@@ -217,7 +217,10 @@ export function VideoFeed({
       if (direction === ScrollSnapDirection.NEXT) {
         target = cards.find((el) => el.offsetTop > y + 1);
       } else if (direction === ScrollSnapDirection.PREVIOUS) {
-        target = [...cards].reverse().find((el) => el.offsetTop < y - 1);
+        // Prevent scroll locking.
+        target = [...cards]
+          .filter((el) => el.offsetTop + el.offsetHeight / 2 < y)
+          .pop();
       }
 
       if (!target) return;
