@@ -23,13 +23,9 @@ import type { ParsedVideoData } from '@/types/video';
 import { debugLog, debugWarn } from '@/lib/debug';
 import type { SortMode } from '@/types/nostr';
 import { useNavigate } from 'react-router-dom';
+import { useVideoPlayback } from '@/hooks/useVideoPlayback';
 
 type ViewMode = 'feed' | 'grid';
-
-enum ScrollSnapDirection {
-  PREVIOUS,
-  NEXT
-}
 
 interface VideoFeedProps {
   feedType?: 'discovery' | 'home' | 'trending' | 'hashtag' | 'profile' | 'recent';
@@ -44,6 +40,7 @@ interface VideoFeedProps {
   'data-testid'?: string;
   'data-hashtag-testid'?: string;
   'data-profile-testid'?: string;
+  autoScrollTimeout?: number;
 }
 
 export function VideoFeed({
@@ -59,12 +56,15 @@ export function VideoFeed({
   'data-testid': testId,
   'data-hashtag-testid': hashtagTestId,
   'data-profile-testid': profileTestId,
+  autoScrollTimeout = 2000,
 }: VideoFeedProps) {
   const [showCommentsForVideo, setShowCommentsForVideo] = useState<string | null>(null);
   const [showListDialog, setShowListDialog] = useState<{ videoId: string; videoPubkey: string } | null>(null);
   const mountTimeRef = useRef<number | null>(null);
 
   const videoCardsListRef = useRef<HTMLDivElement | null>(null);
+  const activeVideoIndexRef = useRef<number | null>(null);
+  const autoScrollTimeoutIdRef = useRef<number | null>(null);
 
   const { user } = useCurrentUser();
   const { toast } = useToast();
@@ -73,6 +73,8 @@ export function VideoFeed({
   const { checkContent } = useContentModeration();
   const { openLoginDialog } = useLoginDialog();
   const navigate = useNavigate();
+
+  const { activeVideoId, registerVideo, unregisterVideo, updateVideoVisibility, globalMuted, setGlobalMuted } = useVideoPlayback();
 
   // Use new infinite scroll hook with NIP-50 support
   const {
@@ -201,49 +203,35 @@ export function VideoFeed({
     }
   }, [isLoading, feedType, allFiltered, navigate, filteredVideos]);
   
-  // Register 'wheel' event for scroll snapping.
+  // Register the auto-scroll timeout.
   useEffect(() => {
-    const snapScroll = (direction: ScrollSnapDirection) => {
-      if (!videoCardsListRef.current) return;
+    if (autoScrollTimeout !== undefined) {
+      const newActiveVideoIndex = filteredVideos.findIndex(v => v.id === activeVideoId);
+      if (newActiveVideoIndex !== activeVideoIndexRef.current) {
+        autoScrollTimeoutIdRef.current = window.setTimeout(() => scrollToVideoCard(newActiveVideoIndex), autoScrollTimeout);
 
-      const y = window.scrollY;
-      const viewportHeight = window.innerHeight;
-
-      const cards = [...videoCardsListRef.current.children].filter(
-        (v) => v instanceof HTMLElement
-      ) as HTMLElement[];
-
-      let target: HTMLElement | undefined;
-      if (direction === ScrollSnapDirection.NEXT) {
-        target = cards.find((el) => el.offsetTop > y + 1);
-      } else if (direction === ScrollSnapDirection.PREVIOUS) {
-        // Prevent scroll locking.
-        target = [...cards]
-          .filter((el) => el.offsetTop + el.offsetHeight / 2 < y)
-          .pop();
+        activeVideoIndexRef.current = newActiveVideoIndex;
       }
+    }
 
-      if (!target) return;
+    return () => {
+      if (autoScrollTimeoutIdRef.current) window.clearTimeout(autoScrollTimeoutIdRef.current);
+    }
+  }, [activeVideoId]);
 
-      // Make the target centered in the viewport.
+  
+  const scrollToVideoCard = (index: number) => {
+    if (videoCardsListRef.current) {
+      const card = videoCardsListRef.current.children[index] as HTMLDivElement;
       const scrollPosition =
-        (target.offsetTop - (viewportHeight / 2)) + (target.offsetHeight / 2);
+        (card.offsetTop - (window.innerHeight / 2)) + (card.offsetHeight / 2);
 
       window.scrollTo({
         top: scrollPosition,
         behavior: 'smooth',
       });
-    };
-
-    const handleWheel = (e: WheelEvent) => {
-      if (e.deltaY > 0) snapScroll(ScrollSnapDirection.NEXT);
-      else if (e.deltaY < 0) snapScroll(ScrollSnapDirection.PREVIOUS);
-    };
-
-    window.addEventListener('wheel', handleWheel);
-
-    return () => window.removeEventListener('wheel', handleWheel);
-  }, [videoCardsListRef.current]);
+    }
+  };
 
   // Loading state (initial load only)
   if (isLoading && !data) {
