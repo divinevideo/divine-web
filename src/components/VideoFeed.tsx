@@ -223,8 +223,9 @@ export function VideoFeed({
   const scrollToVideoCard = (index: number) => {
     if (videoCardsListRef.current) {
       const card = videoCardsListRef.current.children[index] as HTMLDivElement;
-      const scrollPosition =
-        (card.offsetTop - (window.innerHeight / 2)) + (card.offsetHeight / 2);
+      // Make the card touch the window's bottom to keep the app header
+      // from covering a big chunk of it.
+      const scrollPosition = card.offsetTop + card.offsetHeight - window.innerHeight;
 
       window.scrollTo({
         top: scrollPosition,
