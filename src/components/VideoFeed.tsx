@@ -22,6 +22,7 @@ import InfiniteScroll from 'react-infinite-scroll-component';
 import type { ParsedVideoData } from '@/types/video';
 import { debugLog, debugWarn } from '@/lib/debug';
 import type { SortMode } from '@/types/nostr';
+import { useVideoPlayback } from '@/hooks/useVideoPlayback';
 import { useNavigate } from 'react-router-dom';
 import { useVideoPlayback } from '@/hooks/useVideoPlayback';
 
