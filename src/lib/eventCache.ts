@@ -5,8 +5,20 @@ import type { NostrEvent, NostrFilter, NStore } from '@nostrify/nostrify';
 import { NCache } from '@nostrify/nostrify';
 
 const DB_NAME = 'nostr_events';
-const DB_VERSION = 1;
+const DB_VERSION = 2; // Bumped for cached_at metadata
 const STORE_NAME = 'events';
+
+// Cache TTL for different event kinds (in milliseconds)
+export const CACHE_TTL = {
+  PROFILE: 30 * 60 * 1000, // 30 minutes for profiles (kind 0)
+  CONTACTS: 60 * 60 * 1000, // 1 hour for contacts (kind 3)
+  DEFAULT: 2 * 60 * 60 * 1000, // 2 hours for everything else
+} as const;
+
+interface CachedEvent {
+  event: NostrEvent;
+  cached_at: number; // Timestamp when cached
+}
 
 /**
  * IndexedDB-backed persistent event store
@@ -32,16 +44,19 @@ class IndexedDBStore implements NStore {
       request.onupgradeneeded = (event) => {
         const db = (event.target as IDBOpenDBRequest).result;
 
-        // Create events object store with indexes for efficient querying
-        if (!db.objectStoreNames.contains(STORE_NAME)) {
-          const store = db.createObjectStore(STORE_NAME, { keyPath: 'id' });
-
-          // Indexes for common query patterns
-          store.createIndex('pubkey', 'pubkey', { unique: false });
-          store.createIndex('kind', 'kind', { unique: false });
-          store.createIndex('created_at', 'created_at', { unique: false });
-          store.createIndex('pubkey_kind', ['pubkey', 'kind'], { unique: false });
+        // Recreate store if schema changed (v1 → v2 migration)
+        if (db.objectStoreNames.contains(STORE_NAME)) {
+          db.deleteObjectStore(STORE_NAME);
         }
+        
+        const store = db.createObjectStore(STORE_NAME, { keyPath: 'event.id' });
+
+        // Indexes for common query patterns
+        store.createIndex('pubkey', 'event.pubkey', { unique: false });
+        store.createIndex('kind', 'event.kind', { unique: false });
+        store.createIndex('created_at', 'event.created_at', { unique: false });
+        store.createIndex('pubkey_kind', ['event.pubkey', 'event.kind'], { unique: false });
+        store.createIndex('cached_at', 'cached_at', { unique: false });
       };
     });
   }
@@ -56,10 +71,15 @@ class IndexedDBStore implements NStore {
 
   async event(event: NostrEvent): Promise<void> {
     const db = await this.ensureDB();
+    const cachedEvent: CachedEvent = {
+      event,
+      cached_at: Date.now(),
+    };
+    
     return new Promise((resolve, reject) => {
       const transaction = db.transaction([STORE_NAME], 'readwrite');
       const store = transaction.objectStore(STORE_NAME);
-      const request = store.put(event);
+      const request = store.put(cachedEvent);
 
       request.onsuccess = () => resolve();
       request.onerror = () => reject(request.error);
@@ -68,27 +88,41 @@ class IndexedDBStore implements NStore {
 
   async query(filters: NostrFilter[]): Promise<NostrEvent[]> {
     const db = await this.ensureDB();
-    const allEvents: NostrEvent[] = [];
+    const allCachedEvents: CachedEvent[] = [];
 
     for (const filter of filters) {
-      const events = await this.queryFilter(db, filter);
-      allEvents.push(...events);
+      const cachedEvents = await this.queryFilter(db, filter);
+      allCachedEvents.push(...cachedEvents);
     }
 
-    // Remove duplicates by id
+    const now = Date.now();
+
+    // Filter out stale events based on TTL
+    const freshEvents = allCachedEvents.filter(({ event, cached_at }) => {
+      const age = now - cached_at;
+      const ttl = event.kind === 0 ? CACHE_TTL.PROFILE :
+                   event.kind === 3 ? CACHE_TTL.CONTACTS :
+                   CACHE_TTL.DEFAULT;
+      return age < ttl;
+    });
+
+    // Extract events from wrappers
+    const events = freshEvents.map(ce => ce.event);
+
+    // Remove duplicates by id, keeping newest cached version
     const uniqueEvents = Array.from(
-      new Map(allEvents.map(e => [e.id, e])).values()
+      new Map(events.map(e => [e.id, e])).values()
     );
 
     // Sort events by created_at descending (newest first)
     return uniqueEvents.sort((a, b) => b.created_at - a.created_at);
   }
 
-  private async queryFilter(db: IDBDatabase, filter: NostrFilter): Promise<NostrEvent[]> {
+  private async queryFilter(db: IDBDatabase, filter: NostrFilter): Promise<CachedEvent[]> {
     return new Promise((resolve, reject) => {
       const transaction = db.transaction([STORE_NAME], 'readonly');
       const store = transaction.objectStore(STORE_NAME);
-      const events: NostrEvent[] = [];
+      const cachedEvents: CachedEvent[] = [];
 
       // Use indexes when possible for better performance
       let request: IDBRequest;
@@ -113,14 +147,14 @@ class IndexedDBStore implements NStore {
       request.onsuccess = (event) => {
         const cursor = (event.target as IDBRequest<IDBCursorWithValue>).result;
         if (cursor) {
-          const evt = cursor.value as NostrEvent;
-          if (this.matchesFilter(evt, filter)) {
-            events.push(evt);
+          const cachedEvt = cursor.value as CachedEvent;
+          if (this.matchesFilter(cachedEvt.event, filter)) {
+            cachedEvents.push(cachedEvt);
           }
           cursor.continue();
         } else {
           // Apply limit
-          const limited = filter.limit ? events.slice(0, filter.limit) : events;
+          const limited = filter.limit ? cachedEvents.slice(0, filter.limit) : cachedEvents;
           resolve(limited);
         }
       };
