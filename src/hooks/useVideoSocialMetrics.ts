@@ -38,14 +38,14 @@ export function useVideoSocialMetrics(
 
       try {
         // For kind 34236 (addressable videos), we need to query by both #e and #a tags
-        // - #e tag: Used by likes (kind 7) and zap receipts (kind 9735)
+        // - #e tag: Used by likes (kind 7) and zap receipts (kind 9735) - backward compatibility
         // - #A tag: Used by comments (kind 1111) - uppercase A to get all comments including replies
-        // - #a tag: Used by generic reposts (kind 16) - lowercase a for reposts
+        // - #a tag: Used by generic reposts (kind 16) and likes (kind 7) for addressable events
         const addressableId = `${SHORT_VIDEO_KIND}:${videoPubkey}:${vineId ?? ''}`;
         const filters: NIP50Filter[] = [
           {
-            kinds: [7, 9735],
-            '#e': [videoId],
+            kinds: [7, 9735], // reactions (backward compatibility), zap receipts
+            '#e': [videoId], // Standard event references
             limit: 500,
           } as NIP50Filter & { '#e': string[] },
           {
@@ -54,16 +54,17 @@ export function useVideoSocialMetrics(
             limit: 500,
           } as NIP50Filter & { '#A': string[] },
           {
-            kinds: [16],
+            kinds: [16, 7], // generic reposts and reactions for addressable events
             '#a': [addressableId],
             limit: 500,
           } as NIP50Filter & { '#a': string[] },
         ];
 
 
+
         const events = await nostr.query(filters, { signal });
 
-        let likeCount = 0;
+        const likeSet = new Set<string>();
         let repostCount = 0;
         let viewCount = 0;
         let commentCount = 0;
@@ -73,8 +74,8 @@ export function useVideoSocialMetrics(
           switch (event.kind) {
             case 7: // Reaction events (likes)
               // Check if it's a positive reaction (like)
-              if (event.content === '+' || event.content === '❤️' || event.content === '👍') {
-                likeCount++;
+              if (event.content === '+' || event.content === '❤️' || event.content === '👍') { 
+                likeSet.add(event.id);
               }
               break;
 
@@ -100,7 +101,7 @@ export function useVideoSocialMetrics(
         // with dedicated kind 34236 view events or other mechanisms
 
         const metrics: VideoSocialMetrics = {
-          likeCount,
+          likeCount: likeSet.size,
           repostCount,
           viewCount,
           commentCount,
@@ -151,13 +152,13 @@ export function useVideoUserInteractions(
         // Query for user's interactions with this video
         const events = await nostr.query([ 
           {
-            kinds: [7], // reactions
+            kinds: [7], // reactions (backward)
             authors: [userPubkey],
             '#e': [videoId],
             limit: 10,
           },
           {
-            kinds: [16], // generic reposts
+            kinds: [16, 7], // generic reposts
             authors: [userPubkey],
             '#a': [addressableId],
             limit: 10,

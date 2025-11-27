@@ -7,6 +7,7 @@ import { useNostrPublish } from '@/hooks/useNostrPublish';
 import { useToast } from '@/hooks/useToast';
 import { debugLog } from '@/lib/debug';
 import type { VideoSocialMetrics } from '@/hooks/useVideoSocialMetrics';
+import { VIDEO_KIND } from '@/types/video';
 
 interface OptimisticLikeParams {
   videoId: string;
@@ -85,6 +86,7 @@ export function useOptimisticLike() {
           content: '+',
           tags: [
             ['e', videoId],
+            ['a', `${VIDEO_KIND}:${videoPubkey}:${vineId}`],
             ['p', videoPubkey],
           ],
         });
