@@ -1,2 +1,8 @@
 /discord https://discord.gg/sHb4HMSF 302
+
+# Deep link verification files - must be served as-is (before catch-all)
+/.well-known/apple-app-site-association /.well-known/apple-app-site-association 200
+/.well-known/assetlinks.json /.well-known/assetlinks.json 200
+
+# SPA catch-all - serves index.html for all other routes
 /* /index.html 200
