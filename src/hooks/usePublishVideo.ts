@@ -100,9 +100,9 @@ export function usePublishVideo() {
         tags.push(['duration', String(duration)]);
       }
 
-      // Add hashtags
+      // Add hashtags (normalized to lowercase for consistent querying)
       for (const hashtag of hashtags) {
-        tags.push(['t', hashtag.replace(/^#/, '')]); // Remove # if present
+        tags.push(['t', hashtag.replace(/^#/, '').toLowerCase()]);
       }
 
       // Add alt text for accessibility

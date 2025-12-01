@@ -173,8 +173,8 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
       setIsPlaying(isActive);
 
       // Actually control the video element
-      if (videoRef.current && !isLoading && !hasError) {
-        if (isActive) {
+      if (videoRef.current) {
+        if (isActive && !isLoading && !hasError) {
           verboseLog(`[VideoPlayer ${videoId}] Starting playback`);
           // Ensure video is not already playing before calling play()
           if (videoRef.current.paused) {
@@ -182,11 +182,11 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
               debugError(`[VideoPlayer ${videoId}] Failed to start playback:`, error);
             });
           }
-        } else {
+        } else if (!isActive) {
+          // ALWAYS pause when not active, regardless of loading state
+          // This ensures only one video can play at a time
           verboseLog(`[VideoPlayer ${videoId}] Stopping playback`);
-          // Force pause to ensure only one video plays
           videoRef.current.pause();
-          // Reset to beginning for cleaner experience when scrolling back
           videoRef.current.currentTime = 0;
         }
       }

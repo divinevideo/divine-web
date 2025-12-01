@@ -84,6 +84,10 @@ export const PRESET_RELAYS: RelayConfig[] = [
     name: 'Divine',
   },
   {
+    url: 'wss://nyc.dvines.org',
+    name: 'NYC Divine',
+  },
+  {
     url: 'wss://divine.diy',
     name: 'divine.diy',
   },

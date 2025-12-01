@@ -346,7 +346,8 @@ export function useVideoEvents(options: UseVideoEventsOptions = {}) {
 
       // Add NIP-50 search with sort mode for feeds that should sort by popularity
       // But NOT for direct ID lookups - those should just fetch the specific event
-      const shouldSortByPopularity = ['trending', 'hashtag', 'home', 'discovery'].includes(feedType) && !isDirectIdLookup;
+      // NOTE: hashtag feeds excluded - relay doesn't support combining #t filter with search parameter
+      const shouldSortByPopularity = ['trending', 'home', 'discovery'].includes(feedType) && !isDirectIdLookup;
       if (shouldSortByPopularity) {
         // Use explicit sortMode if provided, otherwise auto-select based on feedType
         // Explicit sortMode allows UI to control sorting (e.g., hot/top/rising/controversial selector)

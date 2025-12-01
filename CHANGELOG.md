@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
+- **BUGFIX**: Fix hashtag pages not loading content (e.g., `/hashtag/lol`)
+  - Root cause: Relay doesn't support combining `#t` tag filter with NIP-50 `search` parameter
+  - Removed NIP-50 search from hashtag queries; sorting now applied client-side for hashtag feeds
+  - Added client-side sorting for hashtag feeds (top/hot/rising modes)
+- **BUGFIX**: Fix multiple videos playing simultaneously
+  - Fixed stale closure bug in `VideoPlaybackContext` visibility selection callback
+  - Fixed pause logic in `VideoPlayer` to always pause inactive videos regardless of loading state
+- **IMPROVEMENT**: Normalize hashtag tags to lowercase when publishing new videos for consistent querying
 - **PERFORMANCE**: Dramatically improve perceived page load speed with deferred social metrics loading
   - Videos now render immediately with placeholders for reactions/comments
   - Social metrics (likes, reposts, comments) load progressively after render

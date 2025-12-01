@@ -9,7 +9,6 @@ import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import type { ParsedVideoData } from '@/types/video';
 import { buildVideoNavigationUrl, type VideoNavigationContext } from '@/hooks/useVideoNavigation';
-import { formatDistanceToNow } from 'date-fns';
 
 interface VideoGridProps {
   videos: ParsedVideoData[];
@@ -240,31 +239,6 @@ export function VideoGrid({ videos, loading = false, className, navigationContex
                   )}
                 </div>
               )}
-              {/* Posted Date */}
-              {(() => {
-                const timestamp = video.originalVineTimestamp || video.createdAt;
-                const date = new Date(timestamp * 1000);
-                const now = new Date();
-
-                const yearsDiff = now.getFullYear() - date.getFullYear();
-                let timeAgo;
-
-                if (yearsDiff > 1 || (yearsDiff === 1 && now.getTime() < new Date(date).setFullYear(date.getFullYear() + 1))) {
-                  timeAgo = date.toLocaleDateString('en-US', {
-                    month: 'short',
-                    day: 'numeric',
-                    year: 'numeric'
-                  });
-                } else {
-                  timeAgo = formatDistanceToNow(date, { addSuffix: true });
-                }
-
-                return (
-                  <div className="absolute top-2 left-2 bg-black/40 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100">
-                    {timeAgo}
-                  </div>
-                );
-              })()}
             </div>
           </Card>
         );

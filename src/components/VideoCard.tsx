@@ -292,146 +292,185 @@ export function VideoCard({
         </div>
       )}
 
-      {/* Author info */}
-      <div className="flex items-center gap-3 p-4 pb-2">
-        <Link to={profileUrl}>
-          <Avatar className="h-10 w-10">
-            <AvatarImage src={profileImage} alt={displayName} />
-            <AvatarFallback>{displayName[0]?.toUpperCase()}</AvatarFallback>
-          </Avatar>
-        </Link>
-        <div className="flex-1 min-w-0">
-          <Link to={profileUrl} className="font-semibold hover:underline truncate">
-            {displayName}
-          </Link>
-          {/* Badge row - matches Flutter's ProofModeBadgeRow */}
-          <div className="flex items-center gap-2 mt-1">
-            {video.proofMode && video.proofMode.level !== 'unverified' && (
-              <ProofModeBadge
-                level={video.proofMode.level}
-                proofData={video.proofMode}
-                showDetails={true}
-              />
-            )}
-            {/* Show Original Content badge if video is from before 2018 (original Vine era) */}
-            {date.getFullYear() < 2018 && (
-              <OriginalContentBadge size="small" />
-            )}
-          </div>
-        </div>
-        {/* Original badge and timestamp - aligned with author */}
-        {(isMigratedVine || timeAgo) && (
-          <div className="flex items-center gap-2 text-sm text-muted-foreground shrink-0">
-            {isMigratedVine && <VineBadge />}
-            {timeAgo && (
-              <span title={new Date(timestamp * 1000).toLocaleString()}>
-                {timeAgo}
-              </span>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* Video content */}
-      <CardContent className="p-0">
-        {/* Video player or thumbnail */}
-        <div 
-          className="relative bg-black rounded-lg overflow-hidden w-full"
-          style={{ aspectRatio: videoAspectRatio?.toString() || '1' }}
-        >
-          {!isPlaying ? (
-            <ThumbnailPlayer
-              videoId={video.id}
-              src={video.videoUrl}
-              thumbnailUrl={video.thumbnailUrl}
-              duration={video.duration}
-              className={cn("w-full h-full", !videoAspectRatio && "opacity-0")}
-              onClick={handleThumbnailClick}
-              onError={() => setVideoError(true)}
-              onVideoDimensions={(d) => setVideoAspectRatio(d.width / d.height)}
-            />
-          ) : !videoError ? (
-            <VideoPlayer
-              videoId={video.id}
-              src={video.videoUrl}
-              hlsUrl={video.hlsUrl}
-              fallbackUrls={video.fallbackVideoUrls}
-              poster={video.thumbnailUrl}
-              blurhash={video.blurhash}
-              className="w-full h-full"
-              onLoadStart={() => setVideoError(false)}
-              onError={() => setVideoError(true)}
-              onEnded={handleVideoEnd}
-              onLoadedData={onLoadedData}
-              onVideoDimensions={(d) => setVideoAspectRatio(d.width / d.height)}
-            />
-          ) : (
-            <div className="flex items-center justify-center h-full text-muted-foreground">
-              <p>Failed to load video</p>
+      {/* Main content - horizontal on desktop, vertical on mobile */}
+      <div className={cn(
+        isMobile ? "flex flex-col" : "flex flex-row"
+      )}>
+        {/* Video section */}
+        <div className={cn(
+          isMobile ? "w-full" : "w-auto flex-shrink-0"
+        )}>
+          {/* Author info - only show here on mobile */}
+          {isMobile && (
+            <div className="flex items-center gap-3 p-4 pb-2">
+              <Link to={profileUrl}>
+                <Avatar className="h-10 w-10">
+                  <AvatarImage src={profileImage} alt={displayName} />
+                  <AvatarFallback>{displayName[0]?.toUpperCase()}</AvatarFallback>
+                </Avatar>
+              </Link>
+              <div className="flex-1 min-w-0">
+                <Link to={profileUrl} className="font-semibold hover:underline truncate">
+                  {displayName}
+                </Link>
+                <div className="flex items-center gap-2 mt-1">
+                  {video.proofMode && video.proofMode.level !== 'unverified' && (
+                    <ProofModeBadge
+                      level={video.proofMode.level}
+                      proofData={video.proofMode}
+                      showDetails={true}
+                    />
+                  )}
+                  {date.getFullYear() < 2018 && (
+                    <OriginalContentBadge size="small" />
+                  )}
+                </div>
+              </div>
+              {(isMigratedVine || timeAgo) && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground shrink-0">
+                  {isMigratedVine && <VineBadge />}
+                  {timeAgo && (
+                    <span title={new Date(timestamp * 1000).toLocaleString()}>
+                      {timeAgo}
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
           )}
 
-          {/* Mute/Unmute button overlay - bottom right corner */}
-          {isPlaying && !videoError && (
-            <Button
-              variant="ghost"
-              size="sm"
+          {/* Video player or thumbnail */}
+          <CardContent className={cn("p-0", !isMobile && "p-2")}>
+            <div
               className={cn(
-                "absolute bottom-3 right-3 z-30",
-                "bg-black/50 hover:bg-black/70 text-white",
-                "backdrop-blur-sm rounded-full",
-                "w-10 h-10 p-0 flex items-center justify-center",
-                "transition-all duration-200"
+                "relative bg-black rounded-lg overflow-hidden",
+                isMobile ? "w-full" : "h-[280px]"
               )}
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                setGlobalMuted(!globalMuted);
-              }}
-              onTouchStart={(e) => {
-                // Prevent touch from bubbling to video player
-                e.stopPropagation();
-              }}
-              onTouchEnd={(e) => {
-                // Prevent touch from bubbling to video player
-                e.stopPropagation();
-              }}
-              aria-label={globalMuted ? "Unmute" : "Mute"}
+              style={isMobile ? { aspectRatio: videoAspectRatio?.toString() || '1' } : undefined}
             >
-              {globalMuted ? (
-                <VolumeX className="h-5 w-5" />
+              {!isPlaying ? (
+                <ThumbnailPlayer
+                  videoId={video.id}
+                  src={video.videoUrl}
+                  thumbnailUrl={video.thumbnailUrl}
+                  duration={video.duration}
+                  className={cn(
+                    "w-full h-full",
+                    !videoAspectRatio && "opacity-0",
+                    !isMobile && "object-contain"
+                  )}
+                  onClick={handleThumbnailClick}
+                  onError={() => setVideoError(true)}
+                  onVideoDimensions={(d) => setVideoAspectRatio(d.width / d.height)}
+                />
+              ) : !videoError ? (
+                <VideoPlayer
+                  videoId={video.id}
+                  src={video.videoUrl}
+                  hlsUrl={video.hlsUrl}
+                  fallbackUrls={video.fallbackVideoUrls}
+                  poster={video.thumbnailUrl}
+                  blurhash={video.blurhash}
+                  className={cn("w-full h-full", !isMobile && "object-contain")}
+                  onLoadStart={() => setVideoError(false)}
+                  onError={() => setVideoError(true)}
+                  onEnded={handleVideoEnd}
+                  onLoadedData={onLoadedData}
+                  onVideoDimensions={(d) => setVideoAspectRatio(d.width / d.height)}
+                />
               ) : (
-                <Volume2 className="h-5 w-5" />
+                <div className="flex items-center justify-center h-full text-muted-foreground">
+                  <p>Failed to load video</p>
+                </div>
               )}
-            </Button>
+
+              {/* Mute/Unmute button overlay - bottom right corner */}
+              {isPlaying && !videoError && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className={cn(
+                    "absolute bottom-3 right-3 z-30",
+                    "bg-black/50 hover:bg-black/70 text-white",
+                    "backdrop-blur-sm rounded-full",
+                    "w-10 h-10 p-0 flex items-center justify-center",
+                    "transition-all duration-200"
+                  )}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setGlobalMuted(!globalMuted);
+                  }}
+                  onTouchStart={(e) => {
+                    e.stopPropagation();
+                  }}
+                  onTouchEnd={(e) => {
+                    e.stopPropagation();
+                  }}
+                  aria-label={globalMuted ? "Unmute" : "Mute"}
+                >
+                  {globalMuted ? (
+                    <VolumeX className="h-5 w-5" />
+                  ) : (
+                    <Volume2 className="h-5 w-5" />
+                  )}
+                </Button>
+              )}
+            </div>
+          </CardContent>
+        </div>
+
+        {/* Info panel - right side on desktop, below video on mobile */}
+        <div className={cn(
+          "flex flex-col",
+          isMobile ? "w-full" : "flex-1 p-3 h-[280px] justify-between min-w-0 overflow-hidden"
+        )}>
+          {/* Author info - desktop only (shown inline on mobile above) */}
+          {!isMobile && (
+            <div className="flex items-start gap-2 mb-2">
+              <Link to={profileUrl}>
+                <Avatar className="h-8 w-8">
+                  <AvatarImage src={profileImage} alt={displayName} />
+                  <AvatarFallback className="text-xs">{displayName[0]?.toUpperCase()}</AvatarFallback>
+                </Avatar>
+              </Link>
+              <div className="flex-1 min-w-0">
+                <Link to={profileUrl} className="font-semibold text-sm hover:underline block truncate">
+                  {displayName}
+                </Link>
+                {timeAgo && (
+                  <span className="text-xs text-muted-foreground" title={new Date(timestamp * 1000).toLocaleString()}>
+                    {timeAgo}
+                  </span>
+                )}
+                <div className="flex items-center gap-2 mt-1">
+                  {isMigratedVine && <VineBadge />}
+                  {video.proofMode && video.proofMode.level !== 'unverified' && (
+                    <ProofModeBadge
+                      level={video.proofMode.level}
+                      proofData={video.proofMode}
+                      showDetails={true}
+                    />
+                  )}
+                  {date.getFullYear() < 2018 && (
+                    <OriginalContentBadge size="small" />
+                  )}
+                </div>
+              </div>
+            </div>
           )}
-        </div>
 
-        {/* Video metadata */}
-        <div className="px-4 py-2" data-testid="video-metadata">
-          <div className="flex items-center gap-3 text-sm text-muted-foreground">
-            {(video.loopCount ?? 0) > 0 && (
-              <span className="flex items-center gap-1">
-                <Eye className="h-3 w-3" />
-                {formatViewCount(video.loopCount!)}
-              </span>
-            )}
-            {(video.duration ?? 0) > 0 && (
-              <span>{formatDuration(video.duration!)}</span>
-            )}
-          </div>
-        </div>
-
-        {/* Title and description */}
-        {(video.title || (video.content && video.content.trim() !== video.title?.trim()) || video.hashtags.length > 0 || video.vineId) && (
-          <div className="p-4 space-y-2">
+          {/* Title, description, hashtags */}
+          <div className={cn(
+            "flex-1 overflow-hidden",
+            isMobile ? "p-4 space-y-2" : "space-y-1"
+          )}>
             {video.title && (
-              <h3 className="font-semibold text-lg">{video.title}</h3>
+              <h3 className={cn("font-semibold line-clamp-2", isMobile ? "text-lg" : "text-sm")}>{video.title}</h3>
             )}
 
-            {/* Only show content if it's different from the title */}
             {video.content && video.content.trim() !== video.title?.trim() && (
-              <div className="whitespace-pre-wrap break-words">
+              <div className={cn("whitespace-pre-wrap break-words", !isMobile && "line-clamp-2")}>
                 <NoteContent
                   event={{
                     id: video.id,
@@ -442,19 +481,22 @@ export function VideoCard({
                     tags: [],
                     sig: ''
                   }}
-                  className="text-sm"
+                  className={cn(isMobile ? "text-sm" : "text-xs")}
                 />
               </div>
             )}
 
-            {/* Hashtags */}
+            {/* Hashtags - Vine green color on desktop */}
             {video.hashtags.length > 0 && (
-              <div className="flex flex-wrap gap-2 pt-2">
+              <div className="flex flex-wrap gap-1">
                 {video.hashtags.map((tag) => (
                   <Link
                     key={tag}
                     to={`/hashtag/${tag}`}
-                    className="text-sm text-primary hover:underline"
+                    className={cn(
+                      "hover:underline",
+                      isMobile ? "text-sm text-primary" : "text-xs text-[#00bf8f]"
+                    )}
                   >
                     #{tag}
                   </Link>
@@ -462,24 +504,46 @@ export function VideoCard({
               </div>
             )}
 
-            {/* List badges - without add button */}
+            {/* List badges */}
             {video.vineId && (
               <VideoListBadges
                 videoId={video.vineId}
                 videoPubkey={video.pubkey}
                 compact={true}
                 showAddButton={false}
-                className="pt-2"
               />
             )}
           </div>
-        )}
 
-        {/* Interaction buttons */}
-        <div className={cn(
-          "flex items-center px-4 pb-4",
-          isMobile ? "gap-0.5" : "gap-1"
-        )}>
+          {/* Stats row - desktop: show loop count only (likes/comments shown on buttons) */}
+          {!isMobile && (video.loopCount ?? 0) > 0 && (
+            <div className="py-2 mt-auto text-sm text-muted-foreground">
+              {formatViewCount(video.loopCount!)}
+            </div>
+          )}
+
+          {/* Mobile: Video metadata row */}
+          {isMobile && (
+            <div className="px-4 py-2" data-testid="video-metadata">
+              <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                {(video.loopCount ?? 0) > 0 && (
+                  <span className="flex items-center gap-1">
+                    <Eye className="h-3 w-3" />
+                    {formatViewCount(video.loopCount!)}
+                  </span>
+                )}
+                {(video.duration ?? 0) > 0 && (
+                  <span>{formatDuration(video.duration!)}</span>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Interaction buttons */}
+          <div className={cn(
+            "flex items-center",
+            isMobile ? "px-4 pb-4 gap-0.5" : "pt-2 gap-1"
+          )}>
           <Button
             variant="ghost"
             size="sm"
@@ -598,8 +662,9 @@ export function VideoCard({
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+          </div>
         </div>
-      </CardContent>
+      </div>
     </Card>
 
     {/* Dialogs */}
