@@ -465,17 +465,20 @@ export function VideoCard({
                     {timeAgo}
                   </span>
                 )}
-                <div className="flex items-center gap-2 mt-1">
-                  {video.proofMode && video.proofMode.level !== 'unverified' && (
-                    <ProofModeBadge
-                      level={video.proofMode.level}
-                      proofData={video.proofMode}
-                      showDetails={true}
-                    />
-                  )}
-                  {isMigratedVine && <VineBadge />}
-                </div>
+                {isMigratedVine && (
+                  <div className="flex items-center gap-2 mt-1">
+                    <VineBadge />
+                  </div>
+                )}
               </div>
+              {/* Human Made badge - right aligned */}
+              {video.proofMode && video.proofMode.level !== 'unverified' && (
+                <ProofModeBadge
+                  level={video.proofMode.level}
+                  proofData={video.proofMode}
+                  showDetails={true}
+                />
+              )}
             </div>
           )}
 
