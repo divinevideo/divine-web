@@ -3,7 +3,7 @@
 
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Heart, Repeat2, MessageCircle, Share, Eye, MoreVertical, Flag, UserX, Trash2, Volume2, VolumeX, Code, Users, ListPlus } from 'lucide-react';
+import { Heart, Repeat2, MessageCircle, Share, Eye, MoreVertical, Flag, UserX, Trash2, Volume2, VolumeX, Code, Users, ListPlus, Download } from 'lucide-react';
 import { nip19 } from 'nostr-tools';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -261,6 +261,42 @@ export function VideoCard({
           variant: 'destructive',
         });
       }
+    }
+  };
+
+  const handleDownload = async () => {
+    if (!video.videoUrl) {
+      toast({
+        title: 'Error',
+        description: 'No video URL available',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      // Fetch the video and create a blob for download
+      const response = await fetch(video.videoUrl);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+
+      // Create download link
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${video.title || video.id}.mp4`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+
+      toast({
+        title: 'Download started',
+        description: 'Your video download has begun',
+      });
+    } catch (error) {
+      console.error('Download failed:', error);
+      // Fallback: open in new tab
+      window.open(video.videoUrl, '_blank');
     }
   };
 
@@ -590,6 +626,19 @@ export function VideoCard({
             aria-label="Share"
           >
             <Share className="h-4 w-4" />
+          </Button>
+
+          <Button
+            variant="ghost"
+            size="sm"
+            className={cn(
+              "gap-2",
+              !isHorizontal && "px-2"
+            )}
+            onClick={handleDownload}
+            aria-label="Download"
+          >
+            <Download className="h-4 w-4" />
           </Button>
 
           {/* Lists button */}
