@@ -476,7 +476,14 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
 
     // Handle play/pause state changes
     const handlePlay = () => {
-      verboseLog(`[VideoPlayer ${videoId}] Play event fired`);
+      verboseLog(`[VideoPlayer ${videoId}] Play event fired, isActive: ${isActive}`);
+      // If this video started playing but it's not the active video, pause it immediately
+      // This prevents multiple videos from playing simultaneously
+      if (!isActive && videoRef.current) {
+        verboseLog(`[VideoPlayer ${videoId}] Not active, pausing immediately`);
+        videoRef.current.pause();
+        return;
+      }
       setIsPlaying(true);
     };
     const handlePause = () => {
