@@ -6,7 +6,9 @@
         "appID": "GZCZBKH7MY.co.openvine.app",
         "paths": [
           "/video/*",
-          "/profile/*"
+          "/profile/*",
+          "/hashtag/*",
+          "/search/*"
         ]
       }
     ]
