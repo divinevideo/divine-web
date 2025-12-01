@@ -22,6 +22,7 @@ import InfiniteScroll from 'react-infinite-scroll-component';
 import type { ParsedVideoData } from '@/types/video';
 import { debugLog, debugWarn } from '@/lib/debug';
 import type { SortMode } from '@/types/nostr';
+import { useVideoPlayback } from '@/hooks/useVideoPlayback';
 import { useNavigate } from 'react-router-dom';
 
 type ViewMode = 'feed' | 'grid';
@@ -39,6 +40,8 @@ interface VideoFeedProps {
   'data-testid'?: string;
   'data-hashtag-testid'?: string;
   'data-profile-testid'?: string;
+  autoScrollTimeout?: number;
+  autoScrollAlignment?: 'center' | 'bottom'
 }
 
 export function VideoFeed({
@@ -54,10 +57,16 @@ export function VideoFeed({
   'data-testid': testId,
   'data-hashtag-testid': hashtagTestId,
   'data-profile-testid': profileTestId,
+  autoScrollTimeout = 2000,
+  autoScrollAlignment = 'center',
 }: VideoFeedProps) {
   const [showCommentsForVideo, setShowCommentsForVideo] = useState<string | null>(null);
   const [showListDialog, setShowListDialog] = useState<{ videoId: string; videoPubkey: string } | null>(null);
   const mountTimeRef = useRef<number | null>(null);
+
+  const videoCardsListRef = useRef<HTMLDivElement | null>(null);
+  const activeVideoIndexRef = useRef<number | null>(null);
+  const autoScrollTimeoutIdRef = useRef<number | null>(null);
 
   const { user } = useCurrentUser();
   const { toast } = useToast();
@@ -66,6 +75,8 @@ export function VideoFeed({
   const { checkContent } = useContentModeration();
   const { openLoginDialog } = useLoginDialog();
   const navigate = useNavigate();
+
+  const { activeVideoId, registerVideo, unregisterVideo, updateVideoVisibility, globalMuted, setGlobalMuted } = useVideoPlayback();
 
   // Use new infinite scroll hook with NIP-50 support
   const {
@@ -183,6 +194,39 @@ export function VideoFeed({
       }
     }
   }, [filteredVideos, allVideos, feedType]);
+
+  // Register the auto-scroll timeout.
+  useEffect(() => {
+    if (autoScrollTimeout !== undefined) {
+      const newActiveVideoIndex = filteredVideos.findIndex(v => v.id === activeVideoId);
+      if (newActiveVideoIndex !== activeVideoIndexRef.current) {
+        autoScrollTimeoutIdRef.current = window.setTimeout(() => scrollToVideoCard(newActiveVideoIndex), autoScrollTimeout);
+
+        activeVideoIndexRef.current = newActiveVideoIndex;
+      }
+    }
+
+    return () => {
+      if (autoScrollTimeoutIdRef.current) window.clearTimeout(autoScrollTimeoutIdRef.current);
+    }
+  }, [activeVideoId]);
+
+  
+  const scrollToVideoCard = (index: number) => {
+    if (videoCardsListRef.current) {
+      const card = videoCardsListRef.current.children[index] as HTMLDivElement;
+      let scrollPosition: number | undefined;
+      if (autoScrollAlignment === 'center')
+        scrollPosition = (card.offsetTop - (window.innerHeight / 2)) + (card.offsetHeight / 2);
+      else if (autoScrollAlignment === 'bottom')
+        scrollPosition = card.offsetTop + card.offsetHeight - window.innerHeight;
+
+      window.scrollTo({
+        top: scrollPosition,
+        behavior: 'smooth',
+      });
+    }
+  };
 
   // Loading state (initial load only)
   if (isLoading && !data) {
@@ -521,7 +565,7 @@ export function VideoFeed({
           ) : null
         }
       >
-        <div className="grid gap-6">
+        <div className="grid gap-6" ref={videoCardsListRef}>
           {filteredVideos.map((video, index) => (
             <VideoCardWithMetrics
               key={video.id}
