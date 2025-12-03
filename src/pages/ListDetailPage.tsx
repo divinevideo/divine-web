@@ -21,7 +21,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { useToast } from '@/hooks/useToast';
 import { getSafeProfileImage } from '@/lib/imageUtils';
 import type { NostrEvent, NostrFilter } from '@nostrify/nostrify';
-import { VIDEO_KIND, VIDEO_KINDS, type ParsedVideoData } from '@/types/video';
+import { SHORT_VIDEO_KIND, VIDEO_KINDS, type ParsedVideoData } from '@/types/video';
 import { parseVideoEvent, getVineId, getThumbnailUrl, getOriginalVineTimestamp, getLoopCount, getProofModeData, getOriginalLikeCount, getOriginalRepostCount, getOriginalCommentCount, getOriginPlatform, isVineMigrated } from '@/lib/videoParser';
 
 interface VideoList {
@@ -147,7 +147,7 @@ async function fetchListVideos(
     videoMap.set(key, {
       id: event.id,
       pubkey: event.pubkey,
-      kind: VIDEO_KIND,
+      kind: SHORT_VIDEO_KIND,
       createdAt: event.created_at,
       originalVineTimestamp: getOriginalVineTimestamp(event),
       content: event.content,

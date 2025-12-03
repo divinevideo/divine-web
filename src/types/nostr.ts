@@ -3,6 +3,8 @@
 
 import type { NostrFilter } from '@nostrify/nostrify';
 
+import { VIDEO_KINDS } from './video';
+
 /**
  * NIP-50 search filter extension
  * Adds full-text search and advanced sorting capabilities
@@ -44,10 +46,10 @@ export interface PaginationOptions {
 
 /**
  * Video-specific query filter
- * Enforces video event kinds (21, 22, 34236)
+ * Enforces video event kinds allowed for this project (34236).
  */
 export interface VideoQuery extends NIP50Filter {
-  kinds: (21 | 22 | 34236)[];
+  kinds: typeof VIDEO_KINDS;
 }
 
 /**

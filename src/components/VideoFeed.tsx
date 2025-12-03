@@ -153,6 +153,16 @@ export function VideoFeed({
   // Prefetch all authors in a single query
   useBatchedAuthors(authorPubkeys);
 
+  // Auto-navigate to discovery if home feed is empty
+  useEffect(() => {
+    // Only navigate if we have empty filtered videos but we're done loading
+    const noFilteredVideos = !filteredVideos || filteredVideos.length === 0;
+    const allFiltered = allVideos && allVideos.length > 0 && filteredVideos.length === 0;
+    if (!isLoading && feedType === 'home' && noFilteredVideos && !allFiltered) {
+      navigate('/discovery/');
+    }
+  }, [isLoading, feedType, filteredVideos, allVideos, navigate]);
+
   // Log video data when it changes
   useEffect(() => {
     const filtered = filteredVideos.length;
@@ -246,6 +256,8 @@ export function VideoFeed({
 
   // Empty state (check filteredVideos instead of allVideos)
   if (!filteredVideos || filteredVideos.length === 0) {
+    // Check if we have videos but they're all filtered
+    const allFiltered = allVideos && allVideos.length > 0 && filteredVideos.length === 0;
 
     return (
       <div
@@ -420,10 +432,10 @@ export function VideoFeed({
         onCloseComments={handleCloseComments}
         isLiked={userInteractions.data?.hasLiked || false}
         isReposted={userInteractions.data?.hasReposted || false}
-        likeCount={video.likeCount ?? socialMetrics.data?.likeCount ?? 0}
-        repostCount={video.repostCount ?? socialMetrics.data?.repostCount ?? 0}
-        commentCount={video.commentCount ?? socialMetrics.data?.commentCount ?? 0}
-        viewCount={socialMetrics.data?.viewCount || video.loopCount}
+        likeCount={(video.likeCount ?? 0) + (socialMetrics.data?.likeCount ?? 0)}
+        repostCount={(video.repostCount ?? 0) + (socialMetrics.data?.repostCount ?? 0)}
+        commentCount={(video.commentCount ?? 0) + (socialMetrics.data?.commentCount ?? 0)}
+        viewCount={(socialMetrics.data?.viewCount ?? 0) + (video.loopCount ?? 0)}
         showComments={showCommentsForVideo === video.id}
         navigationContext={{
           source: feedType,

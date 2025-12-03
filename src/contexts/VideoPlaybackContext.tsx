@@ -22,6 +22,9 @@ export function VideoPlaybackProvider({ children }: { children: ReactNode }) {
   const videoRefs = useRef<Map<string, HTMLVideoElement>>(new Map());
   const videoVisibility = useRef<Map<string, number>>(new Map());
   const visibilityUpdateTimer = useRef<NodeJS.Timeout | null>(null);
+  // Track activeVideoId in a ref to avoid stale closure issues in debounced callbacks
+  const activeVideoIdRef = useRef<string | null>(null);
+  activeVideoIdRef.current = activeVideoId;
 
   const setActiveVideo = (videoId: string | null) => {
     verboseLog(`setActiveVideo called with: ${videoId}, current: ${activeVideoId}`);
@@ -69,7 +72,8 @@ export function VideoPlaybackProvider({ children }: { children: ReactNode }) {
       });
 
       // Only update if there's a visible video and it's different from current
-      if (mostVisibleId !== activeVideoId) {
+      // Use ref to get current value and avoid stale closure
+      if (mostVisibleId !== activeVideoIdRef.current) {
         verboseLog(`Switching to most visible video: ${mostVisibleId} (${(maxVisibility * 100).toFixed(1)}% visible)`);
         setActiveVideoId(mostVisibleId);
       }

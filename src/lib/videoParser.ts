@@ -2,7 +2,7 @@
 // ABOUTME: Extracts video URLs and metadata from multiple tag sources with fallback to content parsing
 
 import type { NostrEvent } from '@nostrify/nostrify';
-import { VIDEO_KINDS, type ParsedVideoData, type RepostMetadata } from '@/types/video';
+import { SHORT_VIDEO_KIND, VIDEO_KINDS, type ParsedVideoData, type RepostMetadata } from '@/types/video';
 import type { VideoMetadata, VideoEvent, ProofModeData, ProofModeLevel } from '@/types/video';
 
 // Common video file extensions - used only as hints, not requirements
@@ -300,7 +300,7 @@ export function parseVideoEvent(event: NostrEvent): VideoEvent | null {
   // Create VideoEvent
   const videoEvent: VideoEvent = {
     ...event,
-    kind: event.kind as 34236, // Kind 34236 Addressable Short Videos
+    kind: event.kind as typeof SHORT_VIDEO_KIND, // Kind 34236 Addressable Short Videos
     videoMetadata,
     title,
     hashtags
@@ -593,7 +593,7 @@ export function validateVideoEvent(event: NostrEvent): boolean {
   if (!VIDEO_KINDS.includes(event.kind)) return false;
 
   // Kind 34236 (addressable/replaceable event) MUST have d tag per NIP-33
-  if (event.kind === 34236) {
+  if (event.kind === SHORT_VIDEO_KIND) {
     const vineId = getVineId(event);
     if (!vineId) {
       // Validation failure - missing required d tag
@@ -621,7 +621,7 @@ export function parseVideoEvents(events: NostrEvent[]): ParsedVideoData[] {
     if (!videoEvent) continue;
 
     const vineId = getVineId(event);
-    if (!vineId && event.kind === 34236) continue;
+    if (!vineId && event.kind === SHORT_VIDEO_KIND) continue;
 
     const videoUrl = videoEvent.videoMetadata?.url;
     if (!videoUrl) continue;
@@ -629,7 +629,7 @@ export function parseVideoEvents(events: NostrEvent[]): ParsedVideoData[] {
     parsedVideos.push({
       id: event.id,
       pubkey: event.pubkey,
-      kind: event.kind as 34236,
+      kind: event.kind as typeof SHORT_VIDEO_KIND,
       createdAt: event.created_at,
       originalVineTimestamp: getOriginalVineTimestamp(event),
       content: event.content,

@@ -24,7 +24,7 @@ import { Plus, List, Check, Loader2, ExternalLink } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/useToast';
-import { VIDEO_KIND } from '@/types/video';
+import { SHORT_VIDEO_KIND } from '@/types/video';
 
 interface AddToListDialogProps {
   videoId: string;
@@ -52,7 +52,7 @@ export function AddToListDialog({
   const [newListDescription, setNewListDescription] = useState('');
   const [isCreating, setIsCreating] = useState(false);
 
-  const videoCoordinate = `${VIDEO_KIND}:${videoPubkey}:${videoId}`;
+  const videoCoordinate = `${SHORT_VIDEO_KIND}:${videoPubkey}:${videoId}`;
 
   const handleAddToLists = async () => {
     if (selectedLists.size === 0) return;

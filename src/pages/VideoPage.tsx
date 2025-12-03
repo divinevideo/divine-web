@@ -302,16 +302,17 @@ export function VideoPage() {
       <VideoCard
         video={video}
         className="max-w-xl mx-auto"
+        layout="vertical"
         onLike={handleVideoLike}
         onRepost={handleVideoRepost}
         onOpenComments={() => handleOpenComments(video)}
         onCloseComments={handleCloseComments}
         isLiked={userInteractions?.hasLiked || false}
         isReposted={userInteractions?.hasReposted || false}
-        likeCount={video.likeCount ?? socialMetrics?.likeCount ?? 0}
-        repostCount={video.repostCount ?? socialMetrics?.repostCount ?? 0}
-        commentCount={video.commentCount ?? socialMetrics?.commentCount ?? 0}
-        viewCount={socialMetrics?.viewCount || video.loopCount}
+        likeCount={(video.likeCount ?? 0) + (socialMetrics?.likeCount ?? 0)}
+        repostCount={(video.repostCount ?? 0) + (socialMetrics?.repostCount ?? 0)}
+        commentCount={(video.commentCount ?? 0) + (socialMetrics?.commentCount ?? 0)}
+        viewCount={(socialMetrics?.viewCount ?? 0) + (video.loopCount ?? 0)}
         showComments={showCommentsForVideo === video.id}
         navigationContext={context || undefined}
       />
@@ -388,28 +389,28 @@ export function VideoPage() {
 
       {/* Main Content Area with Click Zones */}
       <div className="relative video-navigation-target" tabIndex={0}>
-        {/* Left Click Zone */}
+        {/* Left Click Zone - pointer-events-none except for the actual button area */}
         {hasPrevious && (
           <button
             onClick={goToPrevious}
-            className="absolute left-0 top-0 w-1/3 h-full z-10 flex items-center justify-start pl-4 opacity-0 hover:opacity-100 transition-opacity group"
+            className="absolute left-0 top-0 w-16 h-full z-10 flex items-center justify-start pl-4 opacity-0 hover:opacity-100 transition-opacity group"
             aria-label="Previous video"
           >
             <div className="bg-black/20 text-white px-2 py-1 rounded text-sm opacity-0 group-hover:opacity-100 transition-opacity">
-              Previous
+              ←
             </div>
           </button>
         )}
 
-        {/* Right Click Zone */}
+        {/* Right Click Zone - pointer-events-none except for the actual button area */}
         {hasNext && (
           <button
             onClick={goToNext}
-            className="absolute right-0 top-0 w-1/3 h-full z-10 flex items-center justify-end pr-4 opacity-0 hover:opacity-100 transition-opacity group"
+            className="absolute right-0 top-0 w-16 h-full z-10 flex items-center justify-end pr-4 opacity-0 hover:opacity-100 transition-opacity group"
             aria-label="Next video"
           >
             <div className="bg-black/20 text-white px-2 py-1 rounded text-sm opacity-0 group-hover:opacity-100 transition-opacity">
-              Next
+              →
             </div>
           </button>
         )}

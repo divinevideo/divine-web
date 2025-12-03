@@ -144,8 +144,10 @@ const NostrProvider: React.FC<NostrProviderProps> = (props) => {
       },
     });
 
-    // Wrap with caching layer
-    cachedPool.current = createCachedNostr(pool.current);
+    // Wrap with caching layer - pass relay URL getter for gateway detection
+    cachedPool.current = createCachedNostr(pool.current, {
+      getRelayUrl: () => relayUrl.current
+    });
     debugLog('[NostrProvider] Wrapped NPool with caching layer');
 
     // Pre-establish WebSocket connections synchronously

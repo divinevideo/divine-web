@@ -6,7 +6,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useNostrPublish } from '@/hooks/useNostrPublish';
 import type { NostrEvent, NostrFilter } from '@nostrify/nostrify';
-import { VIDEO_KIND } from '@/types/video';
+import { SHORT_VIDEO_KIND } from '@/types/video';
 
 export type PlayOrder = 'chronological' | 'reverse' | 'manual' | 'shuffle';
 
@@ -39,7 +39,7 @@ function parseVideoList(event: NostrEvent): VideoList | null {
 
   // Extract video coordinates from 'a' tags
   const videoCoordinates = event.tags
-    .filter(tag => tag[0] === 'a' && tag[1]?.startsWith(`${VIDEO_KIND}:`))
+    .filter(tag => tag[0] === 'a' && tag[1]?.startsWith(`${SHORT_VIDEO_KIND}:`))
     .map(tag => tag[1]);
 
   // Extract categorization tags (t tags)
@@ -156,7 +156,7 @@ export function useVideosInLists(videoId?: string) {
       // Query for lists that contain this video
       const events = await nostr.query([{
         kinds: [30005], // Video sets
-        '#a': [`${VIDEO_KIND}:*:${videoId}`], // Search for any author with this d-tag
+        '#a': [`${SHORT_VIDEO_KIND}:*:${videoId}`], // Search for any author with this d-tag
         limit: 100
       }], { signal });
 

@@ -4,10 +4,10 @@
 import type { NostrEvent } from '@nostrify/nostrify';
 
 // Video Event Kinds
-export const VIDEO_KIND = 34236; // Kind 34236 - Addressable short-form videos
+export const SHORT_VIDEO_KIND = 34236; // Kind 34236 - Addressable short-form videos
 
 // Array of all supported video kinds
-export const VIDEO_KINDS = [VIDEO_KIND];
+export const VIDEO_KINDS = [SHORT_VIDEO_KIND];
 
 export const REPOST_KIND = 6;
 
@@ -25,7 +25,7 @@ export interface VideoMetadata {
 }
 
 export interface VideoEvent extends NostrEvent {
-  kind: typeof VIDEO_KIND;
+  kind: typeof SHORT_VIDEO_KIND;
   videoMetadata?: VideoMetadata;
   title?: string;
   hashtags?: string[];
@@ -67,7 +67,7 @@ export interface RepostMetadata {
 export interface ParsedVideoData {
   id: string;                // Original video event ID
   pubkey: string;            // Original author pubkey
-  kind: typeof VIDEO_KIND;   // Video kind (34236)
+  kind: typeof SHORT_VIDEO_KIND;   // // NIP-71 video kind (34236).
   createdAt: number;
   originalVineTimestamp?: number; // Custom published_at timestamp (NIP-31 - can be set by any video)
   content: string;
@@ -99,4 +99,11 @@ export interface ParsedVideoData {
   // - getLatestRepostTime(video): number - Most recent repost timestamp (or createdAt if no reposts)
   // - getTotalReposts(video): number - Total number of reposts
   // - getUniqueReposters(video): RepostMetadata[] - Deduplicated list of reposters
+}
+
+export interface UserInteractions {
+  hasLiked: boolean;
+  hasReposted: boolean;
+  likeEventId: string | null;
+  repostEventId: string | null;
 }

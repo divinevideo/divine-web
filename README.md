@@ -21,7 +21,7 @@ The relay implements [NIP-50](https://github.com/nostr-protocol/nips/blob/master
 
 ```typescript
 {
-  kinds: [34236],
+  kinds: VIDEO_KINDS,
   search: "sort:hot",  // Recent + high engagement
   limit: 50
 }
@@ -36,7 +36,7 @@ The relay implements [NIP-50](https://github.com/nostr-protocol/nips/blob/master
 **Combined search and sort:**
 ```typescript
 {
-  kinds: [34236],
+  kinds: VIDEO_KINDS,
   search: "sort:hot bitcoin",  // Hot bitcoin videos
   limit: 50
 }

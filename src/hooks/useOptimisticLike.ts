@@ -2,6 +2,7 @@
 // ABOUTME: Updates UI immediately before server confirms the action
 
 import { useQueryClient } from '@tanstack/react-query';
+import { UserInteractions } from '@/types/video';
 import { useNostrPublish } from '@/hooks/useNostrPublish';
 import { useToast } from '@/hooks/useToast';
 import { debugLog } from '@/lib/debug';
@@ -14,13 +15,6 @@ interface OptimisticLikeParams {
   userPubkey: string;
   isCurrentlyLiked: boolean;
   currentLikeEventId: string | null;
-}
-
-interface UserInteractions {
-  hasLiked: boolean;
-  hasReposted: boolean;
-  likeEventId: string | null;
-  repostEventId: string | null;
 }
 
 export function useOptimisticLike() {

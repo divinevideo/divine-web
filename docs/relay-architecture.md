@@ -49,7 +49,7 @@ The relay implements a custom `sort` extension NOT part of standard Nostr protoc
 
 ```typescript
 {
-  kinds: [34236],
+  kinds: VIDEO_KINDS,
   limit: 50,
   sort: {
     field: 'loop_count',
@@ -71,7 +71,7 @@ Advanced search modes for content discovery:
 
 Example:
 ```json
-{"kinds": [34236], "search": "sort:hot", "limit": 50}
+{"kinds": VIDEO_KINDS, "search": "sort:hot", "limit": 50}
 ```
 
 ### 3. Optimized Tag Indexing
@@ -212,9 +212,9 @@ filter['#e'] = [eventId];             // References
 **Solution**: Combine filters in single REQ:
 ```typescript
 const filters = [
-  { kinds: [34236], authors: [pubkey1] },
-  { kinds: [34236], authors: [pubkey2] },
-  { kinds: [34236], '#t': ['trending'] }
+  { kinds: VIDEO_KINDS, authors: [pubkey1] },
+  { kinds: VIDEO_KINDS, authors: [pubkey2] },
+  { kinds: VIDEO_KINDS, '#t': ['trending'] }
 ];
 // Send as single REQ
 ```

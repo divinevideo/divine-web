@@ -3,6 +3,17 @@
 
 import { useState } from 'react';
 import { Shield, ShieldCheck, ShieldAlert, Info } from 'lucide-react';
+
+// Custom icon component for the no-AI/Human Made icon
+function HumanMadeIcon({ className }: { className?: string }) {
+  return (
+    <img
+      src="/ui-icons/human-made.svg"
+      alt="Human Made"
+      className={className}
+    />
+  );
+}
 import { Badge } from '@/components/ui/badge';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
@@ -55,7 +66,7 @@ export function ProofModeBadge({ level, proofData, className, showDetails = fals
         <div className="space-y-3">
           <div className="flex items-center gap-2">
             <Icon className={cn("h-5 w-5", config.iconColor)} />
-            <h3 className="font-semibold">{config.label} Video</h3>
+            <h3 className="font-semibold">{config.label}</h3>
           </div>
 
           <p className="text-sm text-muted-foreground">{config.description}</p>
@@ -138,21 +149,21 @@ function getProofModeConfig(level: ProofModeLevel) {
   switch (level) {
     case 'verified_mobile':
       return {
-        icon: ShieldCheck,
-        label: 'Fully Verified',
+        icon: HumanMadeIcon,
+        label: 'Human Made',
         className: 'border-green-600 text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-950/20',
         iconColor: 'text-green-600 dark:text-green-400',
-        tooltip: 'Full hardware attestation - captured on secure mobile device',
-        description: 'This video was captured on a verified mobile device with hardware-backed security attestation. It includes cryptographic proof that the content is authentic and has not been tampered with.'
+        tooltip: 'Human made - captured on secure mobile device with ProofMode',
+        description: 'This video was captured by a human on a mobile device with hardware-backed security attestation. ProofMode provides cryptographic proof that the content is authentic and has not been tampered with.'
       };
     case 'verified_web':
       return {
-        icon: Shield,
-        label: 'Verified',
+        icon: HumanMadeIcon,
+        label: 'Human Made',
         className: 'border-blue-600 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/20',
         iconColor: 'text-blue-600 dark:text-blue-400',
-        tooltip: 'Software verification - valid signature but no hardware attestation',
-        description: 'This video has been cryptographically signed and includes proof of authenticity. While it lacks hardware attestation, the signature confirms the content has not been altered since creation.'
+        tooltip: 'Human made - valid ProofMode signature',
+        description: 'This video was created by a human and has been cryptographically signed with ProofMode. The signature confirms the content has not been altered since creation.'
       };
     case 'basic_proof':
       return {

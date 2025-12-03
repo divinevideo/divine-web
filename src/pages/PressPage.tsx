@@ -369,7 +369,12 @@ export function PressPage() {
         </p>
         <p className="text-muted-foreground mb-4">
           Looking for our press releases?{' '}
-          <a href="/news/vine-revisited" className="text-primary hover:underline">
+          <a
+            href="/diVine%20launch%20press%20release%2011.13.25.pdf"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-primary hover:underline"
+          >
             Read our launch announcement
           </a>
           .

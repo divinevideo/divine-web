@@ -8,7 +8,7 @@ import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useFollowList } from '@/hooks/useFollowList';
 import { useEffect } from 'react';
 import type { NostrEvent, NostrFilter } from '@nostrify/nostrify';
-import { VIDEO_KIND, VIDEO_KINDS, REPOST_KIND, type ParsedVideoData } from '@/types/video';
+import { SHORT_VIDEO_KIND, VIDEO_KINDS, REPOST_KIND, type ParsedVideoData } from '@/types/video';
 import type { NIP50Filter } from '@/types/nostr';
 import { parseVideoEvent, getVineId, getThumbnailUrl, getLoopCount, getOriginalVineTimestamp, getProofModeData, getOriginalLikeCount, getOriginalRepostCount, getOriginalCommentCount, getOriginPlatform, isVineMigrated, getLatestRepostTime, validateVideoEvent } from '@/lib/videoParser';
 import { debugLog, debugError, verboseLog } from '@/lib/debug';
@@ -118,7 +118,7 @@ async function parseVideoEvents(
     videoMap.set(uniqueKey, {
       id: event.id,
       pubkey: event.pubkey,
-      kind: event.kind as 34236,
+      kind: event.kind as typeof SHORT_VIDEO_KIND,
       createdAt: event.created_at,
       originalVineTimestamp: getOriginalVineTimestamp(event),
       content: event.content,
@@ -219,7 +219,7 @@ async function parseVideoEvents(
       videoData = {
         id: originalVideo.id,
         pubkey: originalVideo.pubkey,
-        kind: VIDEO_KIND,
+        kind: SHORT_VIDEO_KIND,
         createdAt: originalVideo.created_at,
         originalVineTimestamp: getOriginalVineTimestamp(originalVideo),
         content: originalVideo.content,
@@ -346,7 +346,8 @@ export function useVideoEvents(options: UseVideoEventsOptions = {}) {
 
       // Add NIP-50 search with sort mode for feeds that should sort by popularity
       // But NOT for direct ID lookups - those should just fetch the specific event
-      const shouldSortByPopularity = ['trending', 'hashtag', 'home', 'discovery'].includes(feedType) && !isDirectIdLookup;
+      // NOTE: hashtag feeds excluded - relay doesn't support combining #t filter with search parameter
+      const shouldSortByPopularity = ['trending', 'home', 'discovery'].includes(feedType) && !isDirectIdLookup;
       if (shouldSortByPopularity) {
         // Use explicit sortMode if provided, otherwise auto-select based on feedType
         // Explicit sortMode allows UI to control sorting (e.g., hot/top/rising/controversial selector)

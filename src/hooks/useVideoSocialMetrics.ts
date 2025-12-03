@@ -1,9 +1,12 @@
 // ABOUTME: Hook for fetching video social interaction metrics (likes, reposts, views)
 // ABOUTME: Provides efficient batched queries to minimize relay requests
 
+import { UserInteractions } from '@/types/video';
 import { useQuery } from '@tanstack/react-query';
 import { useNostr } from '@nostrify/react';
 import type { NIP50Filter } from '@/types/nostr';
+
+import { SHORT_VIDEO_KIND } from '@/types/video';
 
 export interface VideoSocialMetrics {
   likeCount: number;
@@ -48,7 +51,7 @@ export function useVideoSocialMetrics(
         ];
 
         // Add addressable event filter for comments and generic reposts
-        const addressableId = `34236:${videoPubkey}:${vineId ?? ''}`;
+        const addressableId = `${SHORT_VIDEO_KIND}:${videoPubkey}:${vineId ?? ''}`;
         filters.push({
           kinds: [1111, 16], // NIP-22 comments, generic reposts
           '#a': [addressableId], // Addressable event references
@@ -141,7 +144,7 @@ export function useVideoUserInteractions(
       const signal = AbortSignal.any([context.signal, AbortSignal.timeout(2000)]);
 
       try {
-        const addressableId = `34236:${videoPubkey}:${vineId ?? ''}`;
+        const addressableId = `${SHORT_VIDEO_KIND}:${videoPubkey}:${vineId ?? ''}`;
         // Query for user's interactions with this video
         const events = await nostr.query([ 
           {
@@ -158,10 +161,12 @@ export function useVideoUserInteractions(
           }
         ], { signal });
 
-        let hasLiked = false;
-        let hasReposted = false;
-        let likeEventId: string | null = null;
-        let repostEventId: string | null = null;
+        const userInteractions: UserInteractions = {
+          hasLiked: false,
+          hasReposted: false,
+          likeEventId: null,
+          repostEventId: null
+        };
 
         // Filter out deleted events by checking for delete events (kind 5)
         const deleteEvents = await nostr.query([
@@ -187,16 +192,16 @@ export function useVideoUserInteractions(
           if (deletedEventIds.has(event.id)) continue; // Skip deleted events
 
           if (event.kind === 7 && (event.content === '+' || event.content === '❤️' || event.content === '👍')) {
-            hasLiked = true;
-            likeEventId = event.id;
+            userInteractions.hasLiked = true;
+            userInteractions.likeEventId = event.id;
           }
           if (event.kind === 16) {
-            hasReposted = true;
-            repostEventId = event.id;
+            userInteractions.hasReposted = true;
+            userInteractions.repostEventId = event.id;
           }
         }
 
-        return { hasLiked, hasReposted, likeEventId, repostEventId };
+        return userInteractions;
       } catch (error) {
         console.error('Failed to fetch user video interactions:', error);
         return { hasLiked: false, hasReposted: false, likeEventId: null, repostEventId: null };

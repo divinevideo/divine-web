@@ -3,7 +3,7 @@
 
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Heart, Repeat2, MessageCircle, Share, Eye, MoreVertical, Flag, UserX, Trash2, Volume2, VolumeX, Code, Users, ListPlus } from 'lucide-react';
+import { Heart, Repeat2, MessageCircle, Share, Eye, MoreVertical, Flag, UserX, Trash2, Volume2, VolumeX, Code, Users, ListPlus, Download } from 'lucide-react';
 import { nip19 } from 'nostr-tools';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -13,9 +13,7 @@ import { VideoPlayer } from '@/components/VideoPlayer';
 import { VideoCommentsModal } from '@/components/VideoCommentsModal';
 import { ThumbnailPlayer } from '@/components/ThumbnailPlayer';
 import { NoteContent } from '@/components/NoteContent';
-import { VideoListBadges } from '@/components/VideoListBadges';
 import { ProofModeBadge } from '@/components/ProofModeBadge';
-import { OriginalContentBadge } from '@/components/OriginalContentBadge';
 import { VineBadge } from '@/components/VineBadge';
 import { AddToListDialog } from '@/components/AddToListDialog';
 import { ReportContentDialog } from '@/components/ReportContentDialog';
@@ -42,6 +40,7 @@ interface VideoCardProps {
   video: ParsedVideoData;
   className?: string;
   mode?: 'thumbnail' | 'auto-play';
+  layout?: 'horizontal' | 'vertical'; // horizontal = Vine-style side-by-side, vertical = stacked
   onLike?: () => void;
   onRepost?: () => void;
   onOpenComments?: (video: ParsedVideoData) => void;
@@ -64,6 +63,7 @@ export function VideoCard({
   video,
   className,
   mode = 'auto-play',
+  layout,
   onLike,
   onRepost,
   onOpenComments,
@@ -90,6 +90,8 @@ export function VideoCard({
   const reposterData = useAuthor(reposterPubkey || '');
   const shouldShowReposter = hasReposts && reposterPubkey;
   const [videoError, setVideoError] = useState(false);
+  // Always start with video player visible in auto-play mode, but let VideoPlaybackContext control actual playback
+  // The VideoPlayer component will only play when it's the activeVideoId (most visible)
   const [isPlaying, setIsPlaying] = useState(mode === 'auto-play');
   const [showAddToListDialog, setShowAddToListDialog] = useState(false);
   const [showReportDialog, setShowReportDialog] = useState(false);
@@ -98,6 +100,9 @@ export function VideoCard({
   const [showViewSourceDialog, setShowViewSourceDialog] = useState(false);
   const [videoAspectRatio, setVideoAspectRatio] = useState<number | null>(null);
   const isMobile = useIsMobile();
+  // Determine layout: use prop if provided, otherwise horizontal on desktop, vertical on mobile
+  const effectiveLayout = layout ?? (isMobile ? 'vertical' : 'horizontal');
+  const isHorizontal = effectiveLayout === 'horizontal';
   const { toast } = useToast();
   const muteUser = useMuteItem();
   const navigate = useNavigate();
@@ -137,26 +142,26 @@ export function VideoCard({
   const timestamp = video.originalVineTimestamp || video.createdAt;
 
   const date = new Date(timestamp * 1000);
-  const now = new Date();
 
   // Check if this is a migrated Vine from original Vine platform (uses 'origin' tag)
   const isMigratedVine = video.isVineMigrated;
 
-  // Calculate timeAgo - always show actual date/time, badge will indicate if it's original Vine
-  const yearsDiff = now.getFullYear() - date.getFullYear();
-
-  let timeAgo: string;
-  // If more than 1 year old, show the actual date
-  if (yearsDiff > 1 || (yearsDiff === 1 && now.getTime() < new Date(date).setFullYear(date.getFullYear() + 1))) {
-    // Format as "Jan 15, 2021" for old dates
-    timeAgo = date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric'
-    });
-  } else {
-    // Use relative time for recent videos
-    timeAgo = formatDistanceToNow(date, { addSuffix: true });
+  // Calculate timeAgo only for pre-2025 videos
+  const isFrom2025 = date.getFullYear() >= 2025;
+  let timeAgo: string | null = null;
+  if (!isFrom2025) {
+    const now = new Date();
+    const yearsDiff = now.getFullYear() - date.getFullYear();
+    // If more than 1 year old, show the actual date
+    if (yearsDiff > 1 || (yearsDiff === 1 && now.getTime() < new Date(date).setFullYear(date.getFullYear() + 1))) {
+      timeAgo = date.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric'
+      });
+    } else {
+      timeAgo = formatDistanceToNow(date, { addSuffix: true });
+    }
   }
 
   const handleCommentsClick = () => {
@@ -258,6 +263,42 @@ export function VideoCard({
     }
   };
 
+  const handleDownload = async () => {
+    if (!video.videoUrl) {
+      toast({
+        title: 'Error',
+        description: 'No video URL available',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      // Fetch the video and create a blob for download
+      const response = await fetch(video.videoUrl);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+
+      // Create download link
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${video.title || video.id}.mp4`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+
+      toast({
+        title: 'Download started',
+        description: 'Your video download has begun',
+      });
+    } catch (error) {
+      console.error('Download failed:', error);
+      // Fallback: open in new tab
+      window.open(video.videoUrl, '_blank');
+    }
+  };
+
   return (
     <>
       {/* Comments Modal */}
@@ -292,153 +333,170 @@ export function VideoCard({
         </div>
       )}
 
-      {/* Author info */}
-      <div className="flex items-center gap-3 p-4 pb-2">
-        <Link to={profileUrl}>
-          <Avatar className="h-10 w-10">
-            <AvatarImage src={profileImage} alt={displayName} />
-            <AvatarFallback>{displayName[0]?.toUpperCase()}</AvatarFallback>
-          </Avatar>
-        </Link>
-        <div className="flex-1 min-w-0">
-          <Link to={profileUrl} className="font-semibold hover:underline truncate">
-            {displayName}
-          </Link>
-          {/* Badge row - matches Flutter's ProofModeBadgeRow */}
-          <div className="flex items-center gap-2 mt-1">
-            {video.proofMode && video.proofMode.level !== 'unverified' && (
-              <ProofModeBadge
-                level={video.proofMode.level}
-                proofData={video.proofMode}
-                showDetails={true}
-              />
-            )}
-            {/* Show Original Content badge if video is from before 2018 (original Vine era) */}
-            {date.getFullYear() < 2018 && (
-              <OriginalContentBadge size="small" />
-            )}
-          </div>
-        </div>
-        {/* Original badge and timestamp - aligned with author */}
-        <div className="flex items-center gap-2 text-sm text-muted-foreground shrink-0">
-          {isMigratedVine && <VineBadge />}
-          <span
-            title={new Date(timestamp * 1000).toLocaleString()}>
-            {timeAgo}
-          </span>
-        </div>
-      </div>
-
-      {/* Video content */}
-      <CardContent className="p-0">
-        {/* Video player or thumbnail */}
-        <div 
-          className="relative bg-black rounded-lg overflow-hidden w-full"
-          style={{ aspectRatio: videoAspectRatio?.toString() || '1' }}
-        >
-          {!isPlaying ? (
-            <ThumbnailPlayer
-              videoId={video.id}
-              src={video.videoUrl}
-              thumbnailUrl={video.thumbnailUrl}
-              duration={video.duration}
-              className={cn("w-full h-full", !videoAspectRatio && "opacity-0")}
-              onClick={handleThumbnailClick}
-              onError={() => setVideoError(true)}
-              onVideoDimensions={(d) => setVideoAspectRatio(d.width / d.height)}
-            />
-          ) : !videoError ? (
-            <VideoPlayer
-              videoId={video.id}
-              src={video.videoUrl}
-              hlsUrl={video.hlsUrl}
-              fallbackUrls={video.fallbackVideoUrls}
-              poster={video.thumbnailUrl}
-              blurhash={video.blurhash}
-              className="w-full h-full"
-              onLoadStart={() => setVideoError(false)}
-              onError={() => setVideoError(true)}
-              onEnded={handleVideoEnd}
-              onLoadedData={onLoadedData}
-              onVideoDimensions={(d) => setVideoAspectRatio(d.width / d.height)}
-            />
-          ) : (
-            <div className="flex items-center justify-center h-full text-muted-foreground">
-              <p>Failed to load video</p>
-            </div>
-          )}
-
-          {/* Loading spinner overlay */}
-          {!videoAspectRatio && !videoError && (
-            <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-primary/10 to-primary/5">
-              <div className="relative w-12 h-12">
-                <div className="absolute inset-0 border-4 border-primary/20 rounded-full" />
-                <div className="absolute inset-0 border-4 border-transparent border-t-primary rounded-full animate-spin" />
+      {/* Main content - horizontal or vertical layout */}
+      <div className={cn(
+        isHorizontal ? "flex flex-row" : "flex flex-col"
+      )}>
+        {/* Video section - fixed width in horizontal mode, full width in vertical */}
+        <div className={cn(
+          isHorizontal ? "w-[280px] flex-shrink-0" : "w-full"
+        )}>
+          {/* Author info - only show here in vertical layout */}
+          {!isHorizontal && (
+            <div className="flex items-center gap-3 p-4 pb-2">
+              <Link to={profileUrl}>
+                <Avatar className="h-10 w-10">
+                  <AvatarImage src={profileImage} alt={displayName} />
+                  <AvatarFallback>{displayName[0]?.toUpperCase()}</AvatarFallback>
+                </Avatar>
+              </Link>
+              <div className="flex-1 min-w-0">
+                <Link to={profileUrl} className="font-semibold hover:underline truncate">
+                  {displayName}
+                </Link>
+                {timeAgo && (
+                  <span className="text-sm text-muted-foreground block" title={new Date(timestamp * 1000).toLocaleString()}>
+                    {timeAgo}
+                  </span>
+                )}
+              </div>
+              {/* Badges - right aligned */}
+              <div className="flex items-center gap-2 shrink-0">
+                {isMigratedVine && <VineBadge />}
+                {video.proofMode && video.proofMode.level !== 'unverified' && (
+                  <ProofModeBadge
+                    level={video.proofMode.level}
+                    proofData={video.proofMode}
+                    showDetails={true}
+                  />
+                )}
               </div>
             </div>
           )}
 
-          {/* Mute/Unmute button overlay - bottom right corner */}
-          {isPlaying && !videoError && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className={cn(
-                "absolute bottom-3 right-3 z-30",
-                "bg-black/50 hover:bg-black/70 text-white",
-                "backdrop-blur-sm rounded-full",
-                "w-10 h-10 p-0 flex items-center justify-center",
-                "transition-all duration-200"
-              )}
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                setGlobalMuted(!globalMuted);
-              }}
-              onTouchStart={(e) => {
-                // Prevent touch from bubbling to video player
-                e.stopPropagation();
-              }}
-              onTouchEnd={(e) => {
-                // Prevent touch from bubbling to video player
-                e.stopPropagation();
-              }}
-              aria-label={globalMuted ? "Unmute" : "Mute"}
+          {/* Video player or thumbnail */}
+          <CardContent className={cn("p-0", isHorizontal && "p-2")}>
+            <div
+              className="relative bg-black rounded-lg overflow-hidden w-full"
+              style={{ aspectRatio: videoAspectRatio?.toString() || '1' }}
             >
-              {globalMuted ? (
-                <VolumeX className="h-5 w-5" />
+              {!isPlaying ? (
+                <ThumbnailPlayer
+                  videoId={video.id}
+                  src={video.videoUrl}
+                  thumbnailUrl={video.thumbnailUrl}
+                  duration={video.duration}
+                  className={cn("w-full h-full", !videoAspectRatio && "opacity-0")}
+                  onClick={handleThumbnailClick}
+                  onError={() => setVideoError(true)}
+                  onVideoDimensions={(d) => setVideoAspectRatio(d.width / d.height)}
+                />
+              ) : !videoError ? (
+                <VideoPlayer
+                  videoId={video.id}
+                  src={video.videoUrl}
+                  hlsUrl={video.hlsUrl}
+                  fallbackUrls={video.fallbackVideoUrls}
+                  poster={video.thumbnailUrl}
+                  blurhash={video.blurhash}
+                  className="w-full h-full"
+                  onLoadStart={() => setVideoError(false)}
+                  onError={() => setVideoError(true)}
+                  onEnded={handleVideoEnd}
+                  onLoadedData={onLoadedData}
+                  onVideoDimensions={(d) => setVideoAspectRatio(d.width / d.height)}
+                />
               ) : (
-                <Volume2 className="h-5 w-5" />
+                <div className="flex items-center justify-center h-full text-muted-foreground">
+                  <p>Failed to load video</p>
+                </div>
               )}
-            </Button>
+
+              {/* Mute/Unmute button overlay - bottom right corner */}
+              {isPlaying && !videoError && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className={cn(
+                    "absolute bottom-3 right-3 z-30",
+                    "bg-black/50 hover:bg-black/70 text-white",
+                    "backdrop-blur-sm rounded-full",
+                    "w-10 h-10 p-0 flex items-center justify-center",
+                    "transition-all duration-200"
+                  )}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setGlobalMuted(!globalMuted);
+                  }}
+                  onTouchStart={(e) => {
+                    e.stopPropagation();
+                  }}
+                  onTouchEnd={(e) => {
+                    e.stopPropagation();
+                  }}
+                  aria-label={globalMuted ? "Unmute" : "Mute"}
+                >
+                  {globalMuted ? (
+                    <VolumeX className="h-5 w-5" />
+                  ) : (
+                    <Volume2 className="h-5 w-5" />
+                  )}
+                </Button>
+              )}
+            </div>
+          </CardContent>
+        </div>
+
+        {/* Info panel - right side in horizontal, below video in vertical */}
+        <div className={cn(
+          "flex flex-col",
+          isHorizontal ? "flex-1 p-3 justify-between min-w-0 overflow-hidden" : "w-full"
+        )}>
+          {/* Author info - horizontal layout only (shown above video in vertical) */}
+          {isHorizontal && (
+            <div className="flex items-start gap-2 mb-2">
+              <Link to={profileUrl}>
+                <Avatar className="h-8 w-8">
+                  <AvatarImage src={profileImage} alt={displayName} />
+                  <AvatarFallback className="text-xs">{displayName[0]?.toUpperCase()}</AvatarFallback>
+                </Avatar>
+              </Link>
+              <div className="flex-1 min-w-0">
+                <Link to={profileUrl} className="font-semibold text-sm hover:underline block truncate">
+                  {displayName}
+                </Link>
+                {timeAgo && (
+                  <span className="text-xs text-muted-foreground" title={new Date(timestamp * 1000).toLocaleString()}>
+                    {timeAgo}
+                  </span>
+                )}
+              </div>
+              {/* Badges - right aligned */}
+              <div className="flex items-center gap-2 shrink-0">
+                {isMigratedVine && <VineBadge />}
+                {video.proofMode && video.proofMode.level !== 'unverified' && (
+                  <ProofModeBadge
+                    level={video.proofMode.level}
+                    proofData={video.proofMode}
+                    showDetails={true}
+                  />
+                )}
+              </div>
+            </div>
           )}
-        </div>
 
-        {/* Video metadata */}
-        <div className="px-4 py-2" data-testid="video-metadata">
-          <div className="flex items-center gap-3 text-sm text-muted-foreground">
-            {(video.loopCount ?? 0) > 0 && (
-              <span className="flex items-center gap-1">
-                <Eye className="h-3 w-3" />
-                {formatViewCount(video.loopCount!)}
-              </span>
-            )}
-            {(video.duration ?? 0) > 0 && (
-              <span>{formatDuration(video.duration!)}</span>
-            )}
-          </div>
-        </div>
-
-        {/* Title and description */}
-        {(video.title || (video.content && video.content.trim() !== video.title?.trim()) || video.hashtags.length > 0 || video.vineId) && (
-          <div className="p-4 space-y-2">
+          {/* Title, description, hashtags */}
+          <div className={cn(
+            "flex-1 overflow-hidden",
+            isHorizontal ? "space-y-1" : "p-4 space-y-2"
+          )}>
             {video.title && (
-              <h3 className="font-semibold text-lg">{video.title}</h3>
+              <h3 className={cn("font-semibold line-clamp-2", isHorizontal ? "text-sm" : "text-lg")}>{video.title}</h3>
             )}
 
-            {/* Only show content if it's different from the title */}
             {video.content && video.content.trim() !== video.title?.trim() && (
-              <div className="whitespace-pre-wrap break-words">
+              <div className={cn("whitespace-pre-wrap break-words", isHorizontal && "line-clamp-2")}>
                 <NoteContent
                   event={{
                     id: video.id,
@@ -449,19 +507,22 @@ export function VideoCard({
                     tags: [],
                     sig: ''
                   }}
-                  className="text-sm"
+                  className={cn(isHorizontal ? "text-xs" : "text-sm")}
                 />
               </div>
             )}
 
-            {/* Hashtags */}
+            {/* Hashtags - Vine green color in horizontal layout */}
             {video.hashtags.length > 0 && (
-              <div className="flex flex-wrap gap-2 pt-2">
+              <div className="flex flex-wrap gap-1">
                 {video.hashtags.map((tag) => (
                   <Link
                     key={tag}
                     to={`/hashtag/${tag}`}
-                    className="text-sm text-primary hover:underline"
+                    className={cn(
+                      "hover:underline",
+                      isHorizontal ? "text-xs text-[#00bf8f]" : "text-sm text-primary"
+                    )}
                   >
                     #{tag}
                   </Link>
@@ -469,29 +530,42 @@ export function VideoCard({
               </div>
             )}
 
-            {/* List badges - without add button */}
-            {video.vineId && (
-              <VideoListBadges
-                videoId={video.vineId}
-                videoPubkey={video.pubkey}
-                compact={true}
-                showAddButton={false}
-                className="pt-2"
-              />
-            )}
           </div>
-        )}
 
-        {/* Interaction buttons */}
-        <div className={cn(
-          "flex items-center px-4 pb-4",
-          isMobile ? "gap-0.5" : "gap-1"
-        )}>
+          {/* Stats row - horizontal layout: show loop count only (likes/comments shown on buttons) */}
+          {isHorizontal && (video.loopCount ?? 0) > 0 && (
+            <div className="py-2 mt-auto text-sm text-muted-foreground">
+              {formatViewCount(video.loopCount!)}
+            </div>
+          )}
+
+          {/* Vertical layout: Video metadata row */}
+          {!isHorizontal && (
+            <div className="px-4 py-2" data-testid="video-metadata">
+              <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                {(video.loopCount ?? 0) > 0 && (
+                  <span className="flex items-center gap-1">
+                    <Eye className="h-3 w-3" />
+                    {formatViewCount(video.loopCount!)}
+                  </span>
+                )}
+                {(video.duration ?? 0) > 0 && (
+                  <span>{formatDuration(video.duration!)}</span>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Interaction buttons */}
+          <div className={cn(
+            "flex items-center",
+            isHorizontal ? "pt-2 gap-1" : "px-4 pb-4 gap-0.5"
+          )}>
           <Button
             variant="ghost"
             size="sm"
             className={cn(
-              isMobile ? 'gap-1 px-2' : 'gap-2',
+              isHorizontal ? 'gap-2' : 'gap-1 px-2',
               isLiked && 'text-red-500 bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/30'
             )}
             onClick={onLike}
@@ -505,7 +579,7 @@ export function VideoCard({
             variant="ghost"
             size="sm"
             className={cn(
-              isMobile ? 'gap-1 px-2' : 'gap-2',
+              isHorizontal ? 'gap-2' : 'gap-1 px-2',
               isReposted && 'text-green-500 bg-green-50 hover:bg-green-100 dark:bg-green-900/20 dark:hover:bg-green-900/30'
             )}
             onClick={onRepost}
@@ -520,7 +594,7 @@ export function VideoCard({
             size="sm"
             className={cn(
               "gap-2",
-              isMobile && "gap-1 px-2"
+              !isHorizontal && "gap-1 px-2"
             )}
             onClick={handleCommentsClick}
             aria-label="Comment"
@@ -534,12 +608,25 @@ export function VideoCard({
             size="sm"
             className={cn(
               "gap-2",
-              isMobile && "px-2"
+              !isHorizontal && "px-2"
             )}
             onClick={handleShare}
             aria-label="Share"
           >
             <Share className="h-4 w-4" />
+          </Button>
+
+          <Button
+            variant="ghost"
+            size="sm"
+            className={cn(
+              "gap-2",
+              !isHorizontal && "px-2"
+            )}
+            onClick={handleDownload}
+            aria-label="Download"
+          >
+            <Download className="h-4 w-4" />
           </Button>
 
           {/* Lists button */}
@@ -549,14 +636,14 @@ export function VideoCard({
               size="sm"
               className={cn(
                 "gap-2",
-                isMobile && "gap-1 px-2"
+                !isHorizontal && "gap-1 px-2"
               )}
               onClick={() => setShowAddToListDialog(true)}
               aria-label="Lists"
             >
               {(lists?.length ?? 0) > 0 ? <Users className="h-4 w-4" /> : <ListPlus className="h-4 w-4" />}
-              {!isMobile && <span className="text-xs">Lists</span>}
-              {lists && lists.length > 0 && !isMobile && <span className="text-xs">{formatCount(lists.length)}</span>}
+              {isHorizontal && <span className="text-xs">Lists</span>}
+              {lists && lists.length > 0 && isHorizontal && <span className="text-xs">{formatCount(lists.length)}</span>}
             </Button>
           )}
 
@@ -605,8 +692,9 @@ export function VideoCard({
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+          </div>
         </div>
-      </CardContent>
+      </div>
     </Card>
 
     {/* Dialogs */}

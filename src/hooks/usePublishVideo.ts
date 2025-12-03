@@ -3,7 +3,7 @@
 
 import { useMutation } from '@tanstack/react-query';
 import { useNostrPublish } from '@/hooks/useNostrPublish';
-import { VIDEO_KIND } from '@/types/video';
+import { SHORT_VIDEO_KIND } from '@/types/video';
 import type { VideoMetadata } from '@/types/video';
 
 interface PublishVideoOptions {
@@ -100,9 +100,9 @@ export function usePublishVideo() {
         tags.push(['duration', String(duration)]);
       }
 
-      // Add hashtags
+      // Add hashtags (normalized to lowercase for consistent querying)
       for (const hashtag of hashtags) {
-        tags.push(['t', hashtag.replace(/^#/, '')]); // Remove # if present
+        tags.push(['t', hashtag.replace(/^#/, '').toLowerCase()]);
       }
 
       // Add alt text for accessibility
@@ -115,7 +115,7 @@ export function usePublishVideo() {
 
       // Publish the event
       const event = await publishEvent({
-        kind: VIDEO_KIND,
+        kind: SHORT_VIDEO_KIND,
         content,
         tags
       });
@@ -140,9 +140,9 @@ export function useRepostVideo() {
       vineId: string;
     }) => {
       const tags: string[][] = [
-        ['a', `${VIDEO_KIND}:${originalPubkey}:${vineId}`],
+        ['a', `${SHORT_VIDEO_KIND}:${originalPubkey}:${vineId}`],
         ['p', originalPubkey],
-        ['k', VIDEO_KIND.toString()],
+        ['k', SHORT_VIDEO_KIND.toString()],
         ['client', 'divine-web']
       ];
 

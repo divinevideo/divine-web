@@ -138,7 +138,7 @@ filter.sort = { field: 'loop_count', dir: 'desc' };
 patchNostrifyForCustomParams();
 
 // Client-side hashtag filtering
-const all = await query([{ kinds: [34236] }]);
+const all = await query([{ kinds: VIDEO_KINDS }]);
 const filtered = all.filter(v => v.hashtags.includes(tag));
 
 // Sequential queries
@@ -158,14 +158,14 @@ filter.search = 'sort:hot';
 
 // Server-side hashtag filtering
 const videos = await query([{
-  kinds: [34236],
+  kinds: VIDEO_KINDS,
   '#t': [tag],
   search: 'sort:hot'
 }]);
 
 // Batched queries
 const all = await query([
-  { kinds: [34236], authors: [pk] },
+  { kinds: VIDEO_KINDS, authors: [pk] },
   { kinds: [3], '#p': [pk] },
   { kinds: [3], authors: [pk] }
 ]);

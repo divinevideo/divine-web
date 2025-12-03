@@ -1,7 +1,6 @@
 // ABOUTME: News page displaying press releases and media coverage about Divine
 // ABOUTME: Links to press releases and articles about the platform
 
-import { Link } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ExternalLink, FileText } from 'lucide-react';
 import { MarketingLayout } from '@/components/MarketingLayout';
@@ -294,12 +293,14 @@ export function NewsPage() {
                   <div className="flex items-start justify-between">
                     <div className="space-y-1">
                       <CardTitle className="text-2xl">
-                        <Link
-                          to="/news/vine-revisited"
+                        <a
+                          href="/diVine%20launch%20press%20release%2011.13.25.pdf"
+                          target="_blank"
+                          rel="noopener noreferrer"
                           className="hover:text-primary transition-colors"
                         >
                           Vine Revisited - A Return to the Halcyon Days of the Internet
-                        </Link>
+                        </a>
                       </CardTitle>
                       <CardDescription>
                         November 13, 2025 • Press Release
@@ -312,12 +313,14 @@ export function NewsPage() {
                   <p className="text-muted-foreground mb-4">
                     With a grant funded by Jack Dorsey, Rabble has created diVine - an open source revival of Vine videos and its six-second video creation capabilities.
                   </p>
-                  <Link
-                    to="/news/vine-revisited"
+                  <a
+                    href="/diVine%20launch%20press%20release%2011.13.25.pdf"
+                    target="_blank"
+                    rel="noopener noreferrer"
                     className="text-primary hover:underline font-medium"
                   >
                     Read full press release →
-                  </Link>
+                  </a>
                 </CardContent>
               </Card>
             </div>

@@ -37,12 +37,6 @@ export function useAuthor(pubkey: string | undefined) {
         return {};
       }
 
-      // Republish the profile to the main relay in the background
-      // This ensures profiles are cached on relay.divine.video even if they came from profile relays
-      nostr.event(event).catch(() => {
-        // Silently ignore republish errors - this is best-effort caching
-      });
-
       // Also add to event cache for future synchronous access
       eventCache.event(event).catch(() => {
         // Silently ignore cache errors

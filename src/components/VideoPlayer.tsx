@@ -173,8 +173,8 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
       setIsPlaying(isActive);
 
       // Actually control the video element
-      if (videoRef.current && !isLoading && !hasError) {
-        if (isActive) {
+      if (videoRef.current) {
+        if (isActive && !isLoading && !hasError) {
           verboseLog(`[VideoPlayer ${videoId}] Starting playback`);
           // Ensure video is not already playing before calling play()
           if (videoRef.current.paused) {
@@ -182,11 +182,11 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
               debugError(`[VideoPlayer ${videoId}] Failed to start playback:`, error);
             });
           }
-        } else {
+        } else if (!isActive) {
+          // ALWAYS pause when not active, regardless of loading state
+          // This ensures only one video can play at a time
           verboseLog(`[VideoPlayer ${videoId}] Stopping playback`);
-          // Force pause to ensure only one video plays
           videoRef.current.pause();
-          // Reset to beginning for cleaner experience when scrolling back
           videoRef.current.currentTime = 0;
         }
       }
@@ -476,7 +476,14 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
 
     // Handle play/pause state changes
     const handlePlay = () => {
-      verboseLog(`[VideoPlayer ${videoId}] Play event fired`);
+      verboseLog(`[VideoPlayer ${videoId}] Play event fired, isActive: ${isActive}`);
+      // If this video started playing but it's not the active video, pause it immediately
+      // This prevents multiple videos from playing simultaneously
+      if (!isActive && videoRef.current) {
+        verboseLog(`[VideoPlayer ${videoId}] Not active, pausing immediately`);
+        videoRef.current.pause();
+        return;
+      }
       setIsPlaying(true);
     };
     const handlePause = () => {
@@ -714,13 +721,18 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
           onClick={!isMobile ? togglePlay : undefined}
         />
 
-        {/* Loading state - show spinner over blurhash */}
+        {/* Loading state - show loading animation over blurhash */}
         {isLoading && (
           <div
             className="absolute inset-0 flex items-center justify-center z-20"
             data-testid={isMobile ? "mobile-loading" : undefined}
           >
-            <div className="w-8 h-8 border-2 border-white/30 border-t-white/80 rounded-full animate-spin" />
+            <div className='absolute w-full h-full bg-black'></div>
+            <img
+              src="/ui-icons/loading-brand.svg"
+              alt="Loading..."
+              className="w-24 h-24 opacity-75"
+            />
           </div>
         )}
 

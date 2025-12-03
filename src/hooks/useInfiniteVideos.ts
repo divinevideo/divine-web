@@ -25,6 +25,8 @@ interface UseInfiniteVideosOptions {
 interface VideoPage {
   videos: ParsedVideoData[];
   nextCursor: number | undefined;
+  // For offset-based pagination with sorted feeds
+  offset?: number;
 }
 
 /**
@@ -63,7 +65,12 @@ export function useInfiniteVideos({
     queryKey: ['infinite-videos', feedType, hashtag, pubkey, effectiveSortMode, pageSize],
     queryFn: async ({ pageParam, signal }) => {
       const totalStart = performance.now();
-      const cursor = pageParam as number | undefined;
+
+      // For sorted feeds, pageParam is { offset: number }
+      // For chronological feeds, pageParam is a timestamp cursor
+      const isOffsetParam = typeof pageParam === 'object' && pageParam !== null && 'offset' in pageParam;
+      const offset = isOffsetParam ? (pageParam as { offset: number }).offset : 0;
+      const cursor = !isOffsetParam ? (pageParam as number | undefined) : undefined;
 
       // Build filter based on feed type
       const filter: NIP50Filter = {
@@ -71,13 +78,21 @@ export function useInfiniteVideos({
         limit: pageSize
       };
 
-      // Add cursor for pagination
-      if (cursor) {
+      // For sorted feeds, we need to request all items up to current offset + pageSize
+      // and then slice to get just the new page (since NIP-50 doesn't support offset)
+      const useSortedPagination = effectiveSortMode && ['top', 'hot', 'rising', 'controversial'].includes(effectiveSortMode);
+
+      if (useSortedPagination && offset > 0) {
+        // Request enough to cover offset + new page
+        filter.limit = offset + pageSize;
+        debugLog(`[useInfiniteVideos] Sorted pagination: requesting ${filter.limit} to get offset ${offset}`);
+      } else if (cursor) {
+        // Use timestamp cursor for chronological pagination
         filter.until = cursor;
       }
 
-      // Filter for Classic (archived Vines) when top sort is selected
-      if (effectiveSortMode === 'top') {
+      // Filter for Classic (archived Vines) - trending feed with top sort
+      if (effectiveSortMode === 'top' && feedType === 'trending') {
         filter['#platform'] = ['vine'];
         debugLog('[useInfiniteVideos] 🎬 Classic mode: filtering for archived Vines only');
       }
@@ -87,10 +102,9 @@ export function useInfiniteVideos({
         case 'hashtag':
           if (!hashtag) throw new Error('Hashtag required for hashtag feed');
           filter['#t'] = [hashtag.toLowerCase()];
-          // Only add search if relay supports NIP-50
-          if (effectiveSortMode) {
-            filter.search = `sort:${effectiveSortMode}`;
-          }
+          // NOTE: Do NOT add NIP-50 search parameter with #t filter
+          // The relay doesn't support combining tag queries with search - returns 0 results
+          // Sort will be applied client-side after fetching
           break;
 
         case 'profile':
@@ -122,9 +136,14 @@ export function useInfiniteVideos({
 
         case 'trending':
           // Only add search if relay supports NIP-50
-          if (effectiveSortMode) {
+          // NOTE: Do NOT add NIP-50 search with #platform filter for Classic (top) mode
+          // The relay doesn't support combining tag queries with search - returns wrong results
+          // Classic Vines are sorted client-side by loop count instead
+          if (effectiveSortMode && effectiveSortMode !== 'top') {
             debugLog(`[useInfiniteVideos] 🔥 Trending feed with sort mode: ${effectiveSortMode}`);
             filter.search = `sort:${effectiveSortMode}`;
+          } else if (effectiveSortMode === 'top') {
+            debugLog('[useInfiniteVideos] 🎬 Classic mode: using #platform filter, no NIP-50 search (will sort by loop count client-side)');
           } else {
             debugLog('[useInfiniteVideos] ⚠️ Trending feed WITHOUT sort mode (relay may not support NIP-50)');
           }
@@ -197,6 +216,38 @@ export function useInfiniteVideos({
         debugLog(`[useInfiniteVideos] 🔄 Sorted ${videos.length} Classic Vines by loop count`);
       }
 
+      // Client-side sorting for hashtag feeds (relay doesn't support #t + search combo)
+      if (feedType === 'hashtag' && sortMode && videos.length > 1) {
+        debugLog(`[useInfiniteVideos] 🔄 Applying client-side sort:${sortMode} for hashtag feed`);
+        videos = videos.sort((a, b) => {
+          switch (sortMode) {
+            case 'top':
+              // Sort by loop count (popularity)
+              return (b.loopCount || 0) - (a.loopCount || 0);
+            case 'hot':
+              // Hot = engagement weighted by recency (loop count + time decay)
+              const aScore = (a.loopCount || 0) / Math.pow((Date.now() / 1000 - a.createdAt) / 3600 + 1, 1.5);
+              const bScore = (b.loopCount || 0) / Math.pow((Date.now() / 1000 - b.createdAt) / 3600 + 1, 1.5);
+              return bScore - aScore;
+            case 'rising':
+              // Rising = recent with some engagement
+              const aRising = (a.loopCount || 0) * Math.max(0, 1 - (Date.now() / 1000 - a.createdAt) / 86400);
+              const bRising = (b.loopCount || 0) * Math.max(0, 1 - (Date.now() / 1000 - b.createdAt) / 86400);
+              return bRising - aRising;
+            default:
+              // Default: chronological (newest first)
+              return b.createdAt - a.createdAt;
+          }
+        });
+      }
+
+      // For sorted pagination, slice to get only the new page
+      let pageVideos = videos;
+      if (useSortedPagination && offset > 0) {
+        pageVideos = videos.slice(offset, offset + pageSize);
+        debugLog(`[useInfiniteVideos] Sliced sorted results: ${videos.length} total -> ${pageVideos.length} for page (offset ${offset})`);
+      }
+
       const parseTime = performance.now() - parseStart;
 
       const totalTime = performance.now() - totalStart;
@@ -207,21 +258,39 @@ export function useInfiniteVideos({
         queryTime,
         parseTime,
         totalTime,
-        videoCount: videos.length,
+        videoCount: pageVideos.length,
         sortMode: effectiveSortMode,
       });
 
-      // Determine next cursor
-      const nextCursor = videos.length > 0
-        ? videos[videos.length - 1].createdAt - 1
-        : undefined;
-
-      return {
-        videos,
-        nextCursor
-      };
+      // Determine next cursor/offset
+      if (useSortedPagination) {
+        // For sorted feeds, use offset-based pagination
+        const newOffset = offset + pageVideos.length;
+        const hasMore = pageVideos.length === pageSize; // If we got a full page, there might be more
+        debugLog(`[useInfiniteVideos] Sorted pagination: offset ${offset} -> ${newOffset}, hasMore: ${hasMore}`);
+        return {
+          videos: pageVideos,
+          nextCursor: undefined,
+          offset: hasMore ? newOffset : undefined
+        };
+      } else {
+        // For chronological feeds, use timestamp cursor
+        const nextCursor = pageVideos.length > 0
+          ? pageVideos[pageVideos.length - 1].createdAt - 1
+          : undefined;
+        return {
+          videos: pageVideos,
+          nextCursor
+        };
+      }
     },
-    getNextPageParam: (lastPage) => lastPage.nextCursor,
+    getNextPageParam: (lastPage) => {
+      // Use offset for sorted pagination, timestamp for chronological
+      if (lastPage.offset !== undefined) {
+        return { offset: lastPage.offset };
+      }
+      return lastPage.nextCursor;
+    },
     initialPageParam: undefined,
     enabled: enabled && !!nostr && (feedType !== 'home' || (!!user?.pubkey && !isLoadingFollows)),
     staleTime: 60000, // 1 minute

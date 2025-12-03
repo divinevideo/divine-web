@@ -1,7 +1,7 @@
 // ABOUTME: Toggle component for filtering to show only verified videos
 // ABOUTME: Allows users to filter feeds to show only ProofMode verified content
 
-import { ShieldCheck } from 'lucide-react';
+import { CheckCircle } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 
@@ -24,8 +24,8 @@ export function VerifiedOnlyToggle({ enabled, onToggle, className }: VerifiedOnl
           htmlFor="verified-only"
           className="flex items-center gap-2 cursor-pointer text-sm text-foreground"
         >
-          <ShieldCheck className="h-4 w-4 text-green-600 dark:text-green-400" />
-          <span>Verified</span>
+          <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
+          <span>Human Made</span>
         </Label>
       </div>
       {enabled && (

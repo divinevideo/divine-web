@@ -46,7 +46,7 @@ filter.search = 'bitcon'; // Matches "bitcoin"
 ### Video Events (NIP-71)
 
 ```typescript
-const VIDEO_KINDS = [21, 22, 34236];
+// SHORT_VIDEO_KIND and VIDEO_KINDS constants can be found in 'video.ts'.
 
 // All videos
 filter.kinds = VIDEO_KINDS;
@@ -75,7 +75,7 @@ filter['#e'] = [eventId];
 filter['#p'] = [pubkey];
 
 // Address references
-filter['#a'] = ['34236:pubkey:identifier'];
+filter['#a'] = [`${SHORT_VIDEO_KIND}:pubkey:identifier`];
 
 // Hashtags
 filter['#t'] = ['bitcoin', 'nostr'];
@@ -195,7 +195,7 @@ filter.limit = 10000; // ❌
 
 ```typescript
 const trendingVideos = await nostr.req([{
-  kinds: [34236],
+  kinds: VIDEO_KINDS,
   limit: 50,
   search: 'sort:hot'
 }]);
@@ -205,7 +205,7 @@ const trendingVideos = await nostr.req([{
 
 ```typescript
 const discoverVideos = await nostr.req([{
-  kinds: [34236],
+  kinds: VIDEO_KINDS,
   limit: 50,
   search: 'sort:top',
   since: Math.floor(Date.now() / 1000) - 604800 // Last week
@@ -218,7 +218,7 @@ const discoverVideos = await nostr.req([{
 const [profile, videos] = await Promise.all([
   nostr.req([{ kinds: [0], authors: [pubkey], limit: 1 }]),
   nostr.req([{ 
-    kinds: [34236], 
+    kinds: VIDEO_KINDS, 
     authors: [pubkey], 
     limit: 20,
     search: 'sort:hot'
@@ -230,7 +230,7 @@ const [profile, videos] = await Promise.all([
 
 ```typescript
 const hashtagVideos = await nostr.req([{
-  kinds: [34236],
+  kinds: VIDEO_KINDS,
   '#t': [hashtag.toLowerCase()],
   limit: 50,
   search: 'sort:hot'
@@ -241,7 +241,7 @@ const hashtagVideos = await nostr.req([{
 
 ```typescript
 const searchResults = await nostr.req([{
-  kinds: [34236],
+  kinds: VIDEO_KINDS,
   search: `sort:hot ${searchTerm}`,
   limit: 50
 }]);
@@ -283,7 +283,7 @@ curl https://relay.divine.video/metrics
 ```javascript
 const ws = new WebSocket('wss://relay.divine.video');
 ws.onopen = () => console.log('Connected');
-ws.send(JSON.stringify(['REQ', 'test', { kinds: [34236], limit: 1 }]));
+ws.send(JSON.stringify(['REQ', 'test', { kinds: VIDEO_KINDS, limit: 1 }]));
 ```
 
 ## Migration Checklist
@@ -313,7 +313,7 @@ interface PaginatedQuery {
 }
 
 interface VideoQuery extends NIP50Filter {
-  kinds: (21 | 22 | 34236)[];
+  kinds: typeof VIDEO_KINDS;
 }
 ```
 
@@ -330,7 +330,7 @@ export function useVideoFeed(sortMode: SortMode = 'hot') {
     queryKey: ['videos', sortMode],
     queryFn: async ({ pageParam }) => {
       const filter: NIP50Filter = {
-        kinds: [34236],
+        kinds: VIDEO_KINDS,
         limit: 20,
         search: `sort:${sortMode}`
       };
