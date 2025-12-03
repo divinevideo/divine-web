@@ -16,7 +16,7 @@ export function AuthenticDemo() {
             {/* Stock image with play overlay */}
             <div className="relative w-4/5 mx-auto aspect-square rounded-lg shadow-md overflow-hidden">
               <img
-                src="/authentic-demo.jpg"
+                src="/authentic-demo.avif"
                 alt="Person creating authentic content"
                 className="w-full h-full object-cover"
               />

@@ -97,7 +97,7 @@ export function LandingPage() {
             <div className="space-y-4">
               <div className="flex flex-col items-center justify-center gap-3">
                 <img
-                  src="/divine_icon_transparent.png"
+                  src="/divine_icon_transparent.avif"
                   alt="diVine logo"
                   className="w-16 h-16 md:w-20 md:h-20"
                 />
@@ -133,7 +133,7 @@ export function LandingPage() {
                   <CarouselItem className="pl-2 md:pl-4 basis-4/5 md:basis-3/4">
                     <div className="p-1">
                       <img
-                        src="/screenshots/iPad 13 inch-0.png"
+                        src="/screenshots/iPad 13 inch-0.avif"
                         alt="diVine Video feed screenshot"
                         className="w-full h-auto rounded-lg shadow-lg"
                       />
@@ -142,7 +142,7 @@ export function LandingPage() {
                   <CarouselItem className="pl-2 md:pl-4 basis-4/5 md:basis-3/4">
                     <div className="p-1">
                       <img
-                        src="/screenshots/iPad 13 inch-1.png"
+                        src="/screenshots/iPad 13 inch-1.avif"
                         alt="diVine Video profile screenshot"
                         className="w-full h-auto rounded-lg shadow-lg"
                       />
@@ -151,7 +151,7 @@ export function LandingPage() {
                   <CarouselItem className="pl-2 md:pl-4 basis-4/5 md:basis-3/4">
                     <div className="p-1">
                       <img
-                        src="/screenshots/iPad 13 inch-2.png"
+                        src="/screenshots/iPad 13 inch-2.avif"
                         alt="diVine Video hashtags screenshot"
                         className="w-full h-auto rounded-lg shadow-lg"
                       />
@@ -160,7 +160,7 @@ export function LandingPage() {
                   <CarouselItem className="pl-2 md:pl-4 basis-4/5 md:basis-3/4">
                     <div className="p-1">
                       <img
-                        src="/screenshots/iPad 13 inch-3.png"
+                        src="/screenshots/iPad 13 inch-3.avif"
                         alt="diVine Video discovery screenshot"
                         className="w-full h-auto rounded-lg shadow-lg"
                       />
@@ -169,7 +169,7 @@ export function LandingPage() {
                   <CarouselItem className="pl-2 md:pl-4 basis-4/5 md:basis-3/4">
                     <div className="p-1">
                       <img
-                        src="/screenshots/iPad 13 inch-4.png"
+                        src="/screenshots/iPad 13 inch-4.avif"
                         alt="diVine Video trending screenshot"
                         className="w-full h-auto rounded-lg shadow-lg"
                       />
@@ -178,7 +178,7 @@ export function LandingPage() {
                   <CarouselItem className="pl-2 md:pl-4 basis-4/5 md:basis-3/4">
                     <div className="p-1">
                       <img
-                        src="/screenshots/iPad 13 inch-5.png"
+                        src="/screenshots/iPad 13 inch-5.avif"
                         alt="diVine Video lists screenshot"
                         className="w-full h-auto rounded-lg shadow-lg"
                       />
@@ -187,7 +187,7 @@ export function LandingPage() {
                   <CarouselItem className="pl-2 md:pl-4 basis-4/5 md:basis-3/4">
                     <div className="p-1">
                       <img
-                        src="/screenshots/iPad 13 inch-6.png"
+                        src="/screenshots/iPad 13 inch-6.avif"
                         alt="diVine Video search screenshot"
                         className="w-full h-auto rounded-lg shadow-lg"
                       />

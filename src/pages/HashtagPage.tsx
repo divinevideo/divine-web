@@ -79,12 +79,12 @@ export function HashtagPage() {
     description: description,
     ogTitle: `#${tag} - diVine`,
     ogDescription: description,
-    ogImage: '/og.png',
+    ogImage: '/og.avif',
     ogType: 'website',
     twitterCard: 'summary_large_image',
     twitterTitle: `#${tag} - diVine`,
     twitterDescription: description,
-    twitterImage: '/og.png',
+    twitterImage: '/og.avif',
   });
 
   if (!normalizedTag || normalizedTag.trim() === '') {

@@ -97,12 +97,12 @@ export function ProfilePage() {
     description: metadata?.about || `${displayName}'s profile on diVine`,
     ogTitle: `${displayName} - diVine Profile`,
     ogDescription: metadata?.about || `${displayName}'s profile on diVine`,
-    ogImage: metadata?.picture || '/app_icon.png',
+    ogImage: metadata?.picture || '/app_icon.avif',
     ogType: 'profile',
     twitterCard: 'summary',
     twitterTitle: `${displayName} - diVine`,
     twitterDescription: metadata?.about || `${displayName}'s profile on diVine`,
-    twitterImage: metadata?.picture || '/app_icon.png',
+    twitterImage: metadata?.picture || '/app_icon.avif',
   });
 
   if (error || !pubkey) {

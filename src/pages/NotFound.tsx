@@ -24,7 +24,7 @@ const NotFound = () => {
         {/* Divine Image */}
         <div className="mb-8 flex justify-center">
           <img
-            src="/divine_gun.jpg"
+            src="/divine_gun.avif"
             alt="Divine"
             className="w-64 h-auto rounded-2xl shadow-2xl transform hover:scale-105 transition-transform duration-300 border-4 border-primary"
           />
