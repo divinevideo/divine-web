@@ -1,4 +1,4 @@
-import { Home, Compass, Search, MoreVertical, Info, Code2, HelpCircle, Headphones, FileText } from 'lucide-react';
+import { Home, Compass, Search, MoreVertical, Info, Code2, HelpCircle, Headphones, FileText, Sun, Moon } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { LoginArea } from '@/components/auth/LoginArea';
@@ -10,13 +10,19 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { useTheme } from '@/hooks/useTheme';
 
 export function AppHeader() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { displayTheme, setTheme } = useTheme();
   const { user } = useCurrentUser();
 
   const isActive = (path: string) => location.pathname === path;
+
+  const toggleTheme = () => {
+    setTheme(displayTheme === 'dark' ? 'light' : 'dark');
+  };
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-primary/10 bg-background/80 backdrop-blur-md shadow-sm">
@@ -69,6 +75,16 @@ export function AppHeader() {
           >
             <Search className="h-4 w-4" />
             <span className="hidden lg:inline">Search</span>
+          </Button>
+          <Button
+            onClick={toggleTheme}
+            variant="ghost"
+            size="icon"
+          >
+            {displayTheme === 'dark'
+              ? <Sun className='w-4 h-4' />
+              : <Moon className='w-4 h-4' />
+            }
           </Button>
           {/* More menu with info links */}
           <DropdownMenu>
