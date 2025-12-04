@@ -1,0 +1,6 @@
+# ABOUTME: Cloudflare Pages configuration for rewind-community deployment
+# ABOUTME: Separate deployment for trademark protection at rewind.community
+
+name = "rewind-community"
+pages_build_output_dir = "dist"
+compatibility_date = "2024-11-29"
