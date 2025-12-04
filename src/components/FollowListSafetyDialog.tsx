@@ -1,5 +1,5 @@
 // ABOUTME: Warning dialog to prevent accidental follow list overwrites
-// ABOUTME: Shown to users from other clients who have no follow list on divine
+// ABOUTME: Shown to users from other clients who have no follow list on Rewind
 
 import {
   AlertDialog,
@@ -43,13 +43,13 @@ export function FollowListSafetyDialog({
               It looks like you're using a Nostr account from another client.
             </p>
             <p>
-              <strong className="text-foreground">Important:</strong> We couldn't find your follow list on divine's relays. 
+              <strong className="text-foreground">Important:</strong> We couldn't find your follow list on rewind's relays. 
               If you follow {targetUserName || 'this user'}, it may create a new contact list that could 
               overwrite your existing follows from other clients.
             </p>
             <p className="text-sm text-muted-foreground">
-              <strong>Recommendation:</strong> Before following anyone on divine, consider publishing your 
-              existing follow list to divine's relays using your other Nostr client. This ensures your 
+              <strong>Recommendation:</strong> Before following anyone on Rewind, consider publishing your 
+              existing follow list to rewind's relays using your other Nostr client. This ensures your 
               follows are synchronized across all apps.
             </p>
           </AlertDialogDescription>

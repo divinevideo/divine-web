@@ -93,15 +93,15 @@ export function ProfilePage() {
 
   // Dynamic SEO meta tags for social sharing
   useSeoMeta({
-    title: `${displayName} - diVine`,
-    description: metadata?.about || `${displayName}'s profile on diVine`,
-    ogTitle: `${displayName} - diVine Profile`,
-    ogDescription: metadata?.about || `${displayName}'s profile on diVine`,
+    title: `${displayName} - Rewind`,
+    description: metadata?.about || `${displayName}'s profile on Rewind`,
+    ogTitle: `${displayName} - Rewind Profile`,
+    ogDescription: metadata?.about || `${displayName}'s profile on Rewind`,
     ogImage: metadata?.picture || '/app_icon.png',
     ogType: 'profile',
     twitterCard: 'summary',
-    twitterTitle: `${displayName} - diVine`,
-    twitterDescription: metadata?.about || `${displayName}'s profile on diVine`,
+    twitterTitle: `${displayName} - Rewind`,
+    twitterDescription: metadata?.about || `${displayName}'s profile on Rewind`,
     twitterImage: metadata?.picture || '/app_icon.png',
   });
 

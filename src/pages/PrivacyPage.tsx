@@ -24,7 +24,7 @@ export function PrivacyPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-muted-foreground mb-4">diVine Web is committed to:</p>
+            <p className="text-muted-foreground mb-4">Rewind Web is committed to:</p>
             <ul className="space-y-2">
               <li className="flex items-start gap-2">
                 <div className="h-2 w-2 bg-primary rounded-full mt-1.5" />
@@ -132,7 +132,7 @@ export function PrivacyPage() {
             <CardTitle>Data Sharing Conditions</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-muted-foreground mb-4">diVine Web may share data:</p>
+            <p className="text-muted-foreground mb-4">Rewind Web may share data:</p>
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li>• As part of distributed network operation</li>
               <li>• With necessary third-party services</li>
@@ -192,7 +192,7 @@ export function PrivacyPage() {
             <div>
               <h4 className="font-semibold mb-3">Zero Tolerance Policy</h4>
               <p className="text-muted-foreground">
-                Divine maintains a strict zero-tolerance policy for objectionable content and abusive behavior.
+                Rewind maintains a strict zero-tolerance policy for objectionable content and abusive behavior.
                 By using our service, you agree to our{' '}
                 <Link to="/terms" className="text-primary hover:underline">
                   Terms of Service
@@ -282,10 +282,10 @@ export function PrivacyPage() {
             <p className="text-muted-foreground">
               For privacy-related questions, email:{' '}
               <a
-                href="mailto:contact@divine.video"
+                href="mailto:contact@rewind.community"
                 className="text-primary hover:underline"
               >
-                contact@divine.video
+                contact@rewind.community
               </a>
             </p>
           </CardContent>

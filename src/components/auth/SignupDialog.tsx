@@ -187,9 +187,9 @@ const SignupDialog: React.FC<SignupDialogProps> = ({ isOpen, onClose, onComplete
     localStorage.setItem('signup_completed', Date.now().toString());
 
     try {
-      // Always publish a profile to tag the user as divine client
+      // Always publish a profile to tag the user as rewind client
       const metadata: Record<string, string> = {
-        client: 'divine.video', // Tag for follow list safety checks
+        client: 'rewind.community', // Tag for follow list safety checks
       };
 
       // Add user-provided information if any

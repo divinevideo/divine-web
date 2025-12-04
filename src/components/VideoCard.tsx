@@ -235,7 +235,7 @@ export function VideoCard({
     if (navigator.share) {
       try {
         await navigator.share({
-          title: video.title || 'Check out this video on diVine Web',
+          title: video.title || 'Check out this video on Rewind Web',
           text: video.content || 'Short-form looping video on Nostr',
           url: videoUrl,
         });

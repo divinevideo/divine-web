@@ -72,15 +72,15 @@ export function VideoPage() {
 
   // Dynamic SEO meta tags for social sharing
   useSeoMeta({
-    title: currentVideo?.title || 'Video on diVine',
-    description: currentVideo?.content || `Watch this video${authorName ? ` by ${authorName}` : ''} on diVine`,
-    ogTitle: currentVideo?.title || 'Video on diVine',
-    ogDescription: currentVideo?.content || 'Watch this video on diVine',
+    title: currentVideo?.title || 'Video on Rewind',
+    description: currentVideo?.content || `Watch this video${authorName ? ` by ${authorName}` : ''} on Rewind`,
+    ogTitle: currentVideo?.title || 'Video on Rewind',
+    ogDescription: currentVideo?.content || 'Watch this video on Rewind',
     ogImage: currentVideo?.thumbnailUrl || '/og.png',
     ogType: 'video.other',
     twitterCard: 'summary_large_image',
-    twitterTitle: currentVideo?.title || 'Video on diVine',
-    twitterDescription: currentVideo?.content || 'Watch this video on diVine',
+    twitterTitle: currentVideo?.title || 'Video on Rewind',
+    twitterDescription: currentVideo?.content || 'Watch this video on Rewind',
     twitterImage: currentVideo?.thumbnailUrl || '/og.png',
   });
 

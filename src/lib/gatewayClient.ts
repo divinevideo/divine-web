@@ -1,4 +1,4 @@
-// ABOUTME: Divine REST Gateway client for fast cached queries
+// ABOUTME: Rewind REST Gateway client for fast cached queries
 // ABOUTME: Provides HTTP-based access to relay.divine.video data
 
 import type { NostrEvent, NostrFilter } from '@nostrify/nostrify';

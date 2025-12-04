@@ -23,7 +23,7 @@ export interface RelayConfig {
  */
 export const PRIMARY_RELAY: RelayConfig = {
   url: 'wss://relay.divine.video',
-  name: 'Divine',
+  name: 'Rewind',
   capabilities: { nip50: true },
   purpose: 'primary',
 };
@@ -49,7 +49,7 @@ export const SEARCH_RELAY: RelayConfig = {
 export const PROFILE_RELAYS: RelayConfig[] = [
   {
     url: 'wss://relay.divine.video',
-    name: 'Divine',
+    name: 'Rewind',
     purpose: 'profile',
   },
   {
@@ -81,15 +81,15 @@ export const PROFILE_RELAYS: RelayConfig[] = [
 export const PRESET_RELAYS: RelayConfig[] = [
   {
     url: 'wss://relay.divine.video',
-    name: 'Divine',
+    name: 'Rewind',
   },
   {
     url: 'wss://nyc.dvines.org',
-    name: 'NYC Divine',
+    name: 'NYC Rewind',
   },
   {
     url: 'wss://divine.diy',
-    name: 'divine.diy',
+    name: 'rewind.diy',
   },
   {
     url: 'wss://relay.ditto.pub',

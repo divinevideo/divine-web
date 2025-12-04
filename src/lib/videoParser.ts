@@ -136,11 +136,11 @@ function parseImetaTag(tag: string[]): VideoMetadata | null {
 }
 
 /**
- * Convert Divine CDN HLS URL to MP4 URL (only for specific Divine CDN URLs)
+ * Convert Rewind CDN HLS URL to MP4 URL (only for specific Rewind CDN URLs)
  * Example: https://cdn.divine.video/xyz/manifest/video.m3u8 -> https://cdn.divine.video/xyz/downloads/default.mp4
  */
 function _convertHlsToMp4(hlsUrl: string): string | null {
-  // Only convert Divine CDN URLs to avoid breaking other services
+  // Only convert Rewind CDN URLs to avoid breaking other services
   if (hlsUrl.includes('cdn.divine.video') && hlsUrl.includes('/manifest/video.m3u8')) {
     return hlsUrl.replace('/manifest/video.m3u8', '/downloads/default.mp4');
   }

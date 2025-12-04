@@ -6,8 +6,8 @@
 
 ## Problem Statement
 
-When users share diVine links on social media platforms (Twitter, Discord, Slack, etc.), all links show the same generic preview:
-- Title: "diVine Web - Short-form Looping Videos on Nostr"
+When users share Rewind links on social media platforms (Twitter, Discord, Slack, etc.), all links show the same generic preview:
+- Title: "Rewind Web - Short-form Looping Videos on Nostr"
 - Description: "Watch and share 6-second looping videos on the decentralized Nostr network."
 - Image: `/og.png`
 
@@ -66,15 +66,15 @@ import { useSeoMeta } from '@unhead/react';
 useEffect(() => {
   if (currentVideo) {
     useSeoMeta({
-      title: currentVideo.title || 'Video on diVine',
-      description: currentVideo.content || `Watch this video${authorName ? ` by ${authorName}` : ''} on diVine`,
-      ogTitle: currentVideo.title || 'Video on diVine',
-      ogDescription: currentVideo.content || 'Watch this video on diVine',
+      title: currentVideo.title || 'Video on Rewind',
+      description: currentVideo.content || `Watch this video${authorName ? ` by ${authorName}` : ''} on Rewind`,
+      ogTitle: currentVideo.title || 'Video on Rewind',
+      ogDescription: currentVideo.content || 'Watch this video on Rewind',
       ogImage: currentVideo.thumbnailUrl || '/og.png',
       ogType: 'video.other',
       twitterCard: 'summary_large_image',
-      twitterTitle: currentVideo.title || 'Video on diVine',
-      twitterDescription: currentVideo.content || 'Watch this video on diVine',
+      twitterTitle: currentVideo.title || 'Video on Rewind',
+      twitterDescription: currentVideo.content || 'Watch this video on Rewind',
       twitterImage: currentVideo.thumbnailUrl || '/og.png',
     });
   }
@@ -82,7 +82,7 @@ useEffect(() => {
 ```
 
 **Fallback strategy:**
-- Title: Use video title, fall back to "Video on diVine"
+- Title: Use video title, fall back to "Video on Rewind"
 - Description: Use video content, fall back to generic description with author name
 - Image: Use video thumbnail, fall back to `/og.png`
 
@@ -102,18 +102,18 @@ import { useSeoMeta } from '@unhead/react';
 useEffect(() => {
   if (metadata || pubkey) {
     const name = displayName;
-    const bio = metadata?.about || `${name}'s profile on diVine`;
+    const bio = metadata?.about || `${name}'s profile on Rewind`;
     const avatar = metadata?.picture || '/app_icon.png';
 
     useSeoMeta({
-      title: `${name} - diVine`,
+      title: `${name} - Rewind`,
       description: bio,
-      ogTitle: `${name} - diVine Profile`,
+      ogTitle: `${name} - Rewind Profile`,
       ogDescription: bio,
       ogImage: avatar,
       ogType: 'profile',
       twitterCard: 'summary',
-      twitterTitle: `${name} - diVine`,
+      twitterTitle: `${name} - Rewind`,
       twitterDescription: bio,
       twitterImage: avatar,
     });
@@ -123,7 +123,7 @@ useEffect(() => {
 
 **Fallback strategy:**
 - Name: Use displayName (which already has fallback to generated name from pubkey)
-- Bio: Use metadata.about, fall back to "${name}'s profile on diVine"
+- Bio: Use metadata.about, fall back to "${name}'s profile on Rewind"
 - Avatar: Use metadata.picture, fall back to `/app_icon.png`
 
 #### 3. HashtagPage.tsx
@@ -144,18 +144,18 @@ useEffect(() => {
   if (normalizedTag) {
     const count = videoCount;
     const description = count > 0
-      ? `Browse ${count} video${count !== 1 ? 's' : ''} tagged with #${tag} on diVine`
-      : `Explore videos tagged with #${tag} on diVine`;
+      ? `Browse ${count} video${count !== 1 ? 's' : ''} tagged with #${tag} on Rewind`
+      : `Explore videos tagged with #${tag} on Rewind`;
 
     useSeoMeta({
-      title: `#${tag} - diVine`,
+      title: `#${tag} - Rewind`,
       description: description,
-      ogTitle: `#${tag} - diVine`,
+      ogTitle: `#${tag} - Rewind`,
       ogDescription: description,
       ogImage: '/og.png',
       ogType: 'website',
       twitterCard: 'summary_large_image',
-      twitterTitle: `#${tag} - diVine`,
+      twitterTitle: `#${tag} - Rewind`,
       twitterDescription: description,
       twitterImage: '/og.png',
     });

@@ -1,4 +1,4 @@
-// ABOUTME: Support and contact information page for diVine Web
+// ABOUTME: Support and contact information page for Rewind Web
 // ABOUTME: Displays email contact and GitHub issues link for user support
 
 import { useEffect } from 'react';
@@ -96,10 +96,10 @@ export function Support() {
           </CardHeader>
           <CardContent>
             <a
-              href="mailto:contact@divine.video"
+              href="mailto:contact@rewind.community"
               className="text-primary hover:underline font-medium"
             >
-              contact@divine.video
+              contact@rewind.community
             </a>
           </CardContent>
         </Card>
@@ -147,12 +147,12 @@ export function Support() {
               Community
             </CardTitle>
             <CardDescription>
-              Join our community discussions and connect with other Divine users on Nostr.
+              Join our community discussions and connect with other Rewind users on Nostr.
             </CardDescription>
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground">
-              Divine is built on Nostr, a decentralized social protocol. Find us on your favorite Nostr client!
+              Rewind is built on Nostr, a decentralized social protocol. Find us on your favorite Nostr client!
             </p>
           </CardContent>
         </Card>

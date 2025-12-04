@@ -1,4 +1,4 @@
-# URL Guide for Linking to diVine
+# URL Guide for Linking to Rewind
 
 This guide explains how to create links to videos, users, and content on divine.video.
 
@@ -192,23 +192,23 @@ const hashtagUrl = `https://divine.video/hashtag/${tag}`;
 ```html
 <!-- Video link -->
 <a href="https://divine.video/video/a1b2c3d4e5f6789...">
-  Watch this video on diVine
+  Watch this video on Rewind
 </a>
 
 <!-- Profile link -->
 <a href="https://divine.video/profile/npub1abc123...">
-  View profile on diVine
+  View profile on Rewind
 </a>
 
 <!-- Hashtag link -->
 <a href="https://divine.video/hashtag/comedy">
-  #comedy videos on diVine
+  #comedy videos on Rewind
 </a>
 ```
 
 ### Markdown
 ```markdown
-[Watch on diVine](https://divine.video/video/a1b2c3d4e5f6789...)
+[Watch on Rewind](https://divine.video/video/a1b2c3d4e5f6789...)
 
 [View profile](https://divine.video/profile/npub1abc123...)
 

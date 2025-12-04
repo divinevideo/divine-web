@@ -235,7 +235,7 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin, onS
               <div className='p-4 rounded-lg bg-gray-50 dark:bg-gray-800'>
                 <Mail className='w-12 h-12 mx-auto mb-3 text-primary' />
                 <p className='text-sm text-gray-600 dark:text-gray-300 mb-4 text-center'>
-                  Login with your diVine account
+                  Login with your Rewind account
                 </p>
                 <div className='p-4 mb-4 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800'>
                   <p className='text-sm text-blue-800 dark:text-blue-200 text-center'>

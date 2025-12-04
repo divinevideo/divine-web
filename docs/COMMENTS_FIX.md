@@ -14,7 +14,7 @@ The bug was in `VideoCommentsModal.tsx`. The component was constructing a new `N
 
 ### Technical Details
 
-1. **Kind 34236 is Addressable**: diVine Web videos use Nostr event kind 34236, which is an addressable event type.
+1. **Kind 34236 is Addressable**: Rewind Web videos use Nostr event kind 34236, which is an addressable event type.
 
 2. **Addressable Events Require 'd' Tag**: Addressable events use a special identifier format:
    ```

@@ -1,8 +1,8 @@
-# diVine Web Caching Strategy
+# Rewind Web Caching Strategy
 
 ## Overview
 
-The diVine Web application implements a comprehensive multi-layer caching strategy to provide instant loading of the home feed while ensuring data stays fresh and up-to-date. This document explains the architecture, implementation details, and cache invalidation rules.
+The Rewind Web application implements a comprehensive multi-layer caching strategy to provide instant loading of the home feed while ensuring data stays fresh and up-to-date. This document explains the architecture, implementation details, and cache invalidation rules.
 
 ## Problem Statement
 

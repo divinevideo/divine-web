@@ -234,7 +234,7 @@ export function PressPage() {
         <div className="mb-8">
           <h1 className="text-4xl font-bold mb-4">Press Inquiries</h1>
           <p className="text-lg text-muted-foreground">
-            We welcome press and media inquiries about diVine. Please fill out the form below and we'll get back to you as soon as possible.
+            We welcome press and media inquiries about Rewind. Please fill out the form below and we'll get back to you as soon as possible.
           </p>
         </div>
 
@@ -357,7 +357,7 @@ export function PressPage() {
       <div className="mt-8 p-6 bg-muted/50 rounded-lg">
         <h2 className="text-xl font-semibold mb-3">Media Resources</h2>
         <p className="text-muted-foreground mb-4">
-          For general information about diVine, please visit our{' '}
+          For general information about Rewind, please visit our{' '}
           <a href="/about" className="text-primary hover:underline">
             About page
           </a>
@@ -370,7 +370,7 @@ export function PressPage() {
         <p className="text-muted-foreground mb-4">
           Looking for our press releases?{' '}
           <a
-            href="/diVine%20launch%20press%20release%2011.13.25.pdf"
+            href="/Rewind%20launch%20press%20release%2011.13.25.pdf"
             target="_blank"
             rel="noopener noreferrer"
             className="text-primary hover:underline"
@@ -389,10 +389,10 @@ export function PressPage() {
         <p className="text-sm text-muted-foreground/70">
           You can also reach us directly at{' '}
           <a
-            href="mailto:press@divine.video"
+            href="mailto:press@rewind.community"
             className="text-muted-foreground hover:text-foreground transition-colors"
           >
-            press@divine.video
+            press@rewind.community
           </a>
         </p>
       </div>

@@ -82,8 +82,8 @@ export function SearchPage() {
   });
 
   useSeoMeta({
-    title: searchQuery ? `Search: ${searchQuery} - diVine Web` : 'Search - diVine Web',
-    description: 'Search for videos, users, and hashtags on Divine Web',
+    title: searchQuery ? `Search: ${searchQuery} - Rewind Web` : 'Search - Rewind Web',
+    description: 'Search for videos, users, and hashtags on Rewind Web',
   });
 
   // Update URL when search changes
@@ -570,7 +570,7 @@ function EmptySearchState() {
   return (
     <div className="text-center py-12">
       <Search className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-      <h3 className="text-lg font-semibold mb-2">Search Divine Web</h3>
+      <h3 className="text-lg font-semibold mb-2">Search Rewind Web</h3>
       <p className="text-muted-foreground mb-4">
         Find videos, users, and hashtags across the Nostr network
       </p>

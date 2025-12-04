@@ -141,7 +141,7 @@ export function AppFooter() {
                   />
                 </a>
                 <a
-                  href="https://bsky.app/profile/divine.video"
+                  href="https://bsky.app/profile/rewind.community"
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label="Follow us on Bluesky"
@@ -154,7 +154,7 @@ export function AppFooter() {
                   />
                 </a>
                 <a
-                  href="https://www.tiktok.com/@divine.video"
+                  href="https://www.tiktok.com/@rewind.community"
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label="Follow us on TikTok"

@@ -1,4 +1,4 @@
-// ABOUTME: Tests for Divine REST Gateway client
+// ABOUTME: Tests for Rewind REST Gateway client
 // ABOUTME: Verifies gateway detection and query encoding
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';

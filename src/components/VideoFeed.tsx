@@ -269,19 +269,19 @@ export function VideoFeed({
         <Card className="border-dashed border-2 border-primary/20 bg-primary/5">
           <CardContent className="py-16 px-8 text-center">
             <div className="max-w-md mx-auto space-y-6">
-              {/* Show reclining Divine image for discovery/trending feeds when no videos */}
+              {/* Show reclining Rewind image for discovery/trending feeds when no videos */}
               {(feedType === 'discovery' || feedType === 'trending') && !allFiltered ? (
                 <>
                   <div className="mx-auto -mx-8 -mt-16">
                     <img
                       src="/divine_reclining.jpg"
-                      alt="Divine reclining"
+                      alt="Rewind reclining"
                       className="w-full rounded-t-lg shadow-lg"
                     />
                   </div>
                   <div className="space-y-2 mt-6">
                     <p className="text-lg font-medium text-foreground">
-                      Divine needs a rest
+                      Rewind needs a rest
                     </p>
                     <p className="text-sm text-muted-foreground">
                       Check back soon for new videos

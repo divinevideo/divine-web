@@ -156,7 +156,7 @@ export function PWAInstallPrompt() {
 
           <div className="flex-1 min-w-0">
             <h3 className="font-semibold text-foreground text-sm mb-1">
-              Install diVine Web
+              Install Rewind Web
             </h3>
             <p className="text-xs text-muted-foreground">
               Tap the Share button <span className="inline-block mx-1">
@@ -193,7 +193,7 @@ export function PWAInstallPrompt() {
 
         <div className="flex-1 min-w-0">
           <h3 className="font-semibold text-foreground mb-1">
-            Install diVine Web
+            Install Rewind Web
           </h3>
           <p className="text-sm text-muted-foreground mb-3">
             Install our app for a better experience

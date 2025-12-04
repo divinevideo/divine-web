@@ -35,15 +35,15 @@ After the existing useEffect for keyboard navigation (after line 70), add:
 useEffect(() => {
   if (currentVideo) {
     useSeoMeta({
-      title: currentVideo.title || 'Video on diVine',
-      description: currentVideo.content || `Watch this video${authorName ? ` by ${authorName}` : ''} on diVine`,
-      ogTitle: currentVideo.title || 'Video on diVine',
-      ogDescription: currentVideo.content || 'Watch this video on diVine',
+      title: currentVideo.title || 'Video on Rewind',
+      description: currentVideo.content || `Watch this video${authorName ? ` by ${authorName}` : ''} on Rewind`,
+      ogTitle: currentVideo.title || 'Video on Rewind',
+      ogDescription: currentVideo.content || 'Watch this video on Rewind',
       ogImage: currentVideo.thumbnailUrl || '/og.png',
       ogType: 'video.other',
       twitterCard: 'summary_large_image',
-      twitterTitle: currentVideo.title || 'Video on diVine',
-      twitterDescription: currentVideo.content || 'Watch this video on diVine',
+      twitterTitle: currentVideo.title || 'Video on Rewind',
+      twitterDescription: currentVideo.content || 'Watch this video on Rewind',
       twitterImage: currentVideo.thumbnailUrl || '/og.png',
     });
   }
@@ -104,18 +104,18 @@ After the ProfilePage function starts (around line 23, after the state declarati
 useEffect(() => {
   if (metadata || pubkey) {
     const name = displayName;
-    const bio = metadata?.about || `${name}'s profile on diVine`;
+    const bio = metadata?.about || `${name}'s profile on Rewind`;
     const avatar = metadata?.picture || '/app_icon.png';
 
     useSeoMeta({
-      title: `${name} - diVine`,
+      title: `${name} - Rewind`,
       description: bio,
-      ogTitle: `${name} - diVine Profile`,
+      ogTitle: `${name} - Rewind Profile`,
       ogDescription: bio,
       ogImage: avatar,
       ogType: 'profile',
       twitterCard: 'summary',
-      twitterTitle: `${name} - diVine`,
+      twitterTitle: `${name} - Rewind`,
       twitterDescription: bio,
       twitterImage: avatar,
     });
@@ -180,18 +180,18 @@ useEffect(() => {
   if (normalizedTag) {
     const count = videoCount;
     const description = count > 0
-      ? `Browse ${count} video${count !== 1 ? 's' : ''} tagged with #${tag} on diVine`
-      : `Explore videos tagged with #${tag} on diVine`;
+      ? `Browse ${count} video${count !== 1 ? 's' : ''} tagged with #${tag} on Rewind`
+      : `Explore videos tagged with #${tag} on Rewind`;
 
     useSeoMeta({
-      title: `#${tag} - diVine`,
+      title: `#${tag} - Rewind`,
       description: description,
-      ogTitle: `#${tag} - diVine`,
+      ogTitle: `#${tag} - Rewind`,
       ogDescription: description,
       ogImage: '/og.png',
       ogType: 'website',
       twitterCard: 'summary_large_image',
-      twitterTitle: `#${tag} - diVine`,
+      twitterTitle: `#${tag} - Rewind`,
       twitterDescription: description,
       twitterImage: '/og.png',
     });
@@ -212,7 +212,7 @@ Run: `npm run dev`
 3. Inspect `<head>` section
 4. Verify meta tags update with hashtag name and video count
 
-Expected: See `<meta property="og:title">` with "#funny - diVine", description with video count
+Expected: See `<meta property="og:title">` with "#funny - Rewind", description with video count
 
 **Step 5: Commit**
 
@@ -248,7 +248,7 @@ Expected: Deployment succeeds, get preview URL
 
 Expected:
 - Card shows video thumbnail (or default og.png if no thumbnail)
-- Card shows video title (or "Video on diVine" fallback)
+- Card shows video title (or "Video on Rewind" fallback)
 - Card shows video description
 
 **Step 3: Validate profile page with Facebook Sharing Debugger**
@@ -269,7 +269,7 @@ Expected:
 3. View preview
 
 Expected:
-- Shows "#funny - diVine" as title
+- Shows "#funny - Rewind" as title
 - Shows video count in description
 - Shows default og.png image
 

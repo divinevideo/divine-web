@@ -21,7 +21,7 @@ const events = await nostr.query([
 
 ### Technical Details
 
-1. **Kind 34236 is Addressable**: diVine Web videos use kind 34236, which is an addressable event type.
+1. **Kind 34236 is Addressable**: Rewind Web videos use kind 34236, which is an addressable event type.
 
 2. **Comments Use Different Tags**: When commenting on different event types, NIP-22 (kind 1111) comments use different reference tags:
    - **Regular events**: Use `e` tag (lowercase) → Query with `#e` (uppercase E)

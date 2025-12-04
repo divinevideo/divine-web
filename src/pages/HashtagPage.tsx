@@ -71,18 +71,18 @@ export function HashtagPage() {
   // Dynamic SEO meta tags for social sharing
   const videoCount = videos?.length || 0;
   const description = videoCount > 0
-    ? `Browse ${videoCount} video${videoCount !== 1 ? 's' : ''} tagged with #${tag} on diVine`
-    : `Explore videos tagged with #${tag} on diVine`;
+    ? `Browse ${videoCount} video${videoCount !== 1 ? 's' : ''} tagged with #${tag} on Rewind`
+    : `Explore videos tagged with #${tag} on Rewind`;
 
   useSeoMeta({
-    title: `#${tag} - diVine`,
+    title: `#${tag} - Rewind`,
     description: description,
-    ogTitle: `#${tag} - diVine`,
+    ogTitle: `#${tag} - Rewind`,
     ogDescription: description,
     ogImage: '/og.png',
     ogType: 'website',
     twitterCard: 'summary_large_image',
-    twitterTitle: `#${tag} - diVine`,
+    twitterTitle: `#${tag} - Rewind`,
     twitterDescription: description,
     twitterImage: '/og.png',
   });

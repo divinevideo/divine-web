@@ -1,4 +1,4 @@
-# diVine Web
+# Rewind Web
 
 OpenVine-compatible Nostr client for short-form looping videos. Built with React 18.x, TailwindCSS 3.x, Vite, shadcn/ui, and Nostrify.
 

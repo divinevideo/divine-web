@@ -6,7 +6,7 @@
 
 ## Overview
 
-Add social media icon links to the AppFooter component, allowing users to easily follow diVine on Instagram, Reddit, Discord, Twitter, and Bluesky.
+Add social media icon links to the AppFooter component, allowing users to easily follow Rewind on Instagram, Reddit, Discord, Twitter, and Bluesky.
 
 ## Requirements
 

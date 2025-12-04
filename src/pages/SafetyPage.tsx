@@ -1,4 +1,4 @@
-// ABOUTME: Safety Standards page for diVine Web
+// ABOUTME: Safety Standards page for Rewind Web
 // ABOUTME: Documents child safety protections and CSAM content filtering
 
 import { Link } from 'react-router-dom';
@@ -33,7 +33,7 @@ export function SafetyPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-muted-foreground">
-              Divine maintains a zero-tolerance policy for Child Sexual Abuse Material (CSAM)
+              Rewind maintains a zero-tolerance policy for Child Sexual Abuse Material (CSAM)
               and child sexual exploitation content. We employ multiple layers of protection
               to prevent, detect, and remove such content from our platform.
             </p>
@@ -54,7 +54,7 @@ export function SafetyPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-muted-foreground">
-              Divine implements industry-standard technical protections to prevent CSAM
+              Rewind implements industry-standard technical protections to prevent CSAM
               from appearing on our platform:
             </p>
 
@@ -62,7 +62,7 @@ export function SafetyPage() {
               <div>
                 <h3 className="font-semibold mb-2">Cloudflare Protection</h3>
                 <p className="text-muted-foreground">
-                  All content served through Divine is filtered by Cloudflare's CSAM scanning
+                  All content served through Rewind is filtered by Cloudflare's CSAM scanning
                   technology. Cloudflare actively monitors and blocks known CSAM content using
                   hash-matching databases maintained by organizations like the National Center
                   for Missing &amp; Exploited Children (NCMEC).
@@ -100,7 +100,7 @@ export function SafetyPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-muted-foreground">
-              Divine empowers users to report content that violates community standards or personal
+              Rewind empowers users to report content that violates community standards or personal
               preferences. User reports are shared with your followers through the decentralized Nostr
               network to help them curate their own experience.
             </p>
@@ -126,11 +126,11 @@ export function SafetyPage() {
             <div>
               <h3 className="font-semibold mb-2">How Reporting Works</h3>
               <p className="text-muted-foreground mb-2">
-                When you report content on Divine:
+                When you report content on Rewind:
               </p>
               <ol className="list-decimal list-inside space-y-1 ml-4 text-muted-foreground">
                 <li>Your report is published to the Nostr network using NIP-56 (content reporting)</li>
-                <li>Divine reviews reports and takes appropriate action within 24 hours</li>
+                <li>Rewind reviews reports and takes appropriate action within 24 hours</li>
                 <li>Anyone who follows you can see your reports and use them to filter their own feed</li>
                 <li>Reports become part of the composable moderation ecosystem</li>
                 <li>Communities can build trust networks based on shared reporting patterns</li>
@@ -151,7 +151,7 @@ export function SafetyPage() {
             <div>
               <h3 className="font-semibold mb-2">Social Reporting & Trust Networks</h3>
               <p className="text-muted-foreground">
-                Divine's reporting system leverages social trust networks. When you report content,
+                Rewind's reporting system leverages social trust networks. When you report content,
                 your followers can automatically filter out content you've flagged. This creates a
                 web of trust where:
               </p>
@@ -193,12 +193,12 @@ export function SafetyPage() {
             </div>
 
             <div>
-              <h3 className="font-semibold mb-2">Divine's Response to Reports</h3>
+              <h3 className="font-semibold mb-2">Rewind's Response to Reports</h3>
               <p className="font-semibold text-destructive mb-2">
                 We commit to reviewing and acting on objectionable content reports within 24 hours.
               </p>
               <p className="text-muted-foreground mb-2">
-                When content is reported, Divine's moderation team:
+                When content is reported, Rewind's moderation team:
               </p>
               <ul className="list-disc list-inside space-y-1 ml-4 text-muted-foreground">
                 <li>
@@ -228,7 +228,7 @@ export function SafetyPage() {
             <div>
               <h3 className="font-semibold mb-2">Legal Compliance</h3>
               <p className="text-muted-foreground">
-                Divine complies with all applicable laws regarding content reporting and moderation:
+                Rewind complies with all applicable laws regarding content reporting and moderation:
               </p>
               <ul className="list-disc list-inside space-y-1 ml-4 text-muted-foreground">
                 <li>18 U.S.C. § 2258A (mandatory CSAM reporting to NCMEC)</li>
@@ -250,7 +250,7 @@ export function SafetyPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-muted-foreground">
-              Divine employs advanced AI-powered content analysis to automatically detect and
+              Rewind employs advanced AI-powered content analysis to automatically detect and
               classify potentially sensitive content including adult material, violence, and
               AI-generated media.
             </p>
@@ -258,7 +258,7 @@ export function SafetyPage() {
             <div>
               <h3 className="font-semibold mb-2">Automated Content Scoring</h3>
               <p className="text-muted-foreground mb-2">
-                Every video uploaded to Divine is automatically analyzed and scored across multiple categories:
+                Every video uploaded to Rewind is automatically analyzed and scored across multiple categories:
               </p>
               <ul className="list-disc list-inside space-y-1 ml-4 text-muted-foreground">
                 <li><strong>Nudity Detection:</strong> Identifies adult content and explicit material</li>
@@ -302,7 +302,7 @@ export function SafetyPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-muted-foreground">
-              Following Bluesky's composable moderation approach, Divine allows users to choose
+              Following Bluesky's composable moderation approach, Rewind allows users to choose
               their own moderation experience rather than relying on a single centralized authority.
             </p>
 
@@ -322,7 +322,7 @@ export function SafetyPage() {
             <div>
               <h3 className="font-semibold mb-2">Default Moderation</h3>
               <p className="text-muted-foreground">
-                Divine provides a default moderation layer focused on:
+                Rewind provides a default moderation layer focused on:
               </p>
               <ul className="list-disc list-inside space-y-1 ml-4 text-muted-foreground">
                 <li>Blocking illegal content (CSAM, illegal activities)</li>
@@ -360,7 +360,7 @@ export function SafetyPage() {
             <div>
               <h3 className="font-semibold mb-2">User Empowerment</h3>
               <p className="text-muted-foreground">
-                Divine provides users with tools to protect themselves and their communities:
+                Rewind provides users with tools to protect themselves and their communities:
               </p>
               <ul className="list-disc list-inside space-y-1 ml-4 text-muted-foreground">
                 <li>User blocking and muting capabilities</li>
@@ -373,20 +373,20 @@ export function SafetyPage() {
             <div>
               <h3 className="font-semibold mb-2">Decentralized Architecture & Limited Responsibility</h3>
               <p className="text-muted-foreground mb-2">
-                Divine operates on the decentralized Nostr protocol, which means the app can connect to
+                Rewind operates on the decentralized Nostr protocol, which means the app can connect to
                 multiple servers (relays and media servers) across the network. <strong>We maintain strict
                 controls over content served through our infrastructure and only bear responsibility for
                 content hosted on our own servers.</strong>
               </p>
               <p className="text-muted-foreground mb-2">
-                Our CDN and filtering systems ensure that all media accessed through Divine.video has passed
+                Our CDN and filtering systems ensure that all media accessed through Rewind.video has passed
                 through our safety checks. However, content on other servers in the Nostr network is moderated
                 according to their operators' policies.
               </p>
               <p className="text-muted-foreground">
                 <strong>Run your own servers:</strong> If you want different moderation policies, you're welcome
                 to run your own Nostr relays and Blossom media servers with whatever policies you prefer. The
-                Divine app can connect to any compatible server.
+                Rewind app can connect to any compatible server.
               </p>
             </div>
           </CardContent>

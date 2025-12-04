@@ -18,7 +18,7 @@ export default function HumanCreatedPage() {
             <h1 className="text-4xl font-bold">Human-Created Content</h1>
           </div>
           <p className="text-xl text-muted-foreground">
-            Certifying authentic, human-made videos on diVine Web
+            Certifying authentic, human-made videos on Rewind Web
           </p>
         </div>
 
@@ -121,7 +121,7 @@ export default function HumanCreatedPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <p>
-              To ensure content authenticity, new videos on Divine require{' '}
+              To ensure content authenticity, new videos on Rewind require{' '}
               <span className="font-semibold text-green-600">ProofMode verification</span>. ProofMode provides
               cryptographic proof that videos are captured directly from your device's camera, not AI-generated
               or uploaded from elsewhere.
@@ -149,7 +149,7 @@ export default function HumanCreatedPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <p>
-              Divine empowers the community to report and label suspected AI-generated content. If you
+              Rewind empowers the community to report and label suspected AI-generated content. If you
               encounter a video that appears to be AI-generated, you can report it for review.
             </p>
             <p>

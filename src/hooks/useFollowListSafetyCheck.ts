@@ -9,7 +9,7 @@ interface SafetyCheckResult {
   needsWarning: boolean;
   hasExistingFollowList: boolean;
   hasExistingProfile: boolean;
-  isDivineClient: boolean;
+  isRewindClient: boolean;
   clientTag?: string;
 }
 
@@ -34,7 +34,7 @@ export function useFollowListSafetyCheck(pubkey: string | undefined, enabled: bo
           needsWarning: false,
           hasExistingFollowList: false,
           hasExistingProfile: false,
-          isDivineClient: false,
+          isRewindClient: false,
         };
       }
 
@@ -70,7 +70,7 @@ export function useFollowListSafetyCheck(pubkey: string | undefined, enabled: bo
         const hasExistingProfile = !!profileEvent;
 
         // Check if profile has divine client tag
-        let isDivineClient = false;
+        let isRewindClient = false;
         let clientTag: string | undefined;
 
         if (profileEvent) {
@@ -78,7 +78,7 @@ export function useFollowListSafetyCheck(pubkey: string | undefined, enabled: bo
             const metadata = JSON.parse(profileEvent.content);
 
             // Check for client tag in metadata
-            // Divine clients should tag their profiles with "client": "divine" or similar
+            // Rewind clients should tag their profiles with "client": "divine" or similar
             clientTag = metadata.client;
 
             // List of divine client identifiers
@@ -90,16 +90,16 @@ export function useFollowListSafetyCheck(pubkey: string | undefined, enabled: bo
               'openvine',
             ];
 
-            isDivineClient = divineClientNames.some(name =>
+            isRewindClient = divineClientNames.some(name =>
               clientTag?.toLowerCase().includes(name)
             );
 
             debugLog('[SafetyCheck] Client tag found:', clientTag || 'NONE');
-            debugLog('[SafetyCheck] Is divine client:', isDivineClient);
+            debugLog('[SafetyCheck] Is rewind client:', isRewindClient);
             if (clientTag) {
               debugLog('[SafetyCheck] Client tag lowercase:', clientTag.toLowerCase());
               debugLog('[SafetyCheck] Checking against divine identifiers:',
-                ['divine', 'divine.video', 'divineweb', 'divine web', 'openvine']);
+                ['rewind', 'rewind.community', 'rewindweb', 'rewind web', 'openvine']);
             }
           } catch (err) {
             debugLog('[SafetyCheck] Failed to parse profile metadata:', err);
@@ -124,11 +124,11 @@ export function useFollowListSafetyCheck(pubkey: string | undefined, enabled: bo
         // - Kind 0 found with non-divine client tag → Show warning
         // - Kind 0 found with divine client tag → Skip warning
         // - Has follow list already → Skip warning
-        const needsWarning = !hasExistingFollowList && !isDivineClient;
+        const needsWarning = !hasExistingFollowList && !isRewindClient;
 
         debugLog('[SafetyCheck] 🎯 FINAL DECISION:');
         debugLog('[SafetyCheck]    Has follow list?', hasExistingFollowList);
-        debugLog('[SafetyCheck]    Is divine client?', isDivineClient);
+        debugLog('[SafetyCheck]    Is rewind client?', isRewindClient);
         debugLog('[SafetyCheck]    ⚠️  NEEDS WARNING?', needsWarning);
         debugLog('[SafetyCheck] ===========================================');
 
@@ -136,7 +136,7 @@ export function useFollowListSafetyCheck(pubkey: string | undefined, enabled: bo
           needsWarning,
           hasExistingFollowList,
           hasExistingProfile,
-          isDivineClient,
+          isRewindClient,
           clientTag,
         };
       } catch (error) {
@@ -147,7 +147,7 @@ export function useFollowListSafetyCheck(pubkey: string | undefined, enabled: bo
           needsWarning: false,
           hasExistingFollowList: false,
           hasExistingProfile: false,
-          isDivineClient: false,
+          isRewindClient: false,
         };
       }
     },

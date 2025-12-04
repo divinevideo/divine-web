@@ -1,4 +1,4 @@
-// ABOUTME: ProofMode information page explaining how Divine.video uses cryptographic authenticity proofs to limit AI-generated content
+// ABOUTME: ProofMode information page explaining how Rewind.video uses cryptographic authenticity proofs to limit AI-generated content
 // ABOUTME: Describes the ProofMode verification system, verification levels, and how it helps distinguish real camera captures from AI fakes
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,7 +17,7 @@ export function ProofModePage() {
           <h1 className="text-4xl font-bold">ProofMode: Cryptographic Video Authenticity</h1>
         </div>
         <p className="text-xl text-muted-foreground">
-          Divine.video uses cryptographic proofs to help you distinguish real camera captures from AI-generated content
+          Rewind.video uses cryptographic proofs to help you distinguish real camera captures from AI-generated content
         </p>
       </div>
 
@@ -255,11 +255,11 @@ export function ProofModePage() {
       {/* Get Started */}
       <Card>
         <CardHeader>
-          <CardTitle>Using ProofMode on Divine.video</CardTitle>
+          <CardTitle>Using ProofMode on Rewind.video</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <p>
-            Currently, ProofMode support on Divine.video is in development. When available:
+            Currently, ProofMode support on Rewind.video is in development. When available:
           </p>
           <ul className="list-disc list-inside space-y-2 text-sm text-muted-foreground ml-4">
             <li>Videos with ProofMode verification will display a badge indicating their verification level</li>

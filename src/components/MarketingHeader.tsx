@@ -10,7 +10,7 @@ export function MarketingHeader() {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link to="/" className="text-xl font-logo text-primary">
-            diVine
+            Rewind
           </Link>
 
           {/* Navigation Links */}

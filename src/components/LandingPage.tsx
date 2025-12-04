@@ -1,5 +1,5 @@
 // ABOUTME: Landing page component shown to logged-out users
-// ABOUTME: Displays the diVine Video brand message
+// ABOUTME: Displays the Rewind Video brand message
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Link } from "react-router-dom";
@@ -27,7 +27,7 @@ export function LandingPage() {
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
             <Link to="/" className="text-xl font-logo text-primary">
-              diVine
+              Rewind
             </Link>
 
             {/* Navigation Links */}
@@ -98,11 +98,11 @@ export function LandingPage() {
               <div className="flex flex-col items-center justify-center gap-3">
                 <img
                   src="/divine_icon_transparent.png"
-                  alt="diVine logo"
+                  alt="Rewind logo"
                   className="w-16 h-16 md:w-20 md:h-20"
                 />
                 <h1 className="text-5xl md:text-6xl font-logo text-primary">
-                  diVine
+                  Rewind
                 </h1>
               </div>
               <p className="text-xl md:text-2xl font-semibold text-foreground">
@@ -134,7 +134,7 @@ export function LandingPage() {
                     <div className="p-1">
                       <img
                         src="/screenshots/iPad 13 inch-0.png"
-                        alt="diVine Video feed screenshot"
+                        alt="Rewind Video feed screenshot"
                         className="w-full h-auto rounded-lg shadow-lg"
                       />
                     </div>
@@ -143,7 +143,7 @@ export function LandingPage() {
                     <div className="p-1">
                       <img
                         src="/screenshots/iPad 13 inch-1.png"
-                        alt="diVine Video profile screenshot"
+                        alt="Rewind Video profile screenshot"
                         className="w-full h-auto rounded-lg shadow-lg"
                       />
                     </div>
@@ -152,7 +152,7 @@ export function LandingPage() {
                     <div className="p-1">
                       <img
                         src="/screenshots/iPad 13 inch-2.png"
-                        alt="diVine Video hashtags screenshot"
+                        alt="Rewind Video hashtags screenshot"
                         className="w-full h-auto rounded-lg shadow-lg"
                       />
                     </div>
@@ -161,7 +161,7 @@ export function LandingPage() {
                     <div className="p-1">
                       <img
                         src="/screenshots/iPad 13 inch-3.png"
-                        alt="diVine Video discovery screenshot"
+                        alt="Rewind Video discovery screenshot"
                         className="w-full h-auto rounded-lg shadow-lg"
                       />
                     </div>
@@ -170,7 +170,7 @@ export function LandingPage() {
                     <div className="p-1">
                       <img
                         src="/screenshots/iPad 13 inch-4.png"
-                        alt="diVine Video trending screenshot"
+                        alt="Rewind Video trending screenshot"
                         className="w-full h-auto rounded-lg shadow-lg"
                       />
                     </div>
@@ -179,7 +179,7 @@ export function LandingPage() {
                     <div className="p-1">
                       <img
                         src="/screenshots/iPad 13 inch-5.png"
-                        alt="diVine Video lists screenshot"
+                        alt="Rewind Video lists screenshot"
                         className="w-full h-auto rounded-lg shadow-lg"
                       />
                     </div>
@@ -188,7 +188,7 @@ export function LandingPage() {
                     <div className="p-1">
                       <img
                         src="/screenshots/iPad 13 inch-6.png"
-                        alt="diVine Video search screenshot"
+                        alt="Rewind Video search screenshot"
                         className="w-full h-auto rounded-lg shadow-lg"
                       />
                     </div>

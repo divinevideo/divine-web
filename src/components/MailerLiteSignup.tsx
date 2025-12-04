@@ -242,7 +242,7 @@ export function MailerLiteSignup() {
           <div className="ml-form-embedWrapper embedForm">
             <div className="ml-form-embedBody ml-form-embedBodyHorizontal row-form">
               <div className="ml-form-embedContent">
-                <h4>Join the diVine mobile app waitlist</h4>
+                <h4>Join the Rewind mobile app waitlist</h4>
                 <p>Our beta test is full and we can't let more folks on the apps until Apple and Google do their thing. If you want to be the first to know when that happens, join our mailing list.</p>
               </div>
 
@@ -288,10 +288,10 @@ export function MailerLiteSignup() {
             <div className="ml-form-successBody row-success" style={{ display: 'none' }}>
               <div className="ml-form-successContent">
                 <div className="flex flex-col items-center gap-4">
-                  <h4 className="text-2xl font-bold font-pacifico">diVine!</h4>
+                  <h4 className="text-2xl font-bold font-pacifico">Rewind!</h4>
                   <img
                     src="/divine_mic.jpg"
-                    alt="diVine microphone"
+                    alt="Rewind microphone"
                     className="w-full max-w-xs object-contain"
                   />
                   <p className="text-center">We'll reach out as soon as we're able to invite you to join us.</p>

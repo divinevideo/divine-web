@@ -61,8 +61,8 @@ VitePWA({
         'browserconfig.xml'
       ],
       manifest: {
-        name: 'diVine Web - Short-form Looping Videos',
-        short_name: 'diVine',
+        name: 'Rewind Web - Short-form Looping Videos',
+        short_name: 'Rewind',
         description: 'Watch and share 6-second looping videos on the decentralized Nostr network.',
         theme_color: '#00b488',
         background_color: '#09090b',

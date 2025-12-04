@@ -14,7 +14,7 @@ const Index = () => {
   const navigate = useNavigate();
 
   useSeoMeta({
-    title: 'diVine Web - Short-form Looping Videos on Nostr',
+    title: 'Rewind Web - Short-form Looping Videos on Nostr',
     description: 'Watch and share 6-second looping videos on the decentralized Nostr network.',
   });
 

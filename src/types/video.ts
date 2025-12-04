@@ -1,4 +1,4 @@
-// ABOUTME: Core video event types and interfaces for OpenVine/Divine Web
+// ABOUTME: Core video event types and interfaces for OpenVine/Rewind Web
 // ABOUTME: Defines the structure of video events (kind 34236) and related metadata
 
 import type { NostrEvent } from '@nostrify/nostrify';

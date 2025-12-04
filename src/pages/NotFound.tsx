@@ -21,11 +21,11 @@ const NotFound = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-100 via-pink-100 to-teal-100 dark:from-purple-950 dark:via-pink-950 dark:to-teal-950">
       <div className="text-center px-4 max-w-2xl mx-auto">
-        {/* Divine Image */}
+        {/* Rewind Image */}
         <div className="mb-8 flex justify-center">
           <img
             src="/divine_gun.jpg"
-            alt="Divine"
+            alt="Rewind"
             className="w-64 h-auto rounded-2xl shadow-2xl transform hover:scale-105 transition-transform duration-300 border-4 border-primary"
           />
         </div>
@@ -37,7 +37,7 @@ const NotFound = () => {
 
         {/* Campy Message */}
         <h2 className="text-3xl md:text-4xl font-bold mb-4 text-gray-900 dark:text-gray-100">
-          This Page is <span className="text-primary font-pacifico">Divine</span>...ly Missing!
+          This Page is <span className="text-primary font-pacifico">Rewind</span>...ly Missing!
         </h2>
 
         <p className="text-xl text-gray-700 dark:text-gray-300 mb-8">

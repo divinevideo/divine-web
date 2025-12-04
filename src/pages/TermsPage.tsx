@@ -1,4 +1,4 @@
-// ABOUTME: Terms of Service (EULA) page for Divine
+// ABOUTME: Terms of Service (EULA) page for Rewind
 // ABOUTME: Defines user agreements, content policies, and platform responsibilities
 
 import { Link } from 'react-router-dom';
@@ -28,12 +28,12 @@ export function TermsPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-muted-foreground">
-              By accessing or using Divine ("the Service"), you agree to be bound by these Terms of Service.
+              By accessing or using Rewind ("the Service"), you agree to be bound by these Terms of Service.
               If you do not agree to these terms, you must not use the Service.
             </p>
             <p className="text-muted-foreground">
-              The Service is provided by Divine ("we," "us," or "our"). These terms constitute a legally
-              binding agreement between you and Divine.
+              The Service is provided by Rewind ("we," "us," or "our"). These terms constitute a legally
+              binding agreement between you and Rewind.
             </p>
           </CardContent>
         </Card>
@@ -48,13 +48,13 @@ export function TermsPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="font-semibold">
-              Divine maintains a strict zero-tolerance policy for objectionable content and abusive behavior.
+              Rewind maintains a strict zero-tolerance policy for objectionable content and abusive behavior.
             </p>
 
             <div>
               <h3 className="font-semibold mb-2">Prohibited Content</h3>
               <p className="text-muted-foreground mb-2">
-                The following content is strictly prohibited on Divine:
+                The following content is strictly prohibited on Rewind:
               </p>
               <ul className="list-disc list-inside space-y-1 ml-4 text-muted-foreground">
                 <li><strong>Child Sexual Abuse Material (CSAM):</strong> Any content depicting or exploiting minors</li>
@@ -94,7 +94,7 @@ export function TermsPage() {
             <div>
               <h3 className="font-semibold mb-2">Automated Content Filtering</h3>
               <p className="text-muted-foreground">
-                Divine employs multiple methods to filter objectionable content:
+                Rewind employs multiple methods to filter objectionable content:
               </p>
               <ul className="list-disc list-inside space-y-1 ml-4 text-muted-foreground">
                 <li>CSAM hash-matching through Cloudflare and BunnyCDN filtering systems</li>
@@ -152,13 +152,13 @@ export function TermsPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-muted-foreground">
-              Divine provides mechanisms for users to protect themselves from abusive users:
+              Rewind provides mechanisms for users to protect themselves from abusive users:
             </p>
 
             <div>
               <h3 className="font-semibold mb-2">User Blocking</h3>
               <p className="text-muted-foreground">
-                You can block any user on Divine. When you block a user:
+                You can block any user on Rewind. When you block a user:
               </p>
               <ul className="list-disc list-inside space-y-1 ml-4 text-muted-foreground">
                 <li>You will no longer see their content in your feeds</li>
@@ -192,7 +192,7 @@ export function TermsPage() {
             <CardTitle>User Responsibilities</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <p className="text-muted-foreground">By using Divine, you agree to:</p>
+            <p className="text-muted-foreground">By using Rewind, you agree to:</p>
             <ul className="list-disc list-inside space-y-2 ml-4 text-muted-foreground">
               <li>Comply with all applicable laws and regulations</li>
               <li>Respect the rights of other users</li>
@@ -213,11 +213,11 @@ export function TermsPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-muted-foreground">
-              Divine is not intended for users under the age of 16. If you are under 16, you may not
+              Rewind is not intended for users under the age of 16. If you are under 16, you may not
               create an account or use the Service.
             </p>
             <p className="text-muted-foreground">
-              Some content on Divine is age-restricted and requires users to be 18 or older to view.
+              Some content on Rewind is age-restricted and requires users to be 18 or older to view.
               By accessing age-restricted content, you certify that you are at least 18 years old.
             </p>
           </CardContent>
@@ -229,7 +229,7 @@ export function TermsPage() {
             <CardTitle>Platform Rights and Limitations</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <p className="text-muted-foreground">Divine reserves the right to:</p>
+            <p className="text-muted-foreground">Rewind reserves the right to:</p>
             <ul className="list-disc list-inside space-y-2 ml-4 text-muted-foreground">
               <li>Remove any content that violates these Terms</li>
               <li>Suspend or terminate accounts that violate these Terms</li>
@@ -251,10 +251,10 @@ export function TermsPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-muted-foreground">
-              Divine operates on the decentralized Nostr protocol. This means:
+              Rewind operates on the decentralized Nostr protocol. This means:
             </p>
             <ul className="list-disc list-inside space-y-2 ml-4 text-muted-foreground">
-              <li>The Divine app can connect to multiple servers (relays and media servers) across the network</li>
+              <li>The Rewind app can connect to multiple servers (relays and media servers) across the network</li>
               <li>Content you post is distributed across multiple independent relays</li>
               <li>Even if we remove content from our platform, it may persist on other relays</li>
               <li>Other Nostr clients may display content using different moderation policies</li>
@@ -268,7 +268,7 @@ export function TermsPage() {
                 other servers in the Nostr network is moderated according to their operators' policies.
               </p>
               <p className="text-muted-foreground">
-                While we maintain strict moderation on content served through Divine, we cannot control
+                While we maintain strict moderation on content served through Rewind, we cannot control
                 content on the broader Nostr network. Users should be aware of this when posting content.
               </p>
             </div>
@@ -276,7 +276,7 @@ export function TermsPage() {
             <p className="text-muted-foreground">
               <strong>Run your own servers:</strong> If you want different moderation policies, you're welcome
               to run your own Nostr relays and Blossom media servers with whatever policies you prefer. The
-              Divine app can connect to any compatible server.
+              Rewind app can connect to any compatible server.
             </p>
           </CardContent>
         </Card>
@@ -329,8 +329,8 @@ export function TermsPage() {
               </li>
               <li>
                 Email:{' '}
-                <a href="mailto:contact@divine.video" className="text-primary hover:underline">
-                  contact@divine.video
+                <a href="mailto:contact@rewind.community" className="text-primary hover:underline">
+                  contact@rewind.community
                 </a>
               </li>
             </ul>

@@ -122,7 +122,7 @@ export function isValidBlurhash(blurhash: string | undefined | null): blurhash i
 }
 
 /**
- * Default blurhash for Divine branding (purple gradient)
+ * Default blurhash for Rewind branding (purple gradient)
  * Used as fallback when no blurhash is available
  */
-export const DEFAULT_DIVINE_BLURHASH = 'L6Pj0^jE.AyE_3t7t7R**0o#DgR4';
+export const DEFAULT_REWIND_BLURHASH = 'L6Pj0^jE.AyE_3t7t7R**0o#DgR4';

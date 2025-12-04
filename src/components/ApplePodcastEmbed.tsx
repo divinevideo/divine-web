@@ -17,7 +17,7 @@ interface ApplePodcastEmbedProps {
 export function ApplePodcastEmbed({
   episodeUrl,
   title = "Vine Revisited and The Fight Against AI Slop",
-  description = "Behind the scenes of the diVine launch",
+  description = "Behind the scenes of the Rewind launch",
   showName = "Revolution.Social",
   duration = "21 min",
   artworkUrl = "https://is1-ssl.mzstatic.com/image/thumb/Podcasts221/v4/7f/29/73/7f2973f2-c3c6-bad0-6f29-e78afa22ccca/mza_12880046013239631742.jpeg/300x300bb.webp",

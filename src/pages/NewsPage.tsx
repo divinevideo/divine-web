@@ -1,4 +1,4 @@
-// ABOUTME: News page displaying press releases and media coverage about Divine
+// ABOUTME: News page displaying press releases and media coverage about Rewind
 // ABOUTME: Links to press releases and articles about the platform
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -49,7 +49,7 @@ export function NewsPage() {
                   target="_blank"
                   rel="noopener noreferrer"
                   className="hover:grayscale hover:opacity-70 transition-all duration-200"
-                  aria-label={`Read about Divine on ${outlet.name}`}
+                  aria-label={`Read about Rewind on ${outlet.name}`}
                 >
                   <img
                     src={outlet.logo}
@@ -86,7 +86,7 @@ export function NewsPage() {
                           rel="noopener noreferrer"
                           className="hover:text-primary transition-colors"
                         >
-                          Jack Dorsey funds diVine, a Vine reboot that includes Vine’s video archive
+                          Jack Dorsey funds Rewind, a Vine reboot that includes Vine’s video archive
                         </a>
                       </CardTitle>
                       <CardDescription>November 12, 2025</CardDescription>
@@ -95,7 +95,7 @@ export function NewsPage() {
                 </CardHeader>
                 <CardContent>
                   <p className="text-muted-foreground mb-4 leading-relaxed">
-                    As generative AI content starts to fill our social apps, a project to bring back Vine’s six-second looping videos is launching with Twitter co-founder Jack Dorsey’s backing. On Thursday, a new app called diVine will give access to more than 100,000 archived Vine videos, restored from an older backup that was created before Vine’s shutdown.
+                    As generative AI content starts to fill our social apps, a project to bring back Vine’s six-second looping videos is launching with Twitter co-founder Jack Dorsey’s backing. On Thursday, a new app called Rewind will give access to more than 100,000 archived Vine videos, restored from an older backup that was created before Vine’s shutdown.
                   </p>
                   <a
                     href="https://techcrunch.com/2025/11/12/jack-dorsey-funds-divine-a-vine-reboot-that-includes-vines-video-archive/"
@@ -136,7 +136,7 @@ export function NewsPage() {
                 </CardHeader>
                 <CardContent>
                   <p className="text-muted-foreground mb-4 leading-relaxed">
-                    DiVine, a decentralized reboot of Vine backed by Jack Dorsey, is resurrecting the long-lost super-short-form video platform. Behind the revival is one of the original Twitter employees who worked closely with Dorsey, Evan Henshaw-Plath, who goes by the alias Rabble. For the founder, diVine isn't just a nostalgia play for bringing back old six-second viral videos, but a sort of protest against the walled garden of "black box" algorithms that social media apps have become, with algorithms feeding users AI-generated content.
+                    DiVine, a decentralized reboot of Vine backed by Jack Dorsey, is resurrecting the long-lost super-short-form video platform. Behind the revival is one of the original Twitter employees who worked closely with Dorsey, Evan Henshaw-Plath, who goes by the alias Rabble. For the founder, Rewind isn't just a nostalgia play for bringing back old six-second viral videos, but a sort of protest against the walled garden of "black box" algorithms that social media apps have become, with algorithms feeding users AI-generated content.
                   </p>
                   <a
                     href="https://www.businessinsider.com/vine-reboot-divine-jack-dorsey-andotherstuff-2025-11"
@@ -168,7 +168,7 @@ export function NewsPage() {
                           rel="noopener noreferrer"
                           className="hover:text-primary transition-colors"
                         >
-                          diVine: Everything We Know About Vine's Reboot
+                          Rewind: Everything We Know About Vine's Reboot
                         </a>
                       </CardTitle>
                       <CardDescription>November 14, 2025</CardDescription>
@@ -177,7 +177,7 @@ export function NewsPage() {
                 </CardHeader>
                 <CardContent>
                   <p className="text-muted-foreground mb-4 leading-relaxed">
-                    Jack Dorsey's latest social media experiment is launching with a promise: no AI slop. Backed by the former Twitter (now X) CEO and co-founder, the reboot of Vine—called diVine—will allow users to access over 100,000 archived six-second clips from the original platform, while creating new content in what its founders say will be a human-first space, designed to resist the spread of AI-generated content.
+                    Jack Dorsey's latest social media experiment is launching with a promise: no AI slop. Backed by the former Twitter (now X) CEO and co-founder, the reboot of Vine—called Rewind—will allow users to access over 100,000 archived six-second clips from the original platform, while creating new content in what its founders say will be a human-first space, designed to resist the spread of AI-generated content.
 
                   </p>
                   <a
@@ -209,7 +209,7 @@ export function NewsPage() {
                           rel="noopener noreferrer"
                           className="hover:text-primary transition-colors"
                         >
-                          Vine Relaunches as Divine
+                          Vine Relaunches as Rewind
                         </a>
                       </h3>
                       <p className="text-sm text-muted-foreground">Vice • November 18, 2025</p>
@@ -230,7 +230,7 @@ export function NewsPage() {
                           rel="noopener noreferrer"
                           className="hover:text-primary transition-colors"
                         >
-                          Light Start: Do it for diVine, Send a Ride
+                          Light Start: Do it for Rewind, Send a Ride
                         </a>
                       </h3>
                       <p className="text-sm text-muted-foreground">Stuff.co.za • November 17, 2025</p>
@@ -251,7 +251,7 @@ export function NewsPage() {
                           rel="noopener noreferrer"
                           className="hover:text-primary transition-colors"
                         >
-                          Divine: Jack Dorsey's Vine revival
+                          Rewind: Jack Dorsey's Vine revival
                         </a>
                       </h3>
                       <p className="text-sm text-muted-foreground">CNN • November 14, 2025</p>
@@ -272,7 +272,7 @@ export function NewsPage() {
                           rel="noopener noreferrer"
                           className="hover:text-primary transition-colors"
                         >
-                          What to know about Jack Dorsey's new Vine revival, Divine
+                          What to know about Jack Dorsey's new Vine revival, Rewind
                         </a>
                       </h3>
                       <p className="text-sm text-muted-foreground">Yahoo News • November 14, 2025</p>
@@ -294,7 +294,7 @@ export function NewsPage() {
                     <div className="space-y-1">
                       <CardTitle className="text-2xl">
                         <a
-                          href="/diVine%20launch%20press%20release%2011.13.25.pdf"
+                          href="/Rewind%20launch%20press%20release%2011.13.25.pdf"
                           target="_blank"
                           rel="noopener noreferrer"
                           className="hover:text-primary transition-colors"
@@ -311,10 +311,10 @@ export function NewsPage() {
                 </CardHeader>
                 <CardContent>
                   <p className="text-muted-foreground mb-4">
-                    With a grant funded by Jack Dorsey, Rabble has created diVine - an open source revival of Vine videos and its six-second video creation capabilities.
+                    With a grant funded by Jack Dorsey, Rabble has created Rewind - an open source revival of Vine videos and its six-second video creation capabilities.
                   </p>
                   <a
-                    href="/diVine%20launch%20press%20release%2011.13.25.pdf"
+                    href="/Rewind%20launch%20press%20release%2011.13.25.pdf"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-primary hover:underline font-medium"

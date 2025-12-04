@@ -34,7 +34,7 @@ export function OpenSourcePage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-lg text-muted-foreground">
-              Divine is a decentralized, open-source platform for short-form looping videos, built on the Nostr protocol.
+              Rewind is a decentralized, open-source platform for short-form looping videos, built on the Nostr protocol.
               We're currently in <strong>beta testing</strong> and invite you to join us in shaping the future of creative video sharing!
             </p>
             <div className="bg-primary/10 p-4 rounded-lg">
@@ -160,7 +160,7 @@ export function OpenSourcePage() {
                     Web Application
                   </h3>
                   <p className="text-sm text-muted-foreground">
-                    React-based web client for diVine
+                    React-based web client for Rewind
                   </p>
                 </div>
                 <Button asChild size="sm" variant="outline">
@@ -322,7 +322,7 @@ export function OpenSourcePage() {
                   Other Ways to Help
                 </h4>
                 <ul className="text-sm text-muted-foreground space-y-1 pl-6 list-disc">
-                  <li>Share diVine with your community and spread the word</li>
+                  <li>Share Rewind with your community and spread the word</li>
                   <li>Report bugs and suggest improvements</li>
                   <li>Help answer questions from other users</li>
                   <li>Create content and showcase what you build</li>

@@ -22,7 +22,7 @@ export function DMCAPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-muted-foreground">
-              Divine operates as a cultural preservation project recovering and hosting content that would otherwise
+              Rewind operates as a cultural preservation project recovering and hosting content that would otherwise
               be lost to history. Our use of archived Vine content is based on fair use principles under U.S. copyright
               law, specifically:
             </p>
@@ -36,7 +36,7 @@ export function DMCAPage() {
                 cultural preservation
               </li>
               <li>
-                <strong>Non-commercial nature:</strong> Divine is an open-source project not designed to generate
+                <strong>Non-commercial nature:</strong> Rewind is an open-source project not designed to generate
                 revenue from user data
               </li>
               <li>
@@ -57,7 +57,7 @@ export function DMCAPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-muted-foreground">
-              Divine recovers Vine videos from public archives maintained by preservation organizations:
+              Rewind recovers Vine videos from public archives maintained by preservation organizations:
             </p>
             <ul className="list-disc list-inside space-y-2 text-muted-foreground ml-4">
               <li>
@@ -88,7 +88,7 @@ export function DMCAPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-muted-foreground">
-              If you are the copyright owner of content hosted on Divine and wish to have it removed, we respect
+              If you are the copyright owner of content hosted on Rewind and wish to have it removed, we respect
               your rights and will process valid DMCA takedown requests.
             </p>
 
@@ -124,7 +124,7 @@ export function DMCAPage() {
                 Send DMCA Notices To:
               </h3>
               <p className="text-sm text-muted-foreground">
-                Email: <a href="mailto:contact@divine.video" className="text-primary hover:underline">contact@divine.video</a>
+                Email: <a href="mailto:contact@rewind.community" className="text-primary hover:underline">contact@rewind.community</a>
               </p>
               <p className="text-sm text-muted-foreground mt-2">
                 We will review valid requests and respond within 10 business days.
@@ -153,7 +153,7 @@ export function DMCAPage() {
               <li>Your name, address, telephone number, and email</li>
               <li>
                 A statement that you consent to the jurisdiction of the Federal District Court for your judicial
-                district (or if outside the U.S., any district where Divine may be found)
+                district (or if outside the U.S., any district where Rewind may be found)
               </li>
             </ol>
           </CardContent>
@@ -166,7 +166,7 @@ export function DMCAPage() {
           </CardHeader>
           <CardContent>
             <p className="text-muted-foreground">
-              Divine will terminate accounts of users who are determined to be repeat copyright infringers in
+              Rewind will terminate accounts of users who are determined to be repeat copyright infringers in
               accordance with applicable law.
             </p>
           </CardContent>
@@ -181,8 +181,8 @@ export function DMCAPage() {
             <p className="text-muted-foreground">
               For questions about this policy or copyright issues not related to DMCA takedowns, please contact
               us at{" "}
-              <a href="mailto:contact@divine.video" className="text-primary hover:underline">
-                contact@divine.video
+              <a href="mailto:contact@rewind.community" className="text-primary hover:underline">
+                contact@rewind.community
               </a>.
             </p>
           </CardContent>

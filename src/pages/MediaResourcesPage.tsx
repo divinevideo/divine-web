@@ -17,7 +17,7 @@ export function MediaResourcesPage() {
         <div className="text-center space-y-4">
           <h1 className="text-4xl font-bold">Media Resources</h1>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Everything you need to know about diVine, the short-form video platform preserving authentic human creativity.
+            Everything you need to know about Rewind, the short-form video platform preserving authentic human creativity.
           </p>
         </div>
 
@@ -42,19 +42,19 @@ export function MediaResourcesPage() {
           </CardContent>
         </Card>
 
-        {/* About diVine */}
+        {/* About Rewind */}
         <Card>
           <CardHeader>
-            <CardTitle>About diVine</CardTitle>
+            <CardTitle>About Rewind</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-muted-foreground">
-              diVine is a decentralized short-form video platform built on the Nostr protocol,
+              Rewind is a decentralized short-form video platform built on the Nostr protocol,
               inspired by Vine's creative 6-second format. In an era of AI-generated content,
-              diVine preserves authentic human creativity and gives creators true ownership of their content.
+              Rewind preserves authentic human creativity and gives creators true ownership of their content.
             </p>
             <p className="text-muted-foreground">
-              diVine brings back the spontaneous creativity that made Vine special—but this time,
+              Rewind brings back the spontaneous creativity that made Vine special—but this time,
               built on open-source technology that makes it impossible for any corporation to shut down.
             </p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
@@ -80,7 +80,7 @@ export function MediaResourcesPage() {
             <div className="pt-4 flex flex-wrap gap-3">
               <Button asChild variant="outline">
                 <Link to="/about" className="inline-flex items-center gap-2">
-                  Learn More About diVine
+                  Learn More About Rewind
                   <ExternalLink className="h-4 w-4" />
                 </Link>
               </Button>
@@ -114,13 +114,13 @@ export function MediaResourcesPage() {
               <div className="flex-1 space-y-4">
                 <p className="text-muted-foreground">
                   Rabble is a veteran technologist and activist building decentralized social media
-                  technologies and fighting for digital rights. Creator of diVine and host of the
+                  technologies and fighting for digital rights. Creator of Rewind and host of the
                   Revolution.Social podcast, Rabble has been at the forefront of open-source and
                   decentralized technology for over two decades.
                 </p>
                 <p className="text-muted-foreground">
                   His work focuses on empowering users through decentralization, protecting digital
-                  rights, and building tools that put creators first. With diVine, he's bringing back
+                  rights, and building tools that put creators first. With Rewind, he's bringing back
                   the creative spontaneity of Vine while ensuring no corporation can ever shut it down again.
                 </p>
                 <div className="flex flex-wrap gap-2">
@@ -154,16 +154,16 @@ export function MediaResourcesPage() {
         {/* Podcast Feature */}
         <Card>
           <CardHeader>
-            <CardTitle>Behind the Scenes of the diVine Launch</CardTitle>
+            <CardTitle>Behind the Scenes of the Rewind Launch</CardTitle>
             <CardDescription>
-              Listen to founder Rabble discuss the vision behind diVine on the Revolution.Social podcast
+              Listen to founder Rabble discuss the vision behind Rewind on the Revolution.Social podcast
             </CardDescription>
           </CardHeader>
           <CardContent>
             <ApplePodcastEmbed
               episodeUrl="https://podcasts.apple.com/us/podcast/vine-revisited-and-the-fight-against-ai-slop/id1824528874?i=1000737216404"
               title="Vine Revisited and The Fight Against AI Slop"
-              description="Behind the scenes of the diVine launch - preserving authentic human creativity"
+              description="Behind the scenes of the Rewind launch - preserving authentic human creativity"
               showName="Revolution.Social • S1 Bonus"
               duration="21 min"
             />
@@ -185,7 +185,7 @@ export function MediaResourcesPage() {
                   <FileText className="h-4 w-4" />
                   <div className="text-left">
                     <div className="font-semibold">Frequently Asked Questions</div>
-                    <div className="text-xs text-muted-foreground">Common questions about diVine</div>
+                    <div className="text-xs text-muted-foreground">Common questions about Rewind</div>
                   </div>
                 </Link>
               </Button>
@@ -231,7 +231,7 @@ export function MediaResourcesPage() {
                     <div className="aspect-[9/16] bg-muted rounded-lg overflow-hidden border">
                       <img
                         src={`/screenshots/${i}_1.png`}
-                        alt={`diVine screenshot ${i}`}
+                        alt={`Rewind screenshot ${i}`}
                         className="w-full h-full object-cover"
                       />
                     </div>
@@ -271,7 +271,7 @@ export function MediaResourcesPage() {
             <div>
               <h3 className="font-semibold mb-3">Brand Assets & Logos</h3>
               <p className="text-sm text-muted-foreground mb-4">
-                Download diVine logos and brand assets for media use. Available in PNG and SVG formats.
+                Download Rewind logos and brand assets for media use. Available in PNG and SVG formats.
               </p>
 
               {/* Cover Image */}
@@ -286,7 +286,7 @@ export function MediaResourcesPage() {
                     <div className="aspect-video bg-muted rounded flex items-center justify-center mb-3">
                       <img
                         src="/og.png"
-                        alt="diVine cover image"
+                        alt="Rewind cover image"
                         className="w-full h-full object-cover rounded"
                       />
                     </div>
@@ -316,7 +316,7 @@ export function MediaResourcesPage() {
                     <div className="aspect-square bg-muted rounded flex items-center justify-center mb-2">
                       <img
                         src="/brand-assets/divine_icon_transparent.png"
-                        alt="Divine icon transparent"
+                        alt="Rewind icon transparent"
                         className="w-20 h-20 object-contain"
                       />
                     </div>
@@ -332,7 +332,7 @@ export function MediaResourcesPage() {
                     <div className="aspect-square bg-muted rounded flex items-center justify-center mb-2">
                       <img
                         src="/brand-assets/app_icon.png"
-                        alt="Divine app icon"
+                        alt="Rewind app icon"
                         className="w-20 h-20 object-contain"
                       />
                     </div>
@@ -351,7 +351,7 @@ export function MediaResourcesPage() {
                     <div className="aspect-video bg-white rounded flex items-center justify-center mb-3 border">
                       <img
                         src="/brand-assets/Black_on_white.png"
-                        alt="Divine logo - Black on white"
+                        alt="Rewind logo - Black on white"
                         className="max-w-[80%] max-h-[80%] object-contain"
                       />
                     </div>
@@ -385,7 +385,7 @@ export function MediaResourcesPage() {
                     <div className="aspect-video bg-black rounded flex items-center justify-center mb-3 border">
                       <img
                         src="/brand-assets/White_on_black.png"
-                        alt="Divine logo - White on black"
+                        alt="Rewind logo - White on black"
                         className="max-w-[80%] max-h-[80%] object-contain"
                       />
                     </div>
@@ -419,7 +419,7 @@ export function MediaResourcesPage() {
                     <div className="aspect-video rounded flex items-center justify-center mb-3 border" style={{ backgroundColor: '#F5F5DC' }}>
                       <img
                         src="/brand-assets/Green_on_ivory.png"
-                        alt="Divine logo - Green on ivory"
+                        alt="Rewind logo - Green on ivory"
                         className="max-w-[80%] max-h-[80%] object-contain"
                       />
                     </div>
@@ -453,7 +453,7 @@ export function MediaResourcesPage() {
                     <div className="aspect-video rounded flex items-center justify-center mb-3 border" style={{ backgroundColor: '#2D5016' }}>
                       <img
                         src="/brand-assets/Ivory_on_Green.png"
-                        alt="Divine logo - Ivory on green"
+                        alt="Rewind logo - Ivory on green"
                         className="max-w-[80%] max-h-[80%] object-contain"
                       />
                     </div>
@@ -501,10 +501,10 @@ export function MediaResourcesPage() {
               </Link>
             </Button>
             <a
-              href="mailto:press@divine.video"
+              href="mailto:press@rewind.community"
               className="text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
-              press@divine.video
+              press@rewind.community
             </a>
           </div>
         </div>

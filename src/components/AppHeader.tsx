@@ -27,7 +27,7 @@ export function AppHeader() {
             onClick={() => navigate('/')}
             aria-label="Go to home"
           >
-            diVine
+            Rewind
           </button>
         </div>
         <div className="flex items-center gap-2">

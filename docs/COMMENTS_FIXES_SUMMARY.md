@@ -38,7 +38,7 @@ This document summarizes all fixes applied to the comments system to resolve iss
 
 ### Addressable Events
 
-diVine Web videos use **kind 34236**, which is an **addressable event** type (NIP-33). Addressable events have unique identifiers composed of three parts:
+Rewind Web videos use **kind 34236**, which is an **addressable event** type (NIP-33). Addressable events have unique identifiers composed of three parts:
 
 ```
 <kind>:<pubkey>:<d-tag-value>
