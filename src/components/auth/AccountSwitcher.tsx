@@ -1,7 +1,7 @@
 // NOTE: This file is stable and usually should not be modified.
 // It is important that all functionality in this file is preserved, and should only be modified if explicitly requested.
 
-import { ChevronDown, LogOut, UserIcon, UserPlus, User, Settings, Moon, Sun /*, Wallet */ } from 'lucide-react';
+import { ChevronDown, LogOut, UserIcon, UserPlus, User, Settings/*, Wallet */ } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { nip19 } from 'nostr-tools';
 import {
@@ -15,7 +15,6 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar.tsx';
 // import { WalletModal } from '@/components/WalletModal';
 import { useLoggedInAccounts, type Account } from '@/hooks/useLoggedInAccounts';
-import { useTheme } from '@/hooks/useTheme';
 import { genUserName } from '@/lib/genUserName';
 import { getSafeProfileImage } from '@/lib/imageUtils';
 import { RelaySelector } from '@/components/RelaySelector';
@@ -27,7 +26,6 @@ interface AccountSwitcherProps {
 export function AccountSwitcher({ onAddAccountClick }: AccountSwitcherProps) {
   const { currentUser, otherUsers, setLogin, removeLogin } = useLoggedInAccounts();
   const navigate = useNavigate();
-  const { displayTheme, setTheme } = useTheme();
 
   if (!currentUser) return null;
 
@@ -38,10 +36,6 @@ export function AccountSwitcher({ onAddAccountClick }: AccountSwitcherProps) {
   const handleMyProfileClick = () => {
     const npub = nip19.npubEncode(currentUser.pubkey);
     navigate(`/profile/${npub}`);
-  };
-
-  const toggleTheme = () => {
-    setTheme(displayTheme === 'dark' ? 'light' : 'dark');
   };
 
   return (
@@ -65,17 +59,6 @@ export function AccountSwitcher({ onAddAccountClick }: AccountSwitcherProps) {
         >
           <User className='w-4 h-4' />
           <span>My Profile</span>
-        </DropdownMenuItem>
-        <DropdownMenuItem
-          onClick={toggleTheme}
-          className='flex items-center gap-2 cursor-pointer p-2 rounded-md'
-        >
-          {displayTheme === 'dark' ? (
-            <Sun className='w-4 h-4' />
-          ) : (
-            <Moon className='w-4 h-4' />
-          )}
-          <span>{displayTheme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
         </DropdownMenuItem>
         <DropdownMenuItem
           onClick={() => navigate('/settings/moderation')}
