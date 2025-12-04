@@ -235,7 +235,7 @@ export function MediaResourcesPage() {
                         className="w-full h-full object-cover"
                       />
                     </div>
-                    <a href={`/screenshots/${i}_1.png`} download={`divine-screenshot-${i}.png`}>
+                    <a href={`/screenshots/${i}_1.png`} download={`rewind-screenshot-${i}.png`}>
                       <Button size="sm" variant="outline" className="w-full">
                         <Download className="h-3 w-3 mr-2" />
                         Download
@@ -280,7 +280,7 @@ export function MediaResourcesPage() {
                 <div className="max-w-2xl">
                   <a
                     href="/og.png"
-                    download="divine-cover-image.png"
+                    download="rewind-cover-image.png"
                     className="group border rounded-lg p-4 hover:border-primary transition-colors block"
                   >
                     <div className="aspect-video bg-muted rounded flex items-center justify-center mb-3">
@@ -309,14 +309,14 @@ export function MediaResourcesPage() {
                 <h4 className="text-sm font-medium mb-3">Icon Logos</h4>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                   <a
-                    href="/brand-assets/divine_icon_transparent.png"
+                    href="/brand-assets/rewind_symbol_orange.png"
                     download
                     className="group border rounded-lg p-4 hover:border-primary transition-colors"
                   >
                     <div className="aspect-square bg-muted rounded flex items-center justify-center mb-2">
                       <img
-                        src="/brand-assets/divine_icon_transparent.png"
-                        alt="Rewind icon transparent"
+                        src="/brand-assets/rewind_symbol_orange.png"
+                        alt="Rewind symbol"
                         className="w-20 h-20 object-contain"
                       />
                     </div>

@@ -97,7 +97,7 @@ export function LandingPage() {
             <div className="space-y-4">
               <div className="flex flex-col items-center justify-center gap-3">
                 <img
-                  src="/divine_icon_transparent.png"
+                  src="/rewind_symbol_orange.png"
                   alt="Rewind logo"
                   className="w-16 h-16 md:w-20 md:h-20"
                 />
