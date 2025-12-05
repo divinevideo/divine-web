@@ -230,12 +230,12 @@ export function MediaResourcesPage() {
                   <div key={i} className="flex flex-col gap-3">
                     <div className="aspect-[9/16] bg-muted rounded-lg overflow-hidden border">
                       <img
-                        src={`/screenshots/${i}_1.png`}
+                        src={`/screenshots/${i}_1.avif`}
                         alt={`diVine screenshot ${i}`}
                         className="w-full h-full object-cover"
                       />
                     </div>
-                    <a href={`/screenshots/${i}_1.png`} download={`divine-screenshot-${i}.png`}>
+                    <a href={`/screenshots/${i}_1.avif`} download={`divine-screenshot-${i}.avif`}>
                       <Button size="sm" variant="outline" className="w-full">
                         <Download className="h-3 w-3 mr-2" />
                         Download
@@ -279,13 +279,13 @@ export function MediaResourcesPage() {
                 <h4 className="text-sm font-medium mb-3">Cover Image</h4>
                 <div className="max-w-2xl">
                   <a
-                    href="/og.png"
+                    href="/og.avif"
                     download="divine-cover-image.png"
                     className="group border rounded-lg p-4 hover:border-primary transition-colors block"
                   >
                     <div className="aspect-video bg-muted rounded flex items-center justify-center mb-3">
                       <img
-                        src="/og.png"
+                        src="/og.avif"
                         alt="diVine cover image"
                         className="w-full h-full object-cover rounded"
                       />

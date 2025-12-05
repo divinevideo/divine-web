@@ -16,7 +16,7 @@ export function DecentralizedDemo() {
             {/* Stock image with network overlay */}
             <div className="relative w-4/5 mx-auto aspect-square rounded-lg shadow-md overflow-hidden">
               <img
-                src="/decentralized-demo.jpg"
+                src="/decentralized-demo.avif"
                 alt="Decentralized network collaboration"
                 className="w-full h-full object-cover"
               />

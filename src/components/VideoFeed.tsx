@@ -274,7 +274,7 @@ export function VideoFeed({
                 <>
                   <div className="mx-auto -mx-8 -mt-16">
                     <img
-                      src="/divine_reclining.jpg"
+                      src="/divine_reclining.avif"
                       alt="Divine reclining"
                       className="w-full rounded-t-lg shadow-lg"
                     />

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * Generate PWA icons from app_icon.png
+ * Generate PWA icons from app_icon.avif
  * 
  * This script creates:
  * - Regular icons for general use (favicon, apple-touch-icon, etc.)
@@ -20,7 +20,7 @@ import sharp from 'sharp';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const inputFile = path.join(__dirname, '../public/app_icon.png');
+const inputFile = path.join(__dirname, '../public/app_icon.avif');
 const outputDir = path.join(__dirname, '../public');
 
 // Icon sizes needed
@@ -40,11 +40,11 @@ const maskableIconSizes = [
 ];
 
 async function generateIcons() {
-  console.log('Generating icons from app_icon.png...');
+  console.log('Generating icons from app_icon.avif...');
   
   // Check if input file exists
   if (!fs.existsSync(inputFile)) {
-    console.error('Error: app_icon.png not found in public directory');
+    console.error('Error: app_icon.avif not found in public directory');
     process.exit(1);
   }
 

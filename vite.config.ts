@@ -54,10 +54,10 @@ VitePWA({
         runtimeCaching: []
       },
       includeAssets: [
-        'app_icon.png',
-        'og.png',
+        'app_icon.avif',
+        'og.avif',
         'no-ai-icon.svg',
-        'divine_icon_transparent.png',
+        'divine_icon_transparent.avif',
         'browserconfig.xml'
       ],
       manifest: {
@@ -73,35 +73,35 @@ VitePWA({
         categories: ['entertainment', 'video', 'social'],
         screenshots: [
           {
-            src: '/screenshots/iPad 13 inch-0.png',
+            src: '/screenshots/iPad 13 inch-0.avif',
             sizes: '2048x2732',
-            type: 'image/png',
+            type: 'image/avif',
             form_factor: 'wide'
           },
           {
-            src: '/screenshots/iPad 13 inch-1.png',
+            src: '/screenshots/iPad 13 inch-1.avif',
             sizes: '2048x2732',
-            type: 'image/png',
+            type: 'image/avif',
             form_factor: 'wide'
           },
           {
-            src: '/screenshots/iPad 13 inch-2.png',
+            src: '/screenshots/iPad 13 inch-2.avif',
             sizes: '2048x2732',
-            type: 'image/png',
+            type: 'image/avif',
             form_factor: 'wide'
           }
         ],
         icons: [
           {
-            src: 'app_icon.png',
+            src: 'app_icon.avif',
             sizes: '256x256',
-            type: 'image/png',
+            type: 'image/avif',
             purpose: 'any'
           },
           {
-            src: 'app_icon.png',
+            src: 'app_icon.avif',
             sizes: '256x256 512x512',
-            type: 'image/png',
+            type: 'image/avif',
             purpose: 'maskable'
           }
         ]

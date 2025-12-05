@@ -76,12 +76,12 @@ export function VideoPage() {
     description: currentVideo?.content || `Watch this video${authorName ? ` by ${authorName}` : ''} on diVine`,
     ogTitle: currentVideo?.title || 'Video on diVine',
     ogDescription: currentVideo?.content || 'Watch this video on diVine',
-    ogImage: currentVideo?.thumbnailUrl || '/og.png',
+    ogImage: currentVideo?.thumbnailUrl || '/og.avif',
     ogType: 'video.other',
     twitterCard: 'summary_large_image',
     twitterTitle: currentVideo?.title || 'Video on diVine',
     twitterDescription: currentVideo?.content || 'Watch this video on diVine',
-    twitterImage: currentVideo?.thumbnailUrl || '/og.png',
+    twitterImage: currentVideo?.thumbnailUrl || '/og.avif',
   });
 
   // Navigation back to source

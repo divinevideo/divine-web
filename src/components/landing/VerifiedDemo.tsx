@@ -16,7 +16,7 @@ export function VerifiedDemo() {
             {/* Stock image with verification badge */}
             <div className="relative w-4/5 mx-auto aspect-square rounded-lg shadow-md overflow-hidden">
               <img
-                src="/verified-demo.jpg"
+                src="/verified-demo.avif"
                 alt="Verified authentic moment"
                 className="w-full h-full object-cover"
               />

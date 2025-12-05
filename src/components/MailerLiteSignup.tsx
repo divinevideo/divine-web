@@ -290,7 +290,7 @@ export function MailerLiteSignup() {
                 <div className="flex flex-col items-center gap-4">
                   <h4 className="text-2xl font-bold font-pacifico">diVine!</h4>
                   <img
-                    src="/divine_mic.jpg"
+                    src="/divine_mic.avif"
                     alt="diVine microphone"
                     className="w-full max-w-xs object-contain"
                   />
