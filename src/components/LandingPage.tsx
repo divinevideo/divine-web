@@ -112,7 +112,7 @@ export function LandingPage() {
 
             {/* Mailing List Signup */}
             <div className="pt-4">
-              <div className="bg-card border border-border rounded-lg p-6 shadow-sm max-w-[400px] mx-auto">
+              <div className="hs-form-landing bg-card border border-border rounded-lg p-6 shadow-sm max-w-[600px] w-full mx-auto">
                 <h4 className="text-base font-normal text-foreground text-center mb-2">
                   Join the diVine mobile app waitlist
                 </h4>

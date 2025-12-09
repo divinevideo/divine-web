@@ -16,22 +16,22 @@ export function HubSpotSignup() {
   return (
     <>
       <style>{`
-        /* HubSpot v4 form - inline styling to match original */
+        /* Base HubSpot v4 form styles - applies to all instances */
         .hs-form-html [data-hsfc-id="Renderer"] {
           --hsf-background__padding: 0;
           --hsf-row__vertical-spacing: 0;
           --hsf-row__horizontal-spacing: 8px;
           --hsf-button__background-color: #00b488;
           --hsf-button__color: white;
-          --hsf-button__border-radius: 9999px;
+          --hsf-button__border-radius: 4px;
           --hsf-button__padding: 0 16px;
           --hsf-button__font-weight: 500;
           --hsf-button__font-size: 0.875rem;
           --hsf-field-input__font-size: 0.875rem;
-          --hsf-field-input__background-color: #020817;
-          --hsf-field-input__color: #f8fafc;
-          --hsf-field-input__border-color: #1e293b;
-          --hsf-field-input__border-radius: 6px;
+          --hsf-field-input__background-color: hsl(222.2 84% 4.9%);
+          --hsf-field-input__color: hsl(210 40% 98%);
+          --hsf-field-input__border-color: hsl(217.2 32.6% 17.5%);
+          --hsf-field-input__border-radius: 4px;
           --hsf-field-input__padding: 0 12px;
           --hsf-field-input__placeholder-color: #94a3b8;
         }
@@ -39,7 +39,6 @@ export function HubSpotSignup() {
           border: none !important;
           background: none !important;
         }
-        /* Step__Content contains Row (input) and NavigationRow (button) - make inline */
         .hs-form-html .hsfc-Step__Content {
           display: flex !important;
           flex-direction: row !important;
@@ -47,13 +46,10 @@ export function HubSpotSignup() {
           gap: 8px !important;
           align-items: flex-end !important;
           padding: 0 !important;
-          max-width: 400px !important;
         }
-        /* Hide the RichText row (intro paragraph) */
         .hs-form-html .hsfc-Row:has(.hsfc-RichText) {
           display: none !important;
         }
-        /* Email field row */
         .hs-form-html .hsfc-Row:has(.hsfc-EmailField) {
           flex: 1 !important;
           margin-bottom: 0 !important;
@@ -78,6 +74,33 @@ export function HubSpotSignup() {
         .hs-form-html .hsfc-Button {
           height: 36px !important;
         }
+
+        /* Landing page card variant - larger with 70/30 split */
+        .hs-form-landing .hs-form-html [data-hsfc-id="Renderer"] {
+          --hsf-row__horizontal-spacing: 10px;
+          --hsf-button__padding: 10px 20px;
+          --hsf-button__font-weight: 700;
+          --hsf-button__font-size: 14px;
+          --hsf-field-input__font-size: 14px;
+          --hsf-field-input__padding: 10px 10px;
+        }
+        .hs-form-landing .hs-form-html .hsfc-Step__Content {
+          gap: 10px !important;
+        }
+        .hs-form-landing .hs-form-html .hsfc-Row:has(.hsfc-EmailField) {
+          flex: 7 !important;
+        }
+        .hs-form-landing .hs-form-html .hsfc-NavigationRow {
+          flex: 3 !important;
+        }
+        .hs-form-landing .hs-form-html .hsfc-TextInput {
+          height: 40px !important;
+        }
+        .hs-form-landing .hs-form-html .hsfc-Button {
+          height: 40px !important;
+          width: 100% !important;
+        }
+
         @media (max-width: 480px) {
           .hs-form-html .hsfc-Step__Content {
             flex-direction: column !important;
@@ -85,6 +108,10 @@ export function HubSpotSignup() {
           }
           .hs-form-html .hsfc-Button {
             width: 100% !important;
+          }
+          .hs-form-landing .hs-form-html .hsfc-Row:has(.hsfc-EmailField),
+          .hs-form-landing .hs-form-html .hsfc-NavigationRow {
+            flex: 1 !important;
           }
         }
       `}</style>
