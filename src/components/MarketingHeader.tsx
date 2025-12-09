@@ -27,12 +27,12 @@ export function MarketingHeader() {
             >
               FAQ
             </Link>
-            <Link
-              to="/media-resources"
+            <a
+              href="https://about.divine.video/media-resources/"
               className="text-sm font-medium text-foreground hover:text-primary transition-colors"
             >
               Press
-            </Link>
+            </a>
             <Link
               to="/discovery"
               className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold bg-primary text-white rounded-full hover:bg-primary/90 transition-colors"

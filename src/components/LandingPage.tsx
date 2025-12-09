@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/carousel";
 import Autoplay from "embla-carousel-autoplay";
 import { useRef } from "react";
-import { MailerLiteSignup } from "@/components/MailerLiteSignup";
+import { HubSpotSignup } from "@/components/HubSpotSignup";
 
 export function LandingPage() {
   const plugin = useRef(
@@ -44,12 +44,12 @@ export function LandingPage() {
               >
                 FAQ
               </Link>
-              <Link
-                to="/media-resources"
+              <a
+                href="https://about.divine.video/media-resources/"
                 className="text-sm font-medium text-foreground hover:text-primary transition-colors"
               >
                 Press
-              </Link>
+              </a>
               <Link
                 to="/discovery"
                 className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold bg-primary text-white rounded-full hover:bg-primary/90 transition-colors"
@@ -112,7 +112,7 @@ export function LandingPage() {
 
             {/* Mailing List Signup */}
             <div className="pt-4">
-              <MailerLiteSignup />
+              <HubSpotSignup />
             </div>
 
             {/* Screenshot Carousel */}
