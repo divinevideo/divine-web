@@ -112,7 +112,15 @@ export function LandingPage() {
 
             {/* Mailing List Signup */}
             <div className="pt-4">
-              <HubSpotSignup />
+              <div className="bg-card border border-border rounded-lg p-6 shadow-sm max-w-[400px] mx-auto">
+                <h4 className="text-base font-normal text-foreground text-center mb-2">
+                  Join the diVine mobile app waitlist
+                </h4>
+                <p className="text-sm text-foreground text-center mb-6 leading-5">
+                  Our beta test is full and we can't let more folks on the apps until Apple and Google do their thing. If you want to be the first to know when that happens, join our mailing list.
+                </p>
+                <HubSpotSignup />
+              </div>
             </div>
 
             {/* Screenshot Carousel */}
