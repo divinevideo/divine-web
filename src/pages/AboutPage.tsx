@@ -49,9 +49,9 @@ export function AboutPage() {
                     <ExternalLink className="h-3 w-3" />
                   </a>
                   <div>
-                    <Link to="/news" className="text-primary hover:underline text-sm">
+                    <a href="https://about.divine.video/news/" className="text-primary hover:underline text-sm">
                       View all press coverage →
-                    </Link>
+                    </a>
                   </div>
                 </div>
               </div>
