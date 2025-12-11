@@ -115,7 +115,7 @@ export function AppHeader() {
               </DropdownMenuItem>
 
               <DropdownMenuItem
-                onClick={() => navigate('/media-resources')}
+                onClick={() => window.location.href = 'https://about.divine.video/media-resources/'}
                 className="cursor-pointer hover:!bg-transparent hover:outline hover:outline-1 hover:outline-primary/30 focus:!bg-transparent focus:outline focus:outline-1 focus:outline-primary"
               >
                 <FileText className="mr-2 h-4 w-4" />

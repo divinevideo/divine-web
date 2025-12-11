@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { MailerLiteSignupFooter } from './MailerLiteSignupFooter';
+import { HubSpotSignup } from './HubSpotSignup';
 
 export function AppFooter() {
   return (
@@ -11,7 +11,7 @@ export function AppFooter() {
             {/* Left side - Email signup */}
             <div className="flex flex-col gap-4 lg:max-w-md">
               <div className="text-sm font-medium text-foreground">Stay Updated</div>
-              <MailerLiteSignupFooter />
+              <HubSpotSignup />
             </div>
 
             {/* Right side - Navigation Links */}
@@ -47,13 +47,17 @@ export function AppFooter() {
                   Our Mission
                 </Link>
                 <span>•</span>
-                <Link to="/news" className="hover:text-foreground transition-colors">
+                <a href="https://about.divine.video/news/" className="hover:text-foreground transition-colors">
                   News
-                </Link>
+                </a>
                 <span>•</span>
-                <Link to="/media-resources" className="hover:text-foreground transition-colors">
+                <a href="https://about.divine.video/media-resources/" className="hover:text-foreground transition-colors">
                   Media Resources
-                </Link>
+                </a>
+                <span>•</span>
+                <a href="https://about.divine.video/blog/" className="hover:text-foreground transition-colors">
+                  Blog
+                </a>
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 <Link to="/support" className="hover:text-foreground transition-colors">

@@ -601,6 +601,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
       });
 
       function loadVideoSource() {
+        if (!video) return; // Guard for TypeScript - video was checked before calling
         verboseLog(`[VideoPlayer ${videoId}] loadVideoSource called - isAdultVerified: ${isAdultVerified}, authRetryCount: ${authRetryCount}`);
 
       // Priority: HLS URL > fallback URLs > primary src

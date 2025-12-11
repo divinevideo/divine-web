@@ -224,16 +224,18 @@ export function useInfiniteVideos({
             case 'top':
               // Sort by loop count (popularity)
               return (b.loopCount || 0) - (a.loopCount || 0);
-            case 'hot':
+            case 'hot': {
               // Hot = engagement weighted by recency (loop count + time decay)
               const aScore = (a.loopCount || 0) / Math.pow((Date.now() / 1000 - a.createdAt) / 3600 + 1, 1.5);
               const bScore = (b.loopCount || 0) / Math.pow((Date.now() / 1000 - b.createdAt) / 3600 + 1, 1.5);
               return bScore - aScore;
-            case 'rising':
+            }
+            case 'rising': {
               // Rising = recent with some engagement
               const aRising = (a.loopCount || 0) * Math.max(0, 1 - (Date.now() / 1000 - a.createdAt) / 86400);
               const bRising = (b.loopCount || 0) * Math.max(0, 1 - (Date.now() / 1000 - b.createdAt) / 86400);
               return bRising - aRising;
+            }
             default:
               // Default: chronological (newest first)
               return b.createdAt - a.createdAt;

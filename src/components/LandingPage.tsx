@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/carousel";
 import Autoplay from "embla-carousel-autoplay";
 import { useRef } from "react";
-import { MailerLiteSignup } from "@/components/MailerLiteSignup";
+import { HubSpotSignup } from "@/components/HubSpotSignup";
 
 export function LandingPage() {
   const plugin = useRef(
@@ -44,12 +44,12 @@ export function LandingPage() {
               >
                 FAQ
               </Link>
-              <Link
-                to="/media-resources"
+              <a
+                href="https://about.divine.video/media-resources/"
                 className="text-sm font-medium text-foreground hover:text-primary transition-colors"
               >
                 Press
-              </Link>
+              </a>
               <Link
                 to="/discovery"
                 className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold bg-primary text-white rounded-full hover:bg-primary/90 transition-colors"
@@ -112,7 +112,15 @@ export function LandingPage() {
 
             {/* Mailing List Signup */}
             <div className="pt-4">
-              <MailerLiteSignup />
+              <div className="hs-form-landing bg-card border border-border rounded-lg p-6 shadow-sm max-w-[600px] w-full mx-auto">
+                <h4 className="text-base font-normal text-foreground text-center mb-2">
+                  Join the diVine mobile app waitlist
+                </h4>
+                <p className="text-sm text-foreground text-center mb-6 leading-5">
+                  Our beta test is full and we can't let more folks on the apps until Apple and Google do their thing. If you want to be the first to know when that happens, join our mailing list.
+                </p>
+                <HubSpotSignup />
+              </div>
             </div>
 
             {/* Screenshot Carousel */}
