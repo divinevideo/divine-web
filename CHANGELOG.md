@@ -3,6 +3,10 @@
 All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
+- **BUGFIX**: Fix .well-known files (assetlinks.json, apple-app-site-association) returning 404 on divine.video
+  - Added `_routes.json` to exclude `.well-known/*` from Pages Functions routing
+  - Updated `functions/[[path]].ts` to pass through `.well-known` paths directly
+  - Updated `divine-name-server` worker to pass through app deep linking files to Pages origin
 - **UI**: Change default VideoCard layout to vertical (text below video) on all screen sizes
 - **UI**: Rename "Verified" badge to "Human Made" with checkmark icon for ProofMode verified content
   - Updated ProofModeBadge to use custom no-AI/human-made icon

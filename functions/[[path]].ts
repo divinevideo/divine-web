@@ -6,15 +6,20 @@ export async function onRequest(context: {
   next: () => Promise<Response>;
   env: Record<string, unknown>;
 }) {
+  const url = new URL(context.request.url);
+  const path = url.pathname;
+
+  // Serve .well-known files directly - don't intercept them
+  if (path.startsWith('/.well-known/')) {
+    return context.next();
+  }
+
   // Try to serve the requested asset first
   const response = await context.next();
 
   // If the response is a 404 and not a file request (no extension or is .html),
   // serve index.html with a 200 status code
   if (response.status === 404) {
-    const url = new URL(context.request.url);
-    const path = url.pathname;
-
     // Check if this is a route (not a static asset)
     const hasExtension = path.includes('.') && !path.endsWith('.html');
 
