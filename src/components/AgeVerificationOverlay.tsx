@@ -19,7 +19,7 @@ export function AgeVerificationOverlay({
   onVerified,
   className,
   thumbnailUrl,
-  blurhash,
+  blurhash: _blurhash,
 }: AgeVerificationOverlayProps) {
   const { confirmAdult, isVerified } = useAdultVerification();
   const { user } = useCurrentUser();
