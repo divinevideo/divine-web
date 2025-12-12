@@ -31,31 +31,38 @@ export function LandingPage() {
             </Link>
 
             {/* Navigation Links */}
-            <div className="flex items-center gap-6">
+            <div className="flex items-center gap-3 md:gap-6">
               <Link
                 to="/about"
-                className="text-sm font-medium text-foreground hover:text-primary transition-colors"
+                className="text-xs md:text-sm font-medium text-foreground hover:text-primary transition-colors"
               >
                 About
               </Link>
               <Link
                 to="/faq"
-                className="text-sm font-medium text-foreground hover:text-primary transition-colors"
+                className="text-xs md:text-sm font-medium text-foreground hover:text-primary transition-colors"
               >
                 FAQ
               </Link>
               <a
-                href="https://about.divine.video/media-resources/"
-                className="text-sm font-medium text-foreground hover:text-primary transition-colors"
+                href="https://about.divine.video/blog/"
+                className="text-xs md:text-sm font-medium text-foreground hover:text-primary transition-colors"
               >
-                Press
+                Blog
+              </a>
+              <a
+                href="https://about.divine.video/news/"
+                className="text-xs md:text-sm font-medium text-foreground hover:text-primary transition-colors"
+              >
+                <span className="md:hidden">News</span>
+                <span className="hidden md:inline">In the News</span>
               </a>
               <Link
                 to="/discovery"
-                className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold bg-primary text-white rounded-full hover:bg-primary/90 transition-colors"
+                className="inline-flex items-center gap-1 md:gap-1.5 px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-sm font-semibold bg-primary text-white rounded-full hover:bg-primary/90 transition-colors whitespace-nowrap"
               >
                 Try it
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-3 h-3 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                 </svg>
               </Link>

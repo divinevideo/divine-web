@@ -28,12 +28,12 @@ export function HubSpotSignup() {
           --hsf-button__font-weight: 500;
           --hsf-button__font-size: 0.875rem;
           --hsf-field-input__font-size: 0.875rem;
-          --hsf-field-input__background-color: hsl(222.2 84% 4.9%);
-          --hsf-field-input__color: hsl(210 40% 98%);
-          --hsf-field-input__border-color: hsl(217.2 32.6% 17.5%);
+          --hsf-field-input__background-color: hsl(var(--input));
+          --hsf-field-input__color: hsl(var(--foreground));
+          --hsf-field-input__border-color: hsl(var(--border));
           --hsf-field-input__border-radius: 4px;
           --hsf-field-input__padding: 0 12px;
-          --hsf-field-input__placeholder-color: #94a3b8;
+          --hsf-field-input__placeholder-color: hsl(var(--muted-foreground));
         }
         .hs-form-html .hsfc-Step {
           border: none !important;
@@ -44,7 +44,7 @@ export function HubSpotSignup() {
           flex-direction: row !important;
           flex-wrap: nowrap !important;
           gap: 8px !important;
-          align-items: flex-end !important;
+          align-items: flex-start !important;
           padding: 0 !important;
         }
         .hs-form-html .hsfc-Row:has(.hsfc-RichText) {
@@ -53,6 +53,13 @@ export function HubSpotSignup() {
         .hs-form-html .hsfc-Row:has(.hsfc-EmailField) {
           flex: 1 !important;
           margin-bottom: 0 !important;
+          position: relative !important;
+        }
+        .hs-form-html .hsfc-Row:has(.hsfc-EmailField) .hsfc-FieldError {
+          position: absolute !important;
+          top: 100% !important;
+          left: 0 !important;
+          right: 0 !important;
         }
         .hs-form-html .hsfc-NavigationRow {
           flex: 0 0 auto !important;
@@ -70,9 +77,11 @@ export function HubSpotSignup() {
         .hs-form-html .hsfc-TextInput {
           height: 36px !important;
           width: 100% !important;
+          box-sizing: border-box !important;
         }
         .hs-form-html .hsfc-Button {
           height: 36px !important;
+          box-sizing: border-box !important;
         }
 
         /* Landing page card variant - larger with 70/30 split */
@@ -94,10 +103,10 @@ export function HubSpotSignup() {
           flex: 3 !important;
         }
         .hs-form-landing .hs-form-html .hsfc-TextInput {
-          height: 40px !important;
+          height: 48px !important;
         }
         .hs-form-landing .hs-form-html .hsfc-Button {
-          height: 40px !important;
+          height: 48px !important;
           width: 100% !important;
         }
 
