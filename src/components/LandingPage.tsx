@@ -45,10 +45,16 @@ export function LandingPage() {
                 FAQ
               </Link>
               <a
-                href="https://about.divine.video/media-resources/"
+                href="https://about.divine.video/blog/"
                 className="text-sm font-medium text-foreground hover:text-primary transition-colors"
               >
-                Press
+                Blog
+              </a>
+              <a
+                href="https://about.divine.video/news/"
+                className="text-sm font-medium text-foreground hover:text-primary transition-colors"
+              >
+                In the News
               </a>
               <Link
                 to="/discovery"
