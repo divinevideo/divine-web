@@ -54,7 +54,8 @@ export function LandingPage() {
                 href="https://about.divine.video/news/"
                 className="text-sm font-medium text-foreground hover:text-primary transition-colors"
               >
-                In the News
+                <span className="md:hidden">News</span>
+                <span className="hidden md:inline">In the News</span>
               </a>
               <Link
                 to="/discovery"
