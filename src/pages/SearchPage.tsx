@@ -1,11 +1,12 @@
 // ABOUTME: Comprehensive search page with debounced input, filter tabs, infinite scroll, and sort modes
 // ABOUTME: Supports searching videos, users, hashtags with NIP-50 full-text search
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { nip19 } from 'nostr-tools';
 import { useSeoMeta } from '@unhead/react';
 import { Search, Hash, Users, Video } from 'lucide-react';
+import { trackSearch } from '@/lib/analytics';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -86,14 +87,39 @@ export function SearchPage() {
     description: 'Search for videos, users, and hashtags on Divine Web',
   });
 
-  // Update URL when search changes
+  // Debounced URL update - only update URL after user stops typing for 300ms
+  // This prevents analytics from firing on every keystroke
+  const debouncedSearchQuery = useRef(searchQuery);
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+
   useEffect(() => {
-    const params = new URLSearchParams();
-    if (searchQuery) params.set('q', searchQuery);
-    if (sortMode !== 'relevance') params.set('sort', sortMode);
-    if (activeFilter !== 'all') params.set('filter', activeFilter);
-    setSearchParams(params, { replace: true });
-  }, [searchQuery, sortMode, activeFilter, setSearchParams]);
+    // Clear any existing timer
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+
+    // Set new timer to update URL after 300ms of no typing
+    debounceTimerRef.current = setTimeout(() => {
+      debouncedSearchQuery.current = searchQuery;
+      const params = new URLSearchParams();
+      if (searchQuery) params.set('q', searchQuery);
+      if (sortMode !== 'relevance') params.set('sort', sortMode);
+      if (activeFilter !== 'all') params.set('filter', activeFilter);
+      setSearchParams(params, { replace: true });
+
+      // Track search analytics when user stops typing
+      if (searchQuery.trim()) {
+        const totalResults = videoResults.length + userResults.length + hashtagResults.length;
+        trackSearch(searchQuery, activeFilter, totalResults);
+      }
+    }, 500);
+
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, [searchQuery, sortMode, activeFilter, setSearchParams, videoResults.length, userResults.length, hashtagResults.length]);
 
   // Handle search input changes
   const handleSearchChange = (value: string) => {

@@ -1,6 +1,32 @@
 import '@testing-library/jest-dom';
 import { vi } from 'vitest';
 
+// Mock indexedDB
+const mockIDBRequest = {
+  result: null,
+  error: null,
+  onerror: null as ((event: Event) => void) | null,
+  onsuccess: null as ((event: Event) => void) | null,
+  onupgradeneeded: null as ((event: Event) => void) | null,
+};
+
+const mockIndexedDB = {
+  open: vi.fn().mockImplementation(() => {
+    setTimeout(() => {
+      if (mockIDBRequest.onsuccess) {
+        mockIDBRequest.onsuccess(new Event('success'));
+      }
+    }, 0);
+    return mockIDBRequest;
+  }),
+  deleteDatabase: vi.fn().mockReturnValue(mockIDBRequest),
+};
+
+Object.defineProperty(global, 'indexedDB', {
+  writable: true,
+  value: mockIndexedDB,
+});
+
 // Mock window.matchMedia
 Object.defineProperty(window, 'matchMedia', {
   writable: true,

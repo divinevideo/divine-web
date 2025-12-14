@@ -5,7 +5,7 @@ import type { NostrEvent, NostrFilter } from '@nostrify/nostrify';
 import { debugLog, debugError } from './debug';
 
 const GATEWAY_URL = 'https://gateway.divine.video';
-const GATEWAY_TIMEOUT_MS = 3000;
+const GATEWAY_TIMEOUT_MS = 30000;
 
 /**
  * Check if a relay URL should use the gateway
@@ -106,7 +106,7 @@ export async function getProfileFromGateway(
 ): Promise<NostrEvent | null> {
   const url = `${GATEWAY_URL}/profile/${pubkey}`;
 
-  debugLog('[GatewayClient] Fetching profile:', pubkey);
+  // Don't log individual profile fetches - too noisy in batch operations
 
   const timeoutSignal = AbortSignal.timeout(GATEWAY_TIMEOUT_MS);
   const combinedSignal = signal
@@ -119,8 +119,8 @@ export async function getProfileFromGateway(
 
     const data: GatewayResponse = await response.json();
     return data.events[0] || null;
-  } catch (err) {
-    debugError('[GatewayClient] Failed to fetch profile:', err);
+  } catch {
+    // Don't log individual failures - too noisy in batch operations
     return null;
   }
 }

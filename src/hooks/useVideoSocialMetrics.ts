@@ -44,7 +44,8 @@ export function useVideoSocialMetrics(
     queryKey: ['video-social-metrics', videoId, videoPubkey, vineId],
     enabled: options?.enabled !== false,
     queryFn: async (context) => {
-      const signal = AbortSignal.any([context.signal, AbortSignal.timeout(3000)]);
+      // 10s timeout to accommodate gateway REST API
+      const signal = AbortSignal.any([context.signal, AbortSignal.timeout(10000)]);
 
       try {
         // For kind 34236 (addressable videos), we need to query by both #e and #a tags
@@ -180,7 +181,8 @@ export function useVideoUserInteractions(
         return { hasLiked: false, hasReposted: false, likeEventId: null, repostEventId: null };
       }
 
-      const signal = AbortSignal.any([context.signal, AbortSignal.timeout(2000)]);
+      // 10s timeout to accommodate gateway REST API
+      const signal = AbortSignal.any([context.signal, AbortSignal.timeout(10000)]);
 
       try {
         const addressableId = `${SHORT_VIDEO_KIND}:${videoPubkey}:${vineId ?? ''}`;

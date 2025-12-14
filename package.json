@@ -7,6 +7,7 @@
   "scripts": {
     "dev": "npm i && vite",
     "build": "npm i && vite build && cp dist/index.html dist/404.html",
+    "preview": "vite preview",
     "test": "npm i && tsc -p tsconfig.app.json --noEmit && eslint && vitest run && vite build",
     "deploy": "npm run build && npx -y nostr-deploy-cli deploy --skip-setup",
     "deploy:cloudflare": "npm run build && wrangler pages deploy dist",

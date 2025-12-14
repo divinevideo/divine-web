@@ -179,9 +179,9 @@ async function parseVideoEvents(
       );
 
       if (!originalVideo) {
-        // Fetch from relay
+        // Fetch from relay (10s timeout for gateway REST API)
         try {
-          const signal = AbortSignal.timeout(2000);
+          const signal = AbortSignal.timeout(10000);
           const events = await nostr.query([{
             kinds: VIDEO_KINDS,
             authors: [pubkey],
@@ -317,11 +317,12 @@ export function useVideoEvents(options: UseVideoEventsOptions = {}) {
       verboseLog(`[useVideoEvents] ========== Starting query for ${feedType} feed ==========`);
       verboseLog(`[useVideoEvents] Options:`, { feedType, hashtag, pubkey, limit, until });
 
-      // Use longer timeout for hashtag queries since they need to search through tags
-      const timeoutMs = feedType === 'hashtag' ? 5000 : (until ? 3000 : 2000);
+      // Timeouts need to accommodate gateway REST API calls which are slower than direct WebSocket
+      // Gateway calls go through CDN and may take longer on first request
+      const timeoutMs = feedType === 'hashtag' ? 15000 : (until ? 15000 : 10000);
       const signal = AbortSignal.any([
         context.signal,
-        AbortSignal.timeout(timeoutMs) // 5s for hashtags, 2s for initial load, 3s for pagination
+        AbortSignal.timeout(timeoutMs) // 15s for hashtags/pagination, 10s for initial load
       ]);
 
       // Build base filter with NIP-50 support

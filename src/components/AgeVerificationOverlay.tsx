@@ -1,7 +1,7 @@
 // ABOUTME: Overlay component shown when video requires age verification
 // ABOUTME: Displays a confirmation button that unlocks age-restricted content
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { AlertTriangle, ShieldCheck } from 'lucide-react';
 import { useAdultVerification } from '@/hooks/useAdultVerification';
@@ -24,6 +24,7 @@ export function AgeVerificationOverlay({
   const { confirmAdult, isVerified } = useAdultVerification();
   const { user } = useCurrentUser();
   const [isConfirming, setIsConfirming] = useState(false);
+  const hasCalledOnVerified = useRef(false);
 
   const handleConfirm = async () => {
     setIsConfirming(true);
@@ -33,9 +34,17 @@ export function AgeVerificationOverlay({
     onVerified();
   };
 
+  // If already verified, call onVerified via effect (not during render)
+  // Use ref to prevent calling multiple times
+  useEffect(() => {
+    if (isVerified && !hasCalledOnVerified.current) {
+      hasCalledOnVerified.current = true;
+      onVerified();
+    }
+  }, [isVerified, onVerified]);
+
   // If already verified, don't show overlay
   if (isVerified) {
-    onVerified();
     return null;
   }
 

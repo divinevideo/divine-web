@@ -177,7 +177,7 @@ export function useVideosInLists(videoId?: string) {
  * Hook to create or update a video list
  */
 export function useCreateVideoList() {
-  const { mutate: publishEvent } = useNostrPublish();
+  const { mutateAsync: publishEvent } = useNostrPublish();
   const queryClient = useQueryClient();
   const { user } = useCurrentUser();
 
@@ -257,9 +257,38 @@ export function useCreateVideoList() {
         content: '', // Empty for public lists
         tags
       });
+
+      // Return the created list data for optimistic update
+      return {
+        id,
+        name,
+        description,
+        image,
+        pubkey: user.pubkey,
+        createdAt: Math.floor(Date.now() / 1000),
+        videoCoordinates,
+        public: true,
+        tags: listTags,
+        isCollaborative,
+        allowedCollaborators,
+        thumbnailEventId,
+        playOrder: playOrder || 'chronological'
+      } as VideoList;
     },
-    onSuccess: () => {
-      // Invalidate video lists queries
+    onSuccess: (newList) => {
+      // Optimistically add the new list to the cache immediately
+      // This ensures the UI updates even if the gateway cache is stale
+      if (newList && user) {
+        queryClient.setQueryData<VideoList[]>(
+          ['video-lists', user.pubkey],
+          (oldLists) => {
+            if (!oldLists) return [newList];
+            // Add new list at the beginning (most recent first)
+            return [newList, ...oldLists.filter(l => l.id !== newList.id)];
+          }
+        );
+      }
+      // Also invalidate to eventually get fresh data from server
       queryClient.invalidateQueries({ queryKey: ['video-lists'] });
     }
   });

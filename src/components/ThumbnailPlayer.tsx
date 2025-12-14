@@ -78,7 +78,7 @@ export function ThumbnailPlayer({
   return (
     <div
       className={cn(
-        'relative aspect-square bg-black cursor-pointer group overflow-hidden',
+        'relative aspect-square cursor-pointer group overflow-hidden',
         'hover:scale-105 transition-transform duration-200',
         className
       )}

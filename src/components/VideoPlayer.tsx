@@ -90,6 +90,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
     const [currentUrlIndex, setCurrentUrlIndex] = useState(0);
     const [allUrls, setAllUrls] = useState<string[]>([]);
     const isChangingMuteState = useRef(false);
+    const blobUrlRef = useRef<string | null>(null); // Track blob URL for cleanup to prevent memory leaks
 
     // Adult verification hook
     const { isVerified: isAdultVerified, getAuthHeader } = useAdultVerification();
@@ -101,6 +102,17 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
 
     const { activeVideoId, registerVideo, unregisterVideo, updateVideoVisibility, globalMuted } = useVideoPlayback();
     const isActive = activeVideoId === videoId;
+
+    // Store context functions in refs to avoid unstable dependencies in setRefs callback
+    // This prevents infinite loops when context functions change reference
+    const registerVideoRef = useRef(registerVideo);
+    const unregisterVideoRef = useRef(unregisterVideo);
+    const globalMutedRef = useRef(globalMuted);
+
+    // Keep refs updated with latest values
+    registerVideoRef.current = registerVideo;
+    unregisterVideoRef.current = unregisterVideo;
+    globalMutedRef.current = globalMuted;
 
     // Get responsive layout class
     const getLayoutClass = useCallback(() => {
@@ -125,6 +137,8 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
     });
 
     // Combine refs - minimize dependencies for stability
+    // IMPORTANT: Use refs for context functions to keep this callback stable
+    // and prevent infinite loops when context functions change reference
     const setRefs = useCallback(
       (node: HTMLVideoElement | null) => {
         verboseLog(`[VideoPlayer ${videoId}] setRefs called with node:`, node ? 'HTMLVideoElement' : 'null');
@@ -144,18 +158,18 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
           }
         }
 
-        // Register/unregister video with context
+        // Register/unregister video with context using refs (stable references)
         if (node) {
           verboseLog(`[VideoPlayer ${videoId}] Registering video element`);
-          // Set initial muted state
-          node.muted = globalMuted;
-          registerVideo(videoId, node);
+          // Set initial muted state using ref
+          node.muted = globalMutedRef.current;
+          registerVideoRef.current(videoId, node);
         } else {
           verboseLog(`[VideoPlayer ${videoId}] Unregistering video element`);
-          unregisterVideo(videoId);
+          unregisterVideoRef.current(videoId);
         }
       },
-      [videoId, registerVideo, unregisterVideo, inViewRef, ref, globalMuted]
+      [videoId, inViewRef, ref] // Removed registerVideo, unregisterVideo, globalMuted - use refs instead
     );
 
     // Set container ref
@@ -688,9 +702,13 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
                   });
                   if (response.ok) {
                     const blob = await response.blob();
+                    // Revoke any previous blob URL before creating a new one
+                    if (blobUrlRef.current) {
+                      URL.revokeObjectURL(blobUrlRef.current);
+                    }
                     const blobUrl = URL.createObjectURL(blob);
+                    blobUrlRef.current = blobUrl; // Store for cleanup on unmount
                     video.src = blobUrl;
-                    // Clean up blob URL when video is done
                     video.onloadeddata = () => {
                       verboseLog(`[VideoPlayer ${videoId}] MP4 blob loaded successfully`);
                     };
@@ -751,6 +769,13 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
 
         // Clean up timers
         if (longPressTimer) clearTimeout(longPressTimer);
+
+        // Revoke blob URL to prevent memory leaks
+        if (blobUrlRef.current) {
+          verboseLog(`[VideoPlayer ${videoId}] Revoking blob URL on unmount`);
+          URL.revokeObjectURL(blobUrlRef.current);
+          blobUrlRef.current = null;
+        }
       };
     }, [videoId, unregisterVideo, updateVideoVisibility, longPressTimer]);
 
@@ -758,7 +783,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
     const currentUrl = allUrls[currentUrlIndex] || src;
     if (currentUrl.toLowerCase().endsWith('.gif')) {
       return (
-        <div className={cn('relative overflow-hidden bg-black', className)}>
+        <div className={cn('relative overflow-hidden', className)}>
           <img
             src={currentUrl}
             alt="Video GIF"
@@ -784,7 +809,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
       <div
         ref={setContainerRef}
         className={cn(
-          'relative overflow-hidden bg-black group',
+          'relative overflow-hidden group',
           layoutClass,
           className
         )}
@@ -817,7 +842,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
           crossOrigin="anonymous"
           disableRemotePlayback
           className={cn(
-            'w-full h-full object-contain relative z-10',
+            'w-full h-full object-contain relative z-10 bg-transparent',
             'transition-opacity duration-300',
             isLoading ? 'opacity-0' : 'opacity-100'
           )}

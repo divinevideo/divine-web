@@ -27,9 +27,10 @@ export function useAuthor(pubkey: string | undefined) {
       }
 
       // Query for profile events and take the newest one
+      // 10s timeout to accommodate gateway REST API which is slower than direct WebSocket
       const events = await nostr.query(
         [{ kinds: [0], authors: [pubkey!], limit: 5 }],
-        { signal: AbortSignal.any([signal, AbortSignal.timeout(5000)]) },
+        { signal: AbortSignal.any([signal, AbortSignal.timeout(10000)]) },
       );
 
       if (events.length === 0) {

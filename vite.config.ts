@@ -6,9 +6,15 @@ import { VitePWA } from 'vite-plugin-pwa';
 
 // https://vitejs.dev/config/
 export default defineConfig(() => ({
+  preview: {
+    host: "::",
+    port: 4173,
+    allowedHosts: ['host.docker.internal', 'localhost', '127.0.0.1'],
+  },
   server: {
     host: "::",
     port: 8080,
+    allowedHosts: ['host.docker.internal', 'localhost', '127.0.0.1'],
     proxy: {
       // Proxy CDN requests to avoid CORS issues in development
       '/cdn-proxy': {

@@ -12,6 +12,7 @@ const VERIFICATION_DURATION_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 interface AdultVerificationState {
   isVerified: boolean;
   isLoading: boolean;
+  hasSigner: boolean;
   confirmAdult: () => void;
   revokeVerification: () => void;
   getAuthHeader: (url: string, method?: string) => Promise<string | null>;
@@ -20,7 +21,8 @@ interface AdultVerificationState {
 export function useAdultVerification(): AdultVerificationState {
   const [isVerified, setIsVerified] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const { signer } = useCurrentUser();
+  const { user } = useCurrentUser();
+  const signer = user?.signer;
 
   // Check localStorage on mount
   useEffect(() => {
@@ -81,6 +83,7 @@ export function useAdultVerification(): AdultVerificationState {
   return {
     isVerified,
     isLoading,
+    hasSigner: !!signer,
     confirmAdult,
     revokeVerification,
     getAuthHeader,

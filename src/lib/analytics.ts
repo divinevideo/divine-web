@@ -145,3 +145,38 @@ export function trackUserAction(action: string, metadata?: Record<string, unknow
     ...metadata,
   });
 }
+
+/**
+ * Track search query (debounced - call this after user stops typing)
+ */
+export function trackSearch(query: string, filter?: string, resultCount?: number) {
+  if (!query.trim()) return;
+
+  trackEvent('search', {
+    search_term: query.trim(),
+    filter: filter || 'all',
+    result_count: resultCount,
+  });
+}
+
+// Track time to first video playback
+let firstVideoPlaybackTracked = false;
+const pageLoadTime = typeof performance !== 'undefined' ? performance.timeOrigin : Date.now();
+
+/**
+ * Track time from page load to first video playback
+ * Call this when the first video starts playing
+ */
+export function trackFirstVideoPlayback() {
+  if (firstVideoPlaybackTracked) return;
+  firstVideoPlaybackTracked = true;
+
+  const timeToFirstVideo = Math.round(performance.now());
+
+  trackEvent('first_video_playback', {
+    time_to_playback_ms: timeToFirstVideo,
+    time_to_playback_seconds: Math.round(timeToFirstVideo / 100) / 10, // 1 decimal place
+  });
+
+  console.log(`[Analytics] First video playback: ${timeToFirstVideo}ms from page load`);
+}

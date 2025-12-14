@@ -381,10 +381,10 @@ export function VideoCard({
           )}
 
           {/* Video player or thumbnail */}
-          <CardContent className={cn("p-0", isHorizontal && "p-2")}>
+          <CardContent className={cn("p-0 flex justify-center", isHorizontal && "p-2")}>
             <div
-              className="relative bg-black rounded-lg overflow-hidden w-full"
-              style={{ aspectRatio: videoAspectRatio?.toString() || '1' }}
+              className="relative rounded-lg overflow-hidden max-h-[70vh]"
+              style={videoAspectRatio ? { aspectRatio: videoAspectRatio.toString() } : undefined}
             >
               {!isPlaying ? (
                 <ThumbnailPlayer
