@@ -1,7 +1,18 @@
 import { useEffect } from 'react';
 
+// Only load HubSpot on production
+function isHubSpotAllowed(): boolean {
+  const hostname = window.location.hostname;
+  return hostname === 'divine.video' || hostname === 'about.divine.video';
+}
+
 export function HubSpotSignup() {
   useEffect(() => {
+    // Skip HubSpot on staging/typo domains (devine.video, dvines.org, etc.)
+    if (!isHubSpotAllowed()) {
+      return;
+    }
+
     // Load HubSpot script
     const script = document.createElement('script');
     script.src = 'https://js-na2.hsforms.net/forms/embed/developer/244466832.js';
