@@ -1,9 +1,9 @@
 import { useEffect } from 'react';
 
-// Only load HubSpot on production
+// Only load HubSpot on production and localhost
 function isHubSpotAllowed(): boolean {
   const hostname = window.location.hostname;
-  return hostname === 'divine.video' || hostname === 'about.divine.video';
+  return hostname === 'divine.video' || hostname === 'about.divine.video' || hostname === 'localhost';
 }
 
 export function HubSpotSignup() {

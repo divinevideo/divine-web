@@ -9,8 +9,11 @@ export function AppFooter() {
           {/* Main Footer Content - Side by side on desktop */}
           <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6 mb-6">
             {/* Left side - Email signup */}
-            <div className="flex flex-col gap-4 lg:max-w-md">
-              <div className="text-sm font-medium text-foreground">Stay Updated</div>
+            <div className="flex flex-col gap-2 lg:max-w-md">
+              <div className="text-sm font-semibold text-primary">diVine Inspiration</div>
+              <p className="text-sm text-foreground mb-2">
+                The diVine beta is currently full. If you'd like to hear our news and be amongst the first to hear when the diVine app goes live, sign up here.
+              </p>
               <HubSpotSignup />
             </div>
 
