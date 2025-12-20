@@ -32,7 +32,7 @@ import { formatDistanceToNow } from 'date-fns';
 import type { ParsedVideoData } from '@/types/video';
 import type { NostrMetadata } from '@nostrify/nostrify';
 import { cn } from '@/lib/utils';
-import { formatViewCount, formatDuration, formatCount } from '@/lib/formatUtils';
+import { formatViewCount, formatCount } from '@/lib/formatUtils';
 import { getSafeProfileImage } from '@/lib/imageUtils';
 import type { VideoNavigationContext } from '@/hooks/useVideoNavigation';
 import { useToast } from '@/hooks/useToast';
@@ -554,9 +554,6 @@ export function VideoCard({
                     <Eye className="h-3 w-3" />
                     {formatViewCount(video.loopCount!)}
                   </span>
-                )}
-                {(video.duration ?? 0) > 0 && (
-                  <span>{formatDuration(video.duration!)}</span>
                 )}
               </div>
             </div>

@@ -13,6 +13,9 @@ import { AgeVerificationOverlay } from '@/components/AgeVerificationOverlay';
 import { createAuthLoader } from '@/lib/hlsAuthLoader';
 import Hls from 'hls.js';
 
+// Maximum playback duration limit - videos loop back to start after this many seconds
+const MAX_PLAYBACK_DURATION = 6.3;
+
 interface VideoPlayerProps {
   videoId: string;
   src: string;
@@ -496,6 +499,15 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
       }
     };
 
+    const handleTimeUpdate = useCallback(() => {
+      const video = videoRef.current;
+      if (!video) return;
+
+      if (video.currentTime >= MAX_PLAYBACK_DURATION) {
+        video.currentTime = 0;
+      }
+    }, []);
+
     // Handle age verification completion - retry video load
     const handleAgeVerified = useCallback(() => {
       verboseLog(`[VideoPlayer ${videoId}] Age verified, retrying video load`);
@@ -850,6 +862,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
           onLoadedData={handleLoadedData}
           onError={handleError}
           onEnded={handleEnded}
+          onTimeUpdate={handleTimeUpdate}
           onPlay={handlePlay}
           onPause={handlePause}
           onClick={!isMobile ? togglePlay : undefined}
