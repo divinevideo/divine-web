@@ -21,7 +21,7 @@ export function ThumbnailPlayer({
   videoId: _videoId,
   src,
   thumbnailUrl,
-  duration,
+  duration: _duration,
   className,
   onClick,
   onError,

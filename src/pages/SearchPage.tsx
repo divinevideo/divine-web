@@ -1,7 +1,7 @@
 // ABOUTME: Comprehensive search page with debounced input, filter tabs, infinite scroll, and sort modes
 // ABOUTME: Supports searching videos, users, hashtags with NIP-50 full-text search
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { nip19 } from 'nostr-tools';
 import { useSeoMeta } from '@unhead/react';
