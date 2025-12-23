@@ -25,6 +25,7 @@ export function TestApp({ children }: TestAppProps) {
 
   const defaultConfig: AppConfig = {
     theme: 'light',
+    autoScroll: false,
     relayUrl: PRIMARY_RELAY.url,
   };
 
