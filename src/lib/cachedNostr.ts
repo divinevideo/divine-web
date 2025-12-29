@@ -4,7 +4,7 @@
 import type { NostrEvent, NostrFilter } from '@nostrify/nostrify';
 import { eventCache } from './eventCache';
 import { debugLog } from './debug';
-import { shouldUseGateway, queryGateway, getProfileFromGateway } from './gatewayClient';
+import { shouldUseGateway, queryGateway } from './gatewayClient';
 
 interface NostrClient {
   query: (filters: NostrFilter[], opts?: { signal?: AbortSignal }) => Promise<NostrEvent[]>;
@@ -60,27 +60,8 @@ export function createCachedNostr<T extends NostrClient>(
         const gatewayStart = performance.now();
         debugLog(`[CachedNostr] Trying gateway for divine.video query (${filters.length} filters)`);
 
-        // Process all filters in PARALLEL for speed
-        const filterPromises = filters.map(async (filter) => {
-          // For kind 0 (profile) queries with multiple authors, use individual profile endpoints
-          // This avoids URL length limits and enables better edge caching
-          const isProfileBatch = filter.kinds?.length === 1 &&
-                                  filter.kinds[0] === 0 &&
-                                  filter.authors &&
-                                  filter.authors.length > 1;
-
-          if (isProfileBatch) {
-            // Batch profile fetch - individual requests logged at verbose level only
-            const profilePromises = filter.authors!.map(pubkey =>
-              getProfileFromGateway(pubkey, opts?.signal)
-            );
-            const profiles = await Promise.all(profilePromises);
-            // Filter out nulls (profiles not found)
-            return profiles.filter((p): p is NostrEvent => p !== null);
-          } else {
-            return queryGateway(filter, opts?.signal);
-          }
-        });
+        // Process all filters in parallel - single /query request per filter
+        const filterPromises = filters.map(filter => queryGateway(filter, opts?.signal));
 
         const resultsArrays = await Promise.all(filterPromises);
         const gatewayResults = resultsArrays.flat();
@@ -139,26 +120,9 @@ async function _refreshInBackground(
     let results: NostrEvent[];
 
     if (useGateway) {
-      // Try gateway first for background refresh - parallel queries
+      // Try gateway first for background refresh
       try {
-        const filterPromises = filters.map(async (filter) => {
-          // For kind 0 (profile) queries with multiple authors, use individual profile endpoints
-          const isProfileBatch = filter.kinds?.length === 1 &&
-                                  filter.kinds[0] === 0 &&
-                                  filter.authors &&
-                                  filter.authors.length > 1;
-
-          if (isProfileBatch) {
-            const profilePromises = filter.authors!.map(pubkey =>
-              getProfileFromGateway(pubkey, opts?.signal)
-            );
-            const profiles = await Promise.all(profilePromises);
-            return profiles.filter((p): p is NostrEvent => p !== null);
-          } else {
-            return queryGateway(filter, opts?.signal);
-          }
-        });
-
+        const filterPromises = filters.map(filter => queryGateway(filter, opts?.signal));
         const resultsArrays = await Promise.all(filterPromises);
         results = resultsArrays.flat();
       } catch {
