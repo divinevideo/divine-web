@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Nostr ProofMode — Cryptographic Authenticity for Video (Kinds 21 & 22)</title>
+<title>Nostr Proofmode — Cryptographic Authenticity for Video (Kinds 21 & 22)</title>
 <style>
   :root { --fg:#111; --muted:#555; --bg:#fff; --acc:#0a7; --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; }
   html,body{margin:0;padding:0;background:var(--bg);color:var(--fg);font:16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Inter,sans-serif}
@@ -27,7 +27,7 @@
 </head>
 <body>
 <header>
-  <h1>ProofMode for Nostr Video (Kinds 21 &amp; 22)</h1>
+  <h1>Proofmode for Nostr Video (Kinds 21 &amp; 22)</h1>
   <p>Cryptographic authenticity proofs for <strong>NIP-71</strong> video events using device attestation, OpenPGP signatures, and content hashes.</p>
 </header>
 <main>
@@ -35,7 +35,7 @@
 <section id="overview">
   <h2>Overview</h2>
   <p>
-    ProofMode defines a standard way to prove a Nostr video event was recorded on a real device and has not been altered.
+    Proofmode defines a standard way to prove a Nostr video event was recorded on a real device and has not been altered.
     It augments <a href="https://nips.nostr.com/71" target="_blank" rel="noreferrer">NIP-71</a> video events on kinds <code>21</code> and <code>22</code>,
     reuses <a href="https://nips.nostr.com/92" target="_blank" rel="noreferrer">NIP-92</a> <code>imeta</code> (including the per-variant SHA-256 <code>x</code>),
     and follows NIP conventions from <a href="https://nips.nostr.com/1" target="_blank" rel="noreferrer">NIP-01</a>, <a href="https://nips.nostr.com/94" target="_blank" rel="noreferrer">NIP-94</a>, and <a href="https://nips.nostr.com/98" target="_blank" rel="noreferrer">NIP-98</a>.
@@ -56,11 +56,11 @@
 <section id="kinds">
   <h2>Event kinds &amp; relationship to NIP-71</h2>
   <p>
-    ProofMode attaches to <strong>kind 21</strong> (normal) and <strong>kind 22</strong> (short) video events defined by NIP-71.
-    Publishers keep using <code>imeta</code> for the media variants; ProofMode adds <em>proof tags</em>.
+    Proofmode attaches to <strong>kind 21</strong> (normal) and <strong>kind 22</strong> (short) video events defined by NIP-71.
+    Publishers keep using <code>imeta</code> for the media variants; Proofmode adds <em>proof tags</em>.
   </p>
   <pre><code>// NIP-71 excerpt: kinds 21/22 use imeta with url/m/dim/x...
-// ProofMode tags live alongside:
+// Proofmode tags live alongside:
 ["proof-version","1"],
 ["verification-level","verified_mobile" | "verified_web" | "basic_proof" | "unverified"],
 ["proof-manifest","&lt;base64(JSON)&gt;"],
@@ -115,7 +115,7 @@
 <section id="examples">
   <h2>Examples</h2>
 
-  <h3>Kind 21 with full ProofMode (verified_mobile)</h3>
+  <h3>Kind 21 with full Proofmode (verified_mobile)</h3>
   <pre><code>{
   "kind": 21,
   "content": "Protest on Main St.",
@@ -217,7 +217,7 @@
 
 </main>
 <footer>
-  <small>ProofMode for Nostr Video — v1 draft. Compatible with NIP-71 kinds 21/22.</small>
+  <small>Proofmode for Nostr Video — v1 draft. Compatible with NIP-71 kinds 21/22.</small>
 </footer>
 </body>
 </html>
