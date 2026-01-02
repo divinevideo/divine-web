@@ -1,5 +1,5 @@
-// ABOUTME: ProofMode information page explaining how Divine.video uses cryptographic authenticity proofs to limit AI-generated content
-// ABOUTME: Describes the ProofMode verification system, verification levels, and how it helps distinguish real camera captures from AI fakes
+// ABOUTME: Proofmode information page explaining how Divine.video uses cryptographic authenticity proofs to limit AI-generated content
+// ABOUTME: Describes the Proofmode verification system, verification levels, and how it helps distinguish real camera captures from AI fakes
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -14,14 +14,14 @@ export function ProofModePage() {
       <div className="space-y-4">
         <div className="flex items-center gap-3">
           <Shield className="h-12 w-12 text-primary" />
-          <h1 className="text-4xl font-bold">ProofMode: Cryptographic Video Authenticity</h1>
+          <h1 className="text-4xl font-bold">Proofmode: Cryptographic Video Authenticity</h1>
         </div>
         <p className="text-xl text-muted-foreground">
           Divine.video uses cryptographic proofs to help you distinguish real camera captures from AI-generated content
         </p>
       </div>
 
-      {/* Why ProofMode */}
+      {/* Why Proofmode */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -41,7 +41,7 @@ export function ProofModePage() {
           </p>
           <div className="bg-muted p-4 rounded-lg">
             <p className="font-semibold">
-              ProofMode brings a cryptographic "notarization" layer to videos, empowering observers to confidently
+              Proofmode brings a cryptographic "notarization" layer to videos, empowering observers to confidently
               distinguish real footage from AI fakes or post-processed uploads.
             </p>
           </div>
@@ -53,12 +53,12 @@ export function ProofModePage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Lock className="h-5 w-5" />
-            How ProofMode Works
+            How Proofmode Works
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <p>
-            ProofMode augments Nostr video events with cryptographic proof metadata that enables independent verification
+            Proofmode augments Nostr video events with cryptographic proof metadata that enables independent verification
             of a video's authenticity. Each proof includes:
           </p>
           <div className="grid gap-3">
@@ -99,7 +99,7 @@ export function ProofModePage() {
         <CardHeader>
           <CardTitle>Verification Levels</CardTitle>
           <CardDescription>
-            ProofMode uses a tiered verification system to indicate different levels of authenticity assurance
+            Proofmode uses a tiered verification system to indicate different levels of authenticity assurance
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -155,7 +155,7 @@ export function ProofModePage() {
                 <p className="font-semibold">No Verification</p>
                 <p className="text-sm text-muted-foreground">
                   Standard upload with no authenticity guarantees. No proof provided, or proof verification failed.
-                  Could be AI-generated, edited, or simply uploaded without ProofMode.
+                  Could be AI-generated, edited, or simply uploaded without Proofmode.
                 </p>
               </div>
             </div>
@@ -163,15 +163,15 @@ export function ProofModePage() {
         </CardContent>
       </Card>
 
-      {/* What ProofMode Can and Cannot Prove */}
+      {/* What Proofmode Can and Cannot Prove */}
       <Card>
         <CardHeader>
-          <CardTitle>What ProofMode Can and Cannot Prove</CardTitle>
+          <CardTitle>What Proofmode Can and Cannot Prove</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-3">
             <div>
-              <p className="font-semibold text-green-600 mb-1">✓ ProofMode CAN prove:</p>
+              <p className="font-semibold text-green-600 mb-1">✓ Proofmode CAN prove:</p>
               <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground ml-4">
                 <li>The video was captured by a real device's camera (not AI-generated)</li>
                 <li>The video hasn't been altered or edited after capture</li>
@@ -180,7 +180,7 @@ export function ProofModePage() {
               </ul>
             </div>
             <div>
-              <p className="font-semibold text-red-600 mb-1">✗ ProofMode CANNOT prove:</p>
+              <p className="font-semibold text-red-600 mb-1">✗ Proofmode CANNOT prove:</p>
               <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground ml-4">
                 <li>What actually happened in the video (authenticity ≠ truthfulness)</li>
                 <li>The identity of the person who recorded it</li>
@@ -191,7 +191,7 @@ export function ProofModePage() {
           </div>
           <div className="bg-muted p-4 rounded-lg">
             <p className="text-sm">
-              <strong>Important:</strong> ProofMode proves a video is an authentic camera capture, not that the content
+              <strong>Important:</strong> Proofmode proves a video is an authentic camera capture, not that the content
               is "true" or in proper context. Someone could still record a staged event and get full verification.
               Critical thinking about content remains essential.
             </p>
@@ -204,12 +204,12 @@ export function ProofModePage() {
         <CardHeader>
           <CardTitle>Technical Details</CardTitle>
           <CardDescription>
-            ProofMode extends NIP-71 video events with cryptographic proof tags
+            Proofmode extends NIP-71 video events with cryptographic proof tags
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <p>
-            ProofMode is implemented as an extension to Nostr's NIP-71 video event standard.
+            Proofmode is implemented as an extension to Nostr's NIP-71 video event standard.
             It adds standardized tags containing proof metadata to video events (kinds 34235 and 34236).
           </p>
           <div className="bg-muted p-4 rounded-lg font-mono text-sm overflow-x-auto">
@@ -221,7 +221,7 @@ export function ProofModePage() {
             <div>["pgp-fingerprint", "&lt;hex-fingerprint&gt;"]</div>
           </div>
           <p className="text-sm text-muted-foreground">
-            Clients that don't support ProofMode will simply ignore these tags and display the video normally,
+            Clients that don't support Proofmode will simply ignore these tags and display the video normally,
             ensuring backward compatibility with the Nostr ecosystem.
           </p>
         </CardContent>
@@ -234,7 +234,7 @@ export function ProofModePage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <p>
-            ProofMode is designed to balance authenticity verification with user privacy:
+            Proofmode is designed to balance authenticity verification with user privacy:
           </p>
           <ul className="list-disc list-inside space-y-2 text-sm text-muted-foreground ml-4">
             <li>Each proof uses a fresh, ephemeral PGP key to prevent tracking across videos</li>
@@ -255,20 +255,20 @@ export function ProofModePage() {
       {/* Get Started */}
       <Card>
         <CardHeader>
-          <CardTitle>Using ProofMode on Divine.video</CardTitle>
+          <CardTitle>Using Proofmode on Divine.video</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <p>
-            Currently, ProofMode support on Divine.video is in development. When available:
+            Currently, Proofmode support on Divine.video is in development. When available:
           </p>
           <ul className="list-disc list-inside space-y-2 text-sm text-muted-foreground ml-4">
-            <li>Videos with ProofMode verification will display a badge indicating their verification level</li>
+            <li>Videos with Proofmode verification will display a badge indicating their verification level</li>
             <li>You can click on the badge to see detailed proof information</li>
-            <li>ProofMode-enabled capture apps will automatically attach proofs when publishing to Nostr</li>
+            <li>Proofmode-enabled capture apps will automatically attach proofs when publishing to Nostr</li>
             <li>Verification happens transparently - the cryptographic checks run automatically</li>
           </ul>
           <p className="text-sm">
-            For more technical details about the ProofMode specification, see the{" "}
+            For more technical details about the Proofmode specification, see the{" "}
             <a href="/proofmode-spec.html" className="text-primary hover:underline" rel="noopener noreferrer">
               full technical specification
             </a>.
