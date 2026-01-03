@@ -102,3 +102,58 @@ export async function getBunkerUrl(token: string): Promise<string> {
 
   return (data as KeycastBunkerResponse).bunker_url;
 }
+
+export interface OAuthAuthorizeParams {
+  codeChallenge: string;
+  state: string;
+}
+
+/**
+ * Build the OAuth authorization URL for Keycast
+ */
+export function buildOAuthAuthorizeUrl(params: OAuthAuthorizeParams): string {
+  const url = new URL('/oauth/authorize', KEYCAST_OAUTH_URL);
+  url.searchParams.set('client_id', OAUTH_CLIENT_ID);
+  url.searchParams.set('redirect_uri', OAUTH_REDIRECT_URI);
+  url.searchParams.set('response_type', 'code');
+  url.searchParams.set('code_challenge', params.codeChallenge);
+  url.searchParams.set('code_challenge_method', 'S256');
+  url.searchParams.set('state', params.state);
+  return url.toString();
+}
+
+export interface TokenExchangeResponse {
+  token: string;
+  pubkey: string;
+}
+
+/**
+ * Exchange authorization code for JWT token
+ */
+export async function exchangeCodeForToken(
+  code: string,
+  codeVerifier: string
+): Promise<TokenExchangeResponse> {
+  const response = await fetch(`${KEYCAST_OAUTH_URL}/oauth/token`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      grant_type: 'authorization_code',
+      code,
+      client_id: OAUTH_CLIENT_ID,
+      redirect_uri: OAUTH_REDIRECT_URI,
+      code_verifier: codeVerifier,
+    }),
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.error || 'Token exchange failed');
+  }
+
+  return {
+    token: data.access_token,
+    pubkey: data.pubkey,
+  };
+}
