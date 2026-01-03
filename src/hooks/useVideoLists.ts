@@ -547,3 +547,41 @@ export function useDeleteVideoList() {
     }
   });
 }
+
+/**
+ * Hook to fetch lists from users the current user follows
+ */
+export function useFollowedUsersLists(followedPubkeys: string[] | undefined) {
+  const { nostr } = useNostr();
+
+  return useQuery({
+    queryKey: ['followed-users-lists', followedPubkeys?.slice(0, 50)],
+    queryFn: async (context) => {
+      if (!followedPubkeys || followedPubkeys.length === 0) return [];
+
+      const signal = AbortSignal.any([
+        context.signal,
+        AbortSignal.timeout(8000)
+      ]);
+
+      // Query lists from followed users (limit to first 50 to avoid huge queries)
+      const pubkeysToQuery = followedPubkeys.slice(0, 50);
+
+      const events = await nostr.query([{
+        kinds: [30005],
+        authors: pubkeysToQuery,
+        limit: 100
+      }], { signal });
+
+      const lists = events
+        .map(parseVideoList)
+        .filter((list): list is VideoList => list !== null && list.videoCoordinates.length > 0)
+        .sort((a, b) => b.createdAt - a.createdAt);
+
+      return lists;
+    },
+    enabled: !!followedPubkeys && followedPubkeys.length > 0,
+    staleTime: 300000, // 5 minutes
+    gcTime: 600000, // 10 minutes
+  });
+}
