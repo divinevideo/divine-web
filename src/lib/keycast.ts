@@ -3,6 +3,13 @@
 
 const KEYCAST_API_URL = 'https://oauth.divine.video';
 
+// OAuth configuration for login.divine.video
+export const KEYCAST_OAUTH_URL = 'https://login.divine.video';
+export const OAUTH_CLIENT_ID = 'divine-web';
+export const OAUTH_REDIRECT_URI = typeof window !== 'undefined'
+  ? `${window.location.origin}/auth/callback`
+  : 'https://divine.video/auth/callback';
+
 export interface KeycastRegisterResponse {
   user_id: string;
   email: string;
