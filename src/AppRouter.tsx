@@ -37,6 +37,7 @@ import { Support } from "./pages/Support";
 import { FAQPage } from "./pages/FAQPage";
 import { TermsPage } from "./pages/TermsPage";
 import AppCallbackPage from "./pages/AppCallbackPage";
+import { AuthCallbackPage } from "./pages/AuthCallbackPage";
 import { AppLayout } from "@/components/AppLayout";
 import { DebugVideoPage } from "./pages/DebugVideoPage";
 // import { UploadPage } from "./pages/UploadPage"; // DISABLED: Upload route is commented out
@@ -69,6 +70,7 @@ export function AppRouter() {
         <Route path="/support" element={<Support />} />
         <Route path="/faq" element={<FAQPage />} />
         <Route path="/app/callback" element={<AppCallbackPage />} />
+        <Route path="/auth/callback" element={<AuthCallbackPage />} />
 
         {/* App routes - with AppLayout */}
         <Route element={<AppLayout />}>
