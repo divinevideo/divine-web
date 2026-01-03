@@ -1,16 +1,18 @@
 // ABOUTME: Primary login button that initiates OAuth flow with Keycast
 // ABOUTME: Prominent CTA for new users, uses login.divine.video for auth
 
-import { Cloud, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useOAuthLogin } from '@/hooks/useOAuthLogin';
 
 interface KeycastOAuthButtonProps {
   onStartLogin?: () => void;
   className?: string;
+  /** Button label - defaults to "Continue" */
+  label?: string;
 }
 
-export function KeycastOAuthButton({ onStartLogin, className }: KeycastOAuthButtonProps) {
+export function KeycastOAuthButton({ onStartLogin, className, label = 'Continue' }: KeycastOAuthButtonProps) {
   const { startOAuthLogin, isLoading, error } = useOAuthLogin();
 
   const handleClick = async () => {
@@ -31,10 +33,7 @@ export function KeycastOAuthButton({ onStartLogin, className }: KeycastOAuthButt
             Redirecting...
           </>
         ) : (
-          <>
-            <Cloud className="w-5 h-5 mr-2" />
-            Continue with Keycast
-          </>
+          label
         )}
       </Button>
       {error && (

@@ -328,11 +328,11 @@ const SignupDialog: React.FC<SignupDialogProps> = ({ isOpen, onClose, onComplete
               <div className='space-y-2'>
                 <h3 className='text-xl font-semibold'>Create Account</h3>
                 <p className='text-muted-foreground'>
-                  Sign up with Keycast or generate a secret key
+                  Get started with your diVine account
                 </p>
               </div>
 
-              <KeycastOAuthButton onStartLogin={onClose} />
+              <KeycastOAuthButton onStartLogin={onClose} label="Create Account" />
 
               <div className="relative">
                 <div className="absolute inset-0 flex items-center">
@@ -340,7 +340,7 @@ const SignupDialog: React.FC<SignupDialogProps> = ({ isOpen, onClose, onComplete
                 </div>
                 <div className="relative flex justify-center text-xs">
                   <span className="px-2 bg-background text-muted-foreground">
-                    or for advanced users
+                    or use Nostr
                   </span>
                 </div>
               </div>
@@ -350,7 +350,7 @@ const SignupDialog: React.FC<SignupDialogProps> = ({ isOpen, onClose, onComplete
                 className='w-full rounded-full py-6'
                 onClick={() => setStep('generate')}
               >
-                Generate Secret Key
+                Create with Secret Key
               </Button>
 
               {onLogin && (

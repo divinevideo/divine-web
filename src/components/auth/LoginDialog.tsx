@@ -187,7 +187,7 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin, onS
 
           {/* Primary OAuth Login */}
           <div className="space-y-4">
-            <KeycastOAuthButton onStartLogin={onClose} />
+            <KeycastOAuthButton onStartLogin={onClose} label="Log In" />
 
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
@@ -195,7 +195,7 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin, onS
               </div>
               <div className="relative flex justify-center text-xs">
                 <span className="px-2 bg-background text-muted-foreground">
-                  or for Nostr users
+                  or use Nostr
                 </span>
               </div>
             </div>
