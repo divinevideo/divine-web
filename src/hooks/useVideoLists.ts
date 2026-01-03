@@ -508,3 +508,42 @@ export function useTrendingVideoLists() {
     gcTime: 600000, // 10 minutes
   });
 }
+
+/**
+ * Hook to delete a video list (publishes deletion event)
+ */
+export function useDeleteVideoList() {
+  const { mutateAsync: publishEvent } = useNostrPublish();
+  const queryClient = useQueryClient();
+  const { user } = useCurrentUser();
+
+  return useMutation({
+    mutationFn: async ({ listId }: { listId: string }) => {
+      if (!user) throw new Error('Must be logged in to delete lists');
+
+      // Publish a kind 5 deletion event targeting the list
+      // The 'a' tag references the addressable event to delete
+      await publishEvent({
+        kind: 5, // NIP-09 deletion event
+        content: 'List deleted by owner',
+        tags: [
+          ['a', `30005:${user.pubkey}:${listId}`],
+        ]
+      });
+
+      return { listId };
+    },
+    onSuccess: ({ listId }) => {
+      // Remove from cache immediately
+      if (user) {
+        queryClient.setQueryData<VideoList[]>(
+          ['video-lists', user.pubkey],
+          (oldLists) => oldLists?.filter(l => l.id !== listId) || []
+        );
+      }
+      queryClient.invalidateQueries({ queryKey: ['video-lists'] });
+      queryClient.invalidateQueries({ queryKey: ['trending-video-lists'] });
+      queryClient.invalidateQueries({ queryKey: ['followed-users-lists'] });
+    }
+  });
+}
