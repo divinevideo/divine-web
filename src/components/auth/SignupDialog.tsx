@@ -15,6 +15,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { generateSecretKey, nip19 } from 'nostr-tools';
 import { cn } from '@/lib/utils';
 import { debugLog } from '@/lib/debug';
+import { KeycastOAuthButton } from '@/components/auth/KeycastOAuthButton';
 
 interface SignupDialogProps {
   isOpen: boolean;
@@ -327,15 +328,29 @@ const SignupDialog: React.FC<SignupDialogProps> = ({ isOpen, onClose, onComplete
               <div className='space-y-2'>
                 <h3 className='text-xl font-semibold'>Create Account</h3>
                 <p className='text-muted-foreground'>
-                  Generate a secret key to get started
+                  Sign up with Keycast or generate a secret key
                 </p>
               </div>
 
+              <KeycastOAuthButton onStartLogin={onClose} />
+
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-muted"></div>
+                </div>
+                <div className="relative flex justify-center text-xs">
+                  <span className="px-2 bg-background text-muted-foreground">
+                    or for advanced users
+                  </span>
+                </div>
+              </div>
+
               <Button
+                variant="outline"
                 className='w-full rounded-full py-6'
                 onClick={() => setStep('generate')}
               >
-                Continue
+                Generate Secret Key
               </Button>
 
               {onLogin && (
