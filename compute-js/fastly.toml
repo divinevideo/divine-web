@@ -1,0 +1,32 @@
+# This file describes a Fastly Compute package. To learn more visit:
+# https://www.fastly.com/documentation/reference/compute/fastly-toml
+
+authors = ["you@example.com"]
+description = "diVine video app for Nostr"
+language = "javascript"
+manifest_version = 3
+name = "divine-web"
+service_id = "WfOrPTFYmwwxRvqrfralLA"
+
+[local_server]
+
+  [local_server.kv_stores]
+
+    [local_server.kv_stores.divine-web-content]
+      file = "./static-publisher/kvstore.json"
+      format = "json"
+
+    [local_server.kv_stores.divine-names]
+      file = "./test-data/names-kvstore.json"
+      format = "json"
+
+[scripts]
+  build = "npm run build"
+
+[setup]
+
+  [setup.kv_stores]
+
+    [setup.kv_stores.divine-web-content]
+
+    [setup.kv_stores.divine-names]

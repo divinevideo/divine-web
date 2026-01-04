@@ -37,3 +37,8 @@ dist-ssr
 
 # Git worktrees
 .worktrees/
+
+# Fastly Compute
+compute-js/static-publisher/
+compute-js/bin/
+compute-js/node_modules/

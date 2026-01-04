@@ -12,6 +12,9 @@
     "deploy": "npm run build && npx -y nostr-deploy-cli deploy --skip-setup",
     "deploy:cloudflare": "npm run build && wrangler pages deploy dist",
     "deploy:cloudflare:preview": "npm run build && wrangler pages deploy dist --branch preview",
+    "fastly:local": "npm run build && cd compute-js && npm run dev:publish && npm run dev:start",
+    "fastly:deploy": "npm run build && cd compute-js && npm run fastly:deploy",
+    "fastly:publish": "npm run build && cd compute-js && npm run fastly:publish",
     "precalculate-thumbnails": "tsx scripts/precalculate-hashtag-thumbnails.ts",
     "generate-icons": "node scripts/generate-icons.js"
   },

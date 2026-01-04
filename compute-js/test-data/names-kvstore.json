@@ -1,0 +1,8 @@
+{
+  "user:rabble": {
+    "data": "{\"pubkey\":\"76c71aae3a491f1d9f5f0c88e8fbd6e1db221143674cbcf8bce56a79ff5c4e3c\",\"status\":\"active\",\"display_name\":\"Rabble\",\"relays\":[\"wss://relay.damus.io\",\"wss://nos.lol\"]}"
+  },
+  "user:test": {
+    "data": "{\"pubkey\":\"0000000000000000000000000000000000000000000000000000000000000001\",\"status\":\"active\",\"display_name\":\"Test User\",\"relays\":[]}"
+  }
+}

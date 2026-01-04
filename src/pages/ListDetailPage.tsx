@@ -35,6 +35,7 @@ interface VideoList {
   pubkey: string;
   createdAt: number;
   videoCoordinates: string[];
+  public: boolean;
   tags?: string[];
   isCollaborative?: boolean;
   allowedCollaborators?: string[];
@@ -86,6 +87,7 @@ function parseVideoList(event: NostrEvent): VideoList | null {
     pubkey: event.pubkey,
     createdAt: event.created_at,
     videoCoordinates,
+    public: true,
     tags,
     isCollaborative,
     allowedCollaborators,
