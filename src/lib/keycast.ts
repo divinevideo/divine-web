@@ -6,9 +6,14 @@ const KEYCAST_API_URL = 'https://oauth.divine.video';
 // OAuth configuration for login.divine.video
 export const KEYCAST_OAUTH_URL = 'https://login.divine.video';
 export const OAUTH_CLIENT_ID = 'divine-web';
-export const OAUTH_REDIRECT_URI = typeof window !== 'undefined'
-  ? `${window.location.origin}/auth/callback`
-  : 'https://divine.video/auth/callback';
+
+/** Get redirect URI dynamically based on current origin */
+export function getOAuthRedirectUri(): string {
+  if (typeof window !== 'undefined') {
+    return `${window.location.origin}/auth/callback`;
+  }
+  return 'https://divine.video/auth/callback';
+}
 
 export interface KeycastRegisterResponse {
   user_id: string;
@@ -116,7 +121,7 @@ export interface OAuthAuthorizeParams {
 export function buildOAuthAuthorizeUrl(params: OAuthAuthorizeParams): string {
   const url = new URL('/api/oauth/authorize', KEYCAST_OAUTH_URL);
   url.searchParams.set('client_id', OAUTH_CLIENT_ID);
-  url.searchParams.set('redirect_uri', OAUTH_REDIRECT_URI);
+  url.searchParams.set('redirect_uri', getOAuthRedirectUri());
   url.searchParams.set('response_type', 'code');
   url.searchParams.set('code_challenge', params.codeChallenge);
   url.searchParams.set('code_challenge_method', 'S256');
@@ -146,7 +151,7 @@ export async function exchangeCodeForToken(
       grant_type: 'authorization_code',
       code,
       client_id: OAUTH_CLIENT_ID,
-      redirect_uri: OAUTH_REDIRECT_URI,
+      redirect_uri: getOAuthRedirectUri(),
       code_verifier: codeVerifier,
     }),
   });
