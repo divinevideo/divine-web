@@ -10,7 +10,7 @@ export function useOAuthLogin() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const startOAuthLogin = useCallback(async (returnTo?: string) => {
+  const startOAuthLogin = useCallback(async (options?: { returnTo?: string; signup?: boolean }) => {
     setIsLoading(true);
     setError(null);
 
@@ -25,7 +25,7 @@ export function useOAuthLogin() {
       // Save state for callback
       saveOAuthState({
         codeVerifier,
-        returnTo: returnTo || window.location.pathname,
+        returnTo: options?.returnTo || window.location.pathname,
         nonce,
       });
 
@@ -33,6 +33,7 @@ export function useOAuthLogin() {
       const authUrl = buildOAuthAuthorizeUrl({
         codeChallenge,
         state: nonce,
+        signup: options?.signup,
       });
 
       window.location.href = authUrl;

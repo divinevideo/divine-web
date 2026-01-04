@@ -106,6 +106,8 @@ export async function getBunkerUrl(token: string): Promise<string> {
 export interface OAuthAuthorizeParams {
   codeChallenge: string;
   state: string;
+  /** If true, shows registration form by default on Keycast */
+  signup?: boolean;
 }
 
 /**
@@ -119,6 +121,9 @@ export function buildOAuthAuthorizeUrl(params: OAuthAuthorizeParams): string {
   url.searchParams.set('code_challenge', params.codeChallenge);
   url.searchParams.set('code_challenge_method', 'S256');
   url.searchParams.set('state', params.state);
+  if (params.signup) {
+    url.searchParams.set('default_register', 'true');
+  }
   return url.toString();
 }
 

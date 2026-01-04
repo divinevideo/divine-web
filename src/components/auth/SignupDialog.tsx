@@ -334,7 +334,7 @@ const SignupDialog: React.FC<SignupDialogProps> = ({ isOpen, onClose, onComplete
                 </p>
               </div>
 
-              <KeycastOAuthButton onStartLogin={onClose} label="Create Account" />
+              <KeycastOAuthButton onStartLogin={onClose} label="Create Account" signup />
 
               <div className="relative">
                 <div className="absolute inset-0 flex items-center">

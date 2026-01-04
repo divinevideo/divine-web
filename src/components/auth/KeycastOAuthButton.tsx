@@ -10,14 +10,16 @@ interface KeycastOAuthButtonProps {
   className?: string;
   /** Button label - defaults to "Continue" */
   label?: string;
+  /** If true, shows registration form on Keycast */
+  signup?: boolean;
 }
 
-export function KeycastOAuthButton({ onStartLogin, className, label = 'Continue' }: KeycastOAuthButtonProps) {
+export function KeycastOAuthButton({ onStartLogin, className, label = 'Continue', signup }: KeycastOAuthButtonProps) {
   const { startOAuthLogin, isLoading, error } = useOAuthLogin();
 
   const handleClick = async () => {
     onStartLogin?.();
-    await startOAuthLogin();
+    await startOAuthLogin({ signup });
   };
 
   return (
