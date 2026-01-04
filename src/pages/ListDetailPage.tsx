@@ -1,13 +1,16 @@
 // ABOUTME: Page component for viewing individual video lists
 // ABOUTME: Shows list details, videos in the list, and allows editing for list owners
 
+import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { nip19 } from 'nostr-tools';
 import { useNostr } from '@nostrify/react';
 import { useQuery } from '@tanstack/react-query';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useAuthor } from '@/hooks/useAuthor';
-import { useRemoveVideoFromList, type PlayOrder } from '@/hooks/useVideoLists';
+import { useRemoveVideoFromList, useDeleteVideoList, type PlayOrder } from '@/hooks/useVideoLists';
+import { EditListDialog } from '@/components/EditListDialog';
+import { DeleteListDialog } from '@/components/DeleteListDialog';
 import { VideoGrid } from '@/components/VideoGrid';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -217,9 +220,35 @@ export default function ListDetailPage() {
   const { user } = useCurrentUser();
   const { toast } = useToast();
   const removeVideo = useRemoveVideoFromList();
+  const deleteList = useDeleteVideoList();
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const isOwner = user?.pubkey === pubkey;
   const canEdit = isOwner; // TODO: Add collaborator check
+
+  const handleDeleteList = async () => {
+    if (!list) return;
+    setIsDeleting(true);
+    try {
+      await deleteList.mutateAsync({ listId: list.id });
+      toast({
+        title: 'List deleted',
+        description: `"${list.name}" has been deleted`,
+      });
+      navigate('/lists');
+    } catch {
+      toast({
+        title: 'Error',
+        description: 'Failed to delete list',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsDeleting(false);
+      setShowDeleteDialog(false);
+    }
+  };
 
   // Fetch list details
   const { data: list, isLoading: listLoading } = useQuery({
@@ -432,10 +461,16 @@ export default function ListDetailPage() {
               {/* Actions */}
               <div className="flex gap-2">
                 {isOwner && (
-                  <Button variant="outline" size="sm">
-                    <Edit className="h-4 w-4 mr-2" />
-                    Edit List
-                  </Button>
+                  <>
+                    <Button variant="outline" size="sm" onClick={() => setShowEditDialog(true)}>
+                      <Edit className="h-4 w-4 mr-2" />
+                      Edit List
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => setShowDeleteDialog(true)}>
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Delete
+                    </Button>
+                  </>
                 )}
                 <Button variant="outline" size="sm" onClick={handleShare}>
                   <Share2 className="h-4 w-4 mr-2" />
@@ -539,6 +574,26 @@ export default function ListDetailPage() {
           </Card>
         )}
       </div>
+
+      {/* Edit List Dialog */}
+      {list && showEditDialog && (
+        <EditListDialog
+          open={showEditDialog}
+          onClose={() => setShowEditDialog(false)}
+          list={list}
+        />
+      )}
+
+      {/* Delete List Dialog */}
+      {list && showDeleteDialog && (
+        <DeleteListDialog
+          open={showDeleteDialog}
+          onClose={() => setShowDeleteDialog(false)}
+          onConfirm={handleDeleteList}
+          listName={list.name}
+          isDeleting={isDeleting}
+        />
+      )}
     </div>
   );
 }
