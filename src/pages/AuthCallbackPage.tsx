@@ -18,10 +18,15 @@ export function AuthCallbackPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    // Prevent double execution
+    let cancelled = false;
+
     async function handleCallback() {
       const code = searchParams.get('code');
       const state = searchParams.get('state');
       const errorParam = searchParams.get('error');
+
+      console.log('[AuthCallback] Starting callback handler', { code: code?.substring(0, 8), state: state?.substring(0, 8) });
 
       // Handle OAuth error
       if (errorParam) {
@@ -39,6 +44,12 @@ export function AuthCallbackPage() {
 
       // Get stored state
       const storedState = getOAuthState();
+      console.log('[AuthCallback] Retrieved stored state', {
+        hasState: !!storedState,
+        nonce: storedState?.nonce?.substring(0, 8),
+        verifier: storedState?.codeVerifier?.substring(0, 8),
+      });
+
       if (!storedState) {
         setError('Session expired. Please try logging in again.');
         setStatus('error');
@@ -47,17 +58,29 @@ export function AuthCallbackPage() {
 
       // Validate state (CSRF protection)
       if (state !== storedState.nonce) {
+        console.log('[AuthCallback] State mismatch!', { urlState: state, storedNonce: storedState.nonce });
         setError('Security validation failed. Please try again.');
         setStatus('error');
         return;
       }
 
+      // Check if already cancelled (React strict mode double-mount)
+      if (cancelled) {
+        console.log('[AuthCallback] Cancelled, skipping token exchange');
+        return;
+      }
+
       try {
+        console.log('[AuthCallback] Exchanging code for token...');
         // Exchange code for token
         const { token, pubkey } = await exchangeCodeForToken(
           code,
           storedState.codeVerifier
         );
+
+        if (cancelled) return;
+
+        console.log('[AuthCallback] Token exchange successful, pubkey:', pubkey.substring(0, 8));
 
         // Save session (remember for 1 week by default for OAuth)
         saveSession(token, `oauth:${pubkey.substring(0, 8)}`, true);
@@ -72,12 +95,18 @@ export function AuthCallbackPage() {
           navigate(storedState.returnTo || '/', { replace: true });
         }, 1000);
       } catch (err) {
+        if (cancelled) return;
+        console.error('[AuthCallback] Token exchange failed:', err);
         setError(err instanceof Error ? err.message : 'Login failed');
         setStatus('error');
       }
     }
 
     handleCallback();
+
+    return () => {
+      cancelled = true;
+    };
   }, [searchParams, navigate, saveSession]);
 
   return (

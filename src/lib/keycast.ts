@@ -119,9 +119,10 @@ export interface OAuthAuthorizeParams {
  * Build the OAuth authorization URL for Keycast
  */
 export function buildOAuthAuthorizeUrl(params: OAuthAuthorizeParams): string {
+  const redirectUri = getOAuthRedirectUri();
   const url = new URL('/api/oauth/authorize', KEYCAST_OAUTH_URL);
   url.searchParams.set('client_id', OAUTH_CLIENT_ID);
-  url.searchParams.set('redirect_uri', getOAuthRedirectUri());
+  url.searchParams.set('redirect_uri', redirectUri);
   url.searchParams.set('response_type', 'code');
   url.searchParams.set('code_challenge', params.codeChallenge);
   url.searchParams.set('code_challenge_method', 'S256');
@@ -129,6 +130,11 @@ export function buildOAuthAuthorizeUrl(params: OAuthAuthorizeParams): string {
   if (params.signup) {
     url.searchParams.set('default_register', 'true');
   }
+  console.log('[KeycastOAuth] Authorize URL built:', {
+    redirect_uri: redirectUri,
+    state: params.state.substring(0, 8) + '...',
+    signup: params.signup,
+  });
   return url.toString();
 }
 
@@ -144,19 +150,35 @@ export async function exchangeCodeForToken(
   code: string,
   codeVerifier: string
 ): Promise<TokenExchangeResponse> {
+  const redirectUri = getOAuthRedirectUri();
+  const requestBody = {
+    grant_type: 'authorization_code',
+    code,
+    client_id: OAUTH_CLIENT_ID,
+    redirect_uri: redirectUri,
+    code_verifier: codeVerifier,
+  };
+
+  console.log('[KeycastOAuth] Token exchange request:', {
+    url: `${KEYCAST_OAUTH_URL}/api/oauth/token`,
+    redirect_uri: redirectUri,
+    code: code.substring(0, 8) + '...',
+    verifier: codeVerifier.substring(0, 8) + '...',
+  });
+
   const response = await fetch(`${KEYCAST_OAUTH_URL}/api/oauth/token`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      grant_type: 'authorization_code',
-      code,
-      client_id: OAUTH_CLIENT_ID,
-      redirect_uri: getOAuthRedirectUri(),
-      code_verifier: codeVerifier,
-    }),
+    body: JSON.stringify(requestBody),
   });
 
   const data = await response.json();
+
+  console.log('[KeycastOAuth] Token exchange response:', {
+    status: response.status,
+    ok: response.ok,
+    error: data.error,
+  });
 
   if (!response.ok) {
     throw new Error(data.error || 'Token exchange failed');
