@@ -34,6 +34,7 @@ const SignupDialog: React.FC<SignupDialogProps> = ({ isOpen, onClose, onComplete
   const [nsec, setNsec] = useState('');
   const [showSparkles, setShowSparkles] = useState(false);
   const [keySecured, setKeySecured] = useState<'none' | 'copied' | 'downloaded'>('none');
+  const [showNostrOption, setShowNostrOption] = useState(false);
   const [profileData, setProfileData] = useState({
     name: '',
     about: '',
@@ -290,6 +291,7 @@ const SignupDialog: React.FC<SignupDialogProps> = ({ isOpen, onClose, onComplete
       setNsec('');
       setShowSparkles(false);
       setKeySecured('none');
+      setShowNostrOption(false);
       setProfileData({ name: '', about: '', picture: '' });
     }
   }, [isOpen]);
@@ -339,12 +341,16 @@ const SignupDialog: React.FC<SignupDialogProps> = ({ isOpen, onClose, onComplete
                   <div className="w-full border-t border-muted"></div>
                 </div>
                 <div className="relative flex justify-center text-xs">
-                  <span className="px-2 bg-background text-muted-foreground">
-                    or use Nostr
-                  </span>
+                  <button
+                    onClick={() => setShowNostrOption(!showNostrOption)}
+                    className="px-2 bg-background text-muted-foreground hover:text-primary transition-colors"
+                  >
+                    {showNostrOption ? 'hide Nostr option' : 'or use Nostr'}
+                  </button>
                 </div>
               </div>
 
+              {showNostrOption && (
               <Button
                 variant="outline"
                 className='w-full rounded-full py-6'
@@ -352,6 +358,7 @@ const SignupDialog: React.FC<SignupDialogProps> = ({ isOpen, onClose, onComplete
               >
                 Create with Secret Key
               </Button>
+              )}
 
               {onLogin && (
                 <p className='text-sm text-muted-foreground'>

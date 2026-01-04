@@ -32,6 +32,7 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin, onS
   const [isFileLoading, setIsFileLoading] = useState(false);
   const [nsec, setNsec] = useState('');
   const [bunkerUri, setBunkerUri] = useState('');
+  const [showNostrOptions, setShowNostrOptions] = useState(false);
   const [errors, setErrors] = useState<{
     nsec?: string;
     bunker?: string;
@@ -49,6 +50,7 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin, onS
       setIsFileLoading(false);
       setNsec('');
       setBunkerUri('');
+      setShowNostrOptions(false);
       setErrors({});
       // Reset file input
       if (fileInputRef.current) {
@@ -194,14 +196,18 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin, onS
                 <div className="w-full border-t border-muted"></div>
               </div>
               <div className="relative flex justify-center text-xs">
-                <span className="px-2 bg-background text-muted-foreground">
-                  or use Nostr
-                </span>
+                <button
+                  onClick={() => setShowNostrOptions(!showNostrOptions)}
+                  className="px-2 bg-background text-muted-foreground hover:text-primary transition-colors"
+                >
+                  {showNostrOptions ? 'hide Nostr options' : 'or use Nostr'}
+                </button>
               </div>
             </div>
           </div>
 
-          {/* Login Methods */}
+          {/* Nostr Login Methods - Hidden by default */}
+          {showNostrOptions && (
           <Tabs defaultValue={defaultTab} className="w-full">
             <TabsList className="grid w-full grid-cols-3 bg-muted/80 rounded-lg mb-4">
               <TabsTrigger value="extension" className="flex items-center gap-2">
@@ -345,6 +351,7 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin, onS
               </div>
             </TabsContent>
           </Tabs>
+          )}
 
           {/* Sign up link */}
           {onSignup && (
