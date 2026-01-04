@@ -1,16 +1,18 @@
 // ABOUTME: Tests for OAuth state management utilities
-// ABOUTME: Verifies sessionStorage operations for PKCE flow
+// ABOUTME: Verifies localStorage operations for PKCE flow
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { saveOAuthState, getOAuthState, clearOAuthState } from './oauthState';
 
 describe('OAuth State Management', () => {
   beforeEach(() => {
-    sessionStorage.clear();
+    localStorage.clear();
+    vi.useFakeTimers();
   });
 
   afterEach(() => {
-    sessionStorage.clear();
+    localStorage.clear();
+    vi.useRealTimers();
   });
 
   it('should save and retrieve OAuth state', () => {
@@ -21,7 +23,10 @@ describe('OAuth State Management', () => {
     };
     saveOAuthState(state);
     const retrieved = getOAuthState();
-    expect(retrieved).toEqual(state);
+    expect(retrieved?.codeVerifier).toBe(state.codeVerifier);
+    expect(retrieved?.returnTo).toBe(state.returnTo);
+    expect(retrieved?.nonce).toBe(state.nonce);
+    expect(retrieved?.createdAt).toBeDefined();
   });
 
   it('should return null when no state exists', () => {
@@ -36,7 +41,17 @@ describe('OAuth State Management', () => {
   });
 
   it('should handle malformed JSON gracefully', () => {
-    sessionStorage.setItem('keycast_oauth_state', 'not-json');
+    localStorage.setItem('keycast_oauth_state', 'not-json');
+    expect(getOAuthState()).toBeNull();
+  });
+
+  it('should expire state after 10 minutes', () => {
+    saveOAuthState({ codeVerifier: 'test', returnTo: '/', nonce: 'xyz' });
+    expect(getOAuthState()).not.toBeNull();
+
+    // Advance time by 11 minutes
+    vi.advanceTimersByTime(11 * 60 * 1000);
+
     expect(getOAuthState()).toBeNull();
   });
 });
