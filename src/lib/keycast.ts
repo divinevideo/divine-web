@@ -112,7 +112,7 @@ export interface OAuthAuthorizeParams {
  * Build the OAuth authorization URL for Keycast
  */
 export function buildOAuthAuthorizeUrl(params: OAuthAuthorizeParams): string {
-  const url = new URL('/oauth/authorize', KEYCAST_OAUTH_URL);
+  const url = new URL('/api/oauth/authorize', KEYCAST_OAUTH_URL);
   url.searchParams.set('client_id', OAUTH_CLIENT_ID);
   url.searchParams.set('redirect_uri', OAUTH_REDIRECT_URI);
   url.searchParams.set('response_type', 'code');
@@ -134,7 +134,7 @@ export async function exchangeCodeForToken(
   code: string,
   codeVerifier: string
 ): Promise<TokenExchangeResponse> {
-  const response = await fetch(`${KEYCAST_OAUTH_URL}/oauth/token`, {
+  const response = await fetch(`${KEYCAST_OAUTH_URL}/api/oauth/token`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
