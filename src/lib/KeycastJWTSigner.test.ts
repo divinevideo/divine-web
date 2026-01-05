@@ -1,5 +1,5 @@
 // ABOUTME: Tests for JWT-based Keycast signer
-// ABOUTME: Verifies HTTP signing, encryption, and error handling
+// ABOUTME: Verifies HTTP RPC signing, encryption, and error handling via /api/nostr endpoint
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { KeycastJWTSigner } from './KeycastJWTSigner';
@@ -30,7 +30,7 @@ describe('KeycastJWTSigner', () => {
     it('should use custom API URL if provided', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        json: async () => ({ pubkey: mockPubkey }),
+        json: async () => ({ result: mockPubkey }),
       });
 
       const signer = new KeycastJWTSigner({
@@ -41,11 +41,14 @@ describe('KeycastJWTSigner', () => {
       await signer.getPublicKey();
 
       expect(mockFetch).toHaveBeenCalledWith(
-        `${mockApiUrl}/api/user/pubkey`,
+        `${mockApiUrl}/api/nostr`,
         expect.objectContaining({
+          method: 'POST',
           headers: {
+            'Content-Type': 'application/json',
             Authorization: `Bearer ${mockToken}`,
           },
+          body: JSON.stringify({ method: 'get_public_key', params: [] }),
         })
       );
     });
@@ -63,7 +66,7 @@ describe('KeycastJWTSigner', () => {
     it('should fetch and return public key', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        json: async () => ({ pubkey: mockPubkey }),
+        json: async () => ({ result: mockPubkey }),
       });
 
       const signer = new KeycastJWTSigner({ token: mockToken });
@@ -71,12 +74,14 @@ describe('KeycastJWTSigner', () => {
 
       expect(pubkey).toBe(mockPubkey);
       expect(mockFetch).toHaveBeenCalledWith(
-        'https://oauth.divine.video/api/user/pubkey',
+        'https://login.divine.video/api/nostr',
         expect.objectContaining({
-          method: 'GET',
+          method: 'POST',
           headers: {
+            'Content-Type': 'application/json',
             Authorization: `Bearer ${mockToken}`,
           },
+          body: JSON.stringify({ method: 'get_public_key', params: [] }),
         })
       );
     });
@@ -84,7 +89,7 @@ describe('KeycastJWTSigner', () => {
     it('should cache public key after first call', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        json: async () => ({ pubkey: mockPubkey }),
+        json: async () => ({ result: mockPubkey }),
       });
 
       const signer = new KeycastJWTSigner({ token: mockToken });
@@ -112,10 +117,21 @@ describe('KeycastJWTSigner', () => {
       await expect(signer.getPublicKey()).rejects.toThrow('Invalid token');
     });
 
+    it('should throw error on RPC error response', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ error: 'User not found' }),
+      });
+
+      const signer = new KeycastJWTSigner({ token: mockToken });
+
+      await expect(signer.getPublicKey()).rejects.toThrow('User not found');
+    });
+
     it('should throw error on missing pubkey in response', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        json: async () => ({}), // No pubkey field
+        json: async () => ({ result: null }), // No pubkey
       });
 
       const signer = new KeycastJWTSigner({ token: mockToken });
@@ -152,7 +168,7 @@ describe('KeycastJWTSigner', () => {
     it('should sign event successfully', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        json: async () => ({ event: mockSignedEvent }),
+        json: async () => ({ result: mockSignedEvent }),
       });
 
       const signer = new KeycastJWTSigner({ token: mockToken });
@@ -160,14 +176,14 @@ describe('KeycastJWTSigner', () => {
 
       expect(signed).toEqual(mockSignedEvent);
       expect(mockFetch).toHaveBeenCalledWith(
-        'https://oauth.divine.video/api/sign',
+        'https://login.divine.video/api/nostr',
         expect.objectContaining({
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${mockToken}`,
           },
-          body: JSON.stringify({ event: mockEvent }),
+          body: JSON.stringify({ method: 'sign_event', params: [mockEvent] }),
         })
       );
     });
@@ -187,7 +203,7 @@ describe('KeycastJWTSigner', () => {
     it('should throw error on missing signed event in response', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        json: async () => ({}), // No event field
+        json: async () => ({ result: {} }), // No id/sig fields
       });
 
       const signer = new KeycastJWTSigner({ token: mockToken });
@@ -223,7 +239,7 @@ describe('KeycastJWTSigner', () => {
     it('should encrypt with NIP-04', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        json: async () => ({ ciphertext }),
+        json: async () => ({ result: ciphertext }),
       });
 
       const signer = new KeycastJWTSigner({ token: mockToken });
@@ -231,10 +247,10 @@ describe('KeycastJWTSigner', () => {
 
       expect(result).toBe(ciphertext);
       expect(mockFetch).toHaveBeenCalledWith(
-        'https://oauth.divine.video/api/encrypt/nip04',
+        'https://login.divine.video/api/nostr',
         expect.objectContaining({
           method: 'POST',
-          body: JSON.stringify({ pubkey: targetPubkey, plaintext }),
+          body: JSON.stringify({ method: 'nip04_encrypt', params: [targetPubkey, plaintext] }),
         })
       );
     });
@@ -242,7 +258,7 @@ describe('KeycastJWTSigner', () => {
     it('should decrypt with NIP-04', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        json: async () => ({ plaintext }),
+        json: async () => ({ result: plaintext }),
       });
 
       const signer = new KeycastJWTSigner({ token: mockToken });
@@ -250,10 +266,10 @@ describe('KeycastJWTSigner', () => {
 
       expect(result).toBe(plaintext);
       expect(mockFetch).toHaveBeenCalledWith(
-        'https://oauth.divine.video/api/decrypt/nip04',
+        'https://login.divine.video/api/nostr',
         expect.objectContaining({
           method: 'POST',
-          body: JSON.stringify({ pubkey: targetPubkey, ciphertext }),
+          body: JSON.stringify({ method: 'nip04_decrypt', params: [targetPubkey, ciphertext] }),
         })
       );
     });
@@ -295,7 +311,7 @@ describe('KeycastJWTSigner', () => {
     it('should encrypt with NIP-44', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        json: async () => ({ ciphertext }),
+        json: async () => ({ result: ciphertext }),
       });
 
       const signer = new KeycastJWTSigner({ token: mockToken });
@@ -303,10 +319,10 @@ describe('KeycastJWTSigner', () => {
 
       expect(result).toBe(ciphertext);
       expect(mockFetch).toHaveBeenCalledWith(
-        'https://oauth.divine.video/api/encrypt/nip44',
+        'https://login.divine.video/api/nostr',
         expect.objectContaining({
           method: 'POST',
-          body: JSON.stringify({ pubkey: targetPubkey, plaintext }),
+          body: JSON.stringify({ method: 'nip44_encrypt', params: [targetPubkey, plaintext] }),
         })
       );
     });
@@ -314,7 +330,7 @@ describe('KeycastJWTSigner', () => {
     it('should decrypt with NIP-44', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        json: async () => ({ plaintext }),
+        json: async () => ({ result: plaintext }),
       });
 
       const signer = new KeycastJWTSigner({ token: mockToken });
@@ -322,10 +338,10 @@ describe('KeycastJWTSigner', () => {
 
       expect(result).toBe(plaintext);
       expect(mockFetch).toHaveBeenCalledWith(
-        'https://oauth.divine.video/api/decrypt/nip44',
+        'https://login.divine.video/api/nostr',
         expect.objectContaining({
           method: 'POST',
-          body: JSON.stringify({ pubkey: targetPubkey, ciphertext }),
+          body: JSON.stringify({ method: 'nip44_decrypt', params: [targetPubkey, ciphertext] }),
         })
       );
     });
@@ -364,7 +380,7 @@ describe('KeycastJWTSigner', () => {
       // First call with original token
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        json: async () => ({ pubkey: mockPubkey }),
+        json: async () => ({ result: mockPubkey }),
       });
 
       const signer = new KeycastJWTSigner({ token: mockToken });
@@ -378,15 +394,16 @@ describe('KeycastJWTSigner', () => {
       // Next call should fetch again with new token
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        json: async () => ({ pubkey: mockPubkey }),
+        json: async () => ({ result: mockPubkey }),
       });
 
       await signer.getPublicKey();
       expect(mockFetch).toHaveBeenCalledTimes(2);
       expect(mockFetch).toHaveBeenLastCalledWith(
-        'https://oauth.divine.video/api/user/pubkey',
+        'https://login.divine.video/api/nostr',
         expect.objectContaining({
           headers: {
+            'Content-Type': 'application/json',
             Authorization: `Bearer ${newToken}`,
           },
         })

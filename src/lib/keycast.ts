@@ -1,10 +1,8 @@
 // ABOUTME: Keycast Identity Server API client for custodial Nostr identity
 // ABOUTME: Handles registration, login, and bunker URL retrieval for email-based auth
 
-const KEYCAST_API_URL = 'https://oauth.divine.video';
-
-// OAuth configuration for login.divine.video
-export const KEYCAST_OAUTH_URL = 'https://login.divine.video';
+// Keycast API URL - use localhost for development, login.divine.video for production
+export const KEYCAST_API_URL = import.meta.env.VITE_KEYCAST_API_URL || 'https://login.divine.video';
 export const OAUTH_CLIENT_ID = 'divine-web';
 
 /** Get redirect URI dynamically based on current origin */
@@ -120,7 +118,7 @@ export interface OAuthAuthorizeParams {
  */
 export function buildOAuthAuthorizeUrl(params: OAuthAuthorizeParams): string {
   const redirectUri = getOAuthRedirectUri();
-  const url = new URL('/api/oauth/authorize', KEYCAST_OAUTH_URL);
+  const url = new URL('/api/oauth/authorize', KEYCAST_API_URL);
   url.searchParams.set('client_id', OAUTH_CLIENT_ID);
   url.searchParams.set('redirect_uri', redirectUri);
   url.searchParams.set('response_type', 'code');
@@ -141,10 +139,22 @@ export function buildOAuthAuthorizeUrl(params: OAuthAuthorizeParams): string {
 export interface TokenExchangeResponse {
   token: string;
   pubkey: string;
+  bunkerUrl: string;
 }
 
 /**
- * Exchange authorization code for JWT token
+ * Extract pubkey from bunker URL (format: bunker://PUBKEY?relay=...&secret=...)
+ */
+function extractPubkeyFromBunkerUrl(bunkerUrl: string): string {
+  const match = bunkerUrl.match(/^bunker:\/\/([a-f0-9]{64})/);
+  if (!match) {
+    throw new Error('Invalid bunker URL format');
+  }
+  return match[1];
+}
+
+/**
+ * Exchange authorization code for access token and bunker URL
  */
 export async function exchangeCodeForToken(
   code: string,
@@ -152,21 +162,13 @@ export async function exchangeCodeForToken(
 ): Promise<TokenExchangeResponse> {
   const redirectUri = getOAuthRedirectUri();
   const requestBody = {
-    grant_type: 'authorization_code',
     code,
     client_id: OAUTH_CLIENT_ID,
     redirect_uri: redirectUri,
     code_verifier: codeVerifier,
   };
 
-  console.log('[KeycastOAuth] Token exchange request:', {
-    url: `${KEYCAST_OAUTH_URL}/api/oauth/token`,
-    redirect_uri: redirectUri,
-    code: code.substring(0, 8) + '...',
-    verifier: codeVerifier.substring(0, 8) + '...',
-  });
-
-  const response = await fetch(`${KEYCAST_OAUTH_URL}/api/oauth/token`, {
+  const response = await fetch(`${KEYCAST_API_URL}/api/oauth/token`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(requestBody),
@@ -174,18 +176,19 @@ export async function exchangeCodeForToken(
 
   const data = await response.json();
 
-  console.log('[KeycastOAuth] Token exchange response:', {
-    status: response.status,
-    ok: response.ok,
-    error: data.error,
-  });
-
   if (!response.ok) {
     throw new Error(data.error || 'Token exchange failed');
   }
 
+  if (!data.bunker_url) {
+    throw new Error('Missing bunker_url in token response');
+  }
+
+  const pubkey = extractPubkeyFromBunkerUrl(data.bunker_url);
+
   return {
     token: data.access_token,
-    pubkey: data.pubkey,
+    pubkey,
+    bunkerUrl: data.bunker_url,
   };
 }

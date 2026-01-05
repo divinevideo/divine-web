@@ -1,24 +1,27 @@
-// ABOUTME: JWT-based Nostr signer that signs events via Keycast REST API
-// ABOUTME: Implements NostrSigner interface with HTTP requests instead of NIP-46
+// ABOUTME: JWT-based Nostr signer that signs events via Keycast REST RPC API
+// ABOUTME: Implements NostrSigner interface using the /api/nostr unified endpoint
 
 import type { NostrEvent, NostrSigner } from '@nostrify/nostrify';
-
-const KEYCAST_API_URL = 'https://oauth.divine.video';
+import { KEYCAST_API_URL } from './keycast';
 
 export interface KeycastJWTSignerOptions {
   /** JWT token for authentication */
   token: string;
-  /** Optional custom API URL (defaults to https://oauth.divine.video) */
+  /** Optional custom API URL (defaults to KEYCAST_API_URL) */
   apiUrl?: string;
   /** Optional timeout for requests in milliseconds (default: 10000) */
   timeout?: number;
 }
 
+interface RpcResponse {
+  result?: unknown;
+  error?: string;
+}
+
 /**
- * Nostr signer that uses JWT authentication to sign events via Keycast REST API
+ * Nostr signer that uses JWT authentication to sign events via Keycast REST RPC API
  *
- * This provides a window.nostr-compatible interface that signs events by making
- * HTTP requests to the Keycast server with JWT Bearer authentication.
+ * Uses the unified /api/nostr endpoint which mirrors NIP-46 methods over HTTP.
  *
  * @example
  * ```typescript
@@ -40,6 +43,41 @@ export class KeycastJWTSigner implements NostrSigner {
   }
 
   /**
+   * Make an RPC call to the Keycast /api/nostr endpoint
+   */
+  private async rpc(method: string, params: unknown[] = []): Promise<unknown> {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), this.timeout);
+
+    try {
+      const response = await fetch(`${this.apiUrl}/api/nostr`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${this.token}`,
+        },
+        body: JSON.stringify({ method, params }),
+        signal: controller.signal,
+      });
+
+      const data: RpcResponse = await response.json();
+
+      if (!response.ok || data.error) {
+        throw new Error(data.error || `RPC ${method} failed: ${response.status}`);
+      }
+
+      return data.result;
+    } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw new Error(`Request timeout: ${method} failed`);
+      }
+      throw error;
+    } finally {
+      clearTimeout(timeoutId);
+    }
+  }
+
+  /**
    * Get the public key for the authenticated user
    * Caches the result after first call
    */
@@ -48,91 +86,29 @@ export class KeycastJWTSigner implements NostrSigner {
       return this.cachedPubkey;
     }
 
-    console.log('[KeycastJWTSigner] Fetching public key...');
+    const pubkey = await this.rpc('get_public_key') as string;
 
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), this.timeout);
-
-    try {
-      const response = await fetch(`${this.apiUrl}/api/user/pubkey`, {
-        method: 'GET',
-        headers: {
-          Authorization: `Bearer ${this.token}`,
-        },
-        signal: controller.signal,
-      });
-
-      if (!response.ok) {
-        const error = await response.json().catch(() => ({}));
-        throw new Error(
-          error.error || `Failed to get public key: ${response.status}`
-        );
-      }
-
-      const data = await response.json();
-
-      if (!data.pubkey || typeof data.pubkey !== 'string') {
-        throw new Error('Invalid response: missing pubkey');
-      }
-
-      this.cachedPubkey = data.pubkey;
-      console.log('[KeycastJWTSigner] ✅ Got public key:', data.pubkey);
-
-      return data.pubkey;
-    } catch (error) {
-      if (error instanceof Error && error.name === 'AbortError') {
-        throw new Error('Request timeout: Failed to get public key');
-      }
-      throw error;
-    } finally {
-      clearTimeout(timeoutId);
+    if (!pubkey || typeof pubkey !== 'string') {
+      throw new Error('Invalid response: missing pubkey');
     }
+
+    this.cachedPubkey = pubkey;
+    return pubkey;
   }
 
   /**
-   * Sign an event via JWT-authenticated REST API
+   * Sign an event via Keycast RPC API
    */
   async signEvent(
     event: Omit<NostrEvent, 'id' | 'pubkey' | 'sig'>
   ): Promise<NostrEvent> {
-    console.log('[KeycastJWTSigner] Signing event kind', event.kind, '...');
+    const result = await this.rpc('sign_event', [event]) as NostrEvent;
 
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), this.timeout);
-
-    try {
-      const response = await fetch(`${this.apiUrl}/api/sign`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${this.token}`,
-        },
-        body: JSON.stringify({ event }),
-        signal: controller.signal,
-      });
-
-      if (!response.ok) {
-        const error = await response.json().catch(() => ({}));
-        throw new Error(error.error || `Failed to sign event: ${response.status}`);
-      }
-
-      const data = await response.json();
-
-      if (!data.event || !data.event.id || !data.event.sig) {
-        throw new Error('Invalid response: missing signed event');
-      }
-
-      console.log('[KeycastJWTSigner] ✅ Event signed:', data.event.id);
-
-      return data.event;
-    } catch (error) {
-      if (error instanceof Error && error.name === 'AbortError') {
-        throw new Error('Request timeout: Failed to sign event');
-      }
-      throw error;
-    } finally {
-      clearTimeout(timeoutId);
+    if (!result || !result.id || !result.sig) {
+      throw new Error('Invalid response: missing signed event');
     }
+
+    return result;
   }
 
   /**
@@ -140,161 +116,48 @@ export class KeycastJWTSigner implements NostrSigner {
    * Returns empty object as relays are not managed by JWT signer
    */
   async getRelays(): Promise<Record<string, { read: boolean; write: boolean }>> {
-    console.log('[KeycastJWTSigner] getRelays() called, returning empty object');
     return {};
   }
 
   /**
-   * NIP-04 encryption (not supported by JWT API yet)
+   * NIP-04 encryption/decryption
    */
   readonly nip04 = {
     encrypt: async (pubkey: string, plaintext: string): Promise<string> => {
-      console.log('[KeycastJWTSigner] nip04.encrypt() called...');
-
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), this.timeout);
-
-      try {
-        const response = await fetch(`${this.apiUrl}/api/encrypt/nip04`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${this.token}`,
-          },
-          body: JSON.stringify({ pubkey, plaintext }),
-          signal: controller.signal,
-        });
-
-        if (!response.ok) {
-          const error = await response.json().catch(() => ({}));
-          throw new Error(
-            error.error || `NIP-04 encryption failed: ${response.status}`
-          );
-        }
-
-        const data = await response.json();
-        return data.ciphertext;
-      } catch (error) {
-        if (error instanceof Error && error.name === 'AbortError') {
-          throw new Error('Request timeout: NIP-04 encryption failed');
-        }
-        throw error;
-      } finally {
-        clearTimeout(timeoutId);
+      const result = await this.rpc('nip04_encrypt', [pubkey, plaintext]);
+      if (typeof result !== 'string') {
+        throw new Error('Invalid response: expected ciphertext string');
       }
+      return result;
     },
 
     decrypt: async (pubkey: string, ciphertext: string): Promise<string> => {
-      console.log('[KeycastJWTSigner] nip04.decrypt() called...');
-
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), this.timeout);
-
-      try {
-        const response = await fetch(`${this.apiUrl}/api/decrypt/nip04`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${this.token}`,
-          },
-          body: JSON.stringify({ pubkey, ciphertext }),
-          signal: controller.signal,
-        });
-
-        if (!response.ok) {
-          const error = await response.json().catch(() => ({}));
-          throw new Error(
-            error.error || `NIP-04 decryption failed: ${response.status}`
-          );
-        }
-
-        const data = await response.json();
-        return data.plaintext;
-      } catch (error) {
-        if (error instanceof Error && error.name === 'AbortError') {
-          throw new Error('Request timeout: NIP-04 decryption failed');
-        }
-        throw error;
-      } finally {
-        clearTimeout(timeoutId);
+      const result = await this.rpc('nip04_decrypt', [pubkey, ciphertext]);
+      if (typeof result !== 'string') {
+        throw new Error('Invalid response: expected plaintext string');
       }
+      return result;
     },
   };
 
   /**
-   * NIP-44 encryption (not supported by JWT API yet)
+   * NIP-44 encryption/decryption
    */
   readonly nip44 = {
     encrypt: async (pubkey: string, plaintext: string): Promise<string> => {
-      console.log('[KeycastJWTSigner] nip44.encrypt() called...');
-
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), this.timeout);
-
-      try {
-        const response = await fetch(`${this.apiUrl}/api/encrypt/nip44`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${this.token}`,
-          },
-          body: JSON.stringify({ pubkey, plaintext }),
-          signal: controller.signal,
-        });
-
-        if (!response.ok) {
-          const error = await response.json().catch(() => ({}));
-          throw new Error(
-            error.error || `NIP-44 encryption failed: ${response.status}`
-          );
-        }
-
-        const data = await response.json();
-        return data.ciphertext;
-      } catch (error) {
-        if (error instanceof Error && error.name === 'AbortError') {
-          throw new Error('Request timeout: NIP-44 encryption failed');
-        }
-        throw error;
-      } finally {
-        clearTimeout(timeoutId);
+      const result = await this.rpc('nip44_encrypt', [pubkey, plaintext]);
+      if (typeof result !== 'string') {
+        throw new Error('Invalid response: expected ciphertext string');
       }
+      return result;
     },
 
     decrypt: async (pubkey: string, ciphertext: string): Promise<string> => {
-      console.log('[KeycastJWTSigner] nip44.decrypt() called...');
-
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), this.timeout);
-
-      try {
-        const response = await fetch(`${this.apiUrl}/api/decrypt/nip44`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${this.token}`,
-          },
-          body: JSON.stringify({ pubkey, ciphertext }),
-          signal: controller.signal,
-        });
-
-        if (!response.ok) {
-          const error = await response.json().catch(() => ({}));
-          throw new Error(
-            error.error || `NIP-44 decryption failed: ${response.status}`
-          );
-        }
-
-        const data = await response.json();
-        return data.plaintext;
-      } catch (error) {
-        if (error instanceof Error && error.name === 'AbortError') {
-          throw new Error('Request timeout: NIP-44 decryption failed');
-        }
-        throw error;
-      } finally {
-        clearTimeout(timeoutId);
+      const result = await this.rpc('nip44_decrypt', [pubkey, ciphertext]);
+      if (typeof result !== 'string') {
+        throw new Error('Invalid response: expected plaintext string');
       }
+      return result;
     },
   };
 
@@ -303,8 +166,6 @@ export class KeycastJWTSigner implements NostrSigner {
    */
   updateToken(newToken: string): void {
     this.token = newToken;
-    // Clear cached pubkey as it might have changed
     this.cachedPubkey = null;
-    console.log('[KeycastJWTSigner] Token updated');
   }
 }

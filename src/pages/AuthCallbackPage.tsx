@@ -6,19 +6,23 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { getOAuthState, clearOAuthState } from '@/lib/oauthState';
 import { exchangeCodeForToken } from '@/lib/keycast';
 import { useKeycastSession } from '@/hooks/useKeycastSession';
+import { decodeUcanEmail } from '@/lib/ucanDecode';
 import { Loader2, AlertTriangle, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+
+// Module-level set to track codes that have been used (persists across StrictMode double-mount)
+const usedCodes = new Set<string>();
 
 export function AuthCallbackPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { saveSession } = useKeycastSession();
+  const { saveSession, saveBunkerUrl } = useKeycastSession();
 
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Prevent double execution
+    // Prevent double execution from React StrictMode
     let cancelled = false;
 
     async function handleCallback() {
@@ -70,20 +74,33 @@ export function AuthCallbackPage() {
         return;
       }
 
+      // Prevent double execution - codes can only be used once
+      if (usedCodes.has(code)) {
+        console.log('[AuthCallback] Code already used, skipping duplicate request');
+        return;
+      }
+      usedCodes.add(code);
+
       try {
+        // Exchange code for token and bunker URL
         console.log('[AuthCallback] Exchanging code for token...');
-        // Exchange code for token
-        const { token, pubkey } = await exchangeCodeForToken(
+        const { token, pubkey, bunkerUrl } = await exchangeCodeForToken(
           code,
           storedState.codeVerifier
         );
+        console.log('[AuthCallback] Token exchange successful', { pubkey: pubkey.substring(0, 8), hasBunkerUrl: !!bunkerUrl });
 
-        if (cancelled) return;
+        // Once we have the token, always save it - don't check cancelled flag here
+        // The token exchange already completed successfully on the server
 
-        console.log('[AuthCallback] Token exchange successful, pubkey:', pubkey.substring(0, 8));
+        // Try to extract email from UCAN token, fallback to pubkey identifier
+        const email = decodeUcanEmail(token) || `nostr:${pubkey.substring(0, 8)}`;
 
         // Save session (remember for 1 week by default for OAuth)
-        saveSession(token, `oauth:${pubkey.substring(0, 8)}`, true);
+        saveSession(token, email, true);
+
+        // Save bunker URL for NIP-46 signing (if needed later)
+        saveBunkerUrl(bunkerUrl);
 
         // Clear OAuth state
         clearOAuthState();
@@ -95,7 +112,7 @@ export function AuthCallbackPage() {
           navigate(storedState.returnTo || '/', { replace: true });
         }, 1000);
       } catch (err) {
-        if (cancelled) return;
+        // Always show errors - the code was already consumed so user needs to know what happened
         console.error('[AuthCallback] Token exchange failed:', err);
         setError(err instanceof Error ? err.message : 'Login failed');
         setStatus('error');
@@ -107,7 +124,7 @@ export function AuthCallbackPage() {
     return () => {
       cancelled = true;
     };
-  }, [searchParams, navigate, saveSession]);
+  }, [searchParams, navigate, saveSession, saveBunkerUrl]);
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-background p-4">
