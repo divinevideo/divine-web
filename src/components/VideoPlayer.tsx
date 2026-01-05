@@ -586,6 +586,8 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
     // Set video source - with HLS.js support for adaptive bitrate streaming
     useEffect(() => {
       const video = videoRef.current;
+      // AbortController to cancel in-flight fetches when effect re-runs
+      const abortController = new AbortController();
 
       if (!video) {
         verboseLog(`[VideoPlayer ${videoId}] Skipping source setup - no video element`);
@@ -709,12 +711,23 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
             (async () => {
               try {
                 const authHeader = await getAuthHeader(currentUrl);
+                // Check if request was aborted while getting auth header
+                if (abortController.signal.aborted) {
+                  verboseLog(`[VideoPlayer ${videoId}] Fetch aborted before starting`);
+                  return;
+                }
                 if (authHeader) {
                   const response = await fetch(currentUrl, {
-                    headers: { 'Authorization': authHeader }
+                    headers: { 'Authorization': authHeader },
+                    signal: abortController.signal
                   });
                   if (response.ok) {
                     const blob = await response.blob();
+                    // Check if request was aborted while getting blob
+                    if (abortController.signal.aborted) {
+                      verboseLog(`[VideoPlayer ${videoId}] Fetch aborted after getting blob`);
+                      return;
+                    }
                     // Revoke any previous blob URL before creating a new one
                     if (blobUrlRef.current) {
                       URL.revokeObjectURL(blobUrlRef.current);
@@ -739,6 +752,11 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
                   video.src = currentUrl;
                 }
               } catch (error) {
+                // Ignore abort errors, they're expected when effect re-runs
+                if (error instanceof Error && error.name === 'AbortError') {
+                  verboseLog(`[VideoPlayer ${videoId}] Fetch aborted`);
+                  return;
+                }
                 debugError(`[VideoPlayer ${videoId}] Fetch error:`, error);
                 setHasError(true);
                 setIsLoading(false);
@@ -753,8 +771,10 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
       }
       } // end loadVideoSource
 
-      // Cleanup on unmount
+      // Cleanup on effect re-run or unmount
       return () => {
+        // Abort any in-flight fetch to prevent race conditions with blob URLs
+        abortController.abort();
         if (hlsRef.current) {
           verboseLog(`[VideoPlayer ${videoId}] Cleaning up HLS instance`);
           hlsRef.current.destroy();

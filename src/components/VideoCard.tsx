@@ -101,7 +101,10 @@ export function VideoCard({
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showViewSourceDialog, setShowViewSourceDialog] = useState(false);
   const [showReactionsModal, setShowReactionsModal] = useState<'likes' | 'reposts' | null>(null);
-  const [videoAspectRatio, setVideoAspectRatio] = useState<number | null>(null);
+  // Default aspect ratio: Vine videos (have loopCount) were square, others are likely 9:16 vertical
+  const [videoAspectRatio, setVideoAspectRatio] = useState<number>(
+    video.loopCount ? 1 : 9 / 16
+  );
   const _isMobile = useIsMobile();
   // Determine layout: use prop if provided, otherwise always vertical (text below video)
   const effectiveLayout = layout ?? 'vertical';
@@ -384,7 +387,7 @@ export function VideoCard({
           <CardContent className={cn("p-0 flex justify-center", isHorizontal && "p-2")}>
             <div
               className="relative rounded-lg overflow-hidden max-h-[70vh]"
-              style={videoAspectRatio ? { aspectRatio: videoAspectRatio.toString() } : undefined}
+              style={{ aspectRatio: videoAspectRatio.toString() }}
             >
               {!isPlaying ? (
                 <ThumbnailPlayer
@@ -392,7 +395,7 @@ export function VideoCard({
                   src={video.videoUrl}
                   thumbnailUrl={video.thumbnailUrl}
                   duration={video.duration}
-                  className={cn("w-full h-full", !videoAspectRatio && "opacity-0")}
+                  className="w-full h-full"
                   onClick={handleThumbnailClick}
                   onError={() => setVideoError(true)}
                   onVideoDimensions={(d) => setVideoAspectRatio(d.width / d.height)}
