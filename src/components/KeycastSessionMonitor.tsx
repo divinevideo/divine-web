@@ -1,11 +1,10 @@
 // ABOUTME: Monitors Keycast JWT session and handles automatic token refresh
 // ABOUTME: Uses refresh_token for silent refresh, authorization_handle for consent-skip fallback
 
-import React, { useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { useKeycastSession } from '@/hooks/useKeycastSession';
 import { useNostrLogin } from '@nostrify/react/login';
 import { toast } from '@/hooks/useToast';
-import { ToastAction } from '@/components/ui/toast';
 import { refreshAccessToken, buildOAuthAuthorizeUrl } from '@/lib/keycast';
 import { saveOAuthState } from '@/lib/oauthState';
 import { generateCodeChallenge, generateCodeVerifier, generateNonce } from '@/lib/pkce';
@@ -96,13 +95,10 @@ export function KeycastSessionMonitor() {
   function showReloginToast(authHandle: string) {
     toast({
       title: 'Session Expired',
-      description: 'Click to reconnect seamlessly.',
-      duration: 0, // Don't auto-dismiss
-      action: React.createElement(ToastAction, {
-        altText: 'Reconnect',
-        onClick: () => initiateOAuthReauth(authHandle),
-      }, 'Reconnect'),
+      description: 'Your session has expired. Reconnecting...',
     });
+    // Auto-initiate re-auth with authorization handle (consent-skip)
+    initiateOAuthReauth(authHandle);
   }
 
   return null;
