@@ -16,6 +16,9 @@ import {
   ContentSeverity
 } from '@/types/moderation';
 
+// Stable empty array to prevent unnecessary re-renders
+const EMPTY_MUTE_LIST: MuteItem[] = [];
+
 /**
  * Parse a mute list event (kind 10001)
  */
@@ -53,11 +56,8 @@ export function useMuteList(pubkey?: string) {
     queryKey: ['mute-list', targetPubkey],
     queryFn: async (context) => {
       if (!targetPubkey) {
-        console.log('[useMuteList] No target pubkey, returning empty list');
-        return [];
+        return EMPTY_MUTE_LIST;
       }
-
-      console.log('[useMuteList] Fetching mute list for:', targetPubkey);
 
       const signal = AbortSignal.any([
         context.signal,
@@ -72,19 +72,11 @@ export function useMuteList(pubkey?: string) {
 
       const events = await nostr.query([filter], { signal });
 
-      console.log('[useMuteList] Found', events.length, 'mute list events');
-
-      if (events.length === 0) return [];
+      if (events.length === 0) return EMPTY_MUTE_LIST;
 
       // Get the most recent mute list
       const latestEvent = events.sort((a, b) => b.created_at - a.created_at)[0];
-
-      console.log('[useMuteList] Latest mute list event:', latestEvent);
-
-      const items = parseMuteList(latestEvent);
-      console.log('[useMuteList] Parsed', items.length, 'mute items:', items);
-
-      return items;
+      return parseMuteList(latestEvent);
     },
     enabled: !!targetPubkey,
     staleTime: 60000, // 1 minute
@@ -305,10 +297,7 @@ export function useReportHistory() {
  * Hook to check if content should be filtered
  */
 export function useContentModeration() {
-  const { data: muteList = [] } = useMuteList();
-
-  // Debug: Log mute list when it changes
-  console.log('[useContentModeration] Mute list loaded:', muteList.length, 'items', muteList);
+  const { data: muteList = EMPTY_MUTE_LIST } = useMuteList();
 
   const checkContent = useCallback((content: {
     pubkey?: string;
