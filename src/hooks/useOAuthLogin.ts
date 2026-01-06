@@ -25,7 +25,7 @@ export function useOAuthLogin() {
       // Save state for callback
       saveOAuthState({
         codeVerifier,
-        returnTo: options?.returnTo || window.location.pathname,
+        returnTo: options?.returnTo || window.location.pathname + window.location.search + window.location.hash,
         nonce,
       });
 

@@ -117,7 +117,7 @@ async function initiateOAuthReauth(authHandle: string) {
     saveOAuthState({
       nonce,
       codeVerifier,
-      returnTo: window.location.pathname,
+      returnTo: window.location.pathname + window.location.search + window.location.hash,
     });
 
     // Build authorize URL with authorization_handle for auto-approve (skip consent)
