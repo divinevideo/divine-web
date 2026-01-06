@@ -6,6 +6,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { getOAuthState, clearOAuthState } from '@/lib/oauthState';
 import { exchangeCodeForToken } from '@/lib/keycast';
 import { useKeycastSession } from '@/hooks/useKeycastSession';
+import { useLoginActions } from '@/hooks/useLoginActions';
 import { decodeUcanEmail } from '@/lib/ucanDecode';
 import { Loader2, AlertTriangle, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -16,7 +17,8 @@ const usedCodes = new Set<string>();
 export function AuthCallbackPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { saveSession, saveBunkerUrl } = useKeycastSession();
+  const { saveSession } = useKeycastSession();
+  const login = useLoginActions();
 
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [error, setError] = useState<string | null>(null);
@@ -43,6 +45,13 @@ export function AuthCallbackPage() {
       if (!code || !state) {
         setError('Missing authorization code or state');
         setStatus('error');
+        return;
+      }
+
+      // IMPORTANT: Check if code was already used FIRST, before checking OAuth state
+      // This prevents later renders (after OAuth state is cleared) from showing errors
+      if (usedCodes.has(code)) {
+        console.log('[AuthCallback] Code already used, skipping duplicate request');
         return;
       }
 
@@ -74,21 +83,17 @@ export function AuthCallbackPage() {
         return;
       }
 
-      // Prevent double execution - codes can only be used once
-      if (usedCodes.has(code)) {
-        console.log('[AuthCallback] Code already used, skipping duplicate request');
-        return;
-      }
+      // Mark code as used before starting exchange
       usedCodes.add(code);
 
       try {
-        // Exchange code for token and bunker URL
+        // Exchange code for token
         console.log('[AuthCallback] Exchanging code for token...');
-        const { token, pubkey, bunkerUrl } = await exchangeCodeForToken(
+        const { token, pubkey, refreshToken, authorizationHandle } = await exchangeCodeForToken(
           code,
           storedState.codeVerifier
         );
-        console.log('[AuthCallback] Token exchange successful', { pubkey: pubkey.substring(0, 8), hasBunkerUrl: !!bunkerUrl });
+        console.log('[AuthCallback] Token exchange successful', { pubkey: pubkey.substring(0, 8), hasRefreshToken: !!refreshToken });
 
         // Once we have the token, always save it - don't check cancelled flag here
         // The token exchange already completed successfully on the server
@@ -97,13 +102,17 @@ export function AuthCallbackPage() {
         const email = decodeUcanEmail(token) || `nostr:${pubkey.substring(0, 8)}`;
 
         // Save session (remember for 1 week by default for OAuth)
-        saveSession(token, email, true);
-
-        // Save bunker URL for NIP-46 signing (if needed later)
-        saveBunkerUrl(bunkerUrl);
+        // Save refresh_token for silent background refresh
+        // Save authorization_handle for consent-skip re-auth when refresh_token expires
+        saveSession(token, email, pubkey, true, refreshToken, authorizationHandle);
 
         // Clear OAuth state
         clearOAuthState();
+
+        // Create Keycast login (REST RPC based signing)
+        console.log('[AuthCallback] Creating Keycast login...');
+        login.keycast(pubkey, token);
+        console.log('[AuthCallback] ✅ Keycast login created successfully');
 
         setStatus('success');
 
@@ -124,7 +133,7 @@ export function AuthCallbackPage() {
     return () => {
       cancelled = true;
     };
-  }, [searchParams, navigate, saveSession, saveBunkerUrl]);
+  }, [searchParams, navigate, saveSession, login]);
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-background p-4">

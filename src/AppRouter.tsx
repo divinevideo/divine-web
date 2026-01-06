@@ -44,8 +44,6 @@ import { DebugVideoPage } from "./pages/DebugVideoPage";
 import { KeycastAutoConnect } from "@/components/KeycastAutoConnect";
 
 export function AppRouter() {
-  // Auto-connect Keycast bunker if user has a session
-  KeycastAutoConnect();
   const { logins } = useNostrLogin();
 
   // Check if user is logged in
@@ -56,6 +54,7 @@ export function AppRouter() {
       <ScrollToTop />
       <AnalyticsPageTracker />
       <AnalyticsUserTracker />
+      <KeycastAutoConnect />
       <Routes>
         {/* Marketing/informational pages - no app layout */}
         <Route path="/about" element={<AboutPage />} />

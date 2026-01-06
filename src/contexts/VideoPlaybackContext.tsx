@@ -1,7 +1,7 @@
 // ABOUTME: Context for managing video playback state across the feed
 // ABOUTME: Ensures only one video plays at a time based on viewport visibility
 
-import { createContext, useState, useRef, ReactNode } from 'react';
+import { createContext, useState, useRef, useCallback, useMemo, ReactNode } from 'react';
 import { verboseLog } from '@/lib/debug';
 
 export interface VideoPlaybackContextType {
@@ -26,27 +26,27 @@ export function VideoPlaybackProvider({ children }: { children: ReactNode }) {
   const activeVideoIdRef = useRef<string | null>(null);
   activeVideoIdRef.current = activeVideoId;
 
-  const setActiveVideo = (videoId: string | null) => {
-    verboseLog(`setActiveVideo called with: ${videoId}, current: ${activeVideoId}`);
+  const setActiveVideo = useCallback((videoId: string | null) => {
+    verboseLog(`setActiveVideo called with: ${videoId}`);
     verboseLog(`Registered videos: ${Array.from(videoRefs.current.keys()).join(', ')}`);
 
     // Just update the active video ID
     // The VideoPlayer components will handle play/pause based on this change
     setActiveVideoId(videoId);
-  };
+  }, []);
 
-  const registerVideo = (videoId: string, element: HTMLVideoElement) => {
+  const registerVideo = useCallback((videoId: string, element: HTMLVideoElement) => {
     verboseLog(`Registering video: ${videoId}`);
     videoRefs.current.set(videoId, element);
-  };
+  }, []);
 
-  const unregisterVideo = (videoId: string) => {
+  const unregisterVideo = useCallback((videoId: string) => {
     verboseLog(`Unregistering video: ${videoId}`);
     videoRefs.current.delete(videoId);
     videoVisibility.current.delete(videoId);
-  };
+  }, []);
 
-  const updateVideoVisibility = (videoId: string, visibilityRatio: number) => {
+  const updateVideoVisibility = useCallback((videoId: string, visibilityRatio: number) => {
     // Update visibility for this video
     if (visibilityRatio > 0) {
       videoVisibility.current.set(videoId, visibilityRatio);
@@ -78,20 +78,20 @@ export function VideoPlaybackProvider({ children }: { children: ReactNode }) {
         setActiveVideoId(mostVisibleId);
       }
     }, 100); // Small debounce to avoid rapid switching
-  };
+  }, []);
+
+  const contextValue = useMemo(() => ({
+    activeVideoId,
+    setActiveVideo,
+    registerVideo,
+    unregisterVideo,
+    updateVideoVisibility,
+    globalMuted,
+    setGlobalMuted,
+  }), [activeVideoId, setActiveVideo, registerVideo, unregisterVideo, updateVideoVisibility, globalMuted]);
 
   return (
-    <VideoPlaybackContext.Provider
-      value={{
-        activeVideoId,
-        setActiveVideo,
-        registerVideo,
-        unregisterVideo,
-        updateVideoVisibility,
-        globalMuted,
-        setGlobalMuted,
-      }}
-    >
+    <VideoPlaybackContext.Provider value={contextValue}>
       {children}
     </VideoPlaybackContext.Provider>
   );

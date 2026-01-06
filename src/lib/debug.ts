@@ -16,25 +16,21 @@ export const isLocalhost = typeof window !== 'undefined' &&
  * Enable verbose logging (video playback, visibility updates, etc.)
  * Set to true to see detailed video playback logs
  */
-export const ENABLE_VERBOSE_LOGGING = true;
+export const ENABLE_VERBOSE_LOGGING = false;
 
 /**
  * Debug log that only outputs on localhost
  */
-export const debugLog = (...args: unknown[]) => {
-  if (isLocalhost) {
-    console.log(...args);
-  }
+export const debugLog = (..._args: unknown[]) => {
+  // disabled for debugging
 };
 
 /**
  * Verbose debug log for really detailed/spammy logs
  * Only outputs when ENABLE_VERBOSE_LOGGING is true
  */
-export const verboseLog = (...args: unknown[]) => {
-  if (isLocalhost && ENABLE_VERBOSE_LOGGING) {
-    console.log(...args);
-  }
+export const verboseLog = (..._args: unknown[]) => {
+  // disabled for debugging
 };
 
 /**

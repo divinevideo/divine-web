@@ -19,14 +19,18 @@ export function useNostrPublish(): UseMutationResult<NostrEvent> {
           tags.push(["client", location.hostname]);
         }
 
+        console.log('[useNostrPublish] Signing event...', { kind: t.kind, content: t.content?.substring(0, 100) });
         const event = await user.signer.signEvent({
           kind: t.kind,
           content: t.content ?? "",
           tags,
           created_at: t.created_at ?? Math.floor(Date.now() / 1000),
         });
+        console.log('[useNostrPublish] Event signed:', { id: event.id, pubkey: event.pubkey, kind: event.kind });
 
+        console.log('[useNostrPublish] Publishing to relay...');
         await nostr.event(event, { signal: AbortSignal.timeout(5000) });
+        console.log('[useNostrPublish] ✅ Event published successfully');
         return event;
       } else {
         throw new Error("User is not logged in");

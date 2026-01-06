@@ -11,7 +11,7 @@ import { InferSeoMetaPlugin } from '@unhead/addons';
 import { Suspense } from 'react';
 import NostrProvider from '@/components/NostrProvider';
 import { EventCachePreloader } from '@/components/EventCachePreloader';
-import { KeycastJWTWindowNostr } from '@/components/KeycastJWTWindowNostr';
+import { KeycastSessionMonitor } from '@/components/KeycastSessionMonitor';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -57,7 +57,7 @@ export function App() {
           <NostrLoginProvider storageKey='nostr:login'>
             <NostrProvider>
               <EventCachePreloader />
-              <KeycastJWTWindowNostr />
+              <KeycastSessionMonitor />
               <NWCProvider>
                 <VideoPlaybackProvider>
                   <TooltipProvider>

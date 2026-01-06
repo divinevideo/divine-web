@@ -23,6 +23,16 @@ export async function generateCodeChallenge(verifier: string): Promise<string> {
 }
 
 /**
+ * Generate a random nonce/state for OAuth CSRF protection
+ * Uses 16 bytes (128 bits) of randomness
+ */
+export function generateNonce(): string {
+  const array = new Uint8Array(16);
+  crypto.getRandomValues(array);
+  return base64UrlEncode(array);
+}
+
+/**
  * Base64url encode without padding (per RFC 7636)
  */
 function base64UrlEncode(bytes: Uint8Array): string {

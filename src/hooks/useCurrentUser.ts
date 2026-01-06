@@ -3,6 +3,7 @@ import { useNostr } from '@nostrify/react';
 import { useCallback, useMemo } from 'react';
 
 import { useAuthor } from './useAuthor.ts';
+import { KeycastJWTSigner } from '@/lib/KeycastJWTSigner';
 
 export function useCurrentUser() {
   const { nostr } = useNostr();
@@ -16,7 +17,14 @@ export function useCurrentUser() {
         return NUser.fromBunkerLogin(login, nostr);
       case 'extension': // Nostr login with NIP-07 browser extension
         return NUser.fromExtensionLogin(login);
-      // Other login types can be defined here
+      case 'x-keycast': { // Keycast OAuth (REST RPC based signing)
+        const token = (login as { data?: { token?: string } }).data?.token;
+        if (!token) {
+          throw new Error('Missing token for x-keycast login');
+        }
+        const signer = new KeycastJWTSigner({ token });
+        return new NUser('x-keycast' as NLoginType['type'], login.pubkey, signer);
+      }
       default:
         throw new Error(`Unsupported login type: ${login.type}`);
     }

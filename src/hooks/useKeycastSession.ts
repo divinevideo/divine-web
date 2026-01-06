@@ -10,7 +10,9 @@ const EXPIRATION_KEY = 'keycast_jwt_expiration';
 const SESSION_START_KEY = 'keycast_session_start';
 const REMEMBER_ME_KEY = 'keycast_remember_me';
 const EMAIL_KEY = 'keycast_email';
-const BUNKER_URL_KEY = 'keycast_bunker_url';
+const PUBKEY_KEY = 'keycast_pubkey';
+const AUTH_HANDLE_KEY = 'keycast_auth_handle';
+const REFRESH_TOKEN_KEY = 'keycast_refresh_token';
 
 const JWT_LIFETIME_MS = 24 * 60 * 60 * 1000; // 24 hours
 const REMEMBER_ME_DURATION_MS = 7 * 24 * 60 * 60 * 1000; // 1 week
@@ -19,10 +21,10 @@ const EXPIRATION_WARNING_MS = 60 * 60 * 1000; // 1 hour before expiration
 export interface KeycastSession {
   token: string;
   email: string;
+  pubkey: string;
   expiresAt: number;
   sessionStart: number;
   rememberMe: boolean;
-  bunkerUrl?: string;
 }
 
 export interface KeycastSessionState {
@@ -47,7 +49,9 @@ export function useKeycastSession() {
     false
   );
   const [email, setEmail] = useLocalStorage<string | null>(EMAIL_KEY, null);
-  const [bunkerUrl, setBunkerUrl] = useLocalStorage<string | null>(BUNKER_URL_KEY, null);
+  const [pubkey, setPubkey] = useLocalStorage<string | null>(PUBKEY_KEY, null);
+  const [authHandle, setAuthHandle] = useLocalStorage<string | null>(AUTH_HANDLE_KEY, null);
+  const [refreshTokenStored, setRefreshTokenStored] = useLocalStorage<string | null>(REFRESH_TOKEN_KEY, null);
 
   const [state, setState] = useState<KeycastSessionState>({
     session: null,
@@ -58,7 +62,7 @@ export function useKeycastSession() {
 
   // Update state when storage values change
   useEffect(() => {
-    if (!token || !expiration || !sessionStart || !email) {
+    if (!token || !expiration || !sessionStart || !email || !pubkey) {
       setState({
         session: null,
         isExpired: false,
@@ -84,16 +88,16 @@ export function useKeycastSession() {
       session: {
         token,
         email,
+        pubkey,
         expiresAt: expiration,
         sessionStart,
         rememberMe,
-        bunkerUrl: bunkerUrl || undefined,
       },
       isExpired,
       isExpiringSoon,
       needsReauth: needsReauth || needsReauthDueToAge,
     });
-  }, [token, expiration, sessionStart, rememberMe, email, bunkerUrl]);
+  }, [token, expiration, sessionStart, rememberMe, email, pubkey]);
 
   /**
    * Save a new session after login or registration
@@ -102,7 +106,10 @@ export function useKeycastSession() {
     (
       newToken: string,
       userEmail: string,
-      shouldRememberMe: boolean = false
+      userPubkey: string,
+      shouldRememberMe: boolean = false,
+      refreshToken?: string,
+      authorizationHandle?: string
     ) => {
       const now = Date.now();
 
@@ -122,9 +129,18 @@ export function useKeycastSession() {
       setExpiration(expiresAt);
       setSessionStart(now);
       setEmail(userEmail);
+      setPubkey(userPubkey);
       setRememberMe(shouldRememberMe);
+      if (refreshToken) {
+        setRefreshTokenStored(refreshToken);
+        console.log('[useKeycastSession] Saved refresh token for silent background refresh');
+      }
+      if (authorizationHandle) {
+        setAuthHandle(authorizationHandle);
+        console.log('[useKeycastSession] Saved authorization handle for consent-skip re-auth');
+      }
     },
-    [setToken, setExpiration, setSessionStart, setEmail, setRememberMe]
+    [setToken, setExpiration, setSessionStart, setEmail, setPubkey, setRememberMe, setRefreshTokenStored, setAuthHandle]
   );
 
   /**
@@ -154,24 +170,6 @@ export function useKeycastSession() {
   );
 
   /**
-   * Save bunker URL (called after successful bunker connection)
-   */
-  const saveBunkerUrl = useCallback(
-    (url: string) => {
-      console.log('[useKeycastSession] Saving bunker URL for persistent reconnection');
-      setBunkerUrl(url);
-    },
-    [setBunkerUrl]
-  );
-
-  /**
-   * Get saved bunker URL
-   */
-  const getSavedBunkerUrl = useCallback((): string | null => {
-    return bunkerUrl;
-  }, [bunkerUrl]);
-
-  /**
    * Clear session (logout)
    */
   const clearSession = useCallback(() => {
@@ -179,9 +177,32 @@ export function useKeycastSession() {
     setExpiration(null);
     setSessionStart(null);
     setEmail(null);
+    setPubkey(null);
     setRememberMe(false);
-    setBunkerUrl(null);
-  }, [setToken, setExpiration, setSessionStart, setEmail, setRememberMe, setBunkerUrl]);
+    setRefreshTokenStored(null);
+    setAuthHandle(null);
+  }, [setToken, setExpiration, setSessionStart, setEmail, setPubkey, setRememberMe, setRefreshTokenStored, setAuthHandle]);
+
+  /**
+   * Get saved pubkey
+   */
+  const getPubkey = useCallback((): string | null => {
+    return pubkey;
+  }, [pubkey]);
+
+  /**
+   * Get authorization handle for consent-skip re-authentication
+   */
+  const getAuthHandle = useCallback((): string | null => {
+    return authHandle;
+  }, [authHandle]);
+
+  /**
+   * Get refresh token for silent background token refresh
+   */
+  const getRefreshToken = useCallback((): string | null => {
+    return refreshTokenStored;
+  }, [refreshTokenStored]);
 
   /**
    * Get valid token, or null if expired/missing
@@ -211,7 +232,8 @@ export function useKeycastSession() {
     refreshSession,
     clearSession,
     getValidToken,
-    saveBunkerUrl,
-    getSavedBunkerUrl,
+    getPubkey,
+    getAuthHandle,
+    getRefreshToken,
   };
 }

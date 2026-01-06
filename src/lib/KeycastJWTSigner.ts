@@ -1,8 +1,10 @@
 // ABOUTME: JWT-based Nostr signer that signs events via Keycast REST RPC API
 // ABOUTME: Implements NostrSigner interface using the /api/nostr unified endpoint
+// ABOUTME: Supports lazy token refresh - automatically refreshes expired tokens on use
 
 import type { NostrEvent, NostrSigner } from '@nostrify/nostrify';
-import { KEYCAST_API_URL } from './keycast';
+import { KEYCAST_API_URL, refreshAccessToken } from './keycast';
+import { getJWTExpiration } from './jwtDecode';
 
 export interface KeycastJWTSignerOptions {
   /** JWT token for authentication */
@@ -30,11 +32,21 @@ interface RpcResponse {
  * const signed = await signer.signEvent({ kind: 1, content: 'Hello!', tags: [], created_at: 0 });
  * ```
  */
+// Keys for localStorage
+const REFRESH_TOKEN_KEY = 'keycast_refresh_token';
+const JWT_TOKEN_KEY = 'keycast_jwt_token';
+const EXPIRATION_KEY = 'keycast_jwt_expiration';
+
+// Refresh when less than 5 minutes remaining
+const REFRESH_THRESHOLD_MS = 5 * 60 * 1000;
+
 export class KeycastJWTSigner implements NostrSigner {
   private token: string;
   private apiUrl: string;
   private timeout: number;
   private cachedPubkey: string | null = null;
+  private isRefreshing: boolean = false;
+  private refreshPromise: Promise<void> | null = null;
 
   constructor(options: KeycastJWTSignerOptions) {
     this.token = options.token;
@@ -43,9 +55,85 @@ export class KeycastJWTSigner implements NostrSigner {
   }
 
   /**
+   * Check if the token is expired or expiring soon
+   */
+  private isTokenExpiredOrExpiring(): boolean {
+    const expiration = getJWTExpiration(this.token);
+    if (!expiration) {
+      // Can't determine expiration, assume valid
+      return false;
+    }
+    const now = Date.now();
+    const timeUntilExpiry = expiration - now;
+    return timeUntilExpiry < REFRESH_THRESHOLD_MS;
+  }
+
+  /**
+   * Attempt to refresh the token using stored refresh token
+   */
+  private async ensureValidToken(): Promise<void> {
+    if (!this.isTokenExpiredOrExpiring()) {
+      return;
+    }
+
+    // Avoid concurrent refresh attempts
+    if (this.isRefreshing && this.refreshPromise) {
+      return this.refreshPromise;
+    }
+
+    const refreshTokenRaw = localStorage.getItem(REFRESH_TOKEN_KEY);
+    if (!refreshTokenRaw) {
+      console.warn('[KeycastJWTSigner] Token expired but no refresh token available');
+      return;
+    }
+    // Parse JSON-stringified value from useLocalStorage
+    const refreshToken = JSON.parse(refreshTokenRaw) as string;
+
+    this.isRefreshing = true;
+    this.refreshPromise = this.doRefresh(refreshToken);
+
+    try {
+      await this.refreshPromise;
+    } finally {
+      this.isRefreshing = false;
+      this.refreshPromise = null;
+    }
+  }
+
+  private async doRefresh(refreshToken: string): Promise<void> {
+    try {
+      console.log('[KeycastJWTSigner] Token expired/expiring, refreshing...');
+      const result = await refreshAccessToken(refreshToken);
+
+      // Update internal token
+      this.token = result.token;
+      this.cachedPubkey = null; // Clear cache in case pubkey changes
+
+      // Update localStorage
+      localStorage.setItem(JWT_TOKEN_KEY, JSON.stringify(result.token));
+      const newExpiration = getJWTExpiration(result.token);
+      if (newExpiration) {
+        localStorage.setItem(EXPIRATION_KEY, JSON.stringify(newExpiration));
+      }
+      if (result.refreshToken) {
+        localStorage.setItem(REFRESH_TOKEN_KEY, JSON.stringify(result.refreshToken));
+      }
+
+      console.log('[KeycastJWTSigner] Token refreshed successfully');
+    } catch (error) {
+      console.error('[KeycastJWTSigner] Failed to refresh token:', error);
+      // Don't throw - let the original request proceed and fail naturally
+      // This allows the user to see the auth error and re-login
+    }
+  }
+
+  /**
    * Make an RPC call to the Keycast /api/nostr endpoint
    */
   private async rpc(method: string, params: unknown[] = []): Promise<unknown> {
+    // Lazy refresh: ensure token is valid before making request
+    await this.ensureValidToken();
+
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), this.timeout);
 
@@ -83,15 +171,18 @@ export class KeycastJWTSigner implements NostrSigner {
    */
   async getPublicKey(): Promise<string> {
     if (this.cachedPubkey) {
+      console.log('[KeycastJWTSigner] Using cached pubkey:', this.cachedPubkey);
       return this.cachedPubkey;
     }
 
+    console.log('[KeycastJWTSigner] Fetching pubkey from API...');
     const pubkey = await this.rpc('get_public_key') as string;
 
     if (!pubkey || typeof pubkey !== 'string') {
       throw new Error('Invalid response: missing pubkey');
     }
 
+    console.log('[KeycastJWTSigner] Got pubkey from API:', pubkey);
     this.cachedPubkey = pubkey;
     return pubkey;
   }
@@ -102,7 +193,16 @@ export class KeycastJWTSigner implements NostrSigner {
   async signEvent(
     event: Omit<NostrEvent, 'id' | 'pubkey' | 'sig'>
   ): Promise<NostrEvent> {
-    const result = await this.rpc('sign_event', [event]) as NostrEvent;
+    // Get pubkey first - the API requires it in the event
+    const pubkey = await this.getPublicKey();
+
+    // Create event with pubkey included
+    const eventWithPubkey = {
+      ...event,
+      pubkey,
+    };
+
+    const result = await this.rpc('sign_event', [eventWithPubkey]) as NostrEvent;
 
     if (!result || !result.id || !result.sig) {
       throw new Error('Invalid response: missing signed event');

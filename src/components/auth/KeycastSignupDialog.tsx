@@ -1,5 +1,5 @@
 // ABOUTME: Registration dialog for new Keycast users (custodial Nostr identity)
-// ABOUTME: Guides users through email signup, bunker login, and profile creation
+// ABOUTME: Guides users through email signup and profile creation
 
 import React, { useState, useEffect, useRef } from 'react';
 import {
@@ -33,7 +33,7 @@ import { debugLog } from '@/lib/debug';
 import { useUploadFile } from '@/hooks/useUploadFile';
 import { useKeycastSession } from '@/hooks/useKeycastSession';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
-import { registerUser, getBunkerUrl } from '@/lib/keycast';
+import { registerUser } from '@/lib/keycast';
 
 interface KeycastSignupDialogProps {
   isOpen: boolean;
@@ -64,7 +64,7 @@ export function KeycastSignupDialog({
   });
 
   const login = useLoginActions();
-  const { saveSession, saveBunkerUrl } = useKeycastSession();
+  const { saveSession } = useKeycastSession();
   const currentUser = useCurrentUser();
   const { mutateAsync: publishEvent, isPending: isPublishing } =
     useNostrPublish();
@@ -121,30 +121,12 @@ export function KeycastSignupDialog({
 
       // Step 2: Save session
       console.log('Step 2: Saving session...');
-      saveSession(token, email, rememberMe);
+      saveSession(token, email, pubkey, rememberMe);
 
-      // Step 3: Get bunker URL
-      console.log('Step 3: Getting bunker URL...');
-      const bunkerUrl = await getBunkerUrl(token);
-      console.log('Bunker URL received:', bunkerUrl.substring(0, 50) + '...');
-
-      // Step 3.5: Save bunker URL for persistent reconnection
-      saveBunkerUrl(bunkerUrl);
-
-      // Step 4: Connect to bunker in background (non-blocking)
-      console.log('Step 4: Connecting to bunker in background...');
-      console.log('User pubkey:', pubkey);
-      console.log('Bunker URL:', bunkerUrl.substring(0, 50) + '...');
-
-      // Fire off bunker connection without awaiting - let it connect in background
-      login.bunker(bunkerUrl)
-        .then(() => {
-          console.log('✅ Bunker connection completed successfully!');
-        })
-        .catch((bunkerError) => {
-          console.warn('⚠️ Bunker connection failed:', bunkerError);
-          // User can try logging in again later
-        });
+      // Step 3: Create Keycast login (REST RPC based signing)
+      console.log('Step 3: Creating Keycast login...');
+      login.keycast(pubkey, token);
+      console.log('✅ Keycast login created successfully');
 
       console.log('✅ Registration complete! Proceeding to profile setup...');
 

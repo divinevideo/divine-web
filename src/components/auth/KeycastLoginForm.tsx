@@ -1,5 +1,5 @@
 // ABOUTME: Login form for existing Keycast users (email/password authentication)
-// ABOUTME: Integrates with Keycast identity server and NIP-46 bunker for remote signing
+// ABOUTME: Integrates with Keycast identity server and REST RPC API for signing
 
 import React, { useState } from 'react';
 import { Mail, Lock } from 'lucide-react';
@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertTriangle } from 'lucide-react';
-import { loginUser, getBunkerUrl } from '@/lib/keycast';
+import { loginUser } from '@/lib/keycast';
 import { useLoginActions } from '@/hooks/useLoginActions';
 import { useKeycastSession } from '@/hooks/useKeycastSession';
 import { toast } from '@/hooks/useToast';
@@ -25,7 +25,7 @@ export function KeycastLoginForm({ onSuccess }: KeycastLoginFormProps) {
   const [error, setError] = useState<string | null>(null);
 
   const login = useLoginActions();
-  const { saveSession, saveBunkerUrl } = useKeycastSession();
+  const { saveSession } = useKeycastSession();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,76 +47,22 @@ export function KeycastLoginForm({ onSuccess }: KeycastLoginFormProps) {
 
       // Step 2: Save session
       console.log('Step 2: Saving session...');
-      saveSession(token, email, rememberMe);
+      saveSession(token, email, pubkey, rememberMe);
 
-      // Step 3: Get bunker URL
-      console.log('Step 3: Getting bunker URL...');
-      const bunkerUrl = await getBunkerUrl(token);
-      console.log('Bunker URL received:', bunkerUrl.substring(0, 50) + '...');
+      // Step 3: Create Keycast login (REST RPC based signing)
+      console.log('Step 3: Creating Keycast login...');
+      login.keycast(pubkey, token);
+      console.log('✅ Keycast login created successfully');
 
-      // Step 3.5: Save bunker URL for persistent reconnection
-      saveBunkerUrl(bunkerUrl);
-
-      // Step 4: Start bunker connection in background
-      console.log('Step 4: Connecting to bunker in background...');
-      console.log('User pubkey:', pubkey);
-      console.log('Bunker URL:', bunkerUrl.substring(0, 50) + '...');
-
-      // Show success toast immediately
+      // Show success toast
       toast({
         title: 'Login Successful!',
-        description: 'Connecting to signing service...',
+        description: 'You can now post and interact with content.',
       });
 
-      // Start bunker connection asynchronously - don't wait for it
-      console.log('🔄 Starting bunker connection...');
-      const bunkerStart = Date.now();
+      console.log('✅ Login complete!');
 
-      // Set a 60-second timeout to detect if bunker hangs
-      const bunkerTimeout = setTimeout(() => {
-        const bunkerTime = Date.now() - bunkerStart;
-        console.warn(`⏱️ Bunker connection still pending after ${bunkerTime}ms - may be hanging`);
-
-        // Show warning toast if connection is taking too long
-        toast({
-          title: 'Connection Slow',
-          description: 'Signing service is taking longer than expected. You can still browse content.',
-          variant: 'destructive',
-        });
-      }, 60000);
-
-      login.bunker(bunkerUrl).then(() => {
-        clearTimeout(bunkerTimeout);
-        const bunkerTime = Date.now() - bunkerStart;
-        console.log(`✅ Bunker connection completed successfully in ${bunkerTime}ms!`);
-        console.log('🎉 You can now sign events!');
-
-        // Show success toast
-        toast({
-          title: 'Signing Service Connected!',
-          description: 'You can now post and interact with content.',
-        });
-
-        // Force a re-render to update the UI
-        window.location.reload();
-      }).catch((err) => {
-        clearTimeout(bunkerTimeout);
-        const bunkerTime = Date.now() - bunkerStart;
-        console.error(`❌ Bunker connection failed after ${bunkerTime}ms:`, err);
-        console.error('Error details:', err);
-        console.warn('⚠️ Signing will not work until bunker connects');
-
-        // Show warning toast
-        toast({
-          title: 'Signing Service Failed',
-          description: 'You can browse content, but signing may not work. Try refreshing the page.',
-          variant: 'destructive',
-        });
-      });
-
-      console.log('✅ Login started! Proceeding to app...');
-
-      // Success! Don't wait for bunker to complete
+      // Success!
       onSuccess();
     } catch (err) {
       console.error('Keycast login failed:', err);

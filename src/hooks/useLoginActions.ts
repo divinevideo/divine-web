@@ -26,6 +26,19 @@ export function useLoginActions() {
       const login = await NLogin.fromExtension();
       addLogin(login);
     },
+    // Login with Keycast OAuth (REST RPC based signing)
+    keycast(pubkey: string, token: string): void {
+      // Custom login type for Keycast REST RPC signing
+      const login = {
+        id: `keycast-${pubkey}`,
+        type: 'x-keycast' as const,
+        pubkey,
+        createdAt: new Date().toISOString(),
+        data: { token },
+      };
+      // Cast to NLoginType which is the union type accepted by addLogin
+      addLogin(login as Parameters<typeof addLogin>[0]);
+    },
     // Log out the current user
     async logout(): Promise<void> {
       const login = logins[0];
