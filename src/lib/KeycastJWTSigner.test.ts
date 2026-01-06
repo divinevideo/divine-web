@@ -3,6 +3,7 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { KeycastJWTSigner } from './KeycastJWTSigner';
+import { KEYCAST_API_URL } from './keycast';
 
 // Mock fetch globally
 const mockFetch = vi.fn();
@@ -74,7 +75,7 @@ describe('KeycastJWTSigner', () => {
 
       expect(pubkey).toBe(mockPubkey);
       expect(mockFetch).toHaveBeenCalledWith(
-        'https://login.divine.video/api/nostr',
+        `${KEYCAST_API_URL}/api/nostr`,
         expect.objectContaining({
           method: 'POST',
           headers: {
@@ -166,6 +167,12 @@ describe('KeycastJWTSigner', () => {
     };
 
     it('should sign event successfully', async () => {
+      // First call: getPublicKey
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ result: mockPubkey }),
+      });
+      // Second call: sign_event
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: async () => ({ result: mockSignedEvent }),
@@ -175,15 +182,16 @@ describe('KeycastJWTSigner', () => {
       const signed = await signer.signEvent(mockEvent);
 
       expect(signed).toEqual(mockSignedEvent);
-      expect(mockFetch).toHaveBeenCalledWith(
-        'https://login.divine.video/api/nostr',
+      expect(mockFetch).toHaveBeenCalledTimes(2);
+      expect(mockFetch).toHaveBeenLastCalledWith(
+        `${KEYCAST_API_URL}/api/nostr`,
         expect.objectContaining({
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${mockToken}`,
           },
-          body: JSON.stringify({ method: 'sign_event', params: [mockEvent] }),
+          body: JSON.stringify({ method: 'sign_event', params: [{ ...mockEvent, pubkey: mockPubkey }] }),
         })
       );
     });
@@ -201,6 +209,12 @@ describe('KeycastJWTSigner', () => {
     });
 
     it('should throw error on missing signed event in response', async () => {
+      // First call: getPublicKey succeeds
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ result: mockPubkey }),
+      });
+      // Second call: sign_event returns invalid response
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: async () => ({ result: {} }), // No id/sig fields
@@ -247,7 +261,7 @@ describe('KeycastJWTSigner', () => {
 
       expect(result).toBe(ciphertext);
       expect(mockFetch).toHaveBeenCalledWith(
-        'https://login.divine.video/api/nostr',
+        `${KEYCAST_API_URL}/api/nostr`,
         expect.objectContaining({
           method: 'POST',
           body: JSON.stringify({ method: 'nip04_encrypt', params: [targetPubkey, plaintext] }),
@@ -266,7 +280,7 @@ describe('KeycastJWTSigner', () => {
 
       expect(result).toBe(plaintext);
       expect(mockFetch).toHaveBeenCalledWith(
-        'https://login.divine.video/api/nostr',
+        `${KEYCAST_API_URL}/api/nostr`,
         expect.objectContaining({
           method: 'POST',
           body: JSON.stringify({ method: 'nip04_decrypt', params: [targetPubkey, ciphertext] }),
@@ -319,7 +333,7 @@ describe('KeycastJWTSigner', () => {
 
       expect(result).toBe(ciphertext);
       expect(mockFetch).toHaveBeenCalledWith(
-        'https://login.divine.video/api/nostr',
+        `${KEYCAST_API_URL}/api/nostr`,
         expect.objectContaining({
           method: 'POST',
           body: JSON.stringify({ method: 'nip44_encrypt', params: [targetPubkey, plaintext] }),
@@ -338,7 +352,7 @@ describe('KeycastJWTSigner', () => {
 
       expect(result).toBe(plaintext);
       expect(mockFetch).toHaveBeenCalledWith(
-        'https://login.divine.video/api/nostr',
+        `${KEYCAST_API_URL}/api/nostr`,
         expect.objectContaining({
           method: 'POST',
           body: JSON.stringify({ method: 'nip44_decrypt', params: [targetPubkey, ciphertext] }),
@@ -400,7 +414,7 @@ describe('KeycastJWTSigner', () => {
       await signer.getPublicKey();
       expect(mockFetch).toHaveBeenCalledTimes(2);
       expect(mockFetch).toHaveBeenLastCalledWith(
-        'https://login.divine.video/api/nostr',
+        `${KEYCAST_API_URL}/api/nostr`,
         expect.objectContaining({
           headers: {
             'Content-Type': 'application/json',
