@@ -58,7 +58,7 @@ export function HubSpotSignup() {
           align-items: flex-start !important;
           padding: 0 !important;
         }
-        .hs-form-html .hsfc-Row:has(.hsfc-RichText) {
+        .hs-form-html .hsfc-Form .hsfc-Row:has(.hsfc-RichText) {
           display: none !important;
         }
         .hs-form-html .hsfc-Row:has(.hsfc-EmailField) {
@@ -82,8 +82,49 @@ export function HubSpotSignup() {
         .hs-form-html .hsfc-FieldLabel {
           display: none !important;
         }
-        .hs-form-html .hsfc-RichText {
+        /* Only hide RichText inside the Form, NOT in PostSubmit confirmation */
+        .hs-form-html .hsfc-Form .hsfc-RichText {
           display: none !important;
+        }
+
+        /* Hide React wrapper intro paragraph when HubSpot shows post-submit confirmation */
+        /* Keep the "diVine Inspiration" title, only hide the description text */
+        .hs-form-landing:has(.hsfc-PostSubmit) > p {
+          display: none !important;
+        }
+        /* Footer variant - hide intro paragraph when PostSubmit shows */
+        *:has(.hs-form-html .hsfc-PostSubmit) > p.text-sm.text-foreground {
+          display: none !important;
+        }
+
+        /* Style the PostSubmit confirmation message - no !important so HubSpot can override */
+        .hs-form-html .hsfc-PostSubmit {
+          padding: 0;
+        }
+        .hs-form-html .hsfc-PostSubmit .hsfc-Step {
+          border: none;
+          background: none;
+        }
+        .hs-form-html .hsfc-PostSubmit .hsfc-Step__Content {
+          padding: 0;
+        }
+        .hs-form-html .hsfc-PostSubmit .hsfc-Row {
+          margin-bottom: 0;
+        }
+        .hs-form-html .hsfc-PostSubmit .hsfc-RichText {
+          font-size: 0.875rem;
+          color: hsl(var(--foreground));
+          line-height: 1.5;
+        }
+        .hs-form-html .hsfc-PostSubmit .hsfc-RichText p {
+          margin: 0 0 0.5rem 0;
+        }
+        .hs-form-html .hsfc-PostSubmit .hsfc-RichText a {
+          color: hsl(var(--primary));
+          text-decoration: none;
+        }
+        .hs-form-html .hsfc-PostSubmit .hsfc-RichText a:hover {
+          text-decoration: underline;
         }
         .hs-form-html .hsfc-TextInput {
           height: 36px !important;
