@@ -100,7 +100,8 @@ export function useNostrConnect(options: UseNostrConnectOptions = {}): UseNostrC
   const generate = useCallback(async () => {
     // Cancel any existing connection attempt
     abortControllerRef.current?.abort();
-    abortControllerRef.current = new AbortController();
+    const thisController = new AbortController();
+    abortControllerRef.current = thisController;
 
     setState(prev => ({ ...prev, status: 'generating', error: null }));
 
@@ -143,8 +144,8 @@ export function useNostrConnect(options: UseNostrConnectOptions = {}): UseNostrC
       console.log('[useNostrConnect] Waiting for connection...');
       const signer = await BunkerSigner.fromURI(clientSecretKey, uri, {}, timeout);
 
-      // Check if cancelled
-      if (abortControllerRef.current?.signal.aborted) {
+      // Check if this attempt was cancelled or superseded by a new one
+      if (thisController.signal.aborted || abortControllerRef.current !== thisController) {
         return;
       }
 
@@ -170,8 +171,8 @@ export function useNostrConnect(options: UseNostrConnectOptions = {}): UseNostrC
         });
       }
     } catch (err) {
-      // Check if cancelled
-      if (abortControllerRef.current?.signal.aborted) {
+      // Check if this attempt was cancelled or superseded
+      if (thisController.signal.aborted || abortControllerRef.current !== thisController) {
         return;
       }
 
