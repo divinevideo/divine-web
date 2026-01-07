@@ -21,6 +21,26 @@ export function useLoginActions() {
       const login = await NLogin.fromBunker(uri, nostr);
       addLogin(login);
     },
+    // Login via nostrconnect:// QR code flow (client-initiated NIP-46)
+    nostrconnect(
+      clientNsec: `nsec1${string}`,
+      bunkerPubkey: string,
+      userPubkey: string,
+      relays: string[]
+    ): void {
+      const login = {
+        id: `bunker-${userPubkey}`,
+        type: 'bunker' as const,
+        pubkey: userPubkey,
+        createdAt: new Date().toISOString(),
+        data: {
+          bunkerPubkey,
+          clientNsec,
+          relays,
+        },
+      };
+      addLogin(login as Parameters<typeof addLogin>[0]);
+    },
     // Login with a NIP-07 browser extension
     async extension(): Promise<void> {
       const login = await NLogin.fromExtension();

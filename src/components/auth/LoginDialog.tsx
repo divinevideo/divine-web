@@ -2,7 +2,7 @@
 // It is important that all functionality in this file is preserved, and should only be modified if explicitly requested.
 
 import React, { useRef, useState, useEffect } from 'react';
-import { Shield, Upload, AlertTriangle, KeyRound, Cloud } from 'lucide-react';
+import { Shield, Upload, AlertTriangle, KeyRound, Smartphone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogDescription } from "@/components/ui/dialog";
@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useLoginActions } from '@/hooks/useLoginActions';
 import { KeycastOAuthButton } from '@/components/auth/KeycastOAuthButton';
+import { NostrConnectTab } from '@/components/auth/NostrConnectTab';
 import { cn } from '@/lib/utils';
 
 interface LoginDialogProps {
@@ -23,19 +24,15 @@ const validateNsec = (nsec: string) => {
   return /^nsec1[a-zA-Z0-9]{58}$/.test(nsec);
 };
 
-const validateBunkerUri = (uri: string) => {
-  return uri.startsWith('bunker://');
-};
-
 const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin, onSignup }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [isFileLoading, setIsFileLoading] = useState(false);
   const [nsec, setNsec] = useState('');
-  const [bunkerUri, setBunkerUri] = useState('');
   const [showNostrOptions, setShowNostrOptions] = useState(false);
   const [errors, setErrors] = useState<{
     nsec?: string;
     bunker?: string;
+    connect?: string;
     file?: string;
     extension?: string;
   }>({});
@@ -49,7 +46,6 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin, onS
       setIsLoading(false);
       setIsFileLoading(false);
       setNsec('');
-      setBunkerUri('');
       setShowNostrOptions(false);
       setErrors({});
       // Reset file input
@@ -112,36 +108,6 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin, onS
       return;
     }
     executeLogin(nsec);
-  };
-
-  const handleBunkerLogin = async () => {
-    if (!bunkerUri.trim()) {
-      setErrors(prev => ({ ...prev, bunker: 'Please enter a bunker URI' }));
-      return;
-    }
-
-    if (!validateBunkerUri(bunkerUri)) {
-      setErrors(prev => ({ ...prev, bunker: 'Invalid bunker URI format. Must start with bunker://' }));
-      return;
-    }
-
-    setIsLoading(true);
-    setErrors(prev => ({ ...prev, bunker: undefined }));
-
-    try {
-      await login.bunker(bunkerUri);
-      onLogin();
-      onClose();
-      // Clear the URI from memory
-      setBunkerUri('');
-    } catch {
-      setErrors(prev => ({
-        ...prev,
-        bunker: 'Failed to connect to bunker. Please check the URI.'
-      }));
-    } finally {
-      setIsLoading(false);
-    }
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -219,10 +185,10 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin, onS
                 <KeyRound className="w-4 h-4" />
                 <span>Key</span>
               </TabsTrigger>
-              <TabsTrigger value="bunker" className="flex items-center gap-2">
-                <Cloud className="w-4 h-4" />
-                <span className="hidden sm:inline">Bunker</span>
-                <span className="sm:hidden">Bnkr</span>
+              <TabsTrigger value="connect" className="flex items-center gap-2">
+                <Smartphone className="w-4 h-4" />
+                <span className="hidden sm:inline">Connect</span>
+                <span className="sm:hidden">QR</span>
               </TabsTrigger>
             </TabsList>
             <TabsContent value='extension' className='space-y-3 bg-muted'>
@@ -317,38 +283,15 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin, onS
               </div>
             </TabsContent>
 
-            <TabsContent value='bunker' className='space-y-3 bg-muted'>
-              <div className='space-y-2'>
-                <label htmlFor='bunkerUri' className='text-sm font-medium text-gray-700 dark:text-gray-400'>
-                  Bunker URI
-                </label>
-                <Input
-                  id='bunkerUri'
-                  value={bunkerUri}
-                  onChange={(e) => {
-                    setBunkerUri(e.target.value);
-                    if (errors.bunker) setErrors(prev => ({ ...prev, bunker: undefined }));
-                  }}
-                  className={`rounded-lg border-gray-300 dark:border-gray-700 focus-visible:ring-primary ${
-                    errors.bunker ? 'border-red-500' : ''
-                  }`}
-                  placeholder='bunker://'
-                  autoComplete="off"
-                />
-                {errors.bunker && (
-                  <p className="text-sm text-red-500">{errors.bunker}</p>
-                )}
-              </div>
-
-              <div className="flex justify-center">
-                <Button
-                  className='w-full rounded-full py-4'
-                  onClick={handleBunkerLogin}
-                  disabled={isLoading || !bunkerUri.trim()}
-                >
-                  {isLoading ? 'Connecting...' : 'Login with Bunker'}
-                </Button>
-              </div>
+            <TabsContent value='connect' className='space-y-3'>
+              <NostrConnectTab
+                onConnect={() => {
+                  onLogin();
+                  onClose();
+                }}
+                isLoading={isLoading}
+                setIsLoading={setIsLoading}
+              />
             </TabsContent>
           </Tabs>
           )}
