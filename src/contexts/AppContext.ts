@@ -5,6 +5,8 @@ export type Theme = "dark" | "light" | "system";
 export interface AppConfig {
   /** Current theme */
   theme: Theme;
+  /** If `true`, the view will scroll to the active video in the video feed when idling */
+  autoScroll: boolean;
   /** Selected relay URL (legacy - use relayUrls for multi-relay support) */
   relayUrl: string;
   /** Array of relay URLs to query (overrides relayUrl if provided) */

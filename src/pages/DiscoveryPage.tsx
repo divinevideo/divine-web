@@ -8,6 +8,8 @@ import { VerifiedOnlyToggle } from '@/components/VerifiedOnlyToggle';
 import { HashtagExplorer } from '@/components/HashtagExplorer';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Star, Clock, Hash, Flame, Zap } from 'lucide-react';
+import { AutoScrollToggle } from '@/components/AutoScrollToggle';
+import { useAutoScroll } from '@/hooks/useAutoScroll';
 
 export function DiscoveryPage() {
   const navigate = useNavigate();
@@ -18,6 +20,8 @@ export function DiscoveryPage() {
   const initialTab: AllowedTab = (allowedTabs.includes(routeTab as AllowedTab) ? routeTab : 'top') as AllowedTab;
   const [activeTab, setActiveTab] = useState<AllowedTab>(initialTab);
   const [verifiedOnly, setVerifiedOnly] = useState(false);
+  
+  const {autoScroll, setAutoScroll} = useAutoScroll();
 
   // Note: We no longer force relay changes here as it causes navigation delays
   // The default relay (relay.divine.video) is already configured in App.tsx
@@ -41,16 +45,22 @@ export function DiscoveryPage() {
     <div className="container mx-auto px-4 py-6">
       <div className={activeTab === 'hashtags' ? 'max-w-6xl mx-auto' : 'max-w-2xl mx-auto'}>
         <header className="mb-6 space-y-4">
-          <div className="flex items-start justify-between mb-4">
+          <div className="flex flex-col gap-4 items-start justify-between mb-4 sm:flex-row">
             <div>
               <h1 className="text-2xl font-bold">Discover</h1>
               <p className="text-muted-foreground">Explore videos from the network</p>
             </div>
             {activeTab !== 'hashtags' && (
-              <VerifiedOnlyToggle
-                enabled={verifiedOnly}
-                onToggle={setVerifiedOnly}
-              />
+              <div className="flex flex-row gap-10">
+                <AutoScrollToggle
+                  enabled={autoScroll}
+                  onToggle={setAutoScroll}
+                />
+                <VerifiedOnlyToggle
+                  enabled={verifiedOnly}
+                  onToggle={setVerifiedOnly}
+                />
+              </div>
             )}
           </div>
         </header>

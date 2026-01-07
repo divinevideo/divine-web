@@ -41,6 +41,7 @@ const queryClient = new QueryClient({
 
 const defaultConfig: AppConfig = {
   theme: "system",
+  autoScroll: false,
   relayUrl: PRIMARY_RELAY.url, // Primary relay with NIP-50 support
   relayUrls: [
     PRIMARY_RELAY.url,
