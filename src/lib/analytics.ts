@@ -161,7 +161,7 @@ export function trackSearch(query: string, filter?: string, resultCount?: number
 
 // Track time to first video playback
 let firstVideoPlaybackTracked = false;
-const _pageLoadTime = typeof performance !== 'undefined' ? performance.timeOrigin : Date.now();
+const pageLoadTime = typeof performance !== 'undefined' ? performance.timeOrigin : Date.now();
 
 /**
  * Track time from page load to first video playback

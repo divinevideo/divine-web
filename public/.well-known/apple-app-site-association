@@ -3,33 +3,14 @@
     "apps": [],
     "details": [
       {
-        "appIDs": ["GZCZBKH7MY.co.openvine.app"],
-        "components": [
-          {
-            "/": "/video/*",
-            "comment": "Video deep links"
-          },
-          {
-            "/": "/profile/*",
-            "comment": "Profile deep links"
-          },
-          {
-            "/": "/hashtag/*",
-            "comment": "Hashtag deep links"
-          },
-          {
-            "/": "/search/*",
-            "comment": "Search deep links"
-          },
-          {
-            "/": "/app/callback",
-            "comment": "OAuth callback for Divine app"
-          }
+        "appID": "GZCZBKH7MY.co.openvine.app",
+        "paths": [
+          "/video/*",
+          "/profile/*",
+          "/hashtag/*",
+          "/search/*"
         ]
       }
     ]
-  },
-  "webcredentials": {
-    "apps": ["GZCZBKH7MY.co.openvine.app"]
   }
 }
