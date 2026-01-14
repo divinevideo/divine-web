@@ -24,16 +24,9 @@
           {
             "/": "/invite/*",
             "comment": "Invite redemption deep links"
-          },
-          {
-            "/": "/app/callback",
-            "comment": "OAuth callback for Divine app"
           }
         ]
       }
     ]
-  },
-  "webcredentials": {
-    "apps": ["GZCZBKH7MY.co.openvine.app"]
   }
 }
