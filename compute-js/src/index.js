@@ -18,7 +18,7 @@ const EXTERNAL_REDIRECTS = {
   '/news': { url: 'https://about.divine.video/news/', status: 301 },
   '/media-resources': { url: 'https://about.divine.video/media-resources/', status: 301 },
   '/news/vine-revisited': { url: 'https://about.divine.video/vine-revisited-a-return-to-the-halcyon-days-of-the-internet/', status: 301 },
-  '/discord': { url: 'https://discord.gg/sHb4HMSF', status: 302 },
+  '/discord': { url: 'https://discord.gg/RZVbzuQ5qM', status: 302 },
 };
 
 // eslint-disable-next-line no-restricted-globals

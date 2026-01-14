@@ -4,7 +4,7 @@
 /media-resources https://about.divine.video/media-resources/ 301
 /news/vine-revisited https://about.divine.video/vine-revisited-a-return-to-the-halcyon-days-of-the-internet/ 301
 
-/discord https://discord.gg/sHb4HMSF 302
+/discord https://discord.gg/RZVbzuQ5qM 302
 
 # Deep link verification files - must be served as-is (before catch-all)
 /.well-known/apple-app-site-association /.well-known/apple-app-site-association 200

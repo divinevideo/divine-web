@@ -122,7 +122,7 @@ export function AppFooter() {
                   />
                 </a>
                 <a
-                  href="https://discord.gg/sHb4HMSF"
+                  href="https://discord.gg/RZVbzuQ5qM"
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label="Join us on Discord"
