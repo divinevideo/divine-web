@@ -72,7 +72,7 @@ VitePWA({
         name: 'diVine Web - Short-form Looping Videos',
         short_name: 'diVine',
         description: 'Watch and share 6-second looping videos on the decentralized Nostr network.',
-        theme_color: '#00b488',
+        theme_color: '#27C58B',
         background_color: '#09090b',
         display: 'standalone',
         orientation: 'portrait-primary',

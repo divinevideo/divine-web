@@ -13,8 +13,8 @@
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
 
-    /* Brand primary: #00b488 -> hsl(165 100% 35%) */
-    --primary: 165 100% 35%;
+    /* Brand primary: #27C58B -> hsl(158 67% 46%) */
+    --primary: 158 67% 46%;
     --primary-foreground: 210 40% 98%;
 
     --secondary: 210 40% 96.1%;
@@ -47,9 +47,9 @@
     --radius-large: 1rem;
     --radius-xl: 1.5rem;
 
-    --shadow-sm: 0 2px 8px rgba(0, 180, 136, 0.08);
-    --shadow-md: 0 4px 16px rgba(0, 180, 136, 0.12);
-    --shadow-lg: 0 8px 32px rgba(0, 180, 136, 0.16);
+    --shadow-sm: 0 2px 8px rgba(39, 197, 139, 0.08);
+    --shadow-md: 0 4px 16px rgba(39, 197, 139, 0.12);
+    --shadow-lg: 0 8px 32px rgba(39, 197, 139, 0.16);
 
     --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
     --transition-normal: 250ms cubic-bezier(0.4, 0, 0.2, 1);
@@ -82,8 +82,8 @@
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
 
-    /* Brand primary: #00b488 -> hsl(165 100% 35%) - same in dark mode */
-    --primary: 165 100% 35%;
+    /* Brand primary: #27C58B -> hsl(158 67% 46%) - same in dark mode */
+    --primary: 158 67% 46%;
     --primary-foreground: 210 40% 98%;
 
     --secondary: 217.2 32.6% 17.5%;
@@ -100,7 +100,7 @@
 
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
-    --ring: 165 100% 35%;
+    --ring: 158 67% 46%;
 
     --sidebar-background: 222.2 84% 4.9%;
 
@@ -116,7 +116,7 @@
 
     --sidebar-border: 217.2 32.6% 17.5%;
 
-    --sidebar-ring: 165 100% 35%;
+    --sidebar-ring: 158 67% 46%;
   }
 }
 

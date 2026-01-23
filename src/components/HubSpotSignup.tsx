@@ -32,7 +32,7 @@ export function HubSpotSignup() {
           --hsf-background__padding: 0;
           --hsf-row__vertical-spacing: 0;
           --hsf-row__horizontal-spacing: 8px;
-          --hsf-button__background-color: #00b488;
+          --hsf-button__background-color: #27C58B;
           --hsf-button__color: white;
           --hsf-button__border-radius: 4px;
           --hsf-button__padding: 0 16px;
