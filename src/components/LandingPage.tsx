@@ -26,8 +26,12 @@ export function LandingPage() {
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
-            <Link to="/" className="text-xl font-logo text-primary">
-              diVine
+            <Link to="/">
+              <img
+                src="/divine-logo.svg"
+                alt="diVine"
+                className="h-5"
+              />
             </Link>
 
             {/* Navigation Links */}
@@ -44,12 +48,12 @@ export function LandingPage() {
               >
                 Blog
               </a>
-              <Link
-                to="/faq"
+              <a
+                href="https://about.divine.video/faqs/"
                 className="text-xs md:text-sm font-medium text-foreground hover:text-primary transition-colors"
               >
                 FAQ
-              </Link>
+              </a>
               <a
                 href="https://about.divine.video/news/"
                 className="text-xs md:text-sm font-medium text-foreground hover:text-primary transition-colors"
@@ -108,9 +112,11 @@ export function LandingPage() {
                   alt="diVine logo"
                   className="w-16 h-16 md:w-20 md:h-20"
                 />
-                <h1 className="text-5xl md:text-6xl font-logo text-primary">
-                  diVine
-                </h1>
+                <img
+                  src="/divine-logo.svg"
+                  alt="diVine"
+                  className="h-12 md:h-16"
+                />
               </div>
               <p className="text-xl md:text-2xl font-semibold text-foreground">
                 Short-form looping videos. Authentic moments. Human creativity.

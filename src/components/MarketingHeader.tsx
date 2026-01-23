@@ -9,8 +9,12 @@ export function MarketingHeader() {
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link to="/" className="text-xl font-logo text-primary">
-            diVine
+          <Link to="/">
+            <img
+              src="/divine-logo.svg"
+              alt="diVine"
+              className="h-5"
+            />
           </Link>
 
           {/* Navigation Links */}
@@ -27,12 +31,12 @@ export function MarketingHeader() {
             >
               Blog
             </a>
-            <Link
-              to="/faq"
+            <a
+              href="https://about.divine.video/faqs/"
               className="text-sm font-medium text-foreground hover:text-primary transition-colors"
             >
               FAQ
-            </Link>
+            </a>
             <a
               href="https://about.divine.video/news/"
               className="text-sm font-medium text-foreground hover:text-primary transition-colors"

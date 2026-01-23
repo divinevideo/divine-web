@@ -29,11 +29,14 @@ export function AppHeader() {
       <div className="container flex h-16 items-center justify-between">
         <div className="flex items-center gap-4">
           <button
-            className="text-2xl font-logo text-primary"
             onClick={() => navigate('/')}
             aria-label="Go to home"
           >
-            diVine
+            <img
+              src="/divine-logo.svg"
+              alt="diVine"
+              className="h-6"
+            />
           </button>
         </div>
         <div className="flex items-center gap-2">
@@ -107,7 +110,7 @@ export function AppHeader() {
               </DropdownMenuItem>
 
               <DropdownMenuItem
-                onClick={() => navigate('/faq')}
+                onClick={() => window.location.href = 'https://about.divine.video/faqs/'}
                 className="cursor-pointer hover:!bg-transparent hover:outline hover:outline-1 hover:outline-primary/30 focus:!bg-transparent focus:outline focus:outline-1 focus:outline-primary"
               >
                 <HelpCircle className="mr-2 h-4 w-4" />

@@ -60,8 +60,10 @@ VitePWA({
         runtimeCaching: []
       },
       includeAssets: [
-        'app_icon.avif',
-        'og.avif',
+        'app_icon.png',
+        'favicon.png',
+        'divine-logo.svg',
+        'og.png',
         'no-ai-icon.svg',
         'divine_icon_transparent.avif',
         'browserconfig.xml'
@@ -99,15 +101,15 @@ VitePWA({
         ],
         icons: [
           {
-            src: 'app_icon.avif',
-            sizes: '256x256',
-            type: 'image/avif',
+            src: 'app_icon.png',
+            sizes: '1024x1024',
+            type: 'image/png',
             purpose: 'any'
           },
           {
-            src: 'app_icon.avif',
-            sizes: '256x256 512x512',
-            type: 'image/avif',
+            src: 'app_icon.png',
+            sizes: '1024x1024',
+            type: 'image/png',
             purpose: 'maskable'
           }
         ]

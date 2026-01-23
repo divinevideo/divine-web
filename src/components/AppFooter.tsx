@@ -42,9 +42,9 @@ export function AppFooter() {
                   About
                 </Link>
                 <span>•</span>
-                <Link to="/faq" className="hover:text-foreground transition-colors">
+                <a href="https://about.divine.video/faqs/" className="hover:text-foreground transition-colors">
                   FAQ
-                </Link>
+                </a>
                 <span>•</span>
                 <Link to="/authenticity" className="hover:text-foreground transition-colors">
                   Our Mission
