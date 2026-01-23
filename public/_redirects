@@ -1,14 +1,3 @@
-# WordPress migration redirects
-/press https://about.divine.video/press/ 301
-/news https://about.divine.video/news/ 301
-/media-resources https://about.divine.video/media-resources/ 301
-/news/vine-revisited https://about.divine.video/vine-revisited-a-return-to-the-halcyon-days-of-the-internet/ 301
-
-/discord https://discord.gg/RZVbzuQ5qM 302
-
-# Deep link verification files - must be served as-is (before catch-all)
-/.well-known/apple-app-site-association /.well-known/apple-app-site-association 200
-/.well-known/assetlinks.json /.well-known/assetlinks.json 200
-
-# SPA catch-all - serves index.html for all other routes
-/* /index.html 200
+# Redirect old FAQ page to WordPress subdomain
+/faq  https://about.divine.video/faqs/  301
+/faq/  https://about.divine.video/faqs/  301
