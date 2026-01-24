@@ -8,11 +8,13 @@ import { Button } from '@/components/ui/button';
 import { MarketingLayout } from '@/components/MarketingLayout';
 
 export function Support() {
+  // TEMPORARILY DISABLED (Jan 24, 2026)
+  // Widget went live before support team was ready. Re-enable when prepared.
+  // To restore: set ZENDESK_ENABLED to true and remove return null in ZendeskWidget.tsx
+  const ZENDESK_ENABLED = false;
+
   useEffect(() => {
-    // TEMPORARILY DISABLED (Jan 24, 2026)
-    // Widget went live before support team was ready. Re-enable when prepared.
-    // To restore: remove this return and the return null in ZendeskWidget.tsx
-    return;
+    if (!ZENDESK_ENABLED) return;
 
     // Load Zendesk widget script if not already loaded
     const existingScript = document.getElementById('ze-snippet');

@@ -7,13 +7,14 @@ interface ZendeskWidgetProps {
   hideOnMobile?: boolean;
 }
 
-export function ZendeskWidget({ hideOnMobile = true }: ZendeskWidgetProps) {
-  // TEMPORARILY DISABLED (Jan 24, 2026)
-  // Widget went live before support team was ready. Re-enable when prepared.
-  // To restore: remove this return and the early return in Support.tsx useEffect
-  return null;
+// TEMPORARILY DISABLED (Jan 24, 2026)
+// Widget went live before support team was ready. Re-enable when prepared.
+// To restore: set ZENDESK_ENABLED to true (and in Support.tsx)
+const ZENDESK_ENABLED = false;
 
+export function ZendeskWidget({ hideOnMobile = true }: ZendeskWidgetProps) {
   useEffect(() => {
+    if (!ZENDESK_ENABLED) return;
     // Check if script already exists
     const existingScript = document.getElementById('ze-snippet');
 
