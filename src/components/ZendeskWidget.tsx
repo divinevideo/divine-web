@@ -8,6 +8,11 @@ interface ZendeskWidgetProps {
 }
 
 export function ZendeskWidget({ hideOnMobile = true }: ZendeskWidgetProps) {
+  // TEMPORARILY DISABLED (Jan 24, 2026)
+  // Widget went live before support team was ready. Re-enable when prepared.
+  // To restore: remove this return and the early return in Support.tsx useEffect
+  return null;
+
   useEffect(() => {
     // Check if script already exists
     const existingScript = document.getElementById('ze-snippet');

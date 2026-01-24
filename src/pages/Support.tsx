@@ -9,6 +9,11 @@ import { MarketingLayout } from '@/components/MarketingLayout';
 
 export function Support() {
   useEffect(() => {
+    // TEMPORARILY DISABLED (Jan 24, 2026)
+    // Widget went live before support team was ready. Re-enable when prepared.
+    // To restore: remove this return and the return null in ZendeskWidget.tsx
+    return;
+
     // Load Zendesk widget script if not already loaded
     const existingScript = document.getElementById('ze-snippet');
 
