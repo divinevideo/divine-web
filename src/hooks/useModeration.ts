@@ -15,6 +15,7 @@ import {
   type ModerationResult,
   ContentSeverity
 } from '@/types/moderation';
+import { submitReportToZendesk, buildContentUrl } from '@/lib/reportApi';
 
 /**
  * Parse a mute list event (kind 10001)
@@ -233,12 +234,14 @@ export function useReportContent() {
       eventId,
       pubkey,
       reason,
-      details
+      details,
+      contentType = 'video'
     }: {
       eventId?: string;
       pubkey?: string;
       reason: ContentFilterReason;
       details?: string;
+      contentType?: 'video' | 'user' | 'comment';
     }) => {
       if (!user) throw new Error('Must be logged in to report content');
 
@@ -260,6 +263,20 @@ export function useReportContent() {
         kind: 1984, // Reporting event
         content: details || `Reporting ${reason}`,
         tags
+      });
+
+      // Fire-and-forget Zendesk ticket creation
+      submitReportToZendesk({
+        reporterPubkey: user.pubkey,
+        eventId,
+        pubkey,
+        contentType,
+        reason,
+        details,
+        contentUrl: buildContentUrl(eventId, pubkey),
+        timestamp: Date.now(),
+      }).catch((err) => {
+        console.warn('[useReportContent] Zendesk ticket creation failed:', err);
       });
 
       // Store report locally for user history

@@ -93,6 +93,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
     const [authRetryCount, setAuthRetryCount] = useState(0);
     const [currentUrlIndex, setCurrentUrlIndex] = useState(0);
     const [allUrls, setAllUrls] = useState<string[]>([]);
+    const [triedHls, setTriedHls] = useState(false); // Track if we've fallen back to HLS
     const isChangingMuteState = useRef(false);
     const blobUrlRef = useRef<string | null>(null); // Track blob URL for cleanup to prevent memory leaks
 
@@ -479,13 +480,19 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
         setCurrentUrlIndex(currentUrlIndex + 1);
         setIsLoading(true);
         setHasError(false);
+      } else if (hlsUrl && !triedHls) {
+        // All direct URLs failed, try HLS as last resort
+        verboseLog(`[VideoPlayer ${videoId}] All direct URLs failed, trying HLS as fallback: ${hlsUrl}`);
+        setTriedHls(true);
+        setIsLoading(true);
+        setHasError(false);
       } else {
         debugError(`[VideoPlayer ${videoId}] All URLs failed, no more fallbacks`);
         setIsLoading(false);
         setHasError(true);
         onError?.();
       }
-    }, [videoId, currentUrlIndex, allUrls, onError]);
+    }, [videoId, currentUrlIndex, allUrls, hlsUrl, triedHls, onError]);
 
     const handleEnded = () => {
       verboseLog(`[VideoPlayer ${videoId}] Video ended, auto-looping`);

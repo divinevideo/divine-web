@@ -3,6 +3,8 @@
 
 import { useState } from 'react';
 import { useReportContent } from '@/hooks/useModeration';
+import { useAnonymousReport } from '@/hooks/useAnonymousReport';
+import { useCurrentUser } from '@/hooks/useCurrentUser';
 import {
   Dialog,
   DialogContent,
@@ -11,6 +13,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -34,10 +37,14 @@ export function ReportContentDialog({
   contentType = 'video'
 }: ReportContentDialogProps) {
   const { toast } = useToast();
+  const { user } = useCurrentUser();
   const reportContent = useReportContent();
+  const anonymousReport = useAnonymousReport();
+  const isLoggedIn = !!user;
 
   const [reason, setReason] = useState<ContentFilterReason>(ContentFilterReason.SPAM);
   const [details, setDetails] = useState('');
+  const [email, setEmail] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async () => {
@@ -50,14 +57,35 @@ export function ReportContentDialog({
       return;
     }
 
+    if (!isLoggedIn && (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))) {
+      toast({
+        title: 'Error',
+        description: 'Please enter a valid email address',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setIsSubmitting(true);
     try {
-      await reportContent.mutateAsync({
-        eventId,
-        pubkey,
-        reason,
-        details: details.trim() || undefined
-      });
+      if (isLoggedIn) {
+        await reportContent.mutateAsync({
+          eventId,
+          pubkey,
+          reason,
+          details: details.trim() || undefined,
+          contentType,
+        });
+      } else {
+        await anonymousReport.mutateAsync({
+          email,
+          eventId,
+          pubkey,
+          contentType,
+          reason,
+          details: details.trim() || undefined,
+        });
+      }
 
       toast({
         title: 'Report submitted',
@@ -67,6 +95,7 @@ export function ReportContentDialog({
       // Reset and close
       setReason(ContentFilterReason.SPAM);
       setDetails('');
+      setEmail('');
       onClose();
     } catch {
       toast({
@@ -121,6 +150,23 @@ export function ReportContentDialog({
             </RadioGroup>
           </div>
 
+          {!isLoggedIn && (
+            <div className="space-y-2">
+              <Label htmlFor="email">Email address (required)</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="your@email.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                disabled={isSubmitting}
+              />
+              <p className="text-xs text-muted-foreground">
+                We'll use this to follow up on your report
+              </p>
+            </div>
+          )}
+
           <div className="space-y-2">
             <Label htmlFor="details">Additional details (optional)</Label>
             <Textarea
@@ -133,22 +179,30 @@ export function ReportContentDialog({
             />
           </div>
 
-          <div className="bg-yellow-500/10 border border-yellow-500/20 p-3 rounded-md text-sm space-y-2">
-            <p className="font-semibold text-yellow-700 dark:text-yellow-400">
-              ⚠️ Reports are PUBLIC information
-            </p>
-            <p className="text-muted-foreground">
-              Reports are published as NIP-56 events on the Nostr network and will be linked to your username.
-              Do not include sensitive or private information in reports.
-            </p>
-            <p className="text-muted-foreground">
-              If you have a sensitive issue to share privately, please use our{' '}
-              <a href="/support" className="text-primary hover:underline font-medium">
-                support helpdesk
-              </a>
-              .
-            </p>
-          </div>
+          {isLoggedIn ? (
+            <div className="bg-yellow-500/10 border border-yellow-500/20 p-3 rounded-md text-sm space-y-2">
+              <p className="font-semibold text-yellow-700 dark:text-yellow-400">
+                ⚠️ Reports are PUBLIC information
+              </p>
+              <p className="text-muted-foreground">
+                Reports are published as NIP-56 events on the Nostr network and will be linked to your username.
+                Do not include sensitive or private information in reports.
+              </p>
+              <p className="text-muted-foreground">
+                If you have a sensitive issue to share privately, please use our{' '}
+                <a href="/support" className="text-primary hover:underline font-medium">
+                  support helpdesk
+                </a>
+                .
+              </p>
+            </div>
+          ) : (
+            <div className="bg-blue-500/10 border border-blue-500/20 p-3 rounded-md text-sm">
+              <p className="text-muted-foreground">
+                Your report will be sent privately to our moderation team. You can follow up on your report through the support widget.
+              </p>
+            </div>
+          )}
 
           <div className="flex gap-2 pt-2">
             <Button

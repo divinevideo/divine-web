@@ -234,44 +234,102 @@ function extractAllVideoUrls(event: NostrEvent): string[] {
 
 /**
  * Extract video metadata from video event
+ *
+ * Follows Postel's Law: Be liberal in what you accept.
+ * Multiple imeta tags represent different versions of the same video.
+ * We find the imeta with the best primary URL and use all metadata from THAT imeta.
+ * This prevents mixing broken URLs from one imeta with good URLs from another.
+ *
+ * For short videos (like 6-second clips), we skip HLS entirely since it's overkill
+ * and direct MP4 playback is more reliable and faster.
  */
 export function extractVideoMetadata(event: NostrEvent): VideoMetadata | null {
-  const primaryUrl = extractVideoUrl(event);
-  if (!primaryUrl) {
-    return null;
-  }
+  // First, find the best imeta tag (the one with a working primary URL)
+  // Prioritize MP4 over HLS for primary URL since MP4 is more reliable
+  let bestImeta: VideoMetadata | null = null;
+  let bestScore = -1;
 
-  const metadata: VideoMetadata = { url: primaryUrl };
-
-  // Extract additional metadata from imeta tag
   for (const tag of event.tags) {
     if (tag[0] === 'imeta') {
       const imetaData = parseImetaTag(tag);
-      if (imetaData) {
-        metadata.mimeType = imetaData.mimeType || metadata.mimeType;
-        metadata.dimensions = imetaData.dimensions || metadata.dimensions;
-        metadata.blurhash = imetaData.blurhash || metadata.blurhash;
-        metadata.thumbnailUrl = imetaData.thumbnailUrl || metadata.thumbnailUrl;
-        metadata.duration = imetaData.duration || metadata.duration;
-        metadata.size = imetaData.size || metadata.size;
-        metadata.hash = imetaData.hash || metadata.hash;
+      if (imetaData?.url && isValidVideoUrl(imetaData.url)) {
+        // Score: MP4 > other formats > HLS-only
+        let score = 0;
+        if (imetaData.url.includes('.mp4')) {
+          score = 100;
+        } else if (imetaData.url.includes('.webm') || imetaData.url.includes('.mov')) {
+          score = 90;
+        } else if (imetaData.url.includes('.m3u8')) {
+          score = 50; // HLS as primary is less preferred
+        } else {
+          score = 70; // Unknown format, medium priority
+        }
+
+        // Bonus for having additional metadata (indicates more complete imeta)
+        if (imetaData.hlsUrl) score += 10;
+        if (imetaData.thumbnailUrl) score += 5;
+        if (imetaData.mimeType) score += 2;
+
+        if (score > bestScore) {
+          bestScore = score;
+          bestImeta = imetaData;
+        }
       }
     }
   }
 
-  // Extract HLS manifest URL (.m3u8) from all available sources
-  const allUrls = extractAllVideoUrls(event);
-  for (const url of allUrls) {
-    if (url.includes('.m3u8') && !metadata.hlsUrl) {
-      metadata.hlsUrl = url;
-      break;
+  // Fall back to old extraction method if no good imeta found
+  if (!bestImeta) {
+    const primaryUrl = extractVideoUrl(event);
+    if (!primaryUrl) {
+      return null;
+    }
+    bestImeta = { url: primaryUrl };
+  }
+
+  const metadata: VideoMetadata = { ...bestImeta };
+
+  // For short videos with a good MP4 URL, skip HLS entirely - it's overkill
+  // and direct MP4 is more reliable. Only keep HLS if we don't have an MP4.
+  if (metadata.url.includes('.mp4')) {
+    delete metadata.hlsUrl;
+  }
+
+  // Only fill in missing metadata from other imeta tags (don't override URLs!)
+  for (const tag of event.tags) {
+    if (tag[0] === 'imeta') {
+      const imetaData = parseImetaTag(tag);
+      if (imetaData) {
+        // Only copy non-URL metadata that's missing
+        metadata.mimeType = metadata.mimeType || imetaData.mimeType;
+        metadata.dimensions = metadata.dimensions || imetaData.dimensions;
+        metadata.blurhash = metadata.blurhash || imetaData.blurhash;
+        metadata.thumbnailUrl = metadata.thumbnailUrl || imetaData.thumbnailUrl;
+        metadata.duration = metadata.duration || imetaData.duration;
+        metadata.size = metadata.size || imetaData.size;
+        metadata.hash = metadata.hash || imetaData.hash;
+        // DON'T copy hlsUrl from other imeta tags - keep URLs from same source
+      }
     }
   }
 
-  // Add limited fallback URLs to prevent cascade failures
-  const fallbackUrls = allUrls.filter(u => u !== primaryUrl && u !== metadata.hlsUrl);
+  // Build fallback URLs from other imeta tags, but only MP4s (more reliable)
+  const fallbackUrls: string[] = [];
+  for (const tag of event.tags) {
+    if (tag[0] === 'imeta') {
+      const imetaData = parseImetaTag(tag);
+      if (imetaData?.url &&
+          imetaData.url !== metadata.url &&
+          imetaData.url.includes('.mp4') &&
+          isValidVideoUrl(imetaData.url) &&
+          !fallbackUrls.includes(imetaData.url)) {
+        fallbackUrls.push(imetaData.url);
+      }
+    }
+  }
+
   if (fallbackUrls.length > 0) {
-    metadata.fallbackUrls = fallbackUrls;
+    metadata.fallbackUrls = fallbackUrls.slice(0, 2); // Limit fallbacks
   }
 
   return metadata;
