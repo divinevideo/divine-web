@@ -109,12 +109,16 @@ export function useVideoProvider({
   // 2. Feature flag must be enabled
   // 3. Current relay must support Funnelcake
   // 4. Circuit breaker must allow requests
+  // 5. Profile feeds use WebSocket to get loop counts from Nostr events
+  //    (Funnelcake's /api/users/{pubkey}/videos doesn't return loops)
   const isClassics = feedType === 'classics';
+  const isProfile = feedType === 'profile';
   const shouldUseFunnelcake = isClassics || (
     useFunnelcakeFlag &&
     relayHasFunnelcake &&
     funnelcakeUrl &&
-    isFunnelcakeAvailable(funnelcakeUrl)
+    isFunnelcakeAvailable(funnelcakeUrl) &&
+    !isProfile  // Profile feeds use WebSocket for complete loop count data
   );
 
   debugLog(`[useVideoProvider] Feed: ${feedType}, Relay: ${relayUrl}, Funnelcake: ${shouldUseFunnelcake ? 'yes' : 'no'}`, {

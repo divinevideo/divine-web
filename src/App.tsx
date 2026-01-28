@@ -43,7 +43,6 @@ const defaultConfig: AppConfig = {
   theme: "system",
   relayUrl: PRIMARY_RELAY.url, // Primary relay with NIP-50 support
   relayUrls: [
-    'wss://relay.dvines.org',
     'wss://relay.divine.video',
   ],
 };

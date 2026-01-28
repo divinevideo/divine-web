@@ -25,9 +25,9 @@ service_id = "WfOrPTFYmwwxRvqrfralLA"
 
 [[backends]]
   name = "funnelcake"
-  address = "relay.dvines.org"
+  address = "relay.divine.video"
   port = 443
-  override_host = "relay.dvines.org"
+  override_host = "relay.divine.video"
   use_ssl = true
 
 [setup]

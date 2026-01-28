@@ -61,9 +61,15 @@ export function VideoPage() {
     isLoading: wsLoading,
   } = useVideoNavigation(id || '');
 
-  // Use Funnelcake data when available, fall back to WebSocket
-  const currentVideo = funnelcakeVideo || wsVideo;
-  const videos = funnelcakeVideos || wsVideos;
+  // For profile context, prefer WebSocket data which has loop counts from Nostr events
+  // Funnelcake's /api/users/{pubkey}/videos endpoint doesn't return loop counts
+  const isProfileContext = context?.source === 'profile';
+  const currentVideo = isProfileContext
+    ? (wsVideo || funnelcakeVideo)
+    : (funnelcakeVideo || wsVideo);
+  const videos = isProfileContext
+    ? (wsVideos || funnelcakeVideos)
+    : (funnelcakeVideos || wsVideos);
   const isLoading = funnelcakeLoading && wsLoading;
 
   // Calculate navigation state from available videos

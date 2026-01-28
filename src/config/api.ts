@@ -8,13 +8,13 @@
  * via a REST API served from the same domain as Divine relays.
  *
  * Currently available at:
- * - relay.dvines.org (live now)
+ * - relay.divine.video (live now)
  * - relay.divine.video (switching soon)
  */
 export const API_CONFIG = {
   funnelcake: {
-    // Default base URL - use relay.dvines.org until relay.divine.video switches
-    baseUrl: import.meta.env.VITE_FUNNELCAKE_API_URL || 'https://relay.dvines.org',
+    // Default base URL - use relay.divine.video until relay.divine.video switches
+    baseUrl: import.meta.env.VITE_FUNNELCAKE_API_URL || 'https://relay.divine.video',
     // Request timeout in milliseconds
     timeout: 15000,
     // Endpoints

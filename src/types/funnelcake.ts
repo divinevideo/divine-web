@@ -4,6 +4,10 @@
 /**
  * Raw video data from Funnelcake API
  * Note: id and pubkey are hex strings from the API
+ *
+ * The API has two different response schemas:
+ * - /api/videos: uses embedded_likes, embedded_comments, embedded_reposts, has loops
+ * - /api/users/{pubkey}/videos: uses reactions, comments, reposts, NO loops
  */
 export interface FunnelcakeVideoRaw {
   id: string;             // Hex string event ID
@@ -12,17 +16,25 @@ export interface FunnelcakeVideoRaw {
   kind: number;           // Nostr event kind (34236 for videos)
   d_tag: string;          // Unique identifier for addressable event
   title?: string;         // Video title
+  content?: string;       // Video content/description (user videos endpoint)
   thumbnail?: string;     // Thumbnail URL
   video_url: string;      // Primary video URL
   blurhash?: string;      // Progressive loading placeholder
   author_name?: string;   // Cached author display name
   author_avatar?: string; // Cached author avatar URL
-  reactions: number;      // Like count
-  comments: number;       // Comment count
-  reposts: number;        // Repost count
-  engagement_score: number; // Computed engagement metric
-  trending_score: number;   // Time-weighted popularity score
-  loops: number;          // Original Vine loop count (for classic vines)
+
+  // Social metrics - main videos endpoint uses embedded_* prefix
+  reactions?: number;      // Like count (user videos endpoint)
+  comments?: number;       // Comment count (user videos endpoint)
+  reposts?: number;        // Repost count (user videos endpoint)
+  embedded_likes?: number;    // Like count (main videos endpoint)
+  embedded_comments?: number; // Comment count (main videos endpoint)
+  embedded_reposts?: number;  // Repost count (main videos endpoint)
+
+  engagement_score?: number; // Computed engagement metric
+  trending_score?: number;   // Time-weighted popularity score
+  loops?: number | null;     // Original Vine loop count (only in main videos endpoint)
+
   // Platform origin (for filtering classic vines)
   platform?: string;      // 'vine', 'tiktok', etc.
   classic?: boolean;      // Whether this is a classic/archived vine

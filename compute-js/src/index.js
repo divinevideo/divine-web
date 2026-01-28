@@ -10,7 +10,7 @@ import rc from '../static-publish.rc.js';
 const publisherServer = PublisherServer.fromStaticPublishRc(rc);
 
 // Funnelcake API URL for fetching video metadata
-const FUNNELCAKE_API_URL = 'https://relay.dvines.org';
+const FUNNELCAKE_API_URL = 'https://relay.divine.video';
 
 // Apex domains we serve (used to detect subdomains)
 const APEX_DOMAINS = ['dvine.video', 'divine.video'];
@@ -387,13 +387,13 @@ function isSocialMediaCrawler(request) {
 async function fetchVideoMetadata(videoId) {
   try {
     // Use bulk endpoint to fetch specific video by ID
-    const response = await fetch(`https://relay.dvines.org/api/videos/bulk`, {
+    const response = await fetch(`https://relay.divine.video/api/videos/bulk`, {
       backend: 'funnelcake',
       method: 'POST',
       headers: {
         'Accept': 'application/json',
         'Content-Type': 'application/json',
-        'Host': 'relay.dvines.org',
+        'Host': 'relay.divine.video',
       },
       body: JSON.stringify({ event_ids: [videoId] }),
     });

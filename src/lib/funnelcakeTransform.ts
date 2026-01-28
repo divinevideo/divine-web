@@ -43,12 +43,14 @@ export function transformFunnelcakeVideo(raw: FunnelcakeVideoRaw): ParsedVideoDa
 
     // Vine-specific fields
     vineId: raw.d_tag || null, // d_tag is the unique identifier
-    loopCount: raw.loops || 0,
+    // loops is only available from main /api/videos endpoint, not /api/users/{pubkey}/videos
+    loopCount: raw.loops ?? 0,
 
     // Social metrics from Funnelcake (pre-computed)
-    likeCount: raw.reactions || 0,
-    repostCount: raw.reposts || 0,
-    commentCount: raw.comments || 0,
+    // Handle both naming conventions: embedded_* (main videos) vs plain (user videos)
+    likeCount: raw.embedded_likes ?? raw.reactions ?? 0,
+    repostCount: raw.embedded_reposts ?? raw.reposts ?? 0,
+    commentCount: raw.embedded_comments ?? raw.comments ?? 0,
 
     // Origin data for Vine migrations
     isVineMigrated,

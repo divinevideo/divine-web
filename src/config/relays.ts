@@ -23,7 +23,7 @@ export interface RelayConfig {
  * - Primary relay for kind 34236 video events
  */
 export const PRIMARY_RELAY: RelayConfig = {
-  url: 'wss://relay.dvines.org',
+  url: 'wss://relay.divine.video',
   name: 'DVines',
   capabilities: { nip50: true, funnelcake: true },
   purpose: 'primary',
@@ -54,7 +54,7 @@ export const PROFILE_RELAYS: RelayConfig[] = [
     purpose: 'profile',
   },
   {
-    url: 'wss://relay.dvines.org',
+    url: 'wss://relay.divine.video',
     name: 'DVines',
     purpose: 'profile',
   },
@@ -86,7 +86,7 @@ export const PROFILE_RELAYS: RelayConfig[] = [
  */
 export const PRESET_RELAYS: RelayConfig[] = [
   {
-    url: 'wss://relay.dvines.org',
+    url: 'wss://relay.divine.video',
     name: 'DVines',
     capabilities: { nip50: true, funnelcake: true },
   },
@@ -144,7 +144,6 @@ export const toLegacyFormat = (relays: RelayConfig[]): { url: string; name: stri
  */
 const DIVINE_FUNNELCAKE_HOSTS = [
   'relay.divine.video',
-  'relay.dvines.org',
 ];
 
 /**
@@ -174,7 +173,7 @@ export function getFunnelcakeUrl(relayUrl: string): string | null {
 }
 
 /**
- * Default Funnelcake API URL (relay.dvines.org is currently live)
+ * Default Funnelcake API URL (relay.divine.video is currently live)
  * Used for classic vines which always query Divine regardless of selected relay
  */
-export const DEFAULT_FUNNELCAKE_URL = 'https://relay.dvines.org';
+export const DEFAULT_FUNNELCAKE_URL = 'https://relay.divine.video';
