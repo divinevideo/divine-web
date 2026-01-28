@@ -1,4 +1,4 @@
-# ABOUTME: GitHub Actions workflow for deploying to Cloudflare Pages production
+# ABOUTME: GitHub Actions workflow for deploying to Fastly (primary) and Cloudflare Pages (backup)
 # ABOUTME: Triggers on push to main branch
 
 name: Deploy to Production
@@ -9,12 +9,8 @@ on:
       - main
 
 jobs:
-  deploy:
+  build:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      deployments: write
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -31,7 +27,68 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Deploy to Cloudflare Pages
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+          retention-days: 1
+
+  deploy-fastly:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      deployments: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: compute-js/package-lock.json
+
+      - name: Install Fastly CLI
+        run: npm install -g @fastly/cli
+
+      - name: Install Fastly compute dependencies
+        working-directory: compute-js
+        run: npm ci
+
+      - name: Deploy to Fastly Compute
+        working-directory: compute-js
+        env:
+          FASTLY_API_TOKEN: ${{ secrets.FASTLY_API_TOKEN }}
+        run: fastly compute publish --non-interactive --token=$FASTLY_API_TOKEN
+
+  deploy-cloudflare:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      deployments: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+      - name: Deploy to Cloudflare Pages (backup)
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
