@@ -77,7 +77,7 @@ export function VideoCard({
   likeCount = 0,
   repostCount = 0,
   commentCount = 0,
-  viewCount: _viewCount,
+  viewCount = 0,
   showComments = false,
   navigationContext: _navigationContext,
   videoIndex: _videoIndex,
@@ -241,12 +241,10 @@ export function VideoCard({
   const handleShare = async () => {
     const videoUrl = `${window.location.origin}/video/${video.id}`;
 
-    // Use Web Share API if available
+    // Use Web Share API if available - only share URL, let OG tags handle the rest
     if (navigator.share) {
       try {
         await navigator.share({
-          title: video.title || 'Check out this video on diVine Web',
-          text: video.content || 'Short-form looping video on Nostr',
           url: videoUrl,
         });
       } catch (error) {
@@ -548,10 +546,10 @@ export function VideoCard({
 
           </div>
 
-          {/* Stats row - horizontal layout: show loop count only (likes/comments shown on buttons) */}
-          {isHorizontal && (video.loopCount ?? 0) > 0 && (
+          {/* Stats row - horizontal layout: show view/loop count only (likes/comments shown on buttons) */}
+          {isHorizontal && viewCount > 0 && (
             <div className="py-2 mt-auto text-sm text-muted-foreground">
-              {formatViewCount(video.loopCount!)}
+              {formatViewCount(viewCount)}
             </div>
           )}
 
@@ -559,10 +557,10 @@ export function VideoCard({
           {!isHorizontal && (
             <div className="px-4 py-2" data-testid="video-metadata">
               <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                {(video.loopCount ?? 0) > 0 && (
+                {viewCount > 0 && (
                   <span className="flex items-center gap-1">
                     <Eye className="h-3 w-3" />
-                    {formatViewCount(video.loopCount!)}
+                    {formatViewCount(viewCount)}
                   </span>
                 )}
               </div>
