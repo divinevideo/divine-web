@@ -17,6 +17,7 @@ import { useAuthor } from '@/hooks/useAuthor';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useVideoProvider } from '@/hooks/useVideoProvider';
 import { useProfileStats } from '@/hooks/useProfileStats';
+import { useFunnelcakeProfile } from '@/hooks/useFunnelcakeProfile';
 import { useFollowRelationship, useFollowUser, useUnfollowUser } from '@/hooks/useFollowRelationship';
 import { useFollowListSafetyCheck } from '@/hooks/useFollowListSafetyCheck';
 import { useLoginDialog } from '@/contexts/LoginDialogContext';
@@ -59,11 +60,14 @@ export function ProfilePage() {
     error = 'No user identifier provided';
   }
 
-  // Fetch profile data
+  // Fetch profile data from Funnelcake REST API (fast) - includes profile metadata AND stats
+  const { data: funnelcakeProfile } = useFunnelcakeProfile(pubkey || '', !!pubkey);
+
+  // Fetch profile data from Nostr relays (slower, but more authoritative)
   const { data: authorData } = useAuthor(pubkey || '');
   const author = pubkey ? enhanceAuthorData(authorData, pubkey) : null;
 
-  // Fetch videos for profile using Funnelcake (has authorName/authorAvatar)
+  // Fetch videos for profile using Funnelcake (fast, includes cached author data)
   const { data: videosData, isLoading: videosLoading, error: videosError } = useVideoProvider({
     feedType: 'profile',
     pubkey: pubkey || '',
@@ -71,22 +75,55 @@ export function ProfilePage() {
   });
   const videos = videosData?.pages?.flatMap(p => p.videos) || [];
 
-  // Extract author info from videos if no Nostr profile exists
-  // Funnelcake videos include cached author_name/author_avatar
-  const cachedAuthorName = videos?.[0]?.authorName;
-  const cachedAuthorAvatar = videos?.[0]?.authorAvatar;
+  // Check if we have a real Nostr profile
   const hasRealProfile = authorData?.event && authorData?.metadata?.name;
 
-  // Prefer real Nostr profile, fall back to cached Funnelcake data, then generated
+  // Priority order for profile data:
+  // 1. Real Nostr profile (kind 0) - most authoritative
+  // 2. Funnelcake profile data - fast REST API with cached metadata
+  // 3. Generated placeholder - last resort
   const metadata = author?.metadata ? {
     ...author.metadata,
-    display_name: hasRealProfile ? author.metadata.display_name : (cachedAuthorName || author.metadata.display_name),
-    name: hasRealProfile ? author.metadata.name : (cachedAuthorName || author.metadata.name),
-    picture: hasRealProfile ? author.metadata.picture : (cachedAuthorAvatar || author.metadata.picture),
+    display_name: hasRealProfile
+      ? author.metadata.display_name
+      : (funnelcakeProfile?.display_name || funnelcakeProfile?.name || author.metadata.display_name),
+    name: hasRealProfile
+      ? author.metadata.name
+      : (funnelcakeProfile?.name || author.metadata.name),
+    picture: hasRealProfile
+      ? author.metadata.picture
+      : (funnelcakeProfile?.picture || author.metadata.picture),
+    about: hasRealProfile
+      ? author.metadata.about
+      : (funnelcakeProfile?.about || author.metadata.about),
+    banner: hasRealProfile
+      ? author.metadata.banner
+      : (funnelcakeProfile?.banner || author.metadata.banner),
+    nip05: hasRealProfile
+      ? author.metadata.nip05
+      : (funnelcakeProfile?.nip05 || author.metadata.nip05),
+    website: hasRealProfile
+      ? author.metadata.website
+      : (funnelcakeProfile?.website || author.metadata.website),
+    lud16: hasRealProfile
+      ? author.metadata.lud16
+      : (funnelcakeProfile?.lud16 || author.metadata.lud16),
   } : undefined;
 
-  // Fetch profile statistics - pass videos to calculate totalViews
-  const { data: stats, isLoading: statsLoading } = useProfileStats(pubkey || '', videos);
+  // Fetch profile statistics - use Funnelcake stats as fallback, then compute from videos
+  const { data: nostrStats, isLoading: statsLoading } = useProfileStats(pubkey || '', videos);
+
+  // Merge stats from Funnelcake (fast) with Nostr stats (more complete)
+  // Property names must match ProfileStats interface in ProfileHeader
+  const stats = {
+    videosCount: nostrStats?.videosCount ?? funnelcakeProfile?.video_count ?? videos.length,
+    followersCount: nostrStats?.followersCount ?? funnelcakeProfile?.follower_count ?? 0,
+    followingCount: nostrStats?.followingCount ?? funnelcakeProfile?.following_count ?? 0,
+    totalViews: nostrStats?.totalViews ?? funnelcakeProfile?.total_reactions ?? 0,
+    joinedDate: nostrStats?.joinedDate ?? null,
+    isClassicViner: nostrStats?.isClassicViner ?? (funnelcakeProfile?.total_loops ? funnelcakeProfile.total_loops > 0 : false),
+    originalLoopCount: nostrStats?.originalLoopCount ?? funnelcakeProfile?.total_loops ?? 0,
+  };
 
   // Follow relationship data
   const { data: followData, isLoading: followLoading } = useFollowRelationship(pubkey || '');

@@ -1,5 +1,5 @@
 // ABOUTME: Fastly Compute entry point for divine-web static site
-// ABOUTME: Handles www redirects, external redirects, NIP-05 from KV, subdomain profiles, and SPA fallback
+// ABOUTME: Handles www redirects, external redirects, NIP-05 from KV, subdomain profiles, dynamic OG tags, and SPA fallback
 
 /// <reference types="@fastly/js-compute" />
 import { env } from 'fastly:env';
@@ -8,6 +8,9 @@ import { PublisherServer } from '@fastly/compute-js-static-publish';
 import rc from '../static-publish.rc.js';
 
 const publisherServer = PublisherServer.fromStaticPublishRc(rc);
+
+// Funnelcake API URL for fetching video metadata
+const FUNNELCAKE_API_URL = 'https://relay.dvines.org';
 
 // Apex domains we serve (used to detect subdomains)
 const APEX_DOMAINS = ['dvine.video', 'divine.video'];
@@ -82,7 +85,21 @@ async function handleRequest(event) {
     }
   }
 
-  // 5. Serve static content with SPA fallback (handled by PublisherServer config)
+  // 5. Handle dynamic OG meta tags for video pages (for social media crawlers)
+  if (url.pathname.startsWith('/video/') && isSocialMediaCrawler(request)) {
+    console.log('Handling video OG tags for crawler, path:', url.pathname);
+    const videoId = url.pathname.split('/video/')[1]?.split('?')[0];
+    console.log('Video ID:', videoId);
+    if (videoId) {
+      const ogResponse = await handleVideoOgTags(request, videoId, url);
+      if (ogResponse) {
+        return ogResponse;
+      }
+    }
+    console.log('Falling through to SPA handler');
+  }
+
+  // 6. Serve static content with SPA fallback (handled by PublisherServer config)
   const response = await publisherServer.serveRequest(request);
   if (response != null) {
     return response;
@@ -331,4 +348,165 @@ function createChecksum(data) {
     result.push((mod >> (5 * (5 - i))) & 31);
   }
   return result;
+}
+
+/**
+ * Detect if request is from a social media crawler (for OG tag injection)
+ */
+function isSocialMediaCrawler(request) {
+  const userAgent = (request.headers.get('User-Agent') || '').toLowerCase();
+
+  // Common social media and link preview crawlers
+  const crawlerPatterns = [
+    'facebookexternalhit',
+    'twitterbot',
+    'linkedinbot',
+    'slackbot',
+    'discordbot',
+    'telegrambot',
+    'whatsapp',
+    'signal',
+    'embedly',
+    'quora link preview',
+    'showyoubot',
+    'outbrain',
+    'pinterest',
+    'vkshare',
+    'w3c_validator',
+    'baiduspider',
+    'facebot',
+    'ia_archiver',
+  ];
+
+  return crawlerPatterns.some(pattern => userAgent.includes(pattern));
+}
+
+/**
+ * Fetch video metadata from Funnelcake API using Fastly backend
+ */
+async function fetchVideoMetadata(videoId) {
+  try {
+    // Fetch from Funnelcake API via backend
+    const response = await fetch(`https://relay.dvines.org/api/videos?limit=100`, {
+      backend: 'funnelcake',
+      headers: {
+        'Accept': 'application/json',
+        'Host': 'relay.dvines.org',
+      },
+    });
+
+    if (!response.ok) {
+      console.log('Funnelcake API returned:', response.status);
+      return null;
+    }
+
+    const videos = await response.json();
+
+    // Find video by ID or d_tag
+    const video = videos.find(v => v.id === videoId || v.d_tag === videoId);
+
+    if (!video) {
+      console.log('Video not found in API response:', videoId);
+      return null;
+    }
+
+    return {
+      title: video.title || 'Video on diVine',
+      description: video.title || 'Watch this video on diVine',
+      thumbnail: video.thumbnail || 'https://divine.video/og.avif',
+      authorName: video.author_name || 'diVine creator',
+      loops: video.loops || 0,
+    };
+  } catch (err) {
+    console.error('Failed to fetch video metadata:', err.message);
+    return null;
+  }
+}
+
+/**
+ * Handle video page requests for social media crawlers
+ * Injects dynamic OG meta tags with video-specific content
+ */
+async function handleVideoOgTags(request, videoId, url) {
+  try {
+    // Fetch video metadata from Funnelcake
+    let videoMeta = null;
+    try {
+      videoMeta = await fetchVideoMetadata(videoId);
+    } catch (e) {
+      console.error('Failed to fetch video metadata:', e.message);
+    }
+
+    // Default meta values if video not found
+    const title = videoMeta?.title || 'Video on diVine';
+    const description = videoMeta?.description || 'Watch this video on diVine - Short-form looping videos on Nostr';
+    const thumbnail = videoMeta?.thumbnail || 'https://divine.video/og.avif';
+    const authorName = videoMeta?.authorName || '';
+    const videoUrl = `https://divine.video/video/${videoId}`;
+
+    console.log('Generating OG HTML for video:', videoId, 'title:', title);
+
+    // Generate a minimal HTML page with OG tags for crawlers
+    // This is simpler than trying to inject into the SPA HTML
+    const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${escapeHtml(title)} - diVine</title>
+
+  <!-- Open Graph Meta Tags -->
+  <meta property="og:type" content="video.other" />
+  <meta property="og:title" content="${escapeHtml(title)}" />
+  <meta property="og:description" content="${escapeHtml(description)}" />
+  <meta property="og:image" content="${escapeHtml(thumbnail)}" />
+  <meta property="og:image:width" content="480" />
+  <meta property="og:image:height" content="480" />
+  <meta property="og:url" content="${escapeHtml(videoUrl)}" />
+  <meta property="og:site_name" content="diVine" />
+
+  <!-- Twitter Card Meta Tags -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="${escapeHtml(title)}" />
+  <meta name="twitter:description" content="${escapeHtml(description)}" />
+  <meta name="twitter:image" content="${escapeHtml(thumbnail)}" />
+  ${authorName ? `<meta name="twitter:creator" content="${escapeHtml(authorName)}" />` : ''}
+
+  <!-- Redirect to actual page for any user who lands here -->
+  <meta http-equiv="refresh" content="0;url=${escapeHtml(videoUrl)}">
+  <link rel="canonical" href="${escapeHtml(videoUrl)}" />
+</head>
+<body>
+  <p>Redirecting to <a href="${escapeHtml(videoUrl)}">${escapeHtml(title)}</a>...</p>
+</body>
+</html>`;
+
+    console.log('Generated OG HTML, length:', html.length);
+
+    return new Response(html, {
+      status: 200,
+      headers: {
+        'Content-Type': 'text/html; charset=utf-8',
+        'Cache-Control': 'public, max-age=300',
+        'Vary': 'User-Agent', // Cache different versions for crawlers vs browsers
+      },
+    });
+  } catch (err) {
+    console.error('handleVideoOgTags error:', err.message, err.stack);
+    // Return the normal SPA on error
+    return await publisherServer.serveRequest(request);
+  }
+}
+
+/**
+ * Escape HTML special characters to prevent XSS
+ */
+function escapeHtml(str) {
+  if (!str) return '';
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
 }

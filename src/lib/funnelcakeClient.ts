@@ -431,3 +431,58 @@ export function normalizeVideoIds(video: FunnelcakeVideoRaw): FunnelcakeVideoRaw
     pubkey: Array.isArray(video.pubkey) ? parseByteArrayId(video.pubkey as unknown as number[]) : video.pubkey as unknown as string,
   } as FunnelcakeVideoRaw & { id: string; pubkey: string };
 }
+
+/**
+ * Profile data from Funnelcake /api/users/{pubkey} endpoint
+ */
+export interface FunnelcakeProfile {
+  pubkey: string;
+  name?: string;
+  display_name?: string;
+  picture?: string;
+  banner?: string;
+  about?: string;
+  nip05?: string;
+  lud16?: string;
+  website?: string;
+  // Stats
+  video_count?: number;
+  follower_count?: number;
+  following_count?: number;
+  total_loops?: number;
+  total_reactions?: number;
+}
+
+/**
+ * Fetch user profile data from Funnelcake /api/users/{pubkey} endpoint
+ * This is the dedicated profile endpoint that returns user metadata and stats
+ *
+ * @param apiUrl - Base URL of the Funnelcake API
+ * @param pubkey - User's public key (hex)
+ * @param signal - Optional abort signal
+ * @returns Promise with profile data or null if not found
+ */
+export async function fetchUserProfile(
+  apiUrl: string = API_CONFIG.funnelcake.baseUrl,
+  pubkey: string,
+  signal?: AbortSignal
+): Promise<FunnelcakeProfile | null> {
+  debugLog(`[FunnelcakeClient] fetchUserProfile: ${pubkey}`);
+
+  const endpoint = API_CONFIG.funnelcake.endpoints.userProfile.replace('{pubkey}', pubkey);
+
+  try {
+    const profile = await funnelcakeRequest<FunnelcakeProfile>(
+      apiUrl,
+      endpoint,
+      {},
+      signal
+    );
+
+    debugLog(`[FunnelcakeClient] Got profile:`, profile);
+    return profile;
+  } catch (err) {
+    debugLog(`[FunnelcakeClient] Profile fetch failed:`, err);
+    return null;
+  }
+}

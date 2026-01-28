@@ -1,9 +1,10 @@
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
-import { useEffect, useCallback, useState, useMemo } from 'react';
+import { useEffect, useCallback, useState, useMemo, useRef } from 'react';
 import { useSeoMeta } from '@unhead/react';
-import { Hash, User } from 'lucide-react';
+import { Hash, User, X } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Button } from '@/components/ui/button';
 import { VideoCard } from '@/components/VideoCard';
 import { useVideoNavigation, type VideoNavigationContext } from '@/hooks/useVideoNavigation';
 import { useVideoByIdFunnelcake } from '@/hooks/useVideoByIdFunnelcake';
@@ -387,6 +388,22 @@ export function VideoPage() {
     );
   }
 
+  // Ref for scrolling to the initial video
+  const initialVideoRef = useRef<HTMLDivElement>(null);
+  const hasScrolledRef = useRef(false);
+
+  // Scroll to the initial video when feed mode loads
+  useEffect(() => {
+    if (context && videos && videos.length > 1 && currentIndex >= 0 && !hasScrolledRef.current) {
+      // Small delay to ensure DOM is ready
+      const timer = setTimeout(() => {
+        initialVideoRef.current?.scrollIntoView({ behavior: 'auto', block: 'start' });
+        hasScrolledRef.current = true;
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [context, videos, currentIndex]);
+
   // Check for missing ID after all hooks
   if (!id) {
     return (
@@ -419,6 +436,123 @@ export function VideoPage() {
     );
   }
 
+  // Feed mode: show all videos in a scrollable list when we have context
+  // Show feed mode immediately when we have context, even while loading
+  const showFeedMode = context && (videos?.length ?? 0) > 0;
+  const showFeedLoading = context && isLoading && !videos?.length;
+
+  if (showFeedLoading) {
+    // Show feed-style loading when we have context but videos haven't loaded yet
+    return (
+      <div className="container py-6">
+        <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-sm border-b pb-3 mb-4 -mx-4 px-4">
+          <div className="flex items-center justify-between max-w-xl mx-auto">
+            <button
+              onClick={handleGoBack}
+              className="text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-2 text-sm font-medium"
+            >
+              {context.source === 'hashtag' && context.hashtag && (
+                <>
+                  <Hash className="h-4 w-4" />
+                  #{context.hashtag}
+                </>
+              )}
+              {context.source === 'profile' && (
+                <>
+                  <User className="h-4 w-4" />
+                  Loading videos...
+                </>
+              )}
+              {(context.source === 'discovery' || context.source === 'trending' || context.source === 'home') && (
+                <span className="capitalize">{context.source}</span>
+              )}
+            </button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleGoBack}
+              className="h-8 w-8"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+        <div className="space-y-6 max-w-xl mx-auto">
+          {[1, 2, 3].map((i) => (
+            <Card key={i} className="overflow-hidden">
+              <div className="flex items-center gap-3 p-4">
+                <Skeleton className="h-10 w-10 rounded-full" />
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="h-3 w-16" />
+                </div>
+              </div>
+              <Skeleton className="aspect-square w-full" />
+              <div className="p-4 space-y-2">
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-4/5" />
+              </div>
+            </Card>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (showFeedMode) {
+    return (
+      <div className="container py-6">
+        {/* Header with close button */}
+        <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-sm border-b pb-3 mb-4 -mx-4 px-4">
+          <div className="flex items-center justify-between max-w-xl mx-auto">
+            <button
+              onClick={handleGoBack}
+              className="text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-2 text-sm font-medium"
+            >
+              {context.source === 'hashtag' && context.hashtag && (
+                <>
+                  <Hash className="h-4 w-4" />
+                  #{context.hashtag}
+                </>
+              )}
+              {context.source === 'profile' && authorName && (
+                <>
+                  <User className="h-4 w-4" />
+                  {authorName}'s videos
+                </>
+              )}
+              {(context.source === 'discovery' || context.source === 'trending' || context.source === 'home') && (
+                <span className="capitalize">{context.source}</span>
+              )}
+            </button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleGoBack}
+              className="h-8 w-8"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+
+        {/* Scrollable video feed */}
+        <div className="space-y-6 max-w-xl mx-auto">
+          {videos.map((video, index) => (
+            <div
+              key={video.id}
+              ref={index === currentIndex ? initialVideoRef : undefined}
+              className="scroll-mt-20"
+            >
+              <VideoCardWithMetrics video={video} />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // Single video mode: show just the current video with navigation
   return (
     <div className="container py-6">
       {/* Subtle Navigation Context Info */}

@@ -23,6 +23,13 @@ service_id = "WfOrPTFYmwwxRvqrfralLA"
 [scripts]
   build = "npm run build"
 
+[[backends]]
+  name = "funnelcake"
+  address = "relay.dvines.org"
+  port = 443
+  override_host = "relay.dvines.org"
+  use_ssl = true
+
 [setup]
 
   [setup.kv_stores]
