@@ -80,7 +80,7 @@ export function ProfileHeader({
   // Show loading text if metadata hasn't loaded yet
   const displayName = metadata?.display_name || metadata?.name || (!metadata ? "Loading profile..." : genUserName(pubkey));
   const userName = metadata?.name || (!metadata ? "Loading profile..." : genUserName(pubkey));
-  const profileImage = getSafeProfileImage(metadata?.picture) || `https://api.dicebear.com/7.x/identicon/svg?seed=${pubkey}`;
+  const profileImage = getSafeProfileImage(metadata?.picture) || '/user-avatar.png';
   const about = metadata?.about;
   const nip05 = metadata?.nip05;
   const website = metadata?.website;

@@ -73,8 +73,8 @@ const NostrProvider: React.FC<NostrProviderProps> = (props) => {
         return relay;
       },
       reqRouter(filters): ReadonlyMap<string, NostrFilter[]> {
-        debugLog('[NostrProvider] ========== reqRouter called ==========');
-        debugLog('[NostrProvider] Filters:', filters);
+        // debugLog('[NostrProvider] ========== reqRouter called ==========');
+        // debugLog('[NostrProvider] Filters:', filters);
 
         const result = new Map<string, NostrFilter[]>();
 
@@ -96,7 +96,7 @@ const NostrProvider: React.FC<NostrProviderProps> = (props) => {
         if (profileRelayFilters.length > 0) {
           const profileRelayUrls = getRelayUrls(PROFILE_RELAYS);
 
-          debugLog(`[NostrProvider] Routing ${profileRelayFilters.length} profile/contact filters to ${profileRelayUrls.length} relays`);
+          // debugLog(`[NostrProvider] Routing ${profileRelayFilters.length} profile/contact filters to ${profileRelayUrls.length} relays`);
 
           for (const relay of profileRelayUrls) {
             result.set(relay, profileRelayFilters);
@@ -111,7 +111,7 @@ const NostrProvider: React.FC<NostrProviderProps> = (props) => {
           }
         }
 
-        debugLog('[NostrProvider] Router result:', Array.from(result.entries()));
+        // debugLog('[NostrProvider] Router result:', Array.from(result.entries()));
         return result as ReadonlyMap<string, NostrFilter[]>;
       },
       eventRouter(event: NostrEvent) {
@@ -144,10 +144,8 @@ const NostrProvider: React.FC<NostrProviderProps> = (props) => {
       },
     });
 
-    // Wrap with caching layer - pass relay URL getter for gateway detection
-    cachedPool.current = createCachedNostr(pool.current, {
-      getRelayUrl: () => relayUrl.current
-    });
+    // Wrap with caching layer for profile/contact queries
+    cachedPool.current = createCachedNostr(pool.current);
     debugLog('[NostrProvider] Wrapped NPool with caching layer');
 
     // Pre-establish WebSocket connections synchronously

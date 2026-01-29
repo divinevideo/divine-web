@@ -192,6 +192,13 @@ export async function searchVideos(
 ): Promise<FunnelcakeResponse> {
   const { query, tag, author, sort = 'trending', limit = 20, before, classic, platform, signal } = options;
 
+  // Use /api/videos endpoint for hashtag searches (tag parameter)
+  // Use /api/search endpoint for text searches (q parameter)
+  const isHashtagSearch = !!tag && !query;
+  const endpoint = isHashtagSearch
+    ? API_CONFIG.funnelcake.endpoints.videos
+    : API_CONFIG.funnelcake.endpoints.search;
+
   const params: Record<string, string | number | boolean | undefined> = {
     q: query,
     tag,
@@ -206,7 +213,7 @@ export async function searchVideos(
   // API returns array directly, wrap it in expected format
   const videos = await funnelcakeRequest<FunnelcakeVideoRaw[]>(
     apiUrl,
-    API_CONFIG.funnelcake.endpoints.search,
+    endpoint,
     params,
     signal
   );

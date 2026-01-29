@@ -3,7 +3,7 @@
 
 import type { NostrMetadata, NostrEvent } from '@nostrify/nostrify';
 
-// Hash function to generate consistent colors from pubkey
+// Hash function to generate consistent values from pubkey
 function hashCode(str: string): number {
   let hash = 0;
   for (let i = 0; i < str.length; i++) {
@@ -14,27 +14,10 @@ function hashCode(str: string): number {
   return Math.abs(hash);
 }
 
-// Generate a color based on pubkey
-function generateColor(pubkey: string): string {
-  const hash = hashCode(pubkey);
-  const hue = hash % 360;
-  const saturation = 60 + (hash % 20); // 60-80%
-  const lightness = 45 + (hash % 15); // 45-60%
-  return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
-}
-
-// Generate avatar URL using DiceBear API
-export function generateAvatar(pubkey: string): string {
-  // Use different avatar styles based on pubkey hash
-  const styles = ['avataaars', 'bottts', 'identicon', 'shapes', 'initials'];
-  const hash = hashCode(pubkey);
-  const style = styles[hash % styles.length];
-
-  // Generate a seed from pubkey for consistent avatars
-  const seed = pubkey.substring(0, 16);
-
-  // Use DiceBear API for avatar generation
-  return `https://api.dicebear.com/7.x/${style}/svg?seed=${seed}&backgroundColor=${encodeURIComponent(generateColor(pubkey))}`;
+// Generate avatar URL - uses local default avatar
+export function generateAvatar(_pubkey: string): string {
+  // Use local default avatar instead of external service for privacy
+  return '/user-avatar.png';
 }
 
 // Generate interesting usernames
@@ -85,11 +68,8 @@ export function generateDemoMetadata(pubkey: string): NostrMetadata {
     display_name: username,
     about: generateBio(pubkey),
     picture: generateAvatar(pubkey),
-    banner: `https://source.unsplash.com/random/1024x768?sig=${pubkey.substring(0, 8)}`,
+    // No banner - don't make external requests for privacy
     client: 'divine.video', // Tag profiles created on divine
-    // Don't generate fake NIP-05 or website - only use real ones
-    // website: `https://openvine.co/@${username.toLowerCase()}`,
-    // nip05: `${username.toLowerCase()}@openvine.co`
   };
 }
 
@@ -122,8 +102,8 @@ export function enhanceAuthorData(
       display_name: data.metadata.display_name || data.metadata.name || generateUsername(pubkey),
       about: data.metadata.about || generateBio(pubkey),
       picture: data.metadata.picture || generateAvatar(pubkey),
-      banner: data.metadata.banner || `https://source.unsplash.com/random/1024x768?sig=${pubkey.substring(0, 8)}`,
-      // Keep NIP-05 and website only if they're real (from metadata)
+      // Keep banner, NIP-05 and website only if they're real (from metadata)
+      banner: data.metadata.banner,
       nip05: data.metadata.nip05,
       website: data.metadata.website
     };

@@ -121,8 +121,7 @@ function VinerItem({
   metadata?: NostrMetadata;
 }) {
   const displayName = metadata?.display_name || metadata?.name || viner.name || genUserName(viner.pubkey);
-  const picture = getSafeProfileImage(metadata?.picture || viner.picture) ||
-    `https://api.dicebear.com/7.x/identicon/svg?seed=${viner.pubkey}`;
+  const picture = getSafeProfileImage(metadata?.picture || viner.picture) || '/user-avatar.png';
 
   // Use npub for URL
   let profilePath = `/profile/${viner.pubkey}`;
