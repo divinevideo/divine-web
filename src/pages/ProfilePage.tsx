@@ -16,12 +16,10 @@ import { FollowListSafetyDialog } from '@/components/FollowListSafetyDialog';
 import { useAuthor } from '@/hooks/useAuthor';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useVideoProvider } from '@/hooks/useVideoProvider';
-import { useProfileStats } from '@/hooks/useProfileStats';
 import { useFunnelcakeProfile } from '@/hooks/useFunnelcakeProfile';
 import { useFollowRelationship, useFollowUser, useUnfollowUser } from '@/hooks/useFollowRelationship';
 import { useFollowListSafetyCheck } from '@/hooks/useFollowListSafetyCheck';
 import { useLoginDialog } from '@/contexts/LoginDialogContext';
-import { genUserName } from '@/lib/genUserName';
 import { debugLog } from '@/lib/debug';
 
 export function ProfilePage() {
@@ -73,52 +71,40 @@ export function ProfilePage() {
   });
   const videos = videosData?.pages?.flatMap(p => p.videos) || [];
 
-  // Check if we have a real Nostr profile (kind 0 event with actual name)
-  const hasNostrProfile = authorData?.event && authorData?.metadata?.name;
+  // ALWAYS show data immediately - never block on slow queries
+  // Priority: Funnelcake (fast) first, upgrade with Nostr when it arrives
+  const nostrMeta = authorData?.metadata;
+  const fcMeta = funnelcakeProfile;
 
-  // Priority order for profile data:
-  // 1. Real Nostr profile (kind 0) - most authoritative
-  // 2. Funnelcake profile data - fast REST API with cached metadata
-  // 3. NO PLACEHOLDERS - just show what we have or nothing
-  const metadata = hasNostrProfile ? {
-    // Use Nostr data when available
-    display_name: authorData.metadata?.display_name,
-    name: authorData.metadata?.name,
-    picture: authorData.metadata?.picture || funnelcakeProfile?.picture || '/user-avatar.png',
-    about: authorData.metadata?.about,
-    banner: authorData.metadata?.banner,
-    nip05: authorData.metadata?.nip05,
-    website: authorData.metadata?.website,
-    lud16: authorData.metadata?.lud16,
-  } : funnelcakeProfile ? {
-    // Fall back to Funnelcake data (fast)
-    display_name: funnelcakeProfile.display_name,
-    name: funnelcakeProfile.name,
-    picture: funnelcakeProfile.picture || '/user-avatar.png',
-    about: funnelcakeProfile.about,
-    banner: funnelcakeProfile.banner,
-    nip05: funnelcakeProfile.nip05,
-    website: funnelcakeProfile.website,
-    lud16: funnelcakeProfile.lud16,
-  } : funnelcakeLoading ? undefined : {
-    // No data available - just use default avatar, no fake names
-    picture: '/user-avatar.png',
+  // Build metadata object - prefer Funnelcake (fast) then Nostr
+  // ALWAYS return an object so the UI never shows loading state for name
+  const metadata = {
+    display_name: fcMeta?.display_name || nostrMeta?.display_name,
+    name: fcMeta?.name || nostrMeta?.name,
+    picture: fcMeta?.picture || nostrMeta?.picture || '/user-avatar.png',
+    about: fcMeta?.about || nostrMeta?.about,
+    banner: fcMeta?.banner || nostrMeta?.banner,
+    nip05: fcMeta?.nip05 || nostrMeta?.nip05,
+    website: fcMeta?.website || nostrMeta?.website,
+    lud16: fcMeta?.lud16 || nostrMeta?.lud16,
   };
 
-  // Fetch profile statistics - use Funnelcake stats as fallback, then compute from videos
-  const { data: nostrStats, isLoading: statsLoading } = useProfileStats(pubkey || '', videos);
+  // Use Funnelcake stats (fast) - don't run expensive Nostr queries
+  // Funnelcake already has: video_count, follower_count, following_count, total_reactions, total_loops
+  // Calculate classic viner stats from videos (loop counts are in the video data)
+  const originalLoopCount = videos?.reduce((sum, v) => sum + (v.loopCount || 0), 0) || 0;
+  const isClassicViner = originalLoopCount > 0 || (funnelcakeProfile?.total_loops ? funnelcakeProfile.total_loops > 0 : false);
 
-  // Merge stats from Funnelcake (fast) with Nostr stats (more complete)
-  // Property names must match ProfileStats interface in ProfileHeader
   const stats = {
-    videosCount: nostrStats?.videosCount ?? funnelcakeProfile?.video_count ?? videos.length,
-    followersCount: nostrStats?.followersCount ?? funnelcakeProfile?.follower_count ?? 0,
-    followingCount: nostrStats?.followingCount ?? funnelcakeProfile?.following_count ?? 0,
-    totalViews: nostrStats?.totalViews ?? funnelcakeProfile?.total_reactions ?? 0,
-    joinedDate: nostrStats?.joinedDate ?? null,
-    isClassicViner: nostrStats?.isClassicViner ?? (funnelcakeProfile?.total_loops ? funnelcakeProfile.total_loops > 0 : false),
-    originalLoopCount: nostrStats?.originalLoopCount ?? funnelcakeProfile?.total_loops ?? 0,
+    videosCount: funnelcakeProfile?.video_count ?? videos.length,
+    followersCount: funnelcakeProfile?.follower_count ?? 0,
+    followingCount: funnelcakeProfile?.following_count ?? 0,
+    totalViews: funnelcakeProfile?.total_reactions ?? 0,
+    joinedDate: null, // Could fetch from Nostr later if needed
+    isClassicViner,
+    originalLoopCount: funnelcakeProfile?.total_loops ?? originalLoopCount,
   };
+  const statsLoading = funnelcakeLoading;
 
   // Follow relationship data
   const { data: followData, isLoading: followLoading } = useFollowRelationship(pubkey || '');
@@ -135,8 +121,10 @@ export function ProfilePage() {
   // Check if this is the current user's own profile
   const isOwnProfile = currentUser?.pubkey === pubkey;
 
-  // Get displayName for SEO
-  const displayName = metadata?.display_name || metadata?.name || (pubkey ? genUserName(pubkey) : 'User');
+  // Get displayName for SEO - use real name or truncated npub, never generated placeholders
+  const encodedNpub = pubkey ? nip19.npubEncode(pubkey) : null;
+  const shortNpub = encodedNpub ? `${encodedNpub.slice(0, 12)}...` : 'User';
+  const displayName = metadata?.display_name || metadata?.name || shortNpub;
 
   // Dynamic SEO meta tags for social sharing
   useSeoMeta({

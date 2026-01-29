@@ -3,6 +3,21 @@
 All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
+- **PERFORMANCE**: Fix slow profile page loading (20s → <1s)
+  - Fixed Funnelcake API response parsing - profile data is nested under `profile`, `social`, `stats` objects
+  - Removed circuit breaker checks that were blocking fast API requests
+  - Removed expensive Nostr queries for profile stats (10,000+ events) - now uses Funnelcake stats
+  - Reduced API timeout from 15s to 5s
+  - Profile metadata always returns object (never undefined) so UI renders immediately
+- **FEATURE**: NIP-05 validation with visual feedback
+  - New `useNip05Validation` hook validates NIP-05 via .well-known/nostr.json
+  - Shows loading spinner (grey) while validating
+  - Shows checkmark (green) when validated
+  - Shows strikethrough (grey) when invalid
+  - Never shows unvalidated NIP-05 with checkmark
+- **UI**: Profile shows truncated npub instead of generated placeholder names
+  - Removed fake names like "MysticNebula950"
+  - Shows `npub1xxx...xxxx` while loading, real name when available
 - **FEATURE**: Funnelcake REST API integration for faster video loading
   - New `funnelcakeClient.ts` - REST API client with circuit breaker health tracking
   - New `funnelcakeTransform.ts` - transforms API responses to ParsedVideoData format

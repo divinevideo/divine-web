@@ -521,7 +521,34 @@ export function normalizeVideoIds(video: FunnelcakeVideoRaw): FunnelcakeVideoRaw
 }
 
 /**
- * Profile data from Funnelcake /api/users/{pubkey} endpoint
+ * Raw API response from /api/users/{pubkey} endpoint
+ */
+interface FunnelcakeUserResponse {
+  pubkey: string;
+  profile: {
+    name?: string;
+    display_name?: string;
+    picture?: string;
+    banner?: string;
+    about?: string;
+    nip05?: string;
+    lud16?: string;
+    website?: string;
+  } | null;
+  social: {
+    follower_count: number;
+    following_count: number;
+  };
+  stats: {
+    video_count: number;
+  };
+  engagement: {
+    total_reactions: number;
+  };
+}
+
+/**
+ * Flattened profile data for easy consumption
  */
 export interface FunnelcakeProfile {
   pubkey: string;
@@ -560,12 +587,31 @@ export async function fetchUserProfile(
   const endpoint = API_CONFIG.funnelcake.endpoints.userProfile.replace('{pubkey}', pubkey);
 
   try {
-    const profile = await funnelcakeRequest<FunnelcakeProfile>(
+    const response = await funnelcakeRequest<FunnelcakeUserResponse>(
       apiUrl,
       endpoint,
       {},
       signal
     );
+
+    // Flatten the nested response into FunnelcakeProfile
+    const profile: FunnelcakeProfile = {
+      pubkey: response.pubkey,
+      // Profile fields (may be null)
+      name: response.profile?.name,
+      display_name: response.profile?.display_name,
+      picture: response.profile?.picture,
+      banner: response.profile?.banner,
+      about: response.profile?.about,
+      nip05: response.profile?.nip05,
+      lud16: response.profile?.lud16,
+      website: response.profile?.website,
+      // Stats
+      video_count: response.stats?.video_count,
+      follower_count: response.social?.follower_count,
+      following_count: response.social?.following_count,
+      total_reactions: response.engagement?.total_reactions,
+    };
 
     debugLog(`[FunnelcakeClient] Got profile:`, profile);
     return profile;

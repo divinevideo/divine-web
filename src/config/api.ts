@@ -15,8 +15,8 @@ export const API_CONFIG = {
   funnelcake: {
     // Default base URL - use relay.divine.video until relay.divine.video switches
     baseUrl: import.meta.env.VITE_FUNNELCAKE_API_URL || 'https://relay.divine.video',
-    // Request timeout in milliseconds
-    timeout: 15000,
+    // Request timeout in milliseconds (profile API should be fast)
+    timeout: 5000,
     // Endpoints
     endpoints: {
       videos: '/api/videos',

@@ -4,9 +4,13 @@
 import { useQuery } from '@tanstack/react-query';
 import { debugLog } from '@/lib/debug';
 
+type ValidationState = 'loading' | 'valid' | 'invalid' | 'idle';
+
 interface Nip05ValidationResult {
   isValid: boolean;
   isLoading: boolean;
+  isInvalid: boolean;
+  state: ValidationState;
   nip05: string | undefined;
 }
 
@@ -76,9 +80,27 @@ export function useNip05Validation(
     retry: false,      // Don't retry - if it fails, don't show it
   });
 
+  // Determine validation state
+  const isValid = query.data === true;
+  const isInvalid = query.isFetched && query.data === false;
+  const isLoading = query.isLoading;
+
+  let state: ValidationState = 'idle';
+  if (!nip05) {
+    state = 'idle';
+  } else if (isLoading) {
+    state = 'loading';
+  } else if (isValid) {
+    state = 'valid';
+  } else if (isInvalid) {
+    state = 'invalid';
+  }
+
   return {
-    isValid: query.data === true,
-    isLoading: query.isLoading,
-    nip05: query.data === true ? nip05 : undefined,
+    isValid,
+    isLoading,
+    isInvalid,
+    state,
+    nip05,
   };
 }

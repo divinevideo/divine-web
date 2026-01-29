@@ -13,7 +13,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { UserPlus, UserCheck, CheckCircle, Pencil, Copy, MoreVertical, Flag, Play, Repeat } from 'lucide-react';
+import { UserPlus, UserCheck, CheckCircle, Pencil, Copy, MoreVertical, Flag, Play, Repeat, Loader2, XCircle } from 'lucide-react';
 import { ReportContentDialog } from '@/components/ReportContentDialog';
 import { useNip05Validation } from '@/hooks/useNip05Validation';
 import { getSafeProfileImage } from '@/lib/imageUtils';
@@ -78,11 +78,12 @@ export function ProfileHeader({
 }: ProfileHeaderProps) {
   const [showReportDialog, setShowReportDialog] = useState(false);
 
-  // Validate NIP-05 - only show if validation passes
-  const { isValid: nip05Valid, nip05: validatedNip05 } = useNip05Validation(
+  // Validate NIP-05 - show with visual feedback based on validation state
+  const { state: nip05State } = useNip05Validation(
     metadata?.nip05,
     pubkey
   );
+  const nip05 = metadata?.nip05;
 
   // Get npub for fallback display
   const npub = nip19.npubEncode(pubkey);
@@ -154,16 +155,33 @@ export function ProfileHeader({
                   <Copy className="h-4 w-4" />
                 </Button>
               </div>
-              {/* Only show NIP-05 if validated */}
-              {nip05Valid && validatedNip05 ? (
+              {/* Show NIP-05 with visual feedback based on validation state */}
+              {nip05 ? (
                 <div className="flex items-center gap-1 justify-center sm:justify-start">
-                  <CheckCircle className="h-4 w-4 text-primary" />
+                  {/* Icon based on validation state */}
+                  {nip05State === 'loading' && (
+                    <Loader2 className="h-4 w-4 text-muted-foreground animate-spin" />
+                  )}
+                  {nip05State === 'valid' && (
+                    <CheckCircle className="h-4 w-4 text-primary" />
+                  )}
+                  {nip05State === 'invalid' && (
+                    <XCircle className="h-4 w-4 text-muted-foreground" />
+                  )}
+
+                  {/* NIP-05 text with styling based on state */}
                   <Link
-                    to={`/u/${encodeURIComponent(validatedNip05)}`}
-                    className="text-primary text-sm font-medium hover:underline"
+                    to={`/u/${encodeURIComponent(nip05)}`}
+                    className={`text-sm font-medium hover:underline ${
+                      nip05State === 'valid'
+                        ? 'text-primary'
+                        : nip05State === 'invalid'
+                          ? 'text-muted-foreground line-through'
+                          : 'text-muted-foreground'
+                    }`}
                   >
                     {/* Format NIP-05 for display: _@domain → @domain, user@domain → @user@domain */}
-                    {validatedNip05.startsWith('_@') ? `@${validatedNip05.slice(2)}` : `@${validatedNip05}`}
+                    {nip05.startsWith('_@') ? `@${nip05.slice(2)}` : `@${nip05}`}
                   </Link>
                 </div>
               ) : userName && userName !== displayName ? (
