@@ -46,6 +46,7 @@ export function VideoPage() {
   } = useVideoByIdFunnelcake({
     videoId: id || '',
     pubkey: context?.pubkey,
+    hashtag: context?.hashtag,
     enabled: !!id,
   });
 
