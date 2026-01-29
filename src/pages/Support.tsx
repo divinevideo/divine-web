@@ -8,10 +8,8 @@ import { Button } from '@/components/ui/button';
 import { MarketingLayout } from '@/components/MarketingLayout';
 
 export function Support() {
-  // TEMPORARILY DISABLED (Jan 24, 2026)
-  // Widget went live before support team was ready. Re-enable when prepared.
-   // Adam Replacing Zendesk Widget with Help Center Link (Jan 29th, 2026) 
-  // To restore widget: set ZENDESK_ENABLED to true, remove return null in ZendeskWidget.tsx, remove comments around original <button> (labeled "commented out by Adam 1/29/26")
+  // Zendesk widget disabled - linking to Help Center instead.
+  // To restore widget: set ZENDESK_ENABLED to true and remove return null in ZendeskWidget.tsx
  
   const ZENDESK_ENABLED = false;
 
@@ -58,7 +56,8 @@ export function Support() {
     };
   }, []);
 
-  const openZendeskWidget = () => {
+  // Kept for future re-enablement of Zendesk widget
+  const _openZendeskWidget = () => {
     if (window.zE) {
       window.zE('webWidget', 'open');
     }
@@ -75,25 +74,24 @@ export function Support() {
           </p>
         </div>
 
-        {/* Contact Support Card */}
+        {/* Help Center Card (replaces Zendesk widget) */}
         <Card>
           <CardHeader>
-      <!-- Adam updated this section to replace Zendesk Widget with a link to Zendesk Help Center-->
             <CardTitle>Visit diVine Help Center</CardTitle>
             <CardDescription>
               Find answers to your questions about diVine.  
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <a href='https://help.divine.video/hc/en-gb/'>
+            <a href='https://help.divine.video/'>
               <Button> 
-              {/*<Button onClick={openZendeskWidget} size="lg" className="w-full"> //commented out by Adam 1/29/26 */}
+              {/* <Button onClick={_openZendeskWidget} size="lg" className="w-full"> */}
               Visit Help Center
               </Button>
             </a>  
-            {/*<!--p className="text-sm text-muted-foreground mt-4 text-center">
+            {/* <p className="text-sm text-muted-foreground mt-4 text-center">
               Our support widget will open in the bottom-right corner
-            </p-->       //commented out by Adam 1/29/26   */}
+            </p> */}
           </CardContent>
         </Card>
 
@@ -112,7 +110,7 @@ export function Support() {
               href="https://help.divine.video/hc/en-gb/requests/new?ticket_form_id=14332938774671"
               className="text-primary hover:underline font-medium"
             >
-              Contact us.
+              Contact Support
             </a>
           </CardContent>
         </Card>
