@@ -1,10 +1,15 @@
+// ABOUTME: Hook to fetch thumbnail for a hashtag using Funnelcake API
+// ABOUTME: Returns the thumbnail URL of the top video for a given hashtag
+
 import { useQuery } from '@tanstack/react-query';
-import { useNostr } from '@nostrify/react';
-import { resolveHashtagThumbnail, type NostrClientLike } from '@/lib/hashtagThumbnail';
+import { searchVideos } from '@/lib/funnelcakeClient';
+import { DEFAULT_FUNNELCAKE_URL } from '@/config/relays';
 
+/**
+ * Hook to fetch thumbnail for a hashtag
+ * Uses Funnelcake API to get the top video for the hashtag
+ */
 export function useHashtagThumbnail(hashtag: string) {
-  const { nostr } = useNostr();
-
   return useQuery({
     queryKey: ['hashtag-thumbnail', hashtag],
     queryFn: async (context) => {
@@ -13,9 +18,23 @@ export function useHashtagThumbnail(hashtag: string) {
         AbortSignal.timeout(8000),
       ]);
 
-      return resolveHashtagThumbnail(nostr as NostrClientLike, hashtag, signal);
+      // Fetch top video for this hashtag from Funnelcake
+      const response = await searchVideos(DEFAULT_FUNNELCAKE_URL, {
+        tag: hashtag,
+        limit: 1,
+        sort: 'trending',
+        signal,
+      });
+
+      // Return the thumbnail URL if we have a video
+      if (response.videos.length > 0) {
+        const video = response.videos[0];
+        return video.thumbnail || video.video_url;
+      }
+
+      return undefined;
     },
-    staleTime: Infinity,
-    gcTime: Infinity,
+    staleTime: 300000, // 5 minutes
+    gcTime: 900000,    // 15 minutes
   });
 }

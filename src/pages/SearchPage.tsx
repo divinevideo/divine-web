@@ -566,7 +566,7 @@ function HashtagCard({
   hashtag,
   onClick
 }: {
-  hashtag: { tag: string; count: number };
+  hashtag: HashtagResult;
   onClick: () => void;
 }) {
   return (

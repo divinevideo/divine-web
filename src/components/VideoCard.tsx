@@ -135,7 +135,7 @@ export function VideoCard({
   const displayName = authorData.isLoading
     ? (video.authorName || "Loading profile...")
     : hasRealProfile
-      ? (metadata.display_name || metadata.name)
+      ? (metadata.display_name || metadata.name || `${npub.slice(0, 12)}...`)
       : (video.authorName || metadata.display_name || metadata.name || `${npub.slice(0, 12)}...`);
   // Prefer cached avatar from Funnelcake, then real profile, then generated
   const profileImage = getSafeProfileImage(

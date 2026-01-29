@@ -14,7 +14,8 @@ interface ZendeskWidgetProps {
 const ZENDESK_ENABLED = false;
 
 export function ZendeskWidget({ hideOnMobile = true }: ZendeskWidgetProps) {
-  const { user, displayName } = useCurrentUser();
+  const { user, metadata } = useCurrentUser();
+  const displayName = metadata?.display_name || metadata?.name;
 
   useEffect(() => {
     if (!ZENDESK_ENABLED) return;

@@ -1,15 +1,14 @@
 // ABOUTME: Component for exploring and discovering hashtags using Funnelcake REST API
 // ABOUTME: Shows popular hashtags with thumbnails and search filtering
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Hash, TrendingUp, Search, BarChart, Play } from 'lucide-react';
+import { Hash, Search, Play, Loader2 } from 'lucide-react';
 import { fetchPopularHashtags } from '@/lib/funnelcakeClient';
 import { DEFAULT_FUNNELCAKE_URL } from '@/config/relays';
 import { useHashtagThumbnail } from '@/hooks/useHashtagThumbnail';

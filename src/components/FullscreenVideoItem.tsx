@@ -62,7 +62,7 @@ export function FullscreenVideoItem({
   const displayName = authorData.isLoading
     ? (video.authorName || "Loading...")
     : hasRealProfile
-      ? (metadata.display_name || metadata.name)
+      ? (metadata.display_name || metadata.name || `${npub.slice(0, 12)}...`)
       : (video.authorName || metadata.display_name || metadata.name || `${npub.slice(0, 12)}...`);
   const profileImage = getSafeProfileImage(
     (hasRealProfile ? metadata.picture : null) || video.authorAvatar || metadata.picture
