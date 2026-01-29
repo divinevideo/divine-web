@@ -69,24 +69,24 @@ export function Support() {
         <div className="text-center space-y-2">
           <h1 className="text-3xl font-bold">Support</h1>
           <p className="text-muted-foreground">
-            Need help? We're here to assist you.
+            Need help? We're here to assist you! 
           </p>
         </div>
 
         {/* Contact Support Card */}
         <Card>
           <CardHeader>
-            <CardTitle>Contact Support</CardTitle>
+            <CardTitle>diVine Help Center</CardTitle>
             <CardDescription>
-              Click the button below to open our support chat and get help immediately.
+              Click below to review our help center or to create a support ticket.
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button onClick={openZendeskWidget} size="lg" className="w-full">
-              Open Support Chat
+            <Button onclick="window.location.href='https://help.divine.video/hc/en-gb/'" size="lg" className="w-full">
+              Visit the diVine Help Center
             </Button>
             <p className="text-sm text-muted-foreground mt-4 text-center">
-              Our support widget will open in the bottom-right corner
+              Our Help Center has updated answers to the most common questions. 
             </p>
           </CardContent>
         </Card>
@@ -95,18 +95,18 @@ export function Support() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Mail className="h-5 w-5" />
-              Email Support
+              Contact Support
             </CardTitle>
             <CardDescription>
-              Send us an email and we'll get back to you as soon as possible.
+              Our Support team is available to answer your questions. 
             </CardDescription>
           </CardHeader>
           <CardContent>
             <a
-              href="mailto:contact@divine.video"
+              href="https://help.divine.video/hc/en-gb/requests/new?ticket_form_id=14332938774671"
               className="text-primary hover:underline font-medium"
             >
-              contact@divine.video
+              Create a Support Ticket. 
             </a>
           </CardContent>
         </Card>
