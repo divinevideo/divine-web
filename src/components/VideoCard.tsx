@@ -103,10 +103,19 @@ export function VideoCard({
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showViewSourceDialog, setShowViewSourceDialog] = useState(false);
   const [showReactionsModal, setShowReactionsModal] = useState<'likes' | 'reposts' | null>(null);
-  // Default aspect ratio: Vine videos (have loopCount) were square, others are likely 9:16 vertical
-  const [videoAspectRatio, setVideoAspectRatio] = useState<number>(
-    video.loopCount ? 1 : 9 / 16
-  );
+  // Calculate initial aspect ratio from video dimensions, or use sensible defaults
+  const getInitialAspectRatio = (): number => {
+    // Try to parse dimensions from video data (format: "WIDTHxHEIGHT", e.g., "1080x1920")
+    if (video.dimensions) {
+      const [width, height] = video.dimensions.split('x').map(Number);
+      if (width && height && !isNaN(width) && !isNaN(height)) {
+        return width / height;
+      }
+    }
+    // Fallback: Vine videos (have loopCount) were square, others are likely 9:16 vertical
+    return video.loopCount ? 1 : 9 / 16;
+  };
+  const [videoAspectRatio, setVideoAspectRatio] = useState<number>(getInitialAspectRatio);
   const _isMobile = useIsMobile();
   // Determine layout: use prop if provided, otherwise always vertical (text below video)
   const effectiveLayout = layout ?? 'vertical';

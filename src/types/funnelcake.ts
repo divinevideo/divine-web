@@ -20,6 +20,7 @@ export interface FunnelcakeVideoRaw {
   thumbnail?: string;     // Thumbnail URL
   video_url: string;      // Primary video URL
   blurhash?: string;      // Progressive loading placeholder
+  dim?: string;           // Video dimensions (e.g., "1080x1920")
   author_name?: string;   // Cached author display name
   author_avatar?: string; // Cached author avatar URL
 

@@ -698,6 +698,7 @@ export function parseVideoEvents(events: NostrEvent[]): ParsedVideoData[] {
       blurhash: videoEvent.videoMetadata?.blurhash,
       title: videoEvent.title,
       duration: videoEvent.videoMetadata?.duration,
+      dimensions: videoEvent.videoMetadata?.dimensions,
       hashtags: videoEvent.hashtags || [],
       vineId,
       loopCount: getLoopCount(event),

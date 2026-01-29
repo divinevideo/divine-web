@@ -58,6 +58,7 @@ export function transformFunnelcakeVideo(raw: FunnelcakeVideoRaw): ParsedVideoDa
     thumbnailUrl: raw.thumbnail,
     blurhash: raw.blurhash,
     title: raw.title,
+    dimensions: raw.dim, // Video dimensions from API (e.g., "1080x1920")
     hashtags,
 
     // Vine-specific fields

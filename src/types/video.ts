@@ -80,6 +80,7 @@ export interface ParsedVideoData {
   blurhash?: string; // Blurhash for progressive loading placeholder
   title?: string;
   duration?: number;
+  dimensions?: string; // Video dimensions from imeta dim tag (e.g., "1080x1920")
   hashtags: string[];
   vineId: string | null;
   loopCount?: number;
