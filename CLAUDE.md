@@ -49,6 +49,11 @@ Running only deploy without publish means the new frontend code won't be served!
 ### Other Deployment Options
 - `npm run deploy:cloudflare` - Deploy to Cloudflare Pages
 
+### Git Conventions
+- Commit format: `type: description` (feat, fix, perf, docs, refactor, test)
+- Include `Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>` when AI-assisted
+- Don't amend commits after hook failures - create new commits
+
 ---
 
 ## Funnelcake REST API
@@ -56,9 +61,12 @@ Running only deploy without publish means the new frontend code won't be served!
 Funnelcake is our optimized REST API layer. Use REST for reads, WebSocket for writes.
 
 ### Base URLs
-| Environment | REST API |
-|------------|----------|
-| Production | `https://relay.divine.video/api/` |
+| Environment | WebSocket | REST API |
+|------------|-----------|----------|
+| Production | `wss://relay.divine.video` | `https://relay.divine.video/api/` |
+| Staging | `wss://relay.staging.dvines.org` | `https://relay.staging.dvines.org/api/` |
+
+**OpenAPI Docs**: `https://relay.divine.video/api/docs`
 
 ### When to Use REST vs WebSocket
 - **REST**: Analytics, stats, bulk operations, search, pre-computed data
@@ -76,6 +84,18 @@ GET  /api/users/{pubkey}/following  - Following list
 POST /api/users/bulk                - Bulk user profiles
 GET  /api/search?q=                 - Full-text search
 GET  /api/hashtags/trending         - Trending hashtags
+```
+
+### Bulk Endpoint Pattern
+Bulk endpoints support `from_event` to resolve IDs from another event:
+```json
+// Get profiles of everyone a user follows
+POST /api/users/bulk
+{ "from_event": { "kind": 3, "pubkey": "user-pubkey" } }
+
+// Get videos from a playlist
+POST /api/videos/bulk
+{ "from_event": { "kind": 30005, "pubkey": "curator", "d_tag": "playlist" } }
 ```
 
 ### Circuit Breaker Pattern
@@ -106,9 +126,25 @@ The app uses a circuit breaker for Funnelcake API calls:
 |------|---------|
 | 0 | User profile metadata |
 | 3 | Contact/follow list |
+| 5 | Deletion requests |
 | 7 | Reactions (likes) |
+| 16 | Generic repost (for videos) |
 | 1111 | Comments (NIP-22) |
+| 10003 | Bookmark list |
+| 30005 | Curation set / playlist |
 | 34236 | Short-form video (NIP-71) |
+
+### NIP-50 Search (relay supports)
+```typescript
+// Trending videos
+{ kinds: [34236], search: "sort:hot", limit: 50 }
+
+// Popular all-time
+{ kinds: [34236], search: "sort:top", limit: 50 }
+
+// Combined search + sort
+{ kinds: [34236], search: "sort:hot bitcoin", limit: 50 }
+```
 
 ### Addressable Events (kinds 30000-39999)
 - Unique key: `pubkey:kind:d-tag`
@@ -121,6 +157,23 @@ The app uses a circuit breaker for Funnelcake API calls:
 ["title", "Video Title"],
 ["imeta", "url https://...", "m video/mp4", "image https://..."],
 ["t", "hashtag"]
+```
+
+### Comment Structure (NIP-22)
+Comments use UPPERCASE for root, lowercase for parent:
+```json
+{
+  "kind": 1111,
+  "tags": [
+    ["E", "<video-id>"],      // Root = the video
+    ["K", "34236"],           // Root kind
+    ["P", "<video-author>"],  // Root author
+    ["e", "<parent-id>"],     // Parent (video or comment being replied to)
+    ["k", "34236"],           // Parent kind (34236 for video, 1111 for reply)
+    ["p", "<parent-author>"]  // Parent author
+  ],
+  "content": "Great video!"
+}
 ```
 
 ---
