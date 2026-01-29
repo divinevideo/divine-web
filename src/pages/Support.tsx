@@ -10,7 +10,9 @@ import { MarketingLayout } from '@/components/MarketingLayout';
 export function Support() {
   // TEMPORARILY DISABLED (Jan 24, 2026)
   // Widget went live before support team was ready. Re-enable when prepared.
-  // To restore: set ZENDESK_ENABLED to true and remove return null in ZendeskWidget.tsx
+   // Adam Replacing Zendesk Widget with Help Center Link (Jan 29th, 2026) 
+  // To restore widget: set ZENDESK_ENABLED to true, remove return null in ZendeskWidget.tsx, remove comments around original <button> (labeled "commented out by Adam 1/29/26")
+ 
   const ZENDESK_ENABLED = false;
 
   useEffect(() => {
@@ -76,18 +78,22 @@ export function Support() {
         {/* Contact Support Card */}
         <Card>
           <CardHeader>
-            <CardTitle>Contact Support</CardTitle>
+      <!-- Adam updated this section to replace Zendesk Widget with a link to Zendesk Help Center-->
+            <CardTitle>Visit diVine Help Center</CardTitle>
             <CardDescription>
-              Click the button below to open our support chat and get help immediately.
+              Find answers to your questions about diVine.  
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button onClick={openZendeskWidget} size="lg" className="w-full">
-              Open Support Chat
-            </Button>
-            <p className="text-sm text-muted-foreground mt-4 text-center">
+            <a href='https://help.divine.video/hc/en-gb/'>
+              <Button> 
+              {/*<Button onClick={openZendeskWidget} size="lg" className="w-full"> //commented out by Adam 1/29/26 */}
+              Visit Help Center
+              </Button>
+            </a>  
+            {/*<!--p className="text-sm text-muted-foreground mt-4 text-center">
               Our support widget will open in the bottom-right corner
-            </p>
+            </p-->       //commented out by Adam 1/29/26   */}
           </CardContent>
         </Card>
 
@@ -95,18 +101,18 @@ export function Support() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Mail className="h-5 w-5" />
-              Email Support
+              Contact Support
             </CardTitle>
             <CardDescription>
-              Send us an email and we'll get back to you as soon as possible.
+              Create a ticket and we'll get back to you as soon as possible.
             </CardDescription>
           </CardHeader>
           <CardContent>
             <a
-              href="mailto:contact@divine.video"
+              href="https://help.divine.video/hc/en-gb/requests/new?ticket_form_id=14332938774671"
               className="text-primary hover:underline font-medium"
             >
-              contact@divine.video
+              Contact us.
             </a>
           </CardContent>
         </Card>
