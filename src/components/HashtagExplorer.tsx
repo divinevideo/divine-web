@@ -3,21 +3,23 @@
 
 import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueries } from '@tanstack/react-query';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Hash, TrendingUp, Search, BarChart, Play, Loader2 } from 'lucide-react';
-import { fetchPopularHashtags } from '@/lib/funnelcakeClient';
+import { Hash, Search, Play, Loader2 } from 'lucide-react';
+import { fetchPopularHashtags, searchVideos } from '@/lib/funnelcakeClient';
 import { DEFAULT_FUNNELCAKE_URL } from '@/config/relays';
-import { useHashtagThumbnail } from '@/hooks/useHashtagThumbnail';
 
 interface HashtagStats {
   tag: string;
   count: number;
   rank: number;
+}
+
+interface HashtagWithThumbnail extends HashtagStats {
   thumbnailUrl?: string;
 }
 
@@ -52,9 +54,7 @@ function useHashtagStats() {
 /**
  * Component for individual hashtag card with thumbnail
  */
-function HashtagCard({ stat }: { stat: HashtagStats }) {
-  const { data: thumbnailUrl } = useHashtagThumbnail(stat.tag);
-
+function HashtagCard({ stat, thumbnailUrl }: { stat: HashtagStats; thumbnailUrl?: string }) {
   return (
     <Link to={`/hashtag/${stat.tag}`} className="block group">
       <Card className="hover:shadow-lg transition-all duration-200 overflow-hidden cursor-pointer hover:scale-[1.02]">
@@ -94,9 +94,6 @@ function HashtagCard({ stat }: { stat: HashtagStats }) {
                   <Hash className="h-4 w-4" />
                   {stat.tag}
                 </h3>
-                {/* <p className="text-sm opacity-90">
-                  {stat.count.toLocaleString()} videos
-                </p> */}
               </div>
               <Badge variant="secondary" className="bg-white/20 text-white border-white/30">
                 #{stat.rank}
@@ -115,6 +112,116 @@ function HashtagCard({ stat }: { stat: HashtagStats }) {
       </Card>
     </Link>
   );
+}
+
+/**
+ * Hook to fetch thumbnails for hashtags with deduplication
+ * Uses a two-pass approach: first fetch 1 video each, then fetch more only for duplicates
+ */
+function useHashtagThumbnails(hashtags: string[]) {
+  // First pass: fetch top 1 video per hashtag
+  const initialQueries = useQueries({
+    queries: hashtags.map(tag => ({
+      queryKey: ['hashtag-thumbnail-initial', tag],
+      queryFn: async () => {
+        const signal = AbortSignal.timeout(8000);
+        const response = await searchVideos(DEFAULT_FUNNELCAKE_URL, {
+          tag,
+          limit: 1,
+          sort: 'trending',
+          signal,
+        });
+        const video = response.videos[0];
+        return {
+          tag,
+          url: video?.thumbnail || video?.video_url || null,
+        };
+      },
+      staleTime: 300000,
+      gcTime: 900000,
+    })),
+  });
+
+  // Identify duplicates that need more videos
+  const { duplicateTags, urlToFirstTag } = useMemo(() => {
+    const urlToFirstTag = new Map<string, string>();
+    const duplicateTags: string[] = [];
+
+    for (const query of initialQueries) {
+      if (query.data?.url) {
+        const { tag, url } = query.data;
+        if (urlToFirstTag.has(url)) {
+          // This is a duplicate - the tag needs more videos
+          duplicateTags.push(tag);
+        } else {
+          urlToFirstTag.set(url, tag);
+        }
+      }
+    }
+
+    return { duplicateTags, urlToFirstTag };
+  }, [initialQueries]);
+
+  // Second pass: fetch more videos only for duplicate hashtags
+  const extraQueries = useQueries({
+    queries: duplicateTags.map(tag => ({
+      queryKey: ['hashtag-thumbnail-extra', tag],
+      queryFn: async () => {
+        const signal = AbortSignal.timeout(8000);
+        const response = await searchVideos(DEFAULT_FUNNELCAKE_URL, {
+          tag,
+          limit: 10,  // Get more videos to find a unique one
+          sort: 'trending',
+          signal,
+        });
+        return {
+          tag,
+          videos: response.videos.map(v => v.thumbnail || v.video_url).filter(Boolean),
+        };
+      },
+      staleTime: 300000,
+      gcTime: 900000,
+      enabled: duplicateTags.length > 0,
+    })),
+  });
+
+  // Build final thumbnail map with deduplication
+  const thumbnailMap = useMemo(() => {
+    const map = new Map<string, string>();
+    const usedUrls = new Set<string>();
+
+    // First, add all non-duplicate thumbnails
+    for (const query of initialQueries) {
+      if (query.data?.url) {
+        const { tag, url } = query.data;
+        if (!duplicateTags.includes(tag)) {
+          map.set(tag, url);
+          usedUrls.add(url);
+        }
+      }
+    }
+
+    // Then process duplicates with their extra videos
+    for (const extraQuery of extraQueries) {
+      if (extraQuery.data) {
+        const { tag, videos } = extraQuery.data;
+        for (const url of videos) {
+          if (!usedUrls.has(url)) {
+            map.set(tag, url);
+            usedUrls.add(url);
+            break;
+          }
+        }
+      }
+    }
+
+    return map;
+  }, [initialQueries, extraQueries, duplicateTags]);
+
+  return {
+    thumbnailMap,
+    isLoading: initialQueries.some(q => q.isLoading),
+  };
 }
 
 const INITIAL_LOAD = 20;
@@ -142,6 +249,10 @@ export function HashtagExplorer() {
   const visibleTags = useMemo(() => {
     return filteredTags.slice(0, visibleCount);
   }, [filteredTags, visibleCount]);
+
+  // Fetch thumbnails for visible hashtags with deduplication
+  const visibleHashtags = useMemo(() => visibleTags.map(t => t.tag), [visibleTags]);
+  const { thumbnailMap } = useHashtagThumbnails(visibleHashtags);
 
   const hasMore = visibleCount < filteredTags.length;
 
@@ -238,7 +349,11 @@ export function HashtagExplorer() {
         <>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
             {visibleTags.map((stat) => (
-              <HashtagCard key={stat.tag} stat={stat} />
+              <HashtagCard
+                key={stat.tag}
+                stat={stat}
+                thumbnailUrl={thumbnailMap.get(stat.tag)}
+              />
             ))}
           </div>
 

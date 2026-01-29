@@ -7,6 +7,25 @@ import type { FunnelcakeVideoRaw, FunnelcakeResponse } from '@/types/funnelcake'
 import { debugLog } from './debug';
 
 /**
+ * Parse loop count from video content text
+ * Vine videos often have "Original stats: X loops" embedded in the content
+ */
+function parseLoopsFromContent(content?: string): number | null {
+  if (!content) return null;
+
+  // Match patterns like "2,965,624 loops" or "2965624 loops"
+  const match = content.match(/([0-9,]+)\s*loops/i);
+  if (match) {
+    // Remove commas and parse as integer
+    const loops = parseInt(match[1].replace(/,/g, ''), 10);
+    if (!isNaN(loops) && loops > 0) {
+      return loops;
+    }
+  }
+  return null;
+}
+
+/**
  * Transform a single Funnelcake video to ParsedVideoData format
  */
 export function transformFunnelcakeVideo(raw: FunnelcakeVideoRaw): ParsedVideoData {
@@ -43,8 +62,8 @@ export function transformFunnelcakeVideo(raw: FunnelcakeVideoRaw): ParsedVideoDa
 
     // Vine-specific fields
     vineId: raw.d_tag || null, // d_tag is the unique identifier
-    // loops is only available from main /api/videos endpoint, not /api/users/{pubkey}/videos
-    loopCount: raw.loops ?? 0,
+    // loops may come from API or be parsed from content text (for user videos endpoint)
+    loopCount: raw.loops ?? parseLoopsFromContent(raw.content) ?? parseLoopsFromContent(raw.title) ?? 0,
 
     // Social metrics from Funnelcake (pre-computed)
     // Handle both naming conventions: embedded_* (main videos) vs plain (user videos)
