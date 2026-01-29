@@ -1,7 +1,7 @@
 // ABOUTME: Comprehensive search page with debounced input, filter tabs, infinite scroll, and sort modes
 // ABOUTME: Supports searching videos, users, hashtags with NIP-50 full-text search
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { nip19 } from 'nostr-tools';
 import { useSeoMeta } from '@unhead/react';
@@ -54,7 +54,16 @@ export function SearchPage() {
     pageSize: 20,
   });
 
-  const videoResults = videoData?.pages.flatMap(page => page.videos) ?? [];
+  // Deduplicate videos by ID (React Strict Mode can cause duplicate fetches)
+  const videoResults = useMemo(() => {
+    const videos = videoData?.pages.flatMap(page => page.videos) ?? [];
+    const seen = new Set<string>();
+    return videos.filter(video => {
+      if (seen.has(video.id)) return false;
+      seen.add(video.id);
+      return true;
+    });
+  }, [videoData]);
 
   const {
     data: userResults = [],

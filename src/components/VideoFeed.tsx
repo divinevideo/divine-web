@@ -89,11 +89,16 @@ export function VideoFeed({
     debugLog(`[VideoFeed] Using ${dataSource} for ${feedType} feed`);
   }, [dataSource, feedType]);
 
-  // Flatten all pages into single array
-  const allVideos = useMemo(() =>
-    data?.pages.flatMap(page => page.videos) ?? [],
-    [data]
-  );
+  // Flatten all pages into single array, deduplicating by video ID
+  const allVideos = useMemo(() => {
+    const videos = data?.pages.flatMap(page => page.videos) ?? [];
+    const seen = new Set<string>();
+    return videos.filter(video => {
+      if (seen.has(video.id)) return false;
+      seen.add(video.id);
+      return true;
+    });
+  }, [data]);
 
   // Filter videos based on mute list and verification status
   const filteredVideos = useMemo(() => {

@@ -16,7 +16,7 @@ export const isLocalhost = typeof window !== 'undefined' &&
  * Enable verbose logging (video playback, visibility updates, etc.)
  * Set to true to see detailed video playback logs
  */
-export const ENABLE_VERBOSE_LOGGING = true;
+export const ENABLE_VERBOSE_LOGGING = false;
 
 /**
  * Debug log that only outputs on localhost
