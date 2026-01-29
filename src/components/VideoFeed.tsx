@@ -4,25 +4,20 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { performanceMonitor } from '@/lib/performanceMonitoring';
 import { Video } from 'lucide-react';
-import { VideoCard } from '@/components/VideoCard';
+import { VideoCardWithMetrics } from '@/components/VideoCardWithMetrics';
 import { VideoGrid } from '@/components/VideoGrid';
 import { AddToListDialog } from '@/components/AddToListDialog';
 import { useVideoProvider } from '@/hooks/useVideoProvider';
 import { useBatchedAuthors } from '@/hooks/useBatchedAuthors';
-import { useDeferredVideoMetrics } from '@/hooks/useDeferredVideoMetrics';
-import { useOptimisticLike } from '@/hooks/useOptimisticLike';
-import { useOptimisticRepost } from '@/hooks/useOptimisticRepost';
-import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useContentModeration } from '@/hooks/useModeration';
 import { Card, CardContent } from '@/components/ui/card';
-import { useToast } from '@/hooks/useToast';
-import { useLoginDialog } from '@/contexts/LoginDialogContext';
 import { Loader2 } from 'lucide-react';
 import InfiniteScroll from 'react-infinite-scroll-component';
 import type { ParsedVideoData } from '@/types/video';
 import { debugLog, debugWarn } from '@/lib/debug';
 import type { SortMode } from '@/types/nostr';
 import { useNavigate } from 'react-router-dom';
+import { useCallback } from 'react';
 
 type ViewMode = 'feed' | 'grid';
 
@@ -59,12 +54,7 @@ export function VideoFeed({
   const [showListDialog, setShowListDialog] = useState<{ videoId: string; videoPubkey: string } | null>(null);
   const mountTimeRef = useRef<number | null>(null);
 
-  const { user } = useCurrentUser();
-  const { toast } = useToast();
-  const { toggleLike } = useOptimisticLike();
-  const { toggleRepost } = useOptimisticRepost();
   const { checkContent } = useContentModeration();
-  const { openLoginDialog } = useLoginDialog();
   const navigate = useNavigate();
 
   // Use video provider hook - automatically selects Funnelcake or WebSocket
@@ -205,6 +195,16 @@ export function VideoFeed({
     }
   }, [isLoading, feedType, allFiltered, navigate, filteredVideos]);
 
+  // Stable callbacks for comment handling - MUST be before any early returns
+  // to ensure hooks are called in the same order on every render
+  const handleOpenComments = useCallback((video: ParsedVideoData) => {
+    setShowCommentsForVideo(video.id);
+  }, []);
+
+  const handleCloseComments = useCallback(() => {
+    setShowCommentsForVideo(null);
+  }, []);
+
   // Loading state (initial load only)
   if (isLoading && !data) {
     return (
@@ -342,123 +342,6 @@ export function VideoFeed({
     );
   }
 
-  const handleOpenComments = (video: ParsedVideoData) => {
-    setShowCommentsForVideo(video.id);
-  };
-
-  const handleCloseComments = () => {
-    setShowCommentsForVideo(null);
-  };
-
-  // Note: handleAddToList is not currently used as VideoListBadges handles its own dialog
-  // const handleAddToList = (video: ParsedVideoData) => {
-  //   if (!user) {
-  //     toast({
-  //       title: 'Login Required',
-  //       description: 'Please log in to add videos to lists',
-  //       variant: 'destructive',
-  //     });
-  //     return;
-  //   }
-
-  //   if (!video.vineId) {
-  //     toast({
-  //       title: 'Error',
-  //       description: 'Cannot add this video to a list',
-  //       variant: 'destructive',
-  //     });
-  //     return;
-  //   }
-
-  //   setShowListDialog({ videoId: video.vineId, videoPubkey: video.pubkey });
-  // };
-
-  // Helper component to provide social metrics data for each video
-  function VideoCardWithMetrics({ video, index }: { video: ParsedVideoData; index: number }) {
-    // Use deferred loading: render video immediately, load metrics after a short delay
-    // First 3 videos load immediately, rest have a staggered delay for progressive enhancement
-    const delay = index < 3 ? 0 : Math.min(index * 50, 500);
-    const { socialMetrics, userInteractions, isLoading: _isLoading } = useDeferredVideoMetrics({
-      videoId: video.id,
-      videoPubkey: video.pubkey,
-      vineId: video.vineId,
-      userPubkey: user?.pubkey,
-      delay,
-      immediate: index < 3, // Load first 3 immediately for perceived speed
-    });
-
-    const handleVideoLike = async () => {
-      // Check authentication first, show login dialog if not authenticated
-      if (!user) {
-        openLoginDialog();
-        return;
-      }
-
-      debugLog('Toggle like for video:', video.id);
-      await toggleLike({
-        videoId: video.id,
-        videoPubkey: video.pubkey,
-        vineId: video.vineId,
-        userPubkey: user.pubkey,
-        isCurrentlyLiked: userInteractions.data?.hasLiked || false,
-        currentLikeEventId: userInteractions.data?.likeEventId || null,
-      });
-    };
-
-    const handleVideoRepost = async () => {
-      // Check authentication first, show login dialog if not authenticated
-      if (!user) {
-        openLoginDialog();
-        return;
-      }
-
-      if (!video.vineId) {
-        toast({
-          title: 'Error',
-          description: 'Cannot repost this video',
-          variant: 'destructive',
-        });
-        return;
-      }
-
-      debugLog('Toggle repost for video:', video.id);
-      await toggleRepost({
-        videoId: video.id,
-        videoPubkey: video.pubkey,
-        vineId: video.vineId,
-        userPubkey: user.pubkey,
-        isCurrentlyReposted: userInteractions.data?.hasReposted || false,
-        currentRepostEventId: userInteractions.data?.repostEventId || null,
-      });
-    };
-
-    return (
-      <VideoCard
-        key={video.id}
-        video={video}
-        mode={mode}
-        onLike={handleVideoLike}
-        onRepost={handleVideoRepost}
-        onOpenComments={() => handleOpenComments(video)}
-        onCloseComments={handleCloseComments}
-        isLiked={userInteractions.data?.hasLiked || false}
-        isReposted={userInteractions.data?.hasReposted || false}
-        likeCount={(video.likeCount ?? 0) + (socialMetrics.data?.likeCount ?? 0)}
-        repostCount={(video.repostCount ?? 0) + (socialMetrics.data?.repostCount ?? 0)}
-        commentCount={(video.commentCount ?? 0) + (socialMetrics.data?.commentCount ?? 0)}
-        viewCount={(socialMetrics.data?.viewCount ?? 0) + (video.loopCount ?? 0)}
-        showComments={showCommentsForVideo === video.id}
-        navigationContext={{
-          source: feedType,
-          hashtag,
-          pubkey,
-        }}
-        videoIndex={index}
-        data-testid="video-card"
-      />
-    );
-  }
-
   // Only create VideoCard components for videos in the visible range
   // Use infinite scroll component for smooth pagination
   // Grid mode uses VideoGrid component for thumbnail display
@@ -548,6 +431,15 @@ export function VideoFeed({
               key={video.id}
               video={video}
               index={index}
+              mode={mode}
+              showComments={showCommentsForVideo === video.id}
+              onOpenComments={() => handleOpenComments(video)}
+              onCloseComments={handleCloseComments}
+              navigationContext={{
+                source: feedType,
+                hashtag,
+                pubkey,
+              }}
             />
           ))}
         </div>

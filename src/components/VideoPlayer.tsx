@@ -863,8 +863,8 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
         onTouchMove={isMobile ? handleTouchMove : undefined}
         onTouchEnd={isMobile ? handleTouchEnd : undefined}
       >
-        {/* Blurhash placeholder - shows behind video while loading */}
-        {isValidBlurhash(blurhash) && (
+        {/* Blurhash placeholder - shows behind video while loading, hidden permanently after first load */}
+        {isValidBlurhash(blurhash) && !hasLoadedOnce && (
           <BlurhashPlaceholder
             blurhash={blurhash}
             className={cn(
@@ -885,14 +885,16 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
           autoPlay={false} // Never autoplay, we control playback programmatically
           loop
           playsInline
-          // Preload metadata for videos in view for faster playback
-          preload={inView ? 'auto' : 'none'}
+          // Preload based on visibility, but once loaded, keep preload stable to avoid re-fetching
+          // hasLoadedOnce prevents the preload attribute from changing and causing flashes
+          preload={hasLoadedOnce ? 'auto' : (inView ? 'auto' : 'metadata')}
           crossOrigin="anonymous"
           disableRemotePlayback
           className={cn(
             'w-full h-full object-contain relative z-10 bg-transparent',
-            'transition-opacity duration-300',
-            isLoading ? 'opacity-0' : 'opacity-100'
+            // Only use opacity transition on initial load, not on subsequent visibility changes
+            !hasLoadedOnce && 'transition-opacity duration-300',
+            !hasLoadedOnce && isLoading ? 'opacity-0' : 'opacity-100'
           )}
           onLoadStart={handleLoadStart}
           onLoadedData={handleLoadedData}
@@ -904,8 +906,8 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
           onClick={!isMobile ? togglePlay : undefined}
         />
 
-        {/* Loading state - show loading animation over blurhash */}
-        {isLoading && (
+        {/* Loading state - show loading animation over blurhash, only on initial load */}
+        {isLoading && !hasLoadedOnce && (
           <div
             className="absolute inset-0 flex items-center justify-center z-20"
             data-testid={isMobile ? "mobile-loading" : undefined}

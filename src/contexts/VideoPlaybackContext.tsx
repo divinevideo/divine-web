@@ -4,6 +4,10 @@
 import { createContext, useState, useRef, ReactNode } from 'react';
 import { verboseLog } from '@/lib/debug';
 
+// Maximum number of video references to keep in memory
+// Older entries are pruned when this limit is exceeded
+const MAX_VIDEO_REFS = 30;
+
 export interface VideoPlaybackContextType {
   activeVideoId: string | null;
   setActiveVideo: (videoId: string | null) => void;
@@ -21,6 +25,8 @@ export function VideoPlaybackProvider({ children }: { children: ReactNode }) {
   const [globalMuted, setGlobalMuted] = useState(true); // Start muted by default
   const videoRefs = useRef<Map<string, HTMLVideoElement>>(new Map());
   const videoVisibility = useRef<Map<string, number>>(new Map());
+  // Track registration order for LRU-style pruning
+  const registrationOrder = useRef<string[]>([]);
   const visibilityUpdateTimer = useRef<NodeJS.Timeout | null>(null);
   // Track activeVideoId in a ref to avoid stale closure issues in debounced callbacks
   const activeVideoIdRef = useRef<string | null>(null);
@@ -37,13 +43,37 @@ export function VideoPlaybackProvider({ children }: { children: ReactNode }) {
 
   const registerVideo = (videoId: string, element: HTMLVideoElement) => {
     verboseLog(`Registering video: ${videoId}`);
+
+    // Add to registration order (move to end if already exists)
+    const orderIndex = registrationOrder.current.indexOf(videoId);
+    if (orderIndex !== -1) {
+      registrationOrder.current.splice(orderIndex, 1);
+    }
+    registrationOrder.current.push(videoId);
+
     videoRefs.current.set(videoId, element);
+
+    // Prune oldest entries if we exceed the limit
+    while (registrationOrder.current.length > MAX_VIDEO_REFS) {
+      const oldestId = registrationOrder.current.shift();
+      if (oldestId && oldestId !== activeVideoIdRef.current) {
+        verboseLog(`Pruning old video ref: ${oldestId}`);
+        videoRefs.current.delete(oldestId);
+        videoVisibility.current.delete(oldestId);
+      }
+    }
   };
 
   const unregisterVideo = (videoId: string) => {
     verboseLog(`Unregistering video: ${videoId}`);
     videoRefs.current.delete(videoId);
     videoVisibility.current.delete(videoId);
+
+    // Remove from registration order
+    const orderIndex = registrationOrder.current.indexOf(videoId);
+    if (orderIndex !== -1) {
+      registrationOrder.current.splice(orderIndex, 1);
+    }
   };
 
   const updateVideoVisibility = (videoId: string, visibilityRatio: number) => {
