@@ -7,7 +7,7 @@ import { useVideoEvents } from './useVideoEvents';
 import type { ParsedVideoData } from '@/types/video';
 
 export interface VideoNavigationContext {
-  source: 'hashtag' | 'profile' | 'discovery' | 'home' | 'trending' | 'recent' | 'classics';
+  source: 'hashtag' | 'profile' | 'discovery' | 'home' | 'trending' | 'recent' | 'classics' | 'foryou';
   hashtag?: string;
   pubkey?: string;
   currentIndex?: number;
@@ -42,9 +42,11 @@ export function useVideoNavigation(videoId: string): VideoNavigationHook {
   }, [searchParams]);
 
   // Fetch videos based on context
+  // Map 'foryou' to 'trending' for WebSocket fallback (foryou only works via Funnelcake API)
+  const feedTypeForWebSocket = context?.source === 'foryou' ? 'trending' : context?.source;
   const { data: videos, isLoading } = useVideoEvents(
     context ? {
-      feedType: context.source,
+      feedType: feedTypeForWebSocket,
       hashtag: context.hashtag,
       pubkey: context.pubkey,
       limit: 50, // Get enough videos for navigation

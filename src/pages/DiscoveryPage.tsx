@@ -9,8 +9,14 @@ import { VerifiedOnlyToggle } from '@/components/VerifiedOnlyToggle';
 import { HashtagExplorer } from '@/components/HashtagExplorer';
 import { ClassicVinersRow } from '@/components/ClassicVinersRow';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Star, Clock, Hash, Flame, Zap, Sparkles } from 'lucide-react';
+import { Star, Clock, Hash, Flame, Sparkles } from 'lucide-react';
+// Zap temporarily unused - will be needed when Rising tab is re-enabled
 import { useCurrentUser } from '@/hooks/useCurrentUser';
+
+// All possible tab values (foryou only shown when logged in)
+type AllowedTab = 'foryou' | 'classics' | 'hot' | 'new' | 'hashtags';
+const ALL_TABS: AllowedTab[] = ['foryou', 'classics', 'hot', 'new', 'hashtags'];
+const BASE_TABS: AllowedTab[] = ['classics', 'hot', 'new', 'hashtags'];
 
 export function DiscoveryPage() {
   const navigate = useNavigate();
@@ -21,20 +27,15 @@ export function DiscoveryPage() {
   // Tabs include 'foryou' only when logged in
   // Note: 'rising' temporarily removed
   const allowedTabs = useMemo(() => {
-    const baseTabs = ['classics', 'hot', 'new', 'hashtags'] as const;
-    if (isLoggedIn) {
-      return ['foryou', ...baseTabs] as const;
-    }
-    return baseTabs;
+    return isLoggedIn ? ALL_TABS : BASE_TABS;
   }, [isLoggedIn]);
 
-  type AllowedTab = typeof allowedTabs[number];
   const routeTab = (params.tab || '').toLowerCase();
   // Support legacy 'top' route by mapping to 'classics'
   const normalizedTab = routeTab === 'top' ? 'classics' : routeTab;
   // Default to 'foryou' for logged-in users, 'classics' for anonymous
-  const defaultTab = isLoggedIn ? 'foryou' : 'classics';
-  const initialTab: AllowedTab = (allowedTabs.includes(normalizedTab as AllowedTab) ? normalizedTab : defaultTab) as AllowedTab;
+  const defaultTab: AllowedTab = isLoggedIn ? 'foryou' : 'classics';
+  const initialTab: AllowedTab = allowedTabs.includes(normalizedTab as AllowedTab) ? (normalizedTab as AllowedTab) : defaultTab;
   const [activeTab, setActiveTab] = useState<AllowedTab>(initialTab);
   const [verifiedOnly, setVerifiedOnly] = useState(false);
 
