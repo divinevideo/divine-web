@@ -20,6 +20,7 @@ interface VideoCardWithMetricsProps {
   showComments: boolean;
   onOpenComments: () => void;
   onCloseComments: () => void;
+  onEnterFullscreen?: () => void;
   navigationContext?: VideoNavigationContext;
 }
 
@@ -33,6 +34,7 @@ function VideoCardWithMetricsInner({
   showComments,
   onOpenComments,
   onCloseComments,
+  onEnterFullscreen,
   navigationContext,
 }: VideoCardWithMetricsProps) {
   const { user } = useCurrentUser();
@@ -106,6 +108,7 @@ function VideoCardWithMetricsInner({
       onRepost={handleVideoRepost}
       onOpenComments={onOpenComments}
       onCloseComments={onCloseComments}
+      onEnterFullscreen={onEnterFullscreen}
       isLiked={userInteractions.data?.hasLiked || false}
       isReposted={userInteractions.data?.hasReposted || false}
       likeCount={(video.likeCount ?? 0) + (socialMetrics.data?.likeCount ?? 0)}

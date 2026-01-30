@@ -18,6 +18,7 @@ import { debugLog, debugWarn } from '@/lib/debug';
 import type { SortMode } from '@/types/nostr';
 import { useNavigate } from 'react-router-dom';
 import { useCallback } from 'react';
+import { useFullscreenFeed } from '@/contexts/FullscreenFeedContext';
 
 type ViewMode = 'feed' | 'grid';
 
@@ -56,6 +57,7 @@ export function VideoFeed({
 
   const { checkContent } = useContentModeration();
   const navigate = useNavigate();
+  const { setVideosForFullscreen, enterFullscreen, updateVideos } = useFullscreenFeed();
 
   // Use video provider hook - automatically selects Funnelcake or WebSocket
   const {
@@ -195,6 +197,20 @@ export function VideoFeed({
     }
   }, [isLoading, feedType, allFiltered, navigate, filteredVideos]);
 
+  // Register videos for fullscreen mode
+  useEffect(() => {
+    if (filteredVideos.length > 0) {
+      setVideosForFullscreen(filteredVideos, fetchNextPage, hasNextPage ?? false);
+    }
+  }, [filteredVideos, setVideosForFullscreen, fetchNextPage, hasNextPage]);
+
+  // Update videos in fullscreen when more are loaded
+  useEffect(() => {
+    if (filteredVideos.length > 0) {
+      updateVideos(filteredVideos);
+    }
+  }, [filteredVideos, updateVideos]);
+
   // Stable callbacks for comment handling - MUST be before any early returns
   // to ensure hooks are called in the same order on every render
   const handleOpenComments = useCallback((video: ParsedVideoData) => {
@@ -204,6 +220,11 @@ export function VideoFeed({
   const handleCloseComments = useCallback(() => {
     setShowCommentsForVideo(null);
   }, []);
+
+  // Enter fullscreen at a specific video index
+  const handleEnterFullscreen = useCallback((index: number) => {
+    enterFullscreen(filteredVideos, index);
+  }, [filteredVideos, enterFullscreen]);
 
   // Loading state (initial load only)
   if (isLoading && !data) {
@@ -435,6 +456,7 @@ export function VideoFeed({
               showComments={showCommentsForVideo === video.id}
               onOpenComments={() => handleOpenComments(video)}
               onCloseComments={handleCloseComments}
+              onEnterFullscreen={() => handleEnterFullscreen(index)}
               navigationContext={{
                 source: feedType,
                 hashtag,

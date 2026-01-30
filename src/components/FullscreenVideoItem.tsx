@@ -3,19 +3,34 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Heart, MessageCircle, Repeat2, Share, Volume2, VolumeX, Download } from 'lucide-react';
+import { ArrowLeft, Heart, MessageCircle, Repeat2, Share, Volume2, VolumeX, Download, ListPlus, Users, MoreVertical, Flag, UserX, Code, Trash2, Eye } from 'lucide-react';
 import { nip19 } from 'nostr-tools';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { VideoPlayer } from '@/components/VideoPlayer';
 import { VideoCommentsModal } from '@/components/VideoCommentsModal';
+import { VideoReactionsModal } from '@/components/VideoReactionsModal';
+import { NoteContent } from '@/components/NoteContent';
+import { VineBadge } from '@/components/VineBadge';
+import { ProofModeBadge } from '@/components/ProofModeBadge';
+import { AddToListDialog } from '@/components/AddToListDialog';
+import { ReportContentDialog } from '@/components/ReportContentDialog';
+import { DeleteVideoDialog } from '@/components/DeleteVideoDialog';
+import { ViewSourceDialog } from '@/components/ViewSourceDialog';
 import { useAuthor } from '@/hooks/useAuthor';
 import { useVideoPlayback } from '@/hooks/useVideoPlayback';
+import { useVideoReactions } from '@/hooks/useVideoReactions';
+import { useVideosInLists } from '@/hooks/useVideoLists';
+import { useMuteItem } from '@/hooks/useModeration';
+import { useDeleteVideo, useCanDeleteVideo } from '@/hooks/useDeleteVideo';
+import { useToast } from '@/hooks/useToast';
 import { enhanceAuthorData } from '@/lib/generateProfile';
 import { formatDistanceToNow } from 'date-fns';
-import { formatCount } from '@/lib/formatUtils';
+import { formatCount, formatViewCount } from '@/lib/formatUtils';
 import { getSafeProfileImage } from '@/lib/imageUtils';
 import { cn } from '@/lib/utils';
+import { MuteType } from '@/types/moderation';
 import type { ParsedVideoData } from '@/types/video';
 
 interface FullscreenVideoItemProps {
@@ -31,6 +46,7 @@ interface FullscreenVideoItemProps {
   likeCount: number;
   repostCount: number;
   commentCount: number;
+  viewCount?: number;
 }
 
 export function FullscreenVideoItem({
@@ -46,11 +62,25 @@ export function FullscreenVideoItem({
   likeCount,
   repostCount,
   commentCount,
+  viewCount = 0,
 }: FullscreenVideoItemProps) {
   const [showComments, setShowComments] = useState(false);
   const [videoError, setVideoError] = useState(false);
+  const [showHeartAnimation, setShowHeartAnimation] = useState(false);
+  const [showReactionsModal, setShowReactionsModal] = useState<'likes' | 'reposts' | null>(null);
+  const [showAddToListDialog, setShowAddToListDialog] = useState(false);
+  const [showReportDialog, setShowReportDialog] = useState(false);
+  const [showReportUserDialog, setShowReportUserDialog] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showViewSourceDialog, setShowViewSourceDialog] = useState(false);
   const videoContainerRef = useRef<HTMLDivElement>(null);
   const { globalMuted, setGlobalMuted, setActiveVideo } = useVideoPlayback();
+  const { toast } = useToast();
+  const muteUser = useMuteItem();
+  const { mutate: deleteVideo, isPending: isDeleting } = useDeleteVideo();
+  const canDelete = useCanDeleteVideo(video);
+  const { data: reactions } = useVideoReactions(video.id, video.pubkey, video.vineId);
+  const { data: lists } = useVideosInLists(video.vineId ?? undefined);
 
   // Get author data
   const authorData = useAuthor(video.pubkey);
@@ -108,18 +138,63 @@ export function FullscreenVideoItem({
     }
   }, []);
 
+  // Handle double-tap to like
+  const handleDoubleTap = useCallback(() => {
+    onLike();
+    // Show heart animation
+    setShowHeartAnimation(true);
+    setTimeout(() => setShowHeartAnimation(false), 800);
+  }, [onLike]);
+
   // Handle swipe right to exit
   const handleSwipeRight = useCallback(() => {
     onBack();
   }, [onBack]);
+
+  // Handle mute user
+  const handleMuteUser = async () => {
+    try {
+      await muteUser.mutateAsync({
+        type: MuteType.USER,
+        value: video.pubkey,
+        reason: 'Muted from fullscreen video'
+      });
+      toast({
+        title: 'User muted',
+        description: `${displayName} has been muted`,
+      });
+    } catch {
+      toast({
+        title: 'Error',
+        description: 'Failed to mute user',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  // Handle delete video
+  const handleDeleteVideo = (reason?: string) => {
+    deleteVideo(
+      { video, reason },
+      {
+        onSuccess: () => {
+          setShowDeleteDialog(false);
+          onBack();
+        },
+      }
+    );
+  };
+
+  // Check if this is a migrated Vine
+  const isMigratedVine = video.isVineMigrated;
 
   return (
     <div
       ref={videoContainerRef}
       className="h-screen w-full snap-start snap-always relative bg-black flex items-center justify-center"
     >
-      {/* Video player - full screen, behind overlay, no pointer events */}
-      <div className="absolute inset-0 z-0 flex items-center justify-center pointer-events-none">
+      {/* Video player - full screen, behind overlay */}
+      <div className="absolute inset-0 z-0 flex items-center justify-center">
         {!videoError ? (
           <VideoPlayer
             videoId={video.id}
@@ -131,6 +206,7 @@ export function FullscreenVideoItem({
             className="w-full h-full object-contain"
             onError={() => setVideoError(true)}
             onSwipeRight={handleSwipeRight}
+            onDoubleTap={handleDoubleTap}
           />
         ) : (
           <div className="flex items-center justify-center h-full text-white">
@@ -138,6 +214,16 @@ export function FullscreenVideoItem({
           </div>
         )}
       </div>
+
+      {/* Heart animation on double-tap */}
+      {showHeartAnimation && (
+        <div className="absolute inset-0 z-40 flex items-center justify-center pointer-events-none">
+          <Heart
+            className="h-24 w-24 text-red-500 fill-current animate-ping"
+            style={{ animationDuration: '0.6s' }}
+          />
+        </div>
+      )}
 
       {/* Overlay UI - z-50 */}
       <div className="absolute inset-0 z-50 pointer-events-none">
@@ -176,7 +262,7 @@ export function FullscreenVideoItem({
           <div className="flex items-end justify-between px-4">
             {/* Left side - Author info */}
             <div className="flex-1 max-w-[70%]">
-              <Link to={profileUrl} className="flex items-center gap-3 mb-2" onClick={(e) => e.stopPropagation()}>
+              <Link to={profileUrl} className="flex items-center gap-3 mb-2 pointer-events-auto" onClick={(e) => e.stopPropagation()}>
                 <Avatar className="h-10 w-10 border-2 border-white">
                   <AvatarImage src={profileImage} alt={displayName} />
                   <AvatarFallback className="bg-gray-800 text-white">
@@ -184,23 +270,40 @@ export function FullscreenVideoItem({
                   </AvatarFallback>
                 </Avatar>
                 <div>
-                  <p className="font-semibold text-white drop-shadow-lg">{displayName}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="font-semibold text-white drop-shadow-lg">{displayName}</p>
+                    {isMigratedVine && <VineBadge />}
+                    {video.proofMode && video.proofMode.level !== 'unverified' && (
+                      <ProofModeBadge level={video.proofMode.level} proofData={video.proofMode} />
+                    )}
+                  </div>
                   {timeAgo && (
                     <p className="text-sm text-white/80 drop-shadow-lg">{timeAgo}</p>
                   )}
                 </div>
               </Link>
 
-              {/* Title/Description */}
+              {/* Title/Description with NoteContent parsing */}
               {(video.title || video.content) && (
-                <p className="text-white text-sm drop-shadow-lg line-clamp-2 mb-2">
-                  {video.title || video.content}
-                </p>
+                <div className="text-white text-sm drop-shadow-lg line-clamp-2 mb-2 pointer-events-auto">
+                  <NoteContent
+                    event={{
+                      id: video.id,
+                      pubkey: video.pubkey,
+                      created_at: video.createdAt,
+                      kind: 1,
+                      content: video.title || video.content || '',
+                      tags: [],
+                      sig: ''
+                    }}
+                    className="text-sm text-white"
+                  />
+                </div>
               )}
 
               {/* Hashtags */}
               {video.hashtags.length > 0 && (
-                <div className="flex flex-wrap gap-1">
+                <div className="flex flex-wrap gap-1 pointer-events-auto">
                   {video.hashtags.slice(0, 3).map((tag) => (
                     <Link
                       key={tag}
@@ -216,23 +319,38 @@ export function FullscreenVideoItem({
                   )}
                 </div>
               )}
+
+              {/* View count */}
+              {viewCount > 0 && (
+                <div className="flex items-center gap-1 text-sm text-white/80 drop-shadow-lg mt-1">
+                  <Eye className="h-3 w-3" />
+                  {formatViewCount(viewCount)}
+                </div>
+              )}
             </div>
 
             {/* Right side - Action buttons */}
-            <div className="flex flex-col items-center gap-4 ">
-              {/* Like button */}
-              <button
-                onClick={(e) => { e.stopPropagation(); onLike(); }}
-                className="flex flex-col items-center"
-              >
-                <div className={cn(
-                  "w-12 h-12 rounded-full flex items-center justify-center bg-black/50 backdrop-blur-sm",
-                  isLiked && "bg-red-500/80"
-                )}>
-                  <Heart className={cn("h-6 w-6 text-white", isLiked && "fill-current")} />
-                </div>
-                <span className="text-white text-xs mt-1 drop-shadow-lg">{formatCount(likeCount)}</span>
-              </button>
+            <div className="flex flex-col items-center gap-4 pointer-events-auto">
+              {/* Like button with clickable count */}
+              <div className="flex flex-col items-center">
+                <button
+                  onClick={(e) => { e.stopPropagation(); onLike(); }}
+                  className="flex flex-col items-center"
+                >
+                  <div className={cn(
+                    "w-12 h-12 rounded-full flex items-center justify-center bg-black/50 backdrop-blur-sm",
+                    isLiked && "bg-red-500/80"
+                  )}>
+                    <Heart className={cn("h-6 w-6 text-white", isLiked && "fill-current")} />
+                  </div>
+                </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); setShowReactionsModal('likes'); }}
+                  className="text-white text-xs mt-1 drop-shadow-lg hover:underline"
+                >
+                  {formatCount(likeCount)}
+                </button>
+              </div>
 
               {/* Comment button */}
               <button
@@ -245,19 +363,26 @@ export function FullscreenVideoItem({
                 <span className="text-white text-xs mt-1 drop-shadow-lg">{formatCount(commentCount)}</span>
               </button>
 
-              {/* Repost button */}
-              <button
-                onClick={(e) => { e.stopPropagation(); onRepost(); }}
-                className="flex flex-col items-center"
-              >
-                <div className={cn(
-                  "w-12 h-12 rounded-full flex items-center justify-center bg-black/50 backdrop-blur-sm",
-                  isReposted && "bg-green-500/80"
-                )}>
-                  <Repeat2 className={cn("h-6 w-6 text-white", isReposted && "fill-current")} />
-                </div>
-                <span className="text-white text-xs mt-1 drop-shadow-lg">{formatCount(repostCount)}</span>
-              </button>
+              {/* Repost button with clickable count */}
+              <div className="flex flex-col items-center">
+                <button
+                  onClick={(e) => { e.stopPropagation(); onRepost(); }}
+                  className="flex flex-col items-center"
+                >
+                  <div className={cn(
+                    "w-12 h-12 rounded-full flex items-center justify-center bg-black/50 backdrop-blur-sm",
+                    isReposted && "bg-green-500/80"
+                  )}>
+                    <Repeat2 className={cn("h-6 w-6 text-white", isReposted && "fill-current")} />
+                  </div>
+                </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); setShowReactionsModal('reposts'); }}
+                  className="text-white text-xs mt-1 drop-shadow-lg hover:underline"
+                >
+                  {formatCount(repostCount)}
+                </button>
+              </div>
 
               {/* Share button */}
               <button
@@ -278,6 +403,73 @@ export function FullscreenVideoItem({
                   <Download className="h-6 w-6 text-white" />
                 </div>
               </button>
+
+              {/* Lists button */}
+              {video.vineId && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); setShowAddToListDialog(true); }}
+                  className="flex flex-col items-center"
+                >
+                  <div className="w-12 h-12 rounded-full flex items-center justify-center bg-black/50 backdrop-blur-sm">
+                    {(lists?.length ?? 0) > 0 ? <Users className="h-6 w-6 text-white" /> : <ListPlus className="h-6 w-6 text-white" />}
+                  </div>
+                </button>
+              )}
+
+              {/* More menu */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="flex flex-col items-center">
+                    <div className="w-12 h-12 rounded-full flex items-center justify-center bg-black/50 backdrop-blur-sm">
+                      <MoreVertical className="h-6 w-6 text-white" />
+                    </div>
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="bg-black/90 border-white/20 text-white">
+                  {canDelete && (
+                    <>
+                      <DropdownMenuItem
+                        onClick={() => setShowDeleteDialog(true)}
+                        className="text-red-400 focus:text-red-400 focus:bg-red-500/20"
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Delete video
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator className="bg-white/20" />
+                    </>
+                  )}
+                  <DropdownMenuItem
+                    onClick={() => setShowReportDialog(true)}
+                    className="focus:bg-white/10"
+                  >
+                    <Flag className="h-4 w-4 mr-2" />
+                    Report video
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => setShowReportUserDialog(true)}
+                    className="focus:bg-white/10"
+                  >
+                    <Flag className="h-4 w-4 mr-2" />
+                    Report user
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator className="bg-white/20" />
+                  <DropdownMenuItem
+                    onClick={handleMuteUser}
+                    className="text-red-400 focus:text-red-400 focus:bg-red-500/20"
+                  >
+                    <UserX className="h-4 w-4 mr-2" />
+                    Mute {displayName}
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator className="bg-white/20" />
+                  <DropdownMenuItem
+                    onClick={() => setShowViewSourceDialog(true)}
+                    className="focus:bg-white/10"
+                  >
+                    <Code className="h-4 w-4 mr-2" />
+                    View source
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
         </div>
@@ -289,6 +481,66 @@ export function FullscreenVideoItem({
         open={showComments}
         onOpenChange={setShowComments}
       />
+
+      {/* Reactions modal - shows who liked/reposted */}
+      <VideoReactionsModal
+        open={showReactionsModal !== null}
+        onOpenChange={(open) => !open && setShowReactionsModal(null)}
+        reactions={reactions}
+        type={showReactionsModal || 'likes'}
+      />
+
+      {/* Add to List Dialog */}
+      {video.vineId && showAddToListDialog && (
+        <AddToListDialog
+          videoId={video.vineId}
+          videoPubkey={video.pubkey}
+          open={showAddToListDialog}
+          onClose={() => setShowAddToListDialog(false)}
+        />
+      )}
+
+      {/* Report video dialog */}
+      {showReportDialog && (
+        <ReportContentDialog
+          open={showReportDialog}
+          onClose={() => setShowReportDialog(false)}
+          eventId={video.id}
+          pubkey={video.pubkey}
+          contentType="video"
+        />
+      )}
+
+      {/* Report user dialog */}
+      {showReportUserDialog && (
+        <ReportContentDialog
+          open={showReportUserDialog}
+          onClose={() => setShowReportUserDialog(false)}
+          pubkey={video.pubkey}
+          contentType="user"
+        />
+      )}
+
+      {/* Delete video dialog */}
+      {showDeleteDialog && (
+        <DeleteVideoDialog
+          open={showDeleteDialog}
+          onClose={() => setShowDeleteDialog(false)}
+          onConfirm={handleDeleteVideo}
+          video={video}
+          isDeleting={isDeleting}
+        />
+      )}
+
+      {/* View source dialog */}
+      {showViewSourceDialog && (
+        <ViewSourceDialog
+          open={showViewSourceDialog}
+          onClose={() => setShowViewSourceDialog(false)}
+          video={video}
+          title="Video Event Source"
+        />
+      )}
     </div>
   );
 }

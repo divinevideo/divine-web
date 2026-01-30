@@ -20,6 +20,7 @@ import { AppProvider } from '@/components/AppProvider';
 import { NWCProvider } from '@/contexts/NWCContext';
 import { AppConfig } from '@/contexts/AppContext';
 import { VideoPlaybackProvider } from '@/contexts/VideoPlaybackContext';
+import { FullscreenFeedProvider } from '@/contexts/FullscreenFeedContext';
 import AppRouter from './AppRouter';
 import { PRIMARY_RELAY, PRESET_RELAYS, toLegacyFormat } from '@/config/relays';
 
@@ -60,13 +61,15 @@ export function App() {
               <KeycastJWTWindowNostr />
               <NWCProvider>
                 <VideoPlaybackProvider>
-                  <TooltipProvider>
-                    <Toaster />
-                    <Sonner />
-                    <Suspense>
-                      <AppRouter />
-                    </Suspense>
-                  </TooltipProvider>
+                  <FullscreenFeedProvider>
+                    <TooltipProvider>
+                      <Toaster />
+                      <Sonner />
+                      <Suspense>
+                        <AppRouter />
+                      </Suspense>
+                    </TooltipProvider>
+                  </FullscreenFeedProvider>
                 </VideoPlaybackProvider>
               </NWCProvider>
             </NostrProvider>

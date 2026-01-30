@@ -3,7 +3,7 @@
 
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Heart, Repeat2, MessageCircle, Share, Eye, MoreVertical, Flag, UserX, Trash2, Volume2, VolumeX, Code, Users, ListPlus, Download } from 'lucide-react';
+import { Heart, Repeat2, MessageCircle, Share, Eye, MoreVertical, Flag, UserX, Trash2, Volume2, VolumeX, Code, Users, ListPlus, Download, Maximize2 } from 'lucide-react';
 import { nip19 } from 'nostr-tools';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -49,6 +49,7 @@ interface VideoCardProps {
   onCloseComments?: () => void;
   onPlay?: () => void;
   onLoadedData?: () => void;
+  onEnterFullscreen?: () => void;
   isLiked?: boolean;
   isReposted?: boolean;
   likeCount?: number;
@@ -72,6 +73,7 @@ export function VideoCard({
   onCloseComments,
   onPlay,
   onLoadedData,
+  onEnterFullscreen,
   isLiked = false,
   isReposted = false,
   likeCount = 0,
@@ -456,6 +458,35 @@ export function VideoCard({
                   ) : (
                     <Volume2 className="h-5 w-5" />
                   )}
+                </Button>
+              )}
+
+              {/* Fullscreen button overlay - bottom left corner */}
+              {isPlaying && !videoError && onEnterFullscreen && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className={cn(
+                    "absolute bottom-3 left-3 z-30",
+                    "bg-black/50 hover:bg-black/70 text-white",
+                    "backdrop-blur-sm rounded-full",
+                    "w-10 h-10 p-0 flex items-center justify-center",
+                    "transition-all duration-200"
+                  )}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onEnterFullscreen();
+                  }}
+                  onTouchStart={(e) => {
+                    e.stopPropagation();
+                  }}
+                  onTouchEnd={(e) => {
+                    e.stopPropagation();
+                  }}
+                  aria-label="Enter fullscreen"
+                >
+                  <Maximize2 className="h-5 w-5" />
                 </Button>
               )}
             </div>

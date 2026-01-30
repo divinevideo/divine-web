@@ -3,13 +3,16 @@ import { AppHeader } from '@/components/AppHeader';
 import { AppFooter } from '@/components/AppFooter';
 import { BottomNav } from '@/components/BottomNav';
 import { PWAInstallPrompt } from '@/components/PWAInstallPrompt';
+import { FullscreenFeed } from '@/components/FullscreenFeed';
 import { useNostrLogin } from '@nostrify/react/login';
 import { useAppContext } from '@/hooks/useAppContext';
+import { useFullscreenFeed } from '@/contexts/FullscreenFeedContext';
 
 export function AppLayout() {
   const location = useLocation();
   const { logins } = useNostrLogin();
   const { isRecording } = useAppContext();
+  const { state: fullscreenState, exitFullscreen, onLoadMore, hasMore } = useFullscreenFeed();
 
   // Only consider user logged in if they have active logins, not just a token
   const isLoggedIn = logins.length > 0;
@@ -26,6 +29,17 @@ export function AppLayout() {
       <AppFooter />
       {!isLandingPage && !isRecording && <BottomNav />}
       <PWAInstallPrompt />
+
+      {/* Fullscreen video feed overlay */}
+      {fullscreenState.isOpen && (
+        <FullscreenFeed
+          videos={fullscreenState.videos}
+          startIndex={fullscreenState.startIndex}
+          onClose={exitFullscreen}
+          onLoadMore={onLoadMore}
+          hasMore={hasMore}
+        />
+      )}
     </div>
   );
 }
