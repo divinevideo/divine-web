@@ -300,6 +300,65 @@ export async function fetchUserFeed(
 }
 
 /**
+ * Response from recommendations endpoint
+ */
+interface FunnelcakeRecommendationsResponse {
+  videos: FunnelcakeVideoRaw[];
+  source: 'personalized' | 'popular' | 'recent';
+}
+
+/**
+ * Options for fetching recommendations
+ */
+export interface FunnelcakeRecommendationsOptions {
+  pubkey: string;
+  limit?: number;
+  category?: string;
+  fallback?: 'popular' | 'recent';
+  signal?: AbortSignal;
+}
+
+/**
+ * Fetch personalized video recommendations for a user
+ *
+ * @param apiUrl - Base URL of the Funnelcake API
+ * @param options - Recommendations options including pubkey
+ * @returns Promise with recommended videos and pagination info
+ */
+export async function fetchRecommendations(
+  apiUrl: string = API_CONFIG.funnelcake.baseUrl,
+  options: FunnelcakeRecommendationsOptions
+): Promise<FunnelcakeResponse & { source?: string }> {
+  const { pubkey, limit = 20, category, fallback, signal } = options;
+
+  const endpoint = API_CONFIG.funnelcake.endpoints.userRecommendations.replace('{pubkey}', pubkey);
+
+  const params: Record<string, string | number | boolean | undefined> = {
+    limit,
+    category,
+    fallback,
+  };
+
+  debugLog(`[FunnelcakeClient] Fetching recommendations for ${pubkey}`, { limit, category, fallback });
+
+  const response = await funnelcakeRequest<FunnelcakeRecommendationsResponse>(
+    apiUrl,
+    endpoint,
+    params,
+    signal
+  );
+
+  debugLog(`[FunnelcakeClient] Got ${response.videos?.length || 0} recommendations (source: ${response.source})`);
+
+  return {
+    videos: response.videos || [],
+    has_more: (response.videos?.length || 0) >= limit,
+    next_cursor: undefined, // Recommendations don't support cursor-based pagination
+    source: response.source,
+  };
+}
+
+/**
  * Fetch statistics for a specific video
  *
  * @param apiUrl - Base URL of the Funnelcake API

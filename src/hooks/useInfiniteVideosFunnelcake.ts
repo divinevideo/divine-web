@@ -5,13 +5,13 @@ import { useInfiniteQuery } from '@tanstack/react-query';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import type { ParsedVideoData } from '@/types/video';
 import type { FunnelcakeFetchOptions } from '@/types/funnelcake';
-import { fetchVideos, searchVideos, fetchUserVideos, fetchUserFeed } from '@/lib/funnelcakeClient';
+import { fetchVideos, searchVideos, fetchUserVideos, fetchUserFeed, fetchRecommendations } from '@/lib/funnelcakeClient';
 import { transformToVideoPage } from '@/lib/funnelcakeTransform';
 import { debugLog } from '@/lib/debug';
 import { performanceMonitor } from '@/lib/performanceMonitoring';
 import { DEFAULT_FUNNELCAKE_URL } from '@/config/relays';
 
-export type FunnelcakeFeedType = 'trending' | 'recent' | 'classics' | 'hashtag' | 'profile' | 'home';
+export type FunnelcakeFeedType = 'trending' | 'recent' | 'classics' | 'hashtag' | 'profile' | 'home' | 'recommendations';
 export type FunnelcakeSortMode = 'trending' | 'recent' | 'loops' | 'engagement';
 
 interface UseInfiniteVideosFunnelcakeOptions {
@@ -82,6 +82,12 @@ function getFetchOptions(
         sort: sortMode || 'recent',
       };
 
+    case 'recommendations':
+      return {
+        ...baseOptions,
+        // Recommendations endpoint handles its own sorting
+      };
+
     default:
       return baseOptions;
   }
@@ -97,6 +103,7 @@ function getFetchOptions(
  * - hashtag: Videos with specific hashtag
  * - profile: Videos by specific user
  * - home: Personalized feed for logged-in user
+ * - recommendations: AI-powered personalized recommendations (requires login)
  */
 export function useInfiniteVideosFunnelcake({
   feedType,
@@ -171,6 +178,19 @@ export function useInfiniteVideosFunnelcake({
             });
             break;
 
+          case 'recommendations':
+            if (!user?.pubkey) {
+              debugLog('[useInfiniteVideosFunnelcake] No user logged in for recommendations feed');
+              return { videos: [], nextCursor: undefined };
+            }
+            response = await fetchRecommendations(effectiveApiUrl, {
+              pubkey: user.pubkey,
+              limit: pageSize,
+              fallback: 'popular', // Fall back to popular videos if no personalized recs
+              signal,
+            });
+            break;
+
           default:
             // trending, recent, classics
             response = await fetchVideos(effectiveApiUrl, options);
@@ -229,7 +249,7 @@ export function useInfiniteVideosFunnelcake({
 
     initialPageParam: undefined,
 
-    enabled: enabled && (feedType !== 'home' || !!user?.pubkey),
+    enabled: enabled && ((feedType !== 'home' && feedType !== 'recommendations') || !!user?.pubkey),
 
     staleTime: 60000,  // 1 minute
     gcTime: 600000,    // 10 minutes

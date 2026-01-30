@@ -27,6 +27,7 @@ export const API_CONFIG = {
       userSocial: '/api/users/{pubkey}/social',
       userFollowers: '/api/users/{pubkey}/followers',
       userFollowing: '/api/users/{pubkey}/following',
+      userRecommendations: '/api/users/{pubkey}/recommendations',
       videoStats: '/api/videos/{eventId}/stats',
       bulkUsers: '/api/users/bulk',
       bulkVideoStats: '/api/videos/stats/bulk',

@@ -1,5 +1,6 @@
 // ABOUTME: Discovery feed page showing all public videos with tabs for Classics, Hot, Rising, New, and Hashtags
 // ABOUTME: Each tab uses different sort modes; Classics uses Funnelcake REST API for pre-computed metrics
+// ABOUTME: For You tab shows personalized recommendations when user is logged in
 
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -8,17 +9,32 @@ import { VerifiedOnlyToggle } from '@/components/VerifiedOnlyToggle';
 import { HashtagExplorer } from '@/components/HashtagExplorer';
 import { ClassicVinersRow } from '@/components/ClassicVinersRow';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Star, Clock, Hash, Flame, Zap } from 'lucide-react';
+import { Star, Clock, Hash, Flame, Zap, Sparkles } from 'lucide-react';
+import { useCurrentUser } from '@/hooks/useCurrentUser';
 
 export function DiscoveryPage() {
   const navigate = useNavigate();
   const params = useParams<{ tab?: string }>();
-  const allowedTabs = useMemo(() => ['classics', 'hot', 'rising', 'new', 'hashtags'] as const, []);
+  const { user } = useCurrentUser();
+  const isLoggedIn = !!user?.pubkey;
+
+  // Tabs include 'foryou' only when logged in
+  // Note: 'rising' temporarily removed
+  const allowedTabs = useMemo(() => {
+    const baseTabs = ['classics', 'hot', 'new', 'hashtags'] as const;
+    if (isLoggedIn) {
+      return ['foryou', ...baseTabs] as const;
+    }
+    return baseTabs;
+  }, [isLoggedIn]);
+
   type AllowedTab = typeof allowedTabs[number];
   const routeTab = (params.tab || '').toLowerCase();
   // Support legacy 'top' route by mapping to 'classics'
   const normalizedTab = routeTab === 'top' ? 'classics' : routeTab;
-  const initialTab: AllowedTab = (allowedTabs.includes(normalizedTab as AllowedTab) ? normalizedTab : 'classics') as AllowedTab;
+  // Default to 'foryou' for logged-in users, 'classics' for anonymous
+  const defaultTab = isLoggedIn ? 'foryou' : 'classics';
+  const initialTab: AllowedTab = (allowedTabs.includes(normalizedTab as AllowedTab) ? normalizedTab : defaultTab) as AllowedTab;
   const [activeTab, setActiveTab] = useState<AllowedTab>(initialTab);
   const [verifiedOnly, setVerifiedOnly] = useState(false);
 
@@ -38,12 +54,20 @@ export function DiscoveryPage() {
     }
   }, [routeTab, normalizedTab, allowedTabs, navigate]);
 
-  // Redirect bare /discovery to /discovery/classics to make tab part of URL
+  // Handle edge case: user logs out while on 'foryou' tab
   useEffect(() => {
-    if (!params.tab) {
+    if (!isLoggedIn && activeTab === 'foryou') {
+      setActiveTab('classics');
       navigate('/discovery/classics', { replace: true });
     }
-  }, [params.tab, navigate]);
+  }, [isLoggedIn, activeTab, navigate]);
+
+  // Redirect bare /discovery to default tab (foryou for logged in, classics for anonymous)
+  useEffect(() => {
+    if (!params.tab) {
+      navigate(`/discovery/${defaultTab}`, { replace: true });
+    }
+  }, [params.tab, navigate, defaultTab]);
 
   return (
     <div className="container mx-auto px-4 py-6">
@@ -73,7 +97,13 @@ export function DiscoveryPage() {
           }}
           className="space-y-6"
         >
-          <TabsList className="w-full grid grid-cols-5 gap-1">
+          <TabsList className={`w-full grid gap-1 ${isLoggedIn ? 'grid-cols-5' : 'grid-cols-4'}`}>
+            {isLoggedIn && (
+              <TabsTrigger value="foryou" className="gap-1.5 sm:gap-2">
+                <Sparkles className="h-4 w-4" />
+                <span className="hidden sm:inline">For You</span>
+              </TabsTrigger>
+            )}
             <TabsTrigger value="classics" className="gap-1.5 sm:gap-2">
               <Star className="h-4 w-4" />
               <span className="hidden sm:inline">Classic</span>
@@ -82,10 +112,12 @@ export function DiscoveryPage() {
               <Flame className="h-4 w-4" />
               <span className="hidden sm:inline">Hot</span>
             </TabsTrigger>
+            {/* Rising tab temporarily disabled
             <TabsTrigger value="rising" className="gap-1.5 sm:gap-2">
               <Zap className="h-4 w-4" />
               <span className="hidden sm:inline">Rising</span>
             </TabsTrigger>
+            */}
             <TabsTrigger value="new" className="gap-1.5 sm:gap-2">
               <Clock className="h-4 w-4" />
               <span className="hidden sm:inline">New</span>
@@ -95,6 +127,18 @@ export function DiscoveryPage() {
               <span className="hidden sm:inline">Tags</span>
             </TabsTrigger>
           </TabsList>
+
+          {isLoggedIn && (
+            <TabsContent value="foryou" className="mt-0 space-y-6">
+              <VideoFeed
+                feedType="foryou"
+                verifiedOnly={verifiedOnly}
+                data-testid="video-feed-foryou"
+                className="space-y-6"
+                key="foryou"
+              />
+            </TabsContent>
+          )}
 
           <TabsContent value="classics" className="mt-0 space-y-6">
             {/* Classic Viners horizontal row */}
@@ -121,6 +165,7 @@ export function DiscoveryPage() {
             />
           </TabsContent>
 
+          {/* Rising tab temporarily disabled
           <TabsContent value="rising" className="mt-0 space-y-6">
             <VideoFeed
               feedType="trending"
@@ -131,6 +176,7 @@ export function DiscoveryPage() {
               key="rising"
             />
           </TabsContent>
+          */}
 
           <TabsContent value="new" className="mt-0 space-y-6">
             <VideoFeed

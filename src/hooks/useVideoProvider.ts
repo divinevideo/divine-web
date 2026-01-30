@@ -11,7 +11,7 @@ import { debugLog } from '@/lib/debug';
 import type { SortMode } from '@/types/nostr';
 
 // Feed types that can be provided
-export type VideoFeedType = 'discovery' | 'home' | 'trending' | 'hashtag' | 'profile' | 'recent' | 'classics';
+export type VideoFeedType = 'discovery' | 'home' | 'trending' | 'hashtag' | 'profile' | 'recent' | 'classics' | 'foryou';
 
 interface UseVideoProviderOptions {
   feedType: VideoFeedType;
@@ -53,6 +53,8 @@ function mapToFunnelcakeFeedType(feedType: VideoFeedType): FunnelcakeFeedType {
       return 'profile';
     case 'home':
       return 'home';
+    case 'foryou':
+      return 'recommendations';
     default:
       return 'trending';
   }
