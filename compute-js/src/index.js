@@ -386,55 +386,76 @@ function isSocialMediaCrawler(request) {
  */
 async function fetchVideoMetadata(videoId) {
   try {
-    // Use bulk endpoint to fetch specific video by ID
-    const response = await fetch(`https://relay.divine.video/api/videos/bulk`, {
+    // Use the /api/videos/{id} endpoint
+    const response = await fetch(`https://relay.divine.video/api/videos/${videoId}`, {
       backend: 'funnelcake',
-      method: 'POST',
+      method: 'GET',
       headers: {
         'Accept': 'application/json',
-        'Content-Type': 'application/json',
         'Host': 'relay.divine.video',
       },
-      body: JSON.stringify({ event_ids: [videoId] }),
     });
 
     if (!response.ok) {
-      console.log('Funnelcake bulk API returned:', response.status);
+      console.log('Funnelcake API returned:', response.status);
       return null;
     }
 
     const result = await response.json();
-    const video = result.videos?.[0];
 
-    if (!video) {
-      console.log('Video not found via bulk API:', videoId);
+    if (!result.event) {
+      console.log('Video not found:', videoId);
       return null;
     }
 
+    const event = result.event;
+    const stats = result.stats || {};
+
+    // Extract data from tags
+    const getTag = (name) => event.tags?.find(t => t[0] === name)?.[1];
+
+    // Parse imeta tag for thumbnail and video URL
+    const imetaTag = event.tags?.find(t => t[0] === 'imeta');
+    const imeta = {};
+    if (imetaTag) {
+      for (let i = 1; i < imetaTag.length; i++) {
+        const parts = imetaTag[i].split(' ');
+        if (parts.length >= 2) {
+          imeta[parts[0]] = parts.slice(1).join(' ');
+        }
+      }
+    }
+
+    const thumbnail = imeta.image || null;
+    const title = getTag('title') || null;
+    const content = event.content || '';
+
     // Build a rich description with engagement stats
-    const stats = [];
-    if (video.reactions > 0) stats.push(`${video.reactions} ❤️`);
-    if (video.comments > 0) stats.push(`${video.comments} 💬`);
-    if (video.reposts > 0) stats.push(`${video.reposts} 🔁`);
+    const statsList = [];
+    if (stats.reactions > 0) statsList.push(`${stats.reactions} ❤️`);
+    if (stats.comments > 0) statsList.push(`${stats.comments} 💬`);
+    if (stats.reposts > 0) statsList.push(`${stats.reposts} 🔁`);
 
     let description;
-    if (video.content && video.content.trim()) {
+    if (content && content.trim()) {
       // Use the content/caption if available
-      description = video.content.trim();
-    } else if (stats.length > 0) {
+      description = content.trim();
+    } else if (statsList.length > 0) {
       // Show engagement stats
-      description = `${stats.join(' • ')} on diVine`;
+      description = `${statsList.join(' • ')} on diVine`;
     } else {
       description = 'Watch this short video on diVine';
     }
 
+    console.log('Fetched video metadata - title:', title, 'thumbnail:', thumbnail);
+
     return {
-      title: video.title || 'Video on diVine',
+      title: title || 'Video on diVine',
       description: description,
-      thumbnail: video.thumbnail || 'https://divine.video/og.avif',
-      authorName: video.author_name || '',
-      reactions: video.reactions || 0,
-      comments: video.comments || 0,
+      thumbnail: thumbnail || 'https://divine.video/og.avif',
+      authorName: getTag('author') || '',
+      reactions: stats.reactions || 0,
+      comments: stats.comments || 0,
     };
   } catch (err) {
     console.error('Failed to fetch video metadata:', err.message);

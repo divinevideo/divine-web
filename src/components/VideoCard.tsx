@@ -391,9 +391,9 @@ export function VideoCard({
                   {displayName}
                 </Link>
                 {timeAgo && (
-                  <span className="text-sm text-muted-foreground block" title={new Date(timestamp * 1000).toLocaleString()}>
+                  <Link to={`/video/${video.id}`} className="text-sm text-muted-foreground block hover:underline" title={new Date(timestamp * 1000).toLocaleString()}>
                     {timeAgo}
-                  </span>
+                  </Link>
                 )}
               </div>
               {/* Badges - right aligned */}
@@ -540,9 +540,9 @@ export function VideoCard({
                   {displayName}
                 </Link>
                 {timeAgo && (
-                  <span className="text-xs text-muted-foreground" title={new Date(timestamp * 1000).toLocaleString()}>
+                  <Link to={`/video/${video.id}`} className="text-xs text-muted-foreground hover:underline" title={new Date(timestamp * 1000).toLocaleString()}>
                     {timeAgo}
-                  </span>
+                  </Link>
                 )}
               </div>
               {/* Badges - right aligned */}
@@ -565,7 +565,9 @@ export function VideoCard({
             isHorizontal ? "space-y-1" : "p-4 space-y-2"
           )}>
             {video.title && (
-              <h3 className={cn("font-semibold line-clamp-2", isHorizontal ? "text-sm" : "text-lg")}>{video.title}</h3>
+              <Link to={`/video/${video.id}`}>
+                <h3 className={cn("font-semibold line-clamp-2 hover:underline", isHorizontal ? "text-sm" : "text-lg")}>{video.title}</h3>
+              </Link>
             )}
 
             {video.content && video.content.trim() !== video.title?.trim() && (
@@ -607,9 +609,9 @@ export function VideoCard({
 
           {/* Stats row - horizontal layout: show view/loop count only (likes/comments shown on buttons) */}
           {isHorizontal && viewCount > 0 && (
-            <div className="py-2 mt-auto text-sm text-muted-foreground">
+            <Link to={`/video/${video.id}`} className="py-2 mt-auto text-sm text-muted-foreground hover:underline block">
               {formatViewCount(viewCount)}
-            </div>
+            </Link>
           )}
 
           {/* Vertical layout: Video metadata row */}
@@ -617,10 +619,10 @@ export function VideoCard({
             <div className="px-4 py-2" data-testid="video-metadata">
               <div className="flex items-center gap-3 text-sm text-muted-foreground">
                 {viewCount > 0 && (
-                  <span className="flex items-center gap-1">
+                  <Link to={`/video/${video.id}`} className="flex items-center gap-1 hover:underline">
                     <Eye className="h-3 w-3" />
                     {formatViewCount(viewCount)}
-                  </span>
+                  </Link>
                 )}
               </div>
             </div>
