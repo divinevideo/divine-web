@@ -106,8 +106,11 @@ export function VideoPage() {
   }, [hasPrevious, videos, currentIndex, navigate, buildNavigationUrl]);
 
   // Get author data for profile context
+  // Prefer cached author name from video/Funnelcake, then fetched profile, then generated fallback
   const authorData = useAuthor(context?.pubkey || '');
-  const authorName = context?.pubkey ? (authorData.data?.metadata?.name || genUserName(context.pubkey)) : null;
+  const authorName = context?.pubkey
+    ? (currentVideo?.authorName || authorData.data?.metadata?.name || genUserName(context.pubkey))
+    : null;
 
   // Batch fetch user interactions for all videos at once (instead of N individual queries)
   const videosForInteractions = useMemo(() => {
