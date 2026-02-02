@@ -519,13 +519,14 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
     // Handle age verification completion - retry video load
     const handleAgeVerified = useCallback(() => {
       verboseLog(`[VideoPlayer ${videoId}] Age verified, retrying video load`);
+      
+      // Batch all state updates together using React 18's automatic batching
+      // This prevents multiple re-renders that cause glitching on mobile
       setRequiresAuth(false);
       setAuthCheckPending(false); // No need to re-check, user just verified
       setIsLoading(true);
       setHasError(false);
       setAuthRetryCount(prev => prev + 1);
-
-      // Force re-load by resetting the URL index
       setCurrentUrlIndex(0);
     }, [videoId]);
 
@@ -942,6 +943,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
             onVerified={handleAgeVerified}
             thumbnailUrl={poster}
             blurhash={blurhash}
+            className="touch-none"
           />
         )}
       </div>

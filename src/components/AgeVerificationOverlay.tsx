@@ -25,17 +25,30 @@ export function AgeVerificationOverlay({
   const { user } = useCurrentUser();
   const [isConfirming, setIsConfirming] = useState(false);
   const hasCalledOnVerified = useRef(false);
+  const isConfirmingRef = useRef(false);
 
-  const handleConfirm = async () => {
+  const handleConfirm = () => {
+    // Prevent double-clicks
+    if (isConfirmingRef.current) return;
+    
+    isConfirmingRef.current = true;
     setIsConfirming(true);
+    
+    // Confirm adult status and immediately trigger callback
     confirmAdult();
-    // Small delay to show feedback
-    await new Promise(resolve => setTimeout(resolve, 300));
-    onVerified();
+    
+    // Use requestAnimationFrame to ensure state updates are batched
+    // This prevents layout thrashing on mobile devices
+    requestAnimationFrame(() => {
+      if (!hasCalledOnVerified.current) {
+        hasCalledOnVerified.current = true;
+        onVerified();
+      }
+    });
   };
 
-  // If already verified, call onVerified via effect (not during render)
-  // Use ref to prevent calling multiple times
+  // If already verified on mount, call onVerified once
+  // This handles the case where user is already verified from localStorage
   useEffect(() => {
     if (isVerified && !hasCalledOnVerified.current) {
       hasCalledOnVerified.current = true;
@@ -53,13 +66,21 @@ export function AgeVerificationOverlay({
       className={cn(
         "absolute inset-0 z-20 flex flex-col items-center justify-center",
         "bg-black/80 backdrop-blur-sm",
+        // Add transform to create a new stacking context and prevent layout shifts
+        "transform-gpu",
         className
       )}
+      style={{
+        // Use will-change to optimize rendering on mobile
+        willChange: 'opacity',
+        // Prevent iOS momentum scrolling issues
+        WebkitOverflowScrolling: 'touch',
+      }}
     >
       {/* Blurred background thumbnail if available */}
       {thumbnailUrl && (
         <div
-          className="absolute inset-0 bg-cover bg-center opacity-20 blur-xl"
+          className="absolute inset-0 bg-cover bg-center opacity-20 blur-xl transform-gpu"
           style={{ backgroundImage: `url(${thumbnailUrl})` }}
         />
       )}
@@ -83,7 +104,11 @@ export function AgeVerificationOverlay({
           <Button
             onClick={handleConfirm}
             disabled={isConfirming}
-            className="gap-2 bg-white text-black hover:bg-gray-200"
+            className="gap-2 bg-white text-black hover:bg-gray-200 touch-manipulation"
+            style={{
+              // Prevent iOS double-tap zoom
+              touchAction: 'manipulation',
+            }}
           >
             {isConfirming ? (
               <>Verifying...</>
