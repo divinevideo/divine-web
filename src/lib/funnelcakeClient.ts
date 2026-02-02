@@ -670,6 +670,85 @@ export function normalizeVideoIds(video: FunnelcakeVideoRaw): FunnelcakeVideoRaw
 }
 
 /**
+ * User loop stats from leaderboard
+ */
+export interface UserLoopStats {
+  views: number;
+  unique_viewers: number;
+  loops: number;
+  videos_with_views: number;
+}
+
+/**
+ * Leaderboard creator entry
+ */
+interface LeaderboardCreatorEntry {
+  pubkey: string;
+  name: string;
+  display_name: string;
+  picture: string;
+  views: number;
+  unique_viewers: number;
+  loops: number;
+  videos_with_views: number;
+}
+
+/**
+ * Leaderboard response
+ */
+interface LeaderboardResponse {
+  period: string;
+  entries: LeaderboardCreatorEntry[];
+}
+
+/**
+ * Fetch user loop/view stats from the creator leaderboard
+ * This is a workaround until the user profile endpoint includes this data
+ *
+ * @param apiUrl - Base URL of the Funnelcake API
+ * @param pubkey - User's public key (hex)
+ * @param signal - Optional abort signal
+ * @returns Promise with loop stats or null if user not in leaderboard
+ */
+export async function fetchUserLoopStats(
+  apiUrl: string = API_CONFIG.funnelcake.baseUrl,
+  pubkey: string,
+  signal?: AbortSignal
+): Promise<UserLoopStats | null> {
+  debugLog(`[FunnelcakeClient] fetchUserLoopStats: ${pubkey}`);
+
+  try {
+    // Fetch the all-time leaderboard with a high limit to find the user
+    const response = await funnelcakeRequest<LeaderboardResponse>(
+      apiUrl,
+      API_CONFIG.funnelcake.endpoints.leaderboardCreators,
+      { period: 'alltime', limit: 500 },
+      signal
+    );
+
+    // Find the user in the leaderboard
+    const entry = response.entries?.find(e => e.pubkey === pubkey);
+
+    if (!entry) {
+      debugLog(`[FunnelcakeClient] User not found in leaderboard: ${pubkey}`);
+      return null;
+    }
+
+    debugLog(`[FunnelcakeClient] Found user loop stats:`, entry);
+
+    return {
+      views: entry.views || 0,
+      unique_viewers: entry.unique_viewers || 0,
+      loops: entry.loops || 0,
+      videos_with_views: entry.videos_with_views || 0,
+    };
+  } catch (err) {
+    debugLog(`[FunnelcakeClient] fetchUserLoopStats failed:`, err);
+    return null;
+  }
+}
+
+/**
  * Raw API response from /api/users/{pubkey} endpoint
  */
 interface FunnelcakeUserResponse {

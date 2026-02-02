@@ -23,7 +23,9 @@ import type { NostrMetadata } from '@nostrify/nostrify';
 
 export interface ProfileStats {
   videosCount: number;
-  totalViews: number;
+  totalViews: number;       // Total video views/impressions
+  totalLoops: number;       // Total loops (watch time / video duration)
+  totalReactions: number;   // Total likes/reactions received
   joinedDate: Date | null;
   followersCount: number;
   followingCount: number;
@@ -331,18 +333,18 @@ export function ProfileHeader({
           )}
         </div>
 
-        {/* diVine Loops */}
+        {/* diVine Loops (actual loop count from watch time) */}
         <div className="text-center">
           {stats ? (
             <>
-              <div className="text-xl sm:text-2xl font-bold text-foreground">
-                {formatNumber(stats.totalViews)}
+              <div className="text-xl sm:text-2xl font-bold text-primary">
+                {formatNumber(stats.totalLoops)}
               </div>
               <div className="text-xs sm:text-sm text-muted-foreground">diVine Loops</div>
             </>
           ) : (
             <>
-              <Skeleton className="h-6 w-12 mx-auto mb-1" data-testid="stat-skeleton-views" />
+              <Skeleton className="h-6 w-12 mx-auto mb-1" data-testid="stat-skeleton-loops" />
               <div className="text-xs sm:text-sm text-muted-foreground">diVine Loops</div>
             </>
           )}

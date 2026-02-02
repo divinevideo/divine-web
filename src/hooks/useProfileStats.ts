@@ -7,7 +7,7 @@ import type { ProfileStats } from '@/components/ProfileHeader';
 import { debugLog } from '@/lib/debug';
 import type { ParsedVideoData } from '@/types/video';
 import { API_CONFIG } from '@/config/api';
-import { fetchUserProfile } from '@/lib/funnelcakeClient';
+import { fetchUserProfile, fetchUserLoopStats } from '@/lib/funnelcakeClient';
 import { isFunnelcakeAvailable } from '@/lib/funnelcakeHealth';
 
 /**
@@ -40,20 +40,27 @@ export function useProfileStats(pubkey: string, videos?: ParsedVideoData[]) {
       if (isFunnelcakeAvailable(apiUrl)) {
         try {
           debugLog(`[useProfileStats] Using Funnelcake REST API for ${pubkey}`);
-          const profile = await fetchUserProfile(apiUrl, pubkey, signal);
+
+          // Fetch profile and loop stats in parallel
+          const [profile, loopStats] = await Promise.all([
+            fetchUserProfile(apiUrl, pubkey, signal),
+            fetchUserLoopStats(apiUrl, pubkey, signal),
+          ]);
 
           if (profile) {
-            // Calculate total views from videos if available, otherwise use API reactions
-            let totalViews = 0;
+            // Get total reactions from videos if available, otherwise use API
+            let totalReactions = 0;
             if (videos && videos.length > 0) {
-              totalViews = videos.reduce((sum, v) => sum + (v.likeCount || 0), 0);
+              totalReactions = videos.reduce((sum, v) => sum + (v.likeCount || 0), 0);
             } else {
-              totalViews = profile.total_reactions || 0;
+              totalReactions = profile.total_reactions || 0;
             }
 
             const stats: ProfileStats = {
               videosCount,
-              totalViews,
+              totalViews: loopStats?.views || 0,
+              totalLoops: Math.round(loopStats?.loops || 0),
+              totalReactions,
               joinedDate: null, // REST API doesn't provide this yet
               followersCount: profile.follower_count || 0,
               followingCount: profile.following_count || 0,
@@ -61,7 +68,7 @@ export function useProfileStats(pubkey: string, videos?: ParsedVideoData[]) {
               isClassicViner,
             };
 
-            debugLog(`[useProfileStats] REST API success: ${stats.followersCount} followers`);
+            debugLog(`[useProfileStats] REST API success: ${stats.followersCount} followers, ${stats.totalLoops} loops`);
             return stats;
           }
         } catch (err) {
@@ -139,7 +146,9 @@ export function useProfileStats(pubkey: string, videos?: ParsedVideoData[]) {
 
         const stats: ProfileStats = {
           videosCount,
-          totalViews,
+          totalViews: 0, // WebSocket doesn't have view tracking
+          totalLoops: 0, // WebSocket doesn't have loop tracking
+          totalReactions: totalViews, // This is actually reactions from WebSocket
           joinedDate,
           followersCount,
           followingCount,
@@ -154,6 +163,8 @@ export function useProfileStats(pubkey: string, videos?: ParsedVideoData[]) {
         return {
           videosCount,
           totalViews: 0,
+          totalLoops: 0,
+          totalReactions: 0,
           joinedDate: null,
           followersCount: 0,
           followingCount: 0,

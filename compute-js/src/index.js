@@ -58,10 +58,10 @@ async function handleRequest(event) {
       }
     }
     
-    // Subdomain profile redirect (alice.dvine.video -> dvine.video/profile/npub...)
+    // Subdomain profile - serve SPA with injected user data
     console.log('Handling subdomain profile for:', subdomain);
     try {
-      return await handleSubdomainProfile(subdomain, url);
+      return await handleSubdomainProfile(subdomain, url, request);
     } catch (err) {
       console.error('Subdomain profile error:', err.message, err.stack);
       return new Response('Profile not found', { status: 404 });
@@ -228,27 +228,59 @@ async function handleSubdomainNip05(subdomain) {
 
 /**
  * Handle subdomain profile requests (e.g., alice.dvine.video/)
- * Redirects to the main app's profile page for that user.
+ * Serves the SPA directly with injected user data instead of redirecting.
  */
-async function handleSubdomainProfile(subdomain, url) {
-  const store = new KVStore('divine-names');
-  const entry = await store.get(`user:${subdomain}`);
-  
+async function handleSubdomainProfile(subdomain, url, request) {
+  // Check if this is a static asset request - let publisherServer handle it
+  const assetExtensions = ['.js', '.css', '.png', '.jpg', '.jpeg', '.gif', '.svg', '.ico', '.webp', '.avif', '.woff', '.woff2', '.ttf', '.otf', '.json', '.webmanifest', '.map'];
+  const isAsset = assetExtensions.some(ext => url.pathname.endsWith(ext)) || url.pathname.startsWith('/assets/');
+
+  if (isAsset) {
+    // Serve static assets normally via publisherServer
+    const response = await publisherServer.serveRequest(request);
+    if (response != null) {
+      return response;
+    }
+    return new Response('Not Found', { status: 404 });
+  }
+
+  // Look up user data from KV store
+  const namesStore = new KVStore('divine-names');
+  const entry = await namesStore.get(`user:${subdomain}`);
+
   if (!entry) {
     return new Response('Profile not found', { status: 404 });
   }
 
   const userData = JSON.parse(await entry.text());
-  
+
   if (userData.status !== 'active' || !userData.pubkey) {
     return new Response('Profile not found', { status: 404 });
   }
 
   // Convert hex pubkey to npub for the profile URL
   const npub = hexToNpub(userData.pubkey);
-  
+
+  // Try to fetch user profile from Funnelcake for richer data
+  let profileData = null;
+  try {
+    const profileResponse = await fetch(`https://relay.divine.video/api/users/${userData.pubkey}`, {
+      backend: 'funnelcake',
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json',
+        'Host': 'relay.divine.video',
+      },
+    });
+    if (profileResponse.ok) {
+      profileData = await profileResponse.json();
+    }
+  } catch (e) {
+    console.error('Failed to fetch profile from Funnelcake:', e.message);
+  }
+
   // Find the apex domain from the current hostname
-  let apexDomain = 'dvine.video'; // default
+  let apexDomain = 'dvine.video';
   for (const apex of APEX_DOMAINS) {
     if (url.hostname.endsWith(apex)) {
       apexDomain = apex;
@@ -256,9 +288,66 @@ async function handleSubdomainProfile(subdomain, url) {
     }
   }
 
-  // Redirect to profile page
-  const profileUrl = `https://${apexDomain}/profile/${npub}`;
-  return Response.redirect(profileUrl, 302);
+  // Read the index.html from KV store
+  const contentStore = new KVStore('divine-web-content');
+  const htmlEntry = await contentStore.get('live/index.html');
+
+  if (!htmlEntry) {
+    console.error('Failed to read index.html from KV store');
+    // Fallback to redirect if KV read fails
+    const profileUrl = `https://${apexDomain}/profile/${npub}`;
+    return Response.redirect(profileUrl, 302);
+  }
+
+  let html = await htmlEntry.text();
+
+  // Build the user data object to inject
+  const divineUser = {
+    subdomain: subdomain,
+    pubkey: userData.pubkey,
+    npub: npub,
+    username: subdomain,
+    displayName: profileData?.profile?.display_name || profileData?.profile?.name || subdomain,
+    picture: profileData?.profile?.picture || null,
+    banner: profileData?.profile?.banner || null,
+    about: profileData?.profile?.about || null,
+    nip05: profileData?.profile?.nip05 || `${subdomain}@${apexDomain}`,
+    followersCount: profileData?.social?.follower_count || 0,
+    followingCount: profileData?.social?.following_count || 0,
+    videoCount: profileData?.stats?.video_count || 0,
+    apexDomain: apexDomain,
+  };
+
+  // Inject the user data as a global variable before the main script
+  const userScript = `<script>window.__DIVINE_USER__ = ${JSON.stringify(divineUser)};</script>`;
+
+  // Update OG tags for the profile
+  const ogTitle = divineUser.displayName + ' on diVine';
+  const ogDescription = divineUser.about || `Watch ${divineUser.displayName}'s videos on diVine`;
+  const ogImage = divineUser.picture || 'https://divine.video/og.png';
+  const ogUrl = `https://${subdomain}.${apexDomain}/`;
+
+  // Replace OG tags in HTML
+  html = html.replace(/<meta property="og:title" content="[^"]*" \/>/, `<meta property="og:title" content="${escapeHtml(ogTitle)}" />`);
+  html = html.replace(/<meta property="og:description" content="[^"]*" \/>/, `<meta property="og:description" content="${escapeHtml(ogDescription)}" />`);
+  html = html.replace(/<meta property="og:image" content="[^"]*" \/>/, `<meta property="og:image" content="${escapeHtml(ogImage)}" />`);
+  html = html.replace(/<meta property="og:url" content="[^"]*" \/>/, `<meta property="og:url" content="${escapeHtml(ogUrl)}" />`);
+  html = html.replace(/<meta name="twitter:title" content="[^"]*" \/>/, `<meta name="twitter:title" content="${escapeHtml(ogTitle)}" />`);
+  html = html.replace(/<meta name="twitter:description" content="[^"]*" \/>/, `<meta name="twitter:description" content="${escapeHtml(ogDescription)}" />`);
+  html = html.replace(/<meta name="twitter:image" content="[^"]*" \/>/, `<meta name="twitter:image" content="${escapeHtml(ogImage)}" />`);
+  html = html.replace(/<title>[^<]*<\/title>/, `<title>${escapeHtml(ogTitle)}</title>`);
+
+  // Inject the script before the closing </head> tag
+  html = html.replace('</head>', userScript + '</head>');
+
+  return new Response(html, {
+    status: 200,
+    headers: {
+      'Content-Type': 'text/html; charset=utf-8',
+      'Cache-Control': 'public, max-age=60', // Short cache for profile pages
+      'Vary': 'Host', // Cache varies by hostname (subdomain)
+    },
+  });
 }
 
 /**

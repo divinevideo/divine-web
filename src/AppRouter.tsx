@@ -2,11 +2,12 @@
  * If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
 import { ScrollToTop } from "./components/ScrollToTop";
 import { AnalyticsPageTracker } from "./components/AnalyticsPageTracker";
 import { AnalyticsUserTracker } from "./components/AnalyticsUserTracker";
 import { useNostrLogin } from "@nostrify/react/login";
+import { getSubdomainUser } from "./hooks/useSubdomainUser";
 
 import Index from "./pages/Index";
 import { NIP19Page } from "./pages/NIP19Page";
@@ -51,6 +52,9 @@ export function AppRouter() {
   // Check if user is logged in
   const isLoggedIn = logins.length > 0;
 
+  // Check if we're on a subdomain profile (username.divine.video)
+  const subdomainUser = getSubdomainUser();
+
   return (
     <BrowserRouter>
       <ScrollToTop />
@@ -73,8 +77,12 @@ export function AppRouter() {
 
         {/* App routes - with AppLayout */}
         <Route element={<AppLayout />}>
-          {/* Home/landing route */}
-          <Route path="/" element={<Index />} />
+          {/* Home/landing route - redirect to profile on subdomain */}
+          <Route path="/" element={
+            subdomainUser
+              ? <Navigate to={`/profile/${subdomainUser.npub}`} replace />
+              : <Index />
+          } />
 
           {/* Public browsing routes - accessible without login */}
           <Route path="/discovery" element={<DiscoveryPage />} />

@@ -9,6 +9,7 @@ import React from 'react';
 // Mock the funnelcakeClient module
 vi.mock('@/lib/funnelcakeClient', () => ({
   fetchUserProfile: vi.fn(),
+  fetchUserLoopStats: vi.fn(),
   FunnelcakeApiError: class FunnelcakeApiError extends Error {
     constructor(
       message: string,
@@ -43,6 +44,7 @@ vi.mock('@/config/api', () => ({
       timeout: 5000,
       endpoints: {
         userProfile: '/api/users/{pubkey}',
+        leaderboardCreators: '/api/leaderboard/creators',
       },
     },
   },
@@ -77,6 +79,7 @@ function createWrapper() {
 describe('useProfileStats', () => {
   let useProfileStats: typeof import('./useProfileStats').useProfileStats;
   let fetchUserProfile: ReturnType<typeof vi.fn>;
+  let fetchUserLoopStats: ReturnType<typeof vi.fn>;
   let isFunnelcakeAvailable: ReturnType<typeof vi.fn>;
   let shouldFallbackToWebSocket: ReturnType<typeof vi.fn>;
 
@@ -87,6 +90,7 @@ describe('useProfileStats', () => {
     // Re-import after mocking
     const client = await import('@/lib/funnelcakeClient');
     fetchUserProfile = client.fetchUserProfile as ReturnType<typeof vi.fn>;
+    fetchUserLoopStats = client.fetchUserLoopStats as ReturnType<typeof vi.fn>;
 
     const health = await import('@/lib/funnelcakeHealth');
     isFunnelcakeAvailable = health.isFunnelcakeAvailable as ReturnType<typeof vi.fn>;
@@ -99,6 +103,8 @@ describe('useProfileStats', () => {
     isFunnelcakeAvailable.mockReturnValue(true);
     shouldFallbackToWebSocket.mockReturnValue(false);
     mockNostrQuery.mockResolvedValue([]);
+    // Default loop stats to null (user not in leaderboard)
+    fetchUserLoopStats.mockResolvedValue(null);
   });
 
   afterEach(() => {
@@ -115,7 +121,15 @@ describe('useProfileStats', () => {
       total_reactions: 500,
     };
 
+    const mockLoopStats = {
+      views: 1000,
+      unique_viewers: 50,
+      loops: 750,
+      videos_with_views: 8,
+    };
+
     fetchUserProfile.mockResolvedValueOnce(mockProfile);
+    fetchUserLoopStats.mockResolvedValueOnce(mockLoopStats);
 
     const { result } = renderHook(
       () => useProfileStats(TEST_PUBKEY, []),
@@ -130,7 +144,14 @@ describe('useProfileStats', () => {
     expect(result.current.data?.followersCount).toBe(100);
     expect(result.current.data?.followingCount).toBe(50);
     expect(result.current.data?.videosCount).toBe(0); // From videos array, not API
+    expect(result.current.data?.totalLoops).toBe(750);
+    expect(result.current.data?.totalViews).toBe(1000);
     expect(fetchUserProfile).toHaveBeenCalledWith(
+      'https://relay.divine.video',
+      TEST_PUBKEY,
+      expect.any(AbortSignal)
+    );
+    expect(fetchUserLoopStats).toHaveBeenCalledWith(
       'https://relay.divine.video',
       TEST_PUBKEY,
       expect.any(AbortSignal)

@@ -6,6 +6,7 @@ import { useParams } from 'react-router-dom';
 import { nip19 } from 'nostr-tools';
 import { useSeoMeta } from '@unhead/react';
 import { Grid, List, Loader2 } from 'lucide-react';
+import InfiniteScroll from 'react-infinite-scroll-component';
 import { ProfileHeader } from '@/components/ProfileHeader';
 import { VideoGrid } from '@/components/VideoGrid';
 import { VideoFeed } from '@/components/VideoFeed';
@@ -64,7 +65,13 @@ export function ProfilePage() {
   const { data: authorData, isLoading: authorLoading } = useAuthor(pubkey || '');
 
   // Fetch videos for profile using Funnelcake (fast, includes cached author data)
-  const { data: videosData, isLoading: videosLoading, error: videosError } = useVideoProvider({
+  const {
+    data: videosData,
+    isLoading: videosLoading,
+    error: videosError,
+    fetchNextPage,
+    hasNextPage,
+  } = useVideoProvider({
     feedType: 'profile',
     pubkey: pubkey || '',
     enabled: !!pubkey,
@@ -266,7 +273,7 @@ export function ProfilePage() {
             <div>
               <h2 className="text-xl font-semibold">Videos</h2>
               <p className="text-muted-foreground text-sm">
-                {videosLoading ? 'Loading...' : `${videos?.length || 0} videos`} from {displayName}
+                {videosLoading ? 'Loading...' : `${stats.videosCount} videos`} from {displayName}
               </p>
             </div>
 
@@ -305,15 +312,36 @@ export function ProfilePage() {
               </CardContent>
             </Card>
           ) : viewMode === 'grid' ? (
-            <VideoGrid
-              videos={videos || []}
-              loading={videosLoading}
-              className="min-h-[200px]"
-              navigationContext={{
-                source: 'profile',
-                pubkey: pubkey || undefined,
-              }}
-            />
+            <InfiniteScroll
+              dataLength={videos.length}
+              next={fetchNextPage}
+              hasMore={hasNextPage ?? false}
+              loader={
+                <div className="h-16 flex items-center justify-center col-span-full">
+                  <div className="flex items-center gap-3">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    <span className="text-sm text-muted-foreground">Loading more videos...</span>
+                  </div>
+                </div>
+              }
+              endMessage={
+                videos.length > 10 ? (
+                  <div className="py-8 text-center text-sm text-muted-foreground col-span-full">
+                    <p>You've seen all {stats.videosCount} videos</p>
+                  </div>
+                ) : null
+              }
+            >
+              <VideoGrid
+                videos={videos || []}
+                loading={videosLoading}
+                className="min-h-[200px]"
+                navigationContext={{
+                  source: 'profile',
+                  pubkey: pubkey || undefined,
+                }}
+              />
+            </InfiniteScroll>
           ) : (
             <VideoFeed
               feedType="profile"
