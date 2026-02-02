@@ -295,24 +295,49 @@ async function handleSubdomainProfile(subdomain, url, request, originalHostname)
     }
   }
 
-  // Get HTML from PublisherServer by creating an internal request
-  // We need to fetch "/" from the apex domain to get the SPA HTML
-  const internalUrl = new URL('/', `https://${apexDomain}`);
-  const internalRequest = new Request(internalUrl.toString(), {
+  // Get HTML from PublisherServer by creating a completely clean request
+  // Use a simple URL without any special headers that might cause issues
+  const cleanUrl = `https://divine.video/index.html`;
+  const internalRequest = new Request(cleanUrl, {
     method: 'GET',
-    headers: request.headers,
   });
 
-  const htmlResponse = await publisherServer.serveRequest(internalRequest);
+  console.log('Fetching HTML from PublisherServer for:', cleanUrl);
+  let htmlResponse;
+  try {
+    htmlResponse = await publisherServer.serveRequest(internalRequest);
+    console.log('PublisherServer response:', htmlResponse?.status, 'body:', htmlResponse?.body ? 'present' : 'absent');
+  } catch (err) {
+    console.error('PublisherServer error:', err.message);
+    const profileUrl = `https://${apexDomain}/profile/${npub}`;
+    return Response.redirect(profileUrl, 302);
+  }
 
   if (!htmlResponse || htmlResponse.status !== 200) {
-    console.error('Failed to get index.html from PublisherServer');
+    console.error('Failed to get index.html from PublisherServer, status:', htmlResponse?.status);
     // Fallback to redirect if serving fails
     const profileUrl = `https://${apexDomain}/profile/${npub}`;
     return Response.redirect(profileUrl, 302);
   }
 
-  let html = await htmlResponse.text();
+  // Read the HTML body
+  let html;
+  try {
+    html = await htmlResponse.text();
+    console.log('HTML length:', html?.length);
+  } catch (err) {
+    console.error('Error reading HTML body:', err.message);
+    const profileUrl = `https://${apexDomain}/profile/${npub}`;
+    return Response.redirect(profileUrl, 302);
+  }
+
+  if (!html || html.length === 0) {
+    console.error('Empty HTML from PublisherServer');
+    const profileUrl = `https://${apexDomain}/profile/${npub}`;
+    return Response.redirect(profileUrl, 302);
+  }
+
+  console.log('Got HTML from PublisherServer, length:', html.length);
 
   // Build the user data object to inject
   const divineUser = {
@@ -350,8 +375,9 @@ async function handleSubdomainProfile(subdomain, url, request, originalHostname)
   html = html.replace(/<meta name="twitter:image" content="[^"]*" \/>/, `<meta name="twitter:image" content="${escapeHtml(ogImage)}" />`);
   html = html.replace(/<title>[^<]*<\/title>/, `<title>${escapeHtml(ogTitle)}</title>`);
 
-  // Inject the script before the closing </head> tag
-  html = html.replace('</head>', userScript + '</head>');
+  // Add a debug comment and inject the script before the closing </head> tag
+  const debugComment = `<!-- DIVINE_SUBDOMAIN_PROFILE: ${subdomain} -->`;
+  html = html.replace('</head>', debugComment + userScript + '</head>');
 
   return new Response(html, {
     status: 200,
@@ -359,6 +385,7 @@ async function handleSubdomainProfile(subdomain, url, request, originalHostname)
       'Content-Type': 'text/html; charset=utf-8',
       'Cache-Control': 'public, max-age=60', // Short cache for profile pages
       'Vary': 'Host', // Cache varies by hostname (subdomain)
+      'X-Divine-Subdomain': subdomain, // Debug header to verify subdomain handling
     },
   });
 }
