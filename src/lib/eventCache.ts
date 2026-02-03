@@ -65,21 +65,20 @@ class IndexedDBStore implements NStore {
     });
   }
 
-  private async ensureDB(): Promise<IDBDatabase> {
+  private async ensureDB(): Promise<IDBDatabase | null> {
     await this.initPromise;
-    if (!this.db) {
-      throw new Error('IndexedDB not initialized');
-    }
     return this.db;
   }
 
   async event(event: NostrEvent): Promise<void> {
     const db = await this.ensureDB();
+    if (!db) return;
+
     const cachedEvent: CachedEvent = {
       event,
       cached_at: Date.now(),
     };
-    
+
     return new Promise((resolve, reject) => {
       const transaction = db.transaction([STORE_NAME], 'readwrite');
       const store = transaction.objectStore(STORE_NAME);
@@ -92,6 +91,7 @@ class IndexedDBStore implements NStore {
 
   async query(filters: NostrFilter[]): Promise<NostrEvent[]> {
     const db = await this.ensureDB();
+    if (!db) return [];
     const allCachedEvents: CachedEvent[] = [];
 
     for (const filter of filters) {
@@ -213,6 +213,8 @@ class IndexedDBStore implements NStore {
 
   async remove(filters: NostrFilter[]): Promise<void> {
     const db = await this.ensureDB();
+    if (!db) return;
+
     const eventsToRemove = await this.query(filters);
 
     return new Promise((resolve, reject) => {
@@ -238,6 +240,8 @@ class IndexedDBStore implements NStore {
    */
   async clear(): Promise<void> {
     const db = await this.ensureDB();
+    if (!db) return;
+
     return new Promise((resolve, reject) => {
       const transaction = db.transaction([STORE_NAME], 'readwrite');
       const store = transaction.objectStore(STORE_NAME);
