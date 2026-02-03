@@ -32,6 +32,10 @@ class IndexedDBStore implements NStore {
   }
 
   private async init(): Promise<void> {
+    if (typeof indexedDB === 'undefined') {
+      return; // Gracefully degrade to memory-only cache
+    }
+
     return new Promise((resolve, reject) => {
       const request = indexedDB.open(DB_NAME, DB_VERSION);
 
