@@ -1,12 +1,14 @@
 import { Home, Compass, Search, User } from 'lucide-react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { useSubdomainNavigate } from '@/hooks/useSubdomainNavigate';
+import { isSubdomainOwner } from '@/lib/subdomainLinks';
 import { cn } from '@/lib/utils';
 import { nip19 } from 'nostr-tools';
 
 export function BottomNav() {
-  const navigate = useNavigate();
+  const navigate = useSubdomainNavigate();
   const location = useLocation();
   const { user } = useCurrentUser();
 
@@ -69,7 +71,7 @@ export function BottomNav() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => navigate(getUserProfilePath())}
+            onClick={() => navigate(getUserProfilePath(), { ownerPubkey: user.pubkey })}
             className={cn(
               "flex flex-col items-center justify-center gap-1 h-full flex-1 rounded-none hover:bg-transparent",
               isActive(getUserProfilePath()) && "text-primary"

@@ -2,7 +2,7 @@
 // ABOUTME: Shows popular hashtags with thumbnails and search filtering
 
 import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import { SmartLink } from '@/components/SmartLink';
 import { useQuery, useQueries } from '@tanstack/react-query';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -56,7 +56,7 @@ function useHashtagStats() {
  */
 function HashtagCard({ stat, thumbnailUrl }: { stat: HashtagStats; thumbnailUrl?: string }) {
   return (
-    <Link to={`/hashtag/${stat.tag}`} className="block group">
+    <SmartLink to={`/hashtag/${stat.tag}`} className="block group">
       <Card className="hover:shadow-lg transition-all duration-200 overflow-hidden cursor-pointer hover:scale-[1.02]">
         {/* Thumbnail */}
         <div className="relative aspect-square bg-muted overflow-hidden">
@@ -110,7 +110,7 @@ function HashtagCard({ stat, thumbnailUrl }: { stat: HashtagStats; thumbnailUrl?
           </Button>
         </CardContent>
       </Card>
-    </Link>
+    </SmartLink>
   );
 }
 

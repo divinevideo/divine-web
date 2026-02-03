@@ -2,7 +2,6 @@
 // ABOUTME: Shows video player, metadata, author info, and social interactions
 
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
 import { Heart, Repeat2, MessageCircle, Share, Eye, MoreVertical, Flag, UserX, Trash2, Volume2, VolumeX, Code, Users, ListPlus, Download, Maximize2 } from 'lucide-react';
 import { nip19 } from 'nostr-tools';
 import { Card, CardContent } from '@/components/ui/card';
@@ -36,6 +35,9 @@ import { formatViewCount, formatCount } from '@/lib/formatUtils';
 import { getSafeProfileImage } from '@/lib/imageUtils';
 import type { VideoNavigationContext } from '@/hooks/useVideoNavigation';
 import { useToast } from '@/hooks/useToast';
+import { useSubdomainNavigate } from '@/hooks/useSubdomainNavigate';
+import { SmartLink } from '@/components/SmartLink';
+import { getApexShareUrl } from '@/lib/subdomainLinks';
 import { MuteType } from '@/types/moderation';
 import { getOptimalVideoUrl } from '@/lib/bandwidthTracker';
 import { useBandwidthTier } from '@/hooks/useBandwidthTier';
@@ -133,7 +135,7 @@ export function VideoCard({
   const isHorizontal = effectiveLayout === 'horizontal';
   const { toast } = useToast();
   const muteUser = useMuteItem();
-  const navigate = useNavigate();
+  const navigate = useSubdomainNavigate();
   const { globalMuted, setGlobalMuted } = useVideoPlayback();
   const { mutate: deleteVideo, isPending: isDeleting } = useDeleteVideo();
   const canDelete = useCanDeleteVideo(video);
@@ -215,7 +217,7 @@ export function VideoCard({
   const handleThumbnailClick = () => {
     // In thumbnail mode (grid view), navigate to video page instead of playing inline
     if (mode === 'thumbnail') {
-      navigate(`/video/${video.id}`);
+      navigate(`/video/${video.id}`, { ownerPubkey: video.pubkey });
     } else {
       setIsPlaying(true);
       onPlay?.();
@@ -261,7 +263,7 @@ export function VideoCard({
   };
 
   const handleShare = async () => {
-    const videoUrl = `${window.location.origin}/video/${video.id}`;
+    const videoUrl = getApexShareUrl(`/video/${video.id}`);
 
     // Use Web Share API if available - only share URL, let OG tags handle the rest
     if (navigator.share) {
@@ -380,20 +382,20 @@ export function VideoCard({
           {/* Author info - only show here in vertical layout */}
           {!isHorizontal && (
             <div className="flex items-center gap-3 p-4 pb-2">
-              <Link to={profileUrl}>
+              <SmartLink to={profileUrl} ownerPubkey={video.pubkey}>
                 <Avatar className="h-10 w-10">
                   <AvatarImage src={profileImage} alt={displayName} />
                   <AvatarFallback>{displayName[0]?.toUpperCase()}</AvatarFallback>
                 </Avatar>
-              </Link>
+              </SmartLink>
               <div className="flex-1 min-w-0">
-                <Link to={profileUrl} className="font-semibold hover:underline truncate">
+                <SmartLink to={profileUrl} ownerPubkey={video.pubkey} className="font-semibold hover:underline truncate">
                   {displayName}
-                </Link>
+                </SmartLink>
                 {timeAgo && (
-                  <Link to={`/video/${video.id}`} className="text-sm text-muted-foreground block hover:underline" title={new Date(timestamp * 1000).toLocaleString()}>
+                  <SmartLink to={`/video/${video.id}`} ownerPubkey={video.pubkey} className="text-sm text-muted-foreground block hover:underline" title={new Date(timestamp * 1000).toLocaleString()}>
                     {timeAgo}
-                  </Link>
+                  </SmartLink>
                 )}
               </div>
               {/* Badges - right aligned */}
@@ -529,20 +531,20 @@ export function VideoCard({
           {/* Author info - horizontal layout only (shown above video in vertical) */}
           {isHorizontal && (
             <div className="flex items-start gap-2 mb-2">
-              <Link to={profileUrl}>
+              <SmartLink to={profileUrl} ownerPubkey={video.pubkey}>
                 <Avatar className="h-8 w-8">
                   <AvatarImage src={profileImage} alt={displayName} />
                   <AvatarFallback className="text-xs">{displayName[0]?.toUpperCase()}</AvatarFallback>
                 </Avatar>
-              </Link>
+              </SmartLink>
               <div className="flex-1 min-w-0">
-                <Link to={profileUrl} className="font-semibold text-sm hover:underline block truncate">
+                <SmartLink to={profileUrl} ownerPubkey={video.pubkey} className="font-semibold text-sm hover:underline block truncate">
                   {displayName}
-                </Link>
+                </SmartLink>
                 {timeAgo && (
-                  <Link to={`/video/${video.id}`} className="text-xs text-muted-foreground hover:underline" title={new Date(timestamp * 1000).toLocaleString()}>
+                  <SmartLink to={`/video/${video.id}`} ownerPubkey={video.pubkey} className="text-xs text-muted-foreground hover:underline" title={new Date(timestamp * 1000).toLocaleString()}>
                     {timeAgo}
-                  </Link>
+                  </SmartLink>
                 )}
               </div>
               {/* Badges - right aligned */}
@@ -565,9 +567,9 @@ export function VideoCard({
             isHorizontal ? "space-y-1" : "p-4 space-y-2"
           )}>
             {video.title && (
-              <Link to={`/video/${video.id}`}>
+              <SmartLink to={`/video/${video.id}`} ownerPubkey={video.pubkey}>
                 <h3 className={cn("font-semibold line-clamp-2 hover:underline", isHorizontal ? "text-sm" : "text-lg")}>{video.title}</h3>
-              </Link>
+              </SmartLink>
             )}
 
             {video.content && video.content.trim() !== video.title?.trim() && (
@@ -591,7 +593,7 @@ export function VideoCard({
             {video.hashtags.length > 0 && (
               <div className="flex flex-wrap gap-1">
                 {video.hashtags.map((tag) => (
-                  <Link
+                  <SmartLink
                     key={tag}
                     to={`/hashtag/${tag}`}
                     className={cn(
@@ -600,7 +602,7 @@ export function VideoCard({
                     )}
                   >
                     #{tag}
-                  </Link>
+                  </SmartLink>
                 ))}
               </div>
             )}
@@ -609,9 +611,9 @@ export function VideoCard({
 
           {/* Stats row - horizontal layout: show view/loop count only (likes/comments shown on buttons) */}
           {isHorizontal && viewCount > 0 && (
-            <Link to={`/video/${video.id}`} className="py-2 mt-auto text-sm text-muted-foreground hover:underline block">
+            <SmartLink to={`/video/${video.id}`} ownerPubkey={video.pubkey} className="py-2 mt-auto text-sm text-muted-foreground hover:underline block">
               {formatViewCount(viewCount)}
-            </Link>
+            </SmartLink>
           )}
 
           {/* Vertical layout: Video metadata row */}
@@ -619,10 +621,10 @@ export function VideoCard({
             <div className="px-4 py-2" data-testid="video-metadata">
               <div className="flex items-center gap-3 text-sm text-muted-foreground">
                 {viewCount > 0 && (
-                  <Link to={`/video/${video.id}`} className="flex items-center gap-1 hover:underline">
+                  <SmartLink to={`/video/${video.id}`} ownerPubkey={video.pubkey} className="flex items-center gap-1 hover:underline">
                     <Eye className="h-3 w-3" />
                     {formatViewCount(viewCount)}
-                  </Link>
+                  </SmartLink>
                 )}
               </div>
             </div>

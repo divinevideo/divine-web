@@ -2,7 +2,8 @@
 // ABOUTME: Uses Funnelcake REST API for efficient hashtag video queries
 
 import { useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
+import { SmartLink } from '@/components/SmartLink';
 import { ArrowLeft, Grid3X3, List } from 'lucide-react';
 import { useSeoMeta } from '@unhead/react';
 import { VideoFeed } from '@/components/VideoFeed';
@@ -58,13 +59,13 @@ export function HashtagPage() {
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Navigation */}
         <div className="flex items-center gap-4">
-          <Link
+          <SmartLink
             to="/hashtags"
             className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
           >
             <ArrowLeft className="h-4 w-4" />
             Back to Discovery
-          </Link>
+          </SmartLink>
         </div>
 
         {/* Header */}

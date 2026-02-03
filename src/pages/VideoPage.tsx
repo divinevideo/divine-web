@@ -1,4 +1,5 @@
-import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
+import { useSubdomainNavigate } from '@/hooks/useSubdomainNavigate';
 import { useEffect, useCallback, useState, useMemo, useRef } from 'react';
 import { useSeoMeta } from '@unhead/react';
 import { Hash, User, X } from 'lucide-react';
@@ -23,7 +24,7 @@ import type { ParsedVideoData, UserInteractions } from '@/types/video';
 export function VideoPage() {
   const { id } = useParams<{ id: string }>();
   const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
+  const navigate = useSubdomainNavigate();
 
   // Parse navigation context from URL params
   const context: VideoNavigationContext | null = useMemo(() => {
@@ -181,10 +182,9 @@ export function VideoPage() {
     } else if (context?.source === 'profile' && context.pubkey) {
       try {
         const npub = nip19.npubEncode(context.pubkey);
-        navigate(`/profile/${npub}`);
+        navigate(`/profile/${npub}`, { ownerPubkey: context.pubkey });
       } catch {
-        // Fallback to hex pubkey if encoding fails
-        navigate(`/profile/${context.pubkey}`);
+        navigate(`/profile/${context.pubkey}`, { ownerPubkey: context.pubkey });
       }
     } else {
       navigate(-1); // Browser back

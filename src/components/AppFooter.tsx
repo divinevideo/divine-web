@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { SmartLink } from '@/components/SmartLink';
 import { HubSpotSignup } from './HubSpotSignup';
 
 export function AppFooter() {
@@ -21,34 +21,34 @@ export function AppFooter() {
             <div className="flex flex-col gap-3 text-xs text-muted-foreground">
               {/* Featured Links */}
               <div className="flex flex-wrap items-center gap-3 text-sm">
-                <Link
+                <SmartLink
                   to="/human-created"
                   className="font-semibold text-primary hover:text-primary/80 transition-colors"
                 >
                   Made with Love
-                </Link>
+                </SmartLink>
                 <span className="text-muted-foreground">•</span>
-                <Link
+                <SmartLink
                   to="/proofmode"
                   className="font-semibold text-primary hover:text-primary/80 transition-colors"
                 >
                   No AI Slop
-                </Link>
+                </SmartLink>
               </div>
 
               {/* Navigation Links */}
               <div className="flex flex-wrap items-center gap-2">
-                <Link to="/about" className="hover:text-foreground transition-colors">
+                <SmartLink to="/about" className="hover:text-foreground transition-colors">
                   About
-                </Link>
+                </SmartLink>
                 <span>•</span>
                 <a href="https://about.divine.video/faqs/" className="hover:text-foreground transition-colors">
                   FAQ
                 </a>
                 <span>•</span>
-                <Link to="/authenticity" className="hover:text-foreground transition-colors">
+                <SmartLink to="/authenticity" className="hover:text-foreground transition-colors">
                   Our Mission
-                </Link>
+                </SmartLink>
                 <span>•</span>
                 <a href="https://about.divine.video/news/" className="hover:text-foreground transition-colors">
                   News
@@ -63,25 +63,25 @@ export function AppFooter() {
                 </a>
               </div>
               <div className="flex flex-wrap items-center gap-2">
-                <Link to="/support" className="hover:text-foreground transition-colors">
+                <SmartLink to="/support" className="hover:text-foreground transition-colors">
                   Help
-                </Link>
+                </SmartLink>
                 <span>•</span>
-                <Link to="/privacy" className="hover:text-foreground transition-colors">
+                <SmartLink to="/privacy" className="hover:text-foreground transition-colors">
                   Privacy
-                </Link>
+                </SmartLink>
                 <span>•</span>
-                <Link to="/terms" className="hover:text-foreground transition-colors">
+                <SmartLink to="/terms" className="hover:text-foreground transition-colors">
                   EULA/T&C
-                </Link>
+                </SmartLink>
                 <span>•</span>
-                <Link to="/safety" className="hover:text-foreground transition-colors">
+                <SmartLink to="/safety" className="hover:text-foreground transition-colors">
                   Safety
-                </Link>
+                </SmartLink>
                 <span>•</span>
-                <Link to="/open-source" className="hover:text-foreground transition-colors">
+                <SmartLink to="/open-source" className="hover:text-foreground transition-colors">
                   Open Source
-                </Link>
+                </SmartLink>
                 <span>•</span>
                 <a
                   href="https://opencollective.com/aos-collective/contribute/divine-keepers-95646"

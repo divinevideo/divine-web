@@ -1,14 +1,14 @@
 // ABOUTME: Popular hashtags card component showing trending hashtags from recent videos
 
-import { useNavigate } from 'react-router-dom';
 import { Hash } from 'lucide-react';
+import { useSubdomainNavigate } from '@/hooks/useSubdomainNavigate';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useSearchHashtags } from '@/hooks/useSearchHashtags';
 import { Button } from '@/components/ui/button';
 
 export function PopularHashtagsCard() {
-  const navigate = useNavigate();
+  const navigate = useSubdomainNavigate();
   const { data: popularHashtags = [], isLoading } = useSearchHashtags({
     query: '',
     limit: 12,

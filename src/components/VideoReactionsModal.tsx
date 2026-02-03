@@ -6,8 +6,8 @@ import { useBatchedAuthors } from '@/hooks/useBatchedAuthors';
 import { enhanceAuthorData } from '@/lib/generateProfile';
 import { getSafeProfileImage } from '@/lib/imageUtils';
 import { formatDistanceToNow } from 'date-fns';
-import { Link } from 'react-router-dom';
 import { nip19 } from 'nostr-tools';
+import { SmartLink } from '@/components/SmartLink';
 import { cn } from '@/lib/utils';
 import type { VideoReactions } from '@/hooks/useVideoReactions';
 
@@ -35,8 +35,9 @@ function ReactionUserItem({ pubkey, timestamp }: { pubkey: string; timestamp: nu
   const timeAgo = formatDistanceToNow(date, { addSuffix: true });
 
   return (
-    <Link
+    <SmartLink
       to={profileUrl}
+      ownerPubkey={pubkey}
       className="flex items-center gap-3 p-3 rounded-lg hover:bg-accent transition-colors"
       onClick={(e) => {
         // Close modal when clicking on a user
@@ -51,7 +52,7 @@ function ReactionUserItem({ pubkey, timestamp }: { pubkey: string; timestamp: nu
         <p className="font-medium truncate">{displayName}</p>
         <p className="text-xs text-muted-foreground">{timeAgo}</p>
       </div>
-    </Link>
+    </SmartLink>
   );
 }
 
