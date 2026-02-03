@@ -58,6 +58,12 @@ export function initializeSentry() {
       // Video playback errors (common, usually not actionable)
       'The play() request was interrupted',
       'NotAllowedError: The request is not allowed',
+      'NotSupportedError: The operation is not supported',
+      // iOS WebKit errors (WKWebView lifecycle)
+      'The WKWebView was deallocated',
+      // React DOM errors caused by browser extensions modifying the DOM
+      "Failed to execute 'removeChild' on 'Node'",
+      "Failed to execute 'insertBefore' on 'Node'",
     ],
 
     // Don't send PII
