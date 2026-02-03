@@ -208,6 +208,9 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
           if (videoRef.current.paused) {
             videoRef.current.play().catch((error) => {
               debugError(`[VideoPlayer ${videoId}] Failed to start playback:`, error);
+              if (error.name === 'NotSupportedError') {
+                handleError();
+              }
             });
           }
         } else if (!isActive) {
@@ -244,6 +247,9 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
                 verboseLog(`[VideoPlayer ${videoId}] Video paused after mute change, resuming...`);
                 video.play().catch(error => {
                   verboseLog(`[VideoPlayer ${videoId}] Failed to resume after mute change:`, error);
+                  if (error.name === 'NotSupportedError') {
+                    handleError();
+                  }
                 });
               }
               // Clear flag after we've handled playback
@@ -274,6 +280,9 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
         verboseLog(`[VideoPlayer ${videoId}] Attempting to play video`);
         videoRef.current.play().catch((error) => {
           debugError(`[VideoPlayer ${videoId}] Play failed:`, error);
+          if (error.name === 'NotSupportedError') {
+            handleError();
+          }
           setIsPlaying(false);
         });
       }
@@ -524,6 +533,9 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
         videoRef.current.currentTime = 0;
         videoRef.current.play().catch((error) => {
           debugError(`[VideoPlayer ${videoId}] Failed to loop video:`, error);
+          if (error.name === 'NotSupportedError') {
+            handleError();
+          }
           setIsPlaying(false);
         });
       }

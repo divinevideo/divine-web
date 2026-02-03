@@ -140,7 +140,7 @@ export function FullscreenVideoItem({
     const videoEl = document.querySelector(`video`) as HTMLVideoElement;
     if (videoEl) {
       if (videoEl.paused) {
-        videoEl.play();
+        videoEl.play().catch(() => { /* handled by VideoPlayer */ });
       } else {
         videoEl.pause();
       }

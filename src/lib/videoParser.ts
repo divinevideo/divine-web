@@ -289,10 +289,10 @@ export function extractVideoMetadata(event: NostrEvent): VideoMetadata | null {
 
   const metadata: VideoMetadata = { ...bestImeta };
 
-  // For short videos with a good MP4 URL, skip HLS entirely - it's overkill
-  // and direct MP4 is more reliable. Only keep HLS if we don't have an MP4.
-  if (metadata.url.includes('.mp4')) {
-    delete metadata.hlsUrl;
+  // Generate HLS URL from hash when available on media.divine.video
+  // This ensures hlsUrl is available as a fallback for codec compatibility issues
+  if (!metadata.hlsUrl && metadata.hash && metadata.url.includes('media.divine.video')) {
+    metadata.hlsUrl = `https://media.divine.video/${metadata.hash}/hls/master.m3u8`;
   }
 
   // Only fill in missing metadata from other imeta tags (don't override URLs!)
