@@ -101,7 +101,7 @@ export interface FunnelcakeError {
  * Options for fetching videos from Funnelcake
  */
 export interface FunnelcakeFetchOptions {
-  sort?: 'trending' | 'recent' | 'popular' | 'loops';
+  sort?: 'trending' | 'recent' | 'popular' | 'loops' | 'engagement';
   limit?: number;
   before?: string;        // Cursor for pagination (timestamp)
   offset?: number;        // Offset for page-based pagination (0-indexed)
