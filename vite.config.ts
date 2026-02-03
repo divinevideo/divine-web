@@ -52,7 +52,7 @@ export default defineConfig(() => ({
     react(),
 VitePWA({
       registerType: 'autoUpdate',
-      injectRegister: 'auto',
+      injectRegister: null,
       devOptions: {
         enabled: false
       },

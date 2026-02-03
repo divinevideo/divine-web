@@ -23,23 +23,20 @@ import './index.css';
 import '@fontsource-variable/inter';
 import '@fontsource/pacifico';
 
-// PWA Service Worker Registration
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js', { scope: '/' })
-      .then((registration) => {
-        console.log('[PWA] Service Worker registered:', registration.scope);
+// PWA Service Worker Registration (managed by VitePWA)
+import { registerSW } from 'virtual:pwa-register';
 
-        // Check for updates every hour
-        setInterval(() => {
-          registration.update();
-        }, 60 * 60 * 1000);
-      })
-      .catch((error) => {
-        console.error('[PWA] Service Worker registration failed:', error);
-      });
-  });
-}
+registerSW({
+  onRegistered(registration) {
+    if (registration) {
+      // Check for updates every hour
+      setInterval(() => registration.update(), 60 * 60 * 1000);
+    }
+  },
+  onRegisterError(error) {
+    console.error('[PWA] Service Worker registration failed:', error);
+  },
+});
 
 createRoot(document.getElementById("root")!).render(
   <ErrorBoundary>
