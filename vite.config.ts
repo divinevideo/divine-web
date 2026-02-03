@@ -61,7 +61,9 @@ VitePWA({
         skipWaiting: true,
         clientsClaim: true,
         navigateFallback: null,
-        runtimeCaching: []
+        runtimeCaching: [],
+        // Allow larger JS bundles (default 2MB is too small for this app)
+        maximumFileSizeToCacheInBytes: 3 * 1024 * 1024, // 3MB
       },
       includeAssets: [
         'app_icon.png',
