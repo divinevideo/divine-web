@@ -37,7 +37,7 @@ import { getSafeProfileImage } from '@/lib/imageUtils';
 import type { VideoNavigationContext } from '@/hooks/useVideoNavigation';
 import { useToast } from '@/hooks/useToast';
 import { MuteType } from '@/types/moderation';
-import { getOptimalVideoUrl, bandwidthTracker } from '@/lib/bandwidthTracker';
+import { getOptimalVideoUrl } from '@/lib/bandwidthTracker';
 import { useBandwidthTier } from '@/hooks/useBandwidthTier';
 
 interface VideoCardProps {

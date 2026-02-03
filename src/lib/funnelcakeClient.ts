@@ -156,10 +156,6 @@ export async function fetchVideos(
 ): Promise<FunnelcakeResponse> {
   const { sort = 'trending', limit = 20, before, offset, classic, platform, signal } = options;
 
-  // Use offset pagination for sorted feeds (trending, loops, engagement)
-  // Use timestamp (before) for chronological feeds (recent)
-  const useOffset = offset !== undefined || (sort !== 'recent' && before === undefined);
-
   const params: Record<string, string | number | boolean | undefined> = {
     sort,
     limit,

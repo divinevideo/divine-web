@@ -5,7 +5,7 @@ import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useSeoMeta } from '@unhead/react';
-import { Trophy, Video, User, Clock, Calendar, CalendarDays, CalendarRange, Infinity } from 'lucide-react';
+import { Trophy, Video, User, Clock, Calendar, CalendarDays, CalendarRange, Infinity as InfinityIcon } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -69,7 +69,7 @@ function getTimePeriodLabel(period: TimePeriod): string {
 
 function getTimePeriodIcon(period: TimePeriod) {
   switch (period) {
-    case 'alltime': return Infinity;
+    case 'alltime': return InfinityIcon;
     case 'day': return Clock;
     case 'week': return Calendar;
     case 'month': return CalendarDays;
