@@ -598,7 +598,7 @@ export function VideoCard({
                     to={`/hashtag/${tag}`}
                     className={cn(
                       "hover:underline",
-                      isHorizontal ? "text-xs text-[#00bf8f]" : "text-sm text-primary"
+                      isHorizontal ? "text-xs text-[#0d7a50] dark:text-[#00bf8f]" : "text-sm text-[#0d7a50] dark:text-primary"
                     )}
                   >
                     #{tag}

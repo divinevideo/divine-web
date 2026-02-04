@@ -4,18 +4,21 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* Brand: Off White #F9F7F6 */
+    --background: 30 18% 97%;
+    /* Brand: Dark Green #07241B */
+    --foreground: 158 67% 8%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card: 30 18% 97%;
+    --card-foreground: 158 67% 8%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover: 30 18% 97%;
+    --popover-foreground: 158 67% 8%;
 
     /* Brand primary: #27C58B -> hsl(158 67% 46%) */
     --primary: 158 67% 46%;
-    --primary-foreground: 210 40% 98%;
+    /* Near-black for WCAG AA contrast on green buttons */
+    --primary-foreground: 0 0% 2%;
 
     /* Brand palette */
     --brand-green: 158 67% 46%;        /* #27C58B - same as primary */
@@ -32,21 +35,22 @@
     --brand-purple: 254 100% 70%;      /* #8568FF */
     --brand-blue: 196 86% 57%;         /* #34BBF1 */
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 30 18% 94%;
+    --secondary-foreground: 158 67% 8%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 30 18% 94%;
+    --muted-foreground: 158 30% 35%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 30 18% 94%;
+    --accent-foreground: 158 67% 8%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --border: 30 18% 88%;
+    --input: 30 18% 88%;
+    /* Ring uses brand dark green */
+    --ring: 158 67% 8%;
 
     --radius: 0.5rem;
 
@@ -70,21 +74,15 @@
     --transition-normal: 250ms cubic-bezier(0.4, 0, 0.2, 1);
     --transition-slow: 350ms cubic-bezier(0.4, 0, 0.2, 1);
 
-    --sidebar-background: 0 0% 98%;
-
-    --sidebar-foreground: 240 5.3% 26.1%;
-
-    --sidebar-primary: 240 5.9% 10%;
-
-    --sidebar-primary-foreground: 0 0% 98%;
-
-    --sidebar-accent: 240 4.8% 95.9%;
-
-    --sidebar-accent-foreground: 240 5.9% 10%;
-
-    --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    /* Sidebar uses brand colors */
+    --sidebar-background: 30 18% 97%;
+    --sidebar-foreground: 158 67% 8%;
+    --sidebar-primary: 158 67% 46%;
+    --sidebar-primary-foreground: 30 18% 97%;
+    --sidebar-accent: 30 18% 94%;
+    --sidebar-accent-foreground: 158 67% 8%;
+    --sidebar-border: 30 18% 90%;
+    --sidebar-ring: 158 67% 46%;
   }
 
   .dark {
@@ -99,7 +97,8 @@
 
     /* Brand primary: #27C58B -> hsl(158 67% 46%) - same in dark mode */
     --primary: 158 67% 46%;
-    --primary-foreground: 210 40% 98%;
+    /* Near-black for WCAG AA contrast on green buttons */
+    --primary-foreground: 0 0% 2%;
 
     /* Brand palette (same values, adjusted for dark mode visibility where needed) */
     --brand-green: 158 67% 46%;        /* #27C58B - same as primary */
@@ -164,16 +163,17 @@
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
   }
 
-  /* Ensure all text elements inherit foreground color */
-  p, span, div, li, td, th {
-    @apply text-foreground;
-  }
-
   /* Custom font for headings and logo */
   h1, h2, h3, h4, h5, h6, .font-logo {
     font-family: 'Bricolage Grotesque', system-ui, -apple-system, sans-serif;
     letter-spacing: -0.02em;
-    @apply text-foreground;
+  }
+
+  /* Ensure text inherits color inside primary-colored containers (buttons, tabs, etc.) */
+  .text-primary-foreground *,
+  [class*="text-primary-foreground"] *,
+  [data-state="active"][class*="text-primary-foreground"] * {
+    color: inherit;
   }
 
   /* Improved focus states */
