@@ -33,18 +33,13 @@ export function AgeVerificationOverlay({
     
     isConfirmingRef.current = true;
     setIsConfirming(true);
-    
-    // Confirm adult status and immediately trigger callback
     confirmAdult();
     
-    // Use requestAnimationFrame to ensure state updates are batched
-    // This prevents layout thrashing on mobile devices
-    requestAnimationFrame(() => {
-      if (!hasCalledOnVerified.current) {
-        hasCalledOnVerified.current = true;
-        onVerified();
-      }
-    });
+    // Call onVerified synchronously with guard to prevent multiple calls
+    if (!hasCalledOnVerified.current) {
+      hasCalledOnVerified.current = true;
+      onVerified();
+    }
   };
 
   // If already verified on mount, call onVerified once
@@ -66,21 +61,13 @@ export function AgeVerificationOverlay({
       className={cn(
         "absolute inset-0 z-20 flex flex-col items-center justify-center",
         "bg-black/80 backdrop-blur-sm",
-        // Add transform to create a new stacking context and prevent layout shifts
-        "transform-gpu",
         className
       )}
-      style={{
-        // Use will-change to optimize rendering on mobile
-        willChange: 'opacity',
-        // Prevent iOS momentum scrolling issues
-        WebkitOverflowScrolling: 'touch',
-      }}
     >
       {/* Blurred background thumbnail if available */}
       {thumbnailUrl && (
         <div
-          className="absolute inset-0 bg-cover bg-center opacity-20 blur-xl transform-gpu"
+          className="absolute inset-0 bg-cover bg-center opacity-20 blur-xl"
           style={{ backgroundImage: `url(${thumbnailUrl})` }}
         />
       )}
@@ -105,10 +92,6 @@ export function AgeVerificationOverlay({
             onClick={handleConfirm}
             disabled={isConfirming}
             className="gap-2 bg-white text-black hover:bg-gray-200 touch-manipulation"
-            style={{
-              // Prevent iOS double-tap zoom
-              touchAction: 'manipulation',
-            }}
           >
             {isConfirming ? (
               <>Verifying...</>
