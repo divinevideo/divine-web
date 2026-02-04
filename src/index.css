@@ -17,6 +17,21 @@
     --primary: 158 67% 46%;
     --primary-foreground: 210 40% 98%;
 
+    /* Brand palette */
+    --brand-green: 158 67% 46%;        /* #27C58B - same as primary */
+    --brand-dark-green: 158 67% 8%;    /* #07241B */
+    --brand-light-green: 114 88% 90%;  /* #D0FBCB */
+    --brand-off-white: 30 18% 97%;     /* #F9F7F6 */
+
+    /* Secondary palette for accents */
+    --brand-yellow: 56 100% 62%;       /* #FFF140 */
+    --brand-lime: 79 100% 63%;         /* #D2FF40 */
+    --brand-pink: 338 100% 75%;        /* #FF7FAF */
+    --brand-orange: 20 100% 63%;       /* #FF7640 */
+    --brand-violet: 236 100% 82%;      /* #A3A9FF */
+    --brand-purple: 254 100% 70%;      /* #8568FF */
+    --brand-blue: 196 86% 57%;         /* #34BBF1 */
+
     --secondary: 210 40% 96.1%;
     --secondary-foreground: 222.2 47.4% 11.2%;
 
@@ -86,6 +101,21 @@
     --primary: 158 67% 46%;
     --primary-foreground: 210 40% 98%;
 
+    /* Brand palette (same values, adjusted for dark mode visibility where needed) */
+    --brand-green: 158 67% 46%;        /* #27C58B - same as primary */
+    --brand-dark-green: 158 67% 8%;    /* #07241B */
+    --brand-light-green: 114 88% 90%;  /* #D0FBCB */
+    --brand-off-white: 30 18% 97%;     /* #F9F7F6 */
+
+    /* Secondary palette for accents */
+    --brand-yellow: 56 100% 62%;       /* #FFF140 */
+    --brand-lime: 79 100% 63%;         /* #D2FF40 */
+    --brand-pink: 338 100% 75%;        /* #FF7FAF */
+    --brand-orange: 20 100% 63%;       /* #FF7640 */
+    --brand-violet: 236 100% 82%;      /* #A3A9FF */
+    --brand-purple: 254 100% 70%;      /* #8568FF */
+    --brand-blue: 196 86% 57%;         /* #34BBF1 */
+
     --secondary: 217.2 32.6% 17.5%;
     --secondary-foreground: 210 40% 98%;
 
@@ -103,7 +133,6 @@
     --ring: 158 67% 46%;
 
     --sidebar-background: 222.2 84% 4.9%;
-
     --sidebar-foreground: 210 40% 98%;
 
     --sidebar-primary: 210 40% 98%;

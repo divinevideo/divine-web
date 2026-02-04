@@ -122,7 +122,7 @@ export function AppFooter() {
                   />
                 </a>
                 <a
-                  href="https://discord.gg/RZVbzuQ5qM"
+                  href="https://discord.gg/2J5JcUKrPw"
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label="Join us on Discord"
@@ -183,6 +183,19 @@ export function AppFooter() {
                   <img
                     src="/social-icons/github.svg"
                     alt="GitHub"
+                    className="w-5 h-5 dark:invert"
+                  />
+                </a>
+                <a
+                  href="https://www.youtube.com/channel/UCkAaxItWqDpTgngWAS2cAtQ"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Follow us on YouTube"
+                  className="opacity-60 hover:opacity-100 transition-opacity"
+                >
+                  <img
+                    src="/social-icons/youtube.svg"
+                    alt="YouTube"
                     className="w-5 h-5 dark:invert"
                   />
                 </a>

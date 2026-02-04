@@ -13,7 +13,11 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useTheme } from '@/hooks/useTheme';
 
-export function AppHeader() {
+export interface AppHeaderProps {
+  className?: string;
+}
+
+export function AppHeader({ className }: AppHeaderProps) {
   const navigate = useSubdomainNavigate();
   const location = useLocation();
   const { displayTheme, setTheme } = useTheme();
@@ -26,7 +30,7 @@ export function AppHeader() {
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-primary/10 bg-background/80 backdrop-blur-md shadow-sm">
+    <header className={cn("sticky top-0 z-50 w-full border-b border-primary/10 bg-background/80 backdrop-blur-md shadow-sm", className)}>
       <div className="container flex h-16 items-center justify-between">
         <div className="flex items-center gap-4">
           <button
