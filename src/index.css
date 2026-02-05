@@ -179,7 +179,7 @@
 
   /* Improved focus states */
   *:focus-visible {
-    @apply outline-none ring-2 ring-primary/50 ring-offset-2 ring-offset-background;
+    @apply outline-none ring-2 ring-brand-light-green ring-offset-2 ring-offset-background;
   }
 
   /* Smooth scrolling */
@@ -194,24 +194,25 @@
 
   /* Custom selection color */
   ::selection {
-    @apply bg-primary/20 text-primary;
+    @apply bg-brand-light-green text-brand-dark-green;
   }
 
-  /* Global scrollbar styling */
+  /* Global scrollbar styling - uses brand Light Green */
   * {
     scrollbar-width: thin;
-    scrollbar-color: hsl(var(--muted-foreground) / 0.3) transparent;
+    scrollbar-color: hsl(var(--brand-light-green)) transparent;
   }
 
   *::-webkit-scrollbar { width: 8px; height: 8px; }
   *::-webkit-scrollbar-track { background: transparent; }
   *::-webkit-scrollbar-thumb {
-    background: hsl(var(--muted-foreground) / 0.3);
+    background: hsl(var(--brand-light-green));
     border-radius: 9999px;
   }
 
-  .dark * { scrollbar-color: hsl(var(--muted-foreground) / 0.4) transparent; }
-  .dark *::-webkit-scrollbar-thumb { background: hsl(var(--muted-foreground) / 0.4); }
+  /* Dark mode: use brand Green for better visibility */
+  .dark * { scrollbar-color: hsl(var(--brand-green)) transparent; }
+  .dark *::-webkit-scrollbar-thumb { background: hsl(var(--brand-green)); }
 
   /* Safe area support for mobile bottom navigation */
   @supports (padding-bottom: env(safe-area-inset-bottom)) {
