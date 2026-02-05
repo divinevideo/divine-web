@@ -101,19 +101,21 @@
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
+    /* Brand: Dark Green #07241B for dark mode background */
+    --background: 158 67% 8%;
+    /* Brand: Off White #F9F7F6 for dark mode text */
+    --foreground: 30 18% 97%;
 
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
+    --card: 158 67% 8%;
+    --card-foreground: 30 18% 97%;
 
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 158 67% 8%;
+    --popover-foreground: 30 18% 97%;
 
     /* Brand primary: #27C58B -> hsl(158 67% 46%) - same in dark mode */
     --primary: 158 67% 46%;
-    /* Near-black for WCAG AA contrast on green buttons */
-    --primary-foreground: 0 0% 2%;
+    /* Brand Dark Green for text on green buttons */
+    --primary-foreground: 158 67% 8%;
 
     /* Brand palette (same values, adjusted for dark mode visibility where needed) */
     --brand-green: 158 67% 46%;        /* #27C58B - same as primary */
@@ -144,34 +146,38 @@
     --brand-blue-light: 196 95% 90%;   /* #CCEEFE */
     --brand-blue-dark: 207 72% 14%;    /* #0A223C */
 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+    /* Slightly lighter dark green for secondary/muted backgrounds */
+    --secondary: 158 50% 12%;
+    --secondary-foreground: 30 18% 97%;
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 158 50% 12%;
+    /* Dimmed off-white for secondary text */
+    --muted-foreground: 30 15% 70%;
 
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 158 50% 12%;
+    --accent-foreground: 30 18% 97%;
 
     --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive-foreground: 30 18% 97%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
+    /* Lighter green for borders in dark mode */
+    --border: 158 40% 18%;
+    --input: 158 40% 18%;
     --ring: 158 67% 46%;
 
-    --sidebar-background: 222.2 84% 4.9%;
-    --sidebar-foreground: 210 40% 98%;
+    /* Sidebar uses brand dark green */
+    --sidebar-background: 158 67% 8%;
+    --sidebar-foreground: 30 18% 97%;
 
-    --sidebar-primary: 210 40% 98%;
+    --sidebar-primary: 30 18% 97%;
 
-    --sidebar-primary-foreground: 222.2 84% 4.9%;
+    --sidebar-primary-foreground: 158 67% 8%;
 
-    --sidebar-accent: 217.2 32.6% 17.5%;
+    --sidebar-accent: 158 50% 12%;
 
-    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-accent-foreground: 30 18% 97%;
 
-    --sidebar-border: 217.2 32.6% 17.5%;
+    --sidebar-border: 158 40% 18%;
 
     --sidebar-ring: 158 67% 46%;
   }
