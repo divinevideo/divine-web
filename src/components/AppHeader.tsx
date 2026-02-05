@@ -158,17 +158,6 @@ export function AppHeader({ className }: AppHeaderProps) {
 
               <DropdownMenuSeparator />
 
-              {/* Help - standalone */}
-              <DropdownMenuItem
-                onClick={() => navigate('/support')}
-                className="cursor-pointer hover:bg-muted focus:bg-muted"
-              >
-                <Headphones className="mr-2 h-4 w-4" />
-                <span>Help</span>
-              </DropdownMenuItem>
-
-              <DropdownMenuSeparator />
-
               {/* Terms and open source section */}
               <DropdownMenuItem
                 onClick={() => navigate('/terms')}
@@ -208,6 +197,17 @@ export function AppHeader({ className }: AppHeaderProps) {
               >
                 <FileText className="mr-2 h-4 w-4" />
                 <span>Donate</span>
+              </DropdownMenuItem>
+
+              <DropdownMenuSeparator />
+
+              {/* Help - standalone */}
+              <DropdownMenuItem
+                onClick={() => navigate('/support')}
+                className="cursor-pointer hover:bg-muted focus:bg-muted"
+              >
+                <Headphones className="mr-2 h-4 w-4" />
+                <span>Help</span>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

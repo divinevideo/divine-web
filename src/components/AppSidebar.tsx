@@ -219,16 +219,6 @@ export function AppSidebar({ className }: { className?: string }) {
           </CollapsibleContent>
         </Collapsible>
 
-        {/* Help - standalone link */}
-        <button
-          onClick={() => navigate('/support')}
-          className="flex items-center gap-2 py-1.5 text-[13px] font-semibold text-foreground transition-colors hover:text-primary"
-          style={{ fontFamily: "'Bricolage Grotesque', system-ui, sans-serif" }}
-        >
-          <Headphones className="h-3.5 w-3.5" />
-          <span>Help</span>
-        </button>
-
         {/* Expandable Terms and open source Section */}
         <Collapsible open={termsOpen} onOpenChange={setTermsOpen}>
           <CollapsibleTrigger asChild>
@@ -280,6 +270,16 @@ export function AppSidebar({ className }: { className?: string }) {
             </div>
           </CollapsibleContent>
         </Collapsible>
+
+        {/* Help - standalone link */}
+        <button
+          onClick={() => navigate('/support')}
+          className="flex items-center gap-2 py-1.5 text-[13px] font-semibold text-foreground transition-colors hover:text-primary"
+          style={{ fontFamily: "'Bricolage Grotesque', system-ui, sans-serif" }}
+        >
+          <Headphones className="h-3.5 w-3.5" />
+          <span>Help</span>
+        </button>
 
         {/* Copyright */}
         <div className="mt-3 pb-4 text-[11px] font-normal text-foreground">
