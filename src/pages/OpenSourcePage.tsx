@@ -37,7 +37,7 @@ export function OpenSourcePage() {
               Divine is a decentralized, open-source platform for short-form looping videos, built on the Nostr protocol.
               We're currently in <strong>beta testing</strong> and invite you to join us in shaping the future of creative video sharing!
             </p>
-            <div className="bg-primary/10 p-4 rounded-lg">
+            <div className="bg-brand-light-green dark:bg-brand-dark-green p-4 rounded-lg">
               <h3 className="font-semibold mb-3">Join the Beta</h3>
               <div className="space-y-2 text-sm">
                 <p className="flex items-center gap-2">
@@ -387,7 +387,7 @@ export function OpenSourcePage() {
         </Card>
 
         {/* Motto */}
-        <Card className="bg-primary/5 border-primary/20">
+        <Card className="bg-brand-light-green dark:bg-brand-dark-green border-brand-light-green dark:border-brand-dark-green">
           <CardContent className="py-8 text-center">
             <blockquote className="text-xl font-semibold italic">
               "Liberating Vine, one loop at a time"

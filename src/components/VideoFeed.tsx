@@ -239,21 +239,21 @@ export function VideoFeed({
           {[...Array(3)].map((_, i) => (
             <Card key={i} className="overflow-hidden" data-testid="video-skeleton">
               <div className="flex items-center gap-3 p-4">
-                <div className="h-10 w-10 rounded-full bg-muted/50 animate-pulse" />
+                <div className="h-10 w-10 rounded-full bg-muted animate-pulse" />
                 <div className="space-y-2">
-                  <div className="h-4 w-24 bg-muted/50 rounded animate-pulse" />
-                  <div className="h-3 w-16 bg-muted/50 rounded animate-pulse" />
+                  <div className="h-4 w-24 bg-muted rounded animate-pulse" />
+                  <div className="h-3 w-16 bg-muted rounded animate-pulse" />
                 </div>
               </div>
-              <div className="aspect-square w-full bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center">
+              <div className="aspect-square w-full bg-gradient-to-br from-brand-light-green to-brand-light-green dark:from-brand-dark-green dark:to-brand-dark-green flex items-center justify-center">
                 <div className="relative w-12 h-12">
-                  <div className="absolute inset-0 border-4 border-primary/20 rounded-full" />
+                  <div className="absolute inset-0 border-4 border-brand-light-green dark:border-brand-dark-green rounded-full" />
                   <div className="absolute inset-0 border-4 border-transparent border-t-primary rounded-full animate-spin" />
                 </div>
               </div>
               <div className="p-4 space-y-2">
-                <div className="h-4 w-full bg-muted/50 rounded animate-pulse" />
-                <div className="h-4 w-4/5 bg-muted/50 rounded animate-pulse" />
+                <div className="h-4 w-full bg-muted rounded animate-pulse" />
+                <div className="h-4 w-4/5 bg-muted rounded animate-pulse" />
               </div>
             </Card>
           ))}
@@ -298,7 +298,7 @@ export function VideoFeed({
         data-hashtag-testid={hashtagTestId}
         data-profile-testid={profileTestId}
       >
-        <Card className="border-dashed border-2 border-primary/20 bg-primary/5">
+        <Card className="border-dashed border-2 border-brand-light-green dark:border-brand-dark-green bg-brand-light-green dark:bg-brand-dark-green">
           <CardContent className="py-16 px-8 text-center">
             <div className="max-w-md mx-auto space-y-6">
               {/* Show reclining Divine image for discovery/trending/classics feeds when no videos */}
@@ -318,15 +318,15 @@ export function VideoFeed({
                     <p className="text-sm text-muted-foreground">
                       Check back soon for new videos
                     </p>
-                    <p className="text-xs text-muted-foreground/60 italic mt-4">
+                    <p className="text-xs text-muted-foreground font-light italic mt-4">
                       Photo by Marcus Leatherdale
                     </p>
                   </div>
                 </>
               ) : (
                 <>
-                  <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
-                    <Video className="h-8 w-8 text-primary/60" />
+                  <div className="w-16 h-16 rounded-full bg-brand-light-green dark:bg-brand-dark-green flex items-center justify-center mx-auto">
+                    <Video className="h-8 w-8 text-primary" />
                   </div>
                   <div className="space-y-2">
                     <p className="text-lg font-medium text-foreground">

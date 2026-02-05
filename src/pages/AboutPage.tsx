@@ -18,7 +18,7 @@ export function AboutPage() {
 
       <div className="space-y-8">
         {/* The Story */}
-        <Card className="border-2 border-primary/20">
+        <Card className="border-2 border-brand-light-green dark:border-brand-dark-green">
           <CardHeader>
             <CardTitle>The Story Behind diVine</CardTitle>
           </CardHeader>
@@ -34,7 +34,7 @@ export function AboutPage() {
                   <span>Our Mission: Social Media By Humans, For Humans</span>
                 </Link>
               </Button>
-              <div className="bg-muted/50 p-4 rounded-lg border">
+              <div className="bg-brand-light-green dark:bg-brand-dark-green p-4 rounded-lg border">
                 <p className="text-sm text-muted-foreground mb-2">
                   <strong>In the News:</strong>
                 </p>
@@ -73,7 +73,7 @@ export function AboutPage() {
               six-second videos capturing spontaneous moments of creativity. When Twitter shut down Vine,
               millions of creative videos were lost.
             </p>
-            <div className="bg-muted/50 p-4 rounded-lg border">
+            <div className="bg-brand-light-green dark:bg-brand-dark-green p-4 rounded-lg border">
               <p className="text-muted-foreground">
                 <strong>Important:</strong> diVine is an independent short-form video app with no affiliation
                 to X (formerly Twitter) or the original Vine platform. We're a separate project built on

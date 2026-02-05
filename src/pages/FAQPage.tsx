@@ -196,7 +196,7 @@ export function FAQPage() {
                     </p>
                   </div>
 
-                  <div className="mt-4 pt-4 border-t bg-primary/5 p-4 rounded-lg">
+                  <div className="mt-4 pt-4 border-t bg-brand-light-green dark:bg-brand-dark-green p-4 rounded-lg">
                     <p className="font-semibold mb-2">Do you have old videos to share?</p>
                     <p>
                       If you have collections of archived short-form videos (with or without metadata), we'd love to
@@ -359,7 +359,7 @@ export function FAQPage() {
                   <p>
                     Jack Dorsey explains his support:
                   </p>
-                  <blockquote className="border-l-4 border-primary/30 pl-4 italic text-sm">
+                  <blockquote className="border-l-4 border-brand-light-green dark:border-brand-dark-green pl-4 italic text-sm">
                     "Nostr - the underlying open source protocol being used by Divine - is empowering developers to create a new generation of apps without the need for VC-backing, toxic business models or huge teams of engineers. The reason I funded the non-profit, and Other Stuff, is to allow creative engineers like Rabble to show what's possible in this new world, by using permissionless protocols which can't be shut down based on the whim of a corporate owner."
                   </blockquote>
                 </div>
@@ -695,7 +695,7 @@ export function FAQPage() {
 
               <FAQQuestion value="report" question="How do I report inappropriate content?">
                 <div className="text-muted-foreground space-y-2">
-                  <div className="p-3 bg-primary/10 border border-primary/20 rounded-lg">
+                  <div className="p-3 bg-brand-light-green dark:bg-brand-dark-green border border-brand-light-green dark:border-brand-dark-green rounded-lg">
                     <p className="font-semibold text-destructive mb-2">
                       24-Hour Response Commitment
                     </p>
@@ -942,7 +942,7 @@ export function FAQPage() {
                     </ul>
                   </div>
 
-                  <div className="p-3 bg-primary/10 border border-primary/20 rounded-lg">
+                  <div className="p-3 bg-brand-light-green dark:bg-brand-dark-green border border-brand-light-green dark:border-brand-dark-green rounded-lg">
                     <p className="font-semibold mb-2">Always Open and Permissionless</p>
                     <p>
                       The diVine system will always be open source using permissionless open protocols. This means:
@@ -1070,7 +1070,7 @@ export function FAQPage() {
         </Card>
 
         {/* Still have questions? */}
-        <Card className="bg-primary/5 border-primary/20">
+        <Card className="bg-brand-light-green dark:bg-brand-dark-green border-brand-light-green dark:border-brand-dark-green">
           <CardHeader>
             <CardTitle>Still have questions?</CardTitle>
           </CardHeader>

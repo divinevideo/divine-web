@@ -99,9 +99,9 @@ export function VideoReactionsModal({
             </div>
           ) : !items || items.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-64 text-center px-6">
-              <Icon className={cn('h-12 w-12 text-muted-foreground/50 mb-4', type === 'likes' && 'fill-muted-foreground/50')} />
+              <Icon className={cn('h-12 w-12 text-muted-foreground mb-4', type === 'likes' && 'fill-muted-foreground')} />
               <p className="text-muted-foreground">No {title.toLowerCase()} yet</p>
-              <p className="text-sm text-muted-foreground/70 mt-1">
+              <p className="text-sm text-muted-foreground font-light mt-1">
                 Be the first to {type === 'likes' ? 'like' : 'repost'} this video!
               </p>
             </div>

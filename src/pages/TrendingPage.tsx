@@ -33,7 +33,7 @@ export function TrendingPage() {
                     flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all
                     ${isSelected
                       ? 'bg-primary text-primary-foreground shadow-md'
-                      : 'bg-muted/50 hover:bg-muted text-muted-foreground hover:text-foreground'
+                      : 'bg-brand-light-green dark:bg-brand-dark-green hover:bg-muted text-muted-foreground hover:text-foreground'
                     }
                   `}
                 >

@@ -3,7 +3,7 @@ import { HubSpotSignup } from './HubSpotSignup';
 
 export function AppFooter() {
   return (
-    <footer className="mt-auto border-t border-primary/10 py-6 pb-[calc(1.5rem+4rem+env(safe-area-inset-bottom))] md:pb-6 bg-muted/30">
+    <footer className="mt-auto border-t border-brand-light-green py-6 pb-[calc(1.5rem+4rem+env(safe-area-inset-bottom))] md:pb-6 bg-brand-light-green dark:border-brand-dark-green dark:bg-brand-dark-green">
       <div className="container">
         <div className="max-w-5xl mx-auto">
           {/* Main Footer Content - Side by side on desktop */}
@@ -23,14 +23,14 @@ export function AppFooter() {
               <div className="flex flex-wrap items-center gap-3 text-sm">
                 <SmartLink
                   to="/human-created"
-                  className="font-semibold text-primary hover:text-primary/80 transition-colors"
+                  className="font-semibold text-primary hover:text-brand-green transition-colors"
                 >
                   Made with Love
                 </SmartLink>
                 <span className="text-muted-foreground">•</span>
                 <SmartLink
                   to="/proofmode"
-                  className="font-semibold text-primary hover:text-primary/80 transition-colors"
+                  className="font-semibold text-primary hover:text-brand-green transition-colors"
                 >
                   No AI Slop
                 </SmartLink>
@@ -204,7 +204,7 @@ export function AppFooter() {
           </div>
 
           {/* Build Info */}
-          <div className="text-center text-xs text-muted-foreground/50 pt-4 border-t border-primary/5">
+          <div className="text-center text-xs text-muted-foreground font-light pt-4 border-t border-brand-light-green dark:border-brand-dark-green">
             Build: {__BUILD_DATE__}
           </div>
         </div>

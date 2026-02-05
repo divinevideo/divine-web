@@ -17,8 +17,8 @@
 
     /* Brand primary: #27C58B -> hsl(158 67% 46%) */
     --primary: 158 67% 46%;
-    /* Near-black for WCAG AA contrast on green buttons */
-    --primary-foreground: 0 0% 2%;
+    /* Brand Dark Green for text on green buttons - 7.5:1 contrast ratio */
+    --primary-foreground: 158 67% 8%;
 
     /* Brand palette */
     --brand-green: 158 67% 46%;        /* #27C58B - same as primary */
@@ -26,14 +26,28 @@
     --brand-light-green: 114 88% 90%;  /* #D0FBCB */
     --brand-off-white: 30 18% 97%;     /* #F9F7F6 */
 
-    /* Secondary palette for accents */
+    /* Secondary palette for accents (full, light, dark variants) */
     --brand-yellow: 56 100% 62%;       /* #FFF140 */
+    --brand-yellow-light: 56 100% 86%; /* #FFFAB8 */
+    --brand-yellow-dark: 53 50% 14%;   /* #363313 */
     --brand-lime: 79 100% 63%;         /* #D2FF40 */
+    --brand-lime-light: 79 100% 89%;   /* #F1FFC8 */
+    --brand-lime-dark: 79 50% 12%;     /* #272F0E */
     --brand-pink: 338 100% 75%;        /* #FF7FAF */
+    --brand-pink-light: 338 100% 93%;  /* #FFDEEA */
+    --brand-pink-dark: 338 70% 15%;    /* #3E0C1F */
     --brand-orange: 20 100% 63%;       /* #FF7640 */
+    --brand-orange-light: 20 100% 89%; /* #FFD8C9 */
+    --brand-orange-dark: 20 64% 17%;   /* #471F10 */
     --brand-violet: 236 100% 82%;      /* #A3A9FF */
+    --brand-violet-light: 236 100% 94%; /* #E1E3FF */
+    --brand-violet-dark: 254 40% 22%;  /* #2D214D */
     --brand-purple: 254 100% 70%;      /* #8568FF */
+    --brand-purple-light: 254 100% 91%; /* #DDD4FF */
+    --brand-purple-dark: 254 72% 21%;  /* #231557 */
     --brand-blue: 196 86% 57%;         /* #34BBF1 */
+    --brand-blue-light: 196 95% 90%;   /* #CCEEFE */
+    --brand-blue-dark: 207 72% 14%;    /* #0A223C */
 
     --secondary: 30 18% 94%;
     --secondary-foreground: 158 67% 8%;
@@ -107,14 +121,28 @@
     --brand-light-green: 114 88% 90%;  /* #D0FBCB */
     --brand-off-white: 30 18% 97%;     /* #F9F7F6 */
 
-    /* Secondary palette for accents */
+    /* Secondary palette for accents (full, light, dark variants) */
     --brand-yellow: 56 100% 62%;       /* #FFF140 */
+    --brand-yellow-light: 56 100% 86%; /* #FFFAB8 */
+    --brand-yellow-dark: 53 50% 14%;   /* #363313 */
     --brand-lime: 79 100% 63%;         /* #D2FF40 */
+    --brand-lime-light: 79 100% 89%;   /* #F1FFC8 */
+    --brand-lime-dark: 79 50% 12%;     /* #272F0E */
     --brand-pink: 338 100% 75%;        /* #FF7FAF */
+    --brand-pink-light: 338 100% 93%;  /* #FFDEEA */
+    --brand-pink-dark: 338 70% 15%;    /* #3E0C1F */
     --brand-orange: 20 100% 63%;       /* #FF7640 */
+    --brand-orange-light: 20 100% 89%; /* #FFD8C9 */
+    --brand-orange-dark: 20 64% 17%;   /* #471F10 */
     --brand-violet: 236 100% 82%;      /* #A3A9FF */
+    --brand-violet-light: 236 100% 94%; /* #E1E3FF */
+    --brand-violet-dark: 254 40% 22%;  /* #2D214D */
     --brand-purple: 254 100% 70%;      /* #8568FF */
+    --brand-purple-light: 254 100% 91%; /* #DDD4FF */
+    --brand-purple-dark: 254 72% 21%;  /* #231557 */
     --brand-blue: 196 86% 57%;         /* #34BBF1 */
+    --brand-blue-light: 196 95% 90%;   /* #CCEEFE */
+    --brand-blue-dark: 207 72% 14%;    /* #0A223C */
 
     --secondary: 217.2 32.6% 17.5%;
     --secondary-foreground: 210 40% 98%;
@@ -197,22 +225,18 @@
     @apply bg-brand-light-green text-brand-dark-green;
   }
 
-  /* Global scrollbar styling - uses brand Light Green */
+  /* Global scrollbar styling - subtle, theme-aware */
   * {
     scrollbar-width: thin;
-    scrollbar-color: hsl(var(--brand-light-green)) transparent;
+    scrollbar-color: hsl(var(--border)) transparent;
   }
 
   *::-webkit-scrollbar { width: 8px; height: 8px; }
   *::-webkit-scrollbar-track { background: transparent; }
   *::-webkit-scrollbar-thumb {
-    background: hsl(var(--brand-light-green));
+    background: hsl(var(--border));
     border-radius: 9999px;
   }
-
-  /* Dark mode: use brand Green for better visibility */
-  .dark * { scrollbar-color: hsl(var(--brand-green)) transparent; }
-  .dark *::-webkit-scrollbar-thumb { background: hsl(var(--brand-green)); }
 
   /* Safe area support for mobile bottom navigation */
   @supports (padding-bottom: env(safe-area-inset-bottom)) {

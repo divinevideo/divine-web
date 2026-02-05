@@ -30,7 +30,7 @@ export function AppHeader({ className }: AppHeaderProps) {
   };
 
   return (
-    <header className={cn("sticky top-0 z-50 w-full border-b border-primary/10 bg-background/80 backdrop-blur-md shadow-sm", className)}>
+    <header className={cn("sticky top-0 z-50 w-full border-b border-brand-light-green bg-background backdrop-blur-md shadow-sm dark:border-brand-dark-green", className)}>
       <div className="container flex h-16 items-center justify-between">
         <div className="flex items-center gap-4">
           <button
@@ -53,7 +53,7 @@ export function AppHeader({ className }: AppHeaderProps) {
               onClick={() => navigate('/')}
               className={cn(
                 "hidden md:flex items-center gap-2",
-                isActive('/') && "bg-primary/10 text-primary"
+                isActive('/') && "bg-brand-light-green text-primary dark:bg-brand-dark-green"
               )}
             >
               <Home className="h-4 w-4" />
@@ -66,7 +66,7 @@ export function AppHeader({ className }: AppHeaderProps) {
             onClick={() => navigate('/discovery')}
             className={cn(
               "hidden md:flex items-center gap-2",
-              isActive('/discovery') && "bg-primary/10 text-primary"
+              isActive('/discovery') && "bg-brand-light-green text-primary dark:bg-brand-dark-green"
             )}
           >
             <Compass className="h-4 w-4" />
@@ -78,7 +78,7 @@ export function AppHeader({ className }: AppHeaderProps) {
             onClick={() => navigate('/search')}
             className={cn(
               "hidden md:flex items-center gap-2",
-              isActive('/search') && "bg-primary/10 text-primary"
+              isActive('/search') && "bg-brand-light-green text-primary dark:bg-brand-dark-green"
             )}
           >
             <Search className="h-4 w-4" />
@@ -108,7 +108,7 @@ export function AppHeader({ className }: AppHeaderProps) {
             <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuItem
                 onClick={() => navigate('/about')}
-                className="cursor-pointer hover:!bg-transparent hover:outline hover:outline-1 hover:outline-primary/30 focus:!bg-transparent focus:outline focus:outline-1 focus:outline-primary"
+                className="cursor-pointer hover:!bg-transparent hover:outline hover:outline-1 hover:outline-brand-light-green focus:!bg-transparent focus:outline focus:outline-1 focus:outline-primary dark:hover:outline-brand-green"
               >
                 <Info className="mr-2 h-4 w-4" />
                 <span>About</span>
@@ -116,7 +116,7 @@ export function AppHeader({ className }: AppHeaderProps) {
 
               <DropdownMenuItem
                 onClick={() => window.location.href = 'https://about.divine.video/faqs/'}
-                className="cursor-pointer hover:!bg-transparent hover:outline hover:outline-1 hover:outline-primary/30 focus:!bg-transparent focus:outline focus:outline-1 focus:outline-primary"
+                className="cursor-pointer hover:!bg-transparent hover:outline hover:outline-1 hover:outline-brand-light-green focus:!bg-transparent focus:outline focus:outline-1 focus:outline-primary dark:hover:outline-brand-green"
               >
                 <HelpCircle className="mr-2 h-4 w-4" />
                 <span>FAQ</span>
@@ -124,7 +124,7 @@ export function AppHeader({ className }: AppHeaderProps) {
 
               <DropdownMenuItem
                 onClick={() => navigate('/support')}
-                className="cursor-pointer hover:!bg-transparent hover:outline hover:outline-1 hover:outline-primary/30 focus:!bg-transparent focus:outline focus:outline-1 focus:outline-primary"
+                className="cursor-pointer hover:!bg-transparent hover:outline hover:outline-1 hover:outline-brand-light-green focus:!bg-transparent focus:outline focus:outline-1 focus:outline-primary dark:hover:outline-brand-green"
               >
                 <Headphones className="mr-2 h-4 w-4" />
                 <span>Support</span>
@@ -132,7 +132,7 @@ export function AppHeader({ className }: AppHeaderProps) {
 
               <DropdownMenuItem
                 onClick={() => navigate('/open-source')}
-                className="cursor-pointer hover:!bg-transparent hover:outline hover:outline-1 hover:outline-primary/30 focus:!bg-transparent focus:outline focus:outline-1 focus:outline-primary"
+                className="cursor-pointer hover:!bg-transparent hover:outline hover:outline-1 hover:outline-brand-light-green focus:!bg-transparent focus:outline focus:outline-1 focus:outline-primary dark:hover:outline-brand-green"
               >
                 <Code2 className="mr-2 h-4 w-4" />
                 <span>Open Source</span>
@@ -140,7 +140,7 @@ export function AppHeader({ className }: AppHeaderProps) {
 
               <DropdownMenuItem
                 onClick={() => window.location.href = 'https://about.divine.video/media-resources/'}
-                className="cursor-pointer hover:!bg-transparent hover:outline hover:outline-1 hover:outline-primary/30 focus:!bg-transparent focus:outline focus:outline-1 focus:outline-primary"
+                className="cursor-pointer hover:!bg-transparent hover:outline hover:outline-1 hover:outline-brand-light-green focus:!bg-transparent focus:outline focus:outline-1 focus:outline-primary dark:hover:outline-brand-green"
               >
                 <FileText className="mr-2 h-4 w-4" />
                 <span>Media Resources</span>

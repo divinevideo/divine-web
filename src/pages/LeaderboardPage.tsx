@@ -81,7 +81,7 @@ function VideoLeaderboardSkeleton() {
   return (
     <div className="space-y-3">
       {[1, 2, 3, 4, 5].map((i) => (
-        <div key={i} className="flex items-center gap-4 p-3 rounded-lg bg-muted/50">
+        <div key={i} className="flex items-center gap-4 p-3 rounded-lg bg-brand-light-green dark:bg-brand-dark-green">
           <Skeleton className="h-8 w-8 rounded-full" />
           <Skeleton className="h-16 w-24 rounded" />
           <div className="flex-1 space-y-2">
@@ -99,7 +99,7 @@ function CreatorLeaderboardSkeleton() {
   return (
     <div className="space-y-3">
       {[1, 2, 3, 4, 5].map((i) => (
-        <div key={i} className="flex items-center gap-4 p-3 rounded-lg bg-muted/50">
+        <div key={i} className="flex items-center gap-4 p-3 rounded-lg bg-brand-light-green dark:bg-brand-dark-green">
           <Skeleton className="h-8 w-8 rounded-full" />
           <Skeleton className="h-12 w-12 rounded-full" />
           <div className="flex-1 space-y-2">
@@ -115,9 +115,9 @@ function CreatorLeaderboardSkeleton() {
 
 function RankBadge({ rank }: { rank: number }) {
   const colors = {
-    1: 'bg-yellow-500 text-yellow-950',
-    2: 'bg-gray-300 text-gray-800',
-    3: 'bg-amber-600 text-amber-100',
+    1: 'bg-brand-yellow text-brand-dark-green',
+    2: 'bg-brand-violet-light text-brand-dark-green',
+    3: 'bg-brand-orange text-brand-dark-green',
   };
 
   const color = colors[rank as keyof typeof colors] || 'bg-muted text-muted-foreground';
@@ -234,7 +234,7 @@ function VideoLeaderboard({ period }: { period: TimePeriod }) {
           <Link
             key={video.id}
             to={`/video/${video.id}`}
-            className="flex items-center gap-4 p-3 rounded-lg hover:bg-muted/50 transition-colors"
+            className="flex items-center gap-4 p-3 rounded-lg hover:bg-brand-light-green dark:bg-brand-dark-green transition-colors"
           >
             <RankBadge rank={index + 1} />
 
@@ -335,7 +335,7 @@ function CreatorLeaderboard({ period }: { period: TimePeriod }) {
           <Link
             key={creator.pubkey}
             to={`/profile/${npub}`}
-            className="flex items-center gap-4 p-3 rounded-lg hover:bg-muted/50 transition-colors"
+            className="flex items-center gap-4 p-3 rounded-lg hover:bg-brand-light-green dark:bg-brand-dark-green transition-colors"
           >
             <RankBadge rank={index + 1} />
 
@@ -425,7 +425,7 @@ export function LeaderboardPage() {
                         flex items-center gap-1.5
                         ${timePeriod === period
                           ? 'bg-primary text-primary-foreground'
-                          : 'bg-muted hover:bg-muted/80 text-muted-foreground'
+                          : 'bg-muted hover:bg-brand-light-green dark:hover:bg-brand-dark-green text-muted-foreground'
                         }
                       `}
                     >

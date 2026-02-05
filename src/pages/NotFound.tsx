@@ -36,11 +36,11 @@ const NotFound = () => {
         </h1>
 
         {/* Campy Message */}
-        <h2 className="text-3xl md:text-4xl font-bold mb-4 text-gray-900 dark:text-gray-100">
+        <h2 className="text-3xl md:text-4xl font-bold mb-4 text-foreground">
           This Page is <span className="text-primary font-pacifico">Divine</span>...ly Missing!
         </h2>
 
-        <p className="text-xl text-gray-700 dark:text-gray-300 mb-8">
+        <p className="text-xl text-muted-foreground mb-8">
           Even icons take wrong turns sometimes ✨
         </p>
 
@@ -48,7 +48,7 @@ const NotFound = () => {
         <Button
           asChild
           size="lg"
-          className="bg-primary hover:bg-primary/90 text-white font-semibold px-8 py-6 text-lg shadow-lg hover:shadow-xl transition-all"
+          className="bg-primary hover:brightness-110 text-white font-semibold px-8 py-6 text-lg shadow-lg hover:shadow-xl transition-all"
         >
           <a href="/">Get Me Outta Here!</a>
         </Button>

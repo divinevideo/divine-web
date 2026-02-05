@@ -313,7 +313,7 @@ export function TermsPage() {
         </Card>
 
         {/* Contact Information */}
-        <Card className="bg-primary/5 border-primary/20">
+        <Card className="bg-brand-light-green dark:bg-brand-dark-green border-brand-light-green dark:border-brand-dark-green">
           <CardHeader>
             <CardTitle>Contact Information</CardTitle>
           </CardHeader>

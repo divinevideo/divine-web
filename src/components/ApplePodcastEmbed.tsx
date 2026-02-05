@@ -43,7 +43,7 @@ export function ApplePodcastEmbed({
                 />
                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
                   <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                    <div className="w-12 h-12 rounded-full bg-primary/90 flex items-center justify-center">
+                    <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center">
                       <Play className="h-6 w-6 text-primary-foreground ml-0.5" fill="currentColor" />
                     </div>
                   </div>
@@ -84,7 +84,7 @@ export function ApplePodcastEmbed({
                 href={episodeUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex-shrink-0 text-primary hover:text-primary/80 transition-colors"
+                className="flex-shrink-0 text-primary hover:text-brand-green transition-colors"
                 aria-label="Open in Apple Podcasts"
               >
                 <ExternalLink className="h-5 w-5" />
@@ -97,7 +97,7 @@ export function ApplePodcastEmbed({
                 href={episodeUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors text-sm font-medium"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:brightness-110 transition-colors text-sm font-medium"
               >
                 <Play className="h-4 w-4" fill="currentColor" />
                 Play Episode

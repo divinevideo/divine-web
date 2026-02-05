@@ -92,7 +92,7 @@ export function VideoGrid({ videos, loading = false, className, navigationContex
         {[...Array(6)].map((_, i) => (
           <Card key={i} className="overflow-hidden" data-testid="video-skeleton">
             <div className="aspect-square relative bg-black/80 flex items-center justify-center">
-              <div className="w-8 h-8 border-2 border-muted-foreground/30 border-t-muted-foreground/60 rounded-full animate-spin" />
+              <div className="w-8 h-8 border-2 border-brand-light-green border-t-brand-green rounded-full animate-spin" />
             </div>
           </Card>
         ))}

@@ -60,7 +60,7 @@ export function DeleteCommentDialog({
         <div className="space-y-4 py-4">
           {/* Comment preview */}
           {comment.content && (
-            <div className="rounded-lg border p-3 bg-muted/50">
+            <div className="rounded-lg border p-3 bg-brand-light-green dark:bg-brand-dark-green">
               <p className="text-sm line-clamp-3">{comment.content}</p>
             </div>
           )}
@@ -84,8 +84,8 @@ export function DeleteCommentDialog({
           </div>
 
           {/* Warning */}
-          <div className="bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-900/50 rounded-lg p-3">
-            <p className="text-sm text-yellow-900 dark:text-yellow-200">
+          <div className="bg-brand-yellow-light border border-brand-yellow rounded-lg p-3 dark:bg-brand-yellow-dark">
+            <p className="text-sm text-brand-yellow-dark dark:text-brand-yellow-light">
               <strong>Note:</strong> While most relays will remove your comment, deletion is not guaranteed. Some relays may choose to keep the content, and users who have already seen it will still have access.
             </p>
           </div>

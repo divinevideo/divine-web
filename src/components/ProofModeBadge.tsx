@@ -75,7 +75,7 @@ export function ProofModeBadge({ level, proofData, className, showDetails = fals
           <div className="space-y-2 text-sm">
             {proofData.deviceAttestation && (
               <div className="flex items-start gap-2">
-                <ShieldCheck className="h-4 w-4 mt-0.5 text-green-600 dark:text-green-400 flex-shrink-0" />
+                <ShieldCheck className="h-4 w-4 mt-0.5 text-brand-dark-green dark:text-brand-green flex-shrink-0" />
                 <div>
                   <p className="font-medium">Hardware Attestation</p>
                   <p className="text-xs text-muted-foreground">
@@ -87,7 +87,7 @@ export function ProofModeBadge({ level, proofData, className, showDetails = fals
 
             {proofData.pgpFingerprint && (
               <div className="flex items-start gap-2">
-                <Shield className="h-4 w-4 mt-0.5 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+                <Shield className="h-4 w-4 mt-0.5 text-brand-blue-dark dark:text-brand-blue flex-shrink-0" />
                 <div>
                   <p className="font-medium">Cryptographic Signature</p>
                   <p className="text-xs text-muted-foreground font-mono break-all">
@@ -151,8 +151,8 @@ function getProofModeConfig(level: ProofModeLevel) {
       return {
         icon: HumanMadeIcon,
         label: 'Human Made',
-        className: 'border-green-600 text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-950/20',
-        iconColor: 'text-green-600 dark:text-green-400',
+        className: 'border-brand-green text-brand-dark-green dark:text-brand-green bg-brand-light-green dark:bg-brand-dark-green',
+        iconColor: 'text-brand-dark-green dark:text-brand-green',
         tooltip: 'Human made - captured on secure mobile device with ProofMode',
         description: 'This video was captured by a human on a mobile device with hardware-backed security attestation. ProofMode provides cryptographic proof that the content is authentic and has not been tampered with.'
       };
@@ -160,8 +160,8 @@ function getProofModeConfig(level: ProofModeLevel) {
       return {
         icon: HumanMadeIcon,
         label: 'Human Made',
-        className: 'border-blue-600 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/20',
-        iconColor: 'text-blue-600 dark:text-blue-400',
+        className: 'border-brand-blue text-brand-blue-dark dark:text-brand-blue bg-brand-blue-light dark:bg-brand-blue-dark',
+        iconColor: 'text-brand-blue-dark dark:text-brand-blue',
         tooltip: 'Human made - valid ProofMode signature',
         description: 'This video was created by a human and has been cryptographically signed with ProofMode. The signature confirms the content has not been altered since creation.'
       };
@@ -169,8 +169,8 @@ function getProofModeConfig(level: ProofModeLevel) {
       return {
         icon: ShieldAlert,
         label: 'Basic Proof',
-        className: 'border-yellow-600 text-yellow-600 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-950/20',
-        iconColor: 'text-yellow-600 dark:text-yellow-400',
+        className: 'border-brand-yellow text-brand-yellow-dark dark:text-brand-yellow bg-brand-yellow-light dark:bg-brand-yellow-dark',
+        iconColor: 'text-brand-yellow-dark dark:text-brand-yellow',
         tooltip: 'Basic proof - valid signature, integrity verified',
         description: 'This video includes basic cryptographic proof data. Some verification information is present but it does not meet the full criteria for verified status.'
       };

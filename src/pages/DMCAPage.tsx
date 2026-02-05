@@ -13,7 +13,7 @@ export function DMCAPage() {
 
       <div className="space-y-8">
         {/* Fair Use */}
-        <Card className="border-2 border-primary/20">
+        <Card className="border-2 border-brand-light-green dark:border-brand-dark-green">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Scale className="h-5 w-5 text-primary" />
@@ -92,7 +92,7 @@ export function DMCAPage() {
               your rights and will process valid DMCA takedown requests.
             </p>
 
-            <div className="bg-muted/50 p-4 rounded-lg border">
+            <div className="bg-brand-light-green dark:bg-brand-dark-green p-4 rounded-lg border">
               <h3 className="font-semibold mb-3">To File a DMCA Takedown Request:</h3>
               <p className="text-sm text-muted-foreground mb-3">
                 Your notice must include the following information as required by the Digital Millennium Copyright Act:
@@ -118,7 +118,7 @@ export function DMCAPage() {
               </ol>
             </div>
 
-            <div className="bg-primary/5 p-4 rounded-lg border border-primary/20">
+            <div className="bg-brand-light-green dark:bg-brand-dark-green p-4 rounded-lg border border-brand-light-green dark:border-brand-dark-green">
               <h3 className="font-semibold mb-2 flex items-center gap-2">
                 <Mail className="h-4 w-4" />
                 Send DMCA Notices To:
@@ -173,7 +173,7 @@ export function DMCAPage() {
         </Card>
 
         {/* Contact */}
-        <Card className="border-2 border-primary/20">
+        <Card className="border-2 border-brand-light-green dark:border-brand-dark-green">
           <CardHeader>
             <CardTitle>Questions?</CardTitle>
           </CardHeader>

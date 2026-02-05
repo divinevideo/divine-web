@@ -53,7 +53,7 @@ export function DebugVideoPage() {
                   
                   <button
                     onClick={() => setTestingUrl(testingUrl === video.videoUrl ? null : video.videoUrl)}
-                    className="px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90"
+                    className="px-4 py-2 bg-primary text-primary-foreground rounded hover:brightness-110"
                   >
                     {testingUrl === video.videoUrl ? 'Hide Player' : 'Test This URL'}
                   </button>

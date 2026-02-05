@@ -130,7 +130,7 @@ export function Comment({ root, comment, depth = 0, maxDepth = 3, limit, parentC
             <div className="flex items-start justify-between">
               <div className="flex items-center space-x-3">
                 <SmartLink to={`/${nip19.npubEncode(comment.pubkey)}`} ownerPubkey={comment.pubkey}>
-                  <Avatar className="h-8 w-8 hover:ring-2 hover:ring-primary/30 transition-all cursor-pointer">
+                  <Avatar className="h-8 w-8 hover:ring-2 hover:ring-brand-light-green dark:ring-brand-green transition-all cursor-pointer">
                     <AvatarImage src={metadata?.picture} />
                     <AvatarFallback className="text-xs">
                       {displayName.charAt(0)}
@@ -155,7 +155,7 @@ export function Comment({ root, comment, depth = 0, maxDepth = 3, limit, parentC
 
             {/* Reply Preview - Show what comment this is replying to */}
             {parentComment && (
-              <div className="flex items-start gap-2 px-3 py-2 bg-muted/30 rounded-md border-l-2 border-muted-foreground/20">
+              <div className="flex items-start gap-2 px-3 py-2 bg-brand-light-green dark:bg-brand-dark-green rounded-md border-l-2 border-brand-light-green dark:border-brand-dark-green">
                 <CornerDownRight className="h-3 w-3 text-muted-foreground shrink-0 mt-0.5" />
                 <div className="flex items-center gap-2 min-w-0 flex-1">
                   <Avatar className="h-4 w-4 shrink-0">

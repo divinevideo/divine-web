@@ -37,8 +37,8 @@ const Index = () => {
             <Card className="border-dashed border-2">
               <CardContent className="py-16 px-8 text-center">
                 <div className="max-w-sm mx-auto space-y-4">
-                  <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
-                    <Users className="h-8 w-8 text-primary/60" />
+                  <div className="w-16 h-16 rounded-full bg-brand-light-green dark:bg-brand-dark-green flex items-center justify-center mx-auto">
+                    <Users className="h-8 w-8 text-primary" />
                   </div>
                   <div className="space-y-2">
                     <p className="text-lg font-medium text-foreground">

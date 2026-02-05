@@ -320,7 +320,7 @@ const SignupDialog: React.FC<SignupDialogProps> = ({ isOpen, onClose, onComplete
           {/* Welcome Step */}
           {step === 'welcome' && (
             <div className='text-center space-y-6'>
-              <div className='w-24 h-24 mx-auto bg-primary/10 rounded-full flex items-center justify-center'>
+              <div className='w-24 h-24 mx-auto bg-brand-light-green dark:bg-brand-dark-green rounded-full flex items-center justify-center'>
                 <Key className='w-12 h-12 text-primary' />
               </div>
 
@@ -360,14 +360,14 @@ const SignupDialog: React.FC<SignupDialogProps> = ({ isOpen, onClose, onComplete
             <div className='text-center space-y-6'>
               {isLoading ? (
                 <div className='space-y-4'>
-                  <div className='w-24 h-24 mx-auto bg-primary/10 rounded-full flex items-center justify-center'>
+                  <div className='w-24 h-24 mx-auto bg-brand-light-green dark:bg-brand-dark-green rounded-full flex items-center justify-center'>
                     <div className='w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin'></div>
                   </div>
                   <p className='text-muted-foreground'>Generating key...</p>
                 </div>
               ) : (
                 <>
-                  <div className='w-24 h-24 mx-auto bg-primary/10 rounded-full flex items-center justify-center'>
+                  <div className='w-24 h-24 mx-auto bg-brand-light-green dark:bg-brand-dark-green rounded-full flex items-center justify-center'>
                     <Key className='w-12 h-12 text-primary' />
                   </div>
 
@@ -394,7 +394,7 @@ const SignupDialog: React.FC<SignupDialogProps> = ({ isOpen, onClose, onComplete
           {step === 'download' && (
             <div className='text-center space-y-6'>
               <div className='space-y-4'>
-                <div className='w-24 h-24 mx-auto bg-primary/10 rounded-full flex items-center justify-center'>
+                <div className='w-24 h-24 mx-auto bg-brand-light-green dark:bg-brand-dark-green rounded-full flex items-center justify-center'>
                   <Lock className='w-12 h-12 text-primary' />
                 </div>
 
