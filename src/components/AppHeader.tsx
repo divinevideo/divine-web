@@ -9,6 +9,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useTheme } from '@/hooks/useTheme';
@@ -106,6 +107,7 @@ export function AppHeader({ className }: AppHeaderProps) {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
+              {/* About diVine section */}
               <DropdownMenuItem
                 onClick={() => navigate('/about')}
                 className="cursor-pointer hover:bg-muted focus:bg-muted"
@@ -115,11 +117,35 @@ export function AppHeader({ className }: AppHeaderProps) {
               </DropdownMenuItem>
 
               <DropdownMenuItem
-                onClick={() => window.location.href = 'https://about.divine.video/faqs/'}
+                onClick={() => window.open('https://about.divine.video/news/', '_blank')}
+                className="cursor-pointer hover:bg-muted focus:bg-muted"
+              >
+                <FileText className="mr-2 h-4 w-4" />
+                <span>News</span>
+              </DropdownMenuItem>
+
+              <DropdownMenuItem
+                onClick={() => window.open('https://about.divine.video/blog/', '_blank')}
+                className="cursor-pointer hover:bg-muted focus:bg-muted"
+              >
+                <FileText className="mr-2 h-4 w-4" />
+                <span>Blog</span>
+              </DropdownMenuItem>
+
+              <DropdownMenuItem
+                onClick={() => window.open('https://about.divine.video/faqs/', '_blank')}
                 className="cursor-pointer hover:bg-muted focus:bg-muted"
               >
                 <HelpCircle className="mr-2 h-4 w-4" />
                 <span>FAQ</span>
+              </DropdownMenuItem>
+
+              <DropdownMenuItem
+                onClick={() => window.open('https://about.divine.video/media-resources/', '_blank')}
+                className="cursor-pointer hover:bg-muted focus:bg-muted"
+              >
+                <FileText className="mr-2 h-4 w-4" />
+                <span>Media Resources</span>
               </DropdownMenuItem>
 
               <DropdownMenuItem
@@ -138,12 +164,31 @@ export function AppHeader({ className }: AppHeaderProps) {
                 <span>Open Source</span>
               </DropdownMenuItem>
 
+              <DropdownMenuSeparator />
+
+              {/* Terms & Policies section */}
               <DropdownMenuItem
-                onClick={() => window.location.href = 'https://about.divine.video/media-resources/'}
+                onClick={() => navigate('/terms')}
                 className="cursor-pointer hover:bg-muted focus:bg-muted"
               >
                 <FileText className="mr-2 h-4 w-4" />
-                <span>Media Resources</span>
+                <span>Terms</span>
+              </DropdownMenuItem>
+
+              <DropdownMenuItem
+                onClick={() => navigate('/privacy')}
+                className="cursor-pointer hover:bg-muted focus:bg-muted"
+              >
+                <FileText className="mr-2 h-4 w-4" />
+                <span>Privacy</span>
+              </DropdownMenuItem>
+
+              <DropdownMenuItem
+                onClick={() => navigate('/safety')}
+                className="cursor-pointer hover:bg-muted focus:bg-muted"
+              >
+                <FileText className="mr-2 h-4 w-4" />
+                <span>Safety</span>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
