@@ -226,7 +226,7 @@ export function AppSidebar({ className }: { className?: string }) {
               className="group flex w-full items-center gap-1 py-1.5 text-[13px] font-semibold text-foreground transition-colors hover:text-primary"
               style={{ fontFamily: "'Bricolage Grotesque', system-ui, sans-serif" }}
             >
-              <span>Terms and open source</span>
+              <span>Terms & Open Source</span>
               <ChevronDown className={cn(
                 "h-3.5 w-3.5 transition-transform duration-200",
                 termsOpen && "rotate-180"
