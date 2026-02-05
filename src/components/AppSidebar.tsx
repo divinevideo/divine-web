@@ -2,7 +2,7 @@
 // ABOUTME: Shows main nav, login/signup, expandable diVine links section
 
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Home, Compass, Search, User, Sun, Moon, ChevronDown } from 'lucide-react';
+import { Home, Compass, Search, User, Sun, Moon, ChevronDown, Headphones } from 'lucide-react';
 import { useState } from 'react';
 import { nip19 } from 'nostr-tools';
 
@@ -51,6 +51,7 @@ export function AppSidebar({ className }: { className?: string }) {
   const { displayTheme, setTheme } = useTheme();
   const { user } = useCurrentUser();
   const [divineOpen, setDivineOpen] = useState(false);
+  const [termsOpen, setTermsOpen] = useState(false);
 
   const isActive = (path: string) => location.pathname === path;
   const isDiscoveryActive = () =>
@@ -176,6 +177,12 @@ export function AppSidebar({ className }: { className?: string }) {
               >
                 About
               </button>
+              <button
+                onClick={() => navigate('/authenticity')}
+                className="transition-colors hover:text-primary"
+              >
+                Our Mission
+              </button>
               <a
                 href="https://about.divine.video/news/"
                 target="_blank"
@@ -212,27 +219,67 @@ export function AppSidebar({ className }: { className?: string }) {
           </CollapsibleContent>
         </Collapsible>
 
-        {/* Terms & Policies */}
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 pt-1 text-[12px] font-normal text-foreground">
-          <button
-            onClick={() => navigate('/terms')}
-            className="transition-colors hover:text-primary"
-          >
-            Terms
-          </button>
-          <button
-            onClick={() => navigate('/privacy')}
-            className="transition-colors hover:text-primary"
-          >
-            Privacy
-          </button>
-          <button
-            onClick={() => navigate('/safety')}
-            className="transition-colors hover:text-primary"
-          >
-            Safety
-          </button>
-        </div>
+        {/* Help - standalone link */}
+        <button
+          onClick={() => navigate('/support')}
+          className="flex items-center gap-2 py-1.5 text-[13px] font-semibold text-foreground transition-colors hover:text-primary"
+          style={{ fontFamily: "'Bricolage Grotesque', system-ui, sans-serif" }}
+        >
+          <Headphones className="h-3.5 w-3.5" />
+          <span>Help</span>
+        </button>
+
+        {/* Expandable Terms and open source Section */}
+        <Collapsible open={termsOpen} onOpenChange={setTermsOpen}>
+          <CollapsibleTrigger asChild>
+            <button
+              className="group flex w-full items-center gap-1 py-1.5 text-[13px] font-semibold text-foreground transition-colors hover:text-primary"
+              style={{ fontFamily: "'Bricolage Grotesque', system-ui, sans-serif" }}
+            >
+              <span>Terms and open source</span>
+              <ChevronDown className={cn(
+                "h-3.5 w-3.5 transition-transform duration-200",
+                termsOpen && "rotate-180"
+              )} />
+            </button>
+          </CollapsibleTrigger>
+          <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down">
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 py-2 text-[12px] font-normal text-foreground">
+              <button
+                onClick={() => navigate('/terms')}
+                className="transition-colors hover:text-primary"
+              >
+                Terms
+              </button>
+              <button
+                onClick={() => navigate('/privacy')}
+                className="transition-colors hover:text-primary"
+              >
+                Privacy
+              </button>
+              <button
+                onClick={() => navigate('/safety')}
+                className="transition-colors hover:text-primary"
+              >
+                Safety
+              </button>
+              <button
+                onClick={() => navigate('/open-source')}
+                className="transition-colors hover:text-primary"
+              >
+                Open Source
+              </button>
+              <a
+                href="https://opencollective.com/aos-collective/contribute/divine-keepers-95646"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="transition-colors hover:text-primary"
+              >
+                Donate
+              </a>
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
 
         {/* Copyright */}
         <div className="mt-3 pb-4 text-[11px] font-normal text-foreground">

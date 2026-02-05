@@ -117,6 +117,14 @@ export function AppHeader({ className }: AppHeaderProps) {
               </DropdownMenuItem>
 
               <DropdownMenuItem
+                onClick={() => navigate('/authenticity')}
+                className="cursor-pointer hover:bg-muted focus:bg-muted"
+              >
+                <FileText className="mr-2 h-4 w-4" />
+                <span>Our Mission</span>
+              </DropdownMenuItem>
+
+              <DropdownMenuItem
                 onClick={() => window.open('https://about.divine.video/news/', '_blank')}
                 className="cursor-pointer hover:bg-muted focus:bg-muted"
               >
@@ -148,25 +156,20 @@ export function AppHeader({ className }: AppHeaderProps) {
                 <span>Media Resources</span>
               </DropdownMenuItem>
 
+              <DropdownMenuSeparator />
+
+              {/* Help - standalone */}
               <DropdownMenuItem
                 onClick={() => navigate('/support')}
                 className="cursor-pointer hover:bg-muted focus:bg-muted"
               >
                 <Headphones className="mr-2 h-4 w-4" />
-                <span>Support</span>
-              </DropdownMenuItem>
-
-              <DropdownMenuItem
-                onClick={() => navigate('/open-source')}
-                className="cursor-pointer hover:bg-muted focus:bg-muted"
-              >
-                <Code2 className="mr-2 h-4 w-4" />
-                <span>Open Source</span>
+                <span>Help</span>
               </DropdownMenuItem>
 
               <DropdownMenuSeparator />
 
-              {/* Terms & Policies section */}
+              {/* Terms and open source section */}
               <DropdownMenuItem
                 onClick={() => navigate('/terms')}
                 className="cursor-pointer hover:bg-muted focus:bg-muted"
@@ -189,6 +192,22 @@ export function AppHeader({ className }: AppHeaderProps) {
               >
                 <FileText className="mr-2 h-4 w-4" />
                 <span>Safety</span>
+              </DropdownMenuItem>
+
+              <DropdownMenuItem
+                onClick={() => navigate('/open-source')}
+                className="cursor-pointer hover:bg-muted focus:bg-muted"
+              >
+                <Code2 className="mr-2 h-4 w-4" />
+                <span>Open Source</span>
+              </DropdownMenuItem>
+
+              <DropdownMenuItem
+                onClick={() => window.open('https://opencollective.com/aos-collective/contribute/divine-keepers-95646', '_blank')}
+                className="cursor-pointer hover:bg-muted focus:bg-muted"
+              >
+                <FileText className="mr-2 h-4 w-4" />
+                <span>Donate</span>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
