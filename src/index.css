@@ -39,7 +39,8 @@
     --secondary-foreground: 158 67% 8%;
 
     --muted: 30 18% 94%;
-    --muted-foreground: 158 30% 35%;
+    /* Muted text uses brand Dark Green - apply opacity via classes for hierarchy */
+    --muted-foreground: 158 67% 8%;
 
     --accent: 30 18% 94%;
     --accent-foreground: 158 67% 8%;

@@ -158,7 +158,7 @@ export function AppSidebar({ className }: { className?: string }) {
         <Collapsible open={divineOpen} onOpenChange={setDivineOpen}>
           <CollapsibleTrigger asChild>
             <button
-              className="group flex w-full items-center gap-1 py-1.5 text-[13px] font-semibold text-muted-foreground transition-colors hover:text-primary"
+              className="group flex w-full items-center gap-1 py-1.5 text-[13px] font-semibold text-foreground/70 transition-colors hover:text-primary"
               style={{ fontFamily: "'Bricolage Grotesque', system-ui, sans-serif" }}
             >
               <span>About diVine</span>
@@ -169,7 +169,7 @@ export function AppSidebar({ className }: { className?: string }) {
             </button>
           </CollapsibleTrigger>
           <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down">
-            <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 py-2 text-[12px] text-muted-foreground">
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 py-2 text-[12px] text-foreground/70">
               <button
                 onClick={() => navigate('/about')}
                 className="transition-colors hover:text-primary"
@@ -213,7 +213,7 @@ export function AppSidebar({ className }: { className?: string }) {
         </Collapsible>
 
         {/* Terms & Policies */}
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 pt-1 text-[12px] text-muted-foreground">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 pt-1 text-[12px] text-foreground/70">
           <button
             onClick={() => navigate('/terms')}
             className="transition-colors hover:text-primary"
@@ -235,7 +235,7 @@ export function AppSidebar({ className }: { className?: string }) {
         </div>
 
         {/* Copyright */}
-        <div className="mt-3 pb-4 text-[11px] text-muted-foreground">
+        <div className="mt-3 pb-4 text-[11px] text-foreground/70">
           © 2026 diVine
         </div>
         </div>
