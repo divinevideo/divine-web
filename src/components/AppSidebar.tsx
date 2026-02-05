@@ -28,10 +28,10 @@ function NavItem({ icon, label, onClick, isActive }: NavItemProps) {
     <button
       onClick={onClick}
       className={cn(
-        "group flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-[15px] font-medium transition-all duration-150",
+        "group flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-[15px] transition-all duration-150",
         isActive
-          ? "bg-primary text-primary-foreground"
-          : "text-foreground/70 hover:bg-foreground/5 hover:text-foreground"
+          ? "bg-primary text-primary-foreground font-medium"
+          : "text-foreground font-normal hover:bg-brand-light-green dark:hover:bg-brand-dark-green dark:hover:text-brand-off-white hover:font-medium"
       )}
     >
       <span className={cn(
@@ -67,7 +67,7 @@ export function AppSidebar({ className }: { className?: string }) {
   return (
     <aside
       className={cn(
-        "fixed left-0 top-0 z-40 flex h-svh w-[240px] flex-col border-r border-border/50 bg-background",
+        "fixed left-0 top-0 z-40 flex h-svh w-[240px] flex-col border-r border-brand-light-green bg-background",
         className
       )}
     >
@@ -76,7 +76,7 @@ export function AppSidebar({ className }: { className?: string }) {
         <button
           onClick={() => navigate('/')}
           aria-label="Go to home"
-          className="transition-opacity hover:opacity-70"
+          className="transition-opacity hover:opacity-80"
         >
           <img
             src="/divine-logo.svg"
@@ -127,7 +127,7 @@ export function AppSidebar({ className }: { className?: string }) {
         <div className="mt-4 px-3">
           <button
             onClick={toggleTheme}
-            className="group flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-[15px] font-medium text-foreground/70 transition-all duration-150 hover:bg-foreground/5 hover:text-foreground"
+            className="group flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-[15px] font-normal text-foreground transition-all duration-150 hover:bg-brand-light-green dark:hover:bg-brand-dark-green dark:hover:text-brand-off-white hover:font-medium"
           >
             <span className="transition-transform duration-150 group-hover:scale-105">
               {displayTheme === 'dark' ? (
@@ -146,7 +146,7 @@ export function AppSidebar({ className }: { className?: string }) {
             className={cn(
               "flex-col gap-2.5 w-full",
               "[&>button]:w-full [&>button]:justify-center [&>button]:rounded-lg [&>button]:h-11 [&>button]:text-[15px]",
-              "[&>button:first-child]:border-border/60 [&>button:first-child]:hover:border-foreground/30",
+              "[&>button:first-child]:border-brand-light-green [&>button:first-child]:hover:border-primary",
               "[&_.account-switcher]:w-full"
             )}
           />
@@ -158,7 +158,7 @@ export function AppSidebar({ className }: { className?: string }) {
         <Collapsible open={divineOpen} onOpenChange={setDivineOpen}>
           <CollapsibleTrigger asChild>
             <button
-              className="group flex w-full items-center gap-1 py-1.5 text-[13px] font-semibold text-foreground/70 transition-colors hover:text-primary"
+              className="group flex w-full items-center gap-1 py-1.5 text-[13px] font-semibold text-foreground transition-colors hover:text-primary"
               style={{ fontFamily: "'Bricolage Grotesque', system-ui, sans-serif" }}
             >
               <span>About diVine</span>
@@ -169,7 +169,7 @@ export function AppSidebar({ className }: { className?: string }) {
             </button>
           </CollapsibleTrigger>
           <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down">
-            <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 py-2 text-[12px] text-foreground/70">
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 py-2 text-[12px] font-normal text-foreground">
               <button
                 onClick={() => navigate('/about')}
                 className="transition-colors hover:text-primary"
@@ -213,7 +213,7 @@ export function AppSidebar({ className }: { className?: string }) {
         </Collapsible>
 
         {/* Terms & Policies */}
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 pt-1 text-[12px] text-foreground/70">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 pt-1 text-[12px] font-normal text-foreground">
           <button
             onClick={() => navigate('/terms')}
             className="transition-colors hover:text-primary"
@@ -235,7 +235,7 @@ export function AppSidebar({ className }: { className?: string }) {
         </div>
 
         {/* Copyright */}
-        <div className="mt-3 pb-4 text-[11px] text-foreground/70">
+        <div className="mt-3 pb-4 text-[11px] font-normal text-foreground">
           © 2026 diVine
         </div>
         </div>
