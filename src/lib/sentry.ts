@@ -43,11 +43,16 @@ export function initializeSentry() {
       }),
     ],
 
-    // Filter out noise
+    // Filter out noise - browser environment errors we can't fix
     ignoreErrors: [
-      // Browser extensions
+      // Browser extensions injecting scripts
       /^chrome-extension:\/\//,
       /^moz-extension:\/\//,
+      "Can't find variable: DarkReader",
+      '__firefox__',
+      'runtime.sendMessage',
+      "Can't find variable: CONFIG",
+      "Can't find variable: logMutedMessage",
       // Network errors that are expected
       'Network request failed',
       'Failed to fetch',
@@ -55,6 +60,7 @@ export function initializeSentry() {
       // User aborted requests
       'AbortError',
       'The operation was aborted',
+      'signal timed out',
       // Video playback errors (common, usually not actionable)
       'The play() request was interrupted',
       'NotAllowedError: The request is not allowed',
@@ -64,6 +70,23 @@ export function initializeSentry() {
       // React DOM errors caused by browser extensions modifying the DOM
       "Failed to execute 'removeChild' on 'Node'",
       "Failed to execute 'insertBefore' on 'Node'",
+      // IndexedDB/storage errors (privacy mode, iOS Safari, cross-origin)
+      "Failed to execute 'transaction' on 'IDBDatabase'",
+      'IDBFactory.open() called in an invalid security context',
+      "Failed to read the 'localStorage' property from 'Window'",
+      "The user denied permission to access the database",
+      "Can't find variable: indexedDB",
+      'Unable to open database file on disk',
+      'Database deleted by request of the user',
+      'The operation is insecure',
+      // Firebase errors from browser extensions
+      /^FirebaseError: Installations/,
+      // Service worker errors in restricted contexts
+      'newestWorker is null',
+      'Cannot update a null/nonexistent service worker registration',
+      'invalid origin',
+      // Sentry SDK internal error on iOS DuckDuckGo/older browsers
+      'feature named `performanceMetrics` was not found',
     ],
 
     // Don't send PII
