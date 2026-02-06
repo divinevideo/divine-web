@@ -3,7 +3,6 @@ import { useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useSubdomainNavigate } from '@/hooks/useSubdomainNavigate';
-import { isSubdomainOwner } from '@/lib/subdomainLinks';
 import { cn } from '@/lib/utils';
 import { nip19 } from 'nostr-tools';
 
