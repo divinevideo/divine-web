@@ -98,7 +98,7 @@ export function transformFunnelcakeResponse(response: FunnelcakeResponse): Parse
     return [];
   }
 
-  const videos = response.videos
+  const transformed = response.videos
     .map(raw => {
       try {
         return transformFunnelcakeVideo(raw);
@@ -109,6 +109,19 @@ export function transformFunnelcakeResponse(response: FunnelcakeResponse): Parse
     })
     .filter((v): v is ParsedVideoData => v !== null);
 
+  // Deduplicate by pubkey:kind:d-tag (addressable event key per NIP-33)
+  // The API may return duplicate rows for the same video
+  const seen = new Set<string>();
+  const videos = transformed.filter(v => {
+    const key = `${v.pubkey}:${v.kind}:${v.vineId || v.id}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+
+  if (videos.length < transformed.length) {
+    debugLog(`[FunnelcakeTransform] Deduplicated ${transformed.length} → ${videos.length} videos`);
+  }
   debugLog(`[FunnelcakeTransform] Transformed ${videos.length}/${response.videos.length} videos`);
 
   return videos;

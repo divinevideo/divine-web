@@ -1,7 +1,7 @@
 // ABOUTME: Enhanced profile page with header, stats, video grid, and follow functionality
 // ABOUTME: Displays user profile with comprehensive social features and responsive video grid
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { nip19 } from 'nostr-tools';
 import { useSeoMeta } from '@unhead/react';
@@ -78,7 +78,18 @@ export function ProfilePage() {
     pubkey: pubkey || '',
     enabled: !!pubkey,
   });
-  const videos = videosData?.pages?.flatMap(p => p.videos) || [];
+  // Deduplicate videos by pubkey:kind:d-tag (addressable event key)
+  // The API may return duplicate rows for the same video
+  const videos = useMemo(() => {
+    const all = videosData?.pages?.flatMap(p => p.videos) ?? [];
+    const seen = new Set<string>();
+    return all.filter(video => {
+      const key = `${video.pubkey}:${video.kind}:${video.vineId || video.id}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }, [videosData]);
 
   // Data source priority:
   // 1. Funnelcake (fast REST API) - use if available

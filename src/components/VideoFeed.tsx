@@ -81,13 +81,15 @@ export function VideoFeed({
     debugLog(`[VideoFeed] Using ${dataSource} for ${feedType} feed`);
   }, [dataSource, feedType]);
 
-  // Flatten all pages into single array, deduplicating by video ID
+  // Flatten all pages into single array, deduplicating by pubkey:kind:d-tag
+  // (addressable event key per NIP-33, not just event ID)
   const allVideos = useMemo(() => {
     const videos = data?.pages.flatMap(page => page.videos) ?? [];
     const seen = new Set<string>();
     return videos.filter(video => {
-      if (seen.has(video.id)) return false;
-      seen.add(video.id);
+      const key = `${video.pubkey}:${video.kind}:${video.vineId || video.id}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
       return true;
     });
   }, [data]);
