@@ -16,6 +16,7 @@ import { EditProfileDialog } from '@/components/EditProfileDialog';
 import { FollowListSafetyDialog } from '@/components/FollowListSafetyDialog';
 import { useAuthor } from '@/hooks/useAuthor';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { getSubdomainUser } from '@/hooks/useSubdomainUser';
 import { useVideoProvider } from '@/hooks/useVideoProvider';
 import { useFunnelcakeProfile } from '@/hooks/useFunnelcakeProfile';
 import { useFollowRelationship, useFollowUser, useUnfollowUser } from '@/hooks/useFollowRelationship';
@@ -31,8 +32,9 @@ export function ProfilePage() {
   const [pendingFollowAction, setPendingFollowAction] = useState<boolean | null>(null);
   const { user: currentUser } = useCurrentUser();
 
-  // Get the identifier from either route param
-  const identifier = npub || nip19Param;
+  // Get the identifier from route params, or from subdomain user if rendered at /
+  const subdomainUser = getSubdomainUser();
+  const identifier = npub || nip19Param || subdomainUser?.npub;
 
   // Decode npub to get pubkey
   let pubkey: string | null = null;

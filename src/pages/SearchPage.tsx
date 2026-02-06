@@ -2,7 +2,8 @@
 // ABOUTME: Supports searching videos, users, hashtags with NIP-50 full-text search
 
 import { useState, useEffect, useRef, useMemo } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
+import { useSubdomainNavigate } from '@/hooks/useSubdomainNavigate';
 import { nip19 } from 'nostr-tools';
 import { useSeoMeta } from '@unhead/react';
 import { Search, Hash, Users, Video } from 'lucide-react';
@@ -30,7 +31,7 @@ type SearchFilter = 'all' | 'videos' | 'users' | 'hashtags';
 
 export function SearchPage() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const navigate = useNavigate();
+  const navigate = useSubdomainNavigate();
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
   const [sortMode, setSortMode] = useState<SortMode | 'relevance'>(
     (searchParams.get('sort') as SortMode | 'relevance') || 'relevance'
@@ -513,7 +514,7 @@ interface UserCardMetadata {
 
 // User card component
 function UserCard({ user }: { user: { pubkey: string; metadata?: UserCardMetadata } }) {
-  const navigate = useNavigate();
+  const navigate = useSubdomainNavigate();
   const displayName = user.metadata?.display_name || user.metadata?.name || genUserName(user.pubkey);
   const username = user.metadata?.name || genUserName(user.pubkey);
   const about = user.metadata?.about;

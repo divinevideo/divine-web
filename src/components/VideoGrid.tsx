@@ -2,7 +2,7 @@
 // ABOUTME: Shows video thumbnails with play overlays and metadata on hover
 
 import { useState, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useSubdomainNavigate } from '@/hooks/useSubdomainNavigate';
 import { Play, Repeat } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -35,7 +35,7 @@ function truncateText(text: string, maxLength: number = 50): string {
 }
 
 export function VideoGrid({ videos, loading = false, className, navigationContext }: VideoGridProps) {
-  const navigate = useNavigate();
+  const navigate = useSubdomainNavigate();
   const [hoveredVideo, setHoveredVideo] = useState<string | null>(null);
   const [failedThumbnails, setFailedThumbnails] = useState<Set<string>>(new Set());
   const videoRefs = useRef<Map<string, HTMLVideoElement>>(new Map());

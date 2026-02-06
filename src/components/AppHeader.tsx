@@ -1,5 +1,6 @@
 import { Home, Compass, Search, MoreVertical, Info, Code2, HelpCircle, Headphones, FileText, Sun, Moon } from 'lucide-react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
+import { useSubdomainNavigate } from '@/hooks/useSubdomainNavigate';
 import { Button } from '@/components/ui/button';
 import { LoginArea } from '@/components/auth/LoginArea';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
@@ -13,7 +14,7 @@ import {
 import { useTheme } from '@/hooks/useTheme';
 
 export function AppHeader() {
-  const navigate = useNavigate();
+  const navigate = useSubdomainNavigate();
   const location = useLocation();
   const { displayTheme, setTheme } = useTheme();
   const { user } = useCurrentUser();

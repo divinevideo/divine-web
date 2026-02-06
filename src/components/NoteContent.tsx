@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { type NostrEvent } from '@nostrify/nostrify';
-import { Link } from 'react-router-dom';
+import { SmartLink } from '@/components/SmartLink';
 import { nip19 } from 'nostr-tools';
 import { useAuthor } from '@/hooks/useAuthor';
 import { genUserName } from '@/lib/genUserName';
@@ -64,13 +64,13 @@ export function NoteContent({
           } else {
             // For other types, just show as a link
             parts.push(
-              <Link 
+              <SmartLink
                 key={`nostr-${keyCounter++}`}
                 to={`/${nostrId}`}
                 className="text-blue-500 hover:underline"
               >
                 {fullMatch}
-              </Link>
+              </SmartLink>
             );
           }
         } catch {
@@ -82,13 +82,13 @@ export function NoteContent({
         const tag = hashtag.slice(1); // Remove the #
         const normalized = tag.toLowerCase();
         parts.push(
-          <Link 
+          <SmartLink
             key={`hashtag-${keyCounter++}`}
             to={`/t/${normalized}`}
             className="text-blue-500 hover:underline"
           >
             {hashtag}
-          </Link>
+          </SmartLink>
         );
       }
       
@@ -123,16 +123,17 @@ function NostrMention({ pubkey }: { pubkey: string }) {
   const displayName = author.data?.metadata?.name ?? genUserName(pubkey);
 
   return (
-    <Link 
+    <SmartLink
       to={`/${npub}`}
+      ownerPubkey={pubkey}
       className={cn(
         "font-medium hover:underline",
-        hasRealName 
-          ? "text-blue-500" 
+        hasRealName
+          ? "text-blue-500"
           : "text-gray-500 hover:text-gray-700"
       )}
     >
       @{displayName}
-    </Link>
+    </SmartLink>
   );
 }

@@ -16,7 +16,7 @@ import InfiniteScroll from 'react-infinite-scroll-component';
 import type { ParsedVideoData } from '@/types/video';
 import { debugLog, debugWarn } from '@/lib/debug';
 import type { SortMode } from '@/types/nostr';
-import { useNavigate } from 'react-router-dom';
+import { useSubdomainNavigate } from '@/hooks/useSubdomainNavigate';
 import { useCallback } from 'react';
 import { useFullscreenFeed } from '@/contexts/FullscreenFeedContext';
 
@@ -56,7 +56,7 @@ export function VideoFeed({
   const mountTimeRef = useRef<number | null>(null);
 
   const { checkContent } = useContentModeration();
-  const navigate = useNavigate();
+  const navigate = useSubdomainNavigate();
   const { setVideosForFullscreen, enterFullscreen, updateVideos } = useFullscreenFeed();
 
   // Use video provider hook - automatically selects Funnelcake or WebSocket

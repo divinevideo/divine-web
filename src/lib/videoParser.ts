@@ -289,10 +289,10 @@ export function extractVideoMetadata(event: NostrEvent): VideoMetadata | null {
 
   const metadata: VideoMetadata = { ...bestImeta };
 
-  // For short videos with a good MP4 URL, skip HLS entirely - it's overkill
-  // and direct MP4 is more reliable. Only keep HLS if we don't have an MP4.
-  if (metadata.url.includes('.mp4')) {
-    delete metadata.hlsUrl;
+  // Generate HLS URL from hash when available on media.divine.video
+  // This ensures hlsUrl is available as a fallback for codec compatibility issues
+  if (!metadata.hlsUrl && metadata.hash && metadata.url.includes('media.divine.video')) {
+    metadata.hlsUrl = `https://media.divine.video/${metadata.hash}/hls/master.m3u8`;
   }
 
   // Only fill in missing metadata from other imeta tags (don't override URLs!)
@@ -683,6 +683,11 @@ export function parseVideoEvents(events: NostrEvent[]): ParsedVideoData[] {
 
     const videoUrl = videoEvent.videoMetadata?.url;
     if (!videoUrl) continue;
+
+    // Filter out videos that are 7 seconds or longer (keep short-form only)
+    // Duration is in seconds from imeta tag
+    const duration = videoEvent.videoMetadata?.duration;
+    if (duration !== undefined && duration >= 7) continue;
 
     parsedVideos.push({
       id: event.id,

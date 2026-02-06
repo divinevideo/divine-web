@@ -3,7 +3,8 @@
 // ABOUTME: For You tab shows personalized recommendations when user is logged in
 
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
+import { useSubdomainNavigate } from '@/hooks/useSubdomainNavigate';
 import { VideoFeed } from '@/components/VideoFeed';
 import { VerifiedOnlyToggle } from '@/components/VerifiedOnlyToggle';
 import { HashtagExplorer } from '@/components/HashtagExplorer';
@@ -19,7 +20,7 @@ const ALL_TABS: AllowedTab[] = ['foryou', 'classics', 'hot', 'new', 'hashtags'];
 const BASE_TABS: AllowedTab[] = ['classics', 'hot', 'new', 'hashtags'];
 
 export function DiscoveryPage() {
-  const navigate = useNavigate();
+  const navigate = useSubdomainNavigate();
   const params = useParams<{ tab?: string }>();
   const { user } = useCurrentUser();
   const isLoggedIn = !!user?.pubkey;

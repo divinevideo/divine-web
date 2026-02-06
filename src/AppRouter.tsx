@@ -2,7 +2,7 @@
  * If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
+import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { ScrollToTop } from "./components/ScrollToTop";
 import { AnalyticsPageTracker } from "./components/AnalyticsPageTracker";
 import { AnalyticsUserTracker } from "./components/AnalyticsUserTracker";
@@ -77,10 +77,10 @@ export function AppRouter() {
 
         {/* App routes - with AppLayout */}
         <Route element={<AppLayout />}>
-          {/* Home/landing route - redirect to profile on subdomain */}
+          {/* Home/landing route - render profile directly on subdomain */}
           <Route path="/" element={
             subdomainUser
-              ? <Navigate to={`/profile/${subdomainUser.npub}`} replace />
+              ? <ProfilePage />
               : <Index />
           } />
 

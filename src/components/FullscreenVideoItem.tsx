@@ -2,7 +2,6 @@
 // ABOUTME: Displays video with overlay UI including back button, author info, and action buttons
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Link } from 'react-router-dom';
 import { ArrowLeft, Heart, MessageCircle, Repeat2, Share, Volume2, VolumeX, Download, ListPlus, Users, MoreVertical, Flag, UserX, Code, Trash2, Eye } from 'lucide-react';
 import { nip19 } from 'nostr-tools';
 import { Button } from '@/components/ui/button';
@@ -33,6 +32,7 @@ import { cn } from '@/lib/utils';
 import { MuteType } from '@/types/moderation';
 import { getOptimalVideoUrl } from '@/lib/bandwidthTracker';
 import { useBandwidthTier } from '@/hooks/useBandwidthTier';
+import { SmartLink } from '@/components/SmartLink';
 import type { ParsedVideoData } from '@/types/video';
 
 interface FullscreenVideoItemProps {
@@ -140,7 +140,7 @@ export function FullscreenVideoItem({
     const videoEl = document.querySelector(`video`) as HTMLVideoElement;
     if (videoEl) {
       if (videoEl.paused) {
-        videoEl.play();
+        videoEl.play().catch(() => { /* handled by VideoPlayer */ });
       } else {
         videoEl.pause();
       }
@@ -271,7 +271,7 @@ export function FullscreenVideoItem({
           <div className="flex items-end justify-between px-4">
             {/* Left side - Author info */}
             <div className="flex-1 max-w-[70%]">
-              <Link to={profileUrl} className="flex items-center gap-3 mb-2 pointer-events-auto" onClick={(e) => e.stopPropagation()}>
+              <SmartLink to={profileUrl} ownerPubkey={video.pubkey} className="flex items-center gap-3 mb-2 pointer-events-auto" onClick={(e) => e.stopPropagation()}>
                 <Avatar className="h-10 w-10 border-2 border-white">
                   <AvatarImage src={profileImage} alt={displayName} />
                   <AvatarFallback className="bg-gray-800 text-white">
@@ -290,7 +290,7 @@ export function FullscreenVideoItem({
                     <p className="text-sm text-white/80 drop-shadow-lg">{timeAgo}</p>
                   )}
                 </div>
-              </Link>
+              </SmartLink>
 
               {/* Title/Description with NoteContent parsing */}
               {(video.title || video.content) && (
@@ -314,14 +314,14 @@ export function FullscreenVideoItem({
               {video.hashtags.length > 0 && (
                 <div className="flex flex-wrap gap-1 pointer-events-auto">
                   {video.hashtags.slice(0, 3).map((tag) => (
-                    <Link
+                    <SmartLink
                       key={tag}
                       to={`/hashtag/${tag}`}
                       className="text-sm text-[#00bf8f] drop-shadow-lg"
                       onClick={(e) => e.stopPropagation()}
                     >
                       #{tag}
-                    </Link>
+                    </SmartLink>
                   ))}
                   {video.hashtags.length > 3 && (
                     <span className="text-sm text-white/60">+{video.hashtags.length - 3}</span>

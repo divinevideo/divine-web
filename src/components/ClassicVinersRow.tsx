@@ -2,7 +2,7 @@
 // ABOUTME: Uses static preloaded data for instant rendering, no API calls needed
 
 import { useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { SmartLink } from '@/components/SmartLink';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Star } from 'lucide-react';
 import { CLASSIC_VINERS, CLASSIC_VINER_AVATARS, type StaticViner } from '@/data/classicViners';
@@ -26,8 +26,9 @@ function VinerItem({ viner }: { viner: StaticViner }) {
   }
 
   return (
-    <Link
+    <SmartLink
       to={profilePath}
+      ownerPubkey={viner.pubkey}
       className="flex flex-col items-center gap-1.5 min-w-[72px] group"
     >
       <Avatar className="h-14 w-14 ring-2 ring-primary/20 group-hover:ring-primary/50 transition-all">
@@ -39,7 +40,7 @@ function VinerItem({ viner }: { viner: StaticViner }) {
       <span className="text-xs text-muted-foreground truncate max-w-[70px] group-hover:text-foreground transition-colors">
         {displayName}
       </span>
-    </Link>
+    </SmartLink>
   );
 }
 
