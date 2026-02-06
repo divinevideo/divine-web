@@ -36,10 +36,14 @@ class IndexedDBStore implements NStore {
       return; // Gracefully degrade to memory-only cache
     }
 
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       const request = indexedDB.open(DB_NAME, DB_VERSION);
 
-      request.onerror = () => reject(request.error);
+      request.onerror = () => {
+        // User may have denied IDB permission (e.g. restricted Android browsers)
+        // Gracefully degrade to memory-only cache
+        resolve();
+      };
       request.onsuccess = () => {
         this.db = request.result;
         resolve();

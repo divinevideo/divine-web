@@ -23,20 +23,32 @@ import './index.css';
 import '@fontsource-variable/inter';
 import '@fontsource/pacifico';
 
-// PWA Service Worker Registration (managed by VitePWA)
-import { registerSW } from 'virtual:pwa-register';
+// PWA Service Worker Registration
+// The app works fully without a service worker — SW is only for offline caching.
+// Registration can fail if the browser blocks SW (permission denied, private mode, etc.)
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    try {
+      navigator.serviceWorker.register('/sw.js', { scope: '/' })
+        .then((registration) => {
+          console.log('[PWA] Service Worker registered:', registration.scope);
 
-registerSW({
-  onRegistered(registration) {
-    if (registration) {
-      // Check for updates every hour
-      setInterval(() => registration.update(), 60 * 60 * 1000);
+          // Check for updates every hour
+          setInterval(() => {
+            registration.update();
+          }, 60 * 60 * 1000);
+        })
+        .catch((error) => {
+          // User/browser denied SW permission, or SW script unavailable.
+          // App continues to work normally without offline caching.
+          console.warn('[PWA] Service Worker registration failed (app works without it):', error.message);
+        });
+    } catch (error) {
+      // Synchronous throw on some browsers when SW is completely blocked
+      console.warn('[PWA] Service Worker not available:', error);
     }
-  },
-  onRegisterError(error) {
-    console.error('[PWA] Service Worker registration failed:', error);
-  },
-});
+  });
+}
 
 createRoot(document.getElementById("root")!).render(
   <ErrorBoundary>
