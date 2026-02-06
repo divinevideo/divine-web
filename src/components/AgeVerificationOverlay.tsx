@@ -25,17 +25,25 @@ export function AgeVerificationOverlay({
   const { user } = useCurrentUser();
   const [isConfirming, setIsConfirming] = useState(false);
   const hasCalledOnVerified = useRef(false);
+  const isConfirmingRef = useRef(false);
 
-  const handleConfirm = async () => {
+  const handleConfirm = () => {
+    // Prevent double-clicks
+    if (isConfirmingRef.current) return;
+    
+    isConfirmingRef.current = true;
     setIsConfirming(true);
     confirmAdult();
-    // Small delay to show feedback
-    await new Promise(resolve => setTimeout(resolve, 300));
-    onVerified();
+    
+    // Call onVerified synchronously with guard to prevent multiple calls
+    if (!hasCalledOnVerified.current) {
+      hasCalledOnVerified.current = true;
+      onVerified();
+    }
   };
 
-  // If already verified, call onVerified via effect (not during render)
-  // Use ref to prevent calling multiple times
+  // If already verified on mount, call onVerified once
+  // This handles the case where user is already verified from localStorage
   useEffect(() => {
     if (isVerified && !hasCalledOnVerified.current) {
       hasCalledOnVerified.current = true;
@@ -83,7 +91,7 @@ export function AgeVerificationOverlay({
           <Button
             onClick={handleConfirm}
             disabled={isConfirming}
-            className="gap-2 bg-white text-black hover:bg-gray-200"
+            className="gap-2 bg-white text-black hover:bg-gray-200 touch-manipulation"
           >
             {isConfirming ? (
               <>Verifying...</>
