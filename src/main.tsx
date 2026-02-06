@@ -25,8 +25,11 @@ import '@fontsource/pacifico';
 
 // PWA Service Worker Registration
 // The app works fully without a service worker — SW is only for offline caching.
-// Registration can fail if the browser blocks SW (permission denied, private mode, etc.)
-if ('serviceWorker' in navigator) {
+// Skip registration on subdomains (e.g., alice.divine.video) — they don't need SW
+// and it causes errors when sw.js routing differs from the apex domain.
+const isSubdomain = /^[^.]+\.(dvine\.video|divine\.video)$/.test(location.hostname)
+  && !location.hostname.startsWith('www.');
+if ('serviceWorker' in navigator && !isSubdomain) {
   window.addEventListener('load', () => {
     try {
       navigator.serviceWorker.register('/sw.js', { scope: '/' })
@@ -46,6 +49,14 @@ if ('serviceWorker' in navigator) {
     } catch (error) {
       // Synchronous throw on some browsers when SW is completely blocked
       console.warn('[PWA] Service Worker not available:', error);
+    }
+  });
+} else if (isSubdomain && 'serviceWorker' in navigator) {
+  // Unregister any existing SW on subdomains to clean up stale registrations
+  navigator.serviceWorker.getRegistrations().then(registrations => {
+    for (const registration of registrations) {
+      registration.unregister();
+      console.log('[PWA] Unregistered stale SW on subdomain');
     }
   });
 }
