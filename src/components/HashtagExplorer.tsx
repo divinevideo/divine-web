@@ -3,7 +3,7 @@
 
 import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { SmartLink } from '@/components/SmartLink';
-import { useQuery, useQueries } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -17,10 +17,6 @@ interface HashtagStats {
   tag: string;
   count: number;
   rank: number;
-}
-
-interface _HashtagWithThumbnail extends HashtagStats {
-  thumbnailUrl?: string;
 }
 
 /**
@@ -52,176 +48,102 @@ function useHashtagStats() {
 }
 
 /**
- * Component for individual hashtag card with thumbnail
+ * Component for individual hashtag card with lazy-loaded thumbnail.
+ * Only fetches the thumbnail when the card scrolls into view,
+ * preventing N+1 API calls on page load.
  */
-function HashtagCard({ stat, thumbnailUrl }: { stat: HashtagStats; thumbnailUrl?: string }) {
-  return (
-    <SmartLink to={`/hashtag/${stat.tag}`} className="block group">
-      <Card className="hover:shadow-lg transition-all duration-200 overflow-hidden cursor-pointer hover:scale-[1.02]">
-        {/* Thumbnail */}
-        <div className="relative aspect-square bg-muted overflow-hidden">
-          {thumbnailUrl ? (
-            <>
-              {thumbnailUrl.endsWith('.mp4') || thumbnailUrl.endsWith('.webm') || thumbnailUrl.endsWith('.mov') ? (
-                <video
-                  src={thumbnailUrl}
-                  className="w-full h-full object-cover"
-                  muted
-                  playsInline
-                  preload="metadata"
-                />
-              ) : (
-                <img
-                  src={thumbnailUrl}
-                  alt={`#${stat.tag}`}
-                  className="w-full h-full object-cover"
-                  loading="lazy"
-                />
-              )}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent pointer-events-none" />
-            </>
-          ) : (
-            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/10 to-primary/5">
-              <Hash className="h-12 w-12 text-primary/30" />
-            </div>
-          )}
+function HashtagCard({ stat }: { stat: HashtagStats }) {
+  const cardRef = useRef<HTMLDivElement>(null);
+  const [isVisible, setIsVisible] = useState(false);
 
-          {/* Overlay info */}
-          <div className="absolute bottom-0 left-0 right-0 p-3 text-white">
-            <div className="flex items-end justify-between">
-              <div>
-                <h3 className="text-lg font-bold flex items-center gap-1">
-                  <Hash className="h-4 w-4" />
-                  {stat.tag}
-                </h3>
+  useEffect(() => {
+    const el = cardRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) { setIsVisible(true); observer.disconnect(); } },
+      { rootMargin: '200px' }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  const { data: thumbnailUrl } = useQuery({
+    queryKey: ['hashtag-thumbnail', stat.tag],
+    queryFn: async () => {
+      const signal = AbortSignal.timeout(8000);
+      const response = await searchVideos(DEFAULT_FUNNELCAKE_URL, {
+        tag: stat.tag,
+        limit: 1,
+        sort: 'trending',
+        signal,
+      });
+      const video = response.videos[0];
+      return video?.thumbnail || video?.video_url || null;
+    },
+    enabled: isVisible,
+    staleTime: 300000,
+    gcTime: 900000,
+  });
+
+  return (
+    <div ref={cardRef}>
+      <SmartLink to={`/hashtag/${stat.tag}`} className="block group">
+        <Card className="hover:shadow-lg transition-all duration-200 overflow-hidden cursor-pointer hover:scale-[1.02]">
+          {/* Thumbnail */}
+          <div className="relative aspect-square bg-muted overflow-hidden">
+            {thumbnailUrl ? (
+              <>
+                {thumbnailUrl.endsWith('.mp4') || thumbnailUrl.endsWith('.webm') || thumbnailUrl.endsWith('.mov') ? (
+                  <video
+                    src={thumbnailUrl}
+                    className="w-full h-full object-cover"
+                    muted
+                    playsInline
+                    preload="metadata"
+                  />
+                ) : (
+                  <img
+                    src={thumbnailUrl}
+                    alt={`#${stat.tag}`}
+                    className="w-full h-full object-cover"
+                    loading="lazy"
+                  />
+                )}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent pointer-events-none" />
+              </>
+            ) : (
+              <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/10 to-primary/5">
+                <Hash className="h-12 w-12 text-primary/30" />
               </div>
-              <Badge variant="secondary" className="bg-white/20 text-white border-white/30">
-                #{stat.rank}
-              </Badge>
+            )}
+
+            {/* Overlay info */}
+            <div className="absolute bottom-0 left-0 right-0 p-3 text-white">
+              <div className="flex items-end justify-between">
+                <div>
+                  <h3 className="text-lg font-bold flex items-center gap-1">
+                    <Hash className="h-4 w-4" />
+                    {stat.tag}
+                  </h3>
+                </div>
+                <Badge variant="secondary" className="bg-white/20 text-white border-white/30">
+                  #{stat.rank}
+                </Badge>
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Action Button */}
-        <CardContent className="p-3">
-          <Button variant="outline" size="sm" className="w-full pointer-events-none">
-            <Play className="h-3 w-3 mr-1" />
-            Watch #{stat.tag}
-          </Button>
-        </CardContent>
-      </Card>
-    </SmartLink>
+          {/* Action Button */}
+          <CardContent className="p-3">
+            <Button variant="outline" size="sm" className="w-full pointer-events-none">
+              <Play className="h-3 w-3 mr-1" />
+              Watch #{stat.tag}
+            </Button>
+          </CardContent>
+        </Card>
+      </SmartLink>
+    </div>
   );
-}
-
-/**
- * Hook to fetch thumbnails for hashtags with deduplication
- * Uses a two-pass approach: first fetch 1 video each, then fetch more only for duplicates
- */
-function useHashtagThumbnails(hashtags: string[]) {
-  // First pass: fetch top 1 video per hashtag
-  const initialQueries = useQueries({
-    queries: hashtags.map(tag => ({
-      queryKey: ['hashtag-thumbnail-initial', tag],
-      queryFn: async () => {
-        const signal = AbortSignal.timeout(8000);
-        const response = await searchVideos(DEFAULT_FUNNELCAKE_URL, {
-          tag,
-          limit: 1,
-          sort: 'trending',
-          signal,
-        });
-        const video = response.videos[0];
-        return {
-          tag,
-          url: video?.thumbnail || video?.video_url || null,
-        };
-      },
-      staleTime: 300000,
-      gcTime: 900000,
-    })),
-  });
-
-  // Identify duplicates that need more videos
-  const { duplicateTags, urlToFirstTag: _urlToFirstTag } = useMemo(() => {
-    const urlToFirstTag = new Map<string, string>();
-    const duplicateTags: string[] = [];
-
-    for (const query of initialQueries) {
-      if (query.data?.url) {
-        const { tag, url } = query.data;
-        if (urlToFirstTag.has(url)) {
-          // This is a duplicate - the tag needs more videos
-          duplicateTags.push(tag);
-        } else {
-          urlToFirstTag.set(url, tag);
-        }
-      }
-    }
-
-    return { duplicateTags, urlToFirstTag };
-  }, [initialQueries]);
-
-  // Second pass: fetch more videos only for duplicate hashtags
-  const extraQueries = useQueries({
-    queries: duplicateTags.map(tag => ({
-      queryKey: ['hashtag-thumbnail-extra', tag],
-      queryFn: async () => {
-        const signal = AbortSignal.timeout(8000);
-        const response = await searchVideos(DEFAULT_FUNNELCAKE_URL, {
-          tag,
-          limit: 10,  // Get more videos to find a unique one
-          sort: 'trending',
-          signal,
-        });
-        return {
-          tag,
-          videos: response.videos.map(v => v.thumbnail || v.video_url).filter(Boolean),
-        };
-      },
-      staleTime: 300000,
-      gcTime: 900000,
-      enabled: duplicateTags.length > 0,
-    })),
-  });
-
-  // Build final thumbnail map with deduplication
-  const thumbnailMap = useMemo(() => {
-    const map = new Map<string, string>();
-    const usedUrls = new Set<string>();
-
-    // First, add all non-duplicate thumbnails
-    for (const query of initialQueries) {
-      if (query.data?.url) {
-        const { tag, url } = query.data;
-        if (!duplicateTags.includes(tag)) {
-          map.set(tag, url);
-          usedUrls.add(url);
-        }
-      }
-    }
-
-    // Then process duplicates with their extra videos
-    for (const extraQuery of extraQueries) {
-      if (extraQuery.data) {
-        const { tag, videos } = extraQuery.data;
-        for (const url of videos) {
-          if (!usedUrls.has(url)) {
-            map.set(tag, url);
-            usedUrls.add(url);
-            break;
-          }
-        }
-      }
-    }
-
-    return map;
-  }, [initialQueries, extraQueries, duplicateTags]);
-
-  return {
-    thumbnailMap,
-    isLoading: initialQueries.some(q => q.isLoading),
-  };
 }
 
 const INITIAL_LOAD = 20;
@@ -249,10 +171,6 @@ export function HashtagExplorer() {
   const visibleTags = useMemo(() => {
     return filteredTags.slice(0, visibleCount);
   }, [filteredTags, visibleCount]);
-
-  // Fetch thumbnails for visible hashtags with deduplication
-  const visibleHashtags = useMemo(() => visibleTags.map(t => t.tag), [visibleTags]);
-  const { thumbnailMap } = useHashtagThumbnails(visibleHashtags);
 
   const hasMore = visibleCount < filteredTags.length;
 
@@ -352,7 +270,6 @@ export function HashtagExplorer() {
               <HashtagCard
                 key={stat.tag}
                 stat={stat}
-                thumbnailUrl={thumbnailMap.get(stat.tag)}
               />
             ))}
           </div>
