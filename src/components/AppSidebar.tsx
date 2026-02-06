@@ -177,12 +177,6 @@ export function AppSidebar({ className }: { className?: string }) {
               >
                 About
               </button>
-              <button
-                onClick={() => navigate('/authenticity')}
-                className="transition-colors hover:text-primary"
-              >
-                Our Mission
-              </button>
               <a
                 href="https://about.divine.video/news/"
                 target="_blank"
