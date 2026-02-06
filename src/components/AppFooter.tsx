@@ -83,6 +83,10 @@ export function AppFooter() {
                   Open Source
                 </SmartLink>
                 <span>•</span>
+                <a href="https://docs.divine.video" target="_blank" rel="noopener noreferrer" className="hover:text-brand-off-white transition-colors">
+                  Developers
+                </a>
+                <span>•</span>
                 <a
                   href="https://opencollective.com/aos-collective/contribute/divine-keepers-95646"
                   target="_blank"
