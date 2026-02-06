@@ -37,20 +37,20 @@ export function OpenSourcePage() {
               Divine is a decentralized, open-source platform for short-form looping videos, built on the Nostr protocol.
               We're currently in <strong>beta testing</strong> and invite you to join us in shaping the future of creative video sharing!
             </p>
-            <div className="bg-primary/10 p-4 rounded-lg">
-              <h3 className="font-semibold mb-3">Join the Beta</h3>
+            <div className="bg-brand-dark-green p-4 rounded-lg border border-brand-green">
+              <h3 className="font-semibold mb-3 text-brand-off-white">Join the Beta</h3>
               <div className="space-y-2 text-sm">
                 <p className="flex items-center gap-2">
                   <Smartphone className="h-4 w-4 text-blue-500" />
-                  <strong>iOS:</strong> <span className="text-muted-foreground">Beta is full (10k sign ups in 4 hours!) - Stay tuned for updates</span>
+                  <strong className="text-brand-off-white">iOS:</strong> <span className="text-brand-light-green">Beta is full (10k sign ups in 4 hours!) - Stay tuned for updates</span>
                 </p>
                 <p className="flex items-center gap-2">
                   <Smartphone className="h-4 w-4 text-green-500" />
-                  <strong>Android:</strong> <span className="text-muted-foreground">Beta is full - Stay tuned for updates</span>
+                  <strong className="text-brand-off-white">Android:</strong> <span className="text-brand-light-green">Beta is full - Stay tuned for updates</span>
                 </p>
                 <p className="flex items-center gap-2">
                   <Globe className="h-4 w-4 text-blue-500" />
-                  <strong>Web:</strong> You're already here! <Link to="/discovery" className="text-primary hover:underline">Start exploring</Link>
+                  <strong className="text-brand-off-white">Web:</strong> <span className="text-brand-light-green">You're already here!</span> <Link to="/discovery" className="text-brand-green hover:text-brand-light-green">Start exploring</Link>
                 </p>
               </div>
             </div>
@@ -387,9 +387,9 @@ export function OpenSourcePage() {
         </Card>
 
         {/* Motto */}
-        <Card className="bg-primary/5 border-primary/20">
+        <Card className="bg-brand-dark-green border-brand-green">
           <CardContent className="py-8 text-center">
-            <blockquote className="text-xl font-semibold italic">
+            <blockquote className="text-xl font-semibold italic text-brand-off-white">
               "Liberating Vine, one loop at a time"
             </blockquote>
           </CardContent>

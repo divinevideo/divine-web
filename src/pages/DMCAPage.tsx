@@ -13,7 +13,7 @@ export function DMCAPage() {
 
       <div className="space-y-8">
         {/* Fair Use */}
-        <Card className="border-2 border-primary/20">
+        <Card className="border-2 border-brand-green">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Scale className="h-5 w-5 text-primary" />
@@ -79,7 +79,7 @@ export function DMCAPage() {
         </Card>
 
         {/* Copyright Claims */}
-        <Card className="border-2 border-amber-500/30">
+        <Card className="border-2 border-brand-yellow">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <AlertCircle className="h-5 w-5 text-amber-500" />
@@ -92,12 +92,12 @@ export function DMCAPage() {
               your rights and will process valid DMCA takedown requests.
             </p>
 
-            <div className="bg-muted/50 p-4 rounded-lg border">
-              <h3 className="font-semibold mb-3">To File a DMCA Takedown Request:</h3>
-              <p className="text-sm text-muted-foreground mb-3">
+            <div className="bg-brand-dark-green p-4 rounded-lg border border-brand-green">
+              <h3 className="font-semibold mb-3 text-brand-off-white">To File a DMCA Takedown Request:</h3>
+              <p className="text-sm text-brand-light-green mb-3">
                 Your notice must include the following information as required by the Digital Millennium Copyright Act:
               </p>
-              <ol className="list-decimal list-inside space-y-2 text-sm text-muted-foreground ml-4">
+              <ol className="list-decimal list-inside space-y-2 text-sm text-brand-light-green ml-4">
                 <li>Your physical or electronic signature</li>
                 <li>Identification of the copyrighted work claimed to have been infringed</li>
                 <li>Identification of the material that is claimed to be infringing (including URLs or event IDs)</li>
@@ -118,15 +118,15 @@ export function DMCAPage() {
               </ol>
             </div>
 
-            <div className="bg-primary/5 p-4 rounded-lg border border-primary/20">
-              <h3 className="font-semibold mb-2 flex items-center gap-2">
+            <div className="bg-brand-dark-green p-4 rounded-lg border border-brand-green">
+              <h3 className="font-semibold mb-2 flex items-center gap-2 text-brand-off-white">
                 <Mail className="h-4 w-4" />
                 Send DMCA Notices To:
               </h3>
-              <p className="text-sm text-muted-foreground">
-                Email: <a href="mailto:contact@divine.video" className="text-primary hover:underline">contact@divine.video</a>
+              <p className="text-sm text-brand-light-green">
+                Email: <a href="mailto:contact@divine.video" className="text-brand-green hover:text-brand-light-green">contact@divine.video</a>
               </p>
-              <p className="text-sm text-muted-foreground mt-2">
+              <p className="text-sm text-brand-light-green mt-2">
                 We will review valid requests and respond within 10 business days.
               </p>
             </div>
@@ -173,7 +173,7 @@ export function DMCAPage() {
         </Card>
 
         {/* Contact */}
-        <Card className="border-2 border-primary/20">
+        <Card className="border-2 border-brand-green">
           <CardHeader>
             <CardTitle>Questions?</CardTitle>
           </CardHeader>

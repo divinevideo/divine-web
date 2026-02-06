@@ -180,8 +180,8 @@ export function ReportContentDialog({
           </div>
 
           {isLoggedIn ? (
-            <div className="bg-yellow-500/10 border border-yellow-500/20 p-3 rounded-md text-sm space-y-2">
-              <p className="font-semibold text-yellow-700 dark:text-yellow-400">
+            <div className="bg-brand-yellow-light border border-brand-yellow p-3 rounded-md text-sm space-y-2 dark:bg-brand-yellow-dark">
+              <p className="font-semibold text-brand-yellow-dark dark:text-brand-yellow">
                 ⚠️ Reports are PUBLIC information
               </p>
               <p className="text-muted-foreground">
@@ -197,7 +197,7 @@ export function ReportContentDialog({
               </p>
             </div>
           ) : (
-            <div className="bg-blue-500/10 border border-blue-500/20 p-3 rounded-md text-sm">
+            <div className="bg-brand-blue-light border border-brand-blue p-3 rounded-md text-sm dark:bg-brand-blue-dark">
               <p className="text-muted-foreground">
                 Your report will be sent privately to our moderation team. You can follow up on your report through the support widget.
               </p>

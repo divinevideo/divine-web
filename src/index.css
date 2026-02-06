@@ -4,34 +4,68 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* Brand: Off White #F9F7F6 */
+    --background: 30 18% 97%;
+    /* Brand: Dark Green #07241B */
+    --foreground: 158 67% 8%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card: 30 18% 97%;
+    --card-foreground: 158 67% 8%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover: 30 18% 97%;
+    --popover-foreground: 158 67% 8%;
 
     /* Brand primary: #27C58B -> hsl(158 67% 46%) */
     --primary: 158 67% 46%;
-    --primary-foreground: 210 40% 98%;
+    /* Brand Dark Green for text on green buttons - 7.5:1 contrast ratio */
+    --primary-foreground: 158 67% 8%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    /* Brand palette */
+    --brand-green: 158 67% 46%;        /* #27C58B - same as primary */
+    --brand-dark-green: 158 67% 8%;    /* #07241B */
+    --brand-light-green: 114 88% 90%;  /* #D0FBCB */
+    --brand-off-white: 30 18% 97%;     /* #F9F7F6 */
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    /* Secondary palette for accents (full, light, dark variants) */
+    --brand-yellow: 56 100% 62%;       /* #FFF140 */
+    --brand-yellow-light: 56 100% 86%; /* #FFFAB8 */
+    --brand-yellow-dark: 53 50% 14%;   /* #363313 */
+    --brand-lime: 79 100% 63%;         /* #D2FF40 */
+    --brand-lime-light: 79 100% 89%;   /* #F1FFC8 */
+    --brand-lime-dark: 79 50% 12%;     /* #272F0E */
+    --brand-pink: 338 100% 75%;        /* #FF7FAF */
+    --brand-pink-light: 338 100% 93%;  /* #FFDEEA */
+    --brand-pink-dark: 338 70% 15%;    /* #3E0C1F */
+    --brand-orange: 20 100% 63%;       /* #FF7640 */
+    --brand-orange-light: 20 100% 89%; /* #FFD8C9 */
+    --brand-orange-dark: 20 64% 17%;   /* #471F10 */
+    --brand-violet: 236 100% 82%;      /* #A3A9FF */
+    --brand-violet-light: 236 100% 94%; /* #E1E3FF */
+    --brand-violet-dark: 254 40% 22%;  /* #2D214D */
+    --brand-purple: 254 100% 70%;      /* #8568FF */
+    --brand-purple-light: 254 100% 91%; /* #DDD4FF */
+    --brand-purple-dark: 254 72% 21%;  /* #231557 */
+    --brand-blue: 196 86% 57%;         /* #34BBF1 */
+    --brand-blue-light: 196 95% 90%;   /* #CCEEFE */
+    --brand-blue-dark: 207 72% 14%;    /* #0A223C */
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --secondary: 30 18% 94%;
+    --secondary-foreground: 158 67% 8%;
+
+    --muted: 30 18% 94%;
+    /* Muted text uses brand Dark Green - apply opacity via classes for hierarchy */
+    --muted-foreground: 158 67% 8%;
+
+    --accent: 30 18% 94%;
+    --accent-foreground: 158 67% 8%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --border: 30 18% 88%;
+    --input: 30 18% 88%;
+    /* Ring uses brand dark green */
+    --ring: 158 67% 8%;
 
     --radius: 0.5rem;
 
@@ -55,66 +89,95 @@
     --transition-normal: 250ms cubic-bezier(0.4, 0, 0.2, 1);
     --transition-slow: 350ms cubic-bezier(0.4, 0, 0.2, 1);
 
-    --sidebar-background: 0 0% 98%;
-
-    --sidebar-foreground: 240 5.3% 26.1%;
-
-    --sidebar-primary: 240 5.9% 10%;
-
-    --sidebar-primary-foreground: 0 0% 98%;
-
-    --sidebar-accent: 240 4.8% 95.9%;
-
-    --sidebar-accent-foreground: 240 5.9% 10%;
-
-    --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    /* Sidebar uses brand colors */
+    --sidebar-background: 30 18% 97%;
+    --sidebar-foreground: 158 67% 8%;
+    --sidebar-primary: 158 67% 46%;
+    --sidebar-primary-foreground: 30 18% 97%;
+    --sidebar-accent: 30 18% 94%;
+    --sidebar-accent-foreground: 158 67% 8%;
+    --sidebar-border: 30 18% 90%;
+    --sidebar-ring: 158 67% 46%;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
+    /* Brand: Dark Green #07241B for dark mode background */
+    --background: 158 67% 8%;
+    /* Brand: Off White #F9F7F6 for dark mode text */
+    --foreground: 30 18% 97%;
 
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
+    --card: 158 67% 8%;
+    --card-foreground: 30 18% 97%;
 
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 158 67% 8%;
+    --popover-foreground: 30 18% 97%;
 
     /* Brand primary: #27C58B -> hsl(158 67% 46%) - same in dark mode */
     --primary: 158 67% 46%;
-    --primary-foreground: 210 40% 98%;
+    /* Brand Dark Green for text on green buttons */
+    --primary-foreground: 158 67% 8%;
 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+    /* Brand palette (same values, adjusted for dark mode visibility where needed) */
+    --brand-green: 158 67% 46%;        /* #27C58B - same as primary */
+    --brand-dark-green: 158 67% 8%;    /* #07241B */
+    --brand-light-green: 114 88% 90%;  /* #D0FBCB */
+    --brand-off-white: 30 18% 97%;     /* #F9F7F6 */
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    /* Secondary palette for accents (full, light, dark variants) */
+    --brand-yellow: 56 100% 62%;       /* #FFF140 */
+    --brand-yellow-light: 56 100% 86%; /* #FFFAB8 */
+    --brand-yellow-dark: 53 50% 14%;   /* #363313 */
+    --brand-lime: 79 100% 63%;         /* #D2FF40 */
+    --brand-lime-light: 79 100% 89%;   /* #F1FFC8 */
+    --brand-lime-dark: 79 50% 12%;     /* #272F0E */
+    --brand-pink: 338 100% 75%;        /* #FF7FAF */
+    --brand-pink-light: 338 100% 93%;  /* #FFDEEA */
+    --brand-pink-dark: 338 70% 15%;    /* #3E0C1F */
+    --brand-orange: 20 100% 63%;       /* #FF7640 */
+    --brand-orange-light: 20 100% 89%; /* #FFD8C9 */
+    --brand-orange-dark: 20 64% 17%;   /* #471F10 */
+    --brand-violet: 236 100% 82%;      /* #A3A9FF */
+    --brand-violet-light: 236 100% 94%; /* #E1E3FF */
+    --brand-violet-dark: 254 40% 22%;  /* #2D214D */
+    --brand-purple: 254 100% 70%;      /* #8568FF */
+    --brand-purple-light: 254 100% 91%; /* #DDD4FF */
+    --brand-purple-dark: 254 72% 21%;  /* #231557 */
+    --brand-blue: 196 86% 57%;         /* #34BBF1 */
+    --brand-blue-light: 196 95% 90%;   /* #CCEEFE */
+    --brand-blue-dark: 207 72% 14%;    /* #0A223C */
 
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+    /* Slightly lighter dark green for secondary/muted backgrounds */
+    --secondary: 158 50% 12%;
+    --secondary-foreground: 30 18% 97%;
+
+    --muted: 158 50% 12%;
+    /* Dimmed off-white for secondary text */
+    --muted-foreground: 30 15% 70%;
+
+    --accent: 158 50% 12%;
+    --accent-foreground: 30 18% 97%;
 
     --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive-foreground: 30 18% 97%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
+    /* Lighter green for borders in dark mode */
+    --border: 158 40% 18%;
+    --input: 158 40% 18%;
     --ring: 158 67% 46%;
 
-    --sidebar-background: 222.2 84% 4.9%;
+    /* Sidebar uses brand dark green */
+    --sidebar-background: 158 67% 8%;
+    --sidebar-foreground: 30 18% 97%;
 
-    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 30 18% 97%;
 
-    --sidebar-primary: 210 40% 98%;
+    --sidebar-primary-foreground: 158 67% 8%;
 
-    --sidebar-primary-foreground: 222.2 84% 4.9%;
+    --sidebar-accent: 158 50% 12%;
 
-    --sidebar-accent: 217.2 32.6% 17.5%;
+    --sidebar-accent-foreground: 30 18% 97%;
 
-    --sidebar-accent-foreground: 210 40% 98%;
-
-    --sidebar-border: 217.2 32.6% 17.5%;
+    --sidebar-border: 158 40% 18%;
 
     --sidebar-ring: 158 67% 46%;
   }
@@ -135,21 +198,22 @@
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
   }
 
-  /* Ensure all text elements inherit foreground color */
-  p, span, div, li, td, th {
-    @apply text-foreground;
-  }
-
   /* Custom font for headings and logo */
   h1, h2, h3, h4, h5, h6, .font-logo {
     font-family: 'Bricolage Grotesque', system-ui, -apple-system, sans-serif;
     letter-spacing: -0.02em;
-    @apply text-foreground;
+  }
+
+  /* Ensure text inherits color inside primary-colored containers (buttons, tabs, etc.) */
+  .text-primary-foreground *,
+  [class*="text-primary-foreground"] *,
+  [data-state="active"][class*="text-primary-foreground"] * {
+    color: inherit;
   }
 
   /* Improved focus states */
   *:focus-visible {
-    @apply outline-none ring-2 ring-primary/50 ring-offset-2 ring-offset-background;
+    @apply outline-none ring-2 ring-brand-light-green ring-offset-2 ring-offset-background;
   }
 
   /* Smooth scrolling */
@@ -164,24 +228,21 @@
 
   /* Custom selection color */
   ::selection {
-    @apply bg-primary/20 text-primary;
+    @apply bg-brand-light-green text-brand-dark-green;
   }
 
-  /* Global scrollbar styling */
+  /* Global scrollbar styling - subtle, theme-aware */
   * {
     scrollbar-width: thin;
-    scrollbar-color: hsl(var(--muted-foreground) / 0.3) transparent;
+    scrollbar-color: hsl(var(--border)) transparent;
   }
 
   *::-webkit-scrollbar { width: 8px; height: 8px; }
   *::-webkit-scrollbar-track { background: transparent; }
   *::-webkit-scrollbar-thumb {
-    background: hsl(var(--muted-foreground) / 0.3);
+    background: hsl(var(--border));
     border-radius: 9999px;
   }
-
-  .dark * { scrollbar-color: hsl(var(--muted-foreground) / 0.4) transparent; }
-  .dark *::-webkit-scrollbar-thumb { background: hsl(var(--muted-foreground) / 0.4); }
 
   /* Safe area support for mobile bottom navigation */
   @supports (padding-bottom: env(safe-area-inset-bottom)) {

@@ -187,7 +187,7 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin, onS
 
           {/* Login Methods */}
           <Tabs defaultValue={defaultTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-4 bg-muted/80 rounded-lg mb-4">
+            <TabsList className="grid w-full grid-cols-4 bg-muted rounded-lg mb-4">
               <TabsTrigger value="extension" className="flex items-center gap-2">
                 <Shield className="w-4 h-4" />
                 <span className="hidden sm:inline">Extension</span>

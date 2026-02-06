@@ -393,17 +393,17 @@ export function SafetyPage() {
         </Card>
 
         {/* Contact */}
-        <Card className="bg-primary/5 border-primary/20">
+        <Card className="bg-brand-dark-green border-brand-green">
           <CardHeader>
-            <CardTitle>Contact Information</CardTitle>
+            <CardTitle className="text-brand-off-white">Contact Information</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <p className="text-muted-foreground">
+            <p className="text-brand-light-green">
               For questions about our safety standards or to report concerns:
             </p>
-            <ul className="list-disc list-inside space-y-1 ml-4 text-muted-foreground">
+            <ul className="list-disc list-inside space-y-1 ml-4 text-brand-light-green">
               <li>
-                <Link to="/support" className="text-primary hover:underline">
+                <Link to="/support" className="text-brand-green hover:text-brand-light-green">
                   Contact Support
                 </Link>
               </li>
@@ -413,18 +413,18 @@ export function SafetyPage() {
                   href="https://www.cybertipline.org"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-primary hover:underline"
+                  className="text-brand-green hover:text-brand-light-green"
                 >
                   CyberTipline
                 </a>
               </li>
               <li>
                 View our{' '}
-                <Link to="/privacy" className="text-primary hover:underline">
+                <Link to="/privacy" className="text-brand-green hover:text-brand-light-green">
                   Privacy Policy
                 </Link>
                 {' '}and{' '}
-                <Link to="/dmca" className="text-primary hover:underline">
+                <Link to="/dmca" className="text-brand-green hover:text-brand-light-green">
                   DMCA Policy
                 </Link>
               </li>

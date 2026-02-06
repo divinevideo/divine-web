@@ -39,7 +39,7 @@ export function TermsPage() {
         </Card>
 
         {/* Zero Tolerance Policy */}
-        <Card className="border-destructive/50">
+        <Card className="border-destructive">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-destructive">
               <AlertTriangle className="h-5 w-5" />
@@ -242,7 +242,7 @@ export function TermsPage() {
         </Card>
 
         {/* Decentralization Notice */}
-        <Card className="border-yellow-500/50">
+        <Card className="border-brand-yellow">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <AlertTriangle className="h-5 w-5 text-yellow-500" />
@@ -261,13 +261,13 @@ export function TermsPage() {
               <li>Once content is shared, it may be difficult or impossible to completely remove</li>
             </ul>
 
-            <div className="p-3 bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-500/20 rounded-lg">
-              <p className="font-semibold mb-2">Limited Responsibility</p>
-              <p className="text-muted-foreground mb-2">
-                <strong>We only bear responsibility for content hosted on our own servers.</strong> Content on
+            <div className="p-3 bg-brand-dark-green border border-brand-green rounded-lg">
+              <p className="font-semibold mb-2 text-brand-off-white">Limited Responsibility</p>
+              <p className="text-brand-light-green mb-2">
+                <strong className="text-brand-off-white">We only bear responsibility for content hosted on our own servers.</strong> Content on
                 other servers in the Nostr network is moderated according to their operators' policies.
               </p>
-              <p className="text-muted-foreground">
+              <p className="text-brand-light-green">
                 While we maintain strict moderation on content served through Divine, we cannot control
                 content on the broader Nostr network. Users should be aware of this when posting content.
               </p>
@@ -313,23 +313,23 @@ export function TermsPage() {
         </Card>
 
         {/* Contact Information */}
-        <Card className="bg-primary/5 border-primary/20">
+        <Card className="bg-brand-dark-green border-brand-green">
           <CardHeader>
-            <CardTitle>Contact Information</CardTitle>
+            <CardTitle className="text-brand-off-white">Contact Information</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <p className="text-muted-foreground">
+            <p className="text-brand-light-green">
               For questions about these Terms of Service, please contact us:
             </p>
-            <ul className="list-disc list-inside space-y-1 ml-4 text-muted-foreground">
+            <ul className="list-disc list-inside space-y-1 ml-4 text-brand-light-green">
               <li>
-                <Link to="/support" className="text-primary hover:underline">
+                <Link to="/support" className="text-brand-green hover:text-brand-light-green">
                   Support Page
                 </Link>
               </li>
               <li>
                 Email:{' '}
-                <a href="mailto:contact@divine.video" className="text-primary hover:underline">
+                <a href="mailto:contact@divine.video" className="text-brand-green hover:text-brand-light-green">
                   contact@divine.video
                 </a>
               </li>

@@ -873,7 +873,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
           />
           {isLoading && (
             <div className="absolute inset-0 flex items-center justify-center bg-black/80">
-              <div className="w-8 h-8 border-2 border-muted-foreground/30 border-t-muted-foreground/60 rounded-full animate-spin" />
+              <div className="w-8 h-8 border-2 border-brand-light-green border-t-brand-green rounded-full animate-spin" />
             </div>
           )}
           {hasError && (

@@ -5,7 +5,7 @@ import { Link } from "react-router-dom";
 
 export function MarketingHeader() {
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm border-b border-gray-200 dark:border-gray-800">
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-brand-dark-green border-b border-brand-green">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
@@ -21,31 +21,31 @@ export function MarketingHeader() {
           <div className="flex items-center gap-8">
             <Link
               to="/about"
-              className="text-sm font-medium text-foreground hover:text-primary transition-colors"
+              className="text-sm font-medium text-brand-off-white hover:text-brand-green transition-colors"
             >
               About
             </Link>
             <a
               href="https://about.divine.video/blog/"
-              className="text-sm font-medium text-foreground hover:text-primary transition-colors"
+              className="text-sm font-medium text-brand-off-white hover:text-brand-green transition-colors"
             >
               Blog
             </a>
             <a
               href="https://about.divine.video/faqs/"
-              className="text-sm font-medium text-foreground hover:text-primary transition-colors"
+              className="text-sm font-medium text-brand-off-white hover:text-brand-green transition-colors"
             >
               FAQ
             </a>
             <a
               href="https://about.divine.video/news/"
-              className="text-sm font-medium text-foreground hover:text-primary transition-colors"
+              className="text-sm font-medium text-brand-off-white hover:text-brand-green transition-colors"
             >
               In the News
             </a>
             <Link
               to="/discovery"
-              className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold bg-primary text-white rounded-full hover:bg-primary/90 transition-colors"
+              className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold bg-primary text-white rounded-full hover:brightness-110 transition-colors"
             >
               Try it
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

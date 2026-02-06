@@ -106,7 +106,13 @@ async function handleRequest(event) {
   // 6. Serve static content with SPA fallback (handled by PublisherServer config)
   const response = await publisherServer.serveRequest(request);
   if (response != null) {
-    return response;
+    // Add Vary: X-Original-Host so CDN doesn't mix subdomain and apex cached responses
+    const headers = new Headers(response.headers);
+    headers.append('Vary', 'X-Original-Host');
+    return new Response(response.body, {
+      status: response.status,
+      headers,
+    });
   }
 
   return new Response('Not Found', { status: 404 });
@@ -384,7 +390,7 @@ async function handleSubdomainProfile(subdomain, url, request, originalHostname)
     headers: {
       'Content-Type': 'text/html; charset=utf-8',
       'Cache-Control': 'public, max-age=60', // Short cache for profile pages
-      'Vary': 'Host', // Cache varies by hostname (subdomain)
+      'Vary': 'X-Original-Host', // Cache varies by original hostname (from divine-router)
       'X-Divine-Subdomain': subdomain, // Debug header to verify subdomain handling
     },
   });

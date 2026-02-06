@@ -14,7 +14,7 @@ export function VineBadge({ className }: VineBadgeProps) {
       variant="outline"
       className={cn(
         'flex items-center gap-1 text-xs',
-        'border-[#00bf8f] text-[#00bf8f] bg-[#00bf8f]/10',
+        'border-brand-green bg-brand-light-green text-brand-dark-green',
         className
       )}
       title="Archived - Video preserved from Internet Archive (2013-2017 era)"

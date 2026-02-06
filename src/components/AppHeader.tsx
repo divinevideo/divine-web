@@ -9,11 +9,16 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useTheme } from '@/hooks/useTheme';
 
-export function AppHeader() {
+export interface AppHeaderProps {
+  className?: string;
+}
+
+export function AppHeader({ className }: AppHeaderProps) {
   const navigate = useSubdomainNavigate();
   const location = useLocation();
   const { displayTheme, setTheme } = useTheme();
@@ -26,7 +31,7 @@ export function AppHeader() {
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-primary/10 bg-background/80 backdrop-blur-md shadow-sm">
+    <header className={cn("sticky top-0 z-50 w-full border-b border-border bg-background backdrop-blur-md shadow-sm", className)}>
       <div className="container flex h-16 items-center justify-between">
         <div className="flex items-center gap-4">
           <button
@@ -49,7 +54,7 @@ export function AppHeader() {
               onClick={() => navigate('/')}
               className={cn(
                 "hidden md:flex items-center gap-2",
-                isActive('/') && "bg-primary/10 text-primary"
+                isActive('/') && "bg-primary text-primary-foreground"
               )}
             >
               <Home className="h-4 w-4" />
@@ -62,7 +67,7 @@ export function AppHeader() {
             onClick={() => navigate('/discovery')}
             className={cn(
               "hidden md:flex items-center gap-2",
-              isActive('/discovery') && "bg-primary/10 text-primary"
+              isActive('/discovery') && "bg-primary text-primary-foreground"
             )}
           >
             <Compass className="h-4 w-4" />
@@ -74,7 +79,7 @@ export function AppHeader() {
             onClick={() => navigate('/search')}
             className={cn(
               "hidden md:flex items-center gap-2",
-              isActive('/search') && "bg-primary/10 text-primary"
+              isActive('/search') && "bg-primary text-primary-foreground"
             )}
           >
             <Search className="h-4 w-4" />
@@ -102,44 +107,107 @@ export function AppHeader() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
+              {/* About diVine section */}
               <DropdownMenuItem
                 onClick={() => navigate('/about')}
-                className="cursor-pointer hover:!bg-transparent hover:outline hover:outline-1 hover:outline-primary/30 focus:!bg-transparent focus:outline focus:outline-1 focus:outline-primary"
+                className="cursor-pointer hover:bg-muted focus:bg-muted"
               >
                 <Info className="mr-2 h-4 w-4" />
                 <span>About</span>
               </DropdownMenuItem>
 
               <DropdownMenuItem
-                onClick={() => window.location.href = 'https://about.divine.video/faqs/'}
-                className="cursor-pointer hover:!bg-transparent hover:outline hover:outline-1 hover:outline-primary/30 focus:!bg-transparent focus:outline focus:outline-1 focus:outline-primary"
+                onClick={() => navigate('/authenticity')}
+                className="cursor-pointer hover:bg-muted focus:bg-muted"
+              >
+                <FileText className="mr-2 h-4 w-4" />
+                <span>Our Mission</span>
+              </DropdownMenuItem>
+
+              <DropdownMenuItem
+                onClick={() => window.open('https://about.divine.video/news/', '_blank')}
+                className="cursor-pointer hover:bg-muted focus:bg-muted"
+              >
+                <FileText className="mr-2 h-4 w-4" />
+                <span>News</span>
+              </DropdownMenuItem>
+
+              <DropdownMenuItem
+                onClick={() => window.open('https://about.divine.video/blog/', '_blank')}
+                className="cursor-pointer hover:bg-muted focus:bg-muted"
+              >
+                <FileText className="mr-2 h-4 w-4" />
+                <span>Blog</span>
+              </DropdownMenuItem>
+
+              <DropdownMenuItem
+                onClick={() => window.open('https://about.divine.video/faqs/', '_blank')}
+                className="cursor-pointer hover:bg-muted focus:bg-muted"
               >
                 <HelpCircle className="mr-2 h-4 w-4" />
                 <span>FAQ</span>
               </DropdownMenuItem>
 
               <DropdownMenuItem
-                onClick={() => navigate('/support')}
-                className="cursor-pointer hover:!bg-transparent hover:outline hover:outline-1 hover:outline-primary/30 focus:!bg-transparent focus:outline focus:outline-1 focus:outline-primary"
+                onClick={() => window.open('https://about.divine.video/media-resources/', '_blank')}
+                className="cursor-pointer hover:bg-muted focus:bg-muted"
               >
-                <Headphones className="mr-2 h-4 w-4" />
-                <span>Support</span>
+                <FileText className="mr-2 h-4 w-4" />
+                <span>Media Resources</span>
+              </DropdownMenuItem>
+
+              <DropdownMenuSeparator />
+
+              {/* Terms and open source section */}
+              <DropdownMenuItem
+                onClick={() => navigate('/terms')}
+                className="cursor-pointer hover:bg-muted focus:bg-muted"
+              >
+                <FileText className="mr-2 h-4 w-4" />
+                <span>Terms</span>
+              </DropdownMenuItem>
+
+              <DropdownMenuItem
+                onClick={() => navigate('/privacy')}
+                className="cursor-pointer hover:bg-muted focus:bg-muted"
+              >
+                <FileText className="mr-2 h-4 w-4" />
+                <span>Privacy</span>
+              </DropdownMenuItem>
+
+              <DropdownMenuItem
+                onClick={() => navigate('/safety')}
+                className="cursor-pointer hover:bg-muted focus:bg-muted"
+              >
+                <FileText className="mr-2 h-4 w-4" />
+                <span>Safety</span>
               </DropdownMenuItem>
 
               <DropdownMenuItem
                 onClick={() => navigate('/open-source')}
-                className="cursor-pointer hover:!bg-transparent hover:outline hover:outline-1 hover:outline-primary/30 focus:!bg-transparent focus:outline focus:outline-1 focus:outline-primary"
+                className="cursor-pointer hover:bg-muted focus:bg-muted"
               >
                 <Code2 className="mr-2 h-4 w-4" />
                 <span>Open Source</span>
               </DropdownMenuItem>
 
               <DropdownMenuItem
-                onClick={() => window.location.href = 'https://about.divine.video/media-resources/'}
-                className="cursor-pointer hover:!bg-transparent hover:outline hover:outline-1 hover:outline-primary/30 focus:!bg-transparent focus:outline focus:outline-1 focus:outline-primary"
+                onClick={() => window.open('https://opencollective.com/aos-collective/contribute/divine-keepers-95646', '_blank')}
+                className="cursor-pointer hover:bg-muted focus:bg-muted"
               >
                 <FileText className="mr-2 h-4 w-4" />
-                <span>Media Resources</span>
+                <span>Donate</span>
+              </DropdownMenuItem>
+
+              <DropdownMenuSeparator />
+
+              {/* Help - standalone */}
+              <DropdownMenuItem
+                onClick={() => navigate('/support')}
+                className="cursor-pointer hover:bg-muted focus:bg-muted"
+              >
+                <Headphones className="mr-2 h-4 w-4" />
+                <span>Help</span>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

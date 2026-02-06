@@ -47,8 +47,8 @@ export function DeleteListDialog({
         </DialogHeader>
 
         <div className="py-4">
-          <div className="bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-900/50 rounded-lg p-3">
-            <p className="text-sm text-yellow-900 dark:text-yellow-200">
+          <div className="bg-brand-yellow-light border border-brand-yellow rounded-lg p-3 dark:bg-brand-yellow-dark">
+            <p className="text-sm text-brand-yellow-dark dark:text-brand-yellow-light">
               <strong>Note:</strong> This action sends a deletion request to relays. Most relays will honor this request, but deletion is not guaranteed on all relays.
             </p>
           </div>

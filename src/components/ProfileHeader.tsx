@@ -374,7 +374,7 @@ export function ProfileHeader({
       {/* Classic Viner Stats - Original Vine Metrics */}
       {stats?.isClassicViner && stats.originalLoopCount && stats.originalLoopCount > 0 && (
         <div
-          className="bg-primary/5 rounded-lg p-4 border border-primary/20"
+          className="bg-muted rounded-lg p-4 border border-brand-light-green"
           data-testid="classic-viner-stats"
         >
           <div className="flex items-center gap-2 mb-3">

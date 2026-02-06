@@ -170,9 +170,9 @@ export function ViewSourceDialog({
         )}
 
         {!loading && isReconstructed && (
-          <div className="bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-900/50 rounded-lg p-3 flex items-start gap-2">
-            <AlertCircle className="h-4 w-4 text-yellow-600 dark:text-yellow-400 shrink-0 mt-0.5" />
-            <p className="text-sm text-yellow-900 dark:text-yellow-200">
+          <div className="bg-brand-yellow-light border border-brand-yellow rounded-lg p-3 flex items-start gap-2 dark:bg-brand-yellow-dark">
+            <AlertCircle className="h-4 w-4 text-brand-yellow-dark dark:text-brand-yellow shrink-0 mt-0.5" />
+            <p className="text-sm text-brand-yellow-dark dark:text-brand-yellow-light">
               <strong>Note:</strong> {fetchError
                 ? 'Could not fetch full event from relay. This is a reconstructed representation from cached data.'
                 : 'This is a reconstructed representation from parsed data. The original event signature and some tags may not be included.'}
@@ -181,9 +181,9 @@ export function ViewSourceDialog({
         )}
 
         {!loading && hasFullEvent && (
-          <div className="bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-900/50 rounded-lg p-3 flex items-start gap-2">
-            <Check className="h-4 w-4 text-green-600 dark:text-green-400 shrink-0 mt-0.5" />
-            <p className="text-sm text-green-900 dark:text-green-200">
+          <div className="bg-brand-light-green border border-brand-green rounded-lg p-3 flex items-start gap-2 dark:bg-brand-dark-green">
+            <Check className="h-4 w-4 text-brand-dark-green dark:text-brand-green shrink-0 mt-0.5" />
+            <p className="text-sm text-brand-dark-green dark:text-brand-light-green">
               <strong>Verified:</strong> This is the complete original event with cryptographic signature.
             </p>
           </div>
@@ -191,7 +191,7 @@ export function ViewSourceDialog({
 
         {!loading && (
           <div className="flex-1 overflow-auto">
-            <pre className="bg-muted/50 rounded-lg p-4 text-xs overflow-x-auto">
+            <pre className="bg-brand-light-green rounded-lg p-4 text-xs overflow-x-auto dark:bg-brand-dark-green">
               <code className="font-mono text-foreground">{eventJson}</code>
             </pre>
           </div>

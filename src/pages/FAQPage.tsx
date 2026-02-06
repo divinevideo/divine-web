@@ -196,14 +196,14 @@ export function FAQPage() {
                     </p>
                   </div>
 
-                  <div className="mt-4 pt-4 border-t bg-primary/5 p-4 rounded-lg">
-                    <p className="font-semibold mb-2">Do you have old videos to share?</p>
-                    <p>
+                  <div className="mt-4 pt-4 border-t bg-brand-dark-green p-4 rounded-lg border border-brand-green">
+                    <p className="font-semibold mb-2 text-brand-off-white">Do you have old videos to share?</p>
+                    <p className="text-brand-light-green">
                       If you have collections of archived short-form videos (with or without metadata), we'd love to
                       have them to help preserve them on Divine! Whether it's a handful of videos or an
                       extensive archive, every contribution helps preserve this important piece of internet
                       culture. Please{' '}
-                      <Link to="/support" className="text-primary hover:underline">
+                      <Link to="/support" className="text-brand-green hover:text-brand-light-green">
                         contact us
                       </Link>
                       {' '}to share your collection.
@@ -359,7 +359,7 @@ export function FAQPage() {
                   <p>
                     Jack Dorsey explains his support:
                   </p>
-                  <blockquote className="border-l-4 border-primary/30 pl-4 italic text-sm">
+                  <blockquote className="border-l-4 border-brand-green pl-4 italic text-sm">
                     "Nostr - the underlying open source protocol being used by Divine - is empowering developers to create a new generation of apps without the need for VC-backing, toxic business models or huge teams of engineers. The reason I funded the non-profit, and Other Stuff, is to allow creative engineers like Rabble to show what's possible in this new world, by using permissionless protocols which can't be shut down based on the whim of a corporate owner."
                   </blockquote>
                 </div>
@@ -667,19 +667,19 @@ export function FAQPage() {
                     </ul>
                   </div>
 
-                  <div className="p-3 bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-500/20 rounded-lg">
-                    <p className="font-semibold mb-2">Decentralized Network & Limited Responsibility</p>
-                    <p className="mb-2">
+                  <div className="p-3 bg-brand-dark-green border border-brand-green rounded-lg">
+                    <p className="font-semibold mb-2 text-brand-off-white">Decentralized Network & Limited Responsibility</p>
+                    <p className="mb-2 text-brand-light-green">
                       The diVine app can connect to multiple servers (relays and media servers) across the
-                      decentralized Nostr network. <strong>We only bear responsibility for content hosted on
+                      decentralized Nostr network. <strong className="text-brand-off-white">We only bear responsibility for content hosted on
                       our own servers.</strong>
                     </p>
-                    <p className="mb-2">
+                    <p className="mb-2 text-brand-light-green">
                       Content on other servers is moderated according to their operators' policies. When you
                       use Divine, you may see content from various servers with different moderation standards.
                     </p>
-                    <p>
-                      <strong>Run your own servers:</strong> If you want different moderation policies, you're
+                    <p className="text-brand-light-green">
+                      <strong className="text-brand-off-white">Run your own servers:</strong> If you want different moderation policies, you're
                       welcome to run your own Nostr relays and Blossom media servers with whatever policies you
                       prefer. The diVine app can connect to any compatible server.
                     </p>
@@ -695,14 +695,14 @@ export function FAQPage() {
 
               <FAQQuestion value="report" question="How do I report inappropriate content?">
                 <div className="text-muted-foreground space-y-2">
-                  <div className="p-3 bg-primary/10 border border-primary/20 rounded-lg">
+                  <div className="p-3 bg-brand-dark-green border border-brand-green rounded-lg">
                     <p className="font-semibold text-destructive mb-2">
                       24-Hour Response Commitment
                     </p>
-                    <p className="font-semibold">
+                    <p className="font-semibold text-brand-off-white">
                       We commit to reviewing and responding to all objectionable content reports within 24 hours.
                     </p>
-                    <p className="mt-2">
+                    <p className="mt-2 text-brand-light-green">
                       For reports of illegal content (especially CSAM), our response is immediate. We will remove
                       the content, ban the violating account, and report to appropriate authorities.
                     </p>
@@ -942,18 +942,18 @@ export function FAQPage() {
                     </ul>
                   </div>
 
-                  <div className="p-3 bg-primary/10 border border-primary/20 rounded-lg">
-                    <p className="font-semibold mb-2">Always Open and Permissionless</p>
-                    <p>
+                  <div className="p-3 bg-brand-dark-green border border-brand-green rounded-lg">
+                    <p className="font-semibold mb-2 text-brand-off-white">Always Open and Permissionless</p>
+                    <p className="text-brand-light-green">
                       The diVine system will always be open source using permissionless open protocols. This means:
                     </p>
-                    <ul className="list-disc list-inside space-y-1 ml-4 mt-2">
+                    <ul className="list-disc list-inside space-y-1 ml-4 mt-2 text-brand-light-green">
                       <li>You own your audience - they follow you, not the platform</li>
                       <li>You can take your content and followers to any compatible client</li>
                       <li>No platform lock-in or arbitrary account termination</li>
                       <li>The code is transparent and auditable by anyone</li>
                     </ul>
-                    <p className="mt-2">
+                    <p className="mt-2 text-brand-light-green">
                       This fundamental architecture ensures that creators can build sustainable businesses on Divine
                       without fear of losing everything if the platform changes direction.
                     </p>
@@ -1070,12 +1070,12 @@ export function FAQPage() {
         </Card>
 
         {/* Still have questions? */}
-        <Card className="bg-primary/5 border-primary/20">
+        <Card className="bg-brand-dark-green border-brand-green">
           <CardHeader>
-            <CardTitle>Still have questions?</CardTitle>
+            <CardTitle className="text-brand-off-white">Still have questions?</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <p className="text-muted-foreground">
+            <p className="text-brand-light-green">
               We're here to help! Check out these resources:
             </p>
             <div className="flex flex-wrap gap-3">

@@ -17,7 +17,7 @@ export function OriginalContentBadge({ className, size = 'small' }: OriginalCont
     <Badge
       variant="outline"
       className={cn(
-        'flex items-center gap-1 font-medium border-cyan-600 text-cyan-600 bg-cyan-50 dark:bg-cyan-950/20',
+        'flex items-center gap-1 font-medium border-brand-blue text-brand-blue-dark bg-brand-blue-light dark:bg-brand-blue-dark dark:text-brand-blue',
         sizeConfig.className,
         className
       )}

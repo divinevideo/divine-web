@@ -18,7 +18,7 @@ export function AboutPage() {
 
       <div className="space-y-8">
         {/* The Story */}
-        <Card className="border-2 border-primary/20">
+        <Card className="border-2 border-brand-light-green dark:border-brand-dark-green">
           <CardHeader>
             <CardTitle>The Story Behind diVine</CardTitle>
           </CardHeader>
@@ -34,22 +34,22 @@ export function AboutPage() {
                   <span>Our Mission: Social Media By Humans, For Humans</span>
                 </Link>
               </Button>
-              <div className="bg-muted/50 p-4 rounded-lg border">
-                <p className="text-sm text-muted-foreground mb-2">
-                  <strong>In the News:</strong>
+              <div className="bg-brand-dark-green p-4 rounded-lg border border-brand-green">
+                <p className="text-sm text-brand-light-green mb-2">
+                  <strong className="text-brand-off-white">In the News:</strong>
                 </p>
                 <div className="space-y-2">
                   <a
                     href="https://techcrunch.com/2025/11/12/jack-dorsey-funds-divine-a-vine-reboot-that-includes-vines-video-archive/"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-primary hover:underline inline-flex items-center gap-1"
+                    className="text-brand-green hover:text-brand-light-green inline-flex items-center gap-1"
                   >
                     TechCrunch: Jack Dorsey funds diVine, a Vine reboot that includes Vine's video archive
                     <ExternalLink className="h-3 w-3" />
                   </a>
                   <div>
-                    <a href="https://about.divine.video/news/" className="text-primary hover:underline text-sm">
+                    <a href="https://about.divine.video/news/" className="text-brand-green hover:text-brand-light-green text-sm">
                       View all press coverage →
                     </a>
                   </div>
@@ -73,9 +73,9 @@ export function AboutPage() {
               six-second videos capturing spontaneous moments of creativity. When Twitter shut down Vine,
               millions of creative videos were lost.
             </p>
-            <div className="bg-muted/50 p-4 rounded-lg border">
-              <p className="text-muted-foreground">
-                <strong>Important:</strong> diVine is an independent short-form video app with no affiliation
+            <div className="bg-brand-dark-green p-4 rounded-lg border border-brand-green">
+              <p className="text-brand-light-green">
+                <strong className="text-brand-off-white">Important:</strong> diVine is an independent short-form video app with no affiliation
                 to X (formerly Twitter) or the original Vine platform. We're a separate project built on
                 open-source technology and the decentralized Nostr protocol. diVine preserves archived videos
                 from the Internet Archive and enables new 6-second video creation using similar creative constraints.
