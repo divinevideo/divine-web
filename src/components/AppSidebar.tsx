@@ -1,7 +1,7 @@
 // ABOUTME: TikTok-style left sidebar navigation for desktop
 // ABOUTME: Shows main nav, login/signup, expandable diVine links section
 
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import { Home, Compass, Search, User, Sun, Moon, ChevronDown, Headphones } from 'lucide-react';
 import { useState } from 'react';
 import { nip19 } from 'nostr-tools';
@@ -13,6 +13,8 @@ import {
 } from '@/components/ui/collapsible';
 import { useTheme } from '@/hooks/useTheme';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { useSubdomainNavigate } from '@/hooks/useSubdomainNavigate';
+import { getSubdomainUser } from '@/hooks/useSubdomainUser';
 import { LoginArea } from '@/components/auth/LoginArea';
 import { cn } from '@/lib/utils';
 
@@ -46,8 +48,9 @@ function NavItem({ icon, label, onClick, isActive }: NavItemProps) {
 }
 
 export function AppSidebar({ className }: { className?: string }) {
-  const navigate = useNavigate();
+  const navigate = useSubdomainNavigate();
   const location = useLocation();
+  const subdomainUser = getSubdomainUser();
   const { displayTheme, setTheme } = useTheme();
   const { user } = useCurrentUser();
   const [divineOpen, setDivineOpen] = useState(false);
@@ -141,16 +144,25 @@ export function AppSidebar({ className }: { className?: string }) {
           </button>
         </div>
 
-        {/* Auth Buttons */}
+        {/* Auth Buttons - on subdomains, link to apex domain for login */}
         <div className="mt-6 px-4">
-          <LoginArea
-            className={cn(
-              "flex-col gap-2.5 w-full",
-              "[&>button]:w-full [&>button]:justify-center [&>button]:rounded-lg [&>button]:h-11 [&>button]:text-[15px]",
-              "[&>button:first-child]:border-border [&>button:first-child]:hover:border-primary",
-              "[&_.account-switcher]:w-full"
-            )}
-          />
+          {subdomainUser ? (
+            <a
+              href={`https://${subdomainUser.apexDomain}/`}
+              className="flex w-full items-center justify-center rounded-lg border border-border h-11 text-[15px] font-medium text-foreground transition-colors hover:border-primary hover:text-primary"
+            >
+              Log in on diVine
+            </a>
+          ) : (
+            <LoginArea
+              className={cn(
+                "flex-col gap-2.5 w-full",
+                "[&>button]:w-full [&>button]:justify-center [&>button]:rounded-lg [&>button]:h-11 [&>button]:text-[15px]",
+                "[&>button:first-child]:border-border [&>button:first-child]:hover:border-primary",
+                "[&_.account-switcher]:w-full"
+              )}
+            />
+          )}
         </div>
 
         {/* Footer Section - flows naturally, no pinning */}
