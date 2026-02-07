@@ -124,8 +124,10 @@ export function ProfilePage() {
   const originalLoopCount = videos?.reduce((sum, v) => sum + (v.loopCount || 0), 0) || 0;
   const isClassicViner = originalLoopCount > 0 || (funnelcakeProfile?.total_loops ? funnelcakeProfile.total_loops > 0 : false);
 
+  // Use actual loaded video count once all pages are loaded (API video_count may be inflated by dups)
+  const allLoaded = !hasNextPage && videos.length > 0;
   const stats = {
-    videosCount: funnelcakeProfile?.video_count ?? videos.length,
+    videosCount: allLoaded ? videos.length : (funnelcakeProfile?.video_count ?? videos.length),
     followersCount: funnelcakeProfile?.follower_count ?? 0,
     followingCount: funnelcakeProfile?.following_count ?? 0,
     totalViews: funnelcakeProfile?.total_reactions ?? 0,
