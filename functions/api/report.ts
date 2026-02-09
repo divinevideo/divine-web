@@ -147,6 +147,7 @@ export async function onRequestPost(context: {
   const subject = `[Content Report] ${body.reason} - ${body.contentType}`;
   const tags = [
     'content-report',
+    'client-divine-web',
     `reason-${body.reason}`,
     `type-${body.contentType}`,
     isAuthenticated ? 'authenticated' : 'anonymous',
