@@ -262,6 +262,9 @@ export function useReportContent() {
       tags.push(['L', 'social.nos.ontology']);
       tags.push(['l', `NS-${reason}`, 'social.nos.ontology']);
 
+      // Identify report source for trusted reporter gating
+      tags.push(['client', 'divine-web']);
+
       await publishEvent({
         kind: 1984, // Reporting event
         content: details || `Reporting ${reason}`,
