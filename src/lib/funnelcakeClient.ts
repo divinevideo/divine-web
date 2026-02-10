@@ -280,7 +280,7 @@ export async function fetchUserVideos(
   pubkey: string,
   options: FunnelcakeFetchOptions = {}
 ): Promise<FunnelcakeResponse> {
-  const { limit = 20, before, offset, signal } = options;
+  const { limit = 20, before, offset, sort, signal } = options;
 
   const endpoint = API_CONFIG.funnelcake.endpoints.userVideos.replace('{pubkey}', pubkey);
 
@@ -292,6 +292,7 @@ export async function fetchUserVideos(
   const params: Record<string, string | number | boolean | undefined> = {
     limit,
     offset: currentOffset || undefined, // omit if 0
+    sort: sort || undefined,
   };
 
   // API returns array directly, wrap it in expected format
@@ -777,6 +778,7 @@ export interface FunnelcakeProfile {
   follower_count?: number;
   following_count?: number;
   total_loops?: number;
+  total_views?: number;
   total_reactions?: number;
 }
 

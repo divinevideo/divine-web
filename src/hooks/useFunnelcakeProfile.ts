@@ -64,6 +64,8 @@ export function useFunnelcakeProfile(
         follower_count: data.social?.follower_count,
         following_count: data.social?.following_count,
         total_reactions: data.engagement?.total_reactions,
+        total_loops: data.engagement?.total_loops,
+        total_views: data.engagement?.total_views,
       };
 
       debugLog(`[useFunnelcakeProfile] Got profile:`, profile.name || profile.display_name);

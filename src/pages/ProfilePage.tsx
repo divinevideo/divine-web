@@ -6,6 +6,7 @@ import { useParams } from 'react-router-dom';
 import { nip19 } from 'nostr-tools';
 import { useSeoMeta } from '@unhead/react';
 import { Grid, List, Loader2 } from 'lucide-react';
+import { PROFILE_SORT_MODES } from '@/lib/constants/sortModes';
 import InfiniteScroll from 'react-infinite-scroll-component';
 import { ProfileHeader } from '@/components/ProfileHeader';
 import { VideoGrid } from '@/components/VideoGrid';
@@ -23,10 +24,12 @@ import { useFollowRelationship, useFollowUser, useUnfollowUser } from '@/hooks/u
 import { useFollowListSafetyCheck } from '@/hooks/useFollowListSafetyCheck';
 import { useLoginDialog } from '@/contexts/LoginDialogContext';
 import { debugLog } from '@/lib/debug';
+import type { SortMode } from '@/types/nostr';
 
 export function ProfilePage() {
   const { npub, nip19: nip19Param } = useParams<{ npub?: string; nip19?: string }>();
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [sortMode, setSortMode] = useState<SortMode | undefined>(undefined);
   const [editProfileOpen, setEditProfileOpen] = useState(false);
   const [safetyDialogOpen, setSafetyDialogOpen] = useState(false);
   const [pendingFollowAction, setPendingFollowAction] = useState<boolean | null>(null);
@@ -75,6 +78,7 @@ export function ProfilePage() {
     hasNextPage,
   } = useVideoProvider({
     feedType: 'profile',
+    sortMode,
     pubkey: pubkey || '',
     enabled: !!pubkey,
   });
@@ -119,8 +123,9 @@ export function ProfilePage() {
   };
 
   // Use Funnelcake stats (fast) - don't run expensive Nostr queries
-  // Funnelcake already has: video_count, follower_count, following_count, total_reactions, total_loops
-  // Calculate classic viner stats from videos (loop counts are in the video data)
+  // engagement.total_loops = computed from watch time (seconds_watched / video_duration)
+  // engagement.total_views = total view count across all videos
+  // engagement.total_reactions = likes/reactions received on videos
   const originalLoopCount = videos?.reduce((sum, v) => sum + (v.loopCount || 0), 0) || 0;
   const isClassicViner = originalLoopCount > 0 || (funnelcakeProfile?.total_loops ? funnelcakeProfile.total_loops > 0 : false);
 
@@ -130,7 +135,7 @@ export function ProfilePage() {
     videosCount: allLoaded ? videos.length : (funnelcakeProfile?.video_count ?? videos.length),
     followersCount: funnelcakeProfile?.follower_count ?? 0,
     followingCount: funnelcakeProfile?.following_count ?? 0,
-    totalViews: funnelcakeProfile?.total_reactions ?? 0,
+    totalViews: funnelcakeProfile?.total_views ?? 0,
     totalLoops: funnelcakeProfile?.total_loops ?? 0,
     totalReactions: funnelcakeProfile?.total_reactions ?? 0,
     joinedDate: null, // Could fetch from Nostr later if needed
@@ -285,7 +290,7 @@ export function ProfilePage() {
 
         {/* Content Section */}
         <div className="space-y-4">
-          {/* View Mode Toggle */}
+          {/* View Mode Toggle + Sort */}
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-xl font-semibold">Videos</h2>
@@ -294,23 +299,51 @@ export function ProfilePage() {
               </p>
             </div>
 
-            <div className="flex items-center gap-2">
-              <Button
-                variant={viewMode === 'grid' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setViewMode('grid')}
-                data-testid="grid-view-button"
-              >
-                <Grid className="w-4 h-4" />
-              </Button>
-              <Button
-                variant={viewMode === 'list' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setViewMode('list')}
-                data-testid="list-view-button"
-              >
-                <List className="w-4 h-4" />
-              </Button>
+            <div className="flex items-center gap-3">
+              {/* Sort Mode */}
+              <div className="flex items-center gap-1">
+                {PROFILE_SORT_MODES.map(mode => {
+                  const ModeIcon = mode.icon;
+                  const isSelected = sortMode === mode.value;
+                  return (
+                    <button
+                      key={mode.label}
+                      onClick={() => setSortMode(mode.value as SortMode)}
+                      className={`
+                        flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all
+                        ${isSelected
+                          ? 'bg-primary text-primary-foreground shadow-sm'
+                          : 'bg-brand-light-green dark:bg-brand-dark-green hover:bg-muted text-muted-foreground hover:text-foreground'
+                        }
+                      `}
+                      data-testid={`sort-${mode.label.toLowerCase().replace(' ', '-')}`}
+                    >
+                      <ModeIcon className="h-3.5 w-3.5" />
+                      <span>{mode.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* View Mode */}
+              <div className="flex items-center gap-1 border-l pl-3">
+                <Button
+                  variant={viewMode === 'grid' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setViewMode('grid')}
+                  data-testid="grid-view-button"
+                >
+                  <Grid className="w-4 h-4" />
+                </Button>
+                <Button
+                  variant={viewMode === 'list' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setViewMode('list')}
+                  data-testid="list-view-button"
+                >
+                  <List className="w-4 h-4" />
+                </Button>
+              </div>
             </div>
           </div>
 
@@ -362,6 +395,7 @@ export function ProfilePage() {
           ) : (
             <VideoFeed
               feedType="profile"
+              sortMode={sortMode}
               pubkey={pubkey}
               data-testid="video-feed-profile"
               data-profile-testid={`feed-profile-${identifier}`}
