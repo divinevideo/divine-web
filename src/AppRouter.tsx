@@ -42,11 +42,7 @@ import { AppLayout } from "@/components/AppLayout";
 import { DebugVideoPage } from "./pages/DebugVideoPage";
 import LeaderboardPage from "./pages/LeaderboardPage";
 // import { UploadPage } from "./pages/UploadPage"; // DISABLED: Upload route is commented out
-import { KeycastAutoConnect } from "@/components/KeycastAutoConnect";
-
 export function AppRouter() {
-  // Auto-connect Keycast bunker if user has a session
-  KeycastAutoConnect();
   const { logins } = useNostrLogin();
 
   // Check if user is logged in

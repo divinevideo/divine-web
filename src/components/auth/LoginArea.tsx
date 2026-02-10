@@ -6,7 +6,6 @@ import { User, UserPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button.tsx';
 import LoginDialog from './LoginDialog';
 import SignupDialog from './SignupDialog';
-import { KeycastSignupDialog } from './KeycastSignupDialog';
 import { useLoggedInAccounts } from '@/hooks/useLoggedInAccounts';
 import { AccountSwitcher } from './AccountSwitcher';
 import { cn } from '@/lib/utils';
@@ -21,7 +20,6 @@ export function LoginArea({ className }: LoginAreaProps) {
   const { isOpen: globalLoginDialogOpen, closeLoginDialog } = useLoginDialog();
   const [localLoginDialogOpen, setLocalLoginDialogOpen] = useState(false);
   const [signupDialogOpen, setSignupDialogOpen] = useState(false);
-  const [keycastSignupDialogOpen, setKeycastSignupDialogOpen] = useState(false);
 
   // Combine global and local dialog open states
   const loginDialogOpen = globalLoginDialogOpen || localLoginDialogOpen;
@@ -35,7 +33,6 @@ export function LoginArea({ className }: LoginAreaProps) {
   const handleLogin = () => {
     handleCloseLoginDialog();
     setSignupDialogOpen(false);
-    setKeycastSignupDialogOpen(false);
   };
 
   return (
@@ -80,12 +77,6 @@ export function LoginArea({ className }: LoginAreaProps) {
         }}
       />
 
-      <KeycastSignupDialog
-        isOpen={keycastSignupDialogOpen}
-        onClose={() => setKeycastSignupDialogOpen(false)}
-        onComplete={handleLogin}
-        onSwitchToLogin={() => setLocalLoginDialogOpen(true)}
-      />
     </div>
   );
 }

@@ -2,14 +2,13 @@
 // It is important that all functionality in this file is preserved, and should only be modified if explicitly requested.
 
 import React, { useRef, useState, useEffect } from 'react';
-import { Shield, Upload, AlertTriangle, KeyRound, Cloud, Mail } from 'lucide-react';
+import { Shield, Upload, AlertTriangle, KeyRound, Cloud } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogDescription } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useLoginActions } from '@/hooks/useLoginActions';
-import { KeycastLoginForm } from '@/components/auth/KeycastLoginForm';
 import { cn } from '@/lib/utils';
 
 interface LoginDialogProps {
@@ -187,15 +186,11 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin, onS
 
           {/* Login Methods */}
           <Tabs defaultValue={defaultTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-4 bg-muted rounded-lg mb-4">
+            <TabsList className="grid w-full grid-cols-3 bg-muted rounded-lg mb-4">
               <TabsTrigger value="extension" className="flex items-center gap-2">
                 <Shield className="w-4 h-4" />
                 <span className="hidden sm:inline">Extension</span>
                 <span className="sm:hidden">Ext</span>
-              </TabsTrigger>
-              <TabsTrigger value="email" className="flex items-center gap-2">
-                <Mail className="w-4 h-4" />
-                <span>Email</span>
               </TabsTrigger>
               <TabsTrigger value="key" className="flex items-center gap-2">
                 <KeyRound className="w-4 h-4" />
@@ -228,26 +223,6 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin, onS
                     {isLoading ? 'Logging in...' : 'Login with Extension'}
                   </Button>
                 </div>
-              </div>
-            </TabsContent>
-
-            <TabsContent value='email' className='space-y-3'>
-              <div className='p-4 rounded-lg bg-gray-50 dark:bg-gray-800'>
-                <Mail className='w-12 h-12 mx-auto mb-3 text-primary' />
-                <p className='text-sm text-gray-600 dark:text-gray-300 mb-4 text-center'>
-                  Login with your diVine account
-                </p>
-                <div className='p-4 mb-4 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800'>
-                  <p className='text-sm text-blue-800 dark:text-blue-200 text-center'>
-                    Note: Email signup is currently disabled. The beta is only open to existing Nostr users.
-                  </p>
-                </div>
-                <KeycastLoginForm
-                  onSuccess={() => {
-                    onLogin();
-                    onClose();
-                  }}
-                />
               </div>
             </TabsContent>
 

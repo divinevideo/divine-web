@@ -388,7 +388,6 @@ export function FAQPage() {
                     <strong>Web app:</strong> You have several options:
                   </p>
                   <ul className="list-disc list-inside space-y-1 ml-4">
-                    <li><strong>Email signup:</strong> Sign up with email using Keycast, which manages your Nostr keys for you</li>
                     <li><strong>Browser extension:</strong> Use extensions like Alby, nos2x, or Flamingo</li>
                     <li><strong>Private key (advanced):</strong> Import your existing Nostr private key (nsec)</li>
                     <li><strong>Remote signer:</strong> Use a bunker URL for secure remote signing</li>
@@ -448,7 +447,7 @@ export function FAQPage() {
                     <li>Save your private key in a password manager</li>
                     <li>Write it down on paper and store it securely</li>
                     <li>Use a browser extension that securely stores your key</li>
-                    <li>Or use email signup with Keycast, which manages keys for you</li>
+                    <li>Or use a password manager to store your key securely</li>
                   </ul>
                 </div>
               </FAQQuestion>
