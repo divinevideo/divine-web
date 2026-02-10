@@ -85,6 +85,25 @@ export const EXTENDED_SORT_MODES: SortModeDefinition[] = [
  * Search-specific sort modes including relevance
  * Used in: SearchPage
  */
+/**
+ * Sort modes for profile video feeds
+ * Used in: ProfilePage
+ */
+export const PROFILE_SORT_MODES: SortModeDefinition[] = [
+  {
+    value: undefined,
+    label: 'Recent',
+    description: 'Latest videos',
+    icon: Clock
+  },
+  {
+    value: 'top',
+    label: 'Most Loops',
+    description: 'Highest loop count',
+    icon: TrendingUp
+  },
+];
+
 export const SEARCH_SORT_MODES: SearchSortModeDefinition[] = [
   {
     value: 'relevance',
