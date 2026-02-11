@@ -1,7 +1,7 @@
 // ABOUTME: Enhanced profile page with header, stats, video grid, and follow functionality
 // ABOUTME: Displays user profile with comprehensive social features and responsive video grid
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { nip19 } from 'nostr-tools';
 import { useSeoMeta } from '@unhead/react';
@@ -24,6 +24,7 @@ import { useFollowRelationship, useFollowUser, useUnfollowUser } from '@/hooks/u
 import { useFollowListSafetyCheck } from '@/hooks/useFollowListSafetyCheck';
 import { useLoginDialog } from '@/contexts/LoginDialogContext';
 import { debugLog } from '@/lib/debug';
+import { getDivineNip05Info } from '@/lib/nip05Utils';
 import type { SortMode } from '@/types/nostr';
 
 export function ProfilePage() {
@@ -121,6 +122,20 @@ export function ProfilePage() {
     // Flag to indicate name is still loading (used by ProfileHeader)
     _stillLoadingName: stillLoadingName,
   };
+
+  // Redirect to subdomain if user has a divine.video NIP-05 and we're on the apex domain
+  const nip05 = metadata.nip05;
+  useEffect(() => {
+    // Only redirect if we're on the apex domain (not already on a subdomain)
+    if (subdomainUser) return;
+    if (!nip05) return;
+
+    const divineInfo = getDivineNip05Info(nip05);
+    if (divineInfo) {
+      debugLog('[ProfilePage] Redirecting to subdomain:', divineInfo.href);
+      window.location.href = divineInfo.href;
+    }
+  }, [nip05, subdomainUser]);
 
   // Use Funnelcake stats (fast) - don't run expensive Nostr queries
   // engagement.total_loops = computed from watch time (seconds_watched / video_duration)
