@@ -204,8 +204,6 @@ export function ProfileHeader({
                       <a
                         href={divineInfo.href}
                         className={className}
-                        target="_blank"
-                        rel="noopener noreferrer"
                       >
                         {displayText}
                       </a>
