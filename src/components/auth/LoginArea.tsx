@@ -52,11 +52,10 @@ export function LoginArea({ className }: LoginAreaProps) {
           {/* Hide signup button on mobile - accessible via login dialog */}
           <Button
             onClick={() => setSignupDialogOpen(true)}
-            variant="outline"
-            className='hidden sm:flex items-center gap-2 px-4 py-2 rounded-full font-medium transition-all animate-scale-in border-primary text-primary hover:bg-primary/10'
+            className='hidden sm:flex items-center gap-2 px-4 py-2 rounded-full font-medium transition-all animate-scale-in'
           >
             <UserPlus className='w-4 h-4' />
-            <span className='truncate'>Join Waitlist</span>
+            <span className='truncate'>Sign up</span>
           </Button>
         </>
       )}
