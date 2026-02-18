@@ -34,7 +34,7 @@ const SignupDialog: React.FC<SignupDialogProps> = ({ isOpen, onClose, onLogin })
             <div className='space-y-2'>
               <h3 className='text-xl font-semibold'>Get Early Access</h3>
               <p className='text-muted-foreground text-sm'>
-                The diVine beta is currently full. Sign up to be notified when spots open up.
+                The Divine beta is currently full. If you'd like to hear our news and be amongst the first to hear when the diVine app goes live, sign up here.
               </p>
             </div>
 
