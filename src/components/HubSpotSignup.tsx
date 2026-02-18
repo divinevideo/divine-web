@@ -1,9 +1,10 @@
 import { useEffect } from 'react';
 
-// Only load HubSpot on production and localhost
+// Only block HubSpot on known typo/staging domains
 function isHubSpotAllowed(): boolean {
   const hostname = window.location.hostname;
-  return hostname === 'divine.video' || hostname === 'about.divine.video' || hostname === 'localhost';
+  const blockedDomains = ['devine.video', 'dvines.org'];
+  return !blockedDomains.some(d => hostname === d || hostname.endsWith('.' + d));
 }
 
 export function HubSpotSignup() {
