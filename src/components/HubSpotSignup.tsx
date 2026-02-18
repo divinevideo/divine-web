@@ -1,10 +1,7 @@
 import { useEffect } from 'react';
 
-// Only block HubSpot on known typo/staging domains
 function isHubSpotAllowed(): boolean {
-  const hostname = window.location.hostname;
-  const blockedDomains = ['devine.video', 'dvines.org'];
-  return !blockedDomains.some(d => hostname === d || hostname.endsWith('.' + d));
+  return true;
 }
 
 export function HubSpotSignup() {
