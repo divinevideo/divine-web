@@ -165,18 +165,6 @@ export function AppSidebar({ className }: { className?: string }) {
           )}
         </div>
 
-        {/* Waitlist CTA */}
-        <div className="mt-4 px-4">
-          <a
-            href="https://about.divine.video/news/#signup"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex w-full items-center justify-center rounded-lg border-2 border-primary h-11 text-[15px] font-semibold text-primary transition-colors hover:bg-primary hover:text-primary-foreground"
-          >
-            Join the Waitlist
-          </a>
-        </div>
-
         {/* Footer Section - flows naturally, no pinning */}
         <div className="mt-6 px-4">
         {/* Expandable diVine Section */}
