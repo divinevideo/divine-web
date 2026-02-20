@@ -21,7 +21,7 @@ service_id = "WfOrPTFYmwwxRvqrfralLA"
       format = "json"
 
   [local_server.secret_stores]
-    [local_server.secret_stores.divine-web-secrets]
+    [local_server.secret_stores.divine_web_secrets]
       file = "./test-data/secrets.json"
       format = "json"
 
@@ -51,4 +51,4 @@ service_id = "WfOrPTFYmwwxRvqrfralLA"
     [setup.kv_stores.divine-names]
 
   [setup.secret_stores]
-    [setup.secret_stores.divine-web-secrets]
+    [setup.secret_stores.divine_web_secrets]

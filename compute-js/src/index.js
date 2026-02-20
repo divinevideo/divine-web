@@ -228,7 +228,7 @@ async function handleReport(req) {
 
   try {
     // Read credentials from Fastly Secret Store
-    const store = new SecretStore('divine-web-secrets');
+    const store = new SecretStore('divine_web_secrets');
     const subdomain = (await store.get('ZENDESK_SUBDOMAIN')).plaintext();
     const email = (await store.get('ZENDESK_API_EMAIL')).plaintext();
     const token = (await store.get('ZENDESK_API_TOKEN')).plaintext();
