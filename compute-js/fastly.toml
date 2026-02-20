@@ -20,6 +20,11 @@ service_id = "WfOrPTFYmwwxRvqrfralLA"
       file = "./test-data/names-kvstore.json"
       format = "json"
 
+  [local_server.secret_stores]
+    [local_server.secret_stores.divine-web-secrets]
+      file = "./test-data/secrets.json"
+      format = "json"
+
 [scripts]
   build = "npm run build"
 
@@ -30,6 +35,13 @@ service_id = "WfOrPTFYmwwxRvqrfralLA"
   override_host = "relay.divine.video"
   use_ssl = true
 
+[[backends]]
+  name = "zendesk"
+  address = "rabblelabs.zendesk.com"
+  port = 443
+  override_host = "rabblelabs.zendesk.com"
+  use_ssl = true
+
 [setup]
 
   [setup.kv_stores]
@@ -37,3 +49,6 @@ service_id = "WfOrPTFYmwwxRvqrfralLA"
     [setup.kv_stores.divine-web-content]
 
     [setup.kv_stores.divine-names]
+
+  [setup.secret_stores]
+    [setup.secret_stores.divine-web-secrets]

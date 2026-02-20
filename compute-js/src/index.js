@@ -4,6 +4,7 @@
 /// <reference types="@fastly/js-compute" />
 import { env } from 'fastly:env';
 import { KVStore } from 'fastly:kv-store';
+import { SecretStore } from 'fastly:secret-store';
 import { PublisherServer } from '@fastly/compute-js-static-publish';
 import rc from '../static-publish.rc.js';
 
@@ -117,7 +118,12 @@ async function handleRequest(event) {
     }
   }
 
-  // 7. Serve static content with SPA fallback (handled by PublisherServer config)
+  // 7. Content report API (creates Zendesk tickets)
+  if (url.pathname === '/api/report') {
+    return await handleReport(request);
+  }
+
+  // 8. Serve static content with SPA fallback (handled by PublisherServer config)
   const response = await publisherServer.serveRequest(request);
   if (response != null) {
     // Add Vary: X-Original-Host so CDN doesn't mix subdomain and apex cached responses
@@ -173,6 +179,180 @@ async function handleNip05(url) {
   } catch (error) {
     console.error('NIP-05 KV error:', error);
     return jsonResponse({ error: 'Internal server error' }, 500);
+  }
+}
+
+/**
+ * Handle content report API requests.
+ * Ported from functions/api/report.ts (CF Pages Function) for Fastly Compute.
+ * Creates Zendesk tickets for content reports from the web client.
+ */
+async function handleReport(req) {
+  const REPORT_ALLOWED_ORIGINS = [
+    'https://divine.video',
+    'https://www.divine.video',
+    'https://staging.divine.video',
+  ];
+  const PAGES_PREVIEW_RE = /^https:\/\/[a-z0-9-]+\.divine-web-fm8\.pages\.dev$/;
+
+  const origin = req.headers.get('Origin') || '';
+  const isAllowed = REPORT_ALLOWED_ORIGINS.includes(origin) || PAGES_PREVIEW_RE.test(origin);
+
+  const corsHeaders = {
+    'Access-Control-Allow-Origin': isAllowed ? origin : 'https://divine.video',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Max-Age': '86400',
+  };
+
+  // OPTIONS preflight
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { status: 204, headers: corsHeaders });
+  }
+
+  // POST only
+  if (req.method !== 'POST') {
+    return new Response(JSON.stringify({ error: 'Method not allowed' }), {
+      status: 405,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+
+  // Reject disallowed origins
+  if (!isAllowed) {
+    return new Response(JSON.stringify({ error: 'Origin not allowed' }), {
+      status: 403,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+
+  try {
+    // Read credentials from Fastly Secret Store
+    const store = new SecretStore('divine-web-secrets');
+    const subdomain = (await store.get('ZENDESK_SUBDOMAIN')).plaintext();
+    const email = (await store.get('ZENDESK_API_EMAIL')).plaintext();
+    const token = (await store.get('ZENDESK_API_TOKEN')).plaintext();
+
+    let body;
+    try {
+      body = await req.json();
+    } catch {
+      return new Response(JSON.stringify({ error: 'Invalid JSON body' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const { contentType, reason, timestamp, eventId, pubkey, reporterPubkey, reporterEmail, details, contentUrl } = body;
+
+    // Validate required fields
+    if (!contentType || !reason || !timestamp) {
+      return new Response(JSON.stringify({ error: 'Missing required fields: contentType, reason, timestamp' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    if (!eventId && !pubkey) {
+      return new Response(JSON.stringify({ error: 'Must provide either eventId or pubkey' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Determine requester identity
+    let requesterEmail;
+    let isAuthenticated;
+
+    if (reporterPubkey) {
+      requesterEmail = `${reporterPubkey}@reports.divine.video`;
+      isAuthenticated = true;
+    } else if (reporterEmail) {
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(reporterEmail)) {
+        return new Response(JSON.stringify({ error: 'Invalid email format' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      requesterEmail = reporterEmail;
+      isAuthenticated = false;
+    } else {
+      return new Response(JSON.stringify({ error: 'Must provide either reporterPubkey or reporterEmail' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Determine priority based on reason
+    let priority = 'normal';
+    if (reason === 'csam' || reason === 'illegal') priority = 'urgent';
+    else if (reason === 'violence' || reason === 'harassment' || reason === 'impersonation') priority = 'high';
+
+    // Build ticket
+    const subject = `[Content Report] ${reason} - ${contentType}`;
+    const tags = [
+      'content-report',
+      'client-divine-web',
+      `reason-${reason}`,
+      `type-${contentType}`,
+      isAuthenticated ? 'authenticated' : 'anonymous',
+    ];
+
+    const bodyParts = [
+      `**Content Type:** ${contentType}`,
+      `**Reason:** ${reason}`,
+    ];
+    if (eventId) bodyParts.push(`**Event ID:** ${eventId}`);
+    if (pubkey) bodyParts.push(`**Reported Pubkey:** ${pubkey}`);
+    if (contentUrl) bodyParts.push(`**Content URL:** ${contentUrl}`);
+    if (details) bodyParts.push(`\n**Details:**\n${details}`);
+    bodyParts.push(`\n**Reported at:** ${new Date(timestamp).toISOString()}`);
+    bodyParts.push(`**Reporter:** ${isAuthenticated ? `Authenticated user (${reporterPubkey})` : `Anonymous (${reporterEmail})`}`);
+
+    const ticketPayload = {
+      ticket: {
+        subject,
+        comment: { body: bodyParts.join('\n') },
+        requester: { email: requesterEmail },
+        tags,
+        priority,
+      },
+    };
+
+    // Create Zendesk ticket via named backend
+    const zendeskUrl = `https://${subdomain}.zendesk.com/api/v2/tickets.json`;
+    const authHeader = btoa(`${email}/token:${token}`);
+
+    const zendeskResponse = await fetch(zendeskUrl, {
+      backend: 'zendesk',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Basic ${authHeader}`,
+      },
+      body: JSON.stringify(ticketPayload),
+    });
+
+    if (!zendeskResponse.ok) {
+      const errorText = await zendeskResponse.text();
+      console.error('[report] Zendesk API error:', zendeskResponse.status, errorText);
+      return new Response(JSON.stringify({ error: 'Failed to create ticket' }), {
+        status: 502,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const result = await zendeskResponse.json();
+    return new Response(JSON.stringify({ success: true, ticketId: result.ticket?.id }), {
+      status: 201,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  } catch (err) {
+    console.error('[report] Error:', err);
+    return new Response(JSON.stringify({ error: 'Internal server error' }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
   }
 }
 
