@@ -192,6 +192,10 @@ async function handleReport(req) {
     'https://divine.video',
     'https://www.divine.video',
     'https://staging.divine.video',
+    'http://localhost:5173',
+    'http://localhost:4173',
+    'http://localhost:8080',
+    'https://localhost:8080',
   ];
   const PAGES_PREVIEW_RE = /^https:\/\/[a-z0-9-]+\.divine-web-fm8\.pages\.dev$/;
 
