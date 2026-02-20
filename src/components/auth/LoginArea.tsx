@@ -1,7 +1,7 @@
 // NOTE: This file is stable and usually should not be modified.
 // It is important that all functionality in this file is preserved, and should only be modified if explicitly requested.
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { User, UserPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button.tsx';
 import LoginDialog from './LoginDialog';
@@ -20,6 +20,14 @@ export function LoginArea({ className }: LoginAreaProps) {
   const { isOpen: globalLoginDialogOpen, closeLoginDialog } = useLoginDialog();
   const [localLoginDialogOpen, setLocalLoginDialogOpen] = useState(false);
   const [signupDialogOpen, setSignupDialogOpen] = useState(false);
+
+  // Open signup dialog via #signup deep link (captured in main.tsx before router redirects)
+  useEffect(() => {
+    if (sessionStorage.getItem('openSignup')) {
+      sessionStorage.removeItem('openSignup');
+      setSignupDialogOpen(true);
+    }
+  }, []);
 
   // Combine global and local dialog open states
   const loginDialogOpen = globalLoginDialogOpen || localLoginDialogOpen;
