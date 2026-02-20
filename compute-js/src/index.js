@@ -199,7 +199,7 @@ async function handleReport(req) {
   const isAllowed = REPORT_ALLOWED_ORIGINS.includes(origin) || PAGES_PREVIEW_RE.test(origin);
 
   const corsHeaders = {
-    'Access-Control-Allow-Origin': isAllowed ? origin : 'https://divine.video',
+    'Access-Control-Allow-Origin': isAllowed ? origin : '',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type',
     'Access-Control-Max-Age': '86400',
@@ -229,9 +229,19 @@ async function handleReport(req) {
   try {
     // Read credentials from Fastly Secret Store
     const store = new SecretStore('divine_web_secrets');
-    const subdomain = (await store.get('ZENDESK_SUBDOMAIN')).plaintext();
-    const email = (await store.get('ZENDESK_API_EMAIL')).plaintext();
-    const token = (await store.get('ZENDESK_API_TOKEN')).plaintext();
+    const [subdomain, email, token] = await Promise.all([
+      store.get('ZENDESK_SUBDOMAIN').then(s => s?.plaintext()),
+      store.get('ZENDESK_API_EMAIL').then(s => s?.plaintext()),
+      store.get('ZENDESK_API_TOKEN').then(s => s?.plaintext()),
+    ]);
+
+    if (!subdomain || !email || !token) {
+      console.error('[report] Missing Zendesk secret store keys');
+      return new Response(JSON.stringify({ error: 'Server configuration error' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
     let body;
     try {
@@ -319,7 +329,10 @@ async function handleReport(req) {
       },
     };
 
-    // Create Zendesk ticket via named backend
+    // Create Zendesk ticket via named backend.
+    // NOTE: ZENDESK_SUBDOMAIN must match the backend address in fastly.toml
+    // (currently rabblelabs.zendesk.com). Fastly pins TLS to the declared backend,
+    // so changing the secret without updating fastly.toml will silently misbehave.
     const zendeskUrl = `https://${subdomain}.zendesk.com/api/v2/tickets.json`;
     const authHeader = btoa(`${email}/token:${token}`);
 
