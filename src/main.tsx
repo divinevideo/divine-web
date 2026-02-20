@@ -2,7 +2,9 @@
  * If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-// Capture #signup hash before router redirects strip it
+// Capture #signup hash before React renders (and the router redirects strip it).
+// ESM imports are hoisted above this code, but no import touches location.hash —
+// the router only runs when React mounts, so sessionStorage is set in time.
 if (window.location.hash === '#signup') {
   sessionStorage.setItem('openSignup', '1');
   history.replaceState(null, '', window.location.pathname + window.location.search);
