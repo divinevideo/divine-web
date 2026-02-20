@@ -2,6 +2,12 @@
  * If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+// Capture #signup hash before router redirects strip it
+if (window.location.hash === '#signup') {
+  sessionStorage.setItem('openSignup', '1');
+  history.replaceState(null, '', window.location.pathname + window.location.search);
+}
+
 // Initialize Sentry FIRST for error tracking
 import { initializeSentry } from './lib/sentry';
 initializeSentry();

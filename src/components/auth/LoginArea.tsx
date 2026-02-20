@@ -21,11 +21,11 @@ export function LoginArea({ className }: LoginAreaProps) {
   const [localLoginDialogOpen, setLocalLoginDialogOpen] = useState(false);
   const [signupDialogOpen, setSignupDialogOpen] = useState(false);
 
-  // Open signup dialog via #signup deep link
+  // Open signup dialog via #signup deep link (captured in main.tsx before router redirects)
   useEffect(() => {
-    if (window.location.hash === '#signup') {
+    if (sessionStorage.getItem('openSignup')) {
+      sessionStorage.removeItem('openSignup');
       setSignupDialogOpen(true);
-      history.replaceState(null, '', window.location.pathname + window.location.search);
     }
   }, []);
 
