@@ -8,6 +8,9 @@ import { useVideoPlayback } from '@/hooks/useVideoPlayback';
 import { useIsMobile } from '@/hooks/useIsMobile';
 import { useAdultVerification, checkMediaAuth } from '@/hooks/useAdultVerification';
 import { debugError, verboseLog } from '@/lib/debug';
+import { useVideoMetricsTracker } from '@/hooks/useVideoMetricsTracker';
+import type { ViewTrafficSource } from '@/hooks/useViewEventPublisher';
+import type { ParsedVideoData } from '@/types/video';
 import { BlurhashPlaceholder, isValidBlurhash } from '@/components/BlurhashImage';
 import { AgeVerificationOverlay } from '@/components/AgeVerificationOverlay';
 import { createAuthLoader } from '@/lib/hlsAuthLoader';
@@ -42,6 +45,9 @@ interface VideoPlayerProps {
   onVolumeGesture?: (data: { direction: 'up' | 'down'; delta: number }) => void;
   onBrightnessGesture?: (data: { direction: 'up' | 'down'; delta: number }) => void;
   onOrientationChange?: (orientation: string) => void;
+  // View event tracking
+  videoData?: ParsedVideoData;
+  trafficSource?: ViewTrafficSource;
 }
 
 interface TouchState {
@@ -79,6 +85,8 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
       onVolumeGesture,
       onBrightnessGesture,
       onOrientationChange,
+      videoData,
+      trafficSource,
     },
     ref
   ) => {
@@ -140,6 +148,21 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
       threshold: [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0], // Multiple thresholds for granular tracking
       rootMargin: '0px', // No margin, we want exact visibility
       triggerOnce: false, // Allow re-triggering when scrolling
+    });
+
+    // View event tracking state (throttled to 1 update/sec)
+    const [playbackSecond, setPlaybackSecond] = useState(0);
+    const [videoDuration, setVideoDuration] = useState(0);
+    const playbackSecondRef = useRef(0);
+
+    // Track video view metrics and publish Kind 22236 events
+    useVideoMetricsTracker({
+      video: videoData ?? null,
+      isPlaying,
+      currentTime: playbackSecond,
+      duration: videoDuration,
+      source: trafficSource,
+      enabled: !!videoData,
     });
 
     // Combine refs - minimize dependencies for stability
@@ -460,6 +483,9 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
         verboseLog(`[VideoPlayer ${videoId}] Video dimensions: ${width}x${height} (${isVertical ? 'vertical' : 'horizontal'})`);
         verboseLog(`[VideoPlayer ${videoId}] Video duration: ${videoRef.current.duration}s`);
 
+        // Set duration for view metrics tracking
+        setVideoDuration(videoRef.current.duration || 0);
+
         // Report dimensions to parent component
         onVideoDimensions?.({ width, height, isVertical });
 
@@ -547,6 +573,13 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
 
       if (video.currentTime >= MAX_PLAYBACK_DURATION) {
         video.currentTime = 0;
+      }
+
+      // Update playback second for metrics tracking (throttled to 1/sec)
+      const sec = Math.floor(video.currentTime);
+      if (sec !== playbackSecondRef.current) {
+        playbackSecondRef.current = sec;
+        setPlaybackSecond(sec);
       }
     }, []);
 

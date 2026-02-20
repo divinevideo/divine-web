@@ -33,6 +33,7 @@ import type { NostrMetadata } from '@nostrify/nostrify';
 import { cn } from '@/lib/utils';
 import { formatViewCount, formatCount } from '@/lib/formatUtils';
 import { getSafeProfileImage } from '@/lib/imageUtils';
+import type { ViewTrafficSource } from '@/hooks/useViewEventPublisher';
 import type { VideoNavigationContext } from '@/hooks/useVideoNavigation';
 import { useToast } from '@/hooks/useToast';
 import { useSubdomainNavigate } from '@/hooks/useSubdomainNavigate';
@@ -64,6 +65,7 @@ interface VideoCardProps {
   // Navigation context for maintaining feed position
   navigationContext?: VideoNavigationContext;
   videoIndex?: number;
+  trafficSource?: ViewTrafficSource;
 }
 
 export function VideoCard({
@@ -87,6 +89,7 @@ export function VideoCard({
   showComments = false,
   navigationContext: _navigationContext,
   videoIndex: _videoIndex,
+  trafficSource,
 }: VideoCardProps) {
   const authorData = useAuthor(video.pubkey);
   // Subscribe to bandwidth tier changes - triggers re-render when tier changes
@@ -470,6 +473,8 @@ export function VideoCard({
                   onEnded={handleVideoEnd}
                   onLoadedData={onLoadedData}
                   onVideoDimensions={handleVideoDimensions}
+                  videoData={video}
+                  trafficSource={trafficSource}
                 />
               ) : (
                 <div className="flex items-center justify-center h-full text-muted-foreground">

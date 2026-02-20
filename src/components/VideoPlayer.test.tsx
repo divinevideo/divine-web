@@ -30,6 +30,14 @@ vi.mock('@/hooks/useAdultVerification', () => ({
   checkMediaAuth: vi.fn().mockResolvedValue({ authorized: true, status: 200 }),
 }));
 
+vi.mock('@/hooks/useVideoMetricsTracker', () => ({
+  useVideoMetricsTracker: vi.fn(() => ({
+    watchedSeconds: 0,
+    loopCount: 0,
+    isTracking: false,
+  })),
+}));
+
 vi.mock('@/lib/debug', () => ({
   debugError: vi.fn(),
   verboseLog: vi.fn(),
