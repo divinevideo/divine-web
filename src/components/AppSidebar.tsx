@@ -151,7 +151,7 @@ export function AppSidebar({ className }: { className?: string }) {
               href={`https://${subdomainUser.apexDomain}/`}
               className="flex w-full items-center justify-center rounded-lg border border-border h-11 text-[15px] font-medium text-foreground transition-colors hover:border-primary hover:text-primary"
             >
-              Log in on diVine
+              Log in on Divine
             </a>
           ) : (
             <LoginArea
@@ -174,7 +174,7 @@ export function AppSidebar({ className }: { className?: string }) {
               className="group flex w-full items-center gap-1 py-1.5 text-[13px] font-semibold text-foreground transition-colors hover:text-primary"
               style={{ fontFamily: "'Bricolage Grotesque', system-ui, sans-serif" }}
             >
-              <span>About diVine</span>
+              <span>About Divine</span>
               <ChevronDown className={cn(
                 "h-3.5 w-3.5 transition-transform duration-200",
                 divineOpen && "rotate-180"
@@ -289,7 +289,7 @@ export function AppSidebar({ className }: { className?: string }) {
 
         {/* Copyright */}
         <div className="mt-3 pb-4 text-[11px] font-normal text-foreground">
-          © 2026 diVine
+          © 2026 Divine
         </div>
         </div>
       </div>
