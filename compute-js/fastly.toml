@@ -35,13 +35,6 @@ service_id = "WfOrPTFYmwwxRvqrfralLA"
   override_host = "relay.divine.video"
   use_ssl = true
 
-[[backends]]
-  name = "zendesk"
-  address = "rabblelabs.zendesk.com"
-  port = 443
-  override_host = "rabblelabs.zendesk.com"
-  use_ssl = true
-
 [setup]
 
   [setup.kv_stores]

@@ -330,9 +330,9 @@ async function handleReport(req) {
     };
 
     // Create Zendesk ticket via named backend.
-    // NOTE: ZENDESK_SUBDOMAIN must match the backend address in fastly.toml
-    // (currently rabblelabs.zendesk.com). Fastly pins TLS to the declared backend,
-    // so changing the secret without updating fastly.toml will silently misbehave.
+    // The 'zendesk' backend must be created in the Fastly console pointing to
+    // {subdomain}.zendesk.com. ZENDESK_SUBDOMAIN must match the backend address —
+    // Fastly pins TLS to the declared backend host.
     const zendeskUrl = `https://${subdomain}.zendesk.com/api/v2/tickets.json`;
     const authHeader = btoa(`${email}/token:${token}`);
 
