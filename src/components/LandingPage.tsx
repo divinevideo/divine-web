@@ -130,7 +130,7 @@ export function LandingPage() {
                   diVine Inspiration
                 </h4>
                 <p className="text-sm text-foreground text-center mb-6 leading-5">
-                  The diVine beta is currently full. If you'd like to hear our news and be amongst the first to hear when the diVine app goes live, sign up here.
+                  The Divine beta is currently full. If you'd like to hear our news and be among the first to hear when the Divine app goes live, sign up here.
                 </p>
                 <HubSpotSignup />
               </div>
