@@ -39,12 +39,13 @@ const makeVideo = (overrides?: Partial<ParsedVideoData>): ParsedVideoData => ({
   title: 'Test',
   content: '',
   createdAt: 1700000000,
+  kind: 34236 as const,
   hashtags: [],
-  mentions: [],
   fallbackVideoUrls: [],
+  reposts: [],
   isVineMigrated: false,
   ...overrides,
-} as ParsedVideoData);
+});
 
 describe('useViewEventPublisher', () => {
   beforeEach(() => {

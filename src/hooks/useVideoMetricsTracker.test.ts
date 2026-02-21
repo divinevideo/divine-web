@@ -28,11 +28,12 @@ const makeVideo = (id: string): ParsedVideoData => ({
   title: 'Test Video',
   content: '',
   createdAt: 1700000000,
+  kind: 34236 as const,
   hashtags: [],
-  mentions: [],
   fallbackVideoUrls: [],
+  reposts: [],
   isVineMigrated: false,
-} as ParsedVideoData);
+});
 
 describe('useVideoMetricsTracker', () => {
   beforeEach(() => {
