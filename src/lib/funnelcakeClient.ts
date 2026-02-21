@@ -542,6 +542,8 @@ interface VideoByIdResponse {
     engagement_score: number;
     trending_score: number;
     embedded_loops?: number;
+    author_name?: string;
+    author_avatar?: string;
   };
 }
 
@@ -604,7 +606,8 @@ export async function fetchVideoById(
           content: event.content,
           thumbnail: imeta.image,
           video_url: imeta.url || '',
-          author_name: getTag('author'),
+          author_name: stats.author_name,
+          author_avatar: stats.author_avatar,
           reactions: stats.reactions,
           comments: stats.comments,
           reposts: stats.reposts,
