@@ -97,7 +97,7 @@ export function FullscreenVideoItem({
   const metadata = author.metadata;
 
   const npub = nip19.npubEncode(video.pubkey);
-  const hasRealProfile = authorData.data?.event && authorData.data?.metadata?.name;
+  const hasRealProfile = authorData.data?.event && (authorData.data?.metadata?.name || authorData.data?.metadata?.display_name);
   const displayName = authorData.isLoading
     ? (video.authorName || "Loading...")
     : hasRealProfile

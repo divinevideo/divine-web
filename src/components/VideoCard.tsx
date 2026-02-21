@@ -174,7 +174,7 @@ export function VideoCard({
   const npub = nip19.npubEncode(video.pubkey);
   // Prefer cached author name from Funnelcake over generated placeholder names
   // Priority: 1. Real profile name, 2. Funnelcake cached name, 3. Shortened npub (never use generated names)
-  const hasRealProfile = authorData.data?.event && authorData.data?.metadata?.name;
+  const hasRealProfile = authorData.data?.event && (authorData.data?.metadata?.name || authorData.data?.metadata?.display_name);
   const displayName = authorData.isLoading
     ? (video.authorName || "Loading...")
     : hasRealProfile
