@@ -33,11 +33,13 @@ import { MuteType } from '@/types/moderation';
 import { getOptimalVideoUrl } from '@/lib/bandwidthTracker';
 import { useBandwidthTier } from '@/hooks/useBandwidthTier';
 import { SmartLink } from '@/components/SmartLink';
+import type { ViewTrafficSource } from '@/hooks/useViewEventPublisher';
 import type { ParsedVideoData } from '@/types/video';
 
 interface FullscreenVideoItemProps {
   video: ParsedVideoData;
   isActive: boolean;
+  trafficSource?: ViewTrafficSource;
   onBack: () => void;
   onLike: () => void;
   onRepost: () => void;
@@ -65,6 +67,7 @@ export function FullscreenVideoItem({
   repostCount,
   commentCount,
   viewCount = 0,
+  trafficSource,
 }: FullscreenVideoItemProps) {
   // Subscribe to bandwidth tier changes for adaptive HLS quality
   const _bandwidthTier = useBandwidthTier();
@@ -216,6 +219,8 @@ export function FullscreenVideoItem({
             onError={() => setVideoError(true)}
             onSwipeRight={handleSwipeRight}
             onDoubleTap={handleDoubleTap}
+            videoData={video}
+            trafficSource={trafficSource}
           />
         ) : (
           <div className="flex items-center justify-center h-full text-white">
