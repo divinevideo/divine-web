@@ -2,7 +2,7 @@
 // ABOUTME: Displays user profile with comprehensive social features and responsive video grid
 
 import { useState, useMemo, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, Navigate } from 'react-router-dom';
 import { nip19 } from 'nostr-tools';
 import { useSeoMeta } from '@unhead/react';
 import { Grid, List, Loader2 } from 'lucide-react';
@@ -43,6 +43,7 @@ export function ProfilePage() {
   // Decode npub to get pubkey
   let pubkey: string | null = null;
   let error: string | null = null;
+  let nip05Redirect: string | null = null;
 
   if (identifier) {
     try {
@@ -56,6 +57,9 @@ export function ProfilePage() {
       } else if (/^[0-9a-fA-F]{64}$/.test(identifier)) {
         // Valid 64-char hex pubkey
         pubkey = identifier;
+      } else if (identifier.includes('@')) {
+        // NIP-05 identifier — redirect to /u/ which handles resolution
+        nip05Redirect = `/u/${encodeURIComponent(identifier)}`;
       } else {
         error = 'Invalid profile identifier';
       }
@@ -64,6 +68,11 @@ export function ProfilePage() {
     }
   } else {
     error = 'No user identifier provided';
+  }
+
+  // Redirect NIP-05 identifiers to the universal user lookup page
+  if (nip05Redirect) {
+    return <Navigate to={nip05Redirect} replace />;
   }
 
   // Fetch profile data from Funnelcake REST API (fast) - includes profile metadata AND stats
