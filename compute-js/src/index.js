@@ -52,17 +52,33 @@ async function handleRequest(event) {
   const subdomain = getSubdomain(hostnameToUse);
   
   if (subdomain) {
-    // Subdomain NIP-05 request
-    if (url.pathname === '/.well-known/nostr.json') {
-      console.log('Handling subdomain NIP-05 for:', subdomain);
-      try {
-        return await handleSubdomainNip05(subdomain);
-      } catch (err) {
-        console.error('Subdomain NIP-05 error:', err.message, err.stack);
-        return jsonResponse({ error: 'Handler error' }, 500);
+    // Subdomain .well-known requests
+    if (url.pathname.startsWith('/.well-known/')) {
+      if (url.pathname === '/.well-known/nostr.json') {
+        console.log('Handling subdomain NIP-05 for:', subdomain);
+        try {
+          return await handleSubdomainNip05(subdomain);
+        } catch (err) {
+          console.error('Subdomain NIP-05 error:', err.message, err.stack);
+          return jsonResponse({ error: 'Handler error' }, 500);
+        }
       }
+      // Other .well-known files (apple-app-site-association, assetlinks.json)
+      console.log('Handling subdomain .well-known file:', url.pathname);
+      const wkResponse = await publisherServer.serveRequest(request);
+      // Guard: if publisher returns text/html, it's the SPA fallback, not the real file
+      if (wkResponse != null && wkResponse.status === 200 && !wkResponse.headers.get('Content-Type')?.includes('text/html')) {
+        const headers = new Headers(wkResponse.headers);
+        const contentType = url.pathname.endsWith('.json') || url.pathname.endsWith('/apple-app-site-association')
+          ? 'application/json'
+          : headers.get('Content-Type') || 'application/octet-stream';
+        headers.set('Content-Type', contentType);
+        headers.set('Cache-Control', 'public, max-age=3600');
+        return new Response(wkResponse.body, { status: 200, headers });
+      }
+      return new Response('Not Found', { status: 404 });
     }
-    
+
     // Subdomain profile - serve SPA with injected user data
     console.log('Handling subdomain profile for:', subdomain);
     try {
@@ -79,15 +95,42 @@ async function handleRequest(event) {
     return Response.redirect(redirect.url, redirect.status);
   }
 
-  // 4. Handle NIP-05 requests from KV store (root domain)
-  if (url.pathname === '/.well-known/nostr.json') {
-    console.log('Handling NIP-05 request');
-    try {
-      return await handleNip05(url);
-    } catch (err) {
-      console.error('NIP-05 handler error:', err.message, err.stack);
-      return jsonResponse({ error: 'Handler error', details: err.message }, 500);
+  // 4. Handle .well-known requests
+  if (url.pathname.startsWith('/.well-known/')) {
+    // 4a. NIP-05 from KV store
+    if (url.pathname === '/.well-known/nostr.json') {
+      console.log('Handling NIP-05 request');
+      try {
+        return await handleNip05(url);
+      } catch (err) {
+        console.error('NIP-05 handler error:', err.message, err.stack);
+        return jsonResponse({ error: 'Handler error', details: err.message }, 500);
+      }
     }
+
+    // 4b. Serve other .well-known files (apple-app-site-association, assetlinks.json)
+    // These must be served as JSON, not the SPA fallback.
+    // apple-app-site-association has no file extension, so the static publisher
+    // cannot detect its content type - we handle it explicitly here.
+    console.log('Handling .well-known file:', url.pathname);
+    const wkResponse = await publisherServer.serveRequest(request);
+    // Guard: if publisher returns text/html, it's the SPA fallback, not the real file
+    if (wkResponse != null && wkResponse.status === 200 && !wkResponse.headers.get('Content-Type')?.includes('text/html')) {
+      const headers = new Headers(wkResponse.headers);
+      // Ensure correct content type for app association files
+      const contentType = url.pathname.endsWith('.json') || url.pathname.endsWith('/apple-app-site-association')
+        ? 'application/json'
+        : headers.get('Content-Type') || 'application/octet-stream';
+      headers.set('Content-Type', contentType);
+      headers.set('Cache-Control', 'public, max-age=3600');
+      headers.append('Vary', 'X-Original-Host');
+      return new Response(wkResponse.body, {
+        status: 200,
+        headers,
+      });
+    }
+    // File not found in KV - return 404 instead of SPA fallback
+    return new Response('Not Found', { status: 404 });
   }
 
   // 5. Handle dynamic OG meta tags for video pages (for social media crawlers)
