@@ -10,13 +10,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Hash, Search, Play, Loader2 } from 'lucide-react';
-import { fetchPopularHashtags, searchVideos } from '@/lib/funnelcakeClient';
+import { fetchPopularHashtags } from '@/lib/funnelcakeClient';
 import { DEFAULT_FUNNELCAKE_URL } from '@/config/relays';
 
 interface HashtagStats {
   tag: string;
   count: number;
   rank: number;
+  thumbnail?: string;
 }
 
 /**
@@ -38,6 +39,7 @@ function useHashtagStats() {
         tag: h.hashtag,
         count: h.video_count,
         rank: index + 1,
+        thumbnail: h.thumbnail,
       }));
 
       return stats;
@@ -48,45 +50,14 @@ function useHashtagStats() {
 }
 
 /**
- * Component for individual hashtag card with lazy-loaded thumbnail.
- * Only fetches the thumbnail when the card scrolls into view,
- * preventing N+1 API calls on page load.
+ * Component for individual hashtag card.
+ * Uses thumbnail from the trending hashtags API response (no extra fetch needed).
  */
 function HashtagCard({ stat }: { stat: HashtagStats }) {
-  const cardRef = useRef<HTMLDivElement>(null);
-  const [isVisible, setIsVisible] = useState(false);
-
-  useEffect(() => {
-    const el = cardRef.current;
-    if (!el) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => { if (entry.isIntersecting) { setIsVisible(true); observer.disconnect(); } },
-      { rootMargin: '200px' }
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
-
-  const { data: thumbnailUrl } = useQuery({
-    queryKey: ['hashtag-thumbnail', stat.tag],
-    queryFn: async () => {
-      const signal = AbortSignal.timeout(8000);
-      const response = await searchVideos(DEFAULT_FUNNELCAKE_URL, {
-        tag: stat.tag,
-        limit: 1,
-        sort: 'trending',
-        signal,
-      });
-      const video = response.videos[0];
-      return video?.thumbnail || video?.video_url || null;
-    },
-    enabled: isVisible,
-    staleTime: 300000,
-    gcTime: 900000,
-  });
+  const thumbnailUrl = stat.thumbnail || null;
 
   return (
-    <div ref={cardRef}>
+    <div>
       <SmartLink to={`/hashtag/${stat.tag}`} className="block group">
         <Card className="hover:shadow-lg transition-all duration-200 overflow-hidden cursor-pointer hover:scale-[1.02]">
           {/* Thumbnail */}

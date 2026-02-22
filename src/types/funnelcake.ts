@@ -74,6 +74,7 @@ export interface FunnelcakeHashtag {
   unique_creators?: number; // Number of unique creators
   last_used?: number;     // Unix timestamp of last use
   trending_score: number; // Time-weighted popularity
+  thumbnail?: string;     // Thumbnail URL from top video
 }
 
 /**
