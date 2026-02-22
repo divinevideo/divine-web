@@ -53,9 +53,11 @@ export function ProfilePage() {
         } else {
           error = 'Invalid npub format';
         }
-      } else {
-        // Assume it's already a hex pubkey
+      } else if (/^[0-9a-fA-F]{64}$/.test(identifier)) {
+        // Valid 64-char hex pubkey
         pubkey = identifier;
+      } else {
+        error = 'Invalid profile identifier';
       }
     } catch {
       error = 'Invalid npub format';
