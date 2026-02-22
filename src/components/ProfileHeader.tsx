@@ -33,6 +33,7 @@ export interface ProfileStats {
   // Classic Vine stats (original counts from Vine era)
   originalLoopCount?: number;  // Sum of all original Vine loop counts
   isClassicViner?: boolean;    // Whether this user has classic Vine content
+  classicVineCount?: number;   // Number of Vine-migrated videos
 }
 
 interface ProfileMetadata extends NostrMetadata {
@@ -410,7 +411,7 @@ export function ProfileHeader({
             </div>
             <div className="text-center">
               <div className="text-xl sm:text-2xl font-bold text-foreground">
-                {formatNumber(stats.videosCount)}
+                {formatNumber(stats.classicVineCount ?? stats.videosCount)}
               </div>
               <div className="text-xs sm:text-sm text-muted-foreground">Classic Vines</div>
             </div>

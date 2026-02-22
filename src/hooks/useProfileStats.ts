@@ -29,8 +29,9 @@ export function useProfileStats(pubkey: string, videos?: ParsedVideoData[]) {
       // Calculate video-based stats from provided videos array
       // These are always computed locally regardless of API source
       const videosCount = videos?.length || 0;
-      const originalLoopCount = videos?.reduce((sum, v) => sum + (v.loopCount || 0), 0) || 0;
-      const isClassicViner = originalLoopCount > 0;
+      const vineVideos = videos?.filter(v => v.isVineMigrated) || [];
+      const originalLoopCount = vineVideos.reduce((sum, v) => sum + (v.loopCount || 0), 0);
+      const isClassicViner = vineVideos.length > 0;
 
       if (isClassicViner) {
         debugLog(`[useProfileStats] Classic Viner detected with ${originalLoopCount} original loops`);
@@ -66,6 +67,7 @@ export function useProfileStats(pubkey: string, videos?: ParsedVideoData[]) {
               followingCount: profile.following_count || 0,
               originalLoopCount: isClassicViner ? originalLoopCount : undefined,
               isClassicViner,
+              classicVineCount: vineVideos.length,
             };
 
             debugLog(`[useProfileStats] REST API success: ${stats.followersCount} followers, ${stats.totalLoops} loops`);
@@ -154,6 +156,7 @@ export function useProfileStats(pubkey: string, videos?: ParsedVideoData[]) {
           followingCount,
           originalLoopCount: isClassicViner ? originalLoopCount : undefined,
           isClassicViner,
+          classicVineCount: vineVideos.length,
         };
 
         return stats;
@@ -170,6 +173,7 @@ export function useProfileStats(pubkey: string, videos?: ParsedVideoData[]) {
           followingCount: 0,
           originalLoopCount: isClassicViner ? originalLoopCount : undefined,
           isClassicViner,
+          classicVineCount: vineVideos.length,
         } as ProfileStats;
       }
     },

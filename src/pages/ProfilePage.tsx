@@ -141,9 +141,10 @@ export function ProfilePage() {
   // engagement.total_loops = computed from watch time (seconds_watched / video_duration)
   // engagement.total_views = total view count across all videos
   // engagement.total_reactions = likes/reactions received on videos
-  const originalLoopCount = videos?.reduce((sum, v) => sum + (v.loopCount || 0), 0) || 0;
-  // Classic Viner = has embedded loop counts from Vine archive, NOT divine watch-time loops
-  const isClassicViner = originalLoopCount > 0;
+  const vineVideos = videos?.filter(v => v.isVineMigrated) || [];
+  const originalLoopCount = vineVideos.reduce((sum, v) => sum + (v.loopCount || 0), 0);
+  // Classic Viner = has actual Vine-migrated videos, NOT just any video with loops
+  const isClassicViner = vineVideos.length > 0;
 
   // Use actual loaded video count once all pages are loaded (API video_count may be inflated by dups)
   const allLoaded = !hasNextPage && videos.length > 0;
@@ -157,6 +158,7 @@ export function ProfilePage() {
     joinedDate: null, // Could fetch from Nostr later if needed
     isClassicViner,
     originalLoopCount,
+    classicVineCount: vineVideos.length,
   };
   const statsLoading = funnelcakeLoading;
 

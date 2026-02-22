@@ -168,9 +168,9 @@ describe('useProfileStats', () => {
     fetchUserProfile.mockResolvedValueOnce(mockProfile);
 
     const mockVideos = [
-      { id: 'v1', loopCount: 1000000 },
-      { id: 'v2', loopCount: 500000 },
-      { id: 'v3', loopCount: 0 },
+      { id: 'v1', loopCount: 1000000, isVineMigrated: true },
+      { id: 'v2', loopCount: 500000, isVineMigrated: true },
+      { id: 'v3', loopCount: 0, isVineMigrated: false },
     ] as unknown[];
 
     const { result } = renderHook(
