@@ -522,10 +522,13 @@ export function getOriginalCommentCount(event: NostrEvent): number | undefined {
  * - pgp_fingerprint: PGP public key fingerprint
  */
 export function getProofModeData(event: NostrEvent): ProofModeData | undefined {
+  console.log('[ProofMode] Event tags:', JSON.stringify(event.tags, null, 2));
+
   const levelTag = event.tags.find(tag => tag[0] === 'verification');
 
   // If no verification level tag found, return undefined
   if (!levelTag?.[1]) {
+    console.log('[ProofMode] No verification tag found');
     return undefined;
   }
 
@@ -542,23 +545,29 @@ export function getProofModeData(event: NostrEvent): ProofModeData | undefined {
   const attestationTag = event.tags.find(tag => tag[0] === 'device_attestation');
   const fingerprintTag = event.tags.find(tag => tag[0] === 'pgp_fingerprint');
 
+  if (attestationTag != null)
+	level = "verified_mobile";
+
   // Parse manifest JSON if present
   let manifestData: Record<string, unknown> | undefined;
   if (manifestTag?.[1]) {
     try {
       manifestData = JSON.parse(manifestTag[1]);
+      level = "verified_web";
     } catch {
       // Invalid JSON, ignore
     }
   }
 
-  return {
+  const result = {
     level,
     manifest: manifestTag?.[1],
     manifestData,
     deviceAttestation: attestationTag?.[1],
     pgpFingerprint: fingerprintTag?.[1],
   };
+  console.log('[ProofMode] Result:', result);
+  return result;
 }
 
 /**

@@ -5,6 +5,8 @@ import { parseByteArrayId } from './funnelcakeClient';
 import { SHORT_VIDEO_KIND, type ParsedVideoData } from '@/types/video';
 import type { FunnelcakeVideoRaw, FunnelcakeResponse } from '@/types/funnelcake';
 import { debugLog } from './debug';
+import { getProofModeData } from './videoParser';
+import type { NostrEvent } from '@nostrify/nostrify';
 
 /**
  * Parse loop count from video content text
@@ -78,6 +80,17 @@ export function transformFunnelcakeVideo(raw: FunnelcakeVideoRaw): ParsedVideoDa
       platform: 'vine',
       externalId: raw.d_tag || '',
     } : undefined,
+
+    // ProofMode data - extract from tags when available (single video endpoint)
+    proofMode: raw.tags ? getProofModeData({
+      id: id,
+      pubkey: pubkey,
+      created_at: raw.created_at,
+      kind: raw.kind,
+      tags: raw.tags,
+      content: raw.content || '',
+      sig: '',
+    } as NostrEvent) : undefined,
 
     // Empty reposts array (Funnelcake doesn't return individual reposts)
     reposts: [],

@@ -614,6 +614,7 @@ export async function fetchVideoById(
           engagement_score: stats.engagement_score,
           trending_score: stats.trending_score,
           loops: stats.embedded_loops || parseInt(getTag('loops') || '0') || null,
+          tags: event.tags,
         };
       }
     } catch {

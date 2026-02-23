@@ -1,4 +1,4 @@
-// ABOUTME: Badge component for displaying ProofMode verification status
+// ABOUTME: Badge component for displaying Proofmode verification status
 // ABOUTME: Shows different icons and colors based on verification level with detailed tooltip
 
 import { useState } from 'react';
@@ -153,8 +153,8 @@ function getProofModeConfig(level: ProofModeLevel) {
         label: 'Human Made',
         className: 'border-brand-green text-brand-dark-green dark:text-brand-green bg-brand-light-green dark:bg-brand-dark-green',
         iconColor: 'text-brand-dark-green dark:text-brand-green',
-        tooltip: 'Human made - captured on secure mobile device with ProofMode',
-        description: 'This video was captured by a human on a mobile device with hardware-backed security attestation. ProofMode provides cryptographic proof that the content is authentic and has not been tampered with.'
+        tooltip: 'Human made - captured on secure mobile device with Proofmode',
+        description: 'This video was captured by a human on a mobile device with hardware-backed security attestation. Proofmode provides cryptographic proof that the content is authentic and has not been tampered with.'
       };
     case 'verified_web':
       return {
@@ -162,8 +162,8 @@ function getProofModeConfig(level: ProofModeLevel) {
         label: 'Human Made',
         className: 'border-brand-blue text-brand-blue-dark dark:text-brand-blue bg-brand-blue-light dark:bg-brand-blue-dark',
         iconColor: 'text-brand-blue-dark dark:text-brand-blue',
-        tooltip: 'Human made - valid ProofMode signature',
-        description: 'This video was created by a human and has been cryptographically signed with ProofMode. The signature confirms the content has not been altered since creation.'
+        tooltip: 'Human made - valid Proofmode signature',
+        description: 'This video was created by a human and has been cryptographically signed with Proofmode. The signature confirms the content has not been altered since creation.'
       };
     case 'basic_proof':
       return {
