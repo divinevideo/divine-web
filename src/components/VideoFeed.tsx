@@ -10,6 +10,7 @@ import { AddToListDialog } from '@/components/AddToListDialog';
 import { useVideoProvider } from '@/hooks/useVideoProvider';
 import { useBatchedAuthors } from '@/hooks/useBatchedAuthors';
 import { useContentModeration } from '@/hooks/useModeration';
+import { useProofModeEnrichment } from '@/hooks/useProofModeEnrichment';
 import { Card, CardContent } from '@/components/ui/card';
 import { Loader2 } from 'lucide-react';
 import InfiniteScroll from 'react-infinite-scroll-component';
@@ -83,7 +84,7 @@ export function VideoFeed({
 
   // Flatten all pages into single array, deduplicating by pubkey:kind:d-tag
   // (addressable event key per NIP-33, not just event ID)
-  const allVideos = useMemo(() => {
+  const dedupedVideos = useMemo(() => {
     const videos = data?.pages.flatMap(page => page.videos) ?? [];
     const seen = new Set<string>();
     return videos.filter(video => {
@@ -93,6 +94,10 @@ export function VideoFeed({
       return true;
     });
   }, [data]);
+
+  // Enrich Funnelcake feed videos with ProofMode data via WebSocket
+  // Feed videos from REST API don't have event tags, so proofMode is always undefined
+  const allVideos = useProofModeEnrichment(dedupedVideos);
 
   // Filter videos based on mute list and verification status
   const filteredVideos = useMemo(() => {

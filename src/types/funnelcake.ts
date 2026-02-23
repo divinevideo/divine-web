@@ -39,6 +39,9 @@ export interface FunnelcakeVideoRaw {
   // Platform origin (for filtering classic vines)
   platform?: string;      // 'vine', 'tiktok', etc.
   classic?: boolean;      // Whether this is a classic/archived vine
+
+  // Full event tags (only present from /api/videos/{id} endpoint)
+  tags?: string[][];      // Nostr event tags for ProofMode extraction
 }
 
 /**
