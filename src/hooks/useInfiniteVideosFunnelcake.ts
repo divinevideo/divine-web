@@ -2,6 +2,7 @@
 // ABOUTME: Provides pre-computed trending scores and efficient cursor-based pagination
 
 import { useInfiniteQuery } from '@tanstack/react-query';
+import { useState } from 'react';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import type { ParsedVideoData } from '@/types/video';
 import type { FunnelcakeFetchOptions } from '@/types/funnelcake';
@@ -22,6 +23,7 @@ interface UseInfiniteVideosFunnelcakeOptions {
   pubkey?: string;          // For profile and home feeds
   pageSize?: number;
   enabled?: boolean;
+  randomizeWithinTop?: number;  // Randomize starting offset within top N results (e.g. 500)
 }
 
 interface FunnelcakeVideoPage {
@@ -113,8 +115,16 @@ export function useInfiniteVideosFunnelcake({
   pubkey,
   pageSize = 20,
   enabled = true,
+  randomizeWithinTop,
 }: UseInfiniteVideosFunnelcakeOptions) {
   const { user } = useCurrentUser();
+
+  // For randomized feeds: pick a random page-aligned starting offset on mount
+  const totalPages = randomizeWithinTop ? Math.floor(randomizeWithinTop / pageSize) : 0;
+  const [randomStartPage] = useState(() =>
+    totalPages > 0 ? Math.floor(Math.random() * totalPages) : 0
+  );
+  const randomStartOffset = randomStartPage * pageSize;
 
   // Determine API URL:
   // - Classics always use Divine's Funnelcake
@@ -124,7 +134,7 @@ export function useInfiniteVideosFunnelcake({
     : (apiUrl || DEFAULT_FUNNELCAKE_URL);
 
   return useInfiniteQuery<FunnelcakeVideoPage, Error>({
-    queryKey: ['funnelcake-videos', feedType, effectiveApiUrl, sortMode, hashtag, pubkey, pageSize],
+    queryKey: ['funnelcake-videos', feedType, effectiveApiUrl, sortMode, hashtag, pubkey, pageSize, randomStartOffset],
 
     queryFn: async ({ pageParam, signal }) => {
       const totalStart = performance.now();
@@ -138,8 +148,14 @@ export function useInfiniteVideosFunnelcake({
           : undefined;
 
       const options = getFetchOptions(feedType, sortMode, pageSize);
-      options.before = before;
       options.signal = signal;
+
+      // For randomized feeds, use offset directly instead of before cursor
+      if (randomizeWithinTop && isOffsetParam) {
+        options.offset = (pageParam as { offset: number }).offset;
+      } else {
+        options.before = before;
+      }
 
       debugLog(`[useInfiniteVideosFunnelcake] Fetching ${feedType} feed from ${effectiveApiUrl}`, {
         sortMode,
@@ -245,7 +261,13 @@ export function useInfiniteVideosFunnelcake({
       };
     },
 
-    getNextPageParam: (lastPage) => {
+    getNextPageParam: (lastPage, allPages) => {
+      // Randomized pool: wrap around within top N, stop after all pages covered
+      if (randomizeWithinTop && totalPages > 0) {
+        if (allPages.length >= totalPages) return undefined; // All pages fetched
+        const nextOffset = (randomStartOffset + allPages.length * pageSize) % randomizeWithinTop;
+        return { offset: nextOffset };
+      }
       // Use offset for sorted pagination, timestamp for chronological
       if (lastPage.offset !== undefined) {
         return { offset: lastPage.offset };
@@ -253,7 +275,9 @@ export function useInfiniteVideosFunnelcake({
       return lastPage.nextCursor;
     },
 
-    initialPageParam: undefined,
+    initialPageParam: randomizeWithinTop
+      ? { offset: randomStartOffset }
+      : undefined,
 
     enabled: enabled && ((feedType !== 'home' && feedType !== 'recommendations') || !!user?.pubkey),
 
