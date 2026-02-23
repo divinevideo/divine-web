@@ -275,22 +275,22 @@ export function AboutPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Shield className="h-5 w-5 text-primary" />
-              Cryptographic Authenticity with ProofMode
+              Cryptographic Authenticity with Proofmode
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-muted-foreground">
-              In an era where AI can generate realistic fake videos, diVine uses ProofMode to help you
+              In an era where AI can generate realistic fake videos, diVine uses Proofmode to help you
               distinguish real camera captures from AI-generated content.
             </p>
             <p className="text-muted-foreground">
-              ProofMode adds cryptographic proofs to videos, including device hardware attestation,
+              Proofmode adds cryptographic proofs to videos, including device hardware attestation,
               OpenPGP signatures, and content hashes. This raises the bar for authenticity and helps
               restore trust in video content.
             </p>
             <p className="text-sm text-muted-foreground">
               <Link to="/proofmode" className="text-primary hover:underline">
-                Learn more about ProofMode
+                Learn more about Proofmode
               </Link>.
             </p>
           </CardContent>
