@@ -2,7 +2,7 @@
 // ABOUTME: Displays video with overlay UI including back button, author info, and action buttons
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { ArrowLeft, Heart, MessageCircle, Repeat2, Share, Volume2, VolumeX, Download, ListPlus, Users, MoreVertical, Flag, UserX, Code, Trash2, Eye } from 'lucide-react';
+import { ArrowLeft, Heart, MessageCircle, Repeat2, Share, Volume2, VolumeX, Download, ListPlus, Users, MoreVertical, Flag, UserX, Code, Trash2, Eye, Captions } from 'lucide-react';
 import { nip19 } from 'nostr-tools';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -34,6 +34,7 @@ import { getOptimalVideoUrl } from '@/lib/bandwidthTracker';
 import { useBandwidthTier } from '@/hooks/useBandwidthTier';
 import { SmartLink } from '@/components/SmartLink';
 import type { ViewTrafficSource } from '@/hooks/useViewEventPublisher';
+import { useSubtitles } from '@/hooks/useSubtitles';
 import type { ParsedVideoData } from '@/types/video';
 
 interface FullscreenVideoItemProps {
@@ -87,6 +88,15 @@ export function FullscreenVideoItem({
   const [showViewSourceDialog, setShowViewSourceDialog] = useState(false);
   const videoContainerRef = useRef<HTMLDivElement>(null);
   const { globalMuted, setGlobalMuted, setActiveVideo } = useVideoPlayback();
+  const { cues: subtitleCues, hasSubtitles } = useSubtitles(video);
+  const [ccOverride, setCcOverride] = useState<boolean | undefined>(undefined);
+  const subtitlesVisible = ccOverride ?? (globalMuted && hasSubtitles);
+
+  // Reset ccOverride when mute state changes so auto-behavior resumes
+  useEffect(() => {
+    setCcOverride(undefined);
+  }, [globalMuted]);
+
   const { toast } = useToast();
   const muteUser = useMuteItem();
   const { mutate: deleteVideo, isPending: isDeleting } = useDeleteVideo();
@@ -219,6 +229,8 @@ export function FullscreenVideoItem({
             onError={() => setVideoError(true)}
             onSwipeRight={handleSwipeRight}
             onDoubleTap={handleDoubleTap}
+            subtitleCues={subtitleCues}
+            subtitlesVisible={subtitlesVisible}
             videoData={video}
             trafficSource={trafficSource}
           />
@@ -256,6 +268,24 @@ export function FullscreenVideoItem({
         >
           <ArrowLeft className="h-5 w-5" />
         </Button>
+
+        {/* CC button - top right, next to mute */}
+        {hasSubtitles && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className={cn(
+              "absolute top-4 right-16 backdrop-blur-sm rounded-full w-10 h-10 pointer-events-auto text-white",
+              subtitlesVisible ? "bg-white/30 hover:bg-white/40" : "bg-black/50 hover:bg-black/70"
+            )}
+            onClick={(e) => {
+              e.stopPropagation();
+              setCcOverride(prev => prev === undefined ? !subtitlesVisible : !prev);
+            }}
+          >
+            <Captions className="h-5 w-5" />
+          </Button>
+        )}
 
         {/* Mute/Unmute button - top right */}
         <Button

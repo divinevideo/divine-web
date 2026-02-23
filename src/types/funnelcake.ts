@@ -39,6 +39,10 @@ export interface FunnelcakeVideoRaw {
   // Platform origin (for filtering classic vines)
   platform?: string;      // 'vine', 'tiktok', etc.
   classic?: boolean;      // Whether this is a classic/archived vine
+
+  // Subtitle / text track fields
+  text_track_ref?: string;     // Reference to Kind 39307 event
+  text_track_content?: string; // Embedded VTT content
 }
 
 /**

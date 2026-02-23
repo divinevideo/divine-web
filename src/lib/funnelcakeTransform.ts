@@ -79,6 +79,10 @@ export function transformFunnelcakeVideo(raw: FunnelcakeVideoRaw): ParsedVideoDa
       externalId: raw.d_tag || '',
     } : undefined,
 
+    // Subtitle / text track fields from API
+    textTrackRef: raw.text_track_ref,
+    textTrackContent: raw.text_track_content,
+
     // Empty reposts array (Funnelcake doesn't return individual reposts)
     reposts: [],
 

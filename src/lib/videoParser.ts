@@ -456,6 +456,19 @@ export function isVineMigrated(event: NostrEvent): boolean {
 }
 
 /**
+ * Get text-track reference from event tags
+ * Returns the coordinate string for a Kind 39307 subtitle event
+ * Tag format: ["text-track", "39307:<pubkey>:subtitles:<d-tag>", "en"]
+ */
+export function getTextTrackRef(event: NostrEvent): { ref: string; language?: string } | undefined {
+  const tag = event.tags.find(t => t[0] === 'text-track');
+  if (tag?.[1]) {
+    return { ref: tag[1], language: tag[2] };
+  }
+  return undefined;
+}
+
+/**
  * Get loop count from event tags
  */
 export function getLoopCount(event: NostrEvent): number {
@@ -689,6 +702,8 @@ export function parseVideoEvents(events: NostrEvent[]): ParsedVideoData[] {
     const duration = videoEvent.videoMetadata?.duration;
     if (duration !== undefined && duration >= 7) continue;
 
+    const textTrack = getTextTrackRef(event);
+
     parsedVideos.push({
       id: event.id,
       pubkey: event.pubkey,
@@ -713,6 +728,8 @@ export function parseVideoEvents(events: NostrEvent[]): ParsedVideoData[] {
       proofMode: getProofModeData(event),
       origin: getOriginPlatform(event),
       isVineMigrated: isVineMigrated(event),
+      textTrackRef: textTrack?.ref,
+      textTrackLanguage: textTrack?.language,
       reposts: [],
       originalEvent: event
     });
