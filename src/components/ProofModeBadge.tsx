@@ -112,11 +112,11 @@ export function ProofModeBadge({ level, proofData, className, showDetails = fals
 
           <div className="pt-2 border-t">
             <Link
-              to="/proof-mode"
+              to="/proofmode"
               className="text-sm text-primary hover:underline"
               onClick={() => setOpen(false)}
             >
-              Learn more about ProofMode →
+              Learn more about Proofmode →
             </Link>
           </div>
         </div>
