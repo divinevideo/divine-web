@@ -1,5 +1,5 @@
 // ABOUTME: Hook to fetch and parse subtitles for a video
-// ABOUTME: Three-tier: embedded content > relay query for Kind 39307 > null
+// ABOUTME: Four-tier: embedded content > relay Kind 39307 > CDN VTT > null
 
 import { useNostr } from '@nostrify/react';
 import { useQuery } from '@tanstack/react-query';
@@ -29,14 +29,34 @@ function parseTextTrackRef(ref: string): { kind: number; pubkey: string; dTag: s
   return { kind, pubkey, dTag };
 }
 
+/**
+ * Extract the content hash from a media.divine.video URL
+ * URL pattern: https://media.divine.video/{hash}/downloads/default.mp4
+ */
+function extractCdnHash(videoUrl: string): string | null {
+  try {
+    const url = new URL(videoUrl);
+    if (!url.hostname.includes('media.divine.video')) return null;
+    // Path: /{hash}/downloads/default.mp4 or /{hash}/hls/master.m3u8
+    const parts = url.pathname.split('/').filter(Boolean);
+    if (parts.length >= 1 && parts[0].length >= 16) {
+      return parts[0];
+    }
+  } catch {
+    // Not a valid URL
+  }
+  return null;
+}
+
 export function useSubtitles(video: ParsedVideoData | null | undefined): UseSubtitlesResult {
   const { nostr } = useNostr();
 
   const hasEmbeddedContent = !!video?.textTrackContent;
   const hasRef = !!video?.textTrackRef;
+  const cdnHash = video?.videoUrl ? extractCdnHash(video.videoUrl) : null;
 
   const { data: cues = [], isLoading } = useQuery({
-    queryKey: ['subtitles', video?.id, video?.textTrackRef],
+    queryKey: ['subtitles', video?.id, video?.textTrackRef, cdnHash],
     queryFn: async ({ signal }) => {
       if (!video) return [];
 
@@ -48,31 +68,53 @@ export function useSubtitles(video: ParsedVideoData | null | undefined): UseSubt
       // Tier 2: Fetch from relay via text-track ref
       if (video.textTrackRef) {
         const coords = parseTextTrackRef(video.textTrackRef);
-        if (!coords) return [];
+        if (coords) {
+          try {
+            const events = await nostr.query([{
+              kinds: [coords.kind],
+              authors: [coords.pubkey],
+              '#d': [coords.dTag],
+              limit: 1,
+            }], { signal: signal ?? AbortSignal.timeout(5000) });
 
-        const events = await nostr.query([{
-          kinds: [coords.kind],
-          authors: [coords.pubkey],
-          '#d': [coords.dTag],
-          limit: 1,
-        }], { signal: signal ?? AbortSignal.timeout(5000) });
-
-        if (events.length > 0 && events[0].content) {
-          return parseVtt(events[0].content);
+            if (events.length > 0 && events[0].content) {
+              const parsed = parseVtt(events[0].content);
+              if (parsed.length > 0) return parsed;
+            }
+          } catch {
+            // Fall through to CDN tier
+          }
         }
       }
 
-      // Tier 3: No subtitles
+      // Tier 3: Fetch VTT from CDN (media.divine.video/{hash}/vtt)
+      if (cdnHash) {
+        try {
+          const vttUrl = `https://media.divine.video/${cdnHash}/vtt`;
+          const response = await fetch(vttUrl, { signal });
+          if (response.ok) {
+            const text = await response.text();
+            if (text.trim().startsWith('WEBVTT')) {
+              return parseVtt(text);
+            }
+          }
+        } catch {
+          // No VTT available from CDN
+        }
+      }
+
+      // Tier 4: No subtitles
       return [];
     },
-    enabled: !!video && (hasEmbeddedContent || hasRef),
+    enabled: !!video && (hasEmbeddedContent || hasRef || !!cdnHash),
     staleTime: Infinity, // Subtitles are immutable
     gcTime: 30 * 60 * 1000, // Keep in cache 30 minutes
+    retry: false, // Don't retry CDN 404s
   });
 
   return {
     cues,
     hasSubtitles: cues.length > 0,
-    isLoading: isLoading && (hasEmbeddedContent || hasRef),
+    isLoading,
   };
 }
