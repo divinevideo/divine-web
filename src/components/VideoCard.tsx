@@ -123,7 +123,7 @@ export function VideoCard({
   // Calculate initial aspect ratio from video dimensions, or use sensible defaults
   // Classic Vine videos were ALWAYS 1:1 square — ignore any dim tag or transcoder dimensions
   const hasDeclaredDimensions = !!video.dimensions;
-  const isClassicVine = !!video.loopCount;
+  const isClassicVine = !!video.loopCount || video.isVineMigrated;
   const getInitialAspectRatio = (): number => {
     // Classic Vines are always square, regardless of what dim tag says
     if (isClassicVine) return 1;
