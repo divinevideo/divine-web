@@ -120,8 +120,12 @@ export function VideoCard({
   const [showViewSourceDialog, setShowViewSourceDialog] = useState(false);
   const [showReactionsModal, setShowReactionsModal] = useState<'likes' | 'reposts' | null>(null);
   // Calculate initial aspect ratio from video dimensions, or use sensible defaults
+  // Classic Vine videos were ALWAYS 1:1 square — ignore any dim tag or transcoder dimensions
   const hasDeclaredDimensions = !!video.dimensions;
+  const isClassicVine = !!video.loopCount;
   const getInitialAspectRatio = (): number => {
+    // Classic Vines are always square, regardless of what dim tag says
+    if (isClassicVine) return 1;
     // Try to parse dimensions from video data (format: "WIDTHxHEIGHT", e.g., "1080x1920")
     if (video.dimensions) {
       const [width, height] = video.dimensions.split('x').map(Number);
@@ -129,17 +133,20 @@ export function VideoCard({
         return width / height;
       }
     }
-    // Fallback: Vine videos (have loopCount) were square, others are likely 9:16 vertical
-    return video.loopCount ? 1 : 9 / 16;
+    // Fallback: most modern videos are 9:16 vertical
+    return 9 / 16;
   };
   const initialAspectRatio = getInitialAspectRatio();
   const [videoAspectRatio, setVideoAspectRatio] = useState<number>(initialAspectRatio);
 
   // Guard against HLS transcoder reporting wrong orientation.
-  // HLS streams may lose rotation metadata and report landscape dimensions
-  // for portrait videos. Only block orientation flip when we had DECLARED dimensions
-  // (from dim tag). If we're guessing (no dim tag), always trust the actual video.
+  // Classic Vine videos: never update — they were always 1:1 square.
+  // Videos with declared dimensions: don't flip portrait→landscape (HLS rotation bug).
+  // Videos without dimensions: trust the actual loaded video dimensions.
   const handleVideoDimensions = useCallback((d: { width: number; height: number }) => {
+    // Classic Vines are always square — ignore any reported dimensions
+    if (isClassicVine) return;
+
     const newRatio = d.width / d.height;
     if (hasDeclaredDimensions) {
       const isInitialPortrait = initialAspectRatio < 0.9;
@@ -150,7 +157,7 @@ export function VideoCard({
       }
     }
     setVideoAspectRatio(newRatio);
-  }, [initialAspectRatio, hasDeclaredDimensions]);
+  }, [initialAspectRatio, hasDeclaredDimensions, isClassicVine]);
   const _isMobile = useIsMobile();
   // Determine layout: use prop if provided, otherwise always vertical (text below video)
   const effectiveLayout = layout ?? 'vertical';

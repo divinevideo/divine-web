@@ -130,6 +130,7 @@ export function useVideoProvider({
     pubkey,
     pageSize,
     enabled: enabled && shouldUseFunnelcake,
+    randomizeWithinTop: isClassics ? 500 : undefined,
   });
 
   // WebSocket query (enabled only when shouldUseFunnelcake is false)
