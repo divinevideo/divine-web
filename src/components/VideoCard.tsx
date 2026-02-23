@@ -509,8 +509,9 @@ export function VideoCard({
                   size="sm"
                   className={cn(
                     "absolute bottom-3 right-14 z-30",
-                    subtitlesVisible ? "bg-white/30 hover:bg-white/40" : "bg-black/50 hover:bg-black/70",
-                    "text-white backdrop-blur-sm rounded-full",
+                    "bg-black/50 hover:bg-black/70",
+                    subtitlesVisible ? "text-white" : "text-white/50",
+                    "backdrop-blur-sm rounded-full",
                     "w-10 h-10 p-0 flex items-center justify-center",
                     "transition-all duration-200"
                   )}

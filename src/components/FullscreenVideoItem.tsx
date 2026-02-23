@@ -275,8 +275,9 @@ export function FullscreenVideoItem({
             variant="ghost"
             size="icon"
             className={cn(
-              "absolute top-4 right-16 backdrop-blur-sm rounded-full w-10 h-10 pointer-events-auto text-white",
-              subtitlesVisible ? "bg-white/30 hover:bg-white/40" : "bg-black/50 hover:bg-black/70"
+              "absolute top-4 right-16 backdrop-blur-sm rounded-full w-10 h-10 pointer-events-auto",
+              "bg-black/50 hover:bg-black/70",
+              subtitlesVisible ? "text-white" : "text-white/50"
             )}
             onClick={(e) => {
               e.stopPropagation();
