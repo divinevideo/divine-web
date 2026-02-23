@@ -37,8 +37,11 @@ export function SubtitleOverlay({ videoElement, cues, visible }: SubtitleOverlay
   if (!visible || !text) return null;
 
   return (
-    <div className="absolute bottom-12 left-0 right-0 flex justify-center z-20 pointer-events-none px-4">
-      <span className="bg-black/75 text-white text-sm rounded-md px-3 py-1.5 max-w-[90%] text-center leading-snug">
+    <div className="absolute bottom-14 left-0 right-0 flex justify-center z-20 pointer-events-none px-6">
+      <span
+        className="bg-black/80 text-white text-[15px] font-medium rounded-lg px-4 py-2 max-w-[85%] text-center leading-relaxed drop-shadow-lg"
+        style={{ textShadow: '0 1px 3px rgba(0,0,0,0.8)' }}
+      >
         {text}
       </span>
     </div>
