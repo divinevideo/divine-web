@@ -1,5 +1,6 @@
 // ABOUTME: Hook to fetch and parse subtitles for a video
 // ABOUTME: Four-tier: embedded content > relay Kind 39307 > CDN VTT > null
+// ABOUTME: CDN fetch only fires when enabled=true (active/playing video) to avoid N requests per feed
 
 import { useNostr } from '@nostrify/react';
 import { useQuery } from '@tanstack/react-query';
@@ -48,19 +49,35 @@ function extractCdnHash(videoUrl: string): string | null {
   return null;
 }
 
-export function useSubtitles(video: ParsedVideoData | null | undefined): UseSubtitlesResult {
+/**
+ * Fetch and parse subtitles for a video.
+ *
+ * @param video - The video to get subtitles for
+ * @param active - Only fetch when true. Pass false for off-screen videos
+ *   to avoid firing CDN requests for every video in the feed.
+ *   Tier 1 (embedded content) is zero-cost regardless; tiers 2-3 require network.
+ */
+export function useSubtitles(
+  video: ParsedVideoData | null | undefined,
+  active = true,
+): UseSubtitlesResult {
   const { nostr } = useNostr();
 
   const hasEmbeddedContent = !!video?.textTrackContent;
   const hasRef = !!video?.textTrackRef;
   const cdnHash = video?.videoUrl ? extractCdnHash(video.videoUrl) : null;
 
+  // Tier 1 is free (already in memory), so always enabled.
+  // Tiers 2-3 require network — only fetch when video is active (playing).
+  const needsNetwork = !hasEmbeddedContent && (hasRef || !!cdnHash);
+  const queryEnabled = !!video && (hasEmbeddedContent || (active && needsNetwork));
+
   const { data: cues = [], isLoading } = useQuery({
     queryKey: ['subtitles', video?.id, video?.textTrackRef, cdnHash],
     queryFn: async ({ signal }) => {
       if (!video) return [];
 
-      // Tier 1: Embedded VTT content from API
+      // Tier 1: Embedded VTT content from API (zero cost)
       if (video.textTrackContent) {
         return parseVtt(video.textTrackContent);
       }
@@ -106,8 +123,8 @@ export function useSubtitles(video: ParsedVideoData | null | undefined): UseSubt
       // Tier 4: No subtitles
       return [];
     },
-    enabled: !!video && (hasEmbeddedContent || hasRef || !!cdnHash),
-    staleTime: Infinity, // Subtitles are immutable
+    enabled: queryEnabled,
+    staleTime: Infinity, // Subtitles are immutable — never refetch
     gcTime: 30 * 60 * 1000, // Keep in cache 30 minutes
     retry: false, // Don't retry CDN 404s
   });
@@ -115,6 +132,6 @@ export function useSubtitles(video: ParsedVideoData | null | undefined): UseSubt
   return {
     cues,
     hasSubtitles: cues.length > 0,
-    isLoading,
+    isLoading: isLoading && queryEnabled,
   };
 }

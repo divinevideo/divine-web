@@ -88,7 +88,7 @@ export function FullscreenVideoItem({
   const [showViewSourceDialog, setShowViewSourceDialog] = useState(false);
   const videoContainerRef = useRef<HTMLDivElement>(null);
   const { globalMuted, setGlobalMuted, setActiveVideo } = useVideoPlayback();
-  const { cues: subtitleCues, hasSubtitles } = useSubtitles(video);
+  const { cues: subtitleCues, hasSubtitles } = useSubtitles(video, isActive);
   const [ccOverride, setCcOverride] = useState<boolean | undefined>(undefined);
   const subtitlesVisible = ccOverride ?? (globalMuted && hasSubtitles);
 

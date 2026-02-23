@@ -166,8 +166,9 @@ export function VideoCard({
   const { toast } = useToast();
   const muteUser = useMuteItem();
   const navigate = useSubdomainNavigate();
-  const { globalMuted, setGlobalMuted } = useVideoPlayback();
-  const { cues: subtitleCues, hasSubtitles } = useSubtitles(video);
+  const { globalMuted, setGlobalMuted, activeVideoId } = useVideoPlayback();
+  const isActiveVideo = activeVideoId === video.id;
+  const { cues: subtitleCues, hasSubtitles } = useSubtitles(video, isActiveVideo);
   const [ccOverride, setCcOverride] = useState<boolean | undefined>(undefined);
   const subtitlesVisible = ccOverride ?? (globalMuted && hasSubtitles);
 
