@@ -1,6 +1,5 @@
 // ABOUTME: Hook to fetch and parse subtitles for a video
 // ABOUTME: Four-tier: embedded content > relay Kind 39307 > CDN VTT > null
-// ABOUTME: CDN fetch only fires when enabled=true (active/playing video) to avoid N requests per feed
 
 import { useNostr } from '@nostrify/react';
 import { useQuery } from '@tanstack/react-query';
@@ -32,13 +31,15 @@ function parseTextTrackRef(ref: string): { kind: number; pubkey: string; dTag: s
 
 /**
  * Extract the content hash from a media.divine.video URL
- * URL pattern: https://media.divine.video/{hash}/downloads/default.mp4
+ * URL patterns:
+ *   https://media.divine.video/{hash}/downloads/default.mp4
+ *   https://media.divine.video/{hash}/hls/master.m3u8
+ *   https://media.divine.video/{hash}  (classic vines, no path suffix)
  */
 function extractCdnHash(videoUrl: string): string | null {
   try {
     const url = new URL(videoUrl);
     if (!url.hostname.includes('media.divine.video')) return null;
-    // Path: /{hash}/downloads/default.mp4 or /{hash}/hls/master.m3u8
     const parts = url.pathname.split('/').filter(Boolean);
     if (parts.length >= 1 && parts[0].length >= 16) {
       return parts[0];
@@ -52,25 +53,18 @@ function extractCdnHash(videoUrl: string): string | null {
 /**
  * Fetch and parse subtitles for a video.
  *
- * @param video - The video to get subtitles for
- * @param active - Only fetch when true. Pass false for off-screen videos
- *   to avoid firing CDN requests for every video in the feed.
- *   Tier 1 (embedded content) is zero-cost regardless; tiers 2-3 require network.
+ * Uses staleTime: Infinity so each video's subtitles are fetched at most once
+ * and cached for the session. retry: false ensures 404s don't retry.
  */
 export function useSubtitles(
   video: ParsedVideoData | null | undefined,
-  active = true,
 ): UseSubtitlesResult {
   const { nostr } = useNostr();
 
   const hasEmbeddedContent = !!video?.textTrackContent;
   const hasRef = !!video?.textTrackRef;
   const cdnHash = video?.videoUrl ? extractCdnHash(video.videoUrl) : null;
-
-  // Tier 1 is free (already in memory), so always enabled.
-  // Tiers 2-3 require network — only fetch when video is active (playing).
-  const needsNetwork = !hasEmbeddedContent && (hasRef || !!cdnHash);
-  const queryEnabled = !!video && (hasEmbeddedContent || (active && needsNetwork));
+  const queryEnabled = !!video && (hasEmbeddedContent || hasRef || !!cdnHash);
 
   const { data: cues = [], isLoading } = useQuery({
     queryKey: ['subtitles', video?.id, video?.textTrackRef, cdnHash],
