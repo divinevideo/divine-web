@@ -120,9 +120,12 @@ export function VideoCard({
   const [showViewSourceDialog, setShowViewSourceDialog] = useState(false);
   const [showReactionsModal, setShowReactionsModal] = useState<'likes' | 'reposts' | null>(null);
   // Calculate initial aspect ratio from video dimensions, or use sensible defaults
+  // Classic Vine videos were ALWAYS 1:1 square — ignore any dim tag or transcoder dimensions
   const hasDeclaredDimensions = !!video.dimensions;
   const isClassicVine = !!video.loopCount;
   const getInitialAspectRatio = (): number => {
+    // Classic Vines are always square, regardless of what dim tag says
+    if (isClassicVine) return 1;
     // Try to parse dimensions from video data (format: "WIDTHxHEIGHT", e.g., "1080x1920")
     if (video.dimensions) {
       const [width, height] = video.dimensions.split('x').map(Number);
@@ -130,35 +133,31 @@ export function VideoCard({
         return width / height;
       }
     }
-    // Fallback: Vine videos (have loopCount) were square, others are likely 9:16 vertical
-    return isClassicVine ? 1 : 9 / 16;
+    // Fallback: most modern videos are 9:16 vertical
+    return 9 / 16;
   };
   const initialAspectRatio = getInitialAspectRatio();
   const [videoAspectRatio, setVideoAspectRatio] = useState<number>(initialAspectRatio);
 
   // Guard against HLS transcoder reporting wrong orientation.
-  // HLS streams may lose rotation metadata and report landscape dimensions
-  // for portrait videos. Block orientation flip when we have DECLARED dimensions
-  // (from dim tag) or for classic Vine videos (which were always 1:1 square).
-  const hasKnownDimensions = hasDeclaredDimensions || isClassicVine;
+  // Classic Vine videos: never update — they were always 1:1 square.
+  // Videos with declared dimensions: don't flip portrait→landscape (HLS rotation bug).
+  // Videos without dimensions: trust the actual loaded video dimensions.
   const handleVideoDimensions = useCallback((d: { width: number; height: number }) => {
+    // Classic Vines are always square — ignore any reported dimensions
+    if (isClassicVine) return;
+
     const newRatio = d.width / d.height;
-    if (hasKnownDimensions) {
+    if (hasDeclaredDimensions) {
       const isInitialPortrait = initialAspectRatio < 0.9;
-      const isInitialSquare = initialAspectRatio >= 0.9 && initialAspectRatio <= 1.1;
       const isNewLandscape = newRatio > 1.1;
-      const isNewPortrait = newRatio < 0.9;
       // Don't let HLS flip a video with declared portrait dimensions to landscape
       if (isInitialPortrait && isNewLandscape) {
         return;
       }
-      // Don't let HLS distort square Vine videos to non-square
-      if (isInitialSquare && (isNewLandscape || isNewPortrait)) {
-        return;
-      }
     }
     setVideoAspectRatio(newRatio);
-  }, [initialAspectRatio, hasKnownDimensions]);
+  }, [initialAspectRatio, hasDeclaredDimensions, isClassicVine]);
   const _isMobile = useIsMobile();
   // Determine layout: use prop if provided, otherwise always vertical (text below video)
   const effectiveLayout = layout ?? 'vertical';
