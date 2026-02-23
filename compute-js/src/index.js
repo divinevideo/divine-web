@@ -16,6 +16,40 @@ const FUNNELCAKE_API_URL = 'https://relay.divine.video';
 // Apex domains we serve (used to detect subdomains)
 const APEX_DOMAINS = ['dvine.video', 'divine.video'];
 
+// App association files served directly (iOS Universal Links & Android App Links)
+// These rarely change and must be served as application/json reliably.
+const WELL_KNOWN_FILES = {
+  '/.well-known/apple-app-site-association': JSON.stringify({
+    applinks: {
+      apps: [],
+      details: [{
+        appIDs: ["GZCZBKH7MY.co.openvine.app"],
+        components: [
+          { "/": "/video/*", comment: "Video deep links" },
+          { "/": "/profile/*", comment: "Profile deep links" },
+          { "/": "/hashtag/*", comment: "Hashtag deep links" },
+          { "/": "/search/*", comment: "Search deep links" },
+          { "/": "/app/callback", comment: "OAuth callback for Divine app" },
+        ],
+      }],
+    },
+    webcredentials: { apps: ["GZCZBKH7MY.co.openvine.app"] },
+  }),
+  '/.well-known/assetlinks.json': JSON.stringify([{
+    relation: ["delegate_permission/common.handle_all_urls"],
+    target: {
+      namespace: "android_app",
+      package_name: "co.openvine.app",
+      sha256_cert_fingerprints: [
+        "6F:36:C3:68:74:18:5E:03:B4:79:3D:82:EF:54:CE:34:26:ED:6E:C8:12:B7:CD:E2:F4:FA:9C:81:2F:C7:14:F4",
+        "ED:9D:A6:BF:1A:D1:5B:D1:02:AF:0C:DB:4E:90:F0:3C:1B:8C:7F:EB:AA:9C:C8:F1:15:97:EB:9C:2C:41:B1:75",
+        "10:B8:04:F9:48:FC:91:EC:28:27:B9:67:15:C3:21:2E:AB:1A:0B:46:AF:52:1B:3A:31:6C:9D:78:BF:A4:39:6E",
+        "CF:7E:6A:A4:99:A8:00:A8:0E:93:E4:07:03:60:38:4F:2F:9C:22:81:3B:3D:7B:81:88:15:A0:1B:37:6F:ED:B1",
+      ],
+    },
+  }]),
+};
+
 // External redirects - always redirect to about.divine.video (Option A)
 const EXTERNAL_REDIRECTS = {
   '/press': { url: 'https://about.divine.video/press/', status: 301 },
@@ -64,17 +98,16 @@ async function handleRequest(event) {
         }
       }
       // Other .well-known files (apple-app-site-association, assetlinks.json)
-      console.log('Handling subdomain .well-known file:', url.pathname);
-      const wkResponse = await publisherServer.serveRequest(request);
-      // Guard: if publisher returns text/html, it's the SPA fallback, not the real file
-      if (wkResponse != null && wkResponse.status === 200 && !wkResponse.headers.get('Content-Type')?.includes('text/html')) {
-        const headers = new Headers(wkResponse.headers);
-        const contentType = url.pathname.endsWith('.json') || url.pathname.endsWith('/apple-app-site-association')
-          ? 'application/json'
-          : headers.get('Content-Type') || 'application/octet-stream';
-        headers.set('Content-Type', contentType);
-        headers.set('Cache-Control', 'public, max-age=3600');
-        return new Response(wkResponse.body, { status: 200, headers });
+      // Served directly to bypass SPA fallback and ensure correct content type
+      const wkContent = WELL_KNOWN_FILES[url.pathname];
+      if (wkContent) {
+        return new Response(wkContent, {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/json',
+            'Cache-Control': 'public, max-age=3600',
+          },
+        });
       }
       return new Response('Not Found', { status: 404 });
     }
@@ -109,27 +142,19 @@ async function handleRequest(event) {
     }
 
     // 4b. Serve other .well-known files (apple-app-site-association, assetlinks.json)
-    // These must be served as JSON, not the SPA fallback.
-    // apple-app-site-association has no file extension, so the static publisher
-    // cannot detect its content type - we handle it explicitly here.
+    // Served directly to bypass SPA fallback and ensure correct content type
     console.log('Handling .well-known file:', url.pathname);
-    const wkResponse = await publisherServer.serveRequest(request);
-    // Guard: if publisher returns text/html, it's the SPA fallback, not the real file
-    if (wkResponse != null && wkResponse.status === 200 && !wkResponse.headers.get('Content-Type')?.includes('text/html')) {
-      const headers = new Headers(wkResponse.headers);
-      // Ensure correct content type for app association files
-      const contentType = url.pathname.endsWith('.json') || url.pathname.endsWith('/apple-app-site-association')
-        ? 'application/json'
-        : headers.get('Content-Type') || 'application/octet-stream';
-      headers.set('Content-Type', contentType);
-      headers.set('Cache-Control', 'public, max-age=3600');
-      headers.append('Vary', 'X-Original-Host');
-      return new Response(wkResponse.body, {
+    const wkContent = WELL_KNOWN_FILES[url.pathname];
+    if (wkContent) {
+      return new Response(wkContent, {
         status: 200,
-        headers,
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'public, max-age=3600',
+          'Vary': 'X-Original-Host',
+        },
       });
     }
-    // File not found in KV - return 404 instead of SPA fallback
     return new Response('Not Found', { status: 404 });
   }
 
