@@ -1002,10 +1002,16 @@ export async function fetchBulkVideoStats(
     const data = await response.json();
     recordFunnelcakeSuccess(apiUrl);
 
-    debugLog(`[FunnelcakeClient] Got ${data.stats?.length || 0} stats, ${data.missing?.length || 0} missing`);
+    // API returns stats as an object keyed by event ID — convert to array
+    const rawStats = data.stats ?? {};
+    const statsArray = Array.isArray(rawStats)
+      ? rawStats
+      : Object.entries(rawStats as Record<string, Record<string, unknown>>).map(([id, s]) => ({ id, ...s }));
+
+    debugLog(`[FunnelcakeClient] Got ${statsArray.length} stats, ${data.missing?.length || 0} missing`);
 
     return {
-      stats: data.stats || [],
+      stats: statsArray,
       missing: data.missing || [],
     };
   } catch (err) {
