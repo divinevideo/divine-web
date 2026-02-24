@@ -1,7 +1,7 @@
 // ABOUTME: Tests for shareUtils — verifies URL generation for videos and lists
 // ABOUTME: Ensures stable d-tag IDs are preferred and apex domain URLs are always used
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import type { ParsedVideoData } from '@/types/video';
 
 // Mock subdomainLinks before importing shareUtils

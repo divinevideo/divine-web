@@ -10,7 +10,7 @@ import {
   fetchBulkVideoStats,
 } from '@/lib/funnelcakeClient';
 import { buildAnalyticsData } from '@/lib/analyticsTransform';
-import { debugLog, debugError } from '@/lib/debug';
+import { debugLog } from '@/lib/debug';
 import type { FunnelcakeVideoRaw } from '@/types/funnelcake';
 import type { CreatorAnalyticsData } from '@/types/creatorAnalytics';
 

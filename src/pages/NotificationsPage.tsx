@@ -1,7 +1,7 @@
 // ABOUTME: Notifications page showing social interactions (likes, comments, follows, reposts, zaps)
 // ABOUTME: Simple list with infinite scroll, marks all as read on page open
 
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback, useMemo } from 'react';
 import { Bell } from 'lucide-react';
 import { useNotifications, useMarkNotificationsRead } from '@/hooks/useNotifications';
 import { NotificationItem } from '@/components/NotificationItem';
@@ -23,7 +23,10 @@ export default function NotificationsPage() {
   const hasMarkedRead = useRef(false);
 
   // Flatten all pages into a single array of notifications
-  const notifications: Notification[] = data?.pages.flatMap((p) => p.notifications) ?? [];
+  const notifications: Notification[] = useMemo(
+    () => data?.pages.flatMap((p) => p.notifications) ?? [],
+    [data?.pages],
+  );
 
   // Mark all as read on page open (once, when first page loads)
   useEffect(() => {
