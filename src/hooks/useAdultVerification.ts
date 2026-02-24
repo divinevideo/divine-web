@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
-import { NIP98 } from '@nostrify/nostrify';
+import { createNip98AuthHeader } from '@/lib/nip98Auth';
 
 const STORAGE_KEY = 'adult-verification-confirmed';
 const STORAGE_EXPIRY_KEY = 'adult-verification-expiry';
@@ -60,24 +60,7 @@ export function useAdultVerification(): AdultVerificationState {
     if (!signer || !isVerified) {
       return null;
     }
-
-    try {
-      // Create a mock Request object for NIP-98 template
-      const request = new Request(url, { method });
-
-      // Generate NIP-98 event template
-      const template = await NIP98.template(request);
-
-      // Sign the event
-      const signedEvent = await signer.signEvent(template);
-
-      // Encode as base64 for Authorization header
-      const encoded = btoa(JSON.stringify(signedEvent));
-      return `Nostr ${encoded}`;
-    } catch (error) {
-      console.error('[useAdultVerification] Failed to generate auth header:', error);
-      return null;
-    }
+    return createNip98AuthHeader(signer, url, method);
   }, [signer, isVerified]);
 
   return {

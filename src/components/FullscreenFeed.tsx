@@ -11,6 +11,8 @@ import { useOptimisticRepost } from '@/hooks/useOptimisticRepost';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useLoginDialog } from '@/contexts/LoginDialogContext';
 import { useToast } from '@/hooks/useToast';
+import { useShare } from '@/hooks/useShare';
+import { getVideoShareData } from '@/lib/shareUtils';
 import { debugLog } from '@/lib/debug';
 import type { ParsedVideoData } from '@/types/video';
 
@@ -36,6 +38,7 @@ function FullscreenVideoWithMetrics({
 }) {
   const { user } = useCurrentUser();
   const { toast } = useToast();
+  const { share } = useShare();
   const { toggleLike } = useOptimisticLike();
   const { toggleRepost } = useOptimisticRepost();
   const { openLoginDialog } = useLoginDialog();
@@ -93,37 +96,7 @@ function FullscreenVideoWithMetrics({
     });
   };
 
-  const handleShare = async () => {
-    const videoUrl = `${window.location.origin}/video/${video.id}`;
-
-    if (navigator.share) {
-      try {
-        await navigator.share({ url: videoUrl });
-      } catch (error) {
-        if ((error as Error).name !== 'AbortError') {
-          toast({
-            title: 'Error',
-            description: 'Failed to share video',
-            variant: 'destructive',
-          });
-        }
-      }
-    } else {
-      try {
-        await navigator.clipboard.writeText(videoUrl);
-        toast({
-          title: 'Link copied!',
-          description: 'Video link has been copied to clipboard',
-        });
-      } catch {
-        toast({
-          title: 'Error',
-          description: 'Failed to copy link to clipboard',
-          variant: 'destructive',
-        });
-      }
-    }
-  };
+  const handleShare = () => share(getVideoShareData(video));
 
   const handleDownload = async () => {
     if (!video.videoUrl) {

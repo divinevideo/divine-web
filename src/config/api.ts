@@ -36,6 +36,8 @@ export const API_CONFIG = {
       viners: '/api/viners',
       health: '/api/health',
       leaderboardCreators: '/api/leaderboard/creators',
+      userNotifications: '/api/users/{pubkey}/notifications',
+      userNotificationsRead: '/api/users/{pubkey}/notifications/read',
     },
   },
 

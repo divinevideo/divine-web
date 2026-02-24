@@ -22,6 +22,8 @@ import { ArrowLeft, List, Video, Clock, Edit, Share2, Users, Shuffle, ArrowUpDow
 import { genUserName } from '@/lib/genUserName';
 import { formatDistanceToNow } from 'date-fns';
 import { useToast } from '@/hooks/useToast';
+import { useShare } from '@/hooks/useShare';
+import { getListShareData } from '@/lib/shareUtils';
 import { getSafeProfileImage } from '@/lib/imageUtils';
 import type { NostrEvent, NostrFilter } from '@nostrify/nostrify';
 import { SHORT_VIDEO_KIND, VIDEO_KINDS, type ParsedVideoData } from '@/types/video';
@@ -221,6 +223,7 @@ export default function ListDetailPage() {
   const { nostr } = useNostr();
   const { user } = useCurrentUser();
   const { toast } = useToast();
+  const { share } = useShare();
   const removeVideo = useRemoveVideoFromList();
   const deleteList = useDeleteVideoList();
   const [showEditDialog, setShowEditDialog] = useState(false);
@@ -300,27 +303,9 @@ export default function ListDetailPage() {
   const authorMetadata = author.data?.metadata;
   const authorName = authorMetadata?.name || genUserName(pubkey || '');
 
-  const handleShare = async () => {
-    const url = window.location.href;
-
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: list?.name || 'Video List',
-          text: list?.description || 'Check out this video list',
-          url
-        });
-      } catch {
-        // User cancelled or error
-      }
-    } else {
-      // Fallback to clipboard
-      await navigator.clipboard.writeText(url);
-      toast({
-        title: 'Link copied',
-        description: 'List link copied to clipboard',
-      });
-    }
+  const handleShare = () => {
+    if (!pubkey || !listId) return;
+    share(getListShareData(pubkey, listId));
   };
 
   if (listLoading) {

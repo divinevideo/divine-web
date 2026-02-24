@@ -41,6 +41,8 @@ import AppCallbackPage from "./pages/AppCallbackPage";
 import { AppLayout } from "@/components/AppLayout";
 import { DebugVideoPage } from "./pages/DebugVideoPage";
 import LeaderboardPage from "./pages/LeaderboardPage";
+import NotificationsPage from "./pages/NotificationsPage";
+import AnalyticsPage from "./pages/AnalyticsPage";
 // import { UploadPage } from "./pages/UploadPage"; // DISABLED: Upload route is commented out
 export function AppRouter() {
   const { logins } = useNostrLogin();
@@ -98,6 +100,8 @@ export function AppRouter() {
           {isLoggedIn && (
             <>
               <Route path="/home" element={<HomePage />} />
+              <Route path="/notifications" element={<NotificationsPage />} />
+              <Route path="/analytics" element={<AnalyticsPage />} />
               <Route path="/lists" element={<ListsPage />} />
               <Route path="/list/:pubkey/:listId" element={<ListDetailPage />} />
               {/* DISABLED: Upload route - not supported on web at this time

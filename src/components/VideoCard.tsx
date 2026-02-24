@@ -36,9 +36,10 @@ import { getSafeProfileImage } from '@/lib/imageUtils';
 import type { ViewTrafficSource } from '@/hooks/useViewEventPublisher';
 import type { VideoNavigationContext } from '@/hooks/useVideoNavigation';
 import { useToast } from '@/hooks/useToast';
+import { useShare } from '@/hooks/useShare';
+import { getVideoShareData } from '@/lib/shareUtils';
 import { useSubdomainNavigate } from '@/hooks/useSubdomainNavigate';
 import { SmartLink } from '@/components/SmartLink';
-import { getApexShareUrl } from '@/lib/subdomainLinks';
 import { MuteType } from '@/types/moderation';
 import { getOptimalVideoUrl } from '@/lib/bandwidthTracker';
 import { useBandwidthTier } from '@/hooks/useBandwidthTier';
@@ -164,6 +165,7 @@ export function VideoCard({
   const effectiveLayout = layout ?? 'vertical';
   const isHorizontal = effectiveLayout === 'horizontal';
   const { toast } = useToast();
+  const { share } = useShare();
   const muteUser = useMuteItem();
   const navigate = useSubdomainNavigate();
   const { globalMuted, setGlobalMuted } = useVideoPlayback();
@@ -301,44 +303,7 @@ export function VideoCard({
     );
   };
 
-  const handleShare = async () => {
-    const videoUrl = getApexShareUrl(`/video/${video.id}`);
-
-    // Use Web Share API if available - only share URL, let OG tags handle the rest
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          url: videoUrl,
-        });
-      } catch (error) {
-        // User cancelled or error occurred
-        if ((error as Error).name !== 'AbortError') {
-          console.error('Error sharing:', error);
-          toast({
-            title: 'Error',
-            description: 'Failed to share video',
-            variant: 'destructive',
-          });
-        }
-      }
-    } else {
-      // Fallback: Copy to clipboard
-      try {
-        await navigator.clipboard.writeText(videoUrl);
-        toast({
-          title: 'Link copied!',
-          description: 'Video link has been copied to clipboard',
-        });
-      } catch (error) {
-        console.error('Failed to copy link:', error);
-        toast({
-          title: 'Error',
-          description: 'Failed to copy link to clipboard',
-          variant: 'destructive',
-        });
-      }
-    }
-  };
+  const handleShare = () => share(getVideoShareData(video));
 
   const handleDownload = async () => {
     if (!video.videoUrl) {
