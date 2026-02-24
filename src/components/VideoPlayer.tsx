@@ -600,8 +600,6 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
       setIsLoading(true);
       setHasError(false);
       setAuthRetryCount(prev => prev + 1);
-
-      // Force re-load by resetting the URL index
       setCurrentUrlIndex(0);
     }, [videoId]);
 
