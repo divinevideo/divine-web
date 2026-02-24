@@ -9,7 +9,7 @@ Date: 2026-02-24
 3. **Mark-as-read**: On page open (not explicit click)
 4. **Share title/text**: Keep URL-only sharing (match mobile behavior)
 5. **Profile share OG tags**: Need edge worker/compute fix for profile OG meta tags before profile sharing is useful
-6. **Analytics views**: Funnelcake DOES have per-video views via `/api/leaderboard/videos` — reviewer missed this
+6. **Analytics views**: Funnelcake DOES have per-video views via BOTH `/api/leaderboard/videos` AND `/api/videos/stats/bulk` — reviewer missed both. Backend confirms `COALESCE(vcl.total_views, 0) AS views` in bulk stats query, `VideoStatsOnly` struct has `views: Option<u64>`
 7. **List subscriptions**: Must be Nostr-backed from the start (no localStorage dead end)
 8. **List search**: Use Funnelcake REST API (note: no REST list endpoint exists yet — needs backend work or NIP-50 validation)
 
@@ -18,7 +18,7 @@ Date: 2026-02-24
 | Endpoint | Status | Evidence |
 |----------|--------|----------|
 | `GET /api/users/{pubkey}/notifications` | EXISTS (needs NIP-98 auth) | Returns 401 (not 404) |
-| Per-video views | EXISTS | `/api/leaderboard/videos` returns `views`, `unique_viewers`, `loops` |
+| Per-video views | EXISTS | Both `/api/leaderboard/videos` AND `/api/videos/stats/bulk` return `views`. Backend: `VideoStatsOnly.views: Option<u64>` |
 | List/curation REST API | DOES NOT EXIST | All list queries go through WebSocket kind 30005 |
 | Funnelcake OpenAPI docs | NOT AVAILABLE | `/api/docs` returns 404 |
 
@@ -32,7 +32,7 @@ Date: 2026-02-24
 
 ### Analytics
 - Reconcile duplicate `FunnelcakeUserResponse` types (src/types/funnelcake.ts vs inline in funnelcakeClient.ts)
-- Per-video views come from leaderboard endpoint, not bulk stats — plan needs adjustment
+- Per-video views are available from BOTH leaderboard AND bulk stats endpoints (web client types may not include the `views` field yet — update `FunnelcakeBulkStatsResponse` to include it)
 - Daily interactions chart is misleading (only has `created_at`, not per-day engagement) — defer until backend has time-series data
 
 ### Share
