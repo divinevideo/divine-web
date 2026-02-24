@@ -16,7 +16,10 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { UserPlus, UserCheck, CheckCircle, Pencil, Copy, MoreVertical, Flag, Play, Repeat, Loader2, XCircle } from 'lucide-react';
 import { ReportContentDialog } from '@/components/ReportContentDialog';
+import { UserListDialog } from '@/components/UserListDialog';
 import { useNip05Validation } from '@/hooks/useNip05Validation';
+import { useFollowers, getAllFollowerPubkeys } from '@/hooks/useFollowers';
+import { useFollowing } from '@/hooks/useFollowing';
 import { getSafeProfileImage } from '@/lib/imageUtils';
 import { toast } from '@/hooks/useToast';
 import { nip19 } from 'nostr-tools';
@@ -88,6 +91,13 @@ export function ProfileHeader({
   className,
 }: ProfileHeaderProps) {
   const [showReportDialog, setShowReportDialog] = useState(false);
+  const [userListDialog, setUserListDialog] = useState<'followers' | 'following' | null>(null);
+
+  // Fetch followers/following when dialog is open
+  const followersQuery = useFollowers(userListDialog === 'followers' ? pubkey : '');
+  const followingQuery = useFollowing(userListDialog === 'following' ? pubkey : '');
+  const followerPubkeys = getAllFollowerPubkeys(followersQuery.data);
+  const followingPubkeys = followingQuery.data?.pubkeys ?? [];
 
   // Validate NIP-05 - show with visual feedback based on validation state
   const { state: nip05State } = useNip05Validation(
@@ -320,12 +330,16 @@ export function ProfileHeader({
         {/* Followers Count */}
         <div className="text-center">
           {stats ? (
-            <>
+            <button
+              className="hover:opacity-70 transition-opacity"
+              onClick={() => setUserListDialog('followers')}
+              data-testid="followers-button"
+            >
               <div className="text-xl sm:text-2xl font-bold text-foreground">
                 {formatNumber(stats.followersCount)}
               </div>
               <div className="text-xs sm:text-sm text-muted-foreground">Followers</div>
-            </>
+            </button>
           ) : (
             <>
               <Skeleton className="h-6 w-12 mx-auto mb-1" data-testid="stat-skeleton-followers" />
@@ -337,12 +351,16 @@ export function ProfileHeader({
         {/* Following Count */}
         <div className="text-center">
           {stats ? (
-            <>
+            <button
+              className="hover:opacity-70 transition-opacity"
+              onClick={() => setUserListDialog('following')}
+              data-testid="following-button"
+            >
               <div className="text-xl sm:text-2xl font-bold text-foreground">
                 {formatNumber(stats.followingCount)}
               </div>
               <div className="text-xs sm:text-sm text-muted-foreground">Following</div>
-            </>
+            </button>
           ) : (
             <>
               <Skeleton className="h-6 w-12 mx-auto mb-1" data-testid="stat-skeleton-following" />
@@ -431,6 +449,24 @@ export function ProfileHeader({
           contentType="user"
         />
       )}
+
+      {/* Followers / Following Dialog */}
+      <UserListDialog
+        open={userListDialog === 'followers'}
+        onOpenChange={(open) => !open && setUserListDialog(null)}
+        title="Followers"
+        pubkeys={followerPubkeys}
+        isLoading={followersQuery.isLoading || followersQuery.isFetchingNextPage}
+        hasMore={followersQuery.hasNextPage ?? false}
+        onLoadMore={() => followersQuery.fetchNextPage()}
+      />
+      <UserListDialog
+        open={userListDialog === 'following'}
+        onOpenChange={(open) => !open && setUserListDialog(null)}
+        title="Following"
+        pubkeys={followingPubkeys}
+        isLoading={followingQuery.isLoading}
+      />
     </div>
   );
 }

@@ -94,6 +94,11 @@ export interface ParsedVideoData {
   // NEW: Aggregated repost data (replaces individual isRepost/reposterPubkey/repostedAt)
   reposts: RepostMetadata[];
 
+  // Subtitle / text track fields (Kind 39307)
+  textTrackRef?: string;       // "39307:<pubkey>:subtitles:<d-tag>"
+  textTrackContent?: string;   // Embedded VTT string from API
+  textTrackLanguage?: string;  // e.g. "en"
+
   // Original Nostr event for full source viewing
   originalEvent?: NostrEvent;
 

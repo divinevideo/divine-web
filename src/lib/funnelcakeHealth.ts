@@ -2,6 +2,7 @@
 // ABOUTME: Tracks failures and provides automatic fallback to WebSocket queries
 
 import { debugLog, debugError } from './debug';
+import { addBreadcrumb, Sentry } from './sentry';
 import type { FunnelcakeHealthStatus } from '@/types/funnelcake';
 
 // Circuit breaker configuration
@@ -87,8 +88,11 @@ export function recordFunnelcakeFailure(apiUrl: string, error: string): void {
 
   if (newErrorCount >= CIRCUIT_BREAKER_THRESHOLD) {
     debugError(`[FunnelcakeHealth] Circuit opened for ${apiUrl} after ${newErrorCount} failures: ${error}`);
+    addBreadcrumb('Funnelcake circuit breaker opened', 'api', { apiUrl, errorCount: newErrorCount, lastError: error });
+    Sentry.captureMessage('Funnelcake circuit breaker opened', { level: 'warning', extra: { apiUrl, errorCount: newErrorCount, lastError: error } });
   } else {
     debugLog(`[FunnelcakeHealth] Funnelcake error ${newErrorCount}/${CIRCUIT_BREAKER_THRESHOLD} for ${apiUrl}: ${error}`);
+    addBreadcrumb('Funnelcake API error', 'api', { apiUrl, errorCount: newErrorCount, error });
   }
 }
 

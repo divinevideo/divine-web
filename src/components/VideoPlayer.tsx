@@ -8,11 +8,14 @@ import { useVideoPlayback } from '@/hooks/useVideoPlayback';
 import { useIsMobile } from '@/hooks/useIsMobile';
 import { useAdultVerification, checkMediaAuth } from '@/hooks/useAdultVerification';
 import { debugError, verboseLog } from '@/lib/debug';
+import { trackFirstVideoPlayback } from '@/lib/analytics';
 import { useVideoMetricsTracker } from '@/hooks/useVideoMetricsTracker';
 import type { ViewTrafficSource } from '@/hooks/useViewEventPublisher';
 import type { ParsedVideoData } from '@/types/video';
+import type { VttCue } from '@/lib/vttParser';
 import { BlurhashPlaceholder, isValidBlurhash } from '@/components/BlurhashImage';
 import { AgeVerificationOverlay } from '@/components/AgeVerificationOverlay';
+import { SubtitleOverlay } from '@/components/SubtitleOverlay';
 import { createAuthLoader } from '@/lib/hlsAuthLoader';
 import { bandwidthTracker } from '@/lib/bandwidthTracker';
 import Hls from 'hls.js';
@@ -45,6 +48,9 @@ interface VideoPlayerProps {
   onVolumeGesture?: (data: { direction: 'up' | 'down'; delta: number }) => void;
   onBrightnessGesture?: (data: { direction: 'up' | 'down'; delta: number }) => void;
   onOrientationChange?: (orientation: string) => void;
+  // Subtitle support
+  subtitleCues?: VttCue[];
+  subtitlesVisible?: boolean;
   // View event tracking
   videoData?: ParsedVideoData;
   trafficSource?: ViewTrafficSource;
@@ -85,6 +91,8 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
       onVolumeGesture,
       onBrightnessGesture,
       onOrientationChange,
+      subtitleCues,
+      subtitlesVisible,
       videoData,
       trafficSource,
     },
@@ -517,6 +525,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
 
       // Emit first video load metric (only once)
       if (loadDuration > 0 && typeof window !== 'undefined') {
+        trackFirstVideoPlayback();
         window.dispatchEvent(new CustomEvent('performance-metric', {
           detail: {
             firstVideoLoad: Math.round(loadDuration),
@@ -972,6 +981,15 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
           onPause={handlePause}
           onClick={!isMobile ? togglePlay : undefined}
         />
+
+        {/* Subtitle overlay */}
+        {subtitleCues && subtitleCues.length > 0 && (
+          <SubtitleOverlay
+            videoElement={videoRef.current}
+            cues={subtitleCues}
+            visible={!!subtitlesVisible}
+          />
+        )}
 
         {/* Loading state - show loading animation over blurhash, only on initial load */}
         {isLoading && !hasLoadedOnce && (

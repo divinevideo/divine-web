@@ -10,7 +10,7 @@ import { useEffect } from 'react';
 import type { NostrEvent, NostrFilter } from '@nostrify/nostrify';
 import { SHORT_VIDEO_KIND, VIDEO_KINDS, REPOST_KIND, type ParsedVideoData } from '@/types/video';
 import type { NIP50Filter } from '@/types/nostr';
-import { parseVideoEvent, getVineId, getThumbnailUrl, getLoopCount, getOriginalVineTimestamp, getProofModeData, getOriginalLikeCount, getOriginalRepostCount, getOriginalCommentCount, getOriginPlatform, isVineMigrated, getLatestRepostTime, validateVideoEvent } from '@/lib/videoParser';
+import { parseVideoEvent, getVineId, getThumbnailUrl, getLoopCount, getOriginalVineTimestamp, getProofModeData, getOriginalLikeCount, getOriginalRepostCount, getOriginalCommentCount, getOriginPlatform, isVineMigrated, getLatestRepostTime, validateVideoEvent, getTextTrackRef } from '@/lib/videoParser';
 import { debugLog, debugError, verboseLog } from '@/lib/debug';
 import type { SortMode } from '@/types/nostr';
 
@@ -115,6 +115,8 @@ async function parseVideoEvents(
       continue;
     }
 
+    const textTrack = getTextTrackRef(event);
+
     videoMap.set(uniqueKey, {
       id: event.id,
       pubkey: event.pubkey,
@@ -138,6 +140,8 @@ async function parseVideoEvents(
       proofMode: getProofModeData(event),
       origin: getOriginPlatform(event),
       isVineMigrated: isVineMigrated(event),
+      textTrackRef: textTrack?.ref,
+      textTrackLanguage: textTrack?.language,
       reposts: [], // Initialize empty reposts array
       originalEvent: event // Store original event for source viewing
     });
@@ -217,6 +221,8 @@ async function parseVideoEvents(
       }
 
       // Create new video entry
+      const repostTextTrack = getTextTrackRef(originalVideo);
+
       videoData = {
         id: originalVideo.id,
         pubkey: originalVideo.pubkey,
@@ -240,6 +246,8 @@ async function parseVideoEvents(
         proofMode: getProofModeData(originalVideo),
         origin: getOriginPlatform(originalVideo),
         isVineMigrated: isVineMigrated(originalVideo),
+        textTrackRef: repostTextTrack?.ref,
+        textTrackLanguage: repostTextTrack?.language,
         reposts: [],
         originalEvent: originalVideo // Store original event for source viewing
       };

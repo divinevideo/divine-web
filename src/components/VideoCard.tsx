@@ -1,8 +1,8 @@
 // ABOUTME: Video card component for displaying individual videos in feeds
 // ABOUTME: Shows video player, metadata, author info, and social interactions
 
-import { useState, useCallback } from 'react';
-import { Heart, Repeat2, MessageCircle, Share, Eye, MoreVertical, Flag, UserX, Trash2, Volume2, VolumeX, Code, Users, ListPlus, Download, Maximize2 } from 'lucide-react';
+import { useState, useCallback, useEffect } from 'react';
+import { Heart, Repeat2, MessageCircle, Share, Eye, MoreVertical, Flag, UserX, Trash2, Volume2, VolumeX, Code, Users, ListPlus, Download, Maximize2, Captions } from 'lucide-react';
 import { nip19 } from 'nostr-tools';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -42,6 +42,7 @@ import { getApexShareUrl } from '@/lib/subdomainLinks';
 import { MuteType } from '@/types/moderation';
 import { getOptimalVideoUrl } from '@/lib/bandwidthTracker';
 import { useBandwidthTier } from '@/hooks/useBandwidthTier';
+import { useSubtitles } from '@/hooks/useSubtitles';
 
 interface VideoCardProps {
   video: ParsedVideoData;
@@ -122,7 +123,7 @@ export function VideoCard({
   // Calculate initial aspect ratio from video dimensions, or use sensible defaults
   // Classic Vine videos were ALWAYS 1:1 square — ignore any dim tag or transcoder dimensions
   const hasDeclaredDimensions = !!video.dimensions;
-  const isClassicVine = !!video.loopCount;
+  const isClassicVine = !!video.loopCount || video.isVineMigrated;
   const getInitialAspectRatio = (): number => {
     // Classic Vines are always square, regardless of what dim tag says
     if (isClassicVine) return 1;
@@ -166,6 +167,15 @@ export function VideoCard({
   const muteUser = useMuteItem();
   const navigate = useSubdomainNavigate();
   const { globalMuted, setGlobalMuted } = useVideoPlayback();
+  const { cues: subtitleCues, hasSubtitles } = useSubtitles(video);
+  const [ccOverride, setCcOverride] = useState<boolean | undefined>(undefined);
+  const subtitlesVisible = ccOverride ?? (globalMuted && hasSubtitles);
+
+  // Reset ccOverride when mute state changes so auto-behavior resumes
+  useEffect(() => {
+    setCcOverride(undefined);
+  }, [globalMuted]);
+
   const { mutate: deleteVideo, isPending: isDeleting } = useDeleteVideo();
   const canDelete = useCanDeleteVideo(video);
 
@@ -480,6 +490,8 @@ export function VideoCard({
                   onEnded={handleVideoEnd}
                   onLoadedData={onLoadedData}
                   onVideoDimensions={handleVideoDimensions}
+                  subtitleCues={subtitleCues}
+                  subtitlesVisible={subtitlesVisible}
                   videoData={video}
                   trafficSource={trafficSource}
                 />
@@ -487,6 +499,32 @@ export function VideoCard({
                 <div className="flex items-center justify-center h-full text-muted-foreground">
                   <p>Failed to load video</p>
                 </div>
+              )}
+
+              {/* CC button overlay - bottom right, next to mute */}
+              {isPlaying && !videoError && hasSubtitles && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className={cn(
+                    "absolute bottom-3 right-14 z-30",
+                    "bg-black/50 hover:bg-black/70",
+                    subtitlesVisible ? "text-white" : "text-white/50",
+                    "backdrop-blur-sm rounded-full",
+                    "w-10 h-10 p-0 flex items-center justify-center",
+                    "transition-all duration-200"
+                  )}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setCcOverride(prev => prev === undefined ? !subtitlesVisible : !prev);
+                  }}
+                  onTouchStart={(e) => { e.stopPropagation(); }}
+                  onTouchEnd={(e) => { e.stopPropagation(); }}
+                  aria-label={subtitlesVisible ? "Hide subtitles" : "Show subtitles"}
+                >
+                  <Captions className="h-5 w-5" />
+                </Button>
               )}
 
               {/* Mute/Unmute button overlay - bottom right corner */}
