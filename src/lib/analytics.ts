@@ -2,8 +2,9 @@
 // ABOUTME: Provides functions for logging analytics events, errors, and performance metrics
 
 import { initializeApp, type FirebaseApp } from 'firebase/app';
-import { getAnalytics, logEvent, setUserId, type Analytics } from 'firebase/analytics';
+import { getAnalytics, logEvent, setUserId, setAnalyticsCollectionEnabled, type Analytics } from 'firebase/analytics';
 import { getPerformance, trace, type FirebasePerformance } from 'firebase/performance';
+import { onAnalyticsConsentChanged } from './cookieConsent';
 
 const firebaseConfig = {
   apiKey: "AIzaSyDEdSqDEExCcHMXr6MEvNmY_GJ5ACTtLvA",
@@ -18,27 +19,55 @@ const firebaseConfig = {
 let app: FirebaseApp | null = null;
 let analytics: Analytics | null = null;
 let firebasePerf: FirebasePerformance | null = null;
+let analyticsEnabled = false;
 
 /**
- * Initialize Firebase Analytics and Performance Monitoring
+ * Initialize Firebase App and register consent listener.
+ * Analytics and Performance only activate after GDPR consent is granted.
  */
 export function initializeAnalytics() {
   try {
-    // Only initialize in browser environment
     if (typeof window === 'undefined') return;
 
     app = initializeApp(firebaseConfig);
-    analytics = getAnalytics(app);
-    firebasePerf = getPerformance(app);
+    console.log('[Analytics] Firebase App initialized (analytics pending consent)');
 
-    console.log('[Analytics] Firebase Analytics initialized');
-    console.log('[Performance] Firebase Performance Monitoring initialized');
-
-    // Set up global error handlers
-    setupErrorHandlers();
+    onAnalyticsConsentChanged((consented) => {
+      if (consented) {
+        enableAnalytics();
+      } else {
+        disableAnalytics();
+      }
+    });
   } catch (error) {
     console.error('[Analytics] Failed to initialize Firebase:', error);
   }
+}
+
+function enableAnalytics() {
+  if (!app || analyticsEnabled) return;
+
+  try {
+    analytics = getAnalytics(app);
+    setAnalyticsCollectionEnabled(analytics, true);
+    firebasePerf = getPerformance(app);
+    analyticsEnabled = true;
+
+    console.log('[Analytics] Firebase Analytics enabled (consent granted)');
+    console.log('[Performance] Firebase Performance Monitoring enabled');
+
+    setupErrorHandlers();
+  } catch (error) {
+    console.error('[Analytics] Failed to enable analytics:', error);
+  }
+}
+
+function disableAnalytics() {
+  if (analytics) {
+    setAnalyticsCollectionEnabled(analytics, false);
+  }
+  analyticsEnabled = false;
+  console.log('[Analytics] Firebase Analytics disabled (consent revoked)');
 }
 
 /**
