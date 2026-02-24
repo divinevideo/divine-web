@@ -49,13 +49,28 @@ export function transformNotification(raw: RawApiNotification): Notification {
 }
 
 /**
+ * Deduplicate follow notifications — keep only the most recent per actor.
+ * The API may return multiple follow events from the same user (e.g. unfollow/refollow).
+ */
+export function deduplicateFollows(notifications: Notification[]): Notification[] {
+  const seenFollows = new Set<string>();
+  return notifications.filter((n) => {
+    if (n.type !== 'follow') return true;
+    if (seenFollows.has(n.actorPubkey)) return false;
+    seenFollows.add(n.actorPubkey);
+    return true;
+  });
+}
+
+/**
  * Transform a full API response into the app NotificationsResponse.
  */
 export function transformNotificationsResponse(
   raw: RawNotificationsApiResponse,
 ): NotificationsResponse {
+  const all = (raw.notifications ?? []).map(transformNotification);
   return {
-    notifications: (raw.notifications ?? []).map(transformNotification),
+    notifications: deduplicateFollows(all),
     unreadCount: raw.unread_count ?? 0,
     nextCursor: raw.next_cursor,
     hasMore: raw.has_more ?? false,

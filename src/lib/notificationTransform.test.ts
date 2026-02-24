@@ -6,10 +6,11 @@ import {
   mapNotificationType,
   transformNotification,
   transformNotificationsResponse,
+  deduplicateFollows,
   generateNotificationMessage,
   formatRelativeTime,
 } from './notificationTransform';
-import type { RawApiNotification, RawNotificationsApiResponse } from '@/types/notification';
+import type { RawApiNotification, RawNotificationsApiResponse, Notification, NotificationType } from '@/types/notification';
 
 describe('notificationTransform', () => {
   describe('mapNotificationType', () => {
@@ -131,6 +132,59 @@ describe('notificationTransform', () => {
       expect(result.unreadCount).toBe(0);
       expect(result.hasMore).toBe(false);
       expect(result.nextCursor).toBeUndefined();
+    });
+  });
+
+  describe('deduplicateFollows', () => {
+    const makeNotif = (overrides: Partial<Notification> & { id: string; type: NotificationType; actorPubkey: string }): Notification => ({
+      timestamp: 1700000000,
+      isRead: false,
+      sourceEventId: 'se1',
+      sourceKind: 3,
+      ...overrides,
+    });
+
+    it('removes duplicate follow notifications from same actor', () => {
+      const notifications = [
+        makeNotif({ id: 'n1', type: 'follow', actorPubkey: 'pk1', timestamp: 1700000003 }),
+        makeNotif({ id: 'n2', type: 'follow', actorPubkey: 'pk1', timestamp: 1700000002 }),
+        makeNotif({ id: 'n3', type: 'follow', actorPubkey: 'pk1', timestamp: 1700000001 }),
+      ];
+
+      const result = deduplicateFollows(notifications);
+      expect(result).toHaveLength(1);
+      expect(result[0].id).toBe('n1'); // keeps the first (most recent)
+    });
+
+    it('keeps follows from different actors', () => {
+      const notifications = [
+        makeNotif({ id: 'n1', type: 'follow', actorPubkey: 'pk1' }),
+        makeNotif({ id: 'n2', type: 'follow', actorPubkey: 'pk2' }),
+      ];
+
+      const result = deduplicateFollows(notifications);
+      expect(result).toHaveLength(2);
+    });
+
+    it('does not deduplicate non-follow types', () => {
+      const notifications = [
+        makeNotif({ id: 'n1', type: 'like', actorPubkey: 'pk1' }),
+        makeNotif({ id: 'n2', type: 'like', actorPubkey: 'pk1' }),
+      ];
+
+      const result = deduplicateFollows(notifications);
+      expect(result).toHaveLength(2); // both kept — likes from same person on different videos are valid
+    });
+
+    it('handles mixed types correctly', () => {
+      const notifications = [
+        makeNotif({ id: 'n1', type: 'follow', actorPubkey: 'pk1', timestamp: 1700000003 }),
+        makeNotif({ id: 'n2', type: 'like', actorPubkey: 'pk1', timestamp: 1700000002 }),
+        makeNotif({ id: 'n3', type: 'follow', actorPubkey: 'pk1', timestamp: 1700000001 }),
+      ];
+
+      const result = deduplicateFollows(notifications);
+      expect(result).toHaveLength(2); // follow n1 + like n2 (follow n3 deduped)
     });
   });
 
