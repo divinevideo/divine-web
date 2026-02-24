@@ -61,7 +61,7 @@ describe('mergeVideosWithStats', () => {
 describe('toVideoPerformance', () => {
   it('prefers bulk stats over video-level counts', () => {
     const video = makeVideo({ id: 'v1', reactions: 5, comments: 2, reposts: 1 });
-    const stats = { id: 'v1', reactions: 50, comments: 20, reposts: 10, views: 1000 };
+    const stats = { reactions: 50, comments: 20, reposts: 10, views: 1000 };
 
     const result = toVideoPerformance({ video, stats });
 
@@ -106,11 +106,11 @@ describe('computeKPIs', () => {
     const performances = [
       toVideoPerformance({
         video: makeVideo({ id: 'a' }),
-        stats: { id: 'a', reactions: 10, comments: 5, reposts: 2, views: 100 },
+        stats: { reactions: 10, comments: 5, reposts: 2, views: 100 },
       }),
       toVideoPerformance({
         video: makeVideo({ id: 'b' }),
-        stats: { id: 'b', reactions: 20, comments: 10, reposts: 3, views: 200 },
+        stats: { reactions: 20, comments: 10, reposts: 3, views: 200 },
       }),
     ];
 
@@ -149,15 +149,15 @@ describe('rankTopContent', () => {
     const performances = [
       toVideoPerformance({
         video: makeVideo({ id: 'low' }),
-        stats: { id: 'low', reactions: 1, comments: 0, reposts: 0 },
+        stats: { reactions: 1, comments: 0, reposts: 0 },
       }),
       toVideoPerformance({
         video: makeVideo({ id: 'high' }),
-        stats: { id: 'high', reactions: 100, comments: 50, reposts: 25 },
+        stats: { reactions: 100, comments: 50, reposts: 25 },
       }),
       toVideoPerformance({
         video: makeVideo({ id: 'mid' }),
-        stats: { id: 'mid', reactions: 10, comments: 5, reposts: 2 },
+        stats: { reactions: 10, comments: 5, reposts: 2 },
       }),
     ];
 
@@ -172,7 +172,7 @@ describe('rankTopContent', () => {
     const performances = Array.from({ length: 20 }, (_, i) =>
       toVideoPerformance({
         video: makeVideo({ id: `v${i}` }),
-        stats: { id: `v${i}`, reactions: i, comments: 0, reposts: 0 },
+        stats: { reactions: i, comments: 0, reposts: 0 },
       }),
     );
 
