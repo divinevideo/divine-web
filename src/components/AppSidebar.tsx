@@ -2,7 +2,7 @@
 // ABOUTME: Shows main nav, login/signup, expandable diVine links section
 
 import { useLocation } from 'react-router-dom';
-import { Home, Compass, Search, User, Sun, Moon, ChevronDown, Headphones } from 'lucide-react';
+import { Home, Compass, Search, Bell, User, Sun, Moon, ChevronDown, Headphones, BarChart3 } from 'lucide-react';
 import { useState } from 'react';
 import { nip19 } from 'nostr-tools';
 
@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/collapsible';
 import { useTheme } from '@/hooks/useTheme';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { useUnreadNotificationCount } from '@/hooks/useNotifications';
 import { useSubdomainNavigate } from '@/hooks/useSubdomainNavigate';
 import { getSubdomainUser } from '@/hooks/useSubdomainUser';
 import { LoginArea } from '@/components/auth/LoginArea';
@@ -53,6 +54,7 @@ export function AppSidebar({ className }: { className?: string }) {
   const subdomainUser = getSubdomainUser();
   const { displayTheme, setTheme } = useTheme();
   const { user } = useCurrentUser();
+  const { data: unreadCount } = useUnreadNotificationCount();
   const [divineOpen, setDivineOpen] = useState(false);
   const [termsOpen, setTermsOpen] = useState(false);
 
@@ -117,12 +119,39 @@ export function AppSidebar({ className }: { className?: string }) {
             isActive={isDiscoveryActive()}
           />
 
+          {user && (
+            <NavItem
+              icon={
+                <div className="relative">
+                  <Bell className="h-[18px] w-[18px]" />
+                  {(unreadCount ?? 0) > 0 && (
+                    <span className="absolute -top-1 -right-2 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-destructive px-0.5 text-[9px] font-bold text-destructive-foreground">
+                      {(unreadCount ?? 0) > 99 ? '99+' : unreadCount}
+                    </span>
+                  )}
+                </div>
+              }
+              label="Notifications"
+              onClick={() => navigate('/notifications')}
+              isActive={isActive('/notifications')}
+            />
+          )}
+
           {user && profilePath && (
             <NavItem
               icon={<User className="h-[18px] w-[18px]" />}
               label="Profile"
               onClick={() => navigate(profilePath)}
               isActive={location.pathname === profilePath}
+            />
+          )}
+
+          {user && (
+            <NavItem
+              icon={<BarChart3 className="h-[18px] w-[18px]" />}
+              label="Analytics"
+              onClick={() => navigate('/analytics')}
+              isActive={isActive('/analytics')}
             />
           )}
         </nav>

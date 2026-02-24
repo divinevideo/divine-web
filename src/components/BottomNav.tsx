@@ -1,7 +1,8 @@
-import { Home, Compass, Search, User } from 'lucide-react';
+import { Home, Compass, Search, Bell, User } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { useUnreadNotificationCount } from '@/hooks/useNotifications';
 import { useSubdomainNavigate } from '@/hooks/useSubdomainNavigate';
 import { cn } from '@/lib/utils';
 import { nip19 } from 'nostr-tools';
@@ -10,6 +11,7 @@ export function BottomNav() {
   const navigate = useSubdomainNavigate();
   const location = useLocation();
   const { user } = useCurrentUser();
+  const { data: unreadCount } = useUnreadNotificationCount();
 
   const getUserProfilePath = () => {
     if (!user?.pubkey) return '/';
@@ -64,6 +66,29 @@ export function BottomNav() {
           <Search className={cn("h-5 w-5", isActive('/search') && "text-primary")} />
           <span className={cn("text-xs", isActive('/search') && "text-primary")}>Search</span>
         </Button>
+
+        {/* Notifications */}
+        {user && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate('/notifications')}
+            className={cn(
+              "flex flex-col items-center justify-center gap-1 h-full flex-1 rounded-none hover:bg-transparent",
+              isActive('/notifications') && "text-primary"
+            )}
+          >
+            <div className="relative">
+              <Bell className={cn("h-5 w-5", isActive('/notifications') && "text-primary")} />
+              {(unreadCount ?? 0) > 0 && (
+                <span className="absolute -top-1 -right-1.5 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-destructive px-0.5 text-[9px] font-bold text-destructive-foreground">
+                  {(unreadCount ?? 0) > 99 ? '99+' : unreadCount}
+                </span>
+              )}
+            </div>
+            <span className={cn("text-xs", isActive('/notifications') && "text-primary")}>Alerts</span>
+          </Button>
+        )}
 
         {/* Profile */}
         {user && (

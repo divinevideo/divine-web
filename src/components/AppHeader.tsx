@@ -1,9 +1,10 @@
-import { Home, Compass, Search, MoreVertical, Info, Code2, HelpCircle, Headphones, FileText, Sun, Moon } from 'lucide-react';
+import { Home, Compass, Search, Bell, MoreVertical, Info, Code2, HelpCircle, Headphones, FileText, Sun, Moon } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 import { useSubdomainNavigate } from '@/hooks/useSubdomainNavigate';
 import { Button } from '@/components/ui/button';
 import { LoginArea } from '@/components/auth/LoginArea';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { useUnreadNotificationCount } from '@/hooks/useNotifications';
 import { cn } from '@/lib/utils';
 import {
   DropdownMenu,
@@ -25,6 +26,7 @@ export function AppHeader({ className }: AppHeaderProps) {
   const { displayTheme, setTheme } = useTheme();
   const { user } = useCurrentUser();
   const subdomainUser = getSubdomainUser();
+  const { data: unreadCount } = useUnreadNotificationCount();
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -93,6 +95,23 @@ export function AppHeader({ className }: AppHeaderProps) {
             <Search className="h-4 w-4" />
             <span className="hidden lg:inline">Search</span>
           </Button>
+          {/* Notification bell - visible when logged in */}
+          {user && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate('/notifications')}
+              className="relative"
+              aria-label="Notifications"
+            >
+              <Bell className="h-4 w-4" />
+              {(unreadCount ?? 0) > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold text-destructive-foreground">
+                  {(unreadCount ?? 0) > 99 ? '99+' : unreadCount}
+                </span>
+              )}
+            </Button>
+          )}
           <Button
             onClick={toggleTheme}
             variant="ghost"
