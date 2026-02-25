@@ -7,7 +7,7 @@ import { Shield, ShieldCheck, ShieldAlert, Info } from 'lucide-react';
 // Custom icon component for the no-AI/Human Made icon
 function HumanMadeIcon({ className }: { className?: string }) {
   return (
-     <ShieldCheck className="h-4 w-4 mt-0.5 text-brand-dark-green dark:text-brand-green flex-shrink-0" />
+     <ShieldCheck className="h-4 w-4 mt-0.5 text-brand-dark-green dark:text-brand-green flex-shrink-0 {className}" />
   );
 }
 import { Badge } from '@/components/ui/badge';
