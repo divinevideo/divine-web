@@ -81,6 +81,10 @@ export function transformFunnelcakeVideo(raw: FunnelcakeVideoRaw): ParsedVideoDa
       externalId: raw.d_tag || '',
     } : undefined,
 
+    // Subtitle / text track fields from API
+    textTrackRef: raw.text_track_ref,
+    textTrackContent: raw.text_track_content,
+
     // ProofMode data - extract from tags when available (single video endpoint)
     proofMode: raw.tags ? getProofModeData({
       id: id,

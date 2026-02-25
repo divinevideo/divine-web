@@ -19,7 +19,12 @@ import { createRoot } from 'react-dom/client';
 // Import polyfills first
 import './lib/polyfills.ts';
 
+// Initialize cookie consent listener (must be before analytics)
+import { initCookieConsent } from './lib/cookieConsent';
+initCookieConsent();
+
 // Initialize Firebase Analytics and Performance Monitoring
+// (gated behind GDPR cookie consent from HubSpot banner)
 import { initializeAnalytics } from './lib/analytics';
 initializeAnalytics();
 

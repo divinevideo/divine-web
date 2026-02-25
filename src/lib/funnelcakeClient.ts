@@ -14,6 +14,11 @@ import type {
   FunnelcakeHashtag,
   FunnelcakeViner,
 } from '@/types/funnelcake';
+import type { RawNotificationsApiResponse } from '@/types/notification';
+import { transformNotificationsResponse } from '@/lib/notificationTransform';
+import type { NotificationsResponse } from '@/types/notification';
+import type { NostrSigner } from '@nostrify/nostrify';
+import { createNip98AuthHeader } from '@/lib/nip98Auth';
 
 /**
  * Convert a byte array to hex string
@@ -875,6 +880,7 @@ export interface FunnelcakeBulkStatsResponse {
     reactions: number;
     comments: number;
     reposts: number;
+    views?: number;
     loops?: number;
     engagement_score?: number;
     trending_score?: number;
@@ -1012,4 +1018,149 @@ export async function fetchBulkVideoStats(
     debugError(`[FunnelcakeClient] fetchBulkVideoStats failed: ${message}`);
     throw new FunnelcakeApiError(message, null, undefined);
   }
+}
+
+// ---------------------------------------------------------------------------
+// Notification API functions (NIP-98 authenticated, bypass circuit breaker)
+// ---------------------------------------------------------------------------
+
+/**
+ * Make an authenticated request to a notification endpoint.
+ * These requests intentionally bypass the circuit breaker so that
+ * 401 auth errors do not open the circuit for all API calls.
+ */
+async function authenticatedNotificationRequest<T>(
+  apiUrl: string,
+  endpoint: string,
+  signer: NostrSigner,
+  options: {
+    method?: string;
+    params?: Record<string, string | number | boolean | undefined>;
+    body?: unknown;
+    signal?: AbortSignal;
+  } = {},
+): Promise<T> {
+  const { method = 'GET', params = {}, body, signal } = options;
+  const url = buildUrl(apiUrl, endpoint, params);
+  const timeout = API_CONFIG.funnelcake.timeout;
+
+  const authHeader = await createNip98AuthHeader(signer, url, method);
+  if (!authHeader) {
+    throw new FunnelcakeApiError('Failed to create NIP-98 auth header', null);
+  }
+
+  const timeoutSignal = AbortSignal.timeout(timeout);
+  const combinedSignal = signal
+    ? AbortSignal.any([signal, timeoutSignal])
+    : timeoutSignal;
+
+  const fetchOptions: RequestInit = {
+    method,
+    signal: combinedSignal,
+    headers: {
+      'Accept': 'application/json',
+      'Authorization': authHeader,
+      ...(body ? { 'Content-Type': 'application/json' } : {}),
+    },
+    ...(body ? { body: JSON.stringify(body) } : {}),
+  };
+
+  debugLog(`[FunnelcakeClient] Auth request: ${method} ${url}`);
+
+  const response = await fetch(url, fetchOptions);
+
+  if (!response.ok) {
+    const errorText = await response.text().catch(() => 'Unknown error');
+    throw new FunnelcakeApiError(
+      `Notification API error: ${response.status} ${response.statusText}`,
+      response.status,
+      errorText,
+    );
+  }
+
+  return response.json() as Promise<T>;
+}
+
+/**
+ * Fetch paginated notifications for a user (NIP-98 authenticated).
+ * Bypasses circuit breaker.
+ */
+export async function fetchNotifications(
+  apiUrl: string,
+  pubkey: string,
+  signer: NostrSigner,
+  options?: {
+    limit?: number;
+    before?: string;
+    signal?: AbortSignal;
+  },
+): Promise<NotificationsResponse> {
+  const endpoint = API_CONFIG.funnelcake.endpoints.userNotifications.replace('{pubkey}', pubkey);
+
+  const params: Record<string, string | number | boolean | undefined> = {
+    limit: options?.limit ?? 50,
+    before: options?.before,
+  };
+
+  const raw = await authenticatedNotificationRequest<RawNotificationsApiResponse>(
+    apiUrl,
+    endpoint,
+    signer,
+    { params, signal: options?.signal },
+  );
+
+  return transformNotificationsResponse(raw);
+}
+
+/**
+ * Fetch unread notification count (lightweight, uses limit=1).
+ * Bypasses circuit breaker.
+ */
+export async function fetchUnreadCount(
+  apiUrl: string,
+  pubkey: string,
+  signer: NostrSigner,
+  signal?: AbortSignal,
+): Promise<number> {
+  const endpoint = API_CONFIG.funnelcake.endpoints.userNotifications.replace('{pubkey}', pubkey);
+
+  const raw = await authenticatedNotificationRequest<RawNotificationsApiResponse>(
+    apiUrl,
+    endpoint,
+    signer,
+    { params: { limit: 1 }, signal },
+  );
+
+  return raw.unread_count ?? 0;
+}
+
+/**
+ * Mark notifications as read (NIP-98 authenticated).
+ * Bypasses circuit breaker.
+ *
+ * @param notificationIds - Specific IDs to mark, or omit/empty to mark all
+ */
+export async function markNotificationsRead(
+  apiUrl: string,
+  pubkey: string,
+  signer: NostrSigner,
+  notificationIds?: string[],
+): Promise<{ success: boolean; markedCount: number }> {
+  const endpoint = API_CONFIG.funnelcake.endpoints.userNotificationsRead.replace('{pubkey}', pubkey);
+
+  const body = notificationIds && notificationIds.length > 0
+    ? { notification_ids: notificationIds }
+    : {};
+
+  const result = await authenticatedNotificationRequest<{ success?: boolean; marked_count?: number }>(
+    apiUrl,
+    endpoint,
+    signer,
+    { method: 'POST', body },
+  );
+
+  return {
+    success: result.success !== false,
+    markedCount: result.marked_count ?? 0,
+  };
 }

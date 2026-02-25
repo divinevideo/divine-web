@@ -3,8 +3,8 @@
 
 import { useState } from 'react';
 import { useReportContent } from '@/hooks/useModeration';
-import { useAnonymousReport } from '@/hooks/useAnonymousReport';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { useLoginDialog } from '@/contexts/LoginDialogContext';
 import {
   Dialog,
   DialogContent,
@@ -13,11 +13,10 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Loader2, Flag } from 'lucide-react';
+import { Loader2, Flag, LogIn } from 'lucide-react';
 import { useToast } from '@/hooks/useToast';
 import { ContentFilterReason, REPORT_REASON_LABELS } from '@/types/moderation';
 
@@ -38,13 +37,12 @@ export function ReportContentDialog({
 }: ReportContentDialogProps) {
   const { toast } = useToast();
   const { user } = useCurrentUser();
+  const { openLoginDialog } = useLoginDialog();
   const reportContent = useReportContent();
-  const anonymousReport = useAnonymousReport();
   const isLoggedIn = !!user;
 
   const [reason, setReason] = useState<ContentFilterReason>(ContentFilterReason.SPAM);
   const [details, setDetails] = useState('');
-  const [email, setEmail] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async () => {
@@ -57,35 +55,15 @@ export function ReportContentDialog({
       return;
     }
 
-    if (!isLoggedIn && (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))) {
-      toast({
-        title: 'Error',
-        description: 'Please enter a valid email address',
-        variant: 'destructive',
-      });
-      return;
-    }
-
     setIsSubmitting(true);
     try {
-      if (isLoggedIn) {
-        await reportContent.mutateAsync({
-          eventId,
-          pubkey,
-          reason,
-          details: details.trim() || undefined,
-          contentType,
-        });
-      } else {
-        await anonymousReport.mutateAsync({
-          email,
-          eventId,
-          pubkey,
-          contentType,
-          reason,
-          details: details.trim() || undefined,
-        });
-      }
+      await reportContent.mutateAsync({
+        eventId,
+        pubkey,
+        reason,
+        details: details.trim() || undefined,
+        contentType,
+      });
 
       toast({
         title: 'Report submitted',
@@ -95,7 +73,6 @@ export function ReportContentDialog({
       // Reset and close
       setReason(ContentFilterReason.SPAM);
       setDetails('');
-      setEmail('');
       onClose();
     } catch {
       toast({
@@ -133,56 +110,64 @@ export function ReportContentDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 pb-2">
-          <div className="space-y-3">
-            <Label>Why are you reporting this {contentType}?</Label>
-            <RadioGroup value={reason} onValueChange={(value) => setReason(value as ContentFilterReason)}>
-              <div className="space-y-2">
-                {Object.entries(REPORT_REASON_LABELS).map(([value, label]) => (
-                  <div key={value} className="flex items-center space-x-2">
-                    <RadioGroupItem value={value} id={value} />
-                    <Label htmlFor={value} className="font-normal cursor-pointer">
-                      {label}
-                    </Label>
-                  </div>
-                ))}
-              </div>
-            </RadioGroup>
+        {!isLoggedIn ? (
+          <div className="space-y-4 pb-2">
+            <p className="text-sm text-muted-foreground">
+              You need to be logged in to report content. This helps us verify reports and follow up with you if needed.
+            </p>
+            <div className="flex gap-2 pt-2">
+              <Button
+                variant="outline"
+                onClick={onClose}
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={() => {
+                  onClose();
+                  openLoginDialog();
+                }}
+                className="flex-1"
+              >
+                <LogIn className="h-4 w-4 mr-2" />
+                Log in
+              </Button>
+            </div>
           </div>
+        ) : (
+          <div className="space-y-4 pb-2">
+            <div className="space-y-3">
+              <Label>Why are you reporting this {contentType}?</Label>
+              <RadioGroup value={reason} onValueChange={(value) => setReason(value as ContentFilterReason)}>
+                <div className="space-y-2">
+                  {Object.entries(REPORT_REASON_LABELS).map(([value, label]) => (
+                    <div key={value} className="flex items-center space-x-2">
+                      <RadioGroupItem value={value} id={value} />
+                      <Label htmlFor={value} className="font-normal cursor-pointer">
+                        {label}
+                      </Label>
+                    </div>
+                  ))}
+                </div>
+              </RadioGroup>
+            </div>
 
-          {!isLoggedIn && (
             <div className="space-y-2">
-              <Label htmlFor="email">Email address (required)</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="your@email.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+              <Label htmlFor="details">Additional details (optional)</Label>
+              <Textarea
+                id="details"
+                placeholder="Provide any additional context that might be helpful..."
+                value={details}
+                onChange={(e) => setDetails(e.target.value)}
+                rows={3}
                 disabled={isSubmitting}
               />
-              <p className="text-xs text-muted-foreground">
-                We'll use this to follow up on your report
-              </p>
             </div>
-          )}
 
-          <div className="space-y-2">
-            <Label htmlFor="details">Additional details (optional)</Label>
-            <Textarea
-              id="details"
-              placeholder="Provide any additional context that might be helpful..."
-              value={details}
-              onChange={(e) => setDetails(e.target.value)}
-              rows={3}
-              disabled={isSubmitting}
-            />
-          </div>
-
-          {isLoggedIn ? (
             <div className="bg-brand-yellow-light border border-brand-yellow p-3 rounded-md text-sm space-y-2 dark:bg-brand-yellow-dark">
               <p className="font-semibold text-brand-yellow-dark dark:text-brand-yellow">
-                ⚠️ Reports are PUBLIC information
+                Reports are PUBLIC information
               </p>
               <p className="text-muted-foreground">
                 Reports are published as NIP-56 events on the Nostr network and will be linked to your username.
@@ -196,42 +181,36 @@ export function ReportContentDialog({
                 .
               </p>
             </div>
-          ) : (
-            <div className="bg-brand-blue-light border border-brand-blue p-3 rounded-md text-sm dark:bg-brand-blue-dark">
-              <p className="text-muted-foreground">
-                Your report will be sent privately to our moderation team. You can follow up on your report through the support widget.
-              </p>
-            </div>
-          )}
 
-          <div className="flex gap-2 pt-2">
-            <Button
-              variant="outline"
-              onClick={onClose}
-              disabled={isSubmitting}
-              className="flex-1"
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleSubmit}
-              disabled={isSubmitting}
-              className="flex-1"
-            >
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Submitting...
-                </>
-              ) : (
-                <>
-                  <Flag className="h-4 w-4 mr-2" />
-                  Submit Report
-                </>
-              )}
-            </Button>
+            <div className="flex gap-2 pt-2">
+              <Button
+                variant="outline"
+                onClick={onClose}
+                disabled={isSubmitting}
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleSubmit}
+                disabled={isSubmitting}
+                className="flex-1"
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Submitting...
+                  </>
+                ) : (
+                  <>
+                    <Flag className="h-4 w-4 mr-2" />
+                    Submit Report
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
-        </div>
+        )}
       </DialogContent>
     </Dialog>
   );

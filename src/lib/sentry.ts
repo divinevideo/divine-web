@@ -28,11 +28,11 @@ export function initializeSentry() {
     release: `divine-web@${__BUILD_DATE__}`,
 
     // Performance monitoring
-    tracesSampleRate: isDev ? 1.0 : 0.1, // 10% in production
+    tracesSampleRate: isDev ? 1.0 : 0.3, // 30% in production (small app benefits from more data)
 
     // Session replay for debugging (captures what user did before crash)
     replaysSessionSampleRate: 0, // Don't record normal sessions
-    replaysOnErrorSampleRate: isDev ? 1.0 : 0.5, // 50% of error sessions in prod
+    replaysOnErrorSampleRate: isDev ? 1.0 : 1.0, // 100% of error sessions get replay
 
     // Integrations
     integrations: [
@@ -41,6 +41,8 @@ export function initializeSentry() {
         maskAllText: false,
         blockAllMedia: false,
       }),
+      Sentry.httpClientIntegration({ failedRequestStatusCodes: [[400, 599]] }),
+      Sentry.captureConsoleIntegration({ levels: ['error', 'warn'] }),
     ],
 
     // Filter out noise - browser environment errors we can't fix
