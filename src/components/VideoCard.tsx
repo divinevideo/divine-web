@@ -160,7 +160,7 @@ export function VideoCard({
     }
     setVideoAspectRatio(newRatio);
   }, [initialAspectRatio, hasDeclaredDimensions, isClassicVine]);
-  const _isMobile = useIsMobile();
+  const isMobile = useIsMobile();
   // Determine layout: use prop if provided, otherwise always vertical (text below video)
   const effectiveLayout = layout ?? 'vertical';
   const isHorizontal = effectiveLayout === 'horizontal';
@@ -420,14 +420,20 @@ export function VideoCard({
           <CardContent className={cn("p-0", isHorizontal && "p-2")}>
             <div
               className={cn(
-                "relative rounded-lg overflow-hidden w-full max-h-[70vh]",
-                // Center non-landscape videos when height-constrained
-                videoAspectRatio <= 1.1 && "mx-auto"
+                "relative rounded-lg overflow-hidden w-full",
+                // On desktop, cap height to avoid oversized videos
+                // On mobile, let portrait videos fill the width naturally
+                !isMobile && "max-h-[70vh]",
+                // Center non-landscape videos when height-constrained (desktop only)
+                !isMobile && videoAspectRatio <= 1.1 && "mx-auto"
               )}
               style={{
                 aspectRatio: videoAspectRatio.toString(),
-                // For non-landscape videos, limit width so max-h-[70vh] doesn't stretch them wide
-                maxWidth: videoAspectRatio <= 1.1 ? `calc(70vh * ${videoAspectRatio})` : undefined,
+                // On desktop, limit width for portrait videos so max-h doesn't stretch them
+                // On mobile, let videos fill available width for a better viewing experience
+                maxWidth: !isMobile && videoAspectRatio <= 1.1
+                  ? `calc(70vh * ${videoAspectRatio})`
+                  : undefined,
               }}
             >
               {!isPlaying ? (
