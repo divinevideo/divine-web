@@ -146,6 +146,18 @@ export function VideoCard({
   // Track thumbnail-reported aspect ratio as ground truth
   const thumbnailRatioRef = useRef<number | null>(null);
 
+  // Reset aspect ratio when video data changes (e.g., isVineMigrated arrives late)
+  // useState only sets initial value on first mount, so we need this sync
+  useEffect(() => {
+    const ratio = isClassicVine ? 1 : initialAspectRatio;
+    setVideoAspectRatio(ratio);
+    thumbnailRatioRef.current = null;
+  }, [video.id, isClassicVine, initialAspectRatio]);
+
+  // For classic Vines, ALWAYS force 1:1 regardless of state — state might be
+  // stale if video data changed after mount or component was recycled
+  const effectiveAspectRatio = isClassicVine ? 1 : videoAspectRatio;
+
   // Thumbnail dimensions are the source of truth for content aspect ratio.
   // Thumbnails are simple images that preserve the original aspect ratio,
   // unlike HLS streams which may be transcoded to different dimensions.
@@ -443,12 +455,12 @@ export function VideoCard({
               className={cn(
                 "relative rounded-lg overflow-hidden w-full max-h-[70vh]",
                 // Center non-landscape videos when height-constrained
-                videoAspectRatio <= 1.1 && "mx-auto"
+                effectiveAspectRatio <= 1.1 && "mx-auto"
               )}
               style={{
-                aspectRatio: videoAspectRatio.toString(),
+                aspectRatio: effectiveAspectRatio.toString(),
                 // For non-landscape videos, limit width so max-h-[70vh] doesn't stretch them wide
-                maxWidth: videoAspectRatio <= 1.1 ? `calc(70vh * ${videoAspectRatio})` : undefined,
+                maxWidth: effectiveAspectRatio <= 1.1 ? `calc(70vh * ${effectiveAspectRatio})` : undefined,
               }}
             >
               {!isPlaying ? (
