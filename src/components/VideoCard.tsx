@@ -1,7 +1,7 @@
 // ABOUTME: Video card component for displaying individual videos in feeds
 // ABOUTME: Shows video player, metadata, author info, and social interactions
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { Heart, Repeat2, MessageCircle, Share, Eye, MoreVertical, Flag, UserX, Trash2, Volume2, VolumeX, Code, Users, ListPlus, Download, Maximize2, Captions } from 'lucide-react';
 import { nip19 } from 'nostr-tools';
 import { Card, CardContent } from '@/components/ui/card';
@@ -124,7 +124,18 @@ export function VideoCard({
   // Calculate initial aspect ratio from video dimensions, or use sensible defaults
   // Classic Vine videos were ALWAYS 1:1 square — ignore any dim tag or transcoder dimensions
   const hasDeclaredDimensions = !!video.dimensions;
-  const isClassicVine = !!video.loopCount || video.isVineMigrated;
+  // Vine shut down Jan 17, 2017 (unix 1484611200) — videos with originalVineTimestamp
+  // before that date are almost certainly classic Vines even without origin/platform tags
+  const isClassicVine = !!video.loopCount || video.isVineMigrated ||
+    (video.originalVineTimestamp !== undefined && video.originalVineTimestamp < 1484611200);
+
+  // Log once per video mount to trace aspect ratio decisions
+  useMemo(() => {
+    console.log(`[AspectRatio] video=${video.id?.slice(0, 8)} isClassicVine=${isClassicVine}`,
+      `loopCount=${video.loopCount} isVineMigrated=${video.isVineMigrated}`,
+      `dimensions=${video.dimensions} vineTimestamp=${video.originalVineTimestamp}`);
+  }, [video.id, isClassicVine, video.loopCount, video.isVineMigrated, video.dimensions, video.originalVineTimestamp]);
+
   const getInitialAspectRatio = (): number => {
     // Classic Vines are always square, regardless of what dim tag says
     if (isClassicVine) return 1;
@@ -140,26 +151,61 @@ export function VideoCard({
   };
   const initialAspectRatio = getInitialAspectRatio();
   const [videoAspectRatio, setVideoAspectRatio] = useState<number>(initialAspectRatio);
+  // Track thumbnail-reported aspect ratio as ground truth
+  const thumbnailRatioRef = useRef<number | null>(null);
 
-  // Guard against HLS transcoder reporting wrong orientation.
-  // Classic Vine videos: never update — they were always 1:1 square.
-  // Videos with declared dimensions: don't flip portrait→landscape (HLS rotation bug).
-  // Videos without dimensions: trust the actual loaded video dimensions.
-  const handleVideoDimensions = useCallback((d: { width: number; height: number }) => {
-    // Classic Vines are always square — ignore any reported dimensions
-    if (isClassicVine) return;
+  // NO useEffect here — useState(initialAspectRatio) sets the right value on mount,
+  // and effectiveAspectRatio below overrides for classic Vines anyway.
 
+  // For classic Vines, ALWAYS force 1:1 regardless of state — state might be
+  // stale if video data changed after mount or component was recycled
+  const effectiveAspectRatio = isClassicVine ? 1 : videoAspectRatio;
+
+  // Thumbnail dimensions are the source of truth for content aspect ratio.
+  // Thumbnails are simple images that preserve the original aspect ratio,
+  // unlike HLS streams which may be transcoded to different dimensions.
+  const handleThumbnailDimensions = useCallback((d: { width: number; height: number }) => {
     const newRatio = d.width / d.height;
+    console.log(`[AspectRatio] THUMBNAIL video=${video.id?.slice(0, 8)} dims=${d.width}x${d.height} ratio=${newRatio.toFixed(3)} isClassicVine=${isClassicVine} → ${isClassicVine ? 'IGNORED (classic vine)' : 'APPLIED'}`);
+    if (isClassicVine) return; // Classic Vines locked to 1:1
+    thumbnailRatioRef.current = newRatio;
+    setVideoAspectRatio(newRatio);
+  }, [isClassicVine, video.id]);
+
+  // Video player dimensions may be wrong due to HLS transcoding.
+  // If thumbnail already established the correct ratio, don't override
+  // unless the difference is trivial (< 10%, just codec rounding).
+  const handleVideoDimensions = useCallback((d: { width: number; height: number }) => {
+    const newRatio = d.width / d.height;
+    const thumbRatio = thumbnailRatioRef.current;
+
+    if (isClassicVine) {
+      console.log(`[AspectRatio] VIDEO video=${video.id?.slice(0, 8)} dims=${d.width}x${d.height} ratio=${newRatio.toFixed(3)} → IGNORED (classic vine, forcing 1:1)`);
+      return;
+    }
+
+    // If thumbnail already set the ratio, trust it over HLS
+    if (thumbRatio !== null) {
+      const ratioChange = Math.abs(newRatio - thumbRatio) / thumbRatio;
+      if (ratioChange > 0.1) {
+        console.log(`[AspectRatio] VIDEO video=${video.id?.slice(0, 8)} dims=${d.width}x${d.height} ratio=${newRatio.toFixed(3)} → IGNORED (${(ratioChange * 100).toFixed(0)}% off thumbnail=${thumbRatio.toFixed(3)})`);
+        return; // >10% difference = HLS distortion, ignore
+      }
+    }
+
     if (hasDeclaredDimensions) {
-      const isInitialPortrait = initialAspectRatio < 0.9;
+      const isInitialPortraitOrSquare = initialAspectRatio <= 1.1;
       const isNewLandscape = newRatio > 1.1;
-      // Don't let HLS flip a video with declared portrait dimensions to landscape
-      if (isInitialPortrait && isNewLandscape) {
+      // Don't let HLS flip a video with declared portrait/square dimensions to landscape
+      if (isInitialPortraitOrSquare && isNewLandscape) {
+        console.log(`[AspectRatio] VIDEO video=${video.id?.slice(0, 8)} dims=${d.width}x${d.height} ratio=${newRatio.toFixed(3)} → IGNORED (declared ${initialAspectRatio.toFixed(3)} but HLS says landscape)`);
         return;
       }
     }
+
+    console.log(`[AspectRatio] VIDEO video=${video.id?.slice(0, 8)} dims=${d.width}x${d.height} ratio=${newRatio.toFixed(3)} → APPLIED (was ${videoAspectRatio.toFixed(3)})`);
     setVideoAspectRatio(newRatio);
-  }, [initialAspectRatio, hasDeclaredDimensions, isClassicVine]);
+  }, [initialAspectRatio, hasDeclaredDimensions, isClassicVine, video.id, videoAspectRatio]);
   const _isMobile = useIsMobile();
   // Determine layout: use prop if provided, otherwise always vertical (text below video)
   const effectiveLayout = layout ?? 'vertical';
@@ -417,17 +463,21 @@ export function VideoCard({
           )}
 
           {/* Video player or thumbnail */}
-          <CardContent className={cn("p-0", isHorizontal && "p-2")}>
+          <CardContent className={cn("p-0", isHorizontal && "p-2")}
+            data-aspect-ratio={effectiveAspectRatio.toFixed(3)}
+            data-is-classic-vine={isClassicVine}
+            data-video-id={video.id?.slice(0, 8)}
+          >
             <div
               className={cn(
                 "relative rounded-lg overflow-hidden w-full max-h-[70vh]",
                 // Center non-landscape videos when height-constrained
-                videoAspectRatio <= 1.1 && "mx-auto"
+                effectiveAspectRatio <= 1.1 && "mx-auto"
               )}
               style={{
-                aspectRatio: videoAspectRatio.toString(),
+                aspectRatio: effectiveAspectRatio.toString(),
                 // For non-landscape videos, limit width so max-h-[70vh] doesn't stretch them wide
-                maxWidth: videoAspectRatio <= 1.1 ? `calc(70vh * ${videoAspectRatio})` : undefined,
+                maxWidth: effectiveAspectRatio <= 1.1 ? `calc(70vh * ${effectiveAspectRatio})` : undefined,
               }}
             >
               {!isPlaying ? (
@@ -439,7 +489,7 @@ export function VideoCard({
                   className="w-full h-full"
                   onClick={handleThumbnailClick}
                   onError={() => setVideoError(true)}
-                  onVideoDimensions={handleVideoDimensions}
+                  onVideoDimensions={handleThumbnailDimensions}
                 />
               ) : !videoError ? (
                 <VideoPlayer
