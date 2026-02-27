@@ -1,7 +1,7 @@
 // ABOUTME: Video card component for displaying individual videos in feeds
 // ABOUTME: Shows video player, metadata, author info, and social interactions
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { Heart, Repeat2, MessageCircle, Share, Eye, MoreVertical, Flag, UserX, Trash2, Volume2, VolumeX, Code, Users, ListPlus, Download, Maximize2, Captions } from 'lucide-react';
 import { nip19 } from 'nostr-tools';
 import { Card, CardContent } from '@/components/ui/card';
@@ -124,7 +124,10 @@ export function VideoCard({
   // Calculate initial aspect ratio from video dimensions, or use sensible defaults
   // Classic Vine videos were ALWAYS 1:1 square — ignore any dim tag or transcoder dimensions
   const hasDeclaredDimensions = !!video.dimensions;
-  const isClassicVine = !!video.loopCount || video.isVineMigrated;
+  // Vine shut down Jan 17, 2017 (unix 1484611200) — videos with originalVineTimestamp
+  // before that date are almost certainly classic Vines even without origin/platform tags
+  const isClassicVine = !!video.loopCount || video.isVineMigrated ||
+    (video.originalVineTimestamp !== undefined && video.originalVineTimestamp < 1484611200);
   const getInitialAspectRatio = (): number => {
     // Classic Vines are always square, regardless of what dim tag says
     if (isClassicVine) return 1;
@@ -140,21 +143,39 @@ export function VideoCard({
   };
   const initialAspectRatio = getInitialAspectRatio();
   const [videoAspectRatio, setVideoAspectRatio] = useState<number>(initialAspectRatio);
+  // Track thumbnail-reported aspect ratio as ground truth
+  const thumbnailRatioRef = useRef<number | null>(null);
 
-  // Guard against HLS transcoder reporting wrong orientation.
-  // Classic Vine videos: never update — they were always 1:1 square.
-  // Videos with declared dimensions: don't flip portrait→landscape (HLS rotation bug).
-  // Videos without dimensions: trust the actual loaded video dimensions.
+  // Thumbnail dimensions are the source of truth for content aspect ratio.
+  // Thumbnails are simple images that preserve the original aspect ratio,
+  // unlike HLS streams which may be transcoded to different dimensions.
+  const handleThumbnailDimensions = useCallback((d: { width: number; height: number }) => {
+    if (isClassicVine) return; // Classic Vines locked to 1:1
+    const newRatio = d.width / d.height;
+    thumbnailRatioRef.current = newRatio;
+    setVideoAspectRatio(newRatio);
+  }, [isClassicVine]);
+
+  // Video player dimensions may be wrong due to HLS transcoding.
+  // If thumbnail already established the correct ratio, don't override
+  // unless the difference is trivial (< 10%, just codec rounding).
   const handleVideoDimensions = useCallback((d: { width: number; height: number }) => {
-    // Classic Vines are always square — ignore any reported dimensions
     if (isClassicVine) return;
 
     const newRatio = d.width / d.height;
+
+    // If thumbnail already set the ratio, trust it over HLS
+    if (thumbnailRatioRef.current !== null) {
+      const thumbRatio = thumbnailRatioRef.current;
+      const ratioChange = Math.abs(newRatio - thumbRatio) / thumbRatio;
+      if (ratioChange > 0.1) return; // >10% difference = HLS distortion, ignore
+    }
+
     if (hasDeclaredDimensions) {
-      const isInitialPortrait = initialAspectRatio < 0.9;
+      const isInitialPortraitOrSquare = initialAspectRatio <= 1.1;
       const isNewLandscape = newRatio > 1.1;
-      // Don't let HLS flip a video with declared portrait dimensions to landscape
-      if (isInitialPortrait && isNewLandscape) {
+      // Don't let HLS flip a video with declared portrait/square dimensions to landscape
+      if (isInitialPortraitOrSquare && isNewLandscape) {
         return;
       }
     }
@@ -439,7 +460,7 @@ export function VideoCard({
                   className="w-full h-full"
                   onClick={handleThumbnailClick}
                   onError={() => setVideoError(true)}
-                  onVideoDimensions={handleVideoDimensions}
+                  onVideoDimensions={handleThumbnailDimensions}
                 />
               ) : !videoError ? (
                 <VideoPlayer
