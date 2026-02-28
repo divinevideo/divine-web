@@ -44,6 +44,7 @@ import { MuteType } from '@/types/moderation';
 import { getOptimalVideoUrl } from '@/lib/bandwidthTracker';
 import { useBandwidthTier } from '@/hooks/useBandwidthTier';
 import { useSubtitles } from '@/hooks/useSubtitles';
+import { debugLog } from '@/lib/debug';
 
 interface VideoCardProps {
   video: ParsedVideoData;
@@ -104,8 +105,14 @@ export function VideoCard({
   // Compute optimal HLS URL based on current bandwidth tier
   // This dynamically selects 480p/720p/adaptive based on observed load performance
   const optimalHlsUrl = getOptimalVideoUrl(video.videoUrl);
-  // Use the video's hlsUrl if provided (e.g., already HLS), otherwise use computed optimal URL
-  const effectiveHlsUrl = video.hlsUrl || (optimalHlsUrl !== video.videoUrl ? optimalHlsUrl : undefined);
+  // Classic Vine detection — used for HLS skip and forced square aspect ratio
+  // Vine shut down Jan 17, 2017 (unix 1484611200) — videos with originalVineTimestamp
+  // before that date are almost certainly classic Vines even without origin/platform tags
+  const isClassicVine = !!video.loopCount || video.isVineMigrated ||
+    (video.originalVineTimestamp !== undefined && video.originalVineTimestamp < 1484611200);
+  // SKIP HLS for classic Vines — the HLS transcoder distorts square videos into landscape format.
+  // The original MP4 files preserve the correct 480x480 square aspect ratio.
+  const effectiveHlsUrl = isClassicVine ? undefined : (video.hlsUrl || (optimalHlsUrl !== video.videoUrl ? optimalHlsUrl : undefined));
   const { data: lists } = useVideosInLists(video.vineId ?? undefined);
 
   // NEW: Get reposter data from reposts array
@@ -127,14 +134,10 @@ export function VideoCard({
   // Calculate initial aspect ratio from video dimensions, or use sensible defaults
   // Classic Vine videos were ALWAYS 1:1 square — ignore any dim tag or transcoder dimensions
   const hasDeclaredDimensions = !!video.dimensions;
-  // Vine shut down Jan 17, 2017 (unix 1484611200) — videos with originalVineTimestamp
-  // before that date are almost certainly classic Vines even without origin/platform tags
-  const isClassicVine = !!video.loopCount || video.isVineMigrated ||
-    (video.originalVineTimestamp !== undefined && video.originalVineTimestamp < 1484611200);
 
   // Log once per video mount to trace aspect ratio decisions
   useMemo(() => {
-    console.log(`[AspectRatio] video=${video.id?.slice(0, 8)} isClassicVine=${isClassicVine}`,
+    debugLog(`[AspectRatio] video=${video.id?.slice(0, 8)} isClassicVine=${isClassicVine}`,
       `loopCount=${video.loopCount} isVineMigrated=${video.isVineMigrated}`,
       `dimensions=${video.dimensions} vineTimestamp=${video.originalVineTimestamp}`);
   }, [video.id, isClassicVine, video.loopCount, video.isVineMigrated, video.dimensions, video.originalVineTimestamp]);
@@ -462,14 +465,10 @@ export function VideoCard({
           )}
 
           {/* Video player or thumbnail */}
-          <CardContent className={cn("p-0", isHorizontal && "p-2")}
-            data-aspect-ratio={effectiveAspectRatio.toFixed(3)}
-            data-is-classic-vine={isClassicVine}
-            data-video-id={video.id?.slice(0, 8)}
-          >
+          <CardContent className={cn("p-0", isHorizontal && "p-2")}>
             <div
               className={cn(
-                "relative rounded-lg overflow-hidden w-full max-h-[70vh]",
+                "relative rounded-lg overflow-hidden w-full max-h-[70vh] bg-black",
                 // Center non-landscape videos when height-constrained
                 effectiveAspectRatio <= 1.1 && "mx-auto"
               )}
@@ -508,6 +507,7 @@ export function VideoCard({
                   subtitlesVisible={showSubtitles}
                   videoData={video}
                   trafficSource={trafficSource}
+                  objectFit={isClassicVine ? 'cover' : 'contain'}
                 />
               ) : (
                 <div className="flex items-center justify-center h-full text-muted-foreground">
