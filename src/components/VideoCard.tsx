@@ -1,7 +1,7 @@
 // ABOUTME: Video card component for displaying individual videos in feeds
 // ABOUTME: Shows video player, metadata, author info, and social interactions
 
-import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
+import { useState, useCallback, useRef, useMemo } from 'react';
 import { Heart, Repeat2, MessageCircle, Share, Eye, MoreVertical, Flag, UserX, Trash2, Volume2, VolumeX, Code, Users, ListPlus, Download, Maximize2, Captions } from 'lucide-react';
 import { nip19 } from 'nostr-tools';
 import { Card, CardContent } from '@/components/ui/card';
