@@ -89,13 +89,9 @@ export function FullscreenVideoItem({
   const videoContainerRef = useRef<HTMLDivElement>(null);
   const { globalMuted, setGlobalMuted, setActiveVideo } = useVideoPlayback();
   const { cues: subtitleCues, hasSubtitles } = useSubtitles(video);
-  const [ccOverride, setCcOverride] = useState<boolean | undefined>(undefined);
-  const subtitlesVisible = ccOverride ?? (globalMuted && hasSubtitles);
-
-  // Reset ccOverride when mute state changes so auto-behavior resumes
-  useEffect(() => {
-    setCcOverride(undefined);
-  }, [globalMuted]);
+  // Subtitles default to ON when available, independent of mute state
+  const [subtitlesVisible, setSubtitlesVisible] = useState(true);
+  const showSubtitles = subtitlesVisible && hasSubtitles;
 
   const { toast } = useToast();
   const muteUser = useMuteItem();
@@ -233,7 +229,7 @@ export function FullscreenVideoItem({
             onSwipeRight={handleSwipeRight}
             onDoubleTap={handleDoubleTap}
             subtitleCues={subtitleCues}
-            subtitlesVisible={subtitlesVisible}
+            subtitlesVisible={showSubtitles}
             videoData={video}
             trafficSource={trafficSource}
           />
@@ -280,11 +276,11 @@ export function FullscreenVideoItem({
             className={cn(
               "absolute top-4 right-16 backdrop-blur-sm rounded-full w-10 h-10 pointer-events-auto",
               "bg-black/50 hover:bg-black/70",
-              subtitlesVisible ? "text-white" : "text-white/50"
+              showSubtitles ? "text-white" : "text-white/50"
             )}
             onClick={(e) => {
               e.stopPropagation();
-              setCcOverride(prev => prev === undefined ? !subtitlesVisible : !prev);
+              setSubtitlesVisible(prev => !prev);
             }}
           >
             <Captions className="h-5 w-5" />
