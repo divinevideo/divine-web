@@ -93,7 +93,10 @@ export function VideoCard({
   videoIndex: _videoIndex,
   trafficSource,
 }: VideoCardProps) {
-  const authorData = useAuthor(video.pubkey);
+  const authorData = useAuthor(video.pubkey, {
+    initialName: video.authorName,
+    initialAvatar: video.authorAvatar,
+  });
   // Subscribe to bandwidth tier changes - triggers re-render when tier changes
   // The tier itself is used internally by getOptimalVideoUrl
   const _bandwidthTier = useBandwidthTier();
@@ -240,17 +243,17 @@ export function VideoCard({
   const reposterMetadata: NostrMetadata | undefined = reposter?.metadata;
 
   const npub = nip19.npubEncode(video.pubkey);
-  // Prefer cached author name from Funnelcake over generated placeholder names
-  // Priority: 1. Real profile name, 2. Funnelcake cached name, 3. Shortened npub (never use generated names)
-  const hasRealProfile = authorData.data?.event && (authorData.data?.metadata?.name || authorData.data?.metadata?.display_name);
-  const displayName = authorData.isLoading
-    ? (video.authorName || "Loading...")
-    : hasRealProfile
-      ? (metadata.display_name || metadata.name || video.authorName || `${npub.slice(0, 12)}...`)
-      : (video.authorName || `${npub.slice(0, 12)}...`);
-  // Prefer cached avatar from Funnelcake, then real profile, then generated
+  // Use raw author data (pre-enhancement) to detect real vs generated names
+  // enhanceAuthorData fills in generated names like "ElectricVine742" — we don't want those
+  const rawMetadata = authorData.data?.metadata;
+  const hasRealName = rawMetadata?.display_name || rawMetadata?.name;
+  // Display name priority: real profile name > Funnelcake cached name > shortened npub
+  const displayName = hasRealName
+    ? (rawMetadata.display_name || rawMetadata.name!)
+    : (video.authorName || `${npub.slice(0, 12)}...`);
+  // Avatar priority: real profile > Funnelcake cached > generated fallback
   const profileImage = getSafeProfileImage(
-    (hasRealProfile ? metadata.picture : null) || video.authorAvatar || metadata.picture
+    rawMetadata?.picture || video.authorAvatar || metadata.picture
   );
   // Just use npub for now, we'll deal with NIP-05 later
   const profileUrl = `/${npub}`;

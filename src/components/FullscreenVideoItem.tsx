@@ -105,19 +105,22 @@ export function FullscreenVideoItem({
   const { data: lists } = useVideosInLists(video.vineId ?? undefined);
 
   // Get author data
-  const authorData = useAuthor(video.pubkey);
+  const authorData = useAuthor(video.pubkey, {
+    initialName: video.authorName,
+    initialAvatar: video.authorAvatar,
+  });
   const author = enhanceAuthorData(authorData.data, video.pubkey);
   const metadata = author.metadata;
 
   const npub = nip19.npubEncode(video.pubkey);
-  const hasRealProfile = authorData.data?.event && (authorData.data?.metadata?.name || authorData.data?.metadata?.display_name);
-  const displayName = authorData.isLoading
-    ? (video.authorName || "Loading...")
-    : hasRealProfile
-      ? (metadata.display_name || metadata.name || `${npub.slice(0, 12)}...`)
-      : (video.authorName || metadata.display_name || metadata.name || `${npub.slice(0, 12)}...`);
+  // Use raw author data to detect real vs generated names
+  const rawMetadata = authorData.data?.metadata;
+  const hasRealName = rawMetadata?.display_name || rawMetadata?.name;
+  const displayName = hasRealName
+    ? (rawMetadata.display_name || rawMetadata.name!)
+    : (video.authorName || `${npub.slice(0, 12)}...`);
   const profileImage = getSafeProfileImage(
-    (hasRealProfile ? metadata.picture : null) || video.authorAvatar || metadata.picture
+    rawMetadata?.picture || video.authorAvatar || metadata.picture
   );
   const profileUrl = `/${npub}`;
 

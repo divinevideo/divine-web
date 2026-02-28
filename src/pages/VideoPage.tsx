@@ -109,9 +109,12 @@ export function VideoPage() {
 
   // Get author data for profile context
   // Prefer cached author name from video/Funnelcake, then fetched profile, then generated fallback
-  const authorData = useAuthor(context?.pubkey || '');
+  const authorData = useAuthor(context?.pubkey || '', {
+    initialName: currentVideo?.authorName,
+    initialAvatar: currentVideo?.authorAvatar,
+  });
   const authorName = context?.pubkey
-    ? (currentVideo?.authorName || authorData.data?.metadata?.name || genUserName(context.pubkey))
+    ? (authorData.data?.metadata?.display_name || authorData.data?.metadata?.name || currentVideo?.authorName || genUserName(context.pubkey))
     : null;
 
   // Progressive rendering: only render a window of videos, expand on scroll
