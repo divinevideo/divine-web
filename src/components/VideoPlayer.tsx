@@ -54,6 +54,8 @@ interface VideoPlayerProps {
   // View event tracking
   videoData?: ParsedVideoData;
   trafficSource?: ViewTrafficSource;
+  // Object-fit mode for the video element (default: 'contain')
+  objectFit?: 'contain' | 'cover';
 }
 
 interface TouchState {
@@ -95,6 +97,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
       subtitlesVisible,
       videoData,
       trafficSource,
+      objectFit = 'contain',
     },
     ref
   ) => {
@@ -967,7 +970,8 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
           crossOrigin="anonymous"
           disableRemotePlayback
           className={cn(
-            'w-full h-full object-contain relative z-10 bg-transparent',
+            'w-full h-full relative z-10 bg-transparent',
+            objectFit === 'cover' ? 'object-cover' : 'object-contain',
             // Only use opacity transition on initial load, not on subsequent visibility changes
             !hasLoadedOnce && 'transition-opacity duration-300',
             !hasLoadedOnce && isLoading ? 'opacity-0' : 'opacity-100'
