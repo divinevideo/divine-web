@@ -22,6 +22,7 @@ import { useVideoProvider } from '@/hooks/useVideoProvider';
 import { useFunnelcakeProfile } from '@/hooks/useFunnelcakeProfile';
 import { useFollowRelationship, useFollowUser, useUnfollowUser } from '@/hooks/useFollowRelationship';
 import { useFollowListSafetyCheck } from '@/hooks/useFollowListSafetyCheck';
+import { PinnedVideosSection } from '@/components/PinnedVideosSection';
 import { useLoginDialog } from '@/contexts/LoginDialogContext';
 import { debugLog } from '@/lib/debug';
 import { getDivineNip05Info } from '@/lib/nip05Utils';
@@ -307,6 +308,9 @@ export function ProfilePage() {
           onCancel={handleSafetyCancel}
           targetUserName={displayName}
         />
+
+        {/* Pinned Videos */}
+        <PinnedVideosSection pubkey={pubkey} isOwnProfile={isOwnProfile} />
 
         {/* Content Section */}
         <div className="space-y-4">
