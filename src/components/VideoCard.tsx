@@ -216,13 +216,9 @@ export function VideoCard({
   const navigate = useSubdomainNavigate();
   const { globalMuted, setGlobalMuted } = useVideoPlayback();
   const { cues: subtitleCues, hasSubtitles } = useSubtitles(video);
-  const [ccOverride, setCcOverride] = useState<boolean | undefined>(undefined);
-  const subtitlesVisible = ccOverride ?? (globalMuted && hasSubtitles);
-
-  // Reset ccOverride when mute state changes so auto-behavior resumes
-  useEffect(() => {
-    setCcOverride(undefined);
-  }, [globalMuted]);
+  // Subtitles default to ON when available, independent of mute state
+  const [subtitlesVisible, setSubtitlesVisible] = useState(true);
+  const showSubtitles = subtitlesVisible && hasSubtitles;
 
   const { mutate: deleteVideo, isPending: isDeleting } = useDeleteVideo();
   const canDelete = useCanDeleteVideo(video);
@@ -506,7 +502,7 @@ export function VideoCard({
                   onLoadedData={onLoadedData}
                   onVideoDimensions={handleVideoDimensions}
                   subtitleCues={subtitleCues}
-                  subtitlesVisible={subtitlesVisible}
+                  subtitlesVisible={showSubtitles}
                   videoData={video}
                   trafficSource={trafficSource}
                 />
@@ -524,7 +520,7 @@ export function VideoCard({
                   className={cn(
                     "absolute bottom-3 right-14 z-30",
                     "bg-black/50 hover:bg-black/70",
-                    subtitlesVisible ? "text-white" : "text-white/50",
+                    showSubtitles ? "text-white" : "text-white/50",
                     "backdrop-blur-sm rounded-full",
                     "w-10 h-10 p-0 flex items-center justify-center",
                     "transition-all duration-200"
@@ -532,11 +528,11 @@ export function VideoCard({
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    setCcOverride(prev => prev === undefined ? !subtitlesVisible : !prev);
+                    setSubtitlesVisible(prev => !prev);
                   }}
                   onTouchStart={(e) => { e.stopPropagation(); }}
                   onTouchEnd={(e) => { e.stopPropagation(); }}
-                  aria-label={subtitlesVisible ? "Hide subtitles" : "Show subtitles"}
+                  aria-label={showSubtitles ? "Hide subtitles" : "Show subtitles"}
                 >
                   <Captions className="h-5 w-5" />
                 </Button>
