@@ -110,6 +110,34 @@ export const PRESET_RELAYS: RelayConfig[] = [
 ];
 
 /**
+ * Relays used for NIP-58 badge queries (kinds 30009, 8, 30008)
+ * Badge events may not be accepted by all relays, so we query a broad set.
+ * Includes Divine relay (once kinds are allowlisted) plus public relays.
+ */
+export const BADGE_RELAYS: RelayConfig[] = [
+  {
+    url: 'wss://relay.divine.video',
+    name: 'Divine',
+    purpose: 'primary',
+  },
+  {
+    url: 'wss://relay.damus.io',
+    name: 'Damus',
+    purpose: 'backup',
+  },
+  {
+    url: 'wss://nos.lol',
+    name: 'nos.lol',
+    purpose: 'backup',
+  },
+  {
+    url: 'wss://relay.primal.net',
+    name: 'Primal',
+    purpose: 'backup',
+  },
+];
+
+/**
  * Helper: Extract just the URLs from an array of relay configs
  */
 export const getRelayUrls = (relays: RelayConfig[]): string[] =>
