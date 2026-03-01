@@ -1,7 +1,7 @@
 // NOTE: This file is stable and usually should not be modified.
 // It is important that all functionality in this file is preserved, and should only be modified if explicitly requested.
 
-import { ChevronDown, LogOut, UserIcon, UserPlus, User, Settings/*, Wallet */ } from 'lucide-react';
+import { ChevronDown, LogOut, UserIcon, UserPlus, User, Settings, Link2/*, Wallet */ } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { nip19 } from 'nostr-tools';
 import {
@@ -65,7 +65,14 @@ export function AccountSwitcher({ onAddAccountClick }: AccountSwitcherProps) {
           className='flex items-center gap-2 cursor-pointer p-2 rounded-md'
         >
           <Settings className='w-4 h-4' />
-          <span>Settings</span>
+          <span>Moderation</span>
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          onClick={() => navigate('/settings/linked-accounts')}
+          className='flex items-center gap-2 cursor-pointer p-2 rounded-md'
+        >
+          <Link2 className='w-4 h-4' />
+          <span>Linked Accounts</span>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuLabel>Switch Relay</DropdownMenuLabel>
