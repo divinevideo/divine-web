@@ -4,7 +4,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNostr } from '@nostrify/react';
 import { useCurrentUser } from './useCurrentUser';
-import { useExternalIdentities, type ExternalIdentity } from './useExternalIdentities';
+import { useExternalIdentities } from './useExternalIdentities';
 
 export function usePublishIdentity() {
   const { nostr } = useNostr();
