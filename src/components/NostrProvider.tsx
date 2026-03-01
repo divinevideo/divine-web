@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { NostrEvent, NostrFilter, NPool, NRelay1 } from '@nostrify/nostrify';
+import { BADGE_RELAYS } from '@/config/relays';
 import { NostrContext } from '@nostrify/react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAppContext } from '@/hooks/useAppContext';
@@ -80,12 +81,18 @@ const NostrProvider: React.FC<NostrProviderProps> = (props) => {
 
         // Separate filters by kind for kind-specific relay routing
         const profileRelayFilters: NostrFilter[] = []; // Kind 0 (profiles) and Kind 3 (contact lists)
+        const badgeRelayFilters: NostrFilter[] = []; // Kind 30009, 8, 30008 (NIP-58 badges)
         const otherFilters: NostrFilter[] = [];
+
+        const BADGE_KINDS = [30009, 8, 30008];
 
         for (const filter of filters) {
           if (filter.kinds?.includes(0) || filter.kinds?.includes(3)) {
             // Kind 0 (profile metadata) and Kind 3 (contact lists) - route to profile relays
             profileRelayFilters.push(filter);
+          } else if (filter.kinds?.some(k => BADGE_KINDS.includes(k))) {
+            // NIP-58 badge events - route to badge relays
+            badgeRelayFilters.push(filter);
           } else {
             // All other kinds - route to main relay
             otherFilters.push(filter);
@@ -100,6 +107,14 @@ const NostrProvider: React.FC<NostrProviderProps> = (props) => {
 
           for (const relay of profileRelayUrls) {
             result.set(relay, profileRelayFilters);
+          }
+        }
+
+        // Route NIP-58 badge queries to badge-specific relays
+        if (badgeRelayFilters.length > 0) {
+          for (const relay of BADGE_RELAYS) {
+            const existing = result.get(relay.url) || [];
+            result.set(relay.url, [...existing, ...badgeRelayFilters]);
           }
         }
 

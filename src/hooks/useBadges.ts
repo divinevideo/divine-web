@@ -4,6 +4,7 @@
 import { useNostr } from '@nostrify/react';
 import { useQuery } from '@tanstack/react-query';
 import type { NostrEvent, NostrFilter } from '@nostrify/nostrify';
+import { BADGE_RELAYS, getRelayUrls } from '@/config/relays';
 import {
   BADGE_KINDS,
   parseBadgeDefinition,
