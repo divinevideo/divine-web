@@ -26,6 +26,7 @@ import { PinnedVideosSection } from '@/components/PinnedVideosSection';
 import { useLoginDialog } from '@/contexts/LoginDialogContext';
 import { debugLog } from '@/lib/debug';
 import { getDivineNip05Info } from '@/lib/nip05Utils';
+import { genUserName } from '@/lib/genUserName';
 import type { SortMode } from '@/types/nostr';
 
 export function ProfilePage() {
@@ -180,10 +181,7 @@ export function ProfilePage() {
   // Check if this is the current user's own profile
   const isOwnProfile = currentUser?.pubkey === pubkey;
 
-  // Get displayName for SEO - use real name or truncated npub, never generated placeholders
-  const encodedNpub = pubkey ? nip19.npubEncode(pubkey) : null;
-  const shortNpub = encodedNpub ? `${encodedNpub.slice(0, 12)}...` : 'User';
-  const displayName = metadata?.display_name || metadata?.name || shortNpub;
+  const displayName = metadata?.display_name || metadata?.name || (pubkey ? genUserName(pubkey) : 'User');
 
   // Dynamic SEO meta tags for social sharing
   useSeoMeta({

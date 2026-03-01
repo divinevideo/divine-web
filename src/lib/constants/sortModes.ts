@@ -62,6 +62,12 @@ export const EXTENDED_SORT_MODES: SortModeDefinition[] = [
     icon: Flame
   },
   {
+    value: undefined,
+    label: 'New',
+    description: 'Latest videos',
+    icon: Clock
+  },
+  {
     value: 'top',
     label: 'Classic',
     description: 'Popular archived Vines',
