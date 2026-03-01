@@ -2,7 +2,7 @@
 // ABOUTME: Displays video with overlay UI including back button, author info, and action buttons
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { ArrowLeft, Heart, MessageCircle, Repeat2, Share, Volume2, VolumeX, Download, ListPlus, Users, MoreVertical, Flag, UserX, Code, Trash2, Eye, Captions } from 'lucide-react';
+import { ArrowLeft, Heart, MessageCircle, Repeat2, Share, Volume2, VolumeX, Download, ListPlus, Users, MoreVertical, Flag, UserX, Code, Trash2, Eye, Captions, Pin, PinOff } from 'lucide-react';
 import { nip19 } from 'nostr-tools';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -36,6 +36,9 @@ import { SmartLink } from '@/components/SmartLink';
 import type { ViewTrafficSource } from '@/hooks/useViewEventPublisher';
 import { useSubtitles } from '@/hooks/useSubtitles';
 import type { ParsedVideoData } from '@/types/video';
+import { SHORT_VIDEO_KIND } from '@/types/video';
+import { useIsVideoPinned, usePinVideo, useUnpinVideo } from '@/hooks/usePinnedVideos';
+import { useCurrentUser } from '@/hooks/useCurrentUser';
 
 interface FullscreenVideoItemProps {
   video: ParsedVideoData;
@@ -98,6 +101,11 @@ export function FullscreenVideoItem({
   const { mutate: deleteVideo, isPending: isDeleting } = useDeleteVideo();
   const canDelete = useCanDeleteVideo(video);
   const { data: reactions } = useVideoReactions(video.id, video.pubkey, video.vineId);
+  const { user: currentUser } = useCurrentUser();
+  const coordinate = video.vineId ? `${SHORT_VIDEO_KIND}:${video.pubkey}:${video.vineId}` : undefined;
+  const isPinned = useIsVideoPinned(coordinate);
+  const { mutateAsync: pinVideo } = usePinVideo();
+  const { mutateAsync: unpinVideo } = useUnpinVideo();
   const { data: lists } = useVideosInLists(video.vineId ?? undefined);
 
   // Get author data
@@ -204,6 +212,25 @@ export function FullscreenVideoItem({
         },
       }
     );
+  };
+
+  const handlePinToggle = async () => {
+    if (!coordinate) return;
+    try {
+      if (isPinned) {
+        await unpinVideo({ coordinate });
+        toast({ title: 'Unpinned', description: 'Video removed from your profile pins' });
+      } else {
+        await pinVideo({ coordinate });
+        toast({ title: 'Pinned', description: 'Video pinned to your profile' });
+      }
+    } catch (err) {
+      toast({
+        title: 'Error',
+        description: err instanceof Error ? err.message : 'Failed to update pin',
+        variant: 'destructive',
+      });
+    }
   };
 
   // Check if this is a migrated Vine
@@ -470,6 +497,18 @@ export function FullscreenVideoItem({
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="bg-black/90 border-white/20 text-white">
+                  {currentUser && coordinate && (
+                    <>
+                      <DropdownMenuItem onClick={handlePinToggle} className="focus:bg-white/10">
+                        {isPinned ? (
+                          <><PinOff className="h-4 w-4 mr-2" />Unpin from profile</>
+                        ) : (
+                          <><Pin className="h-4 w-4 mr-2" />Pin to profile</>
+                        )}
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator className="bg-white/20" />
+                    </>
+                  )}
                   {canDelete && (
                     <>
                       <DropdownMenuItem
