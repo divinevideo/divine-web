@@ -17,6 +17,7 @@ import {
 import { UserPlus, UserCheck, CheckCircle, Pencil, Copy, MoreVertical, Flag, Play, Repeat, Loader2, XCircle } from 'lucide-react';
 import { ReportContentDialog } from '@/components/ReportContentDialog';
 import { UserListDialog } from '@/components/UserListDialog';
+import { LinkedAccounts } from '@/components/LinkedAccounts';
 import { useNip05Validation } from '@/hooks/useNip05Validation';
 import { useFollowers, getAllFollowerPubkeys } from '@/hooks/useFollowers';
 import { useFollowing } from '@/hooks/useFollowing';
@@ -250,6 +251,9 @@ export function ProfileHeader({
                 {about}
               </p>
             )}
+
+            {/* NIP-39 Linked Accounts */}
+            <LinkedAccounts pubkey={pubkey} className="justify-center sm:justify-start" />
           </div>
         </div>
 
