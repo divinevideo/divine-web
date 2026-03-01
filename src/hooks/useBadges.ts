@@ -153,7 +153,7 @@ export function useBadges(pubkey: string | undefined) {
       if (awardIds.length > 0) {
         try {
           awardEvents = await nostr.query(
-            [{ ids: awardIds } as NostrFilter],
+            [{ kinds: [BADGE_KINDS.AWARD], ids: awardIds }],
             { signal }
           );
         } catch {

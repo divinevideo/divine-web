@@ -94,7 +94,7 @@ const NostrProvider: React.FC<NostrProviderProps> = (props) => {
             // NIP-58 badge events - route to badge relays
             badgeRelayFilters.push(filter);
           } else {
-            // All other kinds - route to main relay
+            // All other kinds (or id-only queries) - route to main relay
             otherFilters.push(filter);
           }
         }
