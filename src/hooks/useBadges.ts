@@ -44,7 +44,54 @@ export function useBadges(pubkey: string | undefined) {
         { signal }
       );
 
-      if (!profileBadgeEvents.length) return [];
+      // Fallback: if no profile_badges event, show all awarded badges
+      if (!profileBadgeEvents.length) {
+        // Fetch all badge awards for this user
+        const awardFilter: NostrFilter = {
+          kinds: [BADGE_KINDS.AWARD],
+          '#p': [pubkey],
+          limit: 20,
+        };
+        const awards = await nostr.query([awardFilter], { signal });
+        if (!awards.length) return [];
+
+        // For each award, extract the badge definition reference and fetch it
+        const fallbackValidated: ValidatedBadge[] = [];
+        for (const award of awards) {
+          const aTag = award.tags.find(t => t[0] === 'a');
+          if (!aTag) continue;
+          const naddr = aTag[1]; // e.g. "30009:<pubkey>:beta-tester"
+          const parts = naddr.split(':');
+          if (parts.length < 3) continue;
+
+          let def = getCachedDefinition(naddr);
+          if (!def) {
+            try {
+              const defEvents = await nostr.query([{
+                kinds: [BADGE_KINDS.DEFINITION],
+                authors: [parts[1]],
+                '#d': [parts[2]],
+              }], { signal });
+              for (const ev of defEvents) {
+                const parsed = parseBadgeDefinition(ev);
+                if (parsed) {
+                  cacheDefinition(parsed);
+                  def = parsed;
+                }
+              }
+            } catch { /* continue */ }
+          }
+
+          if (def && validateBadgeAward(award, def, pubkey)) {
+            fallbackValidated.push({
+              definition: def,
+              awardEvent: award,
+              awardedAt: award.created_at,
+            });
+          }
+        }
+        return fallbackValidated;
+      }
 
       // Use the most recent one (addressable event, should be only one)
       const profileBadgeEvent = profileBadgeEvents.sort(
