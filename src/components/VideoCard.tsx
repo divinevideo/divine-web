@@ -2,7 +2,7 @@
 // ABOUTME: Shows video player, metadata, author info, and social interactions
 
 import { useState, useCallback, useRef, useMemo } from 'react';
-import { Heart, Repeat2, MessageCircle, Share, Eye, MoreVertical, Flag, UserX, Trash2, Volume2, VolumeX, Code, Users, ListPlus, Download, Maximize2, Captions } from 'lucide-react';
+import { Heart, Repeat2, MessageCircle, Share, Eye, MoreVertical, Flag, UserX, Trash2, Volume2, VolumeX, Code, Users, ListPlus, Download, Maximize2, Captions, Pin, PinOff } from 'lucide-react';
 import { nip19 } from 'nostr-tools';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -24,11 +24,14 @@ import { useAuthor } from '@/hooks/useAuthor';
 import { useIsMobile } from '@/hooks/useIsMobile';
 import { useMuteItem } from '@/hooks/useModeration';
 import { useDeleteVideo, useCanDeleteVideo } from '@/hooks/useDeleteVideo';
+import { useIsVideoPinned, usePinVideo, useUnpinVideo } from '@/hooks/usePinnedVideos';
+import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useVideoPlayback } from '@/hooks/useVideoPlayback';
 import { useVideosInLists } from '@/hooks/useVideoLists';
 import { enhanceAuthorData } from '@/lib/generateProfile';
 import { formatDistanceToNow } from 'date-fns';
 import type { ParsedVideoData } from '@/types/video';
+import { SHORT_VIDEO_KIND } from '@/types/video';
 import type { NostrMetadata } from '@nostrify/nostrify';
 import { cn } from '@/lib/utils';
 import { formatViewCount, formatCount } from '@/lib/formatUtils';
@@ -228,6 +231,11 @@ export function VideoCard({
 
   const { mutate: deleteVideo, isPending: isDeleting } = useDeleteVideo();
   const canDelete = useCanDeleteVideo(video);
+  const { user: currentUser } = useCurrentUser();
+  const coordinate = video.vineId ? `${SHORT_VIDEO_KIND}:${video.pubkey}:${video.vineId}` : undefined;
+  const isPinned = useIsVideoPinned(coordinate);
+  const { mutateAsync: pinVideo } = usePinVideo();
+  const { mutateAsync: unpinVideo } = useUnpinVideo();
 
   // Get reactions data for the modal
   const { data: reactions } = useVideoReactions(video.id, video.pubkey, video.vineId);
@@ -352,6 +360,25 @@ export function VideoCard({
   };
 
   const handleShare = () => share(getVideoShareData(video));
+
+  const handlePinToggle = async () => {
+    if (!coordinate) return;
+    try {
+      if (isPinned) {
+        await unpinVideo({ coordinate });
+        toast({ title: 'Unpinned', description: 'Video removed from your profile pins' });
+      } else {
+        await pinVideo({ coordinate });
+        toast({ title: 'Pinned', description: 'Video pinned to your profile' });
+      }
+    } catch (err) {
+      toast({
+        title: 'Error',
+        description: err instanceof Error ? err.message : 'Failed to update pin',
+        variant: 'destructive',
+      });
+    }
+  };
 
   const handleDownload = async () => {
     if (!video.videoUrl) {
@@ -851,6 +878,18 @@ export function VideoCard({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
+              {currentUser && coordinate && (
+                <>
+                  <DropdownMenuItem onClick={handlePinToggle}>
+                    {isPinned ? (
+                      <><PinOff className="h-4 w-4 mr-2" />Unpin from profile</>
+                    ) : (
+                      <><Pin className="h-4 w-4 mr-2" />Pin to profile</>
+                    )}
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                </>
+              )}
               {canDelete && (
                 <>
                   <DropdownMenuItem
