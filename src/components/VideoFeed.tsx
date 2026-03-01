@@ -24,8 +24,9 @@ import { useFullscreenFeed } from '@/contexts/FullscreenFeedContext';
 type ViewMode = 'feed' | 'grid';
 
 interface VideoFeedProps {
-  feedType?: 'discovery' | 'home' | 'trending' | 'hashtag' | 'profile' | 'recent' | 'classics' | 'foryou';
+  feedType?: 'discovery' | 'home' | 'trending' | 'hashtag' | 'profile' | 'recent' | 'classics' | 'foryou' | 'category';
   hashtag?: string;
+  category?: string;
   pubkey?: string;
   limit?: number;
   sortMode?: SortMode; // NIP-50 sort mode (hot, top, rising, controversial)
@@ -41,6 +42,7 @@ interface VideoFeedProps {
 export function VideoFeed({
   feedType = 'discovery',
   hashtag,
+  category,
   pubkey,
   limit = 20, // Page size for infinite scroll
   sortMode,
@@ -72,6 +74,7 @@ export function VideoFeed({
   } = useVideoProvider({
     feedType,
     hashtag,
+    category,
     pubkey,
     pageSize: limit,
     sortMode,

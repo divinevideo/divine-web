@@ -12,7 +12,7 @@ import { debugLog } from '@/lib/debug';
 import { performanceMonitor } from '@/lib/performanceMonitoring';
 import { DEFAULT_FUNNELCAKE_URL } from '@/config/relays';
 
-export type FunnelcakeFeedType = 'trending' | 'recent' | 'classics' | 'hashtag' | 'profile' | 'home' | 'recommendations';
+export type FunnelcakeFeedType = 'trending' | 'recent' | 'classics' | 'hashtag' | 'profile' | 'home' | 'recommendations' | 'category';
 export type FunnelcakeSortMode = 'trending' | 'recent' | 'loops' | 'engagement';
 
 interface UseInfiniteVideosFunnelcakeOptions {
@@ -20,6 +20,7 @@ interface UseInfiniteVideosFunnelcakeOptions {
   apiUrl?: string;          // Override API URL (for classics always using Divine)
   sortMode?: FunnelcakeSortMode;
   hashtag?: string;         // For hashtag feed
+  category?: string;        // For category feed
   pubkey?: string;          // For profile and home feeds
   pageSize?: number;
   enabled?: boolean;
@@ -84,6 +85,12 @@ function getFetchOptions(
         sort: sortMode || 'recent',
       };
 
+    case 'category':
+      return {
+        ...baseOptions,
+        sort: sortMode || 'trending',
+      };
+
     case 'recommendations':
       return {
         ...baseOptions,
@@ -112,6 +119,7 @@ export function useInfiniteVideosFunnelcake({
   apiUrl,
   sortMode,
   hashtag,
+  category,
   pubkey,
   pageSize = 20,
   enabled = true,
@@ -134,7 +142,7 @@ export function useInfiniteVideosFunnelcake({
     : (apiUrl || DEFAULT_FUNNELCAKE_URL);
 
   return useInfiniteQuery<FunnelcakeVideoPage, Error>({
-    queryKey: ['funnelcake-videos', feedType, effectiveApiUrl, sortMode, hashtag, pubkey, pageSize, randomStartOffset],
+    queryKey: ['funnelcake-videos', feedType, effectiveApiUrl, sortMode, hashtag, category, pubkey, pageSize, randomStartOffset],
 
     queryFn: async ({ pageParam, signal }) => {
       const totalStart = performance.now();
@@ -210,6 +218,14 @@ export function useInfiniteVideosFunnelcake({
             });
             break;
           }
+
+          case 'category':
+            if (!category) throw new Error('Category required for category feed');
+            response = await fetchVideos(effectiveApiUrl, {
+              ...options,
+              category,
+            });
+            break;
 
           default:
             // trending, recent, classics
