@@ -266,7 +266,6 @@ export function VideoCard({
   // Just use npub for now, we'll deal with NIP-05 later
   const profileUrl = `/${npub}`;
 
-  const reposterNpub = reposterPubkey ? nip19.npubEncode(reposterPubkey) : '';
   const reposterName = reposterData.isLoading
     ? "Loading profile..."
     : (reposterMetadata?.name || (reposterPubkey ? genUserName(reposterPubkey) : ''));

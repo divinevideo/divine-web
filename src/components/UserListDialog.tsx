@@ -37,7 +37,6 @@ interface UserRowProps {
 }
 
 const UserRow = memo(function UserRow({ pubkey, metadata, onNavigate }: UserRowProps) {
-  const npub = nip19.npubEncode(pubkey);
   const displayName = metadata?.display_name || metadata?.name || genUserName(pubkey);
   const profileImage = getSafeProfileImage(metadata?.picture) || '/user-avatar.png';
 

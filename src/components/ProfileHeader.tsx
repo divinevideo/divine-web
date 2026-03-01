@@ -107,10 +107,6 @@ export function ProfileHeader({
   );
   const nip05 = metadata?.nip05;
 
-  // Get npub for fallback display
-  const npub = nip19.npubEncode(pubkey);
-  const shortNpub = `${npub.slice(0, 8)}...${npub.slice(-4)}`;
-
   // Check if we're still waiting for name to load
   const stillLoadingName = metadata?._stillLoadingName ?? false;
 
