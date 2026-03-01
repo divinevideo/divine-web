@@ -23,22 +23,7 @@ export function ProfileBadges({ badges, className, isOwnProfile }: ProfileBadges
   const [selectedBadge, setSelectedBadge] = useState<ValidatedBadge | null>(null);
 
   if (!badges.length) {
-    return (
-      <div className={`flex items-center gap-1.5 ${className || ''}`} data-testid="profile-badges-empty">
-        <span className="text-xs text-muted-foreground">
-          No badges yet
-          {' · '}
-          <a
-            href="https://nostr.com/the-protocol/nips/58"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="underline hover:text-foreground transition-colors"
-          >
-            Learn about Nostr badges
-          </a>
-        </span>
-      </div>
-    );
+    return null;
   }
 
   const displayBadges = badges.slice(0, MAX_PROFILE_BADGES);
