@@ -20,6 +20,8 @@ import { UserListDialog } from '@/components/UserListDialog';
 import { useNip05Validation } from '@/hooks/useNip05Validation';
 import { useFollowers, getAllFollowerPubkeys } from '@/hooks/useFollowers';
 import { useFollowing } from '@/hooks/useFollowing';
+import { useBadges } from '@/hooks/useBadges';
+import { ProfileBadges } from '@/components/ProfileBadges';
 import { getSafeProfileImage } from '@/lib/imageUtils';
 import { toast } from '@/hooks/useToast';
 import { nip19 } from 'nostr-tools';
@@ -98,6 +100,9 @@ export function ProfileHeader({
   const followingQuery = useFollowing(userListDialog === 'following' ? pubkey : '');
   const followerPubkeys = getAllFollowerPubkeys(followersQuery.data);
   const followingPubkeys = followingQuery.data?.pubkeys ?? [];
+
+  // Fetch NIP-58 badges
+  const badgesQuery = useBadges(pubkey);
 
   // Validate NIP-05 - show with visual feedback based on validation state
   const { state: nip05State } = useNip05Validation(
@@ -249,6 +254,11 @@ export function ProfileHeader({
               <p className="text-muted-foreground text-sm leading-relaxed max-w-md">
                 {about}
               </p>
+            )}
+
+            {/* NIP-58 Badges */}
+            {badgesQuery.data && badgesQuery.data.length > 0 && (
+              <ProfileBadges badges={badgesQuery.data} className="justify-center sm:justify-start" />
             )}
           </div>
         </div>
