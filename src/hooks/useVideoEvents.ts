@@ -16,7 +16,7 @@ import type { SortMode } from '@/types/nostr';
 
 interface UseVideoEventsOptions {
   filter?: Partial<NostrFilter>;
-  feedType?: 'discovery' | 'home' | 'trending' | 'hashtag' | 'profile' | 'recent' | 'classics';
+  feedType?: 'discovery' | 'home' | 'trending' | 'hashtag' | 'profile' | 'recent' | 'classics' | 'category';
   hashtag?: string;
   pubkey?: string;
   limit?: number;

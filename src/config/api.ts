@@ -33,6 +33,7 @@ export const API_CONFIG = {
       bulkVideoStats: '/api/videos/stats/bulk',
       hashtags: '/api/hashtags',
       trendingHashtags: '/api/hashtags/trending',
+      categories: '/api/categories',
       viners: '/api/viners',
       health: '/api/health',
       leaderboardCreators: '/api/leaderboard/creators',

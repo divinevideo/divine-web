@@ -16,6 +16,7 @@ import HomePage from "./pages/HomePage";
 import DiscoveryPage from "./pages/DiscoveryPage";
 import TrendingPage from "./pages/TrendingPage";
 import HashtagPage from "./pages/HashtagPage";
+import CategoryPage from "./pages/CategoryPage";
 import HashtagDiscoveryPage from "./pages/HashtagDiscoveryPage";
 import ProfilePage from "./pages/ProfilePage";
 import SearchPage from "./pages/SearchPage";
@@ -88,6 +89,7 @@ export function AppRouter() {
           <Route path="/trending" element={<TrendingPage />} />
           <Route path="/hashtags" element={<HashtagDiscoveryPage />} />
           <Route path="/hashtag/:tag" element={<HashtagPage />} />
+          <Route path="/category/:name" element={<CategoryPage />} />
           <Route path="/t/:tag" element={<TagPage />} />
           <Route path="/profile/:npub" element={<ProfilePage />} />
           <Route path="/video/:id" element={<VideoPage />} />
