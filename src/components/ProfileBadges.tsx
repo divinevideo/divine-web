@@ -16,12 +16,30 @@ const MAX_PROFILE_BADGES = 5;
 interface ProfileBadgesProps {
   badges: ValidatedBadge[];
   className?: string;
+  isOwnProfile?: boolean;
 }
 
-export function ProfileBadges({ badges, className }: ProfileBadgesProps) {
+export function ProfileBadges({ badges, className, isOwnProfile }: ProfileBadgesProps) {
   const [selectedBadge, setSelectedBadge] = useState<ValidatedBadge | null>(null);
 
-  if (!badges.length) return null;
+  if (!badges.length) {
+    return (
+      <div className={`flex items-center gap-1.5 ${className || ''}`} data-testid="profile-badges-empty">
+        <span className="text-xs text-muted-foreground">
+          No badges yet
+          {' · '}
+          <a
+            href="https://nostr.com/the-protocol/nips/58"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline hover:text-foreground transition-colors"
+          >
+            Learn about Nostr badges
+          </a>
+        </span>
+      </div>
+    );
+  }
 
   const displayBadges = badges.slice(0, MAX_PROFILE_BADGES);
   const remaining = badges.length - MAX_PROFILE_BADGES;
@@ -66,6 +84,18 @@ export function ProfileBadges({ badges, className }: ProfileBadgesProps) {
           <span className="text-xs text-muted-foreground ml-1">+{remaining}</span>
         )}
       </div>
+
+      {isOwnProfile && (
+        <a
+          href="https://badges.page"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+          data-testid="manage-badges-link"
+        >
+          Manage your badges on badges.page →
+        </a>
+      )}
 
       <BadgeDetailModal
         badge={selectedBadge}

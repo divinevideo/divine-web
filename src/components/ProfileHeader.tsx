@@ -258,7 +258,7 @@ export function ProfileHeader({
 
             {/* NIP-58 Badges */}
             {badgesQuery.data && badgesQuery.data.length > 0 && (
-              <ProfileBadges badges={badgesQuery.data} className="justify-center sm:justify-start" />
+              <ProfileBadges badges={badgesQuery.data} className="justify-center sm:justify-start" isOwnProfile={isOwnProfile} />
             )}
           </div>
         </div>
