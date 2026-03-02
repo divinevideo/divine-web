@@ -52,12 +52,13 @@ function IdentityBadge({ identity, pubkey }: { identity: ExternalIdentity; pubke
 
   const config = SUPPORTED_PLATFORMS[identity.platform];
   const label = config?.label || identity.platform;
+  const canAutoVerify = config?.canVerifyInBrowser ?? false;
 
-  // Lazy verification — only runs when popover opens
+  // Lazy verification — only runs when popover opens, only for CORS-friendly platforms
   const verification = useQuery({
     queryKey: ['identity-verify', identity.platform, identity.identity, identity.proof],
     queryFn: () => verifyIdentityClaim(identity, pubkey),
-    enabled: open && !!identity.proof,
+    enabled: open && !!identity.proof && canAutoVerify,
     staleTime: 60 * 60 * 1000, // Cache 1 hour
     gcTime: 2 * 60 * 60 * 1000,
     retry: 1,
@@ -87,22 +88,31 @@ function IdentityBadge({ identity, pubkey }: { identity: ExternalIdentity; pubke
           {/* Verification status */}
           {identity.proof ? (
             <div className="flex items-center gap-1.5 text-xs">
-              {verification.isLoading ? (
-                <>
-                  <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
-                  <span className="text-muted-foreground">Verifying…</span>
-                </>
-              ) : verification.data?.verified ? (
-                <>
-                  <CheckCircle className="h-3.5 w-3.5 text-green-500" />
-                  <span className="text-green-600 dark:text-green-400">Verified</span>
-                </>
+              {canAutoVerify ? (
+                // Auto-verifiable platforms (GitHub)
+                verification.isLoading ? (
+                  <>
+                    <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+                    <span className="text-muted-foreground">Verifying...</span>
+                  </>
+                ) : verification.data?.verified ? (
+                  <>
+                    <CheckCircle className="h-3.5 w-3.5 text-green-500" />
+                    <span className="text-green-600 dark:text-green-400">Verified</span>
+                  </>
+                ) : (
+                  <>
+                    <AlertTriangle className="h-3.5 w-3.5 text-yellow-500" />
+                    <span className="text-yellow-600 dark:text-yellow-400">
+                      {verification.data?.error || 'Unverified'}
+                    </span>
+                  </>
+                )
               ) : (
+                // Non-auto-verifiable platforms — show "has proof" with link
                 <>
-                  <AlertTriangle className="h-3.5 w-3.5 text-yellow-500" />
-                  <span className="text-yellow-600 dark:text-yellow-400">
-                    {verification.data?.error || 'Unverified'}
-                  </span>
+                  <Link2 className="h-3.5 w-3.5 text-blue-500" />
+                  <span className="text-muted-foreground">Proof linked</span>
                 </>
               )}
             </div>

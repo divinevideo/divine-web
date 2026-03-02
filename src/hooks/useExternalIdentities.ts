@@ -13,13 +13,19 @@ export interface ExternalIdentity {
   proofUrl: string;
 }
 
-/** Well-known platforms with their profile URL patterns */
-const PLATFORM_CONFIG: Record<string, {
+export interface PlatformConfig {
   label: string;
   profileUrl: (identity: string) => string;
   proofUrl: (identity: string, proof: string) => string;
   verificationText: (npub: string) => string[];
-}> = {
+  /** URL to help user create the proof post */
+  createProofUrl?: (identity: string, npub: string) => string;
+  /** Whether verification can be done via browser fetch (CORS-friendly) */
+  canVerifyInBrowser: boolean;
+}
+
+/** Well-known platforms with their profile URL patterns per NIP-39 */
+const PLATFORM_CONFIG: Record<string, PlatformConfig> = {
   github: {
     label: 'GitHub',
     profileUrl: (id) => `https://github.com/${id}`,
@@ -27,35 +33,54 @@ const PLATFORM_CONFIG: Record<string, {
     verificationText: (npub) => [
       `Verifying that I control the following Nostr public key: ${npub}`,
     ],
+    createProofUrl: () => 'https://gist.github.com/',
+    canVerifyInBrowser: true,
   },
   twitter: {
-    label: 'Twitter',
+    label: 'Twitter / X',
     profileUrl: (id) => `https://twitter.com/${id}`,
     proofUrl: (id, proof) => `https://twitter.com/${id}/status/${proof}`,
     verificationText: (npub) => [
       `Verifying my account on nostr My Public Key: "${npub}"`,
       `Verifying that I control the following Nostr public key: "${npub}"`,
     ],
+    createProofUrl: (_id, npub) =>
+      `https://twitter.com/intent/tweet?text=${encodeURIComponent(`Verifying my account on nostr My Public Key: "${npub}"`)}`,
+    canVerifyInBrowser: false,
   },
   mastodon: {
     label: 'Mastodon',
-    profileUrl: (id) => `https://${id}`,
-    proofUrl: (id, proof) => `https://${id}/${proof}`,
+    // NIP-39 identity format: "instance/@username" e.g. "bitcoinhackers.org/@semisol"
+    profileUrl: (id) => {
+      // id = "instance/@username"
+      return `https://${id}`;
+    },
+    proofUrl: (id, proof) => {
+      // id = "instance/@username", proof = post ID
+      // URL: https://instance/@username/postId
+      return `https://${id}/${proof}`;
+    },
     verificationText: (npub) => [
       `Verifying that I control the following Nostr public key: "${npub}"`,
     ],
+    canVerifyInBrowser: false,
   },
   telegram: {
     label: 'Telegram',
+    // NIP-39 identity: Telegram user ID (numeric)
     profileUrl: (id) => `https://t.me/${id}`,
+    // NIP-39 proof format: "ref/id" e.g. "channel/123"
     proofUrl: (_id, proof) => `https://t.me/${proof}`,
-    verificationText: (npub) => [npub],
+    verificationText: (npub) => [
+      `Verifying that I control the following Nostr public key: ${npub}`,
+    ],
+    canVerifyInBrowser: false,
   },
 };
 
 export const SUPPORTED_PLATFORMS = PLATFORM_CONFIG;
 
-function parseIdentityTag(tag: string[]): ExternalIdentity | null {
+export function parseIdentityTag(tag: string[]): ExternalIdentity | null {
   if (tag[0] !== 'i' || !tag[1]) return null;
 
   const colonIndex = tag[1].indexOf(':');
@@ -110,8 +135,8 @@ export function useExternalIdentities(pubkey: string | undefined) {
 
 /**
  * Verify an external identity claim by fetching the proof URL and checking for npub.
- * Returns true if verified, false otherwise.
- * This is called on-demand (lazy verification) to avoid rate-limiting.
+ * Only works for platforms with CORS-friendly APIs (GitHub).
+ * For other platforms, returns 'manual' to indicate the user should check manually.
  */
 export async function verifyIdentityClaim(
   identity: ExternalIdentity,
@@ -126,14 +151,18 @@ export async function verifyIdentityClaim(
     return { verified: false, error: 'Unknown platform' };
   }
 
+  // Only attempt browser-based verification for CORS-friendly platforms
+  if (!config.canVerifyInBrowser) {
+    return { verified: false, error: 'manual' };
+  }
+
   const npub = nip19.npubEncode(pubkey);
 
   try {
-    // For GitHub gists, use the API which is CORS-friendly
-    let url = identity.proofUrl;
-    if (identity.platform === 'github') {
-      url = `https://api.github.com/gists/${identity.proof}`;
-    }
+    // GitHub gists: use the API which is CORS-friendly
+    const url = identity.platform === 'github'
+      ? `https://api.github.com/gists/${identity.proof}`
+      : identity.proofUrl;
 
     const response = await fetch(url, {
       signal: AbortSignal.timeout(10000),

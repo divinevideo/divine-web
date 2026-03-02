@@ -24,6 +24,8 @@ import {
   MessageCircle,
   AtSign,
   Shield,
+  Copy,
+  Check,
 } from 'lucide-react';
 import { useToast } from '@/hooks/useToast';
 import { nip19 } from 'nostr-tools';
@@ -48,19 +50,57 @@ const PROOF_PLACEHOLDERS: Record<string, string> = {
   github: 'Gist ID (e.g. abc123def456)',
   twitter: 'Tweet ID (e.g. 1234567890)',
   mastodon: 'Post ID (e.g. 109876543210)',
-  telegram: 'Message link path (e.g. username/123)',
+  telegram: 'Message path (e.g. channelname/123)',
 };
 
 const IDENTITY_PLACEHOLDERS: Record<string, string> = {
   github: 'GitHub username',
   twitter: 'Twitter/X username',
-  mastodon: 'user@instance.social',
-  telegram: 'Telegram username',
+  mastodon: 'instance.social/@username',
+  telegram: 'Telegram username or user ID',
 };
+
+const PROOF_INSTRUCTIONS: Record<string, string> = {
+  github: 'Create a public GitHub Gist containing the text below, then paste the Gist ID.',
+  twitter: 'Post a tweet containing the text below, then paste the Tweet ID from the URL.',
+  mastodon: 'Post a toot containing the text below, then paste the Post ID from the URL.',
+  telegram: 'Send a message in a public channel/group containing the text below, then paste the message path (e.g. channelname/123).',
+};
+
+function CopyButton({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Fallback for older browsers
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  }, [text]);
+
+  return (
+    <Button variant="ghost" size="sm" onClick={handleCopy} className="h-7 gap-1 text-xs">
+      {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+      {copied ? 'Copied!' : 'Copy'}
+    </Button>
+  );
+}
 
 function VerificationBadge({ identity, pubkey }: { identity: ExternalIdentity; pubkey: string }) {
   const [status, setStatus] = useState<'idle' | 'checking' | 'verified' | 'failed'>('idle');
   const [error, setError] = useState<string>();
+
+  const config = SUPPORTED_PLATFORMS[identity.platform];
 
   const verify = useCallback(async () => {
     setStatus('checking');
@@ -82,6 +122,21 @@ function VerificationBadge({ identity, pubkey }: { identity: ExternalIdentity; p
     );
   }
 
+  // Non-CORS platforms: link directly to proof instead of attempting verification
+  if (!config?.canVerifyInBrowser) {
+    return (
+      <a
+        href={identity.proofUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+      >
+        <ExternalLink className="h-3 w-3" />
+        Check proof
+      </a>
+    );
+  }
+
   switch (status) {
     case 'idle':
       return (
@@ -93,7 +148,7 @@ function VerificationBadge({ identity, pubkey }: { identity: ExternalIdentity; p
       return (
         <Badge variant="outline" className="gap-1">
           <Loader2 className="h-3 w-3 animate-spin" />
-          Checking…
+          Checking...
         </Badge>
       );
     case 'verified':
@@ -184,6 +239,8 @@ export default function LinkedAccountsSettingsPage() {
 
   const npub = user ? nip19.npubEncode(user.pubkey) : '';
   const selectedConfig = SUPPORTED_PLATFORMS[platform];
+  const verificationText = selectedConfig?.verificationText(npub)[0] ?? npub;
+  const createProofUrl = selectedConfig?.createProofUrl?.(identity.trim(), npub);
 
   const handleAdd = async () => {
     if (!identity.trim()) {
@@ -305,7 +362,7 @@ export default function LinkedAccountsSettingsPage() {
           {/* Step 1: Select platform */}
           <div className="space-y-2">
             <Label>Platform</Label>
-            <Select value={platform} onValueChange={setPlatform}>
+            <Select value={platform} onValueChange={(v) => { setPlatform(v); setIdentity(''); setProof(''); }}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -324,28 +381,64 @@ export default function LinkedAccountsSettingsPage() {
 
           {/* Step 2: Enter username */}
           <div className="space-y-2">
-            <Label>Username / Identity</Label>
+            <Label>
+              {platform === 'mastodon' ? 'Instance & Username' : 'Username / Identity'}
+            </Label>
             <Input
               placeholder={IDENTITY_PLACEHOLDERS[platform] ?? 'Username'}
               value={identity}
               onChange={(e) => setIdentity(e.target.value)}
             />
+            {platform === 'mastodon' && (
+              <p className="text-xs text-muted-foreground">
+                Format: instance.social/@username (e.g. mastodon.social/@alice)
+              </p>
+            )}
+            {platform === 'telegram' && (
+              <p className="text-xs text-muted-foreground">
+                Your Telegram username or numeric user ID
+              </p>
+            )}
           </div>
 
-          {/* Step 3: Instructions */}
+          {/* Step 3: Instructions with copy + platform link */}
           <Card className="border-blue-500/50 bg-blue-50 dark:bg-blue-950/20">
             <CardContent className="py-4">
               <p className="text-sm font-medium mb-2">Step 1: Create a proof post</p>
               <p className="text-sm text-muted-foreground mb-3">
-                {platform === 'github' && 'Create a public GitHub Gist containing:'}
-                {platform === 'twitter' && 'Post a tweet containing:'}
-                {platform === 'mastodon' && 'Post a toot containing:'}
-                {platform === 'telegram' && 'Send a message containing:'}
+                {PROOF_INSTRUCTIONS[platform]}
               </p>
-              <code className="block p-3 bg-muted rounded text-xs break-all select-all">
-                {selectedConfig?.verificationText(npub)[0] ?? npub}
-              </code>
+              <div className="relative">
+                <code className="block p-3 pr-20 bg-muted rounded text-xs break-all">
+                  {verificationText}
+                </code>
+                <div className="absolute top-1 right-1">
+                  <CopyButton text={verificationText} />
+                </div>
+              </div>
+
+              {createProofUrl && (
+                <div className="mt-3">
+                  <a
+                    href={createProofUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 text-sm text-blue-600 dark:text-blue-400 hover:underline font-medium"
+                  >
+                    <ExternalLink className="h-3.5 w-3.5" />
+                    {platform === 'github' && 'Create a new Gist'}
+                    {platform === 'twitter' && 'Post on Twitter/X'}
+                  </a>
+                </div>
+              )}
+
               <p className="text-sm font-medium mt-4 mb-2">Step 2: Enter the proof ID below</p>
+              <p className="text-xs text-muted-foreground">
+                {platform === 'github' && 'The Gist ID is the last part of the Gist URL (e.g. gist.github.com/you/THIS_PART)'}
+                {platform === 'twitter' && 'The Tweet ID is the number at the end of the tweet URL'}
+                {platform === 'mastodon' && 'The Post ID is the number at the end of the post URL'}
+                {platform === 'telegram' && 'The message path is like "channelname/123" from the t.me link'}
+              </p>
             </CardContent>
           </Card>
 
@@ -367,12 +460,12 @@ export default function LinkedAccountsSettingsPage() {
             {addIdentity.isPending ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Publishing…
+                Publishing...
               </>
             ) : (
               <>
                 <Plus className="h-4 w-4 mr-2" />
-                Verify & Save
+                Link Account
               </>
             )}
           </Button>
