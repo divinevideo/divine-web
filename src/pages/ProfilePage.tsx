@@ -18,6 +18,7 @@ import { FollowListSafetyDialog } from '@/components/FollowListSafetyDialog';
 import { useAuthor } from '@/hooks/useAuthor';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { getSubdomainUser } from '@/hooks/useSubdomainUser';
+import { useResolveSubdomainPubkey } from '@/hooks/useResolveSubdomainPubkey';
 import { useVideoProvider } from '@/hooks/useVideoProvider';
 import { useFunnelcakeProfile } from '@/hooks/useFunnelcakeProfile';
 import { useFollowRelationship, useFollowUser, useUnfollowUser } from '@/hooks/useFollowRelationship';
@@ -40,7 +41,9 @@ export function ProfilePage() {
 
   // Get the identifier from route params, or from subdomain user if rendered at /
   const subdomainUser = getSubdomainUser();
-  const identifier = npub || nip19Param || subdomainUser?.npub;
+  const resolved = useResolveSubdomainPubkey();
+  // Use resolved pubkey when KV store mapping is stale
+  const identifier = npub || nip19Param || (resolved.isResolved ? resolved.npub : subdomainUser?.npub);
 
   // Decode npub to get pubkey
   let pubkey: string | null = null;
@@ -196,6 +199,17 @@ export function ProfilePage() {
     twitterDescription: metadata?.about || `${displayName}'s profile on diVine`,
     twitterImage: metadata?.picture || '/app_icon.avif',
   });
+
+  // Show spinner while resolving stale subdomain mapping
+  if (resolved.isSearching && subdomainUser?.nip05Stale) {
+    return (
+      <div className="container mx-auto px-4 py-6">
+        <div className="max-w-4xl mx-auto flex items-center justify-center py-12">
+          <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+        </div>
+      </div>
+    );
+  }
 
   if (error || !pubkey) {
     return (
