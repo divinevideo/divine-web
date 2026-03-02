@@ -198,7 +198,7 @@ export function GetEmbedPage() {
                 <div className="bg-muted rounded-lg p-4 flex justify-center min-h-[200px] items-center">
                   {isValidNpub ? (
                     <iframe
-                      src={`/embed.html?${embedUrl}`}
+                      src={`/embed?${embedUrl}`}
                       width="350"
                       height={height}
                       style={{ border: 'none', borderRadius: '12px' }}
