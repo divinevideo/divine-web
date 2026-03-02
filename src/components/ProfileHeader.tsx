@@ -14,7 +14,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { UserPlus, UserCheck, CheckCircle, Pencil, Copy, MoreVertical, Flag, Play, Repeat, Loader2, XCircle } from 'lucide-react';
+import { UserPlus, UserCheck, CheckCircle, Pencil, Copy, MoreVertical, Flag, Play, Repeat, Loader2, XCircle, Code } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { ReportContentDialog } from '@/components/ReportContentDialog';
 import { UserListDialog } from '@/components/UserListDialog';
 import { useNip05Validation } from '@/hooks/useNip05Validation';
@@ -91,6 +92,7 @@ export function ProfileHeader({
   isLoading: _isLoading = false,
   className,
 }: ProfileHeaderProps) {
+  const navigate = useNavigate();
   const [showReportDialog, setShowReportDialog] = useState(false);
   const [userListDialog, setUserListDialog] = useState<'followers' | 'following' | null>(null);
 
@@ -250,7 +252,7 @@ export function ProfileHeader({
 
         {/* Edit Profile / Follow Button */}
         {isOwnProfile ? (
-          <div className="flex-shrink-0 self-center sm:self-start">
+          <div className="flex-shrink-0 self-center sm:self-start flex gap-2">
             <Button
               onClick={onEditProfile}
               variant="outline"
@@ -261,6 +263,19 @@ export function ProfileHeader({
               <Pencil className="w-4 h-4 mr-2" />
               Edit Profile
             </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" data-testid="own-profile-menu-button">
+                  <MoreVertical className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => navigate(`/get-embed?npub=${nip19.npubEncode(pubkey)}`)}>
+                  <Code className="h-4 w-4 mr-2" />
+                  Get embed code
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         ) : (
           <div className="flex-shrink-0 self-center sm:self-start flex gap-2">
@@ -290,6 +305,10 @@ export function ProfileHeader({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => navigate(`/get-embed?npub=${nip19.npubEncode(pubkey)}`)}>
+                  <Code className="h-4 w-4 mr-2" />
+                  Get embed code
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setShowReportDialog(true)}>
                   <Flag className="h-4 w-4 mr-2" />
                   Report user
