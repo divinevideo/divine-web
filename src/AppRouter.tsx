@@ -39,6 +39,7 @@ import { SafetyPage } from "./pages/SafetyPage";
 import { Support } from "./pages/Support";
 import { FAQPage } from "./pages/FAQPage";
 import { TermsPage } from "./pages/TermsPage";
+import GetEmbedPage from "./pages/GetEmbedPage";
 import AppCallbackPage from "./pages/AppCallbackPage";
 import { AppLayout } from "@/components/AppLayout";
 import { DebugVideoPage } from "./pages/DebugVideoPage";
@@ -73,6 +74,7 @@ export function AppRouter() {
         <Route path="/safety" element={<SafetyPage />} />
         <Route path="/support" element={<Support />} />
         <Route path="/faq" element={<FAQPage />} />
+        <Route path="/get-embed" element={<GetEmbedPage />} />
         <Route path="/app/callback" element={<AppCallbackPage />} />
 
         {/* App routes - with AppLayout */}
