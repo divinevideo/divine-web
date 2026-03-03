@@ -1,7 +1,7 @@
 // ABOUTME: Centralized sort mode definitions for NIP-50 search
 // ABOUTME: Single source of truth for sort modes across all pages
 
-import { Flame, TrendingUp, Zap, Scale, Clock, Search } from 'lucide-react';
+import { Flame, TrendingUp, Zap, Scale, Clock, Search, Clapperboard } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { SortMode } from '@/types/nostr';
 
@@ -32,8 +32,8 @@ export const SORT_MODES: SortModeDefinition[] = [
   },
   {
     value: 'top',
-    label: 'Classic',
-    description: 'Popular archived Vines',
+    label: 'Top',
+    description: 'Most viewed all-time',
     icon: TrendingUp
   },
   {
@@ -41,6 +41,12 @@ export const SORT_MODES: SortModeDefinition[] = [
     label: 'Rising',
     description: 'Gaining traction',
     icon: Zap
+  },
+  {
+    value: 'classic',
+    label: 'Classic',
+    description: 'Vine archive favorites',
+    icon: Clapperboard
   },
   {
     value: undefined,
@@ -69,8 +75,8 @@ export const EXTENDED_SORT_MODES: SortModeDefinition[] = [
   },
   {
     value: 'top',
-    label: 'Classic',
-    description: 'Popular archived Vines',
+    label: 'Top',
+    description: 'Most viewed all-time',
     icon: TrendingUp
   },
   {
@@ -78,6 +84,12 @@ export const EXTENDED_SORT_MODES: SortModeDefinition[] = [
     label: 'Rising',
     description: 'Gaining traction',
     icon: Zap
+  },
+  {
+    value: 'classic',
+    label: 'Classic',
+    description: 'Vine archive favorites',
+    icon: Clapperboard
   },
   {
     value: 'controversial',
@@ -125,8 +137,8 @@ export const SEARCH_SORT_MODES: SearchSortModeDefinition[] = [
   },
   {
     value: 'top',
-    label: 'Classic',
-    description: 'Popular archived Vines',
+    label: 'Top',
+    description: 'Most viewed all-time',
     icon: TrendingUp
   },
   {
@@ -134,6 +146,12 @@ export const SEARCH_SORT_MODES: SearchSortModeDefinition[] = [
     label: 'Rising',
     description: 'Gaining traction',
     icon: Zap
+  },
+  {
+    value: 'classic',
+    label: 'Classic',
+    description: 'Vine archive favorites',
+    icon: Clapperboard
   },
   {
     value: 'controversial',

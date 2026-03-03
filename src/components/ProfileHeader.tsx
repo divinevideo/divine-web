@@ -14,7 +14,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { UserPlus, UserCheck, CheckCircle, Pencil, Copy, MoreVertical, Flag, Play, Repeat, Loader2, XCircle } from 'lucide-react';
+import { UserPlus, UserCheck, CheckCircle, Pencil, Copy, MoreVertical, Flag, Play, Repeat, Loader2, XCircle, Rss } from 'lucide-react';
+import { feedUrls } from '@/lib/feedUrls';
+import { useRssFeedAvailable } from '@/hooks/useRssFeedAvailable';
 import { ReportContentDialog } from '@/components/ReportContentDialog';
 import { UserListDialog } from '@/components/UserListDialog';
 import { useNip05Validation } from '@/hooks/useNip05Validation';
@@ -91,6 +93,7 @@ export function ProfileHeader({
   isLoading: _isLoading = false,
   className,
 }: ProfileHeaderProps) {
+  const rssFeedAvailable = useRssFeedAvailable();
   const [showReportDialog, setShowReportDialog] = useState(false);
   const [userListDialog, setUserListDialog] = useState<'followers' | 'following' | null>(null);
 
@@ -296,6 +299,17 @@ export function ProfileHeader({
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
+            {rssFeedAvailable && (
+              <a
+                href={feedUrls.userVideos(nip19.npubEncode(pubkey))}
+                target="_blank"
+                rel="noopener noreferrer"
+                title="Subscribe to RSS feed"
+                className="inline-flex items-center justify-center rounded-md p-2 text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+              >
+                <Rss className="h-4 w-4" />
+              </a>
+            )}
           </div>
         )}
       </div>

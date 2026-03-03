@@ -4,8 +4,10 @@
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { SmartLink } from '@/components/SmartLink';
-import { ArrowLeft, Grid3X3, List } from 'lucide-react';
-import { useSeoMeta } from '@unhead/react';
+import { ArrowLeft, Grid3X3, List, Rss } from 'lucide-react';
+import { useHead, useSeoMeta } from '@unhead/react';
+import { feedUrls } from '@/lib/feedUrls';
+import { useRssFeedAvailable } from '@/hooks/useRssFeedAvailable';
 import { VideoFeed } from '@/components/VideoFeed';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -25,6 +27,19 @@ export function CategoryPage() {
 
   const displayName = config?.label || categoryName;
   const emoji = config?.emoji || '';
+
+  // RSS auto-discovery link for feed readers (only if feed endpoints exist)
+  const rssFeedAvailable = useRssFeedAvailable();
+  useHead({
+    link: rssFeedAvailable && categoryName ? [
+      {
+        rel: 'alternate',
+        type: 'application/rss+xml',
+        title: `${displayName} Videos - diVine`,
+        href: feedUrls.category(categoryName),
+      },
+    ] : [],
+  });
 
   useSeoMeta({
     title: `${displayName} Videos - diVine`,
@@ -82,6 +97,16 @@ export function CategoryPage() {
                 </p>
               </div>
             </div>
+            {rssFeedAvailable && (
+              <a
+                href={feedUrls.category(categoryName)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <Rss className="h-3.5 w-3.5" /> RSS
+              </a>
+            )}
           </div>
 
           {/* View Toggle and Sort Selector */}

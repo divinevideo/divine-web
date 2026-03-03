@@ -4,7 +4,9 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { nip19 } from 'nostr-tools';
-import { useSeoMeta } from '@unhead/react';
+import { useHead, useSeoMeta } from '@unhead/react';
+import { feedUrls } from '@/lib/feedUrls';
+import { useRssFeedAvailable } from '@/hooks/useRssFeedAvailable';
 import { Grid, List, Loader2 } from 'lucide-react';
 import { PROFILE_SORT_MODES } from '@/lib/constants/sortModes';
 import InfiniteScroll from 'react-infinite-scroll-component';
@@ -185,6 +187,20 @@ export function ProfilePage() {
   const isOwnProfile = currentUser?.pubkey === pubkey;
 
   const displayName = metadata?.display_name || metadata?.name || (pubkey ? genUserName(pubkey) : 'User');
+
+  // RSS auto-discovery link for feed readers (only if feed endpoints exist)
+  const rssFeedAvailable = useRssFeedAvailable();
+  const profileNpub = pubkey ? nip19.npubEncode(pubkey) : '';
+  useHead({
+    link: rssFeedAvailable && profileNpub ? [
+      {
+        rel: 'alternate',
+        type: 'application/rss+xml',
+        title: `${displayName}'s Videos - diVine`,
+        href: feedUrls.userVideos(profileNpub),
+      },
+    ] : [],
+  });
 
   // Dynamic SEO meta tags for social sharing
   useSeoMeta({
