@@ -1,3 +1,6 @@
+# Embed widget — rewrite clean URL to static HTML
+/embed /embed.html 200
+
 # Redirect old FAQ page to WordPress subdomain
 /faq  https://about.divine.video/faqs/  301
 /faq/  https://about.divine.video/faqs/  301
