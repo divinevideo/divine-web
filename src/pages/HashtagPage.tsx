@@ -4,8 +4,10 @@
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { SmartLink } from '@/components/SmartLink';
-import { ArrowLeft, Grid3X3, List } from 'lucide-react';
-import { useSeoMeta } from '@unhead/react';
+import { ArrowLeft, Grid3X3, List, Rss } from 'lucide-react';
+import { useHead, useSeoMeta } from '@unhead/react';
+import { feedUrls } from '@/lib/feedUrls';
+import { useRssFeedAvailable } from '@/hooks/useRssFeedAvailable';
 import { VideoFeed } from '@/components/VideoFeed';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -20,6 +22,19 @@ export function HashtagPage() {
   const normalizedTag = (tag || '').toLowerCase();
   const [viewMode, setViewMode] = useState<ViewMode>('feed');
   const [sortMode, setSortMode] = useState<SortMode>('hot');
+
+  // RSS auto-discovery link for feed readers (only if feed endpoints exist)
+  const rssFeedAvailable = useRssFeedAvailable();
+  useHead({
+    link: rssFeedAvailable && normalizedTag ? [
+      {
+        rel: 'alternate',
+        type: 'application/rss+xml',
+        title: `#${tag} - diVine`,
+        href: feedUrls.hashtag(normalizedTag),
+      },
+    ] : [],
+  });
 
   // Dynamic SEO meta tags for social sharing
   const description = `Explore videos tagged with #${tag} on diVine`;
@@ -75,6 +90,16 @@ export function HashtagPage() {
               <h1 className="text-3xl font-bold">#{tag}</h1>
               <p className="text-muted-foreground">Videos tagged with #{tag}</p>
             </div>
+            {rssFeedAvailable && (
+              <a
+                href={feedUrls.hashtag(normalizedTag)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <Rss className="h-3.5 w-3.5" /> RSS
+              </a>
+            )}
           </div>
 
           {/* View Toggle and Sort Selector */}

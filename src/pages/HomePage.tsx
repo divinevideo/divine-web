@@ -2,6 +2,8 @@
 // ABOUTME: Requires user to be logged in and have a follow list
 
 import { useState } from 'react';
+import { nip19 } from 'nostr-tools';
+import { useHead } from '@unhead/react';
 import { VideoFeed } from '@/components/VideoFeed';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useFollowList } from '@/hooks/useFollowList';
@@ -9,6 +11,8 @@ import { LoginArea } from '@/components/auth/LoginArea';
 import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RefreshCw } from 'lucide-react';
+import { feedUrls } from '@/lib/feedUrls';
+import { useRssFeedAvailable } from '@/hooks/useRssFeedAvailable';
 import type { SortMode } from '@/types/nostr';
 import { SORT_MODES } from '@/lib/constants/sortModes';
 
@@ -16,6 +20,26 @@ export function HomePage() {
   const { user } = useCurrentUser();
   const { data: followList, isLoading, isFetching, dataUpdatedAt } = useFollowList();
   const [sortMode, setSortMode] = useState<SortMode | undefined>(undefined);
+
+  // RSS auto-discovery link for feed readers (only if feed endpoints exist)
+  const rssFeedAvailable = useRssFeedAvailable();
+  const userNpub = user?.pubkey ? nip19.npubEncode(user.pubkey) : '';
+  useHead({
+    link: rssFeedAvailable ? [
+      {
+        rel: 'alternate',
+        type: 'application/rss+xml',
+        title: 'DiVine - Latest Videos',
+        href: feedUrls.latest(),
+      },
+      ...(userNpub ? [{
+        rel: 'alternate' as const,
+        type: 'application/rss+xml',
+        title: 'Your Feed - diVine',
+        href: feedUrls.userFeed(userNpub),
+      }] : []),
+    ] : [],
+  });
 
   // Check if data is from cache (not currently fetching but has data)
   const isShowingCachedData = !isLoading && !isFetching && !!followList && followList.length > 0;

@@ -78,6 +78,8 @@ function mapToFunnelcakeSortMode(sortMode?: SortMode): FunnelcakeSortMode | unde
       return 'engagement';
     case 'controversial':
       return 'engagement';
+    case 'classic':
+      return 'classic';
     default:
       return 'trending';
   }

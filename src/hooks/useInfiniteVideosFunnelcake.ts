@@ -13,7 +13,7 @@ import { performanceMonitor } from '@/lib/performanceMonitoring';
 import { DEFAULT_FUNNELCAKE_URL } from '@/config/relays';
 
 export type FunnelcakeFeedType = 'trending' | 'recent' | 'classics' | 'hashtag' | 'profile' | 'home' | 'recommendations' | 'category';
-export type FunnelcakeSortMode = 'trending' | 'recent' | 'loops' | 'engagement';
+export type FunnelcakeSortMode = 'trending' | 'recent' | 'loops' | 'engagement' | 'classic';
 
 interface UseInfiniteVideosFunnelcakeOptions {
   feedType: FunnelcakeFeedType;
@@ -58,7 +58,8 @@ function getFetchOptions(
     case 'trending':
       return {
         ...baseOptions,
-        sort: sortMode || 'trending',
+        sort: sortMode === 'classic' ? 'loops' : (sortMode || 'trending'),
+        ...(sortMode === 'classic' ? { classic: true, platform: 'vine' } : {}),
       };
 
     case 'recent':
@@ -70,25 +71,29 @@ function getFetchOptions(
     case 'hashtag':
       return {
         ...baseOptions,
-        sort: sortMode || 'trending',
+        sort: sortMode === 'classic' ? 'loops' : (sortMode || 'trending'),
+        ...(sortMode === 'classic' ? { classic: true, platform: 'vine' } : {}),
       };
 
     case 'profile':
       return {
         ...baseOptions,
-        sort: sortMode || 'recent',
+        sort: sortMode === 'classic' ? 'loops' : (sortMode || 'recent'),
+        ...(sortMode === 'classic' ? { classic: true, platform: 'vine' } : {}),
       };
 
     case 'home':
       return {
         ...baseOptions,
-        sort: sortMode || 'recent',
+        sort: sortMode === 'classic' ? 'loops' : (sortMode || 'recent'),
+        ...(sortMode === 'classic' ? { classic: true, platform: 'vine' } : {}),
       };
 
     case 'category':
       return {
         ...baseOptions,
-        sort: sortMode || 'trending',
+        sort: sortMode === 'classic' ? 'loops' : (sortMode || 'trending'),
+        ...(sortMode === 'classic' ? { classic: true, platform: 'vine' } : {}),
       };
 
     case 'recommendations':

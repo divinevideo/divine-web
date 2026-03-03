@@ -39,6 +39,13 @@ export const API_CONFIG = {
       leaderboardCreators: '/api/leaderboard/creators',
       userNotifications: '/api/users/{pubkey}/notifications',
       userNotificationsRead: '/api/users/{pubkey}/notifications/read',
+      // RSS feed endpoints
+      feedLatest: '/feed/latest',
+      feedTrending: '/feed/trending',
+      feedUserVideos: '/feed/{npub}/videos',
+      feedUserFeed: '/feed/{npub}/feed',
+      feedHashtag: '/feed/tag/{hashtag}',
+      feedCategory: '/feed/category/{category}',
     },
   },
 

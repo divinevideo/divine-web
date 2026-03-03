@@ -29,8 +29,9 @@ export interface NIP50Filter extends NostrFilter {
  * - top: Most referenced events (all-time or within time range)
  * - rising: Recently created events gaining engagement quickly
  * - controversial: Events with mixed positive/negative reactions
+ * - classic: Classic Vine archive content sorted by loops
  */
-export type SortMode = 'hot' | 'top' | 'rising' | 'controversial';
+export type SortMode = 'hot' | 'top' | 'rising' | 'controversial' | 'classic';
 
 /**
  * Pagination options for cursor-based queries
