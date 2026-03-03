@@ -166,6 +166,20 @@ async function handleRequest(event) {
     return await handleReport(request);
   }
 
+  // 7b. Proxy RSS feed requests to the relay backend (serves application/rss+xml)
+  if (url.pathname.startsWith('/feed/') || url.pathname === '/feed') {
+    console.log('Proxying RSS feed request to relay:', url.pathname);
+    const feedUrl = `${FUNNELCAKE_API_URL}${url.pathname}${url.search}`;
+    return fetch(feedUrl, {
+      backend: 'funnelcake',
+      method: request.method,
+      headers: {
+        'Accept': request.headers.get('Accept') || '*/*',
+        'Host': 'relay.divine.video',
+      },
+    });
+  }
+
   // 8. Serve static content with SPA fallback (handled by PublisherServer config)
   const response = await publisherServer.serveRequest(request);
   if (response != null) {
