@@ -16,6 +16,26 @@ vi.mock('@nostrify/react', () => ({
   }),
 }));
 
+// Mock verification cache
+const mockGetCached = vi.fn().mockReturnValue(null);
+const mockSetCached = vi.fn();
+vi.mock('@/lib/verificationCache', () => ({
+  getCachedVerification: (...args: unknown[]) => mockGetCached(...args),
+  setCachedVerification: (...args: unknown[]) => mockSetCached(...args),
+}));
+
+// Mock API config
+vi.mock('@/config/api', () => ({
+  API_CONFIG: {
+    verificationService: {
+      baseUrl: '',
+      timeout: 10000,
+      endpoints: { verify: '/api/verify' },
+    },
+  },
+  getFeatureFlag: () => false,
+}));
+
 import {
   parseIdentityTag,
   verifyIdentityClaim,
@@ -106,13 +126,26 @@ describe('parseIdentityTag', () => {
     expect(parseIdentityTag(['i', ''])).toBeNull();
   });
 
-  it('handles unknown platforms with empty URLs', () => {
-    const tag = ['i', 'bluesky:someone.bsky.social', 'someproof'];
+  it('parses a Bluesky identity tag', () => {
+    const tag = ['i', 'bluesky:alice.bsky.social', '3jxh5kdbmop2o'];
     const result = parseIdentityTag(tag);
 
     expect(result).toEqual({
       platform: 'bluesky',
-      identity: 'someone.bsky.social',
+      identity: 'alice.bsky.social',
+      proof: '3jxh5kdbmop2o',
+      profileUrl: 'https://bsky.app/profile/alice.bsky.social',
+      proofUrl: 'https://bsky.app/profile/alice.bsky.social/post/3jxh5kdbmop2o',
+    });
+  });
+
+  it('handles unknown platforms with empty URLs', () => {
+    const tag = ['i', 'linkedin:someone', 'someproof'];
+    const result = parseIdentityTag(tag);
+
+    expect(result).toEqual({
+      platform: 'linkedin',
+      identity: 'someone',
       proof: 'someproof',
       profileUrl: '',
       proofUrl: '',
@@ -141,6 +174,7 @@ describe('SUPPORTED_PLATFORMS', () => {
     expect(SUPPORTED_PLATFORMS.twitter.canVerifyInBrowser).toBe(false);
     expect(SUPPORTED_PLATFORMS.mastodon.canVerifyInBrowser).toBe(false);
     expect(SUPPORTED_PLATFORMS.telegram.canVerifyInBrowser).toBe(false);
+    expect(SUPPORTED_PLATFORMS.bluesky.canVerifyInBrowser).toBe(false);
   });
 
   it('generates correct Mastodon URLs for NIP-39 format', () => {
@@ -177,6 +211,19 @@ describe('SUPPORTED_PLATFORMS', () => {
 
   it('has no createProofUrl for telegram', () => {
     expect(SUPPORTED_PLATFORMS.telegram.createProofUrl).toBeUndefined();
+  });
+
+  it('generates correct Bluesky URLs', () => {
+    const config = SUPPORTED_PLATFORMS.bluesky;
+    expect(config.profileUrl('alice.bsky.social'))
+      .toBe('https://bsky.app/profile/alice.bsky.social');
+    expect(config.proofUrl('alice.bsky.social', '3jxh5kdbmop2o'))
+      .toBe('https://bsky.app/profile/alice.bsky.social/post/3jxh5kdbmop2o');
+  });
+
+  it('Bluesky verification text has quotes per NIP-39', () => {
+    const text = SUPPORTED_PLATFORMS.bluesky.verificationText('npub1abc')[0];
+    expect(text).toContain('"npub1abc"');
   });
 
   it('GitHub verification text has no quotes per NIP-39', () => {
@@ -225,7 +272,7 @@ describe('verifyIdentityClaim', () => {
   });
 
   it('returns manual for non-CORS platforms without fetching', async () => {
-    const platforms = ['twitter', 'mastodon', 'telegram'] as const;
+    const platforms = ['twitter', 'mastodon', 'telegram', 'bluesky'] as const;
 
     for (const platform of platforms) {
       const identity: ExternalIdentity = {
@@ -241,7 +288,7 @@ describe('verifyIdentityClaim', () => {
       expect(result.error).toBe('manual');
     }
 
-    // fetch should never have been called
+    // fetch should never have been called (no service, no browser verification)
     expect(global.fetch).not.toHaveBeenCalled();
   });
 
@@ -317,6 +364,44 @@ describe('verifyIdentityClaim', () => {
     const result = await verifyIdentityClaim(identity, TEST_PUBKEY);
     expect(result.verified).toBe(false);
     expect(result.error).toBe('Unknown platform');
+  });
+
+  it('returns cached result without fetching', async () => {
+    mockGetCached.mockReturnValueOnce({ verified: true });
+
+    const identity: ExternalIdentity = {
+      platform: 'github',
+      identity: 'alice',
+      proof: 'abc123',
+      profileUrl: 'https://github.com/alice',
+      proofUrl: 'https://gist.github.com/alice/abc123',
+    };
+
+    const result = await verifyIdentityClaim(identity, TEST_PUBKEY);
+    expect(result.verified).toBe(true);
+    expect(global.fetch).not.toHaveBeenCalled();
+  });
+
+  it('caches result after successful verification', async () => {
+    const identity: ExternalIdentity = {
+      platform: 'github',
+      identity: 'alice',
+      proof: 'abc123',
+      profileUrl: 'https://github.com/alice',
+      proofUrl: 'https://gist.github.com/alice/abc123',
+    };
+
+    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      ok: true,
+      text: () => Promise.resolve(`Verifying that I control the following Nostr public key: npub1${TEST_PUBKEY}`),
+    });
+
+    await verifyIdentityClaim(identity, TEST_PUBKEY);
+
+    expect(mockSetCached).toHaveBeenCalledWith(
+      'github', 'alice', 'abc123',
+      expect.objectContaining({ verified: expect.any(Boolean) }),
+    );
   });
 });
 

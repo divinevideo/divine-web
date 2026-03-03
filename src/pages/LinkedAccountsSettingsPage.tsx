@@ -1,7 +1,7 @@
 // ABOUTME: Settings page for NIP-39 external identity verification (linked accounts)
 // ABOUTME: Manage linked platform accounts (GitHub, Twitter, Mastodon, Telegram) with proof verification
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useExternalIdentities, SUPPORTED_PLATFORMS, verifyIdentityClaim, type ExternalIdentity } from '@/hooks/useExternalIdentities';
 import { useAddIdentity, useRemoveIdentity } from '@/hooks/usePublishIdentity';
@@ -16,6 +16,7 @@ import {
   Link2,
   Plus,
   Trash2,
+  Pencil,
   CheckCircle2,
   AlertTriangle,
   Loader2,
@@ -26,6 +27,7 @@ import {
   Shield,
   Copy,
   Check,
+  X,
 } from 'lucide-react';
 import { useToast } from '@/hooks/useToast';
 import { nip19 } from 'nostr-tools';
@@ -39,11 +41,21 @@ function XIcon({ className }: { className?: string }) {
   );
 }
 
+// Bluesky butterfly icon
+function BlueskyIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+      <path d="M12 10.8c-1.087-2.114-4.046-6.053-6.798-7.995C2.566.944 1.561 1.266.902 1.565.139 1.908 0 3.08 0 3.768c0 .69.378 5.65.624 6.479.785 2.643 3.593 3.519 6.178 3.229-3.782.483-7.96 1.692-5.062 5.979 2.56 3.783 4.462 2.05 6.26-1.025 1.612-2.754 2-4.238 2-4.238s.388 1.484 2 4.238c1.798 3.075 3.7 4.808 6.26 1.025 2.898-4.287-1.28-5.496-5.062-5.979 2.585.29 5.393-.586 6.178-3.229C19.622 9.418 20 4.458 20 3.768c0-.689-.139-1.861-.902-2.203-.659-.3-1.664-.62-4.3 1.24C12.046 4.747 9.087 8.686 8 10.8h4z" />
+    </svg>
+  );
+}
+
 const PLATFORM_ICONS: Record<string, React.ReactNode> = {
   github: <Github className="h-5 w-5" />,
   twitter: <XIcon className="h-5 w-5" />,
   mastodon: <AtSign className="h-5 w-5" />,
   telegram: <MessageCircle className="h-5 w-5" />,
+  bluesky: <BlueskyIcon className="h-5 w-5" />,
 };
 
 const PROOF_PLACEHOLDERS: Record<string, string> = {
@@ -51,6 +63,7 @@ const PROOF_PLACEHOLDERS: Record<string, string> = {
   twitter: 'Tweet ID (e.g. 1234567890)',
   mastodon: 'Post ID (e.g. 109876543210)',
   telegram: 'Message path (e.g. channelname/123)',
+  bluesky: 'Post record key (rkey from the post URL)',
 };
 
 const IDENTITY_PLACEHOLDERS: Record<string, string> = {
@@ -58,6 +71,7 @@ const IDENTITY_PLACEHOLDERS: Record<string, string> = {
   twitter: 'Twitter/X username',
   mastodon: 'instance.social/@username',
   telegram: 'Telegram username or user ID',
+  bluesky: 'handle.bsky.social',
 };
 
 const PROOF_INSTRUCTIONS: Record<string, string> = {
@@ -65,6 +79,7 @@ const PROOF_INSTRUCTIONS: Record<string, string> = {
   twitter: 'Post a tweet containing the text below, then paste the Tweet ID from the URL.',
   mastodon: 'Post a toot containing the text below, then paste the Post ID from the URL.',
   telegram: 'Send a message in a public channel/group containing the text below, then paste the message path (e.g. channelname/123).',
+  bluesky: 'Post on Bluesky containing the text below, then paste the record key (rkey) from the post URL.',
 };
 
 function CopyButton({ text }: { text: string }) {
@@ -172,11 +187,13 @@ function LinkedAccountItem({
   identity,
   pubkey,
   onRemove,
+  onEdit,
   removing,
 }: {
   identity: ExternalIdentity;
   pubkey: string;
   onRemove: () => void;
+  onEdit: () => void;
   removing: boolean;
 }) {
   const config = SUPPORTED_PLATFORMS[identity.platform];
@@ -218,9 +235,14 @@ function LinkedAccountItem({
           </div>
         </div>
       </div>
-      <Button variant="ghost" size="sm" onClick={onRemove} disabled={removing}>
-        {removing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-      </Button>
+      <div className="flex items-center gap-1">
+        <Button variant="ghost" size="sm" onClick={onEdit} title="Edit">
+          <Pencil className="h-4 w-4" />
+        </Button>
+        <Button variant="ghost" size="sm" onClick={onRemove} disabled={removing} title="Remove">
+          {removing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+        </Button>
+      </div>
     </div>
   );
 }
@@ -236,11 +258,29 @@ export default function LinkedAccountsSettingsPage() {
   const [identity, setIdentity] = useState('');
   const [proof, setProof] = useState('');
   const [removingKey, setRemovingKey] = useState<string | null>(null);
+  const [editingIdentity, setEditingIdentity] = useState<ExternalIdentity | null>(null);
+  const formRef = useRef<HTMLDivElement>(null);
 
   const npub = user ? nip19.npubEncode(user.pubkey) : '';
   const selectedConfig = SUPPORTED_PLATFORMS[platform];
   const verificationText = selectedConfig?.verificationText(npub)[0] ?? npub;
   const createProofUrl = selectedConfig?.createProofUrl?.(identity.trim(), npub);
+
+  const handleEdit = (id: ExternalIdentity) => {
+    setEditingIdentity(id);
+    setPlatform(id.platform);
+    setIdentity(id.identity);
+    setProof(id.proof);
+    // Scroll to form
+    setTimeout(() => formRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingIdentity(null);
+    setPlatform('github');
+    setIdentity('');
+    setProof('');
+  };
 
   const handleAdd = async () => {
     if (!identity.trim()) {
@@ -254,9 +294,11 @@ export default function LinkedAccountsSettingsPage() {
 
     try {
       await addIdentity.mutateAsync({ platform, identity: identity.trim(), proof: proof.trim() });
-      toast({ title: 'Linked', description: `${selectedConfig?.label ?? platform} account linked successfully` });
+      const action = editingIdentity ? 'Updated' : 'Linked';
+      toast({ title: action, description: `${selectedConfig?.label ?? platform} account ${action.toLowerCase()} successfully` });
       setIdentity('');
       setProof('');
+      setEditingIdentity(null);
     } catch {
       toast({ title: 'Error', description: 'Failed to publish identity event', variant: 'destructive' });
     }
@@ -335,6 +377,7 @@ export default function LinkedAccountsSettingsPage() {
                   identity={id}
                   pubkey={user.pubkey}
                   onRemove={() => handleRemove(id)}
+                  onEdit={() => handleEdit(id)}
                   removing={removingKey === `${id.platform}:${id.identity}`}
                 />
               ))}
@@ -347,22 +390,22 @@ export default function LinkedAccountsSettingsPage() {
         </CardContent>
       </Card>
 
-      {/* Add New Account */}
-      <Card>
+      {/* Add / Edit Account */}
+      <Card ref={formRef}>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Plus className="h-5 w-5" />
-            Link a New Account
+            {editingIdentity ? <Pencil className="h-5 w-5" /> : <Plus className="h-5 w-5" />}
+            {editingIdentity ? 'Edit Linked Account' : 'Link a New Account'}
           </CardTitle>
           <CardDescription>
-            Prove you own an account on another platform
+            {editingIdentity ? 'Update the proof for this account' : 'Prove you own an account on another platform'}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Step 1: Select platform */}
           <div className="space-y-2">
             <Label>Platform</Label>
-            <Select value={platform} onValueChange={(v) => { setPlatform(v); setIdentity(''); setProof(''); }}>
+            <Select value={platform} onValueChange={(v) => { setPlatform(v); setIdentity(''); setProof(''); }} disabled={!!editingIdentity}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -397,6 +440,11 @@ export default function LinkedAccountsSettingsPage() {
             {platform === 'telegram' && (
               <p className="text-xs text-muted-foreground">
                 Your Telegram username or numeric user ID
+              </p>
+            )}
+            {platform === 'bluesky' && (
+              <p className="text-xs text-muted-foreground">
+                Your Bluesky handle (e.g. alice.bsky.social or your custom domain)
               </p>
             )}
           </div>
@@ -438,6 +486,7 @@ export default function LinkedAccountsSettingsPage() {
                 {platform === 'twitter' && 'The Tweet ID is the number at the end of the tweet URL'}
                 {platform === 'mastodon' && 'The Post ID is the number at the end of the post URL'}
                 {platform === 'telegram' && 'The message path is like "channelname/123" from the t.me link'}
+                {platform === 'bluesky' && 'The rkey is the last segment of the post URL (e.g. bsky.app/profile/you/post/THIS_PART)'}
               </p>
             </CardContent>
           </Card>
@@ -452,23 +501,36 @@ export default function LinkedAccountsSettingsPage() {
             />
           </div>
 
-          <Button
-            onClick={handleAdd}
-            disabled={!identity.trim() || !proof.trim() || addIdentity.isPending}
-            className="w-full"
-          >
-            {addIdentity.isPending ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Publishing...
-              </>
-            ) : (
-              <>
-                <Plus className="h-4 w-4 mr-2" />
-                Link Account
-              </>
+          <div className="flex gap-2">
+            {editingIdentity && (
+              <Button variant="outline" onClick={handleCancelEdit} className="flex-shrink-0">
+                <X className="h-4 w-4 mr-2" />
+                Cancel
+              </Button>
             )}
-          </Button>
+            <Button
+              onClick={handleAdd}
+              disabled={!identity.trim() || !proof.trim() || addIdentity.isPending}
+              className="w-full"
+            >
+              {addIdentity.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Publishing...
+                </>
+              ) : editingIdentity ? (
+                <>
+                  <Check className="h-4 w-4 mr-2" />
+                  Update Account
+                </>
+              ) : (
+                <>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Link Account
+                </>
+              )}
+            </Button>
+          </div>
         </CardContent>
       </Card>
     </div>

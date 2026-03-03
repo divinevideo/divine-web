@@ -4,6 +4,8 @@
 import { useQuery } from '@tanstack/react-query';
 import { useNostr } from '@nostrify/react';
 import { nip19 } from 'nostr-tools';
+import { getCachedVerification, setCachedVerification } from '@/lib/verificationCache';
+import { API_CONFIG, getFeatureFlag } from '@/config/api';
 
 export interface ExternalIdentity {
   platform: string;
@@ -76,6 +78,15 @@ const PLATFORM_CONFIG: Record<string, PlatformConfig> = {
     ],
     canVerifyInBrowser: false,
   },
+  bluesky: {
+    label: 'Bluesky',
+    profileUrl: (id) => `https://bsky.app/profile/${id}`,
+    proofUrl: (id, proof) => `https://bsky.app/profile/${id}/post/${proof}`,
+    verificationText: (npub) => [
+      `Verifying that I control the following Nostr public key: "${npub}"`,
+    ],
+    canVerifyInBrowser: false,
+  },
 };
 
 export const SUPPORTED_PLATFORMS = PLATFORM_CONFIG;
@@ -135,8 +146,9 @@ export function useExternalIdentities(pubkey: string | undefined) {
 
 /**
  * Verify an external identity claim by fetching the proof URL and checking for npub.
- * Only works for platforms with CORS-friendly APIs (GitHub).
- * For other platforms, returns 'manual' to indicate the user should check manually.
+ * Checks localStorage cache first, then tries external verification service,
+ * then falls back to browser-based verification (GitHub only).
+ * For other platforms without service, returns 'manual'.
  */
 export async function verifyIdentityClaim(
   identity: ExternalIdentity,
@@ -149,6 +161,17 @@ export async function verifyIdentityClaim(
   const config = PLATFORM_CONFIG[identity.platform];
   if (!config) {
     return { verified: false, error: 'Unknown platform' };
+  }
+
+  // Check localStorage cache first
+  const cached = getCachedVerification(identity.platform, identity.identity, identity.proof);
+  if (cached) return cached;
+
+  // Try verification service if available
+  const serviceResult = await verifyViaService(identity, pubkey);
+  if (serviceResult) {
+    setCachedVerification(identity.platform, identity.identity, identity.proof, serviceResult);
+    return serviceResult;
   }
 
   // Only attempt browser-based verification for CORS-friendly platforms
@@ -169,16 +192,53 @@ export async function verifyIdentityClaim(
     });
 
     if (!response.ok) {
-      return { verified: false, error: `HTTP ${response.status}` };
+      const result = { verified: false, error: `HTTP ${response.status}` };
+      setCachedVerification(identity.platform, identity.identity, identity.proof, result);
+      return result;
     }
 
     const text = await response.text();
     const expectedTexts = config.verificationText(npub);
 
     const found = expectedTexts.some((expected) => text.includes(expected));
-    return { verified: found, error: found ? undefined : 'npub not found in proof' };
+    const result = { verified: found, error: found ? undefined : 'npub not found in proof' };
+    setCachedVerification(identity.platform, identity.identity, identity.proof, result);
+    return result;
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Fetch failed';
     return { verified: false, error: message };
+  }
+}
+
+/**
+ * Try to verify via external verification service.
+ * Returns null if service is unavailable or feature flag is off.
+ */
+async function verifyViaService(
+  identity: ExternalIdentity,
+  pubkey: string,
+): Promise<{ verified: boolean; error?: string } | null> {
+  const baseUrl = API_CONFIG.verificationService.baseUrl;
+  if (!baseUrl || !getFeatureFlag('useVerificationService')) return null;
+
+  try {
+    const response = await fetch(`${baseUrl}${API_CONFIG.verificationService.endpoints.verify}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        platform: identity.platform,
+        identity: identity.identity,
+        proof: identity.proof,
+        pubkey,
+      }),
+      signal: AbortSignal.timeout(API_CONFIG.verificationService.timeout),
+    });
+
+    if (!response.ok) return null;
+
+    const data = await response.json();
+    return { verified: !!data.verified, error: data.error };
+  } catch {
+    return null; // Service unavailable, fall through to browser verification
   }
 }

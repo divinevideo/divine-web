@@ -65,7 +65,7 @@ export function AccountSwitcher({ onAddAccountClick }: AccountSwitcherProps) {
           className='flex items-center gap-2 cursor-pointer p-2 rounded-md'
         >
           <Settings className='w-4 h-4' />
-          <span>Moderation</span>
+          <span>Settings</span>
         </DropdownMenuItem>
         <DropdownMenuItem
           onClick={() => navigate('/settings/linked-accounts')}

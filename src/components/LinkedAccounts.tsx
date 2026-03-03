@@ -3,7 +3,7 @@
 
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Github, ExternalLink, CheckCircle, AlertTriangle, Loader2, Link2 } from 'lucide-react';
+import { Github, ExternalLink, CheckCircle, AlertTriangle, Loader2, Link2, Shield } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import {
   Popover,
@@ -17,6 +17,7 @@ import {
   SUPPORTED_PLATFORMS,
   type ExternalIdentity,
 } from '@/hooks/useExternalIdentities';
+import { getCachedVerification } from '@/lib/verificationCache';
 
 /** Platform icon mapping */
 function PlatformIcon({ platform, className }: { platform: string; className?: string }) {
@@ -42,6 +43,12 @@ function PlatformIcon({ platform, className }: { platform: string; className?: s
           <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.479.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z" />
         </svg>
       );
+    case 'bluesky':
+      return (
+        <svg className={cn} viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 10.8c-1.087-2.114-4.046-6.053-6.798-7.995C2.566.944 1.561 1.266.902 1.565.139 1.908 0 3.08 0 3.768c0 .69.378 5.65.624 6.479.785 2.643 3.593 3.519 6.178 3.229-3.782.483-7.96 1.692-5.062 5.979 2.56 3.783 4.462 2.05 6.26-1.025 1.612-2.754 2-4.238 2-4.238s.388 1.484 2 4.238c1.798 3.075 3.7 4.808 6.26 1.025 2.898-4.287-1.28-5.496-5.062-5.979 2.585.29 5.393-.586 6.178-3.229C19.622 9.418 20 4.458 20 3.768c0-.689-.139-1.861-.902-2.203-.659-.3-1.664-.62-4.3 1.24C12.046 4.747 9.087 8.686 8 10.8h4z" />
+        </svg>
+      );
     default:
       return <Link2 className={cn} />;
   }
@@ -54,6 +61,11 @@ function IdentityBadge({ identity, pubkey }: { identity: ExternalIdentity; pubke
   const label = config?.label || identity.platform;
   const canAutoVerify = config?.canVerifyInBrowser ?? false;
 
+  // Seed from localStorage cache if available
+  const cachedResult = identity.proof
+    ? getCachedVerification(identity.platform, identity.identity, identity.proof)
+    : undefined;
+
   // Lazy verification — only runs when popover opens, only for CORS-friendly platforms
   const verification = useQuery({
     queryKey: ['identity-verify', identity.platform, identity.identity, identity.proof],
@@ -62,6 +74,7 @@ function IdentityBadge({ identity, pubkey }: { identity: ExternalIdentity; pubke
     staleTime: 60 * 60 * 1000, // Cache 1 hour
     gcTime: 2 * 60 * 60 * 1000,
     retry: 1,
+    initialData: cachedResult ?? undefined,
   });
 
   return (
@@ -151,6 +164,37 @@ function IdentityBadge({ identity, pubkey }: { identity: ExternalIdentity; pubke
   );
 }
 
+function VerificationSummary({ identities }: { identities: ExternalIdentity[] }) {
+  const proofCount = identities.filter((id) => !!id.proof).length;
+  const total = identities.length;
+
+  if (proofCount === 0) return null;
+
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-7 gap-1.5 px-2 text-muted-foreground hover:text-foreground"
+        >
+          <Shield className="h-3.5 w-3.5" />
+          <span className="text-xs">{proofCount}/{total} linked</span>
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-56 p-3" align="start">
+        <div className="space-y-1.5">
+          <p className="font-medium text-sm">Cross-verified</p>
+          <p className="text-xs text-muted-foreground">
+            {proofCount} of {total} linked {total === 1 ? 'account has' : 'accounts have'} proof
+            connecting this Nostr identity to external platforms.
+          </p>
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 interface LinkedAccountsProps {
   pubkey: string;
   className?: string;
@@ -163,6 +207,7 @@ export function LinkedAccounts({ pubkey, className }: LinkedAccountsProps) {
 
   return (
     <div className={`flex flex-wrap gap-1 ${className || ''}`} data-testid="linked-accounts">
+      <VerificationSummary identities={identities} />
       {identities.map((identity) => (
         <IdentityBadge
           key={`${identity.platform}:${identity.identity}`}

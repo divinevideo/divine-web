@@ -41,12 +41,22 @@ export const API_CONFIG = {
     },
   },
 
+  verificationService: {
+    baseUrl: import.meta.env.VITE_VERIFICATION_SERVICE_URL || '',
+    timeout: 10000,
+    endpoints: {
+      verify: '/api/verify',
+    },
+  },
+
   // Feature flags (can be overridden via localStorage for debugging)
   features: {
     // Use Funnelcake API when available (default: true)
     useFunnelcake: true,
     // Enable debug logging for API calls
     debugApi: false,
+    // Use external verification service for identity proofs
+    useVerificationService: false,
   },
 } as const;
 
