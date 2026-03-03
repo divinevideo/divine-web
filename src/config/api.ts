@@ -42,7 +42,7 @@ export const API_CONFIG = {
   },
 
   verificationService: {
-    baseUrl: import.meta.env.VITE_VERIFICATION_SERVICE_URL || '',
+    baseUrl: import.meta.env.VITE_VERIFICATION_SERVICE_URL || 'https://verifyer.divine.video',
     timeout: 10000,
     endpoints: {
       verify: '/api/verify',
@@ -56,7 +56,7 @@ export const API_CONFIG = {
     // Enable debug logging for API calls
     debugApi: false,
     // Use external verification service for identity proofs
-    useVerificationService: false,
+    useVerificationService: true,
   },
 } as const;
 
