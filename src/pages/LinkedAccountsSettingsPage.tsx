@@ -78,37 +78,51 @@ const PROOF_PLACEHOLDERS: Record<string, string> = {
   discord: 'Invite code or full discord.gg URL',
 };
 
-/** Extract just the proof ID from a full URL (or return as-is if already an ID) */
-function extractProofId(platform: string, input: string): string {
+/** Extract identity and proof from a URL, or return input as proof only */
+function extractFromUrl(platform: string, input: string): { identity?: string; proof: string } {
   const trimmed = input.trim();
   try {
     const url = new URL(trimmed);
-    const path = url.pathname;
+    const parts = url.pathname.split('/').filter(Boolean);
     switch (platform) {
       case 'github':
-        // https://gist.github.com/user/GIST_ID or https://api.github.com/gists/GIST_ID
-        return path.split('/').filter(Boolean).pop() || trimmed;
+        // https://gist.github.com/USER/GIST_ID
+        if (url.hostname.includes('gist.github.com') && parts.length >= 2) {
+          return { identity: parts[0], proof: parts[1] };
+        }
+        return { proof: parts.pop() || trimmed };
       case 'twitter':
-        // https://twitter.com/user/status/TWEET_ID or https://x.com/user/status/TWEET_ID
-        return path.split('/').filter(Boolean).pop() || trimmed;
+        // https://twitter.com/USER/status/TWEET_ID or https://x.com/USER/status/TWEET_ID
+        if (parts.length >= 3 && parts[1] === 'status') {
+          return { identity: parts[0], proof: parts[2] };
+        }
+        return { proof: parts.pop() || trimmed };
       case 'mastodon':
         // https://instance/@user/POST_ID
-        return path.split('/').filter(Boolean).pop() || trimmed;
+        if (parts.length >= 2 && parts[0].startsWith('@')) {
+          return { identity: `${url.hostname}/${parts[0]}`, proof: parts[1] };
+        }
+        return { proof: parts.pop() || trimmed };
       case 'bluesky':
-        // https://bsky.app/profile/user/post/RKEY
-        return path.split('/').filter(Boolean).pop() || trimmed;
+        // https://bsky.app/profile/USER/post/RKEY
+        if (parts.length >= 4 && parts[0] === 'profile' && parts[2] === 'post') {
+          return { identity: parts[1], proof: parts[3] };
+        }
+        return { proof: parts.pop() || trimmed };
       case 'telegram':
-        // https://t.me/channel/123 → channel/123
-        return path.slice(1) || trimmed; // remove leading /
+        // https://t.me/channel/123
+        if (parts.length >= 2) {
+          return { proof: parts.join('/') };
+        }
+        return { proof: url.pathname.slice(1) || trimmed };
       case 'discord':
         // https://discord.gg/CODE
-        return path.split('/').filter(Boolean).pop() || trimmed;
+        return { proof: parts.pop() || trimmed };
       default:
-        return trimmed;
+        return { proof: trimmed };
     }
   } catch {
-    // Not a URL, return as-is
-    return trimmed;
+    return { proof: trimmed };
   }
 }
 
@@ -331,27 +345,29 @@ export default function LinkedAccountsSettingsPage() {
   };
 
   const handleAdd = async () => {
-    if (!identity.trim()) {
-      toast({ title: 'Error', description: 'Please enter your username/identity', variant: 'destructive' });
-      return;
-    }
     if (!proof.trim()) {
-      toast({ title: 'Error', description: 'Please enter the proof ID', variant: 'destructive' });
+      toast({ title: 'Error', description: 'Please enter the proof URL or ID', variant: 'destructive' });
       return;
     }
 
     try {
-      const cleanProof = extractProofId(platform, proof);
-      await addIdentity.mutateAsync({ platform, identity: identity.trim(), proof: cleanProof });
+      const extracted = extractFromUrl(platform, proof);
+      const cleanProof = extracted.proof;
+      const cleanIdentity = extracted.identity || identity.trim();
+      if (!cleanIdentity) {
+        toast({ title: 'Error', description: 'Could not determine username — please enter it manually', variant: 'destructive' });
+        return;
+      }
+      await addIdentity.mutateAsync({ platform, identity: cleanIdentity, proof: cleanProof });
       const action = editingIdentity ? 'Updated' : 'Linked';
 
       // Auto-verify the newly linked identity
       const newIdentity: ExternalIdentity = {
         platform,
-        identity: identity.trim(),
+        identity: cleanIdentity,
         proof: cleanProof,
-        profileUrl: selectedConfig?.profileUrl(identity.trim()) ?? '',
-        proofUrl: selectedConfig?.proofUrl(identity.trim(), cleanProof) ?? '',
+        profileUrl: selectedConfig?.profileUrl(cleanIdentity) ?? '',
+        proofUrl: selectedConfig?.proofUrl(cleanIdentity, cleanProof) ?? '',
       };
       const verifyResult = await verifyIdentityClaim(newIdentity, user!.pubkey);
       if (verifyResult.verified) {
@@ -498,39 +514,7 @@ export default function LinkedAccountsSettingsPage() {
             </div>
           </div>
 
-          {/* Step 2: Enter username */}
-          <div className="space-y-2">
-            <Label>
-              {platform === 'mastodon' ? 'Instance & Username' : 'Username / Identity'}
-            </Label>
-            <Input
-              placeholder={IDENTITY_PLACEHOLDERS[platform] ?? 'Username'}
-              value={identity}
-              onChange={(e) => setIdentity(e.target.value)}
-            />
-            {platform === 'mastodon' && (
-              <p className="text-xs text-muted-foreground">
-                Format: instance.social/@username (e.g. mastodon.social/@alice)
-              </p>
-            )}
-            {platform === 'telegram' && (
-              <p className="text-xs text-muted-foreground">
-                Your Telegram username or numeric user ID
-              </p>
-            )}
-            {platform === 'bluesky' && (
-              <p className="text-xs text-muted-foreground">
-                Your Bluesky handle (e.g. alice.bsky.social or your custom domain)
-              </p>
-            )}
-            {platform === 'discord' && (
-              <p className="text-xs text-muted-foreground">
-                Your Discord username (e.g. alice or alice#1234)
-              </p>
-            )}
-          </div>
-
-          {/* Step 3: Instructions with copy + platform link */}
+          {/* Instructions */}
           <Card className="border-blue-500/50 bg-blue-50 dark:bg-blue-950/20">
             <CardContent className="py-4">
               <p className="text-sm font-medium mb-2">Step 1: Create a proof post</p>
@@ -561,26 +545,42 @@ export default function LinkedAccountsSettingsPage() {
                   </a>
                 </div>
               )}
-
-              <p className="text-sm font-medium mt-4 mb-2">Step 2: Enter the proof ID below</p>
-              <p className="text-xs text-muted-foreground">
-                {platform === 'github' && 'The Gist ID is the last part of the Gist URL (e.g. gist.github.com/you/THIS_PART)'}
-                {platform === 'twitter' && 'The Tweet ID is the number at the end of the tweet URL'}
-                {platform === 'mastodon' && 'The Post ID is the number at the end of the post URL'}
-                {platform === 'telegram' && 'The message path is like "channelname/123" from the t.me link'}
-                {platform === 'bluesky' && 'The rkey is the last segment of the post URL (e.g. bsky.app/profile/you/post/THIS_PART)'}
-              </p>
             </CardContent>
           </Card>
 
-          {/* Step 4: Proof ID */}
-          <div className="space-y-2">
-            <Label>Proof ID</Label>
-            <Input
-              placeholder={PROOF_PLACEHOLDERS[platform] ?? 'Proof identifier'}
-              value={proof}
-              onChange={(e) => setProof(e.target.value)}
-            />
+          {/* Step 2: Paste URL or enter details */}
+          <p className="text-sm font-medium">Step 2: Paste the proof URL or enter details</p>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Proof URL or ID</Label>
+              <Input
+                placeholder={PROOF_PLACEHOLDERS[platform] ?? 'Paste the full URL or just the ID'}
+                value={proof}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setProof(val);
+                  // Auto-extract identity from URL
+                  const extracted = extractFromUrl(platform, val);
+                  if (extracted.identity) {
+                    setIdentity(extracted.identity);
+                  }
+                }}
+              />
+              <p className="text-xs text-muted-foreground">
+                Paste the full URL and we'll extract everything automatically
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label>
+                {platform === 'mastodon' ? 'Instance & Username' : 'Username'}
+                {identity && <span className="text-green-600 ml-2 text-xs font-normal">(auto-filled from URL)</span>}
+              </Label>
+              <Input
+                placeholder={IDENTITY_PLACEHOLDERS[platform] ?? 'Username'}
+                value={identity}
+                onChange={(e) => setIdentity(e.target.value)}
+              />
+            </div>
           </div>
 
           <div className="flex gap-2">
@@ -592,7 +592,7 @@ export default function LinkedAccountsSettingsPage() {
             )}
             <Button
               onClick={handleAdd}
-              disabled={!identity.trim() || !proof.trim() || addIdentity.isPending}
+              disabled={!proof.trim() || addIdentity.isPending}
               className="w-full"
             >
               {addIdentity.isPending ? (
