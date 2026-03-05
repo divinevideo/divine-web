@@ -70,12 +70,12 @@ const PLATFORM_ICONS: Record<string, React.ReactNode> = {
 };
 
 const PROOF_PLACEHOLDERS: Record<string, string> = {
-  github: 'Gist ID or full Gist URL',
-  twitter: 'Tweet ID or full tweet URL',
-  mastodon: 'Post ID or full post URL',
-  telegram: 'Message path (e.g. channelname/123) or full t.me URL',
-  bluesky: 'Post rkey or full Bluesky post URL',
-  discord: 'Invite code or full discord.gg URL',
+  github: 'https://gist.github.com/you/abc123',
+  twitter: 'https://x.com/you/status/123456789',
+  mastodon: 'https://mastodon.social/@you/123456789',
+  telegram: 'https://t.me/channelname/123',
+  bluesky: 'https://bsky.app/profile/you/post/abc123',
+  discord: 'https://discord.gg/AbCdEf',
 };
 
 /** Extract identity and proof from a URL, or return input as proof only */
@@ -110,14 +110,20 @@ function extractFromUrl(platform: string, input: string): { identity?: string; p
         }
         return { proof: parts.pop() || trimmed };
       case 'telegram':
-        // https://t.me/channel/123
+        // https://t.me/channel/123 → identity=channel, proof=channel/123
         if (parts.length >= 2) {
-          return { proof: parts.join('/') };
+          return { identity: parts[0], proof: parts.join('/') };
+        }
+        if (parts.length === 1) {
+          return { identity: parts[0], proof: parts[0] };
         }
         return { proof: url.pathname.slice(1) || trimmed };
       case 'discord':
-        // https://discord.gg/CODE
-        return { proof: parts.pop() || trimmed };
+        // https://discord.gg/CODE → identity=CODE (invite), proof=CODE
+        {
+          const code = parts.pop() || trimmed;
+          return { identity: code, proof: code };
+        }
       default:
         return { proof: trimmed };
     }
@@ -353,9 +359,10 @@ export default function LinkedAccountsSettingsPage() {
     try {
       const extracted = extractFromUrl(platform, proof);
       const cleanProof = extracted.proof;
-      const cleanIdentity = extracted.identity || identity.trim();
+      // Use extracted identity, or state identity, or fall back to proof itself for Telegram/Discord
+      const cleanIdentity = extracted.identity || identity.trim() || cleanProof;
       if (!cleanIdentity) {
-        toast({ title: 'Error', description: 'Could not determine username — please enter it manually', variant: 'destructive' });
+        toast({ title: 'Error', description: 'Could not determine username from the URL', variant: 'destructive' });
         return;
       }
       await addIdentity.mutateAsync({ platform, identity: cleanIdentity, proof: cleanProof });
@@ -548,42 +555,26 @@ export default function LinkedAccountsSettingsPage() {
             </CardContent>
           </Card>
 
-          {/* Step 2: Paste URL or enter details */}
-          <p className="text-sm font-medium">Step 2: Paste the proof link</p>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label>Proof URL</Label>
-              <Input
-                placeholder={PROOF_PLACEHOLDERS[platform] ?? 'Paste the full URL'}
-                value={proof}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  setProof(val);
-                  // Auto-extract identity from URL
-                  const extracted = extractFromUrl(platform, val);
-                  if (extracted.identity) {
-                    setIdentity(extracted.identity);
-                  }
-                }}
-              />
-              {identity && (
-                <p className="text-xs text-green-600">
-                  Detected username: <span className="font-medium">{identity}</span>
-                </p>
-              )}
-            </div>
-            {/* Only show username field for platforms where the URL doesn't contain it */}
-            {(platform === 'telegram' || platform === 'discord' || (!identity && proof)) && (
-              <div className="space-y-2">
-                <Label>
-                  {platform === 'mastodon' ? 'Instance & Username' : 'Username'}
-                </Label>
-                <Input
-                  placeholder={IDENTITY_PLACEHOLDERS[platform] ?? 'Username'}
-                  value={identity}
-                  onChange={(e) => setIdentity(e.target.value)}
-                />
-              </div>
+          {/* Step 2: Paste proof link */}
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">Step 2: Paste the proof link</Label>
+            <Input
+              placeholder={PROOF_PLACEHOLDERS[platform] ?? 'Paste the full URL'}
+              value={proof}
+              onChange={(e) => {
+                const val = e.target.value;
+                setProof(val);
+                // Auto-extract identity from URL
+                const extracted = extractFromUrl(platform, val);
+                if (extracted.identity) {
+                  setIdentity(extracted.identity);
+                }
+              }}
+            />
+            {identity && (
+              <p className="text-xs text-green-600">
+                Detected: <span className="font-medium">{identity}</span>
+              </p>
             )}
           </div>
 
