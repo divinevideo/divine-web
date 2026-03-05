@@ -82,6 +82,13 @@ function IdentityBadge({ identity, pubkey }: { identity: ExternalIdentity; pubke
     initialData: cachedResult ?? undefined,
   });
 
+  // Don't show badge on public profile if verification failed (prevents impersonation display)
+  // Show while loading, when verified, or when manual check is needed
+  const isVerified = verification.data?.verified;
+  const isManual = verification.data?.error === 'manual';
+  const isStillLoading = verification.isLoading || verification.fetchStatus === 'idle';
+  if (!isVerified && !isManual && !isStillLoading) return null;
+
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
@@ -93,7 +100,7 @@ function IdentityBadge({ identity, pubkey }: { identity: ExternalIdentity; pubke
         >
           <PlatformIcon platform={identity.platform} className="h-3.5 w-3.5" />
           <span className="text-xs">{identity.identity}</span>
-          {verification.data?.verified && <CheckCircle className="h-3 w-3 text-green-500" />}
+          {isVerified && <CheckCircle className="h-3 w-3 text-green-500" />}
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-64 p-3" align="start">
@@ -171,9 +178,10 @@ function IdentityBadge({ identity, pubkey }: { identity: ExternalIdentity; pubke
   );
 }
 
+// Note: VerificationSummary is rendered but individual badges hide themselves
+// if verification fails, so this just provides context for what's visible
 function VerificationSummary({ identities }: { identities: ExternalIdentity[] }) {
   const proofCount = identities.filter((id) => !!id.proof).length;
-  const total = identities.length;
 
   if (proofCount === 0) return null;
 
@@ -186,15 +194,15 @@ function VerificationSummary({ identities }: { identities: ExternalIdentity[] })
           className="h-7 gap-1.5 px-2 text-muted-foreground hover:text-foreground"
         >
           <Shield className="h-3.5 w-3.5" />
-          <span className="text-xs">{proofCount}/{total} linked</span>
+          <span className="text-xs">Linked accounts</span>
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-56 p-3" align="start">
         <div className="space-y-1.5">
-          <p className="font-medium text-sm">Cross-verified</p>
+          <p className="font-medium text-sm">Identity verification</p>
           <p className="text-xs text-muted-foreground">
-            {proofCount} of {total} linked {total === 1 ? 'account has' : 'accounts have'} proof
-            connecting this Nostr identity to external platforms.
+            Linked accounts are verified using NIP-39 identity proofs.
+            Only verified accounts are shown.
           </p>
         </div>
       </PopoverContent>
