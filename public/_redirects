@@ -4,3 +4,7 @@
 # Redirect old FAQ page to WordPress subdomain
 /faq  https://about.divine.video/faqs/  301
 /faq/  https://about.divine.video/faqs/  301
+
+# Redirect about page to WordPress subdomain
+/about  https://about.divine.video/  301
+/about/  https://about.divine.video/  301

@@ -312,12 +312,14 @@ export function AppSidebar({ className }: { className?: string }) {
           </CollapsibleTrigger>
           <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down">
             <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 py-2 text-[12px] font-normal text-foreground">
-              <button
-                onClick={() => navigate('/about')}
+              <a
+                href="https://about.divine.video/"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="transition-colors hover:text-primary"
               >
                 About
-              </button>
+              </a>
               <a
                 href="https://about.divine.video/news/"
                 target="_blank"

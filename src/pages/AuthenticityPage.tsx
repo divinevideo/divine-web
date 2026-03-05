@@ -347,10 +347,10 @@ export function AuthenticityPage() {
               </Link>
             </Button>
             <Button size="lg" variant="outline" asChild>
-              <Link to="/about">
+              <a href="https://about.divine.video/">
                 <Heart className="h-5 w-5 mr-2" />
                 Our Story
-              </Link>
+              </a>
             </Button>
           </div>
           <div className="text-center pt-4">

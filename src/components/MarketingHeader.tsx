@@ -19,12 +19,12 @@ export function MarketingHeader() {
 
           {/* Navigation Links */}
           <div className="flex items-center gap-8">
-            <Link
-              to="/about"
+            <a
+              href="https://about.divine.video/"
               className="text-sm font-medium text-brand-off-white hover:text-brand-green transition-colors"
             >
               About
-            </Link>
+            </a>
             <a
               href="https://about.divine.video/blog/"
               className="text-sm font-medium text-brand-off-white hover:text-brand-green transition-colors"

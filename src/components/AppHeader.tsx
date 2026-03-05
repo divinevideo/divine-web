@@ -136,7 +136,7 @@ export function AppHeader({ className }: AppHeaderProps) {
             <DropdownMenuContent align="end" className="w-56">
               {/* About diVine section */}
               <DropdownMenuItem
-                onClick={() => navigate('/about')}
+                onClick={() => window.open('https://about.divine.video/', '_blank')}
                 className="cursor-pointer hover:bg-muted focus:bg-muted"
               >
                 <Info className="mr-2 h-4 w-4" />
