@@ -549,12 +549,12 @@ export default function LinkedAccountsSettingsPage() {
           </Card>
 
           {/* Step 2: Paste URL or enter details */}
-          <p className="text-sm font-medium">Step 2: Paste the proof URL or enter details</p>
+          <p className="text-sm font-medium">Step 2: Paste the proof link</p>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>Proof URL or ID</Label>
+              <Label>Proof URL</Label>
               <Input
-                placeholder={PROOF_PLACEHOLDERS[platform] ?? 'Paste the full URL or just the ID'}
+                placeholder={PROOF_PLACEHOLDERS[platform] ?? 'Paste the full URL'}
                 value={proof}
                 onChange={(e) => {
                   const val = e.target.value;
@@ -566,21 +566,25 @@ export default function LinkedAccountsSettingsPage() {
                   }
                 }}
               />
-              <p className="text-xs text-muted-foreground">
-                Paste the full URL and we'll extract everything automatically
-              </p>
+              {identity && (
+                <p className="text-xs text-green-600">
+                  Detected username: <span className="font-medium">{identity}</span>
+                </p>
+              )}
             </div>
-            <div className="space-y-2">
-              <Label>
-                {platform === 'mastodon' ? 'Instance & Username' : 'Username'}
-                {identity && <span className="text-green-600 ml-2 text-xs font-normal">(auto-filled from URL)</span>}
-              </Label>
-              <Input
-                placeholder={IDENTITY_PLACEHOLDERS[platform] ?? 'Username'}
-                value={identity}
-                onChange={(e) => setIdentity(e.target.value)}
-              />
-            </div>
+            {/* Only show username field for platforms where the URL doesn't contain it */}
+            {(platform === 'telegram' || platform === 'discord' || (!identity && proof)) && (
+              <div className="space-y-2">
+                <Label>
+                  {platform === 'mastodon' ? 'Instance & Username' : 'Username'}
+                </Label>
+                <Input
+                  placeholder={IDENTITY_PLACEHOLDERS[platform] ?? 'Username'}
+                  value={identity}
+                  onChange={(e) => setIdentity(e.target.value)}
+                />
+              </div>
+            )}
           </div>
 
           <div className="flex gap-2">
