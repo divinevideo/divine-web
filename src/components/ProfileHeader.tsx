@@ -30,6 +30,46 @@ import { toast } from '@/hooks/useToast';
 import { nip19 } from 'nostr-tools';
 import type { NostrMetadata } from '@nostrify/nostrify';
 
+/** Linkify URLs and domain-like words in text */
+function linkifyText(text: string): React.ReactNode[] {
+  // Match URLs (https?://...) and bare domain names (word.tld patterns)
+  const urlRegex = /(https?:\/\/[^\s]+)|(\b[a-zA-Z0-9][-a-zA-Z0-9]*\.[a-zA-Z]{2,}(?:\.[a-zA-Z]{2,})?(?:\/[^\s]*)?)/g;
+  const parts: React.ReactNode[] = [];
+  let lastIndex = 0;
+  let match;
+
+  while ((match = urlRegex.exec(text)) !== null) {
+    // Add text before the match
+    if (match.index > lastIndex) {
+      parts.push(text.slice(lastIndex, match.index));
+    }
+
+    const matchedText = match[0];
+    const href = matchedText.startsWith('http') ? matchedText : `https://${matchedText}`;
+
+    parts.push(
+      <a
+        key={match.index}
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-primary hover:underline"
+      >
+        {matchedText}
+      </a>
+    );
+
+    lastIndex = match.index + matchedText.length;
+  }
+
+  // Add remaining text
+  if (lastIndex < text.length) {
+    parts.push(text.slice(lastIndex));
+  }
+
+  return parts;
+}
+
 export interface ProfileStats {
   videosCount: number;
   totalViews: number;       // Total video views/impressions
@@ -248,7 +288,7 @@ export function ProfileHeader({
             {/* Bio */}
             {about && (
               <p className="text-muted-foreground text-sm leading-relaxed max-w-md">
-                {about}
+                {linkifyText(about)}
               </p>
             )}
 

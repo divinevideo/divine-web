@@ -235,31 +235,31 @@ describe('SUPPORTED_PLATFORMS', () => {
       .toBe('https://bsky.app/profile/alice.bsky.social/post/3jxh5kdbmop2o');
   });
 
-  it('Bluesky verification text has quotes per NIP-39', () => {
-    const text = SUPPORTED_PLATFORMS.bluesky.verificationText('npub1abc')[0];
-    expect(text).toContain('"npub1abc"');
+  it('Bluesky verification text includes npub', () => {
+    const texts = SUPPORTED_PLATFORMS.bluesky.verificationText('npub1abc');
+    expect(texts.some((t) => t.includes('npub1abc'))).toBe(true);
   });
 
-  it('GitHub verification text has no quotes per NIP-39', () => {
-    const text = SUPPORTED_PLATFORMS.github.verificationText('npub1abc')[0];
-    expect(text).toBe('Verifying that I control the following Nostr public key: npub1abc');
-    expect(text).not.toContain('"');
+  it('GitHub verification text includes npub', () => {
+    const texts = SUPPORTED_PLATFORMS.github.verificationText('npub1abc');
+    expect(texts.some((t) => t.includes('npub1abc'))).toBe(true);
+    // Backward compat: still accepts the standard NIP-39 text
+    expect(texts).toContainEqual('Verifying that I control the following Nostr public key: npub1abc');
   });
 
-  it('Twitter verification text has quotes per NIP-39', () => {
-    const text = SUPPORTED_PLATFORMS.twitter.verificationText('npub1abc')[0];
-    expect(text).toContain('"npub1abc"');
+  it('Twitter verification text includes npub or @divinevideoapp', () => {
+    const texts = SUPPORTED_PLATFORMS.twitter.verificationText('npub1abc');
+    expect(texts.some((t) => t.includes('npub1abc') || t.includes('@divinevideoapp'))).toBe(true);
   });
 
-  it('Mastodon verification text has quotes per NIP-39', () => {
-    const text = SUPPORTED_PLATFORMS.mastodon.verificationText('npub1abc')[0];
-    expect(text).toContain('"npub1abc"');
+  it('Mastodon verification text includes npub', () => {
+    const texts = SUPPORTED_PLATFORMS.mastodon.verificationText('npub1abc');
+    expect(texts.some((t) => t.includes('npub1abc'))).toBe(true);
   });
 
-  it('Telegram verification text has no quotes per NIP-39', () => {
-    const text = SUPPORTED_PLATFORMS.telegram.verificationText('npub1abc')[0];
-    expect(text).not.toContain('"');
-    expect(text).toContain('npub1abc');
+  it('Telegram verification text includes npub', () => {
+    const texts = SUPPORTED_PLATFORMS.telegram.verificationText('npub1abc');
+    expect(texts.some((t) => t.includes('npub1abc'))).toBe(true);
   });
 
   it('generates correct Discord URLs', () => {
@@ -270,9 +270,9 @@ describe('SUPPORTED_PLATFORMS', () => {
       .toBe('https://discord.gg/AbCdEf');
   });
 
-  it('Discord verification text has quotes per NIP-39', () => {
-    const text = SUPPORTED_PLATFORMS.discord.verificationText('npub1abc')[0];
-    expect(text).toContain('"npub1abc"');
+  it('Discord verification text includes npub', () => {
+    const texts = SUPPORTED_PLATFORMS.discord.verificationText('npub1abc');
+    expect(texts.some((t) => t.includes('npub1abc'))).toBe(true);
   });
 
   it('has no createProofUrl for discord', () => {

@@ -18,6 +18,7 @@ import {
   type ExternalIdentity,
 } from '@/hooks/useExternalIdentities';
 import { getCachedVerification } from '@/lib/verificationCache';
+import { API_CONFIG } from '@/config/api';
 
 /** Platform icon mapping */
 function PlatformIcon({ platform, className }: { platform: string; className?: string }) {
@@ -126,7 +127,7 @@ function IdentityBadge({ identity, pubkey }: { identity: ExternalIdentity; pubke
                 </>
               ) : verification.data?.error === 'manual' ? (
                 <a
-                  href={identity.proofUrl}
+                  href={`${API_CONFIG.verificationService.baseUrl}/verify/${encodeURIComponent(identity.platform)}/${encodeURIComponent(identity.identity)}/${encodeURIComponent(identity.proof)}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-1.5 text-primary hover:underline"

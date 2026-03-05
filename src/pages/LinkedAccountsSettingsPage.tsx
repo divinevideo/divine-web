@@ -6,6 +6,7 @@ import { Link } from 'react-router-dom';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useExternalIdentities, SUPPORTED_PLATFORMS, verifyIdentityClaim, type ExternalIdentity } from '@/hooks/useExternalIdentities';
 import { useAddIdentity, useRemoveIdentity } from '@/hooks/usePublishIdentity';
+import { API_CONFIG } from '@/config/api';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -234,7 +235,7 @@ function VerificationBadge({ identity, pubkey }: { identity: ExternalIdentity; p
     case 'failed':
       return error === 'manual' ? (
         <a
-          href={identity.proofUrl}
+          href={`${API_CONFIG.verificationService.baseUrl}/verify/${encodeURIComponent(identity.platform)}/${encodeURIComponent(identity.identity)}/${encodeURIComponent(identity.proof)}`}
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
@@ -331,7 +332,10 @@ export default function LinkedAccountsSettingsPage() {
 
   const npub = user ? nip19.npubEncode(user.pubkey) : '';
   const selectedConfig = SUPPORTED_PLATFORMS[platform];
-  const verificationText = selectedConfig?.verificationText(npub)[0] ?? npub;
+  const profileLink = `https://divine.video/profile/${npub}`;
+  const verificationText = selectedConfig
+    ? `${selectedConfig.verificationText(npub)[0]}: ${npub}\n\nFind me on ${profileLink}`
+    : npub;
   const createProofUrl = selectedConfig?.createProofUrl?.(identity.trim(), npub);
 
   const handleEdit = (id: ExternalIdentity) => {
@@ -529,7 +533,7 @@ export default function LinkedAccountsSettingsPage() {
                 {PROOF_INSTRUCTIONS[platform]}
               </p>
               <div className="relative">
-                <code className="block p-3 pr-20 bg-muted rounded text-xs break-all">
+                <code className="block p-3 pr-20 bg-muted rounded text-xs break-all whitespace-pre-wrap">
                   {verificationText}
                 </code>
                 <div className="absolute top-1 right-1">
