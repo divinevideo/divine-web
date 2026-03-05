@@ -33,7 +33,7 @@ const PLATFORM_CONFIG: Record<string, PlatformConfig> = {
     profileUrl: (id) => `https://github.com/${id}`,
     proofUrl: (id, proof) => `https://gist.github.com/${id}/${proof}`,
     verificationText: (npub) => [
-      `Verifying my Nostr key for @diVineApp: ${npub}`,
+      `verify connecting this account with my divine account: ${npub}`,
       `Verifying that I control the following Nostr public key: ${npub}`,
     ],
     createProofUrl: () => 'https://gist.github.com/',
@@ -44,13 +44,13 @@ const PLATFORM_CONFIG: Record<string, PlatformConfig> = {
     profileUrl: (id) => `https://twitter.com/${id}`,
     proofUrl: (id, proof) => `https://twitter.com/${id}/status/${proof}`,
     verificationText: (npub) => [
-      `Verifying my Nostr key for @divinevideoapp`,
+      `verify connecting this account with my divine account: ${npub}`,
       `@divinevideoapp Verifying my Nostr key: "${npub}"`,
       `Verifying my account on nostr My Public Key: "${npub}"`,
       `Verifying that I control the following Nostr public key: "${npub}"`,
     ],
     createProofUrl: (_id, npub) =>
-      `https://twitter.com/intent/tweet?text=${encodeURIComponent(`Verifying my Nostr key for @divinevideoapp: ${npub}\n\nFind me on https://divine.video/profile/${npub}`)}`,
+      `https://twitter.com/intent/tweet?text=${encodeURIComponent(`I'm on @divinevideoapp, find me at: https://divine.video/profile/${npub}\n\nThis serves to verify connecting this account with my divine account: ${npub}`)}`,
     canVerifyInBrowser: false,
   },
   mastodon: {
@@ -66,7 +66,7 @@ const PLATFORM_CONFIG: Record<string, PlatformConfig> = {
       return `https://${id}/${proof}`;
     },
     verificationText: (npub) => [
-      `Verifying my Nostr key for diVine`,
+      `verify connecting this account with my divine account: ${npub}`,
       `Verifying that I control the following Nostr public key: "${npub}"`,
     ],
     canVerifyInBrowser: false,
@@ -78,7 +78,7 @@ const PLATFORM_CONFIG: Record<string, PlatformConfig> = {
     // NIP-39 proof format: "ref/id" e.g. "channel/123"
     proofUrl: (_id, proof) => `https://t.me/${proof}`,
     verificationText: (npub) => [
-      `Verifying my Nostr key for diVine`,
+      `verify connecting this account with my divine account: ${npub}`,
       `Verifying that I control the following Nostr public key: ${npub}`,
     ],
     canVerifyInBrowser: false,
@@ -88,11 +88,11 @@ const PLATFORM_CONFIG: Record<string, PlatformConfig> = {
     profileUrl: (id) => `https://bsky.app/profile/${id}`,
     proofUrl: (id, proof) => `https://bsky.app/profile/${id}/post/${proof}`,
     verificationText: (npub) => [
-      `Verifying my Nostr key for diVine`,
+      `verify connecting this account with my divine account: ${npub}`,
       `Verifying that I control the following Nostr public key: "${npub}"`,
     ],
     createProofUrl: (_id, npub) =>
-      `https://bsky.app/intent/compose?text=${encodeURIComponent(`Verifying my Nostr key for diVine: ${npub}\n\nFind me on https://divine.video/profile/${npub}`)}`,
+      `https://bsky.app/intent/compose?text=${encodeURIComponent(`I'm on divine.video, find me at: https://divine.video/profile/${npub}\n\nThis serves to verify connecting this account with my divine account: ${npub}`)}`,
     canVerifyInBrowser: false,
   },
   discord: {
@@ -100,7 +100,7 @@ const PLATFORM_CONFIG: Record<string, PlatformConfig> = {
     profileUrl: (id) => `https://discord.com/users/${id}`,
     proofUrl: (_id, proof) => `https://discord.gg/${proof}`,
     verificationText: (npub) => [
-      `Verifying my Nostr key for diVine`,
+      `verify connecting this account with my divine account: ${npub}`,
       `Verifying that I control the following Nostr public key: "${npub}"`,
     ],
     canVerifyInBrowser: false,
