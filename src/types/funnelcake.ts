@@ -97,6 +97,14 @@ export interface FunnelcakeViner {
 }
 
 /**
+ * Category data from Funnelcake categories endpoint
+ */
+export interface FunnelcakeCategory {
+  name: string;
+  video_count: number;
+}
+
+/**
  * Funnelcake API error response
  */
 export interface FunnelcakeError {
@@ -115,6 +123,7 @@ export interface FunnelcakeFetchOptions {
   offset?: number;        // Offset for page-based pagination (0-indexed)
   classic?: boolean;      // Filter for classic/archived vines
   platform?: string;      // Filter by origin platform ('vine', 'tiktok', etc.)
+  category?: string;      // Filter by content category
   signal?: AbortSignal;
 }
 

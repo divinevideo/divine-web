@@ -13,6 +13,7 @@ import type {
   FunnelcakeVideoStats,
   FunnelcakeHashtag,
   FunnelcakeViner,
+  FunnelcakeCategory,
 } from '@/types/funnelcake';
 import type { RawNotificationsApiResponse } from '@/types/notification';
 import { transformNotificationsResponse } from '@/lib/notificationTransform';
@@ -159,13 +160,14 @@ export async function fetchVideos(
   apiUrl: string = API_CONFIG.funnelcake.baseUrl,
   options: FunnelcakeFetchOptions = {}
 ): Promise<FunnelcakeResponse> {
-  const { sort = 'trending', limit = 20, before, offset, classic, platform, signal } = options;
+  const { sort = 'trending', limit = 20, before, offset, classic, platform, category, signal } = options;
 
   const params: Record<string, string | number | boolean | undefined> = {
     sort,
     limit,
     classic,
     platform,
+    category,
   };
 
   // Add pagination param
@@ -216,7 +218,7 @@ export async function searchVideos(
   apiUrl: string = API_CONFIG.funnelcake.baseUrl,
   options: FunnelcakeSearchOptions = {}
 ): Promise<FunnelcakeResponse> {
-  const { query, tag, author, sort = 'trending', limit = 20, before, offset, classic, platform, signal } = options;
+  const { query, tag, author, sort = 'trending', limit = 20, before, offset, classic, platform, category, signal } = options;
 
   // Use /api/videos endpoint for hashtag searches (tag parameter)
   // Use /api/search endpoint for text searches (q parameter)
@@ -233,6 +235,7 @@ export async function searchVideos(
     limit,
     classic,
     platform,
+    category,
   };
 
   // Add pagination param - prefer offset for sorted results
@@ -523,6 +526,25 @@ export async function fetchClassicViners(
     apiUrl,
     API_CONFIG.funnelcake.endpoints.viners,
     { limit },
+    signal
+  );
+}
+
+/**
+ * Fetch categories from Funnelcake API
+ *
+ * @param apiUrl - Base URL of the Funnelcake API
+ * @param signal - Optional abort signal
+ * @returns Promise with categories array
+ */
+export async function fetchCategories(
+  apiUrl: string = API_CONFIG.funnelcake.baseUrl,
+  signal?: AbortSignal
+): Promise<FunnelcakeCategory[]> {
+  return funnelcakeRequest<FunnelcakeCategory[]>(
+    apiUrl,
+    API_CONFIG.funnelcake.endpoints.categories,
+    {},
     signal
   );
 }
@@ -1002,10 +1024,21 @@ export async function fetchBulkVideoStats(
     const data = await response.json();
     recordFunnelcakeSuccess(apiUrl);
 
-    debugLog(`[FunnelcakeClient] Got ${data.stats?.length || 0} stats, ${data.missing?.length || 0} missing`);
+    // Funnelcake returns stats as an object keyed by event ID, e.g.
+    // { "stats": { "eventId1": { views: 3, ... }, ... } }
+    // Normalize to the array format the frontend expects.
+    const rawStats = data.stats;
+    const statsArray = Array.isArray(rawStats)
+      ? rawStats
+      : Object.entries(rawStats || {}).map(([id, s]) => ({
+          id,
+          ...(s as Record<string, unknown>),
+        }));
+
+    debugLog(`[FunnelcakeClient] Got ${statsArray.length} stats, ${data.missing?.length || 0} missing`);
 
     return {
-      stats: data.stats || [],
+      stats: statsArray,
       missing: data.missing || [],
     };
   } catch (err) {

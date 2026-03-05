@@ -2,18 +2,7 @@
 // ABOUTME: Shows different icons and colors based on verification level with detailed tooltip
 
 import { useState } from 'react';
-import { Shield, ShieldCheck, ShieldAlert, Info } from 'lucide-react';
-
-// Custom icon component for the no-AI/Human Made icon
-function HumanMadeIcon({ className }: { className?: string }) {
-  return (
-    <img
-      src="/ui-icons/human-made.svg"
-      alt="Human Made"
-      className={className}
-    />
-  );
-}
+import { Shield, ShieldCheck, ShieldAlert, CheckCircle, Info } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
@@ -149,7 +138,7 @@ function getProofModeConfig(level: ProofModeLevel) {
   switch (level) {
     case 'verified_mobile':
       return {
-        icon: HumanMadeIcon,
+        icon: CheckCircle,
         label: 'Human Made',
         className: 'border-brand-green text-brand-dark-green dark:text-brand-green bg-brand-light-green dark:bg-brand-dark-green',
         iconColor: 'text-brand-dark-green dark:text-brand-green',
@@ -158,7 +147,7 @@ function getProofModeConfig(level: ProofModeLevel) {
       };
     case 'verified_web':
       return {
-        icon: HumanMadeIcon,
+        icon: CheckCircle,
         label: 'Human Made',
         className: 'border-brand-blue text-brand-blue-dark dark:text-brand-blue bg-brand-blue-light dark:bg-brand-blue-dark',
         iconColor: 'text-brand-blue-dark dark:text-brand-blue',

@@ -15,6 +15,7 @@ export interface SubdomainUser {
   banner: string | null;
   about: string | null;
   nip05: string;
+  nip05Stale?: boolean;
   followersCount: number;
   followingCount: number;
   videoCount: number;

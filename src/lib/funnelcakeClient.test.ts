@@ -281,5 +281,45 @@ describe('funnelcakeClient', () => {
       expect(result.missing).toEqual([]);
       expect(global.fetch).not.toHaveBeenCalled();
     });
+
+    it('normalizes object-keyed stats from Funnelcake into array format', async () => {
+      const eventIds = ['vid1'.padEnd(64, '0'), 'vid2'.padEnd(64, '0')];
+      // Funnelcake actually returns stats as an object keyed by event ID
+      const mockResponse = {
+        stats: {
+          [eventIds[0]]: { views: 3, reactions: 1, comments: 0, reposts: 0 },
+          [eventIds[1]]: { views: 5, reactions: 0, comments: 0, reposts: 0 },
+        },
+        missing: [],
+      };
+
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(mockResponse),
+      });
+
+      const result = await fetchBulkVideoStats(API_URL, eventIds);
+
+      expect(result.stats).toHaveLength(2);
+      expect(result.stats[0].id).toBe(eventIds[0]);
+      expect(result.stats[0].reactions).toBe(1);
+      expect(result.stats[1].id).toBe(eventIds[1]);
+      expect(result.stats[1].views).toBe(5);
+    });
+
+    it('normalizes empty object stats to empty array', async () => {
+      const eventIds = ['vid1'.padEnd(64, '0')];
+      const mockResponse = { stats: {}, missing: [eventIds[0]] };
+
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(mockResponse),
+      });
+
+      const result = await fetchBulkVideoStats(API_URL, eventIds);
+
+      expect(result.stats).toEqual([]);
+      expect(result.missing).toContain(eventIds[0]);
+    });
   });
 });

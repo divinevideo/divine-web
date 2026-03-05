@@ -4,6 +4,7 @@ import { Heart, Repeat2, Loader2 } from 'lucide-react';
 import { useAuthor } from '@/hooks/useAuthor';
 import { useBatchedAuthors } from '@/hooks/useBatchedAuthors';
 import { enhanceAuthorData } from '@/lib/generateProfile';
+import { genUserName } from '@/lib/genUserName';
 import { getSafeProfileImage } from '@/lib/imageUtils';
 import { formatDistanceToNow } from 'date-fns';
 import { nip19 } from 'nostr-tools';
@@ -27,7 +28,7 @@ function ReactionUserItem({ pubkey, timestamp }: { pubkey: string; timestamp: nu
   const npub = nip19.npubEncode(pubkey);
   const displayName = authorData.isLoading
     ? "Loading..."
-    : (metadata?.display_name || metadata?.name || `${npub.slice(0, 12)}...`);
+    : (metadata?.display_name || metadata?.name || genUserName(pubkey));
   const profileImage = getSafeProfileImage(metadata?.picture);
   const profileUrl = `/${npub}`;
 

@@ -29,6 +29,7 @@ import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useVideoPlayback } from '@/hooks/useVideoPlayback';
 import { useVideosInLists } from '@/hooks/useVideoLists';
 import { enhanceAuthorData } from '@/lib/generateProfile';
+import { genUserName } from '@/lib/genUserName';
 import { formatDistanceToNow } from 'date-fns';
 import type { ParsedVideoData } from '@/types/video';
 import { SHORT_VIDEO_KIND } from '@/types/video';
@@ -257,7 +258,7 @@ export function VideoCard({
   // Display name priority: real profile name > Funnelcake cached name > shortened npub
   const displayName = hasRealName
     ? (rawMetadata.display_name || rawMetadata.name!)
-    : (video.authorName || `${npub.slice(0, 12)}...`);
+    : (video.authorName || genUserName(video.pubkey));
   // Avatar priority: real profile > Funnelcake cached > generated fallback
   const profileImage = getSafeProfileImage(
     rawMetadata?.picture || video.authorAvatar || metadata.picture
@@ -265,10 +266,9 @@ export function VideoCard({
   // Just use npub for now, we'll deal with NIP-05 later
   const profileUrl = `/${npub}`;
 
-  const reposterNpub = reposterPubkey ? nip19.npubEncode(reposterPubkey) : '';
   const reposterName = reposterData.isLoading
     ? "Loading profile..."
-    : (reposterMetadata?.name || (reposterPubkey ? `${reposterNpub.slice(0, 12)}...` : ''));
+    : (reposterMetadata?.name || (reposterPubkey ? genUserName(reposterPubkey) : ''));
 
   // NEW: Get all unique reposters for display
   const allReposters = video.reposts || [];

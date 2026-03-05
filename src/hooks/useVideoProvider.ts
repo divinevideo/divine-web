@@ -11,12 +11,13 @@ import { debugLog } from '@/lib/debug';
 import type { SortMode } from '@/types/nostr';
 
 // Feed types that can be provided
-export type VideoFeedType = 'discovery' | 'home' | 'trending' | 'hashtag' | 'profile' | 'recent' | 'classics' | 'foryou';
+export type VideoFeedType = 'discovery' | 'home' | 'trending' | 'hashtag' | 'profile' | 'recent' | 'classics' | 'foryou' | 'category';
 
 interface UseVideoProviderOptions {
   feedType: VideoFeedType;
   sortMode?: SortMode;
   hashtag?: string;
+  category?: string;
   pubkey?: string;
   pageSize?: number;
   enabled?: boolean;
@@ -55,6 +56,8 @@ function mapToFunnelcakeFeedType(feedType: VideoFeedType): FunnelcakeFeedType {
       return 'home';
     case 'foryou':
       return 'recommendations';
+    case 'category':
+      return 'category';
     default:
       return 'trending';
   }
@@ -75,6 +78,8 @@ function mapToFunnelcakeSortMode(sortMode?: SortMode): FunnelcakeSortMode | unde
       return 'engagement';
     case 'controversial':
       return 'engagement';
+    case 'classic':
+      return 'classic';
     default:
       return 'trending';
   }
@@ -94,6 +99,7 @@ export function useVideoProvider({
   feedType,
   sortMode,
   hashtag,
+  category,
   pubkey,
   pageSize = 20,
   enabled = true,
@@ -127,6 +133,7 @@ export function useVideoProvider({
     apiUrl: isClassics ? DEFAULT_FUNNELCAKE_URL : funnelcakeUrl || undefined,
     sortMode: mapToFunnelcakeSortMode(sortMode),
     hashtag,
+    category,
     pubkey,
     pageSize,
     enabled: enabled && shouldUseFunnelcake,

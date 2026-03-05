@@ -13,6 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Star, Clock, Hash, Flame, Sparkles } from 'lucide-react';
 // Zap temporarily unused - will be needed when Rising tab is re-enabled
 import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { useCategories } from '@/hooks/useCategories';
 
 // All possible tab values (foryou only shown when logged in)
 type AllowedTab = 'foryou' | 'classics' | 'hot' | 'new' | 'hashtags';
@@ -24,6 +25,7 @@ export function DiscoveryPage() {
   const params = useParams<{ tab?: string }>();
   const { user } = useCurrentUser();
   const isLoggedIn = !!user?.pubkey;
+  const { data: categories } = useCategories();
 
   // Tabs include 'foryou' only when logged in
   // Note: 'rising' temporarily removed
@@ -88,6 +90,24 @@ export function DiscoveryPage() {
             )}
           </div>
         </header>
+
+        {/* Mobile category pills - visible on small screens only */}
+        {categories && categories.length > 0 && (
+          <div className="lg:hidden -mx-4 px-4 overflow-x-auto scrollbar-hide">
+            <div className="flex gap-2 pb-2">
+              {categories.slice(0, 12).map(cat => (
+                <button
+                  key={cat.name}
+                  onClick={() => navigate(`/category/${cat.name}`)}
+                  className="flex items-center gap-1.5 whitespace-nowrap rounded-full border border-border bg-background px-3 py-1.5 text-sm transition-colors hover:bg-muted hover:border-primary"
+                >
+                  <span>{cat.config?.emoji || ''}</span>
+                  <span>{cat.config?.label || cat.name}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         <Tabs
           value={activeTab}

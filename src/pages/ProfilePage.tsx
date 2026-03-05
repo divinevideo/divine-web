@@ -4,7 +4,9 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { nip19 } from 'nostr-tools';
-import { useSeoMeta } from '@unhead/react';
+import { useHead, useSeoMeta } from '@unhead/react';
+import { feedUrls } from '@/lib/feedUrls';
+import { useRssFeedAvailable } from '@/hooks/useRssFeedAvailable';
 import { Grid, List, Loader2 } from 'lucide-react';
 import { PROFILE_SORT_MODES } from '@/lib/constants/sortModes';
 import InfiniteScroll from 'react-infinite-scroll-component';
@@ -18,6 +20,7 @@ import { FollowListSafetyDialog } from '@/components/FollowListSafetyDialog';
 import { useAuthor } from '@/hooks/useAuthor';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { getSubdomainUser } from '@/hooks/useSubdomainUser';
+import { useResolveSubdomainPubkey } from '@/hooks/useResolveSubdomainPubkey';
 import { useVideoProvider } from '@/hooks/useVideoProvider';
 import { useFunnelcakeProfile } from '@/hooks/useFunnelcakeProfile';
 import { useFollowRelationship, useFollowUser, useUnfollowUser } from '@/hooks/useFollowRelationship';
@@ -26,6 +29,7 @@ import { PinnedVideosSection } from '@/components/PinnedVideosSection';
 import { useLoginDialog } from '@/contexts/LoginDialogContext';
 import { debugLog } from '@/lib/debug';
 import { getDivineNip05Info } from '@/lib/nip05Utils';
+import { genUserName } from '@/lib/genUserName';
 import type { SortMode } from '@/types/nostr';
 
 export function ProfilePage() {
@@ -39,7 +43,9 @@ export function ProfilePage() {
 
   // Get the identifier from route params, or from subdomain user if rendered at /
   const subdomainUser = getSubdomainUser();
-  const identifier = npub || nip19Param || subdomainUser?.npub;
+  const resolved = useResolveSubdomainPubkey();
+  // Use resolved pubkey when KV store mapping is stale
+  const identifier = npub || nip19Param || (resolved.isResolved ? resolved.npub : subdomainUser?.npub);
 
   // Decode npub to get pubkey
   let pubkey: string | null = null;
@@ -180,10 +186,21 @@ export function ProfilePage() {
   // Check if this is the current user's own profile
   const isOwnProfile = currentUser?.pubkey === pubkey;
 
-  // Get displayName for SEO - use real name or truncated npub, never generated placeholders
-  const encodedNpub = pubkey ? nip19.npubEncode(pubkey) : null;
-  const shortNpub = encodedNpub ? `${encodedNpub.slice(0, 12)}...` : 'User';
-  const displayName = metadata?.display_name || metadata?.name || shortNpub;
+  const displayName = metadata?.display_name || metadata?.name || (pubkey ? genUserName(pubkey) : 'User');
+
+  // RSS auto-discovery link for feed readers (only if feed endpoints exist)
+  const rssFeedAvailable = useRssFeedAvailable();
+  const profileNpub = pubkey ? nip19.npubEncode(pubkey) : '';
+  useHead({
+    link: rssFeedAvailable && profileNpub ? [
+      {
+        rel: 'alternate',
+        type: 'application/rss+xml',
+        title: `${displayName}'s Videos - diVine`,
+        href: feedUrls.userVideos(profileNpub),
+      },
+    ] : [],
+  });
 
   // Dynamic SEO meta tags for social sharing
   useSeoMeta({
@@ -198,6 +215,17 @@ export function ProfilePage() {
     twitterDescription: metadata?.about || `${displayName}'s profile on diVine`,
     twitterImage: metadata?.picture || '/app_icon.avif',
   });
+
+  // Show spinner while resolving stale subdomain mapping
+  if (resolved.isSearching && subdomainUser?.nip05Stale) {
+    return (
+      <div className="container mx-auto px-4 py-6">
+        <div className="max-w-4xl mx-auto flex items-center justify-center py-12">
+          <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+        </div>
+      </div>
+    );
+  }
 
   if (error || !pubkey) {
     return (

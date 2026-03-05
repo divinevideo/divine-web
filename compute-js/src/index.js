@@ -166,6 +166,20 @@ async function handleRequest(event) {
     return await handleReport(request);
   }
 
+  // 7b. Proxy RSS feed requests to the relay backend (serves application/rss+xml)
+  if (url.pathname.startsWith('/feed/') || url.pathname === '/feed') {
+    console.log('Proxying RSS feed request to relay:', url.pathname);
+    const feedUrl = `${FUNNELCAKE_API_URL}${url.pathname}${url.search}`;
+    return fetch(feedUrl, {
+      backend: 'funnelcake',
+      method: request.method,
+      headers: {
+        'Accept': request.headers.get('Accept') || '*/*',
+        'Host': 'relay.divine.video',
+      },
+    });
+  }
+
   // 8. Serve static content with SPA fallback (handled by PublisherServer config)
   const response = await publisherServer.serveRequest(request);
   if (response != null) {
@@ -591,6 +605,17 @@ async function handleSubdomainProfile(subdomain, url, request, originalHostname)
     return Response.redirect(profileUrl, 302);
   }
 
+  // Detect NIP-05 mismatch: the profile's NIP-05 doesn't match this subdomain,
+  // which means the KV store may be pointing to a stale (old) pubkey.
+  const profileNip05 = profileData?.profile?.nip05 || null;
+  const nip05Stale = profileNip05
+    ? !isNip05MatchForSubdomain(profileNip05, subdomain, apexDomain)
+    : false; // No NIP-05 on profile = can't determine, assume OK
+
+  if (nip05Stale) {
+    console.log(`NIP-05 mismatch detected: subdomain=${subdomain}, profile nip05=${profileNip05}, expected _@${subdomain}.${apexDomain}`);
+  }
+
   // Build the user data object to inject
   const divineUser = {
     subdomain: subdomain,
@@ -602,6 +627,7 @@ async function handleSubdomainProfile(subdomain, url, request, originalHostname)
     banner: profileData?.profile?.banner || null,
     about: profileData?.profile?.about || null,
     nip05: profileData?.profile?.nip05 || `${subdomain}@${apexDomain}`,
+    nip05Stale: nip05Stale,
     followersCount: profileData?.social?.follower_count || 0,
     followingCount: profileData?.social?.following_count || 0,
     videoCount: profileData?.stats?.video_count || 0,
@@ -917,6 +943,25 @@ async function handleVideoOgTags(request, videoId, url) {
     // Return the normal SPA on error
     return await publisherServer.serveRequest(request);
   }
+}
+
+/**
+ * Check if a profile's NIP-05 matches the expected subdomain.
+ * Returns true if the NIP-05 indicates this pubkey owns this subdomain.
+ *
+ * Matches:
+ *   _@{subdomain}.{apex}  (subdomain NIP-05 format)
+ *   {subdomain}@{apex}    (apex NIP-05 format)
+ */
+function isNip05MatchForSubdomain(nip05, subdomain, apexDomain) {
+  if (!nip05 || !subdomain || !apexDomain) return false;
+  const lower = nip05.toLowerCase();
+  const subLower = subdomain.toLowerCase();
+  // _@alice.divine.video
+  if (lower === `_@${subLower}.${apexDomain}`) return true;
+  // alice@divine.video
+  if (lower === `${subLower}@${apexDomain}`) return true;
+  return false;
 }
 
 /**

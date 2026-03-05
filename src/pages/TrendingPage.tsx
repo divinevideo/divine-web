@@ -2,22 +2,51 @@
 // ABOUTME: Supports NIP-50 search modes: hot, top, rising, controversial
 
 import { useState } from 'react';
+import { Rss } from 'lucide-react';
+import { useHead } from '@unhead/react';
 import { VideoFeed } from '@/components/VideoFeed';
+import { feedUrls } from '@/lib/feedUrls';
+import { useRssFeedAvailable } from '@/hooks/useRssFeedAvailable';
 import type { SortMode } from '@/types/nostr';
 import { EXTENDED_SORT_MODES as SORT_MODES } from '@/lib/constants/sortModes';
 
 export function TrendingPage() {
   const [sortMode, setSortMode] = useState<SortMode>('hot');
 
+  // RSS auto-discovery link for feed readers (only if feed endpoints exist)
+  const rssFeedAvailable = useRssFeedAvailable();
+  useHead({
+    link: rssFeedAvailable ? [
+      {
+        rel: 'alternate',
+        type: 'application/rss+xml',
+        title: 'DiVine - Trending',
+        href: feedUrls.trending(),
+      },
+    ] : [],
+  });
+
   return (
     <div className="container mx-auto px-4 py-6">
       <div className="max-w-2xl mx-auto">
         <header className="mb-6 space-y-4">
-          <div>
-            <h1 className="text-2xl font-bold">Trending</h1>
-            <p className="text-muted-foreground">
-              Discover what's popular in the community
-            </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold">Trending</h1>
+              <p className="text-muted-foreground">
+                Discover what's popular in the community
+              </p>
+            </div>
+            {rssFeedAvailable && (
+              <a
+                href={feedUrls.trending()}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <Rss className="h-3.5 w-3.5" /> RSS
+              </a>
+            )}
           </div>
 
           {/* Sort mode selector as prominent tabs/buttons */}

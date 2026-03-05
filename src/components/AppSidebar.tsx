@@ -2,8 +2,9 @@
 // ABOUTME: Shows main nav, login/signup, expandable diVine links section
 
 import { useLocation } from 'react-router-dom';
-import { Home, Compass, Search, Bell, User, Sun, Moon, ChevronDown, Headphones, BarChart3 } from 'lucide-react';
+import { Home, Compass, Search, Bell, User, Sun, Moon, ChevronDown, Headphones, BarChart3, LayoutGrid, Rss } from 'lucide-react';
 import { useState } from 'react';
+import { useCategories } from '@/hooks/useCategories';
 import { nip19 } from 'nostr-tools';
 
 import {
@@ -18,6 +19,8 @@ import { useSubdomainNavigate } from '@/hooks/useSubdomainNavigate';
 import { getSubdomainUser } from '@/hooks/useSubdomainUser';
 import { LoginArea } from '@/components/auth/LoginArea';
 import { cn } from '@/lib/utils';
+import { feedUrls } from '@/lib/feedUrls';
+import { useRssFeedAvailable } from '@/hooks/useRssFeedAvailable';
 
 interface NavItemProps {
   icon: React.ReactNode;
@@ -55,12 +58,17 @@ export function AppSidebar({ className }: { className?: string }) {
   const { displayTheme, setTheme } = useTheme();
   const { user } = useCurrentUser();
   const { data: unreadCount } = useUnreadNotificationCount();
+  const rssFeedAvailable = useRssFeedAvailable();
+  const [categoriesOpen, setCategoriesOpen] = useState(true);
+  const [rssOpen, setRssOpen] = useState(false);
   const [divineOpen, setDivineOpen] = useState(false);
   const [termsOpen, setTermsOpen] = useState(false);
+  const { data: categories } = useCategories();
 
   const isActive = (path: string) => location.pathname === path;
   const isDiscoveryActive = () =>
     location.pathname === '/discovery' || location.pathname.startsWith('/discovery/');
+  const isCategoryActive = (name: string) => location.pathname === `/category/${name}`;
 
   const toggleTheme = () => {
     setTheme(displayTheme === 'dark' ? 'light' : 'dark');
@@ -155,6 +163,98 @@ export function AppSidebar({ className }: { className?: string }) {
             />
           )}
         </nav>
+
+        {/* Categories */}
+        {categories && categories.length > 0 && (
+          <div className="mt-4 px-3">
+            <Collapsible open={categoriesOpen} onOpenChange={setCategoriesOpen}>
+              <CollapsibleTrigger asChild>
+                <button
+                  className="group flex w-full items-center gap-2 rounded-lg px-3 py-2 text-[13px] font-semibold text-muted-foreground transition-colors hover:text-foreground"
+                >
+                  <LayoutGrid className="h-4 w-4" />
+                  <span>Categories</span>
+                  <ChevronDown className={cn(
+                    "ml-auto h-3.5 w-3.5 transition-transform duration-200",
+                    categoriesOpen && "rotate-180"
+                  )} />
+                </button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down">
+                <div className="flex flex-col gap-0.5 pt-1">
+                  {categories.slice(0, 12).map(cat => (
+                    <button
+                      key={cat.name}
+                      onClick={() => navigate(`/category/${cat.name}`)}
+                      className={cn(
+                        "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-[14px] transition-all duration-150",
+                        isCategoryActive(cat.name)
+                          ? "bg-primary text-primary-foreground font-medium"
+                          : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                      )}
+                    >
+                      <span className="text-base leading-none w-5 text-center">
+                        {cat.config?.emoji || ''}
+                      </span>
+                      <span>{cat.config?.label || cat.name}</span>
+                    </button>
+                  ))}
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
+          </div>
+        )}
+
+        {/* RSS Feeds - only shown when feed endpoints are available */}
+        {rssFeedAvailable && <div className="mt-4 px-3">
+          <Collapsible open={rssOpen} onOpenChange={setRssOpen}>
+            <CollapsibleTrigger asChild>
+              <button
+                className="group flex w-full items-center gap-2 rounded-lg px-3 py-2 text-[13px] font-semibold text-muted-foreground transition-colors hover:text-foreground"
+              >
+                <Rss className="h-4 w-4 text-orange-500" />
+                <span>RSS Feeds</span>
+                <ChevronDown className={cn(
+                  "ml-auto h-3.5 w-3.5 transition-transform duration-200",
+                  rssOpen && "rotate-180"
+                )} />
+              </button>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down">
+              <div className="flex flex-col gap-0.5 pt-1">
+                <a
+                  href={feedUrls.latest()}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-[14px] text-muted-foreground hover:bg-muted hover:text-foreground transition-all duration-150"
+                >
+                  <Rss className="h-3.5 w-3.5 text-orange-500" />
+                  <span>Latest Videos</span>
+                </a>
+                <a
+                  href={feedUrls.trending()}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-[14px] text-muted-foreground hover:bg-muted hover:text-foreground transition-all duration-150"
+                >
+                  <Rss className="h-3.5 w-3.5 text-orange-500" />
+                  <span>Trending</span>
+                </a>
+                {user && profilePath && (
+                  <a
+                    href={feedUrls.userFeed(nip19.npubEncode(user.pubkey))}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-[14px] text-muted-foreground hover:bg-muted hover:text-foreground transition-all duration-150"
+                  >
+                    <Rss className="h-3.5 w-3.5 text-orange-500" />
+                    <span>Your Feed</span>
+                  </a>
+                )}
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
+        </div>}
 
         {/* Theme Toggle */}
         <div className="mt-4 px-3">

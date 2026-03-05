@@ -17,6 +17,7 @@ import {
 import { useBatchedAuthors } from '@/hooks/useBatchedAuthors';
 import { useSubdomainNavigate } from '@/hooks/useSubdomainNavigate';
 import { getSafeProfileImage } from '@/lib/imageUtils';
+import { genUserName } from '@/lib/genUserName';
 import { Sentry } from '@/lib/sentry';
 
 interface UserListDialogProps {
@@ -36,10 +37,7 @@ interface UserRowProps {
 }
 
 const UserRow = memo(function UserRow({ pubkey, metadata, onNavigate }: UserRowProps) {
-  const npub = nip19.npubEncode(pubkey);
-  const shortNpub = `${npub.slice(0, 12)}...${npub.slice(-4)}`;
-
-  const displayName = metadata?.display_name || metadata?.name || shortNpub;
+  const displayName = metadata?.display_name || metadata?.name || genUserName(pubkey);
   const profileImage = getSafeProfileImage(metadata?.picture) || '/user-avatar.png';
 
   return (

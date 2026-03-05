@@ -25,6 +25,7 @@ import { useMuteItem } from '@/hooks/useModeration';
 import { useDeleteVideo, useCanDeleteVideo } from '@/hooks/useDeleteVideo';
 import { useToast } from '@/hooks/useToast';
 import { enhanceAuthorData } from '@/lib/generateProfile';
+import { genUserName } from '@/lib/genUserName';
 import { formatDistanceToNow } from 'date-fns';
 import { formatCount, formatViewCount } from '@/lib/formatUtils';
 import { getSafeProfileImage } from '@/lib/imageUtils';
@@ -114,7 +115,7 @@ export function FullscreenVideoItem({
   const hasRealName = rawMetadata?.display_name || rawMetadata?.name;
   const displayName = hasRealName
     ? (rawMetadata.display_name || rawMetadata.name!)
-    : (video.authorName || `${npub.slice(0, 12)}...`);
+    : (video.authorName || genUserName(video.pubkey));
   const profileImage = getSafeProfileImage(
     rawMetadata?.picture || video.authorAvatar || metadata.picture
   );
