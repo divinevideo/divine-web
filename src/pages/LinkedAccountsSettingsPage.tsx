@@ -134,15 +134,6 @@ function extractFromUrl(platform: string, input: string): { identity?: string; p
   }
 }
 
-const IDENTITY_PLACEHOLDERS: Record<string, string> = {
-  github: 'GitHub username',
-  twitter: 'Twitter/X username',
-  mastodon: 'instance.social/@username',
-  telegram: 'Telegram username or user ID',
-  bluesky: 'handle.bsky.social',
-  discord: 'Discord username',
-};
-
 const PROOF_INSTRUCTIONS: Record<string, string> = {
   github: 'Create a public GitHub Gist containing the text below, then paste the Gist ID.',
   twitter: 'Post a tweet containing the text below, then paste the Tweet ID from the URL.',
