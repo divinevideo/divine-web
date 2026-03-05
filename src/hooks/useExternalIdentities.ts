@@ -156,6 +156,29 @@ export function useExternalIdentities(pubkey: string | undefined) {
 }
 
 /**
+ * Extract just the proof ID if someone stored a full URL as the proof.
+ * e.g. "https://gist.github.com/rabble/abc123" → "abc123"
+ */
+function cleanProofId(platform: string, proof: string): string {
+  if (!proof.startsWith('http')) return proof;
+  try {
+    const url = new URL(proof);
+    const parts = url.pathname.split('/').filter(Boolean);
+    switch (platform) {
+      case 'github': return parts.pop() || proof;
+      case 'twitter': return parts.pop() || proof;
+      case 'mastodon': return parts.pop() || proof;
+      case 'bluesky': return parts.pop() || proof;
+      case 'telegram': return parts.slice(-2).join('/') || proof;
+      case 'discord': return parts.pop() || proof;
+      default: return proof;
+    }
+  } catch {
+    return proof;
+  }
+}
+
+/**
  * Verify an external identity claim by fetching the proof URL and checking for npub.
  * Checks localStorage cache first, then tries external verification service,
  * then falls back to browser-based verification (GitHub only).
@@ -165,7 +188,7 @@ export async function verifyIdentityClaim(
   identity: ExternalIdentity,
   pubkey: string,
 ): Promise<{ verified: boolean; error?: string }> {
-  if (!identity.proofUrl) {
+  if (!identity.proofUrl && !identity.proof) {
     return { verified: false, error: 'No proof URL' };
   }
 
@@ -174,14 +197,22 @@ export async function verifyIdentityClaim(
     return { verified: false, error: 'Unknown platform' };
   }
 
+  // Clean up proof in case a full URL was stored instead of just the ID
+  const cleanedProof = cleanProofId(identity.platform, identity.proof);
+  const cleanedIdentity = { ...identity, proof: cleanedProof };
+  // Rebuild proofUrl from cleaned proof if needed
+  if (cleanedProof !== identity.proof) {
+    cleanedIdentity.proofUrl = config.proofUrl(identity.identity, cleanedProof);
+  }
+
   // Check localStorage cache first
-  const cached = getCachedVerification(identity.platform, identity.identity, identity.proof);
+  const cached = getCachedVerification(cleanedIdentity.platform, cleanedIdentity.identity, cleanedIdentity.proof);
   if (cached) return cached;
 
   // Try verification service if available
-  const serviceResult = await verifyViaService(identity, pubkey);
+  const serviceResult = await verifyViaService(cleanedIdentity, pubkey);
   if (serviceResult) {
-    setCachedVerification(identity.platform, identity.identity, identity.proof, serviceResult);
+    setCachedVerification(cleanedIdentity.platform, cleanedIdentity.identity, cleanedIdentity.proof, serviceResult);
     return serviceResult;
   }
 
@@ -194,9 +225,9 @@ export async function verifyIdentityClaim(
 
   try {
     // GitHub gists: use the API which is CORS-friendly
-    const url = identity.platform === 'github'
-      ? `https://api.github.com/gists/${identity.proof}`
-      : identity.proofUrl;
+    const url = cleanedIdentity.platform === 'github'
+      ? `https://api.github.com/gists/${cleanedIdentity.proof}`
+      : cleanedIdentity.proofUrl;
 
     const response = await fetch(url, {
       signal: AbortSignal.timeout(10000),
@@ -204,7 +235,7 @@ export async function verifyIdentityClaim(
 
     if (!response.ok) {
       const result = { verified: false, error: `HTTP ${response.status}` };
-      setCachedVerification(identity.platform, identity.identity, identity.proof, result);
+      setCachedVerification(cleanedIdentity.platform, cleanedIdentity.identity, cleanedIdentity.proof, result);
       return result;
     }
 
@@ -213,7 +244,7 @@ export async function verifyIdentityClaim(
 
     const found = expectedTexts.some((expected) => text.includes(expected));
     const result = { verified: found, error: found ? undefined : 'npub not found in proof' };
-    setCachedVerification(identity.platform, identity.identity, identity.proof, result);
+    setCachedVerification(cleanedIdentity.platform, cleanedIdentity.identity, cleanedIdentity.proof, result);
     return result;
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Fetch failed';
