@@ -70,13 +70,47 @@ const PLATFORM_ICONS: Record<string, React.ReactNode> = {
 };
 
 const PROOF_PLACEHOLDERS: Record<string, string> = {
-  github: 'Gist ID (e.g. abc123def456)',
-  twitter: 'Tweet ID (e.g. 1234567890)',
-  mastodon: 'Post ID (e.g. 109876543210)',
-  telegram: 'Message path (e.g. channelname/123)',
-  bluesky: 'Post record key (rkey from the post URL)',
-  discord: 'Invite code (e.g. AbCdEf from discord.gg/AbCdEf)',
+  github: 'Gist ID or full Gist URL',
+  twitter: 'Tweet ID or full tweet URL',
+  mastodon: 'Post ID or full post URL',
+  telegram: 'Message path (e.g. channelname/123) or full t.me URL',
+  bluesky: 'Post rkey or full Bluesky post URL',
+  discord: 'Invite code or full discord.gg URL',
 };
+
+/** Extract just the proof ID from a full URL (or return as-is if already an ID) */
+function extractProofId(platform: string, input: string): string {
+  const trimmed = input.trim();
+  try {
+    const url = new URL(trimmed);
+    const path = url.pathname;
+    switch (platform) {
+      case 'github':
+        // https://gist.github.com/user/GIST_ID or https://api.github.com/gists/GIST_ID
+        return path.split('/').filter(Boolean).pop() || trimmed;
+      case 'twitter':
+        // https://twitter.com/user/status/TWEET_ID or https://x.com/user/status/TWEET_ID
+        return path.split('/').filter(Boolean).pop() || trimmed;
+      case 'mastodon':
+        // https://instance/@user/POST_ID
+        return path.split('/').filter(Boolean).pop() || trimmed;
+      case 'bluesky':
+        // https://bsky.app/profile/user/post/RKEY
+        return path.split('/').filter(Boolean).pop() || trimmed;
+      case 'telegram':
+        // https://t.me/channel/123 → channel/123
+        return path.slice(1) || trimmed; // remove leading /
+      case 'discord':
+        // https://discord.gg/CODE
+        return path.split('/').filter(Boolean).pop() || trimmed;
+      default:
+        return trimmed;
+    }
+  } catch {
+    // Not a URL, return as-is
+    return trimmed;
+  }
+}
 
 const IDENTITY_PLACEHOLDERS: Record<string, string> = {
   github: 'GitHub username',
@@ -307,16 +341,17 @@ export default function LinkedAccountsSettingsPage() {
     }
 
     try {
-      await addIdentity.mutateAsync({ platform, identity: identity.trim(), proof: proof.trim() });
+      const cleanProof = extractProofId(platform, proof);
+      await addIdentity.mutateAsync({ platform, identity: identity.trim(), proof: cleanProof });
       const action = editingIdentity ? 'Updated' : 'Linked';
 
       // Auto-verify the newly linked identity
       const newIdentity: ExternalIdentity = {
         platform,
         identity: identity.trim(),
-        proof: proof.trim(),
+        proof: cleanProof,
         profileUrl: selectedConfig?.profileUrl(identity.trim()) ?? '',
-        proofUrl: selectedConfig?.proofUrl(identity.trim(), proof.trim()) ?? '',
+        proofUrl: selectedConfig?.proofUrl(identity.trim(), cleanProof) ?? '',
       };
       const verifyResult = await verifyIdentityClaim(newIdentity, user!.pubkey);
       if (verifyResult.verified) {
