@@ -14,7 +14,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { UserPlus, UserCheck, CheckCircle, Pencil, Copy, MoreVertical, Flag, Play, Repeat, Loader2, XCircle } from 'lucide-react';
+import { UserPlus, UserCheck, CheckCircle, Pencil, Copy, MoreVertical, Flag, Play, Repeat, Loader2, XCircle, Link2 } from 'lucide-react';
 import { ReportContentDialog } from '@/components/ReportContentDialog';
 import { UserListDialog } from '@/components/UserListDialog';
 import { LinkedAccounts } from '@/components/LinkedAccounts';
@@ -259,7 +259,7 @@ export function ProfileHeader({
 
         {/* Edit Profile / Follow Button */}
         {isOwnProfile ? (
-          <div className="flex-shrink-0 self-center sm:self-start">
+          <div className="flex-shrink-0 self-center sm:self-start flex gap-2">
             <Button
               onClick={onEditProfile}
               variant="outline"
@@ -270,6 +270,16 @@ export function ProfileHeader({
               <Pencil className="w-4 h-4 mr-2" />
               Edit Profile
             </Button>
+            <Link to="/settings/linked-accounts">
+              <Button
+                variant="ghost"
+                size="sm"
+                data-testid="linked-accounts-button"
+              >
+                <Link2 className="w-4 h-4 mr-2" />
+                Linked Accounts
+              </Button>
+            </Link>
           </div>
         ) : (
           <div className="flex-shrink-0 self-center sm:self-start flex gap-2">

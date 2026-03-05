@@ -1,7 +1,7 @@
 // ABOUTME: Settings page for NIP-39 external identity verification (linked accounts)
 // ABOUTME: Manage linked platform accounts (GitHub, Twitter, Mastodon, Telegram) with proof verification
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useExternalIdentities, SUPPORTED_PLATFORMS, verifyIdentityClaim, type ExternalIdentity } from '@/hooks/useExternalIdentities';
 import { useAddIdentity, useRemoveIdentity } from '@/hooks/usePublishIdentity';
@@ -50,12 +50,22 @@ function BlueskyIcon({ className }: { className?: string }) {
   );
 }
 
+// Discord icon
+function DiscordIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+      <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z" />
+    </svg>
+  );
+}
+
 const PLATFORM_ICONS: Record<string, React.ReactNode> = {
   github: <Github className="h-5 w-5" />,
   twitter: <XIcon className="h-5 w-5" />,
   mastodon: <AtSign className="h-5 w-5" />,
   telegram: <MessageCircle className="h-5 w-5" />,
   bluesky: <BlueskyIcon className="h-5 w-5" />,
+  discord: <DiscordIcon className="h-5 w-5" />,
 };
 
 const PROOF_PLACEHOLDERS: Record<string, string> = {
@@ -64,6 +74,7 @@ const PROOF_PLACEHOLDERS: Record<string, string> = {
   mastodon: 'Post ID (e.g. 109876543210)',
   telegram: 'Message path (e.g. channelname/123)',
   bluesky: 'Post record key (rkey from the post URL)',
+  discord: 'Invite code (e.g. AbCdEf from discord.gg/AbCdEf)',
 };
 
 const IDENTITY_PLACEHOLDERS: Record<string, string> = {
@@ -72,6 +83,7 @@ const IDENTITY_PLACEHOLDERS: Record<string, string> = {
   mastodon: 'instance.social/@username',
   telegram: 'Telegram username or user ID',
   bluesky: 'handle.bsky.social',
+  discord: 'Discord username',
 };
 
 const PROOF_INSTRUCTIONS: Record<string, string> = {
@@ -80,6 +92,7 @@ const PROOF_INSTRUCTIONS: Record<string, string> = {
   mastodon: 'Post a toot containing the text below, then paste the Post ID from the URL.',
   telegram: 'Send a message in a public channel/group containing the text below, then paste the message path (e.g. channelname/123).',
   bluesky: 'Post on Bluesky containing the text below, then paste the record key (rkey) from the post URL.',
+  discord: 'Create a Discord server with your npub in the server name or description, then create a permanent invite link and paste the invite code.',
 };
 
 function CopyButton({ text }: { text: string }) {
@@ -115,8 +128,6 @@ function VerificationBadge({ identity, pubkey }: { identity: ExternalIdentity; p
   const [status, setStatus] = useState<'idle' | 'checking' | 'verified' | 'failed'>('idle');
   const [error, setError] = useState<string>();
 
-  const config = SUPPORTED_PLATFORMS[identity.platform];
-
   const verify = useCallback(async () => {
     setStatus('checking');
     const result = await verifyIdentityClaim(identity, pubkey);
@@ -128,27 +139,19 @@ function VerificationBadge({ identity, pubkey }: { identity: ExternalIdentity; p
     }
   }, [identity, pubkey]);
 
+  // Auto-verify on mount when proof exists
+  useEffect(() => {
+    if (identity.proof) {
+      verify();
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   if (!identity.proof) {
     return (
       <Badge variant="outline" className="gap-1 text-yellow-600 border-yellow-300">
         <AlertTriangle className="h-3 w-3" />
         No proof
       </Badge>
-    );
-  }
-
-  // Non-CORS platforms: link directly to proof instead of attempting verification
-  if (!config?.canVerifyInBrowser) {
-    return (
-      <a
-        href={identity.proofUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
-      >
-        <ExternalLink className="h-3 w-3" />
-        Check proof
-      </a>
     );
   }
 
@@ -174,7 +177,17 @@ function VerificationBadge({ identity, pubkey }: { identity: ExternalIdentity; p
         </Badge>
       );
     case 'failed':
-      return (
+      return error === 'manual' ? (
+        <a
+          href={identity.proofUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+        >
+          <ExternalLink className="h-3 w-3" />
+          Check proof
+        </a>
+      ) : (
         <Badge variant="outline" className="gap-1 text-yellow-600 border-yellow-300" title={error}>
           <AlertTriangle className="h-3 w-3" />
           Unverified
@@ -295,7 +308,22 @@ export default function LinkedAccountsSettingsPage() {
     try {
       await addIdentity.mutateAsync({ platform, identity: identity.trim(), proof: proof.trim() });
       const action = editingIdentity ? 'Updated' : 'Linked';
-      toast({ title: action, description: `${selectedConfig?.label ?? platform} account ${action.toLowerCase()} successfully` });
+
+      // Auto-verify the newly linked identity
+      const newIdentity: ExternalIdentity = {
+        platform,
+        identity: identity.trim(),
+        proof: proof.trim(),
+        profileUrl: selectedConfig?.profileUrl(identity.trim()) ?? '',
+        proofUrl: selectedConfig?.proofUrl(identity.trim(), proof.trim()) ?? '',
+      };
+      const verifyResult = await verifyIdentityClaim(newIdentity, user!.pubkey);
+      if (verifyResult.verified) {
+        toast({ title: 'Verified!', description: `${selectedConfig?.label ?? platform} account ${action.toLowerCase()} and verified` });
+      } else {
+        toast({ title: action, description: `${selectedConfig?.label ?? platform} account ${action.toLowerCase()} — check your proof post to verify` });
+      }
+
       setIdentity('');
       setProof('');
       setEditingIdentity(null);
@@ -447,6 +475,11 @@ export default function LinkedAccountsSettingsPage() {
                 Your Bluesky handle (e.g. alice.bsky.social or your custom domain)
               </p>
             )}
+            {platform === 'discord' && (
+              <p className="text-xs text-muted-foreground">
+                Your Discord username (e.g. alice or alice#1234)
+              </p>
+            )}
           </div>
 
           {/* Step 3: Instructions with copy + platform link */}
@@ -476,6 +509,7 @@ export default function LinkedAccountsSettingsPage() {
                     <ExternalLink className="h-3.5 w-3.5" />
                     {platform === 'github' && 'Create a new Gist'}
                     {platform === 'twitter' && 'Post on Twitter/X'}
+                    {platform === 'bluesky' && 'Post on Bluesky'}
                   </a>
                 </div>
               )}

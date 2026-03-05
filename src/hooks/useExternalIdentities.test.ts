@@ -139,6 +139,19 @@ describe('parseIdentityTag', () => {
     });
   });
 
+  it('parses a Discord identity tag', () => {
+    const tag = ['i', 'discord:alice', 'AbCdEf'];
+    const result = parseIdentityTag(tag);
+
+    expect(result).toEqual({
+      platform: 'discord',
+      identity: 'alice',
+      proof: 'AbCdEf',
+      profileUrl: 'https://discord.com/users/alice',
+      proofUrl: 'https://discord.gg/AbCdEf',
+    });
+  });
+
   it('handles unknown platforms with empty URLs', () => {
     const tag = ['i', 'linkedin:someone', 'someproof'];
     const result = parseIdentityTag(tag);
@@ -175,6 +188,7 @@ describe('SUPPORTED_PLATFORMS', () => {
     expect(SUPPORTED_PLATFORMS.mastodon.canVerifyInBrowser).toBe(false);
     expect(SUPPORTED_PLATFORMS.telegram.canVerifyInBrowser).toBe(false);
     expect(SUPPORTED_PLATFORMS.bluesky.canVerifyInBrowser).toBe(false);
+    expect(SUPPORTED_PLATFORMS.discord.canVerifyInBrowser).toBe(false);
   });
 
   it('generates correct Mastodon URLs for NIP-39 format', () => {
@@ -247,6 +261,23 @@ describe('SUPPORTED_PLATFORMS', () => {
     expect(text).not.toContain('"');
     expect(text).toContain('npub1abc');
   });
+
+  it('generates correct Discord URLs', () => {
+    const config = SUPPORTED_PLATFORMS.discord;
+    expect(config.profileUrl('alice'))
+      .toBe('https://discord.com/users/alice');
+    expect(config.proofUrl('alice', 'AbCdEf'))
+      .toBe('https://discord.gg/AbCdEf');
+  });
+
+  it('Discord verification text has quotes per NIP-39', () => {
+    const text = SUPPORTED_PLATFORMS.discord.verificationText('npub1abc')[0];
+    expect(text).toContain('"npub1abc"');
+  });
+
+  it('has no createProofUrl for discord', () => {
+    expect(SUPPORTED_PLATFORMS.discord.createProofUrl).toBeUndefined();
+  });
 });
 
 // -- verifyIdentityClaim --
@@ -272,7 +303,7 @@ describe('verifyIdentityClaim', () => {
   });
 
   it('returns manual for non-CORS platforms without fetching', async () => {
-    const platforms = ['twitter', 'mastodon', 'telegram', 'bluesky'] as const;
+    const platforms = ['twitter', 'mastodon', 'telegram', 'bluesky', 'discord'] as const;
 
     for (const platform of platforms) {
       const identity: ExternalIdentity = {

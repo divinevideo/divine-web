@@ -85,6 +85,16 @@ const PLATFORM_CONFIG: Record<string, PlatformConfig> = {
     verificationText: (npub) => [
       `Verifying that I control the following Nostr public key: "${npub}"`,
     ],
+    createProofUrl: () => 'https://bsky.app/',
+    canVerifyInBrowser: false,
+  },
+  discord: {
+    label: 'Discord',
+    profileUrl: (id) => `https://discord.com/users/${id}`,
+    proofUrl: (_id, proof) => `https://discord.gg/${proof}`,
+    verificationText: (npub) => [
+      `Verifying that I control the following Nostr public key: "${npub}"`,
+    ],
     canVerifyInBrowser: false,
   },
 };
