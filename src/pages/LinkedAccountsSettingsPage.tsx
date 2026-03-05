@@ -236,7 +236,7 @@ function VerificationBadge({ identity, pubkey }: { identity: ExternalIdentity; p
     case 'failed':
       return error === 'manual' ? (
         <a
-          href={`${API_CONFIG.verificationService.baseUrl}/verify/${encodeURIComponent(identity.platform)}/${encodeURIComponent(identity.identity)}/${encodeURIComponent(identity.proof)}`}
+          href={`${API_CONFIG.verificationService.baseUrl}/verify/${encodeURIComponent(identity.platform)}/${encodeURIComponent(identity.identity)}/${encodeURIComponent(identity.proof)}?pubkey=${pubkey}`}
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
