@@ -11,7 +11,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   Link2,
   Plus,
@@ -431,23 +430,28 @@ export default function LinkedAccountsSettingsPage() {
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Step 1: Select platform */}
-          <div className="space-y-2">
+          <div className="space-y-3">
             <Label>Platform</Label>
-            <Select value={platform} onValueChange={(v) => { setPlatform(v); setIdentity(''); setProof(''); }} disabled={!!editingIdentity}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {Object.entries(SUPPORTED_PLATFORMS).map(([key, config]) => (
-                  <SelectItem key={key} value={key}>
-                    <div className="flex items-center gap-2">
-                      {PLATFORM_ICONS[key]}
-                      {config.label}
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+              {Object.entries(SUPPORTED_PLATFORMS).map(([key, config]) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => { if (!editingIdentity) { setPlatform(key); setIdentity(''); setProof(''); } }}
+                  disabled={!!editingIdentity}
+                  className={`flex flex-col items-center gap-1.5 p-3 rounded-lg border-2 transition-colors ${
+                    platform === key
+                      ? 'border-primary bg-primary/10 text-primary'
+                      : 'border-muted hover:border-primary/50 hover:bg-muted/50 text-muted-foreground'
+                  } ${editingIdentity ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                >
+                  <div className="h-8 w-8 flex items-center justify-center [&>svg]:h-8 [&>svg]:w-8">
+                    {PLATFORM_ICONS[key]}
+                  </div>
+                  <span className="text-xs font-medium">{config.label}</span>
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Step 2: Enter username */}
