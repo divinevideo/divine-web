@@ -7,6 +7,7 @@ import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useExternalIdentities, SUPPORTED_PLATFORMS, verifyIdentityClaim, type ExternalIdentity } from '@/hooks/useExternalIdentities';
 import { useAddIdentity, useRemoveIdentity } from '@/hooks/usePublishIdentity';
 import { API_CONFIG } from '@/config/api';
+import { getDivineNip05Info } from '@/lib/nip05Utils';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -317,7 +318,7 @@ function LinkedAccountItem({
 }
 
 export default function LinkedAccountsSettingsPage() {
-  const { user } = useCurrentUser();
+  const { user, metadata } = useCurrentUser();
   const { data: identities = [], isLoading } = useExternalIdentities(user?.pubkey);
   const addIdentity = useAddIdentity();
   const removeIdentity = useRemoveIdentity();
@@ -332,11 +333,22 @@ export default function LinkedAccountsSettingsPage() {
 
   const npub = user ? nip19.npubEncode(user.pubkey) : '';
   const selectedConfig = SUPPORTED_PLATFORMS[platform];
-  const profileLink = `https://divine.video/profile/${npub}`;
+  const divineInfo = metadata?.nip05 ? getDivineNip05Info(metadata.nip05) : null;
+  const profileLink = divineInfo?.href || `https://divine.video/profile/${npub}`;
   const verificationText = selectedConfig
     ? `${selectedConfig.verificationText(npub)[0]}: ${npub}\n\nFind me on ${profileLink}`
     : npub;
-  const createProofUrl = selectedConfig?.createProofUrl?.(identity.trim(), npub);
+  // Build compose URL with the correct profile link (divine NIP-05 or npub)
+  const createProofUrl = (() => {
+    if (!selectedConfig?.createProofUrl) return undefined;
+    if (platform === 'twitter') {
+      return `https://twitter.com/intent/tweet?text=${encodeURIComponent(`Verifying my Nostr key for @divinevideoapp: ${npub}\n\nFind me on ${profileLink}`)}`;
+    }
+    if (platform === 'bluesky') {
+      return `https://bsky.app/intent/compose?text=${encodeURIComponent(`Verifying my Nostr key for diVine: ${npub}\n\nFind me on ${profileLink}`)}`;
+    }
+    return selectedConfig.createProofUrl(identity.trim(), npub);
+  })();
 
   const handleEdit = (id: ExternalIdentity) => {
     setEditingIdentity(id);
