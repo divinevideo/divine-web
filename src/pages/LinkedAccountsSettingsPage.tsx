@@ -2,6 +2,7 @@
 // ABOUTME: Manage linked platform accounts (GitHub, Twitter, Mastodon, Telegram) with proof verification
 
 import { useState, useCallback, useRef, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useExternalIdentities, SUPPORTED_PLATFORMS, verifyIdentityClaim, type ExternalIdentity } from '@/hooks/useExternalIdentities';
 import { useAddIdentity, useRemoveIdentity } from '@/hooks/usePublishIdentity';
@@ -27,6 +28,7 @@ import {
   Copy,
   Check,
   X,
+  ArrowLeft,
 } from 'lucide-react';
 import { useToast } from '@/hooks/useToast';
 import { nip19 } from 'nostr-tools';
@@ -361,6 +363,13 @@ export default function LinkedAccountsSettingsPage() {
   return (
     <div className="container max-w-4xl mx-auto px-4 py-8">
       <div className="mb-8">
+        <Link
+          to={`/profile/${nip19.npubEncode(user.pubkey)}`}
+          className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-4"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to profile
+        </Link>
         <h1 className="text-3xl font-bold flex items-center gap-2 mb-2">
           <Link2 className="h-8 w-8" />
           Linked Accounts

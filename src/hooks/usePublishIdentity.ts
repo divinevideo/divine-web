@@ -27,7 +27,11 @@ export function usePublishIdentity() {
 
   const invalidate = () => {
     if (user) {
-      queryClient.invalidateQueries({ queryKey: ['external-identities', user.pubkey] });
+      // Delay slightly to let the relay index the new event
+      setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ['external-identities', user.pubkey] });
+        queryClient.invalidateQueries({ queryKey: ['identity-verify'] });
+      }, 500);
     }
   };
 
