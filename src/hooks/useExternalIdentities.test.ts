@@ -278,6 +278,23 @@ describe('SUPPORTED_PLATFORMS', () => {
   it('has no createProofUrl for discord', () => {
     expect(SUPPORTED_PLATFORMS.discord.createProofUrl).toBeUndefined();
   });
+
+  it('generates correct Discord URLs', () => {
+    const config = SUPPORTED_PLATFORMS.discord;
+    expect(config.profileUrl('alice'))
+      .toBe('https://discord.com/users/alice');
+    expect(config.proofUrl('alice', 'AbCdEf'))
+      .toBe('https://discord.gg/AbCdEf');
+  });
+
+  it('Discord verification text has quotes per NIP-39', () => {
+    const text = SUPPORTED_PLATFORMS.discord.verificationText('npub1abc')[0];
+    expect(text).toContain('"npub1abc"');
+  });
+
+  it('has no createProofUrl for discord', () => {
+    expect(SUPPORTED_PLATFORMS.discord.createProofUrl).toBeUndefined();
+  });
 });
 
 // -- verifyIdentityClaim --
