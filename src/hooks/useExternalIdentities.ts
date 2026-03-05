@@ -43,11 +43,12 @@ const PLATFORM_CONFIG: Record<string, PlatformConfig> = {
     profileUrl: (id) => `https://twitter.com/${id}`,
     proofUrl: (id, proof) => `https://twitter.com/${id}/status/${proof}`,
     verificationText: (npub) => [
+      `@divinevideoapp Verifying my Nostr key: "${npub}"`,
       `Verifying my account on nostr My Public Key: "${npub}"`,
       `Verifying that I control the following Nostr public key: "${npub}"`,
     ],
     createProofUrl: (_id, npub) =>
-      `https://twitter.com/intent/tweet?text=${encodeURIComponent(`Verifying my account on nostr My Public Key: "${npub}"`)}`,
+      `https://twitter.com/intent/tweet?text=${encodeURIComponent(`@divinevideoapp Verifying my Nostr key: "${npub}"`)}`,
     canVerifyInBrowser: false,
   },
   mastodon: {
