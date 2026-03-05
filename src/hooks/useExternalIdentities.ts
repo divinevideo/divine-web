@@ -212,9 +212,9 @@ export async function verifyIdentityClaim(
     cleanedIdentity.proofUrl = config.proofUrl(identity.identity, cleanedProof);
   }
 
-  // Check localStorage cache first
+  // Check localStorage cache first (skip 'manual' so verifyer service gets a chance)
   const cached = getCachedVerification(cleanedIdentity.platform, cleanedIdentity.identity, cleanedIdentity.proof);
-  if (cached) return cached;
+  if (cached && cached.error !== 'manual') return cached;
 
   // Try verification service if available
   const serviceResult = await verifyViaService(cleanedIdentity, pubkey);
