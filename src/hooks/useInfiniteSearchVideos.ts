@@ -8,7 +8,7 @@ import { VIDEO_KINDS, type ParsedVideoData } from '@/types/video';
 import type { NIP50Filter, SortMode } from '@/types/nostr';
 import { parseVideoEvents } from '@/lib/videoParser';
 import { searchVideos } from '@/lib/funnelcakeClient';
-import { DEFAULT_FUNNELCAKE_URL, hasFunnelcake } from '@/config/relays';
+import { DEFAULT_FUNNELCAKE_URL } from '@/config/relays';
 import { isFunnelcakeAvailable } from '@/lib/funnelcakeHealth';
 import { debugLog } from '@/lib/debug';
 
