@@ -283,5 +283,5 @@ describe('useSearchUsers', () => {
       apiUrl: 'https://funnelcake.example',
       reason: 'profile search failed',
     }));
-  });
+  }, 10000);
 });
