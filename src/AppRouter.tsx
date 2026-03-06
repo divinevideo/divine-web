@@ -29,7 +29,7 @@ import ModerationSettingsPage from "./pages/ModerationSettingsPage";
 import LinkedAccountsSettingsPage from "./pages/LinkedAccountsSettingsPage";
 // import { NIP05ProfilePage } from "./pages/NIP05ProfilePage";
 import { UniversalUserPage } from "./pages/UniversalUserPage";
-import AboutPage from "./pages/AboutPage";
+
 import PrivacyPage from "./pages/PrivacyPage";
 import OpenSourcePage from "./pages/OpenSourcePage";
 import ProofModePage from "./pages/ProofModePage";
@@ -64,7 +64,7 @@ export function AppRouter() {
       <AnalyticsUserTracker />
       <Routes>
         {/* Marketing/informational pages - no app layout */}
-        <Route path="/about" element={<AboutPage />} />
+        {/* /about redirects to about.divine.video via _redirects (301) */}
         <Route path="/authenticity" element={<AuthenticityPage />} />
         <Route path="/privacy" element={<PrivacyPage />} />
         <Route path="/terms" element={<TermsPage />} />

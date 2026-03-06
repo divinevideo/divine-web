@@ -1079,7 +1079,7 @@ export function FAQPage() {
             </p>
             <div className="flex flex-wrap gap-3">
               <Button variant="outline" asChild>
-                <Link to="/about">About Divine</Link>
+                <a href="https://about.divine.video/">About Divine</a>
               </Button>
               <Button variant="outline" asChild>
                 <Link to="/support">Contact Support</Link>

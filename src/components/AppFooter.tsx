@@ -18,7 +18,7 @@ export function AppFooter() {
             </div>
 
             {/* Right side - Navigation Links */}
-            <div className="flex flex-col gap-3 text-xs text-brand-light-green">
+            <div className="flex flex-col gap-3 text-xs text-white">
               {/* Featured Links */}
               <div className="flex flex-wrap items-center gap-3 text-sm">
                 <SmartLink
@@ -38,9 +38,9 @@ export function AppFooter() {
 
               {/* Navigation Links */}
               <div className="flex flex-wrap items-center gap-2">
-                <SmartLink to="/about" className="hover:text-brand-off-white transition-colors">
+                <a href="https://about.divine.video/" className="hover:text-brand-off-white transition-colors">
                   About
-                </SmartLink>
+                </a>
                 <span>•</span>
                 <a href="https://about.divine.video/faqs/" className="hover:text-brand-off-white transition-colors">
                   FAQ
@@ -204,7 +204,7 @@ export function AppFooter() {
           </div>
 
           {/* Build Info */}
-          <div className="text-center text-xs text-brand-light-green font-light pt-4 border-t border-brand-green">
+          <div className="text-center text-xs text-white font-light pt-4 border-t border-brand-green">
             Build: {__BUILD_DATE__}
           </div>
         </div>

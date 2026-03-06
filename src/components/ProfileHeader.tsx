@@ -24,6 +24,8 @@ import { LinkedAccounts } from '@/components/LinkedAccounts';
 import { useNip05Validation } from '@/hooks/useNip05Validation';
 import { useFollowers, getAllFollowerPubkeys } from '@/hooks/useFollowers';
 import { useFollowing } from '@/hooks/useFollowing';
+import { useBadges } from '@/hooks/useBadges';
+import { ProfileBadges } from '@/components/ProfileBadges';
 import { getSafeProfileImage } from '@/lib/imageUtils';
 import { genUserName } from '@/lib/genUserName';
 import { toast } from '@/hooks/useToast';
@@ -145,6 +147,9 @@ export function ProfileHeader({
   const followingQuery = useFollowing(userListDialog === 'following' ? pubkey : '');
   const followerPubkeys = getAllFollowerPubkeys(followersQuery.data);
   const followingPubkeys = followingQuery.data?.pubkeys ?? [];
+
+  // Fetch NIP-58 badges
+  const badgesQuery = useBadges(pubkey);
 
   // Validate NIP-05 - show with visual feedback based on validation state
   const { state: nip05State } = useNip05Validation(
@@ -294,6 +299,9 @@ export function ProfileHeader({
 
             {/* NIP-39 Linked Accounts */}
             <LinkedAccounts pubkey={pubkey} className="justify-center sm:justify-start" />
+
+            {/* NIP-58 Badges */}
+            <ProfileBadges badges={badgesQuery.data ?? []} className="justify-center sm:justify-start" isOwnProfile={isOwnProfile} />
           </div>
         </div>
 

@@ -36,12 +36,12 @@ export function LandingPage() {
 
             {/* Navigation Links */}
             <div className="flex items-center gap-4 md:gap-8">
-              <Link
-                to="/about"
+              <a
+                href="https://about.divine.video/"
                 className="text-xs md:text-sm font-medium text-foreground hover:text-primary transition-colors"
               >
                 About
-              </Link>
+              </a>
               <a
                 href="https://about.divine.video/blog/"
                 className="text-xs md:text-sm font-medium text-foreground hover:text-primary transition-colors"

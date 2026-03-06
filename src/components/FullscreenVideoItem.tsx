@@ -29,6 +29,8 @@ import { genUserName } from '@/lib/genUserName';
 import { formatDistanceToNow } from 'date-fns';
 import { formatCount, formatViewCount } from '@/lib/formatUtils';
 import { getSafeProfileImage } from '@/lib/imageUtils';
+import { useBadges } from '@/hooks/useBadges';
+import { InlineBadges } from '@/components/InlineBadges';
 import { cn } from '@/lib/utils';
 import { MuteType } from '@/types/moderation';
 import { getOptimalVideoUrl } from '@/lib/bandwidthTracker';
@@ -107,6 +109,7 @@ export function FullscreenVideoItem({
     initialAvatar: video.authorAvatar,
   });
   const author = enhanceAuthorData(authorData.data, video.pubkey);
+  const badgesQuery = useBadges(video.pubkey);
   const metadata = author.metadata;
 
   const npub = nip19.npubEncode(video.pubkey);
@@ -317,6 +320,9 @@ export function FullscreenVideoItem({
                 <div>
                   <div className="flex items-center gap-2">
                     <p className="font-semibold text-white drop-shadow-lg">{displayName}</p>
+                    {badgesQuery.data && badgesQuery.data.length > 0 && (
+                      <InlineBadges badges={badgesQuery.data} />
+                    )}
                     {isMigratedVine && <VineBadge />}
                     {video.proofMode && video.proofMode.level !== 'unverified' && (
                       <ProofModeBadge level={video.proofMode.level} proofData={video.proofMode} />
