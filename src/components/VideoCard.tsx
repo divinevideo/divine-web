@@ -62,6 +62,7 @@ interface VideoCardProps {
   onPlay?: () => void;
   onLoadedData?: () => void;
   onEnterFullscreen?: () => void;
+  onPlaybackStarted?: () => void;
   isLiked?: boolean;
   isReposted?: boolean;
   likeCount?: number;
@@ -87,6 +88,7 @@ export function VideoCard({
   onPlay,
   onLoadedData,
   onEnterFullscreen,
+  onPlaybackStarted,
   isLiked = false,
   isReposted = false,
   likeCount = 0,
@@ -529,6 +531,7 @@ export function VideoCard({
                   onError={() => setVideoError(true)}
                   onEnded={handleVideoEnd}
                   onLoadedData={onLoadedData}
+                  onPlaybackStarted={onPlaybackStarted}
                   onVideoDimensions={handleVideoDimensions}
                   subtitleCues={subtitleCues}
                   subtitlesVisible={showSubtitles}
