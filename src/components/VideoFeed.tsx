@@ -10,6 +10,7 @@ import { AddToListDialog } from '@/components/AddToListDialog';
 import { useVideoProvider } from '@/hooks/useVideoProvider';
 import { useBatchedAuthors } from '@/hooks/useBatchedAuthors';
 import { useContentModeration } from '@/hooks/useModeration';
+import { useFeedPerformanceInstrumentation } from '@/hooks/useFeedPerformanceInstrumentation';
 import { useProofModeEnrichment } from '@/hooks/useProofModeEnrichment';
 import { Card, CardContent } from '@/components/ui/card';
 import { Loader2 } from 'lucide-react';
@@ -79,6 +80,12 @@ export function VideoFeed({
     pageSize: limit,
     sortMode,
   });
+  const { feedRootRef, trackInitialRender, trackFirstPlayback } = useFeedPerformanceInstrumentation({
+    feedType,
+    dataSource,
+    sortMode,
+    verifiedOnly,
+  });
 
   // Log data source for debugging
   useEffect(() => {
@@ -130,6 +137,15 @@ export function VideoFeed({
       return true;
     });
   }, [allVideos, checkContent, verifiedOnly]);
+
+  useEffect(() => {
+    if (!isLoading && filteredVideos.length > 0) {
+      trackInitialRender({
+        renderedVideos: filteredVideos.length,
+        totalVideos: allVideos.length,
+      });
+    }
+  }, [allVideos.length, filteredVideos.length, isLoading, trackInitialRender]);
 
   // Track perceived first-render time for the Recent feed
   useEffect(() => {
@@ -236,10 +252,19 @@ export function VideoFeed({
     enterFullscreen(filteredVideos, index);
   }, [filteredVideos, enterFullscreen]);
 
+  const handlePlaybackStarted = useCallback((video: ParsedVideoData) => {
+    trackFirstPlayback({
+      renderedVideos: filteredVideos.length,
+      totalVideos: allVideos.length,
+      videoId: video.id,
+    });
+  }, [allVideos.length, filteredVideos.length, trackFirstPlayback]);
+
   // Loading state (initial load only)
   if (isLoading && !data) {
     return (
       <div
+        ref={feedRootRef}
         className={`feed-root ${className || ''}`}
         data-testid={testId}
         data-hashtag-testid={hashtagTestId}
@@ -276,6 +301,7 @@ export function VideoFeed({
   if (error) {
     return (
       <div
+        ref={feedRootRef}
         className={`feed-root ${className || ''}`}
         data-testid={testId}
         data-hashtag-testid={hashtagTestId}
@@ -303,6 +329,7 @@ export function VideoFeed({
 
     return (
       <div
+        ref={feedRootRef}
         className={`feed-root ${className || ''}`}
         data-testid={testId}
         data-hashtag-testid={hashtagTestId}
@@ -379,6 +406,7 @@ export function VideoFeed({
   if (viewMode === 'grid') {
     return (
       <div
+        ref={feedRootRef}
         className={`feed-root ${className || ''}`}
         data-testid={testId}
         data-hashtag-testid={hashtagTestId}
@@ -431,6 +459,7 @@ export function VideoFeed({
   // Feed mode uses full VideoCard components
   return (
     <div
+      ref={feedRootRef}
       className={className}
       data-testid={testId}
       data-hashtag-testid={hashtagTestId}
@@ -467,6 +496,7 @@ export function VideoFeed({
               onOpenComments={() => handleOpenComments(video)}
               onCloseComments={handleCloseComments}
               onEnterFullscreen={() => handleEnterFullscreen(index)}
+              onPlaybackStarted={() => handlePlaybackStarted(video)}
               navigationContext={{
                 source: feedType,
                 hashtag,

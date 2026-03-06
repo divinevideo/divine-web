@@ -35,6 +35,7 @@ interface VideoPlayerProps {
   muted?: boolean;
   onLoadStart?: () => void;
   onLoadedData?: () => void;
+  onPlaybackStarted?: () => void;
   onEnded?: () => void;
   onError?: () => void;
   preload?: 'none' | 'metadata' | 'auto';
@@ -80,6 +81,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
       muted: _muted = true,
       onLoadStart,
       onLoadedData,
+      onPlaybackStarted,
       onEnded,
       onError,
       preload: _preload = 'none', // Changed to 'none' for better performance
@@ -165,6 +167,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
     const [playbackSecond, setPlaybackSecond] = useState(0);
     const [videoDuration, setVideoDuration] = useState(0);
     const playbackSecondRef = useRef(0);
+    const playbackStartedRef = useRef(false);
 
     // Track video view metrics and publish Kind 22236 events
     useVideoMetricsTracker({
@@ -619,6 +622,10 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
         return;
       }
       setIsPlaying(true);
+      if (!playbackStartedRef.current) {
+        playbackStartedRef.current = true;
+        onPlaybackStarted?.();
+      }
     };
     const handlePause = () => {
       // Ignore pause events that occur during mute state changes
