@@ -187,12 +187,12 @@ function VerificationBadge({ identity, pubkey }: { identity: ExternalIdentity; p
     }
   }, [identity, pubkey]);
 
-  // Auto-verify on mount when proof exists
+  // Auto-verify when a proof is present or changes.
   useEffect(() => {
     if (identity.proof) {
-      verify();
+      void verify();
     }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [identity.proof, verify]);
 
   if (!identity.proof) {
     return (
