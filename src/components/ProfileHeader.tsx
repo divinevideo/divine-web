@@ -14,7 +14,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { UserPlus, UserCheck, CheckCircle, Pencil, Copy, MoreVertical, Flag, Play, Repeat, Loader2, XCircle, Link2, Code, Rss } from 'lucide-react';
+import { UserPlus, UserCheck, CheckCircle, Copy, MoreVertical, Flag, Play, Repeat, Loader2, XCircle, Code, Rss } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { feedUrls } from '@/lib/feedUrls';
 import { useRssFeedAvailable } from '@/hooks/useRssFeedAvailable';
@@ -285,26 +285,6 @@ export function ProfileHeader({
             <div className="flex flex-wrap items-center justify-center gap-2 sm:justify-start lg:justify-end">
               {isOwnProfile ? (
                 <>
-                  <Button
-                    onClick={onEditProfile}
-                    variant="outline"
-                    size="sm"
-                    className="min-w-[100px]"
-                    data-testid="edit-profile-button"
-                  >
-                    <Pencil className="w-4 h-4 mr-2" />
-                    Edit Profile
-                  </Button>
-                  <Link to="/settings/linked-accounts">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      data-testid="linked-accounts-button"
-                    >
-                      <Link2 className="w-4 h-4 mr-2" />
-                      Linked Accounts
-                    </Button>
-                  </Link>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="outline" size="sm" data-testid="own-profile-menu-button">
@@ -312,6 +292,12 @@ export function ProfileHeader({
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={onEditProfile} data-testid="edit-profile-menu-item">
+                        Edit Profile
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => navigate('/settings/linked-accounts')} data-testid="linked-accounts-menu-item">
+                        Linked Accounts
+                      </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => navigate(`/get-embed?npub=${nip19.npubEncode(pubkey)}`)}>
                         <Code className="h-4 w-4 mr-2" />
                         Get embed code
