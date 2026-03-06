@@ -21,6 +21,7 @@ export const API_CONFIG = {
     endpoints: {
       videos: '/api/videos',
       search: '/api/search',
+      searchProfiles: '/api/search/profiles',
       userProfile: '/api/users/{pubkey}',
       userVideos: '/api/users/{pubkey}/videos',
       userFeed: '/api/users/{pubkey}/feed',

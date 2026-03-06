@@ -2,7 +2,7 @@
 // ABOUTME: Provides trending hashtags with video counts and search filtering
 
 import { useQuery } from '@tanstack/react-query';
-import { useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { fetchTrendingHashtags } from '@/lib/funnelcakeClient';
 import { DEFAULT_FUNNELCAKE_URL } from '@/config/relays';
 
@@ -14,6 +14,24 @@ interface UseSearchHashtagsOptions {
 export interface HashtagResult {
   hashtag: string;
   video_count: number;
+}
+
+/**
+ * Proper debounce hook
+ */
+function useDebouncedValue(value: string, delay: number): string {
+  const [debounced, setDebounced] = useState(value);
+
+  useEffect(() => {
+    if (delay <= 0) {
+      setDebounced(value);
+      return;
+    }
+    const timer = setTimeout(() => setDebounced(value), delay);
+    return () => clearTimeout(timer);
+  }, [value, delay]);
+
+  return debounced;
 }
 
 /**
@@ -37,29 +55,12 @@ function filterHashtagsByQuery(hashtags: HashtagResult[], query: string): Hashta
 export function useSearchHashtags(options: UseSearchHashtagsOptions) {
   const { query, limit = 20 } = options;
 
-  // Debounce the query - disable in test environment
   const isTest = process.env.NODE_ENV === 'test';
-  const debounceDelay = isTest ? 0 : 300;
-
-  const debouncedQuery = useMemo(() => {
-    let timeoutId: NodeJS.Timeout;
-    return new Promise<string>((resolve) => {
-      clearTimeout(timeoutId);
-      timeoutId = setTimeout(() => resolve(query), debounceDelay);
-    });
-  }, [query, debounceDelay]);
+  const debouncedQuery = useDebouncedValue(query, isTest ? 0 : 300);
 
   return useQuery({
-    queryKey: ['search-hashtags', query, limit],
-    queryFn: async (context) => {
-      // Wait for debounced query
-      const actualQuery = await debouncedQuery;
-
-      const signal = AbortSignal.any([
-        context.signal,
-        AbortSignal.timeout(10000)
-      ]);
-
+    queryKey: ['search-hashtags', debouncedQuery, limit],
+    queryFn: async ({ signal }) => {
       // Fetch trending hashtags from Funnelcake
       const hashtags = await fetchTrendingHashtags(
         DEFAULT_FUNNELCAKE_URL,
@@ -74,12 +75,12 @@ export function useSearchHashtags(options: UseSearchHashtagsOptions) {
       }));
 
       // Filter by search query
-      const filteredHashtags = filterHashtagsByQuery(allHashtags, actualQuery);
+      const filteredHashtags = filterHashtagsByQuery(allHashtags, debouncedQuery);
 
       // Apply limit
       return filteredHashtags.slice(0, limit);
     },
-    staleTime: 60000, // 1 minute (Funnelcake data is pre-computed)
-    gcTime: 300000, // 5 minutes
+    staleTime: 60_000,
+    gcTime: 300_000,
   });
 }
