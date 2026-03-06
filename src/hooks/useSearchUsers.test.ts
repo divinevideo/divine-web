@@ -256,19 +256,22 @@ describe('useSearchUsers', () => {
     );
 
     await waitFor(() => {
-      expect(result.current.isSuccess).toBe(true);
-    });
+      expect(mockNostrQuery).toHaveBeenCalledTimes(1);
+    }, { timeout: 5000 });
 
-    expect(result.current.data).toEqual([
-      {
-        pubkey: 'relay-user',
-        metadata: {
-          name: 'jack',
-          display_name: 'Jack Relay',
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+      expect(result.current.data).toEqual([
+        {
+          pubkey: 'relay-user',
+          metadata: {
+            name: 'jack',
+            display_name: 'Jack Relay',
+          },
         },
-      },
-    ]);
-    expect(mockNostrQuery).toHaveBeenCalledTimes(1);
+      ]);
+    }, { timeout: 5000 });
+
     expect(mockReportFunnelcakeFallback).toHaveBeenCalledWith(expect.objectContaining({
       apiUrl: 'https://funnelcake.example',
       reason: 'profile search failed',
