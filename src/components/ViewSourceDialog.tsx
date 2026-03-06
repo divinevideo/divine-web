@@ -1,7 +1,7 @@
 // ABOUTME: Dialog for viewing raw Nostr event JSON source
 // ABOUTME: Shows formatted event data for debugging and transparency
 
-import { useState, useEffect } from 'react';
+import { type ReactNode, useEffect, useMemo, useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -22,6 +22,8 @@ interface ViewSourceDialogProps {
   video?: ParsedVideoData;
   title?: string;
 }
+
+const JSON_URL_REGEX = /https?:\/\/[^\s"]+/g;
 
 // Helper function to reconstruct a basic NostrEvent from ParsedVideoData
 function reconstructEvent(video: ParsedVideoData): Partial<NostrEvent> {
@@ -94,6 +96,40 @@ async function fetchFullEvent(eventId: string): Promise<NostrEvent | null> {
   }
 }
 
+function renderJsonWithLinks(json: string): ReactNode[] {
+  const parts: ReactNode[] = [];
+  let lastIndex = 0;
+
+  for (const match of json.matchAll(JSON_URL_REGEX)) {
+    const url = match[0];
+    const index = match.index ?? 0;
+
+    if (index > lastIndex) {
+      parts.push(json.slice(lastIndex, index));
+    }
+
+    parts.push(
+      <a
+        key={`json-url-${index}`}
+        href={url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-brand-dark-green underline underline-offset-2 decoration-brand-green/60 hover:text-brand-green dark:text-brand-light-green dark:decoration-brand-light-green/70"
+      >
+        {url}
+      </a>,
+    );
+
+    lastIndex = index + url.length;
+  }
+
+  if (lastIndex < json.length) {
+    parts.push(json.slice(lastIndex));
+  }
+
+  return parts.length > 0 ? parts : [json];
+}
+
 export function ViewSourceDialog({
   open,
   onClose,
@@ -138,6 +174,7 @@ export function ViewSourceDialog({
   }
 
   const eventJson = JSON.stringify(displayEvent, null, 2);
+  const renderedEventJson = useMemo(() => renderJsonWithLinks(eventJson), [eventJson]);
 
   const handleCopy = async () => {
     try {
@@ -191,8 +228,12 @@ export function ViewSourceDialog({
 
         {!loading && (
           <div className="flex-1 overflow-auto">
-            <pre className="bg-brand-light-green rounded-lg p-4 text-xs overflow-x-auto dark:bg-brand-dark-green">
-              <code className="font-mono text-foreground">{eventJson}</code>
+            <pre
+              aria-label="Raw Nostr event JSON"
+              className="bg-brand-light-green rounded-lg p-4 text-xs overflow-x-auto font-mono text-foreground select-text cursor-text dark:bg-brand-dark-green"
+              style={{ userSelect: 'text', WebkitUserSelect: 'text' }}
+            >
+              {renderedEventJson}
             </pre>
           </div>
         )}
