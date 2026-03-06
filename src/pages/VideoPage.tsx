@@ -20,6 +20,7 @@ import { useToast } from '@/hooks/useToast';
 import { genUserName } from '@/lib/genUserName';
 import { nip19 } from 'nostr-tools';
 import { debugLog } from '@/lib/debug';
+import { reportFunnelcakeFallback } from '@/lib/funnelcakeFallbackReporting';
 import type { ParsedVideoData, UserInteractions } from '@/types/video';
 
 export function VideoPage() {
@@ -45,6 +46,7 @@ export function VideoPage() {
     video: funnelcakeVideo,
     videos: funnelcakeVideos,
     isLoading: funnelcakeLoading,
+    error: funnelcakeError,
   } = useVideoByIdFunnelcake({
     videoId: id || '',
     pubkey: context?.pubkey,
@@ -139,6 +141,44 @@ export function VideoPage() {
   const showMoreVideos = useCallback(() => {
     setMaxRendered(prev => Math.min(prev + LOAD_MORE_COUNT, videos?.length || 0));
   }, [videos?.length]);
+
+  const fallbackReportKeyRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!id || funnelcakeLoading) return;
+
+    const usingWebsocketFallback = (!funnelcakeVideo && !!wsVideo) || (!funnelcakeVideos && !!wsVideos?.length);
+    if (!usingWebsocketFallback) return;
+
+    const reason = funnelcakeError?.message || 'REST returned no matching video';
+    const fallbackKey = `VideoPage|${id}|${context?.pubkey ?? ''}|${context?.hashtag ?? ''}|${reason}`;
+
+    if (fallbackReportKeyRef.current === fallbackKey) {
+      return;
+    }
+    fallbackReportKeyRef.current = fallbackKey;
+
+    reportFunnelcakeFallback({
+      source: 'VideoPage',
+      reason,
+      dedupeKey: fallbackKey,
+      context: {
+        videoId: id,
+        pubkey: context?.pubkey,
+        hashtag: context?.hashtag,
+      },
+    });
+  }, [
+    context?.hashtag,
+    context?.pubkey,
+    funnelcakeError?.message,
+    funnelcakeLoading,
+    funnelcakeVideo,
+    funnelcakeVideos,
+    id,
+    wsVideo,
+    wsVideos,
+  ]);
 
   // Batch fetch user interactions only for VISIBLE videos (not all)
   const videosForInteractions = useMemo(() => {

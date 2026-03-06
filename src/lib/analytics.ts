@@ -104,6 +104,26 @@ export function trackError(error: Error, context?: Record<string, unknown>) {
 }
 
 /**
+ * Log a non-fatal exception event for correlation with Sentry issues
+ */
+export function trackNonFatalError(error: Error, context?: Record<string, unknown>) {
+  if (!analytics) return;
+
+  try {
+    logEvent(analytics, 'exception', {
+      description: error.message,
+      fatal: false,
+      error_name: error.name,
+      error_stack: error.stack,
+      ...context,
+    });
+    console.warn('[Analytics] Non-fatal error tracked:', error.message, context);
+  } catch (err) {
+    console.error('[Analytics] Failed to track non-fatal error:', err);
+  }
+}
+
+/**
  * Set the current user ID for analytics
  */
 export function setAnalyticsUserId(userId: string | null) {

@@ -9,6 +9,7 @@ import type { ParsedVideoData } from '@/types/video';
 import { API_CONFIG } from '@/config/api';
 import { fetchUserProfile, fetchUserLoopStats } from '@/lib/funnelcakeClient';
 import { isFunnelcakeAvailable } from '@/lib/funnelcakeHealth';
+import { reportFunnelcakeFallback } from '@/lib/funnelcakeFallbackReporting';
 
 /**
  * Fetch comprehensive profile statistics for a user
@@ -36,6 +37,20 @@ export function useProfileStats(pubkey: string, videos?: ParsedVideoData[]) {
       if (isClassicViner) {
         debugLog(`[useProfileStats] Classic Viner detected with ${originalLoopCount} original loops`);
       }
+
+      const reportFallback = (reason: string) => {
+        reportFunnelcakeFallback({
+          source: 'useProfileStats',
+          apiUrl,
+          reason,
+          dedupeKey: `useProfileStats:${pubkey}:${reason}`,
+          context: {
+            pubkey,
+            videoCount: videosCount,
+            isClassicViner,
+          },
+        });
+      };
 
       // Try Funnelcake REST API first (much faster than WebSocket)
       if (isFunnelcakeAvailable(apiUrl)) {
@@ -73,10 +88,15 @@ export function useProfileStats(pubkey: string, videos?: ParsedVideoData[]) {
             debugLog(`[useProfileStats] REST API success: ${stats.followersCount} followers, ${stats.totalLoops} loops`);
             return stats;
           }
+
+          reportFallback('REST returned no profile');
         } catch (err) {
           debugLog(`[useProfileStats] REST API failed, falling back to WebSocket:`, err);
+          reportFallback(err instanceof Error ? err.message : String(err));
           // Fall through to WebSocket fallback
         }
+      } else {
+        reportFallback('Funnelcake unavailable or circuit breaker open');
       }
 
       // WebSocket fallback - original implementation

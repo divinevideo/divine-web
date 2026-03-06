@@ -1,6 +1,7 @@
 // ABOUTME: Unified video provider hook that selects between Funnelcake and WebSocket
 // ABOUTME: Automatically falls back to WebSocket when Funnelcake is unavailable
 
+import { useEffect, useRef } from 'react';
 import { useAppContext } from '@/hooks/useAppContext';
 import { useInfiniteVideos } from '@/hooks/useInfiniteVideos';
 import { useInfiniteVideosFunnelcake, type FunnelcakeFeedType, type FunnelcakeSortMode } from '@/hooks/useInfiniteVideosFunnelcake';
@@ -8,6 +9,7 @@ import { hasFunnelcake, getFunnelcakeUrl, DEFAULT_FUNNELCAKE_URL } from '@/confi
 import { getFeatureFlag } from '@/config/api';
 import { isFunnelcakeAvailable } from '@/lib/funnelcakeHealth';
 import { debugLog } from '@/lib/debug';
+import { reportFunnelcakeFallback } from '@/lib/funnelcakeFallbackReporting';
 import type { SortMode } from '@/types/nostr';
 
 // Feed types that can be provided
@@ -126,6 +128,57 @@ export function useVideoProvider({
   );
 
   debugLog(`[useVideoProvider] Feed: ${feedType}, Relay: ${relayUrl}, Funnelcake: ${shouldUseFunnelcake ? 'yes' : 'no'}`);
+
+  const lastFallbackKeyRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!enabled || isClassics || !useFunnelcakeFlag || !relayHasFunnelcake || !funnelcakeUrl || shouldUseFunnelcake) {
+      return;
+    }
+
+    const fallbackKey = [
+      relayUrl,
+      funnelcakeUrl,
+      feedType,
+      sortMode ?? '',
+      hashtag ?? '',
+      category ?? '',
+      pubkey ?? '',
+    ].join('|');
+
+    if (lastFallbackKeyRef.current === fallbackKey) {
+      return;
+    }
+    lastFallbackKeyRef.current = fallbackKey;
+
+    reportFunnelcakeFallback({
+      source: 'useVideoProvider',
+      apiUrl: funnelcakeUrl,
+      reason: 'Funnelcake unavailable or circuit breaker open',
+      dedupeKey: fallbackKey,
+      context: {
+        relayUrl,
+        feedType,
+        sortMode,
+        hashtag,
+        category,
+        pubkey,
+      },
+    });
+  }, [
+    category,
+    enabled,
+    feedType,
+    funnelcakeUrl,
+    hashtag,
+    isClassics,
+    pubkey,
+    relayHasFunnelcake,
+    relayUrl,
+    shouldUseFunnelcake,
+    sortMode,
+    useFunnelcakeFlag,
+  ]);
 
   // Funnelcake query (enabled only when shouldUseFunnelcake is true)
   const funnelcakeQuery = useInfiniteVideosFunnelcake({

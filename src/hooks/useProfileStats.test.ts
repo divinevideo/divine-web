@@ -36,6 +36,10 @@ vi.mock('@/lib/debug', () => ({
   debugError: vi.fn(),
 }));
 
+vi.mock('@/lib/funnelcakeFallbackReporting', () => ({
+  reportFunnelcakeFallback: vi.fn(),
+}));
+
 // Mock the API config
 vi.mock('@/config/api', () => ({
   API_CONFIG: {
@@ -82,6 +86,7 @@ describe('useProfileStats', () => {
   let fetchUserLoopStats: ReturnType<typeof vi.fn>;
   let isFunnelcakeAvailable: ReturnType<typeof vi.fn>;
   let shouldFallbackToWebSocket: ReturnType<typeof vi.fn>;
+  let reportFunnelcakeFallback: ReturnType<typeof vi.fn>;
 
   beforeEach(async () => {
     vi.resetModules();
@@ -95,6 +100,9 @@ describe('useProfileStats', () => {
     const health = await import('@/lib/funnelcakeHealth');
     isFunnelcakeAvailable = health.isFunnelcakeAvailable as ReturnType<typeof vi.fn>;
     shouldFallbackToWebSocket = health.shouldFallbackToWebSocket as ReturnType<typeof vi.fn>;
+
+    const fallbackReporting = await import('@/lib/funnelcakeFallbackReporting');
+    reportFunnelcakeFallback = fallbackReporting.reportFunnelcakeFallback as ReturnType<typeof vi.fn>;
 
     const hook = await import('./useProfileStats');
     useProfileStats = hook.useProfileStats;
@@ -227,6 +235,10 @@ describe('useProfileStats', () => {
     expect(mockNostrQuery).toHaveBeenCalled();
     expect(result.current.data?.followingCount).toBe(2);
     expect(result.current.data?.followersCount).toBe(3);
+    expect(reportFunnelcakeFallback).toHaveBeenCalledWith(expect.objectContaining({
+      source: 'useProfileStats',
+      reason: 'Funnelcake unavailable or circuit breaker open',
+    }));
   });
 
   it('falls back to WebSocket when REST API returns null', async () => {
@@ -250,6 +262,10 @@ describe('useProfileStats', () => {
     });
 
     expect(mockNostrQuery).toHaveBeenCalled();
+    expect(reportFunnelcakeFallback).toHaveBeenCalledWith(expect.objectContaining({
+      source: 'useProfileStats',
+      reason: 'REST returned no profile',
+    }));
   });
 
   it('does not fetch when pubkey is empty', async () => {

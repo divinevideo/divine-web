@@ -139,6 +139,20 @@ export function captureException(error: Error, context?: Record<string, unknown>
 }
 
 /**
+ * Capture a warning-level non-fatal exception manually
+ */
+export function captureNonFatalError(error: Error, context?: Record<string, unknown>) {
+  Sentry.withScope((scope) => {
+    scope.setLevel('warning');
+    scope.setTag('error_type', 'non_fatal');
+    if (context) {
+      scope.setExtras(context);
+    }
+    Sentry.captureException(error);
+  });
+}
+
+/**
  * Add breadcrumb for debugging context
  */
 export function addBreadcrumb(

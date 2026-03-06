@@ -11,7 +11,7 @@ import { searchVideos } from '@/lib/funnelcakeClient';
 import { DEFAULT_FUNNELCAKE_URL } from '@/config/relays';
 import { isFunnelcakeAvailable } from '@/lib/funnelcakeHealth';
 import { debugLog } from '@/lib/debug';
-import { captureException, addBreadcrumb } from '@/lib/sentry';
+import { reportFunnelcakeFallback } from '@/lib/funnelcakeFallbackReporting';
 
 interface UseInfiniteSearchVideosOptions {
   query: string;
@@ -173,16 +173,28 @@ export function useInfiniteSearchVideos({
           }
         } catch (error) {
           debugLog('[useInfiniteSearchVideos] Funnelcake search failed, falling back to NIP-50:', error);
-          addBreadcrumb('Funnelcake video search fallback to NIP-50', 'api', {
+          reportFunnelcakeFallback({
+            source: 'useInfiniteSearchVideos',
+            apiUrl: DEFAULT_FUNNELCAKE_URL,
+            reason: error instanceof Error ? error.message : String(error),
+            dedupeKey: `useInfiniteSearchVideos:${searchParams.type}:${debouncedQuery}`,
+            context: {
+              query: debouncedQuery,
+              searchType: searchParams.type,
+            },
+          });
+        }
+      } else {
+        reportFunnelcakeFallback({
+          source: 'useInfiniteSearchVideos',
+          apiUrl: DEFAULT_FUNNELCAKE_URL,
+          reason: 'Funnelcake unavailable or circuit breaker open',
+          dedupeKey: `useInfiniteSearchVideos:${searchParams.type}:${debouncedQuery}:unavailable`,
+          context: {
             query: debouncedQuery,
             searchType: searchParams.type,
-            error: error instanceof Error ? error.message : String(error),
-          });
-          captureException(
-            error instanceof Error ? error : new Error(`Funnelcake video search fallback: ${error}`),
-            { query: debouncedQuery, searchType: searchParams.type },
-          );
-        }
+          },
+        });
       }
 
       // Fallback: NIP-50 WebSocket search

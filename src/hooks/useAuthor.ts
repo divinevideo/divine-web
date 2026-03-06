@@ -7,6 +7,7 @@ import { API_CONFIG } from '@/config/api';
 import { fetchUserProfile } from '@/lib/funnelcakeClient';
 import { isFunnelcakeAvailable } from '@/lib/funnelcakeHealth';
 import { debugLog } from '@/lib/debug';
+import { reportFunnelcakeFallback } from '@/lib/funnelcakeFallbackReporting';
 
 /**
  * Parse profile event content into metadata
@@ -50,6 +51,16 @@ export function useAuthor(pubkey: string | undefined, options?: UseAuthorOptions
         return {};
       }
 
+      const reportFallback = (reason: string) => {
+        reportFunnelcakeFallback({
+          source: 'useAuthor',
+          apiUrl,
+          reason,
+          dedupeKey: `useAuthor:${pubkey}:${reason}`,
+          context: { pubkey },
+        });
+      };
+
       // Try Funnelcake REST API first (fast, ~50ms)
       if (isFunnelcakeAvailable(apiUrl)) {
         try {
@@ -70,9 +81,14 @@ export function useAuthor(pubkey: string | undefined, options?: UseAuthorOptions
             debugLog(`[useAuthor] REST got profile for ${pubkey.slice(0, 8)}...`);
             return { metadata };
           }
+
+          reportFallback('REST returned no profile');
         } catch (err) {
           debugLog(`[useAuthor] REST failed for ${pubkey.slice(0, 8)}, falling back to WebSocket:`, err);
+          reportFallback(err instanceof Error ? err.message : String(err));
         }
+      } else {
+        reportFallback('Funnelcake unavailable or circuit breaker open');
       }
 
       // WebSocket fallback (slow, can take seconds)

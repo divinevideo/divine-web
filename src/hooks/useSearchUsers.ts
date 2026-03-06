@@ -6,8 +6,8 @@ import { useNostr } from '@nostrify/react';
 import { useState, useEffect } from 'react';
 import { searchProfiles, type FunnelcakeProfileResult } from '@/lib/funnelcakeClient';
 import { DEFAULT_FUNNELCAKE_URL } from '@/config/relays';
-import { captureException, addBreadcrumb } from '@/lib/sentry';
 import { debugLog } from '@/lib/debug';
+import { reportFunnelcakeFallback } from '@/lib/funnelcakeFallbackReporting';
 import type { NostrMetadata, NostrEvent } from '@nostrify/nostrify';
 
 interface UseSearchUsersOptions {
@@ -107,14 +107,15 @@ export function useSearchUsers(options: UseSearchUsersOptions) {
         return profiles.slice(0, limit).map(toSearchUserResult);
       } catch (error) {
         debugLog('[useSearchUsers] Funnelcake profile search failed, falling back to NIP-50:', error);
-        addBreadcrumb('Funnelcake profile search fallback to NIP-50', 'api', {
-          query: debouncedQuery,
-          error: error instanceof Error ? error.message : String(error),
+        reportFunnelcakeFallback({
+          source: 'useSearchUsers',
+          apiUrl: DEFAULT_FUNNELCAKE_URL,
+          reason: error instanceof Error ? error.message : String(error),
+          dedupeKey: `useSearchUsers:${debouncedQuery}`,
+          context: {
+            query: debouncedQuery,
+          },
         });
-        captureException(
-          error instanceof Error ? error : new Error(`Funnelcake profile search fallback: ${error}`),
-          { query: debouncedQuery },
-        );
       }
 
       // Fallback: NIP-50 WebSocket search

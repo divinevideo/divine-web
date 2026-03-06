@@ -9,6 +9,7 @@ import { API_CONFIG } from '@/config/api';
 import { fetchBulkUsers } from '@/lib/funnelcakeClient';
 import { isFunnelcakeAvailable } from '@/lib/funnelcakeHealth';
 import { debugLog } from '@/lib/debug';
+import { reportFunnelcakeFallback } from '@/lib/funnelcakeFallbackReporting';
 
 interface AuthorData {
   event?: NostrEvent;
@@ -33,6 +34,18 @@ export function useBatchedAuthors(pubkeys: string[]) {
       if (uniquePubkeys.length === 0) {
         return {};
       }
+
+      const reportFallback = (reason: string) => {
+        reportFunnelcakeFallback({
+          source: 'useBatchedAuthors',
+          apiUrl,
+          reason,
+          dedupeKey: `useBatchedAuthors:${uniquePubkeys.join(',')}:${reason}`,
+          context: {
+            pubkeyCount: uniquePubkeys.length,
+          },
+        });
+      };
 
       // Try Funnelcake REST API first (faster than WebSocket)
       if (isFunnelcakeAvailable(apiUrl)) {
@@ -62,8 +75,11 @@ export function useBatchedAuthors(pubkeys: string[]) {
           return authorsMap;
         } catch (err) {
           debugLog(`[useBatchedAuthors] REST API failed, falling back to WebSocket:`, err);
+          reportFallback(err instanceof Error ? err.message : String(err));
           // Fall through to WebSocket fallback
         }
+      } else {
+        reportFallback('Funnelcake unavailable or circuit breaker open');
       }
 
       // WebSocket fallback
