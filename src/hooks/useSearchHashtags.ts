@@ -56,29 +56,50 @@ export function useSearchHashtags(options: UseSearchHashtagsOptions) {
   const { query, limit = 20 } = options;
 
   const isTest = process.env.NODE_ENV === 'test';
-  const debouncedQuery = useDebouncedValue(query, isTest ? 0 : 300);
+  const debounceMs = isTest ? 0 : 300;
+  const debouncedQuery = useDebouncedValue(query, debounceMs);
 
   return useQuery({
     queryKey: ['search-hashtags', debouncedQuery, limit],
     queryFn: async ({ signal }) => {
-      // Fetch trending hashtags from Funnelcake
+      const requestStartedAt = performance.now();
+      const requestContext = {
+        query: debouncedQuery,
+        limit,
+        mode: debouncedQuery.trim() ? 'search' : 'popular',
+      };
+
+      console.info('[search/hashtags] starting', {
+        ...requestContext,
+        debounceMs,
+      });
+
+      const fetchStartedAt = performance.now();
       const hashtags = await fetchTrendingHashtags(
         DEFAULT_FUNNELCAKE_URL,
-        100, // Fetch more to allow for filtering
-        signal
+        100,
+        signal,
       );
+      const fetchCompletedAt = performance.now();
 
-      // Transform to HashtagResult format
-      const allHashtags: HashtagResult[] = hashtags.map(h => ({
-        hashtag: h.hashtag,
-        video_count: h.video_count,
+      const allHashtags: HashtagResult[] = hashtags.map(hashtag => ({
+        hashtag: hashtag.hashtag,
+        video_count: hashtag.video_count,
       }));
 
-      // Filter by search query
       const filteredHashtags = filterHashtagsByQuery(allHashtags, debouncedQuery);
+      const finalHashtags = filteredHashtags.slice(0, limit);
 
-      // Apply limit
-      return filteredHashtags.slice(0, limit);
+      console.info('[search/hashtags] completed', {
+        ...requestContext,
+        apiMs: Math.round(fetchCompletedAt - fetchStartedAt),
+        totalMs: Math.round(fetchCompletedAt - requestStartedAt),
+        fetchedHashtagCount: allHashtags.length,
+        matchedHashtagCount: filteredHashtags.length,
+        returnedHashtagCount: finalHashtags.length,
+      });
+
+      return finalHashtags;
     },
     staleTime: 60_000,
     gcTime: 300_000,

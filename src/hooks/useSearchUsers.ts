@@ -80,16 +80,30 @@ export function useSearchUsers(options: UseSearchUsersOptions) {
   const apiUrl = API_CONFIG.funnelcake.baseUrl;
 
   const isTest = process.env.NODE_ENV === 'test';
-  const debouncedQuery = useDebouncedValue(query, isTest ? 0 : 300);
+  const debounceMs = isTest ? 0 : 300;
+  const debouncedQuery = useDebouncedValue(query, debounceMs);
 
   return useQuery({
     queryKey: ['search-users', debouncedQuery, limit],
     queryFn: async ({ signal }) => {
-      if (!debouncedQuery.trim()) return [];
+      if (!debouncedQuery.trim()) {
+        return [];
+      }
 
-      // Try Funnelcake REST API first (fast, ranked)
+      const requestStartedAt = performance.now();
+      const requestContext = {
+        query: debouncedQuery,
+        limit,
+      };
+
+      console.info('[search/users] starting', {
+        ...requestContext,
+        debounceMs,
+      });
+
       if (isFunnelcakeAvailable(apiUrl)) {
         try {
+          const apiStartedAt = performance.now();
           const profiles = await searchProfiles(
             apiUrl,
             {
@@ -99,9 +113,24 @@ export function useSearchUsers(options: UseSearchUsersOptions) {
               signal: AbortSignal.any([signal, AbortSignal.timeout(FUNNELCAKE_PROFILE_SEARCH_TIMEOUT_MS)]),
             },
           );
+          const finalUsers = profiles.map(toSearchUserResult);
+          const apiCompletedAt = performance.now();
 
-          return profiles.map(toSearchUserResult);
+          console.info('[search/users] funnelcake query complete', {
+            ...requestContext,
+            apiMs: Math.round(apiCompletedAt - apiStartedAt),
+            totalMs: Math.round(apiCompletedAt - requestStartedAt),
+            profileCount: profiles.length,
+            returnedUserCount: finalUsers.length,
+          });
+
+          return finalUsers;
         } catch (error) {
+          console.warn('[search/users] falling back to relay search', {
+            ...requestContext,
+            error,
+            totalMs: Math.round(performance.now() - requestStartedAt),
+          });
           debugLog('[useSearchUsers] Funnelcake profile search failed, falling back to NIP-50:', error);
           reportFunnelcakeFallback({
             source: 'useSearchUsers',
@@ -114,6 +143,10 @@ export function useSearchUsers(options: UseSearchUsersOptions) {
           });
         }
       } else {
+        console.warn('[search/users] funnelcake unavailable, falling back to relay search', {
+          ...requestContext,
+          totalMs: Math.round(performance.now() - requestStartedAt),
+        });
         reportFunnelcakeFallback({
           source: 'useSearchUsers',
           apiUrl,
@@ -125,7 +158,7 @@ export function useSearchUsers(options: UseSearchUsersOptions) {
         });
       }
 
-      // Fallback: NIP-50 WebSocket search
+      const relayStartedAt = performance.now();
       const events = await nostr.query(
         [{ kinds: [0], search: debouncedQuery, limit: Math.min(limit * 2, 100) }],
         { signal: AbortSignal.any([signal, AbortSignal.timeout(8000)]) },
@@ -137,10 +170,24 @@ export function useSearchUsers(options: UseSearchUsersOptions) {
         if (seen.has(event.pubkey)) continue;
         seen.add(event.pubkey);
         const parsed = parseUserEvent(event);
-        if (parsed) results.push(parsed);
+        if (parsed) {
+          results.push(parsed);
+        }
       }
 
-      return results.slice(0, limit);
+      const finalUsers = results.slice(0, limit);
+      const relayCompletedAt = performance.now();
+
+      console.info('[search/users] completed', {
+        ...requestContext,
+        mode: 'nip50',
+        relayMs: Math.round(relayCompletedAt - relayStartedAt),
+        totalMs: Math.round(relayCompletedAt - requestStartedAt),
+        rawEventCount: events.length,
+        returnedUserCount: finalUsers.length,
+      });
+
+      return finalUsers;
     },
     enabled: !!debouncedQuery.trim(),
     staleTime: 60_000,

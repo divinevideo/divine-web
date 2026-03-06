@@ -11,6 +11,7 @@ import { searchVideos } from '@/lib/funnelcakeClient';
 import { API_CONFIG } from '@/config/api';
 import { isFunnelcakeAvailable } from '@/lib/funnelcakeHealth';
 import { debugLog } from '@/lib/debug';
+import { transformToVideoPage } from '@/lib/funnelcakeTransform';
 import { reportFunnelcakeFallback } from '@/lib/funnelcakeFallbackReporting';
 
 interface UseInfiniteSearchVideosOptions {
@@ -22,7 +23,7 @@ interface UseInfiniteSearchVideosOptions {
 
 interface VideoPage {
   videos: ParsedVideoData[];
-  nextCursor: number | string | undefined;
+  nextCursor: number | undefined;
 }
 
 /**
@@ -43,6 +44,20 @@ function useDebouncedValue(value: string, delay: number): string {
   return debounced;
 }
 
+function mapSearchSortModeToFunnelcakeSort(sortMode: SortMode | 'relevance') {
+  switch (sortMode) {
+    case 'top':
+      return 'popular' as const;
+    case 'hot':
+    case 'rising':
+    case 'controversial':
+    case 'classic':
+    case 'relevance':
+    default:
+      return 'trending' as const;
+  }
+}
+
 /**
  * Parse search query to determine type
  */
@@ -60,7 +75,6 @@ function parseSearchQuery(query: string, searchType: 'content' | 'author' | 'aut
     return { type: 'content', value: trimmedQuery };
   }
 
-  // Auto detection
   if (trimmedQuery.startsWith('#')) {
     return { type: 'hashtag', value: trimmedQuery.slice(1).toLowerCase() };
   }
@@ -76,13 +90,14 @@ export function useInfiniteSearchVideos({
   query,
   searchType = 'auto',
   sortMode = 'relevance',
-  pageSize = 20
+  pageSize = 20,
 }: UseInfiniteSearchVideosOptions) {
   const { nostr } = useNostr();
   const apiUrl = API_CONFIG.funnelcake.baseUrl;
 
   const isTest = process.env.NODE_ENV === 'test';
-  const debouncedQuery = useDebouncedValue(query, isTest ? 0 : 300);
+  const debounceMs = isTest ? 0 : 300;
+  const debouncedQuery = useDebouncedValue(query, debounceMs);
 
   return useInfiniteQuery<VideoPage, Error>({
     queryKey: ['infinite-search-videos', debouncedQuery, searchType, sortMode, pageSize],
@@ -91,61 +106,63 @@ export function useInfiniteSearchVideos({
         return { videos: [], nextCursor: undefined };
       }
 
-      const cursor = pageParam as number | string | undefined;
+      const requestStartedAt = performance.now();
+      const cursor = pageParam as number | undefined;
       const searchParams = parseSearchQuery(debouncedQuery, searchType);
+      const requestContext = {
+        query: debouncedQuery,
+        parsedType: searchParams.type,
+        parsedValue: searchParams.value,
+        searchType,
+        sortMode,
+        cursor: cursor ?? null,
+        pageSize,
+      };
+
+      console.info('[search/videos] starting', {
+        ...requestContext,
+        debounceMs,
+      });
 
       const abortSignal = AbortSignal.any([
         signal,
-        AbortSignal.timeout(8000)
+        AbortSignal.timeout(8000),
       ]);
 
-      // Try Funnelcake REST API first (fast, ranked results)
       if (isFunnelcakeAvailable(apiUrl)) {
         try {
-          // Map NIP-50 sort modes to Funnelcake sort options
-          const sortMap: Record<string, 'trending' | 'recent' | 'popular'> = {
-            relevance: 'trending',
-            hot: 'trending',
-            top: 'popular',
-            rising: 'trending',
-            controversial: 'trending',
-            classic: 'trending',
-          };
-          const funnelcakeSort = sortMap[sortMode] || 'trending';
+          const funnelcakeSort = mapSearchSortModeToFunnelcakeSort(sortMode);
 
-          if (searchParams.type === 'hashtag') {
+          if (searchParams.type === 'hashtag' || searchParams.type === 'content') {
+            const apiStartedAt = performance.now();
             const result = await searchVideos(apiUrl, {
-              tag: searchParams.value,
+              query: searchParams.type === 'content' ? searchParams.value : undefined,
+              tag: searchParams.type === 'hashtag' ? searchParams.value : undefined,
               sort: funnelcakeSort,
               limit: pageSize,
-              offset: typeof cursor === 'string' ? parseInt(cursor, 10) : cursor as number | undefined,
+              offset: cursor,
               signal: abortSignal,
             });
+            const page = transformToVideoPage(result, 'offset');
+            const apiCompletedAt = performance.now();
+            const nextCursor = page.offset ?? page.nextCursor;
 
-            const videos = parseVideoEvents(result.videos as unknown as import('@nostrify/nostrify').NostrEvent[]);
+            console.info('[search/videos] funnelcake query complete', {
+              ...requestContext,
+              mode: 'funnelcake',
+              apiMs: Math.round(apiCompletedAt - apiStartedAt),
+              totalMs: Math.round(apiCompletedAt - requestStartedAt),
+              returnedVideoCount: page.videos.length,
+              hasMore: result.has_more,
+              nextCursor: nextCursor ?? null,
+            });
+
             return {
-              videos,
-              nextCursor: result.next_cursor,
+              videos: page.videos,
+              nextCursor,
             };
           }
 
-          if (searchParams.type === 'content') {
-            const result = await searchVideos(apiUrl, {
-              query: searchParams.value,
-              sort: funnelcakeSort,
-              limit: pageSize,
-              offset: typeof cursor === 'string' ? parseInt(cursor, 10) : cursor as number | undefined,
-              signal: abortSignal,
-            });
-
-            const videos = parseVideoEvents(result.videos as unknown as import('@nostrify/nostrify').NostrEvent[]);
-            return {
-              videos,
-              nextCursor: result.next_cursor,
-            };
-          }
-
-          // Author search: use Funnelcake profile search + video fetch
           if (searchParams.type === 'author') {
             const { searchProfiles } = await import('@/lib/funnelcakeClient');
             const profiles = await searchProfiles(apiUrl, {
@@ -155,30 +172,46 @@ export function useInfiniteSearchVideos({
               hasVideos: true,
               signal: abortSignal,
             });
-            const pubkeys = profiles.map(p => p.pubkey);
+            const pubkeys = profiles.map(profile => profile.pubkey);
 
             if (pubkeys.length === 0) {
               return { videos: [], nextCursor: undefined };
             }
 
-            // Fetch videos from matched authors via WebSocket (Funnelcake doesn't have multi-author video search)
             const filter: NIP50Filter = {
               kinds: VIDEO_KINDS,
               authors: pubkeys,
               limit: pageSize,
             };
             if (cursor) {
-              filter.until = typeof cursor === 'string' ? parseInt(cursor, 10) : cursor;
+              filter.until = cursor;
             }
 
+            const relayStartedAt = performance.now();
             const events = await nostr.query([filter], { signal: abortSignal });
             const videos = parseVideoEvents(events);
+            const relayCompletedAt = performance.now();
+
+            console.info('[search/videos] author query complete', {
+              ...requestContext,
+              relayMs: Math.round(relayCompletedAt - relayStartedAt),
+              totalMs: Math.round(relayCompletedAt - requestStartedAt),
+              matchingAuthorCount: pubkeys.length,
+              eventCount: events.length,
+              videoCount: videos.length,
+            });
+
             return {
               videos,
               nextCursor: videos.length > 0 ? videos[videos.length - 1].createdAt - 1 : undefined,
             };
           }
         } catch (error) {
+          console.warn('[search/videos] funnelcake query failed, falling back to relay search', {
+            ...requestContext,
+            error,
+            totalMs: Math.round(performance.now() - requestStartedAt),
+          });
           debugLog('[useInfiniteSearchVideos] Funnelcake search failed, falling back to NIP-50:', error);
           reportFunnelcakeFallback({
             source: 'useInfiniteSearchVideos',
@@ -192,6 +225,10 @@ export function useInfiniteSearchVideos({
           });
         }
       } else {
+        console.warn('[search/videos] funnelcake unavailable, falling back to relay search', {
+          ...requestContext,
+          totalMs: Math.round(performance.now() - requestStartedAt),
+        });
         reportFunnelcakeFallback({
           source: 'useInfiniteSearchVideos',
           apiUrl,
@@ -204,33 +241,62 @@ export function useInfiniteSearchVideos({
         });
       }
 
-      // Fallback: NIP-50 WebSocket search
       const filter: NIP50Filter = {
         kinds: VIDEO_KINDS,
         limit: pageSize,
       };
 
       if (cursor) {
-        filter.until = typeof cursor === 'string' ? parseInt(cursor, 10) : cursor;
+        filter.until = cursor;
       }
 
       if (searchParams.type === 'hashtag') {
         filter['#t'] = [searchParams.value];
-      } else {
-        filter.search = sortMode === 'relevance'
-          ? searchParams.value
-          : `sort:${sortMode} ${searchParams.value}`;
+
+        const relayStartedAt = performance.now();
+        const events = await nostr.query([filter], { signal: abortSignal });
+        const videos = parseVideoEvents(events);
+        const relayCompletedAt = performance.now();
+
+        console.info('[search/videos] hashtag query complete', {
+          ...requestContext,
+          mode: 'nip50',
+          relayMs: Math.round(relayCompletedAt - relayStartedAt),
+          totalMs: Math.round(relayCompletedAt - requestStartedAt),
+          eventCount: events.length,
+          videoCount: videos.length,
+        });
+
+        return {
+          videos,
+          nextCursor: videos.length > 0 ? videos[videos.length - 1].createdAt - 1 : undefined,
+        };
       }
 
+      filter.search = sortMode === 'relevance'
+        ? searchParams.value
+        : `sort:${sortMode} ${searchParams.value}`;
+
+      const relayStartedAt = performance.now();
       const events = await nostr.query([filter], { signal: abortSignal });
       const videos = parseVideoEvents(events);
+      const relayCompletedAt = performance.now();
+
+      console.info('[search/videos] relay query complete', {
+        ...requestContext,
+        mode: 'nip50',
+        relayMs: Math.round(relayCompletedAt - relayStartedAt),
+        totalMs: Math.round(relayCompletedAt - requestStartedAt),
+        eventCount: events.length,
+        videoCount: videos.length,
+      });
 
       return {
         videos,
         nextCursor: videos.length > 0 ? videos[videos.length - 1].createdAt - 1 : undefined,
       };
     },
-    getNextPageParam: (lastPage) => lastPage.nextCursor,
+    getNextPageParam: lastPage => lastPage.nextCursor,
     initialPageParam: undefined,
     enabled: !!debouncedQuery.trim() && !!nostr,
     staleTime: 60_000,
