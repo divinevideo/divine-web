@@ -7,13 +7,13 @@ import { getPerformance, trace, type FirebasePerformance } from 'firebase/perfor
 import { onAnalyticsConsentChanged } from './cookieConsent';
 
 const firebaseConfig = {
-  apiKey: "AIzaSyDEdSqDEExCcHMXr6MEvNmY_GJ5ACTtLvA",
-  authDomain: "openvine-co.firebaseapp.com",
-  projectId: "openvine-co",
-  storageBucket: "openvine-co.firebasestorage.app",
-  messagingSenderId: "972941478875",
-  appId: "1:972941478875:web:cefa0a37c703fd2444b5fe",
-  measurementId: "G-HEXR9PF8PV"
+  apiKey: "AIzaSyDiq-KGmtI9wHNxSkL-QT4HzRckdS_0vQw",
+  authDomain: "divine-web-e8688.firebaseapp.com",
+  projectId: "divine-web-e8688",
+  storageBucket: "divine-web-e8688.firebasestorage.app",
+  messagingSenderId: "799047826829",
+  appId: "1:799047826829:web:be117a5ff8973ccdeed1c4",
+  measurementId: "G-FTDHC8JHYF"
 };
 
 let app: FirebaseApp | null = null;
