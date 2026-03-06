@@ -78,6 +78,7 @@ export interface ProfileStats {
   totalLoops: number;       // Total loops (watch time / video duration)
   totalReactions: number;   // Total likes/reactions received
   joinedDate: Date | null;
+  joinedDateLoading?: boolean;
   followersCount: number;
   followingCount: number;
   // Classic Vine stats (original counts from Vine era)
@@ -486,7 +487,9 @@ export function ProfileHeader({
         {/* Joined Date / Classic Viner Status */}
         <div className="text-center col-span-2 sm:col-span-1">
           {stats ? (
-            <>
+            stats.joinedDateLoading ? (
+              <Skeleton className="h-4 w-20 mx-auto" data-testid="stat-skeleton-joined" />
+            ) : (
               <div className="text-xs sm:text-sm text-muted-foreground"
               title={
                 stats.joinedDate
@@ -495,7 +498,7 @@ export function ProfileHeader({
               }>
                 {formatJoinedDate(stats.joinedDate, stats.isClassicViner)}
               </div>
-            </>
+            )
           ) : (
             <>
               <Skeleton className="h-4 w-20 mx-auto" data-testid="stat-skeleton-joined" />

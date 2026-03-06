@@ -23,6 +23,7 @@ import { getSubdomainUser } from '@/hooks/useSubdomainUser';
 import { useResolveSubdomainPubkey } from '@/hooks/useResolveSubdomainPubkey';
 import { useVideoProvider } from '@/hooks/useVideoProvider';
 import { useFunnelcakeProfile } from '@/hooks/useFunnelcakeProfile';
+import { useProfileJoinedDate } from '@/hooks/useProfileJoinedDate';
 import { useFollowRelationship, useFollowUser, useUnfollowUser } from '@/hooks/useFollowRelationship';
 import { useFollowListSafetyCheck } from '@/hooks/useFollowListSafetyCheck';
 import { PinnedVideosSection } from '@/components/PinnedVideosSection';
@@ -157,14 +158,22 @@ export function ProfilePage() {
 
   // Use actual loaded video count once all pages are loaded (API video_count may be inflated by dups)
   const allLoaded = !hasNextPage && videos.length > 0;
+  const totalVideoCount = funnelcakeProfile?.video_count ?? videos.length;
+  const joinedDateQuery = useProfileJoinedDate(pubkey || '', {
+    videos,
+    totalVideoCount,
+    allVideosLoaded: allLoaded,
+    enabled: !!pubkey,
+  });
   const stats = {
-    videosCount: allLoaded ? videos.length : (funnelcakeProfile?.video_count ?? videos.length),
+    videosCount: allLoaded ? videos.length : totalVideoCount,
     followersCount: funnelcakeProfile?.follower_count ?? 0,
     followingCount: funnelcakeProfile?.following_count ?? 0,
     totalViews: funnelcakeProfile?.total_views ?? 0,
     totalLoops: Math.floor(funnelcakeProfile?.total_loops ?? 0),
     totalReactions: funnelcakeProfile?.total_reactions ?? 0,
-    joinedDate: null, // Could fetch from Nostr later if needed
+    joinedDate: joinedDateQuery.data ?? null,
+    joinedDateLoading: joinedDateQuery.isLoading,
     isClassicViner,
     originalLoopCount,
     classicVineCount: vineVideos.length,
