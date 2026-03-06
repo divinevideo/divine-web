@@ -3,6 +3,7 @@
 
 import { useState } from 'react';
 import { getBadgeImageUrl, type ValidatedBadge } from '@/lib/badges';
+import { BadgeImage } from '@/components/BadgeImage';
 import { BadgeDetailModal } from '@/components/BadgeDetailModal';
 
 const MAX_INLINE_BADGES = 3;
@@ -24,7 +25,6 @@ export function InlineBadges({ badges, className }: InlineBadgesProps) {
       <span className={`inline-flex items-center gap-0.5 ${className || ''}`} data-testid="inline-badges">
         {displayBadges.map((badge) => {
           const thumbUrl = getBadgeImageUrl(badge.definition, 16);
-          if (!thumbUrl) return null;
 
           return (
             <button
@@ -34,16 +34,17 @@ export function InlineBadges({ badges, className }: InlineBadgesProps) {
                 e.stopPropagation();
                 setSelectedBadge(badge);
               }}
-              className={`rounded-full overflow-hidden flex-shrink-0 ${
+              className={`rounded-full overflow-hidden flex-shrink-0 bg-background ${
                 badge.definition.isOfficial
                   ? 'ring-1 ring-yellow-400'
                   : ''
               }`}
             >
-              <img
+              <BadgeImage
                 src={thumbUrl}
                 alt={badge.definition.name}
                 className="w-4 h-4 object-cover"
+                fallbackInnerClassName="scale-[0.82]"
                 loading="lazy"
               />
             </button>

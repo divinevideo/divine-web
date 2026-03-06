@@ -9,6 +9,7 @@ import {
 } from '@/components/ui/dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
+import { BadgeImage } from '@/components/BadgeImage';
 import { useAuthor } from '@/hooks/useAuthor';
 import { getBadgeImageUrl, type ValidatedBadge } from '@/lib/badges';
 import { Award } from 'lucide-react';
@@ -44,20 +45,20 @@ export function BadgeDetailModal({ badge, open, onOpenChange }: BadgeDetailModal
 
         <div className="flex flex-col items-center gap-4 py-4">
           {/* Badge Image */}
-          {imageUrl && (
-            <div className={`relative rounded-lg overflow-hidden ${
-              definition.isOfficial
-                ? 'ring-2 ring-yellow-400 shadow-[0_0_12px_rgba(250,204,21,0.4)]'
-                : ''
-            }`}>
-              <img
-                src={imageUrl}
-                alt={definition.name}
-                className="w-32 h-32 object-cover"
-                loading="lazy"
-              />
-            </div>
-          )}
+          <div className={`relative rounded-3xl overflow-hidden ${
+            definition.isOfficial
+              ? 'ring-2 ring-yellow-400 shadow-[0_0_12px_rgba(250,204,21,0.4)]'
+              : 'ring-1 ring-border/70'
+          }`}>
+            <BadgeImage
+              src={imageUrl}
+              alt={definition.name}
+              className="h-32 w-32 object-cover"
+              fallbackClassName="bg-gradient-to-br from-muted via-muted/80 to-background"
+              fallbackInnerClassName="scale-[0.82]"
+              loading="lazy"
+            />
+          </div>
 
           {/* Badge Name */}
           <div className="text-center">
