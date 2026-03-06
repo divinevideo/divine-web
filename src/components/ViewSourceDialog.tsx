@@ -1,7 +1,7 @@
 // ABOUTME: Dialog for viewing raw Nostr event JSON source
 // ABOUTME: Shows formatted event data for debugging and transparency
 
-import { type ReactNode, useEffect, useMemo, useState } from 'react';
+import { type ReactNode, useEffect, useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -174,7 +174,7 @@ export function ViewSourceDialog({
   }
 
   const eventJson = JSON.stringify(displayEvent, null, 2);
-  const renderedEventJson = useMemo(() => renderJsonWithLinks(eventJson), [eventJson]);
+  const renderedEventJson = renderJsonWithLinks(eventJson);
 
   const handleCopy = async () => {
     try {
