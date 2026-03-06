@@ -26,9 +26,6 @@ interface VideoPage {
   nextCursor: number | undefined;
 }
 
-/**
- * Proper debounce hook
- */
 function useDebouncedValue(value: string, delay: number): string {
   const [debounced, setDebounced] = useState(value);
 
@@ -37,6 +34,7 @@ function useDebouncedValue(value: string, delay: number): string {
       setDebounced(value);
       return;
     }
+
     const timer = setTimeout(() => setDebounced(value), delay);
     return () => clearTimeout(timer);
   }, [value, delay]);
@@ -47,20 +45,19 @@ function useDebouncedValue(value: string, delay: number): string {
 function mapSearchSortModeToFunnelcakeSort(sortMode: SortMode | 'relevance') {
   switch (sortMode) {
     case 'top':
-      return 'popular' as const;
-    case 'hot':
+      return 'loops' as const;
     case 'rising':
     case 'controversial':
+      return 'engagement' as const;
     case 'classic':
+      return 'loops' as const;
+    case 'hot':
     case 'relevance':
     default:
       return 'trending' as const;
   }
 }
 
-/**
- * Parse search query to determine type
- */
 function parseSearchQuery(query: string, searchType: 'content' | 'author' | 'auto') {
   const trimmedQuery = query.trim();
 
@@ -82,10 +79,6 @@ function parseSearchQuery(query: string, searchType: 'content' | 'author' | 'aut
   return { type: 'content', value: trimmedQuery };
 }
 
-/**
- * Infinite scroll search hook
- * Prefers Funnelcake REST API, falls back to NIP-50 WebSocket
- */
 export function useInfiniteSearchVideos({
   query,
   searchType = 'auto',
@@ -141,6 +134,8 @@ export function useInfiniteSearchVideos({
               sort: funnelcakeSort,
               limit: pageSize,
               offset: cursor,
+              classic: sortMode === 'classic' ? true : undefined,
+              platform: sortMode === 'classic' ? 'vine' : undefined,
               signal: abortSignal,
             });
             const page = transformToVideoPage(result, 'offset');
