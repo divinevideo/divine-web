@@ -67,14 +67,29 @@ export function useSearchUsers(options: UseSearchUsersOptions) {
     queryFn: async ({ signal }) => {
       if (!debouncedQuery.trim()) return [];
 
+      // Request extra results so we can re-rank and still fill the limit
       const profiles = await searchProfiles(
         DEFAULT_FUNNELCAKE_URL,
         debouncedQuery,
-        limit,
+        Math.max(limit * 2, 50),
         signal,
       );
 
-      return profiles.map(toSearchUserResult);
+      // Re-rank: boost profiles with content above empty ones
+      const searchLower = debouncedQuery.toLowerCase();
+      profiles.sort((a, b) => {
+        // Exact name match first
+        const aExact = a.name.toLowerCase() === searchLower ? 1 : 0;
+        const bExact = b.name.toLowerCase() === searchLower ? 1 : 0;
+        if (aExact !== bExact) return bExact - aExact;
+
+        // Then by engagement (videos + followers)
+        const aScore = a.video_count + a.follower_count;
+        const bScore = b.video_count + b.follower_count;
+        return bScore - aScore;
+      });
+
+      return profiles.slice(0, limit).map(toSearchUserResult);
     },
     enabled: !!debouncedQuery.trim(),
     staleTime: 60_000,
