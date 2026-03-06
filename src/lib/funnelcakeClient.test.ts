@@ -22,6 +22,7 @@ describe('funnelcakeClient', () => {
   let fetchUserProfile: typeof import('./funnelcakeClient').fetchUserProfile;
   let fetchBulkUsers: typeof import('./funnelcakeClient').fetchBulkUsers;
   let fetchBulkVideoStats: typeof import('./funnelcakeClient').fetchBulkVideoStats;
+  let searchProfiles: typeof import('./funnelcakeClient').searchProfiles;
 
   beforeEach(async () => {
     vi.resetModules();
@@ -33,6 +34,7 @@ describe('funnelcakeClient', () => {
     fetchUserProfile = client.fetchUserProfile;
     fetchBulkUsers = client.fetchBulkUsers;
     fetchBulkVideoStats = client.fetchBulkVideoStats;
+    searchProfiles = client.searchProfiles;
   });
 
   afterEach(() => {
@@ -320,6 +322,36 @@ describe('funnelcakeClient', () => {
 
       expect(result.stats).toEqual([]);
       expect(result.missing).toContain(eventIds[0]);
+    });
+  });
+
+  describe('searchProfiles', () => {
+    it('passes through documented profile-search parameters', async () => {
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve([]),
+      });
+
+      await searchProfiles(API_URL, {
+        query: 'jack',
+        limit: 20,
+        offset: 40,
+        sortBy: 'relevance',
+        hasVideos: true,
+      });
+
+      const [url, init] = (global.fetch as ReturnType<typeof vi.fn>).mock.calls[0];
+      const requestUrl = new URL(url as string);
+
+      expect(requestUrl.pathname).toBe('/api/search/profiles');
+      expect(requestUrl.searchParams.get('q')).toBe('jack');
+      expect(requestUrl.searchParams.get('limit')).toBe('20');
+      expect(requestUrl.searchParams.get('offset')).toBe('40');
+      expect(requestUrl.searchParams.get('sort_by')).toBe('relevance');
+      expect(requestUrl.searchParams.get('has_videos')).toBe('true');
+      expect(init).toEqual(expect.objectContaining({
+        signal: expect.any(AbortSignal),
+      }));
     });
   });
 });

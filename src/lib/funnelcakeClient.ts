@@ -291,16 +291,38 @@ export interface FunnelcakeProfileResult {
   video_count: number;
 }
 
+export interface FunnelcakeProfileSearchOptions {
+  query: string;
+  limit?: number;
+  offset?: number;
+  sortBy?: 'followers' | 'relevance';
+  hasVideos?: boolean;
+  signal?: AbortSignal;
+}
+
 export async function searchProfiles(
   apiUrl: string = API_CONFIG.funnelcake.baseUrl,
-  query: string,
-  limit: number = 20,
-  signal?: AbortSignal,
+  options: FunnelcakeProfileSearchOptions,
 ): Promise<FunnelcakeProfileResult[]> {
+  const {
+    query,
+    limit = 20,
+    offset,
+    sortBy,
+    hasVideos,
+    signal,
+  } = options;
+
   return funnelcakeRequest<FunnelcakeProfileResult[]>(
     apiUrl,
     API_CONFIG.funnelcake.endpoints.searchProfiles,
-    { q: query, limit },
+    {
+      q: query,
+      limit,
+      offset,
+      sort_by: sortBy,
+      has_videos: hasVideos,
+    },
     signal,
   );
 }

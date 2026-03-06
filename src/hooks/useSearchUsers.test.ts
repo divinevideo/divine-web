@@ -57,7 +57,7 @@ function createWrapper() {
 function createAbortableSearchPromise() {
   return new Promise<never>((_, reject) => {
     // The hook should always pass a signal for Funnelcake profile search.
-    const signal = mockSearchProfiles.mock.calls.at(-1)?.[3] as AbortSignal | undefined;
+    const signal = mockSearchProfiles.mock.calls.at(-1)?.[1]?.signal as AbortSignal | undefined;
     if (!signal) return;
 
     const rejectOnAbort = () => {
@@ -115,9 +115,12 @@ describe('useSearchUsers', () => {
     expect(elapsedMs).toBeLessThan(2500);
     expect(mockSearchProfiles).toHaveBeenCalledWith(
       'https://funnelcake.example',
-      'jack',
-      50,
-      expect.any(AbortSignal),
+      expect.objectContaining({
+        query: 'jack',
+        limit: 20,
+        sortBy: 'relevance',
+        signal: expect.any(AbortSignal),
+      }),
     );
     expect(mockNostrQuery).toHaveBeenCalledTimes(1);
     expect(mockReportFunnelcakeFallback).toHaveBeenCalledWith(expect.objectContaining({

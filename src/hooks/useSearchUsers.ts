@@ -92,24 +92,15 @@ export function useSearchUsers(options: UseSearchUsersOptions) {
         try {
           const profiles = await searchProfiles(
             apiUrl,
-            debouncedQuery,
-            Math.max(limit * 2, 50),
-            AbortSignal.any([signal, AbortSignal.timeout(FUNNELCAKE_PROFILE_SEARCH_TIMEOUT_MS)]),
+            {
+              query: debouncedQuery,
+              limit,
+              sortBy: 'relevance',
+              signal: AbortSignal.any([signal, AbortSignal.timeout(FUNNELCAKE_PROFILE_SEARCH_TIMEOUT_MS)]),
+            },
           );
 
-          // Re-rank: boost profiles with content above empty ones
-          const searchLower = debouncedQuery.toLowerCase();
-          profiles.sort((a, b) => {
-            const aExact = a.name.toLowerCase() === searchLower ? 1 : 0;
-            const bExact = b.name.toLowerCase() === searchLower ? 1 : 0;
-            if (aExact !== bExact) return bExact - aExact;
-
-            const aScore = a.video_count + a.follower_count;
-            const bScore = b.video_count + b.follower_count;
-            return bScore - aScore;
-          });
-
-          return profiles.slice(0, limit).map(toSearchUserResult);
+          return profiles.map(toSearchUserResult);
         } catch (error) {
           debugLog('[useSearchUsers] Funnelcake profile search failed, falling back to NIP-50:', error);
           reportFunnelcakeFallback({
