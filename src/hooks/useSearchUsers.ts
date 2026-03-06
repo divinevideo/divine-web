@@ -5,9 +5,10 @@ import { useQuery } from '@tanstack/react-query';
 import { useNostr } from '@nostrify/react';
 import { useState, useEffect } from 'react';
 import { searchProfiles, type FunnelcakeProfileResult } from '@/lib/funnelcakeClient';
-import { DEFAULT_FUNNELCAKE_URL } from '@/config/relays';
+import { API_CONFIG } from '@/config/api';
 import { debugLog } from '@/lib/debug';
 import { reportFunnelcakeFallback } from '@/lib/funnelcakeFallbackReporting';
+import { isFunnelcakeAvailable } from '@/lib/funnelcakeHealth';
 import type { NostrMetadata, NostrEvent } from '@nostrify/nostrify';
 
 interface UseSearchUsersOptions {
@@ -19,6 +20,8 @@ export interface SearchUserResult {
   pubkey: string;
   metadata?: NostrMetadata;
 }
+
+const FUNNELCAKE_PROFILE_SEARCH_TIMEOUT_MS = 500;
 
 /**
  * Convert Funnelcake profile result to SearchUserResult for compatibility
@@ -74,6 +77,7 @@ function useDebouncedValue(value: string, delay: number): string {
 export function useSearchUsers(options: UseSearchUsersOptions) {
   const { nostr } = useNostr();
   const { query, limit = 20 } = options;
+  const apiUrl = API_CONFIG.funnelcake.baseUrl;
 
   const isTest = process.env.NODE_ENV === 'test';
   const debouncedQuery = useDebouncedValue(query, isTest ? 0 : 300);
@@ -84,34 +88,37 @@ export function useSearchUsers(options: UseSearchUsersOptions) {
       if (!debouncedQuery.trim()) return [];
 
       // Try Funnelcake REST API first (fast, ranked)
-      try {
-        const profiles = await searchProfiles(
-          DEFAULT_FUNNELCAKE_URL,
-          debouncedQuery,
-          Math.max(limit * 2, 50),
-          signal,
-        );
+      if (isFunnelcakeAvailable(apiUrl)) {
+        try {
+          const profiles = await searchProfiles(
+            apiUrl,
+            {
+              query: debouncedQuery,
+              limit,
+              sortBy: 'relevance',
+              signal: AbortSignal.any([signal, AbortSignal.timeout(FUNNELCAKE_PROFILE_SEARCH_TIMEOUT_MS)]),
+            },
+          );
 
-        // Re-rank: boost profiles with content above empty ones
-        const searchLower = debouncedQuery.toLowerCase();
-        profiles.sort((a, b) => {
-          const aExact = a.name.toLowerCase() === searchLower ? 1 : 0;
-          const bExact = b.name.toLowerCase() === searchLower ? 1 : 0;
-          if (aExact !== bExact) return bExact - aExact;
-
-          const aScore = a.video_count + a.follower_count;
-          const bScore = b.video_count + b.follower_count;
-          return bScore - aScore;
-        });
-
-        return profiles.slice(0, limit).map(toSearchUserResult);
-      } catch (error) {
-        debugLog('[useSearchUsers] Funnelcake profile search failed, falling back to NIP-50:', error);
+          return profiles.map(toSearchUserResult);
+        } catch (error) {
+          debugLog('[useSearchUsers] Funnelcake profile search failed, falling back to NIP-50:', error);
+          reportFunnelcakeFallback({
+            source: 'useSearchUsers',
+            apiUrl,
+            reason: error instanceof Error ? error.message : String(error),
+            dedupeKey: `useSearchUsers:${debouncedQuery}`,
+            context: {
+              query: debouncedQuery,
+            },
+          });
+        }
+      } else {
         reportFunnelcakeFallback({
           source: 'useSearchUsers',
-          apiUrl: DEFAULT_FUNNELCAKE_URL,
-          reason: error instanceof Error ? error.message : String(error),
-          dedupeKey: `useSearchUsers:${debouncedQuery}`,
+          apiUrl,
+          reason: 'Funnelcake unavailable or circuit breaker open',
+          dedupeKey: `useSearchUsers:${debouncedQuery}:unavailable`,
           context: {
             query: debouncedQuery,
           },

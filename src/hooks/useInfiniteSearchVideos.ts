@@ -8,7 +8,7 @@ import { VIDEO_KINDS, type ParsedVideoData } from '@/types/video';
 import type { NIP50Filter, SortMode } from '@/types/nostr';
 import { parseVideoEvents } from '@/lib/videoParser';
 import { searchVideos } from '@/lib/funnelcakeClient';
-import { DEFAULT_FUNNELCAKE_URL } from '@/config/relays';
+import { API_CONFIG } from '@/config/api';
 import { isFunnelcakeAvailable } from '@/lib/funnelcakeHealth';
 import { debugLog } from '@/lib/debug';
 import { reportFunnelcakeFallback } from '@/lib/funnelcakeFallbackReporting';
@@ -79,6 +79,7 @@ export function useInfiniteSearchVideos({
   pageSize = 20
 }: UseInfiniteSearchVideosOptions) {
   const { nostr } = useNostr();
+  const apiUrl = API_CONFIG.funnelcake.baseUrl;
 
   const isTest = process.env.NODE_ENV === 'test';
   const debouncedQuery = useDebouncedValue(query, isTest ? 0 : 300);
@@ -99,7 +100,7 @@ export function useInfiniteSearchVideos({
       ]);
 
       // Try Funnelcake REST API first (fast, ranked results)
-      if (isFunnelcakeAvailable(DEFAULT_FUNNELCAKE_URL)) {
+      if (isFunnelcakeAvailable(apiUrl)) {
         try {
           // Map NIP-50 sort modes to Funnelcake sort options
           const sortMap: Record<string, 'trending' | 'recent' | 'popular'> = {
@@ -113,7 +114,7 @@ export function useInfiniteSearchVideos({
           const funnelcakeSort = sortMap[sortMode] || 'trending';
 
           if (searchParams.type === 'hashtag') {
-            const result = await searchVideos(DEFAULT_FUNNELCAKE_URL, {
+            const result = await searchVideos(apiUrl, {
               tag: searchParams.value,
               sort: funnelcakeSort,
               limit: pageSize,
@@ -129,7 +130,7 @@ export function useInfiniteSearchVideos({
           }
 
           if (searchParams.type === 'content') {
-            const result = await searchVideos(DEFAULT_FUNNELCAKE_URL, {
+            const result = await searchVideos(apiUrl, {
               query: searchParams.value,
               sort: funnelcakeSort,
               limit: pageSize,
@@ -147,7 +148,13 @@ export function useInfiniteSearchVideos({
           // Author search: use Funnelcake profile search + video fetch
           if (searchParams.type === 'author') {
             const { searchProfiles } = await import('@/lib/funnelcakeClient');
-            const profiles = await searchProfiles(DEFAULT_FUNNELCAKE_URL, searchParams.value, 10, abortSignal);
+            const profiles = await searchProfiles(apiUrl, {
+              query: searchParams.value,
+              limit: 10,
+              sortBy: 'relevance',
+              hasVideos: true,
+              signal: abortSignal,
+            });
             const pubkeys = profiles.map(p => p.pubkey);
 
             if (pubkeys.length === 0) {
@@ -175,7 +182,7 @@ export function useInfiniteSearchVideos({
           debugLog('[useInfiniteSearchVideos] Funnelcake search failed, falling back to NIP-50:', error);
           reportFunnelcakeFallback({
             source: 'useInfiniteSearchVideos',
-            apiUrl: DEFAULT_FUNNELCAKE_URL,
+            apiUrl,
             reason: error instanceof Error ? error.message : String(error),
             dedupeKey: `useInfiniteSearchVideos:${searchParams.type}:${debouncedQuery}`,
             context: {
@@ -187,7 +194,7 @@ export function useInfiniteSearchVideos({
       } else {
         reportFunnelcakeFallback({
           source: 'useInfiniteSearchVideos',
-          apiUrl: DEFAULT_FUNNELCAKE_URL,
+          apiUrl,
           reason: 'Funnelcake unavailable or circuit breaker open',
           dedupeKey: `useInfiniteSearchVideos:${searchParams.type}:${debouncedQuery}:unavailable`,
           context: {
