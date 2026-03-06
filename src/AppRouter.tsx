@@ -26,6 +26,7 @@ import { TagPage } from "./pages/TagPage";
 import ListsPage from "./pages/ListsPage";
 import ListDetailPage from "./pages/ListDetailPage";
 import ModerationSettingsPage from "./pages/ModerationSettingsPage";
+import LinkedAccountsSettingsPage from "./pages/LinkedAccountsSettingsPage";
 // import { NIP05ProfilePage } from "./pages/NIP05ProfilePage";
 import { UniversalUserPage } from "./pages/UniversalUserPage";
 
@@ -114,6 +115,7 @@ export function AppRouter() {
               <Route path="/upload" element={<UploadPage />} />
               */}
               <Route path="/settings/moderation" element={<ModerationSettingsPage />} />
+              <Route path="/settings/linked-accounts" element={<LinkedAccountsSettingsPage />} />
               {/* Test pages for debugging */}
               <Route path="/debug-video" element={<DebugVideoPage />} />
             </>

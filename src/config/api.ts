@@ -21,6 +21,7 @@ export const API_CONFIG = {
     endpoints: {
       videos: '/api/videos',
       search: '/api/search',
+      searchProfiles: '/api/search/profiles',
       userProfile: '/api/users/{pubkey}',
       userVideos: '/api/users/{pubkey}/videos',
       userFeed: '/api/users/{pubkey}/feed',
@@ -49,12 +50,22 @@ export const API_CONFIG = {
     },
   },
 
+  verificationService: {
+    baseUrl: import.meta.env.VITE_VERIFICATION_SERVICE_URL || 'https://verifyer.divine.video',
+    timeout: 10000,
+    endpoints: {
+      verify: '/api/verify',
+    },
+  },
+
   // Feature flags (can be overridden via localStorage for debugging)
   features: {
     // Use Funnelcake API when available (default: true)
     useFunnelcake: true,
     // Enable debug logging for API calls
     debugApi: false,
+    // Use external verification service for identity proofs
+    useVerificationService: true,
   },
 } as const;
 

@@ -276,6 +276,36 @@ export async function searchVideos(
 }
 
 /**
+ * Search user profiles via Funnelcake REST API
+ * Returns ranked results with metadata, follower counts, etc.
+ */
+export interface FunnelcakeProfileResult {
+  pubkey: string;
+  name: string;
+  display_name: string;
+  nip05: string;
+  about: string;
+  picture: string;
+  banner: string;
+  follower_count: number;
+  video_count: number;
+}
+
+export async function searchProfiles(
+  apiUrl: string = API_CONFIG.funnelcake.baseUrl,
+  query: string,
+  limit: number = 20,
+  signal?: AbortSignal,
+): Promise<FunnelcakeProfileResult[]> {
+  return funnelcakeRequest<FunnelcakeProfileResult[]>(
+    apiUrl,
+    API_CONFIG.funnelcake.endpoints.searchProfiles,
+    { q: query, limit },
+    signal,
+  );
+}
+
+/**
  * Fetch videos by a specific user
  *
  * @param apiUrl - Base URL of the Funnelcake API

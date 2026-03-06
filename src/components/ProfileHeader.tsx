@@ -14,12 +14,13 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { UserPlus, UserCheck, CheckCircle, Pencil, Copy, MoreVertical, Flag, Play, Repeat, Loader2, XCircle, Code, Rss } from 'lucide-react';
+import { UserPlus, UserCheck, CheckCircle, Pencil, Copy, MoreVertical, Flag, Play, Repeat, Loader2, XCircle, Link2, Code, Rss } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { feedUrls } from '@/lib/feedUrls';
 import { useRssFeedAvailable } from '@/hooks/useRssFeedAvailable';
 import { ReportContentDialog } from '@/components/ReportContentDialog';
 import { UserListDialog } from '@/components/UserListDialog';
+import { LinkedAccounts } from '@/components/LinkedAccounts';
 import { useNip05Validation } from '@/hooks/useNip05Validation';
 import { useFollowers, getAllFollowerPubkeys } from '@/hooks/useFollowers';
 import { useFollowing } from '@/hooks/useFollowing';
@@ -30,6 +31,46 @@ import { genUserName } from '@/lib/genUserName';
 import { toast } from '@/hooks/useToast';
 import { nip19 } from 'nostr-tools';
 import type { NostrMetadata } from '@nostrify/nostrify';
+
+/** Linkify URLs and domain-like words in text */
+function linkifyText(text: string): React.ReactNode[] {
+  // Match URLs (https?://...) and bare domain names (word.tld patterns)
+  const urlRegex = /(https?:\/\/[^\s]+)|(\b[a-zA-Z0-9][-a-zA-Z0-9]*\.[a-zA-Z]{2,}(?:\.[a-zA-Z]{2,})?(?:\/[^\s]*)?)/g;
+  const parts: React.ReactNode[] = [];
+  let lastIndex = 0;
+  let match;
+
+  while ((match = urlRegex.exec(text)) !== null) {
+    // Add text before the match
+    if (match.index > lastIndex) {
+      parts.push(text.slice(lastIndex, match.index));
+    }
+
+    const matchedText = match[0];
+    const href = matchedText.startsWith('http') ? matchedText : `https://${matchedText}`;
+
+    parts.push(
+      <a
+        key={match.index}
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-primary hover:underline"
+      >
+        {matchedText}
+      </a>
+    );
+
+    lastIndex = match.index + matchedText.length;
+  }
+
+  // Add remaining text
+  if (lastIndex < text.length) {
+    parts.push(text.slice(lastIndex));
+  }
+
+  return parts;
+}
 
 export interface ProfileStats {
   videosCount: number;
@@ -252,9 +293,12 @@ export function ProfileHeader({
             {/* Bio */}
             {about && (
               <p className="text-muted-foreground text-sm leading-relaxed max-w-md">
-                {about}
+                {linkifyText(about)}
               </p>
             )}
+
+            {/* NIP-39 Linked Accounts */}
+            <LinkedAccounts pubkey={pubkey} className="justify-center sm:justify-start" />
 
             {/* NIP-58 Badges */}
             <ProfileBadges badges={badgesQuery.data ?? []} className="justify-center sm:justify-start" isOwnProfile={isOwnProfile} />
@@ -274,6 +318,16 @@ export function ProfileHeader({
               <Pencil className="w-4 h-4 mr-2" />
               Edit Profile
             </Button>
+            <Link to="/settings/linked-accounts">
+              <Button
+                variant="ghost"
+                size="sm"
+                data-testid="linked-accounts-button"
+              >
+                <Link2 className="w-4 h-4 mr-2" />
+                Linked Accounts
+              </Button>
+            </Link>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm" data-testid="own-profile-menu-button">
