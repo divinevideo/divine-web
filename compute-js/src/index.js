@@ -25,7 +25,6 @@ const EXTERNAL_REDIRECTS = {
   '/discord': { url: 'https://discord.gg/d6HpB6XnHp', status: 302 },
 };
 
-// eslint-disable-next-line no-restricted-globals
 addEventListener("fetch", (event) => event.respondWith(handleRequest(event)));
 
 async function handleRequest(event) {
