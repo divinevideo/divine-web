@@ -307,9 +307,10 @@ export function ProfileHeader({
             </div>
           </div>
 
-          {/* NIP-58 Badges - full width below */}
-          <div className="mt-2">
-            <ProfileBadges badges={badgesQuery.data ?? []} className="justify-center sm:justify-start" isOwnProfile={isOwnProfile} />
+          <div className="mt-2 flex flex-wrap items-center gap-2 justify-center sm:justify-start">
+            <LinkedAccounts pubkey={pubkey} />
+            <ProfileBadges badges={badgesQuery.data ?? []} />
+          </div>
           </div>
         </div>
 
