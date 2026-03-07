@@ -92,7 +92,7 @@ describe('resolveVideoVerificationBadge', () => {
     expect(badge).toEqual({ kind: 'possibly_ai_generated' });
   });
 
-  it('falls back to Hosted on Divine for Divine-hosted proofless videos without AI results', () => {
+  it('falls back to Unverified for Divine-hosted proofless videos without AI results', () => {
     const badge = resolveVideoVerificationBadge(
       makeVideo({
         videoUrl: 'https://media.divine.video/0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef.mp4',
@@ -100,7 +100,7 @@ describe('resolveVideoVerificationBadge', () => {
       null,
     );
 
-    expect(badge).toEqual({ kind: 'hosted_on_divine' });
+    expect(badge).toEqual({ kind: 'unverified' });
   });
 
   it('falls back to Not Divine Hosted for external proofless videos without AI results', () => {

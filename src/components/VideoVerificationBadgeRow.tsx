@@ -2,7 +2,7 @@
 // ABOUTME: Renders exactly one primary badge per video using the mobile decision order
 
 import { useState } from 'react';
-import { DivineBadge, NotDivineBadge, PossiblyAIBadge } from '@/components/ContentOriginBadges';
+import { NotDivineBadge, PossiblyAIBadge, UnverifiedBadge } from '@/components/ContentOriginBadges';
 import { ProofModeBadge } from '@/components/ProofModeBadge';
 import { VideoVerificationDetailsDialog } from '@/components/VideoVerificationDetailsDialog';
 import { VineBadge } from '@/components/VineBadge';
@@ -32,7 +32,7 @@ export function VideoVerificationBadgeRow({
       {badge.kind === 'human_made' && (
         <ProofModeBadge level={badge.tier} proofData={video.proofMode} size={size} />
       )}
-      {badge.kind === 'hosted_on_divine' && <DivineBadge size={size} />}
+      {badge.kind === 'unverified' && <UnverifiedBadge size={size} />}
       {badge.kind === 'not_divine_hosted' && <NotDivineBadge size={size} />}
       {badge.kind === 'possibly_ai_generated' && <PossiblyAIBadge size={size} />}
     </span>

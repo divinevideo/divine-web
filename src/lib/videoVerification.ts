@@ -1,5 +1,5 @@
 // ABOUTME: Shared video verification helpers for badge decisions, AI labels, and moderation lookups
-// ABOUTME: Matches the mobile app's badge precedence for original Vine, Proofmode, AI scans, and hosting
+// ABOUTME: Matches the mobile app's badge precedence for original Vine, Proofmode, AI scans, and unverified fallbacks
 
 import type { NostrEvent } from '@nostrify/nostrify';
 import { API_CONFIG } from '@/config/api';
@@ -42,7 +42,7 @@ export type VideoVerificationBadge =
   | { kind: 'original_vine' }
   | { kind: 'human_made'; tier: HumanMadeTier }
   | { kind: 'possibly_ai_generated' }
-  | { kind: 'hosted_on_divine' }
+  | { kind: 'unverified' }
   | { kind: 'not_divine_hosted' };
 
 type VerificationVideo = Pick<
@@ -148,7 +148,7 @@ export function resolveVideoVerificationBadge(
   }
 
   if (isDivineHostedVideo(video.videoUrl)) {
-    return { kind: 'hosted_on_divine' };
+    return { kind: 'unverified' };
   }
 
   return { kind: 'not_divine_hosted' };
@@ -171,10 +171,10 @@ export function getVerificationIntroText(
   }
 
   if (isDivineHostedVideo(video.videoUrl)) {
-    return 'This video is hosted on Divine, but no ProofMode verification data is attached yet.';
+    return 'This video is unverified. It is hosted on Divine, but no ProofMode verification data is attached yet.';
   }
 
-  return 'This video is hosted outside Divine and does not include ProofMode verification data.';
+  return 'This video is unverified and hosted outside Divine. It does not include ProofMode verification data.';
 }
 
 export function getVerificationDescription(

@@ -1,7 +1,7 @@
-// ABOUTME: Badge variants for hosted-on-Divine, external content, and AI warning states
+// ABOUTME: Badge variants for unverified, external content, and AI warning states
 // ABOUTME: Mirrors the mobile app's fallback badge labels when no proof-backed badge applies
 
-import { Cloud, CloudOff, TriangleAlert } from 'lucide-react';
+import { CircleHelp, CloudOff, TriangleAlert } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 
@@ -10,21 +10,21 @@ interface ContentOriginBadgeProps {
   size?: 'small' | 'medium' | 'large';
 }
 
-export function DivineBadge({ className, size = 'small' }: ContentOriginBadgeProps) {
+export function UnverifiedBadge({ className, size = 'small' }: ContentOriginBadgeProps) {
   const sizeConfig = getSizeConfig(size);
 
   return (
     <Badge
       variant="outline"
       className={cn(
-        'flex items-center gap-1 border-[#00BF8F]/60 bg-[#0D2818] text-[#00BF8F]',
+        'flex items-center gap-1 border-slate-500 bg-slate-900/70 text-slate-200',
         sizeConfig.className,
         className,
       )}
-      title="Hosted on Divine"
+      title="Unverified"
     >
-      <Cloud className={sizeConfig.iconSize} />
-      <span>Hosted on Divine</span>
+      <CircleHelp className={sizeConfig.iconSize} />
+      <span>Unverified</span>
     </Badge>
   );
 }
