@@ -1,19 +1,19 @@
 // ABOUTME: Unified video provider hook that selects between Funnelcake and WebSocket
-// ABOUTME: Automatically falls back to WebSocket when Funnelcake is unavailable
+// ABOUTME: Uses an explicit support matrix so unsupported feeds never collapse into generic queries
 
-import { useEffect, useRef } from 'react';
 import { useAppContext } from '@/hooks/useAppContext';
 import { useInfiniteVideos } from '@/hooks/useInfiniteVideos';
+import { useResolvedRelayCapabilities } from '@/hooks/useRelayCapabilities';
 import { useInfiniteVideosFunnelcake, type FunnelcakeFeedType, type FunnelcakeSortMode } from '@/hooks/useInfiniteVideosFunnelcake';
 import { hasFunnelcake, getFunnelcakeUrl, DEFAULT_FUNNELCAKE_URL } from '@/config/relays';
 import { getFeatureFlag } from '@/config/api';
-import { isFunnelcakeAvailable } from '@/lib/funnelcakeHealth';
 import { debugLog } from '@/lib/debug';
-import { reportFunnelcakeFallback } from '@/lib/funnelcakeFallbackReporting';
+import type { RelayCapabilities } from '@/lib/relayCapabilities';
 import type { SortMode } from '@/types/nostr';
 
 // Feed types that can be provided
 export type VideoFeedType = 'discovery' | 'home' | 'trending' | 'hashtag' | 'profile' | 'recent' | 'classics' | 'foryou' | 'category';
+type WebsocketVideoFeedType = 'discovery' | 'home' | 'trending' | 'hashtag' | 'profile' | 'recent';
 
 interface UseVideoProviderOptions {
   feedType: VideoFeedType;
@@ -35,6 +35,13 @@ interface VideoProviderResult {
   // Additional metadata
   dataSource: 'funnelcake' | 'websocket';
   apiUrl?: string;
+}
+
+interface VideoSourceDecision {
+  dataSource: 'funnelcake' | 'websocket';
+  apiUrl?: string;
+  websocketFeedType?: WebsocketVideoFeedType;
+  reason: string;
 }
 
 /**
@@ -65,6 +72,20 @@ function mapToFunnelcakeFeedType(feedType: VideoFeedType): FunnelcakeFeedType {
   }
 }
 
+function mapToWebsocketFeedType(feedType: VideoFeedType): WebsocketVideoFeedType | null {
+  switch (feedType) {
+    case 'discovery':
+    case 'home':
+    case 'trending':
+    case 'hashtag':
+    case 'profile':
+    case 'recent':
+      return feedType;
+    default:
+      return null;
+  }
+}
+
 /**
  * Map SortMode to FunnelcakeSortMode
  */
@@ -87,13 +108,90 @@ function mapToFunnelcakeSortMode(sortMode?: SortMode): FunnelcakeSortMode | unde
   }
 }
 
+function isPublicDiscoveryFeed(feedType: VideoFeedType): boolean {
+  return feedType === 'discovery' || feedType === 'trending' || feedType === 'recent' || feedType === 'category' || feedType === 'classics' || feedType === 'foryou';
+}
+
+export function canServeFeedViaWebsocket(
+  feedType: VideoFeedType,
+  sortMode: SortMode | undefined,
+  capabilities: Pick<RelayCapabilities, 'supportsVideoSorts'>
+): boolean {
+  switch (feedType) {
+    case 'classics':
+    case 'foryou':
+    case 'category':
+      return false;
+
+    case 'discovery':
+    case 'trending':
+      return !sortMode || capabilities.supportsVideoSorts;
+
+    case 'recent':
+    case 'hashtag':
+    case 'profile':
+    case 'home':
+      return true;
+  }
+}
+
+export function chooseVideoDataSource({
+  feedType,
+  sortMode,
+  relayUrl,
+  relayCapabilities,
+  useFunnelcakeFlag,
+}: {
+  feedType: VideoFeedType;
+  sortMode?: SortMode;
+  relayUrl: string;
+  relayCapabilities: RelayCapabilities;
+  useFunnelcakeFlag: boolean;
+}): VideoSourceDecision {
+  const relayHasFunnelcake = hasFunnelcake(relayUrl);
+  const relayFunnelcakeUrl = getFunnelcakeUrl(relayUrl) || undefined;
+  const websocketFeedType = mapToWebsocketFeedType(feedType);
+  const websocketSupported = websocketFeedType
+    ? canServeFeedViaWebsocket(feedType, sortMode, relayCapabilities)
+    : false;
+
+  if (websocketFeedType && websocketSupported) {
+    return {
+      dataSource: 'websocket',
+      websocketFeedType,
+      reason: 'relay-websocket-supports-feed',
+    };
+  }
+
+  const shouldUseCanonicalFunnelcake = isPublicDiscoveryFeed(feedType) && (!relayHasFunnelcake || feedType === 'category' || feedType === 'classics' || feedType === 'foryou');
+  const apiUrl = shouldUseCanonicalFunnelcake
+    ? DEFAULT_FUNNELCAKE_URL
+    : relayFunnelcakeUrl;
+
+  if (apiUrl && (useFunnelcakeFlag || shouldUseCanonicalFunnelcake)) {
+    return {
+      dataSource: 'funnelcake',
+      apiUrl,
+      reason: shouldUseCanonicalFunnelcake
+        ? 'canonical-funnelcake-required-for-feed'
+        : 'selected-relay-funnelcake-required-for-feed',
+    };
+  }
+
+  return {
+    dataSource: 'websocket',
+    websocketFeedType: websocketFeedType || 'recent',
+    reason: 'websocket-last-resort',
+  };
+}
+
 /**
  * Unified video provider hook
  *
  * Automatically selects the best data source:
- * 1. Classics feed ALWAYS uses Divine's Funnelcake (regardless of selected relay)
- * 2. Divine relays use Funnelcake REST API (with circuit breaker fallback)
- * 3. Non-Divine relays use WebSocket queries
+ * 1. Use WebSocket when the selected relay can actually serve the requested feed semantics
+ * 2. Keep categories, classics, and recommendations on Funnelcake until WebSocket parity exists
+ * 3. Fall back to Divine's canonical Funnelcake for public discovery feeds when relay WebSocket support is insufficient
  *
  * The hook exposes `dataSource` to indicate which backend is being used.
  */
@@ -108,103 +206,41 @@ export function useVideoProvider({
 }: UseVideoProviderOptions): VideoProviderResult {
   const { config } = useAppContext();
   const relayUrl = config.relayUrl;
+  const relayCapabilities = useResolvedRelayCapabilities(relayUrl);
 
-  // Determine if we should use Funnelcake
   const useFunnelcakeFlag = getFeatureFlag('useFunnelcake');
-  const funnelcakeUrl = getFunnelcakeUrl(relayUrl);
-  const relayHasFunnelcake = hasFunnelcake(relayUrl);
-
-  // Decision logic:
-  // 1. Classics ALWAYS use Divine's Funnelcake
-  // 2. Feature flag must be enabled
-  // 3. Current relay must support Funnelcake
-  // 4. Circuit breaker must allow requests
-  const isClassics = feedType === 'classics';
-  const shouldUseFunnelcake = isClassics || !!(
-    useFunnelcakeFlag &&
-    relayHasFunnelcake &&
-    funnelcakeUrl &&
-    isFunnelcakeAvailable(funnelcakeUrl)
-  );
-
-  debugLog(`[useVideoProvider] Feed: ${feedType}, Relay: ${relayUrl}, Funnelcake: ${shouldUseFunnelcake ? 'yes' : 'no'}`);
-
-  const lastFallbackKeyRef = useRef<string | null>(null);
-
-  useEffect(() => {
-    if (!enabled || isClassics || !useFunnelcakeFlag || !relayHasFunnelcake || !funnelcakeUrl || shouldUseFunnelcake) {
-      return;
-    }
-
-    const fallbackKey = [
-      relayUrl,
-      funnelcakeUrl,
-      feedType,
-      sortMode ?? '',
-      hashtag ?? '',
-      category ?? '',
-      pubkey ?? '',
-    ].join('|');
-
-    if (lastFallbackKeyRef.current === fallbackKey) {
-      return;
-    }
-    lastFallbackKeyRef.current = fallbackKey;
-
-    reportFunnelcakeFallback({
-      source: 'useVideoProvider',
-      apiUrl: funnelcakeUrl,
-      reason: 'Funnelcake unavailable or circuit breaker open',
-      dedupeKey: fallbackKey,
-      context: {
-        relayUrl,
-        feedType,
-        sortMode,
-        hashtag,
-        category,
-        pubkey,
-      },
-    });
-  }, [
-    category,
-    enabled,
+  const decision = chooseVideoDataSource({
     feedType,
-    funnelcakeUrl,
-    hashtag,
-    isClassics,
-    pubkey,
-    relayHasFunnelcake,
-    relayUrl,
-    shouldUseFunnelcake,
     sortMode,
+    relayUrl,
+    relayCapabilities,
     useFunnelcakeFlag,
-  ]);
+  });
+
+  const shouldUseFunnelcake = decision.dataSource === 'funnelcake';
+
+  debugLog(`[useVideoProvider] Feed: ${feedType}, Relay: ${relayUrl}, Source: ${decision.dataSource}, Reason: ${decision.reason}`);
 
   // Funnelcake query (enabled only when shouldUseFunnelcake is true)
   const funnelcakeQuery = useInfiniteVideosFunnelcake({
     feedType: mapToFunnelcakeFeedType(feedType),
-    apiUrl: isClassics ? DEFAULT_FUNNELCAKE_URL : funnelcakeUrl || undefined,
+    apiUrl: decision.apiUrl,
     sortMode: mapToFunnelcakeSortMode(sortMode),
     hashtag,
     category,
     pubkey,
     pageSize,
     enabled: enabled && shouldUseFunnelcake,
-    randomizeWithinTop: isClassics ? 500 : undefined,
+    randomizeWithinTop: feedType === 'classics' ? 500 : undefined,
   });
 
-  // WebSocket query (enabled only when shouldUseFunnelcake is false)
-  // Map 'classics' to 'trending' with 'top' sort for WebSocket fallback
-  const websocketFeedType = feedType === 'classics' ? 'trending' : feedType;
-  const websocketSortMode = feedType === 'classics' ? 'top' : sortMode;
-
   const websocketQuery = useInfiniteVideos({
-    feedType: websocketFeedType as 'discovery' | 'home' | 'trending' | 'hashtag' | 'profile' | 'recent',
-    sortMode: websocketSortMode,
+    feedType: decision.websocketFeedType || 'recent',
+    sortMode,
     hashtag,
     pubkey,
     pageSize,
-    enabled: enabled && !shouldUseFunnelcake,
+    enabled: enabled && !shouldUseFunnelcake && !!decision.websocketFeedType,
   });
 
   // Select the active query based on data source
@@ -218,7 +254,7 @@ export function useVideoProvider({
     error: activeQuery.error,
     refetch: activeQuery.refetch,
     dataSource: shouldUseFunnelcake ? 'funnelcake' : 'websocket',
-    apiUrl: shouldUseFunnelcake ? (isClassics ? DEFAULT_FUNNELCAKE_URL : funnelcakeUrl || undefined) : undefined,
+    apiUrl: shouldUseFunnelcake ? decision.apiUrl : undefined,
   };
 }
 

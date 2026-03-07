@@ -6,7 +6,7 @@ import { useNostr } from '@nostrify/react';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useFollowList } from '@/hooks/useFollowList';
 import { useAppContext } from '@/hooks/useAppContext';
-import { useNIP50Support } from '@/hooks/useRelayCapabilities';
+import { useVideoSortSupport } from '@/hooks/useRelayCapabilities';
 import { VIDEO_KINDS, type ParsedVideoData } from '@/types/video';
 import type { NIP50Filter, SortMode } from '@/types/nostr';
 import { parseVideoEvents } from '@/lib/videoParser';
@@ -45,7 +45,7 @@ export function useInfiniteVideos({
   const { user } = useCurrentUser();
   const { data: followList, isLoading: isLoadingFollows } = useFollowList();
   const { config } = useAppContext();
-  const supportsNIP50 = useNIP50Support();
+  const supportsVideoSorts = useVideoSortSupport();
 
   // Auto-determine sort mode ONLY for trending/discovery feeds
   // Home feed should always be chronological unless explicitly sorted
@@ -54,15 +54,15 @@ export function useInfiniteVideos({
     requestedSortMode = 'hot';
   }
 
-  // Only use sort mode if relay supports NIP-50 AND a sort mode is requested
-  const effectiveSortMode = (supportsNIP50 && requestedSortMode) ? requestedSortMode : undefined;
+  // Only use relay-side sort when the relay has proven it works for video events.
+  const effectiveSortMode = (supportsVideoSorts && requestedSortMode) ? requestedSortMode : undefined;
 
-  if (!supportsNIP50 && requestedSortMode) {
-    debugLog(`[useInfiniteVideos] Relay doesn't support NIP-50, will use chronological order instead of sort:${requestedSortMode}`);
+  if (!supportsVideoSorts && requestedSortMode) {
+    debugLog(`[useInfiniteVideos] Relay doesn't support video sorting, will use chronological order instead of sort:${requestedSortMode}`);
   }
 
   return useInfiniteQuery<VideoPage, Error>({
-    queryKey: ['infinite-videos', feedType, hashtag, pubkey, effectiveSortMode, pageSize],
+    queryKey: ['infinite-videos', feedType, hashtag, pubkey, requestedSortMode, effectiveSortMode, pageSize],
     queryFn: async ({ pageParam, signal }) => {
       const totalStart = performance.now();
 

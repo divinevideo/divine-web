@@ -1,9 +1,16 @@
 // ABOUTME: React hook for detecting and using relay capabilities
-// ABOUTME: Provides graceful fallback when relays don't support NIP-50
+// ABOUTME: Exposes NIP-50 and video-sort support for capability-driven feed selection
 
 import { useQuery } from '@tanstack/react-query';
 import { useAppContext } from '@/hooks/useAppContext';
-import { detectRelayCapabilities, shouldUseNIP50, getEffectiveSortMode, type RelayCapabilities } from '@/lib/relayCapabilities';
+import {
+  detectRelayCapabilities,
+  getEffectiveSortMode,
+  getOptimisticRelayCapabilities,
+  shouldUseNIP50,
+  shouldUseVideoSorts,
+  type RelayCapabilities,
+} from '@/lib/relayCapabilities';
 import type { SortMode } from '@/types/nostr';
 
 /**
@@ -30,12 +37,29 @@ export function useNIP50Support(relayUrl?: string): boolean {
   const effectiveRelayUrl = relayUrl || config.relayUrl;
   const { data } = useRelayCapabilities(effectiveRelayUrl);
 
-  // Optimistic: assume support while detecting
-  if (!data) {
-    return shouldUseNIP50(effectiveRelayUrl);
-  }
+  return data?.supportsNIP50 ?? shouldUseNIP50(effectiveRelayUrl);
+}
 
-  return data.supportsNIP50;
+/**
+ * Hook to check if current relay supports video sorting for kind 34236 feeds.
+ */
+export function useVideoSortSupport(relayUrl?: string): boolean {
+  const { config } = useAppContext();
+  const effectiveRelayUrl = relayUrl || config.relayUrl;
+  const { data } = useRelayCapabilities(effectiveRelayUrl);
+
+  return data?.supportsVideoSorts ?? shouldUseVideoSorts(effectiveRelayUrl);
+}
+
+/**
+ * Hook to access relay capabilities with optimistic defaults while detection is in flight.
+ */
+export function useResolvedRelayCapabilities(relayUrl?: string): RelayCapabilities {
+  const { config } = useAppContext();
+  const effectiveRelayUrl = relayUrl || config.relayUrl;
+  const { data } = useRelayCapabilities(effectiveRelayUrl);
+
+  return data ?? getOptimisticRelayCapabilities(effectiveRelayUrl);
 }
 
 /**
@@ -47,10 +71,9 @@ export function useEffectiveSortMode(
 ): SortMode | undefined {
   const { config } = useAppContext();
   const effectiveRelayUrl = relayUrl || config.relayUrl;
-  const supportsNIP50 = useNIP50Support(effectiveRelayUrl);
+  const supportsVideoSorts = useVideoSortSupport(effectiveRelayUrl);
 
-  // If relay doesn't support NIP-50, return undefined (triggers client-side sorting)
-  if (!supportsNIP50) {
+  if (!supportsVideoSorts) {
     return undefined;
   }
 
