@@ -38,6 +38,12 @@ export default defineConfig(() => ({
           });
         },
       },
+      '/api/moderation/check-result': {
+        target: 'https://moderation-api.divine.video',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/moderation\/check-result/, '/check-result'),
+        secure: true,
+      },
     },
   },
   build: {

@@ -131,7 +131,8 @@ export function VideoFeed({
       if (verifiedOnly) {
         return video.proofMode &&
                (video.proofMode.level === 'verified_mobile' ||
-                video.proofMode.level === 'verified_web');
+                video.proofMode.level === 'verified_web' ||
+                video.proofMode.level === 'basic_proof');
       }
 
       return true;

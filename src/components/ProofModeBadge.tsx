@@ -9,8 +9,10 @@ import { cn } from '@/lib/utils';
 import type { ProofModeLevel, ProofModeData } from '@/types/video';
 import { Link } from 'react-router-dom';
 
+export type ProofModeBadgeLevel = ProofModeLevel | 'platinum';
+
 interface ProofModeBadgeProps {
-  level: ProofModeLevel;
+  level: ProofModeBadgeLevel;
   proofData?: ProofModeData;
   className?: string;
   showDetails?: boolean; // Show popover with details
@@ -134,34 +136,43 @@ function getSizeConfig(size: 'small' | 'medium' | 'large') {
   }
 }
 
-function getProofModeConfig(level: ProofModeLevel) {
+function getProofModeConfig(level: ProofModeBadgeLevel) {
   switch (level) {
+    case 'platinum':
+      return {
+        icon: CheckCircle,
+        label: 'Human Made',
+        className: 'border-[#E5E4E2] text-[#E5E4E2] bg-[#1A2A3A]',
+        iconColor: 'text-[#E5E4E2]',
+        tooltip: 'Human made - device proof and AI scan both confirm likely human origin',
+        description: 'This video has mobile device proof and an AI scan that both support a likely human origin.'
+      };
     case 'verified_mobile':
       return {
         icon: CheckCircle,
         label: 'Human Made',
-        className: 'border-brand-green text-brand-dark-green dark:text-brand-green bg-brand-light-green dark:bg-brand-dark-green',
-        iconColor: 'text-brand-dark-green dark:text-brand-green',
-        tooltip: 'Human made - captured on secure mobile device with Proofmode',
-        description: 'This video was captured by a human on a mobile device with hardware-backed security attestation. Proofmode provides cryptographic proof that the content is authentic and has not been tampered with.'
+        className: 'border-[#FFD700] text-[#FFD700] bg-[#3D2E00]',
+        iconColor: 'text-[#FFD700]',
+        tooltip: 'Human made - captured on a real device with hardware-backed proof',
+        description: 'This video was captured on a real device with hardware attestation, cryptographic signatures, and Content Credentials.'
       };
     case 'verified_web':
       return {
         icon: CheckCircle,
         label: 'Human Made',
-        className: 'border-brand-blue text-brand-blue-dark dark:text-brand-blue bg-brand-blue-light dark:bg-brand-blue-dark',
-        iconColor: 'text-brand-blue-dark dark:text-brand-blue',
+        className: 'border-[#C0C0C0] text-[#C0C0C0] bg-[#2A2A2A]',
+        iconColor: 'text-[#C0C0C0]',
         tooltip: 'Human made - valid Proofmode signature',
         description: 'This video was created by a human and has been cryptographically signed with Proofmode. The signature confirms the content has not been altered since creation.'
       };
     case 'basic_proof':
       return {
         icon: ShieldAlert,
-        label: 'Basic Proof',
-        className: 'border-brand-yellow text-brand-yellow-dark dark:text-brand-yellow bg-brand-yellow-light dark:bg-brand-yellow-dark',
-        iconColor: 'text-brand-yellow-dark dark:text-brand-yellow',
-        tooltip: 'Basic proof - valid signature, integrity verified',
-        description: 'This video includes basic cryptographic proof data. Some verification information is present but it does not meet the full criteria for verified status.'
+        label: 'Human Made',
+        className: 'border-[#CD7F32] text-[#CD7F32] bg-[#2E1F0F]',
+        iconColor: 'text-[#CD7F32]',
+        tooltip: 'Human made - basic proof metadata is present',
+        description: 'This video includes basic proof metadata. Some verification information is present but it does not meet the full criteria for stronger verified tiers.'
       };
     case 'unverified':
     default:

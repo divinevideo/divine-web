@@ -6,6 +6,7 @@ import { SHORT_VIDEO_KIND, type ParsedVideoData } from '@/types/video';
 import type { FunnelcakeVideoRaw, FunnelcakeResponse } from '@/types/funnelcake';
 import { debugLog } from './debug';
 import { getProofModeData } from './videoParser';
+import { extractSha256FromVideoUrl } from './videoVerification';
 import type { NostrEvent } from '@nostrify/nostrify';
 
 /**
@@ -48,6 +49,16 @@ export function transformFunnelcakeVideo(raw: FunnelcakeVideoRaw): ParsedVideoDa
   // Determine if this is a Vine migration based on platform or classic flag
   const isVineMigrated = raw.platform === 'vine' || raw.classic === true;
 
+  const fullEvent = raw.tags ? ({
+    id: id,
+    pubkey: pubkey,
+    created_at: raw.created_at,
+    kind: raw.kind,
+    tags: raw.tags,
+    content: raw.content || '',
+    sig: '',
+  } as NostrEvent) : undefined;
+
   const video: ParsedVideoData = {
     id,
     pubkey,
@@ -61,6 +72,7 @@ export function transformFunnelcakeVideo(raw: FunnelcakeVideoRaw): ParsedVideoDa
     blurhash: raw.blurhash,
     title: raw.title,
     dimensions: raw.dim, // Video dimensions from API (e.g., "1080x1920")
+    sha256: extractSha256FromVideoUrl(raw.video_url),
     hashtags,
 
     // Vine-specific fields
@@ -86,15 +98,7 @@ export function transformFunnelcakeVideo(raw: FunnelcakeVideoRaw): ParsedVideoDa
     textTrackContent: raw.text_track_content,
 
     // ProofMode data - extract from tags when available (single video endpoint)
-    proofMode: raw.tags ? getProofModeData({
-      id: id,
-      pubkey: pubkey,
-      created_at: raw.created_at,
-      kind: raw.kind,
-      tags: raw.tags,
-      content: raw.content || '',
-      sig: '',
-    } as NostrEvent) : undefined,
+    proofMode: fullEvent ? getProofModeData(fullEvent) : undefined,
 
     // Empty reposts array (Funnelcake doesn't return individual reposts)
     reposts: [],

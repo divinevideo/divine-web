@@ -11,8 +11,6 @@ import { VideoPlayer } from '@/components/VideoPlayer';
 import { VideoCommentsModal } from '@/components/VideoCommentsModal';
 import { VideoReactionsModal } from '@/components/VideoReactionsModal';
 import { NoteContent } from '@/components/NoteContent';
-import { VineBadge } from '@/components/VineBadge';
-import { ProofModeBadge } from '@/components/ProofModeBadge';
 import { AddToListDialog } from '@/components/AddToListDialog';
 import { ReportContentDialog } from '@/components/ReportContentDialog';
 import { DeleteVideoDialog } from '@/components/DeleteVideoDialog';
@@ -38,6 +36,7 @@ import { useBandwidthTier } from '@/hooks/useBandwidthTier';
 import { SmartLink } from '@/components/SmartLink';
 import type { ViewTrafficSource } from '@/hooks/useViewEventPublisher';
 import { useSubtitles } from '@/hooks/useSubtitles';
+import { VideoVerificationBadgeRow } from '@/components/VideoVerificationBadgeRow';
 import type { ParsedVideoData } from '@/types/video';
 
 interface FullscreenVideoItemProps {
@@ -211,8 +210,6 @@ export function FullscreenVideoItem({
   };
 
   // Check if this is a migrated Vine
-  const isMigratedVine = video.isVineMigrated;
-
   return (
     <div
       ref={videoContainerRef}
@@ -323,10 +320,7 @@ export function FullscreenVideoItem({
                     {badgesQuery.data && badgesQuery.data.length > 0 && (
                       <InlineBadges badges={badgesQuery.data} />
                     )}
-                    {isMigratedVine && <VineBadge />}
-                    {video.proofMode && video.proofMode.level !== 'unverified' && (
-                      <ProofModeBadge level={video.proofMode.level} proofData={video.proofMode} />
-                    )}
+                    <VideoVerificationBadgeRow video={video} />
                   </div>
                   {timeAgo && (
                     <p className="text-sm text-white/80 drop-shadow-lg">{timeAgo}</p>

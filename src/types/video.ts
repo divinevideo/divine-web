@@ -49,6 +49,7 @@ export interface ProofModeData {
   manifestData?: Record<string, unknown>; // Parsed manifest object
   deviceAttestation?: string; // Hardware attestation token (iOS App Attest / Android Play Integrity)
   pgpFingerprint?: string; // PGP public key fingerprint for signature verification
+  c2paManifestId?: string; // Content Credentials manifest ID
 }
 
 export interface OriginData {
@@ -81,6 +82,7 @@ export interface ParsedVideoData {
   title?: string;
   duration?: number;
   dimensions?: string; // Video dimensions from imeta dim tag (e.g., "1080x1920")
+  sha256?: string; // Content hash from imeta x or Divine-hosted media URL
   hashtags: string[];
   vineId: string | null;
   loopCount?: number;

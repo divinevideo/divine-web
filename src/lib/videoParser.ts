@@ -535,52 +535,50 @@ export function getOriginalCommentCount(event: NostrEvent): number | undefined {
  * - pgp_fingerprint: PGP public key fingerprint
  */
 export function getProofModeData(event: NostrEvent): ProofModeData | undefined {
-  console.log('[ProofMode] Event tags:', JSON.stringify(event.tags, null, 2));
-
   const levelTag = event.tags.find(tag => tag[0] === 'verification');
+  const manifestTag = event.tags.find(tag => tag[0] === 'proofmode');
+  const attestationTag = event.tags.find(tag => tag[0] === 'device_attestation');
+  const fingerprintTag = event.tags.find(tag => tag[0] === 'pgp_fingerprint');
+  const c2paManifestTag = event.tags.find(tag => tag[0] === 'c2pa_manifest_id');
 
-  // If no verification level tag found, return undefined
-  if (!levelTag?.[1]) {
-    console.log('[ProofMode] No verification tag found');
+  const hasProofFields = Boolean(
+    manifestTag?.[1] ||
+    attestationTag?.[1] ||
+    fingerprintTag?.[1] ||
+    c2paManifestTag?.[1]
+  );
+
+  // No proof tags at all
+  if (!levelTag?.[1] && !hasProofFields) {
     return undefined;
   }
 
   // Parse verification level
   let level: ProofModeLevel = 'unverified';
-  const tagLevel = levelTag[1];
+  const tagLevel = levelTag?.[1];
   if (tagLevel === 'verified_mobile' || tagLevel === 'verified_web' ||
       tagLevel === 'basic_proof' || tagLevel === 'unverified') {
     level = tagLevel;
   }
-
-  // Extract other proof data
-  const manifestTag = event.tags.find(tag => tag[0] === 'proofmode');
-  const attestationTag = event.tags.find(tag => tag[0] === 'device_attestation');
-  const fingerprintTag = event.tags.find(tag => tag[0] === 'pgp_fingerprint');
-
-  if (attestationTag != null)
-	level = "verified_mobile";
 
   // Parse manifest JSON if present
   let manifestData: Record<string, unknown> | undefined;
   if (manifestTag?.[1]) {
     try {
       manifestData = JSON.parse(manifestTag[1]);
-      level = "verified_web";
     } catch {
       // Invalid JSON, ignore
     }
   }
 
-  const result = {
+  return {
     level,
     manifest: manifestTag?.[1],
     manifestData,
     deviceAttestation: attestationTag?.[1],
     pgpFingerprint: fingerprintTag?.[1],
+    c2paManifestId: c2paManifestTag?.[1],
   };
-  console.log('[ProofMode] Result:', result);
-  return result;
 }
 
 /**
@@ -728,6 +726,7 @@ export function parseVideoEvents(events: NostrEvent[]): ParsedVideoData[] {
       title: videoEvent.title,
       duration: videoEvent.videoMetadata?.duration,
       dimensions: videoEvent.videoMetadata?.dimensions,
+      sha256: videoEvent.videoMetadata?.hash,
       hashtags: videoEvent.hashtags || [],
       vineId,
       loopCount: getLoopCount(event),

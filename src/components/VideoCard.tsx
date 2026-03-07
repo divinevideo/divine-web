@@ -14,12 +14,11 @@ import { VideoReactionsModal } from '@/components/VideoReactionsModal';
 import { useVideoReactions } from '@/hooks/useVideoReactions';
 import { ThumbnailPlayer } from '@/components/ThumbnailPlayer';
 import { NoteContent } from '@/components/NoteContent';
-import { ProofModeBadge } from '@/components/ProofModeBadge';
-import { VineBadge } from '@/components/VineBadge';
 import { AddToListDialog } from '@/components/AddToListDialog';
 import { ReportContentDialog } from '@/components/ReportContentDialog';
 import { DeleteVideoDialog } from '@/components/DeleteVideoDialog';
 import { ViewSourceDialog } from '@/components/ViewSourceDialog';
+import { VideoVerificationBadgeRow } from '@/components/VideoVerificationBadgeRow';
 import { useAuthor } from '@/hooks/useAuthor';
 import { useIsMobile } from '@/hooks/useIsMobile';
 import { useMuteItem } from '@/hooks/useModeration';
@@ -282,9 +281,6 @@ export function VideoCard({
 
   const date = new Date(timestamp * 1000);
 
-  // Check if this is a migrated Vine from original Vine platform (uses 'origin' tag)
-  const isMigratedVine = video.isVineMigrated;
-
   // Calculate timeAgo only for pre-2025 videos
   const isFrom2025 = date.getFullYear() >= 2025;
   let timeAgo: string | null = null;
@@ -481,14 +477,7 @@ export function VideoCard({
               </div>
               {/* Badges - right aligned */}
               <div className="flex items-center gap-2 shrink-0">
-                {isMigratedVine && <VineBadge />}
-                {video.proofMode && video.proofMode.level !== 'unverified' && (
-                  <ProofModeBadge
-                    level={video.proofMode.level}
-                    proofData={video.proofMode}
-                    showDetails={true}
-                  />
-                )}
+                <VideoVerificationBadgeRow video={video} />
               </div>
             </div>
           )}
@@ -662,14 +651,7 @@ export function VideoCard({
               </div>
               {/* Badges - right aligned */}
               <div className="flex items-center gap-2 shrink-0">
-                {isMigratedVine && <VineBadge />}
-                {video.proofMode && video.proofMode.level !== 'unverified' && (
-                  <ProofModeBadge
-                    level={video.proofMode.level}
-                    proofData={video.proofMode}
-                    showDetails={true}
-                  />
-                )}
+                <VideoVerificationBadgeRow video={video} />
               </div>
             </div>
           )}

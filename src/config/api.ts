@@ -58,6 +58,14 @@ export const API_CONFIG = {
     },
   },
 
+  moderationService: {
+    baseUrl: import.meta.env.VITE_MODERATION_SERVICE_URL || '',
+    timeout: 10000,
+    endpoints: {
+      checkResult: '/api/moderation/check-result/{sha256}',
+    },
+  },
+
   // Feature flags (can be overridden via localStorage for debugging)
   features: {
     // Use Funnelcake API when available (default: true)
