@@ -5,8 +5,14 @@ import React from 'react';
 
 const mockSearchProfiles = vi.fn();
 const mockNostrQuery = vi.fn();
+<<<<<<< HEAD
 const mockReportFunnelcakeFallback = vi.fn();
 const mockIsFunnelcakeAvailable = vi.fn();
+=======
+const mockAddBreadcrumb = vi.fn();
+const mockCaptureException = vi.fn();
+const mockCaptureNonFatalError = vi.fn();
+>>>>>>> 70a78d6 (Fix search user fallback test mock)
 
 vi.mock('@/lib/funnelcakeClient', () => ({
   searchProfiles: mockSearchProfiles,
@@ -24,12 +30,19 @@ vi.mock('@/lib/debug', () => ({
   debugLog: vi.fn(),
 }));
 
+<<<<<<< HEAD
 vi.mock('@/lib/funnelcakeFallbackReporting', () => ({
   reportFunnelcakeFallback: mockReportFunnelcakeFallback,
 }));
 
 vi.mock('@/lib/funnelcakeHealth', () => ({
   isFunnelcakeAvailable: mockIsFunnelcakeAvailable,
+=======
+vi.mock('@/lib/sentry', () => ({
+  addBreadcrumb: mockAddBreadcrumb,
+  captureException: mockCaptureException,
+  captureNonFatalError: mockCaptureNonFatalError,
+>>>>>>> 70a78d6 (Fix search user fallback test mock)
 }));
 
 vi.mock('@nostrify/react', () => ({
