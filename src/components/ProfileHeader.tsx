@@ -207,7 +207,7 @@ export function ProfileHeader({
           </Avatar>
         </div>
 
-        {/* Profile Info + Linked Accounts side by side on desktop */}
+        {/* Profile Info */}
         <div className="flex-1 min-w-0 text-center sm:text-left">
           <div className="sm:flex sm:gap-6">
             {/* Left: Name, NIP-05, Website, Bio */}
@@ -301,16 +301,11 @@ export function ProfileHeader({
               )}
             </div>
 
-            {/* Right: Linked Accounts (fills empty space on desktop) */}
-            <div className="mt-3 sm:mt-0 sm:flex-shrink-0 sm:max-w-[240px]">
-              <LinkedAccounts pubkey={pubkey} className="justify-center sm:justify-end sm:flex-col sm:items-end" />
-            </div>
           </div>
 
           <div className="mt-2 flex flex-wrap items-center gap-2 justify-center sm:justify-start">
             <LinkedAccounts pubkey={pubkey} />
             <ProfileBadges badges={badgesQuery.data ?? []} />
-          </div>
           </div>
         </div>
 
