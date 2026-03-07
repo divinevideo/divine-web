@@ -23,6 +23,7 @@ describe('funnelcakeClient', () => {
   let fetchBulkUsers: typeof import('./funnelcakeClient').fetchBulkUsers;
   let fetchBulkVideoStats: typeof import('./funnelcakeClient').fetchBulkVideoStats;
   let searchProfiles: typeof import('./funnelcakeClient').searchProfiles;
+  let searchVideos: typeof import('./funnelcakeClient').searchVideos;
 
   beforeEach(async () => {
     vi.resetModules();
@@ -35,6 +36,7 @@ describe('funnelcakeClient', () => {
     fetchBulkUsers = client.fetchBulkUsers;
     fetchBulkVideoStats = client.fetchBulkVideoStats;
     searchProfiles = client.searchProfiles;
+    searchVideos = client.searchVideos;
   });
 
   afterEach(() => {
@@ -352,6 +354,58 @@ describe('funnelcakeClient', () => {
       expect(init).toEqual(expect.objectContaining({
         signal: expect.any(AbortSignal),
       }));
+    });
+  });
+
+  describe('searchVideos', () => {
+    it('uses documented text-search params with /api/search', async () => {
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve([]),
+      });
+
+      await searchVideos(API_URL, {
+        query: 'nostr',
+        limit: 20,
+        offset: 40,
+      });
+
+      const [url] = (global.fetch as ReturnType<typeof vi.fn>).mock.calls[0];
+      const requestUrl = new URL(url as string);
+
+      expect(requestUrl.pathname).toBe('/api/search');
+      expect(requestUrl.searchParams.get('q')).toBe('nostr');
+      expect(requestUrl.searchParams.get('limit')).toBe('20');
+      expect(requestUrl.searchParams.get('offset')).toBe('40');
+      expect(requestUrl.searchParams.get('sort')).toBeNull();
+      expect(requestUrl.searchParams.get('platform')).toBeNull();
+      expect(requestUrl.searchParams.get('category')).toBeNull();
+    });
+
+    it('uses /api/videos for hashtag search so sort controls still apply', async () => {
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve([]),
+      });
+
+      await searchVideos(API_URL, {
+        tag: 'nostr',
+        limit: 20,
+        offset: 40,
+        sort: 'popular',
+        platform: 'vine',
+      });
+
+      const [url] = (global.fetch as ReturnType<typeof vi.fn>).mock.calls[0];
+      const requestUrl = new URL(url as string);
+
+      expect(requestUrl.pathname).toBe('/api/videos');
+      expect(requestUrl.searchParams.get('tag')).toBe('nostr');
+      expect(requestUrl.searchParams.get('limit')).toBe('20');
+      expect(requestUrl.searchParams.get('offset')).toBe('40');
+      expect(requestUrl.searchParams.get('sort')).toBe('popular');
+      expect(requestUrl.searchParams.get('platform')).toBe('vine');
+      expect(requestUrl.searchParams.get('q')).toBeNull();
     });
   });
 });

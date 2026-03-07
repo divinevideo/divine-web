@@ -218,7 +218,7 @@ export async function searchVideos(
   apiUrl: string = API_CONFIG.funnelcake.baseUrl,
   options: FunnelcakeSearchOptions = {}
 ): Promise<FunnelcakeResponse> {
-  const { query, tag, author, sort = 'trending', limit = 20, before, offset, classic, platform, category, signal } = options;
+  const { query, tag, sort = 'trending', limit = 20, before, offset, classic, platform, category, label, signal } = options;
 
   // Use /api/videos endpoint for hashtag searches (tag parameter)
   // Use /api/search endpoint for text searches (q parameter)
@@ -227,16 +227,21 @@ export async function searchVideos(
     ? API_CONFIG.funnelcake.endpoints.videos
     : API_CONFIG.funnelcake.endpoints.search;
 
-  const params: Record<string, string | number | boolean | undefined> = {
-    q: query,
-    tag,
-    author,
-    sort,
-    limit,
-    classic,
-    platform,
-    category,
-  };
+  const params: Record<string, string | number | boolean | undefined> = isHashtagSearch
+    ? {
+        tag,
+        sort,
+        limit,
+        classic,
+        platform,
+        category,
+        label,
+      }
+    : {
+        q: query,
+        limit,
+        label,
+      };
 
   // Add pagination param - prefer offset for sorted results
   if (offset !== undefined) {

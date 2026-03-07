@@ -133,7 +133,7 @@ export interface FunnelcakeFetchOptions {
 export interface FunnelcakeSearchOptions extends FunnelcakeFetchOptions {
   query?: string;         // Text search query
   tag?: string;           // Hashtag filter (without #)
-  author?: string;        // Filter by author pubkey
+  label?: string;         // Content label filter
 }
 
 /**

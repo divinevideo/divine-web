@@ -93,6 +93,8 @@ export function useInfiniteSearchVideos({
 
       const cursor = pageParam as number | string | undefined;
       const searchParams = parseSearchQuery(debouncedQuery, searchType);
+      const shouldUseFunnelcakeContentSearch = searchParams.type !== 'content' || sortMode === 'relevance';
+      const canUseFunnelcake = shouldUseFunnelcakeContentSearch && isFunnelcakeAvailable(apiUrl);
 
       const abortSignal = AbortSignal.any([
         signal,
@@ -100,7 +102,7 @@ export function useInfiniteSearchVideos({
       ]);
 
       // Try Funnelcake REST API first (fast, ranked results)
-      if (isFunnelcakeAvailable(apiUrl)) {
+      if (canUseFunnelcake) {
         try {
           // Map NIP-50 sort modes to Funnelcake sort options
           const sortMap: Record<string, 'trending' | 'recent' | 'popular'> = {
@@ -191,7 +193,7 @@ export function useInfiniteSearchVideos({
             },
           });
         }
-      } else {
+      } else if (shouldUseFunnelcakeContentSearch) {
         reportFunnelcakeFallback({
           source: 'useInfiniteSearchVideos',
           apiUrl,
