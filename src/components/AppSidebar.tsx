@@ -21,6 +21,7 @@ import { LoginArea } from '@/components/auth/LoginArea';
 import { cn } from '@/lib/utils';
 import { feedUrls } from '@/lib/feedUrls';
 import { useRssFeedAvailable } from '@/hooks/useRssFeedAvailable';
+import { usePlatformStats } from '@/hooks/usePlatformStats';
 
 interface NavItemProps {
   icon: React.ReactNode;
@@ -59,11 +60,13 @@ export function AppSidebar({ className }: { className?: string }) {
   const { user } = useCurrentUser();
   const { data: unreadCount } = useUnreadNotificationCount();
   const rssFeedAvailable = useRssFeedAvailable();
+  const { data: platformStats } = usePlatformStats();
   const [categoriesOpen, setCategoriesOpen] = useState(true);
   const [rssOpen, setRssOpen] = useState(false);
   const [divineOpen, setDivineOpen] = useState(false);
   const [termsOpen, setTermsOpen] = useState(false);
   const { data: categories } = useCategories();
+  const classicVinesRecovered = platformStats?.vine_videos?.toLocaleString();
 
   const isActive = (path: string) => location.pathname === path;
   const isDiscoveryActive = () =>
@@ -300,12 +303,19 @@ export function AppSidebar({ className }: { className?: string }) {
         <Collapsible open={divineOpen} onOpenChange={setDivineOpen}>
           <CollapsibleTrigger asChild>
             <button
-              className="group flex w-full items-center gap-1 py-1.5 text-[13px] font-semibold text-foreground transition-colors hover:text-primary"
+              className="group flex w-full items-start justify-between gap-2 py-1.5 text-left text-[13px] font-semibold text-foreground transition-colors hover:text-primary"
               style={{ fontFamily: "'Bricolage Grotesque', system-ui, sans-serif" }}
             >
-              <span>About Divine</span>
+              <div className="min-w-0">
+                <div>About Divine</div>
+                {classicVinesRecovered && (
+                  <div className="mt-0.5 text-[11px] font-normal text-muted-foreground group-hover:text-muted-foreground">
+                    {classicVinesRecovered} Vines recovered
+                  </div>
+                )}
+              </div>
               <ChevronDown className={cn(
-                "h-3.5 w-3.5 transition-transform duration-200",
+                "mt-0.5 h-3.5 w-3.5 shrink-0 transition-transform duration-200",
                 divineOpen && "rotate-180"
               )} />
             </button>
