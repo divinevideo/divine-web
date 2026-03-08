@@ -6,7 +6,7 @@ import { eventCache } from './eventCache';
 import { debugLog } from './debug';
 
 interface NostrClient {
-  query: (filters: NostrFilter[], opts?: { signal?: AbortSignal }) => Promise<NostrEvent[]>;
+  query: (filters: NostrFilter[], opts?: { signal?: AbortSignal; relays?: string[] }) => Promise<NostrEvent[]>;
   event: (event: NostrEvent) => Promise<void>;
 }
 
@@ -20,7 +20,7 @@ export function createCachedNostr<T extends NostrClient>(
   const cachedNostr = Object.create(baseNostr) as T;
 
   // Wrap query method with cache-first logic
-  cachedNostr.query = async (filters: NostrFilter[], opts?: { signal?: AbortSignal }): Promise<NostrEvent[]> => {
+  cachedNostr.query = async (filters: NostrFilter[], opts?: { signal?: AbortSignal; relays?: string[] }): Promise<NostrEvent[]> => {
     const startTime = performance.now();
     // debugLog('[CachedNostr] Query with filters:', filters);
 
@@ -74,9 +74,9 @@ export function createCachedNostr<T extends NostrClient>(
  * Background refresh via WebSocket
  */
 async function _refreshInBackground(
-  queryFn: (filters: NostrFilter[], opts?: { signal?: AbortSignal }) => Promise<NostrEvent[]>,
+  queryFn: (filters: NostrFilter[], opts?: { signal?: AbortSignal; relays?: string[] }) => Promise<NostrEvent[]>,
   filters: NostrFilter[],
-  opts?: { signal?: AbortSignal }
+  opts?: { signal?: AbortSignal; relays?: string[] }
 ): Promise<void> {
   try {
     const results = await queryFn(filters, opts);

@@ -1,5 +1,5 @@
 import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import type {
   ButtonHTMLAttributes,
@@ -11,9 +11,11 @@ import type {
 import { nip19 } from 'nostr-tools';
 import SearchPage from './SearchPage';
 
-const { mockNavigate, mockFetchVideoById } = vi.hoisted(() => ({
+const { mockNavigate, mockFetchEventById, mockFetchVideoById, mockNostrQuery } = vi.hoisted(() => ({
   mockNavigate: vi.fn(),
+  mockFetchEventById: vi.fn(),
   mockFetchVideoById: vi.fn(),
+  mockNostrQuery: vi.fn(),
 }));
 
 vi.mock('@unhead/react', () => ({
@@ -80,10 +82,19 @@ vi.mock('@/hooks/useSubdomainNavigate', () => ({
   useSubdomainNavigate: () => mockNavigate,
 }));
 
+vi.mock('@nostrify/react', () => ({
+  useNostr: () => ({
+    nostr: {
+      query: mockNostrQuery,
+    },
+  }),
+}));
+
 vi.mock('@/hooks/useAppContext', () => ({
   useAppContext: () => ({
     config: {
       relayUrl: 'wss://relay.divine.video',
+      relayUrls: ['wss://relay.divine.video'],
     },
   }),
 }));
@@ -116,6 +127,10 @@ vi.mock('@/hooks/useSearchHashtags', () => ({
 
 vi.mock('@/lib/funnelcakeClient', () => ({
   fetchVideoById: mockFetchVideoById,
+}));
+
+vi.mock('@/lib/eventLookup', () => ({
+  fetchEventById: mockFetchEventById,
 }));
 
 function renderPage(initialEntries: string[] = ['/search']) {
@@ -173,5 +188,39 @@ describe('SearchPage', () => {
     await waitFor(() => {
       expect(mockNavigate).toHaveBeenCalledWith('/video/clip-7');
     });
+  });
+
+  it('looks up raw event ids beyond the funnelcake api fallback', async () => {
+    vi.useFakeTimers();
+
+    const eventId = 'e'.repeat(64);
+    mockFetchEventById.mockResolvedValue({
+      id: eventId,
+      pubkey: 'f'.repeat(64),
+      created_at: 1_700_000_000,
+      kind: 1,
+      tags: [],
+      content: 'hello',
+      sig: '0'.repeat(128),
+    });
+
+    renderPage();
+    await act(async () => {
+      fireEvent.change(screen.getByRole('textbox'), { target: { value: eventId } });
+      await vi.advanceTimersByTimeAsync(600);
+    });
+
+    expect(mockFetchEventById).toHaveBeenCalledWith(
+      { query: mockNostrQuery },
+      eventId,
+      expect.any(AbortSignal),
+      { relayUrls: ['wss://relay.divine.video'] },
+    );
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(mockNavigate).toHaveBeenCalledWith(`/event/${eventId}`);
   });
 });

@@ -23,8 +23,10 @@ import { genUserName } from '@/lib/genUserName';
 import { formatDistanceToNow } from 'date-fns';
 import { useToast } from '@/hooks/useToast';
 import { useShare } from '@/hooks/useShare';
+import { useAppContext } from '@/hooks/useAppContext';
 import { getListShareData } from '@/lib/shareUtils';
 import { getSafeProfileImage } from '@/lib/imageUtils';
+import { getEventLookupRelayUrls } from '@/config/relays';
 import type { NostrEvent, NostrFilter } from '@nostrify/nostrify';
 import { SHORT_VIDEO_KIND, VIDEO_KINDS, type ParsedVideoData } from '@/types/video';
 import { parseVideoEvent, getVineId, getThumbnailUrl, getOriginalVineTimestamp, getLoopCount, getProofModeData, getOriginalLikeCount, getOriginalRepostCount, getOriginalCommentCount, getOriginPlatform, isVineMigrated } from '@/lib/videoParser';
@@ -221,6 +223,8 @@ export default function ListDetailPage() {
   const { pubkey, listId } = useParams<{ pubkey: string; listId: string }>();
   const navigate = useNavigate();
   const { nostr } = useNostr();
+  const { config } = useAppContext();
+  const listLookupRelayKey = (config.relayUrls || [config.relayUrl]).join(',');
   const { user } = useCurrentUser();
   const { toast } = useToast();
   const { share } = useShare();
@@ -257,7 +261,7 @@ export default function ListDetailPage() {
 
   // Fetch list details
   const { data: list, isLoading: listLoading } = useQuery({
-    queryKey: ['list-detail', pubkey, listId],
+    queryKey: ['list-detail', pubkey, listId, listLookupRelayKey],
     queryFn: async (context) => {
       if (!pubkey || !listId) throw new Error('Invalid list parameters');
 
@@ -271,7 +275,12 @@ export default function ListDetailPage() {
         authors: [pubkey],
         '#d': [listId],
         limit: 1
-      }], { signal });
+      }], {
+        signal,
+        relays: getEventLookupRelayUrls({
+          configuredRelayUrls: config.relayUrls || [config.relayUrl],
+        }),
+      });
 
       if (events.length === 0) {
         throw new Error('List not found');

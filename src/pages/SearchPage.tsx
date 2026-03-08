@@ -3,6 +3,7 @@
 
 import { useState, useEffect, useRef, useMemo, type ClipboardEvent } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { useNostr } from '@nostrify/react';
 import { useSubdomainNavigate } from '@/hooks/useSubdomainNavigate';
 import { nip19 } from 'nostr-tools';
 import { useSeoMeta } from '@unhead/react';
@@ -29,9 +30,10 @@ import { SEARCH_SORT_MODES as SORT_MODES } from '@/lib/constants/sortModes';
 import { useAppContext } from '@/hooks/useAppContext';
 import { DEFAULT_FUNNELCAKE_URL, getFunnelcakeUrl } from '@/config/relays';
 import { fetchVideoById } from '@/lib/funnelcakeClient';
+import { fetchEventById } from '@/lib/eventLookup';
+import { buildResolvedEventRoute, buildVideoPath } from '@/lib/eventRouting';
 import {
   buildProfilePath,
-  buildVideoPath,
   getDirectSearchTarget,
   isHexIdentifier,
   isLikelyOpaqueVideoIdentifier,
@@ -42,6 +44,7 @@ type SearchFilter = 'all' | 'videos' | 'users' | 'hashtags';
 
 export function SearchPage() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const { nostr } = useNostr();
   const navigate = useSubdomainNavigate();
   const { config } = useAppContext();
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
@@ -168,25 +171,40 @@ export function SearchPage() {
       const controller = new AbortController();
       directLookupAbortRef.current = controller;
       const funnelcakeUrl = getFunnelcakeUrl(config.relayUrl) || DEFAULT_FUNNELCAKE_URL;
+      const configuredRelayUrls = config.relayUrls || [config.relayUrl];
 
-      void fetchVideoById(funnelcakeUrl, normalized, undefined, controller.signal)
-        .then(video => {
-          if (controller.signal.aborted) {
-            return;
-          }
-
-          if (video) {
-            navigate(buildVideoPath(normalized));
-            return;
-          }
-
-          if (isHexIdentifier(normalized)) {
-            navigate(buildProfilePath(normalized));
-          }
+      if (isHexIdentifier(normalized)) {
+        void fetchEventById(nostr, normalized, controller.signal, {
+          relayUrls: configuredRelayUrls,
         })
-        .catch(() => {
-          // Fall through to normal search results when identifier lookup fails.
-        });
+          .then(event => {
+            if (controller.signal.aborted) {
+              return;
+            }
+
+            if (event) {
+              navigate(buildResolvedEventRoute(event));
+              return;
+            }
+
+            navigate(buildProfilePath(normalized));
+          })
+          .catch(() => {
+            // Fall through to normal search results when identifier lookup fails.
+          });
+      } else {
+        void fetchVideoById(funnelcakeUrl, normalized, undefined, controller.signal)
+          .then(video => {
+            if (controller.signal.aborted || !video) {
+              return;
+            }
+
+            navigate(buildVideoPath(normalized));
+          })
+          .catch(() => {
+            // Fall through to normal search results when identifier lookup fails.
+          });
+      }
 
       if (pastedLookupQueryRef.current === normalized) {
         pastedLookupQueryRef.current = null;
@@ -197,7 +215,7 @@ export function SearchPage() {
       clearTimeout(timer);
       directLookupAbortRef.current?.abort();
     };
-  }, [config.relayUrl, navigate, searchQuery]);
+  }, [config.relayUrl, config.relayUrls, navigate, nostr, searchQuery]);
 
   // Handle search input changes
   const handleSearchChange = (value: string) => {
@@ -294,7 +312,7 @@ export function SearchPage() {
             <Input
               ref={searchInputRef}
               type="text"
-              placeholder="Search or paste an npub, nevent, naddr, or d tag..."
+              placeholder="Search or paste an npub, note, nevent, naddr, or d tag..."
               value={searchQuery}
               onChange={(e) => handleSearchChange(e.target.value)}
               onPaste={handleSearchPaste}

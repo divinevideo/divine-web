@@ -138,10 +138,67 @@ export const BADGE_RELAYS: RelayConfig[] = [
 ];
 
 /**
+ * Relays used for direct event and address lookups.
+ * These are broader than the app's default feed relay so note/list/event pages
+ * can still resolve content that only lives on common public relays.
+ */
+export const EVENT_LOOKUP_RELAYS: RelayConfig[] = [
+  {
+    url: 'wss://relay.divine.video',
+    name: 'Divine',
+    purpose: 'primary',
+  },
+  {
+    url: 'wss://relay.damus.io',
+    name: 'Damus',
+    purpose: 'backup',
+  },
+  {
+    url: 'wss://relay.primal.net',
+    name: 'Primal',
+    purpose: 'backup',
+  },
+  {
+    url: 'wss://relay.ditto.pub',
+    name: 'Ditto',
+    purpose: 'backup',
+  },
+  {
+    url: 'wss://nos.lol',
+    name: 'nos.lol',
+    purpose: 'backup',
+  },
+  {
+    url: 'wss://purplepag.es',
+    name: 'Purple Pages',
+    purpose: 'backup',
+  },
+];
+
+/**
  * Helper: Extract just the URLs from an array of relay configs
  */
 export const getRelayUrls = (relays: RelayConfig[]): string[] =>
   relays.map(r => r.url);
+
+function dedupeRelayUrls(urls: Array<string | null | undefined>): string[] {
+  return [...new Set(
+    urls
+      .map(url => url?.trim())
+      .filter((url): url is string => Boolean(url))
+  )];
+}
+
+export function getEventLookupRelayUrls(options?: {
+  configuredRelayUrls?: string[];
+  relayHints?: string[];
+}): string[] {
+  return dedupeRelayUrls([
+    ...(options?.configuredRelayUrls ?? []),
+    ...(options?.relayHints ?? []),
+    ...getRelayUrls(EVENT_LOOKUP_RELAYS),
+  ]);
+}
 
 /**
  * Helper: Find a relay config by URL
