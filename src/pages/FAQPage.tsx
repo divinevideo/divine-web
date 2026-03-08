@@ -157,8 +157,8 @@ export function FAQPage() {
                     So far, we've successfully imported from the Internet Archive:
                   </p>
                   <ul className="list-disc list-inside space-y-1 ml-4">
-                    <li><strong>Around 170,000 archived videos</strong></li>
-                    <li><strong>About 62,000 creator accounts</strong></li>
+                    <li><strong>Hundreds of thousands of archived videos</strong></li>
+                    <li><strong>98,572 restored Vine accounts</strong></li>
                   </ul>
 
                   <p className="font-semibold mt-4">

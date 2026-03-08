@@ -35,6 +35,7 @@ export const API_CONFIG = {
       hashtags: '/api/hashtags',
       trendingHashtags: '/api/hashtags/trending',
       categories: '/api/categories',
+      stats: '/api/stats',
       viners: '/api/viners',
       health: '/api/health',
       leaderboardCreators: '/api/leaderboard/creators',
