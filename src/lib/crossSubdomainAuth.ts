@@ -3,11 +3,11 @@
  *
  * localStorage is per-origin, so divine.video and alice.divine.video
  * have separate login state. We mirror minimal login info to a cookie
- * with domain=.divine.video so any subdomain can hydrate its localStorage.
+ * with domain=.divine.video (or .dvines.org for staging) so any
+ * subdomain can hydrate its localStorage.
  */
 
 const COOKIE_NAME = 'nostr_login';
-const COOKIE_DOMAIN = '.divine.video';
 
 interface LoginCookieData {
   type: 'extension' | 'bunker' | 'nsec';
@@ -15,18 +15,23 @@ interface LoginCookieData {
   bunkerUri?: string; // only for bunker logins
 }
 
-function isProduction(): boolean {
-  return typeof window !== 'undefined' && window.location.hostname.endsWith('.divine.video');
+export function getCookieDomain(): string | null {
+  if (typeof window === 'undefined') return null;
+  const hostname = window.location.hostname;
+  if (hostname.endsWith('.divine.video') || hostname === 'divine.video') return '.divine.video';
+  if (hostname.endsWith('.dvines.org') || hostname === 'dvines.org') return '.dvines.org';
+  return null; // localhost or unknown — don't set cross-subdomain cookies
 }
 
 export function setLoginCookie(loginData: LoginCookieData): void {
-  if (!isProduction()) return; // cookies with domain= don't work on localhost
+  const domain = getCookieDomain();
+  if (!domain) return; // cookies with domain= don't work on localhost
 
   try {
     const value = btoa(JSON.stringify(loginData));
     const parts = [
       `${COOKIE_NAME}=${value}`,
-      `domain=${COOKIE_DOMAIN}`,
+      `domain=${domain}`,
       `path=/`,
       `max-age=${60 * 60 * 24 * 365}`, // 1 year
       `SameSite=Lax`,
@@ -39,10 +44,11 @@ export function setLoginCookie(loginData: LoginCookieData): void {
 }
 
 export function clearLoginCookie(): void {
-  if (!isProduction()) return;
+  const domain = getCookieDomain();
+  if (!domain) return;
 
   // Clear with domain
-  document.cookie = `${COOKIE_NAME}=; domain=${COOKIE_DOMAIN}; path=/; max-age=0; Secure`;
+  document.cookie = `${COOKIE_NAME}=; domain=${domain}; path=/; max-age=0; Secure`;
   // Also clear without domain (in case one was set without it)
   document.cookie = `${COOKIE_NAME}=; path=/; max-age=0; Secure`;
 }
