@@ -14,6 +14,7 @@ import { VideoReactionsModal } from '@/components/VideoReactionsModal';
 import { useVideoReactions } from '@/hooks/useVideoReactions';
 import { ThumbnailPlayer } from '@/components/ThumbnailPlayer';
 import { NoteContent } from '@/components/NoteContent';
+import { InlineNostrText } from '@/components/InlineNostrText';
 import { AddToListDialog } from '@/components/AddToListDialog';
 import { ReportContentDialog } from '@/components/ReportContentDialog';
 import { DeleteVideoDialog } from '@/components/DeleteVideoDialog';
@@ -663,7 +664,7 @@ export function VideoCard({
           )}>
             {video.title && (
               <SmartLink to={`/video/${video.id}`} ownerPubkey={video.pubkey}>
-                <h3 className={cn("font-semibold line-clamp-2 hover:underline", isHorizontal ? "text-sm" : "text-lg")}>{video.title}</h3>
+                <h3 className={cn("font-semibold line-clamp-2 hover:underline", isHorizontal ? "text-sm" : "text-lg")}><InlineNostrText text={video.title} /></h3>
               </SmartLink>
             )}
 
