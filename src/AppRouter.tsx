@@ -29,6 +29,7 @@ import ModerationSettingsPage from "./pages/ModerationSettingsPage";
 import LinkedAccountsSettingsPage from "./pages/LinkedAccountsSettingsPage";
 // import { NIP05ProfilePage } from "./pages/NIP05ProfilePage";
 import { UniversalUserPage } from "./pages/UniversalUserPage";
+import EventPage from "./pages/EventPage";
 
 import PrivacyPage from "./pages/PrivacyPage";
 import OpenSourcePage from "./pages/OpenSourcePage";
@@ -101,6 +102,9 @@ export function AppRouter() {
           <Route path="/search" element={<SearchPage />} />
           <Route path="/leaderboard" element={<LeaderboardPage />} />
           <Route path="/u/:userId" element={<UniversalUserPage />} />
+          <Route path="/list/:pubkey/:listId" element={<ListDetailPage />} />
+          <Route path="/event/:eventId" element={<EventPage />} />
+          <Route path="/event/a/:kind/:pubkey/:identifier" element={<EventPage />} />
           <Route path="/:nip19" element={<NIP19Page />} />
 
           {/* Protected routes - require login */}
@@ -110,7 +114,6 @@ export function AppRouter() {
               <Route path="/notifications" element={<NotificationsPage />} />
               <Route path="/analytics" element={<AnalyticsPage />} />
               <Route path="/lists" element={<ListsPage />} />
-              <Route path="/list/:pubkey/:listId" element={<ListDetailPage />} />
               {/* DISABLED: Upload route - not supported on web at this time
               <Route path="/upload" element={<UploadPage />} />
               */}

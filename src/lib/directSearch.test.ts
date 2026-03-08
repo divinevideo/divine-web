@@ -2,8 +2,13 @@ import { describe, expect, it } from 'vitest';
 import { nip19 } from 'nostr-tools';
 import { SHORT_VIDEO_KIND } from '@/types/video';
 import {
-  buildProfilePath,
+  buildAddressableEventPath,
+  buildEventPath,
+  buildListPath,
   buildVideoPath,
+} from '@/lib/eventRouting';
+import {
+  buildProfilePath,
   getDirectSearchTarget,
   isHexIdentifier,
   isLikelyOpaqueVideoIdentifier,
@@ -35,13 +40,13 @@ describe('directSearch', () => {
     });
   });
 
-  it('routes note and nevent inputs to the video page', () => {
+  it('routes note inputs to the event page and video nevents to the video page', () => {
     const note = nip19.noteEncode(eventId);
     const nevent = nip19.neventEncode({ id: eventId, kind: SHORT_VIDEO_KIND, author: pubkey });
 
     expect(getDirectSearchTarget(note)).toEqual({
-      path: buildVideoPath(eventId),
-      entity: 'video',
+      path: buildEventPath(eventId),
+      entity: 'event',
     });
     expect(getDirectSearchTarget(nevent)).toEqual({
       path: buildVideoPath(eventId),
@@ -68,14 +73,28 @@ describe('directSearch', () => {
     });
   });
 
-  it('ignores unsupported addressable event kinds', () => {
+  it('routes video lists and generic addressable events to useful paths', () => {
+    const listId = 'spring-picks';
+    const listNaddr = nip19.naddrEncode({
+      identifier: listId,
+      pubkey,
+      kind: 30005,
+    });
+    const articleId = 'post-123';
     const article = nip19.naddrEncode({
-      identifier: 'post-123',
+      identifier: articleId,
       pubkey,
       kind: 30023,
     });
 
-    expect(getDirectSearchTarget(article)).toBeNull();
+    expect(getDirectSearchTarget(listNaddr)).toEqual({
+      path: buildListPath(pubkey, listId),
+      entity: 'event',
+    });
+    expect(getDirectSearchTarget(article)).toEqual({
+      path: buildAddressableEventPath(30023, pubkey, articleId),
+      entity: 'event',
+    });
   });
 
   it('detects hex ids and opaque pasted d tags for async lookup', () => {

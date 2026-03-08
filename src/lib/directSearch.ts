@@ -1,5 +1,11 @@
 import { nip19 } from 'nostr-tools';
 import { VIDEO_KINDS } from '@/types/video';
+import {
+  buildAddressableRoute,
+  buildEventPath,
+  buildProfilePath as buildProfileRoute,
+  buildResolvedEventRoute,
+} from '@/lib/eventRouting';
 
 const VIDEO_COORDINATE_PATTERN = /^(?:a:)?(?<kind>\d+):(?<pubkey>[0-9a-f]{64}):(?<identifier>.+)$/i;
 const HEX_64_PATTERN = /^[0-9a-f]{64}$/i;
@@ -7,7 +13,7 @@ const OPAQUE_IDENTIFIER_PATTERN = /^[a-z0-9:_-]+$/i;
 
 export interface DirectSearchTarget {
   path: string;
-  entity: 'profile' | 'video';
+  entity: 'event' | 'profile' | 'video';
 }
 
 export function normalizeDirectSearchInput(value: string): string {
@@ -18,11 +24,7 @@ export function normalizeDirectSearchInput(value: string): string {
 }
 
 export function buildProfilePath(identifier: string): string {
-  return `/profile/${identifier}`;
-}
-
-export function buildVideoPath(identifier: string): string {
-  return `/video/${encodeURIComponent(identifier)}`;
+  return buildProfileRoute(identifier);
 }
 
 export function isHexIdentifier(value: string): boolean {
@@ -60,12 +62,16 @@ export function getDirectSearchTarget(value: string): DirectSearchTarget | null 
   const coordinateMatch = normalized.match(VIDEO_COORDINATE_PATTERN);
   if (coordinateMatch?.groups) {
     const kind = Number(coordinateMatch.groups.kind);
-    if (VIDEO_KINDS.includes(kind as typeof VIDEO_KINDS[number])) {
-      return {
-        path: buildVideoPath(coordinateMatch.groups.identifier),
-        entity: 'video',
-      };
-    }
+    const path = buildAddressableRoute(
+      kind,
+      coordinateMatch.groups.pubkey,
+      coordinateMatch.groups.identifier,
+    );
+
+    return {
+      path,
+      entity: VIDEO_KINDS.includes(kind as typeof VIDEO_KINDS[number]) ? 'video' : 'event',
+    };
   }
 
   try {
@@ -86,24 +92,30 @@ export function getDirectSearchTarget(value: string): DirectSearchTarget | null 
 
       case 'note':
         return {
-          path: buildVideoPath(decoded.data),
-          entity: 'video',
+          path: buildEventPath(decoded.data),
+          entity: 'event',
         };
 
       case 'nevent':
         return {
-          path: buildVideoPath(decoded.data.id),
-          entity: 'video',
+          path: decoded.data.kind
+            ? buildResolvedEventRoute({
+              id: decoded.data.id,
+              kind: decoded.data.kind,
+              pubkey: decoded.data.author || '',
+              tags: [],
+            })
+            : buildEventPath(decoded.data.id),
+          entity: decoded.data.kind && VIDEO_KINDS.includes(decoded.data.kind as typeof VIDEO_KINDS[number])
+            ? 'video'
+            : 'event',
         };
 
       case 'naddr':
-        if (VIDEO_KINDS.includes(decoded.data.kind as typeof VIDEO_KINDS[number])) {
-          return {
-            path: buildVideoPath(decoded.data.identifier),
-            entity: 'video',
-          };
-        }
-        return null;
+        return {
+          path: buildAddressableRoute(decoded.data.kind, decoded.data.pubkey, decoded.data.identifier),
+          entity: VIDEO_KINDS.includes(decoded.data.kind as typeof VIDEO_KINDS[number]) ? 'video' : 'event',
+        };
 
       default:
         return null;

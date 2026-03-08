@@ -29,9 +29,10 @@ import { SEARCH_SORT_MODES as SORT_MODES } from '@/lib/constants/sortModes';
 import { useAppContext } from '@/hooks/useAppContext';
 import { DEFAULT_FUNNELCAKE_URL, getFunnelcakeUrl } from '@/config/relays';
 import { fetchVideoById } from '@/lib/funnelcakeClient';
+import { fetchEventByIdFromApi } from '@/lib/eventLookup';
+import { buildResolvedEventRoute, buildVideoPath } from '@/lib/eventRouting';
 import {
   buildProfilePath,
-  buildVideoPath,
   getDirectSearchTarget,
   isHexIdentifier,
   isLikelyOpaqueVideoIdentifier,
@@ -169,24 +170,36 @@ export function SearchPage() {
       directLookupAbortRef.current = controller;
       const funnelcakeUrl = getFunnelcakeUrl(config.relayUrl) || DEFAULT_FUNNELCAKE_URL;
 
-      void fetchVideoById(funnelcakeUrl, normalized, undefined, controller.signal)
-        .then(video => {
-          if (controller.signal.aborted) {
-            return;
-          }
+      if (isHexIdentifier(normalized)) {
+        void fetchEventByIdFromApi(normalized, controller.signal)
+          .then(event => {
+            if (controller.signal.aborted) {
+              return;
+            }
 
-          if (video) {
-            navigate(buildVideoPath(normalized));
-            return;
-          }
+            if (event) {
+              navigate(buildResolvedEventRoute(event));
+              return;
+            }
 
-          if (isHexIdentifier(normalized)) {
             navigate(buildProfilePath(normalized));
-          }
-        })
-        .catch(() => {
-          // Fall through to normal search results when identifier lookup fails.
-        });
+          })
+          .catch(() => {
+            // Fall through to normal search results when identifier lookup fails.
+          });
+      } else {
+        void fetchVideoById(funnelcakeUrl, normalized, undefined, controller.signal)
+          .then(video => {
+            if (controller.signal.aborted || !video) {
+              return;
+            }
+
+            navigate(buildVideoPath(normalized));
+          })
+          .catch(() => {
+            // Fall through to normal search results when identifier lookup fails.
+          });
+      }
 
       if (pastedLookupQueryRef.current === normalized) {
         pastedLookupQueryRef.current = null;
@@ -294,7 +307,7 @@ export function SearchPage() {
             <Input
               ref={searchInputRef}
               type="text"
-              placeholder="Search or paste an npub, nevent, naddr, or d tag..."
+              placeholder="Search or paste an npub, note, nevent, naddr, or d tag..."
               value={searchQuery}
               onChange={(e) => handleSearchChange(e.target.value)}
               onPaste={handleSearchPaste}
