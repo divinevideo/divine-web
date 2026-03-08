@@ -1,5 +1,5 @@
-import { nip19 } from 'nostr-tools';
 import { useParams, Navigate } from 'react-router-dom';
+import { getDirectSearchTarget } from '@/lib/directSearch';
 import NotFound from './NotFound';
 
 export function NIP19Page() {
@@ -9,40 +9,10 @@ export function NIP19Page() {
     return <NotFound />;
   }
 
-  let decoded;
-  try {
-    decoded = nip19.decode(identifier);
-  } catch {
+  const target = getDirectSearchTarget(identifier);
+  if (!target) {
     return <NotFound />;
   }
 
-  const { type, data } = decoded;
-
-  switch (type) {
-    case 'npub':
-      // Navigate to the profile route with npub parameter
-      return <Navigate to={`/profile/${identifier}`} replace />;
-      
-    case 'nprofile': {
-      // nprofile contains pubkey and optional relay hints
-      // Redirect to the npub version for consistency
-      const npub = nip19.npubEncode(data.pubkey);
-      return <Navigate to={`/profile/${npub}`} replace />;
-    }
-
-    case 'note':
-      // AI agent should implement note view here
-      return <div>Note placeholder</div>;
-
-    case 'nevent':
-      // AI agent should implement event view here
-      return <div>Event placeholder</div>;
-
-    case 'naddr':
-      // AI agent should implement addressable event view here
-      return <div>Addressable event placeholder</div>;
-
-    default:
-      return <NotFound />;
-  }
-} 
+  return <Navigate to={target.path} replace />;
+}
