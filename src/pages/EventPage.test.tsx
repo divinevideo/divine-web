@@ -21,6 +21,15 @@ vi.mock('@/hooks/useSubdomainNavigate', () => ({
   useSubdomainNavigate: () => mockNavigate,
 }));
 
+vi.mock('@/hooks/useAppContext', () => ({
+  useAppContext: () => ({
+    config: {
+      relayUrl: 'wss://relay.divine.video',
+      relayUrls: ['wss://relay.divine.video'],
+    },
+  }),
+}));
+
 vi.mock('@/hooks/useAuthor', () => ({
   useAuthor: () => ({
     data: {

@@ -53,6 +53,16 @@ export function isLikelyOpaqueVideoIdentifier(value: string, allowShortTokens = 
   return allowShortTokens || normalized.length >= 16;
 }
 
+function withRelayHints(path: string, relayHints?: string[]): string {
+  if (!path.startsWith('/event') || !relayHints?.length) {
+    return path;
+  }
+
+  const params = new URLSearchParams();
+  params.set('relays', relayHints.join(','));
+  return `${path}?${params.toString()}`;
+}
+
 export function getDirectSearchTarget(value: string): DirectSearchTarget | null {
   const normalized = normalizeDirectSearchInput(value);
   if (!normalized) {
@@ -97,25 +107,32 @@ export function getDirectSearchTarget(value: string): DirectSearchTarget | null 
         };
 
       case 'nevent':
-        return {
-          path: decoded.data.kind
+        {
+          const path = decoded.data.kind
             ? buildResolvedEventRoute({
               id: decoded.data.id,
               kind: decoded.data.kind,
               pubkey: decoded.data.author || '',
               tags: [],
             })
-            : buildEventPath(decoded.data.id),
+            : buildEventPath(decoded.data.id);
+
+        return {
+          path: withRelayHints(path, decoded.data.relays),
           entity: decoded.data.kind && VIDEO_KINDS.includes(decoded.data.kind as typeof VIDEO_KINDS[number])
             ? 'video'
             : 'event',
         };
+        }
 
       case 'naddr':
+        {
+          const path = buildAddressableRoute(decoded.data.kind, decoded.data.pubkey, decoded.data.identifier);
         return {
-          path: buildAddressableRoute(decoded.data.kind, decoded.data.pubkey, decoded.data.identifier),
+          path: withRelayHints(path, decoded.data.relays),
           entity: VIDEO_KINDS.includes(decoded.data.kind as typeof VIDEO_KINDS[number]) ? 'video' : 'event',
         };
+        }
 
       default:
         return null;

@@ -3,6 +3,7 @@
 
 import { useState, useEffect, useRef, useMemo, type ClipboardEvent } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { useNostr } from '@nostrify/react';
 import { useSubdomainNavigate } from '@/hooks/useSubdomainNavigate';
 import { nip19 } from 'nostr-tools';
 import { useSeoMeta } from '@unhead/react';
@@ -29,7 +30,7 @@ import { SEARCH_SORT_MODES as SORT_MODES } from '@/lib/constants/sortModes';
 import { useAppContext } from '@/hooks/useAppContext';
 import { DEFAULT_FUNNELCAKE_URL, getFunnelcakeUrl } from '@/config/relays';
 import { fetchVideoById } from '@/lib/funnelcakeClient';
-import { fetchEventByIdFromApi } from '@/lib/eventLookup';
+import { fetchEventById } from '@/lib/eventLookup';
 import { buildResolvedEventRoute, buildVideoPath } from '@/lib/eventRouting';
 import {
   buildProfilePath,
@@ -43,6 +44,7 @@ type SearchFilter = 'all' | 'videos' | 'users' | 'hashtags';
 
 export function SearchPage() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const { nostr } = useNostr();
   const navigate = useSubdomainNavigate();
   const { config } = useAppContext();
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
@@ -169,9 +171,12 @@ export function SearchPage() {
       const controller = new AbortController();
       directLookupAbortRef.current = controller;
       const funnelcakeUrl = getFunnelcakeUrl(config.relayUrl) || DEFAULT_FUNNELCAKE_URL;
+      const configuredRelayUrls = config.relayUrls || [config.relayUrl];
 
       if (isHexIdentifier(normalized)) {
-        void fetchEventByIdFromApi(normalized, controller.signal)
+        void fetchEventById(nostr, normalized, controller.signal, {
+          relayUrls: configuredRelayUrls,
+        })
           .then(event => {
             if (controller.signal.aborted) {
               return;
@@ -210,7 +215,7 @@ export function SearchPage() {
       clearTimeout(timer);
       directLookupAbortRef.current?.abort();
     };
-  }, [config.relayUrl, navigate, searchQuery]);
+  }, [config.relayUrl, config.relayUrls, navigate, nostr, searchQuery]);
 
   // Handle search input changes
   const handleSearchChange = (value: string) => {

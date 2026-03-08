@@ -5,6 +5,7 @@ import { nip19 } from 'nostr-tools';
 import { formatDistanceToNow } from 'date-fns';
 import { ArrowLeft, Code, Loader2 } from 'lucide-react';
 import { useSubdomainNavigate } from '@/hooks/useSubdomainNavigate';
+import { useAppContext } from '@/hooks/useAppContext';
 import { useAuthor } from '@/hooks/useAuthor';
 import { fetchAddressableEvent, fetchEventById } from '@/lib/eventLookup';
 import {
@@ -103,6 +104,15 @@ function EventLoadingState() {
   );
 }
 
+function getRelayHints(search: string): string[] {
+  const params = new URLSearchParams(search);
+  return params
+    .getAll('relays')
+    .flatMap(value => value.split(','))
+    .map(value => value.trim())
+    .filter(Boolean);
+}
+
 export function EventPage() {
   const { eventId, kind, pubkey, identifier } = useParams<{
     eventId?: string;
@@ -111,19 +121,26 @@ export function EventPage() {
     identifier?: string;
   }>();
   const { nostr } = useNostr();
+  const { config } = useAppContext();
   const navigate = useSubdomainNavigate();
   const location = useLocation();
 
   const numericKind = kind ? Number(kind) : null;
   const decodedIdentifier = identifier ? decodeURIComponent(identifier) : null;
+  const relayHints = getRelayHints(location.search);
+  const configuredRelayUrls = config.relayUrls || [config.relayUrl];
+  const relayKey = [...configuredRelayUrls, ...relayHints].join(',');
 
   const { data: event, isLoading, error } = useQuery({
-    queryKey: ['event-page', eventId, numericKind, pubkey, decodedIdentifier],
+    queryKey: ['event-page', eventId, numericKind, pubkey, decodedIdentifier, relayKey],
     queryFn: async (context) => {
       const signal = AbortSignal.any([context.signal, AbortSignal.timeout(10000)]);
 
       if (eventId) {
-        return fetchEventById(nostr, eventId, signal);
+        return fetchEventById(nostr, eventId, signal, {
+          relayHints,
+          relayUrls: configuredRelayUrls,
+        });
       }
 
       if (numericKind && pubkey && decodedIdentifier) {
@@ -131,7 +148,10 @@ export function EventPage() {
           kind: numericKind,
           pubkey,
           identifier: decodedIdentifier,
-        }, signal);
+        }, signal, {
+          relayHints,
+          relayUrls: configuredRelayUrls,
+        });
       }
 
       return null;
@@ -184,7 +204,7 @@ export function EventPage() {
           <CardContent className="py-12 text-center space-y-3">
             <p className="text-lg font-semibold text-muted-foreground">Event not found</p>
             <p className="text-sm text-muted-foreground">
-              {error instanceof Error ? error.message : 'This event may not exist on the configured relays.'}
+              {error instanceof Error ? error.message : 'This event may not exist on the configured or fallback relays.'}
             </p>
           </CardContent>
         </Card>

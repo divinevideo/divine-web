@@ -85,6 +85,7 @@ describe('directSearch', () => {
       identifier: articleId,
       pubkey,
       kind: 30023,
+      relays: ['wss://relay.example'],
     });
 
     expect(getDirectSearchTarget(listNaddr)).toEqual({
@@ -92,7 +93,7 @@ describe('directSearch', () => {
       entity: 'event',
     });
     expect(getDirectSearchTarget(article)).toEqual({
-      path: buildAddressableEventPath(30023, pubkey, articleId),
+      path: `${buildAddressableEventPath(30023, pubkey, articleId)}?relays=${encodeURIComponent('wss://relay.example')}`,
       entity: 'event',
     });
   });
