@@ -53,6 +53,7 @@ interface VideoCardProps {
   video: ParsedVideoData;
   className?: string;
   mode?: 'thumbnail' | 'auto-play';
+  isPriority?: boolean; // First video in feed - skip observer wait for faster load
   layout?: 'horizontal' | 'vertical'; // horizontal = Vine-style side-by-side, vertical = stacked
   onLike?: () => void;
   onRepost?: () => void;
@@ -79,6 +80,7 @@ export function VideoCard({
   video,
   className,
   mode = 'auto-play',
+  isPriority,
   layout,
   onLike,
   onRepost,
@@ -515,6 +517,7 @@ export function VideoCard({
                   fallbackUrls={video.fallbackVideoUrls}
                   poster={video.thumbnailUrl}
                   blurhash={video.blurhash}
+                  isPriority={isPriority}
                   className="w-full h-full"
                   onLoadStart={() => setVideoError(false)}
                   onError={() => setVideoError(true)}

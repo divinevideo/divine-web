@@ -17,6 +17,7 @@ interface VideoCardWithMetricsProps {
   video: ParsedVideoData;
   index: number;
   mode?: 'auto-play' | 'thumbnail';
+  isPriority?: boolean;
   showComments: boolean;
   onOpenComments: () => void;
   onCloseComments: () => void;
@@ -32,6 +33,7 @@ function VideoCardWithMetricsInner({
   video,
   index,
   mode = 'auto-play',
+  isPriority,
   showComments,
   onOpenComments,
   onCloseComments,
@@ -106,6 +108,7 @@ function VideoCardWithMetricsInner({
     <VideoCard
       video={video}
       mode={mode}
+      isPriority={isPriority}
       onLike={handleVideoLike}
       onRepost={handleVideoRepost}
       onOpenComments={onOpenComments}

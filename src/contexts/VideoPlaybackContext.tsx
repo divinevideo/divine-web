@@ -84,6 +84,14 @@ export function VideoPlaybackProvider({ children }: { children: ReactNode }) {
       videoVisibility.current.delete(videoId);
     }
 
+    // If no video is active yet and this one is fully visible, activate immediately
+    // This skips the debounce for the first video on page load (priority video)
+    if (activeVideoIdRef.current === null && visibilityRatio >= 0.5) {
+      verboseLog(`Immediately activating first visible video: ${videoId} (${(visibilityRatio * 100).toFixed(1)}% visible)`);
+      setActiveVideoId(videoId);
+      return;
+    }
+
     // Debounce the selection of most visible video
     if (visibilityUpdateTimer.current) {
       clearTimeout(visibilityUpdateTimer.current);
