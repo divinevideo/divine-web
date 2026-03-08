@@ -152,6 +152,29 @@ export function useInfiniteVideosFunnelcake({
     queryFn: async ({ pageParam, signal }) => {
       const totalStart = performance.now();
 
+      // On the first page of a trending feed, check for edge-injected data
+      // The Fastly edge worker injects window.__DIVINE_FEED__ to avoid a client round-trip
+      if (!pageParam && feedType === 'trending' && typeof window !== 'undefined' && window.__DIVINE_FEED__) {
+        const edgeData = window.__DIVINE_FEED__;
+        delete window.__DIVINE_FEED__; // Consume once
+        debugLog('[useInfiniteVideosFunnelcake] Using edge-injected trending feed data');
+
+        const page = transformToVideoPage(edgeData);
+        performanceMonitor.recordFeedLoad({
+          feedType: 'funnelcake-trending',
+          queryTime: 0,
+          parseTime: performance.now() - totalStart,
+          totalTime: performance.now() - totalStart,
+          videoCount: page.videos.length,
+          sortMode,
+        });
+        return {
+          videos: page.videos,
+          nextCursor: page.nextCursor,
+          offset: page.offset,
+        };
+      }
+
       // Handle pagination cursor
       const isOffsetParam = typeof pageParam === 'object' && pageParam !== null && 'offset' in pageParam;
       const before = isOffsetParam

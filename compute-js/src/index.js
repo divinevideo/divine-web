@@ -181,11 +181,34 @@ async function handleRequest(event) {
   }
 
   // 8. Serve static content with SPA fallback (handled by PublisherServer config)
+  // For apex domain landing page, inject trending feed data to avoid client round-trip
+  const isApexLanding = APEX_DOMAINS.includes(hostnameToUse) && (url.pathname === '/' || url.pathname === '/index.html');
   const response = await publisherServer.serveRequest(request);
   if (response != null) {
     // Add Vary: X-Original-Host so CDN doesn't mix subdomain and apex cached responses
     const headers = new Headers(response.headers);
     headers.append('Vary', 'X-Original-Host');
+
+    // Inject trending feed data into landing page HTML
+    if (isApexLanding && response.headers.get('Content-Type')?.includes('text/html')) {
+      try {
+        let html = await response.text();
+        const feedData = await fetchTrendingFeedData();
+        if (feedData) {
+          let injection = `<script>window.__DIVINE_FEED__=${JSON.stringify(feedData)};</script>`;
+          const firstVideoUrl = feedData.videos?.[0]?.video_url;
+          if (firstVideoUrl) {
+            injection += `\n<link rel="preload" href="${escapeHtml(firstVideoUrl)}" as="video" type="video/mp4">`;
+          }
+          html = html.replace('</head>', injection + '</head>');
+        }
+        return new Response(html, { status: response.status, headers });
+      } catch (err) {
+        console.error('Feed injection error:', err.message);
+        // Fall through to serve unmodified response
+      }
+    }
+
     return new Response(response.body, {
       status: response.status,
       headers,
@@ -193,6 +216,66 @@ async function handleRequest(event) {
   }
 
   return new Response('Not Found', { status: 404 });
+}
+
+/**
+ * Fetch trending feed data with KV cache (stale-while-revalidate pattern).
+ * Returns cached data if fresh (<60s), otherwise fetches from Funnelcake API
+ * and updates the cache for the next request.
+ */
+async function fetchTrendingFeedData() {
+  const CACHE_KEY = 'cache:feed:trending';
+  const CACHE_TTL_SECONDS = 60;
+
+  const contentStore = new KVStore('divine-web-content');
+
+  // 1. Check KV cache
+  try {
+    const cached = await contentStore.get(CACHE_KEY);
+    if (cached) {
+      const parsed = JSON.parse(await cached.text());
+      const ageSeconds = Math.floor(Date.now() / 1000) - parsed.timestamp;
+      if (ageSeconds < CACHE_TTL_SECONDS) {
+        console.log('Trending feed cache hit, age:', ageSeconds, 's');
+        return parsed.data;
+      }
+      console.log('Trending feed cache stale, age:', ageSeconds, 's');
+    }
+  } catch (e) {
+    console.error('KV cache read error:', e.message);
+  }
+
+  // 2. Fetch from Funnelcake backend
+  let feedData = null;
+  try {
+    const resp = await fetch('https://relay.divine.video/api/videos?sort=trending&limit=10', {
+      backend: 'funnelcake',
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json',
+        'Host': 'relay.divine.video',
+      },
+    });
+    if (resp.ok) {
+      feedData = await resp.json();
+      // 3. Update KV cache (fire and forget)
+      try {
+        await contentStore.put(CACHE_KEY, JSON.stringify({
+          data: feedData,
+          timestamp: Math.floor(Date.now() / 1000),
+        }));
+        console.log('Trending feed cached in KV');
+      } catch (e) {
+        console.error('KV cache write error:', e.message);
+      }
+    } else {
+      console.error('Funnelcake trending fetch failed:', resp.status);
+    }
+  } catch (e) {
+    console.error('Funnelcake trending fetch error:', e.message);
+  }
+
+  return feedData;
 }
 
 /**
