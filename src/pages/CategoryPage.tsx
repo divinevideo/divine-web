@@ -23,7 +23,7 @@ export function CategoryPage() {
   const categoryName = name || '';
   const config = getCategoryConfig(categoryName);
   const [viewMode, setViewMode] = useState<ViewMode>('feed');
-  const [sortMode, setSortMode] = useState<SortMode | undefined>('hot');
+  const [sortMode, setSortMode] = useState<SortMode | undefined>('classic');
 
   const displayName = config?.label || categoryName;
   const emoji = config?.emoji || '';
