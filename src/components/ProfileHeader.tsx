@@ -14,7 +14,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { UserPlus, UserCheck, CheckCircle, Pencil, Copy, MoreVertical, Flag, Play, Repeat, Loader2, XCircle, Link2, Code, Rss } from 'lucide-react';
+import { UserPlus, UserCheck, CheckCircle, Copy, MoreVertical, Flag, Play, Repeat, Loader2, XCircle, Code, Rss } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { feedUrls } from '@/lib/feedUrls';
 import { useRssFeedAvailable } from '@/hooks/useRssFeedAvailable';
@@ -207,11 +207,10 @@ export function ProfileHeader({
           </Avatar>
         </div>
 
-        {/* Profile Info + Linked Accounts side by side on desktop */}
+        {/* Profile Info */}
         <div className="flex-1 min-w-0 text-center sm:text-left">
-          <div className="sm:flex sm:gap-6">
-            {/* Left: Name, NIP-05, Website, Bio */}
-            <div className="space-y-2 sm:flex-1 sm:min-w-0">
+          <div className="flex flex-col gap-3 lg:grid lg:grid-cols-[minmax(0,24rem)_minmax(0,1fr)] lg:items-start lg:gap-x-6 lg:gap-y-3">
+            <div className="min-w-0">
               <div>
                 <div className="flex items-center gap-2 justify-center sm:justify-start">
                   {stillLoadingName ? (
@@ -281,7 +280,85 @@ export function ProfileHeader({
                   <p className="text-muted-foreground text-sm">@{userName}</p>
                 ) : null}
               </div>
+            </div>
 
+            <div className="flex flex-wrap items-center justify-center gap-2 sm:justify-start lg:justify-end">
+              {isOwnProfile ? (
+                <>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" size="sm" data-testid="own-profile-menu-button">
+                        <MoreVertical className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={onEditProfile} data-testid="edit-profile-menu-item">
+                        Edit Profile
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => navigate('/settings/linked-accounts')} data-testid="linked-accounts-menu-item">
+                        Linked Accounts
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => navigate(`/get-embed?npub=${nip19.npubEncode(pubkey)}`)}>
+                        <Code className="h-4 w-4 mr-2" />
+                        Get embed code
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </>
+              ) : (
+                <>
+                  <Button
+                    onClick={handleFollowClick}
+                    variant={isFollowing ? "outline" : "default"}
+                    size="sm"
+                    className="min-w-[100px]"
+                    data-testid="follow-button"
+                  >
+                    {isFollowing ? (
+                      <>
+                        <UserCheck className="w-4 h-4 mr-2" />
+                        Following
+                      </>
+                    ) : (
+                      <>
+                        <UserPlus className="w-4 h-4 mr-2" />
+                        Follow
+                      </>
+                    )}
+                  </Button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" size="sm" data-testid="profile-menu-button">
+                        <MoreVertical className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => navigate(`/get-embed?npub=${nip19.npubEncode(pubkey)}`)}>
+                        <Code className="h-4 w-4 mr-2" />
+                        Get embed code
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setShowReportDialog(true)}>
+                        <Flag className="h-4 w-4 mr-2" />
+                        Report user
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                  {rssFeedAvailable && (
+                    <a
+                      href={feedUrls.userVideos(nip19.npubEncode(pubkey))}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      title="Subscribe to RSS feed"
+                      className="inline-flex items-center justify-center rounded-md p-2 text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                    >
+                      <Rss className="h-4 w-4" />
+                    </a>
+                  )}
+                </>
+              )}
+            </div>
+
+            <div className="space-y-2 min-w-0">
               {/* Website - hide if it's just a divine.video profile URL */}
               {website && !website.includes('divine.video/profile/') && (
                 <div className="flex flex-wrap gap-2 justify-center sm:justify-start">
@@ -299,108 +376,17 @@ export function ProfileHeader({
                   {linkifyText(about)}
                 </p>
               )}
+
+              <div className="pt-1">
+                <ProfileBadges badges={badgesQuery.data ?? []} className="justify-center sm:justify-start" isOwnProfile={isOwnProfile} />
+              </div>
             </div>
 
-            {/* Right: Linked Accounts (fills empty space on desktop) */}
-            <div className="mt-3 sm:mt-0 sm:flex-shrink-0 sm:max-w-[240px]">
-              <LinkedAccounts pubkey={pubkey} className="justify-center sm:justify-end sm:flex-col sm:items-end" />
+            <div className="min-w-0 lg:pt-1">
+              <LinkedAccounts pubkey={pubkey} className="justify-center sm:justify-start lg:justify-end" />
             </div>
-          </div>
-
-          {/* NIP-58 Badges - full width below */}
-          <div className="mt-2">
-            <ProfileBadges badges={badgesQuery.data ?? []} className="justify-center sm:justify-start" isOwnProfile={isOwnProfile} />
           </div>
         </div>
-
-        {/* Edit Profile / Follow Button */}
-        {isOwnProfile ? (
-          <div className="flex-shrink-0 self-center sm:self-start flex gap-2">
-            <Button
-              onClick={onEditProfile}
-              variant="outline"
-              size="sm"
-              className="min-w-[100px]"
-              data-testid="edit-profile-button"
-            >
-              <Pencil className="w-4 h-4 mr-2" />
-              Edit Profile
-            </Button>
-            <Link to="/settings/linked-accounts">
-              <Button
-                variant="ghost"
-                size="sm"
-                data-testid="linked-accounts-button"
-              >
-                <Link2 className="w-4 h-4 mr-2" />
-                Linked Accounts
-              </Button>
-            </Link>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" data-testid="own-profile-menu-button">
-                  <MoreVertical className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => navigate(`/get-embed?npub=${nip19.npubEncode(pubkey)}`)}>
-                  <Code className="h-4 w-4 mr-2" />
-                  Get embed code
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        ) : (
-          <div className="flex-shrink-0 self-center sm:self-start flex gap-2">
-            <Button
-              onClick={handleFollowClick}
-              variant={isFollowing ? "outline" : "default"}
-              size="sm"
-              className="min-w-[100px]"
-              data-testid="follow-button"
-            >
-              {isFollowing ? (
-                <>
-                  <UserCheck className="w-4 h-4 mr-2" />
-                  Following
-                </>
-              ) : (
-                <>
-                  <UserPlus className="w-4 h-4 mr-2" />
-                  Follow
-                </>
-              )}
-            </Button>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" data-testid="profile-menu-button">
-                  <MoreVertical className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => navigate(`/get-embed?npub=${nip19.npubEncode(pubkey)}`)}>
-                  <Code className="h-4 w-4 mr-2" />
-                  Get embed code
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setShowReportDialog(true)}>
-                  <Flag className="h-4 w-4 mr-2" />
-                  Report user
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-            {rssFeedAvailable && (
-              <a
-                href={feedUrls.userVideos(nip19.npubEncode(pubkey))}
-                target="_blank"
-                rel="noopener noreferrer"
-                title="Subscribe to RSS feed"
-                className="inline-flex items-center justify-center rounded-md p-2 text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-              >
-                <Rss className="h-4 w-4" />
-              </a>
-            )}
-          </div>
-        )}
       </div>
 
       {/* Stats Section */}

@@ -19,7 +19,7 @@ interface ProfileBadgesProps {
   isOwnProfile?: boolean;
 }
 
-export function ProfileBadges({ badges, className, isOwnProfile }: ProfileBadgesProps) {
+export function ProfileBadges({ badges, className }: ProfileBadgesProps) {
   const [selectedBadge, setSelectedBadge] = useState<ValidatedBadge | null>(null);
 
   if (!badges.length) {
@@ -69,18 +69,6 @@ export function ProfileBadges({ badges, className, isOwnProfile }: ProfileBadges
           <span className="text-xs text-muted-foreground ml-1">+{remaining}</span>
         )}
       </div>
-
-      {isOwnProfile && (
-        <a
-          href="https://badges.page"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-          data-testid="manage-badges-link"
-        >
-          Manage your badges on badges.page →
-        </a>
-      )}
 
       <BadgeDetailModal
         badge={selectedBadge}
