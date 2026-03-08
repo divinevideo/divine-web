@@ -493,6 +493,7 @@ export function VideoFeed({
               video={video}
               index={index}
               mode={mode}
+              isPriority={index === 0}
               showComments={showCommentsForVideo === video.id}
               onOpenComments={() => handleOpenComments(video)}
               onCloseComments={handleCloseComments}

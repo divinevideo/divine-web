@@ -30,6 +30,7 @@ interface VideoPlayerProps {
   fallbackUrls?: string[];
   poster?: string;
   blurhash?: string; // Blurhash for progressive loading placeholder
+  isPriority?: boolean; // First video in feed - skip observer wait, preload immediately
   className?: string;
   autoPlay?: boolean;
   muted?: boolean;
@@ -76,6 +77,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
       fallbackUrls,
       poster,
       blurhash,
+      isPriority,
       className,
       autoPlay: _autoPlay = true,
       muted: _muted = true,
@@ -221,8 +223,13 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
     }, []);
 
     // Handle visibility changes - report visibility ratio to context
+    // Priority videos report full visibility immediately to skip observer wait
     useEffect(() => {
-      if (entry && !hasError) {
+      if (isPriority && !entry && !hasError) {
+        // Priority video: report as fully visible before observer fires
+        verboseLog(`[VideoPlayer ${videoId}] Priority video: reporting immediate full visibility`);
+        updateVideoVisibility(videoId, 1.0);
+      } else if (entry && !hasError) {
         const visibilityRatio = entry.intersectionRatio;
         verboseLog(`[VideoPlayer ${videoId}] Visibility: ${(visibilityRatio * 100).toFixed(1)}%`);
         updateVideoVisibility(videoId, visibilityRatio);
@@ -230,7 +237,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
         // Not visible at all
         updateVideoVisibility(videoId, 0);
       }
-    }, [entry, inView, videoId, hasError, updateVideoVisibility]);
+    }, [entry, inView, videoId, hasError, updateVideoVisibility, isPriority]);
 
     // Update playing state based on active status and control video playback
     useEffect(() => {
@@ -973,7 +980,9 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
           playsInline
           // Preload based on visibility, but once loaded, keep preload stable to avoid re-fetching
           // hasLoadedOnce prevents the preload attribute from changing and causing flashes
-          preload={hasLoadedOnce ? 'auto' : (inView ? 'auto' : 'metadata')}
+          preload={isPriority || hasLoadedOnce ? 'auto' : (inView ? 'auto' : 'metadata')}
+          // @ts-expect-error fetchpriority is a valid HTML attribute but not yet in React types
+          fetchpriority={isPriority ? 'high' : undefined}
           crossOrigin="anonymous"
           disableRemotePlayback
           className={cn(
