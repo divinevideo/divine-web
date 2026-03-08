@@ -14,6 +14,10 @@ if (window.location.hash === '#signup') {
 import { initializeSentry } from './lib/sentry';
 initializeSentry();
 
+// Hydrate login state from cross-subdomain cookie (before React renders)
+import { hydrateLoginFromCookie } from '@/lib/crossSubdomainAuth';
+hydrateLoginFromCookie();
+
 import { createRoot } from 'react-dom/client';
 
 // Import polyfills first
