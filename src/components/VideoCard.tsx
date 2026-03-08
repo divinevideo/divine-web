@@ -115,9 +115,12 @@ export function VideoCard({
   // before that date are almost certainly classic Vines even without origin/platform tags
   const isClassicVine = !!video.loopCount || video.isVineMigrated ||
     (video.originalVineTimestamp !== undefined && video.originalVineTimestamp < 1484611200);
-  // SKIP HLS for classic Vines — the HLS transcoder distorts square videos into landscape format.
-  // The original MP4 files preserve the correct 480x480 square aspect ratio.
-  const effectiveHlsUrl = isClassicVine ? undefined : (video.hlsUrl || (optimalHlsUrl !== video.videoUrl ? optimalHlsUrl : undefined));
+  // SKIP HLS for short-form videos — HLS adds 2 extra round-trips (manifest + segment)
+  // that are unnecessary for small ~6-second videos (~2-4MB). Direct MP4 loads in a single request.
+  // Classic Vines also skip HLS because the transcoder distorts square 480x480 aspect ratio.
+  // Only use HLS for longer content (>60s) if divine ever supports it.
+  const isShortForm = !video.duration || video.duration <= 60;
+  const effectiveHlsUrl = (isClassicVine || isShortForm) ? undefined : (video.hlsUrl || (optimalHlsUrl !== video.videoUrl ? optimalHlsUrl : undefined));
   const { data: lists } = useVideosInLists(video.vineId ?? undefined);
 
   // NEW: Get reposter data from reposts array
