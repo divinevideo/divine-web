@@ -1,7 +1,7 @@
 // ABOUTME: Comprehensive search page with debounced input, filter tabs, infinite scroll, and sort modes
 // ABOUTME: Supports searching videos, users, hashtags with NIP-50 full-text search
 
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, type ClipboardEvent } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useSubdomainNavigate } from '@/hooks/useSubdomainNavigate';
 import { nip19 } from 'nostr-tools';
@@ -26,12 +26,24 @@ import { genUserName } from '@/lib/genUserName';
 import { getSafeProfileImage } from '@/lib/imageUtils';
 import type { SortMode } from '@/types/nostr';
 import { SEARCH_SORT_MODES as SORT_MODES } from '@/lib/constants/sortModes';
+import { useAppContext } from '@/hooks/useAppContext';
+import { DEFAULT_FUNNELCAKE_URL, getFunnelcakeUrl } from '@/config/relays';
+import { fetchVideoById } from '@/lib/funnelcakeClient';
+import {
+  buildProfilePath,
+  buildVideoPath,
+  getDirectSearchTarget,
+  isHexIdentifier,
+  isLikelyOpaqueVideoIdentifier,
+  normalizeDirectSearchInput,
+} from '@/lib/directSearch';
 
 type SearchFilter = 'all' | 'videos' | 'users' | 'hashtags';
 
 export function SearchPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useSubdomainNavigate();
+  const { config } = useAppContext();
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
   const [sortMode, setSortMode] = useState<SortMode | 'relevance'>(
     (searchParams.get('sort') as SortMode | 'relevance') || 'relevance'
@@ -41,6 +53,8 @@ export function SearchPage() {
   );
   const [showSuggestions, setShowSuggestions] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const directLookupAbortRef = useRef<AbortController | null>(null);
+  const pastedLookupQueryRef = useRef<string | null>(null);
 
   // Video search with infinite scroll and NIP-50
   const {
@@ -131,28 +145,85 @@ export function SearchPage() {
     };
   }, [searchQuery, sortMode, activeFilter, setSearchParams, videoResults.length, userResults.length, hashtagResults.length]);
 
+  useEffect(() => {
+    return () => {
+      directLookupAbortRef.current?.abort();
+    };
+  }, []);
+
+  useEffect(() => {
+    const normalized = normalizeDirectSearchInput(searchQuery);
+    const allowShortTokens = pastedLookupQueryRef.current === normalized;
+
+    if (!isLikelyOpaqueVideoIdentifier(normalized, allowShortTokens)) {
+      if (pastedLookupQueryRef.current !== normalized) {
+        pastedLookupQueryRef.current = null;
+      }
+      directLookupAbortRef.current?.abort();
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      directLookupAbortRef.current?.abort();
+      const controller = new AbortController();
+      directLookupAbortRef.current = controller;
+      const funnelcakeUrl = getFunnelcakeUrl(config.relayUrl) || DEFAULT_FUNNELCAKE_URL;
+
+      void fetchVideoById(funnelcakeUrl, normalized, undefined, controller.signal)
+        .then(video => {
+          if (controller.signal.aborted) {
+            return;
+          }
+
+          if (video) {
+            navigate(buildVideoPath(normalized));
+            return;
+          }
+
+          if (isHexIdentifier(normalized)) {
+            navigate(buildProfilePath(normalized));
+          }
+        })
+        .catch(() => {
+          // Fall through to normal search results when identifier lookup fails.
+        });
+
+      if (pastedLookupQueryRef.current === normalized) {
+        pastedLookupQueryRef.current = null;
+      }
+    }, allowShortTokens ? 0 : 500);
+
+    return () => {
+      clearTimeout(timer);
+      directLookupAbortRef.current?.abort();
+    };
+  }, [config.relayUrl, navigate, searchQuery]);
+
   // Handle search input changes
   const handleSearchChange = (value: string) => {
-    // Detect and redirect to npub/nprofile profiles
-    const trimmedValue = value.trim();
-    if (trimmedValue.startsWith('npub1') || trimmedValue.startsWith('nprofile1')) {
-      try {
-        const decoded = nip19.decode(trimmedValue);
-        if (decoded.type === 'npub') {
-          navigate(`/${trimmedValue}`);
-          return;
-        } else if (decoded.type === 'nprofile') {
-          const npub = nip19.npubEncode(decoded.data.pubkey);
-          navigate(`/${npub}`);
-          return;
-        }
-      } catch {
-        // Invalid npub/nprofile, continue with normal search
-      }
+    const directTarget = getDirectSearchTarget(value);
+    if (directTarget) {
+      navigate(directTarget.path);
+      return;
+    }
+
+    if (normalizeDirectSearchInput(value) !== pastedLookupQueryRef.current) {
+      pastedLookupQueryRef.current = null;
     }
 
     setSearchQuery(value);
     setShowSuggestions(false);
+  };
+
+  const handleSearchPaste = (event: ClipboardEvent<HTMLInputElement>) => {
+    const pastedValue = event.clipboardData.getData('text');
+    const directTarget = getDirectSearchTarget(pastedValue);
+    if (directTarget) {
+      navigate(directTarget.path);
+      return;
+    }
+
+    pastedLookupQueryRef.current = normalizeDirectSearchInput(pastedValue) || null;
   };
 
   // Handle hashtag suggestion click
@@ -223,9 +294,10 @@ export function SearchPage() {
             <Input
               ref={searchInputRef}
               type="text"
-              placeholder="Search for videos, users, or hashtags..."
+              placeholder="Search or paste an npub, nevent, naddr, or d tag..."
               value={searchQuery}
               onChange={(e) => handleSearchChange(e.target.value)}
+              onPaste={handleSearchPaste}
               onFocus={() => setShowSuggestions(!searchQuery.trim())}
               onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
               className="pl-10 pr-4"
