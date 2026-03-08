@@ -21,6 +21,8 @@ import type { SortMode } from '@/types/nostr';
 import { useSubdomainNavigate } from '@/hooks/useSubdomainNavigate';
 import { useCallback } from 'react';
 import { useFullscreenFeed } from '@/contexts/FullscreenFeedContext';
+import { useVideoPlayback } from '@/hooks/useVideoPlayback';
+import { useVideoPrefetch } from '@/hooks/useVideoPrefetch';
 
 type ViewMode = 'feed' | 'grid';
 
@@ -182,6 +184,10 @@ export function VideoFeed({
 
   // Prefetch all authors in a single query
   useBatchedAuthors(authorPubkeys);
+
+  // Prefetch next 2-3 video URLs while current video plays
+  const { activeVideoId } = useVideoPlayback();
+  useVideoPrefetch(activeVideoId, filteredVideos);
 
   // Auto-navigate to discovery if home feed is empty
   useEffect(() => {
