@@ -170,7 +170,7 @@ export function chooseVideoDataSource({
     return {
       dataSource: 'funnelcake',
       apiUrl,
-      websocketFeedType: websocketSupported ? websocketFeedType : undefined,
+      websocketFeedType: websocketSupported ? (websocketFeedType ?? undefined) : undefined,
       reason: relayHasFunnelcake
         ? 'prefer-selected-relay-funnelcake-rest-api'
         : 'prefer-canonical-funnelcake-rest-api',
