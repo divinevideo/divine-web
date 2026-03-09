@@ -81,6 +81,7 @@ export function transformFunnelcakeVideo(raw: FunnelcakeVideoRaw): ParsedVideoDa
     vineId: raw.d_tag || null, // d_tag is the unique identifier
     // loops may come from API or be parsed from content text (for user videos endpoint)
     loopCount: raw.loops ?? parseLoopsFromContent(raw.content) ?? parseLoopsFromContent(raw.title) ?? 0,
+    divineViewCount: raw.views ?? 0,
 
     // Social metrics from Funnelcake (pre-computed)
     // Handle both naming conventions: embedded_* (main videos) vs plain (user videos)

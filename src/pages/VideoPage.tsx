@@ -15,6 +15,7 @@ import { useBatchedVideoInteractions } from '@/hooks/useBatchedVideoInteractions
 import { useNostrPublish } from '@/hooks/useNostrPublish';
 import { useRepostVideo } from '@/hooks/usePublishVideo';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { useVideoSocialMetrics } from '@/hooks/useVideoSocialMetrics';
 import { useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/useToast';
 import { genUserName } from '@/lib/genUserName';
@@ -434,6 +435,11 @@ export function VideoPage() {
   // Helper component to provide social metrics data for the video
   // Uses pre-fetched batched interactions instead of individual queries per video
   function VideoCardWithMetrics({ video, userInteractions }: { video: ParsedVideoData; userInteractions?: UserInteractions }) {
+    const socialMetrics = useVideoSocialMetrics(video.id, video.pubkey, video.vineId, {
+      enabled: true,
+    });
+    const divineViewCount = Math.max(video.divineViewCount ?? 0, socialMetrics.data?.viewCount ?? 0);
+
     const handleVideoLike = async () => {
       if (userInteractions?.hasLiked) {
         // Unlike - delete the like event
@@ -472,7 +478,7 @@ export function VideoPage() {
         likeCount={video.likeCount ?? 0}
         repostCount={video.repostCount ?? 0}
         commentCount={video.commentCount ?? 0}
-        viewCount={video.loopCount ?? 0}
+        viewCount={(video.loopCount ?? 0) + divineViewCount}
         showComments={showCommentsForVideo === video.id}
         navigationContext={context || undefined}
       />

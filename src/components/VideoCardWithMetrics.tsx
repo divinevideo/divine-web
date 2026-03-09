@@ -104,6 +104,8 @@ function VideoCardWithMetricsInner({
     });
   };
 
+  const divineViewCount = Math.max(video.divineViewCount ?? 0, socialMetrics.data?.viewCount ?? 0);
+
   return (
     <VideoCard
       video={video}
@@ -120,7 +122,7 @@ function VideoCardWithMetricsInner({
       likeCount={(video.likeCount ?? 0) + (socialMetrics.data?.likeCount ?? 0)}
       repostCount={(video.repostCount ?? 0) + (socialMetrics.data?.repostCount ?? 0)}
       commentCount={(video.commentCount ?? 0) + (socialMetrics.data?.commentCount ?? 0)}
-      viewCount={(socialMetrics.data?.viewCount ?? 0) + (video.loopCount ?? 0)}
+      viewCount={divineViewCount + (video.loopCount ?? 0)}
       showComments={showComments}
       navigationContext={navigationContext}
       videoIndex={index}

@@ -27,7 +27,7 @@ import { useSubdomainNavigate } from '@/hooks/useSubdomainNavigate';
 import { enhanceAuthorData } from '@/lib/generateProfile';
 import { genUserName } from '@/lib/genUserName';
 import { formatDistanceToNow } from 'date-fns';
-import { formatCount, formatViewCount } from '@/lib/formatUtils';
+import { formatClassicVineViewBreakdown, formatCount, formatViewCount } from '@/lib/formatUtils';
 import { getSafeProfileImage } from '@/lib/imageUtils';
 import { useBadges } from '@/hooks/useBadges';
 import { InlineBadges } from '@/components/InlineBadges';
@@ -106,6 +106,7 @@ export function FullscreenVideoItem({
   const canDelete = useCanDeleteVideo(video);
   const { data: reactions } = useVideoReactions(video.id, video.pubkey, video.vineId);
   const { data: lists } = useVideosInLists(video.vineId ?? undefined);
+  const classicViewBreakdown = formatClassicVineViewBreakdown(viewCount, video.loopCount ?? 0);
 
   // Get author data
   const authorData = useAuthor(video.pubkey, {
@@ -374,7 +375,7 @@ export function FullscreenVideoItem({
               {viewCount > 0 && (
                 <div className="flex items-center gap-1 text-sm text-white/80 drop-shadow-lg mt-1">
                   <Eye className="h-3 w-3" />
-                  {formatViewCount(viewCount)}
+                  <span>{classicViewBreakdown || formatViewCount(viewCount)}</span>
                 </div>
               )}
             </div>
