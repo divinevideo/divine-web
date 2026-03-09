@@ -8,8 +8,12 @@ import { ExternalLink, Heart, Archive, Shield } from 'lucide-react';
 import { ZendeskWidget } from '@/components/ZendeskWidget';
 import { MarketingLayout } from '@/components/MarketingLayout';
 import { ApplePodcastEmbed } from '@/components/ApplePodcastEmbed';
+import { usePlatformStats } from '@/hooks/usePlatformStats';
 
 export function AboutPage() {
+  const { data: platformStats } = usePlatformStats();
+  const classicVinesSaved = platformStats?.vine_videos?.toLocaleString();
+
   return (
     <MarketingLayout>
       <div className="container mx-auto px-4 py-8 max-w-4xl">
@@ -155,6 +159,19 @@ export function AboutPage() {
               </a>{" "}
               preserved many videos from the original platform through Internet Archive efforts.
             </p>
+            {classicVinesSaved && (
+              <div className="rounded-lg border border-brand-green bg-brand-dark-green px-4 py-3">
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-green">
+                  Classic Vines Saved
+                </p>
+                <p className="mt-1 text-3xl font-bold text-brand-off-white">
+                  {classicVinesSaved}
+                </p>
+                <p className="mt-1 text-sm text-brand-light-green">
+                  Live total currently available through the diVine relay archive.
+                </p>
+              </div>
+            )}
             <p className="text-muted-foreground">
               diVine has imported archived videos from ArchiveTeam's preservation work, giving these authentic
               pre-AI era videos a new home on the decentralized web. We're committed to restoring creator ownership
