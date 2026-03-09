@@ -1,9 +1,14 @@
 // ABOUTME: Hook for fetching video social interaction metrics (likes, reposts, views)
-// ABOUTME: Returns zeros for metrics (Funnelcake provides counts); WebSocket still used for user interactions
+// ABOUTME: Fetches modern view totals from Funnelcake while keeping optimistic social deltas separate
 
 import { UserInteractions, SHORT_VIDEO_KIND } from '@/types/video';
 import { useQuery } from '@tanstack/react-query';
 import { useNostr } from '@nostrify/react';
+import { useAppContext } from '@/hooks/useAppContext';
+import { DEFAULT_FUNNELCAKE_URL, getFunnelcakeUrl, hasFunnelcake } from '@/config/relays';
+import { fetchVideoStats } from '@/lib/funnelcakeClient';
+import { isFunnelcakeAvailable } from '@/lib/funnelcakeHealth';
+import { debugLog } from '@/lib/debug';
 
 export interface VideoReaction {
   pubkey: string;
@@ -37,20 +42,42 @@ export function useVideoSocialMetrics(
   vineId: string | null,
   options?: { enabled?: boolean }
 ) {
+  const { config } = useAppContext();
+  const apiUrl = hasFunnelcake(config.relayUrl)
+    ? (getFunnelcakeUrl(config.relayUrl) || DEFAULT_FUNNELCAKE_URL)
+    : DEFAULT_FUNNELCAKE_URL;
+
   return useQuery({
     queryKey: ['video-social-metrics', videoId, videoPubkey, vineId],
     enabled: options?.enabled !== false,
-    // Return zeros - Funnelcake already provides counts via video.likeCount etc.
-    // VideoFeed adds: video.likeCount + socialMetrics.likeCount = correct total
-    // Optimistic updates still work by incrementing this cache
-    queryFn: async () => ({
-      likeCount: 0,
-      repostCount: 0,
-      viewCount: 0,
-      commentCount: 0,
-      likes: [],
-      reposts: [],
-    }),
+    // Keep like/repost/comment counts as delta-only so optimistic updates don't
+    // double-count Funnelcake's embedded totals. Views are separate from Vine loops,
+    // so we can safely fetch the current diVine total here.
+    queryFn: async ({ signal }) => {
+      const emptyMetrics: VideoSocialMetrics = {
+        likeCount: 0,
+        repostCount: 0,
+        viewCount: 0,
+        commentCount: 0,
+        likes: [],
+        reposts: [],
+      };
+
+      if (!isFunnelcakeAvailable(apiUrl)) {
+        return emptyMetrics;
+      }
+
+      try {
+        const stats = await fetchVideoStats(apiUrl, videoId, signal);
+        return {
+          ...emptyMetrics,
+          viewCount: stats.views ?? 0,
+        };
+      } catch (error) {
+        debugLog('[useVideoSocialMetrics] Failed to fetch view stats:', error);
+        return emptyMetrics;
+      }
+    },
     staleTime: 30000, // Consider data stale after 30 seconds
     gcTime: 300000, // Keep in cache for 5 minutes
     retry: 2,

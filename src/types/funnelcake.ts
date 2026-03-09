@@ -65,6 +65,7 @@ export interface FunnelcakeVideoStats {
   reactions: number;
   comments: number;
   reposts: number;
+  views?: number;
   loops: number;
   trending_score: number;
   engagement_score: number;

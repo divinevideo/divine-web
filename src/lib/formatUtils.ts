@@ -36,3 +36,21 @@ export function formatViewCount(count: number): string {
   const formatted = formatCount(count);
   return count === 1 ? `${formatted} view` : `${formatted} views`;
 }
+
+/**
+ * Format a classic Vine breakdown so archived loops and new diVine views stay visible.
+ */
+export function formatClassicVineViewBreakdown(totalViews: number, originalLoops: number): string | null {
+  if (originalLoops <= 0) {
+    return null;
+  }
+
+  const vineLoopLabel = `${formatCount(originalLoops)} Vine ${originalLoops === 1 ? 'loop' : 'loops'}`;
+  const newViews = Math.max(totalViews - originalLoops, 0);
+
+  if (newViews <= 0) {
+    return vineLoopLabel;
+  }
+
+  return `${vineLoopLabel} + ${formatCount(newViews)} new ${newViews === 1 ? 'view' : 'views'}`;
+}

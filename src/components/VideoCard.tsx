@@ -35,7 +35,7 @@ import type { ParsedVideoData } from '@/types/video';
 import { SHORT_VIDEO_KIND } from '@/types/video';
 import type { NostrMetadata } from '@nostrify/nostrify';
 import { cn } from '@/lib/utils';
-import { formatViewCount, formatCount } from '@/lib/formatUtils';
+import { formatClassicVineViewBreakdown, formatViewCount, formatCount } from '@/lib/formatUtils';
 import { getSafeProfileImage } from '@/lib/imageUtils';
 import type { ViewTrafficSource } from '@/hooks/useViewEventPublisher';
 import type { VideoNavigationContext } from '@/hooks/useVideoNavigation';
@@ -132,6 +132,7 @@ export function VideoCard({
   const reposterPubkey = latestRepost?.reposterPubkey;
   const reposterData = useAuthor(reposterPubkey || '');
   const shouldShowReposter = hasReposts && reposterPubkey;
+  const classicViewBreakdown = formatClassicVineViewBreakdown(viewCount, video.loopCount ?? 0);
   const [videoError, setVideoError] = useState(false);
   // Always start with video player visible in auto-play mode, but let VideoPlaybackContext control actual playback
   // The VideoPlayer component will only play when it's the activeVideoId (most visible)
@@ -713,8 +714,13 @@ export function VideoCard({
 
           {/* Stats row - horizontal layout: show view/loop count only (likes/comments shown on buttons) */}
           {isHorizontal && viewCount > 0 && (
-            <SmartLink to={`/video/${video.id}`} ownerPubkey={video.pubkey} className="py-2 mt-auto text-sm text-muted-foreground hover:underline block">
-              {formatViewCount(viewCount)}
+            <SmartLink to={`/video/${video.id}`} ownerPubkey={video.pubkey} className="py-2 mt-auto hover:underline block">
+              <span className="block text-sm text-muted-foreground">{formatViewCount(viewCount)}</span>
+              {classicViewBreakdown && (
+                <span className="block text-xs text-muted-foreground/80">
+                  {classicViewBreakdown}
+                </span>
+              )}
             </SmartLink>
           )}
 
@@ -723,9 +729,16 @@ export function VideoCard({
             <div className="px-4 py-2" data-testid="video-metadata">
               <div className="flex items-center gap-3 text-sm text-muted-foreground">
                 {viewCount > 0 && (
-                  <SmartLink to={`/video/${video.id}`} ownerPubkey={video.pubkey} className="flex items-center gap-1 hover:underline">
+                  <SmartLink to={`/video/${video.id}`} ownerPubkey={video.pubkey} className="flex items-start gap-1 hover:underline">
                     <Eye className="h-3 w-3" />
-                    {formatViewCount(viewCount)}
+                    <span className="flex flex-col">
+                      <span>{formatViewCount(viewCount)}</span>
+                      {classicViewBreakdown && (
+                        <span className="text-xs text-muted-foreground/80">
+                          {classicViewBreakdown}
+                        </span>
+                      )}
+                    </span>
                   </SmartLink>
                 )}
               </div>
