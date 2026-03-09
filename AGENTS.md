@@ -14,6 +14,12 @@
 - Deploy: `npm run deploy` (nostr-deploy-cli), `npm run deploy:cloudflare`, `npm run deploy:preview`.
 - Example: `vitest run` executes tests in CI mode.
 
+## Worktree Workflow
+- Always start new work from a fresh git worktree based on `main`.
+- Before making changes, update `main`, then create a dedicated branch and worktree for the task.
+- Example: `git fetch origin && git checkout main && git pull --ff-only && git worktree add ../divine-web-<task> -b <task> main`.
+- Do not begin implementation in an existing feature branch worktree unless the user explicitly asks for that branch.
+
 ## Coding Style & Naming Conventions
 - Language: TypeScript + React 18. Components in `.tsx`; utilities in `.ts`.
 - Naming: Components `PascalCase`, hooks `useX`, pages `*Page.tsx`, tests `*.test.ts(x)` colocated with code.
