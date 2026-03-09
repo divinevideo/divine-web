@@ -535,6 +535,11 @@ export function getOriginalCommentCount(event: NostrEvent): number | undefined {
  * - pgp_fingerprint: PGP public key fingerprint
  */
 export function getProofModeData(event: NostrEvent): ProofModeData | undefined {
+  // Archived Vine imports predate ProofMode and should only use archive badges.
+  if (isVineMigrated(event)) {
+    return undefined;
+  }
+
   const levelTag = event.tags.find(tag => tag[0] === 'verification');
   const manifestTag = event.tags.find(tag => tag[0] === 'proofmode');
   const attestationTag = event.tags.find(tag => tag[0] === 'device_attestation');

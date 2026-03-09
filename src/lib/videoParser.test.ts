@@ -2,7 +2,7 @@
 // ABOUTME: Verifies that hlsUrl is preserved and auto-generated for media.divine.video videos
 
 import { describe, it, expect } from 'vitest';
-import { extractVideoMetadata, parseVideoEvents } from './videoParser';
+import { extractVideoMetadata, getProofModeData, parseVideoEvents } from './videoParser';
 import type { NostrEvent } from '@nostrify/nostrify';
 
 function makeEvent(tags: string[][]): NostrEvent {
@@ -149,6 +149,35 @@ describe('parseVideoEvents', () => {
       const parsed = parseVideoEvents([shortVideo, longVideo, noDuration]);
       expect(parsed).toHaveLength(2);
       expect(parsed.map(v => v.id)).toEqual(['short-id', 'no-dur-id']);
+    });
+  });
+});
+
+describe('getProofModeData', () => {
+  it('returns undefined for archived Vine imports even if verification tags are present', () => {
+    const event = makeEvent([
+      ['platform', 'vine'],
+      ['verification', 'verified_web'],
+      ['proofmode', '{"manifest":"test"}'],
+      ['pgp_fingerprint', 'ABC123'],
+    ]);
+
+    expect(getProofModeData(event)).toBeUndefined();
+  });
+
+  it('returns proof data for non-archived videos with verification tags', () => {
+    const event = makeEvent([
+      ['verification', 'verified_web'],
+      ['proofmode', '{"manifest":"test"}'],
+      ['pgp_fingerprint', 'ABC123'],
+    ]);
+
+    expect(getProofModeData(event)).toEqual({
+      level: 'verified_web',
+      manifest: '{"manifest":"test"}',
+      manifestData: { manifest: 'test' },
+      deviceAttestation: undefined,
+      pgpFingerprint: 'ABC123',
     });
   });
 });

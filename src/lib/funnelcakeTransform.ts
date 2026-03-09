@@ -46,8 +46,10 @@ export function transformFunnelcakeVideo(raw: FunnelcakeVideoRaw): ParsedVideoDa
     }
   }
 
-  // Determine if this is a Vine migration based on platform or classic flag
-  const isVineMigrated = raw.platform === 'vine' || raw.classic === true;
+  const taggedPlatform = raw.tags?.find((tag) => tag[0] === 'platform')?.[1]?.toLowerCase();
+
+  // Single-video lookups can omit top-level platform/classic fields, so fall back to tags.
+  const isVineMigrated = raw.platform === 'vine' || raw.classic === true || taggedPlatform === 'vine';
 
   const fullEvent = raw.tags ? ({
     id: id,
