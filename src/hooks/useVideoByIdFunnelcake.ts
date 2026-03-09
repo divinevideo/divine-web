@@ -125,7 +125,7 @@ export function useVideoByIdFunnelcake(options: UseVideoByIdOptions): UseVideoBy
   });
 
   const video = contextVideo || singleVideoQuery.data || null;
-  const videos = contextVideos;
+  const videos = contextVideo ? contextVideos : null;
   const isLoading = contextLoading || singleVideoQuery.isLoading;
   const error = video
     ? null

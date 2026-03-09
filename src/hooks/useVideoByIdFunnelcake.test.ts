@@ -109,7 +109,7 @@ describe('useVideoByIdFunnelcake', () => {
       'p'.repeat(64),
       expect.any(AbortSignal)
     );
-    expect(result.current.videos).toHaveLength(1);
+    expect(result.current.videos).toBeNull();
     expect(result.current.error).toBeNull();
   });
 
