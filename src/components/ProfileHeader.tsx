@@ -25,12 +25,15 @@ import { useNip05Validation } from '@/hooks/useNip05Validation';
 import { useFollowers, getAllFollowerPubkeys } from '@/hooks/useFollowers';
 import { useFollowing } from '@/hooks/useFollowing';
 import { useBadges } from '@/hooks/useBadges';
+import { useDmCapability } from '@/hooks/useDirectMessages';
+import { useSubdomainNavigate } from '@/hooks/useSubdomainNavigate';
 import { ProfileBadges } from '@/components/ProfileBadges';
 import { getSafeProfileImage } from '@/lib/imageUtils';
 import { genUserName } from '@/lib/genUserName';
 import { toast } from '@/hooks/useToast';
 import { nip19 } from 'nostr-tools';
 import type { NostrMetadata } from '@nostrify/nostrify';
+import { getDmConversationPath } from '@/lib/dm';
 
 /** Linkify URLs and domain-like words in text */
 function linkifyText(text: string): React.ReactNode[] {
@@ -139,9 +142,11 @@ export function ProfileHeader({
   className,
 }: ProfileHeaderProps) {
   const navigate = useNavigate();
+  const subdomainNavigate = useSubdomainNavigate();
   const rssFeedAvailable = useRssFeedAvailable();
   const [showReportDialog, setShowReportDialog] = useState(false);
   const [userListDialog, setUserListDialog] = useState<'followers' | 'following' | null>(null);
+  const { canUseDirectMessages } = useDmCapability();
 
   // Fetch followers/following when dialog is open
   const followersQuery = useFollowers(userListDialog === 'followers' ? pubkey : '');
@@ -367,6 +372,15 @@ export function ProfileHeader({
                 </>
               )}
             </Button>
+            {canUseDirectMessages && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => subdomainNavigate(getDmConversationPath([pubkey]))}
+              >
+                Message
+              </Button>
+            )}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm" data-testid="profile-menu-button">

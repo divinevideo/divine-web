@@ -2,7 +2,7 @@
 // ABOUTME: Shows main nav, login/signup, expandable diVine links section
 
 import { useLocation } from 'react-router-dom';
-import { Home, Compass, Search, Bell, User, Sun, Moon, ChevronDown, Headphones, BarChart3, LayoutGrid, Rss } from 'lucide-react';
+import { Home, Compass, Search, Bell, User, Sun, Moon, ChevronDown, Headphones, BarChart3, LayoutGrid, Rss, MessageCircle } from 'lucide-react';
 import { useState } from 'react';
 import { useCategories } from '@/hooks/useCategories';
 import { nip19 } from 'nostr-tools';
@@ -15,6 +15,7 @@ import {
 import { useTheme } from '@/hooks/useTheme';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useUnreadNotificationCount } from '@/hooks/useNotifications';
+import { useDmCapability, useUnreadDmCount } from '@/hooks/useDirectMessages';
 import { useSubdomainNavigate } from '@/hooks/useSubdomainNavigate';
 import { getSubdomainUser } from '@/hooks/useSubdomainUser';
 import { LoginArea } from '@/components/auth/LoginArea';
@@ -58,7 +59,9 @@ export function AppSidebar({ className }: { className?: string }) {
   const subdomainUser = getSubdomainUser();
   const { displayTheme, setTheme } = useTheme();
   const { user } = useCurrentUser();
+  const { canUseDirectMessages } = useDmCapability();
   const { data: unreadCount } = useUnreadNotificationCount();
+  const { data: unreadDmCount } = useUnreadDmCount();
   const rssFeedAvailable = useRssFeedAvailable();
   const { data: platformStats } = usePlatformStats();
   const [categoriesOpen, setCategoriesOpen] = useState(true);
@@ -71,6 +74,8 @@ export function AppSidebar({ className }: { className?: string }) {
   const isActive = (path: string) => location.pathname === path;
   const isDiscoveryActive = () =>
     location.pathname === '/discovery' || location.pathname.startsWith('/discovery/');
+  const isMessagesActive = () =>
+    location.pathname === '/messages' || location.pathname.startsWith('/messages/');
   const isCategoryActive = (name: string) => location.pathname === `/category/${name}`;
 
   const toggleTheme = () => {
@@ -129,6 +134,24 @@ export function AppSidebar({ className }: { className?: string }) {
             onClick={() => navigate('/discovery')}
             isActive={isDiscoveryActive()}
           />
+
+          {user && canUseDirectMessages && (
+            <NavItem
+              icon={
+                <div className="relative">
+                  <MessageCircle className="h-[18px] w-[18px]" />
+                  {(unreadDmCount ?? 0) > 0 && (
+                    <span className="absolute -top-1 -right-2 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-primary px-0.5 text-[9px] font-bold text-primary-foreground">
+                      {(unreadDmCount ?? 0) > 99 ? '99+' : unreadDmCount}
+                    </span>
+                  )}
+                </div>
+              }
+              label="Messages"
+              onClick={() => navigate('/messages')}
+              isActive={isMessagesActive()}
+            />
+          )}
 
           {user && (
             <NavItem
