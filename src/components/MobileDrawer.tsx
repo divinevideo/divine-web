@@ -2,9 +2,20 @@
 // ABOUTME: Uses shadcn Sheet component, slides from left, closes on nav item tap
 
 import { useLocation } from 'react-router-dom';
-import { Home, Compass, Search, Bell, User, Sun, Moon, MessageCircle, BarChart3, LayoutGrid, ChevronDown } from 'lucide-react';
+import {
+  House as Home,
+  Compass,
+  MagnifyingGlass as Search,
+  Bell,
+  User,
+  Sun,
+  Moon,
+  ChatCircle as MessageCircle,
+  ChartBar as BarChart3,
+  SquaresFour as LayoutGrid,
+  CaretDown as ChevronDown,
+} from '@phosphor-icons/react';
 import { useState } from 'react';
-import { nip19 } from 'nostr-tools';
 
 import {
   Sheet,
@@ -25,6 +36,7 @@ import { getSubdomainUser } from '@/hooks/useSubdomainUser';
 import { useTheme } from '@/hooks/useTheme';
 import { useCategories } from '@/hooks/useCategories';
 import { LoginArea } from '@/components/auth/LoginArea';
+import { buildProfileLinkPath } from '@/lib/profileLinks';
 import { cn } from '@/lib/utils';
 
 export interface MobileDrawerProps {
@@ -78,11 +90,11 @@ export function MobileDrawer({ open, onOpenChange }: MobileDrawerProps) {
     location.pathname === '/messages' || location.pathname.startsWith('/messages/');
 
   const profilePath = user?.pubkey
-    ? `/profile/${nip19.npubEncode(user.pubkey)}`
+    ? buildProfileLinkPath({ pubkey: user.pubkey, fallbackRoute: 'profile' })
     : null;
 
-  const navigateAndClose = (path: string) => {
-    navigate(path);
+  const navigateAndClose = (path: string, ownerPubkey?: string | null) => {
+    navigate(path, { ownerPubkey });
     onOpenChange(false);
   };
 
@@ -174,7 +186,7 @@ export function MobileDrawer({ open, onOpenChange }: MobileDrawerProps) {
             <DrawerNavItem
               icon={<User className="h-[18px] w-[18px]" />}
               label="Profile"
-              onClick={() => navigateAndClose(profilePath)}
+              onClick={() => navigateAndClose(profilePath, user.pubkey)}
               isActive={location.pathname === profilePath}
             />
           )}

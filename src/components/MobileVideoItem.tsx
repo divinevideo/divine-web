@@ -2,8 +2,13 @@
 // ABOUTME: Renders a single video in the mobile swipe feed with action column, author overlay, and heart animation
 
 import { useState, useEffect, useCallback } from 'react';
-import { Heart, MessageCircle, Repeat2, Share2, ChevronDown } from 'lucide-react';
-import { nip19 } from 'nostr-tools';
+import {
+  Heart,
+  ChatCircle as MessageCircle,
+  Repeat as Repeat2,
+  ShareNetwork as Share2,
+  CaretDown as ChevronDown,
+} from '@phosphor-icons/react';
 import { VideoPlayer } from '@/components/VideoPlayer';
 import { VideoCommentsModal } from '@/components/VideoCommentsModal';
 import { SmartLink } from '@/components/SmartLink';
@@ -28,6 +33,7 @@ import { getSafeProfileImage } from '@/lib/imageUtils';
 import { getOptimalVideoUrl } from '@/lib/bandwidthTracker';
 import { getVideoShareData } from '@/lib/shareUtils';
 import { formatCount } from '@/lib/formatUtils';
+import { buildProfileLinkPath } from '@/lib/profileLinks';
 import { cn } from '@/lib/utils';
 import { debugLog } from '@/lib/debug';
 import type { ParsedVideoData } from '@/types/video';
@@ -103,8 +109,10 @@ export function MobileVideoItem({
   const profileImage = getSafeProfileImage(
     rawMetadata?.picture || video.authorAvatar || author.metadata.picture
   );
-  const npub = nip19.npubEncode(video.pubkey);
-  const profileUrl = `/${npub}`;
+  const profileUrl = buildProfileLinkPath({
+    pubkey: video.pubkey,
+    nip05: rawMetadata?.nip05,
+  });
 
   // --- Detect classic Vine ---
   const isClassicVine = !!video.loopCount || video.isVineMigrated ||
