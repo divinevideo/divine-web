@@ -37,6 +37,10 @@ export function formatViewCount(count: number): string {
   return count === 1 ? `${formatted} view` : `${formatted} views`;
 }
 
+function formatExactCount(count: number): string {
+  return count.toLocaleString('en-US');
+}
+
 /**
  * Format a classic Vine breakdown so archived loops and new diVine views stay visible.
  */
@@ -45,12 +49,18 @@ export function formatClassicVineViewBreakdown(totalViews: number, originalLoops
     return null;
   }
 
-  const vineLoopLabel = `${formatCount(originalLoops)} Vine ${originalLoops === 1 ? 'loop' : 'loops'}`;
   const newViews = Math.max(totalViews - originalLoops, 0);
+  const compactOriginalLoops = formatCount(originalLoops);
+  const compactTotalViews = formatCount(totalViews);
+  const loopDisplay = newViews > 0 && compactOriginalLoops === compactTotalViews
+    ? formatExactCount(originalLoops)
+    : compactOriginalLoops;
+  const vineLoopLabel = `${loopDisplay} Vine ${originalLoops === 1 ? 'loop' : 'loops'}`;
 
   if (newViews <= 0) {
     return vineLoopLabel;
   }
 
-  return `${vineLoopLabel} + ${formatCount(newViews)} new ${newViews === 1 ? 'view' : 'views'}`;
+  const newViewDisplay = newViews < 1000 ? formatExactCount(newViews) : formatCount(newViews);
+  return `${vineLoopLabel} + ${newViewDisplay} new ${newViews === 1 ? 'view' : 'views'}`;
 }

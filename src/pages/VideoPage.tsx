@@ -438,6 +438,7 @@ export function VideoPage() {
     const socialMetrics = useVideoSocialMetrics(video.id, video.pubkey, video.vineId, {
       enabled: true,
     });
+    const divineViewCount = Math.max(video.divineViewCount ?? 0, socialMetrics.data?.viewCount ?? 0);
 
     const handleVideoLike = async () => {
       if (userInteractions?.hasLiked) {
@@ -477,7 +478,7 @@ export function VideoPage() {
         likeCount={video.likeCount ?? 0}
         repostCount={video.repostCount ?? 0}
         commentCount={video.commentCount ?? 0}
-        viewCount={(video.loopCount ?? 0) + (socialMetrics.data?.viewCount ?? 0)}
+        viewCount={(video.loopCount ?? 0) + divineViewCount}
         showComments={showCommentsForVideo === video.id}
         navigationContext={context || undefined}
       />

@@ -14,6 +14,10 @@ describe('formatClassicVineViewBreakdown', () => {
     expect(formatClassicVineViewBreakdown(120, 100)).toBe('100 Vine loops + 20 new views');
   });
 
+  it('uses exact loop counts when compact rounding would make the breakdown look duplicated', () => {
+    expect(formatClassicVineViewBreakdown(50453074, 50453008)).toBe('50,453,008 Vine loops + 66 new views');
+  });
+
   it('handles singular new view labels and guards against negative deltas', () => {
     expect(formatClassicVineViewBreakdown(101, 100)).toBe('100 Vine loops + 1 new view');
     expect(formatClassicVineViewBreakdown(90, 100)).toBe('100 Vine loops');
