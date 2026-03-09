@@ -18,6 +18,8 @@ import { genUserName } from '@/lib/genUserName';
 import { CreateListDialog } from '@/components/CreateListDialog';
 import { formatDistanceToNow } from 'date-fns';
 import { getSafeProfileImage } from '@/lib/imageUtils';
+import { AppPage, AppPageHeader } from '@/components/AppPage';
+import { CreatorSectionNav } from '@/components/CreatorSectionNav';
 
 interface ListCardProps {
   id: string;
@@ -35,7 +37,7 @@ function ListCard({ list }: { list: ListCardProps }) {
   const authorName = authorMetadata?.name || genUserName(list.pubkey);
 
   return (
-    <Card className="hover:shadow-lg transition-shadow">
+    <Card className="app-surface transition-transform duration-200 hover:-translate-y-0.5">
       <CardHeader>
         <div className="flex items-start justify-between">
           <div className="flex-1">
@@ -107,43 +109,43 @@ export default function ListsPage() {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const { data: followedPubkeys } = useFollowList();
   const { data: followedUsersLists, isLoading: discoverLoading } = useFollowedUsersLists(followedPubkeys);
+  const profilePath = user ? `/profile/${nip19.npubEncode(user.pubkey)}` : undefined;
 
   return (
-    <div className="container max-w-6xl mx-auto px-4 py-8">
-      {/* Header */}
-      <div className="mb-8">
-        <div className="flex items-center justify-between mb-4">
-          <h1 className="text-3xl font-bold flex items-center gap-2">
+    <AppPage width="full">
+      <AppPageHeader
+        eyebrow="Collect and curate"
+        title={(
+          <span className="flex items-center gap-3">
             <List className="h-8 w-8" />
-            Video Lists
-          </h1>
-          {user && (
-            <Button onClick={() => setShowCreateDialog(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Create List
-            </Button>
-          )}
-        </div>
-        <p className="text-muted-foreground">
-          Discover curated collections of videos from the community
-        </p>
-      </div>
+            <span>Video Lists</span>
+          </span>
+        )}
+        description="Build collections, follow community curation, and move between creator workflows faster."
+        actions={user ? (
+          <Button onClick={() => setShowCreateDialog(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            Create List
+          </Button>
+        ) : undefined}
+      >
+        <CreatorSectionNav active="lists" profilePath={profilePath} />
+      </AppPageHeader>
 
-      {/* Tabs */}
       <Tabs defaultValue={user ? 'my-lists' : 'trending'} className="space-y-6">
-        <TabsList>
+        <TabsList className={`app-tab-list ${user ? 'grid-cols-3' : 'grid-cols-2'} sm:w-fit`}>
           {user && (
-            <TabsTrigger value="my-lists">
-              <List className="h-4 w-4 mr-2" />
+            <TabsTrigger value="my-lists" className="gap-2 rounded-[20px]">
+              <List className="mr-2 h-4 w-4" />
               My Lists
             </TabsTrigger>
           )}
-          <TabsTrigger value="trending">
-            <TrendingUp className="h-4 w-4 mr-2" />
+          <TabsTrigger value="trending" className="gap-2 rounded-[20px]">
+            <TrendingUp className="mr-2 h-4 w-4" />
             Trending
           </TabsTrigger>
-          <TabsTrigger value="discover">
-            <Users className="h-4 w-4 mr-2" />
+          <TabsTrigger value="discover" className="gap-2 rounded-[20px]">
+            <Users className="mr-2 h-4 w-4" />
             Discover
           </TabsTrigger>
         </TabsList>
@@ -172,7 +174,7 @@ export default function ListsPage() {
                 ))}
               </div>
             ) : (
-              <Card className="border-dashed">
+              <Card className="app-surface border-2 border-dashed">
                 <CardContent className="py-12 text-center">
                   <List className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
                   <p className="text-muted-foreground mb-4">
@@ -217,7 +219,7 @@ export default function ListsPage() {
               </div>
             </>
           ) : (
-            <Card className="border-dashed">
+            <Card className="app-surface border-2 border-dashed">
               <CardContent className="py-12 text-center">
                 <TrendingUp className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
                 <p className="text-muted-foreground">
@@ -231,7 +233,7 @@ export default function ListsPage() {
         {/* Discover Tab */}
         <TabsContent value="discover" className="space-y-6">
           {!user ? (
-            <Card className="border-dashed">
+            <Card className="app-surface border-2 border-dashed">
               <CardContent className="py-12 text-center">
                 <Users className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
                 <p className="text-muted-foreground mb-4">
@@ -266,7 +268,7 @@ export default function ListsPage() {
               </div>
             </>
           ) : followedPubkeys && followedPubkeys.length > 0 ? (
-            <Card className="border-dashed">
+            <Card className="app-surface border-2 border-dashed">
               <CardContent className="py-12 text-center">
                 <Users className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
                 <p className="text-muted-foreground">
@@ -278,7 +280,7 @@ export default function ListsPage() {
               </CardContent>
             </Card>
           ) : (
-            <Card className="border-dashed">
+            <Card className="app-surface border-2 border-dashed">
               <CardContent className="py-12 text-center">
                 <Users className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
                 <p className="text-muted-foreground mb-4">
@@ -297,6 +299,6 @@ export default function ListsPage() {
           onClose={() => setShowCreateDialog(false)}
         />
       )}
-    </div>
+    </AppPage>
   );
 }
