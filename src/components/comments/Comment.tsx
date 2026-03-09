@@ -123,14 +123,14 @@ export function Comment({ root, comment, depth = 0, maxDepth = 3, limit, parentC
 
   return (
     <div className={`space-y-3 ${depth > 0 ? 'ml-6 border-l-2 border-muted pl-4' : ''}`}>
-      <Card className={`transition-all ${isOptimistic ? 'bg-orange-500/10 dark:bg-orange-500/20 opacity-70' : 'bg-muted/50 dark:bg-muted'}`}>
+      <Card className={`transition-all ${isOptimistic ? 'bg-orange-500/10 dark:bg-orange-500/20 max-lg:bg-orange-500/20 opacity-70' : 'bg-muted/50 dark:bg-muted max-lg:bg-muted'}`}>
         <CardContent className="p-4">
           <div className="space-y-3">
             {/* Comment Header */}
             <div className="flex items-start justify-between">
               <div className="flex items-center space-x-3">
                 <SmartLink to={`/${nip19.npubEncode(comment.pubkey)}`} ownerPubkey={comment.pubkey}>
-                  <Avatar size="sm" className="cursor-pointer transition-all hover:ring-2 hover:ring-brand-light-green dark:ring-brand-green">
+                  <Avatar size="sm" className="cursor-pointer transition-all hover:ring-2 hover:ring-brand-light-green dark:ring-brand-green max-lg:ring-brand-green">
                     <AvatarImage src={metadata?.picture} />
                     <AvatarFallback className="text-xs">
                       {displayName.charAt(0)}
@@ -155,7 +155,7 @@ export function Comment({ root, comment, depth = 0, maxDepth = 3, limit, parentC
 
             {/* Reply Preview - Show what comment this is replying to */}
             {parentComment && (
-              <div className="flex items-start gap-2 px-3 py-2 bg-brand-light-green dark:bg-brand-dark-green rounded-md border-l-2 border-brand-light-green dark:border-brand-dark-green">
+              <div className="flex items-start gap-2 px-3 py-2 bg-brand-light-green dark:bg-brand-dark-green max-lg:bg-brand-dark-green rounded-md border-l-2 border-brand-light-green dark:border-brand-dark-green max-lg:border-brand-dark-green">
                 <CornerDownRight className="h-3 w-3 text-muted-foreground shrink-0 mt-0.5" />
                 <div className="flex items-center gap-2 min-w-0 flex-1">
                   <Avatar size="2xs" className="shrink-0">
