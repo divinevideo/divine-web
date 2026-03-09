@@ -181,24 +181,34 @@ async function handleRequest(event) {
   }
 
   // 8. Serve static content with SPA fallback (handled by PublisherServer config)
-  // For apex domain landing page, inject trending feed data to avoid client round-trip
-  const isApexLanding = APEX_DOMAINS.includes(hostnameToUse) && (url.pathname === '/' || url.pathname === '/index.html');
+  // Detect pages that benefit from edge-injected feed data
+  const isApexDomain = APEX_DOMAINS.includes(hostnameToUse);
+  const isApexLanding = isApexDomain && (url.pathname === '/' || url.pathname === '/index.html');
+  const discoveryFeedType = isApexDomain ? getDiscoveryFeedType(url.pathname) : null;
+  const shouldInjectFeed = isApexLanding || discoveryFeedType;
+
   const response = await publisherServer.serveRequest(request);
   if (response != null) {
     // Add Vary: X-Original-Host so CDN doesn't mix subdomain and apex cached responses
     const headers = new Headers(response.headers);
     headers.append('Vary', 'X-Original-Host');
 
-    // Inject trending feed data into landing page HTML
-    if (isApexLanding && response.headers.get('Content-Type')?.includes('text/html')) {
+    // Inject feed data into HTML pages for faster LCP
+    if (shouldInjectFeed && response.headers.get('Content-Type')?.includes('text/html')) {
       try {
         let html = await response.text();
-        const feedData = await fetchTrendingFeedData();
+        const feedType = discoveryFeedType || 'trending';
+        const feedData = await fetchFeedData(feedType);
         if (feedData) {
-          let injection = `<script>window.__DIVINE_FEED__=${JSON.stringify(feedData)};</script>`;
-          const firstVideoUrl = feedData.videos?.[0]?.video_url;
+          let injection = `<script>window.__DIVINE_FEED__=${JSON.stringify(feedData)};window.__DIVINE_FEED_TYPE__="${feedType}";</script>`;
+          const firstVideo = feedData.videos?.[0] || feedData[0];
+          const firstVideoUrl = firstVideo?.video_url;
+          const firstThumbnail = firstVideo?.thumbnail;
           if (firstVideoUrl) {
             injection += `\n<link rel="preload" href="${escapeHtml(firstVideoUrl)}" as="video" type="video/mp4">`;
+          }
+          if (firstThumbnail) {
+            injection += `\n<link rel="preload" href="${escapeHtml(firstThumbnail)}" as="image" fetchpriority="high">`;
           }
           html = html.replace('</head>', injection + '</head>');
         }
@@ -219,12 +229,37 @@ async function handleRequest(event) {
 }
 
 /**
- * Fetch trending feed data with KV cache (stale-while-revalidate pattern).
+ * Map discovery route to feed type and API params.
+ */
+function getDiscoveryFeedType(pathname) {
+  const match = pathname.match(/^\/discovery\/(new|hot|classics|top)$/);
+  if (!match) return null;
+  const tab = match[1];
+  if (tab === 'new') return 'recent';
+  if (tab === 'hot') return 'trending';
+  if (tab === 'classics' || tab === 'top') return 'classics';
+  return null;
+}
+
+/**
+ * Get Funnelcake API URL for a given feed type.
+ */
+function getFeedApiUrl(feedType) {
+  switch (feedType) {
+    case 'trending': return '/api/videos?sort=trending&limit=10';
+    case 'recent': return '/api/videos?sort=recent&limit=10';
+    case 'classics': return '/api/videos?sort=loops&limit=10';
+    default: return '/api/videos?sort=trending&limit=10';
+  }
+}
+
+/**
+ * Fetch feed data with KV cache (stale-while-revalidate pattern).
  * Returns cached data if fresh (<60s), otherwise fetches from Funnelcake API
  * and updates the cache for the next request.
  */
-async function fetchTrendingFeedData() {
-  const CACHE_KEY = 'cache:feed:trending';
+async function fetchFeedData(feedType = 'trending') {
+  const CACHE_KEY = `cache:feed:${feedType}`;
   const CACHE_TTL_SECONDS = 60;
 
   const contentStore = new KVStore('divine-web-content');
@@ -236,10 +271,10 @@ async function fetchTrendingFeedData() {
       const parsed = JSON.parse(await cached.text());
       const ageSeconds = Math.floor(Date.now() / 1000) - parsed.timestamp;
       if (ageSeconds < CACHE_TTL_SECONDS) {
-        console.log('Trending feed cache hit, age:', ageSeconds, 's');
+        console.log(`Feed ${feedType} cache hit, age:`, ageSeconds, 's');
         return parsed.data;
       }
-      console.log('Trending feed cache stale, age:', ageSeconds, 's');
+      console.log(`Feed ${feedType} cache stale, age:`, ageSeconds, 's');
     }
   } catch (e) {
     console.error('KV cache read error:', e.message);
@@ -248,7 +283,8 @@ async function fetchTrendingFeedData() {
   // 2. Fetch from Funnelcake backend
   let feedData = null;
   try {
-    const resp = await fetch('https://relay.divine.video/api/videos?sort=trending&limit=10', {
+    const apiPath = getFeedApiUrl(feedType);
+    const resp = await fetch(`https://relay.divine.video${apiPath}`, {
       backend: 'funnelcake',
       method: 'GET',
       headers: {
@@ -264,15 +300,15 @@ async function fetchTrendingFeedData() {
           data: feedData,
           timestamp: Math.floor(Date.now() / 1000),
         }));
-        console.log('Trending feed cached in KV');
+        console.log(`Feed ${feedType} cached in KV`);
       } catch (e) {
         console.error('KV cache write error:', e.message);
       }
     } else {
-      console.error('Funnelcake trending fetch failed:', resp.status);
+      console.error(`Funnelcake ${feedType} fetch failed:`, resp.status);
     }
   } catch (e) {
-    console.error('Funnelcake trending fetch error:', e.message);
+    console.error(`Funnelcake ${feedType} fetch error:`, e.message);
   }
 
   return feedData;

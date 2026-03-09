@@ -152,12 +152,15 @@ export function useInfiniteVideosFunnelcake({
     queryFn: async ({ pageParam, signal }) => {
       const totalStart = performance.now();
 
-      // On the first page of a trending feed, check for edge-injected data
+      // On the first page, check for edge-injected data matching this feed type
       // The Fastly edge worker injects window.__DIVINE_FEED__ to avoid a client round-trip
-      if (!pageParam && feedType === 'trending' && typeof window !== 'undefined' && window.__DIVINE_FEED__) {
+      const edgeFeedType = typeof window !== 'undefined' ? window.__DIVINE_FEED_TYPE__ : undefined;
+      const edgeMatchesFeed = edgeFeedType === feedType || (edgeFeedType === undefined && feedType === 'trending');
+      if (!pageParam && edgeMatchesFeed && typeof window !== 'undefined' && window.__DIVINE_FEED__) {
         const edgeData = window.__DIVINE_FEED__;
         delete window.__DIVINE_FEED__; // Consume once
-        debugLog('[useInfiniteVideosFunnelcake] Using edge-injected trending feed data');
+        delete window.__DIVINE_FEED_TYPE__;
+        debugLog(`[useInfiniteVideosFunnelcake] Using edge-injected ${feedType} feed data`);
 
         const page = transformToVideoPage(edgeData);
         performanceMonitor.recordFeedLoad({

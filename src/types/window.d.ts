@@ -9,8 +9,10 @@ declare global {
     nostr?: NostrSigner;
     zE?: (namespace: string, action: string, ...args: unknown[]) => void;
     _hsp?: Array<[string, ...unknown[]]>;
-    /** Trending feed data injected by the Fastly edge worker to avoid client round-trip */
+    /** Feed data injected by the Fastly edge worker to avoid client round-trip */
     __DIVINE_FEED__?: FunnelcakeResponse;
+    /** Feed type that was injected (trending, recent, classics) */
+    __DIVINE_FEED_TYPE__?: string;
   }
 }
 

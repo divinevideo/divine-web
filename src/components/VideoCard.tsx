@@ -125,7 +125,11 @@ export function VideoCard({
   // Classic Vines also skip HLS because the transcoder distorts square 480x480 aspect ratio.
   // Only use HLS for longer content (>60s) if divine ever supports it.
   const isShortForm = !video.duration || video.duration <= 60;
-  const effectiveHlsUrl = (isClassicVine || isShortForm) ? undefined : (video.hlsUrl || (optimalHlsUrl !== video.videoUrl ? optimalHlsUrl : undefined));
+  // When MP4 blob is missing (404), fall back to HLS if available (transcoded copy may exist)
+  const hlsFallbackUrl = mp4Failed && video.videoUrl?.includes('media.divine.video')
+    ? video.hlsUrl || optimalHlsUrl
+    : undefined;
+  const effectiveHlsUrl = hlsFallbackUrl || ((isClassicVine || isShortForm) ? undefined : (video.hlsUrl || (optimalHlsUrl !== video.videoUrl ? optimalHlsUrl : undefined)));
   const { data: lists } = useVideosInLists(video.vineId ?? undefined);
 
   // NEW: Get reposter data from reposts array
@@ -135,6 +139,8 @@ export function VideoCard({
   const reposterData = useAuthor(reposterPubkey || '');
   const shouldShowReposter = hasReposts && reposterPubkey;
   const [videoError, setVideoError] = useState(false);
+  // When direct MP4 fails, retry with HLS as fallback (blob may be missing but transcode exists)
+  const [mp4Failed, setMp4Failed] = useState(false);
   // Always start with video player visible in auto-play mode, but let VideoPlaybackContext control actual playback
   // The VideoPlayer component will only play when it's the activeVideoId (most visible)
   const [isPlaying, setIsPlaying] = useState(mode === 'auto-play');
@@ -530,7 +536,14 @@ export function VideoCard({
                   isPriority={isPriority}
                   className="w-full h-full"
                   onLoadStart={() => setVideoError(false)}
-                  onError={() => setVideoError(true)}
+                  onError={() => {
+                    // If MP4 failed and we haven't tried HLS yet, retry with HLS fallback
+                    if (!mp4Failed && !effectiveHlsUrl && video.videoUrl?.includes('media.divine.video')) {
+                      setMp4Failed(true);
+                    } else {
+                      setVideoError(true);
+                    }
+                  }}
                   onEnded={handleVideoEnd}
                   onLoadedData={onLoadedData}
                   onPlaybackStarted={onPlaybackStarted}
