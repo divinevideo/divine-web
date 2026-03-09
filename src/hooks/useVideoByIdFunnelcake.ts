@@ -13,14 +13,25 @@ interface UseVideoByIdOptions {
   videoId: string;
   pubkey?: string;   // Optional pubkey for profile context
   hashtag?: string;  // Optional hashtag for hashtag feed context
+  currentIndex?: number; // Optional global index from feed context for neighbor windowing
   enabled?: boolean;
 }
 
 interface UseVideoByIdResult {
   video: ParsedVideoData | null;
   videos: ParsedVideoData[] | null;  // Neighboring videos for navigation
+  windowOffset: number;
   isLoading: boolean;
   error: Error | null;
+}
+
+const NAVIGATION_WINDOW_SIZE = 16;
+
+function getNavigationWindowOffset(currentIndex?: number): number {
+  if (currentIndex === undefined || currentIndex < 0) {
+    return 0;
+  }
+  return Math.max(0, currentIndex - Math.floor(NAVIGATION_WINDOW_SIZE / 2));
 }
 
 /**
@@ -31,21 +42,24 @@ interface UseVideoByIdResult {
  * The single video lookup is faster than WebSocket queries.
  */
 export function useVideoByIdFunnelcake(options: UseVideoByIdOptions): UseVideoByIdResult {
-  const { videoId, pubkey, hashtag, enabled = true } = options;
+  const { videoId, pubkey, hashtag, currentIndex, enabled = true } = options;
   const { config } = useAppContext();
+  const windowOffset = getNavigationWindowOffset(currentIndex);
 
   // Determine API URL from current relay
   const funnelcakeUrl = getFunnelcakeUrl(config.relayUrl) || DEFAULT_FUNNELCAKE_URL;
 
   // If we have a pubkey, fetch all their videos for navigation context
   const userVideosQuery = useQuery({
-    queryKey: ['funnelcake-user-videos', pubkey, funnelcakeUrl],
+    queryKey: ['funnelcake-user-videos', pubkey, funnelcakeUrl, windowOffset],
     queryFn: async ({ signal }) => {
       if (!pubkey) return null;
 
       debugLog(`[useVideoByIdFunnelcake] Fetching user videos for ${pubkey}`);
       const response = await fetchUserVideos(funnelcakeUrl, pubkey, {
-        limit: 50,  // Fetch a reasonable batch for navigation
+        limit: NAVIGATION_WINDOW_SIZE,
+        offset: windowOffset,
+        sort: 'recent',
         signal,
       });
 
@@ -58,14 +72,15 @@ export function useVideoByIdFunnelcake(options: UseVideoByIdOptions): UseVideoBy
 
   // If we have a hashtag, fetch videos from that hashtag for navigation context
   const hashtagVideosQuery = useQuery({
-    queryKey: ['funnelcake-hashtag-videos', hashtag, funnelcakeUrl],
+    queryKey: ['funnelcake-hashtag-videos', hashtag, funnelcakeUrl, windowOffset],
     queryFn: async ({ signal }) => {
       if (!hashtag) return null;
 
       debugLog(`[useVideoByIdFunnelcake] Fetching hashtag videos for #${hashtag}`);
       const response = await searchVideos(funnelcakeUrl, {
         tag: hashtag,
-        limit: 50,  // Fetch a reasonable batch for navigation
+        limit: NAVIGATION_WINDOW_SIZE,
+        offset: windowOffset,
         signal,
       });
 
@@ -123,6 +138,7 @@ export function useVideoByIdFunnelcake(options: UseVideoByIdOptions): UseVideoBy
   return {
     video,
     videos,
+    windowOffset,
     isLoading,
     error,
   };

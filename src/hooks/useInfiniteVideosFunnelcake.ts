@@ -126,7 +126,7 @@ export function useInfiniteVideosFunnelcake({
   hashtag,
   category,
   pubkey,
-  pageSize = 20,
+  pageSize = 12,
   enabled = true,
   randomizeWithinTop,
 }: UseInfiniteVideosFunnelcakeOptions) {

@@ -4,7 +4,6 @@ import type { RelayCapabilities } from '@/lib/relayCapabilities';
 
 const mockUseInfiniteVideos = vi.fn();
 const mockUseInfiniteVideosFunnelcake = vi.fn();
-const mockGetFeatureFlag = vi.fn();
 const mockUseResolvedRelayCapabilities = vi.fn();
 
 let relayUrl = 'wss://relay.divine.video';
@@ -50,10 +49,6 @@ vi.mock('@/hooks/useRelayCapabilities', () => ({
   useResolvedRelayCapabilities: mockUseResolvedRelayCapabilities,
 }));
 
-vi.mock('@/config/api', () => ({
-  getFeatureFlag: mockGetFeatureFlag,
-}));
-
 vi.mock('@/config/relays', async () => {
   const actual = await vi.importActual<typeof import('@/config/relays')>('@/config/relays');
   return actual;
@@ -73,7 +68,6 @@ beforeEach(async () => {
 
   relayUrl = 'wss://relay.divine.video';
 
-  mockGetFeatureFlag.mockReturnValue(true);
   mockUseInfiniteVideos.mockReturnValue(queryResult);
   mockUseInfiniteVideosFunnelcake.mockReturnValue(queryResult);
   mockUseResolvedRelayCapabilities.mockReturnValue(makeCapabilities());
@@ -98,29 +92,28 @@ describe('chooseVideoDataSource', () => {
         supportsVideoSorts: false,
         supportedSortModes: [],
       }),
-      useFunnelcakeFlag: true,
     });
 
     expect(decision).toEqual(expect.objectContaining({
       dataSource: 'funnelcake',
       apiUrl: 'https://relay.divine.video',
-      reason: 'canonical-funnelcake-required-for-feed',
+      reason: 'prefer-canonical-funnelcake-rest-api',
     }));
   });
 
-  it('uses WebSocket for hot feeds when the selected relay supports video sorting', () => {
+  it('prefers Funnelcake for hot feeds even when the selected relay supports video sorting', () => {
     const decision = chooseVideoDataSource({
       feedType: 'trending',
       sortMode: 'hot',
       relayUrl: 'wss://relay.divine.video',
       relayCapabilities: makeCapabilities({ supportsVideoSorts: true }),
-      useFunnelcakeFlag: true,
     });
 
     expect(decision).toEqual(expect.objectContaining({
-      dataSource: 'websocket',
+      dataSource: 'funnelcake',
+      apiUrl: 'https://relay.divine.video',
       websocketFeedType: 'trending',
-      reason: 'relay-websocket-supports-feed',
+      reason: 'prefer-selected-relay-funnelcake-rest-api',
     }));
   });
 
@@ -136,13 +129,12 @@ describe('chooseVideoDataSource', () => {
         supportsVideoSorts: false,
         supportedSortModes: [],
       }),
-      useFunnelcakeFlag: true,
     });
 
     expect(decision).toEqual(expect.objectContaining({
       dataSource: 'funnelcake',
       apiUrl: 'https://relay.divine.video',
-      reason: 'canonical-funnelcake-required-for-feed',
+      reason: 'prefer-canonical-funnelcake-rest-api',
     }));
   });
 });
@@ -190,7 +182,7 @@ describe('useVideoProvider', () => {
     expect(result.current.dataSource).toBe('funnelcake');
   });
 
-  it('uses WebSocket for Divine hot feeds', () => {
+  it('prefers Funnelcake for Divine hot feeds', () => {
     mockUseResolvedRelayCapabilities.mockReturnValue(makeCapabilities({
       supportsVideoSorts: true,
     }));
@@ -202,18 +194,21 @@ describe('useVideoProvider', () => {
       })
     );
 
+    expect(mockUseInfiniteVideosFunnelcake).toHaveBeenCalledWith(expect.objectContaining({
+      feedType: 'trending',
+      apiUrl: 'https://relay.divine.video',
+      sortMode: 'trending',
+      enabled: true,
+    }));
     expect(mockUseInfiniteVideos).toHaveBeenCalledWith(expect.objectContaining({
       feedType: 'trending',
       sortMode: 'hot',
-      enabled: true,
-    }));
-    expect(mockUseInfiniteVideosFunnelcake).toHaveBeenCalledWith(expect.objectContaining({
       enabled: false,
     }));
-    expect(result.current.dataSource).toBe('websocket');
+    expect(result.current.dataSource).toBe('funnelcake');
   });
 
-  it('keeps profile feeds on WebSocket for non-Divine relays', () => {
+  it('uses canonical Funnelcake for profile feeds on non-Divine relays', () => {
     relayUrl = 'wss://relay.damus.io';
     mockUseResolvedRelayCapabilities.mockReturnValue(makeCapabilities({
       url: relayUrl,
@@ -231,14 +226,41 @@ describe('useVideoProvider', () => {
       })
     );
 
+    expect(mockUseInfiniteVideosFunnelcake).toHaveBeenCalledWith(expect.objectContaining({
+      feedType: 'profile',
+      apiUrl: 'https://relay.divine.video',
+      pubkey: 'a'.repeat(64),
+      enabled: true,
+    }));
     expect(mockUseInfiniteVideos).toHaveBeenCalledWith(expect.objectContaining({
       feedType: 'profile',
       pubkey: 'a'.repeat(64),
       sortMode: 'hot',
+      enabled: false,
+    }));
+    expect(result.current.dataSource).toBe('funnelcake');
+  });
+
+  it('falls back to WebSocket after a Funnelcake failure when the relay can serve the feed', () => {
+    mockUseInfiniteVideosFunnelcake.mockReturnValue({
+      ...queryResult,
+      error: new Error('rest failed'),
+    });
+
+    const { result } = renderHook(() =>
+      useVideoProvider({
+        feedType: 'recent',
+      })
+    );
+
+    expect(mockUseInfiniteVideosFunnelcake).toHaveBeenCalledWith(expect.objectContaining({
+      feedType: 'recent',
+      apiUrl: 'https://relay.divine.video',
       enabled: true,
     }));
-    expect(mockUseInfiniteVideosFunnelcake).toHaveBeenCalledWith(expect.objectContaining({
-      enabled: false,
+    expect(mockUseInfiniteVideos).toHaveBeenCalledWith(expect.objectContaining({
+      feedType: 'recent',
+      enabled: true,
     }));
     expect(result.current.dataSource).toBe('websocket');
   });

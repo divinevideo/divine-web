@@ -24,9 +24,14 @@ interface VideoNavigationHook {
   isLoading: boolean;
 }
 
-export function useVideoNavigation(videoId: string): VideoNavigationHook {
+interface UseVideoNavigationOptions {
+  enabled?: boolean;
+}
+
+export function useVideoNavigation(videoId: string, options: UseVideoNavigationOptions = {}): VideoNavigationHook {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { enabled = true } = options;
 
   // Parse navigation context from URL params
   const context: VideoNavigationContext | null = useMemo(() => {
@@ -50,10 +55,12 @@ export function useVideoNavigation(videoId: string): VideoNavigationHook {
       hashtag: context.hashtag,
       pubkey: context.pubkey,
       limit: 50, // Get enough videos for navigation
+      enabled,
     } : {
       filter: { ids: [videoId] },
       limit: 1,
       feedType: 'discovery',
+      enabled,
     }
   );
 

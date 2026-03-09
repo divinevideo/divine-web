@@ -6,7 +6,6 @@ import { useInfiniteVideos } from '@/hooks/useInfiniteVideos';
 import { useResolvedRelayCapabilities } from '@/hooks/useRelayCapabilities';
 import { useInfiniteVideosFunnelcake, type FunnelcakeFeedType, type FunnelcakeSortMode } from '@/hooks/useInfiniteVideosFunnelcake';
 import { hasFunnelcake, getFunnelcakeUrl, DEFAULT_FUNNELCAKE_URL } from '@/config/relays';
-import { getFeatureFlag } from '@/config/api';
 import { debugLog } from '@/lib/debug';
 import type { RelayCapabilities } from '@/lib/relayCapabilities';
 import type { SortMode } from '@/types/nostr';
@@ -42,6 +41,21 @@ interface VideoSourceDecision {
   apiUrl?: string;
   websocketFeedType?: WebsocketVideoFeedType;
   reason: string;
+}
+
+function canServeFeedViaFunnelcake(feedType: VideoFeedType): boolean {
+  switch (feedType) {
+    case 'discovery':
+    case 'home':
+    case 'trending':
+    case 'hashtag':
+    case 'profile':
+    case 'recent':
+    case 'classics':
+    case 'foryou':
+    case 'category':
+      return true;
+  }
 }
 
 /**
@@ -108,10 +122,6 @@ function mapToFunnelcakeSortMode(sortMode?: SortMode): FunnelcakeSortMode | unde
   }
 }
 
-function isPublicDiscoveryFeed(feedType: VideoFeedType): boolean {
-  return feedType === 'discovery' || feedType === 'trending' || feedType === 'recent' || feedType === 'category' || feedType === 'classics' || feedType === 'foryou';
-}
-
 export function canServeFeedViaWebsocket(
   feedType: VideoFeedType,
   sortMode: SortMode | undefined,
@@ -140,13 +150,11 @@ export function chooseVideoDataSource({
   sortMode,
   relayUrl,
   relayCapabilities,
-  useFunnelcakeFlag,
 }: {
   feedType: VideoFeedType;
   sortMode?: SortMode;
   relayUrl: string;
   relayCapabilities: RelayCapabilities;
-  useFunnelcakeFlag: boolean;
 }): VideoSourceDecision {
   const relayHasFunnelcake = hasFunnelcake(relayUrl);
   const relayFunnelcakeUrl = getFunnelcakeUrl(relayUrl) || undefined;
@@ -154,27 +162,26 @@ export function chooseVideoDataSource({
   const websocketSupported = websocketFeedType
     ? canServeFeedViaWebsocket(feedType, sortMode, relayCapabilities)
     : false;
+  const apiUrl = relayFunnelcakeUrl || DEFAULT_FUNNELCAKE_URL;
+
+  // Feed reads prefer Funnelcake REST. Keep a websocket route available as a
+  // recovery path for feeds the selected relay can still serve directly.
+  if (canServeFeedViaFunnelcake(feedType) && apiUrl) {
+    return {
+      dataSource: 'funnelcake',
+      apiUrl,
+      websocketFeedType: websocketSupported ? websocketFeedType : undefined,
+      reason: relayHasFunnelcake
+        ? 'prefer-selected-relay-funnelcake-rest-api'
+        : 'prefer-canonical-funnelcake-rest-api',
+    };
+  }
 
   if (websocketFeedType && websocketSupported) {
     return {
       dataSource: 'websocket',
       websocketFeedType,
       reason: 'relay-websocket-supports-feed',
-    };
-  }
-
-  const shouldUseCanonicalFunnelcake = isPublicDiscoveryFeed(feedType) && (!relayHasFunnelcake || feedType === 'category' || feedType === 'classics' || feedType === 'foryou');
-  const apiUrl = shouldUseCanonicalFunnelcake
-    ? DEFAULT_FUNNELCAKE_URL
-    : relayFunnelcakeUrl;
-
-  if (apiUrl && (useFunnelcakeFlag || shouldUseCanonicalFunnelcake)) {
-    return {
-      dataSource: 'funnelcake',
-      apiUrl,
-      reason: shouldUseCanonicalFunnelcake
-        ? 'canonical-funnelcake-required-for-feed'
-        : 'selected-relay-funnelcake-required-for-feed',
     };
   }
 
@@ -189,9 +196,10 @@ export function chooseVideoDataSource({
  * Unified video provider hook
  *
  * Automatically selects the best data source:
- * 1. Use WebSocket when the selected relay can actually serve the requested feed semantics
- * 2. Keep categories, classics, and recommendations on Funnelcake until WebSocket parity exists
- * 3. Fall back to Divine's canonical Funnelcake for public discovery feeds when relay WebSocket support is insufficient
+ * 1. Prefer Funnelcake REST for feed reads
+ * 2. Use the selected relay's Funnelcake host when available
+ * 3. Fall back to Divine's canonical Funnelcake when the selected relay has no REST endpoint
+ * 4. Only use WebSocket after a Funnelcake failure
  *
  * The hook exposes `dataSource` to indicate which backend is being used.
  */
@@ -201,20 +209,18 @@ export function useVideoProvider({
   hashtag,
   category,
   pubkey,
-  pageSize = 20,
+  pageSize = 12,
   enabled = true,
 }: UseVideoProviderOptions): VideoProviderResult {
   const { config } = useAppContext();
   const relayUrl = config.relayUrl;
   const relayCapabilities = useResolvedRelayCapabilities(relayUrl);
 
-  const useFunnelcakeFlag = getFeatureFlag('useFunnelcake');
   const decision = chooseVideoDataSource({
     feedType,
     sortMode,
     relayUrl,
     relayCapabilities,
-    useFunnelcakeFlag,
   });
 
   const shouldUseFunnelcake = decision.dataSource === 'funnelcake';
@@ -234,17 +240,27 @@ export function useVideoProvider({
     randomizeWithinTop: feedType === 'classics' ? 500 : undefined,
   });
 
+  const shouldEnableWebsocket =
+    enabled &&
+    !!decision.websocketFeedType &&
+    (!shouldUseFunnelcake || !!funnelcakeQuery.error);
+
   const websocketQuery = useInfiniteVideos({
     feedType: decision.websocketFeedType || 'recent',
     sortMode,
     hashtag,
     pubkey,
     pageSize,
-    enabled: enabled && !shouldUseFunnelcake && !!decision.websocketFeedType,
+    enabled: shouldEnableWebsocket,
   });
 
-  // Select the active query based on data source
-  const activeQuery = shouldUseFunnelcake ? funnelcakeQuery : websocketQuery;
+  const usingWebsocketFallback = shouldUseFunnelcake && !!funnelcakeQuery.error && !!decision.websocketFeedType;
+  const activeQuery = usingWebsocketFallback
+    ? websocketQuery
+    : (shouldUseFunnelcake ? funnelcakeQuery : websocketQuery);
+  const activeDataSource = usingWebsocketFallback
+    ? 'websocket'
+    : (shouldUseFunnelcake ? 'funnelcake' : 'websocket');
 
   return {
     data: activeQuery.data,
@@ -253,7 +269,7 @@ export function useVideoProvider({
     isLoading: activeQuery.isLoading,
     error: activeQuery.error,
     refetch: activeQuery.refetch,
-    dataSource: shouldUseFunnelcake ? 'funnelcake' : 'websocket',
+    dataSource: activeDataSource,
     apiUrl: shouldUseFunnelcake ? decision.apiUrl : undefined,
   };
 }
@@ -263,15 +279,15 @@ export function useVideoProvider({
  */
 export function useFunnelcakeSupport(): {
   supported: boolean;
-  apiUrl: string | null;
+  apiUrl: string;
   enabled: boolean;
 } {
   const { config } = useAppContext();
   const relayUrl = config.relayUrl;
 
-  const funnelcakeUrl = getFunnelcakeUrl(relayUrl);
-  const supported = hasFunnelcake(relayUrl);
-  const enabled = getFeatureFlag('useFunnelcake');
+  const funnelcakeUrl = getFunnelcakeUrl(relayUrl) || DEFAULT_FUNNELCAKE_URL;
+  const supported = true;
+  const enabled = true;
 
   return {
     supported,

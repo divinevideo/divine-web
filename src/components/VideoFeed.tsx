@@ -47,7 +47,7 @@ export function VideoFeed({
   hashtag,
   category,
   pubkey,
-  limit = 20, // Page size for infinite scroll
+  limit = 12, // Smaller first page improves initial paint on REST-backed feeds
   sortMode,
   viewMode = 'feed',
   className,

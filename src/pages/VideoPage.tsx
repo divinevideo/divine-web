@@ -45,14 +45,18 @@ export function VideoPage() {
   const {
     video: funnelcakeVideo,
     videos: funnelcakeVideos,
+    windowOffset: funnelcakeWindowOffset,
     isLoading: funnelcakeLoading,
     error: funnelcakeError,
   } = useVideoByIdFunnelcake({
     videoId: id || '',
     pubkey: context?.pubkey,
     hashtag: context?.hashtag,
+    currentIndex: context?.currentIndex,
     enabled: !!id,
   });
+
+  const shouldEnableWebsocketNavigation = !!id && !funnelcakeLoading && !funnelcakeVideo;
 
   // Fallback to WebSocket-based navigation (slower but handles all cases)
   const {
@@ -64,7 +68,7 @@ export function VideoPage() {
     goToNext: _wsGoToNext,
     goToPrevious: _wsGoToPrevious,
     isLoading: wsLoading,
-  } = useVideoNavigation(id || '');
+  } = useVideoNavigation(id || '', { enabled: shouldEnableWebsocketNavigation });
 
   // ALWAYS prefer Funnelcake REST API first - it's much faster
   // Loop counts are parsed from content field by funnelcakeTransform
@@ -78,6 +82,7 @@ export function VideoPage() {
     if (!videos || !id) return -1;
     return videos.findIndex(v => v.id === id || v.vineId === id);
   }, [videos, id]);
+  const navigationIndexBase = videos === funnelcakeVideos ? funnelcakeWindowOffset : 0;
 
   const hasNext = currentIndex >= 0 && currentIndex < (videos?.length || 0) - 1;
   const hasPrevious = currentIndex > 0;
@@ -100,14 +105,14 @@ export function VideoPage() {
   const goToNext = useCallback(() => {
     if (!hasNext || !videos) return;
     const nextVideo = videos[currentIndex + 1];
-    navigate(buildNavigationUrl(nextVideo, currentIndex + 1));
-  }, [hasNext, videos, currentIndex, navigate, buildNavigationUrl]);
+    navigate(buildNavigationUrl(nextVideo, navigationIndexBase + currentIndex + 1));
+  }, [hasNext, videos, currentIndex, navigate, buildNavigationUrl, navigationIndexBase]);
 
   const goToPrevious = useCallback(() => {
     if (!hasPrevious || !videos) return;
     const prevVideo = videos[currentIndex - 1];
-    navigate(buildNavigationUrl(prevVideo, currentIndex - 1));
-  }, [hasPrevious, videos, currentIndex, navigate, buildNavigationUrl]);
+    navigate(buildNavigationUrl(prevVideo, navigationIndexBase + currentIndex - 1));
+  }, [hasPrevious, videos, currentIndex, navigate, buildNavigationUrl, navigationIndexBase]);
 
   // Get author data for profile context
   // Prefer cached author name from video/Funnelcake, then fetched profile, then generated fallback

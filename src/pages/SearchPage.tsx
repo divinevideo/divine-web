@@ -66,7 +66,7 @@ export function SearchPage() {
   } = useInfiniteSearchVideos({
     query: searchQuery,
     sortMode,
-    pageSize: 20,
+    pageSize: 12,
   });
 
   // Deduplicate videos by ID (React Strict Mode can cause duplicate fetches)

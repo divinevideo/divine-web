@@ -83,7 +83,7 @@ export function useInfiniteSearchVideos({
   query,
   searchType = 'auto',
   sortMode = 'relevance',
-  pageSize = 20,
+  pageSize = 12,
 }: UseInfiniteSearchVideosOptions) {
   const { nostr } = useNostr();
   const apiUrl = API_CONFIG.funnelcake.baseUrl;

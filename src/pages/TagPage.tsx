@@ -1,18 +1,11 @@
 import { useParams } from 'react-router-dom';
 import { VideoFeed } from '@/components/VideoFeed';
-import { useVideoEvents } from '@/hooks/useVideoEvents';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Skeleton } from '@/components/ui/skeleton';
 
 export function TagPage() {
   const { tag } = useParams<{ tag: string }>();
   const normalizedTag = (tag || '').toLowerCase();
-
-  const { data: videos, isLoading } = useVideoEvents({
-    feedType: 'hashtag',
-    hashtag: normalizedTag,
-  });
 
   if (!normalizedTag) {
     return (
@@ -43,13 +36,9 @@ export function TagPage() {
         
         <div className="flex-1">
           <h1 className="text-2xl font-bold">#{tag}</h1>
-          {isLoading ? (
-            <Skeleton className="h-4 w-24 mt-1" />
-          ) : (
-            <p className="text-muted-foreground" data-testid="tag-video-count">
-              {videos?.length || 0} videos
-            </p>
-          )}
+          <p className="text-muted-foreground">
+            Browse videos tagged with #{normalizedTag}
+          </p>
         </div>
       </div>
 

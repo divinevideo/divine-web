@@ -7,6 +7,9 @@ import { nip19 } from 'nostr-tools';
 import { useNostr } from '@nostrify/react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { API_CONFIG } from '@/config/api';
+import { searchProfiles } from '@/lib/funnelcakeClient';
+import { isFunnelcakeAvailable } from '@/lib/funnelcakeHealth';
 
 export function NIP05ProfilePage() {
   const { nip05: nip05Param } = useParams<{ nip05: string }>();
@@ -30,32 +33,53 @@ export function NIP05ProfilePage() {
         // Decode the URL parameter (in case it's URL encoded)
         const decodedNip05 = decodeURIComponent(nip05Param);
         
-        console.log('[NIP05ProfilePage] Searching relay for NIP-05:', decodedNip05);
-        
-        // Search the relay for kind 0 events (profiles) that have this NIP-05
+        console.log('[NIP05ProfilePage] Resolving NIP-05:', decodedNip05);
+
         const signal = AbortSignal.timeout(5000);
-        const events = await nostr.query(
-          [{ kinds: [0], limit: 100 }],
-          { signal }
-        );
-        
-        // Look through profiles to find one with matching NIP-05
         let foundPubkey: string | null = null;
-        
-        for (const event of events) {
+
+        if (isFunnelcakeAvailable(API_CONFIG.funnelcake.baseUrl)) {
           try {
-            const metadata = JSON.parse(event.content);
-            if (metadata.nip05 && metadata.nip05.toLowerCase() === decodedNip05.toLowerCase()) {
-              console.log('[NIP05ProfilePage] Found matching profile:', event.pubkey);
-              foundPubkey = event.pubkey;
-              break;
+            const profiles = await searchProfiles(API_CONFIG.funnelcake.baseUrl, {
+              query: decodedNip05,
+              limit: 10,
+              sortBy: 'relevance',
+              signal,
+            });
+
+            const exactMatch = profiles.find((profile) =>
+              profile.nip05?.toLowerCase() === decodedNip05.toLowerCase()
+            );
+
+            if (exactMatch?.pubkey) {
+              console.log('[NIP05ProfilePage] Found matching profile via REST:', exactMatch.pubkey);
+              foundPubkey = exactMatch.pubkey;
             }
-          } catch {
-            // Skip malformed profiles
-            continue;
+          } catch (err) {
+            console.warn('[NIP05ProfilePage] REST lookup failed, falling back to relay search:', err);
           }
         }
-        
+
+        if (!foundPubkey) {
+          const events = await nostr.query(
+            [{ kinds: [0], limit: 100 }],
+            { signal }
+          );
+
+          for (const event of events) {
+            try {
+              const metadata = JSON.parse(event.content);
+              if (metadata.nip05 && metadata.nip05.toLowerCase() === decodedNip05.toLowerCase()) {
+                console.log('[NIP05ProfilePage] Found matching profile via relay:', event.pubkey);
+                foundPubkey = event.pubkey;
+                break;
+              }
+            } catch {
+              continue;
+            }
+          }
+        }
+
         if (foundPubkey) {
           setPubkey(foundPubkey);
         } else {
