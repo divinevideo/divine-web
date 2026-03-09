@@ -11,7 +11,7 @@ import { MarketingLayout } from '@/components/MarketingLayout';
 export function AuthenticityPage() {
   return (
     <MarketingLayout>
-      <div className="container max-w-4xl mx-auto py-8 px-4 space-y-8">
+      <div className="marketing-page marketing-page--default marketing-stack">
       <ZendeskWidget />
       {/* Hero Section */}
       <div className="text-center space-y-4 py-8">

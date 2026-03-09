@@ -7,6 +7,7 @@ import { useNotifications, useMarkNotificationsRead } from '@/hooks/useNotificat
 import { NotificationItem } from '@/components/NotificationItem';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { Notification } from '@/types/notification';
+import { AppPage, AppPageHeader } from '@/components/AppPage';
 
 export default function NotificationsPage() {
   const {
@@ -62,18 +63,21 @@ export default function NotificationsPage() {
   );
 
   return (
-    <div className="container max-w-2xl mx-auto px-4 py-6">
-      {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold flex items-center gap-2">
-          <Bell className="h-6 w-6" />
-          Notifications
-        </h1>
-      </div>
+    <AppPage width="feed">
+      <AppPageHeader
+        eyebrow="Inbox activity"
+        title={(
+          <span className="inline-flex items-center gap-2">
+            <Bell className="h-6 w-6" />
+            Notifications
+          </span>
+        )}
+        description="Likes, comments, follows, reposts, and other signals from around the network."
+      />
 
       {/* Loading skeleton */}
       {isLoading && (
-        <div className="space-y-4">
+        <div className="app-surface space-y-4 px-3 py-3 sm:px-4">
           {[...Array(8)].map((_, i) => (
             <div key={i} className="flex items-center gap-3 p-3">
               <Skeleton className="h-10 w-10 shrink-0 rounded-2xl" />
@@ -88,7 +92,7 @@ export default function NotificationsPage() {
 
       {/* Error state */}
       {isError && (
-        <div className="text-center py-12">
+        <div className="app-surface py-12 text-center">
           <p className="text-destructive mb-2">Failed to load notifications</p>
           <p className="text-sm text-muted-foreground">
             {error?.message || 'Please try again later'}
@@ -98,7 +102,7 @@ export default function NotificationsPage() {
 
       {/* Empty state */}
       {!isLoading && !isError && notifications.length === 0 && (
-        <div className="text-center py-16">
+        <div className="app-surface py-16 text-center">
           <Bell className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
           <p className="text-lg font-medium mb-1">No notifications yet</p>
           <p className="text-sm text-muted-foreground">
@@ -109,7 +113,7 @@ export default function NotificationsPage() {
 
       {/* Notification list */}
       {notifications.length > 0 && (
-        <div className="divide-y divide-border">
+        <div className="app-surface overflow-hidden divide-y divide-border/80">
           {notifications.map((notification) => (
             <NotificationItem key={notification.id} notification={notification} />
           ))}
@@ -125,6 +129,6 @@ export default function NotificationsPage() {
           <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
         </div>
       )}
-    </div>
+    </AppPage>
   );
 }

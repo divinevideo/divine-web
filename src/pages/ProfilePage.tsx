@@ -32,6 +32,7 @@ import { debugLog } from '@/lib/debug';
 import { getDivineNip05Info } from '@/lib/nip05Utils';
 import { genUserName } from '@/lib/genUserName';
 import type { SortMode } from '@/types/nostr';
+import { AppPage, AppPageHeader } from '@/components/AppPage';
 
 export function ProfilePage() {
   const { npub, nip19: nip19Param } = useParams<{ npub?: string; nip19?: string }>();
@@ -228,28 +229,26 @@ export function ProfilePage() {
   // Show spinner while resolving stale subdomain mapping
   if (resolved.isSearching && subdomainUser?.nip05Stale) {
     return (
-      <div className="container mx-auto px-4 py-6">
-        <div className="max-w-4xl mx-auto flex items-center justify-center py-12">
+      <AppPage width="wide">
+        <div className="flex items-center justify-center py-12">
           <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
         </div>
-      </div>
+      </AppPage>
     );
   }
 
   if (error || !pubkey) {
     return (
-      <div className="container mx-auto px-4 py-6">
-        <div className="max-w-4xl mx-auto">
-          <Card>
-            <CardContent className="py-12 text-center">
-              <h2 className="text-xl font-semibold mb-4">Invalid Profile</h2>
-              <p className="text-muted-foreground">
-                {error || 'Unable to load profile'}
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+      <AppPage width="default">
+        <Card className="app-surface">
+          <CardContent className="py-12 text-center">
+            <h2 className="mb-4 text-xl font-semibold">Invalid Profile</h2>
+            <p className="text-muted-foreground">
+              {error || 'Unable to load profile'}
+            </p>
+          </CardContent>
+        </Card>
+      </AppPage>
     );
   }
 
@@ -316,8 +315,15 @@ export function ProfilePage() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-6">
-      <div className="max-w-4xl mx-auto space-y-6">
+    <AppPage width="wide">
+      <div className="space-y-6">
+        <AppPageHeader
+          eyebrow={isOwnProfile ? 'Your profile' : 'Creator profile'}
+          title="Profile"
+          description={`${displayName} on diVine`}
+          className="mb-0"
+        />
+
         {/* Profile Header */}
         <ProfileHeader
           pubkey={pubkey}
@@ -352,69 +358,73 @@ export function ProfilePage() {
         {/* Content Section */}
         <div className="space-y-4">
           {/* View Mode Toggle + Sort */}
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-xl font-semibold">Videos</h2>
-              <p className="text-muted-foreground text-sm">
-                {videosLoading ? 'Loading...' : `${stats.videosCount} videos`} from {displayName}
-              </p>
-            </div>
-
-            <div className="flex items-center gap-3">
-              {/* Sort Mode */}
-              <div className="flex items-center gap-1">
-                {PROFILE_SORT_MODES.map(mode => {
-                  const ModeIcon = mode.icon;
-                  const isSelected = sortMode === mode.value;
-                  return (
-                    <button
-                      key={mode.label}
-                      onClick={() => setSortMode(mode.value as SortMode)}
-                      className={`
-                        flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all
-                        ${isSelected
-                          ? 'bg-primary text-primary-foreground shadow-sm'
-                          : 'bg-brand-light-green dark:bg-brand-dark-green hover:bg-muted text-muted-foreground hover:text-foreground'
-                        }
-                      `}
-                      data-testid={`sort-${mode.label.toLowerCase().replace(' ', '-')}`}
-                    >
-                      <ModeIcon className="h-3.5 w-3.5" />
-                      <span>{mode.label}</span>
-                    </button>
-                  );
-                })}
+          <div className="app-surface px-4 py-4 sm:px-5">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+              <div>
+                <h2 className="text-xl font-semibold">Videos</h2>
+                <p className="text-sm text-muted-foreground">
+                  {videosLoading ? 'Loading...' : `${stats.videosCount} videos`} from {displayName}
+                </p>
               </div>
 
-              {/* View Mode */}
-              <div className="flex items-center gap-1 border-l pl-3">
-                <Button
-                  variant={viewMode === 'grid' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setViewMode('grid')}
-                  data-testid="grid-view-button"
-                >
-                  <Grid className="w-4 h-4" />
-                </Button>
-                <Button
-                  variant={viewMode === 'list' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setViewMode('list')}
-                  data-testid="list-view-button"
-                >
-                  <List className="w-4 h-4" />
-                </Button>
+              <div className="flex flex-col gap-3 lg:items-end">
+                {/* Sort Mode */}
+                <div className="flex flex-wrap items-center gap-2">
+                  {PROFILE_SORT_MODES.map(mode => {
+                    const ModeIcon = mode.icon;
+                    const isSelected = sortMode === mode.value;
+                    return (
+                      <button
+                        key={mode.label}
+                        onClick={() => setSortMode(mode.value as SortMode)}
+                        className={`
+                          flex items-center gap-1.5 rounded-full px-3 py-2 text-sm font-medium transition-all
+                          ${isSelected
+                            ? 'bg-primary text-primary-foreground shadow-[0_12px_30px_rgba(39,197,139,0.22)]'
+                            : 'border border-white/45 bg-[hsl(var(--surface-1)/0.86)] text-muted-foreground hover:bg-muted hover:text-foreground dark:border-white/10'
+                          }
+                        `}
+                        data-testid={`sort-${mode.label.toLowerCase().replace(' ', '-')}`}
+                      >
+                        <ModeIcon className="h-3.5 w-3.5" />
+                        <span>{mode.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* View Mode */}
+                <div className="app-surface-muted inline-flex items-center gap-1 self-start px-1 py-1 lg:self-end">
+                  <Button
+                    variant={viewMode === 'grid' ? 'default' : 'ghost'}
+                    size="sm"
+                    className="rounded-full"
+                    onClick={() => setViewMode('grid')}
+                    data-testid="grid-view-button"
+                  >
+                    <Grid className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    variant={viewMode === 'list' ? 'default' : 'ghost'}
+                    size="sm"
+                    className="rounded-full"
+                    onClick={() => setViewMode('list')}
+                    data-testid="list-view-button"
+                  >
+                    <List className="w-4 h-4" />
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
 
           {/* Videos Display */}
           {videosLoading ? (
-            <div className="flex items-center justify-center py-12">
+            <div className="app-surface flex items-center justify-center py-12">
               <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
             </div>
           ) : videosError ? (
-            <Card className="border-destructive">
+            <Card className="app-surface border-destructive">
               <CardContent className="py-12 text-center">
                 <p className="text-destructive mb-4">Failed to load videos</p>
                 <Button variant="outline" onClick={() => window.location.reload()}>
@@ -465,7 +475,7 @@ export function ProfilePage() {
           )}
         </div>
       </div>
-    </div>
+    </AppPage>
   );
 }
 

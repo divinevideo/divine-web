@@ -77,7 +77,7 @@ export function GetEmbedPage() {
 
   return (
     <MarketingLayout>
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
+      <div className="marketing-page marketing-page--default marketing-stack">
         <div className="flex items-center gap-3 mb-2">
           <Code className="h-8 w-8 text-brand-green" />
           <h1 className="text-4xl font-bold">Embed Divine Widget</h1>

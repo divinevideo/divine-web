@@ -11,11 +11,11 @@ import { useDmCapability } from '@/hooks/useDirectMessages';
 import { useSubdomainNavigate } from '@/hooks/useSubdomainNavigate';
 import { DIVINE_SUPPORT_PUBKEY, getDmConversationPath } from '@/lib/dm';
 
+const ZENDESK_ENABLED = false;
+
 export function Support() {
   // Zendesk widget disabled - linking to Help Center instead.
   // To restore widget: set ZENDESK_ENABLED to true and remove return null in ZendeskWidget.tsx
- 
-  const ZENDESK_ENABLED = false;
   const navigate = useSubdomainNavigate();
   const { user } = useCurrentUser();
   const { canUseDirectMessages } = useDmCapability();
@@ -63,138 +63,127 @@ export function Support() {
     };
   }, []);
 
-  // Kept for future re-enablement of Zendesk widget
-  const _openZendeskWidget = () => {
-    if (window.zE) {
-      window.zE('webWidget', 'open');
-    }
-  };
-
   return (
     <MarketingLayout>
-      <div className="container max-w-2xl mx-auto px-4 py-8">
-      <div className="space-y-6">
-        <div className="text-center space-y-2">
-          <h1 className="text-3xl font-bold">Support</h1>
-          <p className="text-muted-foreground">
-            Need help? We're here to assist you.
-          </p>
-        </div>
+      <div className="marketing-page marketing-page--narrow marketing-stack">
+        <div className="space-y-6">
+          <div className="marketing-hero space-y-4">
+            <div className="app-eyebrow mx-auto">Help and contact</div>
+            <h1 className="marketing-hero__title">Support</h1>
+            <p className="marketing-hero__lede">
+              Need help, want to report a bug, or want a direct line to the team? Start here.
+            </p>
+          </div>
 
-        {/* Help Center Card (replaces Zendesk widget) */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Visit diVine Help Center</CardTitle>
-            <CardDescription>
-              Find answers to your questions about diVine.  
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <a href='https://help.divine.video/'>
-              <Button> 
-              {/* <Button onClick={_openZendeskWidget} size="lg" className="w-full"> */}
-              Visit Help Center
-              </Button>
-            </a>  
-            {/* <p className="text-sm text-muted-foreground mt-4 text-center">
-              Our support widget will open in the bottom-right corner
-            </p> */}
-          </CardContent>
-        </Card>
-
-        {user && canUseDirectMessages && (
-          <Card>
+          <Card className="app-surface">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <MessageCircle className="h-5 w-5" />
-                Message Support
-              </CardTitle>
+              <CardTitle>Visit diVine Help Center</CardTitle>
               <CardDescription>
-                Reach the support inbox directly inside diVine using private NIP-17 messages.
+                Find answers to your questions about diVine.
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Button onClick={() => navigate(getDmConversationPath([DIVINE_SUPPORT_PUBKEY]))}>
-                Open Support Chat
-              </Button>
+              <a href="https://help.divine.video/" className="block">
+                <Button className="w-full sm:w-auto">
+                  Visit Help Center
+                </Button>
+              </a>
             </CardContent>
           </Card>
-        )}
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Mail className="h-5 w-5" />
-              Contact Support
-            </CardTitle>
-            <CardDescription>
-              Create a ticket and we'll get back to you as soon as possible.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <a
-              href="https://help.divine.video/hc/en-gb/requests/new?ticket_form_id=14332938774671"
-              className="text-primary hover:underline font-medium"
-            >
-              Contact Support
-            </a>
-          </CardContent>
-        </Card>
+          {user && canUseDirectMessages && (
+            <Card className="app-surface">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <MessageCircle className="h-5 w-5" />
+                  Message Support
+                </CardTitle>
+                <CardDescription>
+                  Reach the support inbox directly inside diVine using private NIP-17 messages.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button onClick={() => navigate(getDmConversationPath([DIVINE_SUPPORT_PUBKEY]))} className="w-full sm:w-auto">
+                  Open Support Chat
+                </Button>
+              </CardContent>
+            </Card>
+          )}
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Github className="h-5 w-5" />
-              GitHub Issues
-            </CardTitle>
-            <CardDescription>
-              Report bugs, request features, or browse existing issues on our GitHub repositories.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <div>
-              <div className="text-sm font-medium mb-1">Web App:</div>
+          <Card className="app-surface">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Mail className="h-5 w-5" />
+                Contact Support
+              </CardTitle>
+              <CardDescription>
+                Create a ticket and we&apos;ll get back to you as soon as possible.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
               <a
-                href="https://github.com/rabble/divine-web/issues"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-primary hover:underline"
+                href="https://help.divine.video/hc/en-gb/requests/new?ticket_form_id=14332938774671"
+                className="text-primary hover:underline font-medium"
               >
-                github.com/rabble/divine-web/issues
+                Contact Support
               </a>
-            </div>
-            <div>
-              <div className="text-sm font-medium mb-1">Flutter App (iOS/Android):</div>
-              <a
-                href="https://github.com/rabble/nostrvine/issues"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-primary hover:underline"
-              >
-                github.com/rabble/nostrvine/issues
-              </a>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <MessageCircle className="h-5 w-5" />
-              Community
-            </CardTitle>
-            <CardDescription>
-              Join our community discussions and connect with other Divine users on Nostr.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">
-              Divine is built on Nostr, a decentralized social protocol. Find us on your favorite Nostr client!
-            </p>
-          </CardContent>
-        </Card>
+          <Card className="app-surface">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Github className="h-5 w-5" />
+                GitHub Issues
+              </CardTitle>
+              <CardDescription>
+                Report bugs, request features, or browse existing issues on our GitHub repositories.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <div>
+                <div className="text-sm font-medium mb-1">Web App:</div>
+                <a
+                  href="https://github.com/rabble/divine-web/issues"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary hover:underline"
+                >
+                  github.com/rabble/divine-web/issues
+                </a>
+              </div>
+              <div>
+                <div className="text-sm font-medium mb-1">Flutter App (iOS/Android):</div>
+                <a
+                  href="https://github.com/rabble/nostrvine/issues"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary hover:underline"
+                >
+                  github.com/rabble/nostrvine/issues
+                </a>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="app-surface">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <MessageCircle className="h-5 w-5" />
+                Community
+              </CardTitle>
+              <CardDescription>
+                Join our community discussions and connect with other Divine users on Nostr.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground">
+                Divine is built on Nostr, a decentralized social protocol. Find us on your favorite Nostr client!
+              </p>
+            </CardContent>
+          </Card>
+        </div>
       </div>
-    </div>
     </MarketingLayout>
   );
 }

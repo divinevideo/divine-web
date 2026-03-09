@@ -2,14 +2,22 @@
 // ABOUTME: Includes search functionality and hashtag statistics with enhanced explorer
 
 import { HashtagExplorer } from '@/components/HashtagExplorer';
+import { AppPage, AppPageHeader } from '@/components/AppPage';
+import { DiscoverySectionNav } from '@/components/DiscoverySectionNav';
 
 export function HashtagDiscoveryPage() {
   return (
-    <div className="container mx-auto px-4 py-6">
-      <div className="max-w-6xl mx-auto">
-        <HashtagExplorer />
-      </div>
-    </div>
+    <AppPage width="wide">
+      <AppPageHeader
+        eyebrow="Conversation clusters"
+        title="Hashtags"
+        description="Follow live topics, niches, and recurring community memes."
+      >
+        <DiscoverySectionNav active="hashtags" />
+      </AppPageHeader>
+
+      <HashtagExplorer />
+    </AppPage>
   );
 }
 

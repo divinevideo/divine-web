@@ -39,6 +39,7 @@ import {
   isLikelyOpaqueVideoIdentifier,
   normalizeDirectSearchInput,
 } from '@/lib/directSearch';
+import { AppPage, AppPageHeader } from '@/components/AppPage';
 
 type SearchFilter = 'all' | 'videos' | 'users' | 'hashtags';
 
@@ -302,13 +303,18 @@ export function SearchPage() {
   const hasResults = videoResults.length > 0 || userResults.length > 0 || hashtagResults.length > 0;
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Main content */}
-      <main className="container py-6">
-        {/* Search bar with sort selector */}
-        <div className="mb-6 flex-1 max-w-2xl mx-auto space-y-3">
+    <AppPage width="wide">
+      <AppPageHeader
+        eyebrow="Search the network"
+        title="Search"
+        description="Find videos, people, hashtags, and pasted identifiers without leaving the app flow."
+      />
+
+      {/* Search bar with sort selector */}
+      <div className="mx-auto mb-6 flex-1 max-w-[52rem] space-y-3">
+        <div className="app-surface relative overflow-visible px-4 py-4 sm:px-5">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               ref={searchInputRef}
               type="text"
@@ -318,17 +324,17 @@ export function SearchPage() {
               onPaste={handleSearchPaste}
               onFocus={() => setShowSuggestions(!searchQuery.trim())}
               onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-              className="pl-10 pr-4"
+              className="h-12 rounded-[22px] border-transparent bg-background/80 pl-10 pr-4 shadow-inner shadow-brand-dark-green/5 dark:bg-background/70"
               autoFocus
             />
           </div>
 
           {/* Sort mode selector for video results */}
           {(activeFilter === 'all' || activeFilter === 'videos') && searchQuery.trim() && (
-            <div className="flex items-center gap-2 justify-end">
+            <div className="mt-3 flex items-center justify-end gap-2">
               <span className="text-sm text-muted-foreground">Sort:</span>
               <Select value={sortMode} onValueChange={(value) => setSortMode(value as SortMode)}>
-                <SelectTrigger className="w-[160px]">
+                <SelectTrigger className="w-[170px] rounded-full border-white/50 bg-[hsl(var(--surface-1)/0.82)] dark:border-white/10">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -347,7 +353,7 @@ export function SearchPage() {
 
           {/* Search suggestions dropdown */}
           {showSuggestions && popularHashtags.length > 0 && (
-            <Card className="absolute top-full mt-1 w-full z-50 max-h-64 overflow-y-auto">
+            <Card className="absolute inset-x-0 top-full z-50 mt-3 max-h-64 overflow-y-auto rounded-[24px] border-border/80 bg-[hsl(var(--surface-1)/0.98)] shadow-[var(--shadow-lg)] backdrop-blur-xl">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">
                   Popular Hashtags
@@ -361,7 +367,7 @@ export function SearchPage() {
                       variant="ghost"
                       size="sm"
                       onClick={() => handleHashtagClick(hashtag.hashtag)}
-                      className="h-auto px-2 py-1 text-xs"
+                      className="h-auto rounded-full px-2.5 py-1.5 text-xs hover:bg-[hsl(var(--surface-2)/0.9)]"
                     >
                       #{hashtag.hashtag}
                     </Button>
@@ -371,10 +377,11 @@ export function SearchPage() {
             </Card>
           )}
         </div>
+      </div>
 
-        {/* Search tabs */}
-        <Tabs value={activeFilter} onValueChange={handleFilterChange} className="w-full">
-          <TabsList className="grid w-full max-w-md mx-auto grid-cols-4 mb-6">
+      {/* Search tabs */}
+      <Tabs value={activeFilter} onValueChange={handleFilterChange} className="w-full">
+        <TabsList className="app-tab-list mx-auto mb-6 max-w-xl grid-cols-4">
             <TabsTrigger value="all" className="gap-2">
               <Search className="h-4 w-4 flex-shrink-0" />
               <span className="hidden sm:inline">All</span>
@@ -391,32 +398,32 @@ export function SearchPage() {
               <Hash className="h-4 w-4 flex-shrink-0" />
               <span className="hidden sm:inline">Hashtags</span>
             </TabsTrigger>
-          </TabsList>
+        </TabsList>
 
-          {/* Results count */}
-          {searchQuery.trim() && (
-            <div className="text-center mb-4">
-              {isLoading ? (
-                <p className="text-muted-foreground">Searching...</p>
-              ) : error ? (
-                <p className="text-destructive">Search error occurred</p>
-              ) : (
-                <p className="text-muted-foreground">
-                  {getResultsCount() === 0
-                    ? 'No results found'
-                    : `${getResultsCount()} ${
-                        activeFilter === 'all'
-                          ? 'results'
-                          : activeFilter === 'videos'
-                          ? 'videos'
-                          : activeFilter === 'users'
-                          ? 'users'
-                          : 'hashtags'
-                      } found`}
-                </p>
-              )}
-            </div>
-          )}
+        {/* Results count */}
+        {searchQuery.trim() && (
+          <div className="mb-4 text-center">
+            {isLoading ? (
+              <p className="text-muted-foreground">Searching...</p>
+            ) : error ? (
+              <p className="text-destructive">Search error occurred</p>
+            ) : (
+              <p className="text-muted-foreground">
+                {getResultsCount() === 0
+                  ? 'No results found'
+                  : `${getResultsCount()} ${
+                      activeFilter === 'all'
+                        ? 'results'
+                        : activeFilter === 'videos'
+                        ? 'videos'
+                        : activeFilter === 'users'
+                        ? 'users'
+                        : 'hashtags'
+                    } found`}
+              </p>
+            )}
+          </div>
+        )}
 
           {/* All results tab */}
           <TabsContent value="all" className="mt-0">
@@ -590,8 +597,7 @@ export function SearchPage() {
             )}
           </TabsContent>
         </Tabs>
-      </main>
-    </div>
+    </AppPage>
   );
 }
 

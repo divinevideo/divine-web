@@ -86,11 +86,11 @@ export function VideoGrid({ videos, loading = false, className, navigationContex
   if (loading) {
     return (
       <div
-        className={cn("grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4", className)}
+        className={cn("grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4", className)}
         data-testid="video-grid"
       >
         {[...Array(6)].map((_, i) => (
-          <Card key={i} className="overflow-hidden" data-testid="video-skeleton">
+          <Card key={i} className="overflow-hidden rounded-[24px] border-border/80 bg-[hsl(var(--surface-1)/0.92)]" data-testid="video-skeleton">
             <div className="aspect-square relative bg-black/80 flex items-center justify-center">
               <div className="w-8 h-8 border-2 border-brand-light-green border-t-brand-green rounded-full animate-spin" />
             </div>
@@ -121,7 +121,7 @@ export function VideoGrid({ videos, loading = false, className, navigationContex
 
   return (
     <div
-      className={cn("grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4", className)}
+      className={cn("grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4", className)}
       data-testid="video-grid"
     >
       {videos.map((video, index) => {
@@ -132,7 +132,7 @@ export function VideoGrid({ videos, loading = false, className, navigationContex
         return (
           <Card
             key={video.id}
-            className="overflow-hidden cursor-pointer transition-transform hover:scale-105 group"
+            className="group cursor-pointer overflow-hidden rounded-[24px] border-border/80 bg-[hsl(var(--surface-1)/0.92)] shadow-[var(--shadow-sm)] transition-all duration-200 hover:-translate-y-1 hover:border-primary/40 hover:shadow-[var(--shadow-md)]"
             data-testid="video-grid-item"
             onClick={() => handleVideoClick(video.id, index)}
             onKeyDown={(e) => handleKeyDown(e, video.id, index)}
@@ -199,11 +199,11 @@ export function VideoGrid({ videos, loading = false, className, navigationContex
 
               {/* Play Overlay */}
               <div
-                className="absolute inset-0 bg-black/20 flex items-center justify-center transition-opacity group-hover:bg-black/40"
+                className="absolute inset-0 flex items-center justify-center bg-black/10 transition-colors group-hover:bg-black/30"
                 data-testid={`play-overlay-${video.id}`}
               >
-                <div className="bg-white/90 rounded-full p-3 transition-transform group-hover:scale-110">
-                  <Play className="w-6 h-6 text-black fill-black" />
+                <div className="rounded-full bg-white/92 p-2.5 shadow-lg transition-transform group-hover:scale-110">
+                  <Play className="h-5 w-5 fill-black text-black" />
                 </div>
               </div>
 

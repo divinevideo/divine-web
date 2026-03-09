@@ -14,6 +14,7 @@ import { Star, Clock, Hash, Flame, Sparkles } from 'lucide-react';
 // Zap temporarily unused - will be needed when Rising tab is re-enabled
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useCategories } from '@/hooks/useCategories';
+import { AppPage, AppPageHeader } from '@/components/AppPage';
 
 // All possible tab values (foryou only shown when logged in)
 type AllowedTab = 'foryou' | 'classics' | 'hot' | 'new' | 'hashtags';
@@ -74,63 +75,59 @@ export function DiscoveryPage() {
   }, [params.tab, navigate, defaultTab]);
 
   return (
-    <div className="container mx-auto px-4 py-6">
-      <div className={activeTab === 'hashtags' ? 'max-w-6xl mx-auto' : 'max-w-2xl mx-auto'}>
-        <header className="mb-6 space-y-4">
-          <div className="flex items-start justify-between mb-4">
-            <div>
-              <h1 className="text-2xl font-bold">Discover</h1>
-              <p className="text-muted-foreground">Explore videos from the network</p>
-            </div>
-            {activeTab !== 'hashtags' && (
-              <VerifiedOnlyToggle
-                enabled={verifiedOnly}
-                onToggle={setVerifiedOnly}
-              />
-            )}
-          </div>
-        </header>
+    <AppPage width={activeTab === 'hashtags' ? 'wide' : 'feed'}>
+      <AppPageHeader
+        eyebrow={isLoggedIn ? 'Tailored discovery' : 'Open network discovery'}
+        title="Discover"
+        description="Explore videos from the network"
+        actions={activeTab !== 'hashtags' ? (
+          <VerifiedOnlyToggle
+            enabled={verifiedOnly}
+            onToggle={setVerifiedOnly}
+          />
+        ) : undefined}
+      />
 
-        {/* Mobile category pills - visible on small screens only */}
-        {categories && categories.length > 0 && (
-          <div className="lg:hidden -mx-4 px-4 overflow-x-auto scrollbar-hide">
-            <div className="flex gap-2 pb-2">
-              {categories.slice(0, 12).map(cat => (
-                <button
-                  key={cat.name}
-                  onClick={() => navigate(`/category/${cat.name}`)}
-                  className="flex items-center gap-1.5 whitespace-nowrap rounded-full border border-border bg-background px-3 py-1.5 text-sm transition-colors hover:bg-muted hover:border-primary"
-                >
-                  <span>{cat.config?.emoji || ''}</span>
-                  <span>{cat.config?.label || cat.name}</span>
-                </button>
-              ))}
-            </div>
+      {/* Mobile category pills - visible on small screens only */}
+      {categories && categories.length > 0 && (
+        <div className="app-chip-row lg:hidden">
+          <div className="flex gap-2 pb-2">
+            {categories.slice(0, 12).map(cat => (
+              <button
+                key={cat.name}
+                onClick={() => navigate(`/category/${cat.name}`)}
+                className="app-chip"
+              >
+                <span>{cat.config?.emoji || ''}</span>
+                <span>{cat.config?.label || cat.name}</span>
+              </button>
+            ))}
           </div>
-        )}
+        </div>
+      )}
 
-        <Tabs
-          value={activeTab}
-          onValueChange={(val) => {
-            if (allowedTabs.includes(val as AllowedTab)) {
-              setActiveTab(val as AllowedTab);
-              navigate(`/discovery/${val}`);
-            }
-          }}
-          className="space-y-6"
-        >
-          <TabsList className={`w-full grid gap-1 ${isLoggedIn ? 'grid-cols-5' : 'grid-cols-4'}`}>
+      <Tabs
+        value={activeTab}
+        onValueChange={(val) => {
+          if (allowedTabs.includes(val as AllowedTab)) {
+            setActiveTab(val as AllowedTab);
+            navigate(`/discovery/${val}`);
+          }
+        }}
+        className="space-y-6"
+      >
+        <TabsList className={`app-tab-list ${isLoggedIn ? 'grid-cols-5' : 'grid-cols-4'}`}>
             {isLoggedIn && (
-              <TabsTrigger value="foryou" className="gap-1.5 sm:gap-2">
+              <TabsTrigger value="foryou" className="gap-1.5 rounded-[20px] px-2.5 sm:gap-2 sm:px-4">
                 <Sparkles className="h-4 w-4" />
                 <span className="hidden sm:inline">For You</span>
               </TabsTrigger>
             )}
-            <TabsTrigger value="classics" className="gap-1.5 sm:gap-2">
+            <TabsTrigger value="classics" className="gap-1.5 rounded-[20px] px-2.5 sm:gap-2 sm:px-4">
               <Star className="h-4 w-4" />
               <span className="hidden sm:inline">Classic</span>
             </TabsTrigger>
-            <TabsTrigger value="hot" className="gap-1.5 sm:gap-2">
+            <TabsTrigger value="hot" className="gap-1.5 rounded-[20px] px-2.5 sm:gap-2 sm:px-4">
               <Flame className="h-4 w-4" />
               <span className="hidden sm:inline">Hot</span>
             </TabsTrigger>
@@ -140,52 +137,52 @@ export function DiscoveryPage() {
               <span className="hidden sm:inline">Rising</span>
             </TabsTrigger>
             */}
-            <TabsTrigger value="new" className="gap-1.5 sm:gap-2">
+            <TabsTrigger value="new" className="gap-1.5 rounded-[20px] px-2.5 sm:gap-2 sm:px-4">
               <Clock className="h-4 w-4" />
               <span className="hidden sm:inline">New</span>
             </TabsTrigger>
-            <TabsTrigger value="hashtags" className="gap-1.5 sm:gap-2">
+            <TabsTrigger value="hashtags" className="gap-1.5 rounded-[20px] px-2.5 sm:gap-2 sm:px-4">
               <Hash className="h-4 w-4" />
               <span className="hidden sm:inline">Tags</span>
             </TabsTrigger>
-          </TabsList>
+        </TabsList>
 
-          {isLoggedIn && (
-            <TabsContent value="foryou" className="mt-0 space-y-6">
-              <VideoFeed
-                feedType="foryou"
-                verifiedOnly={verifiedOnly}
-                data-testid="video-feed-foryou"
-                className="space-y-6"
-                key="foryou"
-              />
-            </TabsContent>
-          )}
-
-          <TabsContent value="classics" className="mt-0 space-y-6">
-            {/* Classic Viners horizontal row */}
-            <ClassicVinersRow />
-
-            {/* Classic Vines feed - uses Funnelcake API */}
+        {isLoggedIn && (
+          <TabsContent value="foryou" className="mt-0 space-y-6">
             <VideoFeed
-              feedType="classics"
+              feedType="foryou"
               verifiedOnly={verifiedOnly}
-              data-testid="video-feed-classics"
+              data-testid="video-feed-foryou"
               className="space-y-6"
-              key="classics"
+              key="foryou"
             />
           </TabsContent>
+        )}
 
-          <TabsContent value="hot" className="mt-0 space-y-6">
-            <VideoFeed
-              feedType="trending"
-              sortMode="hot"
-              verifiedOnly={verifiedOnly}
-              data-testid="video-feed-hot"
-              className="space-y-6"
-              key="hot"
-            />
-          </TabsContent>
+        <TabsContent value="classics" className="mt-0 space-y-6">
+          {/* Classic Viners horizontal row */}
+          <ClassicVinersRow />
+
+          {/* Classic Vines feed - uses Funnelcake API */}
+          <VideoFeed
+            feedType="classics"
+            verifiedOnly={verifiedOnly}
+            data-testid="video-feed-classics"
+            className="space-y-6"
+            key="classics"
+          />
+        </TabsContent>
+
+        <TabsContent value="hot" className="mt-0 space-y-6">
+          <VideoFeed
+            feedType="trending"
+            sortMode="hot"
+            verifiedOnly={verifiedOnly}
+            data-testid="video-feed-hot"
+            className="space-y-6"
+            key="hot"
+          />
+        </TabsContent>
 
           {/* Rising tab temporarily disabled
           <TabsContent value="rising" className="mt-0 space-y-6">
@@ -200,22 +197,21 @@ export function DiscoveryPage() {
           </TabsContent>
           */}
 
-          <TabsContent value="new" className="mt-0 space-y-6">
-            <VideoFeed
-              feedType="recent"
-              verifiedOnly={verifiedOnly}
-              data-testid="video-feed-new"
-              className="space-y-6"
-              key="recent"
-            />
-          </TabsContent>
+        <TabsContent value="new" className="mt-0 space-y-6">
+          <VideoFeed
+            feedType="recent"
+            verifiedOnly={verifiedOnly}
+            data-testid="video-feed-new"
+            className="space-y-6"
+            key="recent"
+          />
+        </TabsContent>
 
-          <TabsContent value="hashtags" className="mt-0 space-y-6">
-            <HashtagExplorer />
-          </TabsContent>
-        </Tabs>
-      </div>
-    </div>
+        <TabsContent value="hashtags" className="mt-0 space-y-6">
+          <HashtagExplorer />
+        </TabsContent>
+      </Tabs>
+    </AppPage>
   );
 }
 

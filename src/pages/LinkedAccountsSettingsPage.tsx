@@ -34,6 +34,8 @@ import {
 } from 'lucide-react';
 import { useToast } from '@/hooks/useToast';
 import { nip19 } from 'nostr-tools';
+import { AppPage, AppPageHeader } from '@/components/AppPage';
+import { CreatorSectionNav } from '@/components/CreatorSectionNav';
 
 // X/Twitter icon (simple)
 function XIcon({ className }: { className?: string }) {
@@ -261,7 +263,7 @@ function LinkedAccountItem({
   const icon = PLATFORM_ICONS[identity.platform] ?? <Link2 className="h-5 w-5" />;
 
   return (
-    <div className="flex items-center justify-between p-3 rounded-lg border">
+    <div className="app-surface-muted flex items-center justify-between px-3 py-3">
       <div className="flex items-center gap-3">
         <div className="text-muted-foreground">{icon}</div>
         <div>
@@ -413,47 +415,59 @@ export default function LinkedAccountsSettingsPage() {
 
   if (!user) {
     return (
-      <div className="container max-w-4xl mx-auto px-4 py-8">
-        <Card>
+      <AppPage width="wide">
+        <Card className="app-surface">
           <CardContent className="py-12 text-center">
             <Shield className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
             <p className="text-lg font-medium mb-2">Authentication Required</p>
             <p className="text-muted-foreground">Please log in to manage your linked accounts</p>
           </CardContent>
         </Card>
-      </div>
+      </AppPage>
     );
   }
 
   return (
-    <div className="container max-w-4xl mx-auto px-4 py-8">
-      <div className="mb-8">
-        <Link
-          to={`/profile/${nip19.npubEncode(user.pubkey)}`}
-          className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-4"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back to profile
-        </Link>
-        <h1 className="text-3xl font-bold flex items-center gap-2 mb-2">
-          <Link2 className="h-8 w-8" />
-          Linked Accounts
-        </h1>
-        <p className="text-muted-foreground">
-          Verify your identity across platforms using{' '}
-          <a
-            href="https://github.com/nostr-protocol/nips/blob/master/39.md"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="underline"
+    <AppPage width="wide">
+      <AppPageHeader
+        eyebrow="Identity and trust"
+        title={(
+          <span className="flex items-center gap-3">
+            <Link2 className="h-8 w-8" />
+            <span>Linked Accounts</span>
+          </span>
+        )}
+        description={(
+          <>
+            Verify your identity across platforms using{' '}
+            <a
+              href="https://github.com/nostr-protocol/nips/blob/master/39.md"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline"
+            >
+              NIP-39
+            </a>
+            .
+          </>
+        )}
+        actions={(
+          <Link
+            to={`/profile/${nip19.npubEncode(user.pubkey)}`}
+            className="app-chip"
           >
-            NIP-39
-          </a>
-        </p>
-      </div>
+            <ArrowLeft className="h-4 w-4" />
+            <span>Profile</span>
+          </Link>
+        )}
+      >
+        <CreatorSectionNav
+          active="linked-accounts"
+          profilePath={`/profile/${nip19.npubEncode(user.pubkey)}`}
+        />
+      </AppPageHeader>
 
-      {/* Current Linked Accounts */}
-      <Card className="mb-6">
+      <Card className="app-surface mb-6">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <CheckCircle2 className="h-5 w-5" />
@@ -491,8 +505,7 @@ export default function LinkedAccountsSettingsPage() {
         </CardContent>
       </Card>
 
-      {/* Add / Edit Account */}
-      <Card ref={formRef}>
+      <Card ref={formRef} className="app-surface">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             {editingIdentity ? <Pencil className="h-5 w-5" /> : <Plus className="h-5 w-5" />}
@@ -528,8 +541,7 @@ export default function LinkedAccountsSettingsPage() {
             </div>
           </div>
 
-          {/* Instructions */}
-          <Card className="border-blue-500/50 bg-blue-50 dark:bg-blue-950/20">
+          <Card className="app-surface-muted border-blue-500/50 bg-blue-50/90 dark:bg-blue-950/20">
             <CardContent className="py-4">
               <p className="text-sm font-medium mb-2">Step 1: Create a proof post</p>
               <p className="text-sm text-muted-foreground mb-3">
@@ -617,6 +629,6 @@ export default function LinkedAccountsSettingsPage() {
           </div>
         </CardContent>
       </Card>
-    </div>
+    </AppPage>
   );
 }

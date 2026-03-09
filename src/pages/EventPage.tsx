@@ -26,6 +26,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import type { NostrEvent } from '@nostrify/nostrify';
+import { AppPage, AppPageHeader } from '@/components/AppPage';
 
 function getTagValue(event: NostrEvent, name: string): string | undefined {
   return event.tags.find(tag => tag[0] === name)?.[1];
@@ -91,8 +92,8 @@ function getReferenceLabel(tag: string[]): string {
 
 function EventLoadingState() {
   return (
-    <div className="container max-w-4xl mx-auto px-4 py-8">
-      <Card className="border-dashed">
+    <AppPage width="detail">
+      <Card className="app-surface border-2 border-dashed">
         <CardContent className="py-12">
           <div className="flex flex-col items-center justify-center gap-4">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -100,7 +101,7 @@ function EventLoadingState() {
           </div>
         </CardContent>
       </Card>
-    </div>
+    </AppPage>
   );
 }
 
@@ -183,13 +184,13 @@ export function EventPage() {
 
   if (!eventId && (!numericKind || !pubkey || !decodedIdentifier)) {
     return (
-      <div className="container max-w-4xl mx-auto px-4 py-8">
-        <Card className="border-dashed">
+      <AppPage width="detail">
+        <Card className="app-surface border-2 border-dashed">
           <CardContent className="py-12 text-center">
             <p className="text-muted-foreground">No event identifier provided.</p>
           </CardContent>
         </Card>
-      </div>
+      </AppPage>
     );
   }
 
@@ -199,8 +200,8 @@ export function EventPage() {
 
   if (!event) {
     return (
-      <div className="container max-w-4xl mx-auto px-4 py-8">
-        <Card className="border-dashed">
+      <AppPage width="detail">
+        <Card className="app-surface border-2 border-dashed">
           <CardContent className="py-12 text-center space-y-3">
             <p className="text-lg font-semibold text-muted-foreground">Event not found</p>
             <p className="text-sm text-muted-foreground">
@@ -208,18 +209,25 @@ export function EventPage() {
             </p>
           </CardContent>
         </Card>
-      </div>
+      </AppPage>
     );
   }
 
   return (
-    <div className="container max-w-4xl mx-auto px-4 py-8 space-y-6">
-      <Button variant="ghost" className="gap-2" onClick={() => navigate(-1)}>
-        <ArrowLeft className="h-4 w-4" />
-        Back
-      </Button>
+    <AppPage width="detail">
+      <AppPageHeader
+        eyebrow={getEventKindLabel(event.kind)}
+        title={title}
+        description={description || `Published ${formatDistanceToNow(new Date(event.created_at * 1000), { addSuffix: true })} by ${authorName}.`}
+        actions={(
+          <Button variant="outline" className="gap-2" onClick={() => navigate(-1)}>
+            <ArrowLeft className="h-4 w-4" />
+            Back
+          </Button>
+        )}
+      />
 
-      <Card>
+      <Card className="app-surface">
         <CardHeader className="space-y-4">
           <div className="flex flex-wrap items-center gap-2">
             <Badge variant="secondary">{getEventKindLabel(event.kind)}</Badge>
@@ -232,7 +240,6 @@ export function EventPage() {
               <AvatarFallback>{authorName.slice(0, 2).toUpperCase()}</AvatarFallback>
             </Avatar>
             <div className="space-y-1">
-              <CardTitle className="text-2xl">{title}</CardTitle>
               <CardDescription className="flex flex-wrap items-center gap-2">
                 <SmartLink to={buildProfilePath(authorNpub)} ownerPubkey={event.pubkey} className="hover:underline">
                   {authorName}
@@ -240,9 +247,6 @@ export function EventPage() {
                 <span>·</span>
                 <span className="font-mono text-xs">{event.id.slice(0, 16)}…</span>
               </CardDescription>
-              {description ? (
-                <p className="text-sm text-muted-foreground">{description}</p>
-              ) : null}
             </div>
           </div>
         </CardHeader>
@@ -258,7 +262,7 @@ export function EventPage() {
       </Card>
 
       {isListEventKind(event.kind) && (
-        <Card>
+        <Card className="app-surface">
           <CardHeader>
             <CardTitle>List Items</CardTitle>
             <CardDescription>
@@ -276,7 +280,7 @@ export function EventPage() {
                   const value = tag[1];
 
                   return (
-                    <div key={`${tag[0]}-${value}-${index}`} className="rounded-lg border p-3">
+                    <div key={`${tag[0]}-${value}-${index}`} className="app-surface-muted px-3 py-3">
                       <div className="flex flex-wrap items-center gap-2 mb-2">
                         <Badge variant="secondary">{label}</Badge>
                         <span className="font-mono text-xs text-muted-foreground break-all">{value}</span>
@@ -297,7 +301,7 @@ export function EventPage() {
         </Card>
       )}
 
-      <Card>
+      <Card className="app-surface">
         <CardHeader>
           <CardTitle>Tags</CardTitle>
           <CardDescription>{event.tags.length} tags</CardDescription>
@@ -308,7 +312,7 @@ export function EventPage() {
           ) : (
             <div className="space-y-2">
               {event.tags.map((tag, index) => (
-                <div key={`${tag[0]}-${index}`} className="rounded-md bg-muted px-3 py-2 font-mono text-xs break-all">
+                <div key={`${tag[0]}-${index}`} className="app-surface-muted rounded-md px-3 py-2 font-mono text-xs break-all">
                   {JSON.stringify(tag)}
                 </div>
               ))}
@@ -317,7 +321,7 @@ export function EventPage() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="app-surface">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Code className="h-4 w-4" />
@@ -330,7 +334,7 @@ export function EventPage() {
           </pre>
         </CardContent>
       </Card>
-    </div>
+    </AppPage>
   );
 }
 

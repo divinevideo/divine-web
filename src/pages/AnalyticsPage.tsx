@@ -10,6 +10,8 @@ import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useCreatorAnalytics } from '@/hooks/useCreatorAnalytics';
 import type { VideoPerformance, CreatorKPIs } from '@/types/creatorAnalytics';
 import { nip19 } from 'nostr-tools';
+import { AppPage, AppPageHeader } from '@/components/AppPage';
+import { CreatorSectionNav } from '@/components/CreatorSectionNav';
 
 // --- Formatting helpers ---
 
@@ -30,7 +32,7 @@ interface KpiCardProps {
 
 function KpiCard({ title, value, icon }: KpiCardProps) {
   return (
-    <Card>
+    <Card className="app-surface">
       <CardContent className="flex items-center gap-4 p-4">
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
           {icon}
@@ -86,7 +88,7 @@ function TopVideoRow({ video, rank }: { video: VideoPerformance; rank: number })
   return (
     <Link
       to={`/video/${video.eventId}`}
-      className="flex items-center gap-3 rounded-lg p-3 transition-colors hover:bg-muted"
+      className="app-surface-muted flex items-center gap-3 px-3 py-3 transition-transform duration-200 hover:-translate-y-0.5"
     >
       {/* Rank badge */}
       <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full font-bold text-sm ${rankColor}`}>
@@ -140,7 +142,7 @@ function KpiGridSkeleton() {
   return (
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
       {[1, 2, 3, 4].map(i => (
-        <Card key={i}>
+        <Card key={i} className="app-surface">
           <CardContent className="flex items-center gap-4 p-4">
             <Skeleton className="h-10 w-10 rounded-lg" />
             <div className="space-y-2">
@@ -175,7 +177,7 @@ function TopContentSkeleton() {
 
 function EmptyState() {
   return (
-    <div className="flex flex-col items-center gap-4 py-16 text-center">
+    <div className="app-surface flex flex-col items-center gap-4 py-16 text-center">
       <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted">
         <Video className="h-8 w-8 text-muted-foreground" />
       </div>
@@ -193,7 +195,7 @@ function EmptyState() {
 
 function ErrorState({ message, onRetry }: { message: string; onRetry: () => void }) {
   return (
-    <div className="flex flex-col items-center gap-4 py-16 text-center">
+    <div className="app-surface flex flex-col items-center gap-4 py-16 text-center">
       <p className="text-muted-foreground">Failed to load analytics</p>
       <p className="text-sm text-muted-foreground">{message}</p>
       <button
@@ -238,85 +240,79 @@ function AnalyticsDashboard({ pubkey }: { pubkey: string }) {
   }
 
   return (
-    <div className="container mx-auto px-4 py-6">
-      <div className="mx-auto max-w-3xl space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
+    <AppPage width="wide">
+      <AppPageHeader
+        eyebrow="Creator dashboard"
+        title={(
+          <span className="flex items-center gap-3">
             <BarChart3 className="h-8 w-8 text-primary" />
-            <div>
-              <h1 className="text-2xl font-bold">Analytics</h1>
-              <p className="text-muted-foreground">Your video performance</p>
-            </div>
-          </div>
-          <Link
-            to={profilePath}
-            className="text-sm text-muted-foreground hover:text-foreground"
-          >
+            <span>Analytics</span>
+          </span>
+        )}
+        description="Track how your videos are performing and where engagement is building."
+        actions={(
+          <Link to={profilePath} className="app-chip">
             View Profile
           </Link>
-        </div>
-
-        {/* Loading State */}
-        {isLoading && (
-          <>
-            <KpiGridSkeleton />
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Top Content</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <TopContentSkeleton />
-              </CardContent>
-            </Card>
-          </>
         )}
+      >
+        <CreatorSectionNav active="analytics" profilePath={profilePath} />
+      </AppPageHeader>
 
-        {/* Error State */}
-        {error && !isLoading && (
-          <ErrorState
-            message={error instanceof Error ? error.message : 'Unknown error'}
-            onRetry={() => refetch()}
-          />
-        )}
+      {isLoading && (
+        <>
+          <KpiGridSkeleton />
+          <Card className="app-surface">
+            <CardHeader>
+              <CardTitle className="text-lg">Top Content</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <TopContentSkeleton />
+            </CardContent>
+          </Card>
+        </>
+      )}
 
-        {/* Data State */}
-        {data && !isLoading && (
-          <>
-            {data.kpis.totalVideos === 0 ? (
-              <EmptyState />
-            ) : (
-              <>
-                {/* KPI Summary Cards */}
-                <KpiGrid kpis={data.kpis} followerCount={data.followerCount} />
+      {error && !isLoading && (
+        <ErrorState
+          message={error instanceof Error ? error.message : 'Unknown error'}
+          onRetry={() => refetch()}
+        />
+      )}
 
-                {/* Top Content */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg">Top Content</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-1">
-                    {data.topVideos.length > 0 ? (
-                      data.topVideos.map((video, index) => (
-                        <TopVideoRow
-                          key={video.eventId}
-                          video={video}
-                          rank={index + 1}
-                        />
-                      ))
-                    ) : (
-                      <p className="py-8 text-center text-muted-foreground">
-                        No engagement data yet
-                      </p>
-                    )}
-                  </CardContent>
-                </Card>
-              </>
-            )}
-          </>
-        )}
-      </div>
-    </div>
+      {data && !isLoading && (
+        <>
+          {data.kpis.totalVideos === 0 ? (
+            <EmptyState />
+          ) : (
+            <>
+              <KpiGrid kpis={data.kpis} followerCount={data.followerCount} />
+
+              <Card className="app-surface">
+                <CardHeader>
+                  <CardTitle className="text-lg">Top Content</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {data.topVideos.length > 0 ? (
+                    data.topVideos.map((video, index) => (
+                      <TopVideoRow
+                        key={video.eventId}
+                        video={video}
+                        rank={index + 1}
+                      />
+                    ))
+                  ) : (
+                    <p className="py-8 text-center text-muted-foreground">
+                      No engagement data yet
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+            </>
+          )}
+        </>
+      )}
+    </AppPage>
   );
 }
 

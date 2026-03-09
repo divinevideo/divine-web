@@ -16,7 +16,7 @@ export function AboutPage() {
 
   return (
     <MarketingLayout>
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
+      <div className="marketing-page marketing-page--default marketing-stack">
       <ZendeskWidget />
       <h1 className="text-4xl font-bold mb-8">About diVine</h1>
 

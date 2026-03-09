@@ -23,6 +23,7 @@ import { nip19 } from 'nostr-tools';
 import { debugLog } from '@/lib/debug';
 import { reportFunnelcakeFallback } from '@/lib/funnelcakeFallbackReporting';
 import type { ParsedVideoData, UserInteractions } from '@/types/video';
+import { AppPage } from '@/components/AppPage';
 
 export function VideoPage() {
   const { id } = useParams<{ id: string }>();
@@ -515,20 +516,20 @@ export function VideoPage() {
   // Check for missing ID after all hooks
   if (!id) {
     return (
-      <div className="container py-6">
+      <AppPage width="detail">
         <Card className="border-destructive/50">
           <CardContent className="py-12 text-center">
             <p className="text-destructive">No video ID provided</p>
           </CardContent>
         </Card>
-      </div>
+      </AppPage>
     );
   }
 
   // Show error state if video not found
   if (!isLoading && !currentVideo) {
     return (
-      <div className="container py-6">
+      <AppPage width="detail">
         <Card className="border-dashed">
           <CardContent className="py-12 text-center space-y-4">
             <p className="text-muted-foreground text-lg font-semibold">Video not found</p>
@@ -540,7 +541,7 @@ export function VideoPage() {
             </p>
           </CardContent>
         </Card>
-      </div>
+      </AppPage>
     );
   }
 
@@ -552,8 +553,8 @@ export function VideoPage() {
   if (showFeedLoading) {
     // Show feed-style loading when we have context but videos haven't loaded yet
     return (
-      <div className="container py-6">
-        <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-sm border-b pb-3 mb-4 -mx-4 px-4">
+      <AppPage width="detail">
+        <div className="sticky top-[calc(var(--app-header-height)+var(--sat)+0.5rem)] z-20 mb-4 app-surface-muted px-4 py-3">
           <div className="flex items-center justify-between max-w-xl mx-auto">
             <button
               onClick={handleGoBack}
@@ -603,15 +604,15 @@ export function VideoPage() {
             </Card>
           ))}
         </div>
-      </div>
+      </AppPage>
     );
   }
 
   if (showFeedMode) {
     return (
-      <div className="container py-6">
+      <AppPage width="detail">
         {/* Header with close button */}
-        <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-sm border-b pb-3 mb-4 -mx-4 px-4">
+        <div className="sticky top-[calc(var(--app-header-height)+var(--sat)+0.5rem)] z-20 mb-4 app-surface-muted px-4 py-3">
           <div className="flex items-center justify-between max-w-xl mx-auto">
             <button
               onClick={handleGoBack}
@@ -692,13 +693,13 @@ export function VideoPage() {
             );
           })}
         </InfiniteScroll>
-      </div>
+      </AppPage>
     );
   }
 
   // Single video mode: show just the current video with navigation
   return (
-    <div className="container py-6">
+    <AppPage width="detail">
       {/* Subtle Navigation Context Info */}
       {context && (
         <div className="mb-4">
@@ -807,7 +808,7 @@ export function VideoPage() {
           </div>
         </div>
       )}
-    </div>
+    </AppPage>
   );
 }
 

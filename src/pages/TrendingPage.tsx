@@ -9,6 +9,9 @@ import { feedUrls } from '@/lib/feedUrls';
 import { useRssFeedAvailable } from '@/hooks/useRssFeedAvailable';
 import type { SortMode } from '@/types/nostr';
 import { EXTENDED_SORT_MODES as SORT_MODES } from '@/lib/constants/sortModes';
+import { AppPage, AppPageHeader } from '@/components/AppPage';
+import { DiscoverySectionNav } from '@/components/DiscoverySectionNav';
+import { cn } from '@/lib/utils';
 
 export function TrendingPage() {
   const [sortMode, setSortMode] = useState<SortMode>('hot');
@@ -27,66 +30,52 @@ export function TrendingPage() {
   });
 
   return (
-    <div className="container mx-auto px-4 py-6">
-      <div className="max-w-2xl mx-auto">
-        <header className="mb-6 space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold">Trending</h1>
-              <p className="text-muted-foreground">
-                Discover what's popular in the community
-              </p>
-            </div>
-            {rssFeedAvailable && (
-              <a
-                href={feedUrls.trending()}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+    <AppPage width="feed">
+      <AppPageHeader
+        eyebrow="Fast-moving network signals"
+        title="Trending"
+        description="See what is breaking out across the community right now."
+        actions={rssFeedAvailable ? (
+          <a
+            href={feedUrls.trending()}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="app-chip"
+          >
+            <Rss className="h-3.5 w-3.5" />
+            <span>RSS</span>
+          </a>
+        ) : undefined}
+      >
+        <DiscoverySectionNav active="trending" />
+      </AppPageHeader>
+
+      <div className="app-chip-row">
+        <div className="flex gap-2 pb-2">
+          {SORT_MODES.map(mode => {
+            const ModeIcon = mode.icon;
+            const isSelected = sortMode === mode.value;
+            return (
+              <button
+                key={mode.value}
+                onClick={() => setSortMode(mode.value as SortMode)}
+                className={cn('app-chip min-w-fit', isSelected && 'app-chip-active')}
               >
-                <Rss className="h-3.5 w-3.5" /> RSS
-              </a>
-            )}
-          </div>
-
-          {/* Sort mode selector as prominent tabs/buttons */}
-          <div className="flex flex-wrap gap-2">
-            {SORT_MODES.map(mode => {
-              const ModeIcon = mode.icon;
-              const isSelected = sortMode === mode.value;
-              return (
-                <button
-                  key={mode.value}
-                  onClick={() => setSortMode(mode.value as SortMode)}
-                  className={`
-                    flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all
-                    ${isSelected
-                      ? 'bg-primary text-primary-foreground shadow-md'
-                      : 'bg-brand-light-green dark:bg-brand-dark-green hover:bg-muted text-muted-foreground hover:text-foreground'
-                    }
-                  `}
-                >
-                  <ModeIcon className="h-4 w-4" />
-                  <span>{mode.label}</span>
-                  {isSelected && (
-                    <span className="text-xs opacity-80 hidden sm:inline">
-                      • {mode.description}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        </header>
-
-        <VideoFeed
-          feedType="trending"
-          sortMode={sortMode}
-          data-testid="video-feed-trending"
-          className="space-y-6"
-        />
+                <ModeIcon className="h-4 w-4" />
+                <span>{mode.label}</span>
+              </button>
+            );
+          })}
+        </div>
       </div>
-    </div>
+
+      <VideoFeed
+        feedType="trending"
+        sortMode={sortMode}
+        data-testid="video-feed-trending"
+        className="space-y-6"
+      />
+    </AppPage>
   );
 }
 
