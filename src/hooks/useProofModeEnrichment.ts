@@ -26,7 +26,7 @@ export function useProofModeEnrichment(videos: ParsedVideoData[]): ParsedVideoDa
 
   // Find videos that need enrichment (no proofMode and have an ID)
   const videosNeedingEnrichment = useMemo(
-    () => videos.filter(v => !v.proofMode && v.id).slice(0, BATCH_SIZE),
+    () => videos.filter(v => !v.isVineMigrated && !v.proofMode && v.id).slice(0, BATCH_SIZE),
     [videos]
   );
 

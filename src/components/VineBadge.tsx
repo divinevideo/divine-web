@@ -25,7 +25,7 @@ export function VineBadge({ className, size = 'small' }: VineBadgeProps) {
       style={{ fontFamily: 'Pacifico, cursive' }}
     >
       <VineIcon className={sizeConfig.iconSize} />
-      <span>Original</span>
+      <span>Archived</span>
     </Badge>
   );
 }

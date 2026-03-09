@@ -661,6 +661,9 @@ export async function fetchVideoById(
 
         // Extract data from tags
         const getTag = (name: string) => event.tags.find(t => t[0] === name)?.[1];
+        const platform = getTag('platform');
+        const isClassicVine = (platform?.toLowerCase() === 'vine')
+          || event.tags.some(t => t[0] === 'l' && t[1] === 'vine-archive');
         const getImeta = () => {
           const imetaTag = event.tags.find(t => t[0] === 'imeta');
           if (!imetaTag) return {};
@@ -693,6 +696,8 @@ export async function fetchVideoById(
           engagement_score: stats.engagement_score,
           trending_score: stats.trending_score,
           loops: stats.embedded_loops || parseInt(getTag('loops') || '0') || null,
+          platform,
+          classic: isClassicVine,
           tags: event.tags,
         };
       }
