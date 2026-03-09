@@ -1,6 +1,6 @@
 import { Outlet, useLocation, useSearchParams } from 'react-router-dom';
-import { AppHeader } from '@/components/AppHeader';
 import { BottomNav } from '@/components/BottomNav';
+import { ImmersiveTopBar } from '@/components/ImmersiveTopBar';
 import { PWAInstallPrompt } from '@/components/PWAInstallPrompt';
 import { FullscreenFeed } from '@/components/FullscreenFeed';
 import { AppSidebar } from '@/components/AppSidebar';
@@ -49,6 +49,22 @@ export function AppLayout() {
     setSearchParams(nextParams, { replace: true });
   };
 
+  // Determine top bar title and variant based on route
+  const getTopBarConfig = (): { title: string; variant: 'transparent' | 'solid' } => {
+    const path = location.pathname;
+    if (path === '/' || path === '/home') return { title: 'Home', variant: 'transparent' };
+    if (path.startsWith('/discovery')) return { title: 'Discover', variant: 'solid' };
+    if (path.startsWith('/search')) return { title: 'Search', variant: 'solid' };
+    if (path.startsWith('/notifications')) return { title: 'Notifications', variant: 'solid' };
+    if (path.startsWith('/profile')) return { title: 'Profile', variant: 'solid' };
+    if (path.startsWith('/hashtag')) return { title: 'Hashtag', variant: 'solid' };
+    if (path.startsWith('/category')) return { title: 'Category', variant: 'solid' };
+    if (path.startsWith('/settings')) return { title: 'Settings', variant: 'solid' };
+    return { title: 'diVine', variant: 'solid' };
+  };
+
+  const topBarConfig = getTopBarConfig();
+
   return (
     <>
       {/* Sidebar - desktop only (fixed position), hidden on landing page */}
@@ -56,9 +72,13 @@ export function AppLayout() {
 
       {/* Main content area - offset by sidebar width on desktop */}
       <div className={`flex min-h-screen flex-col bg-background ${!isLandingPage ? 'lg:ml-[240px]' : ''}`}>
-        {/* Header - mobile/tablet only (sidebar replaces it on desktop), hidden on landing page */}
-        {/* TODO: Replace AppHeader with ImmersiveTopBar for < lg viewports */}
-        {!isLandingPage && <AppHeader className="lg:hidden" />}
+        {/* ImmersiveTopBar - mobile/tablet only (< lg), hidden on landing page */}
+        {!isLandingPage && (
+          <ImmersiveTopBar
+            title={topBarConfig.title}
+            variant={topBarConfig.variant}
+          />
+        )}
 
         {/* Main content */}
         <main className="flex-1 pb-[calc(4rem+env(safe-area-inset-bottom))] lg:pb-0">
