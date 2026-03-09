@@ -1,5 +1,36 @@
 import '@testing-library/jest-dom';
+import { TextDecoder, TextEncoder } from 'node:util';
 import { vi } from 'vitest';
+
+Object.defineProperty(global, 'TextEncoder', {
+  writable: true,
+  value: TextEncoder,
+});
+
+Object.defineProperty(global, 'TextDecoder', {
+  writable: true,
+  value: TextDecoder,
+});
+
+Object.defineProperty(window, 'TextEncoder', {
+  writable: true,
+  value: TextEncoder,
+});
+
+Object.defineProperty(window, 'TextDecoder', {
+  writable: true,
+  value: TextDecoder,
+});
+
+Object.defineProperty(window, 'Uint8Array', {
+  writable: true,
+  value: Uint8Array,
+});
+
+Object.defineProperty(window, 'ArrayBuffer', {
+  writable: true,
+  value: ArrayBuffer,
+});
 
 // Mock indexedDB
 const mockIDBRequest = {
