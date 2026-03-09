@@ -6,12 +6,19 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Mail, Github, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { MarketingLayout } from '@/components/MarketingLayout';
+import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { useDmCapability } from '@/hooks/useDirectMessages';
+import { useSubdomainNavigate } from '@/hooks/useSubdomainNavigate';
+import { DIVINE_SUPPORT_PUBKEY, getDmConversationPath } from '@/lib/dm';
 
 export function Support() {
   // Zendesk widget disabled - linking to Help Center instead.
   // To restore widget: set ZENDESK_ENABLED to true and remove return null in ZendeskWidget.tsx
  
   const ZENDESK_ENABLED = false;
+  const navigate = useSubdomainNavigate();
+  const { user } = useCurrentUser();
+  const { canUseDirectMessages } = useDmCapability();
 
   useEffect(() => {
     if (!ZENDESK_ENABLED) return;
@@ -94,6 +101,25 @@ export function Support() {
             </p> */}
           </CardContent>
         </Card>
+
+        {user && canUseDirectMessages && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <MessageCircle className="h-5 w-5" />
+                Message Support
+              </CardTitle>
+              <CardDescription>
+                Reach the support inbox directly inside diVine using private NIP-17 messages.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button onClick={() => navigate(getDmConversationPath([DIVINE_SUPPORT_PUBKEY]))}>
+                Open Support Chat
+              </Button>
+            </CardContent>
+          </Card>
+        )}
 
         <Card>
           <CardHeader>

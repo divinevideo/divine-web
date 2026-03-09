@@ -41,6 +41,8 @@ import type { ViewTrafficSource } from '@/hooks/useViewEventPublisher';
 import type { VideoNavigationContext } from '@/hooks/useVideoNavigation';
 import { useToast } from '@/hooks/useToast';
 import { useShare } from '@/hooks/useShare';
+import { useDmCapability } from '@/hooks/useDirectMessages';
+import { buildDmSharePayloadFromVideo, buildDmShareQueryString } from '@/lib/dm';
 import { getVideoShareData } from '@/lib/shareUtils';
 import { useSubdomainNavigate } from '@/hooks/useSubdomainNavigate';
 import { SmartLink } from '@/components/SmartLink';
@@ -229,6 +231,7 @@ export function VideoCard({
   const isHorizontal = effectiveLayout === 'horizontal';
   const { toast } = useToast();
   const { share } = useShare();
+  const { canUseDirectMessages } = useDmCapability();
   const muteUser = useMuteItem();
   const navigate = useSubdomainNavigate();
   const { globalMuted, setGlobalMuted } = useVideoPlayback();
@@ -364,6 +367,9 @@ export function VideoCard({
   };
 
   const handleShare = () => share(getVideoShareData(video));
+  const handleShareViaDm = () => {
+    navigate(`/messages?${buildDmShareQueryString(buildDmSharePayloadFromVideo(video))}`);
+  };
 
   const handlePinToggle = async () => {
     if (!coordinate) return;
@@ -898,6 +904,12 @@ export function VideoCard({
                 <Flag className="h-4 w-4 mr-2" />
                 Report video
               </DropdownMenuItem>
+              {canUseDirectMessages && (
+                <DropdownMenuItem onClick={handleShareViaDm}>
+                  <MessageCircle className="h-4 w-4 mr-2" />
+                  Send via message
+                </DropdownMenuItem>
+              )}
               <DropdownMenuItem onClick={() => setShowReportUserDialog(true)}>
                 <Flag className="h-4 w-4 mr-2" />
                 Report user

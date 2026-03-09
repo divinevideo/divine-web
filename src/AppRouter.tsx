@@ -48,6 +48,8 @@ import { DebugVideoPage } from "./pages/DebugVideoPage";
 import LeaderboardPage from "./pages/LeaderboardPage";
 import NotificationsPage from "./pages/NotificationsPage";
 import AnalyticsPage from "./pages/AnalyticsPage";
+import MessagesPage from "./pages/MessagesPage";
+import ConversationPage from "./pages/ConversationPage";
 // import { UploadPage } from "./pages/UploadPage"; // DISABLED: Upload route is commented out
 export function AppRouter() {
   const { logins } = useNostrLogin();
@@ -112,6 +114,8 @@ export function AppRouter() {
             <>
               <Route path="/home" element={<HomePage />} />
               <Route path="/notifications" element={<NotificationsPage />} />
+              <Route path="/messages" element={<MessagesPage />} />
+              <Route path="/messages/:conversationId" element={<ConversationPage />} />
               <Route path="/analytics" element={<AnalyticsPage />} />
               <Route path="/lists" element={<ListsPage />} />
               {/* DISABLED: Upload route - not supported on web at this time

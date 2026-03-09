@@ -21,7 +21,9 @@ import { useVideoReactions } from '@/hooks/useVideoReactions';
 import { useVideosInLists } from '@/hooks/useVideoLists';
 import { useMuteItem } from '@/hooks/useModeration';
 import { useDeleteVideo, useCanDeleteVideo } from '@/hooks/useDeleteVideo';
+import { useDmCapability } from '@/hooks/useDirectMessages';
 import { useToast } from '@/hooks/useToast';
+import { useSubdomainNavigate } from '@/hooks/useSubdomainNavigate';
 import { enhanceAuthorData } from '@/lib/generateProfile';
 import { genUserName } from '@/lib/genUserName';
 import { formatDistanceToNow } from 'date-fns';
@@ -38,6 +40,7 @@ import type { ViewTrafficSource } from '@/hooks/useViewEventPublisher';
 import { useSubtitles } from '@/hooks/useSubtitles';
 import { VideoVerificationBadgeRow } from '@/components/VideoVerificationBadgeRow';
 import type { ParsedVideoData } from '@/types/video';
+import { buildDmSharePayloadFromVideo, buildDmShareQueryString } from '@/lib/dm';
 
 interface FullscreenVideoItemProps {
   video: ParsedVideoData;
@@ -96,6 +99,8 @@ export function FullscreenVideoItem({
   const showSubtitles = subtitlesVisible && hasSubtitles;
 
   const { toast } = useToast();
+  const navigate = useSubdomainNavigate();
+  const { canUseDirectMessages } = useDmCapability();
   const muteUser = useMuteItem();
   const { mutate: deleteVideo, isPending: isDeleting } = useDeleteVideo();
   const canDelete = useCanDeleteVideo(video);
@@ -490,6 +495,15 @@ export function FullscreenVideoItem({
                     <Flag className="h-4 w-4 mr-2" />
                     Report video
                   </DropdownMenuItem>
+                  {canUseDirectMessages && (
+                    <DropdownMenuItem
+                      onClick={() => navigate(`/messages?${buildDmShareQueryString(buildDmSharePayloadFromVideo(video))}`)}
+                      className="focus:bg-white/10"
+                    >
+                      <MessageCircle className="h-4 w-4 mr-2" />
+                      Send via message
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuItem
                     onClick={() => setShowReportUserDialog(true)}
                     className="focus:bg-white/10"
