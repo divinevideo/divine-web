@@ -125,6 +125,8 @@ export function VideoCard({
   // Classic Vines also skip HLS because the transcoder distorts square 480x480 aspect ratio.
   // Only use HLS for longer content (>60s) if divine ever supports it.
   const isShortForm = !video.duration || video.duration <= 60;
+  // When direct MP4 fails, retry with HLS as fallback (blob may be missing but transcode exists)
+  const [mp4Failed, setMp4Failed] = useState(false);
   // When MP4 blob is missing (404), fall back to HLS if available (transcoded copy may exist)
   const hlsFallbackUrl = mp4Failed && video.videoUrl?.includes('media.divine.video')
     ? video.hlsUrl || optimalHlsUrl
@@ -139,8 +141,6 @@ export function VideoCard({
   const reposterData = useAuthor(reposterPubkey || '');
   const shouldShowReposter = hasReposts && reposterPubkey;
   const [videoError, setVideoError] = useState(false);
-  // When direct MP4 fails, retry with HLS as fallback (blob may be missing but transcode exists)
-  const [mp4Failed, setMp4Failed] = useState(false);
   // Always start with video player visible in auto-play mode, but let VideoPlaybackContext control actual playback
   // The VideoPlayer component will only play when it's the activeVideoId (most visible)
   const [isPlaying, setIsPlaying] = useState(mode === 'auto-play');
