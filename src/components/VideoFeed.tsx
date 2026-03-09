@@ -28,6 +28,23 @@ import { useVideoPrefetch } from '@/hooks/useVideoPrefetch';
 import { useCompilationFullscreen } from '@/hooks/useCompilationFullscreen';
 import { buildCompilationPlaybackUrl } from '@/lib/compilationPlayback';
 import type { PopularPeriod, PopularSource } from '@/hooks/useInfiniteVideosFunnelcake';
+import { MobileFeedView } from '@/components/MobileFeedView';
+
+const MOBILE_FEED_BREAKPOINT = 1024;
+
+function useIsMobileFeed() {
+  const [isMobile, setIsMobile] = useState(
+    typeof window !== 'undefined' ? window.innerWidth < MOBILE_FEED_BREAKPOINT : false
+  );
+
+  useEffect(() => {
+    const handler = () => setIsMobile(window.innerWidth < MOBILE_FEED_BREAKPOINT);
+    window.addEventListener('resize', handler);
+    return () => window.removeEventListener('resize', handler);
+  }, []);
+
+  return isMobile;
+}
 
 type ViewMode = 'feed' | 'grid';
 
@@ -209,6 +226,9 @@ export function VideoFeed({
   // Prefetch upcoming media after the first video is actually playing.
   const { activeVideoId } = useVideoPlayback();
   useVideoPrefetch(activeVideoId, filteredVideos, { prefetchVideos: hasFirstPlayback });
+
+  // Detect mobile/tablet viewport for snap-scroll feed
+  const isMobileFeed = useIsMobileFeed();
 
   // Auto-navigate to discovery if home feed is empty
   useEffect(() => {
@@ -442,6 +462,18 @@ export function VideoFeed({
           </CardContent>
         </Card>
       </div>
+    );
+  }
+
+  // Mobile/tablet snap-scroll feed (< 1024px, feed mode only)
+  if (isMobileFeed && viewMode === 'feed') {
+    return (
+      <MobileFeedView
+        videos={filteredVideos}
+        onLoadMore={fetchNextPage}
+        hasMore={hasNextPage}
+        onOpenComments={handleOpenComments}
+      />
     );
   }
 

@@ -2,7 +2,7 @@
 // ABOUTME: Shows hamburger menu, page title, and search button with scrim pill styling
 
 import { useState } from 'react';
-import { Menu, Search } from 'lucide-react';
+import { List as Menu, MagnifyingGlass as Search } from '@phosphor-icons/react';
 import { useSubdomainNavigate } from '@/hooks/useSubdomainNavigate';
 import { MobileDrawer } from '@/components/MobileDrawer';
 
