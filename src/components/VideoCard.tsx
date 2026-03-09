@@ -715,12 +715,9 @@ export function VideoCard({
           {/* Stats row - horizontal layout: show view/loop count only (likes/comments shown on buttons) */}
           {isHorizontal && viewCount > 0 && (
             <SmartLink to={`/video/${video.id}`} ownerPubkey={video.pubkey} className="py-2 mt-auto hover:underline block">
-              <span className="block text-sm text-muted-foreground">{formatViewCount(viewCount)}</span>
-              {classicViewBreakdown && (
-                <span className="block text-xs text-muted-foreground/80">
-                  {classicViewBreakdown}
-                </span>
-              )}
+              <span className="block text-sm text-muted-foreground">
+                {classicViewBreakdown || formatViewCount(viewCount)}
+              </span>
             </SmartLink>
           )}
 
@@ -729,16 +726,9 @@ export function VideoCard({
             <div className="px-4 py-2" data-testid="video-metadata">
               <div className="flex items-center gap-3 text-sm text-muted-foreground">
                 {viewCount > 0 && (
-                  <SmartLink to={`/video/${video.id}`} ownerPubkey={video.pubkey} className="flex items-start gap-1 hover:underline">
+                  <SmartLink to={`/video/${video.id}`} ownerPubkey={video.pubkey} className="flex items-center gap-1 hover:underline">
                     <Eye className="h-3 w-3" />
-                    <span className="flex flex-col">
-                      <span>{formatViewCount(viewCount)}</span>
-                      {classicViewBreakdown && (
-                        <span className="text-xs text-muted-foreground/80">
-                          {classicViewBreakdown}
-                        </span>
-                      )}
-                    </span>
+                    <span>{classicViewBreakdown || formatViewCount(viewCount)}</span>
                   </SmartLink>
                 )}
               </div>
