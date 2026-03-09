@@ -286,6 +286,15 @@
   }
 }
 
+/* Hide scrollbar for snap-scroll mobile feed */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
 /* Prevent browser overflow anchoring from shifting feed on dynamic updates */
 .feed-root {
   overflow-anchor: none;
