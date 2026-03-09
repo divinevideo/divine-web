@@ -91,6 +91,23 @@ export function useVideoByIdFunnelcake(options: UseVideoByIdOptions): UseVideoBy
     gcTime: 900000,    // 15 minutes
   });
 
+  const contextVideos = userVideosQuery.data ?? hashtagVideosQuery.data ?? null;
+  const contextVideo = contextVideos?.find(v => v.id === videoId || v.vineId === videoId) || null;
+  const contextLoading = pubkey
+    ? userVideosQuery.isLoading
+    : hashtag
+      ? hashtagVideosQuery.isLoading
+      : false;
+  const contextError = pubkey
+    ? (userVideosQuery.error as Error | null)
+    : hashtag
+      ? (hashtagVideosQuery.error as Error | null)
+      : null;
+  const shouldLookupSingleVideo = enabled && (
+    (!pubkey && !hashtag)
+      || (((!!pubkey || !!hashtag) && !contextLoading && !contextVideo))
+  );
+
   // Single video lookup (used when no context or as fallback)
   const singleVideoQuery = useQuery({
     queryKey: ['funnelcake-video', videoId, funnelcakeUrl],
@@ -101,39 +118,18 @@ export function useVideoByIdFunnelcake(options: UseVideoByIdOptions): UseVideoBy
       if (!video) return null;
       return transformFunnelcakeVideo(video);
     },
-    // Only fetch if we don't have pubkey or hashtag (otherwise context queries handle it)
-    enabled: enabled && !pubkey && !hashtag,
+    // Fall back to a direct lookup when the narrowed context window misses the target.
+    enabled: shouldLookupSingleVideo,
     staleTime: 300000,
     gcTime: 900000,
   });
 
-  // Find the video from context videos if we have them
-  let video: ParsedVideoData | null = null;
-  let videos: ParsedVideoData[] | null = null;
-
-  if (userVideosQuery.data) {
-    videos = userVideosQuery.data;
-    video = userVideosQuery.data.find(v => v.id === videoId || v.vineId === videoId) || null;
-  } else if (hashtagVideosQuery.data) {
-    videos = hashtagVideosQuery.data;
-    video = hashtagVideosQuery.data.find(v => v.id === videoId || v.vineId === videoId) || null;
-  } else if (singleVideoQuery.data) {
-    video = singleVideoQuery.data;
-  }
-
-  // Determine loading state based on which query is active
-  const isLoading = pubkey
-    ? userVideosQuery.isLoading
-    : hashtag
-      ? hashtagVideosQuery.isLoading
-      : singleVideoQuery.isLoading;
-
-  // Determine error state based on which query is active
-  const error = pubkey
-    ? (userVideosQuery.error as Error | null)
-    : hashtag
-      ? (hashtagVideosQuery.error as Error | null)
-      : (singleVideoQuery.error as Error | null);
+  const video = contextVideo || singleVideoQuery.data || null;
+  const videos = contextVideos;
+  const isLoading = contextLoading || singleVideoQuery.isLoading;
+  const error = video
+    ? null
+    : ((singleVideoQuery.error as Error | null) || contextError);
 
   return {
     video,

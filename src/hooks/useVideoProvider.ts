@@ -86,7 +86,7 @@ function mapToFunnelcakeFeedType(feedType: VideoFeedType): FunnelcakeFeedType {
   }
 }
 
-function mapToWebsocketFeedType(feedType: VideoFeedType): WebsocketVideoFeedType | null {
+function mapToWebsocketFeedType(feedType: VideoFeedType): WebsocketVideoFeedType | undefined {
   switch (feedType) {
     case 'discovery':
     case 'home':
@@ -96,7 +96,7 @@ function mapToWebsocketFeedType(feedType: VideoFeedType): WebsocketVideoFeedType
     case 'recent':
       return feedType;
     default:
-      return null;
+      return undefined;
   }
 }
 

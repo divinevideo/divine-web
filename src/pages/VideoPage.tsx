@@ -76,7 +76,7 @@ export function VideoPage() {
   // WebSocket is only used as fallback when Funnelcake fails
   const currentVideo = funnelcakeVideo || wsVideo;
   const videos = funnelcakeVideos || wsVideos;
-  const isLoading = funnelcakeLoading && wsLoading;
+  const isLoading = funnelcakeLoading || (!funnelcakeVideo && wsLoading);
 
   // Calculate navigation state from available videos
   const currentIndex = useMemo(() => {
