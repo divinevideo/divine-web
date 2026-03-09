@@ -82,7 +82,7 @@ function VideoLeaderboardSkeleton() {
     <div className="space-y-3">
       {[1, 2, 3, 4, 5].map((i) => (
         <div key={i} className="flex items-center gap-4 p-3 rounded-lg bg-brand-light-green dark:bg-brand-dark-green">
-          <Skeleton className="h-8 w-8 rounded-full" />
+          <Skeleton className="h-8 w-8 rounded-[12px]" />
           <Skeleton className="h-16 w-24 rounded" />
           <div className="flex-1 space-y-2">
             <Skeleton className="h-4 w-3/4" />
@@ -100,8 +100,8 @@ function CreatorLeaderboardSkeleton() {
     <div className="space-y-3">
       {[1, 2, 3, 4, 5].map((i) => (
         <div key={i} className="flex items-center gap-4 p-3 rounded-lg bg-brand-light-green dark:bg-brand-dark-green">
-          <Skeleton className="h-8 w-8 rounded-full" />
-          <Skeleton className="h-12 w-12 rounded-full" />
+          <Skeleton className="h-8 w-8 rounded-[12px]" />
+          <Skeleton className="h-12 w-12 rounded-[20px]" />
           <div className="flex-1 space-y-2">
             <Skeleton className="h-4 w-1/2" />
             <Skeleton className="h-3 w-1/3" />
@@ -339,7 +339,7 @@ function CreatorLeaderboard({ period }: { period: TimePeriod }) {
           >
             <RankBadge rank={index + 1} />
 
-            <Avatar className="h-12 w-12">
+            <Avatar size="lg">
               <AvatarImage src={creator.picture} alt={creator.display_name || creator.name} />
               <AvatarFallback>
                 {(creator.display_name || creator.name || '?')[0].toUpperCase()}

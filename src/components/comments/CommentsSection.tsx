@@ -79,7 +79,7 @@ export function CommentsSection({
                 <CardContent className="p-4">
                   <div className="space-y-3">
                     <div className="flex items-center space-x-3">
-                      <Skeleton className="h-8 w-8 rounded-full" />
+                      <Skeleton className="h-8 w-8 rounded-[12px]" />
                       <div className="space-y-1">
                         <Skeleton className="h-4 w-24" />
                         <Skeleton className="h-3 w-16" />

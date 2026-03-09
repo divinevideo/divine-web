@@ -308,7 +308,7 @@ export function FullscreenVideoItem({
             {/* Left side - Author info */}
             <div className="flex-1 max-w-[70%]">
               <SmartLink to={profileUrl} ownerPubkey={video.pubkey} className="flex items-center gap-3 mb-2 pointer-events-auto" onClick={(e) => e.stopPropagation()}>
-                <Avatar className="h-10 w-10 border-2 border-white">
+                <Avatar size="md" className="border-2 border-white">
                   <AvatarImage src={profileImage} alt={displayName} />
                   <AvatarFallback className="bg-gray-800 text-white">
                     {displayName[0]?.toUpperCase()}

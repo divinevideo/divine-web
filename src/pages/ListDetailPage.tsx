@@ -400,7 +400,7 @@ export default function ListDetailPage() {
                   href={`/profile/${pubkey ? nip19.npubEncode(pubkey) : ''}`}
                   className="flex items-center gap-2 hover:opacity-80 transition-opacity"
                 >
-                  <Avatar className="h-8 w-8">
+                  <Avatar size="sm">
                     <AvatarImage src={getSafeProfileImage(authorMetadata?.picture)} />
                     <AvatarFallback>{authorName[0]?.toUpperCase()}</AvatarFallback>
                   </Avatar>

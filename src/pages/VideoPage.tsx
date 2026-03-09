@@ -578,7 +578,7 @@ export function VideoPage() {
           {[1, 2, 3].map((i) => (
             <Card key={i} className="overflow-hidden">
               <div className="flex items-center gap-3 p-4">
-                <Skeleton className="h-10 w-10 rounded-full" />
+                <Skeleton className="h-10 w-10 rounded-2xl" />
                 <div className="space-y-2">
                   <Skeleton className="h-4 w-24" />
                   <Skeleton className="h-3 w-16" />
@@ -668,7 +668,7 @@ export function VideoPage() {
                   // Placeholder skeleton while waiting for primary video to load
                   <Card className="overflow-hidden">
                     <div className="flex items-center gap-3 p-4">
-                      <Skeleton className="h-10 w-10 rounded-full" />
+                      <Skeleton className="h-10 w-10 rounded-2xl" />
                       <div className="space-y-2">
                         <Skeleton className="h-4 w-24" />
                         <Skeleton className="h-3 w-16" />
@@ -755,7 +755,7 @@ export function VideoPage() {
           <div className="max-w-xl mx-auto">
             <Card className="overflow-hidden">
               <div className="flex items-center gap-3 p-4">
-                <Skeleton className="h-10 w-10 rounded-full" />
+                <Skeleton className="h-10 w-10 rounded-2xl" />
                 <div className="space-y-2">
                   <Skeleton className="h-4 w-24" />
                   <Skeleton className="h-3 w-16" />

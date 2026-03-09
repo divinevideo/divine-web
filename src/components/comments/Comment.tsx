@@ -130,7 +130,7 @@ export function Comment({ root, comment, depth = 0, maxDepth = 3, limit, parentC
             <div className="flex items-start justify-between">
               <div className="flex items-center space-x-3">
                 <SmartLink to={`/${nip19.npubEncode(comment.pubkey)}`} ownerPubkey={comment.pubkey}>
-                  <Avatar className="h-8 w-8 hover:ring-2 hover:ring-brand-light-green dark:ring-brand-green transition-all cursor-pointer">
+                  <Avatar size="sm" className="cursor-pointer transition-all hover:ring-2 hover:ring-brand-light-green dark:ring-brand-green">
                     <AvatarImage src={metadata?.picture} />
                     <AvatarFallback className="text-xs">
                       {displayName.charAt(0)}
@@ -158,7 +158,7 @@ export function Comment({ root, comment, depth = 0, maxDepth = 3, limit, parentC
               <div className="flex items-start gap-2 px-3 py-2 bg-brand-light-green dark:bg-brand-dark-green rounded-md border-l-2 border-brand-light-green dark:border-brand-dark-green">
                 <CornerDownRight className="h-3 w-3 text-muted-foreground shrink-0 mt-0.5" />
                 <div className="flex items-center gap-2 min-w-0 flex-1">
-                  <Avatar className="h-4 w-4 shrink-0">
+                  <Avatar size="2xs" className="shrink-0">
                     <AvatarImage src={parentMetadata?.picture} />
                     <AvatarFallback className="text-[8px]">
                       {parentDisplayName.charAt(0)}

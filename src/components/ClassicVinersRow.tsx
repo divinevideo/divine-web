@@ -31,7 +31,7 @@ function VinerItem({ viner }: { viner: StaticViner }) {
       ownerPubkey={viner.pubkey}
       className="flex flex-col items-center gap-1.5 min-w-[72px] group"
     >
-      <Avatar className="h-14 w-14 ring-2 ring-brand-light-green group-hover:ring-brand-green transition-all dark:ring-brand-dark-green dark:group-hover:ring-brand-green">
+      <Avatar size="xl" className="ring-2 ring-brand-light-green transition-all group-hover:ring-brand-green dark:ring-brand-dark-green dark:group-hover:ring-brand-green">
         <AvatarImage src={picture} alt={displayName} loading="eager" />
         <AvatarFallback className="text-xs">
           {displayName.slice(0, 2).toUpperCase()}

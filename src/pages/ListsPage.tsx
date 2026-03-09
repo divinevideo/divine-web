@@ -69,7 +69,7 @@ function ListCard({ list }: { list: ListCardProps }) {
             to={`/profile/${nip19.npubEncode(list.pubkey)}`}
             className="flex items-center gap-2 hover:opacity-80 transition-opacity"
           >
-            <Avatar className="h-6 w-6">
+            <Avatar size="xs">
               <AvatarImage src={getSafeProfileImage(authorMetadata?.picture)} />
               <AvatarFallback>{authorName[0]?.toUpperCase()}</AvatarFallback>
             </Avatar>

@@ -465,7 +465,7 @@ export function VideoCard({
           {!isHorizontal && (
             <div className="flex items-center gap-3 p-4 pb-2">
               <SmartLink to={profileUrl} ownerPubkey={video.pubkey}>
-                <Avatar className="h-10 w-10">
+                <Avatar size="md">
                   <AvatarImage src={profileImage} alt={displayName} />
                   <AvatarFallback>{displayName[0]?.toUpperCase()}</AvatarFallback>
                 </Avatar>
@@ -640,7 +640,7 @@ export function VideoCard({
           {isHorizontal && (
             <div className="flex items-start gap-2 mb-2">
               <SmartLink to={profileUrl} ownerPubkey={video.pubkey}>
-                <Avatar className="h-8 w-8">
+                <Avatar size="sm">
                   <AvatarImage src={profileImage} alt={displayName} />
                   <AvatarFallback className="text-xs">{displayName[0]?.toUpperCase()}</AvatarFallback>
                 </Avatar>

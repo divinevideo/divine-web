@@ -82,7 +82,7 @@ export function BadgeDetailModal({ badge, open, onOpenChange }: BadgeDetailModal
             <div className="flex items-center gap-3">
               <span className="text-sm text-muted-foreground w-16">Issued by</span>
               <div className="flex items-center gap-2">
-                <Avatar className="h-6 w-6">
+                <Avatar size="xs">
                   <AvatarImage src={issuerAvatar} alt={issuerName} />
                   <AvatarFallback className="text-xs">
                     {issuerName.slice(0, 2).toUpperCase()}

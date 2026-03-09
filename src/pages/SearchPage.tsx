@@ -615,7 +615,7 @@ function UserCard({ user }: { user: { pubkey: string; metadata?: UserCardMetadat
     >
       <CardContent className="p-4">
         <div className="flex items-start gap-3">
-          <Avatar className="h-12 w-12">
+          <Avatar size="lg">
             <AvatarImage src={picture} alt={displayName} />
             <AvatarFallback>{displayName.slice(0, 2).toUpperCase()}</AvatarFallback>
           </Avatar>

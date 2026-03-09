@@ -57,7 +57,7 @@ export function NotificationItem({ notification }: NotificationItemProps) {
     >
       {/* Avatar with type icon overlay */}
       <div className="relative shrink-0">
-        <Avatar className="h-10 w-10">
+        <Avatar size="md">
           <AvatarImage src={avatarUrl} alt={displayName} />
           <AvatarFallback>{avatarFallback}</AvatarFallback>
         </Avatar>

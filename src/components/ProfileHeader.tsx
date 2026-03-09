@@ -199,7 +199,7 @@ export function ProfileHeader({
       <div className="flex flex-col sm:flex-row gap-4 sm:gap-6">
         {/* Avatar */}
         <div className="flex-shrink-0 self-center sm:self-start">
-          <Avatar className="h-20 w-20 sm:h-24 sm:w-24" data-testid="profile-avatar">
+          <Avatar size="2xl" className="sm:h-24 sm:w-24 sm:rounded-[32px]" data-testid="profile-avatar">
             <AvatarImage src={profileImage} alt={displayName} />
             <AvatarFallback className="text-lg">
               {displayName.slice(0, 2).toUpperCase()}

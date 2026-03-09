@@ -45,7 +45,7 @@ function ReactionUserItem({ pubkey, timestamp }: { pubkey: string; timestamp: nu
         e.stopPropagation();
       }}
     >
-      <Avatar className="h-10 w-10">
+      <Avatar size="md">
         <AvatarImage src={profileImage} alt={displayName} />
         <AvatarFallback>{displayName[0]?.toUpperCase()}</AvatarFallback>
       </Avatar>
@@ -122,4 +122,3 @@ export function VideoReactionsModal({
     </Dialog>
   );
 }
-

@@ -45,7 +45,7 @@ const UserRow = memo(function UserRow({ pubkey, metadata, onNavigate }: UserRowP
       className="flex items-center gap-3 w-full p-2 rounded-lg hover:bg-muted transition-colors text-left"
       onClick={() => onNavigate(pubkey)}
     >
-      <Avatar className="h-10 w-10 shrink-0">
+      <Avatar size="md" className="shrink-0">
         <AvatarImage src={profileImage} alt={displayName} />
         <AvatarFallback className="text-xs">
           {displayName.slice(0, 2).toUpperCase()}
@@ -64,7 +64,7 @@ const UserRow = memo(function UserRow({ pubkey, metadata, onNavigate }: UserRowP
 function LoadingSkeleton() {
   return (
     <div className="flex items-center gap-3 p-2">
-      <Skeleton className="h-10 w-10 rounded-full shrink-0" />
+      <Skeleton className="h-10 w-10 shrink-0 rounded-2xl" />
       <div className="flex-1 space-y-1.5">
         <Skeleton className="h-4 w-32" />
         <Skeleton className="h-3 w-20" />

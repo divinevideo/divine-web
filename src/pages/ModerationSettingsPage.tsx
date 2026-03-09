@@ -45,7 +45,7 @@ function MutedUserItem({ pubkey, reason, onUnmute }: {
   return (
     <div className="flex items-center justify-between p-3 rounded-lg border">
       <div className="flex items-center gap-3">
-        <Avatar className="h-10 w-10">
+        <Avatar size="md">
           <AvatarImage src={getSafeProfileImage(authorMetadata?.picture)} />
           <AvatarFallback>{authorName[0]?.toUpperCase()}</AvatarFallback>
         </Avatar>
