@@ -24,15 +24,16 @@ export function AppLayout() {
   return (
     <>
       {/* Sidebar - desktop only (fixed position), hidden on landing page */}
-      {!isLandingPage && <AppSidebar className="hidden md:flex" />}
+      {!isLandingPage && <AppSidebar className="hidden lg:flex" />}
 
       {/* Main content area - offset by sidebar width on desktop */}
-      <div className={`flex min-h-screen flex-col bg-background ${!isLandingPage ? 'md:ml-[240px]' : ''}`}>
-        {/* Header - mobile only (sidebar replaces it on desktop), hidden on landing page */}
-        {!isLandingPage && <AppHeader className="md:hidden" />}
+      <div className={`flex min-h-screen flex-col bg-background ${!isLandingPage ? 'lg:ml-[240px]' : ''}`}>
+        {/* Header - mobile/tablet only (sidebar replaces it on desktop), hidden on landing page */}
+        {/* TODO: Replace AppHeader with ImmersiveTopBar for < lg viewports */}
+        {!isLandingPage && <AppHeader className="lg:hidden" />}
 
         {/* Main content */}
-        <main className="flex-1 pb-[calc(4rem+env(safe-area-inset-bottom))] md:pb-0">
+        <main className="flex-1 pb-[calc(4rem+env(safe-area-inset-bottom))] lg:pb-0">
           <Outlet />
         </main>
 
