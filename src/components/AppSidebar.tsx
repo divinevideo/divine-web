@@ -36,10 +36,10 @@ function NavItem({ icon, label, onClick, isActive }: NavItemProps) {
     <button
       onClick={onClick}
       className={cn(
-        "group flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-[15px] transition-all duration-150",
+        "group flex w-full items-center gap-3 rounded-[22px] px-3.5 py-3 text-[15px] transition-all duration-200",
         isActive
-          ? "bg-primary text-primary-foreground font-medium"
-          : "text-muted-foreground font-normal hover:bg-muted hover:text-foreground hover:font-medium"
+          ? "bg-primary text-primary-foreground font-medium shadow-[0_14px_36px_rgba(39,197,139,0.24)]"
+          : "border border-transparent bg-transparent text-muted-foreground font-normal hover:border-white/50 hover:bg-[hsl(var(--surface-2)/0.9)] hover:text-foreground dark:hover:border-white/10"
       )}
     >
       <span className={cn(
@@ -76,6 +76,7 @@ export function AppSidebar({ className }: { className?: string }) {
     location.pathname === '/discovery' || location.pathname.startsWith('/discovery/');
   const isMessagesActive = () =>
     location.pathname === '/messages' || location.pathname.startsWith('/messages/');
+  const isHomeActive = () => location.pathname === '/' || location.pathname === '/home';
   const isCategoryActive = (name: string) => location.pathname === `/category/${name}`;
 
   const toggleTheme = () => {
@@ -89,29 +90,39 @@ export function AppSidebar({ className }: { className?: string }) {
   return (
     <aside
       className={cn(
-        "fixed left-0 top-0 z-40 flex h-svh w-[240px] flex-col border-r border-border bg-background",
+        "fixed left-4 top-4 z-40 flex h-[calc(100svh-2rem)] w-72 flex-col overflow-hidden rounded-[34px] border border-white/45 bg-[hsl(var(--surface-1)/0.94)] shadow-[0_32px_90px_rgba(7,36,27,0.18)] backdrop-blur-2xl dark:border-white/10 dark:shadow-[0_32px_90px_rgba(0,0,0,0.45)]",
         className
       )}
     >
       {/* Logo - Fixed */}
-      <div className="flex h-14 shrink-0 items-center px-5">
+      <div className="flex h-[4.5rem] shrink-0 items-center px-5">
         <button
           onClick={() => navigate('/')}
           aria-label="Go to home"
-          className="transition-opacity hover:opacity-80"
+          className="flex items-center gap-3 rounded-[22px] border border-white/45 bg-[hsl(var(--surface-1)/0.88)] px-3 py-2 text-left shadow-[var(--shadow-sm)] transition-all duration-200 hover:-translate-y-px hover:shadow-[var(--shadow-md)] dark:border-white/10"
         >
-          <img
-            src="/divine-logo.svg"
-            alt="diVine"
-            className="h-[22px]"
-          />
+          <span className="flex h-10 w-10 items-center justify-center rounded-[18px] bg-[linear-gradient(135deg,hsl(var(--brand-light-green)),hsl(var(--brand-off-white)))] ring-1 ring-white/50 dark:bg-[linear-gradient(135deg,hsl(var(--surface-2)),hsl(var(--surface-3)))] dark:ring-white/10">
+            <img
+              src="/divine-logo.svg"
+              alt="diVine"
+              className="h-[22px]"
+            />
+          </span>
+          <span className="min-w-0">
+            <span className="block text-[0.65rem] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+              diVine Web
+            </span>
+            <span className="block truncate text-sm font-semibold text-foreground">
+              Control Center
+            </span>
+          </span>
         </button>
       </div>
 
       {/* Scrollable Content Area */}
-      <div className="flex-1 overflow-y-auto overflow-x-hidden">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden px-1 pb-3">
         {/* Main Navigation */}
-        <nav className="flex flex-col gap-0.5 px-3 pt-2">
+        <nav className="flex flex-col gap-1 px-3 pt-2">
           <NavItem
             icon={<Search className="h-[18px] w-[18px]" />}
             label="Search"
@@ -124,7 +135,7 @@ export function AppSidebar({ className }: { className?: string }) {
               icon={<Home className="h-[18px] w-[18px]" />}
               label="Home"
               onClick={() => navigate('/')}
-              isActive={isActive('/')}
+              isActive={isHomeActive()}
             />
           )}
 
@@ -196,7 +207,7 @@ export function AppSidebar({ className }: { className?: string }) {
             <Collapsible open={categoriesOpen} onOpenChange={setCategoriesOpen}>
               <CollapsibleTrigger asChild>
                 <button
-                  className="group flex w-full items-center gap-2 rounded-lg px-3 py-2 text-[13px] font-semibold text-muted-foreground transition-colors hover:text-foreground"
+                  className="group flex w-full items-center gap-2 rounded-[18px] px-3 py-2 text-[13px] font-semibold text-muted-foreground transition-colors hover:bg-[hsl(var(--surface-2)/0.7)] hover:text-foreground"
                 >
                   <LayoutGrid className="h-4 w-4" />
                   <span>Categories</span>
@@ -213,10 +224,10 @@ export function AppSidebar({ className }: { className?: string }) {
                       key={cat.name}
                       onClick={() => navigate(`/category/${cat.name}`)}
                       className={cn(
-                        "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-[14px] transition-all duration-150",
+                        "flex w-full items-center gap-3 rounded-[18px] px-3 py-2.5 text-[14px] transition-all duration-150",
                         isCategoryActive(cat.name)
-                          ? "bg-primary text-primary-foreground font-medium"
-                          : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                          ? "bg-primary text-primary-foreground font-medium shadow-[0_12px_30px_rgba(39,197,139,0.22)]"
+                          : "text-muted-foreground hover:bg-[hsl(var(--surface-2)/0.8)] hover:text-foreground"
                       )}
                     >
                       <span className="text-base leading-none w-5 text-center">
@@ -236,7 +247,7 @@ export function AppSidebar({ className }: { className?: string }) {
           <Collapsible open={rssOpen} onOpenChange={setRssOpen}>
             <CollapsibleTrigger asChild>
               <button
-                className="group flex w-full items-center gap-2 rounded-lg px-3 py-2 text-[13px] font-semibold text-muted-foreground transition-colors hover:text-foreground"
+                className="group flex w-full items-center gap-2 rounded-[18px] px-3 py-2 text-[13px] font-semibold text-muted-foreground transition-colors hover:bg-[hsl(var(--surface-2)/0.7)] hover:text-foreground"
               >
                 <Rss className="h-4 w-4 text-orange-500" />
                 <span>RSS Feeds</span>
@@ -252,7 +263,7 @@ export function AppSidebar({ className }: { className?: string }) {
                   href={feedUrls.latest()}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-[14px] text-muted-foreground hover:bg-muted hover:text-foreground transition-all duration-150"
+                  className="flex w-full items-center gap-3 rounded-[18px] px-3 py-2.5 text-[14px] text-muted-foreground transition-all duration-150 hover:bg-[hsl(var(--surface-2)/0.8)] hover:text-foreground"
                 >
                   <Rss className="h-3.5 w-3.5 text-orange-500" />
                   <span>Latest Videos</span>
@@ -261,7 +272,7 @@ export function AppSidebar({ className }: { className?: string }) {
                   href={feedUrls.trending()}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-[14px] text-muted-foreground hover:bg-muted hover:text-foreground transition-all duration-150"
+                  className="flex w-full items-center gap-3 rounded-[18px] px-3 py-2.5 text-[14px] text-muted-foreground transition-all duration-150 hover:bg-[hsl(var(--surface-2)/0.8)] hover:text-foreground"
                 >
                   <Rss className="h-3.5 w-3.5 text-orange-500" />
                   <span>Trending</span>
@@ -271,7 +282,7 @@ export function AppSidebar({ className }: { className?: string }) {
                     href={feedUrls.userFeed(nip19.npubEncode(user.pubkey))}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-[14px] text-muted-foreground hover:bg-muted hover:text-foreground transition-all duration-150"
+                    className="flex w-full items-center gap-3 rounded-[18px] px-3 py-2.5 text-[14px] text-muted-foreground transition-all duration-150 hover:bg-[hsl(var(--surface-2)/0.8)] hover:text-foreground"
                   >
                     <Rss className="h-3.5 w-3.5 text-orange-500" />
                     <span>Your Feed</span>
@@ -286,7 +297,7 @@ export function AppSidebar({ className }: { className?: string }) {
         <div className="mt-4 px-3">
           <button
             onClick={toggleTheme}
-            className="group flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-[15px] font-normal text-muted-foreground transition-all duration-150 hover:bg-muted hover:text-foreground hover:font-medium"
+            className="group flex w-full items-center gap-3 rounded-[22px] px-3.5 py-3 text-[15px] font-normal text-muted-foreground transition-all duration-150 hover:bg-[hsl(var(--surface-2)/0.8)] hover:text-foreground hover:font-medium"
           >
             <span className="transition-transform duration-150 group-hover:scale-105">
               {displayTheme === 'dark' ? (
@@ -304,7 +315,7 @@ export function AppSidebar({ className }: { className?: string }) {
           {subdomainUser ? (
             <a
               href={`https://${subdomainUser.apexDomain}/`}
-              className="flex w-full items-center justify-center rounded-lg border border-border h-11 text-[15px] font-medium text-foreground transition-colors hover:border-primary hover:text-primary"
+              className="flex h-12 w-full items-center justify-center rounded-[20px] border border-border text-[15px] font-medium text-foreground transition-colors hover:border-primary hover:text-primary"
             >
               Log in on Divine
             </a>
@@ -312,7 +323,7 @@ export function AppSidebar({ className }: { className?: string }) {
             <LoginArea
               className={cn(
                 "flex-col gap-2.5 w-full",
-                "[&>button]:w-full [&>button]:justify-center [&>button]:rounded-lg [&>button]:h-11 [&>button]:text-[15px]",
+                "[&>button]:w-full [&>button]:justify-center [&>button]:rounded-[20px] [&>button]:h-12 [&>button]:text-[15px]",
                 "[&>button:first-child]:border-border [&>button:first-child]:hover:border-primary",
                 "[&_.account-switcher]:w-full"
               )}

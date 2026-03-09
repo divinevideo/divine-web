@@ -14,6 +14,8 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import type { SortMode } from '@/types/nostr';
 import { EXTENDED_SORT_MODES as SORT_MODES } from '@/lib/constants/sortModes';
+import { AppPage, AppPageHeader } from '@/components/AppPage';
+import { DiscoverySectionNav } from '@/components/DiscoverySectionNav';
 
 type ViewMode = 'feed' | 'grid';
 
@@ -54,119 +56,109 @@ export function HashtagPage() {
 
   if (!normalizedTag || normalizedTag.trim() === '') {
     return (
-      <div className="container mx-auto px-4 py-6">
-        <div className="max-w-2xl mx-auto">
-          <Card>
-            <CardContent className="py-12 text-center">
-              <h2 className="text-xl font-semibold mb-4">Invalid Hashtag</h2>
-              <p className="text-muted-foreground">
-                No hashtag specified in the URL
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+      <AppPage width="detail">
+        <Card className="app-surface">
+          <CardContent className="py-12 text-center">
+            <h2 className="mb-4 text-xl font-semibold">Invalid Hashtag</h2>
+            <p className="text-muted-foreground">
+              No hashtag specified in the URL
+            </p>
+          </CardContent>
+        </Card>
+      </AppPage>
     );
   }
 
   return (
-    <div className="container mx-auto px-4 py-6">
-      <div className="max-w-4xl mx-auto space-y-6">
-        {/* Navigation */}
+    <AppPage width="wide">
+      <AppPageHeader
+        eyebrow="Live hashtag stream"
+        title={`#${tag}`}
+        description={`Videos tagged with #${tag}`}
+        actions={rssFeedAvailable ? (
+          <a
+            href={feedUrls.hashtag(normalizedTag)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="app-chip"
+          >
+            <Rss className="h-3.5 w-3.5" />
+            <span>RSS</span>
+          </a>
+        ) : undefined}
+      >
+        <DiscoverySectionNav active="hashtags" />
         <div className="flex items-center gap-4">
           <SmartLink
             to="/hashtags"
-            className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+            className="inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
           >
             <ArrowLeft className="h-4 w-4" />
-            Back to Discovery
+            Browse all hashtags
           </SmartLink>
         </div>
+      </AppPageHeader>
 
-        {/* Header */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold">#{tag}</h1>
-              <p className="text-muted-foreground">Videos tagged with #{tag}</p>
-            </div>
-            {rssFeedAvailable && (
-              <a
-                href={feedUrls.hashtag(normalizedTag)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <Rss className="h-3.5 w-3.5" /> RSS
-              </a>
-            )}
-          </div>
-
-          {/* View Toggle and Sort Selector */}
-          <div className="flex items-center justify-between gap-4">
-            <div
-              className="flex items-center bg-muted rounded-lg p-1"
-              role="group"
-              aria-label="View mode selection"
-            >
-              <Button
-                variant={viewMode === 'feed' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => setViewMode('feed')}
-                className="text-xs"
-                role="button"
-                aria-pressed={viewMode === 'feed'}
-              >
-                <List className="h-4 w-4 mr-1" />
-                Feed
-              </Button>
-              <Button
-                variant={viewMode === 'grid' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => setViewMode('grid')}
-                className="text-xs"
-                role="button"
-                aria-pressed={viewMode === 'grid'}
-              >
-                <Grid3X3 className="h-4 w-4 mr-1" />
-                Grid
-              </Button>
-            </div>
-
-            {/* Sort mode selector */}
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">Sort:</span>
-              <Select value={sortMode} onValueChange={(value) => setSortMode(value as SortMode)}>
-                <SelectTrigger className="w-[140px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {SORT_MODES.map(mode => (
-                    <SelectItem key={mode.value} value={mode.value as string}>
-                      <div className="flex items-center gap-2">
-                        <mode.icon className="h-4 w-4" />
-                        {mode.label}
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+      <div className="app-surface flex flex-col gap-4 px-4 py-4 sm:px-5 md:flex-row md:items-center md:justify-between">
+        <div
+          className="app-surface-muted inline-flex items-center gap-1 self-start px-1 py-1"
+          role="group"
+          aria-label="View mode selection"
+        >
+          <Button
+            variant={viewMode === 'feed' ? 'default' : 'ghost'}
+            size="sm"
+            onClick={() => setViewMode('feed')}
+            className="text-xs"
+            role="button"
+            aria-pressed={viewMode === 'feed'}
+          >
+            <List className="mr-1 h-4 w-4" />
+            Feed
+          </Button>
+          <Button
+            variant={viewMode === 'grid' ? 'default' : 'ghost'}
+            size="sm"
+            onClick={() => setViewMode('grid')}
+            className="text-xs"
+            role="button"
+            aria-pressed={viewMode === 'grid'}
+          >
+            <Grid3X3 className="mr-1 h-4 w-4" />
+            Grid
+          </Button>
         </div>
 
-        {/* Video Feed with sort mode */}
-        <VideoFeed
-          feedType="hashtag"
-          hashtag={normalizedTag}
-          sortMode={sortMode}
-          viewMode={viewMode}
-          data-testid="video-feed-hashtag"
-          data-hashtag-testid={`feed-hashtag-${normalizedTag}`}
-          className={viewMode === 'grid' ? '' : 'space-y-6'}
-        />
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <span className="text-sm text-muted-foreground">Sort</span>
+          <Select value={sortMode} onValueChange={(value) => setSortMode(value as SortMode)}>
+            <SelectTrigger className="w-full sm:w-[180px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {SORT_MODES.map(mode => (
+                <SelectItem key={mode.value} value={mode.value as string}>
+                  <div className="flex items-center gap-2">
+                    <mode.icon className="h-4 w-4" />
+                    {mode.label}
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
-    </div>
+
+      <VideoFeed
+        feedType="hashtag"
+        hashtag={normalizedTag}
+        sortMode={sortMode}
+        viewMode={viewMode}
+        data-testid="video-feed-hashtag"
+        data-hashtag-testid={`feed-hashtag-${normalizedTag}`}
+        className={viewMode === 'grid' ? '' : 'space-y-6'}
+      />
+    </AppPage>
   );
 }
 

@@ -12,6 +12,9 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { DEFAULT_FUNNELCAKE_URL } from '@/config/relays';
 import { nip19 } from 'nostr-tools';
+import { AppPage, AppPageHeader } from '@/components/AppPage';
+import { DiscoverySectionNav } from '@/components/DiscoverySectionNav';
+import { cn } from '@/lib/utils';
 
 type TimePeriod = 'alltime' | 'day' | 'week' | 'month' | 'year';
 type LeaderboardType = 'videos' | 'creators';
@@ -81,7 +84,7 @@ function VideoLeaderboardSkeleton() {
   return (
     <div className="space-y-3">
       {[1, 2, 3, 4, 5].map((i) => (
-        <div key={i} className="flex items-center gap-4 p-3 rounded-lg bg-brand-light-green dark:bg-brand-dark-green">
+        <div key={i} className="app-surface-muted flex items-center gap-4 px-3 py-3">
           <Skeleton className="h-8 w-8 rounded-[12px]" />
           <Skeleton className="h-16 w-24 rounded" />
           <div className="flex-1 space-y-2">
@@ -99,7 +102,7 @@ function CreatorLeaderboardSkeleton() {
   return (
     <div className="space-y-3">
       {[1, 2, 3, 4, 5].map((i) => (
-        <div key={i} className="flex items-center gap-4 p-3 rounded-lg bg-brand-light-green dark:bg-brand-dark-green">
+        <div key={i} className="app-surface-muted flex items-center gap-4 px-3 py-3">
           <Skeleton className="h-8 w-8 rounded-[12px]" />
           <Skeleton className="h-12 w-12 rounded-[20px]" />
           <div className="flex-1 space-y-2">
@@ -205,7 +208,7 @@ function VideoLeaderboard({ period }: { period: TimePeriod }) {
 
   if (error) {
     return (
-      <div className="text-center py-8 text-muted-foreground">
+      <div className="app-surface py-10 text-center text-muted-foreground">
         <p>Failed to load leaderboard</p>
         <p className="text-sm mt-2">{error.message}</p>
       </div>
@@ -214,7 +217,7 @@ function VideoLeaderboard({ period }: { period: TimePeriod }) {
 
   if (!videos?.length) {
     return (
-      <div className="text-center py-8 text-muted-foreground">
+      <div className="app-surface py-10 text-center text-muted-foreground">
         No videos found for this time period
       </div>
     );
@@ -234,7 +237,7 @@ function VideoLeaderboard({ period }: { period: TimePeriod }) {
           <Link
             key={video.id}
             to={`/video/${video.id}`}
-            className="flex items-center gap-4 p-3 rounded-lg hover:bg-brand-light-green dark:bg-brand-dark-green transition-colors"
+            className="app-surface-muted flex items-center gap-4 px-3 py-3 transition-transform duration-200 hover:-translate-y-0.5"
           >
             <RankBadge rank={index + 1} />
 
@@ -306,7 +309,7 @@ function CreatorLeaderboard({ period }: { period: TimePeriod }) {
 
   if (error) {
     return (
-      <div className="text-center py-8 text-muted-foreground">
+      <div className="app-surface py-10 text-center text-muted-foreground">
         <p>Failed to load creator leaderboard</p>
         <p className="text-sm mt-2">{error.message}</p>
       </div>
@@ -315,7 +318,7 @@ function CreatorLeaderboard({ period }: { period: TimePeriod }) {
 
   if (!creators?.length) {
     return (
-      <div className="text-center py-8 text-muted-foreground">
+      <div className="app-surface py-10 text-center text-muted-foreground">
         No creators found
       </div>
     );
@@ -335,7 +338,7 @@ function CreatorLeaderboard({ period }: { period: TimePeriod }) {
           <Link
             key={creator.pubkey}
             to={`/profile/${npub}`}
-            className="flex items-center gap-4 p-3 rounded-lg hover:bg-brand-light-green dark:bg-brand-dark-green transition-colors"
+            className="app-surface-muted flex items-center gap-4 px-3 py-3 transition-transform duration-200 hover:-translate-y-0.5"
           >
             <RankBadge rank={index + 1} />
 
@@ -380,83 +383,75 @@ export function LeaderboardPage() {
   const TimePeriodIcon = useMemo(() => getTimePeriodIcon(timePeriod), [timePeriod]);
 
   return (
-    <div className="container mx-auto px-4 py-6">
-      <div className="max-w-3xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="flex items-center gap-3">
-          <Trophy className="h-8 w-8 text-yellow-500" />
-          <div>
-            <h1 className="text-2xl font-bold">Leaderboard</h1>
-            <p className="text-muted-foreground">Top videos and creators by loops</p>
-          </div>
-        </div>
+    <AppPage width="wide">
+      <AppPageHeader
+        eyebrow="Community ranking"
+        title={(
+          <span className="flex items-center gap-3">
+            <Trophy className="h-8 w-8 text-yellow-500" />
+            <span>Leaderboard</span>
+          </span>
+        )}
+        description="Top videos and creators by loops across the network."
+      >
+        <DiscoverySectionNav active="leaderboard" />
+      </AppPageHeader>
 
-        {/* Main tabs: Videos vs Creators */}
-        <Tabs value={leaderboardType} onValueChange={(v) => setLeaderboardType(v as LeaderboardType)}>
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="videos" className="gap-2">
-              <Video className="h-4 w-4" />
-              Top Videos
-            </TabsTrigger>
-            <TabsTrigger value="creators" className="gap-2">
-              <User className="h-4 w-4" />
-              Top Creators
-            </TabsTrigger>
-          </TabsList>
+      <Tabs value={leaderboardType} onValueChange={(v) => setLeaderboardType(v as LeaderboardType)} className="space-y-6">
+        <TabsList className="app-tab-list grid-cols-2">
+          <TabsTrigger value="videos" className="gap-2 rounded-[20px]">
+            <Video className="h-4 w-4" />
+            Top Videos
+          </TabsTrigger>
+          <TabsTrigger value="creators" className="gap-2 rounded-[20px]">
+            <User className="h-4 w-4" />
+            Top Creators
+          </TabsTrigger>
+        </TabsList>
 
-          {/* Time period selector */}
-          <Card className="mt-4">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <TimePeriodIcon className="h-4 w-4" />
-                {getTimePeriodLabel(timePeriod)}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="pt-0">
-              <div className="flex flex-wrap gap-2">
-                {(['alltime', 'day', 'week', 'month', 'year'] as TimePeriod[]).map((period) => {
-                  const Icon = getTimePeriodIcon(period);
-                  return (
-                    <button
-                      key={period}
-                      onClick={() => setTimePeriod(period)}
-                      className={`
-                        px-3 py-1.5 rounded-full text-sm font-medium transition-colors
-                        flex items-center gap-1.5
-                        ${timePeriod === period
-                          ? 'bg-primary text-primary-foreground'
-                          : 'bg-muted hover:bg-brand-light-green dark:hover:bg-brand-dark-green text-muted-foreground'
-                        }
-                      `}
-                    >
-                      <Icon className="h-3.5 w-3.5" />
-                      {getTimePeriodLabel(period)}
-                    </button>
-                  );
-                })}
-              </div>
+        <Card className="app-surface">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-sm font-medium">
+              <TimePeriodIcon className="h-4 w-4" />
+              {getTimePeriodLabel(timePeriod)}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <div className="flex flex-wrap gap-2">
+              {(['alltime', 'day', 'week', 'month', 'year'] as TimePeriod[]).map((period) => {
+                const Icon = getTimePeriodIcon(period);
+                return (
+                  <button
+                    key={period}
+                    onClick={() => setTimePeriod(period)}
+                    className={cn('app-chip', timePeriod === period && 'app-chip-active')}
+                  >
+                    <Icon className="h-3.5 w-3.5" />
+                    {getTimePeriodLabel(period)}
+                  </button>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+
+        <TabsContent value="videos" className="mt-0">
+          <Card className="app-surface">
+            <CardContent className="pt-6">
+              <VideoLeaderboard period={timePeriod} />
             </CardContent>
           </Card>
+        </TabsContent>
 
-          {/* Leaderboard content */}
-          <TabsContent value="videos" className="mt-4">
-            <Card>
-              <CardContent className="pt-6">
-                <VideoLeaderboard period={timePeriod} />
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="creators" className="mt-4">
-            <Card>
-              <CardContent className="pt-6">
-                <CreatorLeaderboard period={timePeriod} />
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-      </div>
-    </div>
+        <TabsContent value="creators" className="mt-0">
+          <Card className="app-surface">
+            <CardContent className="pt-6">
+              <CreatorLeaderboard period={timePeriod} />
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+    </AppPage>
   );
 }
 

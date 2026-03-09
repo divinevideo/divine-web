@@ -81,7 +81,7 @@ export function FAQPage() {
 
   return (
     <MarketingLayout>
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
+      <div className="marketing-page marketing-page--default marketing-stack">
       <ZendeskWidget />
       <div className="text-center space-y-4 mb-8">
         <div className="flex items-center justify-center gap-3">

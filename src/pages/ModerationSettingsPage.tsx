@@ -32,6 +32,8 @@ import { getSafeProfileImage } from '@/lib/imageUtils';
 import { formatDistanceToNow } from 'date-fns';
 import { nip19 } from 'nostr-tools';
 import type { NostrEvent } from '@nostrify/nostrify';
+import { AppPage, AppPageHeader } from '@/components/AppPage';
+import { CreatorSectionNav } from '@/components/CreatorSectionNav';
 
 function MutedUserItem({ pubkey, reason, onUnmute }: {
   pubkey: string;
@@ -43,7 +45,7 @@ function MutedUserItem({ pubkey, reason, onUnmute }: {
   const authorName = authorMetadata?.name || genUserName(pubkey);
 
   return (
-    <div className="flex items-center justify-between p-3 rounded-lg border">
+    <div className="app-surface-muted flex items-center justify-between px-3 py-3">
       <div className="flex items-center gap-3">
         <Avatar size="md">
           <AvatarImage src={getSafeProfileImage(authorMetadata?.picture)} />
@@ -89,17 +91,6 @@ export default function ModerationSettingsPage() {
   const mutedHashtags = muteList.filter(item => item.type === MuteType.HASHTAG);
   const mutedKeywords = muteList.filter(item => item.type === MuteType.KEYWORD);
 
-  // Debug: Log state
-  console.log('[ModerationSettingsPage] Render state:', {
-    user: user?.pubkey,
-    muteListLoading,
-    muteListLength: muteList.length,
-    mutedUsers: mutedUsers.length,
-    mutedHashtags: mutedHashtags.length,
-    mutedKeywords: mutedKeywords.length,
-    muteList
-  });
-
   // Fetch raw mute list event for debugging
   useEffect(() => {
     if (!user || !showDebug) return;
@@ -114,10 +105,8 @@ export default function ModerationSettingsPage() {
 
         if (events.length > 0) {
           setRawMuteEvent(events[0]);
-          console.log('[ModerationSettingsPage] Raw mute event:', events[0]);
         } else {
           setRawMuteEvent(null);
-          console.log('[ModerationSettingsPage] No mute event found');
         }
       } catch (error) {
         console.error('[ModerationSettingsPage] Error fetching raw event:', error);
@@ -200,8 +189,8 @@ export default function ModerationSettingsPage() {
 
   if (!user) {
     return (
-      <div className="container max-w-4xl mx-auto px-4 py-8">
-        <Card>
+      <AppPage width="wide">
+        <Card className="app-surface">
           <CardContent className="py-12 text-center">
             <Shield className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
             <p className="text-lg font-medium mb-2">Authentication Required</p>
@@ -210,23 +199,22 @@ export default function ModerationSettingsPage() {
             </p>
           </CardContent>
         </Card>
-      </div>
+      </AppPage>
     );
   }
 
   return (
-    <div className="container max-w-4xl mx-auto px-4 py-8">
-      <div className="mb-8">
-        <div className="flex items-start justify-between">
-          <div>
-            <h1 className="text-3xl font-bold flex items-center gap-2 mb-2">
-              <Shield className="h-8 w-8" />
-              Moderation Settings
-            </h1>
-            <p className="text-muted-foreground">
-              Control what content you see and report violations
-            </p>
-          </div>
+    <AppPage width="wide">
+      <AppPageHeader
+        eyebrow="Control your filters"
+        title={(
+          <span className="flex items-center gap-3">
+            <Shield className="h-8 w-8" />
+            <span>Moderation Settings</span>
+          </span>
+        )}
+        description="Decide what you see, mute noisy actors, and keep track of your reports."
+        actions={(
           <Button
             variant="outline"
             size="sm"
@@ -235,11 +223,16 @@ export default function ModerationSettingsPage() {
           >
             {showDebug ? 'Hide' : 'Show'} Debug Info
           </Button>
-        </div>
+        )}
+      >
+        <CreatorSectionNav
+          active="moderation"
+          profilePath={`/profile/${nip19.npubEncode(user.pubkey)}`}
+        />
+      </AppPageHeader>
 
-        {/* Debug Panel */}
-        {showDebug && (
-          <Card className="mt-4 border-yellow-500/50 bg-yellow-50 dark:bg-yellow-950/20">
+      {showDebug && (
+          <Card className="app-surface mt-4 border-yellow-500/50 bg-yellow-50/90 dark:bg-yellow-950/20">
             <CardHeader>
               <CardTitle className="text-sm">Debug Information</CardTitle>
             </CardHeader>
@@ -301,11 +294,9 @@ export default function ModerationSettingsPage() {
               )}
             </CardContent>
           </Card>
-        )}
-      </div>
+      )}
 
-      {/* Status Card */}
-      <Card className="mb-6 border-blue-500/50 bg-blue-50 dark:bg-blue-950/20">
+      <Card className="app-surface mb-6 border-blue-500/50 bg-blue-50/90 dark:bg-blue-950/20">
         <CardContent className="py-4">
           <div className="flex items-start gap-3">
             <Shield className="h-5 w-5 text-blue-600 mt-0.5" />
@@ -340,12 +331,12 @@ export default function ModerationSettingsPage() {
       </Card>
 
       <Tabs defaultValue="mute-list" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="mute-list" className="gap-2">
+        <TabsList className="app-tab-list grid-cols-2">
+          <TabsTrigger value="mute-list" className="gap-2 rounded-[20px]">
             <UserX className="h-4 w-4" />
             <span className="hidden sm:inline">Mute List</span>
           </TabsTrigger>
-          <TabsTrigger value="reports" className="gap-2">
+          <TabsTrigger value="reports" className="gap-2 rounded-[20px]">
             <Flag className="h-4 w-4" />
             <span className="hidden sm:inline">My Reports</span>
           </TabsTrigger>
@@ -353,8 +344,7 @@ export default function ModerationSettingsPage() {
 
         {/* Mute List Tab */}
         <TabsContent value="mute-list" className="space-y-6">
-          {/* Add to Mute List */}
-          <Card>
+          <Card className="app-surface">
             <CardHeader>
               <CardTitle>Add to Mute List</CardTitle>
               <CardDescription>
@@ -428,8 +418,7 @@ export default function ModerationSettingsPage() {
             </CardContent>
           </Card>
 
-          {/* Muted Users */}
-          <Card>
+          <Card className="app-surface">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <UserX className="h-5 w-5" />
@@ -462,8 +451,7 @@ export default function ModerationSettingsPage() {
             </CardContent>
           </Card>
 
-          {/* Muted Hashtags */}
-          <Card>
+          <Card className="app-surface">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Hash className="h-5 w-5" />
@@ -493,8 +481,7 @@ export default function ModerationSettingsPage() {
             </CardContent>
           </Card>
 
-          {/* Muted Keywords */}
-          <Card>
+          <Card className="app-surface">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Type className="h-5 w-5" />
@@ -525,9 +512,8 @@ export default function ModerationSettingsPage() {
           </Card>
         </TabsContent>
 
-        {/* Reports Tab */}
         <TabsContent value="reports" className="space-y-6">
-          <Card>
+          <Card className="app-surface">
             <CardHeader>
               <CardTitle>Report History</CardTitle>
               <CardDescription>
@@ -538,7 +524,7 @@ export default function ModerationSettingsPage() {
               {reportHistory.length > 0 ? (
                 <div className="space-y-4">
                   {reportHistory.map((report) => (
-                    <div key={report.reportId} className="border rounded-lg p-4">
+                    <div key={report.reportId} className="app-surface-muted px-4 py-4">
                       <div className="flex items-start justify-between mb-2">
                         <div className="flex items-center gap-2">
                           <Flag className="h-4 w-4 text-destructive" />
@@ -578,6 +564,6 @@ export default function ModerationSettingsPage() {
           </Card>
         </TabsContent>
       </Tabs>
-    </div>
+    </AppPage>
   );
 }

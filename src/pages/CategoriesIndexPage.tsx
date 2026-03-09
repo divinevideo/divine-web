@@ -5,6 +5,8 @@ import { SmartLink } from '@/components/SmartLink';
 import { useSeoMeta } from '@unhead/react';
 import { useCategories } from '@/hooks/useCategories';
 import { Skeleton } from '@/components/ui/skeleton';
+import { AppPage, AppPageHeader } from '@/components/AppPage';
+import { DiscoverySectionNav } from '@/components/DiscoverySectionNav';
 
 export function CategoriesIndexPage() {
   const { data: categories, isLoading } = useCategories();
@@ -23,46 +25,45 @@ export function CategoriesIndexPage() {
   });
 
   return (
-    <div className="container mx-auto px-4 py-6">
-      <div className="max-w-4xl mx-auto space-y-6">
-        <header>
-          <h1 className="text-3xl font-bold">Categories</h1>
-          <p className="text-muted-foreground mt-1">
-            Browse videos by topic
-          </p>
-        </header>
+    <AppPage width="wide">
+      <AppPageHeader
+        eyebrow="Topic browsing"
+        title="Categories"
+        description="Browse the network by topic and jump into tighter video feeds."
+      >
+        <DiscoverySectionNav active="categories" />
+      </AppPageHeader>
 
-        {isLoading ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-            {Array.from({ length: 12 }).map((_, i) => (
-              <Skeleton key={i} className="h-24 rounded-xl" />
-            ))}
-          </div>
-        ) : categories && categories.length > 0 ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-            {categories.map(cat => (
-              <SmartLink
-                key={cat.name}
-                to={`/category/${cat.name}`}
-                className="group flex flex-col items-center gap-2 rounded-xl border border-border bg-card p-4 transition-colors hover:bg-muted hover:border-primary"
-              >
-                <span className="text-3xl">{cat.config?.emoji || ''}</span>
-                <span className="font-medium text-sm text-center">
-                  {cat.config?.label || cat.name}
-                </span>
-                <span className="text-xs text-muted-foreground">
-                  {cat.video_count.toLocaleString()} {cat.video_count === 1 ? 'video' : 'videos'}
-                </span>
-              </SmartLink>
-            ))}
-          </div>
-        ) : (
-          <p className="text-muted-foreground text-center py-12">
-            No categories available right now.
-          </p>
-        )}
-      </div>
-    </div>
+      {isLoading ? (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+          {Array.from({ length: 12 }).map((_, i) => (
+            <Skeleton key={i} className="h-28 rounded-[28px]" />
+          ))}
+        </div>
+      ) : categories && categories.length > 0 ? (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+          {categories.map(cat => (
+            <SmartLink
+              key={cat.name}
+              to={`/category/${cat.name}`}
+              className="app-surface group flex min-h-32 flex-col items-center justify-center gap-2 px-4 py-5 text-center transition-transform duration-200 hover:-translate-y-0.5"
+            >
+              <span className="text-4xl">{cat.config?.emoji || ''}</span>
+              <span className="text-sm font-semibold">
+                {cat.config?.label || cat.name}
+              </span>
+              <span className="text-xs text-muted-foreground">
+                {cat.video_count.toLocaleString()} {cat.video_count === 1 ? 'video' : 'videos'}
+              </span>
+            </SmartLink>
+          ))}
+        </div>
+      ) : (
+        <div className="app-surface py-16 text-center text-muted-foreground">
+          No categories available right now.
+        </div>
+      )}
+    </AppPage>
   );
 }
 

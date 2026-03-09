@@ -1,42 +1,41 @@
-import { Outlet, useLocation } from 'react-router-dom';
+import { Outlet } from 'react-router-dom';
 import { AppHeader } from '@/components/AppHeader';
 import { BottomNav } from '@/components/BottomNav';
 import { PWAInstallPrompt } from '@/components/PWAInstallPrompt';
 import { FullscreenFeed } from '@/components/FullscreenFeed';
 import { AppSidebar } from '@/components/AppSidebar';
-import { useNostrLogin } from '@nostrify/react/login';
 import { useAppContext } from '@/hooks/useAppContext';
 import { useFullscreenFeed } from '@/contexts/FullscreenFeedContext';
-import { getSubdomainUser } from '@/hooks/useSubdomainUser';
+import { cn } from '@/lib/utils';
 
 export function AppLayout() {
-  const location = useLocation();
-  const { logins } = useNostrLogin();
   const { isRecording } = useAppContext();
   const { state: fullscreenState, exitFullscreen, onLoadMore, hasMore } = useFullscreenFeed();
 
-  // Only consider user logged in if they have active logins, not just a token
-  const isLoggedIn = logins.length > 0;
-
-  // Hide header/sidebar on landing page (when logged out on root path), but NOT on subdomain profiles
-  const isLandingPage = location.pathname === '/' && !isLoggedIn && !getSubdomainUser();
+  // Root now renders public discovery, so keep the app shell for signed-out visitors too.
+  const isLandingPage = false;
 
   return (
     <>
       {/* Sidebar - desktop only (fixed position), hidden on landing page */}
-      {!isLandingPage && <AppSidebar className="hidden md:flex" />}
+      {!isLandingPage && <AppSidebar className="hidden xl:flex" />}
 
-      {/* Main content area - offset by sidebar width on desktop */}
-      <div className={`flex min-h-screen flex-col bg-background ${!isLandingPage ? 'md:ml-[240px]' : ''}`}>
-        {/* Header - mobile only (sidebar replaces it on desktop), hidden on landing page */}
-        {!isLandingPage && <AppHeader className="md:hidden" />}
+      {/* Main content area - keep the app shell through tablet sizes */}
+      <div
+        className={cn(
+          'relative isolate flex min-h-screen flex-col overflow-x-clip',
+          !isLandingPage && 'xl:pl-80'
+        )}
+      >
+        {/* Header - mobile and tablet, hidden on landing page */}
+        {!isLandingPage && <AppHeader className="xl:hidden" />}
 
         {/* Main content */}
-        <main className="flex-1 pb-[calc(4rem+env(safe-area-inset-bottom))] md:pb-0">
+        <main className="flex-1 pb-[calc(var(--app-bottom-nav-height)+env(safe-area-inset-bottom)+1.5rem)] xl:pb-8">
           <Outlet />
         </main>
 
-        {/* Bottom nav - mobile only */}
+        {/* Bottom nav - mobile and tablet */}
         {!isLandingPage && !isRecording && <BottomNav />}
 
         <PWAInstallPrompt />

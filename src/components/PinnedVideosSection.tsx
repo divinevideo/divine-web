@@ -144,18 +144,18 @@ export function PinnedVideosSection({ pubkey, isOwnProfile }: PinnedVideosSectio
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-2">
-        <Pin className="h-4 w-4 text-muted-foreground" />
-        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Pinned</h3>
+        <Pin className="h-4 w-4 text-primary" />
+        <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-muted-foreground">Pinned</h3>
       </div>
 
       {videosLoading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
           {coordinates.map((_, i) => (
-            <div key={i} className="aspect-square bg-muted animate-pulse rounded-lg" />
+            <div key={i} className="aspect-square animate-pulse rounded-[24px] bg-muted" />
           ))}
         </div>
       ) : pinnedVideos.length > 0 ? (
-        <div className="relative">
+        <div className="app-surface relative px-4 py-4 sm:px-5">
           <VideoGrid
             videos={pinnedVideos}
             navigationContext={{ source: 'profile', pubkey }}

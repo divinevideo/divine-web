@@ -197,14 +197,14 @@ export function ProfileHeader({
 
   return (
     <div
-      className={`space-y-4 ${className || ''}`}
+      className={`app-surface space-y-5 px-4 py-5 sm:px-6 sm:py-6 ${className || ''}`}
       data-testid="profile-header"
     >
       {/* Main Profile Section */}
-      <div className="flex flex-col sm:flex-row gap-4 sm:gap-6">
+      <div className="flex flex-col gap-5 lg:flex-row lg:items-start">
         {/* Avatar */}
-        <div className="flex-shrink-0 self-center sm:self-start">
-          <Avatar size="2xl" className="sm:h-24 sm:w-24 sm:rounded-[32px]" data-testid="profile-avatar">
+        <div className="flex-shrink-0 self-center lg:self-start">
+          <Avatar size="2xl" className="h-24 w-24 rounded-[30px] sm:h-28 sm:w-28 sm:rounded-[34px]" data-testid="profile-avatar">
             <AvatarImage src={profileImage} alt={displayName} />
             <AvatarFallback className="text-lg">
               {displayName.slice(0, 2).toUpperCase()}
@@ -213,23 +213,23 @@ export function ProfileHeader({
         </div>
 
         {/* Profile Info */}
-        <div className="flex-1 min-w-0 text-center sm:text-left">
-          <div className="sm:flex sm:gap-6">
+        <div className="min-w-0 flex-1 text-center lg:text-left">
+          <div className="lg:flex lg:gap-6">
             {/* Left: Name, NIP-05, Website, Bio */}
-            <div className="space-y-2 sm:flex-1 sm:min-w-0">
+            <div className="space-y-3 lg:min-w-0 lg:flex-1">
               <div>
-                <div className="flex items-center gap-2 justify-center sm:justify-start">
+                <div className="flex items-center justify-center gap-2 lg:justify-start">
                   {stillLoadingName ? (
                     <Skeleton className="h-8 w-32 sm:h-9 sm:w-40" data-testid="name-loading-skeleton" />
                   ) : (
-                    <h1 className="text-2xl sm:text-3xl font-bold truncate">
+                    <h1 className="truncate text-[1.9rem] font-semibold tracking-[-0.03em] sm:text-[2.3rem]">
                       {displayName}
                     </h1>
                   )}
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-8 w-8 shrink-0"
+                    className="h-9 w-9 shrink-0 rounded-full"
                     onClick={handleCopyNpub}
                     title="Copy npub"
                     data-testid="copy-npub-button"
@@ -239,7 +239,7 @@ export function ProfileHeader({
                 </div>
                 {/* Show NIP-05 with visual feedback based on validation state */}
                 {nip05 ? (
-                  <div className="flex items-center gap-1 justify-center sm:justify-start">
+                  <div className="flex items-center justify-center gap-1 lg:justify-start">
                     {/* Icon based on validation state */}
                     {nip05State === 'loading' && (
                       <Loader2 className="h-4 w-4 text-muted-foreground animate-spin" />
@@ -289,8 +289,8 @@ export function ProfileHeader({
 
               {/* Website - hide if it's just a divine.video profile URL */}
               {website && !website.includes('divine.video/profile/') && (
-                <div className="flex flex-wrap gap-2 justify-center sm:justify-start">
-                  <Badge variant="outline" className="text-xs">
+                <div className="flex flex-wrap justify-center gap-2 lg:justify-start">
+                  <Badge variant="outline" className="rounded-full border-white/50 bg-[hsl(var(--surface-1)/0.86)] px-3 py-1 text-xs dark:border-white/10">
                     <a href={website} target="_blank" rel="noopener noreferrer" className="hover:underline">
                       {website}
                     </a>
@@ -300,7 +300,7 @@ export function ProfileHeader({
 
               {/* Bio */}
               {about && (
-                <p className="text-muted-foreground text-sm leading-relaxed max-w-md">
+                <p className="max-w-xl text-sm leading-relaxed text-muted-foreground">
                   {linkifyText(about)}
                 </p>
               )}
@@ -308,7 +308,7 @@ export function ProfileHeader({
 
           </div>
 
-          <div className="mt-2 flex flex-wrap items-center gap-2 justify-center sm:justify-start">
+          <div className="mt-3 flex flex-wrap items-center justify-center gap-2 lg:justify-start">
             <LinkedAccounts pubkey={pubkey} />
             <ProfileBadges badges={badgesQuery.data ?? []} />
           </div>
@@ -316,12 +316,12 @@ export function ProfileHeader({
 
         {/* Edit Profile / Follow Button */}
         {isOwnProfile ? (
-          <div className="flex-shrink-0 self-center sm:self-start flex gap-2">
+          <div className="flex w-full flex-shrink-0 flex-wrap justify-center gap-2 lg:w-auto lg:justify-end">
             <Button
               onClick={onEditProfile}
               variant="outline"
               size="sm"
-              className="min-w-[100px]"
+              className="min-w-[120px] rounded-full"
               data-testid="edit-profile-button"
             >
               <Pencil className="w-4 h-4 mr-2" />
@@ -331,6 +331,7 @@ export function ProfileHeader({
               <Button
                 variant="ghost"
                 size="sm"
+                className="rounded-full"
                 data-testid="linked-accounts-button"
               >
                 <Link2 className="w-4 h-4 mr-2" />
@@ -339,7 +340,7 @@ export function ProfileHeader({
             </Link>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" data-testid="own-profile-menu-button">
+                <Button variant="outline" size="sm" className="rounded-full" data-testid="own-profile-menu-button">
                   <MoreVertical className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
@@ -352,12 +353,12 @@ export function ProfileHeader({
             </DropdownMenu>
           </div>
         ) : (
-          <div className="flex-shrink-0 self-center sm:self-start flex gap-2">
+          <div className="flex w-full flex-shrink-0 flex-wrap justify-center gap-2 lg:w-auto lg:justify-end">
             <Button
               onClick={handleFollowClick}
               variant={isFollowing ? "outline" : "default"}
               size="sm"
-              className="min-w-[100px]"
+              className="min-w-[120px] rounded-full"
               data-testid="follow-button"
             >
               {isFollowing ? (
@@ -376,6 +377,7 @@ export function ProfileHeader({
               <Button
                 variant="outline"
                 size="sm"
+                className="rounded-full"
                 onClick={() => subdomainNavigate(getDmConversationPath([pubkey]))}
               >
                 Message
@@ -383,7 +385,7 @@ export function ProfileHeader({
             )}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" data-testid="profile-menu-button">
+                <Button variant="outline" size="sm" className="rounded-full" data-testid="profile-menu-button">
                   <MoreVertical className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
@@ -404,7 +406,7 @@ export function ProfileHeader({
                 target="_blank"
                 rel="noopener noreferrer"
                 title="Subscribe to RSS feed"
-                className="inline-flex items-center justify-center rounded-md p-2 text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                className="inline-flex items-center justify-center rounded-full border border-white/45 bg-[hsl(var(--surface-1)/0.86)] p-2 text-muted-foreground transition-colors hover:text-foreground hover:bg-accent dark:border-white/10"
               >
                 <Rss className="h-4 w-4" />
               </a>
@@ -415,11 +417,11 @@ export function ProfileHeader({
 
       {/* Stats Section */}
       <div
-        className="grid grid-cols-2 sm:grid-cols-5 gap-4 py-4 border-t"
+        className="grid grid-cols-2 gap-3 border-t border-border/70 pt-4 sm:grid-cols-5"
         data-testid="profile-stats"
       >
-        {/* Videos Count */}
-        <div className="text-center">
+      {/* Videos Count */}
+        <div className="rounded-[22px] border border-[hsl(var(--surface-border)/0.8)] bg-[hsl(var(--surface-2)/0.75)] px-3 py-4 text-center">
           {stats ? (
             <>
               <div className="text-xl sm:text-2xl font-bold text-foreground">
@@ -436,10 +438,10 @@ export function ProfileHeader({
         </div>
 
         {/* Followers Count */}
-        <div className="text-center">
+        <div className="rounded-[22px] border border-[hsl(var(--surface-border)/0.8)] bg-[hsl(var(--surface-2)/0.75)] px-3 py-4 text-center">
           {stats ? (
             <button
-              className="hover:opacity-70 transition-opacity"
+              className="w-full transition-opacity hover:opacity-70"
               onClick={() => setUserListDialog('followers')}
               data-testid="followers-button"
             >
@@ -457,10 +459,10 @@ export function ProfileHeader({
         </div>
 
         {/* Following Count */}
-        <div className="text-center">
+        <div className="rounded-[22px] border border-[hsl(var(--surface-border)/0.8)] bg-[hsl(var(--surface-2)/0.75)] px-3 py-4 text-center">
           {stats ? (
             <button
-              className="hover:opacity-70 transition-opacity"
+              className="w-full transition-opacity hover:opacity-70"
               onClick={() => setUserListDialog('following')}
               data-testid="following-button"
             >
@@ -478,7 +480,7 @@ export function ProfileHeader({
         </div>
 
         {/* diVine Loops (actual loop count from watch time) */}
-        <div className="text-center">
+        <div className="rounded-[22px] border border-[hsl(var(--surface-border)/0.8)] bg-[hsl(var(--surface-2)/0.75)] px-3 py-4 text-center">
           {stats ? (
             <>
               <div className="text-xl sm:text-2xl font-bold text-primary">
@@ -495,7 +497,7 @@ export function ProfileHeader({
         </div>
 
         {/* Joined Date / Classic Viner Status */}
-        <div className="text-center col-span-2 sm:col-span-1">
+        <div className="col-span-2 rounded-[22px] border border-[hsl(var(--surface-border)/0.8)] bg-[hsl(var(--surface-2)/0.75)] px-3 py-4 text-center sm:col-span-1">
           {stats ? (
             stats.joinedDateLoading ? (
               <Skeleton className="h-4 w-20 mx-auto" data-testid="stat-skeleton-joined" />
@@ -520,7 +522,7 @@ export function ProfileHeader({
       {/* Classic Viner Stats - Original Vine Metrics */}
       {stats?.isClassicViner && stats.originalLoopCount && stats.originalLoopCount > 0 && (
         <div
-          className="bg-muted rounded-lg p-4 border border-brand-light-green"
+          className="app-surface-muted border border-brand-light-green p-4"
           data-testid="classic-viner-stats"
         >
           <div className="flex items-center gap-2 mb-3">

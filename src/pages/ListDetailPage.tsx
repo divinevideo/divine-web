@@ -30,6 +30,8 @@ import { getEventLookupRelayUrls } from '@/config/relays';
 import type { NostrEvent, NostrFilter } from '@nostrify/nostrify';
 import { SHORT_VIDEO_KIND, VIDEO_KINDS, type ParsedVideoData } from '@/types/video';
 import { parseVideoEvent, getVineId, getThumbnailUrl, getOriginalVineTimestamp, getLoopCount, getProofModeData, getOriginalLikeCount, getOriginalRepostCount, getOriginalCommentCount, getOriginPlatform, isVineMigrated } from '@/lib/videoParser';
+import { AppPage, AppPageHeader } from '@/components/AppPage';
+import { AppSectionNav } from '@/components/AppSectionNav';
 
 interface VideoList {
   id: string;
@@ -311,6 +313,14 @@ export default function ListDetailPage() {
   const author = useAuthor(pubkey || '');
   const authorMetadata = author.data?.metadata;
   const authorName = authorMetadata?.name || genUserName(pubkey || '');
+  let profilePath = '/lists';
+  if (pubkey) {
+    try {
+      profilePath = `/profile/${nip19.npubEncode(pubkey)}`;
+    } catch {
+      profilePath = `/profile/${pubkey}`;
+    }
+  }
 
   const handleShare = () => {
     if (!pubkey || !listId) return;
@@ -319,34 +329,34 @@ export default function ListDetailPage() {
 
   if (listLoading) {
     return (
-      <div className="container max-w-6xl mx-auto px-4 py-8">
+      <AppPage width="full">
         <div className="space-y-6">
           <Skeleton className="h-8 w-48" />
-          <Card>
+          <Card className="app-surface">
             <CardHeader>
               <Skeleton className="h-6 w-64" />
-              <Skeleton className="h-4 w-full mt-2" />
+              <Skeleton className="mt-2 h-4 w-full" />
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 <Skeleton className="h-10 w-32" />
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
                   {[...Array(8)].map((_, i) => (
-                    <Skeleton key={i} className="aspect-square rounded" />
+                    <Skeleton key={i} className="aspect-square rounded-[28px]" />
                   ))}
                 </div>
               </div>
             </CardContent>
           </Card>
         </div>
-      </div>
+      </AppPage>
     );
   }
 
   if (!list) {
     return (
-      <div className="container max-w-6xl mx-auto px-4 py-8">
-        <Card className="border-dashed">
+      <AppPage width="detail">
+        <Card className="app-surface border-2 border-dashed">
           <CardContent className="py-12 text-center">
             <List className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
             <p className="text-lg font-medium mb-2">List not found</p>
@@ -359,14 +369,41 @@ export default function ListDetailPage() {
             </Button>
           </CardContent>
         </Card>
-      </div>
+      </AppPage>
     );
   }
 
   return (
-    <div className="container max-w-6xl mx-auto px-4 py-8">
+    <AppPage width="full">
+      <AppPageHeader
+        eyebrow="Community playlist"
+        title={list.name}
+        description={list.description || `${list.videoCoordinates.length} videos curated by ${authorName}.`}
+        actions={(
+          <Button variant="outline" size="sm" onClick={handleShare}>
+            <Share2 className="mr-2 h-4 w-4" />
+            Share
+          </Button>
+        )}
+      >
+        <AppSectionNav
+          items={[
+            {
+              label: 'All Lists',
+              to: '/lists',
+              icon: <List className="h-4 w-4" />,
+            },
+            {
+              label: authorName,
+              to: profilePath,
+              icon: <Users className="h-4 w-4" />,
+              ownerPubkey: pubkey,
+            },
+          ]}
+        />
+      </AppPageHeader>
+
       <div className="space-y-6">
-        {/* Back button */}
         <Button
           variant="ghost"
           size="sm"
@@ -377,8 +414,7 @@ export default function ListDetailPage() {
           Back to Lists
         </Button>
 
-        {/* List Header */}
-        <Card>
+        <Card className="app-surface">
           <CardHeader>
             <div className="flex items-start justify-between">
               <div className="flex-1">
@@ -468,20 +504,15 @@ export default function ListDetailPage() {
                     </Button>
                   </>
                 )}
-                <Button variant="outline" size="sm" onClick={handleShare}>
-                  <Share2 className="h-4 w-4 mr-2" />
-                  Share
-                </Button>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Videos Grid */}
         {videosLoading ? (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
             {[...Array(8)].map((_, i) => (
-              <Skeleton key={i} className="aspect-square rounded" />
+              <Skeleton key={i} className="aspect-square rounded-[28px]" />
             ))}
           </div>
         ) : videos && videos.length > 0 ? (
@@ -590,6 +621,6 @@ export default function ListDetailPage() {
           isDeleting={isDeleting}
         />
       )}
-    </div>
+    </AppPage>
   );
 }

@@ -24,6 +24,7 @@ import { genUserName } from '@/lib/genUserName';
 import { getSafeProfileImage } from '@/lib/imageUtils';
 import { formatRelativeTime } from '@/lib/notificationTransform';
 import { cn } from '@/lib/utils';
+import { AppPage } from '@/components/AppPage';
 
 function getDisplayName(pubkey: string, metadata?: { display_name?: string; name?: string }) {
   if (pubkey === DIVINE_SUPPORT_PUBKEY) {
@@ -199,25 +200,22 @@ export function ConversationPage() {
 
   if (!conversationId || !peerPubkeys.length) {
     return (
-      <div className="min-h-full bg-[radial-gradient(circle_at_top,_hsl(var(--primary)/0.12),_transparent_42%),linear-gradient(180deg,hsl(var(--background)),hsl(var(--background)))]">
-        <main className="container py-6">
-          <div className="mx-auto max-w-3xl rounded-[32px] border border-border/80 bg-card/80 px-6 py-12 text-center shadow-sm backdrop-blur-sm">
+      <AppPage width="detail" className="bg-[radial-gradient(circle_at_top,_hsl(var(--primary)/0.12),_transparent_42%),linear-gradient(180deg,hsl(var(--background)),hsl(var(--background)))]">
+        <div className="rounded-[32px] border border-border/80 bg-card/80 px-6 py-12 text-center shadow-sm backdrop-blur-sm">
             <p className="text-lg font-semibold text-foreground">Conversation not found</p>
             <p className="mt-2 text-sm text-muted-foreground">Go back to your inbox and start a new message.</p>
             <Button className="mt-5 rounded-full" onClick={() => navigate('/messages')}>
               Back to inbox
             </Button>
-          </div>
-        </main>
-      </div>
+        </div>
+      </AppPage>
     );
   }
 
   if (!canUseDirectMessages) {
     return (
-      <div className="min-h-full bg-[radial-gradient(circle_at_top,_hsl(var(--primary)/0.12),_transparent_42%),linear-gradient(180deg,hsl(var(--background)),hsl(var(--background)))]">
-        <main className="container py-6">
-          <div className="mx-auto max-w-3xl rounded-[32px] border border-border/80 bg-card/80 px-6 py-12 text-center shadow-sm backdrop-blur-sm">
+      <AppPage width="detail" className="bg-[radial-gradient(circle_at_top,_hsl(var(--primary)/0.12),_transparent_42%),linear-gradient(180deg,hsl(var(--background)),hsl(var(--background)))]">
+        <div className="rounded-[32px] border border-border/80 bg-card/80 px-6 py-12 text-center shadow-sm backdrop-blur-sm">
             <p className="text-lg font-semibold text-foreground">Direct messages are unavailable</p>
             <p className="mt-2 text-sm text-muted-foreground">
               This signer can authenticate you, but it does not expose the NIP-44 encryption methods required for private messaging.
@@ -225,16 +223,14 @@ export function ConversationPage() {
             <Button className="mt-5 rounded-full" onClick={() => navigate('/messages')}>
               Back to inbox
             </Button>
-          </div>
-        </main>
-      </div>
+        </div>
+      </AppPage>
     );
   }
 
   return (
-    <div className="min-h-full bg-[radial-gradient(circle_at_top,_hsl(var(--primary)/0.14),_transparent_42%),linear-gradient(180deg,hsl(var(--background)),hsl(var(--background)))]">
-      <main className="container py-6">
-        <div className="mx-auto flex max-w-3xl flex-col gap-4">
+    <AppPage width="detail" className="bg-[radial-gradient(circle_at_top,_hsl(var(--primary)/0.14),_transparent_42%),linear-gradient(180deg,hsl(var(--background)),hsl(var(--background)))]">
+      <div className="flex flex-col gap-4">
           <section className="rounded-[32px] border border-border/80 bg-card/80 px-4 py-4 shadow-[0_24px_60px_rgba(39,197,139,0.08)] backdrop-blur-sm">
             <div className="flex items-center gap-3">
               <Button
@@ -332,9 +328,8 @@ export function ConversationPage() {
               </div>
             </div>
           </section>
-        </div>
-      </main>
-    </div>
+      </div>
+    </AppPage>
   );
 }
 

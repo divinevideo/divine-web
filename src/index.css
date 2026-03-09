@@ -80,6 +80,7 @@
     --radius-medium: 0.75rem;
     --radius-large: 1rem;
     --radius-xl: 1.5rem;
+    --radius-2xl: 1.75rem;
 
     --shadow-sm: 0 2px 8px rgba(39, 197, 139, 0.08);
     --shadow-md: 0 4px 16px rgba(39, 197, 139, 0.12);
@@ -98,6 +99,20 @@
     --sidebar-accent-foreground: 158 67% 8%;
     --sidebar-border: 30 18% 90%;
     --sidebar-ring: 158 67% 46%;
+
+    --surface-1: 30 18% 99%;
+    --surface-2: 30 18% 96%;
+    --surface-3: 30 18% 92%;
+    --surface-border: 30 18% 87%;
+
+    --app-header-height: 4.5rem;
+    --app-bottom-nav-height: 5.5rem;
+    --app-sidebar-width: 18rem;
+    --app-shell-max-width: 96rem;
+    --app-page-gutter: clamp(1rem, 3vw, 2rem);
+    --app-feed-width: 42rem;
+    --app-detail-width: 52rem;
+    --app-page-width: 48rem;
   }
 
   .dark {
@@ -180,6 +195,11 @@
     --sidebar-border: 158 40% 18%;
 
     --sidebar-ring: 158 67% 46%;
+
+    --surface-1: 158 49% 11%;
+    --surface-2: 158 45% 14%;
+    --surface-3: 158 38% 18%;
+    --surface-border: 158 33% 22%;
   }
 }
 
@@ -195,7 +215,18 @@
 
   body {
     @apply bg-background text-foreground;
+    min-height: 100vh;
+    line-height: 1.5;
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    background-image:
+      radial-gradient(circle at top left, hsl(var(--brand-green) / 0.18), transparent 30rem),
+      radial-gradient(circle at top right, hsl(var(--brand-blue) / 0.12), transparent 28rem),
+      linear-gradient(180deg, hsl(var(--background)), hsl(var(--surface-2) / 0.65) 45%, hsl(var(--background)));
+    background-attachment: fixed;
+  }
+
+  #root {
+    min-height: 100vh;
   }
 
   /* Custom font for headings and logo */
@@ -249,5 +280,137 @@
     .safe-area-bottom {
       padding-bottom: env(safe-area-inset-bottom);
     }
+  }
+}
+
+@layer components {
+  .app-page {
+    @apply relative px-4 pb-8 pt-5 sm:px-5 md:px-6 md:pt-6 lg:px-8;
+  }
+
+  .app-page__inner {
+    @apply mx-auto w-full;
+  }
+
+  .app-page__header {
+    @apply mb-6 flex flex-col gap-4 md:mb-8;
+  }
+
+  .app-eyebrow {
+    @apply inline-flex w-fit items-center gap-2 rounded-full px-3 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.16em];
+    border: 1px solid hsl(var(--surface-border) / 0.8);
+    background: hsl(var(--surface-2) / 0.92);
+    color: hsl(var(--foreground) / 0.72);
+  }
+
+  .app-title {
+    @apply text-[1.75rem] font-semibold leading-tight tracking-[-0.03em] text-foreground sm:text-[2rem];
+  }
+
+  .app-subtitle {
+    @apply max-w-2xl text-sm leading-6 text-muted-foreground sm:text-[0.95rem];
+  }
+
+  .app-surface {
+    @apply rounded-[28px];
+    border: 1px solid hsl(var(--surface-border) / 0.85);
+    background:
+      linear-gradient(180deg, hsl(var(--surface-1) / 0.98), hsl(var(--surface-2) / 0.92));
+    box-shadow: var(--shadow-md);
+    backdrop-filter: blur(18px);
+  }
+
+  .app-surface-muted {
+    @apply rounded-[24px];
+    border: 1px solid hsl(var(--surface-border) / 0.72);
+    background: hsl(var(--surface-2) / 0.84);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .app-tab-list {
+    @apply grid h-auto w-full gap-1 rounded-[26px] p-1.5;
+    border: 1px solid hsl(var(--surface-border) / 0.85);
+    background: hsl(var(--surface-2) / 0.95);
+    box-shadow: inset 0 1px 0 hsl(var(--brand-off-white) / 0.45);
+  }
+
+  .app-chip-row {
+    @apply -mx-4 overflow-x-auto px-4 pb-1 sm:-mx-5 sm:px-5 md:-mx-6 md:px-6 lg:-mx-8 lg:px-8;
+    scrollbar-width: none;
+  }
+
+  .app-chip-row::-webkit-scrollbar {
+    display: none;
+  }
+
+  .app-chip {
+    @apply inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1.5 text-sm transition-colors;
+    border: 1px solid hsl(var(--surface-border) / 0.8);
+    background: hsl(var(--surface-1) / 0.86);
+    color: hsl(var(--foreground) / 0.86);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .app-chip:hover {
+    border-color: hsl(var(--primary) / 0.55);
+    background: hsl(var(--surface-2) / 0.96);
+    color: hsl(var(--foreground));
+  }
+
+  .app-chip-active {
+    border-color: transparent;
+    background: hsl(var(--foreground));
+    color: hsl(var(--background));
+    box-shadow: 0 18px 36px hsl(var(--foreground) / 0.16);
+  }
+
+  .marketing-shell {
+    @apply relative flex-1 overflow-x-clip pb-0;
+    background:
+      radial-gradient(circle at top left, hsl(var(--primary) / 0.18), transparent 32%),
+      radial-gradient(circle at top right, hsl(var(--brand-green) / 0.14), transparent 28%),
+      linear-gradient(180deg, hsl(var(--background)), hsl(var(--background)));
+  }
+
+  .marketing-page {
+    @apply relative mx-auto w-full px-4 pb-12 pt-4 sm:px-5 sm:pt-6 md:px-6 md:pb-16 lg:px-8;
+  }
+
+  .marketing-page--narrow {
+    max-width: 48rem;
+  }
+
+  .marketing-page--default {
+    max-width: 64rem;
+  }
+
+  .marketing-page--wide {
+    max-width: 72rem;
+  }
+
+  .marketing-stack {
+    @apply space-y-8;
+  }
+
+  .marketing-hero {
+    @apply rounded-[32px] px-6 py-8 text-center sm:px-8 sm:py-10;
+    border: 1px solid hsl(var(--surface-border) / 0.85);
+    background:
+      radial-gradient(circle at top, hsl(var(--primary) / 0.12), transparent 48%),
+      linear-gradient(180deg, hsl(var(--surface-1) / 0.98), hsl(var(--surface-2) / 0.92));
+    box-shadow: var(--shadow-md);
+    backdrop-filter: blur(18px);
+  }
+
+  .marketing-hero__title {
+    @apply text-[2.3rem] font-semibold leading-tight tracking-[-0.05em] sm:text-[3.2rem];
+  }
+
+  .marketing-hero__lede {
+    @apply mx-auto max-w-2xl text-base leading-7 text-muted-foreground sm:text-lg;
+  }
+
+  .marketing-section-title {
+    @apply text-2xl font-semibold tracking-[-0.04em] sm:text-3xl;
   }
 }

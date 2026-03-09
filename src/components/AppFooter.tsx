@@ -3,9 +3,9 @@ import { HubSpotSignup } from './HubSpotSignup';
 
 export function AppFooter() {
   return (
-    <footer className="mt-auto border-t border-brand-dark-green py-6 pb-[calc(1.5rem+4rem+env(safe-area-inset-bottom))] md:pb-6 bg-brand-dark-green">
-      <div className="container">
-        <div className="max-w-5xl mx-auto">
+    <footer className="mt-auto bg-transparent px-4 pb-[calc(1.5rem+4rem+env(safe-area-inset-bottom))] pt-6 md:px-6 md:pb-6">
+      <div className="mx-auto max-w-6xl">
+        <div className="rounded-[32px] border border-brand-green/30 bg-brand-dark-green px-5 py-6 shadow-[0_24px_60px_rgba(8,29,23,0.35)] sm:px-6">
           {/* Main Footer Content - Side by side on desktop */}
           <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6 mb-6">
             {/* Left side - Email signup */}
