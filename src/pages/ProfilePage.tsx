@@ -30,6 +30,7 @@ import { PinnedVideosSection } from '@/components/PinnedVideosSection';
 import { useLoginDialog } from '@/contexts/LoginDialogContext';
 import { debugLog } from '@/lib/debug';
 import { getDivineNip05Info } from '@/lib/nip05Utils';
+import { useNip05Validation } from '@/hooks/useNip05Validation';
 import { genUserName } from '@/lib/genUserName';
 import type { SortMode } from '@/types/nostr';
 
@@ -133,19 +134,25 @@ export function ProfilePage() {
     _stillLoadingName: stillLoadingName,
   };
 
-  // Redirect to subdomain if user has a divine.video NIP-05 and we're on the apex domain
+  // Redirect to subdomain if user has a verified divine.video NIP-05 and we're on the apex domain
   const nip05 = metadata.nip05;
+  const nip05Validation = useNip05Validation(
+    !subdomainUser ? nip05 : undefined,
+    pubkey || '',
+  );
   useEffect(() => {
     // Only redirect if we're on the apex domain (not already on a subdomain)
     if (subdomainUser) return;
     if (!nip05) return;
+    // Only redirect after NIP-05 is verified to belong to this pubkey
+    if (!nip05Validation.isValid) return;
 
     const divineInfo = getDivineNip05Info(nip05);
     if (divineInfo) {
       debugLog('[ProfilePage] Redirecting to subdomain:', divineInfo.href);
       window.location.href = divineInfo.href;
     }
-  }, [nip05, subdomainUser]);
+  }, [nip05, subdomainUser, nip05Validation.isValid]);
 
   // Use Funnelcake stats (fast) - don't run expensive Nostr queries
   // engagement.total_loops = computed from watch time (seconds_watched / video_duration)
