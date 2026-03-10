@@ -1214,8 +1214,16 @@ async function handleFeedPage(feedType) {
   // 3. Normalize videos array
   const videos = feedData.videos || feedData;
 
-  // 4. Render full HTML page
-  const feedJson = JSON.stringify(feedData);
+  // 4. Build compact feed JSON for React (strip bulky Nostr event data)
+  const compactVideos = (Array.isArray(videos) ? videos : []).map(v => ({
+    id: v.id, pubkey: v.pubkey, kind: v.kind, d_tag: v.d_tag,
+    title: v.title, content: v.content, thumbnail: v.thumbnail,
+    video_url: v.video_url, created_at: v.created_at,
+    reactions: v.reactions, comments: v.comments, reposts: v.reposts,
+    loops: v.loops, views: v.views, engagement_score: v.engagement_score,
+    author_name: v.author_name, author_avatar: v.author_avatar,
+  }));
+  const feedJson = JSON.stringify(feedData.videos ? { ...feedData, videos: compactVideos } : compactVideos);
   const html = renderFeedPage({ videos, feedType, feedJson });
   console.log('Rendered feed page, type:', feedType, 'videos:', videos.length, 'length:', html.length);
 
