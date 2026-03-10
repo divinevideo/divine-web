@@ -8,13 +8,13 @@ import { useExternalIdentities } from './useExternalIdentities';
 
 export function usePublishIdentity() {
   const { nostr } = useNostr();
-  const { user } = useCurrentUser();
+  const { user, signer } = useCurrentUser();
   const queryClient = useQueryClient();
 
   const publishEvent = async (tags: string[][]) => {
-    if (!user) throw new Error('User is not logged in');
+    if (!user || !signer) throw new Error('User is not logged in');
 
-    const event = await user.signer.signEvent({
+    const event = await signer.signEvent({
       kind: 10011,
       content: '',
       tags,

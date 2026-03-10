@@ -20,7 +20,7 @@ export function useZaps(
 ) {
   const { nostr } = useNostr();
   const { toast } = useToast();
-  const { user } = useCurrentUser();
+  const { user, signer } = useCurrentUser();
   const { config } = useAppContext();
   const queryClient = useQueryClient();
 
@@ -210,10 +210,10 @@ export function useZaps(
       });
 
       // Sign the zap request (but don't publish to relays - only send to LNURL endpoint)
-      if (!user.signer) {
+      if (!signer) {
         throw new Error('No signer available');
       }
-      const signedZapRequest = await user.signer.signEvent(zapRequest);
+      const signedZapRequest = await signer.signEvent(zapRequest);
 
       try {
         const res = await fetch(`${zapEndpoint}?amount=${zapAmount}&nostr=${encodeURI(JSON.stringify(signedZapRequest))}`);

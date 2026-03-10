@@ -4,19 +4,18 @@ import { BottomNav } from '@/components/BottomNav';
 import { PWAInstallPrompt } from '@/components/PWAInstallPrompt';
 import { FullscreenFeed } from '@/components/FullscreenFeed';
 import { AppSidebar } from '@/components/AppSidebar';
-import { useNostrLogin } from '@nostrify/react/login';
 import { useAppContext } from '@/hooks/useAppContext';
 import { useFullscreenFeed } from '@/contexts/FullscreenFeedContext';
 import { getSubdomainUser } from '@/hooks/useSubdomainUser';
+import { useCurrentUser } from '@/hooks/useCurrentUser';
 
 export function AppLayout() {
   const location = useLocation();
-  const { logins } = useNostrLogin();
+  const { user } = useCurrentUser();
   const { isRecording } = useAppContext();
   const { state: fullscreenState, exitFullscreen, onLoadMore, hasMore } = useFullscreenFeed();
 
-  // Only consider user logged in if they have active logins, not just a token
-  const isLoggedIn = logins.length > 0;
+  const isLoggedIn = Boolean(user);
 
   // Hide header/sidebar on landing page (when logged out on root path), but NOT on subdomain profiles
   const isLandingPage = location.pathname === '/' && !isLoggedIn && !getSubdomainUser();

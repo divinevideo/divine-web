@@ -4,11 +4,11 @@ import { BlossomUploader } from '@nostrify/nostrify/uploaders';
 import { useCurrentUser } from "./useCurrentUser";
 
 export function useUploadFile() {
-  const { user } = useCurrentUser();
+  const { signer } = useCurrentUser();
 
   return useMutation({
     mutationFn: async (file: File) => {
-      if (!user) {
+      if (!signer) {
         throw new Error('Must be logged in to upload files');
       }
 
@@ -16,7 +16,7 @@ export function useUploadFile() {
         servers: [
           'https://blossom.divine.video/',
         ],
-        signer: user.signer,
+        signer,
       });
 
       const tags = await uploader.upload(file);

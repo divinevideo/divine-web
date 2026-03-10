@@ -15,9 +15,8 @@ const NOTIFICATIONS_PAGE_SIZE = 30;
  * Fetches pages of notifications with cursor-based pagination.
  */
 export function useNotifications() {
-  const { user } = useCurrentUser();
+  const { user, signer } = useCurrentUser();
   const pubkey = user?.pubkey;
-  const signer = user?.signer;
   const apiUrl = DEFAULT_FUNNELCAKE_URL;
 
   return useInfiniteQuery<NotificationsResponse, Error>({
@@ -57,9 +56,8 @@ export function useNotifications() {
  * Polls every 60 seconds and on window focus.
  */
 export function useUnreadNotificationCount() {
-  const { user } = useCurrentUser();
+  const { user, signer } = useCurrentUser();
   const pubkey = user?.pubkey;
-  const signer = user?.signer;
   const apiUrl = DEFAULT_FUNNELCAKE_URL;
 
   return useQuery<number, Error>({
@@ -86,9 +84,8 @@ export function useUnreadNotificationCount() {
  * then syncs to server in the background.
  */
 export function useMarkNotificationsRead() {
-  const { user } = useCurrentUser();
+  const { user, signer } = useCurrentUser();
   const pubkey = user?.pubkey;
-  const signer = user?.signer;
   const apiUrl = DEFAULT_FUNNELCAKE_URL;
   const queryClient = useQueryClient();
 

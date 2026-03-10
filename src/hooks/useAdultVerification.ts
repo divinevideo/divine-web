@@ -21,8 +21,7 @@ interface AdultVerificationState {
 export function useAdultVerification(): AdultVerificationState {
   const [isVerified, setIsVerified] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const { user } = useCurrentUser();
-  const signer = user?.signer;
+  const { signer } = useCurrentUser();
 
   // Check localStorage on mount
   useEffect(() => {

@@ -6,8 +6,8 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { ScrollToTop } from "./components/ScrollToTop";
 import { AnalyticsPageTracker } from "./components/AnalyticsPageTracker";
 import { AnalyticsUserTracker } from "./components/AnalyticsUserTracker";
-import { useNostrLogin } from "@nostrify/react/login";
 import { getSubdomainUser } from "./hooks/useSubdomainUser";
+import { useCurrentUser } from "./hooks/useCurrentUser";
 
 import Index from "./pages/Index";
 import { NIP19Page } from "./pages/NIP19Page";
@@ -52,10 +52,10 @@ import MessagesPage from "./pages/MessagesPage";
 import ConversationPage from "./pages/ConversationPage";
 // import { UploadPage } from "./pages/UploadPage"; // DISABLED: Upload route is commented out
 export function AppRouter() {
-  const { logins } = useNostrLogin();
+  const { user } = useCurrentUser();
 
   // Check if user is logged in
-  const isLoggedIn = logins.length > 0;
+  const isLoggedIn = Boolean(user);
 
   // Check if we're on a subdomain profile (username.divine.video)
   const subdomainUser = getSubdomainUser();

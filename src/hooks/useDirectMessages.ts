@@ -61,11 +61,11 @@ function writeDmReadState(ownerPubkey: string | undefined, nextState: Record<str
 }
 
 export function useDmCapability() {
-  const { user } = useCurrentUser();
+  const { user, signer } = useCurrentUser();
 
   return {
     isLoggedIn: Boolean(user?.pubkey),
-    canUseDirectMessages: Boolean(user?.pubkey && user.signer.nip44),
+    canUseDirectMessages: Boolean(user?.pubkey && signer?.nip44),
   };
 }
 
@@ -122,32 +122,32 @@ export function useDmReadState(ownerPubkey?: string) {
 }
 
 export function useDmMessages(limit = 200) {
-  const { user } = useCurrentUser();
+  const { user, signer } = useCurrentUser();
   const { config } = useAppContext();
 
   return useQuery({
     queryKey: [...DM_QUERY_KEY, 'messages', user?.pubkey || '', limit],
     queryFn: async ({ signal }) => {
-      if (!user?.pubkey || !user.signer.nip44) {
+      if (!user?.pubkey || !signer?.nip44) {
         return [];
       }
 
       const relayUrls = await resolveDmReadRelays({
         appRelayUrls: config.relayUrls || [config.relayUrl],
-        signer: user.signer,
+        signer,
         currentUserPubkey: user.pubkey,
         signal: AbortSignal.any([signal, AbortSignal.timeout(5000)]),
       });
 
       return fetchDmMessages({
-        signer: user.signer,
+        signer,
         currentUserPubkey: user.pubkey,
         relayUrls,
         signal: AbortSignal.any([signal, AbortSignal.timeout(15000)]),
         limit,
       });
     },
-    enabled: Boolean(user?.pubkey && user.signer.nip44),
+    enabled: Boolean(user?.pubkey && signer?.nip44),
     staleTime: 30_000,
     gcTime: 300_000,
     refetchOnWindowFocus: true,
@@ -212,7 +212,7 @@ export function useDmConversation(conversationId: string | undefined, limit = 30
 
 export function useDmSend() {
   const queryClient = useQueryClient();
-  const { user } = useCurrentUser();
+  const { user, signer } = useCurrentUser();
   const { config } = useAppContext();
 
   return useMutation({
@@ -221,7 +221,7 @@ export function useDmSend() {
         throw new Error('You need to log in before sending a message');
       }
 
-      if (!user.signer.nip44) {
+      if (!signer?.nip44) {
         throw new Error('Your current signer does not support NIP-44 direct messages');
       }
 
@@ -233,13 +233,13 @@ export function useDmSend() {
 
       const relayUrls = await resolveDmWriteRelays({
         appRelayUrls: config.relayUrls || [config.relayUrl],
-        signer: user.signer,
+        signer,
         recipientPubkeys: recipients,
         signal: AbortSignal.timeout(5000),
       });
 
       const wraps = await createDmGiftWraps({
-        signer: user.signer,
+        signer,
         senderPubkey: user.pubkey,
         recipientPubkeys: recipients,
         content,

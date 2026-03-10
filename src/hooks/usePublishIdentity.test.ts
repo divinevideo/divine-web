@@ -27,9 +27,9 @@ vi.mock('./useCurrentUser', () => ({
   useCurrentUser: () => ({
     user: {
       pubkey: TEST_PUBKEY,
-      signer: {
-        signEvent: mockSignEvent,
-      },
+    },
+    signer: {
+      signEvent: mockSignEvent,
     },
   }),
 }));
