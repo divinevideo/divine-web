@@ -178,14 +178,41 @@ async function handleRequest(event) {
     }
   }
 
-  // 5b. Handle video pages — serve full edge-templated HTML for all visitors
+  // 4b. Diagnostic endpoint — test edge template rendering
+  if (url.pathname === '/_divine/diag') {
+    try {
+      const testResp = await fetchFromFunnelcake(funnelcakeTarget, '/api/videos?sort=trending&limit=1');
+      const testData = testResp.ok ? await testResp.json() : null;
+      const templateCheck = typeof renderVideoPage === 'function' ? 'OK' : 'MISSING';
+      return new Response(JSON.stringify({
+        backend: testResp.ok ? 'OK' : `FAIL:${testResp.status}`,
+        templateImport: templateCheck,
+        videoCount: testData ? (testData.length || 0) : 0,
+        firstVideo: testData?.[0]?.title || 'none',
+      }, null, 2), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    } catch (e) {
+      return new Response(JSON.stringify({ error: e.message, stack: e.stack }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+  }
+
+  // 5. Handle video pages — serve full edge-templated HTML for all visitors
   if (url.pathname.startsWith('/video/')) {
     const videoId = url.pathname.split('/video/')[1]?.split('?')[0];
     if (videoId) {
       console.log('Handling video page, id:', videoId);
-      const videoPageResponse = await handleVideoPage(request, videoId, url);
-      if (videoPageResponse) {
-        return videoPageResponse;
+      try {
+        const videoPageResponse = await handleVideoPage(request, videoId, url);
+        if (videoPageResponse) {
+          return videoPageResponse;
+        }
+      } catch (err) {
+        console.error('Video page handler error:', err.message, err.stack);
       }
     }
     console.log('Video page fallthrough to SPA handler');
@@ -313,7 +340,7 @@ async function handleRequest(event) {
 
   // 9. Serve static content with SPA fallback (handled by PublisherServer config)
   // Detect pages that benefit from edge-injected feed data
-  const isApexDomain = APEX_DOMAINS.includes(hostnameToUse);
+  const isApexDomain = APEX_DOMAINS.includes(hostnameToUse) || hostnameToUse.endsWith('.edgecompute.app');
   const isApexLanding = isApexDomain && (url.pathname === '/' || url.pathname === '/index.html');
   const discoveryFeedType = isApexDomain ? getDiscoveryFeedType(url.pathname) : null;
   const isCategoryPage = isApexDomain && url.pathname.startsWith('/category/');

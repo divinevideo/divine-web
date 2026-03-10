@@ -121,7 +121,7 @@ export function videoDetail(video) {
 </script>` : '';
 
   const mediaEl = videoUrl
-    ? `<video id="divine-video-player" poster="${thumbnail}" preload="none" playsinline loop muted>
+    ? `<video id="divine-video-player" poster="${thumbnail}" preload="none" playsinline loop>
         <source src="${videoUrl}" type="video/mp4" />
       </video>
       <div id="divine-play-btn" class="divine-play-overlay">${PLAY_ICON_SVG}</div>`
