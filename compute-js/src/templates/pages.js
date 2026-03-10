@@ -47,6 +47,7 @@ export function renderFeedPage({ videos, feedType = 'trending', feedJson = '', s
     preloadLinks += `\n  <link rel="preload" href="${escapeHtml(firstVideoUrl)}" as="video" type="video/mp4">`;
   }
 
+  // Inject a compact version of feed data for React (strip bulky Nostr event tags)
   const jsonInjection = feedJson
     ? `<script>window.__DIVINE_FEED__=${feedJson};window.__DIVINE_FEED_TYPE__="${escapeHtml(feedType)}";</script>`
     : '';
