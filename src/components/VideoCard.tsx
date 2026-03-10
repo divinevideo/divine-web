@@ -118,7 +118,7 @@ export function VideoCard({
   // Classic Vine detection — used for HLS skip and forced square aspect ratio
   // Vine shut down Jan 17, 2017 (unix 1484611200) — videos with originalVineTimestamp
   // before that date are almost certainly classic Vines even without origin/platform tags
-  const isClassicVine = !!video.loopCount || video.isVineMigrated ||
+  const isClassicVine = video.isVineMigrated ||
     (video.originalVineTimestamp !== undefined && video.originalVineTimestamp < 1484611200);
   // SKIP HLS for short-form videos — HLS adds 2 extra round-trips (manifest + segment)
   // that are unnecessary for small ~6-second videos (~2-4MB). Direct MP4 loads in a single request.

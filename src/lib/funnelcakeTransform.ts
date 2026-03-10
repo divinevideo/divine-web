@@ -79,8 +79,11 @@ export function transformFunnelcakeVideo(raw: FunnelcakeVideoRaw): ParsedVideoDa
 
     // Vine-specific fields
     vineId: raw.d_tag || null, // d_tag is the unique identifier
-    // loops may come from API or be parsed from content text (for user videos endpoint)
-    loopCount: raw.loops ?? parseLoopsFromContent(raw.content) ?? parseLoopsFromContent(raw.title) ?? 0,
+    // loops only meaningful for Vine archive videos — for new diVine videos,
+    // the API `loops` field tracks playback re-loops, NOT classic Vine loop counts
+    loopCount: isVineMigrated
+      ? (raw.loops ?? parseLoopsFromContent(raw.content) ?? parseLoopsFromContent(raw.title) ?? 0)
+      : 0,
     divineViewCount: raw.views ?? 0,
 
     // Social metrics from Funnelcake (pre-computed)
@@ -208,6 +211,6 @@ export function mergeVideoStats(
     likeCount: stats.reactions ?? video.likeCount,
     commentCount: stats.comments ?? video.commentCount,
     repostCount: stats.reposts ?? video.repostCount,
-    loopCount: stats.loops ?? video.loopCount,
+    loopCount: video.isVineMigrated ? (stats.loops ?? video.loopCount) : video.loopCount,
   };
 }
