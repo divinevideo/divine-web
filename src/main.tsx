@@ -18,7 +18,7 @@ initializeSentry();
 import { hydrateLoginFromCookie } from '@/lib/crossSubdomainAuth';
 hydrateLoginFromCookie();
 
-import { createRoot } from 'react-dom/client';
+import { createRoot, hydrateRoot } from 'react-dom/client';
 
 // Import polyfills first
 import './lib/polyfills.ts';
@@ -78,8 +78,16 @@ if ('serviceWorker' in navigator && !isSubdomain) {
   });
 }
 
-createRoot(document.getElementById("root")!).render(
+const rootEl = document.getElementById("root")!;
+const app = (
   <ErrorBoundary>
     <App />
   </ErrorBoundary>
 );
+
+if (rootEl.dataset.divineSsr) {
+  // Edge-templated HTML detected — hydrate instead of full render
+  hydrateRoot(rootEl, app);
+} else {
+  createRoot(rootEl).render(app);
+}
