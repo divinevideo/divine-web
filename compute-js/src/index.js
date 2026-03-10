@@ -134,14 +134,45 @@ async function handleRequest(event) {
     return new Response('Not Found', { status: 404 });
   }
 
+  // 4b. Diagnostic endpoint — test edge template rendering
+  if (url.pathname === '/_divine/diag') {
+    try {
+      const testResp = await fetch('https://relay.divine.video/api/videos?sort=trending&limit=1', {
+        backend: 'funnelcake',
+        method: 'GET',
+        headers: { 'Accept': 'application/json', 'Host': 'relay.divine.video' },
+      });
+      const testData = testResp.ok ? await testResp.json() : null;
+      const templateCheck = typeof renderVideoPage === 'function' ? 'OK' : 'MISSING';
+      return new Response(JSON.stringify({
+        backend: testResp.ok ? 'OK' : `FAIL:${testResp.status}`,
+        templateImport: templateCheck,
+        videoCount: testData ? (testData.length || 0) : 0,
+        firstVideo: testData?.[0]?.title || 'none',
+      }, null, 2), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    } catch (e) {
+      return new Response(JSON.stringify({ error: e.message, stack: e.stack }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+  }
+
   // 5. Handle video pages — serve full edge-templated HTML for all visitors
   if (url.pathname.startsWith('/video/')) {
     const videoId = url.pathname.split('/video/')[1]?.split('?')[0];
     if (videoId) {
       console.log('Handling video page, id:', videoId);
-      const videoPageResponse = await handleVideoPage(request, videoId, url);
-      if (videoPageResponse) {
-        return videoPageResponse;
+      try {
+        const videoPageResponse = await handleVideoPage(request, videoId, url);
+        if (videoPageResponse) {
+          return videoPageResponse;
+        }
+      } catch (err) {
+        console.error('Video page handler error:', err.message, err.stack);
       }
     }
     console.log('Video page fallthrough to SPA handler');
@@ -181,7 +212,7 @@ async function handleRequest(event) {
   }
 
   // 8. Serve edge-templated feed pages or static content with SPA fallback
-  const isApexDomain = APEX_DOMAINS.includes(hostnameToUse);
+  const isApexDomain = APEX_DOMAINS.includes(hostnameToUse) || hostnameToUse.endsWith('.edgecompute.app');
   const isApexLanding = isApexDomain && (url.pathname === '/' || url.pathname === '/index.html');
   const discoveryFeedType = isApexDomain ? getDiscoveryFeedType(url.pathname) : null;
   const isCategoryPage = isApexDomain && url.pathname.startsWith('/category/');

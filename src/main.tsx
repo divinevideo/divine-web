@@ -18,7 +18,7 @@ initializeSentry();
 import { hydrateLoginFromCookie } from '@/lib/crossSubdomainAuth';
 hydrateLoginFromCookie();
 
-import { createRoot, hydrateRoot } from 'react-dom/client';
+import { createRoot } from 'react-dom/client';
 
 // Import polyfills first
 import './lib/polyfills.ts';
@@ -78,16 +78,11 @@ if ('serviceWorker' in navigator && !isSubdomain) {
   });
 }
 
-const rootEl = document.getElementById("root")!;
-const app = (
+// Edge-templated pages have visible content inside #root already.
+// React replaces it with the full interactive app (createRoot clears children).
+// The edge content provides fast first-paint; React takes over for interactivity.
+createRoot(document.getElementById("root")!).render(
   <ErrorBoundary>
     <App />
   </ErrorBoundary>
 );
-
-if (rootEl.dataset.divineSsr) {
-  // Edge-templated HTML detected — hydrate instead of full render
-  hydrateRoot(rootEl, app);
-} else {
-  createRoot(rootEl).render(app);
-}
