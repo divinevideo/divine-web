@@ -45,7 +45,7 @@ export function videoCard(video) {
   const thumbnail = escapeHtml(video.thumbnail || '');
   const authorName = escapeHtml(video.author_name || video.authorName || '');
   const authorAvatar = escapeHtml(video.author_avatar || video.authorAvatar || '');
-  const videoId = escapeHtml(video.id || video.d_tag || '');
+  const videoId = escapeHtml(video.d_tag || video.id || '');
   const href = videoId ? `/video/${videoId}` : '#';
 
   const stats = [];

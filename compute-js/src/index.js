@@ -14,6 +14,51 @@ const publisherServer = PublisherServer.fromStaticPublishRc(rc);
 // Funnelcake API URL for fetching video metadata
 const FUNNELCAKE_API_URL = 'https://relay.divine.video';
 
+// Cached static asset paths (extracted from built index.html)
+let _staticAssets = null;
+
+/**
+ * Extract JS/CSS asset paths from the built index.html in KV store.
+ * Caches the result for the lifetime of the worker instance.
+ */
+async function getStaticAssets() {
+  if (_staticAssets) return _staticAssets;
+
+  try {
+    const contentStore = new KVStore('divine-web-content');
+    const indexEntry = await contentStore.get('default_index_live');
+    if (!indexEntry) return null;
+
+    const kvIndex = JSON.parse(await indexEntry.text());
+    const htmlAsset = kvIndex['/index.html'];
+    if (!htmlAsset) return null;
+
+    const sha256 = htmlAsset.key.replace('sha256:', '');
+    const contentKey = `default_files_sha256_${sha256}`;
+    const contentEntry = await contentStore.get(contentKey);
+    if (!contentEntry) return null;
+
+    const html = await contentEntry.text();
+
+    // Extract script and CSS paths from the built HTML
+    const jsMatch = html.match(/<script[^>]+src="([^"]+\.js)"/);
+    const cssMatch = html.match(/<link[^>]+href="([^"]+\.css)"[^>]*rel="stylesheet"/);
+    // Also try reversed attribute order
+    const cssMatch2 = html.match(/<link[^>]+rel="stylesheet"[^>]+href="([^"]+\.css)"/);
+
+    _staticAssets = {
+      mainJs: jsMatch?.[1] || '/src/main.tsx',
+      mainCss: cssMatch?.[1] || cssMatch2?.[1] || '',
+    };
+
+    console.log('Resolved static assets:', _staticAssets);
+    return _staticAssets;
+  } catch (e) {
+    console.error('Failed to resolve static assets:', e.message);
+    return null;
+  }
+}
+
 // Apex domains we serve (used to detect subdomains)
 const APEX_DOMAINS = ['dvine.video', 'divine.video'];
 
@@ -766,7 +811,8 @@ async function handleSubdomainProfile(subdomain, url, request, originalHostname)
   }
 
   // Render full edge-templated profile page
-  const profileHtml = renderProfilePage({ profile: divineUser, videos: userVideos });
+  const staticAssets = await getStaticAssets();
+  const profileHtml = renderProfilePage({ profile: divineUser, videos: userVideos, staticAssets });
 
   return new Response(profileHtml, {
     status: 200,
@@ -1042,7 +1088,8 @@ async function handleVideoPage(request, videoId, url) {
   }
 
   // 3. Render full HTML page
-  const html = renderVideoPage({ video: videoMeta, videoId });
+  const staticAssets = await getStaticAssets();
+  const html = renderVideoPage({ video: videoMeta, videoId, staticAssets });
   console.log('Rendered video page, id:', videoId, 'length:', html.length);
 
   // 4. Cache in KV (fire and forget)
@@ -1116,7 +1163,8 @@ async function handleFeedPage(feedType) {
     author_name: v.author_name, author_avatar: v.author_avatar,
   }));
   const feedJson = JSON.stringify(feedData.videos ? { ...feedData, videos: compactVideos } : compactVideos);
-  const html = renderFeedPage({ videos, feedType, feedJson });
+  const staticAssets = await getStaticAssets();
+  const html = renderFeedPage({ videos, feedType, feedJson, staticAssets });
   console.log('Rendered feed page, type:', feedType, 'videos:', videos.length, 'length:', html.length);
 
   // 5. Cache in KV
@@ -1161,7 +1209,8 @@ async function handleSearchPage(query) {
     const data = await resp.json();
     const results = data.videos || data.results || data || [];
 
-    const html = renderSearchPage({ query, results });
+    const staticAssets = await getStaticAssets();
+    const html = renderSearchPage({ query, results, staticAssets });
     console.log('Rendered search page, query:', query, 'results:', results.length);
 
     return new Response(html, {
