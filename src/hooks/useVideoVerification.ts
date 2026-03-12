@@ -6,8 +6,8 @@ import { useNostr } from '@nostrify/react';
 import { useQuery } from '@tanstack/react-query';
 import type { NostrFilter } from '@nostrify/nostrify';
 import type { ParsedVideoData } from '@/types/video';
+import { useModerationPubkey } from '@/hooks/useModerationPubkey';
 import {
-  DIVINE_MODERATION_PUBKEY,
   fetchVideoModerationStatus,
   getAIDetectionResultForEventId,
   getAIDetectionResultForHash,
@@ -29,6 +29,7 @@ export function useVideoVerification(
   options: UseVideoVerificationOptions = {},
 ) {
   const { nostr } = useNostr();
+  const moderationPubkey = useModerationPubkey();
   const autoFetchAi = options.autoFetchAi ?? shouldAutoFetchAiForBadge(video);
   const aiHashKey = resolveAIDetectionHashKey(video);
   const moderationSha256 = resolveModerationStatusSha256(video);
@@ -42,7 +43,7 @@ export function useVideoVerification(
 
       const querySignal = AbortSignal.any([signal, AbortSignal.timeout(10000)]);
       const eventIdFilter: NostrFilter = {
-        authors: [DIVINE_MODERATION_PUBKEY],
+        authors: [moderationPubkey],
         kinds: [1985],
         '#e': [video.id],
         limit: 20,
@@ -52,7 +53,7 @@ export function useVideoVerification(
       const hashPromise = aiHashKey
         ? nostr.query(
             [{
-              authors: [DIVINE_MODERATION_PUBKEY],
+              authors: [moderationPubkey],
               kinds: [1985],
               '#x': [aiHashKey],
               limit: 20,
