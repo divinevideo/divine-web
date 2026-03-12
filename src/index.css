@@ -98,6 +98,14 @@
     --sidebar-accent-foreground: 158 67% 8%;
     --sidebar-border: 30 18% 90%;
     --sidebar-ring: 158 67% 46%;
+
+    /* Mobile layout tokens */
+    --fg-on-surface-variant: 0 0% 100% / 0.75;
+    --fg-on-surface-disabled: 0 0% 100% / 0.25;
+    --bg-scrim: 0 0% 0% / 0.65;
+    --top-bar-height: 60px;
+    --bottom-nav-height: 68px;
+    --feed-height: calc(100dvh - var(--top-bar-height) - var(--bottom-nav-height));
   }
 
   .dark {
@@ -180,7 +188,111 @@
     --sidebar-border: 158 40% 18%;
 
     --sidebar-ring: 158 67% 46%;
+
+    /* Mobile layout tokens */
+    --fg-on-surface-variant: 0 0% 100% / 0.75;
+    --fg-on-surface-disabled: 0 0% 100% / 0.25;
+    --bg-scrim: 0 0% 0% / 0.65;
+    --top-bar-height: 60px;
+    --bottom-nav-height: 68px;
+    --feed-height: calc(100dvh - var(--top-bar-height) - var(--bottom-nav-height));
   }
+
+  /* Force dark theme on mobile/tablet for immersive video experience */
+  @media (max-width: 1023px) {
+    :root {
+      /* Brand: Dark Green #07241B for dark mode background */
+      --background: 158 67% 8%;
+      /* Brand: Off White #F9F7F6 for dark mode text */
+      --foreground: 30 18% 97%;
+
+      --card: 158 67% 8%;
+      --card-foreground: 30 18% 97%;
+
+      --popover: 158 67% 8%;
+      --popover-foreground: 30 18% 97%;
+
+      /* Brand primary: #27C58B -> hsl(158 67% 46%) - same in dark mode */
+      --primary: 158 67% 46%;
+      /* Brand Dark Green for text on green buttons */
+      --primary-foreground: 158 67% 8%;
+
+      /* Brand palette (same values, adjusted for dark mode visibility where needed) */
+      --brand-green: 158 67% 46%;
+      --brand-dark-green: 158 67% 8%;
+      --brand-light-green: 114 88% 90%;
+      --brand-off-white: 30 18% 97%;
+
+      /* Secondary palette for accents */
+      --brand-yellow: 56 100% 62%;
+      --brand-yellow-light: 56 100% 86%;
+      --brand-yellow-dark: 53 50% 14%;
+      --brand-lime: 79 100% 63%;
+      --brand-lime-light: 79 100% 89%;
+      --brand-lime-dark: 79 50% 12%;
+      --brand-pink: 338 100% 75%;
+      --brand-pink-light: 338 100% 93%;
+      --brand-pink-dark: 338 70% 15%;
+      --brand-orange: 20 100% 63%;
+      --brand-orange-light: 20 100% 89%;
+      --brand-orange-dark: 20 64% 17%;
+      --brand-violet: 236 100% 82%;
+      --brand-violet-light: 236 100% 94%;
+      --brand-violet-dark: 254 40% 22%;
+      --brand-purple: 254 100% 70%;
+      --brand-purple-light: 254 100% 91%;
+      --brand-purple-dark: 254 72% 21%;
+      --brand-blue: 196 86% 57%;
+      --brand-blue-light: 196 95% 90%;
+      --brand-blue-dark: 207 72% 14%;
+
+      /* Slightly lighter dark green for secondary/muted backgrounds */
+      --secondary: 158 50% 12%;
+      --secondary-foreground: 30 18% 97%;
+
+      --muted: 158 50% 12%;
+      /* Dimmed off-white for secondary text */
+      --muted-foreground: 30 15% 70%;
+
+      --accent: 158 50% 12%;
+      --accent-foreground: 30 18% 97%;
+
+      --destructive: 0 62.8% 30.6%;
+      --destructive-foreground: 30 18% 97%;
+
+      /* Lighter green for borders in dark mode */
+      --border: 158 40% 18%;
+      --input: 158 40% 18%;
+      --ring: 158 67% 46%;
+
+      /* Sidebar uses brand dark green */
+      --sidebar-background: 158 67% 8%;
+      --sidebar-foreground: 30 18% 97%;
+      --sidebar-primary: 30 18% 97%;
+      --sidebar-primary-foreground: 158 67% 8%;
+      --sidebar-accent: 158 50% 12%;
+      --sidebar-accent-foreground: 30 18% 97%;
+      --sidebar-border: 158 40% 18%;
+      --sidebar-ring: 158 67% 46%;
+
+      /* Mobile layout tokens */
+      --fg-on-surface-variant: 0 0% 100% / 0.75;
+      --fg-on-surface-disabled: 0 0% 100% / 0.25;
+      --bg-scrim: 0 0% 0% / 0.65;
+      --top-bar-height: 60px;
+      --bottom-nav-height: 68px;
+      --feed-height: calc(100dvh - var(--top-bar-height) - var(--bottom-nav-height));
+    }
+  }
+}
+
+/* Hide scrollbar for snap-scroll mobile feed */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
 }
 
 /* Prevent browser overflow anchoring from shifting feed on dynamic updates */
