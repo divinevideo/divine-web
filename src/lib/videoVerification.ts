@@ -5,7 +5,6 @@ import type { NostrEvent } from '@nostrify/nostrify';
 import { API_CONFIG } from '@/config/api';
 import type { ParsedVideoData, ProofModeData, ProofModeLevel } from '@/types/video';
 
-/** @deprecated Use useModerationPubkey() hook for NIP-05 resolution. This is the static fallback. */
 export const DIVINE_MODERATION_PUBKEY =
   '8fd5eb6d8f362163bc00a5ab6b4a3167dbf32d00ec4efdbcf43b3c9514433b7e';
 
