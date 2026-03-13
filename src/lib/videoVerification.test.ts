@@ -28,7 +28,7 @@ function makeVideo(overrides: Partial<ParsedVideoData> = {}): ParsedVideoData {
 function makeLabelEvent(tags: string[][], createdAt = 1700000000): NostrEvent {
   return {
     id: `label-${createdAt}`,
-    pubkey: '121b915baba659cbe59626a8afaf83b01dc42354dfecaad9d465d51bb5715d72',
+    pubkey: '8fd5eb6d8f362163bc00a5ab6b4a3167dbf32d00ec4efdbcf43b3c9514433b7e',
     created_at: createdAt,
     kind: 1985,
     tags,
