@@ -87,8 +87,8 @@ const NostrProvider: React.FC<NostrProviderProps> = (props) => {
         const BADGE_KINDS = [30009, 8, 30008];
 
         for (const filter of filters) {
-          if (filter.kinds?.includes(0) || filter.kinds?.includes(3)) {
-            // Kind 0 (profile metadata) and Kind 3 (contact lists) - route to profile relays
+          if (filter.kinds?.includes(0) || filter.kinds?.includes(3) || filter.kinds?.includes(10011)) {
+            // Kind 0 (profile metadata), Kind 3 (contact lists), Kind 10011 (NIP-39 identities) - route to profile relays
             profileRelayFilters.push(filter);
           } else if (filter.kinds?.some(k => BADGE_KINDS.includes(k))) {
             // NIP-58 badge events - route to badge relays
@@ -133,9 +133,8 @@ const NostrProvider: React.FC<NostrProviderProps> = (props) => {
         // Publish to the selected relay
         const allRelays = new Set<string>([relayUrl.current]);
 
-        // For contact lists (kind 3), publish to multiple relays for better availability
-        if (event.kind === 3) {
-          // Add common relays where contact lists should be stored
+        // For contact lists (kind 3) and identity claims (kind 10011), publish to multiple relays for better availability
+        if (event.kind === 3 || event.kind === 10011) {
           getRelayUrls(PROFILE_RELAYS).forEach(url => allRelays.add(url));
         }
 
