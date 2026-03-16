@@ -28,6 +28,19 @@ function parseLoopsFromContent(content?: string): number | null {
   return null;
 }
 
+function resolveLoopCount(raw: FunnelcakeVideoRaw, isVineMigrated: boolean): number {
+  const apiLoops = typeof raw.loops === 'number' && Number.isFinite(raw.loops) ? raw.loops : 0;
+
+  if (!isVineMigrated) {
+    return apiLoops;
+  }
+
+  const contentLoops = parseLoopsFromContent(raw.content) ?? 0;
+  const titleLoops = parseLoopsFromContent(raw.title) ?? 0;
+
+  return Math.max(apiLoops, contentLoops, titleLoops, 0);
+}
+
 /**
  * Transform a single Funnelcake video to ParsedVideoData format
  */
@@ -79,11 +92,9 @@ export function transformFunnelcakeVideo(raw: FunnelcakeVideoRaw): ParsedVideoDa
 
     // Vine-specific fields
     vineId: raw.d_tag || null, // d_tag is the unique identifier
-    // loops only meaningful for Vine archive videos — for new diVine videos,
-    // the API `loops` field tracks playback re-loops, NOT classic Vine loop counts
-    loopCount: isVineMigrated
-      ? (raw.loops ?? parseLoopsFromContent(raw.content) ?? parseLoopsFromContent(raw.title) ?? 0)
-      : 0,
+    // Classic Vine payloads can carry tiny new loop counters in raw.loops while
+    // the preserved Vine total only exists in embedded original-stats text.
+    loopCount: resolveLoopCount(raw, isVineMigrated),
     divineViewCount: raw.views ?? 0,
 
     // Social metrics from Funnelcake (pre-computed)
@@ -206,11 +217,15 @@ export function mergeVideoStats(
     loops?: number;
   }
 ): ParsedVideoData {
+  const mergedLoopCount = video.isVineMigrated
+    ? Math.max(video.loopCount ?? 0, stats.loops ?? 0)
+    : video.loopCount;
+
   return {
     ...video,
     likeCount: stats.reactions ?? video.likeCount,
     commentCount: stats.comments ?? video.commentCount,
     repostCount: stats.reposts ?? video.repostCount,
-    loopCount: video.isVineMigrated ? (stats.loops ?? video.loopCount) : video.loopCount,
+    loopCount: mergedLoopCount,
   };
 }

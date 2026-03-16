@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { transformFunnelcakeVideo } from './funnelcakeTransform';
+import { mergeVideoStats, transformFunnelcakeVideo } from './funnelcakeTransform';
 import type { FunnelcakeVideoRaw } from '@/types/funnelcake';
 
 function makeRawVideo(overrides: Partial<FunnelcakeVideoRaw> = {}): FunnelcakeVideoRaw {
@@ -63,5 +63,17 @@ describe('transformFunnelcakeVideo', () => {
 
     expect(video.isVineMigrated).toBe(false);
     expect(video.loopCount).toBe(12);
+  });
+
+  it('does not let later stats overwrite a classic archived loop count with a smaller value', () => {
+    const classicVideo = transformFunnelcakeVideo(makeRawVideo({
+      platform: 'vine',
+      loops: 1,
+      content: 'Original stats: 791,451 loops - 1,021 likes',
+    }));
+
+    const merged = mergeVideoStats(classicVideo, { loops: 2 });
+
+    expect(merged.loopCount).toBe(791451);
   });
 });
