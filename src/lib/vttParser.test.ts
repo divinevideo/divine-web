@@ -112,6 +112,28 @@ Full format`;
     expect(cues).toHaveLength(1);
     expect(cues[0].text).toBe('Hello');
   });
+
+  it('drops JSON cues with an empty text field', () => {
+    const vtt = `WEBVTT
+
+1
+00:00:00.000 --> 99:59:59.000
+{"text":"","usage":{"type":"tokens","total_tokens":65,"input_tokens":63,"output_tokens":2}}`;
+
+    expect(parseVtt(vtt)).toEqual([]);
+  });
+
+  it('uses the text field from JSON cues when present', () => {
+    const vtt = `WEBVTT
+
+1
+00:00:00.000 --> 00:00:03.000
+{"text":"Hello","usage":{"type":"tokens","total_tokens":65,"input_tokens":63,"output_tokens":2}}`;
+
+    expect(parseVtt(vtt)).toEqual([
+      { startTime: 0, endTime: 3, text: 'Hello' },
+    ]);
+  });
 });
 
 describe('getActiveCue', () => {

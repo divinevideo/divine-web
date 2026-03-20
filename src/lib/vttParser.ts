@@ -39,6 +39,27 @@ function stripTags(text: string): string {
   return text.replace(/<[^>]+>/g, '');
 }
 
+function normalizeCueText(rawText: string): string | null {
+  const stripped = stripTags(rawText).trim();
+  if (!stripped) return null;
+
+  if (!stripped.startsWith('{')) {
+    return stripped;
+  }
+
+  try {
+    const parsed = JSON.parse(stripped) as Record<string, unknown>;
+    if (!parsed || typeof parsed !== 'object' || typeof parsed.text !== 'string') {
+      return null;
+    }
+
+    const normalizedText = parsed.text.trim();
+    return normalizedText || null;
+  } catch {
+    return stripped;
+  }
+}
+
 /**
  * Parse WebVTT content into an array of cues
  * Tolerant: skips malformed cues, strips HTML tags
@@ -75,7 +96,7 @@ export function parseVtt(vttContent: string): VttCue[] {
         i++;
       }
 
-      const text = stripTags(textLines.join('\n')).trim();
+      const text = normalizeCueText(textLines.join('\n'));
       if (text) {
         cues.push({ startTime, endTime, text });
       }
