@@ -31,4 +31,19 @@ describe('transformFunnelcakeVideo', () => {
       externalId: 'vine-id',
     });
   });
+
+  it('prefers archived Vine loop tags over current diVine loop fields', () => {
+    const video = transformFunnelcakeVideo(makeRawVideo({
+      platform: 'vine',
+      loops: 28,
+      content: 'Original stats: 296,752 loops - 5,753 likes',
+      tags: [
+        ['platform', 'vine'],
+        ['loops', '296752'],
+        ['d', '592tnaPXh6z'],
+      ],
+    }));
+
+    expect(video.loopCount).toBe(296752);
+  });
 });

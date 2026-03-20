@@ -24,6 +24,7 @@ import { useResolveSubdomainPubkey } from '@/hooks/useResolveSubdomainPubkey';
 import { useVideoProvider } from '@/hooks/useVideoProvider';
 import { useFunnelcakeProfile } from '@/hooks/useFunnelcakeProfile';
 import { useProfileJoinedDate } from '@/hooks/useProfileJoinedDate';
+import { useClassicVineArchiveStats } from '@/hooks/useClassicVineArchiveStats';
 import { useFollowRelationship, useFollowUser, useUnfollowUser } from '@/hooks/useFollowRelationship';
 import { useFollowListSafetyCheck } from '@/hooks/useFollowListSafetyCheck';
 import { PinnedVideosSection } from '@/components/PinnedVideosSection';
@@ -32,6 +33,8 @@ import { debugLog } from '@/lib/debug';
 import { getDivineNip05Info } from '@/lib/nip05Utils';
 import { useNip05Validation } from '@/hooks/useNip05Validation';
 import { genUserName } from '@/lib/genUserName';
+import { parseLegacySocials } from '@/lib/legacySocials';
+import { buildProfileStats } from '@/lib/profileStats';
 import type { SortMode } from '@/types/nostr';
 
 export function ProfilePage() {
@@ -154,15 +157,6 @@ export function ProfilePage() {
     }
   }, [nip05, subdomainUser, nip05Validation.isValid]);
 
-  // Use Funnelcake stats (fast) - don't run expensive Nostr queries
-  // engagement.total_loops = computed from watch time (seconds_watched / video_duration)
-  // engagement.total_views = total view count across all videos
-  // engagement.total_reactions = likes/reactions received on videos
-  const vineVideos = videos?.filter(v => v.isVineMigrated) || [];
-  const originalLoopCount = vineVideos.reduce((sum, v) => sum + (v.loopCount || 0), 0);
-  // Classic Viner = has actual Vine-migrated videos, NOT just any video with loops
-  const isClassicViner = vineVideos.length > 0;
-
   // Use actual loaded video count once all pages are loaded (API video_count may be inflated by dups)
   const allLoaded = !hasNextPage && videos.length > 0;
   const totalVideoCount = funnelcakeProfile?.video_count ?? videos.length;
@@ -172,20 +166,42 @@ export function ProfilePage() {
     allVideosLoaded: allLoaded,
     enabled: !!pubkey,
   });
-  const stats = {
-    videosCount: allLoaded ? videos.length : totalVideoCount,
-    followersCount: funnelcakeProfile?.follower_count ?? 0,
-    followingCount: funnelcakeProfile?.following_count ?? 0,
-    totalViews: funnelcakeProfile?.total_views ?? 0,
-    totalLoops: Math.floor(funnelcakeProfile?.total_loops ?? 0),
-    totalReactions: funnelcakeProfile?.total_reactions ?? 0,
+  const archiveStatsQuery = useClassicVineArchiveStats(
+    pubkey || '',
+    !!pubkey && (videos.length > 0 || (funnelcakeProfile?.video_count ?? 0) > 0)
+  );
+  const stats = useMemo(() => buildProfileStats({
+    funnelcakeProfile,
+    loadedVideos: videos,
+    archiveStats: archiveStatsQuery.data,
     joinedDate: joinedDateQuery.data ?? null,
     joinedDateLoading: joinedDateQuery.isLoading,
-    isClassicViner,
-    originalLoopCount,
-    classicVineCount: vineVideos.length,
-  };
+    hasNextPage,
+  }), [
+    archiveStatsQuery.data,
+    funnelcakeProfile,
+    hasNextPage,
+    joinedDateQuery.data,
+    joinedDateQuery.isLoading,
+    videos,
+  ]);
   const statsLoading = funnelcakeLoading;
+  const legacySocials = useMemo(() => (
+    stats.isClassicViner
+      ? parseLegacySocials({
+          displayName: metadata.display_name,
+          name: metadata.name,
+          about: metadata.about,
+          website: metadata.website,
+        })
+      : []
+  ), [
+    metadata.about,
+    metadata.display_name,
+    metadata.name,
+    metadata.website,
+    stats.isClassicViner,
+  ]);
 
   // Follow relationship data
   const { data: followData, isLoading: followLoading } = useFollowRelationship(pubkey || '');
@@ -330,6 +346,7 @@ export function ProfilePage() {
           pubkey={pubkey}
           metadata={metadata}
           stats={stats}
+          legacySocials={legacySocials}
           isOwnProfile={isOwnProfile}
           isFollowing={followData?.isFollowing || false}
           onFollowToggle={handleFollowToggle}

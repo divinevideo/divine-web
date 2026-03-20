@@ -28,6 +28,14 @@ function parseLoopsFromContent(content?: string): number | null {
   return null;
 }
 
+function parseLoopsFromTags(tags?: string[][]): number | null {
+  const tagValue = tags?.find((tag) => tag[0] === 'loops')?.[1];
+  if (!tagValue) return null;
+
+  const loops = parseInt(tagValue.replace(/,/g, ''), 10);
+  return Number.isFinite(loops) && loops > 0 ? loops : null;
+}
+
 /**
  * Transform a single Funnelcake video to ParsedVideoData format
  */
@@ -50,6 +58,9 @@ export function transformFunnelcakeVideo(raw: FunnelcakeVideoRaw): ParsedVideoDa
 
   // Single-video lookups can omit top-level platform/classic fields, so fall back to tags.
   const isVineMigrated = raw.platform === 'vine' || raw.classic === true || taggedPlatform === 'vine';
+  const archivedLoopCount = parseLoopsFromTags(raw.tags)
+    ?? parseLoopsFromContent(raw.content)
+    ?? parseLoopsFromContent(raw.title);
 
   const fullEvent = raw.tags ? ({
     id: id,
@@ -82,7 +93,7 @@ export function transformFunnelcakeVideo(raw: FunnelcakeVideoRaw): ParsedVideoDa
     // loops only meaningful for Vine archive videos — for new diVine videos,
     // the API `loops` field tracks playback re-loops, NOT classic Vine loop counts
     loopCount: isVineMigrated
-      ? (raw.loops ?? parseLoopsFromContent(raw.content) ?? parseLoopsFromContent(raw.title) ?? 0)
+      ? (archivedLoopCount ?? raw.loops ?? 0)
       : 0,
     divineViewCount: raw.views ?? 0,
 

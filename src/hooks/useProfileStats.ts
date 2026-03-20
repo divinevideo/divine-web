@@ -3,13 +3,13 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { useNostr } from '@nostrify/react';
-import type { ProfileStats } from '@/components/ProfileHeader';
 import { debugLog } from '@/lib/debug';
 import type { ParsedVideoData } from '@/types/video';
 import { API_CONFIG } from '@/config/api';
 import { fetchUserProfile, fetchUserLoopStats } from '@/lib/funnelcakeClient';
 import { isFunnelcakeAvailable } from '@/lib/funnelcakeHealth';
 import { reportFunnelcakeFallback } from '@/lib/funnelcakeFallbackReporting';
+import type { ProfileStats } from '@/lib/profileStats';
 
 /**
  * Fetch comprehensive profile statistics for a user

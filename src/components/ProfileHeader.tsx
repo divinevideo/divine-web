@@ -34,6 +34,8 @@ import { toast } from '@/hooks/useToast';
 import { nip19 } from 'nostr-tools';
 import type { NostrMetadata } from '@nostrify/nostrify';
 import { getDmConversationPath } from '@/lib/dm';
+import type { LegacySocialLink } from '@/lib/legacySocials';
+import type { ProfileStats } from '@/lib/profileStats';
 
 /** Linkify URLs and domain-like words in text */
 function linkifyText(text: string): React.ReactNode[] {
@@ -75,21 +77,6 @@ function linkifyText(text: string): React.ReactNode[] {
   return parts;
 }
 
-export interface ProfileStats {
-  videosCount: number;
-  totalViews: number;       // Total video views/impressions
-  totalLoops: number;       // Total loops (watch time / video duration)
-  totalReactions: number;   // Total likes/reactions received
-  joinedDate: Date | null;
-  joinedDateLoading?: boolean;
-  followersCount: number;
-  followingCount: number;
-  // Classic Vine stats (original counts from Vine era)
-  originalLoopCount?: number;  // Sum of all original Vine loop counts
-  isClassicViner?: boolean;    // Whether this user has classic Vine content
-  classicVineCount?: number;   // Number of Vine-migrated videos
-}
-
 interface ProfileMetadata extends NostrMetadata {
   _stillLoadingName?: boolean;  // Flag to indicate name is still being fetched
 }
@@ -98,6 +85,7 @@ interface ProfileHeaderProps {
   pubkey: string;
   metadata?: ProfileMetadata;
   stats?: ProfileStats;
+  legacySocials?: LegacySocialLink[];
   isOwnProfile: boolean;
   isFollowing: boolean;
   onFollowToggle: (shouldFollow: boolean) => void;
@@ -134,6 +122,7 @@ export function ProfileHeader({
   pubkey,
   metadata,
   stats,
+  legacySocials,
   isOwnProfile,
   isFollowing,
   onFollowToggle,
@@ -312,6 +301,26 @@ export function ProfileHeader({
             <LinkedAccounts pubkey={pubkey} />
             <ProfileBadges badges={badgesQuery.data ?? []} />
           </div>
+
+          {stats?.isClassicViner && legacySocials && legacySocials.length > 0 && (
+            <div
+              className="mt-3 flex flex-wrap gap-2 justify-center sm:justify-start"
+              data-testid="classic-legacy-socials"
+            >
+              {legacySocials.map((social) => (
+                <a
+                  key={`${social.platform}:${social.handle}`}
+                  href={social.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center rounded-full border px-2 py-1 text-xs text-muted-foreground hover:text-foreground"
+                  aria-label={`${social.label}: ${social.handle}`}
+                >
+                  {social.label}: @{social.handle}
+                </a>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Edit Profile / Follow Button */}
