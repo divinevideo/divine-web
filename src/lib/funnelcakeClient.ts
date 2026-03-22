@@ -90,6 +90,13 @@ async function funnelcakeRequest<T>(
 
     return data as T;
   } catch (err) {
+    // Aborted requests (e.g. user typing fast in search) are not backend failures —
+    // don't let them trip the circuit breaker (fixes #167)
+    if (err instanceof DOMException && err.name === 'AbortError') {
+      debugLog(`[FunnelcakeClient] Request aborted (not a failure): ${endpoint}`);
+      throw err;
+    }
+
     // Don't double-record if it's already a FunnelcakeApiError
     if (err instanceof FunnelcakeApiError) {
       recordFunnelcakeFailure(apiUrl, err.message);
