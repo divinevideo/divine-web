@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { setInviteHandoff } from '@/lib/authHandoff';
-import { buildSignupRedirect } from '@/lib/divineLogin';
+import { buildLoginRedirect, buildSignupRedirect } from '@/lib/divineLogin';
 import { getInviteClientConfig, joinInviteWaitlist, validateInviteCode } from '@/lib/inviteApi';
 import { getStoredLocalNsecLogin } from '@/lib/localNsecAccount';
 import { cn } from '@/lib/utils';
@@ -251,6 +251,20 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin }) =
     }
   };
 
+  const handleExistingAccountLogin = async () => {
+    setConfigError(null);
+    setIsLoginLoading(true);
+
+    try {
+      const returnPath = `${window.location.pathname}${window.location.search}`;
+      const redirect = await buildLoginRedirect({ returnPath });
+      window.location.assign(redirect.url);
+    } catch (caughtError) {
+      setConfigError(caughtError instanceof Error ? caughtError.message : 'Unable to start sign-in');
+      setIsLoginLoading(false);
+    }
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className={cn('max-w-[95vw] overflow-hidden rounded-2xl p-0 sm:max-w-md')}>
@@ -303,6 +317,18 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin }) =
               onSubmit={handleWaitlistSubmit}
             />
           )}
+
+          {!isConfigLoading && !configError ? (
+            <Button
+              className="w-full rounded-full"
+              disabled={isInviteLoading || isLoginLoading || isWaitlistLoading}
+              onClick={handleExistingAccountLogin}
+              type="button"
+              variant="secondary"
+            >
+              {isLoginLoading ? 'Redirecting...' : 'I already have an account'}
+            </Button>
+          ) : null}
 
           <Collapsible open={advancedOpen} onOpenChange={setAdvancedOpen}>
             <CollapsibleTrigger asChild>

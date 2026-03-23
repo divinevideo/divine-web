@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import LoginDialog from './LoginDialog';
 
 const {
+  mockBuildLoginRedirect,
   mockBuildSignupRedirect,
   mockGetInviteClientConfig,
   mockGetStoredLocalNsecLogin,
@@ -13,6 +14,7 @@ const {
   mockSetInviteHandoff,
   mockValidateInviteCode,
 } = vi.hoisted(() => ({
+  mockBuildLoginRedirect: vi.fn(),
   mockBuildSignupRedirect: vi.fn(),
   mockGetInviteClientConfig: vi.fn(),
   mockGetStoredLocalNsecLogin: vi.fn(),
@@ -44,6 +46,7 @@ vi.mock('@/lib/divineLogin', async () => {
 
   return {
     ...actual,
+    buildLoginRedirect: mockBuildLoginRedirect,
     buildSignupRedirect: mockBuildSignupRedirect,
   };
 });
@@ -72,6 +75,10 @@ describe('LoginDialog', () => {
       state: 'signup-state',
       url: 'https://login.divine.video/api/oauth/authorize?client_id=divine-web',
     });
+    mockBuildLoginRedirect.mockResolvedValue({
+      state: 'login-state',
+      url: 'https://login.divine.video/api/oauth/authorize?client_id=divine-web',
+    });
 
     Object.defineProperty(window, 'location', {
       value: { ...originalLocation, assign: locationAssign, pathname: '/', search: '' },
@@ -95,6 +102,7 @@ describe('LoginDialog', () => {
     await screen.findByRole('button', { name: /Continue with invite code/i });
 
     expect(screen.getByRole('button', { name: /Join the waitlist/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /I already have an account/i })).toBeInTheDocument();
     expect(screen.getByPlaceholderText(/Enter your invite code/i)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Login with Extension/i })).not.toBeInTheDocument();
   });
@@ -158,6 +166,20 @@ describe('LoginDialog', () => {
           mode: 'signup',
         }),
       );
+      expect(locationAssign).toHaveBeenCalledWith('https://login.divine.video/api/oauth/authorize?client_id=divine-web');
+    });
+  });
+
+  it('redirects existing-account users without validating an invite code', async () => {
+    const user = userEvent.setup();
+
+    render(<LoginDialog isOpen onClose={vi.fn()} onLogin={vi.fn()} />);
+
+    await user.click(await screen.findByRole('button', { name: /I already have an account/i }));
+
+    await waitFor(() => {
+      expect(mockBuildLoginRedirect).toHaveBeenCalledWith({ returnPath: '/' });
+      expect(mockValidateInviteCode).not.toHaveBeenCalled();
       expect(locationAssign).toHaveBeenCalledWith('https://login.divine.video/api/oauth/authorize?client_id=divine-web');
     });
   });
