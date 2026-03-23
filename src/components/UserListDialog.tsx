@@ -20,6 +20,8 @@ import { getSafeProfileImage } from '@/lib/imageUtils';
 import { genUserName } from '@/lib/genUserName';
 import { Sentry } from '@/lib/sentry';
 
+const ESTIMATED_ROW_HEIGHT = 56;
+
 interface UserListDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -115,21 +117,35 @@ export function UserListDialog({
   const rowVirtualizer = useVirtualizer({
     count: totalCount,
     getScrollElement: () => parentRef.current,
-    estimateSize: () => 56,
+    estimateSize: () => ESTIMATED_ROW_HEIGHT,
     overscan: 5,
   });
 
   const virtualItems = rowVirtualizer.getVirtualItems();
+  const virtualizedHeight = rowVirtualizer.getTotalSize();
+  const renderedRows = useMemo(() => {
+    if (virtualItems.length > 0) {
+      return virtualItems;
+    }
+
+    const fallbackCount = Math.min(totalCount, 8);
+    return Array.from({ length: fallbackCount }, (_, index) => ({
+      key: `fallback-${index}`,
+      index,
+      size: ESTIMATED_ROW_HEIGHT,
+      start: index * ESTIMATED_ROW_HEIGHT,
+    }));
+  }, [totalCount, virtualItems]);
 
   // Resolve profiles only for the visible range + a buffer
   const visiblePubkeys = useMemo(() => {
-    if (virtualItems.length === 0) return [];
-    const visibleStart = virtualItems[0].index;
-    const visibleEnd = virtualItems[virtualItems.length - 1].index;
+    if (renderedRows.length === 0) return [];
+    const visibleStart = renderedRows[0].index;
+    const visibleEnd = renderedRows[renderedRows.length - 1].index;
     const bufferStart = Math.max(0, visibleStart - 10);
-    const bufferEnd = Math.min(pubkeys.length, visibleEnd + 10);
+    const bufferEnd = Math.min(pubkeys.length, visibleEnd + 11);
     return pubkeys.slice(bufferStart, bufferEnd);
-  }, [virtualItems, pubkeys]);
+  }, [renderedRows, pubkeys]);
 
   const { data: authorsData } = useBatchedAuthors(open ? visiblePubkeys : []);
 
@@ -153,7 +169,10 @@ export function UserListDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-sm max-h-[80vh] flex flex-col p-0">
+      <DialogContent
+        className="max-w-sm h-[min(80vh,36rem)] min-h-80 flex flex-col p-0"
+        style={{ overflowY: 'hidden' }}
+      >
         <DialogHeader className="px-6 pt-6 pb-2">
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription className="sr-only">
@@ -170,17 +189,16 @@ export function UserListDialog({
         ) : (
           <div
             ref={parentRef}
-            className="overflow-y-auto flex-1 px-4 pb-4"
-            style={{ contain: 'strict' }}
+            className="min-h-0 flex-1 overflow-y-auto px-4 pb-4"
           >
             <div
               style={{
-                height: `${rowVirtualizer.getTotalSize()}px`,
+                height: `${Math.max(virtualizedHeight, renderedRows.length * ESTIMATED_ROW_HEIGHT)}px`,
                 width: '100%',
                 position: 'relative',
               }}
             >
-              {virtualItems.map((virtualRow) => {
+              {renderedRows.map((virtualRow) => {
                 const index = virtualRow.index;
 
                 if (index >= pubkeys.length) {
