@@ -2,7 +2,7 @@
 // ABOUTME: Ensures Kind 3 contact list is fetched fresh before publishing to prevent data loss
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { renderHook, waitFor, act } from '@testing-library/react';
+import { renderHook, act } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
 import type { NostrEvent } from '@nostrify/nostrify';
