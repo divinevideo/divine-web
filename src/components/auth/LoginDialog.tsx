@@ -294,7 +294,8 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin }) =
             </div>
           ) : configError ? (
             <div className="rounded-2xl bg-muted px-4 py-6 text-center text-sm text-muted-foreground">
-              Invite sign-up is unavailable right now. You can still use the advanced login methods below.
+              Invite sign-up is unavailable right now. You can still sign in with an existing account or use the
+              advanced login methods below.
             </div>
           ) : view === 'invite' ? (
             <InviteCodeForm
@@ -318,7 +319,7 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin }) =
             />
           )}
 
-          {!isConfigLoading && !configError ? (
+          {!isConfigLoading ? (
             <Button
               className="w-full rounded-full"
               disabled={isInviteLoading || isLoginLoading || isWaitlistLoading}
