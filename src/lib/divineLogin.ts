@@ -92,6 +92,16 @@ export async function buildSignupRedirect(options?: { returnPath?: string }): Pr
   return { state, url };
 }
 
+export async function buildLoginRedirect(options?: { returnPath?: string }): Promise<DivineLoginRedirect> {
+  const client = createClient();
+  const { url } = await client.oauth.getAuthorizationUrl({});
+  const state = readStateFromRedirect(url);
+
+  storeReturnPath(state, options?.returnPath);
+
+  return { state, url };
+}
+
 export async function buildSecureAccountRedirect(
   nsec: string,
   options?: { returnPath?: string },

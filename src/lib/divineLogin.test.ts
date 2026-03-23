@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { generateSecretKey, getPublicKey, nip19 } from 'nostr-tools';
 
 import {
+  buildLoginRedirect,
   buildSecureAccountRedirect,
   buildSignupRedirect,
   exchangeDivineLoginCallback,
@@ -67,6 +68,18 @@ describe('divineLogin', () => {
     expect(url.searchParams.get('client_id')).toBe('divine-web');
     expect(url.searchParams.get('redirect_uri')).toBe('https://divine.video/auth/callback');
     expect(url.searchParams.get('default_register')).toBe('true');
+    expect(url.searchParams.get('state')).toBe(redirect.state);
+    expect(localStorage.getItem(`${RETURN_PATH_PREFIX}${redirect.state}`)).toBe('/messages');
+  });
+
+  it('builds an existing-account login redirect without forcing register mode', async () => {
+    const redirect = await buildLoginRedirect({ returnPath: '/messages' });
+    const url = new URL(redirect.url);
+
+    expect(`${url.origin}${url.pathname}`).toBe('https://login.divine.video/api/oauth/authorize');
+    expect(url.searchParams.get('client_id')).toBe('divine-web');
+    expect(url.searchParams.get('redirect_uri')).toBe('https://divine.video/auth/callback');
+    expect(url.searchParams.get('default_register')).toBeNull();
     expect(url.searchParams.get('state')).toBe(redirect.state);
     expect(localStorage.getItem(`${RETURN_PATH_PREFIX}${redirect.state}`)).toBe('/messages');
   });
