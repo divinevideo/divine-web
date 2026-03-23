@@ -118,9 +118,14 @@ export function useFollowRelationship(targetPubkey: string) {
 
 /**
  * Follow a user by updating the contact list (kind 3)
+ *
+ * IMPORTANT: Always fetches the latest Kind 3 from the relay before publishing
+ * to prevent accidental follow list overwrites when the UI's cached contact list
+ * is stale or hasn't loaded yet (e.g., fresh mobile Safari login).
  */
 export function useFollowUser() {
   const { mutateAsync: publishEvent } = useNostrPublish();
+  const { nostr } = useNostr();
   const queryClient = useQueryClient();
   const { user } = useCurrentUser();
 
@@ -128,8 +133,45 @@ export function useFollowUser() {
     mutationFn: async ({ targetPubkey, currentContactList, targetDisplayName }: FollowUserParams) => {
       if (!user?.pubkey) throw new Error('No current user');
 
-      // Get current contact list tags or start with empty array
-      const currentTags = currentContactList?.tags || [];
+      // CRITICAL: Always fetch the latest Kind 3 from the relay before publishing.
+      // The passed currentContactList may be stale or null if the UI query hasn't
+      // loaded yet (race condition on fresh sessions / mobile browsers).
+      let bestContactList = currentContactList;
+
+      try {
+        const relayEvents = await nostr.query([
+          { kinds: [3], authors: [user.pubkey], limit: 1 },
+        ], { signal: AbortSignal.timeout(5000) });
+
+        const relayContactList = relayEvents
+          .filter((e: NostrEvent) => e.kind === 3)
+          .sort((a: NostrEvent, b: NostrEvent) => b.created_at - a.created_at)[0] || null;
+
+        if (relayContactList) {
+          const relayFollowCount = relayContactList.tags.filter((t: string[]) => t[0] === 'p').length;
+          const passedFollowCount = currentContactList?.tags.filter((t: string[]) => t[0] === 'p').length ?? 0;
+
+          // Use whichever has more follows to prevent data loss
+          if (relayFollowCount >= passedFollowCount) {
+            bestContactList = relayContactList;
+            debugLog('[useFollowUser] Using relay contact list:', relayFollowCount, 'follows (passed had', passedFollowCount, ')');
+          } else {
+            debugLog('[useFollowUser] Using passed contact list:', passedFollowCount, 'follows (relay had', relayFollowCount, ')');
+          }
+        }
+      } catch (error) {
+        debugLog('[useFollowUser] Failed to fetch latest Kind 3 from relay, using passed contact list:', error);
+      }
+
+      // If we still have no contact list after trying both sources, refuse to publish
+      // to prevent creating a Kind 3 with only 1 follow that overwrites an existing list
+      if (!bestContactList) {
+        throw new Error(
+          'Could not load your existing follow list. Please try again in a moment.'
+        );
+      }
+
+      const currentTags = bestContactList.tags;
 
       // Check if already following (shouldn't happen but good safety check)
       const alreadyFollowing = currentTags.some(tag => tag[0] === 'p' && tag[1] === targetPubkey);
@@ -143,7 +185,7 @@ export function useFollowUser() {
       const updatedTags = [...currentTags, newFollowTag];
 
       // Preserve relay information from existing contact list or use default
-      const relayContent = currentContactList?.content || JSON.stringify({
+      const relayContent = bestContactList.content || JSON.stringify({
         [PRIMARY_RELAY.url]: { read: true, write: true },
       });
 
@@ -180,26 +222,56 @@ export function useFollowUser() {
 
 /**
  * Unfollow a user by removing them from the contact list
+ *
+ * IMPORTANT: Always fetches the latest Kind 3 from the relay before publishing
+ * to prevent accidental follow list overwrites.
  */
 export function useUnfollowUser() {
   const { mutateAsync: publishEvent } = useNostrPublish();
+  const { nostr } = useNostr();
   const queryClient = useQueryClient();
   const { user } = useCurrentUser();
 
   return useMutation({
     mutationFn: async ({ targetPubkey, currentContactList }: UnfollowUserParams) => {
       if (!user?.pubkey) throw new Error('No current user');
-      if (!currentContactList) throw new Error('No contact list to update');
+
+      // Fetch latest Kind 3 from relay, same as useFollowUser
+      let bestContactList = currentContactList;
+
+      try {
+        const relayEvents = await nostr.query([
+          { kinds: [3], authors: [user.pubkey], limit: 1 },
+        ], { signal: AbortSignal.timeout(5000) });
+
+        const relayContactList = relayEvents
+          .filter((e: NostrEvent) => e.kind === 3)
+          .sort((a: NostrEvent, b: NostrEvent) => b.created_at - a.created_at)[0] || null;
+
+        if (relayContactList) {
+          const relayFollowCount = relayContactList.tags.filter((t: string[]) => t[0] === 'p').length;
+          const passedFollowCount = currentContactList?.tags.filter((t: string[]) => t[0] === 'p').length ?? 0;
+
+          if (relayFollowCount >= passedFollowCount) {
+            bestContactList = relayContactList;
+            debugLog('[useUnfollowUser] Using relay contact list:', relayFollowCount, 'follows');
+          }
+        }
+      } catch (error) {
+        debugLog('[useUnfollowUser] Failed to fetch latest Kind 3, using passed contact list:', error);
+      }
+
+      if (!bestContactList) throw new Error('No contact list to update');
 
       // Remove the target user from tags
-      const updatedTags = currentContactList.tags.filter(tag =>
+      const updatedTags = bestContactList.tags.filter(tag =>
         !(tag[0] === 'p' && tag[1] === targetPubkey)
       );
 
       // Create new contact list event with removed user
       return await publishEvent({
         kind: 3,
-        content: currentContactList.content,
+        content: bestContactList.content,
         tags: updatedTags,
       });
     },
