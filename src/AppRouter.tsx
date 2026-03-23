@@ -43,6 +43,7 @@ import { FAQPage } from "./pages/FAQPage";
 import { TermsPage } from "./pages/TermsPage";
 import GetEmbedPage from "./pages/GetEmbedPage";
 import AppCallbackPage from "./pages/AppCallbackPage";
+import AuthCallbackPage from "./pages/AuthCallbackPage";
 import { AppLayout } from "@/components/AppLayout";
 import { DebugVideoPage } from "./pages/DebugVideoPage";
 import LeaderboardPage from "./pages/LeaderboardPage";
@@ -80,6 +81,7 @@ export function AppRouter() {
         <Route path="/faq" element={<FAQPage />} />
         <Route path="/get-embed" element={<GetEmbedPage />} />
         <Route path="/app/callback" element={<AppCallbackPage />} />
+        <Route path="/auth/callback" element={<AuthCallbackPage />} />
 
         {/* App routes - with AppLayout */}
         <Route element={<AppLayout />}>
