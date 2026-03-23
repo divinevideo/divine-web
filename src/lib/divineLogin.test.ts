@@ -12,6 +12,19 @@ const fetchMock = vi.fn<typeof fetch>();
 const originalLocation = window.location;
 const RETURN_PATH_PREFIX = 'divine:return-path:';
 
+/** jsdom may not implement localStorage; provide a minimal in-memory fallback. */
+function createMemoryStorage(): Storage {
+  const store = new Map<string, string>();
+  return {
+    get length() { return store.size; },
+    clear() { store.clear(); },
+    getItem(key: string) { return store.get(key) ?? null; },
+    key(index: number) { return [...store.keys()][index] ?? null; },
+    removeItem(key: string) { store.delete(key); },
+    setItem(key: string, value: string) { store.set(key, value); },
+  };
+}
+
 function createNsec() {
   return nip19.nsecEncode(generateSecretKey());
 }
@@ -27,7 +40,12 @@ function setLocation(url: string) {
 describe('divineLogin', () => {
   beforeEach(() => {
     vi.stubGlobal('fetch', fetchMock);
-    sessionStorage.clear();
+    // jsdom may not provide a working localStorage; stub with in-memory storage.
+    if (typeof localStorage?.clear !== 'function') {
+      vi.stubGlobal('localStorage', createMemoryStorage());
+    } else {
+      localStorage.clear();
+    }
     setLocation('https://divine.video/home');
   });
 
@@ -50,7 +68,7 @@ describe('divineLogin', () => {
     expect(url.searchParams.get('redirect_uri')).toBe('https://divine.video/auth/callback');
     expect(url.searchParams.get('default_register')).toBe('true');
     expect(url.searchParams.get('state')).toBe(redirect.state);
-    expect(sessionStorage.getItem(`${RETURN_PATH_PREFIX}${redirect.state}`)).toBe('/messages');
+    expect(localStorage.getItem(`${RETURN_PATH_PREFIX}${redirect.state}`)).toBe('/messages');
   });
 
   it('builds a secure-account redirect without placing the nsec in the URL', async () => {
@@ -67,12 +85,12 @@ describe('divineLogin', () => {
     expect(url.searchParams.get('byok_pubkey')).toBe(getPublicKey(decoded.data));
     expect(url.searchParams.get('default_register')).toBe('true');
     expect(redirect.url).not.toContain(nsec);
-    expect(sessionStorage.getItem(`${RETURN_PATH_PREFIX}${redirect.state}`)).toBe('/settings/linked-accounts');
-    expect(sessionStorage.getItem(`divine:secure-account:${redirect.state}`)).toBeNull();
+    expect(localStorage.getItem(`${RETURN_PATH_PREFIX}${redirect.state}`)).toBe('/settings/linked-accounts');
+    expect(localStorage.getItem(`divine:secure-account:${redirect.state}`)).toBeNull();
   });
 
   it('parses callback query parameters from the login redirect', () => {
-    sessionStorage.setItem(`${RETURN_PATH_PREFIX}test-state`, '/messages');
+    localStorage.setItem(`${RETURN_PATH_PREFIX}test-state`, '/messages');
 
     expect(parseDivineLoginCallback(
       'https://divine.video/auth/callback?code=test-code&state=test-state&return_path=%2Fmessages',

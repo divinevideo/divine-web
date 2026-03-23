@@ -35,14 +35,16 @@ vi.mock('@/lib/authHandoff', () => ({
   clearInviteHandoff: mockClearInviteHandoff,
 }));
 
-vi.mock('@/lib/divineLogin', async () => {
-  const actual = await vi.importActual<typeof import('./../lib/divineLogin')>('./../lib/divineLogin');
-
-  return {
-    ...actual,
-    exchangeDivineLoginCallback: mockExchangeDivineLoginCallback,
-  };
-});
+vi.mock('@/lib/divineLogin', () => ({
+  parseDivineLoginCallback: (url: string) => {
+    const parsed = new URL(url);
+    return {
+      code: parsed.searchParams.get('code') ?? undefined,
+      state: parsed.searchParams.get('state') ?? undefined,
+    };
+  },
+  exchangeDivineLoginCallback: mockExchangeDivineLoginCallback,
+}));
 
 describe('AuthCallbackPage', () => {
   beforeEach(() => {

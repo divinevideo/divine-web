@@ -41,9 +41,10 @@ function createClient(fetchImpl: typeof fetch = fetch) {
     clientId: DIVINE_LOGIN_CLIENT_ID,
     redirectUri: buildCallbackUrl(),
     fetch: fetchImpl,
-    // Session storage survives the redirect round-trip without leaving BYOK PKCE
-    // material behind indefinitely.
-    storage: sessionStorage,
+    // localStorage survives cross-origin redirects more reliably than sessionStorage,
+    // which can be lost if the browser opens a new tab or browsing context changes.
+    // The SDK cleans up PKCE material after exchangeCode completes.
+    storage: localStorage,
   });
 }
 
@@ -65,7 +66,7 @@ function storeReturnPath(state: string, returnPath?: string): void {
     return;
   }
 
-  sessionStorage.setItem(getReturnPathKey(state), returnPath);
+  localStorage.setItem(getReturnPathKey(state), returnPath);
 }
 
 function readStoredReturnPath(state?: string): string | undefined {
@@ -74,8 +75,8 @@ function readStoredReturnPath(state?: string): string | undefined {
   }
 
   const key = getReturnPathKey(state);
-  const returnPath = sessionStorage.getItem(key) ?? undefined;
-  sessionStorage.removeItem(key);
+  const returnPath = localStorage.getItem(key) ?? undefined;
+  localStorage.removeItem(key);
   return returnPath;
 }
 
