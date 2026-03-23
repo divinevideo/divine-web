@@ -34,7 +34,7 @@ export function InviteCodeForm(props: InviteCodeFormProps) {
           autoComplete="off"
           id="invite-code"
           onChange={(event) => onInviteCodeChange(event.target.value)}
-          placeholder="ABCD-EFGH"
+          placeholder="Enter your invite code"
           value={value}
         />
         {error ? <p className="text-sm text-red-500">{error}</p> : null}

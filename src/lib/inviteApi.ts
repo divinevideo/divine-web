@@ -57,8 +57,25 @@ function toInviteApiError(response: Response, body: Record<string, unknown>): In
   return new InviteApiError(message, 'unknown', response.status);
 }
 
+function toNetworkInviteApiError(error: unknown): InviteApiError {
+  const message = error instanceof Error && error.message
+    ? error.message
+    : 'Invite service unavailable';
+
+  return new InviteApiError(
+    message === 'Failed to fetch' ? 'Invite service unavailable' : message,
+    'unavailable',
+    0,
+  );
+}
+
 export async function getInviteClientConfig(): Promise<InviteClientConfig> {
-  const response = await fetch(`${INVITE_API_BASE_URL}/v1/client-config`);
+  let response: Response;
+  try {
+    response = await fetch(`${INVITE_API_BASE_URL}/v1/client-config`);
+  } catch (error) {
+    throw toNetworkInviteApiError(error);
+  }
   const body = await readJson(response);
 
   if (!response.ok) {
@@ -78,11 +95,16 @@ export async function getInviteClientConfig(): Promise<InviteClientConfig> {
 
 export async function validateInviteCode(code: string): Promise<InviteValidationResult> {
   const normalizedCode = normalizeInviteCode(code);
-  const response = await fetch(`${INVITE_API_BASE_URL}/v1/validate`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ code: normalizedCode }),
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${INVITE_API_BASE_URL}/v1/validate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code: normalizedCode }),
+    });
+  } catch (error) {
+    throw toNetworkInviteApiError(error);
+  }
   const body = await readJson(response);
 
   if (!response.ok || body.valid === false) {
@@ -100,11 +122,16 @@ export async function validateInviteCode(code: string): Promise<InviteValidation
 }
 
 export async function joinInviteWaitlist(contact: string): Promise<WaitlistJoinResult> {
-  const response = await fetch(`${INVITE_API_BASE_URL}/v1/waitlist`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ contact: contact.trim() }),
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${INVITE_API_BASE_URL}/v1/waitlist`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contact: contact.trim() }),
+    });
+  } catch (error) {
+    throw toNetworkInviteApiError(error);
+  }
   const body = await readJson(response);
 
   if (!response.ok) {

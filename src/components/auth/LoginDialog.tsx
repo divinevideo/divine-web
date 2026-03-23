@@ -278,6 +278,10 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin }) =
             <div className="rounded-2xl bg-muted px-4 py-6 text-center text-sm text-muted-foreground">
               Checking invite status...
             </div>
+          ) : configError ? (
+            <div className="rounded-2xl bg-muted px-4 py-6 text-center text-sm text-muted-foreground">
+              Invite sign-up is unavailable right now. You can still use the advanced login methods below.
+            </div>
           ) : view === 'invite' ? (
             <InviteCodeForm
               error={inviteError}

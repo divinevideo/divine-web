@@ -81,6 +81,16 @@ describe('inviteApi', () => {
     } satisfies Partial<InviteApiError>);
   });
 
+  it('maps network failures to an unavailable invite service error', async () => {
+    fetchMock.mockRejectedValue(new TypeError('Failed to fetch'));
+
+    await expect(getInviteClientConfig()).rejects.toMatchObject({
+      code: 'unavailable',
+      message: 'Invite service unavailable',
+      status: 0,
+    } satisfies Partial<InviteApiError>);
+  });
+
   it('submits waitlist entries to the invite service', async () => {
     fetchMock.mockResolvedValue(
       new Response(JSON.stringify({

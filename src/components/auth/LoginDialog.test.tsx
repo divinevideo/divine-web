@@ -95,6 +95,7 @@ describe('LoginDialog', () => {
     await screen.findByRole('button', { name: /Continue with invite code/i });
 
     expect(screen.getByRole('button', { name: /Join the waitlist/i })).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/Enter your invite code/i)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Login with Extension/i })).not.toBeInTheDocument();
   });
 
@@ -159,5 +160,16 @@ describe('LoginDialog', () => {
       );
       expect(locationAssign).toHaveBeenCalledWith('https://login.divine.video/api/oauth/authorize?client_id=divine-web');
     });
+  });
+
+  it('falls back to advanced login methods when the invite service config fails', async () => {
+    mockGetInviteClientConfig.mockRejectedValue(new Error('Invite service unavailable'));
+
+    render(<LoginDialog isOpen onClose={vi.fn()} onLogin={vi.fn()} />);
+
+    await screen.findByText(/Invite service unavailable/i);
+    expect(screen.queryByRole('button', { name: /Continue with invite code/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Join the waitlist/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Login with Extension/i })).toBeInTheDocument();
   });
 });
