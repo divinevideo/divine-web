@@ -227,7 +227,7 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin }) =
         createdAt: Date.now(),
         returnPath,
       });
-      const redirect = buildSignupRedirect({ returnPath });
+      const redirect = await buildSignupRedirect({ returnPath });
       window.location.assign(redirect.url);
     } catch (caughtError) {
       setInviteError(caughtError instanceof Error ? caughtError.message : 'Unable to validate invite code');

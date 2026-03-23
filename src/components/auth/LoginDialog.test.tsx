@@ -68,9 +68,9 @@ describe('LoginDialog', () => {
       waitlistEnabled: true,
     });
     mockGetStoredLocalNsecLogin.mockReturnValue(null);
-    mockBuildSignupRedirect.mockReturnValue({
+    mockBuildSignupRedirect.mockResolvedValue({
       state: 'signup-state',
-      url: 'https://login.divine.video/oauth/start?mode=signup',
+      url: 'https://login.divine.video/api/oauth/authorize?client_id=divine-web',
     });
 
     Object.defineProperty(window, 'location', {
@@ -157,7 +157,7 @@ describe('LoginDialog', () => {
           mode: 'signup',
         }),
       );
-      expect(locationAssign).toHaveBeenCalledWith('https://login.divine.video/oauth/start?mode=signup');
+      expect(locationAssign).toHaveBeenCalledWith('https://login.divine.video/api/oauth/authorize?client_id=divine-web');
     });
   });
 });

@@ -29,8 +29,8 @@ export default function AuthCallbackPage() {
         const callback = parseDivineLoginCallback(`${window.location.origin}${location.pathname}${location.search}`);
         const result = await exchangeDivineLoginCallback(callback);
 
-        if (result.token && result.email) {
-          saveSession(result.token, result.email, false);
+        if (result.token) {
+          saveSession(result.token, null, false);
         }
 
         saveBunkerUrl(result.bunkerUri);

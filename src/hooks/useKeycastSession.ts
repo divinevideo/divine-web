@@ -18,7 +18,7 @@ const EXPIRATION_WARNING_MS = 60 * 60 * 1000; // 1 hour before expiration
 
 export interface KeycastSession {
   token: string;
-  email: string;
+  email?: string;
   expiresAt: number;
   sessionStart: number;
   rememberMe: boolean;
@@ -58,7 +58,7 @@ export function useKeycastSession() {
 
   // Update state when storage values change
   useEffect(() => {
-    if (!token || !expiration || !sessionStart || !email) {
+    if (!token || !expiration || !sessionStart) {
       setState({
         session: null,
         isExpired: false,
@@ -83,7 +83,7 @@ export function useKeycastSession() {
     setState({
       session: {
         token,
-        email,
+        email: email || undefined,
         expiresAt: expiration,
         sessionStart,
         rememberMe,
@@ -99,11 +99,11 @@ export function useKeycastSession() {
    * Save a new session after login or registration
    */
   const saveSession = useCallback(
-    (
-      newToken: string,
-      userEmail: string,
-      shouldRememberMe: boolean = false
-    ) => {
+      (
+        newToken: string,
+        userEmail: string | null = null,
+        shouldRememberMe: boolean = false
+      ) => {
       const now = Date.now();
 
       // Try to get the real expiration from the JWT token

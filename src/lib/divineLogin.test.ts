@@ -10,6 +10,7 @@ import {
 
 const fetchMock = vi.fn<typeof fetch>();
 const originalLocation = window.location;
+const RETURN_PATH_PREFIX = 'divine:return-path:';
 
 function createNsec() {
   return nip19.nsecEncode(generateSecretKey());
@@ -40,31 +41,39 @@ describe('divineLogin', () => {
     });
   });
 
-  it('builds a signup redirect URL for login.divine.video', () => {
-    const redirect = buildSignupRedirect({ returnPath: '/messages' });
+  it('builds a signup redirect URL for the published divine login oauth flow', async () => {
+    const redirect = await buildSignupRedirect({ returnPath: '/messages' });
+    const url = new URL(redirect.url);
 
-    expect(redirect.url).toContain('https://login.divine.video/oauth/start');
-    expect(redirect.url).toContain('mode=signup');
-    expect(redirect.url).toContain(encodeURIComponent('https://divine.video/auth/callback'));
-    expect(redirect.state).toBeTruthy();
+    expect(`${url.origin}${url.pathname}`).toBe('https://login.divine.video/api/oauth/authorize');
+    expect(url.searchParams.get('client_id')).toBe('divine-web');
+    expect(url.searchParams.get('redirect_uri')).toBe('https://divine.video/auth/callback');
+    expect(url.searchParams.get('default_register')).toBe('true');
+    expect(url.searchParams.get('state')).toBe(redirect.state);
+    expect(sessionStorage.getItem(`${RETURN_PATH_PREFIX}${redirect.state}`)).toBe('/messages');
   });
 
-  it('builds a secure-account redirect without placing the nsec in the URL', () => {
+  it('builds a secure-account redirect without placing the nsec in the URL', async () => {
     const nsec = createNsec();
     const decoded = nip19.decode(nsec);
     if (decoded.type !== 'nsec') {
       throw new Error('Expected a valid nsec');
     }
 
-    const redirect = buildSecureAccountRedirect(nsec, { returnPath: '/settings/linked-accounts' });
+    const redirect = await buildSecureAccountRedirect(nsec, { returnPath: '/settings/linked-accounts' });
+    const url = new URL(redirect.url);
 
-    expect(redirect.url).toContain('https://login.divine.video/oauth/start');
-    expect(redirect.url).toContain(`byok_pubkey=${getPublicKey(decoded.data)}`);
+    expect(`${url.origin}${url.pathname}`).toBe('https://login.divine.video/api/oauth/authorize');
+    expect(url.searchParams.get('byok_pubkey')).toBe(getPublicKey(decoded.data));
+    expect(url.searchParams.get('default_register')).toBe('true');
     expect(redirect.url).not.toContain(nsec);
-    expect(sessionStorage.getItem(`divine:secure-account:${redirect.state}`)).toContain(nsec);
+    expect(sessionStorage.getItem(`${RETURN_PATH_PREFIX}${redirect.state}`)).toBe('/settings/linked-accounts');
+    expect(sessionStorage.getItem(`divine:secure-account:${redirect.state}`)).toBeNull();
   });
 
   it('parses callback query parameters from the login redirect', () => {
+    sessionStorage.setItem(`${RETURN_PATH_PREFIX}test-state`, '/messages');
+
     expect(parseDivineLoginCallback(
       'https://divine.video/auth/callback?code=test-code&state=test-state&return_path=%2Fmessages',
     )).toMatchObject({
@@ -74,28 +83,47 @@ describe('divineLogin', () => {
     });
   });
 
-  it('exchanges callback codes for a bunker login payload', async () => {
+  it('exchanges callback codes through the published divine login client contract', async () => {
     fetchMock.mockResolvedValue({
       ok: true,
       status: 200,
-      text: async () => JSON.stringify({
-        token: 'jwt-token',
-        email: 'person@example.com',
-        pubkey: 'pubkey-123',
-        bunker_uri: 'bunker://pubkey?relay=wss://relay.example.com&secret=test',
-        return_path: '/home',
+      json: async () => ({
+        bunker_url: 'bunker://pubkey?relay=wss://relay.example.com&secret=test',
+        access_token: 'jwt-token',
+        authorization_handle: 'auth-handle',
+        refresh_token: 'refresh-token',
+        token_type: 'Bearer',
+        expires_in: 3600,
       }),
     } as Response);
+    const redirect = await buildSignupRedirect({ returnPath: '/home' });
 
     await expect(exchangeDivineLoginCallback({
       code: 'test-code',
-      state: 'test-state',
+      state: redirect.state,
     }, fetchMock)).resolves.toEqual({
       token: 'jwt-token',
-      email: 'person@example.com',
-      pubkey: 'pubkey-123',
       bunkerUri: 'bunker://pubkey?relay=wss://relay.example.com&secret=test',
       returnPath: '/home',
+      authorizationHandle: 'auth-handle',
+      expiresIn: 3600,
+      refreshToken: 'refresh-token',
+    });
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://login.divine.video/api/oauth/token',
+      expect.objectContaining({
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    );
+
+    const [, options] = fetchMock.mock.calls[0]!;
+    expect(JSON.parse(String(options?.body))).toMatchObject({
+      grant_type: 'authorization_code',
+      code: 'test-code',
+      client_id: 'divine-web',
+      redirect_uri: 'https://divine.video/auth/callback',
     });
   });
 });

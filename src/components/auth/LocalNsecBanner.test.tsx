@@ -23,10 +23,10 @@ vi.mock('@/lib/divineLogin', async () => {
 
 describe('LocalNsecBanner', () => {
   beforeEach(() => {
-    mockBuildSecureAccountRedirect.mockReturnValue({
+    mockBuildSecureAccountRedirect.mockResolvedValue({
       state: 'secure-state',
       pubkey: 'pubkey-123',
-      url: 'https://login.divine.video/oauth/start?mode=secure_account',
+      url: 'https://login.divine.video/api/oauth/authorize?client_id=divine-web',
     });
 
     Object.defineProperty(window, 'location', {
@@ -79,7 +79,7 @@ describe('LocalNsecBanner', () => {
       expect(mockBuildSecureAccountRedirect).toHaveBeenCalledWith('nsec1example', {
         returnPath: '/settings/linked-accounts',
       });
-      expect(locationAssign).toHaveBeenCalledWith('https://login.divine.video/oauth/start?mode=secure_account');
+      expect(locationAssign).toHaveBeenCalledWith('https://login.divine.video/api/oauth/authorize?client_id=divine-web');
     });
   });
 });

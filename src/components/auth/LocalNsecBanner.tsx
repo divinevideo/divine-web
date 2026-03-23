@@ -46,9 +46,9 @@ export function LocalNsecBanner(props: LocalNsecBannerProps) {
       : 'Backup ready. Store it somewhere secure.');
   };
 
-  const handleSecure = () => {
+  const handleSecure = async () => {
     const returnPath = `${window.location.pathname}${window.location.search}`;
-    const redirect = buildSecureAccountRedirect(nsec, { returnPath });
+    const redirect = await buildSecureAccountRedirect(nsec, { returnPath });
     window.location.assign(redirect.url);
   };
 
@@ -62,7 +62,7 @@ export function LocalNsecBanner(props: LocalNsecBannerProps) {
           </p>
         </div>
         <div className="flex flex-col gap-2 sm:flex-row">
-          <Button className="rounded-full" onClick={handleSecure} type="button">
+          <Button className="rounded-full" onClick={() => void handleSecure()} type="button">
             Secure with divine.video login
           </Button>
           <Button className="rounded-full" onClick={() => void handleBackUp()} type="button" variant="outline">

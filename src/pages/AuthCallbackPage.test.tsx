@@ -49,7 +49,6 @@ describe('AuthCallbackPage', () => {
     mockBunker.mockResolvedValue();
     mockExchangeDivineLoginCallback.mockResolvedValue({
       bunkerUri: 'bunker://pubkey?relay=wss://relay.example.com&secret=test',
-      email: 'person@example.com',
       returnPath: '/home',
       token: 'jwt-token',
     });
@@ -73,7 +72,7 @@ describe('AuthCallbackPage', () => {
 
     await waitFor(() => {
       expect(mockExchangeDivineLoginCallback).toHaveBeenCalled();
-      expect(mockSaveSession).toHaveBeenCalledWith('jwt-token', 'person@example.com', false);
+      expect(mockSaveSession).toHaveBeenCalledWith('jwt-token', null, false);
       expect(mockSaveBunkerUrl).toHaveBeenCalledWith(
         'bunker://pubkey?relay=wss://relay.example.com&secret=test',
       );

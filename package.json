@@ -19,6 +19,7 @@
     "generate-icons": "node scripts/generate-icons.js"
   },
   "dependencies": {
+    "@divinevideo/login": "^1.0.0",
     "@fontsource-variable/inter": "^5.2.6",
     "@fontsource/pacifico": "^5.2.7",
     "@getalby/sdk": "^5.1.1",
