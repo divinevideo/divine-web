@@ -90,6 +90,11 @@ export function useSearchUsers(options: UseSearchUsersOptions) {
         return [];
       }
 
+      // Skip URL-like queries that cause Funnelcake 500 errors (#166)
+      if (/^https?:\/\//i.test(debouncedQuery.trim())) {
+        return [];
+      }
+
       const requestStartedAt = performance.now();
       const requestContext = {
         query: debouncedQuery,

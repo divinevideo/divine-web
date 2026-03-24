@@ -99,6 +99,11 @@ export function useInfiniteSearchVideos({
         return { videos: [], nextCursor: undefined };
       }
 
+      // Skip URL-like queries that cause Funnelcake 500 errors (#166)
+      if (/^https?:\/\//i.test(debouncedQuery.trim())) {
+        return { videos: [], nextCursor: undefined };
+      }
+
       const requestStartedAt = performance.now();
       const cursor = pageParam as number | undefined;
       const searchParams = parseSearchQuery(debouncedQuery, searchType);
