@@ -118,6 +118,26 @@ describe('useCurrentUser', () => {
     expect(result.current.signer).toBe(mockJwtSigner);
   });
 
+  it('does not fall back to a manual account while a JWT session is still initializing', () => {
+    mockGetValidToken.mockReturnValue('jwt-token');
+    mockJwtSigner.getPublicKey.mockReturnValue(new Promise(() => {}));
+    setNostrProvider();
+
+    mockLogins.push({
+      id: 'extension:manualpub',
+      type: 'extension',
+      pubkey: 'manualpub',
+      createdAt: '2026-03-10T00:00:00.000Z',
+      data: null,
+    });
+
+    const { result } = renderHook(() => useCurrentUser());
+
+    expect(result.current.user).toBeUndefined();
+    expect(result.current.users).toEqual([]);
+    expect(result.current.signer).toBeUndefined();
+  });
+
   it('skips extension logins when no browser extension is available', () => {
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 

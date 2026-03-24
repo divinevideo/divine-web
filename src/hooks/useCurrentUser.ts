@@ -82,8 +82,8 @@ export function useCurrentUser() {
   }, [jwtPubkey, jwtSigner]);
 
   const users = useMemo(() => (
-    jwtUser ? [jwtUser] : manualUsers
-  ), [jwtUser, manualUsers]);
+    token ? (jwtUser ? [jwtUser] : []) : manualUsers
+  ), [jwtUser, manualUsers, token]);
 
   const user = users[0];
   const signer = useMemo(() => getSafeUserSigner(user), [user]);

@@ -16,6 +16,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar.tsx'
 // import { WalletModal } from '@/components/WalletModal';
 import { useNostrLogin } from '@nostrify/react/login';
 import { useLoggedInAccounts, type Account } from '@/hooks/useLoggedInAccounts';
+import { useKeycastSession } from '@/hooks/useKeycastSession';
+import { clearLoginCookie } from '@/lib/crossSubdomainAuth';
 import { genUserName } from '@/lib/genUserName';
 import { getSafeProfileImage } from '@/lib/imageUtils';
 import { getActiveLocalNsecLogin } from '@/lib/localNsecAccount';
@@ -29,10 +31,13 @@ interface AccountSwitcherProps {
 export function AccountSwitcher({ onAddAccountClick }: AccountSwitcherProps) {
   const { logins } = useNostrLogin();
   const { currentUser, otherUsers, setLogin, removeLogin } = useLoggedInAccounts();
+  const { clearSession } = useKeycastSession();
   const navigate = useNavigate();
   const localNsecLogin = getActiveLocalNsecLogin(logins);
 
   if (!currentUser) return null;
+
+  const isJwtCurrentUser = currentUser.id.startsWith('jwt:');
 
   const getDisplayName = (account: Account): string => {
     return account.metadata.name ?? genUserName(account.pubkey);
@@ -41,6 +46,16 @@ export function AccountSwitcher({ onAddAccountClick }: AccountSwitcherProps) {
   const handleMyProfileClick = () => {
     const npub = nip19.npubEncode(currentUser.pubkey);
     navigate(`/profile/${npub}`);
+  };
+
+  const handleLogout = () => {
+    if (isJwtCurrentUser) {
+      clearSession();
+      clearLoginCookie();
+      return;
+    }
+
+    removeLogin(currentUser.id);
   };
 
   return (
@@ -86,25 +101,29 @@ export function AccountSwitcher({ onAddAccountClick }: AccountSwitcherProps) {
           <DropdownMenuItem onSelect={(e) => e.preventDefault()} className='p-2'>
             <RelaySelector className='w-full' />
           </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuLabel>Switch Account</DropdownMenuLabel>
-          {otherUsers.map((user) => (
-            <DropdownMenuItem
-              key={user.id}
-              onClick={() => setLogin(user.id)}
-              className='flex items-center gap-2 cursor-pointer p-2 rounded-md'
-            >
-              <Avatar size="sm">
-                <AvatarImage src={getSafeProfileImage(user.metadata.picture)} alt={getDisplayName(user)} />
-                <AvatarFallback>{getDisplayName(user)?.charAt(0) || <UserIcon />}</AvatarFallback>
-              </Avatar>
-              <div className='flex-1 truncate'>
-                <p className='text-sm font-medium'>{getDisplayName(user)}</p>
-              </div>
-              {user.id === currentUser.id && <div className='w-2 h-2 rounded-full bg-primary'></div>}
-            </DropdownMenuItem>
-          ))}
-          <DropdownMenuSeparator />
+          {!isJwtCurrentUser ? (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel>Switch Account</DropdownMenuLabel>
+              {otherUsers.map((user) => (
+                <DropdownMenuItem
+                  key={user.id}
+                  onClick={() => setLogin(user.id)}
+                  className='flex items-center gap-2 cursor-pointer p-2 rounded-md'
+                >
+                  <Avatar size="sm">
+                    <AvatarImage src={getSafeProfileImage(user.metadata.picture)} alt={getDisplayName(user)} />
+                    <AvatarFallback>{getDisplayName(user)?.charAt(0) || <UserIcon />}</AvatarFallback>
+                  </Avatar>
+                  <div className='flex-1 truncate'>
+                    <p className='text-sm font-medium'>{getDisplayName(user)}</p>
+                  </div>
+                  {user.id === currentUser.id && <div className='w-2 h-2 rounded-full bg-primary'></div>}
+                </DropdownMenuItem>
+              ))}
+              <DropdownMenuSeparator />
+            </>
+          ) : null}
           {/* Wallet Settings temporarily hidden */}
           {/* <WalletModal>
             <DropdownMenuItem
@@ -115,15 +134,17 @@ export function AccountSwitcher({ onAddAccountClick }: AccountSwitcherProps) {
               <span>Wallet Settings</span>
             </DropdownMenuItem>
           </WalletModal> */}
+          {!isJwtCurrentUser ? (
+            <DropdownMenuItem
+              onClick={onAddAccountClick}
+              className='flex items-center gap-2 cursor-pointer p-2 rounded-md'
+            >
+              <UserPlus className='w-4 h-4' />
+              <span>Add another account</span>
+            </DropdownMenuItem>
+          ) : null}
           <DropdownMenuItem
-            onClick={onAddAccountClick}
-            className='flex items-center gap-2 cursor-pointer p-2 rounded-md'
-          >
-            <UserPlus className='w-4 h-4' />
-            <span>Add another account</span>
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            onClick={() => removeLogin(currentUser.id)}
+            onClick={handleLogout}
             className='flex items-center gap-2 cursor-pointer p-2 rounded-md text-red-500'
           >
             <LogOut className='w-4 h-4' />
