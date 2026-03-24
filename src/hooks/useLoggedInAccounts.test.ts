@@ -1,6 +1,11 @@
 import { renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+type MockCurrentUserResult = {
+  metadata?: { name?: string };
+  user?: { pubkey: string };
+};
+
 const {
   mockGetValidToken,
   mockRemoveLogin,
@@ -10,7 +15,7 @@ const {
   mockGetValidToken: vi.fn<() => string | null>(() => null),
   mockRemoveLogin: vi.fn(),
   mockSetLogin: vi.fn(),
-  mockUseCurrentUser: vi.fn(() => ({ user: undefined, metadata: undefined })),
+  mockUseCurrentUser: vi.fn<() => MockCurrentUserResult>(() => ({ user: undefined, metadata: undefined })),
 }));
 
 vi.mock('@nostrify/react', () => ({
