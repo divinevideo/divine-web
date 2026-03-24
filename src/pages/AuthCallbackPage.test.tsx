@@ -60,7 +60,7 @@ describe('AuthCallbackPage', () => {
     vi.clearAllMocks();
   });
 
-  it('hydrates the returned bunker login and redirects into the app', async () => {
+  it('hydrates the returned JWT session and redirects without waiting for bunker login', async () => {
     render(
       <MemoryRouter initialEntries={['/auth/callback?code=test-code&state=test-state']}>
         <Routes>
@@ -75,12 +75,8 @@ describe('AuthCallbackPage', () => {
     await waitFor(() => {
       expect(mockExchangeDivineLoginCallback).toHaveBeenCalled();
       expect(mockSaveSession).toHaveBeenCalledWith('jwt-token', null, false);
-      expect(mockSaveBunkerUrl).toHaveBeenCalledWith(
-        'bunker://pubkey?relay=wss://relay.example.com&secret=test',
-      );
-      expect(mockBunker).toHaveBeenCalledWith(
-        'bunker://pubkey?relay=wss://relay.example.com&secret=test',
-      );
+      expect(mockSaveBunkerUrl).not.toHaveBeenCalled();
+      expect(mockBunker).not.toHaveBeenCalled();
       expect(mockClearInviteHandoff).toHaveBeenCalled();
     });
 

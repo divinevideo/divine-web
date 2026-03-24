@@ -5,14 +5,12 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { clearInviteHandoff } from '@/lib/authHandoff';
 import { exchangeDivineLoginCallback, parseDivineLoginCallback } from '@/lib/divineLogin';
-import { useLoginActions } from '@/hooks/useLoginActions';
 import { useKeycastSession } from '@/hooks/useKeycastSession';
 
 export default function AuthCallbackPage() {
   const location = useLocation();
   const navigate = useNavigate();
-  const loginActions = useLoginActions();
-  const { saveBunkerUrl, saveSession } = useKeycastSession();
+  const { saveSession } = useKeycastSession();
   const [error, setError] = useState<string | null>(null);
   const startedRef = useRef(false);
 
@@ -33,8 +31,6 @@ export default function AuthCallbackPage() {
           saveSession(result.token, null, false);
         }
 
-        saveBunkerUrl(result.bunkerUri);
-        await loginActions.bunker(result.bunkerUri);
         clearInviteHandoff();
 
         if (!isCancelled) {
@@ -52,7 +48,7 @@ export default function AuthCallbackPage() {
     return () => {
       isCancelled = true;
     };
-  }, [location.pathname, location.search, loginActions, navigate, saveBunkerUrl, saveSession]);
+  }, [location.pathname, location.search, navigate, saveSession]);
 
   if (error) {
     return (
