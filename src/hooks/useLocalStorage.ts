@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 /**
  * Generic hook for managing localStorage state
@@ -23,16 +23,19 @@ export function useLocalStorage<T>(
       return defaultValue;
     }
   });
+  const stateRef = useRef(state);
 
-  const setValue = (value: T | ((prev: T) => T)) => {
+  stateRef.current = state;
+
+  const setValue = useCallback((value: T | ((prev: T) => T)) => {
     try {
-      const valueToStore = value instanceof Function ? value(state) : value;
+      const valueToStore = value instanceof Function ? value(stateRef.current) : value;
       setState(valueToStore);
       localStorage.setItem(key, serialize(valueToStore));
     } catch (error) {
       console.warn(`Failed to save ${key} to localStorage:`, error);
     }
-  };
+  }, [key, serialize]);
 
   // Sync with localStorage changes from other tabs
   useEffect(() => {
