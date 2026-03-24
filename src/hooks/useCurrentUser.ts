@@ -1,20 +1,62 @@
 import { type NLoginType, NUser, useNostrLogin } from '@nostrify/react/login';
 import { useNostr } from '@nostrify/react';
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import type { NostrSigner } from '@nostrify/nostrify';
+import { KeycastJWTSigner } from '@/lib/KeycastJWTSigner';
 import { createUserFromLogin, getSafeUserSigner } from '@/lib/nostrLogin';
 
 import { useAuthor } from './useAuthor.ts';
+import { useKeycastSession } from './useKeycastSession';
+
+type CurrentUser = {
+  pubkey: string;
+  signer?: NostrSigner;
+};
 
 export function useCurrentUser() {
   const { nostr } = useNostr();
   const { logins } = useNostrLogin();
+  const { getValidToken } = useKeycastSession();
+  const token = getValidToken();
+  const [jwtPubkey, setJwtPubkey] = useState<string>();
+  const jwtSigner = useMemo(() => (
+    token ? new KeycastJWTSigner({ token }) : null
+  ), [token]);
 
   const loginToUser = useCallback((login: NLoginType): NUser  => {
     return createUserFromLogin(login, nostr);
   }, [nostr]);
 
-  const users = useMemo(() => {
-    const users: NUser[] = [];
+  useEffect(() => {
+    let isCancelled = false;
+
+    if (!jwtSigner) {
+      setJwtPubkey(undefined);
+      return;
+    }
+
+    setJwtPubkey(undefined);
+
+    jwtSigner.getPublicKey()
+      .then((pubkey) => {
+        if (!isCancelled) {
+          setJwtPubkey(pubkey);
+        }
+      })
+      .catch((error) => {
+        if (!isCancelled) {
+          console.warn('Skipped invalid JWT session', error);
+          setJwtPubkey(undefined);
+        }
+      });
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [jwtSigner]);
+
+  const manualUsers = useMemo(() => {
+    const users: CurrentUser[] = [];
 
     for (const login of logins) {
       try {
@@ -28,7 +70,22 @@ export function useCurrentUser() {
     return users;
   }, [logins, loginToUser]);
 
-  const user = users[0] as NUser | undefined;
+  const jwtUser = useMemo<CurrentUser | undefined>(() => {
+    if (!jwtSigner || !jwtPubkey) {
+      return undefined;
+    }
+
+    return {
+      pubkey: jwtPubkey,
+      signer: jwtSigner,
+    };
+  }, [jwtPubkey, jwtSigner]);
+
+  const users = useMemo(() => (
+    jwtUser ? [jwtUser] : manualUsers
+  ), [jwtUser, manualUsers]);
+
+  const user = users[0];
   const signer = useMemo(() => getSafeUserSigner(user), [user]);
   const author = useAuthor(user?.pubkey);
 

@@ -1,9 +1,21 @@
-import { renderHook } from '@testing-library/react';
+import { renderHook, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { NLoginType } from '@nostrify/react/login';
 
-const mockLogins: NLoginType[] = [];
-const mockUseAuthor = vi.fn<(pubkey?: string) => { data: Record<string, never> }>(() => ({ data: {} }));
+const {
+  mockGetValidToken,
+  mockJwtSigner,
+  mockLogins,
+  mockUseAuthor,
+} = vi.hoisted(() => ({
+  mockGetValidToken: vi.fn<() => string | null>(() => null),
+  mockJwtSigner: {
+    getPublicKey: vi.fn<() => Promise<string>>(),
+    signEvent: vi.fn(),
+  },
+  mockLogins: [] as NLoginType[],
+  mockUseAuthor: vi.fn<(pubkey?: string) => { data: Record<string, never> }>(() => ({ data: {} })),
+}));
 
 vi.mock('@nostrify/react', () => ({
   useNostr: () => ({ nostr: {} }),
@@ -19,6 +31,16 @@ vi.mock('@nostrify/react/login', async () => {
 
 vi.mock('./useAuthor.ts', () => ({
   useAuthor: (pubkey?: string) => mockUseAuthor(pubkey),
+}));
+
+vi.mock('@/hooks/useKeycastSession', () => ({
+  useKeycastSession: () => ({
+    getValidToken: mockGetValidToken,
+  }),
+}));
+
+vi.mock('@/lib/KeycastJWTSigner', () => ({
+  KeycastJWTSigner: vi.fn(() => mockJwtSigner),
 }));
 
 import { useCurrentUser } from './useCurrentUser';
@@ -45,6 +67,10 @@ function setNostrProvider(value: unknown = { getPublicKey: vi.fn() }) {
 describe('useCurrentUser', () => {
   beforeEach(() => {
     mockLogins.length = 0;
+    mockGetValidToken.mockReset();
+    mockGetValidToken.mockReturnValue(null);
+    mockJwtSigner.getPublicKey.mockReset();
+    mockJwtSigner.signEvent.mockReset();
     mockUseAuthor.mockClear();
     resetNostrProvider();
   });
@@ -52,6 +78,44 @@ describe('useCurrentUser', () => {
   afterEach(() => {
     vi.restoreAllMocks();
     resetNostrProvider();
+  });
+
+  it('returns a JWT-backed current user and signer when a valid web session exists', async () => {
+    mockGetValidToken.mockReturnValue('jwt-token');
+    mockJwtSigner.getPublicKey.mockResolvedValue('b'.repeat(64));
+
+    const { result } = renderHook(() => useCurrentUser());
+
+    await waitFor(() => {
+      expect(result.current.user?.pubkey).toBe('b'.repeat(64));
+    });
+
+    expect(result.current.users).toHaveLength(1);
+    expect(result.current.signer).toBe(mockJwtSigner);
+    expect(mockUseAuthor).toHaveBeenCalledWith('b'.repeat(64));
+  });
+
+  it('prefers the JWT-backed session over manual logins', async () => {
+    mockGetValidToken.mockReturnValue('jwt-token');
+    mockJwtSigner.getPublicKey.mockResolvedValue('c'.repeat(64));
+    setNostrProvider();
+
+    mockLogins.push({
+      id: 'extension:manualpub',
+      type: 'extension',
+      pubkey: 'manualpub',
+      createdAt: '2026-03-10T00:00:00.000Z',
+      data: null,
+    });
+
+    const { result } = renderHook(() => useCurrentUser());
+
+    await waitFor(() => {
+      expect(result.current.user?.pubkey).toBe('c'.repeat(64));
+    });
+
+    expect(result.current.users).toHaveLength(1);
+    expect(result.current.signer).toBe(mockJwtSigner);
   });
 
   it('skips extension logins when no browser extension is available', () => {

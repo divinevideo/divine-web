@@ -9,7 +9,7 @@ export function hasNip07Provider(): boolean {
 }
 
 export function getSafeUserSigner(
-  user?: Pick<NUser, 'signer'> | null,
+  user?: { signer?: NostrSigner } | null,
 ): NostrSigner | undefined {
   if (!user) {
     return undefined;
