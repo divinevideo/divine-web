@@ -230,6 +230,14 @@ export function AppHeader({ className }: AppHeaderProps) {
               </DropdownMenuItem>
 
               <DropdownMenuItem
+                onClick={() => navigate('/dmca')}
+                className="cursor-pointer hover:bg-muted focus:bg-muted"
+              >
+                <FileText className="mr-2 h-4 w-4" />
+                <span>Copyright & DMCA</span>
+              </DropdownMenuItem>
+
+              <DropdownMenuItem
                 onClick={() => navigate('/open-source')}
                 className="cursor-pointer hover:bg-muted focus:bg-muted"
               >

@@ -79,6 +79,10 @@ export function AppFooter() {
                   Safety
                 </SmartLink>
                 <span>•</span>
+                <SmartLink to="/dmca" className="hover:text-brand-off-white transition-colors">
+                  Copyright & DMCA
+                </SmartLink>
+                <span>•</span>
                 <SmartLink to="/open-source" className="hover:text-brand-off-white transition-colors">
                   Open Source
                 </SmartLink>

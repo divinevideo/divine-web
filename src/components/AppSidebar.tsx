@@ -424,6 +424,12 @@ export function AppSidebar({ className }: { className?: string }) {
                 Safety
               </button>
               <button
+                onClick={() => navigate('/dmca')}
+                className="transition-colors hover:text-primary"
+              >
+                Copyright & DMCA
+              </button>
+              <button
                 onClick={() => navigate('/open-source')}
                 className="transition-colors hover:text-primary"
               >
