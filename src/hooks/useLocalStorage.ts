@@ -1,5 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+const LOCAL_STORAGE_CHANGE_EVENT = 'local-storage-change';
+
+interface LocalStorageChangeDetail {
+  key: string;
+  newValue: string | null;
+}
+
 /**
  * Generic hook for managing localStorage state
  */
@@ -30,8 +37,15 @@ export function useLocalStorage<T>(
   const setValue = useCallback((value: T | ((prev: T) => T)) => {
     try {
       const valueToStore = value instanceof Function ? value(stateRef.current) : value;
+      const serializedValue = serialize(valueToStore);
       setState(valueToStore);
-      localStorage.setItem(key, serialize(valueToStore));
+      localStorage.setItem(key, serializedValue);
+      window.dispatchEvent(new CustomEvent<LocalStorageChangeDetail>(LOCAL_STORAGE_CHANGE_EVENT, {
+        detail: {
+          key,
+          newValue: serializedValue,
+        },
+      }));
     } catch (error) {
       console.warn(`Failed to save ${key} to localStorage:`, error);
     }
@@ -39,19 +53,40 @@ export function useLocalStorage<T>(
 
   // Sync with localStorage changes from other tabs
   useEffect(() => {
+    const syncFromSerializedValue = (serializedValue: string | null) => {
+      if (serializedValue === null) {
+        setState(defaultValue);
+        return;
+      }
+
+      try {
+        setState(deserialize(serializedValue));
+      } catch (error) {
+        console.warn(`Failed to sync ${key} from localStorage:`, error);
+      }
+    };
+
     const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === key && e.newValue !== null) {
-        try {
-          setState(deserialize(e.newValue));
-        } catch (error) {
-          console.warn(`Failed to sync ${key} from localStorage:`, error);
-        }
+      if (e.key === key) {
+        syncFromSerializedValue(e.newValue);
+      }
+    };
+
+    const handleSameTabChange = (event: Event) => {
+      const customEvent = event as CustomEvent<LocalStorageChangeDetail>;
+      if (customEvent.detail?.key === key) {
+        syncFromSerializedValue(customEvent.detail.newValue);
       }
     };
 
     window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
-  }, [key, deserialize]);
+    window.addEventListener(LOCAL_STORAGE_CHANGE_EVENT, handleSameTabChange as EventListener);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener(LOCAL_STORAGE_CHANGE_EVENT, handleSameTabChange as EventListener);
+    };
+  }, [defaultValue, deserialize, key]);
 
   return [state, setValue] as const;
 }

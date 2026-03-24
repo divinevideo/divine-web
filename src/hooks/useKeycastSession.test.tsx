@@ -53,4 +53,20 @@ describe('useKeycastSession', () => {
     expect(result.current.session?.email).toBeUndefined();
     expect(result.current.getValidToken()).toBe(token);
   });
+
+  it('syncs a saved session across hook instances in the same tab', async () => {
+    const token = createToken(Math.floor(Date.now() / 1000) + 3600);
+    const first = renderHook(() => useKeycastSession());
+    const second = renderHook(() => useKeycastSession());
+
+    act(() => {
+      first.result.current.saveSession(token, null, false);
+    });
+
+    await waitFor(() => {
+      expect(second.result.current.session?.token).toBe(token);
+    });
+
+    expect(second.result.current.getValidToken()).toBe(token);
+  });
 });
