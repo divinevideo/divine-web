@@ -35,12 +35,14 @@ function buildCallbackUrl(): string {
   return new URL('/auth/callback', window.location.origin).toString();
 }
 
-function createClient(fetchImpl: typeof fetch = fetch) {
+function createClient(fetchImpl?: typeof fetch) {
   return createDivineClient({
     serverUrl: DIVINE_LOGIN_BASE_URL,
     clientId: DIVINE_LOGIN_CLIENT_ID,
     redirectUri: buildCallbackUrl(),
-    fetch: fetchImpl,
+    ...(fetchImpl ? {
+      fetch: (input, init) => fetchImpl(input, init),
+    } : {}),
     // localStorage survives cross-origin redirects more reliably than sessionStorage,
     // which can be lost if the browser opens a new tab or browsing context changes.
     // The SDK cleans up PKCE material after exchangeCode completes.
@@ -148,7 +150,7 @@ export function parseDivineLoginCallback(url: string): DivineLoginCallbackParams
 
 export async function exchangeDivineLoginCallback(
   callback: DivineLoginCallbackParams,
-  fetchImpl: typeof fetch = fetch,
+  fetchImpl?: typeof fetch,
 ): Promise<DivineLoginExchangeResult> {
   if (callback.error) {
     throw new Error(callback.errorDescription || callback.error);

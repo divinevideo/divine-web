@@ -114,6 +114,38 @@ describe('divineLogin', () => {
     });
   });
 
+  it('uses a correctly bound global fetch during callback exchange', async () => {
+    const redirect = await buildSignupRedirect({ returnPath: '/home' });
+    const contextSensitiveFetch = vi.fn(function (this: unknown, _input: RequestInfo | URL, _init?: RequestInit) {
+      if (this !== globalThis) {
+        throw new TypeError('Failed to execute "fetch" on "Window": Illegal invocation');
+      }
+
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          bunker_url: 'bunker://pubkey?relay=wss://relay.example.com&secret=test',
+          access_token: 'jwt-token',
+          authorization_handle: 'auth-handle',
+          refresh_token: 'refresh-token',
+          token_type: 'Bearer',
+          expires_in: 3600,
+        }),
+      } as Response);
+    });
+    vi.stubGlobal('fetch', contextSensitiveFetch as typeof fetch);
+
+    await expect(exchangeDivineLoginCallback({
+      code: 'test-code',
+      state: redirect.state,
+    })).resolves.toMatchObject({
+      bunkerUri: 'bunker://pubkey?relay=wss://relay.example.com&secret=test',
+      token: 'jwt-token',
+      returnPath: '/home',
+    });
+  });
+
   it('exchanges callback codes through the published divine login client contract', async () => {
     fetchMock.mockResolvedValue({
       ok: true,
