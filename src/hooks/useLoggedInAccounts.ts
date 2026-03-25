@@ -4,6 +4,8 @@ import { useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
 import { NSchema as n, NostrEvent, NostrMetadata } from '@nostrify/nostrify';
 import { createUserFromLogin } from '@/lib/nostrLogin';
+import { useCurrentUser } from './useCurrentUser';
+import { useKeycastSession } from './useKeycastSession';
 
 export interface Account {
   id: string;
@@ -15,6 +17,9 @@ export interface Account {
 export function useLoggedInAccounts() {
   const { nostr } = useNostr();
   const { logins, setLogin, removeLogin } = useNostrLogin();
+  const { getValidToken } = useKeycastSession();
+  const { metadata, user } = useCurrentUser();
+  const token = getValidToken();
   const activeLogins = useMemo(
     () => logins.filter((login) => {
       try {
@@ -26,6 +31,18 @@ export function useLoggedInAccounts() {
     }),
     [logins, nostr],
   );
+
+  const jwtCurrentUser = useMemo<Account | undefined>(() => {
+    if (!token || !user) {
+      return undefined;
+    }
+
+    return {
+      id: `jwt:${user.pubkey}`,
+      metadata: metadata ?? {},
+      pubkey: user.pubkey,
+    };
+  }, [metadata, token, user]);
 
   const { data: authors = [] } = useQuery({
     queryKey: ['logins', activeLogins.map((l) => l.id).join(';')],
@@ -49,9 +66,19 @@ export function useLoggedInAccounts() {
         }
       });
     },
-    enabled: activeLogins.length > 0,
+    enabled: !jwtCurrentUser && activeLogins.length > 0,
     retry: 3,
   });
+
+  if (jwtCurrentUser) {
+    return {
+      authors: [jwtCurrentUser],
+      currentUser: jwtCurrentUser,
+      otherUsers: [],
+      setLogin,
+      removeLogin,
+    };
+  }
 
   // Current user is the first login
   const currentUser: Account | undefined = (() => {

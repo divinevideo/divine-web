@@ -3,6 +3,7 @@ import { NLogin, useNostrLogin } from '@nostrify/react/login';
 import { followListCache } from '@/lib/followListCache';
 import { setLoginCookie, clearLoginCookie } from '@/lib/crossSubdomainAuth';
 import { debugLog } from '@/lib/debug';
+import { getActiveLocalNsecLogin } from '@/lib/localNsecAccount';
 import { nip19 } from 'nostr-tools';
 
 // NOTE: This file should not be edited except for adding new login methods.
@@ -29,6 +30,9 @@ export function useLoginActions() {
       const login = await NLogin.fromExtension();
       addLogin(login);
       setLoginCookie({ type: 'extension', pubkey: login.pubkey });
+    },
+    exportCurrentNsec(): string | null {
+      return getActiveLocalNsecLogin(logins)?.data.nsec ?? null;
     },
     // Log out the current user
     async logout(): Promise<void> {

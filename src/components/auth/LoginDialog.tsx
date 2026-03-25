@@ -1,15 +1,22 @@
-// NOTE: This file is stable and usually should not be modified.
-// It is important that all functionality in this file is preserved, and should only be modified if explicitly requested.
+import React, { FormEvent, useEffect, useRef, useState } from 'react';
+import { AlertTriangle, Cloud, KeyRound, Shield, Upload } from 'lucide-react';
 
-import React, { useRef, useState, useEffect } from 'react';
-import { Shield, Upload, AlertTriangle, KeyRound, Cloud } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Dialog, DialogContent, DialogHeader, DialogDescription } from "@/components/ui/dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { useLoginActions } from '@/hooks/useLoginActions';
+import { Button } from '@/components/ui/button';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { setInviteHandoff } from '@/lib/authHandoff';
+import { buildLoginRedirect, buildSignupRedirect } from '@/lib/divineLogin';
+import { getInviteClientConfig, joinInviteWaitlist, validateInviteCode } from '@/lib/inviteApi';
+import { getStoredLocalNsecLogin } from '@/lib/localNsecAccount';
 import { cn } from '@/lib/utils';
+import { useLoginActions } from '@/hooks/useLoginActions';
+
+import InviteCodeForm from './InviteCodeForm';
+import LocalNsecBanner from './LocalNsecBanner';
+import WaitlistForm from './WaitlistForm';
 
 interface LoginDialogProps {
   isOpen: boolean;
@@ -18,338 +25,423 @@ interface LoginDialogProps {
   onSignup?: () => void;
 }
 
-const validateNsec = (nsec: string) => {
-  return /^nsec1[a-zA-Z0-9]{58}$/.test(nsec);
-};
+type DialogView = 'invite' | 'waitlist';
 
-const validateBunkerUri = (uri: string) => {
-  return uri.startsWith('bunker://');
-};
+const validateNsec = (nsec: string) => /^nsec1[a-zA-Z0-9]{58}$/.test(nsec);
+const validateBunkerUri = (uri: string) => uri.startsWith('bunker://');
 
-const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin, onSignup }) => {
-  const [isLoading, setIsLoading] = useState(false);
-  const [isFileLoading, setIsFileLoading] = useState(false);
-  const [nsec, setNsec] = useState('');
+const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin }) => {
+  const [advancedOpen, setAdvancedOpen] = useState(false);
+  const [bunkerError, setBunkerError] = useState<string | null>(null);
   const [bunkerUri, setBunkerUri] = useState('');
-  const [errors, setErrors] = useState<{
-    nsec?: string;
-    bunker?: string;
-    file?: string;
-    extension?: string;
-  }>({});
+  const [configError, setConfigError] = useState<string | null>(null);
+  const [inviteCode, setInviteCode] = useState('');
+  const [inviteError, setInviteError] = useState<string | null>(null);
+  const [isConfigLoading, setIsConfigLoading] = useState(false);
+  const [isFileLoading, setIsFileLoading] = useState(false);
+  const [isInviteLoading, setIsInviteLoading] = useState(false);
+  const [isLoginLoading, setIsLoginLoading] = useState(false);
+  const [isWaitlistLoading, setIsWaitlistLoading] = useState(false);
+  const [keyError, setKeyError] = useState<string | null>(null);
+  const [nsec, setNsec] = useState('');
+  const [storedLocalNsec, setStoredLocalNsec] = useState<string | null>(null);
+  const [view, setView] = useState<DialogView>('invite');
+  const [waitlistContact, setWaitlistContact] = useState('');
+  const [waitlistEnabled, setWaitlistEnabled] = useState(false);
+  const [waitlistError, setWaitlistError] = useState<string | null>(null);
+  const [waitlistSuccess, setWaitlistSuccess] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const login = useLoginActions();
 
-  // Reset all state when dialog opens/closes
   useEffect(() => {
-    if (isOpen) {
-      // Reset state when dialog opens
-      setIsLoading(false);
-      setIsFileLoading(false);
-      setNsec('');
-      setBunkerUri('');
-      setErrors({});
-      // Reset file input
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
+    if (!isOpen) {
+      return;
     }
+
+    setAdvancedOpen(false);
+    setBunkerError(null);
+    setBunkerUri('');
+    setConfigError(null);
+    setInviteCode('');
+    setInviteError(null);
+    setIsConfigLoading(true);
+    setIsFileLoading(false);
+    setIsInviteLoading(false);
+    setIsLoginLoading(false);
+    setIsWaitlistLoading(false);
+    setKeyError(null);
+    setNsec('');
+    setStoredLocalNsec(getStoredLocalNsecLogin()?.data.nsec ?? null);
+    setView('invite');
+    setWaitlistContact('');
+    setWaitlistEnabled(false);
+    setWaitlistError(null);
+    setWaitlistSuccess(false);
+
+    let isCancelled = false;
+
+    getInviteClientConfig()
+      .then((config) => {
+        if (!isCancelled) {
+          setWaitlistEnabled(config.waitlistEnabled);
+        }
+      })
+      .catch((caughtError) => {
+        if (!isCancelled) {
+          setConfigError(caughtError instanceof Error ? caughtError.message : 'Invite service unavailable');
+          setAdvancedOpen(true);
+        }
+      })
+      .finally(() => {
+        if (!isCancelled) {
+          setIsConfigLoading(false);
+        }
+      });
+
+    return () => {
+      isCancelled = true;
+    };
   }, [isOpen]);
 
   const handleExtensionLogin = async () => {
-    setIsLoading(true);
-    setErrors(prev => ({ ...prev, extension: undefined }));
+    setIsLoginLoading(true);
+    setConfigError(null);
 
     try {
       if (!('nostr' in window)) {
         throw new Error('Nostr extension not found. Please install a NIP-07 extension.');
       }
+
       await login.extension();
       onLogin();
       onClose();
-    } catch (e: unknown) {
-      const error = e as Error;
-      console.error('Bunker login failed:', error);
-      console.error('Nsec login failed:', error);
-      console.error('Extension login failed:', error);
-      setErrors(prev => ({
-        ...prev,
-        extension: error instanceof Error ? error.message : 'Extension login failed'
-      }));
+    } catch (caughtError) {
+      setConfigError(caughtError instanceof Error ? caughtError.message : 'Extension login failed');
     } finally {
-      setIsLoading(false);
+      setIsLoginLoading(false);
     }
   };
 
-  const executeLogin = (key: string) => {
-    setIsLoading(true);
-    setErrors({});
+  const executeNsecLogin = (nextNsec: string) => {
+    setIsLoginLoading(true);
+    setKeyError(null);
 
-    // Use a timeout to allow the UI to update before the synchronous login call
-    setTimeout(() => {
+    window.setTimeout(() => {
       try {
-        login.nsec(key);
+        login.nsec(nextNsec);
         onLogin();
         onClose();
       } catch {
-        setErrors({ nsec: "Failed to login with this key. Please check that it's correct." });
-        setIsLoading(false);
+        setKeyError('Failed to login with this key. Please check that it is correct.');
+        setIsLoginLoading(false);
       }
     }, 50);
   };
 
   const handleKeyLogin = () => {
     if (!nsec.trim()) {
-      setErrors(prev => ({ ...prev, nsec: 'Please enter your secret key' }));
+      setKeyError('Please enter your secret key');
       return;
     }
 
     if (!validateNsec(nsec)) {
-      setErrors(prev => ({ ...prev, nsec: 'Invalid secret key format. Must be a valid nsec starting with nsec1.' }));
+      setKeyError('Invalid secret key format. Must be a valid nsec starting with nsec1.');
       return;
     }
-    executeLogin(nsec);
+
+    executeNsecLogin(nsec);
   };
 
   const handleBunkerLogin = async () => {
     if (!bunkerUri.trim()) {
-      setErrors(prev => ({ ...prev, bunker: 'Please enter a bunker URI' }));
+      setBunkerError('Please enter a bunker URI');
       return;
     }
 
     if (!validateBunkerUri(bunkerUri)) {
-      setErrors(prev => ({ ...prev, bunker: 'Invalid bunker URI format. Must start with bunker://' }));
+      setBunkerError('Invalid bunker URI format. Must start with bunker://');
       return;
     }
 
-    setIsLoading(true);
-    setErrors(prev => ({ ...prev, bunker: undefined }));
+    setIsLoginLoading(true);
+    setBunkerError(null);
 
     try {
       await login.bunker(bunkerUri);
       onLogin();
       onClose();
-      // Clear the URI from memory
       setBunkerUri('');
     } catch {
-      setErrors(prev => ({
-        ...prev,
-        bunker: 'Failed to connect to bunker. Please check the URI.'
-      }));
+      setBunkerError('Failed to connect to bunker. Please check the URI.');
     } finally {
-      setIsLoading(false);
+      setIsLoginLoading(false);
     }
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) {
+      return;
+    }
 
     setIsFileLoading(true);
-    setErrors({});
+    setKeyError(null);
 
     const reader = new FileReader();
-    reader.onload = (event) => {
+    reader.onload = (loadEvent) => {
       setIsFileLoading(false);
-      const content = event.target?.result as string;
-      if (content) {
-        const trimmedContent = content.trim();
-        if (validateNsec(trimmedContent)) {
-          executeLogin(trimmedContent);
-        } else {
-          setErrors({ file: 'File does not contain a valid secret key.' });
-        }
-      } else {
-        setErrors({ file: 'Could not read file content.' });
+      const content = typeof loadEvent.target?.result === 'string'
+        ? loadEvent.target.result.trim()
+        : '';
+
+      if (!content) {
+        setKeyError('Could not read file content.');
+        return;
       }
+
+      if (!validateNsec(content)) {
+        setKeyError('File does not contain a valid secret key.');
+        return;
+      }
+
+      executeNsecLogin(content);
     };
     reader.onerror = () => {
       setIsFileLoading(false);
-      setErrors({ file: 'Failed to read file.' });
+      setKeyError('Failed to read file.');
     };
     reader.readAsText(file);
   };
 
-  const defaultTab = 'extension';
+  const handleInviteSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setInviteError(null);
+    setIsInviteLoading(true);
+
+    try {
+      const result = await validateInviteCode(inviteCode);
+      const returnPath = `${window.location.pathname}${window.location.search}`;
+      setInviteHandoff({
+        code: result.normalizedCode,
+        mode: 'signup',
+        createdAt: Date.now(),
+        returnPath,
+      });
+      const redirect = await buildSignupRedirect({ returnPath });
+      window.location.assign(redirect.url);
+    } catch (caughtError) {
+      setInviteError(caughtError instanceof Error ? caughtError.message : 'Unable to validate invite code');
+    } finally {
+      setIsInviteLoading(false);
+    }
+  };
+
+  const handleWaitlistSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setWaitlistError(null);
+    setIsWaitlistLoading(true);
+
+    try {
+      await joinInviteWaitlist(waitlistContact);
+      setWaitlistSuccess(true);
+    } catch (caughtError) {
+      setWaitlistError(caughtError instanceof Error ? caughtError.message : 'Unable to join the waitlist');
+    } finally {
+      setIsWaitlistLoading(false);
+    }
+  };
+
+  const handleExistingAccountLogin = async () => {
+    setConfigError(null);
+    setIsLoginLoading(true);
+
+    try {
+      const returnPath = `${window.location.pathname}${window.location.search}`;
+      const redirect = await buildLoginRedirect({ returnPath });
+      window.location.assign(redirect.url);
+    } catch (caughtError) {
+      setConfigError(caughtError instanceof Error ? caughtError.message : 'Unable to start sign-in');
+      setIsLoginLoading(false);
+    }
+  };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent
-        className={cn("max-w-[95vw] sm:max-w-md max-h-[90vh] max-h-[90dvh] p-0 overflow-hidden rounded-2xl overflow-y-scroll")}
-      >
-        <DialogHeader className={cn('px-6 pt-6 pb-1 relative')}>
-            <DialogDescription className="text-center">
-              Log in to continue
-            </DialogDescription>
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className={cn('max-w-[95vw] overflow-hidden rounded-2xl p-0 sm:max-w-md')}>
+        <DialogHeader className="space-y-2 px-6 pb-1 pt-6">
+          <DialogTitle className="sr-only">Sign in to Divine</DialogTitle>
+          <DialogDescription className="text-center text-base font-medium text-foreground">
+            Create or sign in to your account
+          </DialogDescription>
+          <p className="text-center text-sm text-muted-foreground">
+            Use an invite to continue with the main web login flow. Advanced Nostr signers are still available.
+          </p>
         </DialogHeader>
-        <div className='px-6 pt-2 pb-4 space-y-4 overflow-y-auto flex-1'>
 
-          {/* Login Methods */}
-          <Tabs defaultValue={defaultTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-3 bg-muted rounded-lg mb-4">
-              <TabsTrigger value="extension" className="flex items-center gap-2">
-                <Shield className="w-4 h-4" />
-                <span className="hidden sm:inline">Extension</span>
-                <span className="sm:hidden">Ext</span>
-              </TabsTrigger>
-              <TabsTrigger value="key" className="flex items-center gap-2">
-                <KeyRound className="w-4 h-4" />
-                <span>Key</span>
-              </TabsTrigger>
-              <TabsTrigger value="bunker" className="flex items-center gap-2">
-                <Cloud className="w-4 h-4" />
-                <span className="hidden sm:inline">Bunker</span>
-                <span className="sm:hidden">Bnkr</span>
-              </TabsTrigger>
-            </TabsList>
-            <TabsContent value='extension' className='space-y-3 bg-muted'>
-              {errors.extension && (
-                <Alert variant="destructive">
-                  <AlertTriangle className="h-4 w-4" />
-                  <AlertDescription>{errors.extension}</AlertDescription>
-                </Alert>
-              )}
-              <div className='text-center p-4 rounded-lg bg-gray-50 dark:bg-gray-800'>
-                <Shield className='w-12 h-12 mx-auto mb-3 text-primary' />
-                <p className='text-sm text-gray-600 dark:text-gray-300 mb-4'>
-                  Login with one click using the browser extension
-                </p>
-                <div className="flex justify-center">
-                  <Button
-                    className='w-full rounded-full py-4'
-                    onClick={handleExtensionLogin}
-                    disabled={isLoading}
-                  >
-                    {isLoading ? 'Logging in...' : 'Login with Extension'}
+        <div className="space-y-4 px-6 pb-6 pt-2">
+          {storedLocalNsec ? <LocalNsecBanner nsec={storedLocalNsec} /> : null}
+
+          {configError ? (
+            <Alert variant="destructive">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription>{configError}</AlertDescription>
+            </Alert>
+          ) : null}
+
+          {isConfigLoading ? (
+            <div className="rounded-2xl bg-muted px-4 py-6 text-center text-sm text-muted-foreground">
+              Checking invite status...
+            </div>
+          ) : configError ? (
+            <div className="rounded-2xl bg-muted px-4 py-6 text-center text-sm text-muted-foreground">
+              Invite sign-up is unavailable right now. You can still sign in with an existing account or use the
+              advanced login methods below.
+            </div>
+          ) : view === 'invite' ? (
+            <InviteCodeForm
+              error={inviteError}
+              isLoading={isInviteLoading}
+              onInviteCodeChange={setInviteCode}
+              onJoinWaitlist={() => setView('waitlist')}
+              onSubmit={handleInviteSubmit}
+              value={inviteCode}
+              waitlistEnabled={waitlistEnabled}
+            />
+          ) : (
+            <WaitlistForm
+              contact={waitlistContact}
+              error={waitlistError}
+              isLoading={isWaitlistLoading}
+              isSuccess={waitlistSuccess}
+              onBack={() => setView('invite')}
+              onContactChange={setWaitlistContact}
+              onSubmit={handleWaitlistSubmit}
+            />
+          )}
+
+          {!isConfigLoading ? (
+            <Button
+              className="w-full rounded-full"
+              disabled={isInviteLoading || isLoginLoading || isWaitlistLoading}
+              onClick={handleExistingAccountLogin}
+              type="button"
+              variant="secondary"
+            >
+              {isLoginLoading ? 'Redirecting...' : 'I already have an account'}
+            </Button>
+          ) : null}
+
+          <Collapsible open={advancedOpen} onOpenChange={setAdvancedOpen}>
+            <CollapsibleTrigger asChild>
+              <Button className="w-full rounded-full" type="button" variant="outline">
+                Advanced login methods
+              </Button>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="pt-4">
+              <Tabs className="w-full" defaultValue="extension">
+                <TabsList className="grid w-full grid-cols-3 rounded-lg bg-muted">
+                  <TabsTrigger className="flex items-center gap-2" value="extension">
+                    <Shield className="h-4 w-4" />
+                    <span className="hidden sm:inline">Extension</span>
+                    <span className="sm:hidden">Ext</span>
+                  </TabsTrigger>
+                  <TabsTrigger className="flex items-center gap-2" value="key">
+                    <KeyRound className="h-4 w-4" />
+                    <span>Key</span>
+                  </TabsTrigger>
+                  <TabsTrigger className="flex items-center gap-2" value="bunker">
+                    <Cloud className="h-4 w-4" />
+                    <span className="hidden sm:inline">Bunker</span>
+                    <span className="sm:hidden">Bnkr</span>
+                  </TabsTrigger>
+                </TabsList>
+
+                <TabsContent className="space-y-3 pt-4" value="extension">
+                  <div className="space-y-3 rounded-2xl bg-muted p-4 text-center">
+                    <p className="text-sm text-muted-foreground">
+                      Use your browser extension if you already have a signer set up.
+                    </p>
+                    <Button className="w-full rounded-full py-4" disabled={isLoginLoading} onClick={handleExtensionLogin}>
+                      {isLoginLoading ? 'Logging in...' : 'Login with Extension'}
+                    </Button>
+                  </div>
+                </TabsContent>
+
+                <TabsContent className="space-y-4 pt-4" value="key">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium" htmlFor="nsec">
+                      Secret key (nsec)
+                    </label>
+                    <Input
+                      autoComplete="off"
+                      id="nsec"
+                      onChange={(event) => {
+                        setNsec(event.target.value);
+                        setKeyError(null);
+                      }}
+                      placeholder="nsec1..."
+                      type="password"
+                      value={nsec}
+                    />
+                    {keyError ? <p className="text-sm text-red-500">{keyError}</p> : null}
+                  </div>
+
+                  <Button className="w-full rounded-full py-3" disabled={isLoginLoading || !nsec.trim()} onClick={handleKeyLogin}>
+                    {isLoginLoading ? 'Verifying...' : 'Log In'}
                   </Button>
-                </div>
-              </div>
-            </TabsContent>
 
-            <TabsContent value='key' className='space-y-4'>
-              <div className='space-y-4'>
-                <div className='space-y-2'>
-                  <label htmlFor='nsec' className='text-sm font-medium'>
-                    Secret Key (nsec)
-                  </label>
-                  <Input
-                    id='nsec'
-                    type="password"
-                    value={nsec}
-                    onChange={(e) => {
-                      setNsec(e.target.value);
-                      if (errors.nsec) setErrors(prev => ({ ...prev, nsec: undefined }));
-                    }}
-                    className={`rounded-lg ${
-                      errors.nsec ? 'border-red-500 focus-visible:ring-red-500' : ''
-                    }`}
-                    placeholder='nsec1...'
-                    autoComplete="off"
-                  />
-                  {errors.nsec && (
-                    <p className="text-sm text-red-500">{errors.nsec}</p>
-                  )}
-                </div>
-
-                <Button
-                  className='w-full rounded-full py-3'
-                  onClick={handleKeyLogin}
-                  disabled={isLoading || !nsec.trim()}
-                >
-                  {isLoading ? 'Verifying...' : 'Log In'}
-                </Button>
-
-                <div className='relative'>
-                  <div className='absolute inset-0 flex items-center'>
-                    <div className='w-full border-t border-muted'></div>
-                  </div>
-                  <div className='relative flex justify-center text-xs'>
-                    <span className='px-2 bg-background text-muted-foreground'>
-                      or
-                    </span>
-                  </div>
-                </div>
-
-                <div className='text-center'>
                   <input
-                    type='file'
-                    accept='.txt'
-                    className='hidden'
-                    ref={fileInputRef}
+                    accept=".txt"
+                    className="hidden"
                     onChange={handleFileUpload}
+                    ref={fileInputRef}
+                    type="file"
                   />
                   <Button
-                    variant='outline'
-                    className='w-full'
+                    className="w-full"
+                    disabled={isLoginLoading || isFileLoading}
                     onClick={() => fileInputRef.current?.click()}
-                    disabled={isLoading || isFileLoading}
+                    type="button"
+                    variant="outline"
                   >
-                    <Upload className='w-4 h-4 mr-2' />
+                    <Upload className="mr-2 h-4 w-4" />
                     {isFileLoading ? 'Reading File...' : 'Upload Your Key File'}
                   </Button>
-                  {errors.file && (
-                    <p className="text-sm text-red-500 mt-2">{errors.file}</p>
-                  )}
-                </div>
-              </div>
-            </TabsContent>
+                </TabsContent>
 
-            <TabsContent value='bunker' className='space-y-3 bg-muted'>
-              <div className='space-y-2'>
-                <label htmlFor='bunkerUri' className='text-sm font-medium text-gray-700 dark:text-gray-400'>
-                  Bunker URI
-                </label>
-                <Input
-                  id='bunkerUri'
-                  value={bunkerUri}
-                  onChange={(e) => {
-                    setBunkerUri(e.target.value);
-                    if (errors.bunker) setErrors(prev => ({ ...prev, bunker: undefined }));
-                  }}
-                  className={`rounded-lg border-gray-300 dark:border-gray-700 focus-visible:ring-primary ${
-                    errors.bunker ? 'border-red-500' : ''
-                  }`}
-                  placeholder='bunker://'
-                  autoComplete="off"
-                />
-                {errors.bunker && (
-                  <p className="text-sm text-red-500">{errors.bunker}</p>
-                )}
-              </div>
+                <TabsContent className="space-y-4 pt-4" value="bunker">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium" htmlFor="bunkerUri">
+                      Bunker URI
+                    </label>
+                    <Input
+                      autoComplete="off"
+                      id="bunkerUri"
+                      onChange={(event) => {
+                        setBunkerUri(event.target.value);
+                        setBunkerError(null);
+                      }}
+                      placeholder="bunker://"
+                      value={bunkerUri}
+                    />
+                    {bunkerError ? <p className="text-sm text-red-500">{bunkerError}</p> : null}
+                  </div>
 
-              <div className="flex justify-center">
-                <Button
-                  className='w-full rounded-full py-4'
-                  onClick={handleBunkerLogin}
-                  disabled={isLoading || !bunkerUri.trim()}
-                >
-                  {isLoading ? 'Connecting...' : 'Login with Bunker'}
-                </Button>
-              </div>
-            </TabsContent>
-          </Tabs>
-
-          {/* Sign up link */}
-          {onSignup && (
-            <div className='text-center pt-2 pb-2'>
-              <p className='text-sm text-muted-foreground'>
-                Don't have an account?{' '}
-                <button
-                  onClick={() => {
-                    onClose();
-                    onSignup();
-                  }}
-                  className='text-primary hover:underline font-medium'
-                >
-                  Sign up
-                </button>
-              </p>
-            </div>
-          )}
+                  <Button
+                    className="w-full rounded-full py-4"
+                    disabled={isLoginLoading || !bunkerUri.trim()}
+                    onClick={handleBunkerLogin}
+                  >
+                    {isLoginLoading ? 'Connecting...' : 'Login with Bunker'}
+                  </Button>
+                </TabsContent>
+              </Tabs>
+            </CollapsibleContent>
+          </Collapsible>
         </div>
       </DialogContent>
     </Dialog>
-    );
-  };
+  );
+};
 
 export default LoginDialog;
