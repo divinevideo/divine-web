@@ -2,11 +2,11 @@ import { type NLoginType, NUser, useNostrLogin } from '@nostrify/react/login';
 import { useNostr } from '@nostrify/react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { NostrSigner } from '@nostrify/nostrify';
-import { KeycastJWTSigner } from '@/lib/KeycastJWTSigner';
+import { DivineJWTSigner } from '@/lib/DivineJWTSigner';
 import { createUserFromLogin, getSafeUserSigner } from '@/lib/nostrLogin';
 
 import { useAuthor } from './useAuthor.ts';
-import { useKeycastSession } from './useKeycastSession';
+import { useDivineSession } from './useDivineSession';
 
 type CurrentUser = {
   pubkey: string;
@@ -16,11 +16,11 @@ type CurrentUser = {
 export function useCurrentUser() {
   const { nostr } = useNostr();
   const { logins } = useNostrLogin();
-  const { getValidToken } = useKeycastSession();
+  const { getValidToken } = useDivineSession();
   const token = getValidToken();
   const [jwtPubkey, setJwtPubkey] = useState<string>();
   const jwtSigner = useMemo(() => (
-    token ? new KeycastJWTSigner({ token }) : null
+    token ? new DivineJWTSigner({ token }) : null
   ), [token]);
 
   const loginToUser = useCallback((login: NLoginType): NUser  => {

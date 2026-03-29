@@ -6,9 +6,9 @@ import { renderHook, waitFor } from '@testing-library/react';
 import { useWindowNostrJWT } from './useWindowNostrJWT';
 import { removeWindowNostr } from '@/lib/bunkerToWindowNostr';
 
-// Mock the KeycastJWTSigner
-vi.mock('@/lib/KeycastJWTSigner', () => ({
-  KeycastJWTSigner: vi.fn().mockImplementation(({ token }) => ({
+// Mock the DivineJWTSigner
+vi.mock('@/lib/DivineJWTSigner', () => ({
+  DivineJWTSigner: vi.fn().mockImplementation(({ token }) => ({
     getPublicKey: vi.fn().mockResolvedValue('a'.repeat(64)),
     signEvent: vi.fn().mockResolvedValue({
       id: 'event-id',

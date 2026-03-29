@@ -50,7 +50,7 @@ The current dialog tries to explain invite-gated registration, existing-account 
 
 Inline invite-backed account creation and inline credential sign-in are not implemented in this phase.
 
-The current web contract only supports invite validation in `divine-web` followed by hosted account creation/sign-in at `login.divine.video`. The old `oauth.divine.video` credential endpoints are not a safe browser contract for this flow. Because of that, phase 1 keeps both mainstream signup and mainstream sign-in hosted after the user picks a tab in the web modal.
+The current web contract only supports invite validation in `divine-web` followed by hosted account creation/sign-in at `login.divine.video`. Older in-repo browser-auth helpers referenced `oauth.divine.video`, but that is not a supported browser contract for this flow. Because of that, phase 1 keeps both mainstream signup and mainstream sign-in hosted after the user picks a tab in the web modal.
 
 ## Primary User Flows
 

@@ -1,4 +1,4 @@
-// ABOUTME: React hook for managing window.nostr injection from Keycast bunker
+// ABOUTME: React hook for managing window.nostr injection from a remote bunker signer
 // ABOUTME: Automatically injects/removes window.nostr based on bunker connection state
 
 import { useEffect, useRef, useState } from 'react';
@@ -34,7 +34,7 @@ export interface UseWindowNostrReturn {
 }
 
 /**
- * Hook to manage window.nostr injection from a Keycast bunker URL
+ * Hook to manage window.nostr injection from a bunker URL
  *
  * @example
  * ```tsx

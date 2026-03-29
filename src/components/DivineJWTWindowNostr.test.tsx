@@ -1,14 +1,14 @@
-// ABOUTME: Tests for KeycastJWTWindowNostr component
+// ABOUTME: Tests for DivineJWTWindowNostr component
 // ABOUTME: Verifies component integration and window.nostr injection
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render } from '@testing-library/react';
-import { KeycastJWTWindowNostr } from './KeycastJWTWindowNostr';
+import { DivineJWTWindowNostr } from './DivineJWTWindowNostr';
 import { removeWindowNostr } from '@/lib/bunkerToWindowNostr';
 
 // Mock the hooks
-vi.mock('@/hooks/useKeycastSession', () => ({
-  useKeycastSession: vi.fn(() => ({
+vi.mock('@/hooks/useDivineSession', () => ({
+  useDivineSession: vi.fn(() => ({
     getValidToken: vi.fn(() => 'mock-token'),
   })),
 }));
@@ -30,36 +30,36 @@ vi.mock('@/hooks/useWindowNostrJWT', () => ({
   })),
 }));
 
-describe('KeycastJWTWindowNostr', () => {
+describe('DivineJWTWindowNostr', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     removeWindowNostr();
   });
 
   it('should render without crashing', () => {
-    const { container } = render(<KeycastJWTWindowNostr />);
+    const { container } = render(<DivineJWTWindowNostr />);
     expect(container).toBeDefined();
   });
 
   it('should not render any visible content', () => {
-    const { container } = render(<KeycastJWTWindowNostr />);
+    const { container } = render(<DivineJWTWindowNostr />);
     expect(container.textContent).toBe('');
   });
 
   it('should render with verbose prop', () => {
-    const { container } = render(<KeycastJWTWindowNostr verbose={true} />);
+    const { container } = render(<DivineJWTWindowNostr verbose={true} />);
     expect(container).toBeDefined();
   });
 
-  it('should call useKeycastSession to get token', async () => {
-    const { useKeycastSession } = await import('@/hooks/useKeycastSession');
-    render(<KeycastJWTWindowNostr />);
-    expect(useKeycastSession).toHaveBeenCalled();
+  it('should call useDivineSession to get token', async () => {
+    const { useDivineSession } = await import('@/hooks/useDivineSession');
+    render(<DivineJWTWindowNostr />);
+    expect(useDivineSession).toHaveBeenCalled();
   });
 
   it('should call useWindowNostrJWT with token', async () => {
     const { useWindowNostrJWT } = await import('@/hooks/useWindowNostrJWT');
-    render(<KeycastJWTWindowNostr />);
+    render(<DivineJWTWindowNostr />);
     expect(useWindowNostrJWT).toHaveBeenCalledWith(
       expect.objectContaining({
         token: 'mock-token',
@@ -69,12 +69,12 @@ describe('KeycastJWTWindowNostr', () => {
   });
 
   it('should handle case when no token is available', async () => {
-    const { useKeycastSession } = await import('@/hooks/useKeycastSession');
-    (useKeycastSession as ReturnType<typeof vi.fn>).mockReturnValueOnce({
+    const { useDivineSession } = await import('@/hooks/useDivineSession');
+    (useDivineSession as ReturnType<typeof vi.fn>).mockReturnValueOnce({
       getValidToken: vi.fn(() => null),
     });
 
-    const { container } = render(<KeycastJWTWindowNostr />);
+    const { container } = render(<DivineJWTWindowNostr />);
     expect(container).toBeDefined();
   });
 });

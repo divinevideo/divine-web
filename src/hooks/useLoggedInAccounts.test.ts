@@ -46,8 +46,8 @@ vi.mock('./useCurrentUser', () => ({
   useCurrentUser: () => mockUseCurrentUser(),
 }));
 
-vi.mock('./useKeycastSession', () => ({
-  useKeycastSession: () => ({
+vi.mock('./useDivineSession', () => ({
+  useDivineSession: () => ({
     getValidToken: mockGetValidToken,
   }),
 }));

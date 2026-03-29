@@ -5,7 +5,7 @@ import { useMemo } from 'react';
 import { NSchema as n, NostrEvent, NostrMetadata } from '@nostrify/nostrify';
 import { createUserFromLogin } from '@/lib/nostrLogin';
 import { useCurrentUser } from './useCurrentUser';
-import { useKeycastSession } from './useKeycastSession';
+import { useDivineSession } from './useDivineSession';
 
 export interface Account {
   id: string;
@@ -17,7 +17,7 @@ export interface Account {
 export function useLoggedInAccounts() {
   const { nostr } = useNostr();
   const { logins, setLogin, removeLogin } = useNostrLogin();
-  const { getValidToken } = useKeycastSession();
+  const { getValidToken } = useDivineSession();
   const { metadata, user } = useCurrentUser();
   const token = getValidToken();
   const activeLogins = useMemo(

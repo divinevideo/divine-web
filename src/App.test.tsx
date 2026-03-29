@@ -18,8 +18,8 @@ vi.mock('@/components/SentryUserSync', () => ({
   SentryUserSync: () => <div data-testid="sentry-user-sync" />,
 }));
 
-vi.mock('@/components/KeycastJWTWindowNostr', () => ({
-  KeycastJWTWindowNostr: () => <div data-testid="keycast-jwt-window-nostr" />,
+vi.mock('@/components/DivineJWTWindowNostr', () => ({
+  DivineJWTWindowNostr: () => <div data-testid="divine-jwt-window-nostr" />,
 }));
 
 vi.mock('@/components/ui/toaster', () => ({
@@ -64,7 +64,7 @@ describe('App', () => {
   it('mounts the JWT window.nostr compatibility component at the app root', () => {
     render(<App />);
 
-    expect(screen.getByTestId('keycast-jwt-window-nostr')).toBeInTheDocument();
+    expect(screen.getByTestId('divine-jwt-window-nostr')).toBeInTheDocument();
     expect(screen.getByTestId('app-router')).toBeInTheDocument();
   });
 });

@@ -3,14 +3,14 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
+import { useDivineSession } from '@/hooks/useDivineSession';
 import { clearInviteHandoff } from '@/lib/authHandoff';
 import { exchangeDivineLoginCallback, parseDivineLoginCallback } from '@/lib/divineLogin';
-import { useKeycastSession } from '@/hooks/useKeycastSession';
 
 export default function AuthCallbackPage() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { saveSession } = useKeycastSession();
+  const { saveSession } = useDivineSession();
   const [error, setError] = useState<string | null>(null);
   const startedRef = useRef(false);
 

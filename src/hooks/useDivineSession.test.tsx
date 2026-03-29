@@ -1,7 +1,7 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { useKeycastSession } from './useKeycastSession';
+import { useDivineSession } from './useDivineSession';
 
 function encodeBase64Url(value: string): string {
   return btoa(value).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/u, '');
@@ -13,7 +13,7 @@ function createToken(expiresAtSeconds: number): string {
   return `${header}.${payload}.signature`;
 }
 
-describe('useKeycastSession', () => {
+describe('useDivineSession', () => {
   beforeEach(() => {
     const data = new Map<string, string>();
     const storage = {
@@ -40,7 +40,7 @@ describe('useKeycastSession', () => {
 
   it('keeps an oauth session even when no email is available', async () => {
     const token = createToken(Math.floor(Date.now() / 1000) + 3600);
-    const { result } = renderHook(() => useKeycastSession());
+    const { result } = renderHook(() => useDivineSession());
 
     act(() => {
       result.current.saveSession(token, null, false);
@@ -56,8 +56,8 @@ describe('useKeycastSession', () => {
 
   it('syncs a saved session across hook instances in the same tab', async () => {
     const token = createToken(Math.floor(Date.now() / 1000) + 3600);
-    const first = renderHook(() => useKeycastSession());
-    const second = renderHook(() => useKeycastSession());
+    const first = renderHook(() => useDivineSession());
+    const second = renderHook(() => useDivineSession());
 
     act(() => {
       first.result.current.saveSession(token, null, false);

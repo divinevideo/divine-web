@@ -1,11 +1,11 @@
-// ABOUTME: Component that injects window.nostr using JWT-based Keycast signing
+// ABOUTME: Component that injects window.nostr using the hosted Divine JWT signer
 // ABOUTME: Alternative to bunker-based signing for simpler HTTP-based authentication
 
 import { useEffect } from 'react';
-import { useKeycastSession } from '@/hooks/useKeycastSession';
+import { useDivineSession } from '@/hooks/useDivineSession';
 import { useWindowNostrJWT } from '@/hooks/useWindowNostrJWT';
 
-export interface KeycastJWTWindowNostrProps {
+export interface DivineJWTWindowNostrProps {
   /** Whether to show console logs (default: false) */
   verbose?: boolean;
 }
@@ -15,7 +15,7 @@ export interface KeycastJWTWindowNostrProps {
  *
  * This provides window.nostr compatibility for existing Nostr libraries without
  * requiring a bunker connection. Signing happens via direct HTTP requests to
- * Keycast API with JWT Bearer authentication.
+ * the hosted Divine login RPC API with JWT Bearer authentication.
  *
  * Place this component in your app root (App.tsx) to enable JWT-based signing:
  *
@@ -24,18 +24,18 @@ export interface KeycastJWTWindowNostrProps {
  * function App() {
  *   return (
  *     <NostrLoginProvider>
- *       <KeycastJWTWindowNostr />
+ *       <DivineJWTWindowNostr />
  *       <YourAppContent />
  *     </NostrLoginProvider>
  *   );
  * }
  * ```
  */
-export function KeycastJWTWindowNostr(
-  props: KeycastJWTWindowNostrProps = {}
+export function DivineJWTWindowNostr(
+  props: DivineJWTWindowNostrProps = {}
 ): null {
   const { verbose = false } = props;
-  const { getValidToken } = useKeycastSession();
+  const { getValidToken } = useDivineSession();
   const token = getValidToken();
 
   const { signer, isInitializing, error, isInjected } = useWindowNostrJWT({
@@ -48,13 +48,13 @@ export function KeycastJWTWindowNostr(
     if (!verbose) return;
 
     if (isInitializing) {
-      console.log('[KeycastJWTWindowNostr] Initializing JWT signer...');
+      console.log('[DivineJWTWindowNostr] Initializing JWT signer...');
     } else if (error) {
-      console.error('[KeycastJWTWindowNostr] Error:', error.message);
+      console.error('[DivineJWTWindowNostr] Error:', error.message);
     } else if (isInjected) {
-      console.log('[KeycastJWTWindowNostr] ✅ window.nostr injected successfully!');
+      console.log('[DivineJWTWindowNostr] ✅ window.nostr injected successfully!');
     } else if (!token) {
-      console.log('[KeycastJWTWindowNostr] No JWT token available');
+      console.log('[DivineJWTWindowNostr] No JWT token available');
     }
   }, [isInitializing, error, isInjected, token, verbose]);
 
@@ -62,7 +62,7 @@ export function KeycastJWTWindowNostr(
   useEffect(() => {
     if (verbose && signer) {
       signer.getPublicKey().then((pubkey) => {
-        console.log('[KeycastJWTWindowNostr] Signed in as:', pubkey);
+        console.log('[DivineJWTWindowNostr] Signed in as:', pubkey);
       });
     }
   }, [signer, verbose]);

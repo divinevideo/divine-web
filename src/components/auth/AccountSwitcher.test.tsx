@@ -32,8 +32,8 @@ vi.mock('@/hooks/useLoggedInAccounts', () => ({
   useLoggedInAccounts: () => mockUseLoggedInAccounts(),
 }));
 
-vi.mock('@/hooks/useKeycastSession', () => ({
-  useKeycastSession: () => ({
+vi.mock('@/hooks/useDivineSession', () => ({
+  useDivineSession: () => ({
     clearSession: mockClearSession,
   }),
 }));

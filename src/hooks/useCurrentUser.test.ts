@@ -33,14 +33,14 @@ vi.mock('./useAuthor.ts', () => ({
   useAuthor: (pubkey?: string) => mockUseAuthor(pubkey),
 }));
 
-vi.mock('@/hooks/useKeycastSession', () => ({
-  useKeycastSession: () => ({
+vi.mock('@/hooks/useDivineSession', () => ({
+  useDivineSession: () => ({
     getValidToken: mockGetValidToken,
   }),
 }));
 
-vi.mock('@/lib/KeycastJWTSigner', () => ({
-  KeycastJWTSigner: vi.fn(() => mockJwtSigner),
+vi.mock('@/lib/DivineJWTSigner', () => ({
+  DivineJWTSigner: vi.fn(() => mockJwtSigner),
 }));
 
 import { useCurrentUser } from './useCurrentUser';

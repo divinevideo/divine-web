@@ -24,8 +24,8 @@ vi.mock('@/hooks/useLoginActions', () => ({
   }),
 }));
 
-vi.mock('@/hooks/useKeycastSession', () => ({
-  useKeycastSession: () => ({
+vi.mock('@/hooks/useDivineSession', () => ({
+  useDivineSession: () => ({
     saveBunkerUrl: mockSaveBunkerUrl,
     saveSession: mockSaveSession,
   }),

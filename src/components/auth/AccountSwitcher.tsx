@@ -16,7 +16,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar.tsx'
 // import { WalletModal } from '@/components/WalletModal';
 import { useNostrLogin } from '@nostrify/react/login';
 import { useLoggedInAccounts, type Account } from '@/hooks/useLoggedInAccounts';
-import { useKeycastSession } from '@/hooks/useKeycastSession';
+import { useDivineSession } from '@/hooks/useDivineSession';
 import { clearLoginCookie } from '@/lib/crossSubdomainAuth';
 import { genUserName } from '@/lib/genUserName';
 import { getSafeProfileImage } from '@/lib/imageUtils';
@@ -31,7 +31,7 @@ interface AccountSwitcherProps {
 export function AccountSwitcher({ onAddAccountClick }: AccountSwitcherProps) {
   const { logins } = useNostrLogin();
   const { currentUser, otherUsers, setLogin, removeLogin } = useLoggedInAccounts();
-  const { clearSession } = useKeycastSession();
+  const { clearSession } = useDivineSession();
   const navigate = useNavigate();
   const localNsecLogin = getActiveLocalNsecLogin(logins);
 
