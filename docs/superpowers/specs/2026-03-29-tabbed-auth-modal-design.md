@@ -36,7 +36,7 @@ The current dialog tries to explain invite-gated registration, existing-account 
 
 ### Sign in tab
 
-- Show a single primary button: `Continue to sign in`.
+- Show a single primary button: `Continue`.
 - Existing-account sign-in continues through the hosted `login.divine.video` OAuth flow.
 - Render `Use Nostr instead` as a text-link-style disclosure beneath the primary CTA.
 - Clicking that link reveals the existing advanced Nostr methods inside the sign-in tab.

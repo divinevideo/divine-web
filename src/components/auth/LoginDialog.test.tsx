@@ -128,7 +128,8 @@ describe('LoginDialog', () => {
     await user.click(await screen.findByRole('tab', { name: /^Sign in$/i }));
 
     expect(await screen.findByText(/Continue to sign in with your existing account\./i)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /^Continue to sign in$/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^Continue$/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^Continue to sign in$/i })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Use Nostr instead/i })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Login with Extension/i })).not.toBeInTheDocument();
 
@@ -143,7 +144,7 @@ describe('LoginDialog', () => {
     render(<LoginDialog isOpen onClose={vi.fn()} onLogin={vi.fn()} />);
 
     await user.click(await screen.findByRole('tab', { name: /^Sign in$/i }));
-    await user.click(screen.getByRole('button', { name: /^Continue to sign in$/i }));
+    await user.click(screen.getByRole('button', { name: /^Continue$/i }));
 
     await waitFor(() => {
       expect(mockBuildLoginRedirect).toHaveBeenCalledWith({ returnPath: '/' });
@@ -199,7 +200,7 @@ describe('LoginDialog', () => {
     expect(screen.getByText(/Invite sign-up is unavailable right now/i)).toBeInTheDocument();
 
     await user.click(screen.getByRole('tab', { name: /^Sign in$/i }));
-    await user.click(await screen.findByRole('button', { name: /^Continue to sign in$/i }));
+    await user.click(await screen.findByRole('button', { name: /^Continue$/i }));
 
     await waitFor(() => {
       expect(mockBuildLoginRedirect).toHaveBeenCalledWith({ returnPath: '/' });
