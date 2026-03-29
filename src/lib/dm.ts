@@ -572,6 +572,48 @@ export function getDmMessagePreview(message: DmMessage): string {
   return 'Sent a message';
 }
 
+interface BuildOptimisticDmMessageInput {
+  currentUserPubkey: string;
+  participantPubkeys: string[];
+  content: string;
+  share?: DmSharePayload;
+  wraps: NostrEvent[];
+  createdAt?: number;
+}
+
+export function buildOptimisticDmMessage(input: BuildOptimisticDmMessageInput): DmMessage | null {
+  const {
+    currentUserPubkey,
+    participantPubkeys,
+    content,
+    share,
+    wraps,
+    createdAt = Math.round(Date.now() / 1000),
+  } = input;
+
+  const peerPubkeys = [...new Set(participantPubkeys.filter((pubkey) => pubkey !== currentUserPubkey))].sort();
+  if (!peerPubkeys.length) {
+    return null;
+  }
+
+  const participantList = [...new Set([currentUserPubkey, ...peerPubkeys])].sort();
+  const selfWrap = wraps.find((wrap) => wrap.tags.some((tag) => tag[0] === 'p' && tag[1] === currentUserPubkey));
+  const wrapId = selfWrap?.id || `optimistic:${currentUserPubkey}:${peerPubkeys.join(',')}:${createdAt}`;
+
+  return {
+    conversationId: encodeConversationId(peerPubkeys),
+    wrapId,
+    rumorId: wrapId,
+    senderPubkey: currentUserPubkey,
+    participantPubkeys: participantList,
+    peerPubkeys,
+    content,
+    createdAt,
+    isOutgoing: true,
+    share,
+  };
+}
+
 export function groupDmConversations(
   messages: DmMessage[],
   readState: Record<string, number>,

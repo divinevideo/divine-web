@@ -5,6 +5,7 @@ import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { toast } from '@/hooks/useToast';
 import { useAppContext } from '@/hooks/useAppContext';
 import {
+  buildOptimisticDmMessage,
   buildDmShareTags,
   createDmGiftWraps,
   fetchDmMessages,
@@ -249,8 +250,44 @@ export function useDmSend() {
       await publishDmMessages(relayUrls, wraps, AbortSignal.timeout(10000));
       return { relayUrls, wraps };
     },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: DM_QUERY_KEY });
+    onSuccess: async ({ wraps }, variables) => {
+      const optimisticMessage = buildOptimisticDmMessage({
+        currentUserPubkey: user?.pubkey || '',
+        participantPubkeys: variables.participantPubkeys,
+        content: variables.content,
+        share: variables.share,
+        wraps,
+      });
+
+      if (user?.pubkey && optimisticMessage) {
+        const limitsToUpdate = new Set<number>([200, 300]);
+        const existingMessageQueries = queryClient.getQueriesData<DmMessage[]>({
+          queryKey: [...DM_QUERY_KEY, 'messages', user.pubkey],
+        });
+
+        for (const [queryKey] of existingMessageQueries) {
+          const maybeLimit = queryKey[3];
+          if (typeof maybeLimit === 'number') {
+            limitsToUpdate.add(maybeLimit);
+          }
+        }
+
+        const mergeOptimisticMessage = (existingMessages: DmMessage[] = []) => {
+          const nextMessages = [
+            ...existingMessages.filter((message) => message.wrapId !== optimisticMessage.wrapId),
+            optimisticMessage,
+          ];
+
+          return nextMessages.sort((a, b) => a.createdAt - b.createdAt);
+        };
+
+        for (const limit of limitsToUpdate) {
+          queryClient.setQueryData<DmMessage[]>(
+            [...DM_QUERY_KEY, 'messages', user.pubkey, limit],
+            mergeOptimisticMessage,
+          );
+        }
+      }
     },
     onError: (error) => {
       toast({
