@@ -291,7 +291,7 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin }) =
           <p className="text-center text-sm text-muted-foreground">
             {activeTab === 'register'
               ? 'Use an invite to create your account.'
-              : 'Continue to sign in with your existing account.'}
+              : 'Sign in on login.divine.video with your existing account.'}
           </p>
         </DialogHeader>
 

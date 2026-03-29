@@ -13,7 +13,7 @@ export function WebAccountSignInForm(props: WebAccountSignInFormProps) {
   return (
     <div className="space-y-4">
       <Button className="w-full rounded-full py-3" disabled={isLoading} onClick={onContinue} type="button">
-        {isLoading ? 'Redirecting...' : 'Continue'}
+        {isLoading ? 'Redirecting...' : 'Sign in at login.divine.video'}
       </Button>
 
       <Button
