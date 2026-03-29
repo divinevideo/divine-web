@@ -17,6 +17,8 @@ export interface DivineJWTSignerOptions {
 }
 
 export class DivineJWTSigner implements NostrSigner {
+  private static readonly sharedPubkeys = new Map<string, string>();
+  private static readonly inflightPubkeys = new Map<string, Promise<string>>();
   private token: string;
   private readonly serverUrl: string;
   private readonly timeout: number;
@@ -62,23 +64,46 @@ export class DivineJWTSigner implements NostrSigner {
     }
   }
 
+  private get pubkeyCacheKey(): string {
+    return `${this.serverUrl}::${this.token}`;
+  }
+
   async getPublicKey(): Promise<string> {
     if (this.cachedPubkey) {
       return this.cachedPubkey;
     }
 
+    const sharedPubkey = DivineJWTSigner.sharedPubkeys.get(this.pubkeyCacheKey);
+    if (sharedPubkey) {
+      this.cachedPubkey = sharedPubkey;
+      return sharedPubkey;
+    }
+
+    const inflightPubkey = DivineJWTSigner.inflightPubkeys.get(this.pubkeyCacheKey);
+    if (inflightPubkey) {
+      const pubkey = await inflightPubkey;
+      this.cachedPubkey = pubkey;
+      return pubkey;
+    }
+
     console.log('[DivineJWTSigner] Fetching public key...');
 
-    const pubkey = await this.run<string>(
+    const pubkeyPromise = this.run<string>(
       (rpc) => rpc.getPublicKey(),
       'Request timeout: Failed to get public key',
     );
+    DivineJWTSigner.inflightPubkeys.set(this.pubkeyCacheKey, pubkeyPromise);
+
+    const pubkey = await pubkeyPromise.finally(() => {
+      DivineJWTSigner.inflightPubkeys.delete(this.pubkeyCacheKey);
+    });
 
     if (!pubkey || typeof pubkey !== 'string') {
       throw new Error('Invalid response: missing pubkey');
     }
 
     this.cachedPubkey = pubkey;
+    DivineJWTSigner.sharedPubkeys.set(this.pubkeyCacheKey, pubkey);
     console.log('[DivineJWTSigner] ✅ Got public key:', pubkey);
     return pubkey;
   }

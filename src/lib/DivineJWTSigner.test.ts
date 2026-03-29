@@ -6,11 +6,12 @@ const mockFetch = vi.fn();
 global.fetch = mockFetch as unknown as typeof fetch;
 
 describe('DivineJWTSigner', () => {
-  const mockToken = 'mock-jwt-token';
+  let mockToken: string;
   const mockPubkey = 'a'.repeat(64);
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mockToken = `mock-jwt-token-${Math.random().toString(36).slice(2)}`;
   });
 
   afterEach(() => {
@@ -51,6 +52,23 @@ describe('DivineJWTSigner', () => {
 
     await expect(signer.getPublicKey()).resolves.toBe(mockPubkey);
     await expect(signer.getPublicKey()).resolves.toBe(mockPubkey);
+
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('coalesces concurrent public key lookups across signers that share a session token', async () => {
+    mockFetch.mockImplementation(async () => ({
+      json: async () => ({ result: mockPubkey }),
+    }));
+
+    const firstSigner = new DivineJWTSigner({ token: mockToken });
+    const secondSigner = new DivineJWTSigner({ token: mockToken });
+
+    await expect(Promise.all([
+      firstSigner.getPublicKey(),
+      secondSigner.getPublicKey(),
+      firstSigner.getPublicKey(),
+    ])).resolves.toEqual([mockPubkey, mockPubkey, mockPubkey]);
 
     expect(mockFetch).toHaveBeenCalledTimes(1);
   });
