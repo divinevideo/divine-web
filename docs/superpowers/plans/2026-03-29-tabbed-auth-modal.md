@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED: Use superpowers:subagent-driven-development (if subagents available) or superpowers:executing-plans to implement this plan. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Refine the invite-first auth modal into explicit `Register` and `Sign in` tabs, ship direct in-app password sign-in, and keep invite-gated signup on the hosted `login.divine.video` flow.
+**Goal:** Refine the invite-first auth modal into explicit `Register` and `Sign in` tabs while keeping mainstream auth on the hosted `login.divine.video` flow.
 
-**Architecture:** Keep `LoginDialog` as the auth state coordinator, but split its public surface into two modes. Registration stays invite-first and redirect-based; sign-in becomes an inline password flow backed by the existing JWT login API, with advanced Nostr methods demoted to a text disclosure inside the sign-in tab.
+**Architecture:** Keep `LoginDialog` as the auth state coordinator, but split its public surface into two modes. Registration stays invite-first and redirect-based; sign-in becomes its own hosted-auth handoff tab with advanced Nostr methods demoted to a text disclosure inside that tab.
 
 **Tech Stack:** React 18, TypeScript, Radix Tabs/Collapsible, Vitest, Testing Library
 
@@ -18,7 +18,7 @@
 
 - [ ] **Step 1: Save the approved design note**
 
-Capture the tabbed auth structure, direct sign-in decision, and the hosted-signup dependency boundary.
+Capture the tabbed auth structure, hosted sign-in decision, and the dependency boundary around `login.divine.video`.
 
 - [ ] **Step 2: Save the implementation plan**
 
@@ -33,19 +33,19 @@ Record the test-first execution path and the specific files that will change.
 
 Assert that the default tab is `Register`, the invite field is visible there, and the old `I already have an account` button is gone.
 
-- [ ] **Step 2: Add a failing test for direct password sign-in**
+- [ ] **Step 2: Add a failing test for hosted sign-in inside the new tab**
 
-Assert that switching to `Sign in` shows `Username or email`, `Password`, a primary `Sign in` button, and a `Use Nostr instead` link.
+Assert that switching to `Sign in` shows a primary `Continue to sign in` button and a `Use Nostr instead` link.
 
-- [ ] **Step 3: Add a failing test for inline sign-in success**
+- [ ] **Step 3: Add a failing test for hosted sign-in redirect success**
 
 Run: `npx vitest run src/components/auth/LoginDialog.test.tsx`
 
-Expected: FAIL because the dialog still redirects existing users instead of logging them in inline.
+Expected: FAIL because the dialog still exposes the old standalone existing-account button instead of the new sign-in tab.
 
 - [ ] **Step 4: Add a failing test for invite-service degradation**
 
-Assert that register shows degraded messaging while the sign-in tab still exposes the inline credential form.
+Assert that register shows degraded messaging while the sign-in tab still exposes the hosted sign-in CTA.
 
 ### Task 3: Implement The Phase 1 Modal Refresh
 
@@ -54,11 +54,10 @@ Assert that register shows degraded messaging while the sign-in tab still expose
 - Modify: `src/components/auth/InviteCodeForm.tsx`
 - Modify: `src/components/auth/WaitlistForm.tsx`
 - Create: `src/components/auth/WebAccountSignInForm.tsx`
-- Modify: `src/lib/keycast.ts` if needed for helper naming or typing only
 
-- [ ] **Step 1: Add the new sign-in form component**
+- [ ] **Step 1: Add the new sign-in tab component**
 
-Implement the inline credential form, direct JWT login path, and quiet Nostr disclosure affordance.
+Implement the hosted sign-in CTA and quiet Nostr disclosure affordance.
 
 - [ ] **Step 2: Rework `LoginDialog` around explicit tabs**
 

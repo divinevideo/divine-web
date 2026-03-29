@@ -17,7 +17,7 @@ The current dialog tries to explain invite-gated registration, existing-account 
 - The auth modal stays on one card.
 - The first decision is `Register` or `Sign in`.
 - `Register` remains invite-gated.
-- `Sign in` becomes a direct username/email and password form inside the modal.
+- `Sign in` becomes its own explicit tab with a single primary handoff to hosted `login.divine.video`.
 - `Use Nostr instead` remains available only from the sign-in path and should read like a minor fallback, not a parallel primary flow.
 - Waitlist remains attached only to registration.
 - Stored local-`nsec` recovery messaging stays above the main auth surface when relevant.
@@ -36,12 +36,9 @@ The current dialog tries to explain invite-gated registration, existing-account 
 
 ### Sign in tab
 
-- Show an inline credential form immediately:
-  - `Username or email`
-  - `Password`
-  - primary `Sign in` button
-- Sign-in should complete in-web using the existing JWT login API and session storage rather than redirecting away.
-- Render `Use Nostr instead` as a text-link-style disclosure beneath the password form.
+- Show a single primary button: `Continue to sign in`.
+- Existing-account sign-in continues through the hosted `login.divine.video` OAuth flow.
+- Render `Use Nostr instead` as a text-link-style disclosure beneath the primary CTA.
 - Clicking that link reveals the existing advanced Nostr methods inside the sign-in tab.
 
 ### Degraded register state
@@ -51,9 +48,9 @@ The current dialog tries to explain invite-gated registration, existing-account 
 
 ## Dependency Boundary
 
-Inline invite-backed account creation is not implemented in this phase.
+Inline invite-backed account creation and inline credential sign-in are not implemented in this phase.
 
-The current web contract only supports invite validation in `divine-web` followed by hosted account creation at `login.divine.video`. There is no documented inline web registration API for invite consumption, account creation, and recovery. Because of that, phase 1 keeps signup hosted after invite validation and only moves existing-account sign-in into the modal itself.
+The current web contract only supports invite validation in `divine-web` followed by hosted account creation/sign-in at `login.divine.video`. The old `oauth.divine.video` credential endpoints are not a safe browser contract for this flow. Because of that, phase 1 keeps both mainstream signup and mainstream sign-in hosted after the user picks a tab in the web modal.
 
 ## Primary User Flows
 
@@ -61,9 +58,9 @@ The current web contract only supports invite validation in `divine-web` followe
 
 1. User opens the auth modal.
 2. User selects `Sign in`.
-3. User enters username/email and password.
-4. Web stores the returned JWT-backed session.
-5. Modal closes and the user continues in-app.
+3. User clicks `Continue to sign in`.
+4. Web redirects to `login.divine.video` in sign-in mode.
+5. User completes auth and returns through the existing callback flow.
 
 ### 2. User prefers Nostr sign-in
 
@@ -98,8 +95,7 @@ The current web contract only supports invite validation in `divine-web` followe
 
 - Update `LoginDialog` component tests to assert:
   - register and sign-in tabs are present
-  - sign-in renders inline fields rather than a redirect button
+  - sign-in renders a hosted-auth redirect CTA rather than inline fields
   - Nostr options stay hidden until the sign-in disclosure is clicked
   - register still validates invites before redirect
   - invite-config failure still leaves sign-in usable
-- Add tests for direct password sign-in success and failure behavior.

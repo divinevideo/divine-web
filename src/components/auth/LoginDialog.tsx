@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { setInviteHandoff } from '@/lib/authHandoff';
-import { buildSignupRedirect } from '@/lib/divineLogin';
+import { buildLoginRedirect, buildSignupRedirect } from '@/lib/divineLogin';
 import { getInviteClientConfig, joinInviteWaitlist, validateInviteCode } from '@/lib/inviteApi';
 import { getStoredLocalNsecLogin } from '@/lib/localNsecAccount';
 import { cn } from '@/lib/utils';
@@ -241,6 +241,20 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin }) =
     }
   };
 
+  const handleExistingAccountLogin = async () => {
+    setGeneralError(null);
+    setIsLoginLoading(true);
+
+    try {
+      const returnPath = `${window.location.pathname}${window.location.search}`;
+      const redirect = await buildLoginRedirect({ returnPath });
+      window.location.assign(redirect.url);
+    } catch (caughtError) {
+      setGeneralError(caughtError instanceof Error ? caughtError.message : 'Unable to start sign-in');
+      setIsLoginLoading(false);
+    }
+  };
+
   const handleWaitlistSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setWaitlistError(null);
@@ -277,7 +291,7 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin }) =
           <p className="text-center text-sm text-muted-foreground">
             {activeTab === 'register'
               ? 'Use an invite to create your account.'
-              : 'Sign in with your username and password.'}
+              : 'Continue to sign in with your existing account.'}
           </p>
         </DialogHeader>
 
@@ -333,10 +347,8 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin }) =
             <TabsContent className="space-y-4" value="signin">
               <WebAccountSignInForm
                 advancedOpen={advancedOpen}
-                onSuccess={() => {
-                  onLogin();
-                  onClose();
-                }}
+                isLoading={isLoginLoading}
+                onContinue={handleExistingAccountLogin}
                 onToggleAdvanced={() => setAdvancedOpen((current) => !current)}
               />
 

@@ -5,16 +5,16 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import LoginDialog from './LoginDialog';
 
 const {
+  mockBuildLoginRedirect,
   mockBuildSignupRedirect,
   mockGetInviteClientConfig,
   mockGetStoredLocalNsecLogin,
   mockJoinInviteWaitlist,
   mockLoginActions,
-  mockLoginUser,
-  mockSaveSession,
   mockSetInviteHandoff,
   mockValidateInviteCode,
 } = vi.hoisted(() => ({
+  mockBuildLoginRedirect: vi.fn(),
   mockBuildSignupRedirect: vi.fn(),
   mockGetInviteClientConfig: vi.fn(),
   mockGetStoredLocalNsecLogin: vi.fn(),
@@ -24,8 +24,6 @@ const {
     extension: vi.fn(),
     nsec: vi.fn(),
   },
-  mockLoginUser: vi.fn(),
-  mockSaveSession: vi.fn(),
   mockSetInviteHandoff: vi.fn(),
   mockValidateInviteCode: vi.fn(),
 }));
@@ -48,6 +46,7 @@ vi.mock('@/lib/divineLogin', async () => {
 
   return {
     ...actual,
+    buildLoginRedirect: mockBuildLoginRedirect,
     buildSignupRedirect: mockBuildSignupRedirect,
   };
 });
@@ -55,21 +54,6 @@ vi.mock('@/lib/divineLogin', async () => {
 vi.mock('@/hooks/useLoginActions', () => ({
   useLoginActions: () => mockLoginActions,
 }));
-
-vi.mock('@/hooks/useKeycastSession', () => ({
-  useKeycastSession: () => ({
-    saveSession: mockSaveSession,
-  }),
-}));
-
-vi.mock('@/lib/keycast', async () => {
-  const actual = await vi.importActual<typeof import('@/lib/keycast')>('@/lib/keycast');
-
-  return {
-    ...actual,
-    loginUser: mockLoginUser,
-  };
-});
 
 vi.mock('@/lib/localNsecAccount', async () => {
   const actual = await vi.importActual<typeof import('@/lib/localNsecAccount')>('@/lib/localNsecAccount');
@@ -91,9 +75,9 @@ describe('LoginDialog', () => {
       state: 'signup-state',
       url: 'https://login.divine.video/api/oauth/authorize?client_id=divine-web',
     });
-    mockLoginUser.mockResolvedValue({
-      token: 'jwt-token',
-      pubkey: 'pubkey-123',
+    mockBuildLoginRedirect.mockResolvedValue({
+      state: 'login-state',
+      url: 'https://login.divine.video/api/oauth/authorize?client_id=divine-web',
     });
 
     Object.defineProperty(window, 'location', {
@@ -136,17 +120,15 @@ describe('LoginDialog', () => {
     await screen.findByText(/Invite not found/i);
   });
 
-  it('shows inline password sign-in and keeps Nostr methods behind a text disclosure', async () => {
+  it('renders hosted sign-in and keeps Nostr methods behind a text disclosure', async () => {
     const user = userEvent.setup();
 
     render(<LoginDialog isOpen onClose={vi.fn()} onLogin={vi.fn()} />);
 
     await user.click(await screen.findByRole('tab', { name: /^Sign in$/i }));
 
-    expect(await screen.findByText(/Sign in with your username and password\./i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Username or email/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/^Password$/i)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /^Sign in$/i })).toBeInTheDocument();
+    expect(await screen.findByText(/Continue to sign in with your existing account\./i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^Continue to sign in$/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Use Nostr instead/i })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Login with Extension/i })).not.toBeInTheDocument();
 
@@ -155,39 +137,19 @@ describe('LoginDialog', () => {
     expect(await screen.findByRole('button', { name: /Login with Extension/i })).toBeInTheDocument();
   });
 
-  it('signs in directly from the sign-in tab without invite validation', async () => {
+  it('redirects existing-account users from the sign-in tab without validating an invite code', async () => {
     const user = userEvent.setup();
-    const onClose = vi.fn();
-    const onLogin = vi.fn();
-
-    render(<LoginDialog isOpen onClose={onClose} onLogin={onLogin} />);
-
-    await user.click(await screen.findByRole('tab', { name: /^Sign in$/i }));
-    await user.type(await screen.findByLabelText(/Username or email/i), 'alice@example.com');
-    await user.type(screen.getByLabelText(/^Password$/i), 'password123');
-    await user.click(screen.getByRole('button', { name: /^Sign in$/i }));
-
-    await waitFor(() => {
-      expect(mockLoginUser).toHaveBeenCalledWith('alice@example.com', 'password123');
-      expect(mockSaveSession).toHaveBeenCalledWith('jwt-token', 'alice@example.com', false);
-      expect(mockValidateInviteCode).not.toHaveBeenCalled();
-      expect(onLogin).toHaveBeenCalledTimes(1);
-      expect(onClose).toHaveBeenCalledTimes(1);
-    });
-  });
-
-  it('shows sign-in failures inline', async () => {
-    const user = userEvent.setup();
-    mockLoginUser.mockRejectedValue(new Error('Invalid username or password'));
 
     render(<LoginDialog isOpen onClose={vi.fn()} onLogin={vi.fn()} />);
 
     await user.click(await screen.findByRole('tab', { name: /^Sign in$/i }));
-    await user.type(await screen.findByLabelText(/Username or email/i), 'alice@example.com');
-    await user.type(screen.getByLabelText(/^Password$/i), 'wrong-password');
-    await user.click(screen.getByRole('button', { name: /^Sign in$/i }));
+    await user.click(screen.getByRole('button', { name: /^Continue to sign in$/i }));
 
-    await screen.findByText(/Invalid username or password/i);
+    await waitFor(() => {
+      expect(mockBuildLoginRedirect).toHaveBeenCalledWith({ returnPath: '/' });
+      expect(mockValidateInviteCode).not.toHaveBeenCalled();
+      expect(locationAssign).toHaveBeenCalledWith('https://login.divine.video/api/oauth/authorize?client_id=divine-web');
+    });
   });
 
   it('shows the local nsec banner when a browser-local key already exists', async () => {
@@ -227,7 +189,7 @@ describe('LoginDialog', () => {
     });
   });
 
-  it('keeps inline sign-in available when the invite service config fails', async () => {
+  it('keeps hosted sign-in available when the invite service config fails', async () => {
     const user = userEvent.setup();
     mockGetInviteClientConfig.mockRejectedValue(new Error('Invite service unavailable'));
 
@@ -237,9 +199,11 @@ describe('LoginDialog', () => {
     expect(screen.getByText(/Invite sign-up is unavailable right now/i)).toBeInTheDocument();
 
     await user.click(screen.getByRole('tab', { name: /^Sign in$/i }));
+    await user.click(await screen.findByRole('button', { name: /^Continue to sign in$/i }));
 
-    expect(await screen.findByLabelText(/Username or email/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/^Password$/i)).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /^Continue$/i })).not.toBeInTheDocument();
+    await waitFor(() => {
+      expect(mockBuildLoginRedirect).toHaveBeenCalledWith({ returnPath: '/' });
+      expect(locationAssign).toHaveBeenCalledWith('https://login.divine.video/api/oauth/authorize?client_id=divine-web');
+    });
   });
 });
