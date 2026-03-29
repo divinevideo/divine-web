@@ -88,9 +88,14 @@ export class DivineJWTSigner implements NostrSigner {
   ): Promise<NostrEvent> {
     console.log('[DivineJWTSigner] Signing event kind', event.kind, '...');
 
+    const pubkey = await this.getPublicKey();
+    const unsignedEvent = {
+      ...event,
+      pubkey,
+    } as DivineRpcUnsignedEvent;
+
     const signedEvent = await this.run<NostrEvent>(
-      // DivineRpc expects its own unsigned-event type; the app signer contract omits pubkey here.
-      (rpc) => rpc.signEvent(event as DivineRpcUnsignedEvent),
+      (rpc) => rpc.signEvent(unsignedEvent),
       'Request timeout: Failed to sign event',
     );
 

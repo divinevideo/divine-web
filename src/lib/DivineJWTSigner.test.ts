@@ -69,14 +69,34 @@ describe('DivineJWTSigner', () => {
       sig: 'signature-123',
     };
 
-    mockFetch.mockResolvedValueOnce({
-      json: async () => ({ result: signedEvent }),
-    });
+    mockFetch
+      .mockResolvedValueOnce({
+        json: async () => ({ result: mockPubkey }),
+      })
+      .mockResolvedValueOnce({
+        json: async () => ({ result: signedEvent }),
+      });
 
     const signer = new DivineJWTSigner({ token: mockToken });
 
     await expect(signer.signEvent(unsignedEvent)).resolves.toEqual(signedEvent);
-    expect(mockFetch).toHaveBeenCalledWith(
+    expect(mockFetch).toHaveBeenNthCalledWith(
+      1,
+      'https://login.divine.video/api/nostr',
+      expect.objectContaining({
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${mockToken}`,
+        },
+        body: JSON.stringify({
+          method: 'get_public_key',
+          params: [],
+        }),
+      })
+    );
+    expect(mockFetch).toHaveBeenNthCalledWith(
+      2,
       'https://login.divine.video/api/nostr',
       expect.objectContaining({
         method: 'POST',
@@ -86,7 +106,7 @@ describe('DivineJWTSigner', () => {
         },
         body: JSON.stringify({
           method: 'sign_event',
-          params: [unsignedEvent],
+          params: [{ ...unsignedEvent, pubkey: mockPubkey }],
         }),
       })
     );
