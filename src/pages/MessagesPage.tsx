@@ -107,6 +107,42 @@ function ConversationRow({ conversation, names, pictures, onClick }: Conversatio
   );
 }
 
+interface SupportRowProps {
+  displayName: string;
+  picture: string;
+  onClick: () => void;
+}
+
+function SupportRow({ displayName, picture, onClick }: SupportRowProps) {
+  return (
+    <button
+      onClick={onClick}
+      className="group w-full rounded-[28px] border border-border/80 bg-card/70 p-4 text-left shadow-sm backdrop-blur-sm transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-[0_12px_36px_rgba(39,197,139,0.12)]"
+    >
+      <div className="flex items-center gap-3">
+        <Avatar className="h-12 w-12 border border-primary/20 bg-primary/10">
+          <AvatarImage src={picture} alt={displayName} />
+          <AvatarFallback className="text-xs">
+            {displayName.slice(0, 2).toUpperCase()}
+          </AvatarFallback>
+        </Avatar>
+
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center justify-between gap-3">
+            <p className="truncate text-sm font-semibold text-foreground">{displayName}</p>
+            <span className="rounded-full bg-primary/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-primary">
+              Support
+            </span>
+          </div>
+          <p className="mt-2 truncate text-sm text-muted-foreground">
+            Ask about bugs, moderation, or account issues.
+          </p>
+        </div>
+      </div>
+    </button>
+  );
+}
+
 export function MessagesPage() {
   const navigate = useSubdomainNavigate();
   const location = useLocation();
@@ -147,7 +183,7 @@ export function MessagesPage() {
       <main className="container py-6">
         <div className="mx-auto max-w-4xl space-y-5">
           <section className="overflow-hidden rounded-[32px] border border-border/70 bg-card/80 px-5 py-6 shadow-[0_24px_60px_rgba(39,197,139,0.08)] backdrop-blur-sm">
-            <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
+            <div className="space-y-4">
               <div className="space-y-2">
                 <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-primary">
                   Messages
@@ -160,18 +196,19 @@ export function MessagesPage() {
                 </div>
               </div>
 
-              <div className="flex flex-col gap-3 sm:flex-row">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                <div className="relative flex-1">
+                  <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    id="dm-search-input"
+                    value={searchQuery}
+                    onChange={(event) => setSearchQuery(event.target.value)}
+                    placeholder="Find people to message"
+                    className="h-12 rounded-full border-border/80 bg-background/80 pl-11 text-sm"
+                  />
+                </div>
                 <Button
-                  variant="outline"
-                  className="justify-start gap-2 rounded-full"
-                  onClick={() => openConversation([DIVINE_SUPPORT_PUBKEY])}
-                  disabled={!canUseDirectMessages}
-                >
-                  <LifeBuoy className="h-4 w-4" />
-                  Message support
-                </Button>
-                <Button
-                  className="justify-start gap-2 rounded-full"
+                  className="justify-center gap-2 rounded-full sm:px-6"
                   onClick={() => {
                     const searchInput = document.getElementById('dm-search-input');
                     searchInput?.focus();
@@ -182,38 +219,6 @@ export function MessagesPage() {
                   New message
                 </Button>
               </div>
-            </div>
-
-            <div className="mt-5 grid gap-3 lg:grid-cols-[minmax(0,1fr)_280px]">
-              <div className="relative">
-                <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  id="dm-search-input"
-                  value={searchQuery}
-                  onChange={(event) => setSearchQuery(event.target.value)}
-                  placeholder="Find people to message"
-                  className="h-12 rounded-full border-border/80 bg-background/80 pl-11 text-sm"
-                />
-              </div>
-
-              <button
-                onClick={() => openConversation([DIVINE_SUPPORT_PUBKEY])}
-                disabled={!canUseDirectMessages}
-                className="flex items-center gap-3 rounded-[24px] border border-primary/20 bg-primary/10 px-4 py-3 text-left transition-colors hover:bg-primary/15 disabled:pointer-events-none disabled:opacity-60"
-              >
-                <Avatar className="h-11 w-11 border border-primary/20">
-                  <AvatarImage src={supportPicture} alt={supportDisplayName} />
-                  <AvatarFallback className="text-xs">
-                    {supportDisplayName.slice(0, 2).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold text-foreground">{supportDisplayName}</p>
-                  <p className="truncate text-xs text-muted-foreground">
-                    Ask about bugs, moderation, or account issues.
-                  </p>
-                </div>
-              </button>
             </div>
 
             {share && (
@@ -285,6 +290,12 @@ export function MessagesPage() {
                     </>
                   )}
 
+                  <SupportRow
+                    displayName={supportDisplayName}
+                    picture={supportPicture}
+                    onClick={() => openConversation([DIVINE_SUPPORT_PUBKEY])}
+                  />
+
                   {(conversationsQuery.data || []).map((conversation) => {
                     const names = conversation.participantPubkeys.map((pubkey) =>
                       getDisplayName(pubkey, authorMap[pubkey]?.metadata),
@@ -311,14 +322,11 @@ export function MessagesPage() {
                           <LifeBuoy className="h-6 w-6" />
                         </div>
                         <div className="space-y-1">
-                          <h2 className="text-xl font-semibold text-foreground">No messages yet</h2>
+                          <h2 className="text-xl font-semibold text-foreground">No other messages yet</h2>
                           <p className="text-sm text-muted-foreground">
-                            Start with support, then use the search bar above to message people directly.
+                            Start a new conversation from the search bar above when you are ready to message someone else.
                           </p>
                         </div>
-                        <Button className="rounded-full" onClick={() => openConversation([DIVINE_SUPPORT_PUBKEY])}>
-                          Open support chat
-                        </Button>
                       </div>
                     </div>
                   )}
