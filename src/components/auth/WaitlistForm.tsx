@@ -30,7 +30,12 @@ export function WaitlistForm(props: WaitlistFormProps) {
         <p className="rounded-xl bg-muted px-4 py-3 text-sm text-muted-foreground">
           You are on the list. We will reach out as soon as invites open up.
         </p>
-        <Button className="w-full rounded-full" onClick={onBack} type="button" variant="outline">
+        <Button
+          className="h-auto px-0 py-0 text-sm font-medium text-muted-foreground"
+          onClick={onBack}
+          type="button"
+          variant="link"
+        >
           I have an invite code
         </Button>
       </div>
@@ -58,7 +63,12 @@ export function WaitlistForm(props: WaitlistFormProps) {
         {isLoading ? 'Joining waitlist...' : 'Join the waitlist'}
       </Button>
 
-      <Button className="w-full rounded-full" onClick={onBack} type="button" variant="outline">
+      <Button
+        className="h-auto px-0 py-0 text-sm font-medium text-muted-foreground"
+        onClick={onBack}
+        type="button"
+        variant="link"
+      >
         I have an invite code
       </Button>
     </form>

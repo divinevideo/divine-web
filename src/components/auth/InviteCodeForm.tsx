@@ -41,12 +41,17 @@ export function InviteCodeForm(props: InviteCodeFormProps) {
       </div>
 
       <Button className="w-full rounded-full py-3" disabled={isLoading || !value.trim()} type="submit">
-        {isLoading ? 'Checking invite...' : 'Continue with invite code'}
+        {isLoading ? 'Checking invite...' : 'Continue'}
       </Button>
 
       {waitlistEnabled ? (
-        <Button className="w-full rounded-full" onClick={onJoinWaitlist} type="button" variant="outline">
-          Join the waitlist
+        <Button
+          className="h-auto px-0 py-0 text-sm font-medium text-muted-foreground"
+          onClick={onJoinWaitlist}
+          type="button"
+          variant="link"
+        >
+          No invite? Join the waitlist
         </Button>
       ) : null}
     </form>

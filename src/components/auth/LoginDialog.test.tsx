@@ -5,16 +5,16 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import LoginDialog from './LoginDialog';
 
 const {
-  mockBuildLoginRedirect,
   mockBuildSignupRedirect,
   mockGetInviteClientConfig,
   mockGetStoredLocalNsecLogin,
   mockJoinInviteWaitlist,
   mockLoginActions,
+  mockLoginUser,
+  mockSaveSession,
   mockSetInviteHandoff,
   mockValidateInviteCode,
 } = vi.hoisted(() => ({
-  mockBuildLoginRedirect: vi.fn(),
   mockBuildSignupRedirect: vi.fn(),
   mockGetInviteClientConfig: vi.fn(),
   mockGetStoredLocalNsecLogin: vi.fn(),
@@ -24,6 +24,8 @@ const {
     extension: vi.fn(),
     nsec: vi.fn(),
   },
+  mockLoginUser: vi.fn(),
+  mockSaveSession: vi.fn(),
   mockSetInviteHandoff: vi.fn(),
   mockValidateInviteCode: vi.fn(),
 }));
@@ -46,7 +48,6 @@ vi.mock('@/lib/divineLogin', async () => {
 
   return {
     ...actual,
-    buildLoginRedirect: mockBuildLoginRedirect,
     buildSignupRedirect: mockBuildSignupRedirect,
   };
 });
@@ -54,6 +55,21 @@ vi.mock('@/lib/divineLogin', async () => {
 vi.mock('@/hooks/useLoginActions', () => ({
   useLoginActions: () => mockLoginActions,
 }));
+
+vi.mock('@/hooks/useKeycastSession', () => ({
+  useKeycastSession: () => ({
+    saveSession: mockSaveSession,
+  }),
+}));
+
+vi.mock('@/lib/keycast', async () => {
+  const actual = await vi.importActual<typeof import('@/lib/keycast')>('@/lib/keycast');
+
+  return {
+    ...actual,
+    loginUser: mockLoginUser,
+  };
+});
 
 vi.mock('@/lib/localNsecAccount', async () => {
   const actual = await vi.importActual<typeof import('@/lib/localNsecAccount')>('@/lib/localNsecAccount');
@@ -75,9 +91,9 @@ describe('LoginDialog', () => {
       state: 'signup-state',
       url: 'https://login.divine.video/api/oauth/authorize?client_id=divine-web',
     });
-    mockBuildLoginRedirect.mockResolvedValue({
-      state: 'login-state',
-      url: 'https://login.divine.video/api/oauth/authorize?client_id=divine-web',
+    mockLoginUser.mockResolvedValue({
+      token: 'jwt-token',
+      pubkey: 'pubkey-123',
     });
 
     Object.defineProperty(window, 'location', {
@@ -96,15 +112,16 @@ describe('LoginDialog', () => {
     });
   });
 
-  it('renders the invite-first auth surface before advanced login methods', async () => {
+  it('renders explicit register and sign-in tabs with register selected by default', async () => {
     render(<LoginDialog isOpen onClose={vi.fn()} onLogin={vi.fn()} />);
 
-    await screen.findByRole('button', { name: /Continue with invite code/i });
-
-    expect(screen.getByRole('button', { name: /Join the waitlist/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /I already have an account/i })).toBeInTheDocument();
-    expect(screen.getByPlaceholderText(/Enter your invite code/i)).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /Login with Extension/i })).not.toBeInTheDocument();
+    expect(await screen.findByRole('tab', { name: /^Register$/i })).toHaveAttribute('data-state', 'active');
+    expect(screen.getByRole('tab', { name: /^Sign in$/i })).toBeInTheDocument();
+    expect(screen.getByText(/Use an invite to create your account\./i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Invite code/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^Continue$/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /No invite\? Join the waitlist/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /I already have an account/i })).not.toBeInTheDocument();
   });
 
   it('shows field-level feedback for invalid invite codes', async () => {
@@ -114,23 +131,63 @@ describe('LoginDialog', () => {
     render(<LoginDialog isOpen onClose={vi.fn()} onLogin={vi.fn()} />);
 
     await user.type(await screen.findByLabelText(/Invite code/i), 'bad-code');
-    await user.click(screen.getByRole('button', { name: /Continue with invite code/i }));
+    await user.click(screen.getByRole('button', { name: /^Continue$/i }));
 
     await screen.findByText(/Invite not found/i);
   });
 
-  it('keeps advanced Nostr methods behind a secondary disclosure', async () => {
+  it('shows inline password sign-in and keeps Nostr methods behind a text disclosure', async () => {
     const user = userEvent.setup();
 
     render(<LoginDialog isOpen onClose={vi.fn()} onLogin={vi.fn()} />);
 
-    await user.click(await screen.findByRole('button', { name: /Advanced login methods/i }));
+    await user.click(await screen.findByRole('tab', { name: /^Sign in$/i }));
+
+    expect(await screen.findByText(/Sign in with your username and password\./i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Username or email/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/^Password$/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^Sign in$/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Use Nostr instead/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Login with Extension/i })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /Use Nostr instead/i }));
 
     expect(await screen.findByRole('button', { name: /Login with Extension/i })).toBeInTheDocument();
+  });
 
-    await user.click(screen.getByRole('tab', { name: /Bunker/i }));
+  it('signs in directly from the sign-in tab without invite validation', async () => {
+    const user = userEvent.setup();
+    const onClose = vi.fn();
+    const onLogin = vi.fn();
 
-    expect(await screen.findByRole('button', { name: /Login with Bunker/i })).toBeInTheDocument();
+    render(<LoginDialog isOpen onClose={onClose} onLogin={onLogin} />);
+
+    await user.click(await screen.findByRole('tab', { name: /^Sign in$/i }));
+    await user.type(await screen.findByLabelText(/Username or email/i), 'alice@example.com');
+    await user.type(screen.getByLabelText(/^Password$/i), 'password123');
+    await user.click(screen.getByRole('button', { name: /^Sign in$/i }));
+
+    await waitFor(() => {
+      expect(mockLoginUser).toHaveBeenCalledWith('alice@example.com', 'password123');
+      expect(mockSaveSession).toHaveBeenCalledWith('jwt-token', 'alice@example.com', false);
+      expect(mockValidateInviteCode).not.toHaveBeenCalled();
+      expect(onLogin).toHaveBeenCalledTimes(1);
+      expect(onClose).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  it('shows sign-in failures inline', async () => {
+    const user = userEvent.setup();
+    mockLoginUser.mockRejectedValue(new Error('Invalid username or password'));
+
+    render(<LoginDialog isOpen onClose={vi.fn()} onLogin={vi.fn()} />);
+
+    await user.click(await screen.findByRole('tab', { name: /^Sign in$/i }));
+    await user.type(await screen.findByLabelText(/Username or email/i), 'alice@example.com');
+    await user.type(screen.getByLabelText(/^Password$/i), 'wrong-password');
+    await user.click(screen.getByRole('button', { name: /^Sign in$/i }));
+
+    await screen.findByText(/Invalid username or password/i);
   });
 
   it('shows the local nsec banner when a browser-local key already exists', async () => {
@@ -157,7 +214,7 @@ describe('LoginDialog', () => {
     render(<LoginDialog isOpen onClose={vi.fn()} onLogin={vi.fn()} />);
 
     await user.type(await screen.findByLabelText(/Invite code/i), 'abcd-efgh');
-    await user.click(screen.getByRole('button', { name: /Continue with invite code/i }));
+    await user.click(screen.getByRole('button', { name: /^Continue$/i }));
 
     await waitFor(() => {
       expect(mockSetInviteHandoff).toHaveBeenCalledWith(
@@ -170,37 +227,19 @@ describe('LoginDialog', () => {
     });
   });
 
-  it('redirects existing-account users without validating an invite code', async () => {
-    const user = userEvent.setup();
-
-    render(<LoginDialog isOpen onClose={vi.fn()} onLogin={vi.fn()} />);
-
-    await user.click(await screen.findByRole('button', { name: /I already have an account/i }));
-
-    await waitFor(() => {
-      expect(mockBuildLoginRedirect).toHaveBeenCalledWith({ returnPath: '/' });
-      expect(mockValidateInviteCode).not.toHaveBeenCalled();
-      expect(locationAssign).toHaveBeenCalledWith('https://login.divine.video/api/oauth/authorize?client_id=divine-web');
-    });
-  });
-
-  it('falls back to advanced login methods when the invite service config fails', async () => {
+  it('keeps inline sign-in available when the invite service config fails', async () => {
     const user = userEvent.setup();
     mockGetInviteClientConfig.mockRejectedValue(new Error('Invite service unavailable'));
 
     render(<LoginDialog isOpen onClose={vi.fn()} onLogin={vi.fn()} />);
 
     await screen.findByText(/Invite service unavailable/i);
-    expect(screen.queryByRole('button', { name: /Continue with invite code/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /Join the waitlist/i })).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /I already have an account/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Login with Extension/i })).toBeInTheDocument();
+    expect(screen.getByText(/Invite sign-up is unavailable right now/i)).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: /I already have an account/i }));
+    await user.click(screen.getByRole('tab', { name: /^Sign in$/i }));
 
-    await waitFor(() => {
-      expect(mockBuildLoginRedirect).toHaveBeenCalledWith({ returnPath: '/' });
-      expect(locationAssign).toHaveBeenCalledWith('https://login.divine.video/api/oauth/authorize?client_id=divine-web');
-    });
+    expect(await screen.findByLabelText(/Username or email/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/^Password$/i)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^Continue$/i })).not.toBeInTheDocument();
   });
 });

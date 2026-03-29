@@ -3,12 +3,12 @@ import { AlertTriangle, Cloud, KeyRound, Shield, Upload } from 'lucide-react';
 
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Collapsible, CollapsibleContent } from '@/components/ui/collapsible';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { setInviteHandoff } from '@/lib/authHandoff';
-import { buildLoginRedirect, buildSignupRedirect } from '@/lib/divineLogin';
+import { buildSignupRedirect } from '@/lib/divineLogin';
 import { getInviteClientConfig, joinInviteWaitlist, validateInviteCode } from '@/lib/inviteApi';
 import { getStoredLocalNsecLogin } from '@/lib/localNsecAccount';
 import { cn } from '@/lib/utils';
@@ -17,6 +17,7 @@ import { useLoginActions } from '@/hooks/useLoginActions';
 import InviteCodeForm from './InviteCodeForm';
 import LocalNsecBanner from './LocalNsecBanner';
 import WaitlistForm from './WaitlistForm';
+import WebAccountSignInForm from './WebAccountSignInForm';
 
 interface LoginDialogProps {
   isOpen: boolean;
@@ -25,7 +26,8 @@ interface LoginDialogProps {
   onSignup?: () => void;
 }
 
-type DialogView = 'invite' | 'waitlist';
+type AuthTab = 'register' | 'signin';
+type RegisterView = 'invite' | 'waitlist';
 
 const validateNsec = (nsec: string) => /^nsec1[a-zA-Z0-9]{58}$/.test(nsec);
 const validateBunkerUri = (uri: string) => uri.startsWith('bunker://');
@@ -34,7 +36,8 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin }) =
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [bunkerError, setBunkerError] = useState<string | null>(null);
   const [bunkerUri, setBunkerUri] = useState('');
-  const [configError, setConfigError] = useState<string | null>(null);
+  const [generalError, setGeneralError] = useState<string | null>(null);
+  const [inviteConfigError, setInviteConfigError] = useState<string | null>(null);
   const [inviteCode, setInviteCode] = useState('');
   const [inviteError, setInviteError] = useState<string | null>(null);
   const [isConfigLoading, setIsConfigLoading] = useState(false);
@@ -45,7 +48,8 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin }) =
   const [keyError, setKeyError] = useState<string | null>(null);
   const [nsec, setNsec] = useState('');
   const [storedLocalNsec, setStoredLocalNsec] = useState<string | null>(null);
-  const [view, setView] = useState<DialogView>('invite');
+  const [activeTab, setActiveTab] = useState<AuthTab>('register');
+  const [registerView, setRegisterView] = useState<RegisterView>('invite');
   const [waitlistContact, setWaitlistContact] = useState('');
   const [waitlistEnabled, setWaitlistEnabled] = useState(false);
   const [waitlistError, setWaitlistError] = useState<string | null>(null);
@@ -61,7 +65,8 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin }) =
     setAdvancedOpen(false);
     setBunkerError(null);
     setBunkerUri('');
-    setConfigError(null);
+    setGeneralError(null);
+    setInviteConfigError(null);
     setInviteCode('');
     setInviteError(null);
     setIsConfigLoading(true);
@@ -72,7 +77,8 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin }) =
     setKeyError(null);
     setNsec('');
     setStoredLocalNsec(getStoredLocalNsecLogin()?.data.nsec ?? null);
-    setView('invite');
+    setActiveTab('register');
+    setRegisterView('invite');
     setWaitlistContact('');
     setWaitlistEnabled(false);
     setWaitlistError(null);
@@ -88,8 +94,7 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin }) =
       })
       .catch((caughtError) => {
         if (!isCancelled) {
-          setConfigError(caughtError instanceof Error ? caughtError.message : 'Invite service unavailable');
-          setAdvancedOpen(true);
+          setInviteConfigError(caughtError instanceof Error ? caughtError.message : 'Invite service unavailable');
         }
       })
       .finally(() => {
@@ -105,7 +110,7 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin }) =
 
   const handleExtensionLogin = async () => {
     setIsLoginLoading(true);
-    setConfigError(null);
+    setGeneralError(null);
 
     try {
       if (!('nostr' in window)) {
@@ -116,7 +121,7 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin }) =
       onLogin();
       onClose();
     } catch (caughtError) {
-      setConfigError(caughtError instanceof Error ? caughtError.message : 'Extension login failed');
+      setGeneralError(caughtError instanceof Error ? caughtError.message : 'Extension login failed');
     } finally {
       setIsLoginLoading(false);
     }
@@ -251,17 +256,13 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin }) =
     }
   };
 
-  const handleExistingAccountLogin = async () => {
-    setConfigError(null);
-    setIsLoginLoading(true);
+  const handleAuthTabChange = (value: string) => {
+    const nextTab = value === 'signin' ? 'signin' : 'register';
+    setActiveTab(nextTab);
+    setGeneralError(null);
 
-    try {
-      const returnPath = `${window.location.pathname}${window.location.search}`;
-      const redirect = await buildLoginRedirect({ returnPath });
-      window.location.assign(redirect.url);
-    } catch (caughtError) {
-      setConfigError(caughtError instanceof Error ? caughtError.message : 'Unable to start sign-in');
-      setIsLoginLoading(false);
+    if (nextTab !== 'signin') {
+      setAdvancedOpen(false);
     }
   };
 
@@ -274,170 +275,175 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin }) =
             Create or sign in to your account
           </DialogDescription>
           <p className="text-center text-sm text-muted-foreground">
-            Use an invite to continue with the main web login flow. Advanced Nostr signers are still available.
+            {activeTab === 'register'
+              ? 'Use an invite to create your account.'
+              : 'Sign in with your username and password.'}
           </p>
         </DialogHeader>
 
         <div className="space-y-4 px-6 pb-6 pt-2">
           {storedLocalNsec ? <LocalNsecBanner nsec={storedLocalNsec} /> : null}
 
-          {configError ? (
+          {generalError ? (
             <Alert variant="destructive">
               <AlertTriangle className="h-4 w-4" />
-              <AlertDescription>{configError}</AlertDescription>
+              <AlertDescription>{generalError}</AlertDescription>
             </Alert>
           ) : null}
 
-          {isConfigLoading ? (
-            <div className="rounded-2xl bg-muted px-4 py-6 text-center text-sm text-muted-foreground">
-              Checking invite status...
-            </div>
-          ) : configError ? (
-            <div className="rounded-2xl bg-muted px-4 py-6 text-center text-sm text-muted-foreground">
-              Invite sign-up is unavailable right now. You can still sign in with an existing account or use the
-              advanced login methods below.
-            </div>
-          ) : view === 'invite' ? (
-            <InviteCodeForm
-              error={inviteError}
-              isLoading={isInviteLoading}
-              onInviteCodeChange={setInviteCode}
-              onJoinWaitlist={() => setView('waitlist')}
-              onSubmit={handleInviteSubmit}
-              value={inviteCode}
-              waitlistEnabled={waitlistEnabled}
-            />
-          ) : (
-            <WaitlistForm
-              contact={waitlistContact}
-              error={waitlistError}
-              isLoading={isWaitlistLoading}
-              isSuccess={waitlistSuccess}
-              onBack={() => setView('invite')}
-              onContactChange={setWaitlistContact}
-              onSubmit={handleWaitlistSubmit}
-            />
-          )}
+          <Tabs className="space-y-4" onValueChange={handleAuthTabChange} value={activeTab}>
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="register">Register</TabsTrigger>
+              <TabsTrigger value="signin">Sign in</TabsTrigger>
+            </TabsList>
 
-          {!isConfigLoading ? (
-            <Button
-              className="w-full rounded-full"
-              disabled={isInviteLoading || isLoginLoading || isWaitlistLoading}
-              onClick={handleExistingAccountLogin}
-              type="button"
-              variant="secondary"
-            >
-              {isLoginLoading ? 'Redirecting...' : 'I already have an account'}
-            </Button>
-          ) : null}
+            <TabsContent className="space-y-4" value="register">
+              {isConfigLoading ? (
+                <div className="rounded-2xl bg-muted px-4 py-6 text-center text-sm text-muted-foreground">
+                  Checking invite status...
+                </div>
+              ) : inviteConfigError ? (
+                <div className="space-y-2 rounded-2xl bg-muted px-4 py-6 text-center text-sm text-muted-foreground">
+                  <p>Invite sign-up is unavailable right now. You can still sign in on the next tab.</p>
+                  <p className="text-red-500">{inviteConfigError}</p>
+                </div>
+              ) : registerView === 'invite' ? (
+                <InviteCodeForm
+                  error={inviteError}
+                  isLoading={isInviteLoading}
+                  onInviteCodeChange={setInviteCode}
+                  onJoinWaitlist={() => setRegisterView('waitlist')}
+                  onSubmit={handleInviteSubmit}
+                  value={inviteCode}
+                  waitlistEnabled={waitlistEnabled}
+                />
+              ) : (
+                <WaitlistForm
+                  contact={waitlistContact}
+                  error={waitlistError}
+                  isLoading={isWaitlistLoading}
+                  isSuccess={waitlistSuccess}
+                  onBack={() => setRegisterView('invite')}
+                  onContactChange={setWaitlistContact}
+                  onSubmit={handleWaitlistSubmit}
+                />
+              )}
+            </TabsContent>
 
-          <Collapsible open={advancedOpen} onOpenChange={setAdvancedOpen}>
-            <CollapsibleTrigger asChild>
-              <Button className="w-full rounded-full" type="button" variant="outline">
-                Advanced login methods
-              </Button>
-            </CollapsibleTrigger>
-            <CollapsibleContent className="pt-4">
-              <Tabs className="w-full" defaultValue="extension">
-                <TabsList className="grid w-full grid-cols-3 rounded-lg bg-muted">
-                  <TabsTrigger className="flex items-center gap-2" value="extension">
-                    <Shield className="h-4 w-4" />
-                    <span className="hidden sm:inline">Extension</span>
-                    <span className="sm:hidden">Ext</span>
-                  </TabsTrigger>
-                  <TabsTrigger className="flex items-center gap-2" value="key">
-                    <KeyRound className="h-4 w-4" />
-                    <span>Key</span>
-                  </TabsTrigger>
-                  <TabsTrigger className="flex items-center gap-2" value="bunker">
-                    <Cloud className="h-4 w-4" />
-                    <span className="hidden sm:inline">Bunker</span>
-                    <span className="sm:hidden">Bnkr</span>
-                  </TabsTrigger>
-                </TabsList>
+            <TabsContent className="space-y-4" value="signin">
+              <WebAccountSignInForm
+                advancedOpen={advancedOpen}
+                onSuccess={() => {
+                  onLogin();
+                  onClose();
+                }}
+                onToggleAdvanced={() => setAdvancedOpen((current) => !current)}
+              />
 
-                <TabsContent className="space-y-3 pt-4" value="extension">
-                  <div className="space-y-3 rounded-2xl bg-muted p-4 text-center">
-                    <p className="text-sm text-muted-foreground">
-                      Use your browser extension if you already have a signer set up.
-                    </p>
-                    <Button className="w-full rounded-full py-4" disabled={isLoginLoading} onClick={handleExtensionLogin}>
-                      {isLoginLoading ? 'Logging in...' : 'Login with Extension'}
-                    </Button>
-                  </div>
-                </TabsContent>
+              <Collapsible open={advancedOpen}>
+                <CollapsibleContent className="space-y-4 pt-2">
+                  <Tabs className="w-full" defaultValue="extension">
+                    <TabsList className="grid w-full grid-cols-3 rounded-lg bg-muted">
+                      <TabsTrigger className="flex items-center gap-2" value="extension">
+                        <Shield className="h-4 w-4" />
+                        <span className="hidden sm:inline">Extension</span>
+                        <span className="sm:hidden">Ext</span>
+                      </TabsTrigger>
+                      <TabsTrigger className="flex items-center gap-2" value="key">
+                        <KeyRound className="h-4 w-4" />
+                        <span>Key</span>
+                      </TabsTrigger>
+                      <TabsTrigger className="flex items-center gap-2" value="bunker">
+                        <Cloud className="h-4 w-4" />
+                        <span className="hidden sm:inline">Bunker</span>
+                        <span className="sm:hidden">Bnkr</span>
+                      </TabsTrigger>
+                    </TabsList>
 
-                <TabsContent className="space-y-4 pt-4" value="key">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium" htmlFor="nsec">
-                      Secret key (nsec)
-                    </label>
-                    <Input
-                      autoComplete="off"
-                      id="nsec"
-                      onChange={(event) => {
-                        setNsec(event.target.value);
-                        setKeyError(null);
-                      }}
-                      placeholder="nsec1..."
-                      type="password"
-                      value={nsec}
-                    />
-                    {keyError ? <p className="text-sm text-red-500">{keyError}</p> : null}
-                  </div>
+                    <TabsContent className="space-y-3 pt-4" value="extension">
+                      <div className="space-y-3 rounded-2xl bg-muted p-4 text-center">
+                        <p className="text-sm text-muted-foreground">
+                          Use your browser extension if you already have a signer set up.
+                        </p>
+                        <Button className="w-full rounded-full py-4" disabled={isLoginLoading} onClick={handleExtensionLogin}>
+                          {isLoginLoading ? 'Logging in...' : 'Login with Extension'}
+                        </Button>
+                      </div>
+                    </TabsContent>
 
-                  <Button className="w-full rounded-full py-3" disabled={isLoginLoading || !nsec.trim()} onClick={handleKeyLogin}>
-                    {isLoginLoading ? 'Verifying...' : 'Log In'}
-                  </Button>
+                    <TabsContent className="space-y-4 pt-4" value="key">
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium" htmlFor="nsec">
+                          Secret key (nsec)
+                        </label>
+                        <Input
+                          autoComplete="off"
+                          id="nsec"
+                          onChange={(event) => {
+                            setNsec(event.target.value);
+                            setKeyError(null);
+                          }}
+                          placeholder="nsec1..."
+                          type="password"
+                          value={nsec}
+                        />
+                        {keyError ? <p className="text-sm text-red-500">{keyError}</p> : null}
+                      </div>
 
-                  <input
-                    accept=".txt"
-                    className="hidden"
-                    onChange={handleFileUpload}
-                    ref={fileInputRef}
-                    type="file"
-                  />
-                  <Button
-                    className="w-full"
-                    disabled={isLoginLoading || isFileLoading}
-                    onClick={() => fileInputRef.current?.click()}
-                    type="button"
-                    variant="outline"
-                  >
-                    <Upload className="mr-2 h-4 w-4" />
-                    {isFileLoading ? 'Reading File...' : 'Upload Your Key File'}
-                  </Button>
-                </TabsContent>
+                      <Button className="w-full rounded-full py-3" disabled={isLoginLoading || !nsec.trim()} onClick={handleKeyLogin}>
+                        {isLoginLoading ? 'Verifying...' : 'Log In'}
+                      </Button>
 
-                <TabsContent className="space-y-4 pt-4" value="bunker">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium" htmlFor="bunkerUri">
-                      Bunker URI
-                    </label>
-                    <Input
-                      autoComplete="off"
-                      id="bunkerUri"
-                      onChange={(event) => {
-                        setBunkerUri(event.target.value);
-                        setBunkerError(null);
-                      }}
-                      placeholder="bunker://"
-                      value={bunkerUri}
-                    />
-                    {bunkerError ? <p className="text-sm text-red-500">{bunkerError}</p> : null}
-                  </div>
+                      <input
+                        accept=".txt"
+                        className="hidden"
+                        onChange={handleFileUpload}
+                        ref={fileInputRef}
+                        type="file"
+                      />
+                      <Button
+                        className="w-full"
+                        disabled={isLoginLoading || isFileLoading}
+                        onClick={() => fileInputRef.current?.click()}
+                        type="button"
+                        variant="outline"
+                      >
+                        <Upload className="mr-2 h-4 w-4" />
+                        {isFileLoading ? 'Reading File...' : 'Upload Your Key File'}
+                      </Button>
+                    </TabsContent>
 
-                  <Button
-                    className="w-full rounded-full py-4"
-                    disabled={isLoginLoading || !bunkerUri.trim()}
-                    onClick={handleBunkerLogin}
-                  >
-                    {isLoginLoading ? 'Connecting...' : 'Login with Bunker'}
-                  </Button>
-                </TabsContent>
-              </Tabs>
-            </CollapsibleContent>
-          </Collapsible>
+                    <TabsContent className="space-y-4 pt-4" value="bunker">
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium" htmlFor="bunkerUri">
+                          Bunker URI
+                        </label>
+                        <Input
+                          autoComplete="off"
+                          id="bunkerUri"
+                          onChange={(event) => {
+                            setBunkerUri(event.target.value);
+                            setBunkerError(null);
+                          }}
+                          placeholder="bunker://"
+                          value={bunkerUri}
+                        />
+                        {bunkerError ? <p className="text-sm text-red-500">{bunkerError}</p> : null}
+                      </div>
+
+                      <Button
+                        className="w-full rounded-full py-4"
+                        disabled={isLoginLoading || !bunkerUri.trim()}
+                        onClick={handleBunkerLogin}
+                      >
+                        {isLoginLoading ? 'Connecting...' : 'Login with Bunker'}
+                      </Button>
+                    </TabsContent>
+                  </Tabs>
+                </CollapsibleContent>
+              </Collapsible>
+            </TabsContent>
+          </Tabs>
         </div>
       </DialogContent>
     </Dialog>
