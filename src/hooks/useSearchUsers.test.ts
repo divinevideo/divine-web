@@ -54,25 +54,7 @@ function createWrapper() {
   };
 }
 
-function createAbortableSearchPromise() {
-  return new Promise<never>((_, reject) => {
-    // The hook should always pass a signal for Funnelcake profile search.
-    const signal = mockSearchProfiles.mock.calls.at(-1)?.[1]?.signal as AbortSignal | undefined;
-    if (!signal) return;
 
-    const rejectOnAbort = () => {
-      const reason = signal.reason;
-      reject(reason instanceof Error ? reason : new Error('aborted'));
-    };
-
-    if (signal.aborted) {
-      rejectOnAbort();
-      return;
-    }
-
-    signal.addEventListener('abort', rejectOnAbort, { once: true });
-  });
-}
 
 let useSearchUsers: typeof import('./useSearchUsers').useSearchUsers;
 
