@@ -4,12 +4,16 @@ import {
   buildAddressableRoute,
   buildEventPath,
   buildProfilePath as buildProfileRoute,
+  buildVideoPath,
   buildResolvedEventRoute,
 } from '@/lib/eventRouting';
 
 const VIDEO_COORDINATE_PATTERN = /^(?:a:)?(?<kind>\d+):(?<pubkey>[0-9a-f]{64}):(?<identifier>.+)$/i;
 const HEX_64_PATTERN = /^[0-9a-f]{64}$/i;
 const OPAQUE_IDENTIFIER_PATTERN = /^[a-z0-9:_-]+$/i;
+const VINE_CLIP_ID_PATTERN = /^[a-z0-9]{11}$/i;
+const VINE_USER_ID_PATTERN = /^\d{15,20}$/;
+const VINE_HOSTNAME_PATTERN = /(^|\.)vine\.co$/i;
 
 export interface DirectSearchTarget {
   path: string;
@@ -63,10 +67,89 @@ function withRelayHints(path: string, relayHints?: string[]): string {
   return `${path}?${params.toString()}`;
 }
 
+function parseHttpUrl(value: string): URL | null {
+  const trimmed = value.trim();
+  const candidates = trimmed.startsWith('http://') || trimmed.startsWith('https://')
+    ? [trimmed]
+    : [`https://${trimmed}`];
+
+  for (const candidate of candidates) {
+    try {
+      const url = new URL(candidate);
+      if (url.protocol === 'http:' || url.protocol === 'https:') {
+        return url;
+      }
+    } catch {
+      continue;
+    }
+  }
+
+  return null;
+}
+
+function isVineHostname(hostname: string): boolean {
+  return VINE_HOSTNAME_PATTERN.test(hostname);
+}
+
+function getVineDirectTarget(value: string): DirectSearchTarget | null {
+  const normalized = normalizeDirectSearchInput(value);
+  if (!normalized) {
+    return null;
+  }
+
+  if (VINE_USER_ID_PATTERN.test(normalized)) {
+    return {
+      path: `/u/${normalized}`,
+      entity: 'profile',
+    };
+  }
+
+  if (VINE_CLIP_ID_PATTERN.test(normalized)) {
+    return {
+      path: buildVideoPath(normalized),
+      entity: 'video',
+    };
+  }
+
+  const url = parseHttpUrl(normalized);
+  if (!url || !isVineHostname(url.hostname)) {
+    return null;
+  }
+
+  const segments = url.pathname.split('/').filter(Boolean);
+  if (segments.length === 0) {
+    return null;
+  }
+
+  if (segments[0] === 'v' && segments[1]) {
+    return {
+      path: buildVideoPath(segments[1]),
+      entity: 'video',
+    };
+  }
+
+  if (segments[0] === 'u' && segments[1]) {
+    return {
+      path: `/u/${segments[1]}`,
+      entity: 'profile',
+    };
+  }
+
+  return {
+    path: `/u/${segments[0]}`,
+    entity: 'profile',
+  };
+}
+
 export function getDirectSearchTarget(value: string): DirectSearchTarget | null {
   const normalized = normalizeDirectSearchInput(value);
   if (!normalized) {
     return null;
+  }
+
+  const vineTarget = getVineDirectTarget(normalized);
+  if (vineTarget) {
+    return vineTarget;
   }
 
   const coordinateMatch = normalized.match(VIDEO_COORDINATE_PATTERN);
