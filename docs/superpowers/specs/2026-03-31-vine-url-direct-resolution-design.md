@@ -12,13 +12,14 @@ PR `#207` is a good safety fix because it stops URL-like queries from triggering
 
 ## User-Facing Behavior
 
-The search box should recognize all of these inputs and route immediately:
+The search box should recognize all of these structured inputs and route immediately:
 
 - `https://vine.co/v/<clipId>` -> `/video/<clipId>`
 - `https://vine.co/u/<numericUserId>` -> `/u/<numericUserId>`
 - `https://vine.co/<username>` -> `/u/<username>`
-- bare clip IDs such as `hBFP5LFKUOU` -> `/video/<clipId>`
 - bare numeric Vine user IDs such as `1080167736266633216` -> `/u/<numericUserId>`
+
+Bare Vine clip IDs such as `hBFP5LFKUOU` should still work when pasted into the search box, but they should not be treated as direct-navigation targets during normal typing. Instead, they should flow through the existing paste-oriented opaque-video lookup path in `SearchPage`, which can resolve them without hijacking ordinary 11-character searches.
 
 Once routed:
 
@@ -38,13 +39,20 @@ Once routed:
 
 ### Direct Input Parsing
 
-Extend `src/lib/directSearch.ts` so `getDirectSearchTarget()` can recognize Vine-specific inputs in addition to the existing Nostr identifiers.
+Extend `src/lib/directSearch.ts` so `getDirectSearchTarget()` can recognize Vine-specific URLs and bare numeric Vine user IDs in addition to the existing Nostr identifiers.
 
 The direct-search layer should remain the single entrypoint for immediate routing decisions from the search box.
 
 ### Search Page Integration
 
-`src/pages/SearchPage.tsx` already routes immediately for direct targets and already has dedicated paths for pasted opaque video IDs and hex event IDs. That logic should remain in place. The only change needed is to make the direct-target parser smarter so Vine URLs become first-class direct targets.
+`src/pages/SearchPage.tsx` already routes immediately for direct targets and already has dedicated paths for pasted opaque video IDs and hex event IDs. That logic should remain in place.
+
+Changes in this area should do two things:
+
+- make the direct-target parser smart enough that Vine URLs become first-class direct targets
+- preserve bare Vine clip IDs as paste-only asynchronous lookups, not typed direct targets
+
+This avoids a regression where any 11-character alphanumeric search term would be mistaken for a Vine clip ID and routed away from normal search.
 
 ### User Resolution
 
@@ -75,11 +83,16 @@ Extend `src/lib/directSearch.test.ts` with cases for:
 - `vine.co/u/<numericUserId>`
 - `vine.co/<username>`
 - protocol, query-string, and hash variants
-- bare clip IDs and numeric user IDs continuing to resolve correctly
+- bare numeric user IDs continuing to resolve correctly
+- bare clip IDs not being treated as direct targets
+- reserved or nested Vine paths not being misclassified as legacy profile URLs
 
 ### Search Page Tests
 
-Extend `src/pages/SearchPage.test.tsx` with cases showing that pasted Vine URLs navigate immediately and do not require generic search hooks to return results first.
+Extend `src/pages/SearchPage.test.tsx` with cases showing that:
+
+- pasted Vine URLs navigate immediately and do not require generic search hooks to return results first
+- pasted bare Vine clip IDs resolve through the existing opaque-video lookup flow
 
 ### Universal User Tests
 

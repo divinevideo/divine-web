@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED: Use superpowers:subagent-driven-development (if subagents available) or superpowers:executing-plans to implement this plan. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Let the search box and paste flow recognize legacy Vine URLs and IDs, navigate directly to the correct route, and resolve legacy Vine usernames without generic search fallback.
+**Goal:** Let the search box and paste flow recognize legacy Vine URLs and IDs, navigate to the correct route, and resolve legacy Vine usernames without generic search fallback.
 
-**Architecture:** Extend the existing direct-search parser for Vine-specific inputs, keep `SearchPage` as the direct-routing entrypoint, and expand `UniversalUserPage` so non-numeric legacy Vine usernames resolve by exact metadata match before the current `openvine.co` fallback. Do not move this behavior into the generic search hooks.
+**Architecture:** Extend the existing direct-search parser for Vine URLs and bare numeric Vine user IDs, keep `SearchPage` as the direct-routing entrypoint, and expand `UniversalUserPage` so non-numeric legacy Vine usernames resolve by exact metadata match before the current `openvine.co` fallback. Bare 11-character Vine clip IDs should remain in the paste-only asynchronous lookup path in `SearchPage` so ordinary typed searches are not hijacked. Do not move this behavior into the generic search hooks.
 
 **Tech Stack:** TypeScript, React 18, React Router, Vitest, Testing Library
 
@@ -13,13 +13,13 @@
 ## File Map
 
 - Modify: `src/lib/directSearch.ts`
-  - Extend direct target parsing for Vine clip URLs, Vine user URLs, and legacy username URLs.
+  - Extend direct target parsing for Vine clip URLs, Vine user URLs, legacy username URLs, and bare numeric Vine user IDs.
 - Modify: `src/lib/directSearch.test.ts`
-  - Add direct-target tests for Vine URL and bare-ID forms.
+  - Add direct-target tests for supported Vine URL forms and negative tests for unsupported direct-target shapes.
 - Modify: `src/pages/SearchPage.tsx`
-  - Reuse the expanded direct-search parser for immediate routing on change and paste.
+  - Reuse the expanded direct-search parser for immediate routing on change and paste while preserving paste-only lookup for bare Vine clip IDs.
 - Modify: `src/pages/SearchPage.test.tsx`
-  - Add interaction tests proving Vine URLs navigate immediately.
+  - Add interaction tests proving Vine URLs navigate immediately and bare pasted Vine clip IDs resolve via lookup.
 - Modify: `src/pages/UniversalUserPage.tsx`
   - Add legacy Vine username resolution before the existing OpenVine NIP-05 fallback.
 - Create: `src/pages/UniversalUserPage.test.tsx`
@@ -33,7 +33,7 @@
 - Modify: `src/lib/directSearch.test.ts`
 - Modify: `src/lib/directSearch.ts`
 
-- [ ] **Step 1: Add failing test cases for Vine URLs and IDs**
+- [ ] **Step 1: Add failing test cases for supported Vine direct targets and negative cases**
 
 ```ts
 it('routes vine clip URLs to the video page', () => {
@@ -56,6 +56,17 @@ it('routes legacy vine username URLs to the universal user page', () => {
     entity: 'profile',
   });
 });
+
+it('routes bare numeric vine user ids to the universal user page', () => {
+  expect(getDirectSearchTarget('1080167736266633216')).toEqual({
+    path: '/u/1080167736266633216',
+    entity: 'profile',
+  });
+});
+
+it('does not treat bare 11-character tokens as direct vine video routes', () => {
+  expect(getDirectSearchTarget('hBFP5LFKUOU')).toBeNull();
+});
 ```
 
 - [ ] **Step 2: Run the direct-search test file and confirm the new cases fail**
@@ -68,13 +79,17 @@ Expected: FAIL on the new Vine URL cases because the parser does not recognize t
 ```ts
 function getVineDirectTarget(value: string): DirectSearchTarget | null {
   const normalized = value.trim();
+  if (VINE_USER_ID_PATTERN.test(normalized)) {
+    return { path: `/u/${normalized}`, entity: 'profile' };
+  }
+
   const url = tryParseHttpUrl(normalized);
   if (!url || !isVineHost(url.hostname)) return null;
 
   const path = url.pathname.replace(/\/+$/, '');
   if (path.startsWith('/v/')) return { path: buildVideoPath(path.slice(3)), entity: 'video' };
   if (path.startsWith('/u/')) return { path: `/u/${path.slice(3)}`, entity: 'profile' };
-  if (path.length > 1) return { path: `/u/${path.slice(1)}`, entity: 'profile' };
+  if (isSingleSegmentLegacyProfilePath(path)) return { path: `/u/${path.slice(1)}`, entity: 'profile' };
   return null;
 }
 ```
@@ -99,7 +114,7 @@ git commit -m "feat: parse vine urls in direct search"
 - Modify: `src/pages/SearchPage.test.tsx`
 - Modify: `src/pages/SearchPage.tsx`
 
-- [ ] **Step 1: Add failing tests for immediate navigation from pasted Vine inputs**
+- [ ] **Step 1: Add failing tests for Vine URL navigation and bare clip-ID paste resolution**
 
 ```ts
 it('navigates directly when a vine clip url is pasted', () => {
@@ -112,6 +127,22 @@ it('navigates directly when a vine clip url is pasted', () => {
   fireEvent.change(input, { target: { value: 'https://vine.co/v/hBFP5LFKUOU' } });
 
   expect(mockNavigate).toHaveBeenCalledWith('/video/hBFP5LFKUOU');
+});
+
+it('looks up a pasted bare vine clip id through the opaque lookup flow', async () => {
+  mockFetchVideoById.mockResolvedValue({ id: 'e'.repeat(64), d_tag: 'hBFP5LFKUOU' });
+
+  renderPage();
+  const input = screen.getByRole('textbox');
+
+  fireEvent.paste(input, {
+    clipboardData: { getData: () => 'hBFP5LFKUOU' },
+  });
+  fireEvent.change(input, { target: { value: 'hBFP5LFKUOU' } });
+
+  await waitFor(() => {
+    expect(mockFetchVideoById).toHaveBeenCalled();
+  });
 });
 ```
 
@@ -133,6 +164,7 @@ if (directTarget) {
 Notes:
 - Do not add Vine-specific parsing directly inside `SearchPage`.
 - Keep pasted opaque-video lookup and raw-event lookup behavior unchanged.
+- Bare Vine clip IDs should continue to work through the existing paste-only lookup path, not through `getDirectSearchTarget()`.
 
 - [ ] **Step 4: Re-run the search-page tests and confirm they pass**
 
