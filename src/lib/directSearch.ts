@@ -11,9 +11,19 @@ import {
 const VIDEO_COORDINATE_PATTERN = /^(?:a:)?(?<kind>\d+):(?<pubkey>[0-9a-f]{64}):(?<identifier>.+)$/i;
 const HEX_64_PATTERN = /^[0-9a-f]{64}$/i;
 const OPAQUE_IDENTIFIER_PATTERN = /^[a-z0-9:_-]+$/i;
-const VINE_CLIP_ID_PATTERN = /^[a-z0-9]{11}$/i;
 const VINE_USER_ID_PATTERN = /^\d{15,20}$/;
 const VINE_HOSTNAME_PATTERN = /(^|\.)vine\.co$/i;
+const VINE_RESERVED_PATHS = new Set([
+  'about',
+  'explore',
+  'help',
+  'login',
+  'messages',
+  'privacy',
+  'search',
+  'settings',
+  'terms',
+]);
 
 export interface DirectSearchTarget {
   path: string;
@@ -104,13 +114,6 @@ function getVineDirectTarget(value: string): DirectSearchTarget | null {
     };
   }
 
-  if (VINE_CLIP_ID_PATTERN.test(normalized)) {
-    return {
-      path: buildVideoPath(normalized),
-      entity: 'video',
-    };
-  }
-
   const url = parseHttpUrl(normalized);
   if (!url || !isVineHostname(url.hostname)) {
     return null;
@@ -129,16 +132,23 @@ function getVineDirectTarget(value: string): DirectSearchTarget | null {
   }
 
   if (segments[0] === 'u' && segments[1]) {
+    if (!VINE_USER_ID_PATTERN.test(segments[1])) {
+      return null;
+    }
     return {
       path: `/u/${segments[1]}`,
       entity: 'profile',
     };
   }
 
-  return {
-    path: `/u/${segments[0]}`,
-    entity: 'profile',
-  };
+  if (segments.length === 1 && !VINE_RESERVED_PATHS.has(segments[0].toLowerCase())) {
+    return {
+      path: `/u/${segments[0]}`,
+      entity: 'profile',
+    };
+  }
+
+  return null;
 }
 
 export function getDirectSearchTarget(value: string): DirectSearchTarget | null {

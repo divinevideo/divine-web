@@ -103,10 +103,7 @@ describe('directSearch', () => {
       path: buildVideoPath('hBFP5LFKUOU'),
       entity: 'video',
     });
-    expect(getDirectSearchTarget('hBFP5LFKUOU')).toEqual({
-      path: buildVideoPath('hBFP5LFKUOU'),
-      entity: 'video',
-    });
+    expect(getDirectSearchTarget('hBFP5LFKUOU')).toBeNull();
     expect(getDirectSearchTarget('https://vine.co/v/hBFP5LFKUOU?foo=bar#section')).toEqual({
       path: buildVideoPath('hBFP5LFKUOU'),
       entity: 'video',
@@ -137,6 +134,11 @@ describe('directSearch', () => {
       path: '/u/someuser',
       entity: 'profile',
     });
+  });
+
+  it('rejects reserved and nested vine paths', () => {
+    expect(getDirectSearchTarget('https://vine.co/about')).toBeNull();
+    expect(getDirectSearchTarget('https://vine.co/messages/compose')).toBeNull();
   });
 
   it('detects hex ids and opaque pasted d tags for async lookup', () => {
