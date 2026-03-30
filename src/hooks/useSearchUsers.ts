@@ -21,7 +21,7 @@ export interface SearchUserResult {
   metadata?: NostrMetadata;
 }
 
-const FUNNELCAKE_PROFILE_SEARCH_TIMEOUT_MS = 500;
+const FUNNELCAKE_PROFILE_SEARCH_TIMEOUT_MS = 5000;
 
 /**
  * Convert Funnelcake profile result to SearchUserResult for compatibility
