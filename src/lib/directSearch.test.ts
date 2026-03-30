@@ -103,6 +103,10 @@ describe('directSearch', () => {
       path: buildVideoPath('hBFP5LFKUOU'),
       entity: 'video',
     });
+    expect(getDirectSearchTarget('hBFP5LFKUOU')).toEqual({
+      path: buildVideoPath('hBFP5LFKUOU'),
+      entity: 'video',
+    });
     expect(getDirectSearchTarget('https://vine.co/v/hBFP5LFKUOU?foo=bar#section')).toEqual({
       path: buildVideoPath('hBFP5LFKUOU'),
       entity: 'video',
@@ -111,6 +115,10 @@ describe('directSearch', () => {
 
   it('routes vine user urls to the universal user page', () => {
     expect(getDirectSearchTarget('https://vine.co/u/1080167736266633216')).toEqual({
+      path: '/u/1080167736266633216',
+      entity: 'profile',
+    });
+    expect(getDirectSearchTarget('1080167736266633216')).toEqual({
       path: '/u/1080167736266633216',
       entity: 'profile',
     });
