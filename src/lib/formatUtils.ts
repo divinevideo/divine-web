@@ -38,7 +38,7 @@ export function formatViewCount(count: number): string {
 }
 
 /**
- * Format a classic Vine summary so archived loops and new diVine views stay visible
+ * Format a classic Vine summary so archived loops and new Divine views stay visible
  * without duplicating the total on a second line.
  */
 export function formatClassicVineViewBreakdown(totalViews: number, originalLoops: number): string | null {

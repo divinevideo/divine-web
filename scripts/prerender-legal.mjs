@@ -43,16 +43,16 @@ function buildPage({ title, description, path, content, shell }) {
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
-    <title>${title} - diVine Web</title>
+    <title>${title} - Divine Web</title>
     <meta name="description" content="${description}">
     <meta name="theme-color" content="#27C58B">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://divine.video${path}">
-    <meta property="og:title" content="${title} - diVine Web">
+    <meta property="og:title" content="${title} - Divine Web">
     <meta property="og:description" content="${description}">
     <meta property="og:image" content="https://divine.video/og.png">
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="${title} - diVine Web">
+    <meta name="twitter:title" content="${title} - Divine Web">
     <meta name="twitter:description" content="${description}">
     <link rel="icon" type="image/png" sizes="72x72" href="/favicon.png">
     <link rel="apple-touch-icon" href="/app_icon.png">
@@ -74,7 +74,7 @@ function buildPage({ title, description, path, content, shell }) {
         <nav class="fixed top-0 left-0 right-0 z-50 bg-brand-dark-green border-b border-brand-green" style="background:#07241B;border-bottom:1px solid #27C58B;">
           <div class="container mx-auto px-4">
             <div class="flex items-center justify-between h-16">
-              <a href="/"><img src="/divine-logo.svg" alt="diVine" style="height:20px;"></a>
+              <a href="/"><img src="/divine-logo.svg" alt="Divine" style="height:20px;"></a>
               <div class="flex items-center gap-8">
                 <a href="https://about.divine.video/" style="color:#F9F7F6;font-size:14px;">About</a>
                 <a href="https://about.divine.video/blog/" style="color:#F9F7F6;font-size:14px;">Blog</a>
@@ -103,7 +103,7 @@ function buildPage({ title, description, path, content, shell }) {
               <a href="/faq" style="color:white;">FAQ</a> &bull;
               <a href="/support" style="color:white;">Help</a>
             </div>
-            <p style="color:#999;">&copy; diVine Web</p>
+            <p style="color:#999;">&copy; Divine Web</p>
           </div>
         </footer>
       </div>
@@ -125,31 +125,31 @@ const PAGES = [
   {
     path: '/terms',
     title: 'Terms of Service',
-    description: 'Terms of Service for diVine Web - Short-form looping videos on the Nostr network.',
+    description: 'Terms of Service for Divine Web - Short-form looping videos on the Nostr network.',
     contentFile: 'terms-content.html',
   },
   {
     path: '/privacy',
     title: 'Privacy Policy',
-    description: 'Privacy Policy for diVine Web - How we handle your data on the decentralized Nostr network.',
+    description: 'Privacy Policy for Divine Web - How we handle your data on the decentralized Nostr network.',
     contentFile: 'privacy-content.html',
   },
   {
     path: '/safety',
     title: 'Safety Standards',
-    description: 'Safety Standards for diVine Web - Our commitment to protecting users and preventing child exploitation.',
+    description: 'Safety Standards for Divine Web - Our commitment to protecting users and preventing child exploitation.',
     contentFile: 'safety-content.html',
   },
   {
     path: '/dmca',
-    title: 'Copyright & DMCA Policy',
-    description: 'Copyright and DMCA Policy for diVine Web - Fair use basis, content sources, and takedown procedures.',
+    title: 'DMCA & Copyright Policy',
+    description: 'Copyright and DMCA Policy for Divine Web - Fair use basis, content sources, and takedown procedures.',
     contentFile: 'dmca-content.html',
   },
   {
     path: '/faq',
     title: 'Frequently Asked Questions',
-    description: 'Frequently Asked Questions about diVine Web - Everything you need to know about the platform.',
+    description: 'Frequently Asked Questions about Divine Web - Everything you need to know about the platform.',
     contentFile: 'faq-content.html',
   },
 ];

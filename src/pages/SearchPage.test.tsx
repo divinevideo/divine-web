@@ -241,7 +241,7 @@ describe('SearchPage', () => {
     });
 
     expect(mockFetchVideoById).toHaveBeenCalledWith(
-      'https://relay.divine.video',
+      'https://api.divine.video',
       'hBFP5LFKUOU',
       undefined,
       expect.any(AbortSignal),

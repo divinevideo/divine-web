@@ -90,7 +90,7 @@ export function transformFunnelcakeVideo(raw: FunnelcakeVideoRaw): ParsedVideoDa
 
     // Vine-specific fields
     vineId: raw.d_tag || null, // d_tag is the unique identifier
-    // loops only meaningful for Vine archive videos — for new diVine videos,
+    // loops only meaningful for Vine archive videos — for new Divine videos,
     // the API `loops` field tracks playback re-loops, NOT classic Vine loop counts
     loopCount: isVineMigrated
       ? (archivedLoopCount ?? raw.loops ?? 0)

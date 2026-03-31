@@ -86,7 +86,7 @@ export function HubSpotSignup() {
         }
 
         /* Hide React wrapper intro paragraph when HubSpot shows post-submit confirmation */
-        /* Keep the "diVine Inspiration" title, only hide the description text */
+        /* Keep the "Divine Inspiration" title, only hide the description text */
         .hs-form-landing:has(.hsfc-PostSubmit) > p {
           display: none !important;
         }

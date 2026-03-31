@@ -53,7 +53,7 @@ export function AppHeader({ className }: AppHeaderProps) {
           >
             <img
               src="/divine-logo.svg"
-              alt="diVine"
+              alt="Divine"
               className="h-6"
             />
           </button>
@@ -153,7 +153,7 @@ export function AppHeader({ className }: AppHeaderProps) {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
-              {/* About diVine section */}
+              {/* About Divine section */}
               <DropdownMenuItem
                 onClick={() => window.open('https://about.divine.video/', '_blank')}
                 className="cursor-pointer hover:bg-muted focus:bg-muted"
@@ -234,7 +234,7 @@ export function AppHeader({ className }: AppHeaderProps) {
                 className="cursor-pointer hover:bg-muted focus:bg-muted"
               >
                 <FileText className="mr-2 h-4 w-4" />
-                <span>Copyright & DMCA</span>
+                <span>DMCA & Copyright</span>
               </DropdownMenuItem>
 
               <DropdownMenuItem

@@ -8,13 +8,13 @@ vi.mock('./HubSpotSignup', () => ({
 }));
 
 describe('AppFooter', () => {
-  it('renders a Copyright & DMCA link to /dmca', () => {
+  it('renders a DMCA & Copyright link to /dmca', () => {
     render(
       <MemoryRouter>
         <AppFooter />
       </MemoryRouter>,
     );
 
-    expect(screen.getByRole('link', { name: 'Copyright & DMCA' })).toHaveAttribute('href', '/dmca');
+    expect(screen.getByRole('link', { name: 'DMCA & Copyright' })).toHaveAttribute('href', '/dmca');
   });
 });

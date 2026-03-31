@@ -1,5 +1,5 @@
 // ABOUTME: Landing page component shown to logged-out users
-// ABOUTME: Displays the diVine Video brand message
+// ABOUTME: Displays the Divine Video brand message
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Link } from "react-router-dom";
@@ -29,7 +29,7 @@ export function LandingPage() {
             <Link to="/">
               <img
                 src="/divine-logo.svg"
-                alt="diVine"
+                alt="Divine"
                 className="h-5"
               />
             </Link>
@@ -109,12 +109,12 @@ export function LandingPage() {
               <div className="flex flex-col items-center justify-center gap-3">
                 <img
                   src="/divine_icon_transparent.avif"
-                  alt="diVine logo"
+                  alt="Divine logo"
                   className="w-16 h-16 md:w-20 md:h-20"
                 />
                 <img
                   src="/divine-logo.svg"
-                  alt="diVine"
+                  alt="Divine"
                   className="h-12 md:h-16"
                 />
               </div>
@@ -127,7 +127,7 @@ export function LandingPage() {
             <div className="pt-4">
               <div className="hs-form-landing bg-card border border-border rounded-lg p-6 shadow-sm max-w-[600px] w-full mx-auto">
                 <h4 className="text-base font-semibold text-primary text-center mb-2">
-                  diVine Inspiration
+                  Divine Inspiration
                 </h4>
                 <p className="text-sm text-foreground text-center mb-6 leading-5">
                   The Divine beta is currently full. If you'd like to hear our news and be among the first to hear when the Divine app goes live, sign up here.
@@ -155,7 +155,7 @@ export function LandingPage() {
                     <div className="p-1">
                       <img
                         src="/screenshots/iPad 13 inch-0.avif"
-                        alt="diVine Video feed screenshot"
+                        alt="Divine Video feed screenshot"
                         className="w-full h-auto rounded-lg shadow-lg"
                       />
                     </div>
@@ -164,7 +164,7 @@ export function LandingPage() {
                     <div className="p-1">
                       <img
                         src="/screenshots/iPad 13 inch-1.avif"
-                        alt="diVine Video profile screenshot"
+                        alt="Divine Video profile screenshot"
                         className="w-full h-auto rounded-lg shadow-lg"
                       />
                     </div>
@@ -173,7 +173,7 @@ export function LandingPage() {
                     <div className="p-1">
                       <img
                         src="/screenshots/iPad 13 inch-2.avif"
-                        alt="diVine Video hashtags screenshot"
+                        alt="Divine Video hashtags screenshot"
                         className="w-full h-auto rounded-lg shadow-lg"
                       />
                     </div>
@@ -182,7 +182,7 @@ export function LandingPage() {
                     <div className="p-1">
                       <img
                         src="/screenshots/iPad 13 inch-3.avif"
-                        alt="diVine Video discovery screenshot"
+                        alt="Divine Video discovery screenshot"
                         className="w-full h-auto rounded-lg shadow-lg"
                       />
                     </div>
@@ -191,7 +191,7 @@ export function LandingPage() {
                     <div className="p-1">
                       <img
                         src="/screenshots/iPad 13 inch-4.avif"
-                        alt="diVine Video trending screenshot"
+                        alt="Divine Video trending screenshot"
                         className="w-full h-auto rounded-lg shadow-lg"
                       />
                     </div>
@@ -200,7 +200,7 @@ export function LandingPage() {
                     <div className="p-1">
                       <img
                         src="/screenshots/iPad 13 inch-5.avif"
-                        alt="diVine Video lists screenshot"
+                        alt="Divine Video lists screenshot"
                         className="w-full h-auto rounded-lg shadow-lg"
                       />
                     </div>
@@ -209,7 +209,7 @@ export function LandingPage() {
                     <div className="p-1">
                       <img
                         src="/screenshots/iPad 13 inch-6.avif"
-                        alt="diVine Video search screenshot"
+                        alt="Divine Video search screenshot"
                         className="w-full h-auto rounded-lg shadow-lg"
                       />
                     </div>

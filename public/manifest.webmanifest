@@ -1,6 +1,6 @@
 {
-  "name": "diVine Web - Short-form Looping Videos",
-  "short_name": "diVine",
+  "name": "Divine Web - Short-form Looping Videos",
+  "short_name": "Divine",
   "description": "Watch and share 6-second looping videos on the decentralized Nostr network.",
   "start_url": "/",
   "display": "standalone",

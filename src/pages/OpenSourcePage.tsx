@@ -160,7 +160,7 @@ export function OpenSourcePage() {
                     Web Application
                   </h3>
                   <p className="text-sm text-muted-foreground">
-                    React-based web client for diVine
+                    React-based web client for Divine
                   </p>
                 </div>
                 <Button asChild size="sm" variant="outline">
@@ -322,7 +322,7 @@ export function OpenSourcePage() {
                   Other Ways to Help
                 </h4>
                 <ul className="text-sm text-muted-foreground space-y-1 pl-6 list-disc">
-                  <li>Share diVine with your community and spread the word</li>
+                  <li>Share Divine with your community and spread the word</li>
                   <li>Report bugs and suggest improvements</li>
                   <li>Help answer questions from other users</li>
                   <li>Create content and showcase what you build</li>

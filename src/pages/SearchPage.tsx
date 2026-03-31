@@ -110,7 +110,7 @@ export function SearchPage() {
   });
 
   useSeoMeta({
-    title: searchQuery ? `Search: ${searchQuery} - diVine Web` : 'Search - diVine Web',
+    title: searchQuery ? `Search: ${searchQuery} - Divine Web` : 'Search - Divine Web',
     description: 'Search for videos, users, and hashtags on Divine Web',
   });
 

@@ -32,7 +32,7 @@ describe('transformFunnelcakeVideo', () => {
     });
   });
 
-  it('prefers archived Vine loop tags over current diVine loop fields', () => {
+  it('prefers archived Vine loop tags over current Divine loop fields', () => {
     const video = transformFunnelcakeVideo(makeRawVideo({
       platform: 'vine',
       loops: 28,

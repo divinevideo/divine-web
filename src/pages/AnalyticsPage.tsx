@@ -212,10 +212,10 @@ export function AnalyticsPage() {
   const { user } = useCurrentUser();
 
   useSeoMeta({
-    title: 'Creator Analytics - diVine',
+    title: 'Creator Analytics - Divine',
     description: 'View your video performance metrics and engagement analytics',
-    ogTitle: 'Creator Analytics - diVine',
-    ogDescription: 'Track your video performance on diVine',
+    ogTitle: 'Creator Analytics - Divine',
+    ogDescription: 'Track your video performance on Divine',
   });
 
   // Redirect to home if not logged in

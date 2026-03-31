@@ -18,17 +18,17 @@ export function AboutPage() {
     <MarketingLayout>
       <div className="container mx-auto px-4 py-8 max-w-4xl">
       <ZendeskWidget />
-      <h1 className="text-4xl font-bold mb-8">About diVine</h1>
+      <h1 className="text-4xl font-bold mb-8">About Divine</h1>
 
       <div className="space-y-8">
         {/* The Story */}
         <Card className="border-2 border-brand-light-green dark:border-brand-dark-green">
           <CardHeader>
-            <CardTitle>The Story Behind diVine</CardTitle>
+            <CardTitle>The Story Behind Divine</CardTitle>
           </CardHeader>
           <CardContent className="prose prose-sm dark:prose-invert max-w-none space-y-4">
             <p className="text-lg">
-              In an era of AI-generated content, diVine is a new short-form video app inspired by
+              In an era of AI-generated content, Divine is a new short-form video app inspired by
               Vine's creative 6-second format, preserving authentic human creativity.
             </p>
             <div className="not-prose space-y-3">
@@ -49,7 +49,7 @@ export function AboutPage() {
                     rel="noopener noreferrer"
                     className="text-brand-green hover:text-brand-light-green inline-flex items-center gap-1"
                   >
-                    TechCrunch: Jack Dorsey funds diVine, a Vine reboot that includes Vine's video archive
+                    TechCrunch: Jack Dorsey funds Divine, a Vine reboot that includes Vine's video archive
                     <ExternalLink className="h-3 w-3" />
                   </a>
                   <div>
@@ -79,9 +79,9 @@ export function AboutPage() {
             </p>
             <div className="bg-brand-dark-green p-4 rounded-lg border border-brand-green">
               <p className="text-brand-light-green">
-                <strong className="text-brand-off-white">Important:</strong> diVine is an independent short-form video app with no affiliation
+                <strong className="text-brand-off-white">Important:</strong> Divine is an independent short-form video app with no affiliation
                 to X (formerly Twitter) or the original Vine platform. We're a separate project built on
-                open-source technology and the decentralized Nostr protocol. diVine preserves archived videos
+                open-source technology and the decentralized Nostr protocol. Divine preserves archived videos
                 from the Internet Archive and enables new 6-second video creation using similar creative constraints.
               </p>
             </div>
@@ -91,16 +91,16 @@ export function AboutPage() {
         {/* Podcast Feature */}
         <Card>
           <CardHeader>
-            <CardTitle>Behind the Scenes of the diVine Launch</CardTitle>
+            <CardTitle>Behind the Scenes of the Divine Launch</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-muted-foreground">
-              Listen to founder Rabble discuss the vision behind diVine on the Revolution.Social podcast.
+              Listen to founder Rabble discuss the vision behind Divine on the Revolution.Social podcast.
             </p>
             <ApplePodcastEmbed
               episodeUrl="https://podcasts.apple.com/us/podcast/vine-revisited-and-the-fight-against-ai-slop/id1824528874?i=1000737216404"
               title="Vine Revisited and The Fight Against AI Slop"
-              description="Behind the scenes of the diVine launch - preserving authentic human creativity"
+              description="Behind the scenes of the Divine launch - preserving authentic human creativity"
               showName="Revolution.Social • S1 Bonus"
               duration="21 min"
             />
@@ -114,7 +114,7 @@ export function AboutPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-muted-foreground">
-              The idea for diVine came during interviews for the{" "}
+              The idea for Divine came during interviews for the{" "}
               <a href="https://revolution.social" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
                 Revolution.Social podcast
               </a>. When interviewing{" "}
@@ -168,12 +168,12 @@ export function AboutPage() {
                   {classicVinesSaved}
                 </p>
                 <p className="mt-1 text-sm text-brand-light-green">
-                  Live total currently available through the diVine relay archive.
+                  Live total currently available through the Divine relay archive.
                 </p>
               </div>
             )}
             <p className="text-muted-foreground">
-              diVine has imported archived videos from ArchiveTeam's preservation work, giving these authentic
+              Divine has imported archived videos from ArchiveTeam's preservation work, giving these authentic
               pre-AI era videos a new home on the decentralized web. We're committed to restoring creator ownership
               and attribution when possible, honoring those who created these cultural artifacts.
             </p>
@@ -189,7 +189,7 @@ export function AboutPage() {
             <CardTitle>Fighting for Digital Rights</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <p className="text-muted-foreground mb-4">diVine upholds key digital rights:</p>
+            <p className="text-muted-foreground mb-4">Divine upholds key digital rights:</p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div className="flex items-center gap-2">
                 <div className="h-2 w-2 bg-primary rounded-full" />
@@ -297,7 +297,7 @@ export function AboutPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-muted-foreground">
-              In an era where AI can generate realistic fake videos, diVine uses Proofmode to help you
+              In an era where AI can generate realistic fake videos, Divine uses Proofmode to help you
               distinguish real camera captures from AI-generated content.
             </p>
             <p className="text-muted-foreground">
@@ -324,7 +324,7 @@ export function AboutPage() {
               <a href="https://neocities.org" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
                 Neocities
               </a>,
-              diVine brings back spontaneous, creative 6-second video sharing.
+              Divine brings back spontaneous, creative 6-second video sharing.
             </p>
             <p className="text-muted-foreground">
               Rabble is building decentralized social media technologies and fighting for digital rights.

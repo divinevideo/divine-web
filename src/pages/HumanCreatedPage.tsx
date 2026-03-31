@@ -18,7 +18,7 @@ export default function HumanCreatedPage() {
             <h1 className="text-4xl font-bold">Human-Created Content</h1>
           </div>
           <p className="text-xl text-muted-foreground">
-            Certifying authentic, human-made videos on diVine Web
+            Certifying authentic, human-made videos on Divine Web
           </p>
         </div>
 

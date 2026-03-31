@@ -1,4 +1,4 @@
-// ABOUTME: Support and contact information page for diVine Web
+// ABOUTME: Support and contact information page for Divine Web
 // ABOUTME: Displays email contact and GitHub issues link for user support
 
 import { useEffect } from 'react';
@@ -84,9 +84,9 @@ export function Support() {
         {/* Help Center Card (replaces Zendesk widget) */}
         <Card>
           <CardHeader>
-            <CardTitle>Visit diVine Help Center</CardTitle>
+            <CardTitle>Visit Divine Help Center</CardTitle>
             <CardDescription>
-              Find answers to your questions about diVine.  
+              Find answers to your questions about Divine.  
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -110,7 +110,7 @@ export function Support() {
                 Message Support
               </CardTitle>
               <CardDescription>
-                Reach the support inbox directly inside diVine using private NIP-17 messages.
+                Reach the support inbox directly inside Divine using private NIP-17 messages.
               </CardDescription>
             </CardHeader>
             <CardContent>

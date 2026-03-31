@@ -30,24 +30,24 @@ export function HashtagPage() {
       {
         rel: 'alternate',
         type: 'application/rss+xml',
-        title: `#${tag} - diVine`,
+        title: `#${tag} - Divine`,
         href: feedUrls.hashtag(normalizedTag),
       },
     ] : [],
   });
 
   // Dynamic SEO meta tags for social sharing
-  const description = `Explore videos tagged with #${tag} on diVine`;
+  const description = `Explore videos tagged with #${tag} on Divine`;
 
   useSeoMeta({
-    title: `#${tag} - diVine`,
+    title: `#${tag} - Divine`,
     description: description,
-    ogTitle: `#${tag} - diVine`,
+    ogTitle: `#${tag} - Divine`,
     ogDescription: description,
     ogImage: '/og.avif',
     ogType: 'website',
     twitterCard: 'summary_large_image',
-    twitterTitle: `#${tag} - diVine`,
+    twitterTitle: `#${tag} - Divine`,
     twitterDescription: description,
     twitterImage: '/og.avif',
   });

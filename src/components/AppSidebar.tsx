@@ -1,5 +1,5 @@
 // ABOUTME: TikTok-style left sidebar navigation for desktop
-// ABOUTME: Shows main nav, login/signup, expandable diVine links section
+// ABOUTME: Shows main nav, login/signup, expandable Divine links section
 
 import { useLocation } from 'react-router-dom';
 import { Home, Compass, Search, Bell, User, Sun, Moon, ChevronDown, Headphones, BarChart3, LayoutGrid, Rss, MessageCircle } from 'lucide-react';
@@ -102,7 +102,7 @@ export function AppSidebar({ className }: { className?: string }) {
         >
           <img
             src="/divine-logo.svg"
-            alt="diVine"
+            alt="Divine"
             className="h-[22px]"
           />
         </button>
@@ -322,7 +322,7 @@ export function AppSidebar({ className }: { className?: string }) {
 
         {/* Footer Section - flows naturally, no pinning */}
         <div className="mt-6 px-4">
-        {/* Expandable diVine Section */}
+        {/* Expandable Divine Section */}
         <Collapsible open={divineOpen} onOpenChange={setDivineOpen}>
           <CollapsibleTrigger asChild>
             <button
@@ -427,7 +427,7 @@ export function AppSidebar({ className }: { className?: string }) {
                 onClick={() => navigate('/dmca')}
                 className="transition-colors hover:text-primary"
               >
-                Copyright & DMCA
+                DMCA & Copyright
               </button>
               <button
                 onClick={() => navigate('/open-source')}

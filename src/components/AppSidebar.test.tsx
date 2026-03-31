@@ -55,7 +55,7 @@ describe('AppSidebar', () => {
     mockSetTheme.mockReset();
   });
 
-  it('renders a Copyright & DMCA legal action', () => {
+  it('renders a DMCA & Copyright legal action', () => {
     render(
       <MemoryRouter>
         <AppSidebar />
@@ -64,7 +64,7 @@ describe('AppSidebar', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /terms & open source/i }));
 
-    const dmcaButton = screen.getByRole('button', { name: 'Copyright & DMCA' });
+    const dmcaButton = screen.getByRole('button', { name: 'DMCA & Copyright' });
     expect(dmcaButton).toBeVisible();
 
     fireEvent.click(dmcaButton);

@@ -6,7 +6,7 @@ describe('formatClassicVineViewBreakdown', () => {
     expect(formatClassicVineViewBreakdown(25, 0)).toBeNull();
   });
 
-  it('shows only Vine loops when there are no new diVine views yet', () => {
+  it('shows only Vine loops when there are no new Divine views yet', () => {
     expect(formatClassicVineViewBreakdown(100, 100)).toBe('100 Classic Loops');
   });
 
