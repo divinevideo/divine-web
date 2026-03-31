@@ -178,7 +178,7 @@ describe('SearchPage', () => {
 
     await waitFor(() => {
       expect(mockFetchVideoById).toHaveBeenCalledWith(
-        'https://relay.divine.video',
+        'https://api.divine.video',
         'clip-7',
         undefined,
         expect.any(AbortSignal),

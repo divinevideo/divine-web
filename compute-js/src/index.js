@@ -10,7 +10,8 @@ import rc from '../static-publish.rc.js';
 
 const publisherServer = PublisherServer.fromStaticPublishRc(rc);
 
-// Funnelcake API URL for fetching video metadata
+// Funnelcake API URL — edge worker calls origin directly (not via api.divine.video cache
+// to avoid Fastly→Fastly loops). Client-side code uses api.divine.video for caching.
 const FUNNELCAKE_API_URL = 'https://relay.divine.video';
 
 // Apex domains we serve (used to detect subdomains)

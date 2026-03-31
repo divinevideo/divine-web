@@ -15,7 +15,7 @@ vi.mock('./debug', () => ({
   debugError: vi.fn(),
 }));
 
-const API_URL = 'https://relay.divine.video';
+const API_URL = 'https://api.divine.video';
 const TEST_PUBKEY = 'a'.repeat(64);
 
 describe('funnelcakeClient', () => {

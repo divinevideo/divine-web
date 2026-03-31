@@ -22,7 +22,7 @@ describe('reportFunnelcakeFallback', () => {
 
     reportFunnelcakeFallback({
       source: 'useAuthor',
-      apiUrl: 'https://relay.divine.video',
+      apiUrl: 'https://api.divine.video',
       reason: 'REST returned no profile',
       context: { pubkey: 'abc123' },
     });
@@ -32,7 +32,7 @@ describe('reportFunnelcakeFallback', () => {
       'api',
       expect.objectContaining({
         source: 'useAuthor',
-        apiUrl: 'https://relay.divine.video',
+        apiUrl: 'https://api.divine.video',
         reason: 'REST returned no profile',
         pubkey: 'abc123',
       }),
@@ -45,7 +45,7 @@ describe('reportFunnelcakeFallback', () => {
       }),
       expect.objectContaining({
         source: 'useAuthor',
-        apiUrl: 'https://relay.divine.video',
+        apiUrl: 'https://api.divine.video',
         reason: 'REST returned no profile',
         pubkey: 'abc123',
       }),
@@ -57,7 +57,7 @@ describe('reportFunnelcakeFallback', () => {
       }),
       expect.objectContaining({
         source: 'useAuthor',
-        apiUrl: 'https://relay.divine.video',
+        apiUrl: 'https://api.divine.video',
         reason: 'REST returned no profile',
         pubkey: 'abc123',
       }),

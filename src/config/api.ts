@@ -4,17 +4,13 @@
 /**
  * API configuration for Funnelcake REST endpoints
  *
- * Funnelcake provides pre-computed trending scores and efficient video queries
- * via a REST API served from the same domain as Divine relays.
- *
- * Currently available at:
- * - relay.divine.video (live now)
- * - relay.divine.video (switching soon)
+ * Funnelcake provides pre-computed trending scores and efficient video queries.
+ * REST reads go through the Fastly-cached api.divine.video endpoint.
+ * WebSocket connections still use relay.divine.video directly.
  */
 export const API_CONFIG = {
   funnelcake: {
-    // Default base URL - use relay.divine.video until relay.divine.video switches
-    baseUrl: import.meta.env.VITE_FUNNELCAKE_API_URL || 'https://relay.divine.video',
+    baseUrl: import.meta.env.VITE_FUNNELCAKE_API_URL || 'https://api.divine.video',
     // Request timeout in milliseconds (profile API should be fast)
     timeout: 5000,
     // Endpoints

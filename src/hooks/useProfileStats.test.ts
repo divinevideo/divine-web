@@ -44,7 +44,7 @@ vi.mock('@/lib/funnelcakeFallbackReporting', () => ({
 vi.mock('@/config/api', () => ({
   API_CONFIG: {
     funnelcake: {
-      baseUrl: 'https://relay.divine.video',
+      baseUrl: 'https://api.divine.video',
       timeout: 5000,
       endpoints: {
         userProfile: '/api/users/{pubkey}',
@@ -155,12 +155,12 @@ describe('useProfileStats', () => {
     expect(result.current.data?.totalLoops).toBe(750);
     expect(result.current.data?.totalViews).toBe(1000);
     expect(fetchUserProfile).toHaveBeenCalledWith(
-      'https://relay.divine.video',
+      'https://api.divine.video',
       TEST_PUBKEY,
       expect.any(AbortSignal)
     );
     expect(fetchUserLoopStats).toHaveBeenCalledWith(
-      'https://relay.divine.video',
+      'https://api.divine.video',
       TEST_PUBKEY,
       expect.any(AbortSignal)
     );

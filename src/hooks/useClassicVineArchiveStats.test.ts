@@ -10,7 +10,7 @@ vi.mock('@/lib/funnelcakeClient', () => ({
 vi.mock('@/config/api', () => ({
   API_CONFIG: {
     funnelcake: {
-      baseUrl: 'https://relay.divine.video',
+      baseUrl: 'https://api.divine.video',
     },
   },
 }));

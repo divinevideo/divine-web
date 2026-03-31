@@ -248,12 +248,15 @@ export function getFunnelcakeUrl(relayUrl: string): string | null {
   if (!hasFunnelcake(relayUrl)) {
     return null;
   }
-  // Convert wss://relay.divine.video to https://relay.divine.video
-  return relayUrl.replace('wss://', 'https://').replace('ws://', 'http://');
+  // Route REST API calls through the Fastly-cached api.divine.video endpoint
+  return relayUrl
+    .replace('wss://relay.divine.video', 'https://api.divine.video')
+    .replace('wss://', 'https://')
+    .replace('ws://', 'http://');
 }
 
 /**
- * Default Funnelcake API URL (relay.divine.video is currently live)
+ * Default Funnelcake API URL — Fastly-cached edge endpoint
  * Used for classic vines which always query Divine regardless of selected relay
  */
-export const DEFAULT_FUNNELCAKE_URL = 'https://relay.divine.video';
+export const DEFAULT_FUNNELCAKE_URL = 'https://api.divine.video';

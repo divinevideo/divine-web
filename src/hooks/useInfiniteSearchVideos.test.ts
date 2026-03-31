@@ -88,7 +88,7 @@ describe('useInfiniteSearchVideos', () => {
     });
 
     expect(mockSearchVideos).toHaveBeenCalledWith(
-      'https://relay.divine.video',
+      'https://api.divine.video',
       expect.objectContaining({
         query: 'jack',
         sort: 'trending',

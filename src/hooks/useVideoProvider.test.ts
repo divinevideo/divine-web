@@ -96,7 +96,7 @@ describe('chooseVideoDataSource', () => {
 
     expect(decision).toEqual(expect.objectContaining({
       dataSource: 'funnelcake',
-      apiUrl: 'https://relay.divine.video',
+      apiUrl: 'https://api.divine.video',
       reason: 'prefer-canonical-funnelcake-rest-api',
     }));
   });
@@ -111,7 +111,7 @@ describe('chooseVideoDataSource', () => {
 
     expect(decision).toEqual(expect.objectContaining({
       dataSource: 'funnelcake',
-      apiUrl: 'https://relay.divine.video',
+      apiUrl: 'https://api.divine.video',
       websocketFeedType: 'trending',
       reason: 'prefer-selected-relay-funnelcake-rest-api',
     }));
@@ -133,7 +133,7 @@ describe('chooseVideoDataSource', () => {
 
     expect(decision).toEqual(expect.objectContaining({
       dataSource: 'funnelcake',
-      apiUrl: 'https://relay.divine.video',
+      apiUrl: 'https://api.divine.video',
       reason: 'prefer-canonical-funnelcake-rest-api',
     }));
   });
@@ -172,7 +172,7 @@ describe('useVideoProvider', () => {
 
     expect(mockUseInfiniteVideosFunnelcake).toHaveBeenCalledWith(expect.objectContaining({
       feedType: 'category',
-      apiUrl: 'https://relay.divine.video',
+      apiUrl: 'https://api.divine.video',
       category: 'dance',
       enabled: true,
     }));
@@ -196,7 +196,7 @@ describe('useVideoProvider', () => {
 
     expect(mockUseInfiniteVideosFunnelcake).toHaveBeenCalledWith(expect.objectContaining({
       feedType: 'trending',
-      apiUrl: 'https://relay.divine.video',
+      apiUrl: 'https://api.divine.video',
       sortMode: 'trending',
       enabled: true,
     }));
@@ -228,7 +228,7 @@ describe('useVideoProvider', () => {
 
     expect(mockUseInfiniteVideosFunnelcake).toHaveBeenCalledWith(expect.objectContaining({
       feedType: 'profile',
-      apiUrl: 'https://relay.divine.video',
+      apiUrl: 'https://api.divine.video',
       pubkey: 'a'.repeat(64),
       enabled: true,
     }));
@@ -255,7 +255,7 @@ describe('useVideoProvider', () => {
 
     expect(mockUseInfiniteVideosFunnelcake).toHaveBeenCalledWith(expect.objectContaining({
       feedType: 'recent',
-      apiUrl: 'https://relay.divine.video',
+      apiUrl: 'https://api.divine.video',
       enabled: true,
     }));
     expect(mockUseInfiniteVideos).toHaveBeenCalledWith(expect.objectContaining({

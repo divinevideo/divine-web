@@ -25,8 +25,8 @@ vi.mock('@/hooks/useAppContext', () => ({
 }));
 
 vi.mock('@/config/relays', () => ({
-  DEFAULT_FUNNELCAKE_URL: 'https://relay.divine.video',
-  getFunnelcakeUrl: () => 'https://relay.divine.video',
+  DEFAULT_FUNNELCAKE_URL: 'https://api.divine.video',
+  getFunnelcakeUrl: () => 'https://api.divine.video',
 }));
 
 vi.mock('@/lib/funnelcakeClient', () => ({
@@ -94,7 +94,7 @@ describe('useVideoByIdFunnelcake', () => {
     });
 
     expect(mockFetchUserVideos).toHaveBeenCalledWith(
-      'https://relay.divine.video',
+      'https://api.divine.video',
       'p'.repeat(64),
       expect.objectContaining({
         limit: 16,
@@ -104,7 +104,7 @@ describe('useVideoByIdFunnelcake', () => {
       })
     );
     expect(mockFetchVideoById).toHaveBeenCalledWith(
-      'https://relay.divine.video',
+      'https://api.divine.video',
       'target-video',
       'p'.repeat(64),
       expect.any(AbortSignal)

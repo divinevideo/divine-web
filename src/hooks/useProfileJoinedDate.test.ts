@@ -19,7 +19,7 @@ vi.mock('@/lib/debug', () => ({
 vi.mock('@/config/api', () => ({
   API_CONFIG: {
     funnelcake: {
-      baseUrl: 'https://relay.divine.video',
+      baseUrl: 'https://api.divine.video',
     },
   },
 }));
@@ -117,7 +117,7 @@ describe('useProfileJoinedDate', () => {
 
     expect(result.current.data?.toISOString()).toBe('2014-01-01T00:00:00.000Z');
     expect(fetchUserVideos).toHaveBeenCalledWith(
-      'https://relay.divine.video',
+      'https://api.divine.video',
       TEST_PUBKEY,
       expect.objectContaining({
         limit: 1,
@@ -127,7 +127,7 @@ describe('useProfileJoinedDate', () => {
       })
     );
     expect(fetchVideoById).toHaveBeenCalledWith(
-      'https://relay.divine.video',
+      'https://api.divine.video',
       'video-1',
       TEST_PUBKEY,
       expect.any(AbortSignal)
