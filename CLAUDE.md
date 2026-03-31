@@ -63,10 +63,13 @@ Funnelcake is our optimized REST API layer. Use REST for reads, WebSocket for wr
 ### Base URLs
 | Environment | WebSocket | REST API |
 |------------|-----------|----------|
-| Production | `wss://relay.divine.video` | `https://relay.divine.video/api/` |
+| Production | `wss://relay.divine.video` | `https://api.divine.video/api/` |
 | Staging | `wss://relay.staging.dvines.org` | `https://relay.staging.dvines.org/api/` |
 
-**OpenAPI Docs**: `https://relay.divine.video/api/docs`
+Canonical production REST traffic goes to `https://api.divine.video/api/`.
+`https://relay.divine.video/api/` remains the uncached backup path.
+
+**OpenAPI Docs**: `https://api.divine.video/docs`
 
 ### When to Use REST vs WebSocket
 - **REST**: Analytics, stats, bulk operations, search, pre-computed data
@@ -299,7 +302,7 @@ npx tsc --noEmit      # Type check only
 ## Environment Variables
 
 ```bash
-VITE_FUNNELCAKE_API_URL=https://relay.divine.video  # Funnelcake API base
+VITE_FUNNELCAKE_API_URL=https://api.divine.video  # Funnelcake API host
 ```
 
 ---
