@@ -486,19 +486,19 @@ export function ProfileHeader({
           )}
         </div>
 
-        {/* diVine Loops (actual loop count from watch time) */}
+        {/* Divine Loops (actual loop count from watch time) */}
         <div className="text-center">
           {stats ? (
             <>
               <div className="text-xl sm:text-2xl font-bold text-primary">
                 {formatNumber(stats.totalLoops)}
               </div>
-              <div className="text-xs sm:text-sm text-muted-foreground">diVine Loops</div>
+              <div className="text-xs sm:text-sm text-muted-foreground">Divine Loops</div>
             </>
           ) : (
             <>
               <Skeleton className="h-6 w-12 mx-auto mb-1" data-testid="stat-skeleton-loops" />
-              <div className="text-xs sm:text-sm text-muted-foreground">diVine Loops</div>
+              <div className="text-xs sm:text-sm text-muted-foreground">Divine Loops</div>
             </>
           )}
         </div>

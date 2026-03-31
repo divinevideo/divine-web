@@ -228,7 +228,7 @@ export function ProfilePage() {
       {
         rel: 'alternate',
         type: 'application/rss+xml',
-        title: `${displayName}'s Videos - diVine`,
+        title: `${displayName}'s Videos - Divine`,
         href: feedUrls.userVideos(profileNpub),
       },
     ] : [],
@@ -236,15 +236,15 @@ export function ProfilePage() {
 
   // Dynamic SEO meta tags for social sharing
   useSeoMeta({
-    title: `${displayName} - diVine`,
-    description: metadata?.about || `${displayName}'s profile on diVine`,
-    ogTitle: `${displayName} - diVine Profile`,
-    ogDescription: metadata?.about || `${displayName}'s profile on diVine`,
+    title: `${displayName} - Divine`,
+    description: metadata?.about || `${displayName}'s profile on Divine`,
+    ogTitle: `${displayName} - Divine Profile`,
+    ogDescription: metadata?.about || `${displayName}'s profile on Divine`,
     ogImage: metadata?.picture || '/app_icon.avif',
     ogType: 'profile',
     twitterCard: 'summary',
-    twitterTitle: `${displayName} - diVine`,
-    twitterDescription: metadata?.about || `${displayName}'s profile on diVine`,
+    twitterTitle: `${displayName} - Divine`,
+    twitterDescription: metadata?.about || `${displayName}'s profile on Divine`,
     twitterImage: metadata?.picture || '/app_icon.avif',
   });
 

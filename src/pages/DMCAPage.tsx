@@ -1,194 +1,195 @@
-// ABOUTME: DMCA and copyright policy page
-// ABOUTME: Explains fair use basis, content sources, and takedown procedures
+// ABOUTME: DMCA and copyright policy page for Divine
+// ABOUTME: Describes how Divine handles copyright infringement claims and takedown procedures
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { AlertCircle, Archive, Scale, Mail } from 'lucide-react';
+import { ZendeskWidget } from '@/components/ZendeskWidget';
 import { MarketingLayout } from '@/components/MarketingLayout';
 
 export function DMCAPage() {
   return (
     <MarketingLayout>
       <div className="container mx-auto px-4 py-8 max-w-4xl">
-      <h1 className="text-4xl font-bold mb-8">Copyright & DMCA Policy</h1>
+        <ZendeskWidget />
+        <h1 className="text-4xl font-bold mb-4">DMCA + Copyright Policy</h1>
+        <p className="text-muted-foreground mb-8">Last Updated: March 30, 2026</p>
 
-      <div className="space-y-8">
-        {/* Fair Use */}
-        <Card className="border-2 border-brand-green">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Scale className="h-5 w-5 text-primary" />
-              Fair Use Basis
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-muted-foreground">
-              Divine operates as a cultural preservation project recovering and hosting content that would otherwise
-              be lost to history. Our use of archived Vine content is based on fair use principles under U.S. copyright
-              law, specifically:
+        <div className="space-y-8 text-muted-foreground leading-relaxed">
+          {/* 1. Overview */}
+          <section>
+            <h2 className="text-2xl font-semibold text-foreground mb-3">1. Overview</h2>
+            <p className="mb-3">
+              Verse Communications PBC dba Divine (&ldquo;Divine&rdquo;) respects intellectual property rights
+              and complies with the Digital Millennium Copyright Act (&ldquo;DMCA&rdquo;). This policy describes
+              how Divine responds to claims of copyright infringement involving Divine-controlled infrastructure.
             </p>
-            <ul className="list-disc list-inside space-y-2 text-muted-foreground ml-4">
-              <li>
-                <strong>Preservation and archival purposes:</strong> Preventing permanent loss of cultural artifacts
-                after the original platform shutdown
-              </li>
-              <li>
-                <strong>Transformative use:</strong> Presenting content in a new context focused on historical and
-                cultural preservation
-              </li>
-              <li>
-                <strong>Non-commercial nature:</strong> Divine is an open-source project not designed to generate
-                revenue from user data
-              </li>
-              <li>
-                <strong>No market harm:</strong> The original Vine platform no longer exists, and this content cannot
-                be obtained elsewhere
-              </li>
-            </ul>
-          </CardContent>
-        </Card>
-
-        {/* Content Sources */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Archive className="h-5 w-5" />
-              Content Sources
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-muted-foreground">
-              Divine recovers Vine videos from public archives maintained by preservation organizations:
+            <p>
+              For purposes of the DMCA, Divine has designated{' '}
+              <a href="mailto:contact@divine.video" className="text-primary hover:underline">
+                contact@divine.video
+              </a>{' '}
+              as its agent for receiving notices of claimed infringement.
             </p>
-            <ul className="list-disc list-inside space-y-2 text-muted-foreground ml-4">
-              <li>
-                <strong>ArchiveTeam:</strong> Volunteer archivists who preserved Vine content before the platform
-                shut down in 2017 (
-                <a href="https://wiki.archiveteam.org/index.php/Vine" rel="noopener noreferrer" className="text-primary hover:underline">
-                  wiki.archiveteam.org/index.php/Vine
-                </a>)
-              </li>
-              <li>
-                <strong>Archive.org:</strong> The Internet Archive's public collection of historical web content
-              </li>
-            </ul>
-            <p className="text-muted-foreground">
-              We are committed to restoring proper creator attribution when possible and honoring the original
-              creators who made Vine special.
+          </section>
+
+          {/* 2. Definitions */}
+          <section>
+            <h2 className="text-2xl font-semibold text-foreground mb-3">2. Definitions</h2>
+            <p className="mb-3">
+              <strong className="text-foreground">&ldquo;Divine-controlled infrastructure&rdquo;</strong> means
+              websites, apps, relays, media storage, APIs, and other systems owned or controlled by Divine.
             </p>
-          </CardContent>
-        </Card>
-
-        {/* Copyright Claims */}
-        <Card className="border-2 border-brand-yellow">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <AlertCircle className="h-5 w-5 text-amber-500" />
-              Copyright Claims & Content Removal
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-muted-foreground">
-              If you are the copyright owner of content hosted on Divine and wish to have it removed, we respect
-              your rights and will process valid DMCA takedown requests.
+            <p className="mb-3">
+              <strong className="text-foreground">&ldquo;Externally hosted content&rdquo;</strong> means any
+              video, image, audio file, or other media referenced within a Nostr event that is stored on
+              third-party infrastructure.
             </p>
-
-            <div className="bg-brand-dark-green p-4 rounded-lg border border-brand-green">
-              <h3 className="font-semibold mb-3 text-brand-off-white">To File a DMCA Takedown Request:</h3>
-              <p className="text-sm text-brand-light-green mb-3">
-                Your notice must include the following information as required by the Digital Millennium Copyright Act:
-              </p>
-              <ol className="list-decimal list-inside space-y-2 text-sm text-brand-light-green ml-4">
-                <li>Your physical or electronic signature</li>
-                <li>Identification of the copyrighted work claimed to have been infringed</li>
-                <li>Identification of the material that is claimed to be infringing (including URLs or event IDs)</li>
-                <li>Your contact information (address, telephone number, and email)</li>
-                <li>
-                  A statement that you have a good faith belief that the use of the material is not authorized by
-                  the copyright owner, its agent, or the law
-                </li>
-                <li>
-                  A statement that the information in the notification is accurate, and under penalty of perjury,
-                  that you are authorized to act on behalf of the copyright owner
-                </li>
-                <li>
-                  <strong>Proof of ownership:</strong> You must demonstrate that you are the original creator or
-                  copyright holder of the content (e.g., links to your accounts on other platforms, original files,
-                  creation dates, etc.)
-                </li>
-              </ol>
-            </div>
-
-            <div className="bg-brand-dark-green p-4 rounded-lg border border-brand-green">
-              <h3 className="font-semibold mb-2 flex items-center gap-2 text-brand-off-white">
-                <Mail className="h-4 w-4" />
-                Send DMCA Notices To:
-              </h3>
-              <p className="text-sm text-brand-light-green">
-                Email: <a href="mailto:contact@divine.video" className="text-brand-green hover:text-brand-light-green">contact@divine.video</a>
-              </p>
-              <p className="text-sm text-brand-light-green mt-2">
-                We will review valid requests and respond within 10 business days.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Counter-Notice */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Counter-Notice Procedure</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-muted-foreground">
-              If you believe content was removed in error or that you have the right to use the material, you may
-              file a counter-notice containing:
+            <p className="mb-3">
+              <strong className="text-foreground">&ldquo;Nostr&rdquo;</strong> means the decentralized protocol
+              known as &ldquo;Notes and Other Stuff Transmitted by Relays,&rdquo; which enables users to publish,
+              retrieve, and verify content using cryptographic keypairs and signed messages.
             </p>
-            <ol className="list-decimal list-inside space-y-2 text-muted-foreground ml-4">
-              <li>Your physical or electronic signature</li>
-              <li>Identification of the material that was removed</li>
-              <li>
-                A statement under penalty of perjury that you have a good faith belief the material was removed
-                by mistake or misidentification
-              </li>
-              <li>Your name, address, telephone number, and email</li>
-              <li>
-                A statement that you consent to the jurisdiction of the Federal District Court for your judicial
-                district (or if outside the U.S., any district where Divine may be found)
-              </li>
-            </ol>
-          </CardContent>
-        </Card>
-
-        {/* Repeat Infringers */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Repeat Infringer Policy</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground">
-              Divine will terminate accounts of users who are determined to be repeat copyright infringers in
-              accordance with applicable law.
+            <p className="mb-3">
+              <strong className="text-foreground">&ldquo;Nostr event&rdquo;</strong> means a cryptographically
+              signed data object published using the Nostr protocol. A Nostr event may include a public key,
+              timestamp, event kind, content, tags, metadata, and a digital signature. Once broadcast, Nostr
+              events may be stored or replicated across multiple independent relays, including relays Divine does
+              not own or control.
             </p>
-          </CardContent>
-        </Card>
+            <p className="mb-3">
+              <strong className="text-foreground">&ldquo;Nostr keypair&rdquo;</strong> means the cryptographic
+              public/private keypair used to create, sign, and authenticate Nostr events. The public key functions
+              as a user identifier across the Nostr protocol, and the private key is required to sign events and
+              prove authorship.
+            </p>
+            <p className="mb-3">
+              <strong className="text-foreground">&ldquo;Relay&rdquo;</strong> means any independently operated
+              server implementing the Nostr protocol for receiving, storing, indexing, or redistributing Nostr
+              events. Unless expressly stated otherwise, relays are not operated by Divine.
+            </p>
+            <p>
+              <strong className="text-foreground">&ldquo;User content&rdquo;</strong> means any Nostr event,
+              media, metadata, username, profile information, or other material submitted, published, uploaded,
+              linked, or otherwise made available by a user through the Divine&trade; app (the
+              &ldquo;Service&rdquo;), whether hosted by Divine or externally.
+            </p>
+          </section>
 
-        {/* Contact */}
-        <Card className="border-2 border-brand-green">
-          <CardHeader>
-            <CardTitle>Questions?</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground">
-              For questions about this policy or copyright issues not related to DMCA takedowns, please contact
-              us at{" "}
+          {/* 3. Submitting a Notice */}
+          <section>
+            <h2 className="text-2xl font-semibold text-foreground mb-3">3. Submitting a Notice</h2>
+            <p className="mb-3">
+              If you believe that content available through Divine-controlled infrastructure infringes your
+              copyright, you may submit a notice to{' '}
               <a href="mailto:contact@divine.video" className="text-primary hover:underline">
                 contact@divine.video
               </a>.
             </p>
-          </CardContent>
-        </Card>
+            <p>
+              A valid notice must include your contact information, identification of the copyrighted work,
+              identification of the allegedly infringing material and its location, a statement of good faith
+              belief that the use is not authorized, a statement under penalty of perjury that the information is
+              accurate, and your signature.
+            </p>
+          </section>
+
+          {/* 4. Response to Notices */}
+          <section>
+            <h2 className="text-2xl font-semibold text-foreground mb-3">4. Response to Notices</h2>
+            <p className="mb-3">
+              Upon receipt of a facially valid notice, Divine may remove or disable access to the allegedly
+              infringing material on Divine-controlled infrastructure and may take additional action, including
+              restricting access for repeat infringers.
+            </p>
+            <p className="mb-3">
+              Divine evaluates notices for facial validity but does not adjudicate the underlying legal merits of
+              any claim.
+            </p>
+            <p>
+              Where appropriate, Divine may make reasonable efforts to notify the user who posted the content and
+              provide information about the claim and the process for submitting a counter-notification.
+            </p>
+          </section>
+
+          {/* 5. Counter-Notifications */}
+          <section>
+            <h2 className="text-2xl font-semibold text-foreground mb-3">5. Counter-Notifications</h2>
+            <p className="mb-3">
+              Users may submit counter-notifications as permitted by law. A valid counter-notification must
+              include identification of the removed material, a statement under penalty of perjury, consent to
+              jurisdiction, and the user&rsquo;s contact information.
+            </p>
+            <p>
+              Divine may forward counter-notifications to the original complainant. Where required by law, Divine
+              may restore removed content if the complainant does not initiate legal action within the applicable
+              time period.
+            </p>
+          </section>
+
+          {/* 6. Repeat Infringers */}
+          <section>
+            <h2 className="text-2xl font-semibold text-foreground mb-3">6. Repeat Infringers</h2>
+            <p>
+              Divine maintains a policy of addressing repeat infringement and may restrict or terminate access for
+              users who repeatedly infringe intellectual property rights.
+            </p>
+          </section>
+
+          {/* 7. Scope of Control */}
+          <section>
+            <h2 className="text-2xl font-semibold text-foreground mb-3">7. Scope of Control</h2>
+            <p>
+              Divine can remove or disable access to content only on systems it owns or controls. If the
+              underlying material is stored on independent relays, third-party hosts, or archives, requests to
+              remove that material must be directed to the relevant operator.
+            </p>
+          </section>
+
+          {/* 8. User Responsibility */}
+          <section>
+            <h2 className="text-2xl font-semibold text-foreground mb-3">8. User Responsibility</h2>
+            <p>
+              Users are responsible for ensuring that they have the rights, licenses, and permissions necessary to
+              publish or reference content through the Service.
+            </p>
+          </section>
+
+          {/* 9. Good Faith Requirement */}
+          <section>
+            <h2 className="text-2xl font-semibold text-foreground mb-3">9. Good Faith Requirement</h2>
+            <p>
+              Submitting false or misleading claims may result in liability under applicable law.
+            </p>
+          </section>
+
+          {/* 10. User Controls */}
+          <section>
+            <h2 className="text-2xl font-semibold text-foreground mb-3">10. User Controls</h2>
+            <p>
+              The Service may provide tools such as blocking, muting, filtering, and moderation lists that allow
+              users to manage their experience. These controls apply within Divine-operated interfaces as
+              implemented by Divine.
+            </p>
+          </section>
+
+          {/* 11. Relationship to Terms */}
+          <section>
+            <h2 className="text-2xl font-semibold text-foreground mb-3">11. Relationship to Terms</h2>
+            <p>
+              This policy operates alongside the Terms of Service. Users retain ownership of their content but
+              grant Divine a license to use that content as described in the Terms.
+            </p>
+          </section>
+
+          {/* 12. Contact */}
+          <section>
+            <h2 className="text-2xl font-semibold text-foreground mb-3">12. Contact</h2>
+            <p>
+              <a href="mailto:contact@divine.video" className="text-primary hover:underline">
+                contact@divine.video
+              </a>
+            </p>
+          </section>
+        </div>
       </div>
-    </div>
     </MarketingLayout>
   );
 }

@@ -10,15 +10,15 @@ export function CategoriesIndexPage() {
   const { data: categories, isLoading } = useCategories();
 
   useSeoMeta({
-    title: 'Browse Categories - diVine',
-    description: 'Explore video categories on diVine — comedy, music, dance, animals, sports, food, and more.',
-    ogTitle: 'Browse Categories - diVine',
-    ogDescription: 'Explore video categories on diVine — comedy, music, dance, animals, sports, food, and more.',
+    title: 'Browse Categories - Divine',
+    description: 'Explore video categories on Divine — comedy, music, dance, animals, sports, food, and more.',
+    ogTitle: 'Browse Categories - Divine',
+    ogDescription: 'Explore video categories on Divine — comedy, music, dance, animals, sports, food, and more.',
     ogImage: '/og.avif',
     ogType: 'website',
     twitterCard: 'summary_large_image',
-    twitterTitle: 'Browse Categories - diVine',
-    twitterDescription: 'Explore video categories on diVine — comedy, music, dance, animals, sports, food, and more.',
+    twitterTitle: 'Browse Categories - Divine',
+    twitterDescription: 'Explore video categories on Divine — comedy, music, dance, animals, sports, food, and more.',
     twitterImage: '/og.avif',
   });
 

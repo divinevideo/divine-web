@@ -52,7 +52,7 @@ export function useVideoSocialMetrics(
     enabled: options?.enabled !== false,
     // Keep like/repost/comment counts as delta-only so optimistic updates don't
     // double-count Funnelcake's embedded totals. Views are separate from Vine loops,
-    // so we can safely fetch the current diVine total here.
+    // so we can safely fetch the current Divine total here.
     queryFn: async ({ signal }) => {
       const emptyMetrics: VideoSocialMetrics = {
         likeCount: 0,

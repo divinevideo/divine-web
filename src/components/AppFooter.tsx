@@ -10,7 +10,7 @@ export function AppFooter() {
           <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6 mb-6">
             {/* Left side - Email signup */}
             <div className="flex flex-col gap-2 lg:max-w-md">
-              <div className="text-sm font-semibold text-brand-green">diVine Inspiration</div>
+              <div className="text-sm font-semibold text-brand-green">Divine Inspiration</div>
               <p className="text-sm text-brand-off-white mb-2">
                 The Divine beta is currently full. If you'd like to hear our news and be among the first to hear when the Divine app goes live, sign up here.
               </p>
@@ -67,12 +67,12 @@ export function AppFooter() {
                   Help
                 </SmartLink>
                 <span>•</span>
-                <SmartLink to="/privacy" className="hover:text-brand-off-white transition-colors">
-                  Privacy
+                <SmartLink to="/terms" className="hover:text-brand-off-white transition-colors">
+                  Terms of Service
                 </SmartLink>
                 <span>•</span>
-                <SmartLink to="/terms" className="hover:text-brand-off-white transition-colors">
-                  EULA/T&C
+                <SmartLink to="/privacy" className="hover:text-brand-off-white transition-colors">
+                  Privacy
                 </SmartLink>
                 <span>•</span>
                 <SmartLink to="/safety" className="hover:text-brand-off-white transition-colors">
@@ -80,7 +80,7 @@ export function AppFooter() {
                 </SmartLink>
                 <span>•</span>
                 <SmartLink to="/dmca" className="hover:text-brand-off-white transition-colors">
-                  Copyright & DMCA
+                  DMCA & Copyright
                 </SmartLink>
                 <span>•</span>
                 <SmartLink to="/open-source" className="hover:text-brand-off-white transition-colors">

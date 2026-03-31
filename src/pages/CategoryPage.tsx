@@ -35,22 +35,22 @@ export function CategoryPage() {
       {
         rel: 'alternate',
         type: 'application/rss+xml',
-        title: `${displayName} Videos - diVine`,
+        title: `${displayName} Videos - Divine`,
         href: feedUrls.category(categoryName),
       },
     ] : [],
   });
 
   useSeoMeta({
-    title: `${displayName} Videos - diVine`,
-    description: `Explore ${displayName.toLowerCase()} videos on diVine`,
-    ogTitle: `${displayName} Videos - diVine`,
-    ogDescription: `Explore ${displayName.toLowerCase()} videos on diVine`,
+    title: `${displayName} Videos - Divine`,
+    description: `Explore ${displayName.toLowerCase()} videos on Divine`,
+    ogTitle: `${displayName} Videos - Divine`,
+    ogDescription: `Explore ${displayName.toLowerCase()} videos on Divine`,
     ogImage: '/og.avif',
     ogType: 'website',
     twitterCard: 'summary_large_image',
-    twitterTitle: `${displayName} Videos - diVine`,
-    twitterDescription: `Explore ${displayName.toLowerCase()} videos on diVine`,
+    twitterTitle: `${displayName} Videos - Divine`,
+    twitterDescription: `Explore ${displayName.toLowerCase()} videos on Divine`,
     twitterImage: '/og.avif',
   });
 
@@ -93,7 +93,7 @@ export function CategoryPage() {
               <div>
                 <h1 className="text-3xl font-bold">{displayName}</h1>
                 <p className="text-muted-foreground">
-                  {displayName} videos on diVine
+                  {displayName} videos on Divine
                 </p>
               </div>
             </div>

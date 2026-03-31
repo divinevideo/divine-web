@@ -1,7 +1,7 @@
 {
   "name": "divine-web",
   "version": "0.1.0",
-  "description": "diVine video app for Nostr",
+  "description": "Divine video app for Nostr",
   "author": "you@example.com",
   "type": "module",
   "devDependencies": {

@@ -371,9 +371,9 @@ export function LeaderboardPage() {
   const [timePeriod, setTimePeriod] = useState<TimePeriod>('alltime');
 
   useSeoMeta({
-    title: 'Leaderboard - diVine',
-    description: 'Top videos and creators by loops on diVine',
-    ogTitle: 'Leaderboard - diVine',
+    title: 'Leaderboard - Divine',
+    description: 'Top videos and creators by loops on Divine',
+    ogTitle: 'Leaderboard - Divine',
     ogDescription: 'See the most popular videos and creators',
   });
 

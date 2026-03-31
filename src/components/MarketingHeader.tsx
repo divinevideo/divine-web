@@ -12,7 +12,7 @@ export function MarketingHeader() {
           <Link to="/">
             <img
               src="/divine-logo.svg"
-              alt="diVine"
+              alt="Divine"
               className="h-5"
             />
           </Link>

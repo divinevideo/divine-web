@@ -63,7 +63,7 @@ describe('AppHeader', () => {
     mockSetTheme.mockReset();
   });
 
-  it('renders a Copyright & DMCA legal action in the more menu', () => {
+  it('renders a DMCA & Copyright legal action in the more menu', () => {
     render(
       <MemoryRouter>
         <AppHeader />
@@ -72,7 +72,7 @@ describe('AppHeader', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /more options/i }));
 
-    const dmcaItem = screen.getByRole('menuitem', { name: 'Copyright & DMCA' });
+    const dmcaItem = screen.getByRole('menuitem', { name: 'DMCA & Copyright' });
     expect(dmcaItem).toBeVisible();
 
     fireEvent.click(dmcaItem);

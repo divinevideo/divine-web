@@ -35,7 +35,7 @@ export function HomePage() {
       ...(userNpub ? [{
         rel: 'alternate' as const,
         type: 'application/rss+xml',
-        title: 'Your Feed - diVine',
+        title: 'Your Feed - Divine',
         href: feedUrls.userFeed(userNpub),
       }] : []),
     ] : [],

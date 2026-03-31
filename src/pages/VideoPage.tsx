@@ -236,15 +236,15 @@ export function VideoPage() {
 
   // Dynamic SEO meta tags for social sharing
   useSeoMeta({
-    title: currentVideo?.title || 'Video on diVine',
-    description: currentVideo?.content || `Watch this video${authorName ? ` by ${authorName}` : ''} on diVine`,
-    ogTitle: currentVideo?.title || 'Video on diVine',
-    ogDescription: currentVideo?.content || 'Watch this video on diVine',
+    title: currentVideo?.title || 'Video on Divine',
+    description: currentVideo?.content || `Watch this video${authorName ? ` by ${authorName}` : ''} on Divine`,
+    ogTitle: currentVideo?.title || 'Video on Divine',
+    ogDescription: currentVideo?.content || 'Watch this video on Divine',
     ogImage: currentVideo?.thumbnailUrl || '/og.avif',
     ogType: 'video.other',
     twitterCard: 'summary_large_image',
-    twitterTitle: currentVideo?.title || 'Video on diVine',
-    twitterDescription: currentVideo?.content || 'Watch this video on diVine',
+    twitterTitle: currentVideo?.title || 'Video on Divine',
+    twitterDescription: currentVideo?.content || 'Watch this video on Divine',
     twitterImage: currentVideo?.thumbnailUrl || '/og.avif',
   });
 
