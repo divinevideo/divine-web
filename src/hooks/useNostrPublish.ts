@@ -19,11 +19,15 @@ export function useNostrPublish(): UseMutationResult<NostrEvent> {
           tags.push(["client", location.hostname]);
         }
 
+        // Include pubkey in the unsigned event for signers (like DivineJWTSigner)
+        // that forward to an API expecting pubkey to already be set.
+        const pubkey = user.pubkey;
         const event = await signer.signEvent({
           kind: t.kind,
           content: t.content ?? "",
           tags,
           created_at: t.created_at ?? Math.floor(Date.now() / 1000),
+          pubkey,
         });
 
         await nostr.event(event, { signal: AbortSignal.timeout(5000) });
