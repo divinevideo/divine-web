@@ -96,6 +96,19 @@ async function handleRequest(event) {
     return Response.redirect(redirect.url, redirect.status);
   }
 
+  // 3b. Handle /@username paths on apex domain (e.g., divine.video/@samuelgrubbs)
+  const atUsernameMatch = url.pathname.match(/^\/@([a-zA-Z0-9_-]+)$/);
+  if (atUsernameMatch) {
+    const username = atUsernameMatch[1].toLowerCase();
+    console.log('Handling @username profile for:', username);
+    try {
+      return await handleSubdomainProfile(username, url, request, hostnameToUse);
+    } catch (err) {
+      console.error('@username profile error:', err.message, err.stack);
+      // Fall through to SPA handler which will render the client-side @username route
+    }
+  }
+
   // 4. Handle .well-known requests
   if (url.pathname.startsWith('/.well-known/')) {
     // 4a. NIP-05 from KV store
