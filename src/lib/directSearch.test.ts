@@ -108,6 +108,7 @@ describe('directSearch', () => {
       path: buildVideoPath('hBFP5LFKUOU'),
       entity: 'video',
     });
+    expect(getDirectSearchTarget('https://vine.co/v/hBFP5LFKUOU/extra')).toBeNull();
   });
 
   it('routes vine user urls to the universal user page', () => {
@@ -123,6 +124,7 @@ describe('directSearch', () => {
       path: '/u/1080167736266633216',
       entity: 'profile',
     });
+    expect(getDirectSearchTarget('https://vine.co/u/1080167736266633216/extra')).toBeNull();
   });
 
   it('routes legacy vine profile urls to the universal user page', () => {

@@ -124,14 +124,14 @@ function getVineDirectTarget(value: string): DirectSearchTarget | null {
     return null;
   }
 
-  if (segments[0] === 'v' && segments[1]) {
+  if (segments[0] === 'v' && segments.length === 2) {
     return {
       path: buildVideoPath(segments[1]),
       entity: 'video',
     };
   }
 
-  if (segments[0] === 'u' && segments[1]) {
+  if (segments[0] === 'u' && segments.length === 2) {
     if (!VINE_USER_ID_PATTERN.test(segments[1])) {
       return null;
     }
