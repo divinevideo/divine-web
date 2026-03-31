@@ -1,69 +1,79 @@
-// ABOUTME: Page for /@username routes (e.g., divine.video/@samuelgrubbs)
-// ABOUTME: Checks edge-injected data first, then looks up username via KV/API and redirects to profile
+// ABOUTME: Resolves divine.video/@username to username.divine.video via NIP-05 lookup
+// ABOUTME: Fetches /.well-known/nostr.json and redirects to the user's subdomain profile
 
 import { useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { nip19 } from 'nostr-tools';
 import { Card, CardContent } from '@/components/ui/card';
 import { AlertCircle, Loader2 } from 'lucide-react';
-import { getSubdomainUser } from '@/hooks/useSubdomainUser';
-import ProfilePage from './ProfilePage';
+import { debugLog } from '@/lib/debug';
 
-/**
- * Look up a username via the Funnelcake API's NIP-05 resolution
- */
-function useUsernameLookup(username: string | undefined) {
-  // If edge worker already injected user data, skip the lookup
-  const subdomainUser = getSubdomainUser();
+const HEX_64_PATTERN = /^[0-9a-f]{64}$/i;
+const APEX_DOMAIN = 'divine.video';
 
+function decodeUsername(raw: string): string {
+  try {
+    return decodeURIComponent(raw).toLowerCase().trim();
+  } catch {
+    return raw.toLowerCase().trim();
+  }
+}
+
+function useNip05Lookup(username: string | undefined) {
   return useQuery({
-    queryKey: ['at-username', username],
+    queryKey: ['at-username-nip05', username],
     queryFn: async ({ signal }) => {
-      if (!username) throw new Error('No username provided');
+      if (!username) throw new Error('No username');
 
-      // Look up username via NIP-05 resolution (divine.video/.well-known/nostr.json)
-      const divineNip05 = await fetch(
-        `https://divine.video/.well-known/nostr.json?name=${encodeURIComponent(username)}`,
-        { signal }
+      const decoded = decodeUsername(username);
+      debugLog('[AtUsernamePage] Looking up NIP-05 for:', decoded);
+
+      const response = await fetch(
+        `/.well-known/nostr.json?name=${encodeURIComponent(decoded)}`,
+        { signal },
       );
-      if (divineNip05.ok) {
-        const data = await divineNip05.json();
-        const pubkey = data.names?.[username] || data.names?.[username.toLowerCase()];
-        if (pubkey) {
-          return { pubkey, npub: nip19.npubEncode(pubkey) };
-        }
+
+      if (!response.ok) {
+        throw new Error(`NIP-05 lookup failed: ${response.status}`);
       }
 
-      throw new Error(`User @${username} not found`);
+      const data = await response.json();
+      const pubkey = data?.names?.[decoded];
+
+      if (!pubkey || typeof pubkey !== 'string' || !HEX_64_PATTERN.test(pubkey)) {
+        throw new UserNotFoundError(decoded);
+      }
+
+      debugLog('[AtUsernamePage] Resolved:', decoded);
+      return { username: decoded, pubkey };
     },
-    enabled: !!username && !subdomainUser,
-    staleTime: 300000,
-    gcTime: 600000,
-    retry: 1,
+    enabled: !!username,
+    staleTime: 300_000,
+    gcTime: 600_000,
+    retry: (failureCount, error) =>
+      !(error instanceof UserNotFoundError) && failureCount < 2,
   });
 }
 
-export function AtUsernamePage() {
-  // Username comes from either /@:username route or /:nip19 catch-all (with @ prefix)
-  const params = useParams<{ username?: string; nip19?: string }>();
-  const username = params.username || params.nip19?.replace(/^@/, '');
-  const navigate = useNavigate();
-  const subdomainUser = getSubdomainUser();
+class UserNotFoundError extends Error {}
 
-  // All hooks must be called before any conditional returns
-  const { data, isLoading, error } = useUsernameLookup(username);
+interface AtUsernamePageProps {
+  username: string;
+}
+
+export function AtUsernamePage({ username }: AtUsernamePageProps) {
+  const navigate = useNavigate();
+  const { data, isLoading, error } = useNip05Lookup(username);
 
   useEffect(() => {
-    if (data?.npub) {
-      navigate(`/profile/${data.npub}`, { replace: true });
+    if (data) {
+      const href = `https://${data.username}.${APEX_DOMAIN}`;
+      debugLog('[AtUsernamePage] Redirecting to:', href);
+      window.location.href = href;
     }
-  }, [data, navigate]);
+  }, [data]);
 
-  // If edge worker injected the user data, render ProfilePage directly
-  if (subdomainUser) {
-    return <ProfilePage />;
-  }
+  const decoded = decodeUsername(username);
 
   if (isLoading) {
     return (
@@ -72,7 +82,9 @@ export function AtUsernamePage() {
           <CardContent className="py-12">
             <div className="flex flex-col items-center justify-center space-y-4">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              <p className="text-muted-foreground">Looking up @{username}...</p>
+              <p className="text-muted-foreground">
+                Looking up @{decoded}...
+              </p>
             </div>
           </CardContent>
         </Card>
@@ -89,17 +101,8 @@ export function AtUsernamePage() {
               <AlertCircle className="h-12 w-12 text-destructive" />
               <h2 className="text-xl font-semibold">User Not Found</h2>
               <p className="text-muted-foreground text-center max-w-md">
-                Could not find user
-                <code className="text-sm bg-muted px-2 py-1 rounded ml-2">@{username}</code>
-              </p>
-              <p className="text-sm text-muted-foreground text-center max-w-md">
-                Try visiting their profile at{' '}
-                <a
-                  href={`https://${username}.divine.video`}
-                  className="text-primary hover:underline"
-                >
-                  {username}.divine.video
-                </a>
+                Could not find a user with username:
+                <code className="text-sm bg-muted px-2 py-1 rounded ml-2">@{decoded}</code>
               </p>
               <button
                 onClick={() => navigate('/')}
@@ -114,13 +117,16 @@ export function AtUsernamePage() {
     );
   }
 
+  // Redirecting state
   return (
     <div className="container max-w-4xl mx-auto px-4 py-8">
       <Card className="border-dashed">
         <CardContent className="py-12">
           <div className="flex flex-col items-center justify-center space-y-4">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <p className="text-muted-foreground">Redirecting to profile...</p>
+            <p className="text-muted-foreground">
+              Redirecting to {decoded}.{APEX_DOMAIN}...
+            </p>
           </div>
         </CardContent>
       </Card>

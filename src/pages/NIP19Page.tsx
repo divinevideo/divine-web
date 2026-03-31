@@ -10,9 +10,9 @@ export function NIP19Page() {
     return <NotFound />;
   }
 
-  // Handle @username patterns (e.g., divine.video/@samuelgrubbs)
+  // Handle @username pattern (e.g., divine.video/@alice)
   if (identifier.startsWith('@') && identifier.length > 1) {
-    return <AtUsernamePage />;
+    return <AtUsernamePage username={identifier.slice(1)} />;
   }
 
   const target = getDirectSearchTarget(identifier);
