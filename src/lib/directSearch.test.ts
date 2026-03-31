@@ -139,6 +139,10 @@ describe('directSearch', () => {
   });
 
   it('rejects reserved and nested vine paths', () => {
+    expect(getDirectSearchTarget('https://vine.co/v')).toBeNull();
+    expect(getDirectSearchTarget('https://vine.co/v/')).toBeNull();
+    expect(getDirectSearchTarget('https://vine.co/u')).toBeNull();
+    expect(getDirectSearchTarget('https://vine.co/u/')).toBeNull();
     expect(getDirectSearchTarget('https://vine.co/about')).toBeNull();
     expect(getDirectSearchTarget('https://vine.co/messages/compose')).toBeNull();
   });

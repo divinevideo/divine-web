@@ -22,6 +22,8 @@ const VINE_RESERVED_PATHS = new Set([
   'privacy',
   'search',
   'settings',
+  'u',
+  'v',
   'terms',
 ]);
 
