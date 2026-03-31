@@ -49,14 +49,9 @@ export function AtUsernamePage() {
   const params = useParams<{ username?: string; nip19?: string }>();
   const username = params.username || params.nip19?.replace(/^@/, '');
   const navigate = useNavigate();
-
-  // If edge worker injected the user data, render ProfilePage directly
   const subdomainUser = getSubdomainUser();
-  if (subdomainUser) {
-    return <ProfilePage />;
-  }
 
-  // Client-side navigation: look up username and redirect
+  // All hooks must be called before any conditional returns
   const { data, isLoading, error } = useUsernameLookup(username);
 
   useEffect(() => {
@@ -64,6 +59,11 @@ export function AtUsernamePage() {
       navigate(`/profile/${data.npub}`, { replace: true });
     }
   }, [data, navigate]);
+
+  // If edge worker injected the user data, render ProfilePage directly
+  if (subdomainUser) {
+    return <ProfilePage />;
+  }
 
   if (isLoading) {
     return (
