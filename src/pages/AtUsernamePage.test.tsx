@@ -70,7 +70,7 @@ function mockFetchEmpty() {
 }
 
 function mockFetchError(status = 500) {
-  vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+  vi.spyOn(globalThis, 'fetch').mockResolvedValue(
     new Response('Internal Server Error', { status }),
   );
 }
@@ -126,10 +126,8 @@ describe('AtUsernamePage', () => {
   });
 
   it('shows not-found when fetch fails', async () => {
-    // Mock must return error for all retry attempts
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response('Internal Server Error', { status: 500 }),
-    );
+    // mockResolvedValue (not Once) so retries also fail
+    mockFetchError(500);
     renderPage('broken');
 
     expect(await screen.findByText('User Not Found', {}, { timeout: 5000 })).toBeInTheDocument();
