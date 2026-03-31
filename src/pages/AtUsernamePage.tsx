@@ -45,7 +45,9 @@ function useUsernameLookup(username: string | undefined) {
 }
 
 export function AtUsernamePage() {
-  const { username } = useParams<{ username: string }>();
+  // Username comes from either /@:username route or /:nip19 catch-all (with @ prefix)
+  const params = useParams<{ username?: string; nip19?: string }>();
+  const username = params.username || params.nip19?.replace(/^@/, '');
   const navigate = useNavigate();
 
   // If edge worker injected the user data, render ProfilePage directly

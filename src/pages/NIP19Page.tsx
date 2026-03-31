@@ -1,5 +1,6 @@
 import { useParams, Navigate } from 'react-router-dom';
 import { getDirectSearchTarget } from '@/lib/directSearch';
+import { AtUsernamePage } from './AtUsernamePage';
 import NotFound from './NotFound';
 
 export function NIP19Page() {
@@ -7,6 +8,11 @@ export function NIP19Page() {
 
   if (!identifier) {
     return <NotFound />;
+  }
+
+  // Handle @username patterns (e.g., divine.video/@samuelgrubbs)
+  if (identifier.startsWith('@') && identifier.length > 1) {
+    return <AtUsernamePage />;
   }
 
   const target = getDirectSearchTarget(identifier);

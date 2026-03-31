@@ -29,7 +29,6 @@ import ModerationSettingsPage from "./pages/ModerationSettingsPage";
 import LinkedAccountsSettingsPage from "./pages/LinkedAccountsSettingsPage";
 // import { NIP05ProfilePage } from "./pages/NIP05ProfilePage";
 import { UniversalUserPage } from "./pages/UniversalUserPage";
-import { AtUsernamePage } from "./pages/AtUsernamePage";
 import EventPage from "./pages/EventPage";
 
 import PrivacyPage from "./pages/PrivacyPage";
@@ -107,7 +106,6 @@ export function AppRouter() {
           <Route path="/search" element={<SearchPage />} />
           <Route path="/leaderboard" element={<LeaderboardPage />} />
           <Route path="/u/:userId" element={<UniversalUserPage />} />
-          <Route path="/@:username" element={<AtUsernamePage />} />
           <Route path="/list/:pubkey/:listId" element={<ListDetailPage />} />
           <Route path="/event/:eventId" element={<EventPage />} />
           <Route path="/event/a/:kind/:pubkey/:identifier" element={<EventPage />} />
