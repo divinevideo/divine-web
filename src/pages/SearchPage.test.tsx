@@ -160,6 +160,34 @@ describe('SearchPage', () => {
     expect(mockFetchVideoById).not.toHaveBeenCalled();
   });
 
+  it('navigates immediately when a Vine clip URL is pasted', () => {
+    renderPage();
+    const input = screen.getByRole('textbox');
+
+    fireEvent.paste(input, {
+      clipboardData: {
+        getData: () => 'https://vine.co/v/hBFP5LFKUOU',
+      },
+    });
+
+    expect(mockNavigate).toHaveBeenCalledWith('/video/hBFP5LFKUOU');
+    expect(mockFetchVideoById).not.toHaveBeenCalled();
+  });
+
+  it('navigates immediately when a Vine user URL is pasted', () => {
+    renderPage();
+    const input = screen.getByRole('textbox');
+
+    fireEvent.paste(input, {
+      clipboardData: {
+        getData: () => 'https://vine.co/u/1080167736266633216',
+      },
+    });
+
+    expect(mockNavigate).toHaveBeenCalledWith('/u/1080167736266633216');
+    expect(mockFetchVideoById).not.toHaveBeenCalled();
+  });
+
   it('looks up pasted short d tags and navigates to the matching video', async () => {
     mockFetchVideoById.mockResolvedValue({
       id: 'e'.repeat(64),
@@ -188,6 +216,37 @@ describe('SearchPage', () => {
     await waitFor(() => {
       expect(mockNavigate).toHaveBeenCalledWith('/video/clip-7');
     });
+  });
+
+  it('resolves bare pasted Vine clip IDs through the opaque video lookup flow', async () => {
+    vi.useFakeTimers();
+    mockFetchVideoById.mockResolvedValue({
+      id: 'e'.repeat(64),
+      d_tag: 'hBFP5LFKUOU',
+    });
+
+    renderPage();
+    const input = screen.getByRole('textbox');
+
+    fireEvent.paste(input, {
+      clipboardData: {
+        getData: () => 'hBFP5LFKUOU',
+      },
+    });
+    fireEvent.change(input, { target: { value: 'hBFP5LFKUOU' } });
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1);
+      await Promise.resolve();
+    });
+
+    expect(mockFetchVideoById).toHaveBeenCalledWith(
+      'https://relay.divine.video',
+      'hBFP5LFKUOU',
+      undefined,
+      expect.any(AbortSignal),
+    );
+    expect(mockNavigate).toHaveBeenCalledWith('/video/hBFP5LFKUOU');
   });
 
   it('looks up raw event ids beyond the funnelcake api fallback', async () => {
