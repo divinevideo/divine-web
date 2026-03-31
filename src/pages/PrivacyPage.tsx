@@ -1,7 +1,6 @@
 // ABOUTME: Privacy Policy page for Divine
 // ABOUTME: Explains data collection, use, disclosure, and user rights
 
-import { Link } from 'react-router-dom';
 import { ZendeskWidget } from '@/components/ZendeskWidget';
 import { MarketingLayout } from '@/components/MarketingLayout';
 
