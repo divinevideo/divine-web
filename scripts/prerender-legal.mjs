@@ -96,12 +96,13 @@ function buildPage({ title, description, path, content, shell }) {
         <footer style="background:#07241B;border-top:1px solid #27C58B;padding:24px 0;color:white;font-size:12px;">
           <div class="container mx-auto px-4 text-center">
             <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-bottom:12px;">
-              <a href="/privacy" style="color:white;">Privacy</a> &bull;
-              <a href="/terms" style="color:white;">Terms</a> &bull;
-              <a href="/safety" style="color:white;">Safety</a> &bull;
-              <a href="/dmca" style="color:white;">DMCA</a> &bull;
-              <a href="/faq" style="color:white;">FAQ</a> &bull;
               <a href="/support" style="color:white;">Help</a>
+              &bull; <a href="/terms" style="color:white;">Terms of Service</a>
+              &bull; <a href="/privacy" style="color:white;">Privacy</a>
+              &bull; <a href="/safety" style="color:white;">Safety</a>
+              &bull; <a href="/dmca" style="color:white;">DMCA &amp; Copyright</a>
+              &bull; <a href="/open-source" style="color:white;">Open Source</a>
+              &bull; <a href="https://opencollective.com/aos-collective/contribute/divine-keepers-95646" target="_blank" rel="noopener noreferrer" style="color:white;">Donate</a>
             </div>
             <p style="color:#999;">&copy; Divine Web</p>
           </div>
@@ -126,25 +127,25 @@ const PAGES = [
     path: '/terms',
     title: 'Terms of Service',
     description: 'Terms of Service for Divine Web - Short-form looping videos on the Nostr network.',
-    contentFile: 'terms-content.html',
+    sourceFile: '../src/pages/TermsPage.tsx',
   },
   {
     path: '/privacy',
     title: 'Privacy Policy',
     description: 'Privacy Policy for Divine Web - How we handle your data on the decentralized Nostr network.',
-    contentFile: 'privacy-content.html',
+    sourceFile: '../src/pages/PrivacyPage.tsx',
   },
   {
     path: '/safety',
     title: 'Safety Standards',
     description: 'Safety Standards for Divine Web - Our commitment to protecting users and preventing child exploitation.',
-    contentFile: 'safety-content.html',
+    sourceFile: '../src/pages/SafetyPage.tsx',
   },
   {
     path: '/dmca',
     title: 'DMCA & Copyright Policy',
     description: 'Copyright and DMCA Policy for Divine Web - Fair use basis, content sources, and takedown procedures.',
-    contentFile: 'dmca-content.html',
+    sourceFile: '../src/pages/DMCAPage.tsx',
   },
   {
     path: '/faq',
@@ -153,6 +154,24 @@ const PAGES = [
     contentFile: 'faq-content.html',
   },
 ];
+
+function extractContentFromTsx(sourcePath) {
+  const source = readFileSync(sourcePath, 'utf-8');
+  const match = source.match(/<ZendeskWidget\s*\/>\s*([\s\S]*?)\s*<\/div>\s*<\/MarketingLayout>/);
+
+  if (!match) {
+    throw new Error(`Could not extract prerender content from ${sourcePath}`);
+  }
+
+  return match[1]
+    .replace(/\{\/\*[\s\S]*?\*\/\}/g, '')
+    .replace(/<Link\s+to=/g, '<a href=')
+    .replace(/<\/Link>/g, '</a>')
+    .replace(/className=/g, 'class=')
+    .replace(/\{\s*' '\s*\}/g, ' ')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
 
 // ── Main ──────────────────────────────────────────────────────────────────
 
@@ -177,13 +196,23 @@ function main() {
   const scriptMatch = indexHtml.match(/<script[^>]+src="([^"]+)"[^>]*>/);
 
   for (const page of PAGES) {
-    const contentPath = join(__dirname, 'prerender-content', page.contentFile);
-    if (!existsSync(contentPath)) {
-      console.warn(`Skipping ${page.path}: content file not found at ${contentPath}`);
-      continue;
+    let content;
+    if (page.sourceFile) {
+      const sourcePath = join(__dirname, page.sourceFile);
+      if (!existsSync(sourcePath)) {
+        console.warn(`Skipping ${page.path}: source file not found at ${sourcePath}`);
+        continue;
+      }
+      content = extractContentFromTsx(sourcePath);
+    } else {
+      const contentPath = join(__dirname, 'prerender-content', page.contentFile);
+      if (!existsSync(contentPath)) {
+        console.warn(`Skipping ${page.path}: content file not found at ${contentPath}`);
+        continue;
+      }
+      content = readFileSync(contentPath, 'utf-8');
     }
 
-    const content = readFileSync(contentPath, 'utf-8');
     const html = buildPage({
       title: page.title,
       description: page.description,
