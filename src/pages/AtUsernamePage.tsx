@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent } from '@/components/ui/card';
 import { AlertCircle, Loader2 } from 'lucide-react';
+import { getSubdomainUser } from '@/hooks/useSubdomainUser';
 import { debugLog } from '@/lib/debug';
 
 const HEX_64_PATTERN = /^[0-9a-f]{64}$/i;
@@ -63,7 +64,18 @@ interface AtUsernamePageProps {
 
 export function AtUsernamePage({ username }: AtUsernamePageProps) {
   const navigate = useNavigate();
-  const { data, isLoading, error } = useNip05Lookup(username);
+  const subdomainUser = getSubdomainUser();
+
+  // On subdomains, NIP-05 serves the subdomain owner, not the ?name= query.
+  // Redirect to the apex domain so the lookup resolves correctly.
+  useEffect(() => {
+    if (subdomainUser) {
+      const decoded = decodeUsername(username);
+      window.location.href = `https://${APEX_DOMAIN}/@${decoded}`;
+    }
+  }, [subdomainUser, username]);
+
+  const { data, isLoading, error } = useNip05Lookup(subdomainUser ? undefined : username);
 
   useEffect(() => {
     if (data) {

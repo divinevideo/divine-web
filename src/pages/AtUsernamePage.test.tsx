@@ -19,6 +19,11 @@ vi.mock('@/lib/debug', () => ({
   debugLog: vi.fn(),
 }));
 
+const mockGetSubdomainUser = vi.hoisted(() => vi.fn(() => null));
+vi.mock('@/hooks/useSubdomainUser', () => ({
+  getSubdomainUser: mockGetSubdomainUser,
+}));
+
 vi.mock('@/components/ui/card', () => ({
   Card: ({ children, ...props }: HTMLAttributes<HTMLDivElement>) => <div {...props}>{children}</div>,
   CardContent: ({ children, ...props }: HTMLAttributes<HTMLDivElement>) => <div {...props}>{children}</div>,
@@ -150,5 +155,31 @@ describe('AtUsernamePage', () => {
     renderPage('loading');
 
     expect(screen.getByText('Looking up @loading...')).toBeInTheDocument();
+  });
+
+  it('redirects to apex domain when on a subdomain', async () => {
+    mockGetSubdomainUser.mockReturnValue({
+      subdomain: 'alice',
+      pubkey: 'b'.repeat(64),
+      npub: 'npub1test',
+      username: 'alice',
+      displayName: 'Alice',
+      picture: null,
+      banner: null,
+      about: null,
+      nip05: '_@alice.divine.video',
+      followersCount: 0,
+      followingCount: 0,
+      videoCount: 0,
+      apexDomain: 'divine.video',
+    });
+    renderPage('bob');
+
+    await waitFor(() => {
+      expect(window.location.href).toMatch(/^https:\/\/divine\.video\/@bob\/?$/);
+    });
+
+    // Should NOT have attempted a NIP-05 fetch
+    expect(globalThis.fetch).not.toHaveBeenCalled();
   });
 });
