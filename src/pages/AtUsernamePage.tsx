@@ -18,18 +18,19 @@ function useUsernameLookup(username: string | undefined) {
   const subdomainUser = getSubdomainUser();
 
   return useQuery({
-    queryKey: ['at-username', username],
+    queryKey: ['at-username', username?.toLowerCase()],
     queryFn: async ({ signal }) => {
       if (!username) throw new Error('No username provided');
+      const normalizedUsername = username.toLowerCase();
 
       // Look up username via NIP-05 resolution (divine.video/.well-known/nostr.json)
       const divineNip05 = await fetch(
-        `https://divine.video/.well-known/nostr.json?name=${encodeURIComponent(username)}`,
+        `https://divine.video/.well-known/nostr.json?name=${encodeURIComponent(normalizedUsername)}`,
         { signal }
       );
       if (divineNip05.ok) {
         const data = await divineNip05.json();
-        const pubkey = data.names?.[username] || data.names?.[username.toLowerCase()];
+        const pubkey = data.names?.[normalizedUsername];
         if (pubkey) {
           return { pubkey, npub: nip19.npubEncode(pubkey) };
         }
