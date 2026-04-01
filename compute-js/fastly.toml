@@ -2,7 +2,7 @@
 # https://www.fastly.com/documentation/reference/compute/fastly-toml
 
 authors = ["you@example.com"]
-description = "diVine video app for Nostr"
+description = "Divine video app for Nostr"
 language = "javascript"
 manifest_version = 3
 name = "divine-web"
