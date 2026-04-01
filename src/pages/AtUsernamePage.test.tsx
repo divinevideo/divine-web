@@ -19,7 +19,8 @@ vi.mock('@/lib/debug', () => ({
   debugLog: vi.fn(),
 }));
 
-const mockGetSubdomainUser = vi.hoisted(() => vi.fn(() => null));
+const mockGetSubdomainUser = vi.hoisted(() => vi.fn((): SubdomainUser | null => null));
+type SubdomainUser = import('@/hooks/useSubdomainUser').SubdomainUser;
 vi.mock('@/hooks/useSubdomainUser', () => ({
   getSubdomainUser: mockGetSubdomainUser,
 }));
