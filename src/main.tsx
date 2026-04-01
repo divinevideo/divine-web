@@ -78,6 +78,9 @@ if ('serviceWorker' in navigator && !isSubdomain) {
   });
 }
 
+// Edge-templated pages have visible content inside #root already.
+// React replaces it with the full interactive app (createRoot clears children).
+// The edge content provides fast first-paint; React takes over for interactivity.
 createRoot(document.getElementById("root")!).render(
   <ErrorBoundary>
     <App />
