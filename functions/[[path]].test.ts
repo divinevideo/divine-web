@@ -5,16 +5,16 @@ import { onRequest } from './[[path]]';
 const INDEX_HTML = `<!DOCTYPE html>
 <html lang="en">
   <head>
-    <title>diVine Web - Short-form Looping Videos on Nostr</title>
+    <title>Divine Web - Short-form Looping Videos on Nostr</title>
     <meta name="description" content="Watch and share 6-second looping videos on the decentralized Nostr network." />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://divine.video/" />
-    <meta property="og:title" content="diVine Web - Short-form Looping Videos on Nostr" />
+    <meta property="og:title" content="Divine Web - Short-form Looping Videos on Nostr" />
     <meta property="og:description" content="Watch and share 6-second looping videos on the decentralized Nostr network." />
     <meta property="og:image" content="https://divine.video/og.png" />
-    <meta property="og:image:alt" content="diVine Web - Short-form looping videos on the Nostr network" />
+    <meta property="og:image:alt" content="Divine Web - Short-form looping videos on the Nostr network" />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="diVine Web - Short-form Looping Videos on Nostr" />
+    <meta name="twitter:title" content="Divine Web - Short-form Looping Videos on Nostr" />
     <meta name="twitter:description" content="Watch and share 6-second looping videos on the decentralized Nostr network." />
     <meta name="twitter:image" content="https://divine.video/og.png" />
   </head>
@@ -98,7 +98,7 @@ describe('functions/[[path]]', () => {
     const html = await response.text();
 
     expect(response.status).toBe(200);
-    expect(html).toContain(`<title>${'diVine Web - Short-form Looping Videos on Nostr'}</title>`);
+    expect(html).toContain(`<title>${'Divine Web - Short-form Looping Videos on Nostr'}</title>`);
     expect(html).not.toContain('property="og:video"');
   });
 });

@@ -771,8 +771,8 @@ async function handleSubdomainProfile(subdomain, url, request, originalHostname)
   const userScript = `<script>window.__DIVINE_USER__ = ${JSON.stringify(divineUser)};</script>`;
 
   // Update OG tags for the profile
-  const ogTitle = divineUser.displayName + ' on diVine';
-  const ogDescription = divineUser.about || `Watch ${divineUser.displayName}'s videos on diVine`;
+  const ogTitle = divineUser.displayName + ' on Divine';
+  const ogDescription = divineUser.about || `Watch ${divineUser.displayName}'s videos on Divine`;
   const ogImage = divineUser.picture || 'https://divine.video/og.png';
   const ogUrl = `https://${subdomain}.${apexDomain}/`;
 
@@ -982,15 +982,15 @@ async function fetchVideoMetadata(videoId) {
       description = content.trim();
     } else if (statsList.length > 0) {
       // Show engagement stats
-      description = `${statsList.join(' • ')} on diVine`;
+      description = `${statsList.join(' • ')} on Divine`;
     } else {
-      description = 'Watch this short video on diVine';
+      description = 'Watch this short video on Divine';
     }
 
     console.log('Fetched video metadata - title:', title, 'thumbnail:', thumbnail);
 
     return {
-      title: title || 'Video on diVine',
+      title: title || 'Video on Divine',
       description: description,
       thumbnail: thumbnail || 'https://divine.video/og.avif',
       authorName: getTag('author') || '',
@@ -1018,8 +1018,8 @@ async function handleVideoOgTags(request, videoId, url) {
     }
 
     // Default meta values if video not found
-    const title = videoMeta?.title || 'Video on diVine';
-    const description = videoMeta?.description || 'Watch this video on diVine - Short-form looping videos on Nostr';
+    const title = videoMeta?.title || 'Video on Divine';
+    const description = videoMeta?.description || 'Watch this video on Divine - Short-form looping videos on Nostr';
     const thumbnail = videoMeta?.thumbnail || 'https://divine.video/og.avif';
     const authorName = videoMeta?.authorName || '';
     const videoUrl = `https://divine.video/video/${videoId}`;
@@ -1033,7 +1033,7 @@ async function handleVideoOgTags(request, videoId, url) {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${escapeHtml(title)} - diVine</title>
+  <title>${escapeHtml(title)} - Divine</title>
 
   <!-- Open Graph Meta Tags -->
   <meta property="og:type" content="video.other" />
@@ -1043,7 +1043,7 @@ async function handleVideoOgTags(request, videoId, url) {
   <meta property="og:image:width" content="480" />
   <meta property="og:image:height" content="480" />
   <meta property="og:url" content="${escapeHtml(videoUrl)}" />
-  <meta property="og:site_name" content="diVine" />
+  <meta property="og:site_name" content="Divine" />
 
   <!-- Twitter Card Meta Tags -->
   <meta name="twitter:card" content="summary_large_image" />

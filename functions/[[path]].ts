@@ -156,13 +156,13 @@ async function fetchVideoMeta(url: URL): Promise<PageMeta | null> {
 
     const title = getTagValue(payload.event.tags, 'title')
       || getTagValue(payload.event.tags, 'alt')
-      || 'Video on diVine';
+      || 'Video on Divine';
     const authorName = payload.stats?.author_name;
     const description = truncateText(
       getTagValue(payload.event.tags, 'summary')
         || payload.event.content
         || getTagValue(payload.event.tags, 'alt')
-        || (authorName ? `Watch this video by ${authorName} on diVine` : 'Watch this video on diVine'),
+        || (authorName ? `Watch this video by ${authorName} on Divine` : 'Watch this video on Divine'),
       200
     );
     const media = parseImeta(payload.event.tags);
