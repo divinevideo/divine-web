@@ -6,22 +6,12 @@ import { renderHook, waitFor } from '@testing-library/react';
 import { useWindowNostrJWT } from './useWindowNostrJWT';
 import { removeWindowNostr } from '@/lib/bunkerToWindowNostr';
 
-// Mock the DivineJWTSigner
+const { mockDivineJWTSigner } = vi.hoisted(() => ({
+  mockDivineJWTSigner: vi.fn(),
+}));
+
 vi.mock('@/lib/DivineJWTSigner', () => ({
-  DivineJWTSigner: vi.fn().mockImplementation(({ token }) => ({
-    getPublicKey: vi.fn().mockResolvedValue('a'.repeat(64)),
-    signEvent: vi.fn().mockResolvedValue({
-      id: 'event-id',
-      pubkey: 'a'.repeat(64),
-      sig: 'signature',
-      kind: 1,
-      content: 'test',
-      tags: [],
-      created_at: 1234567890,
-    }),
-    updateToken: vi.fn(),
-    token,
-  })),
+  DivineJWTSigner: mockDivineJWTSigner,
 }));
 
 describe('useWindowNostrJWT', () => {
@@ -29,6 +19,20 @@ describe('useWindowNostrJWT', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mockDivineJWTSigner.mockImplementation(({ token }) => ({
+      getPublicKey: vi.fn().mockResolvedValue('a'.repeat(64)),
+      signEvent: vi.fn().mockResolvedValue({
+        id: 'event-id',
+        pubkey: 'a'.repeat(64),
+        sig: 'signature',
+        kind: 1,
+        content: 'test',
+        tags: [],
+        created_at: 1234567890,
+      }),
+      updateToken: vi.fn(),
+      token,
+    }));
     removeWindowNostr();
   });
 
@@ -189,9 +193,33 @@ describe('useWindowNostrJWT', () => {
     expect(result.current.isInitializing).toBe(false);
   });
 
-  it.skip('should handle initialization errors', async () => {
-    // Skipping this test due to TypeScript mock complexity
-    // TODO: Fix mock setup for error handling test
+  it('should handle initialization errors', async () => {
+    const initError = new Error('signer init failed');
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    mockDivineJWTSigner.mockImplementationOnce(({ token }) => ({
+      getPublicKey: vi.fn().mockRejectedValue(initError),
+      signEvent: vi.fn(),
+      updateToken: vi.fn(),
+      token,
+    }));
+
+    const { result } = renderHook(() =>
+      useWindowNostrJWT({ token: mockToken, autoInject: true })
+    );
+
+    await waitFor(() => {
+      expect(result.current.error).toBe(initError);
+    });
+
+    expect(result.current.signer).toBeNull();
+    expect(result.current.isInitializing).toBe(false);
+    expect(result.current.isInjected).toBe(false);
+    expect(window.nostr).toBeUndefined();
+    expect(errorSpy).toHaveBeenCalledWith(
+      '[useWindowNostrJWT] ❌ Failed to verify signer:',
+      initError
+    );
   });
 
   it('should not inject when manual inject is called without signer', () => {
