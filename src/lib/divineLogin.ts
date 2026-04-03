@@ -1,7 +1,8 @@
 import { createDivineClient } from '@divinevideo/login';
 import { getPublicKey, nip19 } from 'nostr-tools';
 
-const DIVINE_LOGIN_BASE_URL = import.meta.env.VITE_DIVINE_LOGIN_URL || 'https://login.divine.video';
+import { DIVINE_LOGIN_ORIGIN } from './divineLoginOrigin';
+
 const DIVINE_LOGIN_CLIENT_ID = 'divine-web';
 const RETURN_PATH_PREFIX = 'divine:return-path:';
 
@@ -37,7 +38,7 @@ function buildCallbackUrl(): string {
 
 function createClient(fetchImpl?: typeof fetch) {
   return createDivineClient({
-    serverUrl: DIVINE_LOGIN_BASE_URL,
+    serverUrl: DIVINE_LOGIN_ORIGIN,
     clientId: DIVINE_LOGIN_CLIENT_ID,
     redirectUri: buildCallbackUrl(),
     ...(fetchImpl ? {

@@ -8,6 +8,7 @@ import {
   exchangeDivineLoginCallback,
   parseDivineLoginCallback,
 } from './divineLogin';
+import { DIVINE_LOGIN_ORIGIN } from './divineLoginOrigin';
 
 const fetchMock = vi.fn<typeof fetch>();
 const originalLocation = window.location;
@@ -64,7 +65,7 @@ describe('divineLogin', () => {
     const redirect = await buildSignupRedirect({ returnPath: '/messages' });
     const url = new URL(redirect.url);
 
-    expect(`${url.origin}${url.pathname}`).toBe('https://login.divine.video/api/oauth/authorize');
+    expect(`${url.origin}${url.pathname}`).toBe(`${DIVINE_LOGIN_ORIGIN}/api/oauth/authorize`);
     expect(url.searchParams.get('client_id')).toBe('divine-web');
     expect(url.searchParams.get('redirect_uri')).toBe('https://divine.video/auth/callback');
     expect(url.searchParams.get('default_register')).toBe('true');
@@ -76,7 +77,7 @@ describe('divineLogin', () => {
     const redirect = await buildLoginRedirect({ returnPath: '/messages' });
     const url = new URL(redirect.url);
 
-    expect(`${url.origin}${url.pathname}`).toBe('https://login.divine.video/api/oauth/authorize');
+    expect(`${url.origin}${url.pathname}`).toBe(`${DIVINE_LOGIN_ORIGIN}/api/oauth/authorize`);
     expect(url.searchParams.get('client_id')).toBe('divine-web');
     expect(url.searchParams.get('redirect_uri')).toBe('https://divine.video/auth/callback');
     expect(url.searchParams.get('default_register')).toBeNull();
@@ -94,7 +95,7 @@ describe('divineLogin', () => {
     const redirect = await buildSecureAccountRedirect(nsec, { returnPath: '/settings/linked-accounts' });
     const url = new URL(redirect.url);
 
-    expect(`${url.origin}${url.pathname}`).toBe('https://login.divine.video/api/oauth/authorize');
+    expect(`${url.origin}${url.pathname}`).toBe(`${DIVINE_LOGIN_ORIGIN}/api/oauth/authorize`);
     expect(url.searchParams.get('byok_pubkey')).toBe(getPublicKey(decoded.data));
     expect(url.searchParams.get('default_register')).toBe('true');
     expect(redirect.url).not.toContain(nsec);
@@ -174,7 +175,7 @@ describe('divineLogin', () => {
     });
 
     expect(fetchMock).toHaveBeenCalledWith(
-      'https://login.divine.video/api/oauth/token',
+      `${DIVINE_LOGIN_ORIGIN}/api/oauth/token`,
       expect.objectContaining({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

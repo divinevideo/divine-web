@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { DivineJWTSigner } from './DivineJWTSigner';
+import { DIVINE_LOGIN_ORIGIN } from './divineLoginOrigin';
 
 const mockFetch = vi.fn();
 global.fetch = mockFetch as unknown as typeof fetch;
@@ -28,7 +29,7 @@ describe('DivineJWTSigner', () => {
 
     expect(pubkey).toBe(mockPubkey);
     expect(mockFetch).toHaveBeenCalledWith(
-      'https://login.divine.video/api/nostr',
+      `${DIVINE_LOGIN_ORIGIN}/api/nostr`,
       expect.objectContaining({
         method: 'POST',
         headers: {
@@ -100,7 +101,7 @@ describe('DivineJWTSigner', () => {
     await expect(signer.signEvent(unsignedEvent)).resolves.toEqual(signedEvent);
     expect(mockFetch).toHaveBeenNthCalledWith(
       1,
-      'https://login.divine.video/api/nostr',
+      `${DIVINE_LOGIN_ORIGIN}/api/nostr`,
       expect.objectContaining({
         method: 'POST',
         headers: {
@@ -115,7 +116,7 @@ describe('DivineJWTSigner', () => {
     );
     expect(mockFetch).toHaveBeenNthCalledWith(
       2,
-      'https://login.divine.video/api/nostr',
+      `${DIVINE_LOGIN_ORIGIN}/api/nostr`,
       expect.objectContaining({
         method: 'POST',
         headers: {
@@ -146,7 +147,7 @@ describe('DivineJWTSigner', () => {
 
     expect(mockFetch).toHaveBeenNthCalledWith(
       1,
-      'https://login.divine.video/api/nostr',
+      `${DIVINE_LOGIN_ORIGIN}/api/nostr`,
       expect.objectContaining({
         body: JSON.stringify({
           method: 'nip04_encrypt',
@@ -156,7 +157,7 @@ describe('DivineJWTSigner', () => {
     );
     expect(mockFetch).toHaveBeenNthCalledWith(
       2,
-      'https://login.divine.video/api/nostr',
+      `${DIVINE_LOGIN_ORIGIN}/api/nostr`,
       expect.objectContaining({
         body: JSON.stringify({
           method: 'nip44_encrypt',

@@ -1,10 +1,11 @@
 // ABOUTME: JWT-based Nostr signer backed by the hosted Divine login RPC API
-// ABOUTME: Implements the NostrSigner interface on top of login.divine.video/api/nostr
+// ABOUTME: Implements the NostrSigner interface on top of the Divine login RPC API
 
 import { DivineRpc } from '@divinevideo/login';
 import type { NostrEvent, NostrSigner } from '@nostrify/nostrify';
 
-const DIVINE_LOGIN_SERVER_URL = import.meta.env.VITE_DIVINE_LOGIN_URL || 'https://login.divine.video';
+import { DIVINE_LOGIN_ORIGIN } from './divineLoginOrigin';
+
 type DivineRpcUnsignedEvent = Parameters<DivineRpc['signEvent']>[0];
 
 export interface DivineJWTSignerOptions {
@@ -26,7 +27,7 @@ export class DivineJWTSigner implements NostrSigner {
 
   constructor(options: DivineJWTSignerOptions) {
     this.token = options.token;
-    this.serverUrl = options.serverUrl || DIVINE_LOGIN_SERVER_URL;
+    this.serverUrl = options.serverUrl || DIVINE_LOGIN_ORIGIN;
     this.timeout = options.timeout || 10000;
   }
 
