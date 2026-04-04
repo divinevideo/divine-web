@@ -59,14 +59,14 @@ export function AppHeader({ className }: AppHeaderProps) {
           </button>
         </div>
         <div className="flex items-center gap-2">
-          {/* Main navigation - hidden on mobile when BottomNav is visible */}
+          {/* Main navigation - hidden on mobile/tablet when BottomNav is visible */}
           {user && (
             <Button
               variant="ghost"
               size="sm"
               onClick={() => navigate('/')}
               className={cn(
-                "hidden md:flex items-center gap-2",
+                "hidden lg:flex items-center gap-2",
                 isActive('/') && "bg-primary text-primary-foreground"
               )}
             >
@@ -79,7 +79,7 @@ export function AppHeader({ className }: AppHeaderProps) {
             size="sm"
             onClick={() => navigate('/discovery')}
             className={cn(
-              "hidden md:flex items-center gap-2",
+              "hidden lg:flex items-center gap-2",
               isActive('/discovery') && "bg-primary text-primary-foreground"
             )}
           >
@@ -91,7 +91,7 @@ export function AppHeader({ className }: AppHeaderProps) {
             size="sm"
             onClick={() => navigate('/search')}
             className={cn(
-              "hidden md:flex items-center gap-2",
+              "hidden lg:flex items-center gap-2",
               isActive('/search') && "bg-primary text-primary-foreground"
             )}
           >
