@@ -238,13 +238,15 @@ export function useReportContent() {
       pubkey,
       reason,
       details,
-      contentType = 'video'
+      contentType = 'video',
+      reporterName,
     }: {
       eventId?: string;
       pubkey?: string;
       reason: ContentFilterReason;
       details?: string;
       contentType?: 'video' | 'user' | 'comment';
+      reporterName?: string;
     }) => {
       if (!user) throw new Error('Must be logged in to report content');
 
@@ -274,6 +276,7 @@ export function useReportContent() {
       // Fire-and-forget Zendesk ticket creation
       submitReportToZendesk({
         reporterPubkey: user.pubkey,
+        reporterName,
         eventId,
         pubkey,
         contentType,
