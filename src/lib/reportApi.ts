@@ -3,6 +3,7 @@
 
 export interface ReportPayload {
   reporterPubkey?: string;
+  reporterName?: string;
   reporterEmail?: string;
   eventId?: string;
   pubkey?: string;

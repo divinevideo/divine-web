@@ -4,6 +4,7 @@
 import { useState } from 'react';
 import { useReportContent } from '@/hooks/useModeration';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { useAuthor } from '@/hooks/useAuthor';
 import { useLoginDialog } from '@/contexts/LoginDialogContext';
 import {
   Dialog,
@@ -37,6 +38,7 @@ export function ReportContentDialog({
 }: ReportContentDialogProps) {
   const { toast } = useToast();
   const { user } = useCurrentUser();
+  const { data: authorData } = useAuthor(user?.pubkey);
   const { openLoginDialog } = useLoginDialog();
   const reportContent = useReportContent();
   const isLoggedIn = !!user;
@@ -63,6 +65,7 @@ export function ReportContentDialog({
         reason,
         details: details.trim() || undefined,
         contentType,
+        reporterName: authorData?.metadata?.display_name || authorData?.metadata?.name,
       });
 
       toast({

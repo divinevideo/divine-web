@@ -447,7 +447,7 @@ async function handleReport(req) {
       });
     }
 
-    const { contentType, reason, timestamp, eventId, pubkey, reporterPubkey, reporterEmail, details, contentUrl } = body;
+    const { contentType, reason, timestamp, eventId, pubkey, reporterPubkey, reporterName, reporterEmail, details, contentUrl } = body;
 
     // Validate required fields
     if (!contentType || !reason || !timestamp) {
@@ -517,7 +517,7 @@ async function handleReport(req) {
       ticket: {
         subject,
         comment: { body: bodyParts.join('\n') },
-        requester: { email: requesterEmail },
+        requester: { email: requesterEmail, name: reporterName || reporterPubkey || reporterEmail },
         tags,
         priority,
       },
