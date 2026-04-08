@@ -13,6 +13,7 @@ import { isFunnelcakeAvailable } from '@/lib/funnelcakeHealth';
 import { debugLog } from '@/lib/debug';
 import { transformToVideoPage } from '@/lib/funnelcakeTransform';
 import { reportFunnelcakeFallback } from '@/lib/funnelcakeFallbackReporting';
+import { isUrlLikeQuery } from '@/lib/searchUtils';
 
 interface UseInfiniteSearchVideosOptions {
   query: string;
@@ -100,7 +101,7 @@ export function useInfiniteSearchVideos({
       }
 
       // Skip URL-like queries that cause Funnelcake 500 errors (#166)
-      if (/^https?:\/\//i.test(debouncedQuery.trim())) {
+      if (isUrlLikeQuery(debouncedQuery)) {
         return { videos: [], nextCursor: undefined };
       }
 

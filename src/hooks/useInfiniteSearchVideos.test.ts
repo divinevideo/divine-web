@@ -101,6 +101,21 @@ describe('useInfiniteSearchVideos', () => {
     expect(result.current.data?.pages[0].videos).toEqual(expectedVideos);
   });
 
+  it('returns empty results for URL-like queries without calling the API', async () => {
+    const { result } = renderHook(
+      () => useInfiniteSearchVideos({ query: 'https://vine.co/v/hAgW0mP5zKL//', sortMode: 'relevance', pageSize: 20 }),
+      { wrapper: createWrapper() }
+    );
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+
+    expect(mockSearchVideos).not.toHaveBeenCalled();
+    expect(mockNostrQuery).not.toHaveBeenCalled();
+    expect(result.current.data?.pages[0].videos).toEqual([]);
+  });
+
   it('falls back to relay search when Funnelcake search throws', async () => {
     const relayVideos = [
       { id: 'video-2', pubkey: 'pubkey-2', createdAt: 456 } as const,
