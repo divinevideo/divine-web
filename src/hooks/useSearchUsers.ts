@@ -9,6 +9,7 @@ import { API_CONFIG } from '@/config/api';
 import { debugLog } from '@/lib/debug';
 import { reportFunnelcakeFallback } from '@/lib/funnelcakeFallbackReporting';
 import { isFunnelcakeAvailable } from '@/lib/funnelcakeHealth';
+import { isUrlLikeQuery } from '@/lib/searchUtils';
 import type { NostrMetadata, NostrEvent } from '@nostrify/nostrify';
 
 interface UseSearchUsersOptions {
@@ -87,6 +88,11 @@ export function useSearchUsers(options: UseSearchUsersOptions) {
     queryKey: ['search-users', debouncedQuery, limit],
     queryFn: async ({ signal }) => {
       if (!debouncedQuery.trim()) {
+        return [];
+      }
+
+      // Skip URL-like queries that cause Funnelcake 500 errors (#166)
+      if (isUrlLikeQuery(debouncedQuery)) {
         return [];
       }
 
