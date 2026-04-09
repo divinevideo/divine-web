@@ -33,6 +33,10 @@ interface FunnelcakeVideoPage {
   offset?: number;
 }
 
+function getVideoKey(video: Pick<ParsedVideoData, 'pubkey' | 'kind' | 'vineId' | 'id'>): string {
+  return `${video.pubkey}:${video.kind}:${video.vineId || video.id}`;
+}
+
 /**
  * Map feed type and sort mode to Funnelcake API options
  */
@@ -314,6 +318,18 @@ export function useInfiniteVideosFunnelcake({
         if (allPages.length >= totalPages) return undefined; // All pages fetched
         const nextOffset = (randomStartOffset + allPages.length * pageSize) % randomizeWithinTop;
         return { offset: nextOffset };
+      }
+      if (feedType === 'recommendations') {
+        const seenKeys = new Set(
+          allPages
+            .slice(0, -1)
+            .flatMap(page => page.videos.map(getVideoKey))
+        );
+        const hasNewVideos = lastPage.videos.some(video => !seenKeys.has(getVideoKey(video)));
+
+        if (!hasNewVideos) {
+          return undefined;
+        }
       }
       // Use offset for sorted pagination, timestamp for chronological
       if (lastPage.offset !== undefined) {

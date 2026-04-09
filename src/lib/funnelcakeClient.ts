@@ -487,15 +487,18 @@ export async function fetchRecommendations(
   );
 
   const videoCount = response.videos?.length || 0;
-  const nextOffset = (offset || 0) + videoCount;
+  const nextOffset = (offset || 0) + limit;
 
   debugLog(`[FunnelcakeClient] Got ${videoCount} recommendations (source: ${response.source})`);
 
   return {
     videos: response.videos || [],
-    has_more: videoCount >= limit,
+    // Recommendations batches can be shorter than the requested limit while
+    // still having more results available, so keep paginating until the API
+    // returns an empty page or the hook detects a duplicate-only page.
+    has_more: videoCount > 0,
     // Use offset-based pagination for recommendations
-    next_cursor: videoCount >= limit ? String(nextOffset) : undefined,
+    next_cursor: videoCount > 0 ? String(nextOffset) : undefined,
     source: response.source,
   };
 }
