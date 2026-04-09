@@ -239,12 +239,18 @@ export function useInfiniteVideosFunnelcake({
               debugLog('[useInfiniteVideosFunnelcake] No user logged in for recommendations feed');
               return { videos: [], nextCursor: undefined };
             }
-            // Recommendations use cursor-based pagination (preferred over offset)
+            // Cursor-based pagination (preferred), with offset fallback
+            // The cursor may be an opaque server cursor or a numeric offset string
             const recCursor = typeof pageParam === 'string' ? pageParam : undefined;
+            const recOffset = recCursor ? parseInt(recCursor, 10) : undefined;
+            const isNumericOffset = recOffset !== undefined && !isNaN(recOffset);
             response = await fetchRecommendations(effectiveApiUrl, {
               pubkey: user.pubkey,
               limit: pageSize,
               cursor: recCursor,
+              // Also send offset for backward compatibility with servers
+              // that don't support cursor yet
+              offset: isNumericOffset ? recOffset : undefined,
               fallback: 'popular',
               signal,
             });

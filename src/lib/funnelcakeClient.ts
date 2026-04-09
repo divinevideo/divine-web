@@ -475,11 +475,12 @@ export async function fetchRecommendations(
 
   const endpoint = API_CONFIG.funnelcake.endpoints.userRecommendations.replace('{pubkey}', pubkey);
 
-  // Prefer cursor over offset for pagination
+  // Send both cursor and offset — server uses cursor if supported,
+  // falls back to offset on older servers that ignore cursor
   const params: Record<string, string | number | boolean | undefined> = {
     limit,
     cursor,
-    offset: cursor ? undefined : offset,  // Only send offset if no cursor
+    offset,
     category,
     fallback,
   };
@@ -494,14 +495,26 @@ export async function fetchRecommendations(
   );
 
   const videoCount = response.videos?.length || 0;
+  // Detect whether server supports cursor pagination by checking if
+  // has_more field exists in the response (even if false/null)
+  const serverSupportsCursors = 'has_more' in response;
 
-  debugLog(`[FunnelcakeClient] Got ${videoCount} recommendations (source: ${response.source}, has_more: ${response.has_more}, fallback_applied: ${response.fallback_applied})`);
+  // If server returns cursor pagination fields, use them directly.
+  // Otherwise, fall back to offset-based pagination for compatibility
+  // with servers that haven't been updated yet.
+  const hasMore = serverSupportsCursors
+    ? (response.has_more ?? false)
+    : videoCount > 0;
+  const nextCursor = serverSupportsCursors
+    ? (response.next_cursor ?? undefined)
+    : (videoCount > 0 ? String((offset || 0) + limit) : undefined);
+
+  debugLog(`[FunnelcakeClient] Got ${videoCount} recommendations (source: ${response.source}, has_more: ${hasMore}, cursor: ${serverSupportsCursors ? 'server' : 'offset-fallback'})`);
 
   return {
     videos: response.videos || [],
-    // Trust the server's has_more and next_cursor directly
-    has_more: response.has_more ?? false,
-    next_cursor: response.next_cursor ?? undefined,
+    has_more: hasMore,
+    next_cursor: nextCursor,
     source: response.source,
     fallback_applied: response.fallback_applied,
   };
