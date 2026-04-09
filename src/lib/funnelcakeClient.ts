@@ -441,6 +441,10 @@ export async function fetchUserFeed(
 interface FunnelcakeRecommendationsResponse {
   videos: FunnelcakeVideoRaw[];
   source: 'personalized' | 'popular' | 'recent';
+  has_more: boolean;
+  next_cursor: string | null;
+  next_offset: number | null;
+  fallback_applied: boolean;
 }
 
 /**
@@ -449,7 +453,8 @@ interface FunnelcakeRecommendationsResponse {
 export interface FunnelcakeRecommendationsOptions {
   pubkey: string;
   limit?: number;
-  offset?: number;           // Offset for pagination (0-indexed)
+  cursor?: string;           // Cursor for pagination (preferred)
+  offset?: number;           // Offset for pagination (compatibility only)
   category?: string;
   fallback?: 'popular' | 'recent';
   signal?: AbortSignal;
@@ -465,19 +470,21 @@ export interface FunnelcakeRecommendationsOptions {
 export async function fetchRecommendations(
   apiUrl: string = API_CONFIG.funnelcake.baseUrl,
   options: FunnelcakeRecommendationsOptions
-): Promise<FunnelcakeResponse & { source?: string }> {
-  const { pubkey, limit = 20, offset, category, fallback, signal } = options;
+): Promise<FunnelcakeResponse & { source?: string; fallback_applied?: boolean }> {
+  const { pubkey, limit = 20, cursor, offset, category, fallback, signal } = options;
 
   const endpoint = API_CONFIG.funnelcake.endpoints.userRecommendations.replace('{pubkey}', pubkey);
 
+  // Prefer cursor over offset for pagination
   const params: Record<string, string | number | boolean | undefined> = {
     limit,
-    offset,
+    cursor,
+    offset: cursor ? undefined : offset,  // Only send offset if no cursor
     category,
     fallback,
   };
 
-  debugLog(`[FunnelcakeClient] Fetching recommendations for ${pubkey}`, { limit, offset, category, fallback });
+  debugLog(`[FunnelcakeClient] Fetching recommendations for ${pubkey}`, { limit, cursor, offset, category, fallback });
 
   const response = await funnelcakeRequest<FunnelcakeRecommendationsResponse>(
     apiUrl,
@@ -487,19 +494,16 @@ export async function fetchRecommendations(
   );
 
   const videoCount = response.videos?.length || 0;
-  const nextOffset = (offset || 0) + limit;
 
-  debugLog(`[FunnelcakeClient] Got ${videoCount} recommendations (source: ${response.source})`);
+  debugLog(`[FunnelcakeClient] Got ${videoCount} recommendations (source: ${response.source}, has_more: ${response.has_more}, fallback_applied: ${response.fallback_applied})`);
 
   return {
     videos: response.videos || [],
-    // Recommendations batches can be shorter than the requested limit while
-    // still having more results available, so keep paginating until the API
-    // returns an empty page or the hook detects a duplicate-only page.
-    has_more: videoCount > 0,
-    // Use offset-based pagination for recommendations
-    next_cursor: videoCount > 0 ? String(nextOffset) : undefined,
+    // Trust the server's has_more and next_cursor directly
+    has_more: response.has_more ?? false,
+    next_cursor: response.next_cursor ?? undefined,
     source: response.source,
+    fallback_applied: response.fallback_applied,
   };
 }
 

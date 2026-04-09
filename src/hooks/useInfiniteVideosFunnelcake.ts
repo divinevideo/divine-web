@@ -31,10 +31,7 @@ interface FunnelcakeVideoPage {
   videos: ParsedVideoData[];
   nextCursor: number | undefined;
   offset?: number;
-}
-
-function getVideoKey(video: Pick<ParsedVideoData, 'pubkey' | 'kind' | 'vineId' | 'id'>): string {
-  return `${video.pubkey}:${video.kind}:${video.vineId || video.id}`;
+  recCursor?: string;  // Opaque cursor for recommendations pagination
 }
 
 /**
@@ -242,13 +239,13 @@ export function useInfiniteVideosFunnelcake({
               debugLog('[useInfiniteVideosFunnelcake] No user logged in for recommendations feed');
               return { videos: [], nextCursor: undefined };
             }
-            // Recommendations use offset pagination
-            const recOffset = isOffsetParam ? (pageParam as { offset: number }).offset : 0;
+            // Recommendations use cursor-based pagination (preferred over offset)
+            const recCursor = typeof pageParam === 'string' ? pageParam : undefined;
             response = await fetchRecommendations(effectiveApiUrl, {
               pubkey: user.pubkey,
               limit: pageSize,
-              offset: recOffset,
-              fallback: 'popular', // Fall back to popular videos if no personalized recs
+              cursor: recCursor,
+              fallback: 'popular',
               signal,
             });
             break;
@@ -274,10 +271,8 @@ export function useInfiniteVideosFunnelcake({
       const queryTime = performance.now() - queryStart;
 
       // Transform response to video page
-      // Recommendations use offset-based pagination, others use timestamp
       const parseStart = performance.now();
-      const cursorType = feedType === 'recommendations' ? 'offset' : 'timestamp';
-      const page = transformToVideoPage(response, cursorType);
+      const page = transformToVideoPage(response, 'timestamp');
       const parseTime = performance.now() - parseStart;
 
       const totalTime = performance.now() - totalStart;
@@ -300,15 +295,21 @@ export function useInfiniteVideosFunnelcake({
         sortMode,
       });
 
+      // For recommendations, use the server's opaque cursor string directly
+      // (not the numeric timestamp cursor from transformToVideoPage)
+      const recCursor = feedType === 'recommendations' ? (response.next_cursor ?? undefined) : undefined;
+
       debugLog(`[useInfiniteVideosFunnelcake] Got ${page.videos.length} videos in ${queryTime.toFixed(0)}ms`, {
         hasMore: page.hasMore,
         nextCursor: page.nextCursor,
+        recCursor,
       });
 
       return {
         videos: page.videos,
         nextCursor: page.nextCursor,
         offset: page.offset,
+        recCursor,
       };
     },
 
@@ -319,17 +320,10 @@ export function useInfiniteVideosFunnelcake({
         const nextOffset = (randomStartOffset + allPages.length * pageSize) % randomizeWithinTop;
         return { offset: nextOffset };
       }
+      // Recommendations: use server-provided opaque cursor
       if (feedType === 'recommendations') {
-        const seenKeys = new Set(
-          allPages
-            .slice(0, -1)
-            .flatMap(page => page.videos.map(getVideoKey))
-        );
-        const hasNewVideos = lastPage.videos.some(video => !seenKeys.has(getVideoKey(video)));
-
-        if (!hasNewVideos) {
-          return undefined;
-        }
+        // Trust the server's cursor — stop when no cursor returned
+        return lastPage.recCursor ?? undefined;
       }
       // Use offset for sorted pagination, timestamp for chronological
       if (lastPage.offset !== undefined) {
