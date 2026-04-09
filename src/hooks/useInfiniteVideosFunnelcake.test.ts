@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { renderHook, waitFor, act } from '@testing-library/react';
+import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
 
@@ -57,10 +57,10 @@ beforeEach(async () => {
 });
 
 describe('useInfiniteVideosFunnelcake', () => {
-  it('stops paginating recommendations when a new page contains no new videos', async () => {
+  it('uses cursor-based pagination for recommendations', async () => {
+    // Page 1: server returns cursor for next page
     mockFetchRecommendations
-      .mockResolvedValueOnce({ videos: [{}], has_more: true, next_cursor: '12' })
-      .mockResolvedValueOnce({ videos: [{}], has_more: true, next_cursor: '24' });
+      .mockResolvedValueOnce({ videos: [{}], has_more: true, next_cursor: 'cursor-page2' });
 
     mockTransformToVideoPage
       .mockReturnValueOnce({
@@ -69,16 +69,6 @@ describe('useInfiniteVideosFunnelcake', () => {
           { id: 'video-2', pubkey: 'p2', kind: 34236, createdAt: 100, vineId: 'd-2' },
         ],
         nextCursor: undefined,
-        offset: 12,
-        hasMore: true,
-      })
-      .mockReturnValueOnce({
-        videos: [
-          { id: 'video-1', pubkey: 'p1', kind: 34236, createdAt: 101, vineId: 'd-1' },
-          { id: 'video-2', pubkey: 'p2', kind: 34236, createdAt: 100, vineId: 'd-2' },
-        ],
-        nextCursor: undefined,
-        offset: 24,
         hasMore: true,
       });
 
@@ -91,24 +81,39 @@ describe('useInfiniteVideosFunnelcake', () => {
       expect(result.current.isSuccess).toBe(true);
     });
 
+    // First page loaded — check the page data
+    const page1 = result.current.data?.pages[0];
+    expect(page1?.videos).toHaveLength(2);
+    expect(page1?.recCursor).toBe('cursor-page2');
     expect(result.current.hasNextPage).toBe(true);
+  });
 
-    await act(async () => {
-      await result.current.fetchNextPage();
-    });
+  it('stops paginating when server returns no cursor', async () => {
+    mockFetchRecommendations
+      .mockResolvedValueOnce({ videos: [{}], has_more: false, next_cursor: null });
+
+    mockTransformToVideoPage
+      .mockReturnValueOnce({
+        videos: [
+          { id: 'video-1', pubkey: 'p1', kind: 34236, createdAt: 101, vineId: 'd-1' },
+        ],
+        nextCursor: undefined,
+        hasMore: false,
+      });
+
+    const { result } = renderHook(
+      () => useInfiniteVideosFunnelcake({ feedType: 'recommendations', pageSize: 12 }),
+      { wrapper: createWrapper() }
+    );
 
     await waitFor(() => {
-      expect(result.current.data?.pages).toHaveLength(2);
+      expect(result.current.isSuccess).toBe(true);
     });
 
+    // Page should have no recCursor
+    const page = result.current.data?.pages[0];
+    expect(page?.recCursor).toBeUndefined();
+    // Server said no more — should not have next page
     expect(result.current.hasNextPage).toBe(false);
-    expect(mockFetchRecommendations).toHaveBeenNthCalledWith(
-      2,
-      'https://api.divine.video',
-      expect.objectContaining({
-        offset: 12,
-        limit: 12,
-      })
-    );
   });
 });
