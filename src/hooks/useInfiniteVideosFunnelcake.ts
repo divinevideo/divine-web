@@ -36,6 +36,10 @@ interface FunnelcakeVideoPage {
   recommendationsCursor?: string;
 }
 
+function getVideoKey(video: Pick<ParsedVideoData, 'pubkey' | 'kind' | 'vineId' | 'id'>): string {
+  return `${video.pubkey}:${video.kind}:${video.vineId || video.id}`;
+}
+
 /**
  * Map feed type and sort mode to Funnelcake API options
  */
@@ -241,12 +245,16 @@ export function useInfiniteVideosFunnelcake({
               debugLog('[useInfiniteVideosFunnelcake] No user logged in for recommendations feed');
               return { videos: [], nextCursor: undefined };
             }
-            // Recommendations use cursor-based pagination (preferred over offset)
+            // Recommendations use cursor-based pagination, with numeric-offset
+            // fallback for older servers that do not return cursor metadata yet.
             const recCursor = typeof pageParam === 'string' ? pageParam : undefined;
+            const recOffset = recCursor ? parseInt(recCursor, 10) : undefined;
+            const isNumericOffset = recOffset !== undefined && !isNaN(recOffset);
             response = await fetchRecommendations(effectiveApiUrl, {
               pubkey: user.pubkey,
               limit: pageSize,
               cursor: recCursor,
+              offset: isNumericOffset ? recOffset : undefined,
               fallback: 'popular', // Fall back to popular videos if no personalized recs
               signal,
             });
@@ -322,8 +330,24 @@ export function useInfiniteVideosFunnelcake({
         const nextOffset = (randomStartOffset + allPages.length * pageSize) % randomizeWithinTop;
         return { offset: nextOffset };
       }
-      // Recommendations: use opaque cursor string
-      if (lastPage.recommendationsCursor) {
+      if (feedType === 'recommendations') {
+        if (!lastPage.recommendationsCursor) {
+          return undefined;
+        }
+
+        if (allPages.length > 1) {
+          const seenKeys = new Set(
+            allPages
+              .slice(0, -1)
+              .flatMap(page => page.videos.map(getVideoKey))
+          );
+          const hasNewVideos = lastPage.videos.some(video => !seenKeys.has(getVideoKey(video)));
+
+          if (!hasNewVideos) {
+            return undefined;
+          }
+        }
+
         return lastPage.recommendationsCursor;
       }
       // Use offset for sorted pagination, timestamp for chronological

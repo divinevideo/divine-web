@@ -479,10 +479,12 @@ export async function fetchRecommendations(
 
   const endpoint = API_CONFIG.funnelcake.endpoints.userRecommendations.replace('{pubkey}', pubkey);
 
-  // Prefer cursor over offset; if both sent, backend uses cursor
+  // Send both cursor and offset. Newer servers honor cursor, while older
+  // ones ignore it and continue to paginate via numeric offsets.
   const params: Record<string, string | number | boolean | undefined> = {
     limit,
-    ...(cursor ? { cursor } : offset !== undefined ? { offset } : {}),
+    cursor,
+    offset,
     category,
     fallback,
     content_safety,
@@ -499,13 +501,22 @@ export async function fetchRecommendations(
   );
 
   const videoCount = response.videos?.length || 0;
+  const serverSupportsCursorMetadata = 'has_more' in response;
+  const hasMore = serverSupportsCursorMetadata
+    ? (response.has_more ?? false)
+    : videoCount > 0;
+  const nextCursor = serverSupportsCursorMetadata
+    ? (response.next_cursor ?? undefined)
+    : (videoCount > 0 ? String((offset || 0) + limit) : undefined);
 
-  debugLog(`[FunnelcakeClient] Got ${videoCount} recommendations (source: ${response.source}, has_more: ${response.has_more}, fallback_applied: ${response.fallback_applied})`);
+  debugLog(
+    `[FunnelcakeClient] Got ${videoCount} recommendations (source: ${response.source}, has_more: ${hasMore}, fallback_applied: ${response.fallback_applied}, cursor_mode: ${serverSupportsCursorMetadata ? 'server' : 'offset-fallback'})`
+  );
 
   return {
     videos: response.videos || [],
-    has_more: response.has_more ?? false,
-    next_cursor: response.next_cursor ?? undefined,
+    has_more: hasMore,
+    next_cursor: nextCursor,
     source: response.source,
     fallback_applied: response.fallback_applied,
   };
