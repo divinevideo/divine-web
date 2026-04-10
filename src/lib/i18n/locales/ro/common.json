@@ -126,5 +126,11 @@
     "communityTitle": "Comunitate",
     "communityDescription": "Alatura-te discutiilor comunitatii si conecteaza-te cu alti utilizatori Divine pe Nostr.",
     "communityBody": "Divine este construit pe Nostr, un protocol social descentralizat. Gaseste-ne in clientul tau Nostr preferat."
+  },
+  "tagPage": {
+    "notFoundTitle": "Eticheta nu a fost gasita",
+    "notFoundDescription": "Eticheta solicitata nu a putut fi gasita.",
+    "back": "Inapoi",
+    "subtitle": "Exploreaza videoclipuri etichetate cu #{{tag}}"
   }
 }

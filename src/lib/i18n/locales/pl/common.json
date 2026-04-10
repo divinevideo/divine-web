@@ -126,5 +126,11 @@
     "communityTitle": "Spolecznosc",
     "communityDescription": "Dolacz do dyskusji spolecznosci i polacz sie z innymi uzytkownikami Divine na Nostr.",
     "communityBody": "Divine jest zbudowane na Nostr, zdecentralizowanym protokole spolecznosciowym. Znajdz nas w swoim ulubionym kliencie Nostr."
+  },
+  "tagPage": {
+    "notFoundTitle": "Nie znaleziono tagu",
+    "notFoundDescription": "Nie mozna znalezc podanego tagu.",
+    "back": "Wroc",
+    "subtitle": "Przegladaj filmy oznaczone tagiem #{{tag}}"
   }
 }

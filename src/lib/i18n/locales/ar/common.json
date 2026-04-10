@@ -126,5 +126,11 @@
     "communityTitle": "المجتمع",
     "communityDescription": "انضم إلى نقاشات المجتمع وتواصل مع مستخدمي Divine الآخرين على Nostr.",
     "communityBody": "تم بناء Divine على Nostr، وهو بروتوكول اجتماعي لامركزي. اعثر علينا في عميل Nostr المفضل لديك."
+  },
+  "tagPage": {
+    "notFoundTitle": "لم يتم العثور على الوسم",
+    "notFoundDescription": "تعذر العثور على الوسم المطلوب.",
+    "back": "رجوع",
+    "subtitle": "استعرض الفيديوهات الموسومة بـ #{{tag}}"
   }
 }

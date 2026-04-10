@@ -126,5 +126,11 @@
     "communityTitle": "コミュニティ",
     "communityDescription": "コミュニティの会話に参加し、Nostr 上の他の Divine ユーザーとつながりましょう。",
     "communityBody": "Divine は分散型ソーシャルプロトコル Nostr 上に構築されています。お気に入りの Nostr クライアントで見つけてください。"
+  },
+  "tagPage": {
+    "notFoundTitle": "タグが見つかりません",
+    "notFoundDescription": "指定されたタグは見つかりませんでした。",
+    "back": "戻る",
+    "subtitle": "#{{tag}} のタグが付いた動画を探す"
   }
 }

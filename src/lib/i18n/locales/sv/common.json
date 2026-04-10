@@ -126,5 +126,11 @@
     "communityTitle": "Gemenskap",
     "communityDescription": "Delta i våra gemenskapsdiskussioner och få kontakt med andra Divine-användare på Nostr.",
     "communityBody": "Divine är byggt på Nostr, ett decentraliserat socialt protokoll. Hitta oss i din favoritklient för Nostr."
+  },
+  "tagPage": {
+    "notFoundTitle": "Tagg hittades inte",
+    "notFoundDescription": "Den begarda taggen kunde inte hittas.",
+    "back": "Tillbaka",
+    "subtitle": "Utforska videor med taggen #{{tag}}"
   }
 }

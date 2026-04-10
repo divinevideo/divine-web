@@ -126,5 +126,11 @@
     "communityTitle": "Comunita",
     "communityDescription": "Partecipa alle discussioni della comunita e connettiti con altri utenti Divine su Nostr.",
     "communityBody": "Divine e costruito su Nostr, un protocollo sociale decentralizzato. Trovaci nel tuo client Nostr preferito."
+  },
+  "tagPage": {
+    "notFoundTitle": "Tag non trovata",
+    "notFoundDescription": "Impossibile trovare la tag richiesta.",
+    "back": "Indietro",
+    "subtitle": "Esplora i video con il tag #{{tag}}"
   }
 }

@@ -126,5 +126,11 @@
     "communityTitle": "Community",
     "communityDescription": "Doe mee aan onze communitygesprekken en maak contact met andere Divine-gebruikers op Nostr.",
     "communityBody": "Divine is gebouwd op Nostr, een gedecentraliseerd sociaal protocol. Vind ons in je favoriete Nostr-client."
+  },
+  "tagPage": {
+    "notFoundTitle": "Tag niet gevonden",
+    "notFoundDescription": "De gevraagde tag kon niet worden gevonden.",
+    "back": "Terug",
+    "subtitle": "Bekijk video's met tag #{{tag}}"
   }
 }

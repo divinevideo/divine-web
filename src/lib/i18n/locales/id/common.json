@@ -126,5 +126,11 @@
     "communityTitle": "Komunitas",
     "communityDescription": "Bergabunglah dalam diskusi komunitas dan terhubung dengan pengguna Divine lainnya di Nostr.",
     "communityBody": "Divine dibangun di atas Nostr, protokol sosial yang terdesentralisasi. Temukan kami di klien Nostr favorit Anda."
+  },
+  "tagPage": {
+    "notFoundTitle": "Tag tidak ditemukan",
+    "notFoundDescription": "Tag yang diminta tidak dapat ditemukan.",
+    "back": "Kembali",
+    "subtitle": "Jelajahi video dengan tag #{{tag}}"
   }
 }

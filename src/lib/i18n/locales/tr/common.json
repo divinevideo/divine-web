@@ -126,5 +126,11 @@
     "communityTitle": "Topluluk",
     "communityDescription": "Topluluk tartismalarimiza katil ve Nostr uzerindeki diger Divine kullanicilariyla baglan.",
     "communityBody": "Divine, merkezi olmayan bir sosyal protokol olan Nostr uzerine kuruludur. Bizi sevdigin Nostr istemcisinde bul."
+  },
+  "tagPage": {
+    "notFoundTitle": "Etiket bulunamadi",
+    "notFoundDescription": "Istenen etiket bulunamadi.",
+    "back": "Geri",
+    "subtitle": "#{{tag}} etiketiyle isaretlenmis videolari kesfet"
   }
 }
