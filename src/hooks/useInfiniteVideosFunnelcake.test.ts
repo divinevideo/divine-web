@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { renderHook, waitFor } from '@testing-library/react';
+import { renderHook, waitFor, act } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
 
@@ -114,6 +114,44 @@ describe('useInfiniteVideosFunnelcake', () => {
     const page = result.current.data?.pages[0];
     expect(page?.recCursor).toBeUndefined();
     // Server said no more — should not have next page
+    expect(result.current.hasNextPage).toBe(false);
+  });
+
+  it('dedup safety net stops pagination when server returns duplicate videos', async () => {
+    // Server returns the same videos for both pages (offset/cursor ignored)
+    const sameVideos = [
+      { id: 'video-1', pubkey: 'p1', kind: 34236, createdAt: 101, vineId: 'd-1' },
+      { id: 'video-2', pubkey: 'p2', kind: 34236, createdAt: 100, vineId: 'd-2' },
+    ];
+
+    mockFetchRecommendations
+      .mockResolvedValueOnce({ videos: [{}], has_more: true, next_cursor: '12' })
+      .mockResolvedValueOnce({ videos: [{}], has_more: true, next_cursor: '24' });
+
+    mockTransformToVideoPage
+      .mockReturnValueOnce({ videos: sameVideos, nextCursor: undefined, hasMore: true })
+      .mockReturnValueOnce({ videos: sameVideos, nextCursor: undefined, hasMore: true });
+
+    const { result } = renderHook(
+      () => useInfiniteVideosFunnelcake({ feedType: 'recommendations', pageSize: 12 }),
+      { wrapper: createWrapper() }
+    );
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+
+    expect(result.current.hasNextPage).toBe(true);
+
+    await act(async () => {
+      await result.current.fetchNextPage();
+    });
+
+    await waitFor(() => {
+      expect(result.current.data?.pages).toHaveLength(2);
+    });
+
+    // Page 2 contains only duplicates → should stop pagination
     expect(result.current.hasNextPage).toBe(false);
   });
 });
