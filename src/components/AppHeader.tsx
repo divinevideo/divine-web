@@ -1,5 +1,6 @@
 import { Home, Compass, Search, Bell, MoreVertical, Info, Code2, HelpCircle, Headphones, FileText, Sun, Moon, MessageCircle } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useSubdomainNavigate } from '@/hooks/useSubdomainNavigate';
 import { Button } from '@/components/ui/button';
 import { LoginArea } from '@/components/auth/LoginArea';
@@ -16,6 +17,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useTheme } from '@/hooks/useTheme';
 import { getSubdomainUser } from '@/hooks/useSubdomainUser';
+import { LanguageMenu } from '@/components/LanguageMenu';
 
 export interface AppHeaderProps {
   className?: string;
@@ -24,6 +26,7 @@ export interface AppHeaderProps {
 export function AppHeader({ className }: AppHeaderProps) {
   const navigate = useSubdomainNavigate();
   const location = useLocation();
+  const { t } = useTranslation();
   const { displayTheme, setTheme } = useTheme();
   const { user } = useCurrentUser();
   const { canUseDirectMessages } = useDmCapability();
@@ -71,7 +74,7 @@ export function AppHeader({ className }: AppHeaderProps) {
               )}
             >
               <Home className="h-4 w-4" />
-              <span className="hidden lg:inline">Home</span>
+              <span className="hidden lg:inline">{t('nav.home')}</span>
             </Button>
           )}
           <Button
@@ -82,9 +85,9 @@ export function AppHeader({ className }: AppHeaderProps) {
               "hidden md:flex items-center gap-2",
               isActive('/discovery') && "bg-primary text-primary-foreground"
             )}
-          >
-            <Compass className="h-4 w-4" />
-            <span className="hidden lg:inline">Discover</span>
+            >
+              <Compass className="h-4 w-4" />
+            <span className="hidden lg:inline">{t('nav.discover')}</span>
           </Button>
           <Button
             variant="ghost"
@@ -94,9 +97,9 @@ export function AppHeader({ className }: AppHeaderProps) {
               "hidden md:flex items-center gap-2",
               isActive('/search') && "bg-primary text-primary-foreground"
             )}
-          >
-            <Search className="h-4 w-4" />
-            <span className="hidden lg:inline">Search</span>
+            >
+              <Search className="h-4 w-4" />
+            <span className="hidden lg:inline">{t('nav.search')}</span>
           </Button>
           {/* Notification bell - visible when logged in */}
           {user && canUseDirectMessages && (
@@ -105,7 +108,7 @@ export function AppHeader({ className }: AppHeaderProps) {
               size="icon"
               onClick={() => navigate('/messages')}
               className="relative"
-              aria-label="Messages"
+              aria-label={t('nav.messages')}
             >
               <MessageCircle className="h-4 w-4" />
               {(unreadDmCount ?? 0) > 0 && (
@@ -121,7 +124,7 @@ export function AppHeader({ className }: AppHeaderProps) {
               size="icon"
               onClick={() => navigate('/notifications')}
               className="relative"
-              aria-label="Notifications"
+              aria-label={t('nav.notifications')}
             >
               <Bell className="h-4 w-4" />
               {(unreadCount ?? 0) > 0 && (
@@ -147,9 +150,10 @@ export function AppHeader({ className }: AppHeaderProps) {
               <Button
                 variant="ghost"
                 size="icon"
+                aria-label={t('common.moreOptions')}
               >
                 <MoreVertical className="h-4 w-4" />
-                <span className="sr-only">More options</span>
+                <span className="sr-only">{t('common.moreOptions')}</span>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
@@ -159,7 +163,7 @@ export function AppHeader({ className }: AppHeaderProps) {
                 className="cursor-pointer hover:bg-muted focus:bg-muted"
               >
                 <Info className="mr-2 h-4 w-4" />
-                <span>About</span>
+                <span>{t('menu.about')}</span>
               </DropdownMenuItem>
 
               <DropdownMenuItem
@@ -167,7 +171,7 @@ export function AppHeader({ className }: AppHeaderProps) {
                 className="cursor-pointer hover:bg-muted focus:bg-muted"
               >
                 <FileText className="mr-2 h-4 w-4" />
-                <span>Our Mission</span>
+                <span>{t('menu.ourMission')}</span>
               </DropdownMenuItem>
 
               <DropdownMenuItem
@@ -175,7 +179,7 @@ export function AppHeader({ className }: AppHeaderProps) {
                 className="cursor-pointer hover:bg-muted focus:bg-muted"
               >
                 <FileText className="mr-2 h-4 w-4" />
-                <span>News</span>
+                <span>{t('menu.news')}</span>
               </DropdownMenuItem>
 
               <DropdownMenuItem
@@ -183,7 +187,7 @@ export function AppHeader({ className }: AppHeaderProps) {
                 className="cursor-pointer hover:bg-muted focus:bg-muted"
               >
                 <FileText className="mr-2 h-4 w-4" />
-                <span>Blog</span>
+                <span>{t('menu.blog')}</span>
               </DropdownMenuItem>
 
               <DropdownMenuItem
@@ -191,7 +195,7 @@ export function AppHeader({ className }: AppHeaderProps) {
                 className="cursor-pointer hover:bg-muted focus:bg-muted"
               >
                 <HelpCircle className="mr-2 h-4 w-4" />
-                <span>FAQ</span>
+                <span>{t('menu.faq')}</span>
               </DropdownMenuItem>
 
               <DropdownMenuItem
@@ -199,7 +203,7 @@ export function AppHeader({ className }: AppHeaderProps) {
                 className="cursor-pointer hover:bg-muted focus:bg-muted"
               >
                 <FileText className="mr-2 h-4 w-4" />
-                <span>Media Resources</span>
+                <span>{t('menu.mediaResources')}</span>
               </DropdownMenuItem>
 
               <DropdownMenuSeparator />
@@ -210,7 +214,7 @@ export function AppHeader({ className }: AppHeaderProps) {
                 className="cursor-pointer hover:bg-muted focus:bg-muted"
               >
                 <FileText className="mr-2 h-4 w-4" />
-                <span>Terms</span>
+                <span>{t('menu.terms')}</span>
               </DropdownMenuItem>
 
               <DropdownMenuItem
@@ -218,7 +222,7 @@ export function AppHeader({ className }: AppHeaderProps) {
                 className="cursor-pointer hover:bg-muted focus:bg-muted"
               >
                 <FileText className="mr-2 h-4 w-4" />
-                <span>Privacy</span>
+                <span>{t('menu.privacy')}</span>
               </DropdownMenuItem>
 
               <DropdownMenuItem
@@ -226,7 +230,7 @@ export function AppHeader({ className }: AppHeaderProps) {
                 className="cursor-pointer hover:bg-muted focus:bg-muted"
               >
                 <FileText className="mr-2 h-4 w-4" />
-                <span>Safety</span>
+                <span>{t('menu.safety')}</span>
               </DropdownMenuItem>
 
               <DropdownMenuItem
@@ -234,7 +238,7 @@ export function AppHeader({ className }: AppHeaderProps) {
                 className="cursor-pointer hover:bg-muted focus:bg-muted"
               >
                 <FileText className="mr-2 h-4 w-4" />
-                <span>DMCA & Copyright</span>
+                <span>{t('menu.dmca')}</span>
               </DropdownMenuItem>
 
               <DropdownMenuItem
@@ -242,7 +246,7 @@ export function AppHeader({ className }: AppHeaderProps) {
                 className="cursor-pointer hover:bg-muted focus:bg-muted"
               >
                 <Code2 className="mr-2 h-4 w-4" />
-                <span>Open Source</span>
+                <span>{t('menu.openSource')}</span>
               </DropdownMenuItem>
 
               <DropdownMenuItem
@@ -250,8 +254,11 @@ export function AppHeader({ className }: AppHeaderProps) {
                 className="cursor-pointer hover:bg-muted focus:bg-muted"
               >
                 <FileText className="mr-2 h-4 w-4" />
-                <span>Donate</span>
+                <span>{t('menu.donate')}</span>
               </DropdownMenuItem>
+
+              <DropdownMenuSeparator />
+              <LanguageMenu variant="dropdown" />
 
               <DropdownMenuSeparator />
 
@@ -261,7 +268,7 @@ export function AppHeader({ className }: AppHeaderProps) {
                 className="cursor-pointer hover:bg-muted focus:bg-muted"
               >
                 <Headphones className="mr-2 h-4 w-4" />
-                <span>Help</span>
+                <span>{t('menu.help')}</span>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

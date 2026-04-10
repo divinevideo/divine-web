@@ -1,0 +1,84 @@
+{
+  "common": {
+    "language": "Taal",
+    "moreOptions": "Meer opties"
+  },
+  "nav": {
+    "home": "Home",
+    "discover": "Ontdekken",
+    "search": "Zoeken",
+    "messages": "Berichten",
+    "notifications": "Meldingen",
+    "profile": "Profiel",
+    "analytics": "Analyse"
+  },
+  "menu": {
+    "about": "Over",
+    "ourMission": "Onze missie",
+    "news": "Nieuws",
+    "blog": "Blog",
+    "faq": "FAQ",
+    "mediaResources": "Mediaresources",
+    "terms": "Voorwaarden",
+    "privacy": "Privacy",
+    "safety": "Veiligheid",
+    "dmca": "DMCA en auteursrecht",
+    "openSource": "Open source",
+    "donate": "Doneren",
+    "help": "Help"
+  },
+  "theme": {
+    "lightMode": "Lichte modus",
+    "darkMode": "Donkere modus"
+  },
+  "footer": {
+    "aboutDivine": "Over Divine",
+    "vinesRecovered": "{{count}} Vines hersteld",
+    "termsAndOpenSource": "Voorwaarden en open source",
+    "copyright": "© 2026 Divine"
+  },
+  "rss": {
+    "title": "RSS-feeds",
+    "latestVideos": "Nieuwste video's",
+    "trending": "Trending",
+    "yourFeed": "Jouw feed"
+  },
+  "auth": {
+    "logInOnDivine": "Inloggen op Divine"
+  },
+  "home": {
+    "welcomeTitle": "Welkom bij je homefeed",
+    "welcomeSubtitle": "Log in om video's te zien van mensen die je volgt",
+    "title": "Home",
+    "subtitle": "Video's van mensen die je volgt",
+    "sortBy": "Sorteren op:",
+    "updating": "Bezig met bijwerken..."
+  },
+  "comments": {
+    "title": "Reacties",
+    "noCommentsYet": "Nog geen reacties",
+    "beFirstToShare": "Wees de eerste om je mening te delen",
+    "failedToLoad": "Reacties konden niet worden geladen",
+    "writeAComment": "Schrijf een reactie...",
+    "signInToReply": "Log in om te antwoorden",
+    "signInToComment": "Log in om te reageren",
+    "replyingToComment": "Reageren op reactie",
+    "addingToDiscussion": "Toevoegen aan de discussie",
+    "posting": "Plaatsen...",
+    "reply": "Antwoorden",
+    "comment": "Reageren"
+  },
+  "messages": {
+    "badge": "Berichten",
+    "title": "Directe berichten",
+    "subtitle": "Praat met support, stuur vines prive of houd een gesprek gaande met mensen die je volgt.",
+    "searchPlaceholder": "Zoek mensen om een bericht te sturen",
+    "newMessage": "Nieuw bericht",
+    "readyToShare": "Klaar om prive te delen.",
+    "shareWithTitle": "Je volgende bericht bevat “{{title}}”.",
+    "shareWithLink": "Je volgende bericht bevat een vine-link.",
+    "signerUnsupported": "Je huidige signer kan je laten inloggen, maar ondersteunt nog geen NIP-44-versleuteling. Schakel over naar een nsec, bunker of andere signer met NIP-44-ondersteuning om directe berichten op het web te gebruiken.",
+    "supportBadge": "Support",
+    "supportSummary": "Vraag naar bugs, moderatie of accountproblemen."
+  }
+}

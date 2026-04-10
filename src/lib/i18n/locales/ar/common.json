@@ -1,0 +1,84 @@
+{
+  "common": {
+    "language": "اللغة",
+    "moreOptions": "خيارات إضافية"
+  },
+  "nav": {
+    "home": "الرئيسية",
+    "discover": "اكتشف",
+    "search": "بحث",
+    "messages": "الرسائل",
+    "notifications": "الإشعارات",
+    "profile": "الملف الشخصي",
+    "analytics": "التحليلات"
+  },
+  "menu": {
+    "about": "حول",
+    "ourMission": "مهمتنا",
+    "news": "الأخبار",
+    "blog": "المدونة",
+    "faq": "الأسئلة الشائعة",
+    "mediaResources": "الموارد الإعلامية",
+    "terms": "الشروط",
+    "privacy": "الخصوصية",
+    "safety": "السلامة",
+    "dmca": "DMCA وحقوق النشر",
+    "openSource": "المصدر المفتوح",
+    "donate": "تبرع",
+    "help": "مساعدة"
+  },
+  "theme": {
+    "lightMode": "الوضع الفاتح",
+    "darkMode": "الوضع الداكن"
+  },
+  "footer": {
+    "aboutDivine": "حول Divine",
+    "vinesRecovered": "تمت استعادة {{count}} من Vine",
+    "termsAndOpenSource": "الشروط والمصدر المفتوح",
+    "copyright": "© 2026 Divine"
+  },
+  "rss": {
+    "title": "خلاصات RSS",
+    "latestVideos": "أحدث الفيديوهات",
+    "trending": "الرائج",
+    "yourFeed": "خلاصتك"
+  },
+  "auth": {
+    "logInOnDivine": "سجل الدخول إلى Divine"
+  },
+  "home": {
+    "welcomeTitle": "مرحبًا بك في خلاصتك الرئيسية",
+    "welcomeSubtitle": "سجل الدخول لرؤية فيديوهات الأشخاص الذين تتابعهم",
+    "title": "الرئيسية",
+    "subtitle": "فيديوهات الأشخاص الذين تتابعهم",
+    "sortBy": "ترتيب حسب:",
+    "updating": "جارٍ التحديث..."
+  },
+  "comments": {
+    "title": "التعليقات",
+    "noCommentsYet": "لا توجد تعليقات بعد",
+    "beFirstToShare": "كن أول من يشارك رأيه",
+    "failedToLoad": "تعذر تحميل التعليقات",
+    "writeAComment": "اكتب تعليقًا...",
+    "signInToReply": "سجل الدخول للرد",
+    "signInToComment": "سجل الدخول للتعليق",
+    "replyingToComment": "الرد على التعليق",
+    "addingToDiscussion": "إضافة إلى النقاش",
+    "posting": "جارٍ النشر...",
+    "reply": "رد",
+    "comment": "تعليق"
+  },
+  "messages": {
+    "badge": "الرسائل",
+    "title": "الرسائل المباشرة",
+    "subtitle": "تحدث مع الدعم، وأرسل vines بشكل خاص، أو واصل المحادثة مع الأشخاص الذين تتابعهم.",
+    "searchPlaceholder": "ابحث عن أشخاص لمراسلتهم",
+    "newMessage": "رسالة جديدة",
+    "readyToShare": "جاهز للمشاركة بشكل خاص.",
+    "shareWithTitle": "ستتضمن رسالتك التالية “{{title}}”.",
+    "shareWithLink": "ستتضمن رسالتك التالية رابط vine.",
+    "signerUnsupported": "يمكن للموقّع الحالي تسجيل دخولك، لكنه لا يوفّر بعد تشفير NIP-44. انتقل إلى nsec أو bunker أو موقّع آخر يدعم NIP-44 لاستخدام الرسائل المباشرة على الويب.",
+    "supportBadge": "الدعم",
+    "supportSummary": "اسأل عن الأخطاء أو الإشراف أو مشكلات الحساب."
+  }
+}

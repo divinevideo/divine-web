@@ -1,0 +1,84 @@
+{
+  "common": {
+    "language": "言語",
+    "moreOptions": "その他のオプション"
+  },
+  "nav": {
+    "home": "ホーム",
+    "discover": "発見",
+    "search": "検索",
+    "messages": "メッセージ",
+    "notifications": "通知",
+    "profile": "プロフィール",
+    "analytics": "分析"
+  },
+  "menu": {
+    "about": "概要",
+    "ourMission": "私たちの使命",
+    "news": "ニュース",
+    "blog": "ブログ",
+    "faq": "よくある質問",
+    "mediaResources": "メディア資料",
+    "terms": "利用規約",
+    "privacy": "プライバシー",
+    "safety": "安全",
+    "dmca": "DMCA と著作権",
+    "openSource": "オープンソース",
+    "donate": "寄付",
+    "help": "ヘルプ"
+  },
+  "theme": {
+    "lightMode": "ライトモード",
+    "darkMode": "ダークモード"
+  },
+  "footer": {
+    "aboutDivine": "Divine について",
+    "vinesRecovered": "{{count}} 件の Vine を復元",
+    "termsAndOpenSource": "利用規約とオープンソース",
+    "copyright": "© 2026 Divine"
+  },
+  "rss": {
+    "title": "RSS フィード",
+    "latestVideos": "最新動画",
+    "trending": "トレンド",
+    "yourFeed": "あなたのフィード"
+  },
+  "auth": {
+    "logInOnDivine": "Divine にログイン"
+  },
+  "home": {
+    "welcomeTitle": "ホームフィードへようこそ",
+    "welcomeSubtitle": "フォローしている人の動画を見るにはログインしてください",
+    "title": "ホーム",
+    "subtitle": "フォローしている人の動画",
+    "sortBy": "並び替え:",
+    "updating": "更新中..."
+  },
+  "comments": {
+    "title": "コメント",
+    "noCommentsYet": "まだコメントはありません",
+    "beFirstToShare": "最初に感想を共有しましょう",
+    "failedToLoad": "コメントを読み込めませんでした",
+    "writeAComment": "コメントを書く...",
+    "signInToReply": "返信するにはログインしてください",
+    "signInToComment": "コメントするにはログインしてください",
+    "replyingToComment": "コメントに返信中",
+    "addingToDiscussion": "会話に追加しています",
+    "posting": "投稿中...",
+    "reply": "返信",
+    "comment": "コメント"
+  },
+  "messages": {
+    "badge": "メッセージ",
+    "title": "ダイレクトメッセージ",
+    "subtitle": "サポートに相談したり、vine を非公開で送ったり、フォロー中の人との会話を続けたりできます。",
+    "searchPlaceholder": "メッセージを送る相手を探す",
+    "newMessage": "新しいメッセージ",
+    "readyToShare": "非公開で共有する準備ができました。",
+    "shareWithTitle": "次のメッセージには「{{title}}」が含まれます。",
+    "shareWithLink": "次のメッセージには vine のリンクが含まれます。",
+    "signerUnsupported": "現在の signer ではログインできますが、まだ NIP-44 暗号化に対応していません。Web でダイレクトメッセージを使うには、NIP-44 に対応した nsec、bunker、または別の signer に切り替えてください。",
+    "supportBadge": "サポート",
+    "supportSummary": "不具合、モデレーション、またはアカウントの問題について相談できます。"
+  }
+}

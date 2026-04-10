@@ -1,0 +1,84 @@
+{
+  "common": {
+    "language": "Sprache",
+    "moreOptions": "Weitere Optionen"
+  },
+  "nav": {
+    "home": "Startseite",
+    "discover": "Entdecken",
+    "search": "Suchen",
+    "messages": "Nachrichten",
+    "notifications": "Benachrichtigungen",
+    "profile": "Profil",
+    "analytics": "Analysen"
+  },
+  "menu": {
+    "about": "Uber uns",
+    "ourMission": "Unsere Mission",
+    "news": "Neuigkeiten",
+    "blog": "Blog",
+    "faq": "FAQ",
+    "mediaResources": "Medienressourcen",
+    "terms": "Nutzungsbedingungen",
+    "privacy": "Datenschutz",
+    "safety": "Sicherheit",
+    "dmca": "DMCA und Urheberrecht",
+    "openSource": "Open Source",
+    "donate": "Spenden",
+    "help": "Hilfe"
+  },
+  "theme": {
+    "lightMode": "Heller Modus",
+    "darkMode": "Dunkler Modus"
+  },
+  "footer": {
+    "aboutDivine": "Uber Divine",
+    "vinesRecovered": "{{count}} Vines wiederhergestellt",
+    "termsAndOpenSource": "Bedingungen und Open Source",
+    "copyright": "© 2026 Divine"
+  },
+  "rss": {
+    "title": "RSS-Feeds",
+    "latestVideos": "Neueste Videos",
+    "trending": "Im Trend",
+    "yourFeed": "Dein Feed"
+  },
+  "auth": {
+    "logInOnDivine": "Bei Divine anmelden"
+  },
+  "home": {
+    "welcomeTitle": "Willkommen in deinem Home-Feed",
+    "welcomeSubtitle": "Melde dich an, um Videos von Personen zu sehen, denen du folgst",
+    "title": "Startseite",
+    "subtitle": "Videos von Personen, denen du folgst",
+    "sortBy": "Sortieren nach:",
+    "updating": "Wird aktualisiert..."
+  },
+  "comments": {
+    "title": "Kommentare",
+    "noCommentsYet": "Noch keine Kommentare",
+    "beFirstToShare": "Teile als Erste oder Erster deine Gedanken",
+    "failedToLoad": "Kommentare konnten nicht geladen werden",
+    "writeAComment": "Schreibe einen Kommentar...",
+    "signInToReply": "Melde dich an, um zu antworten",
+    "signInToComment": "Melde dich an, um zu kommentieren",
+    "replyingToComment": "Antwort auf Kommentar",
+    "addingToDiscussion": "Zur Diskussion hinzufugen",
+    "posting": "Wird gesendet...",
+    "reply": "Antworten",
+    "comment": "Kommentieren"
+  },
+  "messages": {
+    "badge": "Nachrichten",
+    "title": "Direktnachrichten",
+    "subtitle": "Sprich mit dem Support, sende Vines privat oder fuhre Unterhaltungen mit Personen fort, denen du folgst.",
+    "searchPlaceholder": "Personen zum Anschreiben finden",
+    "newMessage": "Neue Nachricht",
+    "readyToShare": "Bereit zum privaten Teilen.",
+    "shareWithTitle": "Deine nachste Nachricht enthalt „{{title}}“.",
+    "shareWithLink": "Deine nachste Nachricht enthalt einen Vine-Link.",
+    "signerUnsupported": "Dein aktueller Signer kann dich anmelden, bietet aber noch keine NIP-44-Verschlusselung. Wechsle zu einem nsec, bunker oder einem anderen Signer mit NIP-44-Unterstutzung, um Direktnachrichten im Web zu nutzen.",
+    "supportBadge": "Support",
+    "supportSummary": "Frage nach Bugs, Moderation oder Kontoproblemen."
+  }
+}

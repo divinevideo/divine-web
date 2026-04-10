@@ -1,0 +1,84 @@
+{
+  "common": {
+    "language": "Sprak",
+    "moreOptions": "Fler alternativ"
+  },
+  "nav": {
+    "home": "Hem",
+    "discover": "Utforska",
+    "search": "Sok",
+    "messages": "Meddelanden",
+    "notifications": "Aviseringar",
+    "profile": "Profil",
+    "analytics": "Analys"
+  },
+  "menu": {
+    "about": "Om",
+    "ourMission": "Vart uppdrag",
+    "news": "Nyheter",
+    "blog": "Blogg",
+    "faq": "FAQ",
+    "mediaResources": "Mediaresurser",
+    "terms": "Villkor",
+    "privacy": "Integritet",
+    "safety": "Sakerhet",
+    "dmca": "DMCA och upphovsratt",
+    "openSource": "Oppen kallkod",
+    "donate": "Donera",
+    "help": "Hjalp"
+  },
+  "theme": {
+    "lightMode": "Ljust lage",
+    "darkMode": "Morkt lage"
+  },
+  "footer": {
+    "aboutDivine": "Om Divine",
+    "vinesRecovered": "{{count}} Vines aterstallda",
+    "termsAndOpenSource": "Villkor och oppen kallkod",
+    "copyright": "© 2026 Divine"
+  },
+  "rss": {
+    "title": "RSS-floden",
+    "latestVideos": "Senaste videorna",
+    "trending": "Trendande",
+    "yourFeed": "Ditt flode"
+  },
+  "auth": {
+    "logInOnDivine": "Logga in pa Divine"
+  },
+  "home": {
+    "welcomeTitle": "Valkommen till ditt hemmaflode",
+    "welcomeSubtitle": "Logga in for att se videor fran personer du foljer",
+    "title": "Hem",
+    "subtitle": "Videor fran personer du foljer",
+    "sortBy": "Sortera efter:",
+    "updating": "Uppdaterar..."
+  },
+  "comments": {
+    "title": "Kommentarer",
+    "noCommentsYet": "Inga kommentarer an",
+    "beFirstToShare": "Bli den forsta som delar dina tankar",
+    "failedToLoad": "Det gick inte att ladda kommentarer",
+    "writeAComment": "Skriv en kommentar...",
+    "signInToReply": "Logga in for att svara",
+    "signInToComment": "Logga in for att kommentera",
+    "replyingToComment": "Svara pa kommentar",
+    "addingToDiscussion": "Lagger till i diskussionen",
+    "posting": "Publicerar...",
+    "reply": "Svara",
+    "comment": "Kommentera"
+  },
+  "messages": {
+    "badge": "Meddelanden",
+    "title": "Direktmeddelanden",
+    "subtitle": "Prata med support, skicka vines privat eller hall igang en trad med personer du foljer.",
+    "searchPlaceholder": "Hitta personer att skicka meddelanden till",
+    "newMessage": "Nytt meddelande",
+    "readyToShare": "Redo att dela privat.",
+    "shareWithTitle": "Ditt nasta meddelande kommer att innehalla “{{title}}”.",
+    "shareWithLink": "Ditt nasta meddelande kommer att innehalla en vine-lank.",
+    "signerUnsupported": "Din nuvarande signer kan logga in dig, men den exponerar inte NIP-44-kryptering an. Byt till en nsec, bunker eller annan signer som stodjer NIP-44 for att anvanda direktmeddelanden pa webben.",
+    "supportBadge": "Support",
+    "supportSummary": "Fraga om buggar, moderering eller kontoproblem."
+  }
+}

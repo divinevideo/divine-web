@@ -1,0 +1,84 @@
+{
+  "common": {
+    "language": "Language",
+    "moreOptions": "More options"
+  },
+  "nav": {
+    "home": "Home",
+    "discover": "Discover",
+    "search": "Search",
+    "messages": "Messages",
+    "notifications": "Notifications",
+    "profile": "Profile",
+    "analytics": "Analytics"
+  },
+  "menu": {
+    "about": "About",
+    "ourMission": "Our Mission",
+    "news": "News",
+    "blog": "Blog",
+    "faq": "FAQ",
+    "mediaResources": "Media Resources",
+    "terms": "Terms",
+    "privacy": "Privacy",
+    "safety": "Safety",
+    "dmca": "DMCA & Copyright",
+    "openSource": "Open Source",
+    "donate": "Donate",
+    "help": "Help"
+  },
+  "theme": {
+    "lightMode": "Light mode",
+    "darkMode": "Dark mode"
+  },
+  "footer": {
+    "aboutDivine": "About Divine",
+    "vinesRecovered": "{{count}} Vines recovered",
+    "termsAndOpenSource": "Terms & Open Source",
+    "copyright": "© 2026 Divine"
+  },
+  "rss": {
+    "title": "RSS Feeds",
+    "latestVideos": "Latest Videos",
+    "trending": "Trending",
+    "yourFeed": "Your Feed"
+  },
+  "auth": {
+    "logInOnDivine": "Log in on Divine"
+  },
+  "home": {
+    "welcomeTitle": "Welcome to Your Home Feed",
+    "welcomeSubtitle": "Sign in to see videos from people you follow",
+    "title": "Home",
+    "subtitle": "Videos from people you follow",
+    "sortBy": "Sort by:",
+    "updating": "Updating..."
+  },
+  "comments": {
+    "title": "Comments",
+    "noCommentsYet": "No comments yet",
+    "beFirstToShare": "Be the first to share your thoughts!",
+    "failedToLoad": "Failed to load comments",
+    "writeAComment": "Write a comment...",
+    "signInToReply": "Sign in to reply",
+    "signInToComment": "Sign in to comment",
+    "replyingToComment": "Replying to comment",
+    "addingToDiscussion": "Adding to the discussion",
+    "posting": "Posting...",
+    "reply": "Reply",
+    "comment": "Comment"
+  },
+  "messages": {
+    "badge": "Messages",
+    "title": "Direct messages",
+    "subtitle": "Talk to support, send vines privately, or keep a thread going with people you follow.",
+    "searchPlaceholder": "Find people to message",
+    "newMessage": "New message",
+    "readyToShare": "Ready to share privately.",
+    "shareWithTitle": "Your next message will include “{{title}}”.",
+    "shareWithLink": "Your next message will include a vine link.",
+    "signerUnsupported": "Your current signer can log you in, but it does not expose NIP-44 encryption yet. Switch to an nsec, bunker, or another signer that supports NIP-44 to use direct messages on web.",
+    "supportBadge": "Support",
+    "supportSummary": "Ask about bugs, moderation, or account issues."
+  }
+}

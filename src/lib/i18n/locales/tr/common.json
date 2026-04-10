@@ -1,0 +1,84 @@
+{
+  "common": {
+    "language": "Dil",
+    "moreOptions": "Daha fazla secenek"
+  },
+  "nav": {
+    "home": "Ana sayfa",
+    "discover": "Kesfet",
+    "search": "Ara",
+    "messages": "Mesajlar",
+    "notifications": "Bildirimler",
+    "profile": "Profil",
+    "analytics": "Analitik"
+  },
+  "menu": {
+    "about": "Hakkinda",
+    "ourMission": "Misyonumuz",
+    "news": "Haberler",
+    "blog": "Blog",
+    "faq": "SSS",
+    "mediaResources": "Medya kaynaklari",
+    "terms": "Kosullar",
+    "privacy": "Gizlilik",
+    "safety": "Guvenlik",
+    "dmca": "DMCA ve telif haklari",
+    "openSource": "Acik kaynak",
+    "donate": "Bagis yap",
+    "help": "Yardim"
+  },
+  "theme": {
+    "lightMode": "Acik mod",
+    "darkMode": "Koyu mod"
+  },
+  "footer": {
+    "aboutDivine": "Divine hakkinda",
+    "vinesRecovered": "{{count}} Vine kurtarildi",
+    "termsAndOpenSource": "Kosullar ve Acik Kaynak",
+    "copyright": "© 2026 Divine"
+  },
+  "rss": {
+    "title": "RSS akislari",
+    "latestVideos": "En son videolar",
+    "trending": "Gundemdekiler",
+    "yourFeed": "Akisin"
+  },
+  "auth": {
+    "logInOnDivine": "Divine'da giris yap"
+  },
+  "home": {
+    "welcomeTitle": "Ana akisina hos geldin",
+    "welcomeSubtitle": "Takip ettigin kisilerin videolarini gormek icin giris yap",
+    "title": "Ana sayfa",
+    "subtitle": "Takip ettigin kisilerin videolari",
+    "sortBy": "Siralama:",
+    "updating": "Guncelleniyor..."
+  },
+  "comments": {
+    "title": "Yorumlar",
+    "noCommentsYet": "Henuz yorum yok",
+    "beFirstToShare": "Dusuncelerini ilk paylasan sen ol",
+    "failedToLoad": "Yorumlar yuklenemedi",
+    "writeAComment": "Bir yorum yaz...",
+    "signInToReply": "Yanıt vermek icin giris yap",
+    "signInToComment": "Yorum yapmak icin giris yap",
+    "replyingToComment": "Yoruma yanıt veriliyor",
+    "addingToDiscussion": "Tartismaya ekleniyor",
+    "posting": "Gonderiliyor...",
+    "reply": "Yanıtla",
+    "comment": "Yorum yap"
+  },
+  "messages": {
+    "badge": "Mesajlar",
+    "title": "Dogrudan mesajlar",
+    "subtitle": "Destekle konus, vine'lari ozel olarak gonder veya takip ettigin kisilerle konusmayi surdur.",
+    "searchPlaceholder": "Mesaj gonderecek kisi bul",
+    "newMessage": "Yeni mesaj",
+    "readyToShare": "Ozel olarak paylasmaya hazir.",
+    "shareWithTitle": "Bir sonraki mesajin “{{title}}” icerecek.",
+    "shareWithLink": "Bir sonraki mesajin bir vine baglantisi icerecek.",
+    "signerUnsupported": "Mevcut imzalayicin giris yapmana izin veriyor, ancak henuz NIP-44 sifrelemesini desteklemiyor. Web'de dogrudan mesaj kullanmak icin NIP-44 destekleyen bir nsec, bunker veya baska bir imzalayiciya gec.",
+    "supportBadge": "Destek",
+    "supportSummary": "Hatalar, moderasyon veya hesap sorunlari hakkinda sor."
+  }
+}

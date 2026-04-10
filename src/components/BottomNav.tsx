@@ -1,5 +1,6 @@
 import { Home, Compass, Search, Bell, User } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useUnreadNotificationCount } from '@/hooks/useNotifications';
@@ -10,6 +11,7 @@ import { nip19 } from 'nostr-tools';
 export function BottomNav() {
   const navigate = useSubdomainNavigate();
   const location = useLocation();
+  const { t } = useTranslation();
   const { user } = useCurrentUser();
   const { data: unreadCount } = useUnreadNotificationCount();
 
@@ -36,7 +38,7 @@ export function BottomNav() {
           )}
         >
           <Home className={cn("h-5 w-5", isHomePage && "text-primary")} />
-          <span className={cn("text-xs", isHomePage && "text-primary")}>Home</span>
+          <span className={cn("text-xs", isHomePage && "text-primary")}>{t('nav.home')}</span>
         </Button>
 
         {/* Explore - Redirects to home page with explore tab */}
@@ -50,7 +52,7 @@ export function BottomNav() {
           )}
         >
           <Compass className={cn("h-5 w-5", isActive('/discovery') && "text-primary")} />
-          <span className={cn("text-xs", isActive('/discovery') && "text-primary")}>Discover</span>
+          <span className={cn("text-xs", isActive('/discovery') && "text-primary")}>{t('nav.discover')}</span>
         </Button>
 
         {/* Search */}
@@ -64,7 +66,7 @@ export function BottomNav() {
           )}
         >
           <Search className={cn("h-5 w-5", isActive('/search') && "text-primary")} />
-          <span className={cn("text-xs", isActive('/search') && "text-primary")}>Search</span>
+          <span className={cn("text-xs", isActive('/search') && "text-primary")}>{t('nav.search')}</span>
         </Button>
 
         {/* Notifications */}
@@ -86,7 +88,7 @@ export function BottomNav() {
                 </span>
               )}
             </div>
-            <span className={cn("text-xs", isActive('/notifications') && "text-primary")}>Alerts</span>
+            <span className={cn("text-xs", isActive('/notifications') && "text-primary")}>{t('nav.notifications')}</span>
           </Button>
         )}
 
@@ -100,11 +102,11 @@ export function BottomNav() {
               "flex flex-col items-center justify-center gap-1 h-full flex-1 rounded-none hover:bg-transparent",
               isActive(getUserProfilePath()) && "text-primary"
             )}
-          >
-            <User className={cn("h-5 w-5", isActive(getUserProfilePath()) && "text-primary")} />
-            <span className={cn("text-xs", isActive(getUserProfilePath()) && "text-primary")}>Profile</span>
-          </Button>
-        )}
+        >
+          <User className={cn("h-5 w-5", isActive(getUserProfilePath()) && "text-primary")} />
+          <span className={cn("text-xs", isActive(getUserProfilePath()) && "text-primary")}>{t('nav.profile')}</span>
+        </Button>
+      )}
       </div>
     </nav>
   );

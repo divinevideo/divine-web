@@ -1,6 +1,8 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { LOCALE_STORAGE_KEY } from '@/lib/i18n/config';
+import { initializeI18n } from '@/lib/i18n';
 import { AppSidebar } from './AppSidebar';
 
 const { mockNavigate, mockSetTheme } = vi.hoisted(() => ({
@@ -50,21 +52,39 @@ vi.mock('@/hooks/usePlatformStats', () => ({
 }));
 
 describe('AppSidebar', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
+    const storage = new Map<string, string>();
+
+    Object.defineProperty(window, 'localStorage', {
+      configurable: true,
+      value: {
+        getItem: (key: string) => storage.get(key) ?? null,
+        setItem: (key: string, value: string) => storage.set(key, value),
+        removeItem: (key: string) => storage.delete(key),
+        clear: () => storage.clear(),
+      } satisfies Pick<Storage, 'getItem' | 'setItem' | 'removeItem' | 'clear'>,
+    });
+
+    window.localStorage.setItem(LOCALE_STORAGE_KEY, 'es');
+
+    await initializeI18n({ force: true, languages: ['en-US'] });
+
     mockNavigate.mockReset();
     mockSetTheme.mockReset();
   });
 
-  it('renders a DMCA & Copyright legal action', () => {
+  it('renders translated shell labels and a translated DMCA action', () => {
     render(
       <MemoryRouter>
         <AppSidebar />
       </MemoryRouter>,
     );
 
-    fireEvent.click(screen.getByRole('button', { name: /terms & open source/i }));
+    expect(screen.getByRole('button', { name: 'Buscar' })).toBeVisible();
 
-    const dmcaButton = screen.getByRole('button', { name: 'DMCA & Copyright' });
+    fireEvent.click(screen.getByRole('button', { name: 'Terminos y codigo abierto' }));
+
+    const dmcaButton = screen.getByRole('button', { name: 'DMCA y derechos de autor' });
     expect(dmcaButton).toBeVisible();
 
     fireEvent.click(dmcaButton);

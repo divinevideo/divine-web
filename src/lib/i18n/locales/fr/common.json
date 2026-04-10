@@ -1,0 +1,84 @@
+{
+  "common": {
+    "language": "Langue",
+    "moreOptions": "Plus d'options"
+  },
+  "nav": {
+    "home": "Accueil",
+    "discover": "Decouvrir",
+    "search": "Rechercher",
+    "messages": "Messages",
+    "notifications": "Notifications",
+    "profile": "Profil",
+    "analytics": "Analyses"
+  },
+  "menu": {
+    "about": "A propos",
+    "ourMission": "Notre mission",
+    "news": "Actualites",
+    "blog": "Blog",
+    "faq": "FAQ",
+    "mediaResources": "Ressources media",
+    "terms": "Conditions",
+    "privacy": "Confidentialite",
+    "safety": "Securite",
+    "dmca": "DMCA et droits d'auteur",
+    "openSource": "Open source",
+    "donate": "Faire un don",
+    "help": "Aide"
+  },
+  "theme": {
+    "lightMode": "Mode clair",
+    "darkMode": "Mode sombre"
+  },
+  "footer": {
+    "aboutDivine": "A propos de Divine",
+    "vinesRecovered": "{{count}} Vines recuperes",
+    "termsAndOpenSource": "Conditions et open source",
+    "copyright": "© 2026 Divine"
+  },
+  "rss": {
+    "title": "Flux RSS",
+    "latestVideos": "Dernieres videos",
+    "trending": "Tendances",
+    "yourFeed": "Votre flux"
+  },
+  "auth": {
+    "logInOnDivine": "Se connecter a Divine"
+  },
+  "home": {
+    "welcomeTitle": "Bienvenue dans votre fil d'accueil",
+    "welcomeSubtitle": "Connectez-vous pour voir les videos des personnes que vous suivez",
+    "title": "Accueil",
+    "subtitle": "Videos des personnes que vous suivez",
+    "sortBy": "Trier par :",
+    "updating": "Mise a jour..."
+  },
+  "comments": {
+    "title": "Commentaires",
+    "noCommentsYet": "Aucun commentaire pour l'instant",
+    "beFirstToShare": "Soyez la premiere personne a partager votre avis",
+    "failedToLoad": "Impossible de charger les commentaires",
+    "writeAComment": "Ecrire un commentaire...",
+    "signInToReply": "Connectez-vous pour repondre",
+    "signInToComment": "Connectez-vous pour commenter",
+    "replyingToComment": "Reponse au commentaire",
+    "addingToDiscussion": "Ajout a la discussion",
+    "posting": "Publication...",
+    "reply": "Repondre",
+    "comment": "Commenter"
+  },
+  "messages": {
+    "badge": "Messages",
+    "title": "Messages directs",
+    "subtitle": "Parlez au support, envoyez des vines en prive ou poursuivez une conversation avec les personnes que vous suivez.",
+    "searchPlaceholder": "Trouver des personnes a contacter",
+    "newMessage": "Nouveau message",
+    "readyToShare": "Pret a partager en prive.",
+    "shareWithTitle": "Votre prochain message inclura « {{title}} ».",
+    "shareWithLink": "Votre prochain message inclura un lien vine.",
+    "signerUnsupported": "Votre signer actuel peut vous connecter, mais il n'expose pas encore le chiffrement NIP-44. Passez a un nsec, un bunker ou un autre signer compatible NIP-44 pour utiliser les messages directs sur le web.",
+    "supportBadge": "Support",
+    "supportSummary": "Posez des questions sur les bugs, la moderation ou les problemes de compte."
+  }
+}

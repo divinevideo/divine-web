@@ -1,6 +1,8 @@
 import { render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { LOCALE_STORAGE_KEY } from '@/lib/i18n/config';
+import { initializeI18n } from '@/lib/i18n';
 
 import MessagesPage from './MessagesPage';
 import type { DmConversation } from '@/lib/dm';
@@ -68,18 +70,35 @@ function renderPage() {
 }
 
 describe('MessagesPage', () => {
-  it('renders a compose-first header without an inline support action', () => {
+  beforeEach(async () => {
+    const storage = new Map<string, string>();
+
+    Object.defineProperty(window, 'localStorage', {
+      configurable: true,
+      value: {
+        getItem: (key: string) => storage.get(key) ?? null,
+        setItem: (key: string, value: string) => storage.set(key, value),
+        removeItem: (key: string) => storage.delete(key),
+        clear: () => storage.clear(),
+      } satisfies Pick<Storage, 'getItem' | 'setItem' | 'removeItem' | 'clear'>,
+    });
+
+    window.localStorage.setItem(LOCALE_STORAGE_KEY, 'es');
+    await initializeI18n({ force: true, languages: ['en-US'] });
+  });
+
+  it('renders a localized compose-first header without an inline support action', () => {
     renderPage();
 
-    expect(screen.getByRole('heading', { name: /direct messages/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /new message/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /mensajes directos/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /nuevo mensaje/i })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /message support/i })).not.toBeInTheDocument();
   });
 
   it('keeps divine support outside the header card', () => {
     renderPage();
 
-    const headerSection = screen.getByRole('heading', { name: /direct messages/i }).closest('section');
+    const headerSection = screen.getByRole('heading', { name: /mensajes directos/i }).closest('section');
 
     expect(headerSection).not.toBeNull();
     expect(screen.getByText(/divine support/i)).toBeInTheDocument();

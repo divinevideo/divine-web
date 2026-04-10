@@ -1,0 +1,84 @@
+{
+  "common": {
+    "language": "Limba",
+    "moreOptions": "Mai multe optiuni"
+  },
+  "nav": {
+    "home": "Acasa",
+    "discover": "Descopera",
+    "search": "Cauta",
+    "messages": "Mesaje",
+    "notifications": "Notificari",
+    "profile": "Profil",
+    "analytics": "Analitice"
+  },
+  "menu": {
+    "about": "Despre",
+    "ourMission": "Misiunea noastra",
+    "news": "Stiri",
+    "blog": "Blog",
+    "faq": "Intrebari frecvente",
+    "mediaResources": "Resurse media",
+    "terms": "Termeni",
+    "privacy": "Confidentialitate",
+    "safety": "Siguranta",
+    "dmca": "DMCA si drepturi de autor",
+    "openSource": "Sursa deschisa",
+    "donate": "Doneaza",
+    "help": "Ajutor"
+  },
+  "theme": {
+    "lightMode": "Mod luminos",
+    "darkMode": "Mod intunecat"
+  },
+  "footer": {
+    "aboutDivine": "Despre Divine",
+    "vinesRecovered": "{{count}} Vines recuperate",
+    "termsAndOpenSource": "Termeni si sursa deschisa",
+    "copyright": "© 2026 Divine"
+  },
+  "rss": {
+    "title": "Fluxuri RSS",
+    "latestVideos": "Cele mai noi videoclipuri",
+    "trending": "In tendinte",
+    "yourFeed": "Fluxul tau"
+  },
+  "auth": {
+    "logInOnDivine": "Conecteaza-te la Divine"
+  },
+  "home": {
+    "welcomeTitle": "Bine ai venit in fluxul tau principal",
+    "welcomeSubtitle": "Conecteaza-te pentru a vedea videoclipuri de la persoanele pe care le urmaresti",
+    "title": "Acasa",
+    "subtitle": "Videoclipuri de la persoanele pe care le urmaresti",
+    "sortBy": "Sorteaza dupa:",
+    "updating": "Se actualizeaza..."
+  },
+  "comments": {
+    "title": "Comentarii",
+    "noCommentsYet": "Nu exista comentarii inca",
+    "beFirstToShare": "Fii prima persoana care isi impartaseste gandurile",
+    "failedToLoad": "Comentariile nu au putut fi incarcate",
+    "writeAComment": "Scrie un comentariu...",
+    "signInToReply": "Conecteaza-te pentru a raspunde",
+    "signInToComment": "Conecteaza-te pentru a comenta",
+    "replyingToComment": "Raspunzi la comentariu",
+    "addingToDiscussion": "Adaugare la discutie",
+    "posting": "Se publica...",
+    "reply": "Raspunde",
+    "comment": "Comenteaza"
+  },
+  "messages": {
+    "badge": "Mesaje",
+    "title": "Mesaje directe",
+    "subtitle": "Vorbeste cu suportul, trimite vines in privat sau continua o conversatie cu persoanele pe care le urmaresti.",
+    "searchPlaceholder": "Gaseste persoane carora sa le scrii",
+    "newMessage": "Mesaj nou",
+    "readyToShare": "Gata de partajare privata.",
+    "shareWithTitle": "Urmatorul tau mesaj va include “{{title}}”.",
+    "shareWithLink": "Urmatorul tau mesaj va include un link vine.",
+    "signerUnsupported": "Signerul tau actual te poate autentifica, dar nu ofera inca criptare NIP-44. Treci la un nsec, bunker sau alt signer care suporta NIP-44 pentru a folosi mesaje directe pe web.",
+    "supportBadge": "Suport",
+    "supportSummary": "Intreaba despre buguri, moderare sau probleme de cont."
+  }
+}

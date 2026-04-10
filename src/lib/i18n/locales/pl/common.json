@@ -1,0 +1,84 @@
+{
+  "common": {
+    "language": "Jezyk",
+    "moreOptions": "Wiecej opcji"
+  },
+  "nav": {
+    "home": "Strona glowna",
+    "discover": "Odkrywaj",
+    "search": "Szukaj",
+    "messages": "Wiadomosci",
+    "notifications": "Powiadomienia",
+    "profile": "Profil",
+    "analytics": "Analityka"
+  },
+  "menu": {
+    "about": "O nas",
+    "ourMission": "Nasza misja",
+    "news": "Aktualnosci",
+    "blog": "Blog",
+    "faq": "FAQ",
+    "mediaResources": "Materialy medialne",
+    "terms": "Warunki",
+    "privacy": "Prywatnosc",
+    "safety": "Bezpieczenstwo",
+    "dmca": "DMCA i prawa autorskie",
+    "openSource": "Open source",
+    "donate": "Wesprzyj",
+    "help": "Pomoc"
+  },
+  "theme": {
+    "lightMode": "Tryb jasny",
+    "darkMode": "Tryb ciemny"
+  },
+  "footer": {
+    "aboutDivine": "O Divine",
+    "vinesRecovered": "{{count}} odzyskanych Vine",
+    "termsAndOpenSource": "Warunki i open source",
+    "copyright": "© 2026 Divine"
+  },
+  "rss": {
+    "title": "Kanaly RSS",
+    "latestVideos": "Najnowsze filmy",
+    "trending": "Popularne",
+    "yourFeed": "Twoj kanal"
+  },
+  "auth": {
+    "logInOnDivine": "Zaloguj sie do Divine"
+  },
+  "home": {
+    "welcomeTitle": "Witaj w swoim glownym kanale",
+    "welcomeSubtitle": "Zaloguj sie, aby zobaczyc filmy osob, ktore obserwujesz",
+    "title": "Strona glowna",
+    "subtitle": "Filmy osob, ktore obserwujesz",
+    "sortBy": "Sortuj wedlug:",
+    "updating": "Aktualizacja..."
+  },
+  "comments": {
+    "title": "Komentarze",
+    "noCommentsYet": "Brak komentarzy",
+    "beFirstToShare": "Badz pierwsza osoba, ktora podzieli sie swoja opinia",
+    "failedToLoad": "Nie udalo sie zaladowac komentarzy",
+    "writeAComment": "Napisz komentarz...",
+    "signInToReply": "Zaloguj sie, aby odpowiedziec",
+    "signInToComment": "Zaloguj sie, aby skomentowac",
+    "replyingToComment": "Odpowiadanie na komentarz",
+    "addingToDiscussion": "Dodawanie do dyskusji",
+    "posting": "Publikowanie...",
+    "reply": "Odpowiedz",
+    "comment": "Komentarz"
+  },
+  "messages": {
+    "badge": "Wiadomosci",
+    "title": "Wiadomosci bezposrednie",
+    "subtitle": "Porozmawiaj z supportem, wyslij vines prywatnie albo kontynuuj rozmowe z osobami, ktore obserwujesz.",
+    "searchPlaceholder": "Znajdz osoby, do ktorych chcesz napisac",
+    "newMessage": "Nowa wiadomosc",
+    "readyToShare": "Gotowe do prywatnego udostepnienia.",
+    "shareWithTitle": "Twoja nastepna wiadomosc bedzie zawierac “{{title}}”.",
+    "shareWithLink": "Twoja nastepna wiadomosc bedzie zawierac link do vine.",
+    "signerUnsupported": "Twoj obecny signer pozwala sie zalogowac, ale nie udostepnia jeszcze szyfrowania NIP-44. Przelacz sie na nsec, bunker lub inny signer obslugujacy NIP-44, aby korzystac z wiadomosci bezposrednich w sieci.",
+    "supportBadge": "Wsparcie",
+    "supportSummary": "Zapytaj o bledy, moderacje lub problemy z kontem."
+  }
+}

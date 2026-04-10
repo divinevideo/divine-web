@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { LifeBuoy, Plus, Search } from 'lucide-react';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -111,9 +112,17 @@ interface SupportRowProps {
   displayName: string;
   picture: string;
   onClick: () => void;
+  supportBadge: string;
+  supportSummary: string;
 }
 
-function SupportRow({ displayName, picture, onClick }: SupportRowProps) {
+function SupportRow({
+  displayName,
+  picture,
+  onClick,
+  supportBadge,
+  supportSummary,
+}: SupportRowProps) {
   return (
     <button
       onClick={onClick}
@@ -131,11 +140,11 @@ function SupportRow({ displayName, picture, onClick }: SupportRowProps) {
           <div className="flex items-center justify-between gap-3">
             <p className="truncate text-sm font-semibold text-foreground">{displayName}</p>
             <span className="rounded-full bg-primary/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-primary">
-              Support
+              {supportBadge}
             </span>
           </div>
           <p className="mt-2 truncate text-sm text-muted-foreground">
-            Ask about bugs, moderation, or account issues.
+            {supportSummary}
           </p>
         </div>
       </div>
@@ -146,6 +155,7 @@ function SupportRow({ displayName, picture, onClick }: SupportRowProps) {
 export function MessagesPage() {
   const navigate = useSubdomainNavigate();
   const location = useLocation();
+  const { t } = useTranslation();
   const { canUseDirectMessages } = useDmCapability();
   const conversationsQuery = useDmConversations();
   const share = useParsedDmShare(location.search);
@@ -186,12 +196,12 @@ export function MessagesPage() {
             <div className="space-y-4">
               <div className="space-y-2">
                 <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-primary">
-                  Messages
+                  {t('messages.badge')}
                 </div>
                 <div>
-                  <h1 className="text-3xl font-bold tracking-tight">Direct messages</h1>
+                  <h1 className="text-3xl font-bold tracking-tight">{t('messages.title')}</h1>
                   <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-                    Talk to support, send vines privately, or keep a thread going with people you follow.
+                    {t('messages.subtitle')}
                   </p>
                 </div>
               </div>
@@ -203,7 +213,7 @@ export function MessagesPage() {
                     id="dm-search-input"
                     value={searchQuery}
                     onChange={(event) => setSearchQuery(event.target.value)}
-                    placeholder="Find people to message"
+                    placeholder={t('messages.searchPlaceholder')}
                     className="h-12 rounded-full border-border/80 bg-background/80 pl-11 text-sm"
                   />
                 </div>
@@ -216,22 +226,24 @@ export function MessagesPage() {
                   disabled={!canUseDirectMessages}
                 >
                   <Plus className="h-4 w-4" />
-                  New message
+                  {t('messages.newMessage')}
                 </Button>
               </div>
             </div>
 
             {share && (
               <div className="mt-4 rounded-[24px] border border-primary/20 bg-primary/10 px-4 py-3 text-sm text-foreground">
-                <span className="font-medium">Ready to share privately.</span>{' '}
-                {share.title ? `Your next message will include “${share.title}”.` : 'Your next message will include a vine link.'}
+                <span className="font-medium">{t('messages.readyToShare')}</span>{' '}
+                {share.title
+                  ? t('messages.shareWithTitle', { title: share.title })
+                  : t('messages.shareWithLink')}
               </div>
             )}
           </section>
 
           {!canUseDirectMessages && (
             <section className="rounded-[32px] border border-border/80 bg-card/80 px-5 py-6 text-sm text-muted-foreground shadow-sm backdrop-blur-sm">
-              Your current signer can log you in, but it does not expose NIP-44 encryption yet. Switch to an `nsec`, bunker, or another signer that supports NIP-44 to use direct messages on web.
+              {t('messages.signerUnsupported')}
             </section>
           )}
 
@@ -293,6 +305,8 @@ export function MessagesPage() {
                   <SupportRow
                     displayName={supportDisplayName}
                     picture={supportPicture}
+                    supportBadge={t('messages.supportBadge')}
+                    supportSummary={t('messages.supportSummary')}
                     onClick={() => openConversation([DIVINE_SUPPORT_PUBKEY])}
                   />
 

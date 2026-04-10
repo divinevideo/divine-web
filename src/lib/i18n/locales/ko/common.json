@@ -1,0 +1,84 @@
+{
+  "common": {
+    "language": "언어",
+    "moreOptions": "추가 옵션"
+  },
+  "nav": {
+    "home": "홈",
+    "discover": "탐색",
+    "search": "검색",
+    "messages": "메시지",
+    "notifications": "알림",
+    "profile": "프로필",
+    "analytics": "분석"
+  },
+  "menu": {
+    "about": "소개",
+    "ourMission": "우리의 미션",
+    "news": "뉴스",
+    "blog": "블로그",
+    "faq": "FAQ",
+    "mediaResources": "미디어 자료",
+    "terms": "이용 약관",
+    "privacy": "개인정보",
+    "safety": "안전",
+    "dmca": "DMCA 및 저작권",
+    "openSource": "오픈 소스",
+    "donate": "후원",
+    "help": "도움말"
+  },
+  "theme": {
+    "lightMode": "라이트 모드",
+    "darkMode": "다크 모드"
+  },
+  "footer": {
+    "aboutDivine": "Divine 소개",
+    "vinesRecovered": "{{count}}개의 Vine 복구됨",
+    "termsAndOpenSource": "약관 및 오픈 소스",
+    "copyright": "© 2026 Divine"
+  },
+  "rss": {
+    "title": "RSS 피드",
+    "latestVideos": "최신 동영상",
+    "trending": "인기",
+    "yourFeed": "내 피드"
+  },
+  "auth": {
+    "logInOnDivine": "Divine에 로그인"
+  },
+  "home": {
+    "welcomeTitle": "홈 피드에 오신 것을 환영합니다",
+    "welcomeSubtitle": "팔로우한 사람들의 동영상을 보려면 로그인하세요",
+    "title": "홈",
+    "subtitle": "팔로우한 사람들의 동영상",
+    "sortBy": "정렬 기준:",
+    "updating": "업데이트 중..."
+  },
+  "comments": {
+    "title": "댓글",
+    "noCommentsYet": "아직 댓글이 없습니다",
+    "beFirstToShare": "가장 먼저 의견을 남겨보세요",
+    "failedToLoad": "댓글을 불러오지 못했습니다",
+    "writeAComment": "댓글 쓰기...",
+    "signInToReply": "답글을 쓰려면 로그인하세요",
+    "signInToComment": "댓글을 쓰려면 로그인하세요",
+    "replyingToComment": "댓글에 답글 작성 중",
+    "addingToDiscussion": "대화에 추가하는 중",
+    "posting": "게시 중...",
+    "reply": "답글",
+    "comment": "댓글"
+  },
+  "messages": {
+    "badge": "메시지",
+    "title": "다이렉트 메시지",
+    "subtitle": "지원팀과 대화하고, vine을 비공개로 보내거나, 팔로우한 사람들과 대화를 이어가세요.",
+    "searchPlaceholder": "메시지를 보낼 사람 찾기",
+    "newMessage": "새 메시지",
+    "readyToShare": "비공개로 공유할 준비가 되었습니다.",
+    "shareWithTitle": "다음 메시지에는 “{{title}}”가 포함됩니다.",
+    "shareWithLink": "다음 메시지에는 vine 링크가 포함됩니다.",
+    "signerUnsupported": "현재 signer로 로그인할 수는 있지만 아직 NIP-44 암호화를 제공하지 않습니다. 웹에서 다이렉트 메시지를 사용하려면 NIP-44를 지원하는 nsec, bunker 또는 다른 signer로 전환하세요.",
+    "supportBadge": "지원",
+    "supportSummary": "버그, 모더레이션 또는 계정 문제에 대해 문의하세요."
+  }
+}
