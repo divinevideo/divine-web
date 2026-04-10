@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Check, Languages } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -24,6 +25,8 @@ export function LanguageMenu({
 }: LanguageMenuProps) {
   const { i18n, t } = useTranslation();
   const activeLocale = normalizeLocale(i18n.resolvedLanguage) ?? DEFAULT_LOCALE;
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const activeOption = LOCALE_OPTIONS.find((option) => option.code === activeLocale) ?? LOCALE_OPTIONS[0];
 
   const handleSelect = (locale: (typeof LOCALE_OPTIONS)[number]['code']) => {
     setStoredLocale(locale);
@@ -33,29 +36,38 @@ export function LanguageMenu({
   if (variant === 'sidebar') {
     return (
       <div className={className}>
-        <div className="px-3 text-[13px] font-semibold text-muted-foreground">
-          <div className="flex items-center gap-2">
+        <div className="px-3">
+          <button
+            type="button"
+            onClick={() => setIsSidebarOpen((current) => !current)}
+            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-[13px] font-semibold text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          >
             <Languages className="h-4 w-4" />
-            <span>{t('common.language')}</span>
+            <span className="flex-1">{`${t('common.language')}: ${activeOption.nativeName}`}</span>
+          </button>
+        </div>
+        {isSidebarOpen && (
+          <div className="mt-2 flex flex-wrap gap-2 px-3">
+            {LOCALE_OPTIONS.map((option) => (
+              <button
+                key={option.code}
+                type="button"
+                onClick={() => {
+                  handleSelect(option.code);
+                  setIsSidebarOpen(false);
+                }}
+                className={cn(
+                  'rounded-full border px-3 py-1.5 text-xs transition-colors',
+                  activeLocale === option.code
+                    ? 'border-primary bg-primary text-primary-foreground'
+                    : 'border-border text-muted-foreground hover:border-primary hover:text-foreground',
+                )}
+              >
+                {option.nativeName}
+              </button>
+            ))}
           </div>
-        </div>
-        <div className="mt-2 flex flex-wrap gap-2 px-3">
-          {LOCALE_OPTIONS.map((option) => (
-            <button
-              key={option.code}
-              type="button"
-              onClick={() => handleSelect(option.code)}
-              className={cn(
-                'rounded-full border px-3 py-1.5 text-xs transition-colors',
-                activeLocale === option.code
-                  ? 'border-primary bg-primary text-primary-foreground'
-                  : 'border-border text-muted-foreground hover:border-primary hover:text-foreground',
-              )}
-            >
-              {option.nativeName}
-            </button>
-          ))}
-        </div>
+        )}
       </div>
     );
   }

@@ -54,6 +54,32 @@
     "sortBy": "Sort by:",
     "updating": "Updating..."
   },
+  "discovery": {
+    "title": "Discover",
+    "subtitle": "Explore videos from the network",
+    "categories": "Categories",
+    "forYou": "For You",
+    "classic": "Classic",
+    "hot": "Hot",
+    "new": "New",
+    "tags": "Tags",
+    "verifiedOnly": "Human Made",
+    "verifiedOnlyHint": "Showing only videos with ProofMode verification"
+  },
+  "categories": {
+    "music": "Music",
+    "sports": "Sports",
+    "dance": "Dance",
+    "comedy": "Comedy",
+    "travel": "Travel",
+    "fashion": "Fashion",
+    "family": "Family",
+    "beauty": "Beauty",
+    "food": "Food",
+    "technology": "Tech",
+    "gaming": "Gaming",
+    "education": "Education"
+  },
   "comments": {
     "title": "Comments",
     "noCommentsYet": "No comments yet",

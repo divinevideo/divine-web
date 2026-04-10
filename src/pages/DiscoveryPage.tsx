@@ -3,6 +3,7 @@
 // ABOUTME: For You tab shows personalized recommendations when user is logged in
 
 import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router-dom';
 import { useSubdomainNavigate } from '@/hooks/useSubdomainNavigate';
 import { VideoFeed } from '@/components/VideoFeed';
@@ -14,6 +15,7 @@ import { Star, Clock, Hash, Flame, Sparkles } from 'lucide-react';
 // Zap temporarily unused - will be needed when Rising tab is re-enabled
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useCategories } from '@/hooks/useCategories';
+import { getTranslatedCategoryLabel } from '@/lib/constants/categories';
 
 // All possible tab values (foryou only shown when logged in)
 type AllowedTab = 'foryou' | 'classics' | 'hot' | 'new' | 'hashtags';
@@ -22,6 +24,7 @@ const BASE_TABS: AllowedTab[] = ['classics', 'hot', 'new', 'hashtags'];
 
 export function DiscoveryPage() {
   const navigate = useSubdomainNavigate();
+  const { t } = useTranslation();
   const params = useParams<{ tab?: string }>();
   const { user } = useCurrentUser();
   const isLoggedIn = !!user?.pubkey;
@@ -79,8 +82,8 @@ export function DiscoveryPage() {
         <header className="mb-6 space-y-4">
           <div className="flex items-start justify-between mb-4">
             <div>
-              <h1 className="text-2xl font-bold">Discover</h1>
-              <p className="text-muted-foreground">Explore videos from the network</p>
+              <h1 className="text-2xl font-bold">{t('discovery.title')}</h1>
+              <p className="text-muted-foreground">{t('discovery.subtitle')}</p>
             </div>
             {activeTab !== 'hashtags' && (
               <VerifiedOnlyToggle
@@ -102,7 +105,7 @@ export function DiscoveryPage() {
                   className="flex items-center gap-1.5 whitespace-nowrap rounded-full border border-border bg-background px-3 py-1.5 text-sm transition-colors hover:bg-muted hover:border-primary"
                 >
                   <span>{cat.config?.emoji || ''}</span>
-                  <span>{cat.config?.label || cat.name}</span>
+                  <span>{getTranslatedCategoryLabel(cat.name, t)}</span>
                 </button>
               ))}
             </div>
@@ -123,16 +126,16 @@ export function DiscoveryPage() {
             {isLoggedIn && (
               <TabsTrigger value="foryou" className="gap-1.5 sm:gap-2">
                 <Sparkles className="h-4 w-4" />
-                <span className="hidden sm:inline">For You</span>
+                <span className="hidden sm:inline">{t('discovery.forYou')}</span>
               </TabsTrigger>
             )}
             <TabsTrigger value="classics" className="gap-1.5 sm:gap-2">
               <Star className="h-4 w-4" />
-              <span className="hidden sm:inline">Classic</span>
+              <span className="hidden sm:inline">{t('discovery.classic')}</span>
             </TabsTrigger>
             <TabsTrigger value="hot" className="gap-1.5 sm:gap-2">
               <Flame className="h-4 w-4" />
-              <span className="hidden sm:inline">Hot</span>
+              <span className="hidden sm:inline">{t('discovery.hot')}</span>
             </TabsTrigger>
             {/* Rising tab temporarily disabled
             <TabsTrigger value="rising" className="gap-1.5 sm:gap-2">
@@ -142,11 +145,11 @@ export function DiscoveryPage() {
             */}
             <TabsTrigger value="new" className="gap-1.5 sm:gap-2">
               <Clock className="h-4 w-4" />
-              <span className="hidden sm:inline">New</span>
+              <span className="hidden sm:inline">{t('discovery.new')}</span>
             </TabsTrigger>
             <TabsTrigger value="hashtags" className="gap-1.5 sm:gap-2">
               <Hash className="h-4 w-4" />
-              <span className="hidden sm:inline">Tags</span>
+              <span className="hidden sm:inline">{t('discovery.tags')}</span>
             </TabsTrigger>
           </TabsList>
 

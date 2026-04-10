@@ -1,17 +1,20 @@
 import { fireEvent, render, screen } from '@testing-library/react';
+import { Tag } from 'lucide-react';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { LOCALE_STORAGE_KEY } from '@/lib/i18n/config';
 import { initializeI18n } from '@/lib/i18n';
 import { AppSidebar } from './AppSidebar';
+import type { CategoryWithConfig } from '@/hooks/useCategories';
 
-const { mockNavigate, mockSetTheme } = vi.hoisted(() => ({
+const { mockNavigate, mockSetTheme, mockCategories } = vi.hoisted(() => ({
   mockNavigate: vi.fn(),
   mockSetTheme: vi.fn(),
+  mockCategories: [] as CategoryWithConfig[],
 }));
 
 vi.mock('@/hooks/useCategories', () => ({
-  useCategories: () => ({ data: [] }),
+  useCategories: () => ({ data: mockCategories }),
 }));
 
 vi.mock('@/hooks/useTheme', () => ({
@@ -71,6 +74,7 @@ describe('AppSidebar', () => {
 
     mockNavigate.mockReset();
     mockSetTheme.mockReset();
+    mockCategories.length = 0;
   });
 
   it('renders translated shell labels and a translated DMCA action', () => {
@@ -90,5 +94,41 @@ describe('AppSidebar', () => {
     fireEvent.click(dmcaButton);
 
     expect(mockNavigate).toHaveBeenCalledWith('/dmca');
+  });
+
+  it('renders translated category labels from category config', () => {
+    mockCategories.push({
+      name: 'music',
+      video_count: 42,
+      config: {
+        icon: Tag,
+        label: 'Music',
+        emoji: '🎵',
+      },
+    });
+
+    render(
+      <MemoryRouter>
+        <AppSidebar />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole('button', { name: /categorias/i })).toBeVisible();
+    expect(screen.getByRole('button', { name: /musica/i })).toBeVisible();
+  });
+
+  it('keeps the language chooser collapsed until opened', () => {
+    render(
+      <MemoryRouter>
+        <AppSidebar />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole('button', { name: /idioma: español/i })).toBeVisible();
+    expect(screen.queryByRole('button', { name: 'English' })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /idioma: español/i }));
+
+    expect(screen.getByRole('button', { name: 'English' })).toBeVisible();
   });
 });

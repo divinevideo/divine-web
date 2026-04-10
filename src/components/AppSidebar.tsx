@@ -25,6 +25,7 @@ import { feedUrls } from '@/lib/feedUrls';
 import { useRssFeedAvailable } from '@/hooks/useRssFeedAvailable';
 import { usePlatformStats } from '@/hooks/usePlatformStats';
 import { LanguageMenu } from '@/components/LanguageMenu';
+import { getTranslatedCategoryLabel } from '@/lib/constants/categories';
 
 interface NavItemProps {
   icon: React.ReactNode;
@@ -202,7 +203,7 @@ export function AppSidebar({ className }: { className?: string }) {
                   className="group flex w-full items-center gap-2 rounded-lg px-3 py-2 text-[13px] font-semibold text-muted-foreground transition-colors hover:text-foreground"
                 >
                   <LayoutGrid className="h-4 w-4" />
-                  <span>Categories</span>
+                  <span>{t('discovery.categories')}</span>
                   <ChevronDown className={cn(
                     "ml-auto h-3.5 w-3.5 transition-transform duration-200",
                     categoriesOpen && "rotate-180"
@@ -225,7 +226,7 @@ export function AppSidebar({ className }: { className?: string }) {
                       <span className="text-base leading-none w-5 text-center">
                         {cat.config?.emoji || ''}
                       </span>
-                      <span>{cat.config?.label || cat.name}</span>
+                      <span>{getTranslatedCategoryLabel(cat.name, t)}</span>
                     </button>
                   ))}
                 </div>
