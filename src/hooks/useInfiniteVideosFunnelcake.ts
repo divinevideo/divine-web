@@ -301,8 +301,8 @@ export function useInfiniteVideosFunnelcake({
         sortMode,
       });
 
-      // For recommendations, use the server's opaque cursor string directly
-      // (not the numeric timestamp cursor from transformToVideoPage)
+      // For recommendations, use the cursor string directly (server cursor or
+      // offset fallback string from fetchRecommendations)
       const recCursor = feedType === 'recommendations' ? (response.next_cursor ?? undefined) : undefined;
 
       debugLog(`[useInfiniteVideosFunnelcake] Got ${page.videos.length} videos in ${queryTime.toFixed(0)}ms`, {
@@ -326,10 +326,25 @@ export function useInfiniteVideosFunnelcake({
         const nextOffset = (randomStartOffset + allPages.length * pageSize) % randomizeWithinTop;
         return { offset: nextOffset };
       }
-      // Recommendations: use server-provided opaque cursor
+      // Recommendations: use server-provided cursor with dedup safety net
       if (feedType === 'recommendations') {
-        // Trust the server's cursor — stop when no cursor returned
-        return lastPage.recCursor ?? undefined;
+        // Stop if server returned no cursor
+        if (!lastPage.recCursor) return undefined;
+        // Safety net: stop if the latest page contains only videos we've
+        // already seen. This catches servers that ignore the offset/cursor
+        // param and return the same recommendations on every request.
+        if (allPages.length > 1) {
+          const seenKeys = new Set(
+            allPages
+              .slice(0, -1)
+              .flatMap(page => page.videos.map(v => `${v.pubkey}:${v.kind}:${v.vineId || v.id}`))
+          );
+          const hasNewVideos = lastPage.videos.some(
+            v => !seenKeys.has(`${v.pubkey}:${v.kind}:${v.vineId || v.id}`)
+          );
+          if (!hasNewVideos) return undefined;
+        }
+        return lastPage.recCursor;
       }
       // Use offset for sorted pagination, timestamp for chronological
       if (lastPage.offset !== undefined) {
