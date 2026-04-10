@@ -13,17 +13,20 @@ function flattenKeys(value: unknown, prefix = ''): string[] {
 }
 
 describe('i18n locale resources', () => {
-  it('keeps every locale aligned with the english common namespace', () => {
-    const englishKeys = flattenKeys(resources.en.common).sort();
+  it('keeps every locale aligned with the english namespaces', () => {
+    for (const [namespace, englishCatalog] of Object.entries(resources.en)) {
+      const englishKeys = flattenKeys(englishCatalog).sort();
 
-    for (const [locale, namespaces] of Object.entries(resources)) {
-      const localeKeys = new Set(flattenKeys(namespaces.common));
-      const missingKeys = englishKeys.filter((key) => !localeKeys.has(key));
+      for (const [locale, namespaces] of Object.entries(resources)) {
+        const localeCatalog = namespaces[namespace as keyof typeof namespaces];
+        const localeKeys = new Set(flattenKeys(localeCatalog));
+        const missingKeys = englishKeys.filter((key) => !localeKeys.has(key));
 
-      expect(
-        missingKeys,
-        `${locale} is missing keys:\n${missingKeys.join('\n')}`,
-      ).toEqual([]);
+        expect(
+          missingKeys,
+          `${locale}.${namespace} is missing keys:\n${missingKeys.join('\n')}`,
+        ).toEqual([]);
+      }
     }
   });
 });

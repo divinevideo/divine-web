@@ -8,39 +8,35 @@ import {
   resolveInitialLocale,
   type SupportedLocale,
 } from './config';
-import arCommon from './locales/ar/common.json';
-import deCommon from './locales/de/common.json';
-import enCommon from './locales/en/common.json';
-import esCommon from './locales/es/common.json';
-import frCommon from './locales/fr/common.json';
-import idCommon from './locales/id/common.json';
-import itCommon from './locales/it/common.json';
-import jaCommon from './locales/ja/common.json';
-import koCommon from './locales/ko/common.json';
-import nlCommon from './locales/nl/common.json';
-import plCommon from './locales/pl/common.json';
-import ptCommon from './locales/pt/common.json';
-import roCommon from './locales/ro/common.json';
-import svCommon from './locales/sv/common.json';
-import trCommon from './locales/tr/common.json';
 
-const resources = {
-  en: { common: enCommon },
-  es: { common: esCommon },
-  tr: { common: trCommon },
-  ja: { common: jaCommon },
-  de: { common: deCommon },
-  pt: { common: ptCommon },
-  fr: { common: frCommon },
-  id: { common: idCommon },
-  nl: { common: nlCommon },
-  sv: { common: svCommon },
-  ro: { common: roCommon },
-  it: { common: itCommon },
-  pl: { common: plCommon },
-  ko: { common: koCommon },
-  ar: { common: arCommon },
-} as const;
+type LocaleResourceSet = Record<string, Record<string, unknown>>;
+
+const localeModules = import.meta.glob('./locales/*/*.json', {
+  eager: true,
+  import: 'default',
+}) as Record<string, unknown>;
+
+const resources: Record<SupportedLocale, LocaleResourceSet> = SUPPORTED_LOCALES.reduce(
+  (accumulator, locale) => {
+    accumulator[locale] = {};
+    return accumulator;
+  },
+  {} as Record<SupportedLocale, LocaleResourceSet>,
+);
+
+for (const [path, module] of Object.entries(localeModules)) {
+  const match = path.match(/\.\/locales\/([^/]+)\/([^/]+)\.json$/);
+  if (!match) {
+    continue;
+  }
+
+  const [, locale, namespace] = match;
+  if (!SUPPORTED_LOCALES.includes(locale as SupportedLocale)) {
+    continue;
+  }
+
+  resources[locale as SupportedLocale][namespace] = module as Record<string, unknown>;
+}
 
 export interface InitializeI18nOptions {
   force?: boolean;
@@ -62,6 +58,9 @@ export async function createI18nInstance(
 ): Promise<I18nInstance> {
   const locale = resolveInitialLocale(options.languages ?? navigator.languages);
   const instance = i18next.createInstance();
+  const namespaces = Array.from(
+    new Set(Object.values(resources).flatMap((namespacesByLocale) => Object.keys(namespacesByLocale))),
+  );
 
   await instance.use(initReactI18next).init({
     defaultNS: 'common',
@@ -70,7 +69,7 @@ export async function createI18nInstance(
       escapeValue: false,
     },
     lng: locale,
-    ns: ['common'],
+    ns: namespaces,
     resources,
     returnNull: false,
     supportedLngs: [...SUPPORTED_LOCALES],
