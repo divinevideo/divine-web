@@ -2,6 +2,7 @@
 // ABOUTME: Allows users to filter feeds to show only ProofMode verified content
 
 import { CheckCircle } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 
@@ -12,6 +13,7 @@ interface VerifiedOnlyToggleProps {
 }
 
 export function VerifiedOnlyToggle({ enabled, onToggle, className }: VerifiedOnlyToggleProps) {
+  const { t } = useTranslation();
   return (
     <div className={className}>
       <div className="flex items-center space-x-2">
@@ -25,12 +27,12 @@ export function VerifiedOnlyToggle({ enabled, onToggle, className }: VerifiedOnl
           className="flex items-center gap-2 cursor-pointer text-sm text-foreground"
         >
           <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
-          <span>Human Made</span>
+          <span>{t('discovery.verifiedOnly')}</span>
         </Label>
       </div>
       {enabled && (
         <p className="text-xs text-muted-foreground mt-2">
-          Showing only videos with ProofMode verification
+          {t('discovery.verifiedOnlyHint')}
         </p>
       )}
     </div>

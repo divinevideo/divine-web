@@ -1,0 +1,136 @@
+{
+  "common": {
+    "language": "Dil",
+    "moreOptions": "Daha fazla secenek"
+  },
+  "nav": {
+    "home": "Ana sayfa",
+    "discover": "Kesfet",
+    "search": "Ara",
+    "messages": "Mesajlar",
+    "notifications": "Bildirimler",
+    "profile": "Profil",
+    "analytics": "Analitik"
+  },
+  "menu": {
+    "about": "Hakkinda",
+    "ourMission": "Misyonumuz",
+    "news": "Haberler",
+    "blog": "Blog",
+    "faq": "SSS",
+    "mediaResources": "Medya kaynaklari",
+    "terms": "Kosullar",
+    "privacy": "Gizlilik",
+    "safety": "Guvenlik",
+    "dmca": "DMCA ve telif haklari",
+    "openSource": "Acik kaynak",
+    "donate": "Bagis yap",
+    "help": "Yardim"
+  },
+  "theme": {
+    "lightMode": "Acik mod",
+    "darkMode": "Koyu mod"
+  },
+  "footer": {
+    "aboutDivine": "Divine hakkinda",
+    "vinesRecovered": "{{count}} Vine kurtarildi",
+    "termsAndOpenSource": "Kosullar ve Acik Kaynak",
+    "copyright": "© 2026 Divine"
+  },
+  "rss": {
+    "title": "RSS akislari",
+    "latestVideos": "En son videolar",
+    "trending": "Gundemdekiler",
+    "yourFeed": "Akisin"
+  },
+  "auth": {
+    "logInOnDivine": "Divine'da giris yap"
+  },
+  "home": {
+    "welcomeTitle": "Ana akisina hos geldin",
+    "welcomeSubtitle": "Takip ettigin kisilerin videolarini gormek icin giris yap",
+    "title": "Ana sayfa",
+    "subtitle": "Takip ettigin kisilerin videolari",
+    "sortBy": "Siralama:",
+    "updating": "Guncelleniyor..."
+  },
+  "discovery": {
+    "title": "Kesfet",
+    "subtitle": "Agdaki videolari kesfet",
+    "categories": "Kategoriler",
+    "forYou": "Senin icin",
+    "classic": "Klasik",
+    "hot": "Populer",
+    "new": "Yeni",
+    "tags": "Etiketler",
+    "verifiedOnly": "Insan yapimi",
+    "verifiedOnlyHint": "Yalnizca ProofMode dogrulamali videolar gosteriliyor"
+  },
+  "categories": {
+    "beauty": "Guzellik",
+    "comedy": "Komedi",
+    "dance": "Dans",
+    "education": "Egitim",
+    "family": "Aile",
+    "fashion": "Moda",
+    "food": "Yemek",
+    "gaming": "Oyun",
+    "music": "Muzik",
+    "sports": "Spor",
+    "technology": "Teknoloji",
+    "travel": "Seyahat"
+  },
+  "comments": {
+    "title": "Yorumlar",
+    "noCommentsYet": "Henuz yorum yok",
+    "beFirstToShare": "Dusuncelerini ilk paylasan sen ol",
+    "failedToLoad": "Yorumlar yuklenemedi",
+    "writeAComment": "Bir yorum yaz...",
+    "signInToReply": "Yanıt vermek icin giris yap",
+    "signInToComment": "Yorum yapmak icin giris yap",
+    "replyingToComment": "Yoruma yanıt veriliyor",
+    "addingToDiscussion": "Tartismaya ekleniyor",
+    "posting": "Gonderiliyor...",
+    "reply": "Yanıtla",
+    "comment": "Yorum yap"
+  },
+  "messages": {
+    "badge": "Mesajlar",
+    "title": "Dogrudan mesajlar",
+    "subtitle": "Destekle konus, vine'lari ozel olarak gonder veya takip ettigin kisilerle konusmayi surdur.",
+    "searchPlaceholder": "Mesaj gonderecek kisi bul",
+    "newMessage": "Yeni mesaj",
+    "readyToShare": "Ozel olarak paylasmaya hazir.",
+    "shareWithTitle": "Bir sonraki mesajin “{{title}}” icerecek.",
+    "shareWithLink": "Bir sonraki mesajin bir vine baglantisi icerecek.",
+    "signerUnsupported": "Mevcut imzalayicin giris yapmana izin veriyor, ancak henuz NIP-44 sifrelemesini desteklemiyor. Web'de dogrudan mesaj kullanmak icin NIP-44 destekleyen bir nsec, bunker veya baska bir imzalayiciya gec.",
+    "supportBadge": "Destek",
+    "supportSummary": "Hatalar, moderasyon veya hesap sorunlari hakkinda sor."
+  },
+  "support": {
+    "title": "Destek",
+    "subtitle": "Yardima mi ihtiyacin var? Yardim etmek icin buradayiz.",
+    "helpCenterTitle": "Divine Yardim Merkezini ziyaret et",
+    "helpCenterDescription": "Divine hakkindaki sorularina yanit bul.",
+    "helpCenterCta": "Yardim merkezini ziyaret et",
+    "messageSupportTitle": "Destege mesaj gonder",
+    "messageSupportDescription": "Ozel NIP-17 mesajlariyla Divine icindeki destek kutusuna dogrudan ulas.",
+    "messageSupportCta": "Destek sohbetini ac",
+    "contactTitle": "Destekle iletisime gec",
+    "contactDescription": "Bir destek talebi olustur, en kisa surede geri donelim.",
+    "contactLink": "Destekle iletisime gec",
+    "githubTitle": "GitHub sorunlari",
+    "githubDescription": "Hata bildir, ozellik iste veya GitHub depolarimizdaki mevcut sorunlari incele.",
+    "webAppLabel": "Web uygulamasi:",
+    "flutterAppLabel": "Flutter uygulamasi (iOS/Android):",
+    "communityTitle": "Topluluk",
+    "communityDescription": "Topluluk tartismalarimiza katil ve Nostr uzerindeki diger Divine kullanicilariyla baglan.",
+    "communityBody": "Divine, merkezi olmayan bir sosyal protokol olan Nostr uzerine kuruludur. Bizi sevdigin Nostr istemcisinde bul."
+  },
+  "tagPage": {
+    "notFoundTitle": "Etiket bulunamadi",
+    "notFoundDescription": "Istenen etiket bulunamadi.",
+    "back": "Geri",
+    "subtitle": "#{{tag}} etiketiyle isaretlenmis videolari kesfet"
+  }
+}

@@ -2,6 +2,7 @@
 // ABOUTME: Used by sidebar nav and category pages for Vine-style category browsing
 
 import type { LucideIcon } from 'lucide-react';
+import type { TFunction } from 'i18next';
 import {
   Laugh,
   Music,
@@ -126,4 +127,12 @@ export function getCategoryConfig(name: string): CategoryConfig {
     .replace(/[-_]/g, ' ')
     .replace(/\b\w/g, c => c.toUpperCase());
   return { ...DEFAULT_CONFIG, label };
+}
+
+export function getTranslatedCategoryLabel(
+  name: string,
+  t: TFunction<'common'>,
+): string {
+  const config = getCategoryConfig(name);
+  return t(`categories.${name.toLowerCase()}`, { defaultValue: config.label });
 }

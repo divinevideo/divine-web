@@ -1,0 +1,136 @@
+{
+  "common": {
+    "language": "Lingua",
+    "moreOptions": "Altre opzioni"
+  },
+  "nav": {
+    "home": "Home",
+    "discover": "Scopri",
+    "search": "Cerca",
+    "messages": "Messaggi",
+    "notifications": "Notifiche",
+    "profile": "Profilo",
+    "analytics": "Analisi"
+  },
+  "menu": {
+    "about": "Informazioni",
+    "ourMission": "La nostra missione",
+    "news": "Notizie",
+    "blog": "Blog",
+    "faq": "FAQ",
+    "mediaResources": "Risorse media",
+    "terms": "Termini",
+    "privacy": "Privacy",
+    "safety": "Sicurezza",
+    "dmca": "DMCA e copyright",
+    "openSource": "Open source",
+    "donate": "Dona",
+    "help": "Aiuto"
+  },
+  "theme": {
+    "lightMode": "Modalita chiara",
+    "darkMode": "Modalita scura"
+  },
+  "footer": {
+    "aboutDivine": "Informazioni su Divine",
+    "vinesRecovered": "{{count}} Vines recuperati",
+    "termsAndOpenSource": "Termini e open source",
+    "copyright": "© 2026 Divine"
+  },
+  "rss": {
+    "title": "Feed RSS",
+    "latestVideos": "Video piu recenti",
+    "trending": "Di tendenza",
+    "yourFeed": "Il tuo feed"
+  },
+  "auth": {
+    "logInOnDivine": "Accedi a Divine"
+  },
+  "home": {
+    "welcomeTitle": "Benvenuto nel tuo feed principale",
+    "welcomeSubtitle": "Accedi per vedere i video delle persone che segui",
+    "title": "Home",
+    "subtitle": "Video delle persone che segui",
+    "sortBy": "Ordina per:",
+    "updating": "Aggiornamento..."
+  },
+  "discovery": {
+    "title": "Scopri",
+    "subtitle": "Esplora i video della rete",
+    "categories": "Categorie",
+    "forYou": "Per te",
+    "classic": "Classico",
+    "hot": "Caldo",
+    "new": "Nuovo",
+    "tags": "Tag",
+    "verifiedOnly": "Creato da umani",
+    "verifiedOnlyHint": "Mostra solo video con verifica ProofMode"
+  },
+  "categories": {
+    "beauty": "Bellezza",
+    "comedy": "Commedia",
+    "dance": "Danza",
+    "education": "Educazione",
+    "family": "Famiglia",
+    "fashion": "Moda",
+    "food": "Cibo",
+    "gaming": "Giochi",
+    "music": "Musica",
+    "sports": "Sport",
+    "technology": "Tecnologia",
+    "travel": "Viaggi"
+  },
+  "comments": {
+    "title": "Commenti",
+    "noCommentsYet": "Nessun commento per ora",
+    "beFirstToShare": "Sii la prima persona a condividere la tua opinione",
+    "failedToLoad": "Impossibile caricare i commenti",
+    "writeAComment": "Scrivi un commento...",
+    "signInToReply": "Accedi per rispondere",
+    "signInToComment": "Accedi per commentare",
+    "replyingToComment": "Risposta al commento",
+    "addingToDiscussion": "Aggiunta alla discussione",
+    "posting": "Pubblicazione...",
+    "reply": "Rispondi",
+    "comment": "Commenta"
+  },
+  "messages": {
+    "badge": "Messaggi",
+    "title": "Messaggi diretti",
+    "subtitle": "Parla con il supporto, invia vines in privato o continua una conversazione con le persone che segui.",
+    "searchPlaceholder": "Trova persone a cui scrivere",
+    "newMessage": "Nuovo messaggio",
+    "readyToShare": "Pronto per la condivisione privata.",
+    "shareWithTitle": "Il tuo prossimo messaggio includera “{{title}}”.",
+    "shareWithLink": "Il tuo prossimo messaggio includera un link vine.",
+    "signerUnsupported": "Il tuo signer attuale puo autenticarti, ma non espone ancora la crittografia NIP-44. Passa a un nsec, bunker o altro signer con supporto NIP-44 per usare i messaggi diretti sul web.",
+    "supportBadge": "Supporto",
+    "supportSummary": "Chiedi informazioni su bug, moderazione o problemi dell'account."
+  },
+  "support": {
+    "title": "Supporto",
+    "subtitle": "Hai bisogno di aiuto? Siamo qui per aiutarti.",
+    "helpCenterTitle": "Visita il centro assistenza Divine",
+    "helpCenterDescription": "Trova risposte alle tue domande su Divine.",
+    "helpCenterCta": "Visita il centro assistenza",
+    "messageSupportTitle": "Invia un messaggio al supporto",
+    "messageSupportDescription": "Contatta direttamente la casella di supporto dentro Divine usando messaggi privati NIP-17.",
+    "messageSupportCta": "Apri la chat di supporto",
+    "contactTitle": "Contatta il supporto",
+    "contactDescription": "Apri un ticket e ti risponderemo il prima possibile.",
+    "contactLink": "Contatta il supporto",
+    "githubTitle": "Issue di GitHub",
+    "githubDescription": "Segnala bug, richiedi funzionalita o consulta le issue esistenti nei nostri repository GitHub.",
+    "webAppLabel": "App web:",
+    "flutterAppLabel": "App Flutter (iOS/Android):",
+    "communityTitle": "Comunita",
+    "communityDescription": "Partecipa alle discussioni della comunita e connettiti con altri utenti Divine su Nostr.",
+    "communityBody": "Divine e costruito su Nostr, un protocollo sociale decentralizzato. Trovaci nel tuo client Nostr preferito."
+  },
+  "tagPage": {
+    "notFoundTitle": "Tag non trovata",
+    "notFoundDescription": "Impossibile trovare la tag richiesta.",
+    "back": "Indietro",
+    "subtitle": "Esplora i video con il tag #{{tag}}"
+  }
+}

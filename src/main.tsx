@@ -19,9 +19,12 @@ import { hydrateLoginFromCookie } from '@/lib/crossSubdomainAuth';
 hydrateLoginFromCookie();
 
 import { createRoot } from 'react-dom/client';
+import { initializeI18n } from '@/lib/i18n';
 
 // Import polyfills first
 import './lib/polyfills.ts';
+
+initializeI18n();
 
 // Initialize cookie consent listener (must be before analytics)
 import { initCookieConsent } from './lib/cookieConsent';
@@ -78,8 +81,10 @@ if ('serviceWorker' in navigator && !isSubdomain) {
   });
 }
 
-createRoot(document.getElementById("root")!).render(
-  <ErrorBoundary>
-    <App />
-  </ErrorBoundary>
-);
+initializeI18n().finally(() => {
+  createRoot(document.getElementById("root")!).render(
+    <ErrorBoundary>
+      <App />
+    </ErrorBoundary>
+  );
+});

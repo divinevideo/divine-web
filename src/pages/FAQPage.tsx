@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/accordion";
 import { ZendeskWidget } from '@/components/ZendeskWidget';
 import { MarketingLayout } from '@/components/MarketingLayout';
+import { useTranslation } from 'react-i18next';
 
 function FAQQuestion({
   value,
@@ -64,6 +65,7 @@ function FAQQuestion({
 
 export function FAQPage() {
   const [openItem, setOpenItem] = useState<string>('');
+  const { t } = useTranslation('faq');
 
   useEffect(() => {
     // Handle hash navigation on page load
@@ -86,11 +88,9 @@ export function FAQPage() {
       <div className="text-center space-y-4 mb-8">
         <div className="flex items-center justify-center gap-3">
           <HelpCircle className="h-12 w-12 text-primary" />
-          <h1 className="text-4xl font-bold">Frequently Asked Questions</h1>
+          <h1 className="text-4xl font-bold">{t('title')}</h1>
         </div>
-        <p className="text-xl text-muted-foreground">
-          Everything you need to know about Divine
-        </p>
+        <p className="text-xl text-muted-foreground">{t('subtitle')}</p>
       </div>
 
       <div className="space-y-8">

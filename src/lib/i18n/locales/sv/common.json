@@ -1,0 +1,136 @@
+{
+  "common": {
+    "language": "Sprak",
+    "moreOptions": "Fler alternativ"
+  },
+  "nav": {
+    "home": "Hem",
+    "discover": "Utforska",
+    "search": "Sok",
+    "messages": "Meddelanden",
+    "notifications": "Aviseringar",
+    "profile": "Profil",
+    "analytics": "Analys"
+  },
+  "menu": {
+    "about": "Om",
+    "ourMission": "Vart uppdrag",
+    "news": "Nyheter",
+    "blog": "Blogg",
+    "faq": "FAQ",
+    "mediaResources": "Mediaresurser",
+    "terms": "Villkor",
+    "privacy": "Integritet",
+    "safety": "Sakerhet",
+    "dmca": "DMCA och upphovsratt",
+    "openSource": "Oppen kallkod",
+    "donate": "Donera",
+    "help": "Hjalp"
+  },
+  "theme": {
+    "lightMode": "Ljust lage",
+    "darkMode": "Morkt lage"
+  },
+  "footer": {
+    "aboutDivine": "Om Divine",
+    "vinesRecovered": "{{count}} Vines aterstallda",
+    "termsAndOpenSource": "Villkor och oppen kallkod",
+    "copyright": "© 2026 Divine"
+  },
+  "rss": {
+    "title": "RSS-floden",
+    "latestVideos": "Senaste videorna",
+    "trending": "Trendande",
+    "yourFeed": "Ditt flode"
+  },
+  "auth": {
+    "logInOnDivine": "Logga in pa Divine"
+  },
+  "home": {
+    "welcomeTitle": "Valkommen till ditt hemmaflode",
+    "welcomeSubtitle": "Logga in for att se videor fran personer du foljer",
+    "title": "Hem",
+    "subtitle": "Videor fran personer du foljer",
+    "sortBy": "Sortera efter:",
+    "updating": "Uppdaterar..."
+  },
+  "discovery": {
+    "title": "Utforska",
+    "subtitle": "Utforska videor fran natverket",
+    "categories": "Kategorier",
+    "forYou": "For dig",
+    "classic": "Klassiskt",
+    "hot": "Hett",
+    "new": "Nytt",
+    "tags": "Taggar",
+    "verifiedOnly": "Skapad av manniskor",
+    "verifiedOnlyHint": "Visar endast videor med ProofMode-verifiering"
+  },
+  "categories": {
+    "beauty": "Skonhet",
+    "comedy": "Komedi",
+    "dance": "Dans",
+    "education": "Utbildning",
+    "family": "Familj",
+    "fashion": "Mode",
+    "food": "Mat",
+    "gaming": "Spel",
+    "music": "Musik",
+    "sports": "Sport",
+    "technology": "Teknik",
+    "travel": "Resor"
+  },
+  "comments": {
+    "title": "Kommentarer",
+    "noCommentsYet": "Inga kommentarer an",
+    "beFirstToShare": "Bli den forsta som delar dina tankar",
+    "failedToLoad": "Det gick inte att ladda kommentarer",
+    "writeAComment": "Skriv en kommentar...",
+    "signInToReply": "Logga in for att svara",
+    "signInToComment": "Logga in for att kommentera",
+    "replyingToComment": "Svara pa kommentar",
+    "addingToDiscussion": "Lagger till i diskussionen",
+    "posting": "Publicerar...",
+    "reply": "Svara",
+    "comment": "Kommentera"
+  },
+  "messages": {
+    "badge": "Meddelanden",
+    "title": "Direktmeddelanden",
+    "subtitle": "Prata med support, skicka vines privat eller hall igang en trad med personer du foljer.",
+    "searchPlaceholder": "Hitta personer att skicka meddelanden till",
+    "newMessage": "Nytt meddelande",
+    "readyToShare": "Redo att dela privat.",
+    "shareWithTitle": "Ditt nasta meddelande kommer att innehalla “{{title}}”.",
+    "shareWithLink": "Ditt nasta meddelande kommer att innehalla en vine-lank.",
+    "signerUnsupported": "Din nuvarande signer kan logga in dig, men den exponerar inte NIP-44-kryptering an. Byt till en nsec, bunker eller annan signer som stodjer NIP-44 for att anvanda direktmeddelanden pa webben.",
+    "supportBadge": "Support",
+    "supportSummary": "Fraga om buggar, moderering eller kontoproblem."
+  },
+  "support": {
+    "title": "Support",
+    "subtitle": "Behöver du hjälp? Vi finns här för att hjälpa dig.",
+    "helpCenterTitle": "Besök Divines hjälpcenter",
+    "helpCenterDescription": "Hitta svar på dina frågor om Divine.",
+    "helpCenterCta": "Besök hjälpcentret",
+    "messageSupportTitle": "Meddela supporten",
+    "messageSupportDescription": "Kontakta supportinkorgen direkt i Divine med privata NIP-17-meddelanden.",
+    "messageSupportCta": "Öppna supportchatten",
+    "contactTitle": "Kontakta supporten",
+    "contactDescription": "Skapa ett ärende så återkommer vi så snart som möjligt.",
+    "contactLink": "Kontakta supporten",
+    "githubTitle": "GitHub-ärenden",
+    "githubDescription": "Rapportera buggar, önska funktioner eller bläddra bland befintliga ärenden i våra GitHub-repositorier.",
+    "webAppLabel": "Webbapp:",
+    "flutterAppLabel": "Flutter-app (iOS/Android):",
+    "communityTitle": "Gemenskap",
+    "communityDescription": "Delta i våra gemenskapsdiskussioner och få kontakt med andra Divine-användare på Nostr.",
+    "communityBody": "Divine är byggt på Nostr, ett decentraliserat socialt protokoll. Hitta oss i din favoritklient för Nostr."
+  },
+  "tagPage": {
+    "notFoundTitle": "Tagg hittades inte",
+    "notFoundDescription": "Den begarda taggen kunde inte hittas.",
+    "back": "Tillbaka",
+    "subtitle": "Utforska videor med taggen #{{tag}}"
+  }
+}

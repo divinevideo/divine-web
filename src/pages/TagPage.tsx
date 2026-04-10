@@ -2,18 +2,20 @@ import { useParams } from 'react-router-dom';
 import { VideoFeed } from '@/components/VideoFeed';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useTranslation } from 'react-i18next';
 
 export function TagPage() {
   const { tag } = useParams<{ tag: string }>();
   const normalizedTag = (tag || '').toLowerCase();
+  const { t } = useTranslation();
 
   if (!normalizedTag) {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-destructive">Tag not found</h1>
+          <h1 className="text-2xl font-bold text-destructive">{t('tagPage.notFoundTitle')}</h1>
           <p className="text-muted-foreground mt-2">
-            The requested tag could not be found.
+            {t('tagPage.notFoundDescription')}
           </p>
         </div>
       </div>
@@ -31,13 +33,13 @@ export function TagPage() {
           className="flex items-center gap-2"
         >
           <ArrowLeft className="w-4 h-4" />
-          Back
+          {t('tagPage.back')}
         </Button>
         
         <div className="flex-1">
           <h1 className="text-2xl font-bold">#{tag}</h1>
           <p className="text-muted-foreground">
-            Browse videos tagged with #{normalizedTag}
+            {t('tagPage.subtitle', { tag: normalizedTag })}
           </p>
         </div>
       </div>

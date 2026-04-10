@@ -1,0 +1,136 @@
+{
+  "common": {
+    "language": "Jezyk",
+    "moreOptions": "Wiecej opcji"
+  },
+  "nav": {
+    "home": "Strona glowna",
+    "discover": "Odkrywaj",
+    "search": "Szukaj",
+    "messages": "Wiadomosci",
+    "notifications": "Powiadomienia",
+    "profile": "Profil",
+    "analytics": "Analityka"
+  },
+  "menu": {
+    "about": "O nas",
+    "ourMission": "Nasza misja",
+    "news": "Aktualnosci",
+    "blog": "Blog",
+    "faq": "FAQ",
+    "mediaResources": "Materialy medialne",
+    "terms": "Warunki",
+    "privacy": "Prywatnosc",
+    "safety": "Bezpieczenstwo",
+    "dmca": "DMCA i prawa autorskie",
+    "openSource": "Open source",
+    "donate": "Wesprzyj",
+    "help": "Pomoc"
+  },
+  "theme": {
+    "lightMode": "Tryb jasny",
+    "darkMode": "Tryb ciemny"
+  },
+  "footer": {
+    "aboutDivine": "O Divine",
+    "vinesRecovered": "{{count}} odzyskanych Vine",
+    "termsAndOpenSource": "Warunki i open source",
+    "copyright": "© 2026 Divine"
+  },
+  "rss": {
+    "title": "Kanaly RSS",
+    "latestVideos": "Najnowsze filmy",
+    "trending": "Popularne",
+    "yourFeed": "Twoj kanal"
+  },
+  "auth": {
+    "logInOnDivine": "Zaloguj sie do Divine"
+  },
+  "home": {
+    "welcomeTitle": "Witaj w swoim glownym kanale",
+    "welcomeSubtitle": "Zaloguj sie, aby zobaczyc filmy osob, ktore obserwujesz",
+    "title": "Strona glowna",
+    "subtitle": "Filmy osob, ktore obserwujesz",
+    "sortBy": "Sortuj wedlug:",
+    "updating": "Aktualizacja..."
+  },
+  "discovery": {
+    "title": "Odkrywaj",
+    "subtitle": "Odkrywaj filmy z sieci",
+    "categories": "Kategorie",
+    "forYou": "Dla ciebie",
+    "classic": "Klasyczne",
+    "hot": "Gorace",
+    "new": "Nowe",
+    "tags": "Tagi",
+    "verifiedOnly": "Stworzone przez ludzi",
+    "verifiedOnlyHint": "Pokazuje tylko filmy z weryfikacja ProofMode"
+  },
+  "categories": {
+    "beauty": "Uroda",
+    "comedy": "Komedia",
+    "dance": "Taniec",
+    "education": "Edukacja",
+    "family": "Rodzina",
+    "fashion": "Moda",
+    "food": "Jedzenie",
+    "gaming": "Gry",
+    "music": "Muzyka",
+    "sports": "Sport",
+    "technology": "Technologia",
+    "travel": "Podroze"
+  },
+  "comments": {
+    "title": "Komentarze",
+    "noCommentsYet": "Brak komentarzy",
+    "beFirstToShare": "Badz pierwsza osoba, ktora podzieli sie swoja opinia",
+    "failedToLoad": "Nie udalo sie zaladowac komentarzy",
+    "writeAComment": "Napisz komentarz...",
+    "signInToReply": "Zaloguj sie, aby odpowiedziec",
+    "signInToComment": "Zaloguj sie, aby skomentowac",
+    "replyingToComment": "Odpowiadanie na komentarz",
+    "addingToDiscussion": "Dodawanie do dyskusji",
+    "posting": "Publikowanie...",
+    "reply": "Odpowiedz",
+    "comment": "Komentarz"
+  },
+  "messages": {
+    "badge": "Wiadomosci",
+    "title": "Wiadomosci bezposrednie",
+    "subtitle": "Porozmawiaj z supportem, wyslij vines prywatnie albo kontynuuj rozmowe z osobami, ktore obserwujesz.",
+    "searchPlaceholder": "Znajdz osoby, do ktorych chcesz napisac",
+    "newMessage": "Nowa wiadomosc",
+    "readyToShare": "Gotowe do prywatnego udostepnienia.",
+    "shareWithTitle": "Twoja nastepna wiadomosc bedzie zawierac “{{title}}”.",
+    "shareWithLink": "Twoja nastepna wiadomosc bedzie zawierac link do vine.",
+    "signerUnsupported": "Twoj obecny signer pozwala sie zalogowac, ale nie udostepnia jeszcze szyfrowania NIP-44. Przelacz sie na nsec, bunker lub inny signer obslugujacy NIP-44, aby korzystac z wiadomosci bezposrednich w sieci.",
+    "supportBadge": "Wsparcie",
+    "supportSummary": "Zapytaj o bledy, moderacje lub problemy z kontem."
+  },
+  "support": {
+    "title": "Wsparcie",
+    "subtitle": "Potrzebujesz pomocy? Jestesmy tutaj, aby pomoc.",
+    "helpCenterTitle": "Odwiedz centrum pomocy Divine",
+    "helpCenterDescription": "Znajdz odpowiedzi na swoje pytania o Divine.",
+    "helpCenterCta": "Odwiedz centrum pomocy",
+    "messageSupportTitle": "Napisz do wsparcia",
+    "messageSupportDescription": "Skontaktuj sie bezposrednio ze skrzynka wsparcia w Divine za pomoca prywatnych wiadomosci NIP-17.",
+    "messageSupportCta": "Otworz czat wsparcia",
+    "contactTitle": "Skontaktuj sie ze wsparciem",
+    "contactDescription": "Utworz zgloszenie, a odpowiemy tak szybko, jak to mozliwe.",
+    "contactLink": "Skontaktuj sie ze wsparciem",
+    "githubTitle": "Zgloszenia GitHub",
+    "githubDescription": "Zglaszaj bledy, pros o funkcje lub przegladaj istniejace zgloszenia w naszych repozytoriach GitHub.",
+    "webAppLabel": "Aplikacja webowa:",
+    "flutterAppLabel": "Aplikacja Flutter (iOS/Android):",
+    "communityTitle": "Spolecznosc",
+    "communityDescription": "Dolacz do dyskusji spolecznosci i polacz sie z innymi uzytkownikami Divine na Nostr.",
+    "communityBody": "Divine jest zbudowane na Nostr, zdecentralizowanym protokole spolecznosciowym. Znajdz nas w swoim ulubionym kliencie Nostr."
+  },
+  "tagPage": {
+    "notFoundTitle": "Nie znaleziono tagu",
+    "notFoundDescription": "Nie mozna znalezc podanego tagu.",
+    "back": "Wroc",
+    "subtitle": "Przegladaj filmy oznaczone tagiem #{{tag}}"
+  }
+}

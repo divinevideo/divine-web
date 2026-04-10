@@ -2,6 +2,7 @@
 // ABOUTME: Requires user to be logged in and have a follow list
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { nip19 } from 'nostr-tools';
 import { useHead } from '@unhead/react';
 import { VideoFeed } from '@/components/VideoFeed';
@@ -17,6 +18,7 @@ import type { SortMode } from '@/types/nostr';
 import { SORT_MODES } from '@/lib/constants/sortModes';
 
 export function HomePage() {
+  const { t } = useTranslation();
   const { user } = useCurrentUser();
   const { data: followList, isLoading, isFetching, dataUpdatedAt } = useFollowList();
   const [sortMode, setSortMode] = useState<SortMode | undefined>(undefined);
@@ -50,11 +52,11 @@ export function HomePage() {
     return (
       <div className="container mx-auto px-4 py-6">
         <div className="max-w-2xl mx-auto">
-          <Card>
+            <Card>
             <CardContent className="py-12 text-center">
-              <h2 className="text-xl font-semibold mb-4">Welcome to Your Home Feed</h2>
+              <h2 className="text-xl font-semibold mb-4">{t('home.welcomeTitle')}</h2>
               <p className="text-muted-foreground mb-6">
-                Sign in to see videos from people you follow
+                {t('home.welcomeSubtitle')}
               </p>
               <LoginArea className="max-w-60 mx-auto" />
             </CardContent>
@@ -72,16 +74,16 @@ export function HomePage() {
         <header className="mb-6 space-y-4">
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-bold">Home</h1>
+              <h1 className="text-2xl font-bold">{t('home.title')}</h1>
               {isFetching && (
                 <RefreshCw className="h-4 w-4 animate-spin text-muted-foreground" />
               )}
             </div>
             <p className="text-muted-foreground">
-              Videos from people you follow
+              {t('home.subtitle')}
               {isShowingCachedData && isStale && (
                 <span className="text-xs ml-2 opacity-70">
-                  • Updating...
+                  • {t('home.updating')}
                 </span>
               )}
             </p>
@@ -89,7 +91,7 @@ export function HomePage() {
 
           {/* Sort mode selector */}
           <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">Sort by:</span>
+            <span className="text-sm text-muted-foreground">{t('home.sortBy')}</span>
             <Select
               value={sortMode || 'recent'}
               onValueChange={(value) => setSortMode(value === 'recent' ? undefined : value as SortMode)}
