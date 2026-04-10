@@ -54,6 +54,32 @@
     "sortBy": "Sortera efter:",
     "updating": "Uppdaterar..."
   },
+  "discovery": {
+    "title": "Utforska",
+    "subtitle": "Utforska videor fran natverket",
+    "categories": "Kategorier",
+    "forYou": "For dig",
+    "classic": "Klassiskt",
+    "hot": "Hett",
+    "new": "Nytt",
+    "tags": "Taggar",
+    "verifiedOnly": "Skapad av manniskor",
+    "verifiedOnlyHint": "Visar endast videor med ProofMode-verifiering"
+  },
+  "categories": {
+    "beauty": "Skonhet",
+    "comedy": "Komedi",
+    "dance": "Dans",
+    "education": "Utbildning",
+    "family": "Familj",
+    "fashion": "Mode",
+    "food": "Mat",
+    "gaming": "Spel",
+    "music": "Musik",
+    "sports": "Sport",
+    "technology": "Teknik",
+    "travel": "Resor"
+  },
   "comments": {
     "title": "Kommentarer",
     "noCommentsYet": "Inga kommentarer an",

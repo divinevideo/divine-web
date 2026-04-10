@@ -54,6 +54,32 @@
     "sortBy": "Sorteaza dupa:",
     "updating": "Se actualizeaza..."
   },
+  "discovery": {
+    "title": "Descopera",
+    "subtitle": "Exploreaza videoclipuri din retea",
+    "categories": "Categorii",
+    "forYou": "Pentru tine",
+    "classic": "Clasic",
+    "hot": "Popular",
+    "new": "Nou",
+    "tags": "Etichete",
+    "verifiedOnly": "Creat de oameni",
+    "verifiedOnlyHint": "Afiseaza doar videoclipuri cu verificare ProofMode"
+  },
+  "categories": {
+    "beauty": "Frumusete",
+    "comedy": "Comedie",
+    "dance": "Dans",
+    "education": "Educatie",
+    "family": "Familie",
+    "fashion": "Moda",
+    "food": "Mancare",
+    "gaming": "Jocuri",
+    "music": "Muzica",
+    "sports": "Sport",
+    "technology": "Tehnologie",
+    "travel": "Calatorii"
+  },
   "comments": {
     "title": "Comentarii",
     "noCommentsYet": "Nu exista comentarii inca",

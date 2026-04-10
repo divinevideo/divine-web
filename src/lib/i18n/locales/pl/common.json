@@ -54,6 +54,32 @@
     "sortBy": "Sortuj wedlug:",
     "updating": "Aktualizacja..."
   },
+  "discovery": {
+    "title": "Odkrywaj",
+    "subtitle": "Odkrywaj filmy z sieci",
+    "categories": "Kategorie",
+    "forYou": "Dla ciebie",
+    "classic": "Klasyczne",
+    "hot": "Gorace",
+    "new": "Nowe",
+    "tags": "Tagi",
+    "verifiedOnly": "Stworzone przez ludzi",
+    "verifiedOnlyHint": "Pokazuje tylko filmy z weryfikacja ProofMode"
+  },
+  "categories": {
+    "beauty": "Uroda",
+    "comedy": "Komedia",
+    "dance": "Taniec",
+    "education": "Edukacja",
+    "family": "Rodzina",
+    "fashion": "Moda",
+    "food": "Jedzenie",
+    "gaming": "Gry",
+    "music": "Muzyka",
+    "sports": "Sport",
+    "technology": "Technologia",
+    "travel": "Podroze"
+  },
   "comments": {
     "title": "Komentarze",
     "noCommentsYet": "Brak komentarzy",

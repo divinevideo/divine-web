@@ -54,6 +54,32 @@
     "sortBy": "並び替え:",
     "updating": "更新中..."
   },
+  "discovery": {
+    "title": "発見",
+    "subtitle": "ネットワーク上の動画を探す",
+    "categories": "カテゴリ",
+    "forYou": "あなた向け",
+    "classic": "クラシック",
+    "hot": "人気",
+    "new": "新着",
+    "tags": "タグ",
+    "verifiedOnly": "人が作成",
+    "verifiedOnlyHint": "ProofMode 検証済みの動画のみ表示しています"
+  },
+  "categories": {
+    "beauty": "美容",
+    "comedy": "コメディ",
+    "dance": "ダンス",
+    "education": "教育",
+    "family": "家族",
+    "fashion": "ファッション",
+    "food": "食べ物",
+    "gaming": "ゲーム",
+    "music": "音楽",
+    "sports": "スポーツ",
+    "technology": "テック",
+    "travel": "旅行"
+  },
   "comments": {
     "title": "コメント",
     "noCommentsYet": "まだコメントはありません",

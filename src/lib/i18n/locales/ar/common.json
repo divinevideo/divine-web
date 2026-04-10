@@ -54,6 +54,32 @@
     "sortBy": "ترتيب حسب:",
     "updating": "جارٍ التحديث..."
   },
+  "discovery": {
+    "title": "اكتشف",
+    "subtitle": "استكشف الفيديوهات من الشبكة",
+    "categories": "الفئات",
+    "forYou": "لك",
+    "classic": "كلاسيكي",
+    "hot": "رائج",
+    "new": "جديد",
+    "tags": "الوسوم",
+    "verifiedOnly": "من صنع البشر",
+    "verifiedOnlyHint": "يتم عرض الفيديوهات التي تحتوي على تحقق ProofMode فقط"
+  },
+  "categories": {
+    "beauty": "الجمال",
+    "comedy": "كوميديا",
+    "dance": "رقص",
+    "education": "تعليم",
+    "family": "العائلة",
+    "fashion": "الموضة",
+    "food": "الطعام",
+    "gaming": "الألعاب",
+    "music": "الموسيقى",
+    "sports": "الرياضة",
+    "technology": "التقنية",
+    "travel": "السفر"
+  },
   "comments": {
     "title": "التعليقات",
     "noCommentsYet": "لا توجد تعليقات بعد",

@@ -54,6 +54,32 @@
     "sortBy": "Urutkan berdasarkan:",
     "updating": "Memperbarui..."
   },
+  "discovery": {
+    "title": "Jelajahi",
+    "subtitle": "Jelajahi video dari jaringan",
+    "categories": "Kategori",
+    "forYou": "Untuk Anda",
+    "classic": "Klasik",
+    "hot": "Populer",
+    "new": "Baru",
+    "tags": "Tag",
+    "verifiedOnly": "Buatan manusia",
+    "verifiedOnlyHint": "Hanya menampilkan video dengan verifikasi ProofMode"
+  },
+  "categories": {
+    "beauty": "Kecantikan",
+    "comedy": "Komedi",
+    "dance": "Tarian",
+    "education": "Pendidikan",
+    "family": "Keluarga",
+    "fashion": "Mode",
+    "food": "Makanan",
+    "gaming": "Game",
+    "music": "Musik",
+    "sports": "Olahraga",
+    "technology": "Teknologi",
+    "travel": "Perjalanan"
+  },
   "comments": {
     "title": "Komentar",
     "noCommentsYet": "Belum ada komentar",

@@ -54,6 +54,32 @@
     "sortBy": "Sortieren nach:",
     "updating": "Wird aktualisiert..."
   },
+  "discovery": {
+    "title": "Entdecken",
+    "subtitle": "Videos aus dem Netzwerk entdecken",
+    "categories": "Kategorien",
+    "forYou": "Fur dich",
+    "classic": "Klassisch",
+    "hot": "Heiss",
+    "new": "Neu",
+    "tags": "Tags",
+    "verifiedOnly": "Von Menschen gemacht",
+    "verifiedOnlyHint": "Es werden nur Videos mit ProofMode-Verifizierung angezeigt"
+  },
+  "categories": {
+    "beauty": "Beauty",
+    "comedy": "Komodie",
+    "dance": "Tanz",
+    "education": "Bildung",
+    "family": "Familie",
+    "fashion": "Mode",
+    "food": "Essen",
+    "gaming": "Gaming",
+    "music": "Musik",
+    "sports": "Sport",
+    "technology": "Technik",
+    "travel": "Reisen"
+  },
   "comments": {
     "title": "Kommentare",
     "noCommentsYet": "Noch keine Kommentare",

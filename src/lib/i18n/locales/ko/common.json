@@ -54,6 +54,32 @@
     "sortBy": "정렬 기준:",
     "updating": "업데이트 중..."
   },
+  "discovery": {
+    "title": "탐색",
+    "subtitle": "네트워크의 동영상을 둘러보세요",
+    "categories": "카테고리",
+    "forYou": "추천",
+    "classic": "클래식",
+    "hot": "인기",
+    "new": "신규",
+    "tags": "태그",
+    "verifiedOnly": "사람이 만든 콘텐츠",
+    "verifiedOnlyHint": "ProofMode 검증이 있는 동영상만 표시합니다"
+  },
+  "categories": {
+    "beauty": "뷰티",
+    "comedy": "코미디",
+    "dance": "댄스",
+    "education": "교육",
+    "family": "가족",
+    "fashion": "패션",
+    "food": "음식",
+    "gaming": "게임",
+    "music": "음악",
+    "sports": "스포츠",
+    "technology": "기술",
+    "travel": "여행"
+  },
   "comments": {
     "title": "댓글",
     "noCommentsYet": "아직 댓글이 없습니다",

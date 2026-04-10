@@ -54,6 +54,32 @@
     "sortBy": "Sorteren op:",
     "updating": "Bezig met bijwerken..."
   },
+  "discovery": {
+    "title": "Ontdekken",
+    "subtitle": "Verken video's uit het netwerk",
+    "categories": "Categorieen",
+    "forYou": "Voor jou",
+    "classic": "Klassiek",
+    "hot": "Heet",
+    "new": "Nieuw",
+    "tags": "Tags",
+    "verifiedOnly": "Door mensen gemaakt",
+    "verifiedOnlyHint": "Toont alleen video's met ProofMode-verificatie"
+  },
+  "categories": {
+    "beauty": "Beauty",
+    "comedy": "Komedie",
+    "dance": "Dans",
+    "education": "Onderwijs",
+    "family": "Familie",
+    "fashion": "Mode",
+    "food": "Eten",
+    "gaming": "Gaming",
+    "music": "Muziek",
+    "sports": "Sport",
+    "technology": "Technologie",
+    "travel": "Reizen"
+  },
   "comments": {
     "title": "Reacties",
     "noCommentsYet": "Nog geen reacties",

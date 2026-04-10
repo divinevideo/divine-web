@@ -54,6 +54,32 @@
     "sortBy": "Ordenar por:",
     "updating": "Atualizando..."
   },
+  "discovery": {
+    "title": "Descobrir",
+    "subtitle": "Explore videos da rede",
+    "categories": "Categorias",
+    "forYou": "Para voce",
+    "classic": "Classico",
+    "hot": "Em alta",
+    "new": "Novo",
+    "tags": "Tags",
+    "verifiedOnly": "Feito por humanos",
+    "verifiedOnlyHint": "Mostrando apenas videos com verificacao ProofMode"
+  },
+  "categories": {
+    "beauty": "Beleza",
+    "comedy": "Comedia",
+    "dance": "Danca",
+    "education": "Educacao",
+    "family": "Familia",
+    "fashion": "Moda",
+    "food": "Comida",
+    "gaming": "Jogos",
+    "music": "Musica",
+    "sports": "Esportes",
+    "technology": "Tecnologia",
+    "travel": "Viagem"
+  },
   "comments": {
     "title": "Comentarios",
     "noCommentsYet": "Ainda nao ha comentarios",

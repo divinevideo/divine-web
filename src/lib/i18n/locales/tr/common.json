@@ -54,6 +54,32 @@
     "sortBy": "Siralama:",
     "updating": "Guncelleniyor..."
   },
+  "discovery": {
+    "title": "Kesfet",
+    "subtitle": "Agdaki videolari kesfet",
+    "categories": "Kategoriler",
+    "forYou": "Senin icin",
+    "classic": "Klasik",
+    "hot": "Populer",
+    "new": "Yeni",
+    "tags": "Etiketler",
+    "verifiedOnly": "Insan yapimi",
+    "verifiedOnlyHint": "Yalnizca ProofMode dogrulamali videolar gosteriliyor"
+  },
+  "categories": {
+    "beauty": "Guzellik",
+    "comedy": "Komedi",
+    "dance": "Dans",
+    "education": "Egitim",
+    "family": "Aile",
+    "fashion": "Moda",
+    "food": "Yemek",
+    "gaming": "Oyun",
+    "music": "Muzik",
+    "sports": "Spor",
+    "technology": "Teknoloji",
+    "travel": "Seyahat"
+  },
   "comments": {
     "title": "Yorumlar",
     "noCommentsYet": "Henuz yorum yok",

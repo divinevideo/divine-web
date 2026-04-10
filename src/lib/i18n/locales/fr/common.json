@@ -54,6 +54,32 @@
     "sortBy": "Trier par :",
     "updating": "Mise a jour..."
   },
+  "discovery": {
+    "title": "Decouvrir",
+    "subtitle": "Explorer les videos du reseau",
+    "categories": "Categories",
+    "forYou": "Pour vous",
+    "classic": "Classique",
+    "hot": "Tendance",
+    "new": "Nouveau",
+    "tags": "Tags",
+    "verifiedOnly": "Cree par des humains",
+    "verifiedOnlyHint": "Affiche uniquement les videos avec verification ProofMode"
+  },
+  "categories": {
+    "beauty": "Beaute",
+    "comedy": "Comedie",
+    "dance": "Danse",
+    "education": "Education",
+    "family": "Famille",
+    "fashion": "Mode",
+    "food": "Cuisine",
+    "gaming": "Jeux",
+    "music": "Musique",
+    "sports": "Sports",
+    "technology": "Tech",
+    "travel": "Voyage"
+  },
   "comments": {
     "title": "Commentaires",
     "noCommentsYet": "Aucun commentaire pour l'instant",
