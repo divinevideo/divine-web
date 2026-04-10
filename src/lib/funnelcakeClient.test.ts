@@ -22,6 +22,7 @@ describe('funnelcakeClient', () => {
   let fetchUserProfile: typeof import('./funnelcakeClient').fetchUserProfile;
   let fetchBulkUsers: typeof import('./funnelcakeClient').fetchBulkUsers;
   let fetchBulkVideoStats: typeof import('./funnelcakeClient').fetchBulkVideoStats;
+  let fetchRecommendations: typeof import('./funnelcakeClient').fetchRecommendations;
   let searchProfiles: typeof import('./funnelcakeClient').searchProfiles;
 
   beforeEach(async () => {
@@ -34,6 +35,7 @@ describe('funnelcakeClient', () => {
     fetchUserProfile = client.fetchUserProfile;
     fetchBulkUsers = client.fetchBulkUsers;
     fetchBulkVideoStats = client.fetchBulkVideoStats;
+    fetchRecommendations = client.fetchRecommendations;
     searchProfiles = client.searchProfiles;
   });
 
@@ -352,6 +354,81 @@ describe('funnelcakeClient', () => {
       expect(init).toEqual(expect.objectContaining({
         signal: expect.any(AbortSignal),
       }));
+    });
+  });
+
+  describe('fetchRecommendations', () => {
+    it('passes through server has_more and next_cursor for cursor-based pagination', async () => {
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({
+          videos: [
+            {
+              id: 'vid-1',
+              pubkey: TEST_PUBKEY,
+              created_at: 123,
+              kind: 34236,
+              d_tag: 'd-1',
+              title: 'Video 1',
+              content: '',
+              thumbnail: 'https://example.com/thumb-1.jpg',
+              video_url: 'https://example.com/video-1.mp4',
+            },
+          ],
+          source: 'personalized',
+          has_more: true,
+          next_cursor: 'abc123cursor',
+          next_offset: 36,
+          fallback_applied: false,
+        }),
+      });
+
+      const result = await fetchRecommendations(API_URL, {
+        pubkey: TEST_PUBKEY,
+        limit: 12,
+        cursor: 'prev-cursor',
+        fallback: 'popular',
+      });
+
+      expect(result.videos).toHaveLength(1);
+      expect(result.has_more).toBe(true);
+      expect(result.next_cursor).toBe('abc123cursor');
+    });
+
+    it('stops pagination when server says has_more is false', async () => {
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({
+          videos: [
+            {
+              id: 'vid-2',
+              pubkey: TEST_PUBKEY,
+              created_at: 456,
+              kind: 34236,
+              d_tag: 'd-2',
+              title: 'Video 2',
+              content: '',
+              thumbnail: 'https://example.com/thumb-2.jpg',
+              video_url: 'https://example.com/video-2.mp4',
+            },
+          ],
+          source: 'popular',
+          has_more: false,
+          next_cursor: null,
+          next_offset: null,
+          fallback_applied: true,
+        }),
+      });
+
+      const result = await fetchRecommendations(API_URL, {
+        pubkey: TEST_PUBKEY,
+        limit: 12,
+        fallback: 'popular',
+      });
+
+      expect(result.videos).toHaveLength(1);
+      expect(result.has_more).toBe(false);
+      expect(result.next_cursor).toBeUndefined();
     });
   });
 });

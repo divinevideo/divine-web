@@ -441,6 +441,10 @@ export async function fetchUserFeed(
 interface FunnelcakeRecommendationsResponse {
   videos: FunnelcakeVideoRaw[];
   source: 'personalized' | 'popular' | 'recent';
+  has_more: boolean;
+  next_cursor: string | null;
+  next_offset: number | null;
+  fallback_applied: boolean;
 }
 
 /**
@@ -449,7 +453,8 @@ interface FunnelcakeRecommendationsResponse {
 export interface FunnelcakeRecommendationsOptions {
   pubkey: string;
   limit?: number;
-  offset?: number;           // Offset for pagination (0-indexed)
+  cursor?: string;           // Cursor for pagination (preferred)
+  offset?: number;           // Offset for pagination (compatibility only)
   category?: string;
   fallback?: 'popular' | 'recent';
   signal?: AbortSignal;
@@ -465,19 +470,22 @@ export interface FunnelcakeRecommendationsOptions {
 export async function fetchRecommendations(
   apiUrl: string = API_CONFIG.funnelcake.baseUrl,
   options: FunnelcakeRecommendationsOptions
-): Promise<FunnelcakeResponse & { source?: string }> {
-  const { pubkey, limit = 20, offset, category, fallback, signal } = options;
+): Promise<FunnelcakeResponse & { source?: string; fallback_applied?: boolean }> {
+  const { pubkey, limit = 20, cursor, offset, category, fallback, signal } = options;
 
   const endpoint = API_CONFIG.funnelcake.endpoints.userRecommendations.replace('{pubkey}', pubkey);
 
+  // Send both cursor and offset — server uses cursor if supported,
+  // falls back to offset on older servers that ignore cursor
   const params: Record<string, string | number | boolean | undefined> = {
     limit,
+    cursor,
     offset,
     category,
     fallback,
   };
 
-  debugLog(`[FunnelcakeClient] Fetching recommendations for ${pubkey}`, { limit, offset, category, fallback });
+  debugLog(`[FunnelcakeClient] Fetching recommendations for ${pubkey}`, { limit, cursor, offset, category, fallback });
 
   const response = await funnelcakeRequest<FunnelcakeRecommendationsResponse>(
     apiUrl,
@@ -487,16 +495,28 @@ export async function fetchRecommendations(
   );
 
   const videoCount = response.videos?.length || 0;
-  const nextOffset = (offset || 0) + videoCount;
+  // Detect whether server supports cursor pagination by checking if
+  // has_more field exists in the response (even if false/null)
+  const serverSupportsCursors = 'has_more' in response;
 
-  debugLog(`[FunnelcakeClient] Got ${videoCount} recommendations (source: ${response.source})`);
+  // If server returns cursor pagination fields, use them directly.
+  // Otherwise, fall back to offset-based pagination for compatibility
+  // with servers that haven't been updated yet.
+  const hasMore = serverSupportsCursors
+    ? (response.has_more ?? false)
+    : videoCount > 0;
+  const nextCursor = serverSupportsCursors
+    ? (response.next_cursor ?? undefined)
+    : (videoCount > 0 ? String((offset || 0) + limit) : undefined);
+
+  debugLog(`[FunnelcakeClient] Got ${videoCount} recommendations (source: ${response.source}, has_more: ${hasMore}, cursor: ${serverSupportsCursors ? 'server' : 'offset-fallback'})`);
 
   return {
     videos: response.videos || [],
-    has_more: videoCount >= limit,
-    // Use offset-based pagination for recommendations
-    next_cursor: videoCount >= limit ? String(nextOffset) : undefined,
+    has_more: hasMore,
+    next_cursor: nextCursor,
     source: response.source,
+    fallback_applied: response.fallback_applied,
   };
 }
 

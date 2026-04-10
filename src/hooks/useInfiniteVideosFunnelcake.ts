@@ -31,6 +31,7 @@ interface FunnelcakeVideoPage {
   videos: ParsedVideoData[];
   nextCursor: number | undefined;
   offset?: number;
+  recCursor?: string;  // Opaque cursor for recommendations pagination
 }
 
 /**
@@ -238,13 +239,19 @@ export function useInfiniteVideosFunnelcake({
               debugLog('[useInfiniteVideosFunnelcake] No user logged in for recommendations feed');
               return { videos: [], nextCursor: undefined };
             }
-            // Recommendations use offset pagination
-            const recOffset = isOffsetParam ? (pageParam as { offset: number }).offset : 0;
+            // Cursor-based pagination (preferred), with offset fallback
+            // The cursor may be an opaque server cursor or a numeric offset string
+            const recCursor = typeof pageParam === 'string' ? pageParam : undefined;
+            const recOffset = recCursor ? parseInt(recCursor, 10) : undefined;
+            const isNumericOffset = recOffset !== undefined && !isNaN(recOffset);
             response = await fetchRecommendations(effectiveApiUrl, {
               pubkey: user.pubkey,
               limit: pageSize,
-              offset: recOffset,
-              fallback: 'popular', // Fall back to popular videos if no personalized recs
+              cursor: recCursor,
+              // Also send offset for backward compatibility with servers
+              // that don't support cursor yet
+              offset: isNumericOffset ? recOffset : undefined,
+              fallback: 'popular',
               signal,
             });
             break;
@@ -270,10 +277,8 @@ export function useInfiniteVideosFunnelcake({
       const queryTime = performance.now() - queryStart;
 
       // Transform response to video page
-      // Recommendations use offset-based pagination, others use timestamp
       const parseStart = performance.now();
-      const cursorType = feedType === 'recommendations' ? 'offset' : 'timestamp';
-      const page = transformToVideoPage(response, cursorType);
+      const page = transformToVideoPage(response, 'timestamp');
       const parseTime = performance.now() - parseStart;
 
       const totalTime = performance.now() - totalStart;
@@ -296,15 +301,21 @@ export function useInfiniteVideosFunnelcake({
         sortMode,
       });
 
+      // For recommendations, use the cursor string directly (server cursor or
+      // offset fallback string from fetchRecommendations)
+      const recCursor = feedType === 'recommendations' ? (response.next_cursor ?? undefined) : undefined;
+
       debugLog(`[useInfiniteVideosFunnelcake] Got ${page.videos.length} videos in ${queryTime.toFixed(0)}ms`, {
         hasMore: page.hasMore,
         nextCursor: page.nextCursor,
+        recCursor,
       });
 
       return {
         videos: page.videos,
         nextCursor: page.nextCursor,
         offset: page.offset,
+        recCursor,
       };
     },
 
@@ -314,6 +325,26 @@ export function useInfiniteVideosFunnelcake({
         if (allPages.length >= totalPages) return undefined; // All pages fetched
         const nextOffset = (randomStartOffset + allPages.length * pageSize) % randomizeWithinTop;
         return { offset: nextOffset };
+      }
+      // Recommendations: use server-provided cursor with dedup safety net
+      if (feedType === 'recommendations') {
+        // Stop if server returned no cursor
+        if (!lastPage.recCursor) return undefined;
+        // Safety net: stop if the latest page contains only videos we've
+        // already seen. This catches servers that ignore the offset/cursor
+        // param and return the same recommendations on every request.
+        if (allPages.length > 1) {
+          const seenKeys = new Set(
+            allPages
+              .slice(0, -1)
+              .flatMap(page => page.videos.map(v => `${v.pubkey}:${v.kind}:${v.vineId || v.id}`))
+          );
+          const hasNewVideos = lastPage.videos.some(
+            v => !seenKeys.has(`${v.pubkey}:${v.kind}:${v.vineId || v.id}`)
+          );
+          if (!hasNewVideos) return undefined;
+        }
+        return lastPage.recCursor;
       }
       // Use offset for sorted pagination, timestamp for chronological
       if (lastPage.offset !== undefined) {
