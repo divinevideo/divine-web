@@ -106,5 +106,25 @@
     "signerUnsupported": "يمكن للموقّع الحالي تسجيل دخولك، لكنه لا يوفّر بعد تشفير NIP-44. انتقل إلى nsec أو bunker أو موقّع آخر يدعم NIP-44 لاستخدام الرسائل المباشرة على الويب.",
     "supportBadge": "الدعم",
     "supportSummary": "اسأل عن الأخطاء أو الإشراف أو مشكلات الحساب."
+  },
+  "support": {
+    "title": "الدعم",
+    "subtitle": "هل تحتاج إلى مساعدة؟ نحن هنا لمساعدتك.",
+    "helpCenterTitle": "زيارة مركز مساعدة Divine",
+    "helpCenterDescription": "اعثر على إجابات لأسئلتك حول Divine.",
+    "helpCenterCta": "زيارة مركز المساعدة",
+    "messageSupportTitle": "مراسلة الدعم",
+    "messageSupportDescription": "تواصل مباشرة مع صندوق دعم Divine باستخدام رسائل NIP-17 الخاصة.",
+    "messageSupportCta": "فتح دردشة الدعم",
+    "contactTitle": "الاتصال بالدعم",
+    "contactDescription": "أنشئ تذكرة وسنرد عليك في أقرب وقت ممكن.",
+    "contactLink": "الاتصال بالدعم",
+    "githubTitle": "مشكلات GitHub",
+    "githubDescription": "أبلغ عن الأخطاء أو اطلب ميزات أو تصفح المشكلات الحالية في مستودعات GitHub الخاصة بنا.",
+    "webAppLabel": "تطبيق الويب:",
+    "flutterAppLabel": "تطبيق Flutter ‏(iOS/Android):",
+    "communityTitle": "المجتمع",
+    "communityDescription": "انضم إلى نقاشات المجتمع وتواصل مع مستخدمي Divine الآخرين على Nostr.",
+    "communityBody": "تم بناء Divine على Nostr، وهو بروتوكول اجتماعي لامركزي. اعثر علينا في عميل Nostr المفضل لديك."
   }
 }

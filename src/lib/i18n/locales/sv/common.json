@@ -106,5 +106,25 @@
     "signerUnsupported": "Din nuvarande signer kan logga in dig, men den exponerar inte NIP-44-kryptering an. Byt till en nsec, bunker eller annan signer som stodjer NIP-44 for att anvanda direktmeddelanden pa webben.",
     "supportBadge": "Support",
     "supportSummary": "Fraga om buggar, moderering eller kontoproblem."
+  },
+  "support": {
+    "title": "Support",
+    "subtitle": "Behöver du hjälp? Vi finns här för att hjälpa dig.",
+    "helpCenterTitle": "Besök Divines hjälpcenter",
+    "helpCenterDescription": "Hitta svar på dina frågor om Divine.",
+    "helpCenterCta": "Besök hjälpcentret",
+    "messageSupportTitle": "Meddela supporten",
+    "messageSupportDescription": "Kontakta supportinkorgen direkt i Divine med privata NIP-17-meddelanden.",
+    "messageSupportCta": "Öppna supportchatten",
+    "contactTitle": "Kontakta supporten",
+    "contactDescription": "Skapa ett ärende så återkommer vi så snart som möjligt.",
+    "contactLink": "Kontakta supporten",
+    "githubTitle": "GitHub-ärenden",
+    "githubDescription": "Rapportera buggar, önska funktioner eller bläddra bland befintliga ärenden i våra GitHub-repositorier.",
+    "webAppLabel": "Webbapp:",
+    "flutterAppLabel": "Flutter-app (iOS/Android):",
+    "communityTitle": "Gemenskap",
+    "communityDescription": "Delta i våra gemenskapsdiskussioner och få kontakt med andra Divine-användare på Nostr.",
+    "communityBody": "Divine är byggt på Nostr, ett decentraliserat socialt protokoll. Hitta oss i din favoritklient för Nostr."
   }
 }

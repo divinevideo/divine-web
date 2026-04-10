@@ -106,5 +106,25 @@
     "signerUnsupported": "Dein aktueller Signer kann dich anmelden, bietet aber noch keine NIP-44-Verschlusselung. Wechsle zu einem nsec, bunker oder einem anderen Signer mit NIP-44-Unterstutzung, um Direktnachrichten im Web zu nutzen.",
     "supportBadge": "Support",
     "supportSummary": "Frage nach Bugs, Moderation oder Kontoproblemen."
+  },
+  "support": {
+    "title": "Support",
+    "subtitle": "Brauchst du Hilfe? Wir sind fur dich da.",
+    "helpCenterTitle": "Divine Hilfe-Center besuchen",
+    "helpCenterDescription": "Finde Antworten auf deine Fragen zu Divine.",
+    "helpCenterCta": "Hilfe-Center besuchen",
+    "messageSupportTitle": "Support anschreiben",
+    "messageSupportDescription": "Erreiche den Support-Posteingang direkt in Divine mit privaten NIP-17-Nachrichten.",
+    "messageSupportCta": "Support-Chat offnen",
+    "contactTitle": "Support kontaktieren",
+    "contactDescription": "Erstelle ein Ticket und wir melden uns so schnell wie moglich.",
+    "contactLink": "Support kontaktieren",
+    "githubTitle": "GitHub-Issues",
+    "githubDescription": "Melde Fehler, frage Funktionen an oder sieh dir bestehende Issues in unseren GitHub-Repositories an.",
+    "webAppLabel": "Web-App:",
+    "flutterAppLabel": "Flutter-App (iOS/Android):",
+    "communityTitle": "Community",
+    "communityDescription": "Beteilige dich an unseren Community-Diskussionen und vernetze dich mit anderen Divine-Nutzern auf Nostr.",
+    "communityBody": "Divine basiert auf Nostr, einem dezentralen sozialen Protokoll. Finde uns in deinem bevorzugten Nostr-Client."
   }
 }

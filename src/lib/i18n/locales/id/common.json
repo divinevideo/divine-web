@@ -106,5 +106,25 @@
     "signerUnsupported": "Signer Anda saat ini bisa dipakai untuk masuk, tetapi belum mendukung enkripsi NIP-44. Gunakan nsec, bunker, atau signer lain yang mendukung NIP-44 untuk memakai pesan langsung di web.",
     "supportBadge": "Dukungan",
     "supportSummary": "Tanyakan tentang bug, moderasi, atau masalah akun."
+  },
+  "support": {
+    "title": "Dukungan",
+    "subtitle": "Butuh bantuan? Kami siap membantu Anda.",
+    "helpCenterTitle": "Kunjungi pusat bantuan Divine",
+    "helpCenterDescription": "Temukan jawaban atas pertanyaan Anda tentang Divine.",
+    "helpCenterCta": "Kunjungi pusat bantuan",
+    "messageSupportTitle": "Kirim pesan ke dukungan",
+    "messageSupportDescription": "Hubungi kotak masuk dukungan langsung di Divine menggunakan pesan pribadi NIP-17.",
+    "messageSupportCta": "Buka chat dukungan",
+    "contactTitle": "Hubungi dukungan",
+    "contactDescription": "Buat tiket dan kami akan membalas secepat mungkin.",
+    "contactLink": "Hubungi dukungan",
+    "githubTitle": "Issue GitHub",
+    "githubDescription": "Laporkan bug, minta fitur, atau telusuri issue yang ada di repositori GitHub kami.",
+    "webAppLabel": "Aplikasi web:",
+    "flutterAppLabel": "Aplikasi Flutter (iOS/Android):",
+    "communityTitle": "Komunitas",
+    "communityDescription": "Bergabunglah dalam diskusi komunitas dan terhubung dengan pengguna Divine lainnya di Nostr.",
+    "communityBody": "Divine dibangun di atas Nostr, protokol sosial yang terdesentralisasi. Temukan kami di klien Nostr favorit Anda."
   }
 }

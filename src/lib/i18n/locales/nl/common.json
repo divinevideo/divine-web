@@ -106,5 +106,25 @@
     "signerUnsupported": "Je huidige signer kan je laten inloggen, maar ondersteunt nog geen NIP-44-versleuteling. Schakel over naar een nsec, bunker of andere signer met NIP-44-ondersteuning om directe berichten op het web te gebruiken.",
     "supportBadge": "Support",
     "supportSummary": "Vraag naar bugs, moderatie of accountproblemen."
+  },
+  "support": {
+    "title": "Support",
+    "subtitle": "Hulp nodig? We staan klaar om je te helpen.",
+    "helpCenterTitle": "Bezoek het Divine-helpcentrum",
+    "helpCenterDescription": "Vind antwoorden op je vragen over Divine.",
+    "helpCenterCta": "Bezoek het helpcentrum",
+    "messageSupportTitle": "Bericht naar support",
+    "messageSupportDescription": "Neem rechtstreeks contact op met de supportinbox in Divine via prive-NIP-17-berichten.",
+    "messageSupportCta": "Open supportchat",
+    "contactTitle": "Contact opnemen met support",
+    "contactDescription": "Maak een ticket aan en we reageren zo snel mogelijk.",
+    "contactLink": "Contact opnemen met support",
+    "githubTitle": "GitHub-issues",
+    "githubDescription": "Meld bugs, vraag functies aan of bekijk bestaande issues in onze GitHub-repositories.",
+    "webAppLabel": "Webapp:",
+    "flutterAppLabel": "Flutter-app (iOS/Android):",
+    "communityTitle": "Community",
+    "communityDescription": "Doe mee aan onze communitygesprekken en maak contact met andere Divine-gebruikers op Nostr.",
+    "communityBody": "Divine is gebouwd op Nostr, een gedecentraliseerd sociaal protocol. Vind ons in je favoriete Nostr-client."
   }
 }

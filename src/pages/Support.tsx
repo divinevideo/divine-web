@@ -10,6 +10,7 @@ import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useDmCapability } from '@/hooks/useDirectMessages';
 import { useSubdomainNavigate } from '@/hooks/useSubdomainNavigate';
 import { DIVINE_SUPPORT_PUBKEY, getDmConversationPath } from '@/lib/dm';
+import { useTranslation } from 'react-i18next';
 
 export function Support() {
   // Zendesk widget disabled - linking to Help Center instead.
@@ -19,6 +20,7 @@ export function Support() {
   const navigate = useSubdomainNavigate();
   const { user } = useCurrentUser();
   const { canUseDirectMessages } = useDmCapability();
+  const { t } = useTranslation();
 
   useEffect(() => {
     if (!ZENDESK_ENABLED) return;
@@ -75,25 +77,25 @@ export function Support() {
       <div className="container max-w-2xl mx-auto px-4 py-8">
       <div className="space-y-6">
         <div className="text-center space-y-2">
-          <h1 className="text-3xl font-bold">Support</h1>
+          <h1 className="text-3xl font-bold">{t('support.title')}</h1>
           <p className="text-muted-foreground">
-            Need help? We're here to assist you.
+            {t('support.subtitle')}
           </p>
         </div>
 
         {/* Help Center Card (replaces Zendesk widget) */}
         <Card>
           <CardHeader>
-            <CardTitle>Visit Divine Help Center</CardTitle>
+            <CardTitle>{t('support.helpCenterTitle')}</CardTitle>
             <CardDescription>
-              Find answers to your questions about Divine.  
+              {t('support.helpCenterDescription')}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <a href='https://help.divine.video/'>
               <Button> 
               {/* <Button onClick={_openZendeskWidget} size="lg" className="w-full"> */}
-              Visit Help Center
+              {t('support.helpCenterCta')}
               </Button>
             </a>  
             {/* <p className="text-sm text-muted-foreground mt-4 text-center">
@@ -107,15 +109,15 @@ export function Support() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <MessageCircle className="h-5 w-5" />
-                Message Support
+                {t('support.messageSupportTitle')}
               </CardTitle>
               <CardDescription>
-                Reach the support inbox directly inside Divine using private NIP-17 messages.
+                {t('support.messageSupportDescription')}
               </CardDescription>
             </CardHeader>
             <CardContent>
               <Button onClick={() => navigate(getDmConversationPath([DIVINE_SUPPORT_PUBKEY]))}>
-                Open Support Chat
+                {t('support.messageSupportCta')}
               </Button>
             </CardContent>
           </Card>
@@ -125,10 +127,10 @@ export function Support() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Mail className="h-5 w-5" />
-              Contact Support
+              {t('support.contactTitle')}
             </CardTitle>
             <CardDescription>
-              Create a ticket and we'll get back to you as soon as possible.
+              {t('support.contactDescription')}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -136,7 +138,7 @@ export function Support() {
               href="https://help.divine.video/hc/en-gb/requests/new?ticket_form_id=14332938774671"
               className="text-primary hover:underline font-medium"
             >
-              Contact Support
+              {t('support.contactLink')}
             </a>
           </CardContent>
         </Card>
@@ -145,15 +147,15 @@ export function Support() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Github className="h-5 w-5" />
-              GitHub Issues
+              {t('support.githubTitle')}
             </CardTitle>
             <CardDescription>
-              Report bugs, request features, or browse existing issues on our GitHub repositories.
+              {t('support.githubDescription')}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-2">
             <div>
-              <div className="text-sm font-medium mb-1">Web App:</div>
+              <div className="text-sm font-medium mb-1">{t('support.webAppLabel')}</div>
               <a
                 href="https://github.com/rabble/divine-web/issues"
                 target="_blank"
@@ -164,7 +166,7 @@ export function Support() {
               </a>
             </div>
             <div>
-              <div className="text-sm font-medium mb-1">Flutter App (iOS/Android):</div>
+              <div className="text-sm font-medium mb-1">{t('support.flutterAppLabel')}</div>
               <a
                 href="https://github.com/rabble/nostrvine/issues"
                 target="_blank"
@@ -181,15 +183,15 @@ export function Support() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <MessageCircle className="h-5 w-5" />
-              Community
+              {t('support.communityTitle')}
             </CardTitle>
             <CardDescription>
-              Join our community discussions and connect with other Divine users on Nostr.
+              {t('support.communityDescription')}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground">
-              Divine is built on Nostr, a decentralized social protocol. Find us on your favorite Nostr client!
+              {t('support.communityBody')}
             </p>
           </CardContent>
         </Card>

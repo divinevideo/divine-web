@@ -106,5 +106,25 @@
     "signerUnsupported": "Twoj obecny signer pozwala sie zalogowac, ale nie udostepnia jeszcze szyfrowania NIP-44. Przelacz sie na nsec, bunker lub inny signer obslugujacy NIP-44, aby korzystac z wiadomosci bezposrednich w sieci.",
     "supportBadge": "Wsparcie",
     "supportSummary": "Zapytaj o bledy, moderacje lub problemy z kontem."
+  },
+  "support": {
+    "title": "Wsparcie",
+    "subtitle": "Potrzebujesz pomocy? Jestesmy tutaj, aby pomoc.",
+    "helpCenterTitle": "Odwiedz centrum pomocy Divine",
+    "helpCenterDescription": "Znajdz odpowiedzi na swoje pytania o Divine.",
+    "helpCenterCta": "Odwiedz centrum pomocy",
+    "messageSupportTitle": "Napisz do wsparcia",
+    "messageSupportDescription": "Skontaktuj sie bezposrednio ze skrzynka wsparcia w Divine za pomoca prywatnych wiadomosci NIP-17.",
+    "messageSupportCta": "Otworz czat wsparcia",
+    "contactTitle": "Skontaktuj sie ze wsparciem",
+    "contactDescription": "Utworz zgloszenie, a odpowiemy tak szybko, jak to mozliwe.",
+    "contactLink": "Skontaktuj sie ze wsparciem",
+    "githubTitle": "Zgloszenia GitHub",
+    "githubDescription": "Zglaszaj bledy, pros o funkcje lub przegladaj istniejace zgloszenia w naszych repozytoriach GitHub.",
+    "webAppLabel": "Aplikacja webowa:",
+    "flutterAppLabel": "Aplikacja Flutter (iOS/Android):",
+    "communityTitle": "Spolecznosc",
+    "communityDescription": "Dolacz do dyskusji spolecznosci i polacz sie z innymi uzytkownikami Divine na Nostr.",
+    "communityBody": "Divine jest zbudowane na Nostr, zdecentralizowanym protokole spolecznosciowym. Znajdz nas w swoim ulubionym kliencie Nostr."
   }
 }

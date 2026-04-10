@@ -106,5 +106,25 @@
     "signerUnsupported": "現在の signer ではログインできますが、まだ NIP-44 暗号化に対応していません。Web でダイレクトメッセージを使うには、NIP-44 に対応した nsec、bunker、または別の signer に切り替えてください。",
     "supportBadge": "サポート",
     "supportSummary": "不具合、モデレーション、またはアカウントの問題について相談できます。"
+  },
+  "support": {
+    "title": "サポート",
+    "subtitle": "お困りですか。私たちがサポートします。",
+    "helpCenterTitle": "Divine ヘルプセンターを開く",
+    "helpCenterDescription": "Divine に関する質問の答えを見つけてください。",
+    "helpCenterCta": "ヘルプセンターを開く",
+    "messageSupportTitle": "サポートにメッセージ",
+    "messageSupportDescription": "NIP-17 のプライベートメッセージで Divine 内のサポート受信箱に直接連絡できます。",
+    "messageSupportCta": "サポートチャットを開く",
+    "contactTitle": "サポートに連絡",
+    "contactDescription": "チケットを作成してください。できるだけ早く返信します。",
+    "contactLink": "サポートに連絡",
+    "githubTitle": "GitHub Issues",
+    "githubDescription": "バグ報告、機能リクエスト、または GitHub リポジトリの既存 issue を確認できます。",
+    "webAppLabel": "Web アプリ:",
+    "flutterAppLabel": "Flutter アプリ (iOS/Android):",
+    "communityTitle": "コミュニティ",
+    "communityDescription": "コミュニティの会話に参加し、Nostr 上の他の Divine ユーザーとつながりましょう。",
+    "communityBody": "Divine は分散型ソーシャルプロトコル Nostr 上に構築されています。お気に入りの Nostr クライアントで見つけてください。"
   }
 }

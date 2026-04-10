@@ -106,5 +106,25 @@
     "signerUnsupported": "Mevcut imzalayicin giris yapmana izin veriyor, ancak henuz NIP-44 sifrelemesini desteklemiyor. Web'de dogrudan mesaj kullanmak icin NIP-44 destekleyen bir nsec, bunker veya baska bir imzalayiciya gec.",
     "supportBadge": "Destek",
     "supportSummary": "Hatalar, moderasyon veya hesap sorunlari hakkinda sor."
+  },
+  "support": {
+    "title": "Destek",
+    "subtitle": "Yardima mi ihtiyacin var? Yardim etmek icin buradayiz.",
+    "helpCenterTitle": "Divine Yardim Merkezini ziyaret et",
+    "helpCenterDescription": "Divine hakkindaki sorularina yanit bul.",
+    "helpCenterCta": "Yardim merkezini ziyaret et",
+    "messageSupportTitle": "Destege mesaj gonder",
+    "messageSupportDescription": "Ozel NIP-17 mesajlariyla Divine icindeki destek kutusuna dogrudan ulas.",
+    "messageSupportCta": "Destek sohbetini ac",
+    "contactTitle": "Destekle iletisime gec",
+    "contactDescription": "Bir destek talebi olustur, en kisa surede geri donelim.",
+    "contactLink": "Destekle iletisime gec",
+    "githubTitle": "GitHub sorunlari",
+    "githubDescription": "Hata bildir, ozellik iste veya GitHub depolarimizdaki mevcut sorunlari incele.",
+    "webAppLabel": "Web uygulamasi:",
+    "flutterAppLabel": "Flutter uygulamasi (iOS/Android):",
+    "communityTitle": "Topluluk",
+    "communityDescription": "Topluluk tartismalarimiza katil ve Nostr uzerindeki diger Divine kullanicilariyla baglan.",
+    "communityBody": "Divine, merkezi olmayan bir sosyal protokol olan Nostr uzerine kuruludur. Bizi sevdigin Nostr istemcisinde bul."
   }
 }
