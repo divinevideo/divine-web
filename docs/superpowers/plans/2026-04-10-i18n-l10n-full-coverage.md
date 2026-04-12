@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED: Use superpowers:subagent-driven-development (if subagents available) or superpowers:executing-plans to implement this plan. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Extend PR 229 so every app-owned page and static content surface is translated across all 15 supported locales, while leaving user-generated content unchanged.
+**Goal:** Extend PR 229 so every app-owned page and static content surface except `Terms` and `Privacy` is translated across all 15 supported locales, while leaving user-generated content unchanged and keeping `Terms` and `Privacy` in English.
 
-**Architecture:** Build on the existing `i18next` foundation in the `feat/i18n-l10n-kickoff` branch. Expand translation catalogs beyond the shell-focused kickoff coverage, move long-form static page content into translation namespaces, replace remaining hard-coded app-owned copy with `t(...)` lookups, and guard the result with locale parity tests plus targeted UI tests.
+**Architecture:** Build on the existing `i18next` foundation in the `feat/i18n-l10n-kickoff` branch. Expand translation catalogs beyond the shell-focused kickoff coverage, move long-form static page content into translation namespaces where needed, replace remaining hard-coded app-owned copy with `t(...)` lookups, and guard the result with locale parity tests plus targeted UI tests. Preserve `Terms` and `Privacy` as English-only content and do not spend follow-up translation effort there.
 
 **Tech Stack:** TypeScript, React 18, React Router, i18next, react-i18next, Vitest, Testing Library
 
@@ -53,11 +53,9 @@ Expected: PASS
 
 ## Chunk 2: Translate Long-Form Static Pages
 
-### Task 2: Move legal, FAQ, support, and marketing copy into catalogs
+### Task 2: Move FAQ, safety, support, and marketing copy into catalogs
 
 **Files:**
-- Modify: `src/pages/TermsPage.tsx`
-- Modify: `src/pages/PrivacyPage.tsx`
 - Modify: `src/pages/SafetyPage.tsx`
 - Modify: `src/pages/FAQPage.tsx`
 - Modify: `src/pages/AboutPage.tsx`
@@ -69,11 +67,11 @@ Expected: PASS
 
 - [ ] **Step 1: Write failing tests for representative static pages**
 
-Add focused tests that render at least one legal page and one marketing or support page in a non-English locale and assert translated app-owned headings and body copy.
+Add focused tests that render at least one FAQ or safety page and one marketing or support page in a non-English locale and assert translated app-owned headings and body copy.
 
 - [ ] **Step 2: Run those tests and confirm they fail**
 
-Run: `npx vitest run src/pages/FAQPage.test.tsx src/pages/TermsPage.test.tsx`
+Run: `npx vitest run src/pages/FAQPage.test.tsx src/pages/static-pages-i18n.test.tsx`
 Expected: FAIL because the pages still render English inline copy.
 
 - [ ] **Step 3: Move page content into translation catalogs and wire `useTranslation`**
@@ -82,7 +80,7 @@ Prefer structured keys over giant raw blobs where possible, but keep the impleme
 
 - [ ] **Step 4: Re-run the static page tests and confirm they pass**
 
-Run: `npx vitest run src/pages/FAQPage.test.tsx src/pages/TermsPage.test.tsx`
+Run: `npx vitest run src/pages/FAQPage.test.tsx src/pages/static-pages-i18n.test.tsx`
 Expected: PASS
 
 ## Chunk 3: Translate Remaining Product Pages

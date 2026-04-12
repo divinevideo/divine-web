@@ -4,7 +4,7 @@
 
 ## Goal
 
-Expand the existing i18n kickoff implementation so every app-owned page, dialog, menu, helper message, legal page, and marketing page in Divine Web is available in all 15 supported languages, while leaving user-generated content untouched.
+Expand the existing i18n kickoff implementation so every app-owned page, dialog, menu, helper message, and marketing page in Divine Web is available in all 15 supported languages, while leaving user-generated content untouched. `Terms` and `Privacy` remain English-only for now.
 
 ## Scope
 
@@ -14,13 +14,14 @@ Included in this phase:
 
 - convert all route pages that still contain hard-coded app-owned copy
 - convert dialogs, forms, toasts, menus, helper text, empty states, and error text that remain in English
-- move long-form legal, support, FAQ, and marketing copy into translation catalogs
+- move long-form support, FAQ, safety, and marketing copy into translation catalogs
 - keep translation coverage aligned across all 15 locales
 - add regression tests that catch missing locale keys outside the kickoff scope
 
 Explicitly out of scope:
 
 - translating user-generated content such as comments, usernames, bios, captions, and note bodies
+- translating `Terms` and `Privacy` beyond their current English presentation
 - locale in URLs
 - server-side locale rendering
 - human translation review workflow
@@ -50,7 +51,7 @@ Keep the existing `i18next` and `react-i18next` foundation. Expand catalog organ
 - `common` for shared UI, chrome, repeated actions, and cross-page states
 - additional namespaces for large page domains where keeping everything in `common` would become brittle
 
-The exact namespace boundaries should stay pragmatic. Large pages such as Terms, Privacy, Safety, FAQ, About, and other support or marketing surfaces should move into dedicated page or domain namespaces instead of embedding long English blocks in JSX.
+The exact namespace boundaries should stay pragmatic. Large pages such as Safety, FAQ, About, and other support or marketing surfaces should move into dedicated page or domain namespaces instead of embedding long English blocks in JSX. `Terms` and `Privacy` can keep their current namespace scaffolding for consistency, but they should not be part of the translation completion target.
 
 All locale resources must mirror English namespace and key structure exactly. English remains the source locale and fallback.
 
