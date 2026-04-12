@@ -1,4 +1,12 @@
 {
-  "title": "Frequently Asked Questions",
-  "subtitle": "Everything you need to know about Divine"
+  "title": "FAQ",
+  "subtitle": "Everything you need to know about Divine",
+  "sections": {
+    "gettingStarted": "Getting Started",
+    "accounts": "Accounts & Authentication",
+    "posting": "Posting & Content",
+    "privacySafety": "Privacy & Safety",
+    "features": "Features & Interactions",
+    "technical": "Technical Questions"
+  }
 }

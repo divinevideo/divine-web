@@ -1,4 +1,12 @@
 {
-  "title": "Vanliga frågor",
-  "subtitle": "Allt du behöver veta om Divine"
+  "title": "FAQ",
+  "subtitle": "Allt du behöver veta om Divine",
+  "sections": {
+    "gettingStarted": "Komma igång",
+    "accounts": "Konton och autentisering",
+    "posting": "Inlägg och innehåll",
+    "privacySafety": "Sekretess och säkerhet",
+    "features": "Funktioner & interaktioner",
+    "technical": "Tekniska frågor"
+  }
 }

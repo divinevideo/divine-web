@@ -5,8 +5,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Shield, ShieldCheck, ShieldAlert, ShieldQuestion, Camera, Lock, Fingerprint, Video } from "lucide-react";
 import { MarketingLayout } from '@/components/MarketingLayout';
+import { useTranslation } from 'react-i18next';
 
 export function ProofModePage() {
+  const { t } = useTranslation('proofmode');
+
   return (
     <MarketingLayout>
       <div className="container max-w-4xl mx-auto py-8 px-4 space-y-8">
@@ -14,7 +17,7 @@ export function ProofModePage() {
       <div className="space-y-4">
         <div className="flex items-center gap-3">
           <Shield className="h-12 w-12 text-primary" />
-          <h1 className="text-4xl font-bold">Proofmode: Cryptographic Video Authenticity</h1>
+          <h1 className="text-4xl font-bold">{t('hero.title')}</h1>
         </div>
         <p className="text-xl text-muted-foreground">
           Divine.video uses cryptographic proofs to help you distinguish real camera captures from AI-generated content
@@ -23,12 +26,12 @@ export function ProofModePage() {
 
       {/* Why Proofmode */}
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Camera className="h-5 w-5" />
-            The Deepfake Problem
-          </CardTitle>
-        </CardHeader>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Camera className="h-5 w-5" />
+              {t('sections.problem')}
+            </CardTitle>
+          </CardHeader>
         <CardContent className="space-y-4">
           <p>
             In an era of AI-generated deepfakes and synthetic media, "seeing is believing" no longer holds true.

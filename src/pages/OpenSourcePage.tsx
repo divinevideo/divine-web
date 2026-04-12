@@ -15,13 +15,16 @@ import {
 } from 'lucide-react';
 import { ZendeskWidget } from '@/components/ZendeskWidget';
 import { MarketingLayout } from '@/components/MarketingLayout';
+import { useTranslation } from 'react-i18next';
 
 export function OpenSourcePage() {
+  const { t } = useTranslation('openSource');
+
   return (
     <MarketingLayout>
       <div className="container mx-auto px-4 py-8 max-w-4xl">
       <ZendeskWidget />
-      <h1 className="text-4xl font-bold mb-8">Open Source Project</h1>
+      <h1 className="text-4xl font-bold mb-8">{t('title')}</h1>
 
       <div className="space-y-8">
         {/* Overview */}
@@ -29,7 +32,7 @@ export function OpenSourcePage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Code2 className="h-5 w-5 text-primary" />
-              Beta Testing Now Live!
+              {t('sections.beta')}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">

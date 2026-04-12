@@ -1,4 +1,12 @@
 {
   "title": "Perguntas frequentes",
-  "subtitle": "Tudo o que você precisa saber sobre Divino"
+  "subtitle": "Tudo o que você precisa saber sobre Divino",
+  "sections": {
+    "gettingStarted": "Começando",
+    "accounts": "Contas e autenticação",
+    "posting": "Postagem e conteúdo",
+    "privacySafety": "Privacidade e segurança",
+    "features": "Recursos e interações",
+    "technical": "Perguntas técnicas"
+  }
 }

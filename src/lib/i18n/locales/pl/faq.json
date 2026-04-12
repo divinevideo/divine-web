@@ -1,4 +1,12 @@
 {
   "title": "Często zadawane pytania",
-  "subtitle": "Wszystko, co musisz wiedzieć o Bogu"
+  "subtitle": "Wszystko, co musisz wiedzieć o Bogu",
+  "sections": {
+    "gettingStarted": "Pierwsze kroki",
+    "accounts": "Konta i uwierzytelnianie",
+    "posting": "Publikowanie i treść",
+    "privacySafety": "Prywatność i bezpieczeństwo",
+    "features": "Funkcje i interakcje",
+    "technical": "Pytania techniczne"
+  }
 }

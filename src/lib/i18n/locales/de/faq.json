@@ -1,4 +1,12 @@
 {
-  "title": "Häufig gestellte Fragen",
-  "subtitle": "Alles, was Sie über Divine wissen müssen"
+  "title": "FAQ",
+  "subtitle": "Alles, was Sie über Divine wissen müssen",
+  "sections": {
+    "gettingStarted": "Erste Schritte",
+    "accounts": "Konten und Authentifizierung",
+    "posting": "Veröffentlichung und Inhalt",
+    "privacySafety": "Datenschutz und Sicherheit",
+    "features": "Funktionen und Interaktionen",
+    "technical": "Technische Fragen"
+  }
 }

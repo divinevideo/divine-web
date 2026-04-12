@@ -1,4 +1,20 @@
 {
   "title": "안전 표준",
-  "updated": "최종 업데이트: 2026년 3월 30일"
+  "updated": "최종 업데이트: 2026년 3월 30일",
+  "sections": {
+    "overview": "1. 개요",
+    "definitions": "2. 정의",
+    "prohibited": "3. 금지된 내용 및 행위",
+    "childSafety": "4. 어린이 안전",
+    "matureContent": "5. 성인 콘텐츠",
+    "integrity": "6. 플랫폼 무결성 및 남용",
+    "enforcement": "7. 집행",
+    "moderation": "8. 조정 방법",
+    "reporting": "9. 보고",
+    "userControls": "10. 사용자 컨트롤",
+    "decentralization": "11. 탈중앙화의 한계",
+    "automated": "12. 자동화된 의사결정",
+    "appeals": "13. 항소",
+    "updates": "14. 업데이트"
+  }
 }

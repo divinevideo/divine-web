@@ -1,4 +1,12 @@
 {
-  "title": "Sıkça Sorulan Sorular",
-  "subtitle": "Divine hakkında bilmeniz gereken her şey"
+  "title": "SSS",
+  "subtitle": "Divine hakkında bilmeniz gereken her şey",
+  "sections": {
+    "gettingStarted": "Başlarken",
+    "accounts": "Hesaplar ve Kimlik Doğrulama",
+    "posting": "Gönderim ve İçerik",
+    "privacySafety": "Gizlilik ve Güvenlik",
+    "features": "Özellikler ve Etkileşimler",
+    "technical": "Teknik Sorular"
+  }
 }

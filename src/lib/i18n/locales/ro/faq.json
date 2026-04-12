@@ -1,4 +1,12 @@
 {
-  "title": "Întrebări frecvente",
-  "subtitle": "Tot ce trebuie să știi despre Divine"
+  "title": "FAQ",
+  "subtitle": "Tot ce trebuie să știi despre Divine",
+  "sections": {
+    "gettingStarted": "Noțiuni de bază",
+    "accounts": "Conturi și autentificare",
+    "posting": "Postare și conținut",
+    "privacySafety": "Confidențialitate și siguranță",
+    "features": "Caracteristici și interacțiuni",
+    "technical": "Întrebări tehnice"
+  }
 }

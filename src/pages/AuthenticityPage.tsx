@@ -7,8 +7,11 @@ import { Button } from '@/components/ui/button';
 import { Heart, Users, Camera, Shield, Sparkles, Archive, Video, Fingerprint } from 'lucide-react';
 import { ZendeskWidget } from '@/components/ZendeskWidget';
 import { MarketingLayout } from '@/components/MarketingLayout';
+import { useTranslation } from 'react-i18next';
 
 export function AuthenticityPage() {
+  const { t } = useTranslation('authenticity');
+
   return (
     <MarketingLayout>
       <div className="container max-w-4xl mx-auto py-8 px-4 space-y-8">
@@ -19,9 +22,7 @@ export function AuthenticityPage() {
           <Heart className="h-16 w-16 text-red-500 animate-pulse" />
         </div>
         <h1 className="text-5xl font-bold leading-tight">
-          Social Media<br />
-          By Humans,<br />
-          For Humans
+          {t('hero.title')}
         </h1>
         <p className="text-2xl text-muted-foreground max-w-2xl mx-auto">
           In a world of AI-generated content, Divine is a sanctuary for authentic human creativity
@@ -30,12 +31,12 @@ export function AuthenticityPage() {
 
       {/* The Vine Legacy */}
       <Card className="border-2 border-brand-green">
-        <CardHeader>
-          <CardTitle className="text-3xl flex items-center gap-3">
-            <Video className="h-8 w-8 text-primary" />
-            Building on the Original Vine
-          </CardTitle>
-        </CardHeader>
+          <CardHeader>
+            <CardTitle className="text-3xl flex items-center gap-3">
+              <Video className="h-8 w-8 text-primary" />
+              {t('sections.legacy')}
+            </CardTitle>
+          </CardHeader>
         <CardContent className="space-y-4 text-lg">
           <p>
             From 2013 to 2017, Vine was magic. Six seconds of pure, unfiltered human creativity.

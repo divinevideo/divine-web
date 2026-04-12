@@ -1,4 +1,20 @@
 {
   "title": "Standarde de siguranță",
-  "updated": "Ultima actualizare: 30 martie 2026"
+  "updated": "Ultima actualizare: 30 martie 2026",
+  "sections": {
+    "overview": "1. Prezentare generală",
+    "definitions": "2. Definiții",
+    "prohibited": "3. Conținut și conduită interzise",
+    "childSafety": "4. Siguranța copiilor",
+    "matureContent": "5. Conținut pentru adulți",
+    "integrity": "6. Integritatea și abuzul platformei",
+    "enforcement": "7. Executarea silita",
+    "moderation": "8. Metode de moderare",
+    "reporting": "9. Raportare",
+    "userControls": "10. Controlul utilizatorului",
+    "decentralization": "11. Limitarea descentralizării",
+    "automated": "12. Luare automată a deciziilor",
+    "appeals": "13. Contestaţii",
+    "updates": "14. Actualizări"
+  }
 }

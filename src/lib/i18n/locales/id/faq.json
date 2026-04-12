@@ -1,4 +1,12 @@
 {
-  "title": "Pertanyaan yang Sering Diajukan",
-  "subtitle": "Segala sesuatu yang perlu Anda ketahui tentang Ilahi"
+  "title": "Pertanyaan Umum",
+  "subtitle": "Segala sesuatu yang perlu Anda ketahui tentang Ilahi",
+  "sections": {
+    "gettingStarted": "Memulai",
+    "accounts": "Akun & Otentikasi",
+    "posting": "Posting & Konten",
+    "privacySafety": "Privasi & Keamanan",
+    "features": "Fitur & Interaksi",
+    "technical": "Pertanyaan Teknis"
+  }
 }

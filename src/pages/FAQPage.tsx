@@ -99,7 +99,7 @@ export function FAQPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Video className="h-5 w-5" />
-              Getting Started
+              {t('sections.gettingStarted')}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -373,7 +373,7 @@ export function FAQPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Key className="h-5 w-5" />
-              Accounts & Authentication
+              {t('sections.accounts')}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -492,7 +492,7 @@ export function FAQPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Upload className="h-5 w-5" />
-              Posting & Content
+              {t('sections.posting')}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -589,7 +589,7 @@ export function FAQPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Shield className="h-5 w-5" />
-              Privacy & Safety
+              {t('sections.privacySafety')}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -806,7 +806,7 @@ export function FAQPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Settings className="h-5 w-5" />
-              Features & Interactions
+              {t('sections.features')}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -968,7 +968,7 @@ export function FAQPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Globe className="h-5 w-5" />
-              Technical Questions
+              {t('sections.technical')}
             </CardTitle>
           </CardHeader>
           <CardContent>

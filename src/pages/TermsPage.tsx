@@ -4,17 +4,14 @@
 import { Link } from 'react-router-dom';
 import { ZendeskWidget } from '@/components/ZendeskWidget';
 import { MarketingLayout } from '@/components/MarketingLayout';
-import { useTranslation } from 'react-i18next';
 
 export function TermsPage() {
-  const { t } = useTranslation('terms');
-
   return (
     <MarketingLayout>
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         <ZendeskWidget />
-        <h1 className="text-4xl font-bold mb-4">{t('title')}</h1>
-        <p className="text-muted-foreground mb-8">{t('updated')}</p>
+        <h1 className="text-4xl font-bold mb-4">Terms of Service</h1>
+        <p className="text-muted-foreground mb-8">Last Updated: March 30, 2026</p>
 
         <div className="space-y-8 text-muted-foreground leading-relaxed">
           {/* 1. Acceptance of Terms */}
