@@ -3,19 +3,22 @@
 
 import { ZendeskWidget } from '@/components/ZendeskWidget';
 import { MarketingLayout } from '@/components/MarketingLayout';
+import { useTranslation } from 'react-i18next';
 
 export function DMCAPage() {
+  const { t } = useTranslation('dmca');
+
   return (
     <MarketingLayout>
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         <ZendeskWidget />
-        <h1 className="text-4xl font-bold mb-4">DMCA + Copyright Policy</h1>
-        <p className="text-muted-foreground mb-8">Last Updated: March 30, 2026</p>
+        <h1 className="text-4xl font-bold mb-4">{t('title')}</h1>
+        <p className="text-muted-foreground mb-8">{t('updated')}</p>
 
         <div className="space-y-8 text-muted-foreground leading-relaxed">
           {/* 1. Overview */}
           <section>
-            <h2 className="text-2xl font-semibold text-foreground mb-3">1. Overview</h2>
+            <h2 className="text-2xl font-semibold text-foreground mb-3">{t('sections.overview')}</h2>
             <p className="mb-3">
               Verse Communications PBC dba Divine (&ldquo;Divine&rdquo;) respects intellectual property rights
               and complies with the Digital Millennium Copyright Act (&ldquo;DMCA&rdquo;). This policy describes
@@ -32,7 +35,7 @@ export function DMCAPage() {
 
           {/* 2. Definitions */}
           <section>
-            <h2 className="text-2xl font-semibold text-foreground mb-3">2. Definitions</h2>
+            <h2 className="text-2xl font-semibold text-foreground mb-3">{t('sections.definitions')}</h2>
             <p className="mb-3">
               <strong className="text-foreground">&ldquo;Divine-controlled infrastructure&rdquo;</strong> means
               websites, apps, relays, media storage, APIs, and other systems owned or controlled by Divine.
@@ -75,7 +78,7 @@ export function DMCAPage() {
 
           {/* 3. Submitting a Notice */}
           <section>
-            <h2 className="text-2xl font-semibold text-foreground mb-3">3. Submitting a Notice</h2>
+            <h2 className="text-2xl font-semibold text-foreground mb-3">{t('sections.notice')}</h2>
             <p className="mb-3">
               If you believe that content available through Divine-controlled infrastructure infringes your
               copyright, you may submit a notice to{' '}
@@ -93,7 +96,7 @@ export function DMCAPage() {
 
           {/* 4. Response to Notices */}
           <section>
-            <h2 className="text-2xl font-semibold text-foreground mb-3">4. Response to Notices</h2>
+            <h2 className="text-2xl font-semibold text-foreground mb-3">{t('sections.response')}</h2>
             <p className="mb-3">
               Upon receipt of a facially valid notice, Divine may remove or disable access to the allegedly
               infringing material on Divine-controlled infrastructure and may take additional action, including
@@ -111,7 +114,7 @@ export function DMCAPage() {
 
           {/* 5. Counter-Notifications */}
           <section>
-            <h2 className="text-2xl font-semibold text-foreground mb-3">5. Counter-Notifications</h2>
+            <h2 className="text-2xl font-semibold text-foreground mb-3">{t('sections.counter')}</h2>
             <p className="mb-3">
               Users may submit counter-notifications as permitted by law. A valid counter-notification must
               include identification of the removed material, a statement under penalty of perjury, consent to
@@ -126,7 +129,7 @@ export function DMCAPage() {
 
           {/* 6. Repeat Infringers */}
           <section>
-            <h2 className="text-2xl font-semibold text-foreground mb-3">6. Repeat Infringers</h2>
+            <h2 className="text-2xl font-semibold text-foreground mb-3">{t('sections.repeat')}</h2>
             <p>
               Divine maintains a policy of addressing repeat infringement and may restrict or terminate access for
               users who repeatedly infringe intellectual property rights.
@@ -135,7 +138,7 @@ export function DMCAPage() {
 
           {/* 7. Scope of Control */}
           <section>
-            <h2 className="text-2xl font-semibold text-foreground mb-3">7. Scope of Control</h2>
+            <h2 className="text-2xl font-semibold text-foreground mb-3">{t('sections.control')}</h2>
             <p>
               Divine can remove or disable access to content only on systems it owns or controls. If the
               underlying material is stored on independent relays, third-party hosts, or archives, requests to
@@ -145,7 +148,7 @@ export function DMCAPage() {
 
           {/* 8. User Responsibility */}
           <section>
-            <h2 className="text-2xl font-semibold text-foreground mb-3">8. User Responsibility</h2>
+            <h2 className="text-2xl font-semibold text-foreground mb-3">{t('sections.responsibility')}</h2>
             <p>
               Users are responsible for ensuring that they have the rights, licenses, and permissions necessary to
               publish or reference content through the Service.
@@ -154,7 +157,7 @@ export function DMCAPage() {
 
           {/* 9. Good Faith Requirement */}
           <section>
-            <h2 className="text-2xl font-semibold text-foreground mb-3">9. Good Faith Requirement</h2>
+            <h2 className="text-2xl font-semibold text-foreground mb-3">{t('sections.goodFaith')}</h2>
             <p>
               Submitting false or misleading claims may result in liability under applicable law.
             </p>
@@ -162,7 +165,7 @@ export function DMCAPage() {
 
           {/* 10. User Controls */}
           <section>
-            <h2 className="text-2xl font-semibold text-foreground mb-3">10. User Controls</h2>
+            <h2 className="text-2xl font-semibold text-foreground mb-3">{t('sections.userControls')}</h2>
             <p>
               The Service may provide tools such as blocking, muting, filtering, and moderation lists that allow
               users to manage their experience. These controls apply within Divine-operated interfaces as
@@ -172,7 +175,7 @@ export function DMCAPage() {
 
           {/* 11. Relationship to Terms */}
           <section>
-            <h2 className="text-2xl font-semibold text-foreground mb-3">11. Relationship to Terms</h2>
+            <h2 className="text-2xl font-semibold text-foreground mb-3">{t('sections.relation')}</h2>
             <p>
               This policy operates alongside the Terms of Service. Users retain ownership of their content but
               grant Divine a license to use that content as described in the Terms.
@@ -181,7 +184,7 @@ export function DMCAPage() {
 
           {/* 12. Contact */}
           <section>
-            <h2 className="text-2xl font-semibold text-foreground mb-3">12. Contact</h2>
+            <h2 className="text-2xl font-semibold text-foreground mb-3">{t('sections.contact')}</h2>
             <p>
               <a href="mailto:contact@divine.video" className="text-primary hover:underline">
                 contact@divine.video

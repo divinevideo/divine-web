@@ -9,8 +9,10 @@ import { ZendeskWidget } from '@/components/ZendeskWidget';
 import { MarketingLayout } from '@/components/MarketingLayout';
 import { ApplePodcastEmbed } from '@/components/ApplePodcastEmbed';
 import { usePlatformStats } from '@/hooks/usePlatformStats';
+import { useTranslation } from 'react-i18next';
 
 export function AboutPage() {
+  const { t } = useTranslation('about');
   const { data: platformStats } = usePlatformStats();
   const classicVinesSaved = platformStats?.vine_videos?.toLocaleString();
 
@@ -18,13 +20,13 @@ export function AboutPage() {
     <MarketingLayout>
       <div className="container mx-auto px-4 py-8 max-w-4xl">
       <ZendeskWidget />
-      <h1 className="text-4xl font-bold mb-8">About Divine</h1>
+      <h1 className="text-4xl font-bold mb-8">{t('title')}</h1>
 
       <div className="space-y-8">
         {/* The Story */}
         <Card className="border-2 border-brand-light-green dark:border-brand-dark-green">
           <CardHeader>
-            <CardTitle>The Story Behind Divine</CardTitle>
+            <CardTitle>{t('sections.story')}</CardTitle>
           </CardHeader>
           <CardContent className="prose prose-sm dark:prose-invert max-w-none space-y-4">
             <p className="text-lg">

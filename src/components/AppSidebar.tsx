@@ -4,6 +4,7 @@
 import { useLocation } from 'react-router-dom';
 import { Home, Compass, Search, Bell, User, Sun, Moon, ChevronDown, Headphones, BarChart3, LayoutGrid, Rss, MessageCircle } from 'lucide-react';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useCategories } from '@/hooks/useCategories';
 import { nip19 } from 'nostr-tools';
 
@@ -23,6 +24,8 @@ import { cn } from '@/lib/utils';
 import { feedUrls } from '@/lib/feedUrls';
 import { useRssFeedAvailable } from '@/hooks/useRssFeedAvailable';
 import { usePlatformStats } from '@/hooks/usePlatformStats';
+import { LanguageMenu } from '@/components/LanguageMenu';
+import { getTranslatedCategoryLabel } from '@/lib/constants/categories';
 
 interface NavItemProps {
   icon: React.ReactNode;
@@ -56,6 +59,7 @@ function NavItem({ icon, label, onClick, isActive }: NavItemProps) {
 export function AppSidebar({ className }: { className?: string }) {
   const navigate = useSubdomainNavigate();
   const location = useLocation();
+  const { t } = useTranslation();
   const subdomainUser = getSubdomainUser();
   const { displayTheme, setTheme } = useTheme();
   const { user } = useCurrentUser();
@@ -114,7 +118,7 @@ export function AppSidebar({ className }: { className?: string }) {
         <nav className="flex flex-col gap-0.5 px-3 pt-2">
           <NavItem
             icon={<Search className="h-[18px] w-[18px]" />}
-            label="Search"
+            label={t('nav.search')}
             onClick={() => navigate('/search')}
             isActive={isActive('/search')}
           />
@@ -122,7 +126,7 @@ export function AppSidebar({ className }: { className?: string }) {
           {user && (
             <NavItem
               icon={<Home className="h-[18px] w-[18px]" />}
-              label="Home"
+              label={t('nav.home')}
               onClick={() => navigate('/')}
               isActive={isActive('/')}
             />
@@ -130,7 +134,7 @@ export function AppSidebar({ className }: { className?: string }) {
 
           <NavItem
             icon={<Compass className="h-[18px] w-[18px]" />}
-            label="Discover"
+            label={t('nav.discover')}
             onClick={() => navigate('/discovery')}
             isActive={isDiscoveryActive()}
           />
@@ -147,7 +151,7 @@ export function AppSidebar({ className }: { className?: string }) {
                   )}
                 </div>
               }
-              label="Messages"
+              label={t('nav.messages')}
               onClick={() => navigate('/messages')}
               isActive={isMessagesActive()}
             />
@@ -165,7 +169,7 @@ export function AppSidebar({ className }: { className?: string }) {
                   )}
                 </div>
               }
-              label="Notifications"
+              label={t('nav.notifications')}
               onClick={() => navigate('/notifications')}
               isActive={isActive('/notifications')}
             />
@@ -174,7 +178,7 @@ export function AppSidebar({ className }: { className?: string }) {
           {user && profilePath && (
             <NavItem
               icon={<User className="h-[18px] w-[18px]" />}
-              label="Profile"
+              label={t('nav.profile')}
               onClick={() => navigate(profilePath)}
               isActive={location.pathname === profilePath}
             />
@@ -183,7 +187,7 @@ export function AppSidebar({ className }: { className?: string }) {
           {user && (
             <NavItem
               icon={<BarChart3 className="h-[18px] w-[18px]" />}
-              label="Analytics"
+              label={t('nav.analytics')}
               onClick={() => navigate('/analytics')}
               isActive={isActive('/analytics')}
             />
@@ -199,7 +203,7 @@ export function AppSidebar({ className }: { className?: string }) {
                   className="group flex w-full items-center gap-2 rounded-lg px-3 py-2 text-[13px] font-semibold text-muted-foreground transition-colors hover:text-foreground"
                 >
                   <LayoutGrid className="h-4 w-4" />
-                  <span>Categories</span>
+                  <span>{t('discovery.categories')}</span>
                   <ChevronDown className={cn(
                     "ml-auto h-3.5 w-3.5 transition-transform duration-200",
                     categoriesOpen && "rotate-180"
@@ -222,7 +226,7 @@ export function AppSidebar({ className }: { className?: string }) {
                       <span className="text-base leading-none w-5 text-center">
                         {cat.config?.emoji || ''}
                       </span>
-                      <span>{cat.config?.label || cat.name}</span>
+                      <span>{getTranslatedCategoryLabel(cat.name, t)}</span>
                     </button>
                   ))}
                 </div>
@@ -239,7 +243,7 @@ export function AppSidebar({ className }: { className?: string }) {
                 className="group flex w-full items-center gap-2 rounded-lg px-3 py-2 text-[13px] font-semibold text-muted-foreground transition-colors hover:text-foreground"
               >
                 <Rss className="h-4 w-4 text-orange-500" />
-                <span>RSS Feeds</span>
+                <span>{t('rss.title')}</span>
                 <ChevronDown className={cn(
                   "ml-auto h-3.5 w-3.5 transition-transform duration-200",
                   rssOpen && "rotate-180"
@@ -255,7 +259,7 @@ export function AppSidebar({ className }: { className?: string }) {
                   className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-[14px] text-muted-foreground hover:bg-muted hover:text-foreground transition-all duration-150"
                 >
                   <Rss className="h-3.5 w-3.5 text-orange-500" />
-                  <span>Latest Videos</span>
+                  <span>{t('rss.latestVideos')}</span>
                 </a>
                 <a
                   href={feedUrls.trending()}
@@ -264,7 +268,7 @@ export function AppSidebar({ className }: { className?: string }) {
                   className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-[14px] text-muted-foreground hover:bg-muted hover:text-foreground transition-all duration-150"
                 >
                   <Rss className="h-3.5 w-3.5 text-orange-500" />
-                  <span>Trending</span>
+                  <span>{t('rss.trending')}</span>
                 </a>
                 {user && profilePath && (
                   <a
@@ -274,7 +278,7 @@ export function AppSidebar({ className }: { className?: string }) {
                     className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-[14px] text-muted-foreground hover:bg-muted hover:text-foreground transition-all duration-150"
                   >
                     <Rss className="h-3.5 w-3.5 text-orange-500" />
-                    <span>Your Feed</span>
+                    <span>{t('rss.yourFeed')}</span>
                   </a>
                 )}
               </div>
@@ -295,9 +299,11 @@ export function AppSidebar({ className }: { className?: string }) {
                 <Moon className="h-[18px] w-[18px]" />
               )}
             </span>
-            <span>{displayTheme === 'dark' ? 'Light mode' : 'Dark mode'}</span>
+            <span>{displayTheme === 'dark' ? t('theme.lightMode') : t('theme.darkMode')}</span>
           </button>
         </div>
+
+        <LanguageMenu variant="sidebar" className="mt-4" />
 
         {/* Auth Buttons - on subdomains, link to apex domain for login */}
         <div className="mt-6 px-4">
@@ -306,7 +312,7 @@ export function AppSidebar({ className }: { className?: string }) {
               href={`https://${subdomainUser.apexDomain}/`}
               className="flex w-full items-center justify-center rounded-lg border border-border h-11 text-[15px] font-medium text-foreground transition-colors hover:border-primary hover:text-primary"
             >
-              Log in on Divine
+              {t('auth.logInOnDivine')}
             </a>
           ) : (
             <LoginArea
@@ -330,10 +336,10 @@ export function AppSidebar({ className }: { className?: string }) {
               style={{ fontFamily: "'Bricolage Grotesque', system-ui, sans-serif" }}
             >
               <div className="min-w-0">
-                <div>About Divine</div>
+                <div>{t('footer.aboutDivine')}</div>
                 {classicVinesRecovered && (
                   <div className="mt-0.5 text-[11px] font-normal text-muted-foreground group-hover:text-muted-foreground">
-                    {classicVinesRecovered} Vines recovered
+                    {t('footer.vinesRecovered', { count: classicVinesRecovered })}
                   </div>
                 )}
               </div>
@@ -351,7 +357,7 @@ export function AppSidebar({ className }: { className?: string }) {
                 rel="noopener noreferrer"
                 className="transition-colors hover:text-primary"
               >
-                About
+                {t('menu.about')}
               </a>
               <a
                 href="https://about.divine.video/news/"
@@ -359,7 +365,7 @@ export function AppSidebar({ className }: { className?: string }) {
                 rel="noopener noreferrer"
                 className="transition-colors hover:text-primary"
               >
-                News
+                {t('menu.news')}
               </a>
               <a
                 href="https://about.divine.video/blog/"
@@ -367,7 +373,7 @@ export function AppSidebar({ className }: { className?: string }) {
                 rel="noopener noreferrer"
                 className="transition-colors hover:text-primary"
               >
-                Blog
+                {t('menu.blog')}
               </a>
               <a
                 href="https://about.divine.video/faqs/"
@@ -375,7 +381,7 @@ export function AppSidebar({ className }: { className?: string }) {
                 rel="noopener noreferrer"
                 className="transition-colors hover:text-primary"
               >
-                FAQ
+                {t('menu.faq')}
               </a>
               <a
                 href="https://about.divine.video/media-resources/"
@@ -383,7 +389,7 @@ export function AppSidebar({ className }: { className?: string }) {
                 rel="noopener noreferrer"
                 className="transition-colors hover:text-primary"
               >
-                Media
+                {t('menu.mediaResources')}
               </a>
             </div>
           </CollapsibleContent>
@@ -396,7 +402,7 @@ export function AppSidebar({ className }: { className?: string }) {
               className="group flex w-full items-center gap-1 py-1.5 text-[13px] font-semibold text-foreground transition-colors hover:text-primary"
               style={{ fontFamily: "'Bricolage Grotesque', system-ui, sans-serif" }}
             >
-              <span>Terms & Open Source</span>
+              <span>{t('footer.termsAndOpenSource')}</span>
               <ChevronDown className={cn(
                 "h-3.5 w-3.5 transition-transform duration-200",
                 termsOpen && "rotate-180"
@@ -409,31 +415,31 @@ export function AppSidebar({ className }: { className?: string }) {
                 onClick={() => navigate('/terms')}
                 className="transition-colors hover:text-primary"
               >
-                Terms
+                {t('menu.terms')}
               </button>
               <button
                 onClick={() => navigate('/privacy')}
                 className="transition-colors hover:text-primary"
               >
-                Privacy
+                {t('menu.privacy')}
               </button>
               <button
                 onClick={() => navigate('/safety')}
                 className="transition-colors hover:text-primary"
               >
-                Safety
+                {t('menu.safety')}
               </button>
               <button
                 onClick={() => navigate('/dmca')}
                 className="transition-colors hover:text-primary"
               >
-                DMCA & Copyright
+                {t('menu.dmca')}
               </button>
               <button
                 onClick={() => navigate('/open-source')}
                 className="transition-colors hover:text-primary"
               >
-                Open Source
+                {t('menu.openSource')}
               </button>
               <a
                 href="https://opencollective.com/aos-collective/contribute/divine-keepers-95646"
@@ -441,7 +447,7 @@ export function AppSidebar({ className }: { className?: string }) {
                 rel="noopener noreferrer"
                 className="transition-colors hover:text-primary"
               >
-                Donate
+                {t('menu.donate')}
               </a>
             </div>
           </CollapsibleContent>
@@ -454,12 +460,12 @@ export function AppSidebar({ className }: { className?: string }) {
           style={{ fontFamily: "'Bricolage Grotesque', system-ui, sans-serif" }}
         >
           <Headphones className="h-3.5 w-3.5" />
-          <span>Help</span>
+          <span>{t('menu.help')}</span>
         </button>
 
         {/* Copyright */}
         <div className="mt-3 pb-4 text-[11px] font-normal text-foreground">
-          © 2026 Divine
+          {t('footer.copyright')}
         </div>
         </div>
       </div>

@@ -1,0 +1,20 @@
+{
+  "title": "安全基準",
+  "updated": "最終更新日: 2026 年 3 月 30 日",
+  "sections": {
+    "overview": "1. 概要",
+    "definitions": "2. 定義",
+    "prohibited": "3. 禁止される内容および行為",
+    "childSafety": "4. 子供の安全",
+    "matureContent": "5. 成人向けコンテンツ",
+    "integrity": "6. プラットフォームの完全性と悪用",
+    "enforcement": "7. 執行",
+    "moderation": "8. モデレーション方法",
+    "reporting": "9. 報告",
+    "userControls": "10. ユーザーコントロール",
+    "decentralization": "11. 分散化の制限",
+    "automated": "12. 自動化された意思決定",
+    "appeals": "13. 控訴",
+    "updates": "14. アップデート"
+  }
+}

@@ -3,19 +3,22 @@
 
 import { ZendeskWidget } from '@/components/ZendeskWidget';
 import { MarketingLayout } from '@/components/MarketingLayout';
+import { useTranslation } from 'react-i18next';
 
 export function SafetyPage() {
+  const { t } = useTranslation('safety');
+
   return (
     <MarketingLayout>
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         <ZendeskWidget />
-        <h1 className="text-4xl font-bold mb-4">Safety Standards</h1>
-        <p className="text-muted-foreground mb-8">Last Updated: March 30, 2026</p>
+        <h1 className="text-4xl font-bold mb-4">{t('title')}</h1>
+        <p className="text-muted-foreground mb-8">{t('updated')}</p>
 
         <div className="space-y-8 text-muted-foreground leading-relaxed">
           {/* 1. Overview */}
           <section>
-            <h2 className="text-2xl font-semibold text-foreground mb-3">1. Overview</h2>
+            <h2 className="text-2xl font-semibold text-foreground mb-3">{t('sections.overview')}</h2>
             <p className="mb-3">
               These Safety Standards describe the rules and enforcement practices that apply to use of the
               Divine&trade; app (the &ldquo;Service&rdquo;). The Service is provided by Verse Communications PBC
@@ -31,7 +34,7 @@ export function SafetyPage() {
 
           {/* 2. Definitions */}
           <section>
-            <h2 className="text-2xl font-semibold text-foreground mb-3">2. Definitions</h2>
+            <h2 className="text-2xl font-semibold text-foreground mb-3">{t('sections.definitions')}</h2>
             <p className="mb-3">
               <strong className="text-foreground">&ldquo;Divine-controlled infrastructure&rdquo;</strong> means
               websites, apps, relays, media storage, APIs, and other systems owned or controlled by Divine.
@@ -74,9 +77,7 @@ export function SafetyPage() {
 
           {/* 3. Prohibited Content and Conduct */}
           <section>
-            <h2 className="text-2xl font-semibold text-foreground mb-3">
-              3. Prohibited Content and Conduct
-            </h2>
+            <h2 className="text-2xl font-semibold text-foreground mb-3">{t('sections.prohibited')}</h2>
             <p className="mb-3">
               Users may not use the Service to create, publish, distribute, or facilitate content or activity
               that is unlawful, harmful, violates applicable law, or violates the Terms of Service.
@@ -94,7 +95,7 @@ export function SafetyPage() {
 
           {/* 4. Child Safety */}
           <section>
-            <h2 className="text-2xl font-semibold text-foreground mb-3">4. Child Safety</h2>
+            <h2 className="text-2xl font-semibold text-foreground mb-3">{t('sections.childSafety')}</h2>
             <p>
               Divine maintains a zero-tolerance policy for child sexual abuse material and related exploitation.
               Divine may remove such content from Divine-controlled infrastructure, restrict access, preserve
@@ -104,7 +105,7 @@ export function SafetyPage() {
 
           {/* 5. Mature Content */}
           <section>
-            <h2 className="text-2xl font-semibold text-foreground mb-3">5. Mature Content</h2>
+            <h2 className="text-2xl font-semibold text-foreground mb-3">{t('sections.matureContent')}</h2>
             <p>
               Certain mature content may be restricted, hidden by default, or made available only to users who
               meet applicable age requirements. Users are responsible for complying with all age restrictions.
@@ -113,9 +114,7 @@ export function SafetyPage() {
 
           {/* 6. Platform Integrity and Abuse */}
           <section>
-            <h2 className="text-2xl font-semibold text-foreground mb-3">
-              6. Platform Integrity and Abuse
-            </h2>
+            <h2 className="text-2xl font-semibold text-foreground mb-3">{t('sections.integrity')}</h2>
             <p>
               Users may not interfere with the operation or integrity of the Service, including by circumventing
               safeguards, engaging in coordinated manipulation, or using automation or bulk activity in ways that
@@ -125,7 +124,7 @@ export function SafetyPage() {
 
           {/* 7. Enforcement */}
           <section>
-            <h2 className="text-2xl font-semibold text-foreground mb-3">7. Enforcement</h2>
+            <h2 className="text-2xl font-semibold text-foreground mb-3">{t('sections.enforcement')}</h2>
             <p className="mb-3">
               Divine may take action in response to violations of these Safety Standards, including removing or
               limiting content within Divine-controlled infrastructure, restricting or suspending access, disabling
@@ -144,7 +143,7 @@ export function SafetyPage() {
 
           {/* 8. Moderation Methods */}
           <section>
-            <h2 className="text-2xl font-semibold text-foreground mb-3">8. Moderation Methods</h2>
+            <h2 className="text-2xl font-semibold text-foreground mb-3">{t('sections.moderation')}</h2>
             <p>
               Divine may use automated tools, third-party systems, human review, and other methods to identify
               and address violations. These systems are not perfect, and Divine does not guarantee that all
@@ -155,7 +154,7 @@ export function SafetyPage() {
 
           {/* 9. Reporting */}
           <section>
-            <h2 className="text-2xl font-semibold text-foreground mb-3">9. Reporting</h2>
+            <h2 className="text-2xl font-semibold text-foreground mb-3">{t('sections.reporting')}</h2>
             <p>
               Users may report content or accounts through tools made available in the Service. Divine aims to
               review reports of objectionable content promptly and generally within 24 hours, although response
@@ -165,7 +164,7 @@ export function SafetyPage() {
 
           {/* 10. User Controls */}
           <section>
-            <h2 className="text-2xl font-semibold text-foreground mb-3">10. User Controls</h2>
+            <h2 className="text-2xl font-semibold text-foreground mb-3">{t('sections.userControls')}</h2>
             <p>
               The Service may provide tools such as blocking, muting, filtering, and moderation lists that allow
               users to manage their experience. These controls apply within Divine-operated interfaces as
@@ -175,9 +174,7 @@ export function SafetyPage() {
 
           {/* 11. Decentralization Limitation */}
           <section>
-            <h2 className="text-2xl font-semibold text-foreground mb-3">
-              11. Decentralization Limitation
-            </h2>
+            <h2 className="text-2xl font-semibold text-foreground mb-3">{t('sections.decentralization')}</h2>
             <p>
               Enforcement actions apply only within Divine-controlled infrastructure and do not extend to
               independent relays, clients, or third-party systems. Because the Service interacts with
@@ -189,9 +186,7 @@ export function SafetyPage() {
 
           {/* 12. Automated Decision-Making */}
           <section>
-            <h2 className="text-2xl font-semibold text-foreground mb-3">
-              12. Automated Decision-Making
-            </h2>
+            <h2 className="text-2xl font-semibold text-foreground mb-3">{t('sections.automated')}</h2>
             <p>
               Divine does not engage in automated decision-making or profiling that produces legal or similarly
               significant effects on users within the meaning of applicable data protection law.
@@ -200,7 +195,7 @@ export function SafetyPage() {
 
           {/* 13. Appeals */}
           <section>
-            <h2 className="text-2xl font-semibold text-foreground mb-3">13. Appeals</h2>
+            <h2 className="text-2xl font-semibold text-foreground mb-3">{t('sections.appeals')}</h2>
             <p>
               Divine may, but is not obligated to, review requests to reconsider moderation decisions.
             </p>
@@ -208,7 +203,7 @@ export function SafetyPage() {
 
           {/* 14. Updates */}
           <section>
-            <h2 className="text-2xl font-semibold text-foreground mb-3">14. Updates</h2>
+            <h2 className="text-2xl font-semibold text-foreground mb-3">{t('sections.updates')}</h2>
             <p>
               These Safety Standards may be updated from time to time. When we do, we will post the updated
               version and revise the &ldquo;Last Updated&rdquo; date above. Unless a different effective date is

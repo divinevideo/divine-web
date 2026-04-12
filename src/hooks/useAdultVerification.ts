@@ -8,6 +8,7 @@ import { createNip98AuthHeader } from '@/lib/nip98Auth';
 const STORAGE_KEY = 'adult-verification-confirmed';
 const STORAGE_EXPIRY_KEY = 'adult-verification-expiry';
 const VERIFICATION_DURATION_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
+const ADULT_VERIFICATION_EVENT = 'adult-verification-changed';
 
 interface AdultVerificationState {
   isVerified: boolean;
@@ -18,27 +19,62 @@ interface AdultVerificationState {
   getAuthHeader: (url: string, method?: string) => Promise<string | null>;
 }
 
+function getStoredVerificationState(): boolean {
+  if (typeof window === 'undefined') {
+    return false;
+  }
+
+  const stored = localStorage.getItem(STORAGE_KEY);
+  const expiry = localStorage.getItem(STORAGE_EXPIRY_KEY);
+
+  if (stored === 'true' && expiry) {
+    const expiryTime = parseInt(expiry, 10);
+    if (Date.now() < expiryTime) {
+      return true;
+    }
+
+    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(STORAGE_EXPIRY_KEY);
+  }
+
+  return false;
+}
+
+function notifyVerificationChange(): void {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  window.dispatchEvent(new Event(ADULT_VERIFICATION_EVENT));
+}
+
 export function useAdultVerification(): AdultVerificationState {
   const [isVerified, setIsVerified] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const { signer } = useCurrentUser();
 
-  // Check localStorage on mount
   useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    const expiry = localStorage.getItem(STORAGE_EXPIRY_KEY);
+    const syncFromStorage = () => {
+      setIsVerified(getStoredVerificationState());
+      setIsLoading(false);
+    };
 
-    if (stored === 'true' && expiry) {
-      const expiryTime = parseInt(expiry, 10);
-      if (Date.now() < expiryTime) {
-        setIsVerified(true);
-      } else {
-        // Expired, clean up
-        localStorage.removeItem(STORAGE_KEY);
-        localStorage.removeItem(STORAGE_EXPIRY_KEY);
+    const handleStorageChange = (event: Event) => {
+      if (event instanceof StorageEvent && event.key && event.key !== STORAGE_KEY && event.key !== STORAGE_EXPIRY_KEY) {
+        return;
       }
-    }
-    setIsLoading(false);
+
+      syncFromStorage();
+    };
+
+    syncFromStorage();
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener(ADULT_VERIFICATION_EVENT, handleStorageChange);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener(ADULT_VERIFICATION_EVENT, handleStorageChange);
+    };
   }, []);
 
   const confirmAdult = useCallback(() => {
@@ -46,12 +82,14 @@ export function useAdultVerification(): AdultVerificationState {
     localStorage.setItem(STORAGE_KEY, 'true');
     localStorage.setItem(STORAGE_EXPIRY_KEY, expiryTime.toString());
     setIsVerified(true);
+    notifyVerificationChange();
   }, []);
 
   const revokeVerification = useCallback(() => {
     localStorage.removeItem(STORAGE_KEY);
     localStorage.removeItem(STORAGE_EXPIRY_KEY);
     setIsVerified(false);
+    notifyVerificationChange();
   }, []);
 
   // Generate NIP-98 auth header for a given URL

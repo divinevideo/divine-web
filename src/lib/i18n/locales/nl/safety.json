@@ -1,0 +1,20 @@
+{
+  "title": "Veiligheidsnormen",
+  "updated": "Laatst bijgewerkt: 30 maart 2026",
+  "sections": {
+    "overview": "1. Overzicht",
+    "definitions": "2. Definities",
+    "prohibited": "3. Verboden inhoud en gedrag",
+    "childSafety": "4. Kindveiligheid",
+    "matureContent": "5. Inhoud voor volwassenen",
+    "integrity": "6. Platformintegriteit en misbruik",
+    "enforcement": "7. Handhaving",
+    "moderation": "8. Moderatiemethoden",
+    "reporting": "9. Rapportage",
+    "userControls": "10. Gebruikersbedieningen",
+    "decentralization": "11. Beperking van decentralisatie",
+    "automated": "12. Geautomatiseerde besluitvorming",
+    "appeals": "13. Beroep",
+    "updates": "14. Updates"
+  }
+}

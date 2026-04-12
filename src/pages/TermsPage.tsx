@@ -11,7 +11,7 @@ export function TermsPage() {
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         <ZendeskWidget />
         <h1 className="text-4xl font-bold mb-4">Terms of Service</h1>
-        <p className="text-muted-foreground mb-8">Last Updated: March 24, 2026</p>
+        <p className="text-muted-foreground mb-8">Last Updated: March 30, 2026</p>
 
         <div className="space-y-8 text-muted-foreground leading-relaxed">
           {/* 1. Acceptance of Terms */}

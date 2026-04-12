@@ -1,0 +1,12 @@
+{
+  "title": "FAQ",
+  "subtitle": "Tout ce que vous devez savoir sur Divin",
+  "sections": {
+    "gettingStarted": "Commencer",
+    "accounts": "Comptes et authentification",
+    "posting": "Publication et contenu",
+    "privacySafety": "Confidentialité et sécurité",
+    "features": "Fonctionnalités et interactions",
+    "technical": "Questions techniques"
+  }
+}

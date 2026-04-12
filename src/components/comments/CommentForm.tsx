@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent } from '@/components/ui/card';
@@ -20,12 +21,14 @@ export function CommentForm({
   root,
   reply,
   onSuccess,
-  placeholder = "Write a comment...",
+  placeholder,
   compact = false
 }: CommentFormProps) {
+  const { t } = useTranslation();
   const [content, setContent] = useState('');
   const { user } = useCurrentUser();
   const { mutate: postComment, isPending } = usePostComment();
+  const effectivePlaceholder = placeholder ?? t('comments.writeAComment');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,7 +50,7 @@ export function CommentForm({
     <div className="text-center space-y-4">
       <div className="flex items-center justify-center space-x-2 text-muted-foreground">
         <MessageSquare className="h-5 w-5" />
-        <span>Sign in to {reply ? 'reply' : 'comment'}</span>
+        <span>{reply ? t('comments.signInToReply') : t('comments.signInToComment')}</span>
       </div>
       <LoginArea />
     </div>
@@ -58,13 +61,13 @@ export function CommentForm({
       <Textarea
         value={content}
         onChange={(e) => setContent(e.target.value)}
-        placeholder={placeholder}
+        placeholder={effectivePlaceholder}
         className={compact ? "min-h-[80px]" : "min-h-[100px]"}
         disabled={isPending}
       />
       <div className="flex justify-between items-center">
         <span className="text-sm text-muted-foreground">
-          {reply ? 'Replying to comment' : 'Adding to the discussion'}
+          {reply ? t('comments.replyingToComment') : t('comments.addingToDiscussion')}
         </span>
         <Button
           type="submit"
@@ -72,7 +75,7 @@ export function CommentForm({
           size={compact ? "sm" : "default"}
         >
           <Send className="h-4 w-4 mr-2" />
-          {isPending ? 'Posting...' : (reply ? 'Reply' : 'Comment')}
+          {isPending ? t('comments.posting') : (reply ? t('comments.reply') : t('comments.comment'))}
         </Button>
       </div>
     </form>

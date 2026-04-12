@@ -1,4 +1,5 @@
 import { useComments } from '@/hooks/useComments';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { MessageSquare } from 'lucide-react';
@@ -19,21 +20,25 @@ interface CommentsSectionProps {
 
 export function CommentsSection({
   root,
-  title = "Comments",
-  emptyStateMessage = "No comments yet",
-  emptyStateSubtitle = "Be the first to share your thoughts!",
+  title,
+  emptyStateMessage,
+  emptyStateSubtitle,
   className,
   limit = 500,
   compact = false,
 }: CommentsSectionProps) {
+  const { t } = useTranslation();
   const { data: commentsData, isLoading, error } = useComments(root, limit);
   const comments = commentsData?.topLevelComments || [];
+  const resolvedTitle = title ?? t('comments.title');
+  const resolvedEmptyStateMessage = emptyStateMessage ?? t('comments.noCommentsYet');
+  const resolvedEmptyStateSubtitle = emptyStateSubtitle ?? t('comments.beFirstToShare');
 
   if (error) {
     const errorContent = (
       <div className="text-center text-muted-foreground py-6">
         <MessageSquare className="h-8 w-8 mx-auto mb-2 opacity-50" />
-        <p>Failed to load comments</p>
+        <p>{t('comments.failedToLoad')}</p>
       </div>
     );
 
@@ -57,7 +62,7 @@ export function CommentsSection({
         <div className="px-6 pt-6 pb-4">
           <div className="flex items-center space-x-2">
             <MessageSquare className="h-5 w-5" />
-            <span className="font-semibold">{title}</span>
+            <span className="font-semibold">{resolvedTitle}</span>
             {!isLoading && (
               <span className="text-sm font-normal text-muted-foreground">
                 ({comments.length})
@@ -94,8 +99,8 @@ export function CommentsSection({
         ) : comments.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
             <MessageSquare className="h-12 w-12 mx-auto mb-4 opacity-30" />
-            <p className="text-lg font-medium mb-2">{emptyStateMessage}</p>
-            <p className="text-sm">{emptyStateSubtitle}</p>
+            <p className="text-lg font-medium mb-2">{resolvedEmptyStateMessage}</p>
+            <p className="text-sm">{resolvedEmptyStateSubtitle}</p>
           </div>
         ) : (
           <div className="space-y-4">

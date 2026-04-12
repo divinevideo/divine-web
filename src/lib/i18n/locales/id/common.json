@@ -1,0 +1,145 @@
+{
+  "common": {
+    "language": "Bahasa",
+    "moreOptions": "Opsi lainnya"
+  },
+  "nav": {
+    "home": "Beranda",
+    "discover": "Jelajahi",
+    "search": "Cari",
+    "messages": "Pesan",
+    "notifications": "Notifikasi",
+    "profile": "Profil",
+    "analytics": "Analitik"
+  },
+  "menu": {
+    "about": "Tentang",
+    "ourMission": "Misi kami",
+    "news": "Berita",
+    "blog": "Blog",
+    "faq": "FAQ",
+    "mediaResources": "Sumber media",
+    "terms": "Ketentuan",
+    "privacy": "Privasi",
+    "safety": "Keamanan",
+    "dmca": "DMCA dan hak cipta",
+    "openSource": "Sumber terbuka",
+    "donate": "Donasi",
+    "help": "Bantuan"
+  },
+  "theme": {
+    "lightMode": "Mode terang",
+    "darkMode": "Mode gelap"
+  },
+  "footer": {
+    "aboutDivine": "Tentang Divine",
+    "vinesRecovered": "{{count}} Vine dipulihkan",
+    "termsAndOpenSource": "Ketentuan & sumber terbuka",
+    "copyright": "© 2026 Divine"
+  },
+  "rss": {
+    "title": "Umpan RSS",
+    "latestVideos": "Video terbaru",
+    "trending": "Sedang tren",
+    "yourFeed": "Umpan Anda"
+  },
+  "auth": {
+    "logInOnDivine": "Masuk ke Divine"
+  },
+  "home": {
+    "welcomeTitle": "Selamat datang di beranda Anda",
+    "welcomeSubtitle": "Masuk untuk melihat video dari orang yang Anda ikuti",
+    "title": "Beranda",
+    "subtitle": "Video dari orang yang Anda ikuti",
+    "sortBy": "Urutkan berdasarkan:",
+    "updating": "Memperbarui..."
+  },
+  "discovery": {
+    "title": "Jelajahi",
+    "subtitle": "Jelajahi video dari jaringan",
+    "categories": "Kategori",
+    "forYou": "Untuk Anda",
+    "classic": "Klasik",
+    "hot": "Populer",
+    "new": "Baru",
+    "tags": "Tag",
+    "verifiedOnly": "Buatan manusia",
+    "verifiedOnlyHint": "Hanya menampilkan video dengan verifikasi ProofMode"
+  },
+  "categories": {
+    "beauty": "Kecantikan",
+    "comedy": "Komedi",
+    "dance": "Tarian",
+    "education": "Pendidikan",
+    "family": "Keluarga",
+    "fashion": "Mode",
+    "food": "Makanan",
+    "gaming": "Game",
+    "music": "Musik",
+    "sports": "Olahraga",
+    "technology": "Teknologi",
+    "travel": "Perjalanan"
+  },
+  "comments": {
+    "title": "Komentar",
+    "noCommentsYet": "Belum ada komentar",
+    "beFirstToShare": "Jadilah yang pertama membagikan pendapat Anda",
+    "failedToLoad": "Gagal memuat komentar",
+    "writeAComment": "Tulis komentar...",
+    "signInToReply": "Masuk untuk membalas",
+    "signInToComment": "Masuk untuk berkomentar",
+    "replyingToComment": "Membalas komentar",
+    "addingToDiscussion": "Menambahkan ke diskusi",
+    "posting": "Mengirim...",
+    "reply": "Balas",
+    "comment": "Komentar"
+  },
+  "messages": {
+    "badge": "Pesan",
+    "title": "Pesan langsung",
+    "subtitle": "Hubungi dukungan, kirim vine secara pribadi, atau lanjutkan percakapan dengan orang yang Anda ikuti.",
+    "searchPlaceholder": "Cari orang untuk dikirimi pesan",
+    "newMessage": "Pesan baru",
+    "readyToShare": "Siap dibagikan secara pribadi.",
+    "shareWithTitle": "Pesan Anda berikutnya akan menyertakan “{{title}}”.",
+    "shareWithLink": "Pesan Anda berikutnya akan menyertakan tautan vine.",
+    "signerUnsupported": "Signer Anda saat ini bisa dipakai untuk masuk, tetapi belum mendukung enkripsi NIP-44. Gunakan nsec, bunker, atau signer lain yang mendukung NIP-44 untuk memakai pesan langsung di web.",
+    "supportBadge": "Dukungan",
+    "supportSummary": "Tanyakan tentang bug, moderasi, atau masalah akun."
+  },
+  "support": {
+    "title": "Dukungan",
+    "subtitle": "Butuh bantuan? Kami siap membantu Anda.",
+    "helpCenterTitle": "Kunjungi pusat bantuan Divine",
+    "helpCenterDescription": "Temukan jawaban atas pertanyaan Anda tentang Divine.",
+    "helpCenterCta": "Kunjungi pusat bantuan",
+    "messageSupportTitle": "Kirim pesan ke dukungan",
+    "messageSupportDescription": "Hubungi kotak masuk dukungan langsung di Divine menggunakan pesan pribadi NIP-17.",
+    "messageSupportCta": "Buka chat dukungan",
+    "contactTitle": "Hubungi dukungan",
+    "contactDescription": "Buat tiket dan kami akan membalas secepat mungkin.",
+    "contactLink": "Hubungi dukungan",
+    "githubTitle": "Issue GitHub",
+    "githubDescription": "Laporkan bug, minta fitur, atau telusuri issue yang ada di repositori GitHub kami.",
+    "webAppLabel": "Aplikasi web:",
+    "flutterAppLabel": "Aplikasi Flutter (iOS/Android):",
+    "communityTitle": "Komunitas",
+    "communityDescription": "Bergabunglah dalam diskusi komunitas dan terhubung dengan pengguna Divine lainnya di Nostr.",
+    "communityBody": "Divine dibangun di atas Nostr, protokol sosial yang terdesentralisasi. Temukan kami di klien Nostr favorit Anda."
+  },
+  "tagPage": {
+    "notFoundTitle": "Tag tidak ditemukan",
+    "notFoundDescription": "Tag yang diminta tidak dapat ditemukan.",
+    "back": "Kembali",
+    "subtitle": "Jelajahi video dengan tag #{{tag}}"
+  },
+  "categoriesPage": {
+    "title": "Kategori",
+    "subtitle": "Jelajahi video berdasarkan topik",
+    "emptyState": "Belum ada kategori yang tersedia saat ini.",
+    "metaTitle": "Jelajahi kategori - Divine",
+    "metaDescription": "Jelajahi kategori video di Divine - komedi, musik, tarian, hewan, olahraga, makanan, dan lainnya.",
+    "videoCount_one": "{{count}} video",
+    "videoCount_other": "{{count}} video"
+  }
+}

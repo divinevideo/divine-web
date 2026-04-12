@@ -1,0 +1,20 @@
+{
+  "title": "Säkerhetsstandarder",
+  "updated": "Senast uppdaterad: 30 mars 2026",
+  "sections": {
+    "overview": "1. Översikt",
+    "definitions": "2. Definitioner",
+    "prohibited": "3. Förbjudet innehåll och uppförande",
+    "childSafety": "4. Barnsäkerhet",
+    "matureContent": "5. Moget innehåll",
+    "integrity": "6. Plattformens integritet och missbruk",
+    "enforcement": "7. Verkställighet",
+    "moderation": "8. Modereringsmetoder",
+    "reporting": "9. Rapportering",
+    "userControls": "10. Användarkontroller",
+    "decentralization": "11. Decentraliseringsbegränsning",
+    "automated": "12. Automatiserat beslutsfattande",
+    "appeals": "13. Överklaganden",
+    "updates": "14. Uppdateringar"
+  }
+}

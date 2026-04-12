@@ -5,8 +5,11 @@ import { Brain, Shield, Video, ExternalLink } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { MarketingLayout } from '@/components/MarketingLayout';
+import { useTranslation } from 'react-i18next';
 
 export default function HumanCreatedPage() {
+  const { t } = useTranslation('humanCreated');
+
   return (
     <MarketingLayout>
       <div className="container max-w-4xl mx-auto px-4 py-8">
@@ -15,7 +18,7 @@ export default function HumanCreatedPage() {
         <div className="text-center space-y-4">
           <div className="flex items-center justify-center gap-3">
             <Brain className="h-12 w-12 text-purple-600" />
-            <h1 className="text-4xl font-bold">Human-Created Content</h1>
+            <h1 className="text-4xl font-bold">{t('title')}</h1>
           </div>
           <p className="text-xl text-muted-foreground">
             Certifying authentic, human-made videos on Divine Web
@@ -27,7 +30,7 @@ export default function HumanCreatedPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Brain className="h-5 w-5 text-purple-600" />
-              What is the Human-Made Badge?
+              {t('sections.badge')}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">

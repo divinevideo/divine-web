@@ -1,0 +1,12 @@
+{
+  "title": "Veelgestelde vragen",
+  "subtitle": "Alles wat je moet weten over Divine",
+  "sections": {
+    "gettingStarted": "Aan de slag",
+    "accounts": "Accounts en authenticatie",
+    "posting": "Plaatsing en inhoud",
+    "privacySafety": "Privacy en veiligheid",
+    "features": "Functies en interacties",
+    "technical": "Technische vragen"
+  }
+}

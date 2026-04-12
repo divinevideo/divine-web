@@ -1,0 +1,20 @@
+{
+  "title": "Güvenlik Standartları",
+  "updated": "Son Güncelleme: 30 Mart 2026",
+  "sections": {
+    "overview": "1. Genel Bakış",
+    "definitions": "2. Tanımlar",
+    "prohibited": "3. Yasaklanmış İçerik ve Davranış",
+    "childSafety": "4. Çocuk Güvenliği",
+    "matureContent": "5. Yetişkinlere Yönelik İçerik",
+    "integrity": "6. Platform Bütünlüğü ve Kötüye Kullanım",
+    "enforcement": "7. Uygulama",
+    "moderation": "8. Denetleme Yöntemleri",
+    "reporting": "9. Raporlama",
+    "userControls": "10. Kullanıcı Kontrolleri",
+    "decentralization": "11. Merkezi Olmama Sınırlaması",
+    "automated": "12. Otomatik Karar Verme",
+    "appeals": "13. İtirazlar",
+    "updates": "14. Güncellemeler"
+  }
+}
