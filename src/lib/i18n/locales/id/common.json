@@ -132,5 +132,14 @@
     "notFoundDescription": "Tag yang diminta tidak dapat ditemukan.",
     "back": "Kembali",
     "subtitle": "Jelajahi video dengan tag #{{tag}}"
+  },
+  "categoriesPage": {
+    "title": "Kategori",
+    "subtitle": "Jelajahi video berdasarkan topik",
+    "emptyState": "Belum ada kategori yang tersedia saat ini.",
+    "metaTitle": "Jelajahi kategori - Divine",
+    "metaDescription": "Jelajahi kategori video di Divine - komedi, musik, tarian, hewan, olahraga, makanan, dan lainnya.",
+    "videoCount_one": "{{count}} video",
+    "videoCount_other": "{{count}} video"
   }
 }

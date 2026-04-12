@@ -132,5 +132,14 @@
     "notFoundDescription": "指定されたタグは見つかりませんでした。",
     "back": "戻る",
     "subtitle": "#{{tag}} のタグが付いた動画を探す"
+  },
+  "categoriesPage": {
+    "title": "カテゴリ",
+    "subtitle": "テーマごとに動画を探す",
+    "emptyState": "現在利用できるカテゴリはありません。",
+    "metaTitle": "カテゴリを探す - Divine",
+    "metaDescription": "Divine でコメディ、音楽、ダンス、動物、スポーツ、食べ物などの動画カテゴリを探そう。",
+    "videoCount_one": "{{count}}本の動画",
+    "videoCount_other": "{{count}}本の動画"
   }
 }

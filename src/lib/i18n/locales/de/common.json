@@ -132,5 +132,14 @@
     "notFoundDescription": "Der angeforderte Tag konnte nicht gefunden werden.",
     "back": "Zuruck",
     "subtitle": "Entdecke Videos mit dem Tag #{{tag}}"
+  },
+  "categoriesPage": {
+    "title": "Kategorien",
+    "subtitle": "Videos nach Thema durchsuchen",
+    "emptyState": "Derzeit sind keine Kategorien verfugbar.",
+    "metaTitle": "Kategorien entdecken - Divine",
+    "metaDescription": "Entdecke Videokategorien auf Divine - Comedy, Musik, Tanz, Tiere, Sport, Essen und mehr.",
+    "videoCount_one": "{{count}} Video",
+    "videoCount_other": "{{count}} Videos"
   }
 }

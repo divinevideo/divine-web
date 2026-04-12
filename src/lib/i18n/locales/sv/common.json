@@ -132,5 +132,14 @@
     "notFoundDescription": "Den begarda taggen kunde inte hittas.",
     "back": "Tillbaka",
     "subtitle": "Utforska videor med taggen #{{tag}}"
+  },
+  "categoriesPage": {
+    "title": "Kategorier",
+    "subtitle": "Utforska videor efter amne",
+    "emptyState": "Inga kategorier ar tillgangliga just nu.",
+    "metaTitle": "Utforska kategorier - Divine",
+    "metaDescription": "Utforska videokategorier pa Divine - komedi, musik, dans, djur, sport, mat och mer.",
+    "videoCount_one": "{{count}} video",
+    "videoCount_other": "{{count}} videor"
   }
 }

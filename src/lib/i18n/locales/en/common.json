@@ -132,5 +132,14 @@
     "notFoundDescription": "The requested tag could not be found.",
     "back": "Back",
     "subtitle": "Browse videos tagged with #{{tag}}"
+  },
+  "categoriesPage": {
+    "title": "Categories",
+    "subtitle": "Browse videos by topic",
+    "emptyState": "No categories available right now.",
+    "metaTitle": "Browse Categories - Divine",
+    "metaDescription": "Explore video categories on Divine - comedy, music, dance, animals, sports, food, and more.",
+    "videoCount_one": "{{count}} video",
+    "videoCount_other": "{{count}} videos"
   }
 }

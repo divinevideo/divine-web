@@ -5,20 +5,23 @@ import { SmartLink } from '@/components/SmartLink';
 import { useSeoMeta } from '@unhead/react';
 import { useCategories } from '@/hooks/useCategories';
 import { Skeleton } from '@/components/ui/skeleton';
+import { getTranslatedCategoryLabel } from '@/lib/constants/categories';
+import { useTranslation } from 'react-i18next';
 
 export function CategoriesIndexPage() {
   const { data: categories, isLoading } = useCategories();
+  const { t } = useTranslation();
 
   useSeoMeta({
-    title: 'Browse Categories - Divine',
-    description: 'Explore video categories on Divine — comedy, music, dance, animals, sports, food, and more.',
-    ogTitle: 'Browse Categories - Divine',
-    ogDescription: 'Explore video categories on Divine — comedy, music, dance, animals, sports, food, and more.',
+    title: t('categoriesPage.metaTitle'),
+    description: t('categoriesPage.metaDescription'),
+    ogTitle: t('categoriesPage.metaTitle'),
+    ogDescription: t('categoriesPage.metaDescription'),
     ogImage: '/og.avif',
     ogType: 'website',
     twitterCard: 'summary_large_image',
-    twitterTitle: 'Browse Categories - Divine',
-    twitterDescription: 'Explore video categories on Divine — comedy, music, dance, animals, sports, food, and more.',
+    twitterTitle: t('categoriesPage.metaTitle'),
+    twitterDescription: t('categoriesPage.metaDescription'),
     twitterImage: '/og.avif',
   });
 
@@ -26,9 +29,9 @@ export function CategoriesIndexPage() {
     <div className="container mx-auto px-4 py-6">
       <div className="max-w-4xl mx-auto space-y-6">
         <header>
-          <h1 className="text-3xl font-bold">Categories</h1>
+          <h1 className="text-3xl font-bold">{t('categoriesPage.title')}</h1>
           <p className="text-muted-foreground mt-1">
-            Browse videos by topic
+            {t('categoriesPage.subtitle')}
           </p>
         </header>
 
@@ -48,17 +51,17 @@ export function CategoriesIndexPage() {
               >
                 <span className="text-3xl">{cat.config?.emoji || ''}</span>
                 <span className="font-medium text-sm text-center">
-                  {cat.config?.label || cat.name}
+                  {getTranslatedCategoryLabel(cat.name, t)}
                 </span>
                 <span className="text-xs text-muted-foreground">
-                  {cat.video_count.toLocaleString()} {cat.video_count === 1 ? 'video' : 'videos'}
+                  {t('categoriesPage.videoCount', { count: cat.video_count })}
                 </span>
               </SmartLink>
             ))}
           </div>
         ) : (
           <p className="text-muted-foreground text-center py-12">
-            No categories available right now.
+            {t('categoriesPage.emptyState')}
           </p>
         )}
       </div>

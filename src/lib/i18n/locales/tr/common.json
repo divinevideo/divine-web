@@ -132,5 +132,14 @@
     "notFoundDescription": "Istenen etiket bulunamadi.",
     "back": "Geri",
     "subtitle": "#{{tag}} etiketiyle isaretlenmis videolari kesfet"
+  },
+  "categoriesPage": {
+    "title": "Kategoriler",
+    "subtitle": "Videolari konuya gore kesfet",
+    "emptyState": "Su anda hic kategori yok.",
+    "metaTitle": "Kategorilere goz at - Divine",
+    "metaDescription": "Divine uzerinde komedi, muzik, dans, hayvanlar, spor, yemek ve daha fazlasini kesfet.",
+    "videoCount_one": "{{count}} video",
+    "videoCount_other": "{{count}} video"
   }
 }

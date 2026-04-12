@@ -132,5 +132,14 @@
     "notFoundDescription": "Le tag demande est introuvable.",
     "back": "Retour",
     "subtitle": "Explorer les videos taguees avec #{{tag}}"
+  },
+  "categoriesPage": {
+    "title": "Categories",
+    "subtitle": "Parcourir les videos par sujet",
+    "emptyState": "Aucune categorie disponible pour le moment.",
+    "metaTitle": "Parcourir les categories - Divine",
+    "metaDescription": "Explorez les categories de videos sur Divine - comedie, musique, danse, animaux, sport, cuisine et plus encore.",
+    "videoCount_one": "{{count}} video",
+    "videoCount_other": "{{count}} videos"
   }
 }

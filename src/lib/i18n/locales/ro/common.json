@@ -132,5 +132,15 @@
     "notFoundDescription": "Eticheta solicitata nu a putut fi gasita.",
     "back": "Inapoi",
     "subtitle": "Exploreaza videoclipuri etichetate cu #{{tag}}"
+  },
+  "categoriesPage": {
+    "title": "Categorii",
+    "subtitle": "Exploreaza videoclipuri dupa subiect",
+    "emptyState": "Nu exista categorii disponibile acum.",
+    "metaTitle": "Rasfoieste categoriile - Divine",
+    "metaDescription": "Exploreaza categoriile video de pe Divine - comedie, muzica, dans, animale, sport, mancare si multe altele.",
+    "videoCount_one": "{{count}} videoclip",
+    "videoCount_few": "{{count}} videoclipuri",
+    "videoCount_other": "{{count}} de videoclipuri"
   }
 }

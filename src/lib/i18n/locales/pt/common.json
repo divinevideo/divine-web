@@ -132,5 +132,14 @@
     "notFoundDescription": "Nao foi possivel encontrar a tag solicitada.",
     "back": "Voltar",
     "subtitle": "Explore videos marcados com #{{tag}}"
+  },
+  "categoriesPage": {
+    "title": "Categorias",
+    "subtitle": "Explore videos por tema",
+    "emptyState": "Nenhuma categoria disponivel no momento.",
+    "metaTitle": "Explorar categorias - Divine",
+    "metaDescription": "Explore categorias de videos na Divine - comedia, musica, danca, animais, esportes, comida e mais.",
+    "videoCount_one": "{{count}} video",
+    "videoCount_other": "{{count}} videos"
   }
 }

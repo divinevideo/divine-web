@@ -132,5 +132,18 @@
     "notFoundDescription": "تعذر العثور على الوسم المطلوب.",
     "back": "رجوع",
     "subtitle": "استعرض الفيديوهات الموسومة بـ #{{tag}}"
+  },
+  "categoriesPage": {
+    "title": "الفئات",
+    "subtitle": "تصفح الفيديوهات حسب الموضوع",
+    "emptyState": "لا توجد فئات متاحة حاليا.",
+    "metaTitle": "تصفح الفئات - Divine",
+    "metaDescription": "استكشف فئات الفيديو على Divine مثل الكوميديا والموسيقى والرقص والحيوانات والرياضة والطعام والمزيد.",
+    "videoCount_zero": "0 فيديو",
+    "videoCount_one": "فيديو واحد",
+    "videoCount_two": "فيديوهان",
+    "videoCount_few": "{{count}} فيديوهات",
+    "videoCount_many": "{{count}} فيديو",
+    "videoCount_other": "{{count}} فيديو"
   }
 }

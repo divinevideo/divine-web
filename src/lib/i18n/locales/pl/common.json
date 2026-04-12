@@ -132,5 +132,16 @@
     "notFoundDescription": "Nie mozna znalezc podanego tagu.",
     "back": "Wroc",
     "subtitle": "Przegladaj filmy oznaczone tagiem #{{tag}}"
+  },
+  "categoriesPage": {
+    "title": "Kategorie",
+    "subtitle": "Przegladaj filmy wedlug tematu",
+    "emptyState": "Obecnie brak dostepnych kategorii.",
+    "metaTitle": "Przegladaj kategorie - Divine",
+    "metaDescription": "Przegladaj kategorie wideo w Divine - komedia, muzyka, taniec, zwierzeta, sport, jedzenie i wiecej.",
+    "videoCount_one": "{{count}} film",
+    "videoCount_few": "{{count}} filmy",
+    "videoCount_many": "{{count}} filmow",
+    "videoCount_other": "{{count}} filmu"
   }
 }

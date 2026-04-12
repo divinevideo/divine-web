@@ -132,5 +132,14 @@
     "notFoundDescription": "De gevraagde tag kon niet worden gevonden.",
     "back": "Terug",
     "subtitle": "Bekijk video's met tag #{{tag}}"
+  },
+  "categoriesPage": {
+    "title": "Categorieen",
+    "subtitle": "Bekijk videos per onderwerp",
+    "emptyState": "Er zijn momenteel geen categorieen beschikbaar.",
+    "metaTitle": "Categorieen bekijken - Divine",
+    "metaDescription": "Ontdek videocategorieen op Divine - komedie, muziek, dans, dieren, sport, eten en meer.",
+    "videoCount_one": "{{count}} video",
+    "videoCount_other": "{{count}} videos"
   }
 }
