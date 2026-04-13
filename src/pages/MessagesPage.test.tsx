@@ -26,7 +26,7 @@ const { mockNavigate, mockConversations, mockAuthorMap } = vi.hoisted(() => ({
         isOutgoing: false,
       },
     },
-  ] satisfies DmConversation[],
+  ] as DmConversation[],
   mockAuthorMap: {
     ['78a5c21b5166dc1474b64ddf7454bf79e6b5d6b4a77148593bf1e866b73c2738']: {
       metadata: {
@@ -71,6 +71,18 @@ function renderPage() {
 
 describe('MessagesPage', () => {
   beforeEach(async () => {
+    mockConversations[0].lastMessage = {
+      conversationId: 'conversation-1',
+      wrapId: 'wrap-1',
+      rumorId: 'rumor-1',
+      senderPubkey: 'b'.repeat(64),
+      participantPubkeys: ['b'.repeat(64)],
+      peerPubkeys: ['b'.repeat(64)],
+      content: 'Hello from the inbox',
+      createdAt: 1_700_000_000,
+      isOutgoing: false,
+    };
+
     const storage = new Map<string, string>();
 
     Object.defineProperty(window, 'localStorage', {
@@ -103,5 +115,33 @@ describe('MessagesPage', () => {
     expect(headerSection).not.toBeNull();
     expect(screen.getByText(/divine support/i)).toBeInTheDocument();
     expect(within(headerSection as HTMLElement).queryByText(/divine support/i)).not.toBeInTheDocument();
+  });
+
+  it('shows sending state in the conversation preview for optimistic last messages', () => {
+    mockConversations[0].lastMessage = {
+      ...mockConversations[0].lastMessage,
+      content: 'Sending this now',
+      isOutgoing: true,
+      deliveryState: 'sending',
+      isOptimistic: true,
+    } as DmConversation['lastMessage'];
+
+    renderPage();
+
+    expect(screen.getByText(/sending\.\.\. sending this now/i)).toBeInTheDocument();
+  });
+
+  it('shows failed state in the conversation preview for failed last messages', () => {
+    mockConversations[0].lastMessage = {
+      ...mockConversations[0].lastMessage,
+      content: 'This one failed',
+      isOutgoing: true,
+      deliveryState: 'failed',
+      isOptimistic: true,
+    } as DmConversation['lastMessage'];
+
+    renderPage();
+
+    expect(screen.getByText(/failed to send: this one failed/i)).toBeInTheDocument();
   });
 });

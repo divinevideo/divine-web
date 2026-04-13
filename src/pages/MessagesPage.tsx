@@ -30,6 +30,20 @@ function getDisplayName(pubkey: string, metadata?: { display_name?: string; name
   return metadata?.display_name || metadata?.name || genUserName(pubkey);
 }
 
+function getConversationPreview(message: DmConversation['lastMessage']): string {
+  const preview = getDmMessagePreview(message);
+
+  if (message.deliveryState === 'sending') {
+    return `Sending... ${preview}`;
+  }
+
+  if (message.deliveryState === 'failed') {
+    return `Failed to send: ${preview}`;
+  }
+
+  return preview;
+}
+
 function ConversationSkeleton() {
   return (
     <div className="rounded-[28px] border border-border/80 bg-card/70 p-4 backdrop-blur-sm">
@@ -94,7 +108,7 @@ function ConversationRow({ conversation, names, pictures, onClick }: Conversatio
 
           <div className="mt-2 flex items-center gap-3">
             <p className="min-w-0 flex-1 truncate text-sm text-muted-foreground">
-              {getDmMessagePreview(conversation.lastMessage)}
+              {getConversationPreview(conversation.lastMessage)}
             </p>
             {conversation.unreadCount > 0 && (
               <span className="inline-flex min-w-6 items-center justify-center rounded-full bg-primary px-2 py-1 text-[11px] font-semibold text-primary-foreground">
