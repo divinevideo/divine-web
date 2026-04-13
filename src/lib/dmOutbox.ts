@@ -32,11 +32,15 @@ function nowInSeconds(): number {
 }
 
 function getLocalStorage(): Storage | undefined {
-  if (typeof globalThis === 'undefined' || !('localStorage' in globalThis)) {
+  try {
+    if (typeof globalThis === 'undefined' || !('localStorage' in globalThis)) {
+      return undefined;
+    }
+
+    return globalThis.localStorage;
+  } catch {
     return undefined;
   }
-
-  return globalThis.localStorage;
 }
 
 function buildClientId(ownerPubkey: string, participantPubkeys: string[], createdAt: number): string {
@@ -162,10 +166,14 @@ export function writeDmOutbox(ownerPubkey: string, records: DmOutboxRecord[]): v
     return;
   }
 
-  storage.setItem(
-    getStorageKey(ownerPubkey),
-    JSON.stringify(records.map(normalizeRecord)),
-  );
+  try {
+    storage.setItem(
+      getStorageKey(ownerPubkey),
+      JSON.stringify(records.map(normalizeRecord)),
+    );
+  } catch {
+    // Persistence is best-effort. DM rendering should still work without storage.
+  }
 }
 
 export function upsertDmOutboxRecord(ownerPubkey: string, record: DmOutboxRecord): DmOutboxRecord[] {

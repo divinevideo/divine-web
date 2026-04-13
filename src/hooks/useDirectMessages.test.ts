@@ -83,6 +83,7 @@ function createWrapper(queryClient: QueryClient) {
 
 describe('useDirectMessages', () => {
   beforeEach(() => {
+    vi.restoreAllMocks();
     vi.clearAllMocks();
     localStorageMock.clear();
     mockResolveDmReadRelays.mockResolvedValue(['wss://relay.example']);
@@ -193,6 +194,47 @@ describe('useDirectMessages', () => {
       }),
     ]);
     expect(readDmOutbox(TEST_PUBKEY)).toEqual([]);
+  });
+
+  it('keeps fetched messages visible when outbox persistence fails', async () => {
+    vi.spyOn(Date, 'now').mockReturnValue(1_234_567_890_000);
+    vi.spyOn(globalThis.localStorage, 'setItem').mockImplementation(() => {
+      throw new Error('storage blocked');
+    });
+
+    mockFetchDmMessages.mockResolvedValue([{
+      conversationId: encodeConversationId([RECIPIENT_PUBKEY]),
+      wrapId: 'remote-wrap-id',
+      rumorId: 'remote-rumor-id',
+      senderPubkey: RECIPIENT_PUBKEY,
+      participantPubkeys: [RECIPIENT_PUBKEY, TEST_PUBKEY].sort(),
+      peerPubkeys: [RECIPIENT_PUBKEY],
+      content: 'hello',
+      createdAt: 1_234_567_892,
+      isOutgoing: false,
+    }]);
+
+    const queryClient = new QueryClient({
+      defaultOptions: {
+        queries: { retry: false },
+        mutations: { retry: false },
+      },
+    });
+
+    const { result } = renderHook(
+      () => useDmConversation(encodeConversationId([RECIPIENT_PUBKEY])),
+      { wrapper: createWrapper(queryClient) },
+    );
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    expect(result.current.data).toEqual([
+      expect.objectContaining({
+        wrapId: 'remote-wrap-id',
+        content: 'hello',
+        isOutgoing: false,
+      }),
+    ]);
   });
 
   it('adds an optimistic sending message before publish resolves', async () => {

@@ -101,4 +101,20 @@ describe('dmOutbox', () => {
       }),
     ]);
   });
+
+  it('does not throw when localStorage writes fail', () => {
+    const record = createDmOutboxRecord({
+      ownerPubkey: TEST_PUBKEY,
+      participantPubkeys: [RECIPIENT_PUBKEY],
+      content: 'hello',
+    });
+
+    vi.spyOn(globalThis.localStorage, 'setItem').mockImplementation(() => {
+      throw new Error('storage blocked');
+    });
+
+    expect(() => writeDmOutbox(TEST_PUBKEY, [record])).not.toThrow();
+    expect(() => upsertDmOutboxRecord(TEST_PUBKEY, record)).not.toThrow();
+    expect(() => hydrateDmOutbox(TEST_PUBKEY, 3600)).not.toThrow();
+  });
 });
