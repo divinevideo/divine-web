@@ -1,6 +1,7 @@
-import type { DmDeliveryState, DmSharePayload } from './dm';
+import { encodeConversationId, type DmDeliveryState, type DmMessage, type DmSharePayload } from './dm';
 
 const DM_OUTBOX_STORAGE_PREFIX = 'dm:outbox:';
+const DM_RECONCILIATION_WINDOW_SECONDS = 5;
 
 export interface DmOutboxRecord {
   clientId: string;
@@ -52,6 +53,43 @@ function normalizeRecord(record: DmOutboxRecord): DmOutboxRecord {
     ...record,
     participantPubkeys: [...new Set(record.participantPubkeys)].sort(),
   };
+}
+
+function normalizeContent(content: string): string {
+  return content.trim();
+}
+
+function normalizeSharePayload(share?: DmSharePayload): string {
+  if (!share) {
+    return '';
+  }
+
+  return JSON.stringify({
+    url: share.url,
+    title: share.title || '',
+    videoId: share.videoId || '',
+    videoPubkey: share.videoPubkey || '',
+    vineId: share.vineId || '',
+  });
+}
+
+function isReconciledDmMessage(outboxRecord: DmOutboxRecord, message: DmMessage): boolean {
+  return (
+    buildDmReconciliationFingerprint({
+      senderPubkey: outboxRecord.ownerPubkey,
+      participantPubkeys: [outboxRecord.ownerPubkey, ...outboxRecord.participantPubkeys],
+      content: outboxRecord.content,
+      share: outboxRecord.share,
+      createdAt: 0,
+    }) === buildDmReconciliationFingerprint({
+      senderPubkey: message.senderPubkey,
+      participantPubkeys: message.participantPubkeys,
+      content: message.content,
+      share: message.share,
+      createdAt: 0,
+    }) &&
+    Math.abs(outboxRecord.createdAt - message.createdAt) <= DM_RECONCILIATION_WINDOW_SECONDS
+  );
 }
 
 function isDmOutboxRecord(value: unknown): value is DmOutboxRecord {
@@ -166,4 +204,68 @@ export function hydrateDmOutbox(ownerPubkey: string, staleAfterSeconds: number):
 
   writeDmOutbox(ownerPubkey, hydrated);
   return hydrated;
+}
+
+export function buildDmReconciliationFingerprint(input: {
+  senderPubkey: string;
+  participantPubkeys: string[];
+  content: string;
+  share?: DmSharePayload;
+  createdAt: number;
+}): string {
+  return JSON.stringify({
+    senderPubkey: input.senderPubkey,
+    participantPubkeys: [...new Set(input.participantPubkeys)].sort(),
+    content: normalizeContent(input.content),
+    share: normalizeSharePayload(input.share),
+    createdAt: input.createdAt,
+  });
+}
+
+export function convertOutboxRecordToDmMessage(record: DmOutboxRecord): DmMessage {
+  const peerPubkeys = [...new Set(
+    record.participantPubkeys.filter((pubkey) => pubkey !== record.ownerPubkey),
+  )].sort();
+  const participantPubkeys = [...new Set([record.ownerPubkey, ...peerPubkeys])].sort();
+
+  return {
+    conversationId: encodeConversationId(peerPubkeys),
+    wrapId: `optimistic:${record.clientId}`,
+    rumorId: `optimistic:${record.clientId}`,
+    senderPubkey: record.ownerPubkey,
+    participantPubkeys,
+    peerPubkeys,
+    content: record.content,
+    createdAt: record.createdAt,
+    isOutgoing: true,
+    share: record.share,
+    clientId: record.clientId,
+    deliveryState: record.deliveryState,
+    errorMessage: record.errorMessage,
+    isOptimistic: true,
+  };
+}
+
+export function mergeFetchedAndOutboxMessages(
+  fetched: DmMessage[],
+  outbox: DmOutboxRecord[],
+): { messages: DmMessage[]; reconciledClientIds: string[] } {
+  const reconciledClientIds: string[] = [];
+  const optimisticMessages: DmMessage[] = [];
+
+  for (const record of outbox) {
+    if (fetched.some((message) => isReconciledDmMessage(record, message))) {
+      reconciledClientIds.push(record.clientId);
+      continue;
+    }
+
+    optimisticMessages.push(convertOutboxRecordToDmMessage(record));
+  }
+
+  const messages = [...fetched, ...optimisticMessages].sort((left, right) => left.createdAt - right.createdAt);
+
+  return {
+    messages,
+    reconciledClientIds,
+  };
 }

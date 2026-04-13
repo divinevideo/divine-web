@@ -18,9 +18,11 @@ import {
   type DmMessage,
   type DmSharePayload,
 } from '@/lib/dm';
+import { hydrateDmOutbox, mergeFetchedAndOutboxMessages, removeDmOutboxRecord } from '@/lib/dmOutbox';
 
 const DM_QUERY_KEY = ['dm'];
 const DM_READ_STATE_EVENT = 'dm:read-state';
+const DM_OUTBOX_STALE_AFTER_SECONDS = 60;
 
 interface SendDmInput {
   participantPubkeys: string[];
@@ -140,13 +142,22 @@ export function useDmMessages(limit = 200) {
         signal: AbortSignal.any([signal, AbortSignal.timeout(5000)]),
       });
 
-      return fetchDmMessages({
+      const fetchedMessages = await fetchDmMessages({
         signer,
         currentUserPubkey: user.pubkey,
         relayUrls,
         signal: AbortSignal.any([signal, AbortSignal.timeout(15000)]),
         limit,
       });
+
+      const hydratedOutbox = hydrateDmOutbox(user.pubkey, DM_OUTBOX_STALE_AFTER_SECONDS);
+      const { messages, reconciledClientIds } = mergeFetchedAndOutboxMessages(fetchedMessages, hydratedOutbox);
+
+      for (const clientId of reconciledClientIds) {
+        removeDmOutboxRecord(user.pubkey, clientId);
+      }
+
+      return messages;
     },
     enabled: Boolean(user?.pubkey && signer?.nip44),
     staleTime: 30_000,
