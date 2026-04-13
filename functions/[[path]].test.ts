@@ -59,6 +59,55 @@ describe('functions/[[path]]', () => {
         });
       }
 
+      if (url.includes('/api/videos/blank-title')) {
+        return new Response(JSON.stringify({
+          event: {
+            id: 'blank-title',
+            content: 'Choo choo!\n\nInspired by nostr:npub15l5atkgtzladdezjdnjc7zhej7uvzjpxaj7mctpe2hnwyk85qqxqjuecgm',
+            tags: [
+              ['title', ''],
+              ['summary', 'Choo choo!'],
+              ['alt', ''],
+              ['imeta', 'url https://media.divine.video/blank-title.mp4', 'm video/mp4', 'image https://media.divine.video/blank-title.jpg'],
+            ],
+          },
+          stats: {
+            author_name: 'The Wall!',
+          },
+        }), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        });
+      }
+
+      if (url.includes('/api/users/076c979382b90f5d3a2b21f95e1ee86b6033f14c92e79b7fad3fe1f1073f4886')) {
+        return new Response(JSON.stringify({
+          pubkey: '076c979382b90f5d3a2b21f95e1ee86b6033f14c92e79b7fad3fe1f1073f4886',
+          profile: {
+            name: '',
+            display_name: 'The Wall!',
+            about: 'How can you have any pudding if you have not eaten your meat? ',
+            picture: 'https://media.divine.video/545aff83f83b4643f340747213e86520fac83596f899e8ea3117e0aa8b260f7b',
+          },
+          stats: {
+            video_count: 125,
+          },
+        }), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        });
+      }
+
+      if (url.includes('/api/categories')) {
+        return new Response(JSON.stringify([
+          { name: 'dance', video_count: 895 },
+          { name: 'music', video_count: 1812 },
+        ]), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        });
+      }
+
       return new Response('not found', { status: 404 });
     }));
   });
@@ -100,5 +149,51 @@ describe('functions/[[path]]', () => {
     expect(response.status).toBe(200);
     expect(html).toContain(`<title>${'Divine Web - Short-form Looping Videos on Nostr'}</title>`);
     expect(html).not.toContain('property="og:video"');
+  });
+
+  it('uses summary text when the video title is blank', async () => {
+    const response = await onRequest({
+      request: new Request('https://divine.video/video/blank-title'),
+      next: async () => new Response('not found', { status: 404 }),
+      env: {},
+    });
+
+    const html = await response.text();
+
+    expect(response.status).toBe(200);
+    expect(html).toContain('<title>Choo choo!</title>');
+    expect(html).toContain('property="og:title" content="Choo choo!"');
+    expect(html).toContain('name="twitter:title" content="Choo choo!"');
+  });
+
+  it('injects profile metadata for apex profile routes', async () => {
+    const response = await onRequest({
+      request: new Request('https://divine.video/profile/npub1qakf0yuzhy846w3ty8u4u8hgddsr8u2vjtneklad8lslzpelfzrqsy63m7'),
+      next: async () => new Response('not found', { status: 404 }),
+      env: {},
+    });
+
+    const html = await response.text();
+
+    expect(response.status).toBe(200);
+    expect(html).toContain('<title>The Wall! on Divine</title>');
+    expect(html).toContain('property="og:title" content="The Wall! on Divine"');
+    expect(html).toContain('property="og:description" content="How can you have any pudding if you have not eaten your meat?"');
+    expect(html).toContain('property="og:image" content="https://media.divine.video/545aff83f83b4643f340747213e86520fac83596f899e8ea3117e0aa8b260f7b"');
+  });
+
+  it('injects category metadata for category routes', async () => {
+    const response = await onRequest({
+      request: new Request('https://divine.video/category/dance'),
+      next: async () => new Response('not found', { status: 404 }),
+      env: {},
+    });
+
+    const html = await response.text();
+
+    expect(response.status).toBe(200);
+    expect(html).toContain('<title>Dance Videos - Divine</title>');
+    expect(html).toContain('property="og:title" content="Dance Videos - Divine"');
+    expect(html).toContain('property="og:description" content="Explore 895 dance videos on Divine."');
   });
 });
