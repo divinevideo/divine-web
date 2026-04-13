@@ -21,6 +21,7 @@ import { useAuthor } from '@/hooks/useAuthor';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { getSubdomainUser } from '@/hooks/useSubdomainUser';
 import { useResolveSubdomainPubkey } from '@/hooks/useResolveSubdomainPubkey';
+import { useNip05Pubkey } from '@/hooks/useNip05Pubkey';
 import { useVideoProvider } from '@/hooks/useVideoProvider';
 import { useFunnelcakeProfile } from '@/hooks/useFunnelcakeProfile';
 import { useProfileJoinedDate } from '@/hooks/useProfileJoinedDate';
@@ -52,9 +53,11 @@ export function ProfilePage() {
   // Use resolved pubkey when KV store mapping is stale
   const identifier = npub || nip19Param || (resolved.isResolved ? resolved.npub : subdomainUser?.npub);
 
-  // Decode npub to get pubkey
+  // Decode npub to get pubkey. Accepts npub1..., 64-char hex, or a NIP-05 (name@domain).
   let pubkey: string | null = null;
   let error: string | null = null;
+  const isNip05 = !!identifier && identifier.includes('@');
+  const nip05Query = useNip05Pubkey(isNip05 ? identifier : undefined);
 
   if (identifier) {
     try {
@@ -68,6 +71,12 @@ export function ProfilePage() {
       } else if (/^[0-9a-fA-F]{64}$/.test(identifier)) {
         // Valid 64-char hex pubkey
         pubkey = identifier;
+      } else if (isNip05) {
+        if (nip05Query.data) {
+          pubkey = nip05Query.data;
+        } else if (nip05Query.isFetched && !nip05Query.data) {
+          error = `Could not resolve NIP-05: ${identifier}`;
+        }
       } else {
         error = 'Invalid profile identifier';
       }
@@ -247,6 +256,17 @@ export function ProfilePage() {
     twitterDescription: metadata?.about || `${displayName}'s profile on Divine`,
     twitterImage: metadata?.picture || '/app_icon.avif',
   });
+
+  // Show spinner while resolving a NIP-05 identifier in the URL
+  if (isNip05 && nip05Query.isLoading) {
+    return (
+      <div className="container mx-auto px-4 py-6">
+        <div className="max-w-4xl mx-auto flex items-center justify-center py-12">
+          <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+        </div>
+      </div>
+    );
+  }
 
   // Show spinner while resolving stale subdomain mapping
   if (resolved.isSearching && subdomainUser?.nip05Stale) {
