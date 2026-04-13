@@ -296,6 +296,85 @@ describe('useDirectMessages', () => {
     expect(mockToast).toHaveBeenCalled();
   });
 
+  it('retries a failed message by reusing the same optimistic row', async () => {
+    vi.spyOn(Date, 'now').mockReturnValue(1_234_567_890_000);
+
+    let resolvePublish: (() => void) | undefined;
+    mockPublishDmMessages.mockImplementation(() => new Promise<void>((resolve) => {
+      resolvePublish = resolve;
+    }));
+
+    writeDmOutbox(TEST_PUBKEY, [{
+      clientId: 'local-1',
+      ownerPubkey: TEST_PUBKEY,
+      participantPubkeys: [RECIPIENT_PUBKEY],
+      content: 'retry me',
+      createdAt: 1_234_567_890,
+      lastAttemptAt: 1_234_567_890,
+      deliveryState: 'failed',
+      errorMessage: 'signal has been aborted',
+      retryCount: 0,
+    }]);
+
+    const queryClient = new QueryClient({
+      defaultOptions: {
+        queries: { retry: false },
+        mutations: { retry: false },
+      },
+    });
+
+    queryClient.setQueryData(['dm', 'messages', TEST_PUBKEY, 300], [
+      {
+        conversationId: encodeConversationId([RECIPIENT_PUBKEY]),
+        wrapId: 'optimistic:local-1',
+        rumorId: 'optimistic:local-1',
+        senderPubkey: TEST_PUBKEY,
+        participantPubkeys: [RECIPIENT_PUBKEY, TEST_PUBKEY].sort(),
+        peerPubkeys: [RECIPIENT_PUBKEY],
+        content: 'retry me',
+        createdAt: 1_234_567_890,
+        isOutgoing: true,
+        clientId: 'local-1',
+        deliveryState: 'failed' as const,
+        errorMessage: 'signal has been aborted',
+        isOptimistic: true,
+      },
+    ]);
+
+    const { result } = renderHook(() => useDmSend(), {
+      wrapper: createWrapper(queryClient),
+    });
+
+    await act(async () => {
+      result.current.mutate({
+        clientId: 'local-1',
+        participantPubkeys: [RECIPIENT_PUBKEY],
+        content: 'retry me',
+      });
+    });
+
+    expect(queryClient.getQueryData(['dm', 'messages', TEST_PUBKEY, 300])).toEqual([
+      expect.objectContaining({
+        clientId: 'local-1',
+        content: 'retry me',
+        deliveryState: 'sending',
+        errorMessage: undefined,
+        isOptimistic: true,
+      }),
+    ]);
+    expect(readDmOutbox(TEST_PUBKEY)).toEqual([
+      expect.objectContaining({
+        clientId: 'local-1',
+        deliveryState: 'sending',
+        retryCount: 1,
+      }),
+    ]);
+
+    await act(async () => {
+      resolvePublish?.();
+    });
+  });
+
   it('marks the optimistic row as sent after a successful send', async () => {
     vi.spyOn(Date, 'now').mockReturnValue(1_234_567_890_000);
 

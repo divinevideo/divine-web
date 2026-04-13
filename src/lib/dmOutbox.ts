@@ -291,6 +291,31 @@ export function markDmOutboxRecordSent(ownerPubkey: string, clientId: string): D
   return updatedRecord;
 }
 
+export function markDmOutboxRecordSending(
+  ownerPubkey: string,
+  clientId: string,
+  input?: Pick<DmOutboxRecord, 'participantPubkeys' | 'content' | 'share'>,
+): DmOutboxRecord | undefined {
+  const record = getDmOutboxRecord(ownerPubkey, clientId);
+  if (!record) {
+    return undefined;
+  }
+
+  const updatedRecord = {
+    ...record,
+    participantPubkeys: input?.participantPubkeys || record.participantPubkeys,
+    content: input?.content ?? record.content,
+    share: input?.share ?? record.share,
+    deliveryState: 'sending' as const,
+    errorMessage: undefined,
+    lastAttemptAt: nowInSeconds(),
+    retryCount: record.retryCount + 1,
+  };
+
+  upsertDmOutboxRecord(ownerPubkey, updatedRecord);
+  return updatedRecord;
+}
+
 export function markDmOutboxRecordFailed(
   ownerPubkey: string,
   clientId: string,

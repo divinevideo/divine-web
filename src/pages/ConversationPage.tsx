@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ArrowLeft, ArrowUp, Link2, Loader2, X } from 'lucide-react';
+import { ArrowLeft, ArrowUp, Link2, X } from 'lucide-react';
 import { Link, useLocation, useParams } from 'react-router-dom';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -33,7 +33,13 @@ function getDisplayName(pubkey: string, metadata?: { display_name?: string; name
   return metadata?.display_name || metadata?.name || genUserName(pubkey);
 }
 
-function MessageBubble({ message }: { message: DmMessage }) {
+function MessageBubble({
+  message,
+  onRetry,
+}: {
+  message: DmMessage;
+  onRetry?: (message: DmMessage) => void;
+}) {
   const videoPath = message.share?.vineId || message.share?.videoId
     ? `/video/${message.share.vineId || message.share.videoId}`
     : undefined;
@@ -102,13 +108,33 @@ function MessageBubble({ message }: { message: DmMessage }) {
 
         <div
           className={cn(
-            'mt-2 text-[11px]',
+            'mt-2 flex items-center gap-2 text-[11px]',
             message.isOutgoing
               ? 'text-primary-foreground/70'
               : 'text-muted-foreground',
           )}
         >
-          {formatRelativeTime(message.createdAt)}
+          <span>{formatRelativeTime(message.createdAt)}</span>
+          {message.deliveryState === 'sending' && <span>Sending...</span>}
+          {message.deliveryState === 'failed' && (
+            <>
+              <span>Failed to send</span>
+              {message.clientId && onRetry && (
+                <button
+                  type="button"
+                  className={cn(
+                    'rounded-full border px-2 py-0.5 text-[11px] font-semibold transition-colors',
+                    message.isOutgoing
+                      ? 'border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10'
+                      : 'border-border text-foreground hover:bg-muted',
+                  )}
+                  onClick={() => onRetry(message)}
+                >
+                  Retry
+                </button>
+              )}
+            </>
+          )}
         </div>
       </div>
     </div>
@@ -167,33 +193,43 @@ export function ConversationPage() {
 
   const sharelessPath = conversationId ? getDmConversationPath(peerPubkeys) : '/messages';
 
-  const handleSend = async () => {
+  const handleSend = () => {
     const trimmedDraft = draft.trim();
     if (!peerPubkeys.length || (!trimmedDraft && !share)) {
       return;
     }
 
-    try {
-      await sendMessage.mutateAsync({
-        participantPubkeys: peerPubkeys,
-        content: trimmedDraft,
-        share,
-      });
+    const content = trimmedDraft;
+    setDraft('');
 
-      setDraft('');
+    sendMessage.mutate({
+      participantPubkeys: peerPubkeys,
+      content,
+      share: share ?? undefined,
+    });
 
-      if (share) {
-        navigate(sharelessPath, { replace: true });
-      }
-    } catch {
-      // Mutation error state and toast are handled by the hook.
+    if (share) {
+      navigate(sharelessPath, { replace: true });
     }
   };
 
-  const handleComposerKeyDown = async (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
+  const handleRetry = (message: DmMessage) => {
+    if (!message.clientId) {
+      return;
+    }
+
+    sendMessage.mutate({
+      clientId: message.clientId,
+      participantPubkeys: message.peerPubkeys,
+      content: message.content,
+      share: message.share,
+    });
+  };
+
+  const handleComposerKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault();
-      await handleSend();
+      handleSend();
     }
   };
 
@@ -283,7 +319,11 @@ export function ConversationPage() {
               )}
 
               {messages.map((message) => (
-                <MessageBubble key={message.wrapId} message={message} />
+                <MessageBubble
+                  key={message.clientId || message.wrapId}
+                  message={message}
+                  onRetry={handleRetry}
+                />
               ))}
             </div>
 
@@ -321,13 +361,9 @@ export function ConversationPage() {
                 <Button
                   className="h-12 w-12 rounded-full"
                   onClick={handleSend}
-                  disabled={sendMessage.isPending || (!draft.trim() && !share)}
+                  disabled={!draft.trim() && !share}
                 >
-                  {sendMessage.isPending ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <ArrowUp className="h-4 w-4" />
-                  )}
+                  <ArrowUp className="h-4 w-4" />
                 </Button>
               </div>
             </div>

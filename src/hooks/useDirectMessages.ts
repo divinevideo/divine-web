@@ -22,6 +22,7 @@ import {
   createDmOutboxRecord,
   hydrateDmOutbox,
   markDmOutboxRecordFailed,
+  markDmOutboxRecordSending,
   markDmOutboxRecordSent,
   mergeFetchedAndOutboxMessages,
   removeDmOutboxRecord,
@@ -33,6 +34,7 @@ const DM_READ_STATE_EVENT = 'dm:read-state';
 const DM_OUTBOX_STALE_AFTER_SECONDS = 60;
 
 interface SendDmInput {
+  clientId?: string;
   participantPubkeys: string[];
   content: string;
   share?: DmSharePayload;
@@ -302,20 +304,33 @@ export function useDmSend() {
   const { config } = useAppContext();
 
   return useMutation<{ relayUrls: string[]; wraps: Awaited<ReturnType<typeof createDmGiftWraps>> }, Error, SendDmInput, SendDmMutationContext>({
-    onMutate: ({ participantPubkeys, content, share }) => {
+    onMutate: ({ clientId, participantPubkeys, content, share }) => {
       if (!user?.pubkey) {
         return {};
       }
 
-      const record = createDmOutboxRecord({
-        ownerPubkey: user.pubkey,
-        participantPubkeys,
-        content,
-        share,
-      });
+      const record = clientId
+        ? markDmOutboxRecordSending(user.pubkey, clientId, {
+          participantPubkeys,
+          content,
+          share,
+        }) || createDmOutboxRecord({
+          ownerPubkey: user.pubkey,
+          participantPubkeys,
+          content,
+          share,
+        })
+        : createDmOutboxRecord({
+          ownerPubkey: user.pubkey,
+          participantPubkeys,
+          content,
+          share,
+        });
 
       const optimisticMessage = convertOutboxRecordToDmMessage(record);
-      upsertDmOutboxRecord(user.pubkey, record);
+      if (!clientId || record.clientId !== clientId) {
+        upsertDmOutboxRecord(user.pubkey, record);
+      }
 
       insertOptimisticDmIntoAllCaches(queryClient, user.pubkey, optimisticMessage);
       return {
