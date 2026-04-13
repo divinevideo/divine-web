@@ -4,6 +4,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { getJWTExpiration } from '@/lib/jwtDecode';
+import { setJwtCookie, clearJwtCookie } from '@/lib/crossSubdomainAuth';
 
 // Legacy key names stay in place so existing hosted-login sessions survive this rename.
 const TOKEN_KEY = 'keycast_jwt_token';
@@ -124,6 +125,15 @@ export function useDivineSession() {
       setSessionStart(now);
       setEmail(userEmail);
       setRememberMe(shouldRememberMe);
+
+      // Share JWT session across subdomains via cookie
+      setJwtCookie({
+        token: newToken,
+        expiration: expiresAt,
+        sessionStart: now,
+        rememberMe: shouldRememberMe,
+        email: userEmail || undefined,
+      });
     },
     [setToken, setExpiration, setSessionStart, setEmail, setRememberMe]
   );
@@ -150,8 +160,20 @@ export function useDivineSession() {
       setToken(newToken);
       setExpiration(expiresAt);
       // Keep original sessionStart to track 1-week limit
+
+      // Update JWT cookie with refreshed token
+      if (sessionStart) {
+        setJwtCookie({
+          token: newToken,
+          expiration: expiresAt,
+          sessionStart,
+          rememberMe,
+          email: email || undefined,
+          bunkerUrl: bunkerUrl || undefined,
+        });
+      }
     },
-    [setToken, setExpiration]
+    [setToken, setExpiration, sessionStart, rememberMe, email, bunkerUrl]
   );
 
   /**
@@ -161,8 +183,20 @@ export function useDivineSession() {
     (url: string) => {
       console.log('[useDivineSession] Saving bunker URL for persistent reconnection');
       setBunkerUrl(url);
+
+      // Update JWT cookie with bunker URL
+      if (token && expiration && sessionStart) {
+        setJwtCookie({
+          token,
+          expiration,
+          sessionStart,
+          rememberMe,
+          email: email || undefined,
+          bunkerUrl: url,
+        });
+      }
     },
-    [setBunkerUrl]
+    [setBunkerUrl, token, expiration, sessionStart, rememberMe, email]
   );
 
   /**
@@ -182,6 +216,7 @@ export function useDivineSession() {
     setEmail(null);
     setRememberMe(false);
     setBunkerUrl(null);
+    clearJwtCookie();
   }, [setToken, setExpiration, setSessionStart, setEmail, setRememberMe, setBunkerUrl]);
 
   /**

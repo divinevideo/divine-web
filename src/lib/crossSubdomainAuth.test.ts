@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { getCookieDomain, getLoginCookie, setLoginCookie, clearLoginCookie, hydrateLoginFromCookie } from './crossSubdomainAuth';
+import { getCookieDomain, getLoginCookie, setLoginCookie, clearLoginCookie, hydrateLoginFromCookie, setJwtCookie, getJwtCookie, clearJwtCookie } from './crossSubdomainAuth';
 
 // Mock localStorage for Node.js environment
 const localStorageMock = (() => {
@@ -207,6 +207,96 @@ describe('hydrateLoginFromCookie', () => {
     hydrateLoginFromCookie();
 
     expect(localStorage.getItem(STORAGE_KEY)).toBeNull();
+    expect(cookieJar).toBe('');
+  });
+
+  // --- JWT cross-subdomain hydration ---
+
+  it('when localStorage has JWT, syncs TO jwt cookie', () => {
+    const token = 'eyJ0eXAiOiJKV1QifQ.test-token';
+    const expiration = Date.now() + 86400000;
+    localStorage.setItem('keycast_jwt_token', JSON.stringify(token));
+    localStorage.setItem('keycast_jwt_expiration', JSON.stringify(expiration));
+    localStorage.setItem('keycast_session_start', JSON.stringify(Date.now()));
+    localStorage.setItem('keycast_remember_me', JSON.stringify(false));
+
+    hydrateLoginFromCookie();
+
+    const jwtCookie = getJwtCookie();
+    expect(jwtCookie).not.toBeNull();
+    expect(jwtCookie!.token).toBe(token);
+    expect(jwtCookie!.expiration).toBe(expiration);
+  });
+
+  it('when localStorage has no JWT but jwt cookie exists, hydrates localStorage', () => {
+    const expiration = Date.now() + 86400000;
+    const sessionStart = Date.now();
+    const jwtData = {
+      token: 'eyJ0eXAiOiJKV1QifQ.hydrate-test',
+      expiration,
+      sessionStart,
+      rememberMe: true,
+      email: 'test@divine.video',
+    };
+    cookieJar = `divine_jwt=${btoa(JSON.stringify(jwtData))}`;
+
+    hydrateLoginFromCookie();
+
+    expect(JSON.parse(localStorage.getItem('keycast_jwt_token')!)).toBe(jwtData.token);
+    expect(JSON.parse(localStorage.getItem('keycast_jwt_expiration')!)).toBe(expiration);
+    expect(JSON.parse(localStorage.getItem('keycast_session_start')!)).toBe(sessionStart);
+    expect(JSON.parse(localStorage.getItem('keycast_remember_me')!)).toBe(true);
+    expect(JSON.parse(localStorage.getItem('keycast_email')!)).toBe('test@divine.video');
+  });
+
+  it('does NOT hydrate JWT from cookie if token is expired', () => {
+    const jwtData = {
+      token: 'eyJ0eXAiOiJKV1QifQ.expired',
+      expiration: Date.now() - 1000, // expired
+      sessionStart: Date.now() - 86400000,
+      rememberMe: false,
+    };
+    cookieJar = `divine_jwt=${btoa(JSON.stringify(jwtData))}`;
+
+    hydrateLoginFromCookie();
+
+    expect(localStorage.getItem('keycast_jwt_token')).toBeNull();
+  });
+});
+
+describe('JWT cookie functions', () => {
+  it('setJwtCookie sets and getJwtCookie reads', () => {
+    const data = {
+      token: 'test-jwt-token',
+      expiration: Date.now() + 86400000,
+      sessionStart: Date.now(),
+      rememberMe: false,
+    };
+    setJwtCookie(data);
+    const result = getJwtCookie();
+    expect(result).toEqual(data);
+  });
+
+  it('clearJwtCookie removes the cookie', () => {
+    setJwtCookie({
+      token: 'test',
+      expiration: Date.now() + 86400000,
+      sessionStart: Date.now(),
+      rememberMe: false,
+    });
+    expect(getJwtCookie()).not.toBeNull();
+    clearJwtCookie();
+    expect(getJwtCookie()).toBeNull();
+  });
+
+  it('does not set cookie on localhost', () => {
+    setHostname('localhost');
+    setJwtCookie({
+      token: 'test',
+      expiration: Date.now() + 86400000,
+      sessionStart: Date.now(),
+      rememberMe: false,
+    });
     expect(cookieJar).toBe('');
   });
 });
