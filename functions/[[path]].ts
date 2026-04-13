@@ -1,31 +1,20 @@
 // ABOUTME: Cloudflare Pages Function to handle SPA routing and route-specific social metadata
 // ABOUTME: Returns index.html with a 200 status for SPA routes and injects per-video OG/Twitter tags for bots
 
+import {
+  buildCategoriesIndexMeta,
+  buildCategoryPageMeta,
+  buildProfilePageMeta,
+  buildVideoPageMeta,
+  decodeNpubToHex,
+  extractCategoryName,
+  extractProfileNpub,
+  type PageMeta,
+  type ProfileApiResponse,
+  type VideoApiResponse,
+} from '../src/lib/serverSocialMeta';
+
 const FUNNELCAKE_API_URL = 'https://relay.divine.video';
-const DEFAULT_OG_IMAGE = 'https://divine.video/og.png';
-
-interface VideoApiResponse {
-  event: {
-    id: string;
-    content: string;
-    tags: string[][];
-  };
-  stats?: {
-    author_name?: string;
-  };
-}
-
-interface PageMeta {
-  title: string;
-  description: string;
-  ogType: string;
-  url: string;
-  image: string;
-  imageAlt: string;
-  twitterCard: string;
-  videoUrl?: string;
-  videoMimeType?: string;
-}
 
 function escapeHtml(value: string): string {
   return value
@@ -38,45 +27,6 @@ function escapeHtml(value: string): string {
 
 function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-
-function truncateText(value: string, maxLength: number): string {
-  const trimmed = value.replace(/\s+/g, ' ').trim();
-  if (trimmed.length <= maxLength) {
-    return trimmed;
-  }
-
-  return `${trimmed.slice(0, maxLength - 1).trimEnd()}…`;
-}
-
-function getTagValue(tags: string[][], name: string): string | undefined {
-  return tags.find(tag => tag[0] === name)?.[1];
-}
-
-function parseImeta(tags: string[][]): { url?: string; image?: string; mimeType?: string } {
-  const imetaTag = tags.find(tag => tag[0] === 'imeta');
-  if (!imetaTag) {
-    return {};
-  }
-
-  const parsed: { url?: string; image?: string; mimeType?: string } = {};
-
-  for (let i = 1; i < imetaTag.length; i += 1) {
-    const part = imetaTag[i];
-    const separatorIndex = part.indexOf(' ');
-    if (separatorIndex === -1) {
-      continue;
-    }
-
-    const key = part.slice(0, separatorIndex);
-    const value = part.slice(separatorIndex + 1).trim();
-
-    if (key === 'url') parsed.url = value;
-    if (key === 'image') parsed.image = value;
-    if (key === 'm') parsed.mimeType = value;
-  }
-
-  return parsed;
 }
 
 function replaceTitle(html: string, title: string): string {
@@ -154,33 +104,79 @@ async function fetchVideoMeta(url: URL): Promise<PageMeta | null> {
       return null;
     }
 
-    const title = getTagValue(payload.event.tags, 'title')
-      || getTagValue(payload.event.tags, 'alt')
-      || 'Video on Divine';
-    const authorName = payload.stats?.author_name;
-    const description = truncateText(
-      getTagValue(payload.event.tags, 'summary')
-        || payload.event.content
-        || getTagValue(payload.event.tags, 'alt')
-        || (authorName ? `Watch this video by ${authorName} on Divine` : 'Watch this video on Divine'),
-      200
-    );
-    const media = parseImeta(payload.event.tags);
-
-    return {
-      title,
-      description,
-      ogType: 'video.other',
-      url: url.toString(),
-      image: media.image || DEFAULT_OG_IMAGE,
-      imageAlt: title,
-      twitterCard: 'summary_large_image',
-      videoUrl: media.url,
-      videoMimeType: media.mimeType,
-    };
+    return buildVideoPageMeta(url, payload);
   } catch {
     return null;
   }
+}
+
+async function fetchProfileMeta(url: URL): Promise<PageMeta | null> {
+  const npub = extractProfileNpub(url.pathname);
+  if (!npub) {
+    return null;
+  }
+
+  const pubkey = decodeNpubToHex(npub);
+  if (!pubkey) {
+    return null;
+  }
+
+  try {
+    const response = await fetch(`${FUNNELCAKE_API_URL}/api/users/${pubkey}`);
+    if (!response.ok) {
+      return null;
+    }
+
+    const payload = await response.json() as ProfileApiResponse;
+    if (!payload.profile) {
+      return null;
+    }
+
+    return buildProfilePageMeta(url, payload);
+  } catch {
+    return null;
+  }
+}
+
+async function fetchCategoryMeta(url: URL): Promise<PageMeta | null> {
+  if (url.pathname === '/category') {
+    return buildCategoriesIndexMeta(url);
+  }
+
+  const categoryName = extractCategoryName(url.pathname);
+  if (!categoryName) {
+    return null;
+  }
+
+  try {
+    const response = await fetch(`${FUNNELCAKE_API_URL}/api/categories`);
+    if (!response.ok) {
+      return buildCategoryPageMeta(url);
+    }
+
+    const payload = await response.json() as Array<{ name: string; video_count?: number }>;
+    const matchedCategory = payload.find(category => category.name.toLowerCase() === categoryName.toLowerCase());
+
+    return buildCategoryPageMeta(url, matchedCategory);
+  } catch {
+    return buildCategoryPageMeta(url);
+  }
+}
+
+async function fetchRouteMeta(url: URL): Promise<PageMeta | null> {
+  if (url.pathname.startsWith('/video/')) {
+    return fetchVideoMeta(url);
+  }
+
+  if (url.pathname === '/category' || url.pathname.startsWith('/category/')) {
+    return fetchCategoryMeta(url);
+  }
+
+  if (url.pathname.startsWith('/profile/')) {
+    return fetchProfileMeta(url);
+  }
+
+  return null;
 }
 
 export async function onRequest(context: {
@@ -209,7 +205,7 @@ export async function onRequest(context: {
       // Fetch index.html from the static assets
       const indexUrl = new URL('/index.html', context.request.url);
       const indexResponse = await fetch(indexUrl);
-      const meta = await fetchVideoMeta(url);
+      const meta = await fetchRouteMeta(url);
 
       if (meta) {
         const html = injectMetaTags(await indexResponse.text(), meta);
