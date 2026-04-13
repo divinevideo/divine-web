@@ -195,7 +195,110 @@ describe('useDirectMessages', () => {
     expect(readDmOutbox(TEST_PUBKEY)).toEqual([]);
   });
 
-  it('adds the outgoing message to existing DM message caches immediately after a successful send', async () => {
+  it('adds an optimistic sending message before publish resolves', async () => {
+    vi.spyOn(Date, 'now').mockReturnValue(1_234_567_890_000);
+
+    let resolvePublish: (() => void) | undefined;
+    mockPublishDmMessages.mockImplementation(() => new Promise<void>((resolve) => {
+      resolvePublish = resolve;
+    }));
+
+    const queryClient = new QueryClient({
+      defaultOptions: {
+        queries: { retry: false },
+        mutations: { retry: false },
+      },
+    });
+
+    queryClient.setQueryData(['dm', 'messages', TEST_PUBKEY, 300], []);
+
+    const { result } = renderHook(() => useDmSend(), {
+      wrapper: createWrapper(queryClient),
+    });
+
+    await act(async () => {
+      result.current.mutate({
+        participantPubkeys: [RECIPIENT_PUBKEY],
+        content: 'hi support',
+      });
+    });
+
+    expect(queryClient.getQueryData(['dm', 'messages', TEST_PUBKEY, 300])).toEqual([
+      expect.objectContaining({
+        content: 'hi support',
+        deliveryState: 'sending',
+        isOptimistic: true,
+      }),
+    ]);
+
+    await act(async () => {
+      resolvePublish?.();
+    });
+
+    await waitFor(() => {
+      expect(queryClient.getQueryData(['dm', 'messages', TEST_PUBKEY, 300])).toEqual([
+        expect.objectContaining({
+          content: 'hi support',
+          deliveryState: 'sent',
+          isOptimistic: true,
+        }),
+      ]);
+    });
+    expect(readDmOutbox(TEST_PUBKEY)).toEqual([
+      expect.objectContaining({
+        content: 'hi support',
+        deliveryState: 'sent',
+      }),
+    ]);
+    expect(mockToast).not.toHaveBeenCalled();
+  });
+
+  it('keeps the optimistic row as failed when publish rejects', async () => {
+    vi.spyOn(Date, 'now').mockReturnValue(1_234_567_890_000);
+
+    mockPublishDmMessages.mockRejectedValue(new Error('signal has been aborted'));
+
+    const queryClient = new QueryClient({
+      defaultOptions: {
+        queries: { retry: false },
+        mutations: { retry: false },
+      },
+    });
+
+    queryClient.setQueryData(['dm', 'messages', TEST_PUBKEY, 300], []);
+
+    const { result } = renderHook(() => useDmSend(), {
+      wrapper: createWrapper(queryClient),
+    });
+
+    await act(async () => {
+      await expect(result.current.mutateAsync({
+        participantPubkeys: [RECIPIENT_PUBKEY],
+        content: 'hi support',
+      })).rejects.toThrow('signal has been aborted');
+    });
+
+    expect(queryClient.getQueryData(['dm', 'messages', TEST_PUBKEY, 300])).toEqual([
+      expect.objectContaining({
+        content: 'hi support',
+        deliveryState: 'failed',
+        errorMessage: 'signal has been aborted',
+        isOptimistic: true,
+      }),
+    ]);
+    expect(readDmOutbox(TEST_PUBKEY)).toEqual([
+      expect.objectContaining({
+        content: 'hi support',
+        deliveryState: 'failed',
+        errorMessage: 'signal has been aborted',
+      }),
+    ]);
+    expect(mockToast).toHaveBeenCalled();
+  });
+
+  it('marks the optimistic row as sent after a successful send', async () => {
+    vi.spyOn(Date, 'now').mockReturnValue(1_234_567_890_000);
+
     const queryClient = new QueryClient({
       defaultOptions: {
         queries: { retry: false },
@@ -218,14 +321,15 @@ describe('useDirectMessages', () => {
 
     expect(queryClient.getQueryData(['dm', 'messages', TEST_PUBKEY, 300])).toEqual([
       expect.objectContaining({
-        conversationId: encodeConversationId([RECIPIENT_PUBKEY]),
-        wrapId: 'self-wrap-id',
-        rumorId: 'self-wrap-id',
-        senderPubkey: TEST_PUBKEY,
-        participantPubkeys: [RECIPIENT_PUBKEY, TEST_PUBKEY].sort(),
-        peerPubkeys: [RECIPIENT_PUBKEY],
         content: 'hi support',
-        isOutgoing: true,
+        deliveryState: 'sent',
+        isOptimistic: true,
+      }),
+    ]);
+    expect(readDmOutbox(TEST_PUBKEY)).toEqual([
+      expect.objectContaining({
+        content: 'hi support',
+        deliveryState: 'sent',
       }),
     ]);
     expect(mockToast).not.toHaveBeenCalled();

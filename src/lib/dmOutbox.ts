@@ -178,6 +178,10 @@ export function upsertDmOutboxRecord(ownerPubkey: string, record: DmOutboxRecord
   return nextRecords;
 }
 
+export function getDmOutboxRecord(ownerPubkey: string, clientId: string): DmOutboxRecord | undefined {
+  return readDmOutbox(ownerPubkey).find((record) => record.clientId === clientId);
+}
+
 export function removeDmOutboxRecord(ownerPubkey: string, clientId: string): DmOutboxRecord[] {
   const nextRecords = readDmOutbox(ownerPubkey).filter((record) => record.clientId !== clientId);
   writeDmOutbox(ownerPubkey, nextRecords);
@@ -268,4 +272,42 @@ export function mergeFetchedAndOutboxMessages(
     messages,
     reconciledClientIds,
   };
+}
+
+export function markDmOutboxRecordSent(ownerPubkey: string, clientId: string): DmOutboxRecord | undefined {
+  const record = getDmOutboxRecord(ownerPubkey, clientId);
+  if (!record) {
+    return undefined;
+  }
+
+  const updatedRecord = {
+    ...record,
+    deliveryState: 'sent' as const,
+    errorMessage: undefined,
+    lastAttemptAt: nowInSeconds(),
+  };
+
+  upsertDmOutboxRecord(ownerPubkey, updatedRecord);
+  return updatedRecord;
+}
+
+export function markDmOutboxRecordFailed(
+  ownerPubkey: string,
+  clientId: string,
+  errorMessage: string,
+): DmOutboxRecord | undefined {
+  const record = getDmOutboxRecord(ownerPubkey, clientId);
+  if (!record) {
+    return undefined;
+  }
+
+  const updatedRecord = {
+    ...record,
+    deliveryState: 'failed' as const,
+    errorMessage,
+    lastAttemptAt: nowInSeconds(),
+  };
+
+  upsertDmOutboxRecord(ownerPubkey, updatedRecord);
+  return updatedRecord;
 }
