@@ -170,11 +170,13 @@ export function transformFunnelcakeResponse(response: FunnelcakeResponse): Parse
  */
 export function transformToVideoPage(
   response: FunnelcakeResponse,
-  cursorType: 'timestamp' | 'offset' = 'timestamp'
+  cursorType: 'timestamp' | 'offset' | 'cursor' = 'timestamp'
 ): {
   videos: ParsedVideoData[];
   nextCursor: number | undefined;
   offset?: number;
+  /** Raw opaque cursor string for cursor-based pagination (recommendations) */
+  rawCursor?: string;
   hasMore: boolean;
 } {
   const videos = transformFunnelcakeResponse(response);
@@ -182,9 +184,13 @@ export function transformToVideoPage(
   // Parse next cursor based on pagination type
   let nextCursor: number | undefined;
   let offset: number | undefined;
+  let rawCursor: string | undefined;
 
   if (response.has_more && response.next_cursor) {
-    if (cursorType === 'offset') {
+    if (cursorType === 'cursor') {
+      // Opaque cursor: pass through as-is (recommendations)
+      rawCursor = response.next_cursor;
+    } else if (cursorType === 'offset') {
       offset = parseInt(response.next_cursor, 10);
     } else {
       // Timestamp cursor - parse as number
@@ -200,6 +206,7 @@ export function transformToVideoPage(
     videos,
     nextCursor,
     offset,
+    rawCursor,
     hasMore: response.has_more,
   };
 }

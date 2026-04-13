@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { transformFunnelcakeVideo } from './funnelcakeTransform';
-import type { FunnelcakeVideoRaw } from '@/types/funnelcake';
+import { transformFunnelcakeVideo, transformToVideoPage } from './funnelcakeTransform';
+import type { FunnelcakeVideoRaw, FunnelcakeResponse } from '@/types/funnelcake';
 
 function makeRawVideo(overrides: Partial<FunnelcakeVideoRaw> = {}): FunnelcakeVideoRaw {
   return {
@@ -45,5 +45,61 @@ describe('transformFunnelcakeVideo', () => {
     }));
 
     expect(video.loopCount).toBe(296752);
+  });
+});
+
+function makeResponse(overrides: Partial<FunnelcakeResponse> = {}): FunnelcakeResponse {
+  return {
+    videos: [makeRawVideo()],
+    has_more: true,
+    next_cursor: 'abc123',
+    ...overrides,
+  };
+}
+
+describe('transformToVideoPage', () => {
+  describe('cursor type (recommendations)', () => {
+    it('returns raw cursor string when cursorType is cursor', () => {
+      const page = transformToVideoPage(makeResponse({ next_cursor: 'opaque-cursor-xyz' }), 'cursor');
+      expect(page.rawCursor).toBe('opaque-cursor-xyz');
+      expect(page.nextCursor).toBeUndefined();
+      expect(page.offset).toBeUndefined();
+    });
+
+    it('returns no rawCursor when has_more is false', () => {
+      const page = transformToVideoPage(makeResponse({ has_more: false, next_cursor: 'opaque-cursor-xyz' }), 'cursor');
+      expect(page.rawCursor).toBeUndefined();
+      expect(page.hasMore).toBe(false);
+    });
+
+    it('returns no rawCursor when next_cursor is null/undefined', () => {
+      const page = transformToVideoPage(makeResponse({ has_more: true, next_cursor: undefined }), 'cursor');
+      expect(page.rawCursor).toBeUndefined();
+    });
+  });
+
+  describe('offset type', () => {
+    it('parses next_cursor as integer offset', () => {
+      const page = transformToVideoPage(makeResponse({ next_cursor: '24' }), 'offset');
+      expect(page.offset).toBe(24);
+      expect(page.rawCursor).toBeUndefined();
+    });
+  });
+
+  describe('timestamp type (default)', () => {
+    it('parses next_cursor as numeric timestamp', () => {
+      const page = transformToVideoPage(makeResponse({ next_cursor: '1700000000' }), 'timestamp');
+      expect(page.nextCursor).toBe(1700000000);
+      expect(page.rawCursor).toBeUndefined();
+      expect(page.offset).toBeUndefined();
+    });
+  });
+
+  it('stops pagination when has_more is false', () => {
+    const page = transformToVideoPage(makeResponse({ has_more: false }));
+    expect(page.hasMore).toBe(false);
+    expect(page.nextCursor).toBeUndefined();
+    expect(page.offset).toBeUndefined();
+    expect(page.rawCursor).toBeUndefined();
   });
 });

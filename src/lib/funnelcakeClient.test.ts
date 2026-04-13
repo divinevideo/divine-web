@@ -23,6 +23,7 @@ describe('funnelcakeClient', () => {
   let fetchBulkUsers: typeof import('./funnelcakeClient').fetchBulkUsers;
   let fetchBulkVideoStats: typeof import('./funnelcakeClient').fetchBulkVideoStats;
   let searchProfiles: typeof import('./funnelcakeClient').searchProfiles;
+  let fetchRecommendations: typeof import('./funnelcakeClient').fetchRecommendations;
 
   beforeEach(async () => {
     vi.resetModules();
@@ -35,6 +36,7 @@ describe('funnelcakeClient', () => {
     fetchBulkUsers = client.fetchBulkUsers;
     fetchBulkVideoStats = client.fetchBulkVideoStats;
     searchProfiles = client.searchProfiles;
+    fetchRecommendations = client.fetchRecommendations;
   });
 
   afterEach(() => {
@@ -322,6 +324,98 @@ describe('funnelcakeClient', () => {
 
       expect(result.stats).toEqual([]);
       expect(result.missing).toContain(eventIds[0]);
+    });
+  });
+
+  describe('fetchRecommendations', () => {
+    it('sends cursor param when provided', async () => {
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({
+          videos: [{ id: 'v1', pubkey: TEST_PUBKEY, video_url: 'https://example.com/v.mp4', d_tag: 'd1', created_at: 1700000000, kind: 34236 }],
+          source: 'personalized',
+          has_more: true,
+          next_cursor: 'cursor-page2',
+          next_offset: 12,
+          fallback_applied: false,
+          limit: 12,
+          offset: 0,
+        }),
+      });
+
+      const result = await fetchRecommendations(API_URL, {
+        pubkey: TEST_PUBKEY,
+        limit: 12,
+        cursor: 'cursor-page1',
+        fallback: 'popular',
+      });
+
+      const [url] = (global.fetch as ReturnType<typeof vi.fn>).mock.calls[0];
+      const requestUrl = new URL(url as string);
+      expect(requestUrl.searchParams.get('cursor')).toBe('cursor-page1');
+      expect(requestUrl.searchParams.has('offset')).toBe(false);
+      expect(result.has_more).toBe(true);
+      expect(result.next_cursor).toBe('cursor-page2');
+    });
+
+    it('sends offset when no cursor provided', async () => {
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({
+          videos: [],
+          source: 'popular',
+          has_more: false,
+          next_cursor: null,
+          next_offset: null,
+          fallback_applied: true,
+          limit: 12,
+          offset: 24,
+        }),
+      });
+
+      const result = await fetchRecommendations(API_URL, {
+        pubkey: TEST_PUBKEY,
+        limit: 12,
+        offset: 24,
+        fallback: 'popular',
+      });
+
+      const [url] = (global.fetch as ReturnType<typeof vi.fn>).mock.calls[0];
+      const requestUrl = new URL(url as string);
+      expect(requestUrl.searchParams.get('offset')).toBe('24');
+      expect(requestUrl.searchParams.has('cursor')).toBe(false);
+      expect(result.has_more).toBe(false);
+      expect(result.next_cursor).toBeUndefined();
+    });
+
+    it('uses backend has_more instead of computing locally', async () => {
+      // Backend says has_more=false even though we got limit-count videos
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({
+          videos: Array.from({ length: 12 }, (_, i) => ({
+            id: `v${i}`, pubkey: TEST_PUBKEY, video_url: 'https://example.com/v.mp4',
+            d_tag: `d${i}`, created_at: 1700000000, kind: 34236,
+          })),
+          source: 'popular',
+          has_more: false,
+          next_cursor: null,
+          next_offset: null,
+          fallback_applied: true,
+          limit: 12,
+          offset: 0,
+        }),
+      });
+
+      const result = await fetchRecommendations(API_URL, {
+        pubkey: TEST_PUBKEY,
+        limit: 12,
+        fallback: 'popular',
+      });
+
+      // Even though videoCount === limit, backend says no more
+      expect(result.has_more).toBe(false);
+      expect(result.next_cursor).toBeUndefined();
     });
   });
 

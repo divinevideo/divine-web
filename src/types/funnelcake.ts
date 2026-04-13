@@ -213,4 +213,10 @@ export interface FunnelcakeProfile {
 export interface FunnelcakeRecommendationsResponse {
   videos: FunnelcakeVideoRaw[];
   source: 'personalized' | 'popular' | 'recent';
+  limit: number;
+  offset: number;
+  has_more: boolean;
+  next_offset: number | null;
+  next_cursor: string | null;
+  fallback_applied: boolean;
 }
