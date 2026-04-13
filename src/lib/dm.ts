@@ -27,6 +27,8 @@ export interface DmSharePayload {
   vineId?: string;
 }
 
+export type DmDeliveryState = 'sending' | 'failed' | 'sent';
+
 export interface DmMessage {
   conversationId: string;
   wrapId: string;
@@ -39,6 +41,10 @@ export interface DmMessage {
   isOutgoing: boolean;
   share?: DmSharePayload;
   subject?: string;
+  clientId?: string;
+  deliveryState?: DmDeliveryState;
+  errorMessage?: string;
+  isOptimistic?: boolean;
 }
 
 export interface DmConversation {
