@@ -155,7 +155,6 @@ export function ProfileHeader({
 
   // Check if we're still waiting for name to load
   const stillLoadingName = metadata?._stillLoadingName ?? false;
-
   const hasRealName = metadata?.display_name || metadata?.name;
   const displayName = hasRealName || genUserName(pubkey);
   const userName = metadata?.name;
