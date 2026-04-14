@@ -65,14 +65,16 @@ export function genUserName(pubkey: string): string {
   state = nextState(state);
   state = nextState(state);
 
-  let adjectiveIndex: number;
-  [state, adjectiveIndex] = nextInt(state, adjectives.length);
+  const adjectiveResult = nextInt(state, adjectives.length);
+  state = adjectiveResult[0];
+  const adjectiveIndex = adjectiveResult[1];
 
-  let animalIndex: number;
-  [state, animalIndex] = nextInt(state, animals.length);
+  const animalResult = nextInt(state, animals.length);
+  state = animalResult[0];
+  const animalIndex = animalResult[1];
 
-  let number: number;
-  [, number] = nextInt(state, 99);
+  const numberResult = nextInt(state, 99);
+  const number = numberResult[1];
 
   return `${capitalize(adjectives[adjectiveIndex])} ${capitalize(animals[animalIndex])} ${number + 1}`;
 }
