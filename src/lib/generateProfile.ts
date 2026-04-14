@@ -2,6 +2,7 @@
 // ABOUTME: Creates consistent, unique avatars and usernames based on pubkey
 
 import type { NostrMetadata, NostrEvent } from '@nostrify/nostrify';
+import { genUserName } from './genUserName';
 
 // Hash function to generate consistent values from pubkey
 function hashCode(str: string): number {
@@ -22,22 +23,7 @@ export function generateAvatar(_pubkey: string): string {
 
 // Generate interesting usernames
 export function generateUsername(pubkey: string): string {
-  const adjectives = [
-    'Electric', 'Cosmic', 'Digital', 'Neon', 'Cyber', 'Quantum', 'Stellar',
-    'Lunar', 'Solar', 'Astral', 'Mystic', 'Echo', 'Nova', 'Prism', 'Zenith'
-  ];
-
-  const nouns = [
-    'Vine', 'Loop', 'Wave', 'Pulse', 'Flow', 'Stream', 'Signal', 'Beacon',
-    'Phoenix', 'Comet', 'Nebula', 'Vortex', 'Matrix', 'Nexus', 'Cipher'
-  ];
-
-  const hash = hashCode(pubkey);
-  const adjective = adjectives[hash % adjectives.length];
-  const noun = nouns[(hash >> 8) % nouns.length];
-  const number = (hash % 900) + 100; // 3-digit number
-
-  return `${adjective}${noun}${number}`;
+  return genUserName(pubkey);
 }
 
 // Generate bio text
