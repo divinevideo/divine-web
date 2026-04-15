@@ -35,6 +35,13 @@ service_id = "WfOrPTFYmwwxRvqrfralLA"
   override_host = "relay.divine.video"
   use_ssl = true
 
+[[backends]]
+  name = "funnelcake_staging"
+  address = "relay.staging.divine.video"
+  port = 443
+  override_host = "relay.staging.divine.video"
+  use_ssl = true
+
 [setup]
 
   [setup.kv_stores]
