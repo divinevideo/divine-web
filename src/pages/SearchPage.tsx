@@ -2,7 +2,7 @@
 // ABOUTME: Supports searching videos, users, hashtags with NIP-50 full-text search
 
 import { useState, useEffect, useRef, useMemo, type ClipboardEvent } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useLocation, useSearchParams } from 'react-router-dom';
 import { useNostr } from '@nostrify/react';
 import { useSubdomainNavigate } from '@/hooks/useSubdomainNavigate';
 import { nip19 } from 'nostr-tools';
@@ -40,10 +40,12 @@ import {
   isLikelyOpaqueVideoIdentifier,
   normalizeDirectSearchInput,
 } from '@/lib/directSearch';
+import { buildCompilationPlaybackUrl } from '@/lib/compilationPlayback';
 
 type SearchFilter = 'all' | 'videos' | 'users' | 'hashtags';
 
 export function SearchPage() {
+  const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const { nostr } = useNostr();
   const navigate = useSubdomainNavigate();
@@ -301,6 +303,20 @@ export function SearchPage() {
 
   // Check if we have any results
   const hasResults = videoResults.length > 0 || userResults.length > 0 || hashtagResults.length > 0;
+  const showCompilationButton =
+    searchQuery.trim().length > 0 &&
+    videoResults.length > 0 &&
+    (activeFilter === 'all' || activeFilter === 'videos');
+  const compilationUrl = showCompilationButton
+    ? buildCompilationPlaybackUrl({
+        source: 'search',
+        query: searchQuery.trim(),
+        filter: activeFilter,
+        sort: sortMode,
+        start: 0,
+        returnTo: `${location.pathname}${location.search}`,
+      })
+    : null;
 
   const searchNavigationContext = useMemo<VideoNavigationContext | undefined>(() => {
     const trimmedQuery = searchQuery.trim();
@@ -407,7 +423,7 @@ export function SearchPage() {
 
           {/* Status message */}
           {searchQuery.trim() && (
-            <div className="text-center mb-4">
+            <div className="mb-4 flex flex-col items-center gap-3">
               {isLoading ? (
                 <p className="text-muted-foreground">Searching...</p>
               ) : error ? (
@@ -415,6 +431,15 @@ export function SearchPage() {
               ) : getResultsCount() === 0 ? (
                 <p className="text-muted-foreground">Nada. Try something different?</p>
               ) : null}
+              {compilationUrl && !isLoading && !error && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => navigate(compilationUrl)}
+                >
+                  Play all as compilation
+                </Button>
+              )}
             </div>
           )}
 

@@ -1,5 +1,6 @@
 import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import type {
   ButtonHTMLAttributes,
@@ -16,13 +17,13 @@ const {
   mockFetchEventById,
   mockFetchVideoById,
   mockNostrQuery,
-  mockSearchVideosData,
+  mockUseInfiniteSearchVideos,
 } = vi.hoisted(() => ({
   mockNavigate: vi.fn(),
   mockFetchEventById: vi.fn(),
   mockFetchVideoById: vi.fn(),
   mockNostrQuery: vi.fn(),
-  mockSearchVideosData: [] as Array<{ id: string; pubkey: string }>,
+  mockUseInfiniteSearchVideos: vi.fn(),
 }));
 
 vi.mock('@unhead/react', () => ({
@@ -125,13 +126,7 @@ vi.mock('@/hooks/useAppContext', () => ({
 }));
 
 vi.mock('@/hooks/useInfiniteSearchVideos', () => ({
-  useInfiniteSearchVideos: () => ({
-    data: { pages: [{ videos: mockSearchVideosData }] },
-    fetchNextPage: vi.fn(),
-    hasNextPage: false,
-    isLoading: false,
-    error: null,
-  }),
+  useInfiniteSearchVideos: mockUseInfiniteSearchVideos,
 }));
 
 vi.mock('@/hooks/useSearchUsers', () => ({
@@ -169,7 +164,13 @@ function renderPage(initialEntries: string[] = ['/search']) {
 describe('SearchPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockSearchVideosData.length = 0;
+    mockUseInfiniteSearchVideos.mockReturnValue({
+      data: { pages: [{ videos: [] }] },
+      fetchNextPage: vi.fn(),
+      hasNextPage: false,
+      isLoading: false,
+      error: null,
+    });
   });
 
   afterEach(() => {
@@ -310,15 +311,52 @@ describe('SearchPage', () => {
   });
 
   it('opens video results with bounded search context', async () => {
-    mockSearchVideosData.push(
-      { id: 'video-1', pubkey: 'a'.repeat(64) },
-      { id: 'video-2', pubkey: 'b'.repeat(64) },
-    );
+    mockUseInfiniteSearchVideos.mockReturnValue({
+      data: {
+        pages: [{
+          videos: [
+            { id: 'video-1', pubkey: 'a'.repeat(64) },
+            { id: 'video-2', pubkey: 'b'.repeat(64) },
+          ],
+        }],
+      },
+      fetchNextPage: vi.fn(),
+      hasNextPage: false,
+      isLoading: false,
+      error: null,
+    });
 
     renderPage(['/search?q=twerking&filter=videos&sort=top']);
 
     fireEvent.click(screen.getAllByTestId('video-card-video-2')[0]!);
 
     expect(mockNavigate).toHaveBeenCalledWith('/video/video-2?source=search&q=twerking&sort=top&index=1');
+  });
+
+  it('renders a play-all button for video search results and navigates with source context', async () => {
+    const user = userEvent.setup();
+    mockUseInfiniteSearchVideos.mockReturnValue({
+      data: {
+        pages: [{
+          videos: [{
+            id: 'video-1',
+            pubkey: 'a'.repeat(64),
+            videoUrl: 'https://example.com/video-1.mp4',
+          }],
+        }],
+      },
+      fetchNextPage: vi.fn(),
+      hasNextPage: false,
+      isLoading: false,
+      error: null,
+    });
+
+    renderPage(['/search?q=twerking&filter=videos']);
+
+    const button = await screen.findByRole('button', { name: /play all as compilation/i });
+    await user.click(button);
+
+    expect(mockNavigate).toHaveBeenCalledWith(expect.stringContaining('/watch?play=compilation&source=search'));
+    expect(mockNavigate).toHaveBeenCalledWith(expect.stringContaining('q=twerking'));
   });
 });
