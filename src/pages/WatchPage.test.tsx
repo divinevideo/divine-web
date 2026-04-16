@@ -23,6 +23,23 @@ vi.mock('@/hooks/useCompilationSource', () => ({
   useCompilationSource: mockUseCompilationSource,
 }));
 
+vi.mock('@/components/CompilationPlayerSurface', () => ({
+  CompilationPlayerSurface: ({
+    videos,
+    onVideoChange,
+  }: {
+    videos: Array<{ id: string; title?: string; authorName?: string; content?: string }>;
+    onVideoChange?: (video: { id: string; title?: string; authorName?: string; content?: string }) => void;
+  }) => (
+    <button
+      type="button"
+      onClick={() => onVideoChange?.(videos[1])}
+    >
+      advance
+    </button>
+  ),
+}));
+
 vi.mock('@/components/ui/button', () => ({
   Button: ({ children, ...props }: ButtonHTMLAttributes<HTMLButtonElement>) => (
     <button {...props}>{children}</button>
@@ -57,7 +74,24 @@ describe('WatchPage', () => {
     vi.clearAllMocks();
     mockUseCompilationSource.mockReturnValue({
       kind: 'search',
-      videos: [],
+      videos: [
+        {
+          id: 'video-a',
+          pubkey: 'a'.repeat(64),
+          videoUrl: 'https://example.com/a.mp4',
+          title: 'Video A',
+          authorName: 'Author A',
+          content: 'About A',
+        },
+        {
+          id: 'video-b',
+          pubkey: 'b'.repeat(64),
+          videoUrl: 'https://example.com/b.mp4',
+          title: 'Video B',
+          authorName: 'Author B',
+          content: 'About B',
+        },
+      ],
       fetchNextPage: vi.fn(),
       hasNextPage: false,
       isLoading: false,
@@ -79,5 +113,16 @@ describe('WatchPage', () => {
     await user.click(await screen.findByRole('button', { name: /back/i }));
 
     expect(mockNavigate).toHaveBeenCalledWith('/search?q=vine');
+  });
+
+  it('updates title, author, and about text when playback advances', async () => {
+    const user = userEvent.setup();
+    renderPage('/watch?play=compilation&source=search&q=twerking&filter=videos&start=0');
+
+    await user.click(await screen.findByRole('button', { name: 'advance' }));
+
+    expect(screen.getByText('Video B')).toBeInTheDocument();
+    expect(screen.getByText('Author B')).toBeInTheDocument();
+    expect(screen.getByText('About B')).toBeInTheDocument();
   });
 });
