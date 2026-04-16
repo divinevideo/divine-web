@@ -359,4 +359,33 @@ describe('SearchPage', () => {
     expect(mockNavigate).toHaveBeenCalledWith(expect.stringContaining('/watch?play=compilation&source=search'));
     expect(mockNavigate).toHaveBeenCalledWith(expect.stringContaining('q=twerking'));
   });
+
+  it('uses the live search state for returnTo even before the debounced url sync runs', async () => {
+    const user = userEvent.setup();
+    mockUseInfiniteSearchVideos.mockReturnValue({
+      data: {
+        pages: [{
+          videos: [{
+            id: 'video-1',
+            pubkey: 'a'.repeat(64),
+            videoUrl: 'https://example.com/video-1.mp4',
+          }],
+        }],
+      },
+      fetchNextPage: vi.fn(),
+      hasNextPage: false,
+      isLoading: false,
+      error: null,
+    });
+
+    renderPage(['/search?q=vine&filter=videos']);
+
+    await user.clear(screen.getByRole('textbox'));
+    await user.type(screen.getByRole('textbox'), 'twerking');
+    await user.click(await screen.findByRole('button', { name: /play all as compilation/i }));
+
+    expect(mockNavigate).toHaveBeenCalledWith(
+      expect.stringContaining('returnTo=%2Fsearch%3Fq%3Dtwerking%26filter%3Dvideos')
+    );
+  });
 });

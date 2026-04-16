@@ -80,4 +80,57 @@ describe('CompilationPlayerSurface', () => {
     expect(screen.getByTestId('compilation-preload-video-video-b')).toHaveAttribute('preload', 'auto');
     expect(screen.getByTestId('compilation-preload-video-video-c')).toHaveAttribute('preload', 'auto');
   });
+
+  it('advances as soon as the next page arrives after the current tail video ends', () => {
+    const fetchNextPage = vi.fn();
+    const replaceVideoQueryParam = vi.fn();
+    const { rerender } = render(
+      <CompilationPlayerSurface
+        videos={videos.slice(0, 2)}
+        initialIndex={1}
+        hasNextPage
+        fetchNextPage={fetchNextPage}
+        replaceVideoQueryParam={replaceVideoQueryParam}
+      />
+    );
+
+    fireEvent.ended(screen.getByTestId('compilation-video'));
+
+    expect(fetchNextPage).toHaveBeenCalled();
+    expect(replaceVideoQueryParam).not.toHaveBeenCalled();
+    expect(screen.getByText('Video B')).toBeInTheDocument();
+
+    rerender(
+      <CompilationPlayerSurface
+        videos={videos}
+        initialIndex={1}
+        hasNextPage={false}
+        fetchNextPage={fetchNextPage}
+        replaceVideoQueryParam={replaceVideoQueryParam}
+      />
+    );
+
+    expect(replaceVideoQueryParam).toHaveBeenCalledWith('video-c');
+    expect(screen.getByText('Video C')).toBeInTheDocument();
+  });
+
+  it('does not request multiple pages while already waiting at the current tail', () => {
+    const fetchNextPage = vi.fn();
+
+    render(
+      <CompilationPlayerSurface
+        videos={videos.slice(0, 2)}
+        initialIndex={1}
+        hasNextPage
+        fetchNextPage={fetchNextPage}
+      />
+    );
+
+    fetchNextPage.mockClear();
+
+    fireEvent.ended(screen.getByTestId('compilation-video'));
+    fireEvent.ended(screen.getByTestId('compilation-video'));
+
+    expect(fetchNextPage).toHaveBeenCalledTimes(1);
+  });
 });

@@ -2,7 +2,7 @@
 // ABOUTME: Supports searching videos, users, hashtags with NIP-50 full-text search
 
 import { useState, useEffect, useRef, useMemo, type ClipboardEvent } from 'react';
-import { useLocation, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { useNostr } from '@nostrify/react';
 import { useSubdomainNavigate } from '@/hooks/useSubdomainNavigate';
 import { nip19 } from 'nostr-tools';
@@ -45,7 +45,6 @@ import { buildCompilationPlaybackUrl } from '@/lib/compilationPlayback';
 type SearchFilter = 'all' | 'videos' | 'users' | 'hashtags';
 
 export function SearchPage() {
-  const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const { nostr } = useNostr();
   const navigate = useSubdomainNavigate();
@@ -307,6 +306,17 @@ export function SearchPage() {
     searchQuery.trim().length > 0 &&
     videoResults.length > 0 &&
     (activeFilter === 'all' || activeFilter === 'videos');
+  const compilationReturnPath = useMemo(() => {
+    const params = new URLSearchParams();
+    const trimmedQuery = searchQuery.trim();
+
+    if (trimmedQuery) params.set('q', trimmedQuery);
+    if (sortMode !== 'relevance') params.set('sort', sortMode);
+    if (activeFilter !== 'all') params.set('filter', activeFilter);
+
+    const query = params.toString();
+    return query ? `/search?${query}` : '/search';
+  }, [activeFilter, searchQuery, sortMode]);
   const compilationUrl = showCompilationButton
     ? buildCompilationPlaybackUrl({
         source: 'search',
@@ -314,7 +324,8 @@ export function SearchPage() {
         filter: activeFilter,
         sort: sortMode,
         start: 0,
-        returnTo: `${location.pathname}${location.search}`,
+        returnTo: compilationReturnPath,
+        surface: compilationReturnPath,
       })
     : null;
 

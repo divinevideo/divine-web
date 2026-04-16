@@ -10,6 +10,7 @@ import { useSubdomainNavigate } from '@/hooks/useSubdomainNavigate';
 import type { ParsedVideoData } from '@/types/video';
 import {
   getCompilationFallbackPath,
+  getSafeCompilationPath,
   getCompilationTitle,
   parseCompilationPlaybackParams,
 } from '@/lib/compilationPlayback';
@@ -51,7 +52,7 @@ export function WatchPage() {
   });
 
   const handleBack = () => {
-    navigate(descriptor.returnTo ?? getCompilationFallbackPath(descriptor));
+    navigate(getSafeCompilationPath(descriptor.returnTo) ?? getCompilationFallbackPath(descriptor));
   };
 
   const replaceVideoQueryParam = (videoId: string) => {

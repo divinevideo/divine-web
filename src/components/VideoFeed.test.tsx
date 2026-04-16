@@ -134,4 +134,21 @@ describe('VideoFeed', () => {
       expect.stringContaining('/watch?play=compilation&source=classics')
     );
   });
+
+  it('preserves discovery tab context in the compilation url', async () => {
+    const user = userEvent.setup();
+
+    render(
+      <MemoryRouter initialEntries={['/discovery/hot']}>
+        <VideoFeed feedType="trending" sortMode="hot" viewMode="grid" mode="thumbnail" />
+      </MemoryRouter>
+    );
+
+    const button = await screen.findByRole('button', { name: /play all as compilation/i });
+    await user.click(button);
+
+    expect(mockNavigate).toHaveBeenCalledWith(
+      expect.stringContaining('surface=%2Fdiscovery%2Fhot')
+    );
+  });
 });

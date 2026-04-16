@@ -115,6 +115,15 @@ describe('WatchPage', () => {
     expect(mockNavigate).toHaveBeenCalledWith('/search?q=vine');
   });
 
+  it('falls back to the source route when returnTo is not a safe app path', async () => {
+    const user = userEvent.setup();
+    renderPage('/watch?play=compilation&source=trending&sort=hot&returnTo=https%3A%2F%2Fevil.example%2Fpath');
+
+    await user.click(await screen.findByRole('button', { name: /back/i }));
+
+    expect(mockNavigate).toHaveBeenCalledWith('/trending');
+  });
+
   it('updates title, author, and about text when playback advances', async () => {
     const user = userEvent.setup();
     renderPage('/watch?play=compilation&source=search&q=twerking&filter=videos&start=0');

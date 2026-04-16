@@ -21,9 +21,11 @@ export function CompilationPlayerSurface({
 }: CompilationPlayerSurfaceProps) {
   const boundedIndex = Math.min(Math.max(initialIndex, 0), Math.max(videos.length - 1, 0));
   const [currentIndex, setCurrentIndex] = useState(boundedIndex);
+  const [awaitingNextPage, setAwaitingNextPage] = useState(false);
 
   useEffect(() => {
     setCurrentIndex(boundedIndex);
+    setAwaitingNextPage(false);
   }, [boundedIndex]);
 
   const currentVideo = useMemo(() => videos[currentIndex], [videos, currentIndex]);
@@ -41,10 +43,25 @@ export function CompilationPlayerSurface({
   }, [currentVideo, onVideoChange]);
 
   useEffect(() => {
-    if (hasNextPage && currentIndex >= videos.length - 2) {
+    if (!awaitingNextPage && hasNextPage && currentIndex >= videos.length - 2) {
       void fetchNextPage?.();
     }
-  }, [currentIndex, fetchNextPage, hasNextPage, videos.length]);
+  }, [awaitingNextPage, currentIndex, fetchNextPage, hasNextPage, videos.length]);
+
+  useEffect(() => {
+    if (!awaitingNextPage || currentIndex >= videos.length - 1) {
+      return;
+    }
+
+    const nextVideo = videos[currentIndex + 1];
+    if (!nextVideo) {
+      return;
+    }
+
+    setCurrentIndex(index => index + 1);
+    setAwaitingNextPage(false);
+    replaceVideoQueryParam?.(nextVideo.id);
+  }, [awaitingNextPage, currentIndex, replaceVideoQueryParam, videos]);
 
   if (!currentVideo) {
     return null;
@@ -52,13 +69,17 @@ export function CompilationPlayerSurface({
 
   const handleEnded = () => {
     if (currentIndex >= videos.length - 1) {
+      if (hasNextPage && !awaitingNextPage) {
+        setAwaitingNextPage(true);
+        void fetchNextPage?.();
+      }
       return;
     }
 
     const nextVideo = videos[currentIndex + 1];
     setCurrentIndex(index => index + 1);
+    setAwaitingNextPage(false);
     replaceVideoQueryParam?.(nextVideo.id);
-    onVideoChange?.(nextVideo);
   };
 
   return (

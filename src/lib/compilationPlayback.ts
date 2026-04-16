@@ -20,6 +20,7 @@ interface CompilationBase {
   start?: number;
   videoId?: string;
   returnTo?: string;
+  surface?: string;
 }
 
 export interface SearchCompilationSource extends CompilationBase {
@@ -58,6 +59,23 @@ function getProfileFallbackPath(pubkey?: string): string {
   }
 }
 
+export function getSafeCompilationPath(path?: string): string | undefined {
+  if (!path || !path.startsWith('/') || path.startsWith('//')) {
+    return undefined;
+  }
+
+  try {
+    const url = new URL(path, 'https://divine.video');
+    if (url.origin !== 'https://divine.video') {
+      return undefined;
+    }
+
+    return `${url.pathname}${url.search}${url.hash}`;
+  } catch {
+    return undefined;
+  }
+}
+
 export function buildCompilationPlaybackUrl(source: CompilationSource): string {
   const params = new URLSearchParams({
     play: 'compilation',
@@ -68,6 +86,7 @@ export function buildCompilationPlaybackUrl(source: CompilationSource): string {
   setOptionalParam(params, 'start', source.start);
   setOptionalParam(params, 'video', source.videoId);
   setOptionalParam(params, 'returnTo', source.returnTo);
+  setOptionalParam(params, 'surface', source.surface);
 
   if (source.source === 'search') {
     setOptionalParam(params, 'q', source.query);
@@ -88,6 +107,7 @@ export function parseCompilationPlaybackParams(params: URLSearchParams): ParsedC
   const start = params.get('start');
   const videoId = params.get('video') || undefined;
   const returnTo = params.get('returnTo') || undefined;
+  const surface = params.get('surface') || undefined;
 
   if (source === 'search') {
     return {
@@ -99,6 +119,7 @@ export function parseCompilationPlaybackParams(params: URLSearchParams): ParsedC
       start: start ? Number(start) : undefined,
       videoId,
       returnTo,
+      surface,
     };
   }
 
@@ -112,10 +133,16 @@ export function parseCompilationPlaybackParams(params: URLSearchParams): ParsedC
     start: start ? Number(start) : undefined,
     videoId,
     returnTo,
+    surface,
   };
 }
 
 export function getCompilationFallbackPath(source: CompilationSource): string {
+  const safeSurface = getSafeCompilationPath(source.surface);
+  if (safeSurface) {
+    return safeSurface;
+  }
+
   if (source.source === 'search') {
     const params = new URLSearchParams();
     setOptionalParam(params, 'q', source.query);
@@ -147,9 +174,45 @@ export function getCompilationFallbackPath(source: CompilationSource): string {
   }
 }
 
+function getSurfaceTitle(surface?: string): string | null {
+  const safeSurface = getSafeCompilationPath(surface);
+  if (!safeSurface) {
+    return null;
+  }
+
+  try {
+    const url = new URL(safeSurface, 'https://divine.video');
+    const path = url.pathname.toLowerCase();
+
+    switch (path) {
+      case '/discovery/classics':
+        return 'Classics';
+      case '/discovery/foryou':
+        return 'For You';
+      case '/discovery/hot':
+        return 'Hot';
+      case '/discovery/new':
+        return 'New';
+      case '/trending':
+        return 'Trending';
+      case '/home':
+        return 'Following';
+      default:
+        return null;
+    }
+  } catch {
+    return null;
+  }
+}
+
 export function getCompilationTitle(source: CompilationSource): string {
   if (source.source === 'search') {
     return `Search: "${source.query}"`;
+  }
+
+  const surfaceTitle = getSurfaceTitle(source.surface);
+  if (surfaceTitle) {
+    return surfaceTitle;
   }
 
   switch (source.source) {

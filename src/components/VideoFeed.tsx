@@ -232,6 +232,7 @@ export function VideoFeed({
 
   // Check if we have videos but they're all filtered (before early return)
   const allFiltered = allVideos && allVideos.length > 0 && (!filteredVideos || filteredVideos.length === 0);
+  const currentSurface = `${location.pathname}${location.search}`;
   const compilationUrl = filteredVideos.length > 0
     ? buildCompilationPlaybackUrl({
         source: feedType,
@@ -240,7 +241,8 @@ export function VideoFeed({
         category,
         sort: sortMode,
         start: 0,
-        returnTo: `${location.pathname}${location.search}`,
+        returnTo: currentSurface,
+        surface: currentSurface,
       })
     : null;
   const compilationLauncher = compilationUrl ? (
