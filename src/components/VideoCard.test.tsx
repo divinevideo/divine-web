@@ -41,7 +41,24 @@ vi.mock('@/components/ui/dropdown-menu', () => ({
 }));
 
 vi.mock('@/components/VideoPlayer', () => ({
-  VideoPlayer: ({ videoId }: { videoId: string }) => <div data-testid={`video-player-${videoId}`}>Video Player</div>,
+  VideoPlayer: ({
+    videoId,
+    onPlaybackStarted,
+  }: {
+    videoId: string;
+    onPlaybackStarted?: () => void;
+  }) => (
+    <div data-testid={`video-player-${videoId}`}>
+      Video Player
+      <button
+        aria-label={`start-playback-${videoId}`}
+        onClick={onPlaybackStarted}
+        type="button"
+      >
+        Start playback
+      </button>
+    </div>
+  ),
 }));
 
 vi.mock('@/components/ThumbnailPlayer', () => ({
@@ -284,6 +301,19 @@ describe('VideoCard', () => {
 
     expect(playbackMocks.setActiveVideo).toHaveBeenCalledWith(baseVideo.id);
     expect(screen.getByTestId(`video-player-${baseVideo.id}`)).toBeTruthy();
+  });
+
+  it('keeps the thumbnail visible until inline playback actually starts', () => {
+    render(<VideoCard video={baseVideo} mode="thumbnail" />);
+
+    fireEvent.click(screen.getByLabelText('Play video'));
+
+    expect(screen.getByTestId(`video-player-${baseVideo.id}`)).toBeTruthy();
+    expect(screen.getByTestId('thumbnail-player')).toBeTruthy();
+
+    fireEvent.click(screen.getByLabelText(`start-playback-${baseVideo.id}`));
+
+    expect(screen.queryByTestId('thumbnail-player')).toBeNull();
   });
 
   it('stops inline thumbnail playback when another video becomes active', () => {

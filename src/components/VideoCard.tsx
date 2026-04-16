@@ -145,6 +145,7 @@ export function VideoCard({
   // Always start with video player visible in auto-play mode, but let VideoPlaybackContext control actual playback
   // The VideoPlayer component will only play when it's the activeVideoId (most visible)
   const [isPlaying, setIsPlaying] = useState(mode === 'auto-play');
+  const [showThumbnailDuringStartup, setShowThumbnailDuringStartup] = useState(false);
   const [showAddToListDialog, setShowAddToListDialog] = useState(false);
   const [showReportDialog, setShowReportDialog] = useState(false);
   const [showReportUserDialog, setShowReportUserDialog] = useState(false);
@@ -339,6 +340,7 @@ export function VideoCard({
   const handleThumbnailPlayButtonClick = () => {
     setActiveVideo(video.id);
     setIsPlaying(true);
+    setShowThumbnailDuringStartup(mode === 'thumbnail');
     onPlay?.();
   };
 
@@ -348,6 +350,7 @@ export function VideoCard({
         setActiveVideo(null);
       }
       setIsPlaying(false);
+      setShowThumbnailDuringStartup(false);
     }
   };
 
@@ -358,8 +361,30 @@ export function VideoCard({
 
     if (isPlaying && activeVideoId !== null && activeVideoId !== video.id) {
       setIsPlaying(false);
+      setShowThumbnailDuringStartup(false);
     }
   }, [activeVideoId, isPlaying, mode, video.id]);
+
+  useEffect(() => {
+    if (!isPlaying) {
+      setShowThumbnailDuringStartup(false);
+    }
+  }, [isPlaying]);
+
+  const handlePlaybackStarted = () => {
+    setShowThumbnailDuringStartup(false);
+    onPlaybackStarted?.();
+  };
+
+  const handleVideoError = () => {
+    setShowThumbnailDuringStartup(false);
+    // If MP4 failed and we haven't tried HLS yet, retry with HLS fallback
+    if (!mp4Failed && !effectiveHlsUrl && video.videoUrl?.includes('media.divine.video')) {
+      setMp4Failed(true);
+    } else {
+      setVideoError(true);
+    }
+  };
 
   const handleMuteUser = async () => {
     try {
@@ -548,34 +573,41 @@ export function VideoCard({
                   onVideoDimensions={handleThumbnailDimensions}
                 />
               ) : !videoError ? (
-                <VideoPlayer
-                  videoId={video.id}
-                  src={video.videoUrl}
-                  hlsUrl={effectiveHlsUrl}
-                  fallbackUrls={video.fallbackVideoUrls}
-                  poster={video.thumbnailUrl}
-                  blurhash={video.blurhash}
-                  isPriority={isPriority}
-                  className="w-full h-full"
-                  onLoadStart={() => setVideoError(false)}
-                  onError={() => {
-                    // If MP4 failed and we haven't tried HLS yet, retry with HLS fallback
-                    if (!mp4Failed && !effectiveHlsUrl && video.videoUrl?.includes('media.divine.video')) {
-                      setMp4Failed(true);
-                    } else {
-                      setVideoError(true);
-                    }
-                  }}
-                  onEnded={handleVideoEnd}
-                  onLoadedData={onLoadedData}
-                  onPlaybackStarted={onPlaybackStarted}
-                  onVideoDimensions={handleVideoDimensions}
-                  subtitleCues={subtitleCues}
-                  subtitlesVisible={showSubtitles}
-                  videoData={video}
-                  trafficSource={trafficSource}
-                  objectFit={isClassicVine ? 'cover' : 'contain'}
-                />
+                <>
+                  <VideoPlayer
+                    videoId={video.id}
+                    src={video.videoUrl}
+                    hlsUrl={effectiveHlsUrl}
+                    fallbackUrls={video.fallbackVideoUrls}
+                    poster={video.thumbnailUrl}
+                    blurhash={video.blurhash}
+                    isPriority={isPriority}
+                    className="w-full h-full"
+                    onLoadStart={() => setVideoError(false)}
+                    onError={handleVideoError}
+                    onEnded={handleVideoEnd}
+                    onLoadedData={onLoadedData}
+                    onPlaybackStarted={handlePlaybackStarted}
+                    onVideoDimensions={handleVideoDimensions}
+                    subtitleCues={subtitleCues}
+                    subtitlesVisible={showSubtitles}
+                    videoData={video}
+                    trafficSource={trafficSource}
+                    objectFit={isClassicVine ? 'cover' : 'contain'}
+                  />
+                  {mode === 'thumbnail' && showThumbnailDuringStartup && (
+                    <div className="absolute inset-0 z-20 pointer-events-none">
+                      <ThumbnailPlayer
+                        videoId={video.id}
+                        src={video.videoUrl}
+                        thumbnailUrl={video.thumbnailUrl}
+                        duration={video.duration}
+                        className="w-full h-full"
+                        onVideoDimensions={handleThumbnailDimensions}
+                      />
+                    </div>
+                  )}
+                </>
               ) : (
                 <div className="flex items-center justify-center h-full text-muted-foreground">
                   <p>Failed to load video</p>
