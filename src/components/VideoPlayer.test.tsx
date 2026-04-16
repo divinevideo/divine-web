@@ -20,6 +20,12 @@ vi.mock('@/hooks/useIsMobile', () => ({
   useIsMobile: vi.fn(() => false),
 }));
 
+vi.mock('@/hooks/useCurrentUser', () => ({
+  useCurrentUser: vi.fn(() => ({
+    user: { pubkey: 'a'.repeat(64) },
+  })),
+}));
+
 vi.mock('@/hooks/useAdultVerification', () => ({
   useAdultVerification: vi.fn(() => ({
     isVerified: false,
@@ -262,6 +268,42 @@ describe('VideoPlayer', () => {
       if (createObjectURLSpy.mock.calls.length > 0) {
         expect(revokeObjectURLSpy).toHaveBeenCalledWith('blob:test-123');
       }
+    });
+  });
+
+  describe('protected media auth failures', () => {
+    it('does not retry age verification indefinitely for already verified viewers when media fetch returns 401', async () => {
+      const getAuthHeader = vi.fn().mockResolvedValue('Nostr test-auth-header');
+      const fetchSpy = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 401,
+      });
+
+      global.fetch = fetchSpy as typeof fetch;
+
+      const { useAdultVerification } = await import('@/hooks/useAdultVerification');
+      (useAdultVerification as ReturnType<typeof vi.fn>).mockReturnValue({
+        isVerified: true,
+        isLoading: false,
+        hasSigner: true,
+        getAuthHeader,
+      });
+
+      render(
+        <VideoPlayer
+          videoId="verified-auth-failure"
+          src="https://media.divine.video/protected-video"
+        />
+      );
+
+      await waitFor(() => {
+        expect(fetchSpy).toHaveBeenCalled();
+      });
+
+      await new Promise((resolve) => setTimeout(resolve, 50));
+
+      expect(getAuthHeader).toHaveBeenCalledTimes(1);
+      expect(fetchSpy).toHaveBeenCalledTimes(1);
     });
   });
 });

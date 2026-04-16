@@ -781,7 +781,11 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
           // Check for 401/403 auth errors
           if (data.response && (data.response.code === 401 || data.response.code === 403)) {
             debugError(`[VideoPlayer ${videoId}] Auth required (${data.response.code})`);
-            setRequiresAuth(true);
+            if (isAdultVerified) {
+              setHasError(true);
+            } else {
+              setRequiresAuth(true);
+            }
             setIsLoading(false);
             hls.destroy();
             return;
@@ -850,7 +854,11 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
                     };
                   } else if (response.status === 401 || response.status === 403) {
                     debugError(`[VideoPlayer ${videoId}] Auth failed even with NIP-98 (${response.status})`);
-                    setRequiresAuth(true);
+                    if (isAdultVerified) {
+                      setHasError(true);
+                    } else {
+                      setRequiresAuth(true);
+                    }
                     setIsLoading(false);
                   } else {
                     debugError(`[VideoPlayer ${videoId}] Fetch failed: ${response.status}`);
@@ -858,8 +866,9 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
                     setIsLoading(false);
                   }
                 } else {
-                  // No auth header available, try without
-                  video.src = currentUrl;
+                  debugError(`[VideoPlayer ${videoId}] Missing auth header for protected media`);
+                  setHasError(true);
+                  setIsLoading(false);
                 }
               } catch (error) {
                 // Ignore abort errors, they're expected when effect re-runs
@@ -1046,7 +1055,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
         )}
 
         {/* Age verification required (401/403) */}
-        {requiresAuth && (
+        {requiresAuth && !isAdultVerified && (
           <AgeVerificationOverlay
             onVerified={handleAgeVerified}
             thumbnailUrl={overlayPosterUrl}
