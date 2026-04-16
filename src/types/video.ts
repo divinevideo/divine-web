@@ -83,6 +83,7 @@ export interface ParsedVideoData {
   duration?: number;
   dimensions?: string; // Video dimensions from imeta dim tag (e.g., "1080x1920")
   sha256?: string; // Content hash from imeta x or Divine-hosted media URL
+  ageRestricted?: boolean;
   hashtags: string[];
   vineId: string | null;
   loopCount?: number;

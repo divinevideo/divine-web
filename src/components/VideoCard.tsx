@@ -26,6 +26,7 @@ import { useMuteItem } from '@/hooks/useModeration';
 import { useDeleteVideo, useCanDeleteVideo } from '@/hooks/useDeleteVideo';
 import { useIsVideoPinned, usePinVideo, useUnpinVideo } from '@/hooks/usePinnedVideos';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { useAdultVerification } from '@/hooks/useAdultVerification';
 import { useVideoPlayback } from '@/hooks/useVideoPlayback';
 import { useVideosInLists } from '@/hooks/useVideoLists';
 import { enhanceAuthorData } from '@/lib/generateProfile';
@@ -51,6 +52,8 @@ import { getOptimalVideoUrl } from '@/lib/bandwidthTracker';
 import { useBandwidthTier } from '@/hooks/useBandwidthTier';
 import { useSubtitles } from '@/hooks/useSubtitles';
 import { debugLog } from '@/lib/debug';
+import { useLoginDialog } from '@/contexts/LoginDialogContext';
+import { AgeRestrictedMediaPlaceholder } from '@/components/AgeRestrictedMediaPlaceholder';
 
 interface VideoCardProps {
   video: ParsedVideoData;
@@ -255,6 +258,8 @@ export function VideoCard({
   const isPinned = useIsVideoPinned(coordinate);
   const { mutateAsync: pinVideo } = usePinVideo();
   const { mutateAsync: unpinVideo } = useUnpinVideo();
+  const { isVerified: isAdultVerified, confirmAdult } = useAdultVerification();
+  const { openLoginDialog } = useLoginDialog();
 
   // Get reactions data for the modal
   const { data: reactions } = useVideoReactions(video.id, video.pubkey, video.vineId);
@@ -297,6 +302,7 @@ export function VideoCard({
   const timestamp = video.originalVineTimestamp || video.createdAt;
 
   const date = new Date(timestamp * 1000);
+  const isAgeGated = video.ageRestricted === true && (!currentUser || !isAdultVerified);
 
   // Calculate timeAgo only for pre-2025 videos
   const isFrom2025 = date.getFullYear() >= 2025;
@@ -318,6 +324,15 @@ export function VideoCard({
 
   const handleCommentsClick = () => {
     onOpenComments?.(video);
+  };
+
+  const handleAgeGateAction = () => {
+    if (currentUser) {
+      confirmAdult();
+      return;
+    }
+
+    openLoginDialog();
   };
 
   const handleCloseCommentsModal = (open: boolean) => {
@@ -560,7 +575,13 @@ export function VideoCard({
                 maxWidth: effectiveAspectRatio <= 1.1 ? `calc(70vh * ${effectiveAspectRatio})` : undefined,
               }}
             >
-              {!isPlaying ? (
+              {isAgeGated ? (
+                <AgeRestrictedMediaPlaceholder
+                  actionLabel={currentUser ? 'Verify age to view' : 'Log in to view'}
+                  onAction={handleAgeGateAction}
+                  title={video.title || video.content}
+                />
+              ) : !isPlaying ? (
                 <ThumbnailPlayer
                   videoId={video.id}
                   src={video.videoUrl}

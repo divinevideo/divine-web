@@ -23,6 +23,8 @@ export interface FunnelcakeVideoRaw {
   dim?: string;           // Video dimensions (e.g., "1080x1920")
   author_name?: string;   // Cached author display name
   author_avatar?: string; // Cached author avatar URL
+  age_restricted?: boolean;
+  moderation_status?: string;
 
   // Social metrics - main videos endpoint uses embedded_* prefix
   reactions?: number;      // Like count (user videos endpoint)

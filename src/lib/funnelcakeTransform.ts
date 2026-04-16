@@ -86,6 +86,7 @@ export function transformFunnelcakeVideo(raw: FunnelcakeVideoRaw): ParsedVideoDa
     title: raw.title,
     dimensions: raw.dim, // Video dimensions from API (e.g., "1080x1920")
     sha256: extractSha256FromVideoUrl(raw.video_url),
+    ageRestricted: raw.age_restricted === true || raw.moderation_status === 'age_restricted',
     hashtags,
 
     // Vine-specific fields

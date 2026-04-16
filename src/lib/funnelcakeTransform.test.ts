@@ -46,6 +46,14 @@ describe('transformFunnelcakeVideo', () => {
 
     expect(video.loopCount).toBe(296752);
   });
+
+  it('preserves the age-restricted flag from the API payload', () => {
+    const video = transformFunnelcakeVideo(makeRawVideo({
+      age_restricted: true,
+    }));
+
+    expect(video.ageRestricted).toBe(true);
+  });
 });
 
 function makeResponse(overrides: Partial<FunnelcakeResponse> = {}): FunnelcakeResponse {

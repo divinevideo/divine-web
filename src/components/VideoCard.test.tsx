@@ -1,5 +1,10 @@
 import { fireEvent, render, screen } from '@testing-library/react';
-import type { ButtonHTMLAttributes, HTMLAttributes, ImgHTMLAttributes, ReactNode } from 'react';
+import type {
+  ButtonHTMLAttributes,
+  HTMLAttributes,
+  ImgHTMLAttributes,
+  ReactNode,
+} from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ParsedVideoData } from '@/types/video';
 import { VideoCard } from './VideoCard';
@@ -17,27 +22,53 @@ const playbackMocks = vi.hoisted(() => ({
   unpinVideo: vi.fn(),
 }));
 
+const authMocks = vi.hoisted(() => ({
+  openLoginDialog: vi.fn(),
+  confirmAdult: vi.fn(),
+  useCurrentUser: vi.fn(),
+  useAdultVerification: vi.fn(),
+}));
+
 vi.mock('@/components/ui/card', () => ({
-  Card: ({ children, ...props }: HTMLAttributes<HTMLDivElement>) => <div {...props}>{children}</div>,
-  CardContent: ({ children, ...props }: HTMLAttributes<HTMLDivElement>) => <div {...props}>{children}</div>,
+  Card: ({ children, ...props }: HTMLAttributes<HTMLDivElement>) => (
+    <div {...props}>{children}</div>
+  ),
+  CardContent: ({ children, ...props }: HTMLAttributes<HTMLDivElement>) => (
+    <div {...props}>{children}</div>
+  ),
 }));
 
 vi.mock('@/components/ui/button', () => ({
-  Button: ({ children, ...props }: ButtonHTMLAttributes<HTMLButtonElement>) => <button {...props}>{children}</button>,
+  Button: ({
+    children,
+    ...props
+  }: ButtonHTMLAttributes<HTMLButtonElement>) => (
+    <button {...props}>{children}</button>
+  ),
 }));
 
 vi.mock('@/components/ui/avatar', () => ({
-  Avatar: ({ children, ...props }: HTMLAttributes<HTMLDivElement>) => <div {...props}>{children}</div>,
+  Avatar: ({ children, ...props }: HTMLAttributes<HTMLDivElement>) => (
+    <div {...props}>{children}</div>
+  ),
   AvatarImage: (props: ImgHTMLAttributes<HTMLImageElement>) => <img {...props} />,
-  AvatarFallback: ({ children, ...props }: HTMLAttributes<HTMLDivElement>) => <div {...props}>{children}</div>,
+  AvatarFallback: ({ children, ...props }: HTMLAttributes<HTMLDivElement>) => (
+    <div {...props}>{children}</div>
+  ),
 }));
 
 vi.mock('@/components/ui/dropdown-menu', () => ({
   DropdownMenu: ({ children }: { children: ReactNode }) => <div>{children}</div>,
-  DropdownMenuContent: ({ children }: { children: ReactNode }) => <div>{children}</div>,
-  DropdownMenuItem: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+  DropdownMenuContent: ({ children }: { children: ReactNode }) => (
+    <div>{children}</div>
+  ),
+  DropdownMenuItem: ({ children }: { children: ReactNode }) => (
+    <div>{children}</div>
+  ),
   DropdownMenuSeparator: () => <div />,
-  DropdownMenuTrigger: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+  DropdownMenuTrigger: ({ children }: { children: ReactNode }) => (
+    <div>{children}</div>
+  ),
 }));
 
 vi.mock('@/components/VideoPlayer', () => ({
@@ -70,8 +101,12 @@ vi.mock('@/components/ThumbnailPlayer', () => ({
     onPlayButtonClick?: () => void;
   }) => (
     <div data-testid="thumbnail-player">
-      <button onClick={onClick} type="button">Thumbnail</button>
-      <button aria-label="Play video" onClick={onPlayButtonClick} type="button">Play</button>
+      <button onClick={onClick} type="button">
+        Thumbnail
+      </button>
+      <button aria-label="Play video" onClick={onPlayButtonClick} type="button">
+        Play
+      </button>
     </div>
   ),
 }));
@@ -85,7 +120,9 @@ vi.mock('@/components/VideoReactionsModal', () => ({
 }));
 
 vi.mock('@/components/NoteContent', () => ({
-  NoteContent: ({ event }: { event: { content: string } }) => <div>{event.content}</div>,
+  NoteContent: ({ event }: { event: { content: string } }) => (
+    <div>{event.content}</div>
+  ),
 }));
 
 vi.mock('@/components/InlineNostrText', () => ({
@@ -117,7 +154,9 @@ vi.mock('@/components/SmartLink', () => ({
     children,
     ownerPubkey: _ownerPubkey,
     ...props
-  }: HTMLAttributes<HTMLAnchorElement> & { ownerPubkey?: string }) => <a {...props}>{children}</a>,
+  }: HTMLAttributes<HTMLAnchorElement> & { ownerPubkey?: string }) => (
+    <a {...props}>{children}</a>
+  ),
 }));
 
 vi.mock('@/hooks/useAuthor', () => ({
@@ -161,9 +200,11 @@ vi.mock('@/hooks/usePinnedVideos', () => ({
 }));
 
 vi.mock('@/hooks/useCurrentUser', () => ({
-  useCurrentUser: () => ({
-    user: null,
-  }),
+  useCurrentUser: () => authMocks.useCurrentUser(),
+}));
+
+vi.mock('@/hooks/useAdultVerification', () => ({
+  useAdultVerification: () => authMocks.useAdultVerification(),
 }));
 
 vi.mock('@/hooks/useVideoPlayback', () => ({
@@ -223,8 +264,17 @@ vi.mock('@/hooks/useSubtitles', () => ({
   }),
 }));
 
+vi.mock('@/contexts/LoginDialogContext', () => ({
+  useLoginDialog: () => ({
+    openLoginDialog: authMocks.openLoginDialog,
+  }),
+}));
+
 vi.mock('@/lib/generateProfile', () => ({
-  enhanceAuthorData: (data: { metadata?: Record<string, unknown> } | undefined, pubkey: string) => ({
+  enhanceAuthorData: (
+    data: { metadata?: Record<string, unknown> } | undefined,
+    pubkey: string
+  ) => ({
     metadata: data?.metadata ?? { name: pubkey },
   }),
 }));
@@ -234,7 +284,8 @@ vi.mock('@/lib/genUserName', () => ({
 }));
 
 vi.mock('@/lib/utils', () => ({
-  cn: (...classes: Array<string | false | null | undefined>) => classes.filter(Boolean).join(' '),
+  cn: (...classes: Array<string | false | null | undefined>) =>
+    classes.filter(Boolean).join(' '),
 }));
 
 vi.mock('@/lib/formatUtils', () => ({
@@ -258,6 +309,25 @@ vi.mock('@/lib/bandwidthTracker', () => ({
 vi.mock('@/lib/debug', () => ({
   debugLog: vi.fn(),
 }));
+
+function makeVideo(overrides: Partial<ParsedVideoData> = {}): ParsedVideoData {
+  return {
+    id: 'video-1',
+    pubkey: 'f'.repeat(64),
+    kind: 34236,
+    createdAt: 1700000000,
+    content: 'Test video',
+    title: 'Test video',
+    videoUrl: 'https://media.divine.video/video-1',
+    thumbnailUrl: 'https://media.divine.video/video-1.jpg',
+    hashtags: [],
+    vineId: 'vine-id-1',
+    reposts: [],
+    isVineMigrated: false,
+    ageRestricted: false,
+    ...overrides,
+  };
+}
 
 const baseVideo = {
   id: 'video-1',
@@ -292,6 +362,19 @@ describe('VideoCard', () => {
     playbackMocks.setActiveVideo.mockClear();
     playbackMocks.setGlobalMuted.mockClear();
     playbackMocks.navigate.mockClear();
+    playbackMocks.toast.mockClear();
+    playbackMocks.share.mockClear();
+    authMocks.openLoginDialog.mockClear();
+    authMocks.confirmAdult.mockClear();
+    authMocks.useCurrentUser.mockReturnValue({ user: null });
+    authMocks.useAdultVerification.mockReturnValue({
+      isVerified: false,
+      confirmAdult: authMocks.confirmAdult,
+      revokeVerification: vi.fn(),
+      getAuthHeader: vi.fn(),
+      isLoading: false,
+      hasSigner: false,
+    });
   });
 
   it('marks a thumbnail-mode video active when inline playback starts', () => {
@@ -327,5 +410,55 @@ describe('VideoCard', () => {
 
     expect(screen.queryByTestId(`video-player-${baseVideo.id}`)).toBeNull();
     expect(screen.getByTestId('thumbnail-player')).toBeTruthy();
+  });
+
+  it('shows a logged-out gated card instead of mounting thumbnail media', () => {
+    render(
+      <VideoCard
+        video={makeVideo({
+          ageRestricted: true,
+          title: 'Constructive criticism',
+        })}
+        mode="thumbnail"
+      />
+    );
+
+    expect(screen.getByText('Log in to view')).toBeInTheDocument();
+    expect(screen.queryByTestId('thumbnail-player')).not.toBeInTheDocument();
+    expect(screen.queryByTestId(/video-player-/)).not.toBeInTheDocument();
+  });
+
+  it('shows an age-verification prompt for logged-in viewers who are not verified', () => {
+    authMocks.useCurrentUser.mockReturnValue({
+      user: { pubkey: 'a'.repeat(64) },
+    });
+
+    render(
+      <VideoCard
+        video={makeVideo({
+          ageRestricted: true,
+        })}
+        mode="thumbnail"
+      />
+    );
+
+    expect(screen.getByText('Verify age to view')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Verify age to view' }));
+    expect(authMocks.confirmAdult).toHaveBeenCalledTimes(1);
+  });
+
+  it('still renders the thumbnail player for unrestricted videos', () => {
+    render(
+      <VideoCard
+        video={makeVideo({
+          ageRestricted: false,
+        })}
+        mode="thumbnail"
+      />
+    );
+
+    expect(screen.getByTestId('thumbnail-player')).toBeInTheDocument();
+    expect(screen.queryByText('Log in to view')).not.toBeInTheDocument();
   });
 });

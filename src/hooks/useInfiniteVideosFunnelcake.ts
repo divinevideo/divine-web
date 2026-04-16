@@ -7,6 +7,7 @@ import { useCurrentUser } from '@/hooks/useCurrentUser';
 import type { ParsedVideoData } from '@/types/video';
 import type { FunnelcakeFetchOptions } from '@/types/funnelcake';
 import { fetchVideos, searchVideos, fetchUserVideos, fetchUserFeed, fetchRecommendations } from '@/lib/funnelcakeClient';
+import { enrichAgeRestrictedVideos } from '@/lib/ageRestrictedVideos';
 import { transformToVideoPage } from '@/lib/funnelcakeTransform';
 import { debugLog } from '@/lib/debug';
 import { performanceMonitor } from '@/lib/performanceMonitoring';
@@ -276,6 +277,9 @@ export function useInfiniteVideosFunnelcake({
       const parseStart = performance.now();
       const cursorType = feedType === 'recommendations' ? 'cursor' : 'timestamp';
       const page = transformToVideoPage(response, cursorType);
+      const enrichedVideos = feedType === 'profile'
+        ? await enrichAgeRestrictedVideos(page.videos, signal)
+        : page.videos;
       const parseTime = performance.now() - parseStart;
 
       const totalTime = performance.now() - totalStart;
@@ -285,7 +289,7 @@ export function useInfiniteVideosFunnelcake({
         relayUrl: effectiveApiUrl,
         queryType: `funnelcake-${feedType}`,
         duration: queryTime,
-        eventCount: page.videos.length,
+        eventCount: enrichedVideos.length,
         filters: JSON.stringify({ feedType, sortMode, hashtag, pubkey }),
       });
 
@@ -294,17 +298,17 @@ export function useInfiniteVideosFunnelcake({
         queryTime,
         parseTime,
         totalTime,
-        videoCount: page.videos.length,
+        videoCount: enrichedVideos.length,
         sortMode,
       });
 
-      debugLog(`[useInfiniteVideosFunnelcake] Got ${page.videos.length} videos in ${queryTime.toFixed(0)}ms`, {
+      debugLog(`[useInfiniteVideosFunnelcake] Got ${enrichedVideos.length} videos in ${queryTime.toFixed(0)}ms`, {
         hasMore: page.hasMore,
         nextCursor: page.nextCursor,
       });
 
       return {
-        videos: page.videos,
+        videos: enrichedVideos,
         nextCursor: page.nextCursor,
         offset: page.offset,
         recommendationsCursor: page.rawCursor,
