@@ -440,7 +440,7 @@ const getAuthHeader = useCallback(
 );
 ```
 
-4. Leave `checkMediaAuth` and `fetchWithAuth` untouched. They are agnostic of protocol.
+4. Leave `checkMediaAuth` and `fetchWithAuth` untouched. They are agnostic of protocol. `checkMediaAuth` is an unauthenticated HEAD probe that only looks for `ok` / `401` / `403` — no sha256 hint is needed because the goal is simply to detect "auth required" before attempting the authed fetch. The authed fetch path (inside `VideoPlayer`) is the only place that must choose Blossom vs. NIP-98.
 
 - [ ] **Step 5: Update `hlsAuthLoader.ts` to keep its contract explicit**
 
@@ -644,6 +644,8 @@ Also update the dependency array at the bottom of the effect to include `videoDa
 
 Do NOT change the HLS branch's `createAuthLoader(getAuthHeader)` call — segments stay URL-only per Chunk 3's rationale.
 
+**ESLint note:** `react-hooks/exhaustive-deps` may flag that `videoData` itself (not just `videoData?.sha256`) should be in the dep array. If the lint rule complains, add `videoData` as well — it's a stable prop, not destructured into multiple captured fields, so this will not cause extra re-runs in practice beyond what `videoData?.sha256` already triggers.
+
 - [ ] **Step 4: Re-run the focused test**
 
 Run: `npx vitest run src/components/__tests__/VideoPlayer.authHeaders.test.tsx`
@@ -751,6 +753,28 @@ describe('AgeVerificationOverlay', () => {
     fireEvent.click(confirmButton);
     expect(confirmAdult).toHaveBeenCalledTimes(1);
     expect(onVerified).toHaveBeenCalledTimes(1);
+  });
+
+  it('renders nothing when isVerified is true (preserves existing early-return)', async () => {
+    // Re-mock just this test to flip isVerified.
+    vi.doMock('@/hooks/useAdultVerification', () => ({
+      useAdultVerification: () => ({
+        isVerified: true,
+        isLoading: false,
+        hasSigner: true,
+        confirmAdult,
+        revokeVerification: vi.fn(),
+        getAuthHeader: vi.fn(),
+      }),
+    }));
+    vi.resetModules();
+    const { AgeVerificationOverlay: Reloaded } = await import('@/components/AgeVerificationOverlay');
+    useCurrentUserMock.mockReturnValue({
+      user: { pubkey: 'pub' },
+      signer: { signEvent: vi.fn(), getPublicKey: vi.fn() },
+    });
+    const { container } = render(<Reloaded onVerified={vi.fn()} />);
+    expect(container.firstChild).toBeNull();
   });
 });
 ```
