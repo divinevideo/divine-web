@@ -1,0 +1,301 @@
+import { fireEvent, render, screen } from '@testing-library/react';
+import type { ButtonHTMLAttributes, HTMLAttributes, ImgHTMLAttributes, ReactNode } from 'react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { ParsedVideoData } from '@/types/video';
+import { VideoCard } from './VideoCard';
+
+const playbackMocks = vi.hoisted(() => ({
+  activeVideoId: null as string | null,
+  setActiveVideo: vi.fn(),
+  setGlobalMuted: vi.fn(),
+  navigate: vi.fn(),
+  toast: vi.fn(),
+  share: vi.fn(),
+  muteAsync: vi.fn(),
+  deleteVideo: vi.fn(),
+  pinVideo: vi.fn(),
+  unpinVideo: vi.fn(),
+}));
+
+vi.mock('@/components/ui/card', () => ({
+  Card: ({ children, ...props }: HTMLAttributes<HTMLDivElement>) => <div {...props}>{children}</div>,
+  CardContent: ({ children, ...props }: HTMLAttributes<HTMLDivElement>) => <div {...props}>{children}</div>,
+}));
+
+vi.mock('@/components/ui/button', () => ({
+  Button: ({ children, ...props }: ButtonHTMLAttributes<HTMLButtonElement>) => <button {...props}>{children}</button>,
+}));
+
+vi.mock('@/components/ui/avatar', () => ({
+  Avatar: ({ children, ...props }: HTMLAttributes<HTMLDivElement>) => <div {...props}>{children}</div>,
+  AvatarImage: (props: ImgHTMLAttributes<HTMLImageElement>) => <img {...props} />,
+  AvatarFallback: ({ children, ...props }: HTMLAttributes<HTMLDivElement>) => <div {...props}>{children}</div>,
+}));
+
+vi.mock('@/components/ui/dropdown-menu', () => ({
+  DropdownMenu: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+  DropdownMenuContent: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+  DropdownMenuItem: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+  DropdownMenuSeparator: () => <div />,
+  DropdownMenuTrigger: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+}));
+
+vi.mock('@/components/VideoPlayer', () => ({
+  VideoPlayer: ({ videoId }: { videoId: string }) => <div data-testid={`video-player-${videoId}`}>Video Player</div>,
+}));
+
+vi.mock('@/components/ThumbnailPlayer', () => ({
+  ThumbnailPlayer: ({
+    onClick,
+    onPlayButtonClick,
+  }: {
+    onClick?: () => void;
+    onPlayButtonClick?: () => void;
+  }) => (
+    <div data-testid="thumbnail-player">
+      <button onClick={onClick} type="button">Thumbnail</button>
+      <button aria-label="Play video" onClick={onPlayButtonClick} type="button">Play</button>
+    </div>
+  ),
+}));
+
+vi.mock('@/components/VideoCommentsModal', () => ({
+  VideoCommentsModal: () => null,
+}));
+
+vi.mock('@/components/VideoReactionsModal', () => ({
+  VideoReactionsModal: () => null,
+}));
+
+vi.mock('@/components/NoteContent', () => ({
+  NoteContent: ({ event }: { event: { content: string } }) => <div>{event.content}</div>,
+}));
+
+vi.mock('@/components/InlineNostrText', () => ({
+  InlineNostrText: ({ text }: { text: string }) => <>{text}</>,
+}));
+
+vi.mock('@/components/AddToListDialog', () => ({
+  AddToListDialog: () => null,
+}));
+
+vi.mock('@/components/ReportContentDialog', () => ({
+  ReportContentDialog: () => null,
+}));
+
+vi.mock('@/components/DeleteVideoDialog', () => ({
+  DeleteVideoDialog: () => null,
+}));
+
+vi.mock('@/components/ViewSourceDialog', () => ({
+  ViewSourceDialog: () => null,
+}));
+
+vi.mock('@/components/VideoVerificationBadgeRow', () => ({
+  VideoVerificationBadgeRow: () => <div>Badges</div>,
+}));
+
+vi.mock('@/components/SmartLink', () => ({
+  SmartLink: ({
+    children,
+    ownerPubkey: _ownerPubkey,
+    ...props
+  }: HTMLAttributes<HTMLAnchorElement> & { ownerPubkey?: string }) => <a {...props}>{children}</a>,
+}));
+
+vi.mock('@/hooks/useAuthor', () => ({
+  useAuthor: () => ({
+    data: {
+      metadata: {
+        name: 'Video Author',
+        picture: 'https://example.com/avatar.jpg',
+      },
+    },
+    isLoading: false,
+  }),
+}));
+
+vi.mock('@/hooks/useIsMobile', () => ({
+  useIsMobile: () => false,
+}));
+
+vi.mock('@/hooks/useModeration', () => ({
+  useMuteItem: () => ({
+    mutateAsync: playbackMocks.muteAsync,
+  }),
+}));
+
+vi.mock('@/hooks/useDeleteVideo', () => ({
+  useDeleteVideo: () => ({
+    mutate: playbackMocks.deleteVideo,
+    isPending: false,
+  }),
+  useCanDeleteVideo: () => false,
+}));
+
+vi.mock('@/hooks/usePinnedVideos', () => ({
+  useIsVideoPinned: () => false,
+  usePinVideo: () => ({
+    mutateAsync: playbackMocks.pinVideo,
+  }),
+  useUnpinVideo: () => ({
+    mutateAsync: playbackMocks.unpinVideo,
+  }),
+}));
+
+vi.mock('@/hooks/useCurrentUser', () => ({
+  useCurrentUser: () => ({
+    user: null,
+  }),
+}));
+
+vi.mock('@/hooks/useVideoPlayback', () => ({
+  useVideoPlayback: () => ({
+    activeVideoId: playbackMocks.activeVideoId,
+    setActiveVideo: playbackMocks.setActiveVideo,
+    registerVideo: vi.fn(),
+    unregisterVideo: vi.fn(),
+    updateVideoVisibility: vi.fn(),
+    globalMuted: true,
+    setGlobalMuted: playbackMocks.setGlobalMuted,
+  }),
+}));
+
+vi.mock('@/hooks/useVideoLists', () => ({
+  useVideosInLists: () => ({
+    data: [],
+  }),
+}));
+
+vi.mock('@/hooks/useVideoReactions', () => ({
+  useVideoReactions: () => ({
+    data: null,
+  }),
+}));
+
+vi.mock('@/hooks/useToast', () => ({
+  useToast: () => ({
+    toast: playbackMocks.toast,
+  }),
+}));
+
+vi.mock('@/hooks/useShare', () => ({
+  useShare: () => ({
+    share: playbackMocks.share,
+  }),
+}));
+
+vi.mock('@/hooks/useDirectMessages', () => ({
+  useDmCapability: () => ({
+    canUseDirectMessages: false,
+  }),
+}));
+
+vi.mock('@/hooks/useSubdomainNavigate', () => ({
+  useSubdomainNavigate: () => playbackMocks.navigate,
+}));
+
+vi.mock('@/hooks/useBandwidthTier', () => ({
+  useBandwidthTier: () => 'default',
+}));
+
+vi.mock('@/hooks/useSubtitles', () => ({
+  useSubtitles: () => ({
+    cues: [],
+    hasSubtitles: false,
+  }),
+}));
+
+vi.mock('@/lib/generateProfile', () => ({
+  enhanceAuthorData: (data: { metadata?: Record<string, unknown> } | undefined, pubkey: string) => ({
+    metadata: data?.metadata ?? { name: pubkey },
+  }),
+}));
+
+vi.mock('@/lib/genUserName', () => ({
+  genUserName: () => 'Generated User',
+}));
+
+vi.mock('@/lib/utils', () => ({
+  cn: (...classes: Array<string | false | null | undefined>) => classes.filter(Boolean).join(' '),
+}));
+
+vi.mock('@/lib/formatUtils', () => ({
+  formatClassicVineViewBreakdown: () => '0 views',
+  formatViewCount: (count: number) => String(count),
+  formatCount: (count: number) => String(count),
+}));
+
+vi.mock('@/lib/imageUtils', () => ({
+  getSafeProfileImage: (url?: string) => url ?? '',
+}));
+
+vi.mock('@/lib/shareUtils', () => ({
+  getVideoShareData: () => ({}),
+}));
+
+vi.mock('@/lib/bandwidthTracker', () => ({
+  getOptimalVideoUrl: (url: string) => url,
+}));
+
+vi.mock('@/lib/debug', () => ({
+  debugLog: vi.fn(),
+}));
+
+const baseVideo = {
+  id: 'video-1',
+  kind: 34236,
+  pubkey: 'f'.repeat(64),
+  authorName: 'Video Author',
+  authorAvatar: 'https://example.com/avatar.jpg',
+  videoUrl: 'https://example.com/video.mp4',
+  thumbnailUrl: 'https://example.com/thumb.jpg',
+  duration: 6,
+  createdAt: 1_700_000_000,
+  hashtags: [],
+  reposts: [],
+  content: '',
+  title: 'Test Video',
+  likeCount: 0,
+  repostCount: 0,
+  commentCount: 0,
+  divineViewCount: 0,
+  loopCount: 0,
+  isVineMigrated: false,
+  originalVineTimestamp: undefined,
+  dimensions: '1080x1920',
+  fallbackVideoUrls: [],
+  hlsUrl: undefined,
+  vineId: 'vine-id-1',
+} as unknown as ParsedVideoData;
+
+describe('VideoCard', () => {
+  beforeEach(() => {
+    playbackMocks.activeVideoId = null;
+    playbackMocks.setActiveVideo.mockClear();
+    playbackMocks.setGlobalMuted.mockClear();
+    playbackMocks.navigate.mockClear();
+  });
+
+  it('marks a thumbnail-mode video active when inline playback starts', () => {
+    render(<VideoCard video={baseVideo} mode="thumbnail" />);
+
+    fireEvent.click(screen.getByLabelText('Play video'));
+
+    expect(playbackMocks.setActiveVideo).toHaveBeenCalledWith(baseVideo.id);
+    expect(screen.getByTestId(`video-player-${baseVideo.id}`)).toBeTruthy();
+  });
+
+  it('stops inline thumbnail playback when another video becomes active', () => {
+    const { rerender } = render(<VideoCard video={baseVideo} mode="thumbnail" />);
+
+    fireEvent.click(screen.getByLabelText('Play video'));
+    expect(screen.getByTestId(`video-player-${baseVideo.id}`)).toBeTruthy();
+
+    playbackMocks.activeVideoId = 'video-2';
+    rerender(<VideoCard video={baseVideo} mode="thumbnail" />);
+
+    expect(screen.queryByTestId(`video-player-${baseVideo.id}`)).toBeNull();
+    expect(screen.getByTestId('thumbnail-player')).toBeTruthy();
+  });
+});

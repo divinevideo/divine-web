@@ -1,7 +1,7 @@
 // ABOUTME: Video card component for displaying individual videos in feeds
 // ABOUTME: Shows video player, metadata, author info, and social interactions
 
-import { useState, useCallback, useRef, useMemo } from 'react';
+import { useState, useCallback, useRef, useMemo, useEffect } from 'react';
 import { Heart, Repeat2, MessageCircle, Share, Eye, MoreVertical, Flag, UserX, Trash2, Volume2, VolumeX, Code, Users, ListPlus, Download, Maximize2, Captions, Pin, PinOff } from 'lucide-react';
 import { nip19 } from 'nostr-tools';
 import { Card, CardContent } from '@/components/ui/card';
@@ -241,7 +241,7 @@ export function VideoCard({
   const { canUseDirectMessages } = useDmCapability();
   const muteUser = useMuteItem();
   const navigate = useSubdomainNavigate();
-  const { globalMuted, setGlobalMuted } = useVideoPlayback();
+  const { activeVideoId, setActiveVideo, globalMuted, setGlobalMuted } = useVideoPlayback();
   const { cues: subtitleCues, hasSubtitles } = useSubtitles(video);
   // Subtitles default to ON when available, independent of mute state
   const [subtitlesVisible, setSubtitlesVisible] = useState(true);
@@ -330,21 +330,36 @@ export function VideoCard({
     if (mode === 'thumbnail') {
       navigate(`/video/${video.id}`, { ownerPubkey: video.pubkey });
     } else {
+      setActiveVideo(video.id);
       setIsPlaying(true);
       onPlay?.();
     }
   };
 
   const handleThumbnailPlayButtonClick = () => {
+    setActiveVideo(video.id);
     setIsPlaying(true);
     onPlay?.();
   };
 
   const handleVideoEnd = () => {
     if (mode === 'thumbnail') {
+      if (activeVideoId === video.id) {
+        setActiveVideo(null);
+      }
       setIsPlaying(false);
     }
   };
+
+  useEffect(() => {
+    if (mode !== 'thumbnail') {
+      return;
+    }
+
+    if (isPlaying && activeVideoId !== null && activeVideoId !== video.id) {
+      setIsPlaying(false);
+    }
+  }, [activeVideoId, isPlaying, mode, video.id]);
 
   const handleMuteUser = async () => {
     try {
