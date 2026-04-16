@@ -10,8 +10,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Hash, Search, Play, Loader2 } from 'lucide-react';
+import { getFunnelcakeBaseUrl } from '@/config/api';
 import { fetchPopularHashtags } from '@/lib/funnelcakeClient';
-import { DEFAULT_FUNNELCAKE_URL } from '@/config/relays';
 
 interface HashtagStats {
   tag: string;
@@ -32,7 +32,7 @@ function useHashtagStats() {
         AbortSignal.timeout(10000),
       ]);
 
-      const hashtags = await fetchPopularHashtags(DEFAULT_FUNNELCAKE_URL, 100, signal);
+      const hashtags = await fetchPopularHashtags(getFunnelcakeBaseUrl(), 100, signal);
 
       // Transform to HashtagStats format with rank
       const stats: HashtagStats[] = hashtags.map((h, index) => ({

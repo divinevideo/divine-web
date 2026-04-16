@@ -2,8 +2,8 @@
 // ABOUTME: Merges API data (video counts) with static icon config
 
 import { useQuery } from '@tanstack/react-query';
+import { getFunnelcakeBaseUrl } from '@/config/api';
 import { fetchCategories } from '@/lib/funnelcakeClient';
-import { DEFAULT_FUNNELCAKE_URL } from '@/config/relays';
 import { getCategoryConfig } from '@/lib/constants/categories';
 import type { FunnelcakeCategory } from '@/types/funnelcake';
 import type { CategoryConfig } from '@/lib/constants/categories';
@@ -16,7 +16,7 @@ export function useCategories() {
   return useQuery<CategoryWithConfig[]>({
     queryKey: ['categories'],
     queryFn: async ({ signal }) => {
-      const categories = await fetchCategories(DEFAULT_FUNNELCAKE_URL, signal);
+      const categories = await fetchCategories(getFunnelcakeBaseUrl(), signal);
       // Only show categories with enough videos to be meaningful
       const MIN_VIDEO_COUNT = 5;
       return categories

@@ -2,9 +2,9 @@
 // ABOUTME: Provides infinite scroll, unread count polling, and mark-as-read
 
 import { useInfiniteQuery, useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { getFunnelcakeBaseUrl } from '@/config/api';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { fetchNotifications, fetchUnreadCount, markNotificationsRead } from '@/lib/funnelcakeClient';
-import { DEFAULT_FUNNELCAKE_URL } from '@/config/relays';
 import { debugLog } from '@/lib/debug';
 import type { NotificationsResponse } from '@/types/notification';
 
@@ -17,7 +17,7 @@ const NOTIFICATIONS_PAGE_SIZE = 30;
 export function useNotifications() {
   const { user, signer } = useCurrentUser();
   const pubkey = user?.pubkey;
-  const apiUrl = DEFAULT_FUNNELCAKE_URL;
+  const apiUrl = getFunnelcakeBaseUrl();
 
   return useInfiniteQuery<NotificationsResponse, Error>({
     queryKey: ['notifications', pubkey],
@@ -58,7 +58,7 @@ export function useNotifications() {
 export function useUnreadNotificationCount() {
   const { user, signer } = useCurrentUser();
   const pubkey = user?.pubkey;
-  const apiUrl = DEFAULT_FUNNELCAKE_URL;
+  const apiUrl = getFunnelcakeBaseUrl();
 
   return useQuery<number, Error>({
     queryKey: ['notifications-unread-count', pubkey],
@@ -86,7 +86,7 @@ export function useUnreadNotificationCount() {
 export function useMarkNotificationsRead() {
   const { user, signer } = useCurrentUser();
   const pubkey = user?.pubkey;
-  const apiUrl = DEFAULT_FUNNELCAKE_URL;
+  const apiUrl = getFunnelcakeBaseUrl();
   const queryClient = useQueryClient();
 
   return useMutation({

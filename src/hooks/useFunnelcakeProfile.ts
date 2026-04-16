@@ -3,8 +3,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { type FunnelcakeProfile } from '@/lib/funnelcakeClient';
-import { DEFAULT_FUNNELCAKE_URL } from '@/config/relays';
-import { API_CONFIG } from '@/config/api';
+import { API_CONFIG, getFunnelcakeBaseUrl } from '@/config/api';
 import { debugLog } from '@/lib/debug';
 
 interface UseFunnelcakeProfileResult {
@@ -29,7 +28,7 @@ export function useFunnelcakeProfile(
       if (!pubkey) return null;
 
       const endpoint = API_CONFIG.funnelcake.endpoints.userProfile.replace('{pubkey}', pubkey);
-      const url = `${DEFAULT_FUNNELCAKE_URL}${endpoint}`;
+      const url = `${getFunnelcakeBaseUrl()}${endpoint}`;
 
       debugLog(`[useFunnelcakeProfile] Fetching: ${url}`);
 
