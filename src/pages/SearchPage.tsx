@@ -41,12 +41,19 @@ import {
   isLikelyOpaqueVideoIdentifier,
   normalizeDirectSearchInput,
 } from '@/lib/directSearch';
-import { buildCompilationPlaybackUrl } from '@/lib/compilationPlayback';
+import {
+  buildCompilationPlaybackUrl,
+  parseCompilationPlaybackParams,
+} from '@/lib/compilationPlayback';
 
 type SearchFilter = 'all' | 'videos' | 'users' | 'hashtags';
 
 export function SearchPage() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const compilationRequest = useMemo(
+    () => parseCompilationPlaybackParams(searchParams),
+    [searchParams]
+  );
   const { nostr } = useNostr();
   const navigate = useSubdomainNavigate();
   const { config } = useAppContext();
@@ -135,6 +142,14 @@ export function SearchPage() {
       if (searchQuery) params.set('q', searchQuery);
       if (sortMode !== 'relevance') params.set('sort', sortMode);
       if (activeFilter !== 'all') params.set('filter', activeFilter);
+      if (compilationRequest.play) {
+        params.set('play', 'compilation');
+        if (compilationRequest.videoId) {
+          params.set('video', compilationRequest.videoId);
+        } else if (compilationRequest.start !== undefined) {
+          params.set('start', String(compilationRequest.start));
+        }
+      }
       setSearchParams(params, { replace: true });
 
       // Track search analytics when user stops typing
@@ -149,7 +164,18 @@ export function SearchPage() {
         clearTimeout(debounceTimerRef.current);
       }
     };
-  }, [searchQuery, sortMode, activeFilter, setSearchParams, videoResults.length, userResults.length, hashtagResults.length]);
+  }, [
+    activeFilter,
+    compilationRequest.play,
+    compilationRequest.start,
+    compilationRequest.videoId,
+    hashtagResults.length,
+    searchQuery,
+    setSearchParams,
+    sortMode,
+    userResults.length,
+    videoResults.length,
+  ]);
 
   useEffect(() => {
     return () => {

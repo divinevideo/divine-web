@@ -1,7 +1,7 @@
 import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, useLocation } from 'react-router-dom';
 import type {
   ButtonHTMLAttributes,
   HTMLAttributes,
@@ -171,7 +171,18 @@ function renderPage(initialEntries: string[] = ['/search']) {
   return render(
     <MemoryRouter initialEntries={initialEntries}>
       <SearchPage />
+      <LocationDisplay />
     </MemoryRouter>
+  );
+}
+
+function LocationDisplay() {
+  const location = useLocation();
+  return (
+    <div data-testid="location-display">
+      {location.pathname}
+      {location.search}
+    </div>
   );
 }
 
@@ -422,6 +433,35 @@ describe('SearchPage', () => {
     expect(mockEnterFullscreen).toHaveBeenCalledWith(
       [expect.objectContaining({ id: 'video-1' })],
       0,
+    );
+  });
+
+  it('preserves compilation params during the debounced search url sync', async () => {
+    vi.useFakeTimers();
+    mockUseInfiniteSearchVideos.mockReturnValue({
+      data: {
+        pages: [{
+          videos: [{
+            id: 'video-1',
+            pubkey: 'a'.repeat(64),
+            videoUrl: 'https://example.com/video-1.mp4',
+          }],
+        }],
+      },
+      fetchNextPage: vi.fn(),
+      hasNextPage: false,
+      isLoading: false,
+      error: null,
+    });
+
+    renderPage(['/search?q=twerking&filter=videos&play=compilation&video=video-1']);
+
+    await act(async () => {
+      vi.advanceTimersByTime(600);
+    });
+
+    expect(screen.getByTestId('location-display').textContent).toBe(
+      '/search?q=twerking&filter=videos&play=compilation&video=video-1'
     );
   });
 });
