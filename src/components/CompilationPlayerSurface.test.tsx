@@ -71,4 +71,11 @@ describe('CompilationPlayerSurface', () => {
 
     expect(fetchNextPage).toHaveBeenCalled();
   });
+
+  it('preloads the next two videos while the current one plays', () => {
+    render(<CompilationPlayerSurface videos={videos} initialIndex={0} />);
+
+    expect(screen.getByTestId('compilation-preload-video-video-b')).toHaveAttribute('preload', 'auto');
+    expect(screen.getByTestId('compilation-preload-video-video-c')).toHaveAttribute('preload', 'auto');
+  });
 });

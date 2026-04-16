@@ -27,6 +27,10 @@ export function CompilationPlayerSurface({
   }, [boundedIndex]);
 
   const currentVideo = useMemo(() => videos[currentIndex], [videos, currentIndex]);
+  const preloadVideos = useMemo(
+    () => videos.slice(currentIndex + 1, currentIndex + 3),
+    [videos, currentIndex]
+  );
 
   useEffect(() => {
     if (!currentVideo) {
@@ -71,6 +75,17 @@ export function CompilationPlayerSurface({
         preload="auto"
         videoData={currentVideo}
       />
+      {preloadVideos.map((video) => (
+        <video
+          key={video.id}
+          data-testid={`compilation-preload-video-${video.id}`}
+          src={video.videoUrl}
+          preload="auto"
+          muted
+          playsInline
+          className="hidden"
+        />
+      ))}
       <div className="text-sm font-medium">{currentVideo.title ?? currentVideo.id}</div>
     </div>
   );
