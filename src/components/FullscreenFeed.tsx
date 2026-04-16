@@ -33,12 +33,14 @@ function FullscreenVideoWithMetrics({
   isActive,
   onBack,
   onEnded,
+  loopPlayback = true,
 }: {
   video: ParsedVideoData;
   index: number;
   isActive: boolean;
   onBack: () => void;
   onEnded?: () => void;
+  loopPlayback?: boolean;
 }) {
   const { user } = useCurrentUser();
   const { toast } = useToast();
@@ -151,6 +153,7 @@ function FullscreenVideoWithMetrics({
       commentCount={(video.commentCount ?? 0) + (socialMetrics.data?.commentCount ?? 0)}
       viewCount={divineViewCount + (video.loopCount ?? 0)}
       onEnded={onEnded}
+      loopPlayback={loopPlayback}
     />
   );
 }
@@ -307,6 +310,7 @@ export function FullscreenFeed({
             isActive={index === currentIndex}
             onBack={onClose}
             onEnded={handleAdvance}
+            loopPlayback={!autoAdvance}
           />
         ))}
       </div>

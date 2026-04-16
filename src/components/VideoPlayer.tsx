@@ -1,4 +1,4 @@
-// ABOUTME: Auto-looping video player component for 6-second videos
+// ABOUTME: Video player component for short-form feeds with configurable loop behavior
 // ABOUTME: Supports MP4 and GIF formats with preloading, seamless playback, and blurhash placeholders
 
 import { useRef, useEffect, useState, forwardRef, useCallback } from 'react';
@@ -36,6 +36,7 @@ interface VideoPlayerProps {
   className?: string;
   autoPlay?: boolean;
   muted?: boolean;
+  loopPlayback?: boolean;
   onLoadStart?: () => void;
   onLoadedData?: () => void;
   onPlaybackStarted?: () => void;
@@ -83,6 +84,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
       className,
       autoPlay: _autoPlay = true,
       muted: _muted = true,
+      loopPlayback = true,
       onLoadStart,
       onLoadedData,
       onPlaybackStarted,
@@ -584,10 +586,12 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
     }, [videoId, currentUrlIndex, allUrls, hlsUrl, triedHls, onError]);
 
     const handleEnded = () => {
-      verboseLog(`[VideoPlayer ${videoId}] Video ended, auto-looping`);
+      verboseLog(
+        `[VideoPlayer ${videoId}] Video ended${loopPlayback ? ', auto-looping' : ''}`
+      );
       onEnded?.();
-      // Auto-loop by replaying
-      if (videoRef.current) {
+      // Default feed behavior loops short-form videos in place.
+      if (loopPlayback && videoRef.current) {
         videoRef.current.currentTime = 0;
         videoRef.current.play().catch((error) => {
           debugError(`[VideoPlayer ${videoId}] Failed to loop video:`, error);
@@ -603,7 +607,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
       const video = videoRef.current;
       if (!video) return;
 
-      if (video.currentTime >= MAX_PLAYBACK_DURATION) {
+      if (loopPlayback && video.currentTime >= MAX_PLAYBACK_DURATION) {
         video.currentTime = 0;
       }
 
@@ -613,7 +617,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
         playbackSecondRef.current = sec;
         setPlaybackSecond(sec);
       }
-    }, []);
+    }, [loopPlayback]);
 
     // Handle age verification completion - retry video load
     const handleAgeVerified = useCallback(() => {
@@ -997,7 +1001,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
           poster={(requiresAuth || authCheckPending) ? undefined : authenticatedPosterUrl}
           muted // Start muted, will be controlled via effect
           autoPlay={false} // Never autoplay, we control playback programmatically
-          loop
+          loop={loopPlayback}
           playsInline
           // Preload based on visibility, but once loaded, keep preload stable to avoid re-fetching
           // hasLoadedOnce prevents the preload attribute from changing and causing flashes
