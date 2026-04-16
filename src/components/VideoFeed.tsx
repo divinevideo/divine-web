@@ -2,6 +2,7 @@
 // ABOUTME: Uses video provider hook with automatic Funnelcake/WebSocket selection
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { performanceMonitor } from '@/lib/performanceMonitoring';
 import { VideoCamera as Video, CircleNotch as Loader2 } from '@phosphor-icons/react';
 import { VideoCardWithMetrics } from '@/components/VideoCardWithMetrics';
@@ -13,6 +14,7 @@ import { useContentModeration } from '@/hooks/useModeration';
 import { useFeedPerformanceInstrumentation } from '@/hooks/useFeedPerformanceInstrumentation';
 import { useProofModeEnrichment } from '@/hooks/useProofModeEnrichment';
 import { Card, CardContent, type CardAccent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import InfiniteScroll from 'react-infinite-scroll-component';
 import type { ParsedVideoData } from '@/types/video';
 import { debugLog, debugWarn } from '@/lib/debug';
@@ -22,6 +24,7 @@ import { useCallback } from 'react';
 import { useFullscreenFeed } from '@/contexts/FullscreenFeedContext';
 import { useVideoPlayback } from '@/hooks/useVideoPlayback';
 import { useVideoPrefetch } from '@/hooks/useVideoPrefetch';
+import { buildCompilationPlaybackUrl } from '@/lib/compilationPlayback';
 
 type ViewMode = 'feed' | 'grid';
 
@@ -63,6 +66,7 @@ export function VideoFeed({
   'data-hashtag-testid': hashtagTestId,
   'data-profile-testid': profileTestId,
 }: VideoFeedProps) {
+  const location = useLocation();
   const [showCommentsForVideo, setShowCommentsForVideo] = useState<string | null>(null);
   const [showListDialog, setShowListDialog] = useState<{ videoId: string; videoPubkey: string } | null>(null);
   const mountTimeRef = useRef<number | null>(null);
@@ -228,6 +232,29 @@ export function VideoFeed({
 
   // Check if we have videos but they're all filtered (before early return)
   const allFiltered = allVideos && allVideos.length > 0 && (!filteredVideos || filteredVideos.length === 0);
+  const compilationUrl = filteredVideos.length > 0
+    ? buildCompilationPlaybackUrl({
+        source: feedType,
+        tag: hashtag,
+        pubkey,
+        category,
+        sort: sortMode,
+        start: 0,
+        returnTo: `${location.pathname}${location.search}`,
+      })
+    : null;
+  const compilationLauncher = compilationUrl ? (
+    <div className="mb-4 flex justify-end">
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        onClick={() => navigate(compilationUrl)}
+      >
+        Play all as compilation
+      </Button>
+    </div>
+  ) : null;
 
   // Redirect empty home feed to discovery (must be before ALL early returns)
   useEffect(() => {
@@ -425,6 +452,7 @@ export function VideoFeed({
         data-hashtag-testid={hashtagTestId}
         data-profile-testid={profileTestId}
       >
+        {compilationLauncher}
         <InfiniteScroll
           dataLength={filteredVideos.length}
           next={fetchNextPage}
@@ -478,6 +506,7 @@ export function VideoFeed({
       data-hashtag-testid={hashtagTestId}
       data-profile-testid={profileTestId}
     >
+      {compilationLauncher}
       <InfiniteScroll
         dataLength={filteredVideos.length}
         next={fetchNextPage}
