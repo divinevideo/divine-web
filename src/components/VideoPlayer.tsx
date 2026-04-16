@@ -27,6 +27,7 @@ const MAX_PLAYBACK_DURATION = 6.3;
 
 interface VideoPlayerProps {
   videoId: string;
+  playbackId?: string;
   src: string;
   hlsUrl?: string; // HLS manifest URL for adaptive bitrate streaming
   fallbackUrls?: string[];
@@ -75,6 +76,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
   (
     {
       videoId,
+      playbackId,
       src,
       hlsUrl,
       fallbackUrls,
@@ -139,8 +141,9 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
     const [lastTapTime, setLastTapTime] = useState(0);
     const [longPressTimer, setLongPressTimer] = useState<NodeJS.Timeout | null>(null);
 
+    const resolvedPlaybackId = playbackId ?? videoId;
     const { activeVideoId, registerVideo, unregisterVideo, updateVideoVisibility, globalMuted } = useVideoPlayback();
-    const isActive = activeVideoId === videoId;
+    const isActive = activeVideoId === resolvedPlaybackId;
 
     // Store context functions in refs to avoid unstable dependencies in setRefs callback
     // This prevents infinite loops when context functions change reference
@@ -218,13 +221,13 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
           verboseLog(`[VideoPlayer ${videoId}] Registering video element`);
           // Set initial muted state using ref
           node.muted = globalMutedRef.current;
-          registerVideoRef.current(videoId, node);
+          registerVideoRef.current(resolvedPlaybackId, node);
         } else {
           verboseLog(`[VideoPlayer ${videoId}] Unregistering video element`);
-          unregisterVideoRef.current(videoId);
+          unregisterVideoRef.current(resolvedPlaybackId);
         }
       },
-      [videoId, inViewRef, ref] // Removed registerVideo, unregisterVideo, globalMuted - use refs instead
+      [resolvedPlaybackId, videoId, inViewRef, ref] // Removed registerVideo, unregisterVideo, globalMuted - use refs instead
     );
 
     // Set container ref
@@ -238,16 +241,16 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
       if (isPriority && !entry && !hasError) {
         // Priority video: report as fully visible before observer fires
         verboseLog(`[VideoPlayer ${videoId}] Priority video: reporting immediate full visibility`);
-        updateVideoVisibility(videoId, 1.0);
+        updateVideoVisibility(resolvedPlaybackId, 1.0);
       } else if (entry && !hasError) {
         const visibilityRatio = entry.intersectionRatio;
         verboseLog(`[VideoPlayer ${videoId}] Visibility: ${(visibilityRatio * 100).toFixed(1)}%`);
-        updateVideoVisibility(videoId, visibilityRatio);
+        updateVideoVisibility(resolvedPlaybackId, visibilityRatio);
       } else if (!entry || !inView) {
         // Not visible at all
-        updateVideoVisibility(videoId, 0);
+        updateVideoVisibility(resolvedPlaybackId, 0);
       }
-    }, [entry, inView, videoId, hasError, updateVideoVisibility, isPriority]);
+    }, [entry, inView, resolvedPlaybackId, videoId, hasError, updateVideoVisibility, isPriority]);
 
     // Update playing state based on active status and control video playback
     useEffect(() => {
@@ -928,8 +931,8 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
         }
 
         // Clear visibility and unregister
-        updateVideoVisibility(videoId, 0);
-        unregisterVideo(videoId);
+        updateVideoVisibility(resolvedPlaybackId, 0);
+        unregisterVideo(resolvedPlaybackId);
 
         // Clean up timers
         if (longPressTimer) clearTimeout(longPressTimer);
@@ -941,7 +944,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
           blobUrlRef.current = null;
         }
       };
-    }, [videoId, unregisterVideo, updateVideoVisibility, longPressTimer]);
+    }, [resolvedPlaybackId, videoId, unregisterVideo, updateVideoVisibility, longPressTimer]);
 
     // Handle GIF format (use img tag)
     const currentUrl = allUrls[currentUrlIndex] || src;

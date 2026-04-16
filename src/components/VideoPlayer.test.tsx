@@ -5,13 +5,17 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { VideoPlayer } from './VideoPlayer';
 
+const mockRegisterVideo = vi.fn();
+const mockUnregisterVideo = vi.fn();
+const mockUpdateVideoVisibility = vi.fn();
+
 // Mock dependencies
 vi.mock('@/hooks/useVideoPlayback', () => ({
   useVideoPlayback: vi.fn(() => ({
     activeVideoId: null,
-    registerVideo: vi.fn(),
-    unregisterVideo: vi.fn(),
-    updateVideoVisibility: vi.fn(),
+    registerVideo: mockRegisterVideo,
+    unregisterVideo: mockUnregisterVideo,
+    updateVideoVisibility: mockUpdateVideoVisibility,
     globalMuted: true,
   })),
 }));
@@ -107,9 +111,9 @@ describe('VideoPlayer', () => {
     const { useVideoPlayback } = await import('@/hooks/useVideoPlayback');
     (useVideoPlayback as ReturnType<typeof vi.fn>).mockImplementation(() => ({
       activeVideoId: null,
-      registerVideo: vi.fn(),
-      unregisterVideo: vi.fn(),
-      updateVideoVisibility: vi.fn(),
+      registerVideo: mockRegisterVideo,
+      unregisterVideo: mockUnregisterVideo,
+      updateVideoVisibility: mockUpdateVideoVisibility,
       globalMuted: true,
     }));
 
@@ -375,9 +379,9 @@ describe('VideoPlayer', () => {
       const { useVideoPlayback } = await import('@/hooks/useVideoPlayback');
       (useVideoPlayback as ReturnType<typeof vi.fn>).mockImplementation(() => ({
         activeVideoId: 'test-no-loop',
-        registerVideo: vi.fn(),
-        unregisterVideo: vi.fn(),
-        updateVideoVisibility: vi.fn(),
+        registerVideo: mockRegisterVideo,
+        unregisterVideo: mockUnregisterVideo,
+        updateVideoVisibility: mockUpdateVideoVisibility,
         globalMuted: true,
       }));
 
@@ -421,9 +425,9 @@ describe('VideoPlayer', () => {
       const { useVideoPlayback } = await import('@/hooks/useVideoPlayback');
       (useVideoPlayback as ReturnType<typeof vi.fn>).mockImplementation(() => ({
         activeVideoId: 'test-loop-default',
-        registerVideo: vi.fn(),
-        unregisterVideo: vi.fn(),
-        updateVideoVisibility: vi.fn(),
+        registerVideo: mockRegisterVideo,
+        unregisterVideo: mockUnregisterVideo,
+        updateVideoVisibility: mockUpdateVideoVisibility,
         globalMuted: true,
       }));
 
@@ -455,6 +459,27 @@ describe('VideoPlayer', () => {
 
       expect(playSpy).toHaveBeenCalled();
       expect(currentTimeValue).toBe(0);
+    });
+  });
+
+  describe('playback identity separation', () => {
+    it('registers fullscreen players under playbackId instead of the shared video id', () => {
+      render(
+        <VideoPlayer
+          videoId="shared-video-id"
+          playbackId="fullscreen:shared-video-id"
+          src="https://example.com/shared-video.mp4"
+        />
+      );
+
+      expect(mockRegisterVideo).toHaveBeenCalledWith(
+        'fullscreen:shared-video-id',
+        expect.any(HTMLVideoElement)
+      );
+      expect(mockRegisterVideo).not.toHaveBeenCalledWith(
+        'shared-video-id',
+        expect.any(HTMLVideoElement)
+      );
     });
   });
 });

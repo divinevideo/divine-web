@@ -154,6 +154,7 @@ function FullscreenVideoWithMetrics({
       viewCount={divineViewCount + (video.loopCount ?? 0)}
       onEnded={onEnded}
       loopPlayback={loopPlayback}
+      playbackId={`fullscreen:${video.id}`}
     />
   );
 }
