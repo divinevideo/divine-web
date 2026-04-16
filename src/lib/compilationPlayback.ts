@@ -146,3 +146,30 @@ export function getCompilationFallbackPath(source: CompilationSource): string {
       return source.category ? `/category/${encodeURIComponent(source.category)}` : '/category';
   }
 }
+
+export function getCompilationTitle(source: CompilationSource): string {
+  if (source.source === 'search') {
+    return `Search: "${source.query}"`;
+  }
+
+  switch (source.source) {
+    case 'classics':
+      return 'Classics';
+    case 'foryou':
+      return 'For You';
+    case 'trending':
+      return 'Trending';
+    case 'recent':
+      return 'New';
+    case 'home':
+      return 'Following';
+    case 'hashtag':
+      return source.tag ? `#${source.tag}` : 'Hashtag';
+    case 'profile':
+      return 'Profile videos';
+    case 'category':
+      return source.category ? `Category: ${source.category}` : 'Category';
+    case 'discovery':
+      return 'Discovery';
+  }
+}
