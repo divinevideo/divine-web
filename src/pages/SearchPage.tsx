@@ -393,28 +393,16 @@ export function SearchPage() {
             </TabsTrigger>
           </TabsList>
 
-          {/* Results count */}
+          {/* Status message */}
           {searchQuery.trim() && (
             <div className="text-center mb-4">
               {isLoading ? (
                 <p className="text-muted-foreground">Searching...</p>
               ) : error ? (
                 <p className="text-destructive">Search error occurred</p>
-              ) : (
-                <p className="text-muted-foreground">
-                  {getResultsCount() === 0
-                    ? 'No results found'
-                    : `${getResultsCount()} ${
-                        activeFilter === 'all'
-                          ? 'results'
-                          : activeFilter === 'videos'
-                          ? 'videos'
-                          : activeFilter === 'users'
-                          ? 'users'
-                          : 'hashtags'
-                      } found`}
-                </p>
-              )}
+              ) : getResultsCount() === 0 ? (
+                <p className="text-muted-foreground">No results found</p>
+              ) : null}
             </div>
           )}
 
