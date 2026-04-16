@@ -103,7 +103,10 @@ export function VideoPlaybackProvider({ children }: { children: ReactNode }) {
       let maxVisibility = 0;
 
       videoVisibility.current.forEach((ratio, id) => {
-        if (ratio > maxVisibility) {
+        if (
+          ratio > maxVisibility ||
+          (ratio === maxVisibility && id === activeVideoIdRef.current)
+        ) {
           maxVisibility = ratio;
           mostVisibleId = id;
         }
