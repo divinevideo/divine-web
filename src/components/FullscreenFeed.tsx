@@ -22,6 +22,8 @@ interface FullscreenFeedProps {
   onClose: () => void;
   onLoadMore?: () => void;
   hasMore?: boolean;
+  autoAdvance?: boolean;
+  onVideoChange?: (videoId: string) => void;
 }
 
 // Wrapper component to provide metrics for each video
@@ -30,11 +32,13 @@ function FullscreenVideoWithMetrics({
   index: _index,
   isActive,
   onBack,
+  onEnded,
 }: {
   video: ParsedVideoData;
   index: number;
   isActive: boolean;
   onBack: () => void;
+  onEnded?: () => void;
 }) {
   const { user } = useCurrentUser();
   const { toast } = useToast();
@@ -146,6 +150,7 @@ function FullscreenVideoWithMetrics({
       repostCount={(video.repostCount ?? 0) + (socialMetrics.data?.repostCount ?? 0)}
       commentCount={(video.commentCount ?? 0) + (socialMetrics.data?.commentCount ?? 0)}
       viewCount={divineViewCount + (video.loopCount ?? 0)}
+      onEnded={onEnded}
     />
   );
 }
@@ -156,12 +161,19 @@ export function FullscreenFeed({
   onClose,
   onLoadMore,
   hasMore,
+  autoAdvance = false,
+  onVideoChange,
 }: FullscreenFeedProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [currentIndex, setCurrentIndex] = useState(startIndex);
   const [mounted, setMounted] = useState(false);
+  const [awaitingNextPage, setAwaitingNextPage] = useState(false);
   const { setGlobalMuted, globalMuted } = useVideoPlayback();
   const previousMutedState = useRef(globalMuted);
+  const scrollToIndex = useCallback((index: number, behavior: ScrollBehavior = 'smooth') => {
+    const targetElement = containerRef.current?.children[index] as HTMLElement | undefined;
+    targetElement?.scrollIntoView({ behavior });
+  }, []);
 
   // Unmute when entering fullscreen, restore on exit
   useEffect(() => {
@@ -188,12 +200,18 @@ export function FullscreenFeed({
   // Scroll to start index on mount
   useEffect(() => {
     if (containerRef.current && mounted) {
-      const targetElement = containerRef.current.children[startIndex] as HTMLElement;
-      if (targetElement) {
-        targetElement.scrollIntoView({ behavior: 'instant' });
-      }
+      scrollToIndex(startIndex, 'instant');
     }
-  }, [startIndex, mounted]);
+  }, [mounted, scrollToIndex, startIndex]);
+
+  useEffect(() => {
+    const activeVideo = videos[currentIndex];
+    if (!activeVideo) {
+      return;
+    }
+
+    onVideoChange?.(activeVideo.id);
+  }, [currentIndex, onVideoChange, videos]);
 
   // Handle scroll to detect current video
   const handleScroll = useCallback(() => {
@@ -210,11 +228,38 @@ export function FullscreenFeed({
       setCurrentIndex(newIndex);
 
       // Load more videos when near the end
-      if (hasMore && onLoadMore && newIndex >= videos.length - 3) {
+      if (!awaitingNextPage && hasMore && onLoadMore && newIndex >= videos.length - 3) {
         onLoadMore();
       }
     }
-  }, [currentIndex, videos.length, hasMore, onLoadMore]);
+  }, [awaitingNextPage, currentIndex, videos.length, hasMore, onLoadMore]);
+
+  useEffect(() => {
+    if (!awaitingNextPage || currentIndex >= videos.length - 1) {
+      return;
+    }
+
+    setAwaitingNextPage(false);
+    setCurrentIndex(index => Math.min(index + 1, videos.length - 1));
+    scrollToIndex(currentIndex + 1);
+  }, [awaitingNextPage, currentIndex, scrollToIndex, videos.length]);
+
+  const handleAdvance = useCallback(() => {
+    if (!autoAdvance) {
+      return;
+    }
+
+    if (currentIndex < videos.length - 1) {
+      setCurrentIndex(index => Math.min(index + 1, videos.length - 1));
+      scrollToIndex(currentIndex + 1);
+      return;
+    }
+
+    if (hasMore && onLoadMore && !awaitingNextPage) {
+      setAwaitingNextPage(true);
+      onLoadMore();
+    }
+  }, [autoAdvance, awaitingNextPage, currentIndex, hasMore, onLoadMore, scrollToIndex, videos.length]);
 
   // Handle keyboard navigation
   useEffect(() => {
@@ -224,21 +269,19 @@ export function FullscreenFeed({
       } else if (e.key === 'ArrowDown' || e.key === 'j') {
         // Next video
         if (currentIndex < videos.length - 1) {
-          const targetElement = containerRef.current?.children[currentIndex + 1] as HTMLElement;
-          targetElement?.scrollIntoView({ behavior: 'smooth' });
+          scrollToIndex(currentIndex + 1);
         }
       } else if (e.key === 'ArrowUp' || e.key === 'k') {
         // Previous video
         if (currentIndex > 0) {
-          const targetElement = containerRef.current?.children[currentIndex - 1] as HTMLElement;
-          targetElement?.scrollIntoView({ behavior: 'smooth' });
+          scrollToIndex(currentIndex - 1);
         }
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [currentIndex, videos.length, onClose]);
+  }, [currentIndex, onClose, scrollToIndex, videos.length]);
 
   // Portal content
   const content = (
@@ -263,6 +306,7 @@ export function FullscreenFeed({
             index={index}
             isActive={index === currentIndex}
             onBack={onClose}
+            onEnded={handleAdvance}
           />
         ))}
       </div>

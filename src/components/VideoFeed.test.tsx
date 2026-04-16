@@ -5,9 +5,12 @@ import { MemoryRouter } from 'react-router-dom';
 import type { ButtonHTMLAttributes, HTMLAttributes, ReactNode } from 'react';
 import { VideoFeed } from './VideoFeed';
 
-const { mockNavigate, mockUseVideoProvider } = vi.hoisted(() => ({
+const { mockNavigate, mockUseVideoProvider, mockEnterFullscreen, mockSetVideosForFullscreen, mockUpdateVideos } = vi.hoisted(() => ({
   mockNavigate: vi.fn(),
   mockUseVideoProvider: vi.fn(),
+  mockEnterFullscreen: vi.fn(),
+  mockSetVideosForFullscreen: vi.fn(),
+  mockUpdateVideos: vi.fn(),
 }));
 
 vi.mock('@/hooks/useVideoProvider', () => ({
@@ -42,9 +45,9 @@ vi.mock('@/hooks/useSubdomainNavigate', () => ({
 
 vi.mock('@/contexts/FullscreenFeedContext', () => ({
   useFullscreenFeed: () => ({
-    setVideosForFullscreen: vi.fn(),
-    enterFullscreen: vi.fn(),
-    updateVideos: vi.fn(),
+    setVideosForFullscreen: mockSetVideosForFullscreen,
+    enterFullscreen: mockEnterFullscreen,
+    updateVideos: mockUpdateVideos,
   }),
 }));
 
@@ -127,12 +130,10 @@ describe('VideoFeed', () => {
       </MemoryRouter>
     );
 
-    const button = await screen.findByRole('button', { name: /play all as compilation/i });
+    const button = await screen.findByRole('button', { name: /play all/i });
     await user.click(button);
 
-    expect(mockNavigate).toHaveBeenCalledWith(
-      expect.stringContaining('/watch?play=compilation&source=classics')
-    );
+    expect(mockNavigate).toHaveBeenCalledWith('/discovery/classics?play=compilation&start=0');
   });
 
   it('preserves discovery tab context in the compilation url', async () => {
@@ -144,11 +145,22 @@ describe('VideoFeed', () => {
       </MemoryRouter>
     );
 
-    const button = await screen.findByRole('button', { name: /play all as compilation/i });
+    const button = await screen.findByRole('button', { name: /play all/i });
     await user.click(button);
 
-    expect(mockNavigate).toHaveBeenCalledWith(
-      expect.stringContaining('surface=%2Fdiscovery%2Fhot')
+    expect(mockNavigate).toHaveBeenCalledWith('/discovery/hot?play=compilation&start=0&sort=hot');
+  });
+
+  it('auto-opens the existing fullscreen feed when compilation mode is present in the source url', () => {
+    render(
+      <MemoryRouter initialEntries={['/discovery/classics?play=compilation&start=0']}>
+        <VideoFeed feedType="classics" viewMode="grid" mode="thumbnail" />
+      </MemoryRouter>
+    );
+
+    expect(mockEnterFullscreen).toHaveBeenCalledWith(
+      [expect.objectContaining({ id: 'video-1' })],
+      0,
     );
   });
 });

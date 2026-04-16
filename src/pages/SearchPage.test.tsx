@@ -18,12 +18,18 @@ const {
   mockFetchVideoById,
   mockNostrQuery,
   mockUseInfiniteSearchVideos,
+  mockEnterFullscreen,
+  mockSetVideosForFullscreen,
+  mockUpdateVideos,
 } = vi.hoisted(() => ({
   mockNavigate: vi.fn(),
   mockFetchEventById: vi.fn(),
   mockFetchVideoById: vi.fn(),
   mockNostrQuery: vi.fn(),
   mockUseInfiniteSearchVideos: vi.fn(),
+  mockEnterFullscreen: vi.fn(),
+  mockSetVideosForFullscreen: vi.fn(),
+  mockUpdateVideos: vi.fn(),
 }));
 
 vi.mock('@unhead/react', () => ({
@@ -106,6 +112,14 @@ vi.mock('react-infinite-scroll-component', () => ({
 
 vi.mock('@/hooks/useSubdomainNavigate', () => ({
   useSubdomainNavigate: () => mockNavigate,
+}));
+
+vi.mock('@/contexts/FullscreenFeedContext', () => ({
+  useFullscreenFeed: () => ({
+    setVideosForFullscreen: mockSetVideosForFullscreen,
+    enterFullscreen: mockEnterFullscreen,
+    updateVideos: mockUpdateVideos,
+  }),
 }));
 
 vi.mock('@nostrify/react', () => ({
@@ -353,11 +367,10 @@ describe('SearchPage', () => {
 
     renderPage(['/search?q=twerking&filter=videos']);
 
-    const button = await screen.findByRole('button', { name: /play all as compilation/i });
+    const button = await screen.findByRole('button', { name: /play all/i });
     await user.click(button);
 
-    expect(mockNavigate).toHaveBeenCalledWith(expect.stringContaining('/watch?play=compilation&source=search'));
-    expect(mockNavigate).toHaveBeenCalledWith(expect.stringContaining('q=twerking'));
+    expect(mockNavigate).toHaveBeenCalledWith('/search?q=twerking&filter=videos&play=compilation&start=0');
   });
 
   it('uses the live search state for returnTo even before the debounced url sync runs', async () => {
@@ -382,10 +395,33 @@ describe('SearchPage', () => {
 
     await user.clear(screen.getByRole('textbox'));
     await user.type(screen.getByRole('textbox'), 'twerking');
-    await user.click(await screen.findByRole('button', { name: /play all as compilation/i }));
+    await user.click(await screen.findByRole('button', { name: /play all/i }));
 
-    expect(mockNavigate).toHaveBeenCalledWith(
-      expect.stringContaining('returnTo=%2Fsearch%3Fq%3Dtwerking%26filter%3Dvideos')
+    expect(mockNavigate).toHaveBeenCalledWith('/search?q=twerking&filter=videos&play=compilation&start=0');
+  });
+
+  it('auto-opens the existing fullscreen feed when compilation mode is present in the search url', () => {
+    mockUseInfiniteSearchVideos.mockReturnValue({
+      data: {
+        pages: [{
+          videos: [{
+            id: 'video-1',
+            pubkey: 'a'.repeat(64),
+            videoUrl: 'https://example.com/video-1.mp4',
+          }],
+        }],
+      },
+      fetchNextPage: vi.fn(),
+      hasNextPage: false,
+      isLoading: false,
+      error: null,
+    });
+
+    renderPage(['/search?q=twerking&filter=videos&play=compilation&start=0']);
+
+    expect(mockEnterFullscreen).toHaveBeenCalledWith(
+      [expect.objectContaining({ id: 'video-1' })],
+      0,
     );
   });
 });

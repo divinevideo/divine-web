@@ -7,7 +7,7 @@ import { useNostr } from '@nostrify/react';
 import { useSubdomainNavigate } from '@/hooks/useSubdomainNavigate';
 import { nip19 } from 'nostr-tools';
 import { useSeoMeta } from '@unhead/react';
-import { MagnifyingGlass as Search, Hash, Users, VideoCamera as Video, CircleNotch as Loader2 } from '@phosphor-icons/react';
+import { MagnifyingGlass as Search, Hash, Play, Users, VideoCamera as Video, CircleNotch as Loader2 } from '@phosphor-icons/react';
 import { trackSearch } from '@/lib/analytics';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -20,6 +20,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { VideoCard } from '@/components/VideoCard';
 import InfiniteScroll from 'react-infinite-scroll-component';
 import { useInfiniteSearchVideos } from '@/hooks/useInfiniteSearchVideos';
+import { useCompilationFullscreen } from '@/hooks/useCompilationFullscreen';
 import { useSearchUsers } from '@/hooks/useSearchUsers';
 import { useSearchHashtags, type HashtagResult } from '@/hooks/useSearchHashtags';
 import { getFunnelcakeBaseUrl } from '@/config/api';
@@ -318,14 +319,8 @@ export function SearchPage() {
     return query ? `/search?${query}` : '/search';
   }, [activeFilter, searchQuery, sortMode]);
   const compilationUrl = showCompilationButton
-    ? buildCompilationPlaybackUrl({
-        source: 'search',
-        query: searchQuery.trim(),
-        filter: activeFilter,
-        sort: sortMode,
+    ? buildCompilationPlaybackUrl(compilationReturnPath, {
         start: 0,
-        returnTo: compilationReturnPath,
-        surface: compilationReturnPath,
       })
     : null;
 
@@ -339,6 +334,13 @@ export function SearchPage() {
       sortMode,
     };
   }, [searchQuery, sortMode]);
+
+  useCompilationFullscreen({
+    videos: videoResults,
+    fetchNextPage: fetchNextVideos,
+    hasNextPage: hasNextVideos ?? false,
+    enabled: activeFilter === 'all' || activeFilter === 'videos',
+  });
 
   return (
     <div className="min-h-screen bg-background">
@@ -445,10 +447,13 @@ export function SearchPage() {
               {compilationUrl && !isLoading && !error && (
                 <Button
                   type="button"
-                  variant="outline"
+                  variant="ghost"
+                  size="sm"
                   onClick={() => navigate(compilationUrl)}
+                  className="gap-2"
                 >
-                  Play all as compilation
+                  <Play className="h-4 w-4" />
+                  Play all
                 </Button>
               )}
             </div>

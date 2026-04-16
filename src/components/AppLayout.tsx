@@ -1,4 +1,4 @@
-import { Outlet, useLocation } from 'react-router-dom';
+import { Outlet, useLocation, useSearchParams } from 'react-router-dom';
 import { AppHeader } from '@/components/AppHeader';
 import { BottomNav } from '@/components/BottomNav';
 import { PWAInstallPrompt } from '@/components/PWAInstallPrompt';
@@ -8,17 +8,46 @@ import { useAppContext } from '@/hooks/useAppContext';
 import { useFullscreenFeed } from '@/contexts/FullscreenFeedContext';
 import { getSubdomainUser } from '@/hooks/useSubdomainUser';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
+import {
+  clearCompilationPlaybackParams,
+  parseCompilationPlaybackParams,
+} from '@/lib/compilationPlayback';
 
 export function AppLayout() {
   const location = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { user } = useCurrentUser();
   const { isRecording } = useAppContext();
   const { state: fullscreenState, exitFullscreen, onLoadMore, hasMore } = useFullscreenFeed();
+  const compilationRequest = parseCompilationPlaybackParams(searchParams);
 
   const isLoggedIn = Boolean(user);
 
   // Hide header/sidebar on landing page (when logged out on root path), but NOT on subdomain profiles
   const isLandingPage = location.pathname === '/' && !isLoggedIn && !getSubdomainUser();
+
+  const handleCloseFullscreen = () => {
+    exitFullscreen();
+
+    if (!compilationRequest.play) {
+      return;
+    }
+
+    const nextParams = new URLSearchParams(searchParams);
+    clearCompilationPlaybackParams(nextParams);
+    setSearchParams(nextParams, { replace: true });
+  };
+
+  const handleCompilationVideoChange = (videoId: string) => {
+    if (!compilationRequest.play) {
+      return;
+    }
+
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.set('video', videoId);
+    nextParams.delete('start');
+    setSearchParams(nextParams, { replace: true });
+  };
 
   return (
     <>
@@ -46,9 +75,11 @@ export function AppLayout() {
         <FullscreenFeed
           videos={fullscreenState.videos}
           startIndex={fullscreenState.startIndex}
-          onClose={exitFullscreen}
+          onClose={handleCloseFullscreen}
           onLoadMore={onLoadMore}
           hasMore={hasMore}
+          autoAdvance={compilationRequest.play}
+          onVideoChange={handleCompilationVideoChange}
         />
       )}
     </>

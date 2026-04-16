@@ -4,7 +4,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { performanceMonitor } from '@/lib/performanceMonitoring';
-import { VideoCamera as Video, CircleNotch as Loader2 } from '@phosphor-icons/react';
+import { VideoCamera as Video, CircleNotch as Loader2, Play } from '@phosphor-icons/react';
 import { VideoCardWithMetrics } from '@/components/VideoCardWithMetrics';
 import { VideoGrid } from '@/components/VideoGrid';
 import { AddToListDialog } from '@/components/AddToListDialog';
@@ -24,6 +24,7 @@ import { useCallback } from 'react';
 import { useFullscreenFeed } from '@/contexts/FullscreenFeedContext';
 import { useVideoPlayback } from '@/hooks/useVideoPlayback';
 import { useVideoPrefetch } from '@/hooks/useVideoPrefetch';
+import { useCompilationFullscreen } from '@/hooks/useCompilationFullscreen';
 import { buildCompilationPlaybackUrl } from '@/lib/compilationPlayback';
 
 type ViewMode = 'feed' | 'grid';
@@ -73,7 +74,7 @@ export function VideoFeed({
 
   const { checkContent } = useContentModeration();
   const navigate = useSubdomainNavigate();
-  const { setVideosForFullscreen, enterFullscreen, updateVideos } = useFullscreenFeed();
+  const { enterFullscreen } = useFullscreenFeed();
 
   // Use video provider hook - automatically selects Funnelcake or WebSocket
   const {
@@ -234,26 +235,24 @@ export function VideoFeed({
   const allFiltered = allVideos && allVideos.length > 0 && (!filteredVideos || filteredVideos.length === 0);
   const currentSurface = `${location.pathname}${location.search}`;
   const compilationUrl = filteredVideos.length > 0
-    ? buildCompilationPlaybackUrl({
-        source: feedType,
-        tag: hashtag,
-        pubkey,
-        category,
-        sort: sortMode,
+    ? buildCompilationPlaybackUrl(currentSurface, {
         start: 0,
-        returnTo: currentSurface,
-        surface: currentSurface,
+        extraParams: {
+          sort: sortMode,
+        },
       })
     : null;
   const compilationLauncher = compilationUrl ? (
     <div className="mb-4 flex justify-end">
       <Button
         type="button"
-        variant="outline"
+        variant="ghost"
         size="sm"
         onClick={() => navigate(compilationUrl)}
+        className="gap-2"
       >
-        Play all as compilation
+        <Play className="h-4 w-4" />
+        Play all
       </Button>
     </div>
   ) : null;
@@ -266,18 +265,11 @@ export function VideoFeed({
   }, [isLoading, feedType, allFiltered, navigate, filteredVideos]);
 
   // Register videos for fullscreen mode
-  useEffect(() => {
-    if (filteredVideos.length > 0) {
-      setVideosForFullscreen(filteredVideos, fetchNextPage, hasNextPage ?? false);
-    }
-  }, [filteredVideos, setVideosForFullscreen, fetchNextPage, hasNextPage]);
-
-  // Update videos in fullscreen when more are loaded
-  useEffect(() => {
-    if (filteredVideos.length > 0) {
-      updateVideos(filteredVideos);
-    }
-  }, [filteredVideos, updateVideos]);
+  useCompilationFullscreen({
+    videos: filteredVideos,
+    fetchNextPage,
+    hasNextPage: hasNextPage ?? false,
+  });
 
   // Stable callbacks for comment handling - MUST be before any early returns
   // to ensure hooks are called in the same order on every render

@@ -1,68 +1,47 @@
 import { describe, expect, it } from 'vitest';
 import {
   buildCompilationPlaybackUrl,
-  getCompilationFallbackPath,
-  getCompilationTitle,
-  getSafeCompilationPath,
+  clearCompilationPlaybackParams,
+  getCompilationStartIndex,
   parseCompilationPlaybackParams,
 } from '@/lib/compilationPlayback';
 
 describe('compilationPlayback', () => {
-  it('builds and parses search descriptors with return state', () => {
-    const url = buildCompilationPlaybackUrl({
-      source: 'search',
-      query: 'twerking',
-      filter: 'videos',
-      sort: 'relevance',
-      start: 0,
-      returnTo: '/search?q=twerking&filter=videos',
-    });
-
-    expect(url).toContain('/watch?');
+  it('builds same-page compilation urls without leaving the source route', () => {
     expect(
-      parseCompilationPlaybackParams(new URL(url, 'https://divine.video').searchParams)
-    ).toMatchObject({
-      play: 'compilation',
-      source: 'search',
-      query: 'twerking',
-      filter: 'videos',
-      sort: 'relevance',
-      start: 0,
-      returnTo: '/search?q=twerking&filter=videos',
+      buildCompilationPlaybackUrl('/discovery/classics', { start: 0 })
+    ).toBe('/discovery/classics?play=compilation&start=0');
+
+    expect(
+      buildCompilationPlaybackUrl('/search?q=twerking&filter=videos', { start: 0 })
+    ).toBe('/search?q=twerking&filter=videos&play=compilation&start=0');
+  });
+
+  it('parses compilation params from source-page urls', () => {
+    const descriptor = parseCompilationPlaybackParams(
+      new URLSearchParams('q=twerking&play=compilation&video=video-7')
+    );
+
+    expect(descriptor).toEqual({
+      play: true,
+      start: undefined,
+      videoId: 'video-7',
     });
   });
 
-  it('derives deterministic fallback routes when returnTo is absent', () => {
-    expect(getCompilationFallbackPath({ source: 'classics' })).toBe('/discovery/classics');
-    expect(getCompilationFallbackPath({ source: 'hashtag', tag: 'dance' })).toBe('/hashtag/dance');
+  it('clears compilation params while preserving the source page query state', () => {
+    const params = new URLSearchParams('q=twerking&filter=videos&play=compilation&start=0&video=video-2');
+
+    clearCompilationPlaybackParams(params);
+
+    expect(params.toString()).toBe('q=twerking&filter=videos');
   });
 
-  it('preserves explicit feed surface context for shared compilation urls', () => {
-    const url = buildCompilationPlaybackUrl({
-      source: 'trending',
-      sort: 'hot',
-      surface: '/discovery/hot',
-      start: 0,
-    });
-    const descriptor = parseCompilationPlaybackParams(new URL(url, 'https://divine.video').searchParams);
+  it('resolves requested start positions against loaded videos', () => {
+    const videos = [{ id: 'video-1' }, { id: 'video-2' }];
 
-    expect(descriptor).toMatchObject({
-      source: 'trending',
-      sort: 'hot',
-      surface: '/discovery/hot',
-    });
-    expect(getCompilationFallbackPath(descriptor)).toBe('/discovery/hot');
-    expect(getCompilationTitle(descriptor)).toBe('Hot');
-  });
-
-  it('ignores invalid navigation targets from shared url params', () => {
-    expect(getSafeCompilationPath('/discovery/hot?foo=1')).toBe('/discovery/hot?foo=1');
-    expect(getSafeCompilationPath('//evil.example/path')).toBeUndefined();
-    expect(getSafeCompilationPath('https://evil.example/path')).toBeUndefined();
-    expect(getCompilationFallbackPath({
-      source: 'trending',
-      sort: 'hot',
-      surface: '//evil.example/path',
-    })).toBe('/trending');
+    expect(getCompilationStartIndex({ play: true, start: 1 }, videos)).toBe(1);
+    expect(getCompilationStartIndex({ play: true, videoId: 'video-2' }, videos)).toBe(1);
+    expect(getCompilationStartIndex({ play: true, videoId: 'missing' }, videos)).toBe(-1);
   });
 });
