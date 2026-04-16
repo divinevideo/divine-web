@@ -9,7 +9,8 @@ type AuthHeaderGenerator = (url: string, method?: string) => Promise<string | nu
 type LoaderConstructor = new (config: HlsConfig) => Loader<LoaderContext>;
 
 /**
- * Creates a custom HLS loader class that adds NIP-98 auth headers to each request
+ * Creates a custom HLS loader class that adds viewer auth headers to each request.
+ * Protocol choice (Blossom vs NIP-98) is delegated to the passed-in generator.
  */
 export function createAuthLoader(getAuthHeader: AuthHeaderGenerator): LoaderConstructor {
   // Get the default loader class from HLS.js
