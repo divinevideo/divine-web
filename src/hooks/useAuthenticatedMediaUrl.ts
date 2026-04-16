@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { fetchWithAuth, useAdultVerification } from '@/hooks/useAdultVerification';
 
-function isProtectedDivineMediaUrl(url: string): boolean {
+export function isProtectedDivineMediaUrl(url: string): boolean {
   try {
     const parsed = new URL(url);
     return parsed.hostname === 'media.divine.video';
@@ -47,7 +47,7 @@ export function useAuthenticatedMediaUrl(
         const authHeader = await getAuthHeader(url);
         if (!authHeader) {
           if (!cancelled) {
-            setMediaUrl(url);
+            setMediaUrl(undefined);
             setIsLoading(false);
           }
           return;
@@ -75,7 +75,7 @@ export function useAuthenticatedMediaUrl(
         setIsLoading(false);
       } catch {
         if (!cancelled) {
-          setMediaUrl(url);
+          setMediaUrl(undefined);
           setIsLoading(false);
         }
       }

@@ -18,7 +18,7 @@ import { AgeVerificationOverlay } from '@/components/AgeVerificationOverlay';
 import { SubtitleOverlay } from '@/components/SubtitleOverlay';
 import { createAuthLoader } from '@/lib/hlsAuthLoader';
 import { bandwidthTracker } from '@/lib/bandwidthTracker';
-import { useAuthenticatedMediaUrl } from '@/hooks/useAuthenticatedMediaUrl';
+import { isProtectedDivineMediaUrl, useAuthenticatedMediaUrl } from '@/hooks/useAuthenticatedMediaUrl';
 import Hls from 'hls.js';
 
 // Maximum playback duration limit - videos loop back to start after this many seconds
@@ -127,6 +127,8 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
     const { mediaUrl: authenticatedPosterUrl } = useAuthenticatedMediaUrl(poster, {
       enabled: !!poster && !requiresAuth && !authCheckPending,
     });
+    const overlayPosterUrl = authenticatedPosterUrl ||
+      (poster && !isProtectedDivineMediaUrl(poster) ? poster : undefined);
 
     // Mobile-specific state
     const [touchState, setTouchState] = useState<TouchState | null>(null);
@@ -1047,7 +1049,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
         {requiresAuth && (
           <AgeVerificationOverlay
             onVerified={handleAgeVerified}
-            thumbnailUrl={authenticatedPosterUrl || poster}
+            thumbnailUrl={overlayPosterUrl}
             blurhash={blurhash}
           />
         )}

@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useAdultVerification, checkMediaAuth } from '@/hooks/useAdultVerification';
 import { AgeVerificationOverlay } from '@/components/AgeVerificationOverlay';
-import { useAuthenticatedMediaUrl } from '@/hooks/useAuthenticatedMediaUrl';
+import { isProtectedDivineMediaUrl, useAuthenticatedMediaUrl } from '@/hooks/useAuthenticatedMediaUrl';
 import { verboseLog, debugError } from '@/lib/debug';
 
 interface ThumbnailPlayerProps {
@@ -100,6 +100,8 @@ export function ThumbnailPlayer({
   const { mediaUrl: authenticatedMediaUrl, isLoading: authMediaLoading } = useAuthenticatedMediaUrl(baseThumbnailUrl, {
     enabled: !requiresAuth,
   });
+  const overlayThumbnailUrl = authenticatedMediaUrl ||
+    (baseThumbnailUrl && !isProtectedDivineMediaUrl(baseThumbnailUrl) ? baseThumbnailUrl : undefined);
   // Generate thumbnail from video if no thumbnail URL provided
   const effectiveThumbnailUrl = thumbnailUrl
     ? authenticatedMediaUrl
@@ -124,7 +126,7 @@ export function ThumbnailPlayer({
       {requiresAuth ? (
         <AgeVerificationOverlay
           onVerified={handleAgeVerified}
-          thumbnailUrl={thumbnailUrl}
+          thumbnailUrl={overlayThumbnailUrl}
         />
       ) : authMediaLoading ? (
         <div
