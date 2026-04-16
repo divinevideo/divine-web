@@ -11,11 +11,18 @@ import type {
 import { nip19 } from 'nostr-tools';
 import SearchPage from './SearchPage';
 
-const { mockNavigate, mockFetchEventById, mockFetchVideoById, mockNostrQuery } = vi.hoisted(() => ({
+const {
+  mockNavigate,
+  mockFetchEventById,
+  mockFetchVideoById,
+  mockNostrQuery,
+  mockSearchVideosData,
+} = vi.hoisted(() => ({
   mockNavigate: vi.fn(),
   mockFetchEventById: vi.fn(),
   mockFetchVideoById: vi.fn(),
   mockNostrQuery: vi.fn(),
+  mockSearchVideosData: [] as Array<{ id: string; pubkey: string }>,
 }));
 
 vi.mock('@unhead/react', () => ({
@@ -71,7 +78,25 @@ vi.mock('@/components/ui/avatar', () => ({
 }));
 
 vi.mock('@/components/VideoCard', () => ({
-  VideoCard: () => <div data-testid="video-card" />,
+  VideoCard: ({
+    video,
+    navigationContext,
+    videoIndex,
+  }: {
+    video: { id: string };
+    navigationContext?: { source: string; query?: string; sortMode?: string };
+    videoIndex?: number;
+  }) => {
+    const href = navigationContext
+      ? `/video/${video.id}?source=${navigationContext.source}&q=${navigationContext.query}&sort=${navigationContext.sortMode}&index=${videoIndex}`
+      : `/video/${video.id}`;
+
+    return (
+      <button data-testid={`video-card-${video.id}`} onClick={() => mockNavigate(href)}>
+        open {video.id}
+      </button>
+    );
+  },
 }));
 
 vi.mock('react-infinite-scroll-component', () => ({
@@ -101,7 +126,7 @@ vi.mock('@/hooks/useAppContext', () => ({
 
 vi.mock('@/hooks/useInfiniteSearchVideos', () => ({
   useInfiniteSearchVideos: () => ({
-    data: { pages: [{ videos: [] }] },
+    data: { pages: [{ videos: mockSearchVideosData }] },
     fetchNextPage: vi.fn(),
     hasNextPage: false,
     isLoading: false,
@@ -144,6 +169,7 @@ function renderPage(initialEntries: string[] = ['/search']) {
 describe('SearchPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockSearchVideosData.length = 0;
   });
 
   afterEach(() => {
@@ -281,5 +307,18 @@ describe('SearchPage', () => {
     });
 
     expect(mockNavigate).toHaveBeenCalledWith(`/event/${eventId}`);
+  });
+
+  it('opens video results with bounded search context', async () => {
+    mockSearchVideosData.push(
+      { id: 'video-1', pubkey: 'a'.repeat(64) },
+      { id: 'video-2', pubkey: 'b'.repeat(64) },
+    );
+
+    renderPage(['/search?q=twerking&filter=videos&sort=top']);
+
+    fireEvent.click(screen.getAllByTestId('video-card-video-2')[0]!);
+
+    expect(mockNavigate).toHaveBeenCalledWith('/video/video-2?source=search&q=twerking&sort=top&index=1');
   });
 });

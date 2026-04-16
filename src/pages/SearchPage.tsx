@@ -32,6 +32,7 @@ import { DEFAULT_FUNNELCAKE_URL, getFunnelcakeUrl } from '@/config/relays';
 import { fetchVideoById } from '@/lib/funnelcakeClient';
 import { fetchEventById } from '@/lib/eventLookup';
 import { buildResolvedEventRoute, buildVideoPath } from '@/lib/eventRouting';
+import type { VideoNavigationContext } from '@/hooks/useVideoNavigation';
 import {
   buildProfilePath,
   getDirectSearchTarget,
@@ -301,6 +302,17 @@ export function SearchPage() {
   // Check if we have any results
   const hasResults = videoResults.length > 0 || userResults.length > 0 || hashtagResults.length > 0;
 
+  const searchNavigationContext = useMemo<VideoNavigationContext | undefined>(() => {
+    const trimmedQuery = searchQuery.trim();
+    if (!trimmedQuery) return undefined;
+
+    return {
+      source: 'search',
+      query: trimmedQuery,
+      sortMode,
+    };
+  }, [searchQuery, sortMode]);
+
   return (
     <div className="min-h-screen bg-background">
       {/* Main content */}
@@ -447,8 +459,14 @@ export function SearchPage() {
                       </Button>
                     </div>
                     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                      {videoResults.slice(0, 6).map((video) => (
-                        <VideoCard key={video.id} video={video} mode="thumbnail" />
+                      {videoResults.slice(0, 6).map((video, index) => (
+                        <VideoCard
+                          key={video.id}
+                          video={video}
+                          mode="thumbnail"
+                          navigationContext={searchNavigationContext}
+                          videoIndex={index}
+                        />
                       ))}
                     </div>
                   </section>
@@ -540,8 +558,14 @@ export function SearchPage() {
                 }
               >
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  {videoResults.map((video) => (
-                    <VideoCard key={video.id} video={video} mode="thumbnail" />
+                  {videoResults.map((video, index) => (
+                    <VideoCard
+                      key={video.id}
+                      video={video}
+                      mode="thumbnail"
+                      navigationContext={searchNavigationContext}
+                      videoIndex={index}
+                    />
                   ))}
                 </div>
               </InfiniteScroll>

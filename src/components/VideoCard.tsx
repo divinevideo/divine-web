@@ -38,7 +38,7 @@ import { cn } from '@/lib/utils';
 import { formatClassicVineViewBreakdown, formatViewCount, formatCount } from '@/lib/formatUtils';
 import { getSafeProfileImage } from '@/lib/imageUtils';
 import type { ViewTrafficSource } from '@/hooks/useViewEventPublisher';
-import type { VideoNavigationContext } from '@/hooks/useVideoNavigation';
+import { buildVideoNavigationUrl, type VideoNavigationContext } from '@/hooks/useVideoNavigation';
 import { useToast } from '@/hooks/useToast';
 import { useShare } from '@/hooks/useShare';
 import { useDmCapability } from '@/hooks/useDirectMessages';
@@ -100,8 +100,8 @@ export function VideoCard({
   commentCount = 0,
   viewCount = 0,
   showComments = false,
-  navigationContext: _navigationContext,
-  videoIndex: _videoIndex,
+  navigationContext,
+  videoIndex,
   trafficSource,
 }: VideoCardProps) {
   const authorData = useAuthor(video.pubkey, {
@@ -329,7 +329,10 @@ export function VideoCard({
   const handleThumbnailClick = () => {
     // In thumbnail mode (grid view), navigate to video page instead of playing inline
     if (mode === 'thumbnail') {
-      navigate(`/video/${video.id}`, { ownerPubkey: video.pubkey });
+      const targetUrl = navigationContext
+        ? buildVideoNavigationUrl(video.id, navigationContext, videoIndex)
+        : `/video/${video.id}`;
+      navigate(targetUrl, { ownerPubkey: video.pubkey });
     } else {
       setActiveVideo(video.id);
       setIsPlaying(true);

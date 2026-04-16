@@ -38,6 +38,8 @@ export function VideoPage() {
       source,
       hashtag: searchParams.get('hashtag') || undefined,
       pubkey: searchParams.get('pubkey') || undefined,
+      query: searchParams.get('q') || undefined,
+      sortMode: searchParams.get('sort') as VideoNavigationContext['sortMode'],
       currentIndex: searchParams.get('index') ? parseInt(searchParams.get('index')!) : undefined,
     };
   }, [searchParams]);
@@ -53,6 +55,8 @@ export function VideoPage() {
     videoId: id || '',
     pubkey: context?.pubkey,
     hashtag: context?.hashtag,
+    query: context?.query,
+    sortMode: context?.sortMode,
     currentIndex: context?.currentIndex,
     enabled: !!id,
   });
@@ -99,6 +103,8 @@ export function VideoPage() {
 
     if (context.hashtag) params.set('hashtag', context.hashtag);
     if (context.pubkey) params.set('pubkey', context.pubkey);
+    if (context.query) params.set('q', context.query);
+    if (context.sortMode) params.set('sort', context.sortMode);
 
     return `/video/${video.id}?${params.toString()}`;
   }, [context]);
@@ -259,6 +265,13 @@ export function VideoPage() {
       } catch {
         navigate(`/profile/${context.pubkey}`, { ownerPubkey: context.pubkey });
       }
+    } else if (context?.source === 'search') {
+      const params = new URLSearchParams();
+      if (context.query) params.set('q', context.query);
+      params.set('filter', 'videos');
+      if (context.sortMode) params.set('sort', context.sortMode);
+      const target = params.toString() ? `/search?${params.toString()}` : '/search';
+      navigate(target);
     } else {
       navigate(-1); // Browser back
     }
@@ -571,6 +584,9 @@ export function VideoPage() {
                   Loading videos...
                 </>
               )}
+              {context.source === 'search' && (
+                <span>{context.query ? `Search: ${context.query}` : 'Search results'}</span>
+              )}
               {(context.source === 'discovery' || context.source === 'trending' || context.source === 'home') && (
                 <span className="capitalize">{context.source}</span>
               )}
@@ -628,6 +644,9 @@ export function VideoPage() {
                   <User className="h-4 w-4" />
                   {authorName}'s videos
                 </>
+              )}
+              {context.source === 'search' && (
+                <span>{context.query ? `Search: ${context.query}` : 'Search results'}</span>
               )}
               {(context.source === 'discovery' || context.source === 'trending' || context.source === 'home') && (
                 <span className="capitalize">{context.source}</span>
@@ -719,6 +738,14 @@ export function VideoPage() {
               >
                 <User className="h-3 w-3" />
                 {authorName}
+              </button>
+            )}
+            {context.source === 'search' && (
+              <button
+                onClick={handleGoBack}
+                className="text-muted-foreground hover:text-primary transition-colors text-xs"
+              >
+                {context.query ? `Search: ${context.query}` : 'Search results'}
               </button>
             )}
             {(context.source === 'discovery' || context.source === 'trending' || context.source === 'home') && (

@@ -5,11 +5,14 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useCallback, useMemo } from 'react';
 import { useVideoEvents } from './useVideoEvents';
 import type { ParsedVideoData } from '@/types/video';
+import type { SortMode } from '@/types/nostr';
 
 export interface VideoNavigationContext {
-  source: 'hashtag' | 'profile' | 'discovery' | 'home' | 'trending' | 'recent' | 'classics' | 'foryou' | 'category';
+  source: 'hashtag' | 'profile' | 'discovery' | 'home' | 'trending' | 'recent' | 'classics' | 'foryou' | 'category' | 'search';
   hashtag?: string;
   pubkey?: string;
+  query?: string;
+  sortMode?: SortMode | 'relevance';
   currentIndex?: number;
 }
 
@@ -42,13 +45,19 @@ export function useVideoNavigation(videoId: string, options: UseVideoNavigationO
       source,
       hashtag: searchParams.get('hashtag') || undefined,
       pubkey: searchParams.get('pubkey') || undefined,
+      query: searchParams.get('q') || undefined,
+      sortMode: searchParams.get('sort') as VideoNavigationContext['sortMode'],
       currentIndex: searchParams.get('index') ? parseInt(searchParams.get('index')!) : undefined,
     };
   }, [searchParams]);
 
   // Fetch videos based on context
   // Map 'foryou' to 'trending' for WebSocket fallback (foryou only works via Funnelcake API)
-  const feedTypeForWebSocket = context?.source === 'foryou' ? 'trending' : context?.source;
+  const feedTypeForWebSocket = context?.source === 'foryou'
+    ? 'trending'
+    : context?.source === 'search'
+      ? 'discovery'
+      : context?.source;
   const { data: videos, isLoading } = useVideoEvents(
     context ? {
       feedType: feedTypeForWebSocket,
@@ -89,6 +98,8 @@ export function useVideoNavigation(videoId: string, options: UseVideoNavigationO
 
     if (context.hashtag) params.set('hashtag', context.hashtag);
     if (context.pubkey) params.set('pubkey', context.pubkey);
+    if (context.query) params.set('q', context.query);
+    if (context.sortMode) params.set('sort', context.sortMode);
 
     return `/video/${video.id}?${params.toString()}`;
   }, [context]);
@@ -129,6 +140,8 @@ export function buildVideoNavigationUrl(
 
   if (context.hashtag) params.set('hashtag', context.hashtag);
   if (context.pubkey) params.set('pubkey', context.pubkey);
+  if (context.query) params.set('q', context.query);
+  if (context.sortMode) params.set('sort', context.sortMode);
   if (index !== undefined) params.set('index', index.toString());
 
   return `/video/${videoId}?${params.toString()}`;
