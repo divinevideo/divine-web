@@ -2,7 +2,7 @@
 // ABOUTME: Verifies video loading, auth handling, and URL management
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { VideoPlayer } from './VideoPlayer';
 
 // Mock dependencies
@@ -51,6 +51,21 @@ vi.mock('@/lib/debug', () => ({
 
 vi.mock('@/lib/analytics', () => ({
   trackFirstVideoPlayback: vi.fn(),
+}));
+
+vi.mock('@/components/AgeRestrictedMediaPlaceholder', () => ({
+  AgeRestrictedMediaPlaceholder: ({
+    actionLabel,
+    title,
+  }: {
+    actionLabel: string;
+    title?: string;
+  }) => (
+    <div data-testid="age-restricted-media-placeholder">
+      <div>{title ?? 'Age-restricted'}</div>
+      <button type="button">{actionLabel}</button>
+    </div>
+  ),
 }));
 
 vi.mock('hls.js', () => ({
@@ -304,6 +319,38 @@ describe('VideoPlayer', () => {
 
       expect(getAuthHeader).toHaveBeenCalledTimes(1);
       expect(fetchSpy).toHaveBeenCalledTimes(1);
+    });
+
+    it('shows an age-restricted placeholder instead of a broken video message when verified viewers get 401', async () => {
+      const fetchSpy = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 401,
+      });
+
+      global.fetch = fetchSpy as typeof fetch;
+
+      const { useAdultVerification } = await import('@/hooks/useAdultVerification');
+      (useAdultVerification as ReturnType<typeof vi.fn>).mockReturnValue({
+        isVerified: true,
+        isLoading: false,
+        hasSigner: true,
+        getAuthHeader: vi.fn().mockResolvedValue('Nostr test-auth-header'),
+      });
+
+      render(
+        <VideoPlayer
+          videoId="verified-auth-placeholder"
+          src="https://media.divine.video/protected-video"
+        />
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTestId('age-restricted-media-placeholder')).toBeInTheDocument();
+      });
+
+      expect(screen.queryByText('Failed to load video')).not.toBeInTheDocument();
+      expect(screen.getByText('Age-restricted video')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Retry' })).toBeInTheDocument();
     });
   });
 });

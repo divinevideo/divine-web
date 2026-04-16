@@ -15,6 +15,7 @@ import type { ParsedVideoData } from '@/types/video';
 import type { VttCue } from '@/lib/vttParser';
 import { BlurhashPlaceholder, isValidBlurhash } from '@/components/BlurhashImage';
 import { AgeVerificationOverlay } from '@/components/AgeVerificationOverlay';
+import { AgeRestrictedMediaPlaceholder } from '@/components/AgeRestrictedMediaPlaceholder';
 import { SubtitleOverlay } from '@/components/SubtitleOverlay';
 import { createAuthLoader } from '@/lib/hlsAuthLoader';
 import { bandwidthTracker } from '@/lib/bandwidthTracker';
@@ -114,6 +115,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
     const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
     const [hasError, setHasError] = useState(false);
     const [requiresAuth, setRequiresAuth] = useState(false);
+    const [authDeniedAfterVerification, setAuthDeniedAfterVerification] = useState(false);
     const [authCheckPending, setAuthCheckPending] = useState(true); // Start true, set false after check completes
     const [authRetryCount, setAuthRetryCount] = useState(0);
     const [currentUrlIndex, setCurrentUrlIndex] = useState(0);
@@ -494,6 +496,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
         setIsLoading(true);
       }
       setHasError(false);
+      setAuthDeniedAfterVerification(false);
       onLoadStart?.();
     };
 
@@ -541,6 +544,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
       // Mark as loaded and hide blurhash permanently
       setIsLoading(false);
       setHasLoadedOnce(true);
+      setAuthDeniedAfterVerification(false);
 
       // Emit first video load metric (only once)
       if (loadDuration > 0 && typeof window !== 'undefined') {
@@ -618,6 +622,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
       setAuthCheckPending(false); // No need to re-check, user just verified
       setIsLoading(true);
       setHasError(false);
+      setAuthDeniedAfterVerification(false);
       setAuthRetryCount(prev => prev + 1);
       setCurrentUrlIndex(0);
     }, [videoId]);
@@ -782,7 +787,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
           if (data.response && (data.response.code === 401 || data.response.code === 403)) {
             debugError(`[VideoPlayer ${videoId}] Auth required (${data.response.code})`);
             if (isAdultVerified) {
-              setHasError(true);
+              setAuthDeniedAfterVerification(true);
             } else {
               setRequiresAuth(true);
             }
@@ -805,6 +810,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
         hlsRef.current = hls;
         setIsLoading(true);
         setHasError(false);
+        setAuthDeniedAfterVerification(false);
 
       } else if (hlsUrl && video.canPlayType('application/vnd.apple.mpegurl')) {
         // Native HLS support (Safari)
@@ -812,6 +818,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
         video.src = hlsUrl;
         setIsLoading(true);
         setHasError(false);
+        setAuthDeniedAfterVerification(false);
 
       } else {
         // Fall back to regular MP4 playback
@@ -855,7 +862,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
                   } else if (response.status === 401 || response.status === 403) {
                     debugError(`[VideoPlayer ${videoId}] Auth failed even with NIP-98 (${response.status})`);
                     if (isAdultVerified) {
-                      setHasError(true);
+                      setAuthDeniedAfterVerification(true);
                     } else {
                       setRequiresAuth(true);
                     }
@@ -886,6 +893,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
           }
           setIsLoading(true);
           setHasError(false);
+          setAuthDeniedAfterVerification(false);
         }
       }
       } // end loadVideoSource
@@ -1042,8 +1050,17 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
           </div>
         )}
 
+        {/* Auth denied after verification */}
+        {authDeniedAfterVerification && (
+          <AgeRestrictedMediaPlaceholder
+            title="Age-restricted video"
+            actionLabel="Retry"
+            onAction={handleAgeVerified}
+          />
+        )}
+
         {/* Error state */}
-        {hasError && !requiresAuth && (
+        {hasError && !requiresAuth && !authDeniedAfterVerification && (
           <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
             <div className="text-center">
               <div>Failed to load video</div>
