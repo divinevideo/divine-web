@@ -3,10 +3,10 @@ import { VideoPlayer } from '@/components/VideoPlayer';
 import type { ParsedVideoData } from '@/types/video';
 
 interface CompilationPlayerSurfaceProps {
-  videos: ParsedVideoData[];
+  videos: ReadonlyArray<ParsedVideoData>;
   initialIndex: number;
   hasNextPage?: boolean;
-  fetchNextPage?: () => void | Promise<void>;
+  fetchNextPage?: () => void | Promise<unknown>;
   onVideoChange?: (video: ParsedVideoData) => void;
   replaceVideoQueryParam?: (videoId: string) => void;
 }

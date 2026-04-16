@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { CompilationPlayerSurface } from './CompilationPlayerSurface';
+import { SHORT_VIDEO_KIND, type ParsedVideoData } from '@/types/video';
 
 vi.mock('@/components/VideoPlayer', () => ({
   VideoPlayer: ({
@@ -12,25 +13,26 @@ vi.mock('@/components/VideoPlayer', () => ({
   }) => <video data-testid="compilation-video" onEnded={onEnded} />,
 }));
 
+function makeVideo(id: string, title: string): ParsedVideoData {
+  return {
+    id,
+    pubkey: id[0].repeat(64),
+    kind: SHORT_VIDEO_KIND,
+    createdAt: 1,
+    content: `${title} content`,
+    videoUrl: `https://example.com/${id}.mp4`,
+    title,
+    hashtags: [],
+    vineId: null,
+    isVineMigrated: false,
+    reposts: [],
+  };
+}
+
 const videos = [
-  {
-    id: 'video-a',
-    pubkey: 'a'.repeat(64),
-    videoUrl: 'https://example.com/a.mp4',
-    title: 'Video A',
-  },
-  {
-    id: 'video-b',
-    pubkey: 'b'.repeat(64),
-    videoUrl: 'https://example.com/b.mp4',
-    title: 'Video B',
-  },
-  {
-    id: 'video-c',
-    pubkey: 'c'.repeat(64),
-    videoUrl: 'https://example.com/c.mp4',
-    title: 'Video C',
-  },
+  makeVideo('video-a', 'Video A'),
+  makeVideo('video-b', 'Video B'),
+  makeVideo('video-c', 'Video C'),
 ] as const;
 
 describe('CompilationPlayerSurface', () => {

@@ -86,7 +86,7 @@ export function WatchPage() {
                 videos={source.videos}
                 initialIndex={initialIndex}
                 hasNextPage={source.hasNextPage}
-                fetchNextPage={source.fetchNextPage}
+                fetchNextPage={() => source.fetchNextPage()}
                 onVideoChange={setActiveVideo}
                 replaceVideoQueryParam={replaceVideoQueryParam}
               />

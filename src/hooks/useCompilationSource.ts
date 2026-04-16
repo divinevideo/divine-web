@@ -2,14 +2,19 @@ import { useMemo } from 'react';
 import { useInfiniteSearchVideos } from '@/hooks/useInfiniteSearchVideos';
 import { useVideoProvider, type VideoFeedType } from '@/hooks/useVideoProvider';
 import type { CompilationSource } from '@/lib/compilationPlayback';
+import type { ParsedVideoData } from '@/types/video';
 import type { SortMode } from '@/types/nostr';
 
 const DEFAULT_PAGE_SIZE = 12;
 
-function flattenPages(
-  data: { pages?: Array<{ videos: unknown[] }> } | undefined
-) {
-  return data?.pages.flatMap(page => page.videos) ?? [];
+function flattenPages<T>(
+  data: { pages?: Array<{ videos: T[] }> } | undefined
+): T[] {
+  if (!data?.pages) {
+    return [];
+  }
+
+  return data.pages.flatMap(page => page.videos);
 }
 
 function getFeedType(source: Exclude<CompilationSource, { source: 'search' }>): VideoFeedType {
@@ -46,7 +51,7 @@ export function useCompilationSource(source: CompilationSource) {
     if (source.source === 'search') {
       return {
         kind: 'search' as const,
-        videos: flattenPages(searchQuery.data),
+        videos: flattenPages<ParsedVideoData>(searchQuery.data),
         fetchNextPage: searchQuery.fetchNextPage,
         hasNextPage: searchQuery.hasNextPage,
         isLoading: searchQuery.isLoading,
@@ -56,7 +61,7 @@ export function useCompilationSource(source: CompilationSource) {
 
     return {
       kind: 'feed' as const,
-      videos: flattenPages(feedQuery.data),
+      videos: flattenPages<ParsedVideoData>(feedQuery.data),
       fetchNextPage: feedQuery.fetchNextPage,
       hasNextPage: feedQuery.hasNextPage,
       isLoading: feedQuery.isLoading,
