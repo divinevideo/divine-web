@@ -335,6 +335,11 @@ export function VideoCard({
     }
   };
 
+  const handleThumbnailPlayButtonClick = () => {
+    setIsPlaying(true);
+    onPlay?.();
+  };
+
   const handleVideoEnd = () => {
     if (mode === 'thumbnail') {
       setIsPlaying(false);
@@ -523,6 +528,7 @@ export function VideoCard({
                   duration={video.duration}
                   className="w-full h-full"
                   onClick={handleThumbnailClick}
+                  onPlayButtonClick={handleThumbnailPlayButtonClick}
                   onError={() => setVideoError(true)}
                   onVideoDimensions={handleThumbnailDimensions}
                 />

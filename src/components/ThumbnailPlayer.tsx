@@ -16,6 +16,7 @@ interface ThumbnailPlayerProps {
   duration?: number;
   className?: string;
   onClick?: () => void;
+  onPlayButtonClick?: () => void;
   onError?: () => void;
   onVideoDimensions?: (dimensions: { width: number; height: number; isVertical: boolean }) => void;
 }
@@ -27,6 +28,7 @@ export function ThumbnailPlayer({
   duration: _duration,
   className,
   onClick,
+  onPlayButtonClick,
   onError,
   onVideoDimensions,
 }: ThumbnailPlayerProps) {
@@ -165,6 +167,17 @@ export function ThumbnailPlayer({
             className="w-16 h-16 rounded-full bg-black/50 hover:bg-black/70 text-white backdrop-blur-sm"
             data-testid="thumbnail-play-button"
             aria-label="Play video"
+            onClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              onPlayButtonClick?.();
+            }}
+            onTouchStart={(event) => {
+              event.stopPropagation();
+            }}
+            onTouchEnd={(event) => {
+              event.stopPropagation();
+            }}
           >
             <Play className="h-8 w-8 ml-1" />
           </Button>
