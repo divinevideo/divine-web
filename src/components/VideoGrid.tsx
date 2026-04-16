@@ -10,6 +10,7 @@ import { AgeRestrictedMediaPlaceholder } from '@/components/AgeRestrictedMediaPl
 import { useLoginDialog } from '@/contexts/LoginDialogContext';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useAdultVerification } from '@/hooks/useAdultVerification';
+import { useAuthenticatedMediaUrl } from '@/hooks/useAuthenticatedMediaUrl';
 import { cn } from '@/lib/utils';
 import type { ParsedVideoData } from '@/types/video';
 import { buildVideoNavigationUrl, type VideoNavigationContext } from '@/hooks/useVideoNavigation';
@@ -19,6 +20,13 @@ interface VideoGridProps {
   loading?: boolean;
   className?: string;
   navigationContext?: VideoNavigationContext;
+}
+
+interface VideoGridMediaProps {
+  video: ParsedVideoData;
+  thumbnailFailed: boolean;
+  onThumbnailError: (videoId: string) => void;
+  videoRefs: React.MutableRefObject<Map<string, HTMLVideoElement>>;
 }
 
 function formatLoops(loops?: number): string {
@@ -36,6 +44,95 @@ function formatLoops(loops?: number): string {
 function truncateText(text: string, maxLength: number = 50): string {
   if (text.length <= maxLength) return text;
   return text.slice(0, maxLength) + '...';
+}
+
+function VideoGridMedia({
+  video,
+  thumbnailFailed,
+  onThumbnailError,
+  videoRefs,
+}: VideoGridMediaProps) {
+  const shouldShowVideo = !video.thumbnailUrl || thumbnailFailed;
+  const baseThumbnailUrl = video.thumbnailUrl || video.videoUrl;
+  const { mediaUrl: authenticatedMediaUrl, isLoading } = useAuthenticatedMediaUrl(baseThumbnailUrl, {
+    enabled: true,
+  });
+
+  if (isLoading) {
+    return (
+      <div
+        className="w-full h-full bg-muted flex items-center justify-center"
+        data-testid={`video-placeholder-${video.id}`}
+      >
+        <Play className="w-12 h-12 text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (shouldShowVideo && authenticatedMediaUrl) {
+    return (
+      <video
+        ref={(el) => {
+          if (el) {
+            videoRefs.current.set(video.id, el);
+          } else {
+            videoRefs.current.delete(video.id);
+          }
+        }}
+        className="w-full h-full object-cover"
+        src={authenticatedMediaUrl}
+        muted
+        loop
+        playsInline
+        preload="metadata"
+        crossOrigin="anonymous"
+        data-testid={`video-player-${video.id}`}
+        onError={() => onThumbnailError(video.id)}
+      />
+    );
+  }
+
+  if (authenticatedMediaUrl) {
+    const isVideoThumbnail = (video.thumbnailUrl === video.videoUrl) ||
+      !!video.thumbnailUrl?.match(/\.(mp4|webm|mov|m3u8|mpd|avi|mkv|ogv|ogg)($|\?|#)/i) ||
+      !!video.thumbnailUrl?.includes('/manifest/');
+
+    if (isVideoThumbnail) {
+      return (
+        <video
+          className="w-full h-full object-cover"
+          src={`${authenticatedMediaUrl}#t=0.1`}
+          muted
+          playsInline
+          preload="metadata"
+          crossOrigin="anonymous"
+          data-testid={`video-thumbnail-${video.id}`}
+          onError={() => onThumbnailError(video.id)}
+        />
+      );
+    }
+
+    return (
+      <img
+        className="w-full h-full object-cover"
+        src={authenticatedMediaUrl}
+        alt={video.content || 'Video thumbnail'}
+        loading="lazy"
+        crossOrigin="anonymous"
+        data-testid={`video-thumbnail-${video.id}`}
+        onError={() => onThumbnailError(video.id)}
+      />
+    );
+  }
+
+  return (
+    <div
+      className="w-full h-full bg-muted flex items-center justify-center"
+      data-testid={`video-placeholder-${video.id}`}
+    >
+      <Play className="w-12 h-12 text-muted-foreground" />
+    </div>
+  );
 }
 
 export function VideoGrid({ videos, loading = false, className, navigationContext }: VideoGridProps) {
@@ -150,7 +247,6 @@ export function VideoGrid({ videos, loading = false, className, navigationContex
       {videos.map((video, index) => {
         const isHovered = hoveredVideo === video.id;
         const thumbnailFailed = failedThumbnails.has(video.id);
-        const shouldShowVideo = !video.thumbnailUrl || thumbnailFailed;
         const isAgeGated = video.ageRestricted === true && (!user || !isAdultVerified);
 
         return (
@@ -180,58 +276,13 @@ export function VideoGrid({ videos, loading = false, className, navigationContex
                   onAction={handleAgeGateAction}
                   title={video.title || video.content}
                 />
-              ) : shouldShowVideo && video.videoUrl ? (
-                <video
-                  ref={(el) => {
-                    if (el) {
-                      videoRefs.current.set(video.id, el);
-                    } else {
-                      videoRefs.current.delete(video.id);
-                    }
-                  }}
-                  className="w-full h-full object-cover"
-                  src={video.videoUrl}
-                  muted
-                  loop
-                  playsInline
-                  preload="metadata"
-                  crossOrigin="anonymous"
-                  data-testid={`video-player-${video.id}`}
-                  onError={() => handleThumbnailError(video.id)}
-                />
-              ) : video.thumbnailUrl ? (
-                // Check if thumbnail URL is actually a video file
-                video.thumbnailUrl === video.videoUrl ||
-                video.thumbnailUrl.match(/\.(mp4|webm|mov|m3u8|mpd|avi|mkv|ogv|ogg)($|\?|#)/i) ||
-                video.thumbnailUrl.includes('/manifest/') ? (
-                  <video
-                    className="w-full h-full object-cover"
-                    src={`${video.thumbnailUrl}#t=0.1`}
-                    muted
-                    playsInline
-                    preload="metadata"
-                    crossOrigin="anonymous"
-                    data-testid={`video-thumbnail-${video.id}`}
-                    onError={() => handleThumbnailError(video.id)}
-                  />
-                ) : (
-                  <img
-                    className="w-full h-full object-cover"
-                    src={video.thumbnailUrl}
-                    alt={video.content || 'Video thumbnail'}
-                    loading="lazy"
-                    crossOrigin="anonymous"
-                    data-testid={`video-thumbnail-${video.id}`}
-                    onError={() => handleThumbnailError(video.id)}
-                  />
-                )
               ) : (
-                <div
-                  className="w-full h-full bg-muted flex items-center justify-center"
-                  data-testid={`video-placeholder-${video.id}`}
-                >
-                  <Play className="w-12 h-12 text-muted-foreground" />
-                </div>
+                <VideoGridMedia
+                  video={video}
+                  thumbnailFailed={thumbnailFailed}
+                  onThumbnailError={handleThumbnailError}
+                  videoRefs={videoRefs}
+                />
               )}
 
               {/* Play Overlay */}

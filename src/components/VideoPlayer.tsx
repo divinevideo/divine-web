@@ -18,6 +18,7 @@ import { AgeVerificationOverlay } from '@/components/AgeVerificationOverlay';
 import { SubtitleOverlay } from '@/components/SubtitleOverlay';
 import { createAuthLoader } from '@/lib/hlsAuthLoader';
 import { bandwidthTracker } from '@/lib/bandwidthTracker';
+import { useAuthenticatedMediaUrl } from '@/hooks/useAuthenticatedMediaUrl';
 import Hls from 'hls.js';
 
 // Maximum playback duration limit - videos loop back to start after this many seconds
@@ -123,6 +124,9 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
 
     // Adult verification hook
     const { isVerified: isAdultVerified, getAuthHeader } = useAdultVerification();
+    const { mediaUrl: authenticatedPosterUrl } = useAuthenticatedMediaUrl(poster, {
+      enabled: !!poster && !requiresAuth && !authCheckPending,
+    });
 
     // Mobile-specific state
     const [touchState, setTouchState] = useState<TouchState | null>(null);
@@ -971,7 +975,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
           // HLS.js is used when hlsUrl is provided and Hls.isSupported()
           // Only show poster after auth check passes - prevents 401 errors from poster URL
           // During auth check, blurhash provides the visual placeholder
-          poster={(requiresAuth || authCheckPending) ? undefined : poster}
+          poster={(requiresAuth || authCheckPending) ? undefined : authenticatedPosterUrl}
           muted // Start muted, will be controlled via effect
           autoPlay={false} // Never autoplay, we control playback programmatically
           loop
@@ -1043,7 +1047,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
         {requiresAuth && (
           <AgeVerificationOverlay
             onVerified={handleAgeVerified}
-            thumbnailUrl={poster}
+            thumbnailUrl={authenticatedPosterUrl || poster}
             blurhash={blurhash}
           />
         )}

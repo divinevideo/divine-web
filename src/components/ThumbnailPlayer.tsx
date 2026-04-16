@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useAdultVerification, checkMediaAuth } from '@/hooks/useAdultVerification';
 import { AgeVerificationOverlay } from '@/components/AgeVerificationOverlay';
+import { useAuthenticatedMediaUrl } from '@/hooks/useAuthenticatedMediaUrl';
 import { verboseLog, debugError } from '@/lib/debug';
 
 interface ThumbnailPlayerProps {
@@ -95,8 +96,14 @@ export function ThumbnailPlayer({
     onClick?.();
   };
 
+  const baseThumbnailUrl = thumbnailUrl || src;
+  const { mediaUrl: authenticatedMediaUrl, isLoading: authMediaLoading } = useAuthenticatedMediaUrl(baseThumbnailUrl, {
+    enabled: !requiresAuth,
+  });
   // Generate thumbnail from video if no thumbnail URL provided
-  const effectiveThumbnailUrl = thumbnailUrl || generateThumbnailFromVideo(src);
+  const effectiveThumbnailUrl = thumbnailUrl
+    ? authenticatedMediaUrl
+    : generateThumbnailFromVideo(authenticatedMediaUrl || src);
 
   // Check if the thumbnail URL is actually a video file or same as source
   const isVideoThumbnail = effectiveThumbnailUrl === src ||
@@ -119,6 +126,16 @@ export function ThumbnailPlayer({
           onVerified={handleAgeVerified}
           thumbnailUrl={thumbnailUrl}
         />
+      ) : authMediaLoading ? (
+        <div
+          className="w-full h-full flex items-center justify-center bg-gray-800 text-gray-400"
+          data-testid="thumbnail-placeholder"
+        >
+          <div className="text-center">
+            <Play className="h-12 w-12 mx-auto mb-2 opacity-50" />
+            <p className="text-sm">Video Preview</p>
+          </div>
+        </div>
       ) : !thumbnailError && effectiveThumbnailUrl ? (
         /* Thumbnail image or video */
         isVideoThumbnail || useVideoFallback ? (

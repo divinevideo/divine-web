@@ -1,5 +1,5 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { VideoGrid } from './VideoGrid';
 import type { ParsedVideoData } from '@/types/video';
 
@@ -24,6 +24,9 @@ vi.mock('@/hooks/useCurrentUser', () => ({
 
 vi.mock('@/hooks/useAdultVerification', () => ({
   useAdultVerification: () => mockUseAdultVerification(),
+  fetchWithAuth: vi.fn(async (url: string, authHeader: string | null) => fetch(url, {
+    headers: authHeader ? { Authorization: authHeader } : {},
+  })),
 }));
 
 function makeVideo(overrides: Partial<ParsedVideoData> = {}): ParsedVideoData {
@@ -47,7 +50,18 @@ describe('VideoGrid age-restricted gating', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockUseCurrentUser.mockReturnValue({ user: null });
-    mockUseAdultVerification.mockReturnValue({ isVerified: false });
+    mockUseAdultVerification.mockReturnValue({ isVerified: false, confirmAdult: vi.fn(), getAuthHeader: vi.fn() });
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      blob: async () => new Blob(['thumb'], { type: 'image/jpeg' }),
+    }) as typeof fetch;
+    global.URL.createObjectURL = vi.fn().mockReturnValue('blob:grid-thumb');
+    global.URL.revokeObjectURL = vi.fn();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   it('renders a logged-out gated tile without mounting restricted media elements', () => {
@@ -101,5 +115,39 @@ describe('VideoGrid age-restricted gating', () => {
 
     expect(screen.getByTestId('video-thumbnail-public-video')).toBeInTheDocument();
     expect(screen.queryByText('Log in to view')).not.toBeInTheDocument();
+  });
+
+  it('fetches protected thumbnails with auth for verified viewers', async () => {
+    mockUseCurrentUser.mockReturnValue({ user: { pubkey: 'a'.repeat(64) } });
+    mockUseAdultVerification.mockReturnValue({
+      isVerified: true,
+      confirmAdult: vi.fn(),
+      getAuthHeader: vi.fn().mockResolvedValue('Nostr grid-auth-header'),
+    });
+
+    render(
+      <VideoGrid
+        videos={[
+          makeVideo({
+            id: 'verified-restricted-video',
+            ageRestricted: true,
+            thumbnailUrl: 'https://media.divine.video/verified-restricted-video.jpg',
+          }),
+        ]}
+      />
+    );
+
+    await waitFor(() => {
+      expect(global.fetch).toHaveBeenCalledWith(
+        'https://media.divine.video/verified-restricted-video.jpg',
+        expect.objectContaining({
+          headers: expect.objectContaining({
+            Authorization: 'Nostr grid-auth-header',
+          }),
+        }),
+      );
+    });
+
+    expect(screen.getByTestId('video-thumbnail-verified-restricted-video')).toHaveAttribute('src', 'blob:grid-thumb');
   });
 });
