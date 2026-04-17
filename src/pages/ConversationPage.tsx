@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ArrowLeft, ArrowUp, LinkSimple as Link2, CircleNotch as Loader2, X } from '@phosphor-icons/react';
+import { ArrowLeft, ArrowUp, LinkSimple as Link2, X } from '@phosphor-icons/react';
 import { Link, useLocation, useParams } from 'react-router-dom';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
