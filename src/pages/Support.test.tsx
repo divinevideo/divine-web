@@ -51,8 +51,8 @@ describe('Support page', () => {
     );
 
     expect(screen.getByRole('heading', { name: 'Soporte' })).toBeInTheDocument();
-    expect(screen.getByText('Necesitas ayuda? Estamos aqui para ayudarte.')).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Visitar el centro de ayuda de Divine' })).toBeInTheDocument();
+    expect(screen.getByText('Necesitas una mano? Te tenemos.')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Centro de ayuda Divine' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Contactar con soporte' })).toBeInTheDocument();
   });
 });

@@ -44,19 +44,20 @@
     "yourFeed": "Akisin"
   },
   "auth": {
-    "logInOnDivine": "Divine'da giris yap"
+    "logInOnDivine": "Atla iceri",
+    "logIn": "Giris yap"
   },
   "home": {
-    "welcomeTitle": "Ana akisina hos geldin",
-    "welcomeSubtitle": "Takip ettigin kisilerin videolarini gormek icin giris yap",
+    "welcomeTitle": "Senin akisin, senin kurallarin.",
+    "welcomeSubtitle": "Takip ettigin kisilerin loop'larini gormek icin giris yap.",
     "title": "Ana sayfa",
-    "subtitle": "Takip ettigin kisilerin videolari",
+    "subtitle": "Takip ettigin kisilerin loop'lari.",
     "sortBy": "Siralama:",
     "updating": "Guncelleniyor..."
   },
   "discovery": {
     "title": "Kesfet",
-    "subtitle": "Agdaki videolari kesfet",
+    "subtitle": "Agda dolas. Kendi insanlarini bul.",
     "categories": "Kategoriler",
     "forYou": "Senin icin",
     "classic": "Klasik",
@@ -82,14 +83,14 @@
   },
   "comments": {
     "title": "Yorumlar",
-    "noCommentsYet": "Henuz yorum yok",
-    "beFirstToShare": "Dusuncelerini ilk paylasan sen ol",
-    "failedToLoad": "Yorumlar yuklenemedi",
-    "writeAComment": "Bir yorum yaz...",
+    "noCommentsYet": "Henuz soylenecek bir sey yok.",
+    "beFirstToShare": "Sen baslat — bir yorum birak.",
+    "failedToLoad": "Yorumlar yuklenemedi.",
+    "writeAComment": "Bir sey soyle...",
     "signInToReply": "Yanıt vermek icin giris yap",
     "signInToComment": "Yorum yapmak icin giris yap",
     "replyingToComment": "Yoruma yanıt veriliyor",
-    "addingToDiscussion": "Tartismaya ekleniyor",
+    "addingToDiscussion": "Konuya atliyorsun",
     "posting": "Gonderiliyor...",
     "reply": "Yanıtla",
     "comment": "Yorum yap"
@@ -97,49 +98,131 @@
   "messages": {
     "badge": "Mesajlar",
     "title": "Dogrudan mesajlar",
-    "subtitle": "Destekle konus, vine'lari ozel olarak gonder veya takip ettigin kisilerle konusmayi surdur.",
-    "searchPlaceholder": "Mesaj gonderecek kisi bul",
+    "subtitle": "Destekle konus, bir loop'u ozel olarak gonder veya takip ettigin kisilerle sohbeti surdur.",
+    "searchPlaceholder": "Mesaj gonderecek birini bul",
     "newMessage": "Yeni mesaj",
-    "readyToShare": "Ozel olarak paylasmaya hazir.",
+    "readyToShare": "Ozel olarak gondermeye hazir.",
     "shareWithTitle": "Bir sonraki mesajin “{{title}}” icerecek.",
     "shareWithLink": "Bir sonraki mesajin bir vine baglantisi icerecek.",
-    "signerUnsupported": "Mevcut imzalayicin giris yapmana izin veriyor, ancak henuz NIP-44 sifrelemesini desteklemiyor. Web'de dogrudan mesaj kullanmak icin NIP-44 destekleyen bir nsec, bunker veya baska bir imzalayiciya gec.",
+    "signerUnsupported": "Mevcut imzalayicin giris yapmana izin veriyor, ancak henuz NIP-44 konusmuyor. Burada DM kullanmak icin NIP-44 destekleyen bir nsec, bunker veya baska bir imzalayiciya gec.",
     "supportBadge": "Destek",
-    "supportSummary": "Hatalar, moderasyon veya hesap sorunlari hakkinda sor."
+    "supportSummary": "Hatalar, moderasyon, hesap meseleleri — dinliyoruz."
   },
   "support": {
     "title": "Destek",
-    "subtitle": "Yardima mi ihtiyacin var? Yardim etmek icin buradayiz.",
-    "helpCenterTitle": "Divine Yardim Merkezini ziyaret et",
-    "helpCenterDescription": "Divine hakkindaki sorularina yanit bul.",
+    "subtitle": "Yardim mi lazim? Sirtin yere gelmez.",
+    "helpCenterTitle": "Divine Yardim Merkezi",
+    "helpCenterDescription": "Sik sorulan seylerin yanitlari.",
     "helpCenterCta": "Yardim merkezini ziyaret et",
     "messageSupportTitle": "Destege mesaj gonder",
-    "messageSupportDescription": "Ozel NIP-17 mesajlariyla Divine icindeki destek kutusuna dogrudan ulas.",
+    "messageSupportDescription": "Divine icinden bize direkt DM at — NIP-17 ile sifreli.",
     "messageSupportCta": "Destek sohbetini ac",
     "contactTitle": "Destekle iletisime gec",
-    "contactDescription": "Bir destek talebi olustur, en kisa surede geri donelim.",
+    "contactDescription": "Bir destek talebi olustur, en hizli sekilde donus yapalim.",
     "contactLink": "Destekle iletisime gec",
     "githubTitle": "GitHub sorunlari",
-    "githubDescription": "Hata bildir, ozellik iste veya GitHub depolarimizdaki mevcut sorunlari incele.",
+    "githubDescription": "Hata bildir, ozellik iste veya GitHub'imizda sage sola bak.",
     "webAppLabel": "Web uygulamasi:",
     "flutterAppLabel": "Flutter uygulamasi (iOS/Android):",
     "communityTitle": "Topluluk",
-    "communityDescription": "Topluluk tartismalarimiza katil ve Nostr uzerindeki diger Divine kullanicilariyla baglan.",
-    "communityBody": "Divine, merkezi olmayan bir sosyal protokol olan Nostr uzerine kuruludur. Bizi sevdigin Nostr istemcisinde bul."
+    "communityDescription": "Nostr'daki Divine toplulugunda takil.",
+    "communityBody": "Divine, merkezi olmayan sosyal protokol Nostr uzerinde calisir. Bizi sevdigin Nostr istemcisinde bul."
   },
   "tagPage": {
-    "notFoundTitle": "Etiket bulunamadi",
-    "notFoundDescription": "Istenen etiket bulunamadi.",
+    "notFoundTitle": "Etiket bulunamadi.",
+    "notFoundDescription": "Bu etiketi bulamadik.",
     "back": "Geri",
-    "subtitle": "#{{tag}} etiketiyle isaretlenmis videolari kesfet"
+    "subtitle": "#{{tag}} etiketli loop'lar"
   },
   "categoriesPage": {
     "title": "Kategoriler",
-    "subtitle": "Videolari konuya gore kesfet",
-    "emptyState": "Su anda hic kategori yok.",
+    "subtitle": "Loop'lar, vibe'a gore siralandi.",
+    "emptyState": "Su an firinda kategori yok.",
     "metaTitle": "Kategorilere goz at - Divine",
     "metaDescription": "Divine uzerinde komedi, muzik, dans, hayvanlar, spor, yemek ve daha fazlasini kesfet.",
     "videoCount_one": "{{count}} video",
     "videoCount_other": "{{count}} video"
+  },
+  "videoMeta": {
+    "viewCount_one": "{{formatted}} goruntuleme",
+    "viewCount_other": "{{formatted}} goruntuleme"
+  },
+  "verification": {
+    "humanMade": "Insan yapimi",
+    "dialog": {
+      "titleVideo": "Video dogrulama",
+      "titleArchive": "Orijinal Vine arsivi",
+      "description": "Arsiv kaynagi, Proofmode verisi, AI tarama durumu ve hosting kaynagi hakkinda detaylar.",
+      "proofModeSection": "ProofMode dogrulamasi",
+      "aiDetectionSection": "AI tespiti",
+      "aiNotScanned": "AI taramasi: henuz taranmadi",
+      "checking": "Tarama sonuclari aranıyor…",
+      "noScanResults": "Henuz tarama sonucu yok.",
+      "checkAi": "AI tarafindan uretildi mi diye kontrol et",
+      "aiLikelihood": "%{{percent}} AI tarafindan uretilmis olma ihtimali",
+      "scannedBy": "Tarayan: {{source}}",
+      "verifiedByMod": "Insan moderator tarafindan dogrulandi",
+      "learnMore": "Proofmode dogrulamasi hakkinda daha fazla bilgi",
+      "inspectTool": "ProofCheck arac ile incele",
+      "archiveBlurb": "Bu video, Internet Archive uzerinden kurtarilmis orijinal bir Vine.",
+      "archiveContext": "Vine 2017'de kapanmadan once, ArchiveTeam ve Internet Archive milyonlarca Vine'i sakladi. Bu icerik o kurtarma calismasinin bir parcasi.",
+      "originalLoops": "Orijinal istatistikler: {{count}} loop",
+      "archiveLearnMore": "Vine arsivinin korunmasi hakkinda daha fazla bilgi"
+    },
+    "intro": {
+      "proofMode": "Bu videonun gercekligi Proofmode teknolojisiyle dogrulandi.",
+      "aiHumanDivine": "Bu video Divine uzerinde barindiriliyor ve AI tespiti, ProofMode verisi olmamasina ragmen muhtemelen insan yapimi oldugunu gosteriyor.",
+      "aiHuman": "AI tespiti, ProofMode verisi olmamasina ragmen bu videonun muhtemelen insan yapimi oldugunu gosteriyor.",
+      "unverifiedDivine": "Bu video dogrulanmadi. Divine uzerinde barindiriliyor, ama henuz ProofMode verisi yok.",
+      "unverifiedExternal": "Bu video dogrulanmadi ve Divine disinda barindiriliyor. ProofMode verisi icermiyor."
+    },
+    "summary": {
+      "platinum": "Platin: Cihaz donanim onayi, kriptografik imzalar, Content Credentials (C2PA) ve AI taramasi insan kaynagini dogruluyor.",
+      "gold": "Altin: Gercek bir cihazda donanim onayi, kriptografik imzalar ve Content Credentials (C2PA) ile cekildi.",
+      "silverProof": "Gumus: Kriptografik imzalar bu videonun kayittan beri degistirilmedigini kanitliyor.",
+      "bronze": "Bronz: Temel meta veri imzalari mevcut.",
+      "silverAi": "Gumus: AI taramasi bu videonun muhtemelen bir insan tarafindan olusturuldugunu dogruluyor.",
+      "muted": "Bu video icin dogrulama verisi yok."
+    },
+    "checklist": {
+      "deviceAttestation": "Cihaz onayi",
+      "pgpSignature": "PGP imzasi",
+      "c2paContentCredentials": "C2PA Content Credentials",
+      "proofManifest": "Kanit manifestosu"
+    }
+  },
+  "classicViners": {
+    "heading": "Klasik Vinerlar",
+    "archivedBadge": "Arsivlenmis",
+    "archivedTooltip": "Internet Archive tarafindan korunan orijinal Vine arsivi"
+  },
+  "profile": {
+    "stats": {
+      "videos": "Videolar",
+      "followers": "Takipci",
+      "following": "Takip",
+      "divineLoops": "Divine Loop"
+    },
+    "editProfile": "Profili duzenle"
+  },
+  "accountMenu": {
+    "myProfile": "Profilim",
+    "settings": "Ayarlar",
+    "linkedAccounts": "Bagli hesaplar",
+    "switchRelay": "Relay degistir",
+    "switchAccount": "Hesap degistir",
+    "addAccount": "Baska bir hesap ekle",
+    "logOut": "Cikis yap"
+  },
+  "trending": {
+    "title": "Gundemde",
+    "subtitle": "Toplulukta neler donuyor bir bak"
+  },
+  "searchTabs": {
+    "all": "Hepsi",
+    "videos": "Videolar",
+    "users": "Insanlar",
+    "hashtags": "Etiketler",
+    "searching": "Aranıyor..."
   }
 }

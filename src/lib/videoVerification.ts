@@ -154,83 +154,83 @@ export function resolveVideoVerificationBadge(
   return { kind: 'not_divine_hosted' };
 }
 
-export function getVerificationIntroText(
+export type VerificationIntroKey =
+  | 'verification.intro.proofMode'
+  | 'verification.intro.aiHumanDivine'
+  | 'verification.intro.aiHuman'
+  | 'verification.intro.unverifiedDivine'
+  | 'verification.intro.unverifiedExternal';
+
+export function getVerificationIntroKey(
   video: Pick<VerificationVideo, 'proofMode' | 'videoUrl'>,
   aiResult?: AIDetectionResult | null,
-): string {
+): VerificationIntroKey {
   if (hasProofMode(video.proofMode)) {
-    return "This video's authenticity is verified using Proofmode technology.";
+    return 'verification.intro.proofMode';
   }
 
   if (aiResult != null && aiResult.score < 0.5) {
-    if (isDivineHostedVideo(video.videoUrl)) {
-      return 'This video is hosted on Divine and AI detection indicates it is likely human-made, even though no ProofMode verification data is attached.';
-    }
-
-    return 'AI detection indicates this video is likely human-made, though no ProofMode verification data is attached.';
+    return isDivineHostedVideo(video.videoUrl)
+      ? 'verification.intro.aiHumanDivine'
+      : 'verification.intro.aiHuman';
   }
 
-  if (isDivineHostedVideo(video.videoUrl)) {
-    return 'This video is unverified. It is hosted on Divine, but no ProofMode verification data is attached yet.';
-  }
-
-  return 'This video is unverified and hosted outside Divine. It does not include ProofMode verification data.';
+  return isDivineHostedVideo(video.videoUrl)
+    ? 'verification.intro.unverifiedDivine'
+    : 'verification.intro.unverifiedExternal';
 }
 
-export function getVerificationDescription(
+export type VerificationSummaryTone = 'platinum' | 'gold' | 'silver' | 'bronze' | 'muted';
+export type VerificationSummaryKey =
+  | 'verification.summary.platinum'
+  | 'verification.summary.gold'
+  | 'verification.summary.silverProof'
+  | 'verification.summary.bronze'
+  | 'verification.summary.silverAi'
+  | 'verification.summary.muted';
+
+export function getVerificationSummary(
   video: Pick<VerificationVideo, 'proofMode'>,
   aiResult?: AIDetectionResult | null,
-): { tone: 'platinum' | 'gold' | 'silver' | 'bronze' | 'muted'; text: string } {
+): { tone: VerificationSummaryTone; key: VerificationSummaryKey } {
   const baseLevel = getBaseProofLevel(video.proofMode);
   const hasHumanAIScan = aiResult != null && aiResult.score < 0.5;
 
   if (baseLevel === 'verified_mobile' && hasHumanAIScan) {
-    return {
-      tone: 'platinum',
-      text: 'Platinum: Device hardware attestation, cryptographic signatures, Content Credentials (C2PA), and AI scan confirms human origin.',
-    };
+    return { tone: 'platinum', key: 'verification.summary.platinum' };
   }
 
   if (baseLevel === 'verified_mobile') {
-    return {
-      tone: 'gold',
-      text: 'Gold: Captured on a real device with hardware attestation, cryptographic signatures, and Content Credentials (C2PA).',
-    };
+    return { tone: 'gold', key: 'verification.summary.gold' };
   }
 
   if (baseLevel === 'verified_web') {
-    return {
-      tone: 'silver',
-      text: "Silver: Cryptographic signatures prove this video hasn't been altered since recording.",
-    };
+    return { tone: 'silver', key: 'verification.summary.silverProof' };
   }
 
   if (baseLevel === 'basic_proof') {
-    return {
-      tone: 'bronze',
-      text: 'Bronze: Basic metadata signatures are present.',
-    };
+    return { tone: 'bronze', key: 'verification.summary.bronze' };
   }
 
   if (hasHumanAIScan) {
-    return {
-      tone: 'silver',
-      text: 'Silver: AI scan confirms this video is likely human-created.',
-    };
+    return { tone: 'silver', key: 'verification.summary.silverAi' };
   }
 
-  return {
-    tone: 'muted',
-    text: 'No verification data available for this video.',
-  };
+  return { tone: 'muted', key: 'verification.summary.muted' };
 }
 
-export function getProofChecklist(proofMode?: ProofModeData): Array<{ label: string; passed: boolean }> {
+export type ProofChecklistKey =
+  | 'verification.checklist.deviceAttestation'
+  | 'verification.checklist.pgpSignature'
+  | 'verification.checklist.c2paContentCredentials'
+  | 'verification.checklist.proofManifest';
+
+export function getProofChecklist(proofMode?: ProofModeData): Array<{ key: ProofChecklistKey; passed: boolean }> {
   return [
-    { label: 'Device attestation', passed: !!proofMode?.deviceAttestation },
-    { label: 'PGP signature', passed: !!proofMode?.pgpFingerprint },
-    { label: 'C2PA Content Credentials', passed: !!proofMode?.c2paManifestId },
-    { label: 'Proof manifest', passed: !!proofMode?.manifest },
+    { key: 'verification.checklist.deviceAttestation', passed: !!proofMode?.deviceAttestation },
+    { key: 'verification.checklist.pgpSignature', passed: !!proofMode?.pgpFingerprint },
+    { key: 'verification.checklist.c2paContentCredentials', passed: !!proofMode?.c2paManifestId },
+    { key: 'verification.checklist.proofManifest', passed: !!proofMode?.manifest },
   ];
 }
 

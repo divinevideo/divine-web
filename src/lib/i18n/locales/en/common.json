@@ -44,7 +44,8 @@
     "yourFeed": "Your Feed"
   },
   "auth": {
-    "logInOnDivine": "Jump in"
+    "logInOnDivine": "Jump in",
+    "logIn": "Log in"
   },
   "home": {
     "welcomeTitle": "Your feed, your rules.",
@@ -141,5 +142,87 @@
     "metaDescription": "Explore video categories on Divine - comedy, music, dance, animals, sports, food, and more.",
     "videoCount_one": "{{count}} video",
     "videoCount_other": "{{count}} videos"
+  },
+  "videoMeta": {
+    "viewCount_one": "{{formatted}} view",
+    "viewCount_other": "{{formatted}} views"
+  },
+  "verification": {
+    "humanMade": "Human Made",
+    "dialog": {
+      "titleVideo": "Video Verification",
+      "titleArchive": "Original Vine Archive",
+      "description": "Details about this video's archive origin, Proofmode data, AI scan status, and hosting source.",
+      "proofModeSection": "ProofMode Verification",
+      "aiDetectionSection": "AI Detection",
+      "aiNotScanned": "AI scan: Not yet scanned",
+      "checking": "Checking for scan results…",
+      "noScanResults": "No scan results available yet.",
+      "checkAi": "Check if AI-generated",
+      "aiLikelihood": "{{percent}}% likelihood of being AI-generated",
+      "scannedBy": "Scanned by: {{source}}",
+      "verifiedByMod": "Verified by human moderator",
+      "learnMore": "Learn more about Proofmode verification",
+      "inspectTool": "Inspect with ProofCheck Tool",
+      "archiveBlurb": "This video is an original Vine recovered from the Internet Archive.",
+      "archiveContext": "Before Vine shut down in 2017, ArchiveTeam and the Internet Archive preserved millions of Vines. This content is part of that recovery effort.",
+      "originalLoops": "Original stats: {{count}} loops",
+      "archiveLearnMore": "Learn more about the Vine archive preservation"
+    },
+    "intro": {
+      "proofMode": "This video's authenticity is verified using Proofmode technology.",
+      "aiHumanDivine": "This video is hosted on Divine and AI detection indicates it is likely human-made, even though no ProofMode verification data is attached.",
+      "aiHuman": "AI detection indicates this video is likely human-made, though no ProofMode verification data is attached.",
+      "unverifiedDivine": "This video is unverified. It is hosted on Divine, but no ProofMode verification data is attached yet.",
+      "unverifiedExternal": "This video is unverified and hosted outside Divine. It does not include ProofMode verification data."
+    },
+    "summary": {
+      "platinum": "Platinum: Device hardware attestation, cryptographic signatures, Content Credentials (C2PA), and AI scan confirms human origin.",
+      "gold": "Gold: Captured on a real device with hardware attestation, cryptographic signatures, and Content Credentials (C2PA).",
+      "silverProof": "Silver: Cryptographic signatures prove this video hasn't been altered since recording.",
+      "bronze": "Bronze: Basic metadata signatures are present.",
+      "silverAi": "Silver: AI scan confirms this video is likely human-created.",
+      "muted": "No verification data available for this video."
+    },
+    "checklist": {
+      "deviceAttestation": "Device attestation",
+      "pgpSignature": "PGP signature",
+      "c2paContentCredentials": "C2PA Content Credentials",
+      "proofManifest": "Proof manifest"
+    }
+  },
+  "classicViners": {
+    "heading": "Classic Viners",
+    "archivedBadge": "Archived",
+    "archivedTooltip": "Original Vine archive preserved from the Internet Archive"
+  },
+  "profile": {
+    "stats": {
+      "videos": "Videos",
+      "followers": "Followers",
+      "following": "Following",
+      "divineLoops": "Divine Loops"
+    },
+    "editProfile": "Edit Profile"
+  },
+  "accountMenu": {
+    "myProfile": "My Profile",
+    "settings": "Settings",
+    "linkedAccounts": "Linked Accounts",
+    "switchRelay": "Switch Relay",
+    "switchAccount": "Switch Account",
+    "addAccount": "Add another account",
+    "logOut": "Log out"
+  },
+  "trending": {
+    "title": "Trending",
+    "subtitle": "Discover what's popular in the community"
+  },
+  "searchTabs": {
+    "all": "All",
+    "videos": "Videos",
+    "users": "Users",
+    "hashtags": "Hashtags",
+    "searching": "Searching..."
   }
 }

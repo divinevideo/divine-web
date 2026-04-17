@@ -1,6 +1,7 @@
 // NOTE: This file is stable and usually should not be modified.
 // It is important that all functionality in this file is preserved, and should only be modified if explicitly requested.
 
+import { useTranslation } from 'react-i18next';
 import { CaretDown as ChevronDown, SignOut as LogOut, User as UserIcon, UserPlus, User, Gear as Settings, LinkSimple as Link2 } from '@phosphor-icons/react';
 import { useNavigate } from 'react-router-dom';
 import { nip19 } from 'nostr-tools';
@@ -29,6 +30,7 @@ interface AccountSwitcherProps {
 }
 
 export function AccountSwitcher({ onAddAccountClick }: AccountSwitcherProps) {
+  const { t } = useTranslation();
   const { logins } = useNostrLogin();
   const { currentUser, otherUsers, setLogin, removeLogin } = useLoggedInAccounts();
   const { clearSession } = useDivineSession();
@@ -80,31 +82,31 @@ export function AccountSwitcher({ onAddAccountClick }: AccountSwitcherProps) {
             className='flex items-center gap-2 cursor-pointer p-2 rounded-md'
           >
             <User className='w-4 h-4' />
-            <span>My Profile</span>
+            <span>{t('accountMenu.myProfile')}</span>
           </DropdownMenuItem>
           <DropdownMenuItem
             onClick={() => navigate('/settings/moderation')}
             className='flex items-center gap-2 cursor-pointer p-2 rounded-md'
           >
             <Settings className='w-4 h-4' />
-            <span>Settings</span>
+            <span>{t('accountMenu.settings')}</span>
           </DropdownMenuItem>
           <DropdownMenuItem
             onClick={() => navigate('/settings/linked-accounts')}
             className='flex items-center gap-2 cursor-pointer p-2 rounded-md'
           >
             <Link2 className='w-4 h-4' />
-            <span>Linked Accounts</span>
+            <span>{t('accountMenu.linkedAccounts')}</span>
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuLabel>Switch Relay</DropdownMenuLabel>
+          <DropdownMenuLabel>{t('accountMenu.switchRelay')}</DropdownMenuLabel>
           <DropdownMenuItem onSelect={(e) => e.preventDefault()} className='p-2'>
             <RelaySelector className='w-full' />
           </DropdownMenuItem>
           {!isJwtCurrentUser ? (
             <>
               <DropdownMenuSeparator />
-              <DropdownMenuLabel>Switch Account</DropdownMenuLabel>
+              <DropdownMenuLabel>{t('accountMenu.switchAccount')}</DropdownMenuLabel>
               {otherUsers.map((user) => (
                 <DropdownMenuItem
                   key={user.id}
@@ -140,7 +142,7 @@ export function AccountSwitcher({ onAddAccountClick }: AccountSwitcherProps) {
               className='flex items-center gap-2 cursor-pointer p-2 rounded-md'
             >
               <UserPlus className='w-4 h-4' />
-              <span>Add another account</span>
+              <span>{t('accountMenu.addAccount')}</span>
             </DropdownMenuItem>
           ) : null}
           <DropdownMenuItem
@@ -148,7 +150,7 @@ export function AccountSwitcher({ onAddAccountClick }: AccountSwitcherProps) {
             className='flex items-center gap-2 cursor-pointer p-2 rounded-md text-red-500'
           >
             <LogOut className='w-4 h-4' />
-            <span>Log out</span>
+            <span>{t('accountMenu.logOut')}</span>
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

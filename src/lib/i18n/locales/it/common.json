@@ -44,19 +44,20 @@
     "yourFeed": "Il tuo feed"
   },
   "auth": {
-    "logInOnDivine": "Accedi a Divine"
+    "logInOnDivine": "Entra",
+    "logIn": "Accedi"
   },
   "home": {
-    "welcomeTitle": "Benvenuto nel tuo feed principale",
-    "welcomeSubtitle": "Accedi per vedere i video delle persone che segui",
+    "welcomeTitle": "Il tuo feed, le tue regole.",
+    "welcomeSubtitle": "Accedi per vedere i loop delle persone che segui.",
     "title": "Home",
-    "subtitle": "Video delle persone che segui",
+    "subtitle": "Loop delle persone che segui.",
     "sortBy": "Ordina per:",
     "updating": "Aggiornamento..."
   },
   "discovery": {
     "title": "Scopri",
-    "subtitle": "Esplora i video della rete",
+    "subtitle": "Gira per la rete. Trova la tua gente.",
     "categories": "Categorie",
     "forYou": "Per te",
     "classic": "Classico",
@@ -82,14 +83,14 @@
   },
   "comments": {
     "title": "Commenti",
-    "noCommentsYet": "Nessun commento per ora",
-    "beFirstToShare": "Sii la prima persona a condividere la tua opinione",
-    "failedToLoad": "Impossibile caricare i commenti",
-    "writeAComment": "Scrivi un commento...",
+    "noCommentsYet": "Niente da dire per ora.",
+    "beFirstToShare": "Inizia tu — lascia un commento.",
+    "failedToLoad": "I commenti non si sono caricati.",
+    "writeAComment": "Di' qualcosa...",
     "signInToReply": "Accedi per rispondere",
     "signInToComment": "Accedi per commentare",
     "replyingToComment": "Risposta al commento",
-    "addingToDiscussion": "Aggiunta alla discussione",
+    "addingToDiscussion": "Ti unisci al thread",
     "posting": "Pubblicazione...",
     "reply": "Rispondi",
     "comment": "Commenta"
@@ -97,49 +98,131 @@
   "messages": {
     "badge": "Messaggi",
     "title": "Messaggi diretti",
-    "subtitle": "Parla con il supporto, invia vines in privato o continua una conversazione con le persone che segui.",
-    "searchPlaceholder": "Trova persone a cui scrivere",
+    "subtitle": "Parla con il supporto, manda un loop in privato o continua una conversazione con le persone che segui.",
+    "searchPlaceholder": "Trova qualcuno a cui scrivere",
     "newMessage": "Nuovo messaggio",
-    "readyToShare": "Pronto per la condivisione privata.",
+    "readyToShare": "Pronto per l'invio privato.",
     "shareWithTitle": "Il tuo prossimo messaggio includera “{{title}}”.",
     "shareWithLink": "Il tuo prossimo messaggio includera un link vine.",
-    "signerUnsupported": "Il tuo signer attuale puo autenticarti, ma non espone ancora la crittografia NIP-44. Passa a un nsec, bunker o altro signer con supporto NIP-44 per usare i messaggi diretti sul web.",
+    "signerUnsupported": "Il tuo signer attuale puo autenticarti, ma non parla ancora NIP-44. Passa a un nsec, bunker o altro signer con supporto NIP-44 per usare i DM qui.",
     "supportBadge": "Supporto",
-    "supportSummary": "Chiedi informazioni su bug, moderazione o problemi dell'account."
+    "supportSummary": "Bug, moderazione, cose dell'account — siamo qui ad ascoltarti."
   },
   "support": {
     "title": "Supporto",
-    "subtitle": "Hai bisogno di aiuto? Siamo qui per aiutarti.",
-    "helpCenterTitle": "Visita il centro assistenza Divine",
-    "helpCenterDescription": "Trova risposte alle tue domande su Divine.",
+    "subtitle": "Hai bisogno di una mano? Ci pensiamo noi.",
+    "helpCenterTitle": "Centro assistenza Divine",
+    "helpCenterDescription": "Risposte alle cose che ci chiedono di solito.",
     "helpCenterCta": "Visita il centro assistenza",
     "messageSupportTitle": "Invia un messaggio al supporto",
-    "messageSupportDescription": "Contatta direttamente la casella di supporto dentro Divine usando messaggi privati NIP-17.",
+    "messageSupportDescription": "Scrivici direttamente dentro Divine — cifrato con NIP-17.",
     "messageSupportCta": "Apri la chat di supporto",
     "contactTitle": "Contatta il supporto",
-    "contactDescription": "Apri un ticket e ti risponderemo il prima possibile.",
+    "contactDescription": "Apri un ticket e ti rispondiamo il prima possibile.",
     "contactLink": "Contatta il supporto",
     "githubTitle": "Issue di GitHub",
-    "githubDescription": "Segnala bug, richiedi funzionalita o consulta le issue esistenti nei nostri repository GitHub.",
+    "githubDescription": "Segnala bug, chiedi funzionalita o curiosa nel nostro GitHub.",
     "webAppLabel": "App web:",
     "flutterAppLabel": "App Flutter (iOS/Android):",
     "communityTitle": "Comunita",
-    "communityDescription": "Partecipa alle discussioni della comunita e connettiti con altri utenti Divine su Nostr.",
-    "communityBody": "Divine e costruito su Nostr, un protocollo sociale decentralizzato. Trovaci nel tuo client Nostr preferito."
+    "communityDescription": "Vieni a stare con la community di Divine su Nostr.",
+    "communityBody": "Divine gira su Nostr, il protocollo sociale decentralizzato. Trovaci nel tuo client Nostr preferito."
   },
   "tagPage": {
-    "notFoundTitle": "Tag non trovata",
-    "notFoundDescription": "Impossibile trovare la tag richiesta.",
+    "notFoundTitle": "Tag non trovata.",
+    "notFoundDescription": "Non abbiamo trovato questa tag.",
     "back": "Indietro",
-    "subtitle": "Esplora i video con il tag #{{tag}}"
+    "subtitle": "Loop con il tag #{{tag}}"
   },
   "categoriesPage": {
     "title": "Categorie",
-    "subtitle": "Esplora i video per argomento",
-    "emptyState": "Nessuna categoria disponibile in questo momento.",
+    "subtitle": "Loop, ordinati per vibe.",
+    "emptyState": "Nessuna categoria in pentola adesso.",
     "metaTitle": "Esplora le categorie - Divine",
     "metaDescription": "Esplora le categorie video su Divine - commedia, musica, danza, animali, sport, cibo e altro.",
     "videoCount_one": "{{count}} video",
     "videoCount_other": "{{count}} video"
+  },
+  "videoMeta": {
+    "viewCount_one": "{{formatted}} visualizzazione",
+    "viewCount_other": "{{formatted}} visualizzazioni"
+  },
+  "verification": {
+    "humanMade": "Creato da umani",
+    "dialog": {
+      "titleVideo": "Verifica video",
+      "titleArchive": "Archivio Vine originale",
+      "description": "Dettagli sull'origine dell'archivio, dati Proofmode, stato della scansione IA e fonte di hosting.",
+      "proofModeSection": "Verifica ProofMode",
+      "aiDetectionSection": "Rilevamento IA",
+      "aiNotScanned": "Scansione IA: non ancora effettuata",
+      "checking": "Cerco risultati della scansione…",
+      "noScanResults": "Nessun risultato di scansione disponibile al momento.",
+      "checkAi": "Controlla se generato da IA",
+      "aiLikelihood": "{{percent}}% di probabilita che sia generato da IA",
+      "scannedBy": "Scansionato da: {{source}}",
+      "verifiedByMod": "Verificato da un moderatore umano",
+      "learnMore": "Scopri di piu sulla verifica Proofmode",
+      "inspectTool": "Ispeziona con lo strumento ProofCheck",
+      "archiveBlurb": "Questo video e un Vine originale recuperato dall'Internet Archive.",
+      "archiveContext": "Prima della chiusura di Vine nel 2017, ArchiveTeam e l'Internet Archive hanno preservato milioni di Vines. Questo contenuto fa parte di quel salvataggio.",
+      "originalLoops": "Statistiche originali: {{count}} loop",
+      "archiveLearnMore": "Scopri di piu sulla preservazione dell'archivio Vine"
+    },
+    "intro": {
+      "proofMode": "L'autenticita di questo video e verificata con la tecnologia Proofmode.",
+      "aiHumanDivine": "Questo video e ospitato su Divine e il rilevamento IA indica che e probabilmente umano, anche senza dati ProofMode allegati.",
+      "aiHuman": "Il rilevamento IA indica che questo video e probabilmente umano, anche senza dati ProofMode allegati.",
+      "unverifiedDivine": "Questo video non e verificato. E ospitato su Divine, ma non ha ancora dati ProofMode allegati.",
+      "unverifiedExternal": "Questo video non e verificato ed e ospitato fuori da Divine. Non include dati ProofMode."
+    },
+    "summary": {
+      "platinum": "Platino: Attestazione hardware del dispositivo, firme crittografiche, Content Credentials (C2PA) e la scansione IA confermano l'origine umana.",
+      "gold": "Oro: Catturato su un dispositivo reale con attestazione hardware, firme crittografiche e Content Credentials (C2PA).",
+      "silverProof": "Argento: Le firme crittografiche provano che questo video non e stato alterato dalla registrazione.",
+      "bronze": "Bronzo: Firme di metadati di base presenti.",
+      "silverAi": "Argento: La scansione IA conferma che questo video e probabilmente creato da un umano.",
+      "muted": "Nessun dato di verifica disponibile per questo video."
+    },
+    "checklist": {
+      "deviceAttestation": "Attestazione del dispositivo",
+      "pgpSignature": "Firma PGP",
+      "c2paContentCredentials": "Content Credentials C2PA",
+      "proofManifest": "Manifesto di prova"
+    }
+  },
+  "classicViners": {
+    "heading": "Viner classici",
+    "archivedBadge": "Archiviato",
+    "archivedTooltip": "Archivio Vine originale preservato dall'Internet Archive"
+  },
+  "profile": {
+    "stats": {
+      "videos": "Video",
+      "followers": "Follower",
+      "following": "Seguiti",
+      "divineLoops": "Loop Divine"
+    },
+    "editProfile": "Modifica profilo"
+  },
+  "accountMenu": {
+    "myProfile": "Il mio profilo",
+    "settings": "Impostazioni",
+    "linkedAccounts": "Account collegati",
+    "switchRelay": "Cambia relay",
+    "switchAccount": "Cambia account",
+    "addAccount": "Aggiungi un altro account",
+    "logOut": "Esci"
+  },
+  "trending": {
+    "title": "Tendenze",
+    "subtitle": "Scopri cosa spacca nella community"
+  },
+  "searchTabs": {
+    "all": "Tutto",
+    "videos": "Video",
+    "users": "Persone",
+    "hashtags": "Hashtag",
+    "searching": "Ricerca in corso..."
   }
 }

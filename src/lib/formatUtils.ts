@@ -1,6 +1,8 @@
 // ABOUTME: Utility functions for formatting numbers, durations, and counts
 // ABOUTME: Provides consistent formatting across the application for social metrics
 
+import type { TFunction } from 'i18next';
+
 /**
  * Format view counts and social interaction counts with K/M notation
  */
@@ -30,10 +32,14 @@ export function formatDuration(seconds: number): string {
 }
 
 /**
- * Format view count with proper pluralization
+ * Format view count with proper pluralization. Pass a translator (`t` from
+ * useTranslation) to localize the unit; falls back to English if omitted.
  */
-export function formatViewCount(count: number): string {
+export function formatViewCount(count: number, t?: TFunction): string {
   const formatted = formatCount(count);
+  if (t) {
+    return t('videoMeta.viewCount', { count, formatted });
+  }
   return count === 1 ? `${formatted} view` : `${formatted} views`;
 }
 

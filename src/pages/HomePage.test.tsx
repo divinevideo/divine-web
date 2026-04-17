@@ -45,7 +45,7 @@ describe('HomePage', () => {
   it('renders the logged-out home prompt in the active locale', () => {
     render(<HomePage />);
 
-    expect(screen.getByRole('heading', { name: 'Bienvenido a tu feed principal' })).toBeInTheDocument();
-    expect(screen.getByText('Inicia sesion para ver videos de las personas que sigues')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Tu feed, tus reglas.' })).toBeInTheDocument();
+    expect(screen.getByText('Inicia sesion para ver loops de la gente que sigues.')).toBeInTheDocument();
   });
 });

@@ -36,8 +36,8 @@ describe('TagPage', () => {
       </MemoryRouter>,
     );
 
-    expect(screen.getByRole('heading', { name: 'Etiqueta no encontrada' })).toBeInTheDocument();
-    expect(screen.getByText('No se pudo encontrar la etiqueta solicitada.')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Etiqueta no encontrada.' })).toBeInTheDocument();
+    expect(screen.getByText('No encontramos esa etiqueta.')).toBeInTheDocument();
   });
 
   it('renders the tag header copy in spanish', () => {
@@ -50,6 +50,6 @@ describe('TagPage', () => {
     );
 
     expect(screen.getByRole('button', { name: 'Atras' })).toBeInTheDocument();
-    expect(screen.getByText('Explora videos etiquetados con #funny')).toBeInTheDocument();
+    expect(screen.getByText('Loops etiquetados con #funny')).toBeInTheDocument();
   });
 });

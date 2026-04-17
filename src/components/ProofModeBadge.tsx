@@ -2,6 +2,7 @@
 // ABOUTME: Shows different icons and colors based on verification level with detailed tooltip
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Shield, ShieldCheck, ShieldWarning as ShieldAlert, CheckCircle, Info } from '@phosphor-icons/react';
 import { Badge } from '@/components/ui/badge';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -20,11 +21,13 @@ interface ProofModeBadgeProps {
 }
 
 export function ProofModeBadge({ level, proofData, className, showDetails = false, size = 'small' }: ProofModeBadgeProps) {
-  const config = getProofModeConfig(level);
+  const { t } = useTranslation();
+  const baseConfig = getProofModeConfig(level);
   const sizeConfig = getSizeConfig(size);
   const [open, setOpen] = useState(false);
 
-  if (!config) return null;
+  if (!baseConfig) return null;
+  const config = { ...baseConfig, label: t('verification.humanMade') };
 
   const Icon = config.icon;
 

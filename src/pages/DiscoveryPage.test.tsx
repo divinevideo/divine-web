@@ -80,7 +80,7 @@ describe('DiscoveryPage', () => {
     );
 
     expect(screen.getByRole('heading', { name: 'Descubrir' })).toBeInTheDocument();
-    expect(screen.getByText('Explora videos de la red')).toBeInTheDocument();
+    expect(screen.getByText('Recorre la red. Encuentra a tu gente.')).toBeInTheDocument();
     expect(screen.getByText('Clasico')).toBeInTheDocument();
     expect(screen.getByText('Musica')).toBeInTheDocument();
   });

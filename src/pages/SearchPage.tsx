@@ -2,6 +2,7 @@
 // ABOUTME: Supports searching videos, users, hashtags with NIP-50 full-text search
 
 import { useState, useEffect, useRef, useMemo, type ClipboardEvent } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';
 import { useNostr } from '@nostrify/react';
 import { useSubdomainNavigate } from '@/hooks/useSubdomainNavigate';
@@ -42,6 +43,7 @@ import {
 type SearchFilter = 'all' | 'videos' | 'users' | 'hashtags';
 
 export function SearchPage() {
+  const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
   const { nostr } = useNostr();
   const navigate = useSubdomainNavigate();
@@ -376,19 +378,19 @@ export function SearchPage() {
           <TabsList className="grid w-full max-w-md mx-auto grid-cols-4 mb-6">
             <TabsTrigger value="all" className="gap-2">
               <Search className="h-4 w-4 flex-shrink-0" />
-              <span className="hidden sm:inline">All</span>
+              <span className="hidden sm:inline">{t('searchTabs.all')}</span>
             </TabsTrigger>
             <TabsTrigger value="videos" className="gap-2">
               <Video className="h-4 w-4 flex-shrink-0" />
-              <span className="hidden sm:inline">Videos</span>
+              <span className="hidden sm:inline">{t('searchTabs.videos')}</span>
             </TabsTrigger>
             <TabsTrigger value="users" className="gap-2">
               <Users className="h-4 w-4 flex-shrink-0" />
-              <span className="hidden sm:inline">Users</span>
+              <span className="hidden sm:inline">{t('searchTabs.users')}</span>
             </TabsTrigger>
             <TabsTrigger value="hashtags" className="gap-2">
               <Hash className="h-4 w-4 flex-shrink-0" />
-              <span className="hidden sm:inline">Hashtags</span>
+              <span className="hidden sm:inline">{t('searchTabs.hashtags')}</span>
             </TabsTrigger>
           </TabsList>
 
@@ -396,7 +398,7 @@ export function SearchPage() {
           {searchQuery.trim() && (
             <div className="text-center mb-4">
               {isLoading ? (
-                <p className="text-muted-foreground">Searching...</p>
+                <p className="text-muted-foreground">{t('searchTabs.searching')}</p>
               ) : error ? (
                 <p className="text-destructive">Search error occurred</p>
               ) : getResultsCount() === 0 ? (

@@ -44,19 +44,20 @@
     "yourFeed": "Ditt flode"
   },
   "auth": {
-    "logInOnDivine": "Logga in pa Divine"
+    "logInOnDivine": "Hoppa in",
+    "logIn": "Logga in"
   },
   "home": {
-    "welcomeTitle": "Valkommen till ditt hemmaflode",
-    "welcomeSubtitle": "Logga in for att se videor fran personer du foljer",
+    "welcomeTitle": "Ditt flode, dina regler.",
+    "welcomeSubtitle": "Logga in for att se loopar fran personer du foljer.",
     "title": "Hem",
-    "subtitle": "Videor fran personer du foljer",
+    "subtitle": "Loopar fran personer du foljer.",
     "sortBy": "Sortera efter:",
     "updating": "Uppdaterar..."
   },
   "discovery": {
     "title": "Utforska",
-    "subtitle": "Utforska videor fran natverket",
+    "subtitle": "Stroya runt i natverket. Hitta ditt folk.",
     "categories": "Kategorier",
     "forYou": "For dig",
     "classic": "Klassiskt",
@@ -82,14 +83,14 @@
   },
   "comments": {
     "title": "Kommentarer",
-    "noCommentsYet": "Inga kommentarer an",
-    "beFirstToShare": "Bli den forsta som delar dina tankar",
-    "failedToLoad": "Det gick inte att ladda kommentarer",
-    "writeAComment": "Skriv en kommentar...",
+    "noCommentsYet": "Inget att saga an.",
+    "beFirstToShare": "Borja du — slang in en kommentar.",
+    "failedToLoad": "Kommentarerna laddade inte.",
+    "writeAComment": "Saga nagot...",
     "signInToReply": "Logga in for att svara",
     "signInToComment": "Logga in for att kommentera",
     "replyingToComment": "Svara pa kommentar",
-    "addingToDiscussion": "Lagger till i diskussionen",
+    "addingToDiscussion": "Hoppar in i traden",
     "posting": "Publicerar...",
     "reply": "Svara",
     "comment": "Kommentera"
@@ -97,49 +98,131 @@
   "messages": {
     "badge": "Meddelanden",
     "title": "Direktmeddelanden",
-    "subtitle": "Prata med support, skicka vines privat eller hall igang en trad med personer du foljer.",
-    "searchPlaceholder": "Hitta personer att skicka meddelanden till",
+    "subtitle": "Prata med supporten, slang in en loop privat eller hall igang en trad med personer du foljer.",
+    "searchPlaceholder": "Hitta nagon att skicka meddelande till",
     "newMessage": "Nytt meddelande",
-    "readyToShare": "Redo att dela privat.",
+    "readyToShare": "Redo att skicka privat.",
     "shareWithTitle": "Ditt nasta meddelande kommer att innehalla “{{title}}”.",
     "shareWithLink": "Ditt nasta meddelande kommer att innehalla en vine-lank.",
-    "signerUnsupported": "Din nuvarande signer kan logga in dig, men den exponerar inte NIP-44-kryptering an. Byt till en nsec, bunker eller annan signer som stodjer NIP-44 for att anvanda direktmeddelanden pa webben.",
+    "signerUnsupported": "Din nuvarande signer kan logga in dig, men talar inte NIP-44 an. Byt till en nsec, bunker eller annan signer som stodjer NIP-44 for att anvanda DM har.",
     "supportBadge": "Support",
-    "supportSummary": "Fraga om buggar, moderering eller kontoproblem."
+    "supportSummary": "Buggar, moderering, kontogrejer — vi lyssnar."
   },
   "support": {
     "title": "Support",
-    "subtitle": "Behöver du hjälp? Vi finns här för att hjälpa dig.",
-    "helpCenterTitle": "Besök Divines hjälpcenter",
-    "helpCenterDescription": "Hitta svar på dina frågor om Divine.",
-    "helpCenterCta": "Besök hjälpcentret",
+    "subtitle": "Behover du en hand? Vi har dig.",
+    "helpCenterTitle": "Divines hjalpcenter",
+    "helpCenterDescription": "Svar pa det folk brukar fraga om.",
+    "helpCenterCta": "Besok hjalpcentret",
     "messageSupportTitle": "Meddela supporten",
-    "messageSupportDescription": "Kontakta supportinkorgen direkt i Divine med privata NIP-17-meddelanden.",
-    "messageSupportCta": "Öppna supportchatten",
+    "messageSupportDescription": "Slang oss en DM direkt i Divine — krypterat med NIP-17.",
+    "messageSupportCta": "Oppna supportchatten",
     "contactTitle": "Kontakta supporten",
-    "contactDescription": "Skapa ett ärende så återkommer vi så snart som möjligt.",
+    "contactDescription": "Oppna ett arende sa hor vi av oss sa fort vi kan.",
     "contactLink": "Kontakta supporten",
-    "githubTitle": "GitHub-ärenden",
-    "githubDescription": "Rapportera buggar, önska funktioner eller bläddra bland befintliga ärenden i våra GitHub-repositorier.",
+    "githubTitle": "GitHub-arenden",
+    "githubDescription": "Rapportera buggar, onska funktioner eller pilla runt pa var GitHub.",
     "webAppLabel": "Webbapp:",
     "flutterAppLabel": "Flutter-app (iOS/Android):",
     "communityTitle": "Gemenskap",
-    "communityDescription": "Delta i våra gemenskapsdiskussioner och få kontakt med andra Divine-användare på Nostr.",
-    "communityBody": "Divine är byggt på Nostr, ett decentraliserat socialt protokoll. Hitta oss i din favoritklient för Nostr."
+    "communityDescription": "Hang med Divine-gemenskapen pa Nostr.",
+    "communityBody": "Divine kor pa Nostr, det decentraliserade sociala protokollet. Hitta oss i din favoritklient for Nostr."
   },
   "tagPage": {
-    "notFoundTitle": "Tagg hittades inte",
-    "notFoundDescription": "Den begarda taggen kunde inte hittas.",
+    "notFoundTitle": "Tagg hittades inte.",
+    "notFoundDescription": "Vi hittade inte den taggen.",
     "back": "Tillbaka",
-    "subtitle": "Utforska videor med taggen #{{tag}}"
+    "subtitle": "Loopar med taggen #{{tag}}"
   },
   "categoriesPage": {
     "title": "Kategorier",
-    "subtitle": "Utforska videor efter amne",
-    "emptyState": "Inga kategorier ar tillgangliga just nu.",
+    "subtitle": "Loopar, sorterade efter vibe.",
+    "emptyState": "Inga kategorier puttrar just nu.",
     "metaTitle": "Utforska kategorier - Divine",
     "metaDescription": "Utforska videokategorier pa Divine - komedi, musik, dans, djur, sport, mat och mer.",
     "videoCount_one": "{{count}} video",
     "videoCount_other": "{{count}} videor"
+  },
+  "videoMeta": {
+    "viewCount_one": "{{formatted}} visning",
+    "viewCount_other": "{{formatted}} visningar"
+  },
+  "verification": {
+    "humanMade": "Skapad av manniskor",
+    "dialog": {
+      "titleVideo": "Videoverifiering",
+      "titleArchive": "Original Vine-arkiv",
+      "description": "Information om arkivets ursprung, Proofmode-data, AI-scanstatus och hostingkalla.",
+      "proofModeSection": "ProofMode-verifiering",
+      "aiDetectionSection": "AI-detektion",
+      "aiNotScanned": "AI-scan: ej scannad an",
+      "checking": "Soker scanresultat…",
+      "noScanResults": "Inga scanresultat tillgangliga an.",
+      "checkAi": "Kontrollera om AI-genererad",
+      "aiLikelihood": "{{percent}}% sannolikhet att vara AI-genererad",
+      "scannedBy": "Scannad av: {{source}}",
+      "verifiedByMod": "Verifierad av manskliga moderator",
+      "learnMore": "Las mer om Proofmode-verifiering",
+      "inspectTool": "Granska med ProofCheck-verktyget",
+      "archiveBlurb": "Den har videon ar en original-Vine raddad fran Internet Archive.",
+      "archiveContext": "Innan Vine stangde 2017 raddade ArchiveTeam och Internet Archive miljoner Vines. Detta innehall ar en del av den raddningsinsatsen.",
+      "originalLoops": "Original-stats: {{count}} loopar",
+      "archiveLearnMore": "Las mer om Vine-arkivet"
+    },
+    "intro": {
+      "proofMode": "Den har videons akthet ar verifierad med Proofmode-teknik.",
+      "aiHumanDivine": "Den har videon ligger pa Divine och AI-detektionen tyder pa att den troligen ar gjord av manniskor, aven utan ProofMode-data.",
+      "aiHuman": "AI-detektionen tyder pa att den har videon troligen ar gjord av manniskor, aven utan ProofMode-data.",
+      "unverifiedDivine": "Den har videon ar inte verifierad. Den ligger pa Divine, men har annu inga ProofMode-data.",
+      "unverifiedExternal": "Den har videon ar inte verifierad och hostas utanfor Divine. Den innehaller inga ProofMode-data."
+    },
+    "summary": {
+      "platinum": "Platina: Hardvaruattest fran enheten, kryptografiska signaturer, Content Credentials (C2PA) och AI-scan bekraftar manskligt ursprung.",
+      "gold": "Guld: Inspelat pa en riktig enhet med hardvaruattest, kryptografiska signaturer och Content Credentials (C2PA).",
+      "silverProof": "Silver: Kryptografiska signaturer bevisar att videon inte har andrats sedan inspelningen.",
+      "bronze": "Brons: Grundlaggande metadata-signaturer finns.",
+      "silverAi": "Silver: AI-scan bekraftar att videon troligen ar skapad av en manniska.",
+      "muted": "Ingen verifieringsdata tillganglig for den har videon."
+    },
+    "checklist": {
+      "deviceAttestation": "Enhetsattest",
+      "pgpSignature": "PGP-signatur",
+      "c2paContentCredentials": "C2PA Content Credentials",
+      "proofManifest": "Bevismanifest"
+    }
+  },
+  "classicViners": {
+    "heading": "Klassiska Viners",
+    "archivedBadge": "Arkiverad",
+    "archivedTooltip": "Original Vine-arkiv bevarat av Internet Archive"
+  },
+  "profile": {
+    "stats": {
+      "videos": "Videor",
+      "followers": "Foljare",
+      "following": "Foljer",
+      "divineLoops": "Divine Loops"
+    },
+    "editProfile": "Redigera profil"
+  },
+  "accountMenu": {
+    "myProfile": "Min profil",
+    "settings": "Installningar",
+    "linkedAccounts": "Lankade konton",
+    "switchRelay": "Byt relay",
+    "switchAccount": "Byt konto",
+    "addAccount": "Lagg till ett annat konto",
+    "logOut": "Logga ut"
+  },
+  "trending": {
+    "title": "Trendande",
+    "subtitle": "Se vad som rors i gemenskapen"
+  },
+  "searchTabs": {
+    "all": "Alla",
+    "videos": "Videor",
+    "users": "Personer",
+    "hashtags": "Taggar",
+    "searching": "Soker..."
   }
 }

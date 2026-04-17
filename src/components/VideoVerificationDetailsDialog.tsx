@@ -2,6 +2,7 @@
 // ABOUTME: Uses the same decision helpers as the badge row so the UI stays aligned with mobile badge rules
 
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Archive, CheckCircle as CheckCircle2, ArrowSquareOut as ExternalLink, CircleNotch as Loader2, MagnifyingGlass as Search, ShieldCheck, XCircle } from '@phosphor-icons/react';
 import {
   Dialog,
@@ -15,9 +16,10 @@ import { Progress } from '@/components/ui/progress';
 import { useVideoVerification } from '@/hooks/useVideoVerification';
 import {
   type AIDetectionResult,
+  type VerificationSummaryTone,
   getProofChecklist,
-  getVerificationDescription,
-  getVerificationIntroText,
+  getVerificationIntroKey,
+  getVerificationSummary,
   isOriginalVineVideo,
   shouldFetchAiForDetails,
 } from '@/lib/videoVerification';
@@ -35,6 +37,7 @@ export function VideoVerificationDetailsDialog({
   open,
   onOpenChange,
 }: VideoVerificationDetailsDialogProps) {
+  const { t } = useTranslation();
   const { aiResult, isFetching, refetch } = useVideoVerification(video, {
     autoFetchAi: open && shouldFetchAiForDetails(video),
   });
@@ -62,10 +65,10 @@ export function VideoVerificationDetailsDialog({
             ) : (
               <ShieldCheck className="h-5 w-5 text-primary" />
             )}
-            {isOriginalVine ? 'Original Vine Archive' : 'Video Verification'}
+            {isOriginalVine ? t('verification.dialog.titleArchive') : t('verification.dialog.titleVideo')}
           </DialogTitle>
           <DialogDescription className="sr-only">
-            Details about this video&apos;s archive origin, Proofmode data, AI scan status, and hosting source.
+            {t('verification.dialog.description')}
           </DialogDescription>
         </DialogHeader>
 
@@ -86,25 +89,22 @@ export function VideoVerificationDetailsDialog({
 }
 
 function OriginalVineDetails({ video }: { video: ParsedVideoData }) {
+  const { t } = useTranslation();
   return (
     <div className="space-y-4 text-sm">
-      <p className="font-medium">
-        This video is an original Vine recovered from the Internet Archive.
-      </p>
+      <p className="font-medium">{t('verification.dialog.archiveBlurb')}</p>
 
-      <p className="text-muted-foreground">
-        Before Vine shut down in 2017, ArchiveTeam and the Internet Archive preserved millions of Vines. This content is part of that recovery effort.
-      </p>
+      <p className="text-muted-foreground">{t('verification.dialog.archiveContext')}</p>
 
       {typeof video.loopCount === 'number' && video.loopCount > 0 && (
         <p className="text-xs italic text-muted-foreground">
-          Original stats: {video.loopCount.toLocaleString()} loops
+          {t('verification.dialog.originalLoops', { count: video.loopCount.toLocaleString() })}
         </p>
       )}
 
       <ExternalTextLink
         href="https://divine.video/dmca"
-        label="Learn more about the Vine archive preservation"
+        label={t('verification.dialog.archiveLearnMore')}
       />
     </div>
   );
@@ -125,38 +125,38 @@ function VerificationDetails({
   checkedAndEmpty,
   onManualCheck,
 }: VerificationDetailsProps) {
-  const summary = getVerificationDescription(video, aiResult);
+  const { t } = useTranslation();
+  const summary = getVerificationSummary(video, aiResult);
   const checklist = getProofChecklist(video.proofMode);
+  const introKey = getVerificationIntroKey(video, aiResult);
 
   return (
     <div className="space-y-5">
-      <p className="text-sm font-medium">
-        {getVerificationIntroText(video, aiResult)}
-      </p>
+      <p className="text-sm font-medium">{t(introKey)}</p>
 
       <section className="space-y-3">
         <div className="flex items-center gap-2 text-sm font-semibold">
           <ShieldCheck className="h-4 w-4 text-primary" />
-          <span>ProofMode Verification</span>
+          <span>{t('verification.dialog.proofModeSection')}</span>
         </div>
 
         <div className="flex items-start gap-3 rounded-lg border border-border/70 bg-muted/40 p-3">
           <div className={getSummaryToneClass(summary.tone)}>
             <ShieldCheck className="h-4 w-4" />
           </div>
-          <p className="text-sm text-muted-foreground">{summary.text}</p>
+          <p className="text-sm text-muted-foreground">{t(summary.key)}</p>
         </div>
 
         <div className="space-y-2">
           {checklist.map((item) => (
-            <div key={item.label} className="flex items-center gap-2 text-sm">
+            <div key={item.key} className="flex items-center gap-2 text-sm">
               {item.passed ? (
                 <CheckCircle2 className="h-4 w-4 text-green-600" />
               ) : (
                 <XCircle className="h-4 w-4 text-muted-foreground" />
               )}
               <span className={item.passed ? 'text-foreground' : 'text-muted-foreground'}>
-                {item.label}
+                {t(item.key)}
               </span>
             </div>
           ))}
@@ -166,7 +166,7 @@ function VerificationDetails({
       <section className="space-y-3">
         <div className="flex items-center gap-2 text-sm font-semibold">
           <Search className="h-4 w-4 text-primary" />
-          <span>AI Detection</span>
+          <span>{t('verification.dialog.aiDetectionSection')}</span>
         </div>
 
         {aiResult ? (
@@ -177,16 +177,16 @@ function VerificationDetails({
               </span>
               <div className="space-y-1">
                 <p className="text-sm font-medium">
-                  {Math.round(aiResult.score * 100)}% likelihood of being AI-generated
+                  {t('verification.dialog.aiLikelihood', { percent: Math.round(aiResult.score * 100) })}
                 </p>
                 {aiResult.source && (
                   <p className="text-xs text-muted-foreground">
-                    Scanned by: {aiResult.source}
+                    {t('verification.dialog.scannedBy', { source: aiResult.source })}
                   </p>
                 )}
                 {aiResult.isVerified && (
                   <p className="text-xs text-primary">
-                    Verified by human moderator
+                    {t('verification.dialog.verifiedByMod')}
                   </p>
                 )}
               </div>
@@ -196,24 +196,24 @@ function VerificationDetails({
         ) : (
           <div className="space-y-3 rounded-lg border border-border/70 bg-muted/40 p-3">
             <p className="text-sm font-medium text-muted-foreground">
-              AI scan: Not yet scanned
+              {t('verification.dialog.aiNotScanned')}
             </p>
 
             {isFetching ? (
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Loader2 className="h-4 w-4 animate-spin" />
-                <span>Checking for scan results…</span>
+                <span>{t('verification.dialog.checking')}</span>
               </div>
             ) : checkedAndEmpty ? (
               <p className="text-xs italic text-muted-foreground">
-                No scan results available yet.
+                {t('verification.dialog.noScanResults')}
               </p>
             ) : null}
 
             {!isFetching && (
               <Button type="button" variant="outline" size="sm" onClick={onManualCheck} className="w-full justify-center">
                 <Search className="mr-2 h-4 w-4" />
-                Check if AI-generated
+                {t('verification.dialog.checkAi')}
               </Button>
             )}
           </div>
@@ -221,11 +221,11 @@ function VerificationDetails({
       </section>
 
       <div className="space-y-2 border-t pt-3 text-sm">
-        <InternalTextLink href="/proofmode" label="Learn more about Proofmode verification" />
+        <InternalTextLink href="/proofmode" label={t('verification.dialog.learnMore')} />
         {video.videoUrl && (
           <ExternalTextLink
             href={`https://check.proofmode.org/#${video.videoUrl}`}
-            label="Inspect with ProofCheck Tool"
+            label={t('verification.dialog.inspectTool')}
           />
         )}
       </div>
@@ -233,7 +233,7 @@ function VerificationDetails({
   );
 }
 
-function getSummaryToneClass(tone: 'platinum' | 'gold' | 'silver' | 'bronze' | 'muted') {
+function getSummaryToneClass(tone: VerificationSummaryTone) {
   switch (tone) {
     case 'platinum':
       return 'text-[#E5E4E2]';

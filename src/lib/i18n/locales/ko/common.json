@@ -44,19 +44,20 @@
     "yourFeed": "내 피드"
   },
   "auth": {
-    "logInOnDivine": "Divine에 로그인"
+    "logInOnDivine": "들어가자",
+    "logIn": "로그인"
   },
   "home": {
-    "welcomeTitle": "홈 피드에 오신 것을 환영합니다",
-    "welcomeSubtitle": "팔로우한 사람들의 동영상을 보려면 로그인하세요",
+    "welcomeTitle": "당신의 피드, 당신의 규칙.",
+    "welcomeSubtitle": "팔로우한 사람들의 루프를 보려면 로그인하세요.",
     "title": "홈",
-    "subtitle": "팔로우한 사람들의 동영상",
+    "subtitle": "팔로우한 사람들의 루프.",
     "sortBy": "정렬 기준:",
     "updating": "업데이트 중..."
   },
   "discovery": {
     "title": "탐색",
-    "subtitle": "네트워크의 동영상을 둘러보세요",
+    "subtitle": "네트워크를 거닐어보세요. 당신의 사람들을 찾아요.",
     "categories": "카테고리",
     "forYou": "추천",
     "classic": "클래식",
@@ -82,14 +83,14 @@
   },
   "comments": {
     "title": "댓글",
-    "noCommentsYet": "아직 댓글이 없습니다",
-    "beFirstToShare": "가장 먼저 의견을 남겨보세요",
-    "failedToLoad": "댓글을 불러오지 못했습니다",
-    "writeAComment": "댓글 쓰기...",
+    "noCommentsYet": "아직 할 말이 없네요.",
+    "beFirstToShare": "먼저 시작해보세요 — 댓글을 남겨보세요.",
+    "failedToLoad": "댓글이 안 불러와졌어요.",
+    "writeAComment": "한마디 남겨보세요...",
     "signInToReply": "답글을 쓰려면 로그인하세요",
     "signInToComment": "댓글을 쓰려면 로그인하세요",
     "replyingToComment": "댓글에 답글 작성 중",
-    "addingToDiscussion": "대화에 추가하는 중",
+    "addingToDiscussion": "스레드에 뛰어드는 중",
     "posting": "게시 중...",
     "reply": "답글",
     "comment": "댓글"
@@ -97,49 +98,131 @@
   "messages": {
     "badge": "메시지",
     "title": "다이렉트 메시지",
-    "subtitle": "지원팀과 대화하고, vine을 비공개로 보내거나, 팔로우한 사람들과 대화를 이어가세요.",
+    "subtitle": "지원팀과 대화하고, 루프를 비공개로 보내거나, 팔로우한 사람들과 대화를 이어가세요.",
     "searchPlaceholder": "메시지를 보낼 사람 찾기",
     "newMessage": "새 메시지",
-    "readyToShare": "비공개로 공유할 준비가 되었습니다.",
+    "readyToShare": "비공개로 보낼 준비 완료.",
     "shareWithTitle": "다음 메시지에는 “{{title}}”가 포함됩니다.",
     "shareWithLink": "다음 메시지에는 vine 링크가 포함됩니다.",
-    "signerUnsupported": "현재 signer로 로그인할 수는 있지만 아직 NIP-44 암호화를 제공하지 않습니다. 웹에서 다이렉트 메시지를 사용하려면 NIP-44를 지원하는 nsec, bunker 또는 다른 signer로 전환하세요.",
+    "signerUnsupported": "현재 signer로 로그인할 수는 있지만 아직 NIP-44를 사용할 수 없어요. 여기서 DM을 사용하려면 NIP-44를 지원하는 nsec, bunker 또는 다른 signer로 전환하세요.",
     "supportBadge": "지원",
-    "supportSummary": "버그, 모더레이션 또는 계정 문제에 대해 문의하세요."
+    "supportSummary": "버그, 모더레이션, 계정 문제 — 듣고 있어요."
   },
   "support": {
     "title": "지원",
-    "subtitle": "도움이 필요하신가요? 저희가 도와드리겠습니다.",
-    "helpCenterTitle": "Divine 도움말 센터 방문",
-    "helpCenterDescription": "Divine 에 대한 질문의 답을 찾아보세요.",
+    "subtitle": "도움이 필요하신가요? 저희가 챙길게요.",
+    "helpCenterTitle": "Divine 도움말 센터",
+    "helpCenterDescription": "사람들이 자주 묻는 것들의 답변.",
     "helpCenterCta": "도움말 센터 방문",
     "messageSupportTitle": "지원팀에 메시지 보내기",
-    "messageSupportDescription": "NIP-17 개인 메시지로 Divine 안의 지원 수신함에 직접 연락하세요.",
+    "messageSupportDescription": "Divine 안에서 바로 DM 주세요 — NIP-17로 암호화됩니다.",
     "messageSupportCta": "지원 채팅 열기",
     "contactTitle": "지원팀에 문의",
-    "contactDescription": "티켓을 만들면 가능한 한 빨리 답변드리겠습니다.",
+    "contactDescription": "티켓을 만들면 가능한 한 빨리 답변드릴게요.",
     "contactLink": "지원팀에 문의",
     "githubTitle": "GitHub 이슈",
-    "githubDescription": "버그를 신고하거나 기능을 요청하거나 GitHub 저장소의 기존 이슈를 살펴보세요.",
+    "githubDescription": "버그를 신고하거나 기능을 요청하거나 GitHub을 둘러보세요.",
     "webAppLabel": "웹 앱:",
     "flutterAppLabel": "Flutter 앱 (iOS/Android):",
     "communityTitle": "커뮤니티",
-    "communityDescription": "커뮤니티 대화에 참여하고 Nostr 의 다른 Divine 사용자와 연결하세요.",
-    "communityBody": "Divine 은 탈중앙화 소셜 프로토콜인 Nostr 위에 구축되었습니다. 즐겨 사용하는 Nostr 클라이언트에서 저희를 찾아보세요."
+    "communityDescription": "Nostr의 Divine 커뮤니티에 놀러오세요.",
+    "communityBody": "Divine 은 탈중앙화 소셜 프로토콜인 Nostr 위에서 돌아갑니다. 즐겨 사용하는 Nostr 클라이언트에서 저희를 찾아보세요."
   },
   "tagPage": {
-    "notFoundTitle": "태그를 찾을 수 없습니다",
-    "notFoundDescription": "요청한 태그를 찾을 수 없습니다.",
+    "notFoundTitle": "태그를 찾을 수 없습니다.",
+    "notFoundDescription": "해당 태그를 찾지 못했어요.",
     "back": "뒤로",
-    "subtitle": "#{{tag}} 태그가 붙은 동영상을 둘러보세요"
+    "subtitle": "#{{tag}} 태그가 붙은 루프"
   },
   "categoriesPage": {
     "title": "카테고리",
-    "subtitle": "주제별로 동영상을 둘러보세요",
-    "emptyState": "현재 사용할 수 있는 카테고리가 없습니다.",
+    "subtitle": "루프, 분위기별로 정리.",
+    "emptyState": "지금은 준비 중인 카테고리가 없어요.",
     "metaTitle": "카테고리 둘러보기 - Divine",
     "metaDescription": "Divine 에서 코미디, 음악, 댄스, 동물, 스포츠, 음식 등 다양한 동영상 카테고리를 둘러보세요.",
     "videoCount_one": "동영상 {{count}}개",
     "videoCount_other": "동영상 {{count}}개"
+  },
+  "videoMeta": {
+    "viewCount_one": "조회수 {{formatted}}회",
+    "viewCount_other": "조회수 {{formatted}}회"
+  },
+  "verification": {
+    "humanMade": "사람이 만든 콘텐츠",
+    "dialog": {
+      "titleVideo": "동영상 인증",
+      "titleArchive": "오리지널 Vine 아카이브",
+      "description": "아카이브 출처, Proofmode 데이터, AI 스캔 상태, 호스팅 출처에 대한 세부 정보.",
+      "proofModeSection": "ProofMode 인증",
+      "aiDetectionSection": "AI 탐지",
+      "aiNotScanned": "AI 스캔: 아직 스캔되지 않음",
+      "checking": "스캔 결과를 확인하는 중…",
+      "noScanResults": "아직 스캔 결과가 없습니다.",
+      "checkAi": "AI 생성 여부 확인",
+      "aiLikelihood": "AI 생성 가능성 {{percent}}%",
+      "scannedBy": "스캔자: {{source}}",
+      "verifiedByMod": "사람 모더레이터가 확인",
+      "learnMore": "Proofmode 인증에 대해 더 알아보기",
+      "inspectTool": "ProofCheck 도구로 검사",
+      "archiveBlurb": "이 동영상은 Internet Archive에서 구해낸 오리지널 Vine입니다.",
+      "archiveContext": "2017년 Vine 종료 전, ArchiveTeam과 Internet Archive가 수백만 개의 Vine을 보존했습니다. 이 콘텐츠는 그 구출 작업의 일부입니다.",
+      "originalLoops": "오리지널 통계: {{count}} 루프",
+      "archiveLearnMore": "Vine 아카이브 보존에 대해 더 알아보기"
+    },
+    "intro": {
+      "proofMode": "이 동영상의 진위는 Proofmode 기술로 인증되었습니다.",
+      "aiHumanDivine": "이 동영상은 Divine에서 호스팅되며, ProofMode 데이터가 없어도 AI 탐지로 사람이 만든 것일 가능성이 높다고 표시됩니다.",
+      "aiHuman": "ProofMode 데이터가 없더라도 AI 탐지에서 이 동영상은 사람이 만든 것일 가능성이 높다고 표시됩니다.",
+      "unverifiedDivine": "이 동영상은 인증되지 않았습니다. Divine에서 호스팅되지만, 아직 ProofMode 데이터가 없습니다.",
+      "unverifiedExternal": "이 동영상은 인증되지 않았고 Divine 외부에서 호스팅됩니다. ProofMode 데이터를 포함하지 않습니다."
+    },
+    "summary": {
+      "platinum": "플래티넘: 디바이스 하드웨어 증명, 암호화 서명, Content Credentials (C2PA), AI 스캔이 사람 출처를 확인합니다.",
+      "gold": "골드: 실제 기기에서 하드웨어 증명, 암호화 서명, Content Credentials (C2PA)와 함께 촬영.",
+      "silverProof": "실버: 암호화 서명이 이 동영상이 녹화 이후 변경되지 않았음을 증명합니다.",
+      "bronze": "브론즈: 기본 메타데이터 서명이 있습니다.",
+      "silverAi": "실버: AI 스캔으로 이 동영상이 사람이 만든 것일 가능성이 높다고 확인되었습니다.",
+      "muted": "이 동영상에 대한 인증 데이터가 없습니다."
+    },
+    "checklist": {
+      "deviceAttestation": "디바이스 증명",
+      "pgpSignature": "PGP 서명",
+      "c2paContentCredentials": "C2PA Content Credentials",
+      "proofManifest": "증명 매니페스트"
+    }
+  },
+  "classicViners": {
+    "heading": "클래식 Viner",
+    "archivedBadge": "아카이브됨",
+    "archivedTooltip": "Internet Archive에서 보존된 오리지널 Vine 아카이브"
+  },
+  "profile": {
+    "stats": {
+      "videos": "동영상",
+      "followers": "팔로워",
+      "following": "팔로잉",
+      "divineLoops": "Divine 루프"
+    },
+    "editProfile": "프로필 편집"
+  },
+  "accountMenu": {
+    "myProfile": "내 프로필",
+    "settings": "설정",
+    "linkedAccounts": "연결된 계정",
+    "switchRelay": "릴레이 전환",
+    "switchAccount": "계정 전환",
+    "addAccount": "다른 계정 추가",
+    "logOut": "로그아웃"
+  },
+  "trending": {
+    "title": "인기",
+    "subtitle": "커뮤니티에서 뜨는 걸 확인하세요"
+  },
+  "searchTabs": {
+    "all": "전체",
+    "videos": "동영상",
+    "users": "사람",
+    "hashtags": "해시태그",
+    "searching": "검색 중..."
   }
 }

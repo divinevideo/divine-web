@@ -2,6 +2,7 @@
 // ABOUTME: Displays user metadata, social stats, and follow/unfollow functionality
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { getDivineNip05Info } from '@/lib/nip05Utils';
 import { Button } from '@/components/ui/button';
@@ -130,6 +131,7 @@ export function ProfileHeader({
   isLoading: _isLoading = false,
   className,
 }: ProfileHeaderProps) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const subdomainNavigate = useSubdomainNavigate();
   const rssFeedAvailable = useRssFeedAvailable();
@@ -434,12 +436,12 @@ export function ProfileHeader({
               <div className="text-xl sm:text-2xl font-bold text-foreground">
                 {formatNumber(stats.videosCount)}
               </div>
-              <div className="text-xs sm:text-sm text-muted-foreground">Videos</div>
+              <div className="text-xs sm:text-sm text-muted-foreground">{t('profile.stats.videos')}</div>
             </>
           ) : (
             <>
               <Skeleton className="h-6 w-12 mx-auto mb-1" data-testid="stat-skeleton-videos" />
-              <div className="text-xs sm:text-sm text-muted-foreground">Videos</div>
+              <div className="text-xs sm:text-sm text-muted-foreground">{t('profile.stats.videos')}</div>
             </>
           )}
         </div>
@@ -455,12 +457,12 @@ export function ProfileHeader({
               <div className="text-xl sm:text-2xl font-bold text-foreground">
                 {formatNumber(stats.followersCount)}
               </div>
-              <div className="text-xs sm:text-sm text-muted-foreground">Followers</div>
+              <div className="text-xs sm:text-sm text-muted-foreground">{t('profile.stats.followers')}</div>
             </button>
           ) : (
             <>
               <Skeleton className="h-6 w-12 mx-auto mb-1" data-testid="stat-skeleton-followers" />
-              <div className="text-xs sm:text-sm text-muted-foreground">Followers</div>
+              <div className="text-xs sm:text-sm text-muted-foreground">{t('profile.stats.followers')}</div>
             </>
           )}
         </div>
@@ -476,12 +478,12 @@ export function ProfileHeader({
               <div className="text-xl sm:text-2xl font-bold text-foreground">
                 {formatNumber(stats.followingCount)}
               </div>
-              <div className="text-xs sm:text-sm text-muted-foreground">Following</div>
+              <div className="text-xs sm:text-sm text-muted-foreground">{t('profile.stats.following')}</div>
             </button>
           ) : (
             <>
               <Skeleton className="h-6 w-12 mx-auto mb-1" data-testid="stat-skeleton-following" />
-              <div className="text-xs sm:text-sm text-muted-foreground">Following</div>
+              <div className="text-xs sm:text-sm text-muted-foreground">{t('profile.stats.following')}</div>
             </>
           )}
         </div>
@@ -493,12 +495,12 @@ export function ProfileHeader({
               <div className="text-xl sm:text-2xl font-bold text-primary">
                 {formatNumber(stats.totalLoops)}
               </div>
-              <div className="text-xs sm:text-sm text-muted-foreground">Divine Loops</div>
+              <div className="text-xs sm:text-sm text-muted-foreground">{t('profile.stats.divineLoops')}</div>
             </>
           ) : (
             <>
               <Skeleton className="h-6 w-12 mx-auto mb-1" data-testid="stat-skeleton-loops" />
-              <div className="text-xs sm:text-sm text-muted-foreground">Divine Loops</div>
+              <div className="text-xs sm:text-sm text-muted-foreground">{t('profile.stats.divineLoops')}</div>
             </>
           )}
         </div>
@@ -573,7 +575,7 @@ export function ProfileHeader({
       <UserListDialog
         open={userListDialog === 'followers'}
         onOpenChange={(open) => !open && setUserListDialog(null)}
-        title="Followers"
+        title={t('profile.stats.followers')}
         pubkeys={followerPubkeys}
         isLoading={followersQuery.isLoading || followersQuery.isFetchingNextPage}
         hasMore={followersQuery.hasNextPage ?? false}
@@ -582,7 +584,7 @@ export function ProfileHeader({
       <UserListDialog
         open={userListDialog === 'following'}
         onOpenChange={(open) => !open && setUserListDialog(null)}
-        title="Following"
+        title={t('profile.stats.following')}
         pubkeys={followingPubkeys}
         isLoading={followingQuery.isLoading}
       />

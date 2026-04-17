@@ -2,6 +2,7 @@
 // ABOUTME: Shows video player, metadata, author info, and social interactions
 
 import { useState, useCallback, useRef, useMemo, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Heart, Repeat as Repeat2, ChatCircle as MessageCircle, Share, Eye, DotsThreeVertical as MoreVertical, Flag, UserMinus as UserX, Trash as Trash2, SpeakerHigh as Volume2, SpeakerX as VolumeX, Code, Users, ListPlus, DownloadSimple as Download, ArrowsOutSimple as Maximize2, ClosedCaptioning as Captions, PushPin as Pin, PushPinSlash as PinOff } from '@phosphor-icons/react';
 import { nip19 } from 'nostr-tools';
 import { Card, CardContent, type CardAccent } from '@/components/ui/card';
@@ -111,6 +112,7 @@ export function VideoCard({
   trafficSource,
   accent = 'green',
 }: VideoCardProps) {
+  const { t } = useTranslation();
   const authorData = useAuthor(video.pubkey, {
     initialName: video.authorName,
     initialAvatar: video.authorAvatar,
@@ -795,7 +797,7 @@ export function VideoCard({
           {isHorizontal && viewCount > 0 && (
             <SmartLink to={`/video/${video.id}`} ownerPubkey={video.pubkey} className="py-2 mt-auto hover:underline block">
               <span className="block text-sm text-muted-foreground">
-                {classicViewBreakdown || formatViewCount(viewCount)}
+                {classicViewBreakdown || formatViewCount(viewCount, t)}
               </span>
             </SmartLink>
           )}
@@ -807,7 +809,7 @@ export function VideoCard({
                 {viewCount > 0 && (
                   <SmartLink to={`/video/${video.id}`} ownerPubkey={video.pubkey} className="flex items-center gap-1 hover:underline">
                     <Eye className="h-3 w-3" />
-                    <span>{classicViewBreakdown || formatViewCount(viewCount)}</span>
+                    <span>{classicViewBreakdown || formatViewCount(viewCount, t)}</span>
                   </SmartLink>
                 )}
               </div>
