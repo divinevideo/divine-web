@@ -34,7 +34,7 @@ export function ProfileBadges({ badges, className }: ProfileBadgesProps) {
     <>
       <div className={cn('flex flex-wrap items-center gap-2', className)} data-testid="profile-badges">
         <div className="inline-flex min-h-11 items-center gap-2 rounded-2xl border border-border/70 bg-muted/35 px-2.5 py-1.5 shadow-sm">
-          <span className="pl-0.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/80">
+          <span className="pl-0.5 text-[11px] font-semibold text-muted-foreground/80">
             Badges
           </span>
           <TooltipProvider delayDuration={300}>
