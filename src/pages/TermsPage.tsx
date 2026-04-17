@@ -476,18 +476,18 @@ export function TermsPage() {
             <h2 className="text-2xl font-semibold text-foreground mb-3">
               18. Disclaimer of Warranties and Limitation of Liability
             </h2>
-            <p className="mb-3 uppercase">
+            <p className="mb-3">
               The Service is provided &ldquo;as is&rdquo; and &ldquo;as available.&rdquo; To the maximum extent
               permitted by law, Divine disclaims all warranties, express, implied, statutory, or otherwise,
               including any warranties of merchantability, fitness for a particular purpose, title,
               non-infringement, accuracy, quiet enjoyment, or that the Service will be uninterrupted, secure, or
               error-free.
             </p>
-            <p className="mb-3 uppercase">
+            <p className="mb-3">
               Divine does not guarantee the authenticity, legality, accuracy, safety, or availability of any user
               content, Nostr event, relay, or externally hosted file.
             </p>
-            <p className="mb-3 uppercase">
+            <p className="mb-3">
               Divine makes reasonable efforts to prevent the display of AI-generated or synthetic media on the
               Service; however, some AI-generated content may bypass our detection systems. Divine does not
               guarantee that all AI-generated content will be identified or blocked before it is served to users.
@@ -495,7 +495,7 @@ export function TermsPage() {
               app. Divine does not guarantee that content can be removed, corrected, or made unavailable across
               decentralized networks or third-party systems.
             </p>
-            <p className="mb-3 uppercase">
+            <p className="mb-3">
               To the maximum extent permitted by law, Divine will not be liable for any indirect, incidental,
               special, consequential, or punitive damages arising out of or related to your use of or inability to
               use the Service, including data loss, failures of relays or third-party hosts, or any inability to
