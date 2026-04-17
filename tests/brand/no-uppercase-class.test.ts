@@ -16,10 +16,7 @@ function walk(dir: string, out: string[] = []): string[] {
 // within a JSX className-ish context. Won't catch uppercase in backtick templates; acceptable for now.
 const UPPERCASE_RE = /class(Name)?\s*=\s*[`"'][^`"']*\buppercase\b/;
 
-// TODO(phase-1): re-enable once the 8 known files are fixed:
-// PinnedVideosSection.tsx, LanguageMenu.tsx, ApplePodcastEmbed.tsx, ProfileBadges.tsx,
-// TermsPage.tsx, MessagesPage.tsx, ConversationPage.tsx, AboutPage.tsx
-describe.skip('brand rule: no uppercase Tailwind class', () => {
+describe('brand rule: no uppercase Tailwind class', () => {
   it('src/ contains no `uppercase` class inside className/class attributes', () => {
     const violations: string[] = [];
     for (const f of walk('src')) {
