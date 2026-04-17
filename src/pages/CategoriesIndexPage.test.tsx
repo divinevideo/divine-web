@@ -53,8 +53,8 @@ describe('CategoriesIndexPage', () => {
     );
 
     expect(screen.getByRole('heading', { name: 'Categorias' })).toBeInTheDocument();
-    expect(screen.getByText('Explora videos por tema')).toBeInTheDocument();
-    expect(screen.getByText('No hay categorias disponibles en este momento.')).toBeInTheDocument();
+    expect(screen.getByText('Loops, ordenados por vibe.')).toBeInTheDocument();
+    expect(screen.getByText('No hay categorias en marcha ahora mismo.')).toBeInTheDocument();
   });
 
   it('renders translated category labels from the shared category map', () => {

@@ -44,19 +44,19 @@
     "yourFeed": "Twoj kanal"
   },
   "auth": {
-    "logInOnDivine": "Zaloguj sie do Divine"
+    "logInOnDivine": "Wskakuj"
   },
   "home": {
-    "welcomeTitle": "Witaj w swoim glownym kanale",
-    "welcomeSubtitle": "Zaloguj sie, aby zobaczyc filmy osob, ktore obserwujesz",
+    "welcomeTitle": "Twoj feed, twoje zasady.",
+    "welcomeSubtitle": "Zaloguj sie, zeby ogladac loopy ludzi, ktorych obserwujesz.",
     "title": "Strona glowna",
-    "subtitle": "Filmy osob, ktore obserwujesz",
+    "subtitle": "Loopy ludzi, ktorych obserwujesz.",
     "sortBy": "Sortuj wedlug:",
     "updating": "Aktualizacja..."
   },
   "discovery": {
     "title": "Odkrywaj",
-    "subtitle": "Odkrywaj filmy z sieci",
+    "subtitle": "Powlocz sie po sieci. Znajdz swoich ludzi.",
     "categories": "Kategorie",
     "forYou": "Dla ciebie",
     "classic": "Klasyczne",
@@ -82,14 +82,14 @@
   },
   "comments": {
     "title": "Komentarze",
-    "noCommentsYet": "Brak komentarzy",
-    "beFirstToShare": "Badz pierwsza osoba, ktora podzieli sie swoja opinia",
-    "failedToLoad": "Nie udalo sie zaladowac komentarzy",
-    "writeAComment": "Napisz komentarz...",
+    "noCommentsYet": "Nic do powiedzenia jeszcze.",
+    "beFirstToShare": "Zacznij pierwszy — zostaw komentarz.",
+    "failedToLoad": "Komentarze sie nie zaladowaly.",
+    "writeAComment": "Powiedz cos...",
     "signInToReply": "Zaloguj sie, aby odpowiedziec",
     "signInToComment": "Zaloguj sie, aby skomentowac",
     "replyingToComment": "Odpowiadanie na komentarz",
-    "addingToDiscussion": "Dodawanie do dyskusji",
+    "addingToDiscussion": "Wskakujesz w watek",
     "posting": "Publikowanie...",
     "reply": "Odpowiedz",
     "comment": "Komentarz"
@@ -97,46 +97,46 @@
   "messages": {
     "badge": "Wiadomosci",
     "title": "Wiadomosci bezposrednie",
-    "subtitle": "Porozmawiaj z supportem, wyslij vines prywatnie albo kontynuuj rozmowe z osobami, ktore obserwujesz.",
-    "searchPlaceholder": "Znajdz osoby, do ktorych chcesz napisac",
+    "subtitle": "Pogadaj z supportem, podrzuc loop prywatnie albo kontynuuj watek z osobami, ktore obserwujesz.",
+    "searchPlaceholder": "Znajdz kogos, do kogo napiszesz",
     "newMessage": "Nowa wiadomosc",
-    "readyToShare": "Gotowe do prywatnego udostepnienia.",
+    "readyToShare": "Gotowe do prywatnej wysylki.",
     "shareWithTitle": "Twoja nastepna wiadomosc bedzie zawierac “{{title}}”.",
     "shareWithLink": "Twoja nastepna wiadomosc bedzie zawierac link do vine.",
-    "signerUnsupported": "Twoj obecny signer pozwala sie zalogowac, ale nie udostepnia jeszcze szyfrowania NIP-44. Przelacz sie na nsec, bunker lub inny signer obslugujacy NIP-44, aby korzystac z wiadomosci bezposrednich w sieci.",
+    "signerUnsupported": "Twoj obecny signer pozwala sie zalogowac, ale nie mowi jeszcze NIP-44. Przelacz sie na nsec, bunker lub inny signer obslugujacy NIP-44, zeby uzywac tu DM-ow.",
     "supportBadge": "Wsparcie",
-    "supportSummary": "Zapytaj o bledy, moderacje lub problemy z kontem."
+    "supportSummary": "Bugi, moderacja, sprawy konta — sluchamy."
   },
   "support": {
     "title": "Wsparcie",
-    "subtitle": "Potrzebujesz pomocy? Jestesmy tutaj, aby pomoc.",
-    "helpCenterTitle": "Odwiedz centrum pomocy Divine",
-    "helpCenterDescription": "Znajdz odpowiedzi na swoje pytania o Divine.",
+    "subtitle": "Potrzebujesz pomocy? Mamy cie.",
+    "helpCenterTitle": "Centrum pomocy Divine",
+    "helpCenterDescription": "Odpowiedzi na to, o co zwykle pytaja.",
     "helpCenterCta": "Odwiedz centrum pomocy",
     "messageSupportTitle": "Napisz do wsparcia",
-    "messageSupportDescription": "Skontaktuj sie bezposrednio ze skrzynka wsparcia w Divine za pomoca prywatnych wiadomosci NIP-17.",
+    "messageSupportDescription": "Napisz do nas DM bezposrednio w Divine — szyfrowane przez NIP-17.",
     "messageSupportCta": "Otworz czat wsparcia",
     "contactTitle": "Skontaktuj sie ze wsparciem",
-    "contactDescription": "Utworz zgloszenie, a odpowiemy tak szybko, jak to mozliwe.",
+    "contactDescription": "Otworz zgloszenie, a odpowiemy najszybciej, jak sie da.",
     "contactLink": "Skontaktuj sie ze wsparciem",
     "githubTitle": "Zgloszenia GitHub",
-    "githubDescription": "Zglaszaj bledy, pros o funkcje lub przegladaj istniejace zgloszenia w naszych repozytoriach GitHub.",
+    "githubDescription": "Zglos bugi, popros o funkcje albo poszperaj po naszym GitHubie.",
     "webAppLabel": "Aplikacja webowa:",
     "flutterAppLabel": "Aplikacja Flutter (iOS/Android):",
     "communityTitle": "Spolecznosc",
-    "communityDescription": "Dolacz do dyskusji spolecznosci i polacz sie z innymi uzytkownikami Divine na Nostr.",
-    "communityBody": "Divine jest zbudowane na Nostr, zdecentralizowanym protokole spolecznosciowym. Znajdz nas w swoim ulubionym kliencie Nostr."
+    "communityDescription": "Wpadnij do spolecznosci Divine na Nostr.",
+    "communityBody": "Divine dziala na Nostr, zdecentralizowanym protokole spolecznosciowym. Znajdz nas w swoim ulubionym kliencie Nostr."
   },
   "tagPage": {
-    "notFoundTitle": "Nie znaleziono tagu",
-    "notFoundDescription": "Nie mozna znalezc podanego tagu.",
+    "notFoundTitle": "Nie znaleziono tagu.",
+    "notFoundDescription": "Nie znalezlismy tego tagu.",
     "back": "Wroc",
-    "subtitle": "Przegladaj filmy oznaczone tagiem #{{tag}}"
+    "subtitle": "Loopy z tagiem #{{tag}}"
   },
   "categoriesPage": {
     "title": "Kategorie",
-    "subtitle": "Przegladaj filmy wedlug tematu",
-    "emptyState": "Obecnie brak dostepnych kategorii.",
+    "subtitle": "Loopy, ulozone wedlug klimatu.",
+    "emptyState": "Aktualnie zadne kategorie sie nie gotuja.",
     "metaTitle": "Przegladaj kategorie - Divine",
     "metaDescription": "Przegladaj kategorie wideo w Divine - komedia, muzyka, taniec, zwierzeta, sport, jedzenie i wiecej.",
     "videoCount_one": "{{count}} film",

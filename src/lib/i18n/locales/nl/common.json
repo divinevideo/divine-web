@@ -44,19 +44,19 @@
     "yourFeed": "Jouw feed"
   },
   "auth": {
-    "logInOnDivine": "Inloggen op Divine"
+    "logInOnDivine": "Spring erin"
   },
   "home": {
-    "welcomeTitle": "Welkom bij je homefeed",
-    "welcomeSubtitle": "Log in om video's te zien van mensen die je volgt",
+    "welcomeTitle": "Jouw feed, jouw regels.",
+    "welcomeSubtitle": "Log in om loops te zien van mensen die je volgt.",
     "title": "Home",
-    "subtitle": "Video's van mensen die je volgt",
+    "subtitle": "Loops van mensen die je volgt.",
     "sortBy": "Sorteren op:",
     "updating": "Bezig met bijwerken..."
   },
   "discovery": {
     "title": "Ontdekken",
-    "subtitle": "Verken video's uit het netwerk",
+    "subtitle": "Dwaal door het netwerk. Vind je mensen.",
     "categories": "Categorieen",
     "forYou": "Voor jou",
     "classic": "Klassiek",
@@ -82,14 +82,14 @@
   },
   "comments": {
     "title": "Reacties",
-    "noCommentsYet": "Nog geen reacties",
-    "beFirstToShare": "Wees de eerste om je mening te delen",
-    "failedToLoad": "Reacties konden niet worden geladen",
-    "writeAComment": "Schrijf een reactie...",
+    "noCommentsYet": "Nog niks te zeggen.",
+    "beFirstToShare": "Begin jij maar — laat een reactie achter.",
+    "failedToLoad": "Reacties zijn niet geladen.",
+    "writeAComment": "Zeg iets...",
     "signInToReply": "Log in om te antwoorden",
     "signInToComment": "Log in om te reageren",
     "replyingToComment": "Reageren op reactie",
-    "addingToDiscussion": "Toevoegen aan de discussie",
+    "addingToDiscussion": "Springt in de thread",
     "posting": "Plaatsen...",
     "reply": "Antwoorden",
     "comment": "Reageren"
@@ -97,46 +97,46 @@
   "messages": {
     "badge": "Berichten",
     "title": "Directe berichten",
-    "subtitle": "Praat met support, stuur vines prive of houd een gesprek gaande met mensen die je volgt.",
-    "searchPlaceholder": "Zoek mensen om een bericht te sturen",
+    "subtitle": "Praat met support, schuif een loop privé door of houd een thread gaande met de mensen die je volgt.",
+    "searchPlaceholder": "Vind iemand om te berichten",
     "newMessage": "Nieuw bericht",
-    "readyToShare": "Klaar om prive te delen.",
+    "readyToShare": "Klaar om privé te versturen.",
     "shareWithTitle": "Je volgende bericht bevat “{{title}}”.",
     "shareWithLink": "Je volgende bericht bevat een vine-link.",
-    "signerUnsupported": "Je huidige signer kan je laten inloggen, maar ondersteunt nog geen NIP-44-versleuteling. Schakel over naar een nsec, bunker of andere signer met NIP-44-ondersteuning om directe berichten op het web te gebruiken.",
+    "signerUnsupported": "Je huidige signer kan je laten inloggen, maar spreekt nog geen NIP-44. Schakel over naar een nsec, bunker of andere signer met NIP-44-ondersteuning om hier DM's te gebruiken.",
     "supportBadge": "Support",
-    "supportSummary": "Vraag naar bugs, moderatie of accountproblemen."
+    "supportSummary": "Bugs, moderatie, accountgedoe — we luisteren."
   },
   "support": {
     "title": "Support",
-    "subtitle": "Hulp nodig? We staan klaar om je te helpen.",
-    "helpCenterTitle": "Bezoek het Divine-helpcentrum",
-    "helpCenterDescription": "Vind antwoorden op je vragen over Divine.",
+    "subtitle": "Hulp nodig? We hebben je.",
+    "helpCenterTitle": "Divine-helpcentrum",
+    "helpCenterDescription": "Antwoorden op wat mensen meestal vragen.",
     "helpCenterCta": "Bezoek het helpcentrum",
     "messageSupportTitle": "Bericht naar support",
-    "messageSupportDescription": "Neem rechtstreeks contact op met de supportinbox in Divine via prive-NIP-17-berichten.",
+    "messageSupportDescription": "Schuif ons een DM in Divine — versleuteld met NIP-17.",
     "messageSupportCta": "Open supportchat",
     "contactTitle": "Contact opnemen met support",
-    "contactDescription": "Maak een ticket aan en we reageren zo snel mogelijk.",
+    "contactDescription": "Maak een ticket aan en we reageren zo snel als we kunnen.",
     "contactLink": "Contact opnemen met support",
     "githubTitle": "GitHub-issues",
-    "githubDescription": "Meld bugs, vraag functies aan of bekijk bestaande issues in onze GitHub-repositories.",
+    "githubDescription": "Meld bugs, vraag functies aan of snuffel rond op onze GitHub.",
     "webAppLabel": "Webapp:",
     "flutterAppLabel": "Flutter-app (iOS/Android):",
     "communityTitle": "Community",
-    "communityDescription": "Doe mee aan onze communitygesprekken en maak contact met andere Divine-gebruikers op Nostr.",
-    "communityBody": "Divine is gebouwd op Nostr, een gedecentraliseerd sociaal protocol. Vind ons in je favoriete Nostr-client."
+    "communityDescription": "Kom hangen bij de Divine-community op Nostr.",
+    "communityBody": "Divine draait op Nostr, het gedecentraliseerde sociale protocol. Vind ons in je favoriete Nostr-client."
   },
   "tagPage": {
-    "notFoundTitle": "Tag niet gevonden",
-    "notFoundDescription": "De gevraagde tag kon niet worden gevonden.",
+    "notFoundTitle": "Tag niet gevonden.",
+    "notFoundDescription": "Die tag konden we niet vinden.",
     "back": "Terug",
-    "subtitle": "Bekijk video's met tag #{{tag}}"
+    "subtitle": "Loops met tag #{{tag}}"
   },
   "categoriesPage": {
     "title": "Categorieen",
-    "subtitle": "Bekijk videos per onderwerp",
-    "emptyState": "Er zijn momenteel geen categorieen beschikbaar.",
+    "subtitle": "Loops, gesorteerd op vibe.",
+    "emptyState": "Nu staan er geen categorieen op het vuur.",
     "metaTitle": "Categorieen bekijken - Divine",
     "metaDescription": "Ontdek videocategorieen op Divine - komedie, muziek, dans, dieren, sport, eten en meer.",
     "videoCount_one": "{{count}} video",

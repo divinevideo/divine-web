@@ -44,19 +44,19 @@
     "yourFeed": "Fluxul tau"
   },
   "auth": {
-    "logInOnDivine": "Conecteaza-te la Divine"
+    "logInOnDivine": "Hai inauntru"
   },
   "home": {
-    "welcomeTitle": "Bine ai venit in fluxul tau principal",
-    "welcomeSubtitle": "Conecteaza-te pentru a vedea videoclipuri de la persoanele pe care le urmaresti",
+    "welcomeTitle": "Fluxul tau, regulile tale.",
+    "welcomeSubtitle": "Conecteaza-te ca sa vezi loop-urile celor pe care ii urmaresti.",
     "title": "Acasa",
-    "subtitle": "Videoclipuri de la persoanele pe care le urmaresti",
+    "subtitle": "Loop-uri de la cei pe care ii urmaresti.",
     "sortBy": "Sorteaza dupa:",
     "updating": "Se actualizeaza..."
   },
   "discovery": {
     "title": "Descopera",
-    "subtitle": "Exploreaza videoclipuri din retea",
+    "subtitle": "Hoinareste prin retea. Gaseste-ti gasca.",
     "categories": "Categorii",
     "forYou": "Pentru tine",
     "classic": "Clasic",
@@ -82,14 +82,14 @@
   },
   "comments": {
     "title": "Comentarii",
-    "noCommentsYet": "Nu exista comentarii inca",
-    "beFirstToShare": "Fii prima persoana care isi impartaseste gandurile",
-    "failedToLoad": "Comentariile nu au putut fi incarcate",
-    "writeAComment": "Scrie un comentariu...",
+    "noCommentsYet": "Nimic de spus deocamdata.",
+    "beFirstToShare": "Da-i drumul tu — lasa un comentariu.",
+    "failedToLoad": "Comentariile nu s-au incarcat.",
+    "writeAComment": "Spune ceva...",
     "signInToReply": "Conecteaza-te pentru a raspunde",
     "signInToComment": "Conecteaza-te pentru a comenta",
     "replyingToComment": "Raspunzi la comentariu",
-    "addingToDiscussion": "Adaugare la discutie",
+    "addingToDiscussion": "Sari in fir",
     "posting": "Se publica...",
     "reply": "Raspunde",
     "comment": "Comenteaza"
@@ -97,46 +97,46 @@
   "messages": {
     "badge": "Mesaje",
     "title": "Mesaje directe",
-    "subtitle": "Vorbeste cu suportul, trimite vines in privat sau continua o conversatie cu persoanele pe care le urmaresti.",
-    "searchPlaceholder": "Gaseste persoane carora sa le scrii",
+    "subtitle": "Vorbeste cu suportul, trimite un loop in privat sau continua o conversatie cu cei pe care ii urmaresti.",
+    "searchPlaceholder": "Gaseste pe cineva caruia sa-i scrii",
     "newMessage": "Mesaj nou",
-    "readyToShare": "Gata de partajare privata.",
+    "readyToShare": "Gata de trimis in privat.",
     "shareWithTitle": "Urmatorul tau mesaj va include “{{title}}”.",
     "shareWithLink": "Urmatorul tau mesaj va include un link vine.",
-    "signerUnsupported": "Signerul tau actual te poate autentifica, dar nu ofera inca criptare NIP-44. Treci la un nsec, bunker sau alt signer care suporta NIP-44 pentru a folosi mesaje directe pe web.",
+    "signerUnsupported": "Signerul tau actual te poate autentifica, dar nu vorbeste inca NIP-44. Treci la un nsec, bunker sau alt signer care suporta NIP-44 ca sa folosesti DM-uri aici.",
     "supportBadge": "Suport",
-    "supportSummary": "Intreaba despre buguri, moderare sau probleme de cont."
+    "supportSummary": "Bug-uri, moderare, treburi de cont — te ascultam."
   },
   "support": {
     "title": "Suport",
-    "subtitle": "Ai nevoie de ajutor? Suntem aici sa te ajutam.",
-    "helpCenterTitle": "Viziteaza centrul de ajutor Divine",
-    "helpCenterDescription": "Gaseste raspunsuri la intrebarile tale despre Divine.",
+    "subtitle": "Ai nevoie de o mana de ajutor? Te-am prins.",
+    "helpCenterTitle": "Centrul de ajutor Divine",
+    "helpCenterDescription": "Raspunsuri la ce intreaba lumea de obicei.",
     "helpCenterCta": "Viziteaza centrul de ajutor",
     "messageSupportTitle": "Trimite mesaj catre suport",
-    "messageSupportDescription": "Contacteaza direct inboxul de suport din Divine folosind mesaje private NIP-17.",
+    "messageSupportDescription": "Trimite-ne un DM direct in Divine — criptat cu NIP-17.",
     "messageSupportCta": "Deschide chatul de suport",
     "contactTitle": "Contacteaza suportul",
-    "contactDescription": "Creeaza un tichet si iti vom raspunde cat mai curand posibil.",
+    "contactDescription": "Deschide un tichet si revenim cat de repede putem.",
     "contactLink": "Contacteaza suportul",
     "githubTitle": "Issue-uri GitHub",
-    "githubDescription": "Raporteaza buguri, cere functii noi sau rasfoieste issue-urile existente din depozitele noastre GitHub.",
+    "githubDescription": "Raporteaza bug-uri, cere functii noi sau scotoceste pe GitHub-ul nostru.",
     "webAppLabel": "Aplicatie web:",
     "flutterAppLabel": "Aplicatie Flutter (iOS/Android):",
     "communityTitle": "Comunitate",
-    "communityDescription": "Alatura-te discutiilor comunitatii si conecteaza-te cu alti utilizatori Divine pe Nostr.",
-    "communityBody": "Divine este construit pe Nostr, un protocol social descentralizat. Gaseste-ne in clientul tau Nostr preferat."
+    "communityDescription": "Vino sa stai cu comunitatea Divine pe Nostr.",
+    "communityBody": "Divine ruleaza pe Nostr, protocolul social descentralizat. Gaseste-ne in clientul tau Nostr preferat."
   },
   "tagPage": {
-    "notFoundTitle": "Eticheta nu a fost gasita",
-    "notFoundDescription": "Eticheta solicitata nu a putut fi gasita.",
+    "notFoundTitle": "Eticheta nu a fost gasita.",
+    "notFoundDescription": "Nu am gasit eticheta asta.",
     "back": "Inapoi",
-    "subtitle": "Exploreaza videoclipuri etichetate cu #{{tag}}"
+    "subtitle": "Loop-uri etichetate #{{tag}}"
   },
   "categoriesPage": {
     "title": "Categorii",
-    "subtitle": "Exploreaza videoclipuri dupa subiect",
-    "emptyState": "Nu exista categorii disponibile acum.",
+    "subtitle": "Loop-uri, sortate dupa vibe.",
+    "emptyState": "Nicio categorie nu fierbe acum.",
     "metaTitle": "Rasfoieste categoriile - Divine",
     "metaDescription": "Exploreaza categoriile video de pe Divine - comedie, muzica, dans, animale, sport, mancare si multe altele.",
     "videoCount_one": "{{count}} videoclip",

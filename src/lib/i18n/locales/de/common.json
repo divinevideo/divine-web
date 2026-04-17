@@ -44,19 +44,19 @@
     "yourFeed": "Dein Feed"
   },
   "auth": {
-    "logInOnDivine": "Bei Divine anmelden"
+    "logInOnDivine": "Rein da"
   },
   "home": {
-    "welcomeTitle": "Willkommen in deinem Home-Feed",
-    "welcomeSubtitle": "Melde dich an, um Videos von Personen zu sehen, denen du folgst",
+    "welcomeTitle": "Dein Feed, deine Regeln.",
+    "welcomeSubtitle": "Melde dich an und sieh die Loops von Leuten, denen du folgst.",
     "title": "Startseite",
-    "subtitle": "Videos von Personen, denen du folgst",
+    "subtitle": "Loops von Leuten, denen du folgst.",
     "sortBy": "Sortieren nach:",
     "updating": "Wird aktualisiert..."
   },
   "discovery": {
     "title": "Entdecken",
-    "subtitle": "Videos aus dem Netzwerk entdecken",
+    "subtitle": "Streif durchs Netzwerk. Find deine Leute.",
     "categories": "Kategorien",
     "forYou": "Fur dich",
     "classic": "Klassisch",
@@ -82,14 +82,14 @@
   },
   "comments": {
     "title": "Kommentare",
-    "noCommentsYet": "Noch keine Kommentare",
-    "beFirstToShare": "Teile als Erste oder Erster deine Gedanken",
-    "failedToLoad": "Kommentare konnten nicht geladen werden",
-    "writeAComment": "Schreibe einen Kommentar...",
+    "noCommentsYet": "Noch nichts zu sagen.",
+    "beFirstToShare": "Mach den Anfang — schreib was.",
+    "failedToLoad": "Kommentare konnten nicht geladen werden.",
+    "writeAComment": "Sag was...",
     "signInToReply": "Melde dich an, um zu antworten",
     "signInToComment": "Melde dich an, um zu kommentieren",
     "replyingToComment": "Antwort auf Kommentar",
-    "addingToDiscussion": "Zur Diskussion hinzufugen",
+    "addingToDiscussion": "Steig in den Thread ein",
     "posting": "Wird gesendet...",
     "reply": "Antworten",
     "comment": "Kommentieren"
@@ -97,46 +97,46 @@
   "messages": {
     "badge": "Nachrichten",
     "title": "Direktnachrichten",
-    "subtitle": "Sprich mit dem Support, sende Vines privat oder fuhre Unterhaltungen mit Personen fort, denen du folgst.",
-    "searchPlaceholder": "Personen zum Anschreiben finden",
+    "subtitle": "Sprich mit dem Support, schick einen Loop privat oder halt einen Thread mit den Leuten am Laufen, denen du folgst.",
+    "searchPlaceholder": "Jemanden zum Anschreiben finden",
     "newMessage": "Neue Nachricht",
-    "readyToShare": "Bereit zum privaten Teilen.",
+    "readyToShare": "Bereit fur den privaten Versand.",
     "shareWithTitle": "Deine nachste Nachricht enthalt „{{title}}“.",
     "shareWithLink": "Deine nachste Nachricht enthalt einen Vine-Link.",
-    "signerUnsupported": "Dein aktueller Signer kann dich anmelden, bietet aber noch keine NIP-44-Verschlusselung. Wechsle zu einem nsec, bunker oder einem anderen Signer mit NIP-44-Unterstutzung, um Direktnachrichten im Web zu nutzen.",
+    "signerUnsupported": "Dein aktueller Signer kann dich anmelden, spricht aber noch kein NIP-44. Wechsle zu einem nsec, bunker oder einem anderen Signer mit NIP-44-Unterstutzung, um DMs hier zu nutzen.",
     "supportBadge": "Support",
-    "supportSummary": "Frage nach Bugs, Moderation oder Kontoproblemen."
+    "supportSummary": "Bugs, Moderation, Account-Kram — wir horen zu."
   },
   "support": {
     "title": "Support",
-    "subtitle": "Brauchst du Hilfe? Wir sind fur dich da.",
-    "helpCenterTitle": "Divine Hilfe-Center besuchen",
-    "helpCenterDescription": "Finde Antworten auf deine Fragen zu Divine.",
+    "subtitle": "Brauchst du Hilfe? Wir haben dich.",
+    "helpCenterTitle": "Divine Hilfe-Center",
+    "helpCenterDescription": "Antworten auf das, was die meisten fragen.",
     "helpCenterCta": "Hilfe-Center besuchen",
     "messageSupportTitle": "Support anschreiben",
-    "messageSupportDescription": "Erreiche den Support-Posteingang direkt in Divine mit privaten NIP-17-Nachrichten.",
+    "messageSupportDescription": "Schreib uns direkt in Divine — verschlusselt mit NIP-17.",
     "messageSupportCta": "Support-Chat offnen",
     "contactTitle": "Support kontaktieren",
-    "contactDescription": "Erstelle ein Ticket und wir melden uns so schnell wie moglich.",
+    "contactDescription": "Erstelle ein Ticket — wir melden uns so schnell wie moglich.",
     "contactLink": "Support kontaktieren",
     "githubTitle": "GitHub-Issues",
-    "githubDescription": "Melde Fehler, frage Funktionen an oder sieh dir bestehende Issues in unseren GitHub-Repositories an.",
+    "githubDescription": "Melde Bugs, wunsche dir Features oder stober in unserem GitHub.",
     "webAppLabel": "Web-App:",
     "flutterAppLabel": "Flutter-App (iOS/Android):",
     "communityTitle": "Community",
-    "communityDescription": "Beteilige dich an unseren Community-Diskussionen und vernetze dich mit anderen Divine-Nutzern auf Nostr.",
-    "communityBody": "Divine basiert auf Nostr, einem dezentralen sozialen Protokoll. Finde uns in deinem bevorzugten Nostr-Client."
+    "communityDescription": "Komm in die Divine-Community auf Nostr.",
+    "communityBody": "Divine lauft auf Nostr, dem dezentralen sozialen Protokoll. Find uns in deinem Lieblings-Nostr-Client."
   },
   "tagPage": {
-    "notFoundTitle": "Tag nicht gefunden",
-    "notFoundDescription": "Der angeforderte Tag konnte nicht gefunden werden.",
+    "notFoundTitle": "Tag nicht gefunden.",
+    "notFoundDescription": "Diesen Tag gibt's hier nicht.",
     "back": "Zuruck",
-    "subtitle": "Entdecke Videos mit dem Tag #{{tag}}"
+    "subtitle": "Loops mit dem Tag #{{tag}}"
   },
   "categoriesPage": {
     "title": "Kategorien",
-    "subtitle": "Videos nach Thema durchsuchen",
-    "emptyState": "Derzeit sind keine Kategorien verfugbar.",
+    "subtitle": "Loops, sortiert nach Vibe.",
+    "emptyState": "Aktuell brodelt hier keine Kategorie.",
     "metaTitle": "Kategorien entdecken - Divine",
     "metaDescription": "Entdecke Videokategorien auf Divine - Comedy, Musik, Tanz, Tiere, Sport, Essen und mehr.",
     "videoCount_one": "{{count}} Video",
