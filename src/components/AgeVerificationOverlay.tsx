@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { AlertTriangle, ShieldCheck } from 'lucide-react';
 import { useAdultVerification } from '@/hooks/useAdultVerification';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { useLoginDialog } from '@/contexts/LoginDialogContext';
 import { cn } from '@/lib/utils';
 
 interface AgeVerificationOverlayProps {
@@ -23,6 +24,7 @@ export function AgeVerificationOverlay({
 }: AgeVerificationOverlayProps) {
   const { confirmAdult, isVerified } = useAdultVerification();
   const { user } = useCurrentUser();
+  const { openLoginDialog } = useLoginDialog();
   const [isConfirming, setIsConfirming] = useState(false);
   const hasCalledOnVerified = useRef(false);
   const isConfirmingRef = useRef(false);
@@ -74,43 +76,55 @@ export function AgeVerificationOverlay({
 
       <div className="relative z-10 flex flex-col items-center gap-4 p-6 text-center max-w-sm">
         <div className="w-16 h-16 rounded-full bg-yellow-500/20 flex items-center justify-center">
-          <AlertTriangle className="w-8 h-8 text-yellow-500" />
-        </div>
-
-        <div className="space-y-2">
-          <h3 className="text-lg font-semibold text-white">
-            Age-Restricted Content
-          </h3>
-          <p className="text-sm text-gray-300">
-            This content may not be appropriate for all audiences.
-            {!user && " Sign in to verify your age."}
-          </p>
+          {user ? (
+            <AlertTriangle className="w-8 h-8 text-yellow-500" />
+          ) : (
+            <ShieldCheck className="w-8 h-8 text-yellow-500" />
+          )}
         </div>
 
         {user ? (
-          <Button
-            onClick={handleConfirm}
-            disabled={isConfirming}
-            className="gap-2 bg-white text-black hover:bg-gray-200 touch-manipulation"
-          >
-            {isConfirming ? (
-              <>Verifying...</>
-            ) : (
-              <>
-                <ShieldCheck className="w-4 h-4" />
-                I'm 18 or older
-              </>
-            )}
-          </Button>
+          <>
+            <div className="space-y-2">
+              <h3 className="text-lg font-semibold text-white">Age-Restricted Content</h3>
+              <p className="text-sm text-gray-300">
+                This content may not be appropriate for all audiences.
+              </p>
+            </div>
+            <Button
+              onClick={handleConfirm}
+              disabled={isConfirming}
+              className="gap-2 bg-white text-black hover:bg-gray-200 touch-manipulation"
+            >
+              {isConfirming ? (
+                <>Verifying...</>
+              ) : (
+                <>
+                  <ShieldCheck className="w-4 h-4" />
+                  I'm 18 or older
+                </>
+              )}
+            </Button>
+            <p className="text-xs text-gray-500 max-w-xs">
+              Your choice will be remembered for 30 days
+            </p>
+          </>
         ) : (
-          <p className="text-xs text-gray-400">
-            Sign in to view this content
-          </p>
+          <>
+            <div className="space-y-2">
+              <h3 className="text-lg font-semibold text-white">Sign in to view this content</h3>
+              <p className="text-sm text-gray-300">
+                This content is age-restricted. Sign in so we can confirm your age and load the video.
+              </p>
+            </div>
+            <Button
+              onClick={openLoginDialog}
+              className="gap-2 bg-white text-black hover:bg-gray-200 touch-manipulation"
+            >
+              Sign in
+            </Button>
+          </>
         )}
-
-        <p className="text-xs text-gray-500 max-w-xs">
-          Your choice will be remembered for 30 days
-        </p>
       </div>
     </div>
   );

@@ -287,6 +287,13 @@ Funnelcake profile response is nested:
 - Show "Classic Viner" badge for these users
 - Original loop counts are preserved in video metadata
 
+### Age-Gated Media Auth
+- Age-verified users load age-gated media with `getAuthHeader(url, method, sha256?)`.
+- When a blob SHA-256 is known (NIP-71 `imeta` `x`, i.e. `videoData.sha256`), the picker returns a Blossom/BUD-01 kind 24242 header.
+- Otherwise it returns a NIP-98 kind 27235 header for the URL. HLS segments stay NIP-98 (segment URLs carry no blob hash).
+- `divine-blossom` accepts both on viewer GETs; never invent a third protocol in the picker.
+- Logged-out viewers on age-gated content see `AgeVerificationOverlay` in "Sign in to view" mode, wired to `useLoginDialog().openLoginDialog()` — they must log in before the age-verification / header-generation path runs.
+
 ---
 
 ## Running Tests
