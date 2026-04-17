@@ -31,15 +31,40 @@ export const PRIMARY_RELAY: RelayConfig = {
 
 /**
  * Relay optimized for user search (NIP-50)
- * - Large index of kind 0 (profile) events
- * - Used exclusively for user search functionality
+ * - Used for kind 0 (profile) and general NIP-50 search
  */
 export const SEARCH_RELAY: RelayConfig = {
-  url: 'wss://relay.nostr.band',
-  name: 'Nostr.Band',
-  capabilities: { nip50: true },
+  url: 'wss://relay.divine.video',
+  name: 'Divine',
+  capabilities: { nip50: true, funnelcake: true },
   purpose: 'search',
 };
+
+/**
+ * Relays queried when resolving a subdomain's NIP-05 via NIP-50.
+ * Fanned out in parallel; first profile with a matching NIP-05 wins.
+ * Chosen for broad kind 0 / NIP-05 coverage across public infrastructure.
+ */
+export const NIP05_SEARCH_RELAYS: RelayConfig[] = [
+  {
+    url: 'wss://relay.primal.net',
+    name: 'Primal',
+    capabilities: { nip50: true, nip05: true },
+    purpose: 'search',
+  },
+  {
+    url: 'wss://relay.damus.io',
+    name: 'Damus',
+    capabilities: { nip50: true, nip05: true },
+    purpose: 'search',
+  },
+  {
+    url: 'wss://purplepag.es',
+    name: 'Purple Pages',
+    capabilities: { nip50: true, nip05: true },
+    purpose: 'search',
+  },
+];
 
 /**
  * Relays used for profile metadata (kind 0) and contact lists (kind 3)
@@ -93,11 +118,6 @@ export const PRESET_RELAYS: RelayConfig[] = [
   {
     url: 'wss://relay.ditto.pub',
     name: 'Ditto',
-  },
-  {
-    url: 'wss://relay.nostr.band',
-    name: 'Nostr.Band',
-    capabilities: { nip50: true },
   },
   {
     url: 'wss://relay.damus.io',
