@@ -220,7 +220,7 @@ export function VideoGrid({ videos, loading = false, className, navigationContex
               {/* Metadata Overlay */}
               {isHovered && (video.content || video.hashtags.length > 0) && (
                 <div
-                  className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-4 text-white"
+                  className="absolute inset-x-0 bottom-0 bg-brand-dark-green/85 p-4 text-brand-off-white"
                   data-testid={`metadata-overlay-${video.id}`}
                 >
                   {video.content && video.content.trim() && (
