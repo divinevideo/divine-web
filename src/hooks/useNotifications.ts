@@ -6,13 +6,13 @@ import { getNotificationsBaseUrl } from '@/config/api';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { fetchNotifications, fetchUnreadCount, markNotificationsRead } from '@/lib/funnelcakeClient';
 import { debugLog } from '@/lib/debug';
-import type { NotificationCategory, NotificationFilters, NotificationType, NotificationsResponse } from '@/types/notification';
+import type { NotificationApiType, NotificationCategory, NotificationFilters, NotificationsResponse } from '@/types/notification';
 
 const NOTIFICATIONS_PAGE_SIZE = 30;
 
-const CATEGORY_TYPES: Partial<Record<NotificationCategory, NotificationType[]>> = {
-  likes: ['like'],
-  comments: ['comment'],
+const CATEGORY_TYPES: Partial<Record<NotificationCategory, NotificationApiType[]>> = {
+  likes: ['reaction'],
+  comments: ['reply'],
   follows: ['follow'],
   reposts: ['repost'],
   zaps: ['zap'],

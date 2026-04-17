@@ -60,7 +60,7 @@ describe('useNotifications', () => {
     mockFetchUnreadCount.mockResolvedValue(0);
   });
 
-  it('uses the notifications relay base URL for the list query and category filters', async () => {
+  it('maps the likes category to the backend reaction filter on the notifications relay', async () => {
     renderHook(() => useNotifications({ category: 'likes' }), {
       wrapper: createWrapper(),
     });
@@ -73,7 +73,28 @@ describe('useNotifications', () => {
         expect.objectContaining({
           limit: 30,
           before: undefined,
-          types: ['like'],
+          types: ['reaction'],
+          unreadOnly: false,
+          signal: expect.any(AbortSignal),
+        }),
+      );
+    });
+  });
+
+  it('maps the comments category to the backend reply filter on the notifications relay', async () => {
+    renderHook(() => useNotifications({ category: 'comments' }), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => {
+      expect(mockFetchNotifications).toHaveBeenCalledWith(
+        'https://relay.divine.video',
+        'a'.repeat(64),
+        expect.any(Object),
+        expect.objectContaining({
+          limit: 30,
+          before: undefined,
+          types: ['reply'],
           unreadOnly: false,
           signal: expect.any(AbortSignal),
         }),
