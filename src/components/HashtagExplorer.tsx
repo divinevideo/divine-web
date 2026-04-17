@@ -80,10 +80,10 @@ function HashtagCard({ stat }: { stat: HashtagStats }) {
                     loading="lazy"
                   />
                 )}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent pointer-events-none" />
+                <div className="absolute inset-x-0 bottom-0 h-1/2 bg-brand-dark-green/60 pointer-events-none" />
               </>
             ) : (
-              <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/10 to-primary/5">
+              <div className="w-full h-full flex items-center justify-center bg-primary/10">
                 <Hash className="h-12 w-12 text-primary/30" />
               </div>
             )}
