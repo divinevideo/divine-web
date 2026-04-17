@@ -203,5 +203,34 @@
     "heading": "كلاسيكيو Vine",
     "archivedBadge": "مؤرشف",
     "archivedTooltip": "أرشيف Vine الأصلي محفوظ من Internet Archive"
+  },
+  "profile": {
+    "stats": {
+      "videos": "الفيديوهات",
+      "followers": "المتابعون",
+      "following": "يتابع",
+      "divineLoops": "لقطات Divine"
+    },
+    "editProfile": "تحرير الملف الشخصي"
+  },
+  "accountMenu": {
+    "myProfile": "ملفي الشخصي",
+    "settings": "الإعدادات",
+    "linkedAccounts": "الحسابات المرتبطة",
+    "switchRelay": "تبديل الـ Relay",
+    "switchAccount": "تبديل الحساب",
+    "addAccount": "إضافة حساب آخر",
+    "logOut": "تسجيل الخروج"
+  },
+  "trending": {
+    "title": "الرائج",
+    "subtitle": "شاهد ما يتفاعل معه المجتمع"
+  },
+  "searchTabs": {
+    "all": "الكل",
+    "videos": "الفيديوهات",
+    "users": "الأشخاص",
+    "hashtags": "الوسوم",
+    "searching": "جاري البحث..."
   }
 }

@@ -195,5 +195,34 @@
     "heading": "Viners clasicos",
     "archivedBadge": "Archivado",
     "archivedTooltip": "Archivo original de Vine preservado por el Internet Archive"
+  },
+  "profile": {
+    "stats": {
+      "videos": "Videos",
+      "followers": "Seguidores",
+      "following": "Siguiendo",
+      "divineLoops": "Loops Divine"
+    },
+    "editProfile": "Editar perfil"
+  },
+  "accountMenu": {
+    "myProfile": "Mi perfil",
+    "settings": "Ajustes",
+    "linkedAccounts": "Cuentas enlazadas",
+    "switchRelay": "Cambiar de relay",
+    "switchAccount": "Cambiar de cuenta",
+    "addAccount": "Anadir otra cuenta",
+    "logOut": "Cerrar sesion"
+  },
+  "trending": {
+    "title": "Tendencias",
+    "subtitle": "Descubre lo que arrasa en la comunidad"
+  },
+  "searchTabs": {
+    "all": "Todo",
+    "videos": "Videos",
+    "users": "Personas",
+    "hashtags": "Etiquetas",
+    "searching": "Buscando..."
   }
 }

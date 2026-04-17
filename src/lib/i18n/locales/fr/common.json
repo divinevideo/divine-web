@@ -195,5 +195,34 @@
     "heading": "Viners classiques",
     "archivedBadge": "Archive",
     "archivedTooltip": "Archive Vine originale preservee par l'Internet Archive"
+  },
+  "profile": {
+    "stats": {
+      "videos": "Videos",
+      "followers": "Abonnes",
+      "following": "Abonnements",
+      "divineLoops": "Loops Divine"
+    },
+    "editProfile": "Modifier le profil"
+  },
+  "accountMenu": {
+    "myProfile": "Mon profil",
+    "settings": "Parametres",
+    "linkedAccounts": "Comptes lies",
+    "switchRelay": "Changer de relay",
+    "switchAccount": "Changer de compte",
+    "addAccount": "Ajouter un autre compte",
+    "logOut": "Se deconnecter"
+  },
+  "trending": {
+    "title": "Tendances",
+    "subtitle": "Voyez ce qui cartonne dans la communaute"
+  },
+  "searchTabs": {
+    "all": "Tout",
+    "videos": "Videos",
+    "users": "Personnes",
+    "hashtags": "Hashtags",
+    "searching": "Recherche..."
   }
 }

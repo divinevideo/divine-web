@@ -195,5 +195,34 @@
     "heading": "Klassieke Viners",
     "archivedBadge": "Gearchiveerd",
     "archivedTooltip": "Origineel Vine-archief bewaard door het Internet Archive"
+  },
+  "profile": {
+    "stats": {
+      "videos": "Video's",
+      "followers": "Volgers",
+      "following": "Volgend",
+      "divineLoops": "Divine Loops"
+    },
+    "editProfile": "Profiel bewerken"
+  },
+  "accountMenu": {
+    "myProfile": "Mijn profiel",
+    "settings": "Instellingen",
+    "linkedAccounts": "Gekoppelde accounts",
+    "switchRelay": "Relay wisselen",
+    "switchAccount": "Account wisselen",
+    "addAccount": "Nog een account toevoegen",
+    "logOut": "Uitloggen"
+  },
+  "trending": {
+    "title": "Trending",
+    "subtitle": "Zie wat er speelt in de community"
+  },
+  "searchTabs": {
+    "all": "Alles",
+    "videos": "Video's",
+    "users": "Mensen",
+    "hashtags": "Hashtags",
+    "searching": "Zoeken..."
   }
 }

@@ -195,5 +195,34 @@
     "heading": "Klassiska Viners",
     "archivedBadge": "Arkiverad",
     "archivedTooltip": "Original Vine-arkiv bevarat av Internet Archive"
+  },
+  "profile": {
+    "stats": {
+      "videos": "Videor",
+      "followers": "Foljare",
+      "following": "Foljer",
+      "divineLoops": "Divine Loops"
+    },
+    "editProfile": "Redigera profil"
+  },
+  "accountMenu": {
+    "myProfile": "Min profil",
+    "settings": "Installningar",
+    "linkedAccounts": "Lankade konton",
+    "switchRelay": "Byt relay",
+    "switchAccount": "Byt konto",
+    "addAccount": "Lagg till ett annat konto",
+    "logOut": "Logga ut"
+  },
+  "trending": {
+    "title": "Trendande",
+    "subtitle": "Se vad som rors i gemenskapen"
+  },
+  "searchTabs": {
+    "all": "Alla",
+    "videos": "Videor",
+    "users": "Personer",
+    "hashtags": "Taggar",
+    "searching": "Soker..."
   }
 }

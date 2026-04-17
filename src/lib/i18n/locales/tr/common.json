@@ -195,5 +195,34 @@
     "heading": "Klasik Vinerlar",
     "archivedBadge": "Arsivlenmis",
     "archivedTooltip": "Internet Archive tarafindan korunan orijinal Vine arsivi"
+  },
+  "profile": {
+    "stats": {
+      "videos": "Videolar",
+      "followers": "Takipci",
+      "following": "Takip",
+      "divineLoops": "Divine Loop"
+    },
+    "editProfile": "Profili duzenle"
+  },
+  "accountMenu": {
+    "myProfile": "Profilim",
+    "settings": "Ayarlar",
+    "linkedAccounts": "Bagli hesaplar",
+    "switchRelay": "Relay degistir",
+    "switchAccount": "Hesap degistir",
+    "addAccount": "Baska bir hesap ekle",
+    "logOut": "Cikis yap"
+  },
+  "trending": {
+    "title": "Gundemde",
+    "subtitle": "Toplulukta neler donuyor bir bak"
+  },
+  "searchTabs": {
+    "all": "Hepsi",
+    "videos": "Videolar",
+    "users": "Insanlar",
+    "hashtags": "Etiketler",
+    "searching": "Aranıyor..."
   }
 }

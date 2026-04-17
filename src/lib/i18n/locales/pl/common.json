@@ -199,5 +199,34 @@
     "heading": "Klasyczni Vinerzy",
     "archivedBadge": "Zarchiwizowane",
     "archivedTooltip": "Oryginalne archiwum Vine zachowane przez Internet Archive"
+  },
+  "profile": {
+    "stats": {
+      "videos": "Filmy",
+      "followers": "Obserwujacy",
+      "following": "Obserwowani",
+      "divineLoops": "Loopy Divine"
+    },
+    "editProfile": "Edytuj profil"
+  },
+  "accountMenu": {
+    "myProfile": "Moj profil",
+    "settings": "Ustawienia",
+    "linkedAccounts": "Polaczone konta",
+    "switchRelay": "Zmien relay",
+    "switchAccount": "Zmien konto",
+    "addAccount": "Dodaj kolejne konto",
+    "logOut": "Wyloguj"
+  },
+  "trending": {
+    "title": "Na czasie",
+    "subtitle": "Zobacz, co wymiata w spolecznosci"
+  },
+  "searchTabs": {
+    "all": "Wszystko",
+    "videos": "Filmy",
+    "users": "Ludzie",
+    "hashtags": "Tagi",
+    "searching": "Szukam..."
   }
 }

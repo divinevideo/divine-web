@@ -195,5 +195,34 @@
     "heading": "Viner classici",
     "archivedBadge": "Archiviato",
     "archivedTooltip": "Archivio Vine originale preservato dall'Internet Archive"
+  },
+  "profile": {
+    "stats": {
+      "videos": "Video",
+      "followers": "Follower",
+      "following": "Seguiti",
+      "divineLoops": "Loop Divine"
+    },
+    "editProfile": "Modifica profilo"
+  },
+  "accountMenu": {
+    "myProfile": "Il mio profilo",
+    "settings": "Impostazioni",
+    "linkedAccounts": "Account collegati",
+    "switchRelay": "Cambia relay",
+    "switchAccount": "Cambia account",
+    "addAccount": "Aggiungi un altro account",
+    "logOut": "Esci"
+  },
+  "trending": {
+    "title": "Tendenze",
+    "subtitle": "Scopri cosa spacca nella community"
+  },
+  "searchTabs": {
+    "all": "Tutto",
+    "videos": "Video",
+    "users": "Persone",
+    "hashtags": "Hashtag",
+    "searching": "Ricerca in corso..."
   }
 }

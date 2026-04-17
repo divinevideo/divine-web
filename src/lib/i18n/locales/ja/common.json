@@ -195,5 +195,34 @@
     "heading": "クラシック Viner",
     "archivedBadge": "アーカイブ",
     "archivedTooltip": "Internet Archive で保存されたオリジナルの Vine アーカイブ"
+  },
+  "profile": {
+    "stats": {
+      "videos": "動画",
+      "followers": "フォロワー",
+      "following": "フォロー中",
+      "divineLoops": "Divine ループ"
+    },
+    "editProfile": "プロフィールを編集"
+  },
+  "accountMenu": {
+    "myProfile": "マイプロフィール",
+    "settings": "設定",
+    "linkedAccounts": "連携アカウント",
+    "switchRelay": "リレーを切り替え",
+    "switchAccount": "アカウントを切り替え",
+    "addAccount": "別のアカウントを追加",
+    "logOut": "ログアウト"
+  },
+  "trending": {
+    "title": "トレンド",
+    "subtitle": "コミュニティで盛り上がっているものをチェック"
+  },
+  "searchTabs": {
+    "all": "すべて",
+    "videos": "動画",
+    "users": "ユーザー",
+    "hashtags": "ハッシュタグ",
+    "searching": "検索中..."
   }
 }

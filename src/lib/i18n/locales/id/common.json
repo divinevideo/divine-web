@@ -195,5 +195,34 @@
     "heading": "Viner klasik",
     "archivedBadge": "Diarsipkan",
     "archivedTooltip": "Arsip Vine asli yang dilestarikan oleh Internet Archive"
+  },
+  "profile": {
+    "stats": {
+      "videos": "Video",
+      "followers": "Pengikut",
+      "following": "Mengikuti",
+      "divineLoops": "Loop Divine"
+    },
+    "editProfile": "Edit profil"
+  },
+  "accountMenu": {
+    "myProfile": "Profil saya",
+    "settings": "Pengaturan",
+    "linkedAccounts": "Akun terhubung",
+    "switchRelay": "Ganti relay",
+    "switchAccount": "Ganti akun",
+    "addAccount": "Tambah akun lain",
+    "logOut": "Keluar"
+  },
+  "trending": {
+    "title": "Sedang tren",
+    "subtitle": "Lihat apa yang lagi rame di komunitas"
+  },
+  "searchTabs": {
+    "all": "Semua",
+    "videos": "Video",
+    "users": "Orang",
+    "hashtags": "Tagar",
+    "searching": "Mencari..."
   }
 }

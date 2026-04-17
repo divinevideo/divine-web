@@ -197,5 +197,34 @@
     "heading": "Vineri clasici",
     "archivedBadge": "Arhivat",
     "archivedTooltip": "Arhiva Vine originala pastrata de Internet Archive"
+  },
+  "profile": {
+    "stats": {
+      "videos": "Videoclipuri",
+      "followers": "Urmaritori",
+      "following": "Urmaresti",
+      "divineLoops": "Loop-uri Divine"
+    },
+    "editProfile": "Editeaza profilul"
+  },
+  "accountMenu": {
+    "myProfile": "Profilul meu",
+    "settings": "Setari",
+    "linkedAccounts": "Conturi conectate",
+    "switchRelay": "Schimba relay-ul",
+    "switchAccount": "Schimba contul",
+    "addAccount": "Adauga alt cont",
+    "logOut": "Deconectare"
+  },
+  "trending": {
+    "title": "In tendinte",
+    "subtitle": "Vezi ce face valuri in comunitate"
+  },
+  "searchTabs": {
+    "all": "Tot",
+    "videos": "Videoclipuri",
+    "users": "Persoane",
+    "hashtags": "Etichete",
+    "searching": "Se cauta..."
   }
 }

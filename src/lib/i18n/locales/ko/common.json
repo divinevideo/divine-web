@@ -195,5 +195,34 @@
     "heading": "클래식 Viner",
     "archivedBadge": "아카이브됨",
     "archivedTooltip": "Internet Archive에서 보존된 오리지널 Vine 아카이브"
+  },
+  "profile": {
+    "stats": {
+      "videos": "동영상",
+      "followers": "팔로워",
+      "following": "팔로잉",
+      "divineLoops": "Divine 루프"
+    },
+    "editProfile": "프로필 편집"
+  },
+  "accountMenu": {
+    "myProfile": "내 프로필",
+    "settings": "설정",
+    "linkedAccounts": "연결된 계정",
+    "switchRelay": "릴레이 전환",
+    "switchAccount": "계정 전환",
+    "addAccount": "다른 계정 추가",
+    "logOut": "로그아웃"
+  },
+  "trending": {
+    "title": "인기",
+    "subtitle": "커뮤니티에서 뜨는 걸 확인하세요"
+  },
+  "searchTabs": {
+    "all": "전체",
+    "videos": "동영상",
+    "users": "사람",
+    "hashtags": "해시태그",
+    "searching": "검색 중..."
   }
 }

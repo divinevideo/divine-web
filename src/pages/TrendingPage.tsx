@@ -2,6 +2,7 @@
 // ABOUTME: Supports NIP-50 search modes: hot, top, rising, controversial
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Rss } from '@phosphor-icons/react';
 import { useHead } from '@unhead/react';
 import { VideoFeed } from '@/components/VideoFeed';
@@ -11,6 +12,7 @@ import type { SortMode } from '@/types/nostr';
 import { EXTENDED_SORT_MODES as SORT_MODES } from '@/lib/constants/sortModes';
 
 export function TrendingPage() {
+  const { t } = useTranslation();
   const [sortMode, setSortMode] = useState<SortMode>('hot');
 
   // RSS auto-discovery link for feed readers (only if feed endpoints exist)
@@ -32,9 +34,9 @@ export function TrendingPage() {
         <header className="mb-6 space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold">Trending</h1>
+              <h1 className="text-2xl font-bold">{t('trending.title')}</h1>
               <p className="text-muted-foreground">
-                Discover what's popular in the community
+                {t('trending.subtitle')}
               </p>
             </div>
             {rssFeedAvailable && (

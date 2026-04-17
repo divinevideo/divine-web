@@ -195,5 +195,34 @@
     "heading": "Classic Viners",
     "archivedBadge": "Archived",
     "archivedTooltip": "Original Vine archive preserved from the Internet Archive"
+  },
+  "profile": {
+    "stats": {
+      "videos": "Videos",
+      "followers": "Followers",
+      "following": "Following",
+      "divineLoops": "Divine Loops"
+    },
+    "editProfile": "Edit Profile"
+  },
+  "accountMenu": {
+    "myProfile": "My Profile",
+    "settings": "Settings",
+    "linkedAccounts": "Linked Accounts",
+    "switchRelay": "Switch Relay",
+    "switchAccount": "Switch Account",
+    "addAccount": "Add another account",
+    "logOut": "Log out"
+  },
+  "trending": {
+    "title": "Trending",
+    "subtitle": "Discover what's popular in the community"
+  },
+  "searchTabs": {
+    "all": "All",
+    "videos": "Videos",
+    "users": "Users",
+    "hashtags": "Hashtags",
+    "searching": "Searching..."
   }
 }
