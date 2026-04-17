@@ -26,6 +26,7 @@ export default {
 		extend: {
 			fontFamily: {
 				'sans': ['Inter Variable', 'Inter', 'system-ui', 'sans-serif'],
+				'display': ['Bricolage Grotesque', 'system-ui', 'sans-serif'],
 			},
 			colors: {
 				border: 'hsl(var(--border))',

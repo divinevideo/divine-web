@@ -51,7 +51,11 @@
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Inter Variable is loaded locally via @fontsource-variable/inter (see src/main.tsx).
+         Bricolage Grotesque stays on Google Fonts for now — there is no @fontsource-variable
+         build we trust yet. Variable axes (opsz 12..96, wght 400..800) are both requested
+         so font-optical-sizing: auto and heavier weights work across the display range. -->
+    <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&display=swap" rel="stylesheet">
 
     <!-- Performance: preconnect to divine API and media CDN (critical path) -->
     <link rel="dns-prefetch" href="//relay.divine.video" />
