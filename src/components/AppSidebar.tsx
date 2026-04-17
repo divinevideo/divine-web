@@ -41,7 +41,7 @@ function NavItem({ icon, label, onClick, isActive }: NavItemProps) {
       className={cn(
         "group flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-[15px] transition-all duration-150",
         isActive
-          ? "bg-primary text-primary-foreground font-medium"
+          ? "bg-primary text-primary-foreground font-medium brand-offset-shadow-sm-dark"
           : "text-muted-foreground font-normal hover:bg-muted hover:text-foreground hover:font-medium"
       )}
     >
@@ -219,7 +219,7 @@ export function AppSidebar({ className }: { className?: string }) {
                       className={cn(
                         "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-[14px] transition-all duration-150",
                         isCategoryActive(cat.name)
-                          ? "bg-primary text-primary-foreground font-medium"
+                          ? "bg-primary text-primary-foreground font-medium brand-offset-shadow-sm-dark"
                           : "text-muted-foreground hover:bg-muted hover:text-foreground"
                       )}
                     >

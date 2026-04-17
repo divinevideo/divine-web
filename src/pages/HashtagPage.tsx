@@ -12,6 +12,7 @@ import { VideoFeed } from '@/components/VideoFeed';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { cn } from '@/lib/utils';
 import type { SortMode } from '@/types/nostr';
 import { EXTENDED_SORT_MODES as SORT_MODES } from '@/lib/constants/sortModes';
 
@@ -113,7 +114,7 @@ export function HashtagPage() {
                 variant={viewMode === 'feed' ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => setViewMode('feed')}
-                className="text-xs"
+                className={cn('text-xs', viewMode === 'feed' && 'brand-offset-shadow-sm-dark')}
                 role="button"
                 aria-pressed={viewMode === 'feed'}
               >
@@ -124,7 +125,7 @@ export function HashtagPage() {
                 variant={viewMode === 'grid' ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => setViewMode('grid')}
-                className="text-xs"
+                className={cn('text-xs', viewMode === 'grid' && 'brand-offset-shadow-sm-dark')}
                 role="button"
                 aria-pressed={viewMode === 'grid'}
               >
