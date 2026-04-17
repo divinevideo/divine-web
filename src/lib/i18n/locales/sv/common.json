@@ -44,7 +44,8 @@
     "yourFeed": "Ditt flode"
   },
   "auth": {
-    "logInOnDivine": "Hoppa in"
+    "logInOnDivine": "Hoppa in",
+    "logIn": "Logga in"
   },
   "home": {
     "welcomeTitle": "Ditt flode, dina regler.",
@@ -141,5 +142,53 @@
     "metaDescription": "Utforska videokategorier pa Divine - komedi, musik, dans, djur, sport, mat och mer.",
     "videoCount_one": "{{count}} video",
     "videoCount_other": "{{count}} videor"
+  },
+  "videoMeta": {
+    "viewCount_one": "{{formatted}} visning",
+    "viewCount_other": "{{formatted}} visningar"
+  },
+  "verification": {
+    "humanMade": "Skapad av manniskor",
+    "dialog": {
+      "titleVideo": "Videoverifiering",
+      "titleArchive": "Original Vine-arkiv",
+      "description": "Information om arkivets ursprung, Proofmode-data, AI-scanstatus och hostingkalla.",
+      "proofModeSection": "ProofMode-verifiering",
+      "aiDetectionSection": "AI-detektion",
+      "aiNotScanned": "AI-scan: ej scannad an",
+      "checking": "Soker scanresultat…",
+      "noScanResults": "Inga scanresultat tillgangliga an.",
+      "checkAi": "Kontrollera om AI-genererad",
+      "aiLikelihood": "{{percent}}% sannolikhet att vara AI-genererad",
+      "scannedBy": "Scannad av: {{source}}",
+      "verifiedByMod": "Verifierad av manskliga moderator",
+      "learnMore": "Las mer om Proofmode-verifiering",
+      "inspectTool": "Granska med ProofCheck-verktyget",
+      "archiveBlurb": "Den har videon ar en original-Vine raddad fran Internet Archive.",
+      "archiveContext": "Innan Vine stangde 2017 raddade ArchiveTeam och Internet Archive miljoner Vines. Detta innehall ar en del av den raddningsinsatsen.",
+      "originalLoops": "Original-stats: {{count}} loopar",
+      "archiveLearnMore": "Las mer om Vine-arkivet"
+    },
+    "intro": {
+      "proofMode": "Den har videons akthet ar verifierad med Proofmode-teknik.",
+      "aiHumanDivine": "Den har videon ligger pa Divine och AI-detektionen tyder pa att den troligen ar gjord av manniskor, aven utan ProofMode-data.",
+      "aiHuman": "AI-detektionen tyder pa att den har videon troligen ar gjord av manniskor, aven utan ProofMode-data.",
+      "unverifiedDivine": "Den har videon ar inte verifierad. Den ligger pa Divine, men har annu inga ProofMode-data.",
+      "unverifiedExternal": "Den har videon ar inte verifierad och hostas utanfor Divine. Den innehaller inga ProofMode-data."
+    },
+    "summary": {
+      "platinum": "Platina: Hardvaruattest fran enheten, kryptografiska signaturer, Content Credentials (C2PA) och AI-scan bekraftar manskligt ursprung.",
+      "gold": "Guld: Inspelat pa en riktig enhet med hardvaruattest, kryptografiska signaturer och Content Credentials (C2PA).",
+      "silverProof": "Silver: Kryptografiska signaturer bevisar att videon inte har andrats sedan inspelningen.",
+      "bronze": "Brons: Grundlaggande metadata-signaturer finns.",
+      "silverAi": "Silver: AI-scan bekraftar att videon troligen ar skapad av en manniska.",
+      "muted": "Ingen verifieringsdata tillganglig for den har videon."
+    },
+    "checklist": {
+      "deviceAttestation": "Enhetsattest",
+      "pgpSignature": "PGP-signatur",
+      "c2paContentCredentials": "C2PA Content Credentials",
+      "proofManifest": "Bevismanifest"
+    }
   }
 }

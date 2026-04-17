@@ -44,7 +44,8 @@
     "yourFeed": "Fluxul tau"
   },
   "auth": {
-    "logInOnDivine": "Hai inauntru"
+    "logInOnDivine": "Hai inauntru",
+    "logIn": "Conecteaza-te"
   },
   "home": {
     "welcomeTitle": "Fluxul tau, regulile tale.",
@@ -142,5 +143,54 @@
     "videoCount_one": "{{count}} videoclip",
     "videoCount_few": "{{count}} videoclipuri",
     "videoCount_other": "{{count}} de videoclipuri"
+  },
+  "videoMeta": {
+    "viewCount_one": "{{formatted}} vizualizare",
+    "viewCount_few": "{{formatted}} vizualizari",
+    "viewCount_other": "{{formatted}} de vizualizari"
+  },
+  "verification": {
+    "humanMade": "Creat de oameni",
+    "dialog": {
+      "titleVideo": "Verificare video",
+      "titleArchive": "Arhiva Vine originala",
+      "description": "Detalii despre originea arhivei, datele Proofmode, statusul scanarii AI si sursa de hosting.",
+      "proofModeSection": "Verificare ProofMode",
+      "aiDetectionSection": "Detectie AI",
+      "aiNotScanned": "Scanare AI: inca nu a fost scanata",
+      "checking": "Caut rezultatele scanarii…",
+      "noScanResults": "Inca nu sunt rezultate de scanare disponibile.",
+      "checkAi": "Verifica daca e generat de AI",
+      "aiLikelihood": "{{percent}}% probabilitate sa fie generat de AI",
+      "scannedBy": "Scanat de: {{source}}",
+      "verifiedByMod": "Verificat de un moderator uman",
+      "learnMore": "Afla mai multe despre verificarea Proofmode",
+      "inspectTool": "Inspecteaza cu instrumentul ProofCheck",
+      "archiveBlurb": "Acest video este un Vine original recuperat de pe Internet Archive.",
+      "archiveContext": "Inainte ca Vine sa se inchida in 2017, ArchiveTeam si Internet Archive au pastrat milioane de Vines. Acest continut face parte din acea operatiune de salvare.",
+      "originalLoops": "Statistici originale: {{count}} loop-uri",
+      "archiveLearnMore": "Afla mai multe despre pastrarea arhivei Vine"
+    },
+    "intro": {
+      "proofMode": "Autenticitatea acestui video este verificata cu tehnologia Proofmode.",
+      "aiHumanDivine": "Acest video este gazduit pe Divine si detectia AI indica ca este probabil uman, chiar daca nu are date ProofMode.",
+      "aiHuman": "Detectia AI indica ca acest video este probabil uman, chiar daca nu are date ProofMode.",
+      "unverifiedDivine": "Acest video nu este verificat. E gazduit pe Divine, dar inca nu are date ProofMode atasate.",
+      "unverifiedExternal": "Acest video nu este verificat si este gazduit in afara Divine. Nu include date ProofMode."
+    },
+    "summary": {
+      "platinum": "Platina: Atestare hardware a dispozitivului, semnaturi criptografice, Content Credentials (C2PA) si scanarea AI confirma originea umana.",
+      "gold": "Aur: Filmat pe un dispozitiv real cu atestare hardware, semnaturi criptografice si Content Credentials (C2PA).",
+      "silverProof": "Argint: Semnaturile criptografice dovedesc ca acest video nu a fost modificat de la inregistrare.",
+      "bronze": "Bronz: Semnaturi de metadate de baza prezente.",
+      "silverAi": "Argint: Scanarea AI confirma ca acest video este probabil creat de un om.",
+      "muted": "Nu sunt date de verificare disponibile pentru acest video."
+    },
+    "checklist": {
+      "deviceAttestation": "Atestare a dispozitivului",
+      "pgpSignature": "Semnatura PGP",
+      "c2paContentCredentials": "Content Credentials C2PA",
+      "proofManifest": "Manifest al dovezii"
+    }
   }
 }

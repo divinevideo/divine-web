@@ -44,7 +44,8 @@
     "yourFeed": "Dein Feed"
   },
   "auth": {
-    "logInOnDivine": "Rein da"
+    "logInOnDivine": "Rein da",
+    "logIn": "Anmelden"
   },
   "home": {
     "welcomeTitle": "Dein Feed, deine Regeln.",
@@ -141,5 +142,53 @@
     "metaDescription": "Entdecke Videokategorien auf Divine - Comedy, Musik, Tanz, Tiere, Sport, Essen und mehr.",
     "videoCount_one": "{{count}} Video",
     "videoCount_other": "{{count}} Videos"
+  },
+  "videoMeta": {
+    "viewCount_one": "{{formatted}} Aufruf",
+    "viewCount_other": "{{formatted}} Aufrufe"
+  },
+  "verification": {
+    "humanMade": "Von Menschen gemacht",
+    "dialog": {
+      "titleVideo": "Video-Verifizierung",
+      "titleArchive": "Original Vine-Archiv",
+      "description": "Details zur Archivherkunft, Proofmode-Daten, KI-Scan-Status und Hosting-Quelle.",
+      "proofModeSection": "ProofMode-Verifizierung",
+      "aiDetectionSection": "KI-Erkennung",
+      "aiNotScanned": "KI-Scan: noch nicht gescannt",
+      "checking": "Pruefe Scan-Ergebnisse…",
+      "noScanResults": "Noch keine Scan-Ergebnisse verfugbar.",
+      "checkAi": "Prufen, ob KI-generiert",
+      "aiLikelihood": "{{percent}}% Wahrscheinlichkeit, KI-generiert zu sein",
+      "scannedBy": "Gescannt von: {{source}}",
+      "verifiedByMod": "Von menschlichem Moderator bestatigt",
+      "learnMore": "Mehr uber Proofmode-Verifizierung erfahren",
+      "inspectTool": "Mit ProofCheck-Tool prufen",
+      "archiveBlurb": "Dieses Video ist ein Original-Vine, geborgen aus dem Internet Archive.",
+      "archiveContext": "Bevor Vine 2017 abgeschaltet wurde, haben ArchiveTeam und das Internet Archive Millionen von Vines gesichert. Dieser Inhalt ist Teil dieser Rettungsaktion.",
+      "originalLoops": "Originalstats: {{count}} Loops",
+      "archiveLearnMore": "Mehr uber die Vine-Archivierung erfahren"
+    },
+    "intro": {
+      "proofMode": "Die Echtheit dieses Videos ist mit Proofmode-Technologie verifiziert.",
+      "aiHumanDivine": "Dieses Video lauft auf Divine, und die KI-Erkennung deutet auf menschlichen Ursprung hin, obwohl keine ProofMode-Daten anliegen.",
+      "aiHuman": "Die KI-Erkennung deutet darauf hin, dass dieses Video wahrscheinlich von Menschen gemacht ist, auch ohne ProofMode-Daten.",
+      "unverifiedDivine": "Dieses Video ist nicht verifiziert. Es lauft auf Divine, aber es liegen noch keine ProofMode-Daten an.",
+      "unverifiedExternal": "Dieses Video ist nicht verifiziert und wird auserhalb von Divine gehostet. Es enthalt keine ProofMode-Daten."
+    },
+    "summary": {
+      "platinum": "Platin: Geratehardware-Attestierung, kryptografische Signaturen, Content Credentials (C2PA) und KI-Scan bestatigen menschlichen Ursprung.",
+      "gold": "Gold: Auf einem echten Gerat aufgenommen mit Hardware-Attestierung, kryptografischen Signaturen und Content Credentials (C2PA).",
+      "silverProof": "Silber: Kryptografische Signaturen belegen, dass dieses Video seit der Aufnahme nicht verandert wurde.",
+      "bronze": "Bronze: Grundlegende Metadaten-Signaturen vorhanden.",
+      "silverAi": "Silber: KI-Scan bestatigt, dass dieses Video wahrscheinlich von einem Menschen erstellt wurde.",
+      "muted": "Fur dieses Video sind keine Verifizierungsdaten verfugbar."
+    },
+    "checklist": {
+      "deviceAttestation": "Gerate-Attestierung",
+      "pgpSignature": "PGP-Signatur",
+      "c2paContentCredentials": "C2PA Content Credentials",
+      "proofManifest": "Proof-Manifest"
+    }
   }
 }

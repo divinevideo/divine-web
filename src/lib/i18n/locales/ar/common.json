@@ -44,7 +44,8 @@
     "yourFeed": "خلاصتك"
   },
   "auth": {
-    "logInOnDivine": "هيا ندخل"
+    "logInOnDivine": "هيا ندخل",
+    "logIn": "تسجيل الدخول"
   },
   "home": {
     "welcomeTitle": "خلاصتك، قواعدك.",
@@ -145,5 +146,57 @@
     "videoCount_few": "{{count}} فيديوهات",
     "videoCount_many": "{{count}} فيديو",
     "videoCount_other": "{{count}} فيديو"
+  },
+  "videoMeta": {
+    "viewCount_zero": "لا توجد مشاهدات",
+    "viewCount_one": "مشاهدة واحدة",
+    "viewCount_two": "مشاهدتان",
+    "viewCount_few": "{{formatted}} مشاهدات",
+    "viewCount_many": "{{formatted}} مشاهدة",
+    "viewCount_other": "{{formatted}} مشاهدة"
+  },
+  "verification": {
+    "humanMade": "من صنع البشر",
+    "dialog": {
+      "titleVideo": "التحقق من الفيديو",
+      "titleArchive": "أرشيف Vine الأصلي",
+      "description": "تفاصيل عن أصل الأرشيف وبيانات Proofmode وحالة فحص الذكاء الاصطناعي ومصدر الاستضافة.",
+      "proofModeSection": "تحقق ProofMode",
+      "aiDetectionSection": "كشف الذكاء الاصطناعي",
+      "aiNotScanned": "فحص الذكاء الاصطناعي: لم يُفحص بعد",
+      "checking": "يتم التحقق من نتائج الفحص…",
+      "noScanResults": "لا توجد نتائج فحص متاحة بعد.",
+      "checkAi": "تحقق إذا كان مولّدًا بالذكاء الاصطناعي",
+      "aiLikelihood": "احتمال أن يكون مولّدًا بالذكاء الاصطناعي {{percent}}%",
+      "scannedBy": "تم الفحص بواسطة: {{source}}",
+      "verifiedByMod": "تم التحقق من قبل مشرف بشري",
+      "learnMore": "اعرف المزيد عن تحقق Proofmode",
+      "inspectTool": "افحص بأداة ProofCheck",
+      "archiveBlurb": "هذا الفيديو هو Vine أصلي تم استرجاعه من Internet Archive.",
+      "archiveContext": "قبل إغلاق Vine في 2017، حفظ ArchiveTeam وInternet Archive ملايين من Vine. هذا المحتوى جزء من ذلك الإنقاذ.",
+      "originalLoops": "إحصاءات أصلية: {{count}} لقطة",
+      "archiveLearnMore": "اعرف المزيد عن حفظ أرشيف Vine"
+    },
+    "intro": {
+      "proofMode": "تم التحقق من أصالة هذا الفيديو باستخدام تقنية Proofmode.",
+      "aiHumanDivine": "هذا الفيديو مستضاف على Divine ويشير كشف الذكاء الاصطناعي إلى أنه على الأرجح من صنع البشر، رغم عدم وجود بيانات ProofMode.",
+      "aiHuman": "يشير كشف الذكاء الاصطناعي إلى أن هذا الفيديو على الأرجح من صنع البشر، رغم عدم وجود بيانات ProofMode.",
+      "unverifiedDivine": "هذا الفيديو غير موثّق. مستضاف على Divine لكنه لا يحتوي على بيانات ProofMode بعد.",
+      "unverifiedExternal": "هذا الفيديو غير موثّق ومستضاف خارج Divine. لا يحتوي على بيانات ProofMode."
+    },
+    "summary": {
+      "platinum": "بلاتيني: شهادة عتاد الجهاز، توقيعات تشفيرية، Content Credentials (C2PA)، وفحص الذكاء الاصطناعي يؤكد الأصل البشري.",
+      "gold": "ذهبي: مُلتقط على جهاز حقيقي مع شهادة العتاد، توقيعات تشفيرية، وContent Credentials (C2PA).",
+      "silverProof": "فضي: التوقيعات التشفيرية تُثبت أن هذا الفيديو لم يُعدَّل منذ التسجيل.",
+      "bronze": "برونزي: توقيعات بيانات وصفية أساسية موجودة.",
+      "silverAi": "فضي: فحص الذكاء الاصطناعي يؤكد أن هذا الفيديو على الأرجح من صنع البشر.",
+      "muted": "لا تتوفر بيانات تحقق لهذا الفيديو."
+    },
+    "checklist": {
+      "deviceAttestation": "شهادة الجهاز",
+      "pgpSignature": "توقيع PGP",
+      "c2paContentCredentials": "C2PA Content Credentials",
+      "proofManifest": "بيان الإثبات"
+    }
   }
 }

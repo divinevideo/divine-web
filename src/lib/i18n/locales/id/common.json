@@ -44,7 +44,8 @@
     "yourFeed": "Umpan Anda"
   },
   "auth": {
-    "logInOnDivine": "Masuk yuk"
+    "logInOnDivine": "Masuk yuk",
+    "logIn": "Masuk"
   },
   "home": {
     "welcomeTitle": "Feed Anda, aturan Anda.",
@@ -141,5 +142,53 @@
     "metaDescription": "Jelajahi kategori video di Divine - komedi, musik, tarian, hewan, olahraga, makanan, dan lainnya.",
     "videoCount_one": "{{count}} video",
     "videoCount_other": "{{count}} video"
+  },
+  "videoMeta": {
+    "viewCount_one": "{{formatted}} tontonan",
+    "viewCount_other": "{{formatted}} tontonan"
+  },
+  "verification": {
+    "humanMade": "Buatan manusia",
+    "dialog": {
+      "titleVideo": "Verifikasi video",
+      "titleArchive": "Arsip Vine asli",
+      "description": "Detail tentang asal arsip, data Proofmode, status pemindaian AI, dan sumber hosting.",
+      "proofModeSection": "Verifikasi ProofMode",
+      "aiDetectionSection": "Deteksi AI",
+      "aiNotScanned": "Pemindaian AI: belum dipindai",
+      "checking": "Mencari hasil pemindaian…",
+      "noScanResults": "Belum ada hasil pemindaian.",
+      "checkAi": "Periksa apakah dihasilkan AI",
+      "aiLikelihood": "{{percent}}% kemungkinan dihasilkan AI",
+      "scannedBy": "Dipindai oleh: {{source}}",
+      "verifiedByMod": "Diverifikasi oleh moderator manusia",
+      "learnMore": "Pelajari lebih lanjut tentang verifikasi Proofmode",
+      "inspectTool": "Periksa dengan alat ProofCheck",
+      "archiveBlurb": "Video ini adalah Vine asli yang diselamatkan dari Internet Archive.",
+      "archiveContext": "Sebelum Vine ditutup pada 2017, ArchiveTeam dan Internet Archive menyelamatkan jutaan Vine. Konten ini bagian dari penyelamatan itu.",
+      "originalLoops": "Statistik asli: {{count}} loop",
+      "archiveLearnMore": "Pelajari lebih lanjut tentang pelestarian arsip Vine"
+    },
+    "intro": {
+      "proofMode": "Keaslian video ini diverifikasi dengan teknologi Proofmode.",
+      "aiHumanDivine": "Video ini di-host di Divine dan deteksi AI menunjukkan kemungkinan besar buatan manusia, meski tanpa data ProofMode.",
+      "aiHuman": "Deteksi AI menunjukkan video ini kemungkinan besar buatan manusia, meski tanpa data ProofMode.",
+      "unverifiedDivine": "Video ini belum diverifikasi. Di-host di Divine, tapi belum ada data ProofMode.",
+      "unverifiedExternal": "Video ini belum diverifikasi dan di-host di luar Divine. Tidak menyertakan data ProofMode."
+    },
+    "summary": {
+      "platinum": "Platinum: Atestasi perangkat keras, tanda tangan kriptografis, Content Credentials (C2PA), dan pemindaian AI mengonfirmasi asal manusia.",
+      "gold": "Emas: Diambil di perangkat asli dengan atestasi perangkat keras, tanda tangan kriptografis, dan Content Credentials (C2PA).",
+      "silverProof": "Perak: Tanda tangan kriptografis membuktikan video ini tidak diubah sejak perekaman.",
+      "bronze": "Perunggu: Tanda tangan metadata dasar tersedia.",
+      "silverAi": "Perak: Pemindaian AI mengonfirmasi video ini kemungkinan besar dibuat manusia.",
+      "muted": "Tidak ada data verifikasi untuk video ini."
+    },
+    "checklist": {
+      "deviceAttestation": "Atestasi perangkat",
+      "pgpSignature": "Tanda tangan PGP",
+      "c2paContentCredentials": "Content Credentials C2PA",
+      "proofManifest": "Manifes bukti"
+    }
   }
 }

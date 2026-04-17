@@ -44,7 +44,8 @@
     "yourFeed": "내 피드"
   },
   "auth": {
-    "logInOnDivine": "들어가자"
+    "logInOnDivine": "들어가자",
+    "logIn": "로그인"
   },
   "home": {
     "welcomeTitle": "당신의 피드, 당신의 규칙.",
@@ -141,5 +142,53 @@
     "metaDescription": "Divine 에서 코미디, 음악, 댄스, 동물, 스포츠, 음식 등 다양한 동영상 카테고리를 둘러보세요.",
     "videoCount_one": "동영상 {{count}}개",
     "videoCount_other": "동영상 {{count}}개"
+  },
+  "videoMeta": {
+    "viewCount_one": "조회수 {{formatted}}회",
+    "viewCount_other": "조회수 {{formatted}}회"
+  },
+  "verification": {
+    "humanMade": "사람이 만든 콘텐츠",
+    "dialog": {
+      "titleVideo": "동영상 인증",
+      "titleArchive": "오리지널 Vine 아카이브",
+      "description": "아카이브 출처, Proofmode 데이터, AI 스캔 상태, 호스팅 출처에 대한 세부 정보.",
+      "proofModeSection": "ProofMode 인증",
+      "aiDetectionSection": "AI 탐지",
+      "aiNotScanned": "AI 스캔: 아직 스캔되지 않음",
+      "checking": "스캔 결과를 확인하는 중…",
+      "noScanResults": "아직 스캔 결과가 없습니다.",
+      "checkAi": "AI 생성 여부 확인",
+      "aiLikelihood": "AI 생성 가능성 {{percent}}%",
+      "scannedBy": "스캔자: {{source}}",
+      "verifiedByMod": "사람 모더레이터가 확인",
+      "learnMore": "Proofmode 인증에 대해 더 알아보기",
+      "inspectTool": "ProofCheck 도구로 검사",
+      "archiveBlurb": "이 동영상은 Internet Archive에서 구해낸 오리지널 Vine입니다.",
+      "archiveContext": "2017년 Vine 종료 전, ArchiveTeam과 Internet Archive가 수백만 개의 Vine을 보존했습니다. 이 콘텐츠는 그 구출 작업의 일부입니다.",
+      "originalLoops": "오리지널 통계: {{count}} 루프",
+      "archiveLearnMore": "Vine 아카이브 보존에 대해 더 알아보기"
+    },
+    "intro": {
+      "proofMode": "이 동영상의 진위는 Proofmode 기술로 인증되었습니다.",
+      "aiHumanDivine": "이 동영상은 Divine에서 호스팅되며, ProofMode 데이터가 없어도 AI 탐지로 사람이 만든 것일 가능성이 높다고 표시됩니다.",
+      "aiHuman": "ProofMode 데이터가 없더라도 AI 탐지에서 이 동영상은 사람이 만든 것일 가능성이 높다고 표시됩니다.",
+      "unverifiedDivine": "이 동영상은 인증되지 않았습니다. Divine에서 호스팅되지만, 아직 ProofMode 데이터가 없습니다.",
+      "unverifiedExternal": "이 동영상은 인증되지 않았고 Divine 외부에서 호스팅됩니다. ProofMode 데이터를 포함하지 않습니다."
+    },
+    "summary": {
+      "platinum": "플래티넘: 디바이스 하드웨어 증명, 암호화 서명, Content Credentials (C2PA), AI 스캔이 사람 출처를 확인합니다.",
+      "gold": "골드: 실제 기기에서 하드웨어 증명, 암호화 서명, Content Credentials (C2PA)와 함께 촬영.",
+      "silverProof": "실버: 암호화 서명이 이 동영상이 녹화 이후 변경되지 않았음을 증명합니다.",
+      "bronze": "브론즈: 기본 메타데이터 서명이 있습니다.",
+      "silverAi": "실버: AI 스캔으로 이 동영상이 사람이 만든 것일 가능성이 높다고 확인되었습니다.",
+      "muted": "이 동영상에 대한 인증 데이터가 없습니다."
+    },
+    "checklist": {
+      "deviceAttestation": "디바이스 증명",
+      "pgpSignature": "PGP 서명",
+      "c2paContentCredentials": "C2PA Content Credentials",
+      "proofManifest": "증명 매니페스트"
+    }
   }
 }

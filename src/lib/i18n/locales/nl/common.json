@@ -44,7 +44,8 @@
     "yourFeed": "Jouw feed"
   },
   "auth": {
-    "logInOnDivine": "Spring erin"
+    "logInOnDivine": "Spring erin",
+    "logIn": "Inloggen"
   },
   "home": {
     "welcomeTitle": "Jouw feed, jouw regels.",
@@ -141,5 +142,53 @@
     "metaDescription": "Ontdek videocategorieen op Divine - komedie, muziek, dans, dieren, sport, eten en meer.",
     "videoCount_one": "{{count}} video",
     "videoCount_other": "{{count}} videos"
+  },
+  "videoMeta": {
+    "viewCount_one": "{{formatted}} weergave",
+    "viewCount_other": "{{formatted}} weergaven"
+  },
+  "verification": {
+    "humanMade": "Door mensen gemaakt",
+    "dialog": {
+      "titleVideo": "Videoverificatie",
+      "titleArchive": "Origineel Vine-archief",
+      "description": "Details over de archiefoorsprong, Proofmode-data, AI-scanstatus en hostingbron.",
+      "proofModeSection": "ProofMode-verificatie",
+      "aiDetectionSection": "AI-detectie",
+      "aiNotScanned": "AI-scan: nog niet gescand",
+      "checking": "Scanresultaten zoeken…",
+      "noScanResults": "Nog geen scanresultaten beschikbaar.",
+      "checkAi": "Controleer of door AI gegenereerd",
+      "aiLikelihood": "{{percent}}% kans dat dit door AI is gegenereerd",
+      "scannedBy": "Gescand door: {{source}}",
+      "verifiedByMod": "Geverifieerd door menselijke moderator",
+      "learnMore": "Meer over Proofmode-verificatie",
+      "inspectTool": "Inspecteren met ProofCheck",
+      "archiveBlurb": "Deze video is een originele Vine, gered uit het Internet Archive.",
+      "archiveContext": "Voordat Vine in 2017 sloot, hebben ArchiveTeam en het Internet Archive miljoenen Vines bewaard. Deze content is onderdeel van die reddingsoperatie.",
+      "originalLoops": "Originele stats: {{count}} loops",
+      "archiveLearnMore": "Meer over het behoud van het Vine-archief"
+    },
+    "intro": {
+      "proofMode": "De echtheid van deze video is geverifieerd met Proofmode-technologie.",
+      "aiHumanDivine": "Deze video staat op Divine en de AI-detectie geeft aan dat het waarschijnlijk door mensen is gemaakt, ook zonder ProofMode-data.",
+      "aiHuman": "De AI-detectie geeft aan dat deze video waarschijnlijk door mensen is gemaakt, ook zonder ProofMode-data.",
+      "unverifiedDivine": "Deze video is niet geverifieerd. Hij staat op Divine, maar er zijn nog geen ProofMode-data aan gekoppeld.",
+      "unverifiedExternal": "Deze video is niet geverifieerd en wordt buiten Divine gehost. Hij bevat geen ProofMode-data."
+    },
+    "summary": {
+      "platinum": "Platina: Hardware-attestatie van het apparaat, cryptografische handtekeningen, Content Credentials (C2PA) en AI-scan bevestigen menselijke oorsprong.",
+      "gold": "Goud: Opgenomen op een echt apparaat met hardware-attestatie, cryptografische handtekeningen en Content Credentials (C2PA).",
+      "silverProof": "Zilver: Cryptografische handtekeningen bewijzen dat deze video sinds de opname niet is gewijzigd.",
+      "bronze": "Brons: Basis metadata-handtekeningen aanwezig.",
+      "silverAi": "Zilver: AI-scan bevestigt dat deze video waarschijnlijk door een mens is gemaakt.",
+      "muted": "Geen verificatiegegevens beschikbaar voor deze video."
+    },
+    "checklist": {
+      "deviceAttestation": "Apparaat-attestatie",
+      "pgpSignature": "PGP-handtekening",
+      "c2paContentCredentials": "C2PA Content Credentials",
+      "proofManifest": "Bewijsmanifest"
+    }
   }
 }

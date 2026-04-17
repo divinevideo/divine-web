@@ -44,7 +44,8 @@
     "yourFeed": "Akisin"
   },
   "auth": {
-    "logInOnDivine": "Atla iceri"
+    "logInOnDivine": "Atla iceri",
+    "logIn": "Giris yap"
   },
   "home": {
     "welcomeTitle": "Senin akisin, senin kurallarin.",
@@ -141,5 +142,53 @@
     "metaDescription": "Divine uzerinde komedi, muzik, dans, hayvanlar, spor, yemek ve daha fazlasini kesfet.",
     "videoCount_one": "{{count}} video",
     "videoCount_other": "{{count}} video"
+  },
+  "videoMeta": {
+    "viewCount_one": "{{formatted}} goruntuleme",
+    "viewCount_other": "{{formatted}} goruntuleme"
+  },
+  "verification": {
+    "humanMade": "Insan yapimi",
+    "dialog": {
+      "titleVideo": "Video dogrulama",
+      "titleArchive": "Orijinal Vine arsivi",
+      "description": "Arsiv kaynagi, Proofmode verisi, AI tarama durumu ve hosting kaynagi hakkinda detaylar.",
+      "proofModeSection": "ProofMode dogrulamasi",
+      "aiDetectionSection": "AI tespiti",
+      "aiNotScanned": "AI taramasi: henuz taranmadi",
+      "checking": "Tarama sonuclari aranıyor…",
+      "noScanResults": "Henuz tarama sonucu yok.",
+      "checkAi": "AI tarafindan uretildi mi diye kontrol et",
+      "aiLikelihood": "%{{percent}} AI tarafindan uretilmis olma ihtimali",
+      "scannedBy": "Tarayan: {{source}}",
+      "verifiedByMod": "Insan moderator tarafindan dogrulandi",
+      "learnMore": "Proofmode dogrulamasi hakkinda daha fazla bilgi",
+      "inspectTool": "ProofCheck arac ile incele",
+      "archiveBlurb": "Bu video, Internet Archive uzerinden kurtarilmis orijinal bir Vine.",
+      "archiveContext": "Vine 2017'de kapanmadan once, ArchiveTeam ve Internet Archive milyonlarca Vine'i sakladi. Bu icerik o kurtarma calismasinin bir parcasi.",
+      "originalLoops": "Orijinal istatistikler: {{count}} loop",
+      "archiveLearnMore": "Vine arsivinin korunmasi hakkinda daha fazla bilgi"
+    },
+    "intro": {
+      "proofMode": "Bu videonun gercekligi Proofmode teknolojisiyle dogrulandi.",
+      "aiHumanDivine": "Bu video Divine uzerinde barindiriliyor ve AI tespiti, ProofMode verisi olmamasina ragmen muhtemelen insan yapimi oldugunu gosteriyor.",
+      "aiHuman": "AI tespiti, ProofMode verisi olmamasina ragmen bu videonun muhtemelen insan yapimi oldugunu gosteriyor.",
+      "unverifiedDivine": "Bu video dogrulanmadi. Divine uzerinde barindiriliyor, ama henuz ProofMode verisi yok.",
+      "unverifiedExternal": "Bu video dogrulanmadi ve Divine disinda barindiriliyor. ProofMode verisi icermiyor."
+    },
+    "summary": {
+      "platinum": "Platin: Cihaz donanim onayi, kriptografik imzalar, Content Credentials (C2PA) ve AI taramasi insan kaynagini dogruluyor.",
+      "gold": "Altin: Gercek bir cihazda donanim onayi, kriptografik imzalar ve Content Credentials (C2PA) ile cekildi.",
+      "silverProof": "Gumus: Kriptografik imzalar bu videonun kayittan beri degistirilmedigini kanitliyor.",
+      "bronze": "Bronz: Temel meta veri imzalari mevcut.",
+      "silverAi": "Gumus: AI taramasi bu videonun muhtemelen bir insan tarafindan olusturuldugunu dogruluyor.",
+      "muted": "Bu video icin dogrulama verisi yok."
+    },
+    "checklist": {
+      "deviceAttestation": "Cihaz onayi",
+      "pgpSignature": "PGP imzasi",
+      "c2paContentCredentials": "C2PA Content Credentials",
+      "proofManifest": "Kanit manifestosu"
+    }
   }
 }

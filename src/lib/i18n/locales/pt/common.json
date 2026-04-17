@@ -44,7 +44,8 @@
     "yourFeed": "Seu feed"
   },
   "auth": {
-    "logInOnDivine": "Bora entrar"
+    "logInOnDivine": "Bora entrar",
+    "logIn": "Entrar"
   },
   "home": {
     "welcomeTitle": "Seu feed, suas regras.",
@@ -141,5 +142,53 @@
     "metaDescription": "Explore categorias de videos na Divine - comedia, musica, danca, animais, esportes, comida e mais.",
     "videoCount_one": "{{count}} video",
     "videoCount_other": "{{count}} videos"
+  },
+  "videoMeta": {
+    "viewCount_one": "{{formatted}} visualizacao",
+    "viewCount_other": "{{formatted}} visualizacoes"
+  },
+  "verification": {
+    "humanMade": "Feito por humanos",
+    "dialog": {
+      "titleVideo": "Verificacao de video",
+      "titleArchive": "Arquivo original do Vine",
+      "description": "Detalhes sobre a origem do arquivo, dados Proofmode, status do escaneamento de IA e fonte de hospedagem.",
+      "proofModeSection": "Verificacao ProofMode",
+      "aiDetectionSection": "Deteccao de IA",
+      "aiNotScanned": "Escaneamento de IA: ainda nao escaneado",
+      "checking": "Procurando resultados do escaneamento…",
+      "noScanResults": "Nenhum resultado de escaneamento disponivel ainda.",
+      "checkAi": "Verificar se foi gerado por IA",
+      "aiLikelihood": "{{percent}}% de probabilidade de ser gerado por IA",
+      "scannedBy": "Escaneado por: {{source}}",
+      "verifiedByMod": "Verificado por moderador humano",
+      "learnMore": "Saiba mais sobre a verificacao Proofmode",
+      "inspectTool": "Inspecionar com a ferramenta ProofCheck",
+      "archiveBlurb": "Este video e um Vine original recuperado do Internet Archive.",
+      "archiveContext": "Antes do Vine fechar em 2017, o ArchiveTeam e o Internet Archive preservaram milhoes de Vines. Este conteudo faz parte desse resgate.",
+      "originalLoops": "Estatisticas originais: {{count}} loops",
+      "archiveLearnMore": "Saiba mais sobre a preservacao do arquivo do Vine"
+    },
+    "intro": {
+      "proofMode": "A autenticidade deste video e verificada com a tecnologia Proofmode.",
+      "aiHumanDivine": "Este video esta hospedado na Divine e a deteccao de IA indica que provavelmente e humano, mesmo sem dados ProofMode anexados.",
+      "aiHuman": "A deteccao de IA indica que este video provavelmente e humano, mesmo sem dados ProofMode anexados.",
+      "unverifiedDivine": "Este video nao esta verificado. Esta hospedado na Divine, mas ainda nao tem dados ProofMode.",
+      "unverifiedExternal": "Este video nao esta verificado e esta hospedado fora da Divine. Nao inclui dados ProofMode."
+    },
+    "summary": {
+      "platinum": "Platina: Atestacao de hardware do dispositivo, assinaturas criptograficas, Content Credentials (C2PA) e o escaneamento de IA confirmam origem humana.",
+      "gold": "Ouro: Capturado em um dispositivo real com atestacao de hardware, assinaturas criptograficas e Content Credentials (C2PA).",
+      "silverProof": "Prata: Assinaturas criptograficas provam que este video nao foi alterado desde a gravacao.",
+      "bronze": "Bronze: Assinaturas basicas de metadados presentes.",
+      "silverAi": "Prata: O escaneamento de IA confirma que este video provavelmente foi criado por um humano.",
+      "muted": "Nenhum dado de verificacao disponivel para este video."
+    },
+    "checklist": {
+      "deviceAttestation": "Atestacao do dispositivo",
+      "pgpSignature": "Assinatura PGP",
+      "c2paContentCredentials": "Content Credentials C2PA",
+      "proofManifest": "Manifesto de prova"
+    }
   }
 }

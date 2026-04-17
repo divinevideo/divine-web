@@ -27,6 +27,7 @@ import { useSubdomainNavigate } from '@/hooks/useSubdomainNavigate';
 import { enhanceAuthorData } from '@/lib/generateProfile';
 import { genUserName } from '@/lib/genUserName';
 import { formatDistanceToNow } from 'date-fns';
+import { useTranslation } from 'react-i18next';
 import { formatClassicVineViewBreakdown, formatCount, formatViewCount } from '@/lib/formatUtils';
 import { getSafeProfileImage } from '@/lib/imageUtils';
 import { useBadges } from '@/hooks/useBadges';
@@ -75,6 +76,7 @@ export function FullscreenVideoItem({
   viewCount = 0,
   trafficSource,
 }: FullscreenVideoItemProps) {
+  const { t } = useTranslation();
   // Subscribe to bandwidth tier changes for adaptive HLS quality
   const _bandwidthTier = useBandwidthTier();
 
@@ -385,7 +387,7 @@ export function FullscreenVideoItem({
               {viewCount > 0 && (
                 <div className="flex items-center gap-1 text-sm text-white/80 drop-shadow-lg mt-1">
                   <Eye className="h-3 w-3" />
-                  <span>{classicViewBreakdown || formatViewCount(viewCount)}</span>
+                  <span>{classicViewBreakdown || formatViewCount(viewCount, t)}</span>
                 </div>
               )}
             </div>
