@@ -214,7 +214,7 @@ function VideoLeaderboard({ period }: { period: TimePeriod }) {
   if (!videos?.length) {
     return (
       <div className="text-center py-8 text-muted-foreground">
-        No videos found for this time period
+        Nothing on the leaderboard yet. Zoom out or check back soon.
       </div>
     );
   }
@@ -315,7 +315,7 @@ function CreatorLeaderboard({ period }: { period: TimePeriod }) {
   if (!creators?.length) {
     return (
       <div className="text-center py-8 text-muted-foreground">
-        No creators found
+        No creators here yet. The leaderboard is wide open.
       </div>
     );
   }

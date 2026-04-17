@@ -35,8 +35,8 @@ export function PopularHashtagsCard() {
           </div>
         ) : popularHashtags.length === 0 ? (
           <div className="py-4 text-center">
-            <p className="text-sm text-muted-foreground">No hashtags found</p>
-            <p className="text-xs text-muted-foreground mt-1">Check back later for trending tags</p>
+            <p className="text-sm text-muted-foreground">Quiet on the hashtag front.</p>
+            <p className="text-xs text-muted-foreground mt-1">Check back soon — trends move fast.</p>
           </div>
         ) : (
           <div className="space-y-2">

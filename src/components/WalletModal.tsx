@@ -145,7 +145,7 @@ const WalletContent = forwardRef<HTMLDivElement, {
       {/* Connected Wallets List */}
       {connections.length === 0 ? (
         <div className="text-center py-6 text-muted-foreground">
-          <p className="text-sm">No wallets connected</p>
+          <p className="text-sm">No wallets yet. Plug one in to start zapping.</p>
         </div>
       ) : (
         <div className="space-y-2">

@@ -468,7 +468,7 @@ export default function LinkedAccountsSettingsPage() {
             </div>
           ) : (
             <p className="text-center text-muted-foreground py-8">
-              No linked accounts yet. Add one below!
+              No accounts linked yet. Connect one below and claim your name.
             </p>
           )}
         </CardContent>
