@@ -2,6 +2,7 @@
 // ABOUTME: MUST be defined outside of parent component to prevent remounting on re-renders
 
 import { VideoCard } from '@/components/VideoCard';
+import type { CardAccent } from '@/components/ui/card';
 import { useDeferredVideoMetrics } from '@/hooks/useDeferredVideoMetrics';
 import { useOptimisticLike } from '@/hooks/useOptimisticLike';
 import { useOptimisticRepost } from '@/hooks/useOptimisticRepost';
@@ -24,6 +25,7 @@ interface VideoCardWithMetricsProps {
   onEnterFullscreen?: () => void;
   onPlaybackStarted?: () => void;
   navigationContext?: VideoNavigationContext;
+  accent?: CardAccent;
 }
 
 // IMPORTANT: This component is defined at module level to prevent React from
@@ -40,6 +42,7 @@ function VideoCardWithMetricsInner({
   onEnterFullscreen,
   onPlaybackStarted,
   navigationContext,
+  accent,
 }: VideoCardWithMetricsProps) {
   const { user } = useCurrentUser();
   const { toast } = useToast();
@@ -126,6 +129,7 @@ function VideoCardWithMetricsInner({
       showComments={showComments}
       navigationContext={navigationContext}
       videoIndex={index}
+      accent={accent}
       data-testid="video-card"
     />
   );
