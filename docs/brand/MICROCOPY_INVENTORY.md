@@ -12,15 +12,16 @@ a follow-up pass. They still load fine and carry the older corporate phrasing
 on translation. Flag for a future PR: run the translation pipeline from the
 updated EN files.
 
+
 | File | Line | Kind | Current | Proposed | Done? |
 |------|------|------|---------|----------|-------|
-| src/components/AddToListDialog.tsx | 70 | toast() | Added to lists |  |  |
-| src/components/AddToListDialog.tsx | 81 | toast() | Error |  |  |
-| src/components/AddToListDialog.tsx | 103 | toast() | List created |  |  |
-| src/components/AddToListDialog.tsx | 114 | toast() | Error |  |  |
+| src/components/AddToListDialog.tsx | 70 | toast() | Stashed. | Stashed. | done |
+| src/components/AddToListDialog.tsx | 81 | toast() | Didn\ | Didn't add. | done |
+| src/components/AddToListDialog.tsx | 103 | toast() | List created. | List created. | done |
+| src/components/AddToListDialog.tsx | 114 | toast() | Didn\ | Didn't make it. | done |
 | src/components/AddToListDialog.tsx | 287 | placeholder | My Favorite Vines |  |  |
 | src/components/AddToListDialog.tsx | 297 | placeholder | A collection of my favorite videos... |  |  |
-| src/components/AddToListDialog.tsx | 266 | empty-state | You don't have any lists yet
+| src/components/AddToListDialog.tsx | 266 | empty-state | No lists yet. Make one and start stashing.
                  |  |  |
 | src/components/AppFooter.tsx | 101 | aria-label | Social media links |  |  |
 | src/components/AppFooter.tsx | 106 | aria-label | Follow us on Instagram |  |  |
@@ -92,65 +93,64 @@ updated EN files.
 | src/components/BottomNav.tsx | 69 | t() key | nav.search |  |  |
 | src/components/BottomNav.tsx | 91 | t() key | nav.notifications |  |  |
 | src/components/BottomNav.tsx | 107 | t() key | nav.profile |  |  |
-| src/components/CreateListDialog.tsx | 57 | toast() | Error |  |  |
-| src/components/CreateListDialog.tsx | 66 | toast() | Error |  |  |
-| src/components/CreateListDialog.tsx | 89 | toast() | List created |  |  |
-| src/components/CreateListDialog.tsx | 98 | toast() | Error |  |  |
+| src/components/CreateListDialog.tsx | 57 | toast() | Name it. | Name it. | done |
+| src/components/CreateListDialog.tsx | 66 | toast() | Log in first. | Log in first. | done |
+| src/components/CreateListDialog.tsx | 89 | toast() | List created. | List created. | done |
+| src/components/CreateListDialog.tsx | 98 | toast() | Didn\ | Didn't make it. | done |
 | src/components/CreateListDialog.tsx | 127 | placeholder | My Favorite Vines |  |  |
 | src/components/CreateListDialog.tsx | 138 | placeholder | A collection of hilarious and creative videos... |  |  |
 | src/components/CreateListDialog.tsx | 151 | placeholder | https://example.com/image.jpg |  |  |
 | src/components/CreateListDialog.tsx | 193 | placeholder | comedy, funny, animals... |  |  |
 | src/components/DeleteCommentDialog.tsx | 75 | placeholder | Why are you deleting this comment? |  |  |
 | src/components/DeleteVideoDialog.tsx | 80 | placeholder | Why are you deleting this video? |  |  |
-| src/components/EditListDialog.tsx | 67 | toast() | Error |  |  |
-| src/components/EditListDialog.tsx | 90 | toast() | List updated |  |  |
-| src/components/EditListDialog.tsx | 97 | toast() | Error |  |  |
+| src/components/EditListDialog.tsx | 67 | toast() | Name it. | Name it. | done |
+| src/components/EditListDialog.tsx | 90 | toast() | List saved. | List saved. | done |
+| src/components/EditListDialog.tsx | 97 | toast() | Didn\ | Didn't save. | done |
 | src/components/EditListDialog.tsx | 126 | placeholder | My Favorite Vines |  |  |
 | src/components/EditListDialog.tsx | 137 | placeholder | A collection of hilarious and creative videos... |  |  |
 | src/components/EditListDialog.tsx | 150 | placeholder | https://example.com/image.jpg |  |  |
 | src/components/EditListDialog.tsx | 192 | placeholder | comedy, funny, animals... |  |  |
-| src/components/EditProfileForm.tsx | 71 | toast() | Success |  |  |
-| src/components/EditProfileForm.tsx | 77 | toast() | Error |  |  |
-| src/components/EditProfileForm.tsx | 87 | toast() | Error |  |  |
-| src/components/EditProfileForm.tsx | 121 | toast() | Success |  |  |
-| src/components/EditProfileForm.tsx | 132 | toast() | Error |  |  |
+| src/components/EditProfileForm.tsx | 71 | toast() | Looking good. | Looking good. | done |
+| src/components/EditProfileForm.tsx | 77 | toast() | Upload snagged. | Upload snagged. | done |
+| src/components/EditProfileForm.tsx | 87 | toast() | Log in first. | Log in first. | done |
+| src/components/EditProfileForm.tsx | 121 | toast() | Profile saved. | Profile saved. | done |
+| src/components/EditProfileForm.tsx | 132 | toast() | Save snagged. | Save snagged. | done |
 | src/components/EditProfileForm.tsx | 151 | placeholder | Your name |  |  |
 | src/components/EditProfileForm.tsx | 168 | placeholder | https://example.com/profile.jpg |  |  |
-| src/components/EditProfileForm.tsx | 185 | placeholder | Tell others about yourself |  |  |
+| src/components/EditProfileForm.tsx | 185 | placeholder | Who are you? What are you into? | Who are you? What are you into? | done |
 | src/components/EditProfileForm.tsx | 206 | placeholder | https://yourwebsite.com |  |  |
 | src/components/EditProfileForm.tsx | 223 | placeholder | you@example.com |  |  |
-| src/components/FullscreenFeed.tsx | 80 | toast() | Error |  |  |
-| src/components/FullscreenFeed.tsx | 103 | toast() | Error |  |  |
-| src/components/FullscreenFeed.tsx | 123 | toast() | Download started |  |  |
-| src/components/FullscreenVideoItem.tsx | 201 | toast() | User muted |  |  |
-| src/components/FullscreenVideoItem.tsx | 206 | toast() | Error |  |  |
-| src/components/HashtagExplorer.tsx | 207 | placeholder | Search hashtags... |  |  |
+| src/components/FullscreenFeed.tsx | 80 | toast() | Can\ | Can't repost this one. | done |
+| src/components/FullscreenFeed.tsx | 103 | toast() | Nothing to download. | Nothing to download. | done |
+| src/components/FullscreenFeed.tsx | 123 | toast() | Downloading. | Downloading. | done |
+| src/components/FullscreenVideoItem.tsx | 201 | toast() | Muted. | Muted. | done |
+| src/components/FullscreenVideoItem.tsx | 206 | toast() | Mute didn\ | Mute didn't land. | done |
+| src/components/HashtagExplorer.tsx | 207 | placeholder | Search hashtags... |  | - Phase 5 |
 | src/components/LanguageMenu.tsx | 46 | t() key | common.language |  |  |
 | src/components/LanguageMenu.tsx | 79 | t() key | common.language |  |  |
 | src/components/LinkedAccounts.tsx | 149 | empty-state | No proof |  |  |
 | src/components/PWAInstallPrompt.tsx | 147 | aria-label | Close |  |  |
 | src/components/PWAInstallPrompt.tsx | 184 | aria-label | Close |  |  |
-| src/components/PinnedVideosSection.tsx | 135 | toast() | Unpinned |  |  |
-| src/components/PinnedVideosSection.tsx | 137 | toast() | Error |  |  |
-| src/components/PopularHashtagsCard.tsx | 38 | empty-state | No hashtags found |  |  |
-| src/components/ProfileHeader.tsx | 174 | toast() | Copied! |  |  |
-| src/components/ProfileHeader.tsx | 179 | toast() | Copy failed |  |  |
+| src/components/PinnedVideosSection.tsx | 135 | toast() | Unpinned. | Unpinned. | done |
+| src/components/PinnedVideosSection.tsx | 137 | toast() | Unpin snagged. | Unpin snagged. | done |
+| src/components/ProfileHeader.tsx | 174 | toast() | Copied. | Copied. | done |
+| src/components/ProfileHeader.tsx | 179 | toast() | Copy hit a wall. | Copy hit a wall. | done |
 | src/components/RelaySelector.tsx | 34 | placeholder | Select relay |  |  |
-| src/components/ReportContentDialog.tsx | 52 | toast() | Error |  |  |
-| src/components/ReportContentDialog.tsx | 71 | toast() | Report submitted |  |  |
-| src/components/ReportContentDialog.tsx | 81 | toast() | Error |  |  |
-| src/components/ReportContentDialog.tsx | 163 | placeholder | Provide any additional context that might be helpful... |  |  |
+| src/components/ReportContentDialog.tsx | 52 | toast() | Nothing to report. | Nothing to report. | done |
+| src/components/ReportContentDialog.tsx | 71 | toast() | Report sent. | Report sent. | done |
+| src/components/ReportContentDialog.tsx | 81 | toast() | Report didn\ | Report didn't send. | done |
+| src/components/ReportContentDialog.tsx | 163 | placeholder | Anything else that might help... | Anything else that might help... | done |
 | src/components/ThumbnailPlayer.tsx | 169 | aria-label | Play video |  |  |
 | src/components/VerifiedOnlyToggle.tsx | 30 | t() key | discovery.verifiedOnly |  |  |
 | src/components/VerifiedOnlyToggle.tsx | 35 | t() key | discovery.verifiedOnlyHint |  |  |
 | src/components/VideoCard.test.tsx | 74 | aria-label | Play video |  |  |
-| src/components/VideoCard.tsx | 404 | toast() | User muted |  |  |
-| src/components/VideoCard.tsx | 409 | toast() | Error |  |  |
-| src/components/VideoCard.tsx | 438 | toast() | Unpinned |  |  |
-| src/components/VideoCard.tsx | 441 | toast() | Pinned |  |  |
-| src/components/VideoCard.tsx | 444 | toast() | Error |  |  |
-| src/components/VideoCard.tsx | 454 | toast() | Error |  |  |
-| src/components/VideoCard.tsx | 477 | toast() | Download started |  |  |
+| src/components/VideoCard.tsx | 404 | toast() | Muted. | Muted. | done |
+| src/components/VideoCard.tsx | 409 | toast() | Mute didn\ | Mute didn't land. | done |
+| src/components/VideoCard.tsx | 438 | toast() | Unpinned. | Unpinned. | done |
+| src/components/VideoCard.tsx | 441 | toast() | Pinned. | Pinned. | done |
+| src/components/VideoCard.tsx | 444 | toast() | Pin snagged. | Pin snagged. | done |
+| src/components/VideoCard.tsx | 454 | toast() | Nothing to download. | Nothing to download. | done |
+| src/components/VideoCard.tsx | 477 | toast() | Downloading. | Downloading. | done |
 | src/components/VideoCard.tsx | 706 | aria-label | Enter fullscreen |  |  |
 | src/components/VideoCard.tsx | 846 | aria-label | View who liked this video |  |  |
 | src/components/VideoCard.tsx | 877 | aria-label | View who reposted this video |  |  |
@@ -162,12 +162,12 @@ updated EN files.
 | src/components/VideoCardWithMetrics.tsx | 91 | toast() | Error |  |  |
 | src/components/VideoGrid.tsx | 112 | empty-state | No videos to display
                |  |  |
-| src/components/VideoMetadataForm.tsx | 90 | toast() | Title Required |  |  |
-| src/components/VideoMetadataForm.tsx | 114 | toast() | Video Published! |  |  |
-| src/components/VideoMetadataForm.tsx | 122 | toast() | Publishing Failed |  |  |
-| src/components/VideoMetadataForm.tsx | 161 | placeholder | Give your vine a title |  |  |
-| src/components/VideoMetadataForm.tsx | 177 | placeholder | Add a description... |  |  |
-| src/components/VideoMetadataForm.tsx | 197 | placeholder | Add hashtags (press Enter) |  |  |
+| src/components/VideoMetadataForm.tsx | 90 | toast() | Give it a title. | Give it a title. | done |
+| src/components/VideoMetadataForm.tsx | 114 | toast() | Your loop is live. | Your loop is live. | done |
+| src/components/VideoMetadataForm.tsx | 122 | toast() | Didn\ | Didn't make it out. | done |
+| src/components/VideoMetadataForm.tsx | 161 | placeholder | Name your loop | Name your loop | done |
+| src/components/VideoMetadataForm.tsx | 177 | placeholder | Say something about it... | Say something about it... | done |
+| src/components/VideoMetadataForm.tsx | 197 | placeholder | Tag it up (hit Enter) | Tag it up (hit Enter) | done |
 | src/components/VideoVerificationBadgeRow.tsx | 50 | aria-label | View video verification details |  |  |
 | src/components/VideoVerificationDetailsDialog.tsx | 208 | empty-state | No scan results available yet.
                |  |  |
@@ -176,20 +176,20 @@ updated EN files.
 | src/components/WalletModal.tsx | 259 | toast() | Active wallet changed |  |  |
 | src/components/WalletModal.tsx | 50 | placeholder | My Lightning Wallet |  |  |
 | src/components/WalletModal.tsx | 59 | placeholder | nostr+walletconnect://... |  |  |
-| src/components/WalletModal.tsx | 148 | empty-state | No wallets connected |  |  |
-| src/components/ZapDialog.tsx | 306 | toast() | Invoice copied |  |  |
+| src/components/WalletModal.tsx | 148 | empty-state | No wallets yet. Plug one in to start zapping. | No wallets yet. Plug one in to start zapping. | done |
+| src/components/ZapDialog.tsx | 306 | toast() | Invoice copied. | Invoice copied. | done |
 | src/components/ZapDialog.tsx | 205 | placeholder | Custom amount |  |  |
-| src/components/ZapDialog.tsx | 212 | placeholder | Add a comment (optional) |  |  |
-| src/components/auth/InviteCodeForm.tsx | 37 | placeholder | Enter your invite code |  |  |
-| src/components/auth/InviteCodeForm.tsx | 53 | empty-state | No invite? Join the waitlist
+| src/components/ZapDialog.tsx | 212 | placeholder | Say something (optional) | Say something (optional) | done |
+| src/components/auth/InviteCodeForm.tsx | 37 | placeholder | Paste your invite code | Paste your invite code | done |
+| src/components/auth/InviteCodeForm.tsx | 53 | empty-state | No invite? Get on the waitlist.
          |  |  |
 | src/components/auth/LoginDialog.tsx | 398 | placeholder | nsec1... |  |  |
 | src/components/auth/LoginDialog.tsx | 440 | placeholder | bunker:// |  |  |
 | src/components/auth/WaitlistForm.tsx | 55 | placeholder | you@example.com |  |  |
-| src/components/comments/Comment.tsx | 84 | toast() | Login required |  |  |
-| src/components/comments/Comment.tsx | 98 | toast() | User muted |  |  |
-| src/components/comments/Comment.tsx | 104 | toast() | Error |  |  |
-| src/components/comments/Comment.tsx | 263 | placeholder | Write a reply... |  |  |
+| src/components/comments/Comment.tsx | 84 | toast() | Log in first. | Log in first. | done |
+| src/components/comments/Comment.tsx | 98 | toast() | Muted. | Muted. | done |
+| src/components/comments/Comment.tsx | 104 | toast() | Mute didn\ | Mute didn't land. | done |
+| src/components/comments/Comment.tsx | 263 | placeholder | Write back... | Write back... | done |
 | src/components/comments/Comment.tsx | 218 | aria-label | Comment options |  |  |
 | src/components/comments/CommentForm.tsx | 31 | t() key | comments.writeAComment |  |  |
 | src/components/comments/CommentForm.tsx | 53 | t() key | comments.signInToReply |  |  |
@@ -208,44 +208,44 @@ updated EN files.
 | src/components/ui/pagination.tsx | 66 | aria-label | Go to previous page |  |  |
 | src/components/ui/pagination.tsx | 82 | aria-label | Go to next page |  |  |
 | src/components/ui/sidebar.tsx | 278 | aria-label | Toggle Sidebar |  |  |
-| src/hooks/useDeleteComment.ts | 62 | toast() | Comment Deleted |  |  |
-| src/hooks/useDeleteComment.ts | 75 | toast() | Delete Failed |  |  |
-| src/hooks/useDeleteVideo.ts | 63 | toast() | Video Deleted |  |  |
-| src/hooks/useDeleteVideo.ts | 82 | toast() | Delete Failed |  |  |
+| src/hooks/useDeleteComment.ts | 62 | toast() | Comment yanked. | Comment yanked. | done |
+| src/hooks/useDeleteComment.ts | 75 | toast() | Delete snagged. | Delete snagged. | done |
+| src/hooks/useDeleteVideo.ts | 63 | toast() | Loop gone. | Loop gone. | done |
+| src/hooks/useDeleteVideo.ts | 82 | toast() | Delete snagged. | Delete snagged. | done |
 | src/hooks/useDirectMessages.ts | 293 | toast() | Message failed |  |  |
-| src/hooks/useMediaRecorder.ts | 89 | toast() | Camera Access Denied |  |  |
-| src/hooks/useNWC.ts | 45 | toast() | Invalid NWC URI |  |  |
-| src/hooks/useNWC.ts | 55 | toast() | Connection already exists |  |  |
-| src/hooks/useNWC.ts | 105 | toast() | Wallet connected |  |  |
-| src/hooks/useNWC.ts | 115 | toast() | Connection failed |  |  |
-| src/hooks/useNWC.ts | 140 | toast() | Wallet disconnected |  |  |
-| src/hooks/useOptimisticLike.ts | 65 | toast() | Unliked! |  |  |
-| src/hooks/useOptimisticLike.ts | 100 | toast() | Liked! |  |  |
-| src/hooks/useOptimisticLike.ts | 112 | toast() | Error |  |  |
-| src/hooks/useOptimisticRepost.ts | 72 | toast() | Un-reposted! |  |  |
-| src/hooks/useOptimisticRepost.ts | 102 | toast() | Reposted! |  |  |
-| src/hooks/useOptimisticRepost.ts | 114 | toast() | Error |  |  |
-| src/hooks/useShare.ts | 28 | toast() | Link copied! |  |  |
-| src/hooks/useShare.ts | 33 | toast() | Error |  |  |
-| src/hooks/useVideoUpload.ts | 53 | toast() | Multi-segment Recording |  |  |
-| src/hooks/useVideoUpload.ts | 122 | toast() | Upload Failed |  |  |
+| src/hooks/useMediaRecorder.ts | 89 | toast() | Camera\ | Camera's locked out. | done |
+| src/hooks/useNWC.ts | 45 | toast() | That URI isn\ | That URI isn't right. | done |
+| src/hooks/useNWC.ts | 55 | toast() | Already plugged in. | Already plugged in. | done |
+| src/hooks/useNWC.ts | 105 | toast() | Wallet connected. | Wallet connected. | done |
+| src/hooks/useNWC.ts | 115 | toast() | Connection didn\ | Connection didn't take. | done |
+| src/hooks/useNWC.ts | 140 | toast() | Wallet unplugged. | Wallet unplugged. | done |
+| src/hooks/useOptimisticLike.ts | 65 | toast() | Unliked. | Unliked. | done |
+| src/hooks/useOptimisticLike.ts | 100 | toast() | Liked. | Liked. | done |
+| src/hooks/useOptimisticLike.ts | 112 | toast() | Error |  | - factual error |
+| src/hooks/useOptimisticRepost.ts | 72 | toast() | Un-reposted. | Un-reposted. | done |
+| src/hooks/useOptimisticRepost.ts | 102 | toast() | Reposted. | Reposted. | done |
+| src/hooks/useOptimisticRepost.ts | 114 | toast() | Error |  | - factual error |
+| src/hooks/useShare.ts | 28 | toast() | Link copied. | Link copied. | done |
+| src/hooks/useShare.ts | 33 | toast() | Copy hit a wall. | Copy hit a wall. | done |
+| src/hooks/useVideoUpload.ts | 53 | toast() | Multi-clip recording. | Multi-clip recording. | done |
+| src/hooks/useVideoUpload.ts | 122 | toast() | Upload snagged. | Upload snagged. | done |
 | src/hooks/useWindowNostr.ts | 52 | empty-state | No bunker connection |  |  |
-| src/hooks/useZaps.ts | 142 | toast() | Login required |  |  |
+| src/hooks/useZaps.ts | 142 | toast() | Log in first. | Log in first. | done |
 | src/hooks/useZaps.ts | 152 | toast() | Event not found |  |  |
 | src/hooks/useZaps.ts | 163 | toast() | Author not found |  |  |
 | src/hooks/useZaps.ts | 174 | toast() | Lightning address not found |  |  |
 | src/hooks/useZaps.ts | 186 | toast() | Zap endpoint not found |  |  |
-| src/hooks/useZaps.ts | 243 | toast() | Zap successful! |  |  |
+| src/hooks/useZaps.ts | 243 | toast() | Zapped. | Zapped. | done |
 | src/hooks/useZaps.ts | 259 | toast() | NWC payment failed |  |  |
-| src/hooks/useZaps.ts | 275 | toast() | Zap successful! |  |  |
+| src/hooks/useZaps.ts | 275 | toast() | Zapped. | Zapped. | done |
 | src/hooks/useZaps.ts | 290 | toast() | WebLN payment failed |  |  |
 | src/hooks/useZaps.ts | 305 | toast() | Zap failed |  |  |
 | src/hooks/useZaps.ts | 314 | toast() | Zap failed |  |  |
 | src/lib/constants/categories.ts | 92 | t() key | categories.${name.toLowerCase()} |  |  |
 | src/pages/AboutPage.tsx | 23 | t() key | title |  |  |
 | src/pages/AboutPage.tsx | 29 | t() key | sections.story |  |  |
-| src/pages/AnalyticsPage.tsx | 183 | empty-state | No videos yet |  |  |
-| src/pages/AnalyticsPage.tsx | 308 | empty-state | No engagement data yet
+| src/pages/AnalyticsPage.tsx | 183 | empty-state | Nothing to graph yet. | Nothing to graph yet. | done |
+| src/pages/AnalyticsPage.tsx | 308 | empty-state | No engagement to brag about yet.
                        |  |  |
 | src/pages/AuthenticityPage.tsx | 25 | t() key | hero.title |  |  |
 | src/pages/AuthenticityPage.tsx | 37 | t() key | sections.legacy |  |  |
@@ -262,7 +262,7 @@ updated EN files.
 | src/pages/CategoryPage.tsx | 117 | aria-label | View mode selection |  |  |
 | src/pages/CategoryPage.tsx | 64 | empty-state | No category specified in the URL
                |  |  |
-| src/pages/ConversationPage.tsx | 278 | empty-state | No messages yet |  |  |
+| src/pages/ConversationPage.tsx | 278 | empty-state | No messages yet |  | - Phase 5 |
 | src/pages/DMCAPage.tsx | 15 | t() key | title |  |  |
 | src/pages/DMCAPage.tsx | 16 | t() key | updated |  |  |
 | src/pages/DMCAPage.tsx | 21 | t() key | sections.overview |  |  |
@@ -312,9 +312,9 @@ updated EN files.
 | src/pages/HomePage.tsx | 94 | t() key | home.sortBy |  |  |
 | src/pages/HumanCreatedPage.tsx | 21 | t() key | title |  |  |
 | src/pages/HumanCreatedPage.tsx | 33 | t() key | sections.badge |  |  |
-| src/pages/LeaderboardPage.tsx | 217 | empty-state | No videos found for this time period
+| src/pages/LeaderboardPage.tsx | 217 | empty-state | Nothing on the leaderboard yet. Zoom out or check back soon.
        |  |  |
-| src/pages/LeaderboardPage.tsx | 318 | empty-state | No creators found
+| src/pages/LeaderboardPage.tsx | 318 | empty-state | No creators here yet. The leaderboard is wide open.
        |  |  |
 | src/pages/LinkedAccountsSettingsPage.tsx | 345 | toast() | Error |  |  |
 | src/pages/LinkedAccountsSettingsPage.tsx | 355 | toast() | Error |  |  |
@@ -324,19 +324,17 @@ updated EN files.
 | src/pages/LinkedAccountsSettingsPage.tsx | 391 | toast() | Error |  |  |
 | src/pages/LinkedAccountsSettingsPage.tsx | 183 | empty-state | No proof
        |  |  |
-| src/pages/LinkedAccountsSettingsPage.tsx | 470 | empty-state | No linked accounts yet. Add one below!
+| src/pages/LinkedAccountsSettingsPage.tsx | 470 | empty-state | No accounts linked yet. Connect one below and claim your name.
              |  |  |
 | src/pages/ListDetailPage.tsx | 245 | toast() | List deleted |  |  |
 | src/pages/ListDetailPage.tsx | 251 | toast() | Error |  |  |
 | src/pages/ListDetailPage.tsx | 523 | toast() | Video removed |  |  |
 | src/pages/ListDetailPage.tsx | 528 | toast() | Error |  |  |
-| src/pages/ListsPage.tsx | 223 | empty-state | No trending lists found
-                 |  |  |
-| src/pages/ListsPage.tsx | 272 | empty-state | No lists found from people you follow
+| src/pages/ListsPage.tsx | 223 | empty-state | No lists trending right now. Be the curator we need.
                  |  |  |
 | src/pages/MessagesPage.tsx | 290 | empty-state | No matching people found.
                      |  |  |
-| src/pages/MessagesPage.tsx | 339 | empty-state | No other messages yet |  |  |
+| src/pages/MessagesPage.tsx | 339 | empty-state | No other messages yet |  | - Phase 5 |
 | src/pages/MessagesPage.tsx | 199 | t() key | messages.badge |  |  |
 | src/pages/MessagesPage.tsx | 202 | t() key | messages.title |  |  |
 | src/pages/MessagesPage.tsx | 204 | t() key | messages.subtitle |  |  |
@@ -355,15 +353,14 @@ updated EN files.
 | src/pages/ModerationSettingsPage.tsx | 179 | toast() | Unmuted |  |  |
 | src/pages/ModerationSettingsPage.tsx | 184 | toast() | Error |  |  |
 | src/pages/ModerationSettingsPage.tsx | 409 | placeholder | Why are you muting this? |  |  |
-| src/pages/ModerationSettingsPage.tsx | 323 | empty-state | No filters active - all content will be shown
+| src/pages/ModerationSettingsPage.tsx | 323 | empty-state | No filters running — you're seeing everything.
                    |  |  |
-| src/pages/ModerationSettingsPage.tsx | 449 | empty-state | No muted users
+| src/pages/ModerationSettingsPage.tsx | 449 | empty-state | No one's on mute. Peaceful.
                  |  |  |
-| src/pages/ModerationSettingsPage.tsx | 480 | empty-state | No muted hashtags
+| src/pages/ModerationSettingsPage.tsx | 480 | empty-state | No hashtags muted yet.
                  |  |  |
-| src/pages/ModerationSettingsPage.tsx | 511 | empty-state | No muted keywords
+| src/pages/ModerationSettingsPage.tsx | 511 | empty-state | No muted keywords. Your feed is raw.
                  |  |  |
-| src/pages/NotificationsPage.tsx | 103 | empty-state | No notifications yet |  |  |
 | src/pages/OpenSourcePage.tsx | 245 | empty-state | No vendor lock-in or corporate control
                  |  |  |
 | src/pages/OpenSourcePage.tsx | 20 | t() key | title |  |  |
@@ -387,10 +384,7 @@ updated EN files.
 | src/pages/SafetyPage.tsx | 189 | t() key | sections.automated |  |  |
 | src/pages/SafetyPage.tsx | 198 | t() key | sections.appeals |  |  |
 | src/pages/SafetyPage.tsx | 206 | t() key | sections.updates |  |  |
-| src/pages/SearchPage.tsx | 314 | placeholder | Search or paste an npub, note, nevent, naddr, or d tag... |  |  |
-| src/pages/SearchPage.tsx | 403 | empty-state | No results found |  |  |
-| src/pages/SearchPage.tsx | 524 | empty-state | No more results |  |  |
-| src/pages/SearchPage.tsx | 706 | empty-state | No results found |  |  |
+| src/pages/SearchPage.tsx | 314 | placeholder | Search — or paste an npub, note, nevent, naddr, or d tag... | Search — or paste an npub... | done |
 | src/pages/Support.tsx | 80 | t() key | support.title |  |  |
 | src/pages/Support.tsx | 82 | t() key | support.subtitle |  |  |
 | src/pages/Support.tsx | 89 | t() key | support.helpCenterTitle |  |  |
