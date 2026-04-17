@@ -20,4 +20,17 @@ describe('BrandLogo', () => {
     expect(el.className).not.toMatch(/font-logo/);
     expect(el.className).not.toMatch(/pacifico/i);
   });
+
+  it('applies Bricolage Grotesque via inline style', () => {
+    // <span> does not inherit from the h1-h6 selector, so the inline style
+    // is load-bearing. Guard against accidental removal.
+    render(<BrandLogo />);
+    const el = screen.getByText('Divine');
+    expect(el.style.fontFamily).toMatch(/Bricolage Grotesque/);
+  });
+
+  it('applies the brand green text color class', () => {
+    render(<BrandLogo />);
+    expect(screen.getByText('Divine').className).toMatch(/text-brand-green/);
+  });
 });
