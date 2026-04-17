@@ -1,11 +1,11 @@
 // ABOUTME: Resolves the correct pubkey for a subdomain when the KV store mapping is stale
-// ABOUTME: Searches relay.nostr.band via NIP-50 to find the profile whose NIP-05 matches the subdomain
+// ABOUTME: Fans out a NIP-50 search across NIP05_SEARCH_RELAYS to find the profile whose NIP-05 matches the subdomain
 
 import { useQuery } from '@tanstack/react-query';
 import { NRelay1 } from '@nostrify/nostrify';
 import { nip19 } from 'nostr-tools';
 import { getSubdomainUser } from '@/hooks/useSubdomainUser';
-import { SEARCH_RELAY } from '@/config/relays';
+import { NIP05_SEARCH_RELAYS } from '@/config/relays';
 
 interface ResolvedPubkey {
   /** The pubkey to use (either resolved or original fallback) */
@@ -29,39 +29,34 @@ export function isNip05MatchForSubdomain(nip05: string, subdomain: string, apexD
   return lower === `_@${subLower}.${apexDomain}` || lower === `${subLower}@${apexDomain}`;
 }
 
-/**
- * Search for the correct pubkey when the subdomain's KV mapping is stale.
- * Connects to relay.nostr.band, does a NIP-50 search for profiles mentioning
- * the subdomain, and finds the one whose NIP-05 matches.
- */
-async function searchForCorrectPubkey(subdomain: string, apexDomain: string): Promise<string | null> {
-  const searchTerm = `${subdomain}.${apexDomain}`;
+async function searchRelayForMatch(
+  relayUrl: string,
+  subdomain: string,
+  apexDomain: string,
+  searchTerm: string,
+  signal: AbortSignal,
+): Promise<string | null> {
   let relay: NRelay1 | null = null;
-
   try {
-    relay = new NRelay1(SEARCH_RELAY.url);
-
+    relay = new NRelay1(relayUrl);
     const events = await relay.query(
       [{ kinds: [0], search: searchTerm, limit: 20 }],
-      { signal: AbortSignal.timeout(10000) },
+      { signal },
     );
-
     for (const event of events) {
       try {
         const metadata = JSON.parse(event.content);
         if (metadata.nip05 && isNip05MatchForSubdomain(metadata.nip05, subdomain, apexDomain)) {
-          console.log(`[useResolveSubdomainPubkey] Found correct pubkey: ${event.pubkey} via NIP-05: ${metadata.nip05}`);
+          console.log(`[useResolveSubdomainPubkey] Found correct pubkey via ${relayUrl}: ${event.pubkey} (NIP-05: ${metadata.nip05})`);
           return event.pubkey;
         }
       } catch {
         // Skip events with invalid JSON content
       }
     }
-
-    console.log(`[useResolveSubdomainPubkey] No matching NIP-05 found for ${searchTerm}`);
     return null;
   } catch (err) {
-    console.error('[useResolveSubdomainPubkey] Search failed:', err);
+    console.warn(`[useResolveSubdomainPubkey] Relay ${relayUrl} search failed:`, err);
     return null;
   } finally {
     try {
@@ -73,12 +68,37 @@ async function searchForCorrectPubkey(subdomain: string, apexDomain: string): Pr
 }
 
 /**
+ * Search for the correct pubkey when the subdomain's KV mapping is stale.
+ * Fans out a NIP-50 search across NIP05_SEARCH_RELAYS in parallel.
+ * Returns the first profile whose NIP-05 matches the subdomain.
+ */
+async function searchForCorrectPubkey(subdomain: string, apexDomain: string): Promise<string | null> {
+  const searchTerm = `${subdomain}.${apexDomain}`;
+  const signal = AbortSignal.timeout(10000);
+
+  const results = await Promise.allSettled(
+    NIP05_SEARCH_RELAYS.map(r =>
+      searchRelayForMatch(r.url, subdomain, apexDomain, searchTerm, signal),
+    ),
+  );
+
+  for (const result of results) {
+    if (result.status === 'fulfilled' && result.value) {
+      return result.value;
+    }
+  }
+
+  console.log(`[useResolveSubdomainPubkey] No matching NIP-05 found for ${searchTerm}`);
+  return null;
+}
+
+/**
  * Hook to resolve the correct pubkey for a subdomain profile when the
  * edge worker detects a NIP-05 mismatch (stale KV store mapping).
  *
  * When nip05Stale is false, returns the original pubkey immediately with no relay queries.
- * When nip05Stale is true, searches relay.nostr.band for the profile whose NIP-05
- * matches this subdomain, and returns the resolved pubkey.
+ * When nip05Stale is true, fans out a NIP-50 search across NIP05_SEARCH_RELAYS to find
+ * the profile whose NIP-05 matches this subdomain, and returns the resolved pubkey.
  */
 export function useResolveSubdomainPubkey(): ResolvedPubkey {
   const subdomainUser = getSubdomainUser();

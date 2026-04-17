@@ -57,7 +57,7 @@
         'wss://relay.divine.video',
         'wss://relay.damus.io',
         'wss://nos.lol',
-        'wss://relay.nostr.band',
+        'wss://relay.primal.net',
         'wss://cache2.primal.net/v1'
     ];
     const RELAY_TIMEOUT = 8000;

@@ -28,7 +28,11 @@ vi.mock('@/hooks/useSubdomainUser', () => ({
 
 // Mock relay config
 vi.mock('@/config/relays', () => ({
-  SEARCH_RELAY: { url: 'wss://relay.nostr.band', name: 'Nostr.Band' },
+  NIP05_SEARCH_RELAYS: [
+    { url: 'wss://relay.primal.net', name: 'Primal' },
+    { url: 'wss://relay.damus.io', name: 'Damus' },
+    { url: 'wss://purplepag.es', name: 'Purple Pages' },
+  ],
 }));
 
 function createWrapper() {
@@ -122,7 +126,7 @@ describe('useResolveSubdomainPubkey', () => {
       nip05Stale: true,
     });
 
-    mockQuery.mockResolvedValueOnce([
+    mockQuery.mockResolvedValue([
       {
         pubkey: 'unrelated' + 'c'.repeat(55),
         content: JSON.stringify({ nip05: '_@other.divine.video' }),
@@ -155,7 +159,7 @@ describe('useResolveSubdomainPubkey', () => {
       nip05Stale: true,
     });
 
-    mockQuery.mockResolvedValueOnce([
+    mockQuery.mockResolvedValue([
       {
         pubkey: 'unrelated' + 'c'.repeat(55),
         content: JSON.stringify({ nip05: '_@other.divine.video' }),
@@ -183,7 +187,7 @@ describe('useResolveSubdomainPubkey', () => {
       nip05Stale: true,
     });
 
-    mockQuery.mockRejectedValueOnce(new Error('Relay connection failed'));
+    mockQuery.mockRejectedValue(new Error('Relay connection failed'));
 
     const { result } = renderHook(() => useResolveSubdomainPubkey(), {
       wrapper: createWrapper(),
@@ -206,7 +210,7 @@ describe('useResolveSubdomainPubkey', () => {
       nip05Stale: true,
     });
 
-    mockQuery.mockResolvedValueOnce([
+    mockQuery.mockResolvedValue([
       {
         pubkey: 'bad' + 'd'.repeat(61),
         content: 'not json at all',
