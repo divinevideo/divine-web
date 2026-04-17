@@ -2,6 +2,8 @@
 // ABOUTME: Tests HTTP communication layer in isolation from hooks and transforms
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import type { NostrSigner } from '@nostrify/nostrify';
+import { createNip98AuthHeader } from './nip98Auth';
 
 // We need to mock the health module before importing the client
 vi.mock('./funnelcakeHealth', () => ({
@@ -15,8 +17,13 @@ vi.mock('./debug', () => ({
   debugError: vi.fn(),
 }));
 
+vi.mock('./nip98Auth', () => ({
+  createNip98AuthHeader: vi.fn(),
+}));
+
 const API_URL = 'https://api.divine.video';
 const TEST_PUBKEY = 'a'.repeat(64);
+const TEST_SIGNER = { signEvent: vi.fn() } as unknown as NostrSigner;
 
 describe('funnelcakeClient', () => {
   let fetchUserProfile: typeof import('./funnelcakeClient').fetchUserProfile;
@@ -24,11 +31,13 @@ describe('funnelcakeClient', () => {
   let fetchBulkVideoStats: typeof import('./funnelcakeClient').fetchBulkVideoStats;
   let searchProfiles: typeof import('./funnelcakeClient').searchProfiles;
   let fetchRecommendations: typeof import('./funnelcakeClient').fetchRecommendations;
+  let markNotificationsRead: typeof import('./funnelcakeClient').markNotificationsRead;
 
   beforeEach(async () => {
     vi.resetModules();
     // Mock fetch globally
     global.fetch = vi.fn();
+    vi.mocked(createNip98AuthHeader).mockReset().mockResolvedValue('Nostr signed-auth');
 
     // Import after mocking
     const client = await import('./funnelcakeClient');
@@ -37,6 +46,7 @@ describe('funnelcakeClient', () => {
     fetchBulkVideoStats = client.fetchBulkVideoStats;
     searchProfiles = client.searchProfiles;
     fetchRecommendations = client.fetchRecommendations;
+    markNotificationsRead = client.markNotificationsRead;
   });
 
   afterEach(() => {
@@ -324,6 +334,44 @@ describe('funnelcakeClient', () => {
 
       expect(result.stats).toEqual([]);
       expect(result.missing).toContain(eventIds[0]);
+    });
+  });
+
+  describe('notification auth requests', () => {
+    it('signs mark-as-read requests with the exact serialized JSON body', async () => {
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({ success: true, marked_count: 1 }),
+      });
+
+      const result = await markNotificationsRead(
+        API_URL,
+        TEST_PUBKEY,
+        TEST_SIGNER,
+        ['event-1'],
+      );
+
+      expect(result).toEqual({ success: true, markedCount: 1 });
+
+      const expectedBody = JSON.stringify({ notification_ids: ['event-1'] });
+      expect(createNip98AuthHeader).toHaveBeenCalledWith(
+        TEST_SIGNER,
+        `${API_URL}/api/users/${TEST_PUBKEY}/notifications/read`,
+        'POST',
+        expectedBody,
+      );
+
+      expect(global.fetch).toHaveBeenCalledWith(
+        `${API_URL}/api/users/${TEST_PUBKEY}/notifications/read`,
+        expect.objectContaining({
+          method: 'POST',
+          body: expectedBody,
+          headers: expect.objectContaining({
+            'Authorization': 'Nostr signed-auth',
+            'Content-Type': 'application/json',
+          }),
+        }),
+      );
     });
   });
 

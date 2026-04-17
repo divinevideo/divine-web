@@ -1151,8 +1151,9 @@ async function authenticatedNotificationRequest<T>(
   const { method = 'GET', params = {}, body, signal } = options;
   const url = buildUrl(apiUrl, endpoint, params);
   const timeout = API_CONFIG.funnelcake.timeout;
+  const serializedBody = body === undefined ? undefined : JSON.stringify(body);
 
-  const authHeader = await createNip98AuthHeader(signer, url, method);
+  const authHeader = await createNip98AuthHeader(signer, url, method, serializedBody);
   if (!authHeader) {
     throw new FunnelcakeApiError('Failed to create NIP-98 auth header', null);
   }
@@ -1168,9 +1169,9 @@ async function authenticatedNotificationRequest<T>(
     headers: {
       'Accept': 'application/json',
       'Authorization': authHeader,
-      ...(body ? { 'Content-Type': 'application/json' } : {}),
+      ...(serializedBody !== undefined ? { 'Content-Type': 'application/json' } : {}),
     },
-    ...(body ? { body: JSON.stringify(body) } : {}),
+    ...(serializedBody !== undefined ? { body: serializedBody } : {}),
   };
 
   debugLog(`[FunnelcakeClient] Auth request: ${method} ${url}`);

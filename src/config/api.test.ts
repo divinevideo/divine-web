@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   clearFunnelcakeApiModeOverride,
   getFunnelcakeApiModeOverride,
+  resolveNotificationsBaseUrl,
   resolveFunnelcakeBaseUrl,
   setFunnelcakeApiModeOverride,
 } from './api';
@@ -62,6 +63,52 @@ describe('resolveFunnelcakeBaseUrl', () => {
       hostname: 'divine.video',
       mode: 'staging',
     })).toBe('https://api.staging.divine.video');
+  });
+});
+
+describe('resolveNotificationsBaseUrl', () => {
+  it('uses the staging relay host in auto mode on staging.divine.video', () => {
+    expect(resolveNotificationsBaseUrl({
+      hostname: 'staging.divine.video',
+      mode: 'auto',
+    })).toBe('https://relay.staging.divine.video');
+  });
+
+  it('uses the production relay host in auto mode on divine.video', () => {
+    expect(resolveNotificationsBaseUrl({
+      hostname: 'divine.video',
+      mode: 'auto',
+    })).toBe('https://relay.divine.video');
+  });
+
+  it('maps the production Funnelcake API host to the relay host for unknown hosts', () => {
+    expect(resolveNotificationsBaseUrl({
+      hostname: 'preview.divine-web.pages.dev',
+      mode: 'auto',
+      envBaseUrl: 'https://api.divine.video',
+    })).toBe('https://relay.divine.video');
+  });
+
+  it('preserves custom environment hosts for unknown hosts', () => {
+    expect(resolveNotificationsBaseUrl({
+      hostname: 'localhost',
+      mode: 'auto',
+      envBaseUrl: 'https://api.preview.divine.video',
+    })).toBe('https://api.preview.divine.video');
+  });
+
+  it('forces the production relay host when production mode is selected', () => {
+    expect(resolveNotificationsBaseUrl({
+      hostname: 'staging.divine.video',
+      mode: 'production',
+    })).toBe('https://relay.divine.video');
+  });
+
+  it('forces the staging relay host when staging mode is selected', () => {
+    expect(resolveNotificationsBaseUrl({
+      hostname: 'divine.video',
+      mode: 'staging',
+    })).toBe('https://relay.staging.divine.video');
   });
 });
 
