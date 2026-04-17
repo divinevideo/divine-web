@@ -8,12 +8,11 @@ export default {
 		"./components/**/*.{ts,tsx}",
 		"./app/**/*.{ts,tsx}",
 		"./src/**/*.{ts,tsx}",
-	],
-	// Brand utilities live in src/styles/brand-utilities.css. Keep them in the
-	// build even before any component consumes them, so downstream phases that
-	// apply them dynamically (or via composition) don't trip JIT tree-shaking.
-	safelist: [
-		{ pattern: /^brand-(offset-shadow(-sm)?-(green|pink|violet|orange|yellow|blue|dark)|tilt-(neg-3|pos-2)|sticker|card)$/ },
+		// Brand utilities live in src/styles/brand-utilities.css and are
+		// referenced by brand primitives / preview page already scanned above,
+		// but include the CSS explicitly so the @layer components rules are
+		// always emitted even if no component references them.
+		"./src/styles/brand-utilities.css",
 	],
 	prefix: "",
 	theme: {
