@@ -293,7 +293,7 @@ export function VideoFeed({
                   <div className="h-3 w-16 bg-muted rounded animate-pulse" />
                 </div>
               </div>
-              <div className="aspect-square w-full bg-gradient-to-br from-brand-light-green to-brand-light-green dark:from-brand-dark-green dark:to-brand-dark-green flex items-center justify-center">
+              <div className="aspect-square w-full bg-brand-light-green dark:bg-brand-dark-green flex items-center justify-center">
                 <div className="relative w-12 h-12">
                   <div className="absolute inset-0 border-4 border-brand-light-green dark:border-brand-dark-green rounded-full" />
                   <div className="absolute inset-0 border-4 border-transparent border-t-primary rounded-full animate-spin" />
