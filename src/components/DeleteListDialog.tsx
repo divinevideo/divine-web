@@ -10,7 +10,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { AlertCircle, Loader2 } from 'lucide-react';
+import { WarningCircle as AlertCircle, CircleNotch as Loader2 } from '@phosphor-icons/react';
 
 interface DeleteListDialogProps {
   open: boolean;

@@ -2,7 +2,7 @@
 // ABOUTME: Displays a stock image to showcase decentralized features
 
 import { Card, CardContent } from "@/components/ui/card";
-import { Users } from "lucide-react";
+import { Users } from '@phosphor-icons/react';
 
 export function DecentralizedDemo() {
   return (

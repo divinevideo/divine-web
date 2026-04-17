@@ -4,7 +4,7 @@
 import { useMemo } from 'react';
 import { useNostr } from '@nostrify/react';
 import { useQuery } from '@tanstack/react-query';
-import { Pin, PinOff } from 'lucide-react';
+import { PushPin as Pin, PushPinSlash as PinOff } from '@phosphor-icons/react';
 import { usePinnedVideos, useUnpinVideo } from '@/hooks/usePinnedVideos';
 import { VideoGrid } from '@/components/VideoGrid';
 import { SectionHeader } from '@/components/brand/SectionHeader';

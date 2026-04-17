@@ -2,7 +2,7 @@
 // ABOUTME: Displays a stock image to showcase the looping video feature
 
 import { Card, CardContent } from "@/components/ui/card";
-import { Heart, Play } from "lucide-react";
+import { Heart, Play } from '@phosphor-icons/react';
 
 export function AuthenticDemo() {
   return (

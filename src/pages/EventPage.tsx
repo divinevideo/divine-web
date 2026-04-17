@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useNostr } from '@nostrify/react';
 import { nip19 } from 'nostr-tools';
 import { formatDistanceToNow } from 'date-fns';
-import { ArrowLeft, Code, Loader2 } from 'lucide-react';
+import { ArrowLeft, Code, CircleNotch as Loader2 } from '@phosphor-icons/react';
 import { useSubdomainNavigate } from '@/hooks/useSubdomainNavigate';
 import { useAppContext } from '@/hooks/useAppContext';
 import { useAuthor } from '@/hooks/useAuthor';

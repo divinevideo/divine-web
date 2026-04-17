@@ -3,7 +3,7 @@
 
 import { Link, Navigate } from 'react-router-dom';
 import { useSeoMeta } from '@unhead/react';
-import { BarChart3, Video, Eye, Heart, Users, MessageCircle, Repeat2 } from 'lucide-react';
+import { ChartBar as BarChart3, VideoCamera as Video, Eye, Heart, Users, ChatCircle as MessageCircle, Repeat as Repeat2 } from '@phosphor-icons/react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useCurrentUser } from '@/hooks/useCurrentUser';

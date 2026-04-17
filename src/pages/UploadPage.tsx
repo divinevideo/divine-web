@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { CameraRecorder } from '@/components/CameraRecorder';
 import { VideoMetadataForm } from '@/components/VideoMetadataForm';
 import { Button } from '@/components/ui/button';
-import { Camera } from 'lucide-react';
+import { Camera } from '@phosphor-icons/react';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 
 type UploadStep = 'choose' | 'record' | 'metadata';

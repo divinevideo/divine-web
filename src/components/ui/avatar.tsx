@@ -1,6 +1,6 @@
 import * as React from "react";
 import * as AvatarPrimitive from "@radix-ui/react-avatar";
-import { Plus } from "lucide-react";
+import { Plus } from '@phosphor-icons/react';
 
 import { cn } from "@/lib/utils";
 
@@ -169,7 +169,7 @@ const Avatar = React.forwardRef<
             overlayClasses[size],
           )}
         >
-          <Plus className={overlayIconClasses[size]} strokeWidth={3} />
+          <Plus className={overlayIconClasses[size]} />
         </span>
       )}
     </AvatarPrimitive.Root>

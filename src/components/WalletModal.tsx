@@ -1,5 +1,5 @@
 import { useState, forwardRef } from 'react';
-import { Wallet, Plus, Trash2, Zap, Globe, WalletMinimal, CheckCircle, X } from 'lucide-react';
+import { Wallet, Plus, Trash as Trash2, Lightning as Zap, Globe, Wallet as WalletMinimal, CheckCircle, X } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,

@@ -5,14 +5,7 @@ import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import {
-  Github,
-  Globe,
-  Smartphone,
-  Code2,
-  Users,
-  Heart
-} from 'lucide-react';
+import { GithubLogo as Github, Globe, DeviceMobile as Smartphone, Code as Code2, Users, Heart } from '@phosphor-icons/react';
 import { ZendeskWidget } from '@/components/ZendeskWidget';
 import { MarketingLayout } from '@/components/MarketingLayout';
 import { useTranslation } from 'react-i18next';

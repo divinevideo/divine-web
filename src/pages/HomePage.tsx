@@ -11,7 +11,7 @@ import { useFollowList } from '@/hooks/useFollowList';
 import { LoginArea } from '@/components/auth/LoginArea';
 import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { RefreshCw } from 'lucide-react';
+import { ArrowsClockwise as RefreshCw } from '@phosphor-icons/react';
 import { feedUrls } from '@/lib/feedUrls';
 import { useRssFeedAvailable } from '@/hooks/useRssFeedAvailable';
 import type { SortMode } from '@/types/nostr';

@@ -3,7 +3,7 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Shield, ShieldCheck, ShieldAlert, ShieldQuestion, Camera, Lock, Fingerprint, Video } from "lucide-react";
+import { Shield, ShieldCheck, ShieldWarning as ShieldAlert, ShieldCheck as ShieldQuestion, Camera, Lock, Fingerprint, VideoCamera as Video } from '@phosphor-icons/react';
 import { MarketingLayout } from '@/components/MarketingLayout';
 import { useTranslation } from 'react-i18next';
 

@@ -13,7 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { List, TrendingUp, Plus, Users, Video, Clock } from 'lucide-react';
+import { List, TrendUp as TrendingUp, Plus, Users, VideoCamera as Video, Clock } from '@phosphor-icons/react';
 import { genUserName } from '@/lib/genUserName';
 import { CreateListDialog } from '@/components/CreateListDialog';
 import { formatDistanceToNow } from 'date-fns';

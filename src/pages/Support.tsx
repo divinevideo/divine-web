@@ -3,7 +3,7 @@
 
 import { useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Mail, Github, MessageCircle } from 'lucide-react';
+import { Envelope as Mail, GithubLogo as Github, ChatCircle as MessageCircle } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
 import { MarketingLayout } from '@/components/MarketingLayout';
 import { useCurrentUser } from '@/hooks/useCurrentUser';

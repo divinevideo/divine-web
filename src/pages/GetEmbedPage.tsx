@@ -3,7 +3,7 @@
 
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Copy, Check, Code } from 'lucide-react';
+import { Copy, Check, Code } from '@phosphor-icons/react';
 import { MarketingLayout } from '@/components/MarketingLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';

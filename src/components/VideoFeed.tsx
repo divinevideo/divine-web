@@ -3,7 +3,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { performanceMonitor } from '@/lib/performanceMonitoring';
-import { Video } from 'lucide-react';
+import { VideoCamera as Video, CircleNotch as Loader2 } from '@phosphor-icons/react';
 import { VideoCardWithMetrics } from '@/components/VideoCardWithMetrics';
 import { VideoGrid } from '@/components/VideoGrid';
 import { AddToListDialog } from '@/components/AddToListDialog';
@@ -13,7 +13,6 @@ import { useContentModeration } from '@/hooks/useModeration';
 import { useFeedPerformanceInstrumentation } from '@/hooks/useFeedPerformanceInstrumentation';
 import { useProofModeEnrichment } from '@/hooks/useProofModeEnrichment';
 import { Card, CardContent, type CardAccent } from '@/components/ui/card';
-import { Loader2 } from 'lucide-react';
 import InfiniteScroll from 'react-infinite-scroll-component';
 import type { ParsedVideoData } from '@/types/video';
 import { debugLog, debugWarn } from '@/lib/debug';

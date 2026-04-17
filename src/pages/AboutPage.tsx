@@ -4,7 +4,7 @@
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ExternalLink, Heart, Archive, Shield } from 'lucide-react';
+import { ArrowSquareOut as ExternalLink, Heart, Archive, Shield } from '@phosphor-icons/react';
 import { ZendeskWidget } from '@/components/ZendeskWidget';
 import { MarketingLayout } from '@/components/MarketingLayout';
 import { ApplePodcastEmbed } from '@/components/ApplePodcastEmbed';

@@ -3,7 +3,7 @@ import { useZaps } from '@/hooks/useZaps';
 import { useWallet } from '@/hooks/useWallet';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useAuthor } from '@/hooks/useAuthor';
-import { Zap } from 'lucide-react';
+import { Lightning as Zap } from '@phosphor-icons/react';
 import type { Event } from 'nostr-tools';
 
 interface ZapButtonProps {

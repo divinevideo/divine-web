@@ -1,4 +1,4 @@
-import { Home, Compass, Search, Bell, User } from 'lucide-react';
+import { House as Home, Compass, MagnifyingGlass as Search, Bell, User } from '@phosphor-icons/react';
 import { useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';

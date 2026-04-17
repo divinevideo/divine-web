@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
-import { AlertTriangle, ShieldCheck } from 'lucide-react';
+import { Warning as AlertTriangle, ShieldCheck } from '@phosphor-icons/react';
 import { useAdultVerification } from '@/hooks/useAdultVerification';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useLoginDialog } from '@/contexts/LoginDialogContext';

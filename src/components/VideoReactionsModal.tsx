@@ -1,6 +1,6 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Heart, Repeat2, Loader2 } from 'lucide-react';
+import { Heart, Repeat as Repeat2, CircleNotch as Loader2 } from '@phosphor-icons/react';
 import { useAuthor } from '@/hooks/useAuthor';
 import { useBatchedAuthors } from '@/hooks/useBatchedAuthors';
 import { enhanceAuthorData } from '@/lib/generateProfile';

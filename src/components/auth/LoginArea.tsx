@@ -2,7 +2,7 @@
 // It is important that all functionality in this file is preserved, and should only be modified if explicitly requested.
 
 import { useState, useEffect } from 'react';
-import { User } from 'lucide-react';
+import { User } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button.tsx';
 import LoginDialog from './LoginDialog';
 import { useLoggedInAccounts } from '@/hooks/useLoggedInAccounts';
