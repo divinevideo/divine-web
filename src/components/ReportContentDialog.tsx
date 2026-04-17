@@ -160,7 +160,7 @@ export function ReportContentDialog({
               <Label htmlFor="details">Additional details (optional)</Label>
               <Textarea
                 id="details"
-                placeholder="Provide any additional context that might be helpful..."
+                placeholder="Anything else that might help..."
                 value={details}
                 onChange={(e) => setDetails(e.target.value)}
                 rows={3}

@@ -158,7 +158,7 @@ export function VideoMetadataForm({
             <Label htmlFor="title">Title *</Label>
             <Input
               id="title"
-              placeholder="Give your vine a title"
+              placeholder="Name your loop"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               maxLength={100}
@@ -174,7 +174,7 @@ export function VideoMetadataForm({
             <Label htmlFor="description">Description</Label>
             <Textarea
               id="description"
-              placeholder="Add a description..."
+              placeholder="Say something about it..."
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
@@ -194,7 +194,7 @@ export function VideoMetadataForm({
                 <Hash className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
                   id="hashtags"
-                  placeholder="Add hashtags (press Enter)"
+                  placeholder="Tag it up (hit Enter)"
                   value={hashtagInput}
                   onChange={(e) => setHashtagInput(e.target.value)}
                   onKeyDown={handleHashtagKeyPress}
