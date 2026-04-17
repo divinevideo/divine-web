@@ -318,8 +318,13 @@ export function AppSidebar({ className }: { className?: string }) {
             <LoginArea
               className={cn(
                 "flex-col gap-2.5 w-full",
-                "[&>button]:w-full [&>button]:justify-center [&>button]:rounded-lg [&>button]:h-11 [&>button]:text-[15px]",
-                "[&>button:first-child]:border-border [&>button:first-child]:hover:border-primary",
+                // Layout only: fill sidebar width, center, tweak height/type.
+                // Do NOT override the button's border/radius here — the sticker
+                // variant (the Divine brand-compliant hero treatment) provides
+                // its own 2px dark-green border, 14px radius, and offset shadow.
+                // Forcing a plain rounded-lg or border-border here would clobber
+                // the brand look (and did, until 2026-04-17).
+                "[&>button]:w-full [&>button]:justify-center [&>button]:h-11 [&>button]:text-[15px]",
                 "[&_.account-switcher]:w-full"
               )}
             />
