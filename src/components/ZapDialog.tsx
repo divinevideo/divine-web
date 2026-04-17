@@ -209,7 +209,7 @@ const ZapContent = forwardRef<HTMLDivElement, ZapContentProps>(({
           />
           <Textarea
             id="custom-comment"
-            placeholder="Add a comment (optional)"
+            placeholder="Say something (optional)"
             value={comment}
             onChange={(e) => setComment(e.target.value)}
             className="w-full resize-none text-sm"

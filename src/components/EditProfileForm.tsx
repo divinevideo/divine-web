@@ -182,7 +182,7 @@ export const EditProfileForm: React.FC<EditProfileFormProps> = ({ onSuccess }) =
               <FormLabel>Bio</FormLabel>
               <FormControl>
                 <Textarea
-                  placeholder="Tell others about yourself"
+                  placeholder="Who are you? What are you into?"
                   className="resize-none"
                   {...field}
                 />

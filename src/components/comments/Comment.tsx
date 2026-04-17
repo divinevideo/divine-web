@@ -260,7 +260,7 @@ export function Comment({ root, comment, depth = 0, maxDepth = 3, limit, parentC
             root={root}
             reply={comment}
             onSuccess={() => setShowReplyForm(false)}
-            placeholder="Write a reply..."
+            placeholder="Write back..."
             compact
           />
         </div>

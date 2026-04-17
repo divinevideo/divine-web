@@ -311,7 +311,7 @@ export function SearchPage() {
             <Input
               ref={searchInputRef}
               type="text"
-              placeholder="Search or paste an npub, note, nevent, naddr, or d tag..."
+              placeholder="Search — or paste an npub, note, nevent, naddr, or d tag..."
               value={searchQuery}
               onChange={(e) => handleSearchChange(e.target.value)}
               onPaste={handleSearchPaste}
