@@ -197,16 +197,23 @@
 
   body {
     @apply bg-background text-foreground;
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    /* Inter Variable (loaded via @fontsource-variable/inter in src/main.tsx). */
+    font-family: 'Inter Variable', 'Inter', system-ui, -apple-system, sans-serif;
+    font-feature-settings: 'cv11' 1, 'ss01' 1;  /* Open letterforms, straight-sided i/j */
   }
 
   /* Brand headings: Bricolage Grotesque, Extra Bold for display (h1-h3),
-     Bold for subheadings (h4-h6). Per docs/brand/VISUAL_IDENTITY.md. */
+     Bold for subheadings (h4-h6). Per docs/brand/VISUAL_IDENTITY.md.
+     font-optical-sizing activates Bricolage's opsz axis (12..96) so display
+     sizes get the refined character shapes and body sizes get sturdier ones. */
   h1, h2, h3, h4, h5, h6 {
     font-family: 'Bricolage Grotesque', system-ui, -apple-system, sans-serif;
+    font-optical-sizing: auto;
     letter-spacing: -0.02em;
+    font-feature-settings: 'ss01' 1;  /* Single-story 'a' — more punk, less corporate */
   }
-  h1, h2, h3 { font-weight: 800; }
+  h1, h2 { font-weight: 800; letter-spacing: -0.03em; }  /* Display: tighter */
+  h3     { font-weight: 800; }
   h4, h5, h6 { font-weight: 700; }
 
   /* Ensure text inherits color inside primary-colored containers (buttons, tabs, etc.) */
