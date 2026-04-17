@@ -173,6 +173,7 @@ export function DiscoveryPage() {
             <VideoFeed
               feedType="classics"
               verifiedOnly={verifiedOnly}
+              accent="violet"
               data-testid="video-feed-classics"
               className="space-y-6"
               key="classics"
