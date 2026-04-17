@@ -132,7 +132,7 @@ VitePWA({
     globals: true,
     environment: 'jsdom',
     setupFiles: './src/test/setup.ts',
-    exclude: [...configDefaults.exclude, '**/.worktrees/**', '**/worktrees/**'],
+    exclude: [...configDefaults.exclude, '**/.worktrees/**', '**/worktrees/**', 'tests/visual/**'],
     onConsoleLog(log) {
       return !log.includes("React Router Future Flag Warning");
     },
