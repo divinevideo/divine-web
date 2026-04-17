@@ -114,7 +114,7 @@ export function useNWCInternal() {
 
       toast({
         title: 'Connection didn\'t take.',
-        description: `Couldn\'t reach the wallet: ${errorMessage}`,
+        description: `Couldn't reach the wallet: ${errorMessage}`,
         variant: 'destructive',
       });
       return false;
