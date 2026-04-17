@@ -2,10 +2,11 @@
 // ABOUTME: Uses an explicit support matrix so unsupported feeds never collapse into generic queries
 
 import { useAppContext } from '@/hooks/useAppContext';
+import { getFunnelcakeBaseUrl } from '@/config/api';
 import { useInfiniteVideos } from '@/hooks/useInfiniteVideos';
 import { useResolvedRelayCapabilities } from '@/hooks/useRelayCapabilities';
 import { useInfiniteVideosFunnelcake, type FunnelcakeFeedType, type FunnelcakeSortMode } from '@/hooks/useInfiniteVideosFunnelcake';
-import { hasFunnelcake, getFunnelcakeUrl, DEFAULT_FUNNELCAKE_URL } from '@/config/relays';
+import { hasFunnelcake, getFunnelcakeUrl } from '@/config/relays';
 import { debugLog } from '@/lib/debug';
 import type { RelayCapabilities } from '@/lib/relayCapabilities';
 import type { SortMode } from '@/types/nostr';
@@ -162,7 +163,7 @@ export function chooseVideoDataSource({
   const websocketSupported = websocketFeedType
     ? canServeFeedViaWebsocket(feedType, sortMode, relayCapabilities)
     : false;
-  const apiUrl = relayFunnelcakeUrl || DEFAULT_FUNNELCAKE_URL;
+  const apiUrl = relayFunnelcakeUrl || getFunnelcakeBaseUrl();
 
   // Feed reads prefer Funnelcake REST. Keep a websocket route available as a
   // recovery path for feeds the selected relay can still serve directly.
@@ -285,7 +286,7 @@ export function useFunnelcakeSupport(): {
   const { config } = useAppContext();
   const relayUrl = config.relayUrl;
 
-  const funnelcakeUrl = getFunnelcakeUrl(relayUrl) || DEFAULT_FUNNELCAKE_URL;
+  const funnelcakeUrl = getFunnelcakeUrl(relayUrl) || getFunnelcakeBaseUrl();
   const supported = true;
   const enabled = true;
 

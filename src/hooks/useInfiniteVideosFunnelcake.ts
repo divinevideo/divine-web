@@ -3,6 +3,7 @@
 
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { useState } from 'react';
+import { getFunnelcakeBaseUrl } from '@/config/api';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import type { ParsedVideoData } from '@/types/video';
 import type { FunnelcakeFetchOptions } from '@/types/funnelcake';
@@ -11,7 +12,6 @@ import { enrichAgeRestrictedVideos } from '@/lib/ageRestrictedVideos';
 import { transformToVideoPage } from '@/lib/funnelcakeTransform';
 import { debugLog } from '@/lib/debug';
 import { performanceMonitor } from '@/lib/performanceMonitoring';
-import { DEFAULT_FUNNELCAKE_URL } from '@/config/relays';
 
 export type FunnelcakeFeedType = 'trending' | 'recent' | 'classics' | 'hashtag' | 'profile' | 'home' | 'recommendations' | 'category';
 export type FunnelcakeSortMode = 'trending' | 'recent' | 'loops' | 'engagement' | 'classic';
@@ -146,8 +146,8 @@ export function useInfiniteVideosFunnelcake({
   // - Classics always use Divine's Funnelcake
   // - Other feeds use provided apiUrl or default
   const effectiveApiUrl = feedType === 'classics'
-    ? DEFAULT_FUNNELCAKE_URL
-    : (apiUrl || DEFAULT_FUNNELCAKE_URL);
+    ? getFunnelcakeBaseUrl()
+    : (apiUrl || getFunnelcakeBaseUrl());
 
   return useInfiniteQuery<FunnelcakeVideoPage, Error>({
     queryKey: ['funnelcake-videos', feedType, effectiveApiUrl, sortMode, hashtag, category, pubkey, pageSize, randomStartOffset],

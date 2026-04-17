@@ -2,9 +2,10 @@
 // ABOUTME: Provides fast video lookup for VideoPage with profile and hashtag context support
 
 import { useQuery } from '@tanstack/react-query';
+import { getFunnelcakeBaseUrl } from '@/config/api';
 import { fetchVideoById, fetchUserVideos, searchVideos } from '@/lib/funnelcakeClient';
 import { transformFunnelcakeVideo } from '@/lib/funnelcakeTransform';
-import { getFunnelcakeUrl, DEFAULT_FUNNELCAKE_URL } from '@/config/relays';
+import { getFunnelcakeUrl } from '@/config/relays';
 import { useAppContext } from '@/hooks/useAppContext';
 import { debugLog } from '@/lib/debug';
 import type { ParsedVideoData } from '@/types/video';
@@ -47,7 +48,7 @@ export function useVideoByIdFunnelcake(options: UseVideoByIdOptions): UseVideoBy
   const windowOffset = getNavigationWindowOffset(currentIndex);
 
   // Determine API URL from current relay
-  const funnelcakeUrl = getFunnelcakeUrl(config.relayUrl) || DEFAULT_FUNNELCAKE_URL;
+  const funnelcakeUrl = getFunnelcakeUrl(config.relayUrl) || getFunnelcakeBaseUrl();
 
   // If we have a pubkey, fetch all their videos for navigation context
   const userVideosQuery = useQuery({

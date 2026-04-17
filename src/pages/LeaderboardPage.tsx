@@ -6,11 +6,11 @@ import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useSeoMeta } from '@unhead/react';
 import { Trophy, Video, User, Clock, Calendar, CalendarDays, CalendarRange, Infinity as InfinityIcon } from 'lucide-react';
+import { getFunnelcakeBaseUrl } from '@/config/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
-import { DEFAULT_FUNNELCAKE_URL } from '@/config/relays';
 import { nip19 } from 'nostr-tools';
 
 type TimePeriod = 'alltime' | 'day' | 'week' | 'month' | 'year';
@@ -140,7 +140,7 @@ function VideoLeaderboard({ period }: { period: TimePeriod }) {
       });
 
       const response = await fetch(
-        `${DEFAULT_FUNNELCAKE_URL}/api/leaderboard/videos?${params}`,
+        `${getFunnelcakeBaseUrl()}/api/leaderboard/videos?${params}`,
         { signal }
       );
 
@@ -161,7 +161,7 @@ function VideoLeaderboard({ period }: { period: TimePeriod }) {
       if (pubkeysNeedingNames.length > 0) {
         try {
           const profilesResponse = await fetch(
-            `${DEFAULT_FUNNELCAKE_URL}/api/users/bulk`,
+            `${getFunnelcakeBaseUrl()}/api/users/bulk`,
             {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -281,7 +281,7 @@ function CreatorLeaderboard({ period }: { period: TimePeriod }) {
       });
 
       const response = await fetch(
-        `${DEFAULT_FUNNELCAKE_URL}/api/leaderboard/creators?${params}`,
+        `${getFunnelcakeBaseUrl()}/api/leaderboard/creators?${params}`,
         { signal }
       );
 

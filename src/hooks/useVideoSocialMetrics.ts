@@ -4,8 +4,9 @@
 import { UserInteractions, SHORT_VIDEO_KIND } from '@/types/video';
 import { useQuery } from '@tanstack/react-query';
 import { useNostr } from '@nostrify/react';
+import { getFunnelcakeBaseUrl } from '@/config/api';
 import { useAppContext } from '@/hooks/useAppContext';
-import { DEFAULT_FUNNELCAKE_URL, getFunnelcakeUrl, hasFunnelcake } from '@/config/relays';
+import { getFunnelcakeUrl, hasFunnelcake } from '@/config/relays';
 import { fetchVideoStats } from '@/lib/funnelcakeClient';
 import { isFunnelcakeAvailable } from '@/lib/funnelcakeHealth';
 import { debugLog } from '@/lib/debug';
@@ -44,8 +45,8 @@ export function useVideoSocialMetrics(
 ) {
   const { config } = useAppContext();
   const apiUrl = hasFunnelcake(config.relayUrl)
-    ? (getFunnelcakeUrl(config.relayUrl) || DEFAULT_FUNNELCAKE_URL)
-    : DEFAULT_FUNNELCAKE_URL;
+    ? (getFunnelcakeUrl(config.relayUrl) || getFunnelcakeBaseUrl())
+    : getFunnelcakeBaseUrl();
 
   return useQuery({
     queryKey: ['video-social-metrics', videoId, videoPubkey, vineId],

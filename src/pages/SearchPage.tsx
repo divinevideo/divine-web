@@ -23,12 +23,13 @@ import InfiniteScroll from 'react-infinite-scroll-component';
 import { useInfiniteSearchVideos } from '@/hooks/useInfiniteSearchVideos';
 import { useSearchUsers } from '@/hooks/useSearchUsers';
 import { useSearchHashtags, type HashtagResult } from '@/hooks/useSearchHashtags';
+import { getFunnelcakeBaseUrl } from '@/config/api';
 import { genUserName } from '@/lib/genUserName';
 import { getSafeProfileImage } from '@/lib/imageUtils';
 import type { SortMode } from '@/types/nostr';
 import { SEARCH_SORT_MODES as SORT_MODES } from '@/lib/constants/sortModes';
 import { useAppContext } from '@/hooks/useAppContext';
-import { DEFAULT_FUNNELCAKE_URL, getFunnelcakeUrl } from '@/config/relays';
+import { getFunnelcakeUrl } from '@/config/relays';
 import { fetchVideoById } from '@/lib/funnelcakeClient';
 import { fetchEventById } from '@/lib/eventLookup';
 import { buildResolvedEventRoute, buildVideoPath } from '@/lib/eventRouting';
@@ -170,7 +171,7 @@ export function SearchPage() {
       directLookupAbortRef.current?.abort();
       const controller = new AbortController();
       directLookupAbortRef.current = controller;
-      const funnelcakeUrl = getFunnelcakeUrl(config.relayUrl) || DEFAULT_FUNNELCAKE_URL;
+      const funnelcakeUrl = getFunnelcakeUrl(config.relayUrl) || getFunnelcakeBaseUrl();
       const configuredRelayUrls = config.relayUrls || [config.relayUrl];
 
       if (isHexIdentifier(normalized)) {

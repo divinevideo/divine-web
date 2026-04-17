@@ -224,7 +224,13 @@ export const toLegacyFormat = (relays: RelayConfig[]): { url: string; name: stri
  */
 const DIVINE_FUNNELCAKE_HOSTS = [
   'relay.divine.video',
+  'relay.staging.divine.video',
 ];
+
+const DIVINE_FUNNELCAKE_API_HOSTS: Record<string, string> = {
+  'relay.divine.video': 'api.divine.video',
+  'relay.staging.divine.video': 'api.staging.divine.video',
+};
 
 /**
  * Check if a relay URL supports the Funnelcake REST API
@@ -248,11 +254,14 @@ export function getFunnelcakeUrl(relayUrl: string): string | null {
   if (!hasFunnelcake(relayUrl)) {
     return null;
   }
-  // Route REST API calls through the Fastly-cached api.divine.video endpoint
-  return relayUrl
-    .replace('wss://relay.divine.video', 'https://api.divine.video')
-    .replace('wss://', 'https://')
-    .replace('ws://', 'http://');
+  const parsed = new URL(relayUrl.replace('wss://', 'https://').replace('ws://', 'http://'));
+  const apiHost = DIVINE_FUNNELCAKE_API_HOSTS[parsed.hostname];
+
+  if (!apiHost) {
+    return null;
+  }
+
+  return `https://${apiHost}`;
 }
 
 /**

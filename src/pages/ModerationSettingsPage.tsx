@@ -1,6 +1,7 @@
 // ABOUTME: Settings page for content moderation
 // ABOUTME: Manage mute lists, view report history, and configure filtering
 
+import { useQueryClient } from '@tanstack/react-query';
 import { useState, useEffect } from 'react';
 import { useMuteList, useMuteItem, useUnmuteItem, useReportHistory } from '@/hooks/useModeration';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
@@ -29,6 +30,13 @@ import { useToast } from '@/hooks/useToast';
 import { MuteType, REPORT_REASON_LABELS } from '@/types/moderation';
 import { genUserName } from '@/lib/genUserName';
 import { getSafeProfileImage } from '@/lib/imageUtils';
+import {
+  getFunnelcakeApiModeOverride,
+  resolveFunnelcakeBaseUrl,
+  setFunnelcakeApiModeOverride,
+  type FunnelcakeApiMode,
+} from '@/config/api';
+import { resetAllFunnelcakeCircuits } from '@/lib/funnelcakeHealth';
 import { formatDistanceToNow } from 'date-fns';
 import { nip19 } from 'nostr-tools';
 import type { NostrEvent } from '@nostrify/nostrify';
@@ -73,6 +81,7 @@ function MutedUserItem({ pubkey, reason, onUnmute }: {
 export default function ModerationSettingsPage() {
   const { user } = useCurrentUser();
   const { nostr } = useNostr();
+  const queryClient = useQueryClient();
   const { toast } = useToast();
   const { data: muteList = [], isLoading: muteListLoading } = useMuteList();
   const { data: reportHistory = [] } = useReportHistory();
@@ -84,10 +93,16 @@ export default function ModerationSettingsPage() {
   const [muteReason, setMuteReason] = useState('');
   const [showDebug, setShowDebug] = useState(false);
   const [rawMuteEvent, setRawMuteEvent] = useState<NostrEvent | null>(null);
+  const [funnelcakeApiMode, setFunnelcakeApiMode] = useState<FunnelcakeApiMode>(() => getFunnelcakeApiModeOverride());
 
   const mutedUsers = muteList.filter(item => item.type === MuteType.USER);
   const mutedHashtags = muteList.filter(item => item.type === MuteType.HASHTAG);
   const mutedKeywords = muteList.filter(item => item.type === MuteType.KEYWORD);
+  const effectiveFunnelcakeBaseUrl = resolveFunnelcakeBaseUrl({
+    mode: funnelcakeApiMode,
+    hostname: window.location.hostname,
+    envBaseUrl: import.meta.env.VITE_FUNNELCAKE_API_URL,
+  });
 
   // Debug: Log state
   console.log('[ModerationSettingsPage] Render state:', {
@@ -126,6 +141,21 @@ export default function ModerationSettingsPage() {
 
     fetchRawEvent();
   }, [user, showDebug, nostr, muteList.length]); // Re-fetch when mute list changes
+
+  const handleFunnelcakeApiModeChange = async (nextMode: FunnelcakeApiMode) => {
+    setFunnelcakeApiModeOverride(nextMode);
+    setFunnelcakeApiMode(nextMode);
+    resetAllFunnelcakeCircuits();
+    await queryClient.invalidateQueries();
+    toast({
+      title: 'Funnelcake API updated',
+      description: `Using ${resolveFunnelcakeBaseUrl({
+        mode: nextMode,
+        hostname: window.location.hostname,
+        envBaseUrl: import.meta.env.VITE_FUNNELCAKE_API_URL,
+      })} for future REST reads.`,
+    });
+  };
 
   const handleMute = async () => {
     if (!muteValue.trim()) {
@@ -249,6 +279,33 @@ export default function ModerationSettingsPage() {
               </div>
               <div>
                 <strong>Mute list loading:</strong> {muteListLoading ? 'Yes' : 'No'}
+              </div>
+              <div className="pt-2 border-t border-yellow-600/50 space-y-2">
+                <div>
+                  <strong>Funnelcake API mode:</strong>
+                </div>
+                <div className="flex flex-col gap-2 text-foreground not-italic font-sans">
+                  <Label htmlFor="funnelcake-api-mode">Funnelcake API</Label>
+                  <select
+                    id="funnelcake-api-mode"
+                    aria-label="Funnelcake API"
+                    className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    value={funnelcakeApiMode}
+                    onChange={(event) => {
+                      void handleFunnelcakeApiModeChange(event.target.value as FunnelcakeApiMode);
+                    }}
+                  >
+                    <option value="auto">Auto</option>
+                    <option value="production">Production</option>
+                    <option value="staging">Staging</option>
+                  </select>
+                  <p className="text-xs text-muted-foreground">
+                    Auto follows hostname: staging uses staging, everything else uses production.
+                  </p>
+                  <div className="text-xs">
+                    <strong>Effective base URL:</strong> {effectiveFunnelcakeBaseUrl}
+                  </div>
+                </div>
               </div>
               <div>
                 <strong>Total mute items:</strong> {muteList.length}

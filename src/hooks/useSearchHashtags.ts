@@ -3,8 +3,8 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { useState, useEffect } from 'react';
+import { getFunnelcakeBaseUrl } from '@/config/api';
 import { fetchTrendingHashtags } from '@/lib/funnelcakeClient';
-import { DEFAULT_FUNNELCAKE_URL } from '@/config/relays';
 
 interface UseSearchHashtagsOptions {
   query: string;
@@ -76,7 +76,7 @@ export function useSearchHashtags(options: UseSearchHashtagsOptions) {
 
       const fetchStartedAt = performance.now();
       const hashtags = await fetchTrendingHashtags(
-        DEFAULT_FUNNELCAKE_URL,
+        getFunnelcakeBaseUrl(),
         100,
         signal,
       );
