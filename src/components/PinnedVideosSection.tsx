@@ -7,6 +7,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Pin, PinOff } from 'lucide-react';
 import { usePinnedVideos, useUnpinVideo } from '@/hooks/usePinnedVideos';
 import { VideoGrid } from '@/components/VideoGrid';
+import { SectionHeader } from '@/components/brand/SectionHeader';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/useToast';
 import { parseVideoEvent, getVineId, getThumbnailUrl, getOriginalVineTimestamp, getLoopCount, getProofModeData, getOriginPlatform, isVineMigrated, getOriginalLikeCount, getOriginalRepostCount, getOriginalCommentCount } from '@/lib/videoParser';
@@ -145,7 +146,7 @@ export function PinnedVideosSection({ pubkey, isOwnProfile }: PinnedVideosSectio
     <div className="space-y-3">
       <div className="flex items-center gap-2">
         <Pin className="h-4 w-4 text-muted-foreground" />
-        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Pinned</h3>
+        <SectionHeader as="h3" className="text-sm text-muted-foreground">Pinned</SectionHeader>
       </div>
 
       {videosLoading ? (
