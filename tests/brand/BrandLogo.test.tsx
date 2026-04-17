@@ -29,8 +29,12 @@ describe('BrandLogo', () => {
     expect(el.style.fontFamily).toMatch(/Bricolage Grotesque/);
   });
 
-  it('applies the brand green text color class', () => {
+  it('applies brand-dark-green on light bg and brand-green on dark bg', () => {
+    // Brand-green on off-white fails WCAG AA (2.1:1). Spec permits
+    // dark-green on light / green on dark. Test asserts both classes.
     render(<BrandLogo />);
-    expect(screen.getByText('Divine').className).toMatch(/text-brand-green/);
+    const el = screen.getByText('Divine');
+    expect(el.className).toMatch(/text-brand-dark-green/);
+    expect(el.className).toMatch(/dark:text-brand-green/);
   });
 });

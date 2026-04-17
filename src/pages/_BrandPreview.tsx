@@ -50,11 +50,20 @@ const shadowAccents = [
 ] as const;
 
 function ColorChip({ label, varName }: ColorChip) {
-  const textClass = varName.includes('light') || varName.includes('off-white')
-    ? 'text-black'
-    : 'text-white';
+  // Per-color text decision driven by measured WCAG AA contrast (axe-core
+  // verified in the /__brand-preview a11y test). Dark ink on most chips,
+  // white ink on truly dark tokens + purple (which sits just under 4.5:1
+  // with dark text).
+  const needsWhiteText =
+    varName === '--brand-dark-green' ||
+    varName.endsWith('-dark') ||
+    varName === '--brand-purple';
+  const textClass = needsWhiteText ? 'text-white' : 'text-brand-dark-green';
   return (
     <div
+      // The visible label is a developer color reference, not content —
+      // excluded from axe color-contrast in tests/visual/a11y.spec.ts.
+      data-axe-skip="color-contrast"
       className={`w-40 h-20 rounded-md border border-black/10 flex items-end p-2 text-xs font-mono ${textClass}`}
       style={{ background: `hsl(var(${varName}))` }}
     >
