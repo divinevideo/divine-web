@@ -34,10 +34,54 @@ interface FunnelcakeVideoPage {
   offset?: number;
   /** Opaque cursor string for recommendations pagination */
   recommendationsCursor?: string;
+  mode?: 'recommendations' | 'popular';
 }
 
 function getVideoKey(video: Pick<ParsedVideoData, 'pubkey' | 'kind' | 'vineId' | 'id'>): string {
   return `${video.pubkey}:${video.kind}:${video.vineId || video.id}`;
+}
+
+function getUniqueVideoCount(pages: FunnelcakeVideoPage[]): number {
+  const seenKeys = new Set<string>();
+
+  for (const page of pages) {
+    for (const video of page.videos) {
+      seenKeys.add(getVideoKey(video));
+    }
+  }
+
+  return seenKeys.size;
+}
+
+function isPopularFallbackPageParam(
+  pageParam: unknown
+): pageParam is { mode: 'popular'; offset: number } {
+  return typeof pageParam === 'object'
+    && pageParam !== null
+    && 'mode' in pageParam
+    && (pageParam as { mode?: string }).mode === 'popular'
+    && 'offset' in pageParam
+    && typeof (pageParam as { offset?: unknown }).offset === 'number';
+}
+
+function isRecommendationsCursorPageParam(
+  pageParam: unknown
+): pageParam is {
+  mode: 'recommendations';
+  cursor: string;
+  seenVideoKeys: string[];
+  popularOffset: number;
+} {
+  return typeof pageParam === 'object'
+    && pageParam !== null
+    && 'mode' in pageParam
+    && (pageParam as { mode?: string }).mode === 'recommendations'
+    && 'cursor' in pageParam
+    && typeof (pageParam as { cursor?: unknown }).cursor === 'string'
+    && 'seenVideoKeys' in pageParam
+    && Array.isArray((pageParam as { seenVideoKeys?: unknown }).seenVideoKeys)
+    && 'popularOffset' in pageParam
+    && typeof (pageParam as { popularOffset?: unknown }).popularOffset === 'number';
 }
 
 /**
@@ -186,7 +230,13 @@ export function useInfiniteVideosFunnelcake({
       }
 
       // Handle pagination cursor
-      const isOffsetParam = typeof pageParam === 'object' && pageParam !== null && 'offset' in pageParam;
+      const isPopularFallback = isPopularFallbackPageParam(pageParam);
+      const isRecommendationsCursorParam = isRecommendationsCursorPageParam(pageParam);
+      const isOffsetParam = typeof pageParam === 'object'
+        && pageParam !== null
+        && 'offset' in pageParam
+        && !isPopularFallback
+        && !isRecommendationsCursorParam;
       const before = isOffsetParam
         ? String((pageParam as { offset: number }).offset)
         : pageParam
@@ -213,6 +263,8 @@ export function useInfiniteVideosFunnelcake({
 
       const queryStart = performance.now();
       let response;
+      let responseMode: FunnelcakeVideoPage['mode'];
+      let cursorType: 'timestamp' | 'offset' | 'cursor' = feedType === 'recommendations' ? 'cursor' : 'timestamp';
 
       try {
         switch (feedType) {
@@ -245,19 +297,35 @@ export function useInfiniteVideosFunnelcake({
               debugLog('[useInfiniteVideosFunnelcake] No user logged in for recommendations feed');
               return { videos: [], nextCursor: undefined };
             }
-            // Recommendations use cursor-based pagination, with numeric-offset
-            // fallback for older servers that do not return cursor metadata yet.
-            const recCursor = typeof pageParam === 'string' ? pageParam : undefined;
-            const recOffset = recCursor ? parseInt(recCursor, 10) : undefined;
-            const isNumericOffset = recOffset !== undefined && !isNaN(recOffset);
-            response = await fetchRecommendations(effectiveApiUrl, {
-              pubkey: user.pubkey,
-              limit: pageSize,
-              cursor: recCursor,
-              offset: isNumericOffset ? recOffset : undefined,
-              fallback: 'popular', // Fall back to popular videos if no personalized recs
-              signal,
-            });
+            if (isPopularFallback) {
+              responseMode = 'popular';
+              cursorType = 'offset';
+              response = await fetchVideos(effectiveApiUrl, {
+                limit: pageSize,
+                sort: 'popular',
+                offset: pageParam.offset,
+                signal,
+              });
+            } else {
+              responseMode = 'recommendations';
+              // Recommendations use cursor-based pagination, with numeric-offset
+              // fallback for older servers that do not return cursor metadata yet.
+              const recCursor = isRecommendationsCursorParam
+                ? pageParam.cursor
+                : typeof pageParam === 'string'
+                  ? pageParam
+                  : undefined;
+              const recOffset = recCursor ? parseInt(recCursor, 10) : undefined;
+              const isNumericOffset = recOffset !== undefined && !isNaN(recOffset);
+              response = await fetchRecommendations(effectiveApiUrl, {
+                pubkey: user.pubkey,
+                limit: pageSize,
+                cursor: recCursor,
+                offset: isNumericOffset ? recOffset : undefined,
+                fallback: 'popular', // Fall back to popular videos if no personalized recs
+                signal,
+              });
+            }
             break;
           }
 
@@ -280,11 +348,27 @@ export function useInfiniteVideosFunnelcake({
 
       const queryTime = performance.now() - queryStart;
 
-      // Transform response to video page
-      // Recommendations use opaque cursor pagination, others use timestamp
+      // Transform response to video page.
       const parseStart = performance.now();
-      const cursorType = feedType === 'recommendations' ? 'cursor' : 'timestamp';
-      const page = transformToVideoPage(response, cursorType);
+      let page = transformToVideoPage(response, cursorType);
+
+      if (feedType === 'recommendations' && responseMode === 'recommendations' && isRecommendationsCursorParam) {
+        const seenKeys = new Set(pageParam.seenVideoKeys);
+        const hasNewVideos = page.videos.some(video => !seenKeys.has(getVideoKey(video)));
+
+        if (!hasNewVideos) {
+          responseMode = 'popular';
+          cursorType = 'offset';
+          response = await fetchVideos(effectiveApiUrl, {
+            limit: pageSize,
+            sort: 'popular',
+            offset: pageParam.popularOffset,
+            signal,
+          });
+          page = transformToVideoPage(response, cursorType);
+        }
+      }
+
       const enrichedVideos = feedType === 'profile'
         ? await enrichAgeRestrictedVideos(page.videos, signal)
         : page.videos;
@@ -319,7 +403,8 @@ export function useInfiniteVideosFunnelcake({
         videos: enrichedVideos,
         nextCursor: page.nextCursor,
         offset: page.offset,
-        recommendationsCursor: page.rawCursor,
+        recommendationsCursor: responseMode === 'recommendations' ? page.rawCursor : undefined,
+        mode: responseMode,
       };
     },
 
@@ -331,24 +416,25 @@ export function useInfiniteVideosFunnelcake({
         return { offset: nextOffset };
       }
       if (feedType === 'recommendations') {
-        if (!lastPage.recommendationsCursor) {
-          return undefined;
+        if (lastPage.mode === 'popular') {
+          return lastPage.offset !== undefined
+            ? { mode: 'popular' as const, offset: lastPage.offset }
+            : undefined;
         }
 
-        if (allPages.length > 1) {
-          const seenKeys = new Set(
-            allPages
-              .slice(0, -1)
-              .flatMap(page => page.videos.map(getVideoKey))
-          );
-          const hasNewVideos = lastPage.videos.some(video => !seenKeys.has(getVideoKey(video)));
-
-          if (!hasNewVideos) {
-            return undefined;
-          }
+        if (lastPage.recommendationsCursor) {
+          return {
+            mode: 'recommendations' as const,
+            cursor: lastPage.recommendationsCursor,
+            seenVideoKeys: allPages.flatMap(page => page.videos.map(getVideoKey)),
+            popularOffset: getUniqueVideoCount(allPages),
+          };
         }
 
-        return lastPage.recommendationsCursor;
+        return {
+          mode: 'popular' as const,
+          offset: getUniqueVideoCount(allPages),
+        };
       }
       // Use offset for sorted pagination, timestamp for chronological
       if (lastPage.offset !== undefined) {

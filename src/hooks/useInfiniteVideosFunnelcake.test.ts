@@ -3,6 +3,7 @@ import { renderHook, waitFor, act } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
 
+const mockFetchVideos = vi.fn();
 const mockFetchRecommendations = vi.fn();
 const mockTransformToVideoPage = vi.fn();
 
@@ -13,7 +14,7 @@ vi.mock('@/hooks/useCurrentUser', () => ({
 }));
 
 vi.mock('@/lib/funnelcakeClient', () => ({
-  fetchVideos: vi.fn(),
+  fetchVideos: mockFetchVideos,
   searchVideos: vi.fn(),
   fetchUserVideos: vi.fn(),
   fetchUserFeed: vi.fn(),
@@ -89,9 +90,12 @@ describe('useInfiniteVideosFunnelcake', () => {
     expect(result.current.hasNextPage).toBe(true);
   });
 
-  it('stops paginating when server returns no cursor', async () => {
+  it('falls back to popular pagination when recommendations return no cursor', async () => {
     mockFetchRecommendations
       .mockResolvedValueOnce({ videos: [{}], has_more: false, next_cursor: null });
+
+    mockFetchVideos
+      .mockResolvedValueOnce({ videos: [{}], has_more: false, next_cursor: undefined });
 
     mockTransformToVideoPage
       .mockReturnValueOnce({
@@ -99,6 +103,14 @@ describe('useInfiniteVideosFunnelcake', () => {
           { id: 'video-1', pubkey: 'p1', kind: 34236, createdAt: 101, vineId: 'd-1' },
         ],
         nextCursor: undefined,
+        hasMore: false,
+      })
+      .mockReturnValueOnce({
+        videos: [
+          { id: 'video-2', pubkey: 'p2', kind: 34236, createdAt: 100, vineId: 'd-2' },
+        ],
+        nextCursor: undefined,
+        offset: undefined,
         hasMore: false,
       });
 
@@ -114,24 +126,50 @@ describe('useInfiniteVideosFunnelcake', () => {
     // Page should have no recCursor
     const page = result.current.data?.pages[0];
     expect(page?.recommendationsCursor).toBeUndefined();
-    // Server said no more — should not have next page
-    expect(result.current.hasNextPage).toBe(false);
+    // Recommendations stop, but the feed should continue via popular fallback
+    expect(result.current.hasNextPage).toBe(true);
+
+    await act(async () => {
+      await result.current.fetchNextPage();
+    });
+
+    await waitFor(() => {
+      expect(result.current.data?.pages).toHaveLength(2);
+    });
+
+    expect(mockFetchVideos).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({
+        sort: 'popular',
+        limit: 12,
+        offset: 1,
+        signal: expect.any(AbortSignal),
+      })
+    );
   });
 
-  it('dedup safety net stops pagination when server returns duplicate videos', async () => {
+  it('falls back to popular pagination when recommendations return duplicate pages', async () => {
     // Server returns the same videos for both pages (offset/cursor ignored)
     const sameVideos = [
       { id: 'video-1', pubkey: 'p1', kind: 34236, createdAt: 101, vineId: 'd-1' },
       { id: 'video-2', pubkey: 'p2', kind: 34236, createdAt: 100, vineId: 'd-2' },
+    ];
+    const popularVideos = [
+      { id: 'video-3', pubkey: 'p3', kind: 34236, createdAt: 99, vineId: 'd-3' },
+      { id: 'video-4', pubkey: 'p4', kind: 34236, createdAt: 98, vineId: 'd-4' },
     ];
 
     mockFetchRecommendations
       .mockResolvedValueOnce({ videos: [{}], has_more: true, next_cursor: '12' })
       .mockResolvedValueOnce({ videos: [{}], has_more: true, next_cursor: '24' });
 
+    mockFetchVideos
+      .mockResolvedValueOnce({ videos: [{}], has_more: false, next_cursor: undefined });
+
     mockTransformToVideoPage
       .mockReturnValueOnce({ videos: sameVideos, nextCursor: undefined, rawCursor: '12', hasMore: true })
-      .mockReturnValueOnce({ videos: sameVideos, nextCursor: undefined, rawCursor: '24', hasMore: true });
+      .mockReturnValueOnce({ videos: sameVideos, nextCursor: undefined, rawCursor: '24', hasMore: true })
+      .mockReturnValueOnce({ videos: popularVideos, nextCursor: undefined, offset: undefined, hasMore: false });
 
     const { result } = renderHook(
       () => useInfiniteVideosFunnelcake({ feedType: 'recommendations', pageSize: 12 }),
@@ -149,10 +187,33 @@ describe('useInfiniteVideosFunnelcake', () => {
     });
 
     await waitFor(() => {
+      expect(mockFetchRecommendations).toHaveBeenCalledTimes(2);
+    });
+
+    expect(mockFetchRecommendations).toHaveBeenNthCalledWith(
+      2,
+      expect.any(String),
+      expect.objectContaining({
+        cursor: '12',
+        offset: 12,
+        limit: 12,
+      })
+    );
+
+    await waitFor(() => {
       expect(result.current.data?.pages).toHaveLength(2);
     });
 
-    // Page 2 contains only duplicates → should stop pagination
-    expect(result.current.hasNextPage).toBe(false);
+    expect(mockFetchVideos).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({
+        sort: 'popular',
+        limit: 12,
+        offset: 2,
+        signal: expect.any(AbortSignal),
+      })
+    );
+
+    expect(result.current.data?.pages[1]?.videos).toEqual(popularVideos);
   });
 });
