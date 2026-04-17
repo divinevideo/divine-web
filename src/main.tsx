@@ -41,7 +41,6 @@ import './index.css';
 
 // Import custom fonts
 import '@fontsource-variable/inter';
-import '@fontsource/pacifico';
 
 // PWA Service Worker Registration
 // The app works fully without a service worker — SW is only for offline caching.

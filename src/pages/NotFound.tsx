@@ -2,6 +2,7 @@ import { useSeoMeta } from "@unhead/react";
 import { useLocation } from "react-router-dom";
 import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { BrandLogo } from "@/components/brand/BrandLogo";
 
 const NotFound = () => {
   const location = useLocation();
@@ -37,7 +38,7 @@ const NotFound = () => {
 
         {/* Campy Message */}
         <h2 className="text-3xl md:text-4xl font-bold mb-4 text-foreground">
-          This Page is <span className="text-primary font-pacifico">Divine</span>...ly Missing!
+          This Page is <BrandLogo className="text-primary" />...ly Missing!
         </h2>
 
         <p className="text-xl text-muted-foreground mb-8">

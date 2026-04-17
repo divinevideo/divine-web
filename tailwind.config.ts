@@ -9,6 +9,12 @@ export default {
 		"./app/**/*.{ts,tsx}",
 		"./src/**/*.{ts,tsx}",
 	],
+	// Brand utilities live in src/styles/brand-utilities.css. Keep them in the
+	// build even before any component consumes them, so downstream phases that
+	// apply them dynamically (or via composition) don't trip JIT tree-shaking.
+	safelist: [
+		{ pattern: /^brand-(offset-shadow(-sm)?-(green|pink|violet|orange|yellow|blue|dark)|tilt-(neg-3|pos-2)|sticker|card)$/ },
+	],
 	prefix: "",
 	theme: {
 		container: {
@@ -21,7 +27,6 @@ export default {
 		extend: {
 			fontFamily: {
 				'sans': ['Inter Variable', 'Inter', 'system-ui', 'sans-serif'],
-				'logo': ['Pacifico', 'cursive'],
 			},
 			colors: {
 				border: 'hsl(var(--border))',
