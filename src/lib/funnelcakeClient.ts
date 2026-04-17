@@ -506,7 +506,7 @@ export async function fetchRecommendations(
     ? (response.has_more ?? false)
     : videoCount > 0;
   const nextCursor = serverSupportsCursorMetadata
-    ? (response.next_cursor ?? undefined)
+    ? (response.next_cursor ?? (response.next_offset !== null ? String(response.next_offset) : undefined))
     : (videoCount > 0 ? String((offset || 0) + limit) : undefined);
 
   debugLog(
