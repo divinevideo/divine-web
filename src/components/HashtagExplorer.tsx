@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Hash, MagnifyingGlass as Search, Play, CircleNotch as Loader2 } from '@phosphor-icons/react';
 import { fetchPopularHashtags } from '@/lib/funnelcakeClient';
+import { getFunnelcakeBaseUrl } from '@/config/api';
 
 interface HashtagStats {
   tag: string;

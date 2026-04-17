@@ -1,4 +1,4 @@
-import { Lock } from 'lucide-react';
+import { Lock } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -27,7 +27,7 @@ export function AgeRestrictedMediaPlaceholder({
         <Lock className="h-5 w-5" />
       </div>
       <div className="space-y-1">
-        <p className="text-xs font-medium uppercase tracking-[0.24em] text-white/60">
+        <p className="text-xs font-semibold tracking-wide text-white/70">
           Age-restricted
         </p>
         {title ? (
