@@ -117,7 +117,7 @@ export function AppSidebar({ className }: { className?: string }) {
         {/* Main Navigation */}
         <nav className="flex flex-col gap-0.5 px-3 pt-2">
           <NavItem
-            icon={<Search className="h-[18px] w-[18px]" />}
+            icon={<Search className="h-[18px] w-[18px]" weight={isActive('/search') ? 'fill' : 'bold'} />}
             label={t('nav.search')}
             onClick={() => navigate('/search')}
             isActive={isActive('/search')}
@@ -125,7 +125,7 @@ export function AppSidebar({ className }: { className?: string }) {
 
           {user && (
             <NavItem
-              icon={<Home className="h-[18px] w-[18px]" />}
+              icon={<Home className="h-[18px] w-[18px]" weight={isActive('/') ? 'fill' : 'bold'} />}
               label={t('nav.home')}
               onClick={() => navigate('/')}
               isActive={isActive('/')}
@@ -133,7 +133,7 @@ export function AppSidebar({ className }: { className?: string }) {
           )}
 
           <NavItem
-            icon={<Compass className="h-[18px] w-[18px]" />}
+            icon={<Compass className="h-[18px] w-[18px]" weight={isDiscoveryActive() ? 'fill' : 'bold'} />}
             label={t('nav.discover')}
             onClick={() => navigate('/discovery')}
             isActive={isDiscoveryActive()}
@@ -143,7 +143,7 @@ export function AppSidebar({ className }: { className?: string }) {
             <NavItem
               icon={
                 <div className="relative">
-                  <MessageCircle className="h-[18px] w-[18px]" />
+                  <MessageCircle className="h-[18px] w-[18px]" weight={isMessagesActive() ? 'fill' : 'bold'} />
                   {(unreadDmCount ?? 0) > 0 && (
                     <span className="absolute -top-1 -right-2 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-primary px-0.5 text-[9px] font-bold text-primary-foreground">
                       {(unreadDmCount ?? 0) > 99 ? '99+' : unreadDmCount}
@@ -161,7 +161,7 @@ export function AppSidebar({ className }: { className?: string }) {
             <NavItem
               icon={
                 <div className="relative">
-                  <Bell className="h-[18px] w-[18px]" />
+                  <Bell className="h-[18px] w-[18px]" weight={isActive('/notifications') ? 'fill' : 'bold'} />
                   {(unreadCount ?? 0) > 0 && (
                     <span className="absolute -top-1 -right-2 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-destructive px-0.5 text-[9px] font-bold text-destructive-foreground">
                       {(unreadCount ?? 0) > 99 ? '99+' : unreadCount}
@@ -177,7 +177,7 @@ export function AppSidebar({ className }: { className?: string }) {
 
           {user && profilePath && (
             <NavItem
-              icon={<User className="h-[18px] w-[18px]" />}
+              icon={<User className="h-[18px] w-[18px]" weight={location.pathname === profilePath ? 'fill' : 'bold'} />}
               label={t('nav.profile')}
               onClick={() => navigate(profilePath)}
               isActive={location.pathname === profilePath}
@@ -186,7 +186,7 @@ export function AppSidebar({ className }: { className?: string }) {
 
           {user && (
             <NavItem
-              icon={<BarChart3 className="h-[18px] w-[18px]" />}
+              icon={<BarChart3 className="h-[18px] w-[18px]" weight={isActive('/analytics') ? 'fill' : 'bold'} />}
               label={t('nav.analytics')}
               onClick={() => navigate('/analytics')}
               isActive={isActive('/analytics')}
