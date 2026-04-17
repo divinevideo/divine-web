@@ -77,10 +77,6 @@ export function ClassicVinersRow() {
 
       {/* Scrollable row */}
       <div className="relative group">
-        {/* Scroll hint gradients */}
-        <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-background to-transparent z-10 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity" />
-        <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-background to-transparent z-10 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity" />
-
         {/* Scrollable container */}
         <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide -mx-1 px-1">
           {CLASSIC_VINERS.map((viner) => (
