@@ -139,7 +139,7 @@ function SupportRow({
         <div className="min-w-0 flex-1">
           <div className="flex items-center justify-between gap-3">
             <p className="truncate text-sm font-semibold text-foreground">{displayName}</p>
-            <span className="rounded-full bg-primary/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-primary">
+            <span className="rounded-full bg-primary/10 px-2.5 py-1 text-[10px] font-semibold text-primary">
               {supportBadge}
             </span>
           </div>
@@ -195,7 +195,7 @@ export function MessagesPage() {
           <section className="overflow-hidden rounded-[32px] border border-border/70 bg-card/80 px-5 py-6 shadow-[0_24px_60px_rgba(39,197,139,0.08)] backdrop-blur-sm">
             <div className="space-y-4">
               <div className="space-y-2">
-                <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-primary">
+                <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary">
                   {t('messages.badge')}
                 </div>
                 <div>
