@@ -163,7 +163,7 @@ export function AboutPage() {
             </p>
             {classicVinesSaved && (
               <div className="rounded-lg border border-brand-green bg-brand-dark-green px-4 py-3">
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-green">
+                <p className="text-xs font-semibold text-brand-green">
                   Classic Vines Saved
                 </p>
                 <p className="mt-1 text-3xl font-bold text-brand-off-white">
