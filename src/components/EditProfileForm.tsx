@@ -233,6 +233,7 @@ export const EditProfileForm: React.FC<EditProfileFormProps> = ({ onSuccess }) =
 
         <Button
           type="submit"
+          variant="sticker"
           className="w-full md:w-auto"
           disabled={isPending || isUploading}
         >
