@@ -22,6 +22,7 @@ import {
 } from '@/lib/dm';
 import { genUserName } from '@/lib/genUserName';
 import { getSafeProfileImage } from '@/lib/imageUtils';
+import { getDivineNip05Info } from '@/lib/nip05Utils';
 import { formatRelativeTime } from '@/lib/notificationTransform';
 import { cn } from '@/lib/utils';
 
@@ -31,6 +32,27 @@ function getDisplayName(pubkey: string, metadata?: { display_name?: string; name
   }
 
   return metadata?.display_name || metadata?.name || genUserName(pubkey);
+}
+
+function getConversationSubtitle(
+  pubkey: string,
+  metadata?: { name?: string; nip05?: string },
+) {
+  if (pubkey === DIVINE_SUPPORT_PUBKEY) {
+    return 'Private support chat';
+  }
+
+  const nip05 = metadata?.nip05?.trim();
+  if (nip05) {
+    const divineInfo = getDivineNip05Info(nip05);
+    if (divineInfo) {
+      return divineInfo.displayName;
+    }
+
+    return nip05.startsWith('_@') ? `@${nip05.slice(2)}` : `@${nip05}`;
+  }
+
+  return `@${metadata?.name || genUserName(pubkey)}`;
 }
 
 function MessageBubble({
@@ -184,11 +206,7 @@ export function ConversationPage() {
     ? peerNames[0]
     : `${peerNames.length} people`;
   const subtitle = peerNames.length === 1
-    ? (
-        peerPubkeys[0] === DIVINE_SUPPORT_PUBKEY
-          ? 'Private support chat'
-          : `@${authorMap[peerPubkeys[0]]?.metadata?.name || genUserName(peerPubkeys[0])}`
-      )
+    ? getConversationSubtitle(peerPubkeys[0], authorMap[peerPubkeys[0]]?.metadata)
     : peerNames.join(', ');
 
   const sharelessPath = conversationId ? getDmConversationPath(peerPubkeys) : '/messages';

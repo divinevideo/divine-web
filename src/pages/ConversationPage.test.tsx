@@ -11,12 +11,15 @@ const RECIPIENT_PUBKEY = 'b'.repeat(64);
 const CONVERSATION_ID = encodeConversationId([RECIPIENT_PUBKEY]);
 
 const {
+  currentUserPubkey,
+  mockAuthorMap,
   directMessageState,
   mockNavigate,
   mockMarkConversationRead,
   mockSendMutate,
   mockSendMutateAsync,
 } = vi.hoisted(() => ({
+  currentUserPubkey: 'a'.repeat(64),
   directMessageState: {
     messages: [] as DmMessage[],
     latestMessageAt: 0,
@@ -29,6 +32,15 @@ const {
   mockMarkConversationRead: vi.fn(),
   mockSendMutate: vi.fn(),
   mockSendMutateAsync: vi.fn(),
+  mockAuthorMap: {
+    ['b'.repeat(64)]: {
+      metadata: {
+        display_name: 'Inbox Friend',
+        name: 'inboxfriend',
+        picture: 'https://example.com/friend.png',
+      },
+    },
+  } as Record<string, { metadata: { display_name?: string; name?: string; picture?: string; nip05?: string } }>,
 }));
 
 vi.mock('@/hooks/useDirectMessages', () => ({
@@ -50,20 +62,18 @@ vi.mock('@/hooks/useDirectMessages', () => ({
 
 vi.mock('@/hooks/useBatchedAuthors', () => ({
   useBatchedAuthors: () => ({
-    data: {
-      [RECIPIENT_PUBKEY]: {
-        metadata: {
-          display_name: 'Inbox Friend',
-          name: 'inboxfriend',
-          picture: 'https://example.com/friend.png',
-        },
-      },
-    },
+    data: mockAuthorMap,
   }),
 }));
 
 vi.mock('@/hooks/useSubdomainNavigate', () => ({
   useSubdomainNavigate: () => mockNavigate,
+}));
+
+vi.mock('@/hooks/useCurrentUser', () => ({
+  useCurrentUser: () => ({
+    user: { pubkey: currentUserPubkey },
+  }),
 }));
 
 function buildMessage(overrides: Partial<DmMessage> = {}): DmMessage {
@@ -94,6 +104,13 @@ function renderPage() {
 describe('ConversationPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockAuthorMap[RECIPIENT_PUBKEY] = {
+      metadata: {
+        display_name: 'Inbox Friend',
+        name: 'inboxfriend',
+        picture: 'https://example.com/friend.png',
+      },
+    };
     directMessageState.messages = [];
     directMessageState.latestMessageAt = 0;
     directMessageState.lastReadAt = 0;
@@ -120,6 +137,20 @@ describe('ConversationPage', () => {
       share: undefined,
     }));
     expect(composer).toHaveValue('');
+  });
+
+  it('prefers nip05 in the header subtitle when it is available', () => {
+    mockAuthorMap[RECIPIENT_PUBKEY] = {
+      metadata: {
+        display_name: 'Rabble',
+        nip05: '_@rabble.divine.video',
+      },
+    };
+
+    renderPage();
+
+    expect(screen.getByRole('heading', { name: 'Rabble' })).toBeInTheDocument();
+    expect(screen.getByText('@rabble.divine.video')).toBeInTheDocument();
   });
 
   it('renders a sending indicator for optimistic messages', () => {

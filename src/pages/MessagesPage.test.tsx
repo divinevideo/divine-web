@@ -1,4 +1,5 @@
 import { render, screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { LOCALE_STORAGE_KEY } from '@/lib/i18n/config';
@@ -7,7 +8,16 @@ import { initializeI18n } from '@/lib/i18n';
 import MessagesPage from './MessagesPage';
 import type { DmConversation } from '@/lib/dm';
 
-const { mockNavigate, mockConversations, mockAuthorMap } = vi.hoisted(() => ({
+const {
+  currentUserPubkey,
+  otherUserPubkey,
+  mockNavigate,
+  mockConversations,
+  mockAuthorMap,
+  mockSearchResults,
+} = vi.hoisted(() => ({
+  currentUserPubkey: 'a'.repeat(64),
+  otherUserPubkey: 'c'.repeat(64),
   mockNavigate: vi.fn(),
   mockConversations: [
     {
@@ -40,7 +50,29 @@ const { mockNavigate, mockConversations, mockAuthorMap } = vi.hoisted(() => ({
         picture: 'https://example.com/friend.png',
       },
     },
+    ['a'.repeat(64)]: {
+      metadata: {
+        display_name: 'Rabble',
+        name: 'rabble',
+        nip05: '_@rabble.divine.video',
+      },
+    },
+    ['c'.repeat(64)]: {
+      metadata: {
+        display_name: 'Alice',
+        name: 'alice',
+      },
+    },
   },
+  mockSearchResults: [] as Array<{
+    pubkey: string;
+    metadata?: {
+      display_name?: string;
+      name?: string;
+      picture?: string;
+      nip05?: string;
+    };
+  }>,
 }));
 
 vi.mock('@/hooks/useDirectMessages', () => ({
@@ -50,11 +82,15 @@ vi.mock('@/hooks/useDirectMessages', () => ({
 }));
 
 vi.mock('@/hooks/useSearchUsers', () => ({
-  useSearchUsers: () => ({ data: [], isLoading: false }),
+  useSearchUsers: () => ({ data: mockSearchResults, isLoading: false }),
 }));
 
 vi.mock('@/hooks/useBatchedAuthors', () => ({
   useBatchedAuthors: () => ({ data: mockAuthorMap }),
+}));
+
+vi.mock('@/hooks/useCurrentUser', () => ({
+  useCurrentUser: () => ({ user: { pubkey: currentUserPubkey } }),
 }));
 
 vi.mock('@/hooks/useSubdomainNavigate', () => ({
@@ -71,6 +107,7 @@ function renderPage() {
 
 describe('MessagesPage', () => {
   beforeEach(async () => {
+    mockSearchResults.length = 0;
     mockConversations[0].lastMessage = {
       conversationId: 'conversation-1',
       wrapId: 'wrap-1',
@@ -143,5 +180,34 @@ describe('MessagesPage', () => {
     renderPage();
 
     expect(screen.getByText(/failed to send: this one failed/i)).toBeInTheDocument();
+  });
+
+  it('filters the current user out of compose search results', async () => {
+    const user = userEvent.setup();
+
+    mockSearchResults.push(
+      {
+        pubkey: currentUserPubkey,
+        metadata: {
+          display_name: 'Rabble',
+          name: 'rabble',
+          nip05: '_@rabble.divine.video',
+        },
+      },
+      {
+        pubkey: otherUserPubkey,
+        metadata: {
+          display_name: 'Alice',
+          name: 'alice',
+        },
+      },
+    );
+
+    renderPage();
+
+    await user.type(screen.getByRole('textbox'), 'a');
+
+    expect(screen.getByText('Alice')).toBeInTheDocument();
+    expect(screen.queryByText('Rabble')).not.toBeInTheDocument();
   });
 });
