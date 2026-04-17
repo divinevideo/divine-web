@@ -393,28 +393,16 @@ export function SearchPage() {
             </TabsTrigger>
           </TabsList>
 
-          {/* Results count */}
+          {/* Status message */}
           {searchQuery.trim() && (
             <div className="text-center mb-4">
               {isLoading ? (
                 <p className="text-muted-foreground">Searching...</p>
               ) : error ? (
                 <p className="text-destructive">Search error occurred</p>
-              ) : (
-                <p className="text-muted-foreground">
-                  {getResultsCount() === 0
-                    ? 'No results found'
-                    : `${getResultsCount()} ${
-                        activeFilter === 'all'
-                          ? 'results'
-                          : activeFilter === 'videos'
-                          ? 'videos'
-                          : activeFilter === 'users'
-                          ? 'users'
-                          : 'hashtags'
-                      } found`}
-                </p>
-              )}
+              ) : getResultsCount() === 0 ? (
+                <p className="text-muted-foreground">No results found</p>
+              ) : null}
             </div>
           )}
 
@@ -436,7 +424,7 @@ export function SearchPage() {
                     <div className="flex items-center justify-between mb-4">
                       <h2 className="text-lg font-semibold flex items-center gap-2">
                         <Video className="h-5 w-5" />
-                        Videos ({videoResults.length}{hasNextVideos ? '+' : ''})
+                        Videos
                       </h2>
                       <Button
                         variant="outline"
@@ -459,7 +447,7 @@ export function SearchPage() {
                   <section>
                     <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
                       <Users className="h-5 w-5" />
-                      Users ({userResults.length})
+                      Users
                     </h2>
                     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                       {userResults.slice(0, 6).map((user) => (
@@ -472,7 +460,7 @@ export function SearchPage() {
                           variant="outline"
                           onClick={() => setActiveFilter('users')}
                         >
-                          View all {userResults.length} users
+                          View all users
                         </Button>
                       </div>
                     )}
@@ -484,7 +472,7 @@ export function SearchPage() {
                   <section>
                     <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
                       <Hash className="h-5 w-5" />
-                      Hashtags ({hashtagResults.length})
+                      Hashtags
                     </h2>
                     <div className="flex flex-wrap gap-2">
                       {hashtagResults.slice(0, 12).map((hashtag) => (
@@ -501,7 +489,7 @@ export function SearchPage() {
                           variant="outline"
                           onClick={() => setActiveFilter('hashtags')}
                         >
-                          View all {hashtagResults.length} hashtags
+                          View all hashtags
                         </Button>
                       </div>
                     )}
