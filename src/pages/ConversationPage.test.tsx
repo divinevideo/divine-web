@@ -104,8 +104,19 @@ describe('ConversationPage', () => {
     mockSendMutateAsync.mockImplementation(() => new Promise<void>(() => undefined));
   });
 
-  it('clears the composer immediately after send is triggered', async () => {
+  it('renders the composer with a two-line baseline', () => {
+    renderPage();
+
+    expect(screen.getByRole('textbox')).toHaveAttribute('rows', '2');
+  });
+
+  it('clears the composer only after a successful send', async () => {
     const user = userEvent.setup();
+    let resolveSend: (() => void) | undefined;
+
+    mockSendMutateAsync.mockImplementationOnce(() => new Promise<void>((resolve) => {
+      resolveSend = resolve;
+    }));
 
     renderPage();
 
@@ -114,12 +125,35 @@ describe('ConversationPage', () => {
     await user.type(composer, 'hello');
     await user.keyboard('{Enter}');
 
-    await waitFor(() => expect(mockSendMutate).toHaveBeenCalledWith({
+    await waitFor(() => expect(mockSendMutateAsync).toHaveBeenCalledWith({
       participantPubkeys: [RECIPIENT_PUBKEY],
       content: 'hello',
       share: undefined,
     }));
-    expect(composer).toHaveValue('');
+    expect(composer).toHaveValue('hello');
+
+    resolveSend?.();
+    await waitFor(() => expect(composer).toHaveValue(''));
+  });
+
+  it('keeps the composer content when send fails', async () => {
+    const user = userEvent.setup();
+
+    mockSendMutateAsync.mockRejectedValueOnce(new Error('publish failed'));
+
+    renderPage();
+
+    const composer = screen.getByRole('textbox');
+
+    await user.type(composer, 'hello');
+    await user.keyboard('{Enter}');
+
+    await waitFor(() => expect(mockSendMutateAsync).toHaveBeenCalledWith({
+      participantPubkeys: [RECIPIENT_PUBKEY],
+      content: 'hello',
+      share: undefined,
+    }));
+    expect(composer).toHaveValue('hello');
   });
 
   it('renders a sending indicator for optimistic messages', () => {

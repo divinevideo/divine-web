@@ -26,13 +26,13 @@ function installTextareaHeights(initialHeights: { offsetHeight: number; scrollHe
       if (offsetHeightDescriptor) {
         Object.defineProperty(HTMLTextAreaElement.prototype, 'offsetHeight', offsetHeightDescriptor);
       } else {
-        delete (HTMLTextAreaElement.prototype as HTMLTextAreaElement).offsetHeight;
+        Reflect.deleteProperty(HTMLTextAreaElement.prototype, 'offsetHeight');
       }
 
       if (scrollHeightDescriptor) {
         Object.defineProperty(HTMLTextAreaElement.prototype, 'scrollHeight', scrollHeightDescriptor);
       } else {
-        delete (HTMLTextAreaElement.prototype as HTMLTextAreaElement).scrollHeight;
+        Reflect.deleteProperty(HTMLTextAreaElement.prototype, 'scrollHeight');
       }
     },
   };

@@ -193,23 +193,26 @@ export function ConversationPage() {
 
   const sharelessPath = conversationId ? getDmConversationPath(peerPubkeys) : '/messages';
 
-  const handleSend = () => {
+  const handleSend = async () => {
     const trimmedDraft = draft.trim();
     if (!peerPubkeys.length || (!trimmedDraft && !share)) {
       return;
     }
 
-    const content = trimmedDraft;
-    setDraft('');
+    try {
+      await sendMessage.mutateAsync({
+        participantPubkeys: peerPubkeys,
+        content: trimmedDraft,
+        share: share ?? undefined,
+      });
 
-    sendMessage.mutate({
-      participantPubkeys: peerPubkeys,
-      content,
-      share: share ?? undefined,
-    });
+      setDraft('');
 
-    if (share) {
-      navigate(sharelessPath, { replace: true });
+      if (share) {
+        navigate(sharelessPath, { replace: true });
+      }
+    } catch {
+      // Mutation error state and toast are handled by the hook.
     }
   };
 
@@ -226,10 +229,10 @@ export function ConversationPage() {
     });
   };
 
-  const handleComposerKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
+  const handleComposerKeyDown = async (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault();
-      handleSend();
+      await handleSend();
     }
   };
 
@@ -355,8 +358,8 @@ export function ConversationPage() {
                   onChange={(event) => setDraft(event.target.value)}
                   onKeyDown={handleComposerKeyDown}
                   placeholder={share ? 'Add an optional note...' : 'Write a message...'}
-                  rows={1}
-                  className="min-h-12 rounded-[24px] border-border/80 bg-background/80 px-4 py-3 text-sm"
+                  rows={2}
+                  className="resize-none rounded-[24px] border-border/80 bg-background/80 px-4 py-3 text-sm"
                 />
                 <Button
                   className="h-12 w-12 rounded-full"
