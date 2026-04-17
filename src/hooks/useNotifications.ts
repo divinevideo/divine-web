@@ -6,21 +6,37 @@ import { getNotificationsBaseUrl } from '@/config/api';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { fetchNotifications, fetchUnreadCount, markNotificationsRead } from '@/lib/funnelcakeClient';
 import { debugLog } from '@/lib/debug';
-import type { NotificationsResponse } from '@/types/notification';
+import type { NotificationCategory, NotificationFilters, NotificationType, NotificationsResponse } from '@/types/notification';
 
 const NOTIFICATIONS_PAGE_SIZE = 30;
+
+const CATEGORY_TYPES: Partial<Record<NotificationCategory, NotificationType[]>> = {
+  likes: ['like'],
+  comments: ['comment'],
+  follows: ['follow'],
+  reposts: ['repost'],
+  zaps: ['zap'],
+};
+
+function resolveNotificationQueryFilters(category: NotificationCategory) {
+  return {
+    unreadOnly: category === 'unread',
+    types: CATEGORY_TYPES[category],
+  };
+}
 
 /**
  * Infinite query for paginated notifications list.
  * Fetches pages of notifications with cursor-based pagination.
  */
-export function useNotifications() {
+export function useNotifications(filters: NotificationFilters = { category: 'all' }) {
   const { user, signer } = useCurrentUser();
   const pubkey = user?.pubkey;
   const apiUrl = getNotificationsBaseUrl();
+  const { unreadOnly, types } = resolveNotificationQueryFilters(filters.category);
 
   return useInfiniteQuery<NotificationsResponse, Error>({
-    queryKey: ['notifications', pubkey],
+    queryKey: ['notifications', pubkey, filters.category],
 
     queryFn: async ({ pageParam, signal }) => {
       if (!pubkey || !signer) {
@@ -32,6 +48,8 @@ export function useNotifications() {
       return fetchNotifications(apiUrl, pubkey, signer, {
         limit: NOTIFICATIONS_PAGE_SIZE,
         before: pageParam as string | undefined,
+        unreadOnly,
+        types,
         signal,
       });
     },

@@ -32,6 +32,7 @@ describe('funnelcakeClient', () => {
   let searchProfiles: typeof import('./funnelcakeClient').searchProfiles;
   let fetchRecommendations: typeof import('./funnelcakeClient').fetchRecommendations;
   let markNotificationsRead: typeof import('./funnelcakeClient').markNotificationsRead;
+  let fetchNotifications: typeof import('./funnelcakeClient').fetchNotifications;
 
   beforeEach(async () => {
     vi.resetModules();
@@ -47,6 +48,7 @@ describe('funnelcakeClient', () => {
     searchProfiles = client.searchProfiles;
     fetchRecommendations = client.fetchRecommendations;
     markNotificationsRead = client.markNotificationsRead;
+    fetchNotifications = client.fetchNotifications;
   });
 
   afterEach(() => {
@@ -494,6 +496,48 @@ describe('funnelcakeClient', () => {
       expect(init).toEqual(expect.objectContaining({
         signal: expect.any(AbortSignal),
       }));
+    });
+  });
+
+  describe('fetchNotifications', () => {
+    it('forwards notification type and unread filters to the backend', async () => {
+      const signer = {
+        signEvent: vi.fn().mockResolvedValue({
+          id: 'event-id',
+          sig: 'sig',
+          pubkey: TEST_PUBKEY,
+          kind: 27235,
+          created_at: 1_700_000_000,
+          content: '',
+          tags: [],
+        }),
+        getPublicKey: vi.fn().mockResolvedValue(TEST_PUBKEY),
+      };
+
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({
+          notifications: [],
+          unread_count: 2,
+          has_more: false,
+        }),
+      });
+
+      await fetchNotifications(API_URL, TEST_PUBKEY, signer as never, {
+        limit: 30,
+        before: 'cursor-1',
+        unreadOnly: true,
+        types: ['like', 'follow'],
+      });
+
+      const [url] = (global.fetch as ReturnType<typeof vi.fn>).mock.calls[0];
+      const requestUrl = new URL(url as string);
+
+      expect(requestUrl.pathname).toBe(`/api/users/${TEST_PUBKEY}/notifications`);
+      expect(requestUrl.searchParams.get('limit')).toBe('30');
+      expect(requestUrl.searchParams.get('before')).toBe('cursor-1');
+      expect(requestUrl.searchParams.get('unread_only')).toBe('true');
+      expect(requestUrl.searchParams.get('types')).toBe('like,follow');
     });
   });
 });
