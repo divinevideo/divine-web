@@ -100,9 +100,9 @@ export default function NotificationsPage() {
       {!isLoading && !isError && notifications.length === 0 && (
         <div className="text-center py-16">
           <Bell className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-          <p className="text-lg font-medium mb-1">No notifications yet</p>
+          <p className="text-lg font-medium mb-1">All quiet. Nothing to flag.</p>
           <p className="text-sm text-muted-foreground">
-            When people interact with your content, you'll see it here
+            When people react to your stuff, it lands right here.
           </p>
         </div>
       )}

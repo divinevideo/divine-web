@@ -264,7 +264,7 @@ export function AddToListDialog({
               <div className="text-center py-8">
                 <List className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
                 <p className="text-muted-foreground mb-4">
-                  You don't have any lists yet
+                  No lists yet. Make one and start stashing.
                 </p>
                 <Button
                   variant="outline"

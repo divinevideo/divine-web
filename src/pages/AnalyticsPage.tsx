@@ -180,9 +180,9 @@ function EmptyState() {
         <Video className="h-8 w-8 text-muted-foreground" />
       </div>
       <div>
-        <h3 className="text-lg font-semibold">No videos yet</h3>
+        <h3 className="text-lg font-semibold">Nothing to graph yet.</h3>
         <p className="mt-1 text-muted-foreground">
-          Post your first video to start seeing analytics here.
+          Drop your first loop — your numbers show up here.
         </p>
       </div>
     </div>
@@ -306,7 +306,7 @@ function AnalyticsDashboard({ pubkey }: { pubkey: string }) {
                       ))
                     ) : (
                       <p className="py-8 text-center text-muted-foreground">
-                        No engagement data yet
+                        No engagement to brag about yet.
                       </p>
                     )}
                   </CardContent>
