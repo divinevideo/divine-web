@@ -60,8 +60,8 @@ export function useDeleteComment() {
     onSuccess: (data, _variables) => {
       // Show success toast
       toast({
-        title: 'Comment Deleted',
-        description: 'Your delete request has been sent to relays. The comment will be removed.',
+        title: 'Comment yanked.',
+        description: 'Delete request sent to the relays.',
       });
 
       // Invalidate comment queries to refresh comment sections
@@ -73,8 +73,8 @@ export function useDeleteComment() {
       debugError('[useDeleteComment] Error deleting comment:', error);
 
       toast({
-        title: 'Delete Failed',
-        description: error.message || 'Failed to delete comment. Please try again.',
+        title: 'Delete snagged.',
+        description: error.message || 'That didn\'t go through. Try again?',
         variant: 'destructive',
       });
     },

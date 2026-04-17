@@ -304,8 +304,8 @@ export function ZapDialog({ target, children, className }: ZapDialogProps) {
       await navigator.clipboard.writeText(invoice);
       setCopied(true);
       toast({
-        title: 'Invoice copied',
-        description: 'Lightning invoice copied to clipboard',
+        title: 'Invoice copied.',
+        description: 'Paste it into your wallet.',
       });
       setTimeout(() => setCopied(false), 2000);
     }

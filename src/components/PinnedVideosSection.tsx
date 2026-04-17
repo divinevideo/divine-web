@@ -132,9 +132,9 @@ export function PinnedVideosSection({ pubkey, isOwnProfile }: PinnedVideosSectio
 
     try {
       await unpinVideo({ coordinate: coord });
-      toast({ title: 'Unpinned', description: `"${video.title || 'Video'}" removed from pinned` });
+      toast({ title: 'Unpinned.', description: `"${video.title || 'Video'}" is off your pins.` });
     } catch {
-      toast({ title: 'Error', description: 'Failed to unpin video', variant: 'destructive' });
+      toast({ title: 'Unpin snagged.', description: 'Couldn\'t unpin. Try again?', variant: 'destructive' });
     }
   };
 

@@ -50,8 +50,8 @@ export function ReportContentDialog({
   const handleSubmit = async () => {
     if (!eventId && !pubkey) {
       toast({
-        title: 'Error',
-        description: 'No content specified for reporting',
+        title: 'Nothing to report.',
+        description: 'Pick some content first.',
         variant: 'destructive',
       });
       return;
@@ -69,8 +69,8 @@ export function ReportContentDialog({
       });
 
       toast({
-        title: 'Report submitted',
-        description: 'Thank you for helping keep the community safe',
+        title: 'Report sent.',
+        description: 'Thanks for watching the community\'s back.',
       });
 
       // Reset and close
@@ -79,8 +79,8 @@ export function ReportContentDialog({
       onClose();
     } catch {
       toast({
-        title: 'Error',
-        description: 'Failed to submit report. Please try again.',
+        title: 'Report didn\'t send.',
+        description: 'Hit a snag. Try again?',
         variant: 'destructive',
       });
     } finally {

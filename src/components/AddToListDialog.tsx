@@ -68,8 +68,8 @@ export function AddToListDialog({
       await Promise.all(promises);
 
       toast({
-        title: 'Added to lists',
-        description: `Video added to ${selectedLists.size} list${selectedLists.size !== 1 ? 's' : ''}`,
+        title: 'Stashed.',
+        description: `Added to ${selectedLists.size} list${selectedLists.size !== 1 ? 's' : ''}.`,
       });
 
       // Invalidate queries to update the UI
@@ -79,8 +79,8 @@ export function AddToListDialog({
       onClose();
     } catch {
       toast({
-        title: 'Error',
-        description: 'Failed to add video to lists',
+        title: 'Didn\'t add.',
+        description: 'Couldn\'t save to your lists. Try again?',
         variant: 'destructive',
       });
     }
@@ -101,8 +101,8 @@ export function AddToListDialog({
       });
 
       toast({
-        title: 'List created',
-        description: `"${newListName}" created and video added`,
+        title: 'List created.',
+        description: `"${newListName}" is live — video's in it.`,
       });
 
       // Invalidate queries to update the UI
@@ -112,8 +112,8 @@ export function AddToListDialog({
       onClose();
     } catch {
       toast({
-        title: 'Error',
-        description: 'Failed to create list',
+        title: 'Didn\'t make it.',
+        description: 'List creation hit a snag. Try again?',
         variant: 'destructive',
       });
     } finally {

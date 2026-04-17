@@ -78,8 +78,8 @@ function FullscreenVideoWithMetrics({
 
     if (!video.vineId) {
       toast({
-        title: 'Error',
-        description: 'Cannot repost this video',
+        title: 'Can\'t repost this one.',
+        description: 'Something about this loop isn\'t repostable.',
         variant: 'destructive',
       });
       return;
@@ -101,8 +101,8 @@ function FullscreenVideoWithMetrics({
   const handleDownload = async () => {
     if (!video.videoUrl) {
       toast({
-        title: 'Error',
-        description: 'No video URL available',
+        title: 'Nothing to download.',
+        description: 'This video doesn\'t have a URL yet.',
         variant: 'destructive',
       });
       return;
@@ -121,8 +121,8 @@ function FullscreenVideoWithMetrics({
       window.URL.revokeObjectURL(url);
 
       toast({
-        title: 'Download started',
-        description: 'Your video download has begun',
+        title: 'Downloading.',
+        description: 'Saving your loop.',
       });
     } catch {
       window.open(video.videoUrl, '_blank');

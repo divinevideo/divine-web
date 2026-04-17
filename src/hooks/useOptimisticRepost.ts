@@ -70,8 +70,8 @@ export function useOptimisticRepost() {
         }
 
         toast({
-          title: 'Un-reposted!',
-          description: 'Your repost has been removed',
+          title: 'Un-reposted.',
+          description: 'Pulled it back. No sweat.',
         });
       } else {
         // Optimistic repost
@@ -100,8 +100,8 @@ export function useOptimisticRepost() {
         }));
 
         toast({
-          title: 'Reposted!',
-          description: 'Video has been reposted to your feed',
+          title: 'Reposted.',
+          description: 'Sharing the love with your feed.',
         });
       }
     } catch (error) {
