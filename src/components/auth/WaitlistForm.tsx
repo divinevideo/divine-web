@@ -28,7 +28,7 @@ export function WaitlistForm(props: WaitlistFormProps) {
     return (
       <div className="space-y-4">
         <p className="rounded-xl bg-muted px-4 py-3 text-sm text-muted-foreground">
-          You are on the list. We will reach out as soon as invites open up.
+          You're on the list. We'll reach out the moment invites open up.
         </p>
         <Button
           className="h-auto px-0 py-0 text-sm font-medium text-muted-foreground"
@@ -60,7 +60,7 @@ export function WaitlistForm(props: WaitlistFormProps) {
       </div>
 
       <Button className="w-full rounded-full py-3" disabled={isLoading || !contact.trim()} type="submit">
-        {isLoading ? 'Joining waitlist...' : 'Join the waitlist'}
+        {isLoading ? 'Adding you...' : 'Count me in'}
       </Button>
 
       <Button

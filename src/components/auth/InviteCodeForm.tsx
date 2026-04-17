@@ -34,14 +34,14 @@ export function InviteCodeForm(props: InviteCodeFormProps) {
           autoComplete="off"
           id="invite-code"
           onChange={(event) => onInviteCodeChange(event.target.value)}
-          placeholder="Enter your invite code"
+          placeholder="Paste your invite code"
           value={value}
         />
         {error ? <p className="text-sm text-red-500">{error}</p> : null}
       </div>
 
       <Button className="w-full rounded-full py-3" disabled={isLoading || !value.trim()} type="submit">
-        {isLoading ? 'Checking invite...' : 'Continue'}
+        {isLoading ? 'Checking...' : 'Continue'}
       </Button>
 
       {waitlistEnabled ? (
@@ -51,7 +51,7 @@ export function InviteCodeForm(props: InviteCodeFormProps) {
           type="button"
           variant="link"
         >
-          No invite? Join the waitlist
+          No invite? Get on the waitlist.
         </Button>
       ) : null}
     </form>

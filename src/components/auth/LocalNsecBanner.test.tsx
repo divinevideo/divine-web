@@ -65,7 +65,7 @@ describe('LocalNsecBanner', () => {
 
     await user.click(screen.getByRole('button', { name: /Back up nsec/i }));
 
-    await screen.findByText(/somewhere secure/i);
+    await screen.findByText(/somewhere safe/i);
   });
 
   it('starts the secure-account redirect without exposing the nsec in the URL', async () => {
