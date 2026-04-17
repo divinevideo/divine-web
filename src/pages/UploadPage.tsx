@@ -83,6 +83,7 @@ export function UploadPage() {
           <div className="space-y-3 pt-4">
             <Button
               onClick={() => setStep('record')}
+              variant="sticker"
               className="w-full h-16 text-lg"
               size="lg"
             >
