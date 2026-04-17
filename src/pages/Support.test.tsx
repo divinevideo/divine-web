@@ -1,6 +1,8 @@
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import React from 'react';
 import { initializeI18n } from '@/lib/i18n';
 import { LOCALE_STORAGE_KEY } from '@/lib/i18n/config';
 import { Support } from './Support';
@@ -25,6 +27,10 @@ vi.mock('@/hooks/useSubdomainNavigate', () => ({
   useSubdomainNavigate: () => mockNavigate,
 }));
 
+vi.mock('@/hooks/useAuthor', () => ({
+  useAuthor: () => ({ data: undefined }),
+}));
+
 describe('Support page', () => {
   beforeEach(async () => {
     const storage = new Map<string, string>();
@@ -44,15 +50,21 @@ describe('Support page', () => {
   });
 
   it('renders support page copy in spanish', () => {
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    });
     render(
-      <MemoryRouter>
-        <Support />
-      </MemoryRouter>,
+      <QueryClientProvider client={client}>
+        <MemoryRouter>
+          <Support />
+        </MemoryRouter>
+      </QueryClientProvider>,
     );
 
     expect(screen.getByRole('heading', { name: 'Soporte' })).toBeInTheDocument();
     expect(screen.getByText('Necesitas ayuda? Estamos aqui para ayudarte.')).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Visitar el centro de ayuda de Divine' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Contactar con soporte' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Open bug form' })).toBeInTheDocument();
   });
 });
