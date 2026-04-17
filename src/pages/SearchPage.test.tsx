@@ -202,6 +202,26 @@ describe('SearchPage', () => {
     vi.useRealTimers();
   });
 
+  it('clears the blur suggestion timeout on unmount', async () => {
+    vi.useFakeTimers();
+
+    const { unmount } = renderPage();
+    const input = screen.getByRole('textbox');
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(500);
+    });
+
+    fireEvent.focus(input);
+    fireEvent.blur(input);
+
+    expect(vi.getTimerCount()).toBeGreaterThan(0);
+
+    unmount();
+
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
   it('navigates directly when the query is an npub', () => {
     const npub = nip19.npubEncode('f'.repeat(64));
 
