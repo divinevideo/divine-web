@@ -199,7 +199,7 @@ export function ConversationPage() {
 
   if (!conversationId || !peerPubkeys.length) {
     return (
-      <div className="min-h-full bg-[radial-gradient(circle_at_top,_hsl(var(--primary)/0.12),_transparent_42%),linear-gradient(180deg,hsl(var(--background)),hsl(var(--background)))]">
+      <div className="min-h-full bg-brand-off-white dark:bg-brand-dark-green">
         <main className="container py-6">
           <div className="mx-auto max-w-3xl rounded-[32px] border border-border/80 bg-card/80 px-6 py-12 text-center shadow-sm backdrop-blur-sm">
             <p className="text-lg font-semibold text-foreground">Conversation not found</p>
@@ -215,7 +215,7 @@ export function ConversationPage() {
 
   if (!canUseDirectMessages) {
     return (
-      <div className="min-h-full bg-[radial-gradient(circle_at_top,_hsl(var(--primary)/0.12),_transparent_42%),linear-gradient(180deg,hsl(var(--background)),hsl(var(--background)))]">
+      <div className="min-h-full bg-brand-off-white dark:bg-brand-dark-green">
         <main className="container py-6">
           <div className="mx-auto max-w-3xl rounded-[32px] border border-border/80 bg-card/80 px-6 py-12 text-center shadow-sm backdrop-blur-sm">
             <p className="text-lg font-semibold text-foreground">Direct messages are unavailable</p>
@@ -232,7 +232,7 @@ export function ConversationPage() {
   }
 
   return (
-    <div className="min-h-full bg-[radial-gradient(circle_at_top,_hsl(var(--primary)/0.14),_transparent_42%),linear-gradient(180deg,hsl(var(--background)),hsl(var(--background)))]">
+    <div className="min-h-full bg-brand-off-white dark:bg-brand-dark-green">
       <main className="container py-6">
         <div className="mx-auto flex max-w-3xl flex-col gap-4">
           <section className="rounded-[32px] border border-border/80 bg-card/80 px-4 py-4 shadow-[0_24px_60px_rgba(39,197,139,0.08)] backdrop-blur-sm">
