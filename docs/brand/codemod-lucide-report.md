@@ -3,13 +3,11 @@
 - Mode: **dry-run**
 - Files modified: **107**
 - strokeWidth props stripped: **1**
-- Unmapped icons: **1**
+- Unmapped icons: **0**
 
 ## Unmapped icons
 
-| Icon | File | Line |
-| --- | --- | --- |
-| `UserIcon` | `src/components/auth/AccountSwitcher.tsx` | 4 |
+_None._
 
 ## Files that would change
 
