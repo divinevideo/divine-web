@@ -2,7 +2,7 @@
 // ABOUTME: Shows video player, metadata, author info, and social interactions
 
 import { useState, useCallback, useRef, useMemo, useEffect } from 'react';
-import { Heart, Repeat2, MessageCircle, Share, Eye, MoreVertical, Flag, UserX, Trash2, Volume2, VolumeX, Code, Users, ListPlus, Download, Maximize2, Captions, Pin, PinOff } from 'lucide-react';
+import { Heart, Repeat as Repeat2, ChatCircle as MessageCircle, Share, Eye, DotsThreeVertical as MoreVertical, Flag, UserMinus as UserX, Trash as Trash2, SpeakerHigh as Volume2, SpeakerX as VolumeX, Code, Users, ListPlus, DownloadSimple as Download, ArrowsOutSimple as Maximize2, ClosedCaptioning as Captions, PushPin as Pin, PushPinSlash as PinOff } from '@phosphor-icons/react';
 import { nip19 } from 'nostr-tools';
 import { Card, CardContent, type CardAccent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -831,7 +831,7 @@ export function VideoCard({
               onClick={onLike}
               aria-label={isLiked ? "Unlike" : "Like"}
             >
-              <Heart className={cn('h-4 w-4', isLiked && 'fill-current')} />
+              <Heart className="h-4 w-4" weight={isLiked ? 'fill' : 'bold'} />
             </Button>
             {likeCount > 0 && (
               <button
@@ -862,7 +862,7 @@ export function VideoCard({
               onClick={onRepost}
               aria-label={isReposted ? "Remove repost" : "Repost"}
             >
-              <Repeat2 className={cn('h-4 w-4', isReposted && 'fill-current')} />
+              <Repeat2 className="h-4 w-4" weight={isReposted ? 'fill' : 'bold'} />
             </Button>
             {repostCount > 0 && (
               <button

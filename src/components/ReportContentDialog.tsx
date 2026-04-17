@@ -17,7 +17,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Loader2, Flag, LogIn } from 'lucide-react';
+import { CircleNotch as Loader2, Flag, SignIn as LogIn } from '@phosphor-icons/react';
 import { useToast } from '@/hooks/useToast';
 import { ContentFilterReason, REPORT_REASON_LABELS } from '@/types/moderation';
 

@@ -14,7 +14,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { UserPlus, UserCheck, CheckCircle, Pencil, Copy, MoreVertical, Flag, Play, Repeat, Loader2, XCircle, Link2, Code, Rss } from 'lucide-react';
+import { UserPlus, UserCheck, CheckCircle, PencilSimple as Pencil, Copy, DotsThreeVertical as MoreVertical, Flag, Play, Repeat, CircleNotch as Loader2, XCircle, LinkSimple as Link2, Code, Rss } from '@phosphor-icons/react';
 import { useNavigate } from 'react-router-dom';
 import { feedUrls } from '@/lib/feedUrls';
 import { useRssFeedAvailable } from '@/hooks/useRssFeedAvailable';
@@ -371,7 +371,7 @@ export function ProfileHeader({
             >
               {isFollowing ? (
                 <>
-                  <UserCheck className="w-4 h-4 mr-2" />
+                  <UserCheck className="w-4 h-4 mr-2" weight="fill" />
                   Following
                 </>
               ) : (

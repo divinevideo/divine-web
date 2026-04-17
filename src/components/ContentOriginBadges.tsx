@@ -1,7 +1,7 @@
 // ABOUTME: Badge variants for unverified, external content, and AI warning states
 // ABOUTME: Mirrors the mobile app's fallback badge labels when no proof-backed badge applies
 
-import { CircleHelp, CloudOff, TriangleAlert } from 'lucide-react';
+import { Question as CircleHelp, CloudSlash as CloudOff, Warning as TriangleAlert } from '@phosphor-icons/react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 

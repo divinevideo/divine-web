@@ -2,7 +2,7 @@ import { useParams, useSearchParams } from 'react-router-dom';
 import { useSubdomainNavigate } from '@/hooks/useSubdomainNavigate';
 import { useEffect, useCallback, useState, useMemo, useRef } from 'react';
 import { useSeoMeta } from '@unhead/react';
-import { Hash, User, X, Loader2 } from 'lucide-react';
+import { Hash, User, X, CircleNotch as Loader2 } from '@phosphor-icons/react';
 import InfiniteScroll from 'react-infinite-scroll-component';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';

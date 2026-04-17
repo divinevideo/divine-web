@@ -1,4 +1,4 @@
-import { Home, Compass, Search, Bell, User } from 'lucide-react';
+import { House as Home, Compass, MagnifyingGlass as Search, Bell, User } from '@phosphor-icons/react';
 import { useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
@@ -37,7 +37,7 @@ export function BottomNav() {
             isHomePage && "text-primary"
           )}
         >
-          <Home className={cn("h-5 w-5", isHomePage && "text-primary")} />
+          <Home className={cn("h-5 w-5", isHomePage && "text-primary")} weight={isHomePage ? 'fill' : 'bold'} />
           <span className={cn("text-xs", isHomePage && "text-primary")}>{t('nav.home')}</span>
         </Button>
 
@@ -51,7 +51,7 @@ export function BottomNav() {
             isActive('/discovery') && "text-primary"
           )}
         >
-          <Compass className={cn("h-5 w-5", isActive('/discovery') && "text-primary")} />
+          <Compass className={cn("h-5 w-5", isActive('/discovery') && "text-primary")} weight={isActive('/discovery') ? 'fill' : 'bold'} />
           <span className={cn("text-xs", isActive('/discovery') && "text-primary")}>{t('nav.discover')}</span>
         </Button>
 
@@ -65,7 +65,7 @@ export function BottomNav() {
             isActive('/search') && "text-primary"
           )}
         >
-          <Search className={cn("h-5 w-5", isActive('/search') && "text-primary")} />
+          <Search className={cn("h-5 w-5", isActive('/search') && "text-primary")} weight={isActive('/search') ? 'fill' : 'bold'} />
           <span className={cn("text-xs", isActive('/search') && "text-primary")}>{t('nav.search')}</span>
         </Button>
 
@@ -81,7 +81,7 @@ export function BottomNav() {
             )}
           >
             <div className="relative">
-              <Bell className={cn("h-5 w-5", isActive('/notifications') && "text-primary")} />
+              <Bell className={cn("h-5 w-5", isActive('/notifications') && "text-primary")} weight={isActive('/notifications') ? 'fill' : 'bold'} />
               {(unreadCount ?? 0) > 0 && (
                 <span className="absolute -top-1 -right-1.5 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-destructive px-0.5 text-[9px] font-bold text-destructive-foreground">
                   {(unreadCount ?? 0) > 99 ? '99+' : unreadCount}
@@ -103,7 +103,7 @@ export function BottomNav() {
               isActive(getUserProfilePath()) && "text-primary"
             )}
         >
-          <User className={cn("h-5 w-5", isActive(getUserProfilePath()) && "text-primary")} />
+          <User className={cn("h-5 w-5", isActive(getUserProfilePath()) && "text-primary")} weight={isActive(getUserProfilePath()) ? 'fill' : 'bold'} />
           <span className={cn("text-xs", isActive(getUserProfilePath()) && "text-primary")}>{t('nav.profile')}</span>
         </Button>
       )}

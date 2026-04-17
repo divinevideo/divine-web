@@ -16,7 +16,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { Loader2, Save, X } from 'lucide-react';
+import { CircleNotch as Loader2, FloppyDisk as Save, X } from '@phosphor-icons/react';
 import { useToast } from '@/hooks/useToast';
 
 interface EditListDialogProps {

@@ -4,7 +4,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Camera, Repeat, X } from 'lucide-react';
+import { Camera, Repeat, X } from '@phosphor-icons/react';
 import { useMediaRecorder } from '@/hooks/useMediaRecorder';
 import { useAppContext } from '@/hooks/useAppContext';
 import { cn } from '@/lib/utils';

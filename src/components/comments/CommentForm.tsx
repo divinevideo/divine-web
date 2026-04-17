@@ -7,7 +7,7 @@ import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { usePostComment } from '@/hooks/usePostComment';
 import { LoginArea } from '@/components/auth/LoginArea';
 import { NostrEvent } from '@nostrify/nostrify';
-import { MessageSquare, Send } from 'lucide-react';
+import { Chat as MessageSquare, PaperPlaneTilt as Send } from '@phosphor-icons/react';
 
 interface CommentFormProps {
   root: NostrEvent | URL;

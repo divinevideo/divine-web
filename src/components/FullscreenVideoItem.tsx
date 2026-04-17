@@ -2,7 +2,7 @@
 // ABOUTME: Displays video with overlay UI including back button, author info, and action buttons
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { ArrowLeft, Heart, MessageCircle, Repeat2, Share, Volume2, VolumeX, Download, ListPlus, Users, MoreVertical, Flag, UserX, Code, Trash2, Eye, Captions } from 'lucide-react';
+import { ArrowLeft, Heart, ChatCircle as MessageCircle, Repeat as Repeat2, Share, SpeakerHigh as Volume2, SpeakerX as VolumeX, DownloadSimple as Download, ListPlus, Users, DotsThreeVertical as MoreVertical, Flag, UserMinus as UserX, Code, Trash as Trash2, Eye, ClosedCaptioning as Captions } from '@phosphor-icons/react';
 import { nip19 } from 'nostr-tools';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -260,7 +260,8 @@ export function FullscreenVideoItem({
       {showHeartAnimation && (
         <div className="absolute inset-0 z-40 flex items-center justify-center pointer-events-none">
           <Heart
-            className="h-24 w-24 text-red-500 fill-current animate-ping"
+            className="h-24 w-24 text-red-500 animate-ping"
+            weight="fill"
             style={{ animationDuration: '0.6s' }}
           />
         </div>
@@ -401,7 +402,7 @@ export function FullscreenVideoItem({
                     "w-12 h-12 rounded-full flex items-center justify-center bg-black/50 backdrop-blur-sm",
                     isLiked && "bg-red-500/80"
                   )}>
-                    <Heart className={cn("h-6 w-6 text-white", isLiked && "fill-current")} />
+                    <Heart className="h-6 w-6 text-white" weight={isLiked ? 'fill' : 'bold'} />
                   </div>
                 </button>
                 <button
@@ -433,7 +434,7 @@ export function FullscreenVideoItem({
                     "w-12 h-12 rounded-full flex items-center justify-center bg-black/50 backdrop-blur-sm",
                     isReposted && "bg-green-500/80"
                   )}>
-                    <Repeat2 className={cn("h-6 w-6 text-white", isReposted && "fill-current")} />
+                    <Repeat2 className="h-6 w-6 text-white" weight={isReposted ? 'fill' : 'bold'} />
                   </div>
                 </button>
                 <button

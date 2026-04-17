@@ -2,7 +2,7 @@
 // ABOUTME: Simple list with infinite scroll, marks all as read on page open
 
 import { useEffect, useRef, useCallback, useMemo } from 'react';
-import { Bell } from 'lucide-react';
+import { Bell } from '@phosphor-icons/react';
 import { useNotifications, useMarkNotificationsRead } from '@/hooks/useNotifications';
 import { NotificationItem } from '@/components/NotificationItem';
 import { Skeleton } from '@/components/ui/skeleton';

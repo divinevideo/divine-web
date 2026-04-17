@@ -7,7 +7,7 @@ import { useNostr } from '@nostrify/react';
 import { useQuery } from '@tanstack/react-query';
 import { nip19 } from 'nostr-tools';
 import { Card, CardContent } from '@/components/ui/card';
-import { AlertCircle, Loader2 } from 'lucide-react';
+import { WarningCircle as AlertCircle, CircleNotch as Loader2 } from '@phosphor-icons/react';
 import { debugLog } from '@/lib/debug';
 
 const VINE_USER_ID_PATTERN = /^\d{15,20}$/;

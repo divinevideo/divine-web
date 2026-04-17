@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/react';
-import { Tag } from 'lucide-react';
+import { Tag } from '@phosphor-icons/react';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { LOCALE_STORAGE_KEY } from '@/lib/i18n/config';

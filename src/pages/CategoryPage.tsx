@@ -4,7 +4,7 @@
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { SmartLink } from '@/components/SmartLink';
-import { ArrowLeft, Grid3X3, List, Rss } from 'lucide-react';
+import { ArrowLeft, GridFour as Grid3X3, List, Rss } from '@phosphor-icons/react';
 import { useHead, useSeoMeta } from '@unhead/react';
 import { feedUrls } from '@/lib/feedUrls';
 import { useRssFeedAvailable } from '@/hooks/useRssFeedAvailable';

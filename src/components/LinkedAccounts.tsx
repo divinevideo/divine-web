@@ -3,7 +3,7 @@
 
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Github, ExternalLink, CheckCircle, AlertTriangle, Loader2, Link2, Shield } from 'lucide-react';
+import { GithubLogo as Github, ArrowSquareOut as ExternalLink, CheckCircle, Warning as AlertTriangle, CircleNotch as Loader2, LinkSimple as Link2, Shield } from '@phosphor-icons/react';
 import { Badge } from '@/components/ui/badge';
 import {
   Popover,

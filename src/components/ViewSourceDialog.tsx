@@ -10,7 +10,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Code, Copy, Check, AlertCircle, Loader2 } from 'lucide-react';
+import { Code, Copy, Check, WarningCircle as AlertCircle, CircleNotch as Loader2 } from '@phosphor-icons/react';
 import type { NostrEvent } from '@nostrify/nostrify';
 import type { ParsedVideoData } from '@/types/video';
 import { API_CONFIG } from '@/config/api';

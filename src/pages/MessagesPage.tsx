@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { LifeBuoy, Plus, Search } from 'lucide-react';
+import { Lifebuoy as LifeBuoy, Plus, MagnifyingGlass as Search } from '@phosphor-icons/react';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';

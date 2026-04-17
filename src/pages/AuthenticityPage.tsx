@@ -4,7 +4,7 @@
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Heart, Users, Camera, Shield, Sparkles, Archive, Video, Fingerprint } from 'lucide-react';
+import { Heart, Users, Camera, Shield, Sparkle as Sparkles, Archive, VideoCamera as Video, Fingerprint } from '@phosphor-icons/react';
 import { ZendeskWidget } from '@/components/ZendeskWidget';
 import { MarketingLayout } from '@/components/MarketingLayout';
 import { useTranslation } from 'react-i18next';

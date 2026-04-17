@@ -1,7 +1,7 @@
 // ABOUTME: Toggle component for filtering to show only verified videos
 // ABOUTME: Allows users to filter feeds to show only ProofMode verified content
 
-import { CheckCircle } from 'lucide-react';
+import { CheckCircle } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';

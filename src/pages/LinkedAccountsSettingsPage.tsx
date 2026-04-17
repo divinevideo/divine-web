@@ -14,24 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import {
-  Link2,
-  Plus,
-  Trash2,
-  Pencil,
-  CheckCircle2,
-  AlertTriangle,
-  Loader2,
-  ExternalLink,
-  Github,
-  MessageCircle,
-  AtSign,
-  Shield,
-  Copy,
-  Check,
-  X,
-  ArrowLeft,
-} from 'lucide-react';
+import { LinkSimple as Link2, Plus, Trash as Trash2, PencilSimple as Pencil, CheckCircle as CheckCircle2, Warning as AlertTriangle, CircleNotch as Loader2, ArrowSquareOut as ExternalLink, GithubLogo as Github, ChatCircle as MessageCircle, At as AtSign, Shield, Copy, Check, X, ArrowLeft } from '@phosphor-icons/react';
 import { useToast } from '@/hooks/useToast';
 import { nip19 } from 'nostr-tools';
 

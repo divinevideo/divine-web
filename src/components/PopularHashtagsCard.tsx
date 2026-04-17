@@ -1,6 +1,6 @@
 // ABOUTME: Popular hashtags card component showing trending hashtags from recent videos
 
-import { Hash } from 'lucide-react';
+import { Hash } from '@phosphor-icons/react';
 import { useSubdomainNavigate } from '@/hooks/useSubdomainNavigate';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';

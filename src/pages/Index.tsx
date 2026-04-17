@@ -4,7 +4,7 @@ import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useFollowList } from '@/hooks/useFollowList';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Users } from 'lucide-react';
+import { Users } from '@phosphor-icons/react';
 import { useNavigate } from 'react-router-dom';
 import DiscoveryPage from './DiscoveryPage';
 

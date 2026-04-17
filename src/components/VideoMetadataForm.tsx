@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { X, Hash, Loader2 } from 'lucide-react';
+import { X, Hash, CircleNotch as Loader2 } from '@phosphor-icons/react';
 import { useVideoUpload } from '@/hooks/useVideoUpload';
 import { usePublishVideo } from '@/hooks/usePublishVideo';
 import { Progress } from '@/components/ui/progress';

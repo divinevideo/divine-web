@@ -12,7 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { BadgeImage } from '@/components/BadgeImage';
 import { useAuthor } from '@/hooks/useAuthor';
 import { getBadgeImageUrl, type ValidatedBadge } from '@/lib/badges';
-import { Award } from 'lucide-react';
+import { Medal as Award } from '@phosphor-icons/react';
 
 interface BadgeDetailModalProps {
   badge: ValidatedBadge | null;

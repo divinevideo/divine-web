@@ -22,7 +22,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
-import { MessageSquare, ChevronDown, ChevronRight, MoreHorizontal, Flag, Volume2, Trash2, CornerDownRight } from 'lucide-react';
+import { Chat as MessageSquare, CaretDown as ChevronDown, CaretRight as ChevronRight, DotsThree as MoreHorizontal, Flag, SpeakerHigh as Volume2, Trash as Trash2, ArrowBendDownRight as CornerDownRight } from '@phosphor-icons/react';
 import { formatDistanceToNow } from 'date-fns';
 import { genUserName } from '@/lib/genUserName';
 import { MuteType } from '@/types/moderation';

@@ -1,6 +1,6 @@
 import { useParams } from 'react-router-dom';
 import { VideoFeed } from '@/components/VideoFeed';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
 import { useTranslation } from 'react-i18next';
 

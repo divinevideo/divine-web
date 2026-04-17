@@ -1,7 +1,7 @@
 // ABOUTME: Single notification row showing actor, action, and timestamp
 // ABOUTME: Displays avatar with type icon overlay, message text, and relative time
 
-import { Heart, MessageCircle, UserPlus, Repeat2, Zap } from 'lucide-react';
+import { Heart, ChatCircle as MessageCircle, UserPlus, Repeat as Repeat2, Lightning as Zap } from '@phosphor-icons/react';
 import { nip19 } from 'nostr-tools';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuthor } from '@/hooks/useAuthor';
