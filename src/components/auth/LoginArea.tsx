@@ -48,8 +48,8 @@ export function LoginArea({ className }: LoginAreaProps) {
       ) : (
         <Button
           onClick={() => setLocalLoginDialogOpen(true)}
-          variant="outline"
-          className='flex items-center gap-2 px-4 py-2 rounded-full font-medium transition-all animate-scale-in'
+          variant="sticker"
+          className='flex items-center gap-2 px-4 py-2 font-medium transition-all animate-scale-in'
         >
           <User className='w-4 h-4' />
           <span className='truncate'>Log in</span>
