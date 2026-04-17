@@ -75,7 +75,7 @@ export function LanguageMenu({
   return (
     <>
       <DropdownMenuSeparator />
-      <div className="px-2 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+      <div className="px-2 py-1 text-xs font-semibold text-muted-foreground">
         {t('common.language')}
       </div>
       {LOCALE_OPTIONS.map((option) => (
