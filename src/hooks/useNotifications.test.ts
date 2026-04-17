@@ -4,26 +4,31 @@ import { renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { useNotifications, useUnreadNotificationCount } from './useNotifications';
-import {
-  fetchNotifications,
-  fetchUnreadCount,
-} from '@/lib/funnelcakeClient';
 
-vi.mock('@/config/api', () => ({
-  getFunnelcakeBaseUrl: vi.fn(() => 'https://api.divine.video'),
-  getNotificationsBaseUrl: vi.fn(() => 'https://relay.divine.video'),
+const { mockFetchNotifications, mockFetchUnreadCount } = vi.hoisted(() => ({
+  mockFetchNotifications: vi.fn(),
+  mockFetchUnreadCount: vi.fn(),
 }));
 
 vi.mock('@/hooks/useCurrentUser', () => ({
-  useCurrentUser: vi.fn(() => ({
+  useCurrentUser: () => ({
     user: { pubkey: 'a'.repeat(64) },
-    signer: { signEvent: vi.fn() },
-  })),
+    signer: { signEvent: vi.fn(), getPublicKey: vi.fn() },
+  }),
+}));
+
+vi.mock('@/config/api', () => ({
+  getFunnelcakeBaseUrl: () => 'https://api.divine.video',
+  getNotificationsBaseUrl: () => 'https://relay.divine.video',
+}));
+
+vi.mock('@/lib/debug', () => ({
+  debugLog: vi.fn(),
 }));
 
 vi.mock('@/lib/funnelcakeClient', () => ({
-  fetchNotifications: vi.fn(),
-  fetchUnreadCount: vi.fn(),
+  fetchNotifications: mockFetchNotifications,
+  fetchUnreadCount: mockFetchUnreadCount,
   markNotificationsRead: vi.fn(),
 }));
 
@@ -39,36 +44,66 @@ function createWrapper() {
     },
   });
 
-  return ({ children }: { children: React.ReactNode }) =>
-    React.createElement(QueryClientProvider, { client: queryClient }, children);
+  return function Wrapper({ children }: { children: React.ReactNode }) {
+    return React.createElement(QueryClientProvider, { client: queryClient }, children);
+  };
 }
 
 describe('useNotifications', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-  });
-
-  it('uses the notifications relay base URL for the list query', async () => {
-    vi.mocked(fetchNotifications).mockResolvedValue({
+    mockFetchNotifications.mockResolvedValue({
       notifications: [],
       unreadCount: 0,
       hasMore: false,
     });
+    mockFetchUnreadCount.mockResolvedValue(0);
+  });
 
-    renderHook(() => useNotifications(), { wrapper: createWrapper() });
+  it('maps the likes category to the backend reaction filter on the notifications relay', async () => {
+    renderHook(() => useNotifications({ category: 'likes' }), {
+      wrapper: createWrapper(),
+    });
 
     await waitFor(() => {
-      expect(fetchNotifications).toHaveBeenCalledWith(
+      expect(mockFetchNotifications).toHaveBeenCalledWith(
         'https://relay.divine.video',
         'a'.repeat(64),
         expect.any(Object),
-        expect.objectContaining({ limit: 30 }),
+        expect.objectContaining({
+          limit: 30,
+          before: undefined,
+          types: ['reaction'],
+          unreadOnly: false,
+          signal: expect.any(AbortSignal),
+        }),
+      );
+    });
+  });
+
+  it('maps the comments category to the backend reply filter on the notifications relay', async () => {
+    renderHook(() => useNotifications({ category: 'comments' }), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => {
+      expect(mockFetchNotifications).toHaveBeenCalledWith(
+        'https://relay.divine.video',
+        'a'.repeat(64),
+        expect.any(Object),
+        expect.objectContaining({
+          limit: 30,
+          before: undefined,
+          types: ['reply'],
+          unreadOnly: false,
+          signal: expect.any(AbortSignal),
+        }),
       );
     });
   });
 
   it('uses the notifications relay base URL for unread count polling', async () => {
-    vi.mocked(fetchUnreadCount).mockResolvedValue(7);
+    mockFetchUnreadCount.mockResolvedValue(7);
 
     const { result } = renderHook(() => useUnreadNotificationCount(), {
       wrapper: createWrapper(),
@@ -78,7 +113,7 @@ describe('useNotifications', () => {
       expect(result.current.data).toBe(7);
     });
 
-    expect(fetchUnreadCount).toHaveBeenCalledWith(
+    expect(mockFetchUnreadCount).toHaveBeenCalledWith(
       'https://relay.divine.video',
       'a'.repeat(64),
       expect.any(Object),

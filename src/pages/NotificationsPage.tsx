@@ -1,14 +1,60 @@
 // ABOUTME: Notifications page showing social interactions (likes, comments, follows, reposts, zaps)
 // ABOUTME: Simple list with infinite scroll, marks all as read on page open
 
-import { useEffect, useRef, useCallback, useMemo } from 'react';
+import { useEffect, useRef, useCallback, useMemo, useState } from 'react';
 import { Bell } from '@phosphor-icons/react';
 import { useNotifications, useMarkNotificationsRead } from '@/hooks/useNotifications';
 import { NotificationItem } from '@/components/NotificationItem';
 import { Skeleton } from '@/components/ui/skeleton';
-import type { Notification } from '@/types/notification';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import type { Notification, NotificationCategory } from '@/types/notification';
+
+const NOTIFICATION_TABS: Array<{ value: NotificationCategory; label: string }> = [
+  { value: 'all', label: 'All' },
+  { value: 'unread', label: 'Unread' },
+  { value: 'likes', label: 'Likes' },
+  { value: 'comments', label: 'Comments' },
+  { value: 'follows', label: 'Follows' },
+  { value: 'reposts', label: 'Reposts' },
+  { value: 'zaps', label: 'Zaps' },
+];
+
+const EMPTY_STATE_COPY: Record<
+  NotificationCategory,
+  { title: string; description: string }
+> = {
+  all: {
+    title: 'All quiet. Nothing to flag.',
+    description: 'When people react to your stuff, it lands right here.',
+  },
+  unread: {
+    title: 'You are all caught up.',
+    description: 'New activity will show up here first.',
+  },
+  likes: {
+    title: 'No like notifications yet.',
+    description: 'When someone likes one of your videos, it will show up here.',
+  },
+  comments: {
+    title: 'No comment notifications yet.',
+    description: 'Replies and comments on your videos will show up here.',
+  },
+  follows: {
+    title: 'No follow notifications yet.',
+    description: 'New followers will show up here.',
+  },
+  reposts: {
+    title: 'No repost notifications yet.',
+    description: 'Reposts of your videos will show up here.',
+  },
+  zaps: {
+    title: 'No zap notifications yet.',
+    description: 'Zaps on your videos will show up here.',
+  },
+};
 
 export default function NotificationsPage() {
+  const [category, setCategory] = useState<NotificationCategory>('all');
   const {
     data,
     isLoading,
@@ -17,10 +63,11 @@ export default function NotificationsPage() {
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
-  } = useNotifications();
+  } = useNotifications({ category });
 
   const markRead = useMarkNotificationsRead();
-  const hasMarkedRead = useRef(false);
+  const hasCapturedInitialUnread = useRef(false);
+  const [initialUnreadIds, setInitialUnreadIds] = useState<Set<string>>(() => new Set());
 
   // Flatten all pages into a single array of notifications
   const notifications: Notification[] = useMemo(
@@ -28,17 +75,43 @@ export default function NotificationsPage() {
     [data?.pages],
   );
 
-  // Mark all as read on page open (once, when first page loads)
+  const newNotifications = useMemo(
+    () => notifications.filter((notification) => initialUnreadIds.has(notification.id)),
+    [notifications, initialUnreadIds],
+  );
+
+  const earlierNotifications = useMemo(
+    () => notifications.filter((notification) => !initialUnreadIds.has(notification.id)),
+    [notifications, initialUnreadIds],
+  );
+
+  // Mark all as read on page open (once, when first page loads).
+  // Keep a snapshot of initially unread rows so the list can still show
+  // what was new when the user arrived, even after optimistic updates flip
+  // everything to read in the cache.
   useEffect(() => {
-    if (hasMarkedRead.current) return;
+    if (category !== 'all') return;
+    if (hasCapturedInitialUnread.current) return;
     if (notifications.length === 0) return;
 
     const unreadIds = notifications.filter((n) => !n.isRead).map((n) => n.id);
-    if (unreadIds.length > 0) {
-      hasMarkedRead.current = true;
-      markRead.mutate(unreadIds);
-    }
-  }, [notifications, markRead]);
+    hasCapturedInitialUnread.current = true;
+
+    if (unreadIds.length === 0) return;
+
+    setInitialUnreadIds(new Set(unreadIds));
+    markRead.mutate(undefined);
+  }, [category, notifications, markRead]);
+
+  const emptyState = EMPTY_STATE_COPY[category];
+
+  const renderNotifications = (items: Notification[]) => (
+    <div className="divide-y divide-border">
+      {items.map((notification) => (
+        <NotificationItem key={notification.id} notification={notification} />
+      ))}
+    </div>
+  );
 
   // Infinite scroll observer
   const observerRef = useRef<IntersectionObserver | null>(null);
@@ -71,6 +144,16 @@ export default function NotificationsPage() {
         </h1>
       </div>
 
+      <Tabs value={category} onValueChange={(value) => setCategory(value as NotificationCategory)}>
+        <TabsList className="mb-6 flex w-full justify-start overflow-x-auto">
+          {NOTIFICATION_TABS.map((tab) => (
+            <TabsTrigger key={tab.value} value={tab.value}>
+              {tab.label}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+      </Tabs>
+
       {/* Loading skeleton */}
       {isLoading && (
         <div className="space-y-4">
@@ -100,20 +183,35 @@ export default function NotificationsPage() {
       {!isLoading && !isError && notifications.length === 0 && (
         <div className="text-center py-16">
           <Bell className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-          <p className="text-lg font-medium mb-1">All quiet. Nothing to flag.</p>
-          <p className="text-sm text-muted-foreground">
-            When people react to your stuff, it lands right here.
-          </p>
+          <p className="text-lg font-medium mb-1">{emptyState.title}</p>
+          <p className="text-sm text-muted-foreground">{emptyState.description}</p>
         </div>
       )}
 
       {/* Notification list */}
       {notifications.length > 0 && (
-        <div className="divide-y divide-border">
-          {notifications.map((notification) => (
-            <NotificationItem key={notification.id} notification={notification} />
-          ))}
-        </div>
+        category === 'all' && initialUnreadIds.size > 0 ? (
+          <div className="space-y-6">
+            {newNotifications.length > 0 && (
+              <section>
+                <h2 className="mb-3 text-sm font-semibold tracking-wide text-muted-foreground">
+                  New
+                </h2>
+                {renderNotifications(newNotifications)}
+              </section>
+            )}
+            {earlierNotifications.length > 0 && (
+              <section>
+                <h2 className="mb-3 text-sm font-semibold tracking-wide text-muted-foreground">
+                  Earlier
+                </h2>
+                {renderNotifications(earlierNotifications)}
+              </section>
+            )}
+          </div>
+        ) : (
+          renderNotifications(notifications)
+        )
       )}
 
       {/* Infinite scroll sentinel */}

@@ -1201,6 +1201,8 @@ export async function fetchNotifications(
   options?: {
     limit?: number;
     before?: string;
+    types?: string[];
+    unreadOnly?: boolean;
     signal?: AbortSignal;
   },
 ): Promise<NotificationsResponse> {
@@ -1209,6 +1211,8 @@ export async function fetchNotifications(
   const params: Record<string, string | number | boolean | undefined> = {
     limit: options?.limit ?? 50,
     before: options?.before,
+    types: options?.types?.length ? options.types.join(',') : undefined,
+    unread_only: options?.unreadOnly ? true : undefined,
   };
 
   const raw = await authenticatedNotificationRequest<RawNotificationsApiResponse>(
