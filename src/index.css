@@ -1,3 +1,5 @@
+@import './styles/brand-utilities.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
