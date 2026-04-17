@@ -2,19 +2,46 @@ import * as React from "react"
 
 import { cn } from "@/lib/utils"
 
-const Card = React.forwardRef<
-  HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => (
-  <div
-    ref={ref}
-    className={cn(
-      "rounded-xl border border-brand-light-green bg-card text-card-foreground shadow-md transition-all duration-200 hover:shadow-lg dark:border-brand-dark-green",
-      className
-    )}
-    {...props}
-  />
-))
+type CardAccent =
+  | "green"
+  | "pink"
+  | "violet"
+  | "orange"
+  | "yellow"
+  | "blue"
+  | "dark"
+
+type CardVariant = "default" | "brand"
+
+interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
+  variant?: CardVariant
+  accent?: CardAccent
+}
+
+const ACCENT_SHADOW: Record<CardAccent, string> = {
+  green: "brand-offset-shadow-green",
+  pink: "brand-offset-shadow-pink",
+  violet: "brand-offset-shadow-violet",
+  orange: "brand-offset-shadow-orange",
+  yellow: "brand-offset-shadow-yellow",
+  blue: "brand-offset-shadow-blue",
+  dark: "brand-offset-shadow-dark",
+}
+
+const Card = React.forwardRef<HTMLDivElement, CardProps>(
+  ({ className, variant = "default", accent, ...props }, ref) => (
+    <div
+      ref={ref}
+      className={cn(
+        variant === "brand"
+          ? cn("brand-card", accent && ACCENT_SHADOW[accent])
+          : "rounded-xl border border-brand-light-green bg-card text-card-foreground shadow-md transition-all duration-200 hover:shadow-lg dark:border-brand-dark-green",
+        className,
+      )}
+      {...props}
+    />
+  ),
+)
 Card.displayName = "Card"
 
 const CardHeader = React.forwardRef<
@@ -77,3 +104,4 @@ const CardFooter = React.forwardRef<
 CardFooter.displayName = "CardFooter"
 
 export { Card, CardHeader, CardFooter, CardTitle, CardDescription, CardContent }
+export type { CardAccent, CardVariant, CardProps }
