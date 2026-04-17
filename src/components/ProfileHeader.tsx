@@ -363,7 +363,7 @@ export function ProfileHeader({
           <div className="flex-shrink-0 self-center sm:self-start flex gap-2">
             <Button
               onClick={handleFollowClick}
-              variant={isFollowing ? "outline" : "default"}
+              variant={isFollowing ? "outline" : "sticker"}
               size="sm"
               className="min-w-[100px]"
               data-testid="follow-button"
