@@ -45,6 +45,16 @@ export function transformNotification(raw: RawApiNotification): Notification {
     sourceEventId: raw.source_event_id,
     sourceKind: raw.source_kind,
     commentText: type === 'comment' ? raw.content : undefined,
+    sourceProfile: raw.source_profile ? {
+      displayName: raw.source_profile.display_name,
+      picture: raw.source_profile.picture,
+      nip05: raw.source_profile.nip05,
+    } : undefined,
+    referencedVideo: raw.referenced_video ? {
+      title: raw.referenced_video.title,
+      thumbnail: raw.referenced_video.thumbnail,
+      dTag: raw.referenced_video.d_tag,
+    } : undefined,
   };
 }
 

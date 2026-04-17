@@ -81,6 +81,52 @@ describe('notificationTransform', () => {
       const result = transformNotification(raw);
       expect(result.commentText).toBeUndefined();
     });
+
+    it('preserves referenced video enrichment from the API payload', () => {
+      const enriched = {
+        ...raw,
+        referenced_video: {
+          title: 'Beach Day Sunset',
+          thumbnail: 'https://media.divine.video/thumb.jpg',
+          d_tag: 'sha256-tag',
+        },
+      } as RawApiNotification;
+
+      const result = transformNotification(enriched) as Notification & {
+        referencedVideo?: {
+          title?: string;
+          thumbnail?: string;
+          dTag?: string;
+        };
+      };
+
+      expect(result.referencedVideo?.title).toBe('Beach Day Sunset');
+      expect(result.referencedVideo?.thumbnail).toBe('https://media.divine.video/thumb.jpg');
+      expect(result.referencedVideo?.dTag).toBe('sha256-tag');
+    });
+
+    it('maps source profile enrichment onto the app notification', () => {
+      const enriched = {
+        ...raw,
+        source_profile: {
+          display_name: 'Alice',
+          picture: 'https://media.divine.video/alice.jpg',
+          nip05: 'alice@example.com',
+        },
+      } as RawApiNotification;
+
+      const result = transformNotification(enriched) as Notification & {
+        sourceProfile?: {
+          displayName?: string;
+          picture?: string;
+          nip05?: string;
+        };
+      };
+
+      expect(result.sourceProfile?.displayName).toBe('Alice');
+      expect(result.sourceProfile?.picture).toBe('https://media.divine.video/alice.jpg');
+      expect(result.sourceProfile?.nip05).toBe('alice@example.com');
+    });
   });
 
   describe('transformNotificationsResponse', () => {

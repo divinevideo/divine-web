@@ -7,7 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuthor } from '@/hooks/useAuthor';
 import { useSubdomainNavigate } from '@/hooks/useSubdomainNavigate';
 import { genUserName } from '@/lib/genUserName';
-import { getSafeProfileImage } from '@/lib/imageUtils';
+import { getSafeProfileImage, getSafeThumbnailUrl } from '@/lib/imageUtils';
 import { generateNotificationMessage, formatRelativeTime } from '@/lib/notificationTransform';
 import { cn } from '@/lib/utils';
 import type { Notification, NotificationType } from '@/types/notification';
@@ -27,12 +27,20 @@ interface NotificationItemProps {
 
 export function NotificationItem({ notification }: NotificationItemProps) {
   const navigate = useSubdomainNavigate();
-  const author = useAuthor(notification.actorPubkey);
+  const author = useAuthor(notification.actorPubkey, {
+    initialName: notification.sourceProfile?.displayName,
+    initialAvatar: notification.sourceProfile?.picture,
+  });
   const metadata = author.data?.metadata;
 
-  const displayName = metadata?.display_name || metadata?.name || genUserName(notification.actorPubkey);
-  const avatarUrl = getSafeProfileImage(metadata?.picture);
+  const displayName = notification.sourceProfile?.displayName || metadata?.display_name || metadata?.name || genUserName(notification.actorPubkey);
+  const avatarUrl = getSafeProfileImage(notification.sourceProfile?.picture || metadata?.picture);
   const avatarFallback = displayName[0]?.toUpperCase() || '?';
+  const referencedTitle = notification.referencedVideo?.title?.trim() || 'Untitled video';
+  const referencedThumbnail = getSafeThumbnailUrl(notification.referencedVideo?.thumbnail);
+  const showReferencedVideo =
+    notification.type !== 'follow'
+    && Boolean(notification.referencedVideo?.title || referencedThumbnail);
 
   const { icon: TypeIcon, color: iconColor } = TYPE_CONFIG[notification.type];
   const message = generateNotificationMessage(notification.type, displayName);
@@ -79,6 +87,24 @@ export function NotificationItem({ notification }: NotificationItemProps) {
             {message.replace(displayName, '').trim()}
           </span>
         </p>
+
+        {showReferencedVideo && (
+          <div
+            className="mt-2 flex items-center gap-2 rounded-lg border border-border/60 bg-muted/30 p-2"
+            data-testid="notification-video-preview"
+          >
+            {referencedThumbnail && (
+              <img
+                src={referencedThumbnail}
+                alt={referencedTitle}
+                className="h-10 w-10 shrink-0 rounded-md object-cover"
+              />
+            )}
+            <p className="min-w-0 text-xs font-medium text-foreground line-clamp-1">
+              {referencedTitle}
+            </p>
+          </div>
+        )}
 
         {/* Comment preview */}
         {notification.type === 'comment' && notification.commentText && (

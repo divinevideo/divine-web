@@ -22,6 +22,18 @@ export interface NotificationFilters {
   category: NotificationCategory;
 }
 
+export interface NotificationSourceProfile {
+  displayName?: string;
+  picture?: string;
+  nip05?: string;
+}
+
+export interface NotificationReferencedVideo {
+  title?: string;
+  thumbnail?: string;
+  dTag?: string;
+}
+
 /** A single notification in app format */
 export interface Notification {
   id: string;
@@ -33,6 +45,8 @@ export interface Notification {
   sourceEventId: string;   // The event that caused the notification
   sourceKind: number;
   commentText?: string;    // For comment notifications
+  sourceProfile?: NotificationSourceProfile;
+  referencedVideo?: NotificationReferencedVideo;
 }
 
 /** Paginated response from the notifications API */
@@ -54,6 +68,16 @@ export interface RawApiNotification {
   created_at: number;
   read: boolean;
   content?: string;
+  source_profile?: {
+    display_name?: string;
+    picture?: string;
+    nip05?: string;
+  };
+  referenced_video?: {
+    title?: string;
+    thumbnail?: string;
+    d_tag?: string;
+  };
 }
 
 /** Raw paginated response from Funnelcake API */
