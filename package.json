@@ -16,7 +16,9 @@
     "fastly:deploy": "npm run build && cd compute-js && npm run fastly:deploy",
     "fastly:publish": "npm run build && cd compute-js && npm run fastly:publish",
     "precalculate-thumbnails": "tsx scripts/precalculate-hashtag-thumbnails.ts",
-    "generate-icons": "node scripts/generate-icons.js"
+    "generate-icons": "node scripts/generate-icons.js",
+    "test:visual": "playwright test",
+    "test:visual:update": "playwright test --update-snapshots"
   },
   "dependencies": {
     "@divinevideo/login": "^1.0.0",
@@ -98,6 +100,7 @@
     "@eslint/js": "^9.9.0",
     "@html-eslint/eslint-plugin": "^0.41.0",
     "@html-eslint/parser": "^0.41.0",
+    "@playwright/test": "^1.59.1",
     "@tailwindcss/typography": "^0.5.15",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^6.6.3",
