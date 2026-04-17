@@ -194,5 +194,10 @@
       "c2paContentCredentials": "Content Credentials C2PA",
       "proofManifest": "Manifest dowodu"
     }
+  },
+  "classicViners": {
+    "heading": "Klasyczni Vinerzy",
+    "archivedBadge": "Zarchiwizowane",
+    "archivedTooltip": "Oryginalne archiwum Vine zachowane przez Internet Archive"
   }
 }

@@ -190,5 +190,10 @@
       "c2paContentCredentials": "C2PA Content Credentials",
       "proofManifest": "Bevismanifest"
     }
+  },
+  "classicViners": {
+    "heading": "Klassiska Viners",
+    "archivedBadge": "Arkiverad",
+    "archivedTooltip": "Original Vine-arkiv bevarat av Internet Archive"
   }
 }

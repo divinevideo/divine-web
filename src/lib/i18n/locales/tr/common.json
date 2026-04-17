@@ -190,5 +190,10 @@
       "c2paContentCredentials": "C2PA Content Credentials",
       "proofManifest": "Kanit manifestosu"
     }
+  },
+  "classicViners": {
+    "heading": "Klasik Vinerlar",
+    "archivedBadge": "Arsivlenmis",
+    "archivedTooltip": "Internet Archive tarafindan korunan orijinal Vine arsivi"
   }
 }

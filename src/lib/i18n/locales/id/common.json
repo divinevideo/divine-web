@@ -190,5 +190,10 @@
       "c2paContentCredentials": "Content Credentials C2PA",
       "proofManifest": "Manifes bukti"
     }
+  },
+  "classicViners": {
+    "heading": "Viner klasik",
+    "archivedBadge": "Diarsipkan",
+    "archivedTooltip": "Arsip Vine asli yang dilestarikan oleh Internet Archive"
   }
 }

@@ -190,5 +190,10 @@
       "c2paContentCredentials": "Content Credentials C2PA",
       "proofManifest": "Manifeste de preuve"
     }
+  },
+  "classicViners": {
+    "heading": "Viners classiques",
+    "archivedBadge": "Archive",
+    "archivedTooltip": "Archive Vine originale preservee par l'Internet Archive"
   }
 }

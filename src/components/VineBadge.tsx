@@ -1,6 +1,7 @@
 // ABOUTME: Badge component for displaying original Vine video indicator
 // ABOUTME: Shows the classic Vine logo for videos migrated from original Vine platform
 
+import { useTranslation } from 'react-i18next';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 
@@ -10,6 +11,7 @@ interface VineBadgeProps {
 }
 
 export function VineBadge({ className, size = 'small' }: VineBadgeProps) {
+  const { t } = useTranslation();
   const sizeConfig = getSizeConfig(size);
 
   return (
@@ -21,11 +23,11 @@ export function VineBadge({ className, size = 'small' }: VineBadgeProps) {
         sizeConfig.className,
         className
       )}
-      title="Original Vine archive preserved from the Internet Archive"
+      title={t('classicViners.archivedTooltip')}
       style={{ fontFamily: "'Bricolage Grotesque', system-ui, sans-serif" }}
     >
       <VineIcon className={sizeConfig.iconSize} />
-      <span>Archived</span>
+      <span>{t('classicViners.archivedBadge')}</span>
     </Badge>
   );
 }

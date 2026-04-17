@@ -190,5 +190,10 @@
       "c2paContentCredentials": "C2PA Content Credentials",
       "proofManifest": "증명 매니페스트"
     }
+  },
+  "classicViners": {
+    "heading": "클래식 Viner",
+    "archivedBadge": "아카이브됨",
+    "archivedTooltip": "Internet Archive에서 보존된 오리지널 Vine 아카이브"
   }
 }

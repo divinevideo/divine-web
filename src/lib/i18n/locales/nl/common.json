@@ -190,5 +190,10 @@
       "c2paContentCredentials": "C2PA Content Credentials",
       "proofManifest": "Bewijsmanifest"
     }
+  },
+  "classicViners": {
+    "heading": "Klassieke Viners",
+    "archivedBadge": "Gearchiveerd",
+    "archivedTooltip": "Origineel Vine-archief bewaard door het Internet Archive"
   }
 }

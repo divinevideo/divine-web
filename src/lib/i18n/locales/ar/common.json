@@ -198,5 +198,10 @@
       "c2paContentCredentials": "C2PA Content Credentials",
       "proofManifest": "بيان الإثبات"
     }
+  },
+  "classicViners": {
+    "heading": "كلاسيكيو Vine",
+    "archivedBadge": "مؤرشف",
+    "archivedTooltip": "أرشيف Vine الأصلي محفوظ من Internet Archive"
   }
 }

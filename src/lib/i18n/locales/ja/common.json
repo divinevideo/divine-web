@@ -190,5 +190,10 @@
       "c2paContentCredentials": "C2PA Content Credentials",
       "proofManifest": "証明マニフェスト"
     }
+  },
+  "classicViners": {
+    "heading": "クラシック Viner",
+    "archivedBadge": "アーカイブ",
+    "archivedTooltip": "Internet Archive で保存されたオリジナルの Vine アーカイブ"
   }
 }
