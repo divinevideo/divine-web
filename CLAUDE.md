@@ -296,6 +296,62 @@ Funnelcake profile response is nested:
 
 ---
 
+## Brand
+
+Divine has an official brand identity. Full guidelines live in `docs/brand/`:
+
+- `docs/brand/BRAND_DNA.md` — purpose, manifesto, archetype (Playful Rebel = Jester + Rebel)
+- `docs/brand/VISUAL_IDENTITY.md` — colors, typography, iconography rules
+- `docs/brand/TONE_OF_VOICE.md` — Candid Simplicity / Collective Optimism / Shot of Punk
+- `docs/brand/AGENT_QUICK_REFERENCE.md` — fast lookup for AI agents
+- `docs/brand/ALIGNMENT_REPORT.md` — history of the refresh
+
+### Hard rules (enforced by tests)
+
+- **No Tailwind `uppercase` class** in any `className` attribute — brand forbids all-caps copy. Guardrail: `tests/brand/no-uppercase-class.test.ts`. Legal-disclaimer exceptions (UCC § 2-316 conspicuousness) use inline `style={{ textTransform: 'uppercase' }}` instead, with an explanatory comment.
+- **No `bg-gradient-*` or `radial-gradient(` / `linear-gradient(` on layout surfaces.** Decorative illustration components are allowlisted. Guardrail: `tests/brand/no-gradients.test.ts`.
+- **No `lucide-react` imports.** All icons come from `@phosphor-icons/react`. App-wide default weight is `bold` via `<IconContext.Provider>` in `src/main.tsx`. Use `weight="fill"` for active/toggled states (liked heart, reposted, followed, active tab). Guardrail: `tests/brand/no-lucide-react.test.ts`.
+- **Fonts**: Bricolage Grotesque (display, variable with opsz axis) + Inter Variable (body). Only these two faces. Pacifico and other decorative fonts are out.
+
+### Brand primitives
+
+Ready-to-use components:
+
+- `<BrandLogo />` (`src/components/brand/BrandLogo.tsx`) — the Divine wordmark. Ink color adapts: dark-green on light bg, brand-green on dark bg (WCAG AA).
+- `<SectionHeader as="h2"|"h3">` (`src/components/brand/SectionHeader.tsx`) — Bricolage Extra Bold heading with brand ink. **Throws in dev** if `className` contains `uppercase`.
+- `<Button variant="sticker">` (`src/components/ui/button-variants.ts`) — hero CTA treatment: thick dark-green border, 14px radius, chunky 4px offset shadow, hover lift. For primary calls-to-action only (Log in, Share, Save, Follow).
+- `<Card variant="brand" accent="green|pink|violet|orange|yellow|blue|dark">` (`src/components/ui/card.tsx`) — thick dark-green border, 22px radius, optional chunky offset shadow in the accent color. Used by VideoCard with per-feed accent rotation (green = default, pink = trending, violet = classics).
+
+### Brand utilities
+
+Defined in `src/styles/brand-utilities.css` (`@layer components`):
+
+- `brand-offset-shadow-{green|pink|violet|orange|yellow|blue|dark}` — 6px offset
+- `brand-offset-shadow-sm-{green|dark}` — 3px offset (used on tab / nav active states)
+- `brand-tilt-neg-3`, `brand-tilt-pos-2` — playful rotation for stickers
+- `brand-sticker` — composition helper (border + shadow + hover lift)
+- `brand-card` — composition helper (thick border + 22px radius)
+
+### Preview page (dev only)
+
+`/__brand-preview` renders every primitive + every color at once for visual QA. Guarded behind `import.meta.env.DEV`; tree-shaken from production builds. Playwright visual baseline lives at `tests/visual/brand-primitives.spec.ts`.
+
+### A11y
+
+`tests/visual/a11y.spec.ts` runs axe-core (WCAG 2 A/AA) on `/`, `/discovery`, `/search`, and `/__brand-preview`. **Don't ship anything that introduces a color-contrast violation** on real content surfaces — decorative swatches on the preview page are excluded via `data-axe-skip="color-contrast"`.
+
+### Voice
+
+When writing user-facing copy (error messages, empty states, buttons), lean casual-direct, never corporate. Examples:
+
+- "Your loop is live. Let's go." (not "Your video has been uploaded successfully")
+- "Nothing looping yet. Go find your people." (not "No content available")
+- "Nada. Try something different?" (not "No results found for your query")
+
+Error messages that name a specific technical failure stay factual. Legal/Terms copy stays neutral.
+
+---
+
 ## Running Tests
 
 ```bash
