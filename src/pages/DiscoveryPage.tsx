@@ -184,6 +184,7 @@ export function DiscoveryPage() {
               feedType="trending"
               sortMode="hot"
               verifiedOnly={verifiedOnly}
+              accent="pink"
               data-testid="video-feed-hot"
               className="space-y-6"
               key="hot"

@@ -82,6 +82,7 @@ export function TrendingPage() {
         <VideoFeed
           feedType="trending"
           sortMode={sortMode}
+          accent="pink"
           data-testid="video-feed-trending"
           className="space-y-6"
         />
