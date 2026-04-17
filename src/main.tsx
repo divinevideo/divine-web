@@ -19,6 +19,7 @@ import { hydrateLoginFromCookie } from '@/lib/crossSubdomainAuth';
 hydrateLoginFromCookie();
 
 import { createRoot } from 'react-dom/client';
+import { IconContext } from '@phosphor-icons/react';
 import { initializeI18n } from '@/lib/i18n';
 
 // Import polyfills first
@@ -83,7 +84,13 @@ if ('serviceWorker' in navigator && !isSubdomain) {
 initializeI18n().finally(() => {
   createRoot(document.getElementById("root")!).render(
     <ErrorBoundary>
-      <App />
+      {/* Phosphor Icons default to weight="regular" (1.5px stroke); we set
+          weight="bold" app-wide so icons approximate the visual heft of the
+          Lucide defaults we migrated from. Per-icon overrides (e.g.
+          weight="fill" for active liked hearts) still work. */}
+      <IconContext.Provider value={{ weight: 'bold', mirrored: false }}>
+        <App />
+      </IconContext.Provider>
     </ErrorBoundary>
   );
 });
