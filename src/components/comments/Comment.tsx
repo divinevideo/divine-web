@@ -82,8 +82,8 @@ export function Comment({ root, comment, depth = 0, maxDepth = 3, limit, parentC
   const handleMuteUser = () => {
     if (!user) {
       toast({
-        title: 'Login required',
-        description: 'You must be logged in to mute users',
+        title: 'Log in first.',
+        description: 'You need to be signed in to mute people.',
         variant: 'destructive',
       });
       return;
@@ -96,14 +96,14 @@ export function Comment({ root, comment, depth = 0, maxDepth = 3, limit, parentC
     }, {
       onSuccess: () => {
         toast({
-          title: 'User muted',
-          description: `${displayName} has been added to your mute list`,
+          title: 'Muted.',
+          description: `${displayName} is off your feed.`,
         });
       },
       onError: () => {
         toast({
-          title: 'Error',
-          description: 'Failed to mute user. Please try again.',
+          title: 'Mute didn\'t land.',
+          description: 'Couldn\'t save the mute. Try again?',
           variant: 'destructive',
         });
       }

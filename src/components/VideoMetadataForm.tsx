@@ -88,8 +88,8 @@ export function VideoMetadataForm({
   const handlePublish = async () => {
     if (!title.trim()) {
       toast({
-        title: 'Title Required',
-        description: 'Please add a title for your video',
+        title: 'Give it a title.',
+        description: 'Your loop needs a name before it goes live.',
         variant: 'destructive',
       });
       return;
@@ -112,16 +112,16 @@ export function VideoMetadataForm({
       });
 
       toast({
-        title: 'Video Published!',
-        description: 'Your vine has been published successfully',
+        title: 'Your loop is live.',
+        description: 'Let\'s go.',
       });
 
       onPublished();
     } catch (error) {
       console.error('Failed to publish video:', error);
       toast({
-        title: 'Publishing Failed',
-        description: error instanceof Error ? error.message : 'Failed to publish video',
+        title: 'Didn\'t make it out.',
+        description: error instanceof Error ? error.message : 'Publish hit a snag. Try again?',
         variant: 'destructive',
       });
     }

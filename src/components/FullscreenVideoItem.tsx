@@ -199,13 +199,13 @@ export function FullscreenVideoItem({
         reason: 'Muted from fullscreen video'
       });
       toast({
-        title: 'User muted',
-        description: `${displayName} has been muted`,
+        title: 'Muted.',
+        description: `${displayName} is off your feed.`,
       });
     } catch {
       toast({
-        title: 'Error',
-        description: 'Failed to mute user',
+        title: 'Mute didn\'t land.',
+        description: 'Couldn\'t save the mute. Try again?',
         variant: 'destructive',
       });
     }

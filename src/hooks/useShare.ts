@@ -26,13 +26,13 @@ export function useShare() {
     try {
       await navigator.clipboard.writeText(data.url);
       toast({
-        title: 'Link copied!',
-        description: 'Link has been copied to clipboard',
+        title: 'Link copied.',
+        description: 'Share it wherever.',
       });
     } catch {
       toast({
-        title: 'Error',
-        description: 'Failed to copy link to clipboard',
+        title: 'Copy hit a wall.',
+        description: 'Your browser blocked clipboard access. Try again?',
         variant: 'destructive',
       });
     }

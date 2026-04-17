@@ -171,13 +171,13 @@ export function ProfileHeader({
       const npub = nip19.npubEncode(pubkey);
       await navigator.clipboard.writeText(npub);
       toast({
-        title: "Copied!",
-        description: "npub copied to clipboard",
+        title: "Copied.",
+        description: "npub's on your clipboard.",
       });
     } catch {
       toast({
-        title: "Copy failed",
-        description: "Failed to copy npub to clipboard",
+        title: "Copy hit a wall.",
+        description: "Your browser blocked clipboard access.",
         variant: "destructive",
       });
     }

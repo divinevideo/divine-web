@@ -87,8 +87,8 @@ export function useMediaRecorder() {
     } catch (error) {
       console.error('Failed to access camera:', error);
       toast({
-        title: 'Camera Access Denied',
-        description: 'Please allow camera and microphone access to record videos.',
+        title: 'Camera\'s locked out.',
+        description: 'Let us into the camera and mic to record.',
         variant: 'destructive',
       });
       throw error;

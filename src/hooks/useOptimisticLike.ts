@@ -63,8 +63,8 @@ export function useOptimisticLike() {
         }
 
         toast({
-          title: 'Unliked!',
-          description: 'Your like has been removed',
+          title: 'Unliked.',
+          description: 'Taken it back. All good.',
         });
       } else {
         // Optimistic like
@@ -98,8 +98,8 @@ export function useOptimisticLike() {
         }));
 
         toast({
-          title: 'Liked!',
-          description: 'Your reaction has been published',
+          title: 'Liked.',
+          description: 'Love, sent.',
         });
       }
     } catch (error) {

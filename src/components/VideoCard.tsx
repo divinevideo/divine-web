@@ -420,13 +420,13 @@ export function VideoCard({
       });
 
       toast({
-        title: 'User muted',
-        description: `${displayName} has been muted`,
+        title: 'Muted.',
+        description: `${displayName} is off your feed.`,
       });
     } catch {
       toast({
-        title: 'Error',
-        description: 'Failed to mute user',
+        title: 'Mute didn\'t land.',
+        description: 'Couldn\'t save the mute. Try again?',
         variant: 'destructive',
       });
     }
@@ -453,15 +453,15 @@ export function VideoCard({
     try {
       if (isPinned) {
         await unpinVideo({ coordinate });
-        toast({ title: 'Unpinned', description: 'Video removed from your profile pins' });
+        toast({ title: 'Unpinned.', description: 'Off your profile pins.' });
       } else {
         await pinVideo({ coordinate });
-        toast({ title: 'Pinned', description: 'Video pinned to your profile' });
+        toast({ title: 'Pinned.', description: 'Up top on your profile.' });
       }
     } catch (err) {
       toast({
-        title: 'Error',
-        description: err instanceof Error ? err.message : 'Failed to update pin',
+        title: 'Pin snagged.',
+        description: err instanceof Error ? err.message : 'Couldn\'t update the pin. Try again?',
         variant: 'destructive',
       });
     }
@@ -470,8 +470,8 @@ export function VideoCard({
   const handleDownload = async () => {
     if (!video.videoUrl) {
       toast({
-        title: 'Error',
-        description: 'No video URL available',
+        title: 'Nothing to download.',
+        description: 'This video doesn\'t have a URL yet.',
         variant: 'destructive',
       });
       return;
@@ -493,8 +493,8 @@ export function VideoCard({
       window.URL.revokeObjectURL(url);
 
       toast({
-        title: 'Download started',
-        description: 'Your video download has begun',
+        title: 'Downloading.',
+        description: 'Saving your loop.',
       });
     } catch (error) {
       console.error('Download failed:', error);

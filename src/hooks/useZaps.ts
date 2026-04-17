@@ -140,8 +140,8 @@ export function useZaps(
 
     if (!user) {
       toast({
-        title: 'Login required',
-        description: 'You must be logged in to send a zap.',
+        title: 'Log in first.',
+        description: 'You need to be signed in to send a zap.',
         variant: 'destructive',
       });
       setIsZapping(false);
@@ -241,8 +241,8 @@ export function useZaps(
                 setInvoice(null);
 
                 toast({
-                  title: 'Zap successful!',
-                  description: `You sent ${amount} sats via NWC to the author.`,
+                  title: 'Zapped.',
+                  description: `${amount} sats, sent via NWC.`,
                 });
 
                 // Invalidate zap queries to refresh counts
@@ -273,8 +273,8 @@ export function useZaps(
                 setInvoice(null);
 
                 toast({
-                  title: 'Zap successful!',
-                  description: `You sent ${amount} sats to the author.`,
+                  title: 'Zapped.',
+                  description: `${amount} sats, on the way.`,
                 });
 
                 // Invalidate zap queries to refresh counts

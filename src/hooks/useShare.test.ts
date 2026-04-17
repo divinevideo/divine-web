@@ -78,8 +78,8 @@ describe('useShare', () => {
 
     expect(navigator.clipboard.writeText).toHaveBeenCalledWith('https://divine.video/video/abc');
     expect(mockToast).toHaveBeenCalledWith({
-      title: 'Link copied!',
-      description: 'Link has been copied to clipboard',
+      title: 'Link copied.',
+      description: 'Share it wherever.',
     });
   });
 
@@ -101,8 +101,8 @@ describe('useShare', () => {
     // Should fall through to clipboard
     expect(navigator.clipboard.writeText).toHaveBeenCalledWith('https://divine.video/video/abc');
     expect(mockToast).toHaveBeenCalledWith({
-      title: 'Link copied!',
-      description: 'Link has been copied to clipboard',
+      title: 'Link copied.',
+      description: 'Share it wherever.',
     });
   });
 
@@ -122,8 +122,8 @@ describe('useShare', () => {
     });
 
     expect(mockToast).toHaveBeenCalledWith({
-      title: 'Error',
-      description: 'Failed to copy link to clipboard',
+      title: 'Copy hit a wall.',
+      description: 'Your browser blocked clipboard access. Try again?',
       variant: 'destructive',
     });
   });
