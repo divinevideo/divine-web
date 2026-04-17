@@ -203,7 +203,7 @@ export function MessagesPage() {
   const searchResults = searchUsersQuery.data || [];
 
   return (
-    <div className="min-h-full bg-[radial-gradient(circle_at_top,_hsl(var(--primary)/0.14),_transparent_42%),linear-gradient(180deg,hsl(var(--background)),hsl(var(--background)))]">
+    <div className="min-h-full bg-brand-off-white dark:bg-brand-dark-green">
       <main className="container py-6">
         <div className="mx-auto max-w-4xl space-y-5">
           <section className="overflow-hidden rounded-[32px] border border-border/70 bg-card/80 px-5 py-6 shadow-[0_24px_60px_rgba(39,197,139,0.08)] backdrop-blur-sm">
