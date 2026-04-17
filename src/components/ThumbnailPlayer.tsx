@@ -2,7 +2,7 @@
 // ABOUTME: Shows poster image with play button overlay and click-to-play functionality
 
 import { useState, useCallback } from 'react';
-import { Play } from 'lucide-react';
+import { Play } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useAdultVerification, checkMediaAuth } from '@/hooks/useAdultVerification';

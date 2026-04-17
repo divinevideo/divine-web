@@ -11,11 +11,18 @@ function walk(dir: string, out: string[] = []): string[] {
   return out;
 }
 
-// TODO(phase-3): re-enable after the codemod migrates all Lucide imports to Phosphor.
-describe.skip('brand rule: no lucide-react imports (Phase 3+)', () => {
+// Enforced since Phase 3 codemod migrated all Lucide imports to Phosphor.
+// The iconMap documents the Lucide→Phosphor mapping; its JSDoc legitimately
+// references the string 'lucide-react' for illustration. Allowlist it.
+const ALLOWLIST: RegExp[] = [
+  /src\/lib\/iconMap\.ts$/,
+];
+
+describe('brand rule: no lucide-react imports', () => {
   it('no src/** file imports from lucide-react', () => {
     const violations: string[] = [];
     for (const f of walk('src')) {
+      if (ALLOWLIST.some(r => r.test(f))) continue;
       if (/from ['"]lucide-react['"]/.test(readFileSync(f, 'utf8'))) violations.push(f);
     }
     expect(violations).toEqual([]);

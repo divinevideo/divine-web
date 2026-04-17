@@ -3,7 +3,7 @@
 
 import { useState, useRef } from 'react';
 import { useSubdomainNavigate } from '@/hooks/useSubdomainNavigate';
-import { Play, Repeat } from 'lucide-react';
+import { Play, Repeat } from '@phosphor-icons/react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';

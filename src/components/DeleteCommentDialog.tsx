@@ -13,7 +13,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { AlertCircle } from 'lucide-react';
+import { WarningCircle as AlertCircle } from '@phosphor-icons/react';
 import type { NostrEvent } from '@nostrify/nostrify';
 
 interface DeleteCommentDialogProps {

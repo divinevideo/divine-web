@@ -1,4 +1,4 @@
-import { Home, Compass, Search, Bell, MoreVertical, Info, Code2, HelpCircle, Headphones, FileText, Sun, Moon, MessageCircle } from 'lucide-react';
+import { House as Home, Compass, MagnifyingGlass as Search, Bell, DotsThreeVertical as MoreVertical, Info, Code as Code2, Question as HelpCircle, Headphones, FileText, Sun, Moon, ChatCircle as MessageCircle } from '@phosphor-icons/react';
 import { useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useSubdomainNavigate } from '@/hooks/useSubdomainNavigate';

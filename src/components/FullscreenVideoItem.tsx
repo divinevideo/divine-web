@@ -2,7 +2,7 @@
 // ABOUTME: Displays video with overlay UI including back button, author info, and action buttons
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { ArrowLeft, Heart, MessageCircle, Repeat2, Share, Volume2, VolumeX, Download, ListPlus, Users, MoreVertical, Flag, UserX, Code, Trash2, Eye, Captions } from 'lucide-react';
+import { ArrowLeft, Heart, ChatCircle as MessageCircle, Repeat as Repeat2, Share, SpeakerHigh as Volume2, SpeakerX as VolumeX, DownloadSimple as Download, ListPlus, Users, DotsThreeVertical as MoreVertical, Flag, UserMinus as UserX, Code, Trash as Trash2, Eye, ClosedCaptioning as Captions } from '@phosphor-icons/react';
 import { nip19 } from 'nostr-tools';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';

@@ -1,8 +1,8 @@
 // ABOUTME: Centralized sort mode definitions for NIP-50 search
 // ABOUTME: Single source of truth for sort modes across all pages
 
-import { Flame, TrendingUp, Zap, Scale, Clock, Search, Clapperboard } from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
+import { Flame, TrendUp as TrendingUp, Lightning as Zap, Scales as Scale, Clock, MagnifyingGlass as Search, FilmSlate as Clapperboard } from '@phosphor-icons/react';
+import type { Icon as LucideIcon } from '@phosphor-icons/react';
 import type { SortMode } from '@/types/nostr';
 
 export interface SortModeDefinition {

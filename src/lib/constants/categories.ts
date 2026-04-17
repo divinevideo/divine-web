@@ -1,54 +1,9 @@
 // ABOUTME: Static mapping of category names to lucide-react icons and display labels
 // ABOUTME: Used by sidebar nav and category pages for Vine-style category browsing
 
-import type { LucideIcon } from 'lucide-react';
+import { SmileyWink as Laugh, MusicNote as Music, Confetti as PartyPopper, PawPrint, Cat, Trophy, ForkKnife as UtensilsCrossed, ChefHat, TShirt as Shirt, Sparkle as Sparkles, GameController as Gamepad2, TreeEvergreen as TreePine, AirplaneTilt as Plane, Palette, Barbell as Dumbbell, Cpu, GraduationCap, Wrench, Newspaper, FilmSlate as Clapperboard, Heart, Baby, VideoCamera as Video, House as Home, Users, Car, FilmStrip as Film, ShoppingBag, Bank as Landmark, SmileyMelting as Drama, Smiley as Smile, CurrencyDollar as DollarSign, Scissors, Buildings as Building2, Plant as Sprout, MapPin, Couch as Sofa, ShareNetwork as Share2, Record as CircleDot, Television as Tv, Coffee, Bus, CurrencyBtc as Bitcoin, Tag } from '@phosphor-icons/react';
+import type { Icon as LucideIcon } from '@phosphor-icons/react';
 import type { TFunction } from 'i18next';
-import {
-  Laugh,
-  Music,
-  PartyPopper,
-  PawPrint,
-  Cat,
-  Trophy,
-  UtensilsCrossed,
-  ChefHat,
-  Shirt,
-  Sparkles,
-  Gamepad2,
-  TreePine,
-  Plane,
-  Palette,
-  Dumbbell,
-  Cpu,
-  GraduationCap,
-  Wrench,
-  Newspaper,
-  Clapperboard,
-  Heart,
-  Baby,
-  Video,
-  Home,
-  Users,
-  Car,
-  Film,
-  ShoppingBag,
-  Landmark,
-  Drama,
-  Smile,
-  DollarSign,
-  Scissors,
-  Building2,
-  Sprout,
-  MapPin,
-  Sofa,
-  Share2,
-  CircleDot,
-  Tv,
-  Coffee,
-  Bus,
-  Bitcoin,
-  Tag,
-} from 'lucide-react';
 
 export interface CategoryConfig {
   icon: LucideIcon;

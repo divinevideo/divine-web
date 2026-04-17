@@ -1,5 +1,5 @@
 import React, { FormEvent, useEffect, useRef, useState } from 'react';
-import { AlertTriangle, Cloud, KeyRound, Shield, Upload } from 'lucide-react';
+import { Warning as AlertTriangle, Cloud, Key as KeyRound, Shield, UploadSimple as Upload } from '@phosphor-icons/react';
 
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';

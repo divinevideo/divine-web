@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Check, Languages } from 'lucide-react';
+import { Check, Translate as Languages } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
 import {
   DropdownMenuItem,

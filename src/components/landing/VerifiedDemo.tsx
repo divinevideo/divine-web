@@ -2,7 +2,7 @@
 // ABOUTME: Displays a stock image to showcase verification features
 
 import { Card, CardContent } from "@/components/ui/card";
-import { Shield, CheckCircle2 } from "lucide-react";
+import { Shield, CheckCircle as CheckCircle2 } from '@phosphor-icons/react';
 
 export function VerifiedDemo() {
   return (

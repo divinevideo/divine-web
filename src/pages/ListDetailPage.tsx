@@ -18,7 +18,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { ArrowLeft, List, Video, Clock, Edit, Share2, Users, Shuffle, ArrowUpDown, MoreVertical, Trash2 } from 'lucide-react';
+import { ArrowLeft, List, VideoCamera as Video, Clock, PencilSimple as Edit, ShareNetwork as Share2, Users, Shuffle, ArrowsDownUp as ArrowUpDown, DotsThreeVertical as MoreVertical, Trash as Trash2 } from '@phosphor-icons/react';
 import { genUserName } from '@/lib/genUserName';
 import { formatDistanceToNow } from 'date-fns';
 import { useToast } from '@/hooks/useToast';

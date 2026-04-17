@@ -5,16 +5,7 @@ import { Link } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import {
-  HelpCircle,
-  Video,
-  Shield,
-  Key,
-  Globe,
-  Upload,
-  Settings,
-  Hash
-} from 'lucide-react';
+import { Question as HelpCircle, VideoCamera as Video, Shield, Key, Globe, UploadSimple as Upload, Gear as Settings, Hash } from '@phosphor-icons/react';
 import {
   Accordion,
   AccordionContent,

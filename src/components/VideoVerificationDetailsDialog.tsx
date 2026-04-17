@@ -2,7 +2,7 @@
 // ABOUTME: Uses the same decision helpers as the badge row so the UI stays aligned with mobile badge rules
 
 import { useEffect, useState } from 'react';
-import { Archive, CheckCircle2, ExternalLink, Loader2, Search, ShieldCheck, XCircle } from 'lucide-react';
+import { Archive, CheckCircle as CheckCircle2, ArrowSquareOut as ExternalLink, CircleNotch as Loader2, MagnifyingGlass as Search, ShieldCheck, XCircle } from '@phosphor-icons/react';
 import {
   Dialog,
   DialogContent,

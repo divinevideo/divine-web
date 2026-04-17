@@ -1,7 +1,7 @@
 // ABOUTME: Badge for original user-created content (non-repost, non-Vine)
 // ABOUTME: Matches Flutter app's OriginalContentBadge styling and behavior
 
-import { CheckCircle } from 'lucide-react';
+import { CheckCircle } from '@phosphor-icons/react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 

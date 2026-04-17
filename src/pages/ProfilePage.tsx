@@ -7,7 +7,7 @@ import { nip19 } from 'nostr-tools';
 import { useHead, useSeoMeta } from '@unhead/react';
 import { feedUrls } from '@/lib/feedUrls';
 import { useRssFeedAvailable } from '@/hooks/useRssFeedAvailable';
-import { Grid, List, Loader2 } from 'lucide-react';
+import { SquaresFour as Grid, List, CircleNotch as Loader2 } from '@phosphor-icons/react';
 import { PROFILE_SORT_MODES } from '@/lib/constants/sortModes';
 import InfiniteScroll from 'react-infinite-scroll-component';
 import { ProfileHeader } from '@/components/ProfileHeader';

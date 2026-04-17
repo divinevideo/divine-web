@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, forwardRef } from 'react';
-import { Zap, Copy, Check, ExternalLink, Sparkle, Sparkles, Star, Rocket, ArrowLeft, X } from 'lucide-react';
+import { Lightning as Zap, Copy, Check, ArrowSquareOut as ExternalLink, Sparkle, Sparkle as Sparkles, Star, Rocket, ArrowLeft, X } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import {

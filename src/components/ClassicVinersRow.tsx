@@ -4,7 +4,7 @@
 import { useEffect } from 'react';
 import { SmartLink } from '@/components/SmartLink';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Star } from 'lucide-react';
+import { Star } from '@phosphor-icons/react';
 import { CLASSIC_VINERS, CLASSIC_VINER_AVATARS, type StaticViner } from '@/data/classicViners';
 import { getSafeProfileImage } from '@/lib/imageUtils';
 import { nip19 } from 'nostr-tools';

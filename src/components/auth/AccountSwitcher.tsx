@@ -1,7 +1,7 @@
 // NOTE: This file is stable and usually should not be modified.
 // It is important that all functionality in this file is preserved, and should only be modified if explicitly requested.
 
-import { ChevronDown, LogOut, UserIcon, UserPlus, User, Settings, Link2/*, Wallet */ } from 'lucide-react';
+import { CaretDown as ChevronDown, SignOut as LogOut, User as UserIcon, UserPlus, User, Gear as Settings, LinkSimple as Link2 } from '@phosphor-icons/react';
 import { useNavigate } from 'react-router-dom';
 import { nip19 } from 'nostr-tools';
 import {

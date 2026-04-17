@@ -2,7 +2,7 @@
 // ABOUTME: Shows main nav, login/signup, expandable Divine links section
 
 import { useLocation } from 'react-router-dom';
-import { Home, Compass, Search, Bell, User, Sun, Moon, ChevronDown, Headphones, BarChart3, LayoutGrid, Rss, MessageCircle } from 'lucide-react';
+import { House as Home, Compass, MagnifyingGlass as Search, Bell, User, Sun, Moon, CaretDown as ChevronDown, Headphones, ChartBar as BarChart3, SquaresFour as LayoutGrid, Rss, ChatCircle as MessageCircle } from '@phosphor-icons/react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCategories } from '@/hooks/useCategories';

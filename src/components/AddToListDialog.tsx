@@ -20,7 +20,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, List, Check, Loader2, ExternalLink } from 'lucide-react';
+import { Plus, List, Check, CircleNotch as Loader2, ArrowSquareOut as ExternalLink } from '@phosphor-icons/react';
 import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/useToast';

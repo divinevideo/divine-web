@@ -2,7 +2,7 @@
 // ABOUTME: Shows different icons and colors based on verification level with detailed tooltip
 
 import { useState } from 'react';
-import { Shield, ShieldCheck, ShieldAlert, CheckCircle, Info } from 'lucide-react';
+import { Shield, ShieldCheck, ShieldWarning as ShieldAlert, CheckCircle, Info } from '@phosphor-icons/react';
 import { Badge } from '@/components/ui/badge';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';

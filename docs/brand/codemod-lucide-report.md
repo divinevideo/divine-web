@@ -1,6 +1,6 @@
 # Lucide → Phosphor codemod report
 
-- Mode: **dry-run**
+- Mode: **write**
 - Files modified: **107**
 - strokeWidth props stripped: **1**
 - Unmapped icons: **0**

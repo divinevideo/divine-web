@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Hash, Search, Play, Loader2 } from 'lucide-react';
+import { Hash, MagnifyingGlass as Search, Play, CircleNotch as Loader2 } from '@phosphor-icons/react';
 import { fetchPopularHashtags } from '@/lib/funnelcakeClient';
 import { DEFAULT_FUNNELCAKE_URL } from '@/config/relays';
 

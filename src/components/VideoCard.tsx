@@ -2,7 +2,7 @@
 // ABOUTME: Shows video player, metadata, author info, and social interactions
 
 import { useState, useCallback, useRef, useMemo, useEffect } from 'react';
-import { Heart, Repeat2, MessageCircle, Share, Eye, MoreVertical, Flag, UserX, Trash2, Volume2, VolumeX, Code, Users, ListPlus, Download, Maximize2, Captions, Pin, PinOff } from 'lucide-react';
+import { Heart, Repeat as Repeat2, ChatCircle as MessageCircle, Share, Eye, DotsThreeVertical as MoreVertical, Flag, UserMinus as UserX, Trash as Trash2, SpeakerHigh as Volume2, SpeakerX as VolumeX, Code, Users, ListPlus, DownloadSimple as Download, ArrowsOutSimple as Maximize2, ClosedCaptioning as Captions, PushPin as Pin, PushPinSlash as PinOff } from '@phosphor-icons/react';
 import { nip19 } from 'nostr-tools';
 import { Card, CardContent, type CardAccent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
