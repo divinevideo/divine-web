@@ -12,7 +12,7 @@ import { useBatchedAuthors } from '@/hooks/useBatchedAuthors';
 import { useContentModeration } from '@/hooks/useModeration';
 import { useFeedPerformanceInstrumentation } from '@/hooks/useFeedPerformanceInstrumentation';
 import { useProofModeEnrichment } from '@/hooks/useProofModeEnrichment';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, type CardAccent } from '@/components/ui/card';
 import { Loader2 } from 'lucide-react';
 import InfiniteScroll from 'react-infinite-scroll-component';
 import type { ParsedVideoData } from '@/types/video';
@@ -37,6 +37,12 @@ interface VideoFeedProps {
   className?: string;
   verifiedOnly?: boolean; // Filter to show only ProofMode verified videos
   mode?: 'auto-play' | 'thumbnail'; // Display mode for video cards
+  /**
+   * Brand accent color applied to each VideoCard's offset shadow.
+   * Used to give each feed type a distinct visual identity
+   * (e.g. pink = trending, violet = classics). Defaults to green.
+   */
+  accent?: CardAccent;
   'data-testid'?: string;
   'data-hashtag-testid'?: string;
   'data-profile-testid'?: string;
@@ -53,6 +59,7 @@ export function VideoFeed({
   className,
   verifiedOnly = false,
   mode = 'auto-play',
+  accent,
   'data-testid': testId,
   'data-hashtag-testid': hashtagTestId,
   'data-profile-testid': profileTestId,
@@ -505,6 +512,7 @@ export function VideoFeed({
               onCloseComments={handleCloseComments}
               onEnterFullscreen={() => handleEnterFullscreen(index)}
               onPlaybackStarted={() => handlePlaybackStarted(video)}
+              accent={accent}
               navigationContext={{
                 source: feedType,
                 hashtag,

@@ -4,7 +4,7 @@
 import { useState, useCallback, useRef, useMemo, useEffect } from 'react';
 import { Heart, Repeat2, MessageCircle, Share, Eye, MoreVertical, Flag, UserX, Trash2, Volume2, VolumeX, Code, Users, ListPlus, Download, Maximize2, Captions, Pin, PinOff } from 'lucide-react';
 import { nip19 } from 'nostr-tools';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, type CardAccent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -77,6 +77,12 @@ interface VideoCardProps {
   navigationContext?: VideoNavigationContext;
   videoIndex?: number;
   trafficSource?: ViewTrafficSource;
+  /**
+   * Brand accent color that drives the card's offset shadow. Used to
+   * visually distinguish feed types (trending=pink, classic=violet, etc.)
+   * without changing copy or layout. Defaults to green.
+   */
+  accent?: CardAccent;
 }
 
 export function VideoCard({
@@ -103,6 +109,7 @@ export function VideoCard({
   navigationContext: _navigationContext,
   videoIndex: _videoIndex,
   trafficSource,
+  accent = 'green',
 }: VideoCardProps) {
   const authorData = useAuthor(video.pubkey, {
     initialName: video.authorName,
@@ -497,7 +504,7 @@ export function VideoCard({
         />
       )}
 
-    <Card className={cn('overflow-hidden', className)}>
+    <Card variant="brand" accent={accent} className={cn('overflow-hidden', className)}>
       {/* Repost indicator - NEW: Show repost count */}
       {hasReposts && (
         <div className="flex items-center gap-2 px-4 pt-3 text-sm text-muted-foreground">
