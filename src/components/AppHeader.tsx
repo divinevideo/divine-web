@@ -73,7 +73,7 @@ export function AppHeader({ className }: AppHeaderProps) {
                 isActive('/') && "bg-primary text-primary-foreground"
               )}
             >
-              <Home className="h-4 w-4" />
+              <Home className="h-4 w-4" weight={isActive('/') ? 'fill' : 'bold'} />
               <span className="hidden lg:inline">{t('nav.home')}</span>
             </Button>
           )}
@@ -86,7 +86,7 @@ export function AppHeader({ className }: AppHeaderProps) {
               isActive('/discovery') && "bg-primary text-primary-foreground"
             )}
             >
-              <Compass className="h-4 w-4" />
+              <Compass className="h-4 w-4" weight={isActive('/discovery') ? 'fill' : 'bold'} />
             <span className="hidden lg:inline">{t('nav.discover')}</span>
           </Button>
           <Button
@@ -98,7 +98,7 @@ export function AppHeader({ className }: AppHeaderProps) {
               isActive('/search') && "bg-primary text-primary-foreground"
             )}
             >
-              <Search className="h-4 w-4" />
+              <Search className="h-4 w-4" weight={isActive('/search') ? 'fill' : 'bold'} />
             <span className="hidden lg:inline">{t('nav.search')}</span>
           </Button>
           {/* Notification bell - visible when logged in */}
