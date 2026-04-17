@@ -84,7 +84,7 @@ export function LandingPage() {
             {/* Playful sticker badge */}
             <div className="flex justify-center">
               <span
-                className="inline-block brand-tilt-neg-3 rounded-full border-2 border-brand-off-white bg-brand-yellow px-4 py-1.5 text-xs font-bold uppercase tracking-wide text-brand-dark-green brand-offset-shadow-sm-dark"
+                className="inline-block brand-tilt-neg-3 rounded-full border-2 border-brand-off-white bg-brand-yellow px-4 py-1.5 text-xs font-bold tracking-wide text-brand-dark-green brand-offset-shadow-sm-dark"
               >
                 No slop. All human.
               </span>
