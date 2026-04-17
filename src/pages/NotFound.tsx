@@ -20,19 +20,19 @@ const NotFound = () => {
   }, [location.pathname]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-100 via-pink-100 to-teal-100 dark:from-purple-950 dark:via-pink-950 dark:to-teal-950">
+    <div className="min-h-screen flex items-center justify-center bg-brand-off-white dark:bg-brand-dark-green">
       <div className="text-center px-4 max-w-2xl mx-auto">
         {/* Divine Image */}
         <div className="mb-8 flex justify-center">
           <img
             src="/divine_gun.avif"
             alt="Divine"
-            className="w-64 h-auto rounded-2xl shadow-2xl transform hover:scale-105 transition-transform duration-300 border-4 border-primary"
+            className="w-64 h-auto rounded-2xl brand-offset-shadow-pink transform hover:scale-105 transition-transform duration-300 border-4 border-primary"
           />
         </div>
 
         {/* 404 Text */}
-        <h1 className="text-8xl md:text-9xl font-bold mb-4 bg-gradient-to-r from-purple-600 via-pink-600 to-teal-600 bg-clip-text text-transparent animate-pulse">
+        <h1 className="text-8xl md:text-9xl font-bold mb-4 text-brand-dark-green dark:text-brand-off-white animate-pulse">
           404
         </h1>
 
