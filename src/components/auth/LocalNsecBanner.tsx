@@ -33,7 +33,7 @@ export function LocalNsecBanner(props: LocalNsecBannerProps) {
     try {
       if (navigator.clipboard?.writeText) {
         await navigator.clipboard.writeText(nsec);
-        setStatus('Secret key copied. Save it somewhere secure.');
+        setStatus('Secret key copied. Stash it somewhere safe.');
         return;
       }
     } catch {
@@ -42,8 +42,8 @@ export function LocalNsecBanner(props: LocalNsecBannerProps) {
 
     const didDownload = downloadBackup(nsec);
     setStatus(didDownload
-      ? 'Backup file downloaded. Store it somewhere secure.'
-      : 'Backup ready. Store it somewhere secure.');
+      ? 'Backup file downloaded. Stash it somewhere safe.'
+      : 'Backup ready. Stash it somewhere safe.');
   };
 
   const handleSecure = async () => {
@@ -56,9 +56,9 @@ export function LocalNsecBanner(props: LocalNsecBannerProps) {
     <Alert className="border-brand-green/30 bg-brand-light-green/40 dark:bg-brand-dark-green/20">
       <AlertDescription className="space-y-3">
         <div className="space-y-1">
-          <p className="font-medium text-foreground">This account still lives only in your browser.</p>
+          <p className="font-medium text-foreground">This account only lives in your browser.</p>
           <p className="text-sm text-muted-foreground">
-            Back it up now or secure it with a Divine login so you are not stuck on local storage forever.
+            Back it up or lock it down with a Divine login — local storage is not forever.
           </p>
         </div>
         <div className="flex flex-col gap-2">

@@ -145,7 +145,7 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin }) =
 
   const handleKeyLogin = () => {
     if (!nsec.trim()) {
-      setKeyError('Please enter your secret key');
+      setKeyError('Drop your secret key to continue.');
       return;
     }
 
@@ -159,7 +159,7 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin }) =
 
   const handleBunkerLogin = async () => {
     if (!bunkerUri.trim()) {
-      setBunkerError('Please enter a bunker URI');
+      setBunkerError('Drop a bunker URI to continue.');
       return;
     }
 
@@ -286,12 +286,12 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin }) =
         <DialogHeader className="space-y-2 px-6 pb-1 pt-6">
           <DialogTitle className="sr-only">Sign in to Divine</DialogTitle>
           <DialogDescription className="text-center text-base font-medium text-foreground">
-            Create or sign in to your account
+            Get in.
           </DialogDescription>
           <p className="text-center text-sm text-muted-foreground">
             {activeTab === 'register'
-              ? 'Use an invite to create your account.'
-              : 'Sign in on login.divine.video with your existing account.'}
+              ? 'Got an invite? Spin up an account.'
+              : 'Sign in at login.divine.video with your existing account.'}
           </p>
         </DialogHeader>
 
