@@ -30,6 +30,7 @@ describe('funnelcakeClient', () => {
   let fetchBulkUsers: typeof import('./funnelcakeClient').fetchBulkUsers;
   let fetchBulkVideoStats: typeof import('./funnelcakeClient').fetchBulkVideoStats;
   let searchProfiles: typeof import('./funnelcakeClient').searchProfiles;
+  let fetchRecommendations: typeof import('./funnelcakeClient').fetchRecommendations;
   let markNotificationsRead: typeof import('./funnelcakeClient').markNotificationsRead;
   let fetchNotifications: typeof import('./funnelcakeClient').fetchNotifications;
 
@@ -45,6 +46,7 @@ describe('funnelcakeClient', () => {
     fetchBulkUsers = client.fetchBulkUsers;
     fetchBulkVideoStats = client.fetchBulkVideoStats;
     searchProfiles = client.searchProfiles;
+    fetchRecommendations = client.fetchRecommendations;
     markNotificationsRead = client.markNotificationsRead;
     fetchNotifications = client.fetchNotifications;
   });
