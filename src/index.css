@@ -200,11 +200,14 @@
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
   }
 
-  /* Custom font for headings */
+  /* Brand headings: Bricolage Grotesque, Extra Bold for display (h1-h3),
+     Bold for subheadings (h4-h6). Per docs/brand/VISUAL_IDENTITY.md. */
   h1, h2, h3, h4, h5, h6 {
     font-family: 'Bricolage Grotesque', system-ui, -apple-system, sans-serif;
     letter-spacing: -0.02em;
   }
+  h1, h2, h3 { font-weight: 800; }
+  h4, h5, h6 { font-weight: 700; }
 
   /* Ensure text inherits color inside primary-colored containers (buttons, tabs, etc.) */
   .text-primary-foreground *,
