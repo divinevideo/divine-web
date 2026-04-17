@@ -157,6 +157,8 @@ export const ICON_MAP = {
   Type: 'TextAa',
   Upload: 'UploadSimple',
   User: 'User',
+  // UserIcon is a Lucide alias variant of User — same Phosphor target.
+  UserIcon: 'User',
   UserCheck: 'UserCheck',
   UserPlus: 'UserPlus',
   UserX: 'UserMinus',
