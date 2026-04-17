@@ -69,6 +69,7 @@ describe('useInfiniteVideosFunnelcake', () => {
           { id: 'video-2', pubkey: 'p2', kind: 34236, createdAt: 100, vineId: 'd-2' },
         ],
         nextCursor: undefined,
+        rawCursor: 'cursor-page2',
         hasMore: true,
       });
 
@@ -84,7 +85,7 @@ describe('useInfiniteVideosFunnelcake', () => {
     // First page loaded — check the page data
     const page1 = result.current.data?.pages[0];
     expect(page1?.videos).toHaveLength(2);
-    expect(page1?.recCursor).toBe('cursor-page2');
+    expect(page1?.recommendationsCursor).toBe('cursor-page2');
     expect(result.current.hasNextPage).toBe(true);
   });
 
@@ -112,7 +113,7 @@ describe('useInfiniteVideosFunnelcake', () => {
 
     // Page should have no recCursor
     const page = result.current.data?.pages[0];
-    expect(page?.recCursor).toBeUndefined();
+    expect(page?.recommendationsCursor).toBeUndefined();
     // Server said no more — should not have next page
     expect(result.current.hasNextPage).toBe(false);
   });
@@ -129,8 +130,8 @@ describe('useInfiniteVideosFunnelcake', () => {
       .mockResolvedValueOnce({ videos: [{}], has_more: true, next_cursor: '24' });
 
     mockTransformToVideoPage
-      .mockReturnValueOnce({ videos: sameVideos, nextCursor: undefined, hasMore: true })
-      .mockReturnValueOnce({ videos: sameVideos, nextCursor: undefined, hasMore: true });
+      .mockReturnValueOnce({ videos: sameVideos, nextCursor: undefined, rawCursor: '12', hasMore: true })
+      .mockReturnValueOnce({ videos: sameVideos, nextCursor: undefined, rawCursor: '24', hasMore: true });
 
     const { result } = renderHook(
       () => useInfiniteVideosFunnelcake({ feedType: 'recommendations', pageSize: 12 }),
