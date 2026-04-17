@@ -125,7 +125,32 @@
     "flutterAppLabel": "Aplicatie Flutter (iOS/Android):",
     "communityTitle": "Comunitate",
     "communityDescription": "Alatura-te discutiilor comunitatii si conecteaza-te cu alti utilizatori Divine pe Nostr.",
-    "communityBody": "Divine este construit pe Nostr, un protocol social descentralizat. Gaseste-ne in clientul tau Nostr preferat."
+    "communityBody": "Divine este construit pe Nostr, un protocol social descentralizat. Gaseste-ne in clientul tau Nostr preferat.",
+    "bugReportCardTitle": "Report a bug",
+    "bugReportCardDescription": "Send details straight to our support queue. Signed-in reporters use your account; guests need an email.",
+    "bugReportCardCta": "Open bug form",
+    "bugReport": {
+      "title": "Report a bug",
+      "subtitle": "Tell us what broke. Device info and page URL are included automatically.",
+      "emailLabel": "Your email",
+      "emailPlaceholder": "you@example.com",
+      "subjectLabel": "Subject",
+      "subjectPlaceholder": "Short summary of the issue",
+      "descriptionLabel": "What happened?",
+      "descriptionPlaceholder": "Describe the problem",
+      "stepsLabel": "Steps to reproduce",
+      "stepsPlaceholder": "1. Go to…\n2. Tap…\n3. See error",
+      "expectedLabel": "Expected behavior",
+      "expectedPlaceholder": "What should have happened instead?",
+      "metaHint": "We attach your browser, page URL, and app version to help us reproduce the issue.",
+      "cancel": "Cancel",
+      "submit": "Send report",
+      "sending": "Sending…",
+      "successTitle": "Thanks, we got it.",
+      "successDescription": "Your bug report is in the queue.",
+      "errorTitle": "Could not send",
+      "errorDescription": "Something went wrong. Try again in a bit."
+    }
   },
   "tagPage": {
     "notFoundTitle": "Eticheta nu a fost gasita",

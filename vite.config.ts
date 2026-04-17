@@ -1,14 +1,23 @@
 import path from "node:path";
+import { readFileSync } from "node:fs";
 
 import react from "@vitejs/plugin-react-swc";
 import { configDefaults, defineConfig } from "vitest/config";
 import { VitePWA } from 'vite-plugin-pwa';
+
+const pkg = JSON.parse(
+  readFileSync(new URL("./package.json", import.meta.url), "utf8"),
+) as { version: string };
+const buildSha = process.env.VITE_BUILD_SHA || "";
+const appVersionLiteral = buildSha ? `${pkg.version}+${buildSha}` : pkg.version;
+const reportApiProxyTarget = process.env.VITE_REPORT_API_TARGET || "http://127.0.0.1:7676";
 
 // https://vitejs.dev/config/
 export default defineConfig(() => ({
   define: {
     __BUILD_TIME__: JSON.stringify(new Date().toISOString()),
     __BUILD_DATE__: JSON.stringify(new Date().toISOString().split('T')[0]),
+    __APP_VERSION__: JSON.stringify(appVersionLiteral),
   },
   preview: {
     host: "::",
@@ -43,6 +52,12 @@ export default defineConfig(() => ({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api\/moderation\/check-result/, '/check-result'),
         secure: true,
+      },
+      // Local bug/content reports are served by Fastly compute serve, not Vite itself.
+      '/api/report': {
+        target: reportApiProxyTarget,
+        changeOrigin: true,
+        secure: false,
       },
     },
   },
