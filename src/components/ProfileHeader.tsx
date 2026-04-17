@@ -370,7 +370,7 @@ export function ProfileHeader({
             >
               {isFollowing ? (
                 <>
-                  <UserCheck className="w-4 h-4 mr-2" />
+                  <UserCheck className="w-4 h-4 mr-2" weight="fill" />
                   Following
                 </>
               ) : (

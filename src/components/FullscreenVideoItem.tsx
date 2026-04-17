@@ -260,7 +260,8 @@ export function FullscreenVideoItem({
       {showHeartAnimation && (
         <div className="absolute inset-0 z-40 flex items-center justify-center pointer-events-none">
           <Heart
-            className="h-24 w-24 text-red-500 fill-current animate-ping"
+            className="h-24 w-24 text-red-500 animate-ping"
+            weight="fill"
             style={{ animationDuration: '0.6s' }}
           />
         </div>
@@ -401,7 +402,7 @@ export function FullscreenVideoItem({
                     "w-12 h-12 rounded-full flex items-center justify-center bg-black/50 backdrop-blur-sm",
                     isLiked && "bg-red-500/80"
                   )}>
-                    <Heart className={cn("h-6 w-6 text-white", isLiked && "fill-current")} />
+                    <Heart className="h-6 w-6 text-white" weight={isLiked ? 'fill' : 'bold'} />
                   </div>
                 </button>
                 <button
@@ -433,7 +434,7 @@ export function FullscreenVideoItem({
                     "w-12 h-12 rounded-full flex items-center justify-center bg-black/50 backdrop-blur-sm",
                     isReposted && "bg-green-500/80"
                   )}>
-                    <Repeat2 className={cn("h-6 w-6 text-white", isReposted && "fill-current")} />
+                    <Repeat2 className="h-6 w-6 text-white" weight={isReposted ? 'fill' : 'bold'} />
                   </div>
                 </button>
                 <button

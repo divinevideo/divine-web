@@ -855,7 +855,7 @@ export function VideoCard({
               onClick={onLike}
               aria-label={isLiked ? "Unlike" : "Like"}
             >
-              <Heart className={cn('h-4 w-4', isLiked && 'fill-current')} />
+              <Heart className="h-4 w-4" weight={isLiked ? 'fill' : 'bold'} />
             </Button>
             {likeCount > 0 && (
               <button
@@ -886,7 +886,7 @@ export function VideoCard({
               onClick={onRepost}
               aria-label={isReposted ? "Remove repost" : "Repost"}
             >
-              <Repeat2 className={cn('h-4 w-4', isReposted && 'fill-current')} />
+              <Repeat2 className="h-4 w-4" weight={isReposted ? 'fill' : 'bold'} />
             </Button>
             {repostCount > 0 && (
               <button
