@@ -292,7 +292,7 @@ Funnelcake profile response is nested:
 - When a blob SHA-256 is known (NIP-71 `imeta` `x`, i.e. `videoData.sha256`), the picker returns a Blossom/BUD-01 kind 24242 header.
 - Otherwise it returns a NIP-98 kind 27235 header for the URL. HLS segments stay NIP-98 (segment URLs carry no blob hash).
 - `divine-blossom` accepts both on viewer GETs; never invent a third protocol in the picker.
-- Logged-out viewers on age-gated content see `AgeVerificationOverlay` in "Sign in to view" mode, wired to `useLoginDialog().openLoginDialog()` — they must log in before the age-verification / header-generation path runs.
+- Logged-out viewers can still pass the age gate: `AgeVerificationOverlay` shows the "I'm 18 or older" button to everyone, and `getAuthHeader` falls back to a device-scoped ephemeral signer (`src/lib/ephemeralSigner.ts`) — generated lazily, persisted in `localStorage` with the same 30-day TTL as the verification flag, wiped by `revokeVerification()`. The ephemeral signer is scoped to media auth only; view events (kind 22236) and other identity-bearing flows still require a real user signer.
 
 ---
 
