@@ -6,6 +6,7 @@ import { NSchema as n, NostrEvent, NostrMetadata } from '@nostrify/nostrify';
 import { createUserFromLogin } from '@/lib/nostrLogin';
 import { useCurrentUser } from './useCurrentUser';
 import { useDivineSession } from './useDivineSession';
+import { useNip07Availability } from './useNip07Availability';
 
 export interface Account {
   id: string;
@@ -20,8 +21,16 @@ export function useLoggedInAccounts() {
   const { getValidToken } = useDivineSession();
   const { metadata, user } = useCurrentUser();
   const token = getValidToken();
+  const hasExtensionLogin = useMemo(() => (
+    logins.some((login) => login.type === 'extension')
+  ), [logins]);
+  const isNip07Available = useNip07Availability(hasExtensionLogin);
   const activeLogins = useMemo(
     () => logins.filter((login) => {
+      if (login.type === 'extension' && !isNip07Available) {
+        return false;
+      }
+
       try {
         createUserFromLogin(login, nostr);
         return true;
@@ -29,7 +38,7 @@ export function useLoggedInAccounts() {
         return false;
       }
     }),
-    [logins, nostr],
+    [isNip07Available, logins, nostr],
   );
 
   const jwtCurrentUser = useMemo<Account | undefined>(() => {

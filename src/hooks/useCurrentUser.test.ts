@@ -204,8 +204,6 @@ describe('useCurrentUser', () => {
   });
 
   it('skips extension logins when no browser extension is available', () => {
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-
     mockLogins.push({
       id: 'extension:pub123',
       type: 'extension',
@@ -219,8 +217,8 @@ describe('useCurrentUser', () => {
     expect(result.current.user).toBeUndefined();
     expect(result.current.users).toEqual([]);
     expect(result.current.signer).toBeUndefined();
+    expect(result.current.isAuthRestoring).toBe(true);
     expect(mockUseAuthor).toHaveBeenCalledWith(undefined);
-    expect(warnSpy).toHaveBeenCalledWith('Skipped invalid login', 'extension:pub123', expect.any(Error));
   });
 
   it('returns an extension user and signer when a browser extension is available', () => {

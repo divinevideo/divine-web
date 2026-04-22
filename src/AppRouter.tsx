@@ -69,19 +69,12 @@ const BrandPreview = import.meta.env.DEV
   : null;
 
 export function AppRouter() {
-  const { user, isResolvingJwt } = useCurrentUser();
+  const { user, isResolvingJwt, isAuthRestoring } = useCurrentUser();
 
-  // Treat an in-flight hosted-JWT session as "still determining auth", not
-  // "logged out" — otherwise the protected routes below unmount during the
-  // getPublicKey() round-trip and a reload bounces the user off the page.
-  //
-  // Tradeoff (intentional): while resolving, `user` is still undefined, so a
-  // protected page renders its own brief logged-out fallback (e.g. LoginArea)
-  // until the pubkey lands. That sub-second fallback is strictly better than the
-  // previous behavior, which unmounted the route entirely and discarded the URL.
-  // A resolving-aware loading state on protected pages is a possible follow-up;
-  // it's deliberately out of scope for this precedence fix.
-  const isLoggedIn = Boolean(user) || isResolvingJwt;
+  // Treat an in-flight hosted-JWT session or a pending NIP-07 extension injection
+  // as "still determining auth" — prevents protected routes from unmounting during
+  // the brief initialization window and bouncing the user off the page on reload.
+  const isLoggedIn = Boolean(user) || isResolvingJwt || isAuthRestoring;
 
   // Check if we're on a subdomain profile (username.divine.video)
   const subdomainUser = getSubdomainUser();
