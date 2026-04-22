@@ -1,4 +1,4 @@
-import { renderHook, waitFor } from '@testing-library/react';
+import { act, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { NLoginType } from '@nostrify/react/login';
 
@@ -203,7 +203,7 @@ describe('useCurrentUser', () => {
     expect(result.current.isResolvingJwt).toBe(true);
   });
 
-  it('skips extension logins when no browser extension is available', () => {
+  it('does not resolve extension logins when no browser extension is available', () => {
     mockLogins.push({
       id: 'extension:pub123',
       type: 'extension',
@@ -219,6 +219,28 @@ describe('useCurrentUser', () => {
     expect(result.current.signer).toBeUndefined();
     expect(result.current.isAuthRestoring).toBe(true);
     expect(mockUseAuthor).toHaveBeenCalledWith(undefined);
+  });
+
+  it('recovers extension login when provider appears shortly after mount', async () => {
+    mockLogins.push({
+      id: 'extension:pub123',
+      type: 'extension',
+      pubkey: 'pub123',
+      createdAt: '2026-03-10T00:00:00.000Z',
+      data: null,
+    });
+
+    const { result } = renderHook(() => useCurrentUser());
+
+    expect(result.current.user).toBeUndefined();
+
+    await act(async () => {
+      setNostrProvider();
+    });
+
+    await waitFor(() => {
+      expect(result.current.user?.pubkey).toBe('pub123');
+    });
   });
 
   it('returns an extension user and signer when a browser extension is available', () => {
