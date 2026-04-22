@@ -438,6 +438,41 @@ describe('funnelcakeClient', () => {
       expect(result.next_cursor).toBeUndefined();
     });
 
+    it('uses next_offset when the server paginates without next_cursor', async () => {
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({
+          videos: [
+            {
+              id: 'v1',
+              pubkey: TEST_PUBKEY,
+              video_url: 'https://example.com/v.mp4',
+              d_tag: 'd1',
+              created_at: 1700000000,
+              kind: 34236,
+            },
+          ],
+          source: 'popular',
+          has_more: true,
+          next_cursor: null,
+          next_offset: 36,
+          fallback_applied: true,
+          limit: 12,
+          offset: 24,
+        }),
+      });
+
+      const result = await fetchRecommendations(API_URL, {
+        pubkey: TEST_PUBKEY,
+        limit: 12,
+        offset: 24,
+        fallback: 'popular',
+      });
+
+      expect(result.has_more).toBe(true);
+      expect(result.next_cursor).toBe('36');
+    });
+
     it('uses backend has_more instead of computing locally', async () => {
       // Backend says has_more=false even though we got limit-count videos
       (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
@@ -538,6 +573,44 @@ describe('funnelcakeClient', () => {
       expect(requestUrl.searchParams.get('before')).toBe('cursor-1');
       expect(requestUrl.searchParams.get('unread_only')).toBe('true');
       expect(requestUrl.searchParams.get('types')).toBe('like,follow');
+    });
+  });
+
+  describe('fetchRecommendations', () => {
+    it('falls back to offset pagination when the server omits cursor metadata', async () => {
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({
+          videos: [
+            {
+              id: 'vid-1',
+              pubkey: TEST_PUBKEY,
+              created_at: 123,
+              kind: 34236,
+              d_tag: 'd-1',
+              title: 'Video 1',
+              content: '',
+              thumbnail: 'https://example.com/thumb-1.jpg',
+              video_url: 'https://example.com/video-1.mp4',
+            },
+          ],
+          source: 'personalized',
+        }),
+      });
+
+      const result = await fetchRecommendations(API_URL, {
+        pubkey: TEST_PUBKEY,
+        limit: 12,
+        offset: 24,
+        fallback: 'popular',
+      });
+
+      const [url] = (global.fetch as ReturnType<typeof vi.fn>).mock.calls[0];
+      const requestUrl = new URL(url as string);
+      expect(requestUrl.searchParams.get('offset')).toBe('24');
+      expect(result.videos).toHaveLength(1);
+      expect(result.has_more).toBe(true);
+      expect(result.next_cursor).toBe('36');
     });
   });
 });

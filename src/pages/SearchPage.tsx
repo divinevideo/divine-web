@@ -66,8 +66,16 @@ export function SearchPage() {
   );
   const [showSuggestions, setShowSuggestions] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const suggestionsBlurTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const directLookupAbortRef = useRef<AbortController | null>(null);
   const pastedLookupQueryRef = useRef<string | null>(null);
+
+  const clearSuggestionsBlurTimer = () => {
+    if (!suggestionsBlurTimerRef.current) return;
+
+    clearTimeout(suggestionsBlurTimerRef.current);
+    suggestionsBlurTimerRef.current = null;
+  };
 
   // Video search with infinite scroll and NIP-50
   const {
@@ -179,6 +187,7 @@ export function SearchPage() {
 
   useEffect(() => {
     return () => {
+      clearSuggestionsBlurTimer();
       directLookupAbortRef.current?.abort();
     };
   }, []);
@@ -383,8 +392,17 @@ export function SearchPage() {
               value={searchQuery}
               onChange={(e) => handleSearchChange(e.target.value)}
               onPaste={handleSearchPaste}
-              onFocus={() => setShowSuggestions(!searchQuery.trim())}
-              onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+              onFocus={() => {
+                clearSuggestionsBlurTimer();
+                setShowSuggestions(!searchQuery.trim());
+              }}
+              onBlur={() => {
+                clearSuggestionsBlurTimer();
+                suggestionsBlurTimerRef.current = setTimeout(() => {
+                  suggestionsBlurTimerRef.current = null;
+                  setShowSuggestions(false);
+                }, 200);
+              }}
               className="pl-10 pr-4"
               autoFocus
             />
