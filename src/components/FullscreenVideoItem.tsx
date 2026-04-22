@@ -49,6 +49,7 @@ interface FullscreenVideoItemProps {
   trafficSource?: ViewTrafficSource;
   onBack: () => void;
   onEnded?: () => void;
+  onUnavailable?: () => void;
   loopPlayback?: boolean;
   onLike: () => void;
   onRepost: () => void;
@@ -68,6 +69,7 @@ export function FullscreenVideoItem({
   playbackId,
   onBack,
   onEnded,
+  onUnavailable,
   loopPlayback = true,
   onLike,
   onRepost,
@@ -248,7 +250,10 @@ export function FullscreenVideoItem({
             poster={video.thumbnailUrl}
             blurhash={video.blurhash}
             className="w-full h-full object-contain"
-            onError={() => setVideoError(true)}
+            onError={() => {
+              setVideoError(true);
+              onUnavailable?.();
+            }}
             onEnded={onEnded}
             loopPlayback={loopPlayback}
             onSwipeRight={handleSwipeRight}

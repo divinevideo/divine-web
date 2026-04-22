@@ -33,6 +33,7 @@ function FullscreenVideoWithMetrics({
   isActive,
   onBack,
   onEnded,
+  onUnavailable,
   loopPlayback = true,
 }: {
   video: ParsedVideoData;
@@ -40,6 +41,7 @@ function FullscreenVideoWithMetrics({
   isActive: boolean;
   onBack: () => void;
   onEnded?: () => void;
+  onUnavailable?: () => void;
   loopPlayback?: boolean;
 }) {
   const { user } = useCurrentUser();
@@ -153,6 +155,7 @@ function FullscreenVideoWithMetrics({
       commentCount={(video.commentCount ?? 0) + (socialMetrics.data?.commentCount ?? 0)}
       viewCount={divineViewCount + (video.loopCount ?? 0)}
       onEnded={onEnded}
+      onUnavailable={onUnavailable}
       loopPlayback={loopPlayback}
       playbackId={`fullscreen:${video.id}`}
     />
@@ -265,6 +268,23 @@ export function FullscreenFeed({
     }
   }, [autoAdvance, awaitingNextPage, currentIndex, hasMore, onLoadMore, scrollToIndex, videos.length]);
 
+  // Always advance when the currently-active video becomes unavailable (404/410),
+  // independent of autoAdvance — the user can't do anything with a dead card.
+  const handleUnavailable = useCallback((itemIndex: number) => {
+    if (itemIndex !== currentIndex) return; // ignore preload failures off-screen
+
+    if (currentIndex < videos.length - 1) {
+      setCurrentIndex(index => Math.min(index + 1, videos.length - 1));
+      scrollToIndex(currentIndex + 1);
+      return;
+    }
+
+    if (hasMore && onLoadMore && !awaitingNextPage) {
+      setAwaitingNextPage(true);
+      onLoadMore();
+    }
+  }, [awaitingNextPage, currentIndex, hasMore, onLoadMore, scrollToIndex, videos.length]);
+
   // Handle keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -311,6 +331,7 @@ export function FullscreenFeed({
             isActive={index === currentIndex}
             onBack={onClose}
             onEnded={handleAdvance}
+            onUnavailable={() => handleUnavailable(index)}
             loopPlayback={!autoAdvance}
           />
         ))}
