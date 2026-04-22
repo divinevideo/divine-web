@@ -122,6 +122,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
     const [hasError, setHasError] = useState(false);
     const [requiresAuth, setRequiresAuth] = useState(false);
     const [authDeniedAfterVerification, setAuthDeniedAfterVerification] = useState(false);
+    const [isUnavailable, setIsUnavailable] = useState(false); // Terminal: blob gone (404/410) — don't retry, skip in feeds
     const [authCheckPending, setAuthCheckPending] = useState(true); // Start true, set false after check completes
     const [authRetryCount, setAuthRetryCount] = useState(0);
     const [currentUrlIndex, setCurrentUrlIndex] = useState(0);
@@ -744,6 +745,12 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
         return;
       }
 
+      // Skip if the blob is gone (404/410) — don't keep retrying
+      if (isUnavailable) {
+        verboseLog(`[VideoPlayer ${videoId}] Skipping source setup - unavailable`);
+        return;
+      }
+
       // Cleanup previous HLS instance
       if (hlsRef.current) {
         verboseLog(`[VideoPlayer ${videoId}] Destroying previous HLS instance`);
@@ -754,17 +761,26 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
       // Preflight auth check for HLS URL
       const checkAuth = async () => {
         const urlToCheck = hlsUrl || allUrls[currentUrlIndex];
-        if (urlToCheck && !isAdultVerified) {
-          const authResult = await checkMediaAuth(urlToCheck);
+        if (urlToCheck) {
+          const result = await checkMediaAuth(urlToCheck);
+          const { authorized, status } = result ?? { authorized: true, status: 0 };
           setAuthCheckPending(false);
-          if (authResult && !authResult.authorized && (authResult.status === 401 || authResult.status === 403)) {
-            verboseLog(`[VideoPlayer ${videoId}] Preflight check: auth required (${authResult.status})`);
+          // Terminal: blob is gone. Don't retry, tell the parent to skip.
+          if (status === 404 || status === 410) {
+            debugError(`[VideoPlayer ${videoId}] Preflight check: blob unavailable (${status})`);
+            setIsUnavailable(true);
+            setIsLoading(false);
+            onError?.();
+            return false;
+          }
+          if (!authorized && (status === 401 || status === 403) && !isAdultVerified) {
+            verboseLog(`[VideoPlayer ${videoId}] Preflight check: auth required (${status})`);
             setRequiresAuth(true);
             setIsLoading(false);
             return false;
           }
         } else {
-          // Already verified or no URL to check
+          // No URL to check
           setAuthCheckPending(false);
         }
         return true;
@@ -817,6 +833,16 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
 
         hls.on(Hls.Events.ERROR, (event, data) => {
           debugError(`[VideoPlayer ${videoId}] HLS error:`, data);
+
+          // Terminal: blob gone
+          if (data.response && (data.response.code === 404 || data.response.code === 410)) {
+            debugError(`[VideoPlayer ${videoId}] HLS blob unavailable (${data.response.code})`);
+            setIsUnavailable(true);
+            setIsLoading(false);
+            hls.destroy();
+            onError?.();
+            return;
+          }
 
           // Check for 401/403 auth errors
           if (data.response && (data.response.code === 401 || data.response.code === 403)) {
@@ -902,6 +928,11 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
                     video.onloadeddata = () => {
                       verboseLog(`[VideoPlayer ${videoId}] MP4 blob loaded successfully`);
                     };
+                  } else if (response.status === 404 || response.status === 410) {
+                    debugError(`[VideoPlayer ${videoId}] MP4 fetch: blob unavailable (${response.status})`);
+                    setIsUnavailable(true);
+                    setIsLoading(false);
+                    onError?.();
                   } else if (response.status === 401 || response.status === 403) {
                     debugError(`[VideoPlayer ${videoId}] Auth failed even with NIP-98 (${response.status})`);
                     if (isAdultVerified) {
@@ -952,7 +983,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
         }
       };
 
-    }, [hlsUrl, currentUrlIndex, allUrls, videoId, requiresAuth, isAdultVerified, authRetryCount, getAuthHeader, isKnownAgeRestricted]); // React to HLS URL, fallback, and auth changes
+    }, [hlsUrl, currentUrlIndex, allUrls, videoId, requiresAuth, isUnavailable, isAdultVerified, authRetryCount, getAuthHeader, isKnownAgeRestricted, onError]); // React to HLS URL, fallback, and auth changes
 
     // Cleanup on unmount
     useEffect(() => {
@@ -1076,7 +1107,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
         )}
 
         {/* Loading state - show loading animation over blurhash, only on initial load */}
-        {isLoading && !hasLoadedOnce && (
+        {isLoading && !hasLoadedOnce && !isUnavailable && (
           <div
             className="absolute inset-0 flex items-center justify-center z-20"
             data-testid={isMobile ? "mobile-loading" : undefined}
@@ -1103,13 +1134,23 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
         )}
 
         {/* Error state */}
-        {hasError && !requiresAuth && !authDeniedAfterVerification && (
+        {hasError && !requiresAuth && !authDeniedAfterVerification && !isUnavailable && (
           <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
             <div className="text-center">
               <div>{t('videoPlayer.loadFailed')}</div>
               {isMobile && (
                 <div className="text-sm mt-2">{t('videoPlayer.tapToRetry')}</div>
               )}
+            </div>
+          </div>
+        )}
+
+        {/* Terminal: blob gone from storage (404/410) */}
+        {isUnavailable && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/80 text-muted-foreground">
+            <div className="text-center px-4">
+              <div className="text-white font-medium">Video unavailable</div>
+              <div className="text-sm mt-1 text-gray-400">This video is no longer available</div>
             </div>
           </div>
         )}
