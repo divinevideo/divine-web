@@ -16,12 +16,12 @@ import {
 export function AppLayout() {
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { user } = useCurrentUser();
+  const { user, isAuthRestoring } = useCurrentUser();
   const { isRecording } = useAppContext();
   const { state: fullscreenState, exitFullscreen, onLoadMore, hasMore } = useFullscreenFeed();
   const compilationRequest = parseCompilationPlaybackParams(searchParams);
 
-  const isLoggedIn = Boolean(user);
+  const isLoggedIn = Boolean(user) || isAuthRestoring;
 
   // Hide header/sidebar on landing page (when logged out on root path), but NOT on subdomain profiles
   const isLandingPage = location.pathname === '/' && !isLoggedIn && !getSubdomainUser();
