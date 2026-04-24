@@ -110,8 +110,7 @@ describe('VideoPlayer — terminal unavailable (404/410)', () => {
 
     render(<VideoPlayer videoId="v-ok" src={URL_MP4} onError={onError} />);
 
-    // Give the effect a tick to run
-    await new Promise((r) => setTimeout(r, 30));
+    await waitFor(() => expect(checkMediaAuth).toHaveBeenCalled());
     expect(screen.queryByText(/video unavailable/i)).toBeNull();
     expect(onError).not.toHaveBeenCalled();
   });
@@ -122,7 +121,7 @@ describe('VideoPlayer — terminal unavailable (404/410)', () => {
 
     render(<VideoPlayer videoId="v-401" src={URL_MP4} onError={onError} />);
 
-    await new Promise((r) => setTimeout(r, 30));
+    await waitFor(() => expect(checkMediaAuth).toHaveBeenCalled());
     expect(screen.queryByText(/video unavailable/i)).toBeNull();
     expect(onError).not.toHaveBeenCalled();
   });
@@ -148,10 +147,8 @@ describe('VideoPlayer — terminal unavailable (404/410)', () => {
       />,
     );
 
-    await new Promise((r) => setTimeout(r, 30));
+    await waitFor(() => expect(checkMediaAuth).toHaveBeenCalledWith(URL_MP4));
     expect(screen.queryByText(/video unavailable/i)).toBeNull();
     expect(onError).not.toHaveBeenCalled();
-    // And we should actually have preflighted the MP4
-    expect(checkMediaAuth).toHaveBeenCalledWith(URL_MP4);
   });
 });

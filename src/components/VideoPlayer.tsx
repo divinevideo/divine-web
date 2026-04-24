@@ -156,11 +156,15 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
     const registerVideoRef = useRef(registerVideo);
     const unregisterVideoRef = useRef(unregisterVideo);
     const globalMutedRef = useRef(globalMuted);
+    // onError is often passed as a fresh inline arrow from the parent; route through a ref
+    // so state-triggered re-renders (like counts, mute, etc.) don't churn the source-loading effect.
+    const onErrorRef = useRef(onError);
 
     // Keep refs updated with latest values
     registerVideoRef.current = registerVideo;
     unregisterVideoRef.current = unregisterVideo;
     globalMutedRef.current = globalMuted;
+    onErrorRef.current = onError;
 
     // Get responsive layout class
     const getLayoutClass = useCallback(() => {
@@ -611,9 +615,9 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
         debugError(`[VideoPlayer ${videoId}] All URLs failed, no more fallbacks`);
         setIsLoading(false);
         setHasError(true);
-        onError?.();
+        onErrorRef.current?.();
       }
-    }, [videoId, currentUrlIndex, allUrls, hlsUrl, src, triedHls, isAdultVerified, onError]);
+    }, [videoId, currentUrlIndex, allUrls, hlsUrl, src, triedHls, isAdultVerified]);
 
     const handleEnded = () => {
       verboseLog(
@@ -774,7 +778,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
             debugError(`[VideoPlayer ${videoId}] Preflight: direct blob unavailable (${status})`);
             setIsUnavailable(true);
             setIsLoading(false);
-            onError?.();
+            onErrorRef.current?.();
             return false;
           }
           if (!authorized && (status === 401 || status === 403) && !isAdultVerified) {
@@ -930,7 +934,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
                     debugError(`[VideoPlayer ${videoId}] MP4 fetch: blob unavailable (${response.status})`);
                     setIsUnavailable(true);
                     setIsLoading(false);
-                    onError?.();
+                    onErrorRef.current?.();
                   } else if (response.status === 401 || response.status === 403) {
                     debugError(`[VideoPlayer ${videoId}] Auth failed even with NIP-98 (${response.status})`);
                     if (isAdultVerified) {
@@ -981,7 +985,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
         }
       };
 
-    }, [hlsUrl, currentUrlIndex, allUrls, videoId, requiresAuth, isUnavailable, isAdultVerified, authRetryCount, getAuthHeader, isKnownAgeRestricted, onError]); // React to HLS URL, fallback, and auth changes
+    }, [hlsUrl, currentUrlIndex, allUrls, videoId, requiresAuth, isUnavailable, isAdultVerified, authRetryCount, getAuthHeader, isKnownAgeRestricted]); // React to HLS URL, fallback, and auth changes — onError goes via ref
 
     // Cleanup on unmount
     useEffect(() => {
