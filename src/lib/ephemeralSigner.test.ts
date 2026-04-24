@@ -48,7 +48,7 @@ describe('ephemeralSigner', () => {
     expect(secondPubkey).toBe(firstPubkey);
   });
 
-  it('refreshes the expiry timestamp on each call within the TTL window', async () => {
+  it('does NOT refresh expiry on subsequent calls — TTL is anchored at the first call', async () => {
     getOrCreateAnonymousSigner();
     const firstExpiry = Number(localStorage.getItem(ANONYMOUS_SIGNER_EXPIRY_KEY));
 
@@ -57,7 +57,9 @@ describe('ephemeralSigner', () => {
     getOrCreateAnonymousSigner();
     const secondExpiry = Number(localStorage.getItem(ANONYMOUS_SIGNER_EXPIRY_KEY));
 
-    expect(secondExpiry).toBeGreaterThanOrEqual(firstExpiry);
+    // Matches the UI promise "Your choice will be remembered for 30 days" — from
+    // confirm-time, not from last-view. Otherwise the key would never expire.
+    expect(secondExpiry).toBe(firstExpiry);
   });
 
   it('generates a new key if the stored key is expired', async () => {

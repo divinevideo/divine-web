@@ -58,13 +58,19 @@ function persistSecretKey(sk: Uint8Array): void {
 
 /**
  * Return a signer backed by a persistent per-device anonymous key.
- * Creates one on first call; reuses and bumps the expiry on subsequent calls.
+ *
+ * Creates and persists a new key on the first call (anchoring the 30-day expiry
+ * at "the moment the viewer confirmed adult"). Subsequent calls reuse the
+ * existing key *without* resetting the expiry — matching the UI copy
+ * "Your choice will be remembered for 30 days" so the key lifetime is tied to
+ * the confirm moment, not to "30 days from the last view".
  */
 export function getOrCreateAnonymousSigner(): NostrSigner {
-  let sk = readPersistedSecretKey();
-  if (!sk) {
-    sk = generateSecretKey();
+  const existing = readPersistedSecretKey();
+  if (existing) {
+    return new NSecSigner(existing);
   }
+  const sk = generateSecretKey();
   persistSecretKey(sk);
   return new NSecSigner(sk);
 }
