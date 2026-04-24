@@ -721,12 +721,6 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
 
       // Skip if the blob is gone (404/410) — don't keep retrying
       if (isUnavailable) {
-        verboseLog(`[VideoPlayer ${videoId}] Skipping source setup - unavailable`);
-        return;
-      }
-
-      // Skip if blob is gone (404/410) — don't keep retrying
-      if (isUnavailable) {
         verboseLog(`[VideoPlayer ${videoId}] Skipping source setup - unavailable (404/410)`);
         return;
       }
