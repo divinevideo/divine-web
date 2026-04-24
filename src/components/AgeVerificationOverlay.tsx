@@ -31,12 +31,18 @@ export function AgeVerificationOverlay({
 
     isConfirmingRef.current = true;
     setIsConfirming(true);
-    confirmAdult();
+    try {
+      confirmAdult();
 
-    // Call onVerified synchronously with guard to prevent multiple calls
-    if (!hasCalledOnVerified.current) {
-      hasCalledOnVerified.current = true;
-      onVerified();
+      // Call onVerified synchronously with guard to prevent multiple calls
+      if (!hasCalledOnVerified.current) {
+        hasCalledOnVerified.current = true;
+        onVerified();
+      }
+    } finally {
+      // Always release the lock so a throw doesn't permanently disable the button
+      isConfirmingRef.current = false;
+      setIsConfirming(false);
     }
   };
 
