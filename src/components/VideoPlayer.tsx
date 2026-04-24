@@ -738,16 +738,20 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
         hlsRef.current = null;
       }
 
-      // Preflight auth check for HLS URL
+      // Preflight the direct MP4 URL, not the HLS manifest.
+      //   - HLS can legitimately return 202 (transcode pending) or 404 (never generated
+      //     for classic Vines) while the direct blob is fine. HLS.js has its own error
+      //     handler that falls back to direct src when the manifest fails.
+      //   - VTT / thumbnail 404s are sidecar assets and must not fail the whole video.
       const checkAuth = async () => {
-        const urlToCheck = hlsUrl || allUrls[currentUrlIndex];
+        const urlToCheck = allUrls[currentUrlIndex];
         if (urlToCheck) {
           const result = await checkMediaAuth(urlToCheck);
           const { authorized, status } = result ?? { authorized: true, status: 0 };
           setAuthCheckPending(false);
-          // Terminal: blob is gone. Don't retry, tell the parent to skip.
+          // Terminal: direct blob is gone. Don't retry, tell the parent to skip.
           if (status === 404 || status === 410) {
-            debugError(`[VideoPlayer ${videoId}] Preflight check: blob unavailable (${status})`);
+            debugError(`[VideoPlayer ${videoId}] Preflight: direct blob unavailable (${status})`);
             setIsUnavailable(true);
             setIsLoading(false);
             onError?.();
@@ -812,15 +816,9 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
         hls.on(Hls.Events.ERROR, (event, data) => {
           debugError(`[VideoPlayer ${videoId}] HLS error:`, data);
 
-          // Terminal: blob gone
-          if (data.response && (data.response.code === 404 || data.response.code === 410)) {
-            debugError(`[VideoPlayer ${videoId}] HLS blob unavailable (${data.response.code})`);
-            setIsUnavailable(true);
-            setIsLoading(false);
-            hls.destroy();
-            onError?.();
-            return;
-          }
+          // Note: an HLS 404/410 is NOT terminal — classic Vines often only have a direct
+          // MP4 and never got transcoded to HLS. Fall through to the direct-playback
+          // fallback below and let that path decide if the blob itself is actually gone.
 
           // Check for 401/403 auth errors
           if (data.response && (data.response.code === 401 || data.response.code === 403)) {

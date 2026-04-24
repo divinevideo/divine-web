@@ -126,4 +126,32 @@ describe('VideoPlayer — terminal unavailable (404/410)', () => {
     expect(screen.queryByText(/video unavailable/i)).toBeNull();
     expect(onError).not.toHaveBeenCalled();
   });
+
+  it('preflights the direct MP4 — not HLS — so a missing HLS manifest does not mark the video unavailable', async () => {
+    // Most real-world case: classic Vine has a fine MP4 but no HLS transcode yet.
+    // checkMediaAuth will be called with the MP4 URL and return 200.
+    // Fail the test if the HLS URL is ever passed to checkMediaAuth.
+    checkMediaAuth.mockImplementation(async (url: string) => {
+      if (url.includes('/hls/master.m3u8')) {
+        throw new Error('preflight should not hit HLS manifest: ' + url);
+      }
+      return { authorized: true, status: 200 };
+    });
+    const onError = vi.fn();
+
+    render(
+      <VideoPlayer
+        videoId="v-hls-404-but-mp4-ok"
+        src={URL_MP4}
+        hlsUrl="https://media.divine.video/foo/hls/master.m3u8"
+        onError={onError}
+      />,
+    );
+
+    await new Promise((r) => setTimeout(r, 30));
+    expect(screen.queryByText(/video unavailable/i)).toBeNull();
+    expect(onError).not.toHaveBeenCalled();
+    // And we should actually have preflighted the MP4
+    expect(checkMediaAuth).toHaveBeenCalledWith(URL_MP4);
+  });
 });
