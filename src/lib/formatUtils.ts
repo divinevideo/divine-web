@@ -38,20 +38,13 @@ export function formatViewCount(count: number): string {
 }
 
 /**
- * Format a classic Vine summary so archived loops and new Divine views stay visible
- * without duplicating the total on a second line.
+ * Format a classic Vine summary using the original archive loop count.
  */
-export function formatClassicVineViewBreakdown(totalViews: number, originalLoops: number): string | null {
+export function formatClassicVineViewBreakdown(_totalViews: number, originalLoops: number): string | null {
   if (originalLoops <= 0) {
     return null;
   }
 
-  const newViews = Math.max(totalViews - originalLoops, 0);
-  const classicLoopLabel = `${formatCount(originalLoops)} Classic ${originalLoops === 1 ? 'Loop' : 'Loops'}`;
-
-  if (newViews <= 0) {
-    return classicLoopLabel;
-  }
-
-  return `${classicLoopLabel} - ${newViews < 1000 ? newViews.toString() : formatCount(newViews)} New`;
+  const loopLabel = originalLoops === 1 ? 'Loop' : 'Loops';
+  return `${formatCount(originalLoops)} ${loopLabel}`;
 }

@@ -6,20 +6,20 @@ describe('formatClassicVineViewBreakdown', () => {
     expect(formatClassicVineViewBreakdown(25, 0)).toBeNull();
   });
 
-  it('shows only Vine loops when there are no new Divine views yet', () => {
-    expect(formatClassicVineViewBreakdown(100, 100)).toBe('100 Classic Loops');
+  it('shows only the archived Vine loop count', () => {
+    expect(formatClassicVineViewBreakdown(100, 100)).toBe('100 Loops');
   });
 
-  it('shows archived and new views when classic Vines receive fresh traffic', () => {
-    expect(formatClassicVineViewBreakdown(120, 100)).toBe('100 Classic Loops - 20 New');
+  it('does not show new Divine views for classic Vines', () => {
+    expect(formatClassicVineViewBreakdown(120, 100)).toBe('100 Loops');
   });
 
-  it('keeps the classic loop count compact and the new delta precise', () => {
-    expect(formatClassicVineViewBreakdown(50453074, 50453008)).toBe('50.5M Classic Loops - 66 New');
+  it('keeps the archived loop count compact', () => {
+    expect(formatClassicVineViewBreakdown(50453074, 50453008)).toBe('50.5M Loops');
   });
 
-  it('handles singular new view labels and guards against negative deltas', () => {
-    expect(formatClassicVineViewBreakdown(101, 100)).toBe('100 Classic Loops - 1 New');
-    expect(formatClassicVineViewBreakdown(90, 100)).toBe('100 Classic Loops');
+  it('handles singular loop labels and ignores negative new-view deltas', () => {
+    expect(formatClassicVineViewBreakdown(2, 1)).toBe('1 Loop');
+    expect(formatClassicVineViewBreakdown(90, 100)).toBe('100 Loops');
   });
 });
