@@ -74,13 +74,22 @@ vi.mock('@/components/ui/dropdown-menu', () => ({
 vi.mock('@/components/VideoPlayer', () => ({
   VideoPlayer: ({
     videoId,
+    onError,
     onPlaybackStarted,
   }: {
     videoId: string;
+    onError?: () => void;
     onPlaybackStarted?: () => void;
   }) => (
     <div data-testid={`video-player-${videoId}`}>
       Video Player
+      <button
+        aria-label={`fail-video-${videoId}`}
+        onClick={onError}
+        type="button"
+      >
+        Fail video
+      </button>
       <button
         aria-label={`start-playback-${videoId}`}
         onClick={onPlaybackStarted}
@@ -460,5 +469,21 @@ describe('VideoCard', () => {
 
     expect(screen.getByTestId('thumbnail-player')).toBeInTheDocument();
     expect(screen.queryByText('Log in to view')).not.toBeInTheDocument();
+  });
+
+  it('lets failed playback be retried without remounting the card', () => {
+    const video = makeVideo();
+    render(<VideoCard video={video} />);
+
+    fireEvent.click(screen.getByLabelText(`fail-video-${video.id}`));
+    expect(screen.getByTestId(`video-player-${video.id}`)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByLabelText(`fail-video-${video.id}`));
+    expect(screen.getByText('Failed to load video')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /retry/i }));
+
+    expect(screen.getByTestId(`video-player-${video.id}`)).toBeInTheDocument();
+    expect(screen.queryByText('Failed to load video')).not.toBeInTheDocument();
   });
 });

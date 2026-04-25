@@ -2,12 +2,23 @@
 // ABOUTME: Verifies video loading, auth handling, and URL management
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { VideoPlayer } from './VideoPlayer';
 
 const mockRegisterVideo = vi.fn();
 const mockUnregisterVideo = vi.fn();
 const mockUpdateVideoVisibility = vi.fn();
+const hlsTestState = vi.hoisted(() => ({
+  instances: [] as Array<{
+    attachMedia: ReturnType<typeof vi.fn>;
+    destroy: ReturnType<typeof vi.fn>;
+    handlers: Record<string, Array<(event: string, data: unknown) => void>>;
+    levels: unknown[];
+    loadSource: ReturnType<typeof vi.fn>;
+    on: ReturnType<typeof vi.fn>;
+  }>,
+  isSupported: vi.fn(() => false),
+}));
 
 // Mock dependencies
 vi.mock('@/hooks/useVideoPlayback', () => ({
@@ -72,12 +83,37 @@ vi.mock('@/components/AgeRestrictedMediaPlaceholder', () => ({
   ),
 }));
 
-vi.mock('hls.js', () => ({
-  default: {
-    isSupported: () => false,
-    Events: { MANIFEST_PARSED: 'hlsManifestParsed', ERROR: 'hlsError' },
-  },
-}));
+vi.mock('hls.js', () => {
+  const HlsMock = vi.fn(function (this: {
+    attachMedia: ReturnType<typeof vi.fn>;
+    destroy: ReturnType<typeof vi.fn>;
+    handlers: Record<string, Array<(event: string, data: unknown) => void>>;
+    levels: unknown[];
+    loadSource: ReturnType<typeof vi.fn>;
+    on: ReturnType<typeof vi.fn>;
+  }) {
+    const handlers: Record<string, Array<(event: string, data: unknown) => void>> = {};
+
+    this.attachMedia = vi.fn();
+    this.destroy = vi.fn();
+    this.handlers = handlers;
+    this.levels = [];
+    this.loadSource = vi.fn();
+    this.on = vi.fn((event: string, handler: (event: string, data: unknown) => void) => {
+      handlers[event] = handlers[event] ?? [];
+      handlers[event].push(handler);
+    });
+
+    hlsTestState.instances.push(this);
+  });
+
+  return {
+    default: Object.assign(HlsMock, {
+      isSupported: hlsTestState.isSupported,
+      Events: { MANIFEST_PARSED: 'hlsManifestParsed', ERROR: 'hlsError' },
+    }),
+  };
+});
 
 // Mock react-intersection-observer to avoid observer.observe issues
 vi.mock('react-intersection-observer', () => ({
@@ -107,6 +143,8 @@ beforeEach(() => {
 describe('VideoPlayer', () => {
   beforeEach(async () => {
     vi.clearAllMocks();
+    hlsTestState.instances.length = 0;
+    hlsTestState.isSupported.mockReturnValue(false);
 
     const { useVideoPlayback } = await import('@/hooks/useVideoPlayback');
     (useVideoPlayback as ReturnType<typeof vi.fn>).mockImplementation(() => ({
@@ -299,6 +337,51 @@ describe('VideoPlayer', () => {
       if (createObjectURLSpy.mock.calls.length > 0) {
         expect(revokeObjectURLSpy).toHaveBeenCalledWith('blob:test-123');
       }
+    });
+  });
+
+  describe('HLS fallback failures', () => {
+    it('reports terminal failure after fatal HLS error falls back to direct playback', async () => {
+      hlsTestState.isSupported.mockReturnValue(true);
+
+      const onError = vi.fn();
+      const src = 'https://media.divine.video/test-video.mp4';
+
+      const { container } = render(
+        <VideoPlayer
+          videoId="fatal-hls-fallback"
+          src={src}
+          hlsUrl="https://media.divine.video/test-video/hls/master.m3u8"
+          onError={onError}
+        />
+      );
+
+      await waitFor(() => {
+        expect(hlsTestState.instances.length).toBeGreaterThan(0);
+      });
+
+      const video = container.querySelector('video');
+      expect(video).not.toBeNull();
+      if (!video) {
+        throw new Error('expected rendered video element');
+      }
+
+      const hls = hlsTestState.instances[hlsTestState.instances.length - 1];
+      expect(hls.handlers.hlsError).toHaveLength(1);
+
+      act(() => {
+        hls.handlers.hlsError[0]('hlsError', { fatal: true });
+      });
+
+      await waitFor(() => {
+        expect(video.src).toBe(src);
+      });
+
+      fireEvent.error(video);
+
+      await waitFor(() => {
+        expect(onError).toHaveBeenCalledTimes(1);
+      });
     });
   });
 

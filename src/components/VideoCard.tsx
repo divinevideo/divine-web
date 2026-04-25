@@ -2,7 +2,7 @@
 // ABOUTME: Shows video player, metadata, author info, and social interactions
 
 import { useState, useCallback, useRef, useMemo, useEffect } from 'react';
-import { Heart, Repeat as Repeat2, ChatCircle as MessageCircle, Share, Eye, DotsThreeVertical as MoreVertical, Flag, UserMinus as UserX, Trash as Trash2, SpeakerHigh as Volume2, SpeakerX as VolumeX, Code, Users, ListPlus, DownloadSimple as Download, ArrowsOutSimple as Maximize2, ClosedCaptioning as Captions, PushPin as Pin, PushPinSlash as PinOff } from '@phosphor-icons/react';
+import { Heart, Repeat as Repeat2, ChatCircle as MessageCircle, Share, Eye, DotsThreeVertical as MoreVertical, Flag, UserMinus as UserX, Trash as Trash2, SpeakerHigh as Volume2, SpeakerX as VolumeX, Code, Users, ListPlus, DownloadSimple as Download, ArrowsOutSimple as Maximize2, ClosedCaptioning as Captions, PushPin as Pin, PushPinSlash as PinOff, ArrowClockwise } from '@phosphor-icons/react';
 import { nip19 } from 'nostr-tools';
 import { Card, CardContent, type CardAccent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -152,6 +152,7 @@ export function VideoCard({
   const shouldShowReposter = hasReposts && reposterPubkey;
   const classicViewBreakdown = formatClassicVineViewBreakdown(viewCount, video.loopCount ?? 0);
   const [videoError, setVideoError] = useState(false);
+  const [retryAttempt, setRetryAttempt] = useState(0);
   // Always start with video player visible in auto-play mode, but let VideoPlaybackContext control actual playback
   // The VideoPlayer component will only play when it's the activeVideoId (most visible)
   const [isPlaying, setIsPlaying] = useState(mode === 'auto-play');
@@ -396,6 +397,12 @@ export function VideoCard({
     }
   }, [isPlaying]);
 
+  useEffect(() => {
+    setVideoError(false);
+    setMp4Failed(false);
+    setRetryAttempt(0);
+  }, [video.id, video.videoUrl]);
+
   const handlePlaybackStarted = () => {
     setShowThumbnailDuringStartup(false);
     onPlaybackStarted?.();
@@ -409,6 +416,16 @@ export function VideoCard({
     } else {
       setVideoError(true);
     }
+  };
+
+  const handleRetryVideo = () => {
+    setVideoError(false);
+    setMp4Failed(false);
+    setShowThumbnailDuringStartup(false);
+    setIsPlaying(true);
+    setActiveVideo(video.id);
+    setRetryAttempt(prev => prev + 1);
+    onPlay?.();
   };
 
   const handleMuteUser = async () => {
@@ -606,6 +623,7 @@ export function VideoCard({
               ) : !videoError ? (
                 <>
                   <VideoPlayer
+                    key={`${video.id}-${video.videoUrl}-${retryAttempt}-${mp4Failed ? 'hls' : 'direct'}`}
                     videoId={video.id}
                     src={video.videoUrl}
                     hlsUrl={effectiveHlsUrl}
@@ -641,7 +659,19 @@ export function VideoCard({
                 </>
               ) : (
                 <div className="flex items-center justify-center h-full text-muted-foreground">
-                  <p>Failed to load video</p>
+                  <div className="text-center space-y-3">
+                    <p>Failed to load video</p>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleRetryVideo}
+                      className="gap-2"
+                    >
+                      <ArrowClockwise className="h-4 w-4" />
+                      Retry
+                    </Button>
+                  </div>
                 </div>
               )}
 

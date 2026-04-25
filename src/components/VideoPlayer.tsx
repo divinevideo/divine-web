@@ -805,7 +805,9 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
 
           if (data.fatal) {
             debugError(`[VideoPlayer ${videoId}] Fatal HLS error, falling back to direct playback`);
+            setTriedHls(true);
             hls.destroy();
+            hlsRef.current = null;
             // Fall back to direct src playback
             const currentUrl = allUrls[currentUrlIndex];
             if (currentUrl) {
