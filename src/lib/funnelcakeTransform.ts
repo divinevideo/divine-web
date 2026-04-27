@@ -36,6 +36,18 @@ function parseLoopsFromTags(tags?: string[][]): number | null {
   return Number.isFinite(loops) && loops > 0 ? loops : null;
 }
 
+function resolveAgeRestricted(raw: FunnelcakeVideoRaw): boolean | undefined {
+  if (raw.age_restricted === true || raw.moderation_status === 'age_restricted') {
+    return true;
+  }
+
+  if (raw.age_restricted === false) {
+    return false;
+  }
+
+  return undefined;
+}
+
 /**
  * Transform a single Funnelcake video to ParsedVideoData format
  */
@@ -86,7 +98,7 @@ export function transformFunnelcakeVideo(raw: FunnelcakeVideoRaw): ParsedVideoDa
     title: raw.title,
     dimensions: raw.dim, // Video dimensions from API (e.g., "1080x1920")
     sha256: extractSha256FromVideoUrl(raw.video_url),
-    ageRestricted: raw.age_restricted === true || raw.moderation_status === 'age_restricted',
+    ageRestricted: resolveAgeRestricted(raw),
     hashtags,
 
     // Vine-specific fields

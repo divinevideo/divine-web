@@ -54,6 +54,32 @@ describe('transformFunnelcakeVideo', () => {
 
     expect(video.ageRestricted).toBe(true);
   });
+
+  it('preserves explicit non-restricted videos from the API payload', () => {
+    const video = transformFunnelcakeVideo(makeRawVideo({
+      age_restricted: false,
+    }));
+
+    expect(video.ageRestricted).toBe(false);
+  });
+
+  it('keeps age restriction unknown when API provides no moderation fields', () => {
+    const video = transformFunnelcakeVideo(makeRawVideo({
+      age_restricted: undefined,
+      moderation_status: undefined,
+    }));
+
+    expect(video.ageRestricted).toBeUndefined();
+  });
+
+  it('marks videos restricted when moderation status says age_restricted', () => {
+    const video = transformFunnelcakeVideo(makeRawVideo({
+      age_restricted: undefined,
+      moderation_status: 'age_restricted',
+    }));
+
+    expect(video.ageRestricted).toBe(true);
+  });
 });
 
 function makeResponse(overrides: Partial<FunnelcakeResponse> = {}): FunnelcakeResponse {
