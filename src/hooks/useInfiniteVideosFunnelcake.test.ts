@@ -6,6 +6,7 @@ import React from 'react';
 const mockFetchVideos = vi.fn();
 const mockFetchRecommendations = vi.fn();
 const mockTransformToVideoPage = vi.fn();
+const mockEnrichAgeRestrictedVideos = vi.fn();
 
 vi.mock('@/hooks/useCurrentUser', () => ({
   useCurrentUser: () => ({
@@ -23,6 +24,10 @@ vi.mock('@/lib/funnelcakeClient', () => ({
 
 vi.mock('@/lib/funnelcakeTransform', () => ({
   transformToVideoPage: mockTransformToVideoPage,
+}));
+
+vi.mock('@/lib/ageRestrictedVideos', () => ({
+  enrichAgeRestrictedVideos: mockEnrichAgeRestrictedVideos,
 }));
 
 vi.mock('@/lib/debug', () => ({
@@ -54,10 +59,77 @@ let useInfiniteVideosFunnelcake: typeof import('./useInfiniteVideosFunnelcake').
 
 beforeEach(async () => {
   vi.clearAllMocks();
+  mockEnrichAgeRestrictedVideos.mockImplementation(async (videos) => videos);
+  delete window.__DIVINE_FEED__;
+  delete window.__DIVINE_FEED_TYPE__;
   ({ useInfiniteVideosFunnelcake } = await import('./useInfiniteVideosFunnelcake'));
 });
 
 describe('useInfiniteVideosFunnelcake', () => {
+  it('enriches classics feeds with moderation age-gate status', async () => {
+    const transformedVideos = [
+      { id: 'video-1', pubkey: 'p1', kind: 34236, createdAt: 101, vineId: 'd-1', videoUrl: 'https://media.divine.video/hash1', reposts: [], isVineMigrated: true },
+    ];
+    const enrichedVideos = [
+      { ...transformedVideos[0], ageRestricted: true },
+    ];
+
+    mockFetchVideos.mockResolvedValueOnce({ videos: [{}], has_more: false, next_cursor: undefined });
+    mockTransformToVideoPage.mockReturnValueOnce({
+      videos: transformedVideos,
+      nextCursor: undefined,
+      hasMore: false,
+    });
+    mockEnrichAgeRestrictedVideos.mockResolvedValueOnce(enrichedVideos);
+
+    const { result } = renderHook(
+      () => useInfiniteVideosFunnelcake({ feedType: 'classics', pageSize: 12 }),
+      { wrapper: createWrapper() }
+    );
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+
+    expect(mockEnrichAgeRestrictedVideos).toHaveBeenCalledWith(
+      transformedVideos,
+      expect.any(AbortSignal)
+    );
+    expect(result.current.data?.pages[0].videos[0].ageRestricted).toBe(true);
+  });
+
+  it('enriches edge-injected classics page before returning results', async () => {
+    const transformedVideos = [
+      { id: 'edge-video', pubkey: 'p2', kind: 34236, createdAt: 201, vineId: 'd-edge', videoUrl: 'https://media.divine.video/hash-edge', reposts: [], isVineMigrated: true },
+    ];
+    const enrichedVideos = [{ ...transformedVideos[0], ageRestricted: true }];
+
+    window.__DIVINE_FEED_TYPE__ = 'classics';
+    window.__DIVINE_FEED__ = { videos: [{}], has_more: false, next_cursor: undefined };
+    mockTransformToVideoPage.mockReturnValueOnce({
+      videos: transformedVideos,
+      nextCursor: undefined,
+      hasMore: false,
+    });
+    mockEnrichAgeRestrictedVideos.mockResolvedValueOnce(enrichedVideos);
+
+    const { result } = renderHook(
+      () => useInfiniteVideosFunnelcake({ feedType: 'classics', pageSize: 12 }),
+      { wrapper: createWrapper() }
+    );
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+
+    expect(mockFetchVideos).not.toHaveBeenCalled();
+    expect(mockEnrichAgeRestrictedVideos).toHaveBeenCalledWith(
+      transformedVideos,
+      expect.any(AbortSignal)
+    );
+    expect(result.current.data?.pages[0].videos[0].ageRestricted).toBe(true);
+  });
+
   it('uses cursor-based pagination for recommendations', async () => {
     // Page 1: server returns cursor for next page
     mockFetchRecommendations
