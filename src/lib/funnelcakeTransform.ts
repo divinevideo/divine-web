@@ -129,15 +129,35 @@ export function transformFunnelcakeVideo(raw: FunnelcakeVideoRaw): ParsedVideoDa
 }
 
 /**
- * Transform a Funnelcake API response to an array of ParsedVideoData
+ * Transform a Funnelcake API response to an array of ParsedVideoData.
+ *
+ * Tolerant of three shapes so that callers that hand us a raw API
+ * response (or a future envelope) keep working:
+ *  - Internal wrapped shape: `{ videos, has_more, next_cursor }` (default)
+ *  - Raw array: `FunnelcakeVideoRaw[]` (legacy / `legacy-array-response`)
+ *  - Envelope: `{ data: FunnelcakeVideoRaw[], pagination: {...} }`
+ *    (post divine-funnelcake PR #238)
  */
-export function transformFunnelcakeResponse(response: FunnelcakeResponse): ParsedVideoData[] {
-  if (!response.videos || !Array.isArray(response.videos)) {
+export function transformFunnelcakeResponse(
+  response: FunnelcakeResponse | FunnelcakeVideoRaw[] | { data?: FunnelcakeVideoRaw[] } | null | undefined
+): ParsedVideoData[] {
+  let rawVideos: FunnelcakeVideoRaw[] | undefined;
+  if (Array.isArray(response)) {
+    rawVideos = response;
+  } else if (response && typeof response === 'object') {
+    if (Array.isArray((response as FunnelcakeResponse).videos)) {
+      rawVideos = (response as FunnelcakeResponse).videos;
+    } else if (Array.isArray((response as { data?: FunnelcakeVideoRaw[] }).data)) {
+      rawVideos = (response as { data: FunnelcakeVideoRaw[] }).data;
+    }
+  }
+
+  if (!rawVideos) {
     debugLog('[FunnelcakeTransform] No videos in response');
     return [];
   }
 
-  const transformed = response.videos
+  const transformed = rawVideos
     .map(raw => {
       try {
         return transformFunnelcakeVideo(raw);
@@ -161,7 +181,7 @@ export function transformFunnelcakeResponse(response: FunnelcakeResponse): Parse
   if (videos.length < transformed.length) {
     debugLog(`[FunnelcakeTransform] Deduplicated ${transformed.length} → ${videos.length} videos`);
   }
-  debugLog(`[FunnelcakeTransform] Transformed ${videos.length}/${response.videos.length} videos`);
+  debugLog(`[FunnelcakeTransform] Transformed ${videos.length}/${rawVideos.length} videos`);
 
   return videos;
 }

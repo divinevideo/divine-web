@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { transformFunnelcakeVideo, transformToVideoPage } from './funnelcakeTransform';
+import { transformFunnelcakeResponse, transformFunnelcakeVideo, transformToVideoPage } from './funnelcakeTransform';
 import type { FunnelcakeVideoRaw, FunnelcakeResponse } from '@/types/funnelcake';
 
 function makeRawVideo(overrides: Partial<FunnelcakeVideoRaw> = {}): FunnelcakeVideoRaw {
@@ -109,5 +109,35 @@ describe('transformToVideoPage', () => {
     expect(page.nextCursor).toBeUndefined();
     expect(page.offset).toBeUndefined();
     expect(page.rawCursor).toBeUndefined();
+  });
+});
+
+describe('transformFunnelcakeResponse shape tolerance', () => {
+  it('transforms the internal wrapped shape ({videos, has_more, next_cursor})', () => {
+    const result = transformFunnelcakeResponse(makeResponse());
+    expect(result).toHaveLength(1);
+    expect(result[0].id).toBe('video-1');
+  });
+
+  it('transforms a raw-array response (legacy `legacy-array-response`)', () => {
+    const result = transformFunnelcakeResponse([makeRawVideo({ id: 'raw-array-vid', d_tag: 'raw' })]);
+    expect(result).toHaveLength(1);
+    expect(result[0].id).toBe('raw-array-vid');
+  });
+
+  it('transforms the post-#238 envelope ({data, pagination})', () => {
+    const result = transformFunnelcakeResponse({
+      data: [makeRawVideo({ id: 'envelope-vid', d_tag: 'env' })],
+      pagination: { has_more: true, next_cursor: 'cur' },
+      // deliberately use `unknown` to mimic real API objects with extras
+    } as unknown as FunnelcakeResponse);
+    expect(result).toHaveLength(1);
+    expect(result[0].id).toBe('envelope-vid');
+  });
+
+  it('returns [] for null/undefined/garbage', () => {
+    expect(transformFunnelcakeResponse(null)).toEqual([]);
+    expect(transformFunnelcakeResponse(undefined)).toEqual([]);
+    expect(transformFunnelcakeResponse({} as FunnelcakeResponse)).toEqual([]);
   });
 });
