@@ -122,7 +122,7 @@ describe('shouldDropHandledMediaHttpClientEvent', () => {
       url: 'https://media.divine.video/f423713/vtt',
       statusCode: 422,
     });
-    delete event.contexts.response.status_code;
+    (event.contexts.response as { status_code?: number | string }).status_code = undefined;
 
     expect(shouldDropHandledMediaHttpClientEvent(event)).toBe(true);
   });
