@@ -215,6 +215,62 @@ export async function fetchVideos(
 }
 
 /**
+ * Fetch videos from Funnelcake v2 API (`/api/v2/videos`).
+ *
+ * v2 differs from v1 in two ways:
+ * - response is an envelope: `{ data: VideoListItemDoc[], pagination: { next_cursor, has_more } }`
+ * - pagination uses an opaque `cursor` query param (not `before`)
+ *
+ * Item field names overlap with v1 (`embedded_likes`, `tags`, `thumbnail`, etc.), so the
+ * existing `transformFunnelcakeVideo` works once we map the envelope back to FunnelcakeResponse.
+ *
+ * Supports the v2-only `sort=watching` mode (24h CDN view count, no age decay).
+ */
+export async function fetchVideosV2(
+  apiUrl: string = API_CONFIG.funnelcake.baseUrl,
+  options: FunnelcakeFetchOptions = {}
+): Promise<FunnelcakeResponse> {
+  const { sort = 'watching', limit = 20, before, offset, classic, platform, category, signal } = options;
+
+  const params: Record<string, string | number | boolean | undefined> = {
+    sort,
+    limit,
+    classic,
+    platform,
+    category,
+  };
+
+  if (offset !== undefined) {
+    params.offset = offset;
+  } else if (before !== undefined) {
+    // v2 uses opaque `cursor` query param; the hook threads the prior page's
+    // next_cursor through `before` to keep one shared option shape.
+    params.cursor = before;
+  }
+
+  type V2Envelope = {
+    data: FunnelcakeVideoRaw[];
+    pagination?: { next_cursor?: string | null; has_more?: boolean };
+  };
+
+  const envelope = await funnelcakeRequest<V2Envelope>(
+    apiUrl,
+    API_CONFIG.funnelcake.endpoints.videosV2,
+    params,
+    signal
+  );
+
+  const videos = Array.isArray(envelope?.data) ? envelope.data : [];
+  const pagination = envelope?.pagination ?? {};
+
+  return {
+    videos,
+    has_more: pagination.has_more === true,
+    next_cursor: pagination.next_cursor ?? undefined,
+  };
+}
+
+/**
  * Search videos via Funnelcake API
  *
  * @param apiUrl - Base URL of the Funnelcake API

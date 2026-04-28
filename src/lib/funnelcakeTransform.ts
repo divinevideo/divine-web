@@ -84,7 +84,7 @@ export function transformFunnelcakeVideo(raw: FunnelcakeVideoRaw): ParsedVideoDa
     thumbnailUrl: raw.thumbnail,
     blurhash: raw.blurhash,
     title: raw.title,
-    dimensions: raw.dim, // Video dimensions from API (e.g., "1080x1920")
+    dimensions: raw.dim ?? raw.dimensions, // Video dimensions from API (e.g., "1080x1920"); v2 uses `dimensions`
     sha256: extractSha256FromVideoUrl(raw.video_url),
     ageRestricted: raw.age_restricted === true || raw.moderation_status === 'age_restricted',
     hashtags,
@@ -98,11 +98,18 @@ export function transformFunnelcakeVideo(raw: FunnelcakeVideoRaw): ParsedVideoDa
       : 0,
     divineViewCount: raw.views ?? 0,
 
-    // Social metrics from Funnelcake (pre-computed)
-    // Handle both naming conventions: embedded_* (main videos) vs plain (user videos)
-    likeCount: raw.embedded_likes ?? raw.reactions ?? 0,
-    repostCount: raw.embedded_reposts ?? raw.reposts ?? 0,
-    commentCount: raw.embedded_comments ?? raw.comments ?? 0,
+    // Social metrics from Funnelcake (pre-computed).
+    // Schema varies by endpoint:
+    // - v1 /api/videos: only `embedded_*` populated
+    // - v1 /api/users/{pubkey}/videos: only `reactions|comments|reposts` populated
+    // - v2 /api/v2/videos: BOTH populated — `embedded_*` carries archive-import stats
+    //   (e.g. 138k Vine likes), `reactions|comments|reposts` carries current Nostr
+    //   engagement. We want to surface activity loudly, so add them — Vine rows show
+    //   archive + current together, native rows just show current. The missing side
+    //   defaults to 0 so v1 endpoints stay correct.
+    likeCount: (raw.embedded_likes ?? 0) + (raw.reactions ?? 0),
+    repostCount: (raw.embedded_reposts ?? 0) + (raw.reposts ?? 0),
+    commentCount: (raw.embedded_comments ?? 0) + (raw.comments ?? 0),
 
     // Origin data for Vine migrations
     isVineMigrated,
