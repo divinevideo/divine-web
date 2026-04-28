@@ -20,6 +20,7 @@ import { SubtitleOverlay } from '@/components/SubtitleOverlay';
 import { createAuthLoader } from '@/lib/hlsAuthLoader';
 import { bandwidthTracker } from '@/lib/bandwidthTracker';
 import { isProtectedDivineMediaUrl, useAuthenticatedMediaUrl } from '@/hooks/useAuthenticatedMediaUrl';
+import { logMediaAuthFailure } from '@/lib/mediaAuthDiagnostics';
 import Hls from 'hls.js';
 
 // Maximum playback duration limit - videos loop back to start after this many seconds
@@ -877,6 +878,12 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
                     };
                   } else if (response.status === 401 || response.status === 403) {
                     debugError(`[VideoPlayer ${videoId}] Auth failed even with NIP-98 (${response.status})`);
+                    await logMediaAuthFailure(
+                      `VideoPlayer ${videoId} MP4 fetch`,
+                      currentUrl,
+                      response,
+                      authHeader,
+                    );
                     if (isAdultVerified) {
                       setAuthDeniedAfterVerification(true);
                     } else {

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { fetchWithAuth, useAdultVerification } from '@/hooks/useAdultVerification';
+import { logMediaAuthFailure } from '@/lib/mediaAuthDiagnostics';
 
 export function isProtectedDivineMediaUrl(url: string): boolean {
   try {
@@ -63,6 +64,9 @@ export function useAuthenticatedMediaUrl(
 
         const response = await fetchWithAuth(url, authHeader);
         if (!response.ok) {
+          if (response.status === 401 || response.status === 403) {
+            await logMediaAuthFailure('useAuthenticatedMediaUrl', url, response, authHeader);
+          }
           throw new Error(`Failed to load media asset: ${response.status}`);
         }
 
