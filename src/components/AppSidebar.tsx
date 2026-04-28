@@ -3,6 +3,7 @@
 
 import { useLocation } from 'react-router-dom';
 import { Home, Compass, Search, Bell, User, Sun, Moon, ChevronDown, Headphones, BarChart3, LayoutGrid, Rss, MessageCircle } from 'lucide-react';
+import { Handshake } from '@phosphor-icons/react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCategories } from '@/hooks/useCategories';
@@ -172,6 +173,15 @@ export function AppSidebar({ className }: { className?: string }) {
               label={t('nav.notifications')}
               onClick={() => navigate('/notifications')}
               isActive={isActive('/notifications')}
+            />
+          )}
+
+          {user && (
+            <NavItem
+              icon={<Handshake size={18} weight="bold" />}
+              label="Collabs"
+              onClick={() => navigate('/collabs')}
+              isActive={location.pathname === '/collabs' || location.pathname.startsWith('/collabs/')}
             />
           )}
 
