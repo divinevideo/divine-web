@@ -55,9 +55,12 @@ describe('transformFunnelcakeVideo', () => {
     expect(video.ageRestricted).toBe(true);
   });
 
-  it('takes the larger of embedded_* and current engagement counts (v2 schema)', () => {
-    // v2 /api/v2/videos returns BOTH families. For native Divine videos
-    // `embedded_*` is 0 while `reactions/comments/reposts` carry real counts.
+  it('sums embedded_* and current engagement counts (v2 schema)', () => {
+    // v2 /api/v2/videos returns BOTH families: `embedded_*` is archive-import
+    // stats (Vine), `reactions|comments|reposts` is current Nostr engagement.
+    // We sum them so the visible numbers reflect total activity (archive +
+    // current), and native videos with no archive history still show real
+    // current counts.
     const native = transformFunnelcakeVideo(makeRawVideo({
       embedded_likes: 0,
       embedded_comments: 0,
@@ -71,8 +74,6 @@ describe('transformFunnelcakeVideo', () => {
     expect(native.commentCount).toBe(9);
     expect(native.repostCount).toBe(3);
 
-    // For archived Vine rows the embedded_* totals dwarf current engagement
-    // and should win.
     const archived = transformFunnelcakeVideo(makeRawVideo({
       embedded_likes: 138577,
       embedded_comments: 3014,
@@ -82,7 +83,7 @@ describe('transformFunnelcakeVideo', () => {
       reposts: 0,
     }));
 
-    expect(archived.likeCount).toBe(138577);
+    expect(archived.likeCount).toBe(138587);
     expect(archived.commentCount).toBe(3014);
     expect(archived.repostCount).toBe(37586);
   });

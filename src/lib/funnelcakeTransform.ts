@@ -104,12 +104,12 @@ export function transformFunnelcakeVideo(raw: FunnelcakeVideoRaw): ParsedVideoDa
     // - v1 /api/users/{pubkey}/videos: only `reactions|comments|reposts` populated
     // - v2 /api/v2/videos: BOTH populated — `embedded_*` carries archive-import stats
     //   (e.g. 138k Vine likes), `reactions|comments|reposts` carries current Nostr
-    //   engagement. For native Divine videos `embedded_*` is 0, so plain `??` would
-    //   zero out the real counts. Take the max so each row shows the larger of
-    //   "archive" vs "current".
-    likeCount: Math.max(raw.embedded_likes ?? 0, raw.reactions ?? 0),
-    repostCount: Math.max(raw.embedded_reposts ?? 0, raw.reposts ?? 0),
-    commentCount: Math.max(raw.embedded_comments ?? 0, raw.comments ?? 0),
+    //   engagement. We want to surface activity loudly, so add them — Vine rows show
+    //   archive + current together, native rows just show current. The missing side
+    //   defaults to 0 so v1 endpoints stay correct.
+    likeCount: (raw.embedded_likes ?? 0) + (raw.reactions ?? 0),
+    repostCount: (raw.embedded_reposts ?? 0) + (raw.reposts ?? 0),
+    commentCount: (raw.embedded_comments ?? 0) + (raw.comments ?? 0),
 
     // Origin data for Vine migrations
     isVineMigrated,
