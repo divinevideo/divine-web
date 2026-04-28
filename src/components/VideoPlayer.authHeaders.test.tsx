@@ -119,6 +119,7 @@ describe('VideoPlayer auth headers', () => {
           vineId: null,
           reposts: [],
           isVineMigrated: false,
+          ageRestricted: true,
         }}
       />,
     );
@@ -146,6 +147,7 @@ describe('VideoPlayer auth headers', () => {
           vineId: null,
           reposts: [],
           isVineMigrated: false,
+          ageRestricted: true,
         }}
       />,
     );

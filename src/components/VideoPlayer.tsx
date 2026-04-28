@@ -132,6 +132,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
     const { isVerified: isAdultVerified, getAuthHeader } = useAdultVerification();
     const { mediaUrl: authenticatedPosterUrl } = useAuthenticatedMediaUrl(poster, {
       enabled: !!poster && !requiresAuth && !authCheckPending,
+      ageRestricted: !!videoData?.ageRestricted,
     });
     const overlayPosterUrl = authenticatedPosterUrl ||
       (poster && !isProtectedDivineMediaUrl(poster) ? poster : undefined);
@@ -771,8 +772,10 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
           capLevelToPlayerSize: true, // Match quality to player size
         };
 
-        // Add custom auth loader if adult verified
-        if (isAdultVerified) {
+        // Add custom auth loader only when the video is age-restricted.
+        // Public HLS streams must not carry an Authorization header — divine-blossom
+        // rejects any malformed auth header with 401 even when the blob is public.
+        if (isAdultVerified && videoData?.ageRestricted) {
           verboseLog(`[VideoPlayer ${videoId}] Using NIP-98 auth loader for each HLS request`);
           hlsConfig.loader = createAuthLoader(getAuthHeader);
         }
@@ -835,8 +838,12 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
         verboseLog(`[VideoPlayer ${videoId}] Using direct playback - URL ${currentUrlIndex}/${allUrls.length - 1}: ${currentUrl}`);
 
         if (currentUrl) {
-          // If adult verified, fetch with auth headers and use blob URL
-          if (isAdultVerified) {
+          // Only fetch with auth headers when the video is actually age-restricted.
+          // Public blobs must not carry an Authorization header — divine-blossom
+          // rejects any malformed auth header with 401 even when the blob is public,
+          // so attaching auth optimistically locks users out of public content
+          // whenever their signer produces an invalid event (e.g., JWT signer bugs).
+          if (isAdultVerified && videoData?.ageRestricted) {
             verboseLog(`[VideoPlayer ${videoId}] Fetching MP4 with NIP-98 auth`);
             (async () => {
               try {
@@ -918,7 +925,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
         }
       };
 
-    }, [hlsUrl, currentUrlIndex, allUrls, videoId, requiresAuth, isAdultVerified, authRetryCount, getAuthHeader, videoData?.sha256]); // React to HLS URL, fallback, and auth changes
+    }, [hlsUrl, currentUrlIndex, allUrls, videoId, requiresAuth, isAdultVerified, authRetryCount, getAuthHeader, videoData?.sha256, videoData?.ageRestricted]); // React to HLS URL, fallback, and auth changes
 
     // Cleanup on unmount
     useEffect(() => {

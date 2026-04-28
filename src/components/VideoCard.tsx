@@ -614,6 +614,7 @@ export function VideoCard({
                   src={video.videoUrl}
                   thumbnailUrl={video.thumbnailUrl}
                   duration={video.duration}
+                  ageRestricted={video.ageRestricted}
                   className="w-full h-full"
                   onClick={handleThumbnailClick}
                   onPlayButtonClick={handleThumbnailPlayButtonClick}
@@ -651,6 +652,7 @@ export function VideoCard({
                         src={video.videoUrl}
                         thumbnailUrl={video.thumbnailUrl}
                         duration={video.duration}
+                        ageRestricted={video.ageRestricted}
                         className="w-full h-full"
                         onVideoDimensions={handleThumbnailDimensions}
                       />

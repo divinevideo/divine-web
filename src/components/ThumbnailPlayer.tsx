@@ -16,6 +16,8 @@ interface ThumbnailPlayerProps {
   thumbnailUrl?: string;
   duration?: number;
   className?: string;
+  /** Whether the source video is age-restricted; gates whether to attach auth on the thumbnail fetch. */
+  ageRestricted?: boolean;
   onClick?: () => void;
   onPlayButtonClick?: () => void;
   onError?: () => void;
@@ -28,6 +30,7 @@ export function ThumbnailPlayer({
   thumbnailUrl,
   duration: _duration,
   className,
+  ageRestricted,
   onClick,
   onPlayButtonClick,
   onError,
@@ -99,6 +102,7 @@ export function ThumbnailPlayer({
   const baseThumbnailUrl = thumbnailUrl || src;
   const { mediaUrl: authenticatedMediaUrl, isLoading: authMediaLoading } = useAuthenticatedMediaUrl(baseThumbnailUrl, {
     enabled: !requiresAuth,
+    ageRestricted: !!ageRestricted,
   });
   const overlayThumbnailUrl = authenticatedMediaUrl ||
     (baseThumbnailUrl && !isProtectedDivineMediaUrl(baseThumbnailUrl) ? baseThumbnailUrl : undefined);
