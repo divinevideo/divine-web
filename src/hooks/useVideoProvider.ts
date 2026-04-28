@@ -109,7 +109,7 @@ function mapToFunnelcakeSortMode(sortMode?: SortMode): FunnelcakeSortMode | unde
 
   switch (sortMode) {
     case 'hot':
-      return 'trending';
+      return 'watching';
     case 'top':
       return 'loops';
     case 'rising':

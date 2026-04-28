@@ -84,7 +84,7 @@ export function transformFunnelcakeVideo(raw: FunnelcakeVideoRaw): ParsedVideoDa
     thumbnailUrl: raw.thumbnail,
     blurhash: raw.blurhash,
     title: raw.title,
-    dimensions: raw.dim, // Video dimensions from API (e.g., "1080x1920")
+    dimensions: raw.dim ?? raw.dimensions, // Video dimensions from API (e.g., "1080x1920"); v2 uses `dimensions`
     sha256: extractSha256FromVideoUrl(raw.video_url),
     ageRestricted: raw.age_restricted === true || raw.moderation_status === 'age_restricted',
     hashtags,

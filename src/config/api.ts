@@ -164,6 +164,7 @@ export const API_CONFIG = {
     // Endpoints
     endpoints: {
       videos: '/api/videos',
+      videosV2: '/api/v2/videos',
       search: '/api/search',
       searchProfiles: '/api/search/profiles',
       userProfile: '/api/users/{pubkey}',
