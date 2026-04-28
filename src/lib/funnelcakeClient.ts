@@ -1466,3 +1466,35 @@ export async function fetchBulkVideos(
     throw new FunnelcakeApiError(message, null, undefined);
   }
 }
+
+function asVideoArray(raw: unknown): FunnelcakeVideoRaw[] {
+  if (Array.isArray(raw)) return raw as FunnelcakeVideoRaw[];
+  if (raw && typeof raw === 'object' && Array.isArray((raw as { data?: unknown }).data)) {
+    return (raw as { data: FunnelcakeVideoRaw[] }).data;
+  }
+  return [];
+}
+
+export async function fetchUserCollabs(
+  pubkey: string,
+  options: {
+    sort?: 'recent' | 'popular' | 'likes' | 'comments' | 'published';
+    limit?: number;
+    offset?: number;
+    signal?: AbortSignal;
+    apiUrl?: string;
+  } = {},
+): Promise<FunnelcakeVideoRaw[]> {
+  const apiUrl = options.apiUrl ?? API_CONFIG.funnelcake.baseUrl;
+  const raw = await funnelcakeRequest<unknown>(
+    apiUrl,
+    `/api/users/${pubkey}/collabs`,
+    {
+      sort: options.sort ?? 'recent',
+      limit: options.limit ?? 50,
+      offset: options.offset ?? 0,
+    },
+    options.signal,
+  );
+  return asVideoArray(raw);
+}
