@@ -100,6 +100,13 @@ export const EditProfileForm: React.FC<EditProfileFormProps> = ({ onSuccess }) =
       // This helps with follow list safety checks
       data.client = 'divine.video';
 
+      // Keep display_name in sync with name to prevent stale values from other clients
+      if (data.name) {
+        data.display_name = data.name;
+      } else {
+        delete data.display_name;
+      }
+
       // Clean up empty values
       for (const key in data) {
         if (data[key] === '') {
