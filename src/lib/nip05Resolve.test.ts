@@ -1,68 +1,84 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { parseNip05, resolveNip05ToPubkey } from './nip05Resolve';
+import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
+import { resolveNip05, parseNip05Handle } from './nip05Resolve';
 
-describe('parseNip05', () => {
-  it('splits name and domain', () => {
-    expect(parseNip05('alice@example.com')).toEqual({ name: 'alice', domain: 'example.com' });
+describe('parseNip05Handle', () => {
+  it.each([
+    ['alice@divine.video',         { name: 'alice', domain: 'divine.video' }],
+    ['_@spiderman.divine.video',   { name: '_',     domain: 'spiderman.divine.video' }],
+    ['@spiderman.divine.video',    { name: '_',     domain: 'spiderman.divine.video' }],
+    ['spiderman.divine.video',     { name: '_',     domain: 'spiderman.divine.video' }],
+    ['  alice@divine.video  ',     { name: 'alice', domain: 'divine.video' }],
+  ])('parses %s', (input, expected) => {
+    expect(parseNip05Handle(input)).toEqual(expected);
   });
 
-  it('defaults empty local part to _', () => {
-    expect(parseNip05('@example.com')).toEqual({ name: '_', domain: 'example.com' });
-  });
-
-  it('returns null for malformed input', () => {
-    expect(parseNip05('no-at-sign')).toBeNull();
-    expect(parseNip05('a@')).toBeNull();
-    expect(parseNip05('a@bad domain')).toBeNull();
+  it.each(['', '@', 'no-dot', 'a@', '@a'])('rejects %s', (input) => {
+    expect(parseNip05Handle(input)).toBeNull();
   });
 });
 
-describe('resolveNip05ToPubkey', () => {
-  const originalFetch = globalThis.fetch;
-
+describe('resolveNip05', () => {
   beforeEach(() => {
+    vi.spyOn(globalThis, 'fetch').mockReset();
+  });
+  afterEach(() => {
     vi.restoreAllMocks();
   });
 
-  afterEach(() => {
-    globalThis.fetch = originalFetch;
-  });
-
-  it('returns the hex pubkey from the well-known response', async () => {
-    const pubkey = 'a'.repeat(64);
-    const fetchMock = vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({ names: { traveltelly: pubkey } }),
+  it('resolves a valid response', async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(new Response(
+      JSON.stringify({ names: { alice: 'a'.repeat(64) } }),
+      { status: 200 },
+    ));
+    const out = await resolveNip05('alice@divine.video');
+    expect(out).toEqual({
+      pubkey: 'a'.repeat(64),
+      name: 'alice',
+      domain: 'divine.video',
     });
-    globalThis.fetch = fetchMock as unknown as typeof fetch;
-
-    const result = await resolveNip05ToPubkey('traveltelly@primal.net');
-
-    expect(result).toBe(pubkey);
-    expect(fetchMock).toHaveBeenCalledWith(
-      'https://primal.net/.well-known/nostr.json?name=traveltelly',
-      expect.objectContaining({ headers: { Accept: 'application/json' } }),
+    expect(fetch).toHaveBeenCalledWith(
+      'https://divine.video/.well-known/nostr.json?name=alice',
+      expect.objectContaining({ signal: expect.anything() }),
     );
   });
 
-  it('returns null when HTTP response is not ok', async () => {
-    globalThis.fetch = vi.fn().mockResolvedValue({ ok: false, status: 404 }) as unknown as typeof fetch;
-    expect(await resolveNip05ToPubkey('alice@example.com')).toBeNull();
+  it('handles the @-shorthand for divine subdomain accounts', async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(new Response(
+      JSON.stringify({ names: { _: 'b'.repeat(64) } }),
+      { status: 200 },
+    ));
+    const out = await resolveNip05('@spiderman.divine.video');
+    expect(out).toEqual({
+      pubkey: 'b'.repeat(64),
+      name: '_',
+      domain: 'spiderman.divine.video',
+    });
+    expect(fetch).toHaveBeenCalledWith(
+      'https://spiderman.divine.video/.well-known/nostr.json?name=_',
+      expect.objectContaining({ signal: expect.anything() }),
+    );
   });
 
-  it('returns null when the name is not present', async () => {
-    globalThis.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({ names: { bob: 'b'.repeat(64) } }),
-    }) as unknown as typeof fetch;
-    expect(await resolveNip05ToPubkey('alice@example.com')).toBeNull();
+  it('returns null on 404', async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(new Response('', { status: 404 }));
+    expect(await resolveNip05('nobody@divine.video')).toBeNull();
   });
 
-  it('returns null when the pubkey is not valid hex', async () => {
-    globalThis.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({ names: { alice: 'not-hex' } }),
-    }) as unknown as typeof fetch;
-    expect(await resolveNip05ToPubkey('alice@example.com')).toBeNull();
+  it('returns null on malformed JSON', async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(new Response('not json', { status: 200 }));
+    expect(await resolveNip05('alice@divine.video')).toBeNull();
+  });
+
+  it('returns null when names map omits the requested name', async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(new Response(
+      JSON.stringify({ names: { bob: 'b'.repeat(64) } }),
+      { status: 200 },
+    ));
+    expect(await resolveNip05('alice@divine.video')).toBeNull();
+  });
+
+  it('returns null on a malformed handle', async () => {
+    expect(await resolveNip05('garbage')).toBeNull();
+    expect(fetch).not.toHaveBeenCalled();
   });
 });
