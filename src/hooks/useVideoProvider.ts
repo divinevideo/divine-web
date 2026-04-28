@@ -14,6 +14,7 @@ import type { SortMode } from '@/types/nostr';
 // Feed types that can be provided
 export type VideoFeedType = 'discovery' | 'home' | 'trending' | 'hashtag' | 'profile' | 'recent' | 'classics' | 'foryou' | 'category';
 type WebsocketVideoFeedType = 'discovery' | 'home' | 'trending' | 'hashtag' | 'profile' | 'recent';
+const CLASSICS_RANDOMIZATION_WINDOW = 120;
 
 interface UseVideoProviderOptions {
   feedType: VideoFeedType;
@@ -238,7 +239,9 @@ export function useVideoProvider({
     pubkey,
     pageSize,
     enabled: enabled && shouldUseFunnelcake,
-    randomizeWithinTop: feedType === 'classics' ? 500 : undefined,
+    // Keep Classics in a low, stable offset window.
+    // Higher offsets on loops+classic queries are currently prone to backend timeouts.
+    randomizeWithinTop: feedType === 'classics' ? CLASSICS_RANDOMIZATION_WINDOW : undefined,
   });
 
   const shouldEnableWebsocket =
