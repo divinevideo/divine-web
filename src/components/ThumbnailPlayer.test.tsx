@@ -88,6 +88,7 @@ describe('ThumbnailPlayer', () => {
         videoId="restricted-video"
         src="https://media.divine.video/restricted-video"
         thumbnailUrl="https://media.divine.video/restricted-video.jpg"
+        ageRestricted
       />
     );
 

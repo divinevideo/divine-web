@@ -27,7 +27,9 @@ describe('useAuthenticatedMediaUrl', () => {
     }) as typeof fetch;
 
     const { result } = renderHook(() =>
-      useAuthenticatedMediaUrl('https://media.divine.video/protected-thumbnail.jpg'),
+      useAuthenticatedMediaUrl('https://media.divine.video/protected-thumbnail.jpg', {
+        ageRestricted: true,
+      }),
     );
 
     await waitFor(() => {

@@ -12,6 +12,13 @@ export function isProtectedDivineMediaUrl(url: string): boolean {
 
 interface UseAuthenticatedMediaUrlOptions {
   enabled?: boolean;
+  /**
+   * Only attach a Nostr auth header when the resource is known to be age-restricted.
+   * Public blobs must NOT receive an Authorization header — the CDN rejects any
+   * malformed/invalid auth header with 401 even when the blob would otherwise
+   * be public. Default: false (assume public; pass through the URL untouched).
+   */
+  ageRestricted?: boolean;
 }
 
 export function useAuthenticatedMediaUrl(
@@ -21,14 +28,15 @@ export function useAuthenticatedMediaUrl(
   mediaUrl: string | undefined;
   isLoading: boolean;
 } {
-  const { enabled = true } = options;
+  const { enabled = true, ageRestricted = false } = options;
   const { isVerified, getAuthHeader } = useAdultVerification();
   const [mediaUrl, setMediaUrl] = useState<string | undefined>(url ?? undefined);
   const [isLoading, setIsLoading] = useState(false);
   const objectUrlRef = useRef<string | null>(null);
 
   useEffect(() => {
-    const shouldAuthenticate = !!url && enabled && isVerified && isProtectedDivineMediaUrl(url);
+    const shouldAuthenticate =
+      !!url && enabled && ageRestricted && isVerified && isProtectedDivineMediaUrl(url);
 
     if (!shouldAuthenticate) {
       setMediaUrl(url ?? undefined);
@@ -84,7 +92,7 @@ export function useAuthenticatedMediaUrl(
     return () => {
       cancelled = true;
     };
-  }, [enabled, getAuthHeader, isVerified, url]);
+  }, [enabled, ageRestricted, getAuthHeader, isVerified, url]);
 
   useEffect(() => (
     () => {

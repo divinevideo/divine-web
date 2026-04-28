@@ -407,6 +407,19 @@ describe('VideoPlayer', () => {
         <VideoPlayer
           videoId="verified-auth-failure"
           src="https://media.divine.video/protected-video"
+          videoData={{
+            id: 'verified-auth-failure',
+            pubkey: 'pub',
+            kind: 34236,
+            createdAt: 0,
+            content: '',
+            videoUrl: 'https://media.divine.video/protected-video',
+            hashtags: [],
+            vineId: null,
+            reposts: [],
+            isVineMigrated: false,
+            ageRestricted: true,
+          }}
         />
       );
 
@@ -440,6 +453,19 @@ describe('VideoPlayer', () => {
         <VideoPlayer
           videoId="verified-auth-placeholder"
           src="https://media.divine.video/protected-video"
+          videoData={{
+            id: 'verified-auth-placeholder',
+            pubkey: 'pub',
+            kind: 34236,
+            createdAt: 0,
+            content: '',
+            videoUrl: 'https://media.divine.video/protected-video',
+            hashtags: [],
+            vineId: null,
+            reposts: [],
+            isVineMigrated: false,
+            ageRestricted: true,
+          }}
         />
       );
 
