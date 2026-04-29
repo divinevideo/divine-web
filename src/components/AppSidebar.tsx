@@ -3,7 +3,7 @@
 
 import { useLocation } from 'react-router-dom';
 import { House as Home, Compass, MagnifyingGlass as Search, Bell, User, Sun, Moon, CaretDown as ChevronDown, Headphones, ChartBar as BarChart3, SquaresFour as LayoutGrid, Rss, ChatCircle as MessageCircle } from '@phosphor-icons/react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCategories } from '@/hooks/useCategories';
 import { nip19 } from 'nostr-tools';
@@ -26,6 +26,7 @@ import { useRssFeedAvailable } from '@/hooks/useRssFeedAvailable';
 import { usePlatformStats } from '@/hooks/usePlatformStats';
 import { LanguageMenu } from '@/components/LanguageMenu';
 import { getTranslatedCategoryLabel } from '@/lib/constants/categories';
+import { getPreferredAppStoreCountry, lookupAppStoreUrl, PLAY_STORE_URL } from '@/lib/mobileStoreLinks';
 
 interface NavItemProps {
   icon: React.ReactNode;
@@ -72,6 +73,7 @@ export function AppSidebar({ className }: { className?: string }) {
   const [rssOpen, setRssOpen] = useState(false);
   const [divineOpen, setDivineOpen] = useState(false);
   const [termsOpen, setTermsOpen] = useState(false);
+  const [appStoreUrl, setAppStoreUrl] = useState<string | null>(null);
   const { data: categories } = useCategories();
   const classicVinesRecovered = platformStats?.vine_videos?.toLocaleString();
 
@@ -89,6 +91,28 @@ export function AppSidebar({ className }: { className?: string }) {
   const profilePath = user?.pubkey
     ? `/profile/${nip19.npubEncode(user.pubkey)}`
     : null;
+
+  useEffect(() => {
+    const country = getPreferredAppStoreCountry();
+    let cancelled = false;
+
+    if (!country) {
+      setAppStoreUrl(null);
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    lookupAppStoreUrl(country).then((url) => {
+      if (!cancelled) {
+        setAppStoreUrl(url);
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
     <aside
@@ -116,21 +140,23 @@ export function AppSidebar({ className }: { className?: string }) {
       <div className="flex-1 overflow-y-auto overflow-x-hidden">
         {/* App Store Badges */}
         <div className="flex flex-col gap-2 px-5 pb-2">
+          {appStoreUrl && (
+            <a
+              href={appStoreUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Download Divine on the App Store"
+              className="block transition-opacity hover:opacity-80"
+            >
+              <img
+                src="/store-badges/app-store-badge.svg"
+                alt="Download on the App Store"
+                className="h-10 w-auto"
+              />
+            </a>
+          )}
           <a
-            href="https://apps.apple.com/nz/app/divine-video/id6747959501"
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label="Download Divine on the App Store"
-            className="block transition-opacity hover:opacity-80"
-          >
-            <img
-              src="/store-badges/app-store-badge.svg"
-              alt="Download on the App Store"
-              className="h-10 w-auto"
-            />
-          </a>
-          <a
-            href="https://play.google.com/store/apps/details?id=co.openvine.app&gl=us&hl=en"
+            href={PLAY_STORE_URL}
             target="_blank"
             rel="noopener noreferrer"
             aria-label="Get Divine on Google Play"
