@@ -30,6 +30,7 @@ import { useFollowRelationship, useFollowUser, useUnfollowUser } from '@/hooks/u
 import { useFollowListSafetyCheck } from '@/hooks/useFollowListSafetyCheck';
 import { PinnedVideosSection } from '@/components/PinnedVideosSection';
 import { useLoginDialog } from '@/contexts/LoginDialogContext';
+import { toast } from '@/hooks/useToast';
 import { debugLog } from '@/lib/debug';
 import { getDivineNip05Info } from '@/lib/nip05Utils';
 import { useNip05Validation } from '@/hooks/useNip05Validation';
@@ -340,6 +341,11 @@ export function ProfilePage() {
       }
     } catch (error) {
       console.error('Failed to update follow status:', error);
+      toast({
+        title: "Couldn't update follow.",
+        description: error instanceof Error ? error.message : 'Please try again.',
+        variant: "destructive",
+      });
     }
   };
 
