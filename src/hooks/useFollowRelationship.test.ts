@@ -219,11 +219,12 @@ describe('useFollowUser - follow list overwrite protection', () => {
       });
     });
 
-    // Should publish a Kind 3 with just the one new follow
+    // Should publish a Kind 3 with just the one new follow and default relay content
     expect(mockPublishEvent).toHaveBeenCalledWith(
       expect.objectContaining({
         kind: 3,
         tags: [['p', mockTargetPubkey, '', 'Test User']],
+        content: JSON.stringify({ 'wss://relay.divine.video': { read: true, write: true } }),
       }),
     );
   });
