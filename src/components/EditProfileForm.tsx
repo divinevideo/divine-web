@@ -21,6 +21,7 @@ import { CircleNotch as Loader2, UploadSimple as Upload } from '@phosphor-icons/
 import { NSchema as n, type NostrMetadata } from '@nostrify/nostrify';
 import { useQueryClient } from '@tanstack/react-query';
 import { useUploadFile } from '@/hooks/useUploadFile';
+import { mergeProfileMetadataForPublish } from '@/lib/mergeProfileMetadataForPublish';
 
 interface EditProfileFormProps {
   onSuccess?: () => void;
@@ -99,26 +100,11 @@ export const EditProfileForm: React.FC<EditProfileFormProps> = ({ onSuccess }) =
     }
 
     try {
-      // Combine existing metadata with new values
-      const data = { ...metadata, ...values };
+      const data = mergeProfileMetadataForPublish(metadata, values);
 
       // Add client tag to identify divine users
       // This helps with follow list safety checks
       data.client = 'divine.video';
-
-      // Keep display_name in sync with name to prevent stale values from other clients
-      if (data.name) {
-        data.display_name = data.name;
-      } else {
-        delete data.display_name;
-      }
-
-      // Clean up empty values
-      for (const key in data) {
-        if (data[key] === '') {
-          delete data[key];
-        }
-      }
 
       // Publish the metadata event (kind 0)
       await publishEvent({
