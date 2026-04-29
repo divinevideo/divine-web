@@ -114,6 +114,36 @@ export function AppSidebar({ className }: { className?: string }) {
 
       {/* Scrollable Content Area */}
       <div className="flex-1 overflow-y-auto overflow-x-hidden">
+        {/* App Store Badges */}
+        <div className="flex flex-col gap-2 px-5 pb-2">
+          <a
+            href="https://apps.apple.com/us/app/divine-video/id6747959501"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Download Divine on the App Store"
+            className="block transition-opacity hover:opacity-80"
+          >
+            <img
+              src="/store-badges/app-store-badge.svg"
+              alt="Download on the App Store"
+              className="h-10 w-auto"
+            />
+          </a>
+          <a
+            href="https://play.google.com/store/apps/details?id=co.openvine.app&gl=us&hl=en"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Get Divine on Google Play"
+            className="block transition-opacity hover:opacity-80"
+          >
+            <img
+              src="/store-badges/google-play-badge.png"
+              alt="Get it on Google Play"
+              className="h-[58px] w-auto -ml-[7px]"
+            />
+          </a>
+        </div>
+
         {/* Main Navigation */}
         <nav className="flex flex-col gap-0.5 px-3 pt-2">
           <NavItem
