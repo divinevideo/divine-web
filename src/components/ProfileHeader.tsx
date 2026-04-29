@@ -458,7 +458,7 @@ export function ProfileHeader({
         </div>
 
         {/* Joined Date / Classic Viner Status */}
-        <div className="text-center">
+        <div className="text-center col-span-2 sm:col-span-1">
           {stats ? (
             stats.joinedDateLoading ? (
               <Skeleton className="h-4 w-20 mx-auto" data-testid="stat-skeleton-joined" />
