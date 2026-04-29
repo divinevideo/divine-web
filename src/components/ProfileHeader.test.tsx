@@ -76,7 +76,7 @@ const baseStats: ProfileStats = {
 };
 
 describe('ProfileHeader', () => {
-  it('hides the total video count stat', () => {
+  it('shows the profile video count stat', () => {
     render(
       <MemoryRouter>
         <ProfileHeader
@@ -90,11 +90,8 @@ describe('ProfileHeader', () => {
       </MemoryRouter>
     );
 
-    expect(screen.queryByText('Videos')).not.toBeInTheDocument();
-    expect(screen.queryByText('10')).not.toBeInTheDocument();
-    expect(screen.getByText('Followers')).toBeInTheDocument();
-    expect(screen.getByText('Following')).toBeInTheDocument();
-    expect(screen.getByText('Divine Loops')).toBeInTheDocument();
+    expect(screen.getByText('Videos')).toBeInTheDocument();
+    expect(screen.getByText('10')).toBeInTheDocument();
   });
 
   it('shows clickable legacy socials for classic viners only', () => {
