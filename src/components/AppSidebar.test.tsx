@@ -96,6 +96,19 @@ describe('AppSidebar', () => {
     expect(mockNavigate).toHaveBeenCalledWith('/dmca');
   });
 
+  it('links the App Store badge to the live regional listing', () => {
+    render(
+      <MemoryRouter>
+        <AppSidebar />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole('link', { name: 'Download Divine on the App Store' })).toHaveAttribute(
+      'href',
+      'https://apps.apple.com/nz/app/divine-video/id6747959501',
+    );
+  });
+
   it('renders translated category labels from category config', () => {
     mockCategories.push({
       name: 'music',

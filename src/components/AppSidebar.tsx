@@ -117,7 +117,7 @@ export function AppSidebar({ className }: { className?: string }) {
         {/* App Store Badges */}
         <div className="flex flex-col gap-2 px-5 pb-2">
           <a
-            href="https://apps.apple.com/us/app/divine-video/id6747959501"
+            href="https://apps.apple.com/nz/app/divine-video/id6747959501"
             target="_blank"
             rel="noopener noreferrer"
             aria-label="Download Divine on the App Store"
