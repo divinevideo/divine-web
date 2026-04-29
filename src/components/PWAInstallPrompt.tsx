@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { DownloadSimple as Download, X } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
+import { getPreferredAppStoreCountry, lookupAppStoreUrl, PLAY_STORE_URL } from '@/lib/mobileStoreLinks';
 
 interface BeforeInstallPromptEvent extends Event {
   readonly platforms: string[];
@@ -16,14 +17,16 @@ interface NavigatorWithStandalone extends Navigator {
   standalone?: boolean;
 }
 
-export function PWAInstallPrompt() {
+export function PWAInstallPrompt({ delayMs = 10000 }: { delayMs?: number } = {}) {
   const location = useLocation();
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [showPrompt, setShowPrompt] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
+  const [isAndroid, setIsAndroid] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [hasLeftLanding, setHasLeftLanding] = useState(false);
+  const [appStoreUrl, setAppStoreUrl] = useState<string | null>(null);
 
   // Track when user leaves the landing page
   useEffect(() => {
@@ -65,6 +68,7 @@ export function PWAInstallPrompt() {
       const userAgent = window.navigator.userAgent.toLowerCase();
       const isIOSDevice = /iphone|ipad|ipod/.test(userAgent);
       setIsIOS(isIOSDevice);
+      setIsAndroid(/android/.test(userAgent));
     };
 
     checkIOS();
@@ -83,6 +87,33 @@ export function PWAInstallPrompt() {
     };
   }, []);
 
+  useEffect(() => {
+    if (!isMobile || isAndroid) {
+      setAppStoreUrl(null);
+      return;
+    }
+
+    const country = getPreferredAppStoreCountry();
+    let cancelled = false;
+
+    if (!country) {
+      setAppStoreUrl(null);
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    lookupAppStoreUrl(country).then((url) => {
+      if (!cancelled) {
+        setAppStoreUrl(url);
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isAndroid, isMobile]);
+
   // Show prompt after user has been on a non-landing page for 10 seconds
   useEffect(() => {
     if (!hasLeftLanding) return;
@@ -91,13 +122,13 @@ export function PWAInstallPrompt() {
     const timer = setTimeout(() => {
       // Check if user hasn't dismissed this before
       const dismissed = localStorage.getItem('pwa-install-dismissed');
-      if (!dismissed && (deferredPrompt || isIOS)) {
+      if (!dismissed && (appStoreUrl || !isIOS || deferredPrompt)) {
         setShowPrompt(true);
       }
-    }, 10000); // Show after 10 seconds on non-landing page
+    }, delayMs); // Show after 10 seconds on non-landing page
 
     return () => clearTimeout(timer);
-  }, [hasLeftLanding, location.pathname, deferredPrompt, isIOS]);
+  }, [appStoreUrl, hasLeftLanding, location.pathname, deferredPrompt, isIOS, delayMs]);
 
   const handleInstallClick = async () => {
     if (!deferredPrompt) return;
@@ -130,49 +161,10 @@ export function PWAInstallPrompt() {
     return null;
   }
 
-  // Show iOS-specific instructions
-  if (isIOS && !isStandalone) {
-    // Only show on iOS Safari, not in other browsers
-    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+  const showGooglePlay = !isIOS;
+  const hasNativeStoreAction = Boolean(appStoreUrl || showGooglePlay);
 
-    if (!isSafari || !showPrompt) {
-      return null;
-    }
-
-    return (
-      <div className="fixed bottom-20 left-4 right-4 z-50 bg-background border-2 border-primary rounded-lg shadow-lg p-4 animate-in slide-in-from-bottom-4">
-        <button
-          onClick={handleDismiss}
-          className="absolute top-2 right-2 p-1 hover:bg-accent rounded-full transition-colors"
-          aria-label="Close"
-        >
-          <X className="h-4 w-4 text-muted-foreground" />
-        </button>
-
-        <div className="flex items-start gap-3">
-          <div className="flex-shrink-0 w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
-            <Download className="h-5 w-5 text-primary-foreground" />
-          </div>
-
-          <div className="flex-1 min-w-0">
-            <h3 className="font-semibold text-foreground text-sm mb-1">
-              Install Divine Web
-            </h3>
-            <p className="text-xs text-muted-foreground">
-              Tap the Share button <span className="inline-block mx-1">
-                <svg className="inline w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M16 5l-1.42 1.42-1.59-1.59V16h-1.98V4.83L9.42 6.42 8 5l4-4 4 4zm4 5v11c0 1.1-.9 2-2 2H6c-1.11 0-2-.9-2-2V10c0-1.11.89-2 2-2h3v2H6v11h12V10h-3V8h3c1.1 0 2 .89 2 2z"/>
-                </svg>
-              </span> then "Add to Home Screen"
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Show Android/Desktop install prompt
-  if (!showPrompt || !deferredPrompt) {
+  if (!showPrompt) {
     return null;
   }
 
@@ -193,21 +185,41 @@ export function PWAInstallPrompt() {
 
         <div className="flex-1 min-w-0">
           <h3 className="font-semibold text-foreground mb-1">
-            Install Divine Web
+            {hasNativeStoreAction ? 'Get Divine' : 'Install Divine Web'}
           </h3>
           <p className="text-sm text-muted-foreground mb-3">
-            Install our app for a better experience
+            {hasNativeStoreAction
+              ? 'Install the native app for the best Divine experience'
+              : 'Install our app for a better experience'}
           </p>
 
-          <div className="flex gap-2">
-            <Button
-              onClick={handleInstallClick}
-              size="sm"
-              className="flex-1"
-            >
-              <Download className="h-4 w-4 mr-2" />
-              Install
-            </Button>
+          <div className="flex flex-wrap gap-2">
+            {appStoreUrl && (
+              <Button asChild size="sm" className="flex-1 min-w-0">
+                <a href={appStoreUrl} target="_blank" rel="noopener noreferrer" aria-label="Download Divine on the App Store">
+                  <Download className="h-4 w-4 mr-2" />
+                  App Store
+                </a>
+              </Button>
+            )}
+            {showGooglePlay && (
+              <Button asChild size="sm" className="flex-1 min-w-0">
+                <a href={PLAY_STORE_URL} target="_blank" rel="noopener noreferrer" aria-label="Get Divine on Google Play">
+                  <Download className="h-4 w-4 mr-2" />
+                  Google Play
+                </a>
+              </Button>
+            )}
+            {!hasNativeStoreAction && deferredPrompt && (
+              <Button
+                onClick={handleInstallClick}
+                size="sm"
+                className="flex-1"
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Install
+              </Button>
+            )}
             <Button
               onClick={handleDismiss}
               size="sm"
