@@ -137,11 +137,14 @@ export function useFollowUser() {
       // The passed currentContactList may be stale or null if the UI query hasn't
       // loaded yet (race condition on fresh sessions / mobile browsers).
       let bestContactList = currentContactList;
+      let relayQuerySucceeded = false;
 
       try {
         const relayEvents = await nostr.query([
           { kinds: [3], authors: [user.pubkey], limit: 1 },
         ], { signal: AbortSignal.timeout(5000) });
+
+        relayQuerySucceeded = true;
 
         const relayContactList = relayEvents
           .filter((e: NostrEvent) => e.kind === 3)
@@ -163,15 +166,17 @@ export function useFollowUser() {
         debugLog('[useFollowUser] Failed to fetch latest Kind 3 from relay, using passed contact list:', error);
       }
 
-      // If we still have no contact list after trying both sources, refuse to publish
-      // to prevent creating a Kind 3 with only 1 follow that overwrites an existing list
-      if (!bestContactList) {
+      // If relay query failed and we have no cached list, refuse to publish
+      // to prevent creating a Kind 3 with only 1 follow that overwrites an existing list.
+      // But if the relay query succeeded and returned nothing, this user has genuinely
+      // never followed anyone — allow creating their first Kind 3.
+      if (!bestContactList && !relayQuerySucceeded) {
         throw new Error(
           'Could not load your existing follow list. Please try again in a moment.'
         );
       }
 
-      const currentTags = bestContactList.tags;
+      const currentTags = bestContactList?.tags ?? [];
 
       // Check if already following (shouldn't happen but good safety check)
       const alreadyFollowing = currentTags.some(tag => tag[0] === 'p' && tag[1] === targetPubkey);
@@ -185,7 +190,7 @@ export function useFollowUser() {
       const updatedTags = [...currentTags, newFollowTag];
 
       // Preserve relay information from existing contact list or use default
-      const relayContent = bestContactList.content || JSON.stringify({
+      const relayContent = bestContactList?.content || JSON.stringify({
         [PRIMARY_RELAY.url]: { read: true, write: true },
       });
 
