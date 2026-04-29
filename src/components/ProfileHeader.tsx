@@ -423,26 +423,9 @@ export function ProfileHeader({
 
       {/* Stats Section */}
       <div
-        className="grid grid-cols-2 sm:grid-cols-5 gap-4 py-4 border-t"
+        className="grid grid-cols-2 sm:grid-cols-4 gap-4 py-4 border-t"
         data-testid="profile-stats"
       >
-        {/* Videos Count */}
-        <div className="text-center">
-          {stats ? (
-            <>
-              <div className="text-xl sm:text-2xl font-bold text-foreground">
-                {formatNumber(stats.videosCount)}
-              </div>
-              <div className="text-xs sm:text-sm text-muted-foreground">Videos</div>
-            </>
-          ) : (
-            <>
-              <Skeleton className="h-6 w-12 mx-auto mb-1" data-testid="stat-skeleton-videos" />
-              <div className="text-xs sm:text-sm text-muted-foreground">Videos</div>
-            </>
-          )}
-        </div>
-
         {/* Followers Count */}
         <div className="text-center">
           {stats ? (
@@ -503,7 +486,7 @@ export function ProfileHeader({
         </div>
 
         {/* Joined Date / Classic Viner Status */}
-        <div className="text-center col-span-2 sm:col-span-1">
+        <div className="text-center">
           {stats ? (
             stats.joinedDateLoading ? (
               <Skeleton className="h-4 w-20 mx-auto" data-testid="stat-skeleton-joined" />

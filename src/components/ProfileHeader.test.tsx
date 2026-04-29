@@ -76,6 +76,27 @@ const baseStats: ProfileStats = {
 };
 
 describe('ProfileHeader', () => {
+  it('hides the total video count stat', () => {
+    render(
+      <MemoryRouter>
+        <ProfileHeader
+          pubkey={'a'.repeat(64)}
+          metadata={{ display_name: 'Modern Creator' }}
+          stats={baseStats}
+          isOwnProfile={false}
+          isFollowing={false}
+          onFollowToggle={vi.fn()}
+        />
+      </MemoryRouter>
+    );
+
+    expect(screen.queryByText('Videos')).not.toBeInTheDocument();
+    expect(screen.queryByText('10')).not.toBeInTheDocument();
+    expect(screen.getByText('Followers')).toBeInTheDocument();
+    expect(screen.getByText('Following')).toBeInTheDocument();
+    expect(screen.getByText('Divine Loops')).toBeInTheDocument();
+  });
+
   it('shows clickable legacy socials for classic viners only', () => {
     render(
       <MemoryRouter>
