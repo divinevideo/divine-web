@@ -1,13 +1,17 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+import { NSecSigner, type NostrEvent, type NostrSigner } from '@nostrify/nostrify';
+import { generateSecretKey, getPublicKey } from 'nostr-tools/pure';
 
 import {
   buildDmSharePayloadFromVideo,
   buildDmShareQueryString,
   decodeConversationId,
+  DM_GIFT_WRAP_KIND,
   encodeConversationId,
   getDmMessagePreview,
   groupDmConversations,
   parseDmShareQuery,
+  unwrapDmGiftWrap,
 } from '@/lib/dm';
 import type { ParsedVideoData } from '@/types/video';
 
@@ -123,5 +127,119 @@ describe('dm utilities', () => {
     expect(conversations[0].id).toBe(conversationB);
     expect(conversations[0].unreadCount).toBe(1);
     expect(conversations[1].unreadCount).toBe(0);
+  });
+});
+
+function createTestSigner(): { signer: NSecSigner; pubkey: string } {
+  const sk = generateSecretKey();
+  return { signer: new NSecSigner(sk), pubkey: getPublicKey(sk) };
+}
+
+describe('unwrapDmGiftWrap', () => {
+  // The happy-path round-trip (real NIP-44 encrypt → decrypt) is exercised in
+  // useDirectMessages.test.ts which mocks at the import boundary. Here we
+  // cannot run real nip44.v2 because src/test/setup.ts overrides global
+  // TextEncoder with node:util's TextEncoder, which produces a Uint8Array
+  // from a different realm than the @noble/hashes consumer expects, breaking
+  // its instance check. Failure-path tests below all run via mocked signers
+  // so they're unaffected.
+
+  it('returns decrypt-failed when the signer.nip44.decrypt RPC throws', async () => {
+    const recipient = createTestSigner();
+    const wrap: NostrEvent = {
+      id: 'a'.repeat(64),
+      pubkey: 'b'.repeat(64),
+      kind: DM_GIFT_WRAP_KIND,
+      created_at: 1,
+      tags: [['p', recipient.pubkey]],
+      content: 'unreadable-ciphertext',
+      sig: 'c'.repeat(128),
+    };
+
+    const cause = new Error('bunker rejected nip44_decrypt');
+    const flakySigner: NostrSigner = {
+      getPublicKey: vi.fn().mockResolvedValue(recipient.pubkey),
+      signEvent: vi.fn(),
+      nip44: {
+        encrypt: vi.fn().mockRejectedValue(cause),
+        decrypt: vi.fn().mockRejectedValue(cause),
+      },
+    };
+
+    const result = await unwrapDmGiftWrap(wrap, flakySigner);
+
+    expect(result.ok).toBe(false);
+    if (!result.ok && result.reason === 'decrypt-failed') {
+      expect(result.cause).toBe(cause);
+    } else {
+      expect.fail(`expected decrypt-failed, got ${JSON.stringify(result)}`);
+    }
+  });
+
+  it('returns malformed when the decrypted seal is not valid JSON', async () => {
+    const recipient = createTestSigner();
+    const wrap: NostrEvent = {
+      id: 'a'.repeat(64),
+      pubkey: 'b'.repeat(64),
+      kind: DM_GIFT_WRAP_KIND,
+      created_at: 1,
+      tags: [['p', recipient.pubkey]],
+      content: 'whatever',
+      sig: 'c'.repeat(128),
+    };
+
+    const garbageSigner: NostrSigner = {
+      getPublicKey: vi.fn().mockResolvedValue(recipient.pubkey),
+      signEvent: vi.fn(),
+      nip44: {
+        encrypt: vi.fn(),
+        decrypt: vi.fn().mockResolvedValue('not valid json {[}'),
+      },
+    };
+
+    const result = await unwrapDmGiftWrap(wrap, garbageSigner);
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.reason).toBe('malformed');
+    }
+  });
+
+  it('returns malformed when the decrypted seal has the wrong kind', async () => {
+    const recipient = createTestSigner();
+    const wrap: NostrEvent = {
+      id: 'a'.repeat(64),
+      pubkey: 'b'.repeat(64),
+      kind: DM_GIFT_WRAP_KIND,
+      created_at: 1,
+      tags: [['p', recipient.pubkey]],
+      content: 'whatever',
+      sig: 'c'.repeat(128),
+    };
+
+    const wrongKindSeal = JSON.stringify({
+      kind: 9999,
+      pubkey: 'a'.repeat(64),
+      created_at: 1,
+      tags: [],
+      content: 'inner',
+      id: 'd'.repeat(64),
+      sig: 'e'.repeat(128),
+    });
+    const wrongKindSigner: NostrSigner = {
+      getPublicKey: vi.fn().mockResolvedValue(recipient.pubkey),
+      signEvent: vi.fn(),
+      nip44: {
+        encrypt: vi.fn(),
+        decrypt: vi.fn().mockResolvedValue(wrongKindSeal),
+      },
+    };
+
+    const result = await unwrapDmGiftWrap(wrap, wrongKindSigner);
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.reason).toBe('malformed');
+    }
   });
 });
