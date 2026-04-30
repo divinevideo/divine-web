@@ -183,7 +183,7 @@ export function ConversationPage() {
   const navigate = useSubdomainNavigate();
   const location = useLocation();
   const { conversationId } = useParams<{ conversationId: string }>();
-  const { canUseDirectMessages } = useDmCapability();
+  const { canUseDirectMessages, isCheckingDmCapability } = useDmCapability();
   const peerPubkeys = useMemo(() => decodeConversationId(conversationId || ''), [conversationId]);
   const { data: authorMap = {} } = useBatchedAuthors(peerPubkeys);
   const conversationQuery = useDmConversation(conversationId);
@@ -270,6 +270,21 @@ export function ConversationPage() {
     );
   }
 
+  // While the bunker NIP-44 healthcheck is in flight, render a neutral
+  // skeleton instead of the "unavailable" copy — capability is unknown,
+  // not negative, until the probe resolves.
+  if (isCheckingDmCapability) {
+    return (
+      <div className="min-h-full bg-brand-off-white dark:bg-brand-dark-green">
+        <main className="container py-6">
+          <div className="mx-auto max-w-3xl rounded-[32px] border border-border/80 bg-card/80 px-6 py-12 text-center shadow-sm backdrop-blur-sm">
+            <p className="text-sm text-muted-foreground">Checking signer capability…</p>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
   if (!canUseDirectMessages) {
     return (
       <div className="min-h-full bg-brand-off-white dark:bg-brand-dark-green">
@@ -277,7 +292,7 @@ export function ConversationPage() {
           <div className="mx-auto max-w-3xl rounded-[32px] border border-border/80 bg-card/80 px-6 py-12 text-center shadow-sm backdrop-blur-sm">
             <p className="text-lg font-semibold text-foreground">Direct messages are unavailable</p>
             <p className="mt-2 text-sm text-muted-foreground">
-              This signer can authenticate you, but it does not expose the NIP-44 encryption methods required for private messaging.
+              Your signer cannot complete a NIP-44 encryption round-trip. Try signing out and reconnecting your bunker.
             </p>
             <Button className="mt-5 rounded-full" onClick={() => navigate('/messages')}>
               Back to inbox

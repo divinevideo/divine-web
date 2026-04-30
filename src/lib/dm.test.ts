@@ -1,4 +1,5 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+import type { NostrSigner } from '@nostrify/nostrify';
 
 import {
   buildDmSharePayloadFromVideo,
@@ -8,6 +9,7 @@ import {
   getDmMessagePreview,
   groupDmConversations,
   parseDmShareQuery,
+  probeBunkerNip44,
 } from '@/lib/dm';
 import type { ParsedVideoData } from '@/types/video';
 
@@ -123,5 +125,59 @@ describe('dm utilities', () => {
     expect(conversations[0].id).toBe(conversationB);
     expect(conversations[0].unreadCount).toBe(1);
     expect(conversations[1].unreadCount).toBe(0);
+  });
+});
+
+describe('probeBunkerNip44', () => {
+  const PROBE_PUBKEY = 'a'.repeat(64);
+
+  function makeSigner(nip44?: NostrSigner['nip44']): NostrSigner {
+    return {
+      getPublicKey: vi.fn().mockResolvedValue(PROBE_PUBKEY),
+      signEvent: vi.fn(),
+      nip44,
+    };
+  }
+
+  it('returns false when the signer has no nip44 surface', async () => {
+    expect(await probeBunkerNip44(makeSigner(undefined), PROBE_PUBKEY)).toBe(false);
+  });
+
+  it('returns false when nip44.encrypt rejects', async () => {
+    const signer = makeSigner({
+      encrypt: vi.fn().mockRejectedValue(new Error('bunker rejected')),
+      decrypt: vi.fn(),
+    });
+    expect(await probeBunkerNip44(signer, PROBE_PUBKEY)).toBe(false);
+  });
+
+  it('returns false when nip44.decrypt rejects', async () => {
+    const signer = makeSigner({
+      encrypt: vi.fn().mockResolvedValue('ciphertext'),
+      decrypt: vi.fn().mockRejectedValue(new Error('bunker rejected')),
+    });
+    expect(await probeBunkerNip44(signer, PROBE_PUBKEY)).toBe(false);
+  });
+
+  it('returns false when the round-trip plaintext does not match the input', async () => {
+    const signer = makeSigner({
+      encrypt: vi.fn().mockResolvedValue('ciphertext'),
+      decrypt: vi.fn().mockResolvedValue('not the same plaintext'),
+    });
+    expect(await probeBunkerNip44(signer, PROBE_PUBKEY)).toBe(false);
+  });
+
+  it('returns true on a successful round-trip', async () => {
+    let probedPlaintext = '';
+    const signer = makeSigner({
+      encrypt: vi.fn().mockImplementation(async (_pubkey: string, plaintext: string) => {
+        probedPlaintext = plaintext;
+        return 'ciphertext';
+      }),
+      decrypt: vi.fn().mockImplementation(async () => probedPlaintext),
+    });
+    expect(await probeBunkerNip44(signer, PROBE_PUBKEY)).toBe(true);
+    expect(signer.nip44!.encrypt).toHaveBeenCalledWith(PROBE_PUBKEY, expect.any(String));
+    expect(signer.nip44!.decrypt).toHaveBeenCalledWith(PROBE_PUBKEY, 'ciphertext');
   });
 });

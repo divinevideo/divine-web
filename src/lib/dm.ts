@@ -357,6 +357,31 @@ export async function createDmGiftWraps(input: CreateDmGiftWrapsInput): Promise<
   return wraps;
 }
 
+const HEALTHCHECK_PROBE_PAYLOAD = '__divine_dm_probe__';
+
+/**
+ * Verify the signer's nip44 RPC actually works by encrypting a small
+ * payload to self and decrypting it back. Returns true iff the round-trip
+ * succeeds AND the recovered plaintext matches the input.
+ *
+ * Used at session attach time to avoid promising DM capability that the
+ * remote bunker will later silently reject. Without this, a NIP-46 bunker
+ * that exposes the `nip44` API surface but rejects the underlying RPC
+ * looks "DM-capable" to feature detection while the entire inbox renders
+ * empty (see issue #307).
+ */
+export async function probeBunkerNip44(signer: NostrSigner, pubkey: string): Promise<boolean> {
+  if (!signer.nip44) return false;
+  try {
+    const ciphertext = await signer.nip44.encrypt(pubkey, HEALTHCHECK_PROBE_PAYLOAD);
+    if (typeof ciphertext !== 'string' || !ciphertext) return false;
+    const plaintext = await signer.nip44.decrypt(pubkey, ciphertext);
+    return plaintext === HEALTHCHECK_PROBE_PAYLOAD;
+  } catch {
+    return false;
+  }
+}
+
 export async function unwrapDmGiftWrap(
   wrap: NostrEvent,
   signer: NostrSigner,

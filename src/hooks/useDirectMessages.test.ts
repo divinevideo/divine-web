@@ -11,6 +11,7 @@ const mockResolveDmWriteRelays = vi.fn();
 const mockFetchDmMessages = vi.fn();
 const mockCreateDmGiftWraps = vi.fn();
 const mockPublishDmMessages = vi.fn();
+const mockProbeBunkerNip44 = vi.fn();
 const mockToast = vi.fn();
 
 const localStorageMock = (() => {
@@ -68,12 +69,13 @@ vi.mock('@/lib/dm', async () => {
     fetchDmMessages: (...args: unknown[]) => mockFetchDmMessages(...args),
     createDmGiftWraps: (...args: unknown[]) => mockCreateDmGiftWraps(...args),
     publishDmMessages: (...args: unknown[]) => mockPublishDmMessages(...args),
+    probeBunkerNip44: (...args: unknown[]) => mockProbeBunkerNip44(...args),
   };
 });
 
 import { encodeConversationId } from '@/lib/dm';
 import { readDmOutbox, writeDmOutbox } from '@/lib/dmOutbox';
-import { useDmConversation, useDmSend } from './useDirectMessages';
+import { useDmCapability, useDmConversation, useDmSend } from './useDirectMessages';
 
 function createWrapper(queryClient: QueryClient) {
   return function Wrapper({ children }: { children: React.ReactNode }) {
@@ -102,6 +104,7 @@ describe('useDirectMessages', () => {
       },
     ]);
     mockPublishDmMessages.mockResolvedValue(undefined);
+    mockProbeBunkerNip44.mockResolvedValue(true);
   });
 
   afterEach(() => {
@@ -454,5 +457,74 @@ describe('useDirectMessages', () => {
       }),
     ]);
     expect(mockToast).not.toHaveBeenCalled();
+  });
+});
+
+describe('useDmCapability with bunker healthcheck', () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+    vi.clearAllMocks();
+    localStorageMock.clear();
+  });
+
+  afterEach(() => {
+    localStorageMock.clear();
+  });
+
+  it('reports canUseDirectMessages=true when the probe succeeds', async () => {
+    mockProbeBunkerNip44.mockResolvedValue(true);
+
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    const { result } = renderHook(() => useDmCapability(), {
+      wrapper: createWrapper(queryClient),
+    });
+
+    await waitFor(() => expect(result.current.isCheckingDmCapability).toBe(false));
+    expect(result.current.canUseDirectMessages).toBe(true);
+    expect(result.current.isLoggedIn).toBe(true);
+  });
+
+  it('reports canUseDirectMessages=false when the probe fails', async () => {
+    mockProbeBunkerNip44.mockResolvedValue(false);
+
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    const { result } = renderHook(() => useDmCapability(), {
+      wrapper: createWrapper(queryClient),
+    });
+
+    await waitFor(() => expect(result.current.isCheckingDmCapability).toBe(false));
+    expect(result.current.canUseDirectMessages).toBe(false);
+    expect(result.current.isLoggedIn).toBe(true);
+  });
+
+  it('reports isCheckingDmCapability=true while the probe is in flight', async () => {
+    let resolveProbe: ((value: boolean) => void) | undefined;
+    mockProbeBunkerNip44.mockImplementation(() => new Promise<boolean>((resolve) => {
+      resolveProbe = resolve;
+    }));
+
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    const { result } = renderHook(() => useDmCapability(), {
+      wrapper: createWrapper(queryClient),
+    });
+
+    await waitFor(() => expect(result.current.isCheckingDmCapability).toBe(true));
+    expect(result.current.canUseDirectMessages).toBe(false);
+
+    await act(async () => {
+      resolveProbe?.(true);
+    });
+
+    await waitFor(() => expect(result.current.isCheckingDmCapability).toBe(false));
+    expect(result.current.canUseDirectMessages).toBe(true);
   });
 });

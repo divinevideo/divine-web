@@ -10,6 +10,7 @@ import {
   fetchDmMessages,
   groupDmConversations,
   parseDmShareQuery,
+  probeBunkerNip44,
   publishDmMessages,
   resolveDmReadRelays,
   resolveDmWriteRelays,
@@ -30,6 +31,7 @@ import {
 } from '@/lib/dmOutbox';
 
 const DM_QUERY_KEY = ['dm'];
+const DM_HEALTHCHECK_QUERY_KEY = ['dm-healthcheck'];
 const DM_READ_STATE_EVENT = 'dm:read-state';
 const DM_OUTBOX_STALE_AFTER_SECONDS = 60;
 
@@ -139,12 +141,46 @@ function updateOptimisticDmInAllCaches(
   }));
 }
 
+/**
+ * One-time round-trip probe of the signer's NIP-44 RPC at session attach.
+ *
+ * Bunker-style signers (NIP-46) expose `signer.nip44` as a stable API
+ * surface even when the remote bunker may reject the underlying RPC. A
+ * boolean truthiness check on `signer.nip44` therefore promises a DM
+ * capability the bunker may not honor — and every downstream `decrypt`
+ * silently fails. This hook performs the actual encrypt-to-self +
+ * decrypt-from-self round trip exactly once per (signer, pubkey) pair.
+ *
+ * Sticky cache (`staleTime: Infinity`) — re-runs only on signer change.
+ * One retry on transient failure to absorb a flaky first connect.
+ *
+ * Local-key signers (NSecSigner) pass instantly; bunker users add ~1×
+ * round-trip latency at session attach.
+ */
+export function useBunkerDecryptHealthcheck() {
+  const { user, signer } = useCurrentUser();
+  return useQuery({
+    queryKey: [...DM_HEALTHCHECK_QUERY_KEY, user?.pubkey || ''],
+    queryFn: async () => {
+      if (!user?.pubkey || !signer) return false;
+      return probeBunkerNip44(signer, user.pubkey);
+    },
+    enabled: Boolean(user?.pubkey && signer?.nip44),
+    staleTime: Infinity,
+    gcTime: Infinity,
+    retry: 1,
+    retryDelay: 1000,
+  });
+}
+
 export function useDmCapability() {
   const { user, signer } = useCurrentUser();
+  const { data: nip44Healthy, isLoading: healthcheckLoading } = useBunkerDecryptHealthcheck();
 
   return {
     isLoggedIn: Boolean(user?.pubkey),
-    canUseDirectMessages: Boolean(user?.pubkey && signer?.nip44),
+    canUseDirectMessages: Boolean(user?.pubkey && signer?.nip44 && nip44Healthy),
+    isCheckingDmCapability: Boolean(user?.pubkey && signer?.nip44) && healthcheckLoading,
   };
 }
 

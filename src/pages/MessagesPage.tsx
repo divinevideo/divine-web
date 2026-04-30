@@ -172,7 +172,7 @@ export function MessagesPage() {
   const location = useLocation();
   const { t } = useTranslation();
   const { user } = useCurrentUser();
-  const { canUseDirectMessages } = useDmCapability();
+  const { canUseDirectMessages, isCheckingDmCapability } = useDmCapability();
   const conversationsQuery = useDmConversations();
   const share = useParsedDmShare(location.search);
   const [searchQuery, setSearchQuery] = useState('');
@@ -257,7 +257,13 @@ export function MessagesPage() {
             )}
           </section>
 
-          {!canUseDirectMessages && (
+          {isCheckingDmCapability && (
+            <section className="rounded-[32px] border border-border/80 bg-card/80 px-5 py-6 text-sm text-muted-foreground shadow-sm backdrop-blur-sm">
+              Checking signer capability…
+            </section>
+          )}
+
+          {!isCheckingDmCapability && !canUseDirectMessages && (
             <section className="rounded-[32px] border border-border/80 bg-card/80 px-5 py-6 text-sm text-muted-foreground shadow-sm backdrop-blur-sm">
               {t('messages.signerUnsupported')}
             </section>

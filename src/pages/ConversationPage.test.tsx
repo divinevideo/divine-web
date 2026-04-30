@@ -44,7 +44,7 @@ const {
 }));
 
 vi.mock('@/hooks/useDirectMessages', () => ({
-  useDmCapability: () => ({ canUseDirectMessages: true }),
+  useDmCapability: () => ({ canUseDirectMessages: true, isCheckingDmCapability: false }),
   useDmConversation: () => ({
     data: directMessageState.messages,
     isLoading: directMessageState.isLoading,
