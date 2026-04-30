@@ -338,23 +338,59 @@ function createWrapEvent(seal: NostrEvent, targetPubkey: string): NostrEvent {
   );
 }
 
-export async function createDmGiftWraps(input: CreateDmGiftWrapsInput): Promise<NostrEvent[]> {
+/**
+ * Create gift wraps targeted at the recipients of a NIP-17 DM.
+ *
+ * Throws on any failure. This is the primary path: if it can't produce
+ * wraps for the recipients, the send genuinely failed and the mutation
+ * must reject so the UI can show the failure.
+ *
+ * Pair with `createSelfGiftWrap` for the best-effort self copy. Never
+ * use this function for the self copy — a self-wrap failure must not
+ * abort delivery to the actual recipients (mirrors the pattern in
+ * mobile/packages/dm_repository/lib/src/nip17_message_service.dart).
+ */
+export async function createRecipientGiftWraps(input: CreateDmGiftWrapsInput): Promise<NostrEvent[]> {
   const { signer, senderPubkey, recipientPubkeys, content, additionalTags = [] } = input;
-  const participants = [...new Set([senderPubkey, ...recipientPubkeys.filter(isPubkey)])];
+  const recipients = recipientPubkeys.filter(isPubkey);
 
-  if (participants.length < 2) {
+  if (!recipients.length) {
     throw new Error('Direct messages require at least one recipient');
   }
 
-  const rumor = createRumorEvent(senderPubkey, participants, content, additionalTags);
+  const allParticipants = [...new Set([senderPubkey, ...recipients])];
+  const rumor = createRumorEvent(senderPubkey, allParticipants, content, additionalTags);
+
   const wraps: NostrEvent[] = [];
-
-  for (const participant of participants) {
-    const seal = await createSealEvent(signer, participant, rumor);
-    wraps.push(createWrapEvent(seal, participant));
+  for (const recipient of recipients) {
+    const seal = await createSealEvent(signer, recipient, rumor);
+    wraps.push(createWrapEvent(seal, recipient));
   }
-
   return wraps;
+}
+
+/**
+ * Best-effort self-addressed gift wrap so the sender can recover their
+ * own sent messages on relays (cross-device, after data loss, or for
+ * server-side observers like the moderation admin reader).
+ *
+ * Returns `null` on any failure and logs a warning. Callers must not
+ * throw on null; the recipient delivery has already happened (or failed
+ * loudly via `createRecipientGiftWraps`), and the self copy is purely a
+ * recovery path.
+ */
+export async function createSelfGiftWrap(input: CreateDmGiftWrapsInput): Promise<NostrEvent | null> {
+  try {
+    const { signer, senderPubkey, recipientPubkeys, content, additionalTags = [] } = input;
+    const recipients = recipientPubkeys.filter(isPubkey);
+    const allParticipants = [...new Set([senderPubkey, ...recipients])];
+    const rumor = createRumorEvent(senderPubkey, allParticipants, content, additionalTags);
+    const seal = await createSealEvent(signer, senderPubkey, rumor);
+    return createWrapEvent(seal, senderPubkey);
+  } catch (cause) {
+    console.warn('[DM] Self-wrap creation failed (non-fatal):', cause);
+    return null;
+  }
 }
 
 export async function unwrapDmGiftWrap(

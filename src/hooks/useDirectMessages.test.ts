@@ -9,7 +9,8 @@ const RECIPIENT_PUBKEY = 'b'.repeat(64);
 const mockResolveDmReadRelays = vi.fn();
 const mockResolveDmWriteRelays = vi.fn();
 const mockFetchDmMessages = vi.fn();
-const mockCreateDmGiftWraps = vi.fn();
+const mockCreateRecipientGiftWraps = vi.fn();
+const mockCreateSelfGiftWrap = vi.fn();
 const mockPublishDmMessages = vi.fn();
 const mockToast = vi.fn();
 
@@ -66,7 +67,8 @@ vi.mock('@/lib/dm', async () => {
     resolveDmReadRelays: (...args: unknown[]) => mockResolveDmReadRelays(...args),
     resolveDmWriteRelays: (...args: unknown[]) => mockResolveDmWriteRelays(...args),
     fetchDmMessages: (...args: unknown[]) => mockFetchDmMessages(...args),
-    createDmGiftWraps: (...args: unknown[]) => mockCreateDmGiftWraps(...args),
+    createRecipientGiftWraps: (...args: unknown[]) => mockCreateRecipientGiftWraps(...args),
+    createSelfGiftWrap: (...args: unknown[]) => mockCreateSelfGiftWrap(...args),
     publishDmMessages: (...args: unknown[]) => mockPublishDmMessages(...args),
   };
 });
@@ -89,18 +91,18 @@ describe('useDirectMessages', () => {
     mockResolveDmReadRelays.mockResolvedValue(['wss://relay.example']);
     mockResolveDmWriteRelays.mockResolvedValue(['wss://relay.example']);
     mockFetchDmMessages.mockResolvedValue([]);
-    mockCreateDmGiftWraps.mockResolvedValue([
-      {
-        id: 'self-wrap-id',
-        created_at: 1_234_567_890,
-        tags: [['p', TEST_PUBKEY]],
-      },
+    mockCreateRecipientGiftWraps.mockResolvedValue([
       {
         id: 'recipient-wrap-id',
         created_at: 1_234_567_890,
         tags: [['p', RECIPIENT_PUBKEY]],
       },
     ]);
+    mockCreateSelfGiftWrap.mockResolvedValue({
+      id: 'self-wrap-id',
+      created_at: 1_234_567_890,
+      tags: [['p', TEST_PUBKEY]],
+    });
     mockPublishDmMessages.mockResolvedValue(undefined);
   });
 
@@ -240,10 +242,13 @@ describe('useDirectMessages', () => {
   it('adds an optimistic sending message before publish resolves', async () => {
     vi.spyOn(Date, 'now').mockReturnValue(1_234_567_890_000);
 
+    // Recipient publish is the only call we want stuck for this test —
+    // the self-wrap publish (second call) resolves immediately so the
+    // mutation can reach onSuccess after the test resolves the first.
     let resolvePublish: (() => void) | undefined;
-    mockPublishDmMessages.mockImplementation(() => new Promise<void>((resolve) => {
-      resolvePublish = resolve;
-    }));
+    mockPublishDmMessages
+      .mockImplementationOnce(() => new Promise<void>((resolve) => { resolvePublish = resolve; }))
+      .mockResolvedValue(undefined);
 
     const queryClient = new QueryClient({
       defaultOptions: {
@@ -454,5 +459,77 @@ describe('useDirectMessages', () => {
       }),
     ]);
     expect(mockToast).not.toHaveBeenCalled();
+  });
+
+  it('resolves the send mutation when only the self-wrap step fails', async () => {
+    vi.spyOn(Date, 'now').mockReturnValue(1_234_567_890_000);
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    // Recipient wrap created and published normally; self-wrap creation
+    // returns null (e.g. bunker rejected encrypt-to-self) — recipient
+    // delivery already succeeded, so the mutation must still resolve.
+    mockCreateSelfGiftWrap.mockResolvedValueOnce(null);
+
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    });
+
+    const { result } = renderHook(() => useDmSend(), {
+      wrapper: createWrapper(queryClient),
+    });
+
+    await act(async () => {
+      await result.current.mutateAsync({
+        participantPubkeys: [RECIPIENT_PUBKEY],
+        content: 'recipient gets it even when self-wrap fails',
+      });
+    });
+
+    // Recipient publish happened; self publish did NOT (no wrap to publish).
+    expect(mockPublishDmMessages).toHaveBeenCalledTimes(1);
+    expect(readDmOutbox(TEST_PUBKEY)).toEqual([
+      expect.objectContaining({
+        content: 'recipient gets it even when self-wrap fails',
+        deliveryState: 'sent',
+      }),
+    ]);
+    expect(mockToast).not.toHaveBeenCalled();
+    warn.mockRestore();
+  });
+
+  it('rejects the send mutation when the recipient wrap fails', async () => {
+    vi.spyOn(Date, 'now').mockReturnValue(1_234_567_890_000);
+
+    const cause = new Error('bunker rejected encrypt');
+    mockCreateRecipientGiftWraps.mockRejectedValueOnce(cause);
+
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    });
+
+    const { result } = renderHook(() => useDmSend(), {
+      wrapper: createWrapper(queryClient),
+    });
+
+    await act(async () => {
+      await expect(result.current.mutateAsync({
+        participantPubkeys: [RECIPIENT_PUBKEY],
+        content: 'should fail loudly',
+      })).rejects.toThrow('bunker rejected encrypt');
+    });
+
+    expect(mockPublishDmMessages).not.toHaveBeenCalled();
+    expect(readDmOutbox(TEST_PUBKEY)).toEqual([
+      expect.objectContaining({
+        content: 'should fail loudly',
+        deliveryState: 'failed',
+      }),
+    ]);
+    expect(mockToast).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'Message failed',
+        variant: 'destructive',
+      }),
+    );
   });
 });
