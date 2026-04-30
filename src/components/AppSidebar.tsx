@@ -165,7 +165,7 @@ export function AppSidebar({ className }: { className?: string }) {
             <img
               src="/store-badges/google-play-badge.png"
               alt="Get it on Google Play"
-              className="h-[58px] w-auto -ml-[7px]"
+              className="h-[58px] w-auto -ml-[10px]"
             />
           </a>
         </div>
