@@ -8,8 +8,10 @@ interface WaitlistFormProps {
   error?: string | null;
   isLoading: boolean;
   isSuccess: boolean;
+  newsletterOptIn: boolean;
   onBack: () => void;
   onContactChange: (value: string) => void;
+  onNewsletterOptInChange: (value: boolean) => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
 }
 
@@ -19,8 +21,10 @@ export function WaitlistForm(props: WaitlistFormProps) {
     error,
     isLoading,
     isSuccess,
+    newsletterOptIn,
     onBack,
     onContactChange,
+    onNewsletterOptInChange,
     onSubmit,
   } = props;
 
@@ -44,6 +48,17 @@ export function WaitlistForm(props: WaitlistFormProps) {
 
   return (
     <form className="space-y-4" onSubmit={onSubmit}>
+      <label className="flex cursor-pointer items-center justify-center gap-2 text-sm text-muted-foreground" htmlFor="waitlist-newsletter">
+        <input
+          checked={newsletterOptIn}
+          className="h-4 w-4 rounded border-border"
+          id="waitlist-newsletter"
+          onChange={(event) => onNewsletterOptInChange(event.target.checked)}
+          type="checkbox"
+        />
+        Send me Divine inspiration
+      </label>
+
       <div className="space-y-2">
         <label className="text-sm font-medium" htmlFor="waitlist-contact">
           Email
@@ -71,6 +86,7 @@ export function WaitlistForm(props: WaitlistFormProps) {
       >
         I have an invite code
       </Button>
+
     </form>
   );
 }

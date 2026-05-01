@@ -106,7 +106,7 @@ describe('inviteApi', () => {
     expect(fetchMock).toHaveBeenCalledWith(
       'https://invite.divine.video/v1/waitlist',
       expect.objectContaining({
-        body: JSON.stringify({ contact: 'person@example.com' }),
+        body: JSON.stringify({ contact: 'person@example.com', newsletter_opt_in: false }),
         headers: { 'Content-Type': 'application/json' },
         method: 'POST',
       }),
