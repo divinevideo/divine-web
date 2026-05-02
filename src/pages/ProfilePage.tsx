@@ -341,11 +341,15 @@ export function ProfilePage() {
       }
     } catch (error) {
       console.error('Failed to update follow status:', error);
-      toast({
-        title: "Couldn't update follow.",
-        description: error instanceof Error ? error.message : 'Please try again.',
-        variant: "destructive",
-      });
+      const message = error instanceof Error ? error.message : '';
+      const isRaceCondition = message === 'Already following this user';
+      if (!isRaceCondition) {
+        toast({
+          title: "Couldn't update follow.",
+          description: message || 'Please try again.',
+          variant: "destructive",
+        });
+      }
     }
   };
 
