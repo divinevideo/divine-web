@@ -7,6 +7,7 @@ import { initializeI18n } from '@/lib/i18n';
 
 import MessagesPage from './MessagesPage';
 import type { DmConversation } from '@/lib/dm';
+import type { DmInboxStatus } from '@/hooks/useDirectMessages';
 
 const {
   currentUserPubkey,
@@ -20,7 +21,7 @@ const {
   currentUserPubkey: 'a'.repeat(64),
   otherUserPubkey: 'c'.repeat(64),
   mockNavigate: vi.fn(),
-  mockInboxStatus: { value: 'ok' as 'loading' | 'ok' | 'empty' | 'unavailable' },
+  mockInboxStatus: { value: 'ok' as DmInboxStatus },
   mockConversations: [
     {
       id: 'conversation-1',

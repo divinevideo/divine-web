@@ -113,12 +113,9 @@ function updateDmMessageCaches(
   for (const limit of getDmMessageQueryLimits(queryClient, ownerPubkey)) {
     queryClient.setQueryData<FetchDmMessagesResult>(
       [...DM_QUERY_KEY, 'messages', ownerPubkey, limit],
-      (existing) => ({
-        messages: updater(existing?.messages ?? []),
-        fetchedCount: existing?.fetchedCount ?? 0,
-        decryptFailures: existing?.decryptFailures ?? 0,
-        malformedCount: existing?.malformedCount ?? 0,
-      }),
+      (existing) => existing
+        ? { ...existing, messages: updater(existing.messages) }
+        : { messages: updater([]), fetchedCount: 0, decryptFailures: 0, malformedCount: 0 },
     );
   }
 }

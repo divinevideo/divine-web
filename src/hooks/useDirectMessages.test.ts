@@ -267,7 +267,12 @@ describe('useDirectMessages', () => {
       },
     });
 
-    queryClient.setQueryData(['dm', 'messages', TEST_PUBKEY, 300], []);
+    queryClient.setQueryData(['dm', 'messages', TEST_PUBKEY, 300], {
+      messages: [],
+      fetchedCount: 0,
+      decryptFailures: 0,
+      malformedCount: 0,
+    });
 
     const { result } = renderHook(() => useDmSend(), {
       wrapper: createWrapper(queryClient),
@@ -330,7 +335,12 @@ describe('useDirectMessages', () => {
       },
     });
 
-    queryClient.setQueryData(['dm', 'messages', TEST_PUBKEY, 300], []);
+    queryClient.setQueryData(['dm', 'messages', TEST_PUBKEY, 300], {
+      messages: [],
+      fetchedCount: 0,
+      decryptFailures: 0,
+      malformedCount: 0,
+    });
 
     const { result } = renderHook(() => useDmSend(), {
       wrapper: createWrapper(queryClient),
@@ -392,23 +402,28 @@ describe('useDirectMessages', () => {
       },
     });
 
-    queryClient.setQueryData(['dm', 'messages', TEST_PUBKEY, 300], [
-      {
-        conversationId: encodeConversationId([RECIPIENT_PUBKEY]),
-        wrapId: 'optimistic:local-1',
-        rumorId: 'optimistic:local-1',
-        senderPubkey: TEST_PUBKEY,
-        participantPubkeys: [RECIPIENT_PUBKEY, TEST_PUBKEY].sort(),
-        peerPubkeys: [RECIPIENT_PUBKEY],
-        content: 'retry me',
-        createdAt: 1_234_567_890,
-        isOutgoing: true,
-        clientId: 'local-1',
-        deliveryState: 'failed' as const,
-        errorMessage: 'signal has been aborted',
-        isOptimistic: true,
-      },
-    ]);
+    queryClient.setQueryData(['dm', 'messages', TEST_PUBKEY, 300], {
+      messages: [
+        {
+          conversationId: encodeConversationId([RECIPIENT_PUBKEY]),
+          wrapId: 'optimistic:local-1',
+          rumorId: 'optimistic:local-1',
+          senderPubkey: TEST_PUBKEY,
+          participantPubkeys: [RECIPIENT_PUBKEY, TEST_PUBKEY].sort(),
+          peerPubkeys: [RECIPIENT_PUBKEY],
+          content: 'retry me',
+          createdAt: 1_234_567_890,
+          isOutgoing: true,
+          clientId: 'local-1',
+          deliveryState: 'failed' as const,
+          errorMessage: 'signal has been aborted',
+          isOptimistic: true,
+        },
+      ],
+      fetchedCount: 0,
+      decryptFailures: 0,
+      malformedCount: 0,
+    });
 
     const { result } = renderHook(() => useDmSend(), {
       wrapper: createWrapper(queryClient),
@@ -458,7 +473,12 @@ describe('useDirectMessages', () => {
       },
     });
 
-    queryClient.setQueryData(['dm', 'messages', TEST_PUBKEY, 300], []);
+    queryClient.setQueryData(['dm', 'messages', TEST_PUBKEY, 300], {
+      messages: [],
+      fetchedCount: 0,
+      decryptFailures: 0,
+      malformedCount: 0,
+    });
 
     const { result } = renderHook(() => useDmSend(), {
       wrapper: createWrapper(queryClient),

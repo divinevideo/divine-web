@@ -135,6 +135,32 @@ function createTestSigner(): { signer: NSecSigner; pubkey: string } {
   return { signer: new NSecSigner(sk), pubkey: getPublicKey(sk) };
 }
 
+function createDmTestWrap(recipientPubkey: string): NostrEvent {
+  return {
+    id: 'a'.repeat(64),
+    pubkey: 'b'.repeat(64),
+    kind: DM_GIFT_WRAP_KIND,
+    created_at: 1,
+    tags: [['p', recipientPubkey]],
+    content: 'ciphertext',
+    sig: 'c'.repeat(128),
+  };
+}
+
+function createMockSigner(
+  recipientPubkey: string,
+  decrypt: NonNullable<NostrSigner['nip44']>['decrypt'],
+): NostrSigner {
+  return {
+    getPublicKey: vi.fn().mockResolvedValue(recipientPubkey),
+    signEvent: vi.fn(),
+    nip44: {
+      encrypt: vi.fn(),
+      decrypt,
+    },
+  };
+}
+
 describe('unwrapDmGiftWrap', () => {
   // The happy-path round-trip (real NIP-44 encrypt → decrypt) is exercised in
   // useDirectMessages.test.ts which mocks at the import boundary. Here we
@@ -146,27 +172,11 @@ describe('unwrapDmGiftWrap', () => {
 
   it('returns decrypt-failed when the signer.nip44.decrypt RPC throws', async () => {
     const recipient = createTestSigner();
-    const wrap: NostrEvent = {
-      id: 'a'.repeat(64),
-      pubkey: 'b'.repeat(64),
-      kind: DM_GIFT_WRAP_KIND,
-      created_at: 1,
-      tags: [['p', recipient.pubkey]],
-      content: 'unreadable-ciphertext',
-      sig: 'c'.repeat(128),
-    };
-
+    const wrap = createDmTestWrap(recipient.pubkey);
     const cause = new Error('bunker rejected nip44_decrypt');
-    const flakySigner: NostrSigner = {
-      getPublicKey: vi.fn().mockResolvedValue(recipient.pubkey),
-      signEvent: vi.fn(),
-      nip44: {
-        encrypt: vi.fn().mockRejectedValue(cause),
-        decrypt: vi.fn().mockRejectedValue(cause),
-      },
-    };
+    const signer = createMockSigner(recipient.pubkey, vi.fn().mockRejectedValue(cause));
 
-    const result = await unwrapDmGiftWrap(wrap, flakySigner);
+    const result = await unwrapDmGiftWrap(wrap, signer);
 
     expect(result.ok).toBe(false);
     if (!result.ok && result.reason === 'decrypt-failed') {
@@ -178,26 +188,13 @@ describe('unwrapDmGiftWrap', () => {
 
   it('returns malformed when the decrypted seal is not valid JSON', async () => {
     const recipient = createTestSigner();
-    const wrap: NostrEvent = {
-      id: 'a'.repeat(64),
-      pubkey: 'b'.repeat(64),
-      kind: DM_GIFT_WRAP_KIND,
-      created_at: 1,
-      tags: [['p', recipient.pubkey]],
-      content: 'whatever',
-      sig: 'c'.repeat(128),
-    };
+    const wrap = createDmTestWrap(recipient.pubkey);
+    const signer = createMockSigner(
+      recipient.pubkey,
+      vi.fn().mockResolvedValue('not valid json {[}'),
+    );
 
-    const garbageSigner: NostrSigner = {
-      getPublicKey: vi.fn().mockResolvedValue(recipient.pubkey),
-      signEvent: vi.fn(),
-      nip44: {
-        encrypt: vi.fn(),
-        decrypt: vi.fn().mockResolvedValue('not valid json {[}'),
-      },
-    };
-
-    const result = await unwrapDmGiftWrap(wrap, garbageSigner);
+    const result = await unwrapDmGiftWrap(wrap, signer);
 
     expect(result.ok).toBe(false);
     if (!result.ok) {
@@ -207,16 +204,7 @@ describe('unwrapDmGiftWrap', () => {
 
   it('returns malformed when the decrypted seal has the wrong kind', async () => {
     const recipient = createTestSigner();
-    const wrap: NostrEvent = {
-      id: 'a'.repeat(64),
-      pubkey: 'b'.repeat(64),
-      kind: DM_GIFT_WRAP_KIND,
-      created_at: 1,
-      tags: [['p', recipient.pubkey]],
-      content: 'whatever',
-      sig: 'c'.repeat(128),
-    };
-
+    const wrap = createDmTestWrap(recipient.pubkey);
     const wrongKindSeal = JSON.stringify({
       kind: 9999,
       pubkey: 'a'.repeat(64),
@@ -226,16 +214,12 @@ describe('unwrapDmGiftWrap', () => {
       id: 'd'.repeat(64),
       sig: 'e'.repeat(128),
     });
-    const wrongKindSigner: NostrSigner = {
-      getPublicKey: vi.fn().mockResolvedValue(recipient.pubkey),
-      signEvent: vi.fn(),
-      nip44: {
-        encrypt: vi.fn(),
-        decrypt: vi.fn().mockResolvedValue(wrongKindSeal),
-      },
-    };
+    const signer = createMockSigner(
+      recipient.pubkey,
+      vi.fn().mockResolvedValue(wrongKindSeal),
+    );
 
-    const result = await unwrapDmGiftWrap(wrap, wrongKindSigner);
+    const result = await unwrapDmGiftWrap(wrap, signer);
 
     expect(result.ok).toBe(false);
     if (!result.ok) {
