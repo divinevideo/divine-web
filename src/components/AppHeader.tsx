@@ -18,6 +18,7 @@ import {
 import { useTheme } from '@/hooks/useTheme';
 import { getSubdomainUser } from '@/hooks/useSubdomainUser';
 import { LanguageMenu } from '@/components/LanguageMenu';
+import { MERCH_STORE_URL } from '@/lib/externalLinks';
 
 export interface AppHeaderProps {
   className?: string;
@@ -204,6 +205,14 @@ export function AppHeader({ className }: AppHeaderProps) {
               >
                 <FileText className="mr-2 h-4 w-4" />
                 <span>{t('menu.mediaResources')}</span>
+              </DropdownMenuItem>
+
+              <DropdownMenuItem
+                onClick={() => window.open(MERCH_STORE_URL, '_blank')}
+                className="cursor-pointer hover:bg-muted focus:bg-muted"
+              >
+                <FileText className="mr-2 h-4 w-4" />
+                <span>{t('menu.merch')}</span>
               </DropdownMenuItem>
 
               <DropdownMenuSeparator />

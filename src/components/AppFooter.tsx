@@ -1,4 +1,5 @@
 import { SmartLink } from '@/components/SmartLink';
+import { MERCH_STORE_URL } from '@/lib/externalLinks';
 import { HubSpotSignup } from './HubSpotSignup';
 
 export function AppFooter() {
@@ -60,6 +61,15 @@ export function AppFooter() {
                 <span>•</span>
                 <a href="https://about.divine.video/blog/" className="hover:text-brand-off-white transition-colors">
                   Blog
+                </a>
+                <span>•</span>
+                <a
+                  href={MERCH_STORE_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-brand-off-white transition-colors"
+                >
+                  Merch
                 </a>
               </div>
               <div className="flex flex-wrap items-center gap-2">

@@ -99,4 +99,23 @@ describe('AppHeader', () => {
 
     expect(mockNavigate).toHaveBeenCalledWith('/dmca');
   });
+
+  it('opens the merch store from the more menu', () => {
+    const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
+
+    try {
+      render(
+        <MemoryRouter>
+          <AppHeader />
+        </MemoryRouter>,
+      );
+
+      fireEvent.click(screen.getByRole('button', { name: 'Mas opciones' }));
+      fireEvent.click(screen.getByRole('menuitem', { name: 'Merch' }));
+
+      expect(openSpy).toHaveBeenCalledWith('https://www.bonfire.com/store/divine-18/', '_blank');
+    } finally {
+      openSpy.mockRestore();
+    }
+  });
 });

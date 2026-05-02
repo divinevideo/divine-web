@@ -27,6 +27,7 @@ import { usePlatformStats } from '@/hooks/usePlatformStats';
 import { LanguageMenu } from '@/components/LanguageMenu';
 import { getTranslatedCategoryLabel } from '@/lib/constants/categories';
 import { getPreferredAppStoreCountry, lookupAppStoreUrl, PLAY_STORE_URL } from '@/lib/mobileStoreLinks';
+import { MERCH_STORE_URL } from '@/lib/externalLinks';
 
 interface NavItemProps {
   icon: React.ReactNode;
@@ -451,6 +452,14 @@ export function AppSidebar({ className }: { className?: string }) {
                 className="transition-colors hover:text-primary"
               >
                 {t('menu.mediaResources')}
+              </a>
+              <a
+                href={MERCH_STORE_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="transition-colors hover:text-primary"
+              >
+                {t('menu.merch')}
               </a>
             </div>
           </CollapsibleContent>

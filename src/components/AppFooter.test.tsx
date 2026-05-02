@@ -17,4 +17,17 @@ describe('AppFooter', () => {
 
     expect(screen.getByRole('link', { name: 'DMCA & Copyright' })).toHaveAttribute('href', '/dmca');
   });
+
+  it('renders a merch store link', () => {
+    render(
+      <MemoryRouter>
+        <AppFooter />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole('link', { name: 'Merch' })).toHaveAttribute(
+      'href',
+      'https://www.bonfire.com/store/divine-18/',
+    );
+  });
 });

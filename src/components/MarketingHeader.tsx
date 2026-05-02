@@ -2,6 +2,7 @@
 // ABOUTME: Provides consistent navigation across About, FAQ, Press, Legal pages, etc.
 
 import { Link } from "react-router-dom";
+import { MERCH_STORE_URL } from "@/lib/externalLinks";
 
 export function MarketingHeader() {
   return (
@@ -42,6 +43,12 @@ export function MarketingHeader() {
               className="text-sm font-medium text-brand-off-white hover:text-brand-green transition-colors"
             >
               In the News
+            </a>
+            <a
+              href={MERCH_STORE_URL}
+              className="text-sm font-medium text-brand-off-white hover:text-brand-green transition-colors"
+            >
+              Merch
             </a>
             <Link
               to="/discovery"
