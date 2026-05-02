@@ -8,6 +8,7 @@ import { SecretStore } from 'fastly:secret-store';
 import { PublisherServer } from '@fastly/compute-js-static-publish';
 import rc from '../static-publish.rc.js';
 import { buildFunnelcakeUrl, getFunnelcakeOriginForApiHost } from './funnelcakeOrigin.js';
+import { isJsonWellKnownPath, shouldServeWellKnownBeforeWwwRedirect } from './wellKnownPaths.js';
 
 const publisherServer = PublisherServer.fromStaticPublishRc(rc);
 const DEFAULT_OG_IMAGE = 'https://divine.video/og.png';
@@ -42,6 +43,12 @@ async function handleRequest(event) {
 
   console.log('Request hostname:', url.hostname, 'original:', originalHost, 'path:', url.pathname);
 
+  // App-link verification files must be served directly for every claimed host.
+  // Do this before the generic www redirect so iOS/Android and deploy checks get 200 JSON.
+  if (shouldServeWellKnownBeforeWwwRedirect(hostnameToUse, url.pathname)) {
+    return await serveStaticWellKnownFile(request, url.pathname);
+  }
+
   // 1. Redirect www.* to apex domain (e.g., www.divine.video -> divine.video)
   if (hostnameToUse.startsWith('www.')) {
     const newUrl = new URL(url);
@@ -66,18 +73,7 @@ async function handleRequest(event) {
       }
       // Other .well-known files (apple-app-site-association, assetlinks.json)
       console.log('Handling subdomain .well-known file:', url.pathname);
-      const wkResponse = await publisherServer.serveRequest(request);
-      // Guard: if publisher returns text/html, it's the SPA fallback, not the real file
-      if (wkResponse != null && wkResponse.status === 200 && !wkResponse.headers.get('Content-Type')?.includes('text/html')) {
-        const headers = new Headers(wkResponse.headers);
-        const contentType = url.pathname.endsWith('.json') || url.pathname.endsWith('/apple-app-site-association')
-          ? 'application/json'
-          : headers.get('Content-Type') || 'application/octet-stream';
-        headers.set('Content-Type', contentType);
-        headers.set('Cache-Control', 'public, max-age=3600');
-        return new Response(wkResponse.body, { status: 200, headers });
-      }
-      return new Response('Not Found', { status: 404 });
+      return await serveStaticWellKnownFile(request, url.pathname);
     }
 
     // Subdomain profile - serve SPA with injected user data
@@ -127,24 +123,7 @@ async function handleRequest(event) {
     // apple-app-site-association has no file extension, so the static publisher
     // cannot detect its content type - we handle it explicitly here.
     console.log('Handling .well-known file:', url.pathname);
-    const wkResponse = await publisherServer.serveRequest(request);
-    // Guard: if publisher returns text/html, it's the SPA fallback, not the real file
-    if (wkResponse != null && wkResponse.status === 200 && !wkResponse.headers.get('Content-Type')?.includes('text/html')) {
-      const headers = new Headers(wkResponse.headers);
-      // Ensure correct content type for app association files
-      const contentType = url.pathname.endsWith('.json') || url.pathname.endsWith('/apple-app-site-association')
-        ? 'application/json'
-        : headers.get('Content-Type') || 'application/octet-stream';
-      headers.set('Content-Type', contentType);
-      headers.set('Cache-Control', 'public, max-age=3600');
-      headers.append('Vary', 'X-Original-Host');
-      return new Response(wkResponse.body, {
-        status: 200,
-        headers,
-      });
-    }
-    // File not found in KV - return 404 instead of SPA fallback
-    return new Response('Not Found', { status: 404 });
+    return await serveStaticWellKnownFile(request, url.pathname, { varyByOriginalHost: true });
   }
 
   // 5. Handle dynamic OG meta tags for crawler requests
@@ -248,6 +227,25 @@ async function handleRequest(event) {
       status: response.status,
       headers,
     });
+  }
+
+  return new Response('Not Found', { status: 404 });
+}
+
+async function serveStaticWellKnownFile(request, pathname, { varyByOriginalHost = false } = {}) {
+  const wkResponse = await publisherServer.serveRequest(request);
+  // Guard: if publisher returns text/html, it's the SPA fallback, not the real file.
+  if (wkResponse != null && wkResponse.status === 200 && !wkResponse.headers.get('Content-Type')?.includes('text/html')) {
+    const headers = new Headers(wkResponse.headers);
+    const contentType = isJsonWellKnownPath(pathname)
+      ? 'application/json'
+      : headers.get('Content-Type') || 'application/octet-stream';
+    headers.set('Content-Type', contentType);
+    headers.set('Cache-Control', 'public, max-age=3600');
+    if (varyByOriginalHost) {
+      headers.append('Vary', 'X-Original-Host');
+    }
+    return new Response(wkResponse.body, { status: 200, headers });
   }
 
   return new Response('Not Found', { status: 404 });
