@@ -77,31 +77,42 @@ jobs:
           FASTLY_API_TOKEN: ${{ secrets.FASTLY_API_TOKEN }}
         run: npx @fastly/compute-js-static-publish publish-content
 
+      - name: Purge Fastly cache
+        working-directory: compute-js
+        env:
+          FASTLY_API_TOKEN: ${{ secrets.FASTLY_API_TOKEN }}
+        run: |
+          set -euo pipefail
+          service_id="$(awk -F' = ' '/^service_id/ {gsub(/"/, "", $2); print $2}' fastly.toml)"
+          fastly purge --all --service-id "$service_id" --token="$FASTLY_API_TOKEN"
+
       - name: Verify live .well-known endpoints
         run: |
           set -euo pipefail
 
           check_json_endpoint() {
             url="$1"
-            headers="$(curl -fsSI "$url")"
-            printf '%s\n' "$headers"
+            for attempt in $(seq 1 12); do
+              headers="$(curl -sSI "$url" || true)"
+              printf '%s\n' "$headers"
 
-            status="$(printf '%s\n' "$headers" | awk 'tolower($1) ~ /^http/ {print $2; exit}')"
-            content_type="$(printf '%s\n' "$headers" | awk -F': ' 'tolower($1) == "content-type" {print tolower($2); exit}' | tr -d '\r')"
+              status="$(printf '%s\n' "$headers" | awk 'tolower($1) ~ /^http/ {print $2; exit}')"
+              content_type="$(printf '%s\n' "$headers" | awk -F': ' 'tolower($1) == "content-type" {print tolower($2); exit}' | tr -d '\r')"
 
-            if [ "$status" != "200" ]; then
-              echo "Expected 200 from $url but got $status" >&2
-              exit 1
-            fi
+              if [ "$status" = "200" ]; then
+                case "$content_type" in
+                  application/json*|application/pkcs7-mime*)
+                    return 0
+                    ;;
+                esac
+              fi
 
-            case "$content_type" in
-              application/json*|application/pkcs7-mime*)
-                ;;
-              *)
-                echo "Expected JSON content-type from $url but got $content_type" >&2
-                exit 1
-                ;;
-            esac
+              echo "Attempt $attempt failed for $url (status=${status:-missing} content-type=${content_type:-missing})"
+              sleep 10
+            done
+
+            echo "Timed out waiting for $url to return 200 JSON" >&2
+            exit 1
           }
 
           check_json_endpoint "https://divine.video/.well-known/apple-app-site-association"
