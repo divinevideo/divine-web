@@ -84,6 +84,10 @@ jobs:
         run: |
           set -euo pipefail
           service_id="$(awk -F' = ' '/^service_id/ {gsub(/"/, "", $2); print $2}' fastly.toml)"
+          test -n "$service_id" || {
+            echo "Failed to read service_id from compute-js/fastly.toml" >&2
+            exit 1
+          }
           fastly purge --all --service-id "$service_id" --token="$FASTLY_API_TOKEN"
 
       - name: Verify live .well-known endpoints
@@ -108,7 +112,10 @@ jobs:
               fi
 
               echo "Attempt $attempt failed for $url (status=${status:-missing} content-type=${content_type:-missing})"
-              sleep 10
+
+              if [ "$attempt" -lt 12 ]; then
+                sleep 10
+              fi
             done
 
             echo "Timed out waiting for $url to return 200 JSON" >&2
