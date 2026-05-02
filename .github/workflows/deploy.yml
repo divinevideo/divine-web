@@ -90,6 +90,10 @@ jobs:
             exit 1
           }
           fastly purge --all --service-id "$service_id" --token="$FASTLY_API_TOKEN"
+          fastly purge --url "https://divine.video/.well-known/apple-app-site-association" --token="$FASTLY_API_TOKEN"
+          fastly purge --url "https://www.divine.video/.well-known/apple-app-site-association" --token="$FASTLY_API_TOKEN"
+          fastly purge --url "https://divine.video/.well-known/assetlinks.json" --token="$FASTLY_API_TOKEN"
+          fastly purge --url "https://www.divine.video/.well-known/assetlinks.json" --token="$FASTLY_API_TOKEN"
 
       - name: Verify live .well-known endpoints
         run: |
