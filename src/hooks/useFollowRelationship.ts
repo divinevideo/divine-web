@@ -11,6 +11,13 @@ import { debugLog } from '@/lib/debug';
 import type { NostrEvent } from '@nostrify/nostrify';
 import { PRIMARY_RELAY } from '@/config/relays';
 
+export class FollowRaceError extends Error {
+  constructor() {
+    super('Already following this user');
+    this.name = 'FollowRaceError';
+  }
+}
+
 interface FollowRelationshipData {
   isFollowing: boolean;
   mutualFollows: number;
@@ -181,7 +188,7 @@ export function useFollowUser() {
       // Check if already following (shouldn't happen but good safety check)
       const alreadyFollowing = currentTags.some(tag => tag[0] === 'p' && tag[1] === targetPubkey);
       if (alreadyFollowing) {
-        throw new Error('Already following this user');
+        throw new FollowRaceError();
       }
 
       // Add new follow tag

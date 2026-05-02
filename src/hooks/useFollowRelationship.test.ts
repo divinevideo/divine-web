@@ -3,6 +3,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
+import { FollowRaceError } from './useFollowRelationship';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
 import type { NostrEvent } from '@nostrify/nostrify';
@@ -247,7 +248,7 @@ describe('useFollowUser - follow list overwrite protection', () => {
           targetDisplayName: 'Test User',
         });
       }),
-    ).rejects.toThrow('Already following');
+    ).rejects.toThrow(FollowRaceError);
 
     expect(mockPublishEvent).not.toHaveBeenCalled();
   });
