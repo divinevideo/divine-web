@@ -11,6 +11,7 @@ import { debugLog } from '@/lib/debug';
 import type { NostrEvent } from '@nostrify/nostrify';
 import { PRIMARY_RELAY } from '@/config/relays';
 
+/** Thrown when a follow request races with stale UI state. */
 export class FollowRaceError extends Error {
   constructor() {
     super('Already following this user');
