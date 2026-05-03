@@ -17,6 +17,24 @@ import {
 } from '@/types/moderation';
 import { submitReportToZendesk, buildContentUrl } from '@/lib/reportApi';
 
+const NIP56_REPORT_TYPE: Record<ContentFilterReason, string> = {
+  [ContentFilterReason.SPAM]: 'spam',
+  [ContentFilterReason.HARASSMENT]: 'profanity',
+  [ContentFilterReason.VIOLENCE]: 'illegal',
+  [ContentFilterReason.SEXUAL_CONTENT]: 'nudity',
+  [ContentFilterReason.COPYRIGHT]: 'illegal',
+  [ContentFilterReason.FALSE_INFO]: 'other',
+  [ContentFilterReason.CSAM]: 'illegal',
+  [ContentFilterReason.AI_GENERATED]: 'other',
+  [ContentFilterReason.IMPERSONATION]: 'impersonation',
+  [ContentFilterReason.ILLEGAL]: 'illegal',
+  [ContentFilterReason.OTHER]: 'other',
+};
+
+export function toNip56ReportType(reason: ContentFilterReason): string {
+  return NIP56_REPORT_TYPE[reason] ?? 'other';
+}
+
 // Stable empty array to prevent infinite re-renders when user is not logged in
 const EMPTY_MUTE_LIST: MuteItem[] = [];
 
@@ -240,12 +258,13 @@ export function useReportContent() {
 
       const tags: string[][] = [];
 
-      // Add reported event or pubkey
+      // Add reported event or pubkey with NIP-56 standard type
+      const nip56Type = toNip56ReportType(reason);
       if (eventId) {
-        tags.push(['e', eventId, reason]);
+        tags.push(['e', eventId, nip56Type]);
       }
       if (pubkey) {
-        tags.push(['p', pubkey, reason]);
+        tags.push(['p', pubkey, nip56Type]);
       }
 
       // Add label namespace (NIP-32)
