@@ -342,6 +342,7 @@ export function ProfilePage() {
     } catch (error) {
       console.error('Failed to update follow status:', error);
       if (!(error instanceof FollowRaceError)) {
+        // Suppress the stale-UI follow race because the user is already in the desired state.
         const message = error instanceof Error ? error.message : '';
         toast({
           title: "Couldn't update follow.",
