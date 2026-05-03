@@ -26,7 +26,7 @@ import { useVideoProvider } from '@/hooks/useVideoProvider';
 import { useFunnelcakeProfile } from '@/hooks/useFunnelcakeProfile';
 import { useProfileJoinedDate } from '@/hooks/useProfileJoinedDate';
 import { useClassicVineArchiveStats } from '@/hooks/useClassicVineArchiveStats';
-import { useFollowRelationship, useFollowUser, useUnfollowUser } from '@/hooks/useFollowRelationship';
+import { useFollowRelationship, useFollowUser, useUnfollowUser, FollowRaceError } from '@/hooks/useFollowRelationship';
 import { useFollowListSafetyCheck } from '@/hooks/useFollowListSafetyCheck';
 import { PinnedVideosSection } from '@/components/PinnedVideosSection';
 import { useLoginDialog } from '@/contexts/LoginDialogContext';
@@ -341,9 +341,9 @@ export function ProfilePage() {
       }
     } catch (error) {
       console.error('Failed to update follow status:', error);
-      const message = error instanceof Error ? error.message : '';
-      const isRaceCondition = message === 'Already following this user';
-      if (!isRaceCondition) {
+      if (!(error instanceof FollowRaceError)) {
+        // Suppress the stale-UI follow race because the user is already in the desired state.
+        const message = error instanceof Error ? error.message : '';
         toast({
           title: "Couldn't update follow.",
           description: message || 'Please try again.',
