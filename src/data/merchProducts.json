@@ -1,31 +1,48 @@
 {
   "storeUrl": "https://www.bonfire.com/store/divine-18/",
-  "scrapedAt": "2026-05-04T02:51:30.877Z",
+  "scrapedAt": "2026-05-04T09:00:56.304Z",
   "products": [
     {
       "name": "White Bucket Hat",
       "url": "https://www.bonfire.com/white-bucket-hat-2/",
-      "image": "https://dynamic.bonfireassets.com/thumb/design-image/01f3cc0f-f681-4d65-b0d5-0be2fe74cdce/667999e3-50d2-46b7-b25c-e47f8d202885/450/"
+      "image": "https://c.bonfireassets.com/thumb/design-image/01f3cc0f-f681-4d65-b0d5-0be2fe74cdce/667999e3-50d2-46b7-b25c-e47f8d202885/900/",
+      "campaign": "white-bucket-hat-2",
+      "campaignTitle": "White Bucket Hat"
     },
     {
       "name": "Canvas Tote Bag",
       "url": "https://www.bonfire.com/canvas-tote-bag-13/",
-      "image": "https://dynamic.bonfireassets.com/thumb/design-image/7391ab0b-441a-4792-ab88-0231b17e15a2/222d8e36-d45d-4684-a640-d44cc0638163/450/"
+      "image": "https://c.bonfireassets.com/thumb/design-image/7391ab0b-441a-4792-ab88-0231b17e15a2/222d8e36-d45d-4684-a640-d44cc0638163/900/",
+      "campaign": "canvas-tote-bag-13",
+      "campaignTitle": "Canvas Tote Bag"
     },
     {
       "name": "Divine Baseball Cap",
       "url": "https://www.bonfire.com/divine-baseball-cap/",
-      "image": "https://dynamic.bonfireassets.com/thumb/design-image/62de8ae7-11c5-438f-85bd-35ea44a0ccd5/27aeaa5a-9dd8-4292-b667-a56fb7bb3e1a/450/"
+      "image": "https://c.bonfireassets.com/thumb/design-image/62de8ae7-11c5-438f-85bd-35ea44a0ccd5/27aeaa5a-9dd8-4292-b667-a56fb7bb3e1a/900/",
+      "campaign": "divine-baseball-cap",
+      "campaignTitle": "Divine Baseball Cap"
     },
     {
       "name": "Plain White Comfort Tee",
       "url": "https://www.bonfire.com/comfort-tee-10/",
-      "image": "https://dynamic.bonfireassets.com/thumb/design-image/55b49b66-0016-4816-bd51-34a531e6ca55/ee4e24c9-0be3-4938-854e-f7e69d3d71bc/450/"
+      "image": "https://c.bonfireassets.com/thumb/design-image/55b49b66-0016-4816-bd51-34a531e6ca55/ee4e24c9-0be3-4938-854e-f7e69d3d71bc/900/",
+      "campaign": "comfort-tee-10",
+      "campaignTitle": "Plain White Comfort Tee"
     },
     {
-      "name": "Divine Tees & Hoodie",
+      "name": "Premium Unisex Tee",
       "url": "https://www.bonfire.com/divine-tee-3/",
-      "image": "https://dynamic.bonfireassets.com/thumb/design-image/74314380-eda7-4579-ae71-7d5a56dca118/10c145d5-f4d9-4819-ac42-2d0d367547d4/450/"
+      "image": "https://c.bonfireassets.com/thumb/design-image/74314380-eda7-4579-ae71-7d5a56dca118/10c145d5-f4d9-4819-ac42-2d0d367547d4/500/",
+      "campaign": "divine-tee-3",
+      "campaignTitle": "Divine Tees & Hoodie"
+    },
+    {
+      "name": "Pullover Hoodie",
+      "url": "https://www.bonfire.com/divine-tee-3/",
+      "image": "https://c.bonfireassets.com/thumb/design-image/74314380-eda7-4579-ae71-7d5a56dca118/88cba6c5-7d55-4c6c-b77b-bd68297b9059/500/",
+      "campaign": "divine-tee-3",
+      "campaignTitle": "Divine Tees & Hoodie"
     }
   ]
 }

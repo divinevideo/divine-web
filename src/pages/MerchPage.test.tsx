@@ -28,25 +28,28 @@ describe('MerchPage', () => {
     expect(screen.getByText(/printed and shipped by bonfire/i)).toBeInTheDocument();
   });
 
-  it('renders one card per scraped Bonfire product, deep-linking to that product', () => {
+  it('renders one card per scraped variant, deep-linking to its Bonfire campaign', () => {
     renderPage();
     const grid = screen.getByRole('list', { name: /merch products/i });
     const cards = within(grid).getAllByRole('listitem');
     expect(cards).toHaveLength(merchProducts.products.length);
 
     for (const product of merchProducts.products) {
-      const link = screen.getByRole('link', { name: new RegExp(product.name, 'i') });
+      const link = screen.getByRole('link', { name: new RegExp(`${product.name} on Bonfire`, 'i') });
       expect(link).toHaveAttribute('href', product.url);
       expect(link).toHaveAttribute('target', '_blank');
       expect(link).toHaveAttribute('rel', expect.stringContaining('noopener'));
     }
   });
 
-  it('renders a Shop everything CTA pointing at the Bonfire store, opening in a new tab', () => {
+  it('renders Shop everything CTAs pointing at the Bonfire store, opening in a new tab', () => {
     renderPage();
-    const cta = screen.getByRole('link', { name: /shop everything/i });
-    expect(cta).toHaveAttribute('href', MERCH_STORE_URL);
-    expect(cta).toHaveAttribute('target', '_blank');
-    expect(cta).toHaveAttribute('rel', expect.stringContaining('noopener'));
+    const ctas = screen.getAllByRole('link', { name: /shop everything/i });
+    expect(ctas.length).toBeGreaterThanOrEqual(1);
+    for (const cta of ctas) {
+      expect(cta).toHaveAttribute('href', MERCH_STORE_URL);
+      expect(cta).toHaveAttribute('target', '_blank');
+      expect(cta).toHaveAttribute('rel', expect.stringContaining('noopener'));
+    }
   });
 });

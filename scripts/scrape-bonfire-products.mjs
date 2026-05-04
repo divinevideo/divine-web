@@ -1,9 +1,16 @@
-// Scrape product cards from bonfire.com/store/divine-18/ and write to
-// src/data/merchProducts.json. Run via: npm run merch:scrape
+// Scrape product variants from bonfire.com/store/divine-18/ + each campaign
+// detail page, write to src/data/merchProducts.json.
+// Run via: npm run merch:scrape
 //
-// We can't iframe Bonfire (X-Frame-Options: SAMEORIGIN) and their JSON API is
-// auth-gated, so we render the storefront in a headless browser and pull
-// product data out of the rendered DOM + intercepted XHR responses.
+// Bonfire blocks iframes (X-Frame-Options: SAMEORIGIN) and the JSON API is
+// auth-gated. Two-pass scrape:
+//   1. Storefront → discover campaign slugs from <h3 class="sw-CampaignTitle">.
+//   2. Each campaign page → extract style variants from the
+//      <div class="sw-ProductPicker"> radio-label list. Each label has:
+//        - <small class="sw-ProductPicker_Title">Premium Unisex Tee</small>
+//        - <span class="sw-ProductPicker_Img-product"><img …/></span>
+//      The radio's `value` attribute is the style name; the picker images
+//      are 150px thumbs we upgrade to /500/ for the grid card.
 
 import { chromium } from 'playwright';
 import { writeFile, mkdir } from 'node:fs/promises';
@@ -23,98 +30,119 @@ async function main() {
   });
   const page = await context.newPage();
 
-  /** @type {Array<{url: string, body: any}>} */
-  const apiResponses = [];
-  page.on('response', async (res) => {
-    const url = res.url();
-    const ct = res.headers()['content-type'] ?? '';
-    if (!ct.includes('application/json')) return;
-    if (!/bonfire\.com\/api\//i.test(url)) return;
-    try {
-      const body = await res.json();
-      apiResponses.push({ url, body });
-    } catch {
-      /* ignore non-json bodies */
-    }
-  });
-
   console.log(`Loading ${STORE_URL} ...`);
   await page.goto(STORE_URL, { waitUntil: 'networkidle', timeout: 60_000 });
-  // Give lazy-loaded grids a chance to settle
   await page.waitForTimeout(2000);
   await page.evaluate(() => window.scrollBy(0, document.body.scrollHeight));
   await page.waitForTimeout(2000);
 
-  console.log(`Captured ${apiResponses.length} JSON XHRs.`);
-
-  // --- Strategy 1: pull from intercepted Bonfire API responses ---
-  /** @type {Array<{name: string, url: string, image: string, price?: string}>} */
-  const fromApi = [];
-  for (const { url, body } of apiResponses) {
-    const candidates = collectProductCandidates(body);
-    for (const c of candidates) {
-      if (c.name && c.url) fromApi.push(c);
-    }
-    if (candidates.length) console.log(`  ${candidates.length} products from ${url}`);
-  }
-
-  // --- Strategy 2: scrape rendered DOM ---
-  // Bonfire is Angular. Each campaign card contains an <h3 class="sw-CampaignTitle"> for the name
-  // and one or more <a class="sw-ProdCard_Fig"> per product-type variant. The figure anchor has
-  // the canonical product URL (`/<slug>/?productType=<uuid>`); the title anchor uses a relative
-  // href that resolves to the wrong path. Take ONE figure anchor per campaign.
-  const fromDom = await page.$$eval('h3.sw-CampaignTitle', (titles) => {
-    /** @type {Array<{name: string, url: string, image: string, price?: string}>} */
+  const campaigns = await page.$$eval('h3.sw-CampaignTitle', (titles) => {
+    /** @type {Array<{ name: string, slug: string }>} */
     const out = [];
     const seen = new Set();
     for (const h3 of titles) {
       const name = (h3.textContent ?? '').trim();
       if (!name) continue;
-
-      // Walk up to the campaign container, then find the first product-type figure link.
-      const campaignContainer =
+      const container =
         h3.closest('.sw-ProductSliderWrap, .sw-ProductSlider, .sw-ProdCard_New, [ng-repeat]') ??
         h3.parentElement;
-      if (!campaignContainer) continue;
-
-      const figureAnchor = campaignContainer.querySelector('a.sw-ProdCard_Fig');
-      const href = figureAnchor?.getAttribute('href') ?? '';
-      if (!href) continue;
-
-      // href is absolute path on bonfire.com root: /<slug>/?productType=<uuid>
-      // Drop the productType variant — we want the canonical product URL (bonfire.com/<slug>/).
-      const fullUrl = href.startsWith('http')
-        ? href
-        : new URL(href, 'https://www.bonfire.com/').toString();
-      const url = fullUrl.split('?')[0];
-
-      if (seen.has(url)) continue;
-      seen.add(url);
-
-      // Image: prefer one inside the figure anchor, fall back to the campaign container.
-      let image = '';
-      const imgEl =
-        figureAnchor?.querySelector('img') ?? campaignContainer.querySelector('img');
-      if (imgEl) {
-        image =
-          imgEl.getAttribute('src') ??
-          imgEl.getAttribute('data-src') ??
-          imgEl.getAttribute('data-lazy-src') ??
-          '';
-      }
-
-      out.push({ name, url, image });
+      const fig = container?.querySelector('a.sw-ProdCard_Fig');
+      const m = (fig?.getAttribute('href') ?? '').match(/^\/([^/?#]+)/);
+      if (!m) continue;
+      const slug = m[1];
+      if (seen.has(slug)) continue;
+      seen.add(slug);
+      out.push({ name, slug });
     }
     return out;
   });
 
-  const merged = dedupeByUrl([...fromApi, ...fromDom]);
-  console.log(`Total: ${merged.length} products (api=${fromApi.length}, dom=${fromDom.length})`);
+  console.log(`Found ${campaigns.length} campaigns:`, campaigns.map((c) => c.slug).join(', '));
 
-  if (merged.length === 0) {
-    const snapshotPath = resolve(__dirname, '../scripts/.bonfire-snapshot.html');
-    await writeFile(snapshotPath, await page.content(), 'utf8');
-    console.error(`No products found. Wrote rendered HTML to ${snapshotPath} for inspection.`);
+  /** @type {Array<{ name: string, url: string, image: string, campaign: string, campaignTitle: string }>} */
+  const allProducts = [];
+
+  for (const campaign of campaigns) {
+    const url = `https://www.bonfire.com/${campaign.slug}/`;
+    console.log(`  Loading ${url} ...`);
+    try {
+      await page.goto(url, { waitUntil: 'networkidle', timeout: 60_000 });
+      await page.waitForTimeout(2000);
+
+      // The style picker is hidden inside slick slider; "click" each label
+      // is overkill. We just read all <label> blocks under .sw-ProductPicker.
+      // Bonfire renders all variant labels in the DOM up-front (slick clones
+      // them); we dedupe by style title.
+      const variants = await page.$$eval(
+        '.sw-ProductPicker label, .sw-ProdCard_Styles label',
+        (labels, ctx) => {
+          /** @type {Array<{ name: string, url: string, image: string, campaign: string, campaignTitle: string }>} */
+          const items = [];
+          const seen = new Set();
+          for (const label of labels) {
+            const title =
+              label.querySelector('.sw-ProductPicker_Title, .sw-ProdCard_StylesText')?.textContent?.trim() ??
+              label.querySelector('input')?.getAttribute('value')?.trim() ??
+              '';
+            if (!title) continue;
+            if (seen.has(title)) continue;
+
+            const imgEl = label.querySelector('.sw-ProductPicker_Img-product img, img.sw-ProdCard_Img');
+            const rawSrc =
+              imgEl?.getAttribute('src') ??
+              imgEl?.getAttribute('ng-src') ??
+              imgEl?.getAttribute('data-src') ??
+              '';
+            if (!rawSrc || rawSrc.startsWith('data:')) continue;
+            // Upgrade Bonfire CDN thumb size from /150/ → /500/ for the card.
+            const image = rawSrc.replace(/\/(75|150|200|450)\/$/, '/500/');
+
+            seen.add(title);
+            items.push({
+              name: title,
+              url: `https://www.bonfire.com/${ctx.slug}/`,
+              image,
+              campaign: ctx.slug,
+              campaignTitle: ctx.campaignName,
+            });
+          }
+          return items;
+        },
+        { slug: campaign.slug, campaignName: campaign.name },
+      );
+
+      // Fallback: if the campaign page has no style picker (single-variant
+      // campaign like the bucket hat), grab the main product image and
+      // emit a single entry with the campaign title.
+      if (variants.length === 0) {
+        const single = await page
+          .$eval('img.sw-ProdCard_Img, .camp-DesktopPreview_ActiveImg', (img) => {
+            const src =
+              img.getAttribute('src') ?? img.getAttribute('ng-src') ?? '';
+            const alt = img.getAttribute('alt') ?? '';
+            return { src, alt };
+          })
+          .catch(() => null);
+        if (single?.src) {
+          variants.push({
+            name: campaign.name,
+            url,
+            image: single.src.replace(/\/(75|150|200|450)\/$/, '/500/'),
+            campaign: campaign.slug,
+            campaignTitle: campaign.name,
+          });
+        }
+      }
+
+      console.log(`    ${variants.length} variant(s) for ${campaign.slug}: ${variants.map((v) => v.name).join(', ')}`);
+      allProducts.push(...variants);
+    } catch (err) {
+      console.warn(`    Failed to scrape ${campaign.slug}: ${err.message}`);
+    }
+  }
+
+  if (allProducts.length === 0) {
+    console.error('No products scraped.');
     process.exitCode = 1;
   }
 
@@ -122,56 +150,12 @@ async function main() {
   const payload = {
     storeUrl: STORE_URL,
     scrapedAt: new Date().toISOString(),
-    products: merged,
+    products: allProducts,
   };
   await writeFile(OUTPUT, JSON.stringify(payload, null, 2) + '\n', 'utf8');
-  console.log(`Wrote ${merged.length} products to ${OUTPUT}`);
+  console.log(`Wrote ${allProducts.length} products to ${OUTPUT}`);
 
   await browser.close();
-}
-
-function collectProductCandidates(node, acc = []) {
-  if (!node) return acc;
-  if (Array.isArray(node)) {
-    for (const item of node) collectProductCandidates(item, acc);
-    return acc;
-  }
-  if (typeof node !== 'object') return acc;
-
-  // Heuristic: an object with a productUrl/url + name/title + image-ish field
-  const url = pick(node, ['productUrl', 'product_url', 'url', 'shareUrl', 'shopUrl']);
-  const name = pick(node, ['name', 'title', 'productName', 'campaignTitle']);
-  const image = pick(node, ['imageUrl', 'image', 'thumbUrl', 'thumbnailUrl', 'frontImage', 'mainImage']);
-  const price = pick(node, ['price', 'displayPrice', 'priceFormatted', 'minPrice']);
-  if (typeof url === 'string' && typeof name === 'string' && (typeof image === 'string' || image == null)) {
-    if (/bonfire\.com|^\/[a-z0-9-]+/i.test(url)) {
-      acc.push({
-        name,
-        url: url.startsWith('http') ? url : `https://www.bonfire.com${url}`,
-        image: typeof image === 'string' ? image : '',
-        price: price ? String(price) : undefined,
-      });
-    }
-  }
-
-  for (const key of Object.keys(node)) {
-    collectProductCandidates(node[key], acc);
-  }
-  return acc;
-}
-
-function pick(obj, keys) {
-  for (const k of keys) if (obj[k] != null) return obj[k];
-  return undefined;
-}
-
-function dedupeByUrl(items) {
-  const seen = new Map();
-  for (const item of items) {
-    const key = item.url.split('?')[0];
-    if (!seen.has(key)) seen.set(key, item);
-  }
-  return [...seen.values()];
 }
 
 main().catch((err) => {
