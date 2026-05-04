@@ -84,18 +84,27 @@ vi.mock('@/components/ui/avatar', () => ({
   AvatarFallback: ({ children, ...props }: HTMLAttributes<HTMLDivElement>) => <div {...props}>{children}</div>,
 }));
 
+// Bare VideoCard mock: search results MUST NOT render this directly because
+// it has no metrics wrapper, which means viewCount/loopCount can never display.
+// The presence of `bare-video-card-*` in a test render is a regression.
 vi.mock('@/components/VideoCard', () => ({
-  VideoCard: ({
+  VideoCard: ({ video }: { video: { id: string } }) => (
+    <div data-testid={`bare-video-card-${video.id}`}>bare {video.id}</div>
+  ),
+}));
+
+vi.mock('@/components/VideoCardWithMetrics', () => ({
+  VideoCardWithMetrics: ({
     video,
     navigationContext,
-    videoIndex,
+    index,
   }: {
     video: { id: string };
     navigationContext?: { source: string; query?: string; sortMode?: string };
-    videoIndex?: number;
+    index?: number;
   }) => {
     const href = navigationContext
-      ? `/video/${video.id}?source=${navigationContext.source}&q=${navigationContext.query}&sort=${navigationContext.sortMode}&index=${videoIndex}`
+      ? `/video/${video.id}?source=${navigationContext.source}&q=${navigationContext.query}&sort=${navigationContext.sortMode}&index=${index}`
       : `/video/${video.id}`;
 
     return (
@@ -483,5 +492,38 @@ describe('SearchPage', () => {
     expect(screen.getByTestId('location-display').textContent).toBe(
       '/search?q=twerking&filter=videos&play=compilation&video=video-1'
     );
+  });
+
+  // Regression: bare VideoCard hides view counts because it has no metrics
+  // wrapper. Search results MUST go through VideoCardWithMetrics so loop /
+  // view counts render alongside other feeds.
+  it('renders the All-tab video grid via VideoCardWithMetrics, not bare VideoCard', () => {
+    mockUseInfiniteSearchVideos.mockReturnValue({
+      data: { pages: [{ videos: [{ id: 'video-1', pubkey: 'a'.repeat(64) }] }] },
+      fetchNextPage: vi.fn(),
+      hasNextPage: false,
+      isLoading: false,
+      error: null,
+    });
+
+    renderPage(['/search?q=dance']);
+
+    expect(screen.getAllByTestId('video-card-video-1').length).toBeGreaterThan(0);
+    expect(screen.queryAllByTestId('bare-video-card-video-1')).toHaveLength(0);
+  });
+
+  it('renders the videos-only tab grid via VideoCardWithMetrics, not bare VideoCard', () => {
+    mockUseInfiniteSearchVideos.mockReturnValue({
+      data: { pages: [{ videos: [{ id: 'video-2', pubkey: 'b'.repeat(64) }] }] },
+      fetchNextPage: vi.fn(),
+      hasNextPage: false,
+      isLoading: false,
+      error: null,
+    });
+
+    renderPage(['/search?q=dance&filter=videos']);
+
+    expect(screen.getAllByTestId('video-card-video-2').length).toBeGreaterThan(0);
+    expect(screen.queryAllByTestId('bare-video-card-video-2')).toHaveLength(0);
   });
 });

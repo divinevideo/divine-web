@@ -17,7 +17,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { VideoCard } from '@/components/VideoCard';
+import { VideoCardWithMetrics } from '@/components/VideoCardWithMetrics';
 import InfiniteScroll from 'react-infinite-scroll-component';
 import { useInfiniteSearchVideos } from '@/hooks/useInfiniteSearchVideos';
 import { useCompilationFullscreen } from '@/hooks/useCompilationFullscreen';
@@ -533,12 +533,15 @@ export function SearchPage() {
                     </div>
                     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                       {videoResults.slice(0, 6).map((video, index) => (
-                        <VideoCard
+                        <VideoCardWithMetrics
                           key={video.id}
                           video={video}
+                          index={index}
                           mode="thumbnail"
+                          showComments={false}
+                          onOpenComments={() => undefined}
+                          onCloseComments={() => undefined}
                           navigationContext={searchNavigationContext}
-                          videoIndex={index}
                         />
                       ))}
                     </div>
@@ -632,12 +635,15 @@ export function SearchPage() {
               >
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                   {videoResults.map((video, index) => (
-                    <VideoCard
+                    <VideoCardWithMetrics
                       key={video.id}
                       video={video}
+                      index={index}
                       mode="thumbnail"
+                      showComments={false}
+                      onOpenComments={() => undefined}
+                      onCloseComments={() => undefined}
                       navigationContext={searchNavigationContext}
-                      videoIndex={index}
                     />
                   ))}
                 </div>
