@@ -177,6 +177,45 @@ describe('parseIdentityTag', () => {
       proofUrl: '',
     });
   });
+
+  it('maps x platform to twitter config', () => {
+    const tag = ['i', 'x:alice', '12345'];
+    const result = parseIdentityTag(tag);
+
+    expect(result).toEqual({
+      platform: 'twitter',
+      identity: 'alice',
+      proof: '12345',
+      profileUrl: 'https://twitter.com/alice',
+      proofUrl: 'https://twitter.com/alice/status/12345',
+    });
+  });
+
+  it('parses a YouTube identity tag', () => {
+    const tag = ['i', 'youtube:alice', 'dQw4w9WgXcQ'];
+    const result = parseIdentityTag(tag);
+
+    expect(result).toEqual({
+      platform: 'youtube',
+      identity: 'alice',
+      proof: 'dQw4w9WgXcQ',
+      profileUrl: 'https://www.youtube.com/@alice',
+      proofUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+    });
+  });
+
+  it('parses a TikTok identity tag', () => {
+    const tag = ['i', 'tiktok:alice', '7399477729245037867'];
+    const result = parseIdentityTag(tag);
+
+    expect(result).toEqual({
+      platform: 'tiktok',
+      identity: 'alice',
+      proof: '7399477729245037867',
+      profileUrl: 'https://www.tiktok.com/@alice',
+      proofUrl: 'https://www.tiktok.com/@alice/video/7399477729245037867',
+    });
+  });
 });
 
 // -- SUPPORTED_PLATFORMS config --
@@ -189,6 +228,8 @@ describe('SUPPORTED_PLATFORMS', () => {
     expect(SUPPORTED_PLATFORMS.telegram.canVerifyInBrowser).toBe(false);
     expect(SUPPORTED_PLATFORMS.bluesky.canVerifyInBrowser).toBe(false);
     expect(SUPPORTED_PLATFORMS.discord.canVerifyInBrowser).toBe(false);
+    expect(SUPPORTED_PLATFORMS.youtube.canVerifyInBrowser).toBe(false);
+    expect(SUPPORTED_PLATFORMS.tiktok.canVerifyInBrowser).toBe(false);
   });
 
   it('generates correct Mastodon URLs for NIP-39 format', () => {
@@ -279,6 +320,20 @@ describe('SUPPORTED_PLATFORMS', () => {
     expect(SUPPORTED_PLATFORMS.discord.createProofUrl).toBeUndefined();
   });
 
+  it('generates correct YouTube URLs', () => {
+    const config = SUPPORTED_PLATFORMS.youtube;
+    expect(config.profileUrl('alice')).toBe('https://www.youtube.com/@alice');
+    expect(config.proofUrl('alice', 'dQw4w9WgXcQ'))
+      .toBe('https://www.youtube.com/watch?v=dQw4w9WgXcQ');
+  });
+
+  it('generates correct TikTok URLs', () => {
+    const config = SUPPORTED_PLATFORMS.tiktok;
+    expect(config.profileUrl('alice')).toBe('https://www.tiktok.com/@alice');
+    expect(config.proofUrl('alice', '7399477729245037867'))
+      .toBe('https://www.tiktok.com/@alice/video/7399477729245037867');
+  });
+
   it('generates correct Discord URLs', () => {
     const config = SUPPORTED_PLATFORMS.discord;
     expect(config.profileUrl('alice'))
@@ -320,7 +375,7 @@ describe('verifyIdentityClaim', () => {
   });
 
   it('returns manual for non-CORS platforms without fetching', async () => {
-    const platforms = ['twitter', 'mastodon', 'telegram', 'bluesky', 'discord'] as const;
+    const platforms = ['twitter', 'mastodon', 'telegram', 'bluesky', 'discord', 'youtube', 'tiktok'] as const;
 
     for (const platform of platforms) {
       const identity: ExternalIdentity = {
