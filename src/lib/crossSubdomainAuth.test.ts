@@ -32,6 +32,8 @@ function setHostname(hostname: string) {
   });
 }
 
+let fetchMock: ReturnType<typeof vi.fn>;
+
 beforeEach(() => {
   cookieJar = '';
   Object.defineProperty(document, 'cookie', {
@@ -55,6 +57,9 @@ beforeEach(() => {
 
   localStorageMock.clear();
   setHostname('divine.video');
+
+  fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 204 }));
+  Object.defineProperty(global, 'fetch', { value: fetchMock, writable: true, configurable: true });
 });
 
 afterEach(() => {
@@ -137,6 +142,74 @@ describe('clearLoginCookie', () => {
     expect(cookieJar).toContain('nostr_login=');
     clearLoginCookie();
     expect(cookieJar).not.toContain('nostr_login=');
+  });
+});
+
+describe('server-side persist fallback', () => {
+  it('setLoginCookie also POSTs to /api/auth/persist-cookie', () => {
+    setHostname('divine.video');
+    setLoginCookie({ type: 'extension', pubkey: 'abc123' });
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/auth/persist-cookie',
+      expect.objectContaining({
+        method: 'POST',
+        credentials: 'same-origin',
+      }),
+    );
+    const body = JSON.parse(fetchMock.mock.calls[0][1].body);
+    expect(body.name).toBe('nostr_login');
+    expect(typeof body.value).toBe('string');
+    expect(body.value.length).toBeGreaterThan(0);
+    expect(body.maxAge).toBe(60 * 60 * 24 * 365);
+  });
+
+  it('setJwtCookie also POSTs to /api/auth/persist-cookie with JWT max-age', () => {
+    setHostname('alice.divine.video');
+    setJwtCookie({
+      token: 'eyJ.test',
+      expiration: Date.now() + 86400000,
+      sessionStart: Date.now(),
+      rememberMe: false,
+    });
+
+    const persistCall = fetchMock.mock.calls.find((c) => c[0] === '/api/auth/persist-cookie');
+    expect(persistCall).toBeDefined();
+    const body = JSON.parse(persistCall![1].body);
+    expect(body.name).toBe('divine_jwt');
+    expect(body.maxAge).toBe(60 * 60 * 24 * 7);
+  });
+
+  it('clearLoginCookie also DELETEs server-side', () => {
+    setHostname('divine.video');
+    clearLoginCookie();
+
+    const deleteCall = fetchMock.mock.calls.find((c) => c[1]?.method === 'DELETE');
+    expect(deleteCall).toBeDefined();
+    expect(deleteCall![0]).toBe('/api/auth/persist-cookie');
+    expect(JSON.parse(deleteCall![1].body)).toEqual({ name: 'nostr_login' });
+  });
+
+  it('clearJwtCookie also DELETEs server-side', () => {
+    setHostname('divine.video');
+    clearJwtCookie();
+
+    const deleteCall = fetchMock.mock.calls.find((c) => c[1]?.method === 'DELETE');
+    expect(deleteCall).toBeDefined();
+    expect(JSON.parse(deleteCall![1].body)).toEqual({ name: 'divine_jwt' });
+  });
+
+  it('does not POST on localhost (no cookie domain)', () => {
+    setHostname('localhost');
+    setLoginCookie({ type: 'extension', pubkey: 'abc123' });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('a fetch rejection does not break setLoginCookie', () => {
+    setHostname('divine.video');
+    fetchMock.mockRejectedValueOnce(new Error('network down'));
+    expect(() => setLoginCookie({ type: 'extension', pubkey: 'abc123' })).not.toThrow();
+    expect(cookieJar).toContain('nostr_login=');
   });
 });
 
