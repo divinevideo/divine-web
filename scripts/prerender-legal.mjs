@@ -140,12 +140,14 @@ const PAGES = [
     title: 'Safety Standards',
     description: 'Safety Standards for Divine Web - Our commitment to protecting users and preventing child exploitation.',
     sourceFile: '../src/pages/SafetyPage.tsx',
+    i18nNamespace: 'safety',
   },
   {
     path: '/dmca',
     title: 'DMCA & Copyright Policy',
     description: 'Copyright and DMCA Policy for Divine Web - Fair use basis, content sources, and takedown procedures.',
     sourceFile: '../src/pages/DMCAPage.tsx',
+    i18nNamespace: 'dmca',
   },
   {
     path: '/faq',
@@ -171,6 +173,44 @@ function extractContentFromTsx(sourcePath) {
     .replace(/\{\s*' '\s*\}/g, ' ')
     .replace(/\n{3,}/g, '\n\n')
     .trim();
+}
+
+// Replace `{t('foo.bar')}` / `{t("foo.bar")}` JSX expressions with their
+// resolved English locale strings. Pages that use `useTranslation()` must
+// declare their namespace via `i18nNamespace`; otherwise the prerender
+// emits literal `{t('...')}` text into the static HTML and crawlers /
+// no-JS clients see the raw template strings instead of copy.
+function applyI18n(content, namespace) {
+  if (!namespace) return content;
+
+  const localePath = join(__dirname, `../src/lib/i18n/locales/en/${namespace}.json`);
+  if (!existsSync(localePath)) {
+    console.warn(`  i18n locale not found for namespace "${namespace}": ${localePath}`);
+    return content;
+  }
+
+  const locale = JSON.parse(readFileSync(localePath, 'utf-8'));
+  const tCallRe = /\{\s*t\(\s*['"]([^'"]+)['"]\s*\)\s*\}/g;
+  let missing = 0;
+
+  const out = content.replace(tCallRe, (match, key) => {
+    const value = key
+      .split('.')
+      .reduce((node, part) => (node && typeof node === 'object' ? node[part] : undefined), locale);
+    if (typeof value === 'string') return escapeHtml(value);
+    missing += 1;
+    console.warn(`  Missing i18n key in en/${namespace}.json: ${key}`);
+    return match;
+  });
+
+  if (missing > 0) {
+    console.warn(`  ${missing} unresolved t() call(s) for namespace "${namespace}"`);
+  }
+  return out;
+}
+
+function escapeHtml(s) {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
 // ── Main ──────────────────────────────────────────────────────────────────
@@ -204,6 +244,7 @@ function main() {
         continue;
       }
       content = extractContentFromTsx(sourcePath);
+      content = applyI18n(content, page.i18nNamespace);
     } else {
       const contentPath = join(__dirname, 'prerender-content', page.contentFile);
       if (!existsSync(contentPath)) {
