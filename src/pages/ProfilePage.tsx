@@ -125,6 +125,12 @@ export function ProfilePage() {
   // 2. Nostr relays (WebSocket) - fallback for users not in Funnelcake
   const nostrMeta = authorData?.metadata;
   const fcMeta = funnelcakeProfile;
+  const isOwnProfile = currentUser?.pubkey === pubkey;
+  const pickMetadataField = <T,>(nostrValue: T | undefined, funnelcakeValue: T | undefined): T | undefined => (
+    isOwnProfile
+      ? (nostrValue || funnelcakeValue)
+      : (funnelcakeValue || nostrValue)
+  );
 
   // Check if we have a real name from either source
   const hasNameFromFunnelcake = !!(fcMeta?.display_name || fcMeta?.name);
@@ -133,16 +139,18 @@ export function ProfilePage() {
   // Still loading name if: no name from either source AND either query is still in progress
   const stillLoadingName = !hasNameFromFunnelcake && !hasNameFromNostr && (funnelcakeLoading || authorLoading);
 
-  // Build metadata object - prefer Funnelcake (fast) then Nostr
+  // Build metadata object:
+  // - own profile: prefer Nostr immediately so edits show up without REST lag
+  // - other profiles: prefer Funnelcake first for fast cached reads
   const metadata = {
-    display_name: fcMeta?.display_name || nostrMeta?.display_name,
-    name: fcMeta?.name || nostrMeta?.name,
-    picture: fcMeta?.picture || nostrMeta?.picture || '/user-avatar.png',
-    about: fcMeta?.about || nostrMeta?.about,
-    banner: fcMeta?.banner || nostrMeta?.banner,
-    nip05: fcMeta?.nip05 || nostrMeta?.nip05,
-    website: fcMeta?.website || nostrMeta?.website,
-    lud16: fcMeta?.lud16 || nostrMeta?.lud16,
+    display_name: pickMetadataField(nostrMeta?.display_name, fcMeta?.display_name),
+    name: pickMetadataField(nostrMeta?.name, fcMeta?.name),
+    picture: pickMetadataField(nostrMeta?.picture, fcMeta?.picture) || '/user-avatar.png',
+    about: pickMetadataField(nostrMeta?.about, fcMeta?.about),
+    banner: pickMetadataField(nostrMeta?.banner, fcMeta?.banner),
+    nip05: pickMetadataField(nostrMeta?.nip05, fcMeta?.nip05),
+    website: pickMetadataField(nostrMeta?.website, fcMeta?.website),
+    lud16: pickMetadataField(nostrMeta?.lud16, fcMeta?.lud16),
     // Flag to indicate name is still loading (used by ProfileHeader)
     _stillLoadingName: stillLoadingName,
   };
@@ -224,9 +232,6 @@ export function ProfilePage() {
     currentUser?.pubkey,
     !!currentUser?.pubkey // Only check if user is logged in
   );
-
-  // Check if this is the current user's own profile
-  const isOwnProfile = currentUser?.pubkey === pubkey;
 
   const displayName = metadata?.display_name || metadata?.name || (pubkey ? genUserName(pubkey) : 'User');
 
