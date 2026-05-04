@@ -58,26 +58,43 @@ async function main() {
     if (candidates.length) console.log(`  ${candidates.length} products from ${url}`);
   }
 
-  // --- Strategy 2: scrape rendered DOM (Bonfire is Angular; products are <a><h3 class="sw-CampaignTitle"> ...) ---
+  // --- Strategy 2: scrape rendered DOM ---
+  // Bonfire is Angular. Each campaign card contains an <h3 class="sw-CampaignTitle"> for the name
+  // and one or more <a class="sw-ProdCard_Fig"> per product-type variant. The figure anchor has
+  // the canonical product URL (`/<slug>/?productType=<uuid>`); the title anchor uses a relative
+  // href that resolves to the wrong path. Take ONE figure anchor per campaign.
   const fromDom = await page.$$eval('h3.sw-CampaignTitle', (titles) => {
     /** @type {Array<{name: string, url: string, image: string, price?: string}>} */
     const out = [];
     const seen = new Set();
     for (const h3 of titles) {
-      const anchor = h3.closest('a');
-      const href = anchor?.getAttribute('href') ?? '';
-      if (!href) continue;
-      // Resolve against the storefront base
-      const url = href.startsWith('http')
-        ? href
-        : new URL(href, 'https://www.bonfire.com/store/divine-18/').toString();
-      if (seen.has(url)) continue;
       const name = (h3.textContent ?? '').trim();
       if (!name) continue;
-      // Find a sibling/descendant image inside the same campaign container
-      const container = anchor?.closest('[ng-repeat], .sw-ProdCard_New, .sw-ProductSlider') ?? anchor;
+
+      // Walk up to the campaign container, then find the first product-type figure link.
+      const campaignContainer =
+        h3.closest('.sw-ProductSliderWrap, .sw-ProductSlider, .sw-ProdCard_New, [ng-repeat]') ??
+        h3.parentElement;
+      if (!campaignContainer) continue;
+
+      const figureAnchor = campaignContainer.querySelector('a.sw-ProdCard_Fig');
+      const href = figureAnchor?.getAttribute('href') ?? '';
+      if (!href) continue;
+
+      // href is absolute path on bonfire.com root: /<slug>/?productType=<uuid>
+      // Drop the productType variant — we want the canonical product URL (bonfire.com/<slug>/).
+      const fullUrl = href.startsWith('http')
+        ? href
+        : new URL(href, 'https://www.bonfire.com/').toString();
+      const url = fullUrl.split('?')[0];
+
+      if (seen.has(url)) continue;
+      seen.add(url);
+
+      // Image: prefer one inside the figure anchor, fall back to the campaign container.
       let image = '';
-      const imgEl = container?.querySelector('img');
+      const imgEl =
+        figureAnchor?.querySelector('img') ?? campaignContainer.querySelector('img');
       if (imgEl) {
         image =
           imgEl.getAttribute('src') ??
@@ -85,7 +102,7 @@ async function main() {
           imgEl.getAttribute('data-lazy-src') ??
           '';
       }
-      seen.add(url);
+
       out.push({ name, url, image });
     }
     return out;
