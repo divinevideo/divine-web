@@ -8,6 +8,7 @@ import { SecretStore } from 'fastly:secret-store';
 import { PublisherServer } from '@fastly/compute-js-static-publish';
 import rc from '../static-publish.rc.js';
 import { buildFunnelcakeUrl, getFunnelcakeOriginForApiHost } from './funnelcakeOrigin.js';
+import { handleAuthPersistCookie } from './authPersistCookie.js';
 import { isJsonWellKnownPath, shouldServeWellKnownBeforeWwwRedirect } from './wellKnownPaths.js';
 import { buildCrawlerHtml, escapeHtml, cleanText, truncateText } from './ogTags.js';
 import { hexToNpub } from './bech32.js';
@@ -262,6 +263,13 @@ async function handleRequest(event) {
   // 8. Content report API (creates Zendesk tickets)
   if (url.pathname === '/api/report') {
     return await handleReport(request);
+  }
+
+  // 8a. Server-set cross-subdomain auth cookie. Browsers handle Set-Cookie far
+  // more reliably than client-side document.cookie writes, which silently fail
+  // in some contexts (Brave, Firefox ETP-Strict, etc). Same-origin so no CORS.
+  if (url.pathname === '/api/auth/persist-cookie') {
+    return await handleAuthPersistCookie(request, hostnameToUse);
   }
 
   // 8b. Proxy RSS feed requests to the relay backend (serves application/rss+xml)
