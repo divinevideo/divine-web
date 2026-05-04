@@ -87,6 +87,31 @@ describe('transformFunnelcakeVideo', () => {
     expect(archived.commentCount).toBe(3014);
     expect(archived.repostCount).toBe(37586);
   });
+
+  // Regression guard: list endpoints (/api/videos, /api/users/{pubkey}/videos,
+  // discovery, etc.) omit Nostr `tags`, so proofMode arrives undefined and the
+  // verification dialog must lazy-fetch the single-video endpoint to recover
+  // it. See VideoVerificationDetailsDialog.tsx.
+  it('returns proofMode undefined when tags are absent (list endpoint shape)', () => {
+    const video = transformFunnelcakeVideo(makeRawVideo());
+    expect(video.proofMode).toBeUndefined();
+  });
+
+  it('extracts proofMode when verification tags are present (single-video shape)', () => {
+    const video = transformFunnelcakeVideo(makeRawVideo({
+      tags: [
+        ['d', 'vine-id'],
+        ['verification', 'verified_mobile'],
+        ['c2pa_manifest_id', 'urn:c2pa:test'],
+        ['device_attestation', 'attest-blob'],
+        ['proofmode', '{"videoHash":"abc"}'],
+      ],
+    }));
+
+    expect(video.proofMode?.level).toBe('verified_mobile');
+    expect(video.proofMode?.c2paManifestId).toBe('urn:c2pa:test');
+    expect(video.proofMode?.deviceAttestation).toBe('attest-blob');
+  });
 });
 
 function makeResponse(overrides: Partial<FunnelcakeResponse> = {}): FunnelcakeResponse {
