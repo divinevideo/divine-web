@@ -206,7 +206,7 @@ export default function ListDetailPage() {
       ]);
 
       const ownerEvents = await nostr.query([{
-        kinds: [30005],
+        kinds: [30000, 30005],
         authors: [pubkey],
         '#d': [listId],
         limit: 1
