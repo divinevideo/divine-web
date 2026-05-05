@@ -12,6 +12,10 @@ import { resolveListPermissions } from '@/lib/listPermissions';
 
 export type { PlayOrder, VideoList };
 
+export function parseVideoList(event: NostrEvent): VideoList | null {
+  return parseVideoListFromEvent(event);
+}
+
 function buildListTags(
   list: Pick<VideoList, 'id' | 'name' | 'description' | 'image' | 'tags' | 'isCollaborative' | 'allowedCollaborators' | 'thumbnailEventId' | 'playOrder'>,
   videoCoordinates: string[],
