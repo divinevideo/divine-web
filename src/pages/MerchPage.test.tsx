@@ -1,23 +1,55 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
-
+import MerchPage from './MerchPage';
 import { MERCH_STORE_URL } from '@/lib/externalLinks';
-import { MerchPage } from './MerchPage';
+import merchProducts from '@/data/merchProducts.json';
 
-vi.mock('@/components/MarketingLayout', () => ({
-  MarketingLayout: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+vi.mock('@unhead/react', () => ({
+  useHead: () => undefined,
 }));
 
-describe('MerchPage', () => {
-  it('renders an on-site merch page with an outbound Bonfire link', () => {
-    render(
-      <MemoryRouter>
-        <MerchPage />
-      </MemoryRouter>,
-    );
+function renderPage() {
+  return render(
+    <MemoryRouter>
+      <MerchPage />
+    </MemoryRouter>,
+  );
+}
 
-    expect(screen.getByRole('heading', { name: /divine merch/i })).toBeVisible();
-    expect(screen.getByRole('link', { name: /open merch store/i })).toHaveAttribute('href', MERCH_STORE_URL);
+describe('MerchPage', () => {
+  it('renders a hero headline', () => {
+    renderPage();
+    expect(screen.getByRole('heading', { level: 1 })).toBeInTheDocument();
+  });
+
+  it('renders the fulfillment trust line', () => {
+    renderPage();
+    expect(screen.getByText(/printed and shipped by bonfire/i)).toBeInTheDocument();
+  });
+
+  it('renders one card per scraped variant, deep-linking to its Bonfire campaign', () => {
+    renderPage();
+    const grid = screen.getByRole('list', { name: /merch products/i });
+    const cards = within(grid).getAllByRole('listitem');
+    expect(cards).toHaveLength(merchProducts.products.length);
+
+    for (const product of merchProducts.products) {
+      const link = screen.getByRole('link', { name: new RegExp(`${product.name} on Bonfire`, 'i') });
+      expect(link).toHaveAttribute('href', product.url);
+      expect(link).toHaveAttribute('target', '_blank');
+      expect(link).toHaveAttribute('rel', expect.stringContaining('noopener'));
+    }
+  });
+
+  it('renders Shop everything CTAs pointing at the Bonfire store, opening in a new tab', () => {
+    renderPage();
+    const ctas = screen.getAllByRole('link', { name: /shop everything/i });
+    expect(ctas.length).toBeGreaterThanOrEqual(1);
+    for (const cta of ctas) {
+      expect(cta).toHaveAttribute('href', MERCH_STORE_URL);
+      expect(cta).toHaveAttribute('target', '_blank');
+      expect(cta).toHaveAttribute('rel', expect.stringContaining('noopener'));
+    }
   });
 });

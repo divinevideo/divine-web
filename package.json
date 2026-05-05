@@ -18,7 +18,8 @@
     "precalculate-thumbnails": "tsx scripts/precalculate-hashtag-thumbnails.ts",
     "generate-icons": "node scripts/generate-icons.js",
     "test:visual": "playwright test",
-    "test:visual:update": "playwright test --update-snapshots"
+    "test:visual:update": "playwright test --update-snapshots",
+    "merch:scrape": "node scripts/scrape-bonfire-products.mjs"
   },
   "dependencies": {
     "@divinevideo/login": "^1.0.0",
