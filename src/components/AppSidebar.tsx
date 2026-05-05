@@ -25,6 +25,7 @@ import { feedUrls } from '@/lib/feedUrls';
 import { useRssFeedAvailable } from '@/hooks/useRssFeedAvailable';
 import { usePlatformStats } from '@/hooks/usePlatformStats';
 import { LanguageMenu } from '@/components/LanguageMenu';
+import { SocialLinks } from '@/components/SocialLinks';
 import { getTranslatedCategoryLabel } from '@/lib/constants/categories';
 import { getPreferredAppStoreCountry, lookupAppStoreUrl, PLAY_STORE_URL } from '@/lib/mobileStoreLinks';
 
@@ -386,6 +387,9 @@ export function AppSidebar({ className }: { className?: string }) {
             />
           )}
         </div>
+
+        {/* Social media — visible on every page, not just About/ProofMode. */}
+        <SocialLinks className="mt-6 px-4 flex-wrap gap-y-2" iconClassName="dark:invert" />
 
         {/* Footer Section - flows naturally, no pinning */}
         <div className="mt-6 px-4">
