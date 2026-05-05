@@ -65,4 +65,34 @@ describe('UnifiedListCard', () => {
     expect(screen.queryByTestId('member-count-badge')).not.toBeInTheDocument();
     expect(screen.getByText('Best Vines')).toBeInTheDocument();
   });
+
+  it('threads previews into PeopleListCard so loaded avatars render', () => {
+    const previews = {
+      getMemberMetadata: (pubkey: string) =>
+        pubkey === 'b'.repeat(64) ? { picture: 'https://cdn.example/avatar-b.jpg' } : undefined,
+      getVideoThumbnail: () => undefined,
+    };
+
+    const { container } = wrap(
+      <UnifiedListCard kind={30000} list={PEOPLE_LIST} previews={previews} />,
+    );
+
+    const img = container.querySelector('img[src="https://cdn.example/avatar-b.jpg"]');
+    expect(img).not.toBeNull();
+  });
+
+  it('threads previews into VideoListCard so the first-video thumbnail overrides list.image', () => {
+    const previews = {
+      getMemberMetadata: () => undefined,
+      getVideoThumbnail: (pubkey: string, listId: string) =>
+        pubkey === PUBKEY && listId === 'best-vines'
+          ? 'https://cdn.example/thumb.jpg'
+          : undefined,
+    };
+
+    wrap(<UnifiedListCard kind={30005} list={VIDEO_LIST} previews={previews} />);
+
+    const img = screen.getByTestId('video-list-cover-image');
+    expect(img).toHaveAttribute('src', 'https://cdn.example/thumb.jpg');
+  });
 });

@@ -35,6 +35,13 @@ vi.mock('@/hooks/useDiscoveryLists', () => ({
   useDiscoveryLists: () => ({ data: mockDiscoveryListsData, isLoading: false, isError: false }),
 }));
 
+vi.mock('@/hooks/useDiscoveryListPreviews', () => ({
+  useDiscoveryListPreviews: () => ({
+    getMemberMetadata: () => undefined,
+    getVideoThumbnail: () => undefined,
+  }),
+}));
+
 vi.mock('@/components/VideoFeed', () => ({
   VideoFeed: () => <div data-testid="video-feed" />,
 }));
