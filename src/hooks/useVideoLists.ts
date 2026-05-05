@@ -29,7 +29,7 @@ export interface VideoList {
 /**
  * Parse a video list event (kind 30005)
  */
-function parseVideoList(event: NostrEvent): VideoList | null {
+export function parseVideoList(event: NostrEvent): VideoList | null {
   const dTag = event.tags.find(tag => tag[0] === 'd')?.[1];
   if (!dTag) return null;
 
