@@ -34,7 +34,9 @@ const D_TAG = 'my-people-list';
 const MEMBER_PUBKEY_A = 'b'.repeat(64);
 const MEMBER_PUBKEY_B = 'c'.repeat(64);
 
-function makeMembers(overrides: Partial<{ nip05: string }>[] = [{}]) {
+type MemberOverride = Partial<{ nip05: string; display_name: string; name: string }>;
+
+function makeMembers(overrides: MemberOverride[] = [{}]) {
   return overrides.map((o, i) => ({
     pubkey: i === 0 ? MEMBER_PUBKEY_A : MEMBER_PUBKEY_B,
     metadata: {
@@ -83,7 +85,7 @@ describe('PeopleListMembersGrid', () => {
       failureCount: 0,
       failureReason: null,
       submittedAt: 0,
-    } as ReturnType<typeof useRemoveFromPeopleList>);
+    } as unknown as ReturnType<typeof useRemoveFromPeopleList>);
   });
 
   it('renders one row per member with display_name shown', () => {
@@ -157,7 +159,7 @@ describe('PeopleListMembersGrid', () => {
       failureCount: 0,
       failureReason: null,
       submittedAt: 0,
-    } as ReturnType<typeof useRemoveFromPeopleList>);
+    } as unknown as ReturnType<typeof useRemoveFromPeopleList>);
 
     mockUsePeopleListMembers.mockReturnValue({
       members: makeMembers([{}]),

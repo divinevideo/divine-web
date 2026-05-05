@@ -69,9 +69,13 @@ export function ProfileListsTab({ pubkey, isOwn }: ProfileListsTabProps) {
         </>
       )}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {allLists.map(({ kind, list }) => (
-          <UnifiedListCard key={`${kind}:${list.id}`} kind={kind} list={list} />
-        ))}
+        {allLists.map((entry) =>
+          entry.kind === 30000 ? (
+            <UnifiedListCard key={`30000:${entry.list.id}`} kind={30000} list={entry.list} />
+          ) : (
+            <UnifiedListCard key={`30005:${entry.list.id}`} kind={30005} list={entry.list} />
+          ),
+        )}
       </div>
     </div>
   );

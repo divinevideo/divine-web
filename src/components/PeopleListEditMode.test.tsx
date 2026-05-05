@@ -71,7 +71,7 @@ function makeMutationReturn(mutateAsync = vi.fn().mockResolvedValue(undefined)) 
     failureCount: 0,
     failureReason: null,
     submittedAt: 0,
-  } as ReturnType<typeof useAddToPeopleList>;
+  } as unknown as ReturnType<typeof useAddToPeopleList>;
 }
 
 function renderScreen(props: { pubkey?: string; dTag?: string } = {}) {

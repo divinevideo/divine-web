@@ -1,6 +1,7 @@
 // ABOUTME: Discovery card for a NIP-51 people list (Figma #1/#2 design)
 // ABOUTME: Shows a mosaic media area with member avatars, member count badge, title and description
 
+import type * as React from 'react';
 import { Link } from 'react-router-dom';
 import { UsersThree } from '@phosphor-icons/react';
 import { SectionHeader } from '@/components/brand/SectionHeader';
@@ -21,7 +22,7 @@ function pubkeyToHue(pubkey: string): number {
   return hash % 360;
 }
 
-function PlaceholderSwatch({ pubkey, className }: { pubkey: string; className?: string }) {
+function PlaceholderSwatch({ pubkey, className, style }: { pubkey: string; className?: string; style?: React.CSSProperties }) {
   const hue = pubkeyToHue(pubkey);
   return (
     <div
@@ -30,6 +31,7 @@ function PlaceholderSwatch({ pubkey, className }: { pubkey: string; className?: 
       style={{
         backgroundColor: `hsl(${hue}, 55%, 65%)`,
         borderRadius: 4,
+        ...style,
       }}
     />
   );
@@ -39,10 +41,12 @@ function AvatarTile({
   src,
   pubkey,
   className,
+  style,
 }: {
   src?: string;
   pubkey: string;
   className?: string;
+  style?: React.CSSProperties;
 }) {
   if (src) {
     return (
@@ -50,12 +54,12 @@ function AvatarTile({
         src={src}
         alt=""
         className={className}
-        style={{ objectFit: 'cover', borderRadius: 4 }}
+        style={{ objectFit: 'cover', borderRadius: 4, ...style }}
         loading="lazy"
       />
     );
   }
-  return <PlaceholderSwatch pubkey={pubkey} className={className} />;
+  return <PlaceholderSwatch pubkey={pubkey} className={className} style={style} />;
 }
 
 // ---- media mosaic ------------------------------------------------------------

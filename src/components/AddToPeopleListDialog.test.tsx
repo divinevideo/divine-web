@@ -115,7 +115,7 @@ describe('AddToPeopleListDialog', () => {
     mockUsePeopleLists.mockReturnValue({
       data: [LIST_A, LIST_B],
       isLoading: false,
-    } as ReturnType<typeof usePeopleLists>);
+    } as unknown as ReturnType<typeof usePeopleLists>);
 
     render(
       <AddToPeopleListDialog
@@ -133,7 +133,7 @@ describe('AddToPeopleListDialog', () => {
     mockUsePeopleLists.mockReturnValue({
       data: [LIST_A, LIST_B],
       isLoading: false,
-    } as ReturnType<typeof usePeopleLists>);
+    } as unknown as ReturnType<typeof usePeopleLists>);
 
     render(
       <AddToPeopleListDialog
@@ -155,7 +155,7 @@ describe('AddToPeopleListDialog', () => {
     mockUsePeopleLists.mockReturnValue({
       data: [LIST_A, LIST_B],
       isLoading: false,
-    } as ReturnType<typeof usePeopleLists>);
+    } as unknown as ReturnType<typeof usePeopleLists>);
 
     render(
       <AddToPeopleListDialog
@@ -188,7 +188,7 @@ describe('AddToPeopleListDialog', () => {
     mockUsePeopleLists.mockReturnValue({
       data: [],
       isLoading: false,
-    } as ReturnType<typeof usePeopleLists>);
+    } as unknown as ReturnType<typeof usePeopleLists>);
 
     render(
       <AddToPeopleListDialog
