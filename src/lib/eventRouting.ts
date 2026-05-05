@@ -28,6 +28,22 @@ export function buildListPath(pubkey: string, listId: string): string {
   return `/list/${pubkey}/${encodeURIComponent(listId)}`;
 }
 
+export function buildListMembersPath(pubkey: string, dTag: string): string {
+  return `${buildListPath(pubkey, dTag)}/members`;
+}
+
+export function buildListVideosPath(pubkey: string, dTag: string): string {
+  return `${buildListPath(pubkey, dTag)}/videos`;
+}
+
+export function buildListEditPath(pubkey: string, dTag: string): string {
+  return `${buildListPath(pubkey, dTag)}/edit`;
+}
+
+export function decodeListIdParam(raw: string): string {
+  try { return decodeURIComponent(raw); } catch { return raw; }
+}
+
 export function buildEventPath(eventId: string): string {
   return `/event/${encodeURIComponent(eventId)}`;
 }
