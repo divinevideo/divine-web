@@ -89,6 +89,19 @@ function getTimePeriodIcon(period: TimePeriod) {
   }
 }
 
+// For alltime, the API returns time-correct `views` (every play start) which is bigger
+// than `loops` (Vine-style replay/completion count). For windowed periods the API does
+// NOT honor the filter on `views` (it leaks alltime totals), so we fall back to `loops`,
+// which IS windowed. Label tracks which value we used so we never lie about the metric.
+function getHeadlineCount(entry: { views?: number; loops?: number }, period: TimePeriod): number {
+  if (period === 'alltime') return entry.views || entry.loops || 0;
+  return entry.loops || 0;
+}
+
+function getHeadlineLabel(period: TimePeriod): string {
+  return period === 'alltime' ? 'plays' : 'loops';
+}
+
 function VideoLeaderboardSkeleton() {
   return (
     <div className="space-y-3">
@@ -204,8 +217,8 @@ function VideoLeaderboard({ period }: { period: TimePeriod }) {
         }
       }
 
-      // Sort client-side as workaround for backend sorting bug
-      return entries.sort((a, b) => (b.loops || 0) - (a.loops || 0));
+      // Sort client-side by the same metric we display so rank matches the headline number.
+      return entries.sort((a, b) => getHeadlineCount(b, period) - getHeadlineCount(a, period));
     },
     staleTime: 60000, // 1 minute
     retry: 1,
@@ -272,8 +285,8 @@ function VideoLeaderboard({ period }: { period: TimePeriod }) {
             </div>
 
             <div className="text-right">
-              <p className="font-bold text-lg">{formatLoops(video.loops || 0)}</p>
-              <p className="text-xs text-muted-foreground">loops</p>
+              <p className="font-bold text-lg">{formatLoops(getHeadlineCount(video, period))}</p>
+              <p className="text-xs text-muted-foreground">{getHeadlineLabel(period)}</p>
             </div>
           </Link>
         );
@@ -305,8 +318,8 @@ function CreatorLeaderboard({ period }: { period: TimePeriod }) {
       const data = await response.json();
       // API returns { period, entries: [...] }
       const entries = (data.entries || data) as CreatorLeaderboardItem[];
-      // Sort client-side as workaround for backend sorting bug
-      return entries.sort((a, b) => (b.loops || 0) - (a.loops || 0));
+      // Sort client-side by the same metric we display so rank matches the headline number.
+      return entries.sort((a, b) => getHeadlineCount(b, period) - getHeadlineCount(a, period));
     },
     staleTime: 60000,
     retry: 1,
@@ -368,8 +381,8 @@ function CreatorLeaderboard({ period }: { period: TimePeriod }) {
             </div>
 
             <div className="text-right">
-              <p className="font-bold text-lg">{formatLoops(creator.loops || 0)}</p>
-              <p className="text-xs text-muted-foreground">total loops</p>
+              <p className="font-bold text-lg">{formatLoops(getHeadlineCount(creator, period))}</p>
+              <p className="text-xs text-muted-foreground">total {getHeadlineLabel(period)}</p>
             </div>
           </Link>
         );
