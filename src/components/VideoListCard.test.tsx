@@ -61,6 +61,12 @@ describe('VideoListCard', () => {
     expect(screen.queryByText('A handpicked collection of classic loops.')).not.toBeInTheDocument();
   });
 
+  it('links to the canonical list detail route /list/<pubkey>/<dTag>', () => {
+    renderCard();
+    const link = screen.getByRole('link');
+    expect(link).toHaveAttribute('href', `/list/${PUBKEY}/best-vines`);
+  });
+
   it('renders cover image when list.image is set, falls back to placeholder otherwise', () => {
     const { unmount } = renderCard();
     expect(screen.getByTestId('video-list-cover-image')).toBeInTheDocument();
