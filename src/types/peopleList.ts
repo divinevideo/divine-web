@@ -15,10 +15,36 @@ export interface PeopleList {
 
 const HEX64 = /^[0-9a-f]{64}$/i;
 
+// Other Nostr clients abuse kind 30000 for mute/block/dm-contact lists.
+// These reserved d-tag values mean the event is a system list, not a
+// curated follow set, so we drop them everywhere people lists surface.
+const RESERVED_LIST_DTAGS = new Set([
+  'mute',
+  'mutelist',
+  'mute-list',
+  'mute list',
+  'muted',
+  'block',
+  'blocklist',
+  'block-list',
+  'block list',
+  'blocked',
+  'dm-contacts',
+  'dm contacts',
+  'dmcontacts',
+  'hidden',
+  'denylist',
+]);
+
+export function isReservedListDTag(dTag: string): boolean {
+  return RESERVED_LIST_DTAGS.has(dTag.trim().toLowerCase());
+}
+
 export function parsePeopleList(event: NostrEvent): PeopleList | null {
   if (event.kind !== PEOPLE_LIST_KIND) return null;
   const dTag = event.tags.find(t => t[0] === 'd')?.[1];
   if (!dTag) return null;
+  if (isReservedListDTag(dTag)) return null;
 
   const seen = new Set<string>();
   const members: string[] = [];

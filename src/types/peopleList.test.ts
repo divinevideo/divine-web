@@ -37,6 +37,31 @@ describe('parsePeopleList', () => {
     });
   });
 
+  it.each([
+    ['mute'],
+    ['Mute'],
+    ['mutelist'],
+    ['mute-list'],
+    ['muted'],
+    ['block'],
+    ['Block List'],
+    ['block-list'],
+    ['blocklist'],
+    ['dm-contacts'],
+    ['dm contacts'],
+    ['hidden'],
+    ['denylist'],
+  ])('returns null for reserved system d-tag %p', (dTag) => {
+    expect(parsePeopleList(makeEvent([['d', dTag]]))).toBeNull();
+    expect(parsePeopleList(makeEvent([['d', dTag], ['title', 'X']]))).toBeNull();
+  });
+
+  it('still parses real curated lists with normal d-tags', () => {
+    const list = parsePeopleList(makeEvent([['d', 'close-friends'], ['title', 'Close Friends']]));
+    expect(list).not.toBeNull();
+    expect(list?.name).toBe('Close Friends');
+  });
+
   it('parses full event with members', () => {
     const list = parsePeopleList(makeEvent([
       ['d', 'team'],

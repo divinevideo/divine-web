@@ -146,6 +146,67 @@ describe('useDiscoveryLists', () => {
     expect(items[0].list.id).toBe('valid-list');
   });
 
+  it('filters out kind 30000 events that look like system/mute lists', async () => {
+    const member = 'b'.repeat(64);
+    const realList = makePeopleListEvent({ dTag: 'real-curated', members: [member] });
+
+    // Other clients publish kind 30000 with reserved d-tags for non-curatorial purposes
+    const blockList: NostrEvent = {
+      id: 'block-id',
+      pubkey: BASE_PK,
+      kind: 30000,
+      created_at: 1_700_000_000,
+      content: '',
+      sig: 'sig',
+      tags: [['d', 'Block List'], ['p', member]],
+    };
+    const dmContacts: NostrEvent = {
+      id: 'dm-id',
+      pubkey: BASE_PK,
+      kind: 30000,
+      created_at: 1_700_000_000,
+      content: '',
+      sig: 'sig',
+      tags: [['d', 'dm-contacts'], ['p', member]],
+    };
+
+    mockQuery.mockResolvedValue([realList, blockList, dmContacts]);
+
+    const { Wrapper } = makeWrapper();
+    const { result } = renderHook(() => useDiscoveryLists(), { wrapper: Wrapper });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    const items = result.current.data!;
+    expect(items).toHaveLength(1);
+    expect(items[0].list.id).toBe('real-curated');
+  });
+
+  it('filters out kind 30000 events without a title tag (untitled lists not discoverable)', async () => {
+    const member = 'b'.repeat(64);
+    const titled = makePeopleListEvent({ dTag: 'titled-list', members: [member] });
+    const untitled: NostrEvent = {
+      id: 'untitled-id',
+      pubkey: BASE_PK,
+      kind: 30000,
+      created_at: 1_700_000_000,
+      content: '',
+      sig: 'sig',
+      tags: [['d', 'random-d-tag'], ['p', member]],
+    };
+
+    mockQuery.mockResolvedValue([titled, untitled]);
+
+    const { Wrapper } = makeWrapper();
+    const { result } = renderHook(() => useDiscoveryLists(), { wrapper: Wrapper });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    const items = result.current.data!;
+    expect(items).toHaveLength(1);
+    expect(items[0].list.id).toBe('titled-list');
+  });
+
   it('limits result to 20 items even when relay returns more', async () => {
     // Create 25 valid people-list events
     const events: NostrEvent[] = Array.from({ length: 25 }, (_, i) =>
