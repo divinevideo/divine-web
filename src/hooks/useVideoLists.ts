@@ -528,6 +528,7 @@ export function useDeleteVideoList() {
         content: 'List deleted by owner',
         tags: [
           ['a', `30005:${user.pubkey}:${listId}`],
+          ['k', '30005'], // NIP-09: k tag names the kind being deleted
         ]
       });
 
