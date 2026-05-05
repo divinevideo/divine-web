@@ -17,6 +17,7 @@ import { Star, Clock, Hash, Flame, Sparkle as Sparkles, ListBullets } from '@pho
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useCategories } from '@/hooks/useCategories';
 import { useDiscoveryLists } from '@/hooks/useDiscoveryLists';
+import { useDiscoveryListPreviews } from '@/hooks/useDiscoveryListPreviews';
 import { getTranslatedCategoryLabel } from '@/lib/constants/categories';
 
 // All possible tab values (foryou only shown when logged in)
@@ -236,6 +237,7 @@ export function DiscoveryPage() {
 
 function ListsTabContent() {
   const { data: items = [], isLoading, isError } = useDiscoveryLists();
+  const previews = useDiscoveryListPreviews(items);
 
   if (isLoading) {
     return (
@@ -272,6 +274,7 @@ function ListsTabContent() {
         <UnifiedListCard
           key={`${item.kind}-${item.list.id}-${item.list.pubkey}`}
           {...item}
+          previews={previews}
         />
       ))}
     </div>

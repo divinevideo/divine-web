@@ -60,10 +60,13 @@ function ThumbnailTile({ image, name, videoCount }: ThumbnailTileProps) {
 
 export interface VideoListCardProps {
   list: VideoList;
+  /** Override thumbnail URL — typically the first video's thumbnail when list.image is absent */
+  thumbnail?: string;
 }
 
-export function VideoListCard({ list }: VideoListCardProps) {
+export function VideoListCard({ list, thumbnail }: VideoListCardProps) {
   const href = buildListPath(list.pubkey, list.id);
+  const coverImage = thumbnail || list.image;
 
   return (
     <Link
@@ -72,7 +75,7 @@ export function VideoListCard({ list }: VideoListCardProps) {
       aria-label={list.name}
     >
       <ThumbnailTile
-        image={list.image}
+        image={coverImage}
         name={list.name}
         videoCount={list.videoCoordinates.length}
       />
