@@ -14,7 +14,7 @@ export interface PeopleListStats {
 }
 
 export function usePeopleListStats(pubkey: string | undefined, dTag: string | undefined) {
-  const list = usePeopleList(pubkey, dTag);
+  const list = usePeopleList(pubkey || '', dTag || '');
   const memberPubkeys = list.data?.members ?? [];
   const apiUrl = API_CONFIG.funnelcake.baseUrl;
   const restOk = isFunnelcakeAvailable(apiUrl);
