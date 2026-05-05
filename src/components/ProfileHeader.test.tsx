@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
 import { ProfileHeader } from './ProfileHeader';
@@ -18,6 +19,11 @@ vi.mock('./ReportContentDialog', () => ({
 
 vi.mock('./UserListDialog', () => ({
   UserListDialog: () => null,
+}));
+
+vi.mock('./AddToPeopleListDialog', () => ({
+  AddToPeopleListDialog: ({ open, memberPubkey }: { open: boolean; memberPubkey: string }) =>
+    open ? <div data-testid="add-to-people-list-dialog" data-member-pubkey={memberPubkey} /> : null,
 }));
 
 vi.mock('@/hooks/useRssFeedAvailable', () => ({
@@ -132,5 +138,66 @@ describe('ProfileHeader', () => {
     );
 
     expect(screen.queryByRole('link', { name: /twitter \/ x/i })).not.toBeInTheDocument();
+  });
+
+  it('renders "Add to list…" menu item when viewing another user profile', async () => {
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <ProfileHeader
+          pubkey={'b'.repeat(64)}
+          metadata={{ display_name: 'Another User' }}
+          stats={baseStats}
+          isOwnProfile={false}
+          isFollowing={false}
+          onFollowToggle={vi.fn()}
+        />
+      </MemoryRouter>
+    );
+
+    await user.click(screen.getByTestId('profile-menu-button'));
+    expect(screen.getByText('Add to list…')).toBeInTheDocument();
+  });
+
+  it('hides "Add to list…" when viewing own profile', async () => {
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <ProfileHeader
+          pubkey={'c'.repeat(64)}
+          metadata={{ display_name: 'Me' }}
+          stats={baseStats}
+          isOwnProfile={true}
+          isFollowing={false}
+          onFollowToggle={vi.fn()}
+        />
+      </MemoryRouter>
+    );
+
+    await user.click(screen.getByTestId('own-profile-menu-button'));
+    expect(screen.queryByText('Add to list…')).not.toBeInTheDocument();
+  });
+
+  it('clicking "Add to list…" opens AddToPeopleListDialog', async () => {
+    const user = userEvent.setup();
+    const profilePubkey = 'd'.repeat(64);
+    render(
+      <MemoryRouter>
+        <ProfileHeader
+          pubkey={profilePubkey}
+          metadata={{ display_name: 'Someone Else' }}
+          stats={baseStats}
+          isOwnProfile={false}
+          isFollowing={false}
+          onFollowToggle={vi.fn()}
+        />
+      </MemoryRouter>
+    );
+
+    await user.click(screen.getByTestId('profile-menu-button'));
+    await user.click(screen.getByText('Add to list…'));
+    const dialog = screen.getByTestId('add-to-people-list-dialog');
+    expect(dialog).toBeInTheDocument();
+    expect(dialog).toHaveAttribute('data-member-pubkey', profilePubkey);
   });
 });
