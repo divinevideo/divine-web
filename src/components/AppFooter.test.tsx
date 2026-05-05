@@ -33,7 +33,7 @@ describe('AppFooter', () => {
 
     expect(screen.getByRole('link', { name: 'Translated merch' })).toHaveAttribute(
       'href',
-      'https://www.bonfire.com/store/divine-18/',
+      '/merch',
     );
   });
 });

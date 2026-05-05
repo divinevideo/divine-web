@@ -1,7 +1,7 @@
 // ABOUTME: TikTok-style left sidebar navigation for desktop
 // ABOUTME: Shows main nav, login/signup, expandable Divine links section
 
-import { useLocation } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { House as Home, Compass, MagnifyingGlass as Search, Bell, User, Sun, Moon, CaretDown as ChevronDown, Headphones, ChartBar as BarChart3, SquaresFour as LayoutGrid, Rss, ChatCircle as MessageCircle } from '@phosphor-icons/react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -27,7 +27,6 @@ import { usePlatformStats } from '@/hooks/usePlatformStats';
 import { LanguageMenu } from '@/components/LanguageMenu';
 import { getTranslatedCategoryLabel } from '@/lib/constants/categories';
 import { getPreferredAppStoreCountry, lookupAppStoreUrl, PLAY_STORE_URL } from '@/lib/mobileStoreLinks';
-import { MERCH_STORE_URL } from '@/lib/externalLinks';
 
 interface NavItemProps {
   icon: React.ReactNode;
@@ -453,14 +452,12 @@ export function AppSidebar({ className }: { className?: string }) {
               >
                 {t('menu.mediaResources')}
               </a>
-              <a
-                href={MERCH_STORE_URL}
-                target="_blank"
-                rel="noopener noreferrer"
+              <Link
+                to="/merch"
                 className="transition-colors hover:text-primary"
               >
                 {t('menu.merch')}
-              </a>
+              </Link>
             </div>
           </CollapsibleContent>
         </Collapsible>

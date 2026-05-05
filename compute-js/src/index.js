@@ -24,8 +24,6 @@ const EXTERNAL_REDIRECTS = {
   '/media-resources': { url: 'https://about.divine.video/media-resources/', status: 301 },
   '/news/vine-revisited': { url: 'https://about.divine.video/vine-revisited-a-return-to-the-halcyon-days-of-the-internet/', status: 301 },
   '/discord': { url: 'https://discord.gg/d6HpB6XnHp', status: 302 },
-  '/merch': { url: 'https://www.bonfire.com/store/divine-18/', status: 302 },
-  '/merch/': { url: 'https://www.bonfire.com/store/divine-18/', status: 302 },
 };
 
 // eslint-disable-next-line no-restricted-globals

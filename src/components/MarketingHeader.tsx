@@ -3,7 +3,6 @@
 
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { MERCH_STORE_URL } from "@/lib/externalLinks";
 
 export function MarketingHeader() {
   const { t } = useTranslation();
@@ -47,12 +46,12 @@ export function MarketingHeader() {
             >
               In the News
             </a>
-            <a
-              href={MERCH_STORE_URL}
+            <Link
+              to="/merch"
               className="text-sm font-medium text-brand-off-white hover:text-brand-green transition-colors"
             >
               {t('menu.merch')}
-            </a>
+            </Link>
             <Link
               to="/discovery"
               className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold bg-primary text-white rounded-full hover:brightness-110 transition-colors"

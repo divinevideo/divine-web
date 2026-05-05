@@ -18,7 +18,6 @@ import { HubSpotSignup } from "@/components/HubSpotSignup";
 import { AuthenticDemo } from "@/components/landing/AuthenticDemo";
 import { VerifiedDemo } from "@/components/landing/VerifiedDemo";
 import { DecentralizedDemo } from "@/components/landing/DecentralizedDemo";
-import { MERCH_STORE_URL } from "@/lib/externalLinks";
 
 const SCREENSHOTS: Array<{ src: string; alt: string }> = [
   { src: "/screenshots/iPad 13 inch-0.avif", alt: "Divine video feed" },
@@ -72,12 +71,12 @@ export function LandingPage() {
                 <span className="md:hidden">News</span>
                 <span className="hidden md:inline">In the News</span>
               </a>
-              <a
-                href={MERCH_STORE_URL}
+              <Link
+                to="/merch"
                 className="hidden sm:inline text-xs md:text-sm font-medium text-foreground hover:text-primary transition-colors"
               >
                 {t('menu.merch')}
-              </a>
+              </Link>
               <Button asChild variant="sticker" size="sm">
                 <Link to="/discovery">Try it</Link>
               </Button>

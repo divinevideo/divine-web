@@ -1,5 +1,4 @@
 import { SmartLink } from '@/components/SmartLink';
-import { MERCH_STORE_URL } from '@/lib/externalLinks';
 import { useTranslation } from 'react-i18next';
 import { HubSpotSignup } from './HubSpotSignup';
 
@@ -66,14 +65,9 @@ export function AppFooter() {
                   Blog
                 </a>
                 <span>•</span>
-                <a
-                  href={MERCH_STORE_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="hover:text-brand-off-white transition-colors"
-                >
+                <SmartLink to="/merch" className="hover:text-brand-off-white transition-colors">
                   {t('menu.merch')}
-                </a>
+                </SmartLink>
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 <SmartLink to="/support" className="hover:text-brand-off-white transition-colors">

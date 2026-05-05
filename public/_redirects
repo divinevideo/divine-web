@@ -8,7 +8,3 @@
 # Redirect about page to WordPress subdomain
 /about  https://about.divine.video/  301
 /about/  https://about.divine.video/  301
-
-# Redirect merch shortcut to the Bonfire store
-/merch  https://www.bonfire.com/store/divine-18/  302
-/merch/  https://www.bonfire.com/store/divine-18/  302
