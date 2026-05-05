@@ -9,18 +9,17 @@ import { useNostr } from '@nostrify/react';
 import { useQuery } from '@tanstack/react-query';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useAuthor } from '@/hooks/useAuthor';
-import { useRemoveVideoFromList, useDeleteVideoList } from '@/hooks/useVideoLists';
+import { useDeleteVideoList } from '@/hooks/useVideoLists';
 import { parseVideoListFromEvent, type PlayOrder, type VideoList } from '@/lib/parseVideoListFromEvent';
 import { EditListDialog } from '@/components/EditListDialog';
 import { DeleteListDialog } from '@/components/DeleteListDialog';
-import { VideoGrid } from '@/components/VideoGrid';
+import { VideoListContent } from '@/components/VideoListContent';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { ArrowLeft, List, VideoCamera as Video, Clock, PencilSimple as Edit, ShareNetwork as Share2, Users, Shuffle, ArrowsDownUp as ArrowUpDown, DotsThreeVertical as MoreVertical, Trash as Trash2 } from '@phosphor-icons/react';
+import { ArrowLeft, List, VideoCamera as Video, Clock, PencilSimple as Edit, ShareNetwork as Share2, Users, Shuffle, ArrowsDownUp as ArrowUpDown, Trash as Trash2 } from '@phosphor-icons/react';
 import { genUserName } from '@/lib/genUserName';
 import { formatDistanceToNow } from 'date-fns';
 import { useToast } from '@/hooks/useToast';
@@ -29,103 +28,7 @@ import { useAppContext } from '@/hooks/useAppContext';
 import { getListShareData } from '@/lib/shareUtils';
 import { getSafeProfileImage } from '@/lib/imageUtils';
 import { getEventLookupRelayUrls } from '@/config/relays';
-import type { NostrEvent, NostrFilter } from '@nostrify/nostrify';
-import { SHORT_VIDEO_KIND, VIDEO_KINDS, type ParsedVideoData } from '@/types/video';
-import { parseVideoEvent, getVineId, getThumbnailUrl, getOriginalVineTimestamp, getLoopCount, getProofModeData, getOriginalLikeCount, getOriginalRepostCount, getOriginalCommentCount, getOriginPlatform, isVineMigrated } from '@/lib/videoParser';
 import { resolveListPermissions } from '@/lib/listPermissions';
-
-async function fetchListVideos(
-  nostr: { query: (filters: NostrFilter[], options: { signal: AbortSignal }) => Promise<NostrEvent[]> },
-  coordinates: string[],
-  signal: AbortSignal
-): Promise<ParsedVideoData[]> {
-  if (coordinates.length === 0) return [];
-
-  // Parse coordinates to extract pubkeys and d-tags
-  const filters: NostrFilter[] = [];
-  const coordinateMap = new Map<string, { pubkey: string; dTag: string }>();
-
-  coordinates.forEach(coord => {
-    const [kind, pubkey, dTag] = coord.split(':');
-    const kindNum = parseInt(kind, 10);
-    if (VIDEO_KINDS.includes(kindNum) && pubkey && dTag) {
-      coordinateMap.set(`${pubkey}:${dTag}`, { pubkey, dTag });
-    }
-  });
-
-  // Group by pubkey for efficient querying
-  const pubkeyGroups = new Map<string, string[]>();
-  coordinateMap.forEach(({ pubkey, dTag }) => {
-    if (!pubkeyGroups.has(pubkey)) {
-      pubkeyGroups.set(pubkey, []);
-    }
-    pubkeyGroups.get(pubkey)!.push(dTag);
-  });
-
-  // Create filters for each pubkey group
-  pubkeyGroups.forEach((dTags, pubkey) => {
-    filters.push({
-      kinds: VIDEO_KINDS,
-      authors: [pubkey],
-      '#d': dTags,
-      limit: dTags.length
-    });
-  });
-
-  if (filters.length === 0) return [];
-
-  const events = await nostr.query(filters, { signal });
-
-  // Parse and order videos according to list order
-  const videoMap = new Map<string, ParsedVideoData>();
-
-  events.forEach(event => {
-    const vineId = getVineId(event);
-    if (!vineId) return;
-
-    const videoEvent = parseVideoEvent(event);
-    if (!videoEvent?.videoMetadata?.url) return;
-
-    const key = `${event.pubkey}:${vineId}`;
-    videoMap.set(key, {
-      id: event.id,
-      pubkey: event.pubkey,
-      kind: SHORT_VIDEO_KIND,
-      createdAt: event.created_at,
-      originalVineTimestamp: getOriginalVineTimestamp(event),
-      content: event.content,
-      videoUrl: videoEvent.videoMetadata.url,
-      fallbackVideoUrls: videoEvent.videoMetadata?.fallbackUrls,
-      hlsUrl: videoEvent.videoMetadata?.hlsUrl,
-      thumbnailUrl: getThumbnailUrl(videoEvent),
-      title: videoEvent.title,
-      duration: videoEvent.videoMetadata?.duration,
-      hashtags: videoEvent.hashtags || [],
-      vineId,
-      loopCount: getLoopCount(event),
-      likeCount: getOriginalLikeCount(event),
-      repostCount: getOriginalRepostCount(event),
-      commentCount: getOriginalCommentCount(event),
-      proofMode: getProofModeData(event),
-      origin: getOriginPlatform(event),
-      isVineMigrated: isVineMigrated(event),
-      reposts: [] // List videos don't include repost data
-    });
-  });
-
-  // Return videos in the order they appear in the list
-  const orderedVideos: ParsedVideoData[] = [];
-  coordinates.forEach(coord => {
-    const [_, pubkey, dTag] = coord.split(':');
-    const key = `${pubkey}:${dTag}`;
-    const video = videoMap.get(key);
-    if (video) {
-      orderedVideos.push(video);
-    }
-  });
-
-  return orderedVideos;
-}
 
 const PlayOrderIcon = ({ order }: { order?: PlayOrder }) => {
   switch (order) {
@@ -164,7 +67,6 @@ export default function ListDetailPage() {
   const { user } = useCurrentUser();
   const { toast } = useToast();
   const { share } = useShare();
-  const removeVideo = useRemoveVideoFromList();
   const deleteList = useDeleteVideoList();
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -259,22 +161,6 @@ export default function ListDetailPage() {
     isCollaborative: list?.isCollaborative,
     allowedCollaborators: list?.allowedCollaborators,
   }, user?.pubkey);
-
-  // Fetch videos in the list
-  const { data: videos, isLoading: videosLoading } = useQuery({
-    queryKey: ['list-videos', pubkey, listId, list?.videoCoordinates],
-    queryFn: async (context) => {
-      if (!list) return [];
-
-      const signal = AbortSignal.any([
-        context.signal,
-        AbortSignal.timeout(10000)
-      ]);
-
-      return fetchListVideos(nostr, list.videoCoordinates, signal);
-    },
-    enabled: !!list
-  });
 
   // Fetch author info
   const author = useAuthor(pubkey || '');
@@ -446,98 +332,13 @@ export default function ListDetailPage() {
           </CardContent>
         </Card>
 
-        {/* Videos Grid */}
-        {videosLoading ? (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {[...Array(8)].map((_, i) => (
-              <Skeleton key={i} className="aspect-square rounded" />
-            ))}
-          </div>
-        ) : videos && videos.length > 0 ? (
-          <div>
-            <h2 className="text-lg font-semibold mb-4">{t('listDetailPage.videosInList')}</h2>
-
-            {permissions.canEditContent ? (
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                {videos.map((video) => {
-                  const videoCoord = `${video.kind}:${video.pubkey}:${video.vineId}`;
-                  return (
-                    <div key={video.id} className="relative group">
-                      <VideoGrid
-                        videos={[video]}
-                        navigationContext={{
-                          source: 'profile',
-                          pubkey: listOwnerPubkey || list.pubkey,
-                        }}
-                      />
-                      <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              variant="secondary"
-                              size="icon"
-                              className="h-8 w-8 bg-background/80 backdrop-blur-sm hover:bg-background"
-                            >
-                              <MoreVertical className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem
-                              onClick={async () => {
-                                try {
-                                  await removeVideo.mutateAsync({
-                                    listId: list.id,
-                                    ownerPubkey: listOwnerPubkey || list.pubkey,
-                                    videoCoordinate: videoCoord
-                                  });
-                                  toast({
-                                    title: t('listDetailPage.videoRemovedTitle'),
-                                    description: t('listDetailPage.videoRemovedDescription'),
-                                  });
-                                } catch (error) {
-                                  toast({
-                                    title: t('listDetailPage.errorTitle'),
-                                    description: error instanceof Error ? error.message : t('listDetailPage.removeVideoFailedDescription'),
-                                    variant: 'destructive',
-                                  });
-                                }
-                              }}
-                              className="text-destructive focus:text-destructive"
-                            >
-                              <Trash2 className="h-4 w-4 mr-2" />
-                              {t('listDetailPage.removeFromList')}
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <VideoGrid
-                videos={videos}
-                navigationContext={{
-                  source: 'profile',
-                  pubkey: listOwnerPubkey || list.pubkey,
-                }}
-              />
-            )}
-          </div>
-        ) : (
-          <Card className="border-dashed">
-            <CardContent className="py-12 text-center">
-              <Video className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-              <p className="text-muted-foreground">
-                {t('listDetailPage.emptyList')}
-              </p>
-              {permissions.canEditContent && (
-                <p className="text-sm text-muted-foreground mt-2">
-                  {t('listDetailPage.emptyListOwnerHint')}
-                </p>
-              )}
-            </CardContent>
-          </Card>
+        {/* Videos Grid — kind 30005 only; kind 30000 is handled in Task 6.5b */}
+        {listId && (
+          <VideoListContent
+            list={list}
+            pubkey={listOwnerPubkey || list.pubkey}
+            dTag={listId}
+          />
         )}
       </div>
 
