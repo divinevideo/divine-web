@@ -1,7 +1,10 @@
 import { SmartLink } from '@/components/SmartLink';
+import { useTranslation } from 'react-i18next';
 import { HubSpotSignup } from './HubSpotSignup';
 
 export function AppFooter() {
+  const { t } = useTranslation();
+
   return (
     <footer className="mt-auto border-t border-brand-dark-green py-6 pb-[calc(1.5rem+4rem+env(safe-area-inset-bottom))] md:pb-6 bg-brand-dark-green">
       <div className="container">
@@ -61,6 +64,10 @@ export function AppFooter() {
                 <a href="https://about.divine.video/blog/" className="hover:text-brand-off-white transition-colors">
                   Blog
                 </a>
+                <span>•</span>
+                <SmartLink to="/merch" className="hover:text-brand-off-white transition-colors">
+                  {t('menu.merch')}
+                </SmartLink>
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 <SmartLink to="/support" className="hover:text-brand-off-white transition-colors">
