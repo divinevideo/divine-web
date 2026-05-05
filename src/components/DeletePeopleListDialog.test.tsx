@@ -36,7 +36,7 @@ describe('DeletePeopleListDialog', () => {
       data: undefined,
       reset: vi.fn(),
       mutate: vi.fn(),
-    } as any);
+    } as unknown as ReturnType<typeof hooks.useDeletePeopleList>);
 
     const user = userEvent.setup();
 
@@ -68,7 +68,7 @@ describe('DeletePeopleListDialog', () => {
       data: undefined,
       reset: vi.fn(),
       mutate: vi.fn(),
-    } as any);
+    } as unknown as ReturnType<typeof hooks.useDeletePeopleList>);
 
     const user = userEvent.setup();
 
@@ -101,7 +101,7 @@ describe('DeletePeopleListDialog', () => {
       data: undefined,
       reset: vi.fn(),
       mutate: vi.fn(),
-    } as any);
+    } as unknown as ReturnType<typeof hooks.useDeletePeopleList>);
 
     const user = userEvent.setup();
 

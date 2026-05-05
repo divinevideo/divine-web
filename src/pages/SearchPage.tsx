@@ -23,7 +23,7 @@ import { useInfiniteSearchVideos } from '@/hooks/useInfiniteSearchVideos';
 import { useCompilationFullscreen } from '@/hooks/useCompilationFullscreen';
 import { useSearchUsers } from '@/hooks/useSearchUsers';
 import { useSearchHashtags, type HashtagResult } from '@/hooks/useSearchHashtags';
-import { useSearchLists, type SearchListResult } from '@/hooks/useSearchLists';
+import { useSearchLists } from '@/hooks/useSearchLists';
 import { UnifiedListCard } from '@/components/UnifiedListCard';
 import { getFunnelcakeBaseUrl } from '@/config/api';
 import { genUserName } from '@/lib/genUserName';

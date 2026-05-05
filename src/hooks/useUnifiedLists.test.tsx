@@ -7,6 +7,13 @@ import { useVideoLists } from './useVideoLists';
 vi.mock('./usePeopleLists');
 vi.mock('./useVideoLists');
 
+type PeopleListsResult = ReturnType<typeof usePeopleLists>;
+type VideoListsResult = ReturnType<typeof useVideoLists>;
+const mockPeople = (v: object) =>
+  vi.mocked(usePeopleLists).mockReturnValue(v as unknown as PeopleListsResult);
+const mockVideo = (v: object) =>
+  vi.mocked(useVideoLists).mockReturnValue(v as unknown as VideoListsResult);
+
 describe('useUnifiedLists', () => {
   const mockPubkey = 'abc123def456';
 
@@ -15,12 +22,12 @@ describe('useUnifiedLists', () => {
   });
 
   it('both empty returns empty arrays with false states', () => {
-    (usePeopleLists as any).mockReturnValue({
+    mockPeople({
       data: [],
       isLoading: false,
       isError: false,
     });
-    (useVideoLists as any).mockReturnValue({
+    mockVideo({
       data: [],
       isLoading: false,
       isError: false,
@@ -56,12 +63,12 @@ describe('useUnifiedLists', () => {
       },
     ];
 
-    (usePeopleLists as any).mockReturnValue({
+    mockPeople({
       data: peopleLists,
       isLoading: false,
       isError: false,
     });
-    (useVideoLists as any).mockReturnValue({
+    mockVideo({
       data: videoLists,
       isLoading: false,
       isError: false,
@@ -76,12 +83,12 @@ describe('useUnifiedLists', () => {
   });
 
   it('isLoading is true when either hook is loading', () => {
-    (usePeopleLists as any).mockReturnValue({
+    mockPeople({
       data: [],
       isLoading: true,
       isError: false,
     });
-    (useVideoLists as any).mockReturnValue({
+    mockVideo({
       data: [],
       isLoading: false,
       isError: false,
@@ -90,12 +97,12 @@ describe('useUnifiedLists', () => {
     const { result: result1 } = renderHook(() => useUnifiedLists(mockPubkey));
     expect(result1.current.isLoading).toBe(true);
 
-    (usePeopleLists as any).mockReturnValue({
+    mockPeople({
       data: [],
       isLoading: false,
       isError: false,
     });
-    (useVideoLists as any).mockReturnValue({
+    mockVideo({
       data: [],
       isLoading: true,
       isError: false,

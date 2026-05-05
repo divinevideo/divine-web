@@ -120,7 +120,7 @@ describe('PeopleListVideosGrid', () => {
     ];
 
     mockUsePeopleListMemberVideos.mockReturnValue(makeQuerySuccess([events]));
-    mockUseContentModeration.mockReturnValue(makeModeration() as any);
+    mockUseContentModeration.mockReturnValue(makeModeration() as unknown as ReturnType<typeof useContentModeration>);
     mockParseVideoEvents.mockReturnValue(parsed);
 
     render(<PeopleListVideosGrid pubkey={PUBKEY} dTag={D_TAG} />, { wrapper: wrap });
@@ -131,7 +131,7 @@ describe('PeopleListVideosGrid', () => {
   // Test 2: Empty state shown when 0 events
   it('shows empty state when no events are returned', () => {
     mockUsePeopleListMemberVideos.mockReturnValue(makeQuerySuccess([[]]));
-    mockUseContentModeration.mockReturnValue(makeModeration() as any);
+    mockUseContentModeration.mockReturnValue(makeModeration() as unknown as ReturnType<typeof useContentModeration>);
     mockParseVideoEvents.mockReturnValue([]);
 
     render(<PeopleListVideosGrid pubkey={PUBKEY} dTag={D_TAG} />, { wrapper: wrap });
@@ -143,7 +143,7 @@ describe('PeopleListVideosGrid', () => {
   // Test 3: Loading state shown when isLoading
   it('passes loading=true to VideoGrid when hook is loading', () => {
     mockUsePeopleListMemberVideos.mockReturnValue(makeQueryLoading());
-    mockUseContentModeration.mockReturnValue(makeModeration() as any);
+    mockUseContentModeration.mockReturnValue(makeModeration() as unknown as ReturnType<typeof useContentModeration>);
     mockParseVideoEvents.mockReturnValue([]);
 
     render(<PeopleListVideosGrid pubkey={PUBKEY} dTag={D_TAG} />, { wrapper: wrap });
@@ -167,7 +167,7 @@ describe('PeopleListVideosGrid', () => {
     ];
 
     mockUsePeopleListMemberVideos.mockReturnValue(makeQuerySuccess([events]));
-    mockUseContentModeration.mockReturnValue(makeModeration([mutedPubkey]) as any);
+    mockUseContentModeration.mockReturnValue(makeModeration([mutedPubkey]) as unknown as ReturnType<typeof useContentModeration>);
     mockParseVideoEvents.mockReturnValue(parsedAll);
 
     render(<PeopleListVideosGrid pubkey={PUBKEY} dTag={D_TAG} />, { wrapper: wrap });

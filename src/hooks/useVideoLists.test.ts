@@ -1,6 +1,6 @@
 // ABOUTME: Tests for useVideoLists hooks — NIP-51 video list management
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { renderHook, waitFor } from '@testing-library/react';
+import { renderHook } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
 import { useDeleteVideoList } from './useVideoLists';

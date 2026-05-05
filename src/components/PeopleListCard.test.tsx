@@ -3,8 +3,8 @@
 
 import React from 'react';
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
-import { MemoryRouter, useNavigate } from 'react-router-dom';
+import { render, screen } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import { PeopleListCard } from './PeopleListCard';
 import type { PeopleList } from '@/types/peopleList';
 
@@ -50,15 +50,11 @@ const EMPTY_MEMBERS_LIST: PeopleList = {
   createdAt: 1_700_000_000,
 };
 
-const MEMBERS_PREVIEW = [
-  { pubkey: 'b'.repeat(64), metadata: { picture: 'https://example.com/a.jpg' } },
-  { pubkey: 'c'.repeat(64), metadata: { picture: 'https://example.com/b.jpg' } },
-  { pubkey: 'd'.repeat(64), metadata: {} },
-];
+type MembersPreview = Array<{ pubkey: string; metadata?: { picture?: string } }>;
 
 function renderCard(
   list: PeopleList = LIST,
-  membersPreview?: typeof MEMBERS_PREVIEW,
+  membersPreview?: MembersPreview,
 ) {
   return render(
     <MemoryRouter>

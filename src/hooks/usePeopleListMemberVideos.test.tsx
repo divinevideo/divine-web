@@ -75,12 +75,12 @@ function makeListLoading() {
 describe('usePeopleListMemberVideos', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(useNostr).mockReturnValue({ nostr: { query: mockNostrQuery } } as any);
+    vi.mocked(useNostr).mockReturnValue({ nostr: { query: mockNostrQuery } } as unknown as ReturnType<typeof useNostr>);
   });
 
   // Test 1: empty members → query is disabled, nostr.query never called
   it('does not fire nostr.query when members list is empty', () => {
-    mockUsePeopleList.mockReturnValue(makeListSuccess([]) as any);
+    mockUsePeopleList.mockReturnValue(makeListSuccess([]) as unknown as ReturnType<typeof usePeopleList>);
 
     const { result } = renderHook(
       () => usePeopleListMemberVideos(PK, D_TAG),
@@ -95,7 +95,7 @@ describe('usePeopleListMemberVideos', () => {
 
   // Test 2: single page, sorted desc, next-page returns undefined when < PAGE_SIZE
   it('returns single page sorted by created_at desc, no next page when fewer than PAGE_SIZE events', async () => {
-    mockUsePeopleList.mockReturnValue(makeListSuccess([MEMBER_A, MEMBER_B]) as any);
+    mockUsePeopleList.mockReturnValue(makeListSuccess([MEMBER_A, MEMBER_B]) as unknown as ReturnType<typeof usePeopleList>);
 
     const older = makeEvent({ created_at: 900_000, pubkey: MEMBER_A });
     const newer = makeEvent({ created_at: 1_100_000, pubkey: MEMBER_B });
@@ -121,7 +121,7 @@ describe('usePeopleListMemberVideos', () => {
 
   // Test 3: two pages happy path — first page full (50 events), second partial (10 events)
   it('paginates correctly: first page of 50 + second page of 10 = 60 total events', async () => {
-    mockUsePeopleList.mockReturnValue(makeListSuccess([MEMBER_A]) as any);
+    mockUsePeopleList.mockReturnValue(makeListSuccess([MEMBER_A]) as unknown as ReturnType<typeof usePeopleList>);
 
     const PAGE_SIZE = 50;
 
@@ -163,7 +163,7 @@ describe('usePeopleListMemberVideos', () => {
 
   // Test 4: list still loading → query is disabled
   it('is disabled while usePeopleList is still loading', () => {
-    mockUsePeopleList.mockReturnValue(makeListLoading() as any);
+    mockUsePeopleList.mockReturnValue(makeListLoading() as unknown as ReturnType<typeof usePeopleList>);
 
     const { result } = renderHook(
       () => usePeopleListMemberVideos(PK, D_TAG),
