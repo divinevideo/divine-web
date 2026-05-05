@@ -270,8 +270,11 @@ export default function ListDetailPage() {
         AbortSignal.timeout(5000)
       ]);
 
+      // Query both kind 30000 (lists) and 30005 (curations)
+      // Kind 30000 detail rendering is wired in Chunk 6; for now, kind 30000 events
+      // parse through parseVideoList and render as nothing (acceptable interim).
       const events = await nostr.query([{
-        kinds: [30005],
+        kinds: [30000, 30005],
         authors: [pubkey],
         '#d': [listId],
         limit: 1
