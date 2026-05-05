@@ -35,6 +35,11 @@ export function useDiscoveryLists() {
 
       for (const event of events) {
         if (event.kind === PEOPLE_LIST_KIND) {
+          // Discovery surfaces require a real name — skip events whose name
+          // would fall back to the d-tag, which is how non-curated system
+          // lists from other clients leak in.
+          const hasTitle = !!event.tags.find(t => t[0] === 'title')?.[1];
+          if (!hasTitle) continue;
           const list = parsePeopleList(event);
           if (list !== null) {
             items.push({ kind: 30000, list });
