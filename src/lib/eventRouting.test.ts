@@ -4,6 +4,10 @@ import { SHORT_VIDEO_KIND } from '@/types/video';
 import {
   buildAddressableEventPath,
   buildListPath,
+  buildListMembersPath,
+  buildListVideosPath,
+  buildListEditPath,
+  decodeListIdParam,
   buildResolvedEventRoute,
   buildVideoPath,
   isListEventKind,
@@ -54,5 +58,29 @@ describe('eventRouting', () => {
     expect(isNoteEventKind(1111)).toBe(true);
     expect(isListEventKind(30001)).toBe(true);
     expect(isListEventKind(22)).toBe(false);
+  });
+});
+
+describe('list path helpers', () => {
+  const PK = 'a'.repeat(64);
+
+  it('encodes special characters in d-tag', () => {
+    expect(buildListPath(PK, 'with/slash')).toBe(`/list/${PK}/with%2Fslash`);
+  });
+
+  it('builds members path', () => {
+    expect(buildListMembersPath(PK, 'team')).toBe(`/list/${PK}/team/members`);
+  });
+
+  it('builds videos path', () => {
+    expect(buildListVideosPath(PK, 'team')).toBe(`/list/${PK}/team/videos`);
+  });
+
+  it('builds edit path', () => {
+    expect(buildListEditPath(PK, 'team')).toBe(`/list/${PK}/team/edit`);
+  });
+
+  it('decodeListIdParam round-trips encoded d-tag', () => {
+    expect(decodeListIdParam('with%2Fslash')).toBe('with/slash');
   });
 });
