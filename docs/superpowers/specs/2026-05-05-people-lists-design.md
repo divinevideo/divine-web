@@ -277,4 +277,3 @@ Existing list dialogs (`CreateListDialog.tsx`, `EditListDialog.tsx`, `AddToListD
 - "List of lists" (curated meta-lists) — out
 - "Private people lists" — phase 2 explicitly
 - Migrating existing kind:3 contact list into a default people list — out
-

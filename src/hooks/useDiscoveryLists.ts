@@ -10,8 +10,8 @@ export type DiscoveryListItem =
   | { kind: 30000; list: PeopleList }
   | { kind: 30005; list: VideoList };
 
-const LAST_WEEK_SECONDS = 7 * 24 * 60 * 60;
 const TOP_LIMIT = 20;
+const RELAY_FETCH_LIMIT = 500;
 
 function scoreList(memberOrVideoCount: number, createdAt: number): number {
   return memberOrVideoCount * 10 + createdAt / 1000;
@@ -23,17 +23,31 @@ export function useDiscoveryLists() {
   return useQuery<DiscoveryListItem[]>({
     queryKey: ['discovery-lists'],
     queryFn: async ({ signal }) => {
-      const since = Math.floor(Date.now() / 1000) - LAST_WEEK_SECONDS;
-      const abortSignal = AbortSignal.any([signal, AbortSignal.timeout(5000)]);
+      // Addressable events (kinds 30000/30005) republish only when edited, so
+      // a `since` filter excludes most real curated lists. Pull a wide pool
+      // and rank locally instead.
+      const abortSignal = AbortSignal.any([signal, AbortSignal.timeout(8000)]);
 
       const events = await nostr.query(
-        [{ kinds: [30000, 30005], since, limit: 50 }],
+        [{ kinds: [30000, 30005], limit: RELAY_FETCH_LIMIT }],
         { signal: abortSignal },
       );
 
+      // Dedupe addressable events by `pubkey:kind:dTag` keeping the newest.
+      const latestByCoord = new Map<string, typeof events[number]>();
+      for (const event of events) {
+        const dTag = event.tags.find(t => t[0] === 'd')?.[1];
+        if (!dTag) continue;
+        const coord = `${event.kind}:${event.pubkey}:${dTag}`;
+        const existing = latestByCoord.get(coord);
+        if (!existing || event.created_at > existing.created_at) {
+          latestByCoord.set(coord, event);
+        }
+      }
+
       const items: DiscoveryListItem[] = [];
 
-      for (const event of events) {
+      for (const event of latestByCoord.values()) {
         if (event.kind === PEOPLE_LIST_KIND) {
           // Discovery surfaces require a real name — skip events whose name
           // would fall back to the d-tag, which is how non-curated system
