@@ -8,6 +8,17 @@
 
 **Tech Stack:** React 18, TypeScript, Vitest, Testing Library, TanStack Query 5, `@nostrify/react`, `@phosphor-icons/react`, Tailwind, shadcn/ui.
 
+**TDD step template — apply to every task in this plan, including the condensed ones.** Some later tasks abbreviate as "Test, implement, commit" for brevity. Expand them to this template literally:
+
+1. **Write the failing test.** Concrete `it(…)` block(s) covering the visible behavior.
+2. **Run it to verify it fails.** `npx vitest run <test-file-path>`. Expected: FAIL — record the failure message.
+3. **Implement the minimum code to make it pass.**
+4. **Run it to verify it passes.** Same command. Expected: PASS.
+5. **Run any neighboring tests** that could regress (e.g. modifying `ProfilePage` → also run `ProfilePage.test.tsx`).
+6. **Commit** with the message shown.
+
+If a task says "Step 1-3: test, implement, commit," it means the above six steps still apply — don't take it literally as 3 steps.
+
 **Required pre-reading:**
 - `docs/superpowers/specs/2026-05-05-people-lists-design.md` (this plan implements that spec)
 - `CLAUDE.md` (project conventions, Nostr essentials, brand rules)
@@ -19,6 +30,19 @@
 - No `lucide-react` imports — use `@phosphor-icons/react` (`bold` weight default; `fill` for active states)
 - No `bg-gradient-*` / `linear-gradient(` / `radial-gradient(` on layout surfaces
 - Voice: casual-direct ("Nada. Try something different?" not "No results found")
+
+**Brand primitives to use** (don't roll your own):
+- `<Card variant="brand" accent="green|pink|violet|orange|yellow|blue|dark">` for `<PeopleListCard>` — accent rotates per surface (green default, pink trending, violet classics)
+- `<SectionHeader as="h1|h2|h3">` for all headings (throws in dev if className contains `uppercase`)
+- `<Button variant="sticker">` for hero CTAs (Follow, Save, Create new list)
+- Brand utilities: `brand-card`, `brand-sticker`, `brand-offset-shadow-*`, `brand-tilt-neg-3`, `brand-tilt-pos-2`
+
+**Responsive (per CLAUDE.md memory + Mobile Responsive Redesign):**
+- `< lg` (1024px) is mobile: dark theme is forced via the `@media (max-width: 1023px)` rule already in `src/styles/`. New surfaces inherit this — don't fight it.
+- `≥ lg` shows `AppSidebar`; mobile hides it and shows the bottom nav.
+- 2-col card grids on mobile, 4-col on desktop (`grid-cols-2 lg:grid-cols-4`).
+- List-detail body constrained to `max-w-3xl` (~720px) on `≥ lg` to leave room for sidebar context.
+- A11y: `tests/visual/a11y.spec.ts` runs axe-core on `/`, `/discovery`, `/search`, `/__brand-preview` — extend it (Task 8.4) to also cover the new list-detail routes.
 
 ---
 
@@ -576,68 +600,158 @@ export function usePeopleListMembers(pubkey: string | undefined, dTag: string | 
 git commit -m "feat(hooks): add usePeopleListMembers (list + batched profiles)"
 ```
 
-### Task 2.4: `usePeopleListStats` — aggregate members/videos/loops
+### Task 2.4: `usePeopleListStats` — aggregate members + videos
 
 **Files:**
 - Create: `src/hooks/usePeopleListStats.ts`
 - Create: `src/hooks/usePeopleListStats.test.ts`
 
-Per spec: ≤200 members → call `POST /api/users/bulk` with the `pubkeys` array, sum `stats.video_count` and `stats.total_loops`. >200 members → return `{ members: list.members.length, videos: null, loops: null }`. The `null` sentinel triggers `—` display in the header.
+**Reality check (per spec review and codebase verification at `src/lib/funnelcakeClient.ts:1014-1036`):** The `POST /api/users/bulk` response only includes `stats.video_count` per user — `total_loops` is **not** in this endpoint's response shape. v1 ships **members + videos only**; the loops aggregate is deferred (would require N per-user requests via `fetchUserLoopStats` at line 871, which we'll consider only if needed). The header renders loops as `—` always for v1; spec line 261 ("> 200 members") cap also stays.
+
+The exact existing helper is `fetchBulkUsers(apiUrl, pubkeys, signal?)` (NOT `fetchUsersBulk`). Existing call site for reference: `src/hooks/useBatchedAuthors.ts:54`.
 
 - [ ] **Step 1: Tests**
 
 ```ts
-it('sums video_count and total_loops for ≤200 members', async () => {
-  // mock fetch, return aggregate object, assert summed numbers
-});
-it('returns null for videos/loops when >200 members', async () => {
-  // mock list with 201 members, assert no fetch is issued
-});
-it('falls back to null when REST is unhealthy', async () => {
-  // mock isFunnelcakeAvailable -> false, assert null/null
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { renderHook, waitFor } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { usePeopleListStats } from './usePeopleListStats';
+
+vi.mock('./usePeopleList', () => ({
+  usePeopleList: vi.fn(),
+}));
+vi.mock('@/lib/funnelcakeHealth', () => ({
+  isFunnelcakeAvailable: vi.fn().mockReturnValue(true),
+}));
+vi.mock('@/lib/funnelcakeClient', () => ({
+  fetchBulkUsers: vi.fn(),
+}));
+
+import { usePeopleList } from './usePeopleList';
+import { isFunnelcakeAvailable } from '@/lib/funnelcakeHealth';
+import { fetchBulkUsers } from '@/lib/funnelcakeClient';
+
+function wrap({ children }: { children: React.ReactNode }) {
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return <QueryClientProvider client={qc}>{children}</QueryClientProvider>;
+}
+
+const PK = 'a'.repeat(64);
+const M = (i: number) => String(i).repeat(64).slice(0, 64);
+
+describe('usePeopleListStats', () => {
+  beforeEach(() => {
+    vi.mocked(usePeopleList).mockReset();
+    vi.mocked(fetchBulkUsers).mockReset();
+    vi.mocked(isFunnelcakeAvailable).mockReturnValue(true);
+  });
+
+  it('sums video_count for ≤200 members', async () => {
+    vi.mocked(usePeopleList).mockReturnValue({
+      data: { id: 'x', pubkey: PK, name: 'x', members: [M(1), M(2)], createdAt: 0 },
+      isSuccess: true,
+    } as any);
+    vi.mocked(fetchBulkUsers).mockResolvedValue({
+      users: [
+        { pubkey: M(1), stats: { video_count: 10 } },
+        { pubkey: M(2), stats: { video_count: 5 } },
+      ],
+      missing: [],
+    } as any);
+    const { result } = renderHook(() => usePeopleListStats(PK, 'x'), { wrapper: wrap });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data).toEqual({ members: 2, videos: 15, loops: null });
+  });
+
+  it('returns null videos when >200 members (no fetch)', async () => {
+    const big = Array.from({ length: 201 }, (_, i) => M(i + 1));
+    vi.mocked(usePeopleList).mockReturnValue({
+      data: { id: 'x', pubkey: PK, name: 'x', members: big, createdAt: 0 },
+      isSuccess: true,
+    } as any);
+    const { result } = renderHook(() => usePeopleListStats(PK, 'x'), { wrapper: wrap });
+    await waitFor(() => expect(result.current.data).toBeDefined());
+    expect(result.current.data).toEqual({ members: 201, videos: null, loops: null });
+    expect(fetchBulkUsers).not.toHaveBeenCalled();
+  });
+
+  it('returns null videos when REST is unhealthy', async () => {
+    vi.mocked(isFunnelcakeAvailable).mockReturnValue(false);
+    vi.mocked(usePeopleList).mockReturnValue({
+      data: { id: 'x', pubkey: PK, name: 'x', members: [M(1)], createdAt: 0 },
+      isSuccess: true,
+    } as any);
+    const { result } = renderHook(() => usePeopleListStats(PK, 'x'), { wrapper: wrap });
+    await waitFor(() => expect(result.current.data).toBeDefined());
+    expect(result.current.data).toEqual({ members: 1, videos: null, loops: null });
+    expect(fetchBulkUsers).not.toHaveBeenCalled();
+  });
 });
 ```
 
-- [ ] **Step 2: Implement**
+- [ ] **Step 2: Verify it fails**
+
+```
+npx vitest run src/hooks/usePeopleListStats.test.ts
+```
+Expected: FAIL — module not found.
+
+- [ ] **Step 3: Implement**
 
 ```ts
+// src/hooks/usePeopleListStats.ts
 import { useQuery } from '@tanstack/react-query';
 import { usePeopleList } from './usePeopleList';
 import { isFunnelcakeAvailable } from '@/lib/funnelcakeHealth';
-import { fetchUsersBulk } from '@/lib/funnelcakeClient'; // existing helper
+import { fetchBulkUsers } from '@/lib/funnelcakeClient';
+import { API_CONFIG } from '@/config/api';
 
 const MAX_AGGREGATE_MEMBERS = 200;
+
+export interface PeopleListStats {
+  members: number;
+  videos: number | null;  // null = unknown (too many members or REST unhealthy)
+  loops: number | null;   // always null in v1; aggregation deferred
+}
 
 export function usePeopleListStats(pubkey: string | undefined, dTag: string | undefined) {
   const list = usePeopleList(pubkey, dTag);
   const memberPubkeys = list.data?.members ?? [];
+  const apiUrl = API_CONFIG.funnelcake.baseUrl;
+  const restOk = isFunnelcakeAvailable(apiUrl);
   const tooMany = memberPubkeys.length > MAX_AGGREGATE_MEMBERS;
-  return useQuery({
-    queryKey: ['people-list-stats', pubkey, dTag, memberPubkeys.length],
-    enabled: list.isSuccess && memberPubkeys.length > 0 && !tooMany && isFunnelcakeAvailable(),
-    queryFn: async () => {
-      const responses = await fetchUsersBulk(memberPubkeys);
-      let videos = 0, loops = 0;
-      for (const r of responses) {
-        videos += r.stats?.video_count ?? 0;
-        loops += r.stats?.total_loops ?? 0;
+  const useFetch = list.isSuccess && memberPubkeys.length > 0 && !tooMany && restOk;
+
+  return useQuery<PeopleListStats>({
+    queryKey: ['people-list-stats', pubkey, dTag, memberPubkeys.length, restOk],
+    enabled: list.isSuccess,
+    queryFn: async ({ signal }) => {
+      if (!useFetch) {
+        return { members: memberPubkeys.length, videos: null, loops: null };
       }
-      return { members: memberPubkeys.length, videos, loops };
+      const response = await fetchBulkUsers(apiUrl, memberPubkeys, signal);
+      let videos = 0;
+      for (const u of response.users) videos += u.stats?.video_count ?? 0;
+      return { members: memberPubkeys.length, videos, loops: null };
     },
     staleTime: 5 * 60_000,
-    placeholderData: tooMany
-      ? { members: memberPubkeys.length, videos: null, loops: null }
-      : undefined,
   });
 }
 ```
 
-NOTE for implementer: confirm `fetchUsersBulk`'s exact name/signature in `src/lib/funnelcakeClient.ts:1083` (per the spec review). Adapt the call shape if it differs.
+- [ ] **Step 4: Verify it passes**
 
-- [ ] **Step 3: Commit**
+```
+npx vitest run src/hooks/usePeopleListStats.test.ts
+```
+Expected: PASS (3 tests).
+
+- [ ] **Step 5: Commit**
 
 ```bash
-git commit -m "feat(hooks): add usePeopleListStats with 200-member cap"
+git add src/hooks/usePeopleListStats.ts src/hooks/usePeopleListStats.test.ts
+git commit -m "feat(hooks): add usePeopleListStats (members + videos; loops deferred)"
 ```
 
 ### Task 2.5: `usePeopleListMemberVideos` — aggregated video feed
@@ -724,11 +838,17 @@ git commit -m "feat(hooks): add useAddToPeopleList / useRemoveFromPeopleList wit
 - Create: `src/hooks/useDeletePeopleList.ts`
 - Create: `src/hooks/useDeletePeopleList.test.ts`
 
-NIP-09 kind 5 publish with **both** `['a', '30000:pubkey:listId']` AND `['k', '30000']` (per spec, conformance fix). On success, drop the list from `['people-lists', user.pubkey]`.
+NIP-09 kind 5 publish with **both** `['a', '30000:pubkey:listId']` AND `['k', '30000']` (per spec, conformance fix). `onSuccess` invalidates BOTH:
+- `['people-lists', user.pubkey]` (collection cache from Task 2.1)
+- `['people-list', user.pubkey, listId]` (single-list cache from Task 2.2)
 
-- [ ] **Step 1: Test asserts both tags are present**, mirroring Task 1.4.
-- [ ] **Step 2: Implement**
-- [ ] **Step 3: Commit**
+…and optimistically drops the list from the collection cache.
+
+- [ ] **Step 1: Failing test** asserts both `a` and `k` tags are present in the published event, mirroring Task 1.4 exactly.
+- [ ] **Step 2: Run** `npx vitest run src/hooks/useDeletePeopleList.test.ts`. Expected: FAIL.
+- [ ] **Step 3: Implement.**
+- [ ] **Step 4: Run** same command. Expected: PASS.
+- [ ] **Step 5: Commit**
 
 ```bash
 git commit -m "feat(hooks): add useDeletePeopleList (NIP-09 with k tag)"
@@ -738,22 +858,99 @@ git commit -m "feat(hooks): add useDeletePeopleList (NIP-09 with k tag)"
 
 ## Chunk 4: Saved-lists (kind 30003)
 
-### Task 4.1: `useSavedLists` — read
+### Task 4.1: `useSavedLists` — read raw addressable IDs
 
 **Files:**
 - Create: `src/hooks/useSavedLists.ts`
 - Create: `src/hooks/useSavedLists.test.ts`
 
-Query `{ kinds: [30003], authors: [user.pubkey], '#d': ['saved-lists'], limit: 1 }`. Parse `a` tags, return `Array<{ kind: 30000 | 30005; pubkey: string; dTag: string }>`.
+Query `{ kinds: [30003], authors: [user.pubkey], '#d': ['saved-lists'], limit: 1 }`. Parse `a` tags, return `Array<{ kind: 30000 | 30005; pubkey: string; dTag: string }>`. Skips malformed `a` values; ignores `a` tags whose kind is not 30000 or 30005.
 
-**Stale-reference handling (per spec):** the hook does NOT auto-resolve targets for liveness on read; it just returns the parsed addressable IDs. Filtering against missing targets happens in the consumer (the sidebar Lists section uses `useUnifiedLists` which already runs queries per ID and naturally drops unresolved).
+This hook returns *raw IDs only*. Resolving the IDs to actual list events happens in `useResolvedSavedLists` (Task 4.1.5) — that's where stale-reference filtering occurs.
 
-- [ ] **Step 1: Tests** — empty (no event) returns `[]`; valid event returns parsed; ignores non-30000/30005 `a` tags.
-- [ ] **Step 2: Implement**
-- [ ] **Step 3: Commit**
+- [ ] **Step 1: Failing test** — empty event returns `[]`; valid event returns parsed; non-list kinds dropped; malformed `a` values dropped.
+- [ ] **Step 2: Run** `npx vitest run src/hooks/useSavedLists.test.ts`. Expected: FAIL.
+- [ ] **Step 3: Implement.**
+- [ ] **Step 4: Run** same command. Expected: PASS.
+- [ ] **Step 5: Commit**
 
 ```bash
-git commit -m "feat(hooks): add useSavedLists (read kind 30003 d=saved-lists)"
+git commit -m "feat(hooks): add useSavedLists (raw kind 30003 read)"
+```
+
+### Task 4.1.5: `useResolvedSavedLists` — resolve IDs to live list events
+
+**Files:**
+- Create: `src/hooks/useResolvedSavedLists.ts`
+- Create: `src/hooks/useResolvedSavedLists.test.ts`
+
+Composes `useSavedLists()` and dispatches per-ID relay queries (`{ kinds: [k], authors: [pubkey], '#d': [dTag], limit: 1 }`) for each saved reference. Drops references that resolve to nothing OR whose latest event is a kind 5 deletion. Returns `{ video: VideoList[]; people: PeopleList[]; isLoading; isError }`.
+
+This is the resolver the spec line 216 ("attempt to resolve each saved `a` tag … filtered out") promises. The sidebar Saved subgroup and the `/lists` Saved tab both consume this hook.
+
+```ts
+// Sketch:
+import { useQueries } from '@tanstack/react-query';
+import { useSavedLists } from './useSavedLists';
+import { useNostr } from '@nostrify/react';
+import { parsePeopleList, PEOPLE_LIST_KIND } from '@/types/peopleList';
+import { parseVideoList } from './useVideoLists'; // export this if not already
+
+const VIDEO_LIST_KIND = 30005;
+
+export function useResolvedSavedLists() {
+  const { nostr } = useNostr();
+  const saved = useSavedLists();
+  const refs = saved.data ?? [];
+
+  const queries = useQueries({
+    queries: refs.map((r) => ({
+      queryKey: ['saved-list-resolved', r.kind, r.pubkey, r.dTag],
+      enabled: !!nostr,
+      staleTime: 60_000,
+      queryFn: async ({ signal }) => {
+        const events = await nostr.query(
+          [{ kinds: [r.kind], authors: [r.pubkey], '#d': [r.dTag], limit: 1 }],
+          { signal: AbortSignal.any([signal, AbortSignal.timeout(5000)]) },
+        );
+        if (events.length === 0) return null;
+        const evt = events[0];
+        if (evt.kind === PEOPLE_LIST_KIND) return { kind: 30000 as const, list: parsePeopleList(evt) };
+        if (evt.kind === VIDEO_LIST_KIND) return { kind: 30005 as const, list: parseVideoList(evt) };
+        return null;
+      },
+    })),
+  });
+
+  const people = queries
+    .map(q => q.data)
+    .filter((d): d is { kind: 30000; list: ReturnType<typeof parsePeopleList> } => d?.kind === 30000 && d.list !== null)
+    .map(d => d.list!);
+  const video = queries
+    .map(q => q.data)
+    .filter((d): d is { kind: 30005; list: ReturnType<typeof parseVideoList> } => d?.kind === 30005 && d.list !== null)
+    .map(d => d.list!);
+
+  return {
+    people,
+    video,
+    isLoading: saved.isLoading || queries.some(q => q.isLoading),
+    isError: saved.isError || queries.some(q => q.isError),
+  };
+}
+```
+
+NOTE: `parseVideoList` is currently a private (non-exported) helper in `src/hooks/useVideoLists.ts`. As part of this task, **export it** so this resolver can call it. (Two-line change to `useVideoLists.ts`.)
+
+- [ ] **Step 1: Failing test** — given mocked `useSavedLists` with 2 refs (one resolves, one returns empty events), `useResolvedSavedLists` returns only the one that resolved.
+- [ ] **Step 2: Run** `npx vitest run src/hooks/useResolvedSavedLists.test.ts`. Expected: FAIL.
+- [ ] **Step 3: Export `parseVideoList`** from `src/hooks/useVideoLists.ts` (`function` → `export function`).
+- [ ] **Step 4: Implement** `useResolvedSavedLists`.
+- [ ] **Step 5: Run** same command. Expected: PASS.
+- [ ] **Step 6: Commit**
+
+```bash
+git commit -m "feat(hooks): add useResolvedSavedLists with stale-reference filtering"
 ```
 
 ### Task 4.2: `useSaveList` / `useUnsaveList` — mutate
@@ -934,36 +1131,112 @@ The ✓ button just navigates back — all changes are persisted optimistically 
 git commit -m "feat(components): add PeopleListEditMode (owner curate)"
 ```
 
-### Task 6.5: Wire `ListDetailPage` dispatcher
+### Task 6.5a: Extract existing `<VideoListContent>` from `ListDetailPage`
+
+**Files:**
+- Modify: `src/pages/ListDetailPage.tsx` (currently 595 lines)
+- Create: `src/components/VideoListContent.tsx`
+
+Move the current page body (the kind-30005 rendering logic) into a new `<VideoListContent listEvent={…} />` component. `ListDetailPage` should now be thin: parse params, run the `kinds: [30000, 30005]` query (already widened in Task 1.5), pass the resolved event to `<VideoListContent>`. Behavior unchanged for kind 30005.
+
+- [ ] **Step 1: Verify existing tests still pass** before the refactor.
+- [ ] **Step 2: Extract.**
+- [ ] **Step 3: Run** `npx vitest run src/pages/ListDetailPage.test.tsx`. Expected: PASS unchanged.
+- [ ] **Step 4: Commit**
+
+```bash
+git commit -m "refactor(list-detail): extract VideoListContent component"
+```
+
+### Task 6.5b: Add kind-30000 dispatch in `ListDetailPage`
 
 **Files:**
 - Modify: `src/pages/ListDetailPage.tsx`
-- Modify: `src/AppRouter.tsx:130` (route already exists; add the three sub-routes)
-- Modify: `src/pages/ListDetailPage.test.tsx` if present
+- Create: `src/components/PeopleListContent.tsx`
+- Modify: `src/pages/ListDetailPage.test.tsx`
 
-Detail page now branches on resolved event kind:
-- kind 30005 → existing `<VideoListContent />` (current behavior)
-- kind 30000 → new `<PeopleListContent />` rendering Header + (default) VideosGrid + (link) MembersGrid
+`ListDetailPage` now branches on resolved event kind:
+- `event.kind === 30005` → `<VideoListContent>` (existing)
+- `event.kind === 30000` → `<PeopleListContent>` (new): renders `<PeopleListDetailHeader>` (Task 6.1) + `<PeopleListVideosGrid>` (Task 6.3) below the avatar strip, in the default landing view per Figma #4.
 
-Add new routes:
-- `/list/:pubkey/:listId/members` → `<ListMembersPage />` thin page rendering `<PeopleListDetailHeader>` + `<PeopleListMembersGrid>`
-- `/list/:pubkey/:listId/videos` → `<ListVideosPage />` rendering header + `<PeopleListVideosGrid>` only
-- `/list/:pubkey/:listId/edit` → `<ListEditPage />` (owner-guarded — see step 4)
-
-- [ ] **Step 1: Add tests** asserting kind dispatch + sub-route rendering.
-- [ ] **Step 2: Refactor `ListDetailPage` to fork on `event.kind`.**
-- [ ] **Step 3: Add the three new pages and routes in `src/AppRouter.tsx`** (under the existing public group, alongside `/list/:pubkey/:listId`).
-- [ ] **Step 4: Add owner guard for `/edit`** — inside `<ListEditPage>`, `useEffect(() => { if (!user || user.pubkey !== pubkey) navigate(buildListPath(pubkey, dTag), { replace: true }); }, …)`.
-- [ ] **Step 5: Verify**
-
-```
-npx vitest run src/pages/ListDetailPage.test.tsx
-```
-
-- [ ] **Step 6: Commit**
+- [ ] **Step 1: Failing test** — given a kind-30000 event, the page renders Header + VideosGrid (and not VideoListContent).
+- [ ] **Step 2: Run** test, verify FAIL.
+- [ ] **Step 3: Implement** `<PeopleListContent>` and the dispatch.
+- [ ] **Step 4: Run** test, verify PASS.
+- [ ] **Step 5: Commit**
 
 ```bash
-git commit -m "feat(routes): wire people-list detail dispatcher and sub-routes"
+git commit -m "feat(list-detail): dispatch to PeopleListContent for kind 30000"
+```
+
+### Task 6.5c: Add `/list/:pubkey/:listId/members` route
+
+**Files:**
+- Modify: `src/AppRouter.tsx` (add route under public group, near line 130)
+- Create: `src/pages/ListMembersPage.tsx`
+- Create: `src/pages/ListMembersPage.test.tsx`
+
+Thin page: header (back arrow + `{listName}` + member count) + `<PeopleListMembersGrid>` (Task 6.2). Use `useParams<{ pubkey: string; listId: string }>` and `decodeListIdParam` from Task 1.2.
+
+- [ ] **Step 1: Failing test** — route renders members grid given mocked list.
+- [ ] **Step 2-5:** test fail → implement → test pass → commit.
+
+```bash
+git commit -m "feat(routes): add /list/.../members sub-route"
+```
+
+### Task 6.5d: Add `/list/:pubkey/:listId/videos` route
+
+**Files:**
+- Modify: `src/AppRouter.tsx`
+- Create: `src/pages/ListVideosPage.tsx`
+- Create: `src/pages/ListVideosPage.test.tsx`
+
+Thin page: header + `<PeopleListVideosGrid>` (Task 6.3) only.
+
+- [ ] **Step 1-5:** test fail → implement → test pass → commit.
+
+```bash
+git commit -m "feat(routes): add /list/.../videos sub-route"
+```
+
+### Task 6.5e: Add `/list/:pubkey/:listId/edit` route (owner-guarded)
+
+**Files:**
+- Modify: `src/AppRouter.tsx`
+- Create: `src/pages/ListEditPage.tsx`
+- Create: `src/pages/ListEditPage.test.tsx`
+
+```tsx
+// src/pages/ListEditPage.tsx
+import { useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { decodeListIdParam, buildListPath } from '@/lib/eventRouting';
+import { PeopleListEditMode } from '@/components/PeopleListEditMode';
+
+export default function ListEditPage() {
+  const { pubkey = '', listId = '' } = useParams();
+  const dTag = decodeListIdParam(listId);
+  const { user } = useCurrentUser();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!user || user.pubkey !== pubkey) {
+      navigate(buildListPath(pubkey, dTag), { replace: true });
+    }
+  }, [user, pubkey, dTag, navigate]);
+
+  if (!user || user.pubkey !== pubkey) return null;
+  return <PeopleListEditMode pubkey={pubkey} dTag={dTag} />;
+}
+```
+
+- [ ] **Step 1: Failing test** asserts non-owner is redirected to detail; owner sees edit mode.
+- [ ] **Step 2-5:** test fail → implement → test pass → commit.
+
+```bash
+git commit -m "feat(routes): add owner-guarded /list/.../edit sub-route"
 ```
 
 ---
@@ -1059,16 +1332,36 @@ git commit -m "feat(discovery): add Lists tab to DiscoveryPage"
 ### Task 7.5: Add Lists tab to `SearchPage`
 
 **Files:**
-- Modify: `src/pages/SearchPage.tsx` (849 lines — touch carefully)
+- Modify: `src/pages/SearchPage.tsx` (849 lines)
 - Modify: `src/pages/SearchPage.test.tsx`
 
-Existing tabs (per spec review): Classics / Popular / Categories. Add `Lists` as a fourth tab. When active, parse the query param `?type=lists`. Search results: NIP-50 query if relay supports it, else fetch recent kind-30000+30005 events and locally filter `name`/`description` (case-insensitive substring).
+**Reality check (verified at `src/pages/SearchPage.tsx:461-479`):** existing tabs are `all | videos | users | hashtags`, NOT "Classics / Popular / Categories" (which were on the discovery surface, not search). Plan: add `lists` as a **5th** tab.
 
-Each result is a `<UnifiedListCard>`.
+Concrete edits:
+1. At `SearchPage.tsx:461`, change `<TabsList ...grid-cols-4 mb-6>` → `grid-cols-5`.
+2. After the `<TabsTrigger value="hashtags">` block (around line 478), insert:
 
-- [ ] **Step 1-4: Test, implement, verify, commit**
+```tsx
+<TabsTrigger value="lists" className="gap-2">
+  <SquaresFour className="h-4 w-4 flex-shrink-0" weight="bold" />
+  <span className="hidden sm:inline">Lists</span>
+</TabsTrigger>
+```
+
+(Import `SquaresFour` from `@phosphor-icons/react` — replaces the `Search`/`Video`/`Users`/`Hash` `lucide` imports already in this file? Verify: this file currently uses `Search`, `Video`, `Users`, `Hash` — confirm those are phosphor names. If they're lucide, this is also a brand-guardrail bug to flag separately, but **do not fix in this PR** — out of scope.)
+
+3. Add a new `<TabsContent value="lists">` block after the existing ones. Body queries `{ kinds: [30000, 30005], limit: 50 }` filtered by `name`/`description` substring against `searchQuery`. Renders `<UnifiedListCard>` per result.
+
+NIP-50 path: try `{ kinds: [30000, 30005], search: searchQuery, limit: 50 }` first; if relay returns nothing, fall back to fetch + local filter.
+
+- [ ] **Step 1: Add a failing test** asserting that with `?type=lists` and 1 mocked kind-30000 + 1 mocked kind-30005 event matching the query, both cards render.
+- [ ] **Step 2: Verify it fails** — `npx vitest run src/pages/SearchPage.test.tsx`. Expected: FAIL — `lists` tab not found.
+- [ ] **Step 3: Implement** the tab + content as above.
+- [ ] **Step 4: Verify it passes** — same command. Expected: PASS.
+- [ ] **Step 5: Commit**
 
 ```bash
+git add src/pages/SearchPage.tsx src/pages/SearchPage.test.tsx
 git commit -m "feat(search): add Lists tab to SearchPage"
 ```
 
@@ -1140,12 +1433,40 @@ git commit -m "feat(profile): add 'Add to list' overflow item"
 ### Task 8.2: "Add creator to list…" on `VideoCard` overflow
 
 **Files:**
-- Modify: `src/components/VideoCard.tsx` (44.1K — touch only the existing creator-row overflow)
+- Modify: `src/components/VideoCard.tsx` (44.1K — surgical edit only)
 - Modify: `src/components/VideoCard.test.tsx`
 
-Add menu item "Add creator to list…" → `AddToPeopleListDialog` for the video's `pubkey`. Both mobile and desktop use the existing overflow `…` button (no long-press).
+**Find the right menu first.** `VideoCard.tsx` has multiple potential menus (video-actions vs creator-row). Step 1 of this task is verification:
 
-- [ ] **Step 1-3: Test, implement, commit**
+```bash
+grep -n "DropdownMenu\|MoreHorizontal\|MoreVertical\|DotsThree" src/components/VideoCard.tsx
+```
+
+We want the menu that already lists user-context items like "View profile" / "Mute author" / etc. — that's the creator-row menu. If both exist, prefer it. If only a video-actions menu exists, do NOT shoehorn "Add creator to list" there — instead, add a small avatar-overflow `<DotsThree weight="bold" />` button next to the creator name. Snippet:
+
+```tsx
+<DropdownMenuItem onSelect={() => setAddToListOpen(true)}>
+  <UsersThree className="mr-2 h-4 w-4" weight="bold" />
+  Add creator to list…
+</DropdownMenuItem>
+{/* Then at the end of the component: */}
+{addToListOpen && (
+  <AddToPeopleListDialog
+    open={addToListOpen}
+    onOpenChange={setAddToListOpen}
+    memberPubkey={video.pubkey}
+  />
+)}
+```
+
+Hide the menu item if `currentUser?.pubkey === video.pubkey` (don't add yourself).
+
+- [ ] **Step 1: Confirm menu location** with the grep above; record the line range you intend to touch.
+- [ ] **Step 2: Failing test** — render `<VideoCard>` with a video by another author, click the overflow, expect "Add creator to list…" in the dropdown.
+- [ ] **Step 3: Run** `npx vitest run src/components/VideoCard.test.tsx`. Expected: FAIL.
+- [ ] **Step 4: Implement.**
+- [ ] **Step 5: Run** same command. Expected: PASS.
+- [ ] **Step 6: Commit**
 
 ```bash
 git commit -m "feat(video-card): add 'Add creator to list' overflow item"

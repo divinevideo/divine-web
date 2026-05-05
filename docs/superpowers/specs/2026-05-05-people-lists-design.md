@@ -112,13 +112,14 @@ Saving cross-syncs across clients and works for both kinds via a single hook.
 
 ## Aggregated list stats
 
-Mobile list-detail header shows "33 members · 88 videos · 89.4b loops". Sources:
+Mobile list-detail header shows "33 members · 88 videos · 89.4b loops" (Figma). **v1 ships members + videos; loops renders as `—` always.**
 
+Sources:
 - `members.length` — free, from event tags
-- `videos` — sum of `video_count` from `POST /api/users/bulk` over member pubkeys
-- `loops` — sum of `total_loops` from same response
+- `videos` — sum of `stats.video_count` from `POST /api/users/bulk` (existing `fetchBulkUsers(apiUrl, pubkeys, signal)` at `src/lib/funnelcakeClient.ts:1064`)
+- `loops` — **deferred for v1.** The bulk users response shape (`FunnelcakeBulkUsersResponse.users[].stats?: { video_count }` at lines 1014-1036) does NOT include `total_loops`. A per-user `fetchUserLoopStats` exists (line 871) but would be N requests per render. Acceptable v1 trade-off: render `—`. The right fix later is a server-side aggregate endpoint on Funnelcake.
 
-Implemented as `usePeopleListStats(pubkey, dTag)`. Cached for 5 minutes (matches existing patterns). **Caveat:** for lists > 200 members, videos and loops render as `—` (see "Stats aggregation cost cap" in Open questions); only `members` is shown for those.
+Implemented as `usePeopleListStats(pubkey, dTag)`. Cached for 5 minutes. **Caveat:** for lists > 200 members, videos also renders as `—` (see "Stats aggregation cost cap" in Open questions); only `members` is shown.
 
 ## Components
 
