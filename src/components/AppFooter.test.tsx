@@ -3,6 +3,12 @@ import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
 import { AppFooter } from './AppFooter';
 
+vi.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key: string) => (key === 'menu.merch' ? 'Translated merch' : key),
+  }),
+}));
+
 vi.mock('./HubSpotSignup', () => ({
   HubSpotSignup: () => <div data-testid="hubspot-signup" />,
 }));
@@ -25,7 +31,7 @@ describe('AppFooter', () => {
       </MemoryRouter>,
     );
 
-    expect(screen.getByRole('link', { name: 'Merch' })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: 'Translated merch' })).toHaveAttribute(
       'href',
       'https://www.bonfire.com/store/divine-18/',
     );

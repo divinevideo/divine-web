@@ -4,6 +4,7 @@
 import { Link } from "react-router-dom";
 import { useRef } from "react";
 import Autoplay from "embla-carousel-autoplay";
+import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -30,6 +31,7 @@ const SCREENSHOTS: Array<{ src: string; alt: string }> = [
 ];
 
 export function LandingPage() {
+  const { t } = useTranslation();
   const autoplay = useRef(
     Autoplay({ delay: 3200, stopOnInteraction: true })
   );
@@ -74,7 +76,7 @@ export function LandingPage() {
                 href={MERCH_STORE_URL}
                 className="hidden sm:inline text-xs md:text-sm font-medium text-foreground hover:text-primary transition-colors"
               >
-                Merch
+                {t('menu.merch')}
               </a>
               <Button asChild variant="sticker" size="sm">
                 <Link to="/discovery">Try it</Link>

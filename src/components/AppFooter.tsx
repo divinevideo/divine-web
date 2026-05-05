@@ -1,8 +1,11 @@
 import { SmartLink } from '@/components/SmartLink';
 import { MERCH_STORE_URL } from '@/lib/externalLinks';
+import { useTranslation } from 'react-i18next';
 import { HubSpotSignup } from './HubSpotSignup';
 
 export function AppFooter() {
+  const { t } = useTranslation();
+
   return (
     <footer className="mt-auto border-t border-brand-dark-green py-6 pb-[calc(1.5rem+4rem+env(safe-area-inset-bottom))] md:pb-6 bg-brand-dark-green">
       <div className="container">
@@ -69,7 +72,7 @@ export function AppFooter() {
                   rel="noopener noreferrer"
                   className="hover:text-brand-off-white transition-colors"
                 >
-                  Merch
+                  {t('menu.merch')}
                 </a>
               </div>
               <div className="flex flex-wrap items-center gap-2">

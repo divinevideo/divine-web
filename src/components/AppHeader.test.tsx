@@ -60,6 +60,9 @@ vi.mock('@/components/ui/dropdown-menu', () => ({
 }));
 
 describe('AppHeader', () => {
+  let moreOptionsLabel: string;
+  let merchLabel: string;
+
   beforeEach(async () => {
     const storage = new Map<string, string>();
 
@@ -75,7 +78,9 @@ describe('AppHeader', () => {
 
     window.localStorage.setItem(LOCALE_STORAGE_KEY, 'es');
 
-    await initializeI18n({ force: true, languages: ['en-US'] });
+    const i18n = await initializeI18n({ force: true, languages: ['en-US'] });
+    moreOptionsLabel = i18n.t('common.moreOptions');
+    merchLabel = i18n.t('menu.merch');
 
     mockNavigate.mockReset();
     mockSetTheme.mockReset();
@@ -90,7 +95,7 @@ describe('AppHeader', () => {
 
     expect(screen.getByText('Buscar')).toBeVisible();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Mas opciones' }));
+    fireEvent.click(screen.getByRole('button', { name: moreOptionsLabel }));
 
     const dmcaItem = screen.getByRole('menuitem', { name: 'DMCA y derechos de autor' });
     expect(dmcaItem).toBeVisible();
@@ -110,8 +115,8 @@ describe('AppHeader', () => {
         </MemoryRouter>,
       );
 
-      fireEvent.click(screen.getByRole('button', { name: 'Mas opciones' }));
-      fireEvent.click(screen.getByRole('menuitem', { name: 'Merch' }));
+      fireEvent.click(screen.getByRole('button', { name: moreOptionsLabel }));
+      fireEvent.click(screen.getByRole('menuitem', { name: merchLabel }));
 
       expect(openSpy).toHaveBeenCalledWith('https://www.bonfire.com/store/divine-18/', '_blank');
     } finally {

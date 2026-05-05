@@ -2,9 +2,12 @@
 // ABOUTME: Provides consistent navigation across About, FAQ, Press, Legal pages, etc.
 
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { MERCH_STORE_URL } from "@/lib/externalLinks";
 
 export function MarketingHeader() {
+  const { t } = useTranslation();
+
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-brand-dark-green border-b border-brand-green">
       <div className="container mx-auto px-4">
@@ -48,7 +51,7 @@ export function MarketingHeader() {
               href={MERCH_STORE_URL}
               className="text-sm font-medium text-brand-off-white hover:text-brand-green transition-colors"
             >
-              Merch
+              {t('menu.merch')}
             </a>
             <Link
               to="/discovery"
