@@ -4,7 +4,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { getJWTExpiration } from '@/lib/jwtDecode';
-import { setJwtCookie, clearJwtCookie } from '@/lib/crossSubdomainAuth';
+import { setJwtCookie } from '@/lib/crossSubdomainAuth';
 
 // Legacy key names stay in place so existing hosted-login sessions survive this rename.
 const TOKEN_KEY = 'keycast_jwt_token';
@@ -207,7 +207,14 @@ export function useDivineSession() {
   }, [bunkerUrl]);
 
   /**
-   * Clear session (logout)
+   * Clear *this origin's* session keys.
+   *
+   * Intentionally does NOT clear the cross-subdomain `divine_jwt` cookie:
+   * automatic expiry on one subdomain shouldn't log the user out everywhere.
+   * `hydrateLoginFromCookie` already refuses to hydrate from an expired
+   * cookie payload, so leaving the cookie behind is safe.
+   *
+   * Explicit logout (AccountSwitcher) calls `clearJwtCookie()` directly.
    */
   const clearSession = useCallback(() => {
     setToken(null);
@@ -216,7 +223,6 @@ export function useDivineSession() {
     setEmail(null);
     setRememberMe(false);
     setBunkerUrl(null);
-    clearJwtCookie();
   }, [setToken, setExpiration, setSessionStart, setEmail, setRememberMe, setBunkerUrl]);
 
   /**

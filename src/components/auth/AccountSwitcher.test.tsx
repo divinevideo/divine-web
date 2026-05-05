@@ -3,6 +3,7 @@ import { render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const {
+  mockClearJwtCookie,
   mockClearLoginCookie,
   mockClearSession,
   mockNavigate,
@@ -10,6 +11,7 @@ const {
   mockSetLogin,
   mockUseLoggedInAccounts,
 } = vi.hoisted(() => ({
+  mockClearJwtCookie: vi.fn(),
   mockClearLoginCookie: vi.fn(),
   mockClearSession: vi.fn(),
   mockNavigate: vi.fn(),
@@ -40,6 +42,7 @@ vi.mock('@/hooks/useDivineSession', () => ({
 
 vi.mock('@/lib/crossSubdomainAuth', () => ({
   clearLoginCookie: mockClearLoginCookie,
+  clearJwtCookie: mockClearJwtCookie,
 }));
 
 vi.mock('@/components/ui/dropdown-menu.tsx', () => ({
@@ -77,6 +80,7 @@ import { AccountSwitcher } from './AccountSwitcher';
 
 describe('AccountSwitcher', () => {
   beforeEach(() => {
+    mockClearJwtCookie.mockClear();
     mockClearLoginCookie.mockClear();
     mockClearSession.mockClear();
     mockNavigate.mockClear();
@@ -102,6 +106,7 @@ describe('AccountSwitcher', () => {
     await user.click(screen.getByRole('button', { name: /Log out/i }));
 
     expect(mockClearSession).toHaveBeenCalled();
+    expect(mockClearJwtCookie).toHaveBeenCalled();
     expect(mockClearLoginCookie).toHaveBeenCalled();
     expect(mockRemoveLogin).not.toHaveBeenCalled();
   });
