@@ -106,10 +106,11 @@ function eventsToResults(events: NostrEvent[]): SearchListResult[] {
       const hasTitle = !!event.tags.find(t => t[0] === 'title')?.[1];
       if (!hasTitle) continue;
       const list = parsePeopleList(event);
-      if (list) results.push({ kind: 30000, list });
+      // Empty lists are noise — nothing to show.
+      if (list && list.members.length > 0) results.push({ kind: 30000, list });
     } else if (event.kind === 30005) {
       const list = parseVideoList(event);
-      if (list) results.push({ kind: 30005, list });
+      if (list && list.videoCoordinates.length > 0) results.push({ kind: 30005, list });
     }
   }
   return results;

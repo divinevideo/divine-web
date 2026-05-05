@@ -146,6 +146,27 @@ describe('useDiscoveryLists', () => {
     expect(items[0].list.id).toBe('valid-list');
   });
 
+  it('filters out lists with zero members (people lists) or zero videos (video lists)', async () => {
+    const member = 'b'.repeat(64);
+    // Empty people list
+    const emptyPeople = makePeopleListEvent({ dTag: 'empty-people', members: [] });
+    // Empty video list
+    const emptyVideo = makeVideoListEvent({ dTag: 'empty-video', videoCount: 0 });
+    // Non-empty people list
+    const nonEmpty = makePeopleListEvent({ dTag: 'has-members', members: [member] });
+
+    mockQuery.mockResolvedValue([emptyPeople, emptyVideo, nonEmpty]);
+
+    const { Wrapper } = makeWrapper();
+    const { result } = renderHook(() => useDiscoveryLists(), { wrapper: Wrapper });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    const items = result.current.data!;
+    expect(items).toHaveLength(1);
+    expect(items[0].list.id).toBe('has-members');
+  });
+
   it('filters out kind 30000 events that look like system/mute lists', async () => {
     const member = 'b'.repeat(64);
     const realList = makePeopleListEvent({ dTag: 'real-curated', members: [member] });

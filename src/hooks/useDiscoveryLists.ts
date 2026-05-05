@@ -41,12 +41,13 @@ export function useDiscoveryLists() {
           const hasTitle = !!event.tags.find(t => t[0] === 'title')?.[1];
           if (!hasTitle) continue;
           const list = parsePeopleList(event);
-          if (list !== null) {
+          // Empty lists are noise in discovery — nothing to thumbnail, nothing to show.
+          if (list !== null && list.members.length > 0) {
             items.push({ kind: 30000, list });
           }
         } else if (event.kind === 30005) {
           const list = parseVideoList(event);
-          if (list !== null) {
+          if (list !== null && list.videoCoordinates.length > 0) {
             items.push({ kind: 30005, list });
           }
         }
