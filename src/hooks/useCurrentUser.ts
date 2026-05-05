@@ -7,6 +7,7 @@ import { createUserFromLogin, getSafeUserSigner } from '@/lib/nostrLogin';
 
 import { useAuthor } from './useAuthor.ts';
 import { useDivineSession } from './useDivineSession';
+import { useNip07Availability } from './useNip07Availability';
 
 type CurrentUser = {
   pubkey: string;
@@ -19,6 +20,11 @@ export function useCurrentUser() {
   const { getValidToken } = useDivineSession();
   const token = getValidToken();
   const [jwtPubkey, setJwtPubkey] = useState<string>();
+  const hasExtensionLogin = useMemo(() => (
+    logins.some((login) => login.type === 'extension')
+  ), [logins]);
+  const { isAvailable: isNip07Available, isRestoring: isNip07Restoring } = useNip07Availability(hasExtensionLogin);
+  const isAuthRestoring = hasExtensionLogin && isNip07Restoring;
   const jwtSigner = useMemo(() => (
     token ? new DivineJWTSigner({ token }) : null
   ), [token]);
@@ -59,6 +65,11 @@ export function useCurrentUser() {
     const users: CurrentUser[] = [];
 
     for (const login of logins) {
+      if (login.type === 'extension' && !isNip07Available) {
+        users.push({ pubkey: login.pubkey });
+        continue;
+      }
+
       try {
         const user = loginToUser(login);
         users.push(user);
@@ -68,7 +79,7 @@ export function useCurrentUser() {
     }
 
     return users;
-  }, [logins, loginToUser]);
+  }, [isNip07Available, logins, loginToUser]);
 
   const jwtUser = useMemo<CurrentUser | undefined>(() => {
     if (!jwtSigner || !jwtPubkey) {
@@ -93,6 +104,7 @@ export function useCurrentUser() {
     user,
     users,
     signer,
+    isAuthRestoring,
     ...author.data,
   };
 }

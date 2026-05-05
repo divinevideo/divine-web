@@ -1,4 +1,4 @@
-import { renderHook, waitFor } from '@testing-library/react';
+import { act, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { NLoginType } from '@nostrify/react/login';
 
@@ -76,6 +76,7 @@ describe('useCurrentUser', () => {
   });
 
   afterEach(() => {
+    vi.useRealTimers();
     vi.restoreAllMocks();
     resetNostrProvider();
   });
@@ -138,8 +139,52 @@ describe('useCurrentUser', () => {
     expect(result.current.signer).toBeUndefined();
   });
 
-  it('skips extension logins when no browser extension is available', () => {
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+  it('does not resolve extension logins when no browser extension is available', () => {
+    mockLogins.push({
+      id: 'extension:pub123',
+      type: 'extension',
+      pubkey: 'pub123',
+      createdAt: '2026-03-10T00:00:00.000Z',
+      data: null,
+    });
+
+    const { result } = renderHook(() => useCurrentUser());
+
+    expect(result.current.user?.pubkey).toBe('pub123');
+    expect(result.current.users).toEqual([{ pubkey: 'pub123' }]);
+    expect(result.current.signer).toBeUndefined();
+    expect(result.current.isAuthRestoring).toBe(true);
+    expect(mockUseAuthor).toHaveBeenCalledWith('pub123');
+  });
+
+  it('recovers extension login when provider appears shortly after mount', async () => {
+    mockLogins.push({
+      id: 'extension:pub123',
+      type: 'extension',
+      pubkey: 'pub123',
+      createdAt: '2026-03-10T00:00:00.000Z',
+      data: null,
+    });
+
+    const { result } = renderHook(() => useCurrentUser());
+
+    expect(result.current.user?.pubkey).toBe('pub123');
+    expect(result.current.signer).toBeUndefined();
+    expect(result.current.isAuthRestoring).toBe(true);
+
+    await act(async () => {
+      setNostrProvider();
+    });
+
+    await waitFor(() => {
+      expect(result.current.user?.pubkey).toBe('pub123');
+      expect(result.current.signer).toBeDefined();
+      expect(result.current.isAuthRestoring).toBe(false);
+    });
+  });
+
+  it('keeps extension auth in restoring mode and recovers after a delayed provider injection', () => {
+    vi.useFakeTimers();
 
     mockLogins.push({
       id: 'extension:pub123',
@@ -151,11 +196,24 @@ describe('useCurrentUser', () => {
 
     const { result } = renderHook(() => useCurrentUser());
 
-    expect(result.current.user).toBeUndefined();
-    expect(result.current.users).toEqual([]);
+    expect(result.current.user?.pubkey).toBe('pub123');
     expect(result.current.signer).toBeUndefined();
-    expect(mockUseAuthor).toHaveBeenCalledWith(undefined);
-    expect(warnSpy).toHaveBeenCalledWith('Skipped invalid login', 'extension:pub123', expect.any(Error));
+    expect(result.current.isAuthRestoring).toBe(true);
+
+    act(() => {
+      vi.advanceTimersByTime(5000);
+    });
+
+    expect(result.current.user?.pubkey).toBe('pub123');
+    expect(result.current.isAuthRestoring).toBe(true);
+
+    act(() => {
+      setNostrProvider();
+      vi.advanceTimersByTime(2500);
+    });
+
+    expect(result.current.signer).toBeDefined();
+    expect(result.current.isAuthRestoring).toBe(false);
   });
 
   it('returns an extension user and signer when a browser extension is available', () => {

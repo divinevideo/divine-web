@@ -63,10 +63,10 @@ const BrandPreview = import.meta.env.DEV
   : null;
 
 export function AppRouter() {
-  const { user } = useCurrentUser();
+  const { user, isAuthRestoring } = useCurrentUser();
 
   // Check if user is logged in
-  const isLoggedIn = Boolean(user);
+  const isLoggedIn = Boolean(user) || isAuthRestoring;
 
   // Check if we're on a subdomain profile (username.divine.video)
   const subdomainUser = getSubdomainUser();
