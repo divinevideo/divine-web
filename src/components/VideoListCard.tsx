@@ -4,6 +4,7 @@
 import { Link } from 'react-router-dom';
 import { Play } from '@phosphor-icons/react';
 import { SectionHeader } from '@/components/brand/SectionHeader';
+import { buildListPath } from '@/lib/eventRouting';
 import type { VideoList } from '@/hooks/useVideoLists';
 
 // ---- constants ---------------------------------------------------------------
@@ -62,7 +63,7 @@ export interface VideoListCardProps {
 }
 
 export function VideoListCard({ list }: VideoListCardProps) {
-  const href = `/list/videos/${list.pubkey}/${list.id}`;
+  const href = buildListPath(list.pubkey, list.id);
 
   return (
     <Link
