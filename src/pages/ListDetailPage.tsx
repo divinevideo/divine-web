@@ -14,6 +14,7 @@ import { parseVideoListFromEvent, type PlayOrder, type VideoList } from '@/lib/p
 import { EditListDialog } from '@/components/EditListDialog';
 import { DeleteListDialog } from '@/components/DeleteListDialog';
 import { VideoListContent } from '@/components/VideoListContent';
+import { PeopleListContent } from '@/components/PeopleListContent';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -73,6 +74,7 @@ export default function ListDetailPage() {
   const [isDeleting, setIsDeleting] = useState(false);
 
   const listOwnerPubkey = pubkey || undefined;
+  const isOwner = user?.pubkey === pubkey;
 
   const handleDeleteList = async () => {
     if (!list || !listOwnerPubkey) return;
@@ -96,8 +98,9 @@ export default function ListDetailPage() {
     }
   };
 
-  // Fetch list details
-  const { data: list, isLoading: listLoading } = useQuery({
+  // Fetch list details — return both the raw event (for kind dispatch) and
+  // the parsed VideoList (used only for the kind-30005 / VideoListContent path).
+  const { data: listData, isLoading: listLoading } = useQuery({
     queryKey: ['list-detail', pubkey, listId, listLookupRelayKey],
     queryFn: async (context) => {
       if (!pubkey || !listId) throw new Error(t('listDetailPage.invalidParamsError'));
@@ -123,13 +126,18 @@ export default function ListDetailPage() {
         throw new Error(t('listDetailPage.notFoundError'));
       }
 
-      const ownerList = parseVideoListFromEvent(ownerEvents[0]);
+      const event = ownerEvents[0];
+      if (event.kind === 30000) {
+        return { event, list: null };
+      }
+
+      const ownerList = parseVideoListFromEvent(event);
       if (!ownerList) {
         throw new Error(t('listDetailPage.notFoundError'));
       }
 
       if (!ownerList.isCollaborative || !ownerList.allowedCollaborators || ownerList.allowedCollaborators.length === 0) {
-        return ownerList;
+        return { event, list: ownerList };
       }
 
       const participantPubkeys = Array.from(new Set([pubkey, ...ownerList.allowedCollaborators]));
@@ -151,10 +159,14 @@ export default function ListDetailPage() {
         .filter((candidate): candidate is VideoList => candidate !== null && participantSet.has(candidate.pubkey))
         .sort((a, b) => b.createdAt - a.createdAt)[0];
 
-      return latestList || ownerList;
+      return { event, list: latestList || ownerList };
     },
     enabled: !!pubkey && !!listId
   });
+
+  // Convenience aliases for the kind-30005 path
+  const list = listData?.list ?? null;
+  const rawEvent = listData?.event ?? null;
 
   const permissions = resolveListPermissions({
     ownerPubkey: listOwnerPubkey,
@@ -198,6 +210,42 @@ export default function ListDetailPage() {
     );
   }
 
+  if (!listData) {
+    return (
+      <div className="container max-w-6xl mx-auto px-4 py-8">
+        <Card className="border-dashed">
+          <CardContent className="py-12 text-center">
+            <List className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+            <p className="text-lg font-medium mb-2">List not found</p>
+            <p className="text-muted-foreground mb-4">
+              This list may have been deleted or doesn't exist
+            </p>
+            <Button onClick={() => navigate('/lists')}>
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Browse Lists
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // kind-30000: render the people-list detail view
+  if (rawEvent && rawEvent.kind === 30000) {
+    return (
+      <div className="container max-w-6xl mx-auto px-4 py-8">
+        <PeopleListContent
+          event={rawEvent}
+          pubkey={pubkey || ''}
+          dTag={listId || ''}
+          isOwner={isOwner}
+        />
+      </div>
+    );
+  }
+
+  // At this point we're in the kind-30005 (video curation) path.
+  // If the event somehow parsed as null (malformed), bail to "not found".
   if (!list) {
     return (
       <div className="container max-w-6xl mx-auto px-4 py-8">
