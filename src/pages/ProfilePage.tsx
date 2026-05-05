@@ -2,7 +2,7 @@
 // ABOUTME: Displays user profile with comprehensive social features and responsive video grid
 
 import { useState, useMemo, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { nip19 } from 'nostr-tools';
 import { useHead, useSeoMeta } from '@unhead/react';
 import { feedUrls } from '@/lib/feedUrls';
@@ -29,6 +29,8 @@ import { useClassicVineArchiveStats } from '@/hooks/useClassicVineArchiveStats';
 import { useFollowRelationship, useFollowUser, useUnfollowUser, FollowRaceError } from '@/hooks/useFollowRelationship';
 import { useFollowListSafetyCheck } from '@/hooks/useFollowListSafetyCheck';
 import { PinnedVideosSection } from '@/components/PinnedVideosSection';
+import { ProfileListsTab } from '@/components/ProfileListsTab';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { useLoginDialog } from '@/contexts/LoginDialogContext';
 import { toast } from '@/hooks/useToast';
 import { debugLog } from '@/lib/debug';
@@ -41,6 +43,11 @@ import type { SortMode } from '@/types/nostr';
 
 export function ProfilePage() {
   const { npub, nip19: nip19Param } = useParams<{ npub?: string; nip19?: string }>();
+  const location = useLocation();
+  const navigate = useNavigate();
+  // Derive the default tab from the URL hash so deep-linking to #lists works
+  const defaultTab = location.hash === '#lists' ? 'lists' : 'videos';
+  const [activeTab, setActiveTab] = useState<'videos' | 'lists'>(defaultTab);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [sortMode, setSortMode] = useState<SortMode | undefined>(undefined);
   const [editProfileOpen, setEditProfileOpen] = useState(false);
@@ -403,121 +410,142 @@ export function ProfilePage() {
         {/* Pinned Videos */}
         <PinnedVideosSection pubkey={pubkey} isOwnProfile={isOwnProfile} />
 
-        {/* Content Section */}
-        <div className="space-y-4">
-          {/* View Mode Toggle + Sort */}
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-xl font-semibold">Videos</h2>
-              <p className="text-muted-foreground text-sm">
-                {videosLoading ? 'Loading...' : `${stats.videosCount} videos`} from {displayName}
-              </p>
-            </div>
+        {/* Content Section — tabbed: Videos | Lists */}
+        <Tabs
+          value={activeTab}
+          onValueChange={(val) => {
+            const tab = val as 'videos' | 'lists';
+            setActiveTab(tab);
+            navigate({ hash: tab === 'lists' ? '#lists' : '' }, { replace: true });
+          }}
+          className="space-y-4"
+        >
+          <TabsList>
+            <TabsTrigger value="videos">Videos</TabsTrigger>
+            <TabsTrigger value="lists">Lists</TabsTrigger>
+          </TabsList>
 
-            <div className="flex items-center gap-3">
-              {/* Sort Mode */}
-              <div className="flex items-center gap-1">
-                {PROFILE_SORT_MODES.map(mode => {
-                  const ModeIcon = mode.icon;
-                  const isSelected = sortMode === mode.value;
-                  return (
-                    <button
-                      key={mode.label}
-                      onClick={() => setSortMode(mode.value as SortMode)}
-                      className={`
-                        flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all
-                        ${isSelected
-                          ? 'bg-primary text-primary-foreground shadow-sm'
-                          : 'bg-brand-light-green dark:bg-brand-dark-green hover:bg-muted text-muted-foreground hover:text-foreground'
-                        }
-                      `}
-                      data-testid={`sort-${mode.label.toLowerCase().replace(' ', '-')}`}
+          <TabsContent value="videos">
+            <div className="space-y-4">
+              {/* View Mode Toggle + Sort */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-xl font-semibold">Videos</h2>
+                  <p className="text-muted-foreground text-sm">
+                    {videosLoading ? 'Loading...' : `${stats.videosCount} videos`} from {displayName}
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  {/* Sort Mode */}
+                  <div className="flex items-center gap-1">
+                    {PROFILE_SORT_MODES.map(mode => {
+                      const ModeIcon = mode.icon;
+                      const isSelected = sortMode === mode.value;
+                      return (
+                        <button
+                          key={mode.label}
+                          onClick={() => setSortMode(mode.value as SortMode)}
+                          className={`
+                            flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all
+                            ${isSelected
+                              ? 'bg-primary text-primary-foreground shadow-sm'
+                              : 'bg-brand-light-green dark:bg-brand-dark-green hover:bg-muted text-muted-foreground hover:text-foreground'
+                            }
+                          `}
+                          data-testid={`sort-${mode.label.toLowerCase().replace(' ', '-')}`}
+                        >
+                          <ModeIcon className="h-3.5 w-3.5" />
+                          <span>{mode.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* View Mode */}
+                  <div className="flex items-center gap-1 border-l pl-3">
+                    <Button
+                      variant={viewMode === 'grid' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setViewMode('grid')}
+                      data-testid="grid-view-button"
                     >
-                      <ModeIcon className="h-3.5 w-3.5" />
-                      <span>{mode.label}</span>
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* View Mode */}
-              <div className="flex items-center gap-1 border-l pl-3">
-                <Button
-                  variant={viewMode === 'grid' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setViewMode('grid')}
-                  data-testid="grid-view-button"
-                >
-                  <Grid className="w-4 h-4" />
-                </Button>
-                <Button
-                  variant={viewMode === 'list' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setViewMode('list')}
-                  data-testid="list-view-button"
-                >
-                  <List className="w-4 h-4" />
-                </Button>
-              </div>
-            </div>
-          </div>
-
-          {/* Videos Display */}
-          {videosLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
-            </div>
-          ) : videosError ? (
-            <Card className="border-destructive">
-              <CardContent className="py-12 text-center">
-                <p className="text-destructive mb-4">Failed to load videos</p>
-                <Button variant="outline" onClick={() => window.location.reload()}>
-                  Try again
-                </Button>
-              </CardContent>
-            </Card>
-          ) : viewMode === 'grid' ? (
-            <InfiniteScroll
-              dataLength={videos.length}
-              next={fetchNextPage}
-              hasMore={hasNextPage ?? false}
-              loader={
-                <div className="h-16 flex items-center justify-center col-span-full">
-                  <div className="flex items-center gap-3">
-                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                    <span className="text-sm text-muted-foreground">Loading more videos...</span>
+                      <Grid className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant={viewMode === 'list' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setViewMode('list')}
+                      data-testid="list-view-button"
+                    >
+                      <List className="w-4 h-4" />
+                    </Button>
                   </div>
                 </div>
-              }
-              endMessage={
-                videos.length > 10 ? (
-                  <div className="py-8 text-center text-sm text-muted-foreground col-span-full">
-                    <p>You've seen all {stats.videosCount} videos</p>
-                  </div>
-                ) : null
-              }
-            >
-              <VideoGrid
-                videos={videos || []}
-                loading={videosLoading}
-                className="min-h-[200px]"
-                navigationContext={{
-                  source: 'profile',
-                  pubkey: pubkey || undefined,
-                }}
-              />
-            </InfiniteScroll>
-          ) : (
-            <VideoFeed
-              feedType="profile"
-              sortMode={sortMode}
-              pubkey={pubkey}
-              data-testid="video-feed-profile"
-              data-profile-testid={`feed-profile-${identifier}`}
-              className="space-y-6"
-            />
-          )}
-        </div>
+              </div>
+
+              {/* Videos Display */}
+              {videosLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+                </div>
+              ) : videosError ? (
+                <Card className="border-destructive">
+                  <CardContent className="py-12 text-center">
+                    <p className="text-destructive mb-4">Failed to load videos</p>
+                    <Button variant="outline" onClick={() => window.location.reload()}>
+                      Try again
+                    </Button>
+                  </CardContent>
+                </Card>
+              ) : viewMode === 'grid' ? (
+                <InfiniteScroll
+                  dataLength={videos.length}
+                  next={fetchNextPage}
+                  hasMore={hasNextPage ?? false}
+                  loader={
+                    <div className="h-16 flex items-center justify-center col-span-full">
+                      <div className="flex items-center gap-3">
+                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                        <span className="text-sm text-muted-foreground">Loading more videos...</span>
+                      </div>
+                    </div>
+                  }
+                  endMessage={
+                    videos.length > 10 ? (
+                      <div className="py-8 text-center text-sm text-muted-foreground col-span-full">
+                        <p>You've seen all {stats.videosCount} videos</p>
+                      </div>
+                    ) : null
+                  }
+                >
+                  <VideoGrid
+                    videos={videos || []}
+                    loading={videosLoading}
+                    className="min-h-[200px]"
+                    navigationContext={{
+                      source: 'profile',
+                      pubkey: pubkey || undefined,
+                    }}
+                  />
+                </InfiniteScroll>
+              ) : (
+                <VideoFeed
+                  feedType="profile"
+                  sortMode={sortMode}
+                  pubkey={pubkey}
+                  data-testid="video-feed-profile"
+                  data-profile-testid={`feed-profile-${identifier}`}
+                  className="space-y-6"
+                />
+              )}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="lists" data-testid="lists-tab-content">
+            <ProfileListsTab pubkey={pubkey} isOwn={isOwnProfile} />
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );

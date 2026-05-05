@@ -69,7 +69,7 @@ VitePWA({
         navigateFallback: null,
         runtimeCaching: [],
         // Allow larger JS bundles (default 2MB is too small for this app)
-        maximumFileSizeToCacheInBytes: 3 * 1024 * 1024, // 3MB
+        maximumFileSizeToCacheInBytes: 4 * 1024 * 1024, // 4MB
       },
       includeAssets: [
         'app_icon.png',

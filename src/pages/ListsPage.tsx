@@ -1,112 +1,65 @@
-// ABOUTME: Page component for browsing and discovering video lists
-// ABOUTME: Shows user's lists, trending lists, and allows list creation
+// ABOUTME: Page component for browsing and managing both video lists and people lists
+// ABOUTME: Two sub-tabs: Authored (user's own lists) and Saved (resolved saved-list references)
 
 import { useState } from 'react';
-import { useVideoLists, useTrendingVideoLists, useFollowedUsersLists } from '@/hooks/useVideoLists';
-import { useFollowList } from '@/hooks/useFollowList';
+import { useUnifiedLists } from '@/hooks/useUnifiedLists';
+import { useResolvedSavedLists } from '@/hooks/useResolvedSavedLists';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
-import { useAuthor } from '@/hooks/useAuthor';
-import { Link } from 'react-router-dom';
-import { nip19 } from 'nostr-tools';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { List, TrendUp as TrendingUp, Plus, Users, VideoCamera as Video, Clock } from '@phosphor-icons/react';
-import { genUserName } from '@/lib/genUserName';
-import { CreateListDialog } from '@/components/CreateListDialog';
-import { formatDistanceToNow } from 'date-fns';
-import { getSafeProfileImage } from '@/lib/imageUtils';
+import { List, BookmarkSimple } from '@phosphor-icons/react';
+import { CreatePeopleListDialog } from '@/components/CreatePeopleListDialog';
+import { UnifiedListCard } from '@/components/UnifiedListCard';
+import type { PeopleList } from '@/types/peopleList';
+import type { VideoList } from '@/hooks/useVideoLists';
 
-interface ListCardProps {
-  id: string;
-  name: string;
-  description?: string;
-  image?: string;
-  pubkey: string;
-  createdAt: number;
-  videoCoordinates: string[];
+// Unified display item — carries the kind tag for polymorphic dispatch
+type UnifiedItem =
+  | { kind: 30000; list: PeopleList; createdAt: number }
+  | { kind: 30005; list: VideoList; createdAt: number };
+
+function flattenAndSort(people: PeopleList[], video: VideoList[]): UnifiedItem[] {
+  const items: UnifiedItem[] = [
+    ...people.map((list): UnifiedItem => ({ kind: 30000, list, createdAt: list.createdAt })),
+    ...video.map((list): UnifiedItem => ({ kind: 30005, list, createdAt: list.createdAt })),
+  ];
+  return items.sort((a, b) => b.createdAt - a.createdAt);
 }
 
-function ListCard({ list }: { list: ListCardProps }) {
-  const author = useAuthor(list.pubkey);
-  const authorMetadata = author.data?.metadata;
-  const authorName = authorMetadata?.name || genUserName(list.pubkey);
-
+function SkeletonGrid() {
   return (
-    <Card className="hover:shadow-lg transition-shadow">
-      <CardHeader>
-        <div className="flex items-start justify-between">
-          <div className="flex-1">
-            <CardTitle className="text-lg">
-              <Link 
-                to={`/list/${list.pubkey}/${list.id}`}
-                className="hover:text-primary transition-colors"
-              >
-                {list.name}
-              </Link>
-            </CardTitle>
-            {list.description && (
-              <CardDescription className="mt-1 line-clamp-2">
-                {list.description}
-              </CardDescription>
-            )}
-          </div>
-          {list.image && (
-            <img
-              src={list.image}
-              alt={list.name}
-              className="w-16 h-16 rounded object-cover ml-4"
-            />
-          )}
-        </div>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-3">
-          {/* Author */}
-          <Link
-            to={`/profile/${nip19.npubEncode(list.pubkey)}`}
-            className="flex items-center gap-2 hover:opacity-80 transition-opacity"
-          >
-            <Avatar size="xs">
-              <AvatarImage src={getSafeProfileImage(authorMetadata?.picture)} />
-              <AvatarFallback>{authorName[0]?.toUpperCase()}</AvatarFallback>
-            </Avatar>
-            <span className="text-sm text-muted-foreground">{authorName}</span>
-          </Link>
-
-          {/* Stats */}
-          <div className="flex items-center gap-4 text-sm">
-            <div className="flex items-center gap-1">
-              <Video className="h-4 w-4 text-muted-foreground" />
-              <span>{list.videoCoordinates.length} videos</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <Clock className="h-4 w-4 text-muted-foreground" />
-              <span>{formatDistanceToNow(list.createdAt * 1000, { addSuffix: true })}</span>
-            </div>
-          </div>
-
-          {/* View Button */}
-          <Link to={`/list/${list.pubkey}/${list.id}`}>
-            <Button variant="outline" size="sm" className="w-full">
-              View List
-            </Button>
-          </Link>
-        </div>
-      </CardContent>
-    </Card>
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      {[...Array(4)].map((_, i) => (
+        <Card key={i}>
+          <CardContent className="pt-4">
+            <Skeleton className="h-[120px] w-full rounded-lg mb-2" />
+            <Skeleton className="h-4 w-3/4" />
+            <Skeleton className="h-3 w-1/2 mt-1" />
+          </CardContent>
+        </Card>
+      ))}
+    </div>
   );
 }
 
 export default function ListsPage() {
   const { user } = useCurrentUser();
-  const { data: userLists, isLoading: userListsLoading } = useVideoLists(user?.pubkey);
-  const { data: trendingLists, isLoading: trendingLoading } = useTrendingVideoLists();
   const [showCreateDialog, setShowCreateDialog] = useState(false);
-  const { data: followedPubkeys } = useFollowList();
-  const { data: followedUsersLists, isLoading: discoverLoading } = useFollowedUsersLists(followedPubkeys);
+
+  const authored = useUnifiedLists(user?.pubkey);
+  const saved = useResolvedSavedLists();
+
+  const authoredItems = flattenAndSort(authored.people, authored.video);
+  const savedItems = flattenAndSort(saved.people, saved.video);
+
+  const CreateCTA = (
+    <Button variant="sticker" onClick={() => setShowCreateDialog(true)}>
+      <List className="h-4 w-4 mr-2" />
+      + Create new list
+    </Button>
+  );
 
   return (
     <div className="container max-w-6xl mx-auto px-4 py-8">
@@ -115,175 +68,93 @@ export default function ListsPage() {
         <div className="flex items-center justify-between mb-4">
           <h1 className="text-3xl font-bold flex items-center gap-2">
             <List className="h-8 w-8" />
-            Video Lists
+            Lists
           </h1>
-          {user && (
-            <Button onClick={() => setShowCreateDialog(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Create List
-            </Button>
-          )}
+          {user && CreateCTA}
         </div>
         <p className="text-muted-foreground">
-          Discover curated collections of videos from the community
+          Your curated collections of videos and people.
         </p>
       </div>
 
       {/* Tabs */}
-      <Tabs defaultValue={user ? 'my-lists' : 'trending'} className="space-y-6">
+      <Tabs defaultValue="authored" className="space-y-6">
         <TabsList>
-          {user && (
-            <TabsTrigger value="my-lists">
-              <List className="h-4 w-4 mr-2" />
-              My Lists
-            </TabsTrigger>
-          )}
-          <TabsTrigger value="trending">
-            <TrendingUp className="h-4 w-4 mr-2" />
-            Trending
+          <TabsTrigger value="authored">
+            <List className="h-4 w-4 mr-2" />
+            Authored
           </TabsTrigger>
-          <TabsTrigger value="discover">
-            <Users className="h-4 w-4 mr-2" />
-            Discover
+          <TabsTrigger value="saved">
+            <BookmarkSimple className="h-4 w-4 mr-2" />
+            Saved
           </TabsTrigger>
         </TabsList>
 
-        {/* My Lists Tab */}
-        {user && (
-          <TabsContent value="my-lists" className="space-y-6">
-            {userListsLoading ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {[...Array(3)].map((_, i) => (
-                  <Card key={i}>
-                    <CardHeader>
-                      <Skeleton className="h-6 w-32" />
-                      <Skeleton className="h-4 w-full mt-2" />
-                    </CardHeader>
-                    <CardContent>
-                      <Skeleton className="h-8 w-full" />
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            ) : userLists && userLists.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {userLists.map((list) => (
-                  <ListCard key={`${list.pubkey}-${list.id}`} list={list} />
-                ))}
-              </div>
-            ) : (
-              <Card className="border-dashed">
-                <CardContent className="py-12 text-center">
-                  <List className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                  <p className="text-muted-foreground mb-4">
-                    You haven't created any lists yet
-                  </p>
-                  <Button onClick={() => setShowCreateDialog(true)}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Create Your First List
-                  </Button>
-                </CardContent>
-              </Card>
-            )}
-          </TabsContent>
-        )}
-
-        {/* Trending Tab */}
-        <TabsContent value="trending" className="space-y-6">
-          {trendingLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {[...Array(6)].map((_, i) => (
-                <Card key={i}>
-                  <CardHeader>
-                    <Skeleton className="h-6 w-32" />
-                    <Skeleton className="h-4 w-full mt-2" />
-                  </CardHeader>
-                  <CardContent>
-                    <Skeleton className="h-8 w-full" />
-                  </CardContent>
-                </Card>
-              ))}
+        {/* Authored Tab */}
+        <TabsContent value="authored" className="space-y-6">
+          {authored.isLoading ? (
+            <SkeletonGrid />
+          ) : authoredItems.length > 0 ? (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {authoredItems.map((item) =>
+                item.kind === 30000 ? (
+                  <UnifiedListCard
+                    key={`people-${item.list.pubkey}-${item.list.id}`}
+                    kind={30000}
+                    list={item.list}
+                  />
+                ) : (
+                  <UnifiedListCard
+                    key={`video-${item.list.pubkey}-${item.list.id}`}
+                    kind={30005}
+                    list={item.list}
+                  />
+                )
+              )}
             </div>
-          ) : trendingLists && trendingLists.length > 0 ? (
-            <>
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <TrendingUp className="h-4 w-4" />
-                <span>Most popular lists from the past week</span>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {trendingLists.map((list) => (
-                  <ListCard key={`${list.pubkey}-${list.id}`} list={list} />
-                ))}
-              </div>
-            </>
           ) : (
             <Card className="border-dashed">
-              <CardContent className="py-12 text-center">
-                <TrendingUp className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                <p className="text-muted-foreground">
-                  No lists trending right now. Be the curator we need.
-                </p>
+              <CardContent className="py-12 text-center space-y-4">
+                <List className="h-12 w-12 mx-auto text-muted-foreground" />
+                <p className="text-muted-foreground">No lists yet. Create your first.</p>
+                {user && (
+                  <Button variant="sticker" onClick={() => setShowCreateDialog(true)}>
+                    <List className="h-4 w-4 mr-2" />
+                    + Create new list
+                  </Button>
+                )}
               </CardContent>
             </Card>
           )}
         </TabsContent>
 
-        {/* Discover Tab */}
-        <TabsContent value="discover" className="space-y-6">
-          {!user ? (
-            <Card className="border-dashed">
-              <CardContent className="py-12 text-center">
-                <Users className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                <p className="text-muted-foreground mb-4">
-                  Log in to see what your people are curating.
-                </p>
-              </CardContent>
-            </Card>
-          ) : discoverLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {[...Array(6)].map((_, i) => (
-                <Card key={i}>
-                  <CardHeader>
-                    <Skeleton className="h-6 w-32" />
-                    <Skeleton className="h-4 w-full mt-2" />
-                  </CardHeader>
-                  <CardContent>
-                    <Skeleton className="h-8 w-full" />
-                  </CardContent>
-                </Card>
-              ))}
+        {/* Saved Tab */}
+        <TabsContent value="saved" className="space-y-6">
+          {saved.isLoading ? (
+            <SkeletonGrid />
+          ) : savedItems.length > 0 ? (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {savedItems.map((item) =>
+                item.kind === 30000 ? (
+                  <UnifiedListCard
+                    key={`people-${item.list.pubkey}-${item.list.id}`}
+                    kind={30000}
+                    list={item.list}
+                  />
+                ) : (
+                  <UnifiedListCard
+                    key={`video-${item.list.pubkey}-${item.list.id}`}
+                    kind={30005}
+                    list={item.list}
+                  />
+                )
+              )}
             </div>
-          ) : followedUsersLists && followedUsersLists.length > 0 ? (
-            <>
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Users className="h-4 w-4" />
-                <span>Lists from people you follow</span>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {followedUsersLists.map((list) => (
-                  <ListCard key={`${list.pubkey}-${list.id}`} list={list} />
-                ))}
-              </div>
-            </>
-          ) : followedPubkeys && followedPubkeys.length > 0 ? (
-            <Card className="border-dashed">
-              <CardContent className="py-12 text-center">
-                <Users className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                <p className="text-muted-foreground">
-                  Nobody you follow has dropped a list yet.
-                </p>
-                <p className="text-sm text-muted-foreground mt-2">
-                  Circle back soon, or poke around trending.
-                </p>
-              </CardContent>
-            </Card>
           ) : (
             <Card className="border-dashed">
               <CardContent className="py-12 text-center">
-                <Users className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                <p className="text-muted-foreground mb-4">
-                  Follow a few creators — their lists land here.
-                </p>
+                <BookmarkSimple className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                <p className="text-muted-foreground">No saved lists.</p>
               </CardContent>
             </Card>
           )}
@@ -292,9 +163,9 @@ export default function ListsPage() {
 
       {/* Create List Dialog */}
       {showCreateDialog && (
-        <CreateListDialog
+        <CreatePeopleListDialog
           open={showCreateDialog}
-          onClose={() => setShowCreateDialog(false)}
+          onOpenChange={(open) => setShowCreateDialog(open)}
         />
       )}
     </div>

@@ -1,4 +1,4 @@
-// ABOUTME: Discovery feed page showing all public videos with tabs for Classics, Hot, Rising, New, and Hashtags
+// ABOUTME: Discovery feed page showing all public videos with tabs for Classics, Hot, Rising, New, Hashtags, and Lists
 // ABOUTME: Each tab uses different sort modes; Classics uses Funnelcake REST API for pre-computed metrics
 // ABOUTME: For You tab shows personalized recommendations when user is logged in
 
@@ -10,17 +10,20 @@ import { VideoFeed } from '@/components/VideoFeed';
 import { VerifiedOnlyToggle } from '@/components/VerifiedOnlyToggle';
 import { HashtagExplorer } from '@/components/HashtagExplorer';
 import { ClassicVinersRow } from '@/components/ClassicVinersRow';
+import { UnifiedListCard } from '@/components/UnifiedListCard';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Star, Clock, Hash, Flame, Sparkle as Sparkles } from '@phosphor-icons/react';
+import { Star, Clock, Hash, Flame, Sparkle as Sparkles, ListBullets } from '@phosphor-icons/react';
 // Zap temporarily unused - will be needed when Rising tab is re-enabled
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useCategories } from '@/hooks/useCategories';
+import { useDiscoveryLists } from '@/hooks/useDiscoveryLists';
+import { useDiscoveryListPreviews } from '@/hooks/useDiscoveryListPreviews';
 import { getTranslatedCategoryLabel } from '@/lib/constants/categories';
 
 // All possible tab values (foryou only shown when logged in)
-type AllowedTab = 'foryou' | 'classics' | 'hot' | 'new' | 'hashtags';
-const ALL_TABS: AllowedTab[] = ['foryou', 'classics', 'hot', 'new', 'hashtags'];
-const BASE_TABS: AllowedTab[] = ['classics', 'hot', 'new', 'hashtags'];
+type AllowedTab = 'foryou' | 'classics' | 'hot' | 'new' | 'hashtags' | 'lists';
+const ALL_TABS: AllowedTab[] = ['foryou', 'classics', 'hot', 'new', 'hashtags', 'lists'];
+const BASE_TABS: AllowedTab[] = ['classics', 'hot', 'new', 'hashtags', 'lists'];
 
 export function DiscoveryPage() {
   const navigate = useSubdomainNavigate();
@@ -78,14 +81,14 @@ export function DiscoveryPage() {
 
   return (
     <div className="container mx-auto px-4 py-6">
-      <div className={activeTab === 'hashtags' ? 'max-w-6xl mx-auto' : 'max-w-2xl mx-auto'}>
+      <div className={activeTab === 'hashtags' || activeTab === 'lists' ? 'max-w-6xl mx-auto' : 'max-w-2xl mx-auto'}>
         <header className="mb-6 space-y-4">
           <div className="flex items-start justify-between mb-4">
             <div>
               <h1 className="text-2xl font-bold">{t('discovery.title')}</h1>
               <p className="text-muted-foreground">{t('discovery.subtitle')}</p>
             </div>
-            {activeTab !== 'hashtags' && (
+            {activeTab !== 'hashtags' && activeTab !== 'lists' && (
               <VerifiedOnlyToggle
                 enabled={verifiedOnly}
                 onToggle={setVerifiedOnly}
@@ -122,7 +125,7 @@ export function DiscoveryPage() {
           }}
           className="space-y-6"
         >
-          <TabsList className={`w-full grid gap-1 ${isLoggedIn ? 'grid-cols-5' : 'grid-cols-4'}`}>
+          <TabsList className={`w-full grid gap-1 ${isLoggedIn ? 'grid-cols-6' : 'grid-cols-5'}`}>
             {isLoggedIn && (
               <TabsTrigger value="foryou" className="gap-1.5 sm:gap-2">
                 <Sparkles className="h-4 w-4" />
@@ -150,6 +153,10 @@ export function DiscoveryPage() {
             <TabsTrigger value="hashtags" className="gap-1.5 sm:gap-2">
               <Hash className="h-4 w-4" />
               <span className="hidden sm:inline">{t('discovery.tags')}</span>
+            </TabsTrigger>
+            <TabsTrigger value="lists" className="gap-1.5 sm:gap-2">
+              <ListBullets className="h-4 w-4" />
+              <span className="hidden sm:inline">{t('discovery.lists')}</span>
             </TabsTrigger>
           </TabsList>
 
@@ -218,8 +225,58 @@ export function DiscoveryPage() {
           <TabsContent value="hashtags" className="mt-0 space-y-6">
             <HashtagExplorer />
           </TabsContent>
+
+          <TabsContent value="lists" className="mt-0">
+            <ListsTabContent />
+          </TabsContent>
         </Tabs>
       </div>
+    </div>
+  );
+}
+
+function ListsTabContent() {
+  const { data: items = [], isLoading, isError } = useDiscoveryLists();
+  const previews = useDiscoveryListPreviews(items);
+
+  if (isLoading) {
+    return (
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {Array.from({ length: 8 }).map((_, i) => (
+          <div key={i} className="h-32 rounded-xl bg-muted animate-pulse" />
+        ))}
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <p className="text-muted-foreground text-sm">
+        Could not load lists. Try again later.
+      </p>
+    );
+  }
+
+  if (items.length === 0) {
+    return (
+      <p className="text-muted-foreground text-sm">
+        No lists yet. Go find your people.
+      </p>
+    );
+  }
+
+  return (
+    <div
+      className="grid grid-cols-2 md:grid-cols-4 gap-4"
+      data-testid="lists-grid"
+    >
+      {items.map((item) => (
+        <UnifiedListCard
+          key={`${item.kind}-${item.list.id}-${item.list.pubkey}`}
+          {...item}
+          previews={previews}
+        />
+      ))}
     </div>
   );
 }

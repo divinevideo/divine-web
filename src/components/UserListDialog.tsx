@@ -1,10 +1,11 @@
 // ABOUTME: Reusable dialog component that displays a list of Nostr users
 // ABOUTME: Uses virtual scrolling for performance with large lists (500+ users)
 
-import { memo, useCallback, useRef, useEffect, useMemo } from 'react';
+import { memo, useCallback, useRef, useEffect, useMemo, useState } from 'react';
 import { nip19 } from 'nostr-tools';
 import type { NostrMetadata } from '@nostrify/nostrify';
 import { useVirtualizer } from '@tanstack/react-virtual';
+import { DotsThree } from '@phosphor-icons/react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -15,10 +16,12 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 import { useBatchedAuthors } from '@/hooks/useBatchedAuthors';
+import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useSubdomainNavigate } from '@/hooks/useSubdomainNavigate';
 import { getSafeProfileImage } from '@/lib/imageUtils';
 import { genUserName } from '@/lib/genUserName';
 import { Sentry } from '@/lib/sentry';
+import { AddToPeopleListDialog } from '@/components/AddToPeopleListDialog';
 
 const ESTIMATED_ROW_HEIGHT = 56;
 
@@ -36,30 +39,47 @@ interface UserRowProps {
   pubkey: string;
   metadata?: NostrMetadata;
   onNavigate: (pubkey: string) => void;
+  onAddToList?: (pubkey: string) => void;
+  showAddToList?: boolean;
 }
 
-const UserRow = memo(function UserRow({ pubkey, metadata, onNavigate }: UserRowProps) {
+const UserRow = memo(function UserRow({ pubkey, metadata, onNavigate, onAddToList, showAddToList }: UserRowProps) {
   const displayName = metadata?.display_name || metadata?.name || genUserName(pubkey);
   const profileImage = getSafeProfileImage(metadata?.picture) || '/user-avatar.png';
 
   return (
-    <button
-      className="flex items-center gap-3 w-full p-2 rounded-lg hover:bg-muted transition-colors text-left"
-      onClick={() => onNavigate(pubkey)}
-    >
-      <Avatar size="md" className="shrink-0">
-        <AvatarImage src={profileImage} alt={displayName} />
-        <AvatarFallback className="text-xs">
-          {displayName.slice(0, 2).toUpperCase()}
-        </AvatarFallback>
-      </Avatar>
-      <div className="min-w-0 flex-1">
-        <div className="font-medium text-sm truncate">{displayName}</div>
-        {metadata?.name && metadata.name !== displayName && (
-          <div className="text-xs text-muted-foreground truncate">@{metadata.name}</div>
-        )}
-      </div>
-    </button>
+    <div className="flex items-center gap-3 w-full p-2 rounded-lg hover:bg-muted transition-colors">
+      <button
+        className="flex items-center gap-3 flex-1 min-w-0 text-left"
+        onClick={() => onNavigate(pubkey)}
+      >
+        <Avatar size="md" className="shrink-0">
+          <AvatarImage src={profileImage} alt={displayName} />
+          <AvatarFallback className="text-xs">
+            {displayName.slice(0, 2).toUpperCase()}
+          </AvatarFallback>
+        </Avatar>
+        <div className="min-w-0 flex-1">
+          <div className="font-medium text-sm truncate">{displayName}</div>
+          {metadata?.name && metadata.name !== displayName && (
+            <div className="text-xs text-muted-foreground truncate">@{metadata.name}</div>
+          )}
+        </div>
+      </button>
+      {showAddToList && onAddToList && (
+        <button
+          aria-label="Add to list"
+          data-testid={`add-to-list-${pubkey}`}
+          className="shrink-0 p-1.5 rounded-full hover:bg-background transition-colors"
+          onClick={(e) => {
+            e.stopPropagation();
+            onAddToList(pubkey);
+          }}
+        >
+          <DotsThree weight="bold" className="h-4 w-4" />
+        </button>
+      )}
+    </div>
   );
 });
 
@@ -87,6 +107,12 @@ export function UserListDialog({
   const navigate = useSubdomainNavigate();
   const parentRef = useRef<HTMLDivElement>(null);
   const spanRef = useRef<ReturnType<typeof Sentry.startInactiveSpan> | null>(null);
+  const { user } = useCurrentUser();
+  const [addToListPubkey, setAddToListPubkey] = useState<string | null>(null);
+
+  const handleOpenAddToList = useCallback((pubkey: string) => {
+    setAddToListPubkey(pubkey);
+  }, []);
 
   // Track dialog open → first content rendered via Sentry span
   useEffect(() => {
@@ -236,6 +262,8 @@ export function UserListDialog({
                       pubkey={pubkey}
                       metadata={authorsData?.[pubkey]?.metadata}
                       onNavigate={handleNavigate}
+                      onAddToList={handleOpenAddToList}
+                      showAddToList={!!user && user.pubkey !== pubkey}
                     />
                   </div>
                 );
@@ -244,6 +272,15 @@ export function UserListDialog({
           </div>
         )}
       </DialogContent>
+      {addToListPubkey && (
+        <AddToPeopleListDialog
+          open={!!addToListPubkey}
+          onOpenChange={(open) => {
+            if (!open) setAddToListPubkey(null);
+          }}
+          memberPubkey={addToListPubkey}
+        />
+      )}
     </Dialog>
   );
 }

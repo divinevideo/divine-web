@@ -18,6 +18,7 @@ const {
   mockFetchVideoById,
   mockNostrQuery,
   mockUseInfiniteSearchVideos,
+  mockUseSearchLists,
   mockEnterFullscreen,
   mockSetVideosForFullscreen,
   mockUpdateVideos,
@@ -27,6 +28,7 @@ const {
   mockFetchVideoById: vi.fn(),
   mockNostrQuery: vi.fn(),
   mockUseInfiniteSearchVideos: vi.fn(),
+  mockUseSearchLists: vi.fn(),
   mockEnterFullscreen: vi.fn(),
   mockSetVideosForFullscreen: vi.fn(),
   mockUpdateVideos: vi.fn(),
@@ -168,6 +170,16 @@ vi.mock('@/hooks/useSearchHashtags', () => ({
   }),
 }));
 
+vi.mock('@/hooks/useSearchLists', () => ({
+  useSearchLists: mockUseSearchLists,
+}));
+
+vi.mock('@/components/UnifiedListCard', () => ({
+  UnifiedListCard: ({ kind, list }: { kind: number; list: { name: string } }) => (
+    <div data-testid={`list-card-${kind}-${list.name}`}>{list.name}</div>
+  ),
+}));
+
 vi.mock('@/lib/funnelcakeClient', () => ({
   fetchVideoById: mockFetchVideoById,
 }));
@@ -202,6 +214,11 @@ describe('SearchPage', () => {
       data: { pages: [{ videos: [] }] },
       fetchNextPage: vi.fn(),
       hasNextPage: false,
+      isLoading: false,
+      error: null,
+    });
+    mockUseSearchLists.mockReturnValue({
+      data: [],
       isLoading: false,
       error: null,
     });
@@ -525,5 +542,40 @@ describe('SearchPage', () => {
 
     expect(screen.getAllByTestId('video-card-video-2').length).toBeGreaterThan(0);
     expect(screen.queryAllByTestId('bare-video-card-video-2')).toHaveLength(0);
+  });
+
+  it('selects the Lists tab when filter=lists and renders both people list and video list cards', () => {
+    mockUseSearchLists.mockReturnValue({
+      data: [
+        {
+          kind: 30000,
+          list: {
+            id: 'my-people',
+            pubkey: 'a'.repeat(64),
+            name: 'Dance Creators',
+            members: [],
+            createdAt: 1700000000,
+          },
+        },
+        {
+          kind: 30005,
+          list: {
+            id: 'classic-vines',
+            pubkey: 'b'.repeat(64),
+            name: 'Classic Vines',
+            videoCoordinates: [],
+            public: true,
+            createdAt: 1700000001,
+          },
+        },
+      ],
+      isLoading: false,
+      error: null,
+    });
+
+    renderPage(['/search?q=dance&filter=lists']);
+
+    expect(screen.getByTestId('list-card-30000-Dance Creators')).toBeTruthy();
+    expect(screen.getByTestId('list-card-30005-Classic Vines')).toBeTruthy();
   });
 });

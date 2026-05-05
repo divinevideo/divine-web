@@ -2,11 +2,16 @@
 // ABOUTME: Shows main nav, login/signup, expandable Divine links section
 
 import { Link, useLocation } from 'react-router-dom';
-import { House as Home, Compass, MagnifyingGlass as Search, Bell, User, Sun, Moon, CaretDown as ChevronDown, Headphones, ChartBar as BarChart3, SquaresFour as LayoutGrid, Rss, ChatCircle as MessageCircle } from '@phosphor-icons/react';
+import { House as Home, Compass, MagnifyingGlass as Search, Bell, User, Sun, Moon, CaretDown as ChevronDown, Headphones, ChartBar as BarChart3, SquaresFour as LayoutGrid, Rss, ChatCircle as MessageCircle, Play, UsersThree } from '@phosphor-icons/react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCategories } from '@/hooks/useCategories';
 import { nip19 } from 'nostr-tools';
+import { useUnifiedLists } from '@/hooks/useUnifiedLists';
+import { useResolvedSavedLists } from '@/hooks/useResolvedSavedLists';
+import { SectionHeader } from '@/components/brand/SectionHeader';
+import { Button } from '@/components/ui/button';
+import { CreatePeopleListDialog } from '@/components/CreatePeopleListDialog';
 
 import {
   Collapsible,
@@ -75,7 +80,10 @@ export function AppSidebar({ className }: { className?: string }) {
   const [divineOpen, setDivineOpen] = useState(false);
   const [termsOpen, setTermsOpen] = useState(false);
   const [appStoreUrl, setAppStoreUrl] = useState<string | null>(null);
+  const [createListDialogOpen, setCreateListDialogOpen] = useState(false);
   const { data: categories } = useCategories();
+  const unifiedLists = useUnifiedLists(user?.pubkey);
+  const resolvedSavedLists = useResolvedSavedLists();
   const classicVinesRecovered = platformStats?.vine_videos?.toLocaleString();
 
   const isActive = (path: string) => location.pathname === path;
@@ -250,6 +258,87 @@ export function AppSidebar({ className }: { className?: string }) {
             />
           )}
         </nav>
+
+        {/* Lists - only shown when logged in */}
+        {user && (
+          <div className="mt-4 px-3">
+            <div className="mb-1 px-3">
+              <SectionHeader as="h3" className="text-[13px]">Your lists</SectionHeader>
+            </div>
+
+            {/* Authored lists */}
+            <div className="flex flex-col gap-0.5">
+              {unifiedLists.video.slice(0, 8).map((list) => (
+                <button
+                  key={`video-${list.id}`}
+                  onClick={() => navigate(`/lists/${list.id}`)}
+                  className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-[14px] text-muted-foreground hover:bg-muted hover:text-foreground transition-all duration-150"
+                >
+                  <Play className="h-3.5 w-3.5 shrink-0" weight="bold" />
+                  <span className="truncate">{list.name}</span>
+                </button>
+              ))}
+              {unifiedLists.people.slice(0, Math.max(0, 8 - unifiedLists.video.length)).map((list) => (
+                <button
+                  key={`people-${list.id}`}
+                  onClick={() => navigate(`/lists/${list.id}`)}
+                  className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-[14px] text-muted-foreground hover:bg-muted hover:text-foreground transition-all duration-150"
+                >
+                  <UsersThree className="h-3.5 w-3.5 shrink-0" weight="bold" />
+                  <span className="truncate">{list.name}</span>
+                </button>
+              ))}
+              {(unifiedLists.video.length + unifiedLists.people.length > 8) && (
+                <button
+                  onClick={() => navigate('/lists')}
+                  className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-[13px] text-muted-foreground hover:bg-muted hover:text-foreground transition-all duration-150"
+                >
+                  <span>View all</span>
+                </button>
+              )}
+            </div>
+
+            {/* Saved lists subgroup — hidden when empty */}
+            {(resolvedSavedLists.people.length > 0 || resolvedSavedLists.video.length > 0) && (
+              <div className="mt-2">
+                <div className="mb-1 px-3 py-0.5 text-[11px] font-semibold text-muted-foreground">Saved</div>
+                <div className="flex flex-col gap-0.5">
+                  {resolvedSavedLists.video.map((list) => (
+                    <button
+                      key={`saved-video-${list.id}`}
+                      onClick={() => navigate(`/lists/${list.id}`)}
+                      className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-[14px] text-muted-foreground hover:bg-muted hover:text-foreground transition-all duration-150"
+                    >
+                      <Play className="h-3.5 w-3.5 shrink-0" weight="bold" />
+                      <span className="truncate">{list.name}</span>
+                    </button>
+                  ))}
+                  {resolvedSavedLists.people.map((list) => (
+                    <button
+                      key={`saved-people-${list.id}`}
+                      onClick={() => navigate(`/lists/${list.id}`)}
+                      className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-[14px] text-muted-foreground hover:bg-muted hover:text-foreground transition-all duration-150"
+                    >
+                      <UsersThree className="h-3.5 w-3.5 shrink-0" weight="bold" />
+                      <span className="truncate">{list.name}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Create new list CTA */}
+            <div className="mt-2 px-0">
+              <Button
+                variant="sticker"
+                className="w-full text-[13px] h-9"
+                onClick={() => setCreateListDialogOpen(true)}
+              >
+                + Create new list
+              </Button>
+            </div>
+          </div>
+        )}
 
         {/* Categories */}
         {categories && categories.length > 0 && (
@@ -540,6 +629,11 @@ export function AppSidebar({ className }: { className?: string }) {
         </div>
         </div>
       </div>
+
+      <CreatePeopleListDialog
+        open={createListDialogOpen}
+        onOpenChange={setCreateListDialogOpen}
+      />
     </aside>
   );
 }

@@ -26,6 +26,9 @@ import VideoPage from "./pages/VideoPage";
 import { TagPage } from "./pages/TagPage";
 import ListsPage from "./pages/ListsPage";
 import ListDetailPage from "./pages/ListDetailPage";
+import ListEditPage from "./pages/ListEditPage";
+import ListMembersPage from "./pages/ListMembersPage";
+import ListVideosPage from "./pages/ListVideosPage";
 import ModerationSettingsPage from "./pages/ModerationSettingsPage";
 import LinkedAccountsSettingsPage from "./pages/LinkedAccountsSettingsPage";
 // import { NIP05ProfilePage } from "./pages/NIP05ProfilePage";
@@ -130,6 +133,8 @@ export function AppRouter() {
           <Route path="/merch" element={<MerchPage />} />
           <Route path="/u/:userId" element={<UniversalUserPage />} />
           <Route path="/list/:pubkey/:listId" element={<ListDetailPage />} />
+          <Route path="/list/:pubkey/:listId/members" element={<ListMembersPage />} />
+          <Route path="/list/:pubkey/:listId/videos" element={<ListVideosPage />} />
           <Route path="/event/:eventId" element={<EventPage />} />
           <Route path="/event/a/:kind/:pubkey/:identifier" element={<EventPage />} />
           <Route path="/:nip19" element={<NIP19Page />} />
@@ -143,6 +148,7 @@ export function AppRouter() {
               <Route path="/messages/:conversationId" element={<ConversationPage />} />
               <Route path="/analytics" element={<AnalyticsPage />} />
               <Route path="/lists" element={<ListsPage />} />
+              <Route path="/list/:pubkey/:listId/edit" element={<ListEditPage />} />
               {/* DISABLED: Upload route - not supported on web at this time
               <Route path="/upload" element={<UploadPage />} />
               */}

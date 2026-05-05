@@ -29,7 +29,7 @@ export interface VideoList {
 /**
  * Parse a video list event (kind 30005)
  */
-function parseVideoList(event: NostrEvent): VideoList | null {
+export function parseVideoList(event: NostrEvent): VideoList | null {
   const dTag = event.tags.find(tag => tag[0] === 'd')?.[1];
   if (!dTag) return null;
 
@@ -528,6 +528,7 @@ export function useDeleteVideoList() {
         content: 'List deleted by owner',
         tags: [
           ['a', `30005:${user.pubkey}:${listId}`],
+          ['k', '30005'], // NIP-09: k tag names the kind being deleted
         ]
       });
 

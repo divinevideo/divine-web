@@ -64,6 +64,7 @@
     "hot": "인기",
     "new": "신규",
     "tags": "태그",
+    "lists": "목록",
     "verifiedOnly": "사람이 만든 콘텐츠",
     "verifiedOnlyHint": "ProofMode 검증이 있는 동영상만 표시합니다"
   },

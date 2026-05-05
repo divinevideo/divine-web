@@ -14,11 +14,12 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { UserPlus, UserCheck, CheckCircle, PencilSimple as Pencil, Copy, DotsThreeVertical as MoreVertical, Flag, Play, Repeat, CircleNotch as Loader2, XCircle, LinkSimple as Link2, Code, Rss } from '@phosphor-icons/react';
+import { UserPlus, UserCheck, CheckCircle, PencilSimple as Pencil, Copy, DotsThreeVertical as MoreVertical, Flag, Play, Repeat, CircleNotch as Loader2, XCircle, LinkSimple as Link2, Code, Rss, UsersThree } from '@phosphor-icons/react';
 import { useNavigate } from 'react-router-dom';
 import { feedUrls } from '@/lib/feedUrls';
 import { useRssFeedAvailable } from '@/hooks/useRssFeedAvailable';
 import { ReportContentDialog } from '@/components/ReportContentDialog';
+import { AddToPeopleListDialog } from '@/components/AddToPeopleListDialog';
 import { UserListDialog } from '@/components/UserListDialog';
 import { LinkedAccounts } from '@/components/LinkedAccounts';
 import { useNip05Validation } from '@/hooks/useNip05Validation';
@@ -134,6 +135,7 @@ export function ProfileHeader({
   const subdomainNavigate = useSubdomainNavigate();
   const rssFeedAvailable = useRssFeedAvailable();
   const [showReportDialog, setShowReportDialog] = useState(false);
+  const [showAddToListDialog, setShowAddToListDialog] = useState(false);
   const [userListDialog, setUserListDialog] = useState<'followers' | 'following' | null>(null);
   const { canUseDirectMessages } = useDmCapability();
 
@@ -400,6 +402,10 @@ export function ProfileHeader({
                   <Code className="h-4 w-4 mr-2" />
                   Get embed code
                 </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setShowAddToListDialog(true)}>
+                  <UsersThree className="h-4 w-4 mr-2" weight="bold" />
+                  Add to list…
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setShowReportDialog(true)}>
                   <Flag className="h-4 w-4 mr-2" />
                   Report user
@@ -565,6 +571,15 @@ export function ProfileHeader({
           onClose={() => setShowReportDialog(false)}
           pubkey={pubkey}
           contentType="user"
+        />
+      )}
+
+      {/* Add to People List Dialog */}
+      {!isOwnProfile && (
+        <AddToPeopleListDialog
+          open={showAddToListDialog}
+          onOpenChange={setShowAddToListDialog}
+          memberPubkey={pubkey}
         />
       )}
 

@@ -62,9 +62,13 @@ vi.mock('@/components/ui/dropdown-menu', () => ({
   DropdownMenuContent: ({ children }: { children: ReactNode }) => (
     <div>{children}</div>
   ),
-  DropdownMenuItem: ({ children }: { children: ReactNode }) => (
-    <div>{children}</div>
-  ),
+  DropdownMenuItem: ({
+    children,
+    onClick,
+  }: {
+    children: ReactNode;
+    onClick?: () => void;
+  }) => <div onClick={onClick}>{children}</div>,
   DropdownMenuSeparator: () => <div />,
   DropdownMenuTrigger: ({ children }: { children: ReactNode }) => (
     <div>{children}</div>
@@ -140,6 +144,20 @@ vi.mock('@/components/InlineNostrText', () => ({
 
 vi.mock('@/components/AddToListDialog', () => ({
   AddToListDialog: () => null,
+}));
+
+vi.mock('@/components/AddToPeopleListDialog', () => ({
+  AddToPeopleListDialog: ({
+    open,
+    memberPubkey,
+  }: {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    memberPubkey: string;
+  }) =>
+    open ? (
+      <div data-testid="add-to-people-list-dialog" data-member={memberPubkey} />
+    ) : null,
 }));
 
 vi.mock('@/components/ReportContentDialog', () => ({
@@ -485,5 +503,48 @@ describe('VideoCard', () => {
 
     expect(screen.getByTestId(`video-player-${video.id}`)).toBeInTheDocument();
     expect(screen.queryByText('Failed to load video')).not.toBeInTheDocument();
+  });
+
+  describe('Add creator to list menu item', () => {
+    const OTHER_PUBKEY = 'a'.repeat(64);
+    const CURRENT_PUBKEY = 'b'.repeat(64);
+
+    it('shows "Add creator to list…" when the current user is not the video author', () => {
+      authMocks.useCurrentUser.mockReturnValue({
+        user: { pubkey: CURRENT_PUBKEY },
+      });
+      const video = makeVideo({ pubkey: OTHER_PUBKEY });
+      render(<VideoCard video={video} />);
+
+      expect(
+        screen.getByText('Add creator to list…')
+      ).toBeInTheDocument();
+    });
+
+    it('hides "Add creator to list…" when the video belongs to the current user', () => {
+      authMocks.useCurrentUser.mockReturnValue({
+        user: { pubkey: CURRENT_PUBKEY },
+      });
+      const video = makeVideo({ pubkey: CURRENT_PUBKEY });
+      render(<VideoCard video={video} />);
+
+      expect(
+        screen.queryByText('Add creator to list…')
+      ).not.toBeInTheDocument();
+    });
+
+    it('opens AddToPeopleListDialog with the correct memberPubkey when clicked', () => {
+      authMocks.useCurrentUser.mockReturnValue({
+        user: { pubkey: CURRENT_PUBKEY },
+      });
+      const video = makeVideo({ pubkey: OTHER_PUBKEY });
+      render(<VideoCard video={video} />);
+
+      fireEvent.click(screen.getByText('Add creator to list…'));
+
+      const dialog = screen.getByTestId('add-to-people-list-dialog');
+      expect(dialog).toBeInTheDocument();
+      expect(dialog.getAttribute('data-member')).toBe(OTHER_PUBKEY);
+    });
   });
 });
