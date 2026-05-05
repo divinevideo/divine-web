@@ -4,6 +4,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { getDivineNip05Info } from '@/lib/nip05Utils';
+import { linkifyProfileBioText, normalizeExternalUrl } from '@/lib/profileBioLinkify';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -36,46 +37,6 @@ import type { NostrMetadata } from '@nostrify/nostrify';
 import { getDmConversationPath } from '@/lib/dm';
 import type { LegacySocialLink } from '@/lib/legacySocials';
 import type { ProfileStats } from '@/lib/profileStats';
-
-/** Linkify URLs and domain-like words in text */
-function linkifyText(text: string): React.ReactNode[] {
-  // Match URLs (https?://...) and bare domain names (word.tld patterns)
-  const urlRegex = /(https?:\/\/[^\s]+)|(\b[a-zA-Z0-9][-a-zA-Z0-9]*\.[a-zA-Z]{2,}(?:\.[a-zA-Z]{2,})?(?:\/[^\s]*)?)/g;
-  const parts: React.ReactNode[] = [];
-  let lastIndex = 0;
-  let match;
-
-  while ((match = urlRegex.exec(text)) !== null) {
-    // Add text before the match
-    if (match.index > lastIndex) {
-      parts.push(text.slice(lastIndex, match.index));
-    }
-
-    const matchedText = match[0];
-    const href = matchedText.startsWith('http') ? matchedText : `https://${matchedText}`;
-
-    parts.push(
-      <a
-        key={match.index}
-        href={href}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="text-primary hover:underline"
-      >
-        {matchedText}
-      </a>
-    );
-
-    lastIndex = match.index + matchedText.length;
-  }
-
-  // Add remaining text
-  if (lastIndex < text.length) {
-    parts.push(text.slice(lastIndex));
-  }
-
-  return parts;
-}
 
 interface ProfileMetadata extends NostrMetadata {
   _stillLoadingName?: boolean;  // Flag to indicate name is still being fetched
@@ -161,6 +122,8 @@ export function ProfileHeader({
   const profileImage = getSafeProfileImage(metadata?.picture) || '/user-avatar.png';
   const about = metadata?.about;
   const website = metadata?.website;
+  const websiteHref = normalizeExternalUrl(website);
+  const websiteLabel = website?.trim();
 
   const handleFollowClick = () => {
     onFollowToggle(!isFollowing);
@@ -275,12 +238,13 @@ export function ProfileHeader({
                 ) : null}
               </div>
 
-              {/* Website - hide if it's just a divine.video profile URL */}
-              {website && !website.includes('divine.video/profile/') && (
+              {/* Website */}
+              {websiteLabel && websiteHref && (
                 <div className="flex flex-wrap gap-2 justify-center sm:justify-start">
-                  <Badge variant="outline" className="text-xs">
-                    <a href={website} target="_blank" rel="noopener noreferrer" className="hover:underline">
-                      {website}
+                  <Badge variant="outline" className="text-xs max-w-full">
+                    <a href={websiteHref} target="_blank" rel="noopener noreferrer" className="hover:underline inline-flex items-center gap-1 break-all">
+                      <Link2 className="h-3 w-3 shrink-0" />
+                      {websiteLabel}
                     </a>
                   </Badge>
                 </div>
@@ -288,9 +252,9 @@ export function ProfileHeader({
 
               {/* Bio */}
               {about && (
-                <p className="text-muted-foreground text-sm leading-relaxed max-w-md">
-                  {linkifyText(about)}
-                </p>
+                <div className="text-muted-foreground text-sm leading-relaxed max-w-md whitespace-pre-wrap break-words">
+                  {linkifyProfileBioText(about)}
+                </div>
               )}
             </div>
 

@@ -1,5 +1,5 @@
 // ABOUTME: Settings page for NIP-39 external identity verification (linked accounts)
-// ABOUTME: Manage linked platform accounts (GitHub, Twitter, Mastodon, Telegram) with proof verification
+// ABOUTME: Manage linked platform accounts with proof verification and publishing
 
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
@@ -45,6 +45,22 @@ function DiscordIcon({ className }: { className?: string }) {
   );
 }
 
+function YouTubeIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+      <path d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.5 12 3.5 12 3.5s-7.5 0-9.4.6A3 3 0 0 0 .5 6.2 31.7 31.7 0 0 0 0 12a31.7 31.7 0 0 0 .5 5.8 3 3 0 0 0 2.1 2.1c1.9.6 9.4.6 9.4.6s7.5 0 9.4-.6a3 3 0 0 0 2.1-2.1A31.7 31.7 0 0 0 24 12a31.7 31.7 0 0 0-.5-5.8zM9.6 15.6V8.4l6.2 3.6-6.2 3.6z" />
+    </svg>
+  );
+}
+
+function TikTokIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+      <path d="M16.7 3.3c.8 2 2.4 3.3 4.5 3.6v3.1a7.7 7.7 0 0 1-4.2-1.3v7.1a6.3 6.3 0 1 1-5.4-6.2v3.2a3.2 3.2 0 1 0 2.2 3V.8h2.9v2.5z" />
+    </svg>
+  );
+}
+
 const PLATFORM_ICONS: Record<string, React.ReactNode> = {
   github: <Github className="h-5 w-5" />,
   twitter: <XIcon className="h-5 w-5" />,
@@ -52,6 +68,8 @@ const PLATFORM_ICONS: Record<string, React.ReactNode> = {
   telegram: <MessageCircle className="h-5 w-5" />,
   bluesky: <BlueskyIcon className="h-5 w-5" />,
   discord: <DiscordIcon className="h-5 w-5" />,
+  youtube: <YouTubeIcon className="h-5 w-5" />,
+  tiktok: <TikTokIcon className="h-5 w-5" />,
 };
 
 const PROOF_PLACEHOLDERS: Record<string, string> = {
@@ -61,6 +79,8 @@ const PROOF_PLACEHOLDERS: Record<string, string> = {
   telegram: 'https://t.me/channelname/123',
   bluesky: 'https://bsky.app/profile/you/post/abc123',
   discord: 'https://discord.gg/AbCdEf',
+  youtube: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+  tiktok: 'https://www.tiktok.com/@you/video/123456789',
 };
 
 /** Extract identity and proof from a URL, or return input as proof only */
@@ -109,6 +129,35 @@ function extractFromUrl(platform: string, input: string): { identity?: string; p
           const code = parts.pop() || trimmed;
           return { identity: code, proof: code };
         }
+      case 'youtube': {
+        // https://www.youtube.com/@channel or /channel/UC... + proof from watch/shorts URLs
+        const watchId = url.searchParams.get('v');
+        if (watchId) {
+          return { proof: watchId };
+        }
+        if (url.hostname.includes('youtu.be') && parts[0]) {
+          return { proof: parts[0] };
+        }
+        if ((parts[0] === 'shorts' || parts[0] === 'live') && parts[1]) {
+          return { proof: parts[1] };
+        }
+        if (parts[0]?.startsWith('@')) {
+          return { identity: parts[0].slice(1), proof: trimmed };
+        }
+        if ((parts[0] === 'channel' || parts[0] === 'c' || parts[0] === 'user') && parts[1]) {
+          return { identity: `${parts[0]}/${parts[1]}`, proof: trimmed };
+        }
+        return { proof: parts.pop() || trimmed };
+      }
+      case 'tiktok':
+        // https://www.tiktok.com/@user/video/123...
+        if (parts.length >= 3 && parts[0].startsWith('@') && parts[1] === 'video') {
+          return { identity: parts[0].slice(1), proof: parts[2] };
+        }
+        if (parts[0]?.startsWith('@')) {
+          return { identity: parts[0].slice(1), proof: trimmed };
+        }
+        return { proof: parts.pop() || trimmed };
       default:
         return { proof: trimmed };
     }
@@ -124,6 +173,8 @@ const PROOF_INSTRUCTIONS: Record<string, string> = {
   telegram: 'Send a message in a public channel/group containing the text below, then paste the message path (e.g. channelname/123).',
   bluesky: 'Post on Bluesky containing the text below, then paste the record key (rkey) from the post URL.',
   discord: 'Create a Discord server with your npub in the server name or description, then create a permanent invite link and paste the invite code.',
+  youtube: 'Create a public YouTube proof post (video/community/description containing the text below), then paste the proof URL.',
+  tiktok: 'Create a TikTok post containing the text below, then paste the post URL.',
 };
 
 function CopyButton({ text }: { text: string }) {
