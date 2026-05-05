@@ -7,12 +7,6 @@ import { render, screen } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { ProfilePage } from './ProfilePage';
 
-// ---- identity pass-through helpers ------------------------------------------
-
-const PassThrough = ({ children }: { children?: React.ReactNode }) => (
-  <>{children}</>
-);
-
 // ---- stub all hooks ProfilePage depends on ----------------------------------
 
 vi.mock('@/hooks/useCurrentUser', () => ({

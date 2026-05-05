@@ -36,14 +36,14 @@ describe('usePeopleListStats', () => {
     vi.mocked(usePeopleList).mockReturnValue({
       data: { id: 'x', pubkey: PK, name: 'x', members: [M(1), M(2)], createdAt: 0 },
       isSuccess: true,
-    } as any);
+    } as unknown as ReturnType<typeof usePeopleList>);
     vi.mocked(fetchBulkUsers).mockResolvedValue({
       users: [
         { pubkey: M(1), stats: { video_count: 10 } },
         { pubkey: M(2), stats: { video_count: 5 } },
       ],
       missing: [],
-    } as any);
+    });
     const { result } = renderHook(() => usePeopleListStats(PK, 'x'), { wrapper: wrap });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data).toEqual({ members: 2, videos: 15, loops: null });
@@ -54,7 +54,7 @@ describe('usePeopleListStats', () => {
     vi.mocked(usePeopleList).mockReturnValue({
       data: { id: 'x', pubkey: PK, name: 'x', members: big, createdAt: 0 },
       isSuccess: true,
-    } as any);
+    } as unknown as ReturnType<typeof usePeopleList>);
     const { result } = renderHook(() => usePeopleListStats(PK, 'x'), { wrapper: wrap });
     await waitFor(() => expect(result.current.data).toBeDefined());
     expect(result.current.data).toEqual({ members: 201, videos: null, loops: null });
@@ -66,7 +66,7 @@ describe('usePeopleListStats', () => {
     vi.mocked(usePeopleList).mockReturnValue({
       data: { id: 'x', pubkey: PK, name: 'x', members: [M(1)], createdAt: 0 },
       isSuccess: true,
-    } as any);
+    } as unknown as ReturnType<typeof usePeopleList>);
     const { result } = renderHook(() => usePeopleListStats(PK, 'x'), { wrapper: wrap });
     await waitFor(() => expect(result.current.data).toBeDefined());
     expect(result.current.data).toEqual({ members: 1, videos: null, loops: null });
