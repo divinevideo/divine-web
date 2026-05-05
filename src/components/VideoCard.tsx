@@ -2,7 +2,7 @@
 // ABOUTME: Shows video player, metadata, author info, and social interactions
 
 import { useState, useCallback, useRef, useMemo, useEffect } from 'react';
-import { Heart, Repeat as Repeat2, ChatCircle as MessageCircle, Share, Eye, DotsThreeVertical as MoreVertical, Flag, UserMinus as UserX, Trash as Trash2, SpeakerHigh as Volume2, SpeakerX as VolumeX, Code, Users, ListPlus, DownloadSimple as Download, ArrowsOutSimple as Maximize2, ClosedCaptioning as Captions, PushPin as Pin, PushPinSlash as PinOff, ArrowClockwise } from '@phosphor-icons/react';
+import { Heart, Repeat as Repeat2, ChatCircle as MessageCircle, Share, Eye, DotsThreeVertical as MoreVertical, Flag, UserMinus as UserX, Trash as Trash2, SpeakerHigh as Volume2, SpeakerX as VolumeX, Code, Users, ListPlus, DownloadSimple as Download, ArrowsOutSimple as Maximize2, ClosedCaptioning as Captions, PushPin as Pin, PushPinSlash as PinOff, ArrowClockwise, UsersThree } from '@phosphor-icons/react';
 import { nip19 } from 'nostr-tools';
 import { Card, CardContent, type CardAccent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -16,6 +16,7 @@ import { ThumbnailPlayer } from '@/components/ThumbnailPlayer';
 import { NoteContent } from '@/components/NoteContent';
 import { InlineNostrText } from '@/components/InlineNostrText';
 import { AddToListDialog } from '@/components/AddToListDialog';
+import { AddToPeopleListDialog } from '@/components/AddToPeopleListDialog';
 import { ReportContentDialog } from '@/components/ReportContentDialog';
 import { DeleteVideoDialog } from '@/components/DeleteVideoDialog';
 import { ViewSourceDialog } from '@/components/ViewSourceDialog';
@@ -158,6 +159,7 @@ export function VideoCard({
   const [isPlaying, setIsPlaying] = useState(mode === 'auto-play');
   const [showThumbnailDuringStartup, setShowThumbnailDuringStartup] = useState(false);
   const [showAddToListDialog, setShowAddToListDialog] = useState(false);
+  const [showAddToListPeopleDialog, setShowAddToListPeopleDialog] = useState(false);
   const [showReportDialog, setShowReportDialog] = useState(false);
   const [showReportUserDialog, setShowReportUserDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -1046,6 +1048,12 @@ export function VideoCard({
                 <Flag className="h-4 w-4 mr-2" />
                 Report user
               </DropdownMenuItem>
+              {currentUser && currentUser.pubkey !== video.pubkey && (
+                <DropdownMenuItem onClick={() => setShowAddToListPeopleDialog(true)}>
+                  <UsersThree className="h-4 w-4 mr-2" weight="bold" />
+                  Add creator to list…
+                </DropdownMenuItem>
+              )}
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleMuteUser} className="text-destructive focus:text-destructive">
                 <UserX className="h-4 w-4 mr-2" />
@@ -1099,6 +1107,14 @@ export function VideoCard({
         onClose={() => setShowViewSourceDialog(false)}
         video={video}
         title="Video Event Source"
+      />
+    )}
+
+    {showAddToListPeopleDialog && (
+      <AddToPeopleListDialog
+        open={showAddToListPeopleDialog}
+        onOpenChange={setShowAddToListPeopleDialog}
+        memberPubkey={video.pubkey}
       />
     )}
 
