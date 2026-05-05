@@ -1,7 +1,7 @@
 // ABOUTME: Leaderboard page showing top videos and creators by loops/views
 // ABOUTME: Supports time filters: all time, today, this week, this month, this year
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useSeoMeta } from '@unhead/react';
@@ -15,6 +15,18 @@ import { getFunnelcakeBaseUrl } from '@/config/api';
 
 type TimePeriod = 'alltime' | 'day' | 'week' | 'month' | 'year';
 type LeaderboardType = 'videos' | 'creators';
+
+const VALID_TYPES: LeaderboardType[] = ['videos', 'creators'];
+const VALID_PERIODS: TimePeriod[] = ['alltime', 'day', 'week', 'month', 'year'];
+
+function parseLeaderboardHash(hash: string): { type?: LeaderboardType; period?: TimePeriod } {
+  const cleaned = hash.replace(/^#/, '');
+  if (!cleaned) return {};
+  const [rawType, rawPeriod] = cleaned.split('-');
+  const type = VALID_TYPES.includes(rawType as LeaderboardType) ? (rawType as LeaderboardType) : undefined;
+  const period = VALID_PERIODS.includes(rawPeriod as TimePeriod) ? (rawPeriod as TimePeriod) : undefined;
+  return { type, period };
+}
 
 interface VideoLeaderboardItem {
   id: string;
@@ -367,8 +379,34 @@ function CreatorLeaderboard({ period }: { period: TimePeriod }) {
 }
 
 export function LeaderboardPage() {
-  const [leaderboardType, setLeaderboardType] = useState<LeaderboardType>('videos');
-  const [timePeriod, setTimePeriod] = useState<TimePeriod>('alltime');
+  const [leaderboardType, setLeaderboardType] = useState<LeaderboardType>(() => {
+    if (typeof window === 'undefined') return 'videos';
+    return parseLeaderboardHash(window.location.hash).type ?? 'videos';
+  });
+  const [timePeriod, setTimePeriod] = useState<TimePeriod>(() => {
+    if (typeof window === 'undefined') return 'alltime';
+    return parseLeaderboardHash(window.location.hash).period ?? 'alltime';
+  });
+
+  // Sync state -> hash without scrolling or polluting history.
+  // No element has id="<type>-<period>", so the browser won't auto-scroll.
+  useEffect(() => {
+    const next = `#${leaderboardType}-${timePeriod}`;
+    if (window.location.hash !== next) {
+      window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}${next}`);
+    }
+  }, [leaderboardType, timePeriod]);
+
+  // Sync hash -> state on back/forward.
+  useEffect(() => {
+    const onHashChange = () => {
+      const { type, period } = parseLeaderboardHash(window.location.hash);
+      if (type) setLeaderboardType(type);
+      if (period) setTimePeriod(period);
+    };
+    window.addEventListener('hashchange', onHashChange);
+    return () => window.removeEventListener('hashchange', onHashChange);
+  }, []);
 
   useSeoMeta({
     title: 'Leaderboard - Divine',
