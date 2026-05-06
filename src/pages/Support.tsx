@@ -1,9 +1,9 @@
 // ABOUTME: Support and contact information page for Divine Web
 // ABOUTME: Displays email contact and GitHub issues link for user support
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Envelope as Mail, GithubLogo as Github, ChatCircle as MessageCircle } from '@phosphor-icons/react';
+import { Envelope as Mail, GithubLogo as Github, ChatCircle as MessageCircle, Bug } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
 import { MarketingLayout } from '@/components/MarketingLayout';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
@@ -11,16 +11,19 @@ import { useDmCapability } from '@/hooks/useDirectMessages';
 import { useSubdomainNavigate } from '@/hooks/useSubdomainNavigate';
 import { DIVINE_SUPPORT_PUBKEY, getDmConversationPath } from '@/lib/dm';
 import { useTranslation } from 'react-i18next';
+import { BugReportDialog } from '@/components/BugReportDialog';
+
+const ZENDESK_ENABLED = false;
 
 export function Support() {
   // Zendesk widget disabled - linking to Help Center instead.
   // To restore widget: set ZENDESK_ENABLED to true and remove return null in ZendeskWidget.tsx
- 
-  const ZENDESK_ENABLED = false;
+
   const navigate = useSubdomainNavigate();
   const { user } = useCurrentUser();
   const { canUseDirectMessages } = useDmCapability();
   const { t } = useTranslation();
+  const [bugDialogOpen, setBugDialogOpen] = useState(false);
 
   useEffect(() => {
     if (!ZENDESK_ENABLED) return;
@@ -74,6 +77,7 @@ export function Support() {
 
   return (
     <MarketingLayout>
+      <BugReportDialog open={bugDialogOpen} onClose={() => setBugDialogOpen(false)} />
       <div className="container max-w-2xl mx-auto px-4 py-8">
       <div className="space-y-6">
         <div className="text-center space-y-2">
@@ -101,6 +105,21 @@ export function Support() {
             {/* <p className="text-sm text-muted-foreground mt-4 text-center">
               Our support widget will open in the bottom-right corner
             </p> */}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Bug className="h-5 w-5" />
+              {t('support.bugReportCardTitle')}
+            </CardTitle>
+            <CardDescription>{t('support.bugReportCardDescription')}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button type="button" variant="sticker" onClick={() => setBugDialogOpen(true)}>
+              {t('support.bugReportCardCta')}
+            </Button>
           </CardContent>
         </Card>
 
