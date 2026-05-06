@@ -19,12 +19,17 @@ export function useNostrPublish(): UseMutationResult<NostrEvent> {
           tags.push(["client", location.hostname]);
         }
 
-        const event = await signer.signEvent({
+        // Build the unsigned event. We include pubkey for signers (like
+        // DivineJWTSigner) that forward to an API expecting it, even though
+        // the NostrSigner type omits it. NIP-07/nsec signers ignore extra fields.
+        const unsigned = {
           kind: t.kind,
           content: t.content ?? "",
           tags,
           created_at: t.created_at ?? Math.floor(Date.now() / 1000),
-        });
+          pubkey: user.pubkey,
+        };
+        const event = await signer.signEvent(unsigned as Parameters<typeof signer.signEvent>[0]);
 
         await nostr.event(event, { signal: AbortSignal.timeout(5000) });
         return event;
