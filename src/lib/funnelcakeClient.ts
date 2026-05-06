@@ -86,7 +86,16 @@ async function funnelcakeRequest<T>(
     const data = await response.json();
     recordFunnelcakeSuccess(apiUrl);
 
-    debugLog(`[FunnelcakeClient] Response OK:`, { endpoint, resultCount: Array.isArray(data?.videos) ? data.videos.length : 'N/A' });
+    // Cover all known shapes for the debug log: raw array, legacy `{videos: [...]}`,
+    // and post-#238 envelope `{data: [...]}`.
+    const resultCount = Array.isArray(data)
+      ? data.length
+      : Array.isArray(data?.videos)
+        ? data.videos.length
+        : Array.isArray(data?.data)
+          ? data.data.length
+          : 'N/A';
+    debugLog(`[FunnelcakeClient] Response OK:`, { endpoint, resultCount });
 
     return data as T;
   } catch (err) {
@@ -123,6 +132,56 @@ export class FunnelcakeApiError extends Error {
     super(message);
     this.name = 'FunnelcakeApiError';
   }
+}
+
+/**
+ * Envelope response shape introduced by divine-funnelcake PR #238.
+ *
+ * The API may return either a raw array (legacy/`legacy-array-response`
+ * Cargo feature) or a `{ data, pagination }` envelope. Mobile clients in
+ * the wild expect the legacy raw-array shape, so the production API is
+ * currently emitting raw arrays — but we need to tolerate both so the
+ * web client keeps working when the flag eventually flips.
+ */
+interface FunnelcakeListEnvelope<T> {
+  data: T[];
+  pagination?: {
+    has_more?: boolean;
+    next_cursor?: string | null;
+    next_offset?: number | null;
+  };
+}
+
+/**
+ * Unwrap a Funnelcake list response that may arrive as either a raw array
+ * (legacy shape) or a `{ data, pagination }` envelope (post-#238 shape).
+ *
+ * Returns a normalised `{ items, hasMore, nextCursor }` triple. For raw
+ * arrays the caller must compute `hasMore`/`nextCursor` itself (we pass
+ * `hasMore: undefined` so the caller can decide based on `items.length`);
+ * for envelopes we use the server-provided pagination fields.
+ */
+export function unwrapListResponse<T>(
+  raw: unknown,
+): { items: T[]; hasMore: boolean | undefined; nextCursor: string | undefined } {
+  if (Array.isArray(raw)) {
+    return { items: raw as T[], hasMore: undefined, nextCursor: undefined };
+  }
+
+  if (raw && typeof raw === 'object' && Array.isArray((raw as FunnelcakeListEnvelope<T>).data)) {
+    const env = raw as FunnelcakeListEnvelope<T>;
+    const pagination = env.pagination;
+    const nextCursor = pagination?.next_cursor != null
+      ? String(pagination.next_cursor)
+      : (pagination?.next_offset != null ? String(pagination.next_offset) : undefined);
+    return {
+      items: env.data,
+      hasMore: pagination?.has_more,
+      nextCursor,
+    };
+  }
+
+  return { items: [], hasMore: false, nextCursor: undefined };
 }
 
 /**
@@ -190,26 +249,34 @@ export async function fetchVideos(
     }
   }
 
-  // API returns array directly, wrap it in expected format
-  const videos = await funnelcakeRequest<FunnelcakeVideoRaw[]>(
+  // API may return either a raw array (legacy/`legacy-array-response`)
+  // or a `{ data, pagination }` envelope (post divine-funnelcake #238).
+  const raw = await funnelcakeRequest<unknown>(
     apiUrl,
     API_CONFIG.funnelcake.endpoints.videos,
     params,
     signal
   );
+  const { items: videos, hasMore: envelopeHasMore, nextCursor: envelopeCursor } =
+    unwrapListResponse<FunnelcakeVideoRaw>(raw);
 
   const videoCount = videos.length;
   const currentOffset = offset ?? (params.offset as number | undefined) ?? 0;
   const nextOffset = currentOffset + videoCount;
 
-  // For sorted feeds, return offset-based cursor; for chronological, return timestamp
-  const next_cursor = videoCount >= limit
+  // Prefer the envelope's pagination metadata when present; otherwise
+  // fall back to the legacy "page is full ⇒ probably more" heuristic.
+  const has_more = envelopeHasMore ?? videoCount >= limit;
+  const computedNextCursor = videoCount >= limit
     ? (sort !== 'recent' ? String(nextOffset) : String(videos[videoCount - 1].created_at))
+    : undefined;
+  const next_cursor = has_more
+    ? (envelopeCursor ?? computedNextCursor)
     : undefined;
 
   return {
     videos,
-    has_more: videoCount >= limit,
+    has_more,
     next_cursor,
   };
 }
@@ -314,26 +381,31 @@ export async function searchVideos(
     }
   }
 
-  // API returns array directly, wrap it in expected format
-  const videos = await funnelcakeRequest<FunnelcakeVideoRaw[]>(
+  // Tolerate both raw-array and envelope shapes (see unwrapListResponse).
+  const raw = await funnelcakeRequest<unknown>(
     apiUrl,
     endpoint,
     params,
     signal
   );
+  const { items: videos, hasMore: envelopeHasMore, nextCursor: envelopeCursor } =
+    unwrapListResponse<FunnelcakeVideoRaw>(raw);
 
   const videoCount = videos.length;
   const currentOffset = offset ?? (params.offset as number | undefined) ?? 0;
   const nextOffset = currentOffset + videoCount;
 
-  // For sorted feeds, return offset-based cursor; for chronological, return timestamp
-  const next_cursor = videoCount >= limit
+  const has_more = envelopeHasMore ?? videoCount >= limit;
+  const computedNextCursor = videoCount >= limit
     ? (sort !== 'recent' ? String(nextOffset) : String(videos[videoCount - 1].created_at))
+    : undefined;
+  const next_cursor = has_more
+    ? (envelopeCursor ?? computedNextCursor)
     : undefined;
 
   return {
     videos,
-    has_more: videoCount >= limit,
+    has_more,
     next_cursor,
   };
 }
@@ -376,7 +448,7 @@ export async function searchProfiles(
     signal,
   } = options;
 
-  return funnelcakeRequest<FunnelcakeProfileResult[]>(
+  const raw = await funnelcakeRequest<unknown>(
     apiUrl,
     API_CONFIG.funnelcake.endpoints.searchProfiles,
     {
@@ -388,6 +460,8 @@ export async function searchProfiles(
     },
     signal,
   );
+  // Tolerate both raw-array and envelope shapes.
+  return unwrapListResponse<FunnelcakeProfileResult>(raw).items;
 }
 
 /**
@@ -418,21 +492,28 @@ export async function fetchUserVideos(
     sort: sort || undefined,
   };
 
-  // API returns array directly, wrap it in expected format
-  const videos = await funnelcakeRequest<FunnelcakeVideoRaw[]>(
+  // Tolerate both raw-array and envelope shapes (see unwrapListResponse).
+  const raw = await funnelcakeRequest<unknown>(
     apiUrl,
     endpoint,
     params,
     signal
   );
+  const { items: videos, hasMore: envelopeHasMore, nextCursor: envelopeCursor } =
+    unwrapListResponse<FunnelcakeVideoRaw>(raw);
 
   const videoCount = videos.length;
   const nextOffset = currentOffset + videoCount;
 
+  const has_more = envelopeHasMore ?? videoCount >= limit;
+  const next_cursor = has_more
+    ? (envelopeCursor ?? (videoCount >= limit ? String(nextOffset) : undefined))
+    : undefined;
+
   return {
     videos,
-    has_more: videoCount >= limit,
-    next_cursor: videoCount >= limit ? String(nextOffset) : undefined,
+    has_more,
+    next_cursor,
   };
 }
 
@@ -468,41 +549,59 @@ export async function fetchUserFeed(
     }
   }
 
-  // API returns array directly, wrap it in expected format
-  const videos = await funnelcakeRequest<FunnelcakeVideoRaw[]>(
+  // Tolerate both raw-array and envelope shapes (see unwrapListResponse).
+  const raw = await funnelcakeRequest<unknown>(
     apiUrl,
     endpoint,
     params,
     signal
   );
+  const { items: videos, hasMore: envelopeHasMore, nextCursor: envelopeCursor } =
+    unwrapListResponse<FunnelcakeVideoRaw>(raw);
 
   const videoCount = videos.length;
   const currentOffset = offset ?? (params.offset as number | undefined) ?? 0;
   const nextOffset = currentOffset + videoCount;
 
-  const next_cursor = videoCount >= limit
+  const has_more = envelopeHasMore ?? videoCount >= limit;
+  const computedNextCursor = videoCount >= limit
     ? (sort !== 'recent' ? String(nextOffset) : String(videos[videoCount - 1].created_at))
+    : undefined;
+  const next_cursor = has_more
+    ? (envelopeCursor ?? computedNextCursor)
     : undefined;
 
   return {
     videos,
-    has_more: videoCount >= limit,
+    has_more,
     next_cursor,
   };
 }
 
 /**
- * Response from recommendations endpoint
+ * Response from recommendations endpoint.
+ *
+ * Historically the recommendations endpoint returned its videos in a
+ * top-level `videos` field with sibling pagination metadata. After
+ * divine-funnelcake PR #238 it may also return the post-#238 envelope
+ * (`{ data: [...], pagination: {...}, source, fallback_applied }`).
+ * We tolerate both shapes when parsing.
  */
 interface FunnelcakeRecommendationsResponse {
-  videos: FunnelcakeVideoRaw[];
-  source: 'personalized' | 'popular' | 'recent';
-  limit: number;
-  offset: number;
-  has_more: boolean;
-  next_offset: number | null;
-  next_cursor: string | null;
-  fallback_applied: boolean;
+  videos?: FunnelcakeVideoRaw[];
+  data?: FunnelcakeVideoRaw[];
+  source?: 'personalized' | 'popular' | 'recent';
+  limit?: number;
+  offset?: number;
+  has_more?: boolean;
+  next_offset?: number | null;
+  next_cursor?: string | null;
+  fallback_applied?: boolean;
+  pagination?: {
+    has_more?: boolean;
+    next_cursor?: string | null;
+    next_offset?: number | null;
+  };
 }
 
 /**
@@ -556,13 +655,22 @@ export async function fetchRecommendations(
     signal
   );
 
-  const videoCount = response.videos?.length || 0;
-  const serverSupportsCursorMetadata = 'has_more' in response;
+  // Pull videos from either the legacy `videos` field or the post-#238
+  // envelope `data` field. Pagination metadata may also live in either
+  // top-level fields or under `pagination`.
+  const videos = response.videos ?? response.data ?? [];
+  const videoCount = videos.length;
+  const pagination = response.pagination;
+  const hasMoreField = response.has_more ?? pagination?.has_more;
+  const nextCursorField = response.next_cursor ?? pagination?.next_cursor;
+  const nextOffsetField = response.next_offset ?? pagination?.next_offset;
+  const serverSupportsCursorMetadata = hasMoreField !== undefined;
+
   const hasMore = serverSupportsCursorMetadata
-    ? (response.has_more ?? false)
+    ? (hasMoreField ?? false)
     : videoCount > 0;
   const nextCursor = serverSupportsCursorMetadata
-    ? (response.next_cursor ?? (response.next_offset !== null ? String(response.next_offset) : undefined))
+    ? (nextCursorField ?? (nextOffsetField != null ? String(nextOffsetField) : undefined))
     : (videoCount > 0 ? String((offset || 0) + limit) : undefined);
 
   debugLog(
@@ -570,9 +678,9 @@ export async function fetchRecommendations(
   );
 
   return {
-    videos: response.videos || [],
+    videos,
     has_more: hasMore,
-    next_cursor: nextCursor,
+    next_cursor: nextCursor ?? undefined,
     source: response.source,
     fallback_applied: response.fallback_applied,
   };
@@ -614,13 +722,14 @@ export async function fetchPopularHashtags(
   limit: number = 50,
   signal?: AbortSignal
 ): Promise<FunnelcakeHashtag[]> {
-  // API returns array directly
-  return funnelcakeRequest<FunnelcakeHashtag[]>(
+  // Tolerate both raw-array and `{ data, pagination }` envelope shapes.
+  const raw = await funnelcakeRequest<unknown>(
     apiUrl,
     API_CONFIG.funnelcake.endpoints.hashtags,
     { limit },
     signal
   );
+  return unwrapListResponse<FunnelcakeHashtag>(raw).items;
 }
 
 /**
@@ -636,13 +745,14 @@ export async function fetchTrendingHashtags(
   limit: number = 20,
   signal?: AbortSignal
 ): Promise<FunnelcakeHashtag[]> {
-  // API returns array directly
-  return funnelcakeRequest<FunnelcakeHashtag[]>(
+  // Tolerate both raw-array and `{ data, pagination }` envelope shapes.
+  const raw = await funnelcakeRequest<unknown>(
     apiUrl,
     API_CONFIG.funnelcake.endpoints.trendingHashtags,
     { limit },
     signal
   );
+  return unwrapListResponse<FunnelcakeHashtag>(raw).items;
 }
 
 /**
@@ -658,13 +768,14 @@ export async function fetchClassicViners(
   limit: number = 20,
   signal?: AbortSignal
 ): Promise<FunnelcakeViner[]> {
-  // API returns array directly
-  return funnelcakeRequest<FunnelcakeViner[]>(
+  // Tolerate both raw-array and `{ data, pagination }` envelope shapes.
+  const raw = await funnelcakeRequest<unknown>(
     apiUrl,
     API_CONFIG.funnelcake.endpoints.viners,
     { limit },
     signal
   );
+  return unwrapListResponse<FunnelcakeViner>(raw).items;
 }
 
 /**
@@ -678,12 +789,14 @@ export async function fetchCategories(
   apiUrl: string = API_CONFIG.funnelcake.baseUrl,
   signal?: AbortSignal
 ): Promise<FunnelcakeCategory[]> {
-  return funnelcakeRequest<FunnelcakeCategory[]>(
+  // Tolerate both raw-array and `{ data, pagination }` envelope shapes.
+  const raw = await funnelcakeRequest<unknown>(
     apiUrl,
     API_CONFIG.funnelcake.endpoints.categories,
     {},
     signal
   );
+  return unwrapListResponse<FunnelcakeCategory>(raw).items;
 }
 
 /**

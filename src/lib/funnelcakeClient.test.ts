@@ -33,6 +33,9 @@ describe('funnelcakeClient', () => {
   let fetchRecommendations: typeof import('./funnelcakeClient').fetchRecommendations;
   let markNotificationsRead: typeof import('./funnelcakeClient').markNotificationsRead;
   let fetchNotifications: typeof import('./funnelcakeClient').fetchNotifications;
+  let fetchVideos: typeof import('./funnelcakeClient').fetchVideos;
+  let fetchUserVideos: typeof import('./funnelcakeClient').fetchUserVideos;
+  let unwrapListResponse: typeof import('./funnelcakeClient').unwrapListResponse;
 
   beforeEach(async () => {
     vi.resetModules();
@@ -49,6 +52,9 @@ describe('funnelcakeClient', () => {
     fetchRecommendations = client.fetchRecommendations;
     markNotificationsRead = client.markNotificationsRead;
     fetchNotifications = client.fetchNotifications;
+    fetchVideos = client.fetchVideos;
+    fetchUserVideos = client.fetchUserVideos;
+    unwrapListResponse = client.unwrapListResponse;
   });
 
   afterEach(() => {
@@ -611,6 +617,180 @@ describe('funnelcakeClient', () => {
       expect(result.videos).toHaveLength(1);
       expect(result.has_more).toBe(true);
       expect(result.next_cursor).toBe('36');
+    });
+
+    it('reads videos from the post-#238 envelope (`data` + `pagination`)', async () => {
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({
+          data: [
+            {
+              id: 'vid-env',
+              pubkey: TEST_PUBKEY,
+              created_at: 123,
+              kind: 34236,
+              d_tag: 'd-env',
+              title: 'Envelope Video',
+              video_url: 'https://example.com/envelope.mp4',
+            },
+          ],
+          pagination: {
+            has_more: true,
+            next_cursor: 'opaque-next',
+          },
+          source: 'personalized',
+        }),
+      });
+
+      const result = await fetchRecommendations(API_URL, {
+        pubkey: TEST_PUBKEY,
+        limit: 12,
+        cursor: 'opaque-prev',
+        fallback: 'popular',
+      });
+
+      expect(result.videos).toHaveLength(1);
+      expect(result.videos[0].id).toBe('vid-env');
+      expect(result.has_more).toBe(true);
+      expect(result.next_cursor).toBe('opaque-next');
+    });
+  });
+
+  describe('unwrapListResponse', () => {
+    it('passes through a raw array as items with no pagination metadata', () => {
+      const result = unwrapListResponse<number>([1, 2, 3]);
+      expect(result.items).toEqual([1, 2, 3]);
+      expect(result.hasMore).toBeUndefined();
+      expect(result.nextCursor).toBeUndefined();
+    });
+
+    it('extracts items + pagination from the post-#238 envelope', () => {
+      const result = unwrapListResponse<number>({
+        data: [10, 11, 12],
+        pagination: { has_more: true, next_cursor: 'cur-2' },
+      });
+      expect(result.items).toEqual([10, 11, 12]);
+      expect(result.hasMore).toBe(true);
+      expect(result.nextCursor).toBe('cur-2');
+    });
+
+    it('falls back to next_offset when the envelope omits next_cursor', () => {
+      const result = unwrapListResponse<number>({
+        data: [1],
+        pagination: { has_more: true, next_offset: 42 },
+      });
+      expect(result.nextCursor).toBe('42');
+    });
+
+    it('returns empty + hasMore=false for null/non-list garbage', () => {
+      const result = unwrapListResponse<number>(null);
+      expect(result.items).toEqual([]);
+      expect(result.hasMore).toBe(false);
+    });
+  });
+
+  describe('fetchVideos shape tolerance', () => {
+    function makeRawVideo(id: string) {
+      return {
+        id,
+        pubkey: TEST_PUBKEY,
+        created_at: 1700000000,
+        kind: 34236,
+        d_tag: id,
+        title: id,
+        video_url: `https://example.com/${id}.mp4`,
+      };
+    }
+
+    it('handles a raw-array response (legacy / `legacy-array-response` flag on)', async () => {
+      const rawArray = Array.from({ length: 3 }, (_, i) => makeRawVideo(`raw-${i}`));
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(rawArray),
+      });
+
+      const result = await fetchVideos(API_URL, { sort: 'trending', limit: 20 });
+
+      expect(result.videos).toHaveLength(3);
+      expect(result.videos[0].id).toBe('raw-0');
+      // Page wasn't full, so legacy heuristic says no more.
+      expect(result.has_more).toBe(false);
+      expect(result.next_cursor).toBeUndefined();
+    });
+
+    it('handles the post-#238 `{ data, pagination }` envelope', async () => {
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({
+          data: [makeRawVideo('env-0'), makeRawVideo('env-1')],
+          pagination: {
+            has_more: true,
+            next_cursor: 'envelope-cursor-2',
+          },
+        }),
+      });
+
+      const result = await fetchVideos(API_URL, { sort: 'trending', limit: 20 });
+
+      expect(result.videos).toHaveLength(2);
+      expect(result.videos[0].id).toBe('env-0');
+      expect(result.has_more).toBe(true);
+      expect(result.next_cursor).toBe('envelope-cursor-2');
+    });
+
+    it('returns no videos and has_more=false for an unrecognised shape', async () => {
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({ unexpected: 'shape' }),
+      });
+
+      const result = await fetchVideos(API_URL, { sort: 'trending', limit: 20 });
+
+      expect(result.videos).toEqual([]);
+      expect(result.has_more).toBe(false);
+      expect(result.next_cursor).toBeUndefined();
+    });
+  });
+
+  describe('fetchUserVideos shape tolerance', () => {
+    function makeRawVideo(id: string) {
+      return {
+        id,
+        pubkey: TEST_PUBKEY,
+        created_at: 1700000000,
+        kind: 34236,
+        d_tag: id,
+        title: id,
+        video_url: `https://example.com/${id}.mp4`,
+      };
+    }
+
+    it('handles a raw-array response', async () => {
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve([makeRawVideo('uv-0')]),
+      });
+
+      const result = await fetchUserVideos(API_URL, TEST_PUBKEY, { limit: 20 });
+      expect(result.videos).toHaveLength(1);
+      expect(result.videos[0].id).toBe('uv-0');
+      expect(result.has_more).toBe(false);
+    });
+
+    it('handles the post-#238 envelope', async () => {
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({
+          data: [makeRawVideo('uv-env-0')],
+          pagination: { has_more: false, next_cursor: null },
+        }),
+      });
+
+      const result = await fetchUserVideos(API_URL, TEST_PUBKEY, { limit: 20 });
+      expect(result.videos).toHaveLength(1);
+      expect(result.videos[0].id).toBe('uv-env-0');
+      expect(result.has_more).toBe(false);
+      expect(result.next_cursor).toBeUndefined();
     });
   });
 });
