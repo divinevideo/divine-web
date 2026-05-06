@@ -123,6 +123,16 @@ describe('AppSidebar', () => {
     expect(mockNavigate).toHaveBeenCalledWith('/dmca');
   });
 
+  it('hides the sidebar imported Vines total', () => {
+    render(
+      <MemoryRouter>
+        <AppSidebar />
+      </MemoryRouter>,
+    );
+
+    expect(screen.queryByText(/vines (recovered|recuperados)/i)).not.toBeInTheDocument();
+  });
+
   it('shows the App Store badge when Apple lookup finds the regional listing', async () => {
     setLanguages(['en-NZ']);
 

@@ -76,6 +76,24 @@ const baseStats: ProfileStats = {
 };
 
 describe('ProfileHeader', () => {
+  it('shows the profile video count stat', () => {
+    render(
+      <MemoryRouter>
+        <ProfileHeader
+          pubkey={'a'.repeat(64)}
+          metadata={{ display_name: 'Modern Creator' }}
+          stats={baseStats}
+          isOwnProfile={false}
+          isFollowing={false}
+          onFollowToggle={vi.fn()}
+        />
+      </MemoryRouter>
+    );
+
+    expect(screen.getByText('Videos')).toBeInTheDocument();
+    expect(screen.getByText('10')).toBeInTheDocument();
+  });
+
   it('shows clickable legacy socials for classic viners only', () => {
     render(
       <MemoryRouter>
