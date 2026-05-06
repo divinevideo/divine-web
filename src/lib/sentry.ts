@@ -2,6 +2,7 @@
 // ABOUTME: Provides crash reporting with stack traces, issue grouping, and performance metrics
 
 import * as Sentry from '@sentry/react';
+import { shouldDropHandledMediaHttpClientEvent } from '@/lib/sentryHttpClientFilter';
 
 /**
  * Initialize Sentry error tracking
@@ -105,6 +106,10 @@ export function initializeSentry() {
 
     // Don't send PII
     beforeSend(event) {
+      if (shouldDropHandledMediaHttpClientEvent(event)) {
+        return null;
+      }
+
       // Scrub any potential PII from the event
       if (event.user) {
         // Only keep anonymized user ID (pubkey is already pseudonymous)
