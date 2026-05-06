@@ -21,6 +21,7 @@ import { clearLoginCookie } from '@/lib/crossSubdomainAuth';
 import { genUserName } from '@/lib/genUserName';
 import { getSafeProfileImage } from '@/lib/imageUtils';
 import { getActiveLocalNsecLogin } from '@/lib/localNsecAccount';
+import { OVERLAY_LAYERS } from '@/lib/overlayLayers';
 import { RelaySelector } from '@/components/RelaySelector';
 import { LocalNsecBanner } from './LocalNsecBanner';
 
@@ -99,7 +100,7 @@ export function AccountSwitcher({ onAddAccountClick }: AccountSwitcherProps) {
           <DropdownMenuSeparator />
           <DropdownMenuLabel>Switch Relay</DropdownMenuLabel>
           <DropdownMenuItem onSelect={(e) => e.preventDefault()} className='p-2'>
-            <RelaySelector className='w-full' />
+            <RelaySelector className='w-full' contentClassName={OVERLAY_LAYERS.nestedOverlayFloating} />
           </DropdownMenuItem>
           {!isJwtCurrentUser ? (
             <>

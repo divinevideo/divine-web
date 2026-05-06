@@ -13,9 +13,10 @@ import { PRESET_RELAYS, toLegacyFormat } from '@/config/relays';
 
 interface RelaySelectorProps {
   className?: string;
+  contentClassName?: string;
 }
 
-export function RelaySelector({ className }: RelaySelectorProps) {
+export function RelaySelector({ className, contentClassName }: RelaySelectorProps) {
   const { config, updateConfig, presetRelays } = useAppContext();
 
   const handleRelayChange = (newRelayUrl: string) => {
@@ -33,7 +34,7 @@ export function RelaySelector({ className }: RelaySelectorProps) {
       <SelectTrigger className={className}>
         <SelectValue placeholder="Select relay" />
       </SelectTrigger>
-      <SelectContent>
+      <SelectContent className={contentClassName}>
         {relays.map(({ name, url }) => (
           <SelectItem key={url} value={url}>
             {name}
