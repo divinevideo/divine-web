@@ -927,7 +927,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
         }
       };
 
-    }, [hlsUrl, currentUrlIndex, allUrls, videoId, requiresAuth, isAdultVerified, authRetryCount, getAuthHeader, videoData?.sha256, videoData?.ageRestricted]); // React to HLS URL, fallback, and auth changes
+    }, [hlsUrl, currentUrlIndex, allUrls, videoId, requiresAuth, isAdultVerified, authRetryCount, getAuthHeader, videoData?.ageRestricted]); // React to HLS URL, fallback, and auth changes
 
     // Cleanup on unmount
     useEffect(() => {
