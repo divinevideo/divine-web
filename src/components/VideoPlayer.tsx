@@ -130,6 +130,9 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
 
     // Adult verification hook
     const { isVerified: isAdultVerified, getAuthHeader } = useAdultVerification();
+    // Truthy-only (not !== false): treating undefined as restricted here causes
+    // getAuthHeader to return null for unsigned-in users, blanking ALL posters.
+    // The preflight HEAD check handles discovery of unknown-status videos.
     const { mediaUrl: authenticatedPosterUrl } = useAuthenticatedMediaUrl(poster, {
       enabled: !!poster && !requiresAuth && !authCheckPending,
       ageRestricted: !!videoData?.ageRestricted,

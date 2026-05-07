@@ -315,6 +315,9 @@ export function VideoCard({
   const timestamp = video.originalVineTimestamp || video.createdAt;
 
   const date = new Date(timestamp * 1000);
+  // Explicit true only, not !== false: unknown status (undefined) should NOT
+  // show the lock overlay in cards. VideoPlayer's preflight HEAD check handles
+  // discovery of actually-gated content at playback time.
   const isAgeGated = video.ageRestricted === true && (!currentUser || !isAdultVerified);
 
   // Calculate timeAgo only for pre-2025 videos
