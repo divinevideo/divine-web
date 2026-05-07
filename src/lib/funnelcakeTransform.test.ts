@@ -112,6 +112,26 @@ describe('transformFunnelcakeVideo', () => {
     expect(video.proofMode?.c2paManifestId).toBe('urn:c2pa:test');
     expect(video.proofMode?.deviceAttestation).toBe('attest-blob');
   });
+
+  it('maps the raw Nostr content (description) to video.content, not the title', () => {
+    const video = transformFunnelcakeVideo(makeRawVideo({
+      title: 'First Divine Compilation 2026!',
+      content: 'I just made the world‘s first divine compilation.\n\nLink: https://youtu.be/abc',
+    }));
+
+    expect(video.title).toBe('First Divine Compilation 2026!');
+    expect(video.content).toBe('I just made the world‘s first divine compilation.\n\nLink: https://youtu.be/abc');
+  });
+
+  it('leaves video.content empty when the API response has no content field', () => {
+    const video = transformFunnelcakeVideo(makeRawVideo({
+      title: 'A title with no description',
+      content: undefined,
+    }));
+
+    expect(video.title).toBe('A title with no description');
+    expect(video.content).toBe('');
+  });
 });
 
 function makeResponse(overrides: Partial<FunnelcakeResponse> = {}): FunnelcakeResponse {
