@@ -847,7 +847,9 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
             verboseLog(`[VideoPlayer ${videoId}] Fetching MP4 with NIP-98 auth`);
             (async () => {
               try {
-                const authHeader = await getAuthHeader(currentUrl, 'GET', videoData?.sha256);
+                // NIP-98 (not BUD-01): Blossom's viewer auth path only accepts
+                // BUD-01 list events, rejecting get events with an action mismatch.
+                const authHeader = await getAuthHeader(currentUrl, 'GET');
                 // Check if request was aborted while getting auth header
                 if (abortController.signal.aborted) {
                   verboseLog(`[VideoPlayer ${videoId}] Fetch aborted before starting`);
