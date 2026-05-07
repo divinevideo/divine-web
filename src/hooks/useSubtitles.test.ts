@@ -118,4 +118,21 @@ describe('useSubtitles protected media auth', () => {
     expect(fetchSpy).not.toHaveBeenCalled();
     expect(result.current.hasSubtitles).toBe(false);
   });
+
+  it('does not make raw CDN subtitle requests for protected media with unknown age gate status', async () => {
+    const fetchSpy = vi.fn();
+    global.fetch = fetchSpy as typeof fetch;
+
+    const { result } = renderHook(
+      () => useSubtitles(makeVideo({ ageRestricted: undefined })),
+      { wrapper: createWrapper() }
+    );
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+    });
+
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(result.current.hasSubtitles).toBe(false);
+  });
 });
