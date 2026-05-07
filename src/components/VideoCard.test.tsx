@@ -74,14 +74,16 @@ vi.mock('@/components/ui/dropdown-menu', () => ({
 vi.mock('@/components/VideoPlayer', () => ({
   VideoPlayer: ({
     videoId,
+    hlsUrl,
     onError,
     onPlaybackStarted,
   }: {
     videoId: string;
+    hlsUrl?: string;
     onError?: () => void;
     onPlaybackStarted?: () => void;
   }) => (
-    <div data-testid={`video-player-${videoId}`}>
+    <div data-testid={`video-player-${videoId}`} data-hls-url={hlsUrl ?? ''}>
       Video Player
       <button
         aria-label={`fail-video-${videoId}`}
@@ -469,6 +471,33 @@ describe('VideoCard', () => {
 
     expect(screen.getByTestId('thumbnail-player')).toBeInTheDocument();
     expect(screen.queryByText('Log in to view')).not.toBeInTheDocument();
+  });
+
+  it('shows a gated card for protected media with unknown age status', () => {
+    const video = makeVideo({
+      ageRestricted: undefined,
+      duration: 6,
+      hlsUrl: 'https://media.divine.video/video-1/hls/master.m3u8',
+      videoUrl: 'https://media.divine.video/video-1',
+    });
+
+    render(<VideoCard video={video} />);
+    expect(screen.getByText('Log in to view')).toBeInTheDocument();
+    expect(screen.queryByTestId(`video-player-${video.id}`)).not.toBeInTheDocument();
+    expect(screen.queryByTestId('thumbnail-player')).not.toBeInTheDocument();
+  });
+
+  it('shows verify-age CTA for logged-in viewers on protected media with unknown age status', () => {
+    authMocks.useCurrentUser.mockReturnValue({
+      user: { pubkey: 'a'.repeat(64) },
+    });
+    const video = makeVideo({
+      ageRestricted: undefined,
+      videoUrl: 'https://media.divine.video/video-1',
+    });
+
+    render(<VideoCard video={video} mode="thumbnail" />);
+    expect(screen.getByText('Verify age to view')).toBeInTheDocument();
   });
 
   it('lets failed playback be retried without remounting the card', () => {
