@@ -56,7 +56,7 @@ function VideoGridMedia({
   const baseThumbnailUrl = video.thumbnailUrl || video.videoUrl;
   const { mediaUrl: authenticatedMediaUrl, isLoading } = useAuthenticatedMediaUrl(baseThumbnailUrl, {
     enabled: true,
-    ageRestricted: !!video.ageRestricted,
+    ageRestricted: video.ageRestricted,
   });
 
   if (isLoading) {
