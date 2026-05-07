@@ -132,7 +132,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
     const { isVerified: isAdultVerified, getAuthHeader } = useAdultVerification();
     const { mediaUrl: authenticatedPosterUrl } = useAuthenticatedMediaUrl(poster, {
       enabled: !!poster && !requiresAuth && !authCheckPending,
-      ageRestricted: videoData?.ageRestricted !== false,
+      ageRestricted: !!videoData?.ageRestricted,
     });
     const overlayPosterUrl = authenticatedPosterUrl ||
       (poster && !isProtectedDivineMediaUrl(poster) ? poster : undefined);
