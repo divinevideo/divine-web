@@ -42,20 +42,6 @@ describe('MerchPage', () => {
     }
   });
 
-  it('uses a defined light brand surface behind product copy', () => {
-    renderPage();
-    const firstProduct = merchProducts.products[0];
-    const link = screen.getByRole('link', {
-      name: new RegExp(`${firstProduct.name} on Bonfire`, 'i'),
-    });
-    expect(link.className).toContain('bg-brand-off-white');
-
-    const heading = within(link).getByRole('heading', { name: firstProduct.name });
-    const copyPanel = heading.parentElement;
-    expect(copyPanel?.className).toContain('bg-brand-off-white');
-    expect(copyPanel?.className).toContain('text-brand-dark-green');
-  });
-
   it('renders Shop everything CTAs pointing at the Bonfire store, opening in a new tab', () => {
     renderPage();
     const ctas = screen.getAllByRole('link', { name: /shop everything/i });

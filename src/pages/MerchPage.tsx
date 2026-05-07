@@ -59,7 +59,7 @@ function ProductCard({ product, accent }: { product: Product; accent: (typeof AC
         rel="noopener noreferrer"
         aria-label={`${product.name} on Bonfire`}
         className={cn(
-          'group flex h-full flex-col overflow-hidden rounded-[22px] border-2 border-brand-dark-green bg-brand-off-white transition-transform duration-200 hover:-translate-y-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+          'group flex h-full flex-col overflow-hidden rounded-[22px] border-2 border-brand-dark-green bg-brand-cream transition-transform duration-200 hover:-translate-y-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
           ACCENT_SHADOW[accent],
         )}
       >
@@ -71,7 +71,7 @@ function ProductCard({ product, accent }: { product: Product; accent: (typeof AC
             className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
           />
         </div>
-        <div className="flex flex-1 flex-col gap-1 border-t-2 border-brand-dark-green bg-brand-off-white px-5 py-4 text-brand-dark-green">
+        <div className="flex flex-1 flex-col gap-1 border-t-2 border-brand-dark-green bg-brand-cream px-5 py-4">
           {showCampaignOverline ? (
             <p className="text-xs font-semibold tracking-wide text-brand-dark-green/60">
               {product.campaignTitle}
@@ -107,7 +107,7 @@ export default function MerchPage() {
 
   return (
     <div className="mx-auto max-w-6xl px-6 py-10 md:py-14">
-      <section className="brand-card brand-offset-shadow-pink rounded-[22px] bg-brand-off-white p-8 text-center md:p-14">
+      <section className="brand-card brand-offset-shadow-pink rounded-[22px] bg-brand-cream p-8 text-center md:p-14">
         <h1 className="font-extrabold tracking-tight text-brand-dark-green text-4xl md:text-6xl leading-[1.05]">
           {HEADLINE}
         </h1>
@@ -134,9 +134,9 @@ export default function MerchPage() {
         </ul>
       ) : null}
 
-      <div className="mt-14 flex flex-col items-center gap-4 rounded-[22px] border-2 border-brand-green/40 bg-brand-off-white/10 p-6 text-center">
+      <div className="mt-14 flex flex-col items-center gap-4 rounded-[22px] border-2 border-brand-green/40 bg-brand-cream/10 p-6 text-center">
         <StoreCta />
-        <p className="text-sm font-medium text-brand-off-white">{TRUST}</p>
+        <p className="text-sm font-medium text-brand-cream">{TRUST}</p>
       </div>
     </div>
   );
