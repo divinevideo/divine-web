@@ -1,5 +1,5 @@
-// ABOUTME: Tests that VideoPlayer forwards videoData.sha256 into getAuthHeader for MP4 fetches
-// ABOUTME: Verifies Blossom auth hint flows through for age-gated direct playback; absent when unknown
+// ABOUTME: Tests that VideoPlayer calls getAuthHeader for age-gated MP4 fetches
+// ABOUTME: Verifies NIP-98 viewer auth (no sha256 hint) for direct playback
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, waitFor } from '@testing-library/react';
@@ -102,7 +102,7 @@ describe('VideoPlayer auth headers', () => {
     vi.restoreAllMocks();
   });
 
-  it('passes sha256 into getAuthHeader for direct MP4 fetch when videoData.sha256 is set', async () => {
+  it('uses NIP-98 (no sha256) for direct MP4 fetch even when videoData.sha256 is set', async () => {
     render(
       <VideoPlayer
         videoId="v1"
@@ -128,32 +128,6 @@ describe('VideoPlayer auth headers', () => {
     const [url, method, sha256] = getAuthHeader.mock.calls[0];
     expect(url).toBe(URL_MP4);
     expect(method ?? 'GET').toBe('GET');
-    expect(sha256).toBe(HASH);
-  });
-
-  it('omits the sha256 hint when videoData.sha256 is absent', async () => {
-    render(
-      <VideoPlayer
-        videoId="v2"
-        src={URL_MP4}
-        videoData={{
-          id: 'v2',
-          pubkey: 'pub',
-          kind: SHORT_VIDEO_KIND,
-          createdAt: 0,
-          content: '',
-          videoUrl: URL_MP4,
-          hashtags: [],
-          vineId: null,
-          reposts: [],
-          isVineMigrated: false,
-          ageRestricted: true,
-        }}
-      />,
-    );
-
-    await waitFor(() => expect(getAuthHeader).toHaveBeenCalled());
-    const [, , sha256] = getAuthHeader.mock.calls[0];
     expect(sha256).toBeUndefined();
   });
 });
