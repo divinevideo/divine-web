@@ -104,7 +104,7 @@ export function ThumbnailPlayer({
   const baseThumbnailUrl = thumbnailUrl || src;
   const { mediaUrl: authenticatedMediaUrl, isLoading: authMediaLoading } = useAuthenticatedMediaUrl(baseThumbnailUrl, {
     enabled: !requiresAuth,
-    ageRestricted,
+    ageRestricted: !!ageRestricted,
   });
   const overlayThumbnailUrl = authenticatedMediaUrl ||
     (baseThumbnailUrl && !isProtectedDivineMediaUrl(baseThumbnailUrl) ? baseThumbnailUrl : undefined);

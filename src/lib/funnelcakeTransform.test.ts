@@ -116,11 +116,11 @@ describe('transformFunnelcakeVideo', () => {
   it('maps the raw Nostr content (description) to video.content, not the title', () => {
     const video = transformFunnelcakeVideo(makeRawVideo({
       title: 'First Divine Compilation 2026!',
-      content: 'I just made the world’s first divine compilation.\n\nLink: https://youtu.be/abc',
+      content: 'I just made the world‘s first divine compilation.\n\nLink: https://youtu.be/abc',
     }));
 
     expect(video.title).toBe('First Divine Compilation 2026!');
-    expect(video.content).toBe('I just made the world’s first divine compilation.\n\nLink: https://youtu.be/abc');
+    expect(video.content).toBe('I just made the world‘s first divine compilation.\n\nLink: https://youtu.be/abc');
   });
 
   it('leaves video.content empty when the API response has no content field', () => {
@@ -131,32 +131,6 @@ describe('transformFunnelcakeVideo', () => {
 
     expect(video.title).toBe('A title with no description');
     expect(video.content).toBe('');
-  });
-
-  it('preserves explicit non-restricted videos from the API payload', () => {
-    const video = transformFunnelcakeVideo(makeRawVideo({
-      age_restricted: false,
-    }));
-
-    expect(video.ageRestricted).toBe(false);
-  });
-
-  it('keeps age restriction unknown when API provides no moderation fields', () => {
-    const video = transformFunnelcakeVideo(makeRawVideo({
-      age_restricted: undefined,
-      moderation_status: undefined,
-    }));
-
-    expect(video.ageRestricted).toBeUndefined();
-  });
-
-  it('marks videos restricted when moderation status says age_restricted', () => {
-    const video = transformFunnelcakeVideo(makeRawVideo({
-      age_restricted: undefined,
-      moderation_status: 'age_restricted',
-    }));
-
-    expect(video.ageRestricted).toBe(true);
   });
 });
 

@@ -86,10 +86,6 @@ function isRecommendationsCursorPageParam(
     && typeof (pageParam as { popularOffset?: unknown }).popularOffset === 'number';
 }
 
-function shouldEnrichAgeGate(feedType: FunnelcakeFeedType): boolean {
-  return feedType === 'profile' || feedType === 'classics';
-}
-
 /**
  * Map feed type and sort mode to Funnelcake API options
  */
@@ -222,19 +218,16 @@ export function useInfiniteVideosFunnelcake({
         debugLog(`[useInfiniteVideosFunnelcake] Using edge-injected ${feedType} feed data`);
 
         const page = transformToVideoPage(edgeData);
-        const enrichedEdgeVideos = shouldEnrichAgeGate(feedType)
-          ? await enrichAgeRestrictedVideos(page.videos, signal)
-          : page.videos;
         performanceMonitor.recordFeedLoad({
           feedType: 'funnelcake-trending',
           queryTime: 0,
           parseTime: performance.now() - totalStart,
           totalTime: performance.now() - totalStart,
-          videoCount: enrichedEdgeVideos.length,
+          videoCount: page.videos.length,
           sortMode,
         });
         return {
-          videos: enrichedEdgeVideos,
+          videos: page.videos,
           nextCursor: page.nextCursor,
           offset: page.offset,
         };
@@ -386,7 +379,7 @@ export function useInfiniteVideosFunnelcake({
         }
       }
 
-      const enrichedVideos = shouldEnrichAgeGate(feedType)
+      const enrichedVideos = feedType === 'profile'
         ? await enrichAgeRestrictedVideos(page.videos, signal)
         : page.videos;
       const parseTime = performance.now() - parseStart;

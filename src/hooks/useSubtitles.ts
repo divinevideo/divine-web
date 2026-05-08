@@ -67,12 +67,11 @@ export function useSubtitles(
   const hasEmbeddedContent = !!video?.textTrackContent;
   const hasRef = !!video?.textTrackRef;
   const cdnHash = video?.videoUrl ? extractCdnHash(video.videoUrl) : null;
-  const isProtectedCdnUrl = !!video?.videoUrl && isProtectedDivineMediaUrl(video.videoUrl);
-  const shouldTreatAsProtectedCdn = isProtectedCdnUrl && video?.ageRestricted !== false;
+  const requiresProtectedCdnAuth = !!video?.ageRestricted && !!video?.videoUrl && isProtectedDivineMediaUrl(video.videoUrl);
   const queryEnabled = !!video && (hasEmbeddedContent || hasRef || !!cdnHash);
 
   const { data: cues = [], isLoading } = useQuery({
-    queryKey: ['subtitles', video?.id, video?.textTrackRef, cdnHash, shouldTreatAsProtectedCdn, isAdultVerified],
+    queryKey: ['subtitles', video?.id, video?.textTrackRef, cdnHash, requiresProtectedCdnAuth, isAdultVerified],
     queryFn: async ({ signal }) => {
       if (!video) return [];
 
@@ -107,11 +106,7 @@ export function useSubtitles(
       if (cdnHash) {
         try {
           const vttUrl = `https://media.divine.video/${cdnHash}/vtt`;
-          if (shouldTreatAsProtectedCdn && !isAdultVerified) {
-            return [];
-          }
-
-          const response = shouldTreatAsProtectedCdn
+          const response = requiresProtectedCdnAuth
             ? await (async () => {
                 const authHeader = await getAuthHeader(vttUrl, 'GET');
                 if (!authHeader) {

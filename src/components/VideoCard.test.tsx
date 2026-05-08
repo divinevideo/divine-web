@@ -75,16 +75,14 @@ vi.mock('@/components/ui/dropdown-menu', () => ({
 vi.mock('@/components/VideoPlayer', () => ({
   VideoPlayer: ({
     videoId,
-    hlsUrl,
     onError,
     onPlaybackStarted,
   }: {
     videoId: string;
-    hlsUrl?: string;
     onError?: () => void;
     onPlaybackStarted?: () => void;
   }) => (
-    <div data-testid={`video-player-${videoId}`} data-hls-url={hlsUrl ?? ''}>
+    <div data-testid={`video-player-${videoId}`}>
       Video Player
       <button
         aria-label={`fail-video-${videoId}`}
@@ -483,33 +481,6 @@ describe('VideoCard', () => {
 
     expect(screen.getByTestId('thumbnail-player')).toBeInTheDocument();
     expect(screen.queryByText('Log in to view')).not.toBeInTheDocument();
-  });
-
-  it('renders video normally for protected media with unknown age status', () => {
-    const video = makeVideo({
-      ageRestricted: undefined,
-      duration: 6,
-      hlsUrl: 'https://media.divine.video/video-1/hls/master.m3u8',
-      videoUrl: 'https://media.divine.video/video-1',
-    });
-
-    render(<VideoCard video={video} />);
-    expect(screen.queryByText('Log in to view')).not.toBeInTheDocument();
-    expect(screen.getByTestId(`video-player-${video.id}`)).toBeInTheDocument();
-  });
-
-  it('renders video normally for logged-in viewers on protected media with unknown age status', () => {
-    authMocks.useCurrentUser.mockReturnValue({
-      user: { pubkey: 'a'.repeat(64) },
-    });
-    const video = makeVideo({
-      ageRestricted: undefined,
-      videoUrl: 'https://media.divine.video/video-1',
-    });
-
-    render(<VideoCard video={video} mode="thumbnail" />);
-    expect(screen.queryByText('Verify age to view')).not.toBeInTheDocument();
-    expect(screen.getByTestId('thumbnail-player')).toBeInTheDocument();
   });
 
   it('lets failed playback be retried without remounting the card', () => {
