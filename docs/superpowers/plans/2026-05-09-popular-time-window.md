@@ -196,7 +196,7 @@ describe('fetchVideos / fetchVideosV2 period parameter', () => {
 Run: `npx vitest run src/lib/funnelcakeClient.test.ts -t "period parameter"`
 Expected: FAIL — period appears nowhere in URLs.
 
-- [ ] **Step 4: Update `fetchVideos`**
+- [ ] **Step 3: Update `fetchVideos`**
 
 In `src/lib/funnelcakeClient.ts`, edit `fetchVideos` (around line 170):
 
@@ -215,7 +215,7 @@ const params: Record<string, string | number | boolean | undefined> = {
 
 (`buildUrl` already drops `undefined` values, so `period` will be omitted when not set.)
 
-- [ ] **Step 5: Update `fetchVideosV2`**
+- [ ] **Step 4: Update `fetchVideosV2`**
 
 In the same file, edit `fetchVideosV2` (around line 233):
 
@@ -232,17 +232,17 @@ const params: Record<string, string | number | boolean | undefined> = {
 };
 ```
 
-- [ ] **Step 6: Run tests, verify they pass**
+- [ ] **Step 5: Run tests, verify they pass**
 
 Run: `npx vitest run src/lib/funnelcakeClient.test.ts`
 Expected: PASS.
 
-- [ ] **Step 7: Type-check**
+- [ ] **Step 6: Type-check**
 
 Run: `npx tsc --noEmit`
 Expected: PASS.
 
-- [ ] **Step 8: Commit**
+- [ ] **Step 7: Commit**
 
 ```bash
 git add src/lib/funnelcakeClient.ts src/lib/funnelcakeClient.test.ts
@@ -821,7 +821,7 @@ describe('TrendingPage URL state', () => {
     renderAt('/trending');
     const feed = screen.getByTestId('video-feed');
     expect(feed.dataset.sort).toBe('hot');
-    expect(screen.queryByRole('group', { name: /window/i })).not.toBeInTheDocument();
+    expect(screen.queryByTestId('period-row')).not.toBeInTheDocument();
   });
 
   it('shows the period row when sort=popular and defaults period to today', () => {
@@ -829,17 +829,20 @@ describe('TrendingPage URL state', () => {
     const feed = screen.getByTestId('video-feed');
     expect(feed.dataset.sort).toBe('popular');
     expect(feed.dataset.period).toBe('today');
-    expect(screen.getByRole('button', { name: /this week/i })).toBeInTheDocument();
+    expect(screen.getByTestId('period-row')).toBeInTheDocument();
+    expect(screen.getByTestId('period-pill-week')).toBeInTheDocument();
   });
 
   it('respects ?sort=popular&period=week', () => {
     renderAt('/trending?sort=popular&period=week');
     expect(screen.getByTestId('video-feed').dataset.period).toBe('week');
+    expect(screen.getByTestId('period-pill-week')).toHaveAttribute('aria-pressed', 'true');
   });
 
-  it('renders ?sort=controversial as the Hot tab (no API call uses controversial)', () => {
+  it('renders ?sort=controversial as the Hot tab (no API call uses controversial) and hides the period row', () => {
     renderAt('/trending?sort=controversial');
     expect(screen.getByTestId('video-feed').dataset.sort).toBe('hot');
+    expect(screen.queryByTestId('period-row')).not.toBeInTheDocument();
   });
 
   it('encodes the New tab as ?sort=new (round-trip stable)', () => {
@@ -847,13 +850,13 @@ describe('TrendingPage URL state', () => {
     // sortMode is undefined for New — VideoFeed receives no sort
     expect(screen.getByTestId('video-feed').dataset.sort).toBe('');
     // No period row for New
-    expect(screen.queryByRole('group', { name: /window/i })).not.toBeInTheDocument();
+    expect(screen.queryByTestId('period-row')).not.toBeInTheDocument();
   });
 
   it('updates the URL and feed when a period pill is clicked', async () => {
     const user = userEvent.setup();
     renderAt('/trending?sort=popular');
-    await user.click(screen.getByRole('button', { name: /this month/i }));
+    await user.click(screen.getByTestId('period-pill-month'));
     await waitFor(() => {
       expect(screen.getByTestId('video-feed').dataset.period).toBe('month');
     });
@@ -864,6 +867,7 @@ describe('TrendingPage URL state', () => {
   it('drops period from the URL when switching from Popular to Hot', async () => {
     const user = userEvent.setup();
     renderAt('/trending?sort=popular&period=week');
+    // Sort tabs use hardcoded English labels from EXTENDED_SORT_MODES (not via i18n)
     await user.click(screen.getByRole('tab', { name: /^Hot/i }));
     await waitFor(() => {
       expect(screen.getByTestId('video-feed').dataset.sort).toBe('hot');
@@ -1003,6 +1007,7 @@ export function TrendingPage() {
             <div
               role="group"
               aria-label={t('trendingPage.popular.period.label')}
+              data-testid="period-row"
               className="flex flex-wrap gap-2 pl-1"
             >
               {POPULAR_PERIODS.map(p => {
@@ -1012,6 +1017,7 @@ export function TrendingPage() {
                     key={p.value}
                     type="button"
                     aria-pressed={isSelected}
+                    data-testid={`period-pill-${p.value}`}
                     onClick={() => setPeriod(p.value)}
                     className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all min-h-[36px]
                       ${isSelected
@@ -1133,14 +1139,65 @@ Inside the empty-state early return, replace the existing else-branch (the one t
 
 - [ ] **Step 4: Add a component test**
 
-Append to `src/components/VideoFeed.test.tsx` a test that renders `<VideoFeed feedType="trending" sortMode="popular" period="now" />` with the data hook mocked to return an empty page. Assert that:
+Append to `src/components/VideoFeed.test.tsx` a new `it(...)` inside the existing `describe('VideoFeed', ...)`. The file already initializes real i18n (`await initializeI18n({ force: true, languages: ['en-US'] })`) and mocks `useVideoProvider` via `mockUseVideoProvider`, so we override the data return per-test. The English translation added in Task 7 is "Quiet hour" / "Try a wider window." / "Show today" — match those.
 
-```ts
-expect(screen.getByText(/quiet hour|emptyHeading/i)).toBeInTheDocument();
-expect(screen.getByTestId('quiet-hour-action')).toBeInTheDocument();
+```tsx
+it('renders the quiet-hour empty state for popular + now when feed is empty', async () => {
+  mockUseVideoProvider.mockReturnValue({
+    data: { pages: [{ videos: [] }] },
+    fetchNextPage: vi.fn(),
+    hasNextPage: false,
+    isLoading: false,
+    error: null,
+    refetch: vi.fn(),
+    dataSource: 'funnelcake',
+  });
+
+  render(
+    <MemoryRouter initialEntries={['/trending?sort=popular&period=now']}>
+      <VideoFeed
+        feedType="trending"
+        sortMode="popular"
+        period="now"
+        viewMode="feed"
+        mode="thumbnail"
+      />
+    </MemoryRouter>
+  );
+
+  expect(await screen.findByText(/quiet hour/i)).toBeInTheDocument();
+  expect(screen.getByTestId('quiet-hour-action')).toBeInTheDocument();
+});
+
+it('does not render the quiet-hour empty state for popular + week', async () => {
+  mockUseVideoProvider.mockReturnValue({
+    data: { pages: [{ videos: [] }] },
+    fetchNextPage: vi.fn(),
+    hasNextPage: false,
+    isLoading: false,
+    error: null,
+    refetch: vi.fn(),
+    dataSource: 'funnelcake',
+  });
+
+  render(
+    <MemoryRouter initialEntries={['/trending?sort=popular&period=week']}>
+      <VideoFeed
+        feedType="trending"
+        sortMode="popular"
+        period="week"
+        viewMode="feed"
+        mode="thumbnail"
+      />
+    </MemoryRouter>
+  );
+
+  // Renders the existing "Divine reclining" / "Divine needs a rest" branch instead
+  expect(screen.queryByTestId('quiet-hour-action')).not.toBeInTheDocument();
+});
 ```
 
-> If `VideoFeed.test.tsx` does not already mock `useVideoProvider`, follow the existing test setup pattern in that file (look at line 156 — there's a working test).
+> The new prop `period` must already be on `VideoFeedProps` (Task 5). If TS complains about `sortMode="popular"`, ensure Task 4 has run (`'popular'` added to `SortMode`).
 
 - [ ] **Step 5: Run tests**
 
@@ -1283,6 +1340,7 @@ EOF
 - **The trending feed uses `/api/v2/videos`.** When `sort=popular` is selected, the request becomes `GET /api/v2/videos?sort=popular&period=<value>&limit=12`. Verify in DevTools network tab during Task 12 manual QA.
 - **Edge-injected feed cache (`window.__DIVINE_FEED__`)** is only consumed for the default trending feed (no `pageParam`, no sort filter). Popular requests bypass it because they have a different `queryKey` (period is part of the key). No edge-side change needed.
 - **Brand guardrails** (`tests/brand`) run on the entire src tree. New code must avoid: Tailwind `uppercase` class, `lucide-react` imports, `bg-gradient-*` / `radial-gradient(` / `linear-gradient(` on layout surfaces. The plan's snippets comply, but watch for accidental introductions during Task 8/9.
+- **`'controversial'` is intentionally NOT removed from the `SortMode` type.** Several call sites still reference it in switch/case branches and literal arrays — `useInfiniteSearchVideos.ts:51`, `useInfiniteVideos.ts:83` (`['top', 'hot', 'rising', 'controversial'].includes(...)`), `useVideoProvider.ts:117`, `useVideoByIdFunnelcake.ts:46`, `relayCapabilities.ts:26`. Keeping the type literal means none of those need editing; the only behavioral change is that `EXTENDED_SORT_MODES` and `SEARCH_SORT_MODES` no longer surface a tab for it. Old `?sort=controversial` URLs on `/trending` get coerced to `hot` (Task 8); on `/search`, no tab is highlighted but the search itself still functions.
 
 ---
 
