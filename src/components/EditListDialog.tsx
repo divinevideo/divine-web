@@ -2,6 +2,7 @@
 // ABOUTME: Allows users to modify list metadata including name, description, cover image, and settings
 
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useCreateVideoList, type PlayOrder, type VideoList } from '@/hooks/useVideoLists';
 import {
   Dialog,
@@ -26,6 +27,7 @@ interface EditListDialogProps {
 }
 
 export function EditListDialog({ open, onClose, list }: EditListDialogProps) {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const updateList = useCreateVideoList();
 
@@ -65,8 +67,8 @@ export function EditListDialog({ open, onClose, list }: EditListDialogProps) {
   const handleSave = async () => {
     if (!name.trim()) {
       toast({
-        title: 'Name it.',
-        description: 'Lists need a name to exist.',
+        title: t('editListDialog.toastNameRequiredTitle'),
+        description: t('editListDialog.toastNameRequiredDescription'),
         variant: 'destructive',
       });
       return;
@@ -88,15 +90,15 @@ export function EditListDialog({ open, onClose, list }: EditListDialogProps) {
       });
 
       toast({
-        title: 'List saved.',
-        description: `"${name}" is updated.`,
+        title: t('editListDialog.toastSavedTitle'),
+        description: t('editListDialog.toastSavedDescription', { name }),
       });
 
       onClose();
     } catch {
       toast({
-        title: 'Didn\'t save.',
-        description: 'List update hit a snag. Try again?',
+        title: t('editListDialog.toastSaveFailedTitle'),
+        description: t('editListDialog.toastSaveFailedDescription'),
         variant: 'destructive',
       });
     } finally {
@@ -112,18 +114,18 @@ export function EditListDialog({ open, onClose, list }: EditListDialogProps) {
     }}>
       <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Edit List</DialogTitle>
+          <DialogTitle>{t('editListDialog.title')}</DialogTitle>
           <DialogDescription>
-            Update your list's details and settings
+            {t('editListDialog.description')}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 pr-2">
           <div className="space-y-2">
-            <Label htmlFor="edit-name">List Name *</Label>
+            <Label htmlFor="edit-name">{t('editListDialog.nameLabel')}</Label>
             <Input
               id="edit-name"
-              placeholder="My Favorite Vines"
+              placeholder={t('editListDialog.namePlaceholder')}
               value={name}
               onChange={(e) => setName(e.target.value)}
               disabled={isSaving}
@@ -131,10 +133,10 @@ export function EditListDialog({ open, onClose, list }: EditListDialogProps) {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="edit-description">Description</Label>
+            <Label htmlFor="edit-description">{t('editListDialog.descriptionLabel')}</Label>
             <Textarea
               id="edit-description"
-              placeholder="A collection of hilarious and creative videos..."
+              placeholder={t('editListDialog.descriptionPlaceholder')}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
@@ -143,11 +145,11 @@ export function EditListDialog({ open, onClose, list }: EditListDialogProps) {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="edit-image">Cover Image URL</Label>
+            <Label htmlFor="edit-image">{t('editListDialog.imageLabel')}</Label>
             <Input
               id="edit-image"
               type="url"
-              placeholder="https://example.com/image.jpg"
+              placeholder={t('editListDialog.imagePlaceholder')}
               value={imageUrl}
               onChange={(e) => setImageUrl(e.target.value)}
               disabled={isSaving}
@@ -156,7 +158,7 @@ export function EditListDialog({ open, onClose, list }: EditListDialogProps) {
               <div className="mt-2 rounded overflow-hidden border">
                 <img
                   src={imageUrl}
-                  alt="Cover preview"
+                  alt={t('editListDialog.coverPreviewAlt')}
                   className="w-full h-32 object-cover"
                   onError={(e) => {
                     (e.target as HTMLImageElement).style.display = 'none';
@@ -167,29 +169,29 @@ export function EditListDialog({ open, onClose, list }: EditListDialogProps) {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="edit-play-order">Play Order</Label>
+            <Label htmlFor="edit-play-order">{t('editListDialog.playOrderLabel')}</Label>
             <Select value={playOrder} onValueChange={(value) => setPlayOrder(value as PlayOrder)} disabled={isSaving}>
               <SelectTrigger id="edit-play-order">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="chronological">Chronological (oldest first)</SelectItem>
-                <SelectItem value="reverse">Reverse (newest first)</SelectItem>
-                <SelectItem value="manual">Manual (custom order)</SelectItem>
-                <SelectItem value="shuffle">Shuffle (random order)</SelectItem>
+                <SelectItem value="chronological">{t('editListDialog.playOrderChronological')}</SelectItem>
+                <SelectItem value="reverse">{t('editListDialog.playOrderReverse')}</SelectItem>
+                <SelectItem value="manual">{t('editListDialog.playOrderManual')}</SelectItem>
+                <SelectItem value="shuffle">{t('editListDialog.playOrderShuffle')}</SelectItem>
               </SelectContent>
             </Select>
             <p className="text-xs text-muted-foreground">
-              How videos should be ordered when viewing the list
+              {t('editListDialog.playOrderHelp')}
             </p>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="edit-tags">Tags (for discovery)</Label>
+            <Label htmlFor="edit-tags">{t('editListDialog.tagsLabel')}</Label>
             <div className="flex gap-2">
               <Input
                 id="edit-tags"
-                placeholder="comedy, funny, animals..."
+                placeholder={t('editListDialog.tagsPlaceholder')}
                 value={currentTag}
                 onChange={(e) => setCurrentTag(e.target.value)}
                 onKeyDown={(e) => {
@@ -207,7 +209,7 @@ export function EditListDialog({ open, onClose, list }: EditListDialogProps) {
                 onClick={handleAddTag}
                 disabled={!currentTag.trim() || isSaving}
               >
-                Add
+                {t('editListDialog.addTagButton')}
               </Button>
             </div>
             {tags.length > 0 && (
@@ -234,9 +236,9 @@ export function EditListDialog({ open, onClose, list }: EditListDialogProps) {
 
           <div className="flex items-center justify-between space-x-2 pt-2">
             <div className="space-y-0.5">
-              <Label htmlFor="edit-collaborative">Collaborative List</Label>
+              <Label htmlFor="edit-collaborative">{t('editListDialog.collaborativeLabel')}</Label>
               <p className="text-xs text-muted-foreground">
-                Allow others to add videos to this list
+                {t('editListDialog.collaborativeHelp')}
               </p>
             </div>
             <Switch
@@ -254,7 +256,7 @@ export function EditListDialog({ open, onClose, list }: EditListDialogProps) {
               disabled={isSaving}
               className="flex-1"
             >
-              Cancel
+              {t('editListDialog.cancelButton')}
             </Button>
             <Button
               onClick={handleSave}
@@ -264,12 +266,12 @@ export function EditListDialog({ open, onClose, list }: EditListDialogProps) {
               {isSaving ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Saving...
+                  {t('editListDialog.savingButton')}
                 </>
               ) : (
                 <>
                   <Save className="h-4 w-4 mr-2" />
-                  Save Changes
+                  {t('editListDialog.saveButton')}
                 </>
               )}
             </Button>
