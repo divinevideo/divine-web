@@ -131,7 +131,7 @@ describe('VideoPlayer auth headers', () => {
     expect(sha256).toBeUndefined();
   });
 
-  it('sends auth headers when ageRestricted is undefined (unknown moderation status)', async () => {
+  it('skips auth headers when ageRestricted is false', async () => {
     render(
       <VideoPlayer
         videoId="v2"
@@ -147,36 +147,11 @@ describe('VideoPlayer auth headers', () => {
           vineId: null,
           reposts: [],
           isVineMigrated: false,
-          ageRestricted: undefined,
-        }}
-      />,
-    );
-
-    await waitFor(() => expect(getAuthHeader).toHaveBeenCalled());
-  });
-
-  it('skips auth headers when ageRestricted is explicitly false', async () => {
-    render(
-      <VideoPlayer
-        videoId="v3"
-        src={URL_MP4}
-        videoData={{
-          id: 'v3',
-          pubkey: 'pub',
-          kind: SHORT_VIDEO_KIND,
-          createdAt: 0,
-          content: '',
-          videoUrl: URL_MP4,
-          hashtags: [],
-          vineId: null,
-          reposts: [],
-          isVineMigrated: false,
           ageRestricted: false,
         }}
       />,
     );
 
-    // Give the effect time to run, then verify no auth call was made
     await new Promise((r) => setTimeout(r, 100));
     expect(getAuthHeader).not.toHaveBeenCalled();
   });

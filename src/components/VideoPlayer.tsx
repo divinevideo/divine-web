@@ -132,9 +132,6 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
 
     // Adult verification hook
     const { isVerified: isAdultVerified, getAuthHeader } = useAdultVerification();
-    // Truthy-only (not !== false): treating undefined as restricted here causes
-    // getAuthHeader to return null for unsigned-in users, blanking ALL posters.
-    // The preflight HEAD check handles discovery of unknown-status videos.
     const { mediaUrl: authenticatedPosterUrl } = useAuthenticatedMediaUrl(poster, {
       enabled: !!poster && !requiresAuth && !authCheckPending,
       ageRestricted: !!videoData?.ageRestricted,
@@ -777,10 +774,10 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
           capLevelToPlayerSize: true, // Match quality to player size
         };
 
-        // Add custom auth loader when the video is (or may be) age-restricted.
+        // Add custom auth loader only when the video is age-restricted.
         // Public HLS streams must not carry an Authorization header — divine-blossom
         // rejects any malformed auth header with 401 even when the blob is public.
-        if (isAdultVerified && videoData?.ageRestricted !== false && isProtectedDivineMediaUrl(hlsUrl)) {
+        if (isAdultVerified && videoData?.ageRestricted) {
           verboseLog(`[VideoPlayer ${videoId}] Using NIP-98 auth loader for each HLS request`);
           hlsConfig.loader = createAuthLoader(getAuthHeader);
         }
@@ -843,12 +840,12 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
         verboseLog(`[VideoPlayer ${videoId}] Using direct playback - URL ${currentUrlIndex}/${allUrls.length - 1}: ${currentUrl}`);
 
         if (currentUrl) {
-          // Only fetch with auth headers when the video is (or may be) age-restricted.
+          // Only fetch with auth headers when the video is actually age-restricted.
           // Public blobs must not carry an Authorization header — divine-blossom
           // rejects any malformed auth header with 401 even when the blob is public,
           // so attaching auth optimistically locks users out of public content
           // whenever their signer produces an invalid event (e.g., JWT signer bugs).
-          if (isAdultVerified && videoData?.ageRestricted !== false && isProtectedDivineMediaUrl(currentUrl)) {
+          if (isAdultVerified && videoData?.ageRestricted) {
             verboseLog(`[VideoPlayer ${videoId}] Fetching MP4 with NIP-98 auth`);
             (async () => {
               try {

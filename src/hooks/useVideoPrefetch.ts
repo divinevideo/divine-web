@@ -15,10 +15,6 @@ function isProtectedDivineMediaUrl(url: string): boolean {
   }
 }
 
-function shouldSkipProtectedPrefetch(url: string | undefined, ageRestricted: boolean | undefined): boolean {
-  return !!url && isProtectedDivineMediaUrl(url) && ageRestricted !== false;
-}
-
 /**
  * Prefetch upcoming video URLs when the active video changes.
  * Inserts <link rel="prefetch"> elements into <head> for the next
@@ -61,10 +57,12 @@ export function useVideoPrefetch(
     // Collect unique URLs to prefetch (video URL + thumbnail)
     const urlsToPrefetch: { url: string; as: string }[] = [];
     for (const video of nextVideos) {
-      if (!shouldSkipProtectedPrefetch(video.videoUrl, video.ageRestricted)) {
+      const shouldSkipProtectedMediaPrefetch = !!video.ageRestricted;
+
+      if (video.videoUrl && !(shouldSkipProtectedMediaPrefetch && isProtectedDivineMediaUrl(video.videoUrl))) {
         urlsToPrefetch.push({ url: video.videoUrl, as: 'video' });
       }
-      if (video.thumbnailUrl && !shouldSkipProtectedPrefetch(video.thumbnailUrl, video.ageRestricted)) {
+      if (video.thumbnailUrl && !(shouldSkipProtectedMediaPrefetch && isProtectedDivineMediaUrl(video.thumbnailUrl))) {
         urlsToPrefetch.push({ url: video.thumbnailUrl, as: 'image' });
       }
     }
