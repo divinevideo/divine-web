@@ -106,86 +106,94 @@ git commit -m "feat(funnelcake): add FunnelcakePeriod type and period option"
 
 **Files:**
 - Modify: `src/lib/funnelcakeClient.ts:166-215` (`fetchVideos`) and `:229-271` (`fetchVideosV2`)
-- Test: `src/lib/funnelcakeClient.test.ts` (extend if exists, else create)
+- Test: `src/lib/funnelcakeClient.test.ts` (already exists — extend with a new `describe` block)
 
-- [ ] **Step 1: Locate or create the test file**
+> **Existing test pattern (must follow):** This file uses `vi.resetModules()` + `global.fetch = vi.fn()` in `beforeEach`, then dynamically `await import('./funnelcakeClient')` so module-level mocks (`./funnelcakeHealth`, `./debug`, `./nip98Auth`) are applied. Do **not** use `vi.spyOn(globalThis, 'fetch')` — it conflicts with the existing module mocks. Follow the existing shape exactly.
 
-Run: `ls src/lib/funnelcakeClient.test.ts 2>/dev/null && echo EXISTS || echo MISSING`
+- [ ] **Step 1: Add a new `describe` block at the bottom of the file**
 
-If MISSING, create the file with the standard imports:
+In `src/lib/funnelcakeClient.test.ts`, append a new top-level `describe('fetchVideos / fetchVideosV2 period parameter', …)` that mirrors the existing pattern. Inside the existing top-level `describe('funnelcakeClient', …)`, the `beforeEach` already wires `global.fetch = vi.fn()`, but the `let fetchUserProfile: …` block does not pull in `fetchVideos` / `fetchVideosV2`. Add a fresh top-level describe so we don't have to amend the shared `let` block:
 
 ```ts
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { fetchVideos, fetchVideosV2 } from './funnelcakeClient';
+describe('fetchVideos / fetchVideosV2 period parameter', () => {
+  let fetchVideos: typeof import('./funnelcakeClient').fetchVideos;
+  let fetchVideosV2: typeof import('./funnelcakeClient').fetchVideosV2;
 
-describe('funnelcakeClient period parameter', () => {
-  beforeEach(() => {
-    vi.restoreAllMocks();
+  beforeEach(async () => {
+    vi.resetModules();
+    global.fetch = vi.fn();
+    const client = await import('./funnelcakeClient');
+    fetchVideos = client.fetchVideos;
+    fetchVideosV2 = client.fetchVideosV2;
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  function lastFetchUrl(): string {
+    const mockFetch = global.fetch as unknown as ReturnType<typeof vi.fn>;
+    const calls = mockFetch.mock.calls;
+    return String(calls[calls.length - 1][0]);
+  }
+
+  it('fetchVideos includes period when provided', async () => {
+    (global.fetch as unknown as ReturnType<typeof vi.fn>).mockResolvedValueOnce(
+      new Response(JSON.stringify([]), { status: 200, headers: { 'Content-Type': 'application/json' } })
+    );
+
+    await fetchVideos(API_URL, { sort: 'popular', period: 'week', limit: 12 });
+
+    const url = lastFetchUrl();
+    expect(url).toContain('sort=popular');
+    expect(url).toContain('period=week');
+  });
+
+  it('fetchVideos omits period when undefined', async () => {
+    (global.fetch as unknown as ReturnType<typeof vi.fn>).mockResolvedValueOnce(
+      new Response(JSON.stringify([]), { status: 200, headers: { 'Content-Type': 'application/json' } })
+    );
+
+    await fetchVideos(API_URL, { sort: 'popular', limit: 12 });
+
+    expect(lastFetchUrl()).not.toContain('period=');
+  });
+
+  it('fetchVideosV2 includes period when provided', async () => {
+    (global.fetch as unknown as ReturnType<typeof vi.fn>).mockResolvedValueOnce(
+      new Response(JSON.stringify({ data: [], pagination: { has_more: false } }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      })
+    );
+
+    await fetchVideosV2(API_URL, { sort: 'popular', period: 'today', limit: 12 });
+
+    const url = lastFetchUrl();
+    expect(url).toContain('sort=popular');
+    expect(url).toContain('period=today');
+  });
+
+  it('fetchVideosV2 omits period when undefined', async () => {
+    (global.fetch as unknown as ReturnType<typeof vi.fn>).mockResolvedValueOnce(
+      new Response(JSON.stringify({ data: [], pagination: { has_more: false } }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      })
+    );
+
+    await fetchVideosV2(API_URL, { sort: 'watching', limit: 12 });
+
+    expect(lastFetchUrl()).not.toContain('period=');
   });
 });
 ```
 
-If EXISTS, append the new `describe` block (or add tests inside an existing block).
+> `API_URL` is already defined at the top of the file as `'https://api.divine.video'`. Reuse it.
 
-- [ ] **Step 2: Write failing tests for `period`**
+- [ ] **Step 2: Run tests, verify they fail**
 
-```ts
-it('fetchVideos includes period when provided', async () => {
-  const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-    new Response(JSON.stringify([]), { status: 200, headers: { 'Content-Type': 'application/json' } })
-  );
-
-  await fetchVideos('https://api.divine.video', { sort: 'popular', period: 'week', limit: 12 });
-
-  const calledUrl = String((fetchSpy.mock.calls[0] as [URL | string, ...unknown[]])[0]);
-  expect(calledUrl).toContain('sort=popular');
-  expect(calledUrl).toContain('period=week');
-});
-
-it('fetchVideos omits period when undefined', async () => {
-  const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-    new Response(JSON.stringify([]), { status: 200, headers: { 'Content-Type': 'application/json' } })
-  );
-
-  await fetchVideos('https://api.divine.video', { sort: 'popular', limit: 12 });
-
-  const calledUrl = String((fetchSpy.mock.calls[0] as [URL | string, ...unknown[]])[0]);
-  expect(calledUrl).not.toContain('period=');
-});
-
-it('fetchVideosV2 includes period when provided', async () => {
-  const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-    new Response(JSON.stringify({ data: [], pagination: { has_more: false } }), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' },
-    })
-  );
-
-  await fetchVideosV2('https://api.divine.video', { sort: 'popular', period: 'today', limit: 12 });
-
-  const calledUrl = String((fetchSpy.mock.calls[0] as [URL | string, ...unknown[]])[0]);
-  expect(calledUrl).toContain('sort=popular');
-  expect(calledUrl).toContain('period=today');
-});
-
-it('fetchVideosV2 omits period when undefined', async () => {
-  const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-    new Response(JSON.stringify({ data: [], pagination: { has_more: false } }), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' },
-    })
-  );
-
-  await fetchVideosV2('https://api.divine.video', { sort: 'watching', limit: 12 });
-
-  const calledUrl = String((fetchSpy.mock.calls[0] as [URL | string, ...unknown[]])[0]);
-  expect(calledUrl).not.toContain('period=');
-});
-```
-
-- [ ] **Step 3: Run tests, verify they fail**
-
-Run: `npx vitest run src/lib/funnelcakeClient.test.ts`
+Run: `npx vitest run src/lib/funnelcakeClient.test.ts -t "period parameter"`
 Expected: FAIL — period appears nowhere in URLs.
 
 - [ ] **Step 4: Update `fetchVideos`**
@@ -249,9 +257,34 @@ git commit -m "feat(funnelcake): thread period query param through fetchVideos a
 - Modify: `src/hooks/useInfiniteVideosFunnelcake.ts:16-17,89-163,177-205`
 - Test: `src/hooks/useInfiniteVideosFunnelcake.test.ts` (extend)
 
-- [ ] **Step 1: Write the failing test**
+- [ ] **Step 1: Add `mockFetchVideosV2` to the existing module mock**
 
-Append to `src/hooks/useInfiniteVideosFunnelcake.test.ts` (inside the existing `describe`):
+The current test file (`src/hooks/useInfiniteVideosFunnelcake.test.ts:6-22`) does **not** mock `fetchVideosV2`. The trending feed path calls `fetchVideosV2`, so calling `useInfiniteVideosFunnelcake({ feedType: 'trending', ... })` from a test today silently invokes `undefined()`. Fix this first — even before adding period — because all popular tests depend on it.
+
+At the top of the file, alongside `const mockFetchVideos = vi.fn();`, add:
+
+```ts
+const mockFetchVideosV2 = vi.fn();
+```
+
+In the `vi.mock('@/lib/funnelcakeClient', …)` block, add the new entry:
+
+```ts
+vi.mock('@/lib/funnelcakeClient', () => ({
+  fetchVideos: mockFetchVideos,
+  fetchVideosV2: mockFetchVideosV2,   // NEW
+  searchVideos: vi.fn(),
+  fetchUserVideos: vi.fn(),
+  fetchUserFeed: vi.fn(),
+  fetchRecommendations: mockFetchRecommendations,
+}));
+```
+
+In any existing `beforeEach` reset, add `mockFetchVideosV2.mockReset();` next to the existing resets (mirror whatever pattern is already there).
+
+- [ ] **Step 2: Write the failing test**
+
+Append to `src/hooks/useInfiniteVideosFunnelcake.test.ts` (as a new top-level `describe`):
 
 ```ts
 describe('popular sort with period', () => {
@@ -312,14 +345,12 @@ describe('popular sort with period', () => {
 });
 ```
 
-> Note: if `mockFetchVideosV2` does not exist in the test file, add it alongside the existing `mockFetchVideos` mock at the top of the file (mirror the existing pattern that mocks `@/lib/funnelcakeClient`).
-
-- [ ] **Step 2: Run tests, verify they fail**
+- [ ] **Step 3: Run tests, verify they fail**
 
 Run: `npx vitest run src/hooks/useInfiniteVideosFunnelcake.test.ts -t "popular sort with period"`
 Expected: FAIL — `'popular'` not assignable to `FunnelcakeSortMode`.
 
-- [ ] **Step 3: Extend the type and options**
+- [ ] **Step 4: Extend the type and options**
 
 In `src/hooks/useInfiniteVideosFunnelcake.ts`:
 
@@ -342,7 +373,7 @@ interface UseInfiniteVideosFunnelcakeOptions {
 
 Import `FunnelcakePeriod` from `@/types/funnelcake`.
 
-- [ ] **Step 4: Wire `period` into `getFetchOptions`**
+- [ ] **Step 5: Wire `period` into `getFetchOptions`**
 
 Update the function signature and the `'trending'` branch:
 
@@ -372,7 +403,7 @@ function getFetchOptions(
 }
 ```
 
-- [ ] **Step 5: Pass `period` from the hook body and into the queryKey**
+- [ ] **Step 6: Pass `period` from the hook body and into the queryKey**
 
 Update the `useInfiniteVideosFunnelcake` function signature and queryKey:
 
@@ -395,17 +426,17 @@ And inside the queryFn where `getFetchOptions` is called:
 const options = getFetchOptions(feedType, sortMode, pageSize, period);
 ```
 
-- [ ] **Step 6: Run the popular tests**
+- [ ] **Step 7: Run the popular tests**
 
 Run: `npx vitest run src/hooks/useInfiniteVideosFunnelcake.test.ts -t "popular sort with period"`
 Expected: PASS.
 
-- [ ] **Step 7: Run the full test file to confirm no regressions**
+- [ ] **Step 8: Run the full test file to confirm no regressions**
 
 Run: `npx vitest run src/hooks/useInfiniteVideosFunnelcake.test.ts`
 Expected: PASS (all).
 
-- [ ] **Step 8: Commit**
+- [ ] **Step 9: Commit**
 
 ```bash
 git add src/hooks/useInfiniteVideosFunnelcake.ts src/hooks/useInfiniteVideosFunnelcake.test.ts
@@ -622,11 +653,9 @@ Expected: FAIL.
 
 - [ ] **Step 3: Update `sortModes.ts`**
 
-In `src/lib/constants/sortModes.ts`:
+In `src/lib/constants/sortModes.ts` (no new icon imports needed — period pills are text-only; the existing `TrendingUp` is reused for the Popular tab):
 
-1. Add `TrendUp` to the existing import (already imported as `TrendingUp`, reuse) and `Hourglass`, `Calendar`, `CalendarBlank`, `Infinity` from `@phosphor-icons/react` for periods. (Adjust import names to whatever Phosphor exports; if a name is unavailable, fall back to `Clock` for any window.)
-
-2. Replace `EXTENDED_SORT_MODES`:
+1. Replace `EXTENDED_SORT_MODES`:
 
 ```ts
 export const EXTENDED_SORT_MODES: SortModeDefinition[] = [
@@ -639,9 +668,9 @@ export const EXTENDED_SORT_MODES: SortModeDefinition[] = [
 ];
 ```
 
-3. Update `SEARCH_SORT_MODES` to drop the `controversial` entry.
+2. Update `SEARCH_SORT_MODES` to drop the `controversial` entry.
 
-4. Add `POPULAR_PERIODS`:
+3. Add `POPULAR_PERIODS`:
 
 ```ts
 import type { FunnelcakePeriod } from '@/types/funnelcake';
@@ -739,16 +768,17 @@ git commit -m "i18n(en): add trendingPage.popular.* keys"
 
 - [ ] **Step 1: Write the failing test**
 
-Create `src/pages/TrendingPage.test.tsx`:
+Create `src/pages/TrendingPage.test.tsx`. Note the URL encoding: the **New** tab (sortMode `undefined`) is encoded as `?sort=new` — not as a missing param — so the round-trip `URL → state → URL` is stable and clicking New doesn't silently revert to Hot.
 
 ```tsx
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import TrendingPage from './TrendingPage';
 
+// Mock VideoFeed to a probe div that exposes the props through dataset.
 vi.mock('@/components/VideoFeed', () => ({
   VideoFeed: (props: { sortMode?: string; period?: string }) => (
     <div data-testid="video-feed" data-sort={props.sortMode ?? ''} data-period={props.period ?? ''} />
@@ -761,13 +791,25 @@ vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (k: string) => k }),
 }));
 
+// Watcher exposes the current URL search to the DOM so tests can assert on URL rewrites.
+function LocationProbe() {
+  const location = useLocation();
+  return <div data-testid="location-search">{location.search}</div>;
+}
+
 function renderAt(initial: string) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={qc}>
       <MemoryRouter initialEntries={[initial]}>
         <Routes>
-          <Route path="/trending" element={<TrendingPage />} />
+          <Route
+            path="/trending"
+            element={<>
+              <TrendingPage />
+              <LocationProbe />
+            </>}
+          />
         </Routes>
       </MemoryRouter>
     </QueryClientProvider>,
@@ -775,7 +817,7 @@ function renderAt(initial: string) {
 }
 
 describe('TrendingPage URL state', () => {
-  it('defaults to sort=hot and renders no period row', () => {
+  it('defaults to sort=hot and renders no period row when no params', () => {
     renderAt('/trending');
     const feed = screen.getByTestId('video-feed');
     expect(feed.dataset.sort).toBe('hot');
@@ -792,24 +834,41 @@ describe('TrendingPage URL state', () => {
 
   it('respects ?sort=popular&period=week', () => {
     renderAt('/trending?sort=popular&period=week');
-    const feed = screen.getByTestId('video-feed');
-    expect(feed.dataset.period).toBe('week');
+    expect(screen.getByTestId('video-feed').dataset.period).toBe('week');
   });
 
-  it('coerces ?sort=controversial to hot', async () => {
+  it('renders ?sort=controversial as the Hot tab (no API call uses controversial)', () => {
     renderAt('/trending?sort=controversial');
-    await waitFor(() => {
-      expect(screen.getByTestId('video-feed').dataset.sort).toBe('hot');
-    });
+    expect(screen.getByTestId('video-feed').dataset.sort).toBe('hot');
   });
 
-  it('updates the URL when a period pill is clicked', async () => {
+  it('encodes the New tab as ?sort=new (round-trip stable)', () => {
+    renderAt('/trending?sort=new');
+    // sortMode is undefined for New — VideoFeed receives no sort
+    expect(screen.getByTestId('video-feed').dataset.sort).toBe('');
+    // No period row for New
+    expect(screen.queryByRole('group', { name: /window/i })).not.toBeInTheDocument();
+  });
+
+  it('updates the URL and feed when a period pill is clicked', async () => {
     const user = userEvent.setup();
     renderAt('/trending?sort=popular');
     await user.click(screen.getByRole('button', { name: /this month/i }));
     await waitFor(() => {
       expect(screen.getByTestId('video-feed').dataset.period).toBe('month');
     });
+    expect(screen.getByTestId('location-search').textContent).toContain('period=month');
+    expect(screen.getByTestId('location-search').textContent).toContain('sort=popular');
+  });
+
+  it('drops period from the URL when switching from Popular to Hot', async () => {
+    const user = userEvent.setup();
+    renderAt('/trending?sort=popular&period=week');
+    await user.click(screen.getByRole('tab', { name: /^Hot/i }));
+    await waitFor(() => {
+      expect(screen.getByTestId('video-feed').dataset.sort).toBe('hot');
+    });
+    expect(screen.getByTestId('location-search').textContent).not.toContain('period=');
   });
 });
 ```
@@ -827,7 +886,7 @@ Replace the body of `src/pages/TrendingPage.tsx` with:
 // ABOUTME: Trending feed page with sort tabs + Popular time-window selector
 // ABOUTME: Sort + period live in URL query params for shareable, refresh-safe views
 
-import { useCallback, useEffect } from 'react';
+import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';
 import { Rss } from '@phosphor-icons/react';
@@ -839,45 +898,40 @@ import type { SortMode } from '@/types/nostr';
 import type { FunnelcakePeriod } from '@/types/funnelcake';
 import { EXTENDED_SORT_MODES, POPULAR_PERIODS } from '@/lib/constants/sortModes';
 
-const VALID_SORTS: ReadonlyArray<SortMode | undefined> = ['hot', 'top', 'rising', 'popular', 'classic', undefined];
-const VALID_PERIODS: ReadonlyArray<FunnelcakePeriod> = ['now', 'today', 'week', 'month', 'all'];
+const VALID_SORTS: ReadonlyArray<string> = ['hot', 'top', 'rising', 'popular', 'classic', 'new'];
+const VALID_PERIODS: ReadonlyArray<string> = ['now', 'today', 'week', 'month', 'all'];
 
+// URL encoding rules:
+// - Missing sort param → 'hot' (default)
+// - 'new' (the New tab; sortMode undefined) → 'new' in URL, undefined in state
+// - 'controversial' (legacy) → coerced to 'hot' in state; URL not rewritten (cosmetic only)
+// - Unknown values → 'hot'
 function parseSort(raw: string | null): SortMode | undefined {
   if (raw === null) return 'hot';
-  if (raw === 'controversial') return 'hot';        // legacy URL coercion
-  if (raw === '' || raw === 'new') return undefined;
-  return (VALID_SORTS as readonly string[]).includes(raw) ? (raw as SortMode) : 'hot';
+  if (raw === 'new') return undefined;
+  if (raw === 'controversial') return 'hot';
+  return (VALID_SORTS.includes(raw) ? (raw as SortMode) : 'hot');
 }
 
 function parsePeriod(raw: string | null): FunnelcakePeriod {
-  if (raw && (VALID_PERIODS as readonly string[]).includes(raw)) return raw as FunnelcakePeriod;
+  if (raw && VALID_PERIODS.includes(raw)) return raw as FunnelcakePeriod;
   return 'today';
+}
+
+function sortToUrl(sort: SortMode | undefined): string {
+  return sort ?? 'new';
 }
 
 export function TrendingPage() {
   const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const rawSort = searchParams.get('sort');
-  const rawPeriod = searchParams.get('period');
-  const sortMode = parseSort(rawSort);
-  const period = parsePeriod(rawPeriod);
-
-  // Rewrite the URL when we coerce (e.g. ?sort=controversial), without history entry.
-  useEffect(() => {
-    const desired = sortMode ?? 'new';
-    const incoming = rawSort ?? 'hot';
-    const sortChanged = desired !== incoming && !(desired === 'hot' && rawSort === null);
-    if (sortChanged) {
-      const next = new URLSearchParams(searchParams);
-      if (sortMode) next.set('sort', sortMode); else next.delete('sort');
-      setSearchParams(next, { replace: true });
-    }
-  }, [rawSort, sortMode, searchParams, setSearchParams]);
+  const sortMode = parseSort(searchParams.get('sort'));
+  const period = parsePeriod(searchParams.get('period'));
 
   const setSort = useCallback((next: SortMode | undefined) => {
     const params = new URLSearchParams(searchParams);
-    if (next) params.set('sort', next); else params.delete('sort');
+    params.set('sort', sortToUrl(next));
     if (next !== 'popular') params.delete('period');
     setSearchParams(params, { replace: true });
   }, [searchParams, setSearchParams]);
@@ -885,9 +939,9 @@ export function TrendingPage() {
   const setPeriod = useCallback((next: FunnelcakePeriod) => {
     const params = new URLSearchParams(searchParams);
     params.set('period', next);
-    if (sortMode !== 'popular') params.set('sort', 'popular');
+    params.set('sort', 'popular');
     setSearchParams(params, { replace: true });
-  }, [searchParams, setSearchParams, sortMode]);
+  }, [searchParams, setSearchParams]);
 
   const rssFeedAvailable = useRssFeedAvailable();
   useHead({
@@ -1016,53 +1070,87 @@ git commit -m "feat(trending): URL-driven sort + Popular time-window selector; c
 ## Task 9: Empty state for `popular + now`
 
 **Files:**
-- Modify: `src/components/VideoFeed.tsx` (only the empty-state branch)
-- Or: dedicated empty-state component if `VideoFeed` already has a slot — investigate before changing.
+- Modify: `src/components/VideoFeed.tsx` (extend the existing empty-state branch — do NOT add a separate early return)
+- Test: `src/components/VideoFeed.test.tsx` (extend)
 
-> The brand guideline is voice-first; the technical change is small. The empty state should appear only when `feedType === 'trending'`, `sortMode === 'popular'`, `period === 'now'`, **and** the loaded feed is empty.
+> The empty state at `src/components/VideoFeed.tsx:362-437` is a single early return that swaps copy based on `feedType`. Reuse its wrapper (refs, testids, Card layout). Don't duplicate the wrapper — extend the conditional with a new "quiet hour" branch in the heading/subtitle/action area.
 
-- [ ] **Step 1: Locate the existing empty-state branch in `VideoFeed`**
+- [ ] **Step 1: Locate the empty-state branch**
 
-Run: `grep -n "no.*video\|empty\|no results" src/components/VideoFeed.tsx`
-Identify where the "no videos" UI renders (likely after the loading branch and before the list).
-
-- [ ] **Step 2: Add the period-aware variant**
-
-Where the existing empty UI renders, branch on the new props:
+Open `src/components/VideoFeed.tsx` around line 361. The structure is:
 
 ```tsx
-const isQuietHour =
-  feedType === 'trending' && sortMode === 'popular' && period === 'now';
-
-if (!isLoading && filteredVideos.length === 0 && isQuietHour) {
-  return (
-    <div className="rounded-lg border bg-card p-8 text-center space-y-3">
-      <h2 className="text-lg font-semibold">{t('trendingPage.popular.emptyHeading')}</h2>
-      <p className="text-muted-foreground">{t('trendingPage.popular.emptyBody')}</p>
-      <Button
-        variant="default"
-        onClick={() => navigate('/trending?sort=popular&period=today', { replace: true })}
-      >
-        {t('trendingPage.popular.emptyAction')}
-      </Button>
-    </div>
-  );
+if (!filteredVideos || filteredVideos.length === 0) {
+  // ...wrapper Card with conditional copy keyed off feedType...
 }
 ```
 
-- [ ] **Step 3: Add a smoke test**
+- [ ] **Step 2: Compute `isQuietHour` near the top of `VideoFeed`**
 
-Append to `src/pages/TrendingPage.test.tsx` (or a new component test under `VideoFeed.test.tsx` if simpler — choose whichever the existing test uses for empty state). The test asserts the empty heading is rendered when the mocked feed returns empty for popular+now. If the page test already mocks `VideoFeed`, add a separate component-level test instead.
+Right after `const filteredVideos = useMemo(...)` (around line 128), add:
 
-- [ ] **Step 4: Run tests**
+```ts
+const isQuietHour =
+  feedType === 'trending' && sortMode === 'popular' && period === 'now';
+```
 
-Run: `npx vitest run src/components/VideoFeed.test.tsx src/pages/TrendingPage.test.tsx`
-Expected: PASS.
+> `period` is the new prop added in Task 5.
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 3: Branch the empty-state copy**
+
+Inside the empty-state early return, replace the existing else-branch (the one that renders the green circle + Video icon + headings) so the quiet-hour variant takes precedence over the generic "No videos found" copy. Keep the existing reclining-Divine branch for `discovery`/`trending`/`classics` only when `!isQuietHour`:
+
+```tsx
+{(feedType === 'discovery' || feedType === 'trending' || feedType === 'classics') && !allFiltered && !isQuietHour ? (
+  // ...existing reclining-Divine branch unchanged...
+) : isQuietHour ? (
+  <>
+    <div className="w-16 h-16 rounded-full bg-brand-light-green dark:bg-brand-dark-green flex items-center justify-center mx-auto">
+      <Video className="h-8 w-8 text-primary" />
+    </div>
+    <div className="space-y-2">
+      <p className="text-lg font-medium text-foreground">
+        {t('trendingPage.popular.emptyHeading')}
+      </p>
+      <p className="text-sm text-muted-foreground">
+        {t('trendingPage.popular.emptyBody')}
+      </p>
+    </div>
+    <Button
+      variant="default"
+      onClick={() => navigate('/trending?sort=popular&period=today', { replace: true })}
+      data-testid="quiet-hour-action"
+    >
+      {t('trendingPage.popular.emptyAction')}
+    </Button>
+  </>
+) : (
+  // ...existing generic empty branch unchanged (the green circle + per-feedType copy)...
+)}
+```
+
+> The existing `useTranslation` hook (`const { t } = useTranslation();`) is already in scope at the top of the function. The existing `Button` import is already present (used on line 248-258 area). `navigate` is already in scope from `useSubdomainNavigate` — reuse it.
+
+- [ ] **Step 4: Add a component test**
+
+Append to `src/components/VideoFeed.test.tsx` a test that renders `<VideoFeed feedType="trending" sortMode="popular" period="now" />` with the data hook mocked to return an empty page. Assert that:
+
+```ts
+expect(screen.getByText(/quiet hour|emptyHeading/i)).toBeInTheDocument();
+expect(screen.getByTestId('quiet-hour-action')).toBeInTheDocument();
+```
+
+> If `VideoFeed.test.tsx` does not already mock `useVideoProvider`, follow the existing test setup pattern in that file (look at line 156 — there's a working test).
+
+- [ ] **Step 5: Run tests**
+
+Run: `npx vitest run src/components/VideoFeed.test.tsx`
+Expected: PASS (including the new quiet-hour test).
+
+- [ ] **Step 6: Commit**
 
 ```bash
-git add src/components/VideoFeed.tsx src/pages/TrendingPage.test.tsx
+git add src/components/VideoFeed.tsx src/components/VideoFeed.test.tsx
 git commit -m "feat(popular): quiet-hour empty state for popular + now"
 ```
 
@@ -1182,6 +1270,19 @@ gh pr create --title "feat: Popular tab with time-window selector on /trending" 
 EOF
 )"
 ```
+
+---
+
+## Risks & gotchas (read before executing)
+
+- **`DiscoveryPage` also passes `feedType="trending"` to `VideoFeed`** (`src/pages/DiscoveryPage.tsx:185,198`). The new `period` prop is optional and defaults to `undefined` for those calls — Discovery keeps its current behavior. No changes required there. Verify the discovery feed still loads in Task 12.
+- **The existing `useInfiniteVideosFunnelcake.test.ts` does not mock `fetchVideosV2`.** Today, any test that drives the trending feed silently calls `undefined()`. Task 3 fixes this by adding `mockFetchVideosV2` — ensure existing tests in that file still pass after the mock is added (they may have been incidentally relying on the missing mock returning `undefined`).
+- **`funnelcakeClient.test.ts` uses `vi.resetModules()` per test.** Do not introduce `vi.spyOn(globalThis, 'fetch')` — it conflicts with the dynamic-import + `global.fetch = vi.fn()` pattern. Stick to the existing pattern (Task 2).
+- **URL encoding for the New tab:** the tab is encoded as `?sort=new`, **not** as a missing param. Missing `?sort` defaults to Hot (matches today's behavior). Clicking New writes `?sort=new`. This is the only way to make the round-trip stable.
+- **Controversial coercion is render-only**, no URL rewrite. Visiting `?sort=controversial` renders Hot; the URL stays `?sort=controversial` until the user clicks something. This is intentional — rewriting the URL on mount triggers re-render churn and is not testable from `useSearchParams` without a location probe.
+- **The trending feed uses `/api/v2/videos`.** When `sort=popular` is selected, the request becomes `GET /api/v2/videos?sort=popular&period=<value>&limit=12`. Verify in DevTools network tab during Task 12 manual QA.
+- **Edge-injected feed cache (`window.__DIVINE_FEED__`)** is only consumed for the default trending feed (no `pageParam`, no sort filter). Popular requests bypass it because they have a different `queryKey` (period is part of the key). No edge-side change needed.
+- **Brand guardrails** (`tests/brand`) run on the entire src tree. New code must avoid: Tailwind `uppercase` class, `lucide-react` imports, `bg-gradient-*` / `radial-gradient(` / `linear-gradient(` on layout surfaces. The plan's snippets comply, but watch for accidental introductions during Task 8/9.
 
 ---
 
