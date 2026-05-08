@@ -36,8 +36,8 @@
 | --- | --- |
 | `src/lib/funnelcakeClient.test.ts` (new or extended) | `fetchVideos` / `fetchVideosV2` include `period` when set, omit when undefined |
 | `src/hooks/useInfiniteVideosFunnelcake.test.ts` (extend) | `sortMode='popular'` + `period` plumbs to `fetchVideosV2` |
-| `src/hooks/useVideoProvider.test.ts` (extend, may need creation) | `SortMode 'popular'` maps + `period` passes through |
-| `src/pages/TrendingPage.test.tsx` (new or extended) | URL state, period row visibility, controversial coercion |
+| `src/pages/TrendingPage.test.tsx` (new) | URL state, period row visibility, controversial coercion |
+| `src/components/VideoFeed.test.tsx` (extend) | Quiet-hour empty state for popular + now (Task 9) |
 | `src/lib/constants/sortModes.test.ts` (new) | Asserts shape of constants and that `controversial` is gone |
 
 ---
@@ -53,6 +53,11 @@
 ## Conventions
 
 - Commit format: `type: description` (e.g. `feat(popular): add period selector to /trending`).
+- **Each commit body MUST end with the project's AI-assist footer** (per `CLAUDE.md`):
+  ```
+  Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
+  ```
+  Pass via heredoc — see the project's commit examples. Update the model name only if the project's `CLAUDE.md` has been updated to a newer model.
 - After every task, run `npx tsc --noEmit` and the touched test files; do not commit on red.
 - Each task ends with a `git add <specific files>` (not `-A`) and a commit.
 - Do not amend; if hooks fail, fix and create a new commit.
@@ -728,8 +733,6 @@ Under `trendingPage`, extend the object:
     "rssTitle": "DiVine - Trending",
     "rssLink": "RSS",
     "popular": {
-      "tabLabel": "Popular",
-      "tabDescription": "Trending in this window",
       "period": {
         "label": "Window",
         "now": "Now",
@@ -1226,8 +1229,12 @@ git commit -m "feat(popular): quiet-hour empty state for popular + now"
 For each of the 14 locales, add the same `trendingPage.popular` shape under `trendingPage`. Use locale-appropriate translations (delegate to the same translation pipeline / model used in prior commits — see commit `8ee809b` for the exact prompt style if needed).
 
 Translations must be casual-direct, never corporate. Examples (German):
-- `tabLabel`: `"Beliebt"`
-- `tabDescription`: `"Trends in diesem Zeitraum"`
+- `period.label`: `"Zeitraum"`
+- `period.now`: `"Jetzt"`
+- `period.today`: `"Heute"`
+- `period.week`: `"Diese Woche"`
+- `period.month`: `"Diesen Monat"`
+- `period.all`: `"Alle Zeit"`
 - `emptyHeading`: `"Stille Stunde"`
 - `emptyBody`: `"Versuch ein größeres Zeitfenster."`
 - `emptyAction`: `"Heute anzeigen"`
