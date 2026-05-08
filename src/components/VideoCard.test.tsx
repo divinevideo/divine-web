@@ -75,14 +75,16 @@ vi.mock('@/components/ui/dropdown-menu', () => ({
 vi.mock('@/components/VideoPlayer', () => ({
   VideoPlayer: ({
     videoId,
+    hlsUrl,
     onError,
     onPlaybackStarted,
   }: {
     videoId: string;
+    hlsUrl?: string;
     onError?: () => void;
     onPlaybackStarted?: () => void;
   }) => (
-    <div data-testid={`video-player-${videoId}`}>
+    <div data-testid={`video-player-${videoId}`} data-hls-url={hlsUrl ?? ''}>
       Video Player
       <button
         aria-label={`fail-video-${videoId}`}

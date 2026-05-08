@@ -116,11 +116,11 @@ describe('transformFunnelcakeVideo', () => {
   it('maps the raw Nostr content (description) to video.content, not the title', () => {
     const video = transformFunnelcakeVideo(makeRawVideo({
       title: 'First Divine Compilation 2026!',
-      content: 'I just made the world‘s first divine compilation.\n\nLink: https://youtu.be/abc',
+      content: 'I just made the world’s first divine compilation.\n\nLink: https://youtu.be/abc',
     }));
 
     expect(video.title).toBe('First Divine Compilation 2026!');
-    expect(video.content).toBe('I just made the world‘s first divine compilation.\n\nLink: https://youtu.be/abc');
+    expect(video.content).toBe('I just made the world’s first divine compilation.\n\nLink: https://youtu.be/abc');
   });
 
   it('leaves video.content empty when the API response has no content field', () => {
