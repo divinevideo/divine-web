@@ -14,6 +14,7 @@ export const SUPPORTED_LOCALES = [
   'pl',
   'ko',
   'ar',
+  'fil',
 ] as const;
 
 export type SupportedLocale = (typeof SUPPORTED_LOCALES)[number];
@@ -44,7 +45,13 @@ export const LOCALE_OPTIONS: LocaleOption[] = [
   { code: 'pl', name: 'Polish', nativeName: 'Polski' },
   { code: 'ko', name: 'Korean', nativeName: '한국어' },
   { code: 'ar', name: 'Arabic', nativeName: 'العربية' },
+  { code: 'fil', name: 'Filipino', nativeName: 'Filipino' },
 ];
+
+const LOCALE_ALIASES: Record<string, SupportedLocale> = {
+  tl: 'fil',
+  fil: 'fil',
+};
 
 function getStorage(): Storage | null {
   if (typeof window === 'undefined' || !window.localStorage) {
@@ -77,8 +84,16 @@ export function normalizeLocale(input: string | null | undefined): SupportedLoca
     return lowercase;
   }
 
+  if (LOCALE_ALIASES[lowercase]) {
+    return LOCALE_ALIASES[lowercase];
+  }
+
   const baseLanguage = lowercase.split('-')[0];
-  return isSupportedLocale(baseLanguage) ? baseLanguage : null;
+  if (isSupportedLocale(baseLanguage)) {
+    return baseLanguage;
+  }
+
+  return LOCALE_ALIASES[baseLanguage] ?? null;
 }
 
 export function getStoredLocale(): SupportedLocale | null {
