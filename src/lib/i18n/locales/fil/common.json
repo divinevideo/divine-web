@@ -1309,5 +1309,59 @@
     "goToPrevious": "Pumunta sa nakaraang pahina",
     "goToNext": "Pumunta sa susunod na pahina",
     "morePages": "Higit pang mga pahina"
+  },
+  "fullscreenFeed": {
+    "repostBlockedTitle": "Hindi mai-repost ito.",
+    "repostBlockedDescription": "May problema sa loop na ito, hindi puwedeng i-repost.",
+    "downloadMissingTitle": "Walang ma-download.",
+    "downloadMissingDescription": "Wala pang URL ang video na ito.",
+    "downloadingTitle": "Dina-download.",
+    "downloadingDescription": "Sini-save ang loop mo."
+  },
+  "uiCarousel": {
+    "previousSlide": "Nakaraang slide",
+    "nextSlide": "Susunod na slide"
+  },
+  "videoCardWithMetrics": {
+    "repostErrorTitle": "May error",
+    "repostErrorDescription": "Hindi mai-repost ang video na ito"
+  },
+  "uiSheet": {
+    "close": "Magsara"
+  },
+  "uiDialog": {
+    "close": "Magsara"
+  },
+  "uiBreadcrumb": {
+    "breadcrumb": "breadcrumb",
+    "more": "Higit pa"
+  },
+  "deleteCommentDialog": {
+    "title": "I-delete ang komento?",
+    "description": "Magpapadala ang aksyong ito ng kahilingang i-delete sa lahat ng relay. Karamihan ng relay ay susunod sa kahilingan at aalisin ang komento mo.",
+    "reasonLabel": "Dahilan (opsyonal)",
+    "reasonPlaceholder": "Bakit mo ide-delete ang komentong ito?",
+    "reasonHelp": "Isasama ang dahilang ito sa deletion event na ipapadala sa mga relay.",
+    "noteLabel": "Tandaan:",
+    "noteBody": "Habang aalisin ng karamihan sa relay ang komento mo, hindi garantisado ang pag-delete. May ilang relay na pipiliing panatilihin ang nilalaman, at ang mga user na nakakita na nito ay magkakaroon pa rin ng access.",
+    "cancel": "Kanselahin",
+    "confirm": "I-delete ang komento",
+    "deleting": "Dine-delete..."
+  },
+  "inviteCodeForm": {
+    "label": "Invite code",
+    "placeholder": "I-paste ang invite code mo",
+    "checking": "Sinusuri...",
+    "continue": "Magpatuloy",
+    "joinWaitlist": "Walang invite? Sumali sa waitlist."
+  },
+  "applePodcastEmbed": {
+    "defaultTitle": "Vine Revisited at ang Laban Kontra AI Slop",
+    "defaultDescription": "Sa likod ng eksena ng Divine launch",
+    "defaultDuration": "21 min",
+    "artworkAlt": "Podcast artwork ng {{showName}}",
+    "podcastEpisode": "Podcast Episode",
+    "openInApplePodcasts": "Buksan sa Apple Podcasts",
+    "playEpisode": "I-play ang Episode"
   }
 }

@@ -1309,5 +1309,59 @@
     "goToPrevious": "Ga naar vorige pagina",
     "goToNext": "Ga naar volgende pagina",
     "morePages": "Meer pagina's"
+  },
+  "fullscreenFeed": {
+    "repostBlockedTitle": "Can't repost this one.",
+    "repostBlockedDescription": "Something about this loop isn't repostable.",
+    "downloadMissingTitle": "Nothing to download.",
+    "downloadMissingDescription": "This video doesn't have a URL yet.",
+    "downloadingTitle": "Downloading.",
+    "downloadingDescription": "Saving your loop."
+  },
+  "uiCarousel": {
+    "previousSlide": "Previous slide",
+    "nextSlide": "Next slide"
+  },
+  "videoCardWithMetrics": {
+    "repostErrorTitle": "Error",
+    "repostErrorDescription": "Cannot repost this video"
+  },
+  "uiSheet": {
+    "close": "Close"
+  },
+  "uiDialog": {
+    "close": "Close"
+  },
+  "uiBreadcrumb": {
+    "breadcrumb": "breadcrumb",
+    "more": "More"
+  },
+  "deleteCommentDialog": {
+    "title": "Delete Comment?",
+    "description": "This action will send a deletion request to all relays. Most relays will honor this request and remove your comment.",
+    "reasonLabel": "Reason (optional)",
+    "reasonPlaceholder": "Why are you deleting this comment?",
+    "reasonHelp": "This reason will be included in the deletion event sent to relays.",
+    "noteLabel": "Note:",
+    "noteBody": "While most relays will remove your comment, deletion is not guaranteed. Some relays may choose to keep the content, and users who have already seen it will still have access.",
+    "cancel": "Cancel",
+    "confirm": "Delete Comment",
+    "deleting": "Deleting..."
+  },
+  "inviteCodeForm": {
+    "label": "Invite code",
+    "placeholder": "Paste your invite code",
+    "checking": "Checking...",
+    "continue": "Continue",
+    "joinWaitlist": "No invite? Get on the waitlist."
+  },
+  "applePodcastEmbed": {
+    "defaultTitle": "Vine Revisited and The Fight Against AI Slop",
+    "defaultDescription": "Behind the scenes of the Divine launch",
+    "defaultDuration": "21 min",
+    "artworkAlt": "{{showName}} podcast artwork",
+    "podcastEpisode": "Podcast Episode",
+    "openInApplePodcasts": "Open in Apple Podcasts",
+    "playEpisode": "Play Episode"
   }
 }
