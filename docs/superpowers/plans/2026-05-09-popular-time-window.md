@@ -459,11 +459,15 @@ Add a regression test inside `src/hooks/useInfiniteVideosFunnelcake.test.ts` (in
 
 ```ts
 it('does not consume edge-injected feed when period is set', async () => {
-  // Simulate edge injection
-  (window as Window & { __DIVINE_FEED__?: unknown; __DIVINE_FEED_TYPE__?: string }).__DIVINE_FEED__ = {
+  // Simulate the real edge worker: it sets BOTH globals together.
+  // See compute-js/src/index.js:207 — `window.__DIVINE_FEED_TYPE__="trending"`.
+  // (The hook also has a fallback path for `__DIVINE_FEED_TYPE__ === undefined`
+  // but that's not what production looks like.)
+  type EdgeWindow = Window & { __DIVINE_FEED__?: unknown; __DIVINE_FEED_TYPE__?: string };
+  (window as EdgeWindow).__DIVINE_FEED__ = {
     videos: [{ id: 'edge-video', pubkey: 'edge-p', kind: 34236, createdAt: 1, vineId: 'edge-d' }],
   };
-  delete (window as { __DIVINE_FEED_TYPE__?: string }).__DIVINE_FEED_TYPE__;
+  (window as EdgeWindow).__DIVINE_FEED_TYPE__ = 'trending';
 
   mockFetchVideosV2.mockResolvedValueOnce({ videos: [{}], has_more: false, next_cursor: undefined });
   mockTransformToVideoPage.mockReturnValueOnce({
@@ -483,11 +487,14 @@ it('does not consume edge-injected feed when period is set', async () => {
   expect(mockFetchVideosV2).toHaveBeenCalled();
   expect(result.current.data?.pages[0]?.videos[0]?.id).toBe('api-video');
 
-  // Edge cache untouched (still present for a future non-period request)
-  expect((window as { __DIVINE_FEED__?: unknown }).__DIVINE_FEED__).toBeDefined();
+  // Edge cache untouched — still available for a future non-period request
+  // (e.g., switching back to Hot would let the hook consume it).
+  expect((window as EdgeWindow).__DIVINE_FEED__).toBeDefined();
+  expect((window as EdgeWindow).__DIVINE_FEED_TYPE__).toBe('trending');
 
-  // Cleanup
-  delete (window as { __DIVINE_FEED__?: unknown }).__DIVINE_FEED__;
+  // Cleanup so test order doesn't leak into other suites
+  delete (window as EdgeWindow).__DIVINE_FEED__;
+  delete (window as EdgeWindow).__DIVINE_FEED_TYPE__;
 });
 ```
 
