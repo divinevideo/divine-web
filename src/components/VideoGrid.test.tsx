@@ -117,6 +117,24 @@ describe('VideoGrid age-restricted gating', () => {
     expect(screen.queryByText('Log in to view')).not.toBeInTheDocument();
   });
 
+  it('treats protected media with unknown age status as gated for logged-out viewers', () => {
+    render(
+      <VideoGrid
+        videos={[
+          makeVideo({
+            id: 'unknown-status-video',
+            ageRestricted: undefined,
+            videoUrl: 'https://media.divine.video/unknown-status-video',
+          }),
+        ]}
+      />
+    );
+
+    expect(screen.getByText('Log in to view')).toBeInTheDocument();
+    expect(screen.queryByTestId('video-thumbnail-unknown-status-video')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('video-player-unknown-status-video')).not.toBeInTheDocument();
+  });
+
   it('fetches protected thumbnails with auth for verified viewers', async () => {
     mockUseCurrentUser.mockReturnValue({ user: { pubkey: 'a'.repeat(64) } });
     mockUseAdultVerification.mockReturnValue({

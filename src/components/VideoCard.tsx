@@ -55,6 +55,7 @@ import { useSubtitles } from '@/hooks/useSubtitles';
 import { debugLog } from '@/lib/debug';
 import { useLoginDialog } from '@/contexts/LoginDialogContext';
 import { AgeRestrictedMediaPlaceholder } from '@/components/AgeRestrictedMediaPlaceholder';
+import { isProtectedDivineMediaUrl } from '@/hooks/useAuthenticatedMediaUrl';
 
 interface VideoCardProps {
   video: ParsedVideoData;
@@ -123,6 +124,9 @@ export function VideoCard({
   // Subscribe to bandwidth tier changes - triggers re-render when tier changes
   // The tier itself is used internally by getOptimalVideoUrl
   const _bandwidthTier = useBandwidthTier();
+  const { user: currentUser } = useCurrentUser();
+  const { isVerified: isAdultVerified, confirmAdult } = useAdultVerification();
+  const { openLoginDialog } = useLoginDialog();
 
   // Compute optimal HLS URL based on current bandwidth tier
   // This dynamically selects 480p/720p/adaptive based on observed load performance
@@ -137,13 +141,17 @@ export function VideoCard({
   // Classic Vines also skip HLS because the transcoder distorts square 480x480 aspect ratio.
   // Only use HLS for longer content (>60s) if divine ever supports it.
   const isShortForm = !video.duration || video.duration <= 60;
+  const isProtectedMedia = isProtectedDivineMediaUrl(video.videoUrl);
+  const shouldBlockSecondaryAssetFallbacks = isProtectedMedia && !isAdultVerified && video.ageRestricted !== false;
   // When direct MP4 fails, retry with HLS as fallback (blob may be missing but transcode exists)
   const [mp4Failed, setMp4Failed] = useState(false);
   // When MP4 blob is missing (404), fall back to HLS if available (transcoded copy may exist)
-  const hlsFallbackUrl = mp4Failed && video.videoUrl?.includes('media.divine.video')
+  const hlsFallbackUrl = mp4Failed && video.videoUrl?.includes('media.divine.video') && !shouldBlockSecondaryAssetFallbacks
     ? video.hlsUrl || optimalHlsUrl
     : undefined;
-  const effectiveHlsUrl = hlsFallbackUrl || ((isClassicVine || isShortForm) ? undefined : (video.hlsUrl || (optimalHlsUrl !== video.videoUrl ? optimalHlsUrl : undefined)));
+  const effectiveHlsUrl = shouldBlockSecondaryAssetFallbacks
+    ? undefined
+    : (hlsFallbackUrl || ((isClassicVine || isShortForm) ? undefined : (video.hlsUrl || (optimalHlsUrl !== video.videoUrl ? optimalHlsUrl : undefined))));
   const { data: lists } = useVideosInLists(video.vineId ?? undefined);
 
   // NEW: Get reposter data from reposts array
@@ -263,13 +271,10 @@ export function VideoCard({
 
   const { mutate: deleteVideo, isPending: isDeleting } = useDeleteVideo();
   const canDelete = useCanDeleteVideo(video);
-  const { user: currentUser } = useCurrentUser();
   const coordinate = video.vineId ? `${SHORT_VIDEO_KIND}:${video.pubkey}:${video.vineId}` : undefined;
   const isPinned = useIsVideoPinned(coordinate);
   const { mutateAsync: pinVideo } = usePinVideo();
   const { mutateAsync: unpinVideo } = useUnpinVideo();
-  const { isVerified: isAdultVerified, confirmAdult } = useAdultVerification();
-  const { openLoginDialog } = useLoginDialog();
 
   // Get reactions data for the modal
   const { data: reactions } = useVideoReactions(video.id, video.pubkey, video.vineId);
@@ -312,6 +317,9 @@ export function VideoCard({
   const timestamp = video.originalVineTimestamp || video.createdAt;
 
   const date = new Date(timestamp * 1000);
+  // Explicit true only, not !== false: unknown status (undefined) should NOT
+  // show the lock overlay in cards. VideoPlayer's preflight HEAD check handles
+  // discovery of actually-gated content at playback time.
   const isAgeGated = video.ageRestricted === true && (!currentUser || !isAdultVerified);
 
   // Calculate timeAgo only for pre-2025 videos
@@ -413,7 +421,7 @@ export function VideoCard({
   const handleVideoError = () => {
     setShowThumbnailDuringStartup(false);
     // If MP4 failed and we haven't tried HLS yet, retry with HLS fallback
-    if (!mp4Failed && !effectiveHlsUrl && video.videoUrl?.includes('media.divine.video')) {
+    if (!mp4Failed && !effectiveHlsUrl && video.videoUrl?.includes('media.divine.video') && !shouldBlockSecondaryAssetFallbacks) {
       setMp4Failed(true);
     } else {
       setVideoError(true);

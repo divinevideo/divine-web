@@ -10,7 +10,7 @@ import { AgeRestrictedMediaPlaceholder } from '@/components/AgeRestrictedMediaPl
 import { useLoginDialog } from '@/contexts/LoginDialogContext';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useAdultVerification } from '@/hooks/useAdultVerification';
-import { useAuthenticatedMediaUrl } from '@/hooks/useAuthenticatedMediaUrl';
+import { isProtectedDivineMediaUrl, useAuthenticatedMediaUrl } from '@/hooks/useAuthenticatedMediaUrl';
 import { cn } from '@/lib/utils';
 import type { ParsedVideoData } from '@/types/video';
 import { buildVideoNavigationUrl, type VideoNavigationContext } from '@/hooks/useVideoNavigation';
@@ -56,7 +56,7 @@ function VideoGridMedia({
   const baseThumbnailUrl = video.thumbnailUrl || video.videoUrl;
   const { mediaUrl: authenticatedMediaUrl, isLoading } = useAuthenticatedMediaUrl(baseThumbnailUrl, {
     enabled: true,
-    ageRestricted: !!video.ageRestricted,
+    ageRestricted: video.ageRestricted,
   });
 
   if (isLoading) {
@@ -248,7 +248,9 @@ export function VideoGrid({ videos, loading = false, className, navigationContex
       {videos.map((video, index) => {
         const isHovered = hoveredVideo === video.id;
         const thumbnailFailed = failedThumbnails.has(video.id);
-        const isAgeGated = video.ageRestricted === true && (!user || !isAdultVerified);
+        const isProtectedMedia = isProtectedDivineMediaUrl(video.videoUrl);
+        const shouldTreatAsGatedMedia = video.ageRestricted === true || (isProtectedMedia && video.ageRestricted !== false);
+        const isAgeGated = shouldTreatAsGatedMedia && (!user || !isAdultVerified);
 
         return (
           <Card

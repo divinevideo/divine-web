@@ -49,6 +49,26 @@ describe('useVideoPrefetch', () => {
     expect(prefetchHrefs).not.toContain('https://media.divine.video/restricted-video.jpg');
   });
 
+  it('does not prefetch protected media when age-restriction status is unknown', () => {
+    renderHook(() =>
+      useVideoPrefetch('video-1', [
+        makeVideo({ id: 'video-1' }),
+        makeVideo({
+          id: 'unknown-status-video',
+          ageRestricted: undefined,
+          videoUrl: 'https://media.divine.video/unknown-status-video',
+          thumbnailUrl: 'https://media.divine.video/unknown-status-video.jpg',
+        }),
+      ]),
+    );
+
+    const prefetchHrefs = Array.from(document.head.querySelectorAll('link[rel="prefetch"]'))
+      .map((link) => (link as HTMLLinkElement).href);
+
+    expect(prefetchHrefs).not.toContain('https://media.divine.video/unknown-status-video');
+    expect(prefetchHrefs).not.toContain('https://media.divine.video/unknown-status-video.jpg');
+  });
+
   it('continues prefetching unrestricted upcoming media', () => {
     renderHook(() =>
       useVideoPrefetch('video-1', [
