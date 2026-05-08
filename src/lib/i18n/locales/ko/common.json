@@ -1311,57 +1311,57 @@
     "morePages": "페이지 더 보기"
   },
   "fullscreenFeed": {
-    "repostBlockedTitle": "Can't repost this one.",
-    "repostBlockedDescription": "Something about this loop isn't repostable.",
-    "downloadMissingTitle": "Nothing to download.",
-    "downloadMissingDescription": "This video doesn't have a URL yet.",
-    "downloadingTitle": "Downloading.",
-    "downloadingDescription": "Saving your loop."
+    "repostBlockedTitle": "이 영상은 리포스트할 수 없어요.",
+    "repostBlockedDescription": "이 루프는 리포스트가 불가능해요.",
+    "downloadMissingTitle": "다운로드할 게 없어요.",
+    "downloadMissingDescription": "이 영상에는 아직 URL이 없어요.",
+    "downloadingTitle": "다운로드 중이에요.",
+    "downloadingDescription": "루프를 저장하고 있어요."
   },
   "uiCarousel": {
-    "previousSlide": "Previous slide",
-    "nextSlide": "Next slide"
+    "previousSlide": "이전 슬라이드",
+    "nextSlide": "다음 슬라이드"
   },
   "videoCardWithMetrics": {
-    "repostErrorTitle": "Error",
-    "repostErrorDescription": "Cannot repost this video"
+    "repostErrorTitle": "오류",
+    "repostErrorDescription": "이 영상은 리포스트할 수 없어요"
   },
   "uiSheet": {
-    "close": "Close"
+    "close": "닫기"
   },
   "uiDialog": {
-    "close": "Close"
+    "close": "닫기"
   },
   "uiBreadcrumb": {
-    "breadcrumb": "breadcrumb",
-    "more": "More"
+    "breadcrumb": "탐색 경로",
+    "more": "더보기"
   },
   "deleteCommentDialog": {
-    "title": "Delete Comment?",
-    "description": "This action will send a deletion request to all relays. Most relays will honor this request and remove your comment.",
-    "reasonLabel": "Reason (optional)",
-    "reasonPlaceholder": "Why are you deleting this comment?",
-    "reasonHelp": "This reason will be included in the deletion event sent to relays.",
-    "noteLabel": "Note:",
-    "noteBody": "While most relays will remove your comment, deletion is not guaranteed. Some relays may choose to keep the content, and users who have already seen it will still have access.",
-    "cancel": "Cancel",
-    "confirm": "Delete Comment",
-    "deleting": "Deleting..."
+    "title": "댓글을 삭제할까요?",
+    "description": "이 작업은 모든 릴레이에 삭제 요청을 보내요. 대부분의 릴레이는 이 요청을 받아들여 댓글을 제거해요.",
+    "reasonLabel": "사유 (선택)",
+    "reasonPlaceholder": "이 댓글을 삭제하는 이유는 무엇인가요?",
+    "reasonHelp": "이 사유는 릴레이에 전송되는 삭제 이벤트에 포함돼요.",
+    "noteLabel": "참고:",
+    "noteBody": "대부분의 릴레이는 댓글을 제거하지만 삭제가 보장되지는 않아요. 일부 릴레이는 콘텐츠를 유지할 수 있고, 이미 본 사용자는 계속 접근할 수 있어요.",
+    "cancel": "취소",
+    "confirm": "댓글 삭제",
+    "deleting": "삭제 중..."
   },
   "inviteCodeForm": {
-    "label": "Invite code",
-    "placeholder": "Paste your invite code",
-    "checking": "Checking...",
-    "continue": "Continue",
-    "joinWaitlist": "No invite? Get on the waitlist."
+    "label": "초대 코드",
+    "placeholder": "초대 코드를 붙여넣으세요",
+    "checking": "확인 중...",
+    "continue": "계속",
+    "joinWaitlist": "초대 코드가 없나요? 대기자 명단에 등록하세요."
   },
   "applePodcastEmbed": {
     "defaultTitle": "Vine Revisited and The Fight Against AI Slop",
-    "defaultDescription": "Behind the scenes of the Divine launch",
-    "defaultDuration": "21 min",
-    "artworkAlt": "{{showName}} podcast artwork",
-    "podcastEpisode": "Podcast Episode",
-    "openInApplePodcasts": "Open in Apple Podcasts",
-    "playEpisode": "Play Episode"
+    "defaultDescription": "Divine 출시의 비하인드 스토리",
+    "defaultDuration": "21분",
+    "artworkAlt": "{{showName}} 팟캐스트 아트워크",
+    "podcastEpisode": "팟캐스트 에피소드",
+    "openInApplePodcasts": "Apple Podcasts에서 열기",
+    "playEpisode": "에피소드 재생"
   }
 }

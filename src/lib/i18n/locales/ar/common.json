@@ -1315,57 +1315,57 @@
     "morePages": "صفحات إضافية"
   },
   "fullscreenFeed": {
-    "repostBlockedTitle": "Can't repost this one.",
-    "repostBlockedDescription": "Something about this loop isn't repostable.",
-    "downloadMissingTitle": "Nothing to download.",
-    "downloadMissingDescription": "This video doesn't have a URL yet.",
-    "downloadingTitle": "Downloading.",
-    "downloadingDescription": "Saving your loop."
+    "repostBlockedTitle": "لا يمكن إعادة نشر هذا.",
+    "repostBlockedDescription": "هناك ما يمنع إعادة نشر هذا المقطع.",
+    "downloadMissingTitle": "لا يوجد ما يمكن تنزيله.",
+    "downloadMissingDescription": "لا يحتوي هذا الفيديو على رابط بعد.",
+    "downloadingTitle": "جارٍ التنزيل.",
+    "downloadingDescription": "يتم حفظ المقطع الخاص بك."
   },
   "uiCarousel": {
-    "previousSlide": "Previous slide",
-    "nextSlide": "Next slide"
+    "previousSlide": "الشريحة السابقة",
+    "nextSlide": "الشريحة التالية"
   },
   "videoCardWithMetrics": {
-    "repostErrorTitle": "Error",
-    "repostErrorDescription": "Cannot repost this video"
+    "repostErrorTitle": "خطأ",
+    "repostErrorDescription": "لا يمكن إعادة نشر هذا الفيديو"
   },
   "uiSheet": {
-    "close": "Close"
+    "close": "إغلاق"
   },
   "uiDialog": {
-    "close": "Close"
+    "close": "إغلاق"
   },
   "uiBreadcrumb": {
-    "breadcrumb": "breadcrumb",
-    "more": "More"
+    "breadcrumb": "مسار التنقل",
+    "more": "المزيد"
   },
   "deleteCommentDialog": {
-    "title": "Delete Comment?",
-    "description": "This action will send a deletion request to all relays. Most relays will honor this request and remove your comment.",
-    "reasonLabel": "Reason (optional)",
-    "reasonPlaceholder": "Why are you deleting this comment?",
-    "reasonHelp": "This reason will be included in the deletion event sent to relays.",
-    "noteLabel": "Note:",
-    "noteBody": "While most relays will remove your comment, deletion is not guaranteed. Some relays may choose to keep the content, and users who have already seen it will still have access.",
-    "cancel": "Cancel",
-    "confirm": "Delete Comment",
-    "deleting": "Deleting..."
+    "title": "حذف التعليق؟",
+    "description": "سيؤدي هذا الإجراء إلى إرسال طلب حذف إلى جميع المرحّلات. ستلتزم معظم المرحّلات بهذا الطلب وتقوم بإزالة تعليقك.",
+    "reasonLabel": "السبب (اختياري)",
+    "reasonPlaceholder": "لماذا تحذف هذا التعليق؟",
+    "reasonHelp": "سيتم تضمين هذا السبب في حدث الحذف المُرسَل إلى المرحّلات.",
+    "noteLabel": "ملاحظة:",
+    "noteBody": "بينما ستقوم معظم المرحّلات بإزالة تعليقك، فإن الحذف غير مضمون. قد تختار بعض المرحّلات الاحتفاظ بالمحتوى، وسيظل بإمكان المستخدمين الذين شاهدوه بالفعل الوصول إليه.",
+    "cancel": "إلغاء",
+    "confirm": "حذف التعليق",
+    "deleting": "جارٍ الحذف..."
   },
   "inviteCodeForm": {
-    "label": "Invite code",
-    "placeholder": "Paste your invite code",
-    "checking": "Checking...",
-    "continue": "Continue",
-    "joinWaitlist": "No invite? Get on the waitlist."
+    "label": "رمز الدعوة",
+    "placeholder": "الصق رمز الدعوة الخاص بك",
+    "checking": "جارٍ التحقق...",
+    "continue": "متابعة",
+    "joinWaitlist": "ليس لديك دعوة؟ انضم إلى قائمة الانتظار."
   },
   "applePodcastEmbed": {
     "defaultTitle": "Vine Revisited and The Fight Against AI Slop",
-    "defaultDescription": "Behind the scenes of the Divine launch",
-    "defaultDuration": "21 min",
-    "artworkAlt": "{{showName}} podcast artwork",
-    "podcastEpisode": "Podcast Episode",
-    "openInApplePodcasts": "Open in Apple Podcasts",
-    "playEpisode": "Play Episode"
+    "defaultDescription": "خلف كواليس إطلاق Divine",
+    "defaultDuration": "21 دقيقة",
+    "artworkAlt": "صورة بودكاست {{showName}}",
+    "podcastEpisode": "حلقة بودكاست",
+    "openInApplePodcasts": "فتح في Apple Podcasts",
+    "playEpisode": "تشغيل الحلقة"
   }
 }

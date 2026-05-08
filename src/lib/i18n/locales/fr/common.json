@@ -1311,57 +1311,57 @@
     "morePages": "Plus de pages"
   },
   "fullscreenFeed": {
-    "repostBlockedTitle": "Can't repost this one.",
-    "repostBlockedDescription": "Something about this loop isn't repostable.",
-    "downloadMissingTitle": "Nothing to download.",
-    "downloadMissingDescription": "This video doesn't have a URL yet.",
-    "downloadingTitle": "Downloading.",
-    "downloadingDescription": "Saving your loop."
+    "repostBlockedTitle": "Impossible de reposter celui-ci.",
+    "repostBlockedDescription": "Quelque chose dans ce loop empêche le repost.",
+    "downloadMissingTitle": "Rien à télécharger.",
+    "downloadMissingDescription": "Cette vidéo n'a pas encore d'URL.",
+    "downloadingTitle": "Téléchargement en cours.",
+    "downloadingDescription": "On enregistre ton loop."
   },
   "uiCarousel": {
-    "previousSlide": "Previous slide",
-    "nextSlide": "Next slide"
+    "previousSlide": "Diapositive précédente",
+    "nextSlide": "Diapositive suivante"
   },
   "videoCardWithMetrics": {
-    "repostErrorTitle": "Error",
-    "repostErrorDescription": "Cannot repost this video"
+    "repostErrorTitle": "Erreur",
+    "repostErrorDescription": "Impossible de reposter cette vidéo"
   },
   "uiSheet": {
-    "close": "Close"
+    "close": "Fermer"
   },
   "uiDialog": {
-    "close": "Close"
+    "close": "Fermer"
   },
   "uiBreadcrumb": {
-    "breadcrumb": "breadcrumb",
-    "more": "More"
+    "breadcrumb": "fil d'Ariane",
+    "more": "Plus"
   },
   "deleteCommentDialog": {
-    "title": "Delete Comment?",
-    "description": "This action will send a deletion request to all relays. Most relays will honor this request and remove your comment.",
-    "reasonLabel": "Reason (optional)",
-    "reasonPlaceholder": "Why are you deleting this comment?",
-    "reasonHelp": "This reason will be included in the deletion event sent to relays.",
-    "noteLabel": "Note:",
-    "noteBody": "While most relays will remove your comment, deletion is not guaranteed. Some relays may choose to keep the content, and users who have already seen it will still have access.",
-    "cancel": "Cancel",
-    "confirm": "Delete Comment",
-    "deleting": "Deleting..."
+    "title": "Supprimer le commentaire ?",
+    "description": "Cette action enverra une demande de suppression à tous les relais. La plupart des relais respecteront cette demande et retireront ton commentaire.",
+    "reasonLabel": "Raison (facultatif)",
+    "reasonPlaceholder": "Pourquoi supprimes-tu ce commentaire ?",
+    "reasonHelp": "Cette raison sera incluse dans l'événement de suppression envoyé aux relais.",
+    "noteLabel": "Note :",
+    "noteBody": "Bien que la plupart des relais retirent ton commentaire, la suppression n'est pas garantie. Certains relais peuvent choisir de conserver le contenu, et les utilisateurs qui l'ont déjà vu y auront toujours accès.",
+    "cancel": "Annuler",
+    "confirm": "Supprimer le commentaire",
+    "deleting": "Suppression en cours..."
   },
   "inviteCodeForm": {
-    "label": "Invite code",
-    "placeholder": "Paste your invite code",
-    "checking": "Checking...",
-    "continue": "Continue",
-    "joinWaitlist": "No invite? Get on the waitlist."
+    "label": "Code d'invitation",
+    "placeholder": "Colle ton code d'invitation",
+    "checking": "Vérification...",
+    "continue": "Continuer",
+    "joinWaitlist": "Pas d'invitation ? Inscris-toi sur la liste d'attente."
   },
   "applePodcastEmbed": {
     "defaultTitle": "Vine Revisited and The Fight Against AI Slop",
-    "defaultDescription": "Behind the scenes of the Divine launch",
+    "defaultDescription": "Dans les coulisses du lancement de Divine",
     "defaultDuration": "21 min",
-    "artworkAlt": "{{showName}} podcast artwork",
-    "podcastEpisode": "Podcast Episode",
-    "openInApplePodcasts": "Open in Apple Podcasts",
-    "playEpisode": "Play Episode"
+    "artworkAlt": "Pochette du podcast {{showName}}",
+    "podcastEpisode": "Épisode de podcast",
+    "openInApplePodcasts": "Ouvrir dans Apple Podcasts",
+    "playEpisode": "Lire l'épisode"
   }
 }

@@ -1311,57 +1311,57 @@
     "morePages": "他のページ"
   },
   "fullscreenFeed": {
-    "repostBlockedTitle": "Can't repost this one.",
-    "repostBlockedDescription": "Something about this loop isn't repostable.",
-    "downloadMissingTitle": "Nothing to download.",
-    "downloadMissingDescription": "This video doesn't have a URL yet.",
-    "downloadingTitle": "Downloading.",
-    "downloadingDescription": "Saving your loop."
+    "repostBlockedTitle": "このループはリポストできません。",
+    "repostBlockedDescription": "このループはリポストできない設定になっています。",
+    "downloadMissingTitle": "ダウンロードできるものがありません。",
+    "downloadMissingDescription": "この動画にはまだURLがありません。",
+    "downloadingTitle": "ダウンロード中です。",
+    "downloadingDescription": "ループを保存しています。"
   },
   "uiCarousel": {
-    "previousSlide": "Previous slide",
-    "nextSlide": "Next slide"
+    "previousSlide": "前のスライド",
+    "nextSlide": "次のスライド"
   },
   "videoCardWithMetrics": {
-    "repostErrorTitle": "Error",
-    "repostErrorDescription": "Cannot repost this video"
+    "repostErrorTitle": "エラー",
+    "repostErrorDescription": "この動画はリポストできません"
   },
   "uiSheet": {
-    "close": "Close"
+    "close": "クローズ"
   },
   "uiDialog": {
-    "close": "Close"
+    "close": "クローズ"
   },
   "uiBreadcrumb": {
-    "breadcrumb": "breadcrumb",
-    "more": "More"
+    "breadcrumb": "パンくず",
+    "more": "もっと見る"
   },
   "deleteCommentDialog": {
-    "title": "Delete Comment?",
-    "description": "This action will send a deletion request to all relays. Most relays will honor this request and remove your comment.",
-    "reasonLabel": "Reason (optional)",
-    "reasonPlaceholder": "Why are you deleting this comment?",
-    "reasonHelp": "This reason will be included in the deletion event sent to relays.",
-    "noteLabel": "Note:",
-    "noteBody": "While most relays will remove your comment, deletion is not guaranteed. Some relays may choose to keep the content, and users who have already seen it will still have access.",
-    "cancel": "Cancel",
-    "confirm": "Delete Comment",
-    "deleting": "Deleting..."
+    "title": "コメントを削除しますか?",
+    "description": "この操作はすべてのリレーに削除リクエストを送信します。ほとんどのリレーはこのリクエストに従ってコメントを削除します。",
+    "reasonLabel": "理由(任意)",
+    "reasonPlaceholder": "なぜこのコメントを削除しますか?",
+    "reasonHelp": "この理由はリレーに送信される削除イベントに含まれます。",
+    "noteLabel": "注意:",
+    "noteBody": "ほとんどのリレーはコメントを削除しますが、削除は保証されません。一部のリレーはコンテンツを保持することを選択する場合があり、すでに閲覧したユーザーは引き続きアクセスできます。",
+    "cancel": "キャンセル",
+    "confirm": "コメントを削除",
+    "deleting": "削除中..."
   },
   "inviteCodeForm": {
-    "label": "Invite code",
-    "placeholder": "Paste your invite code",
-    "checking": "Checking...",
-    "continue": "Continue",
-    "joinWaitlist": "No invite? Get on the waitlist."
+    "label": "招待コード",
+    "placeholder": "招待コードを貼り付けてください",
+    "checking": "確認中...",
+    "continue": "続ける",
+    "joinWaitlist": "招待がない?ウェイトリストに登録してください。"
   },
   "applePodcastEmbed": {
     "defaultTitle": "Vine Revisited and The Fight Against AI Slop",
-    "defaultDescription": "Behind the scenes of the Divine launch",
-    "defaultDuration": "21 min",
-    "artworkAlt": "{{showName}} podcast artwork",
-    "podcastEpisode": "Podcast Episode",
-    "openInApplePodcasts": "Open in Apple Podcasts",
-    "playEpisode": "Play Episode"
+    "defaultDescription": "Divineローンチの舞台裏",
+    "defaultDuration": "21分",
+    "artworkAlt": "{{showName}} ポッドキャストのアートワーク",
+    "podcastEpisode": "ポッドキャストエピソード",
+    "openInApplePodcasts": "Apple Podcastsで開く",
+    "playEpisode": "エピソードを再生"
   }
 }
