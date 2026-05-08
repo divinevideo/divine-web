@@ -1,7 +1,8 @@
 {
   "common": {
     "language": "Langue",
-    "moreOptions": "Plus d'options"
+    "moreOptions": "Plus d'options",
+    "playAll": "Play all"
   },
   "nav": {
     "home": "Accueil",
@@ -45,7 +46,8 @@
     "yourFeed": "Votre flux"
   },
   "auth": {
-    "logInOnDivine": "Se connecter a Divine"
+    "logInOnDivine": "Se connecter a Divine",
+    "logIn": "Log in"
   },
   "home": {
     "welcomeTitle": "Bienvenue dans votre fil d'accueil",
@@ -65,7 +67,8 @@
     "new": "Nouveau",
     "tags": "Tags",
     "verifiedOnly": "Cree par des humains",
-    "verifiedOnlyHint": "Affiche uniquement les videos avec verification ProofMode"
+    "verifiedOnlyHint": "Affiche uniquement les videos avec verification ProofMode",
+    "classicViners": "Classic Viners"
   },
   "categories": {
     "beauty": "Beaute",
@@ -142,5 +145,9 @@
     "metaDescription": "Explorez les categories de videos sur Divine - comedie, musique, danse, animaux, sport, cuisine et plus encore.",
     "videoCount_one": "{{count}} video",
     "videoCount_other": "{{count}} videos"
+  },
+  "vineBadge": {
+    "archived": "Archived",
+    "tooltip": "Original Vine archive preserved from the Internet Archive"
   }
 }

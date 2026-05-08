@@ -1,7 +1,8 @@
 {
   "common": {
     "language": "Jezyk",
-    "moreOptions": "Wiecej opcji"
+    "moreOptions": "Wiecej opcji",
+    "playAll": "Play all"
   },
   "nav": {
     "home": "Strona glowna",
@@ -45,7 +46,8 @@
     "yourFeed": "Twoj kanal"
   },
   "auth": {
-    "logInOnDivine": "Zaloguj sie do Divine"
+    "logInOnDivine": "Zaloguj sie do Divine",
+    "logIn": "Log in"
   },
   "home": {
     "welcomeTitle": "Witaj w swoim glownym kanale",
@@ -65,7 +67,8 @@
     "new": "Nowe",
     "tags": "Tagi",
     "verifiedOnly": "Stworzone przez ludzi",
-    "verifiedOnlyHint": "Pokazuje tylko filmy z weryfikacja ProofMode"
+    "verifiedOnlyHint": "Pokazuje tylko filmy z weryfikacja ProofMode",
+    "classicViners": "Classic Viners"
   },
   "categories": {
     "beauty": "Uroda",
@@ -144,5 +147,9 @@
     "videoCount_few": "{{count}} filmy",
     "videoCount_many": "{{count}} filmow",
     "videoCount_other": "{{count}} filmu"
+  },
+  "vineBadge": {
+    "archived": "Archived",
+    "tooltip": "Original Vine archive preserved from the Internet Archive"
   }
 }

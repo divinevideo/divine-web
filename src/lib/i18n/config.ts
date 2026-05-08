@@ -50,7 +50,6 @@ export const LOCALE_OPTIONS: LocaleOption[] = [
 
 const LOCALE_ALIASES: Record<string, SupportedLocale> = {
   tl: 'fil',
-  fil: 'fil',
 };
 
 function getStorage(): Storage | null {

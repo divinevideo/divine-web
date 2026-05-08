@@ -1,14 +1,15 @@
 {
   "common": {
     "language": "Wika",
-    "moreOptions": "More options"
+    "moreOptions": "Iba pang opsyon",
+    "playAll": "I-play Lahat"
   },
   "nav": {
-    "home": "Home",
-    "discover": "Discover",
-    "search": "Search",
-    "messages": "Messages",
-    "notifications": "Notifications",
+    "home": "Tahanan",
+    "discover": "Tuklasin",
+    "search": "Hanapin",
+    "messages": "Mga Mensahe",
+    "notifications": "Mga Abiso",
     "profile": "Profile",
     "analytics": "Analytics"
   },
@@ -18,128 +19,135 @@
     "news": "Balita",
     "blog": "Blog",
     "faq": "FAQ",
-    "mediaResources": "Media Resources",
-    "terms": "Terms",
+    "mediaResources": "Mga Media Resource",
+    "terms": "Mga Tuntunin",
     "privacy": "Privacy",
-    "safety": "Safety",
+    "safety": "Kaligtasan",
     "dmca": "DMCA at Copyright",
     "openSource": "Open Source",
-    "donate": "Donate",
-    "help": "Tulong"
+    "donate": "Mag-donate",
+    "help": "Tulong",
+    "merch": "Merch"
   },
   "theme": {
-    "lightMode": "Light mode",
-    "darkMode": "Dark mode"
+    "lightMode": "Maliwanag na mode",
+    "darkMode": "Madilim na mode"
   },
   "footer": {
     "aboutDivine": "Tungkol sa Divine",
     "vinesRecovered": "{{count}} Vines na nabawi",
-    "termsAndOpenSource": "Terms at Open Source",
+    "termsAndOpenSource": "Mga Tuntunin at Open Source",
     "copyright": "© 2026 Divine"
   },
   "rss": {
-    "title": "RSS Feeds",
+    "title": "Mga RSS Feed",
     "latestVideos": "Pinakabagong Videos",
-    "trending": "Trending",
+    "trending": "Sumisikat",
     "yourFeed": "Feed Mo"
   },
   "auth": {
-    "logInOnDivine": "Sali na"
+    "logInOnDivine": "Sali na",
+    "logIn": "Mag-log in"
   },
   "home": {
     "welcomeTitle": "Uwi na tayo.",
     "welcomeSubtitle": "Mag-sign in para sa loops ng mga sinusundan mo.",
-    "title": "Home",
+    "title": "Tahanan",
     "subtitle": "Loops ng mga sinusundan mo.",
-    "sortBy": "Sort:",
-    "updating": "Updating..."
+    "sortBy": "Ayos:",
+    "updating": "Ina-update..."
   },
   "discovery": {
-    "title": "Discover",
+    "title": "Tuklasin",
     "subtitle": "Galugarin ang feed. Hanapin ang barkada mo.",
-    "categories": "Categories",
+    "categories": "Mga Kategorya",
     "forYou": "Para Sayo",
-    "classic": "Classic",
-    "hot": "Hot",
+    "classic": "Klasiko",
+    "hot": "Sikat",
     "new": "Bago",
-    "tags": "Tags",
+    "tags": "Mga Tag",
     "verifiedOnly": "Gawa ng Tao",
-    "verifiedOnlyHint": "Mga video lang na may ProofMode verification."
+    "verifiedOnlyHint": "Mga video lang na may ProofMode verification.",
+    "classicViners": "Mga Klasikong Viner"
   },
   "categories": {
-    "music": "Music",
+    "music": "Musika",
     "sports": "Sports",
-    "dance": "Dance",
-    "comedy": "Comedy",
-    "travel": "Travel",
-    "fashion": "Fashion",
-    "family": "Family",
-    "beauty": "Beauty",
-    "food": "Food",
-    "technology": "Tech",
-    "gaming": "Gaming",
-    "education": "Education"
+    "dance": "Sayaw",
+    "comedy": "Komedya",
+    "travel": "Paglalakbay",
+    "fashion": "Moda",
+    "family": "Pamilya",
+    "beauty": "Kagandahan",
+    "food": "Pagkain",
+    "technology": "Teknolohiya",
+    "gaming": "Laro",
+    "education": "Edukasyon"
   },
   "comments": {
-    "title": "Comments",
+    "title": "Mga Komento",
     "noCommentsYet": "Tahimik pa dito.",
-    "beFirstToShare": "Ikaw na mauna — drop a comment.",
-    "failedToLoad": "Hindi nag-load ang comments.",
+    "beFirstToShare": "Ikaw na mauna — magkomento ka.",
+    "failedToLoad": "Hindi nag-load ang mga komento.",
     "writeAComment": "Anong masasabi mo...",
-    "signInToReply": "Mag-sign in para mag-reply",
-    "signInToComment": "Mag-sign in para magcomment",
-    "replyingToComment": "Nagre-reply sa comment",
+    "signInToReply": "Mag-sign in para sumagot",
+    "signInToComment": "Mag-sign in para magkomento",
+    "replyingToComment": "Sumasagot sa komento",
     "addingToDiscussion": "Sumasali sa thread",
-    "posting": "Posting...",
-    "reply": "Reply",
-    "comment": "Comment"
+    "posting": "Pinopost...",
+    "reply": "Sumagot",
+    "comment": "Magkomento"
   },
   "messages": {
-    "badge": "Messages",
-    "title": "Direct messages",
-    "subtitle": "Kausapin ang support, magpa-slide ng loop nang private, o ituloy ang thread mo sa mga sinusundan mo.",
-    "searchPlaceholder": "Sino i-message?",
-    "newMessage": "Bagong message",
-    "readyToShare": "Ready nang i-send nang private.",
-    "shareWithTitle": "Kasama sa susunod mong message ang “{{title}}”.",
-    "shareWithLink": "Kasama sa susunod mong message ang vine link.",
+    "badge": "Mga Mensahe",
+    "title": "Mga direktang mensahe",
+    "subtitle": "Kausapin ang support, magpadala ng loop nang pribado, o ituloy ang thread mo sa mga sinusundan mo.",
+    "searchPlaceholder": "Sino padadalhan?",
+    "newMessage": "Bagong mensahe",
+    "readyToShare": "Handa nang ipadala nang pribado.",
+    "shareWithTitle": "Kasama sa susunod mong mensahe ang “{{title}}”.",
+    "shareWithLink": "Kasama sa susunod mong mensahe ang vine link.",
     "signerUnsupported": "Pwede ka namang mag-log in sa signer mo, pero hindi pa nito kayang gumamit ng NIP-44. Lumipat sa nsec, bunker, o iba pang signer na may NIP-44 support para magamit ang DMs dito.",
-    "supportBadge": "Support",
-    "supportSummary": "Bugs, moderation, account stuff — pakikinggan ka namin."
+    "supportBadge": "Suporta",
+    "supportSummary": "Mga bug, moderation, account — pakikinggan ka namin."
   },
   "support": {
-    "title": "Support",
+    "title": "Suporta",
     "subtitle": "Kailangan ng tulong? Sagot ka namin.",
     "helpCenterTitle": "Divine Help Center",
-    "helpCenterDescription": "Mga sagot sa madalas tanungin.",
+    "helpCenterDescription": "Mga sagot sa mga madalas itanong.",
     "helpCenterCta": "Pumunta sa Help Center",
-    "messageSupportTitle": "I-message ang Support",
-    "messageSupportDescription": "Mag-slide sa DMs namin dito mismo sa Divine — naka-encrypt gamit ang NIP-17.",
+    "messageSupportTitle": "I-message ang Suporta",
+    "messageSupportDescription": "Magpadala ng DM sa amin dito mismo sa Divine — naka-encrypt gamit ang NIP-17.",
     "messageSupportCta": "Buksan ang Support Chat",
-    "contactTitle": "Kontakin ang Support",
-    "contactDescription": "Mag-open ng ticket at babalikan ka namin agad.",
-    "contactLink": "Kontakin ang Support",
+    "contactTitle": "Makipag-ugnayan sa Suporta",
+    "contactDescription": "Magbukas ng ticket at babalikan ka namin agad.",
+    "contactLink": "Makipag-ugnayan sa Suporta",
     "githubTitle": "GitHub Issues",
-    "githubDescription": "Mag-report ng bugs, mag-request ng features, o galugarin ang GitHub namin.",
+    "githubDescription": "Mag-ulat ng bug, humiling ng feature, o galugarin ang GitHub namin.",
     "webAppLabel": "Web App:",
     "flutterAppLabel": "Flutter App (iOS/Android):",
-    "communityTitle": "Community",
-    "communityDescription": "Tara, sumama sa Divine community sa Nostr.",
+    "communityTitle": "Komunidad",
+    "communityDescription": "Tara, sumama sa komunidad ng Divine sa Nostr.",
     "communityBody": "Tumatakbo ang Divine sa Nostr, ang decentralized social protocol. Hanapin kami sa paboritong Nostr client mo."
   },
   "tagPage": {
     "notFoundTitle": "Wala ang tag.",
     "notFoundDescription": "Wala kaming mahanap dyan.",
     "back": "Balik",
-    "subtitle": "Loops na may tag #{{tag}}"
+    "subtitle": "Mga loop na may tag #{{tag}}"
   },
   "categoriesPage": {
-    "title": "Categories",
-    "subtitle": "Loops, ayon sa vibe.",
+    "title": "Mga Kategorya",
+    "subtitle": "Mga loop, ayon sa vibe.",
     "emptyState": "Walang nilulutong kategorya ngayon.",
-    "metaTitle": "Galugarin ang Categories - Divine",
-    "metaDescription": "Tuklasin ang video categories sa Divine — comedy, music, dance, animals, sports, food, at marami pa.",
+    "metaTitle": "Galugarin ang mga Kategorya - Divine",
+    "metaDescription": "Tuklasin ang mga kategorya ng video sa Divine — komedya, musika, sayaw, hayop, sports, pagkain, at marami pa.",
     "videoCount_one": "{{count}} video",
-    "videoCount_other": "{{count}} videos"
+    "videoCount_other": "{{count}} mga video"
+  },
+  "vineBadge": {
+    "archived": "Naka-archive",
+    "tooltip": "Orihinal na Vine archive na nailigtas mula sa Internet Archive"
   }
 }

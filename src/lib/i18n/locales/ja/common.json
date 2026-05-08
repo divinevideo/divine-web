@@ -1,7 +1,8 @@
 {
   "common": {
     "language": "言語",
-    "moreOptions": "その他のオプション"
+    "moreOptions": "その他のオプション",
+    "playAll": "Play all"
   },
   "nav": {
     "home": "ホーム",
@@ -45,7 +46,8 @@
     "yourFeed": "あなたのフィード"
   },
   "auth": {
-    "logInOnDivine": "Divine にログイン"
+    "logInOnDivine": "Divine にログイン",
+    "logIn": "Log in"
   },
   "home": {
     "welcomeTitle": "ホームフィードへようこそ",
@@ -65,7 +67,8 @@
     "new": "新着",
     "tags": "タグ",
     "verifiedOnly": "人が作成",
-    "verifiedOnlyHint": "ProofMode 検証済みの動画のみ表示しています"
+    "verifiedOnlyHint": "ProofMode 検証済みの動画のみ表示しています",
+    "classicViners": "Classic Viners"
   },
   "categories": {
     "beauty": "美容",
@@ -142,5 +145,9 @@
     "metaDescription": "Divine でコメディ、音楽、ダンス、動物、スポーツ、食べ物などの動画カテゴリを探そう。",
     "videoCount_one": "{{count}}本の動画",
     "videoCount_other": "{{count}}本の動画"
+  },
+  "vineBadge": {
+    "archived": "Archived",
+    "tooltip": "Original Vine archive preserved from the Internet Archive"
   }
 }

@@ -1,7 +1,8 @@
 {
   "common": {
     "language": "Idioma",
-    "moreOptions": "Mas opciones"
+    "moreOptions": "Mas opciones",
+    "playAll": "Play all"
   },
   "nav": {
     "home": "Inicio",
@@ -45,7 +46,8 @@
     "yourFeed": "Tu feed"
   },
   "auth": {
-    "logInOnDivine": "Inicia sesion en Divine"
+    "logInOnDivine": "Inicia sesion en Divine",
+    "logIn": "Log in"
   },
   "home": {
     "welcomeTitle": "Bienvenido a tu feed principal",
@@ -65,7 +67,8 @@
     "new": "Nuevo",
     "tags": "Etiquetas",
     "verifiedOnly": "Hecho por humanos",
-    "verifiedOnlyHint": "Mostrando solo videos con verificacion ProofMode"
+    "verifiedOnlyHint": "Mostrando solo videos con verificacion ProofMode",
+    "classicViners": "Classic Viners"
   },
   "categories": {
     "music": "Musica",
@@ -142,5 +145,9 @@
     "metaDescription": "Explora categorias de video en Divine: comedia, musica, baile, animales, deportes, comida y mas.",
     "videoCount_one": "{{count}} video",
     "videoCount_other": "{{count}} videos"
+  },
+  "vineBadge": {
+    "archived": "Archived",
+    "tooltip": "Original Vine archive preserved from the Internet Archive"
   }
 }

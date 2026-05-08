@@ -1,7 +1,8 @@
 {
   "common": {
     "language": "Taal",
-    "moreOptions": "Meer opties"
+    "moreOptions": "Meer opties",
+    "playAll": "Play all"
   },
   "nav": {
     "home": "Home",
@@ -45,7 +46,8 @@
     "yourFeed": "Jouw feed"
   },
   "auth": {
-    "logInOnDivine": "Inloggen op Divine"
+    "logInOnDivine": "Inloggen op Divine",
+    "logIn": "Log in"
   },
   "home": {
     "welcomeTitle": "Welkom bij je homefeed",
@@ -65,7 +67,8 @@
     "new": "Nieuw",
     "tags": "Tags",
     "verifiedOnly": "Door mensen gemaakt",
-    "verifiedOnlyHint": "Toont alleen video's met ProofMode-verificatie"
+    "verifiedOnlyHint": "Toont alleen video's met ProofMode-verificatie",
+    "classicViners": "Classic Viners"
   },
   "categories": {
     "beauty": "Beauty",
@@ -142,5 +145,9 @@
     "metaDescription": "Ontdek videocategorieen op Divine - komedie, muziek, dans, dieren, sport, eten en meer.",
     "videoCount_one": "{{count}} video",
     "videoCount_other": "{{count}} videos"
+  },
+  "vineBadge": {
+    "archived": "Archived",
+    "tooltip": "Original Vine archive preserved from the Internet Archive"
   }
 }

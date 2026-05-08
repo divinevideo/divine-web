@@ -1,7 +1,8 @@
 {
   "common": {
     "language": "Limba",
-    "moreOptions": "Mai multe optiuni"
+    "moreOptions": "Mai multe optiuni",
+    "playAll": "Play all"
   },
   "nav": {
     "home": "Acasa",
@@ -45,7 +46,8 @@
     "yourFeed": "Fluxul tau"
   },
   "auth": {
-    "logInOnDivine": "Conecteaza-te la Divine"
+    "logInOnDivine": "Conecteaza-te la Divine",
+    "logIn": "Log in"
   },
   "home": {
     "welcomeTitle": "Bine ai venit in fluxul tau principal",
@@ -65,7 +67,8 @@
     "new": "Nou",
     "tags": "Etichete",
     "verifiedOnly": "Creat de oameni",
-    "verifiedOnlyHint": "Afiseaza doar videoclipuri cu verificare ProofMode"
+    "verifiedOnlyHint": "Afiseaza doar videoclipuri cu verificare ProofMode",
+    "classicViners": "Classic Viners"
   },
   "categories": {
     "beauty": "Frumusete",
@@ -143,5 +146,9 @@
     "videoCount_one": "{{count}} videoclip",
     "videoCount_few": "{{count}} videoclipuri",
     "videoCount_other": "{{count}} de videoclipuri"
+  },
+  "vineBadge": {
+    "archived": "Archived",
+    "tooltip": "Original Vine archive preserved from the Internet Archive"
   }
 }

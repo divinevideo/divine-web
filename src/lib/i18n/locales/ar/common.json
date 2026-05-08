@@ -1,7 +1,8 @@
 {
   "common": {
     "language": "اللغة",
-    "moreOptions": "خيارات إضافية"
+    "moreOptions": "خيارات إضافية",
+    "playAll": "Play all"
   },
   "nav": {
     "home": "الرئيسية",
@@ -45,7 +46,8 @@
     "yourFeed": "خلاصتك"
   },
   "auth": {
-    "logInOnDivine": "سجل الدخول إلى Divine"
+    "logInOnDivine": "سجل الدخول إلى Divine",
+    "logIn": "Log in"
   },
   "home": {
     "welcomeTitle": "مرحبًا بك في خلاصتك الرئيسية",
@@ -65,7 +67,8 @@
     "new": "جديد",
     "tags": "الوسوم",
     "verifiedOnly": "من صنع البشر",
-    "verifiedOnlyHint": "يتم عرض الفيديوهات التي تحتوي على تحقق ProofMode فقط"
+    "verifiedOnlyHint": "يتم عرض الفيديوهات التي تحتوي على تحقق ProofMode فقط",
+    "classicViners": "Classic Viners"
   },
   "categories": {
     "beauty": "الجمال",
@@ -146,5 +149,9 @@
     "videoCount_few": "{{count}} فيديوهات",
     "videoCount_many": "{{count}} فيديو",
     "videoCount_other": "{{count}} فيديو"
+  },
+  "vineBadge": {
+    "archived": "Archived",
+    "tooltip": "Original Vine archive preserved from the Internet Archive"
   }
 }

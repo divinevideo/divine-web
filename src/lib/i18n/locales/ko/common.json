@@ -1,7 +1,8 @@
 {
   "common": {
     "language": "언어",
-    "moreOptions": "추가 옵션"
+    "moreOptions": "추가 옵션",
+    "playAll": "Play all"
   },
   "nav": {
     "home": "홈",
@@ -45,7 +46,8 @@
     "yourFeed": "내 피드"
   },
   "auth": {
-    "logInOnDivine": "Divine에 로그인"
+    "logInOnDivine": "Divine에 로그인",
+    "logIn": "Log in"
   },
   "home": {
     "welcomeTitle": "홈 피드에 오신 것을 환영합니다",
@@ -65,7 +67,8 @@
     "new": "신규",
     "tags": "태그",
     "verifiedOnly": "사람이 만든 콘텐츠",
-    "verifiedOnlyHint": "ProofMode 검증이 있는 동영상만 표시합니다"
+    "verifiedOnlyHint": "ProofMode 검증이 있는 동영상만 표시합니다",
+    "classicViners": "Classic Viners"
   },
   "categories": {
     "beauty": "뷰티",
@@ -142,5 +145,9 @@
     "metaDescription": "Divine 에서 코미디, 음악, 댄스, 동물, 스포츠, 음식 등 다양한 동영상 카테고리를 둘러보세요.",
     "videoCount_one": "동영상 {{count}}개",
     "videoCount_other": "동영상 {{count}}개"
+  },
+  "vineBadge": {
+    "archived": "Archived",
+    "tooltip": "Original Vine archive preserved from the Internet Archive"
   }
 }

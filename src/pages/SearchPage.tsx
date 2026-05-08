@@ -2,6 +2,7 @@
 // ABOUTME: Supports searching videos, users, hashtags with NIP-50 full-text search
 
 import { useState, useEffect, useRef, useMemo, type ClipboardEvent } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';
 import { useNostr } from '@nostrify/react';
 import { useSubdomainNavigate } from '@/hooks/useSubdomainNavigate';
@@ -49,6 +50,7 @@ import {
 type SearchFilter = 'all' | 'videos' | 'users' | 'hashtags';
 
 export function SearchPage() {
+  const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
   const compilationRequest = useMemo(
     () => parseCompilationPlaybackParams(searchParams),
@@ -497,7 +499,7 @@ export function SearchPage() {
                   className="gap-2"
                 >
                   <Play className="h-4 w-4" />
-                  Play all
+                  {t('common.playAll')}
                 </Button>
               )}
             </div>

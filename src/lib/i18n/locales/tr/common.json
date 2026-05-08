@@ -1,7 +1,8 @@
 {
   "common": {
     "language": "Dil",
-    "moreOptions": "Daha fazla secenek"
+    "moreOptions": "Daha fazla secenek",
+    "playAll": "Play all"
   },
   "nav": {
     "home": "Ana sayfa",
@@ -45,7 +46,8 @@
     "yourFeed": "Akisin"
   },
   "auth": {
-    "logInOnDivine": "Divine'da giris yap"
+    "logInOnDivine": "Divine'da giris yap",
+    "logIn": "Log in"
   },
   "home": {
     "welcomeTitle": "Ana akisina hos geldin",
@@ -65,7 +67,8 @@
     "new": "Yeni",
     "tags": "Etiketler",
     "verifiedOnly": "Insan yapimi",
-    "verifiedOnlyHint": "Yalnizca ProofMode dogrulamali videolar gosteriliyor"
+    "verifiedOnlyHint": "Yalnizca ProofMode dogrulamali videolar gosteriliyor",
+    "classicViners": "Classic Viners"
   },
   "categories": {
     "beauty": "Guzellik",
@@ -142,5 +145,9 @@
     "metaDescription": "Divine uzerinde komedi, muzik, dans, hayvanlar, spor, yemek ve daha fazlasini kesfet.",
     "videoCount_one": "{{count}} video",
     "videoCount_other": "{{count}} video"
+  },
+  "vineBadge": {
+    "archived": "Archived",
+    "tooltip": "Original Vine archive preserved from the Internet Archive"
   }
 }

@@ -1,7 +1,8 @@
 {
   "common": {
     "language": "Sprak",
-    "moreOptions": "Fler alternativ"
+    "moreOptions": "Fler alternativ",
+    "playAll": "Play all"
   },
   "nav": {
     "home": "Hem",
@@ -45,7 +46,8 @@
     "yourFeed": "Ditt flode"
   },
   "auth": {
-    "logInOnDivine": "Logga in pa Divine"
+    "logInOnDivine": "Logga in pa Divine",
+    "logIn": "Log in"
   },
   "home": {
     "welcomeTitle": "Valkommen till ditt hemmaflode",
@@ -65,7 +67,8 @@
     "new": "Nytt",
     "tags": "Taggar",
     "verifiedOnly": "Skapad av manniskor",
-    "verifiedOnlyHint": "Visar endast videor med ProofMode-verifiering"
+    "verifiedOnlyHint": "Visar endast videor med ProofMode-verifiering",
+    "classicViners": "Classic Viners"
   },
   "categories": {
     "beauty": "Skonhet",
@@ -142,5 +145,9 @@
     "metaDescription": "Utforska videokategorier pa Divine - komedi, musik, dans, djur, sport, mat och mer.",
     "videoCount_one": "{{count}} video",
     "videoCount_other": "{{count}} videor"
+  },
+  "vineBadge": {
+    "archived": "Archived",
+    "tooltip": "Original Vine archive preserved from the Internet Archive"
   }
 }

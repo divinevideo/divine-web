@@ -1,7 +1,8 @@
 {
   "common": {
     "language": "Bahasa",
-    "moreOptions": "Opsi lainnya"
+    "moreOptions": "Opsi lainnya",
+    "playAll": "Play all"
   },
   "nav": {
     "home": "Beranda",
@@ -45,7 +46,8 @@
     "yourFeed": "Umpan Anda"
   },
   "auth": {
-    "logInOnDivine": "Masuk ke Divine"
+    "logInOnDivine": "Masuk ke Divine",
+    "logIn": "Log in"
   },
   "home": {
     "welcomeTitle": "Selamat datang di beranda Anda",
@@ -65,7 +67,8 @@
     "new": "Baru",
     "tags": "Tag",
     "verifiedOnly": "Buatan manusia",
-    "verifiedOnlyHint": "Hanya menampilkan video dengan verifikasi ProofMode"
+    "verifiedOnlyHint": "Hanya menampilkan video dengan verifikasi ProofMode",
+    "classicViners": "Classic Viners"
   },
   "categories": {
     "beauty": "Kecantikan",
@@ -142,5 +145,9 @@
     "metaDescription": "Jelajahi kategori video di Divine - komedi, musik, tarian, hewan, olahraga, makanan, dan lainnya.",
     "videoCount_one": "{{count}} video",
     "videoCount_other": "{{count}} video"
+  },
+  "vineBadge": {
+    "archived": "Archived",
+    "tooltip": "Original Vine archive preserved from the Internet Archive"
   }
 }
