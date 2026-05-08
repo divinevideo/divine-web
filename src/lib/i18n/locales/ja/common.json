@@ -1012,5 +1012,302 @@
     "unpinnedDescription": "「{{title}}」が固定から外れました。",
     "unpinErrorTitle": "固定解除に失敗しました。",
     "unpinErrorDescription": "固定解除できませんでした。もう一度試しますか？"
+  },
+  "indexPage": {
+    "seoTitle": "Divine Web - Nostr上のショート・ループ動画",
+    "seoDescription": "分散型のNostrネットワークで、6秒のループ動画を視聴・シェアしよう。",
+    "heading": "ホーム",
+    "subheadingDefault": "フォロー中のユーザーの動画",
+    "subheadingCount_one": "フォロー中の{{count}}人の動画",
+    "subheadingCount_other": "フォロー中の{{count}}人の動画",
+    "emptyTitle": "ホームフィードは空です",
+    "emptyDescription": "クリエイターをフォローすると、ここに動画が表示されます。トレンド動画から気になる人を見つけよう！",
+    "exploreVideos": "動画を見る"
+  },
+  "notificationsPage": {
+    "heading": "通知",
+    "tabs": {
+      "all": "すべて",
+      "unread": "未読",
+      "likes": "いいね",
+      "comments": "コメント",
+      "follows": "フォロー",
+      "reposts": "リポスト",
+      "zaps": "Zap"
+    },
+    "empty": {
+      "all": {
+        "title": "静かですね。お知らせはありません。",
+        "description": "あなたの投稿に反応があると、ここに表示されます。"
+      },
+      "unread": {
+        "title": "すべて確認済みです。",
+        "description": "新しいアクティビティはここに最初に表示されます。"
+      },
+      "likes": {
+        "title": "いいねの通知はまだありません。",
+        "description": "あなたの動画にいいねがつくと、ここに表示されます。"
+      },
+      "comments": {
+        "title": "コメントの通知はまだありません。",
+        "description": "動画への返信やコメントがここに表示されます。"
+      },
+      "follows": {
+        "title": "フォローの通知はまだありません。",
+        "description": "新しいフォロワーがここに表示されます。"
+      },
+      "reposts": {
+        "title": "リポストの通知はまだありません。",
+        "description": "あなたの動画のリポストがここに表示されます。"
+      },
+      "zaps": {
+        "title": "Zapの通知はまだありません。",
+        "description": "動画へのZapがここに表示されます。"
+      }
+    },
+    "errorTitle": "通知の読み込みに失敗しました",
+    "errorFallback": "あとでもう一度お試しください",
+    "sectionNew": "新着",
+    "sectionEarlier": "これまで"
+  },
+  "getEmbedPage": {
+    "title": "Divineウィジェットを埋め込む",
+    "subtitle": "あなたの最新Divine動画をどんなウェブサイトやブログのサイドバーにも追加できます。",
+    "configureTitle": "設定",
+    "npubLabel": "あなたのnpub（Nostr公開鍵）",
+    "themeLabel": "テーマ",
+    "themeDark": "ダーク",
+    "themeLight": "ライト",
+    "videosLabel": "動画",
+    "autoRefreshLabel": "自動更新",
+    "refresh30": "30分",
+    "refresh60": "1時間",
+    "refresh120": "2時間",
+    "refreshNever": "更新しない",
+    "embedCodeTitle": "埋め込みコード",
+    "copy": "コピー",
+    "copied": "コピーしました！",
+    "previewTitle": "プレビュー",
+    "previewEmpty": "上にnpubを入力するとプレビューが表示されます",
+    "iframeTitle": "Divine動画ウィジェット",
+    "previewIframeTitle": "Divine動画ウィジェットのプレビュー"
+  },
+  "trendingPage": {
+    "heading": "トレンド",
+    "subheading": "コミュニティで人気のコンテンツをチェック",
+    "rssTitle": "DiVine - トレンド",
+    "rssLink": "RSS"
+  },
+  "merchPage": {
+    "metaTitle": "グッズ — Divine",
+    "metaDescription": "Tシャツ、フーディー、キャップなど、肩の力が抜けたアイテム。デザインはDivine、印刷と発送はBonfireが担当。",
+    "ogTitle": "Divineグッズ",
+    "headline": "ループを身にまとおう。",
+    "body": "Tシャツ、フーディー、キャップなど、肩の力が抜けたアイテム。",
+    "storeCta": "すべての商品を見る",
+    "trust": "デザインはDivine。印刷と発送はBonfire。",
+    "shopOnBonfire": "Bonfireで購入",
+    "productsAriaLabel": "グッズ商品",
+    "productAriaLabel": "{{name}}（Bonfire）"
+  },
+  "eventPage": {
+    "loading": "イベントを読み込み中…",
+    "back": "戻る",
+    "noIdentifier": "イベント識別子が指定されていません。",
+    "notFound": "イベントが見つかりません",
+    "notFoundDescription": "このイベントは設定済みのリレーまたはフォールバックリレーに存在しない可能性があります。",
+    "kindBadge": "Kind {{kind}}",
+    "listItems": "リストアイテム",
+    "listItemsDescription": "このイベントに含まれる参照。",
+    "noPublicReferences": "このリストには公開された参照がありません。",
+    "openReference": "参照先を開く",
+    "noRouteAvailable": "この参照には対応するルートがありません。",
+    "tags": "タグ",
+    "tagCount_one": "{{count}}件のタグ",
+    "tagCount_other": "{{count}}件のタグ",
+    "noTags": "このイベントにタグはありません。",
+    "rawEvent": "生のイベント",
+    "kindLabel": {
+      "textNote": "テキストノート",
+      "comment": "コメント",
+      "videoList": "動画リスト",
+      "followList": "フォローリスト",
+      "list": "リスト {{kind}}",
+      "kind": "Kind {{kind}}"
+    },
+    "referenceLabel": {
+      "profile": "プロフィール",
+      "event": "イベント",
+      "address": "アドレス",
+      "hashtag": "ハッシュタグ"
+    }
+  },
+  "universalUserPage": {
+    "lookingUp": "ユーザーを検索中...",
+    "userNotFound": "ユーザーが見つかりません",
+    "couldNotFind": "次の{{label}}に該当するユーザーが見つかりませんでした：",
+    "goHome": "ホームへ戻る",
+    "redirecting": "プロフィールにリダイレクト中...",
+    "lookupLabel": {
+      "vineId": "Vine ID",
+      "nip05": "NIP-05識別子",
+      "legacyOrNip05": "旧Vineユーザー名またはNIP-05識別子"
+    },
+    "notFoundDescription": {
+      "vine": "このVineユーザーはまだNostrネットワークにインポートされていない可能性があります。",
+      "nip05": "NIP-05識別子が正しいかご確認ください。",
+      "legacy": "このユーザー名は旧VineプロフィールやOpenVineハンドルと一致しません。"
+    }
+  },
+  "atUsernamePage": {
+    "lookingUp": "@{{username}}を検索中...",
+    "userNotFound": "ユーザーが見つかりません",
+    "couldNotFind": "ユーザーが見つかりませんでした",
+    "tryVisitingPrefix": "プロフィールはこちらから",
+    "goHome": "ホームへ戻る",
+    "redirecting": "プロフィールにリダイレクト中..."
+  },
+  "appCallbackPage": {
+    "appStore": "App Store",
+    "googlePlay": "Google Play",
+    "desktop": {
+      "heading": "スマホで開いてください",
+      "body1": "このリンクは、モバイル端末のDivineアプリで開く必要があります。",
+      "body2": "メールでこのリンクを受け取った場合は、Divineをインストールしているスマホで開いてください。"
+    },
+    "mobile": {
+      "heading": "Divineで開く",
+      "body": "このリンクはDivineアプリで開く想定です。自動で開かなかった場合：",
+      "bullet1": "• Divineがこの端末にインストールされているかご確認ください",
+      "bullet2": "• Divineを開いて再度サインインをお試しください",
+      "getDivine": "{{store}}でDivineを入手",
+      "emailHint": "メールのリンクをクリックした場合は、登録時と同じ端末を使っているかご確認ください。"
+    }
+  },
+  "authCallbackPage": {
+    "finishingSignIn": "サインインを完了中",
+    "restoring": "署名セッションを復元してDivineに戻ります。",
+    "failedToFinish": "サインインを完了できませんでした",
+    "returnToSignIn": "サインインに戻る"
+  },
+  "authenticDemo": {
+    "title": "オーセンティック",
+    "imageAlt": "オーセンティックなコンテンツを作る人",
+    "liveLabel": "LIVE",
+    "caption": "AIではなく、リアルな人間のリアルな瞬間"
+  },
+  "verifiedDemo": {
+    "title": "認証済み",
+    "imageAlt": "認証済みのオーセンティックな瞬間",
+    "proofModeCertified": "ProofMode認証済み",
+    "caption": "暗号で証明された真正性"
+  },
+  "decentralizedDemo": {
+    "title": "分散型",
+    "imageAlt": "分散型ネットワークでの協働",
+    "nostrNetwork": "Nostrネットワーク",
+    "caption": "Nostrの上に構築。あなたのコンテンツ、あなたのコントロール"
+  },
+  "originalContentBadge": {
+    "label": "オリジナル",
+    "tooltip": "このユーザーが制作したオリジナルコンテンツ"
+  },
+  "videoVerificationBadgeRow": {
+    "detailsAriaLabel": "動画の認証情報を表示"
+  },
+  "cameraRecorder": {
+    "accessRequired": "カメラのアクセスが必要です",
+    "failedAccess": "カメラへのアクセスに失敗しました",
+    "goBack": "戻る",
+    "initializing": "カメラを起動中...",
+    "durationOfMax": "{{current}} / 6.0秒",
+    "rec": "REC",
+    "clipLabel": "クリップ {{index}}：{{duration}}",
+    "releaseToPause": "離して一時停止",
+    "holdToRecord": "押し続けて録画",
+    "instructionsRecord": "ボタンを押し続けて録画、離すと一時停止",
+    "maxReached": "最大6秒に達しました",
+    "clipsRemaining_one": "クリップ{{count}}件 • 残り{{remaining}}",
+    "clipsRemaining_other": "クリップ{{count}}件 • 残り{{remaining}}",
+    "startOver": "やり直す"
+  },
+  "comment": {
+    "loginRequiredTitle": "まずサインインしてください。",
+    "loginRequiredDescription": "ユーザーをミュートするにはサインインが必要です。",
+    "mutedTitle": "ミュートしました。",
+    "mutedDescription": "{{name}}はフィードに表示されません。",
+    "muteFailedTitle": "ミュートできませんでした。",
+    "muteFailedDescription": "ミュートを保存できませんでした。もう一度お試しください。",
+    "sending": "（送信中...）",
+    "reply": "返信",
+    "replyCount_one": "{{count}}件の返信",
+    "replyCount_other": "{{count}}件の返信",
+    "optionsLabel": "コメントのオプション",
+    "deleteComment": "コメントを削除",
+    "reportComment": "コメントを報告",
+    "reportUser": "ユーザーを報告",
+    "muteUser": "ユーザーをミュート",
+    "replyPlaceholder": "返信を書く..."
+  },
+  "pwaInstallPrompt": {
+    "close": "閉じる",
+    "getDivine": "Divineを入手",
+    "installDivineWeb": "Divine Webをインストール",
+    "descriptionNative": "ネイティブアプリをインストールすると、Divineを最高の体験で楽しめます",
+    "descriptionWeb": "アプリをインストールするとさらに快適に使えます",
+    "appStore": "App Store",
+    "appStoreAria": "App StoreでDivineをダウンロード",
+    "googlePlay": "Google Play",
+    "googlePlayAria": "Google PlayでDivineを入手",
+    "install": "インストール",
+    "notNow": "あとで"
+  },
+  "relaySelector": {
+    "placeholder": "リレーを選択"
+  },
+  "socialLinks": {
+    "groupLabel": "ソーシャルメディアのリンク",
+    "followInstagram": "Instagramでフォロー",
+    "followReddit": "Redditでフォロー",
+    "joinDiscord": "Discordに参加",
+    "followTwitter": "Twitterでフォロー",
+    "followBluesky": "Blueskyでフォロー",
+    "followTiktok": "TikTokでフォロー",
+    "followGithub": "GitHubでフォロー",
+    "followYoutube": "YouTubeでフォロー"
+  },
+  "fullscreenVideoItem": {
+    "loadError": "動画の読み込みに失敗しました",
+    "muteSuccessTitle": "ミュートしました。",
+    "muteSuccessDescription": "{{name}}はフィードに表示されません。",
+    "muteErrorTitle": "ミュートできませんでした。",
+    "muteErrorDescription": "ミュートを保存できませんでした。もう一度お試しください。",
+    "deleteVideo": "動画を削除",
+    "reportVideo": "動画を報告",
+    "sendViaMessage": "メッセージで送信",
+    "reportUser": "ユーザーを報告",
+    "muteUser": "{{name}}をミュート",
+    "viewSource": "ソースを表示",
+    "videoEventSource": "動画イベントのソース"
+  },
+  "privacyPage": {
+    "title": "プライバシーポリシー",
+    "lastUpdated": "最終更新日：{{date}}"
+  },
+  "termsPage": {
+    "title": "利用規約",
+    "lastUpdated": "最終更新日：{{date}}"
+  },
+  "brandPreview": {},
+  "uiSidebar": {
+    "toggleSidebar": "サイドバーを切り替え"
+  },
+  "uiPagination": {
+    "pagination": "ページネーション",
+    "previous": "前へ",
+    "next": "次へ",
+    "goToPrevious": "前のページへ",
+    "goToNext": "次のページへ",
+    "morePages": "他のページ"
   }
 }

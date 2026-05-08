@@ -1013,5 +1013,302 @@
     "unpinnedDescription": "„{{title}}\" a ieșit dintre fixările tale.",
     "unpinErrorTitle": "Anularea fixării a dat greș.",
     "unpinErrorDescription": "Nu am putut anula fixarea. Mai încerci?"
+  },
+  "indexPage": {
+    "seoTitle": "Divine Web - Videoclipuri scurte în buclă pe Nostr",
+    "seoDescription": "Vezi și distribuie videoclipuri în buclă de 6 secunde în rețeaua descentralizată Nostr.",
+    "heading": "Acasă",
+    "subheadingDefault": "Videoclipuri de la persoanele pe care le urmărești",
+    "subheadingCount_one": "Videoclipuri de la {{count}} persoană pe care o urmărești",
+    "subheadingCount_other": "Videoclipuri de la {{count}} persoane pe care le urmărești",
+    "emptyTitle": "Feed-ul tău e gol",
+    "emptyDescription": "Urmărește creatori ca să le vezi videoclipurile aici. Explorează videoclipurile populare ca să găsești pe cine să urmărești!",
+    "exploreVideos": "Explorează videoclipuri"
+  },
+  "notificationsPage": {
+    "heading": "Notificări",
+    "tabs": {
+      "all": "Toate",
+      "unread": "Necitite",
+      "likes": "Aprecieri",
+      "comments": "Comentarii",
+      "follows": "Urmăriri",
+      "reposts": "Repostări",
+      "zaps": "Zaps"
+    },
+    "empty": {
+      "all": {
+        "title": "Liniște totală. Nimic de semnalat.",
+        "description": "Când oamenii reacționează la chestiile tale, ajung direct aici."
+      },
+      "unread": {
+        "title": "Le-ai văzut pe toate.",
+        "description": "Activitatea nouă apare aici prima."
+      },
+      "likes": {
+        "title": "Nicio notificare de apreciere încă.",
+        "description": "Când cineva îți apreciază un videoclip, apare aici."
+      },
+      "comments": {
+        "title": "Niciun comentariu încă.",
+        "description": "Răspunsurile și comentariile la videoclipurile tale apar aici."
+      },
+      "follows": {
+        "title": "Nicio notificare de urmărire încă.",
+        "description": "Urmăritorii noi apar aici."
+      },
+      "reposts": {
+        "title": "Nicio repostare încă.",
+        "description": "Repostările videoclipurilor tale apar aici."
+      },
+      "zaps": {
+        "title": "Niciun zap încă.",
+        "description": "Zaps-urile pe videoclipurile tale apar aici."
+      }
+    },
+    "errorTitle": "Notificările n-au putut fi încărcate",
+    "errorFallback": "Încearcă din nou mai târziu",
+    "sectionNew": "Noi",
+    "sectionEarlier": "Mai vechi"
+  },
+  "getEmbedPage": {
+    "title": "Inserează widget-ul Divine",
+    "subtitle": "Adaugă cele mai noi videoclipuri Divine pe orice site sau bară laterală de blog.",
+    "configureTitle": "Configurează",
+    "npubLabel": "npub-ul tău (cheia publică Nostr)",
+    "themeLabel": "Temă",
+    "themeDark": "Întunecată",
+    "themeLight": "Luminoasă",
+    "videosLabel": "Videoclipuri",
+    "autoRefreshLabel": "Auto-reîmprospătare",
+    "refresh30": "30 min",
+    "refresh60": "1 oră",
+    "refresh120": "2 ore",
+    "refreshNever": "Niciodată",
+    "embedCodeTitle": "Cod de inserare",
+    "copy": "Copiază",
+    "copied": "Copiat!",
+    "previewTitle": "Previzualizare",
+    "previewEmpty": "Introdu npub-ul tău mai sus ca să vezi previzualizarea",
+    "iframeTitle": "Widget video Divine",
+    "previewIframeTitle": "Previzualizare widget video Divine"
+  },
+  "trendingPage": {
+    "heading": "În tendințe",
+    "subheading": "Descoperă ce e popular în comunitate",
+    "rssTitle": "DiVine - În tendințe",
+    "rssLink": "RSS"
+  },
+  "merchPage": {
+    "metaTitle": "Merch — Divine",
+    "metaDescription": "Tricouri, hanorace, șepci și alte chestii care nu se iau prea în serios. Design de Divine, imprimate și expediate de Bonfire.",
+    "ogTitle": "Merch Divine",
+    "headline": "Poartă-ți buclele.",
+    "body": "Tricouri, hanorace, șepci și alte chestii care nu se iau prea în serios.",
+    "storeCta": "Vezi tot",
+    "trust": "Design de Divine. Imprimate și expediate de Bonfire.",
+    "shopOnBonfire": "Cumpără pe Bonfire",
+    "productsAriaLabel": "Produse merch",
+    "productAriaLabel": "{{name}} pe Bonfire"
+  },
+  "eventPage": {
+    "loading": "Se încarcă evenimentul…",
+    "back": "Înapoi",
+    "noIdentifier": "Niciun identificator de eveniment.",
+    "notFound": "Eveniment negăsit",
+    "notFoundDescription": "Acest eveniment poate să nu existe pe relay-urile configurate sau de rezervă.",
+    "kindBadge": "Kind {{kind}}",
+    "listItems": "Elemente listă",
+    "listItemsDescription": "Referințele conținute în acest eveniment.",
+    "noPublicReferences": "Această listă nu conține referințe publice.",
+    "openReference": "Deschide elementul referit",
+    "noRouteAvailable": "Nicio rută disponibilă pentru această referință.",
+    "tags": "Etichete",
+    "tagCount_one": "{{count}} etichetă",
+    "tagCount_other": "{{count}} etichete",
+    "noTags": "Nicio etichetă pe acest eveniment.",
+    "rawEvent": "Eveniment brut",
+    "kindLabel": {
+      "textNote": "Notă text",
+      "comment": "Comentariu",
+      "videoList": "Listă video",
+      "followList": "Listă de urmăriri",
+      "list": "Listă {{kind}}",
+      "kind": "Kind {{kind}}"
+    },
+    "referenceLabel": {
+      "profile": "Profil",
+      "event": "Eveniment",
+      "address": "Adresă",
+      "hashtag": "Hashtag"
+    }
+  },
+  "universalUserPage": {
+    "lookingUp": "Caut utilizatorul...",
+    "userNotFound": "Utilizator negăsit",
+    "couldNotFind": "N-am găsit niciun utilizator cu {{label}}:",
+    "goHome": "Mergi la Acasă",
+    "redirecting": "Te redirecționez la profil...",
+    "lookupLabel": {
+      "vineId": "ID Vine",
+      "nip05": "Identificator NIP-05",
+      "legacyOrNip05": "nume de utilizator Vine vechi sau identificator NIP-05"
+    },
+    "notFoundDescription": {
+      "vine": "Acest utilizator Vine poate să nu fi fost încă importat în rețeaua Nostr.",
+      "nip05": "Verifică dacă identificatorul NIP-05 e corect.",
+      "legacy": "Acest nume de utilizator nu se potrivește cu un profil Vine vechi sau un handle OpenVine."
+    }
+  },
+  "atUsernamePage": {
+    "lookingUp": "Caut @{{username}}...",
+    "userNotFound": "Utilizator negăsit",
+    "couldNotFind": "N-am găsit utilizatorul",
+    "tryVisitingPrefix": "Încearcă să-i vizitezi profilul la",
+    "goHome": "Mergi la Acasă",
+    "redirecting": "Te redirecționez la profil..."
+  },
+  "appCallbackPage": {
+    "appStore": "App Store",
+    "googlePlay": "Google Play",
+    "desktop": {
+      "heading": "Deschide pe telefon",
+      "body1": "Acest link trebuie deschis în aplicația Divine de pe dispozitivul tău mobil.",
+      "body2": "Dacă ai primit acest link prin email, deschide-l pe telefonul unde ai instalat Divine."
+    },
+    "mobile": {
+      "heading": "Deschide în Divine",
+      "body": "Acest link ar trebui să se deschidă în aplicația Divine. Dacă nu s-a deschis automat:",
+      "bullet1": "• Asigură-te că Divine e instalat pe acest dispozitiv",
+      "bullet2": "• Încearcă să deschizi Divine și să te autentifici din nou",
+      "getDivine": "Ia Divine de pe {{store}}",
+      "emailHint": "Dacă ai dat click pe un link din email, asigură-te că ești pe același dispozitiv pe care te-ai înregistrat."
+    }
+  },
+  "authCallbackPage": {
+    "finishingSignIn": "Finalizez autentificarea",
+    "restoring": "Îți restaurez sesiunea de semnare și te aduc înapoi în Divine.",
+    "failedToFinish": "Autentificarea n-a putut fi finalizată",
+    "returnToSignIn": "Înapoi la autentificare"
+  },
+  "authenticDemo": {
+    "title": "Autentic",
+    "imageAlt": "Persoană care creează conținut autentic",
+    "liveLabel": "LIVE",
+    "caption": "Momente reale, de la oameni reali, nu AI"
+  },
+  "verifiedDemo": {
+    "title": "Verificat",
+    "imageAlt": "Moment autentic verificat",
+    "proofModeCertified": "Certificat ProofMode",
+    "caption": "Autenticitate dovedită criptografic"
+  },
+  "decentralizedDemo": {
+    "title": "Descentralizat",
+    "imageAlt": "Colaborare în rețea descentralizată",
+    "nostrNetwork": "Rețea Nostr",
+    "caption": "Construit pe Nostr. Conținutul tău, controlul tău"
+  },
+  "originalContentBadge": {
+    "label": "Original",
+    "tooltip": "Conținut original creat de acest utilizator"
+  },
+  "videoVerificationBadgeRow": {
+    "detailsAriaLabel": "Vezi detaliile de verificare video"
+  },
+  "cameraRecorder": {
+    "accessRequired": "Acces la cameră necesar",
+    "failedAccess": "Accesul la cameră a eșuat",
+    "goBack": "Înapoi",
+    "initializing": "Inițializez camera...",
+    "durationOfMax": "{{current}} / 6.0s",
+    "rec": "REC",
+    "clipLabel": "Clip {{index}}: {{duration}}",
+    "releaseToPause": "Eliberează ca să pui pauză",
+    "holdToRecord": "Ține apăsat ca să înregistrezi",
+    "instructionsRecord": "Ține apăsat butonul ca să înregistrezi, eliberează ca să pui pauză",
+    "maxReached": "Maximul de 6 secunde atins",
+    "clipsRemaining_one": "{{count}} clip • {{remaining}} rămase",
+    "clipsRemaining_other": "{{count}} clipuri • {{remaining}} rămase",
+    "startOver": "O iei de la capăt"
+  },
+  "comment": {
+    "loginRequiredTitle": "Autentifică-te mai întâi.",
+    "loginRequiredDescription": "Trebuie să fii autentificat ca să dai mute oamenilor.",
+    "mutedTitle": "Mut.",
+    "mutedDescription": "{{name}} nu mai e în feed-ul tău.",
+    "muteFailedTitle": "Mute-ul n-a mers.",
+    "muteFailedDescription": "Mute-ul n-a putut fi salvat. Mai încerci o dată?",
+    "sending": "(se trimite...)",
+    "reply": "Răspunde",
+    "replyCount_one": "{{count}} răspuns",
+    "replyCount_other": "{{count}} răspunsuri",
+    "optionsLabel": "Opțiuni comentariu",
+    "deleteComment": "Șterge comentariul",
+    "reportComment": "Raportează comentariul",
+    "reportUser": "Raportează utilizatorul",
+    "muteUser": "Mute utilizator",
+    "replyPlaceholder": "Răspunde..."
+  },
+  "pwaInstallPrompt": {
+    "close": "Închide",
+    "getDivine": "Ia Divine",
+    "installDivineWeb": "Instalează Divine Web",
+    "descriptionNative": "Instalează aplicația nativă pentru cea mai bună experiență Divine",
+    "descriptionWeb": "Instalează aplicația noastră pentru o experiență mai bună",
+    "appStore": "App Store",
+    "appStoreAria": "Descarcă Divine din App Store",
+    "googlePlay": "Google Play",
+    "googlePlayAria": "Ia Divine de pe Google Play",
+    "install": "Instalează",
+    "notNow": "Nu acum"
+  },
+  "relaySelector": {
+    "placeholder": "Selectează relay"
+  },
+  "socialLinks": {
+    "groupLabel": "Linkuri social media",
+    "followInstagram": "Urmărește-ne pe Instagram",
+    "followReddit": "Urmărește-ne pe Reddit",
+    "joinDiscord": "Vino la noi pe Discord",
+    "followTwitter": "Urmărește-ne pe Twitter",
+    "followBluesky": "Urmărește-ne pe Bluesky",
+    "followTiktok": "Urmărește-ne pe TikTok",
+    "followGithub": "Urmărește-ne pe GitHub",
+    "followYoutube": "Urmărește-ne pe YouTube"
+  },
+  "fullscreenVideoItem": {
+    "loadError": "Videoclipul n-a putut fi încărcat",
+    "muteSuccessTitle": "Mut.",
+    "muteSuccessDescription": "{{name}} nu mai e în feed-ul tău.",
+    "muteErrorTitle": "Mute-ul n-a mers.",
+    "muteErrorDescription": "Mute-ul n-a putut fi salvat. Mai încerci o dată?",
+    "deleteVideo": "Șterge videoclipul",
+    "reportVideo": "Raportează videoclipul",
+    "sendViaMessage": "Trimite prin mesaj",
+    "reportUser": "Raportează utilizatorul",
+    "muteUser": "Mute {{name}}",
+    "viewSource": "Vezi sursa",
+    "videoEventSource": "Sursa evenimentului video"
+  },
+  "privacyPage": {
+    "title": "Politică de confidențialitate",
+    "lastUpdated": "Ultima actualizare: {{date}}"
+  },
+  "termsPage": {
+    "title": "Termeni și condiții",
+    "lastUpdated": "Ultima actualizare: {{date}}"
+  },
+  "brandPreview": {},
+  "uiSidebar": {
+    "toggleSidebar": "Comută bara laterală"
+  },
+  "uiPagination": {
+    "pagination": "paginare",
+    "previous": "Anterior",
+    "next": "Următor",
+    "goToPrevious": "Mergi la pagina anterioară",
+    "goToNext": "Mergi la pagina următoare",
+    "morePages": "Mai multe pagini"
   }
 }

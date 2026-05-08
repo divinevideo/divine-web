@@ -1012,5 +1012,302 @@
     "unpinnedDescription": "\"{{title}}\" sudah lepas dari pin kamu.",
     "unpinErrorTitle": "Lepas pin tersangkut.",
     "unpinErrorDescription": "Tidak bisa melepas pin. Coba lagi?"
+  },
+  "indexPage": {
+    "seoTitle": "Divine Web - Video Loop Pendek di Nostr",
+    "seoDescription": "Tonton dan bagikan video loop 6 detik di jaringan Nostr yang terdesentralisasi.",
+    "heading": "Beranda",
+    "subheadingDefault": "Video dari orang yang kamu ikuti",
+    "subheadingCount_one": "Video dari {{count}} orang yang kamu ikuti",
+    "subheadingCount_other": "Video dari {{count}} orang yang kamu ikuti",
+    "emptyTitle": "Feed beranda kamu kosong",
+    "emptyDescription": "Ikuti kreator untuk melihat video mereka di sini. Jelajahi video trending untuk menemukan orang yang bisa kamu ikuti!",
+    "exploreVideos": "Jelajahi Video"
+  },
+  "notificationsPage": {
+    "heading": "Notifikasi",
+    "tabs": {
+      "all": "Semua",
+      "unread": "Belum dibaca",
+      "likes": "Suka",
+      "comments": "Komentar",
+      "follows": "Pengikut",
+      "reposts": "Repost",
+      "zaps": "Zap"
+    },
+    "empty": {
+      "all": {
+        "title": "Sepi banget. Tidak ada apa-apa.",
+        "description": "Saat orang bereaksi ke konten kamu, semua muncul di sini."
+      },
+      "unread": {
+        "title": "Kamu sudah update semua.",
+        "description": "Aktivitas baru akan muncul di sini lebih dulu."
+      },
+      "likes": {
+        "title": "Belum ada notifikasi suka.",
+        "description": "Kalau ada yang suka video kamu, muncul di sini."
+      },
+      "comments": {
+        "title": "Belum ada notifikasi komentar.",
+        "description": "Balasan dan komentar di video kamu akan muncul di sini."
+      },
+      "follows": {
+        "title": "Belum ada notifikasi pengikut.",
+        "description": "Pengikut baru akan muncul di sini."
+      },
+      "reposts": {
+        "title": "Belum ada notifikasi repost.",
+        "description": "Repost video kamu akan muncul di sini."
+      },
+      "zaps": {
+        "title": "Belum ada notifikasi zap.",
+        "description": "Zap di video kamu akan muncul di sini."
+      }
+    },
+    "errorTitle": "Gagal memuat notifikasi",
+    "errorFallback": "Coba lagi nanti ya",
+    "sectionNew": "Baru",
+    "sectionEarlier": "Sebelumnya"
+  },
+  "getEmbedPage": {
+    "title": "Embed Widget Divine",
+    "subtitle": "Tambahkan video Divine terbaru kamu ke website atau sidebar blog mana pun.",
+    "configureTitle": "Atur",
+    "npubLabel": "npub kamu (kunci publik Nostr)",
+    "themeLabel": "Tema",
+    "themeDark": "Gelap",
+    "themeLight": "Terang",
+    "videosLabel": "Video",
+    "autoRefreshLabel": "Auto-refresh",
+    "refresh30": "30 menit",
+    "refresh60": "1 jam",
+    "refresh120": "2 jam",
+    "refreshNever": "Tidak pernah",
+    "embedCodeTitle": "Kode Embed",
+    "copy": "Salin",
+    "copied": "Tersalin!",
+    "previewTitle": "Pratinjau",
+    "previewEmpty": "Masukkan npub kamu di atas untuk melihat pratinjau",
+    "iframeTitle": "Widget Video Divine",
+    "previewIframeTitle": "Pratinjau Widget Video Divine"
+  },
+  "trendingPage": {
+    "heading": "Trending",
+    "subheading": "Temukan apa yang lagi populer di komunitas",
+    "rssTitle": "DiVine - Trending",
+    "rssLink": "RSS"
+  },
+  "merchPage": {
+    "metaTitle": "Merch — Divine",
+    "metaDescription": "Kaos, hoodie, topi, dan barang lain yang santai aja. Didesain oleh Divine, dicetak dan dikirim oleh Bonfire.",
+    "ogTitle": "Merch Divine",
+    "headline": "Pakai loop kamu.",
+    "body": "Kaos, hoodie, topi, dan barang lain yang nggak terlalu serius.",
+    "storeCta": "Belanja semuanya",
+    "trust": "Didesain oleh Divine. Dicetak dan dikirim oleh Bonfire.",
+    "shopOnBonfire": "Belanja di Bonfire",
+    "productsAriaLabel": "Produk merch",
+    "productAriaLabel": "{{name}} di Bonfire"
+  },
+  "eventPage": {
+    "loading": "Memuat event…",
+    "back": "Kembali",
+    "noIdentifier": "Tidak ada pengenal event yang diberikan.",
+    "notFound": "Event tidak ditemukan",
+    "notFoundDescription": "Event ini mungkin tidak ada di relay yang dikonfigurasi atau relay cadangan.",
+    "kindBadge": "Kind {{kind}}",
+    "listItems": "Item Daftar",
+    "listItemsDescription": "Referensi yang ada di event ini.",
+    "noPublicReferences": "Daftar ini tidak berisi referensi publik.",
+    "openReference": "Buka item yang direferensikan",
+    "noRouteAvailable": "Tidak ada rute tersedia untuk referensi ini.",
+    "tags": "Tag",
+    "tagCount_one": "{{count}} tag",
+    "tagCount_other": "{{count}} tag",
+    "noTags": "Tidak ada tag di event ini.",
+    "rawEvent": "Event Mentah",
+    "kindLabel": {
+      "textNote": "Catatan Teks",
+      "comment": "Komentar",
+      "videoList": "Daftar Video",
+      "followList": "Daftar Follow",
+      "list": "Daftar {{kind}}",
+      "kind": "Kind {{kind}}"
+    },
+    "referenceLabel": {
+      "profile": "Profil",
+      "event": "Event",
+      "address": "Alamat",
+      "hashtag": "Hashtag"
+    }
+  },
+  "universalUserPage": {
+    "lookingUp": "Mencari pengguna...",
+    "userNotFound": "Pengguna Tidak Ditemukan",
+    "couldNotFind": "Tidak bisa menemukan pengguna dengan {{label}}:",
+    "goHome": "Ke Beranda",
+    "redirecting": "Mengarahkan ke profil...",
+    "lookupLabel": {
+      "vineId": "ID Vine",
+      "nip05": "Pengenal NIP-05",
+      "legacyOrNip05": "username Vine lama atau pengenal NIP-05"
+    },
+    "notFoundDescription": {
+      "vine": "Pengguna Vine ini mungkin belum diimpor ke jaringan Nostr.",
+      "nip05": "Cek lagi pengenal NIP-05 nya benar atau tidak.",
+      "legacy": "Username ini tidak cocok dengan profil Vine lama atau handle OpenVine."
+    }
+  },
+  "atUsernamePage": {
+    "lookingUp": "Mencari @{{username}}...",
+    "userNotFound": "Pengguna Tidak Ditemukan",
+    "couldNotFind": "Tidak bisa menemukan pengguna",
+    "tryVisitingPrefix": "Coba kunjungi profil mereka di",
+    "goHome": "Ke Beranda",
+    "redirecting": "Mengarahkan ke profil..."
+  },
+  "appCallbackPage": {
+    "appStore": "App Store",
+    "googlePlay": "Google Play",
+    "desktop": {
+      "heading": "Buka di Ponsel Kamu",
+      "body1": "Link ini perlu dibuka di aplikasi Divine di perangkat mobile kamu.",
+      "body2": "Kalau kamu menerima link ini lewat email, buka di ponsel tempat Divine sudah terinstall."
+    },
+    "mobile": {
+      "heading": "Buka di Divine",
+      "body": "Link ini seharusnya terbuka di aplikasi Divine. Kalau tidak terbuka otomatis:",
+      "bullet1": "• Pastikan Divine sudah terinstall di perangkat ini",
+      "bullet2": "• Coba buka Divine dan login lagi",
+      "getDivine": "Dapatkan Divine di {{store}}",
+      "emailHint": "Kalau kamu klik link dari email, pastikan kamu di perangkat yang sama saat daftar."
+    }
+  },
+  "authCallbackPage": {
+    "finishingSignIn": "Menyelesaikan login",
+    "restoring": "Memulihkan sesi signing kamu dan membawamu kembali ke Divine.",
+    "failedToFinish": "Gagal menyelesaikan login",
+    "returnToSignIn": "Kembali ke login"
+  },
+  "authenticDemo": {
+    "title": "Autentik",
+    "imageAlt": "Orang yang membuat konten autentik",
+    "liveLabel": "LIVE",
+    "caption": "Momen nyata dari manusia nyata, bukan AI"
+  },
+  "verifiedDemo": {
+    "title": "Terverifikasi",
+    "imageAlt": "Momen autentik terverifikasi",
+    "proofModeCertified": "Bersertifikat ProofMode",
+    "caption": "Keaslian terbukti secara kriptografis"
+  },
+  "decentralizedDemo": {
+    "title": "Terdesentralisasi",
+    "imageAlt": "Kolaborasi jaringan terdesentralisasi",
+    "nostrNetwork": "Jaringan Nostr",
+    "caption": "Dibangun di atas Nostr. Konten kamu, kendali kamu"
+  },
+  "originalContentBadge": {
+    "label": "Original",
+    "tooltip": "Konten original yang dibuat oleh pengguna ini"
+  },
+  "videoVerificationBadgeRow": {
+    "detailsAriaLabel": "Lihat detail verifikasi video"
+  },
+  "cameraRecorder": {
+    "accessRequired": "Akses Kamera Dibutuhkan",
+    "failedAccess": "Gagal mengakses kamera",
+    "goBack": "Kembali",
+    "initializing": "Menginisialisasi kamera...",
+    "durationOfMax": "{{current}} / 6.0s",
+    "rec": "REC",
+    "clipLabel": "Klip {{index}}: {{duration}}",
+    "releaseToPause": "Lepas untuk jeda",
+    "holdToRecord": "Tahan untuk merekam",
+    "instructionsRecord": "Tahan tombol untuk merekam, lepas untuk jeda",
+    "maxReached": "Maksimum 6 detik tercapai",
+    "clipsRemaining_one": "{{count}} klip • sisa {{remaining}}",
+    "clipsRemaining_other": "{{count}} klip • sisa {{remaining}}",
+    "startOver": "Mulai Ulang"
+  },
+  "comment": {
+    "loginRequiredTitle": "Login dulu.",
+    "loginRequiredDescription": "Kamu perlu login untuk membisukan orang.",
+    "mutedTitle": "Dibisukan.",
+    "mutedDescription": "{{name}} sudah hilang dari feed kamu.",
+    "muteFailedTitle": "Bisu gagal tersimpan.",
+    "muteFailedDescription": "Tidak bisa menyimpan bisu. Coba lagi?",
+    "sending": "(mengirim...)",
+    "reply": "Balas",
+    "replyCount_one": "{{count}} balasan",
+    "replyCount_other": "{{count}} balasan",
+    "optionsLabel": "Opsi komentar",
+    "deleteComment": "Hapus komentar",
+    "reportComment": "Laporkan komentar",
+    "reportUser": "Laporkan pengguna",
+    "muteUser": "Bisukan pengguna",
+    "replyPlaceholder": "Tulis balasan..."
+  },
+  "pwaInstallPrompt": {
+    "close": "Tutup",
+    "getDivine": "Dapatkan Divine",
+    "installDivineWeb": "Install Divine Web",
+    "descriptionNative": "Install aplikasi native untuk pengalaman Divine terbaik",
+    "descriptionWeb": "Install aplikasi kami untuk pengalaman lebih baik",
+    "appStore": "App Store",
+    "appStoreAria": "Download Divine di App Store",
+    "googlePlay": "Google Play",
+    "googlePlayAria": "Dapatkan Divine di Google Play",
+    "install": "Install",
+    "notNow": "Nanti saja"
+  },
+  "relaySelector": {
+    "placeholder": "Pilih relay"
+  },
+  "socialLinks": {
+    "groupLabel": "Tautan media sosial",
+    "followInstagram": "Ikuti kami di Instagram",
+    "followReddit": "Ikuti kami di Reddit",
+    "joinDiscord": "Gabung di Discord",
+    "followTwitter": "Ikuti kami di Twitter",
+    "followBluesky": "Ikuti kami di Bluesky",
+    "followTiktok": "Ikuti kami di TikTok",
+    "followGithub": "Ikuti kami di GitHub",
+    "followYoutube": "Ikuti kami di YouTube"
+  },
+  "fullscreenVideoItem": {
+    "loadError": "Gagal memuat video",
+    "muteSuccessTitle": "Dibisukan.",
+    "muteSuccessDescription": "{{name}} sudah hilang dari feed kamu.",
+    "muteErrorTitle": "Bisu gagal tersimpan.",
+    "muteErrorDescription": "Tidak bisa menyimpan bisu. Coba lagi?",
+    "deleteVideo": "Hapus video",
+    "reportVideo": "Laporkan video",
+    "sendViaMessage": "Kirim via pesan",
+    "reportUser": "Laporkan pengguna",
+    "muteUser": "Bisukan {{name}}",
+    "viewSource": "Lihat sumber",
+    "videoEventSource": "Sumber Event Video"
+  },
+  "privacyPage": {
+    "title": "Kebijakan Privasi",
+    "lastUpdated": "Terakhir Diperbarui: {{date}}"
+  },
+  "termsPage": {
+    "title": "Syarat Layanan",
+    "lastUpdated": "Terakhir Diperbarui: {{date}}"
+  },
+  "brandPreview": {},
+  "uiSidebar": {
+    "toggleSidebar": "Toggle Sidebar"
+  },
+  "uiPagination": {
+    "pagination": "paginasi",
+    "previous": "Sebelumnya",
+    "next": "Berikutnya",
+    "goToPrevious": "Ke halaman sebelumnya",
+    "goToNext": "Ke halaman berikutnya",
+    "morePages": "Halaman lainnya"
   }
 }

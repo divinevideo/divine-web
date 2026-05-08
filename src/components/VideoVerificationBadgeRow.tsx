@@ -2,6 +2,7 @@
 // ABOUTME: Renders exactly one primary badge per video using the mobile decision order
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { NotDivineBadge, PossiblyAIBadge, UnverifiedBadge } from '@/components/ContentOriginBadges';
 import { ProofModeBadge } from '@/components/ProofModeBadge';
 import { VideoVerificationDetailsDialog } from '@/components/VideoVerificationDetailsDialog';
@@ -23,6 +24,7 @@ export function VideoVerificationBadgeRow({
   size = 'small',
   showDetails = true,
 }: VideoVerificationBadgeRowProps) {
+  const { t } = useTranslation();
   const { badge } = useVideoVerification(video);
   const [open, setOpen] = useState(false);
 
@@ -47,7 +49,7 @@ export function VideoVerificationBadgeRow({
       <button
         type="button"
         className="inline-flex rounded-sm"
-        aria-label="View video verification details"
+        aria-label={t('videoVerificationBadgeRow.detailsAriaLabel')}
         onClick={(event) => {
           event.preventDefault();
           event.stopPropagation();

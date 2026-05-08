@@ -1012,5 +1012,302 @@
     "unpinnedDescription": "\"{{title}}\" ist nicht mehr gepinnt.",
     "unpinErrorTitle": "Lösen geklemmt.",
     "unpinErrorDescription": "Konnte nicht lösen. Nochmal versuchen?"
+  },
+  "indexPage": {
+    "seoTitle": "Divine Web - Kurze Loop-Videos auf Nostr",
+    "seoDescription": "Schau und teile 6-Sekunden-Loop-Videos im dezentralen Nostr-Netzwerk.",
+    "heading": "Startseite",
+    "subheadingDefault": "Videos von Leuten, denen du folgst",
+    "subheadingCount_one": "Videos von {{count}} Person, der du folgst",
+    "subheadingCount_other": "Videos von {{count}} Leuten, denen du folgst",
+    "emptyTitle": "Dein Home-Feed ist leer",
+    "emptyDescription": "Folge Creatorn, um ihre Videos hier zu sehen. Stöbere in den Trends und finde deine Leute!",
+    "exploreVideos": "Videos entdecken"
+  },
+  "notificationsPage": {
+    "heading": "Benachrichtigungen",
+    "tabs": {
+      "all": "Alle",
+      "unread": "Ungelesen",
+      "likes": "Likes",
+      "comments": "Kommentare",
+      "follows": "Follows",
+      "reposts": "Reposts",
+      "zaps": "Zaps"
+    },
+    "empty": {
+      "all": {
+        "title": "Alles ruhig. Nichts zu melden.",
+        "description": "Wenn Leute auf dein Zeug reagieren, landet es direkt hier."
+      },
+      "unread": {
+        "title": "Du bist auf dem Laufenden.",
+        "description": "Neue Aktivität erscheint zuerst hier."
+      },
+      "likes": {
+        "title": "Noch keine Like-Benachrichtigungen.",
+        "description": "Wenn jemand eines deiner Videos liked, taucht es hier auf."
+      },
+      "comments": {
+        "title": "Noch keine Kommentar-Benachrichtigungen.",
+        "description": "Antworten und Kommentare zu deinen Videos erscheinen hier."
+      },
+      "follows": {
+        "title": "Noch keine Follow-Benachrichtigungen.",
+        "description": "Neue Follower zeigen sich hier."
+      },
+      "reposts": {
+        "title": "Noch keine Repost-Benachrichtigungen.",
+        "description": "Reposts deiner Videos tauchen hier auf."
+      },
+      "zaps": {
+        "title": "Noch keine Zap-Benachrichtigungen.",
+        "description": "Zaps auf deine Videos erscheinen hier."
+      }
+    },
+    "errorTitle": "Benachrichtigungen konnten nicht geladen werden",
+    "errorFallback": "Versuch es später nochmal",
+    "sectionNew": "Neu",
+    "sectionEarlier": "Älter"
+  },
+  "getEmbedPage": {
+    "title": "Divine-Widget einbetten",
+    "subtitle": "Bring deine neuesten Divine-Videos auf jede Website oder in jede Blog-Sidebar.",
+    "configureTitle": "Konfigurieren",
+    "npubLabel": "Dein npub (öffentlicher Nostr-Schlüssel)",
+    "themeLabel": "Theme",
+    "themeDark": "Dunkel",
+    "themeLight": "Hell",
+    "videosLabel": "Videos",
+    "autoRefreshLabel": "Auto-Aktualisierung",
+    "refresh30": "30 Min",
+    "refresh60": "1 Stunde",
+    "refresh120": "2 Stunden",
+    "refreshNever": "Nie",
+    "embedCodeTitle": "Embed-Code",
+    "copy": "Kopieren",
+    "copied": "Kopiert!",
+    "previewTitle": "Vorschau",
+    "previewEmpty": "Gib oben deinen npub ein, um eine Vorschau zu sehen",
+    "iframeTitle": "Divine Video-Widget",
+    "previewIframeTitle": "Divine Video-Widget Vorschau"
+  },
+  "trendingPage": {
+    "heading": "Trending",
+    "subheading": "Schau, was in der Community gerade läuft",
+    "rssTitle": "DiVine - Trending",
+    "rssLink": "RSS"
+  },
+  "merchPage": {
+    "metaTitle": "Merch — Divine",
+    "metaDescription": "Shirts, Hoodies, Caps und Zeug, das sich nicht zu ernst nimmt. Designt von Divine, gedruckt und verschickt von Bonfire.",
+    "ogTitle": "Divine Merch",
+    "headline": "Trag deine Loops.",
+    "body": "Shirts, Hoodies, Caps und Zeug, das sich nicht zu ernst nimmt.",
+    "storeCta": "Alles ansehen",
+    "trust": "Designt von Divine. Gedruckt und verschickt von Bonfire.",
+    "shopOnBonfire": "Auf Bonfire shoppen",
+    "productsAriaLabel": "Merch-Produkte",
+    "productAriaLabel": "{{name}} auf Bonfire"
+  },
+  "eventPage": {
+    "loading": "Event wird geladen…",
+    "back": "Zurück",
+    "noIdentifier": "Keine Event-Kennung angegeben.",
+    "notFound": "Event nicht gefunden",
+    "notFoundDescription": "Dieses Event existiert vielleicht nicht auf den konfigurierten oder Fallback-Relays.",
+    "kindBadge": "Kind {{kind}}",
+    "listItems": "Listeneinträge",
+    "listItemsDescription": "Referenzen, die in diesem Event enthalten sind.",
+    "noPublicReferences": "Diese Liste enthält keine öffentlichen Referenzen.",
+    "openReference": "Referenziertes Element öffnen",
+    "noRouteAvailable": "Keine Route für diese Referenz verfügbar.",
+    "tags": "Tags",
+    "tagCount_one": "{{count}} Tag",
+    "tagCount_other": "{{count}} Tags",
+    "noTags": "Keine Tags an diesem Event.",
+    "rawEvent": "Rohes Event",
+    "kindLabel": {
+      "textNote": "Textnotiz",
+      "comment": "Kommentar",
+      "videoList": "Videoliste",
+      "followList": "Follow-Liste",
+      "list": "Liste {{kind}}",
+      "kind": "Kind {{kind}}"
+    },
+    "referenceLabel": {
+      "profile": "Profil",
+      "event": "Event",
+      "address": "Adresse",
+      "hashtag": "Hashtag"
+    }
+  },
+  "universalUserPage": {
+    "lookingUp": "Nutzer wird gesucht...",
+    "userNotFound": "Nutzer nicht gefunden",
+    "couldNotFind": "Konnte keinen Nutzer mit {{label}} finden:",
+    "goHome": "Zur Startseite",
+    "redirecting": "Weiterleitung zum Profil...",
+    "lookupLabel": {
+      "vineId": "Vine-ID",
+      "nip05": "NIP-05-Kennung",
+      "legacyOrNip05": "alter Vine-Username oder NIP-05-Kennung"
+    },
+    "notFoundDescription": {
+      "vine": "Dieser Vine-Nutzer wurde vielleicht noch nicht ins Nostr-Netzwerk importiert.",
+      "nip05": "Bitte prüf, ob die NIP-05-Kennung stimmt.",
+      "legacy": "Dieser Username passt zu keinem alten Vine-Profil oder OpenVine-Handle."
+    }
+  },
+  "atUsernamePage": {
+    "lookingUp": "@{{username}} wird gesucht...",
+    "userNotFound": "Nutzer nicht gefunden",
+    "couldNotFind": "Konnte den Nutzer nicht finden",
+    "tryVisitingPrefix": "Versuch, das Profil hier zu besuchen:",
+    "goHome": "Zur Startseite",
+    "redirecting": "Weiterleitung zum Profil..."
+  },
+  "appCallbackPage": {
+    "appStore": "App Store",
+    "googlePlay": "Google Play",
+    "desktop": {
+      "heading": "Auf deinem Handy öffnen",
+      "body1": "Dieser Link muss in der Divine-App auf deinem Handy geöffnet werden.",
+      "body2": "Wenn du den Link per E-Mail bekommen hast, öffne ihn auf dem Handy, auf dem Divine installiert ist."
+    },
+    "mobile": {
+      "heading": "In Divine öffnen",
+      "body": "Dieser Link sollte in der Divine-App öffnen. Falls das nicht automatisch passiert ist:",
+      "bullet1": "• Stell sicher, dass Divine auf diesem Gerät installiert ist",
+      "bullet2": "• Öffne Divine und melde dich nochmal an",
+      "getDivine": "Divine im {{store}} holen",
+      "emailHint": "Falls du auf einen Link aus einer E-Mail geklickt hast, sei auf dem gleichen Gerät, auf dem du dich registriert hast."
+    }
+  },
+  "authCallbackPage": {
+    "finishingSignIn": "Anmeldung wird abgeschlossen",
+    "restoring": "Wir stellen deine Sitzung wieder her und bringen dich zurück in Divine.",
+    "failedToFinish": "Anmeldung konnte nicht abgeschlossen werden",
+    "returnToSignIn": "Zurück zur Anmeldung"
+  },
+  "authenticDemo": {
+    "title": "Echt",
+    "imageAlt": "Person, die echte Inhalte erstellt",
+    "liveLabel": "LIVE",
+    "caption": "Echte Momente von echten Menschen, keine KI"
+  },
+  "verifiedDemo": {
+    "title": "Verifiziert",
+    "imageAlt": "Verifizierter echter Moment",
+    "proofModeCertified": "ProofMode-zertifiziert",
+    "caption": "Kryptografisch belegte Echtheit"
+  },
+  "decentralizedDemo": {
+    "title": "Dezentral",
+    "imageAlt": "Dezentrale Netzwerk-Zusammenarbeit",
+    "nostrNetwork": "Nostr-Netzwerk",
+    "caption": "Auf Nostr gebaut. Deine Inhalte, deine Kontrolle"
+  },
+  "originalContentBadge": {
+    "label": "Original",
+    "tooltip": "Originalinhalt von diesem Nutzer"
+  },
+  "videoVerificationBadgeRow": {
+    "detailsAriaLabel": "Details zur Video-Verifizierung ansehen"
+  },
+  "cameraRecorder": {
+    "accessRequired": "Kamerazugriff nötig",
+    "failedAccess": "Kamerazugriff fehlgeschlagen",
+    "goBack": "Zurück",
+    "initializing": "Kamera wird gestartet...",
+    "durationOfMax": "{{current}} / 6.0s",
+    "rec": "REC",
+    "clipLabel": "Clip {{index}}: {{duration}}",
+    "releaseToPause": "Loslassen, um zu pausieren",
+    "holdToRecord": "Halten, um aufzunehmen",
+    "instructionsRecord": "Knopf halten zum Aufnehmen, loslassen zum Pausieren",
+    "maxReached": "6 Sekunden Maximum erreicht",
+    "clipsRemaining_one": "{{count}} Clip • {{remaining}} übrig",
+    "clipsRemaining_other": "{{count}} Clips • {{remaining}} übrig",
+    "startOver": "Von vorn"
+  },
+  "comment": {
+    "loginRequiredTitle": "Erst anmelden.",
+    "loginRequiredDescription": "Du musst angemeldet sein, um Leute zu muten.",
+    "mutedTitle": "Gemutet.",
+    "mutedDescription": "{{name}} ist aus deinem Feed raus.",
+    "muteFailedTitle": "Mute hat nicht geklappt.",
+    "muteFailedDescription": "Konnte den Mute nicht speichern. Nochmal versuchen?",
+    "sending": "(wird gesendet...)",
+    "reply": "Antworten",
+    "replyCount_one": "{{count}} Antwort",
+    "replyCount_other": "{{count}} Antworten",
+    "optionsLabel": "Kommentaroptionen",
+    "deleteComment": "Kommentar löschen",
+    "reportComment": "Kommentar melden",
+    "reportUser": "Nutzer melden",
+    "muteUser": "Nutzer muten",
+    "replyPlaceholder": "Antwort schreiben..."
+  },
+  "pwaInstallPrompt": {
+    "close": "Schließen",
+    "getDivine": "Divine holen",
+    "installDivineWeb": "Divine Web installieren",
+    "descriptionNative": "Installier die native App für das beste Divine-Erlebnis",
+    "descriptionWeb": "Installier unsere App für ein besseres Erlebnis",
+    "appStore": "App Store",
+    "appStoreAria": "Divine im App Store laden",
+    "googlePlay": "Google Play",
+    "googlePlayAria": "Divine bei Google Play holen",
+    "install": "Installieren",
+    "notNow": "Jetzt nicht"
+  },
+  "relaySelector": {
+    "placeholder": "Relay auswählen"
+  },
+  "socialLinks": {
+    "groupLabel": "Social-Media-Links",
+    "followInstagram": "Folg uns auf Instagram",
+    "followReddit": "Folg uns auf Reddit",
+    "joinDiscord": "Komm zu uns auf Discord",
+    "followTwitter": "Folg uns auf Twitter",
+    "followBluesky": "Folg uns auf Bluesky",
+    "followTiktok": "Folg uns auf TikTok",
+    "followGithub": "Folg uns auf GitHub",
+    "followYoutube": "Folg uns auf YouTube"
+  },
+  "fullscreenVideoItem": {
+    "loadError": "Video konnte nicht geladen werden",
+    "muteSuccessTitle": "Gemutet.",
+    "muteSuccessDescription": "{{name}} ist aus deinem Feed raus.",
+    "muteErrorTitle": "Mute hat nicht geklappt.",
+    "muteErrorDescription": "Konnte den Mute nicht speichern. Nochmal versuchen?",
+    "deleteVideo": "Video löschen",
+    "reportVideo": "Video melden",
+    "sendViaMessage": "Per Nachricht senden",
+    "reportUser": "Nutzer melden",
+    "muteUser": "{{name}} muten",
+    "viewSource": "Quelle ansehen",
+    "videoEventSource": "Video-Event-Quelle"
+  },
+  "privacyPage": {
+    "title": "Datenschutzerklärung",
+    "lastUpdated": "Zuletzt aktualisiert: {{date}}"
+  },
+  "termsPage": {
+    "title": "Nutzungsbedingungen",
+    "lastUpdated": "Zuletzt aktualisiert: {{date}}"
+  },
+  "brandPreview": {},
+  "uiSidebar": {
+    "toggleSidebar": "Sidebar umschalten"
+  },
+  "uiPagination": {
+    "pagination": "Seitennavigation",
+    "previous": "Zurück",
+    "next": "Weiter",
+    "goToPrevious": "Zur vorherigen Seite",
+    "goToNext": "Zur nächsten Seite",
+    "morePages": "Mehr Seiten"
   }
 }

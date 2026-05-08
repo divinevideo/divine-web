@@ -1016,5 +1016,302 @@
     "unpinnedDescription": "\"{{title}}\" أُزيل من تثبيتاتك.",
     "unpinErrorTitle": "تعثّر إلغاء التثبيت.",
     "unpinErrorDescription": "تعذّر إلغاء التثبيت. هل تجرب من جديد؟"
+  },
+  "indexPage": {
+    "seoTitle": "Divine Web - مقاطع فيديو قصيرة متكررة على Nostr",
+    "seoDescription": "شاهد وشارك مقاطع فيديو متكررة مدتها 6 ثوانٍ على شبكة Nostr اللامركزية.",
+    "heading": "الرئيسية",
+    "subheadingDefault": "مقاطع فيديو من الأشخاص الذين تتابعهم",
+    "subheadingCount_one": "مقاطع فيديو من {{count}} شخص تتابعه",
+    "subheadingCount_other": "مقاطع فيديو من {{count}} أشخاص تتابعهم",
+    "emptyTitle": "خلاصتك الرئيسية فارغة",
+    "emptyDescription": "تابع المبدعين لمشاهدة مقاطعهم هنا. استكشف المقاطع الرائجة لتجد أشخاصًا تتابعهم!",
+    "exploreVideos": "استكشف المقاطع"
+  },
+  "notificationsPage": {
+    "heading": "الإشعارات",
+    "tabs": {
+      "all": "الكل",
+      "unread": "غير المقروءة",
+      "likes": "الإعجابات",
+      "comments": "التعليقات",
+      "follows": "المتابعات",
+      "reposts": "إعادة النشر",
+      "zaps": "Zaps"
+    },
+    "empty": {
+      "all": {
+        "title": "كل شيء هادئ. لا شيء للإشارة إليه.",
+        "description": "عندما يتفاعل الناس مع محتواك، سيظهر هنا مباشرة."
+      },
+      "unread": {
+        "title": "أنت على اطلاع بكل شيء.",
+        "description": "ستظهر النشاطات الجديدة هنا أولًا."
+      },
+      "likes": {
+        "title": "لا توجد إشعارات إعجاب بعد.",
+        "description": "عندما يعجب أحدهم بأحد مقاطعك، سيظهر ذلك هنا."
+      },
+      "comments": {
+        "title": "لا توجد إشعارات تعليقات بعد.",
+        "description": "ستظهر هنا الردود والتعليقات على مقاطعك."
+      },
+      "follows": {
+        "title": "لا توجد إشعارات متابعة بعد.",
+        "description": "سيظهر المتابعون الجدد هنا."
+      },
+      "reposts": {
+        "title": "لا توجد إشعارات إعادة نشر بعد.",
+        "description": "ستظهر هنا عمليات إعادة نشر مقاطعك."
+      },
+      "zaps": {
+        "title": "لا توجد إشعارات Zaps بعد.",
+        "description": "ستظهر هنا Zaps على مقاطعك."
+      }
+    },
+    "errorTitle": "تعذّر تحميل الإشعارات",
+    "errorFallback": "يرجى المحاولة لاحقًا",
+    "sectionNew": "جديد",
+    "sectionEarlier": "في وقت سابق"
+  },
+  "getEmbedPage": {
+    "title": "تضمين أداة Divine",
+    "subtitle": "أضف أحدث مقاطع Divine الخاصة بك إلى أي موقع أو شريط جانبي للمدونة.",
+    "configureTitle": "الإعدادات",
+    "npubLabel": "npub الخاص بك (مفتاح Nostr العام)",
+    "themeLabel": "المظهر",
+    "themeDark": "داكن",
+    "themeLight": "فاتح",
+    "videosLabel": "المقاطع",
+    "autoRefreshLabel": "التحديث التلقائي",
+    "refresh30": "30 دقيقة",
+    "refresh60": "ساعة واحدة",
+    "refresh120": "ساعتان",
+    "refreshNever": "أبدًا",
+    "embedCodeTitle": "كود التضمين",
+    "copy": "نسخ",
+    "copied": "تم النسخ!",
+    "previewTitle": "معاينة",
+    "previewEmpty": "أدخل npub أعلاه لرؤية المعاينة",
+    "iframeTitle": "أداة فيديو Divine",
+    "previewIframeTitle": "معاينة أداة فيديو Divine"
+  },
+  "trendingPage": {
+    "heading": "الرائج",
+    "subheading": "اكتشف ما هو شائع في المجتمع",
+    "rssTitle": "DiVine - الرائج",
+    "rssLink": "RSS"
+  },
+  "merchPage": {
+    "metaTitle": "منتجات — Divine",
+    "metaDescription": "تي شيرتات، هوديز، قبعات، وأشياء لا تأخذ نفسها بجدية. صُمّمت بواسطة Divine، وتُطبع وتُشحن بواسطة Bonfire.",
+    "ogTitle": "منتجات Divine",
+    "headline": "ارتدِ مقاطعك المتكررة.",
+    "body": "تي شيرتات، هوديز، قبعات، وأشياء لا تأخذ نفسها بجدية.",
+    "storeCta": "تسوق كل شيء",
+    "trust": "صُمّمت بواسطة Divine. تُطبع وتُشحن بواسطة Bonfire.",
+    "shopOnBonfire": "تسوق على Bonfire",
+    "productsAriaLabel": "منتجات Divine",
+    "productAriaLabel": "{{name}} على Bonfire"
+  },
+  "eventPage": {
+    "loading": "جاري تحميل الحدث…",
+    "back": "رجوع",
+    "noIdentifier": "لم يتم تقديم معرّف الحدث.",
+    "notFound": "الحدث غير موجود",
+    "notFoundDescription": "قد لا يكون هذا الحدث موجودًا على المرحّلات المهيأة أو الاحتياطية.",
+    "kindBadge": "النوع {{kind}}",
+    "listItems": "عناصر القائمة",
+    "listItemsDescription": "المراجع الموجودة في هذا الحدث.",
+    "noPublicReferences": "لا تحتوي هذه القائمة على أي مراجع عامة.",
+    "openReference": "فتح العنصر المُشار إليه",
+    "noRouteAvailable": "لا يوجد مسار متاح لهذا المرجع.",
+    "tags": "الوسوم",
+    "tagCount_one": "{{count}} وسم",
+    "tagCount_other": "{{count}} وسوم",
+    "noTags": "لا توجد وسوم على هذا الحدث.",
+    "rawEvent": "الحدث الخام",
+    "kindLabel": {
+      "textNote": "ملاحظة نصية",
+      "comment": "تعليق",
+      "videoList": "قائمة فيديو",
+      "followList": "قائمة متابعة",
+      "list": "قائمة {{kind}}",
+      "kind": "النوع {{kind}}"
+    },
+    "referenceLabel": {
+      "profile": "الملف الشخصي",
+      "event": "الحدث",
+      "address": "العنوان",
+      "hashtag": "وسم"
+    }
+  },
+  "universalUserPage": {
+    "lookingUp": "جاري البحث عن المستخدم...",
+    "userNotFound": "المستخدم غير موجود",
+    "couldNotFind": "تعذّر العثور على مستخدم بـ {{label}}:",
+    "goHome": "الذهاب إلى الرئيسية",
+    "redirecting": "جاري إعادة التوجيه إلى الملف الشخصي...",
+    "lookupLabel": {
+      "vineId": "معرّف Vine",
+      "nip05": "معرّف NIP-05",
+      "legacyOrNip05": "اسم مستخدم Vine القديم أو معرّف NIP-05"
+    },
+    "notFoundDescription": {
+      "vine": "قد لا يكون مستخدم Vine هذا قد تم استيراده إلى شبكة Nostr بعد.",
+      "nip05": "يرجى التأكد من صحة معرّف NIP-05.",
+      "legacy": "اسم المستخدم هذا لا يطابق ملف Vine قديم أو حساب OpenVine."
+    }
+  },
+  "atUsernamePage": {
+    "lookingUp": "جاري البحث عن @{{username}}...",
+    "userNotFound": "المستخدم غير موجود",
+    "couldNotFind": "تعذّر العثور على المستخدم",
+    "tryVisitingPrefix": "حاول زيارة ملفه الشخصي على",
+    "goHome": "الذهاب إلى الرئيسية",
+    "redirecting": "جاري إعادة التوجيه إلى الملف الشخصي..."
+  },
+  "appCallbackPage": {
+    "appStore": "App Store",
+    "googlePlay": "Google Play",
+    "desktop": {
+      "heading": "افتح على هاتفك",
+      "body1": "يجب فتح هذا الرابط في تطبيق Divine على جهازك المحمول.",
+      "body2": "إذا تلقيت هذا الرابط عبر البريد الإلكتروني، فافتحه على الهاتف الذي ثبّت عليه Divine."
+    },
+    "mobile": {
+      "heading": "افتح في Divine",
+      "body": "يجب أن يفتح هذا الرابط في تطبيق Divine. إذا لم يفتح تلقائيًا:",
+      "bullet1": "• تأكد من تثبيت Divine على هذا الجهاز",
+      "bullet2": "• حاول فتح Divine وتسجيل الدخول من جديد",
+      "getDivine": "احصل على Divine من {{store}}",
+      "emailHint": "إذا ضغطت على رابط من البريد الإلكتروني، تأكد أنك على نفس الجهاز الذي سجّلت منه."
+    }
+  },
+  "authCallbackPage": {
+    "finishingSignIn": "جاري إتمام تسجيل الدخول",
+    "restoring": "جاري استعادة جلسة التوقيع وإعادتك إلى Divine.",
+    "failedToFinish": "تعذّر إتمام تسجيل الدخول",
+    "returnToSignIn": "العودة إلى تسجيل الدخول"
+  },
+  "authenticDemo": {
+    "title": "أصيل",
+    "imageAlt": "شخص يُنشئ محتوى أصيلًا",
+    "liveLabel": "مباشر",
+    "caption": "لحظات حقيقية من بشر حقيقيين، لا ذكاء اصطناعي"
+  },
+  "verifiedDemo": {
+    "title": "موثّق",
+    "imageAlt": "لحظة أصيلة موثّقة",
+    "proofModeCertified": "موثّق بـ ProofMode",
+    "caption": "أصالة مُثبتة تشفيريًا"
+  },
+  "decentralizedDemo": {
+    "title": "لامركزي",
+    "imageAlt": "تعاون شبكة لامركزية",
+    "nostrNetwork": "شبكة Nostr",
+    "caption": "مبني على Nostr. محتواك تحت سيطرتك"
+  },
+  "originalContentBadge": {
+    "label": "أصلي",
+    "tooltip": "محتوى أصلي أنشأه هذا المستخدم"
+  },
+  "videoVerificationBadgeRow": {
+    "detailsAriaLabel": "عرض تفاصيل توثيق الفيديو"
+  },
+  "cameraRecorder": {
+    "accessRequired": "مطلوب صلاحية الكاميرا",
+    "failedAccess": "تعذّر الوصول إلى الكاميرا",
+    "goBack": "رجوع",
+    "initializing": "جاري تهيئة الكاميرا...",
+    "durationOfMax": "{{current}} / 6.0 ثانية",
+    "rec": "تسجيل",
+    "clipLabel": "المقطع {{index}}: {{duration}}",
+    "releaseToPause": "اترك للإيقاف المؤقت",
+    "holdToRecord": "اضغط مطوّلًا للتسجيل",
+    "instructionsRecord": "اضغط مطوّلًا على الزر للتسجيل، واتركه للإيقاف المؤقت",
+    "maxReached": "تم بلوغ الحد الأقصى 6 ثوانٍ",
+    "clipsRemaining_one": "{{count}} مقطع • متبقّي {{remaining}}",
+    "clipsRemaining_other": "{{count}} مقاطع • متبقّي {{remaining}}",
+    "startOver": "البدء من جديد"
+  },
+  "comment": {
+    "loginRequiredTitle": "سجّل الدخول أولًا.",
+    "loginRequiredDescription": "يجب تسجيل الدخول لكتم الأشخاص.",
+    "mutedTitle": "تم الكتم.",
+    "mutedDescription": "{{name}} لن يظهر في خلاصتك.",
+    "muteFailedTitle": "لم يتم الكتم.",
+    "muteFailedDescription": "تعذّر حفظ الكتم. أعد المحاولة؟",
+    "sending": "(جاري الإرسال...)",
+    "reply": "رد",
+    "replyCount_one": "{{count}} رد",
+    "replyCount_other": "{{count}} ردود",
+    "optionsLabel": "خيارات التعليق",
+    "deleteComment": "حذف التعليق",
+    "reportComment": "الإبلاغ عن التعليق",
+    "reportUser": "الإبلاغ عن المستخدم",
+    "muteUser": "كتم المستخدم",
+    "replyPlaceholder": "اكتب ردًا..."
+  },
+  "pwaInstallPrompt": {
+    "close": "إغلاق",
+    "getDivine": "احصل على Divine",
+    "installDivineWeb": "ثبّت Divine Web",
+    "descriptionNative": "ثبّت التطبيق الأصلي لتجربة Divine الأفضل",
+    "descriptionWeb": "ثبّت تطبيقنا لتجربة أفضل",
+    "appStore": "App Store",
+    "appStoreAria": "حمّل Divine من App Store",
+    "googlePlay": "Google Play",
+    "googlePlayAria": "احصل على Divine من Google Play",
+    "install": "تثبيت",
+    "notNow": "ليس الآن"
+  },
+  "relaySelector": {
+    "placeholder": "اختر مرحّلًا"
+  },
+  "socialLinks": {
+    "groupLabel": "روابط وسائل التواصل الاجتماعي",
+    "followInstagram": "تابعنا على Instagram",
+    "followReddit": "تابعنا على Reddit",
+    "joinDiscord": "انضم إلينا على Discord",
+    "followTwitter": "تابعنا على Twitter",
+    "followBluesky": "تابعنا على Bluesky",
+    "followTiktok": "تابعنا على TikTok",
+    "followGithub": "تابعنا على GitHub",
+    "followYoutube": "تابعنا على YouTube"
+  },
+  "fullscreenVideoItem": {
+    "loadError": "تعذّر تحميل الفيديو",
+    "muteSuccessTitle": "تم الكتم.",
+    "muteSuccessDescription": "{{name}} لن يظهر في خلاصتك.",
+    "muteErrorTitle": "لم يتم الكتم.",
+    "muteErrorDescription": "تعذّر حفظ الكتم. أعد المحاولة؟",
+    "deleteVideo": "حذف الفيديو",
+    "reportVideo": "الإبلاغ عن الفيديو",
+    "sendViaMessage": "إرسال عبر رسالة",
+    "reportUser": "الإبلاغ عن المستخدم",
+    "muteUser": "كتم {{name}}",
+    "viewSource": "عرض المصدر",
+    "videoEventSource": "مصدر حدث الفيديو"
+  },
+  "privacyPage": {
+    "title": "سياسة الخصوصية",
+    "lastUpdated": "آخر تحديث: {{date}}"
+  },
+  "termsPage": {
+    "title": "شروط الخدمة",
+    "lastUpdated": "آخر تحديث: {{date}}"
+  },
+  "brandPreview": {},
+  "uiSidebar": {
+    "toggleSidebar": "تبديل الشريط الجانبي"
+  },
+  "uiPagination": {
+    "pagination": "ترقيم الصفحات",
+    "previous": "السابق",
+    "next": "التالي",
+    "goToPrevious": "الذهاب إلى الصفحة السابقة",
+    "goToNext": "الذهاب إلى الصفحة التالية",
+    "morePages": "صفحات إضافية"
   }
 }

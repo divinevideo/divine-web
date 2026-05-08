@@ -1012,5 +1012,302 @@
     "unpinnedDescription": "\"{{title}}\" staat niet meer in je pins.",
     "unpinErrorTitle": "Losmaken liep vast.",
     "unpinErrorDescription": "Kon niet losmaken. Nog eens proberen?"
+  },
+  "indexPage": {
+    "seoTitle": "Divine Web - Korte loopvideo's op Nostr",
+    "seoDescription": "Bekijk en deel loopvideo's van 6 seconden op het gedecentraliseerde Nostr-netwerk.",
+    "heading": "Home",
+    "subheadingDefault": "Video's van mensen die je volgt",
+    "subheadingCount_one": "Video's van {{count}} persoon die je volgt",
+    "subheadingCount_other": "Video's van {{count}} mensen die je volgt",
+    "emptyTitle": "Je homefeed is leeg",
+    "emptyDescription": "Volg makers om hun video's hier te zien. Verken trending video's om mensen te vinden om te volgen!",
+    "exploreVideos": "Verken video's"
+  },
+  "notificationsPage": {
+    "heading": "Notificaties",
+    "tabs": {
+      "all": "Alles",
+      "unread": "Ongelezen",
+      "likes": "Likes",
+      "comments": "Reacties",
+      "follows": "Volgers",
+      "reposts": "Reposts",
+      "zaps": "Zaps"
+    },
+    "empty": {
+      "all": {
+        "title": "Helemaal stil. Niks te melden.",
+        "description": "Als mensen op je spullen reageren, komt dat hier binnen."
+      },
+      "unread": {
+        "title": "Je bent helemaal bij.",
+        "description": "Nieuwe activiteit verschijnt hier eerst."
+      },
+      "likes": {
+        "title": "Nog geen like-notificaties.",
+        "description": "Wanneer iemand een van je video's leuk vindt, verschijnt het hier."
+      },
+      "comments": {
+        "title": "Nog geen reactie-notificaties.",
+        "description": "Reacties op je video's verschijnen hier."
+      },
+      "follows": {
+        "title": "Nog geen volg-notificaties.",
+        "description": "Nieuwe volgers verschijnen hier."
+      },
+      "reposts": {
+        "title": "Nog geen repost-notificaties.",
+        "description": "Reposts van je video's verschijnen hier."
+      },
+      "zaps": {
+        "title": "Nog geen zap-notificaties.",
+        "description": "Zaps op je video's verschijnen hier."
+      }
+    },
+    "errorTitle": "Notificaties laden mislukt",
+    "errorFallback": "Probeer het later nog eens",
+    "sectionNew": "Nieuw",
+    "sectionEarlier": "Eerder"
+  },
+  "getEmbedPage": {
+    "title": "Divine-widget embedden",
+    "subtitle": "Voeg je nieuwste Divine-video's toe aan elke website of blog-sidebar.",
+    "configureTitle": "Configureren",
+    "npubLabel": "Je npub (Nostr publieke sleutel)",
+    "themeLabel": "Thema",
+    "themeDark": "Donker",
+    "themeLight": "Licht",
+    "videosLabel": "Video's",
+    "autoRefreshLabel": "Auto-refresh",
+    "refresh30": "30 min",
+    "refresh60": "1 uur",
+    "refresh120": "2 uur",
+    "refreshNever": "Nooit",
+    "embedCodeTitle": "Embed-code",
+    "copy": "Kopiëren",
+    "copied": "Gekopieerd!",
+    "previewTitle": "Voorbeeld",
+    "previewEmpty": "Vul hierboven je npub in om een voorbeeld te zien",
+    "iframeTitle": "Divine-videowidget",
+    "previewIframeTitle": "Voorbeeld Divine-videowidget"
+  },
+  "trendingPage": {
+    "heading": "Trending",
+    "subheading": "Ontdek wat populair is in de community",
+    "rssTitle": "DiVine - Trending",
+    "rssLink": "RSS"
+  },
+  "merchPage": {
+    "metaTitle": "Merch — Divine",
+    "metaDescription": "T-shirts, hoodies, petten en spullen die zichzelf niet te serieus nemen. Ontworpen door Divine, gedrukt en verzonden door Bonfire.",
+    "ogTitle": "Divine Merch",
+    "headline": "Draag je loops.",
+    "body": "T-shirts, hoodies, petten en spullen die zichzelf niet te serieus nemen.",
+    "storeCta": "Shop alles",
+    "trust": "Ontworpen door Divine. Gedrukt en verzonden door Bonfire.",
+    "shopOnBonfire": "Shop op Bonfire",
+    "productsAriaLabel": "Merch-producten",
+    "productAriaLabel": "{{name}} op Bonfire"
+  },
+  "eventPage": {
+    "loading": "Event laden…",
+    "back": "Terug",
+    "noIdentifier": "Geen event-identifier opgegeven.",
+    "notFound": "Event niet gevonden",
+    "notFoundDescription": "Dit event bestaat mogelijk niet op de geconfigureerde of fallback-relays.",
+    "kindBadge": "Kind {{kind}}",
+    "listItems": "Lijstitems",
+    "listItemsDescription": "Referenties in dit event.",
+    "noPublicReferences": "Deze lijst bevat geen publieke referenties.",
+    "openReference": "Open verwezen item",
+    "noRouteAvailable": "Geen route beschikbaar voor deze referentie.",
+    "tags": "Tags",
+    "tagCount_one": "{{count}} tag",
+    "tagCount_other": "{{count}} tags",
+    "noTags": "Geen tags op dit event.",
+    "rawEvent": "Ruw event",
+    "kindLabel": {
+      "textNote": "Tekstnotitie",
+      "comment": "Reactie",
+      "videoList": "Videolijst",
+      "followList": "Volglijst",
+      "list": "Lijst {{kind}}",
+      "kind": "Kind {{kind}}"
+    },
+    "referenceLabel": {
+      "profile": "Profiel",
+      "event": "Event",
+      "address": "Adres",
+      "hashtag": "Hashtag"
+    }
+  },
+  "universalUserPage": {
+    "lookingUp": "Gebruiker opzoeken...",
+    "userNotFound": "Gebruiker niet gevonden",
+    "couldNotFind": "Kon geen gebruiker vinden met {{label}}:",
+    "goHome": "Ga naar Home",
+    "redirecting": "Doorsturen naar profiel...",
+    "lookupLabel": {
+      "vineId": "Vine-ID",
+      "nip05": "NIP-05-identifier",
+      "legacyOrNip05": "oude Vine-gebruikersnaam of NIP-05-identifier"
+    },
+    "notFoundDescription": {
+      "vine": "Deze Vine-gebruiker is mogelijk nog niet geïmporteerd naar het Nostr-netwerk.",
+      "nip05": "Controleer of de NIP-05-identifier klopt.",
+      "legacy": "Deze gebruikersnaam komt niet overeen met een oud Vine-profiel of OpenVine-handle."
+    }
+  },
+  "atUsernamePage": {
+    "lookingUp": "@{{username}} opzoeken...",
+    "userNotFound": "Gebruiker niet gevonden",
+    "couldNotFind": "Kon gebruiker niet vinden",
+    "tryVisitingPrefix": "Probeer hun profiel te bezoeken op",
+    "goHome": "Ga naar Home",
+    "redirecting": "Doorsturen naar profiel..."
+  },
+  "appCallbackPage": {
+    "appStore": "App Store",
+    "googlePlay": "Google Play",
+    "desktop": {
+      "heading": "Open op je telefoon",
+      "body1": "Deze link moet worden geopend in de Divine-app op je mobiele apparaat.",
+      "body2": "Als je deze link via e-mail hebt ontvangen, open hem dan op de telefoon waar Divine op staat."
+    },
+    "mobile": {
+      "heading": "Open in Divine",
+      "body": "Deze link zou in de Divine-app moeten openen. Als dat niet automatisch gebeurde:",
+      "bullet1": "• Zorg dat Divine op dit apparaat is geïnstalleerd",
+      "bullet2": "• Probeer Divine te openen en opnieuw in te loggen",
+      "getDivine": "Download Divine in de {{store}}",
+      "emailHint": "Als je een link uit een e-mail hebt geklikt, zorg dat je op hetzelfde apparaat bent waarmee je je hebt geregistreerd."
+    }
+  },
+  "authCallbackPage": {
+    "finishingSignIn": "Inloggen afronden",
+    "restoring": "Je signing-sessie wordt hersteld en je wordt teruggebracht naar Divine.",
+    "failedToFinish": "Inloggen afronden mislukt",
+    "returnToSignIn": "Terug naar inloggen"
+  },
+  "authenticDemo": {
+    "title": "Authentiek",
+    "imageAlt": "Persoon die authentieke content maakt",
+    "liveLabel": "LIVE",
+    "caption": "Echte momenten van echte mensen, geen AI"
+  },
+  "verifiedDemo": {
+    "title": "Geverifieerd",
+    "imageAlt": "Geverifieerd authentiek moment",
+    "proofModeCertified": "ProofMode-gecertificeerd",
+    "caption": "Cryptografisch bewezen authenticiteit"
+  },
+  "decentralizedDemo": {
+    "title": "Gedecentraliseerd",
+    "imageAlt": "Gedecentraliseerde netwerksamenwerking",
+    "nostrNetwork": "Nostr-netwerk",
+    "caption": "Gebouwd op Nostr. Jouw content, jouw controle"
+  },
+  "originalContentBadge": {
+    "label": "Origineel",
+    "tooltip": "Originele content gemaakt door deze gebruiker"
+  },
+  "videoVerificationBadgeRow": {
+    "detailsAriaLabel": "Bekijk video-verificatiedetails"
+  },
+  "cameraRecorder": {
+    "accessRequired": "Cameratoegang vereist",
+    "failedAccess": "Toegang tot camera mislukt",
+    "goBack": "Terug",
+    "initializing": "Camera initialiseren...",
+    "durationOfMax": "{{current}} / 6,0s",
+    "rec": "REC",
+    "clipLabel": "Clip {{index}}: {{duration}}",
+    "releaseToPause": "Loslaten om te pauzeren",
+    "holdToRecord": "Houd vast om op te nemen",
+    "instructionsRecord": "Houd de knop vast om op te nemen, laat los om te pauzeren",
+    "maxReached": "Maximum van 6 seconden bereikt",
+    "clipsRemaining_one": "{{count}} clip • {{remaining}} over",
+    "clipsRemaining_other": "{{count}} clips • {{remaining}} over",
+    "startOver": "Opnieuw beginnen"
+  },
+  "comment": {
+    "loginRequiredTitle": "Log eerst in.",
+    "loginRequiredDescription": "Je moet ingelogd zijn om mensen te muten.",
+    "mutedTitle": "Gemute.",
+    "mutedDescription": "{{name}} staat niet meer in je feed.",
+    "muteFailedTitle": "Muten lukte niet.",
+    "muteFailedDescription": "Kon de mute niet opslaan. Nog eens proberen?",
+    "sending": "(verzenden...)",
+    "reply": "Reageren",
+    "replyCount_one": "{{count}} reactie",
+    "replyCount_other": "{{count}} reacties",
+    "optionsLabel": "Reactie-opties",
+    "deleteComment": "Reactie verwijderen",
+    "reportComment": "Reactie rapporteren",
+    "reportUser": "Gebruiker rapporteren",
+    "muteUser": "Gebruiker muten",
+    "replyPlaceholder": "Schrijf terug..."
+  },
+  "pwaInstallPrompt": {
+    "close": "Sluiten",
+    "getDivine": "Download Divine",
+    "installDivineWeb": "Installeer Divine Web",
+    "descriptionNative": "Installeer de native app voor de beste Divine-ervaring",
+    "descriptionWeb": "Installeer onze app voor een betere ervaring",
+    "appStore": "App Store",
+    "appStoreAria": "Download Divine in de App Store",
+    "googlePlay": "Google Play",
+    "googlePlayAria": "Download Divine op Google Play",
+    "install": "Installeren",
+    "notNow": "Niet nu"
+  },
+  "relaySelector": {
+    "placeholder": "Selecteer relay"
+  },
+  "socialLinks": {
+    "groupLabel": "Social media-links",
+    "followInstagram": "Volg ons op Instagram",
+    "followReddit": "Volg ons op Reddit",
+    "joinDiscord": "Doe mee op Discord",
+    "followTwitter": "Volg ons op Twitter",
+    "followBluesky": "Volg ons op Bluesky",
+    "followTiktok": "Volg ons op TikTok",
+    "followGithub": "Volg ons op GitHub",
+    "followYoutube": "Volg ons op YouTube"
+  },
+  "fullscreenVideoItem": {
+    "loadError": "Video laden mislukt",
+    "muteSuccessTitle": "Gemute.",
+    "muteSuccessDescription": "{{name}} staat niet meer in je feed.",
+    "muteErrorTitle": "Muten lukte niet.",
+    "muteErrorDescription": "Kon de mute niet opslaan. Nog eens proberen?",
+    "deleteVideo": "Video verwijderen",
+    "reportVideo": "Video rapporteren",
+    "sendViaMessage": "Versturen via bericht",
+    "reportUser": "Gebruiker rapporteren",
+    "muteUser": "{{name}} muten",
+    "viewSource": "Bron bekijken",
+    "videoEventSource": "Video-event bron"
+  },
+  "privacyPage": {
+    "title": "Privacybeleid",
+    "lastUpdated": "Laatst bijgewerkt: {{date}}"
+  },
+  "termsPage": {
+    "title": "Algemene voorwaarden",
+    "lastUpdated": "Laatst bijgewerkt: {{date}}"
+  },
+  "brandPreview": {},
+  "uiSidebar": {
+    "toggleSidebar": "Sidebar omschakelen"
+  },
+  "uiPagination": {
+    "pagination": "paginering",
+    "previous": "Vorige",
+    "next": "Volgende",
+    "goToPrevious": "Ga naar vorige pagina",
+    "goToNext": "Ga naar volgende pagina",
+    "morePages": "Meer pagina's"
   }
 }

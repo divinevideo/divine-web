@@ -2,6 +2,7 @@
 // ABOUTME: Simple list with infinite scroll, marks all as read on page open
 
 import { useEffect, useRef, useCallback, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Bell } from '@phosphor-icons/react';
 import { useNotifications, useMarkNotificationsRead } from '@/hooks/useNotifications';
 import { NotificationItem } from '@/components/NotificationItem';
@@ -9,52 +10,55 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import type { Notification, NotificationCategory } from '@/types/notification';
 
-const NOTIFICATION_TABS: Array<{ value: NotificationCategory; label: string }> = [
-  { value: 'all', label: 'All' },
-  { value: 'unread', label: 'Unread' },
-  { value: 'likes', label: 'Likes' },
-  { value: 'comments', label: 'Comments' },
-  { value: 'follows', label: 'Follows' },
-  { value: 'reposts', label: 'Reposts' },
-  { value: 'zaps', label: 'Zaps' },
+const NOTIFICATION_TAB_VALUES: NotificationCategory[] = [
+  'all',
+  'unread',
+  'likes',
+  'comments',
+  'follows',
+  'reposts',
+  'zaps',
 ];
 
-const EMPTY_STATE_COPY: Record<
-  NotificationCategory,
-  { title: string; description: string }
-> = {
-  all: {
-    title: 'All quiet. Nothing to flag.',
-    description: 'When people react to your stuff, it lands right here.',
-  },
-  unread: {
-    title: 'You are all caught up.',
-    description: 'New activity will show up here first.',
-  },
-  likes: {
-    title: 'No like notifications yet.',
-    description: 'When someone likes one of your videos, it will show up here.',
-  },
-  comments: {
-    title: 'No comment notifications yet.',
-    description: 'Replies and comments on your videos will show up here.',
-  },
-  follows: {
-    title: 'No follow notifications yet.',
-    description: 'New followers will show up here.',
-  },
-  reposts: {
-    title: 'No repost notifications yet.',
-    description: 'Reposts of your videos will show up here.',
-  },
-  zaps: {
-    title: 'No zap notifications yet.',
-    description: 'Zaps on your videos will show up here.',
-  },
-};
-
 export default function NotificationsPage() {
+  const { t } = useTranslation();
   const [category, setCategory] = useState<NotificationCategory>('all');
+
+  const NOTIFICATION_TABS: Array<{ value: NotificationCategory; label: string }> = NOTIFICATION_TAB_VALUES.map((value) => ({
+    value,
+    label: t(`notificationsPage.tabs.${value}`),
+  }));
+
+  const EMPTY_STATE_COPY: Record<NotificationCategory, { title: string; description: string }> = {
+    all: {
+      title: t('notificationsPage.empty.all.title'),
+      description: t('notificationsPage.empty.all.description'),
+    },
+    unread: {
+      title: t('notificationsPage.empty.unread.title'),
+      description: t('notificationsPage.empty.unread.description'),
+    },
+    likes: {
+      title: t('notificationsPage.empty.likes.title'),
+      description: t('notificationsPage.empty.likes.description'),
+    },
+    comments: {
+      title: t('notificationsPage.empty.comments.title'),
+      description: t('notificationsPage.empty.comments.description'),
+    },
+    follows: {
+      title: t('notificationsPage.empty.follows.title'),
+      description: t('notificationsPage.empty.follows.description'),
+    },
+    reposts: {
+      title: t('notificationsPage.empty.reposts.title'),
+      description: t('notificationsPage.empty.reposts.description'),
+    },
+    zaps: {
+      title: t('notificationsPage.empty.zaps.title'),
+      description: t('notificationsPage.empty.zaps.description'),
+    },
+  };
   const {
     data,
     isLoading,
@@ -140,7 +144,7 @@ export default function NotificationsPage() {
       <div className="mb-6">
         <h1 className="text-2xl font-bold flex items-center gap-2">
           <Bell className="h-6 w-6" />
-          Notifications
+          {t('notificationsPage.heading')}
         </h1>
       </div>
 
@@ -172,9 +176,9 @@ export default function NotificationsPage() {
       {/* Error state */}
       {isError && (
         <div className="text-center py-12">
-          <p className="text-destructive mb-2">Failed to load notifications</p>
+          <p className="text-destructive mb-2">{t('notificationsPage.errorTitle')}</p>
           <p className="text-sm text-muted-foreground">
-            {error?.message || 'Please try again later'}
+            {error?.message || t('notificationsPage.errorFallback')}
           </p>
         </div>
       )}
@@ -195,7 +199,7 @@ export default function NotificationsPage() {
             {newNotifications.length > 0 && (
               <section>
                 <h2 className="mb-3 text-sm font-semibold tracking-wide text-muted-foreground">
-                  New
+                  {t('notificationsPage.sectionNew')}
                 </h2>
                 {renderNotifications(newNotifications)}
               </section>
@@ -203,7 +207,7 @@ export default function NotificationsPage() {
             {earlierNotifications.length > 0 && (
               <section>
                 <h2 className="mb-3 text-sm font-semibold tracking-wide text-muted-foreground">
-                  Earlier
+                  {t('notificationsPage.sectionEarlier')}
                 </h2>
                 {renderNotifications(earlierNotifications)}
               </section>

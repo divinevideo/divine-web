@@ -1012,5 +1012,302 @@
     "unpinnedDescription": "\"{{title}}\"이(가) 고정에서 빠졌어요.",
     "unpinErrorTitle": "고정 해제 실패.",
     "unpinErrorDescription": "고정 해제가 안 됐어요. 다시 시도할까요?"
+  },
+  "indexPage": {
+    "seoTitle": "Divine Web - Nostr 위의 짧은 루프 비디오",
+    "seoDescription": "탈중앙화 Nostr 네트워크에서 6초 루프 비디오를 보고 공유해요.",
+    "heading": "홈",
+    "subheadingDefault": "팔로우하는 사람들의 비디오",
+    "subheadingCount_one": "팔로우하는 {{count}}명의 비디오",
+    "subheadingCount_other": "팔로우하는 {{count}}명의 비디오",
+    "emptyTitle": "홈 피드가 비어 있어요",
+    "emptyDescription": "크리에이터를 팔로우하면 여기에 비디오가 표시돼요. 인기 비디오를 둘러보고 팔로우할 사람을 찾아보세요!",
+    "exploreVideos": "비디오 둘러보기"
+  },
+  "notificationsPage": {
+    "heading": "알림",
+    "tabs": {
+      "all": "전체",
+      "unread": "읽지 않음",
+      "likes": "좋아요",
+      "comments": "댓글",
+      "follows": "팔로우",
+      "reposts": "리포스트",
+      "zaps": "잽"
+    },
+    "empty": {
+      "all": {
+        "title": "조용하네요. 표시할 게 없어요.",
+        "description": "누군가 회원님의 콘텐츠에 반응하면 바로 여기에 표시돼요."
+      },
+      "unread": {
+        "title": "모두 확인했어요.",
+        "description": "새로운 활동이 여기에 가장 먼저 표시돼요."
+      },
+      "likes": {
+        "title": "아직 좋아요 알림이 없어요.",
+        "description": "누군가 회원님의 비디오에 좋아요를 누르면 여기에 표시돼요."
+      },
+      "comments": {
+        "title": "아직 댓글 알림이 없어요.",
+        "description": "비디오에 달린 답글과 댓글이 여기에 표시돼요."
+      },
+      "follows": {
+        "title": "아직 팔로우 알림이 없어요.",
+        "description": "새로운 팔로워가 여기에 표시돼요."
+      },
+      "reposts": {
+        "title": "아직 리포스트 알림이 없어요.",
+        "description": "회원님 비디오의 리포스트가 여기에 표시돼요."
+      },
+      "zaps": {
+        "title": "아직 잽 알림이 없어요.",
+        "description": "회원님 비디오에 받은 잽이 여기에 표시돼요."
+      }
+    },
+    "errorTitle": "알림을 불러오지 못했어요",
+    "errorFallback": "잠시 후 다시 시도해 주세요",
+    "sectionNew": "새로운 소식",
+    "sectionEarlier": "이전"
+  },
+  "getEmbedPage": {
+    "title": "Divine 위젯 임베드",
+    "subtitle": "최신 Divine 비디오를 어떤 웹사이트나 블로그 사이드바에든 추가해요.",
+    "configureTitle": "설정",
+    "npubLabel": "회원님의 npub (Nostr 공개 키)",
+    "themeLabel": "테마",
+    "themeDark": "다크",
+    "themeLight": "라이트",
+    "videosLabel": "비디오",
+    "autoRefreshLabel": "자동 새로고침",
+    "refresh30": "30분",
+    "refresh60": "1시간",
+    "refresh120": "2시간",
+    "refreshNever": "사용 안 함",
+    "embedCodeTitle": "임베드 코드",
+    "copy": "복사",
+    "copied": "복사됨!",
+    "previewTitle": "미리보기",
+    "previewEmpty": "위에 npub을 입력하면 미리보기가 표시돼요",
+    "iframeTitle": "Divine 비디오 위젯",
+    "previewIframeTitle": "Divine 비디오 위젯 미리보기"
+  },
+  "trendingPage": {
+    "heading": "인기",
+    "subheading": "커뮤니티에서 인기 있는 콘텐츠를 발견해요",
+    "rssTitle": "DiVine - 인기",
+    "rssLink": "RSS"
+  },
+  "merchPage": {
+    "metaTitle": "굿즈 — Divine",
+    "metaDescription": "너무 진지하지 않은 티셔츠, 후디, 모자, 그리고 이런저런 것들. Divine이 디자인하고 Bonfire가 인쇄·배송해요.",
+    "ogTitle": "Divine 굿즈",
+    "headline": "회원님의 루프를 입어요.",
+    "body": "너무 진지하지 않은 티셔츠, 후디, 모자, 그리고 이런저런 것들.",
+    "storeCta": "전체 보기",
+    "trust": "Divine 디자인. Bonfire 인쇄·배송.",
+    "shopOnBonfire": "Bonfire에서 쇼핑하기",
+    "productsAriaLabel": "굿즈 상품",
+    "productAriaLabel": "Bonfire의 {{name}}"
+  },
+  "eventPage": {
+    "loading": "이벤트를 불러오는 중…",
+    "back": "뒤로",
+    "noIdentifier": "이벤트 식별자가 제공되지 않았어요.",
+    "notFound": "이벤트를 찾을 수 없어요",
+    "notFoundDescription": "이 이벤트는 설정된 릴레이나 대체 릴레이에 존재하지 않을 수 있어요.",
+    "kindBadge": "Kind {{kind}}",
+    "listItems": "리스트 항목",
+    "listItemsDescription": "이 이벤트에 포함된 참조예요.",
+    "noPublicReferences": "이 리스트에는 공개 참조가 없어요.",
+    "openReference": "참조된 항목 열기",
+    "noRouteAvailable": "이 참조에 사용할 수 있는 경로가 없어요.",
+    "tags": "태그",
+    "tagCount_one": "태그 {{count}}개",
+    "tagCount_other": "태그 {{count}}개",
+    "noTags": "이 이벤트에는 태그가 없어요.",
+    "rawEvent": "원본 이벤트",
+    "kindLabel": {
+      "textNote": "텍스트 노트",
+      "comment": "댓글",
+      "videoList": "비디오 리스트",
+      "followList": "팔로우 리스트",
+      "list": "리스트 {{kind}}",
+      "kind": "Kind {{kind}}"
+    },
+    "referenceLabel": {
+      "profile": "프로필",
+      "event": "이벤트",
+      "address": "주소",
+      "hashtag": "해시태그"
+    }
+  },
+  "universalUserPage": {
+    "lookingUp": "사용자를 찾는 중...",
+    "userNotFound": "사용자를 찾을 수 없어요",
+    "couldNotFind": "{{label}}에 해당하는 사용자를 찾을 수 없어요:",
+    "goHome": "홈으로",
+    "redirecting": "프로필로 이동 중...",
+    "lookupLabel": {
+      "vineId": "Vine ID",
+      "nip05": "NIP-05 식별자",
+      "legacyOrNip05": "레거시 Vine 사용자명 또는 NIP-05 식별자"
+    },
+    "notFoundDescription": {
+      "vine": "이 Vine 사용자는 아직 Nostr 네트워크로 가져오지 않았을 수 있어요.",
+      "nip05": "NIP-05 식별자가 정확한지 확인해 주세요.",
+      "legacy": "이 사용자명은 레거시 Vine 프로필이나 OpenVine 핸들과 일치하지 않아요."
+    }
+  },
+  "atUsernamePage": {
+    "lookingUp": "@{{username}}을(를) 찾는 중...",
+    "userNotFound": "사용자를 찾을 수 없어요",
+    "couldNotFind": "사용자를 찾을 수 없어요",
+    "tryVisitingPrefix": "다음 주소에서 프로필을 확인해 보세요",
+    "goHome": "홈으로",
+    "redirecting": "프로필로 이동 중..."
+  },
+  "appCallbackPage": {
+    "appStore": "App Store",
+    "googlePlay": "Google Play",
+    "desktop": {
+      "heading": "휴대폰에서 열기",
+      "body1": "이 링크는 모바일 기기의 Divine 앱에서 열어야 해요.",
+      "body2": "이 링크를 이메일로 받았다면 Divine이 설치된 휴대폰에서 열어주세요."
+    },
+    "mobile": {
+      "heading": "Divine에서 열기",
+      "body": "이 링크는 Divine 앱에서 열려야 해요. 자동으로 열리지 않았다면:",
+      "bullet1": "• 이 기기에 Divine이 설치되어 있는지 확인하세요",
+      "bullet2": "• Divine을 열고 다시 로그인해 보세요",
+      "getDivine": "{{store}}에서 Divine 받기",
+      "emailHint": "이메일에서 링크를 클릭했다면, 등록한 기기와 같은 기기인지 확인해 주세요."
+    }
+  },
+  "authCallbackPage": {
+    "finishingSignIn": "로그인 마무리 중",
+    "restoring": "서명 세션을 복원하고 Divine으로 다시 모셔갈게요.",
+    "failedToFinish": "로그인을 마무리하지 못했어요",
+    "returnToSignIn": "로그인 화면으로 돌아가기"
+  },
+  "authenticDemo": {
+    "title": "Authentic",
+    "imageAlt": "진짜 콘텐츠를 만드는 사람",
+    "liveLabel": "LIVE",
+    "caption": "AI가 아닌, 진짜 사람들의 진짜 순간"
+  },
+  "verifiedDemo": {
+    "title": "Verified",
+    "imageAlt": "검증된 진짜 순간",
+    "proofModeCertified": "ProofMode 인증",
+    "caption": "암호학적으로 증명된 진정성"
+  },
+  "decentralizedDemo": {
+    "title": "Decentralized",
+    "imageAlt": "탈중앙화 네트워크 협업",
+    "nostrNetwork": "Nostr 네트워크",
+    "caption": "Nostr 위에 구축. 회원님의 콘텐츠, 회원님의 통제권"
+  },
+  "originalContentBadge": {
+    "label": "오리지널",
+    "tooltip": "이 사용자가 만든 오리지널 콘텐츠"
+  },
+  "videoVerificationBadgeRow": {
+    "detailsAriaLabel": "비디오 검증 세부정보 보기"
+  },
+  "cameraRecorder": {
+    "accessRequired": "카메라 접근 권한 필요",
+    "failedAccess": "카메라에 접근하지 못했어요",
+    "goBack": "뒤로",
+    "initializing": "카메라 초기화 중...",
+    "durationOfMax": "{{current}} / 6.0초",
+    "rec": "REC",
+    "clipLabel": "클립 {{index}}: {{duration}}",
+    "releaseToPause": "놓으면 일시정지",
+    "holdToRecord": "길게 눌러 녹화",
+    "instructionsRecord": "버튼을 길게 눌러 녹화하고, 놓으면 일시정지돼요",
+    "maxReached": "최대 6초에 도달했어요",
+    "clipsRemaining_one": "클립 {{count}}개 • {{remaining}} 남음",
+    "clipsRemaining_other": "클립 {{count}}개 • {{remaining}} 남음",
+    "startOver": "처음부터 다시"
+  },
+  "comment": {
+    "loginRequiredTitle": "먼저 로그인하세요.",
+    "loginRequiredDescription": "사람을 뮤트하려면 로그인이 필요해요.",
+    "mutedTitle": "뮤트했어요.",
+    "mutedDescription": "{{name}}을(를) 피드에서 가렸어요.",
+    "muteFailedTitle": "뮤트하지 못했어요.",
+    "muteFailedDescription": "뮤트를 저장하지 못했어요. 다시 시도해 볼까요?",
+    "sending": "(전송 중...)",
+    "reply": "답글",
+    "replyCount_one": "답글 {{count}}개",
+    "replyCount_other": "답글 {{count}}개",
+    "optionsLabel": "댓글 옵션",
+    "deleteComment": "댓글 삭제",
+    "reportComment": "댓글 신고",
+    "reportUser": "사용자 신고",
+    "muteUser": "사용자 뮤트",
+    "replyPlaceholder": "답글 쓰기..."
+  },
+  "pwaInstallPrompt": {
+    "close": "닫기",
+    "getDivine": "Divine 받기",
+    "installDivineWeb": "Divine Web 설치",
+    "descriptionNative": "최고의 Divine 경험을 위해 네이티브 앱을 설치하세요",
+    "descriptionWeb": "더 나은 경험을 위해 앱을 설치하세요",
+    "appStore": "App Store",
+    "appStoreAria": "App Store에서 Divine 다운로드",
+    "googlePlay": "Google Play",
+    "googlePlayAria": "Google Play에서 Divine 받기",
+    "install": "설치",
+    "notNow": "나중에"
+  },
+  "relaySelector": {
+    "placeholder": "릴레이 선택"
+  },
+  "socialLinks": {
+    "groupLabel": "소셜 미디어 링크",
+    "followInstagram": "Instagram에서 팔로우하기",
+    "followReddit": "Reddit에서 팔로우하기",
+    "joinDiscord": "Discord에서 함께하기",
+    "followTwitter": "Twitter에서 팔로우하기",
+    "followBluesky": "Bluesky에서 팔로우하기",
+    "followTiktok": "TikTok에서 팔로우하기",
+    "followGithub": "GitHub에서 팔로우하기",
+    "followYoutube": "YouTube에서 팔로우하기"
+  },
+  "fullscreenVideoItem": {
+    "loadError": "비디오를 불러오지 못했어요",
+    "muteSuccessTitle": "뮤트했어요.",
+    "muteSuccessDescription": "{{name}}을(를) 피드에서 가렸어요.",
+    "muteErrorTitle": "뮤트하지 못했어요.",
+    "muteErrorDescription": "뮤트를 저장하지 못했어요. 다시 시도해 볼까요?",
+    "deleteVideo": "비디오 삭제",
+    "reportVideo": "비디오 신고",
+    "sendViaMessage": "메시지로 보내기",
+    "reportUser": "사용자 신고",
+    "muteUser": "{{name}} 뮤트",
+    "viewSource": "소스 보기",
+    "videoEventSource": "비디오 이벤트 소스"
+  },
+  "privacyPage": {
+    "title": "개인정보 처리방침",
+    "lastUpdated": "마지막 업데이트: {{date}}"
+  },
+  "termsPage": {
+    "title": "서비스 약관",
+    "lastUpdated": "마지막 업데이트: {{date}}"
+  },
+  "brandPreview": {},
+  "uiSidebar": {
+    "toggleSidebar": "사이드바 전환"
+  },
+  "uiPagination": {
+    "pagination": "페이지네이션",
+    "previous": "이전",
+    "next": "다음",
+    "goToPrevious": "이전 페이지로 이동",
+    "goToNext": "다음 페이지로 이동",
+    "morePages": "페이지 더 보기"
   }
 }

@@ -1012,5 +1012,302 @@
     "unpinnedDescription": "Tinanggal na sa mga naka-pin ang \"{{title}}\".",
     "unpinErrorTitle": "May problema sa pag-unpin.",
     "unpinErrorDescription": "Hindi na-unpin. Subukan ulit?"
+  },
+  "indexPage": {
+    "seoTitle": "Divine Web - Mga Short-form na Looping Video sa Nostr",
+    "seoDescription": "Manood at mag-share ng 6-segundong looping na video sa desentralisadong Nostr network.",
+    "heading": "Home",
+    "subheadingDefault": "Mga video mula sa mga sinusundan mo",
+    "subheadingCount_one": "Mga video mula sa {{count}} taong sinusundan mo",
+    "subheadingCount_other": "Mga video mula sa {{count}} taong sinusundan mo",
+    "emptyTitle": "Walang laman ang iyong home feed",
+    "emptyDescription": "Sundan ang mga creator para makita ang kanilang mga video dito. I-explore ang mga trending na video para makahanap ng mga taong susundan!",
+    "exploreVideos": "I-explore ang mga Video"
+  },
+  "notificationsPage": {
+    "heading": "Mga Abiso",
+    "tabs": {
+      "all": "Lahat",
+      "unread": "Hindi pa nababasa",
+      "likes": "Mga Like",
+      "comments": "Mga Komento",
+      "follows": "Mga Follow",
+      "reposts": "Mga Repost",
+      "zaps": "Mga Zap"
+    },
+    "empty": {
+      "all": {
+        "title": "Tahimik lahat. Walang kailangang tingnan.",
+        "description": "Kapag may nag-react sa mga gamit mo, dito ito lalabas."
+      },
+      "unread": {
+        "title": "Nahabol mo na lahat.",
+        "description": "Mauunang lalabas dito ang mga bagong aktibidad."
+      },
+      "likes": {
+        "title": "Wala pang abiso ng like.",
+        "description": "Kapag may nag-like sa isa sa mga video mo, lalabas ito dito."
+      },
+      "comments": {
+        "title": "Wala pang abiso ng komento.",
+        "description": "Lalabas dito ang mga reply at komento sa mga video mo."
+      },
+      "follows": {
+        "title": "Wala pang abiso ng follow.",
+        "description": "Lalabas dito ang mga bagong follower."
+      },
+      "reposts": {
+        "title": "Wala pang abiso ng repost.",
+        "description": "Lalabas dito ang mga repost ng mga video mo."
+      },
+      "zaps": {
+        "title": "Wala pang abiso ng zap.",
+        "description": "Lalabas dito ang mga zap sa mga video mo."
+      }
+    },
+    "errorTitle": "Hindi na-load ang mga abiso",
+    "errorFallback": "Pakisubukang muli mamaya",
+    "sectionNew": "Bago",
+    "sectionEarlier": "Mas Maaga"
+  },
+  "getEmbedPage": {
+    "title": "I-embed ang Divine Widget",
+    "subtitle": "Idagdag ang iyong pinakabagong mga Divine na video sa kahit anong website o blog sidebar.",
+    "configureTitle": "I-configure",
+    "npubLabel": "Iyong npub (Nostr public key)",
+    "themeLabel": "Tema",
+    "themeDark": "Madilim",
+    "themeLight": "Maliwanag",
+    "videosLabel": "Mga Video",
+    "autoRefreshLabel": "Auto-refresh",
+    "refresh30": "30 min",
+    "refresh60": "1 oras",
+    "refresh120": "2 oras",
+    "refreshNever": "Hindi kailanman",
+    "embedCodeTitle": "Embed Code",
+    "copy": "I-copy",
+    "copied": "Na-copy na!",
+    "previewTitle": "Preview",
+    "previewEmpty": "Ilagay ang iyong npub sa itaas para makita ang preview",
+    "iframeTitle": "Divine Video Widget",
+    "previewIframeTitle": "Preview ng Divine Video Widget"
+  },
+  "trendingPage": {
+    "heading": "Trending",
+    "subheading": "Tuklasin kung ano ang sikat sa komunidad",
+    "rssTitle": "DiVine - Trending",
+    "rssLink": "RSS"
+  },
+  "merchPage": {
+    "metaTitle": "Mga Merch — Divine",
+    "metaDescription": "Mga damit, hoodie, sumbrero, at iba pang bagay na hindi seryoso. Dinisenyo ng Divine, ipi-print at ipi-ship ng Bonfire.",
+    "ogTitle": "Mga Merch ng Divine",
+    "headline": "Isuot ang iyong mga loop.",
+    "body": "Mga damit, hoodie, sumbrero, at iba pang bagay na hindi seryoso.",
+    "storeCta": "I-shop lahat",
+    "trust": "Dinisenyo ng Divine. Ipi-print at ipi-ship ng Bonfire.",
+    "shopOnBonfire": "I-shop sa Bonfire",
+    "productsAriaLabel": "Mga produktong merch",
+    "productAriaLabel": "{{name}} sa Bonfire"
+  },
+  "eventPage": {
+    "loading": "Niloload ang event…",
+    "back": "Bumalik",
+    "noIdentifier": "Walang ibinigay na event identifier.",
+    "notFound": "Hindi nahanap ang event",
+    "notFoundDescription": "Maaaring wala ang event na ito sa configured o fallback na mga relay.",
+    "kindBadge": "Kind {{kind}}",
+    "listItems": "Mga Item ng Listahan",
+    "listItemsDescription": "Mga reference na nakapaloob sa event na ito.",
+    "noPublicReferences": "Walang public na reference ang listahang ito.",
+    "openReference": "Buksan ang reference na item",
+    "noRouteAvailable": "Walang available na ruta para sa reference na ito.",
+    "tags": "Mga Tag",
+    "tagCount_one": "{{count}} tag",
+    "tagCount_other": "{{count}} mga tag",
+    "noTags": "Walang tag sa event na ito.",
+    "rawEvent": "Raw Event",
+    "kindLabel": {
+      "textNote": "Text Note",
+      "comment": "Komento",
+      "videoList": "Listahan ng Video",
+      "followList": "Listahan ng Follow",
+      "list": "Listahan {{kind}}",
+      "kind": "Kind {{kind}}"
+    },
+    "referenceLabel": {
+      "profile": "Profile",
+      "event": "Event",
+      "address": "Address",
+      "hashtag": "Hashtag"
+    }
+  },
+  "universalUserPage": {
+    "lookingUp": "Hinahanap ang user...",
+    "userNotFound": "Hindi Nahanap ang User",
+    "couldNotFind": "Hindi mahanap ang user na may {{label}}:",
+    "goHome": "Bumalik sa Home",
+    "redirecting": "Nire-redirect sa profile...",
+    "lookupLabel": {
+      "vineId": "Vine ID",
+      "nip05": "NIP-05 identifier",
+      "legacyOrNip05": "legacy Vine username o NIP-05 identifier"
+    },
+    "notFoundDescription": {
+      "vine": "Maaaring hindi pa na-import sa Nostr network ang Vine user na ito.",
+      "nip05": "Pakitiyak na tama ang NIP-05 identifier.",
+      "legacy": "Hindi tugma ang username na ito sa anumang legacy Vine profile o OpenVine handle."
+    }
+  },
+  "atUsernamePage": {
+    "lookingUp": "Hinahanap si @{{username}}...",
+    "userNotFound": "Hindi Nahanap ang User",
+    "couldNotFind": "Hindi mahanap ang user",
+    "tryVisitingPrefix": "Subukang bisitahin ang kanyang profile sa",
+    "goHome": "Bumalik sa Home",
+    "redirecting": "Nire-redirect sa profile..."
+  },
+  "appCallbackPage": {
+    "appStore": "App Store",
+    "googlePlay": "Google Play",
+    "desktop": {
+      "heading": "Buksan sa Iyong Telepono",
+      "body1": "Kailangang buksan ang link na ito sa Divine app sa iyong mobile device.",
+      "body2": "Kung natanggap mo ang link na ito sa email, buksan ito sa teleponong may naka-install na Divine."
+    },
+    "mobile": {
+      "heading": "Buksan sa Divine",
+      "body": "Dapat magbukas ang link na ito sa Divine app. Kung hindi ito nag-bukas nang awtomatiko:",
+      "bullet1": "• Tiyaking naka-install ang Divine sa device na ito",
+      "bullet2": "• Subukang buksan ang Divine at mag-sign in muli",
+      "getDivine": "Kunin ang Divine sa {{store}}",
+      "emailHint": "Kung nag-click ka ng link mula sa email, tiyaking nasa parehong device ka kung saan ka nag-register."
+    }
+  },
+  "authCallbackPage": {
+    "finishingSignIn": "Tinatapos ang pag-log in",
+    "restoring": "Pinapasok ka pabalik sa Divine. Ibinabalik ang iyong signing session.",
+    "failedToFinish": "May problema sa pag-log in. Subukan ulit?",
+    "returnToSignIn": "Bumalik sa pag-log in"
+  },
+  "authenticDemo": {
+    "title": "Tunay",
+    "imageAlt": "Taong gumagawa ng tunay na nilalaman",
+    "liveLabel": "LIVE",
+    "caption": "Tunay na sandali mula sa tunay na tao, hindi AI"
+  },
+  "verifiedDemo": {
+    "title": "Pinatutunayan",
+    "imageAlt": "Pinatutunayang tunay na sandali",
+    "proofModeCertified": "Sertipikado ng ProofMode",
+    "caption": "Cryptographically pinatunayang pagiging tunay"
+  },
+  "decentralizedDemo": {
+    "title": "Decentralized",
+    "imageAlt": "Pakikipagtulungan sa decentralized na network",
+    "nostrNetwork": "Nostr Network",
+    "caption": "Itinayo sa Nostr. Ang nilalaman mo, kontrol mo"
+  },
+  "originalContentBadge": {
+    "label": "Orihinal",
+    "tooltip": "Orihinal na nilalamang ginawa ng user na ito"
+  },
+  "videoVerificationBadgeRow": {
+    "detailsAriaLabel": "Tingnan ang detalye ng beripikasyon ng video"
+  },
+  "cameraRecorder": {
+    "accessRequired": "Kailangan ng access sa camera",
+    "failedAccess": "Hindi ma-access ang camera",
+    "goBack": "Bumalik",
+    "initializing": "Sinisimulan ang camera...",
+    "durationOfMax": "{{current}} / 6.0s",
+    "rec": "REC",
+    "clipLabel": "Clip {{index}}: {{duration}}",
+    "releaseToPause": "Bitawan para i-pause",
+    "holdToRecord": "Pindutin nang matagal para mag-record",
+    "instructionsRecord": "Pindutin ang button para mag-record, bitawan para i-pause",
+    "maxReached": "Naabot na ang 6 segundong max",
+    "clipsRemaining_one": "{{count}} clip • {{remaining}} natitira",
+    "clipsRemaining_other": "{{count}} mga clip • {{remaining}} natitira",
+    "startOver": "Magsimulang muli"
+  },
+  "comment": {
+    "loginRequiredTitle": "Mag-log in muna.",
+    "loginRequiredDescription": "Kailangan kang naka-sign in para i-mute ang ibang tao.",
+    "mutedTitle": "Naka-mute na.",
+    "mutedDescription": "Wala na si {{name}} sa feed mo.",
+    "muteFailedTitle": "May problema sa pag-mute.",
+    "muteFailedDescription": "Hindi nai-save ang mute. Subukan ulit?",
+    "sending": "(ipinapadala...)",
+    "reply": "Sumagot",
+    "replyCount_one": "{{count}} sagot",
+    "replyCount_other": "{{count}} mga sagot",
+    "optionsLabel": "Mga opsyon ng komento",
+    "deleteComment": "I-delete ang komento",
+    "reportComment": "I-report ang komento",
+    "reportUser": "I-report ang user",
+    "muteUser": "I-mute ang user",
+    "replyPlaceholder": "Sumagot..."
+  },
+  "pwaInstallPrompt": {
+    "close": "Isara",
+    "getDivine": "Kunin ang Divine",
+    "installDivineWeb": "I-install ang Divine Web",
+    "descriptionNative": "I-install ang native app para sa pinakamagandang karanasan sa Divine",
+    "descriptionWeb": "I-install ang aming app para sa mas magandang karanasan",
+    "appStore": "App Store",
+    "appStoreAria": "I-download ang Divine sa App Store",
+    "googlePlay": "Google Play",
+    "googlePlayAria": "Kunin ang Divine sa Google Play",
+    "install": "I-install",
+    "notNow": "Hindi ngayon"
+  },
+  "relaySelector": {
+    "placeholder": "Pumili ng relay"
+  },
+  "socialLinks": {
+    "groupLabel": "Mga social media link",
+    "followInstagram": "Sundan kami sa Instagram",
+    "followReddit": "Sundan kami sa Reddit",
+    "joinDiscord": "Sumali sa amin sa Discord",
+    "followTwitter": "Sundan kami sa Twitter",
+    "followBluesky": "Sundan kami sa Bluesky",
+    "followTiktok": "Sundan kami sa TikTok",
+    "followGithub": "Sundan kami sa GitHub",
+    "followYoutube": "Sundan kami sa YouTube"
+  },
+  "fullscreenVideoItem": {
+    "loadError": "Hindi ma-load ang video",
+    "muteSuccessTitle": "Na-mute.",
+    "muteSuccessDescription": "Wala na si {{name}} sa feed mo.",
+    "muteErrorTitle": "Hindi tumalab ang mute.",
+    "muteErrorDescription": "Hindi na-save ang mute. Subukan ulit?",
+    "deleteVideo": "I-delete ang video",
+    "reportVideo": "I-report ang video",
+    "sendViaMessage": "Ipadala bilang mensahe",
+    "reportUser": "I-report ang user",
+    "muteUser": "I-mute si {{name}}",
+    "viewSource": "Tingnan ang source",
+    "videoEventSource": "Video Event Source"
+  },
+  "privacyPage": {
+    "title": "Patakaran sa Privacy",
+    "lastUpdated": "Huling Na-update: {{date}}"
+  },
+  "termsPage": {
+    "title": "Mga Tuntunin ng Serbisyo",
+    "lastUpdated": "Huling Na-update: {{date}}"
+  },
+  "brandPreview": {},
+  "uiSidebar": {
+    "toggleSidebar": "I-toggle ang Sidebar"
+  },
+  "uiPagination": {
+    "pagination": "pahina",
+    "previous": "Nakaraan",
+    "next": "Susunod",
+    "goToPrevious": "Pumunta sa nakaraang pahina",
+    "goToNext": "Pumunta sa susunod na pahina",
+    "morePages": "Higit pang mga pahina"
   }
 }

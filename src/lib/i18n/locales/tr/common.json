@@ -1012,5 +1012,302 @@
     "unpinnedDescription": "\"{{title}}\" sabitlerinden çıktı.",
     "unpinErrorTitle": "Sabitleme kaldırma takıldı.",
     "unpinErrorDescription": "Sabitleme kaldırılamadı. Tekrar dene?"
+  },
+  "indexPage": {
+    "seoTitle": "Divine Web - Nostr üzerinde kısa formatlı döngü videolar",
+    "seoDescription": "Merkeziyetsiz Nostr ağında 6 saniyelik döngü videoları izle ve paylaş.",
+    "heading": "Ana sayfa",
+    "subheadingDefault": "Takip ettiğin kişilerden videolar",
+    "subheadingCount_one": "Takip ettiğin {{count}} kişiden videolar",
+    "subheadingCount_other": "Takip ettiğin {{count}} kişiden videolar",
+    "emptyTitle": "Ana sayfa akışın boş",
+    "emptyDescription": "Videolarını burada görmek için içerik üreticilerini takip et. Takip edecek insanlar bulmak için trend videoları keşfet!",
+    "exploreVideos": "Videoları keşfet"
+  },
+  "notificationsPage": {
+    "heading": "Bildirimler",
+    "tabs": {
+      "all": "Tümü",
+      "unread": "Okunmamış",
+      "likes": "Beğeniler",
+      "comments": "Yorumlar",
+      "follows": "Takipler",
+      "reposts": "Yeniden paylaşımlar",
+      "zaps": "Zap'ler"
+    },
+    "empty": {
+      "all": {
+        "title": "Ortalık sessiz. İşaretlenecek bir şey yok.",
+        "description": "İnsanlar paylaşımlarına tepki verince burada görünür."
+      },
+      "unread": {
+        "title": "Hepsini gördün.",
+        "description": "Yeni hareketler önce burada görünecek."
+      },
+      "likes": {
+        "title": "Henüz beğeni bildirimi yok.",
+        "description": "Birisi videolarından birini beğendiğinde burada görünür."
+      },
+      "comments": {
+        "title": "Henüz yorum bildirimi yok.",
+        "description": "Videolarındaki yanıtlar ve yorumlar burada görünür."
+      },
+      "follows": {
+        "title": "Henüz takip bildirimi yok.",
+        "description": "Yeni takipçilerin burada görünür."
+      },
+      "reposts": {
+        "title": "Henüz yeniden paylaşım bildirimi yok.",
+        "description": "Videolarının yeniden paylaşımları burada görünür."
+      },
+      "zaps": {
+        "title": "Henüz zap bildirimi yok.",
+        "description": "Videolarına gelen zap'ler burada görünür."
+      }
+    },
+    "errorTitle": "Bildirimler yüklenemedi",
+    "errorFallback": "Lütfen daha sonra tekrar dene",
+    "sectionNew": "Yeni",
+    "sectionEarlier": "Daha önce"
+  },
+  "getEmbedPage": {
+    "title": "Divine Widget'ı göm",
+    "subtitle": "En son Divine videolarını herhangi bir web sitesine veya blog kenar çubuğuna ekle.",
+    "configureTitle": "Yapılandır",
+    "npubLabel": "Senin npub'ın (Nostr genel anahtarı)",
+    "themeLabel": "Tema",
+    "themeDark": "Koyu",
+    "themeLight": "Açık",
+    "videosLabel": "Videolar",
+    "autoRefreshLabel": "Otomatik yenile",
+    "refresh30": "30 dk",
+    "refresh60": "1 saat",
+    "refresh120": "2 saat",
+    "refreshNever": "Asla",
+    "embedCodeTitle": "Gömme kodu",
+    "copy": "Kopyala",
+    "copied": "Kopyalandı!",
+    "previewTitle": "Önizleme",
+    "previewEmpty": "Önizleme görmek için yukarıya npub'ını gir",
+    "iframeTitle": "Divine Video Widget",
+    "previewIframeTitle": "Divine Video Widget Önizleme"
+  },
+  "trendingPage": {
+    "heading": "Trend",
+    "subheading": "Toplulukta neyin popüler olduğunu keşfet",
+    "rssTitle": "DiVine - Trend",
+    "rssLink": "RSS"
+  },
+  "merchPage": {
+    "metaTitle": "Ürünler — Divine",
+    "metaDescription": "Tişörtler, kapüşonlular, şapkalar ve kendini fazla ciddiye almayan şeyler. Divine tarafından tasarlandı, Bonfire tarafından basıldı ve gönderildi.",
+    "ogTitle": "Divine Ürünleri",
+    "headline": "Döngülerini giy.",
+    "body": "Tişörtler, kapüşonlular, şapkalar ve kendini fazla ciddiye almayan şeyler.",
+    "storeCta": "Hepsine göz at",
+    "trust": "Divine tarafından tasarlandı. Bonfire tarafından basıldı ve gönderildi.",
+    "shopOnBonfire": "Bonfire'da alışveriş yap",
+    "productsAriaLabel": "Ürünler",
+    "productAriaLabel": "Bonfire'da {{name}}"
+  },
+  "eventPage": {
+    "loading": "Olay yükleniyor…",
+    "back": "Geri",
+    "noIdentifier": "Olay tanımlayıcısı verilmedi.",
+    "notFound": "Olay bulunamadı",
+    "notFoundDescription": "Bu olay yapılandırılmış veya yedek relay'lerde bulunmuyor olabilir.",
+    "kindBadge": "Tür {{kind}}",
+    "listItems": "Liste öğeleri",
+    "listItemsDescription": "Bu olayda yer alan referanslar.",
+    "noPublicReferences": "Bu liste herhangi bir genel referans içermiyor.",
+    "openReference": "Referans verilen öğeyi aç",
+    "noRouteAvailable": "Bu referans için kullanılabilir bir yol yok.",
+    "tags": "Etiketler",
+    "tagCount_one": "{{count}} etiket",
+    "tagCount_other": "{{count}} etiket",
+    "noTags": "Bu olayda etiket yok.",
+    "rawEvent": "Ham olay",
+    "kindLabel": {
+      "textNote": "Metin notu",
+      "comment": "Yorum",
+      "videoList": "Video listesi",
+      "followList": "Takip listesi",
+      "list": "Liste {{kind}}",
+      "kind": "Tür {{kind}}"
+    },
+    "referenceLabel": {
+      "profile": "Profil",
+      "event": "Olay",
+      "address": "Adres",
+      "hashtag": "Hashtag"
+    }
+  },
+  "universalUserPage": {
+    "lookingUp": "Kullanıcı aranıyor...",
+    "userNotFound": "Kullanıcı bulunamadı",
+    "couldNotFind": "{{label}} ile bir kullanıcı bulunamadı:",
+    "goHome": "Ana sayfaya git",
+    "redirecting": "Profile yönlendiriliyor...",
+    "lookupLabel": {
+      "vineId": "Vine kimliği",
+      "nip05": "NIP-05 tanımlayıcısı",
+      "legacyOrNip05": "eski Vine kullanıcı adı veya NIP-05 tanımlayıcısı"
+    },
+    "notFoundDescription": {
+      "vine": "Bu Vine kullanıcısı henüz Nostr ağına aktarılmamış olabilir.",
+      "nip05": "Lütfen NIP-05 tanımlayıcısının doğru olduğunu kontrol et.",
+      "legacy": "Bu kullanıcı adı eski bir Vine profili veya OpenVine kullanıcı adıyla eşleşmiyor."
+    }
+  },
+  "atUsernamePage": {
+    "lookingUp": "@{{username}} aranıyor...",
+    "userNotFound": "Kullanıcı bulunamadı",
+    "couldNotFind": "Kullanıcı bulunamadı",
+    "tryVisitingPrefix": "Profilini şu adreste ziyaret etmeyi dene",
+    "goHome": "Ana sayfaya git",
+    "redirecting": "Profile yönlendiriliyor..."
+  },
+  "appCallbackPage": {
+    "appStore": "App Store",
+    "googlePlay": "Google Play",
+    "desktop": {
+      "heading": "Telefonunda aç",
+      "body1": "Bu bağlantının mobil cihazındaki Divine uygulamasında açılması gerekiyor.",
+      "body2": "Bu bağlantıyı e-postayla aldıysan, Divine'ı yüklediğin telefonda aç."
+    },
+    "mobile": {
+      "heading": "Divine'da aç",
+      "body": "Bu bağlantı Divine uygulamasında açılmalı. Otomatik açılmadıysa:",
+      "bullet1": "• Divine'ın bu cihazda yüklü olduğundan emin ol",
+      "bullet2": "• Divine'ı açıp yeniden giriş yapmayı dene",
+      "getDivine": "{{store}}'da Divine'ı edin",
+      "emailHint": "E-postadan bir bağlantıya tıkladıysan, kayıt olduğun cihazda olduğundan emin ol."
+    }
+  },
+  "authCallbackPage": {
+    "finishingSignIn": "Giriş tamamlanıyor",
+    "restoring": "İmzalama oturumun geri yükleniyor ve Divine'a geri getiriliyorsun.",
+    "failedToFinish": "Giriş tamamlanamadı",
+    "returnToSignIn": "Girişe dön"
+  },
+  "authenticDemo": {
+    "title": "Otantik",
+    "imageAlt": "Otantik içerik üreten kişi",
+    "liveLabel": "Canlı",
+    "caption": "Yapay zekâdan değil, gerçek insanlardan gerçek anlar"
+  },
+  "verifiedDemo": {
+    "title": "Doğrulanmış",
+    "imageAlt": "Doğrulanmış otantik an",
+    "proofModeCertified": "ProofMode Sertifikalı",
+    "caption": "Kriptografik olarak kanıtlanmış otantiklik"
+  },
+  "decentralizedDemo": {
+    "title": "Merkeziyetsiz",
+    "imageAlt": "Merkeziyetsiz ağ işbirliği",
+    "nostrNetwork": "Nostr Ağı",
+    "caption": "Nostr üzerine kuruldu. İçeriğin senin, kontrolün senin"
+  },
+  "originalContentBadge": {
+    "label": "Orijinal",
+    "tooltip": "Bu kullanıcı tarafından üretilen orijinal içerik"
+  },
+  "videoVerificationBadgeRow": {
+    "detailsAriaLabel": "Video doğrulama ayrıntılarını gör"
+  },
+  "cameraRecorder": {
+    "accessRequired": "Kamera erişimi gerekli",
+    "failedAccess": "Kameraya erişilemedi",
+    "goBack": "Geri dön",
+    "initializing": "Kamera başlatılıyor...",
+    "durationOfMax": "{{current}} / 6,0s",
+    "rec": "Kayıt",
+    "clipLabel": "Klip {{index}}: {{duration}}",
+    "releaseToPause": "Duraklatmak için bırak",
+    "holdToRecord": "Kaydetmek için basılı tut",
+    "instructionsRecord": "Kaydetmek için butona basılı tut, duraklatmak için bırak",
+    "maxReached": "6 saniyelik maksimum süreye ulaşıldı",
+    "clipsRemaining_one": "{{count}} klip • {{remaining}} kaldı",
+    "clipsRemaining_other": "{{count}} klip • {{remaining}} kaldı",
+    "startOver": "Baştan başla"
+  },
+  "comment": {
+    "loginRequiredTitle": "Önce giriş yap.",
+    "loginRequiredDescription": "İnsanları susturmak için giriş yapmış olman lazım.",
+    "mutedTitle": "Susturuldu.",
+    "mutedDescription": "{{name}} artık akışında yok.",
+    "muteFailedTitle": "Susturma çalışmadı.",
+    "muteFailedDescription": "Susturma kaydedilemedi. Tekrar denemek ister misin?",
+    "sending": "(gönderiliyor...)",
+    "reply": "Yanıtla",
+    "replyCount_one": "{{count}} yanıt",
+    "replyCount_other": "{{count}} yanıt",
+    "optionsLabel": "Yorum seçenekleri",
+    "deleteComment": "Yorumu sil",
+    "reportComment": "Yorumu bildir",
+    "reportUser": "Kullanıcıyı bildir",
+    "muteUser": "Kullanıcıyı sustur",
+    "replyPlaceholder": "Yanıt yaz..."
+  },
+  "pwaInstallPrompt": {
+    "close": "Kapat",
+    "getDivine": "Divine'ı edin",
+    "installDivineWeb": "Divine Web'i yükle",
+    "descriptionNative": "En iyi Divine deneyimi için yerel uygulamayı yükle",
+    "descriptionWeb": "Daha iyi bir deneyim için uygulamamızı yükle",
+    "appStore": "App Store",
+    "appStoreAria": "Divine'ı App Store'dan indir",
+    "googlePlay": "Google Play",
+    "googlePlayAria": "Divine'ı Google Play'den edin",
+    "install": "Yükle",
+    "notNow": "Şimdi değil"
+  },
+  "relaySelector": {
+    "placeholder": "Relay seç"
+  },
+  "socialLinks": {
+    "groupLabel": "Sosyal medya bağlantıları",
+    "followInstagram": "Bizi Instagram'da takip et",
+    "followReddit": "Bizi Reddit'te takip et",
+    "joinDiscord": "Discord'da bize katıl",
+    "followTwitter": "Bizi Twitter'da takip et",
+    "followBluesky": "Bizi Bluesky'da takip et",
+    "followTiktok": "Bizi TikTok'ta takip et",
+    "followGithub": "Bizi GitHub'da takip et",
+    "followYoutube": "Bizi YouTube'da takip et"
+  },
+  "fullscreenVideoItem": {
+    "loadError": "Video yüklenemedi",
+    "muteSuccessTitle": "Susturuldu.",
+    "muteSuccessDescription": "{{name}} artık akışında yok.",
+    "muteErrorTitle": "Susturma çalışmadı.",
+    "muteErrorDescription": "Susturma kaydedilemedi. Tekrar denemek ister misin?",
+    "deleteVideo": "Videoyu sil",
+    "reportVideo": "Videoyu bildir",
+    "sendViaMessage": "Mesajla gönder",
+    "reportUser": "Kullanıcıyı bildir",
+    "muteUser": "{{name}} adlı kullanıcıyı sustur",
+    "viewSource": "Kaynağı gör",
+    "videoEventSource": "Video Olay Kaynağı"
+  },
+  "privacyPage": {
+    "title": "Gizlilik politikası",
+    "lastUpdated": "Son güncelleme: {{date}}"
+  },
+  "termsPage": {
+    "title": "Hizmet şartları",
+    "lastUpdated": "Son güncelleme: {{date}}"
+  },
+  "brandPreview": {},
+  "uiSidebar": {
+    "toggleSidebar": "Kenar çubuğunu aç/kapat"
+  },
+  "uiPagination": {
+    "pagination": "sayfalama",
+    "previous": "Önceki",
+    "next": "Sonraki",
+    "goToPrevious": "Önceki sayfaya git",
+    "goToNext": "Sonraki sayfaya git",
+    "morePages": "Daha fazla sayfa"
   }
 }

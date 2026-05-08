@@ -1012,5 +1012,302 @@
     "unpinnedDescription": "\"{{title}}\" är inte längre fäst.",
     "unpinErrorTitle": "Lossningen krånglade.",
     "unpinErrorDescription": "Kunde inte lossa. Försök igen?"
+  },
+  "indexPage": {
+    "seoTitle": "Divine Web - Korta loopande videor på Nostr",
+    "seoDescription": "Titta på och dela 6-sekunders loopande videor på det decentraliserade Nostr-nätverket.",
+    "heading": "Hem",
+    "subheadingDefault": "Videor från personer du följer",
+    "subheadingCount_one": "Videor från {{count}} person du följer",
+    "subheadingCount_other": "Videor från {{count}} personer du följer",
+    "emptyTitle": "Ditt hemflöde är tomt",
+    "emptyDescription": "Följ kreatörer för att se deras videor här. Utforska populära videor för att hitta personer att följa!",
+    "exploreVideos": "Utforska videor"
+  },
+  "notificationsPage": {
+    "heading": "Notiser",
+    "tabs": {
+      "all": "Alla",
+      "unread": "Olästa",
+      "likes": "Gillamarkeringar",
+      "comments": "Kommentarer",
+      "follows": "Följare",
+      "reposts": "Återpubliceringar",
+      "zaps": "Zaps"
+    },
+    "empty": {
+      "all": {
+        "title": "Tyst på fronten. Inget att flagga.",
+        "description": "När folk reagerar på dina grejer dyker det upp här."
+      },
+      "unread": {
+        "title": "Du är ikapp.",
+        "description": "Ny aktivitet visas här först."
+      },
+      "likes": {
+        "title": "Inga gilla-notiser än.",
+        "description": "När någon gillar en av dina videor dyker det upp här."
+      },
+      "comments": {
+        "title": "Inga kommentarsnotiser än.",
+        "description": "Svar och kommentarer på dina videor dyker upp här."
+      },
+      "follows": {
+        "title": "Inga följar-notiser än.",
+        "description": "Nya följare dyker upp här."
+      },
+      "reposts": {
+        "title": "Inga återpubliceringsnotiser än.",
+        "description": "Återpubliceringar av dina videor dyker upp här."
+      },
+      "zaps": {
+        "title": "Inga zap-notiser än.",
+        "description": "Zaps på dina videor dyker upp här."
+      }
+    },
+    "errorTitle": "Kunde inte ladda notiser",
+    "errorFallback": "Försök igen senare",
+    "sectionNew": "Nytt",
+    "sectionEarlier": "Tidigare"
+  },
+  "getEmbedPage": {
+    "title": "Bädda in Divine-widget",
+    "subtitle": "Lägg till dina senaste Divine-videor på vilken webbplats eller bloggsidofält som helst.",
+    "configureTitle": "Konfigurera",
+    "npubLabel": "Din npub (Nostr publik nyckel)",
+    "themeLabel": "Tema",
+    "themeDark": "Mörkt",
+    "themeLight": "Ljust",
+    "videosLabel": "Videor",
+    "autoRefreshLabel": "Auto-uppdatering",
+    "refresh30": "30 min",
+    "refresh60": "1 timme",
+    "refresh120": "2 timmar",
+    "refreshNever": "Aldrig",
+    "embedCodeTitle": "Inbäddningskod",
+    "copy": "Kopiera",
+    "copied": "Kopierat!",
+    "previewTitle": "Förhandsgranskning",
+    "previewEmpty": "Ange din npub ovan för att se en förhandsgranskning",
+    "iframeTitle": "Divine videowidget",
+    "previewIframeTitle": "Förhandsgranskning av Divine videowidget"
+  },
+  "trendingPage": {
+    "heading": "Populärt",
+    "subheading": "Upptäck vad som är populärt i communityn",
+    "rssTitle": "DiVine - Populärt",
+    "rssLink": "RSS"
+  },
+  "merchPage": {
+    "metaTitle": "Merch — Divine",
+    "metaDescription": "T-shirts, hoodies, kepsar och grejer som inte tar sig själva på för stort allvar. Designat av Divine, tryckt och skickat av Bonfire.",
+    "ogTitle": "Divine Merch",
+    "headline": "Bär dina loopar.",
+    "body": "T-shirts, hoodies, kepsar och grejer som inte tar sig själva på för stort allvar.",
+    "storeCta": "Handla allt",
+    "trust": "Designat av Divine. Tryckt och skickat av Bonfire.",
+    "shopOnBonfire": "Handla på Bonfire",
+    "productsAriaLabel": "Merch-produkter",
+    "productAriaLabel": "{{name}} på Bonfire"
+  },
+  "eventPage": {
+    "loading": "Laddar händelse…",
+    "back": "Tillbaka",
+    "noIdentifier": "Ingen händelse-identifierare angiven.",
+    "notFound": "Händelse hittades inte",
+    "notFoundDescription": "Den här händelsen finns kanske inte på de konfigurerade reläerna eller reservreläerna.",
+    "kindBadge": "Kind {{kind}}",
+    "listItems": "Listobjekt",
+    "listItemsDescription": "Referenser som finns i den här händelsen.",
+    "noPublicReferences": "Den här listan innehåller inga publika referenser.",
+    "openReference": "Öppna refererat objekt",
+    "noRouteAvailable": "Ingen sökväg tillgänglig för den här referensen.",
+    "tags": "Taggar",
+    "tagCount_one": "{{count}} tagg",
+    "tagCount_other": "{{count}} taggar",
+    "noTags": "Inga taggar på den här händelsen.",
+    "rawEvent": "Rå händelse",
+    "kindLabel": {
+      "textNote": "Textnotis",
+      "comment": "Kommentar",
+      "videoList": "Videolista",
+      "followList": "Följarlista",
+      "list": "Lista {{kind}}",
+      "kind": "Kind {{kind}}"
+    },
+    "referenceLabel": {
+      "profile": "Profil",
+      "event": "Händelse",
+      "address": "Adress",
+      "hashtag": "Hashtag"
+    }
+  },
+  "universalUserPage": {
+    "lookingUp": "Letar upp användare...",
+    "userNotFound": "Användare hittades inte",
+    "couldNotFind": "Kunde inte hitta en användare med {{label}}:",
+    "goHome": "Gå till hem",
+    "redirecting": "Omdirigerar till profil...",
+    "lookupLabel": {
+      "vineId": "Vine-ID",
+      "nip05": "NIP-05-identifierare",
+      "legacyOrNip05": "äldre Vine-användarnamn eller NIP-05-identifierare"
+    },
+    "notFoundDescription": {
+      "vine": "Den här Vine-användaren har kanske inte importerats till Nostr-nätverket än.",
+      "nip05": "Kontrollera att NIP-05-identifieraren är korrekt.",
+      "legacy": "Det här användarnamnet matchar ingen äldre Vine-profil eller OpenVine-handle."
+    }
+  },
+  "atUsernamePage": {
+    "lookingUp": "Letar upp @{{username}}...",
+    "userNotFound": "Användare hittades inte",
+    "couldNotFind": "Kunde inte hitta användaren",
+    "tryVisitingPrefix": "Försök besöka deras profil på",
+    "goHome": "Gå till hem",
+    "redirecting": "Omdirigerar till profil..."
+  },
+  "appCallbackPage": {
+    "appStore": "App Store",
+    "googlePlay": "Google Play",
+    "desktop": {
+      "heading": "Öppna på din telefon",
+      "body1": "Den här länken behöver öppnas i Divine-appen på din mobila enhet.",
+      "body2": "Om du fick den här länken via mejl, öppna den på telefonen där du har Divine installerat."
+    },
+    "mobile": {
+      "heading": "Öppna i Divine",
+      "body": "Den här länken borde öppnas i Divine-appen. Om den inte öppnades automatiskt:",
+      "bullet1": "• Se till att Divine är installerat på den här enheten",
+      "bullet2": "• Försök öppna Divine och logga in igen",
+      "getDivine": "Hämta Divine på {{store}}",
+      "emailHint": "Om du klickade på en länk från ett mejl, se till att du är på samma enhet där du registrerade dig."
+    }
+  },
+  "authCallbackPage": {
+    "finishingSignIn": "Slutför inloggning",
+    "restoring": "Återställer din signeringssession och tar dig tillbaka in i Divine.",
+    "failedToFinish": "Kunde inte slutföra inloggning",
+    "returnToSignIn": "Tillbaka till inloggning"
+  },
+  "authenticDemo": {
+    "title": "Äkta",
+    "imageAlt": "Person som skapar äkta innehåll",
+    "liveLabel": "LIVE",
+    "caption": "Riktiga ögonblick från riktiga människor, inte AI"
+  },
+  "verifiedDemo": {
+    "title": "Verifierad",
+    "imageAlt": "Verifierat äkta ögonblick",
+    "proofModeCertified": "ProofMode-certifierad",
+    "caption": "Kryptografiskt bevisad äkthet"
+  },
+  "decentralizedDemo": {
+    "title": "Decentraliserad",
+    "imageAlt": "Decentraliserat nätverkssamarbete",
+    "nostrNetwork": "Nostr-nätverk",
+    "caption": "Byggd på Nostr. Ditt innehåll, din kontroll"
+  },
+  "originalContentBadge": {
+    "label": "Original",
+    "tooltip": "Originalinnehåll skapat av den här användaren"
+  },
+  "videoVerificationBadgeRow": {
+    "detailsAriaLabel": "Visa detaljer om videoverifiering"
+  },
+  "cameraRecorder": {
+    "accessRequired": "Kameraåtkomst krävs",
+    "failedAccess": "Kunde inte komma åt kameran",
+    "goBack": "Tillbaka",
+    "initializing": "Initierar kamera...",
+    "durationOfMax": "{{current}} / 6.0s",
+    "rec": "REC",
+    "clipLabel": "Klipp {{index}}: {{duration}}",
+    "releaseToPause": "Släpp för att pausa",
+    "holdToRecord": "Håll in för att spela in",
+    "instructionsRecord": "Håll in knappen för att spela in, släpp för att pausa",
+    "maxReached": "6 sekunders max nått",
+    "clipsRemaining_one": "{{count}} klipp • {{remaining}} kvar",
+    "clipsRemaining_other": "{{count}} klipp • {{remaining}} kvar",
+    "startOver": "Börja om"
+  },
+  "comment": {
+    "loginRequiredTitle": "Logga in först.",
+    "loginRequiredDescription": "Du behöver vara inloggad för att tysta personer.",
+    "mutedTitle": "Tystad.",
+    "mutedDescription": "{{name}} är borta från ditt flöde.",
+    "muteFailedTitle": "Tystningen gick inte igenom.",
+    "muteFailedDescription": "Kunde inte spara tystningen. Försök igen?",
+    "sending": "(skickar...)",
+    "reply": "Svara",
+    "replyCount_one": "{{count}} svar",
+    "replyCount_other": "{{count}} svar",
+    "optionsLabel": "Kommentarsalternativ",
+    "deleteComment": "Radera kommentar",
+    "reportComment": "Rapportera kommentar",
+    "reportUser": "Rapportera användare",
+    "muteUser": "Tysta användare",
+    "replyPlaceholder": "Skriv ett svar..."
+  },
+  "pwaInstallPrompt": {
+    "close": "Stäng",
+    "getDivine": "Hämta Divine",
+    "installDivineWeb": "Installera Divine Web",
+    "descriptionNative": "Installera den nativa appen för bästa Divine-upplevelse",
+    "descriptionWeb": "Installera vår app för en bättre upplevelse",
+    "appStore": "App Store",
+    "appStoreAria": "Ladda ner Divine på App Store",
+    "googlePlay": "Google Play",
+    "googlePlayAria": "Hämta Divine på Google Play",
+    "install": "Installera",
+    "notNow": "Inte nu"
+  },
+  "relaySelector": {
+    "placeholder": "Välj relä"
+  },
+  "socialLinks": {
+    "groupLabel": "Länkar till sociala medier",
+    "followInstagram": "Följ oss på Instagram",
+    "followReddit": "Följ oss på Reddit",
+    "joinDiscord": "Gå med oss på Discord",
+    "followTwitter": "Följ oss på Twitter",
+    "followBluesky": "Följ oss på Bluesky",
+    "followTiktok": "Följ oss på TikTok",
+    "followGithub": "Följ oss på GitHub",
+    "followYoutube": "Följ oss på YouTube"
+  },
+  "fullscreenVideoItem": {
+    "loadError": "Kunde inte ladda video",
+    "muteSuccessTitle": "Tystad.",
+    "muteSuccessDescription": "{{name}} är borta från ditt flöde.",
+    "muteErrorTitle": "Tystningen gick inte igenom.",
+    "muteErrorDescription": "Kunde inte spara tystningen. Försök igen?",
+    "deleteVideo": "Radera video",
+    "reportVideo": "Rapportera video",
+    "sendViaMessage": "Skicka via meddelande",
+    "reportUser": "Rapportera användare",
+    "muteUser": "Tysta {{name}}",
+    "viewSource": "Visa källa",
+    "videoEventSource": "Videohändelsekälla"
+  },
+  "privacyPage": {
+    "title": "Integritetspolicy",
+    "lastUpdated": "Senast uppdaterad: {{date}}"
+  },
+  "termsPage": {
+    "title": "Användarvillkor",
+    "lastUpdated": "Senast uppdaterad: {{date}}"
+  },
+  "brandPreview": {},
+  "uiSidebar": {
+    "toggleSidebar": "Växla sidofält"
+  },
+  "uiPagination": {
+    "pagination": "paginering",
+    "previous": "Föregående",
+    "next": "Nästa",
+    "goToPrevious": "Gå till föregående sida",
+    "goToNext": "Gå till nästa sida",
+    "morePages": "Fler sidor"
   }
 }
