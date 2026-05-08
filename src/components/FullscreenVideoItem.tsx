@@ -2,6 +2,7 @@
 // ABOUTME: Displays video with overlay UI including back button, author info, and action buttons
 
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Heart, ChatCircle as MessageCircle, Repeat as Repeat2, Share, SpeakerHigh as Volume2, SpeakerX as VolumeX, DownloadSimple as Download, ListPlus, Users, DotsThreeVertical as MoreVertical, Flag, UserMinus as UserX, Code, Trash as Trash2, Eye, ClosedCaptioning as Captions } from '@phosphor-icons/react';
 import { nip19 } from 'nostr-tools';
 import { Button } from '@/components/ui/button';
@@ -81,6 +82,7 @@ export function FullscreenVideoItem({
   viewCount = 0,
   trafficSource,
 }: FullscreenVideoItemProps) {
+  const { t } = useTranslation();
   // Subscribe to bandwidth tier changes for adaptive HLS quality
   const _bandwidthTier = useBandwidthTier();
 
@@ -205,13 +207,13 @@ export function FullscreenVideoItem({
         reason: 'Muted from fullscreen video'
       });
       toast({
-        title: 'Muted.',
-        description: `${displayName} is off your feed.`,
+        title: t('fullscreenVideoItem.muteSuccessTitle'),
+        description: t('fullscreenVideoItem.muteSuccessDescription', { name: displayName }),
       });
     } catch {
       toast({
-        title: 'Mute didn\'t land.',
-        description: 'Couldn\'t save the mute. Try again?',
+        title: t('fullscreenVideoItem.muteErrorTitle'),
+        description: t('fullscreenVideoItem.muteErrorDescription'),
         variant: 'destructive',
       });
     }
@@ -260,7 +262,7 @@ export function FullscreenVideoItem({
           />
         ) : (
           <div className="flex items-center justify-center h-full text-white">
-            <p>Failed to load video</p>
+            <p>{t('fullscreenVideoItem.loadError')}</p>
           </div>
         )}
       </div>
@@ -503,7 +505,7 @@ export function FullscreenVideoItem({
                         className="text-red-400 focus:text-red-400 focus:bg-red-500/20"
                       >
                         <Trash2 className="h-4 w-4 mr-2" />
-                        Delete video
+                        {t('fullscreenVideoItem.deleteVideo')}
                       </DropdownMenuItem>
                       <DropdownMenuSeparator className="bg-white/20" />
                     </>
@@ -513,7 +515,7 @@ export function FullscreenVideoItem({
                     className="focus:bg-white/10"
                   >
                     <Flag className="h-4 w-4 mr-2" />
-                    Report video
+                    {t('fullscreenVideoItem.reportVideo')}
                   </DropdownMenuItem>
                   {canUseDirectMessages && (
                     <DropdownMenuItem
@@ -521,7 +523,7 @@ export function FullscreenVideoItem({
                       className="focus:bg-white/10"
                     >
                       <MessageCircle className="h-4 w-4 mr-2" />
-                      Send via message
+                      {t('fullscreenVideoItem.sendViaMessage')}
                     </DropdownMenuItem>
                   )}
                   <DropdownMenuItem
@@ -529,7 +531,7 @@ export function FullscreenVideoItem({
                     className="focus:bg-white/10"
                   >
                     <Flag className="h-4 w-4 mr-2" />
-                    Report user
+                    {t('fullscreenVideoItem.reportUser')}
                   </DropdownMenuItem>
                   <DropdownMenuSeparator className="bg-white/20" />
                   <DropdownMenuItem
@@ -537,7 +539,7 @@ export function FullscreenVideoItem({
                     className="text-red-400 focus:text-red-400 focus:bg-red-500/20"
                   >
                     <UserX className="h-4 w-4 mr-2" />
-                    Mute {displayName}
+                    {t('fullscreenVideoItem.muteUser', { name: displayName })}
                   </DropdownMenuItem>
                   <DropdownMenuSeparator className="bg-white/20" />
                   <DropdownMenuItem
@@ -545,7 +547,7 @@ export function FullscreenVideoItem({
                     className="focus:bg-white/10"
                   >
                     <Code className="h-4 w-4 mr-2" />
-                    View source
+                    {t('fullscreenVideoItem.viewSource')}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -617,7 +619,7 @@ export function FullscreenVideoItem({
           open={showViewSourceDialog}
           onClose={() => setShowViewSourceDialog(false)}
           video={video}
-          title="Video Event Source"
+          title={t('fullscreenVideoItem.videoEventSource')}
         />
       )}
     </div>

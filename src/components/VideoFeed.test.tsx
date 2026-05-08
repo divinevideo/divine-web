@@ -3,6 +3,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import type { ButtonHTMLAttributes, HTMLAttributes, ReactNode } from 'react';
+import { initializeI18n } from '@/lib/i18n';
 import { VideoFeed } from './VideoFeed';
 
 const { mockNavigate, mockUseVideoProvider, mockEnterFullscreen, mockSetVideosForFullscreen, mockUpdateVideos } = vi.hoisted(() => ({
@@ -100,7 +101,18 @@ vi.mock('react-infinite-scroll-component', () => ({
 }));
 
 describe('VideoFeed', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
+    const storage = new Map<string, string>();
+    Object.defineProperty(window, 'localStorage', {
+      configurable: true,
+      value: {
+        getItem: (key: string) => storage.get(key) ?? null,
+        setItem: (key: string, value: string) => storage.set(key, value),
+        removeItem: (key: string) => storage.delete(key),
+        clear: () => storage.clear(),
+      } satisfies Pick<Storage, 'getItem' | 'setItem' | 'removeItem' | 'clear'>,
+    });
+    await initializeI18n({ force: true, languages: ['en-US'] });
     vi.clearAllMocks();
     mockUseVideoProvider.mockReturnValue({
       data: {

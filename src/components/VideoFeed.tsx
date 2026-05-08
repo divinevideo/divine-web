@@ -2,6 +2,7 @@
 // ABOUTME: Uses video provider hook with automatic Funnelcake/WebSocket selection
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useLocation } from 'react-router-dom';
 import { performanceMonitor } from '@/lib/performanceMonitoring';
 import { VideoCamera as Video, CircleNotch as Loader2, Play } from '@phosphor-icons/react';
@@ -67,6 +68,7 @@ export function VideoFeed({
   'data-hashtag-testid': hashtagTestId,
   'data-profile-testid': profileTestId,
 }: VideoFeedProps) {
+  const { t } = useTranslation();
   const location = useLocation();
   const [showCommentsForVideo, setShowCommentsForVideo] = useState<string | null>(null);
   const [showListDialog, setShowListDialog] = useState<{ videoId: string; videoPubkey: string } | null>(null);
@@ -252,7 +254,7 @@ export function VideoFeed({
         className="gap-2"
       >
         <Play className="h-4 w-4" />
-        Play all
+        {t('common.playAll')}
       </Button>
     </div>
   ) : null;

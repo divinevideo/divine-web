@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { FullscreenFeed } from './FullscreenFeed';
 import { SHORT_VIDEO_KIND, type ParsedVideoData } from '@/types/video';
+import { initializeI18n } from '@/lib/i18n';
 
 vi.mock('@/hooks/useVideoPlayback', () => ({
   useVideoPlayback: () => ({
@@ -96,9 +97,20 @@ function makeVideo(id: string): ParsedVideoData {
 }
 
 describe('FullscreenFeed', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks();
     Element.prototype.scrollIntoView = vi.fn();
+    const storage = new Map<string, string>();
+    Object.defineProperty(window, 'localStorage', {
+      configurable: true,
+      value: {
+        getItem: (key: string) => storage.get(key) ?? null,
+        setItem: (key: string, value: string) => storage.set(key, value),
+        removeItem: (key: string) => storage.delete(key),
+        clear: () => storage.clear(),
+      } satisfies Pick<Storage, 'getItem' | 'setItem' | 'removeItem' | 'clear'>,
+    });
+    await initializeI18n({ force: true, languages: ['en-US'] });
   });
 
   it('auto-advances to the next fullscreen item in compilation mode', () => {

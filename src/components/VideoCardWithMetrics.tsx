@@ -1,6 +1,7 @@
 // ABOUTME: Wrapper component that adds social metrics to VideoCard
 // ABOUTME: MUST be defined outside of parent component to prevent remounting on re-renders
 
+import { useTranslation } from 'react-i18next';
 import { VideoCard } from '@/components/VideoCard';
 import type { CardAccent } from '@/components/ui/card';
 import { useDeferredVideoMetrics } from '@/hooks/useDeferredVideoMetrics';
@@ -44,6 +45,7 @@ function VideoCardWithMetricsInner({
   navigationContext,
   accent,
 }: VideoCardWithMetricsProps) {
+  const { t } = useTranslation();
   const { user } = useCurrentUser();
   const { toast } = useToast();
   const { toggleLike } = useOptimisticLike();
@@ -89,8 +91,8 @@ function VideoCardWithMetricsInner({
 
     if (!video.vineId) {
       toast({
-        title: 'Error',
-        description: 'Cannot repost this video',
+        title: t('videoCardWithMetrics.repostErrorTitle'),
+        description: t('videoCardWithMetrics.repostErrorDescription'),
         variant: 'destructive',
       });
       return;

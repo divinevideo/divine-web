@@ -60,24 +60,26 @@ describe('static pages i18n', () => {
     expect(screen.getByRole('heading', { name: 'Primeros pasos' })).toBeInTheDocument();
   });
 
-  it('keeps terms copy in english', () => {
+  it('renders terms title in spanish (chrome only — body stays english)', () => {
     render(
       <MemoryRouter>
         <TermsPage />
       </MemoryRouter>,
     );
 
-    expect(screen.getByRole('heading', { name: 'Terms of Service' })).toBeInTheDocument();
+    // Page title + "last updated" label are translated; legal body paragraphs
+    // remain hardcoded English per the i18n rollout decision.
+    expect(screen.getByRole('heading', { name: 'Términos del servicio' })).toBeInTheDocument();
   });
 
-  it('keeps privacy copy in english', () => {
+  it('renders privacy title in spanish (chrome only — body stays english)', () => {
     render(
       <MemoryRouter>
         <PrivacyPage />
       </MemoryRouter>,
     );
 
-    expect(screen.getByRole('heading', { name: 'Privacy Policy' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Política de privacidad' })).toBeInTheDocument();
   });
 
   it('renders safety copy in spanish', () => {

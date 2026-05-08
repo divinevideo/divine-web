@@ -33,7 +33,20 @@ describe('i18n config', () => {
   });
 
   it('falls back to english when no locale matches', () => {
-    expect(resolveInitialLocale(['zh-CN', 'fil-PH'])).toBe(DEFAULT_LOCALE);
+    expect(resolveInitialLocale(['zh-CN', 'th-TH'])).toBe(DEFAULT_LOCALE);
+  });
+
+  it('aliases legacy tagalog codes (tl, tl-PH) to fil', () => {
+    // 'tl' and 'tl-PH' come from older OS settings; LOCALE_ALIASES routes them to 'fil'.
+    expect(resolveInitialLocale(['tl'])).toBe('fil');
+    expect(resolveInitialLocale(['tl-PH'])).toBe('fil');
+  });
+
+  it('resolves filipino regional variants (fil-PH) via the standard base-language fallback', () => {
+    // 'fil' is a supported locale, so 'fil-PH' resolves via the normal split-on-dash path,
+    // not via LOCALE_ALIASES.
+    expect(resolveInitialLocale(['fil-PH'])).toBe('fil');
+    expect(resolveInitialLocale(['fil'])).toBe('fil');
   });
 
   it('prefers a persisted manual override over browser locales', () => {

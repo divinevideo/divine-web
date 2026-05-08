@@ -1,9 +1,10 @@
 import { render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import MerchPage from './MerchPage';
 import { MERCH_STORE_URL } from '@/lib/externalLinks';
 import merchProducts from '@/data/merchProducts.json';
+import { initializeI18n } from '@/lib/i18n';
 
 vi.mock('@unhead/react', () => ({
   useHead: () => undefined,
@@ -18,6 +19,20 @@ function renderPage() {
 }
 
 describe('MerchPage', () => {
+  beforeEach(async () => {
+    const storage = new Map<string, string>();
+    Object.defineProperty(window, 'localStorage', {
+      configurable: true,
+      value: {
+        getItem: (key: string) => storage.get(key) ?? null,
+        setItem: (key: string, value: string) => storage.set(key, value),
+        removeItem: (key: string) => storage.delete(key),
+        clear: () => storage.clear(),
+      } satisfies Pick<Storage, 'getItem' | 'setItem' | 'removeItem' | 'clear'>,
+    });
+    await initializeI18n({ force: true, languages: ['en-US'] });
+  });
+
   it('renders a hero headline', () => {
     renderPage();
     expect(screen.getByRole('heading', { level: 1 })).toBeInTheDocument();

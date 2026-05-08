@@ -1,13 +1,18 @@
 import * as React from "react"
 import { Slot } from "@radix-ui/react-slot"
-import { CaretRight as ChevronRight, DotsThree as MoreHorizontal } from '@phosphor-icons/react';import { cn } from "@/lib/utils"
+import { CaretRight as ChevronRight, DotsThree as MoreHorizontal } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
+import { cn } from "@/lib/utils"
 
 const Breadcrumb = React.forwardRef<
   HTMLElement,
   React.ComponentPropsWithoutRef<"nav"> & {
     separator?: React.ReactNode
   }
->(({ ...props }, ref) => <nav ref={ref} aria-label="breadcrumb" {...props} />)
+>(({ ...props }, ref) => {
+  const { t } = useTranslation();
+  return <nav ref={ref} aria-label={t('uiBreadcrumb.breadcrumb')} {...props} />;
+})
 Breadcrumb.displayName = "Breadcrumb"
 
 const BreadcrumbList = React.forwardRef<
@@ -89,17 +94,20 @@ BreadcrumbSeparator.displayName = "BreadcrumbSeparator"
 const BreadcrumbEllipsis = ({
   className,
   ...props
-}: React.ComponentProps<"span">) => (
-  <span
-    role="presentation"
-    aria-hidden="true"
-    className={cn("flex h-9 w-9 items-center justify-center", className)}
-    {...props}
-  >
-    <MoreHorizontal className="h-4 w-4" />
-    <span className="sr-only">More</span>
-  </span>
-)
+}: React.ComponentProps<"span">) => {
+  const { t } = useTranslation();
+  return (
+    <span
+      role="presentation"
+      aria-hidden="true"
+      className={cn("flex h-9 w-9 items-center justify-center", className)}
+      {...props}
+    >
+      <MoreHorizontal className="h-4 w-4" />
+      <span className="sr-only">{t('uiBreadcrumb.more')}</span>
+    </span>
+  );
+}
 BreadcrumbEllipsis.displayName = "BreadcrumbElipssis"
 
 export {

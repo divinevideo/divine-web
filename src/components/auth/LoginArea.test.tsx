@@ -1,7 +1,8 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { initializeI18n } from '@/lib/i18n';
 import { LoginArea } from './LoginArea';
 
 const mockCloseLoginDialog = vi.fn();
@@ -24,6 +25,20 @@ vi.mock('./LoginDialog', () => ({
 }));
 
 describe('LoginArea', () => {
+  beforeEach(async () => {
+    const storage = new Map<string, string>();
+    Object.defineProperty(window, 'localStorage', {
+      configurable: true,
+      value: {
+        getItem: (key: string) => storage.get(key) ?? null,
+        setItem: (key: string, value: string) => storage.set(key, value),
+        removeItem: (key: string) => storage.delete(key),
+        clear: () => storage.clear(),
+      } satisfies Pick<Storage, 'getItem' | 'setItem' | 'removeItem' | 'clear'>,
+    });
+    await initializeI18n({ force: true, languages: ['en-US'] });
+  });
+
   afterEach(() => {
     vi.clearAllMocks();
     sessionStorage.clear();

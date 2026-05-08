@@ -1,8 +1,9 @@
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ProfileHeader } from './ProfileHeader';
 import type { ProfileStats } from '@/lib/profileStats';
+import { initializeI18n } from '@/lib/i18n';
 
 vi.mock('./LinkedAccounts', () => ({
   LinkedAccounts: () => <div data-testid="linked-accounts" />,
@@ -76,6 +77,20 @@ const baseStats: ProfileStats = {
 };
 
 describe('ProfileHeader', () => {
+  beforeEach(async () => {
+    const storage = new Map<string, string>();
+    Object.defineProperty(window, 'localStorage', {
+      configurable: true,
+      value: {
+        getItem: (key: string) => storage.get(key) ?? null,
+        setItem: (key: string, value: string) => storage.set(key, value),
+        removeItem: (key: string) => storage.delete(key),
+        clear: () => storage.clear(),
+      } satisfies Pick<Storage, 'getItem' | 'setItem' | 'removeItem' | 'clear'>,
+    });
+    await initializeI18n({ force: true, languages: ['en-US'] });
+  });
+
   it('shows clickable legacy socials for classic viners only', () => {
     render(
       <MemoryRouter>

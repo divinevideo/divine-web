@@ -7,6 +7,7 @@ import type {
 } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ParsedVideoData } from '@/types/video';
+import { initializeI18n } from '@/lib/i18n';
 import { VideoCard } from './VideoCard';
 
 const playbackMocks = vi.hoisted(() => ({
@@ -366,7 +367,18 @@ const baseVideo = {
 } as unknown as ParsedVideoData;
 
 describe('VideoCard', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
+    const storage = new Map<string, string>();
+    Object.defineProperty(window, 'localStorage', {
+      configurable: true,
+      value: {
+        getItem: (key: string) => storage.get(key) ?? null,
+        setItem: (key: string, value: string) => storage.set(key, value),
+        removeItem: (key: string) => storage.delete(key),
+        clear: () => storage.clear(),
+      } satisfies Pick<Storage, 'getItem' | 'setItem' | 'removeItem' | 'clear'>,
+    });
+    await initializeI18n({ force: true, languages: ['en-US'] });
     playbackMocks.activeVideoId = null;
     playbackMocks.setActiveVideo.mockClear();
     playbackMocks.setGlobalMuted.mockClear();

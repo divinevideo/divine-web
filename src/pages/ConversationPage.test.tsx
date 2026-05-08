@@ -6,6 +6,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { DmMessage } from '@/lib/dm';
 import { encodeConversationId } from '@/lib/dm';
 import ConversationPage from './ConversationPage';
+import { initializeI18n } from '@/lib/i18n';
 
 const RECIPIENT_PUBKEY = 'b'.repeat(64);
 const CONVERSATION_ID = encodeConversationId([RECIPIENT_PUBKEY]);
@@ -102,8 +103,19 @@ function renderPage() {
 }
 
 describe('ConversationPage', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks();
+    const storage = new Map<string, string>();
+    Object.defineProperty(window, 'localStorage', {
+      configurable: true,
+      value: {
+        getItem: (key: string) => storage.get(key) ?? null,
+        setItem: (key: string, value: string) => storage.set(key, value),
+        removeItem: (key: string) => storage.delete(key),
+        clear: () => storage.clear(),
+      } satisfies Pick<Storage, 'getItem' | 'setItem' | 'removeItem' | 'clear'>,
+    });
+    await initializeI18n({ force: true, languages: ['en-US'] });
     mockAuthorMap[RECIPIENT_PUBKEY] = {
       metadata: {
         display_name: 'Inbox Friend',

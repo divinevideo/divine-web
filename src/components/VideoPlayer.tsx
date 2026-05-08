@@ -2,6 +2,7 @@
 // ABOUTME: Supports MP4 and GIF formats with preloading, seamless playback, and blurhash placeholders
 
 import { useRef, useEffect, useState, forwardRef, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { useInView } from 'react-intersection-observer';
 import { useVideoPlayback } from '@/hooks/useVideoPlayback';
@@ -111,6 +112,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
     },
     ref
   ) => {
+    const { t } = useTranslation();
     const videoRef = useRef<HTMLVideoElement | null>(null);
     const hlsRef = useRef<Hls | null>(null);
     const containerRef = useRef<HTMLDivElement | null>(null);
@@ -962,7 +964,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
         <div className={cn('relative overflow-hidden', className)}>
           <img
             src={currentUrl}
-            alt="Video GIF"
+            alt={t('videoPlayer.gifAlt')}
             className="w-full h-full object-contain"
             onLoad={() => setIsLoading(false)}
             onError={() => setHasError(true)}
@@ -974,7 +976,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
           )}
           {hasError && (
             <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
-              Failed to load GIF
+              {t('videoPlayer.gifLoadFailed')}
             </div>
           )}
         </div>
@@ -1060,7 +1062,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
             )}
             <img
               src="/ui-icons/loading-brand.svg"
-              alt="Loading..."
+              alt={t('videoPlayer.loading')}
               className="w-24 h-24 opacity-75"
             />
           </div>
@@ -1069,8 +1071,8 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
         {/* Auth denied after verification */}
         {authDeniedAfterVerification && (
           <AgeRestrictedMediaPlaceholder
-            title="Age-restricted video"
-            actionLabel="Retry"
+            title={t('videoPlayer.ageRestrictedTitle')}
+            actionLabel={t('videoPlayer.retry')}
             onAction={handleAgeVerified}
           />
         )}
@@ -1079,9 +1081,9 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
         {hasError && !requiresAuth && !authDeniedAfterVerification && (
           <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
             <div className="text-center">
-              <div>Failed to load video</div>
+              <div>{t('videoPlayer.loadFailed')}</div>
               {isMobile && (
-                <div className="text-sm mt-2">Tap to retry</div>
+                <div className="text-sm mt-2">{t('videoPlayer.tapToRetry')}</div>
               )}
             </div>
           </div>

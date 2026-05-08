@@ -1,4 +1,5 @@
 import { useSeoMeta } from '@unhead/react';
+import { useTranslation } from 'react-i18next';
 import { VideoFeed } from '@/components/VideoFeed';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useFollowList } from '@/hooks/useFollowList';
@@ -9,13 +10,14 @@ import { useNavigate } from 'react-router-dom';
 import DiscoveryPage from './DiscoveryPage';
 
 const Index = () => {
+  const { t } = useTranslation();
   const { user } = useCurrentUser();
   const { data: followList, isLoading: isLoadingFollows } = useFollowList();
   const navigate = useNavigate();
 
   useSeoMeta({
-    title: 'Divine Web - Short-form Looping Videos on Nostr',
-    description: 'Watch and share 6-second looping videos on the decentralized Nostr network.',
+    title: t('indexPage.seoTitle'),
+    description: t('indexPage.seoDescription'),
   });
 
   // Show discovery feed for non-logged-in users (no interstitial landing page)
@@ -30,8 +32,8 @@ const Index = () => {
         <main className="container py-6">
           <div className="max-w-2xl mx-auto">
             <header className="mb-6">
-              <h1 className="text-2xl font-bold">Home</h1>
-              <p className="text-muted-foreground">Videos from people you follow</p>
+              <h1 className="text-2xl font-bold">{t('indexPage.heading')}</h1>
+              <p className="text-muted-foreground">{t('indexPage.subheadingDefault')}</p>
             </header>
 
             <Card className="border-dashed border-2">
@@ -42,17 +44,17 @@ const Index = () => {
                   </div>
                   <div className="space-y-2">
                     <p className="text-lg font-medium text-foreground">
-                      Your home feed is empty
+                      {t('indexPage.emptyTitle')}
                     </p>
                     <p className="text-sm text-muted-foreground">
-                      Follow creators to see their videos here. Explore trending videos to find people to follow!
+                      {t('indexPage.emptyDescription')}
                     </p>
                   </div>
                   <Button
                     onClick={() => navigate('/discovery')}
                     className="mt-4"
                   >
-                    Explore Videos
+                    {t('indexPage.exploreVideos')}
                   </Button>
                 </div>
               </CardContent>
@@ -69,9 +71,9 @@ const Index = () => {
       <main className="container py-6">
         <div className="max-w-2xl mx-auto">
           <header className="mb-6">
-            <h1 className="text-2xl font-bold">Home</h1>
+            <h1 className="text-2xl font-bold">{t('indexPage.heading')}</h1>
             <p className="text-muted-foreground">
-              Videos from {followList?.length || 0} {followList?.length === 1 ? 'person' : 'people'} you follow
+              {t('indexPage.subheadingCount', { count: followList?.length || 0 })}
             </p>
           </header>
 

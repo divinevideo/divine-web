@@ -3,6 +3,7 @@
 
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { SmartLink } from '@/components/SmartLink';
 import { ArrowLeft, GridFour as Grid3X3, List, Rss } from '@phosphor-icons/react';
 import { useHead, useSeoMeta } from '@unhead/react';
@@ -19,6 +20,7 @@ import { EXTENDED_SORT_MODES as SORT_MODES } from '@/lib/constants/sortModes';
 type ViewMode = 'feed' | 'grid';
 
 export function HashtagPage() {
+  const { t } = useTranslation();
   const { tag } = useParams<{ tag: string }>();
   const normalizedTag = (tag || '').toLowerCase();
   const [viewMode, setViewMode] = useState<ViewMode>('feed');
@@ -31,24 +33,24 @@ export function HashtagPage() {
       {
         rel: 'alternate',
         type: 'application/rss+xml',
-        title: `#${tag} - Divine`,
+        title: t('hashtagPage.rssFeedTitle', { tag }),
         href: feedUrls.hashtag(normalizedTag),
       },
     ] : [],
   });
 
   // Dynamic SEO meta tags for social sharing
-  const description = `Explore videos tagged with #${tag} on Divine`;
+  const description = t('hashtagPage.seoDescription', { tag });
 
   useSeoMeta({
-    title: `#${tag} - Divine`,
+    title: t('hashtagPage.seoTitle', { tag }),
     description: description,
-    ogTitle: `#${tag} - Divine`,
+    ogTitle: t('hashtagPage.seoTitle', { tag }),
     ogDescription: description,
     ogImage: '/og.avif',
     ogType: 'website',
     twitterCard: 'summary_large_image',
-    twitterTitle: `#${tag} - Divine`,
+    twitterTitle: t('hashtagPage.seoTitle', { tag }),
     twitterDescription: description,
     twitterImage: '/og.avif',
   });
@@ -59,9 +61,9 @@ export function HashtagPage() {
         <div className="max-w-2xl mx-auto">
           <Card>
             <CardContent className="py-12 text-center">
-              <h2 className="text-xl font-semibold mb-4">Invalid Hashtag</h2>
+              <h2 className="text-xl font-semibold mb-4">{t('hashtagPage.invalidTitle')}</h2>
               <p className="text-muted-foreground">
-                No hashtag specified in the URL
+                {t('hashtagPage.invalidDescription')}
               </p>
             </CardContent>
           </Card>
@@ -80,7 +82,7 @@ export function HashtagPage() {
             className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
           >
             <ArrowLeft className="h-4 w-4" />
-            Back to Discovery
+            {t('hashtagPage.backToDiscovery')}
           </SmartLink>
         </div>
 
@@ -89,7 +91,7 @@ export function HashtagPage() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold">#{tag}</h1>
-              <p className="text-muted-foreground">Videos tagged with #{tag}</p>
+              <p className="text-muted-foreground">{t('hashtagPage.headerSubtitle', { tag })}</p>
             </div>
             {rssFeedAvailable && (
               <a
@@ -98,7 +100,7 @@ export function HashtagPage() {
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
               >
-                <Rss className="h-3.5 w-3.5" /> RSS
+                <Rss className="h-3.5 w-3.5" /> {t('hashtagPage.rssLabel')}
               </a>
             )}
           </div>
@@ -108,7 +110,7 @@ export function HashtagPage() {
             <div
               className="flex items-center bg-muted rounded-lg p-1"
               role="group"
-              aria-label="View mode selection"
+              aria-label={t('hashtagPage.viewModeAria')}
             >
               <Button
                 variant={viewMode === 'feed' ? 'default' : 'ghost'}
@@ -119,7 +121,7 @@ export function HashtagPage() {
                 aria-pressed={viewMode === 'feed'}
               >
                 <List className="h-4 w-4 mr-1" />
-                Feed
+                {t('hashtagPage.feed')}
               </Button>
               <Button
                 variant={viewMode === 'grid' ? 'default' : 'ghost'}
@@ -130,13 +132,13 @@ export function HashtagPage() {
                 aria-pressed={viewMode === 'grid'}
               >
                 <Grid3X3 className="h-4 w-4 mr-1" />
-                Grid
+                {t('hashtagPage.grid')}
               </Button>
             </div>
 
             {/* Sort mode selector */}
             <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">Sort:</span>
+              <span className="text-sm text-muted-foreground">{t('hashtagPage.sortLabel')}</span>
               <Select value={sortMode} onValueChange={(value) => setSortMode(value as SortMode)}>
                 <SelectTrigger className="w-[140px]">
                   <SelectValue />

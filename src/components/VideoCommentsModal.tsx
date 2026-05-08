@@ -1,6 +1,7 @@
 // ABOUTME: Modal component for displaying comments only (no video replay)
 // ABOUTME: Uses CommentsSection for NIP-22 comments
 
+import { useTranslation } from 'react-i18next';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { CommentsSection } from '@/components/comments/CommentsSection';
 import { cn } from '@/lib/utils';
@@ -22,6 +23,7 @@ export function VideoCommentsModal({
   isLoadingComments = false,
   className,
 }: VideoCommentsModalProps) {
+  const { t } = useTranslation();
   // CRITICAL: Use the original event if available to preserve all tags
   // Kind 34236 is an addressable event that REQUIRES a 'd' tag (vineId) to properly
   // filter comments. Without the original event's tags, all videos would query for
@@ -57,7 +59,7 @@ export function VideoCommentsModal({
       >
         <DialogHeader className="px-6 py-4 border-b">
           <DialogTitle className="text-lg font-semibold">
-            {video.title || 'Comments'}
+            {video.title || t('videoCommentsModal.title')}
           </DialogTitle>
         </DialogHeader>
 
@@ -65,14 +67,14 @@ export function VideoCommentsModal({
         <div className="overflow-y-auto max-h-[calc(90vh-80px)] px-6 py-6">
           {isLoadingComments ? (
             <div className="flex items-center justify-center h-64">
-              <p className="text-muted-foreground">Loading comments...</p>
+              <p className="text-muted-foreground">{t('videoCommentsModal.loading')}</p>
             </div>
           ) : (
             <CommentsSection
               root={videoEvent}
-              title="Comments"
-              emptyStateMessage="No comments yet"
-              emptyStateSubtitle="Be the first to comment on this video!"
+              title={t('videoCommentsModal.title')}
+              emptyStateMessage={t('videoCommentsModal.emptyMessage')}
+              emptyStateSubtitle={t('videoCommentsModal.emptySubtitle')}
               compact={true}
               data-testid="comments-section"
               data-root-kind={video.kind.toString()}

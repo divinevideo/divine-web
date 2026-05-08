@@ -2,6 +2,7 @@
 // ABOUTME: Allows user to optionally provide a reason for deletion
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Dialog,
   DialogContent,
@@ -31,6 +32,7 @@ export function DeleteCommentDialog({
   comment,
   isDeleting,
 }: DeleteCommentDialogProps) {
+  const { t } = useTranslation();
   const [reason, setReason] = useState('');
 
   const handleConfirm = () => {
@@ -50,10 +52,10 @@ export function DeleteCommentDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <AlertCircle className="h-5 w-5 text-destructive" />
-            Delete Comment?
+            {t('deleteCommentDialog.title')}
           </DialogTitle>
           <DialogDescription>
-            This action will send a deletion request to all relays. Most relays will honor this request and remove your comment.
+            {t('deleteCommentDialog.description')}
           </DialogDescription>
         </DialogHeader>
 
@@ -68,25 +70,25 @@ export function DeleteCommentDialog({
           {/* Optional reason */}
           <div className="space-y-2">
             <Label htmlFor="delete-reason">
-              Reason (optional)
+              {t('deleteCommentDialog.reasonLabel')}
             </Label>
             <Textarea
               id="delete-reason"
-              placeholder="Why are you deleting this comment?"
+              placeholder={t('deleteCommentDialog.reasonPlaceholder')}
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               disabled={isDeleting}
               rows={3}
             />
             <p className="text-xs text-muted-foreground">
-              This reason will be included in the deletion event sent to relays.
+              {t('deleteCommentDialog.reasonHelp')}
             </p>
           </div>
 
           {/* Warning */}
           <div className="bg-brand-yellow-light border border-brand-yellow rounded-lg p-3 dark:bg-brand-yellow-dark">
             <p className="text-sm text-brand-yellow-dark dark:text-brand-yellow-light">
-              <strong>Note:</strong> While most relays will remove your comment, deletion is not guaranteed. Some relays may choose to keep the content, and users who have already seen it will still have access.
+              <strong>{t('deleteCommentDialog.noteLabel')}</strong> {t('deleteCommentDialog.noteBody')}
             </p>
           </div>
         </div>
@@ -97,14 +99,14 @@ export function DeleteCommentDialog({
             onClick={handleClose}
             disabled={isDeleting}
           >
-            Cancel
+            {t('deleteCommentDialog.cancel')}
           </Button>
           <Button
             variant="destructive"
             onClick={handleConfirm}
             disabled={isDeleting}
           >
-            {isDeleting ? 'Deleting...' : 'Delete Comment'}
+            {isDeleting ? t('deleteCommentDialog.deleting') : t('deleteCommentDialog.confirm')}
           </Button>
         </DialogFooter>
       </DialogContent>
