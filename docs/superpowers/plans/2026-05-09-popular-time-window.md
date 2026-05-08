@@ -280,7 +280,7 @@ vi.mock('@/lib/funnelcakeClient', () => ({
 }));
 ```
 
-In any existing `beforeEach` reset, add `mockFetchVideosV2.mockReset();` next to the existing resets (mirror whatever pattern is already there).
+No changes needed in `beforeEach` — the existing `vi.clearAllMocks()` (line 56) clears the new mock automatically.
 
 - [ ] **Step 2: Write the failing test**
 
@@ -1297,7 +1297,7 @@ In the browser:
 3. Click each period pill. URL updates `?sort=popular&period=…`. Feed re-fetches.
 4. Open DevTools Network tab. Confirm a request to `/api/v2/videos?sort=popular&period=<value>&limit=12` for each window.
 5. Refresh on `/trending?sort=popular&period=week`. Page restores Popular + This Week.
-6. Visit `/trending?sort=controversial`. URL is rewritten to `/trending?sort=hot` and Hot tab is active.
+6. Visit `/trending?sort=controversial`. Hot tab is active and the period row is hidden. (The URL itself stays `?sort=controversial` — coercion is render-only by design.)
 7. Visit `/trending?sort=popular&period=now`. If feed is empty (off-hours), see "Quiet hour — try a wider window" with a button that navigates to `?sort=popular&period=today`.
 
 - [ ] **Step 4: Open the PR**
@@ -1318,7 +1318,7 @@ gh pr create --title "feat: Popular tab with time-window selector on /trending" 
 - [ ] `/trending` defaults to Hot, no period row
 - [ ] `/trending?sort=popular` shows period row, defaults to Today
 - [ ] Each period pill issues `/api/v2/videos?sort=popular&period=…`
-- [ ] `/trending?sort=controversial` redirects to `/trending?sort=hot`
+- [ ] `/trending?sort=controversial` renders the Hot tab (URL stays as-is — coercion is render-only)
 - [ ] `/trending?sort=popular&period=week` deep-link survives refresh
 - [ ] Quiet-hour empty state appears for empty `now` window with one-tap fix
 - [ ] Axe a11y sweep green on `/trending?sort=popular&period=today`
