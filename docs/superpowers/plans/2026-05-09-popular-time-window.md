@@ -34,7 +34,7 @@
 
 | File | Purpose |
 | --- | --- |
-| `src/lib/funnelcakeClient.test.ts` (new or extended) | `fetchVideos` / `fetchVideosV2` include `period` when set, omit when undefined |
+| `src/lib/funnelcakeClient.test.ts` (extend — file already exists) | `fetchVideos` / `fetchVideosV2` include `period` when set, omit when undefined |
 | `src/hooks/useInfiniteVideosFunnelcake.test.ts` (extend) | `sortMode='popular'` + `period` plumbs to `fetchVideosV2` |
 | `src/pages/TrendingPage.test.tsx` (new) | URL state, period row visibility, controversial coercion |
 | `src/components/VideoFeed.test.tsx` (extend) | Quiet-hour empty state for popular + now (Task 9) |
