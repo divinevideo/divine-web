@@ -431,21 +431,81 @@ And inside the queryFn where `getFetchOptions` is called:
 const options = getFetchOptions(feedType, sortMode, pageSize, period);
 ```
 
-- [ ] **Step 7: Run the popular tests**
+- [ ] **Step 7: Guard edge-feed consumption against Popular requests**
+
+> **Real bug to fix here, not just a forward-looking change.** The current hook (`src/hooks/useInfiniteVideosFunnelcake.ts:210-234`) unconditionally consumes `window.__DIVINE_FEED__` on the first page when `feedType === 'trending'`. The Fastly edge worker injects this for the *default* trending feed (sort=watching, no period). When a user deep-links to `/trending?sort=popular&period=today`, page 1 would silently use the wrong sort while page 2+ correctly hits the API. The fix is one line.
+
+Around line 213-214 of `src/hooks/useInfiniteVideosFunnelcake.ts`, change:
+
+```ts
+const edgeMatchesFeed = edgeFeedType === feedType || (edgeFeedType === undefined && feedType === 'trending');
+if (!pageParam && edgeMatchesFeed && typeof window !== 'undefined' && window.__DIVINE_FEED__) {
+```
+
+to:
+
+```ts
+// Edge-injected data only represents the default trending feed (sort=watching, no period).
+// Skip it whenever the request specifies a period — those mean Popular, which the edge
+// hasn't pre-cached.
+const edgeMatchesFeed = edgeFeedType === feedType || (edgeFeedType === undefined && feedType === 'trending');
+const edgeUsable = edgeMatchesFeed && !period;
+if (!pageParam && edgeUsable && typeof window !== 'undefined' && window.__DIVINE_FEED__) {
+```
+
+(Replace just the `edgeMatchesFeed` check in the `if` with `edgeUsable`.)
+
+Add a regression test inside `src/hooks/useInfiniteVideosFunnelcake.test.ts` (in the same `describe('popular sort with period')` block):
+
+```ts
+it('does not consume edge-injected feed when period is set', async () => {
+  // Simulate edge injection
+  (window as Window & { __DIVINE_FEED__?: unknown; __DIVINE_FEED_TYPE__?: string }).__DIVINE_FEED__ = {
+    videos: [{ id: 'edge-video', pubkey: 'edge-p', kind: 34236, createdAt: 1, vineId: 'edge-d' }],
+  };
+  delete (window as { __DIVINE_FEED_TYPE__?: string }).__DIVINE_FEED_TYPE__;
+
+  mockFetchVideosV2.mockResolvedValueOnce({ videos: [{}], has_more: false, next_cursor: undefined });
+  mockTransformToVideoPage.mockReturnValueOnce({
+    videos: [{ id: 'api-video', pubkey: 'api-p', kind: 34236, createdAt: 2, vineId: 'api-d' }],
+    nextCursor: undefined,
+    hasMore: false,
+  });
+
+  const { result } = renderHook(
+    () => useInfiniteVideosFunnelcake({ feedType: 'trending', sortMode: 'popular', period: 'today', pageSize: 12 }),
+    { wrapper: createWrapper() }
+  );
+
+  await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+  // Hook hit the API, not the edge cache
+  expect(mockFetchVideosV2).toHaveBeenCalled();
+  expect(result.current.data?.pages[0]?.videos[0]?.id).toBe('api-video');
+
+  // Edge cache untouched (still present for a future non-period request)
+  expect((window as { __DIVINE_FEED__?: unknown }).__DIVINE_FEED__).toBeDefined();
+
+  // Cleanup
+  delete (window as { __DIVINE_FEED__?: unknown }).__DIVINE_FEED__;
+});
+```
+
+- [ ] **Step 8: Run the popular tests (including the edge-cache regression test)**
 
 Run: `npx vitest run src/hooks/useInfiniteVideosFunnelcake.test.ts -t "popular sort with period"`
-Expected: PASS.
+Expected: PASS — both the period-plumbing tests and the edge-cache guard test.
 
-- [ ] **Step 8: Run the full test file to confirm no regressions**
+- [ ] **Step 9: Run the full test file to confirm no regressions**
 
 Run: `npx vitest run src/hooks/useInfiniteVideosFunnelcake.test.ts`
-Expected: PASS (all).
+Expected: PASS (all). The existing recommendations tests still work because they don't set `period`.
 
-- [ ] **Step 9: Commit**
+- [ ] **Step 10: Commit**
 
 ```bash
 git add src/hooks/useInfiniteVideosFunnelcake.ts src/hooks/useInfiniteVideosFunnelcake.test.ts
-git commit -m "feat(feed): wire period through useInfiniteVideosFunnelcake for popular sort"
+git commit -m "feat(feed): wire period through useInfiniteVideosFunnelcake; skip edge cache for Popular"
 ```
 
 ---
@@ -1345,7 +1405,7 @@ EOF
 - **URL encoding for the New tab:** the tab is encoded as `?sort=new`, **not** as a missing param. Missing `?sort` defaults to Hot (matches today's behavior). Clicking New writes `?sort=new`. This is the only way to make the round-trip stable.
 - **Controversial coercion is render-only**, no URL rewrite. Visiting `?sort=controversial` renders Hot; the URL stays `?sort=controversial` until the user clicks something. This is intentional — rewriting the URL on mount triggers re-render churn and is not testable from `useSearchParams` without a location probe.
 - **The trending feed uses `/api/v2/videos`.** When `sort=popular` is selected, the request becomes `GET /api/v2/videos?sort=popular&period=<value>&limit=12`. Verify in DevTools network tab during Task 12 manual QA.
-- **Edge-injected feed cache (`window.__DIVINE_FEED__`)** is only consumed for the default trending feed (no `pageParam`, no sort filter). Popular requests bypass it because they have a different `queryKey` (period is part of the key). No edge-side change needed.
+- **Edge-injected feed cache (`window.__DIVINE_FEED__`)** is consumed unconditionally on the first `trending` page in the *current* code at `useInfiniteVideosFunnelcake.ts:210-234`, regardless of sortMode/period. This silently breaks deep-links to `/trending?sort=popular&period=…` (page 1 would show the edge's default sort/period; pages 2+ would correctly use Popular). **Task 3 Step 7 fixes this** with a one-line guard (`!period`) plus a regression test. Existing Hot/Top/Rising sorts keep their current edge consumption — production today already accepts that mismatch and this plan deliberately does not expand the fix beyond Popular. No edge-worker change required.
 - **Brand guardrails** (`tests/brand`) run on the entire src tree. New code must avoid: Tailwind `uppercase` class, `lucide-react` imports, `bg-gradient-*` / `radial-gradient(` / `linear-gradient(` on layout surfaces. The plan's snippets comply, but watch for accidental introductions during Task 8/9.
 - **`'controversial'` is intentionally NOT removed from the `SortMode` type.** Several call sites still reference it in switch/case branches and literal arrays — `useInfiniteSearchVideos.ts:51`, `useInfiniteVideos.ts:83` (`['top', 'hot', 'rising', 'controversial'].includes(...)`), `useVideoProvider.ts:117`, `useVideoByIdFunnelcake.ts:46`, `relayCapabilities.ts:26`. Keeping the type literal means none of those need editing; the only behavioral change is that `EXTENDED_SORT_MODES` and `SEARCH_SORT_MODES` no longer surface a tab for it. Old `?sort=controversial` URLs on `/trending` get coerced to `hot` (Task 8); on `/search`, no tab is highlighted but the search itself still functions.
 
