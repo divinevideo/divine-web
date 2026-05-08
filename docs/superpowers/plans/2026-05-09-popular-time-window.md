@@ -1366,6 +1366,10 @@ In the browser:
 5. Refresh on `/trending?sort=popular&period=week`. Page restores Popular + This Week.
 6. Visit `/trending?sort=controversial`. Hot tab is active and the period row is hidden. (The URL itself stays `?sort=controversial` — coercion is render-only by design.)
 7. Visit `/trending?sort=popular&period=now`. If feed is empty (off-hours), see "Quiet hour — try a wider window" with a button that navigates to `?sort=popular&period=today`.
+8. **Edge-cache deep-link smoke test (validates the Task 3 Step 7 fix).** The edge worker only injects `__DIVINE_FEED__` on the initial HTML response, not on client-side navigations — so this must be tested by opening a *fresh tab* directly to the deep link, not by clicking around the SPA.
+   - Open a brand-new tab. Paste `/trending?sort=popular&period=week` and load it.
+   - DevTools → Network: confirm the very first `/api/v2/videos?...` request includes `sort=popular&period=week`. If it instead requests the default trending feed (or no API call fires for page 1), the edge guard is broken.
+   - In the Console, run `window.__DIVINE_FEED__` — it should still be defined (the hook left it untouched because period was set). If it's `undefined`, the guard didn't fire and the cache was consumed.
 
 - [ ] **Step 4: Open the PR**
 
