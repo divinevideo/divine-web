@@ -31,6 +31,7 @@ import { getEventLookupRelayUrls } from '@/config/relays';
 import type { NostrEvent, NostrFilter } from '@nostrify/nostrify';
 import { SHORT_VIDEO_KIND, VIDEO_KINDS, type ParsedVideoData } from '@/types/video';
 import { parseVideoEvent, getVineId, getThumbnailUrl, getOriginalVineTimestamp, getLoopCount, getProofModeData, getOriginalLikeCount, getOriginalRepostCount, getOriginalCommentCount, getOriginPlatform, isVineMigrated } from '@/lib/videoParser';
+import { resolveListPermissions } from '@/lib/listPermissions';
 
 interface VideoList {
   id: string;
@@ -67,13 +68,15 @@ function parseVideoList(event: NostrEvent): VideoList | null {
   // Extract categorization tags
   const tags = event.tags
     .filter(tag => tag[0] === 't')
-    .map(tag => tag[1]);
+    .map(tag => tag[1])
+    .filter((tag): tag is string => Boolean(tag));
 
   // Extract collaborative settings
   const isCollaborative = event.tags.find(tag => tag[0] === 'collaborative')?.[1] === 'true';
   const allowedCollaborators = event.tags
     .filter(tag => tag[0] === 'collaborator')
-    .map(tag => tag[1]);
+    .map(tag => tag[1])
+    .filter((pubkey): pubkey is string => Boolean(pubkey));
 
   // Extract featured thumbnail
   const thumbnailEventId = event.tags.find(tag => tag[0] === 'thumbnail-event')?.[1];
@@ -237,23 +240,22 @@ export default function ListDetailPage() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const isOwner = user?.pubkey === pubkey;
-  const canEdit = isOwner; // TODO: Add collaborator check
+  const listOwnerPubkey = pubkey || undefined;
 
   const handleDeleteList = async () => {
-    if (!list) return;
+    if (!list || !listOwnerPubkey) return;
     setIsDeleting(true);
     try {
-      await deleteList.mutateAsync({ listId: list.id });
+      await deleteList.mutateAsync({ listId: list.id, ownerPubkey: listOwnerPubkey });
       toast({
         title: t('listDetailPage.listDeletedTitle'),
         description: t('listDetailPage.listDeletedDescription', { name: list.name }),
       });
       navigate('/lists');
-    } catch {
+    } catch (error) {
       toast({
         title: t('listDetailPage.errorTitle'),
-        description: t('listDetailPage.deleteFailedDescription'),
+        description: error instanceof Error ? error.message : t('listDetailPage.deleteFailedDescription'),
         variant: 'destructive',
       });
     } finally {
@@ -273,7 +275,7 @@ export default function ListDetailPage() {
         AbortSignal.timeout(5000)
       ]);
 
-      const events = await nostr.query([{
+      const ownerEvents = await nostr.query([{
         kinds: [30005],
         authors: [pubkey],
         '#d': [listId],
@@ -285,14 +287,48 @@ export default function ListDetailPage() {
         }),
       });
 
-      if (events.length === 0) {
+      if (ownerEvents.length === 0) {
         throw new Error(t('listDetailPage.notFoundError'));
       }
 
-      return parseVideoList(events[0]);
+      const ownerList = parseVideoList(ownerEvents[0]);
+      if (!ownerList) {
+        throw new Error(t('listDetailPage.notFoundError'));
+      }
+
+      if (!ownerList.isCollaborative || !ownerList.allowedCollaborators || ownerList.allowedCollaborators.length === 0) {
+        return ownerList;
+      }
+
+      const participantPubkeys = Array.from(new Set([pubkey, ...ownerList.allowedCollaborators]));
+      const participantEvents = await nostr.query([{
+        kinds: [30005],
+        authors: participantPubkeys,
+        '#d': [listId],
+        limit: 50,
+      }], {
+        signal,
+        relays: getEventLookupRelayUrls({
+          configuredRelayUrls: config.relayUrls || [config.relayUrl],
+        }),
+      });
+
+      const participantSet = new Set(participantPubkeys);
+      const latestList = participantEvents
+        .map(parseVideoList)
+        .filter((candidate): candidate is VideoList => candidate !== null && participantSet.has(candidate.pubkey))
+        .sort((a, b) => b.createdAt - a.createdAt)[0];
+
+      return latestList || ownerList;
     },
     enabled: !!pubkey && !!listId
   });
+
+  const permissions = resolveListPermissions({
+    ownerPubkey: listOwnerPubkey,
+    isCollaborative: list?.isCollaborative,
+    allowedCollaborators: list?.allowedCollaborators,
+  }, user?.pubkey);
 
   // Fetch videos in the list
   const { data: videos, isLoading: videosLoading } = useQuery({
@@ -459,7 +495,7 @@ export default function ListDetailPage() {
 
               {/* Actions */}
               <div className="flex gap-2">
-                {isOwner && (
+                {permissions.canEditMetadata && (
                   <>
                     <Button variant="outline" size="sm" onClick={() => setShowEditDialog(true)}>
                       <Edit className="h-4 w-4 mr-2" />
@@ -491,7 +527,7 @@ export default function ListDetailPage() {
           <div>
             <h2 className="text-lg font-semibold mb-4">{t('listDetailPage.videosInList')}</h2>
 
-            {canEdit ? (
+            {permissions.canEditContent ? (
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 {videos.map((video) => {
                   const videoCoord = `${video.kind}:${video.pubkey}:${video.vineId}`;
@@ -501,7 +537,7 @@ export default function ListDetailPage() {
                         videos={[video]}
                         navigationContext={{
                           source: 'profile',
-                          pubkey: list.pubkey,
+                          pubkey: listOwnerPubkey || list.pubkey,
                         }}
                       />
                       <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -521,16 +557,17 @@ export default function ListDetailPage() {
                                 try {
                                   await removeVideo.mutateAsync({
                                     listId: list.id,
+                                    ownerPubkey: listOwnerPubkey || list.pubkey,
                                     videoCoordinate: videoCoord
                                   });
                                   toast({
                                     title: t('listDetailPage.videoRemovedTitle'),
                                     description: t('listDetailPage.videoRemovedDescription'),
                                   });
-                                } catch {
+                                } catch (error) {
                                   toast({
                                     title: t('listDetailPage.errorTitle'),
-                                    description: t('listDetailPage.removeVideoFailedDescription'),
+                                    description: error instanceof Error ? error.message : t('listDetailPage.removeVideoFailedDescription'),
                                     variant: 'destructive',
                                   });
                                 }
@@ -552,7 +589,7 @@ export default function ListDetailPage() {
                 videos={videos}
                 navigationContext={{
                   source: 'profile',
-                  pubkey: list.pubkey,
+                  pubkey: listOwnerPubkey || list.pubkey,
                 }}
               />
             )}
@@ -564,7 +601,7 @@ export default function ListDetailPage() {
               <p className="text-muted-foreground">
                 {t('listDetailPage.emptyList')}
               </p>
-              {isOwner && (
+              {permissions.canEditContent && (
                 <p className="text-sm text-muted-foreground mt-2">
                   {t('listDetailPage.emptyListOwnerHint')}
                 </p>
