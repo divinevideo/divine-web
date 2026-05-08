@@ -151,5 +151,73 @@
   "vineBadge": {
     "archived": "Archived",
     "tooltip": "Original Vine archive preserved from the Internet Archive"
+  },
+  "videoCard": {
+    "ariaHideSubtitles": "Hide subtitles",
+    "ariaShowSubtitles": "Show subtitles",
+    "ariaUnmute": "Unmute",
+    "ariaMute": "Mute",
+    "ariaEnterFullscreen": "Enter fullscreen",
+    "ariaUnlike": "Unlike",
+    "ariaLike": "Like",
+    "ariaViewLikes": "View who liked this video",
+    "ariaRemoveRepost": "Remove repost",
+    "ariaRepost": "Repost",
+    "ariaViewReposts": "View who reposted this video",
+    "ariaComment": "Comment",
+    "ariaShare": "Share",
+    "ariaDownload": "Download",
+    "ariaLists": "Lists",
+    "ariaMoreOptions": "More options",
+    "lists": "Lists",
+    "verifyAgeToView": "Verify age to view",
+    "logInToView": "Log in to view",
+    "failedToLoad": "Failed to load video",
+    "retry": "Retry",
+    "loadingProfile": "Loading profile...",
+    "repostedBySingle": "{{name}} reposted",
+    "repostedByMultiple_one": "{{name}} and {{count}} other reposted",
+    "repostedByMultiple_other": "{{name}} and {{count}} others reposted",
+    "menu": {
+      "unpinFromProfile": "Unpin from profile",
+      "pinToProfile": "Pin to profile",
+      "deleteVideo": "Delete video",
+      "reportVideo": "Report video",
+      "sendViaMessage": "Send via message",
+      "reportUser": "Report user",
+      "muteUser": "Mute {{name}}",
+      "viewSource": "View source"
+    },
+    "viewSourceDialogTitle": "Video Event Source",
+    "toast": {
+      "muted": {
+        "title": "Muted.",
+        "description": "{{name}} is off your feed."
+      },
+      "muteFailed": {
+        "title": "Mute didn't land.",
+        "description": "Couldn't save the mute. Try again?"
+      },
+      "unpinned": {
+        "title": "Unpinned.",
+        "description": "Off your profile pins."
+      },
+      "pinned": {
+        "title": "Pinned.",
+        "description": "Up top on your profile."
+      },
+      "pinFailed": {
+        "title": "Pin snagged.",
+        "descriptionFallback": "Couldn't update the pin. Try again?"
+      },
+      "noDownloadUrl": {
+        "title": "Nothing to download.",
+        "description": "This video doesn't have a URL yet."
+      },
+      "downloading": {
+        "title": "Downloading.",
+        "description": "Saving your loop."
+      }
+    }
   }
 }

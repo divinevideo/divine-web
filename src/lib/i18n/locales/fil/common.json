@@ -149,5 +149,73 @@
   "vineBadge": {
     "archived": "Naka-archive",
     "tooltip": "Orihinal na Vine archive na nailigtas mula sa Internet Archive"
+  },
+  "videoCard": {
+    "ariaHideSubtitles": "Itago ang subtitles",
+    "ariaShowSubtitles": "Ipakita ang subtitles",
+    "ariaUnmute": "I-unmute",
+    "ariaMute": "I-mute",
+    "ariaEnterFullscreen": "Mag-fullscreen",
+    "ariaUnlike": "Tanggalin ang like",
+    "ariaLike": "I-like",
+    "ariaViewLikes": "Tingnan kung sinong nag-like",
+    "ariaRemoveRepost": "Tanggalin ang repost",
+    "ariaRepost": "I-repost",
+    "ariaViewReposts": "Tingnan kung sinong nag-repost",
+    "ariaComment": "Magkomento",
+    "ariaShare": "I-share",
+    "ariaDownload": "I-download",
+    "ariaLists": "Mga Lista",
+    "ariaMoreOptions": "Iba pang opsyon",
+    "lists": "Mga Lista",
+    "verifyAgeToView": "Patunayan ang edad para tingnan",
+    "logInToView": "Mag-log in para tingnan",
+    "failedToLoad": "Hindi nag-load ang video",
+    "retry": "Subukan ulit",
+    "loadingProfile": "Nilo-load ang profile...",
+    "repostedBySingle": "Nag-repost si {{name}}",
+    "repostedByMultiple_one": "Nag-repost si {{name}} at {{count}} pa",
+    "repostedByMultiple_other": "Nag-repost si {{name}} at {{count}} pa",
+    "menu": {
+      "unpinFromProfile": "Tanggalin sa pin",
+      "pinToProfile": "I-pin sa profile",
+      "deleteVideo": "Burahin ang video",
+      "reportVideo": "I-report ang video",
+      "sendViaMessage": "Ipadala bilang mensahe",
+      "reportUser": "I-report ang user",
+      "muteUser": "I-mute si {{name}}",
+      "viewSource": "Tingnan ang source"
+    },
+    "viewSourceDialogTitle": "Source ng Video Event",
+    "toast": {
+      "muted": {
+        "title": "Na-mute.",
+        "description": "Wala na sa feed mo si {{name}}."
+      },
+      "muteFailed": {
+        "title": "Hindi na-mute.",
+        "description": "Hindi na-save ang mute. Subukan ulit?"
+      },
+      "unpinned": {
+        "title": "Na-unpin.",
+        "description": "Wala na sa pins ng profile mo."
+      },
+      "pinned": {
+        "title": "Na-pin.",
+        "description": "Nasa taas na ng profile mo."
+      },
+      "pinFailed": {
+        "title": "May problema sa pin.",
+        "descriptionFallback": "Hindi na-update ang pin. Subukan ulit?"
+      },
+      "noDownloadUrl": {
+        "title": "Walang ma-download.",
+        "description": "Wala pang URL ang video na 'to."
+      },
+      "downloading": {
+        "title": "Dina-download.",
+        "description": "Sina-save ang loop mo."
+      }
+    }
   }
 }
