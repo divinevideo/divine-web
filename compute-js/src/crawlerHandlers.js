@@ -2,7 +2,7 @@
 // ABOUTME: Each returns a Response with full OG/Twitter Card HTML or null
 
 import { KVStore } from 'fastly:kv-store';
-import { buildCrawlerHtml, cleanText } from './ogTags.js';
+import { buildCrawlerHtml, cleanText, truncateText } from './ogTags.js';
 import { hexToNpub, decodeNpubToHex } from './bech32.js';
 import { transformVideoApiResponse } from './videoMetadata.js';
 
@@ -299,6 +299,32 @@ export async function handleHashtagOgTags(tag) {
     console.error('handleHashtagOgTags error:', err.message);
     return null;
   }
+}
+
+export function handleSearchOgTags(query) {
+  const trimmed = (query || '').trim();
+  if (!trimmed) return null;
+  const safe = truncateText(trimmed, 80);
+
+  const html = buildCrawlerHtml({
+    title: `"${safe}" on Divine`,
+    description: `Search Divine for "${safe}" — watch loops, find creators, follow what you love.`,
+    image: DEFAULT_OG_IMAGE,
+    url: `https://divine.video/search?q=${encodeURIComponent(trimmed)}`,
+    ogType: 'website',
+    twitterCard: 'summary_large_image',
+    imageWidth: 1200,
+    imageHeight: 630,
+  });
+
+  return new Response(html, {
+    status: 200,
+    headers: {
+      'Content-Type': 'text/html; charset=utf-8',
+      'Cache-Control': 'public, max-age=300',
+      'Vary': 'User-Agent',
+    },
+  });
 }
 
 export async function handleAtUsernameOg(username, url) {

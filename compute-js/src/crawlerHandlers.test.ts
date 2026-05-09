@@ -19,7 +19,7 @@ vi.mock('fastly:kv-store', () => {
   return { KVStore: MockKVStore };
 });
 
-import { handleAtUsernameOg, handleHashtagOgTags } from './crawlerHandlers.js';
+import { handleAtUsernameOg, handleHashtagOgTags, handleSearchOgTags } from './crawlerHandlers.js';
 
 const HEX64 = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
 
@@ -149,5 +149,49 @@ describe('handleHashtagOgTags', () => {
     const result = await handleHashtagOgTags('cooking');
     const html = await result!.text();
     expect(html).toContain('https://divine.video/og.png');
+  });
+});
+
+describe('handleSearchOgTags', () => {
+  it('echoes the search query in title and url', async () => {
+    const result = handleSearchOgTags('skateboarding');
+    expect(result).not.toBeNull();
+    const html = await result!.text();
+    // Double-quotes are HTML-escaped in title/meta attributes
+    expect(html).toContain('&quot;skateboarding&quot; on Divine');
+    expect(html).toContain('https://divine.video/search?q=skateboarding');
+  });
+
+  it('escapes HTML in the query', async () => {
+    const result = handleSearchOgTags('<script>alert(1)</script>');
+    const html = await result!.text();
+    expect(html).not.toContain('<script>alert(1)</script>');
+    expect(html).toContain('&lt;script&gt;');
+  });
+
+  it('returns null for empty or whitespace-only query', () => {
+    expect(handleSearchOgTags('')).toBeNull();
+    expect(handleSearchOgTags('   ')).toBeNull();
+    expect(handleSearchOgTags(null as any)).toBeNull();
+  });
+
+  it('truncates very long queries with ellipsis', async () => {
+    const result = handleSearchOgTags('x'.repeat(500));
+    const html = await result!.text();
+    expect(html).toContain('…');
+  });
+
+  it('URL-encodes the query in the canonical url', async () => {
+    const result = handleSearchOgTags('a b c');
+    const html = await result!.text();
+    expect(html).toContain('q=a%20b%20c');
+  });
+
+  it('emits og:image:width 1200 and og:image:height 630', async () => {
+    const result = handleSearchOgTags('foo');
+    const html = await result!.text();
+    expect(html).toContain('og:image:width');
+    expect(html).toContain('content="1200"');
+    expect(html).toContain('content="630"');
   });
 });
