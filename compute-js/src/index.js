@@ -9,6 +9,7 @@ import { PublisherServer } from '@fastly/compute-js-static-publish';
 import rc from '../static-publish.rc.js';
 import { buildCrawlerHtml, escapeHtml, cleanText, truncateText } from './ogTags.js';
 import { transformVideoApiResponse } from './videoMetadata.js';
+import { renderEmbedPage } from './embedPage.js';
 
 const publisherServer = PublisherServer.fromStaticPublishRc(rc);
 const DEFAULT_OG_IMAGE = 'https://divine.video/og.png';
@@ -126,7 +127,35 @@ async function handleRequest(event) {
     return await serveStaticWellKnownFile(request, url.pathname, { varyByOriginalHost: true });
   }
 
-  // 5. Handle dynamic OG meta tags for crawler requests
+  // 5. Handle /embed/:id — minimal autoplaying iframe for twitter:player / Slack
+  if (url.pathname.startsWith('/embed/')) {
+    const videoId = url.pathname.split('/embed/')[1]?.split('?')[0];
+    if (videoId) {
+      let videoMeta = null;
+      try {
+        videoMeta = await fetchVideoMetadata(videoId);
+      } catch (e) {
+        console.error('Embed: failed to fetch video metadata:', e.message);
+      }
+      const html = renderEmbedPage({
+        videoUrl: videoMeta?.videoUrl,
+        mime: videoMeta?.videoMime,
+        poster: videoMeta?.thumbnail,
+        title: videoMeta?.title,
+      });
+      return new Response(html, {
+        status: 200,
+        headers: {
+          'Content-Type': 'text/html; charset=utf-8',
+          'Cache-Control': 'public, max-age=300',
+          'Content-Security-Policy': 'frame-ancestors *',
+          'X-Robots-Tag': 'noindex',
+        },
+      });
+    }
+  }
+
+  // 6. Handle dynamic OG meta tags for crawler requests
   if (isSocialMediaCrawler(request)) {
     if (url.pathname.startsWith('/video/')) {
       console.log('Handling video OG tags for crawler, path:', url.pathname);
@@ -156,7 +185,7 @@ async function handleRequest(event) {
     }
   }
 
-  // 6. Serve sw.js with no-cache to ensure browsers always get the latest service worker
+  // 7. Serve sw.js with no-cache to ensure browsers always get the latest service worker
   if (url.pathname === '/sw.js') {
     const response = await publisherServer.serveRequest(request);
     if (response != null) {
@@ -170,12 +199,12 @@ async function handleRequest(event) {
     }
   }
 
-  // 7. Content report API (creates Zendesk tickets)
+  // 8. Content report API (creates Zendesk tickets)
   if (url.pathname === '/api/report') {
     return await handleReport(request);
   }
 
-  // 7b. Proxy RSS feed requests to the relay backend (serves application/rss+xml)
+  // 8b. Proxy RSS feed requests to the relay backend (serves application/rss+xml)
   if (url.pathname.startsWith('/feed/') || url.pathname === '/feed') {
     console.log('Proxying RSS feed request to relay:', url.pathname);
     return fetchFromFunnelcake(funnelcakeTarget, `${url.pathname}${url.search}`, {
@@ -184,7 +213,7 @@ async function handleRequest(event) {
     });
   }
 
-  // 8. Serve static content with SPA fallback (handled by PublisherServer config)
+  // 9. Serve static content with SPA fallback (handled by PublisherServer config)
   // Detect pages that benefit from edge-injected feed data
   const isApexDomain = APEX_DOMAINS.includes(hostnameToUse);
   const isApexLanding = isApexDomain && (url.pathname === '/' || url.pathname === '/index.html');
