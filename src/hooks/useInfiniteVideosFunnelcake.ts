@@ -6,7 +6,7 @@ import { useState } from 'react';
 import { getFunnelcakeBaseUrl } from '@/config/api';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import type { ParsedVideoData } from '@/types/video';
-import type { FunnelcakeFetchOptions } from '@/types/funnelcake';
+import type { FunnelcakeFetchOptions, FunnelcakePeriod } from '@/types/funnelcake';
 import { fetchVideos, fetchVideosV2, searchVideos, fetchUserVideos, fetchUserFeed, fetchRecommendations } from '@/lib/funnelcakeClient';
 import { enrichAgeRestrictedVideos } from '@/lib/ageRestrictedVideos';
 import { transformToVideoPage } from '@/lib/funnelcakeTransform';
@@ -14,12 +14,13 @@ import { debugLog } from '@/lib/debug';
 import { performanceMonitor } from '@/lib/performanceMonitoring';
 
 export type FunnelcakeFeedType = 'trending' | 'recent' | 'classics' | 'hashtag' | 'profile' | 'home' | 'recommendations' | 'category';
-export type FunnelcakeSortMode = 'trending' | 'recent' | 'loops' | 'engagement' | 'classic' | 'watching';
+export type FunnelcakeSortMode = 'trending' | 'recent' | 'loops' | 'engagement' | 'classic' | 'watching' | 'popular';
 
 interface UseInfiniteVideosFunnelcakeOptions {
   feedType: FunnelcakeFeedType;
   apiUrl?: string;          // Override API URL (for classics always using Divine)
   sortMode?: FunnelcakeSortMode;
+  period?: FunnelcakePeriod;   // Time window for popular/trending sorts
   hashtag?: string;         // For hashtag feed
   category?: string;        // For category feed
   pubkey?: string;          // For profile and home feeds
@@ -92,7 +93,8 @@ function isRecommendationsCursorPageParam(
 function getFetchOptions(
   feedType: FunnelcakeFeedType,
   sortMode?: FunnelcakeSortMode,
-  pageSize: number = 20
+  pageSize: number = 20,
+  period?: FunnelcakePeriod,
 ): FunnelcakeFetchOptions {
   const baseOptions: FunnelcakeFetchOptions = {
     limit: pageSize,
@@ -111,10 +113,15 @@ function getFetchOptions(
     case 'trending':
       // Trending uses /api/v2/videos with sort=watching by default — 24h CDN view
       // count with no age decay, surfaces classic Vines getting current attention.
+      if (sortMode === 'classic') {
+        return { ...baseOptions, classic: true, platform: 'vine', sort: 'loops' };
+      }
+      if (sortMode === 'popular') {
+        return { ...baseOptions, sort: 'popular', period: period ?? 'today' };
+      }
       return {
         ...baseOptions,
-        sort: sortMode === 'classic' ? 'loops' : (sortMode || 'watching'),
-        ...(sortMode === 'classic' ? { classic: true, platform: 'vine' } : {}),
+        sort: sortMode || 'watching',
       };
 
     case 'recent':
@@ -178,6 +185,7 @@ export function useInfiniteVideosFunnelcake({
   feedType,
   apiUrl,
   sortMode,
+  period,
   hashtag,
   category,
   pubkey,
@@ -202,7 +210,7 @@ export function useInfiniteVideosFunnelcake({
     : (apiUrl || getFunnelcakeBaseUrl());
 
   return useInfiniteQuery<FunnelcakeVideoPage, Error>({
-    queryKey: ['funnelcake-videos', feedType, effectiveApiUrl, sortMode, hashtag, category, pubkey, pageSize, randomStartOffset],
+    queryKey: ['funnelcake-videos', feedType, effectiveApiUrl, sortMode, period, hashtag, category, pubkey, pageSize, randomStartOffset],
 
     queryFn: async ({ pageParam, signal }) => {
       const totalStart = performance.now();
@@ -211,7 +219,11 @@ export function useInfiniteVideosFunnelcake({
       // The Fastly edge worker injects window.__DIVINE_FEED__ to avoid a client round-trip
       const edgeFeedType = typeof window !== 'undefined' ? window.__DIVINE_FEED_TYPE__ : undefined;
       const edgeMatchesFeed = edgeFeedType === feedType || (edgeFeedType === undefined && feedType === 'trending');
-      if (!pageParam && edgeMatchesFeed && typeof window !== 'undefined' && window.__DIVINE_FEED__) {
+      // Edge-injected data only represents the default trending feed (sort=watching, no period).
+      // Skip it whenever the request specifies a period — those mean Popular, which the edge
+      // hasn't pre-cached.
+      const edgeUsable = edgeMatchesFeed && !period;
+      if (!pageParam && edgeUsable && typeof window !== 'undefined' && window.__DIVINE_FEED__) {
         const edgeData = window.__DIVINE_FEED__;
         delete window.__DIVINE_FEED__; // Consume once
         delete window.__DIVINE_FEED_TYPE__;
@@ -247,7 +259,7 @@ export function useInfiniteVideosFunnelcake({
           ? String(pageParam)
           : undefined;
 
-      const options = getFetchOptions(feedType, sortMode, pageSize);
+      const options = getFetchOptions(feedType, sortMode, pageSize, period);
       options.signal = signal;
 
       // For randomized feeds, use offset directly instead of before cursor

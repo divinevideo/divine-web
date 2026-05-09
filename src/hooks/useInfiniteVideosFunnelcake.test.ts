@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
 
 const mockFetchVideos = vi.fn();
+const mockFetchVideosV2 = vi.fn();
 const mockFetchRecommendations = vi.fn();
 const mockTransformToVideoPage = vi.fn();
 
@@ -15,6 +16,7 @@ vi.mock('@/hooks/useCurrentUser', () => ({
 
 vi.mock('@/lib/funnelcakeClient', () => ({
   fetchVideos: mockFetchVideos,
+  fetchVideosV2: mockFetchVideosV2,
   searchVideos: vi.fn(),
   fetchUserVideos: vi.fn(),
   fetchUserFeed: vi.fn(),
@@ -215,5 +217,95 @@ describe('useInfiniteVideosFunnelcake', () => {
     );
 
     expect(result.current.data?.pages[1]?.videos).toEqual(popularVideos);
+  });
+});
+
+describe('popular sort with period', () => {
+  it('passes sort=popular and the chosen period to fetchVideosV2', async () => {
+    mockFetchVideosV2.mockResolvedValueOnce({
+      videos: [{}],
+      has_more: false,
+      next_cursor: undefined,
+    });
+    mockTransformToVideoPage.mockReturnValueOnce({
+      videos: [{ id: 'v1', pubkey: 'p1', kind: 34236, createdAt: 1, vineId: 'd1' }],
+      nextCursor: undefined,
+      hasMore: false,
+    });
+
+    const { result } = renderHook(
+      () => useInfiniteVideosFunnelcake({
+        feedType: 'trending',
+        sortMode: 'popular',
+        period: 'week',
+        pageSize: 12,
+      }),
+      { wrapper: createWrapper() }
+    );
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    expect(mockFetchVideosV2).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({
+        sort: 'popular',
+        period: 'week',
+        limit: 12,
+      }),
+    );
+  });
+
+  it('defaults popular sort to period=today when period is omitted', async () => {
+    mockFetchVideosV2.mockResolvedValueOnce({ videos: [], has_more: false, next_cursor: undefined });
+    mockTransformToVideoPage.mockReturnValueOnce({ videos: [], nextCursor: undefined, hasMore: false });
+
+    renderHook(
+      () => useInfiniteVideosFunnelcake({
+        feedType: 'trending',
+        sortMode: 'popular',
+        pageSize: 12,
+      }),
+      { wrapper: createWrapper() }
+    );
+
+    await waitFor(() =>
+      expect(mockFetchVideosV2).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({ sort: 'popular', period: 'today' }),
+      ),
+    );
+  });
+
+  it('does not consume edge-injected feed when period is set', async () => {
+    // Simulate the real edge worker: it sets BOTH globals together.
+    // See compute-js/src/index.js:207 — `window.__DIVINE_FEED_TYPE__="trending"`.
+    type EdgeWindow = Window & { __DIVINE_FEED__?: unknown; __DIVINE_FEED_TYPE__?: string };
+    (window as EdgeWindow).__DIVINE_FEED__ = {
+      videos: [{ id: 'edge-video', pubkey: 'edge-p', kind: 34236, createdAt: 1, vineId: 'edge-d' }],
+    };
+    (window as EdgeWindow).__DIVINE_FEED_TYPE__ = 'trending';
+
+    mockFetchVideosV2.mockResolvedValueOnce({ videos: [{}], has_more: false, next_cursor: undefined });
+    mockTransformToVideoPage.mockReturnValueOnce({
+      videos: [{ id: 'api-video', pubkey: 'api-p', kind: 34236, createdAt: 2, vineId: 'api-d' }],
+      nextCursor: undefined,
+      hasMore: false,
+    });
+
+    const { result } = renderHook(
+      () => useInfiniteVideosFunnelcake({ feedType: 'trending', sortMode: 'popular', period: 'today', pageSize: 12 }),
+      { wrapper: createWrapper() }
+    );
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    expect(mockFetchVideosV2).toHaveBeenCalled();
+    expect(result.current.data?.pages[0]?.videos[0]?.id).toBe('api-video');
+
+    expect((window as EdgeWindow).__DIVINE_FEED__).toBeDefined();
+    expect((window as EdgeWindow).__DIVINE_FEED_TYPE__).toBe('trending');
+
+    delete (window as EdgeWindow).__DIVINE_FEED__;
+    delete (window as EdgeWindow).__DIVINE_FEED_TYPE__;
   });
 });
