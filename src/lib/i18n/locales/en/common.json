@@ -1096,7 +1096,20 @@
     "heading": "Trending",
     "subheading": "Discover what's popular in the community",
     "rssTitle": "DiVine - Trending",
-    "rssLink": "RSS"
+    "rssLink": "RSS",
+    "popular": {
+      "period": {
+        "label": "Window",
+        "now": "Now",
+        "today": "Today",
+        "week": "This Week",
+        "month": "This Month",
+        "all": "All Time"
+      },
+      "emptyHeading": "Quiet hour",
+      "emptyBody": "Try a wider window.",
+      "emptyAction": "Show today"
+    }
   },
   "merchPage": {
     "metaTitle": "Merch — Divine",
