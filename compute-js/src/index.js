@@ -7,13 +7,22 @@ import { KVStore } from 'fastly:kv-store';
 import { SecretStore } from 'fastly:secret-store';
 import { PublisherServer } from '@fastly/compute-js-static-publish';
 import rc from '../static-publish.rc.js';
-import { buildCrawlerHtml, escapeHtml, cleanText, truncateText } from './ogTags.js';
-import { transformVideoApiResponse } from './videoMetadata.js';
+import { escapeHtml } from './ogTags.js';
+import { hexToNpub } from './bech32.js';
+import {
+  fetchVideoMetadata,
+  handleVideoOgTags,
+  handleProfileOgTags,
+  handleCategoryOgTags,
+  handleAtUsernameOg,
+} from './crawlerHandlers.js';
 import { renderEmbedPage } from './embedPage.js';
 
 const publisherServer = PublisherServer.fromStaticPublishRc(rc);
-const DEFAULT_OG_IMAGE = 'https://divine.video/og.png';
-const DEFAULT_SITE_DESCRIPTION = 'Watch and share 6-second looping videos on the decentralized Nostr network.';
+
+// Funnelcake API URL — edge worker calls origin directly (not via api.divine.video cache
+// to avoid Fastly→Fastly loops). Client-side code uses api.divine.video for caching.
+const FUNNELCAKE_API_URL = 'https://relay.divine.video';
 
 // Apex domains we serve (used to detect subdomains)
 const APEX_DOMAINS = ['dvine.video', 'divine.video'];
@@ -98,6 +107,14 @@ async function handleRequest(event) {
   if (atUsernameMatch) {
     const username = atUsernameMatch[1].toLowerCase();
     console.log('Handling @username profile for:', username);
+    if (isSocialMediaCrawler(request)) {
+      try {
+        const ogResponse = await handleAtUsernameOg(username, url);
+        if (ogResponse) return ogResponse;
+      } catch (err) {
+        console.error('@username crawler OG error:', err.message);
+      }
+    }
     try {
       return await handleSubdomainProfile(username, url, request, hostnameToUse);
     } catch (err) {
@@ -843,134 +860,6 @@ async function handleSubdomainProfile(subdomain, url, request, originalHostname)
 }
 
 /**
- * Convert hex pubkey to npub (Bech32) format
- */
-function hexToNpub(hex) {
-  // Bech32 character set
-  const CHARSET = 'qpzry9x8gf2tvdw0s3jn54khce6mua7l';
-  
-  // Convert hex to 5-bit groups
-  const data = [];
-  for (let i = 0; i < hex.length; i += 2) {
-    data.push(parseInt(hex.slice(i, i + 2), 16));
-  }
-  
-  // Convert 8-bit to 5-bit
-  const converted = convertBits(data, 8, 5, true);
-  
-  // Compute checksum
-  const hrp = 'npub';
-  const checksumData = hrpExpand(hrp).concat(converted);
-  const checksum = createChecksum(checksumData);
-  
-  // Encode
-  let result = hrp + '1';
-  for (const b of converted.concat(checksum)) {
-    result += CHARSET[b];
-  }
-  
-  return result;
-}
-
-function decodeNpubToHex(npub) {
-  const CHARSET = 'qpzry9x8gf2tvdw0s3jn54khce6mua7l';
-  const normalized = (npub || '').toLowerCase();
-  if (!normalized.startsWith('npub1')) {
-    return null;
-  }
-
-  const separatorIndex = normalized.lastIndexOf('1');
-  if (separatorIndex === -1) {
-    return null;
-  }
-
-  const dataPart = normalized.slice(separatorIndex + 1);
-  if (dataPart.length < 6) {
-    return null;
-  }
-
-  const values = [...dataPart].map(char => CHARSET.indexOf(char));
-  if (values.some(value => value === -1)) {
-    return null;
-  }
-
-  const payload = values.slice(0, -6);
-  const decoded = convertBits(payload, 5, 8, false);
-  if (!decoded) {
-    return null;
-  }
-
-  return decoded.map(value => value.toString(16).padStart(2, '0')).join('');
-}
-
-function convertBits(data, fromBits, toBits, pad) {
-  let acc = 0;
-  let bits = 0;
-  const result = [];
-  const maxv = (1 << toBits) - 1;
-  const maxAcc = (1 << (fromBits + toBits - 1)) - 1;
-  
-  for (const value of data) {
-    if (value < 0 || (value >> fromBits) !== 0) {
-      return null;
-    }
-    acc = ((acc << fromBits) | value) & maxAcc;
-    bits += fromBits;
-    while (bits >= toBits) {
-      bits -= toBits;
-      result.push((acc >> bits) & maxv);
-    }
-  }
-  
-  if (pad) {
-    if (bits > 0) {
-      result.push((acc << (toBits - bits)) & maxv);
-    }
-  } else if (bits >= fromBits || ((acc << (toBits - bits)) & maxv) !== 0) {
-    return null;
-  }
-  
-  return result;
-}
-
-function hrpExpand(hrp) {
-  const result = [];
-  for (const c of hrp) {
-    result.push(c.charCodeAt(0) >> 5);
-  }
-  result.push(0);
-  for (const c of hrp) {
-    result.push(c.charCodeAt(0) & 31);
-  }
-  return result;
-}
-
-function polymod(values) {
-  const GEN = [0x3b6a57b2, 0x26508e6d, 0x1ea119fa, 0x3d4233dd, 0x2a1462b3];
-  let chk = 1;
-  for (const v of values) {
-    const top = chk >> 25;
-    chk = ((chk & 0x1ffffff) << 5) ^ v;
-    for (let i = 0; i < 5; i++) {
-      if ((top >> i) & 1) {
-        chk ^= GEN[i];
-      }
-    }
-  }
-  return chk;
-}
-
-function createChecksum(data) {
-  const values = data.concat([0, 0, 0, 0, 0, 0]);
-  const mod = polymod(values) ^ 1;
-  const result = [];
-  for (let i = 0; i < 6; i++) {
-    result.push((mod >> (5 * (5 - i))) & 31);
-  }
-  return result;
-}
-
-/**
  * Detect if request is from a social media crawler (for OG tag injection)
  */
 function isSocialMediaCrawler(request) {
@@ -1002,213 +891,6 @@ function isSocialMediaCrawler(request) {
 }
 
 /**
- * Fetch video metadata from Funnelcake API using Fastly backend
- */
-async function fetchVideoMetadata(videoId, funnelcakeTarget = getFunnelcakeOriginForApiHost()) {
-  try {
-    // Use the /api/videos/{id} endpoint
-    const response = await fetchFromFunnelcake(funnelcakeTarget, `/api/videos/${videoId}`);
-
-    if (!response.ok) {
-      console.log('Funnelcake API returned:', response.status);
-      return null;
-    }
-
-    const result = await response.json();
-    const meta = transformVideoApiResponse(result, { defaultOgImage: DEFAULT_OG_IMAGE });
-    if (meta) {
-      console.log('Fetched video metadata - title:', meta.title, 'videoUrl:', meta.videoUrl);
-    }
-    return meta;
-  } catch (err) {
-    console.error('Failed to fetch video metadata:', err.message);
-    return null;
-  }
-}
-
-async function fetchProfileMetadata(pubkey, funnelcakeTarget = getFunnelcakeOriginForApiHost()) {
-  try {
-    const response = await fetchFromFunnelcake(funnelcakeTarget, `/api/users/${pubkey}`);
-
-    if (!response.ok) {
-      console.log('Profile API returned:', response.status);
-      return null;
-    }
-
-    return await response.json();
-  } catch (err) {
-    console.error('Failed to fetch profile metadata:', err.message);
-    return null;
-  }
-}
-
-async function fetchCategoriesMetadata(funnelcakeTarget = getFunnelcakeOriginForApiHost()) {
-  try {
-    const response = await fetchFromFunnelcake(funnelcakeTarget, '/api/categories');
-
-    if (!response.ok) {
-      console.log('Categories API returned:', response.status);
-      return null;
-    }
-
-    return await response.json();
-  } catch (err) {
-    console.error('Failed to fetch category metadata:', err.message);
-    return null;
-  }
-}
-
-/**
- * Handle video page requests for social media crawlers
- * Injects dynamic OG meta tags with video-specific content
- */
-async function handleVideoOgTags(request, videoId, url, funnelcakeTarget) {
-  try {
-    // Fetch video metadata from Funnelcake
-    let videoMeta = null;
-    try {
-      videoMeta = await fetchVideoMetadata(videoId, funnelcakeTarget);
-    } catch (e) {
-      console.error('Failed to fetch video metadata:', e.message);
-    }
-
-    // Default meta values if video not found
-    const title = videoMeta?.title || 'Video on Divine';
-    const description = videoMeta?.description || `Watch this video on Divine. ${DEFAULT_SITE_DESCRIPTION}`;
-    const thumbnail = videoMeta?.thumbnail || DEFAULT_OG_IMAGE;
-    const authorName = videoMeta?.authorName || '';
-    const pageUrl = `https://divine.video/video/${videoId}`;
-
-    const hasPlayableVideo = Boolean(videoMeta?.videoUrl);
-    const videoBlock = hasPlayableVideo ? {
-      url: videoMeta.videoUrl,
-      type: videoMeta.videoMime || 'video/mp4',
-      width: videoMeta.videoWidth || 720,
-      height: videoMeta.videoHeight || 1280,
-      embedUrl: `https://divine.video/embed/${videoId}`,
-    } : null;
-
-    console.log('Generating OG HTML for video:', videoId, 'title:', title, 'player:', hasPlayableVideo);
-    const html = buildCrawlerHtml({
-      title,
-      description,
-      image: thumbnail,
-      url: pageUrl,
-      ogType: 'video.other',
-      twitterCard: hasPlayableVideo ? 'player' : 'summary_large_image',
-      twitterCreator: authorName,
-      imageWidth: videoMeta?.imageWidth || 1200,
-      imageHeight: videoMeta?.imageHeight || 630,
-      video: videoBlock,
-    });
-
-    console.log('Generated OG HTML, length:', html.length);
-
-    return new Response(html, {
-      status: 200,
-      headers: {
-        'Content-Type': 'text/html; charset=utf-8',
-        'Cache-Control': 'public, max-age=300',
-        'Vary': 'User-Agent', // Cache different versions for crawlers vs browsers
-      },
-    });
-  } catch (err) {
-    console.error('handleVideoOgTags error:', err.message, err.stack);
-    // Return the normal SPA on error
-    return await publisherServer.serveRequest(request);
-  }
-}
-
-async function handleProfileOgTags(request, url, funnelcakeTarget) {
-  try {
-    const npub = url.pathname.split('/profile/')[1]?.split('?')[0];
-    const pubkey = decodeNpubToHex(npub || '');
-    if (!pubkey) {
-      return null;
-    }
-
-    const profileMeta = await fetchProfileMetadata(pubkey, funnelcakeTarget);
-    const profile = profileMeta?.profile || {};
-    const stats = profileMeta?.stats || {};
-    const displayName = cleanText(profile.display_name) || cleanText(profile.name) || 'Profile on Divine';
-    const about = cleanText(profile.about);
-    const videoCount = typeof stats.video_count === 'number' ? stats.video_count : null;
-    const description = about
-      || (videoCount && videoCount > 0
-        ? `Watch ${displayName}'s ${videoCount} videos on Divine.`
-        : `Watch ${displayName}'s videos on Divine.`);
-    const image = cleanText(profile.picture) || DEFAULT_OG_IMAGE;
-    const profileUrl = `https://divine.video/profile/${npub}`;
-    const html = buildCrawlerHtml({
-      title: `${displayName} on Divine`,
-      description,
-      image,
-      url: profileUrl,
-      ogType: 'profile',
-      twitterCard: 'summary',
-    });
-
-    return new Response(html, {
-      status: 200,
-      headers: {
-        'Content-Type': 'text/html; charset=utf-8',
-        'Cache-Control': 'public, max-age=300',
-        'Vary': 'User-Agent',
-      },
-    });
-  } catch (err) {
-    console.error('handleProfileOgTags error:', err.message, err.stack);
-    return await publisherServer.serveRequest(request);
-  }
-}
-
-async function handleCategoryOgTags(request, url, funnelcakeTarget) {
-  try {
-    const categoryName = url.pathname === '/category'
-      ? null
-      : decodeURIComponent(url.pathname.split('/category/')[1]?.split('?')[0] || '');
-
-    let title = 'Browse Categories - Divine';
-    let description = 'Explore video categories on Divine - comedy, music, dance, animals, sports, food, and more.';
-    let categoryUrl = 'https://divine.video/category';
-
-    if (categoryName) {
-      const categories = await fetchCategoriesMetadata(funnelcakeTarget);
-      const matchedCategory = categories?.find(category => category.name.toLowerCase() === categoryName.toLowerCase()) || null;
-      const label = humanizeCategoryName(categoryName);
-      title = `${label} Videos - Divine`;
-      description = typeof matchedCategory?.video_count === 'number'
-        ? `Explore ${matchedCategory.video_count} ${categoryName.toLowerCase()} videos on Divine.`
-        : `Explore ${categoryName.toLowerCase()} videos on Divine.`;
-      categoryUrl = `https://divine.video/category/${encodeURIComponent(categoryName)}`;
-    }
-
-    const html = buildCrawlerHtml({
-      title,
-      description,
-      image: DEFAULT_OG_IMAGE,
-      url: categoryUrl,
-      ogType: 'website',
-      twitterCard: 'summary_large_image',
-      imageWidth: 1200,
-      imageHeight: 630,
-    });
-
-    return new Response(html, {
-      status: 200,
-      headers: {
-        'Content-Type': 'text/html; charset=utf-8',
-        'Cache-Control': 'public, max-age=300',
-        'Vary': 'User-Agent',
-      },
-    });
-  } catch (err) {
-    console.error('handleCategoryOgTags error:', err.message, err.stack);
-    return await publisherServer.serveRequest(request);
-  }
-}
-
-/**
  * Check if a profile's NIP-05 matches the expected subdomain.
  * Returns true if the NIP-05 indicates this pubkey owns this subdomain.
  *
@@ -1227,19 +909,3 @@ function isNip05MatchForSubdomain(nip05, subdomain, apexDomain) {
   return false;
 }
 
-function humanizeCategoryName(name) {
-  const normalized = cleanText(decodeURIComponent(name || '').toLowerCase());
-  if (!normalized) {
-    return 'Category';
-  }
-
-  if (normalized === 'diy') return 'DIY';
-  if (normalized === 'vlog') return 'Vlog';
-  if (normalized === 'ai') return 'AI';
-
-  return normalized
-    .split(/[-_\s]+/)
-    .filter(Boolean)
-    .map(part => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(' ');
-}
