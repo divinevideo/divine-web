@@ -167,10 +167,11 @@ export async function fetchVideos(
   apiUrl: string = API_CONFIG.funnelcake.baseUrl,
   options: FunnelcakeFetchOptions = {}
 ): Promise<FunnelcakeResponse> {
-  const { sort = 'trending', limit = 20, before, offset, classic, platform, category, signal } = options;
+  const { sort = 'trending', period, limit = 20, before, offset, classic, platform, category, signal } = options;
 
   const params: Record<string, string | number | boolean | undefined> = {
     sort,
+    period,
     limit,
     classic,
     platform,
@@ -230,10 +231,11 @@ export async function fetchVideosV2(
   apiUrl: string = API_CONFIG.funnelcake.baseUrl,
   options: FunnelcakeFetchOptions = {}
 ): Promise<FunnelcakeResponse> {
-  const { sort = 'watching', limit = 20, before, offset, classic, platform, category, signal } = options;
+  const { sort = 'watching', period, limit = 20, before, offset, classic, platform, category, signal } = options;
 
   const params: Record<string, string | number | boolean | undefined> = {
     sort,
+    period,
     limit,
     classic,
     platform,
