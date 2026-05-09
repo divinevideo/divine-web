@@ -2,9 +2,10 @@
 // ABOUTME: Uses static preloaded data for instant rendering, no API calls needed
 
 import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { SmartLink } from '@/components/SmartLink';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Star } from 'lucide-react';
+import { Star } from '@phosphor-icons/react';
 import { CLASSIC_VINERS, CLASSIC_VINER_AVATARS, type StaticViner } from '@/data/classicViners';
 import { getSafeProfileImage } from '@/lib/imageUtils';
 import { nip19 } from 'nostr-tools';
@@ -64,6 +65,7 @@ function usePreloadAvatars() {
  * No API calls needed - data is from CLASSIC_VINERS constant.
  */
 export function ClassicVinersRow() {
+  const { t } = useTranslation();
   // Preload avatar images
   usePreloadAvatars();
 
@@ -72,15 +74,11 @@ export function ClassicVinersRow() {
       {/* Header */}
       <div className="flex items-center gap-2 mb-3">
         <Star className="h-4 w-4 text-primary" />
-        <h3 className="text-sm font-medium">Classic Viners</h3>
+        <h3 className="text-sm font-medium">{t('discovery.classicViners')}</h3>
       </div>
 
       {/* Scrollable row */}
       <div className="relative group">
-        {/* Scroll hint gradients */}
-        <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-background to-transparent z-10 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity" />
-        <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-background to-transparent z-10 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity" />
-
         {/* Scrollable container */}
         <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide -mx-1 px-1">
           {CLASSIC_VINERS.map((viner) => (

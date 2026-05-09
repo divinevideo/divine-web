@@ -215,6 +215,62 @@ export async function fetchVideos(
 }
 
 /**
+ * Fetch videos from Funnelcake v2 API (`/api/v2/videos`).
+ *
+ * v2 differs from v1 in two ways:
+ * - response is an envelope: `{ data: VideoListItemDoc[], pagination: { next_cursor, has_more } }`
+ * - pagination uses an opaque `cursor` query param (not `before`)
+ *
+ * Item field names overlap with v1 (`embedded_likes`, `tags`, `thumbnail`, etc.), so the
+ * existing `transformFunnelcakeVideo` works once we map the envelope back to FunnelcakeResponse.
+ *
+ * Supports the v2-only `sort=watching` mode (24h CDN view count, no age decay).
+ */
+export async function fetchVideosV2(
+  apiUrl: string = API_CONFIG.funnelcake.baseUrl,
+  options: FunnelcakeFetchOptions = {}
+): Promise<FunnelcakeResponse> {
+  const { sort = 'watching', limit = 20, before, offset, classic, platform, category, signal } = options;
+
+  const params: Record<string, string | number | boolean | undefined> = {
+    sort,
+    limit,
+    classic,
+    platform,
+    category,
+  };
+
+  if (offset !== undefined) {
+    params.offset = offset;
+  } else if (before !== undefined) {
+    // v2 uses opaque `cursor` query param; the hook threads the prior page's
+    // next_cursor through `before` to keep one shared option shape.
+    params.cursor = before;
+  }
+
+  type V2Envelope = {
+    data: FunnelcakeVideoRaw[];
+    pagination?: { next_cursor?: string | null; has_more?: boolean };
+  };
+
+  const envelope = await funnelcakeRequest<V2Envelope>(
+    apiUrl,
+    API_CONFIG.funnelcake.endpoints.videosV2,
+    params,
+    signal
+  );
+
+  const videos = Array.isArray(envelope?.data) ? envelope.data : [];
+  const pagination = envelope?.pagination ?? {};
+
+  return {
+    videos,
+    has_more: pagination.has_more === true,
+    next_cursor: pagination.next_cursor ?? undefined,
+  };
+}
+
+/**
  * Search videos via Funnelcake API
  *
  * @param apiUrl - Base URL of the Funnelcake API
@@ -479,10 +535,12 @@ export async function fetchRecommendations(
 
   const endpoint = API_CONFIG.funnelcake.endpoints.userRecommendations.replace('{pubkey}', pubkey);
 
-  // Prefer cursor over offset; if both sent, backend uses cursor
+  // Send both cursor and offset. Newer servers honor cursor, while older
+  // ones ignore it and continue to paginate via numeric offsets.
   const params: Record<string, string | number | boolean | undefined> = {
     limit,
-    ...(cursor ? { cursor } : offset !== undefined ? { offset } : {}),
+    cursor,
+    offset,
     category,
     fallback,
     content_safety,
@@ -499,13 +557,22 @@ export async function fetchRecommendations(
   );
 
   const videoCount = response.videos?.length || 0;
+  const serverSupportsCursorMetadata = 'has_more' in response;
+  const hasMore = serverSupportsCursorMetadata
+    ? (response.has_more ?? false)
+    : videoCount > 0;
+  const nextCursor = serverSupportsCursorMetadata
+    ? (response.next_cursor ?? (response.next_offset !== null ? String(response.next_offset) : undefined))
+    : (videoCount > 0 ? String((offset || 0) + limit) : undefined);
 
-  debugLog(`[FunnelcakeClient] Got ${videoCount} recommendations (source: ${response.source}, has_more: ${response.has_more}, fallback_applied: ${response.fallback_applied})`);
+  debugLog(
+    `[FunnelcakeClient] Got ${videoCount} recommendations (source: ${response.source}, has_more: ${hasMore}, fallback_applied: ${response.fallback_applied}, cursor_mode: ${serverSupportsCursorMetadata ? 'server' : 'offset-fallback'})`
+  );
 
   return {
     videos: response.videos || [],
-    has_more: response.has_more ?? false,
-    next_cursor: response.next_cursor ?? undefined,
+    has_more: hasMore,
+    next_cursor: nextCursor,
     source: response.source,
     fallback_applied: response.fallback_applied,
   };
@@ -1151,8 +1218,9 @@ async function authenticatedNotificationRequest<T>(
   const { method = 'GET', params = {}, body, signal } = options;
   const url = buildUrl(apiUrl, endpoint, params);
   const timeout = API_CONFIG.funnelcake.timeout;
+  const serializedBody = body === undefined ? undefined : JSON.stringify(body);
 
-  const authHeader = await createNip98AuthHeader(signer, url, method);
+  const authHeader = await createNip98AuthHeader(signer, url, method, serializedBody);
   if (!authHeader) {
     throw new FunnelcakeApiError('Failed to create NIP-98 auth header', null);
   }
@@ -1168,9 +1236,9 @@ async function authenticatedNotificationRequest<T>(
     headers: {
       'Accept': 'application/json',
       'Authorization': authHeader,
-      ...(body ? { 'Content-Type': 'application/json' } : {}),
+      ...(serializedBody !== undefined ? { 'Content-Type': 'application/json' } : {}),
     },
-    ...(body ? { body: JSON.stringify(body) } : {}),
+    ...(serializedBody !== undefined ? { body: serializedBody } : {}),
   };
 
   debugLog(`[FunnelcakeClient] Auth request: ${method} ${url}`);
@@ -1200,6 +1268,8 @@ export async function fetchNotifications(
   options?: {
     limit?: number;
     before?: string;
+    types?: string[];
+    unreadOnly?: boolean;
     signal?: AbortSignal;
   },
 ): Promise<NotificationsResponse> {
@@ -1208,6 +1278,8 @@ export async function fetchNotifications(
   const params: Record<string, string | number | boolean | undefined> = {
     limit: options?.limit ?? 50,
     before: options?.before,
+    types: options?.types?.length ? options.types.join(',') : undefined,
+    unread_only: options?.unreadOnly ? true : undefined,
   };
 
   const raw = await authenticatedNotificationRequest<RawNotificationsApiResponse>(

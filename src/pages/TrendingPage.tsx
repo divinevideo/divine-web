@@ -2,7 +2,8 @@
 // ABOUTME: Supports NIP-50 search modes: hot, top, rising, controversial
 
 import { useState } from 'react';
-import { Rss } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { Rss } from '@phosphor-icons/react';
 import { useHead } from '@unhead/react';
 import { VideoFeed } from '@/components/VideoFeed';
 import { feedUrls } from '@/lib/feedUrls';
@@ -11,6 +12,7 @@ import type { SortMode } from '@/types/nostr';
 import { EXTENDED_SORT_MODES as SORT_MODES } from '@/lib/constants/sortModes';
 
 export function TrendingPage() {
+  const { t } = useTranslation();
   const [sortMode, setSortMode] = useState<SortMode>('hot');
 
   // RSS auto-discovery link for feed readers (only if feed endpoints exist)
@@ -20,7 +22,7 @@ export function TrendingPage() {
       {
         rel: 'alternate',
         type: 'application/rss+xml',
-        title: 'DiVine - Trending',
+        title: t('trendingPage.rssTitle'),
         href: feedUrls.trending(),
       },
     ] : [],
@@ -32,9 +34,9 @@ export function TrendingPage() {
         <header className="mb-6 space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold">Trending</h1>
+              <h1 className="text-2xl font-bold">{t('trendingPage.heading')}</h1>
               <p className="text-muted-foreground">
-                Discover what's popular in the community
+                {t('trendingPage.subheading')}
               </p>
             </div>
             {rssFeedAvailable && (
@@ -44,7 +46,7 @@ export function TrendingPage() {
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
               >
-                <Rss className="h-3.5 w-3.5" /> RSS
+                <Rss className="h-3.5 w-3.5" /> {t('trendingPage.rssLink')}
               </a>
             )}
           </div>
@@ -82,6 +84,7 @@ export function TrendingPage() {
         <VideoFeed
           feedType="trending"
           sortMode={sortMode}
+          accent="pink"
           data-testid="video-feed-trending"
           className="space-y-6"
         />

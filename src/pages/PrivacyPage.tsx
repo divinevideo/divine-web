@@ -1,16 +1,18 @@
 // ABOUTME: Privacy Policy page for Divine
 // ABOUTME: Explains data collection, use, disclosure, and user rights
 
+import { useTranslation } from 'react-i18next';
 import { ZendeskWidget } from '@/components/ZendeskWidget';
 import { MarketingLayout } from '@/components/MarketingLayout';
 
 export function PrivacyPage() {
+  const { t } = useTranslation();
   return (
     <MarketingLayout>
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         <ZendeskWidget />
-        <h1 className="text-4xl font-bold mb-4">Privacy Policy</h1>
-        <p className="text-muted-foreground mb-8">Last Updated: March 30, 2026</p>
+        <h1 className="text-4xl font-bold mb-4">{t('privacyPage.title')}</h1>
+        <p className="text-muted-foreground mb-8">{t('privacyPage.lastUpdated', { date: 'March 30, 2026' })}</p>
 
         <div className="space-y-8 text-muted-foreground leading-relaxed">
           {/* 1. Overview */}

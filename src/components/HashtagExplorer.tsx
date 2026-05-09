@@ -2,6 +2,7 @@
 // ABOUTME: Shows popular hashtags with thumbnails and search filtering
 
 import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { SmartLink } from '@/components/SmartLink';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent } from '@/components/ui/card';
@@ -9,9 +10,9 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Hash, Search, Play, Loader2 } from 'lucide-react';
+import { Hash, MagnifyingGlass as Search, Play, CircleNotch as Loader2 } from '@phosphor-icons/react';
 import { fetchPopularHashtags } from '@/lib/funnelcakeClient';
-import { DEFAULT_FUNNELCAKE_URL } from '@/config/relays';
+import { getFunnelcakeBaseUrl } from '@/config/api';
 
 interface HashtagStats {
   tag: string;
@@ -32,7 +33,7 @@ function useHashtagStats() {
         AbortSignal.timeout(10000),
       ]);
 
-      const hashtags = await fetchPopularHashtags(DEFAULT_FUNNELCAKE_URL, 100, signal);
+      const hashtags = await fetchPopularHashtags(getFunnelcakeBaseUrl(), 100, signal);
 
       // Transform to HashtagStats format with rank
       const stats: HashtagStats[] = hashtags.map((h, index) => ({
@@ -54,6 +55,7 @@ function useHashtagStats() {
  * Uses thumbnail from the trending hashtags API response (no extra fetch needed).
  */
 function HashtagCard({ stat }: { stat: HashtagStats }) {
+  const { t } = useTranslation();
   const thumbnailUrl = stat.thumbnail || null;
 
   return (
@@ -80,10 +82,10 @@ function HashtagCard({ stat }: { stat: HashtagStats }) {
                     loading="lazy"
                   />
                 )}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent pointer-events-none" />
+                <div className="absolute inset-x-0 bottom-0 h-1/2 bg-brand-dark-green/60 pointer-events-none" />
               </>
             ) : (
-              <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/10 to-primary/5">
+              <div className="w-full h-full flex items-center justify-center bg-primary/10">
                 <Hash className="h-12 w-12 text-primary/30" />
               </div>
             )}
@@ -108,7 +110,7 @@ function HashtagCard({ stat }: { stat: HashtagStats }) {
           <CardContent className="p-3">
             <Button variant="outline" size="sm" className="w-full pointer-events-none">
               <Play className="h-3 w-3 mr-1" />
-              Watch #{stat.tag}
+              {t('hashtagExplorer.watchTag', { tag: stat.tag })}
             </Button>
           </CardContent>
         </Card>
@@ -121,6 +123,7 @@ const INITIAL_LOAD = 20;
 const LOAD_MORE_COUNT = 20;
 
 export function HashtagExplorer() {
+  const { t } = useTranslation();
   const [searchTerm, setSearchTerm] = useState('');
   const [visibleCount, setVisibleCount] = useState(INITIAL_LOAD);
   const loadMoreRef = useRef<HTMLDivElement>(null);
@@ -179,7 +182,7 @@ export function HashtagExplorer() {
     return (
       <Card className="border-dashed">
         <CardContent className="py-8 text-center">
-          <p className="text-muted-foreground">Failed to load hashtag data</p>
+          <p className="text-muted-foreground">{t('hashtagExplorer.loadFailed')}</p>
         </CardContent>
       </Card>
     );
@@ -191,10 +194,10 @@ export function HashtagExplorer() {
       <div>
         <h2 className="text-2xl font-bold flex items-center gap-2">
           <Hash className="h-6 w-6" />
-          Hashtag Explorer
+          {t('hashtagExplorer.heading')}
         </h2>
         <p className="text-muted-foreground mt-1">
-          Discover trending topics and explore hashtag communities
+          {t('hashtagExplorer.subheading')}
         </p>
       </div>
 
@@ -204,7 +207,7 @@ export function HashtagExplorer() {
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search hashtags..."
+              placeholder={t('hashtagExplorer.searchPlaceholder')}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-9"
@@ -230,7 +233,7 @@ export function HashtagExplorer() {
           <CardContent className="py-12 text-center">
             <Hash className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
             <p className="text-muted-foreground">
-              {searchTerm ? 'No hashtags found matching your search' : 'No hashtags found'}
+              {searchTerm ? t('hashtagExplorer.noMatch') : t('hashtagExplorer.noHashtags')}
             </p>
           </CardContent>
         </Card>
@@ -251,7 +254,7 @@ export function HashtagExplorer() {
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
             ) : (
               <p className="text-sm text-muted-foreground">
-                Showing all {filteredTags.length} hashtags
+                {t('hashtagExplorer.showingAll', { count: filteredTags.length })}
               </p>
             )}
           </div>

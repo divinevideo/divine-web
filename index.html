@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover" />
 
     <!-- Security Headers -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.gstatic.com https://www.googletagmanager.com https://static.zdassets.com https://ekr.zdassets.com https://*.zendesk.com https://v2.zopim.com https://static.cloudflareinsights.com https://*.hsforms.net https://*.hsforms.com https://*.hubspot.com https://*.hubspotusercontent-na2.net https://*.hsappstatic.net https://*.hs-scripts.com https://*.hs-banner.com https://*.hs-analytics.net https://*.hscollectedforms.net https://*.usemessages.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://static.zdassets.com; frame-src 'self' https: https://static.zdassets.com https://*.hubspot.com https://*.hsforms.net https://*.hsforms.com; font-src 'self' data: https://fonts.gstatic.com https://static.zdassets.com; base-uri 'self'; manifest-src 'self'; worker-src 'self' blob:; connect-src 'self' blob: https: wss: https://www.google-analytics.com https://analytics.google.com https://firebaseinstallations.googleapis.com https://ekr.zdassets.com wss://*.zopim.com wss://*.zendesk.com https://*.hsforms.com https://*.hubspot.com https://*.hubapi.com https://*.hs-banner.com https://*.hscollectedforms.net; img-src 'self' data: blob: https: https://www.google-analytics.com https://static.zdassets.com https://v2assets.zopim.io https://*.hsforms.com https://*.hubspot.com; media-src 'self' blob: https:;">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://itunes.apple.com 'unsafe-inline' 'unsafe-eval' https://www.gstatic.com https://www.googletagmanager.com https://static.zdassets.com https://ekr.zdassets.com https://*.zendesk.com https://v2.zopim.com https://static.cloudflareinsights.com https://*.hsforms.net https://*.hsforms.com https://*.hubspot.com https://*.hubspotusercontent-na2.net https://*.hsappstatic.net https://*.hs-scripts.com https://*.hs-banner.com https://*.hs-analytics.net https://*.hscollectedforms.net https://*.usemessages.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://static.zdassets.com; frame-src 'self' https: https://static.zdassets.com https://*.hubspot.com https://*.hsforms.net https://*.hsforms.com; font-src 'self' data: https://fonts.gstatic.com https://static.zdassets.com; base-uri 'self'; manifest-src 'self'; worker-src 'self' blob:; connect-src 'self' blob: https: wss: https://www.google-analytics.com https://analytics.google.com https://firebaseinstallations.googleapis.com https://ekr.zdassets.com wss://*.zopim.com wss://*.zendesk.com https://*.hsforms.com https://*.hubspot.com https://*.hubapi.com https://*.hs-banner.com https://*.hscollectedforms.net; img-src 'self' data: blob: https: https://www.google-analytics.com https://static.zdassets.com https://v2assets.zopim.io https://*.hsforms.com https://*.hubspot.com; media-src 'self' blob: https:;">
     <meta http-equiv="X-Content-Type-Options" content="nosniff">
     <meta http-equiv="X-XSS-Protection" content="1; mode=block">
     <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
@@ -51,7 +51,11 @@
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Inter Variable is loaded locally via @fontsource-variable/inter (see src/main.tsx).
+         Bricolage Grotesque stays on Google Fonts for now — there is no @fontsource-variable
+         build we trust yet. Variable axes (opsz 12..96, wght 400..800) are both requested
+         so font-optical-sizing: auto and heavier weights work across the display range. -->
+    <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&display=swap" rel="stylesheet">
 
     <!-- Performance: preconnect to divine API and media CDN (critical path) -->
     <link rel="dns-prefetch" href="//relay.divine.video" />
@@ -84,8 +88,8 @@
 
       /* Dark mode support for FOUC prevention */
       .dark #root, .dark html, .dark body {
-        background-color: #09090b;
-        color: #f8fafc;
+        background-color: #07241B; /* Brand dark green */
+        color: #F9F7F6; /* Brand off-white */
       }
 
       /* Loading spinner for initial load */

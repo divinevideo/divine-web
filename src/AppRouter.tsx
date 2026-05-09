@@ -2,6 +2,7 @@
  * If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+import { lazy, Suspense } from "react";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { ScrollToTop } from "./components/ScrollToTop";
 import { AnalyticsPageTracker } from "./components/AnalyticsPageTracker";
@@ -40,6 +41,7 @@ import HumanCreatedPage from "./pages/HumanCreatedPage";
 import { SafetyPage } from "./pages/SafetyPage";
 import { Support } from "./pages/Support";
 import { FAQPage } from "./pages/FAQPage";
+import MerchPage from "./pages/MerchPage";
 import { TermsPage } from "./pages/TermsPage";
 import GetEmbedPage from "./pages/GetEmbedPage";
 import AppCallbackPage from "./pages/AppCallbackPage";
@@ -52,6 +54,14 @@ import AnalyticsPage from "./pages/AnalyticsPage";
 import MessagesPage from "./pages/MessagesPage";
 import ConversationPage from "./pages/ConversationPage";
 // import { UploadPage } from "./pages/UploadPage"; // DISABLED: Upload route is commented out
+
+// Dev-only: static preview surface for the brand system. The `lazy()` call
+// sits behind `import.meta.env.DEV` so Vite's dead-code elimination drops both
+// the route registration AND the async chunk reference from production builds.
+const BrandPreview = import.meta.env.DEV
+  ? lazy(() => import("./pages/_BrandPreview"))
+  : null;
+
 export function AppRouter() {
   const { user } = useCurrentUser();
 
@@ -83,6 +93,18 @@ export function AppRouter() {
         <Route path="/app/callback" element={<AppCallbackPage />} />
         <Route path="/auth/callback" element={<AuthCallbackPage />} />
 
+        {/* Dev-only brand primitives preview — tree-shaken in production */}
+        {import.meta.env.DEV && BrandPreview && (
+          <Route
+            path="/__brand-preview"
+            element={
+              <Suspense fallback={null}>
+                <BrandPreview />
+              </Suspense>
+            }
+          />
+        )}
+
         {/* App routes - with AppLayout */}
         <Route element={<AppLayout />}>
           {/* Home/landing route - render profile directly on subdomain */}
@@ -105,6 +127,7 @@ export function AppRouter() {
           <Route path="/video/:id" element={<VideoPage />} />
           <Route path="/search" element={<SearchPage />} />
           <Route path="/leaderboard" element={<LeaderboardPage />} />
+          <Route path="/merch" element={<MerchPage />} />
           <Route path="/u/:userId" element={<UniversalUserPage />} />
           <Route path="/list/:pubkey/:listId" element={<ListDetailPage />} />
           <Route path="/event/:eventId" element={<EventPage />} />

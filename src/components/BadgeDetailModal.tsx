@@ -1,6 +1,7 @@
 // ABOUTME: Modal showing full badge details - image, name, description, issuer, award date
 // ABOUTME: Shown when clicking a badge on a profile or in the feed
 
+import { useTranslation } from 'react-i18next';
 import {
   Dialog,
   DialogContent,
@@ -12,7 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { BadgeImage } from '@/components/BadgeImage';
 import { useAuthor } from '@/hooks/useAuthor';
 import { getBadgeImageUrl, type ValidatedBadge } from '@/lib/badges';
-import { Award } from 'lucide-react';
+import { Medal as Award } from '@phosphor-icons/react';
 
 interface BadgeDetailModalProps {
   badge: ValidatedBadge | null;
@@ -21,6 +22,7 @@ interface BadgeDetailModalProps {
 }
 
 export function BadgeDetailModal({ badge, open, onOpenChange }: BadgeDetailModalProps) {
+  const { t, i18n } = useTranslation();
   const issuerAuthor = useAuthor(badge?.definition.issuerPubkey);
   const issuerName = issuerAuthor.data?.metadata?.display_name
     || issuerAuthor.data?.metadata?.name
@@ -39,7 +41,7 @@ export function BadgeDetailModal({ badge, open, onOpenChange }: BadgeDetailModal
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Award className="h-5 w-5" />
-            Badge Details
+            {t('badgeDetailModal.title')}
           </DialogTitle>
         </DialogHeader>
 
@@ -65,7 +67,7 @@ export function BadgeDetailModal({ badge, open, onOpenChange }: BadgeDetailModal
             <h3 className="text-lg font-bold">{definition.name}</h3>
             {definition.isOfficial && (
               <Badge variant="outline" className="mt-1 border-yellow-400 text-yellow-600 dark:text-yellow-400">
-                ✦ Official Divine Badge
+                {t('badgeDetailModal.officialBadge')}
               </Badge>
             )}
           </div>
@@ -80,7 +82,7 @@ export function BadgeDetailModal({ badge, open, onOpenChange }: BadgeDetailModal
           {/* Issuer & Date */}
           <div className="w-full space-y-3 pt-2 border-t">
             <div className="flex items-center gap-3">
-              <span className="text-sm text-muted-foreground w-16">Issued by</span>
+              <span className="text-sm text-muted-foreground w-16">{t('badgeDetailModal.issuedBy')}</span>
               <div className="flex items-center gap-2">
                 <Avatar size="xs">
                   <AvatarImage src={issuerAvatar} alt={issuerName} />
@@ -92,9 +94,9 @@ export function BadgeDetailModal({ badge, open, onOpenChange }: BadgeDetailModal
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <span className="text-sm text-muted-foreground w-16">Awarded</span>
+              <span className="text-sm text-muted-foreground w-16">{t('badgeDetailModal.awarded')}</span>
               <span className="text-sm">
-                {awardDate.toLocaleDateString('en-US', {
+                {awardDate.toLocaleDateString(i18n.language || 'en-US', {
                   year: 'numeric',
                   month: 'long',
                   day: 'numeric',

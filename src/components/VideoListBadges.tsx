@@ -7,7 +7,7 @@ import { useAuthor } from '@/hooks/useAuthor';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { List, Plus, Users } from 'lucide-react';
+import { List, Plus, Users } from '@phosphor-icons/react';
 import {
   Tooltip,
   TooltipContent,

@@ -3,6 +3,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
+import { FollowRaceError } from './useFollowRelationship';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
 import type { NostrEvent } from '@nostrify/nostrify';
@@ -204,6 +205,31 @@ describe('useFollowUser - follow list overwrite protection', () => {
     expect(pTags).toHaveLength(11); // 10 from relay + 1 new
   });
 
+  it('allows first follow when user has no existing contact list', async () => {
+    // Relay query succeeds but returns nothing — brand new account
+    mockNostrQuery.mockResolvedValue([]);
+
+    const { useFollowUser } = await import('./useFollowRelationship');
+    const { result } = renderHook(() => useFollowUser(), { wrapper: createWrapper() });
+
+    await act(async () => {
+      await result.current.mutateAsync({
+        targetPubkey: mockTargetPubkey,
+        currentContactList: null,
+        targetDisplayName: 'Test User',
+      });
+    });
+
+    // Should publish a Kind 3 with just the one new follow and default relay content
+    expect(mockPublishEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: 3,
+        tags: [['p', mockTargetPubkey, '', 'Test User']],
+        content: JSON.stringify({ 'wss://relay.divine.video': { read: true, write: true } }),
+      }),
+    );
+  });
+
   it('does not add duplicate follow if target already in fetched contact list', async () => {
     // Target is already in the relay's contact list
     const existingFollows = [mockTargetPubkey, 'bbbb'.padEnd(64, '0')];
@@ -222,7 +248,7 @@ describe('useFollowUser - follow list overwrite protection', () => {
           targetDisplayName: 'Test User',
         });
       }),
-    ).rejects.toThrow('Already following');
+    ).rejects.toThrow(FollowRaceError);
 
     expect(mockPublishEvent).not.toHaveBeenCalled();
   });

@@ -4,7 +4,7 @@
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ExternalLink, Heart, Archive, Shield } from 'lucide-react';
+import { ArrowSquareOut as ExternalLink, Heart, Archive, Shield } from '@phosphor-icons/react';
 import { ZendeskWidget } from '@/components/ZendeskWidget';
 import { MarketingLayout } from '@/components/MarketingLayout';
 import { ApplePodcastEmbed } from '@/components/ApplePodcastEmbed';
@@ -163,7 +163,7 @@ export function AboutPage() {
             </p>
             {classicVinesSaved && (
               <div className="rounded-lg border border-brand-green bg-brand-dark-green px-4 py-3">
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-green">
+                <p className="text-xs font-semibold text-brand-green">
                   Classic Vines Saved
                 </p>
                 <p className="mt-1 text-3xl font-bold text-brand-off-white">

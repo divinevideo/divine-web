@@ -1,0 +1,40 @@
+name: Feature Request
+description: Propose a new capability or product improvement for divine-web.
+title: "feat: "
+labels:
+  - enhancement
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What should be added or changed? Avoid naming corporate partners, customers, or other sensitive external brands; use generic descriptors unless explicitly approved.
+      placeholder: Briefly describe the feature request.
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or Opportunity
+      description: What user or product problem does this solve?
+      placeholder: Explain the gap or opportunity.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed Approach
+      description: Describe the desired behavior or UX at a high level.
+      placeholder: Outline the proposed change.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: Optional alternatives, tradeoffs, or rejected ideas.
+  - type: textarea
+    id: visuals
+    attributes:
+      label: Mockups, References, or Context
+      description: Add links, screenshots, or examples that clarify the request. Redact sensitive external brand or partner names unless explicitly approved.

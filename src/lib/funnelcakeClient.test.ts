@@ -2,6 +2,8 @@
 // ABOUTME: Tests HTTP communication layer in isolation from hooks and transforms
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import type { NostrSigner } from '@nostrify/nostrify';
+import { createNip98AuthHeader } from './nip98Auth';
 
 // We need to mock the health module before importing the client
 vi.mock('./funnelcakeHealth', () => ({
@@ -15,8 +17,13 @@ vi.mock('./debug', () => ({
   debugError: vi.fn(),
 }));
 
+vi.mock('./nip98Auth', () => ({
+  createNip98AuthHeader: vi.fn(),
+}));
+
 const API_URL = 'https://api.divine.video';
 const TEST_PUBKEY = 'a'.repeat(64);
+const TEST_SIGNER = { signEvent: vi.fn() } as unknown as NostrSigner;
 
 describe('funnelcakeClient', () => {
   let fetchUserProfile: typeof import('./funnelcakeClient').fetchUserProfile;
@@ -24,11 +31,14 @@ describe('funnelcakeClient', () => {
   let fetchBulkVideoStats: typeof import('./funnelcakeClient').fetchBulkVideoStats;
   let searchProfiles: typeof import('./funnelcakeClient').searchProfiles;
   let fetchRecommendations: typeof import('./funnelcakeClient').fetchRecommendations;
+  let markNotificationsRead: typeof import('./funnelcakeClient').markNotificationsRead;
+  let fetchNotifications: typeof import('./funnelcakeClient').fetchNotifications;
 
   beforeEach(async () => {
     vi.resetModules();
     // Mock fetch globally
     global.fetch = vi.fn();
+    vi.mocked(createNip98AuthHeader).mockReset().mockResolvedValue('Nostr signed-auth');
 
     // Import after mocking
     const client = await import('./funnelcakeClient');
@@ -37,6 +47,8 @@ describe('funnelcakeClient', () => {
     fetchBulkVideoStats = client.fetchBulkVideoStats;
     searchProfiles = client.searchProfiles;
     fetchRecommendations = client.fetchRecommendations;
+    markNotificationsRead = client.markNotificationsRead;
+    fetchNotifications = client.fetchNotifications;
   });
 
   afterEach(() => {
@@ -327,6 +339,44 @@ describe('funnelcakeClient', () => {
     });
   });
 
+  describe('notification auth requests', () => {
+    it('signs mark-as-read requests with the exact serialized JSON body', async () => {
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({ success: true, marked_count: 1 }),
+      });
+
+      const result = await markNotificationsRead(
+        API_URL,
+        TEST_PUBKEY,
+        TEST_SIGNER,
+        ['event-1'],
+      );
+
+      expect(result).toEqual({ success: true, markedCount: 1 });
+
+      const expectedBody = JSON.stringify({ notification_ids: ['event-1'] });
+      expect(createNip98AuthHeader).toHaveBeenCalledWith(
+        TEST_SIGNER,
+        `${API_URL}/api/users/${TEST_PUBKEY}/notifications/read`,
+        'POST',
+        expectedBody,
+      );
+
+      expect(global.fetch).toHaveBeenCalledWith(
+        `${API_URL}/api/users/${TEST_PUBKEY}/notifications/read`,
+        expect.objectContaining({
+          method: 'POST',
+          body: expectedBody,
+          headers: expect.objectContaining({
+            'Authorization': 'Nostr signed-auth',
+            'Content-Type': 'application/json',
+          }),
+        }),
+      );
+    });
+  });
+
   describe('fetchRecommendations', () => {
     it('sends cursor param when provided', async () => {
       (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
@@ -388,6 +438,41 @@ describe('funnelcakeClient', () => {
       expect(result.next_cursor).toBeUndefined();
     });
 
+    it('uses next_offset when the server paginates without next_cursor', async () => {
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({
+          videos: [
+            {
+              id: 'v1',
+              pubkey: TEST_PUBKEY,
+              video_url: 'https://example.com/v.mp4',
+              d_tag: 'd1',
+              created_at: 1700000000,
+              kind: 34236,
+            },
+          ],
+          source: 'popular',
+          has_more: true,
+          next_cursor: null,
+          next_offset: 36,
+          fallback_applied: true,
+          limit: 12,
+          offset: 24,
+        }),
+      });
+
+      const result = await fetchRecommendations(API_URL, {
+        pubkey: TEST_PUBKEY,
+        limit: 12,
+        offset: 24,
+        fallback: 'popular',
+      });
+
+      expect(result.has_more).toBe(true);
+      expect(result.next_cursor).toBe('36');
+    });
+
     it('uses backend has_more instead of computing locally', async () => {
       // Backend says has_more=false even though we got limit-count videos
       (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
@@ -446,6 +531,86 @@ describe('funnelcakeClient', () => {
       expect(init).toEqual(expect.objectContaining({
         signal: expect.any(AbortSignal),
       }));
+    });
+  });
+
+  describe('fetchNotifications', () => {
+    it('forwards notification type and unread filters to the backend', async () => {
+      const signer = {
+        signEvent: vi.fn().mockResolvedValue({
+          id: 'event-id',
+          sig: 'sig',
+          pubkey: TEST_PUBKEY,
+          kind: 27235,
+          created_at: 1_700_000_000,
+          content: '',
+          tags: [],
+        }),
+        getPublicKey: vi.fn().mockResolvedValue(TEST_PUBKEY),
+      };
+
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({
+          notifications: [],
+          unread_count: 2,
+          has_more: false,
+        }),
+      });
+
+      await fetchNotifications(API_URL, TEST_PUBKEY, signer as never, {
+        limit: 30,
+        before: 'cursor-1',
+        unreadOnly: true,
+        types: ['like', 'follow'],
+      });
+
+      const [url] = (global.fetch as ReturnType<typeof vi.fn>).mock.calls[0];
+      const requestUrl = new URL(url as string);
+
+      expect(requestUrl.pathname).toBe(`/api/users/${TEST_PUBKEY}/notifications`);
+      expect(requestUrl.searchParams.get('limit')).toBe('30');
+      expect(requestUrl.searchParams.get('before')).toBe('cursor-1');
+      expect(requestUrl.searchParams.get('unread_only')).toBe('true');
+      expect(requestUrl.searchParams.get('types')).toBe('like,follow');
+    });
+  });
+
+  describe('fetchRecommendations', () => {
+    it('falls back to offset pagination when the server omits cursor metadata', async () => {
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({
+          videos: [
+            {
+              id: 'vid-1',
+              pubkey: TEST_PUBKEY,
+              created_at: 123,
+              kind: 34236,
+              d_tag: 'd-1',
+              title: 'Video 1',
+              content: '',
+              thumbnail: 'https://example.com/thumb-1.jpg',
+              video_url: 'https://example.com/video-1.mp4',
+            },
+          ],
+          source: 'personalized',
+        }),
+      });
+
+      const result = await fetchRecommendations(API_URL, {
+        pubkey: TEST_PUBKEY,
+        limit: 12,
+        offset: 24,
+        fallback: 'popular',
+      });
+
+      const [url] = (global.fetch as ReturnType<typeof vi.fn>).mock.calls[0];
+      const requestUrl = new URL(url as string);
+      expect(requestUrl.searchParams.get('offset')).toBe('24');
+      expect(result.videos).toHaveLength(1);
+      expect(result.has_more).toBe(true);
+      expect(result.next_cursor).toBe('36');
     });
   });
 });

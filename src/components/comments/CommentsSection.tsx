@@ -2,7 +2,7 @@ import { useComments } from '@/hooks/useComments';
 import { useTranslation } from 'react-i18next';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { MessageSquare } from 'lucide-react';
+import { Chat as MessageSquare } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import type { NostrEvent } from '@nostrify/nostrify';
 import { CommentForm } from './CommentForm';

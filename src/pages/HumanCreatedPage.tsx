@@ -1,7 +1,7 @@
 // ABOUTME: Page explaining the Human-Created certification badge
 // ABOUTME: Describes criteria for displaying the badge and links to no-ai-icon.com
 
-import { Brain, Shield, Video, ExternalLink } from 'lucide-react';
+import { Brain, Shield, VideoCamera as Video, ArrowSquareOut as ExternalLink } from '@phosphor-icons/react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { MarketingLayout } from '@/components/MarketingLayout';

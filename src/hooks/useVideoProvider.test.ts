@@ -197,7 +197,7 @@ describe('useVideoProvider', () => {
     expect(mockUseInfiniteVideosFunnelcake).toHaveBeenCalledWith(expect.objectContaining({
       feedType: 'trending',
       apiUrl: 'https://api.divine.video',
-      sortMode: 'trending',
+      sortMode: 'watching',
       enabled: true,
     }));
     expect(mockUseInfiniteVideos).toHaveBeenCalledWith(expect.objectContaining({

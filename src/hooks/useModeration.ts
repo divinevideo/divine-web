@@ -56,12 +56,7 @@ export function useMuteList(pubkey?: string) {
   return useQuery({
     queryKey: ['mute-list', targetPubkey],
     queryFn: async (context) => {
-      if (!targetPubkey) {
-        console.log('[useMuteList] No target pubkey, returning empty list');
-        return [];
-      }
-
-      console.log('[useMuteList] Fetching mute list for:', targetPubkey);
+      if (!targetPubkey) return [];
 
       const signal = AbortSignal.any([
         context.signal,
@@ -76,19 +71,12 @@ export function useMuteList(pubkey?: string) {
 
       const events = await nostr.query([filter], { signal });
 
-      console.log('[useMuteList] Found', events.length, 'mute list events');
-
       if (events.length === 0) return [];
 
       // Get the most recent mute list
       const latestEvent = events.sort((a, b) => b.created_at - a.created_at)[0];
 
-      console.log('[useMuteList] Latest mute list event:', latestEvent);
-
-      const items = parseMuteList(latestEvent);
-      console.log('[useMuteList] Parsed', items.length, 'mute items:', items);
-
-      return items;
+      return parseMuteList(latestEvent);
     },
     enabled: !!targetPubkey,
     staleTime: 60000, // 1 minute
@@ -333,9 +321,6 @@ export function useReportHistory() {
 export function useContentModeration() {
   const { data: muteList = EMPTY_MUTE_LIST } = useMuteList();
 
-  // Debug: Log mute list when it changes
-  console.log('[useContentModeration] Mute list loaded:', muteList.length, 'items', muteList);
-
   const checkContent = useCallback((content: {
     pubkey?: string;
     eventId?: string;
@@ -351,7 +336,6 @@ export function useContentModeration() {
         item => item.type === MuteType.USER && item.value === content.pubkey
       );
       if (mutedUser) {
-        console.log('[useContentModeration] MATCHED muted user:', content.pubkey, mutedUser);
         matchingItems.push(mutedUser);
         reasons.push(ContentFilterReason.OTHER);
       }
@@ -363,7 +347,6 @@ export function useContentModeration() {
         item => item.type === MuteType.EVENT && item.value === content.eventId
       );
       if (mutedEvent) {
-        console.log('[useContentModeration] MATCHED muted event:', content.eventId);
         matchingItems.push(mutedEvent);
         reasons.push(ContentFilterReason.OTHER);
       }
@@ -377,7 +360,6 @@ export function useContentModeration() {
                   item.value.toLowerCase() === hashtag.toLowerCase()
         );
         if (mutedHashtag) {
-          console.log('[useContentModeration] MATCHED muted hashtag:', hashtag);
           matchingItems.push(mutedHashtag);
           reasons.push(ContentFilterReason.OTHER);
         }
@@ -391,7 +373,6 @@ export function useContentModeration() {
 
       for (const keyword of keywords) {
         if (lowerText.includes(keyword.value.toLowerCase())) {
-          console.log('[useContentModeration] MATCHED muted keyword:', keyword.value);
           matchingItems.push(keyword);
           reasons.push(ContentFilterReason.OTHER);
         }

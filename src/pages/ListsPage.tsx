@@ -13,7 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { List, TrendingUp, Plus, Users, Video, Clock } from 'lucide-react';
+import { List, TrendUp as TrendingUp, Plus, Users, VideoCamera as Video, Clock } from '@phosphor-icons/react';
 import { genUserName } from '@/lib/genUserName';
 import { CreateListDialog } from '@/components/CreateListDialog';
 import { formatDistanceToNow } from 'date-fns';
@@ -221,7 +221,7 @@ export default function ListsPage() {
               <CardContent className="py-12 text-center">
                 <TrendingUp className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
                 <p className="text-muted-foreground">
-                  No trending lists found
+                  No lists trending right now. Be the curator we need.
                 </p>
               </CardContent>
             </Card>
@@ -235,7 +235,7 @@ export default function ListsPage() {
               <CardContent className="py-12 text-center">
                 <Users className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
                 <p className="text-muted-foreground mb-4">
-                  Log in to discover lists from people you follow
+                  Log in to see what your people are curating.
                 </p>
               </CardContent>
             </Card>
@@ -270,10 +270,10 @@ export default function ListsPage() {
               <CardContent className="py-12 text-center">
                 <Users className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
                 <p className="text-muted-foreground">
-                  No lists found from people you follow
+                  Nobody you follow has dropped a list yet.
                 </p>
                 <p className="text-sm text-muted-foreground mt-2">
-                  Check back later or explore trending lists
+                  Circle back soon, or poke around trending.
                 </p>
               </CardContent>
             </Card>
@@ -282,7 +282,7 @@ export default function ListsPage() {
               <CardContent className="py-12 text-center">
                 <Users className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
                 <p className="text-muted-foreground mb-4">
-                  Follow some creators to see their lists here
+                  Follow a few creators — their lists land here.
                 </p>
               </CardContent>
             </Card>

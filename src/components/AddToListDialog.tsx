@@ -2,6 +2,7 @@
 // ABOUTME: Allows users to select existing lists or create new ones
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useVideoLists, useAddVideoToList, useCreateVideoList, useVideosInLists } from '@/hooks/useVideoLists';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useQueryClient } from '@tanstack/react-query';
@@ -20,7 +21,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, List, Check, Loader2, ExternalLink } from 'lucide-react';
+import { Plus, List, Check, CircleNotch as Loader2, ArrowSquareOut as ExternalLink } from '@phosphor-icons/react';
 import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/useToast';
@@ -39,6 +40,7 @@ export function AddToListDialog({
   open,
   onClose
 }: AddToListDialogProps) {
+  const { t } = useTranslation();
   const { user } = useCurrentUser();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -68,8 +70,8 @@ export function AddToListDialog({
       await Promise.all(promises);
 
       toast({
-        title: 'Added to lists',
-        description: `Video added to ${selectedLists.size} list${selectedLists.size !== 1 ? 's' : ''}`,
+        title: t('addToListDialog.toastAddedTitle'),
+        description: t('addToListDialog.toastAddedDescription', { count: selectedLists.size }),
       });
 
       // Invalidate queries to update the UI
@@ -79,8 +81,8 @@ export function AddToListDialog({
       onClose();
     } catch {
       toast({
-        title: 'Error',
-        description: 'Failed to add video to lists',
+        title: t('addToListDialog.toastAddFailedTitle'),
+        description: t('addToListDialog.toastAddFailedDescription'),
         variant: 'destructive',
       });
     }
@@ -101,8 +103,8 @@ export function AddToListDialog({
       });
 
       toast({
-        title: 'List created',
-        description: `"${newListName}" created and video added`,
+        title: t('addToListDialog.toastCreatedTitle'),
+        description: t('addToListDialog.toastCreatedDescription', { name: newListName }),
       });
 
       // Invalidate queries to update the UI
@@ -112,8 +114,8 @@ export function AddToListDialog({
       onClose();
     } catch {
       toast({
-        title: 'Error',
-        description: 'Failed to create list',
+        title: t('addToListDialog.toastCreateFailedTitle'),
+        description: t('addToListDialog.toastCreateFailedDescription'),
         variant: 'destructive',
       });
     } finally {
@@ -130,9 +132,9 @@ export function AddToListDialog({
       }}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Add to List</DialogTitle>
+            <DialogTitle>{t('addToListDialog.title')}</DialogTitle>
             <DialogDescription>
-              Please log in to add videos to lists
+              {t('addToListDialog.loginRequiredDescription')}
             </DialogDescription>
           </DialogHeader>
         </DialogContent>
@@ -148,15 +150,15 @@ export function AddToListDialog({
     }}>
       <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Add to List</DialogTitle>
+          <DialogTitle>{t('addToListDialog.title')}</DialogTitle>
           <DialogDescription>
-            Add this video to your lists or create a new one
+            {t('addToListDialog.description')}
           </DialogDescription>
         </DialogHeader>
 
         {/* Public lists containing this video */}
         <div className="space-y-2 mb-4">
-          <h3 className="text-sm font-medium">Included in public lists</h3>
+          <h3 className="text-sm font-medium">{t('addToListDialog.includedInPublicLists')}</h3>
           {publicListsLoading ? (
             <div className="space-y-2">
               {[...Array(3)].map((_, i) => (
@@ -177,7 +179,7 @@ export function AddToListDialog({
                     <div className="min-w-0">
                       <div className="text-sm font-medium truncate">{list.name}</div>
                       <div className="text-xs text-muted-foreground truncate">
-                        {list.videoCoordinates.length} videos • {format(new Date(list.createdAt * 1000), 'MMM d, yyyy')}
+                        {t('addToListDialog.videoCount', { count: list.videoCoordinates.length })} • {format(new Date(list.createdAt * 1000), 'MMM d, yyyy')}
                       </div>
                     </div>
                     <ExternalLink className="h-4 w-4 text-muted-foreground shrink-0" />
@@ -186,14 +188,14 @@ export function AddToListDialog({
               })}
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground">Not on any public lists yet</p>
+            <p className="text-sm text-muted-foreground">{t('addToListDialog.notOnPublicLists')}</p>
           )}
         </div>
 
         <Tabs defaultValue="existing" className="w-full">
           <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="existing">Your Lists</TabsTrigger>
-            <TabsTrigger value="new">Create New</TabsTrigger>
+            <TabsTrigger value="existing">{t('addToListDialog.tabYourLists')}</TabsTrigger>
+            <TabsTrigger value="new">{t('addToListDialog.tabCreateNew')}</TabsTrigger>
           </TabsList>
 
           <TabsContent value="existing" className="space-y-4">
@@ -239,7 +241,7 @@ export function AddToListDialog({
                             )}
                           </Label>
                           <span className="text-xs text-muted-foreground">
-                            {list.videoCoordinates.length} videos
+                            {t('addToListDialog.videoCount', { count: list.videoCoordinates.length })}
                           </span>
                         </div>
                       );
@@ -257,14 +259,14 @@ export function AddToListDialog({
                   ) : (
                     <Plus className="h-4 w-4 mr-2" />
                   )}
-                  Add to {selectedLists.size} List{selectedLists.size !== 1 ? 's' : ''}
+                  {t('addToListDialog.addToCountButton', { count: selectedLists.size })}
                 </Button>
               </>
             ) : (
               <div className="text-center py-8">
                 <List className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
                 <p className="text-muted-foreground mb-4">
-                  You don't have any lists yet
+                  {t('addToListDialog.emptyState')}
                 </p>
                 <Button
                   variant="outline"
@@ -273,7 +275,7 @@ export function AddToListDialog({
                     tabsList?.click();
                   }}
                 >
-                  Create your first list
+                  {t('addToListDialog.createFirstList')}
                 </Button>
               </div>
             )}
@@ -281,20 +283,20 @@ export function AddToListDialog({
 
           <TabsContent value="new" className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="list-name">List Name</Label>
+              <Label htmlFor="list-name">{t('addToListDialog.listNameLabel')}</Label>
               <Input
                 id="list-name"
-                placeholder="My Favorite Vines"
+                placeholder={t('addToListDialog.listNamePlaceholder')}
                 value={newListName}
                 onChange={(e) => setNewListName(e.target.value)}
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="list-description">Description (optional)</Label>
+              <Label htmlFor="list-description">{t('addToListDialog.descriptionLabel')}</Label>
               <Textarea
                 id="list-description"
-                placeholder="A collection of my favorite videos..."
+                placeholder={t('addToListDialog.descriptionPlaceholder')}
                 value={newListDescription}
                 onChange={(e) => setNewListDescription(e.target.value)}
                 rows={3}
@@ -311,7 +313,7 @@ export function AddToListDialog({
               ) : (
                 <Plus className="h-4 w-4 mr-2" />
               )}
-              Create List & Add Video
+              {t('addToListDialog.createAndAddButton')}
             </Button>
           </TabsContent>
         </Tabs>

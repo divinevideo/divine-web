@@ -1,12 +1,13 @@
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { LifeBuoy, Plus, Search } from 'lucide-react';
+import { Lifebuoy as LifeBuoy, Plus, MagnifyingGlass as Search } from '@phosphor-icons/react';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useBatchedAuthors } from '@/hooks/useBatchedAuthors';
+import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useDmCapability, useDmConversations, useParsedDmShare } from '@/hooks/useDirectMessages';
 import { useSearchUsers } from '@/hooks/useSearchUsers';
 import { useSubdomainNavigate } from '@/hooks/useSubdomainNavigate';
@@ -28,6 +29,20 @@ function getDisplayName(pubkey: string, metadata?: { display_name?: string; name
   }
 
   return metadata?.display_name || metadata?.name || genUserName(pubkey);
+}
+
+function getConversationPreview(message: DmConversation['lastMessage']): string {
+  const preview = getDmMessagePreview(message);
+
+  if (message.deliveryState === 'sending') {
+    return `Sending... ${preview}`;
+  }
+
+  if (message.deliveryState === 'failed') {
+    return `Failed to send: ${preview}`;
+  }
+
+  return preview;
 }
 
 function ConversationSkeleton() {
@@ -94,7 +109,7 @@ function ConversationRow({ conversation, names, pictures, onClick }: Conversatio
 
           <div className="mt-2 flex items-center gap-3">
             <p className="min-w-0 flex-1 truncate text-sm text-muted-foreground">
-              {getDmMessagePreview(conversation.lastMessage)}
+              {getConversationPreview(conversation.lastMessage)}
             </p>
             {conversation.unreadCount > 0 && (
               <span className="inline-flex min-w-6 items-center justify-center rounded-full bg-primary px-2 py-1 text-[11px] font-semibold text-primary-foreground">
@@ -139,7 +154,7 @@ function SupportRow({
         <div className="min-w-0 flex-1">
           <div className="flex items-center justify-between gap-3">
             <p className="truncate text-sm font-semibold text-foreground">{displayName}</p>
-            <span className="rounded-full bg-primary/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-primary">
+            <span className="rounded-full bg-primary/10 px-2.5 py-1 text-[10px] font-semibold text-primary">
               {supportBadge}
             </span>
           </div>
@@ -156,6 +171,7 @@ export function MessagesPage() {
   const navigate = useSubdomainNavigate();
   const location = useLocation();
   const { t } = useTranslation();
+  const { user } = useCurrentUser();
   const { canUseDirectMessages } = useDmCapability();
   const conversationsQuery = useDmConversations();
   const share = useParsedDmShare(location.search);
@@ -186,16 +202,16 @@ export function MessagesPage() {
   const supportDisplayName = getDisplayName(DIVINE_SUPPORT_PUBKEY, supportMetadata);
   const supportPicture = getSafeProfileImage(supportMetadata?.picture) || '/user-avatar.png';
 
-  const searchResults = searchUsersQuery.data || [];
+  const searchResults = (searchUsersQuery.data || []).filter((result) => result.pubkey !== user?.pubkey);
 
   return (
-    <div className="min-h-full bg-[radial-gradient(circle_at_top,_hsl(var(--primary)/0.14),_transparent_42%),linear-gradient(180deg,hsl(var(--background)),hsl(var(--background)))]">
+    <div className="min-h-full bg-brand-off-white dark:bg-brand-dark-green">
       <main className="container py-6">
         <div className="mx-auto max-w-4xl space-y-5">
           <section className="overflow-hidden rounded-[32px] border border-border/70 bg-card/80 px-5 py-6 shadow-[0_24px_60px_rgba(39,197,139,0.08)] backdrop-blur-sm">
             <div className="space-y-4">
               <div className="space-y-2">
-                <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-primary">
+                <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary">
                   {t('messages.badge')}
                 </div>
                 <div>

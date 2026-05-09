@@ -1,7 +1,8 @@
-// ABOUTME: Auto-looping video player component for 6-second videos
+// ABOUTME: Video player component for short-form feeds with configurable loop behavior
 // ABOUTME: Supports MP4 and GIF formats with preloading, seamless playback, and blurhash placeholders
 
 import { useRef, useEffect, useState, forwardRef, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { useInView } from 'react-intersection-observer';
 import { useVideoPlayback } from '@/hooks/useVideoPlayback';
@@ -15,9 +16,11 @@ import type { ParsedVideoData } from '@/types/video';
 import type { VttCue } from '@/lib/vttParser';
 import { BlurhashPlaceholder, isValidBlurhash } from '@/components/BlurhashImage';
 import { AgeVerificationOverlay } from '@/components/AgeVerificationOverlay';
+import { AgeRestrictedMediaPlaceholder } from '@/components/AgeRestrictedMediaPlaceholder';
 import { SubtitleOverlay } from '@/components/SubtitleOverlay';
 import { createAuthLoader } from '@/lib/hlsAuthLoader';
 import { bandwidthTracker } from '@/lib/bandwidthTracker';
+import { isProtectedDivineMediaUrl, useAuthenticatedMediaUrl } from '@/hooks/useAuthenticatedMediaUrl';
 import Hls from 'hls.js';
 
 // Maximum playback duration limit - videos loop back to start after this many seconds
@@ -25,6 +28,7 @@ const MAX_PLAYBACK_DURATION = 6.3;
 
 interface VideoPlayerProps {
   videoId: string;
+  playbackId?: string;
   src: string;
   hlsUrl?: string; // HLS manifest URL for adaptive bitrate streaming
   fallbackUrls?: string[];
@@ -34,6 +38,7 @@ interface VideoPlayerProps {
   className?: string;
   autoPlay?: boolean;
   muted?: boolean;
+  loopPlayback?: boolean;
   onLoadStart?: () => void;
   onLoadedData?: () => void;
   onPlaybackStarted?: () => void;
@@ -72,6 +77,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
   (
     {
       videoId,
+      playbackId,
       src,
       hlsUrl,
       fallbackUrls,
@@ -81,6 +87,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
       className,
       autoPlay: _autoPlay = true,
       muted: _muted = true,
+      loopPlayback = true,
       onLoadStart,
       onLoadedData,
       onPlaybackStarted,
@@ -105,6 +112,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
     },
     ref
   ) => {
+    const { t } = useTranslation();
     const videoRef = useRef<HTMLVideoElement | null>(null);
     const hlsRef = useRef<Hls | null>(null);
     const containerRef = useRef<HTMLDivElement | null>(null);
@@ -113,6 +121,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
     const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
     const [hasError, setHasError] = useState(false);
     const [requiresAuth, setRequiresAuth] = useState(false);
+    const [authDeniedAfterVerification, setAuthDeniedAfterVerification] = useState(false);
     const [authCheckPending, setAuthCheckPending] = useState(true); // Start true, set false after check completes
     const [authRetryCount, setAuthRetryCount] = useState(0);
     const [currentUrlIndex, setCurrentUrlIndex] = useState(0);
@@ -123,14 +132,21 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
 
     // Adult verification hook
     const { isVerified: isAdultVerified, getAuthHeader } = useAdultVerification();
+    const { mediaUrl: authenticatedPosterUrl } = useAuthenticatedMediaUrl(poster, {
+      enabled: !!poster && !requiresAuth && !authCheckPending,
+      ageRestricted: !!videoData?.ageRestricted,
+    });
+    const overlayPosterUrl = authenticatedPosterUrl ||
+      (poster && !isProtectedDivineMediaUrl(poster) ? poster : undefined);
 
     // Mobile-specific state
     const [touchState, setTouchState] = useState<TouchState | null>(null);
     const [lastTapTime, setLastTapTime] = useState(0);
     const [longPressTimer, setLongPressTimer] = useState<NodeJS.Timeout | null>(null);
 
+    const resolvedPlaybackId = playbackId ?? videoId;
     const { activeVideoId, registerVideo, unregisterVideo, updateVideoVisibility, globalMuted } = useVideoPlayback();
-    const isActive = activeVideoId === videoId;
+    const isActive = activeVideoId === resolvedPlaybackId;
 
     // Store context functions in refs to avoid unstable dependencies in setRefs callback
     // This prevents infinite loops when context functions change reference
@@ -208,13 +224,13 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
           verboseLog(`[VideoPlayer ${videoId}] Registering video element`);
           // Set initial muted state using ref
           node.muted = globalMutedRef.current;
-          registerVideoRef.current(videoId, node);
+          registerVideoRef.current(resolvedPlaybackId, node);
         } else {
           verboseLog(`[VideoPlayer ${videoId}] Unregistering video element`);
-          unregisterVideoRef.current(videoId);
+          unregisterVideoRef.current(resolvedPlaybackId);
         }
       },
-      [videoId, inViewRef, ref] // Removed registerVideo, unregisterVideo, globalMuted - use refs instead
+      [resolvedPlaybackId, videoId, inViewRef, ref] // Removed registerVideo, unregisterVideo, globalMuted - use refs instead
     );
 
     // Set container ref
@@ -228,16 +244,16 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
       if (isPriority && !entry && !hasError) {
         // Priority video: report as fully visible before observer fires
         verboseLog(`[VideoPlayer ${videoId}] Priority video: reporting immediate full visibility`);
-        updateVideoVisibility(videoId, 1.0);
+        updateVideoVisibility(resolvedPlaybackId, 1.0);
       } else if (entry && !hasError) {
         const visibilityRatio = entry.intersectionRatio;
         verboseLog(`[VideoPlayer ${videoId}] Visibility: ${(visibilityRatio * 100).toFixed(1)}%`);
-        updateVideoVisibility(videoId, visibilityRatio);
+        updateVideoVisibility(resolvedPlaybackId, visibilityRatio);
       } else if (!entry || !inView) {
         // Not visible at all
-        updateVideoVisibility(videoId, 0);
+        updateVideoVisibility(resolvedPlaybackId, 0);
       }
-    }, [entry, inView, videoId, hasError, updateVideoVisibility, isPriority]);
+    }, [entry, inView, resolvedPlaybackId, videoId, hasError, updateVideoVisibility, isPriority]);
 
     // Update playing state based on active status and control video playback
     useEffect(() => {
@@ -488,6 +504,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
         setIsLoading(true);
       }
       setHasError(false);
+      setAuthDeniedAfterVerification(false);
       onLoadStart?.();
     };
 
@@ -535,6 +552,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
       // Mark as loaded and hide blurhash permanently
       setIsLoading(false);
       setHasLoadedOnce(true);
+      setAuthDeniedAfterVerification(false);
 
       // Emit first video load metric (only once)
       if (loadDuration > 0 && typeof window !== 'undefined') {
@@ -574,10 +592,12 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
     }, [videoId, currentUrlIndex, allUrls, hlsUrl, triedHls, onError]);
 
     const handleEnded = () => {
-      verboseLog(`[VideoPlayer ${videoId}] Video ended, auto-looping`);
+      verboseLog(
+        `[VideoPlayer ${videoId}] Video ended${loopPlayback ? ', auto-looping' : ''}`
+      );
       onEnded?.();
-      // Auto-loop by replaying
-      if (videoRef.current) {
+      // Default feed behavior loops short-form videos in place.
+      if (loopPlayback && videoRef.current) {
         videoRef.current.currentTime = 0;
         videoRef.current.play().catch((error) => {
           debugError(`[VideoPlayer ${videoId}] Failed to loop video:`, error);
@@ -593,7 +613,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
       const video = videoRef.current;
       if (!video) return;
 
-      if (video.currentTime >= MAX_PLAYBACK_DURATION) {
+      if (loopPlayback && video.currentTime >= MAX_PLAYBACK_DURATION) {
         video.currentTime = 0;
       }
 
@@ -603,7 +623,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
         playbackSecondRef.current = sec;
         setPlaybackSecond(sec);
       }
-    }, []);
+    }, [loopPlayback]);
 
     // Handle age verification completion - retry video load
     const handleAgeVerified = useCallback(() => {
@@ -612,6 +632,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
       setAuthCheckPending(false); // No need to re-check, user just verified
       setIsLoading(true);
       setHasError(false);
+      setAuthDeniedAfterVerification(false);
       setAuthRetryCount(prev => prev + 1);
       setCurrentUrlIndex(0);
     }, [videoId]);
@@ -753,8 +774,10 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
           capLevelToPlayerSize: true, // Match quality to player size
         };
 
-        // Add custom auth loader if adult verified
-        if (isAdultVerified) {
+        // Add custom auth loader only when the video is age-restricted.
+        // Public HLS streams must not carry an Authorization header — divine-blossom
+        // rejects any malformed auth header with 401 even when the blob is public.
+        if (isAdultVerified && videoData?.ageRestricted) {
           verboseLog(`[VideoPlayer ${videoId}] Using NIP-98 auth loader for each HLS request`);
           hlsConfig.loader = createAuthLoader(getAuthHeader);
         }
@@ -775,7 +798,11 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
           // Check for 401/403 auth errors
           if (data.response && (data.response.code === 401 || data.response.code === 403)) {
             debugError(`[VideoPlayer ${videoId}] Auth required (${data.response.code})`);
-            setRequiresAuth(true);
+            if (isAdultVerified) {
+              setAuthDeniedAfterVerification(true);
+            } else {
+              setRequiresAuth(true);
+            }
             setIsLoading(false);
             hls.destroy();
             return;
@@ -783,7 +810,9 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
 
           if (data.fatal) {
             debugError(`[VideoPlayer ${videoId}] Fatal HLS error, falling back to direct playback`);
+            setTriedHls(true);
             hls.destroy();
+            hlsRef.current = null;
             // Fall back to direct src playback
             const currentUrl = allUrls[currentUrlIndex];
             if (currentUrl) {
@@ -795,6 +824,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
         hlsRef.current = hls;
         setIsLoading(true);
         setHasError(false);
+        setAuthDeniedAfterVerification(false);
 
       } else if (hlsUrl && video.canPlayType('application/vnd.apple.mpegurl')) {
         // Native HLS support (Safari)
@@ -802,6 +832,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
         video.src = hlsUrl;
         setIsLoading(true);
         setHasError(false);
+        setAuthDeniedAfterVerification(false);
 
       } else {
         // Fall back to regular MP4 playback
@@ -809,12 +840,18 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
         verboseLog(`[VideoPlayer ${videoId}] Using direct playback - URL ${currentUrlIndex}/${allUrls.length - 1}: ${currentUrl}`);
 
         if (currentUrl) {
-          // If adult verified, fetch with auth headers and use blob URL
-          if (isAdultVerified) {
+          // Only fetch with auth headers when the video is actually age-restricted.
+          // Public blobs must not carry an Authorization header — divine-blossom
+          // rejects any malformed auth header with 401 even when the blob is public,
+          // so attaching auth optimistically locks users out of public content
+          // whenever their signer produces an invalid event (e.g., JWT signer bugs).
+          if (isAdultVerified && videoData?.ageRestricted) {
             verboseLog(`[VideoPlayer ${videoId}] Fetching MP4 with NIP-98 auth`);
             (async () => {
               try {
-                const authHeader = await getAuthHeader(currentUrl);
+                // NIP-98 (not BUD-01): Blossom's viewer auth path only accepts
+                // BUD-01 list events, rejecting get events with an action mismatch.
+                const authHeader = await getAuthHeader(currentUrl, 'GET');
                 // Check if request was aborted while getting auth header
                 if (abortController.signal.aborted) {
                   verboseLog(`[VideoPlayer ${videoId}] Fetch aborted before starting`);
@@ -844,7 +881,11 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
                     };
                   } else if (response.status === 401 || response.status === 403) {
                     debugError(`[VideoPlayer ${videoId}] Auth failed even with NIP-98 (${response.status})`);
-                    setRequiresAuth(true);
+                    if (isAdultVerified) {
+                      setAuthDeniedAfterVerification(true);
+                    } else {
+                      setRequiresAuth(true);
+                    }
                     setIsLoading(false);
                   } else {
                     debugError(`[VideoPlayer ${videoId}] Fetch failed: ${response.status}`);
@@ -852,8 +893,9 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
                     setIsLoading(false);
                   }
                 } else {
-                  // No auth header available, try without
-                  video.src = currentUrl;
+                  debugError(`[VideoPlayer ${videoId}] Missing auth header for protected media`);
+                  setHasError(true);
+                  setIsLoading(false);
                 }
               } catch (error) {
                 // Ignore abort errors, they're expected when effect re-runs
@@ -871,6 +913,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
           }
           setIsLoading(true);
           setHasError(false);
+          setAuthDeniedAfterVerification(false);
         }
       }
       } // end loadVideoSource
@@ -886,7 +929,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
         }
       };
 
-    }, [hlsUrl, currentUrlIndex, allUrls, videoId, requiresAuth, isAdultVerified, authRetryCount, getAuthHeader]); // React to HLS URL, fallback, and auth changes
+    }, [hlsUrl, currentUrlIndex, allUrls, videoId, requiresAuth, isAdultVerified, authRetryCount, getAuthHeader, videoData?.ageRestricted]); // React to HLS URL, fallback, and auth changes
 
     // Cleanup on unmount
     useEffect(() => {
@@ -901,8 +944,8 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
         }
 
         // Clear visibility and unregister
-        updateVideoVisibility(videoId, 0);
-        unregisterVideo(videoId);
+        updateVideoVisibility(resolvedPlaybackId, 0);
+        unregisterVideo(resolvedPlaybackId);
 
         // Clean up timers
         if (longPressTimer) clearTimeout(longPressTimer);
@@ -914,7 +957,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
           blobUrlRef.current = null;
         }
       };
-    }, [videoId, unregisterVideo, updateVideoVisibility, longPressTimer]);
+    }, [resolvedPlaybackId, videoId, unregisterVideo, updateVideoVisibility, longPressTimer]);
 
     // Handle GIF format (use img tag)
     const currentUrl = allUrls[currentUrlIndex] || src;
@@ -923,7 +966,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
         <div className={cn('relative overflow-hidden', className)}>
           <img
             src={currentUrl}
-            alt="Video GIF"
+            alt={t('videoPlayer.gifAlt')}
             className="w-full h-full object-contain"
             onLoad={() => setIsLoading(false)}
             onError={() => setHasError(true)}
@@ -935,7 +978,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
           )}
           {hasError && (
             <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
-              Failed to load GIF
+              {t('videoPlayer.gifLoadFailed')}
             </div>
           )}
         </div>
@@ -971,10 +1014,10 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
           // HLS.js is used when hlsUrl is provided and Hls.isSupported()
           // Only show poster after auth check passes - prevents 401 errors from poster URL
           // During auth check, blurhash provides the visual placeholder
-          poster={(requiresAuth || authCheckPending) ? undefined : poster}
+          poster={(requiresAuth || authCheckPending) ? undefined : authenticatedPosterUrl}
           muted // Start muted, will be controlled via effect
           autoPlay={false} // Never autoplay, we control playback programmatically
-          loop
+          loop={loopPlayback}
           playsInline
           // Preload based on visibility, but once loaded, keep preload stable to avoid re-fetching
           // hasLoadedOnce prevents the preload attribute from changing and causing flashes
@@ -1021,29 +1064,38 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
             )}
             <img
               src="/ui-icons/loading-brand.svg"
-              alt="Loading..."
+              alt={t('videoPlayer.loading')}
               className="w-24 h-24 opacity-75"
             />
           </div>
         )}
 
+        {/* Auth denied after verification */}
+        {authDeniedAfterVerification && (
+          <AgeRestrictedMediaPlaceholder
+            title={t('videoPlayer.ageRestrictedTitle')}
+            actionLabel={t('videoPlayer.retry')}
+            onAction={handleAgeVerified}
+          />
+        )}
+
         {/* Error state */}
-        {hasError && !requiresAuth && (
+        {hasError && !requiresAuth && !authDeniedAfterVerification && (
           <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
             <div className="text-center">
-              <div>Failed to load video</div>
+              <div>{t('videoPlayer.loadFailed')}</div>
               {isMobile && (
-                <div className="text-sm mt-2">Tap to retry</div>
+                <div className="text-sm mt-2">{t('videoPlayer.tapToRetry')}</div>
               )}
             </div>
           </div>
         )}
 
         {/* Age verification required (401/403) */}
-        {requiresAuth && (
+        {requiresAuth && !isAdultVerified && (
           <AgeVerificationOverlay
             onVerified={handleAgeVerified}
-            thumbnailUrl={poster}
+            thumbnailUrl={overlayPosterUrl}
             blurhash={blurhash}
           />
         )}

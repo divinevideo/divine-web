@@ -4,6 +4,24 @@
 /** Notification types supported by the app */
 export type NotificationType = 'like' | 'comment' | 'follow' | 'repost' | 'zap';
 
+/** Raw notification types accepted by the backend filter API */
+export type NotificationApiType = 'reaction' | 'reply' | 'follow' | 'repost' | 'zap' | 'mention';
+
+/** Notification tabs supported by the notifications page */
+export type NotificationCategory =
+  | 'all'
+  | 'unread'
+  | 'likes'
+  | 'comments'
+  | 'follows'
+  | 'reposts'
+  | 'zaps';
+
+/** Filters used when fetching notifications */
+export interface NotificationFilters {
+  category: NotificationCategory;
+}
+
 /** A single notification in app format */
 export interface Notification {
   id: string;

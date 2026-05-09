@@ -1,8 +1,10 @@
 // ABOUTME: Modal explaining original Vine, Proofmode, AI detection, and hosting badges for a video
 // ABOUTME: Uses the same decision helpers as the badge row so the UI stays aligned with mobile badge rules
 
-import { useEffect, useState } from 'react';
-import { Archive, CheckCircle2, ExternalLink, Loader2, Search, ShieldCheck, XCircle } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { Archive, CheckCircle as CheckCircle2, ArrowSquareOut as ExternalLink, CircleNotch as Loader2, MagnifyingGlass as Search, ShieldCheck, XCircle } from '@phosphor-icons/react';
+import { useQuery } from '@tanstack/react-query';
+import type { NostrEvent } from '@nostrify/nostrify';
 import {
   Dialog,
   DialogContent,
@@ -18,9 +20,12 @@ import {
   getProofChecklist,
   getVerificationDescription,
   getVerificationIntroText,
+  isDivineHostedVideo,
   isOriginalVineVideo,
   shouldFetchAiForDetails,
 } from '@/lib/videoVerification';
+import { fetchVideoById } from '@/lib/funnelcakeClient';
+import { getProofModeData } from '@/lib/videoParser';
 import type { ParsedVideoData } from '@/types/video';
 import { Link } from 'react-router-dom';
 
@@ -35,11 +40,47 @@ export function VideoVerificationDetailsDialog({
   open,
   onOpenChange,
 }: VideoVerificationDetailsDialogProps) {
-  const { aiResult, isFetching, refetch } = useVideoVerification(video, {
-    autoFetchAi: open && shouldFetchAiForDetails(video),
+  const isOriginalVine = isOriginalVineVideo(video);
+
+  // Funnelcake list endpoints (e.g. /api/videos) don't return Nostr `tags`,
+  // so list-loaded videos arrive with `proofMode` undefined even when the
+  // underlying event has verification tags. Lazily fetch the single-video
+  // endpoint (which includes `event.tags`) when the dialog opens so the
+  // checklist reflects reality.
+  const proofModeFallbackQuery = useQuery({
+    queryKey: ['video-proofmode-fallback', video.id],
+    queryFn: async ({ signal }) => {
+      const raw = await fetchVideoById(undefined, video.id, undefined, signal);
+      if (!raw?.tags) return null;
+      const fullEvent: NostrEvent = {
+        id: raw.id,
+        pubkey: raw.pubkey,
+        created_at: raw.created_at,
+        kind: raw.kind,
+        tags: raw.tags,
+        content: raw.content || '',
+        sig: '',
+      };
+      return getProofModeData(fullEvent) ?? null;
+    },
+    enabled:
+      open &&
+      !isOriginalVine &&
+      !video.proofMode &&
+      isDivineHostedVideo(video.videoUrl),
+    staleTime: 10 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
+  });
+
+  const effectiveVideo = useMemo<ParsedVideoData>(() => {
+    if (video.proofMode || !proofModeFallbackQuery.data) return video;
+    return { ...video, proofMode: proofModeFallbackQuery.data };
+  }, [video, proofModeFallbackQuery.data]);
+
+  const { aiResult, isFetching, refetch } = useVideoVerification(effectiveVideo, {
+    autoFetchAi: open && shouldFetchAiForDetails(effectiveVideo),
   });
   const [checkedAndEmpty, setCheckedAndEmpty] = useState(false);
-  const isOriginalVine = isOriginalVineVideo(video);
 
   useEffect(() => {
     if (!open) {
@@ -70,14 +111,15 @@ export function VideoVerificationDetailsDialog({
         </DialogHeader>
 
         {isOriginalVine ? (
-          <OriginalVineDetails video={video} />
+          <OriginalVineDetails video={effectiveVideo} />
         ) : (
           <VerificationDetails
-            video={video}
+            video={effectiveVideo}
             aiResult={aiResult}
             isFetching={isFetching}
             checkedAndEmpty={checkedAndEmpty}
             onManualCheck={handleManualCheck}
+            proofModeLoading={proofModeFallbackQuery.isFetching}
           />
         )}
       </DialogContent>
@@ -116,6 +158,7 @@ interface VerificationDetailsProps {
   isFetching: boolean;
   checkedAndEmpty: boolean;
   onManualCheck: () => void;
+  proofModeLoading: boolean;
 }
 
 function VerificationDetails({
@@ -124,6 +167,7 @@ function VerificationDetails({
   isFetching,
   checkedAndEmpty,
   onManualCheck,
+  proofModeLoading,
 }: VerificationDetailsProps) {
   const summary = getVerificationDescription(video, aiResult);
   const checklist = getProofChecklist(video.proofMode);
@@ -140,12 +184,19 @@ function VerificationDetails({
           <span>ProofMode Verification</span>
         </div>
 
+        {proofModeLoading ? (
+          <div className="flex items-center gap-2 rounded-lg border border-border/70 bg-muted/40 p-3 text-sm text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            <span>Loading verification data…</span>
+          </div>
+        ) : (
         <div className="flex items-start gap-3 rounded-lg border border-border/70 bg-muted/40 p-3">
           <div className={getSummaryToneClass(summary.tone)}>
             <ShieldCheck className="h-4 w-4" />
           </div>
           <p className="text-sm text-muted-foreground">{summary.text}</p>
         </div>
+        )}
 
         <div className="space-y-2">
           {checklist.map((item) => (

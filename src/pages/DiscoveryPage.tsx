@@ -11,7 +11,7 @@ import { VerifiedOnlyToggle } from '@/components/VerifiedOnlyToggle';
 import { HashtagExplorer } from '@/components/HashtagExplorer';
 import { ClassicVinersRow } from '@/components/ClassicVinersRow';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Star, Clock, Hash, Flame, Sparkles } from 'lucide-react';
+import { Star, Clock, Hash, Flame, Sparkle as Sparkles } from '@phosphor-icons/react';
 // Zap temporarily unused - will be needed when Rising tab is re-enabled
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useCategories } from '@/hooks/useCategories';
@@ -173,6 +173,7 @@ export function DiscoveryPage() {
             <VideoFeed
               feedType="classics"
               verifiedOnly={verifiedOnly}
+              accent="violet"
               data-testid="video-feed-classics"
               className="space-y-6"
               key="classics"
@@ -184,6 +185,7 @@ export function DiscoveryPage() {
               feedType="trending"
               sortMode="hot"
               verifiedOnly={verifiedOnly}
+              accent="pink"
               data-testid="video-feed-hot"
               className="space-y-6"
               key="hot"

@@ -1,20 +1,33 @@
 // ABOUTME: Leaderboard page showing top videos and creators by loops/views
 // ABOUTME: Supports time filters: all time, today, this week, this month, this year
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useSeoMeta } from '@unhead/react';
-import { Trophy, Video, User, Clock, Calendar, CalendarDays, CalendarRange, Infinity as InfinityIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { Trophy, VideoCamera as Video, User, Clock, Calendar, CalendarDots as CalendarDays, CalendarBlank as CalendarRange, Infinity as InfinityIcon } from '@phosphor-icons/react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
-import { DEFAULT_FUNNELCAKE_URL } from '@/config/relays';
 import { nip19 } from 'nostr-tools';
+import { getFunnelcakeBaseUrl } from '@/config/api';
 
 type TimePeriod = 'alltime' | 'day' | 'week' | 'month' | 'year';
 type LeaderboardType = 'videos' | 'creators';
+
+const VALID_TYPES: LeaderboardType[] = ['videos', 'creators'];
+const VALID_PERIODS: TimePeriod[] = ['alltime', 'day', 'week', 'month', 'year'];
+
+function parseLeaderboardHash(hash: string): { type?: LeaderboardType; period?: TimePeriod } {
+  const cleaned = hash.replace(/^#/, '');
+  if (!cleaned) return {};
+  const [rawType, rawPeriod] = cleaned.split('-');
+  const type = VALID_TYPES.includes(rawType as LeaderboardType) ? (rawType as LeaderboardType) : undefined;
+  const period = VALID_PERIODS.includes(rawPeriod as TimePeriod) ? (rawPeriod as TimePeriod) : undefined;
+  return { type, period };
+}
 
 interface VideoLeaderboardItem {
   id: string;
@@ -57,13 +70,13 @@ function formatLoops(loops: number): string {
   return rounded.toLocaleString();
 }
 
-function getTimePeriodLabel(period: TimePeriod): string {
+function getTimePeriodLabel(period: TimePeriod, t: (key: string) => string): string {
   switch (period) {
-    case 'alltime': return 'All Time';
-    case 'day': return 'Today';
-    case 'week': return 'This Week';
-    case 'month': return 'This Month';
-    case 'year': return 'This Year';
+    case 'alltime': return t('leaderboardPage.allTime');
+    case 'day': return t('leaderboardPage.today');
+    case 'week': return t('leaderboardPage.thisWeek');
+    case 'month': return t('leaderboardPage.thisMonth');
+    case 'year': return t('leaderboardPage.thisYear');
   }
 }
 
@@ -75,6 +88,19 @@ function getTimePeriodIcon(period: TimePeriod) {
     case 'month': return CalendarDays;
     case 'year': return CalendarRange;
   }
+}
+
+// For alltime, the API returns time-correct `views` (every play start) which is bigger
+// than `loops` (Vine-style replay/completion count). For windowed periods the API does
+// NOT honor the filter on `views` (it leaks alltime totals), so we fall back to `loops`,
+// which IS windowed. Label tracks which value we used so we never lie about the metric.
+function getHeadlineCount(entry: { views?: number; loops?: number }, period: TimePeriod): number {
+  if (period === 'alltime') return entry.views || entry.loops || 0;
+  return entry.loops || 0;
+}
+
+function getHeadlineLabel(period: TimePeriod, t: (key: string) => string): string {
+  return period === 'alltime' ? t('leaderboardPage.plays') : t('leaderboardPage.loops');
 }
 
 function VideoLeaderboardSkeleton() {
@@ -130,6 +156,7 @@ function RankBadge({ rank }: { rank: number }) {
 }
 
 function VideoLeaderboard({ period }: { period: TimePeriod }) {
+  const { t } = useTranslation();
   const { data: videos, isLoading, error } = useQuery({
     queryKey: ['leaderboard-videos', period],
     queryFn: async ({ signal }) => {
@@ -140,13 +167,13 @@ function VideoLeaderboard({ period }: { period: TimePeriod }) {
       });
 
       const response = await fetch(
-        `${DEFAULT_FUNNELCAKE_URL}/api/leaderboard/videos?${params}`,
+        `${getFunnelcakeBaseUrl()}/api/leaderboard/videos?${params}`,
         { signal }
       );
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || 'Failed to fetch leaderboard');
+        throw new Error(errorData.error || t('leaderboardPage.errorFetchVideos'));
       }
 
       const data = await response.json();
@@ -161,7 +188,7 @@ function VideoLeaderboard({ period }: { period: TimePeriod }) {
       if (pubkeysNeedingNames.length > 0) {
         try {
           const profilesResponse = await fetch(
-            `${DEFAULT_FUNNELCAKE_URL}/api/users/bulk`,
+            `${getFunnelcakeBaseUrl()}/api/users/bulk`,
             {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -192,8 +219,8 @@ function VideoLeaderboard({ period }: { period: TimePeriod }) {
         }
       }
 
-      // Sort client-side as workaround for backend sorting bug
-      return entries.sort((a, b) => (b.loops || 0) - (a.loops || 0));
+      // Sort client-side by the same metric we display so rank matches the headline number.
+      return entries.sort((a, b) => getHeadlineCount(b, period) - getHeadlineCount(a, period));
     },
     staleTime: 60000, // 1 minute
     retry: 1,
@@ -206,7 +233,7 @@ function VideoLeaderboard({ period }: { period: TimePeriod }) {
   if (error) {
     return (
       <div className="text-center py-8 text-muted-foreground">
-        <p>Failed to load leaderboard</p>
+        <p>{t('leaderboardPage.errorLoadVideos')}</p>
         <p className="text-sm mt-2">{error.message}</p>
       </div>
     );
@@ -215,7 +242,7 @@ function VideoLeaderboard({ period }: { period: TimePeriod }) {
   if (!videos?.length) {
     return (
       <div className="text-center py-8 text-muted-foreground">
-        No videos found for this time period
+        {t('leaderboardPage.emptyVideos')}
       </div>
     );
   }
@@ -248,20 +275,20 @@ function VideoLeaderboard({ period }: { period: TimePeriod }) {
 
             <div className="flex-1 min-w-0">
               <p className="font-medium truncate">
-                {video.title || 'Untitled'}
+                {video.title || t('leaderboardPage.untitled')}
               </p>
               <Link
                 to={`/profile/${npub}`}
                 className="text-sm text-muted-foreground hover:text-foreground"
                 onClick={(e) => e.stopPropagation()}
               >
-                {video.author_name || 'Unknown'}
+                {video.author_name || t('leaderboardPage.unknown')}
               </Link>
             </div>
 
             <div className="text-right">
-              <p className="font-bold text-lg">{formatLoops(video.loops || 0)}</p>
-              <p className="text-xs text-muted-foreground">loops</p>
+              <p className="font-bold text-lg">{formatLoops(getHeadlineCount(video, period))}</p>
+              <p className="text-xs text-muted-foreground">{getHeadlineLabel(period, t)}</p>
             </div>
           </Link>
         );
@@ -271,6 +298,7 @@ function VideoLeaderboard({ period }: { period: TimePeriod }) {
 }
 
 function CreatorLeaderboard({ period }: { period: TimePeriod }) {
+  const { t } = useTranslation();
   const { data: creators, isLoading, error } = useQuery({
     queryKey: ['leaderboard-creators', period],
     queryFn: async ({ signal }) => {
@@ -281,20 +309,20 @@ function CreatorLeaderboard({ period }: { period: TimePeriod }) {
       });
 
       const response = await fetch(
-        `${DEFAULT_FUNNELCAKE_URL}/api/leaderboard/creators?${params}`,
+        `${getFunnelcakeBaseUrl()}/api/leaderboard/creators?${params}`,
         { signal }
       );
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || 'Failed to fetch creator leaderboard');
+        throw new Error(errorData.error || t('leaderboardPage.errorFetchCreators'));
       }
 
       const data = await response.json();
       // API returns { period, entries: [...] }
       const entries = (data.entries || data) as CreatorLeaderboardItem[];
-      // Sort client-side as workaround for backend sorting bug
-      return entries.sort((a, b) => (b.loops || 0) - (a.loops || 0));
+      // Sort client-side by the same metric we display so rank matches the headline number.
+      return entries.sort((a, b) => getHeadlineCount(b, period) - getHeadlineCount(a, period));
     },
     staleTime: 60000,
     retry: 1,
@@ -307,7 +335,7 @@ function CreatorLeaderboard({ period }: { period: TimePeriod }) {
   if (error) {
     return (
       <div className="text-center py-8 text-muted-foreground">
-        <p>Failed to load creator leaderboard</p>
+        <p>{t('leaderboardPage.errorLoadCreators')}</p>
         <p className="text-sm mt-2">{error.message}</p>
       </div>
     );
@@ -316,7 +344,7 @@ function CreatorLeaderboard({ period }: { period: TimePeriod }) {
   if (!creators?.length) {
     return (
       <div className="text-center py-8 text-muted-foreground">
-        No creators found
+        {t('leaderboardPage.emptyCreators')}
       </div>
     );
   }
@@ -348,16 +376,16 @@ function CreatorLeaderboard({ period }: { period: TimePeriod }) {
 
             <div className="flex-1 min-w-0">
               <p className="font-medium truncate">
-                {creator.display_name || creator.name || 'Unknown'}
+                {creator.display_name || creator.name || t('leaderboardPage.unknown')}
               </p>
               <p className="text-sm text-muted-foreground">
-                {creator.videos_with_views} videos
+                {t('leaderboardPage.videosCount', { count: creator.videos_with_views })}
               </p>
             </div>
 
             <div className="text-right">
-              <p className="font-bold text-lg">{formatLoops(creator.loops || 0)}</p>
-              <p className="text-xs text-muted-foreground">total loops</p>
+              <p className="font-bold text-lg">{formatLoops(getHeadlineCount(creator, period))}</p>
+              <p className="text-xs text-muted-foreground">{t('leaderboardPage.totalLabel', { label: getHeadlineLabel(period, t) })}</p>
             </div>
           </Link>
         );
@@ -367,14 +395,41 @@ function CreatorLeaderboard({ period }: { period: TimePeriod }) {
 }
 
 export function LeaderboardPage() {
-  const [leaderboardType, setLeaderboardType] = useState<LeaderboardType>('videos');
-  const [timePeriod, setTimePeriod] = useState<TimePeriod>('alltime');
+  const { t } = useTranslation();
+  const [leaderboardType, setLeaderboardType] = useState<LeaderboardType>(() => {
+    if (typeof window === 'undefined') return 'videos';
+    return parseLeaderboardHash(window.location.hash).type ?? 'videos';
+  });
+  const [timePeriod, setTimePeriod] = useState<TimePeriod>(() => {
+    if (typeof window === 'undefined') return 'alltime';
+    return parseLeaderboardHash(window.location.hash).period ?? 'alltime';
+  });
+
+  // Sync state -> hash without scrolling or polluting history.
+  // No element has id="<type>-<period>", so the browser won't auto-scroll.
+  useEffect(() => {
+    const next = `#${leaderboardType}-${timePeriod}`;
+    if (window.location.hash !== next) {
+      window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}${next}`);
+    }
+  }, [leaderboardType, timePeriod]);
+
+  // Sync hash -> state on back/forward.
+  useEffect(() => {
+    const onHashChange = () => {
+      const { type, period } = parseLeaderboardHash(window.location.hash);
+      if (type) setLeaderboardType(type);
+      if (period) setTimePeriod(period);
+    };
+    window.addEventListener('hashchange', onHashChange);
+    return () => window.removeEventListener('hashchange', onHashChange);
+  }, []);
 
   useSeoMeta({
-    title: 'Leaderboard - Divine',
-    description: 'Top videos and creators by loops on Divine',
-    ogTitle: 'Leaderboard - Divine',
-    ogDescription: 'See the most popular videos and creators',
+    title: t('leaderboardPage.seoTitle'),
+    description: t('leaderboardPage.seoDescription'),
+    ogTitle: t('leaderboardPage.seoTitle'),
+    ogDescription: t('leaderboardPage.seoOgDescription'),
   });
 
   const TimePeriodIcon = useMemo(() => getTimePeriodIcon(timePeriod), [timePeriod]);
@@ -386,8 +441,8 @@ export function LeaderboardPage() {
         <div className="flex items-center gap-3">
           <Trophy className="h-8 w-8 text-yellow-500" />
           <div>
-            <h1 className="text-2xl font-bold">Leaderboard</h1>
-            <p className="text-muted-foreground">Top videos and creators by loops</p>
+            <h1 className="text-2xl font-bold">{t('leaderboardPage.heading')}</h1>
+            <p className="text-muted-foreground">{t('leaderboardPage.subheading')}</p>
           </div>
         </div>
 
@@ -396,11 +451,11 @@ export function LeaderboardPage() {
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="videos" className="gap-2">
               <Video className="h-4 w-4" />
-              Top Videos
+              {t('leaderboardPage.topVideos')}
             </TabsTrigger>
             <TabsTrigger value="creators" className="gap-2">
               <User className="h-4 w-4" />
-              Top Creators
+              {t('leaderboardPage.topCreators')}
             </TabsTrigger>
           </TabsList>
 
@@ -409,7 +464,7 @@ export function LeaderboardPage() {
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium flex items-center gap-2">
                 <TimePeriodIcon className="h-4 w-4" />
-                {getTimePeriodLabel(timePeriod)}
+                {getTimePeriodLabel(timePeriod, t)}
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-0">
@@ -430,7 +485,7 @@ export function LeaderboardPage() {
                       `}
                     >
                       <Icon className="h-3.5 w-3.5" />
-                      {getTimePeriodLabel(period)}
+                      {getTimePeriodLabel(period, t)}
                     </button>
                   );
                 })}

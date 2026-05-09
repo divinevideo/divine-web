@@ -2,7 +2,8 @@
 // ABOUTME: Displays video with overlay UI including back button, author info, and action buttons
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { ArrowLeft, Heart, MessageCircle, Repeat2, Share, Volume2, VolumeX, Download, ListPlus, Users, MoreVertical, Flag, UserX, Code, Trash2, Eye, Captions } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { ArrowLeft, Heart, ChatCircle as MessageCircle, Repeat as Repeat2, Share, SpeakerHigh as Volume2, SpeakerX as VolumeX, DownloadSimple as Download, ListPlus, Users, DotsThreeVertical as MoreVertical, Flag, UserMinus as UserX, Code, Trash as Trash2, Eye, ClosedCaptioning as Captions } from '@phosphor-icons/react';
 import { nip19 } from 'nostr-tools';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -45,8 +46,11 @@ import { buildDmSharePayloadFromVideo, buildDmShareQueryString } from '@/lib/dm'
 interface FullscreenVideoItemProps {
   video: ParsedVideoData;
   isActive: boolean;
+  playbackId?: string;
   trafficSource?: ViewTrafficSource;
   onBack: () => void;
+  onEnded?: () => void;
+  loopPlayback?: boolean;
   onLike: () => void;
   onRepost: () => void;
   onShare: () => void;
@@ -62,7 +66,10 @@ interface FullscreenVideoItemProps {
 export function FullscreenVideoItem({
   video,
   isActive,
+  playbackId,
   onBack,
+  onEnded,
+  loopPlayback = true,
   onLike,
   onRepost,
   onShare,
@@ -75,6 +82,7 @@ export function FullscreenVideoItem({
   viewCount = 0,
   trafficSource,
 }: FullscreenVideoItemProps) {
+  const { t } = useTranslation();
   // Subscribe to bandwidth tier changes for adaptive HLS quality
   const _bandwidthTier = useBandwidthTier();
 
@@ -160,9 +168,9 @@ export function FullscreenVideoItem({
   // Set this video as active when it becomes visible
   useEffect(() => {
     if (isActive) {
-      setActiveVideo(video.id);
+      setActiveVideo(playbackId ?? video.id);
     }
-  }, [isActive, video.id, setActiveVideo]);
+  }, [isActive, playbackId, video.id, setActiveVideo]);
 
   // Handle tap on video area to toggle play/pause
   const handleOverlayClick = useCallback(() => {
@@ -199,13 +207,13 @@ export function FullscreenVideoItem({
         reason: 'Muted from fullscreen video'
       });
       toast({
-        title: 'User muted',
-        description: `${displayName} has been muted`,
+        title: t('fullscreenVideoItem.muteSuccessTitle'),
+        description: t('fullscreenVideoItem.muteSuccessDescription', { name: displayName }),
       });
     } catch {
       toast({
-        title: 'Error',
-        description: 'Failed to mute user',
+        title: t('fullscreenVideoItem.muteErrorTitle'),
+        description: t('fullscreenVideoItem.muteErrorDescription'),
         variant: 'destructive',
       });
     }
@@ -235,6 +243,7 @@ export function FullscreenVideoItem({
         {!videoError ? (
           <VideoPlayer
             videoId={video.id}
+            playbackId={playbackId}
             src={video.videoUrl}
             hlsUrl={effectiveHlsUrl}
             fallbackUrls={video.fallbackVideoUrls}
@@ -242,6 +251,8 @@ export function FullscreenVideoItem({
             blurhash={video.blurhash}
             className="w-full h-full object-contain"
             onError={() => setVideoError(true)}
+            onEnded={onEnded}
+            loopPlayback={loopPlayback}
             onSwipeRight={handleSwipeRight}
             onDoubleTap={handleDoubleTap}
             subtitleCues={subtitleCues}
@@ -251,7 +262,7 @@ export function FullscreenVideoItem({
           />
         ) : (
           <div className="flex items-center justify-center h-full text-white">
-            <p>Failed to load video</p>
+            <p>{t('fullscreenVideoItem.loadError')}</p>
           </div>
         )}
       </div>
@@ -260,7 +271,8 @@ export function FullscreenVideoItem({
       {showHeartAnimation && (
         <div className="absolute inset-0 z-40 flex items-center justify-center pointer-events-none">
           <Heart
-            className="h-24 w-24 text-red-500 fill-current animate-ping"
+            className="h-24 w-24 text-red-500 animate-ping"
+            weight="fill"
             style={{ animationDuration: '0.6s' }}
           />
         </div>
@@ -401,7 +413,7 @@ export function FullscreenVideoItem({
                     "w-12 h-12 rounded-full flex items-center justify-center bg-black/50 backdrop-blur-sm",
                     isLiked && "bg-red-500/80"
                   )}>
-                    <Heart className={cn("h-6 w-6 text-white", isLiked && "fill-current")} />
+                    <Heart className="h-6 w-6 text-white" weight={isLiked ? 'fill' : 'bold'} />
                   </div>
                 </button>
                 <button
@@ -433,7 +445,7 @@ export function FullscreenVideoItem({
                     "w-12 h-12 rounded-full flex items-center justify-center bg-black/50 backdrop-blur-sm",
                     isReposted && "bg-green-500/80"
                   )}>
-                    <Repeat2 className={cn("h-6 w-6 text-white", isReposted && "fill-current")} />
+                    <Repeat2 className="h-6 w-6 text-white" weight={isReposted ? 'fill' : 'bold'} />
                   </div>
                 </button>
                 <button
@@ -493,7 +505,7 @@ export function FullscreenVideoItem({
                         className="text-red-400 focus:text-red-400 focus:bg-red-500/20"
                       >
                         <Trash2 className="h-4 w-4 mr-2" />
-                        Delete video
+                        {t('fullscreenVideoItem.deleteVideo')}
                       </DropdownMenuItem>
                       <DropdownMenuSeparator className="bg-white/20" />
                     </>
@@ -503,7 +515,7 @@ export function FullscreenVideoItem({
                     className="focus:bg-white/10"
                   >
                     <Flag className="h-4 w-4 mr-2" />
-                    Report video
+                    {t('fullscreenVideoItem.reportVideo')}
                   </DropdownMenuItem>
                   {canUseDirectMessages && (
                     <DropdownMenuItem
@@ -511,7 +523,7 @@ export function FullscreenVideoItem({
                       className="focus:bg-white/10"
                     >
                       <MessageCircle className="h-4 w-4 mr-2" />
-                      Send via message
+                      {t('fullscreenVideoItem.sendViaMessage')}
                     </DropdownMenuItem>
                   )}
                   <DropdownMenuItem
@@ -519,7 +531,7 @@ export function FullscreenVideoItem({
                     className="focus:bg-white/10"
                   >
                     <Flag className="h-4 w-4 mr-2" />
-                    Report user
+                    {t('fullscreenVideoItem.reportUser')}
                   </DropdownMenuItem>
                   <DropdownMenuSeparator className="bg-white/20" />
                   <DropdownMenuItem
@@ -527,7 +539,7 @@ export function FullscreenVideoItem({
                     className="text-red-400 focus:text-red-400 focus:bg-red-500/20"
                   >
                     <UserX className="h-4 w-4 mr-2" />
-                    Mute {displayName}
+                    {t('fullscreenVideoItem.muteUser', { name: displayName })}
                   </DropdownMenuItem>
                   <DropdownMenuSeparator className="bg-white/20" />
                   <DropdownMenuItem
@@ -535,7 +547,7 @@ export function FullscreenVideoItem({
                     className="focus:bg-white/10"
                   >
                     <Code className="h-4 w-4 mr-2" />
-                    View source
+                    {t('fullscreenVideoItem.viewSource')}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -607,7 +619,7 @@ export function FullscreenVideoItem({
           open={showViewSourceDialog}
           onClose={() => setShowViewSourceDialog(false)}
           video={video}
-          title="Video Event Source"
+          title={t('fullscreenVideoItem.videoEventSource')}
         />
       )}
     </div>

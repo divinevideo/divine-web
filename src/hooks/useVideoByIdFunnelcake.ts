@@ -2,17 +2,21 @@
 // ABOUTME: Provides fast video lookup for VideoPage with profile and hashtag context support
 
 import { useQuery } from '@tanstack/react-query';
+import { getFunnelcakeBaseUrl } from '@/config/api';
 import { fetchVideoById, fetchUserVideos, searchVideos } from '@/lib/funnelcakeClient';
 import { transformFunnelcakeVideo } from '@/lib/funnelcakeTransform';
-import { getFunnelcakeUrl, DEFAULT_FUNNELCAKE_URL } from '@/config/relays';
+import { getFunnelcakeUrl } from '@/config/relays';
 import { useAppContext } from '@/hooks/useAppContext';
 import { debugLog } from '@/lib/debug';
 import type { ParsedVideoData } from '@/types/video';
+import type { SortMode } from '@/types/nostr';
 
 interface UseVideoByIdOptions {
   videoId: string;
   pubkey?: string;   // Optional pubkey for profile context
   hashtag?: string;  // Optional hashtag for hashtag feed context
+  query?: string;    // Optional search query for bounded search navigation
+  sortMode?: SortMode | 'relevance';
   currentIndex?: number; // Optional global index from feed context for neighbor windowing
   enabled?: boolean;
 }
@@ -34,6 +38,22 @@ function getNavigationWindowOffset(currentIndex?: number): number {
   return Math.max(0, currentIndex - Math.floor(NAVIGATION_WINDOW_SIZE / 2));
 }
 
+function mapSearchSortModeToFunnelcakeSort(sortMode: SortMode | 'relevance' = 'relevance') {
+  switch (sortMode) {
+    case 'top':
+      return 'loops' as const;
+    case 'rising':
+    case 'controversial':
+      return 'engagement' as const;
+    case 'classic':
+      return 'loops' as const;
+    case 'hot':
+    case 'relevance':
+    default:
+      return 'trending' as const;
+  }
+}
+
 /**
  * Hook to fetch a single video by ID via Funnelcake REST API
  *
@@ -42,12 +62,15 @@ function getNavigationWindowOffset(currentIndex?: number): number {
  * The single video lookup is faster than WebSocket queries.
  */
 export function useVideoByIdFunnelcake(options: UseVideoByIdOptions): UseVideoByIdResult {
-  const { videoId, pubkey, hashtag, currentIndex, enabled = true } = options;
+  const { videoId, pubkey, hashtag, query, sortMode = 'relevance', currentIndex, enabled = true } = options;
   const { config } = useAppContext();
   const windowOffset = getNavigationWindowOffset(currentIndex);
+  const trimmedQuery = query?.trim();
+  const isHashtagSearch = !!trimmedQuery && trimmedQuery.startsWith('#');
+  const searchValue = isHashtagSearch ? trimmedQuery?.slice(1).toLowerCase() : trimmedQuery;
 
   // Determine API URL from current relay
-  const funnelcakeUrl = getFunnelcakeUrl(config.relayUrl) || DEFAULT_FUNNELCAKE_URL;
+  const funnelcakeUrl = getFunnelcakeUrl(config.relayUrl) || getFunnelcakeBaseUrl();
 
   // If we have a pubkey, fetch all their videos for navigation context
   const userVideosQuery = useQuery({
@@ -91,21 +114,49 @@ export function useVideoByIdFunnelcake(options: UseVideoByIdOptions): UseVideoBy
     gcTime: 900000,    // 15 minutes
   });
 
-  const contextVideos = userVideosQuery.data ?? hashtagVideosQuery.data ?? null;
+  const searchVideosQuery = useQuery({
+    queryKey: ['funnelcake-search-videos', searchValue, sortMode, funnelcakeUrl, windowOffset],
+    queryFn: async ({ signal }) => {
+      if (!searchValue) return null;
+
+      debugLog(`[useVideoByIdFunnelcake] Fetching search videos for ${searchValue}`);
+      const response = await searchVideos(funnelcakeUrl, {
+        query: isHashtagSearch ? undefined : searchValue,
+        tag: isHashtagSearch ? searchValue : undefined,
+        sort: mapSearchSortModeToFunnelcakeSort(sortMode),
+        limit: NAVIGATION_WINDOW_SIZE,
+        offset: windowOffset,
+        classic: sortMode === 'classic' ? true : undefined,
+        platform: sortMode === 'classic' ? 'vine' : undefined,
+        signal,
+      });
+
+      return response.videos.map(transformFunnelcakeVideo);
+    },
+    enabled: enabled && !!searchValue && !pubkey && !hashtag,
+    staleTime: 300000,
+    gcTime: 900000,
+  });
+
+  const contextVideos = userVideosQuery.data ?? hashtagVideosQuery.data ?? searchVideosQuery.data ?? null;
   const contextVideo = contextVideos?.find(v => v.id === videoId || v.vineId === videoId) || null;
   const contextLoading = pubkey
     ? userVideosQuery.isLoading
     : hashtag
       ? hashtagVideosQuery.isLoading
-      : false;
+      : searchValue
+        ? searchVideosQuery.isLoading
+        : false;
   const contextError = pubkey
     ? (userVideosQuery.error as Error | null)
     : hashtag
       ? (hashtagVideosQuery.error as Error | null)
-      : null;
+      : searchValue
+        ? (searchVideosQuery.error as Error | null)
+        : null;
   const shouldLookupSingleVideo = enabled && (
-    (!pubkey && !hashtag)
-      || (((!!pubkey || !!hashtag) && !contextLoading && !contextVideo))
+    (!pubkey && !hashtag && !searchValue)
+      || (((!!pubkey || !!hashtag || !!searchValue) && !contextLoading && !contextVideo))
   );
 
   // Single video lookup (used when no context or as fallback)

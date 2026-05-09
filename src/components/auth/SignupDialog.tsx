@@ -1,5 +1,5 @@
 import React from 'react';
-import { Mail } from 'lucide-react';
+import { Envelope as Mail } from '@phosphor-icons/react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { cn } from '@/lib/utils';
 import { HubSpotSignup } from '@/components/HubSpotSignup';
@@ -19,7 +19,7 @@ const SignupDialog: React.FC<SignupDialogProps> = ({ isOpen, onClose, onLogin })
       >
         <DialogHeader className={cn('px-6 pt-6 pb-1 relative flex-shrink-0')}>
           <DialogTitle className={cn('font-semibold text-center text-lg')}>
-            Join the Waitlist
+            Get on the list.
           </DialogTitle>
           <DialogDescription className={cn('text-muted-foreground text-center')}>
             {' '}
@@ -32,9 +32,9 @@ const SignupDialog: React.FC<SignupDialogProps> = ({ isOpen, onClose, onLogin })
             </div>
 
             <div className='space-y-2'>
-              <h3 className='text-xl font-semibold'>Get Early Access</h3>
+              <h3 className='text-xl font-semibold'>Be early.</h3>
               <p className='text-muted-foreground text-sm'>
-                The Divine beta is currently full. If you'd like to hear our news and be among the first to hear when the Divine app goes live, sign up here.
+                The Divine beta's packed right now. Drop your email and we'll ping you when the doors open again.
               </p>
             </div>
 

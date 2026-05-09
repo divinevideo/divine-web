@@ -68,8 +68,11 @@ VitePWA({
         clientsClaim: true,
         navigateFallback: null,
         runtimeCaching: [],
-        // Allow larger JS bundles (default 2MB is too small for this app)
-        maximumFileSizeToCacheInBytes: 3 * 1024 * 1024, // 3MB
+        // Allow larger JS bundles (default 2MB is too small for this app).
+        // 16 locales × ~1500 keys of i18n catalog inlined via import.meta.glob
+        // pushes the main bundle past 3.5MB; 5MB gives headroom for further growth.
+        // Long-term fix: lazy-load locale JSON instead of eager glob import.
+        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5MB
       },
       includeAssets: [
         'app_icon.png',
@@ -132,7 +135,7 @@ VitePWA({
     globals: true,
     environment: 'jsdom',
     setupFiles: './src/test/setup.ts',
-    exclude: [...configDefaults.exclude, '**/.worktrees/**', '**/worktrees/**'],
+    exclude: [...configDefaults.exclude, '**/.worktrees/**', '**/worktrees/**', 'tests/visual/**'],
     onConsoleLog(log) {
       return !log.includes("React Router Future Flag Warning");
     },

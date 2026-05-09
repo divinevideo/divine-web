@@ -3,8 +3,9 @@
 
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { SmartLink } from '@/components/SmartLink';
-import { ArrowLeft, Grid3X3, List, Rss } from 'lucide-react';
+import { ArrowLeft, GridFour as Grid3X3, List, Rss } from '@phosphor-icons/react';
 import { useHead, useSeoMeta } from '@unhead/react';
 import { feedUrls } from '@/lib/feedUrls';
 import { useRssFeedAvailable } from '@/hooks/useRssFeedAvailable';
@@ -12,6 +13,7 @@ import { VideoFeed } from '@/components/VideoFeed';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { cn } from '@/lib/utils';
 import type { SortMode } from '@/types/nostr';
 import { EXTENDED_SORT_MODES as SORT_MODES } from '@/lib/constants/sortModes';
 import { getCategoryConfig } from '@/lib/constants/categories';
@@ -19,6 +21,7 @@ import { getCategoryConfig } from '@/lib/constants/categories';
 type ViewMode = 'feed' | 'grid';
 
 export function CategoryPage() {
+  const { t } = useTranslation();
   const { name } = useParams<{ name: string }>();
   const categoryName = name || '';
   const config = getCategoryConfig(categoryName);
@@ -35,22 +38,22 @@ export function CategoryPage() {
       {
         rel: 'alternate',
         type: 'application/rss+xml',
-        title: `${displayName} Videos - Divine`,
+        title: t('categoryPage.rssFeedTitle', { name: displayName }),
         href: feedUrls.category(categoryName),
       },
     ] : [],
   });
 
   useSeoMeta({
-    title: `${displayName} Videos - Divine`,
-    description: `Explore ${displayName.toLowerCase()} videos on Divine`,
-    ogTitle: `${displayName} Videos - Divine`,
-    ogDescription: `Explore ${displayName.toLowerCase()} videos on Divine`,
+    title: t('categoryPage.seoTitle', { name: displayName }),
+    description: t('categoryPage.seoDescription', { name: displayName.toLowerCase() }),
+    ogTitle: t('categoryPage.seoTitle', { name: displayName }),
+    ogDescription: t('categoryPage.seoDescription', { name: displayName.toLowerCase() }),
     ogImage: '/og.avif',
     ogType: 'website',
     twitterCard: 'summary_large_image',
-    twitterTitle: `${displayName} Videos - Divine`,
-    twitterDescription: `Explore ${displayName.toLowerCase()} videos on Divine`,
+    twitterTitle: t('categoryPage.seoTitle', { name: displayName }),
+    twitterDescription: t('categoryPage.seoDescription', { name: displayName.toLowerCase() }),
     twitterImage: '/og.avif',
   });
 
@@ -60,9 +63,9 @@ export function CategoryPage() {
         <div className="max-w-2xl mx-auto">
           <Card>
             <CardContent className="py-12 text-center">
-              <h2 className="text-xl font-semibold mb-4">Invalid Category</h2>
+              <h2 className="text-xl font-semibold mb-4">{t('categoryPage.invalidTitle')}</h2>
               <p className="text-muted-foreground">
-                No category specified in the URL
+                {t('categoryPage.invalidDescription')}
               </p>
             </CardContent>
           </Card>
@@ -81,7 +84,7 @@ export function CategoryPage() {
             className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
           >
             <ArrowLeft className="h-4 w-4" />
-            Back to Discovery
+            {t('categoryPage.backToDiscovery')}
           </SmartLink>
         </div>
 
@@ -93,7 +96,7 @@ export function CategoryPage() {
               <div>
                 <h1 className="text-3xl font-bold">{displayName}</h1>
                 <p className="text-muted-foreground">
-                  {displayName} videos on Divine
+                  {t('categoryPage.headerSubtitle', { name: displayName })}
                 </p>
               </div>
             </div>
@@ -104,7 +107,7 @@ export function CategoryPage() {
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
               >
-                <Rss className="h-3.5 w-3.5" /> RSS
+                <Rss className="h-3.5 w-3.5" /> {t('categoryPage.rssLabel')}
               </a>
             )}
           </div>
@@ -114,32 +117,32 @@ export function CategoryPage() {
             <div
               className="flex items-center bg-muted rounded-lg p-1"
               role="group"
-              aria-label="View mode selection"
+              aria-label={t('categoryPage.viewModeAria')}
             >
               <Button
                 variant={viewMode === 'feed' ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => setViewMode('feed')}
-                className="text-xs"
+                className={cn('text-xs', viewMode === 'feed' && 'brand-offset-shadow-sm-dark')}
                 aria-pressed={viewMode === 'feed'}
               >
                 <List className="h-4 w-4 mr-1" />
-                Feed
+                {t('categoryPage.feed')}
               </Button>
               <Button
                 variant={viewMode === 'grid' ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => setViewMode('grid')}
-                className="text-xs"
+                className={cn('text-xs', viewMode === 'grid' && 'brand-offset-shadow-sm-dark')}
                 aria-pressed={viewMode === 'grid'}
               >
                 <Grid3X3 className="h-4 w-4 mr-1" />
-                Grid
+                {t('categoryPage.grid')}
               </Button>
             </div>
 
             <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">Sort:</span>
+              <span className="text-sm text-muted-foreground">{t('categoryPage.sortLabel')}</span>
               <Select
                 value={sortMode || 'recent'}
                 onValueChange={(value) => setSortMode(value === 'recent' ? undefined : value as SortMode)}

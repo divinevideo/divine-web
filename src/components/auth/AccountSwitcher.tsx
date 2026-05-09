@@ -1,7 +1,8 @@
 // NOTE: This file is stable and usually should not be modified.
 // It is important that all functionality in this file is preserved, and should only be modified if explicitly requested.
 
-import { ChevronDown, LogOut, UserIcon, UserPlus, User, Settings, Link2/*, Wallet */ } from 'lucide-react';
+import { CaretDown as ChevronDown, SignOut as LogOut, User as UserIcon, UserPlus, User, Gear as Settings, LinkSimple as Link2 } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { nip19 } from 'nostr-tools';
 import {
@@ -29,6 +30,7 @@ interface AccountSwitcherProps {
 }
 
 export function AccountSwitcher({ onAddAccountClick }: AccountSwitcherProps) {
+  const { t } = useTranslation();
   const { logins } = useNostrLogin();
   const { currentUser, otherUsers, setLogin, removeLogin } = useLoggedInAccounts();
   const { clearSession } = useDivineSession();
@@ -59,16 +61,16 @@ export function AccountSwitcher({ onAddAccountClick }: AccountSwitcherProps) {
   };
 
   return (
-    <div className='space-y-3'>
+    <div className='account-switcher w-full min-w-0 max-w-full space-y-3'>
       {localNsecLogin ? <LocalNsecBanner nsec={localNsecLogin.data.nsec} /> : null}
       <DropdownMenu modal={false}>
         <DropdownMenuTrigger asChild>
-          <button className='flex items-center gap-3 p-3 rounded-full hover:bg-accent transition-all w-full text-foreground'>
+          <button className='flex w-full min-w-0 items-center gap-3 rounded-full p-3 text-foreground transition-all hover:bg-accent'>
             <Avatar size="md">
               <AvatarImage src={getSafeProfileImage(currentUser.metadata.picture)} alt={getDisplayName(currentUser)} />
               <AvatarFallback>{getDisplayName(currentUser).charAt(0)}</AvatarFallback>
             </Avatar>
-            <div className='flex-1 text-left hidden md:block truncate'>
+            <div className='hidden min-w-0 flex-1 truncate text-left md:block'>
               <p className='font-medium text-sm truncate'>{getDisplayName(currentUser)}</p>
             </div>
             <ChevronDown className='w-4 h-4 text-muted-foreground' />
@@ -80,31 +82,31 @@ export function AccountSwitcher({ onAddAccountClick }: AccountSwitcherProps) {
             className='flex items-center gap-2 cursor-pointer p-2 rounded-md'
           >
             <User className='w-4 h-4' />
-            <span>My Profile</span>
+            <span>{t('accountSwitcher.myProfile')}</span>
           </DropdownMenuItem>
           <DropdownMenuItem
             onClick={() => navigate('/settings/moderation')}
             className='flex items-center gap-2 cursor-pointer p-2 rounded-md'
           >
             <Settings className='w-4 h-4' />
-            <span>Settings</span>
+            <span>{t('accountSwitcher.settings')}</span>
           </DropdownMenuItem>
           <DropdownMenuItem
             onClick={() => navigate('/settings/linked-accounts')}
             className='flex items-center gap-2 cursor-pointer p-2 rounded-md'
           >
             <Link2 className='w-4 h-4' />
-            <span>Linked Accounts</span>
+            <span>{t('accountSwitcher.linkedAccounts')}</span>
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuLabel>Switch Relay</DropdownMenuLabel>
+          <DropdownMenuLabel>{t('accountSwitcher.switchRelay')}</DropdownMenuLabel>
           <DropdownMenuItem onSelect={(e) => e.preventDefault()} className='p-2'>
             <RelaySelector className='w-full' />
           </DropdownMenuItem>
           {!isJwtCurrentUser ? (
             <>
               <DropdownMenuSeparator />
-              <DropdownMenuLabel>Switch Account</DropdownMenuLabel>
+              <DropdownMenuLabel>{t('accountSwitcher.switchAccount')}</DropdownMenuLabel>
               {otherUsers.map((user) => (
                 <DropdownMenuItem
                   key={user.id}
@@ -140,7 +142,7 @@ export function AccountSwitcher({ onAddAccountClick }: AccountSwitcherProps) {
               className='flex items-center gap-2 cursor-pointer p-2 rounded-md'
             >
               <UserPlus className='w-4 h-4' />
-              <span>Add another account</span>
+              <span>{t('accountSwitcher.addAnotherAccount')}</span>
             </DropdownMenuItem>
           ) : null}
           <DropdownMenuItem
@@ -148,7 +150,7 @@ export function AccountSwitcher({ onAddAccountClick }: AccountSwitcherProps) {
             className='flex items-center gap-2 cursor-pointer p-2 rounded-md text-red-500'
           >
             <LogOut className='w-4 h-4' />
-            <span>Log out</span>
+            <span>{t('accountSwitcher.logOut')}</span>
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

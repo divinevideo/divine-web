@@ -2,7 +2,8 @@
 // ABOUTME: Shows different icons and colors based on verification level with detailed tooltip
 
 import { useState } from 'react';
-import { Shield, ShieldCheck, ShieldAlert, CheckCircle, Info } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { Shield, ShieldCheck, ShieldWarning as ShieldAlert, CheckCircle, Info } from '@phosphor-icons/react';
 import { Badge } from '@/components/ui/badge';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
@@ -20,6 +21,7 @@ interface ProofModeBadgeProps {
 }
 
 export function ProofModeBadge({ level, proofData, className, showDetails = false, size = 'small' }: ProofModeBadgeProps) {
+  const { t } = useTranslation();
   const config = getProofModeConfig(level);
   const sizeConfig = getSizeConfig(size);
   const [open, setOpen] = useState(false);
@@ -27,6 +29,9 @@ export function ProofModeBadge({ level, proofData, className, showDetails = fals
   if (!config) return null;
 
   const Icon = config.icon;
+  const label = t(`proofModeBadge.levels.${config.tKey}.label`);
+  const tooltip = t(`proofModeBadge.levels.${config.tKey}.tooltip`);
+  const description = t(`proofModeBadge.levels.${config.tKey}.description`);
 
   const badge = (
     <Badge
@@ -37,10 +42,10 @@ export function ProofModeBadge({ level, proofData, className, showDetails = fals
         sizeConfig.className,
         className
       )}
-      title={config.tooltip}
+      title={tooltip}
     >
       <Icon className={sizeConfig.iconSize} />
-      <span>{config.label}</span>
+      <span>{label}</span>
     </Badge>
   );
 
@@ -57,10 +62,10 @@ export function ProofModeBadge({ level, proofData, className, showDetails = fals
         <div className="space-y-3">
           <div className="flex items-center gap-2">
             <Icon className={cn("h-5 w-5", config.iconColor)} />
-            <h3 className="font-semibold">{config.label}</h3>
+            <h3 className="font-semibold">{label}</h3>
           </div>
 
-          <p className="text-sm text-muted-foreground">{config.description}</p>
+          <p className="text-sm text-muted-foreground">{description}</p>
 
           {/* Verification Details */}
           <div className="space-y-2 text-sm">
@@ -68,9 +73,9 @@ export function ProofModeBadge({ level, proofData, className, showDetails = fals
               <div className="flex items-start gap-2">
                 <ShieldCheck className="h-4 w-4 mt-0.5 text-brand-dark-green dark:text-brand-green flex-shrink-0" />
                 <div>
-                  <p className="font-medium">Hardware Attestation</p>
+                  <p className="font-medium">{t('proofModeBadge.hardwareAttestation')}</p>
                   <p className="text-xs text-muted-foreground">
-                    Verified on secure mobile device
+                    {t('proofModeBadge.hardwareAttestationDesc')}
                   </p>
                 </div>
               </div>
@@ -80,7 +85,7 @@ export function ProofModeBadge({ level, proofData, className, showDetails = fals
               <div className="flex items-start gap-2">
                 <Shield className="h-4 w-4 mt-0.5 text-brand-blue-dark dark:text-brand-blue flex-shrink-0" />
                 <div>
-                  <p className="font-medium">Cryptographic Signature</p>
+                  <p className="font-medium">{t('proofModeBadge.cryptographicSignature')}</p>
                   <p className="text-xs text-muted-foreground font-mono break-all">
                     {proofData.pgpFingerprint}
                   </p>
@@ -92,9 +97,9 @@ export function ProofModeBadge({ level, proofData, className, showDetails = fals
               <div className="flex items-start gap-2">
                 <Info className="h-4 w-4 mt-0.5 text-primary flex-shrink-0" />
                 <div>
-                  <p className="font-medium">Proof Manifest</p>
+                  <p className="font-medium">{t('proofModeBadge.proofManifest')}</p>
                   <p className="text-xs text-muted-foreground">
-                    Contains frame hashes and session data
+                    {t('proofModeBadge.proofManifestDesc')}
                   </p>
                 </div>
               </div>
@@ -107,7 +112,7 @@ export function ProofModeBadge({ level, proofData, className, showDetails = fals
               className="text-sm text-primary hover:underline"
               onClick={() => setOpen(false)}
             >
-              Learn more about Proofmode →
+              {t('proofModeBadge.learnMore')}
             </Link>
           </div>
         </div>
@@ -141,38 +146,30 @@ function getProofModeConfig(level: ProofModeBadgeLevel) {
     case 'platinum':
       return {
         icon: CheckCircle,
-        label: 'Human Made',
+        tKey: 'platinum',
         className: 'border-[#E5E4E2] text-[#E5E4E2] bg-[#1A2A3A]',
         iconColor: 'text-[#E5E4E2]',
-        tooltip: 'Human made - device proof and AI scan both confirm likely human origin',
-        description: 'This video has mobile device proof and an AI scan that both support a likely human origin.'
       };
     case 'verified_mobile':
       return {
         icon: CheckCircle,
-        label: 'Human Made',
+        tKey: 'verifiedMobile',
         className: 'border-[#FFD700] text-[#FFD700] bg-[#3D2E00]',
         iconColor: 'text-[#FFD700]',
-        tooltip: 'Human made - captured on a real device with hardware-backed proof',
-        description: 'This video was captured on a real device with hardware attestation, cryptographic signatures, and Content Credentials.'
       };
     case 'verified_web':
       return {
         icon: CheckCircle,
-        label: 'Human Made',
+        tKey: 'verifiedWeb',
         className: 'border-[#C0C0C0] text-[#C0C0C0] bg-[#2A2A2A]',
         iconColor: 'text-[#C0C0C0]',
-        tooltip: 'Human made - valid Proofmode signature',
-        description: 'This video was created by a human and has been cryptographically signed with Proofmode. The signature confirms the content has not been altered since creation.'
       };
     case 'basic_proof':
       return {
         icon: ShieldAlert,
-        label: 'Human Made',
+        tKey: 'basicProof',
         className: 'border-[#CD7F32] text-[#CD7F32] bg-[#2E1F0F]',
         iconColor: 'text-[#CD7F32]',
-        tooltip: 'Human made - basic proof metadata is present',
-        description: 'This video includes basic proof metadata. Some verification information is present but it does not meet the full criteria for stronger verified tiers.'
       };
     case 'unverified':
     default:

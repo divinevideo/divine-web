@@ -5,8 +5,9 @@ import { useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { nip19 } from 'nostr-tools';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent } from '@/components/ui/card';
-import { AlertCircle, Loader2 } from 'lucide-react';
+import { WarningCircle as AlertCircle, CircleNotch as Loader2 } from '@phosphor-icons/react';
 import { getSubdomainUser } from '@/hooks/useSubdomainUser';
 import ProfilePage from './ProfilePage';
 
@@ -51,6 +52,7 @@ export function AtUsernamePage() {
   const username = params.username || params.nip19?.replace(/^@/, '');
   const navigate = useNavigate();
   const subdomainUser = getSubdomainUser();
+  const { t } = useTranslation();
 
   // All hooks must be called before any conditional returns
   const { data, isLoading, error } = useUsernameLookup(username);
@@ -73,7 +75,7 @@ export function AtUsernamePage() {
           <CardContent className="py-12">
             <div className="flex flex-col items-center justify-center space-y-4">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              <p className="text-muted-foreground">Looking up @{username}...</p>
+              <p className="text-muted-foreground">{t('atUsernamePage.lookingUp', { username })}</p>
             </div>
           </CardContent>
         </Card>
@@ -88,13 +90,13 @@ export function AtUsernamePage() {
           <CardContent className="py-12">
             <div className="flex flex-col items-center justify-center space-y-4">
               <AlertCircle className="h-12 w-12 text-destructive" />
-              <h2 className="text-xl font-semibold">User Not Found</h2>
+              <h2 className="text-xl font-semibold">{t('atUsernamePage.userNotFound')}</h2>
               <p className="text-muted-foreground text-center max-w-md">
-                Could not find user
+                {t('atUsernamePage.couldNotFind')}
                 <code className="text-sm bg-muted px-2 py-1 rounded ml-2">@{username}</code>
               </p>
               <p className="text-sm text-muted-foreground text-center max-w-md">
-                Try visiting their profile at{' '}
+                {t('atUsernamePage.tryVisitingPrefix')}{' '}
                 <a
                   href={`https://${username}.divine.video`}
                   className="text-primary hover:underline"
@@ -106,7 +108,7 @@ export function AtUsernamePage() {
                 onClick={() => navigate('/')}
                 className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:brightness-110 transition-colors"
               >
-                Go to Home
+                {t('atUsernamePage.goHome')}
               </button>
             </div>
           </CardContent>
@@ -121,7 +123,7 @@ export function AtUsernamePage() {
         <CardContent className="py-12">
           <div className="flex flex-col items-center justify-center space-y-4">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <p className="text-muted-foreground">Redirecting to profile...</p>
+            <p className="text-muted-foreground">{t('atUsernamePage.redirecting')}</p>
           </div>
         </CardContent>
       </Card>

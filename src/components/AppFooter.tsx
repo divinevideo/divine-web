@@ -1,7 +1,11 @@
 import { SmartLink } from '@/components/SmartLink';
+import { useTranslation } from 'react-i18next';
+import { SocialLinks } from '@/components/SocialLinks';
 import { HubSpotSignup } from './HubSpotSignup';
 
 export function AppFooter() {
+  const { t } = useTranslation();
+
   return (
     <footer className="mt-auto border-t border-brand-dark-green py-6 pb-[calc(1.5rem+4rem+env(safe-area-inset-bottom))] md:pb-6 bg-brand-dark-green">
       <div className="container">
@@ -61,6 +65,10 @@ export function AppFooter() {
                 <a href="https://about.divine.video/blog/" className="hover:text-brand-off-white transition-colors">
                   Blog
                 </a>
+                <span>•</span>
+                <SmartLink to="/merch" className="hover:text-brand-off-white transition-colors">
+                  {t('menu.merch')}
+                </SmartLink>
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 <SmartLink to="/support" className="hover:text-brand-off-white transition-colors">
@@ -98,112 +106,7 @@ export function AppFooter() {
               </div>
 
               {/* Social Media Icons */}
-              <div className="flex items-center gap-3 mt-1" aria-label="Social media links">
-                <a
-                  href="https://www.instagram.com/divinevideoapp"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label="Follow us on Instagram"
-                  className="opacity-60 hover:opacity-100 transition-opacity"
-                >
-                  <img
-                    src="/social-icons/instagram.svg"
-                    alt="Instagram"
-                    className="w-5 h-5 invert"
-                  />
-                </a>
-                <a
-                  href="https://www.reddit.com/r/divinevideo/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label="Follow us on Reddit"
-                  className="opacity-60 hover:opacity-100 transition-opacity"
-                >
-                  <img
-                    src="/social-icons/reddit.svg"
-                    alt="Reddit"
-                    className="w-5 h-5 invert"
-                  />
-                </a>
-                <a
-                  href="https://discord.gg/d6HpB6XnHp"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label="Join us on Discord"
-                  className="opacity-60 hover:opacity-100 transition-opacity"
-                >
-                  <img
-                    src="/social-icons/discord.svg"
-                    alt="Discord"
-                    className="w-5 h-5 invert"
-                  />
-                </a>
-                <a
-                  href="https://twitter.com/divinevideoapp"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label="Follow us on Twitter"
-                  className="opacity-60 hover:opacity-100 transition-opacity"
-                >
-                  <img
-                    src="/social-icons/twitter.svg"
-                    alt="Twitter"
-                    className="w-5 h-5 invert"
-                  />
-                </a>
-                <a
-                  href="https://bsky.app/profile/divine.video"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label="Follow us on Bluesky"
-                  className="opacity-60 hover:opacity-100 transition-opacity"
-                >
-                  <img
-                    src="/social-icons/bluesky.svg"
-                    alt="Bluesky"
-                    className="w-5 h-5 invert"
-                  />
-                </a>
-                <a
-                  href="https://www.tiktok.com/@divine.video"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label="Follow us on TikTok"
-                  className="opacity-60 hover:opacity-100 transition-opacity"
-                >
-                  <img
-                    src="/social-icons/tiktok.svg"
-                    alt="TikTok"
-                    className="w-5 h-5 invert"
-                  />
-                </a>
-                <a
-                  href="https://github.com/divinevideo"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label="Follow us on GitHub"
-                  className="opacity-60 hover:opacity-100 transition-opacity"
-                >
-                  <img
-                    src="/social-icons/github.svg"
-                    alt="GitHub"
-                    className="w-5 h-5 invert"
-                  />
-                </a>
-                <a
-                  href="https://www.youtube.com/channel/UCkAaxItWqDpTgngWAS2cAtQ"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label="Follow us on YouTube"
-                  className="opacity-60 hover:opacity-100 transition-opacity"
-                >
-                  <img
-                    src="/social-icons/youtube.svg"
-                    alt="YouTube"
-                    className="w-5 h-5 invert"
-                  />
-                </a>
-              </div>
+              <SocialLinks className="mt-1" iconClassName="invert" />
             </div>
           </div>
 

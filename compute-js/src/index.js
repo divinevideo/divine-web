@@ -7,13 +7,11 @@ import { KVStore } from 'fastly:kv-store';
 import { SecretStore } from 'fastly:secret-store';
 import { PublisherServer } from '@fastly/compute-js-static-publish';
 import rc from '../static-publish.rc.js';
+import { buildFunnelcakeUrl, getFunnelcakeOriginForApiHost } from './funnelcakeOrigin.js';
+import { isJsonWellKnownPath, shouldServeWellKnownBeforeWwwRedirect } from './wellKnownPaths.js';
 import { buildCrawlerHtml, escapeHtml, cleanText, truncateText } from './ogTags.js';
 
 const publisherServer = PublisherServer.fromStaticPublishRc(rc);
-
-// Funnelcake API URL — edge worker calls origin directly (not via api.divine.video cache
-// to avoid Fastly→Fastly loops). Client-side code uses api.divine.video for caching.
-const FUNNELCAKE_API_URL = 'https://relay.divine.video';
 const DEFAULT_OG_IMAGE = 'https://divine.video/og.png';
 const DEFAULT_SITE_DESCRIPTION = 'Watch and share 6-second looping videos on the decentralized Nostr network.';
 
@@ -42,8 +40,15 @@ async function handleRequest(event) {
   // Check for original host passed by divine-router
   const originalHost = request.headers.get('X-Original-Host');
   const hostnameToUse = originalHost || url.hostname;
+  const funnelcakeTarget = getFunnelcakeOriginForApiHost(hostnameToUse);
 
   console.log('Request hostname:', url.hostname, 'original:', originalHost, 'path:', url.pathname);
+
+  // App-link verification files must be served directly for every claimed host.
+  // Do this before the generic www redirect so iOS/Android and deploy checks get 200 JSON.
+  if (shouldServeWellKnownBeforeWwwRedirect(hostnameToUse, url.pathname)) {
+    return await serveStaticWellKnownFile(request, url.pathname);
+  }
 
   // 1. Redirect www.* to apex domain (e.g., www.divine.video -> divine.video)
   if (hostnameToUse.startsWith('www.')) {
@@ -69,18 +74,7 @@ async function handleRequest(event) {
       }
       // Other .well-known files (apple-app-site-association, assetlinks.json)
       console.log('Handling subdomain .well-known file:', url.pathname);
-      const wkResponse = await publisherServer.serveRequest(request);
-      // Guard: if publisher returns text/html, it's the SPA fallback, not the real file
-      if (wkResponse != null && wkResponse.status === 200 && !wkResponse.headers.get('Content-Type')?.includes('text/html')) {
-        const headers = new Headers(wkResponse.headers);
-        const contentType = url.pathname.endsWith('.json') || url.pathname.endsWith('/apple-app-site-association')
-          ? 'application/json'
-          : headers.get('Content-Type') || 'application/octet-stream';
-        headers.set('Content-Type', contentType);
-        headers.set('Cache-Control', 'public, max-age=3600');
-        return new Response(wkResponse.body, { status: 200, headers });
-      }
-      return new Response('Not Found', { status: 404 });
+      return await serveStaticWellKnownFile(request, url.pathname);
     }
 
     // Subdomain profile - serve SPA with injected user data
@@ -130,24 +124,7 @@ async function handleRequest(event) {
     // apple-app-site-association has no file extension, so the static publisher
     // cannot detect its content type - we handle it explicitly here.
     console.log('Handling .well-known file:', url.pathname);
-    const wkResponse = await publisherServer.serveRequest(request);
-    // Guard: if publisher returns text/html, it's the SPA fallback, not the real file
-    if (wkResponse != null && wkResponse.status === 200 && !wkResponse.headers.get('Content-Type')?.includes('text/html')) {
-      const headers = new Headers(wkResponse.headers);
-      // Ensure correct content type for app association files
-      const contentType = url.pathname.endsWith('.json') || url.pathname.endsWith('/apple-app-site-association')
-        ? 'application/json'
-        : headers.get('Content-Type') || 'application/octet-stream';
-      headers.set('Content-Type', contentType);
-      headers.set('Cache-Control', 'public, max-age=3600');
-      headers.append('Vary', 'X-Original-Host');
-      return new Response(wkResponse.body, {
-        status: 200,
-        headers,
-      });
-    }
-    // File not found in KV - return 404 instead of SPA fallback
-    return new Response('Not Found', { status: 404 });
+    return await serveStaticWellKnownFile(request, url.pathname, { varyByOriginalHost: true });
   }
 
   // 5. Handle dynamic OG meta tags for crawler requests
@@ -157,7 +134,7 @@ async function handleRequest(event) {
       const videoId = url.pathname.split('/video/')[1]?.split('?')[0];
       console.log('Video ID:', videoId);
       if (videoId) {
-        const ogResponse = await handleVideoOgTags(request, videoId, url);
+        const ogResponse = await handleVideoOgTags(request, videoId, url, funnelcakeTarget);
         if (ogResponse) {
           return ogResponse;
         }
@@ -166,14 +143,14 @@ async function handleRequest(event) {
     }
 
     if (url.pathname.startsWith('/profile/')) {
-      const ogResponse = await handleProfileOgTags(request, url);
+      const ogResponse = await handleProfileOgTags(request, url, funnelcakeTarget);
       if (ogResponse) {
         return ogResponse;
       }
     }
 
     if (url.pathname === '/category' || url.pathname.startsWith('/category/')) {
-      const ogResponse = await handleCategoryOgTags(request, url);
+      const ogResponse = await handleCategoryOgTags(request, url, funnelcakeTarget);
       if (ogResponse) {
         return ogResponse;
       }
@@ -202,14 +179,9 @@ async function handleRequest(event) {
   // 7b. Proxy RSS feed requests to the relay backend (serves application/rss+xml)
   if (url.pathname.startsWith('/feed/') || url.pathname === '/feed') {
     console.log('Proxying RSS feed request to relay:', url.pathname);
-    const feedUrl = `${FUNNELCAKE_API_URL}${url.pathname}${url.search}`;
-    return fetch(feedUrl, {
-      backend: 'funnelcake',
+    return fetchFromFunnelcake(funnelcakeTarget, `${url.pathname}${url.search}`, {
       method: request.method,
-      headers: {
-        'Accept': request.headers.get('Accept') || '*/*',
-        'Host': 'relay.divine.video',
-      },
+      accept: request.headers.get('Accept') || '*/*',
     });
   }
 
@@ -231,7 +203,7 @@ async function handleRequest(event) {
       try {
         let html = await response.text();
         const feedType = discoveryFeedType || 'trending';
-        const feedData = await fetchFeedData(feedType);
+        const feedData = await fetchFeedData(feedType, funnelcakeTarget);
         if (feedData) {
           let injection = `<script>window.__DIVINE_FEED__=${JSON.stringify(feedData)};window.__DIVINE_FEED_TYPE__="${feedType}";</script>`;
           const firstVideo = feedData.videos?.[0] || feedData[0];
@@ -256,6 +228,25 @@ async function handleRequest(event) {
       status: response.status,
       headers,
     });
+  }
+
+  return new Response('Not Found', { status: 404 });
+}
+
+async function serveStaticWellKnownFile(request, pathname, { varyByOriginalHost = false } = {}) {
+  const wkResponse = await publisherServer.serveRequest(request);
+  // Guard: if publisher returns text/html, it's the SPA fallback, not the real file.
+  if (wkResponse != null && wkResponse.status === 200 && !wkResponse.headers.get('Content-Type')?.includes('text/html')) {
+    const headers = new Headers(wkResponse.headers);
+    const contentType = isJsonWellKnownPath(pathname)
+      ? 'application/json'
+      : headers.get('Content-Type') || 'application/octet-stream';
+    headers.set('Content-Type', contentType);
+    headers.set('Cache-Control', 'public, max-age=3600');
+    if (varyByOriginalHost) {
+      headers.append('Vary', 'X-Original-Host');
+    }
+    return new Response(wkResponse.body, { status: 200, headers });
   }
 
   return new Response('Not Found', { status: 404 });
@@ -286,12 +277,28 @@ function getFeedApiUrl(feedType) {
   }
 }
 
+function fetchFromFunnelcake(target, path, options = {}) {
+  const {
+    method = 'GET',
+    accept = 'application/json',
+  } = options;
+
+  return fetch(buildFunnelcakeUrl(target, path), {
+    backend: target.backend,
+    method,
+    headers: {
+      'Accept': accept,
+      'Host': target.hostHeader,
+    },
+  });
+}
+
 /**
  * Fetch feed data with KV cache (stale-while-revalidate pattern).
  * Returns cached data if fresh (<60s), otherwise fetches from Funnelcake API
  * and updates the cache for the next request.
  */
-async function fetchFeedData(feedType = 'trending') {
+async function fetchFeedData(feedType = 'trending', funnelcakeTarget = getFunnelcakeOriginForApiHost()) {
   const CACHE_KEY = `cache:feed:${feedType}`;
   const CACHE_TTL_SECONDS = 60;
 
@@ -317,14 +324,7 @@ async function fetchFeedData(feedType = 'trending') {
   let feedData = null;
   try {
     const apiPath = getFeedApiUrl(feedType);
-    const resp = await fetch(`https://relay.divine.video${apiPath}`, {
-      backend: 'funnelcake',
-      method: 'GET',
-      headers: {
-        'Accept': 'application/json',
-        'Host': 'relay.divine.video',
-      },
-    });
+    const resp = await fetchFromFunnelcake(funnelcakeTarget, apiPath);
     if (resp.ok) {
       feedData = await resp.json();
       // 3. Update KV cache (fire and forget)
@@ -667,6 +667,7 @@ async function handleSubdomainProfile(subdomain, url, request, originalHostname)
 
   // Use original hostname if provided (from divine-router), otherwise use url.hostname
   const hostnameToUse = originalHostname || url.hostname;
+  const funnelcakeTarget = getFunnelcakeOriginForApiHost(hostnameToUse);
 
   if (isAsset) {
     // Serve static assets normally via publisherServer
@@ -697,14 +698,7 @@ async function handleSubdomainProfile(subdomain, url, request, originalHostname)
   // Try to fetch user profile from Funnelcake for richer data
   let profileData = null;
   try {
-    const profileResponse = await fetch(`https://relay.divine.video/api/users/${userData.pubkey}`, {
-      backend: 'funnelcake',
-      method: 'GET',
-      headers: {
-        'Accept': 'application/json',
-        'Host': 'relay.divine.video',
-      },
-    });
+    const profileResponse = await fetchFromFunnelcake(funnelcakeTarget, `/api/users/${userData.pubkey}`);
     if (profileResponse.ok) {
       profileData = await profileResponse.json();
     }
@@ -982,17 +976,10 @@ function isSocialMediaCrawler(request) {
 /**
  * Fetch video metadata from Funnelcake API using Fastly backend
  */
-async function fetchVideoMetadata(videoId) {
+async function fetchVideoMetadata(videoId, funnelcakeTarget = getFunnelcakeOriginForApiHost()) {
   try {
     // Use the /api/videos/{id} endpoint
-    const response = await fetch(`https://relay.divine.video/api/videos/${videoId}`, {
-      backend: 'funnelcake',
-      method: 'GET',
-      headers: {
-        'Accept': 'application/json',
-        'Host': 'relay.divine.video',
-      },
-    });
+    const response = await fetchFromFunnelcake(funnelcakeTarget, `/api/videos/${videoId}`);
 
     if (!response.ok) {
       console.log('Funnelcake API returned:', response.status);
@@ -1065,16 +1052,9 @@ async function fetchVideoMetadata(videoId) {
   }
 }
 
-async function fetchProfileMetadata(pubkey) {
+async function fetchProfileMetadata(pubkey, funnelcakeTarget = getFunnelcakeOriginForApiHost()) {
   try {
-    const response = await fetch(`${FUNNELCAKE_API_URL}/api/users/${pubkey}`, {
-      backend: 'funnelcake',
-      method: 'GET',
-      headers: {
-        'Accept': 'application/json',
-        'Host': 'relay.divine.video',
-      },
-    });
+    const response = await fetchFromFunnelcake(funnelcakeTarget, `/api/users/${pubkey}`);
 
     if (!response.ok) {
       console.log('Profile API returned:', response.status);
@@ -1088,16 +1068,9 @@ async function fetchProfileMetadata(pubkey) {
   }
 }
 
-async function fetchCategoriesMetadata() {
+async function fetchCategoriesMetadata(funnelcakeTarget = getFunnelcakeOriginForApiHost()) {
   try {
-    const response = await fetch(`${FUNNELCAKE_API_URL}/api/categories`, {
-      backend: 'funnelcake',
-      method: 'GET',
-      headers: {
-        'Accept': 'application/json',
-        'Host': 'relay.divine.video',
-      },
-    });
+    const response = await fetchFromFunnelcake(funnelcakeTarget, '/api/categories');
 
     if (!response.ok) {
       console.log('Categories API returned:', response.status);
@@ -1115,12 +1088,12 @@ async function fetchCategoriesMetadata() {
  * Handle video page requests for social media crawlers
  * Injects dynamic OG meta tags with video-specific content
  */
-async function handleVideoOgTags(request, videoId, url) {
+async function handleVideoOgTags(request, videoId, url, funnelcakeTarget) {
   try {
     // Fetch video metadata from Funnelcake
     let videoMeta = null;
     try {
-      videoMeta = await fetchVideoMetadata(videoId);
+      videoMeta = await fetchVideoMetadata(videoId, funnelcakeTarget);
     } catch (e) {
       console.error('Failed to fetch video metadata:', e.message);
     }
@@ -1172,7 +1145,7 @@ async function handleVideoOgTags(request, videoId, url) {
   }
 }
 
-async function handleProfileOgTags(request, url) {
+async function handleProfileOgTags(request, url, funnelcakeTarget) {
   try {
     const npub = url.pathname.split('/profile/')[1]?.split('?')[0];
     const pubkey = decodeNpubToHex(npub || '');
@@ -1180,7 +1153,7 @@ async function handleProfileOgTags(request, url) {
       return null;
     }
 
-    const profileMeta = await fetchProfileMetadata(pubkey);
+    const profileMeta = await fetchProfileMetadata(pubkey, funnelcakeTarget);
     const profile = profileMeta?.profile || {};
     const stats = profileMeta?.stats || {};
     const displayName = cleanText(profile.display_name) || cleanText(profile.name) || 'Profile on Divine';
@@ -1215,7 +1188,7 @@ async function handleProfileOgTags(request, url) {
   }
 }
 
-async function handleCategoryOgTags(request, url) {
+async function handleCategoryOgTags(request, url, funnelcakeTarget) {
   try {
     const categoryName = url.pathname === '/category'
       ? null
@@ -1226,7 +1199,7 @@ async function handleCategoryOgTags(request, url) {
     let categoryUrl = 'https://divine.video/category';
 
     if (categoryName) {
-      const categories = await fetchCategoriesMetadata();
+      const categories = await fetchCategoriesMetadata(funnelcakeTarget);
       const matchedCategory = categories?.find(category => category.name.toLowerCase() === categoryName.toLowerCase()) || null;
       const label = humanizeCategoryName(categoryName);
       title = `${label} Videos - Divine`;

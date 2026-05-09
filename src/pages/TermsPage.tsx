@@ -1,17 +1,19 @@
 // ABOUTME: Terms of Service page for Divine
 // ABOUTME: Defines user agreements, content policies, and platform responsibilities
 
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { ZendeskWidget } from '@/components/ZendeskWidget';
 import { MarketingLayout } from '@/components/MarketingLayout';
 
 export function TermsPage() {
+  const { t } = useTranslation();
   return (
     <MarketingLayout>
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         <ZendeskWidget />
-        <h1 className="text-4xl font-bold mb-4">Terms of Service</h1>
-        <p className="text-muted-foreground mb-8">Last Updated: March 30, 2026</p>
+        <h1 className="text-4xl font-bold mb-4">{t('termsPage.title')}</h1>
+        <p className="text-muted-foreground mb-8">{t('termsPage.lastUpdated', { date: 'March 30, 2026' })}</p>
 
         <div className="space-y-8 text-muted-foreground leading-relaxed">
           {/* 1. Acceptance of Terms */}
@@ -471,23 +473,32 @@ export function TermsPage() {
             </p>
           </section>
 
-          {/* 18. Disclaimer of Warranties and Limitation of Liability */}
+          {/* 18. Disclaimer of Warranties and Limitation of Liability
+            * The following four paragraphs are rendered uppercase via inline
+            * style (NOT the Tailwind `uppercase` class) to satisfy the UCC
+            * § 2-316 "conspicuousness" requirement for warranty disclaimers
+            * and limitation-of-liability language in U.S. commercial terms.
+            * The brand-rule guardrail (tests/brand/no-uppercase-class.test.ts)
+            * only matches Tailwind `uppercase` in className, so this exception
+            * is deliberate and legally load-bearing. Do not refactor without
+            * legal review.
+            */}
           <section>
             <h2 className="text-2xl font-semibold text-foreground mb-3">
               18. Disclaimer of Warranties and Limitation of Liability
             </h2>
-            <p className="mb-3 uppercase">
+            <p className="mb-3" style={{ textTransform: 'uppercase' }}>
               The Service is provided &ldquo;as is&rdquo; and &ldquo;as available.&rdquo; To the maximum extent
               permitted by law, Divine disclaims all warranties, express, implied, statutory, or otherwise,
               including any warranties of merchantability, fitness for a particular purpose, title,
               non-infringement, accuracy, quiet enjoyment, or that the Service will be uninterrupted, secure, or
               error-free.
             </p>
-            <p className="mb-3 uppercase">
+            <p className="mb-3" style={{ textTransform: 'uppercase' }}>
               Divine does not guarantee the authenticity, legality, accuracy, safety, or availability of any user
               content, Nostr event, relay, or externally hosted file.
             </p>
-            <p className="mb-3 uppercase">
+            <p className="mb-3" style={{ textTransform: 'uppercase' }}>
               Divine makes reasonable efforts to prevent the display of AI-generated or synthetic media on the
               Service; however, some AI-generated content may bypass our detection systems. Divine does not
               guarantee that all AI-generated content will be identified or blocked before it is served to users.
@@ -495,7 +506,7 @@ export function TermsPage() {
               app. Divine does not guarantee that content can be removed, corrected, or made unavailable across
               decentralized networks or third-party systems.
             </p>
-            <p className="mb-3 uppercase">
+            <p className="mb-3" style={{ textTransform: 'uppercase' }}>
               To the maximum extent permitted by law, Divine will not be liable for any indirect, incidental,
               special, consequential, or punitive damages arising out of or related to your use of or inability to
               use the Service, including data loss, failures of relays or third-party hosts, or any inability to

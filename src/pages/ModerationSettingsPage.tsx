@@ -1,7 +1,9 @@
 // ABOUTME: Settings page for content moderation
 // ABOUTME: Manage mute lists, view report history, and configure filtering
 
+import { useQueryClient } from '@tanstack/react-query';
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useMuteList, useMuteItem, useUnmuteItem, useReportHistory } from '@/hooks/useModeration';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useAuthor } from '@/hooks/useAuthor';
@@ -15,20 +17,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import {
-  Shield,
-  UserX,
-  Hash,
-  Type,
-  Plus,
-  Flag,
-  Trash2,
-  AlertCircle
-} from 'lucide-react';
+import { Shield, UserMinus as UserX, Hash, TextAa as Type, Plus, Flag, Trash as Trash2, WarningCircle as AlertCircle } from '@phosphor-icons/react';
 import { useToast } from '@/hooks/useToast';
 import { MuteType, REPORT_REASON_LABELS } from '@/types/moderation';
 import { genUserName } from '@/lib/genUserName';
 import { getSafeProfileImage } from '@/lib/imageUtils';
+import {
+  getFunnelcakeApiModeOverride,
+  resolveFunnelcakeBaseUrl,
+  setFunnelcakeApiModeOverride,
+  type FunnelcakeApiMode,
+} from '@/config/api';
+import { resetAllFunnelcakeCircuits } from '@/lib/funnelcakeHealth';
 import { formatDistanceToNow } from 'date-fns';
 import { nip19 } from 'nostr-tools';
 import type { NostrEvent } from '@nostrify/nostrify';
@@ -38,6 +38,7 @@ function MutedUserItem({ pubkey, reason, onUnmute }: {
   reason?: string;
   onUnmute: () => void;
 }) {
+  const { t } = useTranslation();
   const author = useAuthor(pubkey);
   const authorMetadata = author.data?.metadata;
   const authorName = authorMetadata?.name || genUserName(pubkey);
@@ -62,7 +63,7 @@ function MutedUserItem({ pubkey, reason, onUnmute }: {
         onClick={onUnmute}
       >
         <Trash2 className="h-4 w-4 mr-2" />
-        Unmute
+        {t('moderationSettings.unmute')}
       </Button>
     </div>
   );
@@ -71,8 +72,10 @@ function MutedUserItem({ pubkey, reason, onUnmute }: {
 
 
 export default function ModerationSettingsPage() {
+  const { t } = useTranslation();
   const { user } = useCurrentUser();
   const { nostr } = useNostr();
+  const queryClient = useQueryClient();
   const { toast } = useToast();
   const { data: muteList = [], isLoading: muteListLoading } = useMuteList();
   const { data: reportHistory = [] } = useReportHistory();
@@ -84,10 +87,16 @@ export default function ModerationSettingsPage() {
   const [muteReason, setMuteReason] = useState('');
   const [showDebug, setShowDebug] = useState(false);
   const [rawMuteEvent, setRawMuteEvent] = useState<NostrEvent | null>(null);
+  const [funnelcakeApiMode, setFunnelcakeApiMode] = useState<FunnelcakeApiMode>(() => getFunnelcakeApiModeOverride());
 
   const mutedUsers = muteList.filter(item => item.type === MuteType.USER);
   const mutedHashtags = muteList.filter(item => item.type === MuteType.HASHTAG);
   const mutedKeywords = muteList.filter(item => item.type === MuteType.KEYWORD);
+  const effectiveFunnelcakeBaseUrl = resolveFunnelcakeBaseUrl({
+    mode: funnelcakeApiMode,
+    hostname: window.location.hostname,
+    envBaseUrl: import.meta.env.VITE_FUNNELCAKE_API_URL,
+  });
 
   // Debug: Log state
   console.log('[ModerationSettingsPage] Render state:', {
@@ -127,11 +136,28 @@ export default function ModerationSettingsPage() {
     fetchRawEvent();
   }, [user, showDebug, nostr, muteList.length]); // Re-fetch when mute list changes
 
+  const handleFunnelcakeApiModeChange = async (nextMode: FunnelcakeApiMode) => {
+    setFunnelcakeApiModeOverride(nextMode);
+    setFunnelcakeApiMode(nextMode);
+    resetAllFunnelcakeCircuits();
+    await queryClient.invalidateQueries();
+    toast({
+      title: t('moderationSettings.toastFunnelcakeUpdatedTitle'),
+      description: t('moderationSettings.toastFunnelcakeUpdatedDescription', {
+        url: resolveFunnelcakeBaseUrl({
+          mode: nextMode,
+          hostname: window.location.hostname,
+          envBaseUrl: import.meta.env.VITE_FUNNELCAKE_API_URL,
+        }),
+      }),
+    });
+  };
+
   const handleMute = async () => {
     if (!muteValue.trim()) {
       toast({
-        title: 'Error',
-        description: 'Please enter a value to mute',
+        title: t('moderationSettings.toastErrorTitle'),
+        description: t('moderationSettings.toastErrorEnterValue'),
         variant: 'destructive',
       });
       return;
@@ -151,8 +177,8 @@ export default function ModerationSettingsPage() {
           }
         } catch {
           toast({
-            title: 'Error',
-            description: 'Invalid npub format',
+            title: t('moderationSettings.toastErrorTitle'),
+            description: t('moderationSettings.toastErrorInvalidNpub'),
             variant: 'destructive',
           });
           return;
@@ -166,8 +192,8 @@ export default function ModerationSettingsPage() {
       });
 
       toast({
-        title: 'Muted',
-        description: `Successfully added to mute list`,
+        title: t('moderationSettings.toastMutedTitle'),
+        description: t('moderationSettings.toastMutedDescription'),
       });
 
       // Reset form
@@ -175,8 +201,8 @@ export default function ModerationSettingsPage() {
       setMuteReason('');
     } catch {
       toast({
-        title: 'Error',
-        description: 'Failed to mute. Please try again.',
+        title: t('moderationSettings.toastErrorTitle'),
+        description: t('moderationSettings.toastMuteFailed'),
         variant: 'destructive',
       });
     }
@@ -186,13 +212,13 @@ export default function ModerationSettingsPage() {
     try {
       await unmuteItem.mutateAsync({ type, value });
       toast({
-        title: 'Unmuted',
-        description: 'Removed from mute list',
+        title: t('moderationSettings.toastUnmutedTitle'),
+        description: t('moderationSettings.toastUnmutedDescription'),
       });
     } catch {
       toast({
-        title: 'Error',
-        description: 'Failed to unmute. Please try again.',
+        title: t('moderationSettings.toastErrorTitle'),
+        description: t('moderationSettings.toastUnmuteFailed'),
         variant: 'destructive',
       });
     }
@@ -204,9 +230,9 @@ export default function ModerationSettingsPage() {
         <Card>
           <CardContent className="py-12 text-center">
             <Shield className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-            <p className="text-lg font-medium mb-2">Authentication Required</p>
+            <p className="text-lg font-medium mb-2">{t('moderationSettings.authRequiredTitle')}</p>
             <p className="text-muted-foreground">
-              Please log in to manage your moderation settings
+              {t('moderationSettings.authRequiredDescription')}
             </p>
           </CardContent>
         </Card>
@@ -221,10 +247,10 @@ export default function ModerationSettingsPage() {
           <div>
             <h1 className="text-3xl font-bold flex items-center gap-2 mb-2">
               <Shield className="h-8 w-8" />
-              Moderation Settings
+              {t('moderationSettings.heading')}
             </h1>
             <p className="text-muted-foreground">
-              Control what content you see and report violations
+              {t('moderationSettings.subheading')}
             </p>
           </div>
           <Button
@@ -233,7 +259,7 @@ export default function ModerationSettingsPage() {
             onClick={() => setShowDebug(!showDebug)}
             className="text-foreground"
           >
-            {showDebug ? 'Hide' : 'Show'} Debug Info
+            {showDebug ? t('moderationSettings.hideDebugInfo') : t('moderationSettings.showDebugInfo')}
           </Button>
         </div>
 
@@ -241,20 +267,47 @@ export default function ModerationSettingsPage() {
         {showDebug && (
           <Card className="mt-4 border-yellow-500/50 bg-yellow-50 dark:bg-yellow-950/20">
             <CardHeader>
-              <CardTitle className="text-sm">Debug Information</CardTitle>
+              <CardTitle className="text-sm">{t('moderationSettings.debugInformation')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2 text-sm font-mono">
               <div>
-                <strong>User pubkey:</strong> {user?.pubkey || 'Not logged in'}
+                <strong>{t('moderationSettings.debugUserPubkey')}</strong> {user?.pubkey || t('moderationSettings.debugNotLoggedIn')}
               </div>
               <div>
-                <strong>Mute list loading:</strong> {muteListLoading ? 'Yes' : 'No'}
+                <strong>{t('moderationSettings.debugMuteListLoading')}</strong> {muteListLoading ? t('moderationSettings.yes') : t('moderationSettings.no')}
+              </div>
+              <div className="pt-2 border-t border-yellow-600/50 space-y-2">
+                <div>
+                  <strong>{t('moderationSettings.debugFunnelcakeApiMode')}</strong>
+                </div>
+                <div className="flex flex-col gap-2 text-foreground not-italic font-sans">
+                  <Label htmlFor="funnelcake-api-mode">{t('moderationSettings.funnelcakeApiLabel')}</Label>
+                  <select
+                    id="funnelcake-api-mode"
+                    aria-label={t('moderationSettings.funnelcakeApiLabel')}
+                    className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    value={funnelcakeApiMode}
+                    onChange={(event) => {
+                      void handleFunnelcakeApiModeChange(event.target.value as FunnelcakeApiMode);
+                    }}
+                  >
+                    <option value="auto">{t('moderationSettings.apiModeAuto')}</option>
+                    <option value="production">{t('moderationSettings.apiModeProduction')}</option>
+                    <option value="staging">{t('moderationSettings.apiModeStaging')}</option>
+                  </select>
+                  <p className="text-xs text-muted-foreground">
+                    {t('moderationSettings.apiModeAutoHelp')}
+                  </p>
+                  <div className="text-xs">
+                    <strong>{t('moderationSettings.debugEffectiveBaseUrl')}</strong> {effectiveFunnelcakeBaseUrl}
+                  </div>
+                </div>
               </div>
               <div>
-                <strong>Total mute items:</strong> {muteList.length}
+                <strong>{t('moderationSettings.debugTotalMuteItems')}</strong> {muteList.length}
               </div>
               <div>
-                <strong>Muted users:</strong> {mutedUsers.length}
+                <strong>{t('moderationSettings.debugMutedUsersLabel')}</strong> {mutedUsers.length}
                 {mutedUsers.length > 0 && (
                   <div className="ml-4 mt-1 text-xs break-all">
                     {mutedUsers.map(item => (
@@ -266,7 +319,7 @@ export default function ModerationSettingsPage() {
                 )}
               </div>
               <div>
-                <strong>Muted hashtags:</strong> {mutedHashtags.length}
+                <strong>{t('moderationSettings.debugMutedHashtagsLabel')}</strong> {mutedHashtags.length}
                 {mutedHashtags.length > 0 && (
                   <div className="ml-4 mt-1 text-xs">
                     {mutedHashtags.map(item => (
@@ -276,7 +329,7 @@ export default function ModerationSettingsPage() {
                 )}
               </div>
               <div>
-                <strong>Muted keywords:</strong> {mutedKeywords.length}
+                <strong>{t('moderationSettings.debugMutedKeywordsLabel')}</strong> {mutedKeywords.length}
                 {mutedKeywords.length > 0 && (
                   <div className="ml-4 mt-1 text-xs">
                     {mutedKeywords.map(item => (
@@ -286,14 +339,14 @@ export default function ModerationSettingsPage() {
                 )}
               </div>
               <div className="pt-2 border-t border-yellow-600/50">
-                <strong>Parsed mute list:</strong>
+                <strong>{t('moderationSettings.debugParsedMuteList')}</strong>
                 <pre className="mt-2 p-2 bg-black/10 rounded text-xs overflow-auto max-h-40">
                   {JSON.stringify(muteList, null, 2)}
                 </pre>
               </div>
               {rawMuteEvent && (
                 <div className="pt-2 border-t border-yellow-600/50">
-                  <strong>Raw Nostr event (kind 10001):</strong>
+                  <strong>{t('moderationSettings.debugRawNostrEvent')}</strong>
                   <pre className="mt-2 p-2 bg-black/10 rounded text-xs overflow-auto max-h-60">
                     {String(JSON.stringify(rawMuteEvent, null, 2))}
                   </pre>
@@ -311,26 +364,26 @@ export default function ModerationSettingsPage() {
             <Shield className="h-5 w-5 text-blue-600 mt-0.5" />
             <div className="flex-1">
               <p className="font-medium text-sm">
-                Moderation Status: {muteListLoading ? 'Loading...' : 'Active'}
+                {t('moderationSettings.moderationStatusLabel')} {muteListLoading ? t('moderationSettings.statusLoading') : t('moderationSettings.statusActive')}
               </p>
               <div className="text-xs text-muted-foreground mt-1 space-y-1">
                 <div>
-                  • <strong>{mutedUsers.length}</strong> users muted
+                  • <strong>{mutedUsers.length}</strong> {t('moderationSettings.statusUsersMutedSuffix')}
                 </div>
                 <div>
-                  • <strong>{mutedHashtags.length}</strong> hashtags muted
+                  • <strong>{mutedHashtags.length}</strong> {t('moderationSettings.statusHashtagsMutedSuffix')}
                 </div>
                 <div>
-                  • <strong>{mutedKeywords.length}</strong> keywords muted
+                  • <strong>{mutedKeywords.length}</strong> {t('moderationSettings.statusKeywordsMutedSuffix')}
                 </div>
                 {muteList.length > 0 && (
                   <div className="text-green-600 dark:text-green-400 mt-2">
-                    ✓ Content filtering is active across all feeds
+                    {t('moderationSettings.statusFilteringActive')}
                   </div>
                 )}
                 {muteList.length === 0 && !muteListLoading && (
                   <div className="text-muted-foreground mt-2">
-                    No filters active - all content will be shown
+                    {t('moderationSettings.statusNoFilters')}
                   </div>
                 )}
               </div>
@@ -343,11 +396,11 @@ export default function ModerationSettingsPage() {
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="mute-list" className="gap-2">
             <UserX className="h-4 w-4" />
-            <span className="hidden sm:inline">Mute List</span>
+            <span className="hidden sm:inline">{t('moderationSettings.tabMuteList')}</span>
           </TabsTrigger>
           <TabsTrigger value="reports" className="gap-2">
             <Flag className="h-4 w-4" />
-            <span className="hidden sm:inline">My Reports</span>
+            <span className="hidden sm:inline">{t('moderationSettings.tabMyReports')}</span>
           </TabsTrigger>
         </TabsList>
 
@@ -356,15 +409,15 @@ export default function ModerationSettingsPage() {
           {/* Add to Mute List */}
           <Card>
             <CardHeader>
-              <CardTitle>Add to Mute List</CardTitle>
+              <CardTitle>{t('moderationSettings.addToMuteListTitle')}</CardTitle>
               <CardDescription>
-                Mute users, hashtags, keywords, or specific content
+                {t('moderationSettings.addToMuteListDescription')}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="mute-type">Type</Label>
+                  <Label htmlFor="mute-type">{t('moderationSettings.typeLabel')}</Label>
                   <Select value={muteType} onValueChange={(value) => setMuteType(value as MuteType)}>
                     <SelectTrigger id="mute-type">
                       <SelectValue />
@@ -373,19 +426,19 @@ export default function ModerationSettingsPage() {
                       <SelectItem value={MuteType.USER}>
                         <div className="flex items-center gap-2">
                           <UserX className="h-4 w-4" />
-                          User (npub or hex)
+                          {t('moderationSettings.typeUserOption')}
                         </div>
                       </SelectItem>
                       <SelectItem value={MuteType.HASHTAG}>
                         <div className="flex items-center gap-2">
                           <Hash className="h-4 w-4" />
-                          Hashtag
+                          {t('moderationSettings.typeHashtagOption')}
                         </div>
                       </SelectItem>
                       <SelectItem value={MuteType.KEYWORD}>
                         <div className="flex items-center gap-2">
                           <Type className="h-4 w-4" />
-                          Keyword
+                          {t('moderationSettings.typeKeywordOption')}
                         </div>
                       </SelectItem>
                     </SelectContent>
@@ -394,16 +447,16 @@ export default function ModerationSettingsPage() {
 
                 <div className="space-y-2">
                   <Label htmlFor="mute-value">
-                    {muteType === MuteType.USER && 'User (npub or pubkey)'}
-                    {muteType === MuteType.HASHTAG && 'Hashtag (without #)'}
-                    {muteType === MuteType.KEYWORD && 'Keyword or phrase'}
+                    {muteType === MuteType.USER && t('moderationSettings.valueLabelUser')}
+                    {muteType === MuteType.HASHTAG && t('moderationSettings.valueLabelHashtag')}
+                    {muteType === MuteType.KEYWORD && t('moderationSettings.valueLabelKeyword')}
                   </Label>
                   <Input
                     id="mute-value"
                     placeholder={
-                      muteType === MuteType.USER ? 'npub1...' :
-                      muteType === MuteType.HASHTAG ? 'spam' :
-                      'unwanted phrase'
+                      muteType === MuteType.USER ? t('moderationSettings.placeholderUser') :
+                      muteType === MuteType.HASHTAG ? t('moderationSettings.placeholderHashtag') :
+                      t('moderationSettings.placeholderKeyword')
                     }
                     value={muteValue}
                     onChange={(e) => setMuteValue(e.target.value)}
@@ -412,10 +465,10 @@ export default function ModerationSettingsPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="mute-reason">Reason (optional)</Label>
+                <Label htmlFor="mute-reason">{t('moderationSettings.reasonLabel')}</Label>
                 <Input
                   id="mute-reason"
-                  placeholder="Why are you muting this?"
+                  placeholder={t('moderationSettings.reasonPlaceholder')}
                   value={muteReason}
                   onChange={(e) => setMuteReason(e.target.value)}
                 />
@@ -423,7 +476,7 @@ export default function ModerationSettingsPage() {
 
               <Button onClick={handleMute} disabled={!muteValue.trim() || muteItem.isPending}>
                 <Plus className="h-4 w-4 mr-2" />
-                Add to Mute List
+                {t('moderationSettings.addToMuteListButton')}
               </Button>
             </CardContent>
           </Card>
@@ -433,7 +486,7 @@ export default function ModerationSettingsPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <UserX className="h-5 w-5" />
-                Muted Users ({mutedUsers.length})
+                {t('moderationSettings.mutedUsersTitle', { count: mutedUsers.length })}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -456,7 +509,7 @@ export default function ModerationSettingsPage() {
                 </div>
               ) : (
                 <p className="text-center text-muted-foreground py-8">
-                  No muted users
+                  {t('moderationSettings.noMutedUsers')}
                 </p>
               )}
             </CardContent>
@@ -467,7 +520,7 @@ export default function ModerationSettingsPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Hash className="h-5 w-5" />
-                Muted Hashtags ({mutedHashtags.length})
+                {t('moderationSettings.mutedHashtagsTitle', { count: mutedHashtags.length })}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -487,7 +540,7 @@ export default function ModerationSettingsPage() {
                 </div>
               ) : (
                 <p className="text-center text-muted-foreground py-8">
-                  No muted hashtags
+                  {t('moderationSettings.noMutedHashtags')}
                 </p>
               )}
             </CardContent>
@@ -498,7 +551,7 @@ export default function ModerationSettingsPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Type className="h-5 w-5" />
-                Muted Keywords ({mutedKeywords.length})
+                {t('moderationSettings.mutedKeywordsTitle', { count: mutedKeywords.length })}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -518,7 +571,7 @@ export default function ModerationSettingsPage() {
                 </div>
               ) : (
                 <p className="text-center text-muted-foreground py-8">
-                  No muted keywords
+                  {t('moderationSettings.noMutedKeywords')}
                 </p>
               )}
             </CardContent>
@@ -529,9 +582,9 @@ export default function ModerationSettingsPage() {
         <TabsContent value="reports" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Report History</CardTitle>
+              <CardTitle>{t('moderationSettings.reportHistoryTitle')}</CardTitle>
               <CardDescription>
-                Content you've reported ({reportHistory.length})
+                {t('moderationSettings.reportHistoryDescription', { count: reportHistory.length })}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -557,10 +610,10 @@ export default function ModerationSettingsPage() {
                       )}
                       <div className="flex gap-2 mt-2 text-xs text-muted-foreground">
                         {report.eventId && (
-                          <span className="font-mono">Event: {report.eventId.slice(0, 8)}...</span>
+                          <span className="font-mono">{t('moderationSettings.reportEventLabel', { id: `${report.eventId.slice(0, 8)}...` })}</span>
                         )}
                         {report.pubkey && (
-                          <span className="font-mono">User: {report.pubkey.slice(0, 8)}...</span>
+                          <span className="font-mono">{t('moderationSettings.reportUserLabel', { id: `${report.pubkey.slice(0, 8)}...` })}</span>
                         )}
                       </div>
                     </div>
@@ -570,7 +623,7 @@ export default function ModerationSettingsPage() {
                 <div className="text-center py-12">
                   <AlertCircle className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
                   <p className="text-muted-foreground">
-                    You haven't reported any content yet
+                    {t('moderationSettings.noReportsYet')}
                   </p>
                 </div>
               )}

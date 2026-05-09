@@ -2,11 +2,13 @@
 // ABOUTME: Shows poster image with play button overlay and click-to-play functionality
 
 import { useState, useCallback } from 'react';
-import { Play } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { Play } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useAdultVerification, checkMediaAuth } from '@/hooks/useAdultVerification';
 import { AgeVerificationOverlay } from '@/components/AgeVerificationOverlay';
+import { isProtectedDivineMediaUrl, useAuthenticatedMediaUrl } from '@/hooks/useAuthenticatedMediaUrl';
 import { verboseLog, debugError } from '@/lib/debug';
 
 interface ThumbnailPlayerProps {
@@ -15,7 +17,10 @@ interface ThumbnailPlayerProps {
   thumbnailUrl?: string;
   duration?: number;
   className?: string;
+  /** Whether the source video is age-restricted; gates whether to attach auth on the thumbnail fetch. */
+  ageRestricted?: boolean;
   onClick?: () => void;
+  onPlayButtonClick?: () => void;
   onError?: () => void;
   onVideoDimensions?: (dimensions: { width: number; height: number; isVertical: boolean }) => void;
 }
@@ -26,10 +31,13 @@ export function ThumbnailPlayer({
   thumbnailUrl,
   duration: _duration,
   className,
+  ageRestricted,
   onClick,
+  onPlayButtonClick,
   onError,
   onVideoDimensions,
 }: ThumbnailPlayerProps) {
+  const { t } = useTranslation();
   const [thumbnailError, setThumbnailError] = useState(false);
   const [useVideoFallback, setUseVideoFallback] = useState(false);
   const [requiresAuth, setRequiresAuth] = useState(false);
@@ -93,8 +101,17 @@ export function ThumbnailPlayer({
     onClick?.();
   };
 
+  const baseThumbnailUrl = thumbnailUrl || src;
+  const { mediaUrl: authenticatedMediaUrl, isLoading: authMediaLoading } = useAuthenticatedMediaUrl(baseThumbnailUrl, {
+    enabled: !requiresAuth,
+    ageRestricted: !!ageRestricted,
+  });
+  const overlayThumbnailUrl = authenticatedMediaUrl ||
+    (baseThumbnailUrl && !isProtectedDivineMediaUrl(baseThumbnailUrl) ? baseThumbnailUrl : undefined);
   // Generate thumbnail from video if no thumbnail URL provided
-  const effectiveThumbnailUrl = thumbnailUrl || generateThumbnailFromVideo(src);
+  const effectiveThumbnailUrl = thumbnailUrl
+    ? authenticatedMediaUrl
+    : generateThumbnailFromVideo(authenticatedMediaUrl || src);
 
   // Check if the thumbnail URL is actually a video file or same as source
   const isVideoThumbnail = effectiveThumbnailUrl === src ||
@@ -115,8 +132,18 @@ export function ThumbnailPlayer({
       {requiresAuth ? (
         <AgeVerificationOverlay
           onVerified={handleAgeVerified}
-          thumbnailUrl={thumbnailUrl}
+          thumbnailUrl={overlayThumbnailUrl}
         />
+      ) : authMediaLoading ? (
+        <div
+          className="w-full h-full flex items-center justify-center bg-gray-800 text-gray-400"
+          data-testid="thumbnail-placeholder"
+        >
+          <div className="text-center">
+            <Play className="h-12 w-12 mx-auto mb-2 opacity-50" />
+            <p className="text-sm">{t('thumbnailPlayer.videoPreview')}</p>
+          </div>
+        </div>
       ) : !thumbnailError && effectiveThumbnailUrl ? (
         /* Thumbnail image or video */
         isVideoThumbnail || useVideoFallback ? (
@@ -136,7 +163,7 @@ export function ThumbnailPlayer({
           <img
             key={`img-${authRetryKey}`}
             src={effectiveThumbnailUrl}
-            alt="Video thumbnail"
+            alt={t('thumbnailPlayer.thumbnailAlt')}
             className="w-full h-full object-cover"
             crossOrigin="anonymous"
             data-testid="video-thumbnail"
@@ -151,7 +178,7 @@ export function ThumbnailPlayer({
         >
           <div className="text-center">
             <Play className="h-12 w-12 mx-auto mb-2 opacity-50" />
-            <p className="text-sm">Video Preview</p>
+            <p className="text-sm">{t('thumbnailPlayer.videoPreview')}</p>
           </div>
         </div>
       )}
@@ -164,7 +191,18 @@ export function ThumbnailPlayer({
             size="icon"
             className="w-16 h-16 rounded-full bg-black/50 hover:bg-black/70 text-white backdrop-blur-sm"
             data-testid="thumbnail-play-button"
-            aria-label="Play video"
+            aria-label={t('thumbnailPlayer.playVideo')}
+            onClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              onPlayButtonClick?.();
+            }}
+            onTouchStart={(event) => {
+              event.stopPropagation();
+            }}
+            onTouchEnd={(event) => {
+              event.stopPropagation();
+            }}
           >
             <Play className="h-8 w-8 ml-1" />
           </Button>

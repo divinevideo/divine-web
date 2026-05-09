@@ -3,11 +3,12 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { nip19 } from 'nostr-tools';
 import { useHead, useSeoMeta } from '@unhead/react';
 import { feedUrls } from '@/lib/feedUrls';
 import { useRssFeedAvailable } from '@/hooks/useRssFeedAvailable';
-import { Grid, List, Loader2 } from 'lucide-react';
+import { SquaresFour as Grid, List, CircleNotch as Loader2 } from '@phosphor-icons/react';
 import { PROFILE_SORT_MODES } from '@/lib/constants/sortModes';
 import InfiniteScroll from 'react-infinite-scroll-component';
 import { ProfileHeader } from '@/components/ProfileHeader';
@@ -26,10 +27,11 @@ import { useVideoProvider } from '@/hooks/useVideoProvider';
 import { useFunnelcakeProfile } from '@/hooks/useFunnelcakeProfile';
 import { useProfileJoinedDate } from '@/hooks/useProfileJoinedDate';
 import { useClassicVineArchiveStats } from '@/hooks/useClassicVineArchiveStats';
-import { useFollowRelationship, useFollowUser, useUnfollowUser } from '@/hooks/useFollowRelationship';
+import { useFollowRelationship, useFollowUser, useUnfollowUser, FollowRaceError } from '@/hooks/useFollowRelationship';
 import { useFollowListSafetyCheck } from '@/hooks/useFollowListSafetyCheck';
 import { PinnedVideosSection } from '@/components/PinnedVideosSection';
 import { useLoginDialog } from '@/contexts/LoginDialogContext';
+import { toast } from '@/hooks/useToast';
 import { debugLog } from '@/lib/debug';
 import { getDivineNip05Info } from '@/lib/nip05Utils';
 import { useNip05Validation } from '@/hooks/useNip05Validation';
@@ -39,6 +41,7 @@ import { buildProfileStats } from '@/lib/profileStats';
 import type { SortMode } from '@/types/nostr';
 
 export function ProfilePage() {
+  const { t } = useTranslation();
   const { npub, nip19: nip19Param } = useParams<{ npub?: string; nip19?: string }>();
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [sortMode, setSortMode] = useState<SortMode | undefined>(undefined);
@@ -66,7 +69,7 @@ export function ProfilePage() {
         if (decoded.type === 'npub') {
           pubkey = decoded.data;
         } else {
-          error = 'Invalid npub format';
+          error = t('profilePage.invalidNpub');
         }
       } else if (/^[0-9a-fA-F]{64}$/.test(identifier)) {
         // Valid 64-char hex pubkey
@@ -75,16 +78,16 @@ export function ProfilePage() {
         if (nip05Query.data) {
           pubkey = nip05Query.data;
         } else if (nip05Query.isFetched && !nip05Query.data) {
-          error = `Could not resolve NIP-05: ${identifier}`;
+          error = t('profilePage.couldNotResolveNip05', { identifier });
         }
       } else {
-        error = 'Invalid profile identifier';
+        error = t('profilePage.invalidIdentifier');
       }
     } catch {
-      error = 'Invalid npub format';
+      error = t('profilePage.invalidNpub');
     }
   } else {
-    error = 'No user identifier provided';
+    error = t('profilePage.noIdentifier');
   }
 
   // Fetch profile data from Funnelcake REST API (fast) - includes profile metadata AND stats
@@ -227,7 +230,7 @@ export function ProfilePage() {
   // Check if this is the current user's own profile
   const isOwnProfile = currentUser?.pubkey === pubkey;
 
-  const displayName = metadata?.display_name || metadata?.name || (pubkey ? genUserName(pubkey) : 'User');
+  const displayName = metadata?.display_name || metadata?.name || (pubkey ? genUserName(pubkey) : t('profilePage.defaultUser'));
 
   // RSS auto-discovery link for feed readers (only if feed endpoints exist)
   const rssFeedAvailable = useRssFeedAvailable();
@@ -237,7 +240,7 @@ export function ProfilePage() {
       {
         rel: 'alternate',
         type: 'application/rss+xml',
-        title: `${displayName}'s Videos - Divine`,
+        title: t('profilePage.rssFeedTitle', { name: displayName }),
         href: feedUrls.userVideos(profileNpub),
       },
     ] : [],
@@ -245,15 +248,15 @@ export function ProfilePage() {
 
   // Dynamic SEO meta tags for social sharing
   useSeoMeta({
-    title: `${displayName} - Divine`,
-    description: metadata?.about || `${displayName}'s profile on Divine`,
-    ogTitle: `${displayName} - Divine Profile`,
-    ogDescription: metadata?.about || `${displayName}'s profile on Divine`,
+    title: t('profilePage.seoTitle', { name: displayName }),
+    description: metadata?.about || t('profilePage.seoDescription', { name: displayName }),
+    ogTitle: t('profilePage.seoOgTitle', { name: displayName }),
+    ogDescription: metadata?.about || t('profilePage.seoDescription', { name: displayName }),
     ogImage: metadata?.picture || '/app_icon.avif',
     ogType: 'profile',
     twitterCard: 'summary',
-    twitterTitle: `${displayName} - Divine`,
-    twitterDescription: metadata?.about || `${displayName}'s profile on Divine`,
+    twitterTitle: t('profilePage.seoTitle', { name: displayName }),
+    twitterDescription: metadata?.about || t('profilePage.seoDescription', { name: displayName }),
     twitterImage: metadata?.picture || '/app_icon.avif',
   });
 
@@ -285,9 +288,9 @@ export function ProfilePage() {
         <div className="max-w-4xl mx-auto">
           <Card>
             <CardContent className="py-12 text-center">
-              <h2 className="text-xl font-semibold mb-4">Invalid Profile</h2>
+              <h2 className="text-xl font-semibold mb-4">{t('profilePage.invalidProfileTitle')}</h2>
               <p className="text-muted-foreground">
-                {error || 'Unable to load profile'}
+                {error || t('profilePage.unableToLoad')}
               </p>
             </CardContent>
           </Card>
@@ -340,6 +343,15 @@ export function ProfilePage() {
       }
     } catch (error) {
       console.error('Failed to update follow status:', error);
+      if (!(error instanceof FollowRaceError)) {
+        // Suppress the stale-UI follow race because the user is already in the desired state.
+        const message = error instanceof Error ? error.message : '';
+        toast({
+          title: t('profilePage.followErrorTitle'),
+          description: message || t('profilePage.followErrorDescription'),
+          variant: "destructive",
+        });
+      }
     }
   };
 
@@ -398,9 +410,11 @@ export function ProfilePage() {
           {/* View Mode Toggle + Sort */}
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-xl font-semibold">Videos</h2>
+              <h2 className="text-xl font-semibold">{t('profilePage.videosHeading')}</h2>
               <p className="text-muted-foreground text-sm">
-                {videosLoading ? 'Loading...' : `${stats.videosCount} videos`} from {displayName}
+                {videosLoading
+                  ? t('profilePage.loadingFrom', { name: displayName })
+                  : t('profilePage.videosCountFrom', { count: stats.videosCount, name: displayName })}
               </p>
             </div>
 
@@ -460,9 +474,9 @@ export function ProfilePage() {
           ) : videosError ? (
             <Card className="border-destructive">
               <CardContent className="py-12 text-center">
-                <p className="text-destructive mb-4">Failed to load videos</p>
+                <p className="text-destructive mb-4">{t('profilePage.failedToLoadVideos')}</p>
                 <Button variant="outline" onClick={() => window.location.reload()}>
-                  Try again
+                  {t('profilePage.tryAgain')}
                 </Button>
               </CardContent>
             </Card>
@@ -475,14 +489,14 @@ export function ProfilePage() {
                 <div className="h-16 flex items-center justify-center col-span-full">
                   <div className="flex items-center gap-3">
                     <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                    <span className="text-sm text-muted-foreground">Loading more videos...</span>
+                    <span className="text-sm text-muted-foreground">{t('profilePage.loadingMore')}</span>
                   </div>
                 </div>
               }
               endMessage={
                 videos.length > 10 ? (
                   <div className="py-8 text-center text-sm text-muted-foreground col-span-full">
-                    <p>You've seen all {stats.videosCount} videos</p>
+                    <p>{t('profilePage.allSeen', { count: stats.videosCount })}</p>
                   </div>
                 ) : null
               }

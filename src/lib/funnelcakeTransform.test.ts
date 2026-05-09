@@ -46,6 +46,92 @@ describe('transformFunnelcakeVideo', () => {
 
     expect(video.loopCount).toBe(296752);
   });
+
+  it('preserves the age-restricted flag from the API payload', () => {
+    const video = transformFunnelcakeVideo(makeRawVideo({
+      age_restricted: true,
+    }));
+
+    expect(video.ageRestricted).toBe(true);
+  });
+
+  it('sums embedded_* and current engagement counts (v2 schema)', () => {
+    // v2 /api/v2/videos returns BOTH families: `embedded_*` is archive-import
+    // stats (Vine), `reactions|comments|reposts` is current Nostr engagement.
+    // We sum them so the visible numbers reflect total activity (archive +
+    // current), and native videos with no archive history still show real
+    // current counts.
+    const native = transformFunnelcakeVideo(makeRawVideo({
+      embedded_likes: 0,
+      embedded_comments: 0,
+      embedded_reposts: 0,
+      reactions: 24,
+      comments: 9,
+      reposts: 3,
+    }));
+
+    expect(native.likeCount).toBe(24);
+    expect(native.commentCount).toBe(9);
+    expect(native.repostCount).toBe(3);
+
+    const archived = transformFunnelcakeVideo(makeRawVideo({
+      embedded_likes: 138577,
+      embedded_comments: 3014,
+      embedded_reposts: 37586,
+      reactions: 10,
+      comments: 0,
+      reposts: 0,
+    }));
+
+    expect(archived.likeCount).toBe(138587);
+    expect(archived.commentCount).toBe(3014);
+    expect(archived.repostCount).toBe(37586);
+  });
+
+  // Regression guard: list endpoints (/api/videos, /api/users/{pubkey}/videos,
+  // discovery, etc.) omit Nostr `tags`, so proofMode arrives undefined and the
+  // verification dialog must lazy-fetch the single-video endpoint to recover
+  // it. See VideoVerificationDetailsDialog.tsx.
+  it('returns proofMode undefined when tags are absent (list endpoint shape)', () => {
+    const video = transformFunnelcakeVideo(makeRawVideo());
+    expect(video.proofMode).toBeUndefined();
+  });
+
+  it('extracts proofMode when verification tags are present (single-video shape)', () => {
+    const video = transformFunnelcakeVideo(makeRawVideo({
+      tags: [
+        ['d', 'vine-id'],
+        ['verification', 'verified_mobile'],
+        ['c2pa_manifest_id', 'urn:c2pa:test'],
+        ['device_attestation', 'attest-blob'],
+        ['proofmode', '{"videoHash":"abc"}'],
+      ],
+    }));
+
+    expect(video.proofMode?.level).toBe('verified_mobile');
+    expect(video.proofMode?.c2paManifestId).toBe('urn:c2pa:test');
+    expect(video.proofMode?.deviceAttestation).toBe('attest-blob');
+  });
+
+  it('maps the raw Nostr content (description) to video.content, not the title', () => {
+    const video = transformFunnelcakeVideo(makeRawVideo({
+      title: 'First Divine Compilation 2026!',
+      content: 'I just made the world’s first divine compilation.\n\nLink: https://youtu.be/abc',
+    }));
+
+    expect(video.title).toBe('First Divine Compilation 2026!');
+    expect(video.content).toBe('I just made the world’s first divine compilation.\n\nLink: https://youtu.be/abc');
+  });
+
+  it('leaves video.content empty when the API response has no content field', () => {
+    const video = transformFunnelcakeVideo(makeRawVideo({
+      title: 'A title with no description',
+      content: undefined,
+    }));
+
+    expect(video.title).toBe('A title with no description');
+    expect(video.content).toBe('');
+  });
 });
 
 function makeResponse(overrides: Partial<FunnelcakeResponse> = {}): FunnelcakeResponse {

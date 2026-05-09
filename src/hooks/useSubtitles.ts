@@ -5,6 +5,8 @@ import { useNostr } from '@nostrify/react';
 import { useQuery } from '@tanstack/react-query';
 import { parseVtt, type VttCue } from '@/lib/vttParser';
 import type { ParsedVideoData } from '@/types/video';
+import { useAdultVerification } from '@/hooks/useAdultVerification';
+import { isProtectedDivineMediaUrl } from '@/hooks/useAuthenticatedMediaUrl';
 
 interface UseSubtitlesResult {
   cues: VttCue[];
@@ -60,14 +62,16 @@ export function useSubtitles(
   video: ParsedVideoData | null | undefined,
 ): UseSubtitlesResult {
   const { nostr } = useNostr();
+  const { isVerified: isAdultVerified, getAuthHeader } = useAdultVerification();
 
   const hasEmbeddedContent = !!video?.textTrackContent;
   const hasRef = !!video?.textTrackRef;
   const cdnHash = video?.videoUrl ? extractCdnHash(video.videoUrl) : null;
+  const requiresProtectedCdnAuth = !!video?.ageRestricted && !!video?.videoUrl && isProtectedDivineMediaUrl(video.videoUrl);
   const queryEnabled = !!video && (hasEmbeddedContent || hasRef || !!cdnHash);
 
   const { data: cues = [], isLoading } = useQuery({
-    queryKey: ['subtitles', video?.id, video?.textTrackRef, cdnHash],
+    queryKey: ['subtitles', video?.id, video?.textTrackRef, cdnHash, requiresProtectedCdnAuth, isAdultVerified],
     queryFn: async ({ signal }) => {
       if (!video) return [];
 
@@ -102,7 +106,24 @@ export function useSubtitles(
       if (cdnHash) {
         try {
           const vttUrl = `https://media.divine.video/${cdnHash}/vtt`;
-          const response = await fetch(vttUrl, { signal });
+          const response = requiresProtectedCdnAuth
+            ? await (async () => {
+                const authHeader = await getAuthHeader(vttUrl, 'GET');
+                if (!authHeader) {
+                  return null;
+                }
+
+                return fetch(vttUrl, {
+                  headers: { Authorization: authHeader },
+                  signal,
+                });
+              })()
+            : await fetch(vttUrl, { signal });
+
+          if (!response) {
+            return [];
+          }
+
           if (response.ok) {
             const text = await response.text();
             if (text.trim().startsWith('WEBVTT')) {

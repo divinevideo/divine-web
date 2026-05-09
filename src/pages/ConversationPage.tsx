@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ArrowLeft, ArrowUp, Link2, Loader2, X } from 'lucide-react';
+import { ArrowLeft, ArrowUp, LinkSimple as Link2, X } from '@phosphor-icons/react';
 import { Link, useLocation, useParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -22,18 +23,50 @@ import {
 } from '@/lib/dm';
 import { genUserName } from '@/lib/genUserName';
 import { getSafeProfileImage } from '@/lib/imageUtils';
+import { getDivineNip05Info } from '@/lib/nip05Utils';
 import { formatRelativeTime } from '@/lib/notificationTransform';
 import { cn } from '@/lib/utils';
 
-function getDisplayName(pubkey: string, metadata?: { display_name?: string; name?: string }) {
+type TFn = (key: string, opts?: Record<string, unknown>) => string;
+
+function getDisplayName(pubkey: string, metadata?: { display_name?: string; name?: string }, t?: TFn) {
   if (pubkey === DIVINE_SUPPORT_PUBKEY) {
-    return metadata?.display_name || metadata?.name || 'Divine Support';
+    return metadata?.display_name || metadata?.name || (t ? t('conversationPage.divineSupport') : 'Divine Support');
   }
 
   return metadata?.display_name || metadata?.name || genUserName(pubkey);
 }
 
-function MessageBubble({ message }: { message: DmMessage }) {
+function getConversationSubtitle(
+  pubkey: string,
+  metadata?: { name?: string; nip05?: string },
+  t?: TFn,
+) {
+  if (pubkey === DIVINE_SUPPORT_PUBKEY) {
+    return t ? t('conversationPage.privateSupportChat') : 'Private support chat';
+  }
+
+  const nip05 = metadata?.nip05?.trim();
+  if (nip05) {
+    const divineInfo = getDivineNip05Info(nip05);
+    if (divineInfo) {
+      return divineInfo.displayName;
+    }
+
+    return nip05.startsWith('_@') ? `@${nip05.slice(2)}` : `@${nip05}`;
+  }
+
+  return `@${metadata?.name || genUserName(pubkey)}`;
+}
+
+function MessageBubble({
+  message,
+  onRetry,
+}: {
+  message: DmMessage;
+  onRetry?: (message: DmMessage) => void;
+}) {
+  const { t } = useTranslation();
   const videoPath = message.share?.vineId || message.share?.videoId
     ? `/video/${message.share.vineId || message.share.videoId}`
     : undefined;
@@ -57,12 +90,12 @@ function MessageBubble({ message }: { message: DmMessage }) {
                 : 'border-primary/15 bg-primary/10',
             )}
           >
-            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em]">
+            <div className="flex items-center gap-2 text-xs font-semibold">
               <Link2 className="h-3.5 w-3.5" />
-              Vine share
+              {t('conversationPage.vineShare')}
             </div>
             <p className="mt-2 text-sm font-medium">
-              {message.share.title || 'Open shared vine'}
+              {message.share.title || t('conversationPage.openSharedVine')}
             </p>
             <div className="mt-3">
               {videoPath ? (
@@ -75,7 +108,7 @@ function MessageBubble({ message }: { message: DmMessage }) {
                       : 'bg-primary text-primary-foreground hover:bg-primary/90',
                   )}
                 >
-                  Open vine
+                  {t('conversationPage.openVine')}
                 </Link>
               ) : (
                 <a
@@ -89,7 +122,7 @@ function MessageBubble({ message }: { message: DmMessage }) {
                       : 'bg-primary text-primary-foreground hover:bg-primary/90',
                   )}
                 >
-                  Open link
+                  {t('conversationPage.openLink')}
                 </a>
               )}
             </div>
@@ -102,13 +135,33 @@ function MessageBubble({ message }: { message: DmMessage }) {
 
         <div
           className={cn(
-            'mt-2 text-[11px]',
+            'mt-2 flex items-center gap-2 text-[11px]',
             message.isOutgoing
               ? 'text-primary-foreground/70'
               : 'text-muted-foreground',
           )}
         >
-          {formatRelativeTime(message.createdAt)}
+          <span>{formatRelativeTime(message.createdAt)}</span>
+          {message.deliveryState === 'sending' && <span>{t('conversationPage.sending')}</span>}
+          {message.deliveryState === 'failed' && (
+            <>
+              <span>{t('conversationPage.failedToSend')}</span>
+              {message.clientId && onRetry && (
+                <button
+                  type="button"
+                  className={cn(
+                    'rounded-full border px-2 py-0.5 text-[11px] font-semibold transition-colors',
+                    message.isOutgoing
+                      ? 'border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10'
+                      : 'border-border text-foreground hover:bg-muted',
+                  )}
+                  onClick={() => onRetry(message)}
+                >
+                  {t('conversationPage.retry')}
+                </button>
+              )}
+            </>
+          )}
         </div>
       </div>
     </div>
@@ -132,6 +185,7 @@ function ThreadSkeleton() {
 }
 
 export function ConversationPage() {
+  const { t } = useTranslation();
   const navigate = useSubdomainNavigate();
   const location = useLocation();
   const { conversationId } = useParams<{ conversationId: string }>();
@@ -153,16 +207,12 @@ export function ConversationPage() {
     }
   }, [lastReadAt, latestMessageAt, markConversationRead]);
 
-  const peerNames = peerPubkeys.map((pubkey) => getDisplayName(pubkey, authorMap[pubkey]?.metadata));
+  const peerNames = peerPubkeys.map((pubkey) => getDisplayName(pubkey, authorMap[pubkey]?.metadata, t));
   const title = peerNames.length === 1
     ? peerNames[0]
-    : `${peerNames.length} people`;
+    : t('conversationPage.peopleCount', { count: peerNames.length });
   const subtitle = peerNames.length === 1
-    ? (
-        peerPubkeys[0] === DIVINE_SUPPORT_PUBKEY
-          ? 'Private support chat'
-          : `@${authorMap[peerPubkeys[0]]?.metadata?.name || genUserName(peerPubkeys[0])}`
-      )
+    ? getConversationSubtitle(peerPubkeys[0], authorMap[peerPubkeys[0]]?.metadata, t)
     : peerNames.join(', ');
 
   const sharelessPath = conversationId ? getDmConversationPath(peerPubkeys) : '/messages';
@@ -177,7 +227,7 @@ export function ConversationPage() {
       await sendMessage.mutateAsync({
         participantPubkeys: peerPubkeys,
         content: trimmedDraft,
-        share,
+        share: share ?? undefined,
       });
 
       setDraft('');
@@ -190,6 +240,19 @@ export function ConversationPage() {
     }
   };
 
+  const handleRetry = (message: DmMessage) => {
+    if (!message.clientId) {
+      return;
+    }
+
+    sendMessage.mutate({
+      clientId: message.clientId,
+      participantPubkeys: message.peerPubkeys,
+      content: message.content,
+      share: message.share,
+    });
+  };
+
   const handleComposerKeyDown = async (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault();
@@ -199,13 +262,13 @@ export function ConversationPage() {
 
   if (!conversationId || !peerPubkeys.length) {
     return (
-      <div className="min-h-full bg-[radial-gradient(circle_at_top,_hsl(var(--primary)/0.12),_transparent_42%),linear-gradient(180deg,hsl(var(--background)),hsl(var(--background)))]">
+      <div className="min-h-full bg-brand-off-white dark:bg-brand-dark-green">
         <main className="container py-6">
           <div className="mx-auto max-w-3xl rounded-[32px] border border-border/80 bg-card/80 px-6 py-12 text-center shadow-sm backdrop-blur-sm">
-            <p className="text-lg font-semibold text-foreground">Conversation not found</p>
-            <p className="mt-2 text-sm text-muted-foreground">Go back to your inbox and start a new message.</p>
+            <p className="text-lg font-semibold text-foreground">{t('conversationPage.notFoundTitle')}</p>
+            <p className="mt-2 text-sm text-muted-foreground">{t('conversationPage.notFoundDescription')}</p>
             <Button className="mt-5 rounded-full" onClick={() => navigate('/messages')}>
-              Back to inbox
+              {t('conversationPage.backToInbox')}
             </Button>
           </div>
         </main>
@@ -215,15 +278,15 @@ export function ConversationPage() {
 
   if (!canUseDirectMessages) {
     return (
-      <div className="min-h-full bg-[radial-gradient(circle_at_top,_hsl(var(--primary)/0.12),_transparent_42%),linear-gradient(180deg,hsl(var(--background)),hsl(var(--background)))]">
+      <div className="min-h-full bg-brand-off-white dark:bg-brand-dark-green">
         <main className="container py-6">
           <div className="mx-auto max-w-3xl rounded-[32px] border border-border/80 bg-card/80 px-6 py-12 text-center shadow-sm backdrop-blur-sm">
-            <p className="text-lg font-semibold text-foreground">Direct messages are unavailable</p>
+            <p className="text-lg font-semibold text-foreground">{t('conversationPage.dmUnavailableTitle')}</p>
             <p className="mt-2 text-sm text-muted-foreground">
-              This signer can authenticate you, but it does not expose the NIP-44 encryption methods required for private messaging.
+              {t('conversationPage.dmUnavailableDescription')}
             </p>
             <Button className="mt-5 rounded-full" onClick={() => navigate('/messages')}>
-              Back to inbox
+              {t('conversationPage.backToInbox')}
             </Button>
           </div>
         </main>
@@ -232,7 +295,7 @@ export function ConversationPage() {
   }
 
   return (
-    <div className="min-h-full bg-[radial-gradient(circle_at_top,_hsl(var(--primary)/0.14),_transparent_42%),linear-gradient(180deg,hsl(var(--background)),hsl(var(--background)))]">
+    <div className="min-h-full bg-brand-off-white dark:bg-brand-dark-green">
       <main className="container py-6">
         <div className="mx-auto flex max-w-3xl flex-col gap-4">
           <section className="rounded-[32px] border border-border/80 bg-card/80 px-4 py-4 shadow-[0_24px_60px_rgba(39,197,139,0.08)] backdrop-blur-sm">
@@ -275,15 +338,19 @@ export function ConversationPage() {
 
               {!conversationQuery.isLoading && messages.length === 0 && (
                 <div className="rounded-[26px] border border-dashed border-border px-5 py-10 text-center">
-                  <p className="text-base font-medium text-foreground">No messages yet</p>
+                  <p className="text-base font-medium text-foreground">{t('conversationPage.noMessages')}</p>
                   <p className="mt-1 text-sm text-muted-foreground">
-                    Send the first message to open this thread.
+                    {t('conversationPage.noMessagesHint')}
                   </p>
                 </div>
               )}
 
               {messages.map((message) => (
-                <MessageBubble key={message.wrapId} message={message} />
+                <MessageBubble
+                  key={message.clientId || message.wrapId}
+                  message={message}
+                  onRetry={handleRetry}
+                />
               ))}
             </div>
 
@@ -291,8 +358,8 @@ export function ConversationPage() {
               {share && (
                 <div className="mb-3 flex items-start justify-between gap-3 rounded-[24px] border border-primary/20 bg-primary/10 px-4 py-3">
                   <div className="min-w-0">
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">
-                      Ready to share
+                    <p className="text-xs font-semibold text-primary">
+                      {t('conversationPage.readyToShare')}
                     </p>
                     <p className="mt-1 truncate text-sm font-medium text-foreground">
                       {share.title || share.url}
@@ -314,20 +381,16 @@ export function ConversationPage() {
                   value={draft}
                   onChange={(event) => setDraft(event.target.value)}
                   onKeyDown={handleComposerKeyDown}
-                  placeholder={share ? 'Add an optional note...' : 'Write a message...'}
-                  rows={1}
-                  className="min-h-12 rounded-[24px] border-border/80 bg-background/80 px-4 py-3 text-sm"
+                  placeholder={share ? t('conversationPage.placeholderShare') : t('conversationPage.placeholderMessage')}
+                  rows={2}
+                  className="resize-none rounded-[24px] border-border/80 bg-background/80 px-4 py-3 text-sm"
                 />
                 <Button
                   className="h-12 w-12 rounded-full"
                   onClick={handleSend}
-                  disabled={sendMessage.isPending || (!draft.trim() && !share)}
+                  disabled={!draft.trim() && !share}
                 >
-                  {sendMessage.isPending ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <ArrowUp className="h-4 w-4" />
-                  )}
+                  <ArrowUp className="h-4 w-4" />
                 </Button>
               </div>
             </div>

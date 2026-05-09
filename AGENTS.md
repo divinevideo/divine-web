@@ -37,6 +37,15 @@
 - Commits: imperative, present tense (e.g., "Add profile page"); keep focused; reference issue IDs when applicable.
 - PRs: include summary, motivation, screenshots for UI changes, and tests for new logic.
 - CI hygiene: ensure `npm run test` passes locally before opening/merging PRs.
+- PR titles must use Conventional Commit format: `type(scope): summary` or `type: summary`.
+- Set the correct PR title when opening the PR instead of relying on title edits afterward.
+- If a PR title must be fixed after opening, verify that the semantic PR title check reruns successfully.
+- Keep PRs tightly scoped to the task. Do not include unrelated formatting churn, lockfile noise, drive-by refactors, or incidental cleanup.
+- Do not mention corporate partners, customers, brands, campaign names, or other sensitive external identities in public issue titles, PR titles, branch names, screenshots, or descriptions unless a maintainer explicitly approves it. Use generic descriptors instead, such as "partner subdomain", "brand account", or "external partner".
+- Temporary or transitional code must include `TODO(#issue):` with a tracking issue for later removal.
+- UI changes should include screenshots or video in the PR, or explicitly state that there is no visual change.
+- PR descriptions should include a concise summary, motivation, linked issue, and manual test plan.
+- Do not continue speculative feature implementation after exploratory UI work if maintainer alignment on scope or UX is still missing.
 
 ## Security & Deployment Notes
 - Do not commit secrets. Configure deploy targets via `wrangler.toml` and environment variables.

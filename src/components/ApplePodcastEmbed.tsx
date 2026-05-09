@@ -1,7 +1,8 @@
 // ABOUTME: Apple Podcasts embed component for displaying podcast episodes
 // ABOUTME: Creates a nice embedded player similar to Slack's podcast embeds
 
-import { ExternalLink, Play } from 'lucide-react';
+import { ArrowSquareOut as ExternalLink, Play } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent } from '@/components/ui/card';
 
 interface ApplePodcastEmbedProps {
@@ -16,13 +17,17 @@ interface ApplePodcastEmbedProps {
 
 export function ApplePodcastEmbed({
   episodeUrl,
-  title = "Vine Revisited and The Fight Against AI Slop",
-  description = "Behind the scenes of the Divine launch",
+  title,
+  description,
   showName = "Revolution.Social",
-  duration = "21 min",
+  duration,
   artworkUrl = "https://is1-ssl.mzstatic.com/image/thumb/Podcasts221/v4/7f/29/73/7f2973f2-c3c6-bad0-6f29-e78afa22ccca/mza_12880046013239631742.jpeg/300x300bb.webp",
   className = "",
 }: ApplePodcastEmbedProps) {
+  const { t } = useTranslation();
+  const resolvedTitle = title ?? t('applePodcastEmbed.defaultTitle');
+  const resolvedDescription = description ?? t('applePodcastEmbed.defaultDescription');
+  const resolvedDuration = duration ?? t('applePodcastEmbed.defaultDuration');
   return (
     <Card className={className}>
       <CardContent className="p-4">
@@ -38,7 +43,7 @@ export function ApplePodcastEmbed({
               <div className="relative w-32 h-32 rounded-lg overflow-hidden bg-muted">
                 <img
                   src={artworkUrl}
-                  alt={`${showName} podcast artwork`}
+                  alt={t('applePodcastEmbed.artworkAlt', { showName })}
                   className="w-full h-full object-cover"
                 />
                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
@@ -64,19 +69,19 @@ export function ApplePodcastEmbed({
                   >
                     <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14.5v-9l6 4.5-6 4.5z"/>
                   </svg>
-                  <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                    Podcast Episode
+                  <span className="text-xs font-medium text-muted-foreground">
+                    {t('applePodcastEmbed.podcastEpisode')}
                   </span>
                 </div>
                 <h3 className="font-semibold text-lg mb-1 line-clamp-2">
-                  {title}
+                  {resolvedTitle}
                 </h3>
                 <p className="text-sm text-muted-foreground mb-2">
-                  {showName} • {duration}
+                  {showName} • {resolvedDuration}
                 </p>
-                {description && (
+                {resolvedDescription && (
                   <p className="text-sm text-muted-foreground line-clamp-2">
-                    {description}
+                    {resolvedDescription}
                   </p>
                 )}
               </div>
@@ -85,7 +90,7 @@ export function ApplePodcastEmbed({
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex-shrink-0 text-primary hover:text-brand-green transition-colors"
-                aria-label="Open in Apple Podcasts"
+                aria-label={t('applePodcastEmbed.openInApplePodcasts')}
               >
                 <ExternalLink className="h-5 w-5" />
               </a>
@@ -100,7 +105,7 @@ export function ApplePodcastEmbed({
                 className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:brightness-110 transition-colors text-sm font-medium"
               >
                 <Play className="h-4 w-4" fill="currentColor" />
-                Play Episode
+                {t('applePodcastEmbed.playEpisode')}
               </a>
             </div>
           </div>

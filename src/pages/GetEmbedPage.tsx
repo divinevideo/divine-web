@@ -2,8 +2,9 @@
 // ABOUTME: Lets users configure and preview an embeddable iframe for their profile
 
 import { useState, useCallback, useMemo, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';
-import { Copy, Check, Code } from 'lucide-react';
+import { Copy, Check, Code } from '@phosphor-icons/react';
 import { MarketingLayout } from '@/components/MarketingLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -12,26 +13,27 @@ import { Label } from '@/components/ui/label';
 
 type Theme = 'dark' | 'light';
 
-const THEME_OPTIONS: { value: Theme; label: string }[] = [
-  { value: 'dark', label: 'Dark' },
-  { value: 'light', label: 'Light' },
-];
-
 const COUNT_OPTIONS = [1, 2, 3, 4, 5];
-
-const REFRESH_OPTIONS = [
-  { value: 30, label: '30 min' },
-  { value: 60, label: '1 hour' },
-  { value: 120, label: '2 hours' },
-  { value: 0, label: 'Never' },
-];
 
 function computeHeight(count: number): number {
   return 200 + count * 180;
 }
 
 export function GetEmbedPage() {
+  const { t } = useTranslation();
   const [searchParams] = useSearchParams();
+
+  const THEME_OPTIONS: { value: Theme; label: string }[] = [
+    { value: 'dark', label: t('getEmbedPage.themeDark') },
+    { value: 'light', label: t('getEmbedPage.themeLight') },
+  ];
+
+  const REFRESH_OPTIONS = [
+    { value: 30, label: t('getEmbedPage.refresh30') },
+    { value: 60, label: t('getEmbedPage.refresh60') },
+    { value: 120, label: t('getEmbedPage.refresh120') },
+    { value: 0, label: t('getEmbedPage.refreshNever') },
+  ];
   const [npub, setNpub] = useState(searchParams.get('npub') || '');
   const [theme, setTheme] = useState<Theme>('dark');
   const [count, setCount] = useState(1);
@@ -59,7 +61,7 @@ export function GetEmbedPage() {
   width="350"
   height="${height}"
   style="border-radius: 12px; border: none;"
-  title="Divine Video Widget"
+  title="${t('getEmbedPage.iframeTitle')}"
 ></iframe>`;
   }, [embedUrl, height]);
 
@@ -80,10 +82,10 @@ export function GetEmbedPage() {
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         <div className="flex items-center gap-3 mb-2">
           <Code className="h-8 w-8 text-brand-green" />
-          <h1 className="text-4xl font-bold">Embed Divine Widget</h1>
+          <h1 className="text-4xl font-bold">{t('getEmbedPage.title')}</h1>
         </div>
         <p className="text-muted-foreground mb-8">
-          Add your latest Divine videos to any website or blog sidebar.
+          {t('getEmbedPage.subtitle')}
         </p>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -91,11 +93,11 @@ export function GetEmbedPage() {
           <div className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Configure</CardTitle>
+                <CardTitle>{t('getEmbedPage.configureTitle')}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="npub-input">Your npub (Nostr public key)</Label>
+                  <Label htmlFor="npub-input">{t('getEmbedPage.npubLabel')}</Label>
                   <Input
                     id="npub-input"
                     type="text"
@@ -109,7 +111,7 @@ export function GetEmbedPage() {
 
                 <div className="grid grid-cols-3 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="theme-select">Theme</Label>
+                    <Label htmlFor="theme-select">{t('getEmbedPage.themeLabel')}</Label>
                     <select
                       id="theme-select"
                       value={theme}
@@ -123,7 +125,7 @@ export function GetEmbedPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="count-select">Videos</Label>
+                    <Label htmlFor="count-select">{t('getEmbedPage.videosLabel')}</Label>
                     <select
                       id="count-select"
                       value={count}
@@ -137,7 +139,7 @@ export function GetEmbedPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="refresh-select">Auto-refresh</Label>
+                    <Label htmlFor="refresh-select">{t('getEmbedPage.autoRefreshLabel')}</Label>
                     <select
                       id="refresh-select"
                       value={autorefresh}
@@ -157,7 +159,7 @@ export function GetEmbedPage() {
             {isValidNpub && (
               <Card>
                 <CardHeader>
-                  <CardTitle>Embed Code</CardTitle>
+                  <CardTitle>{t('getEmbedPage.embedCodeTitle')}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="relative">
@@ -173,12 +175,12 @@ export function GetEmbedPage() {
                       {copied ? (
                         <>
                           <Check className="h-4 w-4 mr-1" />
-                          Copied!
+                          {t('getEmbedPage.copied')}
                         </>
                       ) : (
                         <>
                           <Copy className="h-4 w-4 mr-1" />
-                          Copy
+                          {t('getEmbedPage.copy')}
                         </>
                       )}
                     </Button>
@@ -192,7 +194,7 @@ export function GetEmbedPage() {
           <div>
             <Card>
               <CardHeader>
-                <CardTitle>Preview</CardTitle>
+                <CardTitle>{t('getEmbedPage.previewTitle')}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="bg-muted rounded-lg p-4 flex justify-center min-h-[200px] items-center">
@@ -202,11 +204,11 @@ export function GetEmbedPage() {
                       width="350"
                       height={height}
                       style={{ border: 'none', borderRadius: '12px' }}
-                      title="Divine Video Widget Preview"
+                      title={t('getEmbedPage.previewIframeTitle')}
                     />
                   ) : (
                     <p className="text-muted-foreground text-sm">
-                      Enter your npub above to see a preview
+                      {t('getEmbedPage.previewEmpty')}
                     </p>
                   )}
                 </div>

@@ -2,6 +2,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { initializeI18n } from '@/lib/i18n';
 import LoginDialog from './LoginDialog';
 
 const {
@@ -65,7 +66,19 @@ vi.mock('@/lib/localNsecAccount', async () => {
 });
 
 describe('LoginDialog', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
+    const storage = new Map<string, string>();
+    Object.defineProperty(window, 'localStorage', {
+      configurable: true,
+      value: {
+        getItem: (key: string) => storage.get(key) ?? null,
+        setItem: (key: string, value: string) => storage.set(key, value),
+        removeItem: (key: string) => storage.delete(key),
+        clear: () => storage.clear(),
+      } satisfies Pick<Storage, 'getItem' | 'setItem' | 'removeItem' | 'clear'>,
+    });
+    await initializeI18n({ force: true, languages: ['en-US'] });
+
     mockGetInviteClientConfig.mockResolvedValue({
       mode: 'invite_code_required',
       waitlistEnabled: true,
@@ -101,10 +114,10 @@ describe('LoginDialog', () => {
 
     expect(await screen.findByRole('tab', { name: /^Register$/i })).toHaveAttribute('data-state', 'active');
     expect(screen.getByRole('tab', { name: /^Sign in$/i })).toBeInTheDocument();
-    expect(screen.getByText(/Use an invite to create your account\./i)).toBeInTheDocument();
+    expect(screen.getByText(/Got an invite\? Spin up an account\./i)).toBeInTheDocument();
     expect(screen.getByLabelText(/Invite code/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /^Continue$/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /No invite\? Join the waitlist/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /No invite\? Get on the waitlist/i })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /I already have an account/i })).not.toBeInTheDocument();
   });
 
@@ -127,7 +140,7 @@ describe('LoginDialog', () => {
 
     await user.click(await screen.findByRole('tab', { name: /^Sign in$/i }));
 
-    expect(await screen.findByText(/Sign in on login\.divine\.video with your existing account\./i)).toBeInTheDocument();
+    expect(await screen.findByText(/Sign in at login\.divine\.video with your existing account\./i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /^Sign in at login\.divine\.video$/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Use Nostr instead/i })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Login with Extension/i })).not.toBeInTheDocument();

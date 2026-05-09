@@ -13,6 +13,7 @@ import { isFunnelcakeAvailable } from '@/lib/funnelcakeHealth';
 import { debugLog } from '@/lib/debug';
 import { transformToVideoPage } from '@/lib/funnelcakeTransform';
 import { reportFunnelcakeFallback } from '@/lib/funnelcakeFallbackReporting';
+import { isUrlLikeQuery } from '@/lib/searchUtils';
 
 interface UseInfiniteSearchVideosOptions {
   query: string;
@@ -96,6 +97,11 @@ export function useInfiniteSearchVideos({
     queryKey: ['infinite-search-videos', debouncedQuery, searchType, sortMode, pageSize],
     queryFn: async ({ pageParam, signal }) => {
       if (!debouncedQuery.trim()) {
+        return { videos: [], nextCursor: undefined };
+      }
+
+      // Skip URL-like queries that cause Funnelcake 500 errors (#166)
+      if (isUrlLikeQuery(debouncedQuery)) {
         return { videos: [], nextCursor: undefined };
       }
 

@@ -2,22 +2,43 @@
 // ABOUTME: Verifies video loading, auth handling, and URL management
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { VideoPlayer } from './VideoPlayer';
+
+const mockRegisterVideo = vi.fn();
+const mockUnregisterVideo = vi.fn();
+const mockUpdateVideoVisibility = vi.fn();
+const hlsTestState = vi.hoisted(() => ({
+  instances: [] as Array<{
+    attachMedia: ReturnType<typeof vi.fn>;
+    destroy: ReturnType<typeof vi.fn>;
+    handlers: Record<string, Array<(event: string, data: unknown) => void>>;
+    levels: unknown[];
+    loadSource: ReturnType<typeof vi.fn>;
+    on: ReturnType<typeof vi.fn>;
+  }>,
+  isSupported: vi.fn(() => false),
+}));
 
 // Mock dependencies
 vi.mock('@/hooks/useVideoPlayback', () => ({
   useVideoPlayback: vi.fn(() => ({
     activeVideoId: null,
-    registerVideo: vi.fn(),
-    unregisterVideo: vi.fn(),
-    updateVideoVisibility: vi.fn(),
+    registerVideo: mockRegisterVideo,
+    unregisterVideo: mockUnregisterVideo,
+    updateVideoVisibility: mockUpdateVideoVisibility,
     globalMuted: true,
   })),
 }));
 
 vi.mock('@/hooks/useIsMobile', () => ({
   useIsMobile: vi.fn(() => false),
+}));
+
+vi.mock('@/hooks/useCurrentUser', () => ({
+  useCurrentUser: vi.fn(() => ({
+    user: { pubkey: 'a'.repeat(64) },
+  })),
 }));
 
 vi.mock('@/hooks/useAdultVerification', () => ({
@@ -47,12 +68,52 @@ vi.mock('@/lib/analytics', () => ({
   trackFirstVideoPlayback: vi.fn(),
 }));
 
-vi.mock('hls.js', () => ({
-  default: {
-    isSupported: () => false,
-    Events: { MANIFEST_PARSED: 'hlsManifestParsed', ERROR: 'hlsError' },
-  },
+vi.mock('@/components/AgeRestrictedMediaPlaceholder', () => ({
+  AgeRestrictedMediaPlaceholder: ({
+    actionLabel,
+    title,
+  }: {
+    actionLabel: string;
+    title?: string;
+  }) => (
+    <div data-testid="age-restricted-media-placeholder">
+      <div>{title ?? 'Age-restricted'}</div>
+      <button type="button">{actionLabel}</button>
+    </div>
+  ),
 }));
+
+vi.mock('hls.js', () => {
+  const HlsMock = vi.fn(function (this: {
+    attachMedia: ReturnType<typeof vi.fn>;
+    destroy: ReturnType<typeof vi.fn>;
+    handlers: Record<string, Array<(event: string, data: unknown) => void>>;
+    levels: unknown[];
+    loadSource: ReturnType<typeof vi.fn>;
+    on: ReturnType<typeof vi.fn>;
+  }) {
+    const handlers: Record<string, Array<(event: string, data: unknown) => void>> = {};
+
+    this.attachMedia = vi.fn();
+    this.destroy = vi.fn();
+    this.handlers = handlers;
+    this.levels = [];
+    this.loadSource = vi.fn();
+    this.on = vi.fn((event: string, handler: (event: string, data: unknown) => void) => {
+      handlers[event] = handlers[event] ?? [];
+      handlers[event].push(handler);
+    });
+
+    hlsTestState.instances.push(this);
+  });
+
+  return {
+    default: Object.assign(HlsMock, {
+      isSupported: hlsTestState.isSupported,
+      Events: { MANIFEST_PARSED: 'hlsManifestParsed', ERROR: 'hlsError' },
+    }),
+  };
+});
 
 // Mock react-intersection-observer to avoid observer.observe issues
 vi.mock('react-intersection-observer', () => ({
@@ -80,8 +141,34 @@ beforeEach(() => {
 });
 
 describe('VideoPlayer', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
+    const { initializeI18n } = await import('@/lib/i18n');
+    const storage = new Map<string, string>();
+    Object.defineProperty(window, 'localStorage', {
+      configurable: true,
+      value: {
+        getItem: (key: string) => storage.get(key) ?? null,
+        setItem: (key: string, value: string) => storage.set(key, value),
+        removeItem: (key: string) => storage.delete(key),
+        clear: () => storage.clear(),
+      } satisfies Pick<Storage, 'getItem' | 'setItem' | 'removeItem' | 'clear'>,
+    });
+    await initializeI18n({ force: true, languages: ['en-US'] });
     vi.clearAllMocks();
+    hlsTestState.instances.length = 0;
+    hlsTestState.isSupported.mockReturnValue(false);
+
+    const { useVideoPlayback } = await import('@/hooks/useVideoPlayback');
+    (useVideoPlayback as ReturnType<typeof vi.fn>).mockImplementation(() => ({
+      activeVideoId: null,
+      registerVideo: mockRegisterVideo,
+      unregisterVideo: mockUnregisterVideo,
+      updateVideoVisibility: mockUpdateVideoVisibility,
+      globalMuted: true,
+    }));
+
+    const { checkMediaAuth } = await import('@/hooks/useAdultVerification');
+    (checkMediaAuth as ReturnType<typeof vi.fn>).mockResolvedValue({ authorized: true, status: 200 });
   });
 
   afterEach(() => {
@@ -262,6 +349,258 @@ describe('VideoPlayer', () => {
       if (createObjectURLSpy.mock.calls.length > 0) {
         expect(revokeObjectURLSpy).toHaveBeenCalledWith('blob:test-123');
       }
+    });
+  });
+
+  describe('HLS fallback failures', () => {
+    it('reports terminal failure after fatal HLS error falls back to direct playback', async () => {
+      hlsTestState.isSupported.mockReturnValue(true);
+
+      const onError = vi.fn();
+      const src = 'https://media.divine.video/test-video.mp4';
+
+      const { container } = render(
+        <VideoPlayer
+          videoId="fatal-hls-fallback"
+          src={src}
+          hlsUrl="https://media.divine.video/test-video/hls/master.m3u8"
+          onError={onError}
+        />
+      );
+
+      await waitFor(() => {
+        expect(hlsTestState.instances.length).toBeGreaterThan(0);
+      });
+
+      const video = container.querySelector('video');
+      expect(video).not.toBeNull();
+      if (!video) {
+        throw new Error('expected rendered video element');
+      }
+
+      const hls = hlsTestState.instances[hlsTestState.instances.length - 1];
+      expect(hls.handlers.hlsError).toHaveLength(1);
+
+      act(() => {
+        hls.handlers.hlsError[0]('hlsError', { fatal: true });
+      });
+
+      await waitFor(() => {
+        expect(video.src).toBe(src);
+      });
+
+      fireEvent.error(video);
+
+      await waitFor(() => {
+        expect(onError).toHaveBeenCalledTimes(1);
+      });
+    });
+  });
+
+  describe('protected media auth failures', () => {
+    it('does not retry age verification indefinitely for already verified viewers when media fetch returns 401', async () => {
+      const getAuthHeader = vi.fn().mockResolvedValue('Nostr test-auth-header');
+      const fetchSpy = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 401,
+      });
+
+      global.fetch = fetchSpy as typeof fetch;
+
+      const { useAdultVerification } = await import('@/hooks/useAdultVerification');
+      (useAdultVerification as ReturnType<typeof vi.fn>).mockReturnValue({
+        isVerified: true,
+        isLoading: false,
+        hasSigner: true,
+        getAuthHeader,
+      });
+
+      render(
+        <VideoPlayer
+          videoId="verified-auth-failure"
+          src="https://media.divine.video/protected-video"
+          videoData={{
+            id: 'verified-auth-failure',
+            pubkey: 'pub',
+            kind: 34236,
+            createdAt: 0,
+            content: '',
+            videoUrl: 'https://media.divine.video/protected-video',
+            hashtags: [],
+            vineId: null,
+            reposts: [],
+            isVineMigrated: false,
+            ageRestricted: true,
+          }}
+        />
+      );
+
+      await waitFor(() => {
+        expect(fetchSpy).toHaveBeenCalled();
+      });
+
+      await new Promise((resolve) => setTimeout(resolve, 50));
+
+      expect(getAuthHeader).toHaveBeenCalledTimes(1);
+      expect(fetchSpy).toHaveBeenCalledTimes(1);
+    });
+
+    it('shows an age-restricted placeholder instead of a broken video message when verified viewers get 401', async () => {
+      const fetchSpy = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 401,
+      });
+
+      global.fetch = fetchSpy as typeof fetch;
+
+      const { useAdultVerification } = await import('@/hooks/useAdultVerification');
+      (useAdultVerification as ReturnType<typeof vi.fn>).mockReturnValue({
+        isVerified: true,
+        isLoading: false,
+        hasSigner: true,
+        getAuthHeader: vi.fn().mockResolvedValue('Nostr test-auth-header'),
+      });
+
+      render(
+        <VideoPlayer
+          videoId="verified-auth-placeholder"
+          src="https://media.divine.video/protected-video"
+          videoData={{
+            id: 'verified-auth-placeholder',
+            pubkey: 'pub',
+            kind: 34236,
+            createdAt: 0,
+            content: '',
+            videoUrl: 'https://media.divine.video/protected-video',
+            hashtags: [],
+            vineId: null,
+            reposts: [],
+            isVineMigrated: false,
+            ageRestricted: true,
+          }}
+        />
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTestId('age-restricted-media-placeholder')).toBeInTheDocument();
+      });
+
+      expect(screen.queryByText('Failed to load video')).not.toBeInTheDocument();
+      expect(screen.getByText('Age-restricted video')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Retry' })).toBeInTheDocument();
+    });
+  });
+
+  describe('loop playback control', () => {
+    it('disables native and manual looping when loopPlayback is false', async () => {
+      const onEnded = vi.fn();
+      const playSpy = vi.fn().mockResolvedValue(undefined);
+      HTMLMediaElement.prototype.play = playSpy;
+
+      const { useVideoPlayback } = await import('@/hooks/useVideoPlayback');
+      (useVideoPlayback as ReturnType<typeof vi.fn>).mockImplementation(() => ({
+        activeVideoId: 'test-no-loop',
+        registerVideo: mockRegisterVideo,
+        unregisterVideo: mockUnregisterVideo,
+        updateVideoVisibility: mockUpdateVideoVisibility,
+        globalMuted: true,
+      }));
+
+      const { container } = render(
+        <VideoPlayer
+          videoId="test-no-loop"
+          src="https://example.com/no-loop.mp4"
+          onEnded={onEnded}
+          loopPlayback={false}
+        />
+      );
+
+      const video = container.querySelector('video');
+      expect(video).not.toBeNull();
+      expect(video?.loop).toBe(false);
+
+      if (!video) {
+        throw new Error('expected rendered video element');
+      }
+
+      let currentTimeValue = 6.4;
+      Object.defineProperty(video, 'currentTime', {
+        get: () => currentTimeValue,
+        set: (value: number) => {
+          currentTimeValue = value;
+        },
+        configurable: true,
+      });
+
+      fireEvent.ended(video);
+
+      expect(onEnded).toHaveBeenCalledTimes(1);
+      expect(playSpy).not.toHaveBeenCalled();
+      expect(currentTimeValue).toBe(6.4);
+    });
+
+    it('keeps default looping behavior when loopPlayback is omitted', async () => {
+      const playSpy = vi.fn().mockResolvedValue(undefined);
+      HTMLMediaElement.prototype.play = playSpy;
+
+      const { useVideoPlayback } = await import('@/hooks/useVideoPlayback');
+      (useVideoPlayback as ReturnType<typeof vi.fn>).mockImplementation(() => ({
+        activeVideoId: 'test-loop-default',
+        registerVideo: mockRegisterVideo,
+        unregisterVideo: mockUnregisterVideo,
+        updateVideoVisibility: mockUpdateVideoVisibility,
+        globalMuted: true,
+      }));
+
+      const { container } = render(
+        <VideoPlayer
+          videoId="test-loop-default"
+          src="https://example.com/loop-default.mp4"
+        />
+      );
+
+      const video = container.querySelector('video');
+      expect(video).not.toBeNull();
+      expect(video?.loop).toBe(true);
+
+      if (!video) {
+        throw new Error('expected rendered video element');
+      }
+
+      let currentTimeValue = 6.4;
+      Object.defineProperty(video, 'currentTime', {
+        get: () => currentTimeValue,
+        set: (value: number) => {
+          currentTimeValue = value;
+        },
+        configurable: true,
+      });
+
+      fireEvent.ended(video);
+
+      expect(playSpy).toHaveBeenCalled();
+      expect(currentTimeValue).toBe(0);
+    });
+  });
+
+  describe('playback identity separation', () => {
+    it('registers fullscreen players under playbackId instead of the shared video id', () => {
+      render(
+        <VideoPlayer
+          videoId="shared-video-id"
+          playbackId="fullscreen:shared-video-id"
+          src="https://example.com/shared-video.mp4"
+        />
+      );
+
+      expect(mockRegisterVideo).toHaveBeenCalledWith(
+        'fullscreen:shared-video-id',
+        expect.any(HTMLVideoElement)
+      );
+      expect(mockRegisterVideo).not.toHaveBeenCalledWith(
+        'shared-video-id',
+        expect.any(HTMLVideoElement)
+      );
     });
   });
 });

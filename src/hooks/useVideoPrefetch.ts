@@ -7,6 +7,14 @@ import { debugLog } from '@/lib/debug';
 
 const PREFETCH_COUNT = 3;
 
+function isProtectedDivineMediaUrl(url: string): boolean {
+  try {
+    return new URL(url).hostname === 'media.divine.video';
+  } catch {
+    return false;
+  }
+}
+
 /**
  * Prefetch upcoming video URLs when the active video changes.
  * Inserts <link rel="prefetch"> elements into <head> for the next
@@ -49,10 +57,12 @@ export function useVideoPrefetch(
     // Collect unique URLs to prefetch (video URL + thumbnail)
     const urlsToPrefetch: { url: string; as: string }[] = [];
     for (const video of nextVideos) {
-      if (video.videoUrl) {
+      const shouldSkipProtectedMediaPrefetch = !!video.ageRestricted;
+
+      if (video.videoUrl && !(shouldSkipProtectedMediaPrefetch && isProtectedDivineMediaUrl(video.videoUrl))) {
         urlsToPrefetch.push({ url: video.videoUrl, as: 'video' });
       }
-      if (video.thumbnailUrl) {
+      if (video.thumbnailUrl && !(shouldSkipProtectedMediaPrefetch && isProtectedDivineMediaUrl(video.thumbnailUrl))) {
         urlsToPrefetch.push({ url: video.thumbnailUrl, as: 'image' });
       }
     }

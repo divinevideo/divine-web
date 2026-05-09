@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { NostrEvent } from '@nostrify/nostrify';
 import { nip19 } from 'nostr-tools';
 import { useAuthor } from '@/hooks/useAuthor';
@@ -22,7 +23,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
-import { MessageSquare, ChevronDown, ChevronRight, MoreHorizontal, Flag, Volume2, Trash2, CornerDownRight } from 'lucide-react';
+import { Chat as MessageSquare, CaretDown as ChevronDown, CaretRight as ChevronRight, DotsThree as MoreHorizontal, Flag, SpeakerHigh as Volume2, Trash as Trash2, ArrowBendDownRight as CornerDownRight } from '@phosphor-icons/react';
 import { formatDistanceToNow } from 'date-fns';
 import { genUserName } from '@/lib/genUserName';
 import { MuteType } from '@/types/moderation';
@@ -38,6 +39,7 @@ interface CommentProps {
 }
 
 export function Comment({ root, comment, depth = 0, maxDepth = 3, limit, parentComment }: CommentProps) {
+  const { t } = useTranslation();
   const [showReplyForm, setShowReplyForm] = useState(false);
   const [showReplies, setShowReplies] = useState(depth < 2); // Auto-expand first 2 levels
   const [showReportDialog, setShowReportDialog] = useState(false);
@@ -82,8 +84,8 @@ export function Comment({ root, comment, depth = 0, maxDepth = 3, limit, parentC
   const handleMuteUser = () => {
     if (!user) {
       toast({
-        title: 'Login required',
-        description: 'You must be logged in to mute users',
+        title: t('comment.loginRequiredTitle'),
+        description: t('comment.loginRequiredDescription'),
         variant: 'destructive',
       });
       return;
@@ -96,14 +98,14 @@ export function Comment({ root, comment, depth = 0, maxDepth = 3, limit, parentC
     }, {
       onSuccess: () => {
         toast({
-          title: 'User muted',
-          description: `${displayName} has been added to your mute list`,
+          title: t('comment.mutedTitle'),
+          description: t('comment.mutedDescription', { name: displayName }),
         });
       },
       onError: () => {
         toast({
-          title: 'Error',
-          description: 'Failed to mute user. Please try again.',
+          title: t('comment.muteFailedTitle'),
+          description: t('comment.muteFailedDescription'),
           variant: 'destructive',
         });
       }
@@ -147,7 +149,7 @@ export function Comment({ root, comment, depth = 0, maxDepth = 3, limit, parentC
                   </SmartLink>
                   <p className="text-xs text-muted-foreground">
                     {timeAgo}
-                    {isOptimistic && <span className="ml-1 italic">(sending...)</span>}
+                    {isOptimistic && <span className="ml-1 italic">{t('comment.sending')}</span>}
                   </p>
                 </div>
               </div>
@@ -189,7 +191,7 @@ export function Comment({ root, comment, depth = 0, maxDepth = 3, limit, parentC
                   className="h-8 px-2 text-xs"
                 >
                   <MessageSquare className="h-3 w-3 mr-1" />
-                  Reply
+                  {t('comment.reply')}
                 </Button>
 
                 {hasReplies && (
@@ -201,7 +203,7 @@ export function Comment({ root, comment, depth = 0, maxDepth = 3, limit, parentC
                         ) : (
                           <ChevronRight className="h-3 w-3 mr-1" />
                         )}
-                        {replies.length} {replies.length === 1 ? 'reply' : 'replies'}
+                        {t('comment.replyCount', { count: replies.length })}
                       </Button>
                     </CollapsibleTrigger>
                   </Collapsible>
@@ -215,7 +217,7 @@ export function Comment({ root, comment, depth = 0, maxDepth = 3, limit, parentC
                     variant="ghost"
                     size="sm"
                     className="h-8 px-2 text-xs"
-                    aria-label="Comment options"
+                    aria-label={t('comment.optionsLabel')}
                   >
                     <MoreHorizontal className="h-3 w-3" />
                   </Button>
@@ -227,22 +229,22 @@ export function Comment({ root, comment, depth = 0, maxDepth = 3, limit, parentC
                       className="text-destructive focus:text-destructive"
                     >
                       <Trash2 className="h-4 w-4 mr-2" />
-                      Delete comment
+                      {t('comment.deleteComment')}
                     </DropdownMenuItem>
                   ) : (
                     <>
                       <DropdownMenuItem onClick={handleReportComment}>
                         <Flag className="h-4 w-4 mr-2" />
-                        Report comment
+                        {t('comment.reportComment')}
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={handleReportUser}>
                         <Flag className="h-4 w-4 mr-2" />
-                        Report user
+                        {t('comment.reportUser')}
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem onClick={handleMuteUser}>
                         <Volume2 className="h-4 w-4 mr-2" />
-                        Mute user
+                        {t('comment.muteUser')}
                       </DropdownMenuItem>
                     </>
                   )}
@@ -260,7 +262,7 @@ export function Comment({ root, comment, depth = 0, maxDepth = 3, limit, parentC
             root={root}
             reply={comment}
             onSuccess={() => setShowReplyForm(false)}
-            placeholder="Write a reply..."
+            placeholder={t('comment.replyPlaceholder')}
             compact
           />
         </div>

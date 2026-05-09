@@ -3,7 +3,9 @@ import { useQuery } from '@tanstack/react-query';
 import { useNostr } from '@nostrify/react';
 import { nip19 } from 'nostr-tools';
 import { formatDistanceToNow } from 'date-fns';
-import { ArrowLeft, Code, Loader2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
+import { ArrowLeft, Code, CircleNotch as Loader2 } from '@phosphor-icons/react';
 import { useSubdomainNavigate } from '@/hooks/useSubdomainNavigate';
 import { useAppContext } from '@/hooks/useAppContext';
 import { useAuthor } from '@/hooks/useAuthor';
@@ -31,26 +33,28 @@ function getTagValue(event: NostrEvent, name: string): string | undefined {
   return event.tags.find(tag => tag[0] === name)?.[1];
 }
 
-function getEventTitle(event: NostrEvent): string {
+function getEventTitle(event: NostrEvent, t: TFunction): string {
   return getTagValue(event, 'title')
     || getTagValue(event, 'subject')
     || getTagValue(event, 'name')
     || getEventDTag(event)
-    || getEventKindLabel(event.kind);
+    || getEventKindLabel(event.kind, t);
 }
 
-function getEventKindLabel(kind: number): string {
+function getEventKindLabel(kind: number, t: TFunction): string {
   switch (kind) {
     case 1:
-      return 'Text Note';
+      return t('eventPage.kindLabel.textNote');
     case 1111:
-      return 'Comment';
+      return t('eventPage.kindLabel.comment');
     case 30005:
-      return 'Video List';
+      return t('eventPage.kindLabel.videoList');
     case 3:
-      return 'Follow List';
+      return t('eventPage.kindLabel.followList');
     default:
-      return isListEventKind(kind) ? `List ${kind}` : `Kind ${kind}`;
+      return isListEventKind(kind)
+        ? t('eventPage.kindLabel.list', { kind })
+        : t('eventPage.kindLabel.kind', { kind });
   }
 }
 
@@ -74,29 +78,30 @@ function getReferencePath(tag: string[]): string | null {
   return null;
 }
 
-function getReferenceLabel(tag: string[]): string {
+function getReferenceLabel(tag: string[], t: TFunction): string {
   switch (tag[0]) {
     case 'p':
-      return 'Profile';
+      return t('eventPage.referenceLabel.profile');
     case 'e':
-      return 'Event';
+      return t('eventPage.referenceLabel.event');
     case 'a':
-      return 'Address';
+      return t('eventPage.referenceLabel.address');
     case 't':
-      return 'Hashtag';
+      return t('eventPage.referenceLabel.hashtag');
     default:
       return tag[0];
   }
 }
 
 function EventLoadingState() {
+  const { t } = useTranslation();
   return (
     <div className="container max-w-4xl mx-auto px-4 py-8">
       <Card className="border-dashed">
         <CardContent className="py-12">
           <div className="flex flex-col items-center justify-center gap-4">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <p className="text-muted-foreground">Loading event…</p>
+            <p className="text-muted-foreground">{t('eventPage.loading')}</p>
           </div>
         </CardContent>
       </Card>
@@ -124,6 +129,7 @@ export function EventPage() {
   const { config } = useAppContext();
   const navigate = useSubdomainNavigate();
   const location = useLocation();
+  const { t } = useTranslation();
 
   const numericKind = kind ? Number(kind) : null;
   const decodedIdentifier = identifier ? decodeURIComponent(identifier) : null;
@@ -169,7 +175,7 @@ export function EventPage() {
     : '';
   const authorImage = getSafeProfileImage(author.data?.metadata?.picture);
   const authorNpub = event ? nip19.npubEncode(event.pubkey) : '';
-  const title = event ? getEventTitle(event) : '';
+  const title = event ? getEventTitle(event, t) : '';
   const description = event ? getTagValue(event, 'description') : undefined;
   const content = event?.content?.trim();
   const referenceTags = event
@@ -186,7 +192,7 @@ export function EventPage() {
       <div className="container max-w-4xl mx-auto px-4 py-8">
         <Card className="border-dashed">
           <CardContent className="py-12 text-center">
-            <p className="text-muted-foreground">No event identifier provided.</p>
+            <p className="text-muted-foreground">{t('eventPage.noIdentifier')}</p>
           </CardContent>
         </Card>
       </div>
@@ -202,9 +208,9 @@ export function EventPage() {
       <div className="container max-w-4xl mx-auto px-4 py-8">
         <Card className="border-dashed">
           <CardContent className="py-12 text-center space-y-3">
-            <p className="text-lg font-semibold text-muted-foreground">Event not found</p>
+            <p className="text-lg font-semibold text-muted-foreground">{t('eventPage.notFound')}</p>
             <p className="text-sm text-muted-foreground">
-              {error instanceof Error ? error.message : 'This event may not exist on the configured or fallback relays.'}
+              {error instanceof Error ? error.message : t('eventPage.notFoundDescription')}
             </p>
           </CardContent>
         </Card>
@@ -216,14 +222,14 @@ export function EventPage() {
     <div className="container max-w-4xl mx-auto px-4 py-8 space-y-6">
       <Button variant="ghost" className="gap-2" onClick={() => navigate(-1)}>
         <ArrowLeft className="h-4 w-4" />
-        Back
+        {t('eventPage.back')}
       </Button>
 
       <Card>
         <CardHeader className="space-y-4">
           <div className="flex flex-wrap items-center gap-2">
-            <Badge variant="secondary">{getEventKindLabel(event.kind)}</Badge>
-            <Badge variant="outline">Kind {event.kind}</Badge>
+            <Badge variant="secondary">{getEventKindLabel(event.kind, t)}</Badge>
+            <Badge variant="outline">{t('eventPage.kindBadge', { kind: event.kind })}</Badge>
             <Badge variant="outline">{formatDistanceToNow(new Date(event.created_at * 1000), { addSuffix: true })}</Badge>
           </div>
           <div className="flex items-start gap-4">
@@ -260,19 +266,19 @@ export function EventPage() {
       {isListEventKind(event.kind) && (
         <Card>
           <CardHeader>
-            <CardTitle>List Items</CardTitle>
+            <CardTitle>{t('eventPage.listItems')}</CardTitle>
             <CardDescription>
-              References contained in this event.
+              {t('eventPage.listItemsDescription')}
             </CardDescription>
           </CardHeader>
           <CardContent>
             {referenceTags.length === 0 ? (
-              <p className="text-sm text-muted-foreground">This list does not contain any public references.</p>
+              <p className="text-sm text-muted-foreground">{t('eventPage.noPublicReferences')}</p>
             ) : (
               <div className="space-y-3">
                 {referenceTags.map((tag, index) => {
                   const path = getReferencePath(tag);
-                  const label = getReferenceLabel(tag);
+                  const label = getReferenceLabel(tag, t);
                   const value = tag[1];
 
                   return (
@@ -283,10 +289,10 @@ export function EventPage() {
                       </div>
                       {path ? (
                         <SmartLink to={path} className="text-sm text-primary hover:underline">
-                          Open referenced item
+                          {t('eventPage.openReference')}
                         </SmartLink>
                       ) : (
-                        <p className="text-sm text-muted-foreground">No route available for this reference.</p>
+                        <p className="text-sm text-muted-foreground">{t('eventPage.noRouteAvailable')}</p>
                       )}
                     </div>
                   );
@@ -299,12 +305,12 @@ export function EventPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Tags</CardTitle>
-          <CardDescription>{event.tags.length} tags</CardDescription>
+          <CardTitle>{t('eventPage.tags')}</CardTitle>
+          <CardDescription>{t('eventPage.tagCount', { count: event.tags.length })}</CardDescription>
         </CardHeader>
         <CardContent>
           {event.tags.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No tags on this event.</p>
+            <p className="text-sm text-muted-foreground">{t('eventPage.noTags')}</p>
           ) : (
             <div className="space-y-2">
               {event.tags.map((tag, index) => (
@@ -321,7 +327,7 @@ export function EventPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Code className="h-4 w-4" />
-            Raw Event
+            {t('eventPage.rawEvent')}
           </CardTitle>
         </CardHeader>
         <CardContent>

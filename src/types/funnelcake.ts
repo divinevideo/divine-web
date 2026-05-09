@@ -20,9 +20,12 @@ export interface FunnelcakeVideoRaw {
   thumbnail?: string;     // Thumbnail URL
   video_url: string;      // Primary video URL
   blurhash?: string;      // Progressive loading placeholder
-  dim?: string;           // Video dimensions (e.g., "1080x1920")
+  dim?: string;           // Video dimensions, v1 (e.g., "1080x1920")
+  dimensions?: string;    // Video dimensions, v2 (e.g., "1080x1920")
   author_name?: string;   // Cached author display name
   author_avatar?: string; // Cached author avatar URL
+  age_restricted?: boolean;
+  moderation_status?: string;
 
   // Social metrics - main videos endpoint uses embedded_* prefix
   reactions?: number;      // Like count (user videos endpoint)
@@ -119,7 +122,7 @@ export interface FunnelcakeError {
  * Options for fetching videos from Funnelcake
  */
 export interface FunnelcakeFetchOptions {
-  sort?: 'trending' | 'recent' | 'popular' | 'loops' | 'engagement';
+  sort?: 'trending' | 'recent' | 'popular' | 'loops' | 'engagement' | 'watching' | 'likes' | 'comments' | 'published';
   limit?: number;
   before?: string;        // Cursor for pagination (timestamp)
   offset?: number;        // Offset for page-based pagination (0-indexed)

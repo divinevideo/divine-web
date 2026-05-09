@@ -133,8 +133,8 @@ const NostrProvider: React.FC<NostrProviderProps> = (props) => {
         // Publish to the selected relay
         const allRelays = new Set<string>([relayUrl.current]);
 
-        // For contact lists (kind 3) and identity claims (kind 10011), publish to multiple relays for better availability
-        if (event.kind === 3 || event.kind === 10011) {
+        // For profiles (kind 0), contact lists (kind 3), and identity claims (kind 10011), publish to multiple relays for better availability
+        if (event.kind === 0 || event.kind === 3 || event.kind === 10011) {
           getRelayUrls(PROFILE_RELAYS).forEach(url => allRelays.add(url));
         }
 

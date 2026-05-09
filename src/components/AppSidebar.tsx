@@ -1,9 +1,9 @@
 // ABOUTME: TikTok-style left sidebar navigation for desktop
 // ABOUTME: Shows main nav, login/signup, expandable Divine links section
 
-import { useLocation } from 'react-router-dom';
-import { Home, Compass, Search, Bell, User, Sun, Moon, ChevronDown, Headphones, BarChart3, LayoutGrid, Rss, MessageCircle } from 'lucide-react';
-import { useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
+import { House as Home, Compass, MagnifyingGlass as Search, Bell, User, Sun, Moon, CaretDown as ChevronDown, Headphones, ChartBar as BarChart3, SquaresFour as LayoutGrid, Rss, ChatCircle as MessageCircle } from '@phosphor-icons/react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCategories } from '@/hooks/useCategories';
 import { nip19 } from 'nostr-tools';
@@ -25,7 +25,9 @@ import { feedUrls } from '@/lib/feedUrls';
 import { useRssFeedAvailable } from '@/hooks/useRssFeedAvailable';
 import { usePlatformStats } from '@/hooks/usePlatformStats';
 import { LanguageMenu } from '@/components/LanguageMenu';
+import { SocialLinks } from '@/components/SocialLinks';
 import { getTranslatedCategoryLabel } from '@/lib/constants/categories';
+import { getPreferredAppStoreCountry, lookupAppStoreUrl, PLAY_STORE_URL } from '@/lib/mobileStoreLinks';
 
 interface NavItemProps {
   icon: React.ReactNode;
@@ -41,7 +43,7 @@ function NavItem({ icon, label, onClick, isActive }: NavItemProps) {
       className={cn(
         "group flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-[15px] transition-all duration-150",
         isActive
-          ? "bg-primary text-primary-foreground font-medium"
+          ? "bg-primary text-primary-foreground font-medium brand-offset-shadow-sm-dark"
           : "text-muted-foreground font-normal hover:bg-muted hover:text-foreground hover:font-medium"
       )}
     >
@@ -72,6 +74,7 @@ export function AppSidebar({ className }: { className?: string }) {
   const [rssOpen, setRssOpen] = useState(false);
   const [divineOpen, setDivineOpen] = useState(false);
   const [termsOpen, setTermsOpen] = useState(false);
+  const [appStoreUrl, setAppStoreUrl] = useState<string | null>(null);
   const { data: categories } = useCategories();
   const classicVinesRecovered = platformStats?.vine_videos?.toLocaleString();
 
@@ -89,6 +92,28 @@ export function AppSidebar({ className }: { className?: string }) {
   const profilePath = user?.pubkey
     ? `/profile/${nip19.npubEncode(user.pubkey)}`
     : null;
+
+  useEffect(() => {
+    const country = getPreferredAppStoreCountry();
+    let cancelled = false;
+
+    if (!country) {
+      setAppStoreUrl(null);
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    lookupAppStoreUrl(country).then((url) => {
+      if (!cancelled) {
+        setAppStoreUrl(url);
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
     <aside
@@ -114,10 +139,42 @@ export function AppSidebar({ className }: { className?: string }) {
 
       {/* Scrollable Content Area */}
       <div className="flex-1 overflow-y-auto overflow-x-hidden">
+        {/* App Store Badges */}
+        <div className="flex flex-col gap-2 px-5 pb-2">
+          {appStoreUrl && (
+            <a
+              href={appStoreUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Download Divine on the App Store"
+              className="block transition-opacity hover:opacity-80"
+            >
+              <img
+                src="/store-badges/app-store-badge.svg"
+                alt="Download on the App Store"
+                className="h-10 w-auto"
+              />
+            </a>
+          )}
+          <a
+            href={PLAY_STORE_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Get Divine on Google Play"
+            className="block transition-opacity hover:opacity-80"
+          >
+            <img
+              src="/store-badges/google-play-badge.png"
+              alt="Get it on Google Play"
+              className="h-[58px] w-auto -ml-[10px]"
+            />
+          </a>
+        </div>
+
         {/* Main Navigation */}
         <nav className="flex flex-col gap-0.5 px-3 pt-2">
           <NavItem
-            icon={<Search className="h-[18px] w-[18px]" />}
+            icon={<Search className="h-[18px] w-[18px]" weight={isActive('/search') ? 'fill' : 'bold'} />}
             label={t('nav.search')}
             onClick={() => navigate('/search')}
             isActive={isActive('/search')}
@@ -125,7 +182,7 @@ export function AppSidebar({ className }: { className?: string }) {
 
           {user && (
             <NavItem
-              icon={<Home className="h-[18px] w-[18px]" />}
+              icon={<Home className="h-[18px] w-[18px]" weight={isActive('/') ? 'fill' : 'bold'} />}
               label={t('nav.home')}
               onClick={() => navigate('/')}
               isActive={isActive('/')}
@@ -133,7 +190,7 @@ export function AppSidebar({ className }: { className?: string }) {
           )}
 
           <NavItem
-            icon={<Compass className="h-[18px] w-[18px]" />}
+            icon={<Compass className="h-[18px] w-[18px]" weight={isDiscoveryActive() ? 'fill' : 'bold'} />}
             label={t('nav.discover')}
             onClick={() => navigate('/discovery')}
             isActive={isDiscoveryActive()}
@@ -143,7 +200,7 @@ export function AppSidebar({ className }: { className?: string }) {
             <NavItem
               icon={
                 <div className="relative">
-                  <MessageCircle className="h-[18px] w-[18px]" />
+                  <MessageCircle className="h-[18px] w-[18px]" weight={isMessagesActive() ? 'fill' : 'bold'} />
                   {(unreadDmCount ?? 0) > 0 && (
                     <span className="absolute -top-1 -right-2 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-primary px-0.5 text-[9px] font-bold text-primary-foreground">
                       {(unreadDmCount ?? 0) > 99 ? '99+' : unreadDmCount}
@@ -161,7 +218,7 @@ export function AppSidebar({ className }: { className?: string }) {
             <NavItem
               icon={
                 <div className="relative">
-                  <Bell className="h-[18px] w-[18px]" />
+                  <Bell className="h-[18px] w-[18px]" weight={isActive('/notifications') ? 'fill' : 'bold'} />
                   {(unreadCount ?? 0) > 0 && (
                     <span className="absolute -top-1 -right-2 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-destructive px-0.5 text-[9px] font-bold text-destructive-foreground">
                       {(unreadCount ?? 0) > 99 ? '99+' : unreadCount}
@@ -177,7 +234,7 @@ export function AppSidebar({ className }: { className?: string }) {
 
           {user && profilePath && (
             <NavItem
-              icon={<User className="h-[18px] w-[18px]" />}
+              icon={<User className="h-[18px] w-[18px]" weight={location.pathname === profilePath ? 'fill' : 'bold'} />}
               label={t('nav.profile')}
               onClick={() => navigate(profilePath)}
               isActive={location.pathname === profilePath}
@@ -186,7 +243,7 @@ export function AppSidebar({ className }: { className?: string }) {
 
           {user && (
             <NavItem
-              icon={<BarChart3 className="h-[18px] w-[18px]" />}
+              icon={<BarChart3 className="h-[18px] w-[18px]" weight={isActive('/analytics') ? 'fill' : 'bold'} />}
               label={t('nav.analytics')}
               onClick={() => navigate('/analytics')}
               isActive={isActive('/analytics')}
@@ -219,7 +276,7 @@ export function AppSidebar({ className }: { className?: string }) {
                       className={cn(
                         "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-[14px] transition-all duration-150",
                         isCategoryActive(cat.name)
-                          ? "bg-primary text-primary-foreground font-medium"
+                          ? "bg-primary text-primary-foreground font-medium brand-offset-shadow-sm-dark"
                           : "text-muted-foreground hover:bg-muted hover:text-foreground"
                       )}
                     >
@@ -318,13 +375,21 @@ export function AppSidebar({ className }: { className?: string }) {
             <LoginArea
               className={cn(
                 "flex-col gap-2.5 w-full",
-                "[&>button]:w-full [&>button]:justify-center [&>button]:rounded-lg [&>button]:h-11 [&>button]:text-[15px]",
-                "[&>button:first-child]:border-border [&>button:first-child]:hover:border-primary",
+                // Layout only: fill sidebar width, center, tweak height/type.
+                // Do NOT override the button's border/radius here — the sticker
+                // variant (the Divine brand-compliant hero treatment) provides
+                // its own 2px dark-green border, 14px radius, and offset shadow.
+                // Forcing a plain rounded-lg or border-border here would clobber
+                // the brand look (and did, until 2026-04-17).
+                "[&>button]:w-full [&>button]:justify-center [&>button]:h-11 [&>button]:text-[15px]",
                 "[&_.account-switcher]:w-full"
               )}
             />
           )}
         </div>
+
+        {/* Social media — visible on every page, not just About/ProofMode. */}
+        <SocialLinks className="mt-6 px-4 flex-wrap gap-y-2" iconClassName="dark:invert" />
 
         {/* Footer Section - flows naturally, no pinning */}
         <div className="mt-6 px-4">
@@ -391,6 +456,12 @@ export function AppSidebar({ className }: { className?: string }) {
               >
                 {t('menu.mediaResources')}
               </a>
+              <Link
+                to="/merch"
+                className="transition-colors hover:text-primary"
+              >
+                {t('menu.merch')}
+              </Link>
             </div>
           </CollapsibleContent>
         </Collapsible>

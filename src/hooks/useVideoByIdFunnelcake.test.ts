@@ -138,4 +138,41 @@ describe('useVideoByIdFunnelcake', () => {
     expect(mockFetchVideoById).not.toHaveBeenCalled();
     expect(result.current.windowOffset).toBe(0);
   });
+
+  it('uses search results for navigation when search context is provided', async () => {
+    mockSearchVideos.mockResolvedValueOnce({
+      videos: [
+        { id: 'neighbor-1', pubkey: 'p'.repeat(64), d_tag: 'neighbor-1' },
+        { id: 'target-video', pubkey: 'p'.repeat(64), d_tag: 'target-video' },
+      ],
+      has_more: true,
+    });
+
+    const { result } = renderHook(
+      () => useVideoByIdFunnelcake({
+        videoId: 'target-video',
+        query: 'twerking',
+        sortMode: 'top',
+        currentIndex: 9,
+      }),
+      { wrapper: createWrapper() }
+    );
+
+    await waitFor(() => {
+      expect(result.current.video?.id).toBe('target-video');
+    });
+
+    expect(mockSearchVideos).toHaveBeenCalledWith(
+      'https://api.divine.video',
+      expect.objectContaining({
+        query: 'twerking',
+        sort: 'loops',
+        limit: 16,
+        offset: 1,
+        signal: expect.any(AbortSignal),
+      })
+    );
+    expect(mockFetchVideoById).not.toHaveBeenCalled();
+    expect(result.current.videos?.map(video => video.id)).toEqual(['neighbor-1', 'target-video']);
+  });
 });

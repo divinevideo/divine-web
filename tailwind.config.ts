@@ -8,6 +8,11 @@ export default {
 		"./components/**/*.{ts,tsx}",
 		"./app/**/*.{ts,tsx}",
 		"./src/**/*.{ts,tsx}",
+		// Brand utilities live in src/styles/brand-utilities.css and are
+		// referenced by brand primitives / preview page already scanned above,
+		// but include the CSS explicitly so the @layer components rules are
+		// always emitted even if no component references them.
+		"./src/styles/brand-utilities.css",
 	],
 	prefix: "",
 	theme: {
@@ -21,7 +26,7 @@ export default {
 		extend: {
 			fontFamily: {
 				'sans': ['Inter Variable', 'Inter', 'system-ui', 'sans-serif'],
-				'logo': ['Pacifico', 'cursive'],
+				'display': ['Bricolage Grotesque', 'system-ui', 'sans-serif'],
 			},
 			colors: {
 				border: 'hsl(var(--border))',

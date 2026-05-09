@@ -1,5 +1,6 @@
 import React, { FormEvent, useEffect, useRef, useState } from 'react';
-import { AlertTriangle, Cloud, KeyRound, Shield, Upload } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { Warning as AlertTriangle, Cloud, Key as KeyRound, Shield, UploadSimple as Upload } from '@phosphor-icons/react';
 
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -33,6 +34,7 @@ const validateNsec = (nsec: string) => /^nsec1[a-zA-Z0-9]{58}$/.test(nsec);
 const validateBunkerUri = (uri: string) => uri.startsWith('bunker://');
 
 const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin }) => {
+  const { t } = useTranslation();
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [bunkerError, setBunkerError] = useState<string | null>(null);
   const [bunkerUri, setBunkerUri] = useState('');
@@ -94,7 +96,7 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin }) =
       })
       .catch((caughtError) => {
         if (!isCancelled) {
-          setInviteConfigError(caughtError instanceof Error ? caughtError.message : 'Invite service unavailable');
+          setInviteConfigError(caughtError instanceof Error ? caughtError.message : t('loginDialog.errorInviteServiceUnavailable'));
         }
       })
       .finally(() => {
@@ -114,14 +116,14 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin }) =
 
     try {
       if (!('nostr' in window)) {
-        throw new Error('Nostr extension not found. Please install a NIP-07 extension.');
+        throw new Error(t('loginDialog.errorExtensionNotFound'));
       }
 
       await login.extension();
       onLogin();
       onClose();
     } catch (caughtError) {
-      setGeneralError(caughtError instanceof Error ? caughtError.message : 'Extension login failed');
+      setGeneralError(caughtError instanceof Error ? caughtError.message : t('loginDialog.errorExtensionLoginFailed'));
     } finally {
       setIsLoginLoading(false);
     }
@@ -137,7 +139,7 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin }) =
         onLogin();
         onClose();
       } catch {
-        setKeyError('Failed to login with this key. Please check that it is correct.');
+        setKeyError(t('loginDialog.errorKeyLoginFailed'));
         setIsLoginLoading(false);
       }
     }, 50);
@@ -145,12 +147,12 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin }) =
 
   const handleKeyLogin = () => {
     if (!nsec.trim()) {
-      setKeyError('Please enter your secret key');
+      setKeyError(t('loginDialog.errorNsecRequired'));
       return;
     }
 
     if (!validateNsec(nsec)) {
-      setKeyError('Invalid secret key format. Must be a valid nsec starting with nsec1.');
+      setKeyError(t('loginDialog.errorNsecInvalid'));
       return;
     }
 
@@ -159,12 +161,12 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin }) =
 
   const handleBunkerLogin = async () => {
     if (!bunkerUri.trim()) {
-      setBunkerError('Please enter a bunker URI');
+      setBunkerError(t('loginDialog.errorBunkerRequired'));
       return;
     }
 
     if (!validateBunkerUri(bunkerUri)) {
-      setBunkerError('Invalid bunker URI format. Must start with bunker://');
+      setBunkerError(t('loginDialog.errorBunkerInvalid'));
       return;
     }
 
@@ -177,7 +179,7 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin }) =
       onClose();
       setBunkerUri('');
     } catch {
-      setBunkerError('Failed to connect to bunker. Please check the URI.');
+      setBunkerError(t('loginDialog.errorBunkerConnectFailed'));
     } finally {
       setIsLoginLoading(false);
     }
@@ -200,12 +202,12 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin }) =
         : '';
 
       if (!content) {
-        setKeyError('Could not read file content.');
+        setKeyError(t('loginDialog.errorFileEmpty'));
         return;
       }
 
       if (!validateNsec(content)) {
-        setKeyError('File does not contain a valid secret key.');
+        setKeyError(t('loginDialog.errorFileNoValidKey'));
         return;
       }
 
@@ -213,7 +215,7 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin }) =
     };
     reader.onerror = () => {
       setIsFileLoading(false);
-      setKeyError('Failed to read file.');
+      setKeyError(t('loginDialog.errorFileReadFailed'));
     };
     reader.readAsText(file);
   };
@@ -235,7 +237,7 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin }) =
       const redirect = await buildSignupRedirect({ returnPath });
       window.location.assign(redirect.url);
     } catch (caughtError) {
-      setInviteError(caughtError instanceof Error ? caughtError.message : 'Unable to validate invite code');
+      setInviteError(caughtError instanceof Error ? caughtError.message : t('loginDialog.errorInviteValidationFailed'));
     } finally {
       setIsInviteLoading(false);
     }
@@ -250,7 +252,7 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin }) =
       const redirect = await buildLoginRedirect({ returnPath });
       window.location.assign(redirect.url);
     } catch (caughtError) {
-      setGeneralError(caughtError instanceof Error ? caughtError.message : 'Unable to start sign-in');
+      setGeneralError(caughtError instanceof Error ? caughtError.message : t('loginDialog.errorSignInStartFailed'));
       setIsLoginLoading(false);
     }
   };
@@ -264,7 +266,7 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin }) =
       await joinInviteWaitlist(waitlistContact);
       setWaitlistSuccess(true);
     } catch (caughtError) {
-      setWaitlistError(caughtError instanceof Error ? caughtError.message : 'Unable to join the waitlist');
+      setWaitlistError(caughtError instanceof Error ? caughtError.message : t('loginDialog.errorWaitlistJoinFailed'));
     } finally {
       setIsWaitlistLoading(false);
     }
@@ -284,14 +286,14 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin }) =
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className={cn('max-w-[95vw] overflow-hidden rounded-2xl p-0 sm:max-w-md')}>
         <DialogHeader className="space-y-2 px-6 pb-1 pt-6">
-          <DialogTitle className="sr-only">Sign in to Divine</DialogTitle>
+          <DialogTitle className="sr-only">{t('loginDialog.title')}</DialogTitle>
           <DialogDescription className="text-center text-base font-medium text-foreground">
-            Create or sign in to your account
+            {t('loginDialog.heading')}
           </DialogDescription>
           <p className="text-center text-sm text-muted-foreground">
             {activeTab === 'register'
-              ? 'Use an invite to create your account.'
-              : 'Sign in on login.divine.video with your existing account.'}
+              ? t('loginDialog.subtitleRegister')
+              : t('loginDialog.subtitleSignIn')}
           </p>
         </DialogHeader>
 
@@ -307,18 +309,18 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin }) =
 
           <Tabs className="space-y-4" onValueChange={handleAuthTabChange} value={activeTab}>
             <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="register">Register</TabsTrigger>
-              <TabsTrigger value="signin">Sign in</TabsTrigger>
+              <TabsTrigger value="register">{t('loginDialog.tabRegister')}</TabsTrigger>
+              <TabsTrigger value="signin">{t('loginDialog.tabSignIn')}</TabsTrigger>
             </TabsList>
 
             <TabsContent className="space-y-4" value="register">
               {isConfigLoading ? (
                 <div className="rounded-2xl bg-muted px-4 py-6 text-center text-sm text-muted-foreground">
-                  Checking invite status...
+                  {t('loginDialog.checkingInvite')}
                 </div>
               ) : inviteConfigError ? (
                 <div className="space-y-2 rounded-2xl bg-muted px-4 py-6 text-center text-sm text-muted-foreground">
-                  <p>Invite sign-up is unavailable right now. You can still sign in on the next tab.</p>
+                  <p>{t('loginDialog.inviteUnavailable')}</p>
                   <p className="text-red-500">{inviteConfigError}</p>
                 </div>
               ) : registerView === 'invite' ? (
@@ -358,27 +360,27 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin }) =
                     <TabsList className="grid w-full grid-cols-3 rounded-lg bg-muted">
                       <TabsTrigger className="flex items-center gap-2" value="extension">
                         <Shield className="h-4 w-4" />
-                        <span className="hidden sm:inline">Extension</span>
-                        <span className="sm:hidden">Ext</span>
+                        <span className="hidden sm:inline">{t('loginDialog.tabExtension')}</span>
+                        <span className="sm:hidden">{t('loginDialog.tabExtensionShort')}</span>
                       </TabsTrigger>
                       <TabsTrigger className="flex items-center gap-2" value="key">
                         <KeyRound className="h-4 w-4" />
-                        <span>Key</span>
+                        <span>{t('loginDialog.tabKey')}</span>
                       </TabsTrigger>
                       <TabsTrigger className="flex items-center gap-2" value="bunker">
                         <Cloud className="h-4 w-4" />
-                        <span className="hidden sm:inline">Bunker</span>
-                        <span className="sm:hidden">Bnkr</span>
+                        <span className="hidden sm:inline">{t('loginDialog.tabBunker')}</span>
+                        <span className="sm:hidden">{t('loginDialog.tabBunkerShort')}</span>
                       </TabsTrigger>
                     </TabsList>
 
                     <TabsContent className="space-y-3 pt-4" value="extension">
                       <div className="space-y-3 rounded-2xl bg-muted p-4 text-center">
                         <p className="text-sm text-muted-foreground">
-                          Use your browser extension if you already have a signer set up.
+                          {t('loginDialog.extensionHelper')}
                         </p>
                         <Button className="w-full rounded-full py-4" disabled={isLoginLoading} onClick={handleExtensionLogin}>
-                          {isLoginLoading ? 'Logging in...' : 'Login with Extension'}
+                          {isLoginLoading ? t('loginDialog.loggingIn') : t('loginDialog.extensionButton')}
                         </Button>
                       </div>
                     </TabsContent>
@@ -386,7 +388,7 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin }) =
                     <TabsContent className="space-y-4 pt-4" value="key">
                       <div className="space-y-2">
                         <label className="text-sm font-medium" htmlFor="nsec">
-                          Secret key (nsec)
+                          {t('loginDialog.nsecLabel')}
                         </label>
                         <Input
                           autoComplete="off"
@@ -395,7 +397,7 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin }) =
                             setNsec(event.target.value);
                             setKeyError(null);
                           }}
-                          placeholder="nsec1..."
+                          placeholder={t('loginDialog.nsecPlaceholder')}
                           type="password"
                           value={nsec}
                         />
@@ -403,7 +405,7 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin }) =
                       </div>
 
                       <Button className="w-full rounded-full py-3" disabled={isLoginLoading || !nsec.trim()} onClick={handleKeyLogin}>
-                        {isLoginLoading ? 'Verifying...' : 'Log In'}
+                        {isLoginLoading ? t('loginDialog.verifying') : t('loginDialog.keyLoginButton')}
                       </Button>
 
                       <input
@@ -421,14 +423,14 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin }) =
                         variant="outline"
                       >
                         <Upload className="mr-2 h-4 w-4" />
-                        {isFileLoading ? 'Reading File...' : 'Upload Your Key File'}
+                        {isFileLoading ? t('loginDialog.readingFile') : t('loginDialog.uploadKeyFile')}
                       </Button>
                     </TabsContent>
 
                     <TabsContent className="space-y-4 pt-4" value="bunker">
                       <div className="space-y-2">
                         <label className="text-sm font-medium" htmlFor="bunkerUri">
-                          Bunker URI
+                          {t('loginDialog.bunkerLabel')}
                         </label>
                         <Input
                           autoComplete="off"
@@ -437,7 +439,7 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin }) =
                             setBunkerUri(event.target.value);
                             setBunkerError(null);
                           }}
-                          placeholder="bunker://"
+                          placeholder={t('loginDialog.bunkerPlaceholder')}
                           value={bunkerUri}
                         />
                         {bunkerError ? <p className="text-sm text-red-500">{bunkerError}</p> : null}
@@ -448,7 +450,7 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin }) =
                         disabled={isLoginLoading || !bunkerUri.trim()}
                         onClick={handleBunkerLogin}
                       >
-                        {isLoginLoading ? 'Connecting...' : 'Login with Bunker'}
+                        {isLoginLoading ? t('loginDialog.connecting') : t('loginDialog.bunkerButton')}
                       </Button>
                     </TabsContent>
                   </Tabs>

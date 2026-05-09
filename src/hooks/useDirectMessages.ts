@@ -5,7 +5,6 @@ import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { toast } from '@/hooks/useToast';
 import { useAppContext } from '@/hooks/useAppContext';
 import {
-  buildOptimisticDmMessage,
   buildDmShareTags,
   createDmGiftWraps,
   fetchDmMessages,
@@ -18,14 +17,31 @@ import {
   type DmMessage,
   type DmSharePayload,
 } from '@/lib/dm';
+import {
+  convertOutboxRecordToDmMessage,
+  createDmOutboxRecord,
+  hydrateDmOutbox,
+  markDmOutboxRecordFailed,
+  markDmOutboxRecordSending,
+  markDmOutboxRecordSent,
+  mergeFetchedAndOutboxMessages,
+  removeDmOutboxRecord,
+  upsertDmOutboxRecord,
+} from '@/lib/dmOutbox';
 
 const DM_QUERY_KEY = ['dm'];
 const DM_READ_STATE_EVENT = 'dm:read-state';
+const DM_OUTBOX_STALE_AFTER_SECONDS = 60;
 
 interface SendDmInput {
+  clientId?: string;
   participantPubkeys: string[];
   content: string;
   share?: DmSharePayload;
+}
+
+interface SendDmMutationContext {
+  clientId?: string;
 }
 
 function getDmReadStorageKey(ownerPubkey?: string): string {
@@ -59,6 +75,68 @@ function writeDmReadState(ownerPubkey: string | undefined, nextState: Record<str
   } catch {
     // Ignore persistence failures and keep the in-memory state.
   }
+}
+
+function getDmMessageQueryLimits(queryClient: ReturnType<typeof useQueryClient>, ownerPubkey: string): number[] {
+  const limits = new Set<number>([200, 300]);
+  const existingMessageQueries = queryClient.getQueriesData<DmMessage[]>({
+    queryKey: [...DM_QUERY_KEY, 'messages', ownerPubkey],
+  });
+
+  for (const [queryKey] of existingMessageQueries) {
+    const maybeLimit = queryKey[3];
+    if (typeof maybeLimit === 'number') {
+      limits.add(maybeLimit);
+    }
+  }
+
+  return [...limits];
+}
+
+function updateDmMessageCaches(
+  queryClient: ReturnType<typeof useQueryClient>,
+  ownerPubkey: string,
+  updater: (existingMessages: DmMessage[]) => DmMessage[],
+) {
+  for (const limit of getDmMessageQueryLimits(queryClient, ownerPubkey)) {
+    queryClient.setQueryData<DmMessage[]>(
+      [...DM_QUERY_KEY, 'messages', ownerPubkey, limit],
+      (existingMessages: DmMessage[] = []) => updater(existingMessages),
+    );
+  }
+}
+
+function insertOptimisticDmIntoAllCaches(
+  queryClient: ReturnType<typeof useQueryClient>,
+  ownerPubkey: string,
+  optimisticMessage: DmMessage,
+) {
+  updateDmMessageCaches(queryClient, ownerPubkey, (existingMessages) => {
+    const nextMessages = [
+      ...existingMessages.filter((message) => message.clientId !== optimisticMessage.clientId),
+      optimisticMessage,
+    ];
+
+    return nextMessages.sort((left, right) => left.createdAt - right.createdAt);
+  });
+}
+
+function updateOptimisticDmInAllCaches(
+  queryClient: ReturnType<typeof useQueryClient>,
+  ownerPubkey: string,
+  clientId: string,
+  updates: Pick<DmMessage, 'deliveryState' | 'errorMessage'>,
+) {
+  updateDmMessageCaches(queryClient, ownerPubkey, (existingMessages) => existingMessages.map((message) => {
+    if (message.clientId !== clientId) {
+      return message;
+    }
+
+    return {
+      ...message,
+      ...updates,
+    };
+  }));
 }
 
 export function useDmCapability() {
@@ -140,13 +218,22 @@ export function useDmMessages(limit = 200) {
         signal: AbortSignal.any([signal, AbortSignal.timeout(5000)]),
       });
 
-      return fetchDmMessages({
+      const fetchedMessages = await fetchDmMessages({
         signer,
         currentUserPubkey: user.pubkey,
         relayUrls,
         signal: AbortSignal.any([signal, AbortSignal.timeout(15000)]),
         limit,
       });
+
+      const hydratedOutbox = hydrateDmOutbox(user.pubkey, DM_OUTBOX_STALE_AFTER_SECONDS);
+      const { messages, reconciledClientIds } = mergeFetchedAndOutboxMessages(fetchedMessages, hydratedOutbox);
+
+      for (const clientId of reconciledClientIds) {
+        removeDmOutboxRecord(user.pubkey, clientId);
+      }
+
+      return messages;
     },
     enabled: Boolean(user?.pubkey && signer?.nip44),
     staleTime: 30_000,
@@ -216,7 +303,40 @@ export function useDmSend() {
   const { user, signer } = useCurrentUser();
   const { config } = useAppContext();
 
-  return useMutation({
+  return useMutation<{ relayUrls: string[]; wraps: Awaited<ReturnType<typeof createDmGiftWraps>> }, Error, SendDmInput, SendDmMutationContext>({
+    onMutate: ({ clientId, participantPubkeys, content, share }) => {
+      if (!user?.pubkey) {
+        return {};
+      }
+
+      const record = clientId
+        ? markDmOutboxRecordSending(user.pubkey, clientId, {
+          participantPubkeys,
+          content,
+          share,
+        }) || createDmOutboxRecord({
+          ownerPubkey: user.pubkey,
+          participantPubkeys,
+          content,
+          share,
+        })
+        : createDmOutboxRecord({
+          ownerPubkey: user.pubkey,
+          participantPubkeys,
+          content,
+          share,
+        });
+
+      const optimisticMessage = convertOutboxRecordToDmMessage(record);
+      if (!clientId || record.clientId !== clientId) {
+        upsertDmOutboxRecord(user.pubkey, record);
+      }
+
+      insertOptimisticDmIntoAllCaches(queryClient, user.pubkey, optimisticMessage);
+      return {
+        clientId: record.clientId,
+      };
+    },
     mutationFn: async ({ participantPubkeys, content, share }: SendDmInput) => {
       if (!user?.pubkey) {
         throw new Error('You need to log in before sending a message');
@@ -250,46 +370,26 @@ export function useDmSend() {
       await publishDmMessages(relayUrls, wraps, AbortSignal.timeout(10000));
       return { relayUrls, wraps };
     },
-    onSuccess: async ({ wraps }, variables) => {
-      const optimisticMessage = buildOptimisticDmMessage({
-        currentUserPubkey: user?.pubkey || '',
-        participantPubkeys: variables.participantPubkeys,
-        content: variables.content,
-        share: variables.share,
-        wraps,
-      });
-
-      if (user?.pubkey && optimisticMessage) {
-        const limitsToUpdate = new Set<number>([200, 300]);
-        const existingMessageQueries = queryClient.getQueriesData<DmMessage[]>({
-          queryKey: [...DM_QUERY_KEY, 'messages', user.pubkey],
-        });
-
-        for (const [queryKey] of existingMessageQueries) {
-          const maybeLimit = queryKey[3];
-          if (typeof maybeLimit === 'number') {
-            limitsToUpdate.add(maybeLimit);
-          }
-        }
-
-        const mergeOptimisticMessage = (existingMessages: DmMessage[] = []) => {
-          const nextMessages = [
-            ...existingMessages.filter((message) => message.wrapId !== optimisticMessage.wrapId),
-            optimisticMessage,
-          ];
-
-          return nextMessages.sort((a, b) => a.createdAt - b.createdAt);
-        };
-
-        for (const limit of limitsToUpdate) {
-          queryClient.setQueryData<DmMessage[]>(
-            [...DM_QUERY_KEY, 'messages', user.pubkey, limit],
-            mergeOptimisticMessage,
-          );
-        }
+    onSuccess: (_result, _variables, context) => {
+      if (!user?.pubkey || !context?.clientId) {
+        return;
       }
+
+      markDmOutboxRecordSent(user.pubkey, context.clientId);
+      updateOptimisticDmInAllCaches(queryClient, user.pubkey, context.clientId, {
+        deliveryState: 'sent',
+        errorMessage: undefined,
+      });
     },
-    onError: (error) => {
+    onError: (error, _variables, context) => {
+      if (user?.pubkey && context?.clientId) {
+        markDmOutboxRecordFailed(user.pubkey, context.clientId, error.message);
+        updateOptimisticDmInAllCaches(queryClient, user.pubkey, context.clientId, {
+          deliveryState: 'failed',
+          errorMessage: error.message,
+        });
+      }
+
       toast({
         title: 'Message failed',
         description: error instanceof Error ? error.message : 'Unable to send your message right now',

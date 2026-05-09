@@ -6,8 +6,10 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useNostr } from '@nostrify/react';
 import { useQuery } from '@tanstack/react-query';
 import { nip19 } from 'nostr-tools';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { Card, CardContent } from '@/components/ui/card';
-import { AlertCircle, Loader2 } from 'lucide-react';
+import { WarningCircle as AlertCircle, CircleNotch as Loader2 } from '@phosphor-icons/react';
 import { debugLog } from '@/lib/debug';
 
 const VINE_USER_ID_PATTERN = /^\d{15,20}$/;
@@ -159,24 +161,24 @@ function getParsedProfiles(events: Array<{ pubkey: string; content: string }>): 
   });
 }
 
-function getLookupLabel(identifier: string): string {
+function getLookupLabel(identifier: string, t: TFunction): string {
   if (isVineUserId(identifier)) {
-    return 'Vine ID';
+    return t('universalUserPage.lookupLabel.vineId');
   }
 
   return decodeIdentifier(identifier).includes('@')
-    ? 'NIP-05 identifier'
-    : 'legacy Vine username or NIP-05 identifier';
+    ? t('universalUserPage.lookupLabel.nip05')
+    : t('universalUserPage.lookupLabel.legacyOrNip05');
 }
 
-function getNotFoundDescription(identifier: string): string {
+function getNotFoundDescription(identifier: string, t: TFunction): string {
   if (isVineUserId(identifier)) {
-    return 'This Vine user may not have been imported to the Nostr network yet.';
+    return t('universalUserPage.notFoundDescription.vine');
   }
 
   return decodeIdentifier(identifier).includes('@')
-    ? 'Please check the NIP-05 identifier is correct.'
-    : 'This username does not match a legacy Vine profile or OpenVine handle.';
+    ? t('universalUserPage.notFoundDescription.nip05')
+    : t('universalUserPage.notFoundDescription.legacy');
 }
 
 /**
@@ -267,6 +269,7 @@ function useUniversalUserLookup(identifier: string | undefined) {
 export function UniversalUserPage() {
   const { userId } = useParams<{ userId: string }>();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const { data, isLoading, error } = useUniversalUserLookup(userId);
 
   useEffect(() => {
@@ -286,10 +289,10 @@ export function UniversalUserPage() {
             <div className="flex flex-col items-center justify-center space-y-4">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
               <p className="text-muted-foreground">
-                Looking up user...
+                {t('universalUserPage.lookingUp')}
               </p>
               <p className="text-sm text-muted-foreground">
-                {getLookupLabel(userId || '')}: {userId}
+                {getLookupLabel(userId || '', t)}: {userId}
               </p>
             </div>
           </CardContent>
@@ -305,19 +308,19 @@ export function UniversalUserPage() {
           <CardContent className="py-12">
             <div className="flex flex-col items-center justify-center space-y-4">
               <AlertCircle className="h-12 w-12 text-destructive" />
-              <h2 className="text-xl font-semibold">User Not Found</h2>
+              <h2 className="text-xl font-semibold">{t('universalUserPage.userNotFound')}</h2>
               <p className="text-muted-foreground text-center max-w-md">
-                Could not find a user with {getLookupLabel(userId || '')}:
+                {t('universalUserPage.couldNotFind', { label: getLookupLabel(userId || '', t) })}
                 <code className="text-sm bg-muted px-2 py-1 rounded ml-2">{userId}</code>
               </p>
               <p className="text-sm text-muted-foreground text-center max-w-md">
-                {getNotFoundDescription(userId || '')}
+                {getNotFoundDescription(userId || '', t)}
               </p>
               <button
                 onClick={() => navigate('/')}
                 className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:brightness-110 transition-colors"
               >
-                Go to Home
+                {t('universalUserPage.goHome')}
               </button>
             </div>
           </CardContent>
@@ -333,7 +336,7 @@ export function UniversalUserPage() {
         <CardContent className="py-12">
           <div className="flex flex-col items-center justify-center space-y-4">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <p className="text-muted-foreground">Redirecting to profile...</p>
+            <p className="text-muted-foreground">{t('universalUserPage.redirecting')}</p>
           </div>
         </CardContent>
       </Card>

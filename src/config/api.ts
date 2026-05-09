@@ -1,6 +1,152 @@
 // ABOUTME: API configuration for external services
 // ABOUTME: Centralized settings for Funnelcake and other REST APIs
 
+export const FUNNELCAKE_PRODUCTION_API_URL = 'https://api.divine.video';
+export const FUNNELCAKE_STAGING_API_URL = 'https://api.staging.divine.video';
+export const NOTIFICATIONS_PRODUCTION_API_URL = 'https://relay.divine.video';
+export const NOTIFICATIONS_STAGING_API_URL = 'https://relay.staging.divine.video';
+export const FUNNELCAKE_API_MODE_OVERRIDE_KEY = 'divine_dev_funnelcake_api_mode';
+
+export type FunnelcakeApiMode = 'auto' | 'production' | 'staging';
+
+interface ResolveFunnelcakeBaseUrlOptions {
+  mode?: FunnelcakeApiMode;
+  hostname?: string;
+  envBaseUrl?: string;
+}
+
+function getCurrentHostname(): string {
+  if (typeof window === 'undefined') {
+    return '';
+  }
+
+  return window.location.hostname;
+}
+
+function getSafeLocalStorage(): Pick<Storage, 'getItem' | 'setItem' | 'removeItem'> | null {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+
+  const storage = window.localStorage;
+  if (!storage) {
+    return null;
+  }
+
+  return (
+    typeof storage.getItem === 'function'
+    && typeof storage.setItem === 'function'
+    && typeof storage.removeItem === 'function'
+  )
+    ? storage
+    : null;
+}
+
+function resolveAutoFunnelcakeBaseUrl(hostname: string, envBaseUrl?: string): string {
+  if (hostname === 'staging.divine.video' || hostname.endsWith('.staging.divine.video')) {
+    return FUNNELCAKE_STAGING_API_URL;
+  }
+
+  if (envBaseUrl && hostname !== 'divine.video' && hostname !== 'www.divine.video') {
+    return envBaseUrl;
+  }
+
+  return FUNNELCAKE_PRODUCTION_API_URL;
+}
+
+function mapNotificationsBaseUrl(baseUrl: string): string {
+  switch (baseUrl) {
+    case FUNNELCAKE_PRODUCTION_API_URL:
+      return NOTIFICATIONS_PRODUCTION_API_URL;
+    case FUNNELCAKE_STAGING_API_URL:
+      return NOTIFICATIONS_STAGING_API_URL;
+    default:
+      return baseUrl;
+  }
+}
+
+function resolveAutoNotificationsBaseUrl(hostname: string, envBaseUrl?: string): string {
+  if (hostname === 'staging.divine.video' || hostname.endsWith('.staging.divine.video')) {
+    return NOTIFICATIONS_STAGING_API_URL;
+  }
+
+  if (envBaseUrl && hostname !== 'divine.video' && hostname !== 'www.divine.video') {
+    return mapNotificationsBaseUrl(envBaseUrl);
+  }
+
+  return NOTIFICATIONS_PRODUCTION_API_URL;
+}
+
+export function resolveFunnelcakeBaseUrl(options: ResolveFunnelcakeBaseUrlOptions = {}): string {
+  const mode = options.mode ?? 'auto';
+  const hostname = options.hostname ?? getCurrentHostname();
+  const envBaseUrl = options.envBaseUrl;
+
+  switch (mode) {
+    case 'production':
+      return FUNNELCAKE_PRODUCTION_API_URL;
+    case 'staging':
+      return FUNNELCAKE_STAGING_API_URL;
+    case 'auto':
+    default:
+      return resolveAutoFunnelcakeBaseUrl(hostname, envBaseUrl);
+  }
+}
+
+export function resolveNotificationsBaseUrl(
+  options: ResolveFunnelcakeBaseUrlOptions = {},
+): string {
+  const mode = options.mode ?? 'auto';
+  const hostname = options.hostname ?? getCurrentHostname();
+  const envBaseUrl = options.envBaseUrl;
+
+  switch (mode) {
+    case 'production':
+      return NOTIFICATIONS_PRODUCTION_API_URL;
+    case 'staging':
+      return NOTIFICATIONS_STAGING_API_URL;
+    case 'auto':
+    default:
+      return resolveAutoNotificationsBaseUrl(hostname, envBaseUrl);
+  }
+}
+
+export function getFunnelcakeApiModeOverride(): FunnelcakeApiMode {
+  const storage = getSafeLocalStorage();
+  const stored = storage?.getItem(FUNNELCAKE_API_MODE_OVERRIDE_KEY);
+  if (stored === 'production' || stored === 'staging' || stored === 'auto') {
+    return stored;
+  }
+
+  return 'auto';
+}
+
+export function setFunnelcakeApiModeOverride(mode: FunnelcakeApiMode): void {
+  const storage = getSafeLocalStorage();
+  storage?.setItem(FUNNELCAKE_API_MODE_OVERRIDE_KEY, mode);
+}
+
+export function clearFunnelcakeApiModeOverride(): void {
+  const storage = getSafeLocalStorage();
+  storage?.removeItem(FUNNELCAKE_API_MODE_OVERRIDE_KEY);
+}
+
+export function getFunnelcakeBaseUrl(): string {
+  return resolveFunnelcakeBaseUrl({
+    mode: getFunnelcakeApiModeOverride(),
+    hostname: getCurrentHostname(),
+    envBaseUrl: import.meta.env.VITE_FUNNELCAKE_API_URL,
+  });
+}
+
+export function getNotificationsBaseUrl(): string {
+  return resolveNotificationsBaseUrl({
+    mode: getFunnelcakeApiModeOverride(),
+    hostname: getCurrentHostname(),
+    envBaseUrl: import.meta.env.VITE_FUNNELCAKE_API_URL,
+  });
+}
+
 /**
  * API configuration for Funnelcake REST endpoints
  *
@@ -10,12 +156,15 @@
  */
 export const API_CONFIG = {
   funnelcake: {
-    baseUrl: import.meta.env.VITE_FUNNELCAKE_API_URL || 'https://api.divine.video',
+    get baseUrl() {
+      return getFunnelcakeBaseUrl();
+    },
     // Request timeout in milliseconds (profile API should be fast)
     timeout: 5000,
     // Endpoints
     endpoints: {
       videos: '/api/videos',
+      videosV2: '/api/v2/videos',
       search: '/api/search',
       searchProfiles: '/api/search/profiles',
       userProfile: '/api/users/{pubkey}',

@@ -2,8 +2,10 @@
 // ABOUTME: Uses video provider hook with automatic Funnelcake/WebSocket selection
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { useLocation } from 'react-router-dom';
 import { performanceMonitor } from '@/lib/performanceMonitoring';
-import { Video } from 'lucide-react';
+import { VideoCamera as Video, CircleNotch as Loader2, Play } from '@phosphor-icons/react';
 import { VideoCardWithMetrics } from '@/components/VideoCardWithMetrics';
 import { VideoGrid } from '@/components/VideoGrid';
 import { AddToListDialog } from '@/components/AddToListDialog';
@@ -12,8 +14,8 @@ import { useBatchedAuthors } from '@/hooks/useBatchedAuthors';
 import { useContentModeration } from '@/hooks/useModeration';
 import { useFeedPerformanceInstrumentation } from '@/hooks/useFeedPerformanceInstrumentation';
 import { useProofModeEnrichment } from '@/hooks/useProofModeEnrichment';
-import { Card, CardContent } from '@/components/ui/card';
-import { Loader2 } from 'lucide-react';
+import { Card, CardContent, type CardAccent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import InfiniteScroll from 'react-infinite-scroll-component';
 import type { ParsedVideoData } from '@/types/video';
 import { debugLog, debugWarn } from '@/lib/debug';
@@ -23,6 +25,8 @@ import { useCallback } from 'react';
 import { useFullscreenFeed } from '@/contexts/FullscreenFeedContext';
 import { useVideoPlayback } from '@/hooks/useVideoPlayback';
 import { useVideoPrefetch } from '@/hooks/useVideoPrefetch';
+import { useCompilationFullscreen } from '@/hooks/useCompilationFullscreen';
+import { buildCompilationPlaybackUrl } from '@/lib/compilationPlayback';
 
 type ViewMode = 'feed' | 'grid';
 
@@ -37,6 +41,12 @@ interface VideoFeedProps {
   className?: string;
   verifiedOnly?: boolean; // Filter to show only ProofMode verified videos
   mode?: 'auto-play' | 'thumbnail'; // Display mode for video cards
+  /**
+   * Brand accent color applied to each VideoCard's offset shadow.
+   * Used to give each feed type a distinct visual identity
+   * (e.g. pink = trending, violet = classics). Defaults to green.
+   */
+  accent?: CardAccent;
   'data-testid'?: string;
   'data-hashtag-testid'?: string;
   'data-profile-testid'?: string;
@@ -53,17 +63,20 @@ export function VideoFeed({
   className,
   verifiedOnly = false,
   mode = 'auto-play',
+  accent,
   'data-testid': testId,
   'data-hashtag-testid': hashtagTestId,
   'data-profile-testid': profileTestId,
 }: VideoFeedProps) {
+  const { t } = useTranslation();
+  const location = useLocation();
   const [showCommentsForVideo, setShowCommentsForVideo] = useState<string | null>(null);
   const [showListDialog, setShowListDialog] = useState<{ videoId: string; videoPubkey: string } | null>(null);
   const mountTimeRef = useRef<number | null>(null);
 
   const { checkContent } = useContentModeration();
   const navigate = useSubdomainNavigate();
-  const { setVideosForFullscreen, enterFullscreen, updateVideos } = useFullscreenFeed();
+  const { enterFullscreen } = useFullscreenFeed();
 
   // Use video provider hook - automatically selects Funnelcake or WebSocket
   const {
@@ -222,6 +235,29 @@ export function VideoFeed({
 
   // Check if we have videos but they're all filtered (before early return)
   const allFiltered = allVideos && allVideos.length > 0 && (!filteredVideos || filteredVideos.length === 0);
+  const currentSurface = `${location.pathname}${location.search}`;
+  const compilationUrl = filteredVideos.length > 0
+    ? buildCompilationPlaybackUrl(currentSurface, {
+        start: 0,
+        extraParams: {
+          sort: sortMode,
+        },
+      })
+    : null;
+  const compilationLauncher = compilationUrl ? (
+    <div className="mb-4 flex justify-end">
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        onClick={() => navigate(compilationUrl)}
+        className="gap-2"
+      >
+        <Play className="h-4 w-4" />
+        {t('common.playAll')}
+      </Button>
+    </div>
+  ) : null;
 
   // Redirect empty home feed to discovery (must be before ALL early returns)
   useEffect(() => {
@@ -231,18 +267,11 @@ export function VideoFeed({
   }, [isLoading, feedType, allFiltered, navigate, filteredVideos]);
 
   // Register videos for fullscreen mode
-  useEffect(() => {
-    if (filteredVideos.length > 0) {
-      setVideosForFullscreen(filteredVideos, fetchNextPage, hasNextPage ?? false);
-    }
-  }, [filteredVideos, setVideosForFullscreen, fetchNextPage, hasNextPage]);
-
-  // Update videos in fullscreen when more are loaded
-  useEffect(() => {
-    if (filteredVideos.length > 0) {
-      updateVideos(filteredVideos);
-    }
-  }, [filteredVideos, updateVideos]);
+  useCompilationFullscreen({
+    videos: filteredVideos,
+    fetchNextPage,
+    hasNextPage: hasNextPage ?? false,
+  });
 
   // Stable callbacks for comment handling - MUST be before any early returns
   // to ensure hooks are called in the same order on every render
@@ -287,7 +316,7 @@ export function VideoFeed({
                   <div className="h-3 w-16 bg-muted rounded animate-pulse" />
                 </div>
               </div>
-              <div className="aspect-square w-full bg-gradient-to-br from-brand-light-green to-brand-light-green dark:from-brand-dark-green dark:to-brand-dark-green flex items-center justify-center">
+              <div className="aspect-square w-full bg-brand-light-green dark:bg-brand-dark-green flex items-center justify-center">
                 <div className="relative w-12 h-12">
                   <div className="absolute inset-0 border-4 border-brand-light-green dark:border-brand-dark-green rounded-full" />
                   <div className="absolute inset-0 border-4 border-transparent border-t-primary rounded-full animate-spin" />
@@ -419,6 +448,7 @@ export function VideoFeed({
         data-hashtag-testid={hashtagTestId}
         data-profile-testid={profileTestId}
       >
+        {compilationLauncher}
         <InfiniteScroll
           dataLength={filteredVideos.length}
           next={fetchNextPage}
@@ -472,6 +502,7 @@ export function VideoFeed({
       data-hashtag-testid={hashtagTestId}
       data-profile-testid={profileTestId}
     >
+      {compilationLauncher}
       <InfiniteScroll
         dataLength={filteredVideos.length}
         next={fetchNextPage}
@@ -505,6 +536,7 @@ export function VideoFeed({
               onCloseComments={handleCloseComments}
               onEnterFullscreen={() => handleEnterFullscreen(index)}
               onPlaybackStarted={() => handlePlaybackStarted(video)}
+              accent={accent}
               navigationContext={{
                 source: feedType,
                 hashtag,

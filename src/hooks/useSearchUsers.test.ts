@@ -115,6 +115,36 @@ describe('useSearchUsers', () => {
     ]);
   });
 
+  it('returns empty results for URL-like queries without calling the API', async () => {
+    const { result } = renderHook(
+      () => useSearchUsers({ query: 'https://vine.co/v/hAgW0mP5zKL//', limit: 20 }),
+      { wrapper: createWrapper() }
+    );
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+
+    expect(mockSearchProfiles).not.toHaveBeenCalled();
+    expect(mockNostrQuery).not.toHaveBeenCalled();
+    expect(result.current.data).toEqual([]);
+  });
+
+  it('returns empty results for scheme-less Vine URLs without calling the API', async () => {
+    const { result } = renderHook(
+      () => useSearchUsers({ query: 'vine.co/v/hAgW0mP5zKL', limit: 20 }),
+      { wrapper: createWrapper() }
+    );
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+
+    expect(mockSearchProfiles).not.toHaveBeenCalled();
+    expect(mockNostrQuery).not.toHaveBeenCalled();
+    expect(result.current.data).toEqual([]);
+  });
+
   it('skips Funnelcake entirely when the circuit breaker marks it unavailable', async () => {
     mockIsFunnelcakeAvailable.mockReturnValue(false);
     mockNostrQuery.mockResolvedValue([

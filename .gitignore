@@ -46,3 +46,10 @@ compute-js/node_modules/
 compute-js/pkg/
 compute-js/__input_bundled.js.map
 compute-js/test-data/secrets.json
+
+# Playwright
+test-results/
+playwright-report/
+playwright/.cache/
+scripts/.bonfire-snapshot.html
+scripts/.bonfire-campaign-snapshot.html

@@ -2,6 +2,7 @@
 // ABOUTME: Shows formatted event data for debugging and transparency
 
 import { type ReactNode, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Dialog,
   DialogContent,
@@ -10,7 +11,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Code, Copy, Check, AlertCircle, Loader2 } from 'lucide-react';
+import { Code, Copy, Check, WarningCircle as AlertCircle, CircleNotch as Loader2 } from '@phosphor-icons/react';
 import type { NostrEvent } from '@nostrify/nostrify';
 import type { ParsedVideoData } from '@/types/video';
 import { API_CONFIG } from '@/config/api';
@@ -135,8 +136,10 @@ export function ViewSourceDialog({
   onClose,
   event,
   video,
-  title = 'Video Event Source',
+  title,
 }: ViewSourceDialogProps) {
+  const { t } = useTranslation();
+  const resolvedTitle = title ?? t('viewSourceDialog.title');
   const [copied, setCopied] = useState(false);
   const [fetchedEvent, setFetchedEvent] = useState<NostrEvent | null>(null);
   const [loading, setLoading] = useState(false);
@@ -192,17 +195,17 @@ export function ViewSourceDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Code className="h-5 w-5" />
-            {title}
+            {resolvedTitle}
           </DialogTitle>
           <DialogDescription>
-            Raw Nostr event JSON (NIP-01 format)
+            {t('viewSourceDialog.description')}
           </DialogDescription>
         </DialogHeader>
 
         {loading && (
           <div className="flex items-center justify-center py-8">
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-            <span className="ml-2 text-sm text-muted-foreground">Loading full event...</span>
+            <span className="ml-2 text-sm text-muted-foreground">{t('viewSourceDialog.loading')}</span>
           </div>
         )}
 
@@ -210,9 +213,9 @@ export function ViewSourceDialog({
           <div className="bg-brand-yellow-light border border-brand-yellow rounded-lg p-3 flex items-start gap-2 dark:bg-brand-yellow-dark">
             <AlertCircle className="h-4 w-4 text-brand-yellow-dark dark:text-brand-yellow shrink-0 mt-0.5" />
             <p className="text-sm text-brand-yellow-dark dark:text-brand-yellow-light">
-              <strong>Note:</strong> {fetchError
-                ? 'Could not fetch full event from relay. This is a reconstructed representation from cached data.'
-                : 'This is a reconstructed representation from parsed data. The original event signature and some tags may not be included.'}
+              <strong>{t('viewSourceDialog.noteLabel')}</strong> {fetchError
+                ? t('viewSourceDialog.noteFetchError')
+                : t('viewSourceDialog.noteReconstructed')}
             </p>
           </div>
         )}
@@ -221,7 +224,7 @@ export function ViewSourceDialog({
           <div className="bg-brand-light-green border border-brand-green rounded-lg p-3 flex items-start gap-2 dark:bg-brand-dark-green">
             <Check className="h-4 w-4 text-brand-dark-green dark:text-brand-green shrink-0 mt-0.5" />
             <p className="text-sm text-brand-dark-green dark:text-brand-light-green">
-              <strong>Verified:</strong> This is the complete original event with cryptographic signature.
+              <strong>{t('viewSourceDialog.verifiedLabel')}</strong> {t('viewSourceDialog.verifiedBody')}
             </p>
           </div>
         )}
@@ -229,7 +232,7 @@ export function ViewSourceDialog({
         {!loading && (
           <div className="flex-1 overflow-auto">
             <pre
-              aria-label="Raw Nostr event JSON"
+              aria-label={t('viewSourceDialog.jsonAriaLabel')}
               className="bg-brand-light-green rounded-lg p-4 text-xs overflow-x-auto font-mono text-foreground select-text cursor-text dark:bg-brand-dark-green"
               style={{ userSelect: 'text', WebkitUserSelect: 'text' }}
             >
@@ -240,24 +243,24 @@ export function ViewSourceDialog({
 
         <div className="flex justify-between items-center pt-4 border-t">
           <div className="text-xs text-muted-foreground">
-            Event ID: <code className="bg-muted px-1 py-0.5 rounded">{displayEvent.id}</code>
+            {t('viewSourceDialog.eventIdLabel')} <code className="bg-muted px-1 py-0.5 rounded">{displayEvent.id}</code>
           </div>
           <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={handleCopy} disabled={loading}>
               {copied ? (
                 <>
                   <Check className="h-4 w-4 mr-2" />
-                  Copied!
+                  {t('viewSourceDialog.copied')}
                 </>
               ) : (
                 <>
                   <Copy className="h-4 w-4 mr-2" />
-                  Copy JSON
+                  {t('viewSourceDialog.copyJson')}
                 </>
               )}
             </Button>
             <Button variant="default" size="sm" onClick={onClose}>
-              Close
+              {t('viewSourceDialog.close')}
             </Button>
           </div>
         </div>

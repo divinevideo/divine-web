@@ -3,6 +3,7 @@
 
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useExternalIdentities, SUPPORTED_PLATFORMS, verifyIdentityClaim, type ExternalIdentity } from '@/hooks/useExternalIdentities';
 import { useAddIdentity, useRemoveIdentity } from '@/hooks/usePublishIdentity';
@@ -14,24 +15,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import {
-  Link2,
-  Plus,
-  Trash2,
-  Pencil,
-  CheckCircle2,
-  AlertTriangle,
-  Loader2,
-  ExternalLink,
-  Github,
-  MessageCircle,
-  AtSign,
-  Shield,
-  Copy,
-  Check,
-  X,
-  ArrowLeft,
-} from 'lucide-react';
+import { LinkSimple as Link2, Plus, Trash as Trash2, PencilSimple as Pencil, CheckCircle as CheckCircle2, Warning as AlertTriangle, CircleNotch as Loader2, ArrowSquareOut as ExternalLink, GithubLogo as Github, ChatCircle as MessageCircle, At as AtSign, Shield, Copy, Check, X, ArrowLeft } from '@phosphor-icons/react';
 import { useToast } from '@/hooks/useToast';
 import { nip19 } from 'nostr-tools';
 
@@ -144,6 +128,7 @@ const PROOF_INSTRUCTIONS: Record<string, string> = {
 };
 
 function CopyButton({ text }: { text: string }) {
+  const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
 
   const handleCopy = useCallback(async () => {
@@ -167,12 +152,13 @@ function CopyButton({ text }: { text: string }) {
   return (
     <Button variant="ghost" size="sm" onClick={handleCopy} className="h-7 gap-1 text-xs">
       {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
-      {copied ? 'Copied!' : 'Copy'}
+      {copied ? t('linkedAccountsSettings.copied') : t('linkedAccountsSettings.copy')}
     </Button>
   );
 }
 
 function VerificationBadge({ identity, pubkey }: { identity: ExternalIdentity; pubkey: string }) {
+  const { t } = useTranslation();
   const [status, setStatus] = useState<'idle' | 'checking' | 'verified' | 'failed'>('idle');
   const [error, setError] = useState<string>();
 
@@ -198,7 +184,7 @@ function VerificationBadge({ identity, pubkey }: { identity: ExternalIdentity; p
     return (
       <Badge variant="outline" className="gap-1 text-yellow-600 border-yellow-300">
         <AlertTriangle className="h-3 w-3" />
-        No proof
+        {t('linkedAccountsSettings.noProof')}
       </Badge>
     );
   }
@@ -207,21 +193,21 @@ function VerificationBadge({ identity, pubkey }: { identity: ExternalIdentity; p
     case 'idle':
       return (
         <Button variant="ghost" size="sm" onClick={verify} className="h-6 text-xs">
-          Verify
+          {t('linkedAccountsSettings.verifyButton')}
         </Button>
       );
     case 'checking':
       return (
         <Badge variant="outline" className="gap-1">
           <Loader2 className="h-3 w-3 animate-spin" />
-          Checking...
+          {t('linkedAccountsSettings.checking')}
         </Badge>
       );
     case 'verified':
       return (
         <Badge variant="outline" className="gap-1 text-green-600 border-green-300">
           <CheckCircle2 className="h-3 w-3" />
-          Verified
+          {t('linkedAccountsSettings.verified')}
         </Badge>
       );
     case 'failed':
@@ -233,12 +219,12 @@ function VerificationBadge({ identity, pubkey }: { identity: ExternalIdentity; p
           className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
         >
           <ExternalLink className="h-3 w-3" />
-          Check proof
+          {t('linkedAccountsSettings.checkProof')}
         </a>
       ) : (
         <Badge variant="outline" className="gap-1 text-yellow-600 border-yellow-300" title={error}>
           <AlertTriangle className="h-3 w-3" />
-          Unverified
+          {t('linkedAccountsSettings.unverified')}
         </Badge>
       );
   }
@@ -257,6 +243,7 @@ function LinkedAccountItem({
   onEdit: () => void;
   removing: boolean;
 }) {
+  const { t } = useTranslation();
   const config = SUPPORTED_PLATFORMS[identity.platform];
   const icon = PLATFORM_ICONS[identity.platform] ?? <Link2 className="h-5 w-5" />;
 
@@ -280,7 +267,7 @@ function LinkedAccountItem({
                 rel="noopener noreferrer"
                 className="text-xs text-muted-foreground hover:underline flex items-center gap-1"
               >
-                Profile <ExternalLink className="h-3 w-3" />
+                {t('linkedAccountsSettings.profileLink')} <ExternalLink className="h-3 w-3" />
               </a>
             )}
             {identity.proofUrl && (
@@ -290,17 +277,17 @@ function LinkedAccountItem({
                 rel="noopener noreferrer"
                 className="text-xs text-muted-foreground hover:underline flex items-center gap-1"
               >
-                Proof <ExternalLink className="h-3 w-3" />
+                {t('linkedAccountsSettings.proofLink')} <ExternalLink className="h-3 w-3" />
               </a>
             )}
           </div>
         </div>
       </div>
       <div className="flex items-center gap-1">
-        <Button variant="ghost" size="sm" onClick={onEdit} title="Edit">
+        <Button variant="ghost" size="sm" onClick={onEdit} title={t('linkedAccountsSettings.editTooltip')}>
           <Pencil className="h-4 w-4" />
         </Button>
-        <Button variant="ghost" size="sm" onClick={onRemove} disabled={removing} title="Remove">
+        <Button variant="ghost" size="sm" onClick={onRemove} disabled={removing} title={t('linkedAccountsSettings.removeTooltip')}>
           {removing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
         </Button>
       </div>
@@ -309,6 +296,7 @@ function LinkedAccountItem({
 }
 
 export default function LinkedAccountsSettingsPage() {
+  const { t } = useTranslation();
   const { user, metadata } = useCurrentUser();
   const { data: identities = [], isLoading } = useExternalIdentities(user?.pubkey);
   const addIdentity = useAddIdentity();
@@ -359,7 +347,7 @@ export default function LinkedAccountsSettingsPage() {
 
   const handleAdd = async () => {
     if (!proof.trim()) {
-      toast({ title: 'Error', description: 'Please enter the proof URL or ID', variant: 'destructive' });
+      toast({ title: t('linkedAccountsSettings.toastErrorTitle'), description: t('linkedAccountsSettings.toastEnterProof'), variant: 'destructive' });
       return;
     }
 
@@ -369,11 +357,12 @@ export default function LinkedAccountsSettingsPage() {
       // Use extracted identity, or state identity, or fall back to proof itself for Telegram/Discord
       const cleanIdentity = extracted.identity || identity.trim() || cleanProof;
       if (!cleanIdentity) {
-        toast({ title: 'Error', description: 'Could not determine username from the URL', variant: 'destructive' });
+        toast({ title: t('linkedAccountsSettings.toastErrorTitle'), description: t('linkedAccountsSettings.toastCannotDetermineUsername'), variant: 'destructive' });
         return;
       }
       await addIdentity.mutateAsync({ platform, identity: cleanIdentity, proof: cleanProof });
-      const action = editingIdentity ? 'Updated' : 'Linked';
+      const isEditing = !!editingIdentity;
+      const platformLabel = selectedConfig?.label ?? platform;
 
       // Auto-verify the newly linked identity
       const newIdentity: ExternalIdentity = {
@@ -385,16 +374,26 @@ export default function LinkedAccountsSettingsPage() {
       };
       const verifyResult = await verifyIdentityClaim(newIdentity, user!.pubkey);
       if (verifyResult.verified) {
-        toast({ title: 'Verified!', description: `${selectedConfig?.label ?? platform} account ${action.toLowerCase()} and verified` });
+        toast({
+          title: t('linkedAccountsSettings.toastVerifiedTitle'),
+          description: isEditing
+            ? t('linkedAccountsSettings.toastUpdatedAndVerified', { platform: platformLabel })
+            : t('linkedAccountsSettings.toastLinkedAndVerified', { platform: platformLabel }),
+        });
       } else {
-        toast({ title: action, description: `${selectedConfig?.label ?? platform} account ${action.toLowerCase()} — check your proof post to verify` });
+        toast({
+          title: isEditing ? t('linkedAccountsSettings.toastUpdatedTitle') : t('linkedAccountsSettings.toastLinkedTitle'),
+          description: isEditing
+            ? t('linkedAccountsSettings.toastUpdatedCheckProof', { platform: platformLabel })
+            : t('linkedAccountsSettings.toastLinkedCheckProof', { platform: platformLabel }),
+        });
       }
 
       setIdentity('');
       setProof('');
       setEditingIdentity(null);
     } catch {
-      toast({ title: 'Error', description: 'Failed to publish identity event', variant: 'destructive' });
+      toast({ title: t('linkedAccountsSettings.toastErrorTitle'), description: t('linkedAccountsSettings.toastFailedPublish'), variant: 'destructive' });
     }
   };
 
@@ -403,9 +402,9 @@ export default function LinkedAccountsSettingsPage() {
     setRemovingKey(key);
     try {
       await removeIdentity.mutateAsync({ platform: id.platform, identity: id.identity });
-      toast({ title: 'Removed', description: 'Account unlinked' });
+      toast({ title: t('linkedAccountsSettings.toastRemovedTitle'), description: t('linkedAccountsSettings.toastAccountUnlinked') });
     } catch {
-      toast({ title: 'Error', description: 'Failed to remove identity', variant: 'destructive' });
+      toast({ title: t('linkedAccountsSettings.toastErrorTitle'), description: t('linkedAccountsSettings.toastFailedRemove'), variant: 'destructive' });
     } finally {
       setRemovingKey(null);
     }
@@ -417,8 +416,8 @@ export default function LinkedAccountsSettingsPage() {
         <Card>
           <CardContent className="py-12 text-center">
             <Shield className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-            <p className="text-lg font-medium mb-2">Authentication Required</p>
-            <p className="text-muted-foreground">Please log in to manage your linked accounts</p>
+            <p className="text-lg font-medium mb-2">{t('linkedAccountsSettings.authRequiredTitle')}</p>
+            <p className="text-muted-foreground">{t('linkedAccountsSettings.authRequiredDescription')}</p>
           </CardContent>
         </Card>
       </div>
@@ -433,21 +432,21 @@ export default function LinkedAccountsSettingsPage() {
           className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-4"
         >
           <ArrowLeft className="h-4 w-4" />
-          Back to profile
+          {t('linkedAccountsSettings.backToProfile')}
         </Link>
         <h1 className="text-3xl font-bold flex items-center gap-2 mb-2">
           <Link2 className="h-8 w-8" />
-          Linked Accounts
+          {t('linkedAccountsSettings.heading')}
         </h1>
         <p className="text-muted-foreground">
-          Verify your identity across platforms using{' '}
+          {t('linkedAccountsSettings.subheadingPrefix')}{' '}
           <a
             href="https://github.com/nostr-protocol/nips/blob/master/39.md"
             target="_blank"
             rel="noopener noreferrer"
             className="underline"
           >
-            NIP-39
+            {t('linkedAccountsSettings.nip39')}
           </a>
         </p>
       </div>
@@ -457,10 +456,10 @@ export default function LinkedAccountsSettingsPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <CheckCircle2 className="h-5 w-5" />
-            Your Linked Accounts ({identities.length})
+            {t('linkedAccountsSettings.yourLinkedAccountsTitle', { count: identities.length })}
           </CardTitle>
           <CardDescription>
-            Accounts linked to your Nostr identity
+            {t('linkedAccountsSettings.yourLinkedAccountsDescription')}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -485,7 +484,7 @@ export default function LinkedAccountsSettingsPage() {
             </div>
           ) : (
             <p className="text-center text-muted-foreground py-8">
-              No linked accounts yet. Add one below!
+              {t('linkedAccountsSettings.noAccountsLinked')}
             </p>
           )}
         </CardContent>
@@ -496,16 +495,16 @@ export default function LinkedAccountsSettingsPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             {editingIdentity ? <Pencil className="h-5 w-5" /> : <Plus className="h-5 w-5" />}
-            {editingIdentity ? 'Edit Linked Account' : 'Link a New Account'}
+            {editingIdentity ? t('linkedAccountsSettings.editLinkedAccountTitle') : t('linkedAccountsSettings.linkNewAccountTitle')}
           </CardTitle>
           <CardDescription>
-            {editingIdentity ? 'Update the proof for this account' : 'Prove you own an account on another platform'}
+            {editingIdentity ? t('linkedAccountsSettings.editLinkedAccountDescription') : t('linkedAccountsSettings.linkNewAccountDescription')}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Step 1: Select platform */}
           <div className="space-y-3">
-            <Label>Platform</Label>
+            <Label>{t('linkedAccountsSettings.platformLabel')}</Label>
             <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
               {Object.entries(SUPPORTED_PLATFORMS).map(([key, config]) => (
                 <button
@@ -531,9 +530,9 @@ export default function LinkedAccountsSettingsPage() {
           {/* Instructions */}
           <Card className="border-blue-500/50 bg-blue-50 dark:bg-blue-950/20">
             <CardContent className="py-4">
-              <p className="text-sm font-medium mb-2">Step 1: Create a proof post</p>
+              <p className="text-sm font-medium mb-2">{t('linkedAccountsSettings.step1Title')}</p>
               <p className="text-sm text-muted-foreground mb-3">
-                {PROOF_INSTRUCTIONS[platform]}
+                {t(`linkedAccountsSettings.proofInstructions.${platform}`, { defaultValue: PROOF_INSTRUCTIONS[platform] })}
               </p>
               <div className="relative">
                 <code className="block p-3 pr-20 bg-muted rounded text-xs break-all whitespace-pre-wrap">
@@ -553,9 +552,9 @@ export default function LinkedAccountsSettingsPage() {
                     className="inline-flex items-center gap-1.5 text-sm text-blue-600 dark:text-blue-400 hover:underline font-medium"
                   >
                     <ExternalLink className="h-3.5 w-3.5" />
-                    {platform === 'github' && 'Create a new Gist'}
-                    {platform === 'twitter' && 'Post on Twitter/X'}
-                    {platform === 'bluesky' && 'Post on Bluesky'}
+                    {platform === 'github' && t('linkedAccountsSettings.createGist')}
+                    {platform === 'twitter' && t('linkedAccountsSettings.postOnTwitter')}
+                    {platform === 'bluesky' && t('linkedAccountsSettings.postOnBluesky')}
                   </a>
                 </div>
               )}
@@ -564,9 +563,9 @@ export default function LinkedAccountsSettingsPage() {
 
           {/* Step 2: Paste proof link */}
           <div className="space-y-2">
-            <Label className="text-sm font-medium">Step 2: Paste the proof link</Label>
+            <Label className="text-sm font-medium">{t('linkedAccountsSettings.step2Title')}</Label>
             <Input
-              placeholder={PROOF_PLACEHOLDERS[platform] ?? 'Paste the full URL'}
+              placeholder={PROOF_PLACEHOLDERS[platform] ?? t('linkedAccountsSettings.pasteFullUrl')}
               value={proof}
               onChange={(e) => {
                 const val = e.target.value;
@@ -580,7 +579,7 @@ export default function LinkedAccountsSettingsPage() {
             />
             {identity && (
               <p className="text-xs text-green-600">
-                Detected: <span className="font-medium">{identity}</span>
+                {t('linkedAccountsSettings.detectedLabel')} <span className="font-medium">{identity}</span>
               </p>
             )}
           </div>
@@ -589,7 +588,7 @@ export default function LinkedAccountsSettingsPage() {
             {editingIdentity && (
               <Button variant="outline" onClick={handleCancelEdit} className="flex-shrink-0">
                 <X className="h-4 w-4 mr-2" />
-                Cancel
+                {t('linkedAccountsSettings.cancelButton')}
               </Button>
             )}
             <Button
@@ -600,17 +599,17 @@ export default function LinkedAccountsSettingsPage() {
               {addIdentity.isPending ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Publishing...
+                  {t('linkedAccountsSettings.publishing')}
                 </>
               ) : editingIdentity ? (
                 <>
                   <Check className="h-4 w-4 mr-2" />
-                  Update Account
+                  {t('linkedAccountsSettings.updateAccountButton')}
                 </>
               ) : (
                 <>
                   <Plus className="h-4 w-4 mr-2" />
-                  Link Account
+                  {t('linkedAccountsSettings.linkAccountButton')}
                 </>
               )}
             </Button>

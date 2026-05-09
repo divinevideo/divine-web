@@ -1,9 +1,9 @@
 // ABOUTME: Hook for managing adult content verification state
-// ABOUTME: Stores verification in localStorage and provides NIP-98 auth for media requests
+// ABOUTME: Stores verification in localStorage and provides viewer auth for media requests
 
 import { useState, useEffect, useCallback } from 'react';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
-import { createNip98AuthHeader } from '@/lib/nip98Auth';
+import { createMediaViewerAuthHeader } from '@/lib/mediaViewerAuth';
 
 const STORAGE_KEY = 'adult-verification-confirmed';
 const STORAGE_EXPIRY_KEY = 'adult-verification-expiry';
@@ -16,7 +16,7 @@ interface AdultVerificationState {
   hasSigner: boolean;
   confirmAdult: () => void;
   revokeVerification: () => void;
-  getAuthHeader: (url: string, method?: string) => Promise<string | null>;
+  getAuthHeader: (url: string, method?: string, sha256?: string) => Promise<string | null>;
 }
 
 function getStoredVerificationState(): boolean {
@@ -92,13 +92,20 @@ export function useAdultVerification(): AdultVerificationState {
     notifyVerificationChange();
   }, []);
 
-  // Generate NIP-98 auth header for a given URL
-  const getAuthHeader = useCallback(async (url: string, method: string = 'GET'): Promise<string | null> => {
-    if (!signer || !isVerified) {
-      return null;
-    }
-    return createNip98AuthHeader(signer, url, method);
-  }, [signer, isVerified]);
+  // Generate viewer auth header for a given URL (Blossom or NIP-98 depending on inputs)
+  const getAuthHeader = useCallback(
+    async (
+      url: string,
+      method: string = 'GET',
+      sha256?: string,
+    ): Promise<string | null> => {
+      if (!signer || !isVerified) {
+        return null;
+      }
+      return createMediaViewerAuthHeader({ signer, url, sha256, method });
+    },
+    [signer, isVerified],
+  );
 
   return {
     isVerified,

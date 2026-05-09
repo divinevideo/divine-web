@@ -1,6 +1,7 @@
 import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import userEvent from '@testing-library/user-event';
+import { MemoryRouter, useLocation } from 'react-router-dom';
 import type {
   ButtonHTMLAttributes,
   HTMLAttributes,
@@ -9,13 +10,27 @@ import type {
   ReactNode,
 } from 'react';
 import { nip19 } from 'nostr-tools';
+import { initializeI18n } from '@/lib/i18n';
 import SearchPage from './SearchPage';
 
-const { mockNavigate, mockFetchEventById, mockFetchVideoById, mockNostrQuery } = vi.hoisted(() => ({
+const {
+  mockNavigate,
+  mockFetchEventById,
+  mockFetchVideoById,
+  mockNostrQuery,
+  mockUseInfiniteSearchVideos,
+  mockEnterFullscreen,
+  mockSetVideosForFullscreen,
+  mockUpdateVideos,
+} = vi.hoisted(() => ({
   mockNavigate: vi.fn(),
   mockFetchEventById: vi.fn(),
   mockFetchVideoById: vi.fn(),
   mockNostrQuery: vi.fn(),
+  mockUseInfiniteSearchVideos: vi.fn(),
+  mockEnterFullscreen: vi.fn(),
+  mockSetVideosForFullscreen: vi.fn(),
+  mockUpdateVideos: vi.fn(),
 }));
 
 vi.mock('@unhead/react', () => ({
@@ -70,8 +85,35 @@ vi.mock('@/components/ui/avatar', () => ({
   AvatarFallback: ({ children, ...props }: HTMLAttributes<HTMLDivElement>) => <div {...props}>{children}</div>,
 }));
 
+// Bare VideoCard mock: search results MUST NOT render this directly because
+// it has no metrics wrapper, which means viewCount/loopCount can never display.
+// The presence of `bare-video-card-*` in a test render is a regression.
 vi.mock('@/components/VideoCard', () => ({
-  VideoCard: () => <div data-testid="video-card" />,
+  VideoCard: ({ video }: { video: { id: string } }) => (
+    <div data-testid={`bare-video-card-${video.id}`}>bare {video.id}</div>
+  ),
+}));
+
+vi.mock('@/components/VideoCardWithMetrics', () => ({
+  VideoCardWithMetrics: ({
+    video,
+    navigationContext,
+    index,
+  }: {
+    video: { id: string };
+    navigationContext?: { source: string; query?: string; sortMode?: string };
+    index?: number;
+  }) => {
+    const href = navigationContext
+      ? `/video/${video.id}?source=${navigationContext.source}&q=${navigationContext.query}&sort=${navigationContext.sortMode}&index=${index}`
+      : `/video/${video.id}`;
+
+    return (
+      <button data-testid={`video-card-${video.id}`} onClick={() => mockNavigate(href)}>
+        open {video.id}
+      </button>
+    );
+  },
 }));
 
 vi.mock('react-infinite-scroll-component', () => ({
@@ -80,6 +122,14 @@ vi.mock('react-infinite-scroll-component', () => ({
 
 vi.mock('@/hooks/useSubdomainNavigate', () => ({
   useSubdomainNavigate: () => mockNavigate,
+}));
+
+vi.mock('@/contexts/FullscreenFeedContext', () => ({
+  useFullscreenFeed: () => ({
+    setVideosForFullscreen: mockSetVideosForFullscreen,
+    enterFullscreen: mockEnterFullscreen,
+    updateVideos: mockUpdateVideos,
+  }),
 }));
 
 vi.mock('@nostrify/react', () => ({
@@ -100,13 +150,7 @@ vi.mock('@/hooks/useAppContext', () => ({
 }));
 
 vi.mock('@/hooks/useInfiniteSearchVideos', () => ({
-  useInfiniteSearchVideos: () => ({
-    data: { pages: [{ videos: [] }] },
-    fetchNextPage: vi.fn(),
-    hasNextPage: false,
-    isLoading: false,
-    error: null,
-  }),
+  useInfiniteSearchVideos: mockUseInfiniteSearchVideos,
 }));
 
 vi.mock('@/hooks/useSearchUsers', () => ({
@@ -137,17 +181,66 @@ function renderPage(initialEntries: string[] = ['/search']) {
   return render(
     <MemoryRouter initialEntries={initialEntries}>
       <SearchPage />
+      <LocationDisplay />
     </MemoryRouter>
   );
 }
 
+function LocationDisplay() {
+  const location = useLocation();
+  return (
+    <div data-testid="location-display">
+      {location.pathname}
+      {location.search}
+    </div>
+  );
+}
+
 describe('SearchPage', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
+    const storage = new Map<string, string>();
+    Object.defineProperty(window, 'localStorage', {
+      configurable: true,
+      value: {
+        getItem: (key: string) => storage.get(key) ?? null,
+        setItem: (key: string, value: string) => storage.set(key, value),
+        removeItem: (key: string) => storage.delete(key),
+        clear: () => storage.clear(),
+      } satisfies Pick<Storage, 'getItem' | 'setItem' | 'removeItem' | 'clear'>,
+    });
+    await initializeI18n({ force: true, languages: ['en-US'] });
     vi.clearAllMocks();
+    mockUseInfiniteSearchVideos.mockReturnValue({
+      data: { pages: [{ videos: [] }] },
+      fetchNextPage: vi.fn(),
+      hasNextPage: false,
+      isLoading: false,
+      error: null,
+    });
   });
 
   afterEach(() => {
     vi.useRealTimers();
+  });
+
+  it('clears the blur suggestion timeout on unmount', async () => {
+    vi.useFakeTimers();
+
+    const { unmount } = renderPage();
+    const input = screen.getByRole('textbox');
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(500);
+    });
+
+    fireEvent.focus(input);
+    fireEvent.blur(input);
+
+    expect(vi.getTimerCount()).toBeGreaterThan(0);
+
+    unmount();
+
+    expect(vi.getTimerCount()).toBe(0);
   });
 
   it('navigates directly when the query is an npub', () => {
@@ -281,5 +374,168 @@ describe('SearchPage', () => {
     });
 
     expect(mockNavigate).toHaveBeenCalledWith(`/event/${eventId}`);
+  });
+
+  it('opens video results with bounded search context', async () => {
+    mockUseInfiniteSearchVideos.mockReturnValue({
+      data: {
+        pages: [{
+          videos: [
+            { id: 'video-1', pubkey: 'a'.repeat(64) },
+            { id: 'video-2', pubkey: 'b'.repeat(64) },
+          ],
+        }],
+      },
+      fetchNextPage: vi.fn(),
+      hasNextPage: false,
+      isLoading: false,
+      error: null,
+    });
+
+    renderPage(['/search?q=twerking&filter=videos&sort=top']);
+
+    fireEvent.click(screen.getAllByTestId('video-card-video-2')[0]!);
+
+    expect(mockNavigate).toHaveBeenCalledWith('/video/video-2?source=search&q=twerking&sort=top&index=1');
+  });
+
+  it('renders a play-all button for video search results and navigates with source context', async () => {
+    const user = userEvent.setup();
+    mockUseInfiniteSearchVideos.mockReturnValue({
+      data: {
+        pages: [{
+          videos: [{
+            id: 'video-1',
+            pubkey: 'a'.repeat(64),
+            videoUrl: 'https://example.com/video-1.mp4',
+          }],
+        }],
+      },
+      fetchNextPage: vi.fn(),
+      hasNextPage: false,
+      isLoading: false,
+      error: null,
+    });
+
+    renderPage(['/search?q=twerking&filter=videos']);
+
+    const button = await screen.findByRole('button', { name: /play all/i });
+    await user.click(button);
+
+    expect(mockNavigate).toHaveBeenCalledWith('/search?q=twerking&filter=videos&play=compilation&start=0');
+  });
+
+  it('uses the live search state for returnTo even before the debounced url sync runs', async () => {
+    const user = userEvent.setup();
+    mockUseInfiniteSearchVideos.mockReturnValue({
+      data: {
+        pages: [{
+          videos: [{
+            id: 'video-1',
+            pubkey: 'a'.repeat(64),
+            videoUrl: 'https://example.com/video-1.mp4',
+          }],
+        }],
+      },
+      fetchNextPage: vi.fn(),
+      hasNextPage: false,
+      isLoading: false,
+      error: null,
+    });
+
+    renderPage(['/search?q=vine&filter=videos']);
+
+    await user.clear(screen.getByRole('textbox'));
+    await user.type(screen.getByRole('textbox'), 'twerking');
+    await user.click(await screen.findByRole('button', { name: /play all/i }));
+
+    expect(mockNavigate).toHaveBeenCalledWith('/search?q=twerking&filter=videos&play=compilation&start=0');
+  });
+
+  it('auto-opens the existing fullscreen feed when compilation mode is present in the search url', () => {
+    mockUseInfiniteSearchVideos.mockReturnValue({
+      data: {
+        pages: [{
+          videos: [{
+            id: 'video-1',
+            pubkey: 'a'.repeat(64),
+            videoUrl: 'https://example.com/video-1.mp4',
+          }],
+        }],
+      },
+      fetchNextPage: vi.fn(),
+      hasNextPage: false,
+      isLoading: false,
+      error: null,
+    });
+
+    renderPage(['/search?q=twerking&filter=videos&play=compilation&start=0']);
+
+    expect(mockEnterFullscreen).toHaveBeenCalledWith(
+      [expect.objectContaining({ id: 'video-1' })],
+      0,
+    );
+  });
+
+  it('preserves compilation params during the debounced search url sync', async () => {
+    vi.useFakeTimers();
+    mockUseInfiniteSearchVideos.mockReturnValue({
+      data: {
+        pages: [{
+          videos: [{
+            id: 'video-1',
+            pubkey: 'a'.repeat(64),
+            videoUrl: 'https://example.com/video-1.mp4',
+          }],
+        }],
+      },
+      fetchNextPage: vi.fn(),
+      hasNextPage: false,
+      isLoading: false,
+      error: null,
+    });
+
+    renderPage(['/search?q=twerking&filter=videos&play=compilation&video=video-1']);
+
+    await act(async () => {
+      vi.advanceTimersByTime(600);
+    });
+
+    expect(screen.getByTestId('location-display').textContent).toBe(
+      '/search?q=twerking&filter=videos&play=compilation&video=video-1'
+    );
+  });
+
+  // Regression: bare VideoCard hides view counts because it has no metrics
+  // wrapper. Search results MUST go through VideoCardWithMetrics so loop /
+  // view counts render alongside other feeds.
+  it('renders the All-tab video grid via VideoCardWithMetrics, not bare VideoCard', () => {
+    mockUseInfiniteSearchVideos.mockReturnValue({
+      data: { pages: [{ videos: [{ id: 'video-1', pubkey: 'a'.repeat(64) }] }] },
+      fetchNextPage: vi.fn(),
+      hasNextPage: false,
+      isLoading: false,
+      error: null,
+    });
+
+    renderPage(['/search?q=dance']);
+
+    expect(screen.getAllByTestId('video-card-video-1').length).toBeGreaterThan(0);
+    expect(screen.queryAllByTestId('bare-video-card-video-1')).toHaveLength(0);
+  });
+
+  it('renders the videos-only tab grid via VideoCardWithMetrics, not bare VideoCard', () => {
+    mockUseInfiniteSearchVideos.mockReturnValue({
+      data: { pages: [{ videos: [{ id: 'video-2', pubkey: 'b'.repeat(64) }] }] },
+      fetchNextPage: vi.fn(),
+      hasNextPage: false,
+      isLoading: false,
+      error: null,
+    });
+
+    renderPage(['/search?q=dance&filter=videos']);
+
+    expect(screen.getAllByTestId('video-card-video-2').length).toBeGreaterThan(0);
+    expect(screen.queryAllByTestId('bare-video-card-video-2')).toHaveLength(0);
   });
 });
