@@ -20,6 +20,7 @@ import InfiniteScroll from 'react-infinite-scroll-component';
 import type { ParsedVideoData } from '@/types/video';
 import { debugLog, debugWarn } from '@/lib/debug';
 import type { SortMode } from '@/types/nostr';
+import type { FunnelcakePeriod } from '@/types/funnelcake';
 import { useSubdomainNavigate } from '@/hooks/useSubdomainNavigate';
 import { useCallback } from 'react';
 import { useFullscreenFeed } from '@/contexts/FullscreenFeedContext';
@@ -37,6 +38,7 @@ interface VideoFeedProps {
   pubkey?: string;
   limit?: number;
   sortMode?: SortMode; // NIP-50 sort mode (hot, top, rising, controversial)
+  period?: FunnelcakePeriod; // Time window — only meaningful when sortMode='popular' on a trending feed
   viewMode?: ViewMode; // Display mode: feed (full cards) or grid (thumbnails)
   className?: string;
   verifiedOnly?: boolean; // Filter to show only ProofMode verified videos
@@ -59,6 +61,7 @@ export function VideoFeed({
   pubkey,
   limit = 12, // Smaller first page improves initial paint on REST-backed feeds
   sortMode,
+  period,
   viewMode = 'feed',
   className,
   verifiedOnly = false,
@@ -94,6 +97,7 @@ export function VideoFeed({
     pubkey,
     pageSize: limit,
     sortMode,
+    period,
   });
   const { feedRootRef, trackInitialRender, trackFirstPlayback } = useFeedPerformanceInstrumentation({
     feedType,
