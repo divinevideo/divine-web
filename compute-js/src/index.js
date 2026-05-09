@@ -8,6 +8,7 @@ import { SecretStore } from 'fastly:secret-store';
 import { PublisherServer } from '@fastly/compute-js-static-publish';
 import rc from '../static-publish.rc.js';
 import { buildCrawlerHtml, escapeHtml, cleanText, truncateText } from './ogTags.js';
+import { transformVideoApiResponse } from './videoMetadata.js';
 
 const publisherServer = PublisherServer.fromStaticPublishRc(rc);
 const DEFAULT_OG_IMAGE = 'https://divine.video/og.png';
@@ -985,65 +986,11 @@ async function fetchVideoMetadata(videoId, funnelcakeTarget = getFunnelcakeOrigi
     }
 
     const result = await response.json();
-
-    if (!result.event) {
-      console.log('Video not found:', videoId);
-      return null;
+    const meta = transformVideoApiResponse(result, { defaultOgImage: DEFAULT_OG_IMAGE });
+    if (meta) {
+      console.log('Fetched video metadata - title:', meta.title, 'videoUrl:', meta.videoUrl);
     }
-
-    const event = result.event;
-    const stats = result.stats || {};
-
-    // Extract data from tags
-    const getTag = (name) => event.tags?.find(t => t[0] === name)?.[1];
-
-    // Parse imeta tag for thumbnail and video URL
-    const imetaTag = event.tags?.find(t => t[0] === 'imeta');
-    const imeta = {};
-    if (imetaTag) {
-      for (let i = 1; i < imetaTag.length; i++) {
-        const parts = imetaTag[i].split(' ');
-        if (parts.length >= 2) {
-          imeta[parts[0]] = parts.slice(1).join(' ');
-        }
-      }
-    }
-
-    const thumbnail = imeta.image || null;
-    const summary = cleanText(getTag('summary'));
-    const alt = cleanText(getTag('alt'));
-    const content = cleanText(event.content);
-    const title = cleanText(getTag('title')) || alt || summary || truncateText(content, 80) || null;
-
-    // Build a rich description with engagement stats
-    const statsList = [];
-    if (stats.reactions > 0) statsList.push(`${stats.reactions} ❤️`);
-    if (stats.comments > 0) statsList.push(`${stats.comments} 💬`);
-    if (stats.reposts > 0) statsList.push(`${stats.reposts} 🔁`);
-
-    let description;
-    if (content) {
-      description = content;
-    } else if (summary) {
-      description = summary;
-    } else if (alt) {
-      description = alt;
-    } else if (statsList.length > 0) {
-      description = `${statsList.join(' • ')} on Divine`;
-    } else {
-      description = 'Watch this short video on Divine';
-    }
-
-    console.log('Fetched video metadata - title:', title, 'thumbnail:', thumbnail);
-
-    return {
-      title: title || 'Video on Divine',
-      description: description,
-      thumbnail: thumbnail || DEFAULT_OG_IMAGE,
-      authorName: cleanText(getTag('author')) || cleanText(stats.author_name) || '',
-      reactions: stats.reactions || 0,
-      comments: stats.comments || 0,
-    };
+    return meta;
   } catch (err) {
     console.error('Failed to fetch video metadata:', err.message);
     return null;
