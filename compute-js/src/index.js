@@ -18,6 +18,7 @@ import {
   handleHashtagOgTags,
   handleSearchOgTags,
   handleDiscoveryOgTags,
+  handleApexOgTags,
 } from './crawlerHandlers.js';
 import { renderEmbedPage } from './embedPage.js';
 
@@ -258,6 +259,11 @@ async function handleRequest(event) {
   const isApexLanding = isApexDomain && (url.pathname === '/' || url.pathname === '/index.html');
   const discoveryFeedType = isApexDomain ? getDiscoveryFeedType(url.pathname) : null;
   const shouldInjectFeed = isApexLanding || discoveryFeedType;
+
+  if (isApexLanding && isSocialMediaCrawler(request)) {
+    const ogResponse = await handleApexOgTags();
+    if (ogResponse) return ogResponse;
+  }
 
   const response = await publisherServer.serveRequest(request);
   if (response != null) {

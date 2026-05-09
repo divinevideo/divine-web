@@ -19,9 +19,46 @@ vi.mock('fastly:kv-store', () => {
   return { KVStore: MockKVStore };
 });
 
-import { handleAtUsernameOg, handleHashtagOgTags, handleSearchOgTags, handleDiscoveryOgTags } from './crawlerHandlers.js';
+import { handleAtUsernameOg, handleHashtagOgTags, handleSearchOgTags, handleDiscoveryOgTags, handleApexOgTags } from './crawlerHandlers.js';
 
 const HEX64 = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+
+describe('handleApexOgTags', () => {
+  beforeEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('builds homepage OG with top trending thumbnail', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ videos: [{ thumbnail: 'https://x/hero.jpg' }] }),
+    }));
+    const result = await handleApexOgTags();
+    const html = await result!.text();
+    expect(html).toContain('Divine — 6-second loops from real humans');
+    expect(html).toContain('https://x/hero.jpg');
+    expect(html).toContain('https://divine.video/');
+    // When using a fetched thumbnail, dimensions should be omitted
+    expect(html).not.toContain('og:image:width');
+  });
+
+  it('falls back to brand image with 1200x630 dimensions on API failure', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false }));
+    const result = await handleApexOgTags();
+    const html = await result!.text();
+    expect(html).toContain('https://divine.video/og.png');
+    expect(html).toContain('og:image:width');
+    expect(html).toContain('content="1200"');
+  });
+
+  it('falls back gracefully when fetch throws', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('network')));
+    const result = await handleApexOgTags();
+    const html = await result!.text();
+    expect(html).toContain('Divine — 6-second loops from real humans');
+    expect(html).toContain('https://divine.video/og.png');
+  });
+});
 
 describe('handleAtUsernameOg', () => {
   beforeEach(() => {

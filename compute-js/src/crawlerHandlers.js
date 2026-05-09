@@ -371,6 +371,41 @@ export async function handleDiscoveryOgTags(feedType) {
   });
 }
 
+export async function handleApexOgTags() {
+  let topThumbnail = null;
+  try {
+    const r = await fetch(`https://relay.divine.video/api/videos?sort=trending&limit=1`, {
+      backend: 'funnelcake',
+      method: 'GET',
+      headers: { 'Accept': 'application/json', 'Host': 'relay.divine.video' },
+    });
+    if (r.ok) {
+      const data = await r.json();
+      topThumbnail = data.videos?.[0]?.thumbnail || null;
+    }
+  } catch (e) {
+    console.error('handleApexOgTags funnelcake error:', e.message);
+  }
+  const html = buildCrawlerHtml({
+    title: 'Divine — 6-second loops from real humans',
+    description: 'Watch and share 6-second looping videos on the decentralized Nostr network.',
+    image: topThumbnail || DEFAULT_OG_IMAGE,
+    url: 'https://divine.video/',
+    ogType: 'website',
+    twitterCard: 'summary_large_image',
+    imageWidth: topThumbnail ? null : 1200,
+    imageHeight: topThumbnail ? null : 630,
+  });
+  return new Response(html, {
+    status: 200,
+    headers: {
+      'Content-Type': 'text/html; charset=utf-8',
+      'Cache-Control': 'public, max-age=300',
+      'Vary': 'User-Agent',
+    },
+  });
+}
+
 export async function handleAtUsernameOg(username, url) {
   try {
     const namesStore = new KVStore('divine-names');
