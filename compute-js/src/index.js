@@ -7,13 +7,11 @@ import { KVStore } from 'fastly:kv-store';
 import { SecretStore } from 'fastly:secret-store';
 import { PublisherServer } from '@fastly/compute-js-static-publish';
 import rc from '../static-publish.rc.js';
-import { escapeHtml } from './ogTags.js';
+import { buildFunnelcakeUrl, getFunnelcakeOriginForApiHost } from './funnelcakeOrigin.js';
+import { isJsonWellKnownPath, shouldServeWellKnownBeforeWwwRedirect } from './wellKnownPaths.js';
+import { buildCrawlerHtml, escapeHtml, cleanText, truncateText } from './ogTags.js';
 import { hexToNpub } from './bech32.js';
 import {
-  fetchVideoMetadata,
-  handleVideoOgTags,
-  handleProfileOgTags,
-  handleCategoryOgTags,
   handleAtUsernameOg,
   handleHashtagOgTags,
   handleSearchOgTags,
@@ -21,15 +19,10 @@ import {
   handleApexOgTags,
 } from './crawlerHandlers.js';
 import { renderEmbedPage } from './embedPage.js';
-import { buildFunnelcakeUrl, getFunnelcakeOriginForApiHost } from './funnelcakeOrigin.js';
-import { isJsonWellKnownPath, shouldServeWellKnownBeforeWwwRedirect } from './wellKnownPaths.js';
-import { buildCrawlerHtml, escapeHtml, cleanText, truncateText } from './ogTags.js';
 
 const publisherServer = PublisherServer.fromStaticPublishRc(rc);
-
-// Funnelcake API URL — edge worker calls origin directly (not via api.divine.video cache
-// to avoid Fastly→Fastly loops). Client-side code uses api.divine.video for caching.
-const FUNNELCAKE_API_URL = 'https://relay.divine.video';
+const DEFAULT_OG_IMAGE = 'https://divine.video/og.png';
+const DEFAULT_SITE_DESCRIPTION = 'Watch and share 6-second looping videos on the decentralized Nostr network.';
 
 // Apex domains we serve (used to detect subdomains)
 const APEX_DOMAINS = ['dvine.video', 'divine.video'];
