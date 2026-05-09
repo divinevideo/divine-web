@@ -17,6 +17,7 @@ import {
   handleAtUsernameOg,
   handleHashtagOgTags,
   handleSearchOgTags,
+  handleDiscoveryOgTags,
 } from './crawlerHandlers.js';
 import { renderEmbedPage } from './embedPage.js';
 
@@ -211,6 +212,14 @@ async function handleRequest(event) {
 
     if (url.pathname === '/search') {
       const ogResponse = handleSearchOgTags(url.searchParams.get('q'));
+      if (ogResponse) return ogResponse;
+    }
+
+    if (url.pathname === '/discovery' || url.pathname.startsWith('/discovery/')) {
+      const type = url.pathname === '/discovery'
+        ? 'trending'
+        : url.pathname.slice('/discovery/'.length).split('?')[0];
+      const ogResponse = await handleDiscoveryOgTags(type);
       if (ogResponse) return ogResponse;
     }
   }

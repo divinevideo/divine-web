@@ -327,6 +327,50 @@ export function handleSearchOgTags(query) {
   });
 }
 
+const FEED_TITLES = {
+  trending: 'Trending videos',
+  recent: 'Recent videos',
+  popular: 'Popular videos',
+  loops: 'Top loops',
+};
+
+export async function handleDiscoveryOgTags(feedType) {
+  const type = FEED_TITLES[feedType] ? feedType : 'trending';
+  let topThumbnail = null;
+  try {
+    const r = await fetch(`https://relay.divine.video/api/videos?sort=${encodeURIComponent(type)}&limit=1`, {
+      backend: 'funnelcake',
+      method: 'GET',
+      headers: { 'Accept': 'application/json', 'Host': 'relay.divine.video' },
+    });
+    if (r.ok) {
+      const data = await r.json();
+      topThumbnail = data.videos?.[0]?.thumbnail || null;
+    }
+  } catch (e) {
+    console.error('handleDiscoveryOgTags funnelcake error:', e.message);
+  }
+  const label = FEED_TITLES[type];
+  const html = buildCrawlerHtml({
+    title: `${label} on Divine`,
+    description: `${label} on Divine — 6-second loops from real humans.`,
+    image: topThumbnail || DEFAULT_OG_IMAGE,
+    url: type === 'trending' ? 'https://divine.video/discovery' : `https://divine.video/discovery/${type}`,
+    ogType: 'website',
+    twitterCard: 'summary_large_image',
+    imageWidth: topThumbnail ? null : 1200,
+    imageHeight: topThumbnail ? null : 630,
+  });
+  return new Response(html, {
+    status: 200,
+    headers: {
+      'Content-Type': 'text/html; charset=utf-8',
+      'Cache-Control': 'public, max-age=300',
+      'Vary': 'User-Agent',
+    },
+  });
+}
+
 export async function handleAtUsernameOg(username, url) {
   try {
     const namesStore = new KVStore('divine-names');

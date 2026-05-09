@@ -19,7 +19,7 @@ vi.mock('fastly:kv-store', () => {
   return { KVStore: MockKVStore };
 });
 
-import { handleAtUsernameOg, handleHashtagOgTags, handleSearchOgTags } from './crawlerHandlers.js';
+import { handleAtUsernameOg, handleHashtagOgTags, handleSearchOgTags, handleDiscoveryOgTags } from './crawlerHandlers.js';
 
 const HEX64 = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
 
@@ -148,6 +148,57 @@ describe('handleHashtagOgTags', () => {
     }));
     const result = await handleHashtagOgTags('cooking');
     const html = await result!.text();
+    expect(html).toContain('https://divine.video/og.png');
+  });
+});
+
+describe('handleDiscoveryOgTags', () => {
+  beforeEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('builds OG for trending feed by default', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ videos: [{ thumbnail: 'https://x/top.jpg' }] }),
+    }));
+    const result = await handleDiscoveryOgTags('trending');
+    const html = await result!.text();
+    expect(html).toContain('Trending videos on Divine');
+    expect(html).toContain('https://x/top.jpg');
+    expect(html).toContain('https://divine.video/discovery');
+    expect(html).not.toContain('og:image:width');
+  });
+
+  it('handles unknown feed type by falling back to trending', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false }));
+    const result = await handleDiscoveryOgTags('foobar');
+    const html = await result!.text();
+    expect(html).toContain('Trending videos on Divine');
+  });
+
+  it('honors specific feed types', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false }));
+    const result = await handleDiscoveryOgTags('recent');
+    const html = await result!.text();
+    expect(html).toContain('Recent videos on Divine');
+    expect(html).toContain('https://divine.video/discovery/recent');
+  });
+
+  it('includes og:image dimensions for the default brand image', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false }));
+    const result = await handleDiscoveryOgTags('popular');
+    const html = await result!.text();
+    expect(html).toContain('https://divine.video/og.png');
+    expect(html).toContain('og:image:width');
+    expect(html).toContain('content="1200"');
+  });
+
+  it('falls back gracefully when fetch throws', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('network')));
+    const result = await handleDiscoveryOgTags('loops');
+    const html = await result!.text();
+    expect(html).toContain('Top loops on Divine');
     expect(html).toContain('https://divine.video/og.png');
   });
 });
