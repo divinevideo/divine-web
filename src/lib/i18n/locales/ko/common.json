@@ -1096,7 +1096,20 @@
     "heading": "인기",
     "subheading": "커뮤니티에서 인기 있는 콘텐츠를 발견해요",
     "rssTitle": "DiVine - 인기",
-    "rssLink": "RSS"
+    "rssLink": "RSS",
+    "popular": {
+      "period": {
+        "label": "기간",
+        "now": "지금",
+        "today": "오늘",
+        "week": "이번 주",
+        "month": "이번 달",
+        "all": "전체"
+      },
+      "emptyHeading": "조용한 시간",
+      "emptyBody": "더 넓은 범위로 시도해 봐.",
+      "emptyAction": "오늘 보기"
+    }
   },
   "merchPage": {
     "metaTitle": "굿즈 — Divine",

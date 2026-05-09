@@ -1096,7 +1096,20 @@
     "heading": "Trending",
     "subheading": "Tuklasin kung ano ang sikat sa komunidad",
     "rssTitle": "DiVine - Trending",
-    "rssLink": "RSS"
+    "rssLink": "RSS",
+    "popular": {
+      "period": {
+        "label": "Window",
+        "now": "Now",
+        "today": "Today",
+        "week": "This Week",
+        "month": "This Month",
+        "all": "All Time"
+      },
+      "emptyHeading": "Quiet hour",
+      "emptyBody": "Try a wider window.",
+      "emptyAction": "Show today"
+    }
   },
   "merchPage": {
     "metaTitle": "Mga Merch — Divine",

@@ -1097,7 +1097,20 @@
     "heading": "În tendințe",
     "subheading": "Descoperă ce e popular în comunitate",
     "rssTitle": "DiVine - În tendințe",
-    "rssLink": "RSS"
+    "rssLink": "RSS",
+    "popular": {
+      "period": {
+        "label": "Fereastră",
+        "now": "Acum",
+        "today": "Astăzi",
+        "week": "Săptămâna asta",
+        "month": "Luna asta",
+        "all": "Tot timpul"
+      },
+      "emptyHeading": "Oră liniștită",
+      "emptyBody": "Încearcă o fereastră mai largă.",
+      "emptyAction": "Arată astăzi"
+    }
   },
   "merchPage": {
     "metaTitle": "Merch — Divine",

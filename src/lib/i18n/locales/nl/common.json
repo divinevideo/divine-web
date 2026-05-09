@@ -1096,7 +1096,20 @@
     "heading": "Trending",
     "subheading": "Ontdek wat populair is in de community",
     "rssTitle": "DiVine - Trending",
-    "rssLink": "RSS"
+    "rssLink": "RSS",
+    "popular": {
+      "period": {
+        "label": "Venster",
+        "now": "Nu",
+        "today": "Vandaag",
+        "week": "Deze week",
+        "month": "Deze maand",
+        "all": "Altijd"
+      },
+      "emptyHeading": "Stil uur",
+      "emptyBody": "Probeer een breder venster.",
+      "emptyAction": "Vandaag tonen"
+    }
   },
   "merchPage": {
     "metaTitle": "Merch — Divine",

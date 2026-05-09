@@ -1096,7 +1096,20 @@
     "heading": "Di tendenza",
     "subheading": "Scopri cosa va forte nella community",
     "rssTitle": "DiVine - Di tendenza",
-    "rssLink": "RSS"
+    "rssLink": "RSS",
+    "popular": {
+      "period": {
+        "label": "Finestra",
+        "now": "Ora",
+        "today": "Oggi",
+        "week": "Questa settimana",
+        "month": "Questo mese",
+        "all": "Tutti"
+      },
+      "emptyHeading": "Ora tranquilla",
+      "emptyBody": "Prova una finestra più ampia.",
+      "emptyAction": "Mostra oggi"
+    }
   },
   "merchPage": {
     "metaTitle": "Merch — Divine",
