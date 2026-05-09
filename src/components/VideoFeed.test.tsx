@@ -175,4 +175,58 @@ describe('VideoFeed', () => {
       0,
     );
   });
+
+  it('renders the quiet-hour empty state for popular + now when feed is empty', async () => {
+    mockUseVideoProvider.mockReturnValue({
+      data: { pages: [{ videos: [] }] },
+      fetchNextPage: vi.fn(),
+      hasNextPage: false,
+      isLoading: false,
+      error: null,
+      refetch: vi.fn(),
+      dataSource: 'funnelcake',
+    });
+
+    render(
+      <MemoryRouter initialEntries={['/trending?sort=popular&period=now']}>
+        <VideoFeed
+          feedType="trending"
+          sortMode="popular"
+          period="now"
+          viewMode="feed"
+          mode="thumbnail"
+        />
+      </MemoryRouter>
+    );
+
+    expect(await screen.findByText(/quiet hour/i)).toBeInTheDocument();
+    expect(screen.getByTestId('quiet-hour-action')).toBeInTheDocument();
+  });
+
+  it('does not render the quiet-hour empty state for popular + week', async () => {
+    mockUseVideoProvider.mockReturnValue({
+      data: { pages: [{ videos: [] }] },
+      fetchNextPage: vi.fn(),
+      hasNextPage: false,
+      isLoading: false,
+      error: null,
+      refetch: vi.fn(),
+      dataSource: 'funnelcake',
+    });
+
+    render(
+      <MemoryRouter initialEntries={['/trending?sort=popular&period=week']}>
+        <VideoFeed
+          feedType="trending"
+          sortMode="popular"
+          period="week"
+          viewMode="feed"
+          mode="thumbnail"
+        />
+      </MemoryRouter>
+    );
+
+    // Renders the existing "Divine reclining" / "Divine needs a rest" branch instead
+    expect(screen.queryByTestId('quiet-hour-action')).not.toBeInTheDocument();
+  });
 });
