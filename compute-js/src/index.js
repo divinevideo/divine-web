@@ -9,6 +9,7 @@ import { PublisherServer } from '@fastly/compute-js-static-publish';
 import rc from '../static-publish.rc.js';
 import { buildFunnelcakeUrl, getFunnelcakeOriginForApiHost } from './funnelcakeOrigin.js';
 import { isJsonWellKnownPath, shouldServeWellKnownBeforeWwwRedirect } from './wellKnownPaths.js';
+import { buildCrawlerHtml, escapeHtml, cleanText, truncateText } from './ogTags.js';
 
 const publisherServer = PublisherServer.fromStaticPublishRc(rc);
 const DEFAULT_OG_IMAGE = 'https://divine.video/og.png';
@@ -1083,44 +1084,6 @@ async function fetchCategoriesMetadata(funnelcakeTarget = getFunnelcakeOriginFor
   }
 }
 
-function buildCrawlerHtml({
-  title,
-  description,
-  image,
-  url,
-  ogType,
-  twitterCard = 'summary_large_image',
-  twitterCreator = '',
-}) {
-  return `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${escapeHtml(title)}</title>
-
-  <meta property="og:type" content="${escapeHtml(ogType)}" />
-  <meta property="og:title" content="${escapeHtml(title)}" />
-  <meta property="og:description" content="${escapeHtml(description)}" />
-  <meta property="og:image" content="${escapeHtml(image)}" />
-  <meta property="og:url" content="${escapeHtml(url)}" />
-  <meta property="og:site_name" content="Divine" />
-
-  <meta name="twitter:card" content="${escapeHtml(twitterCard)}" />
-  <meta name="twitter:title" content="${escapeHtml(title)}" />
-  <meta name="twitter:description" content="${escapeHtml(description)}" />
-  <meta name="twitter:image" content="${escapeHtml(image)}" />
-  ${twitterCreator ? `<meta name="twitter:creator" content="${escapeHtml(twitterCreator)}" />` : ''}
-
-  <meta http-equiv="refresh" content="0;url=${escapeHtml(url)}">
-  <link rel="canonical" href="${escapeHtml(url)}" />
-</head>
-<body>
-  <p>Redirecting to <a href="${escapeHtml(url)}">${escapeHtml(title)}</a>...</p>
-</body>
-</html>`;
-}
-
 /**
  * Handle video page requests for social media crawlers
  * Injects dynamic OG meta tags with video-specific content
@@ -1140,17 +1103,29 @@ async function handleVideoOgTags(request, videoId, url, funnelcakeTarget) {
     const description = videoMeta?.description || `Watch this video on Divine. ${DEFAULT_SITE_DESCRIPTION}`;
     const thumbnail = videoMeta?.thumbnail || DEFAULT_OG_IMAGE;
     const authorName = videoMeta?.authorName || '';
-    const videoUrl = `https://divine.video/video/${videoId}`;
+    const pageUrl = `https://divine.video/video/${videoId}`;
 
-    console.log('Generating OG HTML for video:', videoId, 'title:', title);
+    const hasPlayableVideo = Boolean(videoMeta?.videoUrl);
+    const videoBlock = hasPlayableVideo ? {
+      url: videoMeta.videoUrl,
+      type: videoMeta.videoMime || 'video/mp4',
+      width: videoMeta.videoWidth || 720,
+      height: videoMeta.videoHeight || 1280,
+      embedUrl: `https://divine.video/embed/${videoId}`,
+    } : null;
+
+    console.log('Generating OG HTML for video:', videoId, 'title:', title, 'player:', hasPlayableVideo);
     const html = buildCrawlerHtml({
       title,
       description,
       image: thumbnail,
-      url: videoUrl,
+      url: pageUrl,
       ogType: 'video.other',
-      twitterCard: 'summary_large_image',
+      twitterCard: hasPlayableVideo ? 'player' : 'summary_large_image',
       twitterCreator: authorName,
+      imageWidth: videoMeta?.imageWidth || 1200,
+      imageHeight: videoMeta?.imageHeight || 630,
+      video: videoBlock,
     });
 
     console.log('Generated OG HTML, length:', html.length);
@@ -1241,6 +1216,8 @@ async function handleCategoryOgTags(request, url, funnelcakeTarget) {
       url: categoryUrl,
       ogType: 'website',
       twitterCard: 'summary_large_image',
+      imageWidth: 1200,
+      imageHeight: 630,
     });
 
     return new Response(html, {
@@ -1274,32 +1251,6 @@ function isNip05MatchForSubdomain(nip05, subdomain, apexDomain) {
   // alice@divine.video
   if (lower === `${subLower}@${apexDomain}`) return true;
   return false;
-}
-
-/**
- * Escape HTML special characters to prevent XSS
- */
-function escapeHtml(str) {
-  if (!str) return '';
-  return str
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
-}
-
-function cleanText(value) {
-  return (value || '').replace(/\s+/g, ' ').trim();
-}
-
-function truncateText(value, maxLength) {
-  const trimmed = cleanText(value);
-  if (trimmed.length <= maxLength) {
-    return trimmed;
-  }
-
-  return `${trimmed.slice(0, maxLength - 1).trimEnd()}…`;
 }
 
 function humanizeCategoryName(name) {
