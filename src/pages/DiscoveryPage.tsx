@@ -2,25 +2,34 @@
 // ABOUTME: Each tab uses different sort modes; Classics uses Funnelcake REST API for pre-computed metrics
 // ABOUTME: For You tab shows personalized recommendations when user is logged in
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
 import { useSubdomainNavigate } from '@/hooks/useSubdomainNavigate';
 import { VideoFeed } from '@/components/VideoFeed';
 import { VerifiedOnlyToggle } from '@/components/VerifiedOnlyToggle';
 import { HashtagExplorer } from '@/components/HashtagExplorer';
 import { ClassicVinersRow } from '@/components/ClassicVinersRow';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Star, Clock, Hash, Flame, Sparkle as Sparkles } from '@phosphor-icons/react';
+import { Star, Clock, Hash, Flame, Sparkle as Sparkles, TrendUp as TrendingUp } from '@phosphor-icons/react';
 // Zap temporarily unused - will be needed when Rising tab is re-enabled
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useCategories } from '@/hooks/useCategories';
 import { getTranslatedCategoryLabel } from '@/lib/constants/categories';
+import { POPULAR_PERIODS } from '@/lib/constants/sortModes';
+import type { FunnelcakePeriod } from '@/types/funnelcake';
 
 // All possible tab values (foryou only shown when logged in)
-type AllowedTab = 'foryou' | 'classics' | 'hot' | 'new' | 'hashtags';
-const ALL_TABS: AllowedTab[] = ['foryou', 'classics', 'hot', 'new', 'hashtags'];
-const BASE_TABS: AllowedTab[] = ['classics', 'hot', 'new', 'hashtags'];
+type AllowedTab = 'foryou' | 'classics' | 'hot' | 'popular' | 'new' | 'hashtags';
+const ALL_TABS: AllowedTab[] = ['foryou', 'classics', 'hot', 'popular', 'new', 'hashtags'];
+const BASE_TABS: AllowedTab[] = ['classics', 'hot', 'popular', 'new', 'hashtags'];
+
+const VALID_PERIODS: ReadonlyArray<string> = ['now', 'today', 'week', 'month', 'all'];
+
+function parsePeriod(raw: string | null): FunnelcakePeriod {
+  if (raw && VALID_PERIODS.includes(raw)) return raw as FunnelcakePeriod;
+  return 'today';
+}
 
 export function DiscoveryPage() {
   const navigate = useSubdomainNavigate();
@@ -44,6 +53,15 @@ export function DiscoveryPage() {
   const initialTab: AllowedTab = allowedTabs.includes(normalizedTab as AllowedTab) ? (normalizedTab as AllowedTab) : defaultTab;
   const [activeTab, setActiveTab] = useState<AllowedTab>(initialTab);
   const [verifiedOnly, setVerifiedOnly] = useState(false);
+
+  // Period state for the Popular tab. Lives in URL so /discovery/popular?period=week is shareable.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const period = parsePeriod(searchParams.get('period'));
+  const setPeriod = useCallback((next: FunnelcakePeriod) => {
+    const params = new URLSearchParams(searchParams);
+    params.set('period', next);
+    setSearchParams(params, { replace: true });
+  }, [searchParams, setSearchParams]);
 
   // Note: We no longer force relay changes here as it causes navigation delays
   // The default relay (relay.divine.video) is already configured in App.tsx
@@ -122,7 +140,7 @@ export function DiscoveryPage() {
           }}
           className="space-y-6"
         >
-          <TabsList className={`w-full grid gap-1 ${isLoggedIn ? 'grid-cols-5' : 'grid-cols-4'}`}>
+          <TabsList className={`w-full grid gap-1 ${isLoggedIn ? 'grid-cols-6' : 'grid-cols-5'}`}>
             {isLoggedIn && (
               <TabsTrigger value="foryou" className="gap-1.5 sm:gap-2">
                 <Sparkles className="h-4 w-4" />
@@ -136,6 +154,10 @@ export function DiscoveryPage() {
             <TabsTrigger value="hot" className="gap-1.5 sm:gap-2">
               <Flame className="h-4 w-4" />
               <span className="hidden sm:inline">{t('discovery.hot')}</span>
+            </TabsTrigger>
+            <TabsTrigger value="popular" className="gap-1.5 sm:gap-2">
+              <TrendingUp className="h-4 w-4" />
+              <span className="hidden sm:inline">{t('discovery.popular')}</span>
             </TabsTrigger>
             {/* Rising tab temporarily disabled
             <TabsTrigger value="rising" className="gap-1.5 sm:gap-2">
@@ -189,6 +211,45 @@ export function DiscoveryPage() {
               data-testid="video-feed-hot"
               className="space-y-6"
               key="hot"
+            />
+          </TabsContent>
+
+          <TabsContent value="popular" className="mt-0 space-y-6">
+            <div
+              role="group"
+              aria-label={t('trendingPage.popular.period.label')}
+              data-testid="period-row"
+              className="flex flex-wrap gap-2"
+            >
+              {POPULAR_PERIODS.map(p => {
+                const isSelected = period === p.value;
+                return (
+                  <button
+                    key={p.value}
+                    type="button"
+                    aria-pressed={isSelected}
+                    data-testid={`period-pill-${p.value}`}
+                    onClick={() => setPeriod(p.value)}
+                    className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all min-h-[36px]
+                      ${isSelected
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-brand-light-green dark:bg-brand-dark-green hover:bg-muted text-muted-foreground hover:text-foreground'
+                      }`}
+                  >
+                    {t(`trendingPage.popular.period.${p.value}`)}
+                  </button>
+                );
+              })}
+            </div>
+            <VideoFeed
+              feedType="trending"
+              sortMode="popular"
+              period={period}
+              verifiedOnly={verifiedOnly}
+              accent="pink"
+              data-testid="video-feed-popular"
+              className="space-y-6"
+              key={`popular-${period}`}
             />
           </TabsContent>
 
