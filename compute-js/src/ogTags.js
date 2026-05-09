@@ -29,12 +29,15 @@ export function buildCrawlerHtml({
   ogType,
   twitterCard = 'summary_large_image',
   twitterCreator = '',
-  imageWidth = 1200,
-  imageHeight = 630,
+  imageWidth = null,
+  imageHeight = null,
   siteName = 'Divine',
   video = null,
 }) {
   const e = escapeHtml;
+  const imageDimsBlock = (imageWidth && imageHeight) ? `
+  <meta property="og:image:width" content="${Number(imageWidth) || 1200}" />
+  <meta property="og:image:height" content="${Number(imageHeight) || 630}" />` : '';
   const videoBlock = video ? `
   <meta property="og:video" content="${e(video.url)}" />
   <meta property="og:video:secure_url" content="${e(video.url)}" />
@@ -57,9 +60,7 @@ export function buildCrawlerHtml({
   <meta property="og:type" content="${e(ogType)}" />
   <meta property="og:title" content="${e(title)}" />
   <meta property="og:description" content="${e(description)}" />
-  <meta property="og:image" content="${e(image)}" />
-  <meta property="og:image:width" content="${Number(imageWidth) || 1200}" />
-  <meta property="og:image:height" content="${Number(imageHeight) || 630}" />
+  <meta property="og:image" content="${e(image)}" />${imageDimsBlock}
   <meta property="og:url" content="${e(url)}" />
   <meta property="og:site_name" content="${e(siteName)}" />
 ${videoBlock}

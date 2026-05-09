@@ -1141,6 +1141,10 @@ async function handleVideoOgTags(request, videoId, url) {
       ogType: 'video.other',
       twitterCard: 'summary_large_image',
       twitterCreator: authorName,
+      // imageWidth/imageHeight: Task 3 will override with imeta values from videoMeta when available;
+      // for now default to 1200×630 (the og.png brand image dimensions used as fallback thumbnail)
+      imageWidth: videoMeta?.imageWidth || 1200,
+      imageHeight: videoMeta?.imageHeight || 630,
     });
 
     console.log('Generated OG HTML, length:', html.length);
@@ -1231,6 +1235,8 @@ async function handleCategoryOgTags(request, url) {
       url: categoryUrl,
       ogType: 'website',
       twitterCard: 'summary_large_image',
+      imageWidth: 1200,
+      imageHeight: 630,
     });
 
     return new Response(html, {
