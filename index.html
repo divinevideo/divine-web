@@ -124,26 +124,9 @@
   <body>
     <div id="root"></div>
 
-    <!-- HubSpot tracking code & GDPR cookie consent banner.
-         Wrapped in a sim-suppression guard: HubSpot's tracker fires
-         independently of the Firebase/GA4 consent gate, so it must be
-         loaded conditionally. The flag is set by divine-brain's
-         virtual-persona PR runner via Stagehand `page.addInitScript`
-         BEFORE the document is parsed, so this guard sees an already-
-         set window flag in those sessions. Production traffic
-         (no flag set) loads HubSpot exactly as before. -->
-    <script>
-      (function () {
-        if (window.__DIVINE_ANALYTICS_DISABLED__) return;
-        var s = document.createElement('script');
-        s.type = 'text/javascript';
-        s.id = 'hs-script-loader';
-        s.async = true;
-        s.defer = true;
-        s.src = 'https://js-na2.hs-scripts.com/244466832.js';
-        document.head.appendChild(s);
-      })();
-    </script>
+    <!-- HubSpot tracking code & GDPR cookie consent banner. The module keeps
+         the sim-suppression guard out of inline HTML so CSP lint stays clean. -->
+    <script type="module" src="/src/lib/hubSpotLoader.ts"></script>
 
     <script type="module" src="/src/main.tsx"></script>
   </body>
