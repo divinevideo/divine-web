@@ -279,9 +279,15 @@ describe('popular sort with period', () => {
   it('does not consume edge-injected feed when period is set', async () => {
     // Simulate the real edge worker: it sets BOTH globals together.
     // See compute-js/src/index.js:207 — `window.__DIVINE_FEED_TYPE__="trending"`.
+    // The fixture mimics what the Fastly edge worker injects, but the hook is
+    // supposed to skip consumption when period is set — so the shape never
+    // gets parsed. Use a structural type that bypasses FunnelcakeResponse's
+    // required fields (id, pubkey, d_tag, video_url, etc.) to keep the test
+    // narrow.
     type EdgeWindow = Window & { __DIVINE_FEED__?: unknown; __DIVINE_FEED_TYPE__?: string };
     (window as EdgeWindow).__DIVINE_FEED__ = {
-      videos: [{ id: 'edge-video', pubkey: 'edge-p', kind: 34236, createdAt: 1, vineId: 'edge-d' }],
+      videos: [{ id: 'edge-video', pubkey: 'edge-p', kind: 34236, created_at: 1, d_tag: 'edge-d', video_url: 'https://example.com/edge.mp4' }],
+      has_more: false,
     };
     (window as EdgeWindow).__DIVINE_FEED_TYPE__ = 'trending';
 
