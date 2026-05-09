@@ -64,6 +64,7 @@
     "forYou": "Fur dich",
     "classic": "Klassisch",
     "hot": "Heiss",
+    "popular": "Beliebt",
     "new": "Neu",
     "tags": "Tags",
     "verifiedOnly": "Von Menschen gemacht",
@@ -1096,7 +1097,20 @@
     "heading": "Trending",
     "subheading": "Schau, was in der Community gerade läuft",
     "rssTitle": "DiVine - Trending",
-    "rssLink": "RSS"
+    "rssLink": "RSS",
+    "popular": {
+      "period": {
+        "label": "Zeitraum",
+        "now": "Jetzt",
+        "today": "Heute",
+        "week": "Diese Woche",
+        "month": "Diesen Monat",
+        "all": "Alle"
+      },
+      "emptyHeading": "Stille Stunde",
+      "emptyBody": "Versuch ein größeres Zeitfenster.",
+      "emptyAction": "Heute anzeigen"
+    }
   },
   "merchPage": {
     "metaTitle": "Merch — Divine",

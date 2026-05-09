@@ -64,6 +64,7 @@
     "forYou": "Dla ciebie",
     "classic": "Klasyczne",
     "hot": "Gorace",
+    "popular": "Popularne",
     "new": "Nowe",
     "tags": "Tagi",
     "verifiedOnly": "Stworzone przez ludzi",
@@ -1098,7 +1099,20 @@
     "heading": "Na czasie",
     "subheading": "Sprawdź, co jest popularne w społeczności",
     "rssTitle": "DiVine - Na czasie",
-    "rssLink": "RSS"
+    "rssLink": "RSS",
+    "popular": {
+      "period": {
+        "label": "Okno",
+        "now": "Teraz",
+        "today": "Dzisiaj",
+        "week": "Ten tydzień",
+        "month": "Ten miesiąc",
+        "all": "Cały czas"
+      },
+      "emptyHeading": "Cicha godzina",
+      "emptyBody": "Spróbuj szerszego okna.",
+      "emptyAction": "Pokaż dziś"
+    }
   },
   "merchPage": {
     "metaTitle": "Gadżety — Divine",

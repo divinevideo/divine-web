@@ -10,6 +10,7 @@ import { hasFunnelcake, getFunnelcakeUrl } from '@/config/relays';
 import { debugLog } from '@/lib/debug';
 import type { RelayCapabilities } from '@/lib/relayCapabilities';
 import type { SortMode } from '@/types/nostr';
+import type { FunnelcakePeriod } from '@/types/funnelcake';
 
 // Feed types that can be provided
 export type VideoFeedType = 'discovery' | 'home' | 'trending' | 'hashtag' | 'profile' | 'recent' | 'classics' | 'foryou' | 'category';
@@ -18,6 +19,7 @@ type WebsocketVideoFeedType = 'discovery' | 'home' | 'trending' | 'hashtag' | 'p
 interface UseVideoProviderOptions {
   feedType: VideoFeedType;
   sortMode?: SortMode;
+  period?: FunnelcakePeriod;
   hashtag?: string;
   category?: string;
   pubkey?: string;
@@ -118,6 +120,8 @@ function mapToFunnelcakeSortMode(sortMode?: SortMode): FunnelcakeSortMode | unde
       return 'engagement';
     case 'classic':
       return 'classic';
+    case 'popular':
+      return 'popular';
     default:
       return 'trending';
   }
@@ -207,6 +211,7 @@ export function chooseVideoDataSource({
 export function useVideoProvider({
   feedType,
   sortMode,
+  period,
   hashtag,
   category,
   pubkey,
@@ -233,6 +238,7 @@ export function useVideoProvider({
     feedType: mapToFunnelcakeFeedType(feedType),
     apiUrl: decision.apiUrl,
     sortMode: mapToFunnelcakeSortMode(sortMode),
+    period,
     hashtag,
     category,
     pubkey,

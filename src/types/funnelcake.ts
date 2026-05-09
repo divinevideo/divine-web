@@ -119,10 +119,17 @@ export interface FunnelcakeError {
 }
 
 /**
+ * Time window for popular/trending sorts on /api/videos and /api/v2/videos.
+ * Maps directly to the API's `period` query parameter.
+ */
+export type FunnelcakePeriod = 'now' | 'today' | 'week' | 'month' | 'all';
+
+/**
  * Options for fetching videos from Funnelcake
  */
 export interface FunnelcakeFetchOptions {
   sort?: 'trending' | 'recent' | 'popular' | 'loops' | 'engagement' | 'watching' | 'likes' | 'comments' | 'published';
+  period?: FunnelcakePeriod;   // Window for popular/trending; ignored by other sorts
   limit?: number;
   before?: string;        // Cursor for pagination (timestamp)
   offset?: number;        // Offset for page-based pagination (0-indexed)

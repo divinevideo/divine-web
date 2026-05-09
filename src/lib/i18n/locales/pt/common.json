@@ -64,6 +64,7 @@
     "forYou": "Para voce",
     "classic": "Classico",
     "hot": "Em alta",
+    "popular": "Popular",
     "new": "Novo",
     "tags": "Tags",
     "verifiedOnly": "Feito por humanos",
@@ -1096,7 +1097,20 @@
     "heading": "Em alta",
     "subheading": "Descubra o que tá bombando na comunidade",
     "rssTitle": "DiVine - Em alta",
-    "rssLink": "RSS"
+    "rssLink": "RSS",
+    "popular": {
+      "period": {
+        "label": "Período",
+        "now": "Agora",
+        "today": "Hoje",
+        "week": "Esta semana",
+        "month": "Este mês",
+        "all": "Todos"
+      },
+      "emptyHeading": "Hora calma",
+      "emptyBody": "Tenta uma janela mais ampla.",
+      "emptyAction": "Mostrar hoje"
+    }
   },
   "merchPage": {
     "metaTitle": "Merch — Divine",

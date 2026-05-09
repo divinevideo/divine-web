@@ -64,6 +64,7 @@
     "forYou": "لك",
     "classic": "كلاسيكي",
     "hot": "رائج",
+    "popular": "شائع",
     "new": "جديد",
     "tags": "الوسوم",
     "verifiedOnly": "من صنع البشر",
@@ -1100,7 +1101,20 @@
     "heading": "الرائج",
     "subheading": "اكتشف ما هو شائع في المجتمع",
     "rssTitle": "DiVine - الرائج",
-    "rssLink": "RSS"
+    "rssLink": "RSS",
+    "popular": {
+      "period": {
+        "label": "النافذة",
+        "now": "الآن",
+        "today": "اليوم",
+        "week": "هذا الأسبوع",
+        "month": "هذا الشهر",
+        "all": "الكل"
+      },
+      "emptyHeading": "ساعة هادئة",
+      "emptyBody": "جرّب نافذة زمنية أوسع.",
+      "emptyAction": "اعرض اليوم"
+    }
   },
   "merchPage": {
     "metaTitle": "منتجات — Divine",

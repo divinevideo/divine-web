@@ -64,6 +64,7 @@
     "forYou": "Pour vous",
     "classic": "Classique",
     "hot": "Tendance",
+    "popular": "Populaire",
     "new": "Nouveau",
     "tags": "Tags",
     "verifiedOnly": "Cree par des humains",
@@ -1096,7 +1097,20 @@
     "heading": "Tendances",
     "subheading": "Découvre ce qui cartonne dans la communauté",
     "rssTitle": "DiVine - Tendances",
-    "rssLink": "RSS"
+    "rssLink": "RSS",
+    "popular": {
+      "period": {
+        "label": "Fenêtre",
+        "now": "Maintenant",
+        "today": "Aujourd'hui",
+        "week": "Cette semaine",
+        "month": "Ce mois",
+        "all": "Tout"
+      },
+      "emptyHeading": "Heure calme",
+      "emptyBody": "Essaie une plage plus large.",
+      "emptyAction": "Afficher aujourd'hui"
+    }
   },
   "merchPage": {
     "metaTitle": "Merch — Divine",

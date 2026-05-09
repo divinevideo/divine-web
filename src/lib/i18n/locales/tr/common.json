@@ -64,6 +64,7 @@
     "forYou": "Senin icin",
     "classic": "Klasik",
     "hot": "Populer",
+    "popular": "Popüler",
     "new": "Yeni",
     "tags": "Etiketler",
     "verifiedOnly": "Insan yapimi",
@@ -1096,7 +1097,20 @@
     "heading": "Trend",
     "subheading": "Toplulukta neyin popüler olduğunu keşfet",
     "rssTitle": "DiVine - Trend",
-    "rssLink": "RSS"
+    "rssLink": "RSS",
+    "popular": {
+      "period": {
+        "label": "Pencere",
+        "now": "Şimdi",
+        "today": "Bugün",
+        "week": "Bu hafta",
+        "month": "Bu ay",
+        "all": "Tüm zamanlar"
+      },
+      "emptyHeading": "Sakin saat",
+      "emptyBody": "Daha geniş bir pencere dene.",
+      "emptyAction": "Bugünü göster"
+    }
   },
   "merchPage": {
     "metaTitle": "Ürünler — Divine",

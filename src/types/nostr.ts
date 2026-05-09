@@ -31,7 +31,7 @@ export interface NIP50Filter extends NostrFilter {
  * - controversial: Events with mixed positive/negative reactions
  * - classic: Classic Vine archive content sorted by loops
  */
-export type SortMode = 'hot' | 'top' | 'rising' | 'controversial' | 'classic';
+export type SortMode = 'hot' | 'top' | 'rising' | 'controversial' | 'classic' | 'popular';
 
 /**
  * Pagination options for cursor-based queries

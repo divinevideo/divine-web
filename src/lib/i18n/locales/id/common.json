@@ -64,6 +64,7 @@
     "forYou": "Untuk Anda",
     "classic": "Klasik",
     "hot": "Populer",
+    "popular": "Populer",
     "new": "Baru",
     "tags": "Tag",
     "verifiedOnly": "Buatan manusia",
@@ -1096,7 +1097,20 @@
     "heading": "Trending",
     "subheading": "Temukan apa yang lagi populer di komunitas",
     "rssTitle": "DiVine - Trending",
-    "rssLink": "RSS"
+    "rssLink": "RSS",
+    "popular": {
+      "period": {
+        "label": "Jendela",
+        "now": "Sekarang",
+        "today": "Hari ini",
+        "week": "Minggu ini",
+        "month": "Bulan ini",
+        "all": "Semua waktu"
+      },
+      "emptyHeading": "Jam tenang",
+      "emptyBody": "Coba jendela yang lebih lebar.",
+      "emptyAction": "Tampilkan hari ini"
+    }
   },
   "merchPage": {
     "metaTitle": "Merch — Divine",

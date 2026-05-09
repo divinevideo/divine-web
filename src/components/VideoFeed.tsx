@@ -20,6 +20,7 @@ import InfiniteScroll from 'react-infinite-scroll-component';
 import type { ParsedVideoData } from '@/types/video';
 import { debugLog, debugWarn } from '@/lib/debug';
 import type { SortMode } from '@/types/nostr';
+import type { FunnelcakePeriod } from '@/types/funnelcake';
 import { useSubdomainNavigate } from '@/hooks/useSubdomainNavigate';
 import { useCallback } from 'react';
 import { useFullscreenFeed } from '@/contexts/FullscreenFeedContext';
@@ -37,6 +38,7 @@ interface VideoFeedProps {
   pubkey?: string;
   limit?: number;
   sortMode?: SortMode; // NIP-50 sort mode (hot, top, rising, controversial)
+  period?: FunnelcakePeriod; // Time window — only meaningful when sortMode='popular' on a trending feed
   viewMode?: ViewMode; // Display mode: feed (full cards) or grid (thumbnails)
   className?: string;
   verifiedOnly?: boolean; // Filter to show only ProofMode verified videos
@@ -59,6 +61,7 @@ export function VideoFeed({
   pubkey,
   limit = 12, // Smaller first page improves initial paint on REST-backed feeds
   sortMode,
+  period,
   viewMode = 'feed',
   className,
   verifiedOnly = false,
@@ -94,6 +97,7 @@ export function VideoFeed({
     pubkey,
     pageSize: limit,
     sortMode,
+    period,
   });
   const { feedRootRef, trackInitialRender, trackFirstPlayback } = useFeedPerformanceInstrumentation({
     feedType,
@@ -153,6 +157,9 @@ export function VideoFeed({
       return true;
     });
   }, [allVideos, checkContent, verifiedOnly]);
+
+  const isQuietHour =
+    feedType === 'trending' && sortMode === 'popular' && period === 'now';
 
   useEffect(() => {
     if (!isLoading && filteredVideos.length > 0) {
@@ -374,8 +381,30 @@ export function VideoFeed({
         <Card className="border-dashed border-2 border-brand-light-green dark:border-brand-dark-green bg-brand-light-green dark:bg-brand-dark-green">
           <CardContent className="py-16 px-8 text-center">
             <div className="max-w-md mx-auto space-y-6">
-              {/* Show reclining Divine image for discovery/trending/classics feeds when no videos */}
-              {(feedType === 'discovery' || feedType === 'trending' || feedType === 'classics') && !allFiltered ? (
+              {/* Show quiet-hour state for popular + now when no videos */}
+              {isQuietHour ? (
+                <>
+                  <div className="w-16 h-16 rounded-full bg-brand-light-green dark:bg-brand-dark-green flex items-center justify-center mx-auto">
+                    <Video className="h-8 w-8 text-primary" />
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-lg font-medium text-foreground">
+                      {t('trendingPage.popular.emptyHeading')}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {t('trendingPage.popular.emptyBody')}
+                    </p>
+                  </div>
+                  <Button
+                    variant="default"
+                    onClick={() => navigate('/trending?sort=popular&period=today', { replace: true })}
+                    data-testid="quiet-hour-action"
+                  >
+                    {t('trendingPage.popular.emptyAction')}
+                  </Button>
+                </>
+              ) : (feedType === 'discovery' || feedType === 'trending' || feedType === 'classics') && !allFiltered ? (
+                /* Show reclining Divine image for discovery/trending/classics feeds when no videos */
                 <>
                   <div className="mx-auto -mx-8 -mt-16">
                     <img

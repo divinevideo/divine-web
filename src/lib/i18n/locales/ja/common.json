@@ -64,6 +64,7 @@
     "forYou": "あなた向け",
     "classic": "クラシック",
     "hot": "人気",
+    "popular": "人気",
     "new": "新着",
     "tags": "タグ",
     "verifiedOnly": "人が作成",
@@ -1096,7 +1097,20 @@
     "heading": "トレンド",
     "subheading": "コミュニティで人気のコンテンツをチェック",
     "rssTitle": "DiVine - トレンド",
-    "rssLink": "RSS"
+    "rssLink": "RSS",
+    "popular": {
+      "period": {
+        "label": "ウィンドウ",
+        "now": "いま",
+        "today": "今日",
+        "week": "今週",
+        "month": "今月",
+        "all": "すべて"
+      },
+      "emptyHeading": "静かな時間",
+      "emptyBody": "もっと広い期間で試してみて。",
+      "emptyAction": "今日を表示"
+    }
   },
   "merchPage": {
     "metaTitle": "グッズ — Divine",

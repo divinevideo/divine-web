@@ -614,3 +614,76 @@ describe('funnelcakeClient', () => {
     });
   });
 });
+
+describe('fetchVideos / fetchVideosV2 period parameter', () => {
+  let fetchVideos: typeof import('./funnelcakeClient').fetchVideos;
+  let fetchVideosV2: typeof import('./funnelcakeClient').fetchVideosV2;
+
+  beforeEach(async () => {
+    vi.resetModules();
+    global.fetch = vi.fn();
+    const client = await import('./funnelcakeClient');
+    fetchVideos = client.fetchVideos;
+    fetchVideosV2 = client.fetchVideosV2;
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  function lastFetchUrl(): string {
+    const mockFetch = global.fetch as unknown as ReturnType<typeof vi.fn>;
+    const calls = mockFetch.mock.calls;
+    return String(calls[calls.length - 1][0]);
+  }
+
+  it('fetchVideos includes period when provided', async () => {
+    (global.fetch as unknown as ReturnType<typeof vi.fn>).mockResolvedValueOnce(
+      new Response(JSON.stringify([]), { status: 200, headers: { 'Content-Type': 'application/json' } })
+    );
+
+    await fetchVideos(API_URL, { sort: 'popular', period: 'week', limit: 12 });
+
+    const url = lastFetchUrl();
+    expect(url).toContain('sort=popular');
+    expect(url).toContain('period=week');
+  });
+
+  it('fetchVideos omits period when undefined', async () => {
+    (global.fetch as unknown as ReturnType<typeof vi.fn>).mockResolvedValueOnce(
+      new Response(JSON.stringify([]), { status: 200, headers: { 'Content-Type': 'application/json' } })
+    );
+
+    await fetchVideos(API_URL, { sort: 'popular', limit: 12 });
+
+    expect(lastFetchUrl()).not.toContain('period=');
+  });
+
+  it('fetchVideosV2 includes period when provided', async () => {
+    (global.fetch as unknown as ReturnType<typeof vi.fn>).mockResolvedValueOnce(
+      new Response(JSON.stringify({ data: [], pagination: { has_more: false } }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      })
+    );
+
+    await fetchVideosV2(API_URL, { sort: 'popular', period: 'today', limit: 12 });
+
+    const url = lastFetchUrl();
+    expect(url).toContain('sort=popular');
+    expect(url).toContain('period=today');
+  });
+
+  it('fetchVideosV2 omits period when undefined', async () => {
+    (global.fetch as unknown as ReturnType<typeof vi.fn>).mockResolvedValueOnce(
+      new Response(JSON.stringify({ data: [], pagination: { has_more: false } }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      })
+    );
+
+    await fetchVideosV2(API_URL, { sort: 'watching', limit: 12 });
+
+    expect(lastFetchUrl()).not.toContain('period=');
+  });
+});

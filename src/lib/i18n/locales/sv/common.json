@@ -64,6 +64,7 @@
     "forYou": "For dig",
     "classic": "Klassiskt",
     "hot": "Hett",
+    "popular": "Populärt",
     "new": "Nytt",
     "tags": "Taggar",
     "verifiedOnly": "Skapad av manniskor",
@@ -1096,7 +1097,20 @@
     "heading": "Populärt",
     "subheading": "Upptäck vad som är populärt i communityn",
     "rssTitle": "DiVine - Populärt",
-    "rssLink": "RSS"
+    "rssLink": "RSS",
+    "popular": {
+      "period": {
+        "label": "Fönster",
+        "now": "Nu",
+        "today": "Idag",
+        "week": "Denna vecka",
+        "month": "Denna månad",
+        "all": "Alltid"
+      },
+      "emptyHeading": "Tyst stund",
+      "emptyBody": "Pröva ett bredare fönster.",
+      "emptyAction": "Visa idag"
+    }
   },
   "merchPage": {
     "metaTitle": "Merch — Divine",

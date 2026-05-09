@@ -64,6 +64,7 @@
     "forYou": "Para ti",
     "classic": "Clasico",
     "hot": "Popular",
+    "popular": "Popular",
     "new": "Nuevo",
     "tags": "Etiquetas",
     "verifiedOnly": "Hecho por humanos",
@@ -1096,7 +1097,20 @@
     "heading": "Tendencias",
     "subheading": "Descubre qué es popular en la comunidad",
     "rssTitle": "DiVine - Tendencias",
-    "rssLink": "RSS"
+    "rssLink": "RSS",
+    "popular": {
+      "period": {
+        "label": "Período",
+        "now": "Ahora",
+        "today": "Hoy",
+        "week": "Esta semana",
+        "month": "Este mes",
+        "all": "Todo"
+      },
+      "emptyHeading": "Hora tranquila",
+      "emptyBody": "Prueba un período más amplio.",
+      "emptyAction": "Mostrar hoy"
+    }
   },
   "merchPage": {
     "metaTitle": "Merch — Divine",
