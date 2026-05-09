@@ -253,6 +253,54 @@ export async function handleCategoryOgTags(request, url) {
   }
 }
 
+export async function handleHashtagOgTags(tag) {
+  try {
+    const cleanTag = (tag || '').trim().replace(/^#/, '');
+    if (!cleanTag) return null;
+
+    let topThumbnail = null;
+    try {
+      const r = await fetch(`https://relay.divine.video/api/videos?t=${encodeURIComponent(cleanTag)}&limit=1`, {
+        backend: 'funnelcake',
+        method: 'GET',
+        headers: { 'Accept': 'application/json', 'Host': 'relay.divine.video' },
+      });
+      if (r.ok) {
+        const data = await r.json();
+        const top = data.videos?.[0];
+        topThumbnail = top?.thumbnail || null;
+      }
+    } catch (e) {
+      console.error('handleHashtagOgTags funnelcake error:', e.message);
+    }
+
+    const html = buildCrawlerHtml({
+      title: `#${cleanTag} videos on Divine`,
+      description: `Watch the latest #${cleanTag} videos on Divine.`,
+      image: topThumbnail || DEFAULT_OG_IMAGE,
+      url: `https://divine.video/t/${encodeURIComponent(cleanTag)}`,
+      ogType: 'website',
+      twitterCard: 'summary_large_image',
+      // Top video thumbnails are typically 720x1280 (vertical) — but we don't know
+      // for sure from this endpoint. Default to 1200x630 ONLY when using DEFAULT_OG_IMAGE.
+      imageWidth: topThumbnail ? null : 1200,
+      imageHeight: topThumbnail ? null : 630,
+    });
+
+    return new Response(html, {
+      status: 200,
+      headers: {
+        'Content-Type': 'text/html; charset=utf-8',
+        'Cache-Control': 'public, max-age=300',
+        'Vary': 'User-Agent',
+      },
+    });
+  } catch (err) {
+    console.error('handleHashtagOgTags error:', err.message);
+    return null;
+  }
+}
+
 export async function handleAtUsernameOg(username, url) {
   try {
     const namesStore = new KVStore('divine-names');

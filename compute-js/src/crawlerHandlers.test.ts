@@ -19,7 +19,7 @@ vi.mock('fastly:kv-store', () => {
   return { KVStore: MockKVStore };
 });
 
-import { handleAtUsernameOg } from './crawlerHandlers.js';
+import { handleAtUsernameOg, handleHashtagOgTags } from './crawlerHandlers.js';
 
 const HEX64 = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
 
@@ -89,5 +89,65 @@ describe('handleAtUsernameOg', () => {
     const html = await result!.text();
     // The apostrophe is HTML-escaped in the og:description attribute
     expect(html).toContain(`Watch Bob&#039;s 7 videos on Divine.`);
+  });
+});
+
+describe('handleHashtagOgTags', () => {
+  beforeEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('returns null for empty tag', async () => {
+    expect(await handleHashtagOgTags('')).toBeNull();
+    expect(await handleHashtagOgTags('   ')).toBeNull();
+    expect(await handleHashtagOgTags(null as any)).toBeNull();
+  });
+
+  it('strips leading # from tag', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false }));
+    const result = await handleHashtagOgTags('#cooking');
+    const html = await result!.text();
+    expect(html).toContain('#cooking');
+    expect(html).toContain('https://divine.video/t/cooking');
+  });
+
+  it('builds OG with top video thumbnail when available', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ videos: [{ thumbnail: 'https://x/thumb.jpg' }] }),
+    }));
+    const result = await handleHashtagOgTags('cooking');
+    const html = await result!.text();
+    expect(html).toContain('#cooking videos on Divine');
+    expect(html).toContain('https://x/thumb.jpg');
+    // When using a video thumbnail, dimensions should be omitted (we don't know its dims)
+    expect(html).not.toContain('og:image:width');
+  });
+
+  it('falls back to default image when API fails', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false }));
+    const result = await handleHashtagOgTags('cooking');
+    const html = await result!.text();
+    expect(html).toContain('https://divine.video/og.png');
+    // When using the default 1200x630 brand image, dimensions should be emitted
+    expect(html).toContain('og:image:width');
+    expect(html).toContain('content="1200"');
+  });
+
+  it('falls back to default image when API throws', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('network')));
+    const result = await handleHashtagOgTags('cooking');
+    const html = await result!.text();
+    expect(html).toContain('https://divine.video/og.png');
+  });
+
+  it('falls back to default image when videos array is empty', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ videos: [] }),
+    }));
+    const result = await handleHashtagOgTags('cooking');
+    const html = await result!.text();
+    expect(html).toContain('https://divine.video/og.png');
   });
 });

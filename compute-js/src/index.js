@@ -15,6 +15,7 @@ import {
   handleProfileOgTags,
   handleCategoryOgTags,
   handleAtUsernameOg,
+  handleHashtagOgTags,
 } from './crawlerHandlers.js';
 import { renderEmbedPage } from './embedPage.js';
 
@@ -199,6 +200,12 @@ async function handleRequest(event) {
       if (ogResponse) {
         return ogResponse;
       }
+    }
+
+    if (url.pathname.startsWith('/t/')) {
+      const tag = decodeURIComponent(url.pathname.slice(3).split('?')[0]);
+      const ogResponse = await handleHashtagOgTags(tag);
+      if (ogResponse) return ogResponse;
     }
   }
 
