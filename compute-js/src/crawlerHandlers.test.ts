@@ -137,7 +137,7 @@ describe('handleHashtagOgTags', () => {
   it('returns null for empty tag', async () => {
     expect(await handleHashtagOgTags('')).toBeNull();
     expect(await handleHashtagOgTags('   ')).toBeNull();
-    expect(await handleHashtagOgTags(null as any)).toBeNull();
+    expect(await handleHashtagOgTags(null as unknown as string)).toBeNull();
   });
 
   it('strips leading # from tag', async () => {
@@ -260,7 +260,7 @@ describe('handleSearchOgTags', () => {
   it('returns null for empty or whitespace-only query', () => {
     expect(handleSearchOgTags('')).toBeNull();
     expect(handleSearchOgTags('   ')).toBeNull();
-    expect(handleSearchOgTags(null as any)).toBeNull();
+    expect(handleSearchOgTags(null as unknown as string)).toBeNull();
   });
 
   it('truncates very long queries with ellipsis', async () => {
