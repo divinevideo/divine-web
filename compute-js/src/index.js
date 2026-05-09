@@ -1101,21 +1101,29 @@ async function handleVideoOgTags(request, videoId, url, funnelcakeTarget) {
     const description = videoMeta?.description || `Watch this video on Divine. ${DEFAULT_SITE_DESCRIPTION}`;
     const thumbnail = videoMeta?.thumbnail || DEFAULT_OG_IMAGE;
     const authorName = videoMeta?.authorName || '';
-    const videoUrl = `https://divine.video/video/${videoId}`;
+    const pageUrl = `https://divine.video/video/${videoId}`;
 
-    console.log('Generating OG HTML for video:', videoId, 'title:', title);
+    const hasPlayableVideo = Boolean(videoMeta?.videoUrl);
+    const videoBlock = hasPlayableVideo ? {
+      url: videoMeta.videoUrl,
+      type: videoMeta.videoMime || 'video/mp4',
+      width: videoMeta.videoWidth || 720,
+      height: videoMeta.videoHeight || 1280,
+      embedUrl: `https://divine.video/embed/${videoId}`,
+    } : null;
+
+    console.log('Generating OG HTML for video:', videoId, 'title:', title, 'player:', hasPlayableVideo);
     const html = buildCrawlerHtml({
       title,
       description,
       image: thumbnail,
-      url: videoUrl,
+      url: pageUrl,
       ogType: 'video.other',
-      twitterCard: 'summary_large_image',
+      twitterCard: hasPlayableVideo ? 'player' : 'summary_large_image',
       twitterCreator: authorName,
-      // imageWidth/imageHeight: Task 3 will override with imeta values from videoMeta when available;
-      // for now default to 1200×630 (the og.png brand image dimensions used as fallback thumbnail)
       imageWidth: videoMeta?.imageWidth || 1200,
       imageHeight: videoMeta?.imageHeight || 630,
+      video: videoBlock,
     });
 
     console.log('Generated OG HTML, length:', html.length);
