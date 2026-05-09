@@ -21,6 +21,9 @@ import {
   handleApexOgTags,
 } from './crawlerHandlers.js';
 import { renderEmbedPage } from './embedPage.js';
+import { buildFunnelcakeUrl, getFunnelcakeOriginForApiHost } from './funnelcakeOrigin.js';
+import { isJsonWellKnownPath, shouldServeWellKnownBeforeWwwRedirect } from './wellKnownPaths.js';
+import { buildCrawlerHtml, escapeHtml, cleanText, truncateText } from './ogTags.js';
 
 const publisherServer = PublisherServer.fromStaticPublishRc(rc);
 
@@ -919,6 +922,267 @@ function isSocialMediaCrawler(request) {
 }
 
 /**
+ * Fetch video metadata from Funnelcake API using Fastly backend
+ */
+async function fetchVideoMetadata(videoId, funnelcakeTarget = getFunnelcakeOriginForApiHost()) {
+  try {
+    // Use the /api/videos/{id} endpoint
+    const response = await fetchFromFunnelcake(funnelcakeTarget, `/api/videos/${videoId}`);
+
+    if (!response.ok) {
+      console.log('Funnelcake API returned:', response.status);
+      return null;
+    }
+
+    const result = await response.json();
+
+    if (!result.event) {
+      console.log('Video not found:', videoId);
+      return null;
+    }
+
+    const event = result.event;
+    const stats = result.stats || {};
+
+    // Extract data from tags
+    const getTag = (name) => event.tags?.find(t => t[0] === name)?.[1];
+
+    // Parse imeta tag for thumbnail and video URL
+    const imetaTag = event.tags?.find(t => t[0] === 'imeta');
+    const imeta = {};
+    if (imetaTag) {
+      for (let i = 1; i < imetaTag.length; i++) {
+        const parts = imetaTag[i].split(' ');
+        if (parts.length >= 2) {
+          imeta[parts[0]] = parts.slice(1).join(' ');
+        }
+      }
+    }
+
+    const thumbnail = imeta.image || null;
+    const summary = cleanText(getTag('summary'));
+    const alt = cleanText(getTag('alt'));
+    const content = cleanText(event.content);
+    const title = cleanText(getTag('title')) || alt || summary || truncateText(content, 80) || null;
+
+    // Build a rich description with engagement stats
+    const statsList = [];
+    if (stats.reactions > 0) statsList.push(`${stats.reactions} ❤️`);
+    if (stats.comments > 0) statsList.push(`${stats.comments} 💬`);
+    if (stats.reposts > 0) statsList.push(`${stats.reposts} 🔁`);
+
+    let description;
+    if (content) {
+      description = content;
+    } else if (summary) {
+      description = summary;
+    } else if (alt) {
+      description = alt;
+    } else if (statsList.length > 0) {
+      description = `${statsList.join(' • ')} on Divine`;
+    } else {
+      description = 'Watch this short video on Divine';
+    }
+
+    console.log('Fetched video metadata - title:', title, 'thumbnail:', thumbnail);
+
+    return {
+      title: title || 'Video on Divine',
+      description: description,
+      thumbnail: thumbnail || DEFAULT_OG_IMAGE,
+      authorName: cleanText(getTag('author')) || cleanText(stats.author_name) || '',
+      reactions: stats.reactions || 0,
+      comments: stats.comments || 0,
+    };
+  } catch (err) {
+    console.error('Failed to fetch video metadata:', err.message);
+    return null;
+  }
+}
+
+async function fetchProfileMetadata(pubkey, funnelcakeTarget = getFunnelcakeOriginForApiHost()) {
+  try {
+    const response = await fetchFromFunnelcake(funnelcakeTarget, `/api/users/${pubkey}`);
+
+    if (!response.ok) {
+      console.log('Profile API returned:', response.status);
+      return null;
+    }
+
+    return await response.json();
+  } catch (err) {
+    console.error('Failed to fetch profile metadata:', err.message);
+    return null;
+  }
+}
+
+async function fetchCategoriesMetadata(funnelcakeTarget = getFunnelcakeOriginForApiHost()) {
+  try {
+    const response = await fetchFromFunnelcake(funnelcakeTarget, '/api/categories');
+
+    if (!response.ok) {
+      console.log('Categories API returned:', response.status);
+      return null;
+    }
+
+    return await response.json();
+  } catch (err) {
+    console.error('Failed to fetch category metadata:', err.message);
+    return null;
+  }
+}
+
+/**
+ * Handle video page requests for social media crawlers
+ * Injects dynamic OG meta tags with video-specific content
+ */
+async function handleVideoOgTags(request, videoId, url, funnelcakeTarget) {
+  try {
+    // Fetch video metadata from Funnelcake
+    let videoMeta = null;
+    try {
+      videoMeta = await fetchVideoMetadata(videoId, funnelcakeTarget);
+    } catch (e) {
+      console.error('Failed to fetch video metadata:', e.message);
+    }
+
+    // Default meta values if video not found
+    const title = videoMeta?.title || 'Video on Divine';
+    const description = videoMeta?.description || `Watch this video on Divine. ${DEFAULT_SITE_DESCRIPTION}`;
+    const thumbnail = videoMeta?.thumbnail || DEFAULT_OG_IMAGE;
+    const authorName = videoMeta?.authorName || '';
+    const pageUrl = `https://divine.video/video/${videoId}`;
+
+    const hasPlayableVideo = Boolean(videoMeta?.videoUrl);
+    const videoBlock = hasPlayableVideo ? {
+      url: videoMeta.videoUrl,
+      type: videoMeta.videoMime || 'video/mp4',
+      width: videoMeta.videoWidth || 720,
+      height: videoMeta.videoHeight || 1280,
+      embedUrl: `https://divine.video/embed/${videoId}`,
+    } : null;
+
+    console.log('Generating OG HTML for video:', videoId, 'title:', title, 'player:', hasPlayableVideo);
+    const html = buildCrawlerHtml({
+      title,
+      description,
+      image: thumbnail,
+      url: pageUrl,
+      ogType: 'video.other',
+      twitterCard: hasPlayableVideo ? 'player' : 'summary_large_image',
+      twitterCreator: authorName,
+      imageWidth: videoMeta?.imageWidth || 1200,
+      imageHeight: videoMeta?.imageHeight || 630,
+      video: videoBlock,
+    });
+
+    console.log('Generated OG HTML, length:', html.length);
+
+    return new Response(html, {
+      status: 200,
+      headers: {
+        'Content-Type': 'text/html; charset=utf-8',
+        'Cache-Control': 'public, max-age=300',
+        'Vary': 'User-Agent', // Cache different versions for crawlers vs browsers
+      },
+    });
+  } catch (err) {
+    console.error('handleVideoOgTags error:', err.message, err.stack);
+    // Return the normal SPA on error
+    return await publisherServer.serveRequest(request);
+  }
+}
+
+async function handleProfileOgTags(request, url, funnelcakeTarget) {
+  try {
+    const npub = url.pathname.split('/profile/')[1]?.split('?')[0];
+    const pubkey = decodeNpubToHex(npub || '');
+    if (!pubkey) {
+      return null;
+    }
+
+    const profileMeta = await fetchProfileMetadata(pubkey, funnelcakeTarget);
+    const profile = profileMeta?.profile || {};
+    const stats = profileMeta?.stats || {};
+    const displayName = cleanText(profile.display_name) || cleanText(profile.name) || 'Profile on Divine';
+    const about = cleanText(profile.about);
+    const videoCount = typeof stats.video_count === 'number' ? stats.video_count : null;
+    const description = about
+      || (videoCount && videoCount > 0
+        ? `Watch ${displayName}'s ${videoCount} videos on Divine.`
+        : `Watch ${displayName}'s videos on Divine.`);
+    const image = cleanText(profile.picture) || DEFAULT_OG_IMAGE;
+    const profileUrl = `https://divine.video/profile/${npub}`;
+    const html = buildCrawlerHtml({
+      title: `${displayName} on Divine`,
+      description,
+      image,
+      url: profileUrl,
+      ogType: 'profile',
+      twitterCard: 'summary',
+    });
+
+    return new Response(html, {
+      status: 200,
+      headers: {
+        'Content-Type': 'text/html; charset=utf-8',
+        'Cache-Control': 'public, max-age=300',
+        'Vary': 'User-Agent',
+      },
+    });
+  } catch (err) {
+    console.error('handleProfileOgTags error:', err.message, err.stack);
+    return await publisherServer.serveRequest(request);
+  }
+}
+
+async function handleCategoryOgTags(request, url, funnelcakeTarget) {
+  try {
+    const categoryName = url.pathname === '/category'
+      ? null
+      : decodeURIComponent(url.pathname.split('/category/')[1]?.split('?')[0] || '');
+
+    let title = 'Browse Categories - Divine';
+    let description = 'Explore video categories on Divine - comedy, music, dance, animals, sports, food, and more.';
+    let categoryUrl = 'https://divine.video/category';
+
+    if (categoryName) {
+      const categories = await fetchCategoriesMetadata(funnelcakeTarget);
+      const matchedCategory = categories?.find(category => category.name.toLowerCase() === categoryName.toLowerCase()) || null;
+      const label = humanizeCategoryName(categoryName);
+      title = `${label} Videos - Divine`;
+      description = typeof matchedCategory?.video_count === 'number'
+        ? `Explore ${matchedCategory.video_count} ${categoryName.toLowerCase()} videos on Divine.`
+        : `Explore ${categoryName.toLowerCase()} videos on Divine.`;
+      categoryUrl = `https://divine.video/category/${encodeURIComponent(categoryName)}`;
+    }
+
+    const html = buildCrawlerHtml({
+      title,
+      description,
+      image: DEFAULT_OG_IMAGE,
+      url: categoryUrl,
+      ogType: 'website',
+      twitterCard: 'summary_large_image',
+      imageWidth: 1200,
+      imageHeight: 630,
+    });
+
+    return new Response(html, {
+      status: 200,
+      headers: {
+        'Content-Type': 'text/html; charset=utf-8',
+        'Cache-Control': 'public, max-age=300',
+        'Vary': 'User-Agent',
+      },
+    });
+  } catch (err) {
+    console.error('handleCategoryOgTags error:', err.message, err.stack);
+    return await publisherServer.serveRequest(request);
+  }
+}
+
+/**
  * Check if a profile's NIP-05 matches the expected subdomain.
  * Returns true if the NIP-05 indicates this pubkey owns this subdomain.
  *
@@ -937,3 +1201,19 @@ function isNip05MatchForSubdomain(nip05, subdomain, apexDomain) {
   return false;
 }
 
+function humanizeCategoryName(name) {
+  const normalized = cleanText(decodeURIComponent(name || '').toLowerCase());
+  if (!normalized) {
+    return 'Category';
+  }
+
+  if (normalized === 'diy') return 'DIY';
+  if (normalized === 'vlog') return 'Vlog';
+  if (normalized === 'ai') return 'AI';
+
+  return normalized
+    .split(/[-_\s]+/)
+    .filter(Boolean)
+    .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ');
+}
