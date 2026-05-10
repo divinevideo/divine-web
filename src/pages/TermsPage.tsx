@@ -12,13 +12,13 @@ export function TermsPage() {
     <MarketingLayout>
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         <ZendeskWidget />
-        <h1 className="text-4xl font-bold mb-4">{t('termsPage.title')}</h1>
+        <h1 className="text-4xl font-extrabold mb-4">{t('termsPage.title')}</h1>
         <p className="text-muted-foreground mb-8">{t('termsPage.lastUpdated', { date: 'March 30, 2026' })}</p>
 
         <div className="space-y-8 text-muted-foreground leading-relaxed">
           {/* 1. Acceptance of Terms */}
           <section>
-            <h2 className="text-2xl font-semibold text-foreground mb-3">1. Acceptance of Terms</h2>
+            <h2 className="text-2xl font-extrabold text-foreground mb-3">1. Acceptance of Terms</h2>
             <p className="mb-3">
               By accessing or using Divine&trade; (the &ldquo;Service&rdquo;), you agree to these Terms of Service
               (&ldquo;Terms&rdquo;). If you do not agree, do not use the Service.
@@ -39,7 +39,7 @@ export function TermsPage() {
 
           {/* 2. Definitions */}
           <section>
-            <h2 className="text-2xl font-semibold text-foreground mb-3">2. Definitions</h2>
+            <h2 className="text-2xl font-extrabold text-foreground mb-3">2. Definitions</h2>
             <p className="mb-3">
               <strong className="text-foreground">&ldquo;Divine-controlled infrastructure&rdquo;</strong> means
               websites, apps, relays, media storage, APIs, and other systems owned or controlled by Divine.
@@ -82,7 +82,7 @@ export function TermsPage() {
 
           {/* 3. Nature of the Service */}
           <section>
-            <h2 className="text-2xl font-semibold text-foreground mb-3">3. Nature of the Service</h2>
+            <h2 className="text-2xl font-extrabold text-foreground mb-3">3. Nature of the Service</h2>
             <p className="mb-3">
               Divine primarily operates as a non-custodial interface for reading, writing, and interacting with
               Nostr events, although certain optional authentication, signing, backup, or recovery features may
@@ -106,7 +106,7 @@ export function TermsPage() {
 
           {/* 4. Eligibility, Accounts, and Authentication */}
           <section>
-            <h2 className="text-2xl font-semibold text-foreground mb-3">
+            <h2 className="text-2xl font-extrabold text-foreground mb-3">
               4. Eligibility, Accounts, and Authentication
             </h2>
             <p className="mb-3">
@@ -145,7 +145,7 @@ export function TermsPage() {
 
           {/* 5. User Content, Representations, and License */}
           <section>
-            <h2 className="text-2xl font-semibold text-foreground mb-3">
+            <h2 className="text-2xl font-extrabold text-foreground mb-3">
               5. User Content, Representations, and License
             </h2>
             <p className="mb-3">
@@ -177,7 +177,7 @@ export function TermsPage() {
 
           {/* 6. Prohibited Content and Conduct */}
           <section>
-            <h2 className="text-2xl font-semibold text-foreground mb-3">
+            <h2 className="text-2xl font-extrabold text-foreground mb-3">
               6. Prohibited Content and Conduct
             </h2>
             <p className="mb-3">
@@ -216,7 +216,7 @@ export function TermsPage() {
 
           {/* 7. Moderation, Reporting, and User Controls */}
           <section>
-            <h2 className="text-2xl font-semibold text-foreground mb-3">
+            <h2 className="text-2xl font-extrabold text-foreground mb-3">
               7. Moderation, Reporting, and User Controls
             </h2>
             <p className="mb-3">
@@ -247,7 +247,7 @@ export function TermsPage() {
 
           {/* 8. Intellectual Property Complaints */}
           <section>
-            <h2 className="text-2xl font-semibold text-foreground mb-3">
+            <h2 className="text-2xl font-extrabold text-foreground mb-3">
               8. Intellectual Property Complaints
             </h2>
             <p className="mb-3">
@@ -274,7 +274,7 @@ export function TermsPage() {
 
           {/* 9. Usernames, Verification, and Identity Handles */}
           <section>
-            <h2 className="text-2xl font-semibold text-foreground mb-3">
+            <h2 className="text-2xl font-extrabold text-foreground mb-3">
               9. Usernames, Verification, and Identity Handles
             </h2>
             <p className="mb-3">
@@ -320,7 +320,7 @@ export function TermsPage() {
 
           {/* 10. Divine Intellectual Property and Service License */}
           <section>
-            <h2 className="text-2xl font-semibold text-foreground mb-3">
+            <h2 className="text-2xl font-extrabold text-foreground mb-3">
               10. Divine Intellectual Property and Service License
             </h2>
             <p className="mb-3">
@@ -343,7 +343,7 @@ export function TermsPage() {
 
           {/* 11. Service Operations and Platform Rights */}
           <section>
-            <h2 className="text-2xl font-semibold text-foreground mb-3">
+            <h2 className="text-2xl font-extrabold text-foreground mb-3">
               11. Service Operations and Platform Rights
             </h2>
             <p className="mb-3">
@@ -365,7 +365,7 @@ export function TermsPage() {
 
           {/* 12. Termination and Deletion Requests */}
           <section>
-            <h2 className="text-2xl font-semibold text-foreground mb-3">
+            <h2 className="text-2xl font-extrabold text-foreground mb-3">
               12. Termination and Deletion Requests
             </h2>
             <p className="mb-3">
@@ -391,7 +391,7 @@ export function TermsPage() {
 
           {/* 13. Decentralization and Content Persistence */}
           <section>
-            <h2 className="text-2xl font-semibold text-foreground mb-3">
+            <h2 className="text-2xl font-extrabold text-foreground mb-3">
               13. Decentralization and Content Persistence
             </h2>
             <p className="mb-3">
@@ -411,7 +411,7 @@ export function TermsPage() {
 
           {/* 14. Third-Party Systems and External Links */}
           <section>
-            <h2 className="text-2xl font-semibold text-foreground mb-3">
+            <h2 className="text-2xl font-extrabold text-foreground mb-3">
               14. Third-Party Systems and External Links
             </h2>
             <p className="mb-3">
@@ -433,7 +433,7 @@ export function TermsPage() {
 
           {/* 15. Beta and Experimental Features */}
           <section>
-            <h2 className="text-2xl font-semibold text-foreground mb-3">
+            <h2 className="text-2xl font-extrabold text-foreground mb-3">
               15. Beta and Experimental Features
             </h2>
             <p>
@@ -445,7 +445,7 @@ export function TermsPage() {
 
           {/* 16. Disclaimers About User Content and Monitoring */}
           <section>
-            <h2 className="text-2xl font-semibold text-foreground mb-3">
+            <h2 className="text-2xl font-extrabold text-foreground mb-3">
               16. Disclaimers About User Content and Monitoring
             </h2>
             <p className="mb-3">
@@ -463,7 +463,7 @@ export function TermsPage() {
 
           {/* 17. Indemnification */}
           <section>
-            <h2 className="text-2xl font-semibold text-foreground mb-3">17. Indemnification</h2>
+            <h2 className="text-2xl font-extrabold text-foreground mb-3">17. Indemnification</h2>
             <p>
               You agree to indemnify, defend, and hold harmless Divine and its officers, directors, employees,
               contractors, service providers, and affiliates from and against any claims, liabilities, damages,
@@ -484,7 +484,7 @@ export function TermsPage() {
             * legal review.
             */}
           <section>
-            <h2 className="text-2xl font-semibold text-foreground mb-3">
+            <h2 className="text-2xl font-extrabold text-foreground mb-3">
               18. Disclaimer of Warranties and Limitation of Liability
             </h2>
             <p className="mb-3" style={{ textTransform: 'uppercase' }}>
@@ -520,7 +520,7 @@ export function TermsPage() {
 
           {/* 19. Dispute Resolution; Governing Law; Class Action Waiver */}
           <section>
-            <h2 className="text-2xl font-semibold text-foreground mb-3">
+            <h2 className="text-2xl font-extrabold text-foreground mb-3">
               19. Dispute Resolution; Governing Law; Class Action Waiver
             </h2>
             <p className="mb-3">
@@ -541,7 +541,7 @@ export function TermsPage() {
 
           {/* 20. Changes to These Terms */}
           <section>
-            <h2 className="text-2xl font-semibold text-foreground mb-3">20. Changes to These Terms</h2>
+            <h2 className="text-2xl font-extrabold text-foreground mb-3">20. Changes to These Terms</h2>
             <p>
               We may modify these Terms from time to time. When we do, we will post the updated version and revise
               the &ldquo;Last Updated&rdquo; date above. Unless a different effective date is stated, changes will
@@ -552,7 +552,7 @@ export function TermsPage() {
 
           {/* 21. Entire Agreement; Severability; Contact Information */}
           <section>
-            <h2 className="text-2xl font-semibold text-foreground mb-3">
+            <h2 className="text-2xl font-extrabold text-foreground mb-3">
               21. Entire Agreement; Severability; Contact Information
             </h2>
             <p className="mb-3">
