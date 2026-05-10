@@ -11,13 +11,13 @@ export function PrivacyPage() {
     <MarketingLayout>
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         <ZendeskWidget />
-        <h1 className="text-4xl font-bold mb-4">{t('privacyPage.title')}</h1>
+        <h1 className="text-4xl font-extrabold mb-4">{t('privacyPage.title')}</h1>
         <p className="text-muted-foreground mb-8">{t('privacyPage.lastUpdated', { date: 'March 30, 2026' })}</p>
 
         <div className="space-y-8 text-muted-foreground leading-relaxed">
           {/* 1. Overview */}
           <section>
-            <h2 className="text-2xl font-semibold text-foreground mb-3">1. Overview</h2>
+            <h2 className="text-2xl font-extrabold text-foreground mb-3">1. Overview</h2>
             <p className="mb-3">
               This Privacy Policy explains how Verse Communications PBC dba Divine (&ldquo;Divine,&rdquo;
               &ldquo;we,&rdquo; &ldquo;us,&rdquo; or &ldquo;our&rdquo;) collects, uses, and discloses
@@ -38,7 +38,7 @@ export function PrivacyPage() {
 
           {/* 2. Definitions */}
           <section>
-            <h2 className="text-2xl font-semibold text-foreground mb-3">2. Definitions</h2>
+            <h2 className="text-2xl font-extrabold text-foreground mb-3">2. Definitions</h2>
             <p className="mb-3">
               <strong className="text-foreground">&ldquo;Divine-controlled infrastructure&rdquo;</strong> means
               websites, apps, relays, media storage, APIs, and other systems owned or controlled by Divine.
@@ -81,7 +81,7 @@ export function PrivacyPage() {
 
           {/* 3. Non-Custodial and Custodial Use */}
           <section>
-            <h2 className="text-2xl font-semibold text-foreground mb-3">
+            <h2 className="text-2xl font-extrabold text-foreground mb-3">
               3. Non-Custodial and Custodial Use
             </h2>
             <p className="mb-3">
@@ -102,7 +102,7 @@ export function PrivacyPage() {
 
           {/* 4. Information We Collect */}
           <section>
-            <h2 className="text-2xl font-semibold text-foreground mb-3">4. Information We Collect</h2>
+            <h2 className="text-2xl font-extrabold text-foreground mb-3">4. Information We Collect</h2>
             <p className="mb-3">
               Divine may collect and process information in several categories. The categories of personal
               information collected may include identifiers (such as public keys or IP addresses), internet or
@@ -129,7 +129,7 @@ export function PrivacyPage() {
 
           {/* 5. Public, Divine-Controlled, and Third-Party Data */}
           <section>
-            <h2 className="text-2xl font-semibold text-foreground mb-3">
+            <h2 className="text-2xl font-extrabold text-foreground mb-3">
               5. Public, Divine-Controlled, and Third-Party Data
             </h2>
             <p className="mb-3">
@@ -155,7 +155,7 @@ export function PrivacyPage() {
 
           {/* 6. How We Use Information */}
           <section>
-            <h2 className="text-2xl font-semibold text-foreground mb-3">6. How We Use Information</h2>
+            <h2 className="text-2xl font-extrabold text-foreground mb-3">6. How We Use Information</h2>
             <p className="mb-3">
               Divine processes information as reasonably necessary to operate, secure, maintain, and improve the
               Service.
@@ -173,7 +173,7 @@ export function PrivacyPage() {
 
           {/* 7. Legal Bases for Processing */}
           <section>
-            <h2 className="text-2xl font-semibold text-foreground mb-3">
+            <h2 className="text-2xl font-extrabold text-foreground mb-3">
               7. Legal Bases for Processing
             </h2>
             <p className="mb-3">
@@ -208,7 +208,7 @@ export function PrivacyPage() {
 
           {/* 8. Disclosure of Information */}
           <section>
-            <h2 className="text-2xl font-semibold text-foreground mb-3">8. Disclosure of Information</h2>
+            <h2 className="text-2xl font-extrabold text-foreground mb-3">8. Disclosure of Information</h2>
             <p className="mb-3">
               Divine may disclose information to service providers that process data on our behalf and under our
               instructions to support the operation of Divine-controlled infrastructure, to comply with legal
@@ -224,7 +224,7 @@ export function PrivacyPage() {
 
           {/* 9. International Data Transfers */}
           <section>
-            <h2 className="text-2xl font-semibold text-foreground mb-3">
+            <h2 className="text-2xl font-extrabold text-foreground mb-3">
               9. International Data Transfers
             </h2>
             <p className="mb-3">
@@ -239,7 +239,7 @@ export function PrivacyPage() {
 
           {/* 10. Data Retention */}
           <section>
-            <h2 className="text-2xl font-semibold text-foreground mb-3">10. Data Retention</h2>
+            <h2 className="text-2xl font-extrabold text-foreground mb-3">10. Data Retention</h2>
             <p className="mb-3">
               Divine retains information for as long as reasonably necessary to operate the Service, comply with
               legal obligations, enforce its Terms and Safety Standards, and prevent abuse.
@@ -257,7 +257,7 @@ export function PrivacyPage() {
 
           {/* 11. Your Rights */}
           <section>
-            <h2 className="text-2xl font-semibold text-foreground mb-3">11. Your Rights</h2>
+            <h2 className="text-2xl font-extrabold text-foreground mb-3">11. Your Rights</h2>
             <p className="mb-3">
               Depending on your jurisdiction, you may have the right to:
             </p>
@@ -288,7 +288,7 @@ export function PrivacyPage() {
 
           {/* 12. Automated Decision Making */}
           <section>
-            <h2 className="text-2xl font-semibold text-foreground mb-3">12. Automated Decision Making</h2>
+            <h2 className="text-2xl font-extrabold text-foreground mb-3">12. Automated Decision Making</h2>
             <p>
               Divine does not engage in automated decision-making or profiling that produces legal or similarly
               significant effects on users within the meaning of applicable data protection law.
@@ -297,7 +297,7 @@ export function PrivacyPage() {
 
           {/* 13. Security */}
           <section>
-            <h2 className="text-2xl font-semibold text-foreground mb-3">13. Security</h2>
+            <h2 className="text-2xl font-extrabold text-foreground mb-3">13. Security</h2>
             <p>
               Divine implements reasonable technical and organizational measures to protect information processed
               on Divine-controlled infrastructure. However, no system is completely secure, and Divine does not
@@ -307,7 +307,7 @@ export function PrivacyPage() {
 
           {/* 14. Children */}
           <section>
-            <h2 className="text-2xl font-semibold text-foreground mb-3">14. Children</h2>
+            <h2 className="text-2xl font-extrabold text-foreground mb-3">14. Children</h2>
             <p>
               Individuals under the age of 16 may use the Service only with the involvement and consent of a
               parent or legal guardian, where permitted by applicable law. If Divine becomes aware that such
@@ -318,7 +318,7 @@ export function PrivacyPage() {
 
           {/* 15. Decentralized System Notice */}
           <section>
-            <h2 className="text-2xl font-semibold text-foreground mb-3">
+            <h2 className="text-2xl font-extrabold text-foreground mb-3">
               15. Decentralized System Notice
             </h2>
             <p>
@@ -330,7 +330,7 @@ export function PrivacyPage() {
 
           {/* 16. Changes to This Policy */}
           <section>
-            <h2 className="text-2xl font-semibold text-foreground mb-3">16. Changes to This Policy</h2>
+            <h2 className="text-2xl font-extrabold text-foreground mb-3">16. Changes to This Policy</h2>
             <p>
               Divine may update this Privacy Policy from time to time. Updated versions will be posted with a
               revised &ldquo;Last Updated&rdquo; date. Unless a different effective date is stated, changes will
@@ -341,7 +341,7 @@ export function PrivacyPage() {
 
           {/* 17. California Privacy Rights */}
           <section>
-            <h2 className="text-2xl font-semibold text-foreground mb-3">17. California Privacy Rights</h2>
+            <h2 className="text-2xl font-extrabold text-foreground mb-3">17. California Privacy Rights</h2>
             <p className="mb-3">
               If you are a California resident, you may have certain rights under the California Consumer Privacy
               Act (CCPA), as amended by the California Privacy Rights Act (CPRA), subject to applicable
@@ -371,7 +371,7 @@ export function PrivacyPage() {
 
           {/* 18. Contact */}
           <section>
-            <h2 className="text-2xl font-semibold text-foreground mb-3">18. Contact</h2>
+            <h2 className="text-2xl font-extrabold text-foreground mb-3">18. Contact</h2>
             <p className="mb-3">
               For questions about this Privacy Policy, contact:
             </p>
