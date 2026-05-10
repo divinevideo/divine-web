@@ -13,7 +13,7 @@ export function TermsPage() {
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         <ZendeskWidget />
         <h1 className="text-4xl font-extrabold mb-4">{t('termsPage.title')}</h1>
-        <p className="text-muted-foreground mb-8">{t('termsPage.lastUpdated', { date: 'March 30, 2026' })}</p>
+        <p className="text-muted-foreground mb-8">{t('termsPage.lastUpdated', { date: 'May 9, 2026' })}</p>
 
         <div className="space-y-8 text-muted-foreground leading-relaxed">
           {/* 1. Acceptance of Terms */}
@@ -308,13 +308,13 @@ export function TermsPage() {
               rights.
             </p>
             <p className="mb-3">
-              As described in Section 14, Divine cannot guarantee removal of your content from third-party relays
+              As described in Section 15, Divine cannot guarantee removal of your content from third-party relays
               or media hosts not controlled by Divine.
             </p>
             <p>
               You acknowledge that the Service may display URLs or references to externally hosted content, and
               you are solely responsible for ensuring that such content is lawful, safe, and accurately described
-              in your Nostr events. For more information, see Section 17.
+              in your Nostr events. For more information, see Section 18.
             </p>
           </section>
 
@@ -356,10 +356,15 @@ export function TermsPage() {
               geographic limitations, or other protective measures to maintain stability, security, and
               performance.
             </p>
-            <p>
+            <p className="mb-3">
               The Service may be unavailable, degraded, or delayed due to maintenance, scaling constraints,
               traffic surges, network conditions, relay outages, third-party host failures, or other factors.
               Divine does not guarantee uninterrupted availability, storage, delivery, or performance.
+            </p>
+            <p>
+              Divine has no obligation to host, store, retain, or preserve any user content or any storage
+              location referenced through the Service. Divine may display, cache, or cease displaying or caching
+              content, at its discretion, subject to applicable law and its policies.
             </p>
           </section>
 
@@ -385,7 +390,7 @@ export function TermsPage() {
             </p>
             <p>
               Sections that by their nature should survive termination will survive, including Sections 5, 13, 14,
-              16, 17, 18, 19, and 21.
+              15, 17, 18, 19, 20, and 22.
             </p>
           </section>
 
@@ -409,10 +414,54 @@ export function TermsPage() {
             </p>
           </section>
 
-          {/* 14. Third-Party Systems and External Links */}
+          {/* 14. Research and De-Identified Data */}
           <section>
             <h2 className="text-2xl font-extrabold text-foreground mb-3">
-              14. Third-Party Systems and External Links
+              14. Research and De-Identified Data
+            </h2>
+            <p className="mb-3">
+              We may use information related to activity on Divine, including public Nostr events and related
+              metadata, to create datasets for research, analysis, product improvement, safety, transparency,
+              academic, and public-interest purposes. These datasets may be shared with researchers, academic
+              institutions, nonprofit organizations, public-interest organizations, and other third parties.
+            </p>
+            <p className="mb-3">
+              Before sharing, we apply reasonable technical, organizational, and contractual measures designed to
+              reduce the likelihood that any individual can be identified. This may include removing, hashing, or
+              transforming identifiers, aggregating data, limiting fields, limiting date ranges, excluding
+              sensitive or high-risk content where appropriate, and limiting the scope of what is included.
+            </p>
+            <p className="mb-3">
+              Because Divine is built on open protocols, some content and activity may already be publicly
+              available across independent Nostr relays and third-party systems. Any datasets we create may be
+              derived from this activity, but our creation or sharing of a dataset does not control or limit the
+              availability of the original data on the network or through third-party systems.
+            </p>
+            <p className="mb-3">
+              We do not represent that de-identification, anonymization, or aggregation is perfect or irreversible.
+              Given the nature of decentralized systems and publicly accessible data, there is always some risk of
+              re-identification, particularly when information is combined with other datasets.
+            </p>
+            <p className="mb-3">
+              By accessing or using any datasets we share, recipients agree not to attempt to re-identify
+              individuals or combine the data with other sources for the purpose of re-identification, and not to
+              use the datasets to target, contact, profile, harass, discriminate against, or otherwise harm any
+              individual. Once shared, we cannot guarantee that datasets will be deleted, returned, or controlled
+              by third parties, although we may require contractual restrictions where we determine they are
+              appropriate.
+            </p>
+            <p>
+              Where reasonably feasible, we may offer users the ability to opt out of inclusion in Divine-curated
+              datasets derived from Divine-controlled infrastructure. This does not affect the availability of
+              content or activity on the Nostr network itself or through independent relays, clients, archives, or
+              other third-party systems.
+            </p>
+          </section>
+
+          {/* 15. Third-Party Systems and External Links */}
+          <section>
+            <h2 className="text-2xl font-extrabold text-foreground mb-3">
+              15. Third-Party Systems and External Links
             </h2>
             <p className="mb-3">
               The Service may display, preview, retrieve, cache, or link to content stored on third-party servers,
@@ -431,10 +480,10 @@ export function TermsPage() {
             </p>
           </section>
 
-          {/* 15. Beta and Experimental Features */}
+          {/* 16. Beta and Experimental Features */}
           <section>
             <h2 className="text-2xl font-extrabold text-foreground mb-3">
-              15. Beta and Experimental Features
+              16. Beta and Experimental Features
             </h2>
             <p>
               The Service may include features or tools labeled beta, preview, early access, experimental, or
@@ -443,10 +492,10 @@ export function TermsPage() {
             </p>
           </section>
 
-          {/* 16. Disclaimers About User Content and Monitoring */}
+          {/* 17. Disclaimers About User Content and Monitoring */}
           <section>
             <h2 className="text-2xl font-extrabold text-foreground mb-3">
-              16. Disclaimers About User Content and Monitoring
+              17. Disclaimers About User Content and Monitoring
             </h2>
             <p className="mb-3">
               User content is the responsibility of the user who created, uploaded, or referenced it. The fact
@@ -461,9 +510,9 @@ export function TermsPage() {
             </p>
           </section>
 
-          {/* 17. Indemnification */}
+          {/* 18. Indemnification */}
           <section>
-            <h2 className="text-2xl font-extrabold text-foreground mb-3">17. Indemnification</h2>
+            <h2 className="text-2xl font-extrabold text-foreground mb-3">18. Indemnification</h2>
             <p>
               You agree to indemnify, defend, and hold harmless Divine and its officers, directors, employees,
               contractors, service providers, and affiliates from and against any claims, liabilities, damages,
@@ -473,7 +522,7 @@ export function TermsPage() {
             </p>
           </section>
 
-          {/* 18. Disclaimer of Warranties and Limitation of Liability
+          {/* 19. Disclaimer of Warranties and Limitation of Liability
             * The following four paragraphs are rendered uppercase via inline
             * style (NOT the Tailwind `uppercase` class) to satisfy the UCC
             * § 2-316 "conspicuousness" requirement for warranty disclaimers
@@ -485,7 +534,7 @@ export function TermsPage() {
             */}
           <section>
             <h2 className="text-2xl font-extrabold text-foreground mb-3">
-              18. Disclaimer of Warranties and Limitation of Liability
+              19. Disclaimer of Warranties and Limitation of Liability
             </h2>
             <p className="mb-3" style={{ textTransform: 'uppercase' }}>
               The Service is provided &ldquo;as is&rdquo; and &ldquo;as available.&rdquo; To the maximum extent
@@ -518,10 +567,10 @@ export function TermsPage() {
             </p>
           </section>
 
-          {/* 19. Dispute Resolution; Governing Law; Class Action Waiver */}
+          {/* 20. Dispute Resolution; Governing Law; Class Action Waiver */}
           <section>
             <h2 className="text-2xl font-extrabold text-foreground mb-3">
-              19. Dispute Resolution; Governing Law; Class Action Waiver
+              20. Dispute Resolution; Governing Law; Class Action Waiver
             </h2>
             <p className="mb-3">
               Before filing a legal claim relating to the Service or these Terms, you agree to first contact
@@ -539,9 +588,9 @@ export function TermsPage() {
             </p>
           </section>
 
-          {/* 20. Changes to These Terms */}
+          {/* 21. Changes to These Terms */}
           <section>
-            <h2 className="text-2xl font-extrabold text-foreground mb-3">20. Changes to These Terms</h2>
+            <h2 className="text-2xl font-extrabold text-foreground mb-3">21. Changes to These Terms</h2>
             <p>
               We may modify these Terms from time to time. When we do, we will post the updated version and revise
               the &ldquo;Last Updated&rdquo; date above. Unless a different effective date is stated, changes will
@@ -550,10 +599,10 @@ export function TermsPage() {
             </p>
           </section>
 
-          {/* 21. Entire Agreement; Severability; Contact Information */}
+          {/* 22. Entire Agreement; Severability; Contact Information */}
           <section>
             <h2 className="text-2xl font-extrabold text-foreground mb-3">
-              21. Entire Agreement; Severability; Contact Information
+              22. Entire Agreement; Severability; Contact Information
             </h2>
             <p className="mb-3">
               These Terms, together with the Privacy Policy and Safety Standards, constitute the entire agreement
