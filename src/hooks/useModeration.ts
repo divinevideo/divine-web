@@ -20,6 +20,33 @@ import { submitReportToZendesk, buildContentUrl } from '@/lib/reportApi';
 // Stable empty array to prevent infinite re-renders when user is not logged in
 const EMPTY_MUTE_LIST: MuteItem[] = [];
 
+type Nip56ReportType =
+  | 'nudity'
+  | 'malware'
+  | 'profanity'
+  | 'illegal'
+  | 'spam'
+  | 'impersonation'
+  | 'other';
+
+const NIP56_REPORT_TYPE_BY_REASON: Record<ContentFilterReason, Nip56ReportType> = {
+  [ContentFilterReason.SPAM]: 'spam',
+  [ContentFilterReason.HARASSMENT]: 'profanity',
+  [ContentFilterReason.VIOLENCE]: 'illegal',
+  [ContentFilterReason.SEXUAL_CONTENT]: 'nudity',
+  [ContentFilterReason.COPYRIGHT]: 'illegal',
+  [ContentFilterReason.FALSE_INFO]: 'other',
+  [ContentFilterReason.CSAM]: 'illegal',
+  [ContentFilterReason.AI_GENERATED]: 'other',
+  [ContentFilterReason.IMPERSONATION]: 'impersonation',
+  [ContentFilterReason.ILLEGAL]: 'illegal',
+  [ContentFilterReason.OTHER]: 'other',
+};
+
+export function toNip56ReportType(reason: ContentFilterReason): Nip56ReportType {
+  return NIP56_REPORT_TYPE_BY_REASON[reason];
+}
+
 /**
  * Parse a mute list event (kind 10001)
  */
@@ -239,13 +266,14 @@ export function useReportContent() {
       if (!user) throw new Error('Must be logged in to report content');
 
       const tags: string[][] = [];
+      const nip56Reason = toNip56ReportType(reason);
 
       // Add reported event or pubkey
       if (eventId) {
-        tags.push(['e', eventId, reason]);
+        tags.push(['e', eventId, nip56Reason]);
       }
       if (pubkey) {
-        tags.push(['p', pubkey, reason]);
+        tags.push(['p', pubkey, nip56Reason]);
       }
 
       // Add label namespace (NIP-32)
