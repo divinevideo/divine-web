@@ -4,6 +4,7 @@ import { SmartLink } from '@/components/SmartLink';
 import { nip19 } from 'nostr-tools';
 import { useAuthor } from '@/hooks/useAuthor';
 import { genUserName } from '@/lib/genUserName';
+import { buildProfileLinkPath } from '@/lib/profileLinks';
 import { cn } from '@/lib/utils';
 
 interface NoteContentProps {
@@ -118,13 +119,16 @@ export function NoteContent({
 // Helper component to display user mentions
 function NostrMention({ pubkey }: { pubkey: string }) {
   const author = useAuthor(pubkey);
-  const npub = nip19.npubEncode(pubkey);
   const hasRealName = !!author.data?.metadata?.name;
   const displayName = author.data?.metadata?.name ?? genUserName(pubkey);
+  const profilePath = buildProfileLinkPath({
+    pubkey,
+    nip05: author.data?.metadata?.nip05,
+  });
 
   return (
     <SmartLink
-      to={`/${npub}`}
+      to={profilePath}
       ownerPubkey={pubkey}
       className={cn(
         "font-medium hover:underline",

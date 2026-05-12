@@ -4,7 +4,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Heart, ChatCircle as MessageCircle, Repeat as Repeat2, Share, SpeakerHigh as Volume2, SpeakerX as VolumeX, DownloadSimple as Download, ListPlus, Users, DotsThreeVertical as MoreVertical, Flag, UserMinus as UserX, Code, Trash as Trash2, Eye, ClosedCaptioning as Captions } from '@phosphor-icons/react';
-import { nip19 } from 'nostr-tools';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -42,6 +41,7 @@ import { useSubtitles } from '@/hooks/useSubtitles';
 import { VideoVerificationBadgeRow } from '@/components/VideoVerificationBadgeRow';
 import type { ParsedVideoData } from '@/types/video';
 import { buildDmSharePayloadFromVideo, buildDmShareQueryString } from '@/lib/dm';
+import { buildProfileLinkPath } from '@/lib/profileLinks';
 
 interface FullscreenVideoItemProps {
   video: ParsedVideoData;
@@ -134,7 +134,6 @@ export function FullscreenVideoItem({
   const badgesQuery = useBadges(video.pubkey);
   const metadata = author.metadata;
 
-  const npub = nip19.npubEncode(video.pubkey);
   // Use raw author data to detect real vs generated names
   const rawMetadata = authorData.data?.metadata;
   const hasRealName = rawMetadata?.display_name || rawMetadata?.name;
@@ -144,7 +143,10 @@ export function FullscreenVideoItem({
   const profileImage = getSafeProfileImage(
     rawMetadata?.picture || video.authorAvatar || metadata.picture
   );
-  const profileUrl = `/${npub}`;
+  const profileUrl = buildProfileLinkPath({
+    pubkey: video.pubkey,
+    nip05: rawMetadata?.nip05,
+  });
 
   // Format timestamp
   const timestamp = video.originalVineTimestamp || video.createdAt;

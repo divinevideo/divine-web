@@ -2,13 +2,13 @@
 // ABOUTME: Displays avatar with type icon overlay, message text, and relative time
 
 import { Heart, ChatCircle as MessageCircle, UserPlus, Repeat as Repeat2, Lightning as Zap } from '@phosphor-icons/react';
-import { nip19 } from 'nostr-tools';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuthor } from '@/hooks/useAuthor';
 import { useSubdomainNavigate } from '@/hooks/useSubdomainNavigate';
 import { genUserName } from '@/lib/genUserName';
 import { getSafeProfileImage } from '@/lib/imageUtils';
 import { generateNotificationMessage, formatRelativeTime } from '@/lib/notificationTransform';
+import { buildProfileLinkPath } from '@/lib/profileLinks';
 import { cn } from '@/lib/utils';
 import type { Notification, NotificationType } from '@/types/notification';
 
@@ -40,8 +40,11 @@ export function NotificationItem({ notification }: NotificationItemProps) {
 
   const handleClick = () => {
     if (notification.type === 'follow') {
-      const npub = nip19.npubEncode(notification.actorPubkey);
-      navigate(`/profile/${npub}`);
+      navigate(buildProfileLinkPath({
+        pubkey: notification.actorPubkey,
+        nip05: metadata?.nip05,
+        fallbackRoute: 'profile',
+      }));
     } else if (notification.targetEventId) {
       navigate(`/video/${notification.targetEventId}`);
     }
