@@ -1,5 +1,6 @@
 import type { NostrEvent } from '@nostrify/nostrify';
 import { VIDEO_KINDS } from '@/types/video';
+import { buildProfileLinkPath } from '@/lib/profileLinks';
 
 const LIST_EVENT_KINDS = new Set([
   3,
@@ -21,7 +22,10 @@ export function buildVideoPath(identifier: string): string {
 }
 
 export function buildProfilePath(identifier: string): string {
-  return `/profile/${identifier}`;
+  return buildProfileLinkPath({
+    pubkey: identifier,
+    fallbackRoute: 'profile',
+  });
 }
 
 export function buildListPath(pubkey: string, listId: string): string {
