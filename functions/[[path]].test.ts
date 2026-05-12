@@ -184,6 +184,55 @@ describe('functions/[[path]]', () => {
     expect(html).toContain('property="og:image" content="https://media.divine.video/545aff83f83b4643f340747213e86520fac83596f899e8ea3117e0aa8b260f7b"');
   });
 
+  it('injects family-hub metadata for /family on apex', async () => {
+    const response = await onRequest({
+      request: new Request('https://divine.video/family'),
+      next: async () => new Response('not found', { status: 404 }),
+      env: {},
+    });
+
+    const html = await response.text();
+
+    expect(response.status).toBe(200);
+    expect(html).toContain('<title>For families on Divine — Conversation-first guidance for parents and teens</title>');
+    expect(html).toContain('property="og:url" content="https://divine.video/family"');
+    expect(html).toContain('property="og:title" content="For families on Divine');
+    expect(html).toContain('name="twitter:title" content="For families on Divine');
+  });
+
+  it('injects age-review metadata for /age-review on apex', async () => {
+    const response = await onRequest({
+      request: new Request('https://divine.video/age-review'),
+      next: async () => new Response('not found', { status: 404 }),
+      env: {},
+    });
+
+    const html = await response.text();
+
+    expect(response.status).toBe(200);
+    expect(html).toContain('<title>Account review — Divine</title>');
+    expect(html).toContain('property="og:url" content="https://divine.video/age-review"');
+    expect(html).toContain('property="og:title" content="Account review — Divine"');
+    expect(html).toContain('name="twitter:title" content="Account review — Divine"');
+    expect(html).toContain('15-day window');
+  });
+
+  it('injects kids-policy metadata for /kids on apex', async () => {
+    const response = await onRequest({
+      request: new Request('https://divine.video/kids'),
+      next: async () => new Response('not found', { status: 404 }),
+      env: {},
+    });
+
+    const html = await response.text();
+
+    expect(response.status).toBe(200);
+    expect(html).toContain('<title>Kids on Divine — How accounts work for under-16s</title>');
+    expect(html).toContain('property="og:url" content="https://divine.video/kids"');
+    expect(html).toContain('property="og:title" content="Kids on Divine');
+    expect(html).toContain('name="twitter:title" content="Kids on Divine');
+  });
+
   it('injects category metadata for category routes', async () => {
     const response = await onRequest({
       request: new Request('https://divine.video/category/dance'),
