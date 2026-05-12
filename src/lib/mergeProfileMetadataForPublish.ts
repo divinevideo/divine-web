@@ -1,5 +1,3 @@
-// ABOUTME: Pure merge + cleanup for kind 0 profile JSON before publish (display_name sync, strip empty strings)
-
 import type { NostrMetadata } from '@nostrify/nostrify';
 
 /**
@@ -14,6 +12,8 @@ export function mergeProfileMetadataForPublish(
     ...(existing ?? {}),
     ...formValues,
   } as Record<string, unknown>;
+
+  data.client = 'divine.video';
 
   if (data.name) {
     data.display_name = data.name;

@@ -102,10 +102,6 @@ export const EditProfileForm: React.FC<EditProfileFormProps> = ({ onSuccess }) =
     try {
       const data = mergeProfileMetadataForPublish(metadata, values);
 
-      // Add client tag to identify divine users
-      // This helps with follow list safety checks
-      data.client = 'divine.video';
-
       // Publish the metadata event (kind 0)
       await publishEvent({
         kind: 0,
