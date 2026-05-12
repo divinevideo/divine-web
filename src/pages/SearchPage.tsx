@@ -6,7 +6,6 @@ import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';
 import { useNostr } from '@nostrify/react';
 import { useSubdomainNavigate } from '@/hooks/useSubdomainNavigate';
-import { nip19 } from 'nostr-tools';
 import { useSeoMeta } from '@unhead/react';
 import { MagnifyingGlass as Search, Hash, Play, Users, VideoCamera as Video, CircleNotch as Loader2 } from '@phosphor-icons/react';
 import { trackSearch } from '@/lib/analytics';
@@ -46,6 +45,7 @@ import {
   buildCompilationPlaybackUrl,
   parseCompilationPlaybackParams,
 } from '@/lib/compilationPlayback';
+import { buildProfileLinkPath } from '@/lib/profileLinks';
 
 type SearchFilter = 'all' | 'videos' | 'users' | 'hashtags';
 
@@ -705,6 +705,7 @@ interface UserCardMetadata {
   name?: string;
   about?: string;
   picture?: string;
+  nip05?: string;
 }
 
 // User card component
@@ -714,10 +715,13 @@ function UserCard({ user }: { user: { pubkey: string; metadata?: UserCardMetadat
   const username = user.metadata?.name || genUserName(user.pubkey);
   const about = user.metadata?.about;
   const picture = getSafeProfileImage(user.metadata?.picture);
-  const npub = nip19.npubEncode(user.pubkey);
+  const profilePath = buildProfileLinkPath({
+    pubkey: user.pubkey,
+    nip05: user.metadata?.nip05,
+  });
 
   const handleClick = () => {
-    navigate(`/${npub}`);
+    navigate(profilePath);
   };
 
   const handleKeyDown = (event: React.KeyboardEvent) => {

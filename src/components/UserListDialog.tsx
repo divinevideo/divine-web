@@ -2,7 +2,6 @@
 // ABOUTME: Uses virtual scrolling for performance with large lists (500+ users)
 
 import { memo, useCallback, useRef, useEffect, useMemo } from 'react';
-import { nip19 } from 'nostr-tools';
 import type { NostrMetadata } from '@nostrify/nostrify';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -19,6 +18,7 @@ import { useSubdomainNavigate } from '@/hooks/useSubdomainNavigate';
 import { getSafeProfileImage } from '@/lib/imageUtils';
 import { genUserName } from '@/lib/genUserName';
 import { Sentry } from '@/lib/sentry';
+import { buildProfileLinkPath } from '@/lib/profileLinks';
 
 const ESTIMATED_ROW_HEIGHT = 56;
 
@@ -35,7 +35,7 @@ interface UserListDialogProps {
 interface UserRowProps {
   pubkey: string;
   metadata?: NostrMetadata;
-  onNavigate: (pubkey: string) => void;
+  onNavigate: (pubkey: string, nip05?: string) => void;
 }
 
 const UserRow = memo(function UserRow({ pubkey, metadata, onNavigate }: UserRowProps) {
@@ -45,7 +45,7 @@ const UserRow = memo(function UserRow({ pubkey, metadata, onNavigate }: UserRowP
   return (
     <button
       className="flex items-center gap-3 w-full p-2 rounded-lg hover:bg-muted transition-colors text-left"
-      onClick={() => onNavigate(pubkey)}
+      onClick={() => onNavigate(pubkey, metadata?.nip05)}
     >
       <Avatar size="md" className="shrink-0">
         <AvatarImage src={profileImage} alt={displayName} />
@@ -150,10 +150,13 @@ export function UserListDialog({
   const { data: authorsData } = useBatchedAuthors(open ? visiblePubkeys : []);
 
   const handleNavigate = useCallback(
-    (pubkey: string) => {
-      const npub = nip19.npubEncode(pubkey);
+    (pubkey: string, nip05?: string) => {
       onOpenChange(false);
-      navigate(`/profile/${npub}`, { ownerPubkey: pubkey });
+      navigate(buildProfileLinkPath({
+        pubkey,
+        nip05,
+        fallbackRoute: 'profile',
+      }), { ownerPubkey: pubkey });
     },
     [navigate, onOpenChange],
   );
