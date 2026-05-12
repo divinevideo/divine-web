@@ -15,6 +15,50 @@ describe('mergeProfileMetadataForPublish', () => {
 
     expect(result.display_name).toBe('Alice');
     expect(result.name).toBe('Alice');
+    expect(result.client).toBe('divine.video');
+  });
+
+  it('overwrites existing client tag with divine.video', () => {
+    const result = mergeProfileMetadataForPublish(
+      {
+        client: 'old-client',
+        name: 'Alice',
+        display_name: 'Alice',
+        about: '',
+        picture: '',
+        banner: '',
+        website: '',
+        nip05: '',
+        bot: false,
+      },
+      {
+        name: 'Alice',
+        about: 'Bio',
+        picture: '',
+        banner: '',
+        website: '',
+        nip05: '',
+        bot: false,
+      }
+    );
+
+    expect(result.client).toBe('divine.video');
+  });
+
+  it('handles empty existing metadata object', () => {
+    const result = mergeProfileMetadataForPublish({}, {
+      name: 'Fresh User',
+      about: '',
+      picture: '',
+      banner: '',
+      website: '',
+      nip05: '',
+      bot: false,
+    });
+
+    expect(result.name).toBe('Fresh User');
+    expect(result.display_name).toBe('Fresh User');
+    expect(result.client).toBe('divine.video');
   });
 
   it('overrides stale display_name from existing metadata when name is set', () => {
