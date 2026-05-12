@@ -91,8 +91,8 @@ describe('EditProfileForm', () => {
 
     renderForm();
 
-    expect(screen.getByText(/couldn't load your current profile yet/i)).toBeInTheDocument();
-    const retryBtn = screen.getByRole('button', { name: /retry loading profile/i });
+    expect(screen.getByText('editProfileForm.loadingErrorDescription')).toBeInTheDocument();
+    const retryBtn = screen.getByRole('button', { name: 'editProfileForm.retryLoadingProfile' });
     expect(retryBtn).not.toBeDisabled();
 
     await user.click(retryBtn);
@@ -101,7 +101,7 @@ describe('EditProfileForm', () => {
 
   it('disables save until author profile query succeeds', () => {
     renderForm();
-    const saveBtn = screen.getByRole('button', { name: /loading your profile/i });
+    const saveBtn = screen.getByRole('button', { name: 'editProfileForm.saveButton' });
     expect(saveBtn).toBeDisabled();
     expect(mockPublish).not.toHaveBeenCalled();
   });
@@ -117,7 +117,7 @@ describe('EditProfileForm', () => {
 
     renderForm();
 
-    expect(screen.getByRole('button', { name: /^save profile$/i })).not.toBeDisabled();
+    expect(screen.getByRole('button', { name: 'editProfileForm.saveButton' })).not.toBeDisabled();
   });
 
   it('keeps lud16 from loaded metadata when saving', async () => {
@@ -140,7 +140,7 @@ describe('EditProfileForm', () => {
 
     renderForm();
 
-    const saveBtn = screen.getByRole('button', { name: /^save profile$/i });
+    const saveBtn = screen.getByRole('button', { name: 'editProfileForm.saveButton' });
     expect(saveBtn).not.toBeDisabled();
 
     await user.click(saveBtn);
