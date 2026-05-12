@@ -538,4 +538,64 @@ describe('SearchPage', () => {
     expect(screen.getAllByTestId('video-card-video-2').length).toBeGreaterThan(0);
     expect(screen.queryAllByTestId('bare-video-card-video-2')).toHaveLength(0);
   });
+
+  it('defaults to hot sort when no sort param is in the URL and passes it to useInfiniteSearchVideos', () => {
+    mockUseInfiniteSearchVideos.mockReturnValue({
+      data: { pages: [{ videos: [] }] },
+      fetchNextPage: vi.fn(),
+      hasNextPage: false,
+      isLoading: false,
+      error: null,
+    });
+
+    renderPage(['/search?q=dogs']);
+
+    const lastCall = mockUseInfiniteSearchVideos.mock.calls.at(-1)?.[0];
+    expect(lastCall?.sortMode).toBe('hot');
+
+    const hotPill = screen.getByTestId('search-sort-hot');
+    expect(hotPill).toHaveAttribute('aria-checked', 'true');
+    expect(screen.getByTestId('search-sort-relevance')).toHaveAttribute('aria-checked', 'false');
+  });
+
+  it('honors the sort URL param on initial load', () => {
+    mockUseInfiniteSearchVideos.mockReturnValue({
+      data: { pages: [{ videos: [] }] },
+      fetchNextPage: vi.fn(),
+      hasNextPage: false,
+      isLoading: false,
+      error: null,
+    });
+
+    renderPage(['/search?q=dogs&sort=top']);
+
+    const lastCall = mockUseInfiniteSearchVideos.mock.calls.at(-1)?.[0];
+    expect(lastCall?.sortMode).toBe('top');
+    expect(screen.getByTestId('search-sort-top')).toHaveAttribute('aria-checked', 'true');
+  });
+
+  it('writes sort to URL when user picks a non-default mode and omits it when hot is chosen', async () => {
+    const user = userEvent.setup();
+    mockUseInfiniteSearchVideos.mockReturnValue({
+      data: { pages: [{ videos: [] }] },
+      fetchNextPage: vi.fn(),
+      hasNextPage: false,
+      isLoading: false,
+      error: null,
+    });
+
+    renderPage(['/search?q=dogs']);
+
+    await user.click(screen.getByTestId('search-sort-top'));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('location-display').textContent).toContain('sort=top');
+    });
+
+    await user.click(screen.getByTestId('search-sort-hot'));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('location-display').textContent).not.toContain('sort=');
+    });
+  });
 });

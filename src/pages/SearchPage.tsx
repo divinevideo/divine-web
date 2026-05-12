@@ -13,7 +13,6 @@ import { trackSearch } from '@/lib/analytics';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
@@ -61,7 +60,7 @@ export function SearchPage() {
   const { config } = useAppContext();
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
   const [sortMode, setSortMode] = useState<SortMode | 'relevance'>(
-    (searchParams.get('sort') as SortMode | 'relevance') || 'relevance'
+    (searchParams.get('sort') as SortMode | 'relevance') || 'hot'
   );
   const [activeFilter, setActiveFilter] = useState<SearchFilter>(
     (searchParams.get('filter') as SearchFilter) || 'all'
@@ -150,7 +149,7 @@ export function SearchPage() {
       debouncedSearchQuery.current = searchQuery;
       const params = new URLSearchParams();
       if (searchQuery) params.set('q', searchQuery);
-      if (sortMode !== 'relevance') params.set('sort', sortMode);
+      if (sortMode !== 'hot') params.set('sort', sortMode);
       if (activeFilter !== 'all') params.set('filter', activeFilter);
       if (compilationRequest.play) {
         params.set('play', 'compilation');
@@ -349,7 +348,7 @@ export function SearchPage() {
     const trimmedQuery = searchQuery.trim();
 
     if (trimmedQuery) params.set('q', trimmedQuery);
-    if (sortMode !== 'relevance') params.set('sort', sortMode);
+    if (sortMode !== 'hot') params.set('sort', sortMode);
     if (activeFilter !== 'all') params.set('filter', activeFilter);
 
     const query = params.toString();
@@ -412,23 +411,36 @@ export function SearchPage() {
 
           {/* Sort mode selector for video results */}
           {(activeFilter === 'all' || activeFilter === 'videos') && searchQuery.trim() && (
-            <div className="flex items-center gap-2 justify-end">
-              <span className="text-sm text-muted-foreground">Sort:</span>
-              <Select value={sortMode} onValueChange={(value) => setSortMode(value as SortMode)}>
-                <SelectTrigger className="w-[160px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {SORT_MODES.map(mode => (
-                    <SelectItem key={mode.value} value={mode.value}>
-                      <div className="flex items-center gap-2">
-                        <mode.icon className="h-4 w-4" />
-                        {mode.label}
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <div
+              role="radiogroup"
+              aria-label="Sort search results"
+              data-testid="search-sort-pills"
+              className="flex flex-wrap gap-2"
+            >
+              {SORT_MODES.map(mode => {
+                const ModeIcon = mode.icon;
+                const isSelected = sortMode === mode.value;
+                return (
+                  <button
+                    key={mode.value}
+                    type="button"
+                    role="radio"
+                    aria-checked={isSelected}
+                    data-testid={`search-sort-${mode.value}`}
+                    onClick={() => setSortMode(mode.value as SortMode | 'relevance')}
+                    className={`
+                      flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all
+                      ${isSelected
+                        ? 'bg-primary text-primary-foreground shadow-md'
+                        : 'bg-brand-light-green dark:bg-brand-dark-green hover:bg-muted text-muted-foreground hover:text-foreground'
+                      }
+                    `}
+                  >
+                    <ModeIcon className="h-4 w-4" />
+                    <span>{mode.label}</span>
+                  </button>
+                );
+              })}
             </div>
           )}
 
