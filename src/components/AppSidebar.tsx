@@ -1,7 +1,7 @@
 // ABOUTME: TikTok-style left sidebar navigation for desktop
 // ABOUTME: Shows main nav, login/signup, expandable Divine links section
 
-import { useLocation } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { House as Home, Compass, MagnifyingGlass as Search, Bell, User, Sun, Moon, CaretDown as ChevronDown, Headphones, ChartBar as BarChart3, SquaresFour as LayoutGrid, Rss, ChatCircle as MessageCircle } from '@phosphor-icons/react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -25,6 +25,7 @@ import { feedUrls } from '@/lib/feedUrls';
 import { useRssFeedAvailable } from '@/hooks/useRssFeedAvailable';
 import { usePlatformStats } from '@/hooks/usePlatformStats';
 import { LanguageMenu } from '@/components/LanguageMenu';
+import { SocialLinks } from '@/components/SocialLinks';
 import { getTranslatedCategoryLabel } from '@/lib/constants/categories';
 import { getPreferredAppStoreCountry, lookupAppStoreUrl, PLAY_STORE_URL } from '@/lib/mobileStoreLinks';
 
@@ -387,6 +388,9 @@ export function AppSidebar({ className }: { className?: string }) {
           )}
         </div>
 
+        {/* Social media — visible on every page, not just About/ProofMode. */}
+        <SocialLinks className="mt-6 px-4 flex-wrap gap-y-2" iconClassName="dark:invert" />
+
         {/* Footer Section - flows naturally, no pinning */}
         <div className="mt-6 px-4">
         {/* Expandable Divine Section */}
@@ -452,6 +456,12 @@ export function AppSidebar({ className }: { className?: string }) {
               >
                 {t('menu.mediaResources')}
               </a>
+              <Link
+                to="/merch"
+                className="transition-colors hover:text-primary"
+              >
+                {t('menu.merch')}
+              </Link>
             </div>
           </CollapsibleContent>
         </Collapsible>

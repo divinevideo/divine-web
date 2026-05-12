@@ -2,6 +2,7 @@
 // ABOUTME: Displays a confirmation button that unlocks age-restricted content
 
 import { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Warning as AlertTriangle, ShieldCheck } from '@phosphor-icons/react';
 import { useAdultVerification } from '@/hooks/useAdultVerification';
@@ -22,6 +23,7 @@ export function AgeVerificationOverlay({
   thumbnailUrl,
   blurhash: _blurhash,
 }: AgeVerificationOverlayProps) {
+  const { t } = useTranslation();
   const { confirmAdult, isVerified } = useAdultVerification();
   const { user } = useCurrentUser();
   const { openLoginDialog } = useLoginDialog();
@@ -86,9 +88,9 @@ export function AgeVerificationOverlay({
         {user ? (
           <>
             <div className="space-y-2">
-              <h3 className="text-lg font-semibold text-white">Age-Restricted Content</h3>
+              <h3 className="text-lg font-semibold text-white">{t('ageVerificationOverlay.restrictedHeading')}</h3>
               <p className="text-sm text-gray-300">
-                This content may not be appropriate for all audiences.
+                {t('ageVerificationOverlay.restrictedBody')}
               </p>
             </div>
             <Button
@@ -97,31 +99,31 @@ export function AgeVerificationOverlay({
               className="gap-2 bg-white text-black hover:bg-gray-200 touch-manipulation"
             >
               {isConfirming ? (
-                <>Verifying...</>
+                <>{t('ageVerificationOverlay.verifying')}</>
               ) : (
                 <>
                   <ShieldCheck className="w-4 h-4" />
-                  I'm 18 or older
+                  {t('ageVerificationOverlay.confirmButton')}
                 </>
               )}
             </Button>
             <p className="text-xs text-gray-500 max-w-xs">
-              Your choice will be remembered for 30 days
+              {t('ageVerificationOverlay.rememberNote')}
             </p>
           </>
         ) : (
           <>
             <div className="space-y-2">
-              <h3 className="text-lg font-semibold text-white">Sign in to view this content</h3>
+              <h3 className="text-lg font-semibold text-white">{t('ageVerificationOverlay.signInHeading')}</h3>
               <p className="text-sm text-gray-300">
-                This content is age-restricted. Sign in so we can confirm your age and load the video.
+                {t('ageVerificationOverlay.signInBody')}
               </p>
             </div>
             <Button
               onClick={openLoginDialog}
               className="gap-2 bg-white text-black hover:bg-gray-200 touch-manipulation"
             >
-              Sign in
+              {t('ageVerificationOverlay.signInButton')}
             </Button>
           </>
         )}

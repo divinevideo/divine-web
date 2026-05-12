@@ -87,6 +87,51 @@ describe('transformFunnelcakeVideo', () => {
     expect(archived.commentCount).toBe(3014);
     expect(archived.repostCount).toBe(37586);
   });
+
+  // Regression guard: list endpoints (/api/videos, /api/users/{pubkey}/videos,
+  // discovery, etc.) omit Nostr `tags`, so proofMode arrives undefined and the
+  // verification dialog must lazy-fetch the single-video endpoint to recover
+  // it. See VideoVerificationDetailsDialog.tsx.
+  it('returns proofMode undefined when tags are absent (list endpoint shape)', () => {
+    const video = transformFunnelcakeVideo(makeRawVideo());
+    expect(video.proofMode).toBeUndefined();
+  });
+
+  it('extracts proofMode when verification tags are present (single-video shape)', () => {
+    const video = transformFunnelcakeVideo(makeRawVideo({
+      tags: [
+        ['d', 'vine-id'],
+        ['verification', 'verified_mobile'],
+        ['c2pa_manifest_id', 'urn:c2pa:test'],
+        ['device_attestation', 'attest-blob'],
+        ['proofmode', '{"videoHash":"abc"}'],
+      ],
+    }));
+
+    expect(video.proofMode?.level).toBe('verified_mobile');
+    expect(video.proofMode?.c2paManifestId).toBe('urn:c2pa:test');
+    expect(video.proofMode?.deviceAttestation).toBe('attest-blob');
+  });
+
+  it('maps the raw Nostr content (description) to video.content, not the title', () => {
+    const video = transformFunnelcakeVideo(makeRawVideo({
+      title: 'First Divine Compilation 2026!',
+      content: 'I just made the world’s first divine compilation.\n\nLink: https://youtu.be/abc',
+    }));
+
+    expect(video.title).toBe('First Divine Compilation 2026!');
+    expect(video.content).toBe('I just made the world’s first divine compilation.\n\nLink: https://youtu.be/abc');
+  });
+
+  it('leaves video.content empty when the API response has no content field', () => {
+    const video = transformFunnelcakeVideo(makeRawVideo({
+      title: 'A title with no description',
+      content: undefined,
+    }));
+
+    expect(video.title).toBe('A title with no description');
+    expect(video.content).toBe('');
+  });
 });
 
 function makeResponse(overrides: Partial<FunnelcakeResponse> = {}): FunnelcakeResponse {

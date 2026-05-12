@@ -6,7 +6,9 @@ import { nip19 } from 'nostr-tools';
 import { useAuthor } from '@/hooks/useAuthor';
 import { genUserName } from '@/lib/genUserName';
 
-const NOSTR_MENTION_REGEX = /nostr:(npub1[023456789acdefghjklmnpqrstuvwxyz]+)/g;
+// Matches both prefixed (nostr:npub1...) and bare (npub1...) forms.
+// Word boundary keeps `xxxnpub1...yyy` mid-word strings from matching.
+const NOSTR_MENTION_REGEX = /(?:nostr:)?\b(npub1[023456789acdefghjklmnpqrstuvwxyz]+)\b/g;
 
 /** Extract all npub pubkeys from a text string */
 function extractPubkeys(text: string): string[] {

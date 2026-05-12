@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useLocation } from 'react-router-dom';
 import { DownloadSimple as Download, X } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
@@ -18,6 +19,7 @@ interface NavigatorWithStandalone extends Navigator {
 }
 
 export function PWAInstallPrompt({ delayMs = 10000 }: { delayMs?: number } = {}) {
+  const { t } = useTranslation();
   const location = useLocation();
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [showPrompt, setShowPrompt] = useState(false);
@@ -173,7 +175,7 @@ export function PWAInstallPrompt({ delayMs = 10000 }: { delayMs?: number } = {})
       <button
         onClick={handleDismiss}
         className="absolute top-2 right-2 p-1 hover:bg-accent rounded-full transition-colors"
-        aria-label="Close"
+        aria-label={t('pwaInstallPrompt.close')}
       >
         <X className="h-4 w-4 text-muted-foreground" />
       </button>
@@ -185,28 +187,28 @@ export function PWAInstallPrompt({ delayMs = 10000 }: { delayMs?: number } = {})
 
         <div className="flex-1 min-w-0">
           <h3 className="font-semibold text-foreground mb-1">
-            {hasNativeStoreAction ? 'Get Divine' : 'Install Divine Web'}
+            {hasNativeStoreAction ? t('pwaInstallPrompt.getDivine') : t('pwaInstallPrompt.installDivineWeb')}
           </h3>
           <p className="text-sm text-muted-foreground mb-3">
             {hasNativeStoreAction
-              ? 'Install the native app for the best Divine experience'
-              : 'Install our app for a better experience'}
+              ? t('pwaInstallPrompt.descriptionNative')
+              : t('pwaInstallPrompt.descriptionWeb')}
           </p>
 
           <div className="flex flex-wrap gap-2">
             {appStoreUrl && (
               <Button asChild size="sm" className="flex-1 min-w-0">
-                <a href={appStoreUrl} target="_blank" rel="noopener noreferrer" aria-label="Download Divine on the App Store">
+                <a href={appStoreUrl} target="_blank" rel="noopener noreferrer" aria-label={t('pwaInstallPrompt.appStoreAria')}>
                   <Download className="h-4 w-4 mr-2" />
-                  App Store
+                  {t('pwaInstallPrompt.appStore')}
                 </a>
               </Button>
             )}
             {showGooglePlay && (
               <Button asChild size="sm" className="flex-1 min-w-0">
-                <a href={PLAY_STORE_URL} target="_blank" rel="noopener noreferrer" aria-label="Get Divine on Google Play">
+                <a href={PLAY_STORE_URL} target="_blank" rel="noopener noreferrer" aria-label={t('pwaInstallPrompt.googlePlayAria')}>
                   <Download className="h-4 w-4 mr-2" />
-                  Google Play
+                  {t('pwaInstallPrompt.googlePlay')}
                 </a>
               </Button>
             )}
@@ -217,7 +219,7 @@ export function PWAInstallPrompt({ delayMs = 10000 }: { delayMs?: number } = {})
                 className="flex-1"
               >
                 <Download className="h-4 w-4 mr-2" />
-                Install
+                {t('pwaInstallPrompt.install')}
               </Button>
             )}
             <Button
@@ -225,7 +227,7 @@ export function PWAInstallPrompt({ delayMs = 10000 }: { delayMs?: number } = {})
               size="sm"
               variant="outline"
             >
-              Not now
+              {t('pwaInstallPrompt.notNow')}
             </Button>
           </div>
         </div>

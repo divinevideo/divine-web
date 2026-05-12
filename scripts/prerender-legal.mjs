@@ -120,6 +120,35 @@ function buildPage({ title, description, path, content, shell }) {
 </html>`;
 }
 
+function getTranslationValue(messages, key) {
+  return key.split('.').reduce((value, segment) => {
+    if (value && typeof value === 'object' && segment in value) {
+      return value[segment];
+    }
+    return undefined;
+  }, messages);
+}
+
+function resolveTCalls(source, content) {
+  const namespaceMatch = source.match(/useTranslation\('([^']+)'\)/);
+
+  if (!namespaceMatch) {
+    return content;
+  }
+
+  const localePath = join(__dirname, '..', 'src', 'lib', 'i18n', 'locales', 'en', `${namespaceMatch[1]}.json`);
+  if (!existsSync(localePath)) {
+    return content;
+  }
+
+  const messages = JSON.parse(readFileSync(localePath, 'utf-8'));
+
+  return content.replace(/\{t\('([^']+)'\)\}/g, (match, key) => {
+    const value = getTranslationValue(messages, key);
+    return typeof value === 'string' ? value : match;
+  });
+}
+
 // ── Page content (semantic HTML versions of the React components) ──────────
 
 const PAGES = [
@@ -163,7 +192,7 @@ function extractContentFromTsx(sourcePath) {
     throw new Error(`Could not extract prerender content from ${sourcePath}`);
   }
 
-  return match[1]
+  return resolveTCalls(source, match[1])
     .replace(/\{\/\*[\s\S]*?\*\/\}/g, '')
     .replace(/<Link\s+to=/g, '<a href=')
     .replace(/<\/Link>/g, '</a>')

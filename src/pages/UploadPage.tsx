@@ -3,6 +3,7 @@
 
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { CameraRecorder } from '@/components/CameraRecorder';
 import { VideoMetadataForm } from '@/components/VideoMetadataForm';
 import { Button } from '@/components/ui/button';
@@ -17,6 +18,7 @@ interface RecordedSegment {
 }
 
 export function UploadPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { user } = useCurrentUser();
   const [step, setStep] = useState<UploadStep>('choose');
@@ -28,12 +30,12 @@ export function UploadPage() {
       <div className="container max-w-lg mx-auto py-12 px-4">
         <div className="text-center space-y-4">
           <Camera className="h-16 w-16 mx-auto text-muted-foreground" />
-          <h1 className="text-2xl font-bold">Login Required</h1>
+          <h1 className="text-2xl font-bold">{t('uploadPage.loginRequiredTitle')}</h1>
           <p className="text-muted-foreground">
-            You need to be logged in to record videos
+            {t('uploadPage.loginRequiredDescription')}
           </p>
           <Button onClick={() => navigate('/')}>
-            Go to Home
+            {t('uploadPage.goToHomeButton')}
           </Button>
         </div>
       </div>
@@ -75,9 +77,9 @@ export function UploadPage() {
     return (
       <div className="container max-w-lg mx-auto py-12 px-4">
         <div className="text-center space-y-6">
-          <h1 className="text-3xl font-bold">Create a Vine</h1>
+          <h1 className="text-3xl font-bold">{t('uploadPage.createTitle')}</h1>
           <p className="text-muted-foreground">
-            Record a 6-second looping video to share with the world
+            {t('uploadPage.createSubtitle')}
           </p>
 
           <div className="space-y-3 pt-4">
@@ -88,7 +90,7 @@ export function UploadPage() {
               size="lg"
             >
               <Camera className="mr-2 h-5 w-5" />
-              Record with Camera
+              {t('uploadPage.recordWithCameraButton')}
             </Button>
           </div>
 
@@ -97,7 +99,7 @@ export function UploadPage() {
               onClick={() => navigate(-1)}
               variant="ghost"
             >
-              Cancel
+              {t('uploadPage.cancelButton')}
             </Button>
           </div>
         </div>

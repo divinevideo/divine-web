@@ -2,6 +2,7 @@
 // ABOUTME: Supports MP4 and GIF formats with preloading, seamless playback, and blurhash placeholders
 
 import { useRef, useEffect, useState, forwardRef, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { useInView } from 'react-intersection-observer';
 import { useVideoPlayback } from '@/hooks/useVideoPlayback';
@@ -111,6 +112,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
     },
     ref
   ) => {
+    const { t } = useTranslation();
     const videoRef = useRef<HTMLVideoElement | null>(null);
     const hlsRef = useRef<Hls | null>(null);
     const containerRef = useRef<HTMLDivElement | null>(null);
@@ -847,7 +849,9 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
             verboseLog(`[VideoPlayer ${videoId}] Fetching MP4 with NIP-98 auth`);
             (async () => {
               try {
-                const authHeader = await getAuthHeader(currentUrl, 'GET', videoData?.sha256);
+                // NIP-98 (not BUD-01): Blossom's viewer auth path only accepts
+                // BUD-01 list events, rejecting get events with an action mismatch.
+                const authHeader = await getAuthHeader(currentUrl, 'GET');
                 // Check if request was aborted while getting auth header
                 if (abortController.signal.aborted) {
                   verboseLog(`[VideoPlayer ${videoId}] Fetch aborted before starting`);
@@ -925,7 +929,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
         }
       };
 
-    }, [hlsUrl, currentUrlIndex, allUrls, videoId, requiresAuth, isAdultVerified, authRetryCount, getAuthHeader, videoData?.sha256, videoData?.ageRestricted]); // React to HLS URL, fallback, and auth changes
+    }, [hlsUrl, currentUrlIndex, allUrls, videoId, requiresAuth, isAdultVerified, authRetryCount, getAuthHeader, videoData?.ageRestricted]); // React to HLS URL, fallback, and auth changes
 
     // Cleanup on unmount
     useEffect(() => {
@@ -962,7 +966,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
         <div className={cn('relative overflow-hidden', className)}>
           <img
             src={currentUrl}
-            alt="Video GIF"
+            alt={t('videoPlayer.gifAlt')}
             className="w-full h-full object-contain"
             onLoad={() => setIsLoading(false)}
             onError={() => setHasError(true)}
@@ -974,7 +978,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
           )}
           {hasError && (
             <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
-              Failed to load GIF
+              {t('videoPlayer.gifLoadFailed')}
             </div>
           )}
         </div>
@@ -1060,7 +1064,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
             )}
             <img
               src="/ui-icons/loading-brand.svg"
-              alt="Loading..."
+              alt={t('videoPlayer.loading')}
               className="w-24 h-24 opacity-75"
             />
           </div>
@@ -1069,8 +1073,8 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
         {/* Auth denied after verification */}
         {authDeniedAfterVerification && (
           <AgeRestrictedMediaPlaceholder
-            title="Age-restricted video"
-            actionLabel="Retry"
+            title={t('videoPlayer.ageRestrictedTitle')}
+            actionLabel={t('videoPlayer.retry')}
             onAction={handleAgeVerified}
           />
         )}
@@ -1079,9 +1083,9 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
         {hasError && !requiresAuth && !authDeniedAfterVerification && (
           <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
             <div className="text-center">
-              <div>Failed to load video</div>
+              <div>{t('videoPlayer.loadFailed')}</div>
               {isMobile && (
-                <div className="text-sm mt-2">Tap to retry</div>
+                <div className="text-sm mt-2">{t('videoPlayer.tapToRetry')}</div>
               )}
             </div>
           </div>

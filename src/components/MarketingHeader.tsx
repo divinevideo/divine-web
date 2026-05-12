@@ -2,8 +2,11 @@
 // ABOUTME: Provides consistent navigation across About, FAQ, Press, Legal pages, etc.
 
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 export function MarketingHeader() {
+  const { t } = useTranslation();
+
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-brand-dark-green border-b border-brand-green">
       <div className="container mx-auto px-4">
@@ -43,6 +46,12 @@ export function MarketingHeader() {
             >
               In the News
             </a>
+            <Link
+              to="/merch"
+              className="text-sm font-medium text-brand-off-white hover:text-brand-green transition-colors"
+            >
+              {t('menu.merch')}
+            </Link>
             <Link
               to="/discovery"
               className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold bg-primary text-white rounded-full hover:brightness-110 transition-colors"

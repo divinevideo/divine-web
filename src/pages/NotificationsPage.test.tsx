@@ -3,6 +3,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { Notification } from '@/types/notification';
+import { initializeI18n } from '@/lib/i18n';
 import NotificationsPage from './NotificationsPage';
 
 const { mockMarkReadMutate, mockUseNotifications } = vi.hoisted(() => ({
@@ -41,8 +42,20 @@ function buildNotification(overrides: Partial<Notification>): Notification {
 }
 
 describe('NotificationsPage', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks();
+
+    const storage = new Map<string, string>();
+    Object.defineProperty(window, 'localStorage', {
+      configurable: true,
+      value: {
+        getItem: (key: string) => storage.get(key) ?? null,
+        setItem: (key: string, value: string) => storage.set(key, value),
+        removeItem: (key: string) => storage.delete(key),
+        clear: () => storage.clear(),
+      } satisfies Pick<Storage, 'getItem' | 'setItem' | 'removeItem' | 'clear'>,
+    });
+    await initializeI18n({ force: true, languages: ['en-US'] });
 
     mockUseNotifications.mockImplementation((filters?: { category?: string }) => {
       const category = filters?.category ?? 'all';

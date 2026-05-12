@@ -41,6 +41,7 @@ import HumanCreatedPage from "./pages/HumanCreatedPage";
 import { SafetyPage } from "./pages/SafetyPage";
 import { Support } from "./pages/Support";
 import { FAQPage } from "./pages/FAQPage";
+import MerchPage from "./pages/MerchPage";
 import { TermsPage } from "./pages/TermsPage";
 import GetEmbedPage from "./pages/GetEmbedPage";
 import AppCallbackPage from "./pages/AppCallbackPage";
@@ -126,6 +127,7 @@ export function AppRouter() {
           <Route path="/video/:id" element={<VideoPage />} />
           <Route path="/search" element={<SearchPage />} />
           <Route path="/leaderboard" element={<LeaderboardPage />} />
+          <Route path="/merch" element={<MerchPage />} />
           <Route path="/u/:userId" element={<UniversalUserPage />} />
           <Route path="/list/:pubkey/:listId" element={<ListDetailPage />} />
           <Route path="/event/:eventId" element={<EventPage />} />
