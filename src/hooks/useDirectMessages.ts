@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useNostrLogin } from '@nostrify/react/login';
 
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { toast } from '@/hooks/useToast';
@@ -159,8 +160,15 @@ function updateOptimisticDmInAllCaches(
  */
 export function useBunkerDecryptHealthcheck() {
   const { user, signer } = useCurrentUser();
+  const { logins } = useNostrLogin();
+  // login.id is a fresh UUID per addLogin() call; including it in the cache key
+  // means a bunker re-pair (same pubkey, new login object) busts the stale
+  // false negative so DMs recover after reconnect without a hard reload.
+  const loginSessionId = user
+    ? logins.find((login) => login.pubkey === user.pubkey)?.id ?? ''
+    : '';
   return useQuery({
-    queryKey: [...DM_HEALTHCHECK_QUERY_KEY, user?.pubkey || ''],
+    queryKey: [...DM_HEALTHCHECK_QUERY_KEY, user?.pubkey || '', loginSessionId],
     queryFn: async () => {
       if (!user?.pubkey || !signer) return false;
       return probeBunkerNip44(signer, user.pubkey);

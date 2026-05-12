@@ -14,6 +14,10 @@ const mockPublishDmMessages = vi.fn();
 const mockProbeBunkerNip44 = vi.fn();
 const mockToast = vi.fn();
 
+let mockLogins: Array<{ id: string; pubkey: string }> = [
+  { id: 'login-default', pubkey: TEST_PUBKEY },
+];
+
 const localStorageMock = (() => {
   let store: Record<string, string> = {};
 
@@ -45,6 +49,10 @@ vi.mock('@/hooks/useCurrentUser', () => ({
     user: { pubkey: TEST_PUBKEY },
     signer: { nip44: {} },
   }),
+}));
+
+vi.mock('@nostrify/react/login', () => ({
+  useNostrLogin: () => ({ logins: mockLogins }),
 }));
 
 vi.mock('@/hooks/useAppContext', () => ({
@@ -465,6 +473,7 @@ describe('useDmCapability with bunker healthcheck', () => {
     vi.restoreAllMocks();
     vi.clearAllMocks();
     localStorageMock.clear();
+    mockLogins = [{ id: 'login-default', pubkey: TEST_PUBKEY }];
   });
 
   afterEach(() => {
@@ -526,5 +535,30 @@ describe('useDmCapability with bunker healthcheck', () => {
 
     await waitFor(() => expect(result.current.isCheckingDmCapability).toBe(false));
     expect(result.current.canUseDirectMessages).toBe(true);
+  });
+
+  it('re-runs the probe when the active login id changes for the same pubkey', async () => {
+    mockLogins = [{ id: 'login-A', pubkey: TEST_PUBKEY }];
+    mockProbeBunkerNip44.mockResolvedValue(false);
+
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    const { result, rerender } = renderHook(() => useDmCapability(), {
+      wrapper: createWrapper(queryClient),
+    });
+
+    await waitFor(() => expect(result.current.isCheckingDmCapability).toBe(false));
+    expect(result.current.canUseDirectMessages).toBe(false);
+    expect(mockProbeBunkerNip44).toHaveBeenCalledTimes(1);
+
+    mockLogins = [{ id: 'login-B', pubkey: TEST_PUBKEY }];
+    mockProbeBunkerNip44.mockResolvedValue(true);
+
+    rerender();
+
+    await waitFor(() => expect(result.current.canUseDirectMessages).toBe(true));
+    expect(mockProbeBunkerNip44).toHaveBeenCalledTimes(2);
   });
 });
