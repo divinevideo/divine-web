@@ -53,7 +53,7 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin }) =
   const [waitlistContact, setWaitlistContact] = useState('');
   const [waitlistEnabled, setWaitlistEnabled] = useState(false);
   const [waitlistError, setWaitlistError] = useState<string | null>(null);
-  const [waitlistNewsletterOptIn, setWaitlistNewsletterOptIn] = useState(true);
+  const [waitlistNewsletterOptIn, setWaitlistNewsletterOptIn] = useState(false);
   const [waitlistSuccess, setWaitlistSuccess] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const login = useLoginActions();
@@ -83,7 +83,7 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin }) =
     setWaitlistContact('');
     setWaitlistEnabled(false);
     setWaitlistError(null);
-    setWaitlistNewsletterOptIn(true);
+    setWaitlistNewsletterOptIn(false);
     setWaitlistSuccess(false);
 
     let isCancelled = false;

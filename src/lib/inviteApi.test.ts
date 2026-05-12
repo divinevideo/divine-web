@@ -112,4 +112,26 @@ describe('inviteApi', () => {
       }),
     );
   });
+
+  it('submits opted-in waitlist entries to the invite service', async () => {
+    fetchMock.mockResolvedValue(
+      new Response(JSON.stringify({
+        ok: true,
+      }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    );
+
+    await expect(joinInviteWaitlist('person@example.com', true)).resolves.toEqual({ ok: true });
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://invite.divine.video/v1/waitlist',
+      expect.objectContaining({
+        body: JSON.stringify({ contact: 'person@example.com', newsletter_opt_in: true }),
+        headers: { 'Content-Type': 'application/json' },
+        method: 'POST',
+      }),
+    );
+  });
 });

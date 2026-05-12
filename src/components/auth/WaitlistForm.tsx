@@ -1,6 +1,7 @@
 import { FormEvent } from 'react';
 
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 
 interface WaitlistFormProps {
@@ -49,12 +50,10 @@ export function WaitlistForm(props: WaitlistFormProps) {
   return (
     <form className="space-y-4" onSubmit={onSubmit}>
       <label className="flex cursor-pointer items-center justify-center gap-2 text-sm text-muted-foreground" htmlFor="waitlist-newsletter">
-        <input
+        <Checkbox
           checked={newsletterOptIn}
-          className="h-4 w-4 rounded border-border"
           id="waitlist-newsletter"
-          onChange={(event) => onNewsletterOptInChange(event.target.checked)}
-          type="checkbox"
+          onCheckedChange={(checked) => onNewsletterOptInChange(checked === true)}
         />
         Send me Divine inspiration
       </label>
@@ -86,7 +85,6 @@ export function WaitlistForm(props: WaitlistFormProps) {
       >
         I have an invite code
       </Button>
-
     </form>
   );
 }
