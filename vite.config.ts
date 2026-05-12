@@ -146,6 +146,9 @@ VitePWA({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      // Fastly virtual modules — not available outside the Fastly runtime;
+      // tests that import them must vi.mock() the module in the test file.
+      "fastly:kv-store": path.resolve(__dirname, "./compute-js/src/__mocks__/fastly-kv-store.js"),
     },
   },
 }));

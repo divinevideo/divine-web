@@ -10,6 +10,15 @@ import rc from '../static-publish.rc.js';
 import { buildFunnelcakeUrl, getFunnelcakeOriginForApiHost } from './funnelcakeOrigin.js';
 import { isJsonWellKnownPath, shouldServeWellKnownBeforeWwwRedirect } from './wellKnownPaths.js';
 import { buildCrawlerHtml, escapeHtml, cleanText, truncateText } from './ogTags.js';
+import { hexToNpub } from './bech32.js';
+import {
+  handleAtUsernameOg,
+  handleHashtagOgTags,
+  handleSearchOgTags,
+  handleDiscoveryOgTags,
+  handleApexOgTags,
+} from './crawlerHandlers.js';
+import { renderEmbedPage } from './embedPage.js';
 
 const publisherServer = PublisherServer.fromStaticPublishRc(rc);
 const DEFAULT_OG_IMAGE = 'https://divine.video/og.png';
@@ -98,6 +107,14 @@ async function handleRequest(event) {
   if (atUsernameMatch) {
     const username = atUsernameMatch[1].toLowerCase();
     console.log('Handling @username profile for:', username);
+    if (isSocialMediaCrawler(request)) {
+      try {
+        const ogResponse = await handleAtUsernameOg(username, url);
+        if (ogResponse) return ogResponse;
+      } catch (err) {
+        console.error('@username crawler OG error:', err.message);
+      }
+    }
     try {
       return await handleSubdomainProfile(username, url, request, hostnameToUse);
     } catch (err) {
@@ -127,7 +144,35 @@ async function handleRequest(event) {
     return await serveStaticWellKnownFile(request, url.pathname, { varyByOriginalHost: true });
   }
 
-  // 5. Handle dynamic OG meta tags for crawler requests
+  // 5. Handle /embed/:id — minimal autoplaying iframe for twitter:player / Slack
+  if (url.pathname.startsWith('/embed/')) {
+    const videoId = url.pathname.split('/embed/')[1]?.split('?')[0];
+    if (videoId) {
+      let videoMeta = null;
+      try {
+        videoMeta = await fetchVideoMetadata(videoId);
+      } catch (e) {
+        console.error('Embed: failed to fetch video metadata:', e.message);
+      }
+      const html = renderEmbedPage({
+        videoUrl: videoMeta?.videoUrl,
+        mime: videoMeta?.videoMime,
+        poster: videoMeta?.thumbnail,
+        title: videoMeta?.title,
+      });
+      return new Response(html, {
+        status: 200,
+        headers: {
+          'Content-Type': 'text/html; charset=utf-8',
+          'Cache-Control': 'public, max-age=300',
+          'Content-Security-Policy': 'frame-ancestors *',
+          'X-Robots-Tag': 'noindex',
+        },
+      });
+    }
+  }
+
+  // 6. Handle dynamic OG meta tags for crawler requests
   if (isSocialMediaCrawler(request)) {
     if (url.pathname.startsWith('/video/')) {
       console.log('Handling video OG tags for crawler, path:', url.pathname);
@@ -155,9 +200,28 @@ async function handleRequest(event) {
         return ogResponse;
       }
     }
+
+    if (url.pathname.startsWith('/t/')) {
+      const tag = decodeURIComponent(url.pathname.slice(3).split('?')[0]);
+      const ogResponse = await handleHashtagOgTags(tag);
+      if (ogResponse) return ogResponse;
+    }
+
+    if (url.pathname === '/search') {
+      const ogResponse = handleSearchOgTags(url.searchParams.get('q'));
+      if (ogResponse) return ogResponse;
+    }
+
+    if (url.pathname === '/discovery' || url.pathname.startsWith('/discovery/')) {
+      const type = url.pathname === '/discovery'
+        ? 'trending'
+        : url.pathname.slice('/discovery/'.length).split('?')[0];
+      const ogResponse = await handleDiscoveryOgTags(type);
+      if (ogResponse) return ogResponse;
+    }
   }
 
-  // 6. Serve sw.js with no-cache to ensure browsers always get the latest service worker
+  // 7. Serve sw.js with no-cache to ensure browsers always get the latest service worker
   if (url.pathname === '/sw.js') {
     const response = await publisherServer.serveRequest(request);
     if (response != null) {
@@ -171,12 +235,12 @@ async function handleRequest(event) {
     }
   }
 
-  // 7. Content report API (creates Zendesk tickets)
+  // 8. Content report API (creates Zendesk tickets)
   if (url.pathname === '/api/report') {
     return await handleReport(request);
   }
 
-  // 7b. Proxy RSS feed requests to the relay backend (serves application/rss+xml)
+  // 8b. Proxy RSS feed requests to the relay backend (serves application/rss+xml)
   if (url.pathname.startsWith('/feed/') || url.pathname === '/feed') {
     console.log('Proxying RSS feed request to relay:', url.pathname);
     return fetchFromFunnelcake(funnelcakeTarget, `${url.pathname}${url.search}`, {
@@ -185,12 +249,17 @@ async function handleRequest(event) {
     });
   }
 
-  // 8. Serve static content with SPA fallback (handled by PublisherServer config)
+  // 9. Serve static content with SPA fallback (handled by PublisherServer config)
   // Detect pages that benefit from edge-injected feed data
   const isApexDomain = APEX_DOMAINS.includes(hostnameToUse);
   const isApexLanding = isApexDomain && (url.pathname === '/' || url.pathname === '/index.html');
   const discoveryFeedType = isApexDomain ? getDiscoveryFeedType(url.pathname) : null;
   const shouldInjectFeed = isApexLanding || discoveryFeedType;
+
+  if (isApexLanding && isSocialMediaCrawler(request)) {
+    const ogResponse = await handleApexOgTags();
+    if (ogResponse) return ogResponse;
+  }
 
   const response = await publisherServer.serveRequest(request);
   if (response != null) {
@@ -812,134 +881,6 @@ async function handleSubdomainProfile(subdomain, url, request, originalHostname)
       'X-Divine-Subdomain': subdomain, // Debug header to verify subdomain handling
     },
   });
-}
-
-/**
- * Convert hex pubkey to npub (Bech32) format
- */
-function hexToNpub(hex) {
-  // Bech32 character set
-  const CHARSET = 'qpzry9x8gf2tvdw0s3jn54khce6mua7l';
-  
-  // Convert hex to 5-bit groups
-  const data = [];
-  for (let i = 0; i < hex.length; i += 2) {
-    data.push(parseInt(hex.slice(i, i + 2), 16));
-  }
-  
-  // Convert 8-bit to 5-bit
-  const converted = convertBits(data, 8, 5, true);
-  
-  // Compute checksum
-  const hrp = 'npub';
-  const checksumData = hrpExpand(hrp).concat(converted);
-  const checksum = createChecksum(checksumData);
-  
-  // Encode
-  let result = hrp + '1';
-  for (const b of converted.concat(checksum)) {
-    result += CHARSET[b];
-  }
-  
-  return result;
-}
-
-function decodeNpubToHex(npub) {
-  const CHARSET = 'qpzry9x8gf2tvdw0s3jn54khce6mua7l';
-  const normalized = (npub || '').toLowerCase();
-  if (!normalized.startsWith('npub1')) {
-    return null;
-  }
-
-  const separatorIndex = normalized.lastIndexOf('1');
-  if (separatorIndex === -1) {
-    return null;
-  }
-
-  const dataPart = normalized.slice(separatorIndex + 1);
-  if (dataPart.length < 6) {
-    return null;
-  }
-
-  const values = [...dataPart].map(char => CHARSET.indexOf(char));
-  if (values.some(value => value === -1)) {
-    return null;
-  }
-
-  const payload = values.slice(0, -6);
-  const decoded = convertBits(payload, 5, 8, false);
-  if (!decoded) {
-    return null;
-  }
-
-  return decoded.map(value => value.toString(16).padStart(2, '0')).join('');
-}
-
-function convertBits(data, fromBits, toBits, pad) {
-  let acc = 0;
-  let bits = 0;
-  const result = [];
-  const maxv = (1 << toBits) - 1;
-  const maxAcc = (1 << (fromBits + toBits - 1)) - 1;
-  
-  for (const value of data) {
-    if (value < 0 || (value >> fromBits) !== 0) {
-      return null;
-    }
-    acc = ((acc << fromBits) | value) & maxAcc;
-    bits += fromBits;
-    while (bits >= toBits) {
-      bits -= toBits;
-      result.push((acc >> bits) & maxv);
-    }
-  }
-  
-  if (pad) {
-    if (bits > 0) {
-      result.push((acc << (toBits - bits)) & maxv);
-    }
-  } else if (bits >= fromBits || ((acc << (toBits - bits)) & maxv) !== 0) {
-    return null;
-  }
-  
-  return result;
-}
-
-function hrpExpand(hrp) {
-  const result = [];
-  for (const c of hrp) {
-    result.push(c.charCodeAt(0) >> 5);
-  }
-  result.push(0);
-  for (const c of hrp) {
-    result.push(c.charCodeAt(0) & 31);
-  }
-  return result;
-}
-
-function polymod(values) {
-  const GEN = [0x3b6a57b2, 0x26508e6d, 0x1ea119fa, 0x3d4233dd, 0x2a1462b3];
-  let chk = 1;
-  for (const v of values) {
-    const top = chk >> 25;
-    chk = ((chk & 0x1ffffff) << 5) ^ v;
-    for (let i = 0; i < 5; i++) {
-      if ((top >> i) & 1) {
-        chk ^= GEN[i];
-      }
-    }
-  }
-  return chk;
-}
-
-function createChecksum(data) {
-  const values = data.concat([0, 0, 0, 0, 0, 0]);
-  const mod = polymod(values) ^ 1;
-  const result = [];
-  for (let i = 0; i < 6; i++) {
-    result.push((mod >> (5 * (5 - i))) & 31);
-  }
-  return result;
 }
 
 /**
