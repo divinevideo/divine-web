@@ -11,7 +11,12 @@ const mockResolveDmWriteRelays = vi.fn();
 const mockFetchDmMessages = vi.fn();
 const mockCreateDmGiftWraps = vi.fn();
 const mockPublishDmMessages = vi.fn();
+const mockProbeBunkerNip44 = vi.fn();
 const mockToast = vi.fn();
+
+let mockLogins: Array<{ id: string; pubkey: string }> = [
+  { id: 'login-default', pubkey: TEST_PUBKEY },
+];
 
 const localStorageMock = (() => {
   let store: Record<string, string> = {};
@@ -46,6 +51,10 @@ vi.mock('@/hooks/useCurrentUser', () => ({
   }),
 }));
 
+vi.mock('@nostrify/react/login', () => ({
+  useNostrLogin: () => ({ logins: mockLogins }),
+}));
+
 vi.mock('@/hooks/useAppContext', () => ({
   useAppContext: () => ({
     config: {
@@ -68,12 +77,13 @@ vi.mock('@/lib/dm', async () => {
     fetchDmMessages: (...args: unknown[]) => mockFetchDmMessages(...args),
     createDmGiftWraps: (...args: unknown[]) => mockCreateDmGiftWraps(...args),
     publishDmMessages: (...args: unknown[]) => mockPublishDmMessages(...args),
+    probeBunkerNip44: (...args: unknown[]) => mockProbeBunkerNip44(...args),
   };
 });
 
 import { encodeConversationId } from '@/lib/dm';
 import { readDmOutbox, writeDmOutbox } from '@/lib/dmOutbox';
-import { useDmConversation, useDmInboxStatus, useDmSend } from './useDirectMessages';
+import { useDmCapability, useDmConversation, useDmInboxStatus, useDmSend } from './useDirectMessages';
 
 function createWrapper(queryClient: QueryClient) {
   return function Wrapper({ children }: { children: React.ReactNode }) {
@@ -107,6 +117,7 @@ describe('useDirectMessages', () => {
       },
     ]);
     mockPublishDmMessages.mockResolvedValue(undefined);
+    mockProbeBunkerNip44.mockResolvedValue(true);
   });
 
   afterEach(() => {
@@ -509,6 +520,101 @@ describe('useDirectMessages', () => {
       }),
     ]);
     expect(mockToast).not.toHaveBeenCalled();
+  });
+});
+
+describe('useDmCapability with bunker healthcheck', () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+    vi.clearAllMocks();
+    localStorageMock.clear();
+    mockLogins = [{ id: 'login-default', pubkey: TEST_PUBKEY }];
+  });
+
+  afterEach(() => {
+    localStorageMock.clear();
+  });
+
+  it('reports canUseDirectMessages=true when the probe succeeds', async () => {
+    mockProbeBunkerNip44.mockResolvedValue(true);
+
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    const { result } = renderHook(() => useDmCapability(), {
+      wrapper: createWrapper(queryClient),
+    });
+
+    await waitFor(() => expect(result.current.isCheckingDmCapability).toBe(false));
+    expect(result.current.canUseDirectMessages).toBe(true);
+    expect(result.current.isLoggedIn).toBe(true);
+  });
+
+  it('reports canUseDirectMessages=false when the probe fails', async () => {
+    mockProbeBunkerNip44.mockResolvedValue(false);
+
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    const { result } = renderHook(() => useDmCapability(), {
+      wrapper: createWrapper(queryClient),
+    });
+
+    await waitFor(() => expect(result.current.isCheckingDmCapability).toBe(false));
+    expect(result.current.canUseDirectMessages).toBe(false);
+    expect(result.current.isLoggedIn).toBe(true);
+  });
+
+  it('reports isCheckingDmCapability=true while the probe is in flight', async () => {
+    let resolveProbe: ((value: boolean) => void) | undefined;
+    mockProbeBunkerNip44.mockImplementation(() => new Promise<boolean>((resolve) => {
+      resolveProbe = resolve;
+    }));
+
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    const { result } = renderHook(() => useDmCapability(), {
+      wrapper: createWrapper(queryClient),
+    });
+
+    await waitFor(() => expect(result.current.isCheckingDmCapability).toBe(true));
+    expect(result.current.canUseDirectMessages).toBe(false);
+
+    await act(async () => {
+      resolveProbe?.(true);
+    });
+
+    await waitFor(() => expect(result.current.isCheckingDmCapability).toBe(false));
+    expect(result.current.canUseDirectMessages).toBe(true);
+  });
+
+  it('re-runs the probe when the active login id changes for the same pubkey', async () => {
+    mockLogins = [{ id: 'login-A', pubkey: TEST_PUBKEY }];
+    mockProbeBunkerNip44.mockResolvedValue(false);
+
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    const { result, rerender } = renderHook(() => useDmCapability(), {
+      wrapper: createWrapper(queryClient),
+    });
+
+    await waitFor(() => expect(result.current.isCheckingDmCapability).toBe(false));
+    expect(result.current.canUseDirectMessages).toBe(false);
+    expect(mockProbeBunkerNip44).toHaveBeenCalledTimes(1);
+
+    mockLogins = [{ id: 'login-B', pubkey: TEST_PUBKEY }];
+    mockProbeBunkerNip44.mockResolvedValue(true);
+
+    rerender();
+
+    await waitFor(() => expect(result.current.canUseDirectMessages).toBe(true));
+    expect(mockProbeBunkerNip44).toHaveBeenCalledTimes(2);
   });
 });
 
