@@ -5,6 +5,8 @@ import { generateSecretKey, getPublicKey } from 'nostr-tools/pure';
 import {
   buildDmSharePayloadFromVideo,
   buildDmShareQueryString,
+  createRecipientGiftWraps,
+  createSelfGiftWrap,
   decodeConversationId,
   DM_GIFT_WRAP_KIND,
   encodeConversationId,
@@ -128,6 +130,76 @@ describe('dm utilities', () => {
     expect(conversations[0].id).toBe(conversationB);
     expect(conversations[0].unreadCount).toBe(1);
     expect(conversations[1].unreadCount).toBe(0);
+  });
+});
+
+// Note: real-crypto round-trip tests for these functions are blocked by
+// src/test/setup.ts overriding global TextEncoder with node:util's
+// TextEncoder, which produces a Uint8Array from a different realm than
+// @noble/hashes' instance check accepts. The failure-path tests below run
+// entirely on mock signers, so they're unaffected.
+
+describe('createSelfGiftWrap', () => {
+  it('returns null and warns when signer.nip44.encrypt rejects', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const cause = new Error('bunker rejected encrypt-to-self');
+    const signer: NostrSigner = {
+      getPublicKey: vi.fn().mockResolvedValue('a'.repeat(64)),
+      signEvent: vi.fn(),
+      nip44: {
+        encrypt: vi.fn().mockRejectedValue(cause),
+        decrypt: vi.fn(),
+      },
+    };
+
+    const result = await createSelfGiftWrap({
+      signer,
+      senderPubkey: 'a'.repeat(64),
+      recipientPubkeys: ['b'.repeat(64)],
+      content: 'hi',
+    });
+
+    expect(result).toBeNull();
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining('Self-wrap creation failed'),
+      cause,
+    );
+  });
+});
+
+describe('createRecipientGiftWraps', () => {
+  it('throws when signer.nip44.encrypt rejects (primary path must surface failures)', async () => {
+    const cause = new Error('bunker rejected encrypt');
+    const signer: NostrSigner = {
+      getPublicKey: vi.fn().mockResolvedValue('a'.repeat(64)),
+      signEvent: vi.fn(),
+      nip44: {
+        encrypt: vi.fn().mockRejectedValue(cause),
+        decrypt: vi.fn(),
+      },
+    };
+
+    await expect(createRecipientGiftWraps({
+      signer,
+      senderPubkey: 'a'.repeat(64),
+      recipientPubkeys: ['b'.repeat(64)],
+      content: 'hi',
+    })).rejects.toThrow('bunker rejected encrypt');
+  });
+
+  it('throws when given no valid recipients', async () => {
+    const signer: NostrSigner = {
+      getPublicKey: vi.fn(),
+      signEvent: vi.fn(),
+      nip44: { encrypt: vi.fn(), decrypt: vi.fn() },
+    };
+
+    await expect(createRecipientGiftWraps({
+      signer,
+      senderPubkey: 'a'.repeat(64),
+      recipientPubkeys: [],
+      content: 'hi',
+    })).rejects.toThrow(/at least one recipient/);
   });
 });
 

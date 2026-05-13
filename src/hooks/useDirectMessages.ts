@@ -7,7 +7,8 @@ import { toast } from '@/hooks/useToast';
 import { useAppContext } from '@/hooks/useAppContext';
 import {
   buildDmShareTags,
-  createDmGiftWraps,
+  createRecipientGiftWraps,
+  createSelfGiftWrap,
   fetchDmMessages,
   groupDmConversations,
   parseDmShareQuery,
@@ -389,7 +390,7 @@ export function useDmSend() {
   const { user, signer } = useCurrentUser();
   const { config } = useAppContext();
 
-  return useMutation<{ relayUrls: string[]; wraps: Awaited<ReturnType<typeof createDmGiftWraps>> }, Error, SendDmInput, SendDmMutationContext>({
+  return useMutation<{ relayUrls: string[] }, Error, SendDmInput, SendDmMutationContext>({
     onMutate: ({ clientId, participantPubkeys, content, share }) => {
       if (!user?.pubkey) {
         return {};
@@ -445,16 +446,39 @@ export function useDmSend() {
         signal: AbortSignal.timeout(5000),
       });
 
-      const wraps = await createDmGiftWraps({
+      const tags = buildDmShareTags(share);
+
+      // Primary path: deliver to the recipients. Failure here rejects the
+      // mutation so the UI shows the send as failed.
+      const recipientWraps = await createRecipientGiftWraps({
         signer,
         senderPubkey: user.pubkey,
         recipientPubkeys: recipients,
         content,
-        additionalTags: buildDmShareTags(share),
+        additionalTags: tags,
       });
+      await publishDmMessages(relayUrls, recipientWraps, AbortSignal.timeout(10000));
 
-      await publishDmMessages(relayUrls, wraps, AbortSignal.timeout(10000));
-      return { relayUrls, wraps };
+      // Best-effort: self copy for cross-device recovery and server-side
+      // observers (e.g. divine-moderation-service's dm-reader cron). If
+      // either step fails the recipient already got the message — log and
+      // continue.
+      const selfWrap = await createSelfGiftWrap({
+        signer,
+        senderPubkey: user.pubkey,
+        recipientPubkeys: recipients,
+        content,
+        additionalTags: tags,
+      });
+      if (selfWrap) {
+        try {
+          await publishDmMessages(relayUrls, [selfWrap], AbortSignal.timeout(10000));
+        } catch (cause) {
+          console.warn('[DM] Self-wrap publish failed (non-fatal):', cause);
+        }
+      }
+
+      return { relayUrls };
     },
     onSuccess: (_result, _variables, context) => {
       if (!user?.pubkey || !context?.clientId) {
