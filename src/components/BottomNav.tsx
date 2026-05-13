@@ -5,8 +5,8 @@ import { Button } from '@/components/ui/button';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useUnreadNotificationCount } from '@/hooks/useNotifications';
 import { useSubdomainNavigate } from '@/hooks/useSubdomainNavigate';
+import { buildProfileLinkPath } from '@/lib/profileLinks';
 import { cn } from '@/lib/utils';
-import { nip19 } from 'nostr-tools';
 
 export function BottomNav() {
   const navigate = useSubdomainNavigate();
@@ -17,8 +17,10 @@ export function BottomNav() {
 
   const getUserProfilePath = () => {
     if (!user?.pubkey) return '/';
-    const npub = nip19.npubEncode(user.pubkey);
-    return `/profile/${npub}`;
+    return buildProfileLinkPath({
+      pubkey: user.pubkey,
+      fallbackRoute: 'profile',
+    });
   };
 
   const isActive = (path: string) => location.pathname === path;

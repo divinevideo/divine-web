@@ -8,7 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Star } from '@phosphor-icons/react';
 import { CLASSIC_VINERS, CLASSIC_VINER_AVATARS, type StaticViner } from '@/data/classicViners';
 import { getSafeProfileImage } from '@/lib/imageUtils';
-import { nip19 } from 'nostr-tools';
+import { buildProfileLinkPath } from '@/lib/profileLinks';
 
 /**
  * Single viner avatar item
@@ -17,14 +17,7 @@ function VinerItem({ viner }: { viner: StaticViner }) {
   const displayName = viner.name;
   const picture = getSafeProfileImage(viner.picture) || '/user-avatar.png';
 
-  // Use npub for URL
-  let profilePath = `/profile/${viner.pubkey}`;
-  try {
-    const npub = nip19.npubEncode(viner.pubkey);
-    profilePath = `/${npub}`;
-  } catch {
-    // Fall back to hex pubkey
-  }
+  const profilePath = buildProfileLinkPath({ pubkey: viner.pubkey });
 
   return (
     <SmartLink

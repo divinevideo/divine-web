@@ -11,8 +11,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
-import { nip19 } from 'nostr-tools';
 import { getFunnelcakeBaseUrl } from '@/config/api';
+import { buildProfileLinkPath } from '@/lib/profileLinks';
 
 type TimePeriod = 'alltime' | 'day' | 'week' | 'month' | 'year';
 type LeaderboardType = 'videos' | 'creators';
@@ -49,6 +49,7 @@ interface CreatorLeaderboardItem {
   name?: string;
   display_name?: string;
   picture?: string;
+  nip05?: string;
   views: number;
   unique_viewers: number;
   loops: number;
@@ -250,12 +251,10 @@ function VideoLeaderboard({ period }: { period: TimePeriod }) {
   return (
     <div className="space-y-2">
       {videos.map((video, index) => {
-        let npub: string;
-        try {
-          npub = nip19.npubEncode(video.pubkey);
-        } catch {
-          npub = video.pubkey;
-        }
+        const authorProfilePath = buildProfileLinkPath({
+          pubkey: video.pubkey,
+          fallbackRoute: 'profile',
+        });
 
         return (
           <Link
@@ -278,7 +277,7 @@ function VideoLeaderboard({ period }: { period: TimePeriod }) {
                 {video.title || t('leaderboardPage.untitled')}
               </p>
               <Link
-                to={`/profile/${npub}`}
+                to={authorProfilePath}
                 className="text-sm text-muted-foreground hover:text-foreground"
                 onClick={(e) => e.stopPropagation()}
               >
@@ -352,17 +351,16 @@ function CreatorLeaderboard({ period }: { period: TimePeriod }) {
   return (
     <div className="space-y-2">
       {creators.map((creator, index) => {
-        let npub: string;
-        try {
-          npub = nip19.npubEncode(creator.pubkey);
-        } catch {
-          npub = creator.pubkey;
-        }
+        const creatorProfilePath = buildProfileLinkPath({
+          pubkey: creator.pubkey,
+          nip05: creator.nip05,
+          fallbackRoute: 'profile',
+        });
 
         return (
           <Link
             key={creator.pubkey}
-            to={`/profile/${npub}`}
+            to={creatorProfilePath}
             className="flex items-center gap-4 p-3 rounded-lg hover:bg-brand-light-green dark:bg-brand-dark-green transition-colors"
           >
             <RankBadge rank={index + 1} />
