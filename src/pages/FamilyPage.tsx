@@ -139,7 +139,7 @@ const RESOURCE_GROUPS: ResourceGroup[] = [
         name: "Thorn for Parents",
         url: "https://parents.thorn.org/",
         description:
-          "Conversation-first guidance from Thorn for keeping kids safer from online exploitation.",
+          "Thorn is a nonprofit that builds technology and research to defend children from online sexual abuse. Their parents' site offers conversation-first guidance on tough topics like sextortion, grooming, and nudes.",
       },
     ],
   },
