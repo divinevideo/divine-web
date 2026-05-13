@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslation } from 'react-i18next';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { useAuthor } from '@/hooks/useAuthor';
 import { useNostrPublish } from '@/hooks/useNostrPublish';
 import { useToast } from '@/hooks/useToast';
 import { Button } from '@/components/ui/button';
@@ -31,6 +32,7 @@ export const EditProfileForm: React.FC<EditProfileFormProps> = ({ onSuccess }) =
   const queryClient = useQueryClient();
 
   const { user, metadata } = useCurrentUser();
+  const authorQuery = useAuthor(user?.pubkey);
   const { mutateAsync: publishEvent, isPending } = useNostrPublish();
   const { mutateAsync: uploadFile, isPending: isUploading } = useUploadFile();
   const { toast } = useToast();
@@ -93,6 +95,15 @@ export const EditProfileForm: React.FC<EditProfileFormProps> = ({ onSuccess }) =
       toast({
         title: t('editProfileForm.loginRequiredTitle'),
         description: t('editProfileForm.loginRequiredDescription'),
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!authorQuery.isSuccess) {
+      toast({
+        title: t('editProfileForm.loadingErrorTitle'),
+        description: t('editProfileForm.loadingErrorDescription'),
         variant: 'destructive',
       });
       return;
@@ -250,13 +261,29 @@ export const EditProfileForm: React.FC<EditProfileFormProps> = ({ onSuccess }) =
           type="submit"
           variant="sticker"
           className="w-full md:w-auto"
-          disabled={isPending || isUploading}
+          disabled={isPending || isUploading || !authorQuery.isSuccess}
         >
-          {(isPending || isUploading) && (
+          {(isPending || isUploading || authorQuery.isPending) && (
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
           )}
           {t('editProfileForm.saveButton')}
         </Button>
+        {authorQuery.isError && (
+          <div className="flex flex-col gap-2">
+            <p className="text-sm text-destructive">
+              {t('editProfileForm.loadingErrorDescription')}
+            </p>
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full md:w-auto"
+              onClick={() => void authorQuery.refetch()}
+              disabled={authorQuery.isPending || isPending || isUploading}
+            >
+              {t('editProfileForm.retryLoadingProfile')}
+            </Button>
+          </div>
+        )}
       </form>
     </Form>
   );
