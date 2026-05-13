@@ -9,7 +9,8 @@ import { useNostr } from '@nostrify/react';
 import { useQuery } from '@tanstack/react-query';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useAuthor } from '@/hooks/useAuthor';
-import { useRemoveVideoFromList, useDeleteVideoList, type PlayOrder } from '@/hooks/useVideoLists';
+import { useRemoveVideoFromList, useDeleteVideoList } from '@/hooks/useVideoLists';
+import { parseVideoListFromEvent, type PlayOrder } from '@/lib/parseVideoListFromEvent';
 import { EditListDialog } from '@/components/EditListDialog';
 import { DeleteListDialog } from '@/components/DeleteListDialog';
 import { VideoGrid } from '@/components/VideoGrid';
@@ -31,75 +32,6 @@ import { getEventLookupRelayUrls } from '@/config/relays';
 import type { NostrEvent, NostrFilter } from '@nostrify/nostrify';
 import { SHORT_VIDEO_KIND, VIDEO_KINDS, type ParsedVideoData } from '@/types/video';
 import { parseVideoEvent, getVineId, getThumbnailUrl, getOriginalVineTimestamp, getLoopCount, getProofModeData, getOriginalLikeCount, getOriginalRepostCount, getOriginalCommentCount, getOriginPlatform, isVineMigrated } from '@/lib/videoParser';
-
-interface VideoList {
-  id: string;
-  name: string;
-  description?: string;
-  image?: string;
-  pubkey: string;
-  createdAt: number;
-  videoCoordinates: string[];
-  public: boolean;
-  tags?: string[];
-  isCollaborative?: boolean;
-  allowedCollaborators?: string[];
-  thumbnailEventId?: string;
-  playOrder?: PlayOrder;
-}
-
-function parseVideoList(event: NostrEvent): VideoList | null {
-  const dTag = event.tags.find(tag => tag[0] === 'd')?.[1];
-  if (!dTag) return null;
-
-  const title = event.tags.find(tag => tag[0] === 'title')?.[1] || dTag;
-  const description = event.tags.find(tag => tag[0] === 'description')?.[1];
-  const image = event.tags.find(tag => tag[0] === 'image')?.[1];
-
-  const videoCoordinates = event.tags
-    .filter(tag => {
-      if (tag[0] !== 'a' || !tag[1]) return false;
-      // Check if the coordinate starts with any of the supported video kinds
-      return VIDEO_KINDS.some(kind => tag[1].startsWith(`${kind}:`));
-    })
-    .map(tag => tag[1]);
-
-  // Extract categorization tags
-  const tags = event.tags
-    .filter(tag => tag[0] === 't')
-    .map(tag => tag[1]);
-
-  // Extract collaborative settings
-  const isCollaborative = event.tags.find(tag => tag[0] === 'collaborative')?.[1] === 'true';
-  const allowedCollaborators = event.tags
-    .filter(tag => tag[0] === 'collaborator')
-    .map(tag => tag[1]);
-
-  // Extract featured thumbnail
-  const thumbnailEventId = event.tags.find(tag => tag[0] === 'thumbnail-event')?.[1];
-
-  // Extract play order
-  const playOrderTag = event.tags.find(tag => tag[0] === 'play-order')?.[1];
-  const playOrder: PlayOrder = playOrderTag === 'reverse' || playOrderTag === 'manual' || playOrderTag === 'shuffle'
-    ? playOrderTag
-    : 'chronological';
-
-  return {
-    id: dTag,
-    name: title,
-    description,
-    image,
-    pubkey: event.pubkey,
-    createdAt: event.created_at,
-    videoCoordinates,
-    public: true,
-    tags,
-    isCollaborative,
-    allowedCollaborators,
-    thumbnailEventId,
-    playOrder
-  };
-}
 
 async function fetchListVideos(
   nostr: { query: (filters: NostrFilter[], options: { signal: AbortSignal }) => Promise<NostrEvent[]> },
@@ -289,7 +221,7 @@ export default function ListDetailPage() {
         throw new Error(t('listDetailPage.notFoundError'));
       }
 
-      return parseVideoList(events[0]);
+      return parseVideoListFromEvent(events[0]);
     },
     enabled: !!pubkey && !!listId
   });

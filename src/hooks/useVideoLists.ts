@@ -5,91 +5,11 @@ import { useNostr } from '@nostrify/react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useNostrPublish } from '@/hooks/useNostrPublish';
-import type { NostrEvent, NostrFilter } from '@nostrify/nostrify';
+import type { NostrFilter } from '@nostrify/nostrify';
 import { SHORT_VIDEO_KIND } from '@/types/video';
+import { parseVideoListFromEvent, type PlayOrder, type VideoList } from '@/lib/parseVideoListFromEvent';
 
-export type PlayOrder = 'chronological' | 'reverse' | 'manual' | 'shuffle';
-
-export interface VideoList {
-  id: string;
-  name: string;
-  description?: string;
-  image?: string;
-  pubkey: string;
-  createdAt: number;
-  videoCoordinates: string[]; // Array of "34236:pubkey:d-tag" coordinates (NIP-71)
-  public: boolean;
-  tags?: string[]; // Categorization tags
-  isCollaborative?: boolean; // Allow others to add videos
-  allowedCollaborators?: string[]; // Pubkeys allowed to collaborate
-  thumbnailEventId?: string; // Featured video as thumbnail
-  playOrder?: PlayOrder; // How videos should be ordered
-}
-
-/**
- * Parse a video list event (kind 30005)
- */
-function parseVideoList(event: NostrEvent): VideoList | null {
-  const dTag = event.tags.find(tag => tag[0] === 'd')?.[1];
-  if (!dTag) return null;
-
-  const title = event.tags.find(tag => tag[0] === 'title')?.[1] || dTag;
-  const description = event.tags.find(tag => tag[0] === 'description')?.[1];
-  const image = event.tags.find(tag => tag[0] === 'image')?.[1];
-
-  // Extract video coordinates from 'a' tags
-  const videoCoordinates = event.tags
-    .filter(tag => tag[0] === 'a' && tag[1]?.startsWith(`${SHORT_VIDEO_KIND}:`))
-    .map(tag => tag[1]);
-
-  // Extract categorization tags (t tags)
-  const tags = event.tags
-    .filter(tag => tag[0] === 't')
-    .map(tag => tag[1]);
-
-  // Extract collaborative settings
-  const isCollaborative = event.tags.find(tag => tag[0] === 'collaborative')?.[1] === 'true';
-  const allowedCollaborators = event.tags
-    .filter(tag => tag[0] === 'collaborator')
-    .map(tag => tag[1]);
-
-  // Extract featured thumbnail
-  const thumbnailEventId = event.tags.find(tag => tag[0] === 'thumbnail-event')?.[1];
-
-  // Extract play order
-  const playOrderTag = event.tags.find(tag => tag[0] === 'play-order')?.[1];
-  const playOrder: PlayOrder = playOrderTag === 'reverse' || playOrderTag === 'manual' || playOrderTag === 'shuffle'
-    ? playOrderTag
-    : 'chronological';
-
-  // Parse encrypted content if present (private items)
-  let privateCoordinates: string[] = [];
-  if (event.content) {
-    try {
-      // Note: In production, this would need to be decrypted using NIP-04
-      // For now, we'll just mark as having private content
-      privateCoordinates = [];
-    } catch {
-      // Ignore decryption errors
-    }
-  }
-
-  return {
-    id: dTag,
-    name: title,
-    description,
-    image,
-    pubkey: event.pubkey,
-    createdAt: event.created_at,
-    videoCoordinates: [...videoCoordinates, ...privateCoordinates],
-    public: true, // For now, all lists are public
-    tags,
-    isCollaborative,
-    allowedCollaborators,
-    thumbnailEventId,
-    playOrder
-  };
-}
+export type { PlayOrder, VideoList };
 
 /**
  * Hook to fetch video lists
@@ -123,7 +43,7 @@ export function useVideoLists(pubkey?: string) {
       console.log('[useVideoLists] Found', events.length, 'list events');
 
       const lists = events
-        .map(parseVideoList)
+        .map(parseVideoListFromEvent)
         .filter((list): list is VideoList => list !== null)
         .sort((a, b) => b.createdAt - a.createdAt);
 
@@ -161,7 +81,7 @@ export function useVideosInLists(videoId?: string) {
       }], { signal });
 
       const lists = events
-        .map(parseVideoList)
+        .map(parseVideoListFromEvent)
         .filter((list): list is VideoList => list !== null)
         .sort((a, b) => b.createdAt - a.createdAt);
 
@@ -326,7 +246,7 @@ export function useAddVideoToList() {
         throw new Error('List not found');
       }
 
-      const currentList = parseVideoList(events[0]);
+      const currentList = parseVideoListFromEvent(events[0]);
       if (!currentList) throw new Error('Invalid list format');
 
       // Check if video already in list
@@ -401,7 +321,7 @@ export function useRemoveVideoFromList() {
         throw new Error('List not found');
       }
 
-      const currentList = parseVideoList(events[0]);
+      const currentList = parseVideoListFromEvent(events[0]);
       if (!currentList) throw new Error('Invalid list format');
 
       // Filter out the video to remove
@@ -492,7 +412,7 @@ export function useTrendingVideoLists() {
       }], { signal });
 
       const lists = events
-        .map(parseVideoList)
+        .map(parseVideoListFromEvent)
         .filter((list): list is VideoList => list !== null && list.videoCoordinates.length > 0)
         .sort((a, b) => {
           // Sort by number of videos and recency
@@ -574,7 +494,7 @@ export function useFollowedUsersLists(followedPubkeys: string[] | undefined) {
       }], { signal });
 
       const lists = events
-        .map(parseVideoList)
+        .map(parseVideoListFromEvent)
         .filter((list): list is VideoList => list !== null && list.videoCoordinates.length > 0)
         .sort((a, b) => b.createdAt - a.createdAt);
 
