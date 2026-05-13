@@ -135,6 +135,8 @@ describe('functions/[[path]]', () => {
     expect(html).toContain('property="og:video" content="https://media.divine.video/abc123.mp4"');
     expect(html).toContain('property="og:video:type" content="video/mp4"');
     expect(html).toContain('name="twitter:title" content="Bangkok rooftop"');
+    expect(html).toContain('rel="alternate" type="application/json+oembed"');
+    expect(html).toContain('href="https://relay.divine.video/api/oembed?url=https%3A%2F%2Fdivine.video%2Fvideo%2Fabc123"');
   });
 
   it('falls back to the generic shell when video metadata is unavailable', async () => {
