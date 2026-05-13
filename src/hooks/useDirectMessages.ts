@@ -18,6 +18,7 @@ import {
   type DmConversation,
   type DmMessage,
   type DmSharePayload,
+  type FetchDmMessagesResult,
 } from '@/lib/dm';
 import {
   convertOutboxRecordToDmMessage,
@@ -80,9 +81,16 @@ function writeDmReadState(ownerPubkey: string | undefined, nextState: Record<str
   }
 }
 
+const EMPTY_INBOX_RESULT: FetchDmMessagesResult = {
+  messages: [],
+  fetchedCount: 0,
+  decryptFailures: 0,
+  malformedCount: 0,
+};
+
 function getDmMessageQueryLimits(queryClient: ReturnType<typeof useQueryClient>, ownerPubkey: string): number[] {
   const limits = new Set<number>([200, 300]);
-  const existingMessageQueries = queryClient.getQueriesData<DmMessage[]>({
+  const existingMessageQueries = queryClient.getQueriesData<FetchDmMessagesResult>({
     queryKey: [...DM_QUERY_KEY, 'messages', ownerPubkey],
   });
 
@@ -96,15 +104,21 @@ function getDmMessageQueryLimits(queryClient: ReturnType<typeof useQueryClient>,
   return [...limits];
 }
 
+// Updates the messages portion of a cached FetchDmMessagesResult while
+// preserving the fetch-meta counts. Optimistic outbox updates flow through
+// here, so the meta from the most recent network fetch must survive an
+// optimistic write.
 function updateDmMessageCaches(
   queryClient: ReturnType<typeof useQueryClient>,
   ownerPubkey: string,
   updater: (existingMessages: DmMessage[]) => DmMessage[],
 ) {
   for (const limit of getDmMessageQueryLimits(queryClient, ownerPubkey)) {
-    queryClient.setQueryData<DmMessage[]>(
+    queryClient.setQueryData<FetchDmMessagesResult>(
       [...DM_QUERY_KEY, 'messages', ownerPubkey, limit],
-      (existingMessages: DmMessage[] = []) => updater(existingMessages),
+      (existing) => existing
+        ? { ...existing, messages: updater(existing.messages) }
+        : { messages: updater([]), fetchedCount: 0, decryptFailures: 0, malformedCount: 0 },
     );
   }
 }
@@ -248,11 +262,11 @@ export function useDmMessages(limit = 200) {
   const { user, signer } = useCurrentUser();
   const { config } = useAppContext();
 
-  return useQuery({
+  return useQuery<FetchDmMessagesResult>({
     queryKey: [...DM_QUERY_KEY, 'messages', user?.pubkey || '', limit],
     queryFn: async ({ signal }) => {
       if (!user?.pubkey || !signer?.nip44) {
-        return [];
+        return EMPTY_INBOX_RESULT;
       }
 
       const relayUrls = await resolveDmReadRelays({
@@ -262,7 +276,7 @@ export function useDmMessages(limit = 200) {
         signal: AbortSignal.any([signal, AbortSignal.timeout(5000)]),
       });
 
-      const fetchedMessages = await fetchDmMessages({
+      const fetched = await fetchDmMessages({
         signer,
         currentUserPubkey: user.pubkey,
         relayUrls,
@@ -271,13 +285,18 @@ export function useDmMessages(limit = 200) {
       });
 
       const hydratedOutbox = hydrateDmOutbox(user.pubkey, DM_OUTBOX_STALE_AFTER_SECONDS);
-      const { messages, reconciledClientIds } = mergeFetchedAndOutboxMessages(fetchedMessages, hydratedOutbox);
+      const { messages, reconciledClientIds } = mergeFetchedAndOutboxMessages(fetched.messages, hydratedOutbox);
 
       for (const clientId of reconciledClientIds) {
         removeDmOutboxRecord(user.pubkey, clientId);
       }
 
-      return messages;
+      return {
+        messages,
+        fetchedCount: fetched.fetchedCount,
+        decryptFailures: fetched.decryptFailures,
+        malformedCount: fetched.malformedCount,
+      };
     },
     enabled: Boolean(user?.pubkey && signer?.nip44),
     staleTime: 30_000,
@@ -293,7 +312,7 @@ export function useDmConversations(limit = 200) {
   const { readState } = useDmReadState(user?.pubkey);
 
   const conversations = useMemo<DmConversation[]>(
-    () => groupDmConversations(messagesQuery.data || [], readState),
+    () => groupDmConversations(messagesQuery.data?.messages || [], readState),
     [messagesQuery.data, readState],
   );
 
@@ -301,6 +320,29 @@ export function useDmConversations(limit = 200) {
     ...messagesQuery,
     data: conversations,
   };
+}
+
+/**
+ * Status of the moderator/user inbox for the current signer.
+ *
+ * - `loading` — the initial fetch hasn't returned yet.
+ * - `ok` — at least one message is visible.
+ * - `unavailable` — relays returned wraps but every single one failed to
+ *   decrypt. This usually means the signer (typically a NIP-46 bunker) is
+ *   rejecting `nip44_decrypt` for this account. UI should render an
+ *   explicit "inbox unavailable" state, not the generic empty state.
+ * - `empty` — relays returned no wraps OR a partial-decrypt scenario where
+ *   we have nothing to show. Render the generic empty state.
+ */
+export type DmInboxStatus = 'loading' | 'ok' | 'empty' | 'unavailable';
+
+export function useDmInboxStatus(limit = 200): DmInboxStatus {
+  const { data, isLoading } = useDmMessages(limit);
+  if (isLoading) return 'loading';
+  if (!data) return 'empty';
+  if (data.messages.length > 0) return 'ok';
+  if (data.fetchedCount > 0 && data.decryptFailures === data.fetchedCount) return 'unavailable';
+  return 'empty';
 }
 
 export function useUnreadDmCount(limit = 200) {
@@ -323,7 +365,7 @@ export function useDmConversation(conversationId: string | undefined, limit = 30
   const { readState, markConversationRead } = useDmReadState(user?.pubkey);
 
   const messages = useMemo<DmMessage[]>(
-    () => (messagesQuery.data || []).filter((message) => message.conversationId === conversationId),
+    () => (messagesQuery.data?.messages || []).filter((message) => message.conversationId === conversationId),
     [conversationId, messagesQuery.data],
   );
 

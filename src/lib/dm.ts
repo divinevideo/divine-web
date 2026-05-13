@@ -79,6 +79,37 @@ export interface FetchDmMessagesInput {
   limit?: number;
 }
 
+/**
+ * Outcome of unwrapping a single NIP-17 gift wrap.
+ *
+ * - `ok: true` — fully unwrapped to a valid kind-14 rumor.
+ * - `decrypt-failed` — the signer's `nip44.decrypt` RPC threw. This is
+ *   distinct from "malformed" because it usually points at infrastructure
+ *   (bunker rejected, RPC timeout, missing permission grant) rather than a
+ *   bad payload, and lets callers surface "inbox unavailable" instead of
+ *   silently rendering an empty state.
+ * - `malformed` — decrypt succeeded but the recovered content failed
+ *   validation (not JSON, wrong kind, sig invalid, hash mismatch). Drop
+ *   quietly; the wrap was either authored incorrectly or wasn't ours.
+ */
+export type DmUnwrapResult =
+  | { ok: true; rumor: DmRumorEvent }
+  | { ok: false; reason: 'decrypt-failed'; cause: unknown }
+  | { ok: false; reason: 'malformed' };
+
+/**
+ * Result of `fetchDmMessages`. `messages` are the successfully unwrapped
+ * messages. The counts let the UI distinguish "inbox is genuinely empty"
+ * from "every wrap we got back failed to decrypt" (the latter usually
+ * means the bunker can't decrypt — see `DmUnwrapResult.decrypt-failed`).
+ */
+export interface FetchDmMessagesResult {
+  messages: DmMessage[];
+  fetchedCount: number;
+  decryptFailures: number;
+  malformedCount: number;
+}
+
 export interface ResolveDmRelaysInput {
   appRelayUrls: string[];
   signer?: NostrSigner;
@@ -385,46 +416,93 @@ export async function probeBunkerNip44(signer: NostrSigner, pubkey: string): Pro
 export async function unwrapDmGiftWrap(
   wrap: NostrEvent,
   signer: NostrSigner,
-): Promise<DmRumorEvent | null> {
+): Promise<DmUnwrapResult> {
   if (!signer.nip44) {
-    throw new Error('Current signer does not support NIP-44 encryption');
+    return {
+      ok: false,
+      reason: 'decrypt-failed',
+      cause: new Error('Current signer does not support NIP-44 encryption'),
+    };
   }
 
+  let decryptedSeal: string;
   try {
-    const decryptedSeal = await signer.nip44.decrypt(wrap.pubkey, wrap.content);
-    const seal = JSON.parse(decryptedSeal) as NostrEvent;
-
-    if (seal.kind !== DM_SEAL_KIND || !verifyEvent(seal)) {
-      return null;
-    }
-
-    const decryptedRumor = await signer.nip44.decrypt(seal.pubkey, seal.content);
-    const rumor = JSON.parse(decryptedRumor) as DmRumorEvent;
-
-    if (!isRumorEvent(rumor) || rumor.kind !== DM_RUMOR_KIND) {
-      return null;
-    }
-
-    if (seal.pubkey !== rumor.pubkey) {
-      return null;
-    }
-
-    if (calculateUnsignedEventHash(rumor) !== rumor.id) {
-      return null;
-    }
-
-    return rumor;
-  } catch {
-    return null;
+    decryptedSeal = await signer.nip44.decrypt(wrap.pubkey, wrap.content);
+  } catch (cause) {
+    return { ok: false, reason: 'decrypt-failed', cause };
   }
+
+  let seal: NostrEvent;
+  try {
+    seal = JSON.parse(decryptedSeal) as NostrEvent;
+  } catch {
+    return { ok: false, reason: 'malformed' };
+  }
+  if (seal.kind !== DM_SEAL_KIND || !verifyEvent(seal)) {
+    return { ok: false, reason: 'malformed' };
+  }
+
+  let decryptedRumor: string;
+  try {
+    decryptedRumor = await signer.nip44.decrypt(seal.pubkey, seal.content);
+  } catch (cause) {
+    return { ok: false, reason: 'decrypt-failed', cause };
+  }
+
+  let rumor: DmRumorEvent;
+  try {
+    rumor = JSON.parse(decryptedRumor) as DmRumorEvent;
+  } catch {
+    return { ok: false, reason: 'malformed' };
+  }
+  if (!isRumorEvent(rumor) || rumor.kind !== DM_RUMOR_KIND) {
+    return { ok: false, reason: 'malformed' };
+  }
+  // TODO(#321): split attestation/hash mismatch into its own
+  // `DmUnwrapResult.code` discriminator (mirroring `InviteApiError.code`
+  // in `src/lib/inviteApi.ts:21-31`). Forgery-adjacent signals deserve to
+  // be distinguishable from bare decode failures for telemetry.
+  if (seal.pubkey !== rumor.pubkey) {
+    return { ok: false, reason: 'malformed' };
+  }
+  if (calculateUnsignedEventHash(rumor) !== rumor.id) {
+    return { ok: false, reason: 'malformed' };
+  }
+
+  return { ok: true, rumor };
 }
 
-export async function fetchDmMessages(input: FetchDmMessagesInput): Promise<DmMessage[]> {
+function buildMessageFromRumor(
+  wrap: NostrEvent,
+  rumor: DmRumorEvent,
+  currentUserPubkey: string,
+): DmMessage | null {
+  const peerPubkeys = getConversationPubkeys(rumor, currentUserPubkey);
+  if (!peerPubkeys.length) return null;
+
+  const participantPubkeys = [...new Set([currentUserPubkey, ...peerPubkeys])].sort();
+
+  return {
+    conversationId: encodeConversationId(peerPubkeys),
+    wrapId: wrap.id,
+    rumorId: rumor.id,
+    senderPubkey: rumor.pubkey,
+    participantPubkeys,
+    peerPubkeys,
+    content: rumor.content,
+    createdAt: rumor.created_at,
+    isOutgoing: rumor.pubkey === currentUserPubkey,
+    share: getRumorShare(rumor),
+    subject: getRumorSubject(rumor),
+  } satisfies DmMessage;
+}
+
+export async function fetchDmMessages(input: FetchDmMessagesInput): Promise<FetchDmMessagesResult> {
   const { signer, currentUserPubkey, relayUrls, signal, limit = 200 } = input;
   const normalizedRelays = normalizeRelayUrls(relayUrls);
 
   if (!normalizedRelays.length) {
-    return [];
+    return { messages: [], fetchedCount: 0, decryptFailures: 0, malformedCount: 0 };
   }
 
   const pool = createRelayPool(normalizedRelays);
@@ -442,36 +520,34 @@ export async function fetchDmMessages(input: FetchDmMessagesInput): Promise<DmMe
       },
     );
 
-    const unwrapped = await Promise.all(
-      events.map(async (wrap): Promise<DmMessage | null> => {
-        const rumor = await unwrapDmGiftWrap(wrap, signer);
-        if (!rumor) return null;
-
-        const peerPubkeys = getConversationPubkeys(rumor, currentUserPubkey);
-        if (!peerPubkeys.length) return null;
-
-        const participantPubkeys = [...new Set([currentUserPubkey, ...peerPubkeys])].sort();
-        const conversationId = encodeConversationId(peerPubkeys);
-
-        return {
-          conversationId,
-          wrapId: wrap.id,
-          rumorId: rumor.id,
-          senderPubkey: rumor.pubkey,
-          participantPubkeys,
-          peerPubkeys,
-          content: rumor.content,
-          createdAt: rumor.created_at,
-          isOutgoing: rumor.pubkey === currentUserPubkey,
-          share: getRumorShare(rumor),
-          subject: getRumorSubject(rumor),
-        } satisfies DmMessage;
-      }),
+    const outcomes = await Promise.all(
+      events.map((wrap) => unwrapDmGiftWrap(wrap, signer)),
     );
 
-    return unwrapped
-      .filter((message): message is DmMessage => Boolean(message))
-      .sort((a, b) => a.createdAt - b.createdAt);
+    const messages: DmMessage[] = [];
+    let decryptFailures = 0;
+    let malformedCount = 0;
+
+    for (let i = 0; i < outcomes.length; i++) {
+      const outcome = outcomes[i];
+      if (outcome.ok) {
+        const built = buildMessageFromRumor(events[i], outcome.rumor, currentUserPubkey);
+        if (built) messages.push(built);
+        else malformedCount++;
+      } else if (outcome.reason === 'decrypt-failed') {
+        decryptFailures++;
+      } else {
+        malformedCount++;
+      }
+    }
+    messages.sort((a, b) => a.createdAt - b.createdAt);
+
+    return {
+      messages,
+      fetchedCount: events.length,
+      decryptFailures,
+      malformedCount,
+    };
   } finally {
     await pool.close();
   }

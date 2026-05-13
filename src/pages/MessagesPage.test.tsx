@@ -7,6 +7,7 @@ import { initializeI18n } from '@/lib/i18n';
 
 import MessagesPage from './MessagesPage';
 import type { DmConversation } from '@/lib/dm';
+import type { DmInboxStatus } from '@/hooks/useDirectMessages';
 
 const {
   currentUserPubkey,
@@ -15,10 +16,12 @@ const {
   mockConversations,
   mockAuthorMap,
   mockSearchResults,
+  mockInboxStatus,
 } = vi.hoisted(() => ({
   currentUserPubkey: 'a'.repeat(64),
   otherUserPubkey: 'c'.repeat(64),
   mockNavigate: vi.fn(),
+  mockInboxStatus: { value: 'ok' as DmInboxStatus },
   mockConversations: [
     {
       id: 'conversation-1',
@@ -78,6 +81,7 @@ const {
 vi.mock('@/hooks/useDirectMessages', () => ({
   useDmCapability: () => ({ canUseDirectMessages: true, isCheckingDmCapability: false }),
   useDmConversations: () => ({ data: mockConversations, isLoading: false }),
+  useDmInboxStatus: () => mockInboxStatus.value,
   useParsedDmShare: () => null,
 }));
 
@@ -108,17 +112,24 @@ function renderPage() {
 describe('MessagesPage', () => {
   beforeEach(async () => {
     mockSearchResults.length = 0;
-    mockConversations[0].lastMessage = {
-      conversationId: 'conversation-1',
-      wrapId: 'wrap-1',
-      rumorId: 'rumor-1',
-      senderPubkey: 'b'.repeat(64),
+    mockInboxStatus.value = 'ok';
+    mockConversations.length = 0;
+    mockConversations.push({
+      id: 'conversation-1',
       participantPubkeys: ['b'.repeat(64)],
-      peerPubkeys: ['b'.repeat(64)],
-      content: 'Hello from the inbox',
-      createdAt: 1_700_000_000,
-      isOutgoing: false,
-    };
+      unreadCount: 0,
+      lastMessage: {
+        conversationId: 'conversation-1',
+        wrapId: 'wrap-1',
+        rumorId: 'rumor-1',
+        senderPubkey: 'b'.repeat(64),
+        participantPubkeys: ['b'.repeat(64)],
+        peerPubkeys: ['b'.repeat(64)],
+        content: 'Hello from the inbox',
+        createdAt: 1_700_000_000,
+        isOutgoing: false,
+      },
+    });
 
     const storage = new Map<string, string>();
 
@@ -180,6 +191,26 @@ describe('MessagesPage', () => {
     renderPage();
 
     expect(screen.getByText(/failed to send: this one failed/i)).toBeInTheDocument();
+  });
+
+  it("renders the inbox-unavailable state when status is 'unavailable' and no conversations are visible", () => {
+    mockConversations.length = 0;
+    mockInboxStatus.value = 'unavailable';
+
+    renderPage();
+
+    expect(screen.getByText(/inbox temporarily unavailable/i)).toBeInTheDocument();
+    expect(screen.queryByText(/no other messages yet/i)).not.toBeInTheDocument();
+  });
+
+  it("keeps the empty state when status is 'empty' (no relays returned wraps)", () => {
+    mockConversations.length = 0;
+    mockInboxStatus.value = 'empty';
+
+    renderPage();
+
+    expect(screen.getByText(/no other messages yet/i)).toBeInTheDocument();
+    expect(screen.queryByText(/inbox temporarily unavailable/i)).not.toBeInTheDocument();
   });
 
   it('filters the current user out of compose search results', async () => {
