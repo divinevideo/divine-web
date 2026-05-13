@@ -34,6 +34,7 @@ interface SectionAnchor {
 }
 
 const SECTIONS: SectionAnchor[] = [
+  { id: "framing", title: "A simple framing" },
   { id: "talking", title: "Talking with your teen" },
   { id: "limits", title: "What Divine can and can't do" },
   { id: "settings", title: "How content settings work" },
@@ -178,7 +179,7 @@ export function FamilyPage() {
           {/* Anchor nav */}
           <nav
             aria-label="On this page"
-            className="mt-10 grid gap-2 sm:grid-cols-2 lg:grid-cols-4 text-sm"
+            className="mt-10 grid gap-2 sm:grid-cols-3 text-sm"
           >
             {SECTIONS.map((s) => (
               <a
@@ -194,7 +195,7 @@ export function FamilyPage() {
       </section>
 
       {/* Pause • Reflect • Redirect framing band */}
-      <section className="bg-brand-light-green/30 dark:bg-brand-dark-green/40 border-y border-brand-dark-green/10 dark:border-brand-green/20">
+      <section id="framing" className="scroll-mt-24 bg-brand-light-green/30 dark:bg-brand-dark-green/40 border-y border-brand-dark-green/10 dark:border-brand-green/20">
         <div className="container mx-auto px-4 py-10 max-w-5xl">
           <p className="text-xs font-semibold tracking-wide text-brand-dark-green dark:text-brand-green mb-4">
             A simple framing
