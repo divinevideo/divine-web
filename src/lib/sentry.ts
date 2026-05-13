@@ -3,6 +3,101 @@
 
 import * as Sentry from '@sentry/react';
 
+const BENIGN_SUBTITLE_VTT_STATUS_CODES = new Set([404, 410, 422]);
+
+function toObject(value: unknown): Record<string, unknown> | null {
+  if (typeof value === 'object' && value !== null) {
+    return value as Record<string, unknown>;
+  }
+  return null;
+}
+
+function toStatusCode(value: unknown): number | null {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value;
+  }
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+    const parsed = Number.parseInt(trimmed, 10);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+  return null;
+}
+
+function looksLikeSubtitleVttUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    return parsed.hostname === 'media.divine.video' && parsed.pathname.endsWith('/vtt');
+  } catch {
+    return url.includes('media.divine.video') && /\/vtt(?:$|\?|#)/.test(url);
+  }
+}
+
+function extractStatusFromMessage(text: string): number | null {
+  const match = text.match(/\b(4\d{2}|5\d{2})\b/);
+  if (!match) return null;
+  return Number.parseInt(match[1], 10);
+}
+
+function extractHttpStatusCode(event: unknown): number | null {
+  const eventObject = toObject(event);
+  if (!eventObject) return null;
+
+  const contexts = toObject(eventObject.contexts);
+  const responseContext = contexts ? toObject(contexts.response) : null;
+  const contextStatus = responseContext ? toStatusCode(responseContext.status_code) : null;
+  if (contextStatus !== null) return contextStatus;
+
+  const tags = toObject(eventObject.tags);
+  const tagStatus = tags
+    ? toStatusCode(tags['http.status_code'] ?? tags.status_code)
+    : null;
+  if (tagStatus !== null) return tagStatus;
+
+  const extra = toObject(eventObject.extra);
+  const extraStatus = extra
+    ? toStatusCode(extra.status_code ?? extra.status ?? extra['http.status_code'])
+    : null;
+  if (extraStatus !== null) return extraStatus;
+
+  const message = typeof eventObject.message === 'string' ? eventObject.message : '';
+  const exception = toObject(eventObject.exception);
+  const values = Array.isArray(exception?.values) ? exception?.values : [];
+  const exceptionText = values
+    .map((value) => {
+      const obj = toObject(value);
+      return typeof obj?.value === 'string' ? obj.value : '';
+    })
+    .join(' ');
+
+  return extractStatusFromMessage(`${message} ${exceptionText}`);
+}
+
+function extractEventUrl(event: unknown): string | null {
+  const eventObject = toObject(event);
+  if (!eventObject) return null;
+
+  const request = toObject(eventObject.request);
+  if (request && typeof request.url === 'string') {
+    return request.url;
+  }
+
+  const message = typeof eventObject.message === 'string' ? eventObject.message : '';
+  const urlMatch = message.match(/https?:\/\/\S+/);
+  return urlMatch?.[0] ?? null;
+}
+
+export function shouldDropBenignSubtitleVttEvent(event: unknown): boolean {
+  const url = extractEventUrl(event);
+  if (!url || !looksLikeSubtitleVttUrl(url)) return false;
+
+  const statusCode = extractHttpStatusCode(event);
+  if (statusCode === null) return false;
+
+  return BENIGN_SUBTITLE_VTT_STATUS_CODES.has(statusCode);
+}
+
 /**
  * Initialize Sentry error tracking
  * Call this as early as possible in the app lifecycle
@@ -105,6 +200,10 @@ export function initializeSentry() {
 
     // Don't send PII
     beforeSend(event) {
+      if (shouldDropBenignSubtitleVttEvent(event)) {
+        return null;
+      }
+
       // Scrub any potential PII from the event
       if (event.user) {
         // Only keep anonymized user ID (pubkey is already pseudonymous)

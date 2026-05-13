@@ -81,7 +81,10 @@ describe('useSubtitles protected media auth', () => {
     global.fetch = fetchSpy as typeof fetch;
 
     const { result } = renderHook(
-      () => useSubtitles(makeVideo({ ageRestricted: true })),
+      () => useSubtitles(makeVideo({
+        ageRestricted: true,
+        textTrackRef: `39307:${'a'.repeat(64)}:subtitles:video-1`,
+      })),
       { wrapper: createWrapper() }
     );
 
@@ -107,7 +110,10 @@ describe('useSubtitles protected media auth', () => {
     global.fetch = fetchSpy as typeof fetch;
 
     const { result } = renderHook(
-      () => useSubtitles(makeVideo({ ageRestricted: true })),
+      () => useSubtitles(makeVideo({
+        ageRestricted: true,
+        textTrackRef: `39307:${'a'.repeat(64)}:subtitles:video-1`,
+      })),
       { wrapper: createWrapper() }
     );
 
@@ -116,6 +122,50 @@ describe('useSubtitles protected media auth', () => {
     });
 
     expect(fetchSpy).not.toHaveBeenCalled();
+    expect(result.current.hasSubtitles).toBe(false);
+  });
+
+  it('does not probe CDN subtitles when video does not advertise text tracks', async () => {
+    const fetchSpy = vi.fn();
+    global.fetch = fetchSpy as typeof fetch;
+
+    const { result } = renderHook(
+      () => useSubtitles(makeVideo({ ageRestricted: false, textTrackRef: undefined })),
+      { wrapper: createWrapper() }
+    );
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+    });
+
+    expect(mockNostrQuery).not.toHaveBeenCalled();
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(result.current.hasSubtitles).toBe(false);
+  });
+
+  it('treats CDN 422 subtitle responses as benign missing subtitles', async () => {
+    const fetchSpy = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 422,
+      text: () => Promise.resolve(''),
+    });
+    global.fetch = fetchSpy as typeof fetch;
+
+    const { result } = renderHook(
+      () => useSubtitles(makeVideo({
+        textTrackRef: `39307:${'a'.repeat(64)}:subtitles:video-1`,
+      })),
+      { wrapper: createWrapper() }
+    );
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+    });
+
+    expect(fetchSpy).toHaveBeenCalledWith(
+      'https://media.divine.video/4a31d696c2275e60dbfe2359e6ff006f78a30f5df11c7290233a7860c4e8c31e/vtt',
+      expect.objectContaining({ signal: expect.any(AbortSignal) })
+    );
     expect(result.current.hasSubtitles).toBe(false);
   });
 });
