@@ -8,7 +8,12 @@ import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useBatchedAuthors } from '@/hooks/useBatchedAuthors';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
-import { useDmCapability, useDmConversations, useParsedDmShare } from '@/hooks/useDirectMessages';
+import {
+  useDmCapability,
+  useDmConversations,
+  useDmInboxStatus,
+  useParsedDmShare,
+} from '@/hooks/useDirectMessages';
 import { useSearchUsers } from '@/hooks/useSearchUsers';
 import { useSubdomainNavigate } from '@/hooks/useSubdomainNavigate';
 import {
@@ -55,6 +60,31 @@ function ConversationSkeleton() {
           <Skeleton className="h-3 w-56" />
         </div>
         <Skeleton className="h-4 w-10" />
+      </div>
+    </div>
+  );
+}
+
+// Rendered when relays returned wraps but every one failed to decrypt
+// (typically a NIP-46 bunker rejecting `nip44_decrypt` for this account).
+// Distinct from the empty state so the user can act on it.
+function InboxUnavailableState() {
+  return (
+    <div
+      role="status"
+      className="rounded-[32px] border border-dashed border-border bg-card/70 px-6 py-12 text-center shadow-sm backdrop-blur-sm"
+    >
+      <div className="mx-auto max-w-md space-y-3">
+        <div className="inline-flex h-14 w-14 items-center justify-center rounded-full bg-destructive/10 text-destructive">
+          <LifeBuoy className="h-6 w-6" />
+        </div>
+        <div className="space-y-1">
+          <h2 className="text-xl font-semibold text-foreground">Inbox temporarily unavailable</h2>
+          <p className="text-sm text-muted-foreground">
+            Your signer could not decrypt the messages we received from relays. This usually means
+            your bunker session needs to be reconnected. Try signing out and back in.
+          </p>
+        </div>
       </div>
     </div>
   );
@@ -172,8 +202,9 @@ export function MessagesPage() {
   const location = useLocation();
   const { t } = useTranslation();
   const { user } = useCurrentUser();
-  const { canUseDirectMessages } = useDmCapability();
+  const { canUseDirectMessages, isCheckingDmCapability } = useDmCapability();
   const conversationsQuery = useDmConversations();
+  const inboxStatus = useDmInboxStatus();
   const share = useParsedDmShare(location.search);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -257,7 +288,13 @@ export function MessagesPage() {
             )}
           </section>
 
-          {!canUseDirectMessages && (
+          {isCheckingDmCapability && (
+            <section className="rounded-[32px] border border-border/80 bg-card/80 px-5 py-6 text-sm text-muted-foreground shadow-sm backdrop-blur-sm">
+              Checking signer capability…
+            </section>
+          )}
+
+          {!isCheckingDmCapability && !canUseDirectMessages && (
             <section className="rounded-[32px] border border-border/80 bg-card/80 px-5 py-6 text-sm text-muted-foreground shadow-sm backdrop-blur-sm">
               {t('messages.signerUnsupported')}
             </section>
@@ -345,7 +382,15 @@ export function MessagesPage() {
                     );
                   })}
 
-                  {!conversationsQuery.isLoading && (conversationsQuery.data || []).length === 0 && (
+                  {!conversationsQuery.isLoading
+                    && (conversationsQuery.data || []).length === 0
+                    && inboxStatus === 'unavailable' && (
+                      <InboxUnavailableState />
+                  )}
+
+                  {!conversationsQuery.isLoading
+                    && (conversationsQuery.data || []).length === 0
+                    && inboxStatus !== 'unavailable' && (
                     <div className="rounded-[32px] border border-dashed border-border bg-card/70 px-6 py-12 text-center shadow-sm backdrop-blur-sm">
                       <div className="mx-auto max-w-md space-y-3">
                         <div className="inline-flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 text-primary">

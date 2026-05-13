@@ -2,6 +2,7 @@
 // ABOUTME: Supports searching videos, users, hashtags with NIP-50 full-text search
 
 import { useState, useEffect, useRef, useMemo, type ClipboardEvent } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';
 import { useNostr } from '@nostrify/react';
 import { useSubdomainNavigate } from '@/hooks/useSubdomainNavigate';
@@ -17,7 +18,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { VideoCard } from '@/components/VideoCard';
+import { VideoCardWithMetrics } from '@/components/VideoCardWithMetrics';
 import InfiniteScroll from 'react-infinite-scroll-component';
 import { useInfiniteSearchVideos } from '@/hooks/useInfiniteSearchVideos';
 import { useCompilationFullscreen } from '@/hooks/useCompilationFullscreen';
@@ -49,6 +50,7 @@ import {
 type SearchFilter = 'all' | 'videos' | 'users' | 'hashtags';
 
 export function SearchPage() {
+  const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
   const compilationRequest = useMemo(
     () => parseCompilationPlaybackParams(searchParams),
@@ -497,7 +499,7 @@ export function SearchPage() {
                   className="gap-2"
                 >
                   <Play className="h-4 w-4" />
-                  Play all
+                  {t('common.playAll')}
                 </Button>
               )}
             </div>
@@ -533,12 +535,15 @@ export function SearchPage() {
                     </div>
                     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                       {videoResults.slice(0, 6).map((video, index) => (
-                        <VideoCard
+                        <VideoCardWithMetrics
                           key={video.id}
                           video={video}
+                          index={index}
                           mode="thumbnail"
+                          showComments={false}
+                          onOpenComments={() => undefined}
+                          onCloseComments={() => undefined}
                           navigationContext={searchNavigationContext}
-                          videoIndex={index}
                         />
                       ))}
                     </div>
@@ -632,12 +637,15 @@ export function SearchPage() {
               >
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                   {videoResults.map((video, index) => (
-                    <VideoCard
+                    <VideoCardWithMetrics
                       key={video.id}
                       video={video}
+                      index={index}
                       mode="thumbnail"
+                      showComments={false}
+                      onOpenComments={() => undefined}
+                      onCloseComments={() => undefined}
                       navigationContext={searchNavigationContext}
-                      videoIndex={index}
                     />
                   ))}
                 </div>

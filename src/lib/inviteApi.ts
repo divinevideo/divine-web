@@ -121,13 +121,13 @@ export async function validateInviteCode(code: string): Promise<InviteValidation
   };
 }
 
-export async function joinInviteWaitlist(contact: string): Promise<WaitlistJoinResult> {
+export async function joinInviteWaitlist(contact: string, newsletterOptIn = false): Promise<WaitlistJoinResult> {
   let response: Response;
   try {
     response = await fetch(`${INVITE_API_BASE_URL}/v1/waitlist`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ contact: contact.trim() }),
+      body: JSON.stringify({ contact: contact.trim(), newsletter_opt_in: newsletterOptIn }),
     });
   } catch (error) {
     throw toNetworkInviteApiError(error);

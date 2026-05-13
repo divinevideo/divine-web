@@ -3,6 +3,7 @@ import { render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import AuthCallbackPage from './AuthCallbackPage';
+import { initializeI18n } from '@/lib/i18n';
 
 const {
   mockClearInviteHandoff,
@@ -39,7 +40,7 @@ function renderAuthCallback() {
 }
 
 describe('AuthCallbackPage integration', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     const data = new Map<string, string>();
     const storage = {
       getItem: (key: string) => data.get(key) ?? null,
@@ -57,6 +58,7 @@ describe('AuthCallbackPage integration', () => {
     vi.stubGlobal('localStorage', storage);
     vi.spyOn(console, 'log').mockImplementation(() => {});
     vi.spyOn(console, 'warn').mockImplementation(() => {});
+    await initializeI18n({ force: true, languages: ['en-US'] });
   });
 
   afterEach(() => {

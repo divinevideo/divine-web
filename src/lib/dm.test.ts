@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
-import type { NostrSigner } from '@nostrify/nostrify';
+import { NSecSigner, type NostrEvent, type NostrSigner } from '@nostrify/nostrify';
+import { generateSecretKey, getPublicKey } from 'nostr-tools/pure';
 
 import {
   buildDmSharePayloadFromVideo,
@@ -7,10 +8,13 @@ import {
   createRecipientGiftWraps,
   createSelfGiftWrap,
   decodeConversationId,
+  DM_GIFT_WRAP_KIND,
   encodeConversationId,
   getDmMessagePreview,
   groupDmConversations,
   parseDmShareQuery,
+  probeBunkerNip44,
+  unwrapDmGiftWrap,
 } from '@/lib/dm';
 import type { ParsedVideoData } from '@/types/video';
 
@@ -196,5 +200,157 @@ describe('createRecipientGiftWraps', () => {
       recipientPubkeys: [],
       content: 'hi',
     })).rejects.toThrow(/at least one recipient/);
+  });
+});
+
+describe('probeBunkerNip44', () => {
+  const PROBE_PUBKEY = 'a'.repeat(64);
+
+  function makeSigner(nip44?: NostrSigner['nip44']): NostrSigner {
+    return {
+      getPublicKey: vi.fn().mockResolvedValue(PROBE_PUBKEY),
+      signEvent: vi.fn(),
+      nip44,
+    };
+  }
+
+  it('returns false when the signer has no nip44 surface', async () => {
+    expect(await probeBunkerNip44(makeSigner(undefined), PROBE_PUBKEY)).toBe(false);
+  });
+
+  it('returns false when nip44.encrypt rejects', async () => {
+    const signer = makeSigner({
+      encrypt: vi.fn().mockRejectedValue(new Error('bunker rejected')),
+      decrypt: vi.fn(),
+    });
+    expect(await probeBunkerNip44(signer, PROBE_PUBKEY)).toBe(false);
+  });
+
+  it('returns false when nip44.decrypt rejects', async () => {
+    const signer = makeSigner({
+      encrypt: vi.fn().mockResolvedValue('ciphertext'),
+      decrypt: vi.fn().mockRejectedValue(new Error('bunker rejected')),
+    });
+    expect(await probeBunkerNip44(signer, PROBE_PUBKEY)).toBe(false);
+  });
+
+  it('returns false when the round-trip plaintext does not match the input', async () => {
+    const signer = makeSigner({
+      encrypt: vi.fn().mockResolvedValue('ciphertext'),
+      decrypt: vi.fn().mockResolvedValue('not the same plaintext'),
+    });
+    expect(await probeBunkerNip44(signer, PROBE_PUBKEY)).toBe(false);
+  });
+
+  it('returns true on a successful round-trip', async () => {
+    let probedPlaintext = '';
+    const signer = makeSigner({
+      encrypt: vi.fn().mockImplementation(async (_pubkey: string, plaintext: string) => {
+        probedPlaintext = plaintext;
+        return 'ciphertext';
+      }),
+      decrypt: vi.fn().mockImplementation(async () => probedPlaintext),
+    });
+    expect(await probeBunkerNip44(signer, PROBE_PUBKEY)).toBe(true);
+    expect(signer.nip44!.encrypt).toHaveBeenCalledWith(PROBE_PUBKEY, expect.any(String));
+    expect(signer.nip44!.decrypt).toHaveBeenCalledWith(PROBE_PUBKEY, 'ciphertext');
+  });
+});
+
+function createTestSigner(): { signer: NSecSigner; pubkey: string } {
+  const sk = generateSecretKey();
+  return { signer: new NSecSigner(sk), pubkey: getPublicKey(sk) };
+}
+
+function createDmTestWrap(recipientPubkey: string): NostrEvent {
+  return {
+    id: 'a'.repeat(64),
+    pubkey: 'b'.repeat(64),
+    kind: DM_GIFT_WRAP_KIND,
+    created_at: 1,
+    tags: [['p', recipientPubkey]],
+    content: 'ciphertext',
+    sig: 'c'.repeat(128),
+  };
+}
+
+function createMockSigner(
+  recipientPubkey: string,
+  decrypt: NonNullable<NostrSigner['nip44']>['decrypt'],
+): NostrSigner {
+  return {
+    getPublicKey: vi.fn().mockResolvedValue(recipientPubkey),
+    signEvent: vi.fn(),
+    nip44: {
+      encrypt: vi.fn(),
+      decrypt,
+    },
+  };
+}
+
+describe('unwrapDmGiftWrap', () => {
+  // The happy-path round-trip (real NIP-44 encrypt → decrypt) is exercised in
+  // useDirectMessages.test.ts which mocks at the import boundary. Here we
+  // cannot run real nip44.v2 because src/test/setup.ts overrides global
+  // TextEncoder with node:util's TextEncoder, which produces a Uint8Array
+  // from a different realm than the @noble/hashes consumer expects, breaking
+  // its instance check. Failure-path tests below all run via mocked signers
+  // so they're unaffected.
+
+  it('returns decrypt-failed when the signer.nip44.decrypt RPC throws', async () => {
+    const recipient = createTestSigner();
+    const wrap = createDmTestWrap(recipient.pubkey);
+    const cause = new Error('bunker rejected nip44_decrypt');
+    const signer = createMockSigner(recipient.pubkey, vi.fn().mockRejectedValue(cause));
+
+    const result = await unwrapDmGiftWrap(wrap, signer);
+
+    expect(result.ok).toBe(false);
+    if (!result.ok && result.reason === 'decrypt-failed') {
+      expect(result.cause).toBe(cause);
+    } else {
+      expect.fail(`expected decrypt-failed, got ${JSON.stringify(result)}`);
+    }
+  });
+
+  it('returns malformed when the decrypted seal is not valid JSON', async () => {
+    const recipient = createTestSigner();
+    const wrap = createDmTestWrap(recipient.pubkey);
+    const signer = createMockSigner(
+      recipient.pubkey,
+      vi.fn().mockResolvedValue('not valid json {[}'),
+    );
+
+    const result = await unwrapDmGiftWrap(wrap, signer);
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.reason).toBe('malformed');
+    }
+  });
+
+  it('returns malformed when the decrypted seal has the wrong kind', async () => {
+    const recipient = createTestSigner();
+    const wrap = createDmTestWrap(recipient.pubkey);
+    const wrongKindSeal = JSON.stringify({
+      kind: 9999,
+      pubkey: 'a'.repeat(64),
+      created_at: 1,
+      tags: [],
+      content: 'inner',
+      id: 'd'.repeat(64),
+      sig: 'e'.repeat(128),
+    });
+    const signer = createMockSigner(
+      recipient.pubkey,
+      vi.fn().mockResolvedValue(wrongKindSeal),
+    );
+
+    const result = await unwrapDmGiftWrap(wrap, signer);
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.reason).toBe('malformed');
+    }
   });
 });

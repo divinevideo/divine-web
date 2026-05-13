@@ -79,7 +79,7 @@ export function transformFunnelcakeVideo(raw: FunnelcakeVideoRaw): ParsedVideoDa
     authorAvatar: raw.author_avatar, // Cached author avatar from Funnelcake
     kind: SHORT_VIDEO_KIND,
     createdAt: raw.created_at,
-    content: raw.title || '', // Funnelcake uses title field for content
+    content: raw.content || '',
     videoUrl: raw.video_url,
     thumbnailUrl: raw.thumbnail,
     blurhash: raw.blurhash,

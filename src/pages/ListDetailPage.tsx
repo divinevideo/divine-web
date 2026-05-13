@@ -3,6 +3,7 @@
 
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { nip19 } from 'nostr-tools';
 import { useNostr } from '@nostrify/react';
 import { useQuery } from '@tanstack/react-query';
@@ -207,19 +208,21 @@ const PlayOrderIcon = ({ order }: { order?: PlayOrder }) => {
 };
 
 const PlayOrderLabel = ({ order }: { order?: PlayOrder }) => {
+  const { t } = useTranslation();
   switch (order) {
     case 'shuffle':
-      return 'Shuffle';
+      return t('listDetailPage.playOrderShuffle');
     case 'reverse':
-      return 'Newest First';
+      return t('listDetailPage.playOrderReverse');
     case 'manual':
-      return 'Custom Order';
+      return t('listDetailPage.playOrderManual');
     default:
-      return 'Oldest First';
+      return t('listDetailPage.playOrderChronological');
   }
 };
 
 export default function ListDetailPage() {
+  const { t } = useTranslation();
   const { pubkey, listId } = useParams<{ pubkey: string; listId: string }>();
   const navigate = useNavigate();
   const { nostr } = useNostr();
@@ -243,14 +246,14 @@ export default function ListDetailPage() {
     try {
       await deleteList.mutateAsync({ listId: list.id });
       toast({
-        title: 'List deleted',
-        description: `"${list.name}" has been deleted`,
+        title: t('listDetailPage.listDeletedTitle'),
+        description: t('listDetailPage.listDeletedDescription', { name: list.name }),
       });
       navigate('/lists');
     } catch {
       toast({
-        title: 'Error',
-        description: 'Failed to delete list',
+        title: t('listDetailPage.errorTitle'),
+        description: t('listDetailPage.deleteFailedDescription'),
         variant: 'destructive',
       });
     } finally {
@@ -263,7 +266,7 @@ export default function ListDetailPage() {
   const { data: list, isLoading: listLoading } = useQuery({
     queryKey: ['list-detail', pubkey, listId, listLookupRelayKey],
     queryFn: async (context) => {
-      if (!pubkey || !listId) throw new Error('Invalid list parameters');
+      if (!pubkey || !listId) throw new Error(t('listDetailPage.invalidParamsError'));
 
       const signal = AbortSignal.any([
         context.signal,
@@ -283,7 +286,7 @@ export default function ListDetailPage() {
       });
 
       if (events.length === 0) {
-        throw new Error('List not found');
+        throw new Error(t('listDetailPage.notFoundError'));
       }
 
       return parseVideoList(events[0]);
@@ -349,13 +352,13 @@ export default function ListDetailPage() {
         <Card className="border-dashed">
           <CardContent className="py-12 text-center">
             <List className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-            <p className="text-lg font-medium mb-2">List not found</p>
+            <p className="text-lg font-medium mb-2">{t('listDetailPage.notFoundTitle')}</p>
             <p className="text-muted-foreground mb-4">
-              This list may have been deleted or doesn't exist
+              {t('listDetailPage.notFoundDescription')}
             </p>
             <Button onClick={() => navigate('/lists')}>
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Browse Lists
+              {t('listDetailPage.browseLists')}
             </Button>
           </CardContent>
         </Card>
@@ -374,7 +377,7 @@ export default function ListDetailPage() {
           className="mb-4"
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Lists
+          {t('listDetailPage.backToLists')}
         </Button>
 
         {/* List Header */}
@@ -415,14 +418,14 @@ export default function ListDetailPage() {
                   </Avatar>
                   <div>
                     <p className="font-medium">{authorName}</p>
-                    <p className="text-xs text-muted-foreground">List creator</p>
+                    <p className="text-xs text-muted-foreground">{t('listDetailPage.listCreator')}</p>
                   </div>
                 </a>
 
                 <div className="flex items-center gap-4 text-sm text-muted-foreground flex-wrap">
                   <div className="flex items-center gap-1">
                     <Video className="h-4 w-4" />
-                    <span>{list.videoCoordinates.length} videos</span>
+                    <span>{t('listDetailPage.videoCount', { count: list.videoCoordinates.length })}</span>
                   </div>
                   <div className="flex items-center gap-1">
                     <Clock className="h-4 w-4" />
@@ -437,7 +440,7 @@ export default function ListDetailPage() {
                   {list.isCollaborative && (
                     <div className="flex items-center gap-1 text-green-600">
                       <Users className="h-4 w-4" />
-                      <span>Collaborative</span>
+                      <span>{t('listDetailPage.collaborative')}</span>
                     </div>
                   )}
                 </div>
@@ -460,17 +463,17 @@ export default function ListDetailPage() {
                   <>
                     <Button variant="outline" size="sm" onClick={() => setShowEditDialog(true)}>
                       <Edit className="h-4 w-4 mr-2" />
-                      Edit List
+                      {t('listDetailPage.editList')}
                     </Button>
                     <Button variant="outline" size="sm" onClick={() => setShowDeleteDialog(true)}>
                       <Trash2 className="h-4 w-4 mr-2" />
-                      Delete
+                      {t('listDetailPage.delete')}
                     </Button>
                   </>
                 )}
                 <Button variant="outline" size="sm" onClick={handleShare}>
                   <Share2 className="h-4 w-4 mr-2" />
-                  Share
+                  {t('listDetailPage.share')}
                 </Button>
               </div>
             </div>
@@ -486,7 +489,7 @@ export default function ListDetailPage() {
           </div>
         ) : videos && videos.length > 0 ? (
           <div>
-            <h2 className="text-lg font-semibold mb-4">Videos in this list</h2>
+            <h2 className="text-lg font-semibold mb-4">{t('listDetailPage.videosInList')}</h2>
 
             {canEdit ? (
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
@@ -521,13 +524,13 @@ export default function ListDetailPage() {
                                     videoCoordinate: videoCoord
                                   });
                                   toast({
-                                    title: 'Video removed',
-                                    description: 'Video removed from list',
+                                    title: t('listDetailPage.videoRemovedTitle'),
+                                    description: t('listDetailPage.videoRemovedDescription'),
                                   });
                                 } catch {
                                   toast({
-                                    title: 'Error',
-                                    description: 'Failed to remove video',
+                                    title: t('listDetailPage.errorTitle'),
+                                    description: t('listDetailPage.removeVideoFailedDescription'),
                                     variant: 'destructive',
                                   });
                                 }
@@ -535,7 +538,7 @@ export default function ListDetailPage() {
                               className="text-destructive focus:text-destructive"
                             >
                               <Trash2 className="h-4 w-4 mr-2" />
-                              Remove from list
+                              {t('listDetailPage.removeFromList')}
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -559,11 +562,11 @@ export default function ListDetailPage() {
             <CardContent className="py-12 text-center">
               <Video className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
               <p className="text-muted-foreground">
-                This list doesn't have any videos yet
+                {t('listDetailPage.emptyList')}
               </p>
               {isOwner && (
                 <p className="text-sm text-muted-foreground mt-2">
-                  Browse videos and add them to your list
+                  {t('listDetailPage.emptyListOwnerHint')}
                 </p>
               )}
             </CardContent>

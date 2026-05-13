@@ -206,6 +206,14 @@ export function AppHeader({ className }: AppHeaderProps) {
                 <span>{t('menu.mediaResources')}</span>
               </DropdownMenuItem>
 
+              <DropdownMenuItem
+                onClick={() => navigate('/merch')}
+                className="cursor-pointer hover:bg-muted focus:bg-muted"
+              >
+                <FileText className="mr-2 h-4 w-4" />
+                <span>{t('menu.merch')}</span>
+              </DropdownMenuItem>
+
               <DropdownMenuSeparator />
 
               {/* Terms and open source section */}

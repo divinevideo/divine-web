@@ -20,16 +20,17 @@ export function NoteContent({
   const content = useMemo(() => {
     const text = event.content;
     
-    // Regex to find URLs, Nostr references, and hashtags
-    const regex = /(https?:\/\/[^\s]+)|nostr:(npub1|note1|nprofile1|nevent1)([023456789acdefghjklmnpqrstuvwxyz]+)|(#\w+)/g;
-    
+    // Regex to find URLs, Nostr references (with optional `nostr:` prefix), and hashtags.
+    // Word boundaries (\b) prevent mid-word false positives like `xxxnpub1...yyy`.
+    const regex = /(https?:\/\/[^\s]+)|(?:nostr:)?\b((?:npub1|note1|nprofile1|nevent1|naddr1)[023456789acdefghjklmnpqrstuvwxyz]+)\b|(#\w+)/g;
+
     const parts: React.ReactNode[] = [];
     let lastIndex = 0;
     let match: RegExpExecArray | null;
     let keyCounter = 0;
-    
+
     while ((match = regex.exec(text)) !== null) {
-      const [fullMatch, url, nostrPrefix, nostrData, hashtag] = match;
+      const [fullMatch, url, nostrId, hashtag] = match;
       const index = match.index;
       
       // Add text before this match
@@ -50,12 +51,11 @@ export function NoteContent({
             {url}
           </a>
         );
-      } else if (nostrPrefix && nostrData) {
+      } else if (nostrId) {
         // Handle Nostr references
         try {
-          const nostrId = `${nostrPrefix}${nostrData}`;
           const decoded = nip19.decode(nostrId);
-          
+
           if (decoded.type === 'npub') {
             const pubkey = decoded.data;
             parts.push(

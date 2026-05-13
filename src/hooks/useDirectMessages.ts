@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useNostrLogin } from '@nostrify/react/login';
 
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { toast } from '@/hooks/useToast';
@@ -11,12 +12,14 @@ import {
   fetchDmMessages,
   groupDmConversations,
   parseDmShareQuery,
+  probeBunkerNip44,
   publishDmMessages,
   resolveDmReadRelays,
   resolveDmWriteRelays,
   type DmConversation,
   type DmMessage,
   type DmSharePayload,
+  type FetchDmMessagesResult,
 } from '@/lib/dm';
 import {
   convertOutboxRecordToDmMessage,
@@ -31,6 +34,7 @@ import {
 } from '@/lib/dmOutbox';
 
 const DM_QUERY_KEY = ['dm'];
+const DM_HEALTHCHECK_QUERY_KEY = ['dm-healthcheck'];
 const DM_READ_STATE_EVENT = 'dm:read-state';
 const DM_OUTBOX_STALE_AFTER_SECONDS = 60;
 
@@ -78,9 +82,16 @@ function writeDmReadState(ownerPubkey: string | undefined, nextState: Record<str
   }
 }
 
+const EMPTY_INBOX_RESULT: FetchDmMessagesResult = {
+  messages: [],
+  fetchedCount: 0,
+  decryptFailures: 0,
+  malformedCount: 0,
+};
+
 function getDmMessageQueryLimits(queryClient: ReturnType<typeof useQueryClient>, ownerPubkey: string): number[] {
   const limits = new Set<number>([200, 300]);
-  const existingMessageQueries = queryClient.getQueriesData<DmMessage[]>({
+  const existingMessageQueries = queryClient.getQueriesData<FetchDmMessagesResult>({
     queryKey: [...DM_QUERY_KEY, 'messages', ownerPubkey],
   });
 
@@ -94,15 +105,21 @@ function getDmMessageQueryLimits(queryClient: ReturnType<typeof useQueryClient>,
   return [...limits];
 }
 
+// Updates the messages portion of a cached FetchDmMessagesResult while
+// preserving the fetch-meta counts. Optimistic outbox updates flow through
+// here, so the meta from the most recent network fetch must survive an
+// optimistic write.
 function updateDmMessageCaches(
   queryClient: ReturnType<typeof useQueryClient>,
   ownerPubkey: string,
   updater: (existingMessages: DmMessage[]) => DmMessage[],
 ) {
   for (const limit of getDmMessageQueryLimits(queryClient, ownerPubkey)) {
-    queryClient.setQueryData<DmMessage[]>(
+    queryClient.setQueryData<FetchDmMessagesResult>(
       [...DM_QUERY_KEY, 'messages', ownerPubkey, limit],
-      (existingMessages: DmMessage[] = []) => updater(existingMessages),
+      (existing) => existing
+        ? { ...existing, messages: updater(existing.messages) }
+        : { messages: updater([]), fetchedCount: 0, decryptFailures: 0, malformedCount: 0 },
     );
   }
 }
@@ -140,12 +157,53 @@ function updateOptimisticDmInAllCaches(
   }));
 }
 
+/**
+ * One-time round-trip probe of the signer's NIP-44 RPC at session attach.
+ *
+ * Bunker-style signers (NIP-46) expose `signer.nip44` as a stable API
+ * surface even when the remote bunker may reject the underlying RPC. A
+ * boolean truthiness check on `signer.nip44` therefore promises a DM
+ * capability the bunker may not honor — and every downstream `decrypt`
+ * silently fails. This hook performs the actual encrypt-to-self +
+ * decrypt-from-self round trip exactly once per (signer, pubkey) pair.
+ *
+ * Sticky cache (`staleTime: Infinity`) — re-runs only on signer change.
+ * One retry on transient failure to absorb a flaky first connect.
+ *
+ * Local-key signers (NSecSigner) pass instantly; bunker users add ~1×
+ * round-trip latency at session attach.
+ */
+export function useBunkerDecryptHealthcheck() {
+  const { user, signer } = useCurrentUser();
+  const { logins } = useNostrLogin();
+  // login.id is a fresh UUID per addLogin() call; including it in the cache key
+  // means a bunker re-pair (same pubkey, new login object) busts the stale
+  // false negative so DMs recover after reconnect without a hard reload.
+  const loginSessionId = user
+    ? logins.find((login) => login.pubkey === user.pubkey)?.id ?? ''
+    : '';
+  return useQuery({
+    queryKey: [...DM_HEALTHCHECK_QUERY_KEY, user?.pubkey || '', loginSessionId],
+    queryFn: async () => {
+      if (!user?.pubkey || !signer) return false;
+      return probeBunkerNip44(signer, user.pubkey);
+    },
+    enabled: Boolean(user?.pubkey && signer?.nip44),
+    staleTime: Infinity,
+    gcTime: Infinity,
+    retry: 1,
+    retryDelay: 1000,
+  });
+}
+
 export function useDmCapability() {
   const { user, signer } = useCurrentUser();
+  const { data: nip44Healthy, isLoading: healthcheckLoading } = useBunkerDecryptHealthcheck();
 
   return {
     isLoggedIn: Boolean(user?.pubkey),
-    canUseDirectMessages: Boolean(user?.pubkey && signer?.nip44),
+    canUseDirectMessages: Boolean(user?.pubkey && signer?.nip44 && nip44Healthy),
+    isCheckingDmCapability: Boolean(user?.pubkey && signer?.nip44) && healthcheckLoading,
   };
 }
 
@@ -205,11 +263,11 @@ export function useDmMessages(limit = 200) {
   const { user, signer } = useCurrentUser();
   const { config } = useAppContext();
 
-  return useQuery({
+  return useQuery<FetchDmMessagesResult>({
     queryKey: [...DM_QUERY_KEY, 'messages', user?.pubkey || '', limit],
     queryFn: async ({ signal }) => {
       if (!user?.pubkey || !signer?.nip44) {
-        return [];
+        return EMPTY_INBOX_RESULT;
       }
 
       const relayUrls = await resolveDmReadRelays({
@@ -219,7 +277,7 @@ export function useDmMessages(limit = 200) {
         signal: AbortSignal.any([signal, AbortSignal.timeout(5000)]),
       });
 
-      const fetchedMessages = await fetchDmMessages({
+      const fetched = await fetchDmMessages({
         signer,
         currentUserPubkey: user.pubkey,
         relayUrls,
@@ -228,13 +286,18 @@ export function useDmMessages(limit = 200) {
       });
 
       const hydratedOutbox = hydrateDmOutbox(user.pubkey, DM_OUTBOX_STALE_AFTER_SECONDS);
-      const { messages, reconciledClientIds } = mergeFetchedAndOutboxMessages(fetchedMessages, hydratedOutbox);
+      const { messages, reconciledClientIds } = mergeFetchedAndOutboxMessages(fetched.messages, hydratedOutbox);
 
       for (const clientId of reconciledClientIds) {
         removeDmOutboxRecord(user.pubkey, clientId);
       }
 
-      return messages;
+      return {
+        messages,
+        fetchedCount: fetched.fetchedCount,
+        decryptFailures: fetched.decryptFailures,
+        malformedCount: fetched.malformedCount,
+      };
     },
     enabled: Boolean(user?.pubkey && signer?.nip44),
     staleTime: 30_000,
@@ -250,7 +313,7 @@ export function useDmConversations(limit = 200) {
   const { readState } = useDmReadState(user?.pubkey);
 
   const conversations = useMemo<DmConversation[]>(
-    () => groupDmConversations(messagesQuery.data || [], readState),
+    () => groupDmConversations(messagesQuery.data?.messages || [], readState),
     [messagesQuery.data, readState],
   );
 
@@ -258,6 +321,29 @@ export function useDmConversations(limit = 200) {
     ...messagesQuery,
     data: conversations,
   };
+}
+
+/**
+ * Status of the moderator/user inbox for the current signer.
+ *
+ * - `loading` — the initial fetch hasn't returned yet.
+ * - `ok` — at least one message is visible.
+ * - `unavailable` — relays returned wraps but every single one failed to
+ *   decrypt. This usually means the signer (typically a NIP-46 bunker) is
+ *   rejecting `nip44_decrypt` for this account. UI should render an
+ *   explicit "inbox unavailable" state, not the generic empty state.
+ * - `empty` — relays returned no wraps OR a partial-decrypt scenario where
+ *   we have nothing to show. Render the generic empty state.
+ */
+export type DmInboxStatus = 'loading' | 'ok' | 'empty' | 'unavailable';
+
+export function useDmInboxStatus(limit = 200): DmInboxStatus {
+  const { data, isLoading } = useDmMessages(limit);
+  if (isLoading) return 'loading';
+  if (!data) return 'empty';
+  if (data.messages.length > 0) return 'ok';
+  if (data.fetchedCount > 0 && data.decryptFailures === data.fetchedCount) return 'unavailable';
+  return 'empty';
 }
 
 export function useUnreadDmCount(limit = 200) {
@@ -280,7 +366,7 @@ export function useDmConversation(conversationId: string | undefined, limit = 30
   const { readState, markConversationRead } = useDmReadState(user?.pubkey);
 
   const messages = useMemo<DmMessage[]>(
-    () => (messagesQuery.data || []).filter((message) => message.conversationId === conversationId),
+    () => (messagesQuery.data?.messages || []).filter((message) => message.conversationId === conversationId),
     [conversationId, messagesQuery.data],
   );
 

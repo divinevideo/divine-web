@@ -1,6 +1,7 @@
 import { FormEvent } from 'react';
 
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 
 interface WaitlistFormProps {
@@ -8,8 +9,10 @@ interface WaitlistFormProps {
   error?: string | null;
   isLoading: boolean;
   isSuccess: boolean;
+  newsletterOptIn: boolean;
   onBack: () => void;
   onContactChange: (value: string) => void;
+  onNewsletterOptInChange: (value: boolean) => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
 }
 
@@ -19,8 +22,10 @@ export function WaitlistForm(props: WaitlistFormProps) {
     error,
     isLoading,
     isSuccess,
+    newsletterOptIn,
     onBack,
     onContactChange,
+    onNewsletterOptInChange,
     onSubmit,
   } = props;
 
@@ -44,6 +49,15 @@ export function WaitlistForm(props: WaitlistFormProps) {
 
   return (
     <form className="space-y-4" onSubmit={onSubmit}>
+      <label className="flex cursor-pointer items-center justify-center gap-2 text-sm text-muted-foreground" htmlFor="waitlist-newsletter">
+        <Checkbox
+          checked={newsletterOptIn}
+          id="waitlist-newsletter"
+          onCheckedChange={(checked) => onNewsletterOptInChange(checked === true)}
+        />
+        Send me Divine inspiration
+      </label>
+
       <div className="space-y-2">
         <label className="text-sm font-medium" htmlFor="waitlist-contact">
           Email

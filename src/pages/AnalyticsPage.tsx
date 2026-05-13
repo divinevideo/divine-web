@@ -3,6 +3,7 @@
 
 import { Link, Navigate } from 'react-router-dom';
 import { useSeoMeta } from '@unhead/react';
+import { useTranslation } from 'react-i18next';
 import { ChartBar as BarChart3, VideoCamera as Video, Eye, Heart, Users, ChatCircle as MessageCircle, Repeat as Repeat2 } from '@phosphor-icons/react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -47,25 +48,26 @@ function KpiCard({ title, value, icon }: KpiCardProps) {
 // --- KPI Grid ---
 
 function KpiGrid({ kpis, followerCount }: { kpis: CreatorKPIs; followerCount: number }) {
+  const { t } = useTranslation();
   return (
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
       <KpiCard
-        title="Total Videos"
+        title={t('analyticsPage.totalVideos')}
         value={formatCompact(kpis.totalVideos)}
         icon={<Video className="h-5 w-5" />}
       />
       <KpiCard
-        title="Total Views"
+        title={t('analyticsPage.totalViews')}
         value={kpis.hasViewData ? formatCompact(kpis.totalViews) : '--'}
         icon={<Eye className="h-5 w-5" />}
       />
       <KpiCard
-        title="Total Reactions"
+        title={t('analyticsPage.totalReactions')}
         value={formatCompact(kpis.totalReactions)}
         icon={<Heart className="h-5 w-5" />}
       />
       <KpiCard
-        title="Followers"
+        title={t('analyticsPage.followers')}
         value={formatCompact(followerCount)}
         icon={<Users className="h-5 w-5" />}
       />
@@ -174,15 +176,16 @@ function TopContentSkeleton() {
 // --- Empty State ---
 
 function EmptyState() {
+  const { t } = useTranslation();
   return (
     <div className="flex flex-col items-center gap-4 py-16 text-center">
       <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted">
         <Video className="h-8 w-8 text-muted-foreground" />
       </div>
       <div>
-        <h3 className="text-lg font-semibold">Nothing to graph yet.</h3>
+        <h3 className="text-lg font-semibold">{t('analyticsPage.emptyTitle')}</h3>
         <p className="mt-1 text-muted-foreground">
-          Drop your first loop — your numbers show up here.
+          {t('analyticsPage.emptyDescription')}
         </p>
       </div>
     </div>
@@ -192,15 +195,16 @@ function EmptyState() {
 // --- Error State ---
 
 function ErrorState({ message, onRetry }: { message: string; onRetry: () => void }) {
+  const { t } = useTranslation();
   return (
     <div className="flex flex-col items-center gap-4 py-16 text-center">
-      <p className="text-muted-foreground">Failed to load analytics</p>
+      <p className="text-muted-foreground">{t('analyticsPage.errorTitle')}</p>
       <p className="text-sm text-muted-foreground">{message}</p>
       <button
         onClick={onRetry}
         className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
       >
-        Try Again
+        {t('analyticsPage.tryAgain')}
       </button>
     </div>
   );
@@ -210,12 +214,13 @@ function ErrorState({ message, onRetry }: { message: string; onRetry: () => void
 
 export function AnalyticsPage() {
   const { user } = useCurrentUser();
+  const { t } = useTranslation();
 
   useSeoMeta({
-    title: 'Creator Analytics - Divine',
-    description: 'View your video performance metrics and engagement analytics',
-    ogTitle: 'Creator Analytics - Divine',
-    ogDescription: 'Track your video performance on Divine',
+    title: t('analyticsPage.seoTitle'),
+    description: t('analyticsPage.seoDescription'),
+    ogTitle: t('analyticsPage.seoTitle'),
+    ogDescription: t('analyticsPage.seoOgDescription'),
   });
 
   // Redirect to home if not logged in
@@ -227,6 +232,7 @@ export function AnalyticsPage() {
 }
 
 function AnalyticsDashboard({ pubkey }: { pubkey: string }) {
+  const { t } = useTranslation();
   const { data, isLoading, error, refetch } = useCreatorAnalytics(pubkey);
 
   // Build profile link for "View Profile" action
@@ -245,15 +251,15 @@ function AnalyticsDashboard({ pubkey }: { pubkey: string }) {
           <div className="flex items-center gap-3">
             <BarChart3 className="h-8 w-8 text-primary" />
             <div>
-              <h1 className="text-2xl font-bold">Analytics</h1>
-              <p className="text-muted-foreground">Your video performance</p>
+              <h1 className="text-2xl font-bold">{t('analyticsPage.heading')}</h1>
+              <p className="text-muted-foreground">{t('analyticsPage.subheading')}</p>
             </div>
           </div>
           <Link
             to={profilePath}
             className="text-sm text-muted-foreground hover:text-foreground"
           >
-            View Profile
+            {t('analyticsPage.viewProfile')}
           </Link>
         </div>
 
@@ -263,7 +269,7 @@ function AnalyticsDashboard({ pubkey }: { pubkey: string }) {
             <KpiGridSkeleton />
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Top Content</CardTitle>
+                <CardTitle className="text-lg">{t('analyticsPage.topContent')}</CardTitle>
               </CardHeader>
               <CardContent>
                 <TopContentSkeleton />
@@ -275,7 +281,7 @@ function AnalyticsDashboard({ pubkey }: { pubkey: string }) {
         {/* Error State */}
         {error && !isLoading && (
           <ErrorState
-            message={error instanceof Error ? error.message : 'Unknown error'}
+            message={error instanceof Error ? error.message : t('analyticsPage.unknownError')}
             onRetry={() => refetch()}
           />
         )}
@@ -293,7 +299,7 @@ function AnalyticsDashboard({ pubkey }: { pubkey: string }) {
                 {/* Top Content */}
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-lg">Top Content</CardTitle>
+                    <CardTitle className="text-lg">{t('analyticsPage.topContent')}</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-1">
                     {data.topVideos.length > 0 ? (
@@ -306,7 +312,7 @@ function AnalyticsDashboard({ pubkey }: { pubkey: string }) {
                       ))
                     ) : (
                       <p className="py-8 text-center text-muted-foreground">
-                        No engagement to brag about yet.
+                        {t('analyticsPage.noEngagement')}
                       </p>
                     )}
                   </CardContent>

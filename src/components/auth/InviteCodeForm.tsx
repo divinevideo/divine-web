@@ -1,4 +1,5 @@
 import { FormEvent } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,6 +15,7 @@ interface InviteCodeFormProps {
 }
 
 export function InviteCodeForm(props: InviteCodeFormProps) {
+  const { t } = useTranslation();
   const {
     error,
     isLoading,
@@ -28,20 +30,20 @@ export function InviteCodeForm(props: InviteCodeFormProps) {
     <form className="space-y-4" onSubmit={onSubmit}>
       <div className="space-y-2">
         <label className="text-sm font-medium" htmlFor="invite-code">
-          Invite code
+          {t('inviteCodeForm.label')}
         </label>
         <Input
           autoComplete="off"
           id="invite-code"
           onChange={(event) => onInviteCodeChange(event.target.value)}
-          placeholder="Paste your invite code"
+          placeholder={t('inviteCodeForm.placeholder')}
           value={value}
         />
         {error ? <p className="text-sm text-red-500">{error}</p> : null}
       </div>
 
       <Button className="w-full rounded-full py-3" disabled={isLoading || !value.trim()} type="submit">
-        {isLoading ? 'Checking...' : 'Continue'}
+        {isLoading ? t('inviteCodeForm.checking') : t('inviteCodeForm.continue')}
       </Button>
 
       {waitlistEnabled ? (
@@ -51,7 +53,7 @@ export function InviteCodeForm(props: InviteCodeFormProps) {
           type="button"
           variant="link"
         >
-          No invite? Get on the waitlist.
+          {t('inviteCodeForm.joinWaitlist')}
         </Button>
       ) : null}
     </form>
