@@ -60,11 +60,13 @@ export function AddToListDialog({
     if (selectedLists.size === 0) return;
 
     try {
-      const promises = Array.from(selectedLists).map(listId =>
+      const selectedListEntries = (userLists || []).filter((list) => selectedLists.has(list.id));
+      const promises = selectedListEntries.map((list) =>
         addToList.mutateAsync({
-          listId,
-          videoCoordinate
-        })
+          listId: list.id,
+          ownerPubkey: list.pubkey,
+          videoCoordinate,
+        }),
       );
 
       await Promise.all(promises);
