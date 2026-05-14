@@ -21,7 +21,15 @@ function makeVideo(overrides: Partial<ParsedVideoData> = {}): ParsedVideoData {
 }
 
 describe('useVideoPrefetch', () => {
+  const setUserAgent = (userAgent: string) => {
+    Object.defineProperty(window.navigator, 'userAgent', {
+      configurable: true,
+      value: userAgent,
+    });
+  };
+
   beforeEach(() => {
+    setUserAgent('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36');
     document.head.querySelectorAll('link[rel="prefetch"]').forEach((link) => link.remove());
   });
 
@@ -67,5 +75,29 @@ describe('useVideoPrefetch', () => {
 
     expect(prefetchHrefs).toContain('https://media.divine.video/public-video');
     expect(prefetchHrefs).toContain('https://media.divine.video/public-video.jpg');
+  });
+
+  it('skips video prefetches in Firefox but keeps image prefetches', () => {
+    setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:145.0) Gecko/20100101 Firefox/145.0');
+
+    renderHook(() =>
+      useVideoPrefetch('video-1', [
+        makeVideo({ id: 'video-1' }),
+        makeVideo({
+          id: 'firefox-video',
+          ageRestricted: false,
+          videoUrl: 'https://media.divine.video/firefox-video',
+          thumbnailUrl: 'https://media.divine.video/firefox-video.jpg',
+        }),
+      ]),
+    );
+
+    const prefetchLinks = Array.from(document.head.querySelectorAll('link[rel="prefetch"]')) as HTMLLinkElement[];
+    const prefetchHrefs = prefetchLinks.map((link) => link.href);
+    const videoPrefetches = prefetchLinks.filter((link) => link.as === 'video');
+
+    expect(videoPrefetches).toHaveLength(0);
+    expect(prefetchHrefs).not.toContain('https://media.divine.video/firefox-video');
+    expect(prefetchHrefs).toContain('https://media.divine.video/firefox-video.jpg');
   });
 });

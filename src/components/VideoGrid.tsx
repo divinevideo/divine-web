@@ -86,7 +86,6 @@ function VideoGridMedia({
         loop
         playsInline
         preload="metadata"
-        crossOrigin="anonymous"
         data-testid={`video-player-${video.id}`}
         onError={() => onThumbnailError(video.id)}
       />
@@ -106,7 +105,6 @@ function VideoGridMedia({
           muted
           playsInline
           preload="metadata"
-          crossOrigin="anonymous"
           data-testid={`video-thumbnail-${video.id}`}
           onError={() => onThumbnailError(video.id)}
         />
@@ -119,7 +117,6 @@ function VideoGridMedia({
         src={authenticatedMediaUrl}
         alt={video.content || 'Video thumbnail'}
         loading="lazy"
-        crossOrigin="anonymous"
         data-testid={`video-thumbnail-${video.id}`}
         onError={() => onThumbnailError(video.id)}
       />

@@ -5,7 +5,7 @@ import { useEffect, useRef } from 'react';
 import type { ParsedVideoData } from '@/types/video';
 import { debugLog } from '@/lib/debug';
 
-const PREFETCH_COUNT = 5;
+const PREFETCH_COUNT = 3;
 
 function isProtectedDivineMediaUrl(url: string): boolean {
   try {
@@ -24,6 +24,14 @@ function preconnectToMediaDomains() {
     preconnect.crossOrigin = 'anonymous';
     document.head.appendChild(preconnect);
   }
+}
+
+function isFirefoxBrowser(): boolean {
+  if (typeof navigator === 'undefined') {
+    return false;
+  }
+
+  return /firefox/i.test(navigator.userAgent);
 }
 
 /**
@@ -69,10 +77,15 @@ export function useVideoPrefetch(
 
     // Collect unique URLs to prefetch (video URL + thumbnail)
     const urlsToPrefetch: { url: string; as: string }[] = [];
+    const skipVideoPrefetch = isFirefoxBrowser();
     for (const video of nextVideos) {
       const shouldSkipProtectedMediaPrefetch = !!video.ageRestricted;
 
-      if (video.videoUrl && !(shouldSkipProtectedMediaPrefetch && isProtectedDivineMediaUrl(video.videoUrl))) {
+      if (
+        !skipVideoPrefetch &&
+        video.videoUrl &&
+        !(shouldSkipProtectedMediaPrefetch && isProtectedDivineMediaUrl(video.videoUrl))
+      ) {
         urlsToPrefetch.push({ url: video.videoUrl, as: 'video' });
       }
       if (video.thumbnailUrl && !(shouldSkipProtectedMediaPrefetch && isProtectedDivineMediaUrl(video.thumbnailUrl))) {

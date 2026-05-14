@@ -62,7 +62,13 @@ export function ThumbnailPlayer({
 
     // Both image and video fallback failed - check if it's auth-related
     const urlToCheck = thumbnailUrl || src;
-    if (urlToCheck && !isAdultVerified) {
+    const shouldRunPreflight =
+      !!urlToCheck &&
+      !isAdultVerified &&
+      ageRestricted === true &&
+      isProtectedDivineMediaUrl(urlToCheck);
+
+    if (shouldRunPreflight && urlToCheck) {
       verboseLog(`[ThumbnailPlayer ${videoId}] Thumbnail failed, checking if auth required`);
       const { authorized, status } = await checkMediaAuth(urlToCheck);
       if (!authorized && (status === 401 || status === 403)) {
@@ -74,7 +80,7 @@ export function ThumbnailPlayer({
 
     setThumbnailError(true);
     onError?.();
-  }, [useVideoFallback, thumbnailUrl, src, isAdultVerified, videoId, onError]);
+  }, [useVideoFallback, thumbnailUrl, src, isAdultVerified, ageRestricted, videoId, onError]);
 
   const handleThumbnailLoad = (e: React.SyntheticEvent<HTMLVideoElement | HTMLImageElement>) => {
     
@@ -154,7 +160,6 @@ export function ThumbnailPlayer({
             muted
             playsInline
             preload="metadata"
-            crossOrigin="anonymous"
             data-testid="video-thumbnail"
             onLoadedData={handleThumbnailLoad}
             onError={handleThumbnailError}
@@ -165,7 +170,6 @@ export function ThumbnailPlayer({
             src={effectiveThumbnailUrl}
             alt={t('thumbnailPlayer.thumbnailAlt')}
             className="w-full h-full object-cover"
-            crossOrigin="anonymous"
             data-testid="video-thumbnail"
             onLoad={handleThumbnailLoad}
             onError={handleThumbnailError}
