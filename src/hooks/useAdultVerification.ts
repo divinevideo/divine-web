@@ -9,6 +9,12 @@ const STORAGE_KEY = 'adult-verification-confirmed';
 const STORAGE_EXPIRY_KEY = 'adult-verification-expiry';
 const VERIFICATION_DURATION_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 const ADULT_VERIFICATION_EVENT = 'adult-verification-changed';
+const AUTH_CHECK_CACHE_TTL_MS = 30 * 1000;
+
+type MediaAuthCheckResult = { authorized: boolean; status: number };
+
+const mediaAuthCheckCache = new Map<string, { timestamp: number; result: MediaAuthCheckResult }>();
+const mediaAuthInFlight = new Map<string, Promise<MediaAuthCheckResult>>();
 
 interface AdultVerificationState {
   isVerified: boolean;
@@ -120,20 +126,38 @@ export function useAdultVerification(): AdultVerificationState {
 /**
  * Check if a URL returned a 401/403 by making a HEAD request
  */
-export async function checkMediaAuth(url: string): Promise<{ authorized: boolean; status: number }> {
-  try {
-    const response = await fetch(url, {
-      method: 'HEAD',
-      mode: 'cors',
-    });
-    return {
-      authorized: response.ok,
-      status: response.status
-    };
-  } catch {
-    // Network error or CORS issue - assume authorized and let video element handle it
-    return { authorized: true, status: 0 };
+export async function checkMediaAuth(url: string): Promise<MediaAuthCheckResult> {
+  const cachedResult = mediaAuthCheckCache.get(url);
+  if (cachedResult && (Date.now() - cachedResult.timestamp) < AUTH_CHECK_CACHE_TTL_MS) {
+    return cachedResult.result;
   }
+
+  const inFlightRequest = mediaAuthInFlight.get(url);
+  if (inFlightRequest) {
+    return inFlightRequest;
+  }
+
+  const request = (async (): Promise<MediaAuthCheckResult> => {
+    try {
+      const response = await fetch(url, {
+        method: 'HEAD',
+        mode: 'cors',
+      });
+      return {
+        authorized: response.ok,
+        status: response.status
+      };
+    } catch {
+      // Network error or CORS issue - assume authorized and let video element handle it
+      return { authorized: true, status: 0 };
+    }
+  })();
+
+  mediaAuthInFlight.set(url, request);
+  const result = await request;
+  mediaAuthInFlight.delete(url);
+  mediaAuthCheckCache.set(url, { timestamp: Date.now(), result });
+  return result;
 }
 
 /**

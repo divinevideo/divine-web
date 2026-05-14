@@ -398,6 +398,61 @@ describe('VideoPlayer', () => {
   });
 
   describe('protected media auth failures', () => {
+    it('skips auth preflight for non-age-restricted media URLs', async () => {
+      const { checkMediaAuth } = await import('@/hooks/useAdultVerification');
+
+      render(
+        <VideoPlayer
+          videoId="public-no-preflight"
+          src="https://media.divine.video/public-video"
+          videoData={{
+            id: 'public-no-preflight',
+            pubkey: 'pub',
+            kind: 34236,
+            createdAt: 0,
+            content: '',
+            videoUrl: 'https://media.divine.video/public-video',
+            hashtags: [],
+            vineId: null,
+            reposts: [],
+            isVineMigrated: false,
+            ageRestricted: false,
+          }}
+        />
+      );
+
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      expect(checkMediaAuth).not.toHaveBeenCalled();
+    });
+
+    it('runs auth preflight for age-restricted protected media URLs', async () => {
+      const { checkMediaAuth } = await import('@/hooks/useAdultVerification');
+
+      render(
+        <VideoPlayer
+          videoId="protected-with-preflight"
+          src="https://media.divine.video/protected-video"
+          videoData={{
+            id: 'protected-with-preflight',
+            pubkey: 'pub',
+            kind: 34236,
+            createdAt: 0,
+            content: '',
+            videoUrl: 'https://media.divine.video/protected-video',
+            hashtags: [],
+            vineId: null,
+            reposts: [],
+            isVineMigrated: false,
+            ageRestricted: true,
+          }}
+        />
+      );
+
+      await waitFor(() => {
+        expect(checkMediaAuth).toHaveBeenCalledWith('https://media.divine.video/protected-video');
+      });
+    });
+
     it('does not retry age verification indefinitely for already verified viewers when media fetch returns 401', async () => {
       const getAuthHeader = vi.fn().mockResolvedValue('Nostr test-auth-header');
       const fetchSpy = vi.fn().mockResolvedValue({

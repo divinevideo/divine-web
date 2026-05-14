@@ -1,6 +1,6 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { useAdultVerification } from './useAdultVerification';
+import { checkMediaAuth, useAdultVerification } from './useAdultVerification';
 import { createMediaViewerAuthHeader } from '@/lib/mediaViewerAuth';
 
 const mockSigner = { signEvent: vi.fn(), getPublicKey: vi.fn() };
@@ -105,6 +105,25 @@ describe('useAdultVerification', () => {
         sha256: HASH,
         method: 'GET',
       });
+    });
+  });
+
+  describe('checkMediaAuth', () => {
+    it('deduplicates concurrent checks and reuses short-lived cache for the same URL', async () => {
+      const fetchSpy = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 401,
+      });
+      vi.stubGlobal('fetch', fetchSpy);
+
+      const url = 'https://media.divine.video/protected-video-cache-test';
+      const [first, second] = await Promise.all([checkMediaAuth(url), checkMediaAuth(url)]);
+      const third = await checkMediaAuth(url);
+
+      expect(fetchSpy).toHaveBeenCalledTimes(1);
+      expect(first).toEqual({ authorized: false, status: 401 });
+      expect(second).toEqual({ authorized: false, status: 401 });
+      expect(third).toEqual({ authorized: false, status: 401 });
     });
   });
 });

@@ -731,7 +731,13 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
       // Preflight auth check for HLS URL
       const checkAuth = async () => {
         const urlToCheck = hlsUrl || allUrls[currentUrlIndex];
-        if (urlToCheck && !isAdultVerified) {
+        const shouldRunPreflight =
+          !!urlToCheck &&
+          !isAdultVerified &&
+          videoData?.ageRestricted === true &&
+          isProtectedDivineMediaUrl(urlToCheck);
+
+        if (shouldRunPreflight && urlToCheck) {
           const { authorized, status } = await checkMediaAuth(urlToCheck);
           setAuthCheckPending(false);
           if (!authorized && (status === 401 || status === 403)) {
@@ -1024,7 +1030,6 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
           preload={isPriority || hasLoadedOnce ? 'auto' : (inView ? 'auto' : 'metadata')}
           // @ts-expect-error fetchpriority is a valid HTML attribute but not yet in React types
           fetchpriority={isPriority ? 'high' : undefined}
-          crossOrigin="anonymous"
           disableRemotePlayback
           className={cn(
             'w-full h-full relative z-10 bg-transparent',
