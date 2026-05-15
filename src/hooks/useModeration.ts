@@ -220,12 +220,15 @@ export function useUnmuteItem() {
 export function toNip56ReportType(reason: ContentFilterReason): string {
   switch (reason) {
     case ContentFilterReason.SPAM: return 'spam';
+    // closest NIP-56 category; no harassment type exists in the spec
     case ContentFilterReason.HARASSMENT: return 'profanity';
+    // violence falls under illegal content in NIP-56 scope
     case ContentFilterReason.VIOLENCE: return 'illegal';
     case ContentFilterReason.SEXUAL_CONTENT: return 'nudity';
     case ContentFilterReason.COPYRIGHT: return 'illegal';
     case ContentFilterReason.FALSE_INFO: return 'other';
     case ContentFilterReason.CHILD_SAFETY: return 'other';
+    // CSAM is illegal by definition
     case ContentFilterReason.CSAM: return 'illegal';
     case ContentFilterReason.UNDERAGE_USER: return 'other';
     case ContentFilterReason.AI_GENERATED: return 'other';
@@ -262,7 +265,7 @@ export function toNip32ReportLabel(reason: ContentFilterReason): string {
  * Hook to report content (NIP-56)
  */
 export function useReportContent() {
-  const { mutate: publishEvent } = useNostrPublish();
+  const { mutateAsync: publishEvent } = useNostrPublish();
   const queryClient = useQueryClient();
   const { user } = useCurrentUser();
 
@@ -284,18 +287,23 @@ export function useReportContent() {
     }) => {
       if (!user) throw new Error('Must be logged in to report content');
 
+      // NIP-56: p tag is required for all kind:1984 reports
+      if (!pubkey) {
+        throw new Error('Report requires reported author pubkey (p tag)');
+      }
+
       const tags: string[][] = [];
 
       const nip56Type = toNip56ReportType(reason);
       const nip32Label = toNip32ReportLabel(reason);
 
-      // Add reported event or pubkey with NIP-56 report type
+      // Add reported event with NIP-56 report type
       if (eventId) {
         tags.push(['e', eventId, nip56Type]);
       }
-      if (pubkey) {
-        tags.push(['p', pubkey, nip56Type]);
-      }
+
+      // Always include p for NIP-56 compliance
+      tags.push(['p', pubkey, nip56Type]);
 
       // Add label namespace (NIP-32)
       tags.push(['L', 'social.nos.ontology']);
