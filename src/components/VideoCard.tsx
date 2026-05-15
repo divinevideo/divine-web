@@ -805,9 +805,9 @@ export function VideoCard({
             isHorizontal ? "space-y-1" : "p-4 space-y-2"
           )}>
             {video.title && (
-              <SmartLink to={`/video/${video.id}`} ownerPubkey={video.pubkey}>
-                <h3 className={cn("font-semibold line-clamp-2 hover:underline", isHorizontal ? "text-sm" : "text-lg")}><InlineNostrText text={video.title} /></h3>
-              </SmartLink>
+              <h3 className={cn("font-semibold line-clamp-2", isHorizontal ? "text-sm" : "text-lg")}>
+                <InlineNostrText text={video.title} textLinkTo={`/video/${video.id}`} textLinkOwnerPubkey={video.pubkey} textLinkClassName="hover:underline" />
+              </h3>
             )}
 
             {video.content && video.content.trim() !== video.title?.trim() && (
