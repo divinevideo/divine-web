@@ -63,10 +63,10 @@ const BrandPreview = import.meta.env.DEV
   : null;
 
 export function AppRouter() {
-  const { user } = useCurrentUser();
+  const { user, isSessionLoading } = useCurrentUser();
 
   // Check if user is logged in
-  const isLoggedIn = Boolean(user);
+  const canUseProtectedRoutes = Boolean(user) || isSessionLoading;
 
   // Check if we're on a subdomain profile (username.divine.video)
   const subdomainUser = getSubdomainUser();
@@ -135,7 +135,7 @@ export function AppRouter() {
           <Route path="/:nip19" element={<NIP19Page />} />
 
           {/* Protected routes - require login */}
-          {isLoggedIn && (
+          {canUseProtectedRoutes && (
             <>
               <Route path="/home" element={<HomePage />} />
               <Route path="/notifications" element={<NotificationsPage />} />

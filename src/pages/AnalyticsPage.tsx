@@ -213,7 +213,7 @@ function ErrorState({ message, onRetry }: { message: string; onRetry: () => void
 // --- Main Page ---
 
 export function AnalyticsPage() {
-  const { user } = useCurrentUser();
+  const { user, isSessionLoading } = useCurrentUser();
   const { t } = useTranslation();
 
   useSeoMeta({
@@ -222,6 +222,31 @@ export function AnalyticsPage() {
     ogTitle: t('analyticsPage.seoTitle'),
     ogDescription: t('analyticsPage.seoOgDescription'),
   });
+
+  if (isSessionLoading) {
+    return (
+      <div className="container mx-auto px-4 py-6" data-testid="analytics-auth-loading">
+        <div className="mx-auto max-w-3xl space-y-6">
+          <div className="flex items-center gap-3">
+            <Skeleton className="h-8 w-8 rounded-lg" />
+            <div className="space-y-2">
+              <Skeleton className="h-7 w-32" />
+              <Skeleton className="h-4 w-48" />
+            </div>
+          </div>
+          <KpiGridSkeleton />
+          <Card>
+            <CardHeader>
+              <Skeleton className="h-6 w-28" />
+            </CardHeader>
+            <CardContent>
+              <TopContentSkeleton />
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   // Redirect to home if not logged in
   if (!user?.pubkey) {
