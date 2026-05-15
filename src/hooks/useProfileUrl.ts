@@ -1,8 +1,7 @@
 // ABOUTME: Hook to resolve user profile URLs
 // ABOUTME: Returns subdomain URL when user has verified divine.video NIP-05, otherwise /profile/{npub}
 
-import { useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useState, useEffect, useMemo } from 'react';
 import { nip19 } from 'nostr-tools';
 import { getDivineNip05Info } from '@/lib/nip05Utils';
 
@@ -10,37 +9,6 @@ export interface ProfileUrlResult {
   url: string;
   isSubdomain: boolean;
   isLoading: boolean;
-}
-
-function useDivineNip05Validation(nip05: string, pubkey: string) {
-  return useQuery({
-    queryKey: ['nip05-validation', nip05, pubkey],
-    queryFn: async ({ signal }) => {
-      const atIndex = nip05.lastIndexOf('@');
-      if (atIndex === -1) return false;
-
-      const name = nip05.slice(0, atIndex) || '_';
-      const domain = nip05.slice(atIndex + 1);
-
-      if (!domain) return false;
-
-      const url = `https://${domain}/.well-known/nostr.json?name=${encodeURIComponent(name)}`;
-      const response = await fetch(url, {
-        signal,
-        headers: { 'Accept': 'application/json' },
-      });
-
-      if (!response.ok) return false;
-
-      const data = await response.json();
-      const verifiedPubkey = data?.names?.[name];
-      return verifiedPubkey === pubkey;
-    },
-    enabled: !!nip05 && !!pubkey,
-    staleTime: 300000,
-    gcTime: 900000,
-    retry: false,
-  });
 }
 
 /**
@@ -60,35 +28,74 @@ export function useProfileUrl(
   const npub = useMemo(() => nip19.npubEncode(pubkey), [pubkey]);
   const defaultUrl = `/profile/${npub}`;
 
-  // Only call validation hook when nip05 is available
-  const validationEnabled = !!nip05;
-  const validation = useDivineNip05Validation(nip05 || '', pubkey);
+  const [isValid, setIsValid] = useState<boolean | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    setIsValid(null);
+
+    if (!nip05) {
+      return;
+    }
+
+    const atIndex = nip05.lastIndexOf('@');
+    if (atIndex === -1) {
+      return;
+    }
+
+    const name = nip05.slice(0, atIndex) || '_';
+    const domain = nip05.slice(atIndex + 1);
+
+    if (!domain) {
+      return;
+    }
+
+    setIsLoading(true);
+
+    const controller = new AbortController();
+    const signal = controller.signal;
+
+    const url = `https://${domain}/.well-known/nostr.json?name=${encodeURIComponent(name)}`;
+
+    fetch(url, { signal, headers: { 'Accept': 'application/json' } })
+      .then(response => {
+        if (!response.ok) throw new Error('Not ok');
+        return response.json();
+      })
+      .then(data => {
+        const verifiedPubkey = data?.names?.[name];
+        setIsValid(verifiedPubkey === pubkey);
+        setIsLoading(false);
+      })
+      .catch(err => {
+        if (err.name === 'AbortError') return;
+        setIsValid(false);
+        setIsLoading(false);
+      });
+
+    return () => controller.abort();
+  }, [nip05, pubkey]);
 
   const result = useMemo(() => {
-    // No NIP-05 provided - use default immediately
     if (!nip05) {
       return { url: defaultUrl, isSubdomain: false, isLoading: false };
     }
 
-    // Query not enabled or still loading - use default
-    if (!validationEnabled || validation.isLoading) {
+    if (isLoading) {
       return { url: defaultUrl, isSubdomain: false, isLoading: true };
     }
 
-    // Validation failed (fetched but pubkey didn't match) - use default
-    if (validation.isFetched && validation.data === false) {
+    if (isValid === false) {
       return { url: defaultUrl, isSubdomain: false, isLoading: false };
     }
 
-    // Valid NIP-05 - check if it's a divine NIP-05
     const divineInfo = getDivineNip05Info(nip05);
     if (divineInfo) {
       return { url: defaultUrl, isSubdomain: true, isLoading: false };
     }
 
-    // Valid NIP-05 but not divine.video - use default
     return { url: defaultUrl, isSubdomain: false, isLoading: false };
-  }, [nip05, validationEnabled, validation.isLoading, validation.isFetched, validation.data, defaultUrl]);
+  }, [nip05, isValid, isLoading, defaultUrl]);
 
   return result;
 }
