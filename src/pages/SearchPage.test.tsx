@@ -574,6 +574,65 @@ describe('SearchPage', () => {
     expect(screen.getByTestId('search-sort-top')).toHaveAttribute('aria-checked', 'true');
   });
 
+  it('canonicalizes an invalid sort URL param back to hot', async () => {
+    mockUseInfiniteSearchVideos.mockReturnValue({
+      data: { pages: [{ videos: [] }] },
+      fetchNextPage: vi.fn(),
+      hasNextPage: false,
+      isLoading: false,
+      error: null,
+    });
+
+    renderPage(['/search?q=dogs&sort=garbage']);
+
+    const lastCall = mockUseInfiniteSearchVideos.mock.calls.at(-1)?.[0];
+    expect(lastCall?.sortMode).toBe('hot');
+    expect(screen.getByTestId('search-sort-hot')).toHaveAttribute('aria-checked', 'true');
+
+    await waitFor(() => {
+      expect(screen.getByTestId('location-display').textContent).not.toContain('sort=');
+    });
+  });
+
+  it('supports roving keyboard navigation for sort radios', async () => {
+    const user = userEvent.setup();
+    mockUseInfiniteSearchVideos.mockReturnValue({
+      data: { pages: [{ videos: [] }] },
+      fetchNextPage: vi.fn(),
+      hasNextPage: false,
+      isLoading: false,
+      error: null,
+    });
+
+    renderPage(['/search?q=dogs']);
+
+    const relevancePill = screen.getByTestId('search-sort-relevance');
+    const hotPill = screen.getByTestId('search-sort-hot');
+    const topPill = screen.getByTestId('search-sort-top');
+    const controversialPill = screen.getByTestId('search-sort-controversial');
+
+    expect(hotPill).toHaveAttribute('tabIndex', '0');
+    expect(relevancePill).toHaveAttribute('tabIndex', '-1');
+
+    hotPill.focus();
+    await user.keyboard('{ArrowRight}');
+
+    expect(topPill).toHaveFocus();
+    expect(topPill).toHaveAttribute('aria-checked', 'true');
+    expect(hotPill).toHaveAttribute('tabIndex', '-1');
+    expect(topPill).toHaveAttribute('tabIndex', '0');
+
+    await user.keyboard('{Home}');
+
+    expect(relevancePill).toHaveFocus();
+    expect(relevancePill).toHaveAttribute('aria-checked', 'true');
+
+    await user.keyboard('{End}');
+
+    expect(controversialPill).toHaveFocus();
+    expect(controversialPill).toHaveAttribute('aria-checked', 'true');
+  });
+
   it('writes sort to URL when user picks a non-default mode and omits it when hot is chosen', async () => {
     const user = userEvent.setup();
     mockUseInfiniteSearchVideos.mockReturnValue({
