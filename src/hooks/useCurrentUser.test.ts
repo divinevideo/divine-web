@@ -136,6 +136,7 @@ describe('useCurrentUser', () => {
     expect(result.current.user).toBeUndefined();
     expect(result.current.users).toEqual([]);
     expect(result.current.signer).toBeUndefined();
+    expect(result.current.isSessionLoading).toBe(true);
   });
 
   it('skips extension logins when no browser extension is available', () => {
