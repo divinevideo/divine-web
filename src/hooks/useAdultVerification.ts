@@ -49,13 +49,14 @@ function notifyVerificationChange(): void {
 }
 
 export function useAdultVerification(): AdultVerificationState {
-  const [isVerified, setIsVerified] = useState(false);
+  const [storedIsVerified, setStoredIsVerified] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const { signer } = useCurrentUser();
+  const isVerified = storedIsVerified && !!signer;
 
   useEffect(() => {
     const syncFromStorage = () => {
-      setIsVerified(getStoredVerificationState());
+      setStoredIsVerified(getStoredVerificationState());
       setIsLoading(false);
     };
 
@@ -81,14 +82,14 @@ export function useAdultVerification(): AdultVerificationState {
     const expiryTime = Date.now() + VERIFICATION_DURATION_MS;
     localStorage.setItem(STORAGE_KEY, 'true');
     localStorage.setItem(STORAGE_EXPIRY_KEY, expiryTime.toString());
-    setIsVerified(true);
+    setStoredIsVerified(true);
     notifyVerificationChange();
   }, []);
 
   const revokeVerification = useCallback(() => {
     localStorage.removeItem(STORAGE_KEY);
     localStorage.removeItem(STORAGE_EXPIRY_KEY);
-    setIsVerified(false);
+    setStoredIsVerified(false);
     notifyVerificationChange();
   }, []);
 

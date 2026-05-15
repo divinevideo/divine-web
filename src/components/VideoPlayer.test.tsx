@@ -41,6 +41,12 @@ vi.mock('@/hooks/useCurrentUser', () => ({
   })),
 }));
 
+vi.mock('@/contexts/LoginDialogContext', () => ({
+  useLoginDialog: () => ({
+    openLoginDialog: vi.fn(),
+  }),
+}));
+
 vi.mock('@/hooks/useAdultVerification', () => ({
   useAdultVerification: vi.fn(() => ({
     isVerified: false,
@@ -398,6 +404,116 @@ describe('VideoPlayer', () => {
   });
 
   describe('protected media auth failures', () => {
+    it('shows age verification when an unverified direct media error probes as 401', async () => {
+      const { checkMediaAuth } = await import('@/hooks/useAdultVerification');
+      (checkMediaAuth as ReturnType<typeof vi.fn>).mockResolvedValue({
+        authorized: true,
+        status: 200,
+      });
+
+      const { container } = render(
+        <VideoPlayer
+          videoId="unknown-age-restricted"
+          src="https://media.divine.video/protected-video"
+          videoData={{
+            id: 'unknown-age-restricted',
+            pubkey: 'pub',
+            kind: 34236,
+            createdAt: 0,
+            content: '',
+            videoUrl: 'https://media.divine.video/protected-video',
+            hashtags: [],
+            vineId: null,
+            reposts: [],
+            isVineMigrated: false,
+            ageRestricted: false,
+          }}
+        />
+      );
+
+      const video = container.querySelector('video');
+      expect(video).not.toBeNull();
+      if (!video) {
+        throw new Error('expected rendered video element');
+      }
+
+      (checkMediaAuth as ReturnType<typeof vi.fn>).mockResolvedValue({
+        authorized: false,
+        status: 401,
+      });
+      fireEvent.error(video);
+
+      await waitFor(() => {
+        expect(screen.getByText(/age-restricted content/i)).toBeInTheDocument();
+      });
+
+      expect(screen.queryByText('Failed to load video')).not.toBeInTheDocument();
+    });
+
+    it('retries unknown age-restricted media with auth for verified viewers after a 401 probe', async () => {
+      const getAuthHeader = vi.fn().mockResolvedValue('Nostr discovered-auth-header');
+      const fetchSpy = vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        blob: () => Promise.resolve(new Blob(['test'], { type: 'video/mp4' })),
+      });
+
+      global.fetch = fetchSpy as typeof fetch;
+
+      const { useAdultVerification, checkMediaAuth } = await import('@/hooks/useAdultVerification');
+      (useAdultVerification as ReturnType<typeof vi.fn>).mockReturnValue({
+        isVerified: true,
+        isLoading: false,
+        hasSigner: true,
+        getAuthHeader,
+      });
+      (checkMediaAuth as ReturnType<typeof vi.fn>).mockResolvedValue({
+        authorized: true,
+        status: 200,
+      });
+
+      const { container } = render(
+        <VideoPlayer
+          videoId="verified-unknown-age-restricted"
+          src="https://media.divine.video/protected-video"
+          videoData={{
+            id: 'verified-unknown-age-restricted',
+            pubkey: 'pub',
+            kind: 34236,
+            createdAt: 0,
+            content: '',
+            videoUrl: 'https://media.divine.video/protected-video',
+            hashtags: [],
+            vineId: null,
+            reposts: [],
+            isVineMigrated: false,
+            ageRestricted: false,
+          }}
+        />
+      );
+
+      const video = container.querySelector('video');
+      expect(video).not.toBeNull();
+      if (!video) {
+        throw new Error('expected rendered video element');
+      }
+
+      (checkMediaAuth as ReturnType<typeof vi.fn>).mockResolvedValue({
+        authorized: false,
+        status: 401,
+      });
+      fireEvent.error(video);
+
+      await waitFor(() => {
+        expect(fetchSpy).toHaveBeenCalledWith(
+          'https://media.divine.video/protected-video',
+          expect.objectContaining({
+            headers: { Authorization: 'Nostr discovered-auth-header' },
+          }),
+        );
+      });
+    });
+
     it('does not retry age verification indefinitely for already verified viewers when media fetch returns 401', async () => {
       const getAuthHeader = vi.fn().mockResolvedValue('Nostr test-auth-header');
       const fetchSpy = vi.fn().mockResolvedValue({
