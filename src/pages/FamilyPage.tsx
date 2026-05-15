@@ -67,16 +67,16 @@ const RESOURCE_GROUPS: ResourceGroup[] = [
           "American Academy of Pediatrics tool for building a household plan together, room by room and screen by screen.",
       },
       {
-        name: "eSafety Commissioner (Australia) — Family Tech Agreement",
+        name: "eSafety Commissioner (Australia)—Family Tech Agreement",
         url: "https://www.esafety.gov.au/parents/resources/family-tech-agreement",
         description:
-          "A downloadable family tech-agreement template from Australia's online-safety regulator — same shape as the AAP plan, written to work for any household.",
+          "A downloadable family tech-agreement template from Australia's online-safety regulator—same shape as the AAP plan, written to work for any household.",
       },
       {
-        name: "WHO — Helping Adolescents Thrive",
+        name: "WHO—Helping Adolescents Thrive",
         url: "https://www.who.int/publications/i/item/9789240025554",
         description:
-          "The World Health Organization's framework for adolescent well-being — strategies for parents, educators, and health workers, written for a global audience.",
+          "The World Health Organization's framework for adolescent well-being—strategies for parents, educators, and health workers, written for a global audience.",
       },
     ],
   },
@@ -84,7 +84,7 @@ const RESOURCE_GROUPS: ResourceGroup[] = [
     heading: "Family guidance and conversation tools",
     links: [
       {
-        name: "Common Sense Media — Parents' Guide to Social Media",
+        name: "Common Sense Media—Parents' Guide to Social Media",
         url: "https://www.commonsensemedia.org/articles/parents-ultimate-guide-to-social-media",
         description:
           "Plain-language explainers, age-by-age guidance, and reviews of the apps teens actually use.",
@@ -93,7 +93,7 @@ const RESOURCE_GROUPS: ResourceGroup[] = [
         name: "Internet Matters (UK)",
         url: "https://www.internetmatters.org/",
         description:
-          "UK-based equivalent of Common Sense Media — app-by-app guides, age-by-age advice, and practical online-safety tools for parents.",
+          "UK-based equivalent of Common Sense Media—app-by-app guides, age-by-age advice, and practical online-safety tools for parents.",
       },
       {
         name: "ConnectSafely Parent Guides",
@@ -117,7 +117,7 @@ const RESOURCE_GROUPS: ResourceGroup[] = [
         name: "Screen Sanity",
         url: "https://screensanity.org/",
         description:
-          "Parent-to-parent guidance — conversation starters, family templates, and decision frameworks for navigating screens at every age.",
+          "Parent-to-parent guidance—conversation starters, family templates, and decision frameworks for navigating screens at every age.",
       },
     ],
   },
@@ -128,13 +128,13 @@ const RESOURCE_GROUPS: ResourceGroup[] = [
         name: "INHOPE",
         url: "https://www.inhope.org/",
         description:
-          "Global network of reporting hotlines — find the right place to report illegal online content in your country.",
+          "Global network of reporting hotlines—find the right place to report illegal online content in your country.",
       },
       {
         name: "Child Helpline International",
         url: "https://childhelplineinternational.org/",
         description:
-          "Directory of crisis helplines for kids and teens by country — for the moments when your child needs to talk to someone right now.",
+          "Directory of crisis helplines for kids and teens by country—for the moments when your child needs to talk to someone right now.",
       },
       {
         name: "Thorn for Parents",
@@ -171,9 +171,9 @@ export function FamilyPage() {
             conversation, supervision, and thoughtful boundaries at home.
           </p>
           <p className="text-base md:text-lg text-brand-off-white/80 max-w-3xl leading-relaxed mt-4">
-            This page is a starting point for parents, guardians, and teens —
-            not a contract, not a control panel. It's the stuff we wish more
-            apps said out loud.
+            This page is a starting point for parents, guardians, and
+            teens—not a contract, not a control panel. It's the stuff we wish
+            more apps said out loud.
           </p>
 
           {/* Anchor nav */}
@@ -214,7 +214,7 @@ export function FamilyPage() {
             <FrameStep
               icon={<Compass weight="fill" className="h-6 w-6" />}
               label="Redirect"
-              body="Pick the next step together — a setting to try, a person to mute, a break to take, a thing to do off the app."
+              body="Pick the next step together—a setting to try, a person to mute, a break to take, a thing to do off the app."
             />
           </div>
         </div>
@@ -300,7 +300,7 @@ export function FamilyPage() {
             eyebrow="Honest app limits"
             icon={<ShieldCheck weight="fill" className="h-7 w-7" />}
             title="What Divine can and can't do"
-            lead="We'd rather be useful than impressive. Here's the real picture of what the app side can help with — and where conversation, supervision, and human judgment still have to do the work."
+            lead="We'd rather be useful than impressive. Here's the real picture of what the app side can help with—and where conversation, supervision, and human judgment still have to do the work."
           />
 
           <div className="grid gap-6 md:grid-cols-2">
@@ -353,7 +353,7 @@ export function FamilyPage() {
               <CardContent className="space-y-3 text-base leading-relaxed">
                 <ul className="space-y-2 list-disc pl-5 marker:text-brand-orange">
                   <li>
-                    No app — including Divine — can guarantee a teen will
+                    No app—including Divine—can guarantee a teen will
                     never see adult, upsetting, or harmful content.
                   </li>
                   <li>
@@ -371,7 +371,7 @@ export function FamilyPage() {
                   </li>
                   <li>
                     Settings and tools work best as part of a household
-                    conversation — not as a substitute for one.
+                    conversation—not as a substitute for one.
                   </li>
                 </ul>
               </CardContent>
@@ -407,7 +407,7 @@ export function FamilyPage() {
               />
               <SettingsRow
                 title="Moderation lists and filters"
-                body="Users can apply moderation lists, mute words, and filter creators they don't want to see. These can be revisited any time — they're not one-time decisions."
+                body="Users can apply moderation lists, mute words, and filter creators they don't want to see. These can be revisited any time—they're not one-time decisions."
               />
               <SettingsRow
                 title="Blocking and muting"
@@ -422,7 +422,7 @@ export function FamilyPage() {
                   <strong className="text-foreground">A note on settings:</strong>{" "}
                   even good settings can be turned off, worked around, or simply
                   not catch every edge case. Treat them as one helpful layer of
-                  several — alongside conversation, check-ins, and the off
+                  several—alongside conversation, check-ins, and the off
                   switch.
                 </p>
               </div>
@@ -436,7 +436,7 @@ export function FamilyPage() {
             eyebrow="Healthier habits, not just restrictions"
             icon={<Path weight="fill" className="h-7 w-7" />}
             title="Feed habits and healthy stopping points"
-            lead="Most short-form feeds are designed to keep going. The healthier skill isn't blocking the feed — it's noticing when you've had enough and choosing to stop. That's a skill adults are still learning too."
+            lead="Most short-form feeds are designed to keep going. The healthier skill isn't blocking the feed—it's noticing when you've had enough and choosing to stop. That's a skill adults are still learning too."
           />
 
           <div className="grid gap-6 md:grid-cols-2">
@@ -446,7 +446,7 @@ export function FamilyPage() {
               </CardHeader>
               <CardContent className="space-y-3 text-base leading-relaxed">
                 <p>
-                  Pick a natural stop together — end of a video, end of a song,
+                  Pick a natural stop together—end of a video, end of a song,
                   end of a meal. The point isn't a hard timer. It's noticing
                   the moment to put the phone down and meaning it.
                 </p>
@@ -495,17 +495,17 @@ export function FamilyPage() {
             eyebrow="Make it together"
             icon={<UsersThree weight="fill" className="h-7 w-7" />}
             title="Build a family media plan"
-            lead="A plan that everyone helped write is a plan that everyone is more likely to follow. Plans are also living documents — expect to revisit them every few months as kids get older and apps change."
+            lead="A plan that everyone helped write is a plan that everyone is more likely to follow. Plans are also living documents—expect to revisit them every few months as kids get older and apps change."
           />
 
           <div className="grid gap-6 md:grid-cols-2">
             <PlanColumn
               title="Where and when use makes sense"
               items={[
-                "Phones at the dinner table — yes or no, decided together.",
-                "Bedrooms overnight — where do devices charge?",
-                "Homework time — what counts as a focus block?",
-                "Long car rides, family events, hangouts — any shared norms?",
+                "Phones at the dinner table—yes or no, decided together.",
+                "Bedrooms overnight—where do devices charge?",
+                "Homework time—what counts as a focus block?",
+                "Long car rides, family events, hangouts—any shared norms?",
               ]}
             />
             <PlanColumn
@@ -536,8 +536,8 @@ export function FamilyPage() {
           </div>
 
           <p className="mt-6 text-base text-muted-foreground leading-relaxed">
-            Looking for a template? A few household-plan starting points — from
-            the AAP, Australia's eSafety Commissioner, and the WHO — are in the{" "}
+            Looking for a template? A few household-plan starting points—from
+            the AAP, Australia's eSafety Commissioner, and the WHO—are in the{" "}
             <a
               href="#resources"
               className="text-brand-dark-green dark:text-brand-green underline underline-offset-2 hover:opacity-80"
@@ -554,7 +554,7 @@ export function FamilyPage() {
             eyebrow="When something goes wrong"
             icon={<Lifebuoy weight="fill" className="h-7 w-7" />}
             title="What to do if your child saw something upsetting"
-            lead="Most kids will see something they wish they hadn't at some point — on any app. What helps most isn't a perfect filter. It's a parent who reacts in a way that makes the next conversation possible."
+            lead="Most kids will see something they wish they hadn't at some point—on any app. What helps most isn't a perfect filter. It's a parent who reacts in a way that makes the next conversation possible."
           />
 
           <div className="grid gap-6 md:grid-cols-2">
@@ -584,7 +584,7 @@ export function FamilyPage() {
                 <p>
                   Ask what they saw, how they came across it, and how it felt.
                   Try to listen for longer than you talk. Punishment can come
-                  later if it's actually warranted — disclosure has to come
+                  later if it's actually warranted—disclosure has to come
                   first.
                 </p>
               </CardContent>
@@ -641,7 +641,7 @@ export function FamilyPage() {
             eyebrow="Why this approach"
             icon={<Microphone weight="fill" className="h-7 w-7" />}
             title="Rabble + Pam Wisniewski / STIR"
-            lead="The framing on this page — conversation over punishment, co-navigation over surveillance, pause and redirect over hard control — comes out of years of research from teams like the Socio-Technical Interaction Research (STIR) Lab."
+            lead="The framing on this page—conversation over punishment, co-navigation over surveillance, pause and redirect over hard control—comes out of years of research from teams like the Socio-Technical Interaction Research (STIR) Lab."
           />
 
           <Card variant="brand" accent="violet">
@@ -665,7 +665,7 @@ export function FamilyPage() {
                 conversation through the rough patches.
               </p>
               <p>
-                Rabble — Divine's founder — talks with researchers like Pam
+                Rabble—Divine's co-founder—talks with researchers like Pam
                 Wisniewski about what non-punitive, conversation-first online
                 safety actually looks like in practice. The values on this page
                 are why we build the way we do.
@@ -744,7 +744,7 @@ export function FamilyPage() {
             eyebrow="Don't just take our word for it"
             icon={<BookOpenText weight="fill" className="h-7 w-7" />}
             title="Outside resources"
-            lead="These are some resources we recommend. Inclusion here doesn't imply endorsement of every recommendation from these organizations. Read them with the same critical eye you'd bring to any single source — including this one. A few are global; most are from North American or UK sources."
+            lead="These are some resources we recommend. Inclusion here doesn't imply endorsement of every recommendation from these organizations. Read them with the same critical eye you'd bring to any single source—including this one. A few are global; most are from North American or UK sources."
           />
 
           <div className="space-y-10">
@@ -779,7 +779,7 @@ export function FamilyPage() {
           </div>
         </Anchor>
 
-        {/* Cross-link to the kids policy page — separate audience and
+        {/* Cross-link to the kids policy page—separate audience and
             tone, but the same household is likely interested in both. */}
         <div className="pt-12 border-t border-brand-dark-green/10 dark:border-brand-green/20">
           <div className="flex items-center gap-2 text-xs font-semibold tracking-wide text-brand-dark-green dark:text-brand-green mb-4">
@@ -835,7 +835,7 @@ export function FamilyPage() {
 export default FamilyPage;
 
 // ——————————————————————————————————————————————————————————————
-// Local presentation helpers — kept in-file so this page is easy to update.
+// Local presentation helpers—kept in-file so this page is easy to update.
 // ——————————————————————————————————————————————————————————————
 
 function BackToTopButton() {
