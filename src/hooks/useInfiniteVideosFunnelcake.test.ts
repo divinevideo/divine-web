@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
 
 const mockFetchVideos = vi.fn();
+const mockFetchVideosV2 = vi.fn();
 const mockFetchRecommendations = vi.fn();
 const mockTransformToVideoPage = vi.fn();
 
@@ -15,6 +16,7 @@ vi.mock('@/hooks/useCurrentUser', () => ({
 
 vi.mock('@/lib/funnelcakeClient', () => ({
   fetchVideos: mockFetchVideos,
+  fetchVideosV2: mockFetchVideosV2,
   searchVideos: vi.fn(),
   fetchUserVideos: vi.fn(),
   fetchUserFeed: vi.fn(),
@@ -58,6 +60,46 @@ beforeEach(async () => {
 });
 
 describe('useInfiniteVideosFunnelcake', () => {
+  it('requests native popular videos with period and excludes classic Vines', async () => {
+    mockFetchVideosV2.mockResolvedValueOnce({
+      videos: [{}],
+      has_more: true,
+      next_cursor: 'o:12',
+    });
+    mockTransformToVideoPage.mockReturnValueOnce({
+      videos: [{ id: 'video-1', pubkey: 'p1', kind: 34236, createdAt: 101, vineId: 'd-1' }],
+      nextCursor: undefined,
+      rawCursor: 'o:12',
+      hasMore: true,
+    });
+
+    const { result } = renderHook(
+      () => useInfiniteVideosFunnelcake({
+        feedType: 'popular',
+        popularSource: 'new',
+        popularPeriod: 'now',
+        pageSize: 12,
+      }),
+      { wrapper: createWrapper() }
+    );
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+
+    expect(mockFetchVideosV2).toHaveBeenCalledWith(
+      'https://api.divine.video',
+      expect.objectContaining({
+        sort: 'popular',
+        period: 'now',
+        exclude_platform: 'vine',
+        limit: 12,
+        signal: expect.any(AbortSignal),
+      })
+    );
+    expect(result.current.hasNextPage).toBe(true);
+  });
+
   it('uses cursor-based pagination for recommendations', async () => {
     // Page 1: server returns cursor for next page
     mockFetchRecommendations
