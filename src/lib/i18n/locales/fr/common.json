@@ -7,6 +7,7 @@
   "nav": {
     "home": "Accueil",
     "discover": "Decouvrir",
+    "popular": "Popular",
     "search": "Rechercher",
     "messages": "Messages",
     "notifications": "Notifications",
@@ -1091,6 +1092,47 @@
     "previewEmpty": "Entre ton npub ci-dessus pour voir un aperçu",
     "iframeTitle": "Widget vidéo Divine",
     "previewIframeTitle": "Aperçu du widget vidéo Divine"
+  },
+  "popularPage": {
+    "heading": "Popular",
+    "controlsLabel": "Popular feed filters",
+    "sourceLabel": "Source",
+    "periodLabel": "Period",
+    "sources": {
+      "new": "New",
+      "classic": "Classic",
+      "all": "All"
+    },
+    "periods": {
+      "now": "Now",
+      "today": "Today",
+      "week": "Week",
+      "month": "Month",
+      "all": "All time"
+    },
+    "subheadings": {
+      "new": {
+        "now": "Fresh Divine posts getting watched now.",
+        "today": "Fresh Divine posts getting watched today.",
+        "week": "Fresh Divine posts getting watched this week.",
+        "month": "Fresh Divine posts getting watched this month.",
+        "all": "Fresh Divine posts people keep coming back to."
+      },
+      "classic": {
+        "now": "Classic Vines getting watched now.",
+        "today": "Classic Vines getting watched today.",
+        "week": "Classic Vines getting watched this week.",
+        "month": "Classic Vines getting watched this month.",
+        "all": "Classic Vines people keep watching on Divine."
+      },
+      "all": {
+        "now": "Everything Divine is watching now.",
+        "today": "Everything Divine watched today.",
+        "week": "Everything Divine watched this week.",
+        "month": "Everything Divine watched this month.",
+        "all": "Everything people keep watching on Divine."
+      }
+    }
   },
   "trendingPage": {
     "heading": "Tendances",

@@ -16,6 +16,7 @@ import NotFound from "./pages/NotFound";
 import HomePage from "./pages/HomePage";
 import DiscoveryPage from "./pages/DiscoveryPage";
 import TrendingPage from "./pages/TrendingPage";
+import PopularPage from "./pages/PopularPage";
 import HashtagPage from "./pages/HashtagPage";
 import CategoryPage from "./pages/CategoryPage";
 import CategoriesIndexPage from "./pages/CategoriesIndexPage";
@@ -118,6 +119,7 @@ export function AppRouter() {
           <Route path="/discovery" element={<DiscoveryPage />} />
           <Route path="/discovery/:tab" element={<DiscoveryPage />} />
           <Route path="/trending" element={<TrendingPage />} />
+          <Route path="/popular" element={<PopularPage />} />
           <Route path="/hashtags" element={<HashtagDiscoveryPage />} />
           <Route path="/hashtag/:tag" element={<HashtagPage />} />
           <Route path="/category" element={<CategoriesIndexPage />} />
