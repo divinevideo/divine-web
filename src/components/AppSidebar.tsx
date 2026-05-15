@@ -2,7 +2,7 @@
 // ABOUTME: Shows main nav, login/signup, expandable Divine links section
 
 import { Link, useLocation } from 'react-router-dom';
-import { House as Home, Compass, MagnifyingGlass as Search, Bell, User, Sun, Moon, CaretDown as ChevronDown, Headphones, ChartBar as BarChart3, SquaresFour as LayoutGrid, Rss, ChatCircle as MessageCircle } from '@phosphor-icons/react';
+import { House as Home, Compass, MagnifyingGlass as Search, Bell, User, Sun, Moon, CaretDown as ChevronDown, Headphones, ChartBar as BarChart3, SquaresFour as LayoutGrid, Rss, ChatCircle as MessageCircle, TrendUp } from '@phosphor-icons/react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCategories } from '@/hooks/useCategories';
@@ -81,6 +81,7 @@ export function AppSidebar({ className }: { className?: string }) {
   const isActive = (path: string) => location.pathname === path;
   const isDiscoveryActive = () =>
     location.pathname === '/discovery' || location.pathname.startsWith('/discovery/');
+  const isPopularActive = () => location.pathname === '/popular';
   const isMessagesActive = () =>
     location.pathname === '/messages' || location.pathname.startsWith('/messages/');
   const isCategoryActive = (name: string) => location.pathname === `/category/${name}`;
@@ -194,6 +195,13 @@ export function AppSidebar({ className }: { className?: string }) {
             label={t('nav.discover')}
             onClick={() => navigate('/discovery')}
             isActive={isDiscoveryActive()}
+          />
+
+          <NavItem
+            icon={<TrendUp className="h-[18px] w-[18px]" weight={isPopularActive() ? 'fill' : 'bold'} />}
+            label={t('nav.popular')}
+            onClick={() => navigate('/popular')}
+            isActive={isPopularActive()}
           />
 
           {user && canUseDirectMessages && (
