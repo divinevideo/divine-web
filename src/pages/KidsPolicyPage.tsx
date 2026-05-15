@@ -1,5 +1,5 @@
 // ABOUTME: Policy page at /kids explaining how Divine handles accounts for under-16s
-// ABOUTME: Long-form FAQ-style page — paired with the deadline-shaped action page at /age-review
+// ABOUTME: Long-form FAQ-style page—paired with the deadline-shaped action page at /age-review
 
 import { useEffect, useState } from "react";
 import {
@@ -61,7 +61,7 @@ export function KidsPolicyPage() {
             How accounts work for kids on Divine
           </h1>
           <p className="text-lg md:text-xl text-brand-light-green max-w-3xl leading-relaxed">
-            Here's how Divine handles accounts for people under 16 — the
+            Here's how Divine handles accounts for people under 16—the
             rules, the reasoning, and what families can do together
             regardless of age.
           </p>
@@ -97,7 +97,7 @@ export function KidsPolicyPage() {
       </section>
 
       <div className="container mx-auto px-4 py-14 md:py-16 max-w-4xl space-y-16">
-        {/* 1. At a glance — three tier cards */}
+        {/* 1. At a glance—three tier cards */}
         <Anchor id="tiers">
           <SectionHero
             eyebrow="At a glance"
@@ -116,7 +116,7 @@ export function KidsPolicyPage() {
               </CardHeader>
               <CardContent className="space-y-2 text-base leading-relaxed">
                 <p>
-                  No solo accounts for kids under 13.
+                  Parent-held family accounts.
                 </p>
                 <p className="text-muted-foreground text-sm">
                   A parent or guardian can hold the account and do all the
@@ -160,8 +160,8 @@ export function KidsPolicyPage() {
                 </p>
                 <p className="text-muted-foreground text-sm">
                   Same path as anyone else on Divine. The rest of this page
-                  is mostly relevant if a 16+ account is flagged in error —
-                  the mistake-flag path lives on the action page.
+                  is mostly relevant if a 16+ account is flagged in
+                  error—the mistake-flag path lives on the action page.
                 </p>
               </CardContent>
             </Card>
@@ -213,7 +213,7 @@ export function KidsPolicyPage() {
             eyebrow="The under-13 policy"
             icon={<UsersThree weight="fill" className="h-7 w-7" />}
             title="Under-13 accounts close and the data is deleted"
-            lead="Divine isn't built for people under 13. When Divine learns an account is held by someone under 13, the team closes the account and promptly deletes everything tied to it from Divine's infrastructure — even when a parent or guardian is okay with the account staying open. The account doesn't come back."
+            lead="Divine isn't built for people under 13. When Divine learns an account is held by someone under 13, the team closes the account and promptly deletes everything tied to it from Divine's infrastructure—even when a parent or guardian is okay with the account staying open. The account doesn't come back."
           />
 
           {/* Parent-discovery action card */}
@@ -279,13 +279,13 @@ export function KidsPolicyPage() {
                 The team will review what you send, close the account,
                 promptly delete everything tied to it from Divine's
                 infrastructure, and reply confirming what was done. There's
-                no form to fill out — the email is enough.
+                no form to fill out—the email is enough.
               </p>
 
               <div className="pt-2">
                 <SupportEmailButton
                   href={mailtoLink(
-                    "Account review — under 13",
+                    "Account review—under 13",
                     "Hi Divine support,\n\nI'm a parent or guardian. I've discovered a Divine account belonging to a child in my care who is under 13.\n\nAccount username or link:\n\nAnything else that might help:\n\nThanks,",
                   )}
                   label={`Email ${SUPPORT_EMAIL}`}
@@ -299,7 +299,7 @@ export function KidsPolicyPage() {
             <CardContent className="pt-6 space-y-3 text-base leading-relaxed">
               <div className="flex items-center gap-2 text-sm font-semibold text-brand-dark-green dark:text-brand-green">
                 <Info weight="fill" className="h-4 w-4" />
-                <span>An honest note about copies on other relays</span>
+                <span>A note about copies on other relays</span>
               </div>
               <p>
                 Any videos already posted from the account may have been
@@ -350,7 +350,7 @@ export function KidsPolicyPage() {
                 </li>
               </ul>
               <p className="text-sm text-muted-foreground pt-1">
-                Phone-camera quality is fine. There's no script — natural
+                Phone-camera quality is fine. There's no script—natural
                 is better. Keep it short. The video is handled by Divine's
                 support and trust &amp; safety team and isn't published or
                 shared with other users.
@@ -436,7 +436,7 @@ export function KidsPolicyPage() {
             eyebrow="The broader conversation"
             icon={<HouseLine weight="fill" className="h-7 w-7" />}
             title="Looking for the wider family resources?"
-            lead="This page covers the account-policy side. The wider conversation — how to talk with your teen, content settings, healthy feed habits, trusted outside resources — lives separately."
+            lead="This page covers the account-policy side. The wider conversation—how to talk with your teen, content settings, healthy feed habits, trusted outside resources—lives separately."
           />
 
           <a

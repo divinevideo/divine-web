@@ -69,7 +69,7 @@ export function AgeReviewPage() {
             of the in-app notice.
           </p>
           <p className="text-base md:text-lg text-brand-off-white/80 max-w-3xl leading-relaxed mt-4">
-            While the review is open, the account is suspended — you can read
+            While the review is open, the account is suspended—you can read
             this page and email Divine, but you can't post or engage publicly.
             After {REVIEW_WINDOW_DAYS} days with no response, support closes
             the account and deletes the personal information Divine holds
@@ -95,11 +95,11 @@ export function AgeReviewPage() {
       </section>
 
       <div className="container mx-auto px-4 py-14 md:py-16 max-w-4xl space-y-14">
-        {/* Honest note for under-13 readers — placed first so a kid
+        {/* Honest note for under-13 readers—placed first so a kid
             reading the page lands on this before scrolling through the
             13–15 instructions and assuming a parent video might apply.
             Intentionally not a path-shaped card (no CardHeader, no
-            mailto button) — the action paths below don't apply, and
+            mailto button)—the action paths below don't apply, and
             emailing doesn't pause the clock for under-13. */}
         <Card variant="brand">
           <CardContent className="pt-6 space-y-3 text-base leading-relaxed">
@@ -110,7 +110,7 @@ export function AgeReviewPage() {
             <p>
               We're sorry. Divine has to close under-13 accounts at the
               15-day mark and delete the data Divine holds. Emailing
-              won't pause the clock here — the rules around services for
+              won't pause the clock here—the rules around services for
               kids under 13 tie our hands. The same person can come back
               and create a new account when they're 13 or older.
             </p>
@@ -151,7 +151,7 @@ export function AgeReviewPage() {
                   </li>
                 </ul>
                 <p className="text-sm text-muted-foreground pt-1">
-                  Phone-camera quality is fine. There's no script — natural
+                  Phone-camera quality is fine. There's no script—natural
                   is better. Keep it short.
                 </p>
               </CardContent>
@@ -222,7 +222,7 @@ export function AgeReviewPage() {
                 <div className="pt-2">
                   <SupportEmailButton
                     href={mailtoLink(
-                      "Account review — 13 to 15",
+                      "Account review—13 to 15",
                       "Hi Divine support,\n\nI'm a parent or guardian. I'm attaching a short private video to confirm the account on Divine.\n\nAccount username or link:\n\nTeen's age (13, 14, or 15):\n\nThanks,",
                     )}
                     label={`Email ${SUPPORT_EMAIL}`}
@@ -317,7 +317,7 @@ export function AgeReviewPage() {
                     4.
                   </span>
                   <span>
-                    Add any context that might be helpful — anything you
+                    Add any context that might be helpful—anything you
                     think the team should know.
                   </span>
                 </li>
@@ -340,7 +340,7 @@ export function AgeReviewPage() {
           </Card>
         </Anchor>
 
-        {/* 3. No-response section — what happens when the clock runs out */}
+        {/* 3. No-response section—what happens when the clock runs out */}
         <Anchor id="no-response">
           <SectionHero
             eyebrow="If we don't hear from you"
@@ -354,7 +354,7 @@ export function AgeReviewPage() {
               <ul className="space-y-2 list-disc pl-5 marker:text-brand-orange">
                 <li>
                   Support closes the account and deletes everything tied to
-                  it from Divine's infrastructure — profile, videos,
+                  it from Divine's infrastructure—profile, videos,
                   comments, follow lists, and any email or IP-derived data
                   on file.
                 </li>
@@ -365,7 +365,7 @@ export function AgeReviewPage() {
                 </li>
                 <li>
                   The same person can create a new account later when they
-                  meet the age and consent conditions — but the closed
+                  meet the age and consent conditions—but the closed
                   account itself doesn't return.
                 </li>
               </ul>
@@ -390,7 +390,7 @@ export function AgeReviewPage() {
             eyebrow="More context"
             icon={<HouseLine weight="fill" className="h-7 w-7" />}
             title="Want to understand the broader policy?"
-            lead="The full picture — how families can use Divine together on a parent-held account, what happens to under-13 accounts, and why Divine works this way — lives on the kids policy page."
+            lead="The full picture—how families can use Divine together on a parent-held account, what happens to under-13 accounts, and why Divine works this way—lives on the kids policy page."
           />
 
           <a
