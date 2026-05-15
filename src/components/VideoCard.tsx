@@ -4,7 +4,6 @@
 import { useState, useCallback, useRef, useMemo, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Heart, Repeat as Repeat2, ChatCircle as MessageCircle, Share, Eye, DotsThreeVertical as MoreVertical, Flag, UserMinus as UserX, Trash as Trash2, SpeakerHigh as Volume2, SpeakerX as VolumeX, Code, Users, ListPlus, DownloadSimple as Download, ArrowsOutSimple as Maximize2, ClosedCaptioning as Captions, PushPin as Pin, PushPinSlash as PinOff, ArrowClockwise } from '@phosphor-icons/react';
-import { nip19 } from 'nostr-tools';
 import { Card, CardContent, type CardAccent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -53,6 +52,7 @@ import { getOptimalVideoUrl } from '@/lib/bandwidthTracker';
 import { useBandwidthTier } from '@/hooks/useBandwidthTier';
 import { useSubtitles } from '@/hooks/useSubtitles';
 import { debugLog } from '@/lib/debug';
+import { useProfileUrl } from '@/hooks/useProfileUrl';
 import { useLoginDialog } from '@/contexts/LoginDialogContext';
 import { AgeRestrictedMediaPlaceholder } from '@/components/AgeRestrictedMediaPlaceholder';
 
@@ -283,7 +283,6 @@ export function VideoCard({
   const metadata: NostrMetadata = author.metadata;
   const reposterMetadata: NostrMetadata | undefined = reposter?.metadata;
 
-  const npub = nip19.npubEncode(video.pubkey);
   // Use raw author data (pre-enhancement) to detect real vs generated names
   // enhanceAuthorData fills in generated names like "ElectricVine742" — we don't want those
   const rawMetadata = authorData.data?.metadata;
@@ -296,8 +295,8 @@ export function VideoCard({
   const profileImage = getSafeProfileImage(
     rawMetadata?.picture || video.authorAvatar || metadata.picture
   );
-  // Just use npub for now, we'll deal with NIP-05 later
-  const profileUrl = `/${npub}`;
+  // Resolve profile URL - uses divine.video subdomain if user has verified NIP-05
+  const { url: profileUrl } = useProfileUrl(video.pubkey, rawMetadata?.nip05);
 
   const reposterName = reposterData.isLoading
     ? t('videoCard.loadingProfile')
