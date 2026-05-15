@@ -156,6 +156,8 @@ export function ProfilePage() {
     pubkey || '',
   );
   useEffect(() => {
+    // Skip redirect in development mode
+    if (import.meta.env.DEV) return;
     // Only redirect if we're on the apex domain (not already on a subdomain)
     if (subdomainUser) return;
     if (!nip05) return;
