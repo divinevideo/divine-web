@@ -2,8 +2,11 @@
 // ABOUTME: Returns index.html with a 200 status for SPA routes and injects per-video OG/Twitter tags for bots
 
 import {
+  buildAgeReviewPageMeta,
   buildCategoriesIndexMeta,
   buildCategoryPageMeta,
+  buildFamilyPageMeta,
+  buildKidsPolicyPageMeta,
   buildProfilePageMeta,
   buildVideoPageMeta,
   decodeNpubToHex,
@@ -205,6 +208,21 @@ async function fetchRouteMeta(url: URL): Promise<PageMeta | null> {
     return fetchProfileMeta(url);
   }
 
+  // Family resource hub at /family on apex.
+  if (url.pathname === '/family') {
+    return buildFamilyPageMeta(url);
+  }
+
+  // Age-review page at /age-review on apex.
+  if (url.pathname === '/age-review') {
+    return buildAgeReviewPageMeta(url);
+  }
+
+  // Kids policy page at /kids on apex.
+  if (url.pathname === '/kids') {
+    return buildKidsPolicyPageMeta(url);
+  }
+
   return null;
 }
 
@@ -223,6 +241,18 @@ export async function onRequest(context: {
 
   // Try to serve the requested asset first
   const response = await context.next();
+  const meta = await fetchRouteMeta(url);
+
+  if (meta && response.ok && response.headers.get('content-type')?.includes('text/html')) {
+    const html = injectMetaTags(await response.text(), meta);
+    const headers = new Headers(response.headers);
+    headers.set('content-type', 'text/html; charset=UTF-8');
+
+    return new Response(html, {
+      status: response.status,
+      headers,
+    });
+  }
 
   // If the response is a 404 and not a file request (no extension or is .html),
   // serve index.html with a 200 status code
@@ -234,7 +264,6 @@ export async function onRequest(context: {
       // Fetch index.html from the static assets
       const indexUrl = new URL('/index.html', context.request.url);
       const indexResponse = await fetch(indexUrl);
-      const meta = await fetchRouteMeta(url);
 
       if (meta) {
         const html = injectMetaTags(await indexResponse.text(), meta, path);

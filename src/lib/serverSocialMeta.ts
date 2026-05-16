@@ -295,6 +295,45 @@ export function buildCategoriesIndexMeta(url: URL): PageMeta {
   };
 }
 
+export function buildFamilyPageMeta(url: URL): PageMeta {
+  return {
+    title: 'For families on Divine — Conversation-first guidance for parents and teens',
+    description:
+      'A practical guide for families on Divine: how to talk with your teen about social media, what Divine can and can’t do, content settings, healthy feed habits, and trusted outside resources.',
+    ogType: 'website',
+    url: url.toString(),
+    image: DEFAULT_OG_IMAGE,
+    imageAlt: 'Divine — family resource hub for parents and teens',
+    twitterCard: 'summary_large_image',
+  };
+}
+
+export function buildAgeReviewPageMeta(url: URL): PageMeta {
+  return {
+    title: 'Account review — Divine',
+    description:
+      'If your Divine account was flagged as possibly belonging to someone under 16, this page explains what to do — and the 15-day window for responding.',
+    ogType: 'website',
+    url: url.toString(),
+    image: DEFAULT_OG_IMAGE,
+    imageAlt: 'Divine — account review information',
+    twitterCard: 'summary_large_image',
+  };
+}
+
+export function buildKidsPolicyPageMeta(url: URL): PageMeta {
+  return {
+    title: 'Kids on Divine — How accounts work for under-16s',
+    description:
+      'How Divine handles accounts for people under 16 — the rules, the reasoning, and what families can do together regardless of age.',
+    ogType: 'website',
+    url: url.toString(),
+    image: DEFAULT_OG_IMAGE,
+    imageAlt: 'Divine — how accounts work for kids and families',
+    twitterCard: 'summary_large_image',
+  };
+}
+
 export function getDefaultPageMeta(url: URL): PageMeta {
   return {
     title: 'Divine Web - Short-form Looping Videos on Nostr',
