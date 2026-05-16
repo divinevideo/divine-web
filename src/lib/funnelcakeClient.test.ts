@@ -33,6 +33,7 @@ describe('funnelcakeClient', () => {
   let fetchRecommendations: typeof import('./funnelcakeClient').fetchRecommendations;
   let markNotificationsRead: typeof import('./funnelcakeClient').markNotificationsRead;
   let fetchNotifications: typeof import('./funnelcakeClient').fetchNotifications;
+  let fetchVideoById: typeof import('./funnelcakeClient').fetchVideoById;
 
   beforeEach(async () => {
     vi.resetModules();
@@ -49,6 +50,7 @@ describe('funnelcakeClient', () => {
     fetchRecommendations = client.fetchRecommendations;
     markNotificationsRead = client.markNotificationsRead;
     fetchNotifications = client.fetchNotifications;
+    fetchVideoById = client.fetchVideoById;
   });
 
   afterEach(() => {
@@ -336,6 +338,51 @@ describe('funnelcakeClient', () => {
 
       expect(result.stats).toEqual([]);
       expect(result.missing).toContain(eventIds[0]);
+    });
+  });
+
+  describe('fetchVideoById', () => {
+    it('allows the route lookup to use the mobile-parity timeout', async () => {
+      const timeoutSpy = vi.spyOn(AbortSignal, 'timeout');
+      const videoId = 'ab0b34b53e29564eda8943385844de3dd164cd883d469675c14689a8e8772188';
+      const pubkey = TEST_PUBKEY;
+      const mockResponse = {
+        event: {
+          id: videoId,
+          pubkey,
+          created_at: 1477352093,
+          kind: 34236,
+          tags: [
+            ['d', '5dhdEiniwUO'],
+            ['imeta', 'url https://media.divine.video/video.mp4', 'm video/mp4'],
+          ],
+          content: '',
+          sig: 'sig',
+        },
+        stats: {
+          reactions: 0,
+          comments: 0,
+          reposts: 0,
+          engagement_score: 0,
+          trending_score: 0,
+        },
+      };
+
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(mockResponse),
+      });
+
+      const result = await fetchVideoById(API_URL, videoId, pubkey);
+
+      expect(result?.id).toBe(videoId);
+      expect(global.fetch).toHaveBeenCalledWith(
+        expect.stringContaining(`/api/videos/${videoId}`),
+        expect.objectContaining({
+          signal: expect.any(AbortSignal),
+        })
+      );
+      expect(timeoutSpy).toHaveBeenCalledWith(15000);
     });
   });
 

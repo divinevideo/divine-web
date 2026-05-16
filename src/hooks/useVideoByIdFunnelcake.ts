@@ -154,9 +154,8 @@ export function useVideoByIdFunnelcake(options: UseVideoByIdOptions): UseVideoBy
       : searchValue
         ? (searchVideosQuery.error as Error | null)
         : null;
-  const shouldLookupSingleVideo = enabled && (
-    (!pubkey && !hashtag && !searchValue)
-      || (((!!pubkey || !!hashtag || !!searchValue) && !contextLoading && !contextVideo))
+  const shouldLookupSingleVideo = enabled && !!videoId && (
+    !contextVideo
   );
 
   // Single video lookup (used when no context or as fallback)
