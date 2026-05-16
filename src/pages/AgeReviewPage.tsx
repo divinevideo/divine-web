@@ -112,7 +112,8 @@ export function AgeReviewPage() {
               15-day mark and delete the data Divine holds. Emailing
               won't pause the clock here—the rules around services for
               kids under 13 tie our hands. The same person can come back
-              and create a new account when they're 13 or older.
+              and create a new account when they're 13 or older (with
+              parental consent required between ages 13-15).
             </p>
           </CardContent>
         </Card>
