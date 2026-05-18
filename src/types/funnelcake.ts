@@ -76,6 +76,71 @@ export interface FunnelcakeVideoStats {
 }
 
 /**
+ * Aggregated KPI summary returned by /api/users/{pubkey}/analytics.
+ * Mirrors `CreatorAnalyticsSummary` in crates/clickhouse/src/queries.rs.
+ */
+export interface FunnelcakeCreatorAnalyticsSummary {
+  video_count: number;
+  views?: number | null;
+  unique_viewers?: number | null;
+  reactions: number;
+  comments: number;
+  reposts: number;
+  shares?: number | null;
+  saves?: number | null;
+  followers_gained?: number | null;
+  profile_visits?: number | null;
+  avg_watch_seconds?: number | null;
+  completion_rate?: number | null;
+  engagement_rate?: number | null;
+  has_view_data: boolean;
+}
+
+/**
+ * Single point in an analytics time series.
+ */
+export interface FunnelcakeAnalyticsSeriesPoint {
+  date: string;
+  value: number;
+}
+
+/**
+ * Time-series payload for the dashboard charts.
+ */
+export interface FunnelcakeCreatorAnalyticsTimeseries {
+  daily_views: FunnelcakeAnalyticsSeriesPoint[];
+  daily_interactions: FunnelcakeAnalyticsSeriesPoint[];
+  daily_follows: FunnelcakeAnalyticsSeriesPoint[];
+}
+
+/**
+ * Top post entry returned by the analytics endpoint. Only IDs + a couple of
+ * metrics - render metadata must be fetched separately (e.g. via bulk_videos).
+ */
+export interface FunnelcakeCreatorTopPost {
+  id: string;
+  views?: number | null;
+  engagement_rate?: number | null;
+}
+
+/**
+ * Full analytics response. Returned by `GET /api/users/{pubkey}/analytics`,
+ * requires NIP-98 auth as the requesting user.
+ */
+export interface FunnelcakeCreatorAnalyticsResponse {
+  total_views: number;
+  total_loops: number;
+  total_watch_time: number;
+  unique_viewers: number;
+  period: string;
+  pubkey: string;
+  window: string;
+  summary: FunnelcakeCreatorAnalyticsSummary;
+  timeseries: FunnelcakeCreatorAnalyticsTimeseries;
+  top_posts: FunnelcakeCreatorTopPost[];
+}
+
+/**
  * Hashtag data from Funnelcake trending hashtags endpoint
  */
 export interface FunnelcakeHashtag {

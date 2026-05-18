@@ -1,16 +1,48 @@
 // ABOUTME: Unit tests for Creator Analytics transform functions
-// ABOUTME: Tests computeKPIs, rankTopContent, mergeVideosWithStats, and buildAnalyticsData
+// ABOUTME: Tests kpisFromAnalytics, topPostToPerformance, and buildAnalyticsData
 
 import { describe, it, expect } from 'vitest';
 import {
-  mergeVideosWithStats,
-  toVideoPerformance,
-  computeKPIs,
-  rankTopContent,
+  kpisFromAnalytics,
+  topPostToPerformance,
   buildAnalyticsData,
 } from './analyticsTransform';
-import type { FunnelcakeVideoRaw } from '@/types/funnelcake';
-import type { FunnelcakeBulkStatsResponse, FunnelcakeProfile } from '@/lib/funnelcakeClient';
+import type {
+  FunnelcakeVideoRaw,
+  FunnelcakeCreatorAnalyticsResponse,
+  FunnelcakeCreatorTopPost,
+} from '@/types/funnelcake';
+import type { FunnelcakeProfile } from '@/lib/funnelcakeClient';
+
+function makeAnalytics(
+  overrides: Partial<FunnelcakeCreatorAnalyticsResponse> = {},
+): FunnelcakeCreatorAnalyticsResponse {
+  return {
+    total_views: 0,
+    total_loops: 0,
+    total_watch_time: 0,
+    unique_viewers: 0,
+    period: '30d',
+    pubkey: 'pk-1',
+    window: '30d',
+    summary: {
+      video_count: 0,
+      views: 0,
+      unique_viewers: 0,
+      reactions: 0,
+      comments: 0,
+      reposts: 0,
+      has_view_data: false,
+    },
+    timeseries: {
+      daily_views: [],
+      daily_interactions: [],
+      daily_follows: [],
+    },
+    top_posts: [],
+    ...overrides,
+  };
+}
 
 function makeVideo(overrides: Partial<FunnelcakeVideoRaw> = {}): FunnelcakeVideoRaw {
   return {
@@ -25,177 +57,136 @@ function makeVideo(overrides: Partial<FunnelcakeVideoRaw> = {}): FunnelcakeVideo
   };
 }
 
-function makeBulkStats(
-  stats: Array<{ id: string; reactions?: number; comments?: number; reposts?: number; views?: number }>,
-): FunnelcakeBulkStatsResponse {
-  return {
-    stats: stats.map(s => ({
-      id: s.id,
-      reactions: s.reactions ?? 0,
-      comments: s.comments ?? 0,
-      reposts: s.reposts ?? 0,
-      views: s.views,
-    })),
-    missing: [],
-  };
-}
+describe('kpisFromAnalytics', () => {
+  it('reads summary totals, not derived from top_posts', () => {
+    const analytics = makeAnalytics({
+      summary: {
+        video_count: 247,
+        views: 18_000,
+        unique_viewers: 9_000,
+        reactions: 600,
+        comments: 120,
+        reposts: 30,
+        has_view_data: true,
+      },
+      top_posts: [
+        { id: 'a', views: 5_000, engagement_rate: 0.08 },
+      ],
+    });
 
-describe('mergeVideosWithStats', () => {
-  it('merges stats by event ID', () => {
-    const videos = [makeVideo({ id: 'a' }), makeVideo({ id: 'b' })];
-    const stats = makeBulkStats([{ id: 'a', reactions: 10 }]);
+    const kpis = kpisFromAnalytics(analytics);
 
-    const result = mergeVideosWithStats(videos, stats);
-
-    expect(result).toHaveLength(2);
-    expect(result[0].stats?.reactions).toBe(10);
-    expect(result[1].stats).toBeNull();
-  });
-
-  it('handles empty videos', () => {
-    const result = mergeVideosWithStats([], makeBulkStats([]));
-    expect(result).toHaveLength(0);
-  });
-});
-
-describe('toVideoPerformance', () => {
-  it('prefers bulk stats over video-level counts', () => {
-    const video = makeVideo({ id: 'v1', reactions: 5, comments: 2, reposts: 1 });
-    const stats = { reactions: 50, comments: 20, reposts: 10, views: 1000 };
-
-    const result = toVideoPerformance({ video, stats });
-
-    expect(result.reactions).toBe(50);
-    expect(result.comments).toBe(20);
-    expect(result.reposts).toBe(10);
-    expect(result.views).toBe(1000);
-    expect(result.hasViewData).toBe(true);
-    expect(result.totalEngagement).toBe(80);
-  });
-
-  it('falls back to video-level counts when no stats', () => {
-    const video = makeVideo({ reactions: 5, comments: 2, reposts: 1 });
-
-    const result = toVideoPerformance({ video, stats: null });
-
-    expect(result.reactions).toBe(5);
-    expect(result.comments).toBe(2);
-    expect(result.reposts).toBe(1);
-    expect(result.views).toBe(0);
-    expect(result.hasViewData).toBe(false);
-  });
-
-  it('falls back to embedded_* fields', () => {
-    const video = makeVideo({ embedded_likes: 8, embedded_comments: 3, embedded_reposts: 2 });
-
-    const result = toVideoPerformance({ video, stats: null });
-
-    expect(result.reactions).toBe(8);
-    expect(result.comments).toBe(3);
-    expect(result.reposts).toBe(2);
-  });
-
-  it('uses video title or defaults to Untitled', () => {
-    expect(toVideoPerformance({ video: makeVideo({ title: 'Cool Vid' }), stats: null }).title).toBe('Cool Vid');
-    expect(toVideoPerformance({ video: makeVideo({ title: undefined }), stats: null }).title).toBe('Untitled');
-  });
-});
-
-describe('computeKPIs', () => {
-  it('aggregates totals across all videos', () => {
-    const performances = [
-      toVideoPerformance({
-        video: makeVideo({ id: 'a' }),
-        stats: { reactions: 10, comments: 5, reposts: 2, views: 100 },
-      }),
-      toVideoPerformance({
-        video: makeVideo({ id: 'b' }),
-        stats: { reactions: 20, comments: 10, reposts: 3, views: 200 },
-      }),
-    ];
-
-    const kpis = computeKPIs(performances);
-
-    expect(kpis.totalVideos).toBe(2);
-    expect(kpis.totalViews).toBe(300);
+    // totalVideos reflects the full catalogue (247), not top_posts.length (1)
+    expect(kpis.totalVideos).toBe(247);
+    expect(kpis.totalViews).toBe(18_000);
     expect(kpis.hasViewData).toBe(true);
-    expect(kpis.totalReactions).toBe(30);
-    expect(kpis.totalComments).toBe(15);
-    expect(kpis.totalReposts).toBe(5);
-    expect(kpis.totalEngagement).toBe(50);
+    expect(kpis.totalReactions).toBe(600);
+    expect(kpis.totalComments).toBe(120);
+    expect(kpis.totalReposts).toBe(30);
+    expect(kpis.totalEngagement).toBe(750);
   });
 
-  it('returns zeros for empty input', () => {
-    const kpis = computeKPIs([]);
+  it('falls back to total_views when summary.views is null', () => {
+    const analytics = makeAnalytics({
+      total_views: 42,
+      summary: {
+        video_count: 1,
+        views: null,
+        reactions: 0,
+        comments: 0,
+        reposts: 0,
+        has_view_data: false,
+      },
+    });
 
+    expect(kpisFromAnalytics(analytics).totalViews).toBe(42);
+  });
+
+  it('returns zeros for an empty creator', () => {
+    const kpis = kpisFromAnalytics(makeAnalytics());
     expect(kpis.totalVideos).toBe(0);
     expect(kpis.totalViews).toBe(0);
     expect(kpis.hasViewData).toBe(false);
     expect(kpis.totalEngagement).toBe(0);
   });
-
-  it('sets hasViewData false when no video has views', () => {
-    const performances = [
-      toVideoPerformance({ video: makeVideo(), stats: null }),
-    ];
-
-    const kpis = computeKPIs(performances);
-    expect(kpis.hasViewData).toBe(false);
-  });
 });
 
-describe('rankTopContent', () => {
-  it('sorts by total engagement descending', () => {
-    const performances = [
-      toVideoPerformance({
-        video: makeVideo({ id: 'low' }),
-        stats: { reactions: 1, comments: 0, reposts: 0 },
-      }),
-      toVideoPerformance({
-        video: makeVideo({ id: 'high' }),
-        stats: { reactions: 100, comments: 50, reposts: 25 },
-      }),
-      toVideoPerformance({
-        video: makeVideo({ id: 'mid' }),
-        stats: { reactions: 10, comments: 5, reposts: 2 },
-      }),
-    ];
+describe('topPostToPerformance', () => {
+  it('merges top_post metric with bulk-fetched metadata', () => {
+    const post: FunnelcakeCreatorTopPost = { id: 'v1', views: 1_000, engagement_rate: 0.08 };
+    const video = makeVideo({
+      id: 'v1',
+      title: 'My Vine',
+      thumbnail: 'https://cdn/x.jpg',
+      reactions: 42,
+      comments: 7,
+      reposts: 3,
+    });
 
-    const ranked = rankTopContent(performances, 3);
+    const perf = topPostToPerformance(post, new Map([[video.id, video]]));
 
-    expect(ranked[0].eventId).toBe('high');
-    expect(ranked[1].eventId).toBe('mid');
-    expect(ranked[2].eventId).toBe('low');
+    expect(perf.eventId).toBe('v1');
+    expect(perf.title).toBe('My Vine');
+    expect(perf.thumbnail).toBe('https://cdn/x.jpg');
+    expect(perf.views).toBe(1_000);
+    expect(perf.hasViewData).toBe(true);
+    expect(perf.reactions).toBe(42);
+    expect(perf.comments).toBe(7);
+    expect(perf.reposts).toBe(3);
+    expect(perf.totalEngagement).toBe(52);
   });
 
-  it('limits results to specified count', () => {
-    const performances = Array.from({ length: 20 }, (_, i) =>
-      toVideoPerformance({
-        video: makeVideo({ id: `v${i}` }),
-        stats: { reactions: i, comments: 0, reposts: 0 },
-      }),
-    );
+  it('renders a placeholder when metadata is missing for the ID', () => {
+    const post: FunnelcakeCreatorTopPost = { id: 'orphan', views: 5 };
+    const perf = topPostToPerformance(post, new Map());
 
-    const ranked = rankTopContent(performances, 5);
-    expect(ranked).toHaveLength(5);
+    expect(perf.eventId).toBe('orphan');
+    expect(perf.title).toBe('Untitled');
+    expect(perf.thumbnail).toBeUndefined();
+    expect(perf.views).toBe(5);
+    expect(perf.reactions).toBe(0);
   });
 
-  it('returns empty array for empty input', () => {
-    expect(rankTopContent([])).toEqual([]);
+  it('falls back to embedded_* counts when canonical fields are absent', () => {
+    const post: FunnelcakeCreatorTopPost = { id: 'v2' };
+    const video = makeVideo({
+      id: 'v2',
+      embedded_likes: 8,
+      embedded_comments: 3,
+      embedded_reposts: 2,
+    });
+
+    const perf = topPostToPerformance(post, new Map([[video.id, video]]));
+
+    expect(perf.reactions).toBe(8);
+    expect(perf.comments).toBe(3);
+    expect(perf.reposts).toBe(2);
+    expect(perf.hasViewData).toBe(false);
   });
 });
 
 describe('buildAnalyticsData', () => {
-  it('orchestrates all transforms into final analytics data', () => {
-    const videos = [
+  it('orchestrates summary + top_posts into the dashboard payload', () => {
+    const analytics = makeAnalytics({
+      window: '28d',
+      summary: {
+        video_count: 5,
+        views: 1_500,
+        reactions: 30,
+        comments: 10,
+        reposts: 5,
+        has_view_data: true,
+      },
+      top_posts: [
+        { id: 'v1', views: 1_000 },
+        { id: 'v2', views: 500 },
+      ],
+    });
+
+    const meta = [
       makeVideo({ id: 'v1', title: 'First' }),
       makeVideo({ id: 'v2', title: 'Second' }),
     ];
-
-    const bulkStats = makeBulkStats([
-      { id: 'v1', reactions: 10, comments: 5, reposts: 2, views: 100 },
-      { id: 'v2', reactions: 20, comments: 10, reposts: 3, views: 200 },
-    ]);
 
     const profile: FunnelcakeProfile = {
       pubkey: 'pk-1',
@@ -203,23 +194,26 @@ describe('buildAnalyticsData', () => {
       following_count: 100,
     };
 
-    const data = buildAnalyticsData(videos, bulkStats, profile);
+    const data = buildAnalyticsData(analytics, meta, profile);
 
-    expect(data.kpis.totalVideos).toBe(2);
-    expect(data.kpis.totalViews).toBe(300);
+    expect(data.kpis.totalVideos).toBe(5);
+    expect(data.kpis.totalViews).toBe(1_500);
     expect(data.kpis.totalReactions).toBe(30);
     expect(data.followerCount).toBe(500);
     expect(data.followingCount).toBe(100);
+    expect(data.window).toBe('28d');
     expect(data.topVideos).toHaveLength(2);
-    expect(data.topVideos[0].title).toBe('Second'); // Higher engagement
+    expect(data.topVideos[0].title).toBe('First');
+    expect(data.topVideos[1].title).toBe('Second');
     expect(data.fetchedAt).toBeInstanceOf(Date);
   });
 
-  it('handles null profile gracefully', () => {
-    const data = buildAnalyticsData([], makeBulkStats([]), null);
+  it('handles a null profile and an empty top_posts list', () => {
+    const data = buildAnalyticsData(makeAnalytics(), [], null);
 
     expect(data.followerCount).toBe(0);
     expect(data.followingCount).toBe(0);
     expect(data.kpis.totalVideos).toBe(0);
+    expect(data.topVideos).toEqual([]);
   });
 });
