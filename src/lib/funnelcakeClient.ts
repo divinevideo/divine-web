@@ -1196,15 +1196,15 @@ export async function fetchBulkVideoStats(
 }
 
 // ---------------------------------------------------------------------------
-// Notification API functions (NIP-98 authenticated, bypass circuit breaker)
+// NIP-98 authenticated Funnelcake requests (bypass circuit breaker so that
+// per-user 401s don't open the circuit for unauthenticated traffic).
 // ---------------------------------------------------------------------------
 
 /**
- * Make an authenticated request to a notification endpoint.
- * These requests intentionally bypass the circuit breaker so that
- * 401 auth errors do not open the circuit for all API calls.
+ * Make a NIP-98-authenticated request to a Funnelcake endpoint.
+ * Intentionally bypasses the circuit breaker.
  */
-async function authenticatedNotificationRequest<T>(
+async function authenticatedFunnelcakeRequest<T>(
   apiUrl: string,
   endpoint: string,
   signer: NostrSigner,
@@ -1282,7 +1282,7 @@ export async function fetchNotifications(
     unread_only: options?.unreadOnly ? true : undefined,
   };
 
-  const raw = await authenticatedNotificationRequest<RawNotificationsApiResponse>(
+  const raw = await authenticatedFunnelcakeRequest<RawNotificationsApiResponse>(
     apiUrl,
     endpoint,
     signer,
@@ -1304,7 +1304,7 @@ export async function fetchUnreadCount(
 ): Promise<number> {
   const endpoint = API_CONFIG.funnelcake.endpoints.userNotifications.replace('{pubkey}', pubkey);
 
-  const raw = await authenticatedNotificationRequest<RawNotificationsApiResponse>(
+  const raw = await authenticatedFunnelcakeRequest<RawNotificationsApiResponse>(
     apiUrl,
     endpoint,
     signer,
@@ -1332,7 +1332,7 @@ export async function markNotificationsRead(
     ? { notification_ids: notificationIds }
     : {};
 
-  const result = await authenticatedNotificationRequest<{ success?: boolean; marked_count?: number }>(
+  const result = await authenticatedFunnelcakeRequest<{ success?: boolean; marked_count?: number }>(
     apiUrl,
     endpoint,
     signer,
@@ -1343,4 +1343,110 @@ export async function markNotificationsRead(
     success: result.success !== false,
     markedCount: result.marked_count ?? 0,
   };
+}
+
+// ---------------------------------------------------------------------------
+// Creator analytics
+// ---------------------------------------------------------------------------
+
+/**
+ * Fetch the server-aggregated creator analytics for a single pubkey.
+ *
+ * Calls `GET /api/users/{pubkey}/analytics?window=…`. Requires NIP-98 auth
+ * signed by the same pubkey - the backend refuses cross-account requests.
+ *
+ * Replaces the previous client-side approach of paginating every video and
+ * POSTing all IDs to `/api/videos/stats/bulk` - that capped out at 200
+ * videos (frontend page limit) and 400'd at >100 IDs (backend cap).
+ */
+export async function fetchCreatorAnalytics(
+  apiUrl: string,
+  pubkey: string,
+  signer: NostrSigner,
+  options: {
+    window?: import('@/types/creatorAnalytics').CreatorAnalyticsWindow;
+    topPostsSort?: 'views' | 'engagement';
+    signal?: AbortSignal;
+  } = {},
+): Promise<import('@/types/funnelcake').FunnelcakeCreatorAnalyticsResponse> {
+  const endpoint = API_CONFIG.funnelcake.endpoints.userAnalytics.replace('{pubkey}', pubkey);
+  const params: Record<string, string | number | boolean | undefined> = {
+    window: options.window,
+    top_posts_sort: options.topPostsSort,
+  };
+
+  return authenticatedFunnelcakeRequest<import('@/types/funnelcake').FunnelcakeCreatorAnalyticsResponse>(
+    apiUrl,
+    endpoint,
+    signer,
+    { params, signal: options.signal },
+  );
+}
+
+/**
+ * Response shape for `POST /api/videos/bulk`.
+ */
+export interface FunnelcakeBulkVideosResponse {
+  videos: FunnelcakeVideoRaw[];
+  missing: string[];
+  source_event_id?: string | null;
+}
+
+/**
+ * Fetch full metadata for up to 100 videos by event ID in a single request.
+ *
+ * Used to hydrate the top-N posts returned by `fetchCreatorAnalytics`
+ * (which gives IDs only). The backend caps the request at 100 IDs and
+ * returns 400 past that - callers should batch if they need more.
+ */
+export async function fetchBulkVideos(
+  apiUrl: string = API_CONFIG.funnelcake.baseUrl,
+  eventIds: string[],
+  signal?: AbortSignal,
+): Promise<FunnelcakeBulkVideosResponse> {
+  if (eventIds.length === 0) {
+    return { videos: [], missing: [] };
+  }
+
+  const timeout = API_CONFIG.funnelcake.timeout;
+  const timeoutSignal = AbortSignal.timeout(timeout);
+  const combinedSignal = signal
+    ? AbortSignal.any([signal, timeoutSignal])
+    : timeoutSignal;
+
+  try {
+    const response = await fetch(`${apiUrl}${API_CONFIG.funnelcake.endpoints.bulkVideos}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ event_ids: eventIds }),
+      signal: combinedSignal,
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => 'Unknown error');
+      recordFunnelcakeFailure(apiUrl, `HTTP ${response.status}`);
+      throw new FunnelcakeApiError(
+        `Funnelcake bulk videos error: ${response.status} ${response.statusText}`,
+        response.status,
+        errorText,
+      );
+    }
+
+    const data = await response.json();
+    recordFunnelcakeSuccess(apiUrl);
+
+    return {
+      videos: Array.isArray(data?.videos) ? data.videos : [],
+      missing: Array.isArray(data?.missing) ? data.missing : [],
+      source_event_id: data?.source_event_id ?? null,
+    };
+  } catch (err) {
+    if (err instanceof FunnelcakeApiError) throw err;
+    if (err instanceof DOMException && err.name === 'AbortError') throw err;
+
+    const message = err instanceof Error ? err.message : 'Unknown error';
+    recordFunnelcakeFailure(apiUrl, message);
+    debugError(`[FunnelcakeClient] fetchBulkVideos failed: ${message}`);
+    throw new FunnelcakeApiError(message, null, undefined);
+  }
 }
