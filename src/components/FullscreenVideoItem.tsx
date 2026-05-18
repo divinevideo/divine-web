@@ -41,7 +41,7 @@ import { useSubtitles } from '@/hooks/useSubtitles';
 import { VideoVerificationBadgeRow } from '@/components/VideoVerificationBadgeRow';
 import type { ParsedVideoData } from '@/types/video';
 import { buildDmSharePayloadFromVideo, buildDmShareQueryString } from '@/lib/dm';
-import { useProfileUrl } from '@/hooks/useProfileUrl';
+import { nip19 } from 'nostr-tools';
 
 interface FullscreenVideoItemProps {
   video: ParsedVideoData;
@@ -143,8 +143,8 @@ export function FullscreenVideoItem({
   const profileImage = getSafeProfileImage(
     rawMetadata?.picture || video.authorAvatar || metadata.picture
   );
-  // Resolve profile URL - uses divine.video subdomain if user has verified NIP-05
-  const { url: profileUrl } = useProfileUrl(video.pubkey, rawMetadata?.nip05);
+  const npub = nip19.npubEncode(video.pubkey);
+  const profileUrl = `/profile/${npub}`;
 
   // Format timestamp
   const timestamp = video.originalVineTimestamp || video.createdAt;

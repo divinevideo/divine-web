@@ -52,7 +52,7 @@ import { getOptimalVideoUrl } from '@/lib/bandwidthTracker';
 import { useBandwidthTier } from '@/hooks/useBandwidthTier';
 import { useSubtitles } from '@/hooks/useSubtitles';
 import { debugLog } from '@/lib/debug';
-import { useProfileUrl } from '@/hooks/useProfileUrl';
+import { nip19 } from 'nostr-tools';
 import { useLoginDialog } from '@/contexts/LoginDialogContext';
 import { AgeRestrictedMediaPlaceholder } from '@/components/AgeRestrictedMediaPlaceholder';
 
@@ -295,8 +295,8 @@ export function VideoCard({
   const profileImage = getSafeProfileImage(
     rawMetadata?.picture || video.authorAvatar || metadata.picture
   );
-  // Resolve profile URL - uses divine.video subdomain if user has verified NIP-05
-  const { url: profileUrl } = useProfileUrl(video.pubkey, rawMetadata?.nip05);
+  const npub = nip19.npubEncode(video.pubkey);
+  const profileUrl = `/profile/${npub}`;
 
   const reposterName = reposterData.isLoading
     ? t('videoCard.loadingProfile')
