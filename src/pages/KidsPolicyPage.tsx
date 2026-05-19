@@ -180,9 +180,7 @@ export function KidsPolicyPage() {
           <Card variant="brand">
             <CardContent className="pt-6 space-y-3 text-base leading-relaxed">
               <p>
-                The rules for online services for children under 13 require
-                apps to verify parents through credit-card checks,
-                government-ID uploads, and similar intrusive steps. Those
+                The rules for online services for children under 13 can require online services to give parents direct notice and obtain verifiable parental consent before collecting, using, or disclosing personal information from children under 13; available consent methods can include credit-card checks, government-ID checks, and other methods permitted by law. Those
                 rules were written with little grasp of how the open
                 internet actually works. In practice they push every
                 app toward collecting <em>more</em> personal data, not
@@ -213,7 +211,7 @@ export function KidsPolicyPage() {
             eyebrow="The under-13 policy"
             icon={<UsersThree weight="fill" className="h-7 w-7" />}
             title="Under-13 accounts close and the data is deleted"
-            lead="Divine isn't built for people under 13. When Divine learns an account is held by someone under 13, the team closes the account and promptly deletes everything tied to it from Divine's infrastructure—even when a parent or guardian is okay with the account staying open. The account doesn't come back."
+            lead="Divine isn't built for people under 13. When Divine learns an account is held by someone under 13, the team closes the account and promptly deletes everything tied to it from Divine's infrastructure, except information Divine is required or permitted to keep for legal, safety, security, fraud-prevention, dispute-resolution, or compliance purposes—even when a parent or guardian is okay with the account staying open. The account doesn't come back."
           />
 
           {/* Parent-discovery action card */}
@@ -325,7 +323,7 @@ export function KidsPolicyPage() {
             eyebrow="The 13-to-15 policy"
             icon={<VideoCamera weight="fill" className="h-7 w-7" />}
             title="Teen-held accounts need a parent or guardian video"
-            lead="Teens 13 to 15 can use Divine with a parent or guardian who's aware and involved. The video is how Divine knows that consent and supervision are real, without running an intrusive verification system."
+            lead="Teens 13 to 15 can use Divine with a parent or guardian who's aware and involved. The video is how Divine knows that consent and supervision are real, without running an intrusive verification system. Depending on where the teen lives, Divine may require additional or different age-assurance, parental-consent, privacy, or account-safety steps before the account can stay open."
           />
 
           <Card variant="brand" accent="green">
@@ -350,10 +348,7 @@ export function KidsPolicyPage() {
                 </li>
               </ul>
               <p className="text-sm text-muted-foreground pt-1">
-                Phone-camera quality is fine. There's no script—natural
-                is better. Keep it short. The video is handled by Divine's
-                support and trust &amp; safety team and isn't published or
-                shared with other users.
+                Phone-camera quality is fine. There's no script—natural is better. Keep it short. Please don't include more information than Divine asks for here; the review is meant to confirm age, permission, and parent or guardian awareness, not to collect extra documents or background details. The video is handled by Divine's support and trust & safety team, used only for account review, safety, legal, and compliance purposes, kept only as long as reasonably necessary for those purposes unless a longer retention period is required or permitted by law, and isn't published or shared with other users.
               </p>
             </CardContent>
           </Card>
@@ -374,7 +369,7 @@ export function KidsPolicyPage() {
                   <span className="font-medium text-brand-dark-green dark:text-brand-green">
                     divine.video/age-review
                   </span>
-                  .
+                  . If Divine needs more information to finish the review, support will ask for it through the support email thread rather than asking the teen to post anything publicly.
                 </p>
               </div>
               <ArrowSquareOut className="h-5 w-5 flex-shrink-0 text-brand-dark-green dark:text-brand-green group-hover:translate-x-0.5 transition-transform" />
@@ -410,14 +405,14 @@ export function KidsPolicyPage() {
                 </li>
                 <li>
                   Kids of any age can appear in videos with their parent or
-                  guardian's involvement.
+                  guardian's involvement, as long as the parent or guardian has the rights and permissions needed to share the video and the video complies with Divine's policies and applicable law. The parent or guardian should not share the account password or hand off control of the account to a child under 13.
                 </li>
               </ul>
               <p>
                 What Divine won't host is a solo account in a child's
                 hands. Under 13, the account has to be the parent or
                 guardian's. From 13 to 15, the account can be the teen's
-                with the video step above. Pick whichever path fits your
+                with the video step above, subject to any additional requirements that apply based on the teen's location. Pick whichever path fits your
                 family.
               </p>
               <p className="text-muted-foreground">
