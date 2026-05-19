@@ -54,14 +54,14 @@ async function funnelcakeRequest<T>(
   apiUrl: string,
   endpoint: string,
   params: Record<string, string | number | boolean | undefined> = {},
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  timeoutMs: number = API_CONFIG.funnelcake.timeout
 ): Promise<T> {
   const url = buildUrl(apiUrl, endpoint, params);
-  const timeout = API_CONFIG.funnelcake.timeout;
 
   debugLog(`[FunnelcakeClient] Request: ${url}`);
 
-  const timeoutSignal = AbortSignal.timeout(timeout);
+  const timeoutSignal = AbortSignal.timeout(timeoutMs);
   const combinedSignal = signal
     ? AbortSignal.any([signal, timeoutSignal])
     : timeoutSignal;
@@ -748,7 +748,8 @@ export async function fetchVideoById(
         apiUrl,
         `${API_CONFIG.funnelcake.endpoints.videos}/${identifier}`,
         {},
-        signal
+        signal,
+        15000
       );
 
       if (response && response.event) {
