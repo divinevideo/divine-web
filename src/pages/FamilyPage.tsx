@@ -505,7 +505,7 @@ export function FamilyPage() {
                 "Phones at the dinner table—yes or no, decided together.",
                 "Bedrooms overnight—where do devices charge?",
                 "Homework time—what counts as a focus block?",
-                "Long car rides, family events, hangouts—any shared norms?"
+                "Long car rides, family events, hangouts—any shared norms?",
                 "Public posts—what details stay out of videos, like school names, home addresses, daily routines, location clues, or other information that could identify where a child lives, studies, or spends time?",
               ]}
             />
