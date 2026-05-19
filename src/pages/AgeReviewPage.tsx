@@ -31,7 +31,7 @@ interface SectionAnchor {
 const SECTIONS: SectionAnchor[] = [
   { id: "path-13-15", title: "If you're 13 to 15" },
   { id: "path-mistake", title: "If you're 16 or older" },
-  { id: "no-response", title: "If no one responds" },
+  { id: "no-response", title: "If we don't hear from you" },
 ];
 
 function mailtoLink(subject: string, body?: string): string {
@@ -120,9 +120,9 @@ export function AgeReviewPage() {
         {/* 1. 13-15 path */}
         <Anchor id="path-13-15">
           <SectionHero
-            eyebrow="Step-by-step"
+            eyebrow="If you're 13 to 15"
             icon={<VideoCamera weight="fill" className="h-7 w-7" />}
-            title="If you're 13 to 15"
+            title="A guided start"
             lead={`Teens 13 to 15 can use Divine with a parent or guardian who's aware and involved. To keep the account open, a parent or guardian sends a short private video confirming the situation. The email needs to land within ${REVIEW_WINDOW_DAYS} days of the in-app notice.`}
           />
 
