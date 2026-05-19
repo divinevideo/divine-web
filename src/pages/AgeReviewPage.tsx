@@ -95,7 +95,7 @@ export function AgeReviewPage() {
       </section>
 
       <div className="container mx-auto px-4 py-14 md:py-16 max-w-4xl space-y-14">
-        {/* Honest note for under-13 readers—placed first so a kid
+        {/* Note for under-13 readers—placed first so a kid
             reading the page lands on this before scrolling through the
             13–15 instructions and assuming a parent video might apply.
             Intentionally not a path-shaped card (no CardHeader, no
@@ -108,8 +108,7 @@ export function AgeReviewPage() {
               <span>A note for anyone under 13 reading this</span>
             </div>
             <p>
-              We're sorry. Divine has to close under-13 accounts when Divine confirms or has actual knowledge that the account holder is under 13, and in any event no later than the
-              15-day mark and delete the data Divine holds. Emailing
+              We're sorry. Divine must close an under-13 account and delete the data it holds once it confirms or has actual knowledge that the account holder is under 13, and in all cases no later than the 15-day mark. Emailing
               won't pause the clock here—the rules around services for
               kids under 13 tie our hands. The same person can come back
               and create a new account when they're 13 or older (with
@@ -319,7 +318,7 @@ export function AgeReviewPage() {
                   </span>
                   <span>
                     Add any context that might be helpful—anything you
-                    think the team should know.
+                    think the team should know. Please don't include government IDs, payment-card numbers, school records, medical information, passwords, Social Security numbers, or other sensitive documents.
                   </span>
                 </li>
               </ol>
@@ -347,7 +346,7 @@ export function AgeReviewPage() {
             eyebrow="If we don't hear from you"
             icon={<Path weight="fill" className="h-7 w-7" />}
             title={`What happens after ${REVIEW_WINDOW_DAYS} days with no response`}
-            lead={`After ${REVIEW_WINDOW_DAYS} days with no email to support, the account is closed and the personal information Divine holds about it is deleted. The closed account doesn't come back.`}
+            lead={`After ${REVIEW_WINDOW_DAYS} days with no email to Support, the account is closed and the personal information Divine holds about it is deleted. The closed account doesn't come back.`}
           />
 
           <Card variant="brand" accent="orange">
@@ -379,7 +378,7 @@ export function AgeReviewPage() {
                   {SUPPORT_EMAIL}
                 </a>{" "}
                 from a parent or guardian within the 15-day window stops the
-                clock while Divine reviews the submission. For accounts flagged in error as belonging to someone under 16, an email from the account holder stating that they are 16 or older stops the clock while Divine reviews the submission. An email does not pause closure of an account once Divine confirms or has actual knowledge that the account holder is under 13. A "we're working on it" reply counts.
+                clock while Divine reviews the submission. For accounts flagged in error as belonging to someone under 16, an email from the account holder stating that they are 16 or older stops the clock while Divine reviews the submission. A "we're working on it" reply counts. An email does not pause closure of an account once Divine confirms or has actual knowledge that the account holder is under 13.
               </p>
             </CardContent>
           </Card>
@@ -428,7 +427,7 @@ export function AgeReviewPage() {
               {SUPPORT_EMAIL}
             </a>{" "}
             again. The team would rather hear from you twice than miss a
-            message. If your first email was sent within the 15-day window, include the date and address you sent it from so Divine can confirm the timing.
+            message. If your first email was sent within the 15-day window, include the date and address you sent it so Divine can confirm the timing.
           </p>
         </div>
       </div>
