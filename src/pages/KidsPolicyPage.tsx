@@ -171,9 +171,9 @@ export function KidsPolicyPage() {
         {/* 2. Why we work this way */}
         <Anchor id="why">
           <SectionHero
-            eyebrow="Honest framing"
+            eyebrow="Why we work this way"
             icon={<Info weight="fill" className="h-7 w-7" />}
-            title="Why we work this way"
+            title="Our operating philosophy"
             lead="The age rules Divine follows weren't all our idea. Some of them are operational choices about what kind of app we want to be."
           />
 
@@ -208,7 +208,7 @@ export function KidsPolicyPage() {
         {/* 3. Under-13 accounts */}
         <Anchor id="under-13">
           <SectionHero
-            eyebrow="The under-13 policy"
+            eyebrow="Under-13 accounts"
             icon={<UsersThree weight="fill" className="h-7 w-7" />}
             title="Under-13 accounts close and the data is deleted"
             lead="Divine isn't built for people under 13. When Divine learns an account is held by someone under 13, the team closes the account and promptly deletes everything tied to it from Divine's infrastructure, except information Divine is required or permitted to keep for legal, safety, security, fraud-prevention, dispute-resolution, or compliance purposes—even when a parent or guardian is okay with the account staying open. The account doesn't come back."
@@ -320,7 +320,7 @@ export function KidsPolicyPage() {
         {/* 4. 13-15 accounts */}
         <Anchor id="13-15">
           <SectionHero
-            eyebrow="The 13-to-15 policy"
+            eyebrow="13-15 accounts"
             icon={<VideoCamera weight="fill" className="h-7 w-7" />}
             title="Teen-held accounts need a parent or guardian video"
             lead="Teens 13 to 15 can use Divine with a parent or guardian who's aware and involved. The video is how Divine knows that consent and supervision are real, without running an intrusive verification system. Depending on where the teen lives, Divine may require additional or different age-assurance, parental-consent, privacy, or account-safety steps before the account can stay open."
@@ -380,7 +380,7 @@ export function KidsPolicyPage() {
         {/* 5. Family-account carve-out */}
         <Anchor id="family-account">
           <SectionHero
-            eyebrow="Families together"
+            eyebrow="Family-account carve-out"
             icon={<HouseLine weight="fill" className="h-7 w-7" />}
             title="Families absolutely belong on Divine"
             lead="None of the rules above are about pushing your family off Divine. Families enjoying social media together is a good thing, and welcome here. The piece that matters is who holds the account."
@@ -428,7 +428,7 @@ export function KidsPolicyPage() {
         {/* 6. More family guidance */}
         <Anchor id="family-guidance">
           <SectionHero
-            eyebrow="The broader conversation"
+            eyebrow="More family guidance"
             icon={<HouseLine weight="fill" className="h-7 w-7" />}
             title="Looking for the wider family resources?"
             lead="This page covers the account-policy side. The wider conversation—how to talk with your teen, content settings, healthy feed habits, trusted outside resources—lives separately."
