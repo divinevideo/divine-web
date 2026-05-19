@@ -396,7 +396,7 @@ export function FamilyPage() {
             eyebrow="Practical setup"
             icon={<ListChecks weight="fill" className="h-7 w-7" />}
             title="How content settings work on Divine"
-            lead="Settings are a useful layer. They are not a guarantee. The most important step is for the adult in the household to actually open them, read them, and adjust them together with the teen who'll use the account."
+            lead="Settings are a useful layer. They are not a guarantee. The most important step is for the adult in the household to actually open them, read them, and adjust them together with the teen who'll use the account. For accounts used by teens, start with the most protective settings that still let the account work for your family, then loosen settings only after you have (a) talked through why the change makes sense, and (b) made the decision, as parents, to make that change."
           />
 
           <Card variant="brand" accent="violet">
@@ -505,14 +505,15 @@ export function FamilyPage() {
                 "Phones at the dinner table—yes or no, decided together.",
                 "Bedrooms overnight—where do devices charge?",
                 "Homework time—what counts as a focus block?",
-                "Long car rides, family events, hangouts—any shared norms?",
+                "Long car rides, family events, hangouts—any shared norms?"
+                "Public posts—what details stay out of videos, like school names, home addresses, daily routines, location clues, or other information that could identify where a child lives, studies, or spends time?",
               ]}
             />
             <PlanColumn
               title="What we do when things get hard"
               items={[
                 "If something upsetting comes up, we talk before we punish.",
-                "We use the report and mute tools instead of arguing in comments.",
+                "We use the report and mute tools instead of arguing in comments. We don't pile on, quote-post to shame someone, or send other people after an account.",
                 "If a creator or trend stops feeling good, we mute or move on.",
                 "Adults follow the same rules they ask teens to follow.",
               ]}
@@ -601,7 +602,7 @@ export function FamilyPage() {
                 <p>
                   Report the content or account in the app. Mute or block the
                   source. Walk through the steps together so your teen knows
-                  how to do it next time without you.
+                  how to do it next time without you. For serious reports, write down the username, approximate time, and what happened, but don't repost, forward, or save harmful content just to document it.
                 </p>
               </CardContent>
             </Card>
@@ -617,7 +618,7 @@ export function FamilyPage() {
                 <p>
                   If something looks illegal, involves a minor, or feels like
                   it's escalating offline, contact Divine support and, when
-                  appropriate, local authorities. Trust your gut on this one.
+                  appropriate, local authorities. Do not download, save, repost, forward, or share suspected child sexual abuse material (CSAM). Use the in-app report flow or Divine support so Divine can review and, where required, report apparent child sexual exploitation to the appropriate reporting channel or authority. Trust your gut on this one.
                 </p>
                 <p className="text-sm text-muted-foreground">
                   For serious or time-sensitive reports, use the report flow
@@ -628,7 +629,7 @@ export function FamilyPage() {
                   >
                     Divine support
                   </a>
-                  .
+                  , and call local emergency services if someone is in immediate danger.
                 </p>
               </CardContent>
             </Card>
