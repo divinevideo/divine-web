@@ -224,7 +224,7 @@ export function FamilyPage() {
         {/* 2. Talking with your teen */}
         <Anchor id="talking">
           <SectionHero
-            ="Talking with your teen"
+            eyebrow="Talking with your teen"
             icon={<ChatsCircle weight="fill" className="h-7 w-7" />}
             title="How to talk with your teen about social media"
             lead="The goal isn't to win the conversation. It's to keep having one. Teens who feel heard stay open. Teens who feel surveilled go quiet."
@@ -297,7 +297,7 @@ export function FamilyPage() {
         {/* 3. What Divine can / can't do */}
         <Anchor id="limits">
           <SectionHero
-            ="Divine’s role"
+            eyebrow="Divine’s role"
             icon={<ShieldCheck weight="fill" className="h-7 w-7" />}
             title="What Divine can and can't do"
             lead="We'd rather be useful than impressive. Here's the real picture of what the app side can help with—and where conversation, supervision, and human judgment still have to do the work."
@@ -393,7 +393,7 @@ export function FamilyPage() {
         {/* 4. How content settings work */}
         <Anchor id="settings">
           <SectionHero
-            ="Understanding content settings"
+            eyebrow="Understanding content settings"
             icon={<ListChecks weight="fill" className="h-7 w-7" />}
             title="How content settings work on Divine"
             lead="Settings are a useful layer. They are not a guarantee. The most important step is for the adult in the household to actually open them, read them, and adjust them together with the teen who'll use the account. For accounts used by teens, start with the most protective settings that still let the account work for your family, then loosen settings only after you have (a) talked through why the change makes sense, and (b) made the decision, as parents, to make that change."
@@ -433,7 +433,7 @@ export function FamilyPage() {
         {/* 5. Feed habits */}
         <Anchor id="habits">
           <SectionHero
-            ="Building healthier feed habits"
+            eyebrow="Building healthier feed habits"
             icon={<Path weight="fill" className="h-7 w-7" />}
             title="Feed habits and healthy stopping points"
             lead="Most short-form feeds are designed to keep going. The healthier skill isn't blocking the feed—it's noticing when you've had enough and choosing to stop. That's a skill adults are still learning too."
@@ -492,7 +492,7 @@ export function FamilyPage() {
         {/* 6. Family media plan */}
         <Anchor id="plan">
           <SectionHero
-            ="Creating a family media plan"
+            eyebrow="Creating a family media plan"
             icon={<UsersThree weight="fill" className="h-7 w-7" />}
             title="Building a plan for how your family uses media—including Divine"
             lead="A plan that everyone helped write is a plan that everyone is more likely to follow. Plans are also living documents—expect to revisit them every few months as kids get older and apps change."
@@ -552,7 +552,7 @@ export function FamilyPage() {
         {/* 7. What to do if upset */}
         <Anchor id="upset">
           <SectionHero
-            ="When something goes wrong"
+            eyebrow="When something goes wrong"
             icon={<Lifebuoy weight="fill" className="h-7 w-7" />}
             title="What to do if your child saw something upsetting"
             lead="Most kids will see something they wish they hadn't at some point—on any app. What helps most isn't a perfect filter. It's a parent who reacts in a way that makes the next conversation possible."
