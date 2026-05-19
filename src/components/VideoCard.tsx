@@ -32,12 +32,14 @@ import { useVideosInLists } from '@/hooks/useVideoLists';
 import { enhanceAuthorData } from '@/lib/generateProfile';
 import { genUserName } from '@/lib/genUserName';
 import { formatDistanceToNow } from 'date-fns';
+import { nip19 } from 'nostr-tools';
 import type { ParsedVideoData } from '@/types/video';
 import { SHORT_VIDEO_KIND } from '@/types/video';
 import type { NostrMetadata } from '@nostrify/nostrify';
 import { cn } from '@/lib/utils';
 import { formatClassicVineViewBreakdown, formatViewCount, formatCount } from '@/lib/formatUtils';
 import { getSafeProfileImage } from '@/lib/imageUtils';
+import { buildProfilePath } from '@/lib/eventRouting';
 import type { ViewTrafficSource } from '@/hooks/useViewEventPublisher';
 import { buildVideoNavigationUrl, type VideoNavigationContext } from '@/hooks/useVideoNavigation';
 import { useToast } from '@/hooks/useToast';
@@ -52,7 +54,6 @@ import { getOptimalVideoUrl } from '@/lib/bandwidthTracker';
 import { useBandwidthTier } from '@/hooks/useBandwidthTier';
 import { useSubtitles } from '@/hooks/useSubtitles';
 import { debugLog } from '@/lib/debug';
-import { nip19 } from 'nostr-tools';
 import { useLoginDialog } from '@/contexts/LoginDialogContext';
 import { AgeRestrictedMediaPlaceholder } from '@/components/AgeRestrictedMediaPlaceholder';
 
@@ -296,7 +297,7 @@ export function VideoCard({
     rawMetadata?.picture || video.authorAvatar || metadata.picture
   );
   const npub = nip19.npubEncode(video.pubkey);
-  const profileUrl = `/profile/${npub}`;
+  const profileUrl = buildProfilePath(npub);
 
   const reposterName = reposterData.isLoading
     ? t('videoCard.loadingProfile')
