@@ -156,7 +156,7 @@ export function KidsPolicyPage() {
               </CardHeader>
               <CardContent className="space-y-2 text-base leading-relaxed">
                 <p>
-                  Standard adult account. No parent step.
+                  Standard 16+ account. No teen-specific parent step, unless required by applicable law, Divine's policies, or the user's location.
                 </p>
                 <p className="text-muted-foreground text-sm">
                   Same path as anyone else on Divine. The rest of this page
