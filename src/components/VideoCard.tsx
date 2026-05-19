@@ -4,7 +4,6 @@
 import { useState, useCallback, useRef, useMemo, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Heart, Repeat as Repeat2, ChatCircle as MessageCircle, Share, Eye, DotsThreeVertical as MoreVertical, Flag, UserMinus as UserX, Trash as Trash2, SpeakerHigh as Volume2, SpeakerX as VolumeX, Code, Users, ListPlus, DownloadSimple as Download, ArrowsOutSimple as Maximize2, ClosedCaptioning as Captions, PushPin as Pin, PushPinSlash as PinOff, ArrowClockwise } from '@phosphor-icons/react';
-import { nip19 } from 'nostr-tools';
 import { Card, CardContent, type CardAccent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -33,12 +32,14 @@ import { useVideosInLists } from '@/hooks/useVideoLists';
 import { enhanceAuthorData } from '@/lib/generateProfile';
 import { genUserName } from '@/lib/genUserName';
 import { formatDistanceToNow } from 'date-fns';
+import { nip19 } from 'nostr-tools';
 import type { ParsedVideoData } from '@/types/video';
 import { SHORT_VIDEO_KIND } from '@/types/video';
 import type { NostrMetadata } from '@nostrify/nostrify';
 import { cn } from '@/lib/utils';
 import { formatClassicVineViewBreakdown, formatViewCount, formatCount } from '@/lib/formatUtils';
 import { getSafeProfileImage } from '@/lib/imageUtils';
+import { buildProfilePath } from '@/lib/eventRouting';
 import type { ViewTrafficSource } from '@/hooks/useViewEventPublisher';
 import { buildVideoNavigationUrl, type VideoNavigationContext } from '@/hooks/useVideoNavigation';
 import { useToast } from '@/hooks/useToast';
@@ -283,7 +284,6 @@ export function VideoCard({
   const metadata: NostrMetadata = author.metadata;
   const reposterMetadata: NostrMetadata | undefined = reposter?.metadata;
 
-  const npub = nip19.npubEncode(video.pubkey);
   // Use raw author data (pre-enhancement) to detect real vs generated names
   // enhanceAuthorData fills in generated names like "ElectricVine742" — we don't want those
   const rawMetadata = authorData.data?.metadata;
@@ -296,8 +296,8 @@ export function VideoCard({
   const profileImage = getSafeProfileImage(
     rawMetadata?.picture || video.authorAvatar || metadata.picture
   );
-  // Just use npub for now, we'll deal with NIP-05 later
-  const profileUrl = `/${npub}`;
+  const npub = nip19.npubEncode(video.pubkey);
+  const profileUrl = buildProfilePath(npub);
 
   const reposterName = reposterData.isLoading
     ? t('videoCard.loadingProfile')
