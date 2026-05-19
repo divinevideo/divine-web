@@ -380,7 +380,7 @@ export function KidsPolicyPage() {
         {/* 5. Family-account carve-out */}
         <Anchor id="family-account">
           <SectionHero
-            eyebrow="Family-account carve-out"
+            eyebrow="Families on Divine"
             icon={<HouseLine weight="fill" className="h-7 w-7" />}
             title="Families absolutely belong on Divine"
             lead="None of the rules above are about pushing your family off Divine. Families enjoying social media together is a good thing, and welcome here. The piece that matters is who holds the account."
