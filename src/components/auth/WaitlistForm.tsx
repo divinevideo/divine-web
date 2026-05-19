@@ -48,7 +48,7 @@ export function WaitlistForm(props: WaitlistFormProps) {
   }
 
   return (
-    <form className="space-y-4" onSubmit={onSubmit}>
+    <form className="space-y-4" data-hs-do-not-collect="true" onSubmit={onSubmit}>
       <label className="flex cursor-pointer items-center justify-center gap-2 text-sm text-muted-foreground" htmlFor="waitlist-newsletter">
         <Checkbox
           checked={newsletterOptIn}

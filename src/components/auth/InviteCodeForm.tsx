@@ -27,7 +27,7 @@ export function InviteCodeForm(props: InviteCodeFormProps) {
   } = props;
 
   return (
-    <form className="space-y-4" onSubmit={onSubmit}>
+    <form className="space-y-4" data-hs-do-not-collect="true" onSubmit={onSubmit}>
       <div className="space-y-2">
         <label className="text-sm font-medium" htmlFor="invite-code">
           {t('inviteCodeForm.label')}
