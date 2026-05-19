@@ -26,7 +26,7 @@ interface ReportContentDialogProps {
   open: boolean;
   onClose: () => void;
   eventId?: string;
-  pubkey?: string;
+  pubkey: string;
   contentType?: 'video' | 'user' | 'comment';
 }
 
@@ -50,7 +50,7 @@ export function ReportContentDialog({
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async () => {
-    if (!eventId && !pubkey) {
+    if (!pubkey) {
       toast({
         title: t('reportContentDialog.toastNothingTitle'),
         description: t('reportContentDialog.toastNothingDescription'),

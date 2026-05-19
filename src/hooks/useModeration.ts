@@ -220,15 +220,15 @@ export function useUnmuteItem() {
 export function toNip56ReportType(reason: ContentFilterReason): string {
   switch (reason) {
     case ContentFilterReason.SPAM: return 'spam';
-    // closest NIP-56 category; no harassment type exists in the spec
+    // NIP-56 has no harassment category; profanity is the closest fit per mobile alignment
     case ContentFilterReason.HARASSMENT: return 'profanity';
-    // violence falls under illegal content in NIP-56 scope
+    // Violence escalates to illegal per platform policy (aligned with mobile)
     case ContentFilterReason.VIOLENCE: return 'illegal';
     case ContentFilterReason.SEXUAL_CONTENT: return 'nudity';
     case ContentFilterReason.COPYRIGHT: return 'illegal';
     case ContentFilterReason.FALSE_INFO: return 'other';
     case ContentFilterReason.CHILD_SAFETY: return 'other';
-    // CSAM is illegal by definition
+    // CSAM is a subset of illegal content in NIP-56's taxonomy
     case ContentFilterReason.CSAM: return 'illegal';
     case ContentFilterReason.UNDERAGE_USER: return 'other';
     case ContentFilterReason.AI_GENERATED: return 'other';
@@ -279,7 +279,7 @@ export function useReportContent() {
       reporterName,
     }: {
       eventId?: string;
-      pubkey?: string;
+      pubkey: string;
       reason: ContentFilterReason;
       details?: string;
       contentType?: 'video' | 'user' | 'comment';
@@ -288,22 +288,18 @@ export function useReportContent() {
       if (!user) throw new Error('Must be logged in to report content');
 
       // NIP-56: p tag is required for all kind:1984 reports
-      if (!pubkey) {
-        throw new Error('Report requires reported author pubkey (p tag)');
-      }
-
       const tags: string[][] = [];
 
       const nip56Type = toNip56ReportType(reason);
       const nip32Label = toNip32ReportLabel(reason);
 
-      // Add reported event with NIP-56 report type
+      // NIP-56: always include p for the reported user
+      tags.push(['p', pubkey, nip56Type]);
+
+      // Include e when reporting a specific note or comment
       if (eventId) {
         tags.push(['e', eventId, nip56Type]);
       }
-
-      // Always include p for NIP-56 compliance
-      tags.push(['p', pubkey, nip56Type]);
 
       // Add label namespace (NIP-32)
       tags.push(['L', 'social.nos.ontology']);
