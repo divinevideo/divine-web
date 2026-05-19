@@ -575,7 +575,9 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
 
       const failedUrl = allUrls[currentUrlIndex] || hlsUrl || src;
       if (failedUrl && isProtectedDivineMediaUrl(failedUrl)) {
-        const { authorized, status } = await checkMediaAuth(failedUrl);
+        const authResult = await checkMediaAuth(failedUrl);
+        const authorized = authResult?.authorized ?? true;
+        const status = authResult?.status ?? 0;
         if (!authorized && (status === 401 || status === 403)) {
           debugError(`[VideoPlayer ${videoId}] Media auth required after load failure (${status})`);
 
@@ -755,7 +757,9 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
       const checkAuth = async () => {
         const urlToCheck = hlsUrl || allUrls[currentUrlIndex];
         if (urlToCheck && !isAdultVerified) {
-          const { authorized, status } = await checkMediaAuth(urlToCheck);
+          const authResult = await checkMediaAuth(urlToCheck);
+          const authorized = authResult?.authorized ?? true;
+          const status = authResult?.status ?? 0;
           setAuthCheckPending(false);
           if (!authorized && (status === 401 || status === 403)) {
             verboseLog(`[VideoPlayer ${videoId}] Preflight check: auth required (${status})`);
