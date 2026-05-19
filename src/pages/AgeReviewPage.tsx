@@ -108,7 +108,7 @@ export function AgeReviewPage() {
               <span>A note for anyone under 13 reading this</span>
             </div>
             <p>
-              We're sorry. Divine has to close under-13 accounts at the
+              We're sorry. Divine has to close under-13 accounts when Divine confirms or has actual knowledge that the account holder is under 13, and in any event no later than the
               15-day mark and delete the data Divine holds. Emailing
               won't pause the clock here—the rules around services for
               kids under 13 tie our hands. The same person can come back
@@ -192,7 +192,7 @@ export function AgeReviewPage() {
                     >
                       2.
                     </span>
-                    <span>Attach the video, or include a private link to it.</span>
+                    <span>Attach the video, or include a private link to it that is not posted publicly and does not require the teen to share a password or account login with Divine.</span>
                   </li>
                   <li className="flex items-start gap-3">
                     <span
@@ -215,7 +215,7 @@ export function AgeReviewPage() {
                     </span>
                     <span>
                       Don't post the video in the app. It stays between
-                      the family and Divine support.
+                      the family and Divine support. Please don't include government IDs, payment-card numbers, school records, medical information, passwords, Social Security numbers, or other sensitive documents. Divine only needs the short video and the account username for this review.
                     </span>
                   </li>
                 </ol>
@@ -241,7 +241,7 @@ export function AgeReviewPage() {
               </div>
               <p>
                 The video is used to confirm the situation and is handled by
-                Divine's support and trust &amp; safety team. It isn't
+                Divine's support and trust &amp; safety team. Divine uses the video only for account review, safety, legal, and compliance purposes, and keeps it only as long as reasonably necessary for those purposes unless a longer retention period is required or permitted by law. It isn't
                 published anywhere on Divine and isn't shared with other
                 users.
               </p>
@@ -357,7 +357,7 @@ export function AgeReviewPage() {
                   Support closes the account and deletes everything tied to
                   it from Divine's infrastructure—profile, videos,
                   comments, follow lists, and any email or IP-derived data
-                  on file.
+                  on file, except information Divine is required or permitted to keep for legal, safety, security, fraud-prevention, dispute-resolution, or compliance purposes.
                 </li>
                 <li>
                   Divine issues a deletion request across the Nostr network.
@@ -371,15 +371,15 @@ export function AgeReviewPage() {
                 </li>
               </ul>
               <p className="text-sm text-muted-foreground pt-2">
-                Any email to{" "}
+                For 13-to-15 accounts, an email to{" "}
                 <a
                   href={`mailto:${SUPPORT_EMAIL}`}
                   className="text-brand-dark-green dark:text-brand-green underline underline-offset-2 hover:opacity-80 break-all"
                 >
                   {SUPPORT_EMAIL}
                 </a>{" "}
-                from the account holder or a parent or guardian stops the
-                clock. A "we're working on it" reply counts.
+                from a parent or guardian within the 15-day window stops the
+                clock while Divine reviews the submission. For accounts flagged in error as belonging to someone under 16, an email from the account holder stating that they are 16 or older stops the clock while Divine reviews the submission. An email does not pause closure of an account once Divine confirms or has actual knowledge that the account holder is under 13. A "we're working on it" reply counts.
               </p>
             </CardContent>
           </Card>
@@ -428,7 +428,7 @@ export function AgeReviewPage() {
               {SUPPORT_EMAIL}
             </a>{" "}
             again. The team would rather hear from you twice than miss a
-            message.
+            message. If your first email was sent within the 15-day window, include the date and address you sent it from so Divine can confirm the timing.
           </p>
         </div>
       </div>
