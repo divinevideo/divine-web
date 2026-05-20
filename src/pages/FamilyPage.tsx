@@ -41,7 +41,7 @@ const SECTIONS: SectionAnchor[] = [
   { id: "habits", title: "Building healthier feed habits" },
   { id: "plan", title: "Creating a family media plan" },
   { id: "upset", title: "When something goes wrong" },
-  { id: "stir", title: "Hear from the experts" },
+  { id: "stir", title: "Hear from experts" },
   { id: "resources", title: "Outside resources" },
 ];
 
@@ -639,7 +639,7 @@ export function FamilyPage() {
         {/* 8. Rabble + STIR */}
         <Anchor id="stir">
           <SectionHero
-            eyebrow="Hear from the experts"
+            eyebrow="Hear from experts"
             icon={<Microphone weight="fill" className="h-7 w-7" />}
             title="Rabble + Pam Wisniewski / STIR"
             lead="The framing on this page—conversation over punishment, co-navigation over surveillance, pause and redirect over hard control—comes out of years of research from teams like the Socio-Technical Interaction Research (STIR) Lab."
