@@ -218,15 +218,14 @@ export function FamilyPage() {
             />
           </div>
           <p className="mt-5 text-xs leading-relaxed text-muted-foreground/80">
-            Grounded in peer-reviewed research on youth online safety —
-            Sweigart, Valliani, and Wisniewski,{" "}
+            This framing is drawn from{" "}
             <a
               href="https://doi.org/10.3390/socsci14050302"
               className="underline underline-offset-2 hover:text-brand-dark-green dark:hover:text-brand-green"
             >
-              “Pause, reflect, and redirect”
+              peer-reviewed research on youth online safety
             </a>
-            {" "}(<em>Social Sciences</em> 14:5).
+            .
           </p>
         </div>
       </section>
