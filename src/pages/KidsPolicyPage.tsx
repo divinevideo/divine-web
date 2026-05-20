@@ -136,12 +136,10 @@ export function KidsPolicyPage() {
               </CardHeader>
               <CardContent className="space-y-2 text-base leading-relaxed">
                 <p>
-                  In places where the law allows it, teens 13 to 15 can have their own accounts with a short parent or guardian video.
+                  Where local rules allow it, Divine offers a parent-supported path for teens 13 to 15.
                 </p>
                 <p className="text-muted-foreground text-sm">
-                  The video confirms the teen's age, that they have
-                  permission, and that the parent or guardian knows about
-                  the account and will supervise its use.
+                  This path requires a short private video from the teen and a parent or guardian confirming the teen’s age, permission to use Divine, and parent or guardian awareness and supervision. In some places, including countries with under-16 social media restrictions or stricter age-assurance rules, this path may not be available or may require additional steps.
                 </p>
               </CardContent>
             </Card>
