@@ -217,6 +217,19 @@ export function FamilyPage() {
               body="Pick the next step together—a setting to try, a person to mute, a break to take, a thing to do off the app."
             />
           </div>
+          <p className="mt-5 text-sm leading-relaxed text-muted-foreground">
+            Source for this framing: E. A. Sweigart, A. Valliani, and P. J.
+            Wisniewski, “Pause, reflect, and redirect: An approach to
+            empowering youth to be safer online by helping them make better
+            decisions,” <em>Social Sciences</em>, vol. 14, no. 5.{" "}
+            <a
+              href="https://doi.org/10.3390/socsci14050302"
+              className="text-brand-dark-green dark:text-brand-green underline underline-offset-2 hover:opacity-80"
+            >
+              doi:10.3390/socsci14050302
+            </a>
+            .
+          </p>
         </div>
       </section>
 
