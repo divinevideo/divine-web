@@ -494,7 +494,7 @@ export function FamilyPage() {
           <SectionHero
             eyebrow="Creating a family media plan"
             icon={<UsersThree weight="fill" className="h-7 w-7" />}
-            title="Building a plan for how your family uses media—including Divine"
+            title="Building a plan for how your family uses media—not just Divine"
             lead="A plan that everyone helped write is a plan that everyone is more likely to follow. Plans are also living documents—expect to revisit them every few months as kids get older and apps change."
           />
 
