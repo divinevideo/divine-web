@@ -103,7 +103,7 @@ export function KidsPolicyPage() {
             eyebrow="At a glance"
             icon={<Info weight="fill" className="h-7 w-7" />}
             title="Three age tiers, three different paths"
-            lead="Divine handles accounts differently depending on who's holding them. The short version:"
+            lead="Divine handles accounts differently depending on who's holding them and where they live. The short version:"
           />
 
           <div className="grid gap-6 md:grid-cols-3">
@@ -136,8 +136,7 @@ export function KidsPolicyPage() {
               </CardHeader>
               <CardContent className="space-y-2 text-base leading-relaxed">
                 <p>
-                  Teen-held accounts are allowed, with a short video from a
-                  parent or guardian.
+                  In places where the law allows it, teens 13 to 15 can have their own accounts with a short parent or guardian video.
                 </p>
                 <p className="text-muted-foreground text-sm">
                   The video confirms the teen's age, that they have
@@ -323,7 +322,7 @@ export function KidsPolicyPage() {
             eyebrow="13-15 accounts"
             icon={<VideoCamera weight="fill" className="h-7 w-7" />}
             title="Teen-held accounts need a parent or guardian video"
-            lead="Teens 13 to 15 can use Divine with a parent or guardian who's aware and involved. The video is how Divine knows that consent and supervision are real, without running an intrusive verification system. Depending on where the teen lives, Divine may require additional or different age-assurance, parental-consent, privacy, or account-safety steps before the account can stay open."
+            lead="Where permitted by law, teens 13 to 15 can use Divine with a parent or guardian who's aware and involved. The video is how Divine knows that consent and supervision are real, without running an intrusive verification system. Depending on where the teen lives, Divine may require additional or different age-assurance, parental-consent, privacy, or account-safety steps before the account can stay open."
           />
 
           <Card variant="brand" accent="green">
