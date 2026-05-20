@@ -193,12 +193,12 @@ export function KidsPolicyPage() {
                 are.
               </p>
               <p>
-                The 13-to-15 path is a different shape: a short private
+                Where the rules allow, Divine offers a different path for teens 13 to 15: a short private
                 video with a parent or guardian on camera. It's a real
                 human check, but it doesn't require Divine to operate an
                 ID-and-payment verification pipeline, and it doesn't
                 require the family to hand over more data than the video
-                itself. Imperfect, but more honest than the alternative.
+                itself. It’s not perfect, but it is more aligned with the kind of internet we want to build.
               </p>
             </CardContent>
           </Card>
