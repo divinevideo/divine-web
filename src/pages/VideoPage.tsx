@@ -17,6 +17,7 @@ import { useNostrPublish } from '@/hooks/useNostrPublish';
 import { useRepostVideo } from '@/hooks/usePublishVideo';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useVideoSocialMetrics } from '@/hooks/useVideoSocialMetrics';
+import { useLoginDialog } from '@/contexts/LoginDialogContext';
 import { useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/useToast';
 import { genUserName } from '@/lib/genUserName';
@@ -206,6 +207,8 @@ export function VideoPage() {
   // Social interaction hooks
   const [showCommentsForVideo, setShowCommentsForVideo] = useState<string | null>(null);
   const { user } = useCurrentUser();
+  const { openLoginDialog } = useLoginDialog();
+  const pendingSocialAction = useRef<{ action: 'like' | 'repost'; video: ParsedVideoData } | null>(null);
 
   // Batch fetch all user interactions in ONE query instead of per-video
   const { interactions: batchedInteractions } = useBatchedVideoInteractions(
@@ -280,13 +283,10 @@ export function VideoPage() {
   }, [context, navigate]);
 
   // Social interaction handlers (same as VideoFeed)
-  const handleLike = async (video: ParsedVideoData) => {
+  const handleLike = useCallback(async (video: ParsedVideoData) => {
     if (!user) {
-      toast({
-        title: t('videoPage.loginRequiredTitle'),
-        description: t('videoPage.loginRequiredLikeDescription'),
-        variant: 'destructive',
-      });
+      pendingSocialAction.current = { action: 'like', video };
+      openLoginDialog();
       return;
     }
 
@@ -323,15 +323,12 @@ export function VideoPage() {
         variant: 'destructive',
       });
     }
-  };
+  }, [user, openLoginDialog, publishEvent, toast, queryClient]);
 
-  const handleRepost = async (video: ParsedVideoData) => {
+  const handleRepost = useCallback(async (video: ParsedVideoData) => {
     if (!user) {
-      toast({
-        title: t('videoPage.loginRequiredTitle'),
-        description: t('videoPage.loginRequiredRepostDescription'),
-        variant: 'destructive',
-      });
+      pendingSocialAction.current = { action: 'repost', video };
+      openLoginDialog();
       return;
     }
 
@@ -375,7 +372,19 @@ export function VideoPage() {
         variant: 'destructive',
       });
     }
-  };
+  }, [user, openLoginDialog, repostVideo, isReposting, toast, queryClient]);
+
+  // Auto-execute pending like/repost after user signs in
+  useEffect(() => {
+    if (!user || !pendingSocialAction.current) return;
+    const { action, video } = pendingSocialAction.current;
+    pendingSocialAction.current = null;
+    if (action === 'like') {
+      void handleLike(video);
+    } else {
+      void handleRepost(video);
+    }
+  }, [user, handleLike, handleRepost]);
 
   const handleUnlike = async (likeEventId: string) => {
     if (!user) return;
