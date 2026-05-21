@@ -138,6 +138,14 @@ vi.mock('@/hooks/useToast', () => ({
   }),
 }));
 
+vi.mock('@/contexts/LoginDialogContext', () => ({
+  useLoginDialog: () => ({
+    isOpen: false,
+    openLoginDialog: vi.fn(),
+    closeLoginDialog: vi.fn(),
+  }),
+}));
+
 vi.mock('@/components/VideoCard', () => ({
   VideoCard: ({ video }: { video: { id: string } }) => <div data-testid="video-card">{video.id}</div>,
 }));
