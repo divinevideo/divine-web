@@ -207,7 +207,7 @@ export function VideoPage() {
   // Social interaction hooks
   const [showCommentsForVideo, setShowCommentsForVideo] = useState<string | null>(null);
   const { user } = useCurrentUser();
-  const { openLoginDialog } = useLoginDialog();
+  const { openLoginDialog, isOpen: loginDialogOpen, closeLoginDialog } = useLoginDialog();
   const pendingSocialAction = useRef<{ action: 'like' | 'repost'; video: ParsedVideoData } | null>(null);
 
   // Batch fetch all user interactions in ONE query instead of per-video
@@ -323,7 +323,7 @@ export function VideoPage() {
         variant: 'destructive',
       });
     }
-  }, [user, openLoginDialog, publishEvent, toast, queryClient]);
+  }, [user, t, openLoginDialog, publishEvent, toast, queryClient]);
 
   const handleRepost = useCallback(async (video: ParsedVideoData) => {
     if (!user) {
@@ -372,7 +372,7 @@ export function VideoPage() {
         variant: 'destructive',
       });
     }
-  }, [user, openLoginDialog, repostVideo, isReposting, toast, queryClient]);
+  }, [user, t, openLoginDialog, repostVideo, isReposting, toast, queryClient]);
 
   // Auto-execute pending like/repost after user signs in
   useEffect(() => {
@@ -385,6 +385,13 @@ export function VideoPage() {
       void handleRepost(video);
     }
   }, [user, handleLike, handleRepost]);
+
+  // Clear pending social action if dialog is dismissed without successful login.
+  // This prevents a stale pending action from replaying on an unrelated future login.
+  useEffect(() => {
+    if (loginDialogOpen) return;
+    pendingSocialAction.current = null;
+  }, [loginDialogOpen]);
 
   const handleUnlike = async (likeEventId: string) => {
     if (!user) return;

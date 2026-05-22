@@ -9,6 +9,11 @@ const { mockNavigate } = vi.hoisted(() => ({
   mockNavigate: vi.fn(),
 }));
 
+const { openLoginDialogMock, closeLoginDialogMock } = vi.hoisted(() => ({
+  openLoginDialogMock: vi.fn(),
+  closeLoginDialogMock: vi.fn(),
+}));
+
 vi.mock('@unhead/react', () => ({
   useSeoMeta: vi.fn(),
 }));
@@ -138,16 +143,14 @@ vi.mock('@/hooks/useToast', () => ({
   }),
 }));
 
-vi.mock('@/contexts/LoginDialogContext', () => ({
-  useLoginDialog: () => ({
-    isOpen: false,
-    openLoginDialog: vi.fn(),
-    closeLoginDialog: vi.fn(),
-  }),
-}));
-
 vi.mock('@/components/VideoCard', () => ({
-  VideoCard: ({ video }: { video: { id: string } }) => <div data-testid="video-card">{video.id}</div>,
+  VideoCard: ({ video }: { video: { id: string } }) => (
+    <div data-testid="video-card">
+      {video.id}
+      <button aria-label="Like video" data-testid="like-button" />
+      <button aria-label="Repost video" data-testid="repost-button" />
+    </div>
+  ),
 }));
 
 vi.mock('@/components/ui/card', () => ({
@@ -208,5 +211,21 @@ describe('VideoPage', () => {
     expect(url.searchParams.get('q')).toBe('twerking');
     expect(url.searchParams.get('sort')).toBe('top');
     expect(url.searchParams.get('index')).toBe('2');
+  });
+
+  it('clears pending social action when login dialog is dismissed without successful login', async () => {
+    openLoginDialogMock.mockReset();
+    closeLoginDialogMock.mockReset();
+
+    renderPage('/video/video-2');
+
+    const likeButton = document.querySelector('[data-testid="like-button"]') as HTMLButtonElement;
+    expect(likeButton).not.toBeNull();
+    fireEvent.click(likeButton);
+    expect(openLoginDialogMock).toHaveBeenCalledTimes(1);
+
+    closeLoginDialogMock();
+    fireEvent.click(likeButton);
+    expect(openLoginDialogMock).toHaveBeenCalledTimes(2);
   });
 });
