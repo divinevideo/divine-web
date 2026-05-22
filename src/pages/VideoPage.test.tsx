@@ -143,11 +143,19 @@ vi.mock('@/hooks/useToast', () => ({
   }),
 }));
 
+vi.mock('@/contexts/LoginDialogContext', () => ({
+  useLoginDialog: () => ({
+    isOpen: false,
+    openLoginDialog: openLoginDialogMock,
+    closeLoginDialog: closeLoginDialogMock,
+  }),
+}));
+
 vi.mock('@/components/VideoCard', () => ({
-  VideoCard: ({ video }: { video: { id: string } }) => (
+  VideoCard: ({ video, onLike }: { video: { id: string }; onLike?: () => void }) => (
     <div data-testid="video-card">
       {video.id}
-      <button aria-label="Like video" data-testid="like-button" />
+      <button aria-label="Like video" data-testid="like-button" onClick={onLike} />
       <button aria-label="Repost video" data-testid="repost-button" />
     </div>
   ),
