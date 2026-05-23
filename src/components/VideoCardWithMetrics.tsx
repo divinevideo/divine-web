@@ -11,6 +11,7 @@ import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useToast } from '@/hooks/useToast';
 import { useLoginDialog } from '@/contexts/LoginDialogContext';
 import { debugLog } from '@/lib/debug';
+import { getVisiblePlaybackCount } from '@/lib/playbackCount';
 import type { ParsedVideoData } from '@/types/video';
 import type { VideoNavigationContext } from '@/hooks/useVideoNavigation';
 import React from 'react';
@@ -113,7 +114,11 @@ function VideoCardWithMetricsInner({
     ? (video.loopCount ?? 0)
     : Math.max(video.loopCount ?? 0, socialMetrics.data?.loopCount ?? 0);
   const viewStartCount = Math.max(video.divineViewCount ?? 0, socialMetrics.data?.viewCount ?? 0);
-  const displayCount = loopCount > 0 ? loopCount : viewStartCount;
+  const displayCount = getVisiblePlaybackCount({
+    isVineMigrated: video.isVineMigrated,
+    loopCount,
+    viewStartCount,
+  });
   const videoForCard = React.useMemo(
     () => loopCount !== (video.loopCount ?? 0)
       ? { ...video, loopCount }
