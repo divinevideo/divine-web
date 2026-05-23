@@ -308,8 +308,10 @@ vi.mock('@/lib/utils', () => ({
 }));
 
 vi.mock('@/lib/formatUtils', () => ({
-  formatClassicVineViewBreakdown: () => '0 views',
-  formatViewCount: (count: number) => String(count),
+  formatClassicVineViewBreakdown: (_totalViews: number, originalLoops: number) =>
+    originalLoops > 0 ? `${originalLoops} Classic Loops` : null,
+  formatLoopCount: (count: number) => `${count} Loops`,
+  formatViewCount: (count: number) => `${count} views`,
   formatCount: (count: number) => String(count),
 }));
 
@@ -521,6 +523,37 @@ describe('VideoCard', () => {
 
     expect(screen.getByTestId('thumbnail-player')).toBeInTheDocument();
     expect(screen.queryByText('Log in to view')).not.toBeInTheDocument();
+  });
+
+  it('renders the native playback total instead of raw loop count', () => {
+    render(
+      <VideoCard
+        video={makeVideo({
+          loopCount: 10,
+          isVineMigrated: false,
+        })}
+        viewCount={31}
+      />
+    );
+
+    expect(screen.getByText('31 Loops')).toBeInTheDocument();
+    expect(screen.queryByText('10 Classic Loops')).not.toBeInTheDocument();
+  });
+
+  it('keeps migrated Vine cards on the archived loop count', () => {
+    render(
+      <VideoCard
+        video={makeVideo({
+          loopCount: 10,
+          isVineMigrated: true,
+          originalVineTimestamp: 1_400_000_000,
+        })}
+        viewCount={31}
+      />
+    );
+
+    expect(screen.getByText('10 Classic Loops')).toBeInTheDocument();
+    expect(screen.queryByText('31 Loops')).not.toBeInTheDocument();
   });
 
   it('lets failed playback be retried without remounting the card', () => {
