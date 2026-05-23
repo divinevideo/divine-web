@@ -28,7 +28,7 @@ import { enhanceAuthorData } from '@/lib/generateProfile';
 import { genUserName } from '@/lib/genUserName';
 import { formatDistanceToNow } from 'date-fns';
 import { nip19 } from 'nostr-tools';
-import { formatClassicVineViewBreakdown, formatCount, formatViewCount } from '@/lib/formatUtils';
+import { formatClassicVineViewBreakdown, formatCount, formatLoopCount } from '@/lib/formatUtils';
 import { getSafeProfileImage } from '@/lib/imageUtils';
 import { buildProfilePath } from '@/lib/eventRouting';
 import { useBadges } from '@/hooks/useBadges';
@@ -124,7 +124,9 @@ export function FullscreenVideoItem({
   const canDelete = useCanDeleteVideo(video);
   const { data: reactions } = useVideoReactions(video.id, video.pubkey, video.vineId);
   const { data: lists } = useVideosInLists(video.vineId ?? undefined);
-  const classicViewBreakdown = formatClassicVineViewBreakdown(viewCount, video.loopCount ?? 0);
+  const playbackCountLabel = isClassicVine
+    ? formatClassicVineViewBreakdown(viewCount, video.loopCount ?? 0)
+    : formatLoopCount(viewCount);
 
   // Get author data
   const authorData = useAuthor(video.pubkey, {
@@ -394,10 +396,10 @@ export function FullscreenVideoItem({
               )}
 
               {/* View count */}
-              {viewCount > 0 && (
+              {viewCount > 0 && playbackCountLabel && (
                 <div className="flex items-center gap-1 text-sm text-white/80 drop-shadow-lg mt-1">
                   <Eye className="h-3 w-3" />
-                  <span>{classicViewBreakdown || formatViewCount(viewCount)}</span>
+                  <span>{playbackCountLabel}</span>
                 </div>
               )}
             </div>
