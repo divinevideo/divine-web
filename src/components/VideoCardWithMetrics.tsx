@@ -109,11 +109,21 @@ function VideoCardWithMetricsInner({
     });
   };
 
-  const divineViewCount = Math.max(video.divineViewCount ?? 0, socialMetrics.data?.viewCount ?? 0);
+  const loopCount = video.isVineMigrated
+    ? (video.loopCount ?? 0)
+    : Math.max(video.loopCount ?? 0, socialMetrics.data?.loopCount ?? 0);
+  const viewStartCount = Math.max(video.divineViewCount ?? 0, socialMetrics.data?.viewCount ?? 0);
+  const displayCount = loopCount > 0 ? loopCount : viewStartCount;
+  const videoForCard = React.useMemo(
+    () => loopCount !== (video.loopCount ?? 0)
+      ? { ...video, loopCount }
+      : video,
+    [loopCount, video]
+  );
 
   return (
     <VideoCard
-      video={video}
+      video={videoForCard}
       mode={mode}
       isPriority={isPriority}
       onLike={handleVideoLike}
@@ -127,7 +137,7 @@ function VideoCardWithMetricsInner({
       likeCount={(video.likeCount ?? 0) + (socialMetrics.data?.likeCount ?? 0)}
       repostCount={(video.repostCount ?? 0) + (socialMetrics.data?.repostCount ?? 0)}
       commentCount={(video.commentCount ?? 0) + (socialMetrics.data?.commentCount ?? 0)}
-      viewCount={divineViewCount + (video.loopCount ?? 0)}
+      viewCount={displayCount}
       showComments={showComments}
       navigationContext={navigationContext}
       videoIndex={index}
