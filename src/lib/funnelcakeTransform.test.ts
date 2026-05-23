@@ -113,6 +113,120 @@ describe('transformFunnelcakeVideo', () => {
     expect(video.proofMode).toBeUndefined();
   });
 
+  it('maps compact proof summary when list endpoint omits tags', () => {
+    const video = transformFunnelcakeVideo(makeRawVideo({
+      proof: {
+        status: 'present',
+        level: 'basic_proof',
+        checked_at: 1779494400,
+        version: 1,
+        checks: {
+          proofmode_present: true,
+          proofmode_parse_ok: true,
+          pgp_signature_present: true,
+          pgp_signature_valid: null,
+          device_attestation_present: false,
+          device_attestation_valid: null,
+          c2pa_manifest_present: false,
+          c2pa_manifest_valid: null,
+        },
+      },
+    }));
+
+    expect(video.proofMode?.level).toBe('basic_proof');
+    expect(video.proofMode?.manifest).toBe('summary:present');
+    expect(video.proofMode?.pgpFingerprint).toBe('summary:present');
+    expect(video.proofMode?.deviceAttestation).toBeUndefined();
+    expect(video.proofMode?.c2paManifestId).toBeUndefined();
+  });
+
+  it('ignores invalid compact proof summaries', () => {
+    const video = transformFunnelcakeVideo(makeRawVideo({
+      proof: {
+        status: 'invalid',
+        version: 1,
+        checks: {
+          proofmode_present: true,
+          proofmode_parse_ok: false,
+          pgp_signature_present: true,
+          pgp_signature_valid: false,
+          device_attestation_present: true,
+          device_attestation_valid: false,
+          c2pa_manifest_present: true,
+          c2pa_manifest_valid: false,
+        },
+      },
+    }));
+
+    expect(video.proofMode).toBeUndefined();
+  });
+
+  it('defaults verified compact proof summaries to verified_web when level is missing', () => {
+    const video = transformFunnelcakeVideo(makeRawVideo({
+      proof: {
+        status: 'verified',
+        checked_at: 1779494400,
+        version: 1,
+        checks: {
+          proofmode_present: true,
+          proofmode_parse_ok: true,
+          pgp_signature_present: true,
+          pgp_signature_valid: true,
+          device_attestation_present: true,
+          device_attestation_valid: true,
+          c2pa_manifest_present: true,
+          c2pa_manifest_valid: true,
+        },
+      },
+    }));
+
+    expect(video.proofMode?.level).toBe('verified_web');
+    expect(video.proofMode?.manifest).toBe('summary:present');
+    expect(video.proofMode?.pgpFingerprint).toBe('summary:present');
+    expect(video.proofMode?.deviceAttestation).toBe('summary:present');
+    expect(video.proofMode?.c2paManifestId).toBe('summary:present');
+  });
+
+  it('does not mark explicitly invalid proof components as present', () => {
+    const video = transformFunnelcakeVideo(makeRawVideo({
+      proof: {
+        status: 'present',
+        version: 1,
+        checks: {
+          proofmode_present: true,
+          proofmode_parse_ok: false,
+          pgp_signature_present: true,
+          pgp_signature_valid: false,
+          device_attestation_present: true,
+          device_attestation_valid: false,
+          c2pa_manifest_present: true,
+          c2pa_manifest_valid: false,
+        },
+      },
+    }));
+
+    expect(video.proofMode).toBeUndefined();
+  });
+
+  it('maps partial compact proof summaries only when a usable component is present', () => {
+    const video = transformFunnelcakeVideo(makeRawVideo({
+      proof: {
+        status: 'partial',
+        version: 1,
+        checks: {
+          proofmode_present: true,
+          proofmode_parse_ok: false,
+          c2pa_manifest_present: true,
+          c2pa_manifest_valid: null,
+        },
+      },
+    }));
+
+    expect(video.proofMode?.level).toBe('basic_proof');
+    expect(video.proofMode?.manifest).toBeUndefined();
+    expect(video.proofMode?.c2paManifestId).toBe('summary:present');
+  });
+
   it('extracts proofMode when verification tags are present (single-video shape)', () => {
     const video = transformFunnelcakeVideo(makeRawVideo({
       tags: [
