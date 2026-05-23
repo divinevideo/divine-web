@@ -1,7 +1,7 @@
 // ABOUTME: Fullscreen TikTok-style vertical swipe video feed
 // ABOUTME: Uses CSS scroll-snap for native momentum scrolling between videos
 
-import { useRef, useEffect, useState, useCallback } from 'react';
+import { useRef, useEffect, useState, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { FullscreenVideoItem } from '@/components/FullscreenVideoItem';
@@ -137,11 +137,21 @@ function FullscreenVideoWithMetrics({
     }
   };
 
-  const divineViewCount = Math.max(video.divineViewCount ?? 0, socialMetrics.data?.viewCount ?? 0);
+  const loopCount = video.isVineMigrated
+    ? (video.loopCount ?? 0)
+    : Math.max(video.loopCount ?? 0, socialMetrics.data?.loopCount ?? 0);
+  const viewStartCount = Math.max(video.divineViewCount ?? 0, socialMetrics.data?.viewCount ?? 0);
+  const displayCount = loopCount > 0 ? loopCount : viewStartCount;
+  const videoForItem = useMemo(
+    () => loopCount !== (video.loopCount ?? 0)
+      ? { ...video, loopCount }
+      : video,
+    [loopCount, video]
+  );
 
   return (
     <FullscreenVideoItem
-      video={video}
+      video={videoForItem}
       isActive={isActive}
       onBack={onBack}
       onLike={handleLike}
@@ -153,7 +163,7 @@ function FullscreenVideoWithMetrics({
       likeCount={(video.likeCount ?? 0) + (socialMetrics.data?.likeCount ?? 0)}
       repostCount={(video.repostCount ?? 0) + (socialMetrics.data?.repostCount ?? 0)}
       commentCount={(video.commentCount ?? 0) + (socialMetrics.data?.commentCount ?? 0)}
-      viewCount={divineViewCount + (video.loopCount ?? 0)}
+      viewCount={displayCount}
       onEnded={onEnded}
       loopPlayback={loopPlayback}
       playbackId={`fullscreen:${video.id}`}

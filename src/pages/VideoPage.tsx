@@ -456,7 +456,17 @@ export function VideoPage() {
     const socialMetrics = useVideoSocialMetrics(video.id, video.pubkey, video.vineId, {
       enabled: true,
     });
-    const divineViewCount = Math.max(video.divineViewCount ?? 0, socialMetrics.data?.viewCount ?? 0);
+    const loopCount = video.isVineMigrated
+      ? (video.loopCount ?? 0)
+      : Math.max(video.loopCount ?? 0, socialMetrics.data?.loopCount ?? 0);
+    const viewStartCount = Math.max(video.divineViewCount ?? 0, socialMetrics.data?.viewCount ?? 0);
+    const displayCount = loopCount > 0 ? loopCount : viewStartCount;
+    const videoForCard = useMemo(
+      () => loopCount !== (video.loopCount ?? 0)
+        ? { ...video, loopCount }
+        : video,
+      [loopCount, video]
+    );
 
     const handleVideoLike = async () => {
       if (userInteractions?.hasLiked) {
@@ -484,7 +494,7 @@ export function VideoPage() {
 
     return (
       <VideoCard
-        video={video}
+        video={videoForCard}
         className="max-w-xl mx-auto"
         layout="vertical"
         onLike={handleVideoLike}
@@ -496,7 +506,7 @@ export function VideoPage() {
         likeCount={video.likeCount ?? 0}
         repostCount={video.repostCount ?? 0}
         commentCount={video.commentCount ?? 0}
-        viewCount={(video.loopCount ?? 0) + divineViewCount}
+        viewCount={displayCount}
         showComments={showCommentsForVideo === video.id}
         navigationContext={context || undefined}
       />
