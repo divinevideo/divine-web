@@ -22,6 +22,7 @@ import { useToast } from '@/hooks/useToast';
 import { genUserName } from '@/lib/genUserName';
 import { nip19 } from 'nostr-tools';
 import { debugLog } from '@/lib/debug';
+import { getVisiblePlaybackCount } from '@/lib/playbackCount';
 import { reportFunnelcakeFallback } from '@/lib/funnelcakeFallbackReporting';
 import type { ParsedVideoData, UserInteractions } from '@/types/video';
 
@@ -457,7 +458,11 @@ export function VideoPage() {
       ? (video.loopCount ?? 0)
       : Math.max(video.loopCount ?? 0, socialMetrics.data?.loopCount ?? 0);
     const viewStartCount = Math.max(video.divineViewCount ?? 0, socialMetrics.data?.viewCount ?? 0);
-    const displayCount = loopCount > 0 ? loopCount : viewStartCount;
+    const displayCount = getVisiblePlaybackCount({
+      isVineMigrated: video.isVineMigrated,
+      loopCount,
+      viewStartCount,
+    });
     const videoForCard = useMemo(
       () => loopCount !== (video.loopCount ?? 0)
         ? { ...video, loopCount }
