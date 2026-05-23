@@ -15,6 +15,7 @@ import { useToast } from '@/hooks/useToast';
 import { useShare } from '@/hooks/useShare';
 import { getVideoShareData } from '@/lib/shareUtils';
 import { debugLog } from '@/lib/debug';
+import { getVisiblePlaybackCount } from '@/lib/playbackCount';
 import type { ParsedVideoData } from '@/types/video';
 
 interface FullscreenFeedProps {
@@ -141,7 +142,11 @@ function FullscreenVideoWithMetrics({
     ? (video.loopCount ?? 0)
     : Math.max(video.loopCount ?? 0, socialMetrics.data?.loopCount ?? 0);
   const viewStartCount = Math.max(video.divineViewCount ?? 0, socialMetrics.data?.viewCount ?? 0);
-  const displayCount = loopCount > 0 ? loopCount : viewStartCount;
+  const displayCount = getVisiblePlaybackCount({
+    isVineMigrated: video.isVineMigrated,
+    loopCount,
+    viewStartCount,
+  });
   const videoForItem = useMemo(
     () => loopCount !== (video.loopCount ?? 0)
       ? { ...video, loopCount }
