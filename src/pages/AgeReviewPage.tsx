@@ -123,7 +123,7 @@ export function AgeReviewPage() {
             eyebrow="If you're 13 to 15"
             icon={<VideoCamera weight="fill" className="h-7 w-7" />}
             title="A guided start"
-            lead={`Teens 13 to 15 can use Divine with a parent or guardian who's aware and involved. To keep the account open, a parent or guardian sends a short private video confirming the situation. The email needs to land within ${REVIEW_WINDOW_DAYS} days of the in-app notice.`}
+            lead={`Where local rules allow it, teens 13 to 15 can use Divine with a parent or guardian who's aware and involved. To keep the account open, a parent or guardian sends a short private video confirming the situation. The email needs to land within ${REVIEW_WINDOW_DAYS} days of the in-app notice.`}
           />
 
           <div className="grid gap-6 md:grid-cols-2">
