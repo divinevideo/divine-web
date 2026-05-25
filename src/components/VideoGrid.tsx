@@ -7,6 +7,7 @@ import { Play, Repeat } from '@phosphor-icons/react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { AgeRestrictedMediaPlaceholder } from '@/components/AgeRestrictedMediaPlaceholder';
+import { BookmarkButton } from '@/components/BookmarkButton';
 import { useLoginDialog } from '@/contexts/LoginDialogContext';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { checkMediaAuth, useAdultVerification } from '@/hooks/useAdultVerification';
@@ -313,11 +314,18 @@ export function VideoGrid({ videos, loading = false, className, navigationContex
 
               {/* Loop Count Badge */}
               {!isAgeGated && video.loopCount !== undefined && video.loopCount > 0 && (
-                <div className="absolute bottom-2 right-2">
+                <div className="absolute bottom-2 left-2">
                   <Badge variant="secondary" className="text-xs bg-black/80 text-white">
                     <Repeat className="w-3 h-3 mr-1" />
                     {formatLoops(video.loopCount)}
                   </Badge>
+                </div>
+              )}
+
+              {/* Bookmark Button */}
+              {!isAgeGated && user && (
+                <div className="absolute bottom-2 right-2 z-10">
+                  <BookmarkButton videoId={video.id} size="sm" />
                 </div>
               )}
 

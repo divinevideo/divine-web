@@ -8,7 +8,7 @@ import { nip19 } from 'nostr-tools';
 import { useHead, useSeoMeta } from '@unhead/react';
 import { feedUrls } from '@/lib/feedUrls';
 import { useRssFeedAvailable } from '@/hooks/useRssFeedAvailable';
-import { SquaresFour as Grid, List, CircleNotch as Loader2 } from '@phosphor-icons/react';
+import { Play, Heart, BookmarkSimple, SquaresFour as Grid, List, CircleNotch as Loader2 } from '@phosphor-icons/react';
 import { PROFILE_SORT_MODES } from '@/lib/constants/sortModes';
 import InfiniteScroll from 'react-infinite-scroll-component';
 import { ProfileHeader } from '@/components/ProfileHeader';
@@ -30,7 +30,9 @@ import { useClassicVineArchiveStats } from '@/hooks/useClassicVineArchiveStats';
 import { useFollowRelationship, useFollowUser, useUnfollowUser, FollowRaceError } from '@/hooks/useFollowRelationship';
 import { useFollowListSafetyCheck } from '@/hooks/useFollowListSafetyCheck';
 import { PinnedVideosSection } from '@/components/PinnedVideosSection';
+import { cn } from '@/lib/utils';
 import { useLoginDialog } from '@/contexts/LoginDialogContext';
+import { BookmarkedVideosSection } from '@/components/BookmarkedVideosSection';
 import { toast } from '@/hooks/useToast';
 import { debugLog } from '@/lib/debug';
 import { getDivineNip05Info } from '@/lib/nip05Utils';
@@ -45,6 +47,7 @@ export function ProfilePage() {
   const { npub, nip19: nip19Param } = useParams<{ npub?: string; nip19?: string }>();
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [sortMode, setSortMode] = useState<SortMode | undefined>(undefined);
+  const [activeTab, setActiveTab] = useState<'videos' | 'liked' | 'saved'>('videos');
   const [editProfileOpen, setEditProfileOpen] = useState(false);
   const [safetyDialogOpen, setSafetyDialogOpen] = useState(false);
   const [pendingFollowAction, setPendingFollowAction] = useState<boolean | null>(null);
@@ -409,119 +412,169 @@ export function ProfilePage() {
 
         {/* Content Section */}
         <div className="space-y-4">
-          {/* View Mode Toggle + Sort */}
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-xl font-semibold">{t('profilePage.videosHeading')}</h2>
-              <p className="text-muted-foreground text-sm">
-                {videosLoading
-                  ? t('profilePage.loadingFrom', { name: displayName })
-                  : t('profilePage.videosCountFrom', { count: stats.videosCount, name: displayName })}
-              </p>
-            </div>
-
-            <div className="flex items-center gap-3">
-              {/* Sort Mode */}
-              <div className="flex items-center gap-1">
-                {PROFILE_SORT_MODES.map(mode => {
-                  const ModeIcon = mode.icon;
-                  const isSelected = sortMode === mode.value;
-                  return (
-                    <button
-                      key={mode.label}
-                      onClick={() => setSortMode(mode.value as SortMode)}
-                      className={`
-                        flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all
-                        ${isSelected
-                          ? 'bg-primary text-primary-foreground shadow-sm'
-                          : 'bg-brand-light-green dark:bg-brand-dark-green hover:bg-muted text-muted-foreground hover:text-foreground'
-                        }
-                      `}
-                      data-testid={`sort-${mode.label.toLowerCase().replace(' ', '-')}`}
-                    >
-                      <ModeIcon className="h-3.5 w-3.5" />
-                      <span>{mode.label}</span>
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* View Mode */}
-              <div className="flex items-center gap-1 border-l pl-3">
-                <Button
-                  variant={viewMode === 'grid' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setViewMode('grid')}
-                  data-testid="grid-view-button"
-                >
-                  <Grid className="w-4 h-4" />
-                </Button>
-                <Button
-                  variant={viewMode === 'list' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setViewMode('list')}
-                  data-testid="list-view-button"
-                >
-                  <List className="w-4 h-4" />
-                </Button>
-              </div>
-            </div>
+          {/* Tab Navigation */}
+          <div className="flex items-center gap-2 mb-4">
+            <button
+              onClick={() => setActiveTab('videos')}
+              className={cn(
+                "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all",
+                activeTab === 'videos'
+                  ? 'bg-primary text-primary-foreground shadow-sm'
+                  : 'bg-brand-light-green dark:bg-brand-dark-green hover:bg-muted text-muted-foreground'
+              )}
+            >
+              <Play className="h-4 w-4" />
+              <span>{t('profilePage.videosTab')}</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('liked')}
+              className={cn(
+                "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all",
+                activeTab === 'liked'
+                  ? 'bg-primary text-primary-foreground shadow-sm'
+                  : 'bg-brand-light-green dark:bg-brand-dark-green hover:bg-muted text-muted-foreground'
+              )}
+            >
+              <Heart className="h-4 w-4" />
+              <span>{t('profilePage.likedTab')}</span>
+            </button>
+            {isOwnProfile && currentUser && (
+              <button
+                onClick={() => setActiveTab('saved')}
+                className={cn(
+                  "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all",
+                  activeTab === 'saved'
+                    ? 'bg-primary text-primary-foreground shadow-sm'
+                    : 'bg-brand-light-green dark:bg-brand-dark-green hover:bg-muted text-muted-foreground'
+                )}
+              >
+                <BookmarkSimple className="h-4 w-4" />
+                <span>{t('profilePage.savedTab')}</span>
+              </button>
+            )}
           </div>
 
-          {/* Videos Display */}
-          {videosLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
-            </div>
-          ) : videosError ? (
-            <Card className="border-destructive">
-              <CardContent className="py-12 text-center">
-                <p className="text-destructive mb-4">{t('profilePage.failedToLoadVideos')}</p>
-                <Button variant="outline" onClick={() => window.location.reload()}>
-                  {t('profilePage.tryAgain')}
-                </Button>
-              </CardContent>
-            </Card>
-          ) : viewMode === 'grid' ? (
-            <InfiniteScroll
-              dataLength={videos.length}
-              next={fetchNextPage}
-              hasMore={hasNextPage ?? false}
-              loader={
-                <div className="h-16 flex items-center justify-center col-span-full">
-                  <div className="flex items-center gap-3">
-                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                    <span className="text-sm text-muted-foreground">{t('profilePage.loadingMore')}</span>
-                  </div>
+          {/* View Mode Toggle + Sort */}
+          {activeTab !== 'saved' && (
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-semibold">{t('profilePage.videosHeading')}</h2>
+                <p className="text-muted-foreground text-sm">
+                  {videosLoading
+                    ? t('profilePage.loadingFrom', { name: displayName })
+                    : t('profilePage.videosCountFrom', { count: stats.videosCount, name: displayName })}
+                </p>
+              </div>
+
+              <div className="flex items-center gap-3">
+                {/* Sort Mode */}
+                <div className="flex items-center gap-1">
+                  {PROFILE_SORT_MODES.map(mode => {
+                    const ModeIcon = mode.icon;
+                    const isSelected = sortMode === mode.value;
+                    return (
+                      <button
+                        key={mode.label}
+                        onClick={() => setSortMode(mode.value as SortMode)}
+                        className={cn(
+                          "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all",
+                          isSelected
+                            ? 'bg-primary text-primary-foreground shadow-sm'
+                            : 'bg-brand-light-green dark:bg-brand-dark-green hover:bg-muted text-muted-foreground hover:text-foreground'
+                        )}
+                        data-testid={`sort-${mode.label.toLowerCase().replace(' ', '-')}`}
+                      >
+                        <ModeIcon className="h-3.5 w-3.5" />
+                        <span>{mode.label}</span>
+                      </button>
+                    );
+                  })}
                 </div>
-              }
-              endMessage={
-                videos.length > 10 ? (
-                  <div className="py-8 text-center text-sm text-muted-foreground col-span-full">
-                    <p>{t('profilePage.allSeen', { count: stats.videosCount })}</p>
-                  </div>
-                ) : null
-              }
-            >
-              <VideoGrid
-                videos={videos || []}
-                loading={videosLoading}
-                className="min-h-[200px]"
-                navigationContext={{
-                  source: 'profile',
-                  pubkey: pubkey || undefined,
-                }}
-              />
-            </InfiniteScroll>
+
+                {/* View Mode */}
+                <div className="flex items-center gap-1 border-l pl-3">
+                  <Button
+                    variant={viewMode === 'grid' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setViewMode('grid')}
+                    data-testid="grid-view-button"
+                  >
+                    <Grid className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    variant={viewMode === 'list' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setViewMode('list')}
+                    data-testid="list-view-button"
+                  >
+                    <List className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Content - Saved tab or regular videos */}
+          {activeTab === 'saved' && isOwnProfile ? (
+            <BookmarkedVideosSection pubkey={pubkey} />
           ) : (
-            <VideoFeed
-              feedType="profile"
-              sortMode={sortMode}
-              pubkey={pubkey}
-              data-testid="video-feed-profile"
-              data-profile-testid={`feed-profile-${identifier}`}
-              className="space-y-6"
-            />
+            <>
+              {/* Videos Display */}
+              {videosLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+                </div>
+              ) : videosError ? (
+                <Card className="border-destructive">
+                  <CardContent className="py-12 text-center">
+                    <p className="text-destructive mb-4">{t('profilePage.failedToLoadVideos')}</p>
+                    <Button variant="outline" onClick={() => window.location.reload()}>
+                      {t('profilePage.tryAgain')}
+                    </Button>
+                  </CardContent>
+                </Card>
+              ) : viewMode === 'grid' ? (
+                <InfiniteScroll
+                  dataLength={videos.length}
+                  next={fetchNextPage}
+                  hasMore={hasNextPage ?? false}
+                  loader={
+                    <div className="h-16 flex items-center justify-center col-span-full">
+                      <div className="flex items-center gap-3">
+                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                        <span className="text-sm text-muted-foreground">{t('profilePage.loadingMore')}</span>
+                      </div>
+                    </div>
+                  }
+                  endMessage={
+                    videos.length > 10 ? (
+                      <div className="py-8 text-center text-sm text-muted-foreground col-span-full">
+                        <p>{t('profilePage.allSeen', { count: stats.videosCount })}</p>
+                      </div>
+                    ) : null
+                  }
+                >
+                  <VideoGrid
+                    videos={videos || []}
+                    loading={videosLoading}
+                    className="min-h-[200px]"
+                    navigationContext={{
+                      source: 'profile',
+                      pubkey: pubkey || undefined,
+                    }}
+                  />
+                </InfiniteScroll>
+              ) : (
+                <VideoFeed
+                  feedType="profile"
+                  sortMode={sortMode}
+                  pubkey={pubkey}
+                  data-testid="video-feed-profile"
+                  data-profile-testid={`feed-profile-${identifier}`}
+                  className="space-y-6"
+                />
+              )}
+            </>
           )}
         </div>
       </div>

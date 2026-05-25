@@ -30,6 +30,11 @@ vi.mock('@/hooks/useAdultVerification', () => ({
   })),
 }));
 
+vi.mock('@/hooks/useBookmarks', () => ({
+  useBookmarkedVideoIds: vi.fn(() => ({ data: [], isLoading: false, error: undefined })),
+  useBookmarkVideo: vi.fn(() => ({ mutate: vi.fn(), isPending: false, reset: vi.fn() })),
+}));
+
 function makeVideo(overrides: Partial<ParsedVideoData> = {}): ParsedVideoData {
   return {
     id: 'video-1',
