@@ -856,7 +856,12 @@
     "tryAgain": "Coba lagi",
     "loadingMore": "Memuat lebih banyak video...",
     "allSeen_one": "Kamu sudah lihat semua {{count}} video",
-    "allSeen_other": "Kamu sudah lihat semua {{count}} video"
+    "allSeen_other": "Kamu sudah lihat semua {{count}} video",
+    "videosTab": "Video",
+    "likedTab": "Disukai",
+    "likedVideosComingSoon": "Video yang disukai segera hadir",
+    "likedVideosSubtitle": "Suka NIP-51 ada di roadmap kami",
+    "savedTab": "Disimpan"
   },
   "categoryPage": {
     "rssFeedTitle": "Video {{name}} - Divine",

@@ -860,7 +860,12 @@
     "tryAgain": "حاول مجدداً",
     "loadingMore": "جارٍ تحميل المزيد من الفيديوهات...",
     "allSeen_one": "شاهدت كل الـ{{count}} فيديو",
-    "allSeen_other": "شاهدت كل الـ{{count}} فيديو"
+    "allSeen_other": "شاهدت كل الـ{{count}} فيديو",
+    "videosTab": "الفيديوهات",
+    "likedTab": "المُعجب بها",
+    "likedVideosComingSoon": "الفيديوهات المُعجب بها قادمة قريباً",
+    "likedVideosSubtitle": "الإعجابات NIP-51 في خارطة طريقنا",
+    "savedTab": "المحفوظة"
   },
   "categoryPage": {
     "rssFeedTitle": "فيديوهات {{name}} - Divine",

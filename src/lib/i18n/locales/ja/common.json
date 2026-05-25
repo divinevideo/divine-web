@@ -856,7 +856,12 @@
     "tryAgain": "もう一度試す",
     "loadingMore": "さらに動画を読み込み中...",
     "allSeen_one": "{{count}}本の動画をすべて見ました",
-    "allSeen_other": "{{count}}本の動画をすべて見ました"
+    "allSeen_other": "{{count}}本の動画をすべて見ました",
+    "videosTab": "動画",
+    "likedTab": "いいね",
+    "likedVideosComingSoon": "いいねした動画を 곧公開",
+    "likedVideosSubtitle": "NIP-51いいねはロードマップにあります",
+    "savedTab": "保存済み"
   },
   "categoryPage": {
     "rssFeedTitle": "{{name}}の動画 - Divine",

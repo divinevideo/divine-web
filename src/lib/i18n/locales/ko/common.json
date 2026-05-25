@@ -856,7 +856,12 @@
     "tryAgain": "다시 시도",
     "loadingMore": "비디오 더 불러오는 중...",
     "allSeen_one": "비디오 {{count}}개를 다 봤어요",
-    "allSeen_other": "비디오 {{count}}개를 다 봤어요"
+    "allSeen_other": "비디오 {{count}}개를 다 봤어요",
+    "videosTab": "동영상",
+    "likedTab": "좋아요",
+    "likedVideosComingSoon": "좋아요한 동영상 곧 출시",
+    "likedVideosSubtitle": "NIP-51 좋아요는 로드맵에 있습니다",
+    "savedTab": "저장됨"
   },
   "categoryPage": {
     "rssFeedTitle": "{{name}} 비디오 - Divine",

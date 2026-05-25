@@ -413,7 +413,7 @@ export function ProfilePage() {
         {/* Content Section */}
         <div className="space-y-4">
           {/* Tab Navigation */}
-          <div className="flex items-center gap-2 mb-4">
+          <div className="flex items-center justify-center gap-2 mb-4">
             <button
               onClick={() => setActiveTab('videos')}
               className={cn(
@@ -514,9 +514,17 @@ export function ProfilePage() {
             </div>
           )}
 
-          {/* Content - Saved tab or regular videos */}
+          {/* Content - Saved tab, liked tab, or regular videos */}
           {activeTab === 'saved' && isOwnProfile ? (
             <BookmarkedVideosSection pubkey={pubkey} />
+          ) : activeTab === 'liked' ? (
+            <Card className="border-dashed">
+              <CardContent className="py-16 text-center text-muted-foreground">
+                <Heart className="h-12 w-12 mx-auto mb-4 opacity-30" />
+                <p className="text-lg font-medium mb-2">{t('profilePage.likedVideosComingSoon')}</p>
+                <p className="text-sm">{t('profilePage.likedVideosSubtitle')}</p>
+              </CardContent>
+            </Card>
           ) : (
             <>
               {/* Videos Display */}

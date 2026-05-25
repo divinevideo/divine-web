@@ -858,7 +858,12 @@
     "tryAgain": "Spróbuj jeszcze raz",
     "loadingMore": "Ładowanie kolejnych wideo...",
     "allSeen_one": "Widziałeś już {{count}} wideo",
-    "allSeen_other": "Widziałeś już wszystkie {{count}} wideo"
+    "allSeen_other": "Widziałeś już wszystkie {{count}} wideo",
+    "videosTab": "Wideo",
+    "likedTab": "Polubione",
+    "likedVideosComingSoon": "Polubione filmy wkrótce",
+    "likedVideosSubtitle": "Polubienia NIP-51 są w naszej mapie drogowej",
+    "savedTab": "Zapisane"
   },
   "categoryPage": {
     "rssFeedTitle": "Wideo {{name}} - Divine",

@@ -856,7 +856,12 @@
     "tryAgain": "Reintentar",
     "loadingMore": "Cargando más videos...",
     "allSeen_one": "Has visto los {{count}} video",
-    "allSeen_other": "Has visto los {{count}} videos"
+    "allSeen_other": "Has visto los {{count}} videos",
+    "videosTab": "Videos",
+    "likedTab": "Me gustó",
+    "likedVideosComingSoon": "Videos marcados con me gusta pronto",
+    "likedVideosSubtitle": "Los likes NIP-51 están en nuestra hoja de ruta",
+    "savedTab": "Guardados"
   },
   "categoryPage": {
     "rssFeedTitle": "Videos de {{name}} - Divine",

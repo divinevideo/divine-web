@@ -856,7 +856,12 @@
     "tryAgain": "Försök igen",
     "loadingMore": "Laddar fler videor...",
     "allSeen_one": "Du har sett alla {{count}} video",
-    "allSeen_other": "Du har sett alla {{count}} videor"
+    "allSeen_other": "Du har sett alla {{count}} videor",
+    "videosTab": "Videor",
+    "likedTab": "Gillade",
+    "likedVideosComingSoon": "Gillade videor kommer snart",
+    "likedVideosSubtitle": "NIP-51-likes finns i vår roadmap",
+    "savedTab": "Sparade"
   },
   "categoryPage": {
     "rssFeedTitle": "{{name}}-videor - Divine",

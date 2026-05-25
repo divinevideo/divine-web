@@ -856,7 +856,12 @@
     "tryAgain": "Riprova",
     "loadingMore": "Caricamento altri video...",
     "allSeen_one": "Hai visto tutti i {{count}} video",
-    "allSeen_other": "Hai visto tutti i {{count}} video"
+    "allSeen_other": "Hai visto tutti i {{count}} video",
+    "videosTab": "Video",
+    "likedTab": "Piace",
+    "likedVideosComingSoon": "Video piaciuti in arrivo",
+    "likedVideosSubtitle": "I like NIP-51 sono nel nostro roadmap",
+    "savedTab": "Salvati"
   },
   "categoryPage": {
     "rssFeedTitle": "Video {{name}} - Divine",

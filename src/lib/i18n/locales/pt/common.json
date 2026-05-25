@@ -856,7 +856,12 @@
     "tryAgain": "Tentar de novo",
     "loadingMore": "Carregando mais vídeos...",
     "allSeen_one": "Você já viu o {{count}} vídeo",
-    "allSeen_other": "Você já viu todos os {{count}} vídeos"
+    "allSeen_other": "Você já viu todos os {{count}} vídeos",
+    "videosTab": "Vídeos",
+    "likedTab": "Curtidos",
+    "likedVideosComingSoon": "Vídeos curtidos em breve",
+    "likedVideosSubtitle": "Curtir NIP-51 está no nosso roadmap",
+    "savedTab": "Salvos"
   },
   "categoryPage": {
     "rssFeedTitle": "Vídeos de {{name}} - Divine",

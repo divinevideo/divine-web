@@ -857,7 +857,12 @@
     "tryAgain": "Mai încearcă",
     "loadingMore": "Se încarcă mai multe videoclipuri...",
     "allSeen_one": "Le-ai văzut pe toate cele {{count}} videoclipuri",
-    "allSeen_other": "Le-ai văzut pe toate cele {{count}} videoclipuri"
+    "allSeen_other": "Le-ai văzut pe toate cele {{count}} videoclipuri",
+    "videosTab": "Videoclipuri",
+    "likedTab": "Apreciate",
+    "likedVideosComingSoon": "Videoclipuri apreciate în curând",
+    "likedVideosSubtitle": "Aprecierile NIP-51 sunt în roadmap-ul nostru",
+    "savedTab": "Salvate"
   },
   "categoryPage": {
     "rssFeedTitle": "Videoclipuri {{name}} - Divine",

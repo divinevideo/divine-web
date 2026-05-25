@@ -856,7 +856,12 @@
     "tryAgain": "Try again",
     "loadingMore": "Loading more videos...",
     "allSeen_one": "You've seen all {{count}} video",
-    "allSeen_other": "You've seen all {{count}} videos"
+    "allSeen_other": "You've seen all {{count}} videos",
+    "videosTab": "Videos",
+    "likedTab": "Liked",
+    "likedVideosComingSoon": "Liked videos coming soon",
+    "likedVideosSubtitle": "NIP-51 likes are on our roadmap",
+    "savedTab": "Saved"
   },
   "categoryPage": {
     "rssFeedTitle": "{{name}} Videos - Divine",
@@ -1389,6 +1394,16 @@
     "cancel": "Cancel",
     "confirm": "Delete Comment",
     "deleting": "Deleting..."
+  },
+  "invitesLandingPage": {
+    "seoTitle": "Join diVine with invite code {{code}}",
+    "seoTitleDefault": "Join diVine",
+    "seoDescription": "You've been invited! Use invite code {{code}} to join diVine.",
+    "seoDescriptionDefault": "You've been invited to join diVine.",
+    "heading": "You're Invited!",
+    "subheading": "Enter your invite code to create your account.",
+    "alreadyHaveAccount": "Already have an account?",
+    "signIn": "Sign in"
   },
   "inviteCodeForm": {
     "label": "Invite code",

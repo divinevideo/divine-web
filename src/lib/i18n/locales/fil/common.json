@@ -856,7 +856,12 @@
     "tryAgain": "Subukan ulit",
     "loadingMore": "Naglo-load pa ng mga loop...",
     "allSeen_one": "Napanood mo na lahat ng {{count}} loop",
-    "allSeen_other": "Napanood mo na lahat ng {{count}} na loop"
+    "allSeen_other": "Napanood mo na lahat ng {{count}} na loop",
+    "videosTab": "Mga Loop",
+    "likedTab": "Nagugustuhan",
+    "likedVideosComingSoon": "Mga liked na loop ay malapit na",
+    "likedVideosSubtitle": "Ang NIP-51 likes ay nasa aming roadmap",
+    "savedTab": "Nai-save"
   },
   "categoryPage": {
     "rssFeedTitle": "Mga Loop ng {{name}} - Divine",

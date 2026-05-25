@@ -856,7 +856,12 @@
     "tryAgain": "Tekrar dene",
     "loadingMore": "Daha fazla video yükleniyor...",
     "allSeen_one": "{{count}} videonun hepsini gördün",
-    "allSeen_other": "{{count}} videonun hepsini gördün"
+    "allSeen_other": "{{count}} videonun hepsini gördün",
+    "videosTab": "Videolar",
+    "likedTab": "Beğenilen",
+    "likedVideosComingSoon": "Beğenilen videolar yakında gelecek",
+    "likedVideosSubtitle": "NIP-51 beğenileri yol haritamızda",
+    "savedTab": "Kaydedilen"
   },
   "categoryPage": {
     "rssFeedTitle": "{{name}} Videoları - Divine",
