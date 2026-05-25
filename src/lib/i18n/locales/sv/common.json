@@ -435,7 +435,7 @@
     "errorFileNoValidKey": "Filen innehåller ingen giltig hemlig nyckel.",
     "errorFileReadFailed": "Kunde inte läsa filen.",
     "errorInviteValidationFailed": "Kunde inte validera inbjudningskoden",
-            "errorInviteCodeUsed": "This invite code has already been used",
+            "errorInviteCodeUsed": "Invite code already claimed - sorry!",
     "errorSignInStartFailed": "Kunde inte starta inloggning",
     "errorWaitlistJoinFailed": "Kunde inte gå med i väntelistan"
   },

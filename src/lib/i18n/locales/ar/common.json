@@ -439,7 +439,7 @@
     "errorFileNoValidKey": "الملف لا يحتوي على مفتاح سري صالح.",
     "errorFileReadFailed": "تعذّرت قراءة الملف.",
     "errorInviteValidationFailed": "تعذّر التحقق من رمز الدعوة",
-            "errorInviteCodeUsed": "This invite code has already been used",
+            "errorInviteCodeUsed": "Invite code already claimed - sorry!",
     "errorSignInStartFailed": "تعذّر بدء تسجيل الدخول",
     "errorWaitlistJoinFailed": "تعذّر الانضمام إلى قائمة الانتظار"
   },

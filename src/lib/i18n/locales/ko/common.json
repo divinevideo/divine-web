@@ -435,7 +435,7 @@
     "errorFileNoValidKey": "파일에 유효한 비밀키가 없어요.",
     "errorFileReadFailed": "파일을 읽을 수 없어요.",
     "errorInviteValidationFailed": "초대 코드를 확인할 수 없음",
-            "errorInviteCodeUsed": "This invite code has already been used",
+            "errorInviteCodeUsed": "Invite code already claimed - sorry!",
     "errorSignInStartFailed": "로그인을 시작할 수 없음",
     "errorWaitlistJoinFailed": "대기자 명단에 등록할 수 없음"
   },

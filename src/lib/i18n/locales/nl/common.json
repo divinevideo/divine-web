@@ -435,7 +435,7 @@
     "errorFileNoValidKey": "Bestand bevat geen geldige geheime sleutel.",
     "errorFileReadFailed": "Bestand lezen mislukt.",
     "errorInviteValidationFailed": "Kan uitnodigingscode niet valideren",
-            "errorInviteCodeUsed": "This invite code has already been used",
+            "errorInviteCodeUsed": "Invite code already claimed - sorry!",
     "errorSignInStartFailed": "Kan inloggen niet starten",
     "errorWaitlistJoinFailed": "Kan niet aansluiten bij de wachtlijst"
   },

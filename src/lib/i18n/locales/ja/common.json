@@ -435,7 +435,7 @@
     "errorFileNoValidKey": "ファイルに有効な秘密鍵が含まれていません。",
     "errorFileReadFailed": "ファイルの読み込みに失敗しました。",
     "errorInviteValidationFailed": "招待コードを検証できません",
-            "errorInviteCodeUsed": "This invite code has already been used",
+            "errorInviteCodeUsed": "Invite code already claimed - sorry!",
     "errorSignInStartFailed": "サインインを開始できません",
     "errorWaitlistJoinFailed": "順番待ちリストに参加できません"
   },

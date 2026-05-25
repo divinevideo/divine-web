@@ -436,7 +436,7 @@
     "errorFileNoValidKey": "Fișierul nu conține o cheie secretă validă.",
     "errorFileReadFailed": "Citirea fișierului a eșuat.",
     "errorInviteValidationFailed": "Codul de invitație nu poate fi validat",
-            "errorInviteCodeUsed": "This invite code has already been used",
+            "errorInviteCodeUsed": "Invite code already claimed - sorry!",
     "errorSignInStartFailed": "Conectarea nu poate fi pornită",
     "errorWaitlistJoinFailed": "Înscrierea pe lista de așteptare a eșuat"
   },

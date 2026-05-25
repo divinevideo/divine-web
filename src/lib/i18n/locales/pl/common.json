@@ -437,7 +437,7 @@
     "errorFileNoValidKey": "Plik nie zawiera prawidłowego klucza prywatnego.",
     "errorFileReadFailed": "Nie udało się odczytać pliku.",
     "errorInviteValidationFailed": "Nie można zweryfikować kodu zaproszenia",
-            "errorInviteCodeUsed": "This invite code has already been used",
+            "errorInviteCodeUsed": "Invite code already claimed - sorry!",
     "errorSignInStartFailed": "Nie można rozpocząć logowania",
     "errorWaitlistJoinFailed": "Nie można dołączyć do listy oczekujących"
   },

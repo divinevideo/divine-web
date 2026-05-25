@@ -435,7 +435,7 @@
     "errorFileNoValidKey": "Le fichier ne contient pas de clé secrète valide.",
     "errorFileReadFailed": "Échec de la lecture du fichier.",
     "errorInviteValidationFailed": "Impossible de valider le code d'invitation",
-            "errorInviteCodeUsed": "This invite code has already been used",
+            "errorInviteCodeUsed": "Invite code already claimed - sorry!",
     "errorSignInStartFailed": "Impossible de démarrer la connexion",
     "errorWaitlistJoinFailed": "Impossible de rejoindre la liste d'attente"
   },

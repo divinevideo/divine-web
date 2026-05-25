@@ -435,7 +435,7 @@
     "errorFileNoValidKey": "Dosya geçerli bir gizli anahtar içermiyor.",
     "errorFileReadFailed": "Dosya okunamadı.",
     "errorInviteValidationFailed": "Davet kodu doğrulanamadı",
-            "errorInviteCodeUsed": "This invite code has already been used",
+            "errorInviteCodeUsed": "Invite code already claimed - sorry!",
     "errorSignInStartFailed": "Giriş başlatılamadı",
     "errorWaitlistJoinFailed": "Bekleme listesine katılınamadı"
   },

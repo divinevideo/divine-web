@@ -435,7 +435,7 @@
     "errorFileNoValidKey": "El archivo no contiene una clave secreta válida.",
     "errorFileReadFailed": "Falló la lectura del archivo.",
     "errorInviteValidationFailed": "No se pudo validar el código de invitación",
-            "errorInviteCodeUsed": "This invite code has already been used",
+            "errorInviteCodeUsed": "Invite code already claimed - sorry!",
     "errorSignInStartFailed": "No se pudo iniciar el inicio de sesión",
     "errorWaitlistJoinFailed": "No se pudo unir a la lista de espera"
   },

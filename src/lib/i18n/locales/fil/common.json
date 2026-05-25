@@ -435,7 +435,7 @@
     "errorFileNoValidKey": "Walang valid na secret key sa file.",
     "errorFileReadFailed": "Hindi mabasa ang file.",
     "errorInviteValidationFailed": "Hindi ma-validate ang invite code",
-            "errorInviteCodeUsed": "This invite code has already been used",
+            "errorInviteCodeUsed": "Invite code already claimed - sorry!",
     "errorSignInStartFailed": "Hindi masimulan ang sign-in",
     "errorWaitlistJoinFailed": "Hindi maka-join sa waitlist"
   },
