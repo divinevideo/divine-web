@@ -1399,6 +1399,16 @@
     "continue": "Dalej",
     "joinWaitlist": "Nie masz zaproszenia? Zapisz się na listę oczekujących."
   },
+  "invitesLandingPage": {
+    "seoTitle": "Join diVine with invite code {{code}}",
+    "seoTitleDefault": "Join diVine",
+    "seoDescription": "You've been invited! Use invite code {{code}} to join diVine.",
+    "seoDescriptionDefault": "Use your invite code to join diVine and start sharing video.",
+    "heading": "You're Invited!",
+    "subheading": "Enter your invite code to join diVine",
+    "alreadyHaveAccount": "Already have an account?",
+    "signIn": "Sign in"
+  },
   "applePodcastEmbed": {
     "defaultTitle": "Vine Revisited and The Fight Against AI Slop",
     "defaultDescription": "Kulisy startu Divine",
