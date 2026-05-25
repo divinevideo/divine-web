@@ -39,12 +39,12 @@ useEffect(() => {
       description: currentVideo.content || `Watch this video${authorName ? ` by ${authorName}` : ''} on diVine`,
       ogTitle: currentVideo.title || 'Video on diVine',
       ogDescription: currentVideo.content || 'Watch this video on diVine',
-      ogImage: currentVideo.thumbnailUrl || '/og.png',
+      ogImage: currentVideo.thumbnailUrl || '/og.avif',
       ogType: 'video.other',
       twitterCard: 'summary_large_image',
       twitterTitle: currentVideo.title || 'Video on diVine',
       twitterDescription: currentVideo.content || 'Watch this video on diVine',
-      twitterImage: currentVideo.thumbnailUrl || '/og.png',
+      twitterImage: currentVideo.thumbnailUrl || '/og.avif',
     });
   }
 }, [currentVideo, authorName]);
@@ -105,7 +105,7 @@ useEffect(() => {
   if (metadata || pubkey) {
     const name = displayName;
     const bio = metadata?.about || `${name}'s profile on diVine`;
-    const avatar = metadata?.picture || '/app_icon.png';
+    const avatar = metadata?.picture || '/app_icon.avif';
 
     useSeoMeta({
       title: `${name} - diVine`,
@@ -188,12 +188,12 @@ useEffect(() => {
       description: description,
       ogTitle: `#${tag} - diVine`,
       ogDescription: description,
-      ogImage: '/og.png',
+      ogImage: '/og.avif',
       ogType: 'website',
       twitterCard: 'summary_large_image',
       twitterTitle: `#${tag} - diVine`,
       twitterDescription: description,
-      twitterImage: '/og.png',
+      twitterImage: '/og.avif',
     });
   }
 }, [normalizedTag, videoCount, tag]);
@@ -247,7 +247,7 @@ Expected: Deployment succeeds, get preview URL
 3. Click "Preview card"
 
 Expected:
-- Card shows video thumbnail (or default og.png if no thumbnail)
+- Card shows video thumbnail (or default og.avif if no thumbnail)
 - Card shows video title (or "Video on diVine" fallback)
 - Card shows video description
 
@@ -258,7 +258,7 @@ Expected:
 3. Click "Debug"
 
 Expected:
-- Shows user's avatar (or app_icon.png fallback)
+- Shows user's avatar (or app_icon.avif fallback)
 - Shows user's display name in title
 - Shows user's bio in description
 
@@ -271,7 +271,7 @@ Expected:
 Expected:
 - Shows "#funny - diVine" as title
 - Shows video count in description
-- Shows default og.png image
+- Shows default og.avif image
 
 **Step 5: Test in Discord/Slack**
 

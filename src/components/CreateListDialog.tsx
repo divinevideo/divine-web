@@ -2,6 +2,7 @@
 // ABOUTME: Allows users to create lists with name, description, and optional cover image
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useCreateVideoList, type PlayOrder } from '@/hooks/useVideoLists';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -17,7 +18,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { Loader2, List, X } from 'lucide-react';
+import { CircleNotch as Loader2, List, X } from '@phosphor-icons/react';
 import { useToast } from '@/hooks/useToast';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 
@@ -27,6 +28,7 @@ interface CreateListDialogProps {
 }
 
 export function CreateListDialog({ open, onClose }: CreateListDialogProps) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useCurrentUser();
@@ -55,8 +57,8 @@ export function CreateListDialog({ open, onClose }: CreateListDialogProps) {
   const handleCreate = async () => {
     if (!name.trim()) {
       toast({
-        title: 'Error',
-        description: 'Please enter a list name',
+        title: t('createListDialog.toastNameRequiredTitle'),
+        description: t('createListDialog.toastNameRequiredDescription'),
         variant: 'destructive',
       });
       return;
@@ -64,8 +66,8 @@ export function CreateListDialog({ open, onClose }: CreateListDialogProps) {
 
     if (!user) {
       toast({
-        title: 'Error',
-        description: 'You must be logged in to create lists',
+        title: t('createListDialog.toastLoginRequiredTitle'),
+        description: t('createListDialog.toastLoginRequiredDescription'),
         variant: 'destructive',
       });
       return;
@@ -87,8 +89,8 @@ export function CreateListDialog({ open, onClose }: CreateListDialogProps) {
       });
 
       toast({
-        title: 'List created',
-        description: `"${name}" has been created successfully`,
+        title: t('createListDialog.toastCreatedTitle'),
+        description: t('createListDialog.toastCreatedDescription', { name }),
       });
 
       // Navigate to the new list
@@ -96,8 +98,8 @@ export function CreateListDialog({ open, onClose }: CreateListDialogProps) {
       onClose();
     } catch {
       toast({
-        title: 'Error',
-        description: 'Failed to create list. Please try again.',
+        title: t('createListDialog.toastCreateFailedTitle'),
+        description: t('createListDialog.toastCreateFailedDescription'),
         variant: 'destructive',
       });
     } finally {
@@ -113,18 +115,18 @@ export function CreateListDialog({ open, onClose }: CreateListDialogProps) {
     }}>
       <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Create New List</DialogTitle>
+          <DialogTitle>{t('createListDialog.title')}</DialogTitle>
           <DialogDescription>
-            Create a collection of your favorite videos to share with others
+            {t('createListDialog.description')}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 pr-2">
           <div className="space-y-2">
-            <Label htmlFor="name">List Name *</Label>
+            <Label htmlFor="name">{t('createListDialog.nameLabel')}</Label>
             <Input
               id="name"
-              placeholder="My Favorite Vines"
+              placeholder={t('createListDialog.namePlaceholder')}
               value={name}
               onChange={(e) => setName(e.target.value)}
               disabled={isCreating}
@@ -132,10 +134,10 @@ export function CreateListDialog({ open, onClose }: CreateListDialogProps) {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
+            <Label htmlFor="description">{t('createListDialog.descriptionLabel')}</Label>
             <Textarea
               id="description"
-              placeholder="A collection of hilarious and creative videos..."
+              placeholder={t('createListDialog.descriptionPlaceholder')}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
@@ -144,11 +146,11 @@ export function CreateListDialog({ open, onClose }: CreateListDialogProps) {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="image">Cover Image URL</Label>
+            <Label htmlFor="image">{t('createListDialog.imageLabel')}</Label>
             <Input
               id="image"
               type="url"
-              placeholder="https://example.com/image.jpg"
+              placeholder={t('createListDialog.imagePlaceholder')}
               value={imageUrl}
               onChange={(e) => setImageUrl(e.target.value)}
               disabled={isCreating}
@@ -157,7 +159,7 @@ export function CreateListDialog({ open, onClose }: CreateListDialogProps) {
               <div className="mt-2 rounded overflow-hidden border">
                 <img
                   src={imageUrl}
-                  alt="Cover preview"
+                  alt={t('createListDialog.coverPreviewAlt')}
                   className="w-full h-32 object-cover"
                   onError={(e) => {
                     (e.target as HTMLImageElement).style.display = 'none';
@@ -168,29 +170,29 @@ export function CreateListDialog({ open, onClose }: CreateListDialogProps) {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="play-order">Play Order</Label>
+            <Label htmlFor="play-order">{t('createListDialog.playOrderLabel')}</Label>
             <Select value={playOrder} onValueChange={(value) => setPlayOrder(value as PlayOrder)} disabled={isCreating}>
               <SelectTrigger id="play-order">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="chronological">Chronological (oldest first)</SelectItem>
-                <SelectItem value="reverse">Reverse (newest first)</SelectItem>
-                <SelectItem value="manual">Manual (custom order)</SelectItem>
-                <SelectItem value="shuffle">Shuffle (random order)</SelectItem>
+                <SelectItem value="chronological">{t('createListDialog.playOrderChronological')}</SelectItem>
+                <SelectItem value="reverse">{t('createListDialog.playOrderReverse')}</SelectItem>
+                <SelectItem value="manual">{t('createListDialog.playOrderManual')}</SelectItem>
+                <SelectItem value="shuffle">{t('createListDialog.playOrderShuffle')}</SelectItem>
               </SelectContent>
             </Select>
             <p className="text-xs text-muted-foreground">
-              How videos should be ordered when viewing the list
+              {t('createListDialog.playOrderHelp')}
             </p>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="tags">Tags (for discovery)</Label>
+            <Label htmlFor="tags">{t('createListDialog.tagsLabel')}</Label>
             <div className="flex gap-2">
               <Input
                 id="tags"
-                placeholder="comedy, funny, animals..."
+                placeholder={t('createListDialog.tagsPlaceholder')}
                 value={currentTag}
                 onChange={(e) => setCurrentTag(e.target.value)}
                 onKeyDown={(e) => {
@@ -208,7 +210,7 @@ export function CreateListDialog({ open, onClose }: CreateListDialogProps) {
                 onClick={handleAddTag}
                 disabled={!currentTag.trim() || isCreating}
               >
-                Add
+                {t('createListDialog.addTagButton')}
               </Button>
             </div>
             {tags.length > 0 && (
@@ -235,9 +237,9 @@ export function CreateListDialog({ open, onClose }: CreateListDialogProps) {
 
           <div className="flex items-center justify-between space-x-2 pt-2">
             <div className="space-y-0.5">
-              <Label htmlFor="collaborative">Collaborative List</Label>
+              <Label htmlFor="collaborative">{t('createListDialog.collaborativeLabel')}</Label>
               <p className="text-xs text-muted-foreground">
-                Allow others to add videos to this list
+                {t('createListDialog.collaborativeHelp')}
               </p>
             </div>
             <Switch
@@ -255,7 +257,7 @@ export function CreateListDialog({ open, onClose }: CreateListDialogProps) {
               disabled={isCreating}
               className="flex-1"
             >
-              Cancel
+              {t('createListDialog.cancelButton')}
             </Button>
             <Button
               onClick={handleCreate}
@@ -265,12 +267,12 @@ export function CreateListDialog({ open, onClose }: CreateListDialogProps) {
               {isCreating ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Creating...
+                  {t('createListDialog.creatingButton')}
                 </>
               ) : (
                 <>
                   <List className="h-4 w-4 mr-2" />
-                  Create List
+                  {t('createListDialog.createButton')}
                 </>
               )}
             </Button>

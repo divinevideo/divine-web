@@ -1,8 +1,6 @@
 import * as React from "react"
 import * as SelectPrimitive from "@radix-ui/react-select"
-import { Check, ChevronDown, ChevronUp } from "lucide-react"
-
-import { cn } from "@/lib/utils"
+import { Check, CaretDown as ChevronDown, CaretUp as ChevronUp } from '@phosphor-icons/react';import { cn } from "@/lib/utils"
 
 const Select = SelectPrimitive.Root
 

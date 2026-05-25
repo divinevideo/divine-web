@@ -1,8 +1,8 @@
 // ABOUTME: Centralized sort mode definitions for NIP-50 search
 // ABOUTME: Single source of truth for sort modes across all pages
 
-import { Flame, TrendingUp, Zap, Scale, Clock, Search } from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
+import { Flame, TrendUp as TrendingUp, Lightning as Zap, Scales as Scale, Clock, MagnifyingGlass as Search, FilmSlate as Clapperboard } from '@phosphor-icons/react';
+import type { Icon as LucideIcon } from '@phosphor-icons/react';
 import type { SortMode } from '@/types/nostr';
 
 export interface SortModeDefinition {
@@ -32,8 +32,8 @@ export const SORT_MODES: SortModeDefinition[] = [
   },
   {
     value: 'top',
-    label: 'Classic',
-    description: 'Popular archived Vines',
+    label: 'Top',
+    description: 'Most viewed all-time',
     icon: TrendingUp
   },
   {
@@ -41,6 +41,12 @@ export const SORT_MODES: SortModeDefinition[] = [
     label: 'Rising',
     description: 'Gaining traction',
     icon: Zap
+  },
+  {
+    value: 'classic',
+    label: 'Classic',
+    description: 'Vine archive favorites',
+    icon: Clapperboard
   },
   {
     value: undefined,
@@ -62,9 +68,15 @@ export const EXTENDED_SORT_MODES: SortModeDefinition[] = [
     icon: Flame
   },
   {
+    value: undefined,
+    label: 'New',
+    description: 'Latest videos',
+    icon: Clock
+  },
+  {
     value: 'top',
-    label: 'Classic',
-    description: 'Popular archived Vines',
+    label: 'Top',
+    description: 'Most viewed all-time',
     icon: TrendingUp
   },
   {
@@ -72,6 +84,12 @@ export const EXTENDED_SORT_MODES: SortModeDefinition[] = [
     label: 'Rising',
     description: 'Gaining traction',
     icon: Zap
+  },
+  {
+    value: 'classic',
+    label: 'Classic',
+    description: 'Vine archive favorites',
+    icon: Clapperboard
   },
   {
     value: 'controversial',
@@ -85,6 +103,25 @@ export const EXTENDED_SORT_MODES: SortModeDefinition[] = [
  * Search-specific sort modes including relevance
  * Used in: SearchPage
  */
+/**
+ * Sort modes for profile video feeds
+ * Used in: ProfilePage
+ */
+export const PROFILE_SORT_MODES: SortModeDefinition[] = [
+  {
+    value: undefined,
+    label: 'Recent',
+    description: 'Latest videos',
+    icon: Clock
+  },
+  {
+    value: 'top',
+    label: 'Most Loops',
+    description: 'Highest loop count',
+    icon: TrendingUp
+  },
+];
+
 export const SEARCH_SORT_MODES: SearchSortModeDefinition[] = [
   {
     value: 'relevance',
@@ -100,8 +137,8 @@ export const SEARCH_SORT_MODES: SearchSortModeDefinition[] = [
   },
   {
     value: 'top',
-    label: 'Classic',
-    description: 'Popular archived Vines',
+    label: 'Top',
+    description: 'Most viewed all-time',
     icon: TrendingUp
   },
   {
@@ -109,6 +146,12 @@ export const SEARCH_SORT_MODES: SearchSortModeDefinition[] = [
     label: 'Rising',
     description: 'Gaining traction',
     icon: Zap
+  },
+  {
+    value: 'classic',
+    label: 'Classic',
+    description: 'Vine archive favorites',
+    icon: Clapperboard
   },
   {
     value: 'controversial',

@@ -2,20 +2,31 @@
 // ABOUTME: Shows video thumbnails with play overlays and metadata on hover
 
 import { useState, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Play, Repeat } from 'lucide-react';
+import { useSubdomainNavigate } from '@/hooks/useSubdomainNavigate';
+import { Play, Repeat } from '@phosphor-icons/react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { AgeRestrictedMediaPlaceholder } from '@/components/AgeRestrictedMediaPlaceholder';
+import { useLoginDialog } from '@/contexts/LoginDialogContext';
+import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { checkMediaAuth, useAdultVerification } from '@/hooks/useAdultVerification';
+import { useAuthenticatedMediaUrl } from '@/hooks/useAuthenticatedMediaUrl';
 import { cn } from '@/lib/utils';
 import type { ParsedVideoData } from '@/types/video';
 import { buildVideoNavigationUrl, type VideoNavigationContext } from '@/hooks/useVideoNavigation';
-import { formatDistanceToNow } from 'date-fns';
 
 interface VideoGridProps {
   videos: ParsedVideoData[];
   loading?: boolean;
   className?: string;
   navigationContext?: VideoNavigationContext;
+}
+
+interface VideoGridMediaProps {
+  video: ParsedVideoData;
+  thumbnailFailed: boolean;
+  onThumbnailError: (videoId: string) => void;
+  videoRefs: React.MutableRefObject<Map<string, HTMLVideoElement>>;
 }
 
 function formatLoops(loops?: number): string {
@@ -35,10 +46,104 @@ function truncateText(text: string, maxLength: number = 50): string {
   return text.slice(0, maxLength) + '...';
 }
 
+function VideoGridMedia({
+  video,
+  thumbnailFailed,
+  onThumbnailError,
+  videoRefs,
+}: VideoGridMediaProps) {
+  const shouldShowVideo = !video.thumbnailUrl || thumbnailFailed;
+  const baseThumbnailUrl = video.thumbnailUrl || video.videoUrl;
+  const { mediaUrl: authenticatedMediaUrl, isLoading } = useAuthenticatedMediaUrl(baseThumbnailUrl, {
+    enabled: true,
+    ageRestricted: !!video.ageRestricted,
+  });
+
+  if (isLoading) {
+    return (
+      <div
+        className="w-full h-full bg-muted flex items-center justify-center"
+        data-testid={`video-placeholder-${video.id}`}
+      >
+        <Play className="w-12 h-12 text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (shouldShowVideo && authenticatedMediaUrl) {
+    return (
+      <video
+        ref={(el) => {
+          if (el) {
+            videoRefs.current.set(video.id, el);
+          } else {
+            videoRefs.current.delete(video.id);
+          }
+        }}
+        className="w-full h-full object-cover"
+        src={authenticatedMediaUrl}
+        muted
+        loop
+        playsInline
+        preload="metadata"
+        crossOrigin="anonymous"
+        data-testid={`video-player-${video.id}`}
+        onError={() => onThumbnailError(video.id)}
+      />
+    );
+  }
+
+  if (authenticatedMediaUrl) {
+    const isVideoThumbnail = (video.thumbnailUrl === video.videoUrl) ||
+      !!video.thumbnailUrl?.match(/\.(mp4|webm|mov|m3u8|mpd|avi|mkv|ogv|ogg)($|\?|#)/i) ||
+      !!video.thumbnailUrl?.includes('/manifest/');
+
+    if (isVideoThumbnail) {
+      return (
+        <video
+          className="w-full h-full object-cover"
+          src={`${authenticatedMediaUrl}#t=0.1`}
+          muted
+          playsInline
+          preload="metadata"
+          crossOrigin="anonymous"
+          data-testid={`video-thumbnail-${video.id}`}
+          onError={() => onThumbnailError(video.id)}
+        />
+      );
+    }
+
+    return (
+      <img
+        className="w-full h-full object-cover"
+        src={authenticatedMediaUrl}
+        alt={video.content || 'Video thumbnail'}
+        loading="lazy"
+        crossOrigin="anonymous"
+        data-testid={`video-thumbnail-${video.id}`}
+        onError={() => onThumbnailError(video.id)}
+      />
+    );
+  }
+
+  return (
+    <div
+      className="w-full h-full bg-muted flex items-center justify-center"
+      data-testid={`video-placeholder-${video.id}`}
+    >
+      <Play className="w-12 h-12 text-muted-foreground" />
+    </div>
+  );
+}
+
 export function VideoGrid({ videos, loading = false, className, navigationContext }: VideoGridProps) {
-  const navigate = useNavigate();
+  const navigate = useSubdomainNavigate();
+  const { user } = useCurrentUser();
+  const { isVerified: isAdultVerified, confirmAdult } = useAdultVerification();
+  const { openLoginDialog } = useLoginDialog();
   const [hoveredVideo, setHoveredVideo] = useState<string | null>(null);
   const [failedThumbnails, setFailedThumbnails] = useState<Set<string>>(new Set());
+  const [discoveredAgeRestrictedVideos, setDiscoveredAgeRestrictedVideos] = useState<Set<string>>(new Set());
   const videoRefs = useRef<Map<string, HTMLVideoElement>>(new Map());
 
   const handleVideoClick = (videoId: string, index: number) => {
@@ -48,18 +153,43 @@ export function VideoGrid({ videos, loading = false, className, navigationContex
     navigate(url);
   };
 
-  const handleKeyDown = (event: React.KeyboardEvent, videoId: string, index: number) => {
+  const handleKeyDown = (event: React.KeyboardEvent, videoId: string, index: number, isAgeGated: boolean) => {
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault();
+      if (isAgeGated) {
+        handleAgeGateAction();
+        return;
+      }
+
       handleVideoClick(videoId, index);
     }
   };
 
-  const handleThumbnailError = (videoId: string) => {
-    setFailedThumbnails((prev) => new Set(prev).add(videoId));
+  const handleThumbnailError = async (video: ParsedVideoData) => {
+    const urlToCheck = video.thumbnailUrl || video.videoUrl;
+
+    if (urlToCheck) {
+      const { authorized, status } = await checkMediaAuth(urlToCheck);
+      if (!authorized && (status === 401 || status === 403)) {
+        setDiscoveredAgeRestrictedVideos((prev) => new Set(prev).add(video.id));
+        return;
+      }
+    }
+
+    setFailedThumbnails((prev) => new Set(prev).add(video.id));
   };
 
-  const handleMouseEnter = (videoId: string) => {
+  const handleAgeGateAction = () => {
+    if (user) {
+      confirmAdult();
+      return;
+    }
+
+    openLoginDialog();
+  };
+
+  const handleMouseEnter = (videoId: string, isAgeGated: boolean) => {
+    if (isAgeGated) return;
     setHoveredVideo(videoId);
     // Auto-play video on hover if thumbnail failed
     if (failedThumbnails.has(videoId)) {
@@ -72,7 +202,8 @@ export function VideoGrid({ videos, loading = false, className, navigationContex
     }
   };
 
-  const handleMouseLeave = (videoId: string) => {
+  const handleMouseLeave = (videoId: string, isAgeGated: boolean) => {
+    if (isAgeGated) return;
     setHoveredVideo(null);
     // Pause video when not hovering if thumbnail failed
     if (failedThumbnails.has(videoId)) {
@@ -93,7 +224,7 @@ export function VideoGrid({ videos, loading = false, className, navigationContex
         {[...Array(6)].map((_, i) => (
           <Card key={i} className="overflow-hidden" data-testid="video-skeleton">
             <div className="aspect-square relative bg-black/80 flex items-center justify-center">
-              <div className="w-8 h-8 border-2 border-muted-foreground/30 border-t-muted-foreground/60 rounded-full animate-spin" />
+              <div className="w-8 h-8 border-2 border-brand-light-green border-t-brand-green rounded-full animate-spin" />
             </div>
           </Card>
         ))}
@@ -128,88 +259,60 @@ export function VideoGrid({ videos, loading = false, className, navigationContex
       {videos.map((video, index) => {
         const isHovered = hoveredVideo === video.id;
         const thumbnailFailed = failedThumbnails.has(video.id);
-        const shouldShowVideo = !video.thumbnailUrl || thumbnailFailed;
+        const isKnownAgeRestricted = video.ageRestricted === true || discoveredAgeRestrictedVideos.has(video.id);
+        const gridVideo = isKnownAgeRestricted ? { ...video, ageRestricted: true } : video;
+        const isAgeGated = isKnownAgeRestricted && (!user || !isAdultVerified);
 
         return (
           <Card
             key={video.id}
             className="overflow-hidden cursor-pointer transition-transform hover:scale-105 group"
             data-testid="video-grid-item"
-            onClick={() => handleVideoClick(video.id, index)}
-            onKeyDown={(e) => handleKeyDown(e, video.id, index)}
-            onMouseEnter={() => handleMouseEnter(video.id)}
-            onMouseLeave={() => handleMouseLeave(video.id)}
+            onClick={() => {
+              if (isAgeGated) {
+                handleAgeGateAction();
+                return;
+              }
+
+              handleVideoClick(video.id, index);
+            }}
+            onKeyDown={(e) => handleKeyDown(e, video.id, index, isAgeGated)}
+            onMouseEnter={() => handleMouseEnter(video.id, isAgeGated)}
+            onMouseLeave={() => handleMouseLeave(video.id, isAgeGated)}
             tabIndex={0}
             data-video-id={video.id}
           >
             <div className="aspect-square relative bg-muted" data-thumbnail-container="true">
               {/* Video Thumbnail or Actual Video */}
-              {shouldShowVideo && video.videoUrl ? (
-                <video
-                  ref={(el) => {
-                    if (el) {
-                      videoRefs.current.set(video.id, el);
-                    } else {
-                      videoRefs.current.delete(video.id);
-                    }
-                  }}
-                  className="w-full h-full object-cover"
-                  src={video.videoUrl}
-                  muted
-                  loop
-                  playsInline
-                  preload="metadata"
-                  crossOrigin="anonymous"
-                  data-testid={`video-player-${video.id}`}
-                  onError={() => handleThumbnailError(video.id)}
+              {isAgeGated ? (
+                <AgeRestrictedMediaPlaceholder
+                  actionLabel={user ? 'Verify age to view' : 'Log in to view'}
+                  onAction={handleAgeGateAction}
+                  title={video.title || video.content}
                 />
-              ) : video.thumbnailUrl ? (
-                // Check if thumbnail URL is actually a video file
-                video.thumbnailUrl === video.videoUrl ||
-                video.thumbnailUrl.match(/\.(mp4|webm|mov|m3u8|mpd|avi|mkv|ogv|ogg)($|\?|#)/i) ||
-                video.thumbnailUrl.includes('/manifest/') ? (
-                  <video
-                    className="w-full h-full object-cover"
-                    src={`${video.thumbnailUrl}#t=0.1`}
-                    muted
-                    playsInline
-                    preload="metadata"
-                    crossOrigin="anonymous"
-                    data-testid={`video-thumbnail-${video.id}`}
-                    onError={() => handleThumbnailError(video.id)}
-                  />
-                ) : (
-                  <img
-                    className="w-full h-full object-cover"
-                    src={video.thumbnailUrl}
-                    alt={video.content || 'Video thumbnail'}
-                    loading="lazy"
-                    crossOrigin="anonymous"
-                    data-testid={`video-thumbnail-${video.id}`}
-                    onError={() => handleThumbnailError(video.id)}
-                  />
-                )
               ) : (
-                <div
-                  className="w-full h-full bg-muted flex items-center justify-center"
-                  data-testid={`video-placeholder-${video.id}`}
-                >
-                  <Play className="w-12 h-12 text-muted-foreground" />
-                </div>
+                <VideoGridMedia
+                  video={gridVideo}
+                  thumbnailFailed={thumbnailFailed}
+                  onThumbnailError={() => void handleThumbnailError(gridVideo)}
+                  videoRefs={videoRefs}
+                />
               )}
 
               {/* Play Overlay */}
-              <div
-                className="absolute inset-0 bg-black/20 flex items-center justify-center transition-opacity group-hover:bg-black/40"
-                data-testid={`play-overlay-${video.id}`}
-              >
-                <div className="bg-white/90 rounded-full p-3 transition-transform group-hover:scale-110">
-                  <Play className="w-6 h-6 text-black fill-black" />
+              {!isAgeGated && (
+                <div
+                  className="absolute inset-0 bg-black/20 flex items-center justify-center transition-opacity group-hover:bg-black/40"
+                  data-testid={`play-overlay-${video.id}`}
+                >
+                  <div className="bg-white/90 rounded-full p-3 transition-transform group-hover:scale-110">
+                    <Play className="w-6 h-6 text-black fill-black" />
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Loop Count Badge */}
-              {video.loopCount !== undefined && video.loopCount > 0 && (
+              {!isAgeGated && video.loopCount !== undefined && video.loopCount > 0 && (
                 <div className="absolute bottom-2 right-2">
                   <Badge variant="secondary" className="text-xs bg-black/80 text-white">
                     <Repeat className="w-3 h-3 mr-1" />
@@ -219,9 +322,9 @@ export function VideoGrid({ videos, loading = false, className, navigationContex
               )}
 
               {/* Metadata Overlay */}
-              {isHovered && (video.content || video.hashtags.length > 0) && (
+              {!isAgeGated && isHovered && (video.content || video.hashtags.length > 0) && (
                 <div
-                  className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-4 text-white"
+                  className="absolute inset-x-0 bottom-0 bg-brand-dark-green/85 p-4 text-brand-off-white"
                   data-testid={`metadata-overlay-${video.id}`}
                 >
                   {video.content && video.content.trim() && (
@@ -240,31 +343,6 @@ export function VideoGrid({ videos, loading = false, className, navigationContex
                   )}
                 </div>
               )}
-              {/* Posted Date */}
-              {(() => {
-                const timestamp = video.originalVineTimestamp || video.createdAt;
-                const date = new Date(timestamp * 1000);
-                const now = new Date();
-
-                const yearsDiff = now.getFullYear() - date.getFullYear();
-                let timeAgo;
-
-                if (yearsDiff > 1 || (yearsDiff === 1 && now.getTime() < new Date(date).setFullYear(date.getFullYear() + 1))) {
-                  timeAgo = date.toLocaleDateString('en-US', {
-                    month: 'short',
-                    day: 'numeric',
-                    year: 'numeric'
-                  });
-                } else {
-                  timeAgo = formatDistanceToNow(date, { addSuffix: true });
-                }
-
-                return (
-                  <div className="absolute top-2 left-2 bg-black/40 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100">
-                    {timeAgo}
-                  </div>
-                );
-              })()}
             </div>
           </Card>
         );

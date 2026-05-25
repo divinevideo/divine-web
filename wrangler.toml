@@ -1,0 +1,6 @@
+# ABOUTME: Cloudflare Pages configuration for divine-web
+# ABOUTME: Defines project name, build output, and compatibility settings
+
+name = "divine-web"
+pages_build_output_dir = "dist"
+compatibility_date = "2024-11-29"

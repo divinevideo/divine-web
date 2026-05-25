@@ -7,16 +7,11 @@ import type { NostrEvent } from "@nostrify/nostrify";
 
 export function useNostrPublish(): UseMutationResult<NostrEvent> {
   const { nostr } = useNostr();
-  const { user } = useCurrentUser();
+  const { user, signer } = useCurrentUser();
 
   return useMutation({
     mutationFn: async (t: Omit<NostrEvent, 'id' | 'pubkey' | 'sig'>) => {
-      if (user) {
-        console.log('[useNostrPublish] Starting event signing...', {
-          kind: t.kind,
-          tagCount: t.tags?.length || 0,
-        });
-
+      if (user && signer) {
         const tags = t.tags ?? [];
 
         // Add the client tag if it doesn't exist
@@ -24,8 +19,7 @@ export function useNostrPublish(): UseMutationResult<NostrEvent> {
           tags.push(["client", location.hostname]);
         }
 
-        console.log('[useNostrPublish] Requesting signature from user...');
-        const event = await user.signer.signEvent({
+        const event = await signer.signEvent({
           kind: t.kind,
           content: t.content ?? "",
           tags,

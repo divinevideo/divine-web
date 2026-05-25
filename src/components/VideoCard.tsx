@@ -1,53 +1,76 @@
 // ABOUTME: Video card component for displaying individual videos in feeds
 // ABOUTME: Shows video player, metadata, author info, and social interactions
 
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Heart, Repeat2, MessageCircle, Share, Eye, MoreVertical, Flag, UserX, Trash2, Volume2, VolumeX, Code, Users, ListPlus } from 'lucide-react';
-import { nip19 } from 'nostr-tools';
-import { Card, CardContent } from '@/components/ui/card';
+import { useState, useCallback, useRef, useMemo, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
+import { Heart, Repeat as Repeat2, ChatCircle as MessageCircle, Share, Eye, DotsThreeVertical as MoreVertical, Flag, UserMinus as UserX, Trash as Trash2, SpeakerHigh as Volume2, SpeakerX as VolumeX, Code, Users, ListPlus, DownloadSimple as Download, ArrowsOutSimple as Maximize2, ClosedCaptioning as Captions, PushPin as Pin, PushPinSlash as PinOff, ArrowClockwise } from '@phosphor-icons/react';
+import { Card, CardContent, type CardAccent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { VideoPlayer } from '@/components/VideoPlayer';
 import { VideoCommentsModal } from '@/components/VideoCommentsModal';
+import { VideoReactionsModal } from '@/components/VideoReactionsModal';
+import { useVideoReactions } from '@/hooks/useVideoReactions';
 import { ThumbnailPlayer } from '@/components/ThumbnailPlayer';
 import { NoteContent } from '@/components/NoteContent';
-import { VideoListBadges } from '@/components/VideoListBadges';
-import { ProofModeBadge } from '@/components/ProofModeBadge';
-import { OriginalContentBadge } from '@/components/OriginalContentBadge';
-import { VineBadge } from '@/components/VineBadge';
+import { InlineNostrText } from '@/components/InlineNostrText';
 import { AddToListDialog } from '@/components/AddToListDialog';
 import { ReportContentDialog } from '@/components/ReportContentDialog';
 import { DeleteVideoDialog } from '@/components/DeleteVideoDialog';
 import { ViewSourceDialog } from '@/components/ViewSourceDialog';
+import { VideoVerificationBadgeRow } from '@/components/VideoVerificationBadgeRow';
 import { useAuthor } from '@/hooks/useAuthor';
 import { useIsMobile } from '@/hooks/useIsMobile';
 import { useMuteItem } from '@/hooks/useModeration';
 import { useDeleteVideo, useCanDeleteVideo } from '@/hooks/useDeleteVideo';
+import { useIsVideoPinned, usePinVideo, useUnpinVideo } from '@/hooks/usePinnedVideos';
+import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { useAdultVerification } from '@/hooks/useAdultVerification';
 import { useVideoPlayback } from '@/hooks/useVideoPlayback';
 import { useVideosInLists } from '@/hooks/useVideoLists';
 import { enhanceAuthorData } from '@/lib/generateProfile';
+import { genUserName } from '@/lib/genUserName';
 import { formatDistanceToNow } from 'date-fns';
+import { nip19 } from 'nostr-tools';
 import type { ParsedVideoData } from '@/types/video';
+import { SHORT_VIDEO_KIND } from '@/types/video';
 import type { NostrMetadata } from '@nostrify/nostrify';
 import { cn } from '@/lib/utils';
-import { formatViewCount, formatDuration, formatCount } from '@/lib/formatUtils';
+import { formatClassicVineViewBreakdown, formatViewCount, formatCount } from '@/lib/formatUtils';
 import { getSafeProfileImage } from '@/lib/imageUtils';
-import type { VideoNavigationContext } from '@/hooks/useVideoNavigation';
+import { buildProfilePath } from '@/lib/eventRouting';
+import type { ViewTrafficSource } from '@/hooks/useViewEventPublisher';
+import { buildVideoNavigationUrl, type VideoNavigationContext } from '@/hooks/useVideoNavigation';
 import { useToast } from '@/hooks/useToast';
+import { useShare } from '@/hooks/useShare';
+import { useDmCapability } from '@/hooks/useDirectMessages';
+import { buildDmSharePayloadFromVideo, buildDmShareQueryString } from '@/lib/dm';
+import { getVideoShareData } from '@/lib/shareUtils';
+import { useSubdomainNavigate } from '@/hooks/useSubdomainNavigate';
+import { SmartLink } from '@/components/SmartLink';
 import { MuteType } from '@/types/moderation';
+import { getOptimalVideoUrl } from '@/lib/bandwidthTracker';
+import { useBandwidthTier } from '@/hooks/useBandwidthTier';
+import { useSubtitles } from '@/hooks/useSubtitles';
+import { debugLog } from '@/lib/debug';
+import { useLoginDialog } from '@/contexts/LoginDialogContext';
+import { AgeRestrictedMediaPlaceholder } from '@/components/AgeRestrictedMediaPlaceholder';
 
 interface VideoCardProps {
   video: ParsedVideoData;
   className?: string;
   mode?: 'thumbnail' | 'auto-play';
+  isPriority?: boolean; // First video in feed - skip observer wait for faster load
+  layout?: 'horizontal' | 'vertical'; // horizontal = Vine-style side-by-side, vertical = stacked
   onLike?: () => void;
   onRepost?: () => void;
   onOpenComments?: (video: ParsedVideoData) => void;
   onCloseComments?: () => void;
   onPlay?: () => void;
   onLoadedData?: () => void;
+  onEnterFullscreen?: () => void;
+  onPlaybackStarted?: () => void;
   isLiked?: boolean;
   isReposted?: boolean;
   likeCount?: number;
@@ -58,29 +81,70 @@ interface VideoCardProps {
   // Navigation context for maintaining feed position
   navigationContext?: VideoNavigationContext;
   videoIndex?: number;
+  trafficSource?: ViewTrafficSource;
+  /**
+   * Brand accent color that drives the card's offset shadow. Used to
+   * visually distinguish feed types (trending=pink, classic=violet, etc.)
+   * without changing copy or layout. Defaults to green.
+   */
+  accent?: CardAccent;
 }
 
 export function VideoCard({
   video,
   className,
   mode = 'auto-play',
+  isPriority,
+  layout,
   onLike,
   onRepost,
   onOpenComments,
   onCloseComments,
   onPlay,
   onLoadedData,
+  onEnterFullscreen,
+  onPlaybackStarted,
   isLiked = false,
   isReposted = false,
   likeCount = 0,
   repostCount = 0,
   commentCount = 0,
-  viewCount: _viewCount,
+  viewCount = 0,
   showComments = false,
-  navigationContext: _navigationContext,
-  videoIndex: _videoIndex,
+  navigationContext,
+  videoIndex,
+  trafficSource,
+  accent = 'green',
 }: VideoCardProps) {
-  const authorData = useAuthor(video.pubkey);
+  const { t } = useTranslation();
+  const authorData = useAuthor(video.pubkey, {
+    initialName: video.authorName,
+    initialAvatar: video.authorAvatar,
+  });
+  // Subscribe to bandwidth tier changes - triggers re-render when tier changes
+  // The tier itself is used internally by getOptimalVideoUrl
+  const _bandwidthTier = useBandwidthTier();
+
+  // Compute optimal HLS URL based on current bandwidth tier
+  // This dynamically selects 480p/720p/adaptive based on observed load performance
+  const optimalHlsUrl = getOptimalVideoUrl(video.videoUrl);
+  // Classic Vine detection — used for HLS skip and forced square aspect ratio
+  // Vine shut down Jan 17, 2017 (unix 1484611200) — videos with originalVineTimestamp
+  // before that date are almost certainly classic Vines even without origin/platform tags
+  const isClassicVine = video.isVineMigrated ||
+    (video.originalVineTimestamp !== undefined && video.originalVineTimestamp < 1484611200);
+  // SKIP HLS for short-form videos — HLS adds 2 extra round-trips (manifest + segment)
+  // that are unnecessary for small ~6-second videos (~2-4MB). Direct MP4 loads in a single request.
+  // Classic Vines also skip HLS because the transcoder distorts square 480x480 aspect ratio.
+  // Only use HLS for longer content (>60s) if divine ever supports it.
+  const isShortForm = !video.duration || video.duration <= 60;
+  // When direct MP4 fails, retry with HLS as fallback (blob may be missing but transcode exists)
+  const [mp4Failed, setMp4Failed] = useState(false);
+  // When MP4 blob is missing (404), fall back to HLS if available (transcoded copy may exist)
+  const hlsFallbackUrl = mp4Failed && video.videoUrl?.includes('media.divine.video')
+    ? video.hlsUrl || optimalHlsUrl
+    : undefined;
+  const effectiveHlsUrl = hlsFallbackUrl || ((isClassicVine || isShortForm) ? undefined : (video.hlsUrl || (optimalHlsUrl !== video.videoUrl ? optimalHlsUrl : undefined)));
   const { data: lists } = useVideosInLists(video.vineId ?? undefined);
 
   // NEW: Get reposter data from reposts array
@@ -89,21 +153,127 @@ export function VideoCard({
   const reposterPubkey = latestRepost?.reposterPubkey;
   const reposterData = useAuthor(reposterPubkey || '');
   const shouldShowReposter = hasReposts && reposterPubkey;
+  const classicViewBreakdown = formatClassicVineViewBreakdown(viewCount, video.loopCount ?? 0);
   const [videoError, setVideoError] = useState(false);
+  const [retryAttempt, setRetryAttempt] = useState(0);
+  // Always start with video player visible in auto-play mode, but let VideoPlaybackContext control actual playback
+  // The VideoPlayer component will only play when it's the activeVideoId (most visible)
   const [isPlaying, setIsPlaying] = useState(mode === 'auto-play');
+  const [showThumbnailDuringStartup, setShowThumbnailDuringStartup] = useState(false);
   const [showAddToListDialog, setShowAddToListDialog] = useState(false);
   const [showReportDialog, setShowReportDialog] = useState(false);
   const [showReportUserDialog, setShowReportUserDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showViewSourceDialog, setShowViewSourceDialog] = useState(false);
-  const [videoAspectRatio, setVideoAspectRatio] = useState<number | null>(null);
-  const isMobile = useIsMobile();
+  const [showReactionsModal, setShowReactionsModal] = useState<'likes' | 'reposts' | null>(null);
+  // Calculate initial aspect ratio from video dimensions, or use sensible defaults
+  // Classic Vine videos were ALWAYS 1:1 square — ignore any dim tag or transcoder dimensions
+  const hasDeclaredDimensions = !!video.dimensions;
+
+  // Log once per video mount to trace aspect ratio decisions
+  useMemo(() => {
+    debugLog(`[AspectRatio] video=${video.id?.slice(0, 8)} isClassicVine=${isClassicVine}`,
+      `loopCount=${video.loopCount} isVineMigrated=${video.isVineMigrated}`,
+      `dimensions=${video.dimensions} vineTimestamp=${video.originalVineTimestamp}`);
+  }, [video.id, isClassicVine, video.loopCount, video.isVineMigrated, video.dimensions, video.originalVineTimestamp]);
+
+  const getInitialAspectRatio = (): number => {
+    // Classic Vines are always square, regardless of what dim tag says
+    if (isClassicVine) return 1;
+    // Try to parse dimensions from video data (format: "WIDTHxHEIGHT", e.g., "1080x1920")
+    if (video.dimensions) {
+      const [width, height] = video.dimensions.split('x').map(Number);
+      if (width && height && !isNaN(width) && !isNaN(height)) {
+        return width / height;
+      }
+    }
+    // Fallback: most modern videos are 9:16 vertical
+    return 9 / 16;
+  };
+  const initialAspectRatio = getInitialAspectRatio();
+  const [videoAspectRatio, setVideoAspectRatio] = useState<number>(initialAspectRatio);
+  // Track thumbnail-reported aspect ratio as ground truth
+  const thumbnailRatioRef = useRef<number | null>(null);
+
+  // NO useEffect here — useState(initialAspectRatio) sets the right value on mount,
+  // and effectiveAspectRatio below overrides for classic Vines anyway.
+
+  // For classic Vines, ALWAYS force 1:1 regardless of state — state might be
+  // stale if video data changed after mount or component was recycled
+  const effectiveAspectRatio = isClassicVine ? 1 : videoAspectRatio;
+
+  // Thumbnail dimensions are the source of truth for content aspect ratio.
+  // Thumbnails are simple images that preserve the original aspect ratio,
+  // unlike HLS streams which may be transcoded to different dimensions.
+  const handleThumbnailDimensions = useCallback((d: { width: number; height: number }) => {
+    const newRatio = d.width / d.height;
+    console.log(`[AspectRatio] THUMBNAIL video=${video.id?.slice(0, 8)} dims=${d.width}x${d.height} ratio=${newRatio.toFixed(3)} isClassicVine=${isClassicVine} → ${isClassicVine ? 'IGNORED (classic vine)' : 'APPLIED'}`);
+    if (isClassicVine) return; // Classic Vines locked to 1:1
+    thumbnailRatioRef.current = newRatio;
+    setVideoAspectRatio(newRatio);
+  }, [isClassicVine, video.id]);
+
+  // Video player dimensions may be wrong due to HLS transcoding.
+  // If thumbnail already established the correct ratio, don't override
+  // unless the difference is trivial (< 10%, just codec rounding).
+  const handleVideoDimensions = useCallback((d: { width: number; height: number }) => {
+    const newRatio = d.width / d.height;
+    const thumbRatio = thumbnailRatioRef.current;
+
+    if (isClassicVine) {
+      console.log(`[AspectRatio] VIDEO video=${video.id?.slice(0, 8)} dims=${d.width}x${d.height} ratio=${newRatio.toFixed(3)} → IGNORED (classic vine, forcing 1:1)`);
+      return;
+    }
+
+    // If thumbnail already set the ratio, trust it over HLS
+    if (thumbRatio !== null) {
+      const ratioChange = Math.abs(newRatio - thumbRatio) / thumbRatio;
+      if (ratioChange > 0.1) {
+        console.log(`[AspectRatio] VIDEO video=${video.id?.slice(0, 8)} dims=${d.width}x${d.height} ratio=${newRatio.toFixed(3)} → IGNORED (${(ratioChange * 100).toFixed(0)}% off thumbnail=${thumbRatio.toFixed(3)})`);
+        return; // >10% difference = HLS distortion, ignore
+      }
+    }
+
+    if (hasDeclaredDimensions) {
+      const isInitialPortraitOrSquare = initialAspectRatio <= 1.1;
+      const isNewLandscape = newRatio > 1.1;
+      // Don't let HLS flip a video with declared portrait/square dimensions to landscape
+      if (isInitialPortraitOrSquare && isNewLandscape) {
+        console.log(`[AspectRatio] VIDEO video=${video.id?.slice(0, 8)} dims=${d.width}x${d.height} ratio=${newRatio.toFixed(3)} → IGNORED (declared ${initialAspectRatio.toFixed(3)} but HLS says landscape)`);
+        return;
+      }
+    }
+
+    console.log(`[AspectRatio] VIDEO video=${video.id?.slice(0, 8)} dims=${d.width}x${d.height} ratio=${newRatio.toFixed(3)} → APPLIED (was ${videoAspectRatio.toFixed(3)})`);
+    setVideoAspectRatio(newRatio);
+  }, [initialAspectRatio, hasDeclaredDimensions, isClassicVine, video.id, videoAspectRatio]);
+  const _isMobile = useIsMobile();
+  // Determine layout: use prop if provided, otherwise always vertical (text below video)
+  const effectiveLayout = layout ?? 'vertical';
+  const isHorizontal = effectiveLayout === 'horizontal';
   const { toast } = useToast();
+  const { share } = useShare();
+  const { canUseDirectMessages } = useDmCapability();
   const muteUser = useMuteItem();
-  const navigate = useNavigate();
-  const { globalMuted, setGlobalMuted } = useVideoPlayback();
+  const navigate = useSubdomainNavigate();
+  const { activeVideoId, setActiveVideo, globalMuted, setGlobalMuted } = useVideoPlayback();
+  const { cues: subtitleCues, hasSubtitles } = useSubtitles(video);
+  // Subtitles default to ON when available, independent of mute state
+  const [subtitlesVisible, setSubtitlesVisible] = useState(true);
+  const showSubtitles = subtitlesVisible && hasSubtitles;
+
   const { mutate: deleteVideo, isPending: isDeleting } = useDeleteVideo();
   const canDelete = useCanDeleteVideo(video);
+  const { user: currentUser } = useCurrentUser();
+  const coordinate = video.vineId ? `${SHORT_VIDEO_KIND}:${video.pubkey}:${video.vineId}` : undefined;
+  const isPinned = useIsVideoPinned(coordinate);
+  const { mutateAsync: pinVideo } = usePinVideo();
+  const { mutateAsync: unpinVideo } = useUnpinVideo();
+  const { isVerified: isAdultVerified, confirmAdult } = useAdultVerification();
+  const { openLoginDialog } = useLoginDialog();
+
+  // Get reactions data for the modal
+  const { data: reactions } = useVideoReactions(video.id, video.pubkey, video.vineId);
 
   // Enhance author data with generated profiles
   const author = enhanceAuthorData(authorData.data, video.pubkey);
@@ -114,19 +284,24 @@ export function VideoCard({
   const metadata: NostrMetadata = author.metadata;
   const reposterMetadata: NostrMetadata | undefined = reposter?.metadata;
 
+  // Use raw author data (pre-enhancement) to detect real vs generated names
+  // enhanceAuthorData fills in generated names like "ElectricVine742" — we don't want those
+  const rawMetadata = authorData.data?.metadata;
+  const hasRealName = rawMetadata?.display_name || rawMetadata?.name;
+  // Display name priority: real profile name > Funnelcake cached name > shortened npub
+  const displayName = hasRealName
+    ? (rawMetadata.display_name || rawMetadata.name!)
+    : (video.authorName || genUserName(video.pubkey));
+  // Avatar priority: real profile > Funnelcake cached > generated fallback
+  const profileImage = getSafeProfileImage(
+    rawMetadata?.picture || video.authorAvatar || metadata.picture
+  );
   const npub = nip19.npubEncode(video.pubkey);
-  // Show "Loading profile..." while loading, otherwise show truncated npub if no profile exists
-  const displayName = authorData.isLoading
-    ? "Loading profile..."
-    : (metadata.display_name || metadata.name || `${npub.slice(0, 12)}...`);
-  const profileImage = getSafeProfileImage(metadata.picture);
-  // Just use npub for now, we'll deal with NIP-05 later
-  const profileUrl = `/${npub}`;
+  const profileUrl = buildProfilePath(npub);
 
-  const reposterNpub = reposterPubkey ? nip19.npubEncode(reposterPubkey) : '';
   const reposterName = reposterData.isLoading
-    ? "Loading profile..."
-    : (reposterMetadata?.name || (reposterPubkey ? `${reposterNpub.slice(0, 12)}...` : ''));
+    ? t('videoCard.loadingProfile')
+    : (reposterMetadata?.name || (reposterPubkey ? genUserName(reposterPubkey) : ''));
 
   // NEW: Get all unique reposters for display
   const allReposters = video.reposts || [];
@@ -137,30 +312,37 @@ export function VideoCard({
   const timestamp = video.originalVineTimestamp || video.createdAt;
 
   const date = new Date(timestamp * 1000);
-  const now = new Date();
+  const isAgeGated = video.ageRestricted === true && (!currentUser || !isAdultVerified);
 
-  // Check if this is a migrated Vine from original Vine platform (uses 'origin' tag)
-  const isMigratedVine = video.isVineMigrated;
-
-  // Calculate timeAgo - always show actual date/time, badge will indicate if it's original Vine
-  const yearsDiff = now.getFullYear() - date.getFullYear();
-
-  let timeAgo: string;
-  // If more than 1 year old, show the actual date
-  if (yearsDiff > 1 || (yearsDiff === 1 && now.getTime() < new Date(date).setFullYear(date.getFullYear() + 1))) {
-    // Format as "Jan 15, 2021" for old dates
-    timeAgo = date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric'
-    });
-  } else {
-    // Use relative time for recent videos
-    timeAgo = formatDistanceToNow(date, { addSuffix: true });
+  // Calculate timeAgo only for pre-2025 videos
+  const isFrom2025 = date.getFullYear() >= 2025;
+  let timeAgo: string | null = null;
+  if (!isFrom2025) {
+    const now = new Date();
+    const yearsDiff = now.getFullYear() - date.getFullYear();
+    // If more than 1 year old, show the actual date
+    if (yearsDiff > 1 || (yearsDiff === 1 && now.getTime() < new Date(date).setFullYear(date.getFullYear() + 1))) {
+      timeAgo = date.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric'
+      });
+    } else {
+      timeAgo = formatDistanceToNow(date, { addSuffix: true });
+    }
   }
 
   const handleCommentsClick = () => {
     onOpenComments?.(video);
+  };
+
+  const handleAgeGateAction = () => {
+    if (currentUser) {
+      confirmAdult();
+      return;
+    }
+
+    openLoginDialog();
   };
 
   const handleCloseCommentsModal = (open: boolean) => {
@@ -172,17 +354,80 @@ export function VideoCard({
   const handleThumbnailClick = () => {
     // In thumbnail mode (grid view), navigate to video page instead of playing inline
     if (mode === 'thumbnail') {
-      navigate(`/video/${video.id}`);
+      const targetUrl = navigationContext
+        ? buildVideoNavigationUrl(video.id, navigationContext, videoIndex)
+        : `/video/${video.id}`;
+      navigate(targetUrl, { ownerPubkey: video.pubkey });
     } else {
+      setActiveVideo(video.id);
       setIsPlaying(true);
       onPlay?.();
     }
   };
 
+  const handleThumbnailPlayButtonClick = () => {
+    setActiveVideo(video.id);
+    setIsPlaying(true);
+    setShowThumbnailDuringStartup(mode === 'thumbnail');
+    onPlay?.();
+  };
+
   const handleVideoEnd = () => {
     if (mode === 'thumbnail') {
+      if (activeVideoId === video.id) {
+        setActiveVideo(null);
+      }
       setIsPlaying(false);
+      setShowThumbnailDuringStartup(false);
     }
+  };
+
+  useEffect(() => {
+    if (mode !== 'thumbnail') {
+      return;
+    }
+
+    if (isPlaying && activeVideoId !== null && activeVideoId !== video.id) {
+      setIsPlaying(false);
+      setShowThumbnailDuringStartup(false);
+    }
+  }, [activeVideoId, isPlaying, mode, video.id]);
+
+  useEffect(() => {
+    if (!isPlaying) {
+      setShowThumbnailDuringStartup(false);
+    }
+  }, [isPlaying]);
+
+  useEffect(() => {
+    setVideoError(false);
+    setMp4Failed(false);
+    setRetryAttempt(0);
+  }, [video.id, video.videoUrl]);
+
+  const handlePlaybackStarted = () => {
+    setShowThumbnailDuringStartup(false);
+    onPlaybackStarted?.();
+  };
+
+  const handleVideoError = () => {
+    setShowThumbnailDuringStartup(false);
+    // If MP4 failed and we haven't tried HLS yet, retry with HLS fallback
+    if (!mp4Failed && !effectiveHlsUrl && video.videoUrl?.includes('media.divine.video')) {
+      setMp4Failed(true);
+    } else {
+      setVideoError(true);
+    }
+  };
+
+  const handleRetryVideo = () => {
+    setVideoError(false);
+    setMp4Failed(false);
+    setShowThumbnailDuringStartup(false);
+    setIsPlaying(true);
+    setActiveVideo(video.id);
+    setRetryAttempt(prev => prev + 1);
+    onPlay?.();
   };
 
   const handleMuteUser = async () => {
@@ -194,13 +439,13 @@ export function VideoCard({
       });
 
       toast({
-        title: 'User muted',
-        description: `${displayName} has been muted`,
+        title: t('videoCard.toast.muted.title'),
+        description: t('videoCard.toast.muted.description', { name: displayName }),
       });
     } catch {
       toast({
-        title: 'Error',
-        description: 'Failed to mute user',
+        title: t('videoCard.toast.muteFailed.title'),
+        description: t('videoCard.toast.muteFailed.description'),
         variant: 'destructive',
       });
     }
@@ -217,44 +462,63 @@ export function VideoCard({
     );
   };
 
-  const handleShare = async () => {
-    const videoUrl = `${window.location.origin}/video/${video.id}`;
+  const handleShare = () => share(getVideoShareData(video));
+  const handleShareViaDm = () => {
+    navigate(`/messages?${buildDmShareQueryString(buildDmSharePayloadFromVideo(video))}`);
+  };
 
-    // Use Web Share API if available
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: video.title || 'Check out this video on diVine Web',
-          text: video.content || 'Short-form looping video on Nostr',
-          url: videoUrl,
-        });
-      } catch (error) {
-        // User cancelled or error occurred
-        if ((error as Error).name !== 'AbortError') {
-          console.error('Error sharing:', error);
-          toast({
-            title: 'Error',
-            description: 'Failed to share video',
-            variant: 'destructive',
-          });
-        }
+  const handlePinToggle = async () => {
+    if (!coordinate) return;
+    try {
+      if (isPinned) {
+        await unpinVideo({ coordinate });
+        toast({ title: t('videoCard.toast.unpinned.title'), description: t('videoCard.toast.unpinned.description') });
+      } else {
+        await pinVideo({ coordinate });
+        toast({ title: t('videoCard.toast.pinned.title'), description: t('videoCard.toast.pinned.description') });
       }
-    } else {
-      // Fallback: Copy to clipboard
-      try {
-        await navigator.clipboard.writeText(videoUrl);
-        toast({
-          title: 'Link copied!',
-          description: 'Video link has been copied to clipboard',
-        });
-      } catch (error) {
-        console.error('Failed to copy link:', error);
-        toast({
-          title: 'Error',
-          description: 'Failed to copy link to clipboard',
-          variant: 'destructive',
-        });
-      }
+    } catch (err) {
+      toast({
+        title: t('videoCard.toast.pinFailed.title'),
+        description: err instanceof Error ? err.message : t('videoCard.toast.pinFailed.descriptionFallback'),
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleDownload = async () => {
+    if (!video.videoUrl) {
+      toast({
+        title: t('videoCard.toast.noDownloadUrl.title'),
+        description: t('videoCard.toast.noDownloadUrl.description'),
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      // Fetch the video and create a blob for download
+      const response = await fetch(video.videoUrl);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+
+      // Create download link
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${video.title || video.id}.mp4`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+
+      toast({
+        title: t('videoCard.toast.downloading.title'),
+        description: t('videoCard.toast.downloading.description'),
+      });
+    } catch (error) {
+      console.error('Download failed:', error);
+      // Fallback: open in new tab
+      window.open(video.videoUrl, '_blank');
     }
   };
 
@@ -277,168 +541,277 @@ export function VideoCard({
         />
       )}
 
-    <Card className={cn('overflow-hidden', className)}>
+    <Card variant="brand" accent={accent} className={cn('overflow-hidden', className)}>
       {/* Repost indicator - NEW: Show repost count */}
       {hasReposts && (
         <div className="flex items-center gap-2 px-4 pt-3 text-sm text-muted-foreground">
           <Repeat2 className="h-4 w-4" />
           <span>
-            {repostCountDisplay === 1 ? (
-              <>{reposterName} reposted</>
-            ) : (
-              <>{reposterName} and {repostCountDisplay - 1} {repostCountDisplay === 2 ? 'other' : 'others'} reposted</>
-            )}
+            {repostCountDisplay === 1
+              ? t('videoCard.repostedBySingle', { name: reposterName })
+              : t('videoCard.repostedByMultiple', { name: reposterName, count: repostCountDisplay - 1 })}
           </span>
         </div>
       )}
 
-      {/* Author info */}
-      <div className="flex items-center gap-3 p-4 pb-2">
-        <Link to={profileUrl}>
-          <Avatar className="h-10 w-10">
-            <AvatarImage src={profileImage} alt={displayName} />
-            <AvatarFallback>{displayName[0]?.toUpperCase()}</AvatarFallback>
-          </Avatar>
-        </Link>
-        <div className="flex-1 min-w-0">
-          <Link to={profileUrl} className="font-semibold hover:underline truncate">
-            {displayName}
-          </Link>
-          {/* Badge row - matches Flutter's ProofModeBadgeRow */}
-          <div className="flex items-center gap-2 mt-1">
-            {video.proofMode && video.proofMode.level !== 'unverified' && (
-              <ProofModeBadge
-                level={video.proofMode.level}
-                proofData={video.proofMode}
-                showDetails={true}
-              />
-            )}
-            {/* Show Original Content badge if video is from before 2018 (original Vine era) */}
-            {date.getFullYear() < 2018 && (
-              <OriginalContentBadge size="small" />
-            )}
-          </div>
-        </div>
-        {/* Original badge and timestamp - aligned with author */}
-        <div className="flex items-center gap-2 text-sm text-muted-foreground shrink-0">
-          {isMigratedVine && <VineBadge />}
-          <span
-            title={new Date(timestamp * 1000).toLocaleString()}>
-            {timeAgo}
-          </span>
-        </div>
-      </div>
-
-      {/* Video content */}
-      <CardContent className="p-0">
-        {/* Video player or thumbnail */}
-        <div 
-          className="relative bg-black rounded-lg overflow-hidden w-full"
-          style={{ aspectRatio: videoAspectRatio?.toString() || '1' }}
-        >
-          {!isPlaying ? (
-            <ThumbnailPlayer
-              videoId={video.id}
-              src={video.videoUrl}
-              thumbnailUrl={video.thumbnailUrl}
-              duration={video.duration}
-              className={cn("w-full h-full", !videoAspectRatio && "opacity-0")}
-              onClick={handleThumbnailClick}
-              onError={() => setVideoError(true)}
-              onVideoDimensions={(d) => setVideoAspectRatio(d.width / d.height)}
-            />
-          ) : !videoError ? (
-            <VideoPlayer
-              videoId={video.id}
-              src={video.videoUrl}
-              hlsUrl={video.hlsUrl}
-              fallbackUrls={video.fallbackVideoUrls}
-              poster={video.thumbnailUrl}
-              blurhash={video.blurhash}
-              className="w-full h-full"
-              onLoadStart={() => setVideoError(false)}
-              onError={() => setVideoError(true)}
-              onEnded={handleVideoEnd}
-              onLoadedData={onLoadedData}
-              onVideoDimensions={(d) => setVideoAspectRatio(d.width / d.height)}
-            />
-          ) : (
-            <div className="flex items-center justify-center h-full text-muted-foreground">
-              <p>Failed to load video</p>
-            </div>
-          )}
-
-          {/* Loading spinner overlay */}
-          {!videoAspectRatio && !videoError && (
-            <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-primary/10 to-primary/5">
-              <div className="relative w-12 h-12">
-                <div className="absolute inset-0 border-4 border-primary/20 rounded-full" />
-                <div className="absolute inset-0 border-4 border-transparent border-t-primary rounded-full animate-spin" />
+      {/* Main content - horizontal or vertical layout */}
+      <div className={cn(
+        isHorizontal ? "flex flex-row" : "flex flex-col"
+      )}>
+        {/* Video section - fixed width in horizontal mode, full width in vertical */}
+        <div className={cn(
+          isHorizontal ? "w-[280px] flex-shrink-0" : "w-full"
+        )}>
+          {/* Author info - only show here in vertical layout */}
+          {!isHorizontal && (
+            <div className="flex items-center gap-3 p-4 pb-2">
+              <SmartLink to={profileUrl} ownerPubkey={video.pubkey}>
+                <Avatar size="md">
+                  <AvatarImage src={profileImage} alt={displayName} />
+                  <AvatarFallback>{displayName[0]?.toUpperCase()}</AvatarFallback>
+                </Avatar>
+              </SmartLink>
+              <div className="flex-1 min-w-0">
+                <SmartLink to={profileUrl} ownerPubkey={video.pubkey} className="font-semibold hover:underline truncate">
+                  {displayName}
+                </SmartLink>
+                {timeAgo && (
+                  <SmartLink to={`/video/${video.id}`} ownerPubkey={video.pubkey} className="text-sm text-muted-foreground block hover:underline" title={new Date(timestamp * 1000).toLocaleString()}>
+                    {timeAgo}
+                  </SmartLink>
+                )}
+              </div>
+              {/* Badges - right aligned */}
+              <div className="flex items-center gap-2 shrink-0">
+                <VideoVerificationBadgeRow video={video} />
               </div>
             </div>
           )}
 
-          {/* Mute/Unmute button overlay - bottom right corner */}
-          {isPlaying && !videoError && (
-            <Button
-              variant="ghost"
-              size="sm"
+          {/* Video player or thumbnail */}
+          <CardContent className={cn("p-0", isHorizontal && "p-2")}>
+            <div
               className={cn(
-                "absolute bottom-3 right-3 z-30",
-                "bg-black/50 hover:bg-black/70 text-white",
-                "backdrop-blur-sm rounded-full",
-                "w-10 h-10 p-0 flex items-center justify-center",
-                "transition-all duration-200"
+                "relative rounded-lg overflow-hidden w-full max-h-[70vh] bg-black",
+                // Center non-landscape videos when height-constrained
+                effectiveAspectRatio <= 1.1 && "mx-auto"
               )}
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                setGlobalMuted(!globalMuted);
+              style={{
+                aspectRatio: effectiveAspectRatio.toString(),
+                // For non-landscape videos, limit width so max-h-[70vh] doesn't stretch them wide
+                maxWidth: effectiveAspectRatio <= 1.1 ? `calc(70vh * ${effectiveAspectRatio})` : undefined,
               }}
-              onTouchStart={(e) => {
-                // Prevent touch from bubbling to video player
-                e.stopPropagation();
-              }}
-              onTouchEnd={(e) => {
-                // Prevent touch from bubbling to video player
-                e.stopPropagation();
-              }}
-              aria-label={globalMuted ? "Unmute" : "Mute"}
             >
-              {globalMuted ? (
-                <VolumeX className="h-5 w-5" />
+              {isAgeGated ? (
+                <AgeRestrictedMediaPlaceholder
+                  actionLabel={currentUser ? t('videoCard.verifyAgeToView') : t('videoCard.logInToView')}
+                  onAction={handleAgeGateAction}
+                  title={video.title || video.content}
+                />
+              ) : !isPlaying ? (
+                <ThumbnailPlayer
+                  videoId={video.id}
+                  src={video.videoUrl}
+                  thumbnailUrl={video.thumbnailUrl}
+                  duration={video.duration}
+                  ageRestricted={video.ageRestricted}
+                  className="w-full h-full"
+                  onClick={handleThumbnailClick}
+                  onPlayButtonClick={handleThumbnailPlayButtonClick}
+                  onError={() => setVideoError(true)}
+                  onVideoDimensions={handleThumbnailDimensions}
+                />
+              ) : !videoError ? (
+                <>
+                  <VideoPlayer
+                    key={`${video.id}-${video.videoUrl}-${retryAttempt}-${mp4Failed ? 'hls' : 'direct'}`}
+                    videoId={video.id}
+                    src={video.videoUrl}
+                    hlsUrl={effectiveHlsUrl}
+                    fallbackUrls={video.fallbackVideoUrls}
+                    poster={video.thumbnailUrl}
+                    blurhash={video.blurhash}
+                    isPriority={isPriority}
+                    className="w-full h-full"
+                    onLoadStart={() => setVideoError(false)}
+                    onError={handleVideoError}
+                    onEnded={handleVideoEnd}
+                    onLoadedData={onLoadedData}
+                    onPlaybackStarted={handlePlaybackStarted}
+                    onVideoDimensions={handleVideoDimensions}
+                    subtitleCues={subtitleCues}
+                    subtitlesVisible={showSubtitles}
+                    videoData={video}
+                    trafficSource={trafficSource}
+                    objectFit={isClassicVine ? 'cover' : 'contain'}
+                  />
+                  {mode === 'thumbnail' && showThumbnailDuringStartup && (
+                    <div className="absolute inset-0 z-20 pointer-events-none">
+                      <ThumbnailPlayer
+                        videoId={video.id}
+                        src={video.videoUrl}
+                        thumbnailUrl={video.thumbnailUrl}
+                        duration={video.duration}
+                        ageRestricted={video.ageRestricted}
+                        className="w-full h-full"
+                        onVideoDimensions={handleThumbnailDimensions}
+                      />
+                    </div>
+                  )}
+                </>
               ) : (
-                <Volume2 className="h-5 w-5" />
+                <div className="flex items-center justify-center h-full text-muted-foreground">
+                  <div className="text-center space-y-3">
+                    <p>{t('videoCard.failedToLoad')}</p>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleRetryVideo}
+                      className="gap-2"
+                    >
+                      <ArrowClockwise className="h-4 w-4" />
+                      {t('videoCard.retry')}
+                    </Button>
+                  </div>
+                </div>
               )}
-            </Button>
+
+              {/* CC button overlay - bottom right, next to mute */}
+              {isPlaying && !videoError && hasSubtitles && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className={cn(
+                    "absolute bottom-3 right-14 z-30",
+                    "bg-black/50 hover:bg-black/70",
+                    showSubtitles ? "text-white" : "text-white/50",
+                    "backdrop-blur-sm rounded-full",
+                    "w-10 h-10 p-0 flex items-center justify-center",
+                    "transition-all duration-200"
+                  )}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setSubtitlesVisible(prev => !prev);
+                  }}
+                  onTouchStart={(e) => { e.stopPropagation(); }}
+                  onTouchEnd={(e) => { e.stopPropagation(); }}
+                  aria-label={showSubtitles ? t('videoCard.ariaHideSubtitles') : t('videoCard.ariaShowSubtitles')}
+                >
+                  <Captions className="h-5 w-5" />
+                </Button>
+              )}
+
+              {/* Mute/Unmute button overlay - bottom right corner */}
+              {isPlaying && !videoError && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className={cn(
+                    "absolute bottom-3 right-3 z-30",
+                    "bg-black/50 hover:bg-black/70 text-white",
+                    "backdrop-blur-sm rounded-full",
+                    "w-10 h-10 p-0 flex items-center justify-center",
+                    "transition-all duration-200"
+                  )}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setGlobalMuted(!globalMuted);
+                  }}
+                  onTouchStart={(e) => {
+                    e.stopPropagation();
+                  }}
+                  onTouchEnd={(e) => {
+                    e.stopPropagation();
+                  }}
+                  aria-label={globalMuted ? t('videoCard.ariaUnmute') : t('videoCard.ariaMute')}
+                >
+                  {globalMuted ? (
+                    <VolumeX className="h-5 w-5" />
+                  ) : (
+                    <Volume2 className="h-5 w-5" />
+                  )}
+                </Button>
+              )}
+
+              {/* Fullscreen button overlay - bottom left corner */}
+              {isPlaying && !videoError && onEnterFullscreen && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className={cn(
+                    "absolute bottom-3 left-3 z-30",
+                    "bg-black/50 hover:bg-black/70 text-white",
+                    "backdrop-blur-sm rounded-full",
+                    "w-10 h-10 p-0 flex items-center justify-center",
+                    "transition-all duration-200"
+                  )}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onEnterFullscreen();
+                  }}
+                  onTouchStart={(e) => {
+                    e.stopPropagation();
+                  }}
+                  onTouchEnd={(e) => {
+                    e.stopPropagation();
+                  }}
+                  aria-label={t('videoCard.ariaEnterFullscreen')}
+                >
+                  <Maximize2 className="h-5 w-5" />
+                </Button>
+              )}
+            </div>
+          </CardContent>
+        </div>
+
+        {/* Info panel - right side in horizontal, below video in vertical */}
+        <div className={cn(
+          "flex flex-col",
+          isHorizontal ? "flex-1 p-3 justify-between min-w-0 overflow-hidden" : "w-full"
+        )}>
+          {/* Author info - horizontal layout only (shown above video in vertical) */}
+          {isHorizontal && (
+            <div className="flex items-start gap-2 mb-2">
+              <SmartLink to={profileUrl} ownerPubkey={video.pubkey}>
+                <Avatar size="sm">
+                  <AvatarImage src={profileImage} alt={displayName} />
+                  <AvatarFallback className="text-xs">{displayName[0]?.toUpperCase()}</AvatarFallback>
+                </Avatar>
+              </SmartLink>
+              <div className="flex-1 min-w-0">
+                <SmartLink to={profileUrl} ownerPubkey={video.pubkey} className="font-semibold text-sm hover:underline block truncate">
+                  {displayName}
+                </SmartLink>
+                {timeAgo && (
+                  <SmartLink to={`/video/${video.id}`} ownerPubkey={video.pubkey} className="text-xs text-muted-foreground hover:underline" title={new Date(timestamp * 1000).toLocaleString()}>
+                    {timeAgo}
+                  </SmartLink>
+                )}
+              </div>
+              {/* Badges - right aligned */}
+              <div className="flex items-center gap-2 shrink-0">
+                <VideoVerificationBadgeRow video={video} />
+              </div>
+            </div>
           )}
-        </div>
 
-        {/* Video metadata */}
-        <div className="px-4 py-2" data-testid="video-metadata">
-          <div className="flex items-center gap-3 text-sm text-muted-foreground">
-            {(video.loopCount ?? 0) > 0 && (
-              <span className="flex items-center gap-1">
-                <Eye className="h-3 w-3" />
-                {formatViewCount(video.loopCount!)}
-              </span>
-            )}
-            {(video.duration ?? 0) > 0 && (
-              <span>{formatDuration(video.duration!)}</span>
-            )}
-          </div>
-        </div>
-
-        {/* Title and description */}
-        {(video.title || (video.content && video.content.trim() !== video.title?.trim()) || video.hashtags.length > 0 || video.vineId) && (
-          <div className="p-4 space-y-2">
+          {/* Title, description, hashtags */}
+          <div className={cn(
+            "flex-1 overflow-hidden",
+            isHorizontal ? "space-y-1" : "p-4 space-y-2"
+          )}>
             {video.title && (
-              <h3 className="font-semibold text-lg">{video.title}</h3>
+              <h3 className={cn("font-semibold line-clamp-2", isHorizontal ? "text-sm" : "text-lg")}>
+                <InlineNostrText text={video.title} textLinkTo={`/video/${video.id}`} textLinkOwnerPubkey={video.pubkey} textLinkClassName="hover:underline" />
+              </h3>
             )}
 
-            {/* Only show content if it's different from the title */}
             {video.content && video.content.trim() !== video.title?.trim() && (
-              <div className="whitespace-pre-wrap break-words">
+              <div className={cn("whitespace-pre-wrap break-words", isHorizontal && "line-clamp-2")}>
                 <NoteContent
                   event={{
                     id: video.id,
@@ -449,81 +822,130 @@ export function VideoCard({
                     tags: [],
                     sig: ''
                   }}
-                  className="text-sm"
+                  className={cn(isHorizontal ? "text-xs" : "text-sm")}
                 />
               </div>
             )}
 
-            {/* Hashtags */}
+            {/* Hashtags - Vine green color in horizontal layout */}
             {video.hashtags.length > 0 && (
-              <div className="flex flex-wrap gap-2 pt-2">
+              <div className="flex flex-wrap gap-1">
                 {video.hashtags.map((tag) => (
-                  <Link
+                  <SmartLink
                     key={tag}
                     to={`/hashtag/${tag}`}
-                    className="text-sm text-primary hover:underline"
+                    className={cn(
+                      "hover:underline",
+                      isHorizontal ? "text-xs text-[#0d7a50] dark:text-[#00bf8f]" : "text-sm text-[#0d7a50] dark:text-primary"
+                    )}
                   >
                     #{tag}
-                  </Link>
+                  </SmartLink>
                 ))}
               </div>
             )}
 
-            {/* List badges - without add button */}
-            {video.vineId && (
-              <VideoListBadges
-                videoId={video.vineId}
-                videoPubkey={video.pubkey}
-                compact={true}
-                showAddButton={false}
-                className="pt-2"
-              />
+          </div>
+
+          {/* Stats row - horizontal layout: show view/loop count only (likes/comments shown on buttons) */}
+          {isHorizontal && viewCount > 0 && (
+            <SmartLink to={`/video/${video.id}`} ownerPubkey={video.pubkey} className="py-2 mt-auto hover:underline block">
+              <span className="block text-sm text-muted-foreground">
+                {classicViewBreakdown || formatViewCount(viewCount)}
+              </span>
+            </SmartLink>
+          )}
+
+          {/* Vertical layout: Video metadata row */}
+          {!isHorizontal && (
+            <div className="px-4 py-2" data-testid="video-metadata">
+              <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                {viewCount > 0 && (
+                  <SmartLink to={`/video/${video.id}`} ownerPubkey={video.pubkey} className="flex items-center gap-1 hover:underline">
+                    <Eye className="h-3 w-3" />
+                    <span>{classicViewBreakdown || formatViewCount(viewCount)}</span>
+                  </SmartLink>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Interaction buttons */}
+          <div className={cn(
+            "flex items-center",
+            isHorizontal ? "pt-2 gap-1" : "px-4 pb-4 gap-0.5"
+          )}>
+          {/* Like button - icon toggles, count shows modal */}
+          <div className="flex items-center">
+            <Button
+              variant="ghost"
+              size="sm"
+              className={cn(
+                isHorizontal ? 'gap-2 pr-1' : 'gap-1 px-2 pr-1',
+                isLiked && 'text-red-500 bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/30'
+              )}
+              onClick={onLike}
+              aria-label={isLiked ? t('videoCard.ariaUnlike') : t('videoCard.ariaLike')}
+            >
+              <Heart className="h-4 w-4" weight={isLiked ? 'fill' : 'bold'} />
+            </Button>
+            {likeCount > 0 && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowReactionsModal('likes');
+                }}
+                className={cn(
+                  "text-xs text-muted-foreground hover:text-foreground transition-colors px-1",
+                  isLiked && 'text-red-500 hover:text-red-600'
+                )}
+                aria-label={t('videoCard.ariaViewLikes')}
+              >
+                {formatCount(likeCount)}
+              </button>
             )}
           </div>
-        )}
 
-        {/* Interaction buttons */}
-        <div className={cn(
-          "flex items-center px-4 pb-4",
-          isMobile ? "gap-0.5" : "gap-1"
-        )}>
-          <Button
-            variant="ghost"
-            size="sm"
-            className={cn(
-              isMobile ? 'gap-1 px-2' : 'gap-2',
-              isLiked && 'text-red-500 bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/30'
+          {/* Repost button - icon toggles, count shows modal */}
+          <div className="flex items-center">
+            <Button
+              variant="ghost"
+              size="sm"
+              className={cn(
+                isHorizontal ? 'gap-2 pr-1' : 'gap-1 px-2 pr-1',
+                isReposted && 'text-green-500 bg-green-50 hover:bg-green-100 dark:bg-green-900/20 dark:hover:bg-green-900/30'
+              )}
+              onClick={onRepost}
+              aria-label={isReposted ? t('videoCard.ariaRemoveRepost') : t('videoCard.ariaRepost')}
+            >
+              <Repeat2 className="h-4 w-4" weight={isReposted ? 'fill' : 'bold'} />
+            </Button>
+            {repostCount > 0 && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowReactionsModal('reposts');
+                }}
+                className={cn(
+                  "text-xs text-muted-foreground hover:text-foreground transition-colors px-1",
+                  isReposted && 'text-green-500 hover:text-green-600'
+                )}
+                aria-label={t('videoCard.ariaViewReposts')}
+              >
+                {formatCount(repostCount)}
+              </button>
             )}
-            onClick={onLike}
-            aria-label={isLiked ? "Unlike" : "Like"}
-          >
-            <Heart className={cn('h-4 w-4', isLiked && 'fill-current')} />
-            {likeCount > 0 && <span className="text-xs">{formatCount(likeCount)}</span>}
-          </Button>
-
-          <Button
-            variant="ghost"
-            size="sm"
-            className={cn(
-              isMobile ? 'gap-1 px-2' : 'gap-2',
-              isReposted && 'text-green-500 bg-green-50 hover:bg-green-100 dark:bg-green-900/20 dark:hover:bg-green-900/30'
-            )}
-            onClick={onRepost}
-            aria-label={isReposted ? "Remove repost" : "Repost"}
-          >
-            <Repeat2 className={cn('h-4 w-4', isReposted && 'fill-current')} />
-            {repostCount > 0 && <span className="text-xs">{formatCount(repostCount)}</span>}
-          </Button>
+          </div>
 
           <Button
             variant="ghost"
             size="sm"
             className={cn(
               "gap-2",
-              isMobile && "gap-1 px-2"
+              !isHorizontal && "gap-1 px-2"
             )}
             onClick={handleCommentsClick}
-            aria-label="Comment"
+            aria-label={t('videoCard.ariaComment')}
           >
             <MessageCircle className="h-4 w-4" />
             {commentCount > 0 && <span className="text-xs">{formatCount(commentCount)}</span>}
@@ -534,12 +956,25 @@ export function VideoCard({
             size="sm"
             className={cn(
               "gap-2",
-              isMobile && "px-2"
+              !isHorizontal && "px-2"
             )}
             onClick={handleShare}
-            aria-label="Share"
+            aria-label={t('videoCard.ariaShare')}
           >
             <Share className="h-4 w-4" />
+          </Button>
+
+          <Button
+            variant="ghost"
+            size="sm"
+            className={cn(
+              "gap-2",
+              !isHorizontal && "px-2"
+            )}
+            onClick={handleDownload}
+            aria-label={t('videoCard.ariaDownload')}
+          >
+            <Download className="h-4 w-4" />
           </Button>
 
           {/* Lists button */}
@@ -549,14 +984,14 @@ export function VideoCard({
               size="sm"
               className={cn(
                 "gap-2",
-                isMobile && "gap-1 px-2"
+                !isHorizontal && "gap-1 px-2"
               )}
               onClick={() => setShowAddToListDialog(true)}
-              aria-label="Lists"
+              aria-label={t('videoCard.ariaLists')}
             >
               {(lists?.length ?? 0) > 0 ? <Users className="h-4 w-4" /> : <ListPlus className="h-4 w-4" />}
-              {!isMobile && <span className="text-xs">Lists</span>}
-              {lists && lists.length > 0 && !isMobile && <span className="text-xs">{formatCount(lists.length)}</span>}
+              {isHorizontal && <span className="text-xs">{t('videoCard.lists')}</span>}
+              {lists && lists.length > 0 && isHorizontal && <span className="text-xs">{formatCount(lists.length)}</span>}
             </Button>
           )}
 
@@ -567,12 +1002,24 @@ export function VideoCard({
                 variant="ghost"
                 size="sm"
                 className="px-2"
-                aria-label="More options"
+                aria-label={t('videoCard.ariaMoreOptions')}
               >
                 <MoreVertical className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
+              {currentUser && coordinate && (
+                <>
+                  <DropdownMenuItem onClick={handlePinToggle}>
+                    {isPinned ? (
+                      <><PinOff className="h-4 w-4 mr-2" />{t('videoCard.menu.unpinFromProfile')}</>
+                    ) : (
+                      <><Pin className="h-4 w-4 mr-2" />{t('videoCard.menu.pinToProfile')}</>
+                    )}
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                </>
+              )}
               {canDelete && (
                 <>
                   <DropdownMenuItem
@@ -580,33 +1027,40 @@ export function VideoCard({
                     className="text-destructive focus:text-destructive"
                   >
                     <Trash2 className="h-4 w-4 mr-2" />
-                    Delete video
+                    {t('videoCard.menu.deleteVideo')}
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                 </>
               )}
               <DropdownMenuItem onClick={() => setShowReportDialog(true)}>
                 <Flag className="h-4 w-4 mr-2" />
-                Report video
+                {t('videoCard.menu.reportVideo')}
               </DropdownMenuItem>
+              {canUseDirectMessages && (
+                <DropdownMenuItem onClick={handleShareViaDm}>
+                  <MessageCircle className="h-4 w-4 mr-2" />
+                  {t('videoCard.menu.sendViaMessage')}
+                </DropdownMenuItem>
+              )}
               <DropdownMenuItem onClick={() => setShowReportUserDialog(true)}>
                 <Flag className="h-4 w-4 mr-2" />
-                Report user
+                {t('videoCard.menu.reportUser')}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleMuteUser} className="text-destructive focus:text-destructive">
                 <UserX className="h-4 w-4 mr-2" />
-                Mute {displayName}
+                {t('videoCard.menu.muteUser', { name: displayName })}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => setShowViewSourceDialog(true)}>
                 <Code className="h-4 w-4 mr-2" />
-                View source
+                {t('videoCard.menu.viewSource')}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+          </div>
         </div>
-      </CardContent>
+      </div>
     </Card>
 
     {/* Dialogs */}
@@ -644,9 +1098,17 @@ export function VideoCard({
         open={showViewSourceDialog}
         onClose={() => setShowViewSourceDialog(false)}
         video={video}
-        title="Video Event Source"
+        title={t('videoCard.viewSourceDialogTitle')}
       />
     )}
+
+    {/* Reactions Modal - shows who liked/reposted */}
+    <VideoReactionsModal
+      open={showReactionsModal !== null}
+      onOpenChange={(open) => !open && setShowReactionsModal(null)}
+      reactions={reactions}
+      type={showReactionsModal || 'likes'}
+    />
     </>
   );
 }

@@ -1,26 +1,28 @@
 import { useSeoMeta } from '@unhead/react';
+import { useTranslation } from 'react-i18next';
 import { VideoFeed } from '@/components/VideoFeed';
-import { LandingPage } from '@/components/LandingPage';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useFollowList } from '@/hooks/useFollowList';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Users } from 'lucide-react';
+import { Users } from '@phosphor-icons/react';
 import { useNavigate } from 'react-router-dom';
+import DiscoveryPage from './DiscoveryPage';
 
 const Index = () => {
+  const { t } = useTranslation();
   const { user } = useCurrentUser();
   const { data: followList, isLoading: isLoadingFollows } = useFollowList();
   const navigate = useNavigate();
 
   useSeoMeta({
-    title: 'diVine Web - Short-form Looping Videos on Nostr',
-    description: 'Watch and share 6-second looping videos on the decentralized Nostr network.',
+    title: t('indexPage.seoTitle'),
+    description: t('indexPage.seoDescription'),
   });
 
-  // Show landing page if not logged in
+  // Show discovery feed for non-logged-in users (no interstitial landing page)
   if (!user) {
-    return <LandingPage />;
+    return <DiscoveryPage />;
   }
 
   // Show message if user has no follows
@@ -30,29 +32,29 @@ const Index = () => {
         <main className="container py-6">
           <div className="max-w-2xl mx-auto">
             <header className="mb-6">
-              <h1 className="text-2xl font-bold">Home</h1>
-              <p className="text-muted-foreground">Videos from people you follow</p>
+              <h1 className="text-2xl font-bold">{t('indexPage.heading')}</h1>
+              <p className="text-muted-foreground">{t('indexPage.subheadingDefault')}</p>
             </header>
 
             <Card className="border-dashed border-2">
               <CardContent className="py-16 px-8 text-center">
                 <div className="max-w-sm mx-auto space-y-4">
-                  <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
-                    <Users className="h-8 w-8 text-primary/60" />
+                  <div className="w-16 h-16 rounded-full bg-brand-light-green dark:bg-brand-dark-green flex items-center justify-center mx-auto">
+                    <Users className="h-8 w-8 text-primary" />
                   </div>
                   <div className="space-y-2">
                     <p className="text-lg font-medium text-foreground">
-                      Your home feed is empty
+                      {t('indexPage.emptyTitle')}
                     </p>
                     <p className="text-sm text-muted-foreground">
-                      Follow creators to see their videos here. Explore trending videos to find people to follow!
+                      {t('indexPage.emptyDescription')}
                     </p>
                   </div>
                   <Button
                     onClick={() => navigate('/discovery')}
                     className="mt-4"
                   >
-                    Explore Videos
+                    {t('indexPage.exploreVideos')}
                   </Button>
                 </div>
               </CardContent>
@@ -69,9 +71,9 @@ const Index = () => {
       <main className="container py-6">
         <div className="max-w-2xl mx-auto">
           <header className="mb-6">
-            <h1 className="text-2xl font-bold">Home</h1>
+            <h1 className="text-2xl font-bold">{t('indexPage.heading')}</h1>
             <p className="text-muted-foreground">
-              Videos from {followList?.length || 0} {followList?.length === 1 ? 'person' : 'people'} you follow
+              {t('indexPage.subheadingCount', { count: followList?.length || 0 })}
             </p>
           </header>
 

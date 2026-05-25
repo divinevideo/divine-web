@@ -1,0 +1,12 @@
+{
+  "title": "FAQ",
+  "subtitle": "신성에 대해 알아야 할 모든 것",
+  "sections": {
+    "gettingStarted": "시작하기",
+    "accounts": "계정 및 인증",
+    "posting": "게시 및 콘텐츠",
+    "privacySafety": "개인정보 보호 및 안전",
+    "features": "기능 및 상호 작용",
+    "technical": "기술적인 질문"
+  }
+}

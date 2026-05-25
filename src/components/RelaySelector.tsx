@@ -1,6 +1,7 @@
 // ABOUTME: Component for selecting and switching between Nostr relays
 // ABOUTME: Provides a dropdown UI to change the active relay connection
 
+import { useTranslation } from 'react-i18next';
 import { useAppContext } from '@/hooks/useAppContext';
 import {
   Select,
@@ -16,6 +17,7 @@ interface RelaySelectorProps {
 }
 
 export function RelaySelector({ className }: RelaySelectorProps) {
+  const { t } = useTranslation();
   const { config, updateConfig, presetRelays } = useAppContext();
 
   const handleRelayChange = (newRelayUrl: string) => {
@@ -31,7 +33,7 @@ export function RelaySelector({ className }: RelaySelectorProps) {
   return (
     <Select value={config.relayUrl} onValueChange={handleRelayChange}>
       <SelectTrigger className={className}>
-        <SelectValue placeholder="Select relay" />
+        <SelectValue placeholder={t('relaySelector.placeholder')} />
       </SelectTrigger>
       <SelectContent>
         {relays.map(({ name, url }) => (

@@ -8,6 +8,11 @@ export default {
 		"./components/**/*.{ts,tsx}",
 		"./app/**/*.{ts,tsx}",
 		"./src/**/*.{ts,tsx}",
+		// Brand utilities live in src/styles/brand-utilities.css and are
+		// referenced by brand primitives / preview page already scanned above,
+		// but include the CSS explicitly so the @layer components rules are
+		// always emitted even if no component references them.
+		"./src/styles/brand-utilities.css",
 	],
 	prefix: "",
 	theme: {
@@ -21,7 +26,7 @@ export default {
 		extend: {
 			fontFamily: {
 				'sans': ['Inter Variable', 'Inter', 'system-ui', 'sans-serif'],
-				'logo': ['Pacifico', 'cursive'],
+				'display': ['Bricolage Grotesque', 'system-ui', 'sans-serif'],
 			},
 			colors: {
 				border: 'hsl(var(--border))',
@@ -56,6 +61,33 @@ export default {
 				card: {
 					DEFAULT: 'hsl(var(--card))',
 					foreground: 'hsl(var(--card-foreground))'
+				},
+				brand: {
+					green: 'hsl(var(--brand-green))',
+					'dark-green': 'hsl(var(--brand-dark-green))',
+					'light-green': 'hsl(var(--brand-light-green))',
+					'off-white': 'hsl(var(--brand-off-white))',
+					yellow: 'hsl(var(--brand-yellow))',
+					'yellow-light': 'hsl(var(--brand-yellow-light))',
+					'yellow-dark': 'hsl(var(--brand-yellow-dark))',
+					lime: 'hsl(var(--brand-lime))',
+					'lime-light': 'hsl(var(--brand-lime-light))',
+					'lime-dark': 'hsl(var(--brand-lime-dark))',
+					pink: 'hsl(var(--brand-pink))',
+					'pink-light': 'hsl(var(--brand-pink-light))',
+					'pink-dark': 'hsl(var(--brand-pink-dark))',
+					orange: 'hsl(var(--brand-orange))',
+					'orange-light': 'hsl(var(--brand-orange-light))',
+					'orange-dark': 'hsl(var(--brand-orange-dark))',
+					violet: 'hsl(var(--brand-violet))',
+					'violet-light': 'hsl(var(--brand-violet-light))',
+					'violet-dark': 'hsl(var(--brand-violet-dark))',
+					purple: 'hsl(var(--brand-purple))',
+					'purple-light': 'hsl(var(--brand-purple-light))',
+					'purple-dark': 'hsl(var(--brand-purple-dark))',
+					blue: 'hsl(var(--brand-blue))',
+					'blue-light': 'hsl(var(--brand-blue-light))',
+					'blue-dark': 'hsl(var(--brand-blue-dark))',
 				},
 				sidebar: {
 					DEFAULT: 'hsl(var(--sidebar-background))',

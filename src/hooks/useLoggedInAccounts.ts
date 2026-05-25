@@ -1,7 +1,11 @@
 import { useNostr } from '@nostrify/react';
 import { useNostrLogin } from '@nostrify/react/login';
 import { useQuery } from '@tanstack/react-query';
+import { useMemo } from 'react';
 import { NSchema as n, NostrEvent, NostrMetadata } from '@nostrify/nostrify';
+import { createUserFromLogin } from '@/lib/nostrLogin';
+import { useCurrentUser } from './useCurrentUser';
+import { useDivineSession } from './useDivineSession';
 
 export interface Account {
   id: string;
@@ -13,16 +17,46 @@ export interface Account {
 export function useLoggedInAccounts() {
   const { nostr } = useNostr();
   const { logins, setLogin, removeLogin } = useNostrLogin();
+  const { getValidToken } = useDivineSession();
+  const { metadata, user } = useCurrentUser();
+  const token = getValidToken();
+  const activeLogins = useMemo(
+    () => logins.filter((login) => {
+      try {
+        createUserFromLogin(login, nostr);
+        return true;
+      } catch {
+        return false;
+      }
+    }),
+    [logins, nostr],
+  );
+
+  const jwtCurrentUser = useMemo<Account | undefined>(() => {
+    if (!token || !user) {
+      return undefined;
+    }
+
+    return {
+      id: `jwt:${user.pubkey}`,
+      metadata: metadata ?? {},
+      pubkey: user.pubkey,
+    };
+  }, [metadata, token, user]);
 
   const { data: authors = [] } = useQuery({
-    queryKey: ['logins', logins.map((l) => l.id).join(';')],
+    queryKey: ['logins', activeLogins.map((l) => l.id).join(';')],
     queryFn: async ({ signal }) => {
+      if (!activeLogins.length) {
+        return [];
+      }
+
       const events = await nostr.query(
-        [{ kinds: [0], authors: logins.map((l) => l.pubkey) }],
+        [{ kinds: [0], authors: activeLogins.map((l) => l.pubkey) }],
         { signal: AbortSignal.any([signal, AbortSignal.timeout(1500)]) },
       );
 
-      return logins.map(({ id, pubkey }): Account => {
+      return activeLogins.map(({ id, pubkey }): Account => {
         const event = events.find((e) => e.pubkey === pubkey);
         try {
           const metadata = n.json().pipe(n.metadata()).parse(event?.content);
@@ -32,12 +66,23 @@ export function useLoggedInAccounts() {
         }
       });
     },
+    enabled: !jwtCurrentUser && activeLogins.length > 0,
     retry: 3,
   });
 
+  if (jwtCurrentUser) {
+    return {
+      authors: [jwtCurrentUser],
+      currentUser: jwtCurrentUser,
+      otherUsers: [],
+      setLogin,
+      removeLogin,
+    };
+  }
+
   // Current user is the first login
   const currentUser: Account | undefined = (() => {
-    const login = logins[0];
+    const login = activeLogins[0];
     if (!login) return undefined;
     const author = authors.find((a) => a.id === login.id);
     return { metadata: {}, ...author, id: login.id, pubkey: login.pubkey };

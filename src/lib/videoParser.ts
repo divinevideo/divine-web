@@ -2,7 +2,7 @@
 // ABOUTME: Extracts video URLs and metadata from multiple tag sources with fallback to content parsing
 
 import type { NostrEvent } from '@nostrify/nostrify';
-import { VIDEO_KINDS, type ParsedVideoData, type RepostMetadata } from '@/types/video';
+import { SHORT_VIDEO_KIND, VIDEO_KINDS, type ParsedVideoData, type RepostMetadata } from '@/types/video';
 import type { VideoMetadata, VideoEvent, ProofModeData, ProofModeLevel } from '@/types/video';
 
 // Common video file extensions - used only as hints, not requirements
@@ -196,7 +196,7 @@ function extractVideoUrl(event: NostrEvent): string | null {
 /**
  * Extract limited fallback video URLs from event tags
  */
-function extractAllVideoUrls(event: NostrEvent): string[] {
+function _extractAllVideoUrls(event: NostrEvent): string[] {
   const urls: string[] = [];
 
   // 1. All URLs from imeta tags (both MP4 and HLS)
@@ -234,44 +234,102 @@ function extractAllVideoUrls(event: NostrEvent): string[] {
 
 /**
  * Extract video metadata from video event
+ *
+ * Follows Postel's Law: Be liberal in what you accept.
+ * Multiple imeta tags represent different versions of the same video.
+ * We find the imeta with the best primary URL and use all metadata from THAT imeta.
+ * This prevents mixing broken URLs from one imeta with good URLs from another.
+ *
+ * For short videos (like 6-second clips), we skip HLS entirely since it's overkill
+ * and direct MP4 playback is more reliable and faster.
  */
 export function extractVideoMetadata(event: NostrEvent): VideoMetadata | null {
-  const primaryUrl = extractVideoUrl(event);
-  if (!primaryUrl) {
-    return null;
-  }
+  // First, find the best imeta tag (the one with a working primary URL)
+  // Prioritize MP4 over HLS for primary URL since MP4 is more reliable
+  let bestImeta: VideoMetadata | null = null;
+  let bestScore = -1;
 
-  const metadata: VideoMetadata = { url: primaryUrl };
-
-  // Extract additional metadata from imeta tag
   for (const tag of event.tags) {
     if (tag[0] === 'imeta') {
       const imetaData = parseImetaTag(tag);
-      if (imetaData) {
-        metadata.mimeType = imetaData.mimeType || metadata.mimeType;
-        metadata.dimensions = imetaData.dimensions || metadata.dimensions;
-        metadata.blurhash = imetaData.blurhash || metadata.blurhash;
-        metadata.thumbnailUrl = imetaData.thumbnailUrl || metadata.thumbnailUrl;
-        metadata.duration = imetaData.duration || metadata.duration;
-        metadata.size = imetaData.size || metadata.size;
-        metadata.hash = imetaData.hash || metadata.hash;
+      if (imetaData?.url && isValidVideoUrl(imetaData.url)) {
+        // Score: MP4 > other formats > HLS-only
+        let score = 0;
+        if (imetaData.url.includes('.mp4')) {
+          score = 100;
+        } else if (imetaData.url.includes('.webm') || imetaData.url.includes('.mov')) {
+          score = 90;
+        } else if (imetaData.url.includes('.m3u8')) {
+          score = 50; // HLS as primary is less preferred
+        } else {
+          score = 70; // Unknown format, medium priority
+        }
+
+        // Bonus for having additional metadata (indicates more complete imeta)
+        if (imetaData.hlsUrl) score += 10;
+        if (imetaData.thumbnailUrl) score += 5;
+        if (imetaData.mimeType) score += 2;
+
+        if (score > bestScore) {
+          bestScore = score;
+          bestImeta = imetaData;
+        }
       }
     }
   }
 
-  // Extract HLS manifest URL (.m3u8) from all available sources
-  const allUrls = extractAllVideoUrls(event);
-  for (const url of allUrls) {
-    if (url.includes('.m3u8') && !metadata.hlsUrl) {
-      metadata.hlsUrl = url;
-      break;
+  // Fall back to old extraction method if no good imeta found
+  if (!bestImeta) {
+    const primaryUrl = extractVideoUrl(event);
+    if (!primaryUrl) {
+      return null;
+    }
+    bestImeta = { url: primaryUrl };
+  }
+
+  const metadata: VideoMetadata = { ...bestImeta };
+
+  // Generate HLS URL from hash when available on media.divine.video
+  // This ensures hlsUrl is available as a fallback for codec compatibility issues
+  if (!metadata.hlsUrl && metadata.hash && metadata.url.includes('media.divine.video')) {
+    metadata.hlsUrl = `https://media.divine.video/${metadata.hash}/hls/master.m3u8`;
+  }
+
+  // Only fill in missing metadata from other imeta tags (don't override URLs!)
+  for (const tag of event.tags) {
+    if (tag[0] === 'imeta') {
+      const imetaData = parseImetaTag(tag);
+      if (imetaData) {
+        // Only copy non-URL metadata that's missing
+        metadata.mimeType = metadata.mimeType || imetaData.mimeType;
+        metadata.dimensions = metadata.dimensions || imetaData.dimensions;
+        metadata.blurhash = metadata.blurhash || imetaData.blurhash;
+        metadata.thumbnailUrl = metadata.thumbnailUrl || imetaData.thumbnailUrl;
+        metadata.duration = metadata.duration || imetaData.duration;
+        metadata.size = metadata.size || imetaData.size;
+        metadata.hash = metadata.hash || imetaData.hash;
+        // DON'T copy hlsUrl from other imeta tags - keep URLs from same source
+      }
     }
   }
 
-  // Add limited fallback URLs to prevent cascade failures
-  const fallbackUrls = allUrls.filter(u => u !== primaryUrl && u !== metadata.hlsUrl);
+  // Build fallback URLs from other imeta tags, but only MP4s (more reliable)
+  const fallbackUrls: string[] = [];
+  for (const tag of event.tags) {
+    if (tag[0] === 'imeta') {
+      const imetaData = parseImetaTag(tag);
+      if (imetaData?.url &&
+          imetaData.url !== metadata.url &&
+          imetaData.url.includes('.mp4') &&
+          isValidVideoUrl(imetaData.url) &&
+          !fallbackUrls.includes(imetaData.url)) {
+        fallbackUrls.push(imetaData.url);
+      }
+    }
+  }
+
   if (fallbackUrls.length > 0) {
-    metadata.fallbackUrls = fallbackUrls;
+    metadata.fallbackUrls = fallbackUrls.slice(0, 2); // Limit fallbacks
   }
 
   return metadata;
@@ -300,7 +358,7 @@ export function parseVideoEvent(event: NostrEvent): VideoEvent | null {
   // Create VideoEvent
   const videoEvent: VideoEvent = {
     ...event,
-    kind: event.kind as 34236, // Kind 34236 Addressable Short Videos
+    kind: event.kind as typeof SHORT_VIDEO_KIND, // Kind 34236 Addressable Short Videos
     videoMetadata,
     title,
     hashtags
@@ -398,6 +456,19 @@ export function isVineMigrated(event: NostrEvent): boolean {
 }
 
 /**
+ * Get text-track reference from event tags
+ * Returns the coordinate string for a Kind 39307 subtitle event
+ * Tag format: ["text-track", "39307:<pubkey>:subtitles:<d-tag>", "en"]
+ */
+export function getTextTrackRef(event: NostrEvent): { ref: string; language?: string } | undefined {
+  const tag = event.tags.find(t => t[0] === 'text-track');
+  if (tag?.[1]) {
+    return { ref: tag[1], language: tag[2] };
+  }
+  return undefined;
+}
+
+/**
  * Get loop count from event tags
  */
 export function getLoopCount(event: NostrEvent): number {
@@ -464,25 +535,36 @@ export function getOriginalCommentCount(event: NostrEvent): number | undefined {
  * - pgp_fingerprint: PGP public key fingerprint
  */
 export function getProofModeData(event: NostrEvent): ProofModeData | undefined {
-  const levelTag = event.tags.find(tag => tag[0] === 'verification');
+  // Archived Vine imports predate ProofMode and should only use archive badges.
+  if (isVineMigrated(event)) {
+    return undefined;
+  }
 
-  // If no verification level tag found, return undefined
-  if (!levelTag?.[1]) {
+  const levelTag = event.tags.find(tag => tag[0] === 'verification');
+  const manifestTag = event.tags.find(tag => tag[0] === 'proofmode');
+  const attestationTag = event.tags.find(tag => tag[0] === 'device_attestation');
+  const fingerprintTag = event.tags.find(tag => tag[0] === 'pgp_fingerprint');
+  const c2paManifestTag = event.tags.find(tag => tag[0] === 'c2pa_manifest_id');
+
+  const hasProofFields = Boolean(
+    manifestTag?.[1] ||
+    attestationTag?.[1] ||
+    fingerprintTag?.[1] ||
+    c2paManifestTag?.[1]
+  );
+
+  // No proof tags at all
+  if (!levelTag?.[1] && !hasProofFields) {
     return undefined;
   }
 
   // Parse verification level
   let level: ProofModeLevel = 'unverified';
-  const tagLevel = levelTag[1];
+  const tagLevel = levelTag?.[1];
   if (tagLevel === 'verified_mobile' || tagLevel === 'verified_web' ||
       tagLevel === 'basic_proof' || tagLevel === 'unverified') {
     level = tagLevel;
   }
-
-  // Extract other proof data
-  const manifestTag = event.tags.find(tag => tag[0] === 'proofmode');
-  const attestationTag = event.tags.find(tag => tag[0] === 'device_attestation');
-  const fingerprintTag = event.tags.find(tag => tag[0] === 'pgp_fingerprint');
 
   // Parse manifest JSON if present
   let manifestData: Record<string, unknown> | undefined;
@@ -500,6 +582,7 @@ export function getProofModeData(event: NostrEvent): ProofModeData | undefined {
     manifestData,
     deviceAttestation: attestationTag?.[1],
     pgpFingerprint: fingerprintTag?.[1],
+    c2paManifestId: c2paManifestTag?.[1],
   };
 }
 
@@ -593,7 +676,7 @@ export function validateVideoEvent(event: NostrEvent): boolean {
   if (!VIDEO_KINDS.includes(event.kind)) return false;
 
   // Kind 34236 (addressable/replaceable event) MUST have d tag per NIP-33
-  if (event.kind === 34236) {
+  if (event.kind === SHORT_VIDEO_KIND) {
     const vineId = getVineId(event);
     if (!vineId) {
       // Validation failure - missing required d tag
@@ -621,15 +704,22 @@ export function parseVideoEvents(events: NostrEvent[]): ParsedVideoData[] {
     if (!videoEvent) continue;
 
     const vineId = getVineId(event);
-    if (!vineId && event.kind === 34236) continue;
+    if (!vineId && event.kind === SHORT_VIDEO_KIND) continue;
 
     const videoUrl = videoEvent.videoMetadata?.url;
     if (!videoUrl) continue;
 
+    // Filter out videos that are 7 seconds or longer (keep short-form only)
+    // Duration is in seconds from imeta tag
+    const duration = videoEvent.videoMetadata?.duration;
+    if (duration !== undefined && duration >= 7) continue;
+
+    const textTrack = getTextTrackRef(event);
+
     parsedVideos.push({
       id: event.id,
       pubkey: event.pubkey,
-      kind: event.kind as 34236,
+      kind: event.kind as typeof SHORT_VIDEO_KIND,
       createdAt: event.created_at,
       originalVineTimestamp: getOriginalVineTimestamp(event),
       content: event.content,
@@ -640,6 +730,8 @@ export function parseVideoEvents(events: NostrEvent[]): ParsedVideoData[] {
       blurhash: videoEvent.videoMetadata?.blurhash,
       title: videoEvent.title,
       duration: videoEvent.videoMetadata?.duration,
+      dimensions: videoEvent.videoMetadata?.dimensions,
+      sha256: videoEvent.videoMetadata?.hash,
       hashtags: videoEvent.hashtags || [],
       vineId,
       loopCount: getLoopCount(event),
@@ -649,6 +741,8 @@ export function parseVideoEvents(events: NostrEvent[]): ParsedVideoData[] {
       proofMode: getProofModeData(event),
       origin: getOriginPlatform(event),
       isVineMigrated: isVineMigrated(event),
+      textTrackRef: textTrack?.ref,
+      textTrackLanguage: textTrack?.language,
       reposts: [],
       originalEvent: event
     });

@@ -155,8 +155,8 @@ export function useVideoUpload() {
     onError: (error) => {
       console.error('Upload failed:', error);
       toast({
-        title: 'Upload Failed',
-        description: error instanceof Error ? error.message : 'Failed to upload video',
+        title: 'Upload snagged.',
+        description: error instanceof Error ? error.message : 'Couldn\'t send your loop. Try again?',
         variant: 'destructive',
       });
     },

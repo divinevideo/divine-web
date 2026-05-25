@@ -1,0 +1,51 @@
+import { render, screen } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { LOCALE_STORAGE_KEY } from '@/lib/i18n/config';
+import { initializeI18n } from '@/lib/i18n';
+import HomePage from './HomePage';
+
+vi.mock('@/hooks/useCurrentUser', () => ({
+  useCurrentUser: () => ({ user: null }),
+}));
+
+vi.mock('@/hooks/useFollowList', () => ({
+  useFollowList: () => ({ data: [], isLoading: false, isFetching: false, dataUpdatedAt: 0 }),
+}));
+
+vi.mock('@/components/auth/LoginArea', () => ({
+  LoginArea: () => <div data-testid="login-area" />,
+}));
+
+vi.mock('@/hooks/useRssFeedAvailable', () => ({
+  useRssFeedAvailable: () => false,
+}));
+
+vi.mock('@unhead/react', () => ({
+  useHead: () => undefined,
+}));
+
+describe('HomePage', () => {
+  beforeEach(async () => {
+    const storage = new Map<string, string>();
+
+    Object.defineProperty(window, 'localStorage', {
+      configurable: true,
+      value: {
+        getItem: (key: string) => storage.get(key) ?? null,
+        setItem: (key: string, value: string) => storage.set(key, value),
+        removeItem: (key: string) => storage.delete(key),
+        clear: () => storage.clear(),
+      } satisfies Pick<Storage, 'getItem' | 'setItem' | 'removeItem' | 'clear'>,
+    });
+
+    window.localStorage.setItem(LOCALE_STORAGE_KEY, 'es');
+    await initializeI18n({ force: true, languages: ['en-US'] });
+  });
+
+  it('renders the logged-out home prompt in the active locale', () => {
+    render(<HomePage />);
+
+    expect(screen.getByRole('heading', { name: 'Bienvenido a tu feed principal' })).toBeInTheDocument();
+    expect(screen.getByText('Inicia sesion para ver videos de las personas que sigues')).toBeInTheDocument();
+  });
+});

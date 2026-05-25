@@ -2,12 +2,13 @@
 // ABOUTME: Handles video preview and publishing with metadata - mobile-first design
 
 import { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { X, Hash, Loader2 } from 'lucide-react';
+import { X, Hash, CircleNotch as Loader2 } from '@phosphor-icons/react';
 import { useVideoUpload } from '@/hooks/useVideoUpload';
 import { usePublishVideo } from '@/hooks/usePublishVideo';
 import { Progress } from '@/components/ui/progress';
@@ -30,6 +31,7 @@ export function VideoMetadataForm({
   onCancel,
   onPublished,
 }: VideoMetadataFormProps) {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -88,8 +90,8 @@ export function VideoMetadataForm({
   const handlePublish = async () => {
     if (!title.trim()) {
       toast({
-        title: 'Title Required',
-        description: 'Please add a title for your video',
+        title: t('videoMetadataForm.titleRequiredTitle'),
+        description: t('videoMetadataForm.titleRequiredDescription'),
         variant: 'destructive',
       });
       return;
@@ -112,16 +114,16 @@ export function VideoMetadataForm({
       });
 
       toast({
-        title: 'Video Published!',
-        description: 'Your vine has been published successfully',
+        title: t('videoMetadataForm.publishSuccessTitle'),
+        description: t('videoMetadataForm.publishSuccessDescription'),
       });
 
       onPublished();
     } catch (error) {
       console.error('Failed to publish video:', error);
       toast({
-        title: 'Publishing Failed',
-        description: error instanceof Error ? error.message : 'Failed to publish video',
+        title: t('videoMetadataForm.publishErrorTitle'),
+        description: error instanceof Error ? error.message : t('videoMetadataForm.publishErrorDescription'),
         variant: 'destructive',
       });
     }
@@ -155,10 +157,10 @@ export function VideoMetadataForm({
       <div className="flex-1 overflow-y-auto" style={{ paddingBottom: 'var(--sab)' }}>
         <div className="p-4 space-y-4">
           <div>
-            <Label htmlFor="title">Title *</Label>
+            <Label htmlFor="title">{t('videoMetadataForm.titleLabel')}</Label>
             <Input
               id="title"
-              placeholder="Give your vine a title"
+              placeholder={t('videoMetadataForm.titlePlaceholder')}
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               maxLength={100}
@@ -166,15 +168,15 @@ export function VideoMetadataForm({
               className="mt-1.5"
             />
             <p className="text-xs text-muted-foreground mt-1">
-              {title.length}/100 characters
+              {t('videoMetadataForm.titleCharCount', { count: title.length, max: 100 })}
             </p>
           </div>
 
           <div>
-            <Label htmlFor="description">Description</Label>
+            <Label htmlFor="description">{t('videoMetadataForm.descriptionLabel')}</Label>
             <Textarea
               id="description"
-              placeholder="Add a description..."
+              placeholder={t('videoMetadataForm.descriptionPlaceholder')}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
@@ -183,18 +185,18 @@ export function VideoMetadataForm({
               className="mt-1.5"
             />
             <p className="text-xs text-muted-foreground mt-1">
-              {description.length}/500 characters
+              {t('videoMetadataForm.descriptionCharCount', { count: description.length, max: 500 })}
             </p>
           </div>
 
           <div>
-            <Label htmlFor="hashtags">Hashtags</Label>
+            <Label htmlFor="hashtags">{t('videoMetadataForm.hashtagsLabel')}</Label>
             <div className="flex gap-2 mt-1.5">
               <div className="relative flex-1">
                 <Hash className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
                   id="hashtags"
-                  placeholder="Add hashtags (press Enter)"
+                  placeholder={t('videoMetadataForm.hashtagsPlaceholder')}
                   value={hashtagInput}
                   onChange={(e) => setHashtagInput(e.target.value)}
                   onKeyDown={handleHashtagKeyPress}
@@ -209,7 +211,7 @@ export function VideoMetadataForm({
                 size="sm"
                 disabled={!hashtagInput.trim() || isProcessing}
               >
-                Add
+                {t('videoMetadataForm.addHashtagButton')}
               </Button>
             </div>
 
@@ -237,7 +239,7 @@ export function VideoMetadataForm({
             <div className="space-y-2 pt-2">
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">
-                  {isUploading ? 'Uploading video...' : 'Publishing to Nostr...'}
+                  {isUploading ? t('videoMetadataForm.statusUploading') : t('videoMetadataForm.statusPublishing')}
                 </span>
                 <span className="font-medium">{Math.round(currentProgress)}%</span>
               </div>
@@ -258,10 +260,10 @@ export function VideoMetadataForm({
             {isProcessing ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                {isUploading ? 'Uploading...' : 'Publishing...'}
+                {isUploading ? t('videoMetadataForm.uploadingButton') : t('videoMetadataForm.publishingButton')}
               </>
             ) : (
-              'Publish Vine'
+              t('videoMetadataForm.publishButton')
             )}
           </Button>
 
@@ -271,7 +273,7 @@ export function VideoMetadataForm({
             className="w-full h-11"
             disabled={isProcessing}
           >
-            Cancel
+            {t('videoMetadataForm.cancelButton')}
           </Button>
         </div>
       </div>

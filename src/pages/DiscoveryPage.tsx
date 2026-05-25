@@ -1,21 +1,48 @@
-// ABOUTME: Discovery feed page showing all public videos with tabs for Hot, Top, Rising, New, and Hashtags
-// ABOUTME: Each tab uses different NIP-50 sort modes for unique content discovery
+// ABOUTME: Discovery feed page showing all public videos with tabs for Classics, Hot, Rising, New, and Hashtags
+// ABOUTME: Each tab uses different sort modes; Classics uses Funnelcake REST API for pre-computed metrics
+// ABOUTME: For You tab shows personalized recommendations when user is logged in
 
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import { useParams } from 'react-router-dom';
+import { useSubdomainNavigate } from '@/hooks/useSubdomainNavigate';
 import { VideoFeed } from '@/components/VideoFeed';
 import { VerifiedOnlyToggle } from '@/components/VerifiedOnlyToggle';
 import { HashtagExplorer } from '@/components/HashtagExplorer';
+import { ClassicVinersRow } from '@/components/ClassicVinersRow';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Star, Clock, Hash, Flame, Zap } from 'lucide-react';
+import { Star, Clock, Hash, Flame, Sparkle as Sparkles } from '@phosphor-icons/react';
+// Zap temporarily unused - will be needed when Rising tab is re-enabled
+import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { useCategories } from '@/hooks/useCategories';
+import { getTranslatedCategoryLabel } from '@/lib/constants/categories';
+
+// All possible tab values (foryou only shown when logged in)
+type AllowedTab = 'foryou' | 'classics' | 'hot' | 'new' | 'hashtags';
+const ALL_TABS: AllowedTab[] = ['foryou', 'classics', 'hot', 'new', 'hashtags'];
+const BASE_TABS: AllowedTab[] = ['classics', 'hot', 'new', 'hashtags'];
 
 export function DiscoveryPage() {
-  const navigate = useNavigate();
+  const navigate = useSubdomainNavigate();
+  const { t } = useTranslation();
   const params = useParams<{ tab?: string }>();
-  const allowedTabs = useMemo(() => ['top', 'hot', 'rising', 'new', 'hashtags'] as const, []);
+  const { user } = useCurrentUser();
+  const isLoggedIn = !!user?.pubkey;
+  const { data: categories } = useCategories();
+
+  // Tabs include 'foryou' only when logged in
+  // Note: 'rising' temporarily removed
+  const allowedTabs = useMemo(() => {
+    return isLoggedIn ? ALL_TABS : BASE_TABS;
+  }, [isLoggedIn]);
+
   const routeTab = (params.tab || '').toLowerCase();
-  const initialTab = allowedTabs.includes(routeTab as any) ? (routeTab as typeof allowedTabs[number]) : 'top';
-  const [activeTab, setActiveTab] = useState<string>(initialTab);
+  // Support legacy 'top' route by mapping to 'classics'
+  const normalizedTab = routeTab === 'top' ? 'classics' : routeTab;
+  // Default to 'foryou' for logged-in users, 'classics' for anonymous
+  const defaultTab: AllowedTab = isLoggedIn ? 'foryou' : 'classics';
+  const initialTab: AllowedTab = allowedTabs.includes(normalizedTab as AllowedTab) ? (normalizedTab as AllowedTab) : defaultTab;
+  const [activeTab, setActiveTab] = useState<AllowedTab>(initialTab);
   const [verifiedOnly, setVerifiedOnly] = useState(false);
 
   // Note: We no longer force relay changes here as it causes navigation delays
@@ -24,17 +51,30 @@ export function DiscoveryPage() {
 
   // Sync state when URL param changes
   useEffect(() => {
-    if (allowedTabs.includes(routeTab as any)) {
-      setActiveTab(routeTab);
+    // Handle legacy 'top' route by redirecting to 'classics'
+    if (routeTab === 'top') {
+      navigate('/discovery/classics', { replace: true });
+      return;
     }
-  }, [routeTab, allowedTabs]);
+    if (allowedTabs.includes(normalizedTab as AllowedTab)) {
+      setActiveTab(normalizedTab as AllowedTab);
+    }
+  }, [routeTab, normalizedTab, allowedTabs, navigate]);
 
-  // Redirect bare /discovery to /discovery/top to make tab part of URL
+  // Handle edge case: user logs out while on 'foryou' tab
+  useEffect(() => {
+    if (!isLoggedIn && activeTab === 'foryou') {
+      setActiveTab('classics');
+      navigate('/discovery/classics', { replace: true });
+    }
+  }, [isLoggedIn, activeTab, navigate]);
+
+  // Redirect bare /discovery to default tab (foryou for logged in, classics for anonymous)
   useEffect(() => {
     if (!params.tab) {
-      navigate('/discovery/top', { replace: true });
+      navigate(`/discovery/${defaultTab}`, { replace: true });
     }
-  }, [params.tab, navigate]);
+  }, [params.tab, navigate, defaultTab]);
 
   return (
     <div className="container mx-auto px-4 py-6">
@@ -42,8 +82,8 @@ export function DiscoveryPage() {
         <header className="mb-6 space-y-4">
           <div className="flex items-start justify-between mb-4">
             <div>
-              <h1 className="text-2xl font-bold">Discover</h1>
-              <p className="text-muted-foreground">Explore videos from the network</p>
+              <h1 className="text-2xl font-bold">{t('discovery.title')}</h1>
+              <p className="text-muted-foreground">{t('discovery.subtitle')}</p>
             </div>
             {activeTab !== 'hashtags' && (
               <VerifiedOnlyToggle
@@ -54,45 +94,89 @@ export function DiscoveryPage() {
           </div>
         </header>
 
+        {/* Mobile category pills - visible on small screens only */}
+        {categories && categories.length > 0 && (
+          <div className="lg:hidden -mx-4 px-4 overflow-x-auto scrollbar-hide">
+            <div className="flex gap-2 pb-2">
+              {categories.slice(0, 12).map(cat => (
+                <button
+                  key={cat.name}
+                  onClick={() => navigate(`/category/${cat.name}`)}
+                  className="flex items-center gap-1.5 whitespace-nowrap rounded-full border border-border bg-background px-3 py-1.5 text-sm transition-colors hover:bg-muted hover:border-primary"
+                >
+                  <span>{cat.config?.emoji || ''}</span>
+                  <span>{getTranslatedCategoryLabel(cat.name, t)}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         <Tabs
           value={activeTab}
           onValueChange={(val) => {
-            setActiveTab(val);
-            navigate(`/discovery/${val}`);
+            if (allowedTabs.includes(val as AllowedTab)) {
+              setActiveTab(val as AllowedTab);
+              navigate(`/discovery/${val}`);
+            }
           }}
           className="space-y-6"
         >
-          <TabsList className="w-full grid grid-cols-5 gap-1">
-            <TabsTrigger value="top" className="gap-1.5 sm:gap-2">
+          <TabsList className={`w-full grid gap-1 ${isLoggedIn ? 'grid-cols-5' : 'grid-cols-4'}`}>
+            {isLoggedIn && (
+              <TabsTrigger value="foryou" className="gap-1.5 sm:gap-2">
+                <Sparkles className="h-4 w-4" />
+                <span className="hidden sm:inline">{t('discovery.forYou')}</span>
+              </TabsTrigger>
+            )}
+            <TabsTrigger value="classics" className="gap-1.5 sm:gap-2">
               <Star className="h-4 w-4" />
-              <span className="hidden sm:inline">Classic</span>
+              <span className="hidden sm:inline">{t('discovery.classic')}</span>
             </TabsTrigger>
             <TabsTrigger value="hot" className="gap-1.5 sm:gap-2">
               <Flame className="h-4 w-4" />
-              <span className="hidden sm:inline">Hot</span>
+              <span className="hidden sm:inline">{t('discovery.hot')}</span>
             </TabsTrigger>
+            {/* Rising tab temporarily disabled
             <TabsTrigger value="rising" className="gap-1.5 sm:gap-2">
               <Zap className="h-4 w-4" />
               <span className="hidden sm:inline">Rising</span>
             </TabsTrigger>
+            */}
             <TabsTrigger value="new" className="gap-1.5 sm:gap-2">
               <Clock className="h-4 w-4" />
-              <span className="hidden sm:inline">New</span>
+              <span className="hidden sm:inline">{t('discovery.new')}</span>
             </TabsTrigger>
             <TabsTrigger value="hashtags" className="gap-1.5 sm:gap-2">
               <Hash className="h-4 w-4" />
-              <span className="hidden sm:inline">Tags</span>
+              <span className="hidden sm:inline">{t('discovery.tags')}</span>
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="top" className="mt-0 space-y-6">
+          {isLoggedIn && (
+            <TabsContent value="foryou" className="mt-0 space-y-6">
+              <VideoFeed
+                feedType="foryou"
+                verifiedOnly={verifiedOnly}
+                data-testid="video-feed-foryou"
+                className="space-y-6"
+                key="foryou"
+              />
+            </TabsContent>
+          )}
+
+          <TabsContent value="classics" className="mt-0 space-y-6">
+            {/* Classic Viners horizontal row */}
+            <ClassicVinersRow />
+
+            {/* Classic Vines feed - uses Funnelcake API */}
             <VideoFeed
-              feedType="trending"
-              sortMode="top"
+              feedType="classics"
               verifiedOnly={verifiedOnly}
-              data-testid="video-feed-top"
+              accent="violet"
+              data-testid="video-feed-classics"
               className="space-y-6"
-              key="top"
+              key="classics"
             />
           </TabsContent>
 
@@ -101,12 +185,14 @@ export function DiscoveryPage() {
               feedType="trending"
               sortMode="hot"
               verifiedOnly={verifiedOnly}
+              accent="pink"
               data-testid="video-feed-hot"
               className="space-y-6"
               key="hot"
             />
           </TabsContent>
 
+          {/* Rising tab temporarily disabled
           <TabsContent value="rising" className="mt-0 space-y-6">
             <VideoFeed
               feedType="trending"
@@ -117,6 +203,7 @@ export function DiscoveryPage() {
               key="rising"
             />
           </TabsContent>
+          */}
 
           <TabsContent value="new" className="mt-0 space-y-6">
             <VideoFeed

@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { type NostrEvent } from '@nostrify/nostrify';
-import { Link } from 'react-router-dom';
+import { SmartLink } from '@/components/SmartLink';
 import { nip19 } from 'nostr-tools';
 import { useAuthor } from '@/hooks/useAuthor';
 import { genUserName } from '@/lib/genUserName';
@@ -20,16 +20,16 @@ export function NoteContent({
   const content = useMemo(() => {
     const text = event.content;
     
-    // Regex to find URLs, Nostr references, and hashtags
-    const regex = /(https?:\/\/[^\s]+)|nostr:(npub1|note1|nprofile1|nevent1)([023456789acdefghjklmnpqrstuvwxyz]+)|(#\w+)/g;
-    
+    const nip19Chars = '023456789acdefghjklmnpqrstuvwxyz';
+    const regex = new RegExp(`(https?:\\/\\/[^\\s]+)|(?:nostr:)?\\b((?:npub1|note1)[${nip19Chars}]{58}|(?:nprofile1|nevent1|naddr1)[${nip19Chars}]+)(?=$|[^A-Za-z0-9_]|nostr:)|(#\\w+)`, 'g');
+
     const parts: React.ReactNode[] = [];
     let lastIndex = 0;
     let match: RegExpExecArray | null;
     let keyCounter = 0;
-    
+
     while ((match = regex.exec(text)) !== null) {
-      const [fullMatch, url, nostrPrefix, nostrData, hashtag] = match;
+      const [fullMatch, url, nostrId, hashtag] = match;
       const index = match.index;
       
       // Add text before this match
@@ -50,12 +50,11 @@ export function NoteContent({
             {url}
           </a>
         );
-      } else if (nostrPrefix && nostrData) {
+      } else if (nostrId) {
         // Handle Nostr references
         try {
-          const nostrId = `${nostrPrefix}${nostrData}`;
           const decoded = nip19.decode(nostrId);
-          
+
           if (decoded.type === 'npub') {
             const pubkey = decoded.data;
             parts.push(
@@ -64,13 +63,13 @@ export function NoteContent({
           } else {
             // For other types, just show as a link
             parts.push(
-              <Link 
+              <SmartLink
                 key={`nostr-${keyCounter++}`}
                 to={`/${nostrId}`}
                 className="text-blue-500 hover:underline"
               >
                 {fullMatch}
-              </Link>
+              </SmartLink>
             );
           }
         } catch {
@@ -82,13 +81,13 @@ export function NoteContent({
         const tag = hashtag.slice(1); // Remove the #
         const normalized = tag.toLowerCase();
         parts.push(
-          <Link 
+          <SmartLink
             key={`hashtag-${keyCounter++}`}
             to={`/t/${normalized}`}
             className="text-blue-500 hover:underline"
           >
             {hashtag}
-          </Link>
+          </SmartLink>
         );
       }
       
@@ -119,20 +118,21 @@ export function NoteContent({
 function NostrMention({ pubkey }: { pubkey: string }) {
   const author = useAuthor(pubkey);
   const npub = nip19.npubEncode(pubkey);
-  const hasRealName = !!author.data?.metadata?.name;
-  const displayName = author.data?.metadata?.name ?? genUserName(pubkey);
+  const hasRealName = !!(author.data?.metadata?.name || author.data?.metadata?.display_name);
+  const displayName = author.data?.metadata?.name || author.data?.metadata?.display_name || genUserName(pubkey);
 
   return (
-    <Link 
+    <SmartLink
       to={`/${npub}`}
+      ownerPubkey={pubkey}
       className={cn(
         "font-medium hover:underline",
-        hasRealName 
-          ? "text-blue-500" 
+        hasRealName
+          ? "text-blue-500"
           : "text-gray-500 hover:text-gray-700"
       )}
     >
       @{displayName}
-    </Link>
+    </SmartLink>
   );
 }

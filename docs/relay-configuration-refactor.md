@@ -93,14 +93,19 @@ Used for kind 0 (profile) and kind 3 (contact lists):
 - wss://relay.primal.net
 
 ### Search Relay
-- **wss://relay.nostr.band** - NIP-50 search with large profile index
+- **wss://relay.divine.video** - NIP-50 search via Divine infrastructure
+
+### NIP-05 Search Relays
+Fanned out in parallel when resolving a subdomain's NIP-05:
+- wss://relay.primal.net
+- wss://relay.damus.io
+- wss://purplepag.es
 
 ### UI Preset Relays
 Available in relay picker:
 - wss://relay.divine.video (Divine)
 - wss://divine.diy (divine.diy)
 - wss://relay.ditto.pub (Ditto)
-- wss://relay.nostr.band (Nostr.Band)
 - wss://relay.damus.io (Damus)
 - wss://relay.primal.net (Primal)
 

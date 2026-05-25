@@ -61,8 +61,8 @@ export function useDeleteVideo() {
     onSuccess: (data, _variables) => {
       // Show success toast
       toast({
-        title: 'Video Deleted',
-        description: 'Your delete request has been sent to relays. The video will be removed.',
+        title: 'Loop gone.',
+        description: 'Delete request sent to the relays.',
       });
 
       // Invalidate all video queries to refresh feeds
@@ -80,8 +80,8 @@ export function useDeleteVideo() {
       debugError('[useDeleteVideo] Error deleting video:', error);
 
       toast({
-        title: 'Delete Failed',
-        description: error.message || 'Failed to delete video. Please try again.',
+        title: 'Delete snagged.',
+        description: error.message || 'That didn\'t go through. Try again?',
         variant: 'destructive',
       });
     },

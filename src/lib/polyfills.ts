@@ -1,4 +1,32 @@
 /**
+ * Polyfill for localStorage in restricted environments
+ *
+ * Some in-app browsers (Twitter WebView, Samsung Internet in certain modes)
+ * set `localStorage` to null or throw on access. Third-party libraries like
+ * @nostrify/react call localStorage.getItem() without guards, causing crashes.
+ * This provides an in-memory fallback so the app runs (without persistence).
+ */
+try {
+  // Test both existence and usage — some browsers set localStorage to null,
+  // others allow access but throw on use (SecurityError in private mode)
+  if (!window.localStorage) throw new Error('localStorage is null');
+  window.localStorage.getItem('__storage_test__');
+} catch {
+  const memoryStorage: Record<string, string> = {};
+  Object.defineProperty(window, 'localStorage', {
+    value: {
+      getItem: (key: string) => memoryStorage[key] ?? null,
+      setItem: (key: string, value: string) => { memoryStorage[key] = String(value); },
+      removeItem: (key: string) => { delete memoryStorage[key]; },
+      clear: () => { Object.keys(memoryStorage).forEach(k => delete memoryStorage[k]); },
+      get length() { return Object.keys(memoryStorage).length; },
+      key: (index: number) => Object.keys(memoryStorage)[index] ?? null,
+    },
+    writable: true,
+  });
+}
+
+/**
  * Polyfill for AbortSignal.any()
  * 
  * AbortSignal.any() creates an AbortSignal that will be aborted when any of the

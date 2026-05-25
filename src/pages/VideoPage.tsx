@@ -1,45 +1,217 @@
-import { useParams, useNavigate } from 'react-router-dom';
-import { useEffect, useCallback, useState } from 'react';
+import { useParams, useSearchParams } from 'react-router-dom';
+import { useSubdomainNavigate } from '@/hooks/useSubdomainNavigate';
+import { useEffect, useCallback, useState, useMemo, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useSeoMeta } from '@unhead/react';
-import { Hash, User } from 'lucide-react';
+import { Hash, User, X, CircleNotch as Loader2 } from '@phosphor-icons/react';
+import InfiniteScroll from 'react-infinite-scroll-component';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Button } from '@/components/ui/button';
 import { VideoCard } from '@/components/VideoCard';
-import { useVideoNavigation } from '@/hooks/useVideoNavigation';
+import { useVideoNavigation, type VideoNavigationContext } from '@/hooks/useVideoNavigation';
+import { useVideoByIdFunnelcake } from '@/hooks/useVideoByIdFunnelcake';
 import { useAuthor } from '@/hooks/useAuthor';
-import { useVideoSocialMetrics, useVideoUserInteractions } from '@/hooks/useVideoSocialMetrics';
+import { useBatchedVideoInteractions } from '@/hooks/useBatchedVideoInteractions';
 import { useNostrPublish } from '@/hooks/useNostrPublish';
 import { useRepostVideo } from '@/hooks/usePublishVideo';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { useVideoSocialMetrics } from '@/hooks/useVideoSocialMetrics';
 import { useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/useToast';
 import { genUserName } from '@/lib/genUserName';
 import { nip19 } from 'nostr-tools';
 import { debugLog } from '@/lib/debug';
-import type { ParsedVideoData } from '@/types/video';
+import { reportFunnelcakeFallback } from '@/lib/funnelcakeFallbackReporting';
+import type { ParsedVideoData, UserInteractions } from '@/types/video';
 
 export function VideoPage() {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const navigate = useSubdomainNavigate();
 
-  // All hooks must be called before any early returns
+  // Parse navigation context from URL params
+  const context: VideoNavigationContext | null = useMemo(() => {
+    const source = searchParams.get('source') as VideoNavigationContext['source'];
+    if (!source) return null;
+
+    return {
+      source,
+      hashtag: searchParams.get('hashtag') || undefined,
+      pubkey: searchParams.get('pubkey') || undefined,
+      query: searchParams.get('q') || undefined,
+      sortMode: searchParams.get('sort') as VideoNavigationContext['sortMode'],
+      currentIndex: searchParams.get('index') ? parseInt(searchParams.get('index')!) : undefined,
+    };
+  }, [searchParams]);
+
+  // Fast video loading via Funnelcake REST API
   const {
-    context,
-    currentVideo,
-    hasNext,
-    hasPrevious,
-    goToNext,
-    goToPrevious,
-    isLoading,
-  } = useVideoNavigation(id || '');
+    video: funnelcakeVideo,
+    videos: funnelcakeVideos,
+    windowOffset: funnelcakeWindowOffset,
+    isLoading: funnelcakeLoading,
+    error: funnelcakeError,
+  } = useVideoByIdFunnelcake({
+    videoId: id || '',
+    pubkey: context?.pubkey,
+    hashtag: context?.hashtag,
+    query: context?.query,
+    sortMode: context?.sortMode,
+    currentIndex: context?.currentIndex,
+    enabled: !!id,
+  });
+
+  const shouldEnableWebsocketNavigation = !!id && !funnelcakeLoading && !funnelcakeVideo;
+
+  // Fallback to WebSocket-based navigation (slower but handles all cases)
+  const {
+    context: _wsContext,
+    currentVideo: wsVideo,
+    videos: wsVideos,
+    hasNext: _wsHasNext,
+    hasPrevious: _wsHasPrevious,
+    goToNext: _wsGoToNext,
+    goToPrevious: _wsGoToPrevious,
+    isLoading: wsLoading,
+  } = useVideoNavigation(id || '', { enabled: shouldEnableWebsocketNavigation });
+
+  // ALWAYS prefer Funnelcake REST API first - it's much faster
+  // Loop counts are parsed from content field by funnelcakeTransform
+  // WebSocket is only used as fallback when Funnelcake fails
+  const currentVideo = funnelcakeVideo || wsVideo;
+  const videos = funnelcakeVideos || wsVideos;
+  const isLoading = funnelcakeLoading || (!funnelcakeVideo && wsLoading);
+
+  // Calculate navigation state from available videos
+  const currentIndex = useMemo(() => {
+    if (!videos || !id) return -1;
+    return videos.findIndex(v => v.id === id || v.vineId === id);
+  }, [videos, id]);
+  const navigationIndexBase = videos === funnelcakeVideos ? funnelcakeWindowOffset : 0;
+
+  const hasNext = currentIndex >= 0 && currentIndex < (videos?.length || 0) - 1;
+  const hasPrevious = currentIndex > 0;
+
+  // Build navigation URL
+  const buildNavigationUrl = useCallback((video: ParsedVideoData, index: number) => {
+    if (!context) return `/video/${video.id}`;
+
+    const params = new URLSearchParams({
+      source: context.source,
+      index: index.toString(),
+    });
+
+    if (context.hashtag) params.set('hashtag', context.hashtag);
+    if (context.pubkey) params.set('pubkey', context.pubkey);
+    if (context.query) params.set('q', context.query);
+    if (context.sortMode) params.set('sort', context.sortMode);
+
+    return `/video/${video.id}?${params.toString()}`;
+  }, [context]);
+
+  const goToNext = useCallback(() => {
+    if (!hasNext || !videos) return;
+    const nextVideo = videos[currentIndex + 1];
+    navigate(buildNavigationUrl(nextVideo, navigationIndexBase + currentIndex + 1));
+  }, [hasNext, videos, currentIndex, navigate, buildNavigationUrl, navigationIndexBase]);
+
+  const goToPrevious = useCallback(() => {
+    if (!hasPrevious || !videos) return;
+    const prevVideo = videos[currentIndex - 1];
+    navigate(buildNavigationUrl(prevVideo, navigationIndexBase + currentIndex - 1));
+  }, [hasPrevious, videos, currentIndex, navigate, buildNavigationUrl, navigationIndexBase]);
 
   // Get author data for profile context
-  const authorData = useAuthor(context?.pubkey || '');
-  const authorName = context?.pubkey ? (authorData.data?.metadata?.name || genUserName(context.pubkey)) : null;
+  // Prefer cached author name from video/Funnelcake, then fetched profile, then generated fallback
+  const authorData = useAuthor(context?.pubkey || '', {
+    initialName: currentVideo?.authorName,
+    initialAvatar: currentVideo?.authorAvatar,
+  });
+  const authorName = context?.pubkey
+    ? (authorData.data?.metadata?.display_name || authorData.data?.metadata?.name || currentVideo?.authorName || genUserName(context.pubkey))
+    : null;
+
+  // Progressive rendering: only render a window of videos, expand on scroll
+  const INITIAL_RENDER_COUNT = 10;
+  const LOAD_MORE_COUNT = 10;
+  const [maxRendered, setMaxRendered] = useState(INITIAL_RENDER_COUNT);
+
+  // Ensure we always render at least up to the current video + buffer
+  useEffect(() => {
+    if (currentIndex >= 0) {
+      setMaxRendered(prev => Math.max(prev, currentIndex + 5));
+    }
+  }, [currentIndex]);
+
+  const visibleVideos = useMemo(() => {
+    if (!videos) return [];
+    return videos.slice(0, maxRendered);
+  }, [videos, maxRendered]);
+
+  const hasMoreToShow = maxRendered < (videos?.length || 0);
+
+  const showMoreVideos = useCallback(() => {
+    setMaxRendered(prev => Math.min(prev + LOAD_MORE_COUNT, videos?.length || 0));
+  }, [videos?.length]);
+
+  const fallbackReportKeyRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!id || funnelcakeLoading) return;
+
+    const usingWebsocketFallback = (!funnelcakeVideo && !!wsVideo) || (!funnelcakeVideos && !!wsVideos?.length);
+    if (!usingWebsocketFallback) return;
+
+    const reason = funnelcakeError?.message || 'REST returned no matching video';
+    const fallbackKey = `VideoPage|${id}|${context?.pubkey ?? ''}|${context?.hashtag ?? ''}|${reason}`;
+
+    if (fallbackReportKeyRef.current === fallbackKey) {
+      return;
+    }
+    fallbackReportKeyRef.current = fallbackKey;
+
+    reportFunnelcakeFallback({
+      source: 'VideoPage',
+      reason,
+      dedupeKey: fallbackKey,
+      context: {
+        videoId: id,
+        pubkey: context?.pubkey,
+        hashtag: context?.hashtag,
+      },
+    });
+  }, [
+    context?.hashtag,
+    context?.pubkey,
+    funnelcakeError?.message,
+    funnelcakeLoading,
+    funnelcakeVideo,
+    funnelcakeVideos,
+    id,
+    wsVideo,
+    wsVideos,
+  ]);
+
+  // Batch fetch user interactions only for VISIBLE videos (not all)
+  const videosForInteractions = useMemo(() => {
+    return visibleVideos.map(v => ({
+      id: v.id,
+      pubkey: v.pubkey,
+      vineId: v.vineId,
+    }));
+  }, [visibleVideos]);
 
   // Social interaction hooks
   const [showCommentsForVideo, setShowCommentsForVideo] = useState<string | null>(null);
   const { user } = useCurrentUser();
+
+  // Batch fetch all user interactions in ONE query instead of per-video
+  const { interactions: batchedInteractions } = useBatchedVideoInteractions(
+    videosForInteractions,
+    user?.pubkey
+  );
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { mutateAsync: publishEvent } = useNostrPublish();
@@ -72,16 +244,16 @@ export function VideoPage() {
 
   // Dynamic SEO meta tags for social sharing
   useSeoMeta({
-    title: currentVideo?.title || 'Video on diVine',
-    description: currentVideo?.content || `Watch this video${authorName ? ` by ${authorName}` : ''} on diVine`,
-    ogTitle: currentVideo?.title || 'Video on diVine',
-    ogDescription: currentVideo?.content || 'Watch this video on diVine',
-    ogImage: currentVideo?.thumbnailUrl || '/og.png',
+    title: currentVideo?.title || t('videoPage.seoTitle'),
+    description: currentVideo?.content || (authorName ? t('videoPage.seoDescriptionWithAuthor', { name: authorName }) : t('videoPage.seoDescription')),
+    ogTitle: currentVideo?.title || t('videoPage.seoTitle'),
+    ogDescription: currentVideo?.content || t('videoPage.seoDescription'),
+    ogImage: currentVideo?.thumbnailUrl || '/og.avif',
     ogType: 'video.other',
     twitterCard: 'summary_large_image',
-    twitterTitle: currentVideo?.title || 'Video on diVine',
-    twitterDescription: currentVideo?.content || 'Watch this video on diVine',
-    twitterImage: currentVideo?.thumbnailUrl || '/og.png',
+    twitterTitle: currentVideo?.title || t('videoPage.seoTitle'),
+    twitterDescription: currentVideo?.content || t('videoPage.seoDescription'),
+    twitterImage: currentVideo?.thumbnailUrl || '/og.avif',
   });
 
   // Navigation back to source
@@ -91,11 +263,17 @@ export function VideoPage() {
     } else if (context?.source === 'profile' && context.pubkey) {
       try {
         const npub = nip19.npubEncode(context.pubkey);
-        navigate(`/profile/${npub}`);
+        navigate(`/profile/${npub}`, { ownerPubkey: context.pubkey });
       } catch {
-        // Fallback to hex pubkey if encoding fails
-        navigate(`/profile/${context.pubkey}`);
+        navigate(`/profile/${context.pubkey}`, { ownerPubkey: context.pubkey });
       }
+    } else if (context?.source === 'search') {
+      const params = new URLSearchParams();
+      if (context.query) params.set('q', context.query);
+      params.set('filter', 'videos');
+      if (context.sortMode) params.set('sort', context.sortMode);
+      const target = params.toString() ? `/search?${params.toString()}` : '/search';
+      navigate(target);
     } else {
       navigate(-1); // Browser back
     }
@@ -105,8 +283,8 @@ export function VideoPage() {
   const handleLike = async (video: ParsedVideoData) => {
     if (!user) {
       toast({
-        title: 'Login Required',
-        description: 'Please log in to like videos',
+        title: t('videoPage.loginRequiredTitle'),
+        description: t('videoPage.loginRequiredLikeDescription'),
         variant: 'destructive',
       });
       return;
@@ -124,8 +302,8 @@ export function VideoPage() {
       });
 
       toast({
-        title: 'Liked!',
-        description: 'Your reaction has been published',
+        title: t('videoPage.likedTitle'),
+        description: t('videoPage.likedDescription'),
       });
 
       // Invalidate queries to refresh UI
@@ -140,8 +318,8 @@ export function VideoPage() {
     } catch (error) {
       console.error('Failed to like video:', error);
       toast({
-        title: 'Error',
-        description: 'Failed to like video',
+        title: t('videoPage.errorTitle'),
+        description: t('videoPage.likeFailedDescription'),
         variant: 'destructive',
       });
     }
@@ -150,8 +328,8 @@ export function VideoPage() {
   const handleRepost = async (video: ParsedVideoData) => {
     if (!user) {
       toast({
-        title: 'Login Required',
-        description: 'Please log in to repost videos',
+        title: t('videoPage.loginRequiredTitle'),
+        description: t('videoPage.loginRequiredRepostDescription'),
         variant: 'destructive',
       });
       return;
@@ -159,8 +337,8 @@ export function VideoPage() {
 
     if (!video.vineId) {
       toast({
-        title: 'Error',
-        description: 'Cannot repost this video',
+        title: t('videoPage.errorTitle'),
+        description: t('videoPage.cannotRepostDescription'),
         variant: 'destructive',
       });
       return;
@@ -176,8 +354,8 @@ export function VideoPage() {
       });
 
       toast({
-        title: 'Reposted!',
-        description: 'Video has been reposted to your feed',
+        title: t('videoPage.repostedTitle'),
+        description: t('videoPage.repostedDescription'),
       });
 
       // Invalidate queries to refresh UI
@@ -192,8 +370,8 @@ export function VideoPage() {
     } catch (error) {
       console.error('Failed to repost video:', error);
       toast({
-        title: 'Error',
-        description: 'Failed to repost video',
+        title: t('videoPage.errorTitle'),
+        description: t('videoPage.repostFailedDescription'),
         variant: 'destructive',
       });
     }
@@ -213,8 +391,8 @@ export function VideoPage() {
       });
 
       toast({
-        title: 'Unliked!',
-        description: 'Your like has been removed',
+        title: t('videoPage.unlikedTitle'),
+        description: t('videoPage.unlikedDescription'),
       });
 
       // Invalidate queries to refresh UI
@@ -223,8 +401,8 @@ export function VideoPage() {
     } catch (error) {
       console.error('Failed to unlike video:', error);
       toast({
-        title: 'Error',
-        description: 'Failed to remove like',
+        title: t('videoPage.errorTitle'),
+        description: t('videoPage.unlikeFailedDescription'),
         variant: 'destructive',
       });
     }
@@ -244,8 +422,8 @@ export function VideoPage() {
       });
 
       toast({
-        title: 'Un-reposted!',
-        description: 'Your repost has been removed',
+        title: t('videoPage.unrepostedTitle'),
+        description: t('videoPage.unrepostedDescription'),
       });
 
       // Invalidate queries to refresh UI
@@ -254,8 +432,8 @@ export function VideoPage() {
     } catch (error) {
       console.error('Failed to un-repost video:', error);
       toast({
-        title: 'Error',
-        description: 'Failed to remove repost',
+        title: t('videoPage.errorTitle'),
+        description: t('videoPage.unrepostFailedDescription'),
         variant: 'destructive',
       });
     }
@@ -270,9 +448,12 @@ export function VideoPage() {
   };
 
   // Helper component to provide social metrics data for the video
-  function VideoCardWithMetrics({ video }: { video: ParsedVideoData }) {
-    const { data: socialMetrics } = useVideoSocialMetrics(video.id, video.pubkey, video.vineId);
-    const { data: userInteractions } = useVideoUserInteractions(video.id, video.pubkey, video.vineId, user?.pubkey);
+  // Uses pre-fetched batched interactions instead of individual queries per video
+  function VideoCardWithMetrics({ video, userInteractions }: { video: ParsedVideoData; userInteractions?: UserInteractions }) {
+    const socialMetrics = useVideoSocialMetrics(video.id, video.pubkey, video.vineId, {
+      enabled: true,
+    });
+    const divineViewCount = Math.max(video.divineViewCount ?? 0, socialMetrics.data?.viewCount ?? 0);
 
     const handleVideoLike = async () => {
       if (userInteractions?.hasLiked) {
@@ -302,21 +483,49 @@ export function VideoPage() {
       <VideoCard
         video={video}
         className="max-w-xl mx-auto"
+        layout="vertical"
         onLike={handleVideoLike}
         onRepost={handleVideoRepost}
         onOpenComments={() => handleOpenComments(video)}
         onCloseComments={handleCloseComments}
         isLiked={userInteractions?.hasLiked || false}
         isReposted={userInteractions?.hasReposted || false}
-        likeCount={video.likeCount ?? socialMetrics?.likeCount ?? 0}
-        repostCount={video.repostCount ?? socialMetrics?.repostCount ?? 0}
-        commentCount={video.commentCount ?? socialMetrics?.commentCount ?? 0}
-        viewCount={socialMetrics?.viewCount || video.loopCount}
+        likeCount={video.likeCount ?? 0}
+        repostCount={video.repostCount ?? 0}
+        commentCount={video.commentCount ?? 0}
+        viewCount={(video.loopCount ?? 0) + divineViewCount}
         showComments={showCommentsForVideo === video.id}
         navigationContext={context || undefined}
       />
     );
   }
+
+  // Ref for scrolling to the initial video
+  const initialVideoRef = useRef<HTMLDivElement>(null);
+  const hasScrolledRef = useRef(false);
+
+  // Track when the primary video has loaded - delay rendering others until then
+  const [primaryVideoLoaded, setPrimaryVideoLoaded] = useState(false);
+
+  // Reset primary loaded state when video changes
+  useEffect(() => {
+    setPrimaryVideoLoaded(false);
+    // Mark as loaded after a short delay to allow video to start loading
+    const timer = setTimeout(() => setPrimaryVideoLoaded(true), 500);
+    return () => clearTimeout(timer);
+  }, [id]);
+
+  // Scroll to the initial video when feed mode loads
+  useEffect(() => {
+    if (context && videos && videos.length > 1 && currentIndex >= 0 && !hasScrolledRef.current) {
+      // Small delay to ensure DOM is ready
+      const timer = setTimeout(() => {
+        initialVideoRef.current?.scrollIntoView({ behavior: 'auto', block: 'start' });
+        hasScrolledRef.current = true;
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [context, videos, currentIndex]);
 
   // Check for missing ID after all hooks
   if (!id) {
@@ -324,7 +533,7 @@ export function VideoPage() {
       <div className="container py-6">
         <Card className="border-destructive/50">
           <CardContent className="py-12 text-center">
-            <p className="text-destructive">No video ID provided</p>
+            <p className="text-destructive">{t('videoPage.noVideoId')}</p>
           </CardContent>
         </Card>
       </div>
@@ -337,12 +546,12 @@ export function VideoPage() {
       <div className="container py-6">
         <Card className="border-dashed">
           <CardContent className="py-12 text-center space-y-4">
-            <p className="text-muted-foreground text-lg font-semibold">Video not found</p>
+            <p className="text-muted-foreground text-lg font-semibold">{t('videoPage.notFoundTitle')}</p>
             <p className="text-sm text-muted-foreground">
-              This video may not exist, or the relays may be experiencing issues.
+              {t('videoPage.notFoundDescription')}
             </p>
             <p className="text-xs text-muted-foreground">
-              Try checking your relay settings or refreshing the page.
+              {t('videoPage.notFoundHint')}
             </p>
           </CardContent>
         </Card>
@@ -350,6 +559,165 @@ export function VideoPage() {
     );
   }
 
+  // Feed mode: show all videos in a scrollable list when we have context
+  // Show feed mode immediately when we have context, even while loading
+  const showFeedMode = context && (videos?.length ?? 0) > 0;
+  const showFeedLoading = context && isLoading && !videos?.length;
+
+  if (showFeedLoading) {
+    // Show feed-style loading when we have context but videos haven't loaded yet
+    return (
+      <div className="container py-6">
+        <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-sm border-b pb-3 mb-4 -mx-4 px-4">
+          <div className="flex items-center justify-between max-w-xl mx-auto">
+            <button
+              onClick={handleGoBack}
+              className="text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-2 text-sm font-medium"
+            >
+              {context.source === 'hashtag' && context.hashtag && (
+                <>
+                  <Hash className="h-4 w-4" />
+                  #{context.hashtag}
+                </>
+              )}
+              {context.source === 'profile' && (
+                <>
+                  <User className="h-4 w-4" />
+                  {t('videoPage.loadingVideos')}
+                </>
+              )}
+              {context.source === 'search' && (
+                <span>{context.query ? t('videoPage.searchPrefix', { query: context.query }) : t('videoPage.searchResults')}</span>
+              )}
+              {(context.source === 'discovery' || context.source === 'trending' || context.source === 'home') && (
+                <span className="capitalize">{context.source}</span>
+              )}
+            </button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleGoBack}
+              className="h-8 w-8"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+        <div className="space-y-6 max-w-xl mx-auto">
+          {[1, 2, 3].map((i) => (
+            <Card key={i} className="overflow-hidden">
+              <div className="flex items-center gap-3 p-4">
+                <Skeleton className="h-10 w-10 rounded-2xl" />
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="h-3 w-16" />
+                </div>
+              </div>
+              <Skeleton className="aspect-square w-full" />
+              <div className="p-4 space-y-2">
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-4/5" />
+              </div>
+            </Card>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (showFeedMode) {
+    return (
+      <div className="container py-6">
+        {/* Header with close button */}
+        <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-sm border-b pb-3 mb-4 -mx-4 px-4">
+          <div className="flex items-center justify-between max-w-xl mx-auto">
+            <button
+              onClick={handleGoBack}
+              className="text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-2 text-sm font-medium"
+            >
+              {context.source === 'hashtag' && context.hashtag && (
+                <>
+                  <Hash className="h-4 w-4" />
+                  #{context.hashtag}
+                </>
+              )}
+              {context.source === 'profile' && authorName && (
+                <>
+                  <User className="h-4 w-4" />
+                  {t('videoPage.authorVideos', { name: authorName })}
+                </>
+              )}
+              {context.source === 'search' && (
+                <span>{context.query ? t('videoPage.searchPrefix', { query: context.query }) : t('videoPage.searchResults')}</span>
+              )}
+              {(context.source === 'discovery' || context.source === 'trending' || context.source === 'home') && (
+                <span className="capitalize">{context.source}</span>
+              )}
+            </button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleGoBack}
+              className="h-8 w-8"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+
+        {/* Scrollable video feed - progressive rendering */}
+        <InfiniteScroll
+          dataLength={visibleVideos.length}
+          next={showMoreVideos}
+          hasMore={hasMoreToShow}
+          loader={
+            <div className="h-16 flex items-center justify-center">
+              <div className="flex items-center gap-3">
+                <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                <span className="text-sm text-muted-foreground">{t('videoPage.loadingMore')}</span>
+              </div>
+            </div>
+          }
+          className="space-y-6 max-w-xl mx-auto"
+        >
+          {visibleVideos.map((video, index) => {
+            const isCurrentVideo = index === currentIndex;
+            // Only render current video immediately, others wait until primary is loaded
+            const shouldRender = isCurrentVideo || primaryVideoLoaded;
+
+            return (
+              <div
+                key={video.id}
+                ref={isCurrentVideo ? initialVideoRef : undefined}
+                className="scroll-mt-20"
+              >
+                {shouldRender ? (
+                  <VideoCardWithMetrics
+                    video={video}
+                    userInteractions={batchedInteractions.get(video.id)}
+                  />
+                ) : (
+                  // Placeholder skeleton while waiting for primary video to load
+                  <Card className="overflow-hidden">
+                    <div className="flex items-center gap-3 p-4">
+                      <Skeleton className="h-10 w-10 rounded-2xl" />
+                      <div className="space-y-2">
+                        <Skeleton className="h-4 w-24" />
+                        <Skeleton className="h-3 w-16" />
+                      </div>
+                    </div>
+                    <Skeleton className="aspect-square w-full" />
+                  </Card>
+                )}
+              </div>
+            );
+          })}
+        </InfiniteScroll>
+      </div>
+    );
+  }
+
+  // Single video mode: show just the current video with navigation
   return (
     <div className="container py-6">
       {/* Subtle Navigation Context Info */}
@@ -374,6 +742,14 @@ export function VideoPage() {
                 {authorName}
               </button>
             )}
+            {context.source === 'search' && (
+              <button
+                onClick={handleGoBack}
+                className="text-muted-foreground hover:text-primary transition-colors text-xs"
+              >
+                {context.query ? t('videoPage.searchPrefix', { query: context.query }) : t('videoPage.searchResults')}
+              </button>
+            )}
             {(context.source === 'discovery' || context.source === 'trending' || context.source === 'home') && (
               <button
                 onClick={handleGoBack}
@@ -388,28 +764,28 @@ export function VideoPage() {
 
       {/* Main Content Area with Click Zones */}
       <div className="relative video-navigation-target" tabIndex={0}>
-        {/* Left Click Zone */}
+        {/* Left Click Zone - pointer-events-none except for the actual button area */}
         {hasPrevious && (
           <button
             onClick={goToPrevious}
-            className="absolute left-0 top-0 w-1/3 h-full z-10 flex items-center justify-start pl-4 opacity-0 hover:opacity-100 transition-opacity group"
-            aria-label="Previous video"
+            className="absolute left-0 top-0 w-16 h-full z-10 flex items-center justify-start pl-4 opacity-0 hover:opacity-100 transition-opacity group"
+            aria-label={t('videoPage.previousVideoAria')}
           >
             <div className="bg-black/20 text-white px-2 py-1 rounded text-sm opacity-0 group-hover:opacity-100 transition-opacity">
-              Previous
+              ←
             </div>
           </button>
         )}
 
-        {/* Right Click Zone */}
+        {/* Right Click Zone - pointer-events-none except for the actual button area */}
         {hasNext && (
           <button
             onClick={goToNext}
-            className="absolute right-0 top-0 w-1/3 h-full z-10 flex items-center justify-end pr-4 opacity-0 hover:opacity-100 transition-opacity group"
-            aria-label="Next video"
+            className="absolute right-0 top-0 w-16 h-full z-10 flex items-center justify-end pr-4 opacity-0 hover:opacity-100 transition-opacity group"
+            aria-label={t('videoPage.nextVideoAria')}
           >
             <div className="bg-black/20 text-white px-2 py-1 rounded text-sm opacity-0 group-hover:opacity-100 transition-opacity">
-              Next
+              →
             </div>
           </button>
         )}
@@ -419,7 +795,7 @@ export function VideoPage() {
           <div className="max-w-xl mx-auto">
             <Card className="overflow-hidden">
               <div className="flex items-center gap-3 p-4">
-                <Skeleton className="h-10 w-10 rounded-full" />
+                <Skeleton className="h-10 w-10 rounded-2xl" />
                 <div className="space-y-2">
                   <Skeleton className="h-4 w-24" />
                   <Skeleton className="h-3 w-16" />
@@ -436,7 +812,10 @@ export function VideoPage() {
 
         {/* Video Card */}
         {currentVideo && (
-          <VideoCardWithMetrics video={currentVideo} />
+          <VideoCardWithMetrics
+            video={currentVideo}
+            userInteractions={batchedInteractions.get(currentVideo.id)}
+          />
         )}
       </div>
 
@@ -446,12 +825,12 @@ export function VideoPage() {
           <div className="text-xs text-muted-foreground inline-flex items-center gap-3">
             {hasPrevious && (
               <button onClick={goToPrevious} className="hover:underline">
-                ← previous
+                {t('videoPage.previousArrow')}
               </button>
             )}
             {hasNext && (
               <button onClick={goToNext} className="hover:underline">
-                next →
+                {t('videoPage.nextArrow')}
               </button>
             )}
           </div>

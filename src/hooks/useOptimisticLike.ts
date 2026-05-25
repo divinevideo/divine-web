@@ -2,10 +2,12 @@
 // ABOUTME: Updates UI immediately before server confirms the action
 
 import { useQueryClient } from '@tanstack/react-query';
+import { UserInteractions } from '@/types/video';
 import { useNostrPublish } from '@/hooks/useNostrPublish';
 import { useToast } from '@/hooks/useToast';
 import { debugLog } from '@/lib/debug';
 import type { VideoSocialMetrics } from '@/hooks/useVideoSocialMetrics';
+import { SHORT_VIDEO_KIND } from '@/types/video';
 
 interface OptimisticLikeParams {
   videoId: string;
@@ -14,13 +16,6 @@ interface OptimisticLikeParams {
   userPubkey: string;
   isCurrentlyLiked: boolean;
   currentLikeEventId: string | null;
-}
-
-interface UserInteractions {
-  hasLiked: boolean;
-  hasReposted: boolean;
-  likeEventId: string | null;
-  repostEventId: string | null;
 }
 
 export function useOptimisticLike() {
@@ -68,8 +63,8 @@ export function useOptimisticLike() {
         }
 
         toast({
-          title: 'Unliked!',
-          description: 'Your like has been removed',
+          title: 'Unliked.',
+          description: 'Taken it back. All good.',
         });
       } else {
         // Optimistic like
@@ -91,6 +86,7 @@ export function useOptimisticLike() {
           content: '+',
           tags: [
             ['e', videoId],
+            ['a', `${SHORT_VIDEO_KIND}:${videoPubkey}:${vineId}`],
             ['p', videoPubkey],
           ],
         });
@@ -102,8 +98,8 @@ export function useOptimisticLike() {
         }));
 
         toast({
-          title: 'Liked!',
-          description: 'Your reaction has been published',
+          title: 'Liked.',
+          description: 'Love, sent.',
         });
       }
     } catch (error) {

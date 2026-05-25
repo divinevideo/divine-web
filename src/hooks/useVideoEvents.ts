@@ -8,20 +8,21 @@ import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useFollowList } from '@/hooks/useFollowList';
 import { useEffect } from 'react';
 import type { NostrEvent, NostrFilter } from '@nostrify/nostrify';
-import { VIDEO_KIND, VIDEO_KINDS, REPOST_KIND, type ParsedVideoData } from '@/types/video';
+import { SHORT_VIDEO_KIND, VIDEO_KINDS, REPOST_KIND, type ParsedVideoData } from '@/types/video';
 import type { NIP50Filter } from '@/types/nostr';
-import { parseVideoEvent, getVineId, getThumbnailUrl, getLoopCount, getOriginalVineTimestamp, getProofModeData, getOriginalLikeCount, getOriginalRepostCount, getOriginalCommentCount, getOriginPlatform, isVineMigrated, getLatestRepostTime, validateVideoEvent } from '@/lib/videoParser';
+import { parseVideoEvent, getVineId, getThumbnailUrl, getLoopCount, getOriginalVineTimestamp, getProofModeData, getOriginalLikeCount, getOriginalRepostCount, getOriginalCommentCount, getOriginPlatform, isVineMigrated, getLatestRepostTime, validateVideoEvent, getTextTrackRef } from '@/lib/videoParser';
 import { debugLog, debugError, verboseLog } from '@/lib/debug';
 import type { SortMode } from '@/types/nostr';
 
 interface UseVideoEventsOptions {
   filter?: Partial<NostrFilter>;
-  feedType?: 'discovery' | 'home' | 'trending' | 'hashtag' | 'profile' | 'recent';
+  feedType?: 'discovery' | 'home' | 'trending' | 'hashtag' | 'profile' | 'recent' | 'classics' | 'category';
   hashtag?: string;
   pubkey?: string;
   limit?: number;
   until?: number; // For pagination - get videos before this timestamp
   sortMode?: SortMode; // NIP-50 sort mode override
+  enabled?: boolean;
 }
 
 /**
@@ -106,19 +107,21 @@ async function parseVideoEvents(
 
     validVideos++;
 
-    // NEW: Use vineId as the unique key for deduplication
-    const uniqueKey = vineId;
+    // Use pubkey:kind:d-tag as the unique key for addressable event deduplication
+    const uniqueKey = `${event.pubkey}:${event.kind}:${vineId}`;
 
     // If we already have this video, skip (keep the first one)
     if (videoMap.has(uniqueKey)) {
-      debugLog(`[useVideoEvents] Skipping duplicate video with vineId ${vineId}`);
+      debugLog(`[useVideoEvents] Skipping duplicate video with key ${uniqueKey}`);
       continue;
     }
+
+    const textTrack = getTextTrackRef(event);
 
     videoMap.set(uniqueKey, {
       id: event.id,
       pubkey: event.pubkey,
-      kind: event.kind as 34236,
+      kind: event.kind as typeof SHORT_VIDEO_KIND,
       createdAt: event.created_at,
       originalVineTimestamp: getOriginalVineTimestamp(event),
       content: event.content,
@@ -138,6 +141,8 @@ async function parseVideoEvents(
       proofMode: getProofModeData(event),
       origin: getOriginPlatform(event),
       isVineMigrated: isVineMigrated(event),
+      textTrackRef: textTrack?.ref,
+      textTrackLanguage: textTrack?.language,
       reposts: [], // Initialize empty reposts array
       originalEvent: event // Store original event for source viewing
     });
@@ -166,11 +171,12 @@ async function parseVideoEvents(
       continue;
     }
 
-    // The unique key is the vineId (dTag)
+    // Use pubkey:kind:d-tag as unique key for addressable event deduplication
     const vineId = dTag;
+    const uniqueKey = `${pubkey}:${kindNum}:${vineId}`;
 
     // Check if we already have this video in our map
-    let videoData = videoMap.get(vineId);
+    let videoData = videoMap.get(uniqueKey);
 
     if (!videoData) {
       // Need to fetch the original video
@@ -179,9 +185,9 @@ async function parseVideoEvents(
       );
 
       if (!originalVideo) {
-        // Fetch from relay
+        // Fetch from relay (10s timeout for gateway REST API)
         try {
-          const signal = AbortSignal.timeout(2000);
+          const signal = AbortSignal.timeout(10000);
           const events = await nostr.query([{
             kinds: VIDEO_KINDS,
             authors: [pubkey],
@@ -216,10 +222,12 @@ async function parseVideoEvents(
       }
 
       // Create new video entry
+      const repostTextTrack = getTextTrackRef(originalVideo);
+
       videoData = {
         id: originalVideo.id,
         pubkey: originalVideo.pubkey,
-        kind: VIDEO_KIND,
+        kind: SHORT_VIDEO_KIND,
         createdAt: originalVideo.created_at,
         originalVineTimestamp: getOriginalVineTimestamp(originalVideo),
         content: originalVideo.content,
@@ -239,16 +247,18 @@ async function parseVideoEvents(
         proofMode: getProofModeData(originalVideo),
         origin: getOriginPlatform(originalVideo),
         isVineMigrated: isVineMigrated(originalVideo),
+        textTrackRef: repostTextTrack?.ref,
+        textTrackLanguage: repostTextTrack?.language,
         reposts: [],
         originalEvent: originalVideo // Store original event for source viewing
       };
 
-      videoMap.set(vineId, videoData);
+      videoMap.set(uniqueKey, videoData);
     }
 
     // Safety check (should never happen due to logic above)
     if (!videoData) {
-      debugError(`[useVideoEvents] videoData unexpectedly undefined for vineId ${vineId}`);
+      debugError(`[useVideoEvents] videoData unexpectedly undefined for key ${uniqueKey}`);
       continue;
     }
 
@@ -305,7 +315,7 @@ async function parseVideoEvents(
 export function useVideoEvents(options: UseVideoEventsOptions = {}) {
   const { nostr } = useNostr();
   const { user } = useCurrentUser();
-  const { filter, feedType = 'discovery', hashtag, pubkey, limit = 50, until, sortMode } = options;
+  const { filter, feedType = 'discovery', hashtag, pubkey, limit = 50, until, sortMode, enabled = true } = options;
 
   // Get follow list for home feed - this is cached and auto-refetches
   const { data: followList } = useFollowList();
@@ -317,11 +327,12 @@ export function useVideoEvents(options: UseVideoEventsOptions = {}) {
       verboseLog(`[useVideoEvents] ========== Starting query for ${feedType} feed ==========`);
       verboseLog(`[useVideoEvents] Options:`, { feedType, hashtag, pubkey, limit, until });
 
-      // Use longer timeout for hashtag queries since they need to search through tags
-      const timeoutMs = feedType === 'hashtag' ? 5000 : (until ? 3000 : 2000);
+      // Timeouts need to accommodate gateway REST API calls which are slower than direct WebSocket
+      // Gateway calls go through CDN and may take longer on first request
+      const timeoutMs = feedType === 'hashtag' ? 15000 : (until ? 15000 : 10000);
       const signal = AbortSignal.any([
         context.signal,
-        AbortSignal.timeout(timeoutMs) // 5s for hashtags, 2s for initial load, 3s for pagination
+        AbortSignal.timeout(timeoutMs) // 15s for hashtags/pagination, 10s for initial load
       ]);
 
       // Build base filter with NIP-50 support
@@ -346,7 +357,8 @@ export function useVideoEvents(options: UseVideoEventsOptions = {}) {
 
       // Add NIP-50 search with sort mode for feeds that should sort by popularity
       // But NOT for direct ID lookups - those should just fetch the specific event
-      const shouldSortByPopularity = ['trending', 'hashtag', 'home', 'discovery'].includes(feedType) && !isDirectIdLookup;
+      // NOTE: hashtag feeds excluded - relay doesn't support combining #t filter with search parameter
+      const shouldSortByPopularity = ['trending', 'home', 'discovery'].includes(feedType) && !isDirectIdLookup;
       if (shouldSortByPopularity) {
         // Use explicit sortMode if provided, otherwise auto-select based on feedType
         // Explicit sortMode allows UI to control sorting (e.g., hot/top/rising/controversial selector)
@@ -489,7 +501,7 @@ export function useVideoEvents(options: UseVideoEventsOptions = {}) {
     },
     staleTime: 300000, // 5 minutes - reduce re-queries for better performance
     gcTime: 900000, // 15 minutes - keep data longer in cache
-    enabled: (feedType !== 'home' || !!user?.pubkey) && (feedType !== 'profile' || !!pubkey), // Only run home feed if user is logged in, and profile feed if pubkey is provided
+    enabled: enabled && (feedType !== 'home' || !!user?.pubkey) && (feedType !== 'profile' || !!pubkey), // Only run home feed if user is logged in, and profile feed if pubkey is provided
   });
 
   // Auto-refresh logic matching Flutter app behavior

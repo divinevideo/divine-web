@@ -1,16 +1,24 @@
-// NOTE: This file is stable and usually should not be modified.
-// It is important that all functionality in this file is preserved, and should only be modified if explicitly requested.
+import React, { FormEvent, useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { Warning as AlertTriangle, Cloud, Key as KeyRound, Shield, UploadSimple as Upload } from '@phosphor-icons/react';
 
-import React, { useRef, useState, useEffect } from 'react';
-import { Shield, Upload, AlertTriangle, KeyRound, Cloud, Mail } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Dialog, DialogContent, DialogHeader, DialogDescription } from "@/components/ui/dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { useLoginActions } from '@/hooks/useLoginActions';
-import { KeycastLoginForm } from '@/components/auth/KeycastLoginForm';
+import { Button } from '@/components/ui/button';
+import { Collapsible, CollapsibleContent } from '@/components/ui/collapsible';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { setInviteHandoff } from '@/lib/authHandoff';
+import { buildLoginRedirect, buildSignupRedirect } from '@/lib/divineLogin';
+import { getInviteClientConfig, joinInviteWaitlist, validateInviteCode } from '@/lib/inviteApi';
+import { getStoredLocalNsecLogin } from '@/lib/localNsecAccount';
 import { cn } from '@/lib/utils';
+import { useLoginActions } from '@/hooks/useLoginActions';
+
+import InviteCodeForm from './InviteCodeForm';
+import LocalNsecBanner from './LocalNsecBanner';
+import WaitlistForm from './WaitlistForm';
+import WebAccountSignInForm from './WebAccountSignInForm';
 
 interface LoginDialogProps {
   isOpen: boolean;
@@ -19,362 +27,445 @@ interface LoginDialogProps {
   onSignup?: () => void;
 }
 
-const validateNsec = (nsec: string) => {
-  return /^nsec1[a-zA-Z0-9]{58}$/.test(nsec);
-};
+type AuthTab = 'register' | 'signin';
+type RegisterView = 'invite' | 'waitlist';
 
-const validateBunkerUri = (uri: string) => {
-  return uri.startsWith('bunker://');
-};
+const validateNsec = (nsec: string) => /^nsec1[a-zA-Z0-9]{58}$/.test(nsec);
+const validateBunkerUri = (uri: string) => uri.startsWith('bunker://');
 
-const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin, onSignup }) => {
-  const [isLoading, setIsLoading] = useState(false);
-  const [isFileLoading, setIsFileLoading] = useState(false);
-  const [nsec, setNsec] = useState('');
+const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin }) => {
+  const { t } = useTranslation();
+  const [advancedOpen, setAdvancedOpen] = useState(false);
+  const [bunkerError, setBunkerError] = useState<string | null>(null);
   const [bunkerUri, setBunkerUri] = useState('');
-  const [errors, setErrors] = useState<{
-    nsec?: string;
-    bunker?: string;
-    file?: string;
-    extension?: string;
-  }>({});
+  const [generalError, setGeneralError] = useState<string | null>(null);
+  const [inviteConfigError, setInviteConfigError] = useState<string | null>(null);
+  const [inviteCode, setInviteCode] = useState('');
+  const [inviteError, setInviteError] = useState<string | null>(null);
+  const [isConfigLoading, setIsConfigLoading] = useState(false);
+  const [isFileLoading, setIsFileLoading] = useState(false);
+  const [isInviteLoading, setIsInviteLoading] = useState(false);
+  const [isLoginLoading, setIsLoginLoading] = useState(false);
+  const [isWaitlistLoading, setIsWaitlistLoading] = useState(false);
+  const [keyError, setKeyError] = useState<string | null>(null);
+  const [nsec, setNsec] = useState('');
+  const [storedLocalNsec, setStoredLocalNsec] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<AuthTab>('register');
+  const [registerView, setRegisterView] = useState<RegisterView>('invite');
+  const [waitlistContact, setWaitlistContact] = useState('');
+  const [waitlistEnabled, setWaitlistEnabled] = useState(false);
+  const [waitlistError, setWaitlistError] = useState<string | null>(null);
+  const [waitlistNewsletterOptIn, setWaitlistNewsletterOptIn] = useState(false);
+  const [waitlistSuccess, setWaitlistSuccess] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const login = useLoginActions();
 
-  // Reset all state when dialog opens/closes
   useEffect(() => {
-    if (isOpen) {
-      // Reset state when dialog opens
-      setIsLoading(false);
-      setIsFileLoading(false);
-      setNsec('');
-      setBunkerUri('');
-      setErrors({});
-      // Reset file input
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
+    if (!isOpen) {
+      return;
     }
+
+    setAdvancedOpen(false);
+    setBunkerError(null);
+    setBunkerUri('');
+    setGeneralError(null);
+    setInviteConfigError(null);
+    setInviteCode('');
+    setInviteError(null);
+    setIsConfigLoading(true);
+    setIsFileLoading(false);
+    setIsInviteLoading(false);
+    setIsLoginLoading(false);
+    setIsWaitlistLoading(false);
+    setKeyError(null);
+    setNsec('');
+    setStoredLocalNsec(getStoredLocalNsecLogin()?.data.nsec ?? null);
+    setActiveTab('register');
+    setRegisterView('invite');
+    setWaitlistContact('');
+    setWaitlistEnabled(false);
+    setWaitlistError(null);
+    setWaitlistNewsletterOptIn(false);
+    setWaitlistSuccess(false);
+
+    let isCancelled = false;
+
+    getInviteClientConfig()
+      .then((config) => {
+        if (!isCancelled) {
+          setWaitlistEnabled(config.waitlistEnabled);
+        }
+      })
+      .catch((caughtError) => {
+        if (!isCancelled) {
+          setInviteConfigError(caughtError instanceof Error ? caughtError.message : t('loginDialog.errorInviteServiceUnavailable'));
+        }
+      })
+      .finally(() => {
+        if (!isCancelled) {
+          setIsConfigLoading(false);
+        }
+      });
+
+    return () => {
+      isCancelled = true;
+    };
   }, [isOpen]);
 
   const handleExtensionLogin = async () => {
-    setIsLoading(true);
-    setErrors(prev => ({ ...prev, extension: undefined }));
+    setIsLoginLoading(true);
+    setGeneralError(null);
 
     try {
       if (!('nostr' in window)) {
-        throw new Error('Nostr extension not found. Please install a NIP-07 extension.');
+        throw new Error(t('loginDialog.errorExtensionNotFound'));
       }
+
       await login.extension();
       onLogin();
       onClose();
-    } catch (e: unknown) {
-      const error = e as Error;
-      console.error('Bunker login failed:', error);
-      console.error('Nsec login failed:', error);
-      console.error('Extension login failed:', error);
-      setErrors(prev => ({
-        ...prev,
-        extension: error instanceof Error ? error.message : 'Extension login failed'
-      }));
+    } catch (caughtError) {
+      setGeneralError(caughtError instanceof Error ? caughtError.message : t('loginDialog.errorExtensionLoginFailed'));
     } finally {
-      setIsLoading(false);
+      setIsLoginLoading(false);
     }
   };
 
-  const executeLogin = (key: string) => {
-    setIsLoading(true);
-    setErrors({});
+  const executeNsecLogin = (nextNsec: string) => {
+    setIsLoginLoading(true);
+    setKeyError(null);
 
-    // Use a timeout to allow the UI to update before the synchronous login call
-    setTimeout(() => {
+    window.setTimeout(() => {
       try {
-        login.nsec(key);
+        login.nsec(nextNsec);
         onLogin();
         onClose();
       } catch {
-        setErrors({ nsec: "Failed to login with this key. Please check that it's correct." });
-        setIsLoading(false);
+        setKeyError(t('loginDialog.errorKeyLoginFailed'));
+        setIsLoginLoading(false);
       }
     }, 50);
   };
 
   const handleKeyLogin = () => {
     if (!nsec.trim()) {
-      setErrors(prev => ({ ...prev, nsec: 'Please enter your secret key' }));
+      setKeyError(t('loginDialog.errorNsecRequired'));
       return;
     }
 
     if (!validateNsec(nsec)) {
-      setErrors(prev => ({ ...prev, nsec: 'Invalid secret key format. Must be a valid nsec starting with nsec1.' }));
+      setKeyError(t('loginDialog.errorNsecInvalid'));
       return;
     }
-    executeLogin(nsec);
+
+    executeNsecLogin(nsec);
   };
 
   const handleBunkerLogin = async () => {
     if (!bunkerUri.trim()) {
-      setErrors(prev => ({ ...prev, bunker: 'Please enter a bunker URI' }));
+      setBunkerError(t('loginDialog.errorBunkerRequired'));
       return;
     }
 
     if (!validateBunkerUri(bunkerUri)) {
-      setErrors(prev => ({ ...prev, bunker: 'Invalid bunker URI format. Must start with bunker://' }));
+      setBunkerError(t('loginDialog.errorBunkerInvalid'));
       return;
     }
 
-    setIsLoading(true);
-    setErrors(prev => ({ ...prev, bunker: undefined }));
+    setIsLoginLoading(true);
+    setBunkerError(null);
 
     try {
       await login.bunker(bunkerUri);
       onLogin();
       onClose();
-      // Clear the URI from memory
       setBunkerUri('');
     } catch {
-      setErrors(prev => ({
-        ...prev,
-        bunker: 'Failed to connect to bunker. Please check the URI.'
-      }));
+      setBunkerError(t('loginDialog.errorBunkerConnectFailed'));
     } finally {
-      setIsLoading(false);
+      setIsLoginLoading(false);
     }
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) {
+      return;
+    }
 
     setIsFileLoading(true);
-    setErrors({});
+    setKeyError(null);
 
     const reader = new FileReader();
-    reader.onload = (event) => {
+    reader.onload = (loadEvent) => {
       setIsFileLoading(false);
-      const content = event.target?.result as string;
-      if (content) {
-        const trimmedContent = content.trim();
-        if (validateNsec(trimmedContent)) {
-          executeLogin(trimmedContent);
-        } else {
-          setErrors({ file: 'File does not contain a valid secret key.' });
-        }
-      } else {
-        setErrors({ file: 'Could not read file content.' });
+      const content = typeof loadEvent.target?.result === 'string'
+        ? loadEvent.target.result.trim()
+        : '';
+
+      if (!content) {
+        setKeyError(t('loginDialog.errorFileEmpty'));
+        return;
       }
+
+      if (!validateNsec(content)) {
+        setKeyError(t('loginDialog.errorFileNoValidKey'));
+        return;
+      }
+
+      executeNsecLogin(content);
     };
     reader.onerror = () => {
       setIsFileLoading(false);
-      setErrors({ file: 'Failed to read file.' });
+      setKeyError(t('loginDialog.errorFileReadFailed'));
     };
     reader.readAsText(file);
   };
 
-  const defaultTab = 'extension';
+  const handleInviteSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setInviteError(null);
+    setIsInviteLoading(true);
+
+    try {
+      const result = await validateInviteCode(inviteCode);
+      const returnPath = `${window.location.pathname}${window.location.search}`;
+      setInviteHandoff({
+        code: result.normalizedCode,
+        mode: 'signup',
+        createdAt: Date.now(),
+        returnPath,
+      });
+      const redirect = await buildSignupRedirect({ returnPath });
+      window.location.assign(redirect.url);
+    } catch (caughtError) {
+      setInviteError(caughtError instanceof Error ? caughtError.message : t('loginDialog.errorInviteValidationFailed'));
+    } finally {
+      setIsInviteLoading(false);
+    }
+  };
+
+  const handleExistingAccountLogin = async () => {
+    setGeneralError(null);
+    setIsLoginLoading(true);
+
+    try {
+      const returnPath = `${window.location.pathname}${window.location.search}`;
+      const redirect = await buildLoginRedirect({ returnPath });
+      window.location.assign(redirect.url);
+    } catch (caughtError) {
+      setGeneralError(caughtError instanceof Error ? caughtError.message : t('loginDialog.errorSignInStartFailed'));
+      setIsLoginLoading(false);
+    }
+  };
+
+  const handleWaitlistSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setWaitlistError(null);
+    setIsWaitlistLoading(true);
+
+    try {
+      await joinInviteWaitlist(waitlistContact, waitlistNewsletterOptIn);
+      setWaitlistSuccess(true);
+    } catch (caughtError) {
+      setWaitlistError(caughtError instanceof Error ? caughtError.message : t('loginDialog.errorWaitlistJoinFailed'));
+    } finally {
+      setIsWaitlistLoading(false);
+    }
+  };
+
+  const handleAuthTabChange = (value: string) => {
+    const nextTab = value === 'signin' ? 'signin' : 'register';
+    setActiveTab(nextTab);
+    setGeneralError(null);
+
+    if (nextTab !== 'signin') {
+      setAdvancedOpen(false);
+    }
+  };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent
-        className={cn("max-w-[95vw] sm:max-w-md max-h-[90vh] max-h-[90dvh] p-0 overflow-hidden rounded-2xl overflow-y-scroll")}
-      >
-        <DialogHeader className={cn('px-6 pt-6 pb-1 relative')}>
-            <DialogDescription className="text-center">
-              Log in to continue
-            </DialogDescription>
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className={cn('max-w-[95vw] overflow-hidden rounded-2xl p-0 sm:max-w-md')}>
+        <DialogHeader className="space-y-2 px-6 pb-1 pt-6">
+          <DialogTitle className="sr-only">{t('loginDialog.title')}</DialogTitle>
+          <DialogDescription className="text-center text-base font-medium text-foreground">
+            {t('loginDialog.heading')}
+          </DialogDescription>
+          <p className="text-center text-sm text-muted-foreground">
+            {activeTab === 'register'
+              ? t('loginDialog.subtitleRegister')
+              : t('loginDialog.subtitleSignIn')}
+          </p>
         </DialogHeader>
-        <div className='px-6 pt-2 pb-4 space-y-4 overflow-y-auto flex-1'>
 
-          {/* Login Methods */}
-          <Tabs defaultValue={defaultTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-4 bg-muted/80 rounded-lg mb-4">
-              <TabsTrigger value="extension" className="flex items-center gap-2">
-                <Shield className="w-4 h-4" />
-                <span className="hidden sm:inline">Extension</span>
-                <span className="sm:hidden">Ext</span>
-              </TabsTrigger>
-              <TabsTrigger value="email" className="flex items-center gap-2">
-                <Mail className="w-4 h-4" />
-                <span>Email</span>
-              </TabsTrigger>
-              <TabsTrigger value="key" className="flex items-center gap-2">
-                <KeyRound className="w-4 h-4" />
-                <span>Key</span>
-              </TabsTrigger>
-              <TabsTrigger value="bunker" className="flex items-center gap-2">
-                <Cloud className="w-4 h-4" />
-                <span className="hidden sm:inline">Bunker</span>
-                <span className="sm:hidden">Bnkr</span>
-              </TabsTrigger>
+        <div className="space-y-4 px-6 pb-6 pt-2">
+          {storedLocalNsec ? <LocalNsecBanner nsec={storedLocalNsec} /> : null}
+
+          {generalError ? (
+            <Alert variant="destructive">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription>{generalError}</AlertDescription>
+            </Alert>
+          ) : null}
+
+          <Tabs className="space-y-4" onValueChange={handleAuthTabChange} value={activeTab}>
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="register">{t('loginDialog.tabRegister')}</TabsTrigger>
+              <TabsTrigger value="signin">{t('loginDialog.tabSignIn')}</TabsTrigger>
             </TabsList>
-            <TabsContent value='extension' className='space-y-3 bg-muted'>
-              {errors.extension && (
-                <Alert variant="destructive">
-                  <AlertTriangle className="h-4 w-4" />
-                  <AlertDescription>{errors.extension}</AlertDescription>
-                </Alert>
+
+            <TabsContent className="space-y-4" value="register">
+              {isConfigLoading ? (
+                <div className="rounded-2xl bg-muted px-4 py-6 text-center text-sm text-muted-foreground">
+                  {t('loginDialog.checkingInvite')}
+                </div>
+              ) : inviteConfigError ? (
+                <div className="space-y-2 rounded-2xl bg-muted px-4 py-6 text-center text-sm text-muted-foreground">
+                  <p>{t('loginDialog.inviteUnavailable')}</p>
+                  <p className="text-red-500">{inviteConfigError}</p>
+                </div>
+              ) : registerView === 'invite' ? (
+                <InviteCodeForm
+                  error={inviteError}
+                  isLoading={isInviteLoading}
+                  onInviteCodeChange={setInviteCode}
+                  onJoinWaitlist={() => setRegisterView('waitlist')}
+                  onSubmit={handleInviteSubmit}
+                  value={inviteCode}
+                  waitlistEnabled={waitlistEnabled}
+                />
+              ) : (
+                <WaitlistForm
+                  contact={waitlistContact}
+                  error={waitlistError}
+                  isLoading={isWaitlistLoading}
+                  isSuccess={waitlistSuccess}
+                  newsletterOptIn={waitlistNewsletterOptIn}
+                  onBack={() => setRegisterView('invite')}
+                  onContactChange={setWaitlistContact}
+                  onNewsletterOptInChange={setWaitlistNewsletterOptIn}
+                  onSubmit={handleWaitlistSubmit}
+                />
               )}
-              <div className='text-center p-4 rounded-lg bg-gray-50 dark:bg-gray-800'>
-                <Shield className='w-12 h-12 mx-auto mb-3 text-primary' />
-                <p className='text-sm text-gray-600 dark:text-gray-300 mb-4'>
-                  Login with one click using the browser extension
-                </p>
-                <div className="flex justify-center">
-                  <Button
-                    className='w-full rounded-full py-4'
-                    onClick={handleExtensionLogin}
-                    disabled={isLoading}
-                  >
-                    {isLoading ? 'Logging in...' : 'Login with Extension'}
-                  </Button>
-                </div>
-              </div>
             </TabsContent>
 
-            <TabsContent value='email' className='space-y-3'>
-              <div className='p-4 rounded-lg bg-gray-50 dark:bg-gray-800'>
-                <Mail className='w-12 h-12 mx-auto mb-3 text-primary' />
-                <p className='text-sm text-gray-600 dark:text-gray-300 mb-4 text-center'>
-                  Login with your diVine account
-                </p>
-                <div className='p-4 mb-4 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800'>
-                  <p className='text-sm text-blue-800 dark:text-blue-200 text-center'>
-                    Note: Email signup is currently disabled. The beta is only open to existing Nostr users.
-                  </p>
-                </div>
-                <KeycastLoginForm
-                  onSuccess={() => {
-                    onLogin();
-                    onClose();
-                  }}
-                />
-              </div>
-            </TabsContent>
+            <TabsContent className="space-y-4" value="signin">
+              <WebAccountSignInForm
+                advancedOpen={advancedOpen}
+                isLoading={isLoginLoading}
+                onContinue={handleExistingAccountLogin}
+                onToggleAdvanced={() => setAdvancedOpen((current) => !current)}
+              />
 
-            <TabsContent value='key' className='space-y-4'>
-              <div className='space-y-4'>
-                <div className='space-y-2'>
-                  <label htmlFor='nsec' className='text-sm font-medium'>
-                    Secret Key (nsec)
-                  </label>
-                  <Input
-                    id='nsec'
-                    type="password"
-                    value={nsec}
-                    onChange={(e) => {
-                      setNsec(e.target.value);
-                      if (errors.nsec) setErrors(prev => ({ ...prev, nsec: undefined }));
-                    }}
-                    className={`rounded-lg ${
-                      errors.nsec ? 'border-red-500 focus-visible:ring-red-500' : ''
-                    }`}
-                    placeholder='nsec1...'
-                    autoComplete="off"
-                  />
-                  {errors.nsec && (
-                    <p className="text-sm text-red-500">{errors.nsec}</p>
-                  )}
-                </div>
+              <Collapsible open={advancedOpen}>
+                <CollapsibleContent className="space-y-4 pt-2">
+                  <Tabs className="w-full" defaultValue="extension">
+                    <TabsList className="grid w-full grid-cols-3 rounded-lg bg-muted">
+                      <TabsTrigger className="flex items-center gap-2" value="extension">
+                        <Shield className="h-4 w-4" />
+                        <span className="hidden sm:inline">{t('loginDialog.tabExtension')}</span>
+                        <span className="sm:hidden">{t('loginDialog.tabExtensionShort')}</span>
+                      </TabsTrigger>
+                      <TabsTrigger className="flex items-center gap-2" value="key">
+                        <KeyRound className="h-4 w-4" />
+                        <span>{t('loginDialog.tabKey')}</span>
+                      </TabsTrigger>
+                      <TabsTrigger className="flex items-center gap-2" value="bunker">
+                        <Cloud className="h-4 w-4" />
+                        <span className="hidden sm:inline">{t('loginDialog.tabBunker')}</span>
+                        <span className="sm:hidden">{t('loginDialog.tabBunkerShort')}</span>
+                      </TabsTrigger>
+                    </TabsList>
 
-                <Button
-                  className='w-full rounded-full py-3'
-                  onClick={handleKeyLogin}
-                  disabled={isLoading || !nsec.trim()}
-                >
-                  {isLoading ? 'Verifying...' : 'Log In'}
-                </Button>
+                    <TabsContent className="space-y-3 pt-4" value="extension">
+                      <div className="space-y-3 rounded-2xl bg-muted p-4 text-center">
+                        <p className="text-sm text-muted-foreground">
+                          {t('loginDialog.extensionHelper')}
+                        </p>
+                        <Button className="w-full rounded-full py-4" disabled={isLoginLoading} onClick={handleExtensionLogin}>
+                          {isLoginLoading ? t('loginDialog.loggingIn') : t('loginDialog.extensionButton')}
+                        </Button>
+                      </div>
+                    </TabsContent>
 
-                <div className='relative'>
-                  <div className='absolute inset-0 flex items-center'>
-                    <div className='w-full border-t border-muted'></div>
-                  </div>
-                  <div className='relative flex justify-center text-xs'>
-                    <span className='px-2 bg-background text-muted-foreground'>
-                      or
-                    </span>
-                  </div>
-                </div>
+                    <TabsContent className="space-y-4 pt-4" value="key">
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium" htmlFor="nsec">
+                          {t('loginDialog.nsecLabel')}
+                        </label>
+                        <Input
+                          autoComplete="off"
+                          id="nsec"
+                          onChange={(event) => {
+                            setNsec(event.target.value);
+                            setKeyError(null);
+                          }}
+                          placeholder={t('loginDialog.nsecPlaceholder')}
+                          type="password"
+                          value={nsec}
+                        />
+                        {keyError ? <p className="text-sm text-red-500">{keyError}</p> : null}
+                      </div>
 
-                <div className='text-center'>
-                  <input
-                    type='file'
-                    accept='.txt'
-                    className='hidden'
-                    ref={fileInputRef}
-                    onChange={handleFileUpload}
-                  />
-                  <Button
-                    variant='outline'
-                    className='w-full'
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={isLoading || isFileLoading}
-                  >
-                    <Upload className='w-4 h-4 mr-2' />
-                    {isFileLoading ? 'Reading File...' : 'Upload Your Key File'}
-                  </Button>
-                  {errors.file && (
-                    <p className="text-sm text-red-500 mt-2">{errors.file}</p>
-                  )}
-                </div>
-              </div>
-            </TabsContent>
+                      <Button className="w-full rounded-full py-3" disabled={isLoginLoading || !nsec.trim()} onClick={handleKeyLogin}>
+                        {isLoginLoading ? t('loginDialog.verifying') : t('loginDialog.keyLoginButton')}
+                      </Button>
 
-            <TabsContent value='bunker' className='space-y-3 bg-muted'>
-              <div className='space-y-2'>
-                <label htmlFor='bunkerUri' className='text-sm font-medium text-gray-700 dark:text-gray-400'>
-                  Bunker URI
-                </label>
-                <Input
-                  id='bunkerUri'
-                  value={bunkerUri}
-                  onChange={(e) => {
-                    setBunkerUri(e.target.value);
-                    if (errors.bunker) setErrors(prev => ({ ...prev, bunker: undefined }));
-                  }}
-                  className={`rounded-lg border-gray-300 dark:border-gray-700 focus-visible:ring-primary ${
-                    errors.bunker ? 'border-red-500' : ''
-                  }`}
-                  placeholder='bunker://'
-                  autoComplete="off"
-                />
-                {errors.bunker && (
-                  <p className="text-sm text-red-500">{errors.bunker}</p>
-                )}
-              </div>
+                      <input
+                        accept=".txt"
+                        className="hidden"
+                        onChange={handleFileUpload}
+                        ref={fileInputRef}
+                        type="file"
+                      />
+                      <Button
+                        className="w-full"
+                        disabled={isLoginLoading || isFileLoading}
+                        onClick={() => fileInputRef.current?.click()}
+                        type="button"
+                        variant="outline"
+                      >
+                        <Upload className="mr-2 h-4 w-4" />
+                        {isFileLoading ? t('loginDialog.readingFile') : t('loginDialog.uploadKeyFile')}
+                      </Button>
+                    </TabsContent>
 
-              <div className="flex justify-center">
-                <Button
-                  className='w-full rounded-full py-4'
-                  onClick={handleBunkerLogin}
-                  disabled={isLoading || !bunkerUri.trim()}
-                >
-                  {isLoading ? 'Connecting...' : 'Login with Bunker'}
-                </Button>
-              </div>
+                    <TabsContent className="space-y-4 pt-4" value="bunker">
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium" htmlFor="bunkerUri">
+                          {t('loginDialog.bunkerLabel')}
+                        </label>
+                        <Input
+                          autoComplete="off"
+                          id="bunkerUri"
+                          onChange={(event) => {
+                            setBunkerUri(event.target.value);
+                            setBunkerError(null);
+                          }}
+                          placeholder={t('loginDialog.bunkerPlaceholder')}
+                          value={bunkerUri}
+                        />
+                        {bunkerError ? <p className="text-sm text-red-500">{bunkerError}</p> : null}
+                      </div>
+
+                      <Button
+                        className="w-full rounded-full py-4"
+                        disabled={isLoginLoading || !bunkerUri.trim()}
+                        onClick={handleBunkerLogin}
+                      >
+                        {isLoginLoading ? t('loginDialog.connecting') : t('loginDialog.bunkerButton')}
+                      </Button>
+                    </TabsContent>
+                  </Tabs>
+                </CollapsibleContent>
+              </Collapsible>
             </TabsContent>
           </Tabs>
-
-          {/* Sign up link */}
-          {onSignup && (
-            <div className='text-center pt-2 pb-2'>
-              <p className='text-sm text-muted-foreground'>
-                Don't have an account?{' '}
-                <button
-                  onClick={() => {
-                    onClose();
-                    onSignup();
-                  }}
-                  className='text-primary hover:underline font-medium'
-                >
-                  Sign up
-                </button>
-              </p>
-            </div>
-          )}
         </div>
       </DialogContent>
     </Dialog>
-    );
-  };
+  );
+};
 
 export default LoginDialog;

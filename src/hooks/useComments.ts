@@ -8,26 +8,48 @@ export function useComments(root: NostrEvent | URL, limit?: number) {
   return useQuery({
     queryKey: ['nostr', 'comments', root instanceof URL ? root.toString() : root.id, limit],
     queryFn: async (c) => {
-      const filter: NostrFilter = { kinds: [1111] };
+      const signal = AbortSignal.any([c.signal, AbortSignal.timeout(5000)]);
+      let events: NostrEvent[];
 
       if (root instanceof URL) {
-        filter['#I'] = [root.toString()];
+        const filter: NostrFilter = { kinds: [1111], '#I': [root.toString()] };
+        if (typeof limit === 'number') filter.limit = limit;
+        events = await nostr.query([filter], { signal });
       } else if (NKinds.addressable(root.kind)) {
+        // For addressable events, query by BOTH #E (event ID) and #A (addressable identifier)
+        // Funnelcake indexes by E tag, but NIP-22 standard uses A tag for addressable events
         const d = root.tags.find(([name]) => name === 'd')?.[1] ?? '';
-        filter['#A'] = [`${root.kind}:${root.pubkey}:${d}`];
+        const addressableId = `${root.kind}:${root.pubkey}:${d}`;
+
+        const filterByE: NostrFilter = { kinds: [1111], '#E': [root.id] };
+        const filterByA: NostrFilter = { kinds: [1111], '#A': [addressableId] };
+        if (typeof limit === 'number') {
+          filterByE.limit = limit;
+          filterByA.limit = limit;
+        }
+
+        // Run both queries in parallel and merge results
+        const [eventsE, eventsA] = await Promise.all([
+          nostr.query([filterByE], { signal }),
+          nostr.query([filterByA], { signal }),
+        ]);
+
+        // Deduplicate by event ID
+        const seenIds = new Set<string>();
+        events = [...eventsE, ...eventsA].filter(e => {
+          if (seenIds.has(e.id)) return false;
+          seenIds.add(e.id);
+          return true;
+        });
       } else if (NKinds.replaceable(root.kind)) {
-        filter['#A'] = [`${root.kind}:${root.pubkey}:`];
+        const filter: NostrFilter = { kinds: [1111], '#A': [`${root.kind}:${root.pubkey}:`] };
+        if (typeof limit === 'number') filter.limit = limit;
+        events = await nostr.query([filter], { signal });
       } else {
-        filter['#E'] = [root.id];
+        const filter: NostrFilter = { kinds: [1111], '#E': [root.id] };
+        if (typeof limit === 'number') filter.limit = limit;
+        events = await nostr.query([filter], { signal });
       }
-
-      if (typeof limit === 'number') {
-        filter.limit = limit;
-      }
-
-      // Query for all kind 1111 comments that reference this addressable event regardless of depth
-      const signal = AbortSignal.any([c.signal, AbortSignal.timeout(5000)]);
-      const events = await nostr.query([filter], { signal });
 
       // Helper function to get tag value
       const getTagValue = (event: NostrEvent, tagName: string): string | undefined => {
@@ -41,7 +63,11 @@ export function useComments(root: NostrEvent | URL, limit?: number) {
           return getTagValue(comment, 'i') === root.toString();
         } else if (NKinds.addressable(root.kind)) {
           const d = getTagValue(root, 'd') ?? '';
-          return getTagValue(comment, 'a') === `${root.kind}:${root.pubkey}:${d}`;
+          const addressableId = `${root.kind}:${root.pubkey}:${d}`;
+          // Top-level if parent matches root via either 'a' tag (addressable) or 'e' tag (event ID)
+          const aMatch = getTagValue(comment, 'a') === addressableId;
+          const eMatch = getTagValue(comment, 'e') === root.id;
+          return aMatch || eMatch;
         } else if (NKinds.replaceable(root.kind)) {
           return getTagValue(comment, 'a') === `${root.kind}:${root.pubkey}:`;
         } else {

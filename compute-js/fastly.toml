@@ -1,0 +1,54 @@
+# This file describes a Fastly Compute package. To learn more visit:
+# https://www.fastly.com/documentation/reference/compute/fastly-toml
+
+authors = ["you@example.com"]
+description = "Divine video app for Nostr"
+language = "javascript"
+manifest_version = 3
+name = "divine-web"
+service_id = "WfOrPTFYmwwxRvqrfralLA"
+
+[local_server]
+
+  [local_server.kv_stores]
+
+    [local_server.kv_stores.divine-web-content]
+      file = "./static-publisher/kvstore.json"
+      format = "json"
+
+    [local_server.kv_stores.divine-names]
+      file = "./test-data/names-kvstore.json"
+      format = "json"
+
+  [local_server.secret_stores]
+    [local_server.secret_stores.divine_web_secrets]
+      file = "./test-data/secrets.json"
+      format = "json"
+
+[scripts]
+  build = "npm run build"
+
+[[backends]]
+  name = "funnelcake"
+  address = "relay.divine.video"
+  port = 443
+  override_host = "relay.divine.video"
+  use_ssl = true
+
+[[backends]]
+  name = "funnelcake_staging"
+  address = "relay.staging.divine.video"
+  port = 443
+  override_host = "relay.staging.divine.video"
+  use_ssl = true
+
+[setup]
+
+  [setup.kv_stores]
+
+    [setup.kv_stores.divine-web-content]
+
+    [setup.kv_stores.divine-names]
+
+  [setup.secret_stores]
+    [setup.secret_stores.divine_web_secrets]

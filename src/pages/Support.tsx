@@ -1,14 +1,30 @@
-// ABOUTME: Support and contact information page for diVine Web
+// ABOUTME: Support and contact information page for Divine Web
 // ABOUTME: Displays email contact and GitHub issues link for user support
 
 import { useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Mail, Github, MessageCircle } from 'lucide-react';
+import { Envelope as Mail, GithubLogo as Github, ChatCircle as MessageCircle } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
 import { MarketingLayout } from '@/components/MarketingLayout';
+import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { useDmCapability } from '@/hooks/useDirectMessages';
+import { useSubdomainNavigate } from '@/hooks/useSubdomainNavigate';
+import { DIVINE_SUPPORT_PUBKEY, getDmConversationPath } from '@/lib/dm';
+import { useTranslation } from 'react-i18next';
 
 export function Support() {
+  // Zendesk widget disabled - linking to Help Center instead.
+  // To restore widget: set ZENDESK_ENABLED to true and remove return null in ZendeskWidget.tsx
+ 
+  const ZENDESK_ENABLED = false;
+  const navigate = useSubdomainNavigate();
+  const { user } = useCurrentUser();
+  const { canUseDirectMessages } = useDmCapability();
+  const { t } = useTranslation();
+
   useEffect(() => {
+    if (!ZENDESK_ENABLED) return;
+
     // Load Zendesk widget script if not already loaded
     const existingScript = document.getElementById('ze-snippet');
 
@@ -49,7 +65,8 @@ export function Support() {
     };
   }, []);
 
-  const openZendeskWidget = () => {
+  // Kept for future re-enablement of Zendesk widget
+  const _openZendeskWidget = () => {
     if (window.zE) {
       window.zE('webWidget', 'open');
     }
@@ -60,46 +77,68 @@ export function Support() {
       <div className="container max-w-2xl mx-auto px-4 py-8">
       <div className="space-y-6">
         <div className="text-center space-y-2">
-          <h1 className="text-3xl font-bold">Support</h1>
+          <h1 className="text-3xl font-bold">{t('support.title')}</h1>
           <p className="text-muted-foreground">
-            Need help? We're here to assist you.
+            {t('support.subtitle')}
           </p>
         </div>
 
-        {/* Contact Support Card */}
+        {/* Help Center Card (replaces Zendesk widget) */}
         <Card>
           <CardHeader>
-            <CardTitle>Contact Support</CardTitle>
+            <CardTitle>{t('support.helpCenterTitle')}</CardTitle>
             <CardDescription>
-              Click the button below to open our support chat and get help immediately.
+              {t('support.helpCenterDescription')}
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button onClick={openZendeskWidget} size="lg" className="w-full">
-              Open Support Chat
-            </Button>
-            <p className="text-sm text-muted-foreground mt-4 text-center">
+            <a href='https://help.divine.video/'>
+              <Button> 
+              {/* <Button onClick={_openZendeskWidget} size="lg" className="w-full"> */}
+              {t('support.helpCenterCta')}
+              </Button>
+            </a>  
+            {/* <p className="text-sm text-muted-foreground mt-4 text-center">
               Our support widget will open in the bottom-right corner
-            </p>
+            </p> */}
           </CardContent>
         </Card>
+
+        {user && canUseDirectMessages && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <MessageCircle className="h-5 w-5" />
+                {t('support.messageSupportTitle')}
+              </CardTitle>
+              <CardDescription>
+                {t('support.messageSupportDescription')}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button onClick={() => navigate(getDmConversationPath([DIVINE_SUPPORT_PUBKEY]))}>
+                {t('support.messageSupportCta')}
+              </Button>
+            </CardContent>
+          </Card>
+        )}
 
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Mail className="h-5 w-5" />
-              Email Support
+              {t('support.contactTitle')}
             </CardTitle>
             <CardDescription>
-              Send us an email and we'll get back to you as soon as possible.
+              {t('support.contactDescription')}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <a
-              href="mailto:contact@divine.video"
+              href="https://help.divine.video/hc/en-gb/requests/new?ticket_form_id=14332938774671"
               className="text-primary hover:underline font-medium"
             >
-              contact@divine.video
+              {t('support.contactLink')}
             </a>
           </CardContent>
         </Card>
@@ -108,15 +147,15 @@ export function Support() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Github className="h-5 w-5" />
-              GitHub Issues
+              {t('support.githubTitle')}
             </CardTitle>
             <CardDescription>
-              Report bugs, request features, or browse existing issues on our GitHub repositories.
+              {t('support.githubDescription')}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-2">
             <div>
-              <div className="text-sm font-medium mb-1">Web App:</div>
+              <div className="text-sm font-medium mb-1">{t('support.webAppLabel')}</div>
               <a
                 href="https://github.com/rabble/divine-web/issues"
                 target="_blank"
@@ -127,7 +166,7 @@ export function Support() {
               </a>
             </div>
             <div>
-              <div className="text-sm font-medium mb-1">Flutter App (iOS/Android):</div>
+              <div className="text-sm font-medium mb-1">{t('support.flutterAppLabel')}</div>
               <a
                 href="https://github.com/rabble/nostrvine/issues"
                 target="_blank"
@@ -144,15 +183,15 @@ export function Support() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <MessageCircle className="h-5 w-5" />
-              Community
+              {t('support.communityTitle')}
             </CardTitle>
             <CardDescription>
-              Join our community discussions and connect with other Divine users on Nostr.
+              {t('support.communityDescription')}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground">
-              Divine is built on Nostr, a decentralized social protocol. Find us on your favorite Nostr client!
+              {t('support.communityBody')}
             </p>
           </CardContent>
         </Card>

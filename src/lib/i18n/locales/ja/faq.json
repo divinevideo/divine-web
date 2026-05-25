@@ -1,0 +1,12 @@
+{
+  "title": "よくある質問",
+  "subtitle": "神について知っておくべきことすべて",
+  "sections": {
+    "gettingStarted": "はじめる",
+    "accounts": "アカウントと認証",
+    "posting": "投稿とコンテンツ",
+    "privacySafety": "プライバシーと安全性",
+    "features": "機能とインタラクション",
+    "technical": "技術的な質問"
+  }
+}

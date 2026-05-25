@@ -1,38 +1,38 @@
 {
-  "name": "diVine Web - Short-form Looping Videos",
-  "short_name": "diVine",
+  "name": "Divine Web - Short-form Looping Videos",
+  "short_name": "Divine",
   "description": "Watch and share 6-second looping videos on the decentralized Nostr network.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#09090b",
-  "theme_color": "#00b488",
+  "theme_color": "#27C58B",
   "orientation": "portrait-primary",
   "scope": "/",
   "categories": ["entertainment", "video", "social"],
   "screenshots": [
     {
-      "src": "/screenshots/iPad 13 inch-0.png",
+      "src": "/screenshots/iPad 13 inch-0.avif",
       "sizes": "2048x2732",
-      "type": "image/png",
+      "type": "image/avif",
       "form_factor": "wide"
     },
     {
-      "src": "/screenshots/iPad 13 inch-1.png",
+      "src": "/screenshots/iPad 13 inch-1.avif",
       "sizes": "2048x2732",
-      "type": "image/png",
+      "type": "image/avif",
       "form_factor": "wide"
     },
     {
-      "src": "/screenshots/iPad 13 inch-2.png",
+      "src": "/screenshots/iPad 13 inch-2.avif",
       "sizes": "2048x2732",
-      "type": "image/png",
+      "type": "image/avif",
       "form_factor": "wide"
     }
   ],
   "icons": [
     {
       "src": "/app_icon.png",
-      "sizes": "256x256",
+      "sizes": "1024x1024",
       "type": "image/png",
       "purpose": "any maskable"
     }

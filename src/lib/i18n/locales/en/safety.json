@@ -1,0 +1,20 @@
+{
+  "title": "Safety Standards",
+  "updated": "Last Updated: March 30, 2026",
+  "sections": {
+    "overview": "1. Overview",
+    "definitions": "2. Definitions",
+    "prohibited": "3. Prohibited Content and Conduct",
+    "childSafety": "4. Child Safety",
+    "matureContent": "5. Mature Content",
+    "integrity": "6. Platform Integrity and Abuse",
+    "enforcement": "7. Enforcement",
+    "moderation": "8. Moderation Methods",
+    "reporting": "9. Reporting",
+    "userControls": "10. User Controls",
+    "decentralization": "11. Decentralization Limitation",
+    "automated": "12. Automated Decision-Making",
+    "appeals": "13. Appeals",
+    "updates": "14. Updates"
+  }
+}

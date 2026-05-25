@@ -1,9 +1,14 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
+ * If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ */
+
+import { lazy, Suspense } from "react";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { ScrollToTop } from "./components/ScrollToTop";
 import { AnalyticsPageTracker } from "./components/AnalyticsPageTracker";
 import { AnalyticsUserTracker } from "./components/AnalyticsUserTracker";
-import { useNostrLogin } from "@nostrify/react/login";
-import { LandingPage } from "@/components/LandingPage";
+import { getSubdomainUser } from "./hooks/useSubdomainUser";
+import { useCurrentUser } from "./hooks/useCurrentUser";
 
 import Index from "./pages/Index";
 import { NIP19Page } from "./pages/NIP19Page";
@@ -11,7 +16,10 @@ import NotFound from "./pages/NotFound";
 import HomePage from "./pages/HomePage";
 import DiscoveryPage from "./pages/DiscoveryPage";
 import TrendingPage from "./pages/TrendingPage";
+import PopularPage from "./pages/PopularPage";
 import HashtagPage from "./pages/HashtagPage";
+import CategoryPage from "./pages/CategoryPage";
+import CategoriesIndexPage from "./pages/CategoriesIndexPage";
 import HashtagDiscoveryPage from "./pages/HashtagDiscoveryPage";
 import ProfilePage from "./pages/ProfilePage";
 import SearchPage from "./pages/SearchPage";
@@ -20,9 +28,11 @@ import { TagPage } from "./pages/TagPage";
 import ListsPage from "./pages/ListsPage";
 import ListDetailPage from "./pages/ListDetailPage";
 import ModerationSettingsPage from "./pages/ModerationSettingsPage";
+import LinkedAccountsSettingsPage from "./pages/LinkedAccountsSettingsPage";
 // import { NIP05ProfilePage } from "./pages/NIP05ProfilePage";
 import { UniversalUserPage } from "./pages/UniversalUserPage";
-import AboutPage from "./pages/AboutPage";
+import EventPage from "./pages/EventPage";
+
 import PrivacyPage from "./pages/PrivacyPage";
 import OpenSourcePage from "./pages/OpenSourcePage";
 import ProofModePage from "./pages/ProofModePage";
@@ -32,32 +42,45 @@ import HumanCreatedPage from "./pages/HumanCreatedPage";
 import { SafetyPage } from "./pages/SafetyPage";
 import { Support } from "./pages/Support";
 import { FAQPage } from "./pages/FAQPage";
+import MerchPage from "./pages/MerchPage";
 import { TermsPage } from "./pages/TermsPage";
-import { NewsPage } from "./pages/NewsPage";
-import { PressReleasePage } from "./pages/PressReleasePage";
-import { PressPage } from "./pages/PressPage";
-import { MediaResourcesPage } from "./pages/MediaResourcesPage";
+import GetEmbedPage from "./pages/GetEmbedPage";
+import AppCallbackPage from "./pages/AppCallbackPage";
+import AuthCallbackPage from "./pages/AuthCallbackPage";
 import { AppLayout } from "@/components/AppLayout";
 import { DebugVideoPage } from "./pages/DebugVideoPage";
+import LeaderboardPage from "./pages/LeaderboardPage";
+import NotificationsPage from "./pages/NotificationsPage";
+import AnalyticsPage from "./pages/AnalyticsPage";
+import MessagesPage from "./pages/MessagesPage";
+import ConversationPage from "./pages/ConversationPage";
 // import { UploadPage } from "./pages/UploadPage"; // DISABLED: Upload route is commented out
 import PostPage from "./pages/PostPage";
-import { KeycastAutoConnect } from "@/components/KeycastAutoConnect";
+
+// Dev-only: static preview surface for the brand system. The `lazy()` call
+// sits behind `import.meta.env.DEV` so Vite's dead-code elimination drops both
+// the route registration AND the async chunk reference from production builds.
+const BrandPreview = import.meta.env.DEV
+  ? lazy(() => import("./pages/_BrandPreview"))
+  : null;
 
 export function AppRouter() {
-  const { logins } = useNostrLogin();
+  const { user, isSessionLoading } = useCurrentUser();
 
   // Check if user is logged in
-  const isLoggedIn = logins.length > 0;
+  const canUseProtectedRoutes = Boolean(user) || isSessionLoading;
+
+  // Check if we're on a subdomain profile (username.divine.video)
+  const subdomainUser = getSubdomainUser();
 
   return (
     <BrowserRouter>
-      <KeycastAutoConnect />
       <ScrollToTop />
       <AnalyticsPageTracker />
       <AnalyticsUserTracker />
       <Routes>
         {/* Marketing/informational pages - no app layout */}
-        <Route path="/about" element={<AboutPage />} />
+        {/* /about redirects to about.divine.video via _redirects (301) */}
         <Route path="/authenticity" element={<AuthenticityPage />} />
         <Route path="/privacy" element={<PrivacyPage />} />
         <Route path="/terms" element={<TermsPage />} />
@@ -68,40 +91,67 @@ export function AppRouter() {
         <Route path="/safety" element={<SafetyPage />} />
         <Route path="/support" element={<Support />} />
         <Route path="/faq" element={<FAQPage />} />
-        <Route path="/news" element={<NewsPage />} />
-        <Route path="/news/vine-revisited" element={<PressReleasePage />} />
-        <Route path="/press" element={<PressPage />} />
-        <Route path="/media-resources" element={<MediaResourcesPage />} />
+        <Route path="/get-embed" element={<GetEmbedPage />} />
+        <Route path="/app/callback" element={<AppCallbackPage />} />
+        <Route path="/auth/callback" element={<AuthCallbackPage />} />
+
+        {/* Dev-only brand primitives preview — tree-shaken in production */}
+        {import.meta.env.DEV && BrandPreview && (
+          <Route
+            path="/__brand-preview"
+            element={
+              <Suspense fallback={null}>
+                <BrandPreview />
+              </Suspense>
+            }
+          />
+        )}
 
         {/* App routes - with AppLayout */}
         <Route element={<AppLayout />}>
-          {/* Home/landing route */}
-          <Route path="/" element={<Index />} />
+          {/* Home/landing route - render profile directly on subdomain */}
+          <Route path="/" element={
+            subdomainUser
+              ? <ProfilePage />
+              : <Index />
+          } />
 
           {/* Public browsing routes - accessible without login */}
           <Route path="/discovery" element={<DiscoveryPage />} />
           <Route path="/discovery/:tab" element={<DiscoveryPage />} />
           <Route path="/trending" element={<TrendingPage />} />
+          <Route path="/popular" element={<PopularPage />} />
           <Route path="/hashtags" element={<HashtagDiscoveryPage />} />
           <Route path="/hashtag/:tag" element={<HashtagPage />} />
+          <Route path="/category" element={<CategoriesIndexPage />} />
+          <Route path="/category/:name" element={<CategoryPage />} />
           <Route path="/t/:tag" element={<TagPage />} />
           <Route path="/profile/:npub" element={<ProfilePage />} />
           <Route path="/video/:id" element={<VideoPage />} />
           <Route path="/search" element={<SearchPage />} />
+          <Route path="/leaderboard" element={<LeaderboardPage />} />
+          <Route path="/merch" element={<MerchPage />} />
           <Route path="/u/:userId" element={<UniversalUserPage />} />
+          <Route path="/list/:pubkey/:listId" element={<ListDetailPage />} />
+          <Route path="/event/:eventId" element={<EventPage />} />
+          <Route path="/event/a/:kind/:pubkey/:identifier" element={<EventPage />} />
           <Route path="/:nip19" element={<NIP19Page />} />
 
           {/* Protected routes - require login */}
-          {isLoggedIn && (
+          {canUseProtectedRoutes && (
             <>
               <Route path="/home" element={<HomePage />} />
+              <Route path="/notifications" element={<NotificationsPage />} />
+              <Route path="/messages" element={<MessagesPage />} />
+              <Route path="/messages/:conversationId" element={<ConversationPage />} />
+              <Route path="/analytics" element={<AnalyticsPage />} />
               <Route path="/lists" element={<ListsPage />} />
-              <Route path="/list/:pubkey/:listId" element={<ListDetailPage />} />
               <Route path="/post" element={<PostPage />} />
               {/* DISABLED: Upload route - not supported on web at this time
               <Route path="/upload" element={<UploadPage />} />
               */}
               <Route path="/settings/moderation" element={<ModerationSettingsPage />} />
+              <Route path="/settings/linked-accounts" element={<LinkedAccountsSettingsPage />} />
               {/* Test pages for debugging */}
               <Route path="/debug-video" element={<DebugVideoPage />} />
             </>

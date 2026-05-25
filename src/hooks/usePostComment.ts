@@ -33,6 +33,8 @@ export function usePostComment() {
         tags.push(['I', root.toString()]);
       } else if (NKinds.addressable(root.kind)) {
         tags.push(['A', `${root.kind}:${root.pubkey}:${dRoot}`]);
+        // Also include E tag for event ID - Funnelcake indexes by this
+        tags.push(['E', root.id]);
       } else if (NKinds.replaceable(root.kind)) {
         tags.push(['A', `${root.kind}:${root.pubkey}:`]);
       } else {
@@ -68,6 +70,8 @@ export function usePostComment() {
           tags.push(['i', root.toString()]);
         } else if (NKinds.addressable(root.kind)) {
           tags.push(['a', `${root.kind}:${root.pubkey}:${dRoot}`]);
+          // Also include e tag for event ID - ensures comment is found by #E queries
+          tags.push(['e', root.id]);
         } else if (NKinds.replaceable(root.kind)) {
           tags.push(['a', `${root.kind}:${root.pubkey}:`]);
         } else {

@@ -1,7 +1,13 @@
+import { useMemo } from 'react';
 import { type NostrEvent, type NostrMetadata, NSchema as n } from '@nostrify/nostrify';
 import { useNostr } from '@nostrify/react';
 import { useQuery } from '@tanstack/react-query';
-import { eventCache } from '@/lib/eventCache';
+import { eventCache, CACHE_TTL } from '@/lib/eventCache';
+import { API_CONFIG } from '@/config/api';
+import { fetchUserProfile } from '@/lib/funnelcakeClient';
+import { isFunnelcakeAvailable } from '@/lib/funnelcakeHealth';
+import { debugLog } from '@/lib/debug';
+import { reportFunnelcakeFallback } from '@/lib/funnelcakeFallbackReporting';
 
 /**
  * Parse profile event content into metadata
@@ -15,8 +21,27 @@ function parseProfileMetadata(event: NostrEvent): { event: NostrEvent; metadata?
   }
 }
 
-export function useAuthor(pubkey: string | undefined) {
+export interface UseAuthorOptions {
+  /** Pre-cached name from Funnelcake video response — shown instantly while full profile loads */
+  initialName?: string;
+  /** Pre-cached avatar from Funnelcake video response */
+  initialAvatar?: string;
+}
+
+export function useAuthor(pubkey: string | undefined, options?: UseAuthorOptions) {
   const { nostr } = useNostr();
+  const apiUrl = API_CONFIG.funnelcake.baseUrl;
+
+  // Build placeholder from Funnelcake-embedded data so we never show "Loading..."
+  const placeholderData = useMemo(() => {
+    if (!options?.initialName && !options?.initialAvatar) return undefined;
+    return {
+      metadata: {
+        name: options.initialName,
+        picture: options.initialAvatar,
+      } as NostrMetadata,
+    };
+  }, [options?.initialName, options?.initialAvatar]);
 
   return useQuery<{ event?: NostrEvent; metadata?: NostrMetadata }>({
     queryKey: ['author', pubkey ?? ''],
@@ -26,22 +51,63 @@ export function useAuthor(pubkey: string | undefined) {
         return {};
       }
 
-      const [event] = await nostr.query(
-        [{ kinds: [0], authors: [pubkey!], limit: 1 }],
-        { signal: AbortSignal.any([signal, AbortSignal.timeout(5000)]) },
+      const reportFallback = (reason: string) => {
+        reportFunnelcakeFallback({
+          source: 'useAuthor',
+          apiUrl,
+          reason,
+          dedupeKey: `useAuthor:${pubkey}:${reason}`,
+          context: { pubkey },
+        });
+      };
+
+      // Try Funnelcake REST API first (fast, ~50ms)
+      if (isFunnelcakeAvailable(apiUrl)) {
+        try {
+          debugLog(`[useAuthor] REST fetch for ${pubkey.slice(0, 8)}...`);
+          const profile = await fetchUserProfile(apiUrl, pubkey, signal);
+
+          if (profile) {
+            const metadata: NostrMetadata = {
+              name: profile.name,
+              display_name: profile.display_name,
+              picture: profile.picture,
+              banner: profile.banner,
+              about: profile.about,
+              nip05: profile.nip05,
+              lud16: profile.lud16,
+              website: profile.website,
+            };
+            debugLog(`[useAuthor] REST got profile for ${pubkey.slice(0, 8)}...`);
+            return { metadata };
+          }
+
+          reportFallback('REST returned no profile');
+        } catch (err) {
+          debugLog(`[useAuthor] REST failed for ${pubkey.slice(0, 8)}, falling back to WebSocket:`, err);
+          reportFallback(err instanceof Error ? err.message : String(err));
+        }
+      } else {
+        reportFallback('Funnelcake unavailable or circuit breaker open');
+      }
+
+      // WebSocket fallback (slow, can take seconds)
+      debugLog(`[useAuthor] WebSocket fetch for ${pubkey.slice(0, 8)}...`);
+
+      const events = await nostr.query(
+        [{ kinds: [0], authors: [pubkey!], limit: 5 }],
+        { signal: AbortSignal.any([signal, AbortSignal.timeout(15000)]) },
       );
 
-      if (!event) {
-        // Return empty object instead of throwing error
-        // This allows components to use fallback display names
+      if (events.length === 0) {
+        debugLog(`[useAuthor] No profile found for ${pubkey.slice(0, 8)}...`);
         return {};
       }
 
-      // Republish the profile to the main relay in the background
-      // This ensures profiles are cached on relay.divine.video even if they came from profile relays
-      nostr.event(event).catch(() => {
-        // Silently ignore republish errors - this is best-effort caching
-      });
+      // Take the most recent event (kind 0 is replaceable)
+      const event = events.sort((a, b) => b.created_at - a.created_at)[0];
+
+      debugLog(`[useAuthor] WebSocket got profile for ${pubkey.slice(0, 8)}...`);
 
       // Also add to event cache for future synchronous access
       eventCache.event(event).catch(() => {
@@ -51,20 +117,13 @@ export function useAuthor(pubkey: string | undefined) {
       return parseProfileMetadata(event);
     },
 
-    // Use cached profile as initialData for instant rendering
-    initialData: () => {
-      if (!pubkey) return undefined;
+    // Show Funnelcake-cached name/avatar immediately while full profile loads in background
+    placeholderData,
 
-      const cachedEvent = eventCache.getCachedProfile(pubkey);
-      if (cachedEvent) {
-        return parseProfileMetadata(cachedEvent);
-      }
-
-      return undefined;
-    },
-
-    retry: 1, // Reduce retries since many profiles don't exist
-    staleTime: 30 * 60 * 1000, // Cache for 30 minutes (increased from 5 minutes)
-    gcTime: 2 * 60 * 60 * 1000, // Keep in cache for 2 hours (increased from 30 minutes)
+    retry: 2,
+    retryDelay: 1000,
+    staleTime: CACHE_TTL.PROFILE,
+    gcTime: CACHE_TTL.PROFILE * 6,
+    refetchOnWindowFocus: true,
   });
 }

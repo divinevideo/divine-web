@@ -1,7 +1,8 @@
 // ABOUTME: Dialog for viewing raw Nostr event JSON source
 // ABOUTME: Shows formatted event data for debugging and transparency
 
-import { useState } from 'react';
+import { type ReactNode, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Dialog,
   DialogContent,
@@ -10,9 +11,10 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Code, Copy, Check, AlertCircle } from 'lucide-react';
+import { Code, Copy, Check, WarningCircle as AlertCircle, CircleNotch as Loader2 } from '@phosphor-icons/react';
 import type { NostrEvent } from '@nostrify/nostrify';
 import type { ParsedVideoData } from '@/types/video';
+import { API_CONFIG } from '@/config/api';
 
 interface ViewSourceDialogProps {
   open: boolean;
@@ -22,24 +24,111 @@ interface ViewSourceDialogProps {
   title?: string;
 }
 
+const JSON_URL_REGEX = /https?:\/\/[^\s"]+/g;
+
 // Helper function to reconstruct a basic NostrEvent from ParsedVideoData
 function reconstructEvent(video: ParsedVideoData): Partial<NostrEvent> {
+  const tags: string[][] = [];
+
+  // Add d tag (required for addressable events)
+  if (video.vineId) {
+    tags.push(['d', video.vineId]);
+  }
+
+  // Add title
+  if (video.title) {
+    tags.push(['title', video.title]);
+  }
+
+  // Add video URL
+  if (video.videoUrl) {
+    tags.push(['url', video.videoUrl]);
+  }
+
+  // Add thumbnail
+  if (video.thumbnailUrl) {
+    tags.push(['thumb', video.thumbnailUrl]);
+  }
+
+  // Add duration
+  if (video.duration) {
+    tags.push(['duration', video.duration.toString()]);
+  }
+
+  // Add hashtags
+  for (const tag of video.hashtags) {
+    tags.push(['t', tag]);
+  }
+
+  // Add origin platform if vine
+  if (video.isVineMigrated) {
+    tags.push(['platform', 'vine']);
+  }
+
+  // Add loop count if available (vine stat)
+  if (video.loopCount && video.loopCount > 0) {
+    tags.push(['loops', video.loopCount.toString()]);
+  }
+
   return {
     id: video.id,
     pubkey: video.pubkey,
     created_at: video.createdAt,
     kind: video.kind,
     content: video.content,
-    tags: [
-      // Reconstruct basic tags that we know about
-      ...(video.hashtags.map(tag => ['t', tag])),
-      ...(video.title ? [['title', video.title]] : []),
-      ...(video.videoUrl ? [['url', video.videoUrl]] : []),
-      ...(video.thumbnailUrl ? [['thumb', video.thumbnailUrl]] : []),
-      ...(video.duration ? [['duration', video.duration.toString()]] : []),
-    ],
+    tags,
     // Note: sig field is not available in parsed data
   };
+}
+
+// Fetch full event from Funnelcake API
+async function fetchFullEvent(eventId: string): Promise<NostrEvent | null> {
+  try {
+    const response = await fetch(`${API_CONFIG.funnelcake.baseUrl}/api/event/${eventId}`);
+    if (!response.ok) {
+      console.error('Failed to fetch event:', response.status);
+      return null;
+    }
+    const data = await response.json();
+    return data as NostrEvent;
+  } catch (err) {
+    console.error('Failed to fetch event:', err);
+    return null;
+  }
+}
+
+function renderJsonWithLinks(json: string): ReactNode[] {
+  const parts: ReactNode[] = [];
+  let lastIndex = 0;
+
+  for (const match of json.matchAll(JSON_URL_REGEX)) {
+    const url = match[0];
+    const index = match.index ?? 0;
+
+    if (index > lastIndex) {
+      parts.push(json.slice(lastIndex, index));
+    }
+
+    parts.push(
+      <a
+        key={`json-url-${index}`}
+        href={url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-brand-dark-green underline underline-offset-2 decoration-brand-green/60 hover:text-brand-green dark:text-brand-light-green dark:decoration-brand-light-green/70"
+      >
+        {url}
+      </a>,
+    );
+
+    lastIndex = index + url.length;
+  }
+
+  if (lastIndex < json.length) {
+    parts.push(json.slice(lastIndex));
+  }
+
+  return parts.length > 0 ? parts : [json];
 }
 
 export function ViewSourceDialog({
@@ -47,19 +136,48 @@ export function ViewSourceDialog({
   onClose,
   event,
   video,
-  title = 'Event Source',
+  title,
 }: ViewSourceDialogProps) {
+  const { t } = useTranslation();
+  const resolvedTitle = title ?? t('viewSourceDialog.title');
   const [copied, setCopied] = useState(false);
+  const [fetchedEvent, setFetchedEvent] = useState<NostrEvent | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [fetchError, setFetchError] = useState(false);
 
-  // Use provided event, or originalEvent from video data, or reconstruct from video data
-  const displayEvent = event || video?.originalEvent || (video ? reconstructEvent(video) : null);
-  const isReconstructed = !event && !video?.originalEvent && !!video;
+  // Fetch full event when dialog opens and we don't have original
+  useEffect(() => {
+    if (open && !event && !video?.originalEvent && video?.id) {
+      setLoading(true);
+      setFetchError(false);
+      fetchFullEvent(video.id)
+        .then(result => {
+          setFetchedEvent(result);
+          setFetchError(!result);
+        })
+        .finally(() => setLoading(false));
+    }
+  }, [open, event, video?.originalEvent, video?.id]);
+
+  // Reset state when dialog closes
+  useEffect(() => {
+    if (!open) {
+      setFetchedEvent(null);
+      setFetchError(false);
+    }
+  }, [open]);
+
+  // Use provided event, or fetched event, or originalEvent from video data, or reconstruct
+  const displayEvent = event || fetchedEvent || video?.originalEvent || (video ? reconstructEvent(video) : null);
+  const isReconstructed = !event && !fetchedEvent && !video?.originalEvent && !!video;
+  const hasFullEvent = !!event || !!fetchedEvent || !!video?.originalEvent;
 
   if (!displayEvent) {
     return null;
   }
 
   const eventJson = JSON.stringify(displayEvent, null, 2);
+  const renderedEventJson = renderJsonWithLinks(eventJson);
 
   const handleCopy = async () => {
     try {
@@ -77,48 +195,72 @@ export function ViewSourceDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Code className="h-5 w-5" />
-            {title}
+            {resolvedTitle}
           </DialogTitle>
           <DialogDescription>
-            Raw Nostr event JSON (NIP-01 format)
+            {t('viewSourceDialog.description')}
           </DialogDescription>
         </DialogHeader>
 
-        {isReconstructed && (
-          <div className="bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-900/50 rounded-lg p-3 flex items-start gap-2">
-            <AlertCircle className="h-4 w-4 text-yellow-600 dark:text-yellow-400 shrink-0 mt-0.5" />
-            <p className="text-sm text-yellow-900 dark:text-yellow-200">
-              <strong>Note:</strong> This is a reconstructed representation from parsed data. The original event signature and some tags may not be included.
+        {loading && (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            <span className="ml-2 text-sm text-muted-foreground">{t('viewSourceDialog.loading')}</span>
+          </div>
+        )}
+
+        {!loading && isReconstructed && (
+          <div className="bg-brand-yellow-light border border-brand-yellow rounded-lg p-3 flex items-start gap-2 dark:bg-brand-yellow-dark">
+            <AlertCircle className="h-4 w-4 text-brand-yellow-dark dark:text-brand-yellow shrink-0 mt-0.5" />
+            <p className="text-sm text-brand-yellow-dark dark:text-brand-yellow-light">
+              <strong>{t('viewSourceDialog.noteLabel')}</strong> {fetchError
+                ? t('viewSourceDialog.noteFetchError')
+                : t('viewSourceDialog.noteReconstructed')}
             </p>
           </div>
         )}
 
-        <div className="flex-1 overflow-auto">
-          <pre className="bg-muted/50 rounded-lg p-4 text-xs overflow-x-auto">
-            <code className="font-mono text-foreground">{eventJson}</code>
-          </pre>
-        </div>
+        {!loading && hasFullEvent && (
+          <div className="bg-brand-light-green border border-brand-green rounded-lg p-3 flex items-start gap-2 dark:bg-brand-dark-green">
+            <Check className="h-4 w-4 text-brand-dark-green dark:text-brand-green shrink-0 mt-0.5" />
+            <p className="text-sm text-brand-dark-green dark:text-brand-light-green">
+              <strong>{t('viewSourceDialog.verifiedLabel')}</strong> {t('viewSourceDialog.verifiedBody')}
+            </p>
+          </div>
+        )}
+
+        {!loading && (
+          <div className="flex-1 overflow-auto">
+            <pre
+              aria-label={t('viewSourceDialog.jsonAriaLabel')}
+              className="bg-brand-light-green rounded-lg p-4 text-xs overflow-x-auto font-mono text-foreground select-text cursor-text dark:bg-brand-dark-green"
+              style={{ userSelect: 'text', WebkitUserSelect: 'text' }}
+            >
+              {renderedEventJson}
+            </pre>
+          </div>
+        )}
 
         <div className="flex justify-between items-center pt-4 border-t">
           <div className="text-xs text-muted-foreground">
-            Event ID: <code className="bg-muted px-1 py-0.5 rounded">{displayEvent.id}</code>
+            {t('viewSourceDialog.eventIdLabel')} <code className="bg-muted px-1 py-0.5 rounded">{displayEvent.id}</code>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={handleCopy}>
+            <Button variant="outline" size="sm" onClick={handleCopy} disabled={loading}>
               {copied ? (
                 <>
                   <Check className="h-4 w-4 mr-2" />
-                  Copied!
+                  {t('viewSourceDialog.copied')}
                 </>
               ) : (
                 <>
                   <Copy className="h-4 w-4 mr-2" />
-                  Copy JSON
+                  {t('viewSourceDialog.copyJson')}
                 </>
               )}
             </Button>
             <Button variant="default" size="sm" onClick={onClose}>
-              Close
+              {t('viewSourceDialog.close')}
             </Button>
           </div>
         </div>

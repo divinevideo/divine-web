@@ -1,15 +1,19 @@
 // ABOUTME: Infinite scroll search hook for video events
-// ABOUTME: Supports NIP-50 full-text search with cursor-based pagination
+// ABOUTME: Uses Funnelcake REST API for fast search, falls back to NIP-50 WebSocket
 
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { useNostr } from '@nostrify/react';
-import { useNIP50Support } from '@/hooks/useRelayCapabilities';
-import { useMemo } from 'react';
-import type { NostrEvent } from '@nostrify/nostrify';
+import { useState, useEffect } from 'react';
 import { VIDEO_KINDS, type ParsedVideoData } from '@/types/video';
 import type { NIP50Filter, SortMode } from '@/types/nostr';
 import { parseVideoEvents } from '@/lib/videoParser';
+import { searchVideos } from '@/lib/funnelcakeClient';
+import { API_CONFIG } from '@/config/api';
+import { isFunnelcakeAvailable } from '@/lib/funnelcakeHealth';
 import { debugLog } from '@/lib/debug';
+import { transformToVideoPage } from '@/lib/funnelcakeTransform';
+import { reportFunnelcakeFallback } from '@/lib/funnelcakeFallbackReporting';
+import { isUrlLikeQuery } from '@/lib/searchUtils';
 
 interface UseInfiniteSearchVideosOptions {
   query: string;
@@ -23,9 +27,38 @@ interface VideoPage {
   nextCursor: number | undefined;
 }
 
-/**
- * Parse search query to determine type
- */
+function useDebouncedValue(value: string, delay: number): string {
+  const [debounced, setDebounced] = useState(value);
+
+  useEffect(() => {
+    if (delay <= 0) {
+      setDebounced(value);
+      return;
+    }
+
+    const timer = setTimeout(() => setDebounced(value), delay);
+    return () => clearTimeout(timer);
+  }, [value, delay]);
+
+  return debounced;
+}
+
+function mapSearchSortModeToFunnelcakeSort(sortMode: SortMode | 'relevance') {
+  switch (sortMode) {
+    case 'top':
+      return 'loops' as const;
+    case 'rising':
+    case 'controversial':
+      return 'engagement' as const;
+    case 'classic':
+      return 'loops' as const;
+    case 'hot':
+    case 'relevance':
+    default:
+      return 'trending' as const;
+  }
+}
+
 function parseSearchQuery(query: string, searchType: 'content' | 'author' | 'auto') {
   const trimmedQuery = query.trim();
 
@@ -40,7 +73,6 @@ function parseSearchQuery(query: string, searchType: 'content' | 'author' | 'aut
     return { type: 'content', value: trimmedQuery };
   }
 
-  // Auto detection
   if (trimmedQuery.startsWith('#')) {
     return { type: 'hashtag', value: trimmedQuery.slice(1).toLowerCase() };
   }
@@ -48,192 +80,227 @@ function parseSearchQuery(query: string, searchType: 'content' | 'author' | 'aut
   return { type: 'content', value: trimmedQuery };
 }
 
-/**
- * Infinite scroll search hook
- * Uses NIP-50 full-text search with cursor-based pagination
- */
 export function useInfiniteSearchVideos({
   query,
   searchType = 'auto',
   sortMode = 'relevance',
-  pageSize = 20
+  pageSize = 12,
 }: UseInfiniteSearchVideosOptions) {
   const { nostr } = useNostr();
-  const supportsNIP50 = useNIP50Support();
+  const apiUrl = API_CONFIG.funnelcake.baseUrl;
 
-  // Debounce query
   const isTest = process.env.NODE_ENV === 'test';
-  const debounceDelay = isTest ? 0 : 300;
-
-  const debouncedQuery = useMemo(() => {
-    let timeoutId: NodeJS.Timeout;
-    return new Promise<string>((resolve) => {
-      clearTimeout(timeoutId);
-      timeoutId = setTimeout(() => resolve(query), debounceDelay);
-    });
-  }, [query, debounceDelay]);
+  const debounceMs = isTest ? 0 : 300;
+  const debouncedQuery = useDebouncedValue(query, debounceMs);
 
   return useInfiniteQuery<VideoPage, Error>({
-    queryKey: ['infinite-search-videos', query, searchType, sortMode, pageSize],
+    queryKey: ['infinite-search-videos', debouncedQuery, searchType, sortMode, pageSize],
     queryFn: async ({ pageParam, signal }) => {
-      // Wait for debounced query
-      const actualQuery = await debouncedQuery;
-
-      if (!actualQuery.trim()) {
+      if (!debouncedQuery.trim()) {
         return { videos: [], nextCursor: undefined };
       }
 
+      // Skip URL-like queries that cause Funnelcake 500 errors (#166)
+      if (isUrlLikeQuery(debouncedQuery)) {
+        return { videos: [], nextCursor: undefined };
+      }
+
+      const requestStartedAt = performance.now();
       const cursor = pageParam as number | undefined;
-      const searchParams = parseSearchQuery(actualQuery, searchType);
+      const searchParams = parseSearchQuery(debouncedQuery, searchType);
+      const requestContext = {
+        query: debouncedQuery,
+        parsedType: searchParams.type,
+        parsedValue: searchParams.value,
+        searchType,
+        sortMode,
+        cursor: cursor ?? null,
+        pageSize,
+      };
+
+      console.info('[search/videos] starting', {
+        ...requestContext,
+        debounceMs,
+      });
 
       const abortSignal = AbortSignal.any([
         signal,
-        AbortSignal.timeout(8000)
+        AbortSignal.timeout(8000),
       ]);
 
-      let filter: NIP50Filter;
+      if (isFunnelcakeAvailable(apiUrl)) {
+        try {
+          const funnelcakeSort = mapSearchSortModeToFunnelcakeSort(sortMode);
 
-      if (searchParams.type === 'hashtag') {
-        // Hashtag search with NIP-50 sorting (if supported)
-        filter = {
-          kinds: VIDEO_KINDS,
-          '#t': [searchParams.value],
-          limit: pageSize
-        };
+          if (searchParams.type === 'hashtag' || searchParams.type === 'content') {
+            const apiStartedAt = performance.now();
+            const result = await searchVideos(apiUrl, {
+              query: searchParams.type === 'content' ? searchParams.value : undefined,
+              tag: searchParams.type === 'hashtag' ? searchParams.value : undefined,
+              sort: funnelcakeSort,
+              limit: pageSize,
+              offset: cursor,
+              classic: sortMode === 'classic' ? true : undefined,
+              platform: sortMode === 'classic' ? 'vine' : undefined,
+              signal: abortSignal,
+            });
+            const page = transformToVideoPage(result, 'offset');
+            const apiCompletedAt = performance.now();
+            const nextCursor = page.offset ?? page.nextCursor;
 
-        // Add sort mode for NIP-50 relays (only if not relevance)
-        if (supportsNIP50 && sortMode !== 'relevance') {
-          filter.search = `sort:${sortMode}`;
-        }
+            console.info('[search/videos] funnelcake query complete', {
+              ...requestContext,
+              mode: 'funnelcake',
+              apiMs: Math.round(apiCompletedAt - apiStartedAt),
+              totalMs: Math.round(apiCompletedAt - requestStartedAt),
+              returnedVideoCount: page.videos.length,
+              hasMore: result.has_more,
+              nextCursor: nextCursor ?? null,
+            });
 
-        if (cursor) {
-          filter.until = cursor;
-        }
+            return {
+              videos: page.videos,
+              nextCursor,
+            };
+          }
 
-        const events = await nostr.query([filter], { signal: abortSignal });
-        const videos = parseVideoEvents(events);
+          if (searchParams.type === 'author') {
+            const { searchProfiles } = await import('@/lib/funnelcakeClient');
+            const profiles = await searchProfiles(apiUrl, {
+              query: searchParams.value,
+              limit: 10,
+              sortBy: 'relevance',
+              hasVideos: true,
+              signal: abortSignal,
+            });
+            const pubkeys = profiles.map(profile => profile.pubkey);
 
-        return {
-          videos,
-          nextCursor: videos.length > 0 ? videos[videos.length - 1].createdAt - 1 : undefined
-        };
-      }
-
-      if (searchParams.type === 'author') {
-        // Author search - find matching users first, then their videos
-        const userFilter: NIP50Filter = {
-          kinds: [0],
-          search: searchParams.value,
-          limit: 20
-        };
-
-        const userEvents = await nostr.query([userFilter], { signal: abortSignal });
-
-        const matchingPubkeys = userEvents
-          .filter(event => {
-            try {
-              const metadata = JSON.parse(event.content);
-              const searchValue = searchParams.value.toLowerCase();
-              return (
-                metadata.name?.toLowerCase().includes(searchValue) ||
-                metadata.display_name?.toLowerCase().includes(searchValue) ||
-                metadata.nip05?.toLowerCase().includes(searchValue) ||
-                metadata.about?.toLowerCase().includes(searchValue)
-              );
-            } catch {
-              return false;
+            if (pubkeys.length === 0) {
+              return { videos: [], nextCursor: undefined };
             }
-          })
-          .map(event => event.pubkey);
 
-        if (matchingPubkeys.length === 0) {
-          return { videos: [], nextCursor: undefined };
+            const filter: NIP50Filter = {
+              kinds: VIDEO_KINDS,
+              authors: pubkeys,
+              limit: pageSize,
+            };
+            if (cursor) {
+              filter.until = cursor;
+            }
+
+            const relayStartedAt = performance.now();
+            const events = await nostr.query([filter], { signal: abortSignal });
+            const videos = parseVideoEvents(events);
+            const relayCompletedAt = performance.now();
+
+            console.info('[search/videos] author query complete', {
+              ...requestContext,
+              relayMs: Math.round(relayCompletedAt - relayStartedAt),
+              totalMs: Math.round(relayCompletedAt - requestStartedAt),
+              matchingAuthorCount: pubkeys.length,
+              eventCount: events.length,
+              videoCount: videos.length,
+            });
+
+            return {
+              videos,
+              nextCursor: videos.length > 0 ? videos[videos.length - 1].createdAt - 1 : undefined,
+            };
+          }
+        } catch (error) {
+          console.warn('[search/videos] funnelcake query failed, falling back to relay search', {
+            ...requestContext,
+            error,
+            totalMs: Math.round(performance.now() - requestStartedAt),
+          });
+          debugLog('[useInfiniteSearchVideos] Funnelcake search failed, falling back to NIP-50:', error);
+          reportFunnelcakeFallback({
+            source: 'useInfiniteSearchVideos',
+            apiUrl,
+            reason: error instanceof Error ? error.message : String(error),
+            dedupeKey: `useInfiniteSearchVideos:${searchParams.type}:${debouncedQuery}`,
+            context: {
+              query: debouncedQuery,
+              searchType: searchParams.type,
+            },
+          });
         }
-
-        filter = {
-          kinds: VIDEO_KINDS,
-          authors: matchingPubkeys,
-          limit: pageSize
-        };
-
-        if (cursor) {
-          filter.until = cursor;
-        }
-
-        const videoEvents = await nostr.query([filter], { signal: abortSignal });
-        const videos = parseVideoEvents(videoEvents);
-
-        return {
-          videos,
-          nextCursor: videos.length > 0 ? videos[videos.length - 1].createdAt - 1 : undefined
-        };
+      } else {
+        console.warn('[search/videos] funnelcake unavailable, falling back to relay search', {
+          ...requestContext,
+          totalMs: Math.round(performance.now() - requestStartedAt),
+        });
+        reportFunnelcakeFallback({
+          source: 'useInfiniteSearchVideos',
+          apiUrl,
+          reason: 'Funnelcake unavailable or circuit breaker open',
+          dedupeKey: `useInfiniteSearchVideos:${searchParams.type}:${debouncedQuery}:unavailable`,
+          context: {
+            query: debouncedQuery,
+            searchType: searchParams.type,
+          },
+        });
       }
 
-      // Content search with NIP-50 full-text (if supported)
-      filter = {
+      const filter: NIP50Filter = {
         kinds: VIDEO_KINDS,
-        limit: pageSize
+        limit: pageSize,
       };
 
       if (cursor) {
         filter.until = cursor;
       }
 
-      // Use NIP-50 search if supported, otherwise fallback to client-side
-      if (supportsNIP50) {
-        // For relevance (default), just use the search term
-        // For other sort modes, prepend the sort directive
-        if (sortMode === 'relevance') {
-          filter.search = searchParams.value;
-        } else {
-          filter.search = `sort:${sortMode} ${searchParams.value}`;
-        }
+      if (searchParams.type === 'hashtag') {
+        filter['#t'] = [searchParams.value];
 
-        try {
-          const events = await nostr.query([filter], { signal: abortSignal });
-          const videos = parseVideoEvents(events);
+        const relayStartedAt = performance.now();
+        const events = await nostr.query([filter], { signal: abortSignal });
+        const videos = parseVideoEvents(events);
+        const relayCompletedAt = performance.now();
 
-          return {
-            videos,
-            nextCursor: videos.length > 0 ? videos[videos.length - 1].createdAt - 1 : undefined
-          };
-        } catch (error) {
-          debugLog('[useInfiniteSearchVideos] NIP-50 query failed:', error);
-          // Fall through to client-side fallback
-        }
+        console.info('[search/videos] hashtag query complete', {
+          ...requestContext,
+          mode: 'nip50',
+          relayMs: Math.round(relayCompletedAt - relayStartedAt),
+          totalMs: Math.round(relayCompletedAt - requestStartedAt),
+          eventCount: events.length,
+          videoCount: videos.length,
+        });
+
+        return {
+          videos,
+          nextCursor: videos.length > 0 ? videos[videos.length - 1].createdAt - 1 : undefined,
+        };
       }
 
-      // Fallback for relays without NIP-50 or if NIP-50 query failed
-      debugLog('[useInfiniteSearchVideos] Using client-side search fallback');
+      filter.search = sortMode === 'relevance'
+        ? searchParams.value
+        : `sort:${sortMode} ${searchParams.value}`;
 
-      const fallbackFilter = {
-        kinds: VIDEO_KINDS,
-        limit: pageSize
-      };
+      const relayStartedAt = performance.now();
+      const events = await nostr.query([filter], { signal: abortSignal });
+      const videos = parseVideoEvents(events);
+      const relayCompletedAt = performance.now();
 
-      if (cursor) {
-        (fallbackFilter as typeof fallbackFilter & { until: number }).until = cursor;
-      }
-
-      const events = await nostr.query([fallbackFilter], { signal: abortSignal });
-
-      // Client-side filtering
-      const searchValue = searchParams.value.toLowerCase();
-      const filtered = events.filter(event =>
-        event.content.toLowerCase().includes(searchValue)
-      );
-
-      const videos = parseVideoEvents(filtered);
+      console.info('[search/videos] relay query complete', {
+        ...requestContext,
+        mode: 'nip50',
+        relayMs: Math.round(relayCompletedAt - relayStartedAt),
+        totalMs: Math.round(relayCompletedAt - requestStartedAt),
+        eventCount: events.length,
+        videoCount: videos.length,
+      });
 
       return {
         videos,
-        nextCursor: videos.length > 0 ? videos[videos.length - 1].createdAt - 1 : undefined
+        nextCursor: videos.length > 0 ? videos[videos.length - 1].createdAt - 1 : undefined,
       };
     },
-    getNextPageParam: (lastPage) => lastPage.nextCursor,
+    getNextPageParam: lastPage => lastPage.nextCursor,
     initialPageParam: undefined,
-    enabled: !!query.trim() && !!nostr,
-    staleTime: 30000, // 30 seconds
-    gcTime: 300000, // 5 minutes
+    enabled: !!debouncedQuery.trim() && !!nostr,
+    staleTime: 60_000,
+    gcTime: 300_000,
   });
 }

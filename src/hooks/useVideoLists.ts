@@ -6,7 +6,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useNostrPublish } from '@/hooks/useNostrPublish';
 import type { NostrEvent, NostrFilter } from '@nostrify/nostrify';
-import { VIDEO_KIND } from '@/types/video';
+import { SHORT_VIDEO_KIND } from '@/types/video';
 
 export type PlayOrder = 'chronological' | 'reverse' | 'manual' | 'shuffle';
 
@@ -39,7 +39,7 @@ function parseVideoList(event: NostrEvent): VideoList | null {
 
   // Extract video coordinates from 'a' tags
   const videoCoordinates = event.tags
-    .filter(tag => tag[0] === 'a' && tag[1]?.startsWith(`${VIDEO_KIND}:`))
+    .filter(tag => tag[0] === 'a' && tag[1]?.startsWith(`${SHORT_VIDEO_KIND}:`))
     .map(tag => tag[1]);
 
   // Extract categorization tags (t tags)
@@ -156,7 +156,7 @@ export function useVideosInLists(videoId?: string) {
       // Query for lists that contain this video
       const events = await nostr.query([{
         kinds: [30005], // Video sets
-        '#a': [`${VIDEO_KIND}:*:${videoId}`], // Search for any author with this d-tag
+        '#a': [`${SHORT_VIDEO_KIND}:*:${videoId}`], // Search for any author with this d-tag
         limit: 100
       }], { signal });
 
@@ -177,7 +177,7 @@ export function useVideosInLists(videoId?: string) {
  * Hook to create or update a video list
  */
 export function useCreateVideoList() {
-  const { mutate: publishEvent } = useNostrPublish();
+  const { mutateAsync: publishEvent } = useNostrPublish();
   const queryClient = useQueryClient();
   const { user } = useCurrentUser();
 
@@ -257,9 +257,38 @@ export function useCreateVideoList() {
         content: '', // Empty for public lists
         tags
       });
+
+      // Return the created list data for optimistic update
+      return {
+        id,
+        name,
+        description,
+        image,
+        pubkey: user.pubkey,
+        createdAt: Math.floor(Date.now() / 1000),
+        videoCoordinates,
+        public: true,
+        tags: listTags,
+        isCollaborative,
+        allowedCollaborators,
+        thumbnailEventId,
+        playOrder: playOrder || 'chronological'
+      } as VideoList;
     },
-    onSuccess: () => {
-      // Invalidate video lists queries
+    onSuccess: (newList) => {
+      // Optimistically add the new list to the cache immediately
+      // This ensures the UI updates even if the gateway cache is stale
+      if (newList && user) {
+        queryClient.setQueryData<VideoList[]>(
+          ['video-lists', user.pubkey],
+          (oldLists) => {
+            if (!oldLists) return [newList];
+            // Add new list at the beginning (most recent first)
+            return [newList, ...oldLists.filter(l => l.id !== newList.id)];
+          }
+        );
+      }
+      // Also invalidate to eventually get fresh data from server
       queryClient.invalidateQueries({ queryKey: ['video-lists'] });
     }
   });
@@ -475,6 +504,83 @@ export function useTrendingVideoLists() {
 
       return lists;
     },
+    staleTime: 300000, // 5 minutes
+    gcTime: 600000, // 10 minutes
+  });
+}
+
+/**
+ * Hook to delete a video list (publishes deletion event)
+ */
+export function useDeleteVideoList() {
+  const { mutateAsync: publishEvent } = useNostrPublish();
+  const queryClient = useQueryClient();
+  const { user } = useCurrentUser();
+
+  return useMutation({
+    mutationFn: async ({ listId }: { listId: string }) => {
+      if (!user) throw new Error('Must be logged in to delete lists');
+
+      // Publish a kind 5 deletion event targeting the list
+      // The 'a' tag references the addressable event to delete
+      await publishEvent({
+        kind: 5, // NIP-09 deletion event
+        content: 'List deleted by owner',
+        tags: [
+          ['a', `30005:${user.pubkey}:${listId}`],
+        ]
+      });
+
+      return { listId };
+    },
+    onSuccess: ({ listId }) => {
+      // Remove from cache immediately
+      if (user) {
+        queryClient.setQueryData<VideoList[]>(
+          ['video-lists', user.pubkey],
+          (oldLists) => oldLists?.filter(l => l.id !== listId) || []
+        );
+      }
+      queryClient.invalidateQueries({ queryKey: ['video-lists'] });
+      queryClient.invalidateQueries({ queryKey: ['trending-video-lists'] });
+      queryClient.invalidateQueries({ queryKey: ['followed-users-lists'] });
+    }
+  });
+}
+
+/**
+ * Hook to fetch lists from users the current user follows
+ */
+export function useFollowedUsersLists(followedPubkeys: string[] | undefined) {
+  const { nostr } = useNostr();
+
+  return useQuery({
+    queryKey: ['followed-users-lists', followedPubkeys?.slice(0, 50)],
+    queryFn: async (context) => {
+      if (!followedPubkeys || followedPubkeys.length === 0) return [];
+
+      const signal = AbortSignal.any([
+        context.signal,
+        AbortSignal.timeout(8000)
+      ]);
+
+      // Query lists from followed users (limit to first 50 to avoid huge queries)
+      const pubkeysToQuery = followedPubkeys.slice(0, 50);
+
+      const events = await nostr.query([{
+        kinds: [30005],
+        authors: pubkeysToQuery,
+        limit: 100
+      }], { signal });
+
+      const lists = events
+        .map(parseVideoList)
+        .filter((list): list is VideoList => list !== null && list.videoCoordinates.length > 0)
+        .sort((a, b) => b.createdAt - a.createdAt);
+
+      return lists;
+    },
+    enabled: !!followedPubkeys && followedPubkeys.length > 0,
     staleTime: 300000, // 5 minutes
     gcTime: 600000, // 10 minutes
   });

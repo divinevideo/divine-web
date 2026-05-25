@@ -1,186 +1,118 @@
-import { Link } from 'react-router-dom';
-import { MailerLiteSignupFooter } from './MailerLiteSignupFooter';
+import { SmartLink } from '@/components/SmartLink';
+import { useTranslation } from 'react-i18next';
+import { SocialLinks } from '@/components/SocialLinks';
+import { HubSpotSignup } from './HubSpotSignup';
 
 export function AppFooter() {
+  const { t } = useTranslation();
+
   return (
-    <footer className="mt-auto border-t border-primary/10 py-6 pb-[calc(1.5rem+4rem+env(safe-area-inset-bottom))] md:pb-6 bg-muted/30">
+    <footer className="mt-auto border-t border-brand-dark-green py-6 pb-[calc(1.5rem+4rem+env(safe-area-inset-bottom))] md:pb-6 bg-brand-dark-green">
       <div className="container">
         <div className="max-w-5xl mx-auto">
           {/* Main Footer Content - Side by side on desktop */}
           <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6 mb-6">
             {/* Left side - Email signup */}
-            <div className="flex flex-col gap-4 lg:max-w-md">
-              <div className="text-sm font-medium text-foreground">Stay Updated</div>
-              <MailerLiteSignupFooter />
+            <div className="flex flex-col gap-2 lg:max-w-md">
+              <div className="text-sm font-semibold text-brand-green">Divine Inspiration</div>
+              <p className="text-sm text-brand-off-white mb-2">
+                The Divine beta is currently full. If you'd like to hear our news and be among the first to hear when the Divine app goes live, sign up here.
+              </p>
+              <HubSpotSignup />
             </div>
 
             {/* Right side - Navigation Links */}
-            <div className="flex flex-col gap-3 text-xs text-muted-foreground">
+            <div className="flex flex-col gap-3 text-xs text-white">
               {/* Featured Links */}
               <div className="flex flex-wrap items-center gap-3 text-sm">
-                <Link
+                <SmartLink
                   to="/human-created"
-                  className="font-semibold text-primary hover:text-primary/80 transition-colors"
+                  className="font-semibold text-brand-green hover:text-brand-light-green transition-colors"
                 >
                   Made with Love
-                </Link>
-                <span className="text-muted-foreground">•</span>
-                <Link
+                </SmartLink>
+                <span className="text-brand-light-green">•</span>
+                <SmartLink
                   to="/proofmode"
-                  className="font-semibold text-primary hover:text-primary/80 transition-colors"
+                  className="font-semibold text-brand-green hover:text-brand-light-green transition-colors"
                 >
                   No AI Slop
-                </Link>
+                </SmartLink>
               </div>
 
               {/* Navigation Links */}
               <div className="flex flex-wrap items-center gap-2">
-                <Link to="/about" className="hover:text-foreground transition-colors">
+                <a href="https://about.divine.video/" className="hover:text-brand-off-white transition-colors">
                   About
-                </Link>
+                </a>
                 <span>•</span>
-                <Link to="/faq" className="hover:text-foreground transition-colors">
+                <a href="https://about.divine.video/faqs/" className="hover:text-brand-off-white transition-colors">
                   FAQ
-                </Link>
+                </a>
                 <span>•</span>
-                <Link to="/authenticity" className="hover:text-foreground transition-colors">
+                <SmartLink to="/authenticity" className="hover:text-brand-off-white transition-colors">
                   Our Mission
-                </Link>
+                </SmartLink>
                 <span>•</span>
-                <Link to="/news" className="hover:text-foreground transition-colors">
+                <a href="https://about.divine.video/news/" className="hover:text-brand-off-white transition-colors">
                   News
-                </Link>
+                </a>
                 <span>•</span>
-                <Link to="/media-resources" className="hover:text-foreground transition-colors">
+                <a href="https://about.divine.video/media-resources/" className="hover:text-brand-off-white transition-colors">
                   Media Resources
-                </Link>
+                </a>
+                <span>•</span>
+                <a href="https://about.divine.video/blog/" className="hover:text-brand-off-white transition-colors">
+                  Blog
+                </a>
+                <span>•</span>
+                <SmartLink to="/merch" className="hover:text-brand-off-white transition-colors">
+                  {t('menu.merch')}
+                </SmartLink>
               </div>
               <div className="flex flex-wrap items-center gap-2">
-                <Link to="/support" className="hover:text-foreground transition-colors">
+                <SmartLink to="/support" className="hover:text-brand-off-white transition-colors">
                   Help
-                </Link>
+                </SmartLink>
                 <span>•</span>
-                <Link to="/privacy" className="hover:text-foreground transition-colors">
+                <SmartLink to="/terms" className="hover:text-brand-off-white transition-colors">
+                  Terms of Service
+                </SmartLink>
+                <span>•</span>
+                <SmartLink to="/privacy" className="hover:text-brand-off-white transition-colors">
                   Privacy
-                </Link>
+                </SmartLink>
                 <span>•</span>
-                <Link to="/terms" className="hover:text-foreground transition-colors">
-                  EULA/T&C
-                </Link>
-                <span>•</span>
-                <Link to="/safety" className="hover:text-foreground transition-colors">
+                <SmartLink to="/safety" className="hover:text-brand-off-white transition-colors">
                   Safety
-                </Link>
+                </SmartLink>
                 <span>•</span>
-                <Link to="/open-source" className="hover:text-foreground transition-colors">
+                <SmartLink to="/dmca" className="hover:text-brand-off-white transition-colors">
+                  DMCA & Copyright
+                </SmartLink>
+                <span>•</span>
+                <SmartLink to="/open-source" className="hover:text-brand-off-white transition-colors">
                   Open Source
-                </Link>
+                </SmartLink>
                 <span>•</span>
                 <a
                   href="https://opencollective.com/aos-collective/contribute/divine-keepers-95646"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="hover:text-foreground transition-colors"
+                  className="hover:text-brand-off-white transition-colors"
                 >
                   Donate
                 </a>
               </div>
 
               {/* Social Media Icons */}
-              <div className="flex items-center gap-3 mt-1" aria-label="Social media links">
-                <a
-                  href="https://www.instagram.com/divinevideoapp"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label="Follow us on Instagram"
-                  className="opacity-60 hover:opacity-100 transition-opacity"
-                >
-                  <img
-                    src="/social-icons/instagram.svg"
-                    alt="Instagram"
-                    className="w-5 h-5 dark:invert"
-                  />
-                </a>
-                <a
-                  href="https://www.reddit.com/r/divinevideo/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label="Follow us on Reddit"
-                  className="opacity-60 hover:opacity-100 transition-opacity"
-                >
-                  <img
-                    src="/social-icons/reddit.svg"
-                    alt="Reddit"
-                    className="w-5 h-5 dark:invert"
-                  />
-                </a>
-                <a
-                  href="https://discord.gg/sHb4HMSF"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label="Join us on Discord"
-                  className="opacity-60 hover:opacity-100 transition-opacity"
-                >
-                  <img
-                    src="/social-icons/discord.svg"
-                    alt="Discord"
-                    className="w-5 h-5 dark:invert"
-                  />
-                </a>
-                <a
-                  href="https://twitter.com/divinevideoapp"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label="Follow us on Twitter"
-                  className="opacity-60 hover:opacity-100 transition-opacity"
-                >
-                  <img
-                    src="/social-icons/twitter.svg"
-                    alt="Twitter"
-                    className="w-5 h-5 dark:invert"
-                  />
-                </a>
-                <a
-                  href="https://bsky.app/profile/divine.video"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label="Follow us on Bluesky"
-                  className="opacity-60 hover:opacity-100 transition-opacity"
-                >
-                  <img
-                    src="/social-icons/bluesky.svg"
-                    alt="Bluesky"
-                    className="w-5 h-5 dark:invert"
-                  />
-                </a>
-                <a
-                  href="https://www.tiktok.com/@divine.video"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label="Follow us on TikTok"
-                  className="opacity-60 hover:opacity-100 transition-opacity"
-                >
-                  <img
-                    src="/social-icons/tiktok.svg"
-                    alt="TikTok"
-                    className="w-5 h-5 dark:invert"
-                  />
-                </a>
-                <a
-                  href="https://github.com/divinevideo"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label="Follow us on GitHub"
-                  className="opacity-60 hover:opacity-100 transition-opacity"
-                >
-                  <img
-                    src="/social-icons/github.svg"
-                    alt="GitHub"
-                    className="w-5 h-5 dark:invert"
-                  />
-                </a>
-              </div>
+              <SocialLinks className="mt-1" iconClassName="invert" />
             </div>
+          </div>
+
+          {/* Build Info */}
+          <div className="text-center text-xs text-white font-light pt-4 border-t border-brand-green">
+            Build: {__BUILD_DATE__}
           </div>
         </div>
       </div>
@@ -189,4 +121,3 @@ export function AppFooter() {
 }
 
 export default AppFooter;
-

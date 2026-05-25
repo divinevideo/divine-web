@@ -2,9 +2,10 @@
 // ABOUTME: Mobile-first design with desktop modal, proper aspect ratios, and touch-friendly controls
 
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Camera, Repeat, X } from 'lucide-react';
+import { Camera, Repeat, X } from '@phosphor-icons/react';
 import { useMediaRecorder } from '@/hooks/useMediaRecorder';
 import { useAppContext } from '@/hooks/useAppContext';
 import { cn } from '@/lib/utils';
@@ -15,6 +16,7 @@ interface CameraRecorderProps {
 }
 
 export function CameraRecorder({ onRecordingComplete, onCancel }: CameraRecorderProps) {
+  const { t } = useTranslation();
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isHoldingRecord, setIsHoldingRecord] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
@@ -58,9 +60,9 @@ export function CameraRecorder({ onRecordingComplete, onCancel }: CameraRecorder
   // Initialize camera on mount
   useEffect(() => {
     initialize().catch(error => {
-      setCameraError(error.message || 'Failed to access camera');
+      setCameraError(error.message || t('cameraRecorder.failedAccess'));
     });
-  }, [initialize]);
+  }, [initialize, t]);
 
   // Attach camera stream to video element
   useEffect(() => {
@@ -107,10 +109,10 @@ export function CameraRecorder({ onRecordingComplete, onCancel }: CameraRecorder
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black">
         <div className="text-center p-8">
           <Camera className="h-16 w-16 mb-4 text-muted-foreground mx-auto" />
-          <h2 className="text-xl font-semibold mb-2 text-white">Camera Access Required</h2>
+          <h2 className="text-xl font-semibold mb-2 text-white">{t('cameraRecorder.accessRequired')}</h2>
           <p className="text-center text-white/80 mb-4">{cameraError}</p>
           <Button onClick={onCancel} variant="outline">
-            Go Back
+            {t('cameraRecorder.goBack')}
           </Button>
         </div>
       </div>
@@ -123,7 +125,7 @@ export function CameraRecorder({ onRecordingComplete, onCancel }: CameraRecorder
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black">
         <div className="text-white text-center">
           <Camera className="h-12 w-12 mb-2 animate-pulse mx-auto" />
-          <p>Initializing camera...</p>
+          <p>{t('cameraRecorder.initializing')}</p>
         </div>
       </div>
     );
@@ -160,7 +162,7 @@ export function CameraRecorder({ onRecordingComplete, onCancel }: CameraRecorder
           style={{ top: `calc(1rem + var(--sat))` }}
         >
           <span className="text-white text-sm font-medium tabular-nums">
-            {formatDuration(currentDuration)} / 6.0s
+            {t('cameraRecorder.durationOfMax', { current: formatDuration(currentDuration) })}
           </span>
         </div>
 
@@ -182,7 +184,7 @@ export function CameraRecorder({ onRecordingComplete, onCancel }: CameraRecorder
             style={{ top: `calc(1rem + var(--sat))` }}
           >
             <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
-            <span className="text-white text-sm font-medium">REC</span>
+            <span className="text-white text-sm font-medium">{t('cameraRecorder.rec')}</span>
           </div>
         )}
 
@@ -197,7 +199,7 @@ export function CameraRecorder({ onRecordingComplete, onCancel }: CameraRecorder
                 key={index}
                 className="bg-black/80 text-white text-xs border-white/20"
               >
-                Clip {index + 1}: {formatDuration(segment.duration)}
+                {t('cameraRecorder.clipLabel', { index: index + 1, duration: formatDuration(segment.duration) })}
               </Badge>
             ))}
           </div>
@@ -246,7 +248,7 @@ export function CameraRecorder({ onRecordingComplete, onCancel }: CameraRecorder
                 "w-20 h-20 md:w-16 md:h-16",
                 isHoldingRecord ? "bg-red-500 scale-110 ring-4 ring-red-500/50" : "bg-white/20"
               )}
-              aria-label={isRecording ? "Release to pause" : "Hold to record"}
+              aria-label={isRecording ? t('cameraRecorder.releaseToPause') : t('cameraRecorder.holdToRecord')}
             >
               {/* Ripple effect when recording */}
               {isHoldingRecord && (
@@ -278,14 +280,14 @@ export function CameraRecorder({ onRecordingComplete, onCancel }: CameraRecorder
           <div className="text-center space-y-1">
             <p className="text-white/90 text-sm font-medium">
               {canRecord ? (
-                <>Hold button to record, release to pause</>
+                <>{t('cameraRecorder.instructionsRecord')}</>
               ) : (
-                <>6 second maximum reached</>
+                <>{t('cameraRecorder.maxReached')}</>
               )}
             </p>
             {segments.length > 0 && canRecord && (
               <p className="text-white/60 text-xs">
-                {segments.length} clip{segments.length !== 1 ? 's' : ''} • {formatDuration(remainingDuration)} left
+                {t('cameraRecorder.clipsRemaining', { count: segments.length, remaining: formatDuration(remainingDuration) })}
               </p>
             )}
           </div>
@@ -299,7 +301,7 @@ export function CameraRecorder({ onRecordingComplete, onCancel }: CameraRecorder
               className="w-full mt-3 border-white/20 text-white hover:bg-white/10"
               disabled={isRecording}
             >
-              Start Over
+              {t('cameraRecorder.startOver')}
             </Button>
           )}
         </div>

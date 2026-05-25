@@ -9,7 +9,7 @@
 When users share diVine links on social media platforms (Twitter, Discord, Slack, etc.), all links show the same generic preview:
 - Title: "diVine Web - Short-form Looping Videos on Nostr"
 - Description: "Watch and share 6-second looping videos on the decentralized Nostr network."
-- Image: `/og.png`
+- Image: `/og.avif`
 
 This significantly hurts social sharing because:
 - Video links don't show the actual video thumbnail or title
@@ -70,12 +70,12 @@ useEffect(() => {
       description: currentVideo.content || `Watch this video${authorName ? ` by ${authorName}` : ''} on diVine`,
       ogTitle: currentVideo.title || 'Video on diVine',
       ogDescription: currentVideo.content || 'Watch this video on diVine',
-      ogImage: currentVideo.thumbnailUrl || '/og.png',
+      ogImage: currentVideo.thumbnailUrl || '/og.avif',
       ogType: 'video.other',
       twitterCard: 'summary_large_image',
       twitterTitle: currentVideo.title || 'Video on diVine',
       twitterDescription: currentVideo.content || 'Watch this video on diVine',
-      twitterImage: currentVideo.thumbnailUrl || '/og.png',
+      twitterImage: currentVideo.thumbnailUrl || '/og.avif',
     });
   }
 }, [currentVideo, authorName]);
@@ -84,7 +84,7 @@ useEffect(() => {
 **Fallback strategy:**
 - Title: Use video title, fall back to "Video on diVine"
 - Description: Use video content, fall back to generic description with author name
-- Image: Use video thumbnail, fall back to `/og.png`
+- Image: Use video thumbnail, fall back to `/og.avif`
 
 #### 2. ProfilePage.tsx
 
@@ -103,7 +103,7 @@ useEffect(() => {
   if (metadata || pubkey) {
     const name = displayName;
     const bio = metadata?.about || `${name}'s profile on diVine`;
-    const avatar = metadata?.picture || '/app_icon.png';
+    const avatar = metadata?.picture || '/app_icon.avif';
 
     useSeoMeta({
       title: `${name} - diVine`,
@@ -124,7 +124,7 @@ useEffect(() => {
 **Fallback strategy:**
 - Name: Use displayName (which already has fallback to generated name from pubkey)
 - Bio: Use metadata.about, fall back to "${name}'s profile on diVine"
-- Avatar: Use metadata.picture, fall back to `/app_icon.png`
+- Avatar: Use metadata.picture, fall back to `/app_icon.avif`
 
 #### 3. HashtagPage.tsx
 
@@ -152,12 +152,12 @@ useEffect(() => {
       description: description,
       ogTitle: `#${tag} - diVine`,
       ogDescription: description,
-      ogImage: '/og.png',
+      ogImage: '/og.avif',
       ogType: 'website',
       twitterCard: 'summary_large_image',
       twitterTitle: `#${tag} - diVine`,
       twitterDescription: description,
-      twitterImage: '/og.png',
+      twitterImage: '/og.avif',
     });
   }
 }, [normalizedTag, videoCount, tag]);
@@ -166,7 +166,7 @@ useEffect(() => {
 **Fallback strategy:**
 - Title: Always includes hashtag name
 - Description: Shows video count if available, otherwise generic message
-- Image: Use default `/og.png` (hashtags don't have natural thumbnails)
+- Image: Use default `/og.avif` (hashtags don't have natural thumbnails)
 
 ### Error Handling
 

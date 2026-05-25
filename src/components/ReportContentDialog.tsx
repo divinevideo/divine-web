@@ -2,7 +2,11 @@
 // ABOUTME: Allows users to report videos, users, or other content
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useReportContent } from '@/hooks/useModeration';
+import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { useAuthor } from '@/hooks/useAuthor';
+import { useLoginDialog } from '@/contexts/LoginDialogContext';
 import {
   Dialog,
   DialogContent,
@@ -14,7 +18,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Loader2, Flag } from 'lucide-react';
+import { CircleNotch as Loader2, Flag, SignIn as LogIn } from '@phosphor-icons/react';
 import { useToast } from '@/hooks/useToast';
 import { ContentFilterReason, REPORT_REASON_LABELS } from '@/types/moderation';
 
@@ -22,7 +26,7 @@ interface ReportContentDialogProps {
   open: boolean;
   onClose: () => void;
   eventId?: string;
-  pubkey?: string;
+  pubkey: string;
   contentType?: 'video' | 'user' | 'comment';
 }
 
@@ -33,18 +37,23 @@ export function ReportContentDialog({
   pubkey,
   contentType = 'video'
 }: ReportContentDialogProps) {
+  const { t } = useTranslation();
   const { toast } = useToast();
+  const { user } = useCurrentUser();
+  const { data: authorData } = useAuthor(user?.pubkey);
+  const { openLoginDialog } = useLoginDialog();
   const reportContent = useReportContent();
+  const isLoggedIn = !!user;
 
   const [reason, setReason] = useState<ContentFilterReason>(ContentFilterReason.SPAM);
   const [details, setDetails] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async () => {
-    if (!eventId && !pubkey) {
+    if (!pubkey) {
       toast({
-        title: 'Error',
-        description: 'No content specified for reporting',
+        title: t('reportContentDialog.toastNothingTitle'),
+        description: t('reportContentDialog.toastNothingDescription'),
         variant: 'destructive',
       });
       return;
@@ -56,12 +65,14 @@ export function ReportContentDialog({
         eventId,
         pubkey,
         reason,
-        details: details.trim() || undefined
+        details: details.trim() || undefined,
+        contentType,
+        reporterName: authorData?.metadata?.display_name || authorData?.metadata?.name,
       });
 
       toast({
-        title: 'Report submitted',
-        description: 'Thank you for helping keep the community safe',
+        title: t('reportContentDialog.toastSentTitle'),
+        description: t('reportContentDialog.toastSentDescription'),
       });
 
       // Reset and close
@@ -70,8 +81,8 @@ export function ReportContentDialog({
       onClose();
     } catch {
       toast({
-        title: 'Error',
-        description: 'Failed to submit report. Please try again.',
+        title: t('reportContentDialog.toastFailedTitle'),
+        description: t('reportContentDialog.toastFailedDescription'),
         variant: 'destructive',
       });
     } finally {
@@ -82,11 +93,22 @@ export function ReportContentDialog({
   const getDialogTitle = () => {
     switch (contentType) {
       case 'user':
-        return 'Report User';
+        return t('reportContentDialog.titleUser');
       case 'comment':
-        return 'Report Comment';
+        return t('reportContentDialog.titleComment');
       default:
-        return 'Report Video';
+        return t('reportContentDialog.titleVideo');
+    }
+  };
+
+  const getContentTypeLabel = () => {
+    switch (contentType) {
+      case 'user':
+        return t('reportContentDialog.contentTypeUser');
+      case 'comment':
+        return t('reportContentDialog.contentTypeComment');
+      default:
+        return t('reportContentDialog.contentTypeVideo');
     }
   };
 
@@ -100,84 +122,110 @@ export function ReportContentDialog({
         <DialogHeader>
           <DialogTitle>{getDialogTitle()}</DialogTitle>
           <DialogDescription>
-            Help us understand what's wrong with this {contentType}
+            {t('reportContentDialog.description', { contentType: getContentTypeLabel() })}
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 pb-2">
-          <div className="space-y-3">
-            <Label>Why are you reporting this {contentType}?</Label>
-            <RadioGroup value={reason} onValueChange={(value) => setReason(value as ContentFilterReason)}>
-              <div className="space-y-2">
-                {Object.entries(REPORT_REASON_LABELS).map(([value, label]) => (
-                  <div key={value} className="flex items-center space-x-2">
-                    <RadioGroupItem value={value} id={value} />
-                    <Label htmlFor={value} className="font-normal cursor-pointer">
-                      {label}
-                    </Label>
-                  </div>
-                ))}
-              </div>
-            </RadioGroup>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="details">Additional details (optional)</Label>
-            <Textarea
-              id="details"
-              placeholder="Provide any additional context that might be helpful..."
-              value={details}
-              onChange={(e) => setDetails(e.target.value)}
-              rows={3}
-              disabled={isSubmitting}
-            />
-          </div>
-
-          <div className="bg-yellow-500/10 border border-yellow-500/20 p-3 rounded-md text-sm space-y-2">
-            <p className="font-semibold text-yellow-700 dark:text-yellow-400">
-              ⚠️ Reports are PUBLIC information
+        {!isLoggedIn ? (
+          <div className="space-y-4 pb-2">
+            <p className="text-sm text-muted-foreground">
+              {t('reportContentDialog.loggedOutMessage')}
             </p>
-            <p className="text-muted-foreground">
-              Reports are published as NIP-56 events on the Nostr network and will be linked to your username.
-              Do not include sensitive or private information in reports.
-            </p>
-            <p className="text-muted-foreground">
-              If you have a sensitive issue to share privately, please use our{' '}
-              <a href="/support" className="text-primary hover:underline font-medium">
-                support helpdesk
-              </a>
-              .
-            </p>
+            <div className="flex gap-2 pt-2">
+              <Button
+                variant="outline"
+                onClick={onClose}
+                className="flex-1"
+              >
+                {t('reportContentDialog.cancel')}
+              </Button>
+              <Button
+                onClick={() => {
+                  onClose();
+                  openLoginDialog();
+                }}
+                className="flex-1"
+              >
+                <LogIn className="h-4 w-4 mr-2" />
+                {t('reportContentDialog.logIn')}
+              </Button>
+            </div>
           </div>
+        ) : (
+          <div className="space-y-4 pb-2">
+            <div className="space-y-3">
+              <Label>{t('reportContentDialog.reasonLabel', { contentType: getContentTypeLabel() })}</Label>
+              <RadioGroup value={reason} onValueChange={(value) => setReason(value as ContentFilterReason)}>
+                <div className="space-y-2">
+                  {Object.entries(REPORT_REASON_LABELS).map(([value, label]) => (
+                    <div key={value} className="flex items-center space-x-2">
+                      <RadioGroupItem value={value} id={value} />
+                      <Label htmlFor={value} className="font-normal cursor-pointer">
+                        {label}
+                      </Label>
+                    </div>
+                  ))}
+                </div>
+              </RadioGroup>
+            </div>
 
-          <div className="flex gap-2 pt-2">
-            <Button
-              variant="outline"
-              onClick={onClose}
-              disabled={isSubmitting}
-              className="flex-1"
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleSubmit}
-              disabled={isSubmitting}
-              className="flex-1"
-            >
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Submitting...
-                </>
-              ) : (
-                <>
-                  <Flag className="h-4 w-4 mr-2" />
-                  Submit Report
-                </>
-              )}
-            </Button>
+            <div className="space-y-2">
+              <Label htmlFor="details">{t('reportContentDialog.detailsLabel')}</Label>
+              <Textarea
+                id="details"
+                placeholder={t('reportContentDialog.detailsPlaceholder')}
+                value={details}
+                onChange={(e) => setDetails(e.target.value)}
+                rows={3}
+                disabled={isSubmitting}
+              />
+            </div>
+
+            <div className="bg-brand-yellow-light border border-brand-yellow p-3 rounded-md text-sm space-y-2 dark:bg-brand-yellow-dark">
+              <p className="font-semibold text-brand-yellow-dark dark:text-brand-yellow">
+                {t('reportContentDialog.publicNoticeTitle')}
+              </p>
+              <p className="text-muted-foreground">
+                {t('reportContentDialog.publicNoticeBody')}
+              </p>
+              <p className="text-muted-foreground">
+                {t('reportContentDialog.supportPrefix')}{' '}
+                <a href="/support" className="text-primary hover:underline font-medium">
+                  {t('reportContentDialog.supportLink')}
+                </a>
+                {t('reportContentDialog.supportSuffix')}
+              </p>
+            </div>
+
+            <div className="flex gap-2 pt-2">
+              <Button
+                variant="outline"
+                onClick={onClose}
+                disabled={isSubmitting}
+                className="flex-1"
+              >
+                {t('reportContentDialog.cancel')}
+              </Button>
+              <Button
+                onClick={handleSubmit}
+                disabled={isSubmitting}
+                className="flex-1"
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    {t('reportContentDialog.submitting')}
+                  </>
+                ) : (
+                  <>
+                    <Flag className="h-4 w-4 mr-2" />
+                    {t('reportContentDialog.submit')}
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
-        </div>
+        )}
       </DialogContent>
     </Dialog>
   );

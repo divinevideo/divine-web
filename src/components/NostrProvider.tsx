@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { NostrEvent, NostrFilter, NPool, NRelay1 } from '@nostrify/nostrify';
+import { BADGE_RELAYS } from '@/config/relays';
 import { NostrContext } from '@nostrify/react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAppContext } from '@/hooks/useAppContext';
@@ -73,21 +74,27 @@ const NostrProvider: React.FC<NostrProviderProps> = (props) => {
         return relay;
       },
       reqRouter(filters): ReadonlyMap<string, NostrFilter[]> {
-        debugLog('[NostrProvider] ========== reqRouter called ==========');
-        debugLog('[NostrProvider] Filters:', filters);
+        // debugLog('[NostrProvider] ========== reqRouter called ==========');
+        // debugLog('[NostrProvider] Filters:', filters);
 
         const result = new Map<string, NostrFilter[]>();
 
         // Separate filters by kind for kind-specific relay routing
         const profileRelayFilters: NostrFilter[] = []; // Kind 0 (profiles) and Kind 3 (contact lists)
+        const badgeRelayFilters: NostrFilter[] = []; // Kind 30009, 8, 30008 (NIP-58 badges)
         const otherFilters: NostrFilter[] = [];
 
+        const BADGE_KINDS = [30009, 8, 30008];
+
         for (const filter of filters) {
-          if (filter.kinds?.includes(0) || filter.kinds?.includes(3)) {
-            // Kind 0 (profile metadata) and Kind 3 (contact lists) - route to profile relays
+          if (filter.kinds?.includes(0) || filter.kinds?.includes(3) || filter.kinds?.includes(10011)) {
+            // Kind 0 (profile metadata), Kind 3 (contact lists), Kind 10011 (NIP-39 identities) - route to profile relays
             profileRelayFilters.push(filter);
+          } else if (filter.kinds?.some(k => BADGE_KINDS.includes(k))) {
+            // NIP-58 badge events - route to badge relays
+            badgeRelayFilters.push(filter);
           } else {
-            // All other kinds - route to main relay
+            // All other kinds (or id-only queries) - route to main relay
             otherFilters.push(filter);
           }
         }
@@ -96,10 +103,18 @@ const NostrProvider: React.FC<NostrProviderProps> = (props) => {
         if (profileRelayFilters.length > 0) {
           const profileRelayUrls = getRelayUrls(PROFILE_RELAYS);
 
-          debugLog(`[NostrProvider] Routing ${profileRelayFilters.length} profile/contact filters to ${profileRelayUrls.length} relays`);
+          // debugLog(`[NostrProvider] Routing ${profileRelayFilters.length} profile/contact filters to ${profileRelayUrls.length} relays`);
 
           for (const relay of profileRelayUrls) {
             result.set(relay, profileRelayFilters);
+          }
+        }
+
+        // Route NIP-58 badge queries to badge-specific relays
+        if (badgeRelayFilters.length > 0) {
+          for (const relay of BADGE_RELAYS) {
+            const existing = result.get(relay.url) || [];
+            result.set(relay.url, [...existing, ...badgeRelayFilters]);
           }
         }
 
@@ -111,16 +126,15 @@ const NostrProvider: React.FC<NostrProviderProps> = (props) => {
           }
         }
 
-        debugLog('[NostrProvider] Router result:', Array.from(result.entries()));
+        // debugLog('[NostrProvider] Router result:', Array.from(result.entries()));
         return result as ReadonlyMap<string, NostrFilter[]>;
       },
       eventRouter(event: NostrEvent) {
         // Publish to the selected relay
         const allRelays = new Set<string>([relayUrl.current]);
 
-        // For contact lists (kind 3), publish to multiple relays for better availability
-        if (event.kind === 3) {
-          // Add common relays where contact lists should be stored
+        // For profiles (kind 0), contact lists (kind 3), and identity claims (kind 10011), publish to multiple relays for better availability
+        if (event.kind === 0 || event.kind === 3 || event.kind === 10011) {
           getRelayUrls(PROFILE_RELAYS).forEach(url => allRelays.add(url));
         }
 
@@ -144,7 +158,7 @@ const NostrProvider: React.FC<NostrProviderProps> = (props) => {
       },
     });
 
-    // Wrap with caching layer
+    // Wrap with caching layer for profile/contact queries
     cachedPool.current = createCachedNostr(pool.current);
     debugLog('[NostrProvider] Wrapped NPool with caching layer');
 

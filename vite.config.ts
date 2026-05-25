@@ -1,12 +1,21 @@
 import path from "node:path";
 
 import react from "@vitejs/plugin-react-swc";
-import { defineConfig } from "vitest/config";
+import { configDefaults, defineConfig } from "vitest/config";
 import { VitePWA } from 'vite-plugin-pwa';
 import basicSsl from '@vitejs/plugin-basic-ssl';
 
 // https://vitejs.dev/config/
 export default defineConfig(() => ({
+  define: {
+    __BUILD_TIME__: JSON.stringify(new Date().toISOString()),
+    __BUILD_DATE__: JSON.stringify(new Date().toISOString().split('T')[0]),
+  },
+  preview: {
+    host: "::",
+    port: 4173,
+    allowedHosts: ['host.docker.internal', 'localhost', '127.0.0.1'],
+  },
   server: {
     host: "0.0.0.0", // Bind to all network interfaces for phone access
     port: 8080,
@@ -15,6 +24,7 @@ export default defineConfig(() => ({
       'Cross-Origin-Opener-Policy': 'same-origin',
       'Cross-Origin-Embedder-Policy': 'require-corp',
     },
+    allowedHosts: ['host.docker.internal', 'localhost', '127.0.0.1'],
     proxy: {
       // Proxy CDN requests to avoid CORS issues in development
       '/cdn-proxy': {
@@ -34,6 +44,12 @@ export default defineConfig(() => ({
           });
         },
       },
+      '/api/moderation/check-result': {
+        target: 'https://moderation-api.divine.video',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/moderation\/check-result/, '/check-result'),
+        secure: true,
+      },
     },
   },
   build: {
@@ -49,7 +65,7 @@ export default defineConfig(() => ({
     react(),
 VitePWA({
       registerType: 'autoUpdate',
-      injectRegister: 'auto',
+      injectRegister: null,
       devOptions: {
         enabled: false
       },
@@ -58,20 +74,27 @@ VitePWA({
         skipWaiting: true,
         clientsClaim: true,
         navigateFallback: null,
-        runtimeCaching: []
+        runtimeCaching: [],
+        // Allow larger JS bundles (default 2MB is too small for this app).
+        // 16 locales × ~1500 keys of i18n catalog inlined via import.meta.glob
+        // pushes the main bundle past 3.5MB; 5MB gives headroom for further growth.
+        // Long-term fix: lazy-load locale JSON instead of eager glob import.
+        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5MB
       },
       includeAssets: [
         'app_icon.png',
+        'favicon.png',
+        'divine-logo.svg',
         'og.png',
         'no-ai-icon.svg',
-        'divine_icon_transparent.png',
+        'divine_icon_transparent.avif',
         'browserconfig.xml'
       ],
       manifest: {
-        name: 'diVine Web - Short-form Looping Videos',
-        short_name: 'diVine',
+        name: 'Divine Web - Short-form Looping Videos',
+        short_name: 'Divine',
         description: 'Watch and share 6-second looping videos on the decentralized Nostr network.',
-        theme_color: '#00b488',
+        theme_color: '#27C58B',
         background_color: '#09090b',
         display: 'standalone',
         orientation: 'portrait-primary',
@@ -80,34 +103,34 @@ VitePWA({
         categories: ['entertainment', 'video', 'social'],
         screenshots: [
           {
-            src: '/screenshots/iPad 13 inch-0.png',
+            src: '/screenshots/iPad 13 inch-0.avif',
             sizes: '2048x2732',
-            type: 'image/png',
+            type: 'image/avif',
             form_factor: 'wide'
           },
           {
-            src: '/screenshots/iPad 13 inch-1.png',
+            src: '/screenshots/iPad 13 inch-1.avif',
             sizes: '2048x2732',
-            type: 'image/png',
+            type: 'image/avif',
             form_factor: 'wide'
           },
           {
-            src: '/screenshots/iPad 13 inch-2.png',
+            src: '/screenshots/iPad 13 inch-2.avif',
             sizes: '2048x2732',
-            type: 'image/png',
+            type: 'image/avif',
             form_factor: 'wide'
           }
         ],
         icons: [
           {
             src: 'app_icon.png',
-            sizes: '256x256',
+            sizes: '1024x1024',
             type: 'image/png',
             purpose: 'any'
           },
           {
             src: 'app_icon.png',
-            sizes: '256x256 512x512',
+            sizes: '1024x1024',
             type: 'image/png',
             purpose: 'maskable'
           }
@@ -126,6 +149,7 @@ VitePWA({
     globals: true,
     environment: 'jsdom',
     setupFiles: './src/test/setup.ts',
+    exclude: [...configDefaults.exclude, '**/.worktrees/**', '**/worktrees/**', 'tests/visual/**'],
     onConsoleLog(log) {
       return !log.includes("React Router Future Flag Warning");
     },
@@ -136,6 +160,9 @@ VitePWA({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      // Fastly virtual modules — not available outside the Fastly runtime;
+      // tests that import them must vi.mock() the module in the test file.
+      "fastly:kv-store": path.resolve(__dirname, "./compute-js/src/__mocks__/fastly-kv-store.js"),
     },
   },
 }));

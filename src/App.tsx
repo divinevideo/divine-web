@@ -1,3 +1,7 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
+ * If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ */
+
 // NOTE: This file should normally not be modified unless you are adding a new provider.
 // To add new routes, edit the AppRouter.tsx file.
 
@@ -7,7 +11,8 @@ import { InferSeoMetaPlugin } from '@unhead/addons';
 import { Suspense } from 'react';
 import NostrProvider from '@/components/NostrProvider';
 import { EventCachePreloader } from '@/components/EventCachePreloader';
-import { KeycastJWTWindowNostr } from '@/components/KeycastJWTWindowNostr';
+import { SentryUserSync } from '@/components/SentryUserSync';
+import { DivineJWTWindowNostr } from '@/components/DivineJWTWindowNostr';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -16,8 +21,10 @@ import { AppProvider } from '@/components/AppProvider';
 import { NWCProvider } from '@/contexts/NWCContext';
 import { AppConfig } from '@/contexts/AppContext';
 import { VideoPlaybackProvider } from '@/contexts/VideoPlaybackContext';
+import { FullscreenFeedProvider } from '@/contexts/FullscreenFeedContext';
 import AppRouter from './AppRouter';
 import { PRIMARY_RELAY, PRESET_RELAYS, toLegacyFormat } from '@/config/relays';
+import { resolveRelayUrl, resolveRelayUrls } from '@/lib/simRelay';
 
 const head = createHead({
   plugins: [
@@ -37,10 +44,13 @@ const queryClient = new QueryClient({
 
 const defaultConfig: AppConfig = {
   theme: "system",
-  relayUrl: PRIMARY_RELAY.url, // Primary relay with NIP-50 support
-  relayUrls: [
-    PRIMARY_RELAY.url,
-  ],
+  // Sim-suppression: in divine-brain virtual-persona PR runs the
+  // override flips this to wss://relay.staging.divine.video. In prod
+  // (no flag set) the default is unchanged.
+  relayUrl: resolveRelayUrl(PRIMARY_RELAY.url),
+  relayUrls: resolveRelayUrls([
+    'wss://relay.divine.video',
+  ]),
 };
 
 const presetRelays = toLegacyFormat(PRESET_RELAYS);
@@ -52,17 +62,20 @@ export function App() {
         <QueryClientProvider client={queryClient}>
           <NostrLoginProvider storageKey='nostr:login'>
             <NostrProvider>
+              <DivineJWTWindowNostr />
               <EventCachePreloader />
-              <KeycastJWTWindowNostr />
+              <SentryUserSync />
               <NWCProvider>
                 <VideoPlaybackProvider>
-                  <TooltipProvider>
-                    <Toaster />
-                    <Sonner />
-                    <Suspense>
-                      <AppRouter />
-                    </Suspense>
-                  </TooltipProvider>
+                  <FullscreenFeedProvider>
+                    <TooltipProvider>
+                      <Toaster />
+                      <Sonner />
+                      <Suspense>
+                        <AppRouter />
+                      </Suspense>
+                    </TooltipProvider>
+                  </FullscreenFeedProvider>
                 </VideoPlaybackProvider>
               </NWCProvider>
             </NostrProvider>

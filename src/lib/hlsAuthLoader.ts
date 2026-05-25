@@ -1,0 +1,53 @@
+// ABOUTME: Custom HLS.js loader that adds viewer auth headers to each request
+// ABOUTME: Delegates protocol choice (Blossom vs NIP-98) to the passed-in generator
+
+import Hls, { type HlsConfig, type LoaderContext, type LoaderConfiguration, type LoaderCallbacks, type Loader } from 'hls.js';
+
+type AuthHeaderGenerator = (url: string, method?: string) => Promise<string | null>;
+
+// Type for the loader constructor as expected by HlsConfig
+type LoaderConstructor = new (config: HlsConfig) => Loader<LoaderContext>;
+
+/**
+ * Creates a custom HLS loader class that adds viewer auth headers to each request.
+ * Protocol choice (Blossom vs NIP-98) is delegated to the passed-in generator.
+ */
+export function createAuthLoader(getAuthHeader: AuthHeaderGenerator): LoaderConstructor {
+  // Get the default loader class from HLS.js
+  const DefaultLoader = Hls.DefaultConfig.loader;
+
+  return class AuthLoader extends DefaultLoader {
+    private authHeaderGenerator: AuthHeaderGenerator;
+
+    constructor(config: HlsConfig) {
+      super(config);
+      this.authHeaderGenerator = getAuthHeader;
+    }
+
+    load(
+      context: LoaderContext,
+      config: LoaderConfiguration,
+      callbacks: LoaderCallbacks<LoaderContext>
+    ): void {
+      // Generate auth header for this specific URL (fire and forget, then call parent)
+      // Segments are URL-addressed; no sha256 hint is available per segment.
+      this.authHeaderGenerator(context.url, 'GET')
+        .then((authHeader) => {
+          if (authHeader) {
+            // Add auth header to the request
+            if (!context.headers) {
+              context.headers = {};
+            }
+            context.headers['Authorization'] = authHeader;
+          }
+        })
+        .catch((error) => {
+          console.error('[AuthLoader] Failed to generate auth header:', error);
+        })
+        .finally(() => {
+          // Call the parent loader after setting up headers
+          super.load(context, config, callbacks);
+        });
+    }
+  };
+}

@@ -1,49 +1,53 @@
 // ABOUTME: Cache-aware Nostr client wrapper that checks cache before querying relays
-// ABOUTME: Automatically caches query results and published events
+// ABOUTME: Provides local caching for profile and contact queries
 
 import type { NostrEvent, NostrFilter } from '@nostrify/nostrify';
 import { eventCache } from './eventCache';
 import { debugLog } from './debug';
 
 interface NostrClient {
-  query: (filters: NostrFilter[], opts?: { signal?: AbortSignal }) => Promise<NostrEvent[]>;
+  query: (filters: NostrFilter[], opts?: { signal?: AbortSignal; relays?: string[] }) => Promise<NostrEvent[]>;
   event: (event: NostrEvent) => Promise<void>;
 }
 
 /**
  * Wrap a Nostr client with caching layer
- * Preserves all original methods while adding caching to query and event
+ * Order: Local cache -> WebSocket
  */
-export function createCachedNostr<T extends NostrClient>(baseNostr: T): T {
+export function createCachedNostr<T extends NostrClient>(
+  baseNostr: T
+): T {
   const cachedNostr = Object.create(baseNostr) as T;
 
   // Wrap query method with cache-first logic
-  cachedNostr.query = async (filters: NostrFilter[], opts?: { signal?: AbortSignal }): Promise<NostrEvent[]> => {
-    debugLog('[CachedNostr] Query with filters:', filters);
+  cachedNostr.query = async (filters: NostrFilter[], opts?: { signal?: AbortSignal; relays?: string[] }): Promise<NostrEvent[]> => {
+    const startTime = performance.now();
+    // debugLog('[CachedNostr] Query with filters:', filters);
 
     // Check if this is a profile/contact query that should be cached
     const isProfileQuery = filters.some(f => f.kinds?.includes(0));
     const isContactQuery = filters.some(f => f.kinds?.includes(3));
     const isCacheable = isProfileQuery || isContactQuery;
 
-    // Try cache first for cacheable queries
+    // 1. Try local cache first for cacheable queries
     if (isCacheable) {
       const cachedResults = await eventCache.query(filters);
       if (cachedResults.length > 0) {
-        debugLog(`[CachedNostr] Cache hit: ${cachedResults.length} events`);
+        debugLog(`[CachedNostr] Cache hit: ${cachedResults.length} events in ${(performance.now() - startTime).toFixed(0)}ms`);
 
-        // Return cached results immediately, then update in background
-        _queryAndCacheInBackground(baseNostr.query.bind(baseNostr), filters, opts);
+        // Background refresh via WebSocket
+        _refreshInBackground(baseNostr.query.bind(baseNostr), filters, opts);
 
         return cachedResults;
       } else {
-        debugLog('[CachedNostr] Cache miss, querying relay');
+        debugLog('[CachedNostr] Cache miss');
       }
     }
 
-    // Query from relay
+    // 2. Query via WebSocket
+    const _wsStart = performance.now();
     const results = await baseNostr.query(filters, opts);
-    debugLog(`[CachedNostr] Relay returned ${results.length} events`);
+    // debugLog(`[CachedNostr] WebSocket returned ${results.length} events in ${(performance.now() - _wsStart).toFixed(0)}ms`);
 
     // Cache the results if cacheable
     if (isCacheable && results.length > 0) {
@@ -67,12 +71,12 @@ export function createCachedNostr<T extends NostrClient>(baseNostr: T): T {
 }
 
 /**
- * Background query to update cache
+ * Background refresh via WebSocket
  */
-async function _queryAndCacheInBackground(
-  queryFn: (filters: NostrFilter[], opts?: { signal?: AbortSignal }) => Promise<NostrEvent[]>,
+async function _refreshInBackground(
+  queryFn: (filters: NostrFilter[], opts?: { signal?: AbortSignal; relays?: string[] }) => Promise<NostrEvent[]>,
   filters: NostrFilter[],
-  opts?: { signal?: AbortSignal }
+  opts?: { signal?: AbortSignal; relays?: string[] }
 ): Promise<void> {
   try {
     const results = await queryFn(filters, opts);

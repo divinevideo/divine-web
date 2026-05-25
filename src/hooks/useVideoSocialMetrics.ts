@@ -1,14 +1,31 @@
 // ABOUTME: Hook for fetching video social interaction metrics (likes, reposts, views)
-// ABOUTME: Provides efficient batched queries to minimize relay requests
+// ABOUTME: Fetches modern view totals from Funnelcake while keeping optimistic social deltas separate
 
+import { UserInteractions, SHORT_VIDEO_KIND } from '@/types/video';
 import { useQuery } from '@tanstack/react-query';
 import { useNostr } from '@nostrify/react';
+import { getFunnelcakeBaseUrl } from '@/config/api';
+import { useAppContext } from '@/hooks/useAppContext';
+import { getFunnelcakeUrl, hasFunnelcake } from '@/config/relays';
+import { fetchVideoStats } from '@/lib/funnelcakeClient';
+import { isFunnelcakeAvailable } from '@/lib/funnelcakeHealth';
+import { debugLog } from '@/lib/debug';
+
+export interface VideoReaction {
+  pubkey: string;
+  eventId: string;
+  timestamp: number;
+  type: 'like' | 'repost';
+}
 
 export interface VideoSocialMetrics {
   likeCount: number;
   repostCount: number;
   viewCount: number;
   commentCount: number;
+  // Reaction data for showing who liked/reposted
+  likes: VideoReaction[];
+  reposts: VideoReaction[];
 }
 
 /**
@@ -26,89 +43,40 @@ export function useVideoSocialMetrics(
   vineId: string | null,
   options?: { enabled?: boolean }
 ) {
-  const { nostr } = useNostr();
+  const { config } = useAppContext();
+  const apiUrl = hasFunnelcake(config.relayUrl)
+    ? (getFunnelcakeUrl(config.relayUrl) || getFunnelcakeBaseUrl())
+    : getFunnelcakeBaseUrl();
 
   return useQuery({
     queryKey: ['video-social-metrics', videoId, videoPubkey, vineId],
     enabled: options?.enabled !== false,
-    queryFn: async (context) => {
-      const signal = AbortSignal.any([context.signal, AbortSignal.timeout(3000)]);
+    // Keep like/repost/comment counts as delta-only so optimistic updates don't
+    // double-count Funnelcake's embedded totals. Views are separate from Vine loops,
+    // so we can safely fetch the current Divine total here.
+    queryFn: async ({ signal }) => {
+      const emptyMetrics: VideoSocialMetrics = {
+        likeCount: 0,
+        repostCount: 0,
+        viewCount: 0,
+        commentCount: 0,
+        likes: [],
+        reposts: [],
+      };
+
+      if (!isFunnelcakeAvailable(apiUrl)) {
+        return emptyMetrics;
+      }
 
       try {
-        // For kind 34236 (addressable videos), we need to query by both #e and #a tags
-        // - #e tag: Used by likes (kind 7) and zap receipts (kind 9735)
-        // - #a tag: Used by comments (kind 1111), and generic reposts (kind 16) for addressable events
-        const filters = [
-          {
-            kinds: [7, 9735], // reactions, zap receipts
-            '#e': [videoId], // Standard event references
-            limit: 500,
-          }
-        ];
-
-        // Add addressable event filter for comments and generic reposts
-        const addressableId = `34236:${videoPubkey}:${vineId ?? ''}`;
-        filters.push({
-          kinds: [1111, 16], // NIP-22 comments, generic reposts
-          '#a': [addressableId], // Addressable event references
-          limit: 500,
-        } as any); // Type assertion needed for dynamic tag filter properties
-
-        const events = await nostr.query(filters, { signal });
-
-        let likeCount = 0;
-        let repostCount = 0;
-        let viewCount = 0;
-        let commentCount = 0;
-
-        // Process each event type
-        for (const event of events) {
-          switch (event.kind) {
-            case 7: // Reaction events (likes)
-              // Check if it's a positive reaction (like)
-              if (event.content === '+' || event.content === '❤️' || event.content === '👍') {
-                likeCount++;
-              }
-              break;
-
-            case 16: // Generic repost events
-              repostCount++;
-              break;
-
-            case 1: // Text note comments
-            case 1111: // NIP-22 comments
-              commentCount++;
-              break;
-
-            case 9735: // Zap receipts (using as view indicator)
-              // For now, count zap receipts as views
-              // In a more sophisticated implementation, we might have dedicated view events
-              viewCount++;
-              break;
-          }
-        }
-
-        // For view count, we could also implement a custom approach
-        // For now, we'll use zap receipts as a proxy, but this could be enhanced
-        // with dedicated kind 34236 view events or other mechanisms
-
-        const metrics: VideoSocialMetrics = {
-          likeCount,
-          repostCount,
-          viewCount,
-          commentCount,
-        };
-
-        return metrics;
-      } catch (error) {
-        console.error('Failed to fetch video social metrics:', error);
-        // Return default values on error
+        const stats = await fetchVideoStats(apiUrl, videoId, signal);
         return {
-          likeCount: 0,
-          repostCount: 0,
-          viewCount: 0,
-          commentCount: 0,
-        } as VideoSocialMetrics;
+          ...emptyMetrics,
+          viewCount: stats.views ?? 0,
+        };
+      } catch (error) {
+        debugLog('[useVideoSocialMetrics] Failed to fetch view stats:', error);
+        return emptyMetrics;
       }
     },
     staleTime: 30000, // Consider data stale after 30 seconds
@@ -137,30 +105,33 @@ export function useVideoUserInteractions(
         return { hasLiked: false, hasReposted: false, likeEventId: null, repostEventId: null };
       }
 
-      const signal = AbortSignal.any([context.signal, AbortSignal.timeout(2000)]);
+      // 5s timeout - user interactions are important but shouldn't block UI
+      const signal = AbortSignal.any([context.signal, AbortSignal.timeout(5000)]);
 
       try {
-        const addressableId = `34236:${videoPubkey}:${vineId ?? ''}`;
+        const addressableId = `${SHORT_VIDEO_KIND}:${videoPubkey}:${vineId ?? ''}`;
         // Query for user's interactions with this video
         const events = await nostr.query([ 
           {
-            kinds: [7], // reactions
+            kinds: [7], // reactions (backward)
             authors: [userPubkey],
             '#e': [videoId],
             limit: 10,
           },
           {
-            kinds: [16], // generic reposts
+            kinds: [16, 7], // generic reposts
             authors: [userPubkey],
             '#a': [addressableId],
             limit: 10,
           }
         ], { signal });
 
-        let hasLiked = false;
-        let hasReposted = false;
-        let likeEventId: string | null = null;
-        let repostEventId: string | null = null;
+        const userInteractions: UserInteractions = {
+          hasLiked: false,
+          hasReposted: false,
+          likeEventId: null,
+          repostEventId: null
+        };
 
         // Filter out deleted events by checking for delete events (kind 5)
         const deleteEvents = await nostr.query([
@@ -186,16 +157,16 @@ export function useVideoUserInteractions(
           if (deletedEventIds.has(event.id)) continue; // Skip deleted events
 
           if (event.kind === 7 && (event.content === '+' || event.content === '❤️' || event.content === '👍')) {
-            hasLiked = true;
-            likeEventId = event.id;
+            userInteractions.hasLiked = true;
+            userInteractions.likeEventId = event.id;
           }
           if (event.kind === 16) {
-            hasReposted = true;
-            repostEventId = event.id;
+            userInteractions.hasReposted = true;
+            userInteractions.repostEventId = event.id;
           }
         }
 
-        return { hasLiked, hasReposted, likeEventId, repostEventId };
+        return userInteractions;
       } catch (error) {
         console.error('Failed to fetch user video interactions:', error);
         return { hasLiked: false, hasReposted: false, likeEventId: null, repostEventId: null };

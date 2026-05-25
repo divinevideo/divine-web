@@ -7,7 +7,7 @@ import { join } from 'path';
 import { execSync } from 'child_process';
 
 const RELAY_URL = 'wss://relay.divine.video';
-const VIDEO_KIND = 34236;
+const SHORT_VIDEO_KIND = 34236;
 const OUTPUT_FILE = join(process.cwd(), 'public', 'hashtag-thumbnails.json');
 const HASHTAGS_FILE = join(process.cwd(), 'public', 'top_1000_hashtags.json');
 
@@ -99,7 +99,7 @@ async function findThumbnailForHashtag(hashtag: string): Promise<string | null> 
     console.log(`[${hashtag}] Querying for videos using nak...`);
 
     // Use nak to query for videos with this hashtag
-    const cmd = `nak req -k ${VIDEO_KIND} -t t=${hashtag.toLowerCase()} -l 20 ${RELAY_URL}`;
+    const cmd = `nak req -k ${SHORT_VIDEO_KIND} -t t=${hashtag.toLowerCase()} -l 20 ${RELAY_URL}`;
     console.log(`[${hashtag}] Running: ${cmd}`);
 
     const output = execSync(cmd, {

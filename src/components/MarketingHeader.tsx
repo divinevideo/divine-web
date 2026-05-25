@@ -2,40 +2,59 @@
 // ABOUTME: Provides consistent navigation across About, FAQ, Press, Legal pages, etc.
 
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 export function MarketingHeader() {
+  const { t } = useTranslation();
+
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm border-b border-gray-200 dark:border-gray-800">
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-brand-dark-green border-b border-brand-green">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link to="/" className="text-xl font-logo text-primary">
-            diVine
+          <Link to="/">
+            <img
+              src="/divine-logo.svg"
+              alt="Divine"
+              className="h-5"
+            />
           </Link>
 
           {/* Navigation Links */}
-          <div className="flex items-center gap-6">
-            <Link
-              to="/about"
-              className="text-sm font-medium text-foreground hover:text-primary transition-colors"
+          <div className="flex items-center gap-8">
+            <a
+              href="https://about.divine.video/"
+              className="text-sm font-medium text-brand-off-white hover:text-brand-green transition-colors"
             >
               About
-            </Link>
-            <Link
-              to="/faq"
-              className="text-sm font-medium text-foreground hover:text-primary transition-colors"
+            </a>
+            <a
+              href="https://about.divine.video/blog/"
+              className="text-sm font-medium text-brand-off-white hover:text-brand-green transition-colors"
+            >
+              Blog
+            </a>
+            <a
+              href="https://about.divine.video/faqs/"
+              className="text-sm font-medium text-brand-off-white hover:text-brand-green transition-colors"
             >
               FAQ
-            </Link>
-            <Link
-              to="/media-resources"
-              className="text-sm font-medium text-foreground hover:text-primary transition-colors"
+            </a>
+            <a
+              href="https://about.divine.video/news/"
+              className="text-sm font-medium text-brand-off-white hover:text-brand-green transition-colors"
             >
-              Press
+              In the News
+            </a>
+            <Link
+              to="/merch"
+              className="text-sm font-medium text-brand-off-white hover:text-brand-green transition-colors"
+            >
+              {t('menu.merch')}
             </Link>
             <Link
               to="/discovery"
-              className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold bg-primary text-white rounded-full hover:bg-primary/90 transition-colors"
+              className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold bg-primary text-white rounded-full hover:brightness-110 transition-colors"
             >
               Try it
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -12,6 +12,7 @@ export interface RelayConfig {
     nip05?: boolean;  // NIP-05 verification lookups
     nip96?: boolean;  // HTTP file storage
     blossom?: boolean; // Blossom file storage
+    funnelcake?: boolean; // Funnelcake REST API support
   };
   purpose?: 'primary' | 'profile' | 'search' | 'backup';
 }
@@ -23,22 +24,47 @@ export interface RelayConfig {
  */
 export const PRIMARY_RELAY: RelayConfig = {
   url: 'wss://relay.divine.video',
-  name: 'Divine',
-  capabilities: { nip50: true },
+  name: 'DVines',
+  capabilities: { nip50: true, funnelcake: true },
   purpose: 'primary',
 };
 
 /**
  * Relay optimized for user search (NIP-50)
- * - Large index of kind 0 (profile) events
- * - Used exclusively for user search functionality
+ * - Used for kind 0 (profile) and general NIP-50 search
  */
 export const SEARCH_RELAY: RelayConfig = {
-  url: 'wss://relay.nostr.band',
-  name: 'Nostr.Band',
-  capabilities: { nip50: true },
+  url: 'wss://relay.divine.video',
+  name: 'Divine',
+  capabilities: { nip50: true, funnelcake: true },
   purpose: 'search',
 };
+
+/**
+ * Relays queried when resolving a subdomain's NIP-05 via NIP-50.
+ * Fanned out in parallel; first profile with a matching NIP-05 wins.
+ * Chosen for broad kind 0 / NIP-05 coverage across public infrastructure.
+ */
+export const NIP05_SEARCH_RELAYS: RelayConfig[] = [
+  {
+    url: 'wss://relay.primal.net',
+    name: 'Primal',
+    capabilities: { nip50: true, nip05: true },
+    purpose: 'search',
+  },
+  {
+    url: 'wss://relay.damus.io',
+    name: 'Damus',
+    capabilities: { nip50: true, nip05: true },
+    purpose: 'search',
+  },
+  {
+    url: 'wss://purplepag.es',
+    name: 'Purple Pages',
+    capabilities: { nip50: true, nip05: true },
+    purpose: 'search',
+  },
+];
 
 /**
  * Relays used for profile metadata (kind 0) and contact lists (kind 3)
@@ -81,19 +107,17 @@ export const PROFILE_RELAYS: RelayConfig[] = [
 export const PRESET_RELAYS: RelayConfig[] = [
   {
     url: 'wss://relay.divine.video',
-    name: 'Divine',
+    name: 'DVines',
+    capabilities: { nip50: true, funnelcake: true },
   },
   {
-    url: 'wss://divine.diy',
-    name: 'divine.diy',
+    url: 'wss://relay.divine.video',
+    name: 'Divine',
+    capabilities: { nip50: true, funnelcake: true },
   },
   {
     url: 'wss://relay.ditto.pub',
     name: 'Ditto',
-  },
-  {
-    url: 'wss://relay.nostr.band',
-    name: 'Nostr.Band',
   },
   {
     url: 'wss://relay.damus.io',
@@ -106,10 +130,95 @@ export const PRESET_RELAYS: RelayConfig[] = [
 ];
 
 /**
+ * Relays used for NIP-58 badge queries (kinds 30009, 8, 30008)
+ * Badge events may not be accepted by all relays, so we query a broad set.
+ * Includes Divine relay (once kinds are allowlisted) plus public relays.
+ */
+export const BADGE_RELAYS: RelayConfig[] = [
+  {
+    url: 'wss://relay.divine.video',
+    name: 'Divine',
+    purpose: 'primary',
+  },
+  {
+    url: 'wss://relay.damus.io',
+    name: 'Damus',
+    purpose: 'backup',
+  },
+  {
+    url: 'wss://nos.lol',
+    name: 'nos.lol',
+    purpose: 'backup',
+  },
+  {
+    url: 'wss://relay.primal.net',
+    name: 'Primal',
+    purpose: 'backup',
+  },
+];
+
+/**
+ * Relays used for direct event and address lookups.
+ * These are broader than the app's default feed relay so note/list/event pages
+ * can still resolve content that only lives on common public relays.
+ */
+export const EVENT_LOOKUP_RELAYS: RelayConfig[] = [
+  {
+    url: 'wss://relay.divine.video',
+    name: 'Divine',
+    purpose: 'primary',
+  },
+  {
+    url: 'wss://relay.damus.io',
+    name: 'Damus',
+    purpose: 'backup',
+  },
+  {
+    url: 'wss://relay.primal.net',
+    name: 'Primal',
+    purpose: 'backup',
+  },
+  {
+    url: 'wss://relay.ditto.pub',
+    name: 'Ditto',
+    purpose: 'backup',
+  },
+  {
+    url: 'wss://nos.lol',
+    name: 'nos.lol',
+    purpose: 'backup',
+  },
+  {
+    url: 'wss://purplepag.es',
+    name: 'Purple Pages',
+    purpose: 'backup',
+  },
+];
+
+/**
  * Helper: Extract just the URLs from an array of relay configs
  */
 export const getRelayUrls = (relays: RelayConfig[]): string[] =>
   relays.map(r => r.url);
+
+function dedupeRelayUrls(urls: Array<string | null | undefined>): string[] {
+  return [...new Set(
+    urls
+      .map(url => url?.trim())
+      .filter((url): url is string => Boolean(url))
+  )];
+}
+
+export function getEventLookupRelayUrls(options?: {
+  configuredRelayUrls?: string[];
+  relayHints?: string[];
+}): string[] {
+  return dedupeRelayUrls([
+    ...(options?.configuredRelayUrls ?? []),
+    ...(options?.relayHints ?? []),
+    ...getRelayUrls(EVENT_LOOKUP_RELAYS),
+  ]);
+}
 
 /**
  * Helper: Find a relay config by URL
@@ -129,3 +238,54 @@ export const getRelaysByPurpose = (purpose: RelayConfig['purpose']): RelayConfig
  */
 export const toLegacyFormat = (relays: RelayConfig[]): { url: string; name: string }[] =>
   relays.map(r => ({ url: r.url, name: r.name }));
+
+/**
+ * Divine infrastructure hostnames that support Funnelcake REST API
+ */
+const DIVINE_FUNNELCAKE_HOSTS = [
+  'relay.divine.video',
+  'relay.staging.divine.video',
+];
+
+const DIVINE_FUNNELCAKE_API_HOSTS: Record<string, string> = {
+  'relay.divine.video': 'api.divine.video',
+  'relay.staging.divine.video': 'api.staging.divine.video',
+};
+
+/**
+ * Check if a relay URL supports the Funnelcake REST API
+ * Only Divine infrastructure relays have Funnelcake
+ */
+export function hasFunnelcake(relayUrl: string): boolean {
+  try {
+    // Convert wss:// to https:// for URL parsing
+    const url = new URL(relayUrl.replace('wss://', 'https://').replace('ws://', 'http://'));
+    return DIVINE_FUNNELCAKE_HOSTS.includes(url.hostname);
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Get the Funnelcake REST API base URL for a relay
+ * Returns null if the relay doesn't support Funnelcake
+ */
+export function getFunnelcakeUrl(relayUrl: string): string | null {
+  if (!hasFunnelcake(relayUrl)) {
+    return null;
+  }
+  const parsed = new URL(relayUrl.replace('wss://', 'https://').replace('ws://', 'http://'));
+  const apiHost = DIVINE_FUNNELCAKE_API_HOSTS[parsed.hostname];
+
+  if (!apiHost) {
+    return null;
+  }
+
+  return `https://${apiHost}`;
+}
+
+/**
+ * Default Funnelcake API URL — Fastly-cached edge endpoint
+ * Used for classic vines which always query Divine regardless of selected relay
+ */
+export const DEFAULT_FUNNELCAKE_URL = 'https://api.divine.video';

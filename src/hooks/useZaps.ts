@@ -20,7 +20,7 @@ export function useZaps(
 ) {
   const { nostr } = useNostr();
   const { toast } = useToast();
-  const { user } = useCurrentUser();
+  const { user, signer } = useCurrentUser();
   const { config } = useAppContext();
   const queryClient = useQueryClient();
 
@@ -140,8 +140,8 @@ export function useZaps(
 
     if (!user) {
       toast({
-        title: 'Login required',
-        description: 'You must be logged in to send a zap.',
+        title: 'Log in first.',
+        description: 'You need to be signed in to send a zap.',
         variant: 'destructive',
       });
       setIsZapping(false);
@@ -210,10 +210,10 @@ export function useZaps(
       });
 
       // Sign the zap request (but don't publish to relays - only send to LNURL endpoint)
-      if (!user.signer) {
+      if (!signer) {
         throw new Error('No signer available');
       }
-      const signedZapRequest = await user.signer.signEvent(zapRequest);
+      const signedZapRequest = await signer.signEvent(zapRequest);
 
       try {
         const res = await fetch(`${zapEndpoint}?amount=${zapAmount}&nostr=${encodeURI(JSON.stringify(signedZapRequest))}`);
@@ -241,8 +241,8 @@ export function useZaps(
                 setInvoice(null);
 
                 toast({
-                  title: 'Zap successful!',
-                  description: `You sent ${amount} sats via NWC to the author.`,
+                  title: 'Zapped.',
+                  description: `${amount} sats, sent via NWC.`,
                 });
 
                 // Invalidate zap queries to refresh counts
@@ -273,8 +273,8 @@ export function useZaps(
                 setInvoice(null);
 
                 toast({
-                  title: 'Zap successful!',
-                  description: `You sent ${amount} sats to the author.`,
+                  title: 'Zapped.',
+                  description: `${amount} sats, on the way.`,
                 });
 
                 // Invalidate zap queries to refresh counts

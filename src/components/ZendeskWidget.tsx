@@ -1,14 +1,24 @@
 // ABOUTME: Zendesk support widget component
-// ABOUTME: Loads the Zendesk web widget for customer support
+// ABOUTME: Loads the Zendesk web widget for customer support and identifies users
 
 import { useEffect } from 'react';
+import { useCurrentUser } from '@/hooks/useCurrentUser';
 
 interface ZendeskWidgetProps {
   hideOnMobile?: boolean;
 }
 
+// TEMPORARILY DISABLED (Jan 24, 2026)
+// Widget went live before support team was ready. Re-enable when prepared.
+// To restore: set ZENDESK_ENABLED to true (and in Support.tsx)
+const ZENDESK_ENABLED = false;
+
 export function ZendeskWidget({ hideOnMobile = true }: ZendeskWidgetProps) {
+  const { user, metadata } = useCurrentUser();
+  const displayName = metadata?.display_name || metadata?.name;
+
   useEffect(() => {
+    if (!ZENDESK_ENABLED) return;
     // Check if script already exists
     const existingScript = document.getElementById('ze-snippet');
 
@@ -20,16 +30,18 @@ export function ZendeskWidget({ hideOnMobile = true }: ZendeskWidgetProps) {
       script.async = true;
 
       script.onload = () => {
-        // Apply mobile hiding if needed
         if (hideOnMobile) {
           applyMobileHiding();
         }
+        identifyUser();
       };
 
       document.body.appendChild(script);
-    } else if (hideOnMobile) {
-      // Script already loaded, apply mobile hiding immediately
-      applyMobileHiding();
+    } else {
+      if (hideOnMobile) {
+        applyMobileHiding();
+      }
+      identifyUser();
     }
 
     function applyMobileHiding() {
@@ -37,14 +49,21 @@ export function ZendeskWidget({ hideOnMobile = true }: ZendeskWidgetProps) {
       const checkZE = setInterval(() => {
         if (window.zE) {
           clearInterval(checkZE);
+          // Hide the chat widget by default - support is accessed via the Support page
+          window.zE('webWidget', 'hide');
+        }
+      }, 100);
+    }
 
-          // Hide on mobile (screens < 768px)
-          const isMobile = window.matchMedia('(max-width: 767px)').matches;
-          if (isMobile) {
-            window.zE('webWidget', 'hide');
-          } else {
-            window.zE('webWidget', 'show');
-          }
+    function identifyUser() {
+      if (!user?.pubkey) return;
+      const checkZE = setInterval(() => {
+        if (window.zE) {
+          clearInterval(checkZE);
+          window.zE('webWidget', 'identify', {
+            name: displayName || user.pubkey.slice(0, 8),
+            email: `${user.pubkey}@reports.divine.video`,
+          });
         }
       }, 100);
     }
@@ -58,7 +77,7 @@ export function ZendeskWidget({ hideOnMobile = true }: ZendeskWidgetProps) {
         }
       }
     };
-  }, [hideOnMobile]);
+  }, [hideOnMobile, user?.pubkey, displayName]);
 
   return null; // This component doesn't render anything visible
 }

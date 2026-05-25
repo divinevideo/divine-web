@@ -56,6 +56,7 @@ export interface ProofModeData {
   manifestData?: Record<string, unknown>; // Parsed manifest object
   deviceAttestation?: string; // Hardware attestation token (iOS App Attest / Android Play Integrity)
   pgpFingerprint?: string; // PGP public key fingerprint for signature verification
+  c2paManifestId?: string; // Content Credentials manifest ID
 }
 
 export interface OriginData {
@@ -74,6 +75,8 @@ export interface RepostMetadata {
 export interface ParsedVideoData {
   id: string;                // Original video event ID
   pubkey: string;            // Original author pubkey
+  authorName?: string;       // Cached author name from Funnelcake API
+  authorAvatar?: string;     // Cached author avatar from Funnelcake API
   kind: typeof HORIZONTAL_VIDEO_KIND | typeof SHORT_VIDEO_KIND | typeof ADDRESSABLE_NORMAL_VIDEO_KIND | typeof ADDRESSABLE_SHORT_VIDEO_KIND; // NIP-71 video kind
   createdAt: number;
   originalVineTimestamp?: number; // Custom published_at timestamp (NIP-31 - can be set by any video)
@@ -85,9 +88,13 @@ export interface ParsedVideoData {
   blurhash?: string; // Blurhash for progressive loading placeholder
   title?: string;
   duration?: number;
+  dimensions?: string; // Video dimensions from imeta dim tag (e.g., "1080x1920")
+  sha256?: string; // Content hash from imeta x or Divine-hosted media URL
+  ageRestricted?: boolean;
   hashtags: string[];
   vineId: string | null;
   loopCount?: number;
+  divineViewCount?: number;
   likeCount?: number;
   repostCount?: number;
   commentCount?: number;
@@ -98,6 +105,11 @@ export interface ParsedVideoData {
   // NEW: Aggregated repost data (replaces individual isRepost/reposterPubkey/repostedAt)
   reposts: RepostMetadata[];
 
+  // Subtitle / text track fields (Kind 39307)
+  textTrackRef?: string;       // "39307:<pubkey>:subtitles:<d-tag>"
+  textTrackContent?: string;   // Embedded VTT string from API
+  textTrackLanguage?: string;  // e.g. "en"
+
   // Original Nostr event for full source viewing
   originalEvent?: NostrEvent;
 
@@ -106,4 +118,11 @@ export interface ParsedVideoData {
   // - getLatestRepostTime(video): number - Most recent repost timestamp (or createdAt if no reposts)
   // - getTotalReposts(video): number - Total number of reposts
   // - getUniqueReposters(video): RepostMetadata[] - Deduplicated list of reposters
+}
+
+export interface UserInteractions {
+  hasLiked: boolean;
+  hasReposted: boolean;
+  likeEventId: string | null;
+  repostEventId: string | null;
 }
