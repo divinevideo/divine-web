@@ -50,11 +50,13 @@ const InvitesLandingPage = () => {
       .catch((caughtError) => {
         if (!isCancelled) {
           const message =
-            caughtError instanceof InviteApiError && caughtError.code === 'invalid_invite'
-              ? t('loginDialog.errorInviteValidationFailed')
-              : caughtError instanceof Error
-                ? caughtError.message
-                : t('loginDialog.inviteUnavailable');
+            caughtError instanceof InviteApiError && caughtError.inviteStatus === 'used'
+              ? t('loginDialog.errorInviteCodeUsed')
+              : caughtError instanceof InviteApiError && caughtError.code === 'invalid_invite'
+                ? t('loginDialog.errorInviteValidationFailed')
+                : caughtError instanceof Error
+                  ? caughtError.message
+                  : t('loginDialog.inviteUnavailable');
           setValidationError(message);
         }
       })
@@ -125,7 +127,7 @@ const InvitesLandingPage = () => {
 
             <div className="mt-4">
               <InviteCodeForm
-                error={validationError}
+                inputClassName="text-center text-lg font-mono tracking-widest"
                 isLoading={isSubmitting || isValidating}
                 onInviteCodeChange={setInviteCode}
                 onSubmit={handleSubmit}
