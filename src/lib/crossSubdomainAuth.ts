@@ -10,10 +10,33 @@
 const COOKIE_NAME = 'nostr_login';
 const JWT_COOKIE_NAME = 'divine_jwt';
 
+export interface BunkerLoginData {
+  bunkerPubkey: string;
+  clientNsec: string;
+  relays: string[];
+}
+
 interface LoginCookieData {
   type: 'extension' | 'bunker' | 'nsec';
   pubkey: string;
-  bunkerUri?: string; // only for bunker logins
+  bunkerData?: BunkerLoginData; // only for bunker logins; the exact shape NUser.fromBunkerLogin consumes
+}
+
+/**
+ * Structural guard for a bunker login `data` payload. A raw `bunker://` URI
+ * string (the legacy/poisoned shape) and any partial object fail this, so they
+ * are never persisted into localStorage where NUser.fromBunkerLogin would throw.
+ */
+export function isValidBunkerData(data: unknown): data is BunkerLoginData {
+  if (!data || typeof data !== 'object') return false;
+  const d = data as Record<string, unknown>;
+  return (
+    typeof d.bunkerPubkey === 'string' &&
+    typeof d.clientNsec === 'string' &&
+    d.clientNsec.startsWith('nsec1') &&
+    Array.isArray(d.relays) &&
+    d.relays.length > 0
+  );
 }
 
 interface JwtCookieData {

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { getCookieDomain, getLoginCookie, setLoginCookie, clearLoginCookie, hydrateLoginFromCookie, setJwtCookie, getJwtCookie, clearJwtCookie } from './crossSubdomainAuth';
+import { getCookieDomain, getLoginCookie, setLoginCookie, clearLoginCookie, hydrateLoginFromCookie, setJwtCookie, getJwtCookie, clearJwtCookie, isValidBunkerData } from './crossSubdomainAuth';
 
 // Mock localStorage for Node.js environment
 const localStorageMock = (() => {
@@ -64,6 +64,33 @@ afterEach(() => {
     configurable: true,
   });
   Object.defineProperty(document, 'cookie', originalCookieDescriptor);
+});
+
+describe('isValidBunkerData', () => {
+  it('accepts a well-formed bunker data object', () => {
+    expect(isValidBunkerData({
+      bunkerPubkey: 'abc',
+      clientNsec: 'nsec1examplekey',
+      relays: ['wss://relay.example'],
+    })).toBe(true);
+  });
+
+  it('rejects a raw bunker:// URI string', () => {
+    expect(isValidBunkerData('bunker://pub?relay=wss://r&secret=s')).toBe(false);
+  });
+
+  it('rejects an object missing clientNsec', () => {
+    expect(isValidBunkerData({ bunkerPubkey: 'abc', relays: ['wss://r'] })).toBe(false);
+  });
+
+  it('rejects an object with empty relays', () => {
+    expect(isValidBunkerData({ bunkerPubkey: 'abc', clientNsec: 'nsec1x', relays: [] })).toBe(false);
+  });
+
+  it('rejects null/undefined', () => {
+    expect(isValidBunkerData(null)).toBe(false);
+    expect(isValidBunkerData(undefined)).toBe(false);
+  });
 });
 
 describe('getCookieDomain', () => {
