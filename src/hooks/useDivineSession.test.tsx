@@ -116,6 +116,34 @@ describe('useDivineSession', () => {
     expect(result.current.session?.token).toBe(token);
   });
 
+  it('re-attempts refresh when the tab becomes visible near expiry', async () => {
+    // near expiry (inside the 60s lead): on-mount attempt fires once
+    const token = createToken(Math.floor(Date.now() / 1000) + 30);
+    const renewed = createToken(Math.floor(Date.now() / 1000) + 3600);
+    // first (on-mount) attempt yields nothing; the visibility-triggered one renews
+    mockRefreshDivineSession.mockResolvedValueOnce(null).mockResolvedValue(renewed);
+
+    const { result } = renderHook(() => useDivineSession());
+
+    act(() => {
+      result.current.saveSession(token, null, false);
+    });
+
+    await waitFor(() => {
+      expect(mockRefreshDivineSession).toHaveBeenCalled();
+    });
+    expect(result.current.session?.token).toBe(token); // first attempt was a no-op
+
+    await act(async () => {
+      document.dispatchEvent(new Event('visibilitychange'));
+      await Promise.resolve();
+    });
+
+    await waitFor(() => {
+      expect(result.current.session?.token).toBe(renewed);
+    });
+  });
+
   it('getValidToken returns null on expiry without destroying the stored session', async () => {
     const token = createToken(Math.floor(Date.now() / 1000) - 10); // already expired
     const { result } = renderHook(() => useDivineSession());

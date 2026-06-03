@@ -239,11 +239,27 @@ export function useDivineSession() {
       timer = setTimeout(() => { void attemptRefresh(); }, msUntilRefresh);
     }
 
+    // Background tabs throttle setTimeout, so the pre-expiry timer can drift past
+    // expiry while the tab is hidden. When the tab becomes visible again, re-check
+    // and renew if we're at/within the refresh window. Cheap when far from expiry:
+    // the SDK returns cached creds without a network call and the guard above
+    // skips applying an unchanged token.
+    const onVisible = () => {
+      if (
+        document.visibilityState === 'visible' &&
+        Date.now() >= expiration - REFRESH_LEAD_MS
+      ) {
+        void attemptRefresh();
+      }
+    };
+    document.addEventListener('visibilitychange', onVisible);
+
     return () => {
       cancelled = true;
       if (timer) {
         clearTimeout(timer);
       }
+      document.removeEventListener('visibilitychange', onVisible);
     };
   }, [token, expiration, refreshSession]);
 
