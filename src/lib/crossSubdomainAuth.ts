@@ -10,6 +10,11 @@
 const COOKIE_NAME = 'nostr_login';
 const JWT_COOKIE_NAME = 'divine_jwt';
 
+// NOTE: `clientNsec` is an ephemeral, per-login client key (generated fresh by
+// NLogin.fromBunker), NOT the user's identity key — the remote bunker holds the
+// identity key. Persisting this object in the cross-subdomain cookie is required
+// so subdomains can rebuild the NIP-46 signer; it predates this change (the
+// localStorage-sync path already wrote it) and the cookie is Secure + SameSite=Lax.
 export interface BunkerLoginData {
   bunkerPubkey: string;
   clientNsec: string;
@@ -35,7 +40,8 @@ export function isValidBunkerData(data: unknown): data is BunkerLoginData {
     typeof d.clientNsec === 'string' &&
     d.clientNsec.startsWith('nsec1') &&
     Array.isArray(d.relays) &&
-    d.relays.length > 0
+    d.relays.length > 0 &&
+    d.relays.every((relay) => typeof relay === 'string')
   );
 }
 

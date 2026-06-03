@@ -87,6 +87,10 @@ describe('isValidBunkerData', () => {
     expect(isValidBunkerData({ bunkerPubkey: 'abc', clientNsec: 'nsec1x', relays: [] })).toBe(false);
   });
 
+  it('rejects an object whose relays contains a non-string', () => {
+    expect(isValidBunkerData({ bunkerPubkey: 'abc', clientNsec: 'nsec1x', relays: [123] })).toBe(false);
+  });
+
   it('rejects null/undefined', () => {
     expect(isValidBunkerData(null)).toBe(false);
     expect(isValidBunkerData(undefined)).toBe(false);
