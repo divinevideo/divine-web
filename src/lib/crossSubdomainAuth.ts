@@ -224,15 +224,21 @@ export function hydrateLoginFromCookie(): void {
     return;
   }
 
-  // For bunker logins, restore with the bunker URI so it can reconnect
-  if (cookie.type === 'bunker' && cookie.bunkerUri) {
-    const loginState = [{
-      id: crypto.randomUUID(),
-      type: 'bunker' as const,
-      pubkey: cookie.pubkey,
-      data: cookie.bunkerUri,
-    }];
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(loginState));
+  // For bunker logins, restore from the structured data object so the signer
+  // can be rebuilt. A legacy/poisoned cookie (raw bunker:// string under the old
+  // `bunkerUri` field, or any malformed payload) fails the guard and is ignored
+  // rather than persisted — NUser.fromBunkerLogin would throw on a bad shape and
+  // the user would appear logged out. They re-login instead.
+  if (cookie.type === 'bunker') {
+    if (isValidBunkerData(cookie.bunkerData)) {
+      const loginState = [{
+        id: crypto.randomUUID(),
+        type: 'bunker' as const,
+        pubkey: cookie.pubkey,
+        data: cookie.bunkerData,
+      }];
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(loginState));
+    }
     return;
   }
 

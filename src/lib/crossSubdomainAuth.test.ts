@@ -206,8 +206,13 @@ describe('hydrateLoginFromCookie', () => {
     }]);
   });
 
-  it('when localStorage is empty and cookie has bunker login with URI, hydrates localStorage', () => {
-    const data = { type: 'bunker' as const, pubkey: 'pub789', bunkerUri: 'bunker://xyz' };
+  it('when localStorage is empty and cookie has valid bunkerData, hydrates localStorage with the object', () => {
+    const bunkerData = {
+      bunkerPubkey: 'bunkerpub',
+      clientNsec: 'nsec1clientkey',
+      relays: ['wss://relay.example'],
+    };
+    const data = { type: 'bunker' as const, pubkey: 'pub789', bunkerData };
     cookieJar = `nostr_login=${btoa(JSON.stringify(data))}`;
 
     hydrateLoginFromCookie();
@@ -217,8 +222,17 @@ describe('hydrateLoginFromCookie', () => {
       id: mockUUID,
       type: 'bunker',
       pubkey: 'pub789',
-      data: 'bunker://xyz',
+      data: bunkerData,
     }]);
+  });
+
+  it('when cookie has a legacy bunkerUri string (no bunkerData), does NOT hydrate', () => {
+    const data = { type: 'bunker' as const, pubkey: 'pub789', bunkerUri: 'bunker://xyz' };
+    cookieJar = `nostr_login=${btoa(JSON.stringify(data))}`;
+
+    hydrateLoginFromCookie();
+
+    expect(localStorage.getItem(STORAGE_KEY)).toBeNull();
   });
 
   it('when localStorage is empty and cookie has nsec login, does NOT hydrate', () => {
