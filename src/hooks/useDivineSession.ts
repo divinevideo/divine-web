@@ -218,9 +218,16 @@ export function useDivineSession() {
     }
 
     let cancelled = false;
+    let inFlight = false;
     let timer: ReturnType<typeof setTimeout> | undefined;
 
     const attemptRefresh = async () => {
+      // Guard against overlapping attempts (e.g. the timer firing while a
+      // visibility-triggered attempt is still in flight, or rapid tab toggles).
+      if (cancelled || inFlight) {
+        return;
+      }
+      inFlight = true;
       try {
         const newToken = await refreshDivineSession();
         if (!cancelled && newToken && newToken !== token) {
@@ -228,6 +235,8 @@ export function useDivineSession() {
         }
       } catch {
         // Refresh unavailable or failed — leave the existing session untouched.
+      } finally {
+        inFlight = false;
       }
     };
 
@@ -246,6 +255,7 @@ export function useDivineSession() {
     // skips applying an unchanged token.
     const onVisible = () => {
       if (
+        !cancelled &&
         document.visibilityState === 'visible' &&
         Date.now() >= expiration - REFRESH_LEAD_MS
       ) {
