@@ -359,7 +359,7 @@ git commit -m "fix(auth): sync bunkerData object to cookie and self-heal poisone
 
 - [ ] **Step 1: Verify the type error exists**
 
-Run: `npx tsc --noEmit`
+Run: `npx tsc -b`
 Expected: an error at `src/hooks/useLoginActions.ts:26` — object literal may only specify known properties, `bunkerUri` does not exist in type `LoginCookieData`. (This is the type system forcing the consistency fix.)
 
 - [ ] **Step 2: Update the cookie write**
@@ -378,7 +378,7 @@ In `src/hooks/useLoginActions.ts`, change the bunker login (line 24-26) so the c
 
 - [ ] **Step 3: Verify the type error is gone**
 
-Run: `npx tsc --noEmit`
+Run: `npx tsc -b`
 Expected: no errors (clean).
 
 - [ ] **Step 4: Commit**
@@ -396,7 +396,7 @@ git commit -m "fix(auth): persist structured bunkerData on fresh bunker login"
 
 - [ ] **Step 1: Type-check**
 
-Run: `npx tsc --noEmit`
+Run: `npx tsc -b`
 Expected: no errors.
 
 - [ ] **Step 2: Run the full test suite**
