@@ -300,6 +300,9 @@ describe('hydrateLoginFromCookie', () => {
       pubkey: 'pubB',
       data: bunkerData,
     }]);
+    // the healthy shared cookie must be left intact (not cleared/overwritten),
+    // so other origins still recover from it
+    expect(getLoginCookie()).toEqual({ type: 'bunker', pubkey: 'pubB', bunkerData });
   });
 
   // --- JWT cross-subdomain hydration ---

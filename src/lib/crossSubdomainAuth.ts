@@ -199,6 +199,12 @@ export function hydrateLoginFromCookie(): void {
         // legacy/poisoned shape. Persisting it would make NUser.fromBunkerLogin
         // throw (apparent logout) and re-syncing it would re-poison the shared
         // cookie. Drop those entries.
+        //
+        // Scope: only `bunker` data is validated here, because the cookie
+        // data-shape ambiguity was bunker-specific. Malformed nsec/extension
+        // logins (rare) are already handled gracefully downstream — the login
+        // filters in useCurrentUser / useLoggedInAccounts swallow the throw — so
+        // this self-heal stays bunker-scoped.
         const cleaned = logins.filter(
           (l: { type?: string; data?: unknown }) =>
             l.type !== 'bunker' || isValidBunkerData(l.data),
@@ -215,6 +221,10 @@ export function hydrateLoginFromCookie(): void {
         }
 
         if (cleaned.length > 0) {
+          // If the original first login was a dropped poison entry, the next
+          // valid login becomes the cookie's advertised identity. That's
+          // intended: the poisoned login was unusable, so promoting the next
+          // working one is better than advertising a login that can't sign.
           const first = cleaned[0];
           // Keep cookie in sync with current login
           setLoginCookie({
