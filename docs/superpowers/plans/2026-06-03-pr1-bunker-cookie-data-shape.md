@@ -257,12 +257,36 @@ Add inside the `describe('hydrateLoginFromCookie', ...)` block in `src/lib/cross
     expect(localStorage.getItem(STORAGE_KEY)).toBeNull();
     expect(getLoginCookie()).toBeNull();
   });
+
+  it('self-recovers: poisoned local entry dropped, healthy cookie re-hydrates the session', () => {
+    const bunkerData = {
+      bunkerPubkey: 'bp',
+      clientNsec: 'nsec1goodkey',
+      relays: ['wss://relay.example'],
+    };
+    // poisoned localStorage on this origin
+    localStorage.setItem(STORAGE_KEY, JSON.stringify([
+      { id: '1', type: 'bunker', pubkey: 'pubB', data: 'bunker://poisoned' },
+    ]));
+    // but a healthy shared cookie exists (written by another origin)
+    cookieJar = `nostr_login=${btoa(JSON.stringify({ type: 'bunker', pubkey: 'pubB', bunkerData }))}`;
+
+    hydrateLoginFromCookie();
+
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY)!);
+    expect(stored).toEqual([{
+      id: mockUUID,
+      type: 'bunker',
+      pubkey: 'pubB',
+      data: bunkerData,
+    }]);
+  });
 ```
 
 - [ ] **Step 2: Run the tests to verify they fail**
 
-Run: `npx vitest run src/lib/crossSubdomainAuth.test.ts -t "syncs bunkerData|self-heals"`
-Expected: FAIL — current sync writes `bunkerUri: first.data`, and there is no self-heal of poisoned entries.
+Run: `npx vitest run src/lib/crossSubdomainAuth.test.ts -t "syncs bunkerData|self-heals|self-recovers"`
+Expected: FAIL — current sync writes `bunkerUri: first.data`, there is no self-heal of poisoned entries, and no fall-through recovery from a healthy cookie.
 
 - [ ] **Step 3: Implement the localStorage-sync branch**
 
@@ -278,30 +302,35 @@ In `src/lib/crossSubdomainAuth.ts`, REPLACE the localStorage-sync block (current
         // Self-heal: a bunker login whose `data` is not a valid object is the
         // legacy/poisoned shape. Persisting it would make NUser.fromBunkerLogin
         // throw (apparent logout) and re-syncing it would re-poison the shared
-        // cookie. Drop those entries instead.
+        // cookie. Drop those entries.
         const cleaned = logins.filter(
           (l: { type?: string; data?: unknown }) =>
             l.type !== 'bunker' || isValidBunkerData(l.data),
         );
-        if (cleaned.length === 0) {
-          localStorage.removeItem(STORAGE_KEY);
-          clearLoginCookie();
-          return;
-        }
         if (cleaned.length !== logins.length) {
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(cleaned));
+          if (cleaned.length === 0) {
+            // Everything was poisoned. Remove the bad local state but DON'T clear
+            // the shared cookie or return — fall through to cookie hydration so a
+            // healthy cookie (written by another origin) can recover the session.
+            localStorage.removeItem(STORAGE_KEY);
+          } else {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(cleaned));
+          }
         }
 
-        const first = cleaned[0];
-        // Keep cookie in sync with current login
-        setLoginCookie({
-          type: first.type,
-          pubkey: first.pubkey,
-          ...(first.type === 'bunker' && isValidBunkerData(first.data)
-            ? { bunkerData: first.data }
-            : {}),
-        });
-        return;
+        if (cleaned.length > 0) {
+          const first = cleaned[0];
+          // Keep cookie in sync with current login
+          setLoginCookie({
+            type: first.type,
+            pubkey: first.pubkey,
+            ...(first.type === 'bunker' && isValidBunkerData(first.data)
+              ? { bunkerData: first.data }
+              : {}),
+          });
+          return;
+        }
+        // cleaned.length === 0: fall through to cookie-based recovery below.
       }
     } catch {
       // corrupted localStorage, continue to cookie check
