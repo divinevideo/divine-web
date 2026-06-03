@@ -139,6 +139,49 @@ describe('useCurrentUser', () => {
     expect(result.current.isSessionLoading).toBe(true);
   });
 
+  it('falls back to a manual account when the JWT session fails to initialize', async () => {
+    mockGetValidToken.mockReturnValue('jwt-token');
+    mockJwtSigner.getPublicKey.mockRejectedValue(new Error('rpc failed'));
+    setNostrProvider();
+
+    mockLogins.push({
+      id: 'extension:manualpub',
+      type: 'extension',
+      pubkey: 'manualpub',
+      createdAt: '2026-03-10T00:00:00.000Z',
+      data: null,
+    });
+
+    const { result } = renderHook(() => useCurrentUser());
+
+    await waitFor(() => {
+      expect(result.current.user?.pubkey).toBe('manualpub');
+    });
+    expect(result.current.users).toHaveLength(1);
+    expect(result.current.signer).toBeDefined();
+  });
+
+  it('reports isResolvingJwt while the session initializes, then clears it', async () => {
+    mockGetValidToken.mockReturnValue('jwt-token');
+    let resolvePubkey: (pubkey: string) => void = () => {};
+    mockJwtSigner.getPublicKey.mockReturnValue(
+      new Promise<string>((resolve) => { resolvePubkey = resolve; }),
+    );
+
+    const { result } = renderHook(() => useCurrentUser());
+
+    // initializing
+    expect(result.current.isResolvingJwt).toBe(true);
+    expect(result.current.user).toBeUndefined();
+
+    resolvePubkey('d'.repeat(64));
+
+    await waitFor(() => {
+      expect(result.current.user?.pubkey).toBe('d'.repeat(64));
+    });
+    expect(result.current.isResolvingJwt).toBe(false);
+  });
+
   it('skips extension logins when no browser extension is available', () => {
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { NostrSigner } from '@nostrify/nostrify';
 import { DivineJWTSigner } from '@/lib/DivineJWTSigner';
 import { createUserFromLogin, getSafeUserSigner } from '@/lib/nostrLogin';
+import { selectCurrentUsers, isJwtResolving } from '@/lib/selectCurrentUsers';
 
 import { useAuthor } from './useAuthor.ts';
 import { useDivineSession } from './useDivineSession';
@@ -19,7 +20,7 @@ export function useCurrentUser() {
   const { getValidToken } = useDivineSession();
   const token = getValidToken();
   const [jwtPubkey, setJwtPubkey] = useState<string>();
-  const [jwtPubkeyStatus, setJwtPubkeyStatus] = useState<'idle' | 'loading' | 'settled'>('idle');
+  const [jwtError, setJwtError] = useState(false);
   const jwtSigner = useMemo(() => (
     token ? new DivineJWTSigner({ token }) : null
   ), [token]);
@@ -33,25 +34,23 @@ export function useCurrentUser() {
 
     if (!jwtSigner) {
       setJwtPubkey(undefined);
-      setJwtPubkeyStatus('idle');
+      setJwtError(false);
       return;
     }
 
     setJwtPubkey(undefined);
-    setJwtPubkeyStatus('loading');
+    setJwtError(false);
 
     jwtSigner.getPublicKey()
       .then((pubkey) => {
         if (!isCancelled) {
           setJwtPubkey(pubkey);
-          setJwtPubkeyStatus('settled');
         }
       })
       .catch((error) => {
         if (!isCancelled) {
           console.warn('Skipped invalid JWT session', error);
-          setJwtPubkey(undefined);
-          setJwtPubkeyStatus('settled');
+          setJwtError(true);
         }
       });
 
@@ -86,20 +85,26 @@ export function useCurrentUser() {
     };
   }, [jwtPubkey, jwtSigner]);
 
-  const users = useMemo(() => (
-    token ? (jwtUser ? [jwtUser] : []) : manualUsers
-  ), [jwtUser, manualUsers, token]);
+  const users = useMemo(
+    () => selectCurrentUsers({ hasToken: !!token, jwtUser, jwtError, manualUsers }),
+    [token, jwtUser, jwtError, manualUsers],
+  );
+
+  const isResolvingJwt = isJwtResolving({
+    hasSigner: !!jwtSigner,
+    jwtPubkey,
+    jwtError,
+  });
 
   const user = users[0];
   const signer = useMemo(() => getSafeUserSigner(user), [user]);
   const author = useAuthor(user?.pubkey);
-  const isSessionLoading = Boolean(jwtSigner && !jwtPubkey && jwtPubkeyStatus !== 'settled');
 
   return {
     user,
     users,
     signer,
-    isSessionLoading,
+    isResolvingJwt,
     ...author.data,
   };
 }
