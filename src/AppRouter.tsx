@@ -67,10 +67,12 @@ const BrandPreview = import.meta.env.DEV
   : null;
 
 export function AppRouter() {
-  const { user, isSessionLoading } = useCurrentUser();
+  const { user, isResolvingJwt } = useCurrentUser();
 
-  // Check if user is logged in
-  const canUseProtectedRoutes = Boolean(user) || isSessionLoading;
+  // Treat an in-flight hosted-JWT session as "still determining auth", not
+  // "logged out" — otherwise the protected routes below unmount during the
+  // getPublicKey() round-trip and a reload bounces the user off the page.
+  const isLoggedIn = Boolean(user) || isResolvingJwt;
 
   // Check if we're on a subdomain profile (username.divine.video)
   const subdomainUser = getSubdomainUser();
@@ -99,7 +101,7 @@ export function AppRouter() {
       <Route path="/:nip19" element={<NIP19Page />} />
 
       {/* Protected routes - require login */}
-      {canUseProtectedRoutes && (
+      {isLoggedIn && (
         <>
           <Route path="/home" element={<HomePage />} />
           <Route path="/notifications" element={<NotificationsPage />} />
