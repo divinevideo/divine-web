@@ -182,6 +182,27 @@ describe('useCurrentUser', () => {
     expect(result.current.isResolvingJwt).toBe(false);
   });
 
+  it('does not pair a stale pubkey with the new signer after a token swap', async () => {
+    mockGetValidToken.mockReturnValue('token-A');
+    mockJwtSigner.getPublicKey
+      .mockResolvedValueOnce('a'.repeat(64))
+      .mockReturnValue(new Promise(() => {})); // token-B never resolves during the test
+
+    const { result, rerender } = renderHook(() => useCurrentUser());
+
+    await waitFor(() => {
+      expect(result.current.user?.pubkey).toBe('a'.repeat(64));
+    });
+
+    // swap to a new token; its pubkey hasn't resolved yet
+    mockGetValidToken.mockReturnValue('token-B');
+    rerender();
+
+    // must NOT briefly show token-A's pubkey paired with the token-B signer
+    expect(result.current.user).toBeUndefined();
+    expect(result.current.isResolvingJwt).toBe(true);
+  });
+
   it('skips extension logins when no browser extension is available', () => {
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
