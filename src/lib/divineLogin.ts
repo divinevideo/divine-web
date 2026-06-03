@@ -177,3 +177,18 @@ export async function exchangeDivineLoginCallback(
     token: tokens.access_token,
   };
 }
+
+/**
+ * Renew the hosted access token using the refresh token the SDK persisted on
+ * this origin at login time. Delegates rotation + storage to the SDK
+ * (`getSessionWithRefresh` refreshes within ~5 min of expiry). Returns the fresh
+ * access token, or null when there is no stored session on this origin (e.g. a
+ * subdomain) or the refresh failed.
+ */
+export async function refreshDivineSession(
+  fetchImpl?: typeof fetch,
+): Promise<string | null> {
+  const client = createClient(fetchImpl);
+  const credentials = await client.oauth.getSessionWithRefresh();
+  return credentials?.accessToken ?? null;
+}
