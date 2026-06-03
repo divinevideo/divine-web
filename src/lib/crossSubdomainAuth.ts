@@ -195,14 +195,38 @@ export function hydrateLoginFromCookie(): void {
     try {
       const logins = JSON.parse(stored);
       if (Array.isArray(logins) && logins.length > 0) {
-        const first = logins[0];
-        // Keep cookie in sync with current login
-        setLoginCookie({
-          type: first.type,
-          pubkey: first.pubkey,
-          ...(first.type === 'bunker' && first.data ? { bunkerUri: first.data } : {}),
-        });
-        return;
+        // Self-heal: a bunker login whose `data` is not a valid object is the
+        // legacy/poisoned shape. Persisting it would make NUser.fromBunkerLogin
+        // throw (apparent logout) and re-syncing it would re-poison the shared
+        // cookie. Drop those entries.
+        const cleaned = logins.filter(
+          (l: { type?: string; data?: unknown }) =>
+            l.type !== 'bunker' || isValidBunkerData(l.data),
+        );
+        if (cleaned.length !== logins.length) {
+          if (cleaned.length === 0) {
+            // Everything was poisoned. Remove the bad local state but DON'T clear
+            // the shared cookie or return — fall through to cookie hydration so a
+            // healthy cookie (written by another origin) can recover the session.
+            localStorage.removeItem(STORAGE_KEY);
+          } else {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(cleaned));
+          }
+        }
+
+        if (cleaned.length > 0) {
+          const first = cleaned[0];
+          // Keep cookie in sync with current login
+          setLoginCookie({
+            type: first.type,
+            pubkey: first.pubkey,
+            ...(first.type === 'bunker' && isValidBunkerData(first.data)
+              ? { bunkerData: first.data }
+              : {}),
+          });
+          return;
+        }
+        // cleaned.length === 0: fall through to cookie-based recovery below.
       }
     } catch {
       // corrupted localStorage, continue to cookie check

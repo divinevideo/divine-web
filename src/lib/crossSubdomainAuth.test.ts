@@ -251,6 +251,57 @@ describe('hydrateLoginFromCookie', () => {
     expect(cookieJar).toBe('');
   });
 
+  it('when localStorage has a valid bunker login, syncs bunkerData object TO cookie', () => {
+    const bunkerData = {
+      bunkerPubkey: 'bunkerpub',
+      clientNsec: 'nsec1clientkey',
+      relays: ['wss://relay.example'],
+    };
+    const loginState = [{ id: '1', type: 'bunker', pubkey: 'pubB', data: bunkerData }];
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(loginState));
+
+    hydrateLoginFromCookie();
+
+    expect(getLoginCookie()).toEqual({ type: 'bunker', pubkey: 'pubB', bunkerData });
+    // localStorage unchanged
+    expect(JSON.parse(localStorage.getItem(STORAGE_KEY)!)).toEqual(loginState);
+  });
+
+  it('self-heals: drops a poisoned bunker login (string data) and does not poison the cookie', () => {
+    const loginState = [{ id: '1', type: 'bunker', pubkey: 'pubB', data: 'bunker://poisoned' }];
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(loginState));
+
+    hydrateLoginFromCookie();
+
+    // poisoned entry removed; cookie not written with a string payload
+    expect(localStorage.getItem(STORAGE_KEY)).toBeNull();
+    expect(getLoginCookie()).toBeNull();
+  });
+
+  it('self-recovers: poisoned local entry dropped, healthy cookie re-hydrates the session', () => {
+    const bunkerData = {
+      bunkerPubkey: 'bp',
+      clientNsec: 'nsec1goodkey',
+      relays: ['wss://relay.example'],
+    };
+    // poisoned localStorage on this origin
+    localStorage.setItem(STORAGE_KEY, JSON.stringify([
+      { id: '1', type: 'bunker', pubkey: 'pubB', data: 'bunker://poisoned' },
+    ]));
+    // but a healthy shared cookie exists (written by another origin)
+    cookieJar = `nostr_login=${btoa(JSON.stringify({ type: 'bunker', pubkey: 'pubB', bunkerData }))}`;
+
+    hydrateLoginFromCookie();
+
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY)!);
+    expect(stored).toEqual([{
+      id: mockUUID,
+      type: 'bunker',
+      pubkey: 'pubB',
+      data: bunkerData,
+    }]);
+  });
+
   // --- JWT cross-subdomain hydration ---
 
   it('when localStorage has JWT, syncs TO jwt cookie', () => {
