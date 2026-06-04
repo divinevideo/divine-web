@@ -5,6 +5,7 @@ import { useHead, useSeoMeta } from '@unhead/react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { BrandLogo } from '@/components/brand/BrandLogo';
 import { InviteCodeForm } from '@/components/auth/InviteCodeForm';
+import { DIVINE_IOS_APP_ID } from '@/lib/mobileStoreLinks';
 import { setInviteHandoff } from '@/lib/authHandoff';
 import { buildSignupRedirect } from '@/lib/divineLogin';
 import { validateInviteCode, InviteApiError } from '@/lib/inviteApi';
@@ -27,7 +28,7 @@ const InvitesLandingPage = () => {
 
   useHead({
     meta: [
-      { name: 'apple-itunes-app', content: 'app-id=6747959501' },
+      { name: 'apple-itunes-app', content: `app-id=${DIVINE_IOS_APP_ID}` },
     ],
   });
 
