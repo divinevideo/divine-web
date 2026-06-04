@@ -172,8 +172,37 @@ export function FamilyPage() {
           </p>
           <p className="text-base md:text-lg text-brand-off-white/80 max-w-3xl leading-relaxed mt-4">
             This page is a starting point for parents, guardians, and
-            teens—not a contract, not a control panel, and not a replacement for Divine's Terms, Privacy Policy, Safety Standards, Kids Policy, or reporting tools. It's the stuff we wish
-            more apps said out loud.
+            teens—not a contract, not a control panel, and not a replacement
+            for Divine's{" "}
+            <a
+              href="/terms"
+              className="text-brand-green underline underline-offset-2 hover:text-brand-light-green"
+            >
+              Terms
+            </a>
+            ,{" "}
+            <a
+              href="/privacy"
+              className="text-brand-green underline underline-offset-2 hover:text-brand-light-green"
+            >
+              Privacy Policy
+            </a>
+            ,{" "}
+            <a
+              href="/safety"
+              className="text-brand-green underline underline-offset-2 hover:text-brand-light-green"
+            >
+              Safety Standards
+            </a>
+            ,{" "}
+            <a
+              href="/kids"
+              className="text-brand-green underline underline-offset-2 hover:text-brand-light-green"
+            >
+              Kids Policy
+            </a>
+            , or reporting tools. It's the stuff we wish more apps said out
+            loud.
           </p>
 
           {/* Anchor nav */}
