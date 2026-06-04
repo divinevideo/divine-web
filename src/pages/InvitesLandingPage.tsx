@@ -1,10 +1,11 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useHead, useSeoMeta } from '@unhead/react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { BrandLogo } from '@/components/brand/BrandLogo';
 import { InviteCodeForm } from '@/components/auth/InviteCodeForm';
+import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { DIVINE_IOS_APP_ID } from '@/lib/mobileStoreLinks';
 import { setInviteHandoff } from '@/lib/authHandoff';
 import { buildSignupRedirect } from '@/lib/divineLogin';
@@ -13,11 +14,19 @@ import { validateInviteCode, InviteApiError } from '@/lib/inviteApi';
 const InvitesLandingPage = () => {
   const { t } = useTranslation();
   const { code } = useParams<{ code: string }>();
+  const { user } = useCurrentUser();
+  const navigate = useNavigate();
 
   const [inviteCode, setInviteCode] = useState(code ?? '');
   const [isValidating, setIsValidating] = useState(true);
   const [validationError, setValidationError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (user?.pubkey) {
+      navigate('/home', { replace: true });
+    }
+  }, [user, navigate]);
 
   useSeoMeta({
     title: code ? t('invitesLandingPage.seoTitle', { code }) : t('invitesLandingPage.seoTitleDefault'),
