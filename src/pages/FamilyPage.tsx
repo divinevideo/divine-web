@@ -172,7 +172,7 @@ export function FamilyPage() {
           </p>
           <p className="text-base md:text-lg text-brand-off-white/80 max-w-3xl leading-relaxed mt-4">
             This page is a starting point for parents, guardians, and
-            teens—not a contract, not a control panel. It's the stuff we wish
+            teens—not a contract, not a control panel, and not a replacement for Divine's Terms, Privacy Policy, Safety Standards, Kids Policy, or reporting tools. It's the stuff we wish
             more apps said out loud.
           </p>
 
@@ -628,7 +628,7 @@ export function FamilyPage() {
                 <p>
                   If something looks illegal, involves a minor, or feels like
                   it's escalating offline, contact Divine support and, when
-                  appropriate, local authorities. Do not download, save, repost, forward, or share suspected child sexual abuse material (CSAM). Use the in-app report flow or Divine support so Divine can review and, where required, report apparent child sexual exploitation to the appropriate reporting channel or authority. Trust your gut on this one.
+                  appropriate, local authorities. Do <b>not</b> download, save, repost, forward, or share suspected child sexual abuse material (CSAM). Use the in-app report flow or Divine support so Divine can review and, where required, report apparent child sexual exploitation to the appropriate reporting channel or authority. Trust your gut on this one.
                 </p>
                 <p className="text-sm text-muted-foreground">
                   For serious or time-sensitive reports, use the report flow
