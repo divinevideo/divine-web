@@ -41,6 +41,28 @@ function mailtoLink(subject: string, body?: string): string {
   return `mailto:${SUPPORT_EMAIL}?${params.toString().replace(/\+/g, "%20")}`;
 }
 
+// Mirrors the 13-15 parent-consent email in divine-mobile
+// (minorAccountReviewParentConsentEmailSubject / ...Body) so the in-app flow
+// and this page open the same prefilled message.
+const TEEN_REVIEW_EMAIL_SUBJECT = "13-15 account review help";
+const TEEN_REVIEW_EMAIL_BODY =
+  "Hi Divine support,\n\nI am contacting Divine about an account for a teen who is 13 to 15.\n\nI have attached a short private video that shows:\n- the teen\n- a parent or guardian speaking on camera\n- that the teen has permission to use Divine\n- that the parent or guardian knows about the account and will supervise its use\n\nCountry/ies of residence:\n\nHelpful context:\n\nThanks.";
+const TEEN_REVIEW_MAILTO = mailtoLink(
+  TEEN_REVIEW_EMAIL_SUBJECT,
+  TEEN_REVIEW_EMAIL_BODY,
+);
+
+// 16-or-older "flagged by mistake" path. Shared so the inline link and the
+// button below it open the same prefilled message.
+const MISTAKE_REVIEW_EMAIL_SUBJECT =
+  "I am 16 or older and think this account was flagged by mistake";
+const MISTAKE_REVIEW_EMAIL_BODY =
+  "Hi Divine support,\n\nI'm 16 or older and I think this account was flagged by mistake.\n\nAccount username or link:\n\nAny helpful context:\n\nThanks,";
+const MISTAKE_REVIEW_MAILTO = mailtoLink(
+  MISTAKE_REVIEW_EMAIL_SUBJECT,
+  MISTAKE_REVIEW_EMAIL_BODY,
+);
+
 export function AgeReviewPage() {
   return (
     <MarketingLayout>
@@ -110,9 +132,9 @@ export function AgeReviewPage() {
             <p>
               We're sorry. Divine must close an under-13 account and delete the data it holds once it confirms or has actual knowledge that the account holder is under 13, and in all cases no later than the 15-day mark. Emailing
               won't pause the clock here—the rules around services for
-              kids under 13 tie our hands. The same person can come back
-              and create a new account when they're 13 or older (with
-              parental consent required between ages 13-15).
+              kids under 13 tie our hands. Where the rules allow, the same
+              person can come back and create a new account when they're 13
+              or older (with parental consent required between ages 13-15).
             </p>
           </CardContent>
         </Card>
@@ -176,7 +198,7 @@ export function AgeReviewPage() {
                     <span>
                       Email{" "}
                       <a
-                        href={`mailto:${SUPPORT_EMAIL}`}
+                        href={TEEN_REVIEW_MAILTO}
                         className="text-brand-dark-green dark:text-brand-green underline underline-offset-2 hover:opacity-80 break-all"
                       >
                         {SUPPORT_EMAIL}
@@ -221,10 +243,7 @@ export function AgeReviewPage() {
 
                 <div className="pt-2">
                   <SupportEmailButton
-                    href={mailtoLink(
-                      "Account review—13 to 15",
-                      "Hi Divine support,\n\nI'm a parent or guardian. I'm attaching a short private video to confirm the account on Divine.\n\nAccount username or link:\n\nTeen's age (13, 14, or 15):\n\nThanks,",
-                    )}
+                    href={TEEN_REVIEW_MAILTO}
                     label={`Email ${SUPPORT_EMAIL}`}
                   />
                 </div>
@@ -240,7 +259,7 @@ export function AgeReviewPage() {
               </div>
               <p>
                 The video is used to confirm the situation and is handled by
-                Divine's support and trust &amp; safety team. Divine uses the video only for account review, safety, legal, and compliance purposes, and keeps it only as long as reasonably necessary for those purposes unless a longer retention period is required or permitted by law. It isn't
+                Divine's Support and Trust &amp; Safety teams. Divine uses the video only for account review, safety, legal, and compliance purposes, and keeps it only as long as reasonably necessary for those purposes unless a longer retention period is required or permitted by law. It isn't
                 published anywhere on Divine and isn't shared with other
                 users.
               </p>
@@ -276,7 +295,7 @@ export function AgeReviewPage() {
                   <span>
                     Email{" "}
                     <a
-                      href={`mailto:${SUPPORT_EMAIL}`}
+                      href={MISTAKE_REVIEW_MAILTO}
                       className="text-brand-dark-green dark:text-brand-green underline underline-offset-2 hover:opacity-80 break-all"
                     >
                       {SUPPORT_EMAIL}
@@ -329,10 +348,7 @@ export function AgeReviewPage() {
 
               <div className="pt-2">
                 <SupportEmailButton
-                  href={mailtoLink(
-                    "I am 16 or older and think this account was flagged by mistake",
-                    "Hi Divine support,\n\nI'm 16 or older and I think this account was flagged by mistake.\n\nAccount username or link:\n\nAny helpful context:\n\nThanks,",
-                  )}
+                  href={MISTAKE_REVIEW_MAILTO}
                   label={`Email ${SUPPORT_EMAIL}`}
                 />
               </div>
