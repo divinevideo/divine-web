@@ -509,6 +509,18 @@ export function AppSidebar({ className }: { className?: string }) {
                 {t('menu.safety')}
               </button>
               <button
+                onClick={() => navigate('/family')}
+                className="transition-colors hover:text-primary"
+              >
+                Family Resources
+              </button>
+              <button
+                onClick={() => navigate('/kids')}
+                className="transition-colors hover:text-primary"
+              >
+                Kids Policy
+              </button>
+              <button
                 onClick={() => navigate('/dmca')}
                 className="transition-colors hover:text-primary"
               >

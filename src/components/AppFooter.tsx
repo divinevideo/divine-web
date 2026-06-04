@@ -87,6 +87,14 @@ export function AppFooter() {
                   Safety
                 </SmartLink>
                 <span>•</span>
+                <SmartLink to="/family" className="hover:text-brand-off-white transition-colors">
+                  Family Resources
+                </SmartLink>
+                <span>•</span>
+                <SmartLink to="/kids" className="hover:text-brand-off-white transition-colors">
+                  Kids Policy
+                </SmartLink>
+                <span>•</span>
                 <SmartLink to="/dmca" className="hover:text-brand-off-white transition-colors">
                   DMCA & Copyright
                 </SmartLink>
