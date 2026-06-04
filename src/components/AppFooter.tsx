@@ -88,11 +88,11 @@ export function AppFooter() {
                 </SmartLink>
                 <span>•</span>
                 <SmartLink to="/family" className="hover:text-brand-off-white transition-colors">
-                  Family Resources
+                  {t('menu.familyResources')}
                 </SmartLink>
                 <span>•</span>
                 <SmartLink to="/kids" className="hover:text-brand-off-white transition-colors">
-                  Kids Policy
+                  {t('menu.kidsPolicy')}
                 </SmartLink>
                 <span>•</span>
                 <SmartLink to="/dmca" className="hover:text-brand-off-white transition-colors">

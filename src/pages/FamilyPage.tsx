@@ -1,7 +1,6 @@
 // ABOUTME: Family resource hub for parents, guardians, and teens at /family
 // ABOUTME: Conversation-first guidance, honest app limits, and trusted outside resources
 
-import { useEffect, useState } from "react";
 import {
   ChatsCircle,
   Pause,
@@ -20,11 +19,15 @@ import {
   Heart,
   Lightbulb,
   Flag,
-  ArrowUp,
 } from "@phosphor-icons/react";
 
 import { MarketingLayout } from "@/components/MarketingLayout";
-import { SectionHeader } from "@/components/brand/SectionHeader";
+import {
+  Anchor,
+  BackToTopButton,
+  SectionHero,
+  staticPageLinkCardClass,
+} from "@/components/static-pages";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ZendeskWidget } from "@/components/ZendeskWidget";
 
@@ -159,10 +162,7 @@ export function FamilyPage() {
             <HouseLine weight="fill" className="h-4 w-4" />
             <span>For families on Divine</span>
           </div>
-          <h1
-            className="font-display font-extrabold tracking-tight text-4xl md:text-6xl leading-[1.05] text-brand-off-white mb-6"
-            style={{ fontFamily: "'Bricolage Grotesque', system-ui, sans-serif" }}
-          >
+          <h1 className="font-display font-extrabold tracking-tight text-4xl md:text-6xl leading-[1.05] text-brand-off-white mb-6">
             Safer social media use starts with conversation.
           </h1>
           <p className="text-lg md:text-xl text-brand-light-green max-w-3xl leading-relaxed">
@@ -800,7 +800,7 @@ export function FamilyPage() {
                       href={r.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="group block brand-card brand-offset-shadow-green p-6 hover:-translate-x-[2px] hover:-translate-y-[2px] hover:[box-shadow:8px_8px_0_0_hsl(var(--brand-green))] transition-all"
+                      className={staticPageLinkCardClass("green")}
                     >
                       <div className="flex items-start justify-between gap-3">
                         <h4 className="font-display font-extrabold tracking-tight text-lg text-brand-dark-green dark:text-brand-off-white">
@@ -828,7 +828,7 @@ export function FamilyPage() {
           </div>
           <a
             href="/kids"
-            className="group block brand-card brand-offset-shadow-violet p-6 hover:-translate-x-[2px] hover:-translate-y-[2px] hover:[box-shadow:8px_8px_0_0_hsl(var(--brand-violet))] transition-all"
+            className={staticPageLinkCardClass("violet")}
           >
             <div className="flex items-start justify-between gap-3">
               <div>
@@ -873,78 +873,6 @@ export function FamilyPage() {
 }
 
 export default FamilyPage;
-
-// ——————————————————————————————————————————————————————————————
-// Local presentation helpers—kept in-file so this page is easy to update.
-// ——————————————————————————————————————————————————————————————
-
-function BackToTopButton() {
-  const [visible, setVisible] = useState(false);
-
-  useEffect(() => {
-    const onScroll = () => setVisible(window.scrollY > 600);
-    onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
-
-  const goTop = () => {
-    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    window.scrollTo({ top: 0, behavior: reduced ? "auto" : "smooth" });
-  };
-
-  return (
-    <button
-      type="button"
-      onClick={goTop}
-      aria-label="Back to top"
-      aria-hidden={!visible}
-      tabIndex={visible ? 0 : -1}
-      className={`fixed right-5 bottom-[calc(1.25rem+env(safe-area-inset-bottom))] z-40 h-12 w-12 rounded-full bg-brand-green text-brand-dark-green border-2 border-brand-dark-green brand-offset-shadow-sm-dark flex items-center justify-center transition-all duration-200 hover:-translate-x-[2px] hover:-translate-y-[2px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-dark-green focus-visible:ring-offset-2 ${
-        visible
-          ? "opacity-100 translate-y-0 pointer-events-auto"
-          : "opacity-0 translate-y-2 pointer-events-none"
-      }`}
-    >
-      <ArrowUp weight="bold" className="h-5 w-5" />
-    </button>
-  );
-}
-
-function Anchor({ id, children }: { id: string; children: React.ReactNode }) {
-  return (
-    <section id={id} className="scroll-mt-24">
-      {children}
-    </section>
-  );
-}
-
-function SectionHero({
-  eyebrow,
-  icon,
-  title,
-  lead,
-}: {
-  eyebrow: string;
-  icon: React.ReactNode;
-  title: string;
-  lead: string;
-}) {
-  return (
-    <div className="mb-8">
-      <div className="flex items-center gap-2 text-xs font-semibold tracking-wide text-brand-dark-green dark:text-brand-green mb-3">
-        {icon}
-        <span>{eyebrow}</span>
-      </div>
-      <SectionHeader as="h2" className="text-3xl md:text-4xl mb-4">
-        {title}
-      </SectionHeader>
-      <p className="text-lg leading-relaxed text-muted-foreground max-w-3xl">
-        {lead}
-      </p>
-    </div>
-  );
-}
 
 function FrameStep({
   icon,

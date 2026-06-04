@@ -1,7 +1,6 @@
 // ABOUTME: External moderation-flow page at /age-review for accounts flagged as possibly under 16
-// ABOUTME: Deadline-shaped: 15-day window, 13–15 parent video, 16+ mistake-flag; FAQ-style content lives at /family (see _AgeReviewFAQStaging.tsx)
+// ABOUTME: Deadline-shaped: 15-day window, 13–15 parent video, 16+ mistake-flag; policy context lives at /kids
 
-import { useEffect, useState } from "react";
 import {
   Info,
   VideoCamera,
@@ -11,14 +10,19 @@ import {
   HouseLine,
   Heart,
   ArrowSquareOut,
-  ArrowUp,
   LockKey,
 } from "@phosphor-icons/react";
 
 import { MarketingLayout } from "@/components/MarketingLayout";
-import { SectionHeader } from "@/components/brand/SectionHeader";
+import {
+  Anchor,
+  BackToTopButton,
+  SectionHero,
+  staticPageLinkCardClass,
+  SupportEmailButton,
+} from "@/components/static-pages";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { buildMailtoLink } from "@/lib/mailto";
 
 const SUPPORT_EMAIL = "support@divine.video";
 const REVIEW_WINDOW_DAYS = 15;
@@ -34,20 +38,14 @@ const SECTIONS: SectionAnchor[] = [
   { id: "no-response", title: "If we don't hear from you" },
 ];
 
-function mailtoLink(subject: string, body?: string): string {
-  const params = new URLSearchParams();
-  params.set("subject", subject);
-  if (body) params.set("body", body);
-  return `mailto:${SUPPORT_EMAIL}?${params.toString().replace(/\+/g, "%20")}`;
-}
-
 // Mirrors the 13-15 parent-consent email in divine-mobile
 // (minorAccountReviewParentConsentEmailSubject / ...Body) so the in-app flow
 // and this page open the same prefilled message.
 const TEEN_REVIEW_EMAIL_SUBJECT = "13-15 account review help";
 const TEEN_REVIEW_EMAIL_BODY =
   "Hi Divine support,\n\nI am contacting Divine about an account for a teen who is 13 to 15.\n\nI have attached a short private video that shows:\n- the teen\n- a parent or guardian speaking on camera\n- that the teen has permission to use Divine\n- that the parent or guardian knows about the account and will supervise its use\n\nCountry/ies of residence:\n\nHelpful context:\n\nThanks.";
-const TEEN_REVIEW_MAILTO = mailtoLink(
+const TEEN_REVIEW_MAILTO = buildMailtoLink(
+  SUPPORT_EMAIL,
   TEEN_REVIEW_EMAIL_SUBJECT,
   TEEN_REVIEW_EMAIL_BODY,
 );
@@ -58,7 +56,8 @@ const MISTAKE_REVIEW_EMAIL_SUBJECT =
   "I am 16 or older and think this account was flagged by mistake";
 const MISTAKE_REVIEW_EMAIL_BODY =
   "Hi Divine support,\n\nI'm 16 or older and I think this account was flagged by mistake.\n\nAccount username or link:\n\nAny helpful context:\n\nThanks,";
-const MISTAKE_REVIEW_MAILTO = mailtoLink(
+const MISTAKE_REVIEW_MAILTO = buildMailtoLink(
+  SUPPORT_EMAIL,
   MISTAKE_REVIEW_EMAIL_SUBJECT,
   MISTAKE_REVIEW_EMAIL_BODY,
 );
@@ -75,10 +74,7 @@ export function AgeReviewPage() {
             <Info weight="fill" className="h-4 w-4" />
             <span>Account review</span>
           </div>
-          <h1
-            className="font-display font-extrabold tracking-tight text-4xl md:text-5xl leading-[1.05] text-brand-off-white mb-6"
-            style={{ fontFamily: "'Bricolage Grotesque', system-ui, sans-serif" }}
-          >
+          <h1 className="font-display font-extrabold tracking-tight text-4xl md:text-5xl leading-[1.05] text-brand-off-white mb-6">
             Your account is under review
           </h1>
           <p className="text-lg md:text-xl text-brand-light-green max-w-3xl leading-relaxed">
@@ -411,7 +407,7 @@ export function AgeReviewPage() {
 
           <a
             href="/kids"
-            className="group block brand-card brand-offset-shadow-green p-6 hover:-translate-x-[2px] hover:-translate-y-[2px] hover:[box-shadow:8px_8px_0_0_hsl(var(--brand-green))] transition-all"
+            className={staticPageLinkCardClass("green")}
           >
             <div className="flex items-start justify-between gap-3">
               <div>
@@ -452,86 +448,3 @@ export function AgeReviewPage() {
 }
 
 export default AgeReviewPage;
-
-// ——————————————————————————————————————————————————————————————
-// Local presentation helpers
-// ——————————————————————————————————————————————————————————————
-
-function SupportEmailButton({ href, label }: { href: string; label: string }) {
-  return (
-    <Button asChild variant="sticker" size="lg">
-      <a href={href} className="inline-flex items-center gap-2">
-        <EnvelopeSimple weight="fill" className="h-4 w-4" />
-        {label}
-      </a>
-    </Button>
-  );
-}
-
-function BackToTopButton() {
-  const [visible, setVisible] = useState(false);
-
-  useEffect(() => {
-    const onScroll = () => setVisible(window.scrollY > 600);
-    onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
-
-  const goTop = () => {
-    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    window.scrollTo({ top: 0, behavior: reduced ? "auto" : "smooth" });
-  };
-
-  return (
-    <button
-      type="button"
-      onClick={goTop}
-      aria-label="Back to top"
-      aria-hidden={!visible}
-      tabIndex={visible ? 0 : -1}
-      className={`fixed right-5 bottom-[calc(1.25rem+env(safe-area-inset-bottom))] z-40 h-12 w-12 rounded-full bg-brand-green text-brand-dark-green border-2 border-brand-dark-green brand-offset-shadow-sm-dark flex items-center justify-center transition-all duration-200 hover:-translate-x-[2px] hover:-translate-y-[2px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-dark-green focus-visible:ring-offset-2 ${
-        visible
-          ? "opacity-100 translate-y-0 pointer-events-auto"
-          : "opacity-0 translate-y-2 pointer-events-none"
-      }`}
-    >
-      <ArrowUp weight="bold" className="h-5 w-5" />
-    </button>
-  );
-}
-
-function Anchor({ id, children }: { id: string; children: React.ReactNode }) {
-  return (
-    <section id={id} className="scroll-mt-24">
-      {children}
-    </section>
-  );
-}
-
-function SectionHero({
-  eyebrow,
-  icon,
-  title,
-  lead,
-}: {
-  eyebrow: string;
-  icon: React.ReactNode;
-  title: string;
-  lead: string;
-}) {
-  return (
-    <div className="mb-8">
-      <div className="flex items-center gap-2 text-xs font-semibold tracking-wide text-brand-dark-green dark:text-brand-green mb-3">
-        {icon}
-        <span>{eyebrow}</span>
-      </div>
-      <SectionHeader as="h2" className="text-3xl md:text-4xl mb-4">
-        {title}
-      </SectionHeader>
-      <p className="text-lg leading-relaxed text-muted-foreground max-w-3xl">
-        {lead}
-      </p>
-    </div>
-  );
-}

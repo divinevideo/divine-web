@@ -1,7 +1,6 @@
 // ABOUTME: Policy page at /kids explaining how Divine handles accounts for under-16s
 // ABOUTME: Long-form FAQ-style page—paired with the deadline-shaped action page at /age-review
 
-import { useEffect, useState } from "react";
 import {
   Info,
   UsersThree,
@@ -9,15 +8,19 @@ import {
   ShieldCheck,
   ChatsCircle,
   HouseLine,
-  EnvelopeSimple,
   ArrowSquareOut,
-  ArrowUp,
 } from "@phosphor-icons/react";
 
 import { MarketingLayout } from "@/components/MarketingLayout";
-import { SectionHeader } from "@/components/brand/SectionHeader";
+import {
+  Anchor,
+  BackToTopButton,
+  SectionHero,
+  staticPageLinkCardClass,
+  SupportEmailButton,
+} from "@/components/static-pages";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { buildMailtoLink } from "@/lib/mailto";
 
 const SUPPORT_EMAIL = "support@divine.video";
 
@@ -35,16 +38,10 @@ const SECTIONS: SectionAnchor[] = [
   { id: "family-guidance", title: "More family guidance" },
 ];
 
-function mailtoLink(subject: string, body?: string): string {
-  const params = new URLSearchParams();
-  params.set("subject", subject);
-  if (body) params.set("body", body);
-  return `mailto:${SUPPORT_EMAIL}?${params.toString().replace(/\+/g, "%20")}`;
-}
-
 // Parent-discovery email for an under-13 account. Shared so the inline link
 // and the button below it open the same prefilled message.
-const UNDER13_DISCOVERY_MAILTO = mailtoLink(
+const UNDER13_DISCOVERY_MAILTO = buildMailtoLink(
+  SUPPORT_EMAIL,
   "Account review—under 13",
   "Hi Divine support,\n\nI'm a parent or guardian. I've discovered a Divine account belonging to a child in my care who is under 13.\n\nAccount username or link:\n\nAnything else that might help:\n\nThanks,",
 );
@@ -61,10 +58,7 @@ export function KidsPolicyPage() {
             <UsersThree weight="fill" className="h-4 w-4" />
             <span>Kids on Divine</span>
           </div>
-          <h1
-            className="font-display font-extrabold tracking-tight text-4xl md:text-6xl leading-[1.05] text-brand-off-white mb-6"
-            style={{ fontFamily: "'Bricolage Grotesque', system-ui, sans-serif" }}
-          >
+          <h1 className="font-display font-extrabold tracking-tight text-4xl md:text-6xl leading-[1.05] text-brand-off-white mb-6">
             How accounts work for kids on Divine
           </h1>
           <p className="text-lg md:text-xl text-brand-light-green max-w-3xl leading-relaxed">
@@ -357,7 +351,7 @@ export function KidsPolicyPage() {
           {/* Link out to the action page */}
           <a
             href="/age-review"
-            className="mt-6 group block brand-card brand-offset-shadow-green p-6 hover:-translate-x-[2px] hover:-translate-y-[2px] hover:[box-shadow:8px_8px_0_0_hsl(var(--brand-green))] transition-all"
+            className={staticPageLinkCardClass("green", "mt-6")}
           >
             <div className="flex items-start justify-between gap-3">
               <div>
@@ -437,7 +431,7 @@ export function KidsPolicyPage() {
 
           <a
             href="/family"
-            className="group block brand-card brand-offset-shadow-green p-6 hover:-translate-x-[2px] hover:-translate-y-[2px] hover:[box-shadow:8px_8px_0_0_hsl(var(--brand-green))] transition-all"
+            className={staticPageLinkCardClass("green")}
           >
             <div className="flex items-start justify-between gap-3">
               <div>
@@ -478,86 +472,3 @@ export function KidsPolicyPage() {
 }
 
 export default KidsPolicyPage;
-
-// ——————————————————————————————————————————————————————————————
-// Local presentation helpers
-// ——————————————————————————————————————————————————————————————
-
-function SupportEmailButton({ href, label }: { href: string; label: string }) {
-  return (
-    <Button asChild variant="sticker" size="lg">
-      <a href={href} className="inline-flex items-center gap-2">
-        <EnvelopeSimple weight="fill" className="h-4 w-4" />
-        {label}
-      </a>
-    </Button>
-  );
-}
-
-function BackToTopButton() {
-  const [visible, setVisible] = useState(false);
-
-  useEffect(() => {
-    const onScroll = () => setVisible(window.scrollY > 600);
-    onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
-
-  const goTop = () => {
-    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    window.scrollTo({ top: 0, behavior: reduced ? "auto" : "smooth" });
-  };
-
-  return (
-    <button
-      type="button"
-      onClick={goTop}
-      aria-label="Back to top"
-      aria-hidden={!visible}
-      tabIndex={visible ? 0 : -1}
-      className={`fixed right-5 bottom-[calc(1.25rem+env(safe-area-inset-bottom))] z-40 h-12 w-12 rounded-full bg-brand-green text-brand-dark-green border-2 border-brand-dark-green brand-offset-shadow-sm-dark flex items-center justify-center transition-all duration-200 hover:-translate-x-[2px] hover:-translate-y-[2px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-dark-green focus-visible:ring-offset-2 ${
-        visible
-          ? "opacity-100 translate-y-0 pointer-events-auto"
-          : "opacity-0 translate-y-2 pointer-events-none"
-      }`}
-    >
-      <ArrowUp weight="bold" className="h-5 w-5" />
-    </button>
-  );
-}
-
-function Anchor({ id, children }: { id: string; children: React.ReactNode }) {
-  return (
-    <section id={id} className="scroll-mt-24">
-      {children}
-    </section>
-  );
-}
-
-function SectionHero({
-  eyebrow,
-  icon,
-  title,
-  lead,
-}: {
-  eyebrow: string;
-  icon: React.ReactNode;
-  title: string;
-  lead: string;
-}) {
-  return (
-    <div className="mb-8">
-      <div className="flex items-center gap-2 text-xs font-semibold tracking-wide text-brand-dark-green dark:text-brand-green mb-3">
-        {icon}
-        <span>{eyebrow}</span>
-      </div>
-      <SectionHeader as="h2" className="text-3xl md:text-4xl mb-4">
-        {title}
-      </SectionHeader>
-      <p className="text-lg leading-relaxed text-muted-foreground max-w-3xl">
-        {lead}
-      </p>
-    </div>
-  );
-}

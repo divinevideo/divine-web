@@ -512,13 +512,13 @@ export function AppSidebar({ className }: { className?: string }) {
                 onClick={() => navigate('/family')}
                 className="transition-colors hover:text-primary"
               >
-                Family Resources
+                {t('menu.familyResources')}
               </button>
               <button
                 onClick={() => navigate('/kids')}
                 className="transition-colors hover:text-primary"
               >
-                Kids Policy
+                {t('menu.kidsPolicy')}
               </button>
               <button
                 onClick={() => navigate('/dmca')}
