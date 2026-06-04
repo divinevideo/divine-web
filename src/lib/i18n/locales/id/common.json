@@ -435,7 +435,7 @@
     "errorFileNoValidKey": "File tidak berisi kunci rahasia yang valid.",
     "errorFileReadFailed": "Gagal membaca file.",
     "errorInviteValidationFailed": "Tidak bisa memvalidasi kode invite",
-            "errorInviteCodeUsed": "Invite code already claimed - sorry!",
+            "errorInviteCodeUsed": "This invite code has already been used",
     "errorSignInStartFailed": "Tidak bisa memulai sign-in",
     "errorWaitlistJoinFailed": "Tidak bisa bergabung ke waitlist"
   },
