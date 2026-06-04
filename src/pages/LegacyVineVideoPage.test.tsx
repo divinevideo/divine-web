@@ -31,10 +31,8 @@ function renderWithRoute(initialPath: string) {
 
 function setLookupResult(result: { video: unknown; isLoading: boolean }) {
   mockUseVideoByIdFunnelcake.mockReturnValue({
-    video: null,
     videos: null,
     windowOffset: 0,
-    isLoading: false,
     error: null,
     ...result,
   });
