@@ -42,6 +42,13 @@ function mailtoLink(subject: string, body?: string): string {
   return `mailto:${SUPPORT_EMAIL}?${params.toString().replace(/\+/g, "%20")}`;
 }
 
+// Parent-discovery email for an under-13 account. Shared so the inline link
+// and the button below it open the same prefilled message.
+const UNDER13_DISCOVERY_MAILTO = mailtoLink(
+  "Account review—under 13",
+  "Hi Divine support,\n\nI'm a parent or guardian. I've discovered a Divine account belonging to a child in my care who is under 13.\n\nAccount username or link:\n\nAnything else that might help:\n\nThanks,",
+);
+
 export function KidsPolicyPage() {
   return (
     <MarketingLayout>
@@ -236,7 +243,7 @@ export function KidsPolicyPage() {
                   <span>
                     Email Divine support at{" "}
                     <a
-                      href={`mailto:${SUPPORT_EMAIL}`}
+                      href={UNDER13_DISCOVERY_MAILTO}
                       className="text-brand-dark-green dark:text-brand-green underline underline-offset-2 hover:opacity-80 break-all"
                     >
                       {SUPPORT_EMAIL}
@@ -279,10 +286,7 @@ export function KidsPolicyPage() {
 
               <div className="pt-2">
                 <SupportEmailButton
-                  href={mailtoLink(
-                    "Account review—under 13",
-                    "Hi Divine support,\n\nI'm a parent or guardian. I've discovered a Divine account belonging to a child in my care who is under 13.\n\nAccount username or link:\n\nAnything else that might help:\n\nThanks,",
-                  )}
+                  href={UNDER13_DISCOVERY_MAILTO}
                   label={`Email ${SUPPORT_EMAIL}`}
                 />
               </div>
@@ -308,9 +312,9 @@ export function KidsPolicyPage() {
           </Card>
 
           <p className="mt-6 text-sm text-muted-foreground leading-relaxed">
-            When they're 13 or older, the same person can create a new
-            account from scratch. The closed account itself doesn't
-            return.
+            When they're 13 or older, and local law permits, the same
+            person can create a new account from scratch. The closed account
+            itself doesn't return.
           </p>
         </Anchor>
 
@@ -345,7 +349,7 @@ export function KidsPolicyPage() {
                 </li>
               </ul>
               <p className="text-sm text-muted-foreground pt-1">
-                Phone-camera quality is fine. There's no script—natural is better. Keep it short. Please don't include more information than Divine asks for here; the review is meant to confirm age, permission, and parent or guardian awareness, not to collect extra documents or background details. The video is handled by Divine's support and trust & safety team, used only for account review, safety, legal, and compliance purposes, kept only as long as reasonably necessary for those purposes unless a longer retention period is required or permitted by law, and isn't published or shared with other users.
+                Phone-camera quality is fine. There's no script—natural is better. Keep it short. Please don't include more information than Divine asks for here; the review is meant to confirm age, permission, and parent or guardian awareness, not to collect extra documents or background details. The video is handled by Divine's Support and Trust & Safety teams, used only for account review, safety, legal, and compliance purposes, kept only as long as reasonably necessary for those purposes unless a longer retention period is required or permitted by law, and isn't published or shared with other users.
               </p>
             </CardContent>
           </Card>
@@ -465,7 +469,7 @@ export function KidsPolicyPage() {
             >
               {SUPPORT_EMAIL}
             </a>
-            . The support and trust &amp; safety team reads these.
+            . The Support and Trust &amp; Safety teams read these.
           </p>
         </div>
       </div>
