@@ -3,7 +3,9 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useHead, useSeoMeta } from '@unhead/react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { BrandLogo } from '@/components/brand/BrandLogo';
+import { SectionHeader } from '@/components/brand/SectionHeader';
 import { InviteCodeForm } from '@/components/auth/InviteCodeForm';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { DIVINE_IOS_APP_ID } from '@/lib/mobileStoreLinks';
@@ -117,25 +119,26 @@ const InvitesLandingPage = () => {
 
           {/* Header */}
           <div className="space-y-2">
-            <h1 className="text-3xl font-bold tracking-tight text-foreground">
+            <SectionHeader as="h2" className="text-3xl">
               {t('invitesLandingPage.heading')}
-            </h1>
+            </SectionHeader>
             <p className="text-muted-foreground">{t('invitesLandingPage.subheading')}</p>
           </div>
 
           {/* Content Card */}
-          <div className="rounded-2xl bg-card p-6 shadow-lg">
-            {isValidating ? (
-              <div className="rounded-2xl bg-muted px-4 py-6 text-center text-sm text-muted-foreground">
-                {t('loginDialog.checkingInvite')}
-              </div>
-            ) : validationError ? (
-              <Alert variant="destructive">
-                <AlertDescription>{validationError}</AlertDescription>
-              </Alert>
-            ) : null}
-
-            <div className="mt-4">
+          <Card>
+            <CardHeader>
+              {isValidating ? (
+                <div className="rounded-2xl bg-muted px-4 py-6 text-center text-sm text-muted-foreground">
+                  {t('loginDialog.checkingInvite')}
+                </div>
+              ) : validationError ? (
+                <Alert variant="destructive">
+                  <AlertDescription>{validationError}</AlertDescription>
+                </Alert>
+              ) : null}
+            </CardHeader>
+            <CardContent>
               <InviteCodeForm
                 inputClassName="text-center text-lg font-mono tracking-widest"
                 isLoading={isSubmitting || isValidating}
@@ -144,8 +147,8 @@ const InvitesLandingPage = () => {
                 value={inviteCode}
                 waitlistEnabled={false}
               />
-            </div>
-          </div>
+            </CardContent>
+          </Card>
 
           {/* Footer */}
           <p className="text-sm text-muted-foreground">
