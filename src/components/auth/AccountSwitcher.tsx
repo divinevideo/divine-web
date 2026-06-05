@@ -101,7 +101,7 @@ export function AccountSwitcher({ onAddAccountClick }: AccountSwitcherProps) {
           <DropdownMenuSeparator />
           <DropdownMenuLabel>{t('accountSwitcher.switchRelay')}</DropdownMenuLabel>
           <DropdownMenuItem onSelect={(e) => e.preventDefault()} className='p-2'>
-            <RelaySelector className='w-full' />
+            <RelaySelector className='w-full' contentClassName='z-[210]' />
           </DropdownMenuItem>
           {!isJwtCurrentUser ? (
             <>
