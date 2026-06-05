@@ -68,8 +68,11 @@ VitePWA({
         clientsClaim: true,
         navigateFallback: null,
         runtimeCaching: [],
-        // Allow larger JS bundles (default 2MB is too small for this app)
-        maximumFileSizeToCacheInBytes: 3 * 1024 * 1024, // 3MB
+        // Allow larger JS bundles (default 2MB is too small for this app).
+        // 16 locales × ~1500 keys of i18n catalog inlined via import.meta.glob
+        // pushes the main bundle past 3.5MB; 5MB gives headroom for further growth.
+        // Long-term fix: lazy-load locale JSON instead of eager glob import.
+        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5MB
       },
       includeAssets: [
         'app_icon.png',
@@ -143,6 +146,9 @@ VitePWA({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      // Fastly virtual modules — not available outside the Fastly runtime;
+      // tests that import them must vi.mock() the module in the test file.
+      "fastly:kv-store": path.resolve(__dirname, "./compute-js/src/__mocks__/fastly-kv-store.js"),
     },
   },
 }));

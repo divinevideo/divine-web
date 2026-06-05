@@ -2,6 +2,7 @@
 // ABOUTME: Shows platform icons with usernames, click to verify and view proof
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { GithubLogo as Github, ArrowSquareOut as ExternalLink, CheckCircle, Warning as AlertTriangle, CircleNotch as Loader2, LinkSimple as Link2, Shield } from '@phosphor-icons/react';
 import { Badge } from '@/components/ui/badge';
@@ -62,6 +63,7 @@ function PlatformIcon({ platform, className }: { platform: string; className?: s
 }
 
 function IdentityBadge({ identity, pubkey }: { identity: ExternalIdentity; pubkey: string }) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
 
   const config = SUPPORTED_PLATFORMS[identity.platform];
@@ -119,12 +121,12 @@ function IdentityBadge({ identity, pubkey }: { identity: ExternalIdentity; pubke
               {verification.isLoading ? (
                 <>
                   <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
-                  <span className="text-muted-foreground">Verifying...</span>
+                  <span className="text-muted-foreground">{t('linkedAccounts.verifying')}</span>
                 </>
               ) : verification.data?.verified ? (
                 <>
                   <CheckCircle className="h-3.5 w-3.5 text-green-500" />
-                  <span className="text-green-600 dark:text-green-400">Verified</span>
+                  <span className="text-green-600 dark:text-green-400">{t('linkedAccounts.verified')}</span>
                 </>
               ) : verification.data?.error === 'manual' ? (
                 <a
@@ -134,19 +136,19 @@ function IdentityBadge({ identity, pubkey }: { identity: ExternalIdentity; pubke
                   className="flex items-center gap-1.5 text-primary hover:underline"
                 >
                   <ExternalLink className="h-3.5 w-3.5" />
-                  <span>Check proof</span>
+                  <span>{t('linkedAccounts.checkProof')}</span>
                 </a>
               ) : (
                 <>
                   <AlertTriangle className="h-3.5 w-3.5 text-yellow-500" />
                   <span className="text-yellow-600 dark:text-yellow-400">
-                    {verification.data?.error || 'Unverified'}
+                    {verification.data?.error || t('linkedAccounts.unverified')}
                   </span>
                 </>
               )}
             </div>
           ) : (
-            <Badge variant="outline" className="text-xs">No proof</Badge>
+            <Badge variant="outline" className="text-xs">{t('linkedAccounts.noProof')}</Badge>
           )}
 
           {/* Links */}
@@ -159,7 +161,7 @@ function IdentityBadge({ identity, pubkey }: { identity: ExternalIdentity; pubke
                 className="text-xs text-primary hover:underline flex items-center gap-1"
               >
                 <ExternalLink className="h-3 w-3" />
-                Profile
+                {t('linkedAccounts.profileLink')}
               </a>
             )}
             {identity.proofUrl && (
@@ -170,7 +172,7 @@ function IdentityBadge({ identity, pubkey }: { identity: ExternalIdentity; pubke
                 className="text-xs text-primary hover:underline flex items-center gap-1"
               >
                 <ExternalLink className="h-3 w-3" />
-                Proof
+                {t('linkedAccounts.proofLink')}
               </a>
             )}
           </div>
@@ -183,6 +185,7 @@ function IdentityBadge({ identity, pubkey }: { identity: ExternalIdentity; pubke
 // Note: VerificationSummary is rendered but individual badges hide themselves
 // if verification fails, so this just provides context for what's visible
 function VerificationSummary({ identities }: { identities: ExternalIdentity[] }) {
+  const { t } = useTranslation();
   const proofCount = identities.filter((id) => !!id.proof).length;
 
   if (proofCount === 0) return null;
@@ -196,15 +199,14 @@ function VerificationSummary({ identities }: { identities: ExternalIdentity[] })
           className="h-7 gap-1.5 px-2 text-muted-foreground hover:text-foreground"
         >
           <Shield className="h-3.5 w-3.5" />
-          <span className="text-xs">Linked accounts</span>
+          <span className="text-xs">{t('linkedAccounts.linkedAccountsLabel')}</span>
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-56 p-3" align="start">
         <div className="space-y-1.5">
-          <p className="font-medium text-sm">Identity verification</p>
+          <p className="font-medium text-sm">{t('linkedAccounts.identityVerificationTitle')}</p>
           <p className="text-xs text-muted-foreground">
-            Linked accounts are verified using NIP-39 identity proofs.
-            Only verified accounts are shown.
+            {t('linkedAccounts.identityVerificationDescription')}
           </p>
         </div>
       </PopoverContent>

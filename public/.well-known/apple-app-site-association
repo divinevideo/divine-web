@@ -22,6 +22,10 @@
             "comment": "Search deep links"
           },
           {
+            "/": "/invite/*",
+            "comment": "Invite redemption deep links"
+          },
+          {
             "/": "/app/callback",
             "comment": "OAuth callback for Divine app"
           }

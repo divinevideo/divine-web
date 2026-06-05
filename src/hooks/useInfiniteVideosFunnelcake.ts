@@ -7,19 +7,23 @@ import { getFunnelcakeBaseUrl } from '@/config/api';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import type { ParsedVideoData } from '@/types/video';
 import type { FunnelcakeFetchOptions } from '@/types/funnelcake';
-import { fetchVideos, searchVideos, fetchUserVideos, fetchUserFeed, fetchRecommendations } from '@/lib/funnelcakeClient';
+import { fetchVideos, fetchVideosV2, searchVideos, fetchUserVideos, fetchUserFeed, fetchRecommendations } from '@/lib/funnelcakeClient';
 import { enrichAgeRestrictedVideos } from '@/lib/ageRestrictedVideos';
 import { transformToVideoPage } from '@/lib/funnelcakeTransform';
 import { debugLog } from '@/lib/debug';
 import { performanceMonitor } from '@/lib/performanceMonitoring';
 
-export type FunnelcakeFeedType = 'trending' | 'recent' | 'classics' | 'hashtag' | 'profile' | 'home' | 'recommendations' | 'category';
-export type FunnelcakeSortMode = 'trending' | 'recent' | 'loops' | 'engagement' | 'classic';
+export type FunnelcakeFeedType = 'trending' | 'recent' | 'classics' | 'hashtag' | 'profile' | 'home' | 'recommendations' | 'category' | 'popular';
+export type FunnelcakeSortMode = 'trending' | 'recent' | 'loops' | 'engagement' | 'classic' | 'watching';
+export type PopularSource = 'new' | 'classic' | 'all';
+export type PopularPeriod = 'now' | 'today' | 'week' | 'month' | 'all';
 
 interface UseInfiniteVideosFunnelcakeOptions {
   feedType: FunnelcakeFeedType;
   apiUrl?: string;          // Override API URL (for classics always using Divine)
   sortMode?: FunnelcakeSortMode;
+  popularSource?: PopularSource;
+  popularPeriod?: PopularPeriod;
   hashtag?: string;         // For hashtag feed
   category?: string;        // For category feed
   pubkey?: string;          // For profile and home feeds
@@ -34,6 +38,8 @@ interface FunnelcakeVideoPage {
   offset?: number;
   /** Opaque cursor string for recommendations pagination */
   recommendationsCursor?: string;
+  /** Opaque cursor string for v2 endpoints (trending) */
+  v2Cursor?: string;
   mode?: 'recommendations' | 'popular';
 }
 
@@ -90,13 +96,24 @@ function isRecommendationsCursorPageParam(
 function getFetchOptions(
   feedType: FunnelcakeFeedType,
   sortMode?: FunnelcakeSortMode,
-  pageSize: number = 20
+  pageSize: number = 20,
+  popularSource?: PopularSource,
+  popularPeriod?: PopularPeriod
 ): FunnelcakeFetchOptions {
   const baseOptions: FunnelcakeFetchOptions = {
     limit: pageSize,
   };
 
   switch (feedType) {
+    case 'popular':
+      return {
+        ...baseOptions,
+        sort: 'popular',
+        period: popularPeriod ?? 'now',
+        ...(popularSource === 'new' ? { exclude_platform: 'vine' } : {}),
+        ...(popularSource === 'classic' ? { platform: 'vine' } : {}),
+      };
+
     case 'classics':
       // Classic Vines: filter by platform=vine, sort by loops
       return {
@@ -107,9 +124,11 @@ function getFetchOptions(
       };
 
     case 'trending':
+      // Trending uses /api/v2/videos with sort=watching by default — 24h CDN view
+      // count with no age decay, surfaces classic Vines getting current attention.
       return {
         ...baseOptions,
-        sort: sortMode === 'classic' ? 'loops' : (sortMode || 'trending'),
+        sort: sortMode === 'classic' ? 'loops' : (sortMode || 'watching'),
         ...(sortMode === 'classic' ? { classic: true, platform: 'vine' } : {}),
       };
 
@@ -174,6 +193,8 @@ export function useInfiniteVideosFunnelcake({
   feedType,
   apiUrl,
   sortMode,
+  popularSource = 'new',
+  popularPeriod = 'now',
   hashtag,
   category,
   pubkey,
@@ -198,7 +219,7 @@ export function useInfiniteVideosFunnelcake({
     : (apiUrl || getFunnelcakeBaseUrl());
 
   return useInfiniteQuery<FunnelcakeVideoPage, Error>({
-    queryKey: ['funnelcake-videos', feedType, effectiveApiUrl, sortMode, hashtag, category, pubkey, pageSize, randomStartOffset],
+    queryKey: ['funnelcake-videos', feedType, effectiveApiUrl, sortMode, popularSource, popularPeriod, hashtag, category, pubkey, pageSize, randomStartOffset],
 
     queryFn: async ({ pageParam, signal }) => {
       const totalStart = performance.now();
@@ -243,7 +264,7 @@ export function useInfiniteVideosFunnelcake({
           ? String(pageParam)
           : undefined;
 
-      const options = getFetchOptions(feedType, sortMode, pageSize);
+      const options = getFetchOptions(feedType, sortMode, pageSize, popularSource, popularPeriod);
       options.signal = signal;
 
       // For randomized feeds, use offset directly instead of before cursor
@@ -264,7 +285,8 @@ export function useInfiniteVideosFunnelcake({
       const queryStart = performance.now();
       let response;
       let responseMode: FunnelcakeVideoPage['mode'];
-      let cursorType: 'timestamp' | 'offset' | 'cursor' = feedType === 'recommendations' ? 'cursor' : 'timestamp';
+      let cursorType: 'timestamp' | 'offset' | 'cursor' =
+        feedType === 'recommendations' || feedType === 'trending' || feedType === 'popular' ? 'cursor' : 'timestamp';
 
       try {
         switch (feedType) {
@@ -337,8 +359,14 @@ export function useInfiniteVideosFunnelcake({
             });
             break;
 
+          case 'popular':
+          case 'trending':
+            // v2 endpoint with sort=watching default; opaque cursor pagination.
+            response = await fetchVideosV2(effectiveApiUrl, options);
+            break;
+
           default:
-            // trending, recent, classics
+            // recent, classics
             response = await fetchVideos(effectiveApiUrl, options);
         }
       } catch (err) {
@@ -404,6 +432,7 @@ export function useInfiniteVideosFunnelcake({
         nextCursor: page.nextCursor,
         offset: page.offset,
         recommendationsCursor: responseMode === 'recommendations' ? page.rawCursor : undefined,
+        v2Cursor: feedType === 'trending' || feedType === 'popular' ? page.rawCursor : undefined,
         mode: responseMode,
       };
     },
@@ -435,6 +464,10 @@ export function useInfiniteVideosFunnelcake({
           mode: 'popular' as const,
           offset: getUniqueVideoCount(allPages),
         };
+      }
+      // Trending uses opaque v2 cursors — pass through as a string page param
+      if (feedType === 'trending' || feedType === 'popular') {
+        return lastPage.v2Cursor;
       }
       // Use offset for sorted pagination, timestamp for chronological
       if (lastPage.offset !== undefined) {

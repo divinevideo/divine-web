@@ -1,12 +1,12 @@
-import { House as Home, Compass, MagnifyingGlass as Search, Bell, User } from '@phosphor-icons/react';
+import { House as Home, Compass, MagnifyingGlass as Search, Bell, User, TrendUp } from '@phosphor-icons/react';
 import { useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useUnreadNotificationCount } from '@/hooks/useNotifications';
 import { useSubdomainNavigate } from '@/hooks/useSubdomainNavigate';
+import { buildProfileLinkPath } from '@/lib/profileLinks';
 import { cn } from '@/lib/utils';
-import { nip19 } from 'nostr-tools';
 
 export function BottomNav() {
   const navigate = useSubdomainNavigate();
@@ -17,8 +17,10 @@ export function BottomNav() {
 
   const getUserProfilePath = () => {
     if (!user?.pubkey) return '/';
-    const npub = nip19.npubEncode(user.pubkey);
-    return `/profile/${npub}`;
+    return buildProfileLinkPath({
+      pubkey: user.pubkey,
+      fallbackRoute: 'profile',
+    });
   };
 
   const isActive = (path: string) => location.pathname === path;
@@ -53,6 +55,20 @@ export function BottomNav() {
         >
           <Compass className={cn("h-5 w-5", isActive('/discovery') && "text-primary")} weight={isActive('/discovery') ? 'fill' : 'bold'} />
           <span className={cn("text-xs", isActive('/discovery') && "text-primary")}>{t('nav.discover')}</span>
+        </Button>
+
+        {/* Popular */}
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => navigate('/popular')}
+          className={cn(
+            "flex flex-col items-center justify-center gap-1 h-full flex-1 rounded-none hover:bg-transparent",
+            isActive('/popular') && "text-primary"
+          )}
+        >
+          <TrendUp className={cn("h-5 w-5", isActive('/popular') && "text-primary")} weight={isActive('/popular') ? 'fill' : 'bold'} />
+          <span className={cn("text-xs", isActive('/popular') && "text-primary")}>{t('nav.popular')}</span>
         </Button>
 
         {/* Search */}

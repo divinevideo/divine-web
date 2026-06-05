@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { NostrSigner } from '@nostrify/nostrify';
 import { DivineJWTSigner } from '@/lib/DivineJWTSigner';
 import { createUserFromLogin, getSafeUserSigner } from '@/lib/nostrLogin';
+import { selectCurrentUsers, isJwtResolving } from '@/lib/selectCurrentUsers';
 
 import { useAuthor } from './useAuthor.ts';
 import { useDivineSession } from './useDivineSession';
@@ -13,12 +14,19 @@ type CurrentUser = {
   signer?: NostrSigner;
 };
 
+// The result of resolving a hosted-JWT signer, tagged with the token it belongs
+// to. Tagging lets us ignore a resolution from a previous token after a swap, so
+// we never pair a stale pubkey (or stale error) with the current signer.
+type JwtResolution =
+  | { token: string; pubkey: string }
+  | { token: string; error: true };
+
 export function useCurrentUser() {
   const { nostr } = useNostr();
   const { logins } = useNostrLogin();
   const { getValidToken } = useDivineSession();
   const token = getValidToken();
-  const [jwtPubkey, setJwtPubkey] = useState<string>();
+  const [jwtResolution, setJwtResolution] = useState<JwtResolution>();
   const jwtSigner = useMemo(() => (
     token ? new DivineJWTSigner({ token }) : null
   ), [token]);
@@ -30,30 +38,37 @@ export function useCurrentUser() {
   useEffect(() => {
     let isCancelled = false;
 
-    if (!jwtSigner) {
-      setJwtPubkey(undefined);
+    if (!jwtSigner || !token) {
       return;
     }
-
-    setJwtPubkey(undefined);
 
     jwtSigner.getPublicKey()
       .then((pubkey) => {
         if (!isCancelled) {
-          setJwtPubkey(pubkey);
+          setJwtResolution({ token, pubkey });
         }
       })
       .catch((error) => {
         if (!isCancelled) {
           console.warn('Skipped invalid JWT session', error);
-          setJwtPubkey(undefined);
+          setJwtResolution({ token, error: true });
         }
       });
 
     return () => {
       isCancelled = true;
     };
-  }, [jwtSigner]);
+  }, [jwtSigner, token]);
+
+  // Only honor a resolution that belongs to the CURRENT token. After a token
+  // swap, the prior resolution is ignored (both pubkey and error), so the new
+  // signer reads as "resolving" rather than briefly pairing with stale data.
+  const jwtPubkey =
+    jwtResolution && jwtResolution.token === token && 'pubkey' in jwtResolution
+      ? jwtResolution.pubkey
+      : undefined;
+  const jwtError =
+    !!jwtResolution && jwtResolution.token === token && 'error' in jwtResolution;
 
   const manualUsers = useMemo(() => {
     const users: CurrentUser[] = [];
@@ -81,9 +96,16 @@ export function useCurrentUser() {
     };
   }, [jwtPubkey, jwtSigner]);
 
-  const users = useMemo(() => (
-    token ? (jwtUser ? [jwtUser] : []) : manualUsers
-  ), [jwtUser, manualUsers, token]);
+  const users = useMemo(
+    () => selectCurrentUsers({ hasToken: !!token, jwtUser, jwtError, manualUsers }),
+    [token, jwtUser, jwtError, manualUsers],
+  );
+
+  const isResolvingJwt = isJwtResolving({
+    hasSigner: !!jwtSigner,
+    jwtPubkey,
+    jwtError,
+  });
 
   const user = users[0];
   const signer = useMemo(() => getSafeUserSigner(user), [user]);
@@ -93,6 +115,7 @@ export function useCurrentUser() {
     user,
     users,
     signer,
+    isResolvingJwt,
     ...author.data,
   };
 }
