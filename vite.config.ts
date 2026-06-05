@@ -2,7 +2,6 @@ import path from "node:path";
 
 import react from "@vitejs/plugin-react-swc";
 import { configDefaults, defineConfig } from "vitest/config";
-import { VitePWA } from 'vite-plugin-pwa';
 
 // https://vitejs.dev/config/
 export default defineConfig(() => ({
@@ -56,80 +55,6 @@ export default defineConfig(() => ({
   },
   plugins: [
     react(),
-VitePWA({
-      registerType: 'autoUpdate',
-      injectRegister: null,
-      devOptions: {
-        enabled: false
-      },
-      workbox: {
-        // Disable all caching - network only
-        skipWaiting: true,
-        clientsClaim: true,
-        navigateFallback: null,
-        runtimeCaching: [],
-        // Allow larger JS bundles (default 2MB is too small for this app).
-        // 16 locales × ~1500 keys of i18n catalog inlined via import.meta.glob
-        // pushes the main bundle past 3.5MB; 5MB gives headroom for further growth.
-        // Long-term fix: lazy-load locale JSON instead of eager glob import.
-        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5MB
-      },
-      includeAssets: [
-        'app_icon.png',
-        'favicon.png',
-        'divine-logo.svg',
-        'og.png',
-        'no-ai-icon.svg',
-        'divine_icon_transparent.avif',
-        'browserconfig.xml'
-      ],
-      manifest: {
-        name: 'Divine Web - Short-form Looping Videos',
-        short_name: 'Divine',
-        description: 'Watch and share 6-second looping videos on the decentralized Nostr network.',
-        theme_color: '#27C58B',
-        background_color: '#09090b',
-        display: 'standalone',
-        orientation: 'portrait-primary',
-        scope: '/',
-        start_url: '/',
-        categories: ['entertainment', 'video', 'social'],
-        screenshots: [
-          {
-            src: '/screenshots/iPad 13 inch-0.avif',
-            sizes: '2048x2732',
-            type: 'image/avif',
-            form_factor: 'wide'
-          },
-          {
-            src: '/screenshots/iPad 13 inch-1.avif',
-            sizes: '2048x2732',
-            type: 'image/avif',
-            form_factor: 'wide'
-          },
-          {
-            src: '/screenshots/iPad 13 inch-2.avif',
-            sizes: '2048x2732',
-            type: 'image/avif',
-            form_factor: 'wide'
-          }
-        ],
-        icons: [
-          {
-            src: 'app_icon.png',
-            sizes: '1024x1024',
-            type: 'image/png',
-            purpose: 'any'
-          },
-          {
-            src: 'app_icon.png',
-            sizes: '1024x1024',
-            type: 'image/png',
-            purpose: 'maskable'
-          }
-        ]
-      }
-    })
   ],
   test: {
     globals: true,

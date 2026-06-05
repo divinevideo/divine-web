@@ -21,6 +21,7 @@ hydrateLoginFromCookie();
 import { createRoot } from 'react-dom/client';
 import { IconContext } from '@phosphor-icons/react';
 import { initializeI18n } from '@/lib/i18n';
+import { cleanupServiceWorkersAndCaches } from '@/lib/serviceWorkerCleanup';
 
 // Import polyfills first
 import './lib/polyfills.ts';
@@ -43,41 +44,9 @@ import './index.css';
 // Import custom fonts
 import '@fontsource-variable/inter';
 
-// PWA Service Worker Registration
-// The app works fully without a service worker — SW is only for offline caching.
-// Skip registration on subdomains (e.g., alice.divine.video) — they don't need SW
-// and it causes errors when sw.js routing differs from the apex domain.
-const isSubdomain = /^[^.]+\.(dvine\.video|divine\.video)$/.test(location.hostname)
-  && !location.hostname.startsWith('www.');
-if ('serviceWorker' in navigator && !isSubdomain) {
+if ('serviceWorker' in navigator || 'caches' in window) {
   window.addEventListener('load', () => {
-    try {
-      navigator.serviceWorker.register('/sw.js', { scope: '/' })
-        .then((registration) => {
-          console.log('[PWA] Service Worker registered:', registration.scope);
-
-          // Check for updates every hour
-          setInterval(() => {
-            registration.update();
-          }, 60 * 60 * 1000);
-        })
-        .catch((error) => {
-          // User/browser denied SW permission, or SW script unavailable.
-          // App continues to work normally without offline caching.
-          console.warn('[PWA] Service Worker registration failed (app works without it):', error.message);
-        });
-    } catch (error) {
-      // Synchronous throw on some browsers when SW is completely blocked
-      console.warn('[PWA] Service Worker not available:', error);
-    }
-  });
-} else if (isSubdomain && 'serviceWorker' in navigator) {
-  // Unregister any existing SW on subdomains to clean up stale registrations
-  navigator.serviceWorker.getRegistrations().then(registrations => {
-    for (const registration of registrations) {
-      registration.unregister();
-      console.log('[PWA] Unregistered stale SW on subdomain');
-    }
+    void cleanupServiceWorkersAndCaches();
   });
 }
 
