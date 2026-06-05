@@ -219,6 +219,30 @@ async function handleRequest(event) {
       const ogResponse = await handleDiscoveryOgTags(type);
       if (ogResponse) return ogResponse;
     }
+
+    // Family resource hub at /family on apex.
+    if (url.pathname === '/family') {
+      const ogResponse = handleFamilyOgTags(url, hostnameToUse);
+      if (ogResponse) {
+        return ogResponse;
+      }
+    }
+
+    // Age-review page at /age-review on apex.
+    if (url.pathname === '/age-review') {
+      const ogResponse = handleAgeReviewOgTags(url, hostnameToUse);
+      if (ogResponse) {
+        return ogResponse;
+      }
+    }
+
+    // Kids policy page at /kids on apex.
+    if (url.pathname === '/kids') {
+      const ogResponse = handleKidsPolicyOgTags(url, hostnameToUse);
+      if (ogResponse) {
+        return ogResponse;
+      }
+    }
   }
 
   // 7. Serve sw.js with no-cache to ensure browsers always get the latest service worker
@@ -676,8 +700,12 @@ function getSubdomain(hostname) {
     }
     if (hostname.endsWith('.' + apex)) {
       const subdomain = hostname.slice(0, -(apex.length + 1));
-      // Skip reserved subdomains
-      if (subdomain === 'www' || subdomain === 'admin' || subdomain === 'api') {
+      // Skip reserved subdomains.
+      if (
+        subdomain === 'www' ||
+        subdomain === 'admin' ||
+        subdomain === 'api'
+      ) {
         return null;
       }
       // Skip multi-level subdomains (e.g., names.admin.divine.video)
@@ -1172,6 +1200,93 @@ async function handleCategoryOgTags(request, url, funnelcakeTarget) {
   } catch (err) {
     console.error('handleCategoryOgTags error:', err.message, err.stack);
     return await publisherServer.serveRequest(request);
+  }
+}
+
+function handleFamilyOgTags(url, hostnameToUse) {
+  try {
+    const canonical = `https://${hostnameToUse}${url.pathname}`;
+    const html = buildCrawlerHtml({
+      title: 'For families on Divine — Conversation-first guidance for parents and teens',
+      description:
+        'A practical guide for families on Divine: how to talk with your teen about social media, what Divine can and can’t do, content settings, healthy feed habits, and trusted outside resources.',
+      image: DEFAULT_OG_IMAGE,
+      url: canonical,
+      ogType: 'website',
+      twitterCard: 'summary_large_image',
+      imageWidth: 1200,
+      imageHeight: 630,
+    });
+
+    return new Response(html, {
+      status: 200,
+      headers: {
+        'Content-Type': 'text/html; charset=utf-8',
+        'Cache-Control': 'public, max-age=300',
+        'Vary': 'User-Agent',
+      },
+    });
+  } catch (err) {
+    console.error('handleFamilyOgTags error:', err.message, err.stack);
+    return null;
+  }
+}
+
+function handleAgeReviewOgTags(url, hostnameToUse) {
+  try {
+    const canonical = `https://${hostnameToUse}${url.pathname}`;
+    const html = buildCrawlerHtml({
+      title: 'Account review — Divine',
+      description:
+        'If your Divine account was flagged as possibly belonging to someone under 16, this page explains what to do — and the 15-day window for responding.',
+      image: DEFAULT_OG_IMAGE,
+      url: canonical,
+      ogType: 'website',
+      twitterCard: 'summary_large_image',
+      imageWidth: 1200,
+      imageHeight: 630,
+    });
+
+    return new Response(html, {
+      status: 200,
+      headers: {
+        'Content-Type': 'text/html; charset=utf-8',
+        'Cache-Control': 'public, max-age=300',
+        'Vary': 'User-Agent',
+      },
+    });
+  } catch (err) {
+    console.error('handleAgeReviewOgTags error:', err.message, err.stack);
+    return null;
+  }
+}
+
+function handleKidsPolicyOgTags(url, hostnameToUse) {
+  try {
+    const canonical = `https://${hostnameToUse}${url.pathname}`;
+    const html = buildCrawlerHtml({
+      title: 'Kids on Divine — How accounts work for under-16s',
+      description:
+        'How Divine handles accounts for people under 16 — the rules, the reasoning, and what families can do together regardless of age.',
+      image: DEFAULT_OG_IMAGE,
+      url: canonical,
+      ogType: 'website',
+      twitterCard: 'summary_large_image',
+      imageWidth: 1200,
+      imageHeight: 630,
+    });
+
+    return new Response(html, {
+      status: 200,
+      headers: {
+        'Content-Type': 'text/html; charset=utf-8',
+        'Cache-Control': 'public, max-age=300',
+        'Vary': 'User-Agent',
+      },
+    });
+  } catch (err) {
+    console.error('handleKidsPolicyOgTags error:', err.message, err.stack);
+    return null;
   }
 }
 

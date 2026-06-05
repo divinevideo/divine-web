@@ -28,7 +28,9 @@
     "openSource": "Open Source",
     "donate": "Mag-donate",
     "help": "Tulong",
-    "merch": "Merch"
+    "merch": "Merch",
+    "familyResources": "Mga resource para sa pamilya",
+    "kidsPolicy": "Patakaran para sa mga bata"
   },
   "theme": {
     "lightMode": "Maliwanag na mode",
