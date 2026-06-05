@@ -237,9 +237,6 @@ export function ProfilePage() {
     !!currentUser?.pubkey // Only check if user is logged in
   );
 
-  // Check if this is the current user's own profile
-  const isOwnProfile = currentUser?.pubkey === pubkey;
-
   const displayName = metadata?.display_name || metadata?.name || (pubkey ? genUserName(pubkey) : t('profilePage.defaultUser'));
 
   // RSS auto-discovery link for feed readers (only if feed endpoints exist)
