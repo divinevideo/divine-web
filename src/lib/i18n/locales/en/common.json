@@ -1071,6 +1071,17 @@
         "description": "Zaps on your videos will show up here."
       }
     },
+    "message": {
+      "liked": "liked your video",
+      "commented": "commented on your video",
+      "reposted": "reposted your video",
+      "followed": "followed you",
+      "andOthers_one": "{{count}} other",
+      "andOthers_other": "{{count}} others"
+    },
+    "video": {
+      "untitled": "your video"
+    },
     "errorTitle": "Failed to load notifications",
     "errorFallback": "Please try again later",
     "sectionNew": "New",
