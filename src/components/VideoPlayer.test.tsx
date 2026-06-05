@@ -2,12 +2,23 @@
 // ABOUTME: Verifies video loading, auth handling, and URL management
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { VideoPlayer } from './VideoPlayer';
 
 const mockRegisterVideo = vi.fn();
 const mockUnregisterVideo = vi.fn();
 const mockUpdateVideoVisibility = vi.fn();
+const hlsTestState = vi.hoisted(() => ({
+  instances: [] as Array<{
+    attachMedia: ReturnType<typeof vi.fn>;
+    destroy: ReturnType<typeof vi.fn>;
+    handlers: Record<string, Array<(event: string, data: unknown) => void>>;
+    levels: unknown[];
+    loadSource: ReturnType<typeof vi.fn>;
+    on: ReturnType<typeof vi.fn>;
+  }>,
+  isSupported: vi.fn(() => false),
+}));
 
 // Mock dependencies
 vi.mock('@/hooks/useVideoPlayback', () => ({
@@ -28,6 +39,12 @@ vi.mock('@/hooks/useCurrentUser', () => ({
   useCurrentUser: vi.fn(() => ({
     user: { pubkey: 'a'.repeat(64) },
   })),
+}));
+
+vi.mock('@/contexts/LoginDialogContext', () => ({
+  useLoginDialog: () => ({
+    openLoginDialog: vi.fn(),
+  }),
 }));
 
 vi.mock('@/hooks/useAdultVerification', () => ({
@@ -72,12 +89,37 @@ vi.mock('@/components/AgeRestrictedMediaPlaceholder', () => ({
   ),
 }));
 
-vi.mock('hls.js', () => ({
-  default: {
-    isSupported: () => false,
-    Events: { MANIFEST_PARSED: 'hlsManifestParsed', ERROR: 'hlsError' },
-  },
-}));
+vi.mock('hls.js', () => {
+  const HlsMock = vi.fn(function (this: {
+    attachMedia: ReturnType<typeof vi.fn>;
+    destroy: ReturnType<typeof vi.fn>;
+    handlers: Record<string, Array<(event: string, data: unknown) => void>>;
+    levels: unknown[];
+    loadSource: ReturnType<typeof vi.fn>;
+    on: ReturnType<typeof vi.fn>;
+  }) {
+    const handlers: Record<string, Array<(event: string, data: unknown) => void>> = {};
+
+    this.attachMedia = vi.fn();
+    this.destroy = vi.fn();
+    this.handlers = handlers;
+    this.levels = [];
+    this.loadSource = vi.fn();
+    this.on = vi.fn((event: string, handler: (event: string, data: unknown) => void) => {
+      handlers[event] = handlers[event] ?? [];
+      handlers[event].push(handler);
+    });
+
+    hlsTestState.instances.push(this);
+  });
+
+  return {
+    default: Object.assign(HlsMock, {
+      isSupported: hlsTestState.isSupported,
+      Events: { MANIFEST_PARSED: 'hlsManifestParsed', ERROR: 'hlsError' },
+    }),
+  };
+});
 
 // Mock react-intersection-observer to avoid observer.observe issues
 vi.mock('react-intersection-observer', () => ({
@@ -106,7 +148,21 @@ beforeEach(() => {
 
 describe('VideoPlayer', () => {
   beforeEach(async () => {
+    const { initializeI18n } = await import('@/lib/i18n');
+    const storage = new Map<string, string>();
+    Object.defineProperty(window, 'localStorage', {
+      configurable: true,
+      value: {
+        getItem: (key: string) => storage.get(key) ?? null,
+        setItem: (key: string, value: string) => storage.set(key, value),
+        removeItem: (key: string) => storage.delete(key),
+        clear: () => storage.clear(),
+      } satisfies Pick<Storage, 'getItem' | 'setItem' | 'removeItem' | 'clear'>,
+    });
+    await initializeI18n({ force: true, languages: ['en-US'] });
     vi.clearAllMocks();
+    hlsTestState.instances.length = 0;
+    hlsTestState.isSupported.mockReturnValue(false);
 
     const { useVideoPlayback } = await import('@/hooks/useVideoPlayback');
     (useVideoPlayback as ReturnType<typeof vi.fn>).mockImplementation(() => ({
@@ -302,7 +358,162 @@ describe('VideoPlayer', () => {
     });
   });
 
+  describe('HLS fallback failures', () => {
+    it('reports terminal failure after fatal HLS error falls back to direct playback', async () => {
+      hlsTestState.isSupported.mockReturnValue(true);
+
+      const onError = vi.fn();
+      const src = 'https://media.divine.video/test-video.mp4';
+
+      const { container } = render(
+        <VideoPlayer
+          videoId="fatal-hls-fallback"
+          src={src}
+          hlsUrl="https://media.divine.video/test-video/hls/master.m3u8"
+          onError={onError}
+        />
+      );
+
+      await waitFor(() => {
+        expect(hlsTestState.instances.length).toBeGreaterThan(0);
+      });
+
+      const video = container.querySelector('video');
+      expect(video).not.toBeNull();
+      if (!video) {
+        throw new Error('expected rendered video element');
+      }
+
+      const hls = hlsTestState.instances[hlsTestState.instances.length - 1];
+      expect(hls.handlers.hlsError).toHaveLength(1);
+
+      act(() => {
+        hls.handlers.hlsError[0]('hlsError', { fatal: true });
+      });
+
+      await waitFor(() => {
+        expect(video.src).toBe(src);
+      });
+
+      fireEvent.error(video);
+
+      await waitFor(() => {
+        expect(onError).toHaveBeenCalledTimes(1);
+      });
+    });
+  });
+
   describe('protected media auth failures', () => {
+    it('shows age verification when an unverified direct media error probes as 401', async () => {
+      const { checkMediaAuth } = await import('@/hooks/useAdultVerification');
+      (checkMediaAuth as ReturnType<typeof vi.fn>).mockResolvedValue({
+        authorized: true,
+        status: 200,
+      });
+
+      const { container } = render(
+        <VideoPlayer
+          videoId="unknown-age-restricted"
+          src="https://media.divine.video/protected-video"
+          videoData={{
+            id: 'unknown-age-restricted',
+            pubkey: 'pub',
+            kind: 34236,
+            createdAt: 0,
+            content: '',
+            videoUrl: 'https://media.divine.video/protected-video',
+            hashtags: [],
+            vineId: null,
+            reposts: [],
+            isVineMigrated: false,
+            ageRestricted: false,
+          }}
+        />
+      );
+
+      const video = container.querySelector('video');
+      expect(video).not.toBeNull();
+      if (!video) {
+        throw new Error('expected rendered video element');
+      }
+
+      (checkMediaAuth as ReturnType<typeof vi.fn>).mockResolvedValue({
+        authorized: false,
+        status: 401,
+      });
+      fireEvent.error(video);
+
+      await waitFor(() => {
+        expect(screen.getByText(/age-restricted content/i)).toBeInTheDocument();
+      });
+
+      expect(screen.queryByText('Failed to load video')).not.toBeInTheDocument();
+    });
+
+    it('retries unknown age-restricted media with auth for verified viewers after a 401 probe', async () => {
+      const getAuthHeader = vi.fn().mockResolvedValue('Nostr discovered-auth-header');
+      const fetchSpy = vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        blob: () => Promise.resolve(new Blob(['test'], { type: 'video/mp4' })),
+      });
+
+      global.fetch = fetchSpy as typeof fetch;
+
+      const { useAdultVerification, checkMediaAuth } = await import('@/hooks/useAdultVerification');
+      (useAdultVerification as ReturnType<typeof vi.fn>).mockReturnValue({
+        isVerified: true,
+        isLoading: false,
+        hasSigner: true,
+        getAuthHeader,
+      });
+      (checkMediaAuth as ReturnType<typeof vi.fn>).mockResolvedValue({
+        authorized: true,
+        status: 200,
+      });
+
+      const { container } = render(
+        <VideoPlayer
+          videoId="verified-unknown-age-restricted"
+          src="https://media.divine.video/protected-video"
+          videoData={{
+            id: 'verified-unknown-age-restricted',
+            pubkey: 'pub',
+            kind: 34236,
+            createdAt: 0,
+            content: '',
+            videoUrl: 'https://media.divine.video/protected-video',
+            hashtags: [],
+            vineId: null,
+            reposts: [],
+            isVineMigrated: false,
+            ageRestricted: false,
+          }}
+        />
+      );
+
+      const video = container.querySelector('video');
+      expect(video).not.toBeNull();
+      if (!video) {
+        throw new Error('expected rendered video element');
+      }
+
+      (checkMediaAuth as ReturnType<typeof vi.fn>).mockResolvedValue({
+        authorized: false,
+        status: 401,
+      });
+      fireEvent.error(video);
+
+      await waitFor(() => {
+        expect(fetchSpy).toHaveBeenCalledWith(
+          'https://media.divine.video/protected-video',
+          expect.objectContaining({
+            headers: { Authorization: 'Nostr discovered-auth-header' },
+          }),
+        );
+      });
+    });
+
     it('does not retry age verification indefinitely for already verified viewers when media fetch returns 401', async () => {
       const getAuthHeader = vi.fn().mockResolvedValue('Nostr test-auth-header');
       const fetchSpy = vi.fn().mockResolvedValue({
@@ -324,6 +535,19 @@ describe('VideoPlayer', () => {
         <VideoPlayer
           videoId="verified-auth-failure"
           src="https://media.divine.video/protected-video"
+          videoData={{
+            id: 'verified-auth-failure',
+            pubkey: 'pub',
+            kind: 34236,
+            createdAt: 0,
+            content: '',
+            videoUrl: 'https://media.divine.video/protected-video',
+            hashtags: [],
+            vineId: null,
+            reposts: [],
+            isVineMigrated: false,
+            ageRestricted: true,
+          }}
         />
       );
 
@@ -357,6 +581,19 @@ describe('VideoPlayer', () => {
         <VideoPlayer
           videoId="verified-auth-placeholder"
           src="https://media.divine.video/protected-video"
+          videoData={{
+            id: 'verified-auth-placeholder',
+            pubkey: 'pub',
+            kind: 34236,
+            createdAt: 0,
+            content: '',
+            videoUrl: 'https://media.divine.video/protected-video',
+            hashtags: [],
+            vineId: null,
+            reposts: [],
+            isVineMigrated: false,
+            ageRestricted: true,
+          }}
         />
       );
 

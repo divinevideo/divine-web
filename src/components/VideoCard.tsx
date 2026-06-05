@@ -2,8 +2,8 @@
 // ABOUTME: Shows video player, metadata, author info, and social interactions
 
 import { useState, useCallback, useRef, useMemo, useEffect } from 'react';
-import { Heart, Repeat as Repeat2, ChatCircle as MessageCircle, Share, Eye, DotsThreeVertical as MoreVertical, Flag, UserMinus as UserX, Trash as Trash2, SpeakerHigh as Volume2, SpeakerX as VolumeX, Code, Users, ListPlus, DownloadSimple as Download, ArrowsOutSimple as Maximize2, ClosedCaptioning as Captions, PushPin as Pin, PushPinSlash as PinOff } from '@phosphor-icons/react';
-import { nip19 } from 'nostr-tools';
+import { useTranslation } from 'react-i18next';
+import { Heart, Repeat as Repeat2, ChatCircle as MessageCircle, Share, Eye, DotsThreeVertical as MoreVertical, Flag, UserMinus as UserX, Trash as Trash2, SpeakerHigh as Volume2, SpeakerX as VolumeX, Code, Users, ListPlus, DownloadSimple as Download, ArrowsOutSimple as Maximize2, ClosedCaptioning as Captions, PushPin as Pin, PushPinSlash as PinOff, ArrowClockwise } from '@phosphor-icons/react';
 import { Card, CardContent, type CardAccent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -32,12 +32,14 @@ import { useVideosInLists } from '@/hooks/useVideoLists';
 import { enhanceAuthorData } from '@/lib/generateProfile';
 import { genUserName } from '@/lib/genUserName';
 import { formatDistanceToNow } from 'date-fns';
+import { nip19 } from 'nostr-tools';
 import type { ParsedVideoData } from '@/types/video';
 import { SHORT_VIDEO_KIND } from '@/types/video';
 import type { NostrMetadata } from '@nostrify/nostrify';
 import { cn } from '@/lib/utils';
 import { formatClassicVineViewBreakdown, formatViewCount, formatCount } from '@/lib/formatUtils';
 import { getSafeProfileImage } from '@/lib/imageUtils';
+import { buildProfilePath } from '@/lib/eventRouting';
 import type { ViewTrafficSource } from '@/hooks/useViewEventPublisher';
 import { buildVideoNavigationUrl, type VideoNavigationContext } from '@/hooks/useVideoNavigation';
 import { useToast } from '@/hooks/useToast';
@@ -114,6 +116,7 @@ export function VideoCard({
   trafficSource,
   accent = 'green',
 }: VideoCardProps) {
+  const { t } = useTranslation();
   const authorData = useAuthor(video.pubkey, {
     initialName: video.authorName,
     initialAvatar: video.authorAvatar,
@@ -152,6 +155,7 @@ export function VideoCard({
   const shouldShowReposter = hasReposts && reposterPubkey;
   const classicViewBreakdown = formatClassicVineViewBreakdown(viewCount, video.loopCount ?? 0);
   const [videoError, setVideoError] = useState(false);
+  const [retryAttempt, setRetryAttempt] = useState(0);
   // Always start with video player visible in auto-play mode, but let VideoPlaybackContext control actual playback
   // The VideoPlayer component will only play when it's the activeVideoId (most visible)
   const [isPlaying, setIsPlaying] = useState(mode === 'auto-play');
@@ -280,7 +284,6 @@ export function VideoCard({
   const metadata: NostrMetadata = author.metadata;
   const reposterMetadata: NostrMetadata | undefined = reposter?.metadata;
 
-  const npub = nip19.npubEncode(video.pubkey);
   // Use raw author data (pre-enhancement) to detect real vs generated names
   // enhanceAuthorData fills in generated names like "ElectricVine742" — we don't want those
   const rawMetadata = authorData.data?.metadata;
@@ -293,11 +296,11 @@ export function VideoCard({
   const profileImage = getSafeProfileImage(
     rawMetadata?.picture || video.authorAvatar || metadata.picture
   );
-  // Just use npub for now, we'll deal with NIP-05 later
-  const profileUrl = `/${npub}`;
+  const npub = nip19.npubEncode(video.pubkey);
+  const profileUrl = buildProfilePath(npub);
 
   const reposterName = reposterData.isLoading
-    ? "Loading profile..."
+    ? t('videoCard.loadingProfile')
     : (reposterMetadata?.name || (reposterPubkey ? genUserName(reposterPubkey) : ''));
 
   // NEW: Get all unique reposters for display
@@ -396,6 +399,12 @@ export function VideoCard({
     }
   }, [isPlaying]);
 
+  useEffect(() => {
+    setVideoError(false);
+    setMp4Failed(false);
+    setRetryAttempt(0);
+  }, [video.id, video.videoUrl]);
+
   const handlePlaybackStarted = () => {
     setShowThumbnailDuringStartup(false);
     onPlaybackStarted?.();
@@ -411,6 +420,16 @@ export function VideoCard({
     }
   };
 
+  const handleRetryVideo = () => {
+    setVideoError(false);
+    setMp4Failed(false);
+    setShowThumbnailDuringStartup(false);
+    setIsPlaying(true);
+    setActiveVideo(video.id);
+    setRetryAttempt(prev => prev + 1);
+    onPlay?.();
+  };
+
   const handleMuteUser = async () => {
     try {
       await muteUser.mutateAsync({
@@ -420,13 +439,13 @@ export function VideoCard({
       });
 
       toast({
-        title: 'Muted.',
-        description: `${displayName} is off your feed.`,
+        title: t('videoCard.toast.muted.title'),
+        description: t('videoCard.toast.muted.description', { name: displayName }),
       });
     } catch {
       toast({
-        title: 'Mute didn\'t land.',
-        description: 'Couldn\'t save the mute. Try again?',
+        title: t('videoCard.toast.muteFailed.title'),
+        description: t('videoCard.toast.muteFailed.description'),
         variant: 'destructive',
       });
     }
@@ -453,15 +472,15 @@ export function VideoCard({
     try {
       if (isPinned) {
         await unpinVideo({ coordinate });
-        toast({ title: 'Unpinned.', description: 'Off your profile pins.' });
+        toast({ title: t('videoCard.toast.unpinned.title'), description: t('videoCard.toast.unpinned.description') });
       } else {
         await pinVideo({ coordinate });
-        toast({ title: 'Pinned.', description: 'Up top on your profile.' });
+        toast({ title: t('videoCard.toast.pinned.title'), description: t('videoCard.toast.pinned.description') });
       }
     } catch (err) {
       toast({
-        title: 'Pin snagged.',
-        description: err instanceof Error ? err.message : 'Couldn\'t update the pin. Try again?',
+        title: t('videoCard.toast.pinFailed.title'),
+        description: err instanceof Error ? err.message : t('videoCard.toast.pinFailed.descriptionFallback'),
         variant: 'destructive',
       });
     }
@@ -470,8 +489,8 @@ export function VideoCard({
   const handleDownload = async () => {
     if (!video.videoUrl) {
       toast({
-        title: 'Nothing to download.',
-        description: 'This video doesn\'t have a URL yet.',
+        title: t('videoCard.toast.noDownloadUrl.title'),
+        description: t('videoCard.toast.noDownloadUrl.description'),
         variant: 'destructive',
       });
       return;
@@ -493,8 +512,8 @@ export function VideoCard({
       window.URL.revokeObjectURL(url);
 
       toast({
-        title: 'Downloading.',
-        description: 'Saving your loop.',
+        title: t('videoCard.toast.downloading.title'),
+        description: t('videoCard.toast.downloading.description'),
       });
     } catch (error) {
       console.error('Download failed:', error);
@@ -528,11 +547,9 @@ export function VideoCard({
         <div className="flex items-center gap-2 px-4 pt-3 text-sm text-muted-foreground">
           <Repeat2 className="h-4 w-4" />
           <span>
-            {repostCountDisplay === 1 ? (
-              <>{reposterName} reposted</>
-            ) : (
-              <>{reposterName} and {repostCountDisplay - 1} {repostCountDisplay === 2 ? 'other' : 'others'} reposted</>
-            )}
+            {repostCountDisplay === 1
+              ? t('videoCard.repostedBySingle', { name: reposterName })
+              : t('videoCard.repostedByMultiple', { name: reposterName, count: repostCountDisplay - 1 })}
           </span>
         </div>
       )}
@@ -587,7 +604,7 @@ export function VideoCard({
             >
               {isAgeGated ? (
                 <AgeRestrictedMediaPlaceholder
-                  actionLabel={currentUser ? 'Verify age to view' : 'Log in to view'}
+                  actionLabel={currentUser ? t('videoCard.verifyAgeToView') : t('videoCard.logInToView')}
                   onAction={handleAgeGateAction}
                   title={video.title || video.content}
                 />
@@ -597,6 +614,7 @@ export function VideoCard({
                   src={video.videoUrl}
                   thumbnailUrl={video.thumbnailUrl}
                   duration={video.duration}
+                  ageRestricted={video.ageRestricted}
                   className="w-full h-full"
                   onClick={handleThumbnailClick}
                   onPlayButtonClick={handleThumbnailPlayButtonClick}
@@ -606,6 +624,7 @@ export function VideoCard({
               ) : !videoError ? (
                 <>
                   <VideoPlayer
+                    key={`${video.id}-${video.videoUrl}-${retryAttempt}-${mp4Failed ? 'hls' : 'direct'}`}
                     videoId={video.id}
                     src={video.videoUrl}
                     hlsUrl={effectiveHlsUrl}
@@ -633,6 +652,7 @@ export function VideoCard({
                         src={video.videoUrl}
                         thumbnailUrl={video.thumbnailUrl}
                         duration={video.duration}
+                        ageRestricted={video.ageRestricted}
                         className="w-full h-full"
                         onVideoDimensions={handleThumbnailDimensions}
                       />
@@ -641,7 +661,19 @@ export function VideoCard({
                 </>
               ) : (
                 <div className="flex items-center justify-center h-full text-muted-foreground">
-                  <p>Failed to load video</p>
+                  <div className="text-center space-y-3">
+                    <p>{t('videoCard.failedToLoad')}</p>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleRetryVideo}
+                      className="gap-2"
+                    >
+                      <ArrowClockwise className="h-4 w-4" />
+                      {t('videoCard.retry')}
+                    </Button>
+                  </div>
                 </div>
               )}
 
@@ -665,7 +697,7 @@ export function VideoCard({
                   }}
                   onTouchStart={(e) => { e.stopPropagation(); }}
                   onTouchEnd={(e) => { e.stopPropagation(); }}
-                  aria-label={showSubtitles ? "Hide subtitles" : "Show subtitles"}
+                  aria-label={showSubtitles ? t('videoCard.ariaHideSubtitles') : t('videoCard.ariaShowSubtitles')}
                 >
                   <Captions className="h-5 w-5" />
                 </Button>
@@ -694,7 +726,7 @@ export function VideoCard({
                   onTouchEnd={(e) => {
                     e.stopPropagation();
                   }}
-                  aria-label={globalMuted ? "Unmute" : "Mute"}
+                  aria-label={globalMuted ? t('videoCard.ariaUnmute') : t('videoCard.ariaMute')}
                 >
                   {globalMuted ? (
                     <VolumeX className="h-5 w-5" />
@@ -727,7 +759,7 @@ export function VideoCard({
                   onTouchEnd={(e) => {
                     e.stopPropagation();
                   }}
-                  aria-label="Enter fullscreen"
+                  aria-label={t('videoCard.ariaEnterFullscreen')}
                 >
                   <Maximize2 className="h-5 w-5" />
                 </Button>
@@ -773,9 +805,9 @@ export function VideoCard({
             isHorizontal ? "space-y-1" : "p-4 space-y-2"
           )}>
             {video.title && (
-              <SmartLink to={`/video/${video.id}`} ownerPubkey={video.pubkey}>
-                <h3 className={cn("font-semibold line-clamp-2 hover:underline", isHorizontal ? "text-sm" : "text-lg")}><InlineNostrText text={video.title} /></h3>
-              </SmartLink>
+              <h3 className={cn("font-semibold line-clamp-2", isHorizontal ? "text-sm" : "text-lg")}>
+                <InlineNostrText text={video.title} textLinkTo={`/video/${video.id}`} textLinkOwnerPubkey={video.pubkey} textLinkClassName="hover:underline" />
+              </h3>
             )}
 
             {video.content && video.content.trim() !== video.title?.trim() && (
@@ -853,7 +885,7 @@ export function VideoCard({
                 isLiked && 'text-red-500 bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/30'
               )}
               onClick={onLike}
-              aria-label={isLiked ? "Unlike" : "Like"}
+              aria-label={isLiked ? t('videoCard.ariaUnlike') : t('videoCard.ariaLike')}
             >
               <Heart className="h-4 w-4" weight={isLiked ? 'fill' : 'bold'} />
             </Button>
@@ -867,7 +899,7 @@ export function VideoCard({
                   "text-xs text-muted-foreground hover:text-foreground transition-colors px-1",
                   isLiked && 'text-red-500 hover:text-red-600'
                 )}
-                aria-label="View who liked this video"
+                aria-label={t('videoCard.ariaViewLikes')}
               >
                 {formatCount(likeCount)}
               </button>
@@ -884,7 +916,7 @@ export function VideoCard({
                 isReposted && 'text-green-500 bg-green-50 hover:bg-green-100 dark:bg-green-900/20 dark:hover:bg-green-900/30'
               )}
               onClick={onRepost}
-              aria-label={isReposted ? "Remove repost" : "Repost"}
+              aria-label={isReposted ? t('videoCard.ariaRemoveRepost') : t('videoCard.ariaRepost')}
             >
               <Repeat2 className="h-4 w-4" weight={isReposted ? 'fill' : 'bold'} />
             </Button>
@@ -898,7 +930,7 @@ export function VideoCard({
                   "text-xs text-muted-foreground hover:text-foreground transition-colors px-1",
                   isReposted && 'text-green-500 hover:text-green-600'
                 )}
-                aria-label="View who reposted this video"
+                aria-label={t('videoCard.ariaViewReposts')}
               >
                 {formatCount(repostCount)}
               </button>
@@ -913,7 +945,7 @@ export function VideoCard({
               !isHorizontal && "gap-1 px-2"
             )}
             onClick={handleCommentsClick}
-            aria-label="Comment"
+            aria-label={t('videoCard.ariaComment')}
           >
             <MessageCircle className="h-4 w-4" />
             {commentCount > 0 && <span className="text-xs">{formatCount(commentCount)}</span>}
@@ -927,7 +959,7 @@ export function VideoCard({
               !isHorizontal && "px-2"
             )}
             onClick={handleShare}
-            aria-label="Share"
+            aria-label={t('videoCard.ariaShare')}
           >
             <Share className="h-4 w-4" />
           </Button>
@@ -940,7 +972,7 @@ export function VideoCard({
               !isHorizontal && "px-2"
             )}
             onClick={handleDownload}
-            aria-label="Download"
+            aria-label={t('videoCard.ariaDownload')}
           >
             <Download className="h-4 w-4" />
           </Button>
@@ -955,10 +987,10 @@ export function VideoCard({
                 !isHorizontal && "gap-1 px-2"
               )}
               onClick={() => setShowAddToListDialog(true)}
-              aria-label="Lists"
+              aria-label={t('videoCard.ariaLists')}
             >
               {(lists?.length ?? 0) > 0 ? <Users className="h-4 w-4" /> : <ListPlus className="h-4 w-4" />}
-              {isHorizontal && <span className="text-xs">Lists</span>}
+              {isHorizontal && <span className="text-xs">{t('videoCard.lists')}</span>}
               {lists && lists.length > 0 && isHorizontal && <span className="text-xs">{formatCount(lists.length)}</span>}
             </Button>
           )}
@@ -970,7 +1002,7 @@ export function VideoCard({
                 variant="ghost"
                 size="sm"
                 className="px-2"
-                aria-label="More options"
+                aria-label={t('videoCard.ariaMoreOptions')}
               >
                 <MoreVertical className="h-4 w-4" />
               </Button>
@@ -980,9 +1012,9 @@ export function VideoCard({
                 <>
                   <DropdownMenuItem onClick={handlePinToggle}>
                     {isPinned ? (
-                      <><PinOff className="h-4 w-4 mr-2" />Unpin from profile</>
+                      <><PinOff className="h-4 w-4 mr-2" />{t('videoCard.menu.unpinFromProfile')}</>
                     ) : (
-                      <><Pin className="h-4 w-4 mr-2" />Pin to profile</>
+                      <><Pin className="h-4 w-4 mr-2" />{t('videoCard.menu.pinToProfile')}</>
                     )}
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
@@ -995,34 +1027,34 @@ export function VideoCard({
                     className="text-destructive focus:text-destructive"
                   >
                     <Trash2 className="h-4 w-4 mr-2" />
-                    Delete video
+                    {t('videoCard.menu.deleteVideo')}
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                 </>
               )}
               <DropdownMenuItem onClick={() => setShowReportDialog(true)}>
                 <Flag className="h-4 w-4 mr-2" />
-                Report video
+                {t('videoCard.menu.reportVideo')}
               </DropdownMenuItem>
               {canUseDirectMessages && (
                 <DropdownMenuItem onClick={handleShareViaDm}>
                   <MessageCircle className="h-4 w-4 mr-2" />
-                  Send via message
+                  {t('videoCard.menu.sendViaMessage')}
                 </DropdownMenuItem>
               )}
               <DropdownMenuItem onClick={() => setShowReportUserDialog(true)}>
                 <Flag className="h-4 w-4 mr-2" />
-                Report user
+                {t('videoCard.menu.reportUser')}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleMuteUser} className="text-destructive focus:text-destructive">
                 <UserX className="h-4 w-4 mr-2" />
-                Mute {displayName}
+                {t('videoCard.menu.muteUser', { name: displayName })}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => setShowViewSourceDialog(true)}>
                 <Code className="h-4 w-4 mr-2" />
-                View source
+                {t('videoCard.menu.viewSource')}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -1066,7 +1098,7 @@ export function VideoCard({
         open={showViewSourceDialog}
         onClose={() => setShowViewSourceDialog(false)}
         video={video}
-        title="Video Event Source"
+        title={t('videoCard.viewSourceDialogTitle')}
       />
     )}
 
