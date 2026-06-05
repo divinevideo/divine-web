@@ -5,19 +5,21 @@ import { useAppContext } from '@/hooks/useAppContext';
 import { getFunnelcakeBaseUrl } from '@/config/api';
 import { useInfiniteVideos } from '@/hooks/useInfiniteVideos';
 import { useResolvedRelayCapabilities } from '@/hooks/useRelayCapabilities';
-import { useInfiniteVideosFunnelcake, type FunnelcakeFeedType, type FunnelcakeSortMode } from '@/hooks/useInfiniteVideosFunnelcake';
+import { useInfiniteVideosFunnelcake, type FunnelcakeFeedType, type FunnelcakeSortMode, type PopularPeriod, type PopularSource } from '@/hooks/useInfiniteVideosFunnelcake';
 import { hasFunnelcake, getFunnelcakeUrl } from '@/config/relays';
 import { debugLog } from '@/lib/debug';
 import type { RelayCapabilities } from '@/lib/relayCapabilities';
 import type { SortMode } from '@/types/nostr';
 
 // Feed types that can be provided
-export type VideoFeedType = 'discovery' | 'home' | 'trending' | 'hashtag' | 'profile' | 'recent' | 'classics' | 'foryou' | 'category';
+export type VideoFeedType = 'discovery' | 'home' | 'trending' | 'hashtag' | 'profile' | 'recent' | 'classics' | 'foryou' | 'category' | 'popular';
 type WebsocketVideoFeedType = 'discovery' | 'home' | 'trending' | 'hashtag' | 'profile' | 'recent';
 
 interface UseVideoProviderOptions {
   feedType: VideoFeedType;
   sortMode?: SortMode;
+  popularSource?: PopularSource;
+  popularPeriod?: PopularPeriod;
   hashtag?: string;
   category?: string;
   pubkey?: string;
@@ -55,6 +57,7 @@ function canServeFeedViaFunnelcake(feedType: VideoFeedType): boolean {
     case 'classics':
     case 'foryou':
     case 'category':
+    case 'popular':
       return true;
   }
 }
@@ -82,6 +85,8 @@ function mapToFunnelcakeFeedType(feedType: VideoFeedType): FunnelcakeFeedType {
       return 'recommendations';
     case 'category':
       return 'category';
+    case 'popular':
+      return 'popular';
     default:
       return 'trending';
   }
@@ -132,6 +137,7 @@ export function canServeFeedViaWebsocket(
     case 'classics':
     case 'foryou':
     case 'category':
+    case 'popular':
       return false;
 
     case 'discovery':
@@ -207,6 +213,8 @@ export function chooseVideoDataSource({
 export function useVideoProvider({
   feedType,
   sortMode,
+  popularSource,
+  popularPeriod,
   hashtag,
   category,
   pubkey,
@@ -233,6 +241,8 @@ export function useVideoProvider({
     feedType: mapToFunnelcakeFeedType(feedType),
     apiUrl: decision.apiUrl,
     sortMode: mapToFunnelcakeSortMode(sortMode),
+    popularSource,
+    popularPeriod,
     hashtag,
     category,
     pubkey,

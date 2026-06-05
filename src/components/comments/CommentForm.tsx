@@ -57,7 +57,7 @@ export function CommentForm({
   );
 
   const formContent = (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4" data-hs-do-not-collect="true">
       <Textarea
         value={content}
         onChange={(e) => setContent(e.target.value)}

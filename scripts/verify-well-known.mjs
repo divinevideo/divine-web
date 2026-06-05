@@ -1,67 +1,50 @@
-// ABOUTME: Verifies deep-link association files are reachable and valid JSON.
-// ABOUTME: Smoke check for .well-known apple-app-site-association and assetlinks.json.
+import { access, readFile } from 'node:fs/promises';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const baseUrl = process.argv[2] || 'https://divine.video';
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const projectRoot = path.resolve(__dirname, '..');
 
-async function fetchJson(pathname) {
-  const url = new URL(pathname, baseUrl);
-  const response = await fetch(url);
-  const body = await response.text();
+const requiredFiles = [
+  path.join(projectRoot, 'dist', '.well-known', 'apple-app-site-association'),
+  path.join(projectRoot, 'dist', '.well-known', 'assetlinks.json'),
+];
 
-  if (!response.ok) {
-    throw new Error(`${url.toString()} returned ${response.status}: ${body.slice(0, 200)}`);
-  }
-
-  const contentType = response.headers.get('content-type') || '';
-  if (!contentType.toLowerCase().includes('application/json')) {
-    throw new Error(`${url.toString()} returned unexpected Content-Type: ${contentType}`);
-  }
-
-  let json;
-  try {
-    json = JSON.parse(body);
-  } catch (error) {
-    throw new Error(`${url.toString()} returned invalid JSON: ${error.message}`);
-  }
-
-  return { url: url.toString(), json };
+for (const file of requiredFiles) {
+  await access(file);
 }
 
-function assertInviteRoute(aasa) {
-  const components = aasa?.applinks?.details?.[0]?.components;
-  if (!Array.isArray(components)) {
-    throw new Error('AASA missing applinks.details[0].components array');
-  }
+const aasa = JSON.parse(
+  await readFile(requiredFiles[0], 'utf8'),
+);
 
-  const hasInvite = components.some((component) => component?.['/'] === '/invite/*');
-  if (!hasInvite) {
-    throw new Error('AASA does not include /invite/* component');
+const appIds = aasa?.applinks?.details?.flatMap((detail) => detail.appIDs ?? []);
+if (!Array.isArray(appIds) || appIds.length === 0) {
+  throw new Error('apple-app-site-association is missing applinks.details[].appIDs');
+}
+
+const requiredPaths = new Set(['/video/*', '/profile/*', '/invite/*']);
+const declaredPaths = new Set(
+  aasa?.applinks?.details?.flatMap((detail) =>
+    (detail.components ?? []).map((component) => component?.['/']).filter(Boolean),
+  ) ?? [],
+);
+
+for (const requiredPath of requiredPaths) {
+  if (!declaredPaths.has(requiredPath)) {
+    throw new Error(`apple-app-site-association is missing required path ${requiredPath}`);
   }
 }
 
-function assertAssetLinks(assetLinks) {
-  if (!Array.isArray(assetLinks) || assetLinks.length === 0) {
-    throw new Error('assetlinks.json must be a non-empty array');
-  }
+const assetlinks = JSON.parse(
+  await readFile(requiredFiles[1], 'utf8'),
+);
 
-  const hasOpenvineTarget = assetLinks.some((entry) => entry?.target?.package_name === 'co.openvine.app');
-  if (!hasOpenvineTarget) {
-    throw new Error('assetlinks.json does not include co.openvine.app target');
-  }
+if (!Array.isArray(assetlinks) || assetlinks.length === 0) {
+  throw new Error('assetlinks.json must contain at least one target entry');
 }
 
-async function main() {
-  const aasa = await fetchJson('/.well-known/apple-app-site-association');
-  assertInviteRoute(aasa.json);
-
-  const assetLinks = await fetchJson('/.well-known/assetlinks.json');
-  assertAssetLinks(assetLinks.json);
-
-  console.log(`OK ${aasa.url}`);
-  console.log(`OK ${assetLinks.url}`);
+const hasOpenvineTarget = assetlinks.some((entry) => entry?.target?.package_name === 'co.openvine.app');
+if (!hasOpenvineTarget) {
+  throw new Error('assetlinks.json does not include co.openvine.app target');
 }
-
-main().catch((error) => {
-  console.error(error.message);
-  process.exit(1);
-});

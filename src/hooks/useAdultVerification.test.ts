@@ -4,9 +4,10 @@ import { useAdultVerification } from './useAdultVerification';
 import { createMediaViewerAuthHeader } from '@/lib/mediaViewerAuth';
 
 const mockSigner = { signEvent: vi.fn(), getPublicKey: vi.fn() };
+let currentSigner: typeof mockSigner | null = mockSigner;
 
 vi.mock('@/hooks/useCurrentUser', () => ({
-  useCurrentUser: () => ({ signer: mockSigner, pubkey: 'pub', user: { pubkey: 'pub' } }),
+  useCurrentUser: () => ({ signer: currentSigner, pubkey: currentSigner ? 'pub' : null, user: currentSigner ? { pubkey: 'pub' } : null }),
 }));
 
 vi.mock('@/lib/mediaViewerAuth', () => ({
@@ -37,6 +38,7 @@ function installMemoryStorage(): void {
 describe('useAdultVerification', () => {
   beforeEach(() => {
     installMemoryStorage();
+    currentSigner = mockSigner;
   });
 
   it('synchronizes confirmation across mounted hook instances', async () => {
@@ -58,6 +60,19 @@ describe('useAdultVerification', () => {
     await waitFor(() => {
       expect(second.result.current.isVerified).toBe(true);
     });
+  });
+
+  it('does not treat stored adult confirmation as verified without a signer', async () => {
+    currentSigner = null;
+    window.localStorage.setItem('adult-verification-confirmed', 'true');
+    window.localStorage.setItem('adult-verification-expiry', String(Date.now() + 60_000));
+
+    const { result } = renderHook(() => useAdultVerification());
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    expect(result.current.isVerified).toBe(false);
+    expect(result.current.hasSigner).toBe(false);
   });
 
   describe('getAuthHeader', () => {

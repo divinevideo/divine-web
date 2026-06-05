@@ -121,13 +121,17 @@ export interface FunnelcakeError {
 /**
  * Options for fetching videos from Funnelcake
  */
+export type FunnelcakePopularPeriod = 'now' | 'today' | 'week' | 'month' | 'all';
+
 export interface FunnelcakeFetchOptions {
   sort?: 'trending' | 'recent' | 'popular' | 'loops' | 'engagement' | 'watching' | 'likes' | 'comments' | 'published';
+  period?: FunnelcakePopularPeriod;
   limit?: number;
   before?: string;        // Cursor for pagination (timestamp)
   offset?: number;        // Offset for page-based pagination (0-indexed)
   classic?: boolean;      // Filter for classic/archived vines
   platform?: string;      // Filter by origin platform ('vine', 'tiktok', etc.)
+  exclude_platform?: string; // Exclude an origin platform ('vine' for native-only feeds)
   category?: string;      // Filter by content category
   signal?: AbortSignal;
 }

@@ -5,13 +5,24 @@ import { useEffect, useRef } from 'react';
 import type { ParsedVideoData } from '@/types/video';
 import { debugLog } from '@/lib/debug';
 
-const PREFETCH_COUNT = 3;
+const PREFETCH_COUNT = 5;
 
 function isProtectedDivineMediaUrl(url: string): boolean {
   try {
     return new URL(url).hostname === 'media.divine.video';
   } catch {
     return false;
+  }
+}
+
+function preconnectToMediaDomains() {
+  const existingPreconnect = document.querySelector('link[href="https://media.divine.video"]');
+  if (!existingPreconnect) {
+    const preconnect = document.createElement('link');
+    preconnect.rel = 'preconnect';
+    preconnect.href = 'https://media.divine.video';
+    preconnect.crossOrigin = 'anonymous';
+    document.head.appendChild(preconnect);
   }
 }
 
@@ -28,6 +39,8 @@ export function useVideoPrefetch(
   const prefetchLinksRef = useRef<HTMLLinkElement[]>([]);
 
   useEffect(() => {
+    preconnectToMediaDomains();
+
     // Clean up previous prefetch links
     const cleanup = () => {
       for (const link of prefetchLinksRef.current) {

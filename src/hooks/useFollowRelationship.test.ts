@@ -3,6 +3,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
+import { FollowRaceError } from './useFollowRelationship';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
 import type { NostrEvent } from '@nostrify/nostrify';
@@ -219,11 +220,12 @@ describe('useFollowUser - follow list overwrite protection', () => {
       });
     });
 
-    // Should publish a Kind 3 with just the one new follow
+    // Should publish a Kind 3 with just the one new follow and default relay content
     expect(mockPublishEvent).toHaveBeenCalledWith(
       expect.objectContaining({
         kind: 3,
         tags: [['p', mockTargetPubkey, '', 'Test User']],
+        content: JSON.stringify({ 'wss://relay.divine.video': { read: true, write: true } }),
       }),
     );
   });
@@ -246,7 +248,7 @@ describe('useFollowUser - follow list overwrite protection', () => {
           targetDisplayName: 'Test User',
         });
       }),
-    ).rejects.toThrow('Already following');
+    ).rejects.toThrow(FollowRaceError);
 
     expect(mockPublishEvent).not.toHaveBeenCalled();
   });
