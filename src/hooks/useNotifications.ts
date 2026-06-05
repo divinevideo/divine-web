@@ -15,7 +15,6 @@ const CATEGORY_TYPES: Partial<Record<NotificationCategory, NotificationApiType[]
   comments: ['reply'],
   follows: ['follow'],
   reposts: ['repost'],
-  zaps: ['zap'],
 };
 
 function resolveNotificationQueryFilters(category: NotificationCategory) {
