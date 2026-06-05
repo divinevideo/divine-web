@@ -7,6 +7,7 @@ import { createUserFromLogin, getSafeUserSigner } from '@/lib/nostrLogin';
 
 import { useAuthor } from './useAuthor.ts';
 import { useDivineSession } from './useDivineSession';
+import { useNip07Availability } from './useNip07Availability';
 
 type CurrentUser = {
   pubkey: string;
@@ -19,6 +20,11 @@ export function useCurrentUser() {
   const { getValidToken } = useDivineSession();
   const token = getValidToken();
   const [jwtPubkey, setJwtPubkey] = useState<string>();
+  const hasExtensionLogin = useMemo(() => (
+    logins.some((login) => login.type === 'extension')
+  ), [logins]);
+  const { isAvailable: isNip07Available, isRestoring: isNip07Restoring } = useNip07Availability(hasExtensionLogin);
+  const isAuthRestoring = hasExtensionLogin && isNip07Restoring;
   const [jwtPubkeyStatus, setJwtPubkeyStatus] = useState<'idle' | 'loading' | 'settled'>('idle');
   const jwtSigner = useMemo(() => (
     token ? new DivineJWTSigner({ token }) : null
@@ -64,6 +70,11 @@ export function useCurrentUser() {
     const users: CurrentUser[] = [];
 
     for (const login of logins) {
+      if (login.type === 'extension' && !isNip07Available) {
+        users.push({ pubkey: login.pubkey });
+        continue;
+      }
+
       try {
         const user = loginToUser(login);
         users.push(user);
@@ -73,7 +84,7 @@ export function useCurrentUser() {
     }
 
     return users;
-  }, [logins, loginToUser]);
+  }, [isNip07Available, logins, loginToUser]);
 
   const jwtUser = useMemo<CurrentUser | undefined>(() => {
     if (!jwtSigner || !jwtPubkey) {
@@ -93,12 +104,14 @@ export function useCurrentUser() {
   const user = users[0];
   const signer = useMemo(() => getSafeUserSigner(user), [user]);
   const author = useAuthor(user?.pubkey);
-  const isSessionLoading = Boolean(jwtSigner && !jwtPubkey && jwtPubkeyStatus !== 'settled');
+  const isJwtSessionLoading = Boolean(jwtSigner && !jwtPubkey && jwtPubkeyStatus !== 'settled');
+  const isSessionLoading = isJwtSessionLoading || isAuthRestoring;
 
   return {
     user,
     users,
     signer,
+    isAuthRestoring,
     isSessionLoading,
     ...author.data,
   };
