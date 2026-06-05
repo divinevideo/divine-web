@@ -1,6 +1,7 @@
 // ABOUTME: Hydrated notifications hook — groups raw notifications and enriches with profile and video metadata
 // ABOUTME: Delegates paging to useNotifications; profile fetching to useBatchedAuthors; video fetching via internal query
 
+import { useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { API_CONFIG } from '@/config/api';
 import { fetchVideoById } from '@/lib/funnelcakeClient';
@@ -42,8 +43,11 @@ export function useHydratedNotifications(
   // -------------------------------------------------------------------------
   const notificationsQuery = useNotifications(filters);
 
-  const flatRaw: RawNotification[] = (notificationsQuery.data?.pages ?? []).flatMap(
-    (page) => page.notifications,
+  const flatRaw: RawNotification[] = useMemo(
+    () =>
+      (notificationsQuery.data?.pages ?? []).flatMap((page) => page.notifications),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [notificationsQuery.data?.pages],
   );
 
   const unreadCount = notificationsQuery.data?.pages[0]?.unreadCount ?? 0;
@@ -51,23 +55,30 @@ export function useHydratedNotifications(
   // -------------------------------------------------------------------------
   // Profile hydration
   // -------------------------------------------------------------------------
-  const actorPubkeys = Array.from(new Set(flatRaw.map((r) => r.actorPubkey)));
+  const actorPubkeys = useMemo(
+    () => Array.from(new Set(flatRaw.map((r) => r.actorPubkey))),
+    [flatRaw],
+  );
   const authorsQuery = useBatchedAuthors(actorPubkeys);
 
-  const profiles = buildProfilesMap(actorPubkeys, authorsQuery.data ?? {});
+  const profiles = useMemo(
+    () => buildProfilesMap(actorPubkeys, authorsQuery.data ?? {}),
+    [actorPubkeys, authorsQuery.data],
+  );
 
   // -------------------------------------------------------------------------
   // Video hydration (internal — not exported)
   // -------------------------------------------------------------------------
-  const videoIds = Array.from(
-    new Set(
-      flatRaw
-        .filter((r) => r.type !== 'follow' && r.targetEventId)
-        .map((r) => r.targetEventId as string),
-    ),
-  );
-
-  const sortedIds = [...videoIds].sort();
+  const sortedIds = useMemo(() => {
+    const ids = Array.from(
+      new Set(
+        flatRaw
+          .filter((r) => r.type !== 'follow' && r.targetEventId)
+          .map((r) => r.targetEventId as string),
+      ),
+    );
+    return ids.sort();
+  }, [flatRaw]);
 
   const videosQuery = useQuery({
     queryKey: ['notification-videos', sortedIds.join(',')],
@@ -102,21 +113,21 @@ export function useHydratedNotifications(
     gcTime: 30 * 60 * 1000,
   });
 
-  const videosMap: Map<string, NotificationVideoMeta> = new Map(
-    Object.entries(videosQuery.data ?? {}),
+  const videosMap: Map<string, NotificationVideoMeta> = useMemo(
+    () => new Map(Object.entries(videosQuery.data ?? {})),
+    [videosQuery.data],
   );
 
   // -------------------------------------------------------------------------
   // Grouping
   // -------------------------------------------------------------------------
-  let items: NotificationItem[];
-
-  if (filters.category === 'unread') {
-    // Singleton grouping: each raw row becomes its own group
-    items = flatRaw.flatMap((raw) => groupRawNotifications([raw], profiles, videosMap));
-  } else {
-    items = groupRawNotifications(flatRaw, profiles, videosMap);
-  }
+  const items = useMemo(
+    () =>
+      filters.category === 'unread'
+        ? flatRaw.flatMap((r) => groupRawNotifications([r], profiles, videosMap))
+        : groupRawNotifications(flatRaw, profiles, videosMap),
+    [flatRaw, profiles, videosMap, filters.category],
+  );
 
   // -------------------------------------------------------------------------
   // Result
