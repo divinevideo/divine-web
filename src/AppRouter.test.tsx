@@ -6,7 +6,7 @@ import AppRouter from './AppRouter';
 const { mockUseCurrentUser } = vi.hoisted(() => ({
   mockUseCurrentUser: vi.fn(() => ({
     user: undefined,
-    isSessionLoading: true,
+    isResolvingJwt: true,
   })),
 }));
 
@@ -47,7 +47,7 @@ describe('AppRouter', () => {
     mockUseCurrentUser.mockReset();
     mockUseCurrentUser.mockReturnValue({
       user: undefined,
-      isSessionLoading: true,
+      isResolvingJwt: true,
     });
     window.history.pushState({}, '', '/');
   });

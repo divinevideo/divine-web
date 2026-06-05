@@ -6,7 +6,7 @@ import AnalyticsPage from './AnalyticsPage';
 const { mockUseCurrentUser } = vi.hoisted(() => ({
   mockUseCurrentUser: vi.fn(() => ({
     user: undefined,
-    isSessionLoading: true,
+    isResolvingJwt: true,
   })),
 }));
 
@@ -38,7 +38,7 @@ describe('AnalyticsPage', () => {
     mockUseCurrentUser.mockReset();
     mockUseCurrentUser.mockReturnValue({
       user: undefined,
-      isSessionLoading: true,
+      isResolvingJwt: true,
     });
   });
 
