@@ -80,15 +80,17 @@ export function useOptimisticLike() {
 
         debugLog('Optimistically liking video:', videoId);
 
+        const tags = [
+          ['e', videoId],
+          ...(vineId ? [['a', `${SHORT_VIDEO_KIND}:${videoPubkey}:${vineId}`]] : []),
+          ['p', videoPubkey],
+        ];
+
         // Actually publish the like event
         const event = await publishEvent({
           kind: 7, // Reaction event
           content: '+',
-          tags: [
-            ['e', videoId],
-            ['a', `${SHORT_VIDEO_KIND}:${videoPubkey}:${vineId}`],
-            ['p', videoPubkey],
-          ],
+          tags,
         });
 
         // Update with real event ID

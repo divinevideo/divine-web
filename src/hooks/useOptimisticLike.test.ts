@@ -4,7 +4,6 @@ import { renderHook, act } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
 
-import { SHORT_VIDEO_KIND } from '@/types/video';
 import type { VideoSocialMetrics } from '@/hooks/useVideoSocialMetrics';
 import type { UserInteractions } from '@/types/video';
 
@@ -196,7 +195,7 @@ describe('useOptimisticLike', () => {
     expect(publishAsync).toHaveBeenCalled();
   });
 
-  it('likes optimistically, publishes kind 7, then stores returned event id', async () => {
+  it('likes optimistically without an addressable tag when vineId is missing', async () => {
     const { queryClient, Wrapper } = createHarness();
     const mKey = metricsKey(null);
     const iKey = interactionsKey();
@@ -236,7 +235,6 @@ describe('useOptimisticLike', () => {
       content: '+',
       tags: [
         ['e', VIDEO_ID],
-        ['a', `${SHORT_VIDEO_KIND}:${AUTHOR_PK}:null`],
         ['p', AUTHOR_PK],
       ],
     });
