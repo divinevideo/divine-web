@@ -244,7 +244,7 @@ export async function onRequest(context: {
   const meta = await fetchRouteMeta(url);
 
   if (meta && response.ok && response.headers.get('content-type')?.includes('text/html')) {
-    const html = injectMetaTags(await response.text(), meta);
+    const html = injectMetaTags(await response.text(), meta, path);
     const headers = new Headers(response.headers);
     headers.set('content-type', 'text/html; charset=UTF-8');
 
