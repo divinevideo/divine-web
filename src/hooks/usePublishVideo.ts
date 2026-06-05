@@ -3,6 +3,7 @@
 
 import { useMutation } from '@tanstack/react-query';
 import { useNostrPublish } from '@/hooks/useNostrPublish';
+import { buildImetaTag, generateVineId } from '@/lib/publishVideoTags';
 import { SHORT_VIDEO_KIND } from '@/types/video';
 import type { VideoMetadata } from '@/types/video';
 
@@ -15,47 +16,6 @@ interface PublishVideoOptions {
   dimensions?: string;
   hashtags?: string[];
   vineId?: string; // Optional, will generate if not provided
-}
-
-/**
- * Generate a unique vine ID if not provided
- */
-function generateVineId(): string {
-  return `vine-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-}
-
-/**
- * Build imeta tag from video metadata
- */
-function buildImetaTag(metadata: VideoMetadata): string[] {
-  const tag = ['imeta'];
-
-  if (metadata.url) {
-    tag.push('url', metadata.url);
-  }
-  if (metadata.mimeType) {
-    tag.push('m', metadata.mimeType);
-  }
-  if (metadata.dimensions) {
-    tag.push('dim', metadata.dimensions);
-  }
-  if (metadata.blurhash) {
-    tag.push('blurhash', metadata.blurhash);
-  }
-  if (metadata.thumbnailUrl) {
-    tag.push('image', metadata.thumbnailUrl);
-  }
-  if (metadata.duration !== undefined) {
-    tag.push('duration', String(metadata.duration));
-  }
-  if (metadata.size !== undefined) {
-    tag.push('size', String(metadata.size));
-  }
-  if (metadata.hash) {
-    tag.push('x', metadata.hash);
-  }
-
-  return tag;
 }
 
 /**

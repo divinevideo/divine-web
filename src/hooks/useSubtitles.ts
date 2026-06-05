@@ -68,7 +68,9 @@ export function useSubtitles(
   const hasRef = !!video?.textTrackRef;
   const cdnHash = video?.videoUrl ? extractCdnHash(video.videoUrl) : null;
   const requiresProtectedCdnAuth = !!video?.ageRestricted && !!video?.videoUrl && isProtectedDivineMediaUrl(video.videoUrl);
-  const queryEnabled = !!video && (hasEmbeddedContent || hasRef || !!cdnHash);
+  // Only attempt subtitle fetch when video explicitly advertises text tracks.
+  // This avoids blind CDN /vtt probes for videos that never declared subtitles.
+  const queryEnabled = !!video && (hasEmbeddedContent || hasRef);
 
   const { data: cues = [], isLoading } = useQuery({
     queryKey: ['subtitles', video?.id, video?.textTrackRef, cdnHash, requiresProtectedCdnAuth, isAdultVerified],
@@ -103,7 +105,9 @@ export function useSubtitles(
       }
 
       // Tier 3: Fetch VTT from CDN (media.divine.video/{hash}/vtt)
-      if (cdnHash) {
+      // only when a text-track ref exists. This remains a fallback path, not
+      // a blind probe for all media blobs.
+      if (cdnHash && video.textTrackRef) {
         try {
           const vttUrl = `https://media.divine.video/${cdnHash}/vtt`;
           const response = requiresProtectedCdnAuth
@@ -121,6 +125,11 @@ export function useSubtitles(
             : await fetch(vttUrl, { signal });
 
           if (!response) {
+            return [];
+          }
+
+          // Optional subtitle assets can legitimately miss on CDN.
+          if (response.status === 404 || response.status === 410 || response.status === 422) {
             return [];
           }
 
