@@ -16,21 +16,18 @@ import {
 import { MarketingLayout } from "@/components/MarketingLayout";
 import {
   Anchor,
+  AnchorNav,
   BackToTopButton,
   SectionHero,
   staticPageLinkCardClass,
   SupportEmailButton,
+  type SectionAnchor,
 } from "@/components/static-pages";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { buildMailtoLink } from "@/lib/mailto";
 
 const SUPPORT_EMAIL = "support@divine.video";
 const REVIEW_WINDOW_DAYS = 15;
-
-interface SectionAnchor {
-  id: string;
-  title: string;
-}
 
 const SECTIONS: SectionAnchor[] = [
   { id: "path-13-15", title: "If you're 13 to 15" },
@@ -94,21 +91,7 @@ export function AgeReviewPage() {
             about it.
           </p>
 
-          {/* Anchor nav */}
-          <nav
-            aria-label="On this page"
-            className="mt-10 grid gap-2 sm:grid-cols-3 text-sm"
-          >
-            {SECTIONS.map((s) => (
-              <a
-                key={s.id}
-                href={`#${s.id}`}
-                className="rounded-xl border border-brand-green/40 bg-brand-dark-green/40 px-4 py-3 text-brand-light-green hover:bg-brand-green/10 hover:border-brand-green transition-colors"
-              >
-                {s.title}
-              </a>
-            ))}
-          </nav>
+          <AnchorNav sections={SECTIONS} />
         </div>
       </section>
 

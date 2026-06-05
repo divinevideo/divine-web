@@ -24,17 +24,14 @@ import {
 import { MarketingLayout } from "@/components/MarketingLayout";
 import {
   Anchor,
+  AnchorNav,
   BackToTopButton,
   SectionHero,
   staticPageLinkCardClass,
+  type SectionAnchor,
 } from "@/components/static-pages";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ZendeskWidget } from "@/components/ZendeskWidget";
-
-interface SectionAnchor {
-  id: string;
-  title: string;
-}
 
 const SECTIONS: SectionAnchor[] = [
   { id: "framing", title: "A simple framing" },
@@ -205,21 +202,7 @@ export function FamilyPage() {
             loud.
           </p>
 
-          {/* Anchor nav */}
-          <nav
-            aria-label="On this page"
-            className="mt-10 grid gap-2 sm:grid-cols-3 text-sm"
-          >
-            {SECTIONS.map((s) => (
-              <a
-                key={s.id}
-                href={`#${s.id}`}
-                className="rounded-xl border border-brand-green/40 bg-brand-dark-green/40 px-4 py-3 text-brand-light-green hover:bg-brand-green/10 hover:border-brand-green transition-colors"
-              >
-                {s.title}
-              </a>
-            ))}
-          </nav>
+          <AnchorNav sections={SECTIONS} />
         </div>
       </section>
 
@@ -372,7 +355,7 @@ export function FamilyPage() {
                     A support path for families and a published{" "}
                     <a
                       href="/safety"
-                      className="text-brand-green underline underline-offset-2 hover:text-brand-dark-green dark:hover:text-brand-light-green"
+                      className="text-brand-dark-green dark:text-brand-green underline underline-offset-2 hover:opacity-80"
                     >
                       safety standards
                     </a>{" "}
