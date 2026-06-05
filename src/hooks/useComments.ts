@@ -2,88 +2,122 @@ import { NKinds, NostrEvent, NostrFilter } from '@nostrify/nostrify';
 import { useNostr } from '@nostrify/react';
 import { useQuery } from '@tanstack/react-query';
 
-export function useComments(root: NostrEvent | URL, limit?: number) {
+type UseCommentsOptions = {
+  expectedCommentCount?: number;
+};
+
+type CommentsData = {
+  allComments: NostrEvent[];
+  topLevelComments: NostrEvent[];
+};
+
+const COMMENT_MISMATCH_RETRY_ATTEMPTS = 2;
+const COMMENT_MISMATCH_REFETCH_MS = 500;
+
+function getTagValue(event: NostrEvent, tagName: string): string | undefined {
+  const tag = event.tags.find(([name]) => name === tagName);
+  return tag?.[1];
+}
+
+function getAddressableId(root: NostrEvent): string {
+  const d = getTagValue(root, 'd') ?? '';
+  return `${root.kind}:${root.pubkey}:${d}`;
+}
+
+function buildCommentsData(root: NostrEvent | URL, events: NostrEvent[]): CommentsData {
+  const topLevelComments = events.filter(comment => {
+    if (root instanceof URL) {
+      return getTagValue(comment, 'i') === root.toString();
+    } else if (NKinds.addressable(root.kind)) {
+      const addressableId = getAddressableId(root);
+      const aMatch = getTagValue(comment, 'a') === addressableId;
+      const eMatch = getTagValue(comment, 'e') === root.id;
+      return aMatch || eMatch;
+    } else if (NKinds.replaceable(root.kind)) {
+      return getTagValue(comment, 'a') === `${root.kind}:${root.pubkey}:`;
+    } else {
+      return getTagValue(comment, 'e') === root.id;
+    }
+  });
+
+  return {
+    allComments: events,
+    topLevelComments: topLevelComments.sort((a, b) => b.created_at - a.created_at),
+  };
+}
+
+export function useComments(root: NostrEvent | URL, limit?: number, options: UseCommentsOptions = {}) {
   const { nostr } = useNostr();
+  const expectedCommentCount = options.expectedCommentCount ?? 0;
 
   return useQuery({
-    queryKey: ['nostr', 'comments', root instanceof URL ? root.toString() : root.id, limit],
+    queryKey: ['nostr', 'comments', root instanceof URL ? root.toString() : root.id, limit, expectedCommentCount],
     queryFn: async (c) => {
       const signal = AbortSignal.any([c.signal, AbortSignal.timeout(5000)]);
-      let events: NostrEvent[];
 
-      if (root instanceof URL) {
-        const filter: NostrFilter = { kinds: [1111], '#I': [root.toString()] };
-        if (typeof limit === 'number') filter.limit = limit;
-        events = await nostr.query([filter], { signal });
-      } else if (NKinds.addressable(root.kind)) {
-        // For addressable events, query by BOTH #E (event ID) and #A (addressable identifier)
-        // Funnelcake indexes by E tag, but NIP-22 standard uses A tag for addressable events
-        const d = root.tags.find(([name]) => name === 'd')?.[1] ?? '';
-        const addressableId = `${root.kind}:${root.pubkey}:${d}`;
+      const queryOnce = async (): Promise<CommentsData> => {
+        let events: NostrEvent[];
 
-        const filterByE: NostrFilter = { kinds: [1111], '#E': [root.id] };
-        const filterByA: NostrFilter = { kinds: [1111], '#A': [addressableId] };
-        if (typeof limit === 'number') {
-          filterByE.limit = limit;
-          filterByA.limit = limit;
+        if (root instanceof URL) {
+          const filter: NostrFilter = { kinds: [1111], '#I': [root.toString()] };
+          if (typeof limit === 'number') filter.limit = limit;
+          events = await nostr.query([filter], { signal });
+        } else if (NKinds.addressable(root.kind)) {
+          const addressableId = getAddressableId(root);
+
+          const filterByE: NostrFilter = { kinds: [1111], '#E': [root.id] };
+          const filterByA: NostrFilter = { kinds: [1111], '#A': [addressableId] };
+          if (typeof limit === 'number') {
+            filterByE.limit = limit;
+            filterByA.limit = limit;
+          }
+
+          const [eventsE, eventsA] = await Promise.all([
+            nostr.query([filterByE], { signal }),
+            nostr.query([filterByA], { signal }),
+          ]);
+
+          const seenIds = new Set<string>();
+          events = [...eventsE, ...eventsA].filter(e => {
+            if (seenIds.has(e.id)) return false;
+            seenIds.add(e.id);
+            return true;
+          });
+        } else if (NKinds.replaceable(root.kind)) {
+          const filter: NostrFilter = { kinds: [1111], '#A': [`${root.kind}:${root.pubkey}:`] };
+          if (typeof limit === 'number') filter.limit = limit;
+          events = await nostr.query([filter], { signal });
+        } else {
+          const filter: NostrFilter = { kinds: [1111], '#E': [root.id] };
+          if (typeof limit === 'number') filter.limit = limit;
+          events = await nostr.query([filter], { signal });
         }
 
-        // Run both queries in parallel and merge results
-        const [eventsE, eventsA] = await Promise.all([
-          nostr.query([filterByE], { signal }),
-          nostr.query([filterByA], { signal }),
-        ]);
+        return buildCommentsData(root, events);
+      };
 
-        // Deduplicate by event ID
-        const seenIds = new Set<string>();
-        events = [...eventsE, ...eventsA].filter(e => {
-          if (seenIds.has(e.id)) return false;
-          seenIds.add(e.id);
-          return true;
-        });
-      } else if (NKinds.replaceable(root.kind)) {
-        const filter: NostrFilter = { kinds: [1111], '#A': [`${root.kind}:${root.pubkey}:`] };
-        if (typeof limit === 'number') filter.limit = limit;
-        events = await nostr.query([filter], { signal });
-      } else {
-        const filter: NostrFilter = { kinds: [1111], '#E': [root.id] };
-        if (typeof limit === 'number') filter.limit = limit;
-        events = await nostr.query([filter], { signal });
+      let commentsData = await queryOnce();
+
+      for (
+        let attempt = 1;
+        expectedCommentCount > 0
+          && commentsData.topLevelComments.length === 0
+          && attempt < COMMENT_MISMATCH_RETRY_ATTEMPTS;
+        attempt += 1
+      ) {
+        commentsData = await queryOnce();
       }
 
-      // Helper function to get tag value
-      const getTagValue = (event: NostrEvent, tagName: string): string | undefined => {
-        const tag = event.tags.find(([name]) => name === tagName);
-        return tag?.[1];
-      };
-
-      // Filter top-level comments (those with lowercase tag matching the root)
-      const topLevelComments = events.filter(comment => {
-        if (root instanceof URL) {
-          return getTagValue(comment, 'i') === root.toString();
-        } else if (NKinds.addressable(root.kind)) {
-          const d = getTagValue(root, 'd') ?? '';
-          const addressableId = `${root.kind}:${root.pubkey}:${d}`;
-          // Top-level if parent matches root via either 'a' tag (addressable) or 'e' tag (event ID)
-          const aMatch = getTagValue(comment, 'a') === addressableId;
-          const eMatch = getTagValue(comment, 'e') === root.id;
-          return aMatch || eMatch;
-        } else if (NKinds.replaceable(root.kind)) {
-          return getTagValue(comment, 'a') === `${root.kind}:${root.pubkey}:`;
-        } else {
-          return getTagValue(comment, 'e') === root.id;
-        }
-      });
-
-      // Sort top-level comments by creation time (newest first)
-      const sortedTopLevel = topLevelComments.sort((a, b) => b.created_at - a.created_at);
-
-      return {
-        allComments: events,
-        topLevelComments: sortedTopLevel,
-      };
+      return commentsData;
     },
     enabled: !!root,
+    refetchInterval: (query) => {
+      const data = query.state.data as CommentsData | undefined;
+      return expectedCommentCount > 0 && data?.topLevelComments.length === 0
+        ? COMMENT_MISMATCH_REFETCH_MS
+        : false;
+    },
+    refetchIntervalInBackground: true,
   });
 }
 
@@ -91,11 +125,6 @@ export function useComments(root: NostrEvent | URL, limit?: number) {
  * Get direct replies to a comment
  */
 export function getDirectReplies(allComments: NostrEvent[], commentId: string): NostrEvent[] {
-  const getTagValue = (event: NostrEvent, tagName: string): string | undefined => {
-    const tag = event.tags.find(([name]) => name === tagName);
-    return tag?.[1];
-  };
-  
   const directReplies = allComments.filter(comment => {
     const eTag = getTagValue(comment, 'e');
     return eTag === commentId;

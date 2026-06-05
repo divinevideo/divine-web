@@ -76,6 +76,7 @@ export function VideoCommentsModal({
               emptyStateMessage={t('videoCommentsModal.emptyMessage')}
               emptyStateSubtitle={t('videoCommentsModal.emptySubtitle')}
               compact={true}
+              expectedCommentCount={video.commentCount ?? 0}
               data-testid="comments-section"
               data-root-kind={video.kind.toString()}
               data-root-id={video.id}
