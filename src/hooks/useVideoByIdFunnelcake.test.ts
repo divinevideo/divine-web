@@ -113,7 +113,43 @@ describe('useVideoByIdFunnelcake', () => {
     expect(result.current.error).toBeNull();
   });
 
-  it('skips the direct lookup when the context window already contains the target video', async () => {
+  it('starts the direct lookup immediately while profile context is still loading', async () => {
+    let resolveUserVideos: (response: { videos: Array<{ id: string; pubkey: string; d_tag?: string }> }) => void;
+    mockFetchUserVideos.mockImplementationOnce(() => new Promise(resolve => {
+      resolveUserVideos = resolve;
+    }));
+    mockFetchVideoById.mockResolvedValueOnce({
+      id: 'target-video',
+      pubkey: 'p'.repeat(64),
+      d_tag: 'target-video',
+    });
+
+    const { result } = renderHook(
+      () => useVideoByIdFunnelcake({
+        videoId: 'target-video',
+        pubkey: 'p'.repeat(64),
+        currentIndex: 0,
+      }),
+      { wrapper: createWrapper() }
+    );
+
+    await waitFor(() => {
+      expect(mockFetchVideoById).toHaveBeenCalledWith(
+        'https://api.divine.video',
+        'target-video',
+        'p'.repeat(64),
+        expect.any(AbortSignal)
+      );
+    });
+
+    await waitFor(() => {
+      expect(result.current.video?.id).toBe('target-video');
+    });
+
+    resolveUserVideos!({ videos: [] });
+  });
+
+  it('uses context video for navigation when the context window already contains the target video', async () => {
     mockFetchUserVideos.mockResolvedValueOnce({
       videos: [
         { id: 'target-video', pubkey: 'p'.repeat(64), d_tag: 'target-video' },
@@ -135,7 +171,7 @@ describe('useVideoByIdFunnelcake', () => {
     });
 
     expect(mockFetchUserVideos).toHaveBeenCalledTimes(1);
-    expect(mockFetchVideoById).not.toHaveBeenCalled();
+    expect(result.current.videos?.map(video => video.id)).toEqual(['target-video']);
     expect(result.current.windowOffset).toBe(0);
   });
 
@@ -172,7 +208,12 @@ describe('useVideoByIdFunnelcake', () => {
         signal: expect.any(AbortSignal),
       })
     );
-    expect(mockFetchVideoById).not.toHaveBeenCalled();
+    expect(mockFetchVideoById).toHaveBeenCalledWith(
+      'https://api.divine.video',
+      'target-video',
+      undefined,
+      expect.any(AbortSignal)
+    );
     expect(result.current.videos?.map(video => video.id)).toEqual(['neighbor-1', 'target-video']);
   });
 });

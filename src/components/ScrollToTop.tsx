@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigationType } from 'react-router-dom';
 
 const scrollPositions = new Map<string, number>();
 
@@ -9,6 +9,7 @@ function getScrollKey(pathname: string, search: string) {
 
 export function ScrollToTop() {
   const { pathname, search, hash } = useLocation();
+  const navigationType = useNavigationType();
   const scrollKey = getScrollKey(pathname, search);
   const timeoutRef = useRef<number | null>(null);
 
@@ -62,13 +63,17 @@ export function ScrollToTop() {
       };
     }
 
-    const savedPosition = scrollPositions.get(scrollKey) ?? 0;
+    // Only restore the saved position on browser back/forward (POP) — including
+    // in-app `navigate(-1)`. Forward link clicks (PUSH/REPLACE) start at the top
+    // so footer/sidebar/nav links always land at the top of the destination.
+    const savedPosition =
+      navigationType === 'POP' ? (scrollPositions.get(scrollKey) ?? 0) : 0;
     window.scrollTo(0, savedPosition);
 
     return () => {
       scrollPositions.set(scrollKey, window.scrollY);
     };
-  }, [scrollKey, hash]);
+  }, [scrollKey, hash, navigationType]);
 
   return null;
 }

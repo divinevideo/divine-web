@@ -1,6 +1,7 @@
 // ABOUTME: Badge variants for unverified, external content, and AI warning states
 // ABOUTME: Mirrors the mobile app's fallback badge labels when no proof-backed badge applies
 
+import { useTranslation } from 'react-i18next';
 import { Question as CircleHelp, CloudSlash as CloudOff, Warning as TriangleAlert } from '@phosphor-icons/react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -11,6 +12,7 @@ interface ContentOriginBadgeProps {
 }
 
 export function UnverifiedBadge({ className, size = 'small' }: ContentOriginBadgeProps) {
+  const { t } = useTranslation();
   const sizeConfig = getSizeConfig(size);
 
   return (
@@ -21,15 +23,16 @@ export function UnverifiedBadge({ className, size = 'small' }: ContentOriginBadg
         sizeConfig.className,
         className,
       )}
-      title="Unverified"
+      title={t('contentOriginBadges.unverified')}
     >
       <CircleHelp className={sizeConfig.iconSize} />
-      <span>Unverified</span>
+      <span>{t('contentOriginBadges.unverified')}</span>
     </Badge>
   );
 }
 
 export function NotDivineBadge({ className, size = 'small' }: ContentOriginBadgeProps) {
+  const { t } = useTranslation();
   const sizeConfig = getSizeConfig(size);
 
   return (
@@ -40,15 +43,16 @@ export function NotDivineBadge({ className, size = 'small' }: ContentOriginBadge
         sizeConfig.className,
         className,
       )}
-      title="Not Divine Hosted"
+      title={t('contentOriginBadges.notDivineHosted')}
     >
       <CloudOff className={sizeConfig.iconSize} />
-      <span>Not Divine Hosted</span>
+      <span>{t('contentOriginBadges.notDivineHosted')}</span>
     </Badge>
   );
 }
 
 export function PossiblyAIBadge({ className, size = 'small' }: ContentOriginBadgeProps) {
+  const { t } = useTranslation();
   const sizeConfig = getSizeConfig(size);
 
   return (
@@ -59,10 +63,10 @@ export function PossiblyAIBadge({ className, size = 'small' }: ContentOriginBadg
         sizeConfig.className,
         className,
       )}
-      title="Possibly AI-Generated"
+      title={t('contentOriginBadges.possiblyAI')}
     >
       <TriangleAlert className={sizeConfig.iconSize} />
-      <span>Possibly AI-Generated</span>
+      <span>{t('contentOriginBadges.possiblyAI')}</span>
     </Badge>
   );
 }

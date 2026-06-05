@@ -10,6 +10,7 @@ import type {
   ReactNode,
 } from 'react';
 import { nip19 } from 'nostr-tools';
+import { initializeI18n } from '@/lib/i18n';
 import SearchPage from './SearchPage';
 
 const {
@@ -84,18 +85,27 @@ vi.mock('@/components/ui/avatar', () => ({
   AvatarFallback: ({ children, ...props }: HTMLAttributes<HTMLDivElement>) => <div {...props}>{children}</div>,
 }));
 
+// Bare VideoCard mock: search results MUST NOT render this directly because
+// it has no metrics wrapper, which means viewCount/loopCount can never display.
+// The presence of `bare-video-card-*` in a test render is a regression.
 vi.mock('@/components/VideoCard', () => ({
-  VideoCard: ({
+  VideoCard: ({ video }: { video: { id: string } }) => (
+    <div data-testid={`bare-video-card-${video.id}`}>bare {video.id}</div>
+  ),
+}));
+
+vi.mock('@/components/VideoCardWithMetrics', () => ({
+  VideoCardWithMetrics: ({
     video,
     navigationContext,
-    videoIndex,
+    index,
   }: {
     video: { id: string };
     navigationContext?: { source: string; query?: string; sortMode?: string };
-    videoIndex?: number;
+    index?: number;
   }) => {
     const href = navigationContext
-      ? `/video/${video.id}?source=${navigationContext.source}&q=${navigationContext.query}&sort=${navigationContext.sortMode}&index=${videoIndex}`
+      ? `/video/${video.id}?source=${navigationContext.source}&q=${navigationContext.query}&sort=${navigationContext.sortMode}&index=${index}`
       : `/video/${video.id}`;
 
     return (
@@ -187,7 +197,18 @@ function LocationDisplay() {
 }
 
 describe('SearchPage', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
+    const storage = new Map<string, string>();
+    Object.defineProperty(window, 'localStorage', {
+      configurable: true,
+      value: {
+        getItem: (key: string) => storage.get(key) ?? null,
+        setItem: (key: string, value: string) => storage.set(key, value),
+        removeItem: (key: string) => storage.delete(key),
+        clear: () => storage.clear(),
+      } satisfies Pick<Storage, 'getItem' | 'setItem' | 'removeItem' | 'clear'>,
+    });
+    await initializeI18n({ force: true, languages: ['en-US'] });
     vi.clearAllMocks();
     mockUseInfiniteSearchVideos.mockReturnValue({
       data: { pages: [{ videos: [] }] },
@@ -483,5 +504,157 @@ describe('SearchPage', () => {
     expect(screen.getByTestId('location-display').textContent).toBe(
       '/search?q=twerking&filter=videos&play=compilation&video=video-1'
     );
+  });
+
+  // Regression: bare VideoCard hides view counts because it has no metrics
+  // wrapper. Search results MUST go through VideoCardWithMetrics so loop /
+  // view counts render alongside other feeds.
+  it('renders the All-tab video grid via VideoCardWithMetrics, not bare VideoCard', () => {
+    mockUseInfiniteSearchVideos.mockReturnValue({
+      data: { pages: [{ videos: [{ id: 'video-1', pubkey: 'a'.repeat(64) }] }] },
+      fetchNextPage: vi.fn(),
+      hasNextPage: false,
+      isLoading: false,
+      error: null,
+    });
+
+    renderPage(['/search?q=dance']);
+
+    expect(screen.getAllByTestId('video-card-video-1').length).toBeGreaterThan(0);
+    expect(screen.queryAllByTestId('bare-video-card-video-1')).toHaveLength(0);
+  });
+
+  it('renders the videos-only tab grid via VideoCardWithMetrics, not bare VideoCard', () => {
+    mockUseInfiniteSearchVideos.mockReturnValue({
+      data: { pages: [{ videos: [{ id: 'video-2', pubkey: 'b'.repeat(64) }] }] },
+      fetchNextPage: vi.fn(),
+      hasNextPage: false,
+      isLoading: false,
+      error: null,
+    });
+
+    renderPage(['/search?q=dance&filter=videos']);
+
+    expect(screen.getAllByTestId('video-card-video-2').length).toBeGreaterThan(0);
+    expect(screen.queryAllByTestId('bare-video-card-video-2')).toHaveLength(0);
+  });
+
+  it('defaults to hot sort when no sort param is in the URL and passes it to useInfiniteSearchVideos', () => {
+    mockUseInfiniteSearchVideos.mockReturnValue({
+      data: { pages: [{ videos: [] }] },
+      fetchNextPage: vi.fn(),
+      hasNextPage: false,
+      isLoading: false,
+      error: null,
+    });
+
+    renderPage(['/search?q=dogs']);
+
+    const lastCall = mockUseInfiniteSearchVideos.mock.calls.at(-1)?.[0];
+    expect(lastCall?.sortMode).toBe('hot');
+
+    const hotPill = screen.getByTestId('search-sort-hot');
+    expect(hotPill).toHaveAttribute('aria-checked', 'true');
+    expect(screen.getByTestId('search-sort-relevance')).toHaveAttribute('aria-checked', 'false');
+  });
+
+  it('honors the sort URL param on initial load', () => {
+    mockUseInfiniteSearchVideos.mockReturnValue({
+      data: { pages: [{ videos: [] }] },
+      fetchNextPage: vi.fn(),
+      hasNextPage: false,
+      isLoading: false,
+      error: null,
+    });
+
+    renderPage(['/search?q=dogs&sort=top']);
+
+    const lastCall = mockUseInfiniteSearchVideos.mock.calls.at(-1)?.[0];
+    expect(lastCall?.sortMode).toBe('top');
+    expect(screen.getByTestId('search-sort-top')).toHaveAttribute('aria-checked', 'true');
+  });
+
+  it('canonicalizes an invalid sort URL param back to hot', async () => {
+    mockUseInfiniteSearchVideos.mockReturnValue({
+      data: { pages: [{ videos: [] }] },
+      fetchNextPage: vi.fn(),
+      hasNextPage: false,
+      isLoading: false,
+      error: null,
+    });
+
+    renderPage(['/search?q=dogs&sort=garbage']);
+
+    const lastCall = mockUseInfiniteSearchVideos.mock.calls.at(-1)?.[0];
+    expect(lastCall?.sortMode).toBe('hot');
+    expect(screen.getByTestId('search-sort-hot')).toHaveAttribute('aria-checked', 'true');
+
+    await waitFor(() => {
+      expect(screen.getByTestId('location-display').textContent).not.toContain('sort=');
+    });
+  });
+
+  it('supports roving keyboard navigation for sort radios', async () => {
+    const user = userEvent.setup();
+    mockUseInfiniteSearchVideos.mockReturnValue({
+      data: { pages: [{ videos: [] }] },
+      fetchNextPage: vi.fn(),
+      hasNextPage: false,
+      isLoading: false,
+      error: null,
+    });
+
+    renderPage(['/search?q=dogs']);
+
+    const relevancePill = screen.getByTestId('search-sort-relevance');
+    const hotPill = screen.getByTestId('search-sort-hot');
+    const topPill = screen.getByTestId('search-sort-top');
+    const controversialPill = screen.getByTestId('search-sort-controversial');
+
+    expect(hotPill).toHaveAttribute('tabIndex', '0');
+    expect(relevancePill).toHaveAttribute('tabIndex', '-1');
+
+    hotPill.focus();
+    await user.keyboard('{ArrowRight}');
+
+    expect(topPill).toHaveFocus();
+    expect(topPill).toHaveAttribute('aria-checked', 'true');
+    expect(hotPill).toHaveAttribute('tabIndex', '-1');
+    expect(topPill).toHaveAttribute('tabIndex', '0');
+
+    await user.keyboard('{Home}');
+
+    expect(relevancePill).toHaveFocus();
+    expect(relevancePill).toHaveAttribute('aria-checked', 'true');
+
+    await user.keyboard('{End}');
+
+    expect(controversialPill).toHaveFocus();
+    expect(controversialPill).toHaveAttribute('aria-checked', 'true');
+  });
+
+  it('writes sort to URL when user picks a non-default mode and omits it when hot is chosen', async () => {
+    const user = userEvent.setup();
+    mockUseInfiniteSearchVideos.mockReturnValue({
+      data: { pages: [{ videos: [] }] },
+      fetchNextPage: vi.fn(),
+      hasNextPage: false,
+      isLoading: false,
+      error: null,
+    });
+
+    renderPage(['/search?q=dogs']);
+
+    await user.click(screen.getByTestId('search-sort-top'));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('location-display').textContent).toContain('sort=top');
+    });
+
+    await user.click(screen.getByTestId('search-sort-hot'));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('location-display').textContent).not.toContain('sort=');
+    });
   });
 });

@@ -3,6 +3,7 @@
 
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 type Platform = 'android' | 'ios' | 'desktop';
 
@@ -21,6 +22,7 @@ export function AppCallbackPage() {
   const code = searchParams.get('code');
   const [platform] = useState<Platform>(detectPlatform);
   const [triedIntent, setTriedIntent] = useState(false);
+  const { t } = useTranslation();
 
   // On Android, attempt intent:// with fallback
   useEffect(() => {
@@ -41,12 +43,12 @@ export function AppCallbackPage() {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-background p-4">
         <div className="text-center space-y-4 max-w-md">
-          <h1 className="text-2xl font-bold">Open on Your Phone</h1>
+          <h1 className="text-2xl font-bold">{t('appCallbackPage.desktop.heading')}</h1>
           <p className="text-muted-foreground">
-            This link needs to be opened in the Divine app on your mobile device.
+            {t('appCallbackPage.desktop.body1')}
           </p>
           <p className="text-muted-foreground">
-            If you received this link via email, open it on the phone where you have Divine installed.
+            {t('appCallbackPage.desktop.body2')}
           </p>
           <div className="flex gap-4 justify-center pt-4">
             <a
@@ -55,7 +57,7 @@ export function AppCallbackPage() {
               rel="noopener noreferrer"
               className="px-4 py-2 bg-primary text-primary-foreground rounded-lg font-medium hover:opacity-90 transition-opacity"
             >
-              App Store
+              {t('appCallbackPage.appStore')}
             </a>
             <a
               href={PLAY_STORE_URL}
@@ -63,7 +65,7 @@ export function AppCallbackPage() {
               rel="noopener noreferrer"
               className="px-4 py-2 bg-primary text-primary-foreground rounded-lg font-medium hover:opacity-90 transition-opacity"
             >
-              Google Play
+              {t('appCallbackPage.googlePlay')}
             </a>
           </div>
         </div>
@@ -73,27 +75,27 @@ export function AppCallbackPage() {
 
   // Mobile users (iOS or Android after intent attempt)
   const storeUrl = platform === 'ios' ? APP_STORE_URL : PLAY_STORE_URL;
-  const storeName = platform === 'ios' ? 'App Store' : 'Google Play';
+  const storeName = platform === 'ios' ? t('appCallbackPage.appStore') : t('appCallbackPage.googlePlay');
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-background p-4">
       <div className="text-center space-y-4 max-w-md">
-        <h1 className="text-2xl font-bold">Open in Divine</h1>
+        <h1 className="text-2xl font-bold">{t('appCallbackPage.mobile.heading')}</h1>
         <p className="text-muted-foreground">
-          This link should open in the Divine app. If it didn't open automatically:
+          {t('appCallbackPage.mobile.body')}
         </p>
         <ul className="text-left text-muted-foreground space-y-2 pl-4">
-          <li>• Make sure Divine is installed on this device</li>
-          <li>• Try opening Divine and signing in again</li>
+          <li>{t('appCallbackPage.mobile.bullet1')}</li>
+          <li>{t('appCallbackPage.mobile.bullet2')}</li>
         </ul>
         <a
           href={storeUrl}
           className="inline-block mt-4 px-6 py-2 bg-primary text-primary-foreground rounded-lg font-medium hover:opacity-90 transition-opacity"
         >
-          Get Divine on {storeName}
+          {t('appCallbackPage.mobile.getDivine', { store: storeName })}
         </a>
         <p className="text-sm text-muted-foreground pt-4">
-          If you clicked a link from email, make sure you're on the same device where you registered.
+          {t('appCallbackPage.mobile.emailHint')}
         </p>
       </div>
     </div>
