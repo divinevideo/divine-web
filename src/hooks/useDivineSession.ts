@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { getJWTExpiration } from '@/lib/jwtDecode';
 import { setJwtCookie } from '@/lib/crossSubdomainAuth';
+import { refreshDivineSession } from '@/lib/divineLogin';
 
 // Legacy key names stay in place so existing hosted-login sessions survive this rename.
 const TOKEN_KEY = 'keycast_jwt_token';
@@ -206,6 +207,72 @@ export function useDivineSession() {
     return bunkerUrl;
   }, [bunkerUrl]);
 
+  // Proactively renew the hosted access token before it expires, using the
+  // refresh token the @divinevideo/login SDK stored on the origin where the
+  // user logged in. Keeps the session alive instead of hard-expiring. On
+  // origins without a stored refresh token (e.g. subdomains) the SDK returns
+  // null and we leave the session untouched (today's behavior).
+  useEffect(() => {
+    if (!token || !expiration) {
+      return;
+    }
+
+    let cancelled = false;
+    let inFlight = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+
+    const attemptRefresh = async () => {
+      // Guard against overlapping attempts (e.g. the timer firing while a
+      // visibility-triggered attempt is still in flight, or rapid tab toggles).
+      if (cancelled || inFlight) {
+        return;
+      }
+      inFlight = true;
+      try {
+        const newToken = await refreshDivineSession();
+        if (!cancelled && newToken && newToken !== token) {
+          refreshSession(newToken);
+        }
+      } catch {
+        // Refresh unavailable or failed — leave the existing session untouched.
+      } finally {
+        inFlight = false;
+      }
+    };
+
+    const REFRESH_LEAD_MS = 60 * 1000;
+    const msUntilRefresh = expiration - Date.now() - REFRESH_LEAD_MS;
+    if (msUntilRefresh <= 0) {
+      void attemptRefresh();
+    } else {
+      timer = setTimeout(() => { void attemptRefresh(); }, msUntilRefresh);
+    }
+
+    // Background tabs throttle setTimeout, so the pre-expiry timer can drift past
+    // expiry while the tab is hidden. When the tab becomes visible again, re-check
+    // and renew if we're at/within the refresh window. Cheap when far from expiry:
+    // the SDK returns cached creds without a network call and the guard above
+    // skips applying an unchanged token.
+    const onVisible = () => {
+      if (
+        !cancelled &&
+        document.visibilityState === 'visible' &&
+        Date.now() >= expiration - REFRESH_LEAD_MS
+      ) {
+        void attemptRefresh();
+      }
+    };
+    document.addEventListener('visibilitychange', onVisible);
+
+    return () => {
+      cancelled = true;
+      if (timer) {
+        clearTimeout(timer);
+      }
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, [token, expiration, refreshSession]);
+
   /**
    * Clear *this origin's* session keys.
    *
@@ -233,19 +300,18 @@ export function useDivineSession() {
 
     const now = Date.now();
     if (now > expiration) {
-      // Token is expired
-      // If remember me is enabled, return token anyway (UI will prompt for refresh)
-      // If remember me is disabled, clear session
+      // Access token expired. Do NOT destroy the session here — the refresh
+      // effect renews it from the login server's refresh token. Return null so
+      // callers don't use a stale token until the renewed one lands. (With
+      // rememberMe we still hand back the token so the existing UI can prompt.)
       if (!rememberMe) {
-        clearSession();
         return null;
       }
-      // Still return token for remember me case, but caller should check needsReauth
       return token;
     }
 
     return token;
-  }, [token, expiration, rememberMe, clearSession]);
+  }, [token, expiration, rememberMe]);
 
   return {
     ...state,

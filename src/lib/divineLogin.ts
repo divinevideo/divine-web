@@ -177,3 +177,39 @@ export async function exchangeDivineLoginCallback(
     token: tokens.access_token,
   };
 }
+
+/**
+ * Renew the hosted access token using the refresh token the SDK persisted on
+ * this origin at login time. Delegates rotation + storage to the SDK
+ * (`getSessionWithRefresh` refreshes within ~5 min of expiry). Returns the fresh
+ * access token, or null when there is no stored session on this origin (e.g. a
+ * subdomain) or the refresh failed.
+ */
+// Module-level singleflight. useCurrentUser() -> useDivineSession() mounts in
+// ~55 places, each running its own pre-expiry refresh timer + visibilitychange
+// listener that fire together near expiry. Without a shared guard they would all
+// call getSessionWithRefresh() at once and race the SDK's single-use, rotating
+// refresh token: only the first POST wins, the losers fail and clear the stored
+// session (and reuse-detection can revoke the whole token family) — logging the
+// user out at the exact renewal this is meant to make seamless. Collapsing
+// concurrent calls into one in-flight promise removes the within-tab herd. (Two
+// open tabs are separate module instances and still race — that's keycast#250.)
+let inFlightRefresh: Promise<string | null> | null = null;
+
+export async function refreshDivineSession(
+  fetchImpl?: typeof fetch,
+): Promise<string | null> {
+  if (inFlightRefresh) {
+    return inFlightRefresh;
+  }
+  inFlightRefresh = (async () => {
+    const client = createClient(fetchImpl);
+    const credentials = await client.oauth.getSessionWithRefresh();
+    return credentials?.accessToken ?? null;
+  })();
+  try {
+    return await inFlightRefresh;
+  } finally {
+    inFlightRefresh = null;
+  }
+}
