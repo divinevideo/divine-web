@@ -24,6 +24,7 @@ import { VideoPlaybackProvider } from '@/contexts/VideoPlaybackContext';
 import { FullscreenFeedProvider } from '@/contexts/FullscreenFeedContext';
 import AppRouter from './AppRouter';
 import { PRIMARY_RELAY, PRESET_RELAYS, toLegacyFormat } from '@/config/relays';
+import { resolveRelayUrl, resolveRelayUrls } from '@/lib/simRelay';
 
 const head = createHead({
   plugins: [
@@ -43,10 +44,13 @@ const queryClient = new QueryClient({
 
 const defaultConfig: AppConfig = {
   theme: "system",
-  relayUrl: PRIMARY_RELAY.url, // Primary relay with NIP-50 support
-  relayUrls: [
+  // Sim-suppression: in divine-brain virtual-persona PR runs the
+  // override flips this to wss://relay.staging.divine.video. In prod
+  // (no flag set) the default is unchanged.
+  relayUrl: resolveRelayUrl(PRIMARY_RELAY.url),
+  relayUrls: resolveRelayUrls([
     'wss://relay.divine.video',
-  ],
+  ]),
 };
 
 const presetRelays = toLegacyFormat(PRESET_RELAYS);

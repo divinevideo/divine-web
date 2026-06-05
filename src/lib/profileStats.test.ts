@@ -47,6 +47,23 @@ describe('buildProfileStats', () => {
 
     expect(stats.classicVineCount).toBe(398);
     expect(stats.originalLoopCount).toBe(2300000000);
-    expect(stats.totalLoops).toBe(2256);
+    expect(stats.totalLoops).toBe(2578);
+  });
+
+  it('falls back to watch-duration loops when unified views are unavailable', () => {
+    const stats = buildProfileStats({
+      funnelcakeProfile: {
+        pubkey: 'pubkey-1',
+        video_count: 1,
+        follower_count: 0,
+        following_count: 0,
+        total_loops: 12.6,
+        total_reactions: 0,
+      },
+      loadedVideos: [],
+      joinedDate: null,
+    });
+
+    expect(stats.totalLoops).toBe(12);
   });
 });

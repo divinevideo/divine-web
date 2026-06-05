@@ -3,6 +3,7 @@
 
 import { useRef, useEffect, useState, useCallback } from 'react';
 import { createPortal } from 'react-dom';
+import { useTranslation } from 'react-i18next';
 import { FullscreenVideoItem } from '@/components/FullscreenVideoItem';
 import { useVideoPlayback } from '@/hooks/useVideoPlayback';
 import { useDeferredVideoMetrics } from '@/hooks/useDeferredVideoMetrics';
@@ -42,6 +43,7 @@ function FullscreenVideoWithMetrics({
   onEnded?: () => void;
   loopPlayback?: boolean;
 }) {
+  const { t } = useTranslation();
   const { user } = useCurrentUser();
   const { toast } = useToast();
   const { share } = useShare();
@@ -84,8 +86,8 @@ function FullscreenVideoWithMetrics({
 
     if (!video.vineId) {
       toast({
-        title: 'Can\'t repost this one.',
-        description: 'Something about this loop isn\'t repostable.',
+        title: t('fullscreenFeed.repostBlockedTitle'),
+        description: t('fullscreenFeed.repostBlockedDescription'),
         variant: 'destructive',
       });
       return;
@@ -107,8 +109,8 @@ function FullscreenVideoWithMetrics({
   const handleDownload = async () => {
     if (!video.videoUrl) {
       toast({
-        title: 'Nothing to download.',
-        description: 'This video doesn\'t have a URL yet.',
+        title: t('fullscreenFeed.downloadMissingTitle'),
+        description: t('fullscreenFeed.downloadMissingDescription'),
         variant: 'destructive',
       });
       return;
@@ -127,8 +129,8 @@ function FullscreenVideoWithMetrics({
       window.URL.revokeObjectURL(url);
 
       toast({
-        title: 'Downloading.',
-        description: 'Saving your loop.',
+        title: t('fullscreenFeed.downloadingTitle'),
+        description: t('fullscreenFeed.downloadingDescription'),
       });
     } catch {
       window.open(video.videoUrl, '_blank');

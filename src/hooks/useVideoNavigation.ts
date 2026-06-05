@@ -8,7 +8,7 @@ import type { ParsedVideoData } from '@/types/video';
 import type { SortMode } from '@/types/nostr';
 
 export interface VideoNavigationContext {
-  source: 'hashtag' | 'profile' | 'discovery' | 'home' | 'trending' | 'recent' | 'classics' | 'foryou' | 'category' | 'search';
+  source: 'hashtag' | 'profile' | 'discovery' | 'home' | 'trending' | 'popular' | 'recent' | 'classics' | 'foryou' | 'category' | 'search';
   hashtag?: string;
   pubkey?: string;
   query?: string;
@@ -53,7 +53,7 @@ export function useVideoNavigation(videoId: string, options: UseVideoNavigationO
 
   // Fetch videos based on context
   // Map 'foryou' to 'trending' for WebSocket fallback (foryou only works via Funnelcake API)
-  const feedTypeForWebSocket = context?.source === 'foryou'
+  const feedTypeForWebSocket = context?.source === 'foryou' || context?.source === 'popular'
     ? 'trending'
     : context?.source === 'search'
       ? 'discovery'

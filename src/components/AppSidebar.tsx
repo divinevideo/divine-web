@@ -1,9 +1,9 @@
 // ABOUTME: TikTok-style left sidebar navigation for desktop
 // ABOUTME: Shows main nav, login/signup, expandable Divine links section
 
-import { useLocation } from 'react-router-dom';
-import { House as Home, Compass, MagnifyingGlass as Search, Bell, User, Sun, Moon, CaretDown as ChevronDown, Headphones, ChartBar as BarChart3, SquaresFour as LayoutGrid, Rss, ChatCircle as MessageCircle } from '@phosphor-icons/react';
-import { useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
+import { House as Home, Compass, MagnifyingGlass as Search, Bell, User, Sun, Moon, CaretDown as ChevronDown, Headphones, ChartBar as BarChart3, SquaresFour as LayoutGrid, Rss, ChatCircle as MessageCircle, TrendUp } from '@phosphor-icons/react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCategories } from '@/hooks/useCategories';
 import { nip19 } from 'nostr-tools';
@@ -25,7 +25,9 @@ import { feedUrls } from '@/lib/feedUrls';
 import { useRssFeedAvailable } from '@/hooks/useRssFeedAvailable';
 import { usePlatformStats } from '@/hooks/usePlatformStats';
 import { LanguageMenu } from '@/components/LanguageMenu';
+import { SocialLinks } from '@/components/SocialLinks';
 import { getTranslatedCategoryLabel } from '@/lib/constants/categories';
+import { getPreferredAppStoreCountry, lookupAppStoreUrl, PLAY_STORE_URL } from '@/lib/mobileStoreLinks';
 
 interface NavItemProps {
   icon: React.ReactNode;
@@ -72,12 +74,14 @@ export function AppSidebar({ className }: { className?: string }) {
   const [rssOpen, setRssOpen] = useState(false);
   const [divineOpen, setDivineOpen] = useState(false);
   const [termsOpen, setTermsOpen] = useState(false);
+  const [appStoreUrl, setAppStoreUrl] = useState<string | null>(null);
   const { data: categories } = useCategories();
   const classicVinesRecovered = platformStats?.vine_videos?.toLocaleString();
 
   const isActive = (path: string) => location.pathname === path;
   const isDiscoveryActive = () =>
     location.pathname === '/discovery' || location.pathname.startsWith('/discovery/');
+  const isPopularActive = () => location.pathname === '/popular';
   const isMessagesActive = () =>
     location.pathname === '/messages' || location.pathname.startsWith('/messages/');
   const isCategoryActive = (name: string) => location.pathname === `/category/${name}`;
@@ -89,6 +93,28 @@ export function AppSidebar({ className }: { className?: string }) {
   const profilePath = user?.pubkey
     ? `/profile/${nip19.npubEncode(user.pubkey)}`
     : null;
+
+  useEffect(() => {
+    const country = getPreferredAppStoreCountry();
+    let cancelled = false;
+
+    if (!country) {
+      setAppStoreUrl(null);
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    lookupAppStoreUrl(country).then((url) => {
+      if (!cancelled) {
+        setAppStoreUrl(url);
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
     <aside
@@ -114,6 +140,38 @@ export function AppSidebar({ className }: { className?: string }) {
 
       {/* Scrollable Content Area */}
       <div className="flex-1 overflow-y-auto overflow-x-hidden">
+        {/* App Store Badges */}
+        <div className="flex flex-col gap-2 px-5 pb-2">
+          {appStoreUrl && (
+            <a
+              href={appStoreUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Download Divine on the App Store"
+              className="block transition-opacity hover:opacity-80"
+            >
+              <img
+                src="/store-badges/app-store-badge.svg"
+                alt="Download on the App Store"
+                className="h-10 w-auto"
+              />
+            </a>
+          )}
+          <a
+            href={PLAY_STORE_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Get Divine on Google Play"
+            className="block transition-opacity hover:opacity-80"
+          >
+            <img
+              src="/store-badges/google-play-badge.png"
+              alt="Get it on Google Play"
+              className="h-[58px] w-auto -ml-[10px]"
+            />
+          </a>
+        </div>
+
         {/* Main Navigation */}
         <nav className="flex flex-col gap-0.5 px-3 pt-2">
           <NavItem
@@ -137,6 +195,13 @@ export function AppSidebar({ className }: { className?: string }) {
             label={t('nav.discover')}
             onClick={() => navigate('/discovery')}
             isActive={isDiscoveryActive()}
+          />
+
+          <NavItem
+            icon={<TrendUp className="h-[18px] w-[18px]" weight={isPopularActive() ? 'fill' : 'bold'} />}
+            label={t('nav.popular')}
+            onClick={() => navigate('/popular')}
+            isActive={isPopularActive()}
           />
 
           {user && canUseDirectMessages && (
@@ -331,6 +396,9 @@ export function AppSidebar({ className }: { className?: string }) {
           )}
         </div>
 
+        {/* Social media — visible on every page, not just About/ProofMode. */}
+        <SocialLinks className="mt-6 px-4 flex-wrap gap-y-2" iconClassName="dark:invert" />
+
         {/* Footer Section - flows naturally, no pinning */}
         <div className="mt-6 px-4">
         {/* Expandable Divine Section */}
@@ -396,6 +464,12 @@ export function AppSidebar({ className }: { className?: string }) {
               >
                 {t('menu.mediaResources')}
               </a>
+              <Link
+                to="/merch"
+                className="transition-colors hover:text-primary"
+              >
+                {t('menu.merch')}
+              </Link>
             </div>
           </CollapsibleContent>
         </Collapsible>
@@ -433,6 +507,18 @@ export function AppSidebar({ className }: { className?: string }) {
                 className="transition-colors hover:text-primary"
               >
                 {t('menu.safety')}
+              </button>
+              <button
+                onClick={() => navigate('/family')}
+                className="transition-colors hover:text-primary"
+              >
+                {t('menu.familyResources')}
+              </button>
+              <button
+                onClick={() => navigate('/kids')}
+                className="transition-colors hover:text-primary"
+              >
+                {t('menu.kidsPolicy')}
               </button>
               <button
                 onClick={() => navigate('/dmca')}

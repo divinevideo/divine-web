@@ -25,6 +25,7 @@ export function useCurrentUser() {
   ), [logins]);
   const { isAvailable: isNip07Available, isRestoring: isNip07Restoring } = useNip07Availability(hasExtensionLogin);
   const isAuthRestoring = hasExtensionLogin && isNip07Restoring;
+  const [jwtPubkeyStatus, setJwtPubkeyStatus] = useState<'idle' | 'loading' | 'settled'>('idle');
   const jwtSigner = useMemo(() => (
     token ? new DivineJWTSigner({ token }) : null
   ), [token]);
@@ -38,21 +39,25 @@ export function useCurrentUser() {
 
     if (!jwtSigner) {
       setJwtPubkey(undefined);
+      setJwtPubkeyStatus('idle');
       return;
     }
 
     setJwtPubkey(undefined);
+    setJwtPubkeyStatus('loading');
 
     jwtSigner.getPublicKey()
       .then((pubkey) => {
         if (!isCancelled) {
           setJwtPubkey(pubkey);
+          setJwtPubkeyStatus('settled');
         }
       })
       .catch((error) => {
         if (!isCancelled) {
           console.warn('Skipped invalid JWT session', error);
           setJwtPubkey(undefined);
+          setJwtPubkeyStatus('settled');
         }
       });
 
@@ -99,12 +104,15 @@ export function useCurrentUser() {
   const user = users[0];
   const signer = useMemo(() => getSafeUserSigner(user), [user]);
   const author = useAuthor(user?.pubkey);
+  const isJwtSessionLoading = Boolean(jwtSigner && !jwtPubkey && jwtPubkeyStatus !== 'settled');
+  const isSessionLoading = isJwtSessionLoading || isAuthRestoring;
 
   return {
     user,
     users,
     signer,
     isAuthRestoring,
+    isSessionLoading,
     ...author.data,
   };
 }

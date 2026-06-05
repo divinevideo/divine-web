@@ -41,6 +41,8 @@ export function buildProfileStats(input: BuildProfileStatsInput): ProfileStats {
   const originalLoopCount = input.archiveStats?.originalLoopCount ?? fallbackOriginalLoopCount;
   const isClassicViner = classicVineCount > 0;
   const allLoaded = !input.hasNextPage && input.loadedVideos.length > 0;
+  const publicLoopTotal =
+    input.funnelcakeProfile?.total_views ?? Math.floor(input.funnelcakeProfile?.total_loops ?? 0);
 
   return {
     videosCount: allLoaded
@@ -49,7 +51,7 @@ export function buildProfileStats(input: BuildProfileStatsInput): ProfileStats {
     followersCount: input.funnelcakeProfile?.follower_count ?? 0,
     followingCount: input.funnelcakeProfile?.following_count ?? 0,
     totalViews: input.funnelcakeProfile?.total_views ?? 0,
-    totalLoops: Math.floor(input.funnelcakeProfile?.total_loops ?? 0),
+    totalLoops: publicLoopTotal,
     totalReactions: input.funnelcakeProfile?.total_reactions ?? 0,
     joinedDate: input.joinedDate,
     joinedDateLoading: input.joinedDateLoading,
