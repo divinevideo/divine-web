@@ -2,7 +2,7 @@
 // ABOUTME: Bridges the gap between REST API data and existing video display components
 
 import { parseByteArrayId } from './funnelcakeClient';
-import { SHORT_VIDEO_KIND, type ParsedVideoData } from '@/types/video';
+import { SHORT_VIDEO_KIND, type ParsedVideoData, type ProofModeData, type ProofModeLevel } from '@/types/video';
 import type { FunnelcakeVideoRaw, FunnelcakeResponse } from '@/types/funnelcake';
 import { debugLog } from './debug';
 import { getProofModeData } from './videoParser';
@@ -36,6 +36,75 @@ function parseLoopsFromTags(tags?: string[][]): number | null {
   return Number.isFinite(loops) && loops > 0 ? loops : null;
 }
 
+function parseFullEvent(raw: FunnelcakeVideoRaw, id: string, pubkey: string): NostrEvent | undefined {
+  const eventJson = raw.event_json;
+  if (eventJson) {
+    try {
+      const event = typeof eventJson === 'string' ? JSON.parse(eventJson) : eventJson;
+      if (event && typeof event === 'object' && Array.isArray(event.tags)) {
+        return event as NostrEvent;
+      }
+    } catch {
+      // Fall through to top-level tags below.
+    }
+  }
+
+  if (!raw.tags) return undefined;
+
+  return {
+    id,
+    pubkey,
+    created_at: raw.created_at,
+    kind: raw.kind,
+    tags: raw.tags,
+    content: raw.content || '',
+    sig: '',
+  } as NostrEvent;
+}
+
+function isProofModeLevel(level: string): level is ProofModeLevel {
+  return level === 'verified_mobile' ||
+    level === 'verified_web' ||
+    level === 'basic_proof' ||
+    level === 'unverified';
+}
+
+function proofSummaryToProofMode(raw: FunnelcakeVideoRaw): ProofModeData | undefined {
+  if (!raw.proof || raw.proof.status === 'unknown' || raw.proof.status === 'invalid') return undefined;
+
+  const checks = raw.proof.checks ?? {};
+  const manifest = checks.proofmode_present && checks.proofmode_parse_ok === true
+    ? 'summary:present'
+    : undefined;
+  const deviceAttestation = checks.device_attestation_present && checks.device_attestation_valid !== false
+    ? 'summary:present'
+    : undefined;
+  const pgpFingerprint = checks.pgp_signature_present && checks.pgp_signature_valid !== false
+    ? 'summary:present'
+    : undefined;
+  const c2paManifestId = checks.c2pa_manifest_present && checks.c2pa_manifest_valid !== false
+    ? 'summary:present'
+    : undefined;
+
+  const level = raw.proof.level && isProofModeLevel(raw.proof.level)
+    ? raw.proof.level
+    : raw.proof.status === 'verified'
+      ? 'verified_web'
+      : 'basic_proof';
+
+  if (raw.proof.status !== 'verified' && !manifest && !deviceAttestation && !pgpFingerprint && !c2paManifestId) {
+    return undefined;
+  }
+
+  return {
+    level,
+    manifest,
+    deviceAttestation,
+    pgpFingerprint,
+    c2paManifestId,
+  };
+}
+
 /**
  * Transform a single Funnelcake video to ParsedVideoData format
  */
@@ -62,15 +131,7 @@ export function transformFunnelcakeVideo(raw: FunnelcakeVideoRaw): ParsedVideoDa
     ?? parseLoopsFromContent(raw.content)
     ?? parseLoopsFromContent(raw.title);
 
-  const fullEvent = raw.tags ? ({
-    id: id,
-    pubkey: pubkey,
-    created_at: raw.created_at,
-    kind: raw.kind,
-    tags: raw.tags,
-    content: raw.content || '',
-    sig: '',
-  } as NostrEvent) : undefined;
+  const fullEvent = parseFullEvent(raw, id, pubkey);
 
   const video: ParsedVideoData = {
     id,
@@ -123,7 +184,7 @@ export function transformFunnelcakeVideo(raw: FunnelcakeVideoRaw): ParsedVideoDa
     textTrackContent: raw.text_track_content,
 
     // ProofMode data - extract from tags when available (single video endpoint)
-    proofMode: fullEvent ? getProofModeData(fullEvent) : undefined,
+    proofMode: fullEvent ? getProofModeData(fullEvent) : proofSummaryToProofMode(raw),
 
     // Empty reposts array (Funnelcake doesn't return individual reposts)
     reposts: [],
