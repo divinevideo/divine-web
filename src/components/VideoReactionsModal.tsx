@@ -7,8 +7,8 @@ import { enhanceAuthorData } from '@/lib/generateProfile';
 import { genUserName } from '@/lib/genUserName';
 import { getSafeProfileImage } from '@/lib/imageUtils';
 import { formatDistanceToNow } from 'date-fns';
-import { nip19 } from 'nostr-tools';
 import { SmartLink } from '@/components/SmartLink';
+import { buildProfileLinkPath } from '@/lib/profileLinks';
 import { cn } from '@/lib/utils';
 import type { VideoReactions } from '@/hooks/useVideoReactions';
 
@@ -25,12 +25,14 @@ function ReactionUserItem({ pubkey, timestamp }: { pubkey: string; timestamp: nu
   const author = enhanceAuthorData(authorData.data, pubkey);
   const metadata = author.metadata;
 
-  const npub = nip19.npubEncode(pubkey);
   const displayName = authorData.isLoading
     ? "Loading..."
     : (metadata?.display_name || metadata?.name || genUserName(pubkey));
   const profileImage = getSafeProfileImage(metadata?.picture);
-  const profileUrl = `/${npub}`;
+  const profileUrl = buildProfileLinkPath({
+    pubkey,
+    nip05: metadata?.nip05,
+  });
 
   const date = new Date(timestamp * 1000);
   const timeAgo = formatDistanceToNow(date, { addSuffix: true });

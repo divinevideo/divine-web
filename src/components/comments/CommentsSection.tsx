@@ -16,6 +16,7 @@ interface CommentsSectionProps {
   className?: string;
   limit?: number;
   compact?: boolean; // Remove Card wrapper for use in modals
+  expectedCommentCount?: number;
 }
 
 export function CommentsSection({
@@ -26,10 +27,12 @@ export function CommentsSection({
   className,
   limit = 500,
   compact = false,
+  expectedCommentCount = 0,
 }: CommentsSectionProps) {
   const { t } = useTranslation();
-  const { data: commentsData, isLoading, error } = useComments(root, limit);
+  const { data: commentsData, isLoading, error } = useComments(root, limit, { expectedCommentCount });
   const comments = commentsData?.topLevelComments || [];
+  const hasCommentCountMismatch = expectedCommentCount > 0 && comments.length === 0;
   const resolvedTitle = title ?? t('comments.title');
   const resolvedEmptyStateMessage = emptyStateMessage ?? t('comments.noCommentsYet');
   const resolvedEmptyStateSubtitle = emptyStateSubtitle ?? t('comments.beFirstToShare');
@@ -77,7 +80,7 @@ export function CommentsSection({
         <CommentForm root={root} compact={compact} />
 
         {/* Comments List */}
-        {isLoading ? (
+        {isLoading || hasCommentCountMismatch ? (
           <div className="space-y-4">
             {[...Array(3)].map((_, i) => (
               <Card key={i} className="bg-card/50">

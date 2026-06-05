@@ -23,7 +23,7 @@ export function useLoginActions() {
     async bunker(uri: string): Promise<void> {
       const login = await NLogin.fromBunker(uri, nostr);
       addLogin(login);
-      setLoginCookie({ type: 'bunker', pubkey: login.pubkey, bunkerUri: uri });
+      setLoginCookie({ type: 'bunker', pubkey: login.pubkey, bunkerData: login.data });
     },
     // Login with a NIP-07 browser extension
     async extension(): Promise<void> {

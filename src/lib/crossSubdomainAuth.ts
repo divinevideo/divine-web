@@ -44,10 +44,39 @@ function clearCookieOnServer(name: string): void {
   }).catch(() => undefined);
 }
 
+// NOTE: `clientNsec` is an ephemeral, per-login client key (generated fresh by
+// NLogin.fromBunker), NOT the user's identity key — the remote bunker holds the
+// identity key. Persisting this object in the cross-subdomain cookie is required
+// so subdomains can rebuild the NIP-46 signer; it predates this change (the
+// localStorage-sync path already wrote it) and the cookie is Secure + SameSite=Lax.
+export interface BunkerLoginData {
+  bunkerPubkey: string;
+  clientNsec: string;
+  relays: string[];
+}
+
 interface LoginCookieData {
   type: 'extension' | 'bunker' | 'nsec';
   pubkey: string;
-  bunkerUri?: string; // only for bunker logins
+  bunkerData?: BunkerLoginData; // only for bunker logins; the exact shape NUser.fromBunkerLogin consumes
+}
+
+/**
+ * Structural guard for a bunker login `data` payload. A raw `bunker://` URI
+ * string (the legacy/poisoned shape) and any partial object fail this, so they
+ * are never persisted into localStorage where NUser.fromBunkerLogin would throw.
+ */
+export function isValidBunkerData(data: unknown): data is BunkerLoginData {
+  if (!data || typeof data !== 'object') return false;
+  const d = data as Record<string, unknown>;
+  return (
+    typeof d.bunkerPubkey === 'string' &&
+    typeof d.clientNsec === 'string' &&
+    d.clientNsec.startsWith('nsec1') &&
+    Array.isArray(d.relays) &&
+    d.relays.length > 0 &&
+    d.relays.every((relay) => typeof relay === 'string')
+  );
 }
 
 interface JwtCookieData {
@@ -174,7 +203,9 @@ export function clearJwtCookie(): void {
  */
 export function hydrateLoginFromCookie(): void {
   const STORAGE_KEY = 'nostr:login';
-  const log = (...args: unknown[]) => console.info('[crossSubdomainAuth]', ...args);
+  const log = (...args: unknown[]) => {
+    if (import.meta.env.DEV) console.info('[crossSubdomainAuth]', ...args);
+  };
 
   // --- JWT session hydration ---
   // JWT keys used by useDivineSession (must match those constants)
@@ -239,15 +270,49 @@ export function hydrateLoginFromCookie(): void {
     try {
       const logins = JSON.parse(stored);
       if (Array.isArray(logins) && logins.length > 0) {
-        const first = logins[0];
-        log('nostr_login: localStorage present, syncing cookie', { type: first.type });
-        // Keep cookie in sync with current login
-        setLoginCookie({
-          type: first.type,
-          pubkey: first.pubkey,
-          ...(first.type === 'bunker' && first.data ? { bunkerUri: first.data } : {}),
-        });
-        return;
+        // Self-heal: a bunker login whose `data` is not a valid object is the
+        // legacy/poisoned shape. Persisting it would make NUser.fromBunkerLogin
+        // throw (apparent logout) and re-syncing it would re-poison the shared
+        // cookie. Drop those entries.
+        //
+        // Scope: only `bunker` data is validated here, because the cookie
+        // data-shape ambiguity was bunker-specific. Malformed nsec/extension
+        // logins (rare) are already handled gracefully downstream — the login
+        // filters in useCurrentUser / useLoggedInAccounts swallow the throw — so
+        // this self-heal stays bunker-scoped.
+        const cleaned = logins.filter(
+          (l: { type?: string; data?: unknown }) =>
+            l.type !== 'bunker' || isValidBunkerData(l.data),
+        );
+        if (cleaned.length !== logins.length) {
+          if (cleaned.length === 0) {
+            // Everything was poisoned. Remove the bad local state but DON'T clear
+            // the shared cookie or return — fall through to cookie hydration so a
+            // healthy cookie (written by another origin) can recover the session.
+            localStorage.removeItem(STORAGE_KEY);
+          } else {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(cleaned));
+          }
+        }
+
+        if (cleaned.length > 0) {
+          // If the original first login was a dropped poison entry, the next
+          // valid login becomes the cookie's advertised identity. That's
+          // intended: the poisoned login was unusable, so promoting the next
+          // working one is better than advertising a login that can't sign.
+          const first = cleaned[0];
+          log('nostr_login: localStorage present, syncing cookie', { type: first.type });
+          // Keep cookie in sync with current login
+          setLoginCookie({
+            type: first.type,
+            pubkey: first.pubkey,
+            ...(first.type === 'bunker' && isValidBunkerData(first.data)
+              ? { bunkerData: first.data }
+              : {}),
+          });
+          return;
+        }
+        // cleaned.length === 0: fall through to cookie-based recovery below.
       }
     } catch {
       // corrupted localStorage, continue to cookie check
@@ -273,16 +338,24 @@ export function hydrateLoginFromCookie(): void {
     return;
   }
 
-  // For bunker logins, restore with the bunker URI so it can reconnect
-  if (cookie.type === 'bunker' && cookie.bunkerUri) {
-    log('nostr_login: hydrating bunker login from cookie');
-    const loginState = [{
-      id: crypto.randomUUID(),
-      type: 'bunker' as const,
-      pubkey: cookie.pubkey,
-      data: cookie.bunkerUri,
-    }];
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(loginState));
+  // For bunker logins, restore from the structured data object so the signer
+  // can be rebuilt. A legacy/poisoned cookie (raw bunker:// string under the old
+  // `bunkerUri` field, or any malformed payload) fails the guard and is ignored
+  // rather than persisted — NUser.fromBunkerLogin would throw on a bad shape and
+  // the user would appear logged out. They re-login instead.
+  if (cookie.type === 'bunker') {
+    if (isValidBunkerData(cookie.bunkerData)) {
+      log('nostr_login: hydrating bunker login from cookie');
+      const loginState = [{
+        id: crypto.randomUUID(),
+        type: 'bunker' as const,
+        pubkey: cookie.pubkey,
+        data: cookie.bunkerData,
+      }];
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(loginState));
+    } else {
+      log('nostr_login: bunker cookie present but data shape invalid — re-login required on this subdomain');
+    }
     return;
   }
 

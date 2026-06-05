@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { getCookieDomain, getLoginCookie, setLoginCookie, clearLoginCookie, hydrateLoginFromCookie, setJwtCookie, getJwtCookie, clearJwtCookie } from './crossSubdomainAuth';
+import { describe, it, expect, vi, beforeEach, afterEach, type Mock } from 'vitest';
+import { getCookieDomain, getLoginCookie, setLoginCookie, clearLoginCookie, hydrateLoginFromCookie, setJwtCookie, getJwtCookie, clearJwtCookie, isValidBunkerData } from './crossSubdomainAuth';
 
 // Mock localStorage for Node.js environment
 const localStorageMock = (() => {
@@ -32,7 +32,7 @@ function setHostname(hostname: string) {
   });
 }
 
-let fetchMock: ReturnType<typeof vi.fn>;
+let fetchMock: Mock;
 
 beforeEach(() => {
   cookieJar = '';
@@ -69,6 +69,37 @@ afterEach(() => {
     configurable: true,
   });
   Object.defineProperty(document, 'cookie', originalCookieDescriptor);
+});
+
+describe('isValidBunkerData', () => {
+  it('accepts a well-formed bunker data object', () => {
+    expect(isValidBunkerData({
+      bunkerPubkey: 'abc',
+      clientNsec: 'nsec1examplekey',
+      relays: ['wss://relay.example'],
+    })).toBe(true);
+  });
+
+  it('rejects a raw bunker:// URI string', () => {
+    expect(isValidBunkerData('bunker://pub?relay=wss://r&secret=s')).toBe(false);
+  });
+
+  it('rejects an object missing clientNsec', () => {
+    expect(isValidBunkerData({ bunkerPubkey: 'abc', relays: ['wss://r'] })).toBe(false);
+  });
+
+  it('rejects an object with empty relays', () => {
+    expect(isValidBunkerData({ bunkerPubkey: 'abc', clientNsec: 'nsec1x', relays: [] })).toBe(false);
+  });
+
+  it('rejects an object whose relays contains a non-string', () => {
+    expect(isValidBunkerData({ bunkerPubkey: 'abc', clientNsec: 'nsec1x', relays: [123] })).toBe(false);
+  });
+
+  it('rejects null/undefined', () => {
+    expect(isValidBunkerData(null)).toBe(false);
+    expect(isValidBunkerData(undefined)).toBe(false);
+  });
 });
 
 describe('getCookieDomain', () => {
@@ -252,8 +283,13 @@ describe('hydrateLoginFromCookie', () => {
     }]);
   });
 
-  it('when localStorage is empty and cookie has bunker login with URI, hydrates localStorage', () => {
-    const data = { type: 'bunker' as const, pubkey: 'pub789', bunkerUri: 'bunker://xyz' };
+  it('when localStorage is empty and cookie has valid bunkerData, hydrates localStorage with the object', () => {
+    const bunkerData = {
+      bunkerPubkey: 'bunkerpub',
+      clientNsec: 'nsec1clientkey',
+      relays: ['wss://relay.example'],
+    };
+    const data = { type: 'bunker' as const, pubkey: 'pub789', bunkerData };
     cookieJar = `nostr_login=${btoa(JSON.stringify(data))}`;
 
     hydrateLoginFromCookie();
@@ -263,8 +299,17 @@ describe('hydrateLoginFromCookie', () => {
       id: mockUUID,
       type: 'bunker',
       pubkey: 'pub789',
-      data: 'bunker://xyz',
+      data: bunkerData,
     }]);
+  });
+
+  it('when cookie has a legacy bunkerUri string (no bunkerData), does NOT hydrate', () => {
+    const data = { type: 'bunker' as const, pubkey: 'pub789', bunkerUri: 'bunker://xyz' };
+    cookieJar = `nostr_login=${btoa(JSON.stringify(data))}`;
+
+    hydrateLoginFromCookie();
+
+    expect(localStorage.getItem(STORAGE_KEY)).toBeNull();
   });
 
   it('when localStorage is empty and cookie has nsec login, does NOT hydrate', () => {
@@ -281,6 +326,60 @@ describe('hydrateLoginFromCookie', () => {
 
     expect(localStorage.getItem(STORAGE_KEY)).toBeNull();
     expect(cookieJar).toBe('');
+  });
+
+  it('when localStorage has a valid bunker login, syncs bunkerData object TO cookie', () => {
+    const bunkerData = {
+      bunkerPubkey: 'bunkerpub',
+      clientNsec: 'nsec1clientkey',
+      relays: ['wss://relay.example'],
+    };
+    const loginState = [{ id: '1', type: 'bunker', pubkey: 'pubB', data: bunkerData }];
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(loginState));
+
+    hydrateLoginFromCookie();
+
+    expect(getLoginCookie()).toEqual({ type: 'bunker', pubkey: 'pubB', bunkerData });
+    // localStorage unchanged
+    expect(JSON.parse(localStorage.getItem(STORAGE_KEY)!)).toEqual(loginState);
+  });
+
+  it('self-heals: drops a poisoned bunker login (string data) and does not poison the cookie', () => {
+    const loginState = [{ id: '1', type: 'bunker', pubkey: 'pubB', data: 'bunker://poisoned' }];
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(loginState));
+
+    hydrateLoginFromCookie();
+
+    // poisoned entry removed; cookie not written with a string payload
+    expect(localStorage.getItem(STORAGE_KEY)).toBeNull();
+    expect(getLoginCookie()).toBeNull();
+  });
+
+  it('self-recovers: poisoned local entry dropped, healthy cookie re-hydrates the session', () => {
+    const bunkerData = {
+      bunkerPubkey: 'bp',
+      clientNsec: 'nsec1goodkey',
+      relays: ['wss://relay.example'],
+    };
+    // poisoned localStorage on this origin
+    localStorage.setItem(STORAGE_KEY, JSON.stringify([
+      { id: '1', type: 'bunker', pubkey: 'pubB', data: 'bunker://poisoned' },
+    ]));
+    // but a healthy shared cookie exists (written by another origin)
+    cookieJar = `nostr_login=${btoa(JSON.stringify({ type: 'bunker', pubkey: 'pubB', bunkerData }))}`;
+
+    hydrateLoginFromCookie();
+
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY)!);
+    expect(stored).toEqual([{
+      id: mockUUID,
+      type: 'bunker',
+      pubkey: 'pubB',
+      data: bunkerData,
+    }]);
+    // the healthy shared cookie must be left intact (not cleared/overwritten),
+    // so other origins still recover from it
+    expect(getLoginCookie()).toEqual({ type: 'bunker', pubkey: 'pubB', bunkerData });
   });
 
   // --- JWT cross-subdomain hydration ---
