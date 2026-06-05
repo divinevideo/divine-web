@@ -18,7 +18,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar.tsx'
 import { useNostrLogin } from '@nostrify/react/login';
 import { useLoggedInAccounts, type Account } from '@/hooks/useLoggedInAccounts';
 import { useDivineSession } from '@/hooks/useDivineSession';
-import { clearLoginCookie } from '@/lib/crossSubdomainAuth';
+import { clearLoginCookie, clearJwtCookie } from '@/lib/crossSubdomainAuth';
 import { genUserName } from '@/lib/genUserName';
 import { getSafeProfileImage } from '@/lib/imageUtils';
 import { getActiveLocalNsecLogin } from '@/lib/localNsecAccount';
@@ -54,6 +54,7 @@ export function AccountSwitcher({ onAddAccountClick }: AccountSwitcherProps) {
   const handleLogout = () => {
     if (isJwtCurrentUser) {
       clearSession();
+      clearJwtCookie();
       clearLoginCookie();
       return;
     }
