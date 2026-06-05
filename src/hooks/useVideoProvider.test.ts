@@ -182,6 +182,28 @@ describe('useVideoProvider', () => {
     expect(result.current.dataSource).toBe('funnelcake');
   });
 
+  it('routes popular feeds to Funnelcake with popular options and no WebSocket fallback', () => {
+    const { result } = renderHook(() =>
+      useVideoProvider({
+        feedType: 'popular',
+        popularSource: 'classic',
+        popularPeriod: 'week',
+      })
+    );
+
+    expect(mockUseInfiniteVideosFunnelcake).toHaveBeenCalledWith(expect.objectContaining({
+      feedType: 'popular',
+      apiUrl: 'https://api.divine.video',
+      popularSource: 'classic',
+      popularPeriod: 'week',
+      enabled: true,
+    }));
+    expect(mockUseInfiniteVideos).toHaveBeenCalledWith(expect.objectContaining({
+      enabled: false,
+    }));
+    expect(result.current.dataSource).toBe('funnelcake');
+  });
+
   it('prefers Funnelcake for Divine hot feeds', () => {
     mockUseResolvedRelayCapabilities.mockReturnValue(makeCapabilities({
       supportsVideoSorts: true,

@@ -2,8 +2,11 @@
 // ABOUTME: Returns index.html with a 200 status for SPA routes and injects per-video OG/Twitter tags for bots
 
 import {
+  buildAgeReviewPageMeta,
   buildCategoriesIndexMeta,
   buildCategoryPageMeta,
+  buildFamilyPageMeta,
+  buildKidsPolicyPageMeta,
   buildProfilePageMeta,
   buildVideoPageMeta,
   decodeNpubToHex,
@@ -48,12 +51,32 @@ function upsertMetaTag(html: string, attribute: 'name' | 'property', key: string
   );
 }
 
+function upsertLinkTag(html: string, rel: string, type: string, href: string): string {
+  const linkTag = `<link rel="${rel}" type="${type}" href="${href}">`;
+  const pattern = new RegExp(`<link[^>]+rel="${rel}"[^>]*>`, 'i');
+
+  if (pattern.test(html)) {
+    return html.replace(pattern, linkTag);
+  }
+
+  return html.replace('</head>', `${linkTag}</head>`);
+}
+
+function isVideoPage(path: string): boolean {
+  return /^\/video\/([^/]+)$/.test(path);
+}
+
+function extractVideoId(path: string): string | null {
+  const match = path.match(/^\/video\/([^/]+)$/);
+  return match ? match[1] : null;
+}
+
 function removeMetaTag(html: string, attribute: 'name' | 'property', key: string): string {
   const escapedKey = escapeRegExp(key);
   return html.replace(new RegExp(`\\s*<meta[^>]+${attribute}="${escapedKey}"[^>]*>\\s*`, 'ig'), '');
 }
 
-function injectMetaTags(html: string, meta: PageMeta): string {
+function injectMetaTags(html: string, meta: PageMeta, path: string): string {
   let updatedHtml = replaceTitle(html, meta.title);
 
   updatedHtml = upsertMetaTag(updatedHtml, 'name', 'description', meta.description);
@@ -80,6 +103,15 @@ function injectMetaTags(html: string, meta: PageMeta): string {
     updatedHtml = upsertMetaTag(updatedHtml, 'property', 'og:video:type', meta.videoMimeType);
   } else {
     updatedHtml = removeMetaTag(updatedHtml, 'property', 'og:video:type');
+  }
+
+  if (isVideoPage(path)) {
+    const videoId = extractVideoId(path);
+    if (videoId) {
+      const videoUrl = `https://divine.video/video/${videoId}`;
+      const oembedUrl = `https://relay.divine.video/api/oembed?url=${encodeURIComponent(videoUrl)}`;
+      updatedHtml = upsertLinkTag(updatedHtml, 'alternate', 'application/json+oembed', oembedUrl);
+    }
   }
 
   return updatedHtml;
@@ -176,6 +208,21 @@ async function fetchRouteMeta(url: URL): Promise<PageMeta | null> {
     return fetchProfileMeta(url);
   }
 
+  // Family resource hub at /family on apex.
+  if (url.pathname === '/family') {
+    return buildFamilyPageMeta(url);
+  }
+
+  // Age-review page at /age-review on apex.
+  if (url.pathname === '/age-review') {
+    return buildAgeReviewPageMeta(url);
+  }
+
+  // Kids policy page at /kids on apex.
+  if (url.pathname === '/kids') {
+    return buildKidsPolicyPageMeta(url);
+  }
+
   return null;
 }
 
@@ -194,6 +241,18 @@ export async function onRequest(context: {
 
   // Try to serve the requested asset first
   const response = await context.next();
+  const meta = await fetchRouteMeta(url);
+
+  if (meta && response.ok && response.headers.get('content-type')?.includes('text/html')) {
+    const html = injectMetaTags(await response.text(), meta, path);
+    const headers = new Headers(response.headers);
+    headers.set('content-type', 'text/html; charset=UTF-8');
+
+    return new Response(html, {
+      status: response.status,
+      headers,
+    });
+  }
 
   // If the response is a 404 and not a file request (no extension or is .html),
   // serve index.html with a 200 status code
@@ -205,10 +264,9 @@ export async function onRequest(context: {
       // Fetch index.html from the static assets
       const indexUrl = new URL('/index.html', context.request.url);
       const indexResponse = await fetch(indexUrl);
-      const meta = await fetchRouteMeta(url);
 
       if (meta) {
-        const html = injectMetaTags(await indexResponse.text(), meta);
+        const html = injectMetaTags(await indexResponse.text(), meta, path);
         const headers = new Headers(indexResponse.headers);
         headers.set('content-type', 'text/html; charset=UTF-8');
 

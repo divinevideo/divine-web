@@ -9,9 +9,15 @@ const RECIPIENT_PUBKEY = 'b'.repeat(64);
 const mockResolveDmReadRelays = vi.fn();
 const mockResolveDmWriteRelays = vi.fn();
 const mockFetchDmMessages = vi.fn();
-const mockCreateDmGiftWraps = vi.fn();
+const mockCreateRecipientGiftWraps = vi.fn();
+const mockCreateSelfGiftWrap = vi.fn();
 const mockPublishDmMessages = vi.fn();
+const mockProbeBunkerNip44 = vi.fn();
 const mockToast = vi.fn();
+
+let mockLogins: Array<{ id: string; pubkey: string }> = [
+  { id: 'login-default', pubkey: TEST_PUBKEY },
+];
 
 const localStorageMock = (() => {
   let store: Record<string, string> = {};
@@ -46,6 +52,10 @@ vi.mock('@/hooks/useCurrentUser', () => ({
   }),
 }));
 
+vi.mock('@nostrify/react/login', () => ({
+  useNostrLogin: () => ({ logins: mockLogins }),
+}));
+
 vi.mock('@/hooks/useAppContext', () => ({
   useAppContext: () => ({
     config: {
@@ -66,14 +76,16 @@ vi.mock('@/lib/dm', async () => {
     resolveDmReadRelays: (...args: unknown[]) => mockResolveDmReadRelays(...args),
     resolveDmWriteRelays: (...args: unknown[]) => mockResolveDmWriteRelays(...args),
     fetchDmMessages: (...args: unknown[]) => mockFetchDmMessages(...args),
-    createDmGiftWraps: (...args: unknown[]) => mockCreateDmGiftWraps(...args),
+    createRecipientGiftWraps: (...args: unknown[]) => mockCreateRecipientGiftWraps(...args),
+    createSelfGiftWrap: (...args: unknown[]) => mockCreateSelfGiftWrap(...args),
     publishDmMessages: (...args: unknown[]) => mockPublishDmMessages(...args),
+    probeBunkerNip44: (...args: unknown[]) => mockProbeBunkerNip44(...args),
   };
 });
 
 import { encodeConversationId } from '@/lib/dm';
 import { readDmOutbox, writeDmOutbox } from '@/lib/dmOutbox';
-import { useDmConversation, useDmSend } from './useDirectMessages';
+import { useDmCapability, useDmConversation, useDmInboxStatus, useDmSend } from './useDirectMessages';
 
 function createWrapper(queryClient: QueryClient) {
   return function Wrapper({ children }: { children: React.ReactNode }) {
@@ -88,20 +100,26 @@ describe('useDirectMessages', () => {
     localStorageMock.clear();
     mockResolveDmReadRelays.mockResolvedValue(['wss://relay.example']);
     mockResolveDmWriteRelays.mockResolvedValue(['wss://relay.example']);
-    mockFetchDmMessages.mockResolvedValue([]);
-    mockCreateDmGiftWraps.mockResolvedValue([
-      {
-        id: 'self-wrap-id',
-        created_at: 1_234_567_890,
-        tags: [['p', TEST_PUBKEY]],
-      },
+    mockFetchDmMessages.mockResolvedValue({
+      messages: [],
+      fetchedCount: 0,
+      decryptFailures: 0,
+      malformedCount: 0,
+    });
+    mockCreateRecipientGiftWraps.mockResolvedValue([
       {
         id: 'recipient-wrap-id',
         created_at: 1_234_567_890,
         tags: [['p', RECIPIENT_PUBKEY]],
       },
     ]);
+    mockCreateSelfGiftWrap.mockResolvedValue({
+      id: 'self-wrap-id',
+      created_at: 1_234_567_890,
+      tags: [['p', TEST_PUBKEY]],
+    });
     mockPublishDmMessages.mockResolvedValue(undefined);
+    mockProbeBunkerNip44.mockResolvedValue(true);
   });
 
   afterEach(() => {
@@ -160,17 +178,22 @@ describe('useDirectMessages', () => {
       retryCount: 0,
     }]);
 
-    mockFetchDmMessages.mockResolvedValue([{
-      conversationId: encodeConversationId([RECIPIENT_PUBKEY]),
-      wrapId: 'remote-wrap-id',
-      rumorId: 'remote-rumor-id',
-      senderPubkey: TEST_PUBKEY,
-      participantPubkeys: [RECIPIENT_PUBKEY, TEST_PUBKEY].sort(),
-      peerPubkeys: [RECIPIENT_PUBKEY],
-      content: 'hello',
-      createdAt: 1_234_567_892,
-      isOutgoing: true,
-    }]);
+    mockFetchDmMessages.mockResolvedValue({
+      messages: [{
+        conversationId: encodeConversationId([RECIPIENT_PUBKEY]),
+        wrapId: 'remote-wrap-id',
+        rumorId: 'remote-rumor-id',
+        senderPubkey: TEST_PUBKEY,
+        participantPubkeys: [RECIPIENT_PUBKEY, TEST_PUBKEY].sort(),
+        peerPubkeys: [RECIPIENT_PUBKEY],
+        content: 'hello',
+        createdAt: 1_234_567_892,
+        isOutgoing: true,
+      }],
+      fetchedCount: 1,
+      decryptFailures: 0,
+      malformedCount: 0,
+    });
 
     const queryClient = new QueryClient({
       defaultOptions: {
@@ -202,17 +225,22 @@ describe('useDirectMessages', () => {
       throw new Error('storage blocked');
     });
 
-    mockFetchDmMessages.mockResolvedValue([{
-      conversationId: encodeConversationId([RECIPIENT_PUBKEY]),
-      wrapId: 'remote-wrap-id',
-      rumorId: 'remote-rumor-id',
-      senderPubkey: RECIPIENT_PUBKEY,
-      participantPubkeys: [RECIPIENT_PUBKEY, TEST_PUBKEY].sort(),
-      peerPubkeys: [RECIPIENT_PUBKEY],
-      content: 'hello',
-      createdAt: 1_234_567_892,
-      isOutgoing: false,
-    }]);
+    mockFetchDmMessages.mockResolvedValue({
+      messages: [{
+        conversationId: encodeConversationId([RECIPIENT_PUBKEY]),
+        wrapId: 'remote-wrap-id',
+        rumorId: 'remote-rumor-id',
+        senderPubkey: RECIPIENT_PUBKEY,
+        participantPubkeys: [RECIPIENT_PUBKEY, TEST_PUBKEY].sort(),
+        peerPubkeys: [RECIPIENT_PUBKEY],
+        content: 'hello',
+        createdAt: 1_234_567_892,
+        isOutgoing: false,
+      }],
+      fetchedCount: 1,
+      decryptFailures: 0,
+      malformedCount: 0,
+    });
 
     const queryClient = new QueryClient({
       defaultOptions: {
@@ -240,10 +268,13 @@ describe('useDirectMessages', () => {
   it('adds an optimistic sending message before publish resolves', async () => {
     vi.spyOn(Date, 'now').mockReturnValue(1_234_567_890_000);
 
+    // Recipient publish is the only call we want stuck for this test —
+    // the self-wrap publish (second call) resolves immediately so the
+    // mutation can reach onSuccess after the test resolves the first.
     let resolvePublish: (() => void) | undefined;
-    mockPublishDmMessages.mockImplementation(() => new Promise<void>((resolve) => {
-      resolvePublish = resolve;
-    }));
+    mockPublishDmMessages
+      .mockImplementationOnce(() => new Promise<void>((resolve) => { resolvePublish = resolve; }))
+      .mockResolvedValue(undefined);
 
     const queryClient = new QueryClient({
       defaultOptions: {
@@ -252,7 +283,12 @@ describe('useDirectMessages', () => {
       },
     });
 
-    queryClient.setQueryData(['dm', 'messages', TEST_PUBKEY, 300], []);
+    queryClient.setQueryData(['dm', 'messages', TEST_PUBKEY, 300], {
+      messages: [],
+      fetchedCount: 0,
+      decryptFailures: 0,
+      malformedCount: 0,
+    });
 
     const { result } = renderHook(() => useDmSend(), {
       wrapper: createWrapper(queryClient),
@@ -265,26 +301,34 @@ describe('useDirectMessages', () => {
       });
     });
 
-    expect(queryClient.getQueryData(['dm', 'messages', TEST_PUBKEY, 300])).toEqual([
+    expect(queryClient.getQueryData(['dm', 'messages', TEST_PUBKEY, 300])).toEqual(
       expect.objectContaining({
-        content: 'hi support',
-        deliveryState: 'sending',
-        isOptimistic: true,
+        messages: [
+          expect.objectContaining({
+            content: 'hi support',
+            deliveryState: 'sending',
+            isOptimistic: true,
+          }),
+        ],
       }),
-    ]);
+    );
 
     await act(async () => {
       resolvePublish?.();
     });
 
     await waitFor(() => {
-      expect(queryClient.getQueryData(['dm', 'messages', TEST_PUBKEY, 300])).toEqual([
+      expect(queryClient.getQueryData(['dm', 'messages', TEST_PUBKEY, 300])).toEqual(
         expect.objectContaining({
-          content: 'hi support',
-          deliveryState: 'sent',
-          isOptimistic: true,
+          messages: [
+            expect.objectContaining({
+              content: 'hi support',
+              deliveryState: 'sent',
+              isOptimistic: true,
+            }),
+          ],
         }),
-      ]);
+      );
     });
     expect(readDmOutbox(TEST_PUBKEY)).toEqual([
       expect.objectContaining({
@@ -307,7 +351,12 @@ describe('useDirectMessages', () => {
       },
     });
 
-    queryClient.setQueryData(['dm', 'messages', TEST_PUBKEY, 300], []);
+    queryClient.setQueryData(['dm', 'messages', TEST_PUBKEY, 300], {
+      messages: [],
+      fetchedCount: 0,
+      decryptFailures: 0,
+      malformedCount: 0,
+    });
 
     const { result } = renderHook(() => useDmSend(), {
       wrapper: createWrapper(queryClient),
@@ -320,14 +369,18 @@ describe('useDirectMessages', () => {
       })).rejects.toThrow('signal has been aborted');
     });
 
-    expect(queryClient.getQueryData(['dm', 'messages', TEST_PUBKEY, 300])).toEqual([
+    expect(queryClient.getQueryData(['dm', 'messages', TEST_PUBKEY, 300])).toEqual(
       expect.objectContaining({
-        content: 'hi support',
-        deliveryState: 'failed',
-        errorMessage: 'signal has been aborted',
-        isOptimistic: true,
+        messages: [
+          expect.objectContaining({
+            content: 'hi support',
+            deliveryState: 'failed',
+            errorMessage: 'signal has been aborted',
+            isOptimistic: true,
+          }),
+        ],
       }),
-    ]);
+    );
     expect(readDmOutbox(TEST_PUBKEY)).toEqual([
       expect.objectContaining({
         content: 'hi support',
@@ -365,23 +418,28 @@ describe('useDirectMessages', () => {
       },
     });
 
-    queryClient.setQueryData(['dm', 'messages', TEST_PUBKEY, 300], [
-      {
-        conversationId: encodeConversationId([RECIPIENT_PUBKEY]),
-        wrapId: 'optimistic:local-1',
-        rumorId: 'optimistic:local-1',
-        senderPubkey: TEST_PUBKEY,
-        participantPubkeys: [RECIPIENT_PUBKEY, TEST_PUBKEY].sort(),
-        peerPubkeys: [RECIPIENT_PUBKEY],
-        content: 'retry me',
-        createdAt: 1_234_567_890,
-        isOutgoing: true,
-        clientId: 'local-1',
-        deliveryState: 'failed' as const,
-        errorMessage: 'signal has been aborted',
-        isOptimistic: true,
-      },
-    ]);
+    queryClient.setQueryData(['dm', 'messages', TEST_PUBKEY, 300], {
+      messages: [
+        {
+          conversationId: encodeConversationId([RECIPIENT_PUBKEY]),
+          wrapId: 'optimistic:local-1',
+          rumorId: 'optimistic:local-1',
+          senderPubkey: TEST_PUBKEY,
+          participantPubkeys: [RECIPIENT_PUBKEY, TEST_PUBKEY].sort(),
+          peerPubkeys: [RECIPIENT_PUBKEY],
+          content: 'retry me',
+          createdAt: 1_234_567_890,
+          isOutgoing: true,
+          clientId: 'local-1',
+          deliveryState: 'failed' as const,
+          errorMessage: 'signal has been aborted',
+          isOptimistic: true,
+        },
+      ],
+      fetchedCount: 0,
+      decryptFailures: 0,
+      malformedCount: 0,
+    });
 
     const { result } = renderHook(() => useDmSend(), {
       wrapper: createWrapper(queryClient),
@@ -395,15 +453,19 @@ describe('useDirectMessages', () => {
       });
     });
 
-    expect(queryClient.getQueryData(['dm', 'messages', TEST_PUBKEY, 300])).toEqual([
+    expect(queryClient.getQueryData(['dm', 'messages', TEST_PUBKEY, 300])).toEqual(
       expect.objectContaining({
-        clientId: 'local-1',
-        content: 'retry me',
-        deliveryState: 'sending',
-        errorMessage: undefined,
-        isOptimistic: true,
+        messages: [
+          expect.objectContaining({
+            clientId: 'local-1',
+            content: 'retry me',
+            deliveryState: 'sending',
+            errorMessage: undefined,
+            isOptimistic: true,
+          }),
+        ],
       }),
-    ]);
+    );
     expect(readDmOutbox(TEST_PUBKEY)).toEqual([
       expect.objectContaining({
         clientId: 'local-1',
@@ -427,7 +489,12 @@ describe('useDirectMessages', () => {
       },
     });
 
-    queryClient.setQueryData(['dm', 'messages', TEST_PUBKEY, 300], []);
+    queryClient.setQueryData(['dm', 'messages', TEST_PUBKEY, 300], {
+      messages: [],
+      fetchedCount: 0,
+      decryptFailures: 0,
+      malformedCount: 0,
+    });
 
     const { result } = renderHook(() => useDmSend(), {
       wrapper: createWrapper(queryClient),
@@ -440,13 +507,17 @@ describe('useDirectMessages', () => {
       });
     });
 
-    expect(queryClient.getQueryData(['dm', 'messages', TEST_PUBKEY, 300])).toEqual([
+    expect(queryClient.getQueryData(['dm', 'messages', TEST_PUBKEY, 300])).toEqual(
       expect.objectContaining({
-        content: 'hi support',
-        deliveryState: 'sent',
-        isOptimistic: true,
+        messages: [
+          expect.objectContaining({
+            content: 'hi support',
+            deliveryState: 'sent',
+            isOptimistic: true,
+          }),
+        ],
       }),
-    ]);
+    );
     expect(readDmOutbox(TEST_PUBKEY)).toEqual([
       expect.objectContaining({
         content: 'hi support',
@@ -454,5 +525,254 @@ describe('useDirectMessages', () => {
       }),
     ]);
     expect(mockToast).not.toHaveBeenCalled();
+  });
+
+  it('resolves the send mutation when only the self-wrap step fails', async () => {
+    vi.spyOn(Date, 'now').mockReturnValue(1_234_567_890_000);
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    // Recipient wrap created and published normally; self-wrap creation
+    // returns null (e.g. bunker rejected encrypt-to-self) — recipient
+    // delivery already succeeded, so the mutation must still resolve.
+    mockCreateSelfGiftWrap.mockResolvedValueOnce(null);
+
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    });
+
+    const { result } = renderHook(() => useDmSend(), {
+      wrapper: createWrapper(queryClient),
+    });
+
+    await act(async () => {
+      await result.current.mutateAsync({
+        participantPubkeys: [RECIPIENT_PUBKEY],
+        content: 'recipient gets it even when self-wrap fails',
+      });
+    });
+
+    // Recipient publish happened; self publish did NOT (no wrap to publish).
+    expect(mockPublishDmMessages).toHaveBeenCalledTimes(1);
+    expect(readDmOutbox(TEST_PUBKEY)).toEqual([
+      expect.objectContaining({
+        content: 'recipient gets it even when self-wrap fails',
+        deliveryState: 'sent',
+      }),
+    ]);
+    expect(mockToast).not.toHaveBeenCalled();
+    warn.mockRestore();
+  });
+
+  it('rejects the send mutation when the recipient wrap fails', async () => {
+    vi.spyOn(Date, 'now').mockReturnValue(1_234_567_890_000);
+
+    const cause = new Error('bunker rejected encrypt');
+    mockCreateRecipientGiftWraps.mockRejectedValueOnce(cause);
+
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    });
+
+    const { result } = renderHook(() => useDmSend(), {
+      wrapper: createWrapper(queryClient),
+    });
+
+    await act(async () => {
+      await expect(result.current.mutateAsync({
+        participantPubkeys: [RECIPIENT_PUBKEY],
+        content: 'should fail loudly',
+      })).rejects.toThrow('bunker rejected encrypt');
+    });
+
+    expect(mockPublishDmMessages).not.toHaveBeenCalled();
+    expect(readDmOutbox(TEST_PUBKEY)).toEqual([
+      expect.objectContaining({
+        content: 'should fail loudly',
+        deliveryState: 'failed',
+      }),
+    ]);
+    expect(mockToast).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'Message failed',
+        variant: 'destructive',
+      }),
+    );
+  });
+});
+
+describe('useDmCapability with bunker healthcheck', () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+    vi.clearAllMocks();
+    localStorageMock.clear();
+    mockLogins = [{ id: 'login-default', pubkey: TEST_PUBKEY }];
+  });
+
+  afterEach(() => {
+    localStorageMock.clear();
+  });
+
+  it('reports canUseDirectMessages=true when the probe succeeds', async () => {
+    mockProbeBunkerNip44.mockResolvedValue(true);
+
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    const { result } = renderHook(() => useDmCapability(), {
+      wrapper: createWrapper(queryClient),
+    });
+
+    await waitFor(() => expect(result.current.isCheckingDmCapability).toBe(false));
+    expect(result.current.canUseDirectMessages).toBe(true);
+    expect(result.current.isLoggedIn).toBe(true);
+  });
+
+  it('reports canUseDirectMessages=false when the probe fails', async () => {
+    mockProbeBunkerNip44.mockResolvedValue(false);
+
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    const { result } = renderHook(() => useDmCapability(), {
+      wrapper: createWrapper(queryClient),
+    });
+
+    await waitFor(() => expect(result.current.isCheckingDmCapability).toBe(false));
+    expect(result.current.canUseDirectMessages).toBe(false);
+    expect(result.current.isLoggedIn).toBe(true);
+  });
+
+  it('reports isCheckingDmCapability=true while the probe is in flight', async () => {
+    let resolveProbe: ((value: boolean) => void) | undefined;
+    mockProbeBunkerNip44.mockImplementation(() => new Promise<boolean>((resolve) => {
+      resolveProbe = resolve;
+    }));
+
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    const { result } = renderHook(() => useDmCapability(), {
+      wrapper: createWrapper(queryClient),
+    });
+
+    await waitFor(() => expect(result.current.isCheckingDmCapability).toBe(true));
+    expect(result.current.canUseDirectMessages).toBe(false);
+
+    await act(async () => {
+      resolveProbe?.(true);
+    });
+
+    await waitFor(() => expect(result.current.isCheckingDmCapability).toBe(false));
+    expect(result.current.canUseDirectMessages).toBe(true);
+  });
+
+  it('re-runs the probe when the active login id changes for the same pubkey', async () => {
+    mockLogins = [{ id: 'login-A', pubkey: TEST_PUBKEY }];
+    mockProbeBunkerNip44.mockResolvedValue(false);
+
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    const { result, rerender } = renderHook(() => useDmCapability(), {
+      wrapper: createWrapper(queryClient),
+    });
+
+    await waitFor(() => expect(result.current.isCheckingDmCapability).toBe(false));
+    expect(result.current.canUseDirectMessages).toBe(false);
+    expect(mockProbeBunkerNip44).toHaveBeenCalledTimes(1);
+
+    mockLogins = [{ id: 'login-B', pubkey: TEST_PUBKEY }];
+    mockProbeBunkerNip44.mockResolvedValue(true);
+
+    rerender();
+
+    await waitFor(() => expect(result.current.canUseDirectMessages).toBe(true));
+    expect(mockProbeBunkerNip44).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('useDmInboxStatus', () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+    vi.clearAllMocks();
+    localStorageMock.clear();
+    mockResolveDmReadRelays.mockResolvedValue(['wss://relay.example']);
+  });
+
+  afterEach(() => {
+    localStorageMock.clear();
+  });
+
+  it("returns 'unavailable' when relays returned wraps but every one failed to decrypt", async () => {
+    mockFetchDmMessages.mockResolvedValue({
+      messages: [],
+      fetchedCount: 12,
+      decryptFailures: 12,
+      malformedCount: 0,
+    });
+
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    const { result } = renderHook(() => useDmInboxStatus(), {
+      wrapper: createWrapper(queryClient),
+    });
+
+    await waitFor(() => expect(result.current).not.toBe('loading'));
+    expect(result.current).toBe('unavailable');
+  });
+
+  it("returns 'empty' when relays returned no wraps", async () => {
+    mockFetchDmMessages.mockResolvedValue({
+      messages: [],
+      fetchedCount: 0,
+      decryptFailures: 0,
+      malformedCount: 0,
+    });
+
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    const { result } = renderHook(() => useDmInboxStatus(), {
+      wrapper: createWrapper(queryClient),
+    });
+
+    await waitFor(() => expect(result.current).not.toBe('loading'));
+    expect(result.current).toBe('empty');
+  });
+
+  it("returns 'ok' when at least one message is visible", async () => {
+    mockFetchDmMessages.mockResolvedValue({
+      messages: [{
+        conversationId: encodeConversationId([RECIPIENT_PUBKEY]),
+        wrapId: 'remote-wrap-id',
+        rumorId: 'remote-rumor-id',
+        senderPubkey: RECIPIENT_PUBKEY,
+        participantPubkeys: [RECIPIENT_PUBKEY, TEST_PUBKEY].sort(),
+        peerPubkeys: [RECIPIENT_PUBKEY],
+        content: 'hi',
+        createdAt: 1_234_567_892,
+        isOutgoing: false,
+      }],
+      fetchedCount: 1,
+      decryptFailures: 0,
+      malformedCount: 0,
+    });
+
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    const { result } = renderHook(() => useDmInboxStatus(), {
+      wrapper: createWrapper(queryClient),
+    });
+
+    await waitFor(() => expect(result.current).toBe('ok'));
   });
 });
