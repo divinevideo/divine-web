@@ -9,6 +9,7 @@ const {
   mockClearSession,
   mockNavigate,
   mockRemoveLogin,
+  mockRelaySelector,
   mockSetLogin,
   mockUseLoggedInAccounts,
 } = vi.hoisted(() => ({
@@ -16,6 +17,7 @@ const {
   mockClearSession: vi.fn(),
   mockNavigate: vi.fn(),
   mockRemoveLogin: vi.fn(),
+  mockRelaySelector: vi.fn(),
   mockSetLogin: vi.fn(),
   mockUseLoggedInAccounts: vi.fn(),
 }));
@@ -68,7 +70,10 @@ vi.mock('@/components/ui/avatar.tsx', () => ({
 }));
 
 vi.mock('@/components/RelaySelector', () => ({
-  RelaySelector: () => <div>Relay Selector</div>,
+  RelaySelector: (props: { className?: string; contentClassName?: string }) => {
+    mockRelaySelector(props);
+    return <div>Relay Selector</div>;
+  },
 }));
 
 vi.mock('./LocalNsecBanner', () => ({
@@ -76,6 +81,7 @@ vi.mock('./LocalNsecBanner', () => ({
 }));
 
 import { AccountSwitcher } from './AccountSwitcher';
+import { OVERLAY_LAYERS } from '@/lib/overlayLayers';
 
 describe('AccountSwitcher', () => {
   beforeEach(async () => {
@@ -95,6 +101,7 @@ describe('AccountSwitcher', () => {
     mockClearSession.mockClear();
     mockNavigate.mockClear();
     mockRemoveLogin.mockClear();
+    mockRelaySelector.mockClear();
     mockSetLogin.mockClear();
     mockUseLoggedInAccounts.mockReturnValue({
       currentUser: {
@@ -118,5 +125,16 @@ describe('AccountSwitcher', () => {
     expect(mockClearSession).toHaveBeenCalled();
     expect(mockClearLoginCookie).toHaveBeenCalled();
     expect(mockRemoveLogin).not.toHaveBeenCalled();
+  });
+
+  it('keeps the relay selector layer override scoped to account menu usage', () => {
+    render(<AccountSwitcher onAddAccountClick={vi.fn()} />);
+
+    expect(mockRelaySelector).toHaveBeenCalledWith(
+      expect.objectContaining({
+        className: 'w-full',
+        contentClassName: OVERLAY_LAYERS.nestedOverlayFloating,
+      }),
+    );
   });
 });
