@@ -1,6 +1,7 @@
 import { useParams, useSearchParams } from 'react-router-dom';
 import { useSubdomainNavigate } from '@/hooks/useSubdomainNavigate';
 import { useEffect, useCallback, useState, useMemo, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useSeoMeta } from '@unhead/react';
 import { Hash, User, X, CircleNotch as Loader2 } from '@phosphor-icons/react';
 import InfiniteScroll from 'react-infinite-scroll-component';
@@ -19,12 +20,13 @@ import { useVideoSocialMetrics } from '@/hooks/useVideoSocialMetrics';
 import { useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/useToast';
 import { genUserName } from '@/lib/genUserName';
-import { nip19 } from 'nostr-tools';
+import { buildProfileLinkPath } from '@/lib/profileLinks';
 import { debugLog } from '@/lib/debug';
 import { reportFunnelcakeFallback } from '@/lib/funnelcakeFallbackReporting';
 import type { ParsedVideoData, UserInteractions } from '@/types/video';
 
 export function VideoPage() {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const [searchParams] = useSearchParams();
   const navigate = useSubdomainNavigate();
@@ -242,15 +244,15 @@ export function VideoPage() {
 
   // Dynamic SEO meta tags for social sharing
   useSeoMeta({
-    title: currentVideo?.title || 'Video on Divine',
-    description: currentVideo?.content || `Watch this video${authorName ? ` by ${authorName}` : ''} on Divine`,
-    ogTitle: currentVideo?.title || 'Video on Divine',
-    ogDescription: currentVideo?.content || 'Watch this video on Divine',
+    title: currentVideo?.title || t('videoPage.seoTitle'),
+    description: currentVideo?.content || (authorName ? t('videoPage.seoDescriptionWithAuthor', { name: authorName }) : t('videoPage.seoDescription')),
+    ogTitle: currentVideo?.title || t('videoPage.seoTitle'),
+    ogDescription: currentVideo?.content || t('videoPage.seoDescription'),
     ogImage: currentVideo?.thumbnailUrl || '/og.avif',
     ogType: 'video.other',
     twitterCard: 'summary_large_image',
-    twitterTitle: currentVideo?.title || 'Video on Divine',
-    twitterDescription: currentVideo?.content || 'Watch this video on Divine',
+    twitterTitle: currentVideo?.title || t('videoPage.seoTitle'),
+    twitterDescription: currentVideo?.content || t('videoPage.seoDescription'),
     twitterImage: currentVideo?.thumbnailUrl || '/og.avif',
   });
 
@@ -259,12 +261,10 @@ export function VideoPage() {
     if (context?.source === 'hashtag' && context.hashtag) {
       navigate(`/hashtag/${context.hashtag}`);
     } else if (context?.source === 'profile' && context.pubkey) {
-      try {
-        const npub = nip19.npubEncode(context.pubkey);
-        navigate(`/profile/${npub}`, { ownerPubkey: context.pubkey });
-      } catch {
-        navigate(`/profile/${context.pubkey}`, { ownerPubkey: context.pubkey });
-      }
+      navigate(buildProfileLinkPath({
+        pubkey: context.pubkey,
+        fallbackRoute: 'profile',
+      }), { ownerPubkey: context.pubkey });
     } else if (context?.source === 'search') {
       const params = new URLSearchParams();
       if (context.query) params.set('q', context.query);
@@ -281,8 +281,8 @@ export function VideoPage() {
   const handleLike = async (video: ParsedVideoData) => {
     if (!user) {
       toast({
-        title: 'Login Required',
-        description: 'Please log in to like videos',
+        title: t('videoPage.loginRequiredTitle'),
+        description: t('videoPage.loginRequiredLikeDescription'),
         variant: 'destructive',
       });
       return;
@@ -300,8 +300,8 @@ export function VideoPage() {
       });
 
       toast({
-        title: 'Liked!',
-        description: 'Your reaction has been published',
+        title: t('videoPage.likedTitle'),
+        description: t('videoPage.likedDescription'),
       });
 
       // Invalidate queries to refresh UI
@@ -316,8 +316,8 @@ export function VideoPage() {
     } catch (error) {
       console.error('Failed to like video:', error);
       toast({
-        title: 'Error',
-        description: 'Failed to like video',
+        title: t('videoPage.errorTitle'),
+        description: t('videoPage.likeFailedDescription'),
         variant: 'destructive',
       });
     }
@@ -326,8 +326,8 @@ export function VideoPage() {
   const handleRepost = async (video: ParsedVideoData) => {
     if (!user) {
       toast({
-        title: 'Login Required',
-        description: 'Please log in to repost videos',
+        title: t('videoPage.loginRequiredTitle'),
+        description: t('videoPage.loginRequiredRepostDescription'),
         variant: 'destructive',
       });
       return;
@@ -335,8 +335,8 @@ export function VideoPage() {
 
     if (!video.vineId) {
       toast({
-        title: 'Error',
-        description: 'Cannot repost this video',
+        title: t('videoPage.errorTitle'),
+        description: t('videoPage.cannotRepostDescription'),
         variant: 'destructive',
       });
       return;
@@ -352,8 +352,8 @@ export function VideoPage() {
       });
 
       toast({
-        title: 'Reposted!',
-        description: 'Video has been reposted to your feed',
+        title: t('videoPage.repostedTitle'),
+        description: t('videoPage.repostedDescription'),
       });
 
       // Invalidate queries to refresh UI
@@ -368,8 +368,8 @@ export function VideoPage() {
     } catch (error) {
       console.error('Failed to repost video:', error);
       toast({
-        title: 'Error',
-        description: 'Failed to repost video',
+        title: t('videoPage.errorTitle'),
+        description: t('videoPage.repostFailedDescription'),
         variant: 'destructive',
       });
     }
@@ -389,8 +389,8 @@ export function VideoPage() {
       });
 
       toast({
-        title: 'Unliked!',
-        description: 'Your like has been removed',
+        title: t('videoPage.unlikedTitle'),
+        description: t('videoPage.unlikedDescription'),
       });
 
       // Invalidate queries to refresh UI
@@ -399,8 +399,8 @@ export function VideoPage() {
     } catch (error) {
       console.error('Failed to unlike video:', error);
       toast({
-        title: 'Error',
-        description: 'Failed to remove like',
+        title: t('videoPage.errorTitle'),
+        description: t('videoPage.unlikeFailedDescription'),
         variant: 'destructive',
       });
     }
@@ -420,8 +420,8 @@ export function VideoPage() {
       });
 
       toast({
-        title: 'Un-reposted!',
-        description: 'Your repost has been removed',
+        title: t('videoPage.unrepostedTitle'),
+        description: t('videoPage.unrepostedDescription'),
       });
 
       // Invalidate queries to refresh UI
@@ -430,8 +430,8 @@ export function VideoPage() {
     } catch (error) {
       console.error('Failed to un-repost video:', error);
       toast({
-        title: 'Error',
-        description: 'Failed to remove repost',
+        title: t('videoPage.errorTitle'),
+        description: t('videoPage.unrepostFailedDescription'),
         variant: 'destructive',
       });
     }
@@ -531,7 +531,7 @@ export function VideoPage() {
       <div className="container py-6">
         <Card className="border-destructive/50">
           <CardContent className="py-12 text-center">
-            <p className="text-destructive">No video ID provided</p>
+            <p className="text-destructive">{t('videoPage.noVideoId')}</p>
           </CardContent>
         </Card>
       </div>
@@ -544,12 +544,12 @@ export function VideoPage() {
       <div className="container py-6">
         <Card className="border-dashed">
           <CardContent className="py-12 text-center space-y-4">
-            <p className="text-muted-foreground text-lg font-semibold">Video not found</p>
+            <p className="text-muted-foreground text-lg font-semibold">{t('videoPage.notFoundTitle')}</p>
             <p className="text-sm text-muted-foreground">
-              This video may not exist, or the relays may be experiencing issues.
+              {t('videoPage.notFoundDescription')}
             </p>
             <p className="text-xs text-muted-foreground">
-              Try checking your relay settings or refreshing the page.
+              {t('videoPage.notFoundHint')}
             </p>
           </CardContent>
         </Card>
@@ -581,11 +581,11 @@ export function VideoPage() {
               {context.source === 'profile' && (
                 <>
                   <User className="h-4 w-4" />
-                  Loading videos...
+                  {t('videoPage.loadingVideos')}
                 </>
               )}
               {context.source === 'search' && (
-                <span>{context.query ? `Search: ${context.query}` : 'Search results'}</span>
+                <span>{context.query ? t('videoPage.searchPrefix', { query: context.query }) : t('videoPage.searchResults')}</span>
               )}
               {(context.source === 'discovery' || context.source === 'trending' || context.source === 'home') && (
                 <span className="capitalize">{context.source}</span>
@@ -642,11 +642,11 @@ export function VideoPage() {
               {context.source === 'profile' && authorName && (
                 <>
                   <User className="h-4 w-4" />
-                  {authorName}'s videos
+                  {t('videoPage.authorVideos', { name: authorName })}
                 </>
               )}
               {context.source === 'search' && (
-                <span>{context.query ? `Search: ${context.query}` : 'Search results'}</span>
+                <span>{context.query ? t('videoPage.searchPrefix', { query: context.query }) : t('videoPage.searchResults')}</span>
               )}
               {(context.source === 'discovery' || context.source === 'trending' || context.source === 'home') && (
                 <span className="capitalize">{context.source}</span>
@@ -672,7 +672,7 @@ export function VideoPage() {
             <div className="h-16 flex items-center justify-center">
               <div className="flex items-center gap-3">
                 <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                <span className="text-sm text-muted-foreground">Loading more videos...</span>
+                <span className="text-sm text-muted-foreground">{t('videoPage.loadingMore')}</span>
               </div>
             </div>
           }
@@ -745,7 +745,7 @@ export function VideoPage() {
                 onClick={handleGoBack}
                 className="text-muted-foreground hover:text-primary transition-colors text-xs"
               >
-                {context.query ? `Search: ${context.query}` : 'Search results'}
+                {context.query ? t('videoPage.searchPrefix', { query: context.query }) : t('videoPage.searchResults')}
               </button>
             )}
             {(context.source === 'discovery' || context.source === 'trending' || context.source === 'home') && (
@@ -767,7 +767,7 @@ export function VideoPage() {
           <button
             onClick={goToPrevious}
             className="absolute left-0 top-0 w-16 h-full z-10 flex items-center justify-start pl-4 opacity-0 hover:opacity-100 transition-opacity group"
-            aria-label="Previous video"
+            aria-label={t('videoPage.previousVideoAria')}
           >
             <div className="bg-black/20 text-white px-2 py-1 rounded text-sm opacity-0 group-hover:opacity-100 transition-opacity">
               ←
@@ -780,7 +780,7 @@ export function VideoPage() {
           <button
             onClick={goToNext}
             className="absolute right-0 top-0 w-16 h-full z-10 flex items-center justify-end pr-4 opacity-0 hover:opacity-100 transition-opacity group"
-            aria-label="Next video"
+            aria-label={t('videoPage.nextVideoAria')}
           >
             <div className="bg-black/20 text-white px-2 py-1 rounded text-sm opacity-0 group-hover:opacity-100 transition-opacity">
               →
@@ -823,12 +823,12 @@ export function VideoPage() {
           <div className="text-xs text-muted-foreground inline-flex items-center gap-3">
             {hasPrevious && (
               <button onClick={goToPrevious} className="hover:underline">
-                ← previous
+                {t('videoPage.previousArrow')}
               </button>
             )}
             {hasNext && (
               <button onClick={goToNext} className="hover:underline">
-                next →
+                {t('videoPage.nextArrow')}
               </button>
             )}
           </div>

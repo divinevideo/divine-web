@@ -1,7 +1,12 @@
 import { fireEvent, render, screen } from '@testing-library/react';
-import { Link, MemoryRouter, Route, Routes } from 'react-router-dom';
+import { Link, MemoryRouter, Route, Routes, useNavigate } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ScrollToTop } from './ScrollToTop';
+
+function BackButton() {
+  const navigate = useNavigate();
+  return <button onClick={() => navigate(-1)}>Back</button>;
+}
 
 function TestApp() {
   return (
@@ -23,6 +28,7 @@ function TestApp() {
             <div>
               <h1>Details</h1>
               <Link to="/feed">Feed</Link>
+              <BackButton />
             </div>
           }
         />
@@ -45,7 +51,7 @@ describe('ScrollToTop', () => {
     });
   });
 
-  it('restores the saved scroll position when returning to a route', () => {
+  it('scrolls to the top on forward (PUSH) navigation, even with a saved position', () => {
     render(<TestApp />);
 
     expect(window.scrollTo).toHaveBeenLastCalledWith(0, 0);
@@ -56,8 +62,26 @@ describe('ScrollToTop', () => {
     expect(screen.getByRole('heading', { name: 'Details' })).toBeInTheDocument();
     expect(window.scrollTo).toHaveBeenLastCalledWith(0, 0);
 
+    // Returning to /feed via a link is a PUSH — it should land at the top,
+    // not restore the 420 position saved when we left.
     scrollY = 125;
     fireEvent.click(screen.getByRole('link', { name: 'Feed' }));
+
+    expect(screen.getByRole('heading', { name: 'Feed' })).toBeInTheDocument();
+    expect(window.scrollTo).toHaveBeenLastCalledWith(0, 0);
+  });
+
+  it('restores the saved scroll position on back (POP) navigation', () => {
+    render(<TestApp />);
+
+    // Leave /feed at y=420; that position is saved for /feed.
+    scrollY = 420;
+    fireEvent.click(screen.getByRole('link', { name: 'Details' }));
+    expect(screen.getByRole('heading', { name: 'Details' })).toBeInTheDocument();
+
+    // Browser back (navigate(-1)) is a POP — restore the saved /feed position.
+    scrollY = 0;
+    fireEvent.click(screen.getByRole('button', { name: 'Back' }));
 
     expect(screen.getByRole('heading', { name: 'Feed' })).toBeInTheDocument();
     expect(window.scrollTo).toHaveBeenLastCalledWith(0, 420);

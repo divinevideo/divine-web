@@ -23,7 +23,7 @@ if (!Array.isArray(appIds) || appIds.length === 0) {
   throw new Error('apple-app-site-association is missing applinks.details[].appIDs');
 }
 
-const requiredPaths = new Set(['/video/*', '/profile/*']);
+const requiredPaths = new Set(['/video/*', '/profile/*', '/invite/*']);
 const declaredPaths = new Set(
   aasa?.applinks?.details?.flatMap((detail) =>
     (detail.components ?? []).map((component) => component?.['/']).filter(Boolean),
@@ -44,3 +44,7 @@ if (!Array.isArray(assetlinks) || assetlinks.length === 0) {
   throw new Error('assetlinks.json must contain at least one target entry');
 }
 
+const hasOpenvineTarget = assetlinks.some((entry) => entry?.target?.package_name === 'co.openvine.app');
+if (!hasOpenvineTarget) {
+  throw new Error('assetlinks.json does not include co.openvine.app target');
+}

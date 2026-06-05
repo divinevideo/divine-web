@@ -153,6 +153,21 @@ describe('canServeFeedViaWebsocket', () => {
 });
 
 describe('useVideoProvider', () => {
+  it('uses a bounded classics randomization window to avoid high-offset timeouts', () => {
+    renderHook(() =>
+      useVideoProvider({
+        feedType: 'classics',
+      })
+    );
+
+    expect(mockUseInfiniteVideosFunnelcake).toHaveBeenCalledWith(expect.objectContaining({
+      feedType: 'classics',
+      apiUrl: 'https://api.divine.video',
+      randomizeWithinTop: 120,
+      enabled: true,
+    }));
+  });
+
   it('routes category feeds away from the WebSocket hook', () => {
     relayUrl = 'wss://relay.damus.io';
     mockUseResolvedRelayCapabilities.mockReturnValue(makeCapabilities({
@@ -174,6 +189,28 @@ describe('useVideoProvider', () => {
       feedType: 'category',
       apiUrl: 'https://api.divine.video',
       category: 'dance',
+      enabled: true,
+    }));
+    expect(mockUseInfiniteVideos).toHaveBeenCalledWith(expect.objectContaining({
+      enabled: false,
+    }));
+    expect(result.current.dataSource).toBe('funnelcake');
+  });
+
+  it('routes popular feeds to Funnelcake with popular options and no WebSocket fallback', () => {
+    const { result } = renderHook(() =>
+      useVideoProvider({
+        feedType: 'popular',
+        popularSource: 'classic',
+        popularPeriod: 'week',
+      })
+    );
+
+    expect(mockUseInfiniteVideosFunnelcake).toHaveBeenCalledWith(expect.objectContaining({
+      feedType: 'popular',
+      apiUrl: 'https://api.divine.video',
+      popularSource: 'classic',
+      popularPeriod: 'week',
       enabled: true,
     }));
     expect(mockUseInfiniteVideos).toHaveBeenCalledWith(expect.objectContaining({

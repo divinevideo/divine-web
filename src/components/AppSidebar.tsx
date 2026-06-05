@@ -2,7 +2,7 @@
 // ABOUTME: Shows main nav, login/signup, expandable Divine links section
 
 import { Link, useLocation } from 'react-router-dom';
-import { House as Home, Compass, MagnifyingGlass as Search, Bell, User, Sun, Moon, CaretDown as ChevronDown, Headphones, ChartBar as BarChart3, SquaresFour as LayoutGrid, Rss, ChatCircle as MessageCircle } from '@phosphor-icons/react';
+import { House as Home, Compass, MagnifyingGlass as Search, Bell, User, Sun, Moon, CaretDown as ChevronDown, Headphones, ChartBar as BarChart3, SquaresFour as LayoutGrid, Rss, ChatCircle as MessageCircle, TrendUp } from '@phosphor-icons/react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCategories } from '@/hooks/useCategories';
@@ -25,6 +25,7 @@ import { feedUrls } from '@/lib/feedUrls';
 import { useRssFeedAvailable } from '@/hooks/useRssFeedAvailable';
 import { usePlatformStats } from '@/hooks/usePlatformStats';
 import { LanguageMenu } from '@/components/LanguageMenu';
+import { SocialLinks } from '@/components/SocialLinks';
 import { getTranslatedCategoryLabel } from '@/lib/constants/categories';
 import { getPreferredAppStoreCountry, lookupAppStoreUrl, PLAY_STORE_URL } from '@/lib/mobileStoreLinks';
 
@@ -80,6 +81,7 @@ export function AppSidebar({ className }: { className?: string }) {
   const isActive = (path: string) => location.pathname === path;
   const isDiscoveryActive = () =>
     location.pathname === '/discovery' || location.pathname.startsWith('/discovery/');
+  const isPopularActive = () => location.pathname === '/popular';
   const isMessagesActive = () =>
     location.pathname === '/messages' || location.pathname.startsWith('/messages/');
   const isCategoryActive = (name: string) => location.pathname === `/category/${name}`;
@@ -193,6 +195,13 @@ export function AppSidebar({ className }: { className?: string }) {
             label={t('nav.discover')}
             onClick={() => navigate('/discovery')}
             isActive={isDiscoveryActive()}
+          />
+
+          <NavItem
+            icon={<TrendUp className="h-[18px] w-[18px]" weight={isPopularActive() ? 'fill' : 'bold'} />}
+            label={t('nav.popular')}
+            onClick={() => navigate('/popular')}
+            isActive={isPopularActive()}
           />
 
           {user && canUseDirectMessages && (
@@ -387,6 +396,9 @@ export function AppSidebar({ className }: { className?: string }) {
           )}
         </div>
 
+        {/* Social media — visible on every page, not just About/ProofMode. */}
+        <SocialLinks className="mt-6 px-4 flex-wrap gap-y-2" iconClassName="dark:invert" />
+
         {/* Footer Section - flows naturally, no pinning */}
         <div className="mt-6 px-4">
         {/* Expandable Divine Section */}
@@ -495,6 +507,18 @@ export function AppSidebar({ className }: { className?: string }) {
                 className="transition-colors hover:text-primary"
               >
                 {t('menu.safety')}
+              </button>
+              <button
+                onClick={() => navigate('/family')}
+                className="transition-colors hover:text-primary"
+              >
+                {t('menu.familyResources')}
+              </button>
+              <button
+                onClick={() => navigate('/kids')}
+                className="transition-colors hover:text-primary"
+              >
+                {t('menu.kidsPolicy')}
               </button>
               <button
                 onClick={() => navigate('/dmca')}

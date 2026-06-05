@@ -13,6 +13,8 @@ declare global {
     __DIVINE_FEED__?: FunnelcakeResponse;
     /** Feed type that was injected (trending, recent, classics) */
     __DIVINE_FEED_TYPE__?: string;
+    /** Set by divine-brain simulations before page scripts run to suppress analytics. */
+    __DIVINE_ANALYTICS_DISABLED__?: boolean;
   }
 }
 

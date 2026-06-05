@@ -1,8 +1,10 @@
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { nip19 } from 'nostr-tools';
 import { ProfileHeader } from './ProfileHeader';
 import type { ProfileStats } from '@/lib/profileStats';
+import { initializeI18n } from '@/lib/i18n';
 
 vi.mock('./LinkedAccounts', () => ({
   LinkedAccounts: () => <div data-testid="linked-accounts" />,
@@ -76,6 +78,20 @@ const baseStats: ProfileStats = {
 };
 
 describe('ProfileHeader', () => {
+  beforeEach(async () => {
+    const storage = new Map<string, string>();
+    Object.defineProperty(window, 'localStorage', {
+      configurable: true,
+      value: {
+        getItem: (key: string) => storage.get(key) ?? null,
+        setItem: (key: string, value: string) => storage.set(key, value),
+        removeItem: (key: string) => storage.delete(key),
+        clear: () => storage.clear(),
+      } satisfies Pick<Storage, 'getItem' | 'setItem' | 'removeItem' | 'clear'>,
+    });
+    await initializeI18n({ force: true, languages: ['en-US'] });
+  });
+
   it('shows clickable legacy socials for classic viners only', () => {
     render(
       <MemoryRouter>
@@ -132,5 +148,46 @@ describe('ProfileHeader', () => {
     );
 
     expect(screen.queryByRole('link', { name: /twitter \/ x/i })).not.toBeInTheDocument();
+  });
+
+  it('linkifies urls, hashtags, and nostr mentions in bio', () => {
+    const mentionPubkey = 'b'.repeat(64);
+    const npub = nip19.npubEncode(mentionPubkey);
+    const about = `Loops forever: https://divine.video #Divine nostr:${npub}`;
+
+    render(
+      <MemoryRouter>
+        <ProfileHeader
+          pubkey={'a'.repeat(64)}
+          metadata={{ display_name: 'Modern Creator', about }}
+          stats={baseStats}
+          isOwnProfile={false}
+          isFollowing={false}
+          onFollowToggle={vi.fn()}
+        />
+      </MemoryRouter>
+    );
+
+    expect(screen.getByRole('link', { name: 'https://divine.video' })).toHaveAttribute('href', 'https://divine.video/');
+    expect(screen.getByRole('link', { name: '#Divine' })).toHaveAttribute('href', '/t/divine');
+    expect(screen.getByRole('link', { name: `nostr:${npub}` })).toHaveAttribute('href', `/${npub}`);
+  });
+
+  it('normalizes website link and keeps row visible when non-empty', () => {
+    render(
+      <MemoryRouter>
+        <ProfileHeader
+          pubkey={'a'.repeat(64)}
+          metadata={{ display_name: 'Modern Creator', website: 'divine.video/profile/alice' }}
+          stats={baseStats}
+          isOwnProfile={false}
+          isFollowing={false}
+          onFollowToggle={vi.fn()}
+        />
+      </MemoryRouter>
+    );
+
+    expect(screen.getByRole('link', { name: /divine.video\/profile\/alice/i }))
+      .toHaveAttribute('href', 'https://divine.video/profile/alice');
   });
 });

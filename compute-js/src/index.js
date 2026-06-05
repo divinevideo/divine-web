@@ -9,6 +9,17 @@ import { PublisherServer } from '@fastly/compute-js-static-publish';
 import rc from '../static-publish.rc.js';
 import { buildFunnelcakeUrl, getFunnelcakeOriginForApiHost } from './funnelcakeOrigin.js';
 import { isJsonWellKnownPath, shouldServeWellKnownBeforeWwwRedirect } from './wellKnownPaths.js';
+import { buildCrawlerHtml, escapeHtml, cleanText, truncateText } from './ogTags.js';
+import { hexToNpub } from './bech32.js';
+import {
+  handleAtUsernameOg,
+  handleHashtagOgTags,
+  handleSearchOgTags,
+  handleDiscoveryOgTags,
+  handleApexOgTags,
+} from './crawlerHandlers.js';
+import { transformVideoApiResponse } from './videoMetadata.js';
+import { renderEmbedPage } from './embedPage.js';
 
 const publisherServer = PublisherServer.fromStaticPublishRc(rc);
 const DEFAULT_OG_IMAGE = 'https://divine.video/og.png';
@@ -97,6 +108,14 @@ async function handleRequest(event) {
   if (atUsernameMatch) {
     const username = atUsernameMatch[1].toLowerCase();
     console.log('Handling @username profile for:', username);
+    if (isSocialMediaCrawler(request)) {
+      try {
+        const ogResponse = await handleAtUsernameOg(username, url);
+        if (ogResponse) return ogResponse;
+      } catch (err) {
+        console.error('@username crawler OG error:', err.message);
+      }
+    }
     try {
       return await handleSubdomainProfile(username, url, request, hostnameToUse);
     } catch (err) {
@@ -126,7 +145,38 @@ async function handleRequest(event) {
     return await serveStaticWellKnownFile(request, url.pathname, { varyByOriginalHost: true });
   }
 
-  // 5. Handle dynamic OG meta tags for crawler requests
+  // 5. Handle /embed/:id — minimal autoplaying iframe for twitter:player / Slack
+  if (url.pathname.startsWith('/embed/')) {
+    const videoId = url.pathname.split('/embed/')[1]?.split('?')[0];
+    if (videoId) {
+      let videoMeta = null;
+      try {
+        videoMeta = await fetchVideoMetadata(videoId);
+      } catch (e) {
+        console.error('Embed: failed to fetch video metadata:', e.message);
+      }
+      if (!videoMeta?.videoUrl) {
+        return new Response('Video not found', { status: 404 });
+      }
+      const html = renderEmbedPage({
+        videoUrl: videoMeta.videoUrl,
+        mime: videoMeta.videoMime,
+        poster: videoMeta.thumbnail,
+        title: videoMeta.title,
+      });
+      return new Response(html, {
+        status: 200,
+        headers: {
+          'Content-Type': 'text/html; charset=utf-8',
+          'Cache-Control': 'public, max-age=300',
+          'Content-Security-Policy': 'frame-ancestors *',
+          'X-Robots-Tag': 'noindex',
+        },
+      });
+    }
+  }
+
+  // 6. Handle dynamic OG meta tags for crawler requests
   if (isSocialMediaCrawler(request)) {
     if (url.pathname.startsWith('/video/')) {
       console.log('Handling video OG tags for crawler, path:', url.pathname);
@@ -154,9 +204,52 @@ async function handleRequest(event) {
         return ogResponse;
       }
     }
+
+    if (url.pathname.startsWith('/t/')) {
+      const tag = decodeURIComponent(url.pathname.slice(3).split('?')[0]);
+      const ogResponse = await handleHashtagOgTags(tag);
+      if (ogResponse) return ogResponse;
+    }
+
+    if (url.pathname === '/search') {
+      const ogResponse = handleSearchOgTags(url.searchParams.get('q'));
+      if (ogResponse) return ogResponse;
+    }
+
+    if (url.pathname === '/discovery' || url.pathname.startsWith('/discovery/')) {
+      const type = url.pathname === '/discovery'
+        ? 'trending'
+        : url.pathname.slice('/discovery/'.length).split('?')[0];
+      const ogResponse = await handleDiscoveryOgTags(type);
+      if (ogResponse) return ogResponse;
+    }
+
+    // Family resource hub at /family on apex.
+    if (url.pathname === '/family') {
+      const ogResponse = handleFamilyOgTags(url, hostnameToUse);
+      if (ogResponse) {
+        return ogResponse;
+      }
+    }
+
+    // Age-review page at /age-review on apex.
+    if (url.pathname === '/age-review') {
+      const ogResponse = handleAgeReviewOgTags(url, hostnameToUse);
+      if (ogResponse) {
+        return ogResponse;
+      }
+    }
+
+    // Kids policy page at /kids on apex.
+    if (url.pathname === '/kids') {
+      const ogResponse = handleKidsPolicyOgTags(url, hostnameToUse);
+      if (ogResponse) {
+        return ogResponse;
+      }
+    }
   }
 
-  // 6. Serve sw.js with no-cache to ensure browsers always get the latest service worker
+  // 7. Serve sw.js with no-cache to ensure browsers always get the latest service worker
   if (url.pathname === '/sw.js') {
     const response = await publisherServer.serveRequest(request);
     if (response != null) {
@@ -170,12 +263,12 @@ async function handleRequest(event) {
     }
   }
 
-  // 7. Content report API (creates Zendesk tickets)
+  // 8. Content report API (creates Zendesk tickets)
   if (url.pathname === '/api/report') {
     return await handleReport(request);
   }
 
-  // 7b. Proxy RSS feed requests to the relay backend (serves application/rss+xml)
+  // 8b. Proxy RSS feed requests to the relay backend (serves application/rss+xml)
   if (url.pathname.startsWith('/feed/') || url.pathname === '/feed') {
     console.log('Proxying RSS feed request to relay:', url.pathname);
     return fetchFromFunnelcake(funnelcakeTarget, `${url.pathname}${url.search}`, {
@@ -184,12 +277,17 @@ async function handleRequest(event) {
     });
   }
 
-  // 8. Serve static content with SPA fallback (handled by PublisherServer config)
+  // 9. Serve static content with SPA fallback (handled by PublisherServer config)
   // Detect pages that benefit from edge-injected feed data
   const isApexDomain = APEX_DOMAINS.includes(hostnameToUse);
   const isApexLanding = isApexDomain && (url.pathname === '/' || url.pathname === '/index.html');
   const discoveryFeedType = isApexDomain ? getDiscoveryFeedType(url.pathname) : null;
   const shouldInjectFeed = isApexLanding || discoveryFeedType;
+
+  if (isApexLanding && isSocialMediaCrawler(request)) {
+    const ogResponse = await handleApexOgTags();
+    if (ogResponse) return ogResponse;
+  }
 
   const response = await publisherServer.serveRequest(request);
   if (response != null) {
@@ -606,8 +704,12 @@ function getSubdomain(hostname) {
     }
     if (hostname.endsWith('.' + apex)) {
       const subdomain = hostname.slice(0, -(apex.length + 1));
-      // Skip reserved subdomains
-      if (subdomain === 'www' || subdomain === 'admin' || subdomain === 'api') {
+      // Skip reserved subdomains.
+      if (
+        subdomain === 'www' ||
+        subdomain === 'admin' ||
+        subdomain === 'api'
+      ) {
         return null;
       }
       // Skip multi-level subdomains (e.g., names.admin.divine.video)
@@ -814,134 +916,6 @@ async function handleSubdomainProfile(subdomain, url, request, originalHostname)
 }
 
 /**
- * Convert hex pubkey to npub (Bech32) format
- */
-function hexToNpub(hex) {
-  // Bech32 character set
-  const CHARSET = 'qpzry9x8gf2tvdw0s3jn54khce6mua7l';
-  
-  // Convert hex to 5-bit groups
-  const data = [];
-  for (let i = 0; i < hex.length; i += 2) {
-    data.push(parseInt(hex.slice(i, i + 2), 16));
-  }
-  
-  // Convert 8-bit to 5-bit
-  const converted = convertBits(data, 8, 5, true);
-  
-  // Compute checksum
-  const hrp = 'npub';
-  const checksumData = hrpExpand(hrp).concat(converted);
-  const checksum = createChecksum(checksumData);
-  
-  // Encode
-  let result = hrp + '1';
-  for (const b of converted.concat(checksum)) {
-    result += CHARSET[b];
-  }
-  
-  return result;
-}
-
-function decodeNpubToHex(npub) {
-  const CHARSET = 'qpzry9x8gf2tvdw0s3jn54khce6mua7l';
-  const normalized = (npub || '').toLowerCase();
-  if (!normalized.startsWith('npub1')) {
-    return null;
-  }
-
-  const separatorIndex = normalized.lastIndexOf('1');
-  if (separatorIndex === -1) {
-    return null;
-  }
-
-  const dataPart = normalized.slice(separatorIndex + 1);
-  if (dataPart.length < 6) {
-    return null;
-  }
-
-  const values = [...dataPart].map(char => CHARSET.indexOf(char));
-  if (values.some(value => value === -1)) {
-    return null;
-  }
-
-  const payload = values.slice(0, -6);
-  const decoded = convertBits(payload, 5, 8, false);
-  if (!decoded) {
-    return null;
-  }
-
-  return decoded.map(value => value.toString(16).padStart(2, '0')).join('');
-}
-
-function convertBits(data, fromBits, toBits, pad) {
-  let acc = 0;
-  let bits = 0;
-  const result = [];
-  const maxv = (1 << toBits) - 1;
-  const maxAcc = (1 << (fromBits + toBits - 1)) - 1;
-  
-  for (const value of data) {
-    if (value < 0 || (value >> fromBits) !== 0) {
-      return null;
-    }
-    acc = ((acc << fromBits) | value) & maxAcc;
-    bits += fromBits;
-    while (bits >= toBits) {
-      bits -= toBits;
-      result.push((acc >> bits) & maxv);
-    }
-  }
-  
-  if (pad) {
-    if (bits > 0) {
-      result.push((acc << (toBits - bits)) & maxv);
-    }
-  } else if (bits >= fromBits || ((acc << (toBits - bits)) & maxv) !== 0) {
-    return null;
-  }
-  
-  return result;
-}
-
-function hrpExpand(hrp) {
-  const result = [];
-  for (const c of hrp) {
-    result.push(c.charCodeAt(0) >> 5);
-  }
-  result.push(0);
-  for (const c of hrp) {
-    result.push(c.charCodeAt(0) & 31);
-  }
-  return result;
-}
-
-function polymod(values) {
-  const GEN = [0x3b6a57b2, 0x26508e6d, 0x1ea119fa, 0x3d4233dd, 0x2a1462b3];
-  let chk = 1;
-  for (const v of values) {
-    const top = chk >> 25;
-    chk = ((chk & 0x1ffffff) << 5) ^ v;
-    for (let i = 0; i < 5; i++) {
-      if ((top >> i) & 1) {
-        chk ^= GEN[i];
-      }
-    }
-  }
-  return chk;
-}
-
-function createChecksum(data) {
-  const values = data.concat([0, 0, 0, 0, 0, 0]);
-  const mod = polymod(values) ^ 1;
-  const result = [];
-  for (let i = 0; i < 6; i++) {
-    result.push((mod >> (5 * (5 - i))) & 31);
-  }
-  return result;
-}
-
-/**
  * Detect if request is from a social media crawler (for OG tag injection)
  */
 function isSocialMediaCrawler(request) {
@@ -977,74 +951,18 @@ function isSocialMediaCrawler(request) {
  */
 async function fetchVideoMetadata(videoId, funnelcakeTarget = getFunnelcakeOriginForApiHost()) {
   try {
-    // Use the /api/videos/{id} endpoint
     const response = await fetchFromFunnelcake(funnelcakeTarget, `/api/videos/${videoId}`);
-
     if (!response.ok) {
       console.log('Funnelcake API returned:', response.status);
       return null;
     }
 
     const result = await response.json();
-
-    if (!result.event) {
-      console.log('Video not found:', videoId);
-      return null;
+    const meta = transformVideoApiResponse(result, { defaultOgImage: DEFAULT_OG_IMAGE });
+    if (meta) {
+      console.log('Fetched video metadata - title:', meta.title, 'videoUrl:', meta.videoUrl);
     }
-
-    const event = result.event;
-    const stats = result.stats || {};
-
-    // Extract data from tags
-    const getTag = (name) => event.tags?.find(t => t[0] === name)?.[1];
-
-    // Parse imeta tag for thumbnail and video URL
-    const imetaTag = event.tags?.find(t => t[0] === 'imeta');
-    const imeta = {};
-    if (imetaTag) {
-      for (let i = 1; i < imetaTag.length; i++) {
-        const parts = imetaTag[i].split(' ');
-        if (parts.length >= 2) {
-          imeta[parts[0]] = parts.slice(1).join(' ');
-        }
-      }
-    }
-
-    const thumbnail = imeta.image || null;
-    const summary = cleanText(getTag('summary'));
-    const alt = cleanText(getTag('alt'));
-    const content = cleanText(event.content);
-    const title = cleanText(getTag('title')) || alt || summary || truncateText(content, 80) || null;
-
-    // Build a rich description with engagement stats
-    const statsList = [];
-    if (stats.reactions > 0) statsList.push(`${stats.reactions} ❤️`);
-    if (stats.comments > 0) statsList.push(`${stats.comments} 💬`);
-    if (stats.reposts > 0) statsList.push(`${stats.reposts} 🔁`);
-
-    let description;
-    if (content) {
-      description = content;
-    } else if (summary) {
-      description = summary;
-    } else if (alt) {
-      description = alt;
-    } else if (statsList.length > 0) {
-      description = `${statsList.join(' • ')} on Divine`;
-    } else {
-      description = 'Watch this short video on Divine';
-    }
-
-    console.log('Fetched video metadata - title:', title, 'thumbnail:', thumbnail);
-
-    return {
-      title: title || 'Video on Divine',
-      description: description,
-      thumbnail: thumbnail || DEFAULT_OG_IMAGE,
-      authorName: cleanText(getTag('author')) || cleanText(stats.author_name) || '',
-      reactions: stats.reactions || 0,
-      comments: stats.comments || 0,
-    };
+    return meta;
   } catch (err) {
     console.error('Failed to fetch video metadata:', err.message);
     return null;
@@ -1083,44 +1001,6 @@ async function fetchCategoriesMetadata(funnelcakeTarget = getFunnelcakeOriginFor
   }
 }
 
-function buildCrawlerHtml({
-  title,
-  description,
-  image,
-  url,
-  ogType,
-  twitterCard = 'summary_large_image',
-  twitterCreator = '',
-}) {
-  return `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${escapeHtml(title)}</title>
-
-  <meta property="og:type" content="${escapeHtml(ogType)}" />
-  <meta property="og:title" content="${escapeHtml(title)}" />
-  <meta property="og:description" content="${escapeHtml(description)}" />
-  <meta property="og:image" content="${escapeHtml(image)}" />
-  <meta property="og:url" content="${escapeHtml(url)}" />
-  <meta property="og:site_name" content="Divine" />
-
-  <meta name="twitter:card" content="${escapeHtml(twitterCard)}" />
-  <meta name="twitter:title" content="${escapeHtml(title)}" />
-  <meta name="twitter:description" content="${escapeHtml(description)}" />
-  <meta name="twitter:image" content="${escapeHtml(image)}" />
-  ${twitterCreator ? `<meta name="twitter:creator" content="${escapeHtml(twitterCreator)}" />` : ''}
-
-  <meta http-equiv="refresh" content="0;url=${escapeHtml(url)}">
-  <link rel="canonical" href="${escapeHtml(url)}" />
-</head>
-<body>
-  <p>Redirecting to <a href="${escapeHtml(url)}">${escapeHtml(title)}</a>...</p>
-</body>
-</html>`;
-}
-
 /**
  * Handle video page requests for social media crawlers
  * Injects dynamic OG meta tags with video-specific content
@@ -1140,17 +1020,29 @@ async function handleVideoOgTags(request, videoId, url, funnelcakeTarget) {
     const description = videoMeta?.description || `Watch this video on Divine. ${DEFAULT_SITE_DESCRIPTION}`;
     const thumbnail = videoMeta?.thumbnail || DEFAULT_OG_IMAGE;
     const authorName = videoMeta?.authorName || '';
-    const videoUrl = `https://divine.video/video/${videoId}`;
+    const pageUrl = `https://divine.video/video/${videoId}`;
 
-    console.log('Generating OG HTML for video:', videoId, 'title:', title);
+    const hasPlayableVideo = Boolean(videoMeta?.videoUrl);
+    const videoBlock = hasPlayableVideo ? {
+      url: videoMeta.videoUrl,
+      type: videoMeta.videoMime || 'video/mp4',
+      width: videoMeta.videoWidth || 720,
+      height: videoMeta.videoHeight || 1280,
+      embedUrl: `https://divine.video/embed/${videoId}`,
+    } : null;
+
+    console.log('Generating OG HTML for video:', videoId, 'title:', title, 'player:', hasPlayableVideo);
     const html = buildCrawlerHtml({
       title,
       description,
       image: thumbnail,
-      url: videoUrl,
+      url: pageUrl,
       ogType: 'video.other',
-      twitterCard: 'summary_large_image',
+      twitterCard: hasPlayableVideo ? 'player' : 'summary_large_image',
       twitterCreator: authorName,
+      imageWidth: videoMeta?.imageWidth || 1200,
+      imageHeight: videoMeta?.imageHeight || 630,
+      video: videoBlock,
     });
 
     console.log('Generated OG HTML, length:', html.length);
@@ -1241,6 +1133,8 @@ async function handleCategoryOgTags(request, url, funnelcakeTarget) {
       url: categoryUrl,
       ogType: 'website',
       twitterCard: 'summary_large_image',
+      imageWidth: 1200,
+      imageHeight: 630,
     });
 
     return new Response(html, {
@@ -1254,6 +1148,93 @@ async function handleCategoryOgTags(request, url, funnelcakeTarget) {
   } catch (err) {
     console.error('handleCategoryOgTags error:', err.message, err.stack);
     return await publisherServer.serveRequest(request);
+  }
+}
+
+function handleFamilyOgTags(url, hostnameToUse) {
+  try {
+    const canonical = `https://${hostnameToUse}${url.pathname}`;
+    const html = buildCrawlerHtml({
+      title: 'For families on Divine — Conversation-first guidance for parents and teens',
+      description:
+        'A practical guide for families on Divine: how to talk with your teen about social media, what Divine can and can’t do, content settings, healthy feed habits, and trusted outside resources.',
+      image: DEFAULT_OG_IMAGE,
+      url: canonical,
+      ogType: 'website',
+      twitterCard: 'summary_large_image',
+      imageWidth: 1200,
+      imageHeight: 630,
+    });
+
+    return new Response(html, {
+      status: 200,
+      headers: {
+        'Content-Type': 'text/html; charset=utf-8',
+        'Cache-Control': 'public, max-age=300',
+        'Vary': 'User-Agent',
+      },
+    });
+  } catch (err) {
+    console.error('handleFamilyOgTags error:', err.message, err.stack);
+    return null;
+  }
+}
+
+function handleAgeReviewOgTags(url, hostnameToUse) {
+  try {
+    const canonical = `https://${hostnameToUse}${url.pathname}`;
+    const html = buildCrawlerHtml({
+      title: 'Account review — Divine',
+      description:
+        'If your Divine account was flagged as possibly belonging to someone under 16, this page explains what to do — and the 15-day window for responding.',
+      image: DEFAULT_OG_IMAGE,
+      url: canonical,
+      ogType: 'website',
+      twitterCard: 'summary_large_image',
+      imageWidth: 1200,
+      imageHeight: 630,
+    });
+
+    return new Response(html, {
+      status: 200,
+      headers: {
+        'Content-Type': 'text/html; charset=utf-8',
+        'Cache-Control': 'public, max-age=300',
+        'Vary': 'User-Agent',
+      },
+    });
+  } catch (err) {
+    console.error('handleAgeReviewOgTags error:', err.message, err.stack);
+    return null;
+  }
+}
+
+function handleKidsPolicyOgTags(url, hostnameToUse) {
+  try {
+    const canonical = `https://${hostnameToUse}${url.pathname}`;
+    const html = buildCrawlerHtml({
+      title: 'Kids on Divine — How accounts work for under-16s',
+      description:
+        'How Divine handles accounts for people under 16 — the rules, the reasoning, and what families can do together regardless of age.',
+      image: DEFAULT_OG_IMAGE,
+      url: canonical,
+      ogType: 'website',
+      twitterCard: 'summary_large_image',
+      imageWidth: 1200,
+      imageHeight: 630,
+    });
+
+    return new Response(html, {
+      status: 200,
+      headers: {
+        'Content-Type': 'text/html; charset=utf-8',
+        'Cache-Control': 'public, max-age=300',
+        'Vary': 'User-Agent',
+      },
+    });
+  } catch (err) {
+    console.error('handleKidsPolicyOgTags error:', err.message, err.stack);
+    return null;
   }
 }
 
@@ -1274,32 +1255,6 @@ function isNip05MatchForSubdomain(nip05, subdomain, apexDomain) {
   // alice@divine.video
   if (lower === `${subLower}@${apexDomain}`) return true;
   return false;
-}
-
-/**
- * Escape HTML special characters to prevent XSS
- */
-function escapeHtml(str) {
-  if (!str) return '';
-  return str
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
-}
-
-function cleanText(value) {
-  return (value || '').replace(/\s+/g, ' ').trim();
-}
-
-function truncateText(value, maxLength) {
-  const trimmed = cleanText(value);
-  if (trimmed.length <= maxLength) {
-    return trimmed;
-  }
-
-  return `${trimmed.slice(0, maxLength - 1).trimEnd()}…`;
 }
 
 function humanizeCategoryName(name) {

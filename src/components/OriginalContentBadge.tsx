@@ -2,6 +2,7 @@
 // ABOUTME: Matches Flutter app's OriginalContentBadge styling and behavior
 
 import { CheckCircle } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 
@@ -11,6 +12,7 @@ interface OriginalContentBadgeProps {
 }
 
 export function OriginalContentBadge({ className, size = 'small' }: OriginalContentBadgeProps) {
+  const { t } = useTranslation();
   const sizeConfig = getSizeConfig(size);
 
   return (
@@ -21,10 +23,10 @@ export function OriginalContentBadge({ className, size = 'small' }: OriginalCont
         sizeConfig.className,
         className
       )}
-      title="Original content created by this user"
+      title={t('originalContentBadge.tooltip')}
     >
       <CheckCircle className={sizeConfig.iconSize} />
-      <span>Original</span>
+      <span>{t('originalContentBadge.label')}</span>
     </Badge>
   );
 }

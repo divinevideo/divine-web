@@ -213,10 +213,59 @@ export function useUnmuteItem() {
 }
 
 /**
+ * Map app-level ContentFilterReason to one of the NIP-56 standard report type
+ * strings: nudity, malware, profanity, illegal, spam, impersonation, other.
+ * Aligned with mobile's _toNip56ReportType in content_reporting_service.dart.
+ */
+export function toNip56ReportType(reason: ContentFilterReason): string {
+  switch (reason) {
+    case ContentFilterReason.SPAM: return 'spam';
+    // NIP-56 has no harassment category; profanity is the closest fit per mobile alignment
+    case ContentFilterReason.HARASSMENT: return 'profanity';
+    // Violence escalates to illegal per platform policy (aligned with mobile)
+    case ContentFilterReason.VIOLENCE: return 'illegal';
+    case ContentFilterReason.SEXUAL_CONTENT: return 'nudity';
+    case ContentFilterReason.COPYRIGHT: return 'illegal';
+    case ContentFilterReason.FALSE_INFO: return 'other';
+    case ContentFilterReason.CHILD_SAFETY: return 'other';
+    // CSAM is a subset of illegal content in NIP-56's taxonomy
+    case ContentFilterReason.CSAM: return 'illegal';
+    case ContentFilterReason.UNDERAGE_USER: return 'other';
+    case ContentFilterReason.AI_GENERATED: return 'other';
+    case ContentFilterReason.IMPERSONATION: return 'impersonation';
+    case ContentFilterReason.ILLEGAL: return 'illegal';
+    case ContentFilterReason.OTHER: return 'other';
+  }
+}
+
+/**
+ * Map app-level ContentFilterReason to the NIP-32 label value used by
+ * downstream moderation UIs (social.nos.ontology namespace).
+ * Aligned with mobile's _toNip32ReportLabel in content_reporting_service.dart.
+ */
+export function toNip32ReportLabel(reason: ContentFilterReason): string {
+  switch (reason) {
+    case ContentFilterReason.SPAM: return 'NS-spam';
+    case ContentFilterReason.HARASSMENT: return 'NS-harassment';
+    case ContentFilterReason.VIOLENCE: return 'NS-violence';
+    case ContentFilterReason.SEXUAL_CONTENT: return 'NS-sexualContent';
+    case ContentFilterReason.COPYRIGHT: return 'NS-copyright';
+    case ContentFilterReason.FALSE_INFO: return 'NS-falseInformation';
+    case ContentFilterReason.CHILD_SAFETY: return 'NS-childSafety';
+    case ContentFilterReason.CSAM: return 'NS-csam';
+    case ContentFilterReason.UNDERAGE_USER: return 'NS-underageUser';
+    case ContentFilterReason.AI_GENERATED: return 'NS-aiGenerated';
+    case ContentFilterReason.IMPERSONATION: return 'NS-impersonation';
+    case ContentFilterReason.ILLEGAL: return 'NS-illegal';
+    case ContentFilterReason.OTHER: return 'NS-other';
+  }
+}
+
+/**
  * Hook to report content (NIP-56)
  */
 export function useReportContent() {
-  const { mutate: publishEvent } = useNostrPublish();
+  const { mutateAsync: publishEvent } = useNostrPublish();
   const queryClient = useQueryClient();
   const { user } = useCurrentUser();
 
@@ -230,7 +279,7 @@ export function useReportContent() {
       reporterName,
     }: {
       eventId?: string;
-      pubkey?: string;
+      pubkey: string;
       reason: ContentFilterReason;
       details?: string;
       contentType?: 'video' | 'user' | 'comment';
@@ -238,19 +287,23 @@ export function useReportContent() {
     }) => {
       if (!user) throw new Error('Must be logged in to report content');
 
+      // NIP-56: p tag is required for all kind:1984 reports
       const tags: string[][] = [];
 
-      // Add reported event or pubkey
+      const nip56Type = toNip56ReportType(reason);
+      const nip32Label = toNip32ReportLabel(reason);
+
+      // NIP-56: always include p for the reported user
+      tags.push(['p', pubkey, nip56Type]);
+
+      // Include e when reporting a specific note or comment
       if (eventId) {
-        tags.push(['e', eventId, reason]);
-      }
-      if (pubkey) {
-        tags.push(['p', pubkey, reason]);
+        tags.push(['e', eventId, nip56Type]);
       }
 
       // Add label namespace (NIP-32)
       tags.push(['L', 'social.nos.ontology']);
-      tags.push(['l', `NS-${reason}`, 'social.nos.ontology']);
+      tags.push(['l', nip32Label, 'social.nos.ontology']);
 
       // Identify report source for trusted reporter gating
       tags.push(['client', 'divine-web']);

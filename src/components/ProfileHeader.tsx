@@ -2,8 +2,10 @@
 // ABOUTME: Displays user metadata, social stats, and follow/unfollow functionality
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { getDivineNip05Info } from '@/lib/nip05Utils';
+import { linkifyProfileBioText, normalizeExternalUrl } from '@/lib/profileBioLinkify';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -37,46 +39,6 @@ import { getDmConversationPath } from '@/lib/dm';
 import type { LegacySocialLink } from '@/lib/legacySocials';
 import type { ProfileStats } from '@/lib/profileStats';
 
-/** Linkify URLs and domain-like words in text */
-function linkifyText(text: string): React.ReactNode[] {
-  // Match URLs (https?://...) and bare domain names (word.tld patterns)
-  const urlRegex = /(https?:\/\/[^\s]+)|(\b[a-zA-Z0-9][-a-zA-Z0-9]*\.[a-zA-Z]{2,}(?:\.[a-zA-Z]{2,})?(?:\/[^\s]*)?)/g;
-  const parts: React.ReactNode[] = [];
-  let lastIndex = 0;
-  let match;
-
-  while ((match = urlRegex.exec(text)) !== null) {
-    // Add text before the match
-    if (match.index > lastIndex) {
-      parts.push(text.slice(lastIndex, match.index));
-    }
-
-    const matchedText = match[0];
-    const href = matchedText.startsWith('http') ? matchedText : `https://${matchedText}`;
-
-    parts.push(
-      <a
-        key={match.index}
-        href={href}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="text-primary hover:underline"
-      >
-        {matchedText}
-      </a>
-    );
-
-    lastIndex = match.index + matchedText.length;
-  }
-
-  // Add remaining text
-  if (lastIndex < text.length) {
-    parts.push(text.slice(lastIndex));
-  }
-
-  return parts;
-}
-
 interface ProfileMetadata extends NostrMetadata {
   _stillLoadingName?: boolean;  // Flag to indicate name is still being fetched
 }
@@ -104,18 +66,24 @@ function formatNumber(num: number): string {
   return num.toString();
 }
 
-function formatJoinedDate(date: Date | null, isClassicViner?: boolean): string {
+function formatJoinedDate(
+  date: Date | null,
+  isClassicViner: boolean | undefined,
+  t: (key: string, options?: Record<string, unknown>) => string,
+): string {
   // Classic Viners show their status unless they've reclaimed their account
-  if (isClassicViner && !date) return 'Classic Viner';
+  if (isClassicViner && !date) return t('profileHeader.classicViner');
 
-  if (!date) return 'Recently joined';
+  if (!date) return t('profileHeader.recentlyJoined');
 
   const options: Intl.DateTimeFormatOptions = {
     year: 'numeric',
     month: 'long',
   };
 
-  return `Joined ${date.toLocaleDateString('en-US', options)}`;
+  return t('profileHeader.joinedDate', {
+    date: date.toLocaleDateString('en-US', options),
+  });
 }
 
 export function ProfileHeader({
@@ -130,6 +98,7 @@ export function ProfileHeader({
   isLoading: _isLoading = false,
   className,
 }: ProfileHeaderProps) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const subdomainNavigate = useSubdomainNavigate();
   const rssFeedAvailable = useRssFeedAvailable();
@@ -161,6 +130,8 @@ export function ProfileHeader({
   const profileImage = getSafeProfileImage(metadata?.picture) || '/user-avatar.png';
   const about = metadata?.about;
   const website = metadata?.website;
+  const websiteHref = normalizeExternalUrl(website);
+  const websiteLabel = website?.trim();
 
   const handleFollowClick = () => {
     onFollowToggle(!isFollowing);
@@ -171,13 +142,13 @@ export function ProfileHeader({
       const npub = nip19.npubEncode(pubkey);
       await navigator.clipboard.writeText(npub);
       toast({
-        title: "Copied.",
-        description: "npub's on your clipboard.",
+        title: t('profileHeader.copyNpubSuccessTitle'),
+        description: t('profileHeader.copyNpubSuccessDescription'),
       });
     } catch {
       toast({
-        title: "Copy hit a wall.",
-        description: "Your browser blocked clipboard access.",
+        title: t('profileHeader.copyNpubErrorTitle'),
+        description: t('profileHeader.copyNpubErrorDescription'),
         variant: "destructive",
       });
     }
@@ -219,7 +190,7 @@ export function ProfileHeader({
                     size="icon"
                     className="h-8 w-8 shrink-0"
                     onClick={handleCopyNpub}
-                    title="Copy npub"
+                    title={t('profileHeader.copyNpubTitle')}
                     data-testid="copy-npub-button"
                   >
                     <Copy className="h-4 w-4" />
@@ -275,12 +246,13 @@ export function ProfileHeader({
                 ) : null}
               </div>
 
-              {/* Website - hide if it's just a divine.video profile URL */}
-              {website && !website.includes('divine.video/profile/') && (
+              {/* Website */}
+              {websiteLabel && websiteHref && (
                 <div className="flex flex-wrap gap-2 justify-center sm:justify-start">
-                  <Badge variant="outline" className="text-xs">
-                    <a href={website} target="_blank" rel="noopener noreferrer" className="hover:underline">
-                      {website}
+                  <Badge variant="outline" className="text-xs max-w-full">
+                    <a href={websiteHref} target="_blank" rel="noopener noreferrer" className="hover:underline inline-flex items-center gap-1 break-all">
+                      <Link2 className="h-3 w-3 shrink-0" />
+                      {websiteLabel}
                     </a>
                   </Badge>
                 </div>
@@ -288,9 +260,9 @@ export function ProfileHeader({
 
               {/* Bio */}
               {about && (
-                <p className="text-muted-foreground text-sm leading-relaxed max-w-md">
-                  {linkifyText(about)}
-                </p>
+                <div className="text-muted-foreground text-sm leading-relaxed max-w-md whitespace-pre-wrap break-words">
+                  {linkifyProfileBioText(about)}
+                </div>
               )}
             </div>
 
@@ -313,7 +285,7 @@ export function ProfileHeader({
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center rounded-full border px-2 py-1 text-xs text-muted-foreground hover:text-foreground"
-                  aria-label={`${social.label}: ${social.handle}`}
+                  aria-label={t('profileHeader.legacySocialLabel', { label: social.label, handle: social.handle })}
                 >
                   {social.label}: @{social.handle}
                 </a>
@@ -333,7 +305,7 @@ export function ProfileHeader({
               data-testid="edit-profile-button"
             >
               <Pencil className="w-4 h-4 mr-2" />
-              Edit Profile
+              {t('profileHeader.editProfile')}
             </Button>
             <Link to="/settings/linked-accounts">
               <Button
@@ -342,7 +314,7 @@ export function ProfileHeader({
                 data-testid="linked-accounts-button"
               >
                 <Link2 className="w-4 h-4 mr-2" />
-                Linked Accounts
+                {t('profileHeader.linkedAccounts')}
               </Button>
             </Link>
             <DropdownMenu>
@@ -354,7 +326,7 @@ export function ProfileHeader({
               <DropdownMenuContent align="end">
                 <DropdownMenuItem onClick={() => navigate(`/get-embed?npub=${nip19.npubEncode(pubkey)}`)}>
                   <Code className="h-4 w-4 mr-2" />
-                  Get embed code
+                  {t('profileHeader.getEmbedCode')}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -371,12 +343,12 @@ export function ProfileHeader({
               {isFollowing ? (
                 <>
                   <UserCheck className="w-4 h-4 mr-2" weight="fill" />
-                  Following
+                  {t('profileHeader.following')}
                 </>
               ) : (
                 <>
                   <UserPlus className="w-4 h-4 mr-2" />
-                  Follow
+                  {t('profileHeader.follow')}
                 </>
               )}
             </Button>
@@ -386,7 +358,7 @@ export function ProfileHeader({
                 size="sm"
                 onClick={() => subdomainNavigate(getDmConversationPath([pubkey]))}
               >
-                Message
+                {t('profileHeader.message')}
               </Button>
             )}
             <DropdownMenu>
@@ -398,11 +370,11 @@ export function ProfileHeader({
               <DropdownMenuContent align="end">
                 <DropdownMenuItem onClick={() => navigate(`/get-embed?npub=${nip19.npubEncode(pubkey)}`)}>
                   <Code className="h-4 w-4 mr-2" />
-                  Get embed code
+                  {t('profileHeader.getEmbedCode')}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setShowReportDialog(true)}>
                   <Flag className="h-4 w-4 mr-2" />
-                  Report user
+                  {t('profileHeader.reportUser')}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -411,7 +383,7 @@ export function ProfileHeader({
                 href={feedUrls.userVideos(nip19.npubEncode(pubkey))}
                 target="_blank"
                 rel="noopener noreferrer"
-                title="Subscribe to RSS feed"
+                title={t('profileHeader.subscribeRss')}
                 className="inline-flex items-center justify-center rounded-md p-2 text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
               >
                 <Rss className="h-4 w-4" />
@@ -433,12 +405,12 @@ export function ProfileHeader({
               <div className="text-xl sm:text-2xl font-bold text-foreground">
                 {formatNumber(stats.videosCount)}
               </div>
-              <div className="text-xs sm:text-sm text-muted-foreground">Videos</div>
+              <div className="text-xs sm:text-sm text-muted-foreground">{t('profileHeader.videos')}</div>
             </>
           ) : (
             <>
               <Skeleton className="h-6 w-12 mx-auto mb-1" data-testid="stat-skeleton-videos" />
-              <div className="text-xs sm:text-sm text-muted-foreground">Videos</div>
+              <div className="text-xs sm:text-sm text-muted-foreground">{t('profileHeader.videos')}</div>
             </>
           )}
         </div>
@@ -454,12 +426,12 @@ export function ProfileHeader({
               <div className="text-xl sm:text-2xl font-bold text-foreground">
                 {formatNumber(stats.followersCount)}
               </div>
-              <div className="text-xs sm:text-sm text-muted-foreground">Followers</div>
+              <div className="text-xs sm:text-sm text-muted-foreground">{t('profileHeader.followers')}</div>
             </button>
           ) : (
             <>
               <Skeleton className="h-6 w-12 mx-auto mb-1" data-testid="stat-skeleton-followers" />
-              <div className="text-xs sm:text-sm text-muted-foreground">Followers</div>
+              <div className="text-xs sm:text-sm text-muted-foreground">{t('profileHeader.followers')}</div>
             </>
           )}
         </div>
@@ -475,12 +447,12 @@ export function ProfileHeader({
               <div className="text-xl sm:text-2xl font-bold text-foreground">
                 {formatNumber(stats.followingCount)}
               </div>
-              <div className="text-xs sm:text-sm text-muted-foreground">Following</div>
+              <div className="text-xs sm:text-sm text-muted-foreground">{t('profileHeader.followingStat')}</div>
             </button>
           ) : (
             <>
               <Skeleton className="h-6 w-12 mx-auto mb-1" data-testid="stat-skeleton-following" />
-              <div className="text-xs sm:text-sm text-muted-foreground">Following</div>
+              <div className="text-xs sm:text-sm text-muted-foreground">{t('profileHeader.followingStat')}</div>
             </>
           )}
         </div>
@@ -492,12 +464,12 @@ export function ProfileHeader({
               <div className="text-xl sm:text-2xl font-bold text-primary">
                 {formatNumber(stats.totalLoops)}
               </div>
-              <div className="text-xs sm:text-sm text-muted-foreground">Divine Loops</div>
+              <div className="text-xs sm:text-sm text-muted-foreground">{t('profileHeader.divineLoops')}</div>
             </>
           ) : (
             <>
               <Skeleton className="h-6 w-12 mx-auto mb-1" data-testid="stat-skeleton-loops" />
-              <div className="text-xs sm:text-sm text-muted-foreground">Divine Loops</div>
+              <div className="text-xs sm:text-sm text-muted-foreground">{t('profileHeader.divineLoops')}</div>
             </>
           )}
         </div>
@@ -514,7 +486,7 @@ export function ProfileHeader({
                   ? stats.joinedDate.toLocaleString()
                   : undefined
               }>
-                {formatJoinedDate(stats.joinedDate, stats.isClassicViner)}
+                {formatJoinedDate(stats.joinedDate, stats.isClassicViner, t)}
               </div>
             )
           ) : (
@@ -533,7 +505,7 @@ export function ProfileHeader({
         >
           <div className="flex items-center gap-2 mb-3">
             <Repeat className="h-4 w-4 text-primary" />
-            <span className="text-sm font-medium text-primary">Classic Vine Stats</span>
+            <span className="text-sm font-medium text-primary">{t('profileHeader.classicVineStats')}</span>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="text-center">
@@ -543,17 +515,17 @@ export function ProfileHeader({
                   {formatNumber(stats.originalLoopCount)}
                 </span>
               </div>
-              <div className="text-xs sm:text-sm text-muted-foreground">Original Vine Loops</div>
+              <div className="text-xs sm:text-sm text-muted-foreground">{t('profileHeader.originalVineLoops')}</div>
             </div>
             <div className="text-center">
               <div className="text-xl sm:text-2xl font-bold text-foreground">
                 {formatNumber(stats.classicVineCount ?? stats.videosCount)}
               </div>
-              <div className="text-xs sm:text-sm text-muted-foreground">Classic Vines</div>
+              <div className="text-xs sm:text-sm text-muted-foreground">{t('profileHeader.classicVines')}</div>
             </div>
           </div>
           <p className="text-xs text-muted-foreground mt-2 text-center">
-            Stats from the original Vine platform (2013-2017)
+            {t('profileHeader.classicVineStatsCaption')}
           </p>
         </div>
       )}
@@ -572,7 +544,7 @@ export function ProfileHeader({
       <UserListDialog
         open={userListDialog === 'followers'}
         onOpenChange={(open) => !open && setUserListDialog(null)}
-        title="Followers"
+        title={t('profileHeader.followers')}
         pubkeys={followerPubkeys}
         isLoading={followersQuery.isLoading || followersQuery.isFetchingNextPage}
         hasMore={followersQuery.hasNextPage ?? false}
@@ -581,7 +553,7 @@ export function ProfileHeader({
       <UserListDialog
         open={userListDialog === 'following'}
         onOpenChange={(open) => !open && setUserListDialog(null)}
-        title="Following"
+        title={t('profileHeader.followingDialogTitle')}
         pubkeys={followingPubkeys}
         isLoading={followingQuery.isLoading}
       />

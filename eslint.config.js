@@ -8,7 +8,21 @@ import htmlParser from "@html-eslint/parser";
 import customRules from "./eslint-rules/index.js";
 
 export default tseslint.config(
-  { ignores: ["dist", "old_files", "public/proofmode-spec.html", "public/unregister-sw.html", "public/embed.html", "scripts/prerender-content/*.html"] },
+  {
+    ignores: [
+      ".claude/worktrees/**",
+      ".playwright-mcp/**",
+      ".worktrees/**",
+      "dist",
+      "old_files",
+      "playwright-report",
+      "test-results",
+      "public/proofmode-spec.html",
+      "public/unregister-sw.html",
+      "public/embed.html",
+      "scripts/prerender-content/*.html",
+    ],
+  },
   {
     extends: [js.configs.recommended, ...tseslint.configs.recommended],
     files: ["**/*.{ts,tsx}"],

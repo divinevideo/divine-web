@@ -2,6 +2,7 @@
 // ABOUTME: Shows platform icons with usernames, click to verify and view proof
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { GithubLogo as Github, ArrowSquareOut as ExternalLink, CheckCircle, Warning as AlertTriangle, CircleNotch as Loader2, LinkSimple as Link2, Shield } from '@phosphor-icons/react';
 import { Badge } from '@/components/ui/badge';
@@ -56,12 +57,25 @@ function PlatformIcon({ platform, className }: { platform: string; className?: s
           <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z" />
         </svg>
       );
+    case 'youtube':
+      return (
+        <svg className={cn} viewBox="0 0 24 24" fill="currentColor">
+          <path d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.5 12 3.5 12 3.5s-7.5 0-9.4.6A3 3 0 0 0 .5 6.2 31.7 31.7 0 0 0 0 12a31.7 31.7 0 0 0 .5 5.8 3 3 0 0 0 2.1 2.1c1.9.6 9.4.6 9.4.6s7.5 0 9.4-.6a3 3 0 0 0 2.1-2.1A31.7 31.7 0 0 0 24 12a31.7 31.7 0 0 0-.5-5.8zM9.6 15.6V8.4l6.2 3.6-6.2 3.6z" />
+        </svg>
+      );
+    case 'tiktok':
+      return (
+        <svg className={cn} viewBox="0 0 24 24" fill="currentColor">
+          <path d="M16.7 3.3c.8 2 2.4 3.3 4.5 3.6v3.1a7.7 7.7 0 0 1-4.2-1.3v7.1a6.3 6.3 0 1 1-5.4-6.2v3.2a3.2 3.2 0 1 0 2.2 3V.8h2.9v2.5z" />
+        </svg>
+      );
     default:
       return <Link2 className={cn} />;
   }
 }
 
 function IdentityBadge({ identity, pubkey }: { identity: ExternalIdentity; pubkey: string }) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
 
   const config = SUPPORTED_PLATFORMS[identity.platform];
@@ -84,12 +98,9 @@ function IdentityBadge({ identity, pubkey }: { identity: ExternalIdentity; pubke
     initialData: cachedResult ?? undefined,
   });
 
-  // Don't show badge on public profile if verification failed (prevents impersonation display)
-  // Show while loading, when verified, or when manual check is needed
+  // Only show externally-verifiable claims that are currently verified.
   const isVerified = verification.data?.verified;
-  const isManual = verification.data?.error === 'manual';
-  const isStillLoading = verification.isLoading || verification.fetchStatus === 'idle';
-  if (!isVerified && !isManual && !isStillLoading) return null;
+  if (!isVerified) return null;
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -119,12 +130,12 @@ function IdentityBadge({ identity, pubkey }: { identity: ExternalIdentity; pubke
               {verification.isLoading ? (
                 <>
                   <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
-                  <span className="text-muted-foreground">Verifying...</span>
+                  <span className="text-muted-foreground">{t('linkedAccounts.verifying')}</span>
                 </>
               ) : verification.data?.verified ? (
                 <>
                   <CheckCircle className="h-3.5 w-3.5 text-green-500" />
-                  <span className="text-green-600 dark:text-green-400">Verified</span>
+                  <span className="text-green-600 dark:text-green-400">{t('linkedAccounts.verified')}</span>
                 </>
               ) : verification.data?.error === 'manual' ? (
                 <a
@@ -134,19 +145,19 @@ function IdentityBadge({ identity, pubkey }: { identity: ExternalIdentity; pubke
                   className="flex items-center gap-1.5 text-primary hover:underline"
                 >
                   <ExternalLink className="h-3.5 w-3.5" />
-                  <span>Check proof</span>
+                  <span>{t('linkedAccounts.checkProof')}</span>
                 </a>
               ) : (
                 <>
                   <AlertTriangle className="h-3.5 w-3.5 text-yellow-500" />
                   <span className="text-yellow-600 dark:text-yellow-400">
-                    {verification.data?.error || 'Unverified'}
+                    {verification.data?.error || t('linkedAccounts.unverified')}
                   </span>
                 </>
               )}
             </div>
           ) : (
-            <Badge variant="outline" className="text-xs">No proof</Badge>
+            <Badge variant="outline" className="text-xs">{t('linkedAccounts.noProof')}</Badge>
           )}
 
           {/* Links */}
@@ -159,7 +170,7 @@ function IdentityBadge({ identity, pubkey }: { identity: ExternalIdentity; pubke
                 className="text-xs text-primary hover:underline flex items-center gap-1"
               >
                 <ExternalLink className="h-3 w-3" />
-                Profile
+                {t('linkedAccounts.profileLink')}
               </a>
             )}
             {identity.proofUrl && (
@@ -170,7 +181,7 @@ function IdentityBadge({ identity, pubkey }: { identity: ExternalIdentity; pubke
                 className="text-xs text-primary hover:underline flex items-center gap-1"
               >
                 <ExternalLink className="h-3 w-3" />
-                Proof
+                {t('linkedAccounts.proofLink')}
               </a>
             )}
           </div>
@@ -183,6 +194,7 @@ function IdentityBadge({ identity, pubkey }: { identity: ExternalIdentity; pubke
 // Note: VerificationSummary is rendered but individual badges hide themselves
 // if verification fails, so this just provides context for what's visible
 function VerificationSummary({ identities }: { identities: ExternalIdentity[] }) {
+  const { t } = useTranslation();
   const proofCount = identities.filter((id) => !!id.proof).length;
 
   if (proofCount === 0) return null;
@@ -196,15 +208,14 @@ function VerificationSummary({ identities }: { identities: ExternalIdentity[] })
           className="h-7 gap-1.5 px-2 text-muted-foreground hover:text-foreground"
         >
           <Shield className="h-3.5 w-3.5" />
-          <span className="text-xs">Linked accounts</span>
+          <span className="text-xs">{t('linkedAccounts.linkedAccountsLabel')}</span>
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-56 p-3" align="start">
         <div className="space-y-1.5">
-          <p className="font-medium text-sm">Identity verification</p>
+          <p className="font-medium text-sm">{t('linkedAccounts.identityVerificationTitle')}</p>
           <p className="text-xs text-muted-foreground">
-            Linked accounts are verified using NIP-39 identity proofs.
-            Only verified accounts are shown.
+            {t('linkedAccounts.identityVerificationDescription')}
           </p>
         </div>
       </PopoverContent>
