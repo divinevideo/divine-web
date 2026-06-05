@@ -127,14 +127,16 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
     const [currentUrlIndex, setCurrentUrlIndex] = useState(0);
     const [allUrls, setAllUrls] = useState<string[]>([]);
     const [triedHls, setTriedHls] = useState(false); // Track if we've fallen back to HLS
+    const [discoveredAgeRestricted, setDiscoveredAgeRestricted] = useState(false);
     const isChangingMuteState = useRef(false);
     const blobUrlRef = useRef<string | null>(null); // Track blob URL for cleanup to prevent memory leaks
 
     // Adult verification hook
     const { isVerified: isAdultVerified, getAuthHeader } = useAdultVerification();
+    const isKnownAgeRestricted = videoData?.ageRestricted === true || discoveredAgeRestricted;
     const { mediaUrl: authenticatedPosterUrl } = useAuthenticatedMediaUrl(poster, {
       enabled: !!poster && !requiresAuth && !authCheckPending,
-      ageRestricted: !!videoData?.ageRestricted,
+      ageRestricted: isKnownAgeRestricted,
     });
     const overlayPosterUrl = authenticatedPosterUrl ||
       (poster && !isProtectedDivineMediaUrl(poster) ? poster : undefined);
@@ -568,8 +570,29 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
       onLoadedData?.();
     };
 
-    const handleError = useCallback(() => {
+    const handleError = useCallback(async () => {
       debugError(`[VideoPlayer ${videoId}] Error loading video from URL index ${currentUrlIndex}: ${allUrls[currentUrlIndex]}`);
+
+      const failedUrl = allUrls[currentUrlIndex] || hlsUrl || src;
+      if (failedUrl && isProtectedDivineMediaUrl(failedUrl)) {
+        const { authorized, status } = await checkMediaAuth(failedUrl);
+        if (!authorized && (status === 401 || status === 403)) {
+          debugError(`[VideoPlayer ${videoId}] Media auth required after load failure (${status})`);
+
+          setHasError(false);
+          if (isAdultVerified) {
+            setDiscoveredAgeRestricted(true);
+            setIsLoading(true);
+            setAuthDeniedAfterVerification(false);
+            setAuthRetryCount(prev => prev + 1);
+            setCurrentUrlIndex(0);
+          } else {
+            setRequiresAuth(true);
+            setIsLoading(false);
+          }
+          return;
+        }
+      }
 
       // Try next fallback URL if available
       if (currentUrlIndex < allUrls.length - 1) {
@@ -589,7 +612,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
         setHasError(true);
         onError?.();
       }
-    }, [videoId, currentUrlIndex, allUrls, hlsUrl, triedHls, onError]);
+    }, [videoId, currentUrlIndex, allUrls, hlsUrl, src, triedHls, isAdultVerified, onError]);
 
     const handleEnded = () => {
       verboseLog(
@@ -777,7 +800,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
         // Add custom auth loader only when the video is age-restricted.
         // Public HLS streams must not carry an Authorization header — divine-blossom
         // rejects any malformed auth header with 401 even when the blob is public.
-        if (isAdultVerified && videoData?.ageRestricted) {
+        if (isAdultVerified && isKnownAgeRestricted) {
           verboseLog(`[VideoPlayer ${videoId}] Using NIP-98 auth loader for each HLS request`);
           hlsConfig.loader = createAuthLoader(getAuthHeader);
         }
@@ -845,7 +868,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
           // rejects any malformed auth header with 401 even when the blob is public,
           // so attaching auth optimistically locks users out of public content
           // whenever their signer produces an invalid event (e.g., JWT signer bugs).
-          if (isAdultVerified && videoData?.ageRestricted) {
+          if (isAdultVerified && isKnownAgeRestricted) {
             verboseLog(`[VideoPlayer ${videoId}] Fetching MP4 with NIP-98 auth`);
             (async () => {
               try {
@@ -929,7 +952,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
         }
       };
 
-    }, [hlsUrl, currentUrlIndex, allUrls, videoId, requiresAuth, isAdultVerified, authRetryCount, getAuthHeader, videoData?.ageRestricted]); // React to HLS URL, fallback, and auth changes
+    }, [hlsUrl, currentUrlIndex, allUrls, videoId, requiresAuth, isAdultVerified, authRetryCount, getAuthHeader, isKnownAgeRestricted]); // React to HLS URL, fallback, and auth changes
 
     // Cleanup on unmount
     useEffect(() => {

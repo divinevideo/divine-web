@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { AgeRestrictedMediaPlaceholder } from '@/components/AgeRestrictedMediaPlaceholder';
 import { useLoginDialog } from '@/contexts/LoginDialogContext';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
-import { useAdultVerification } from '@/hooks/useAdultVerification';
+import { checkMediaAuth, useAdultVerification } from '@/hooks/useAdultVerification';
 import { useAuthenticatedMediaUrl } from '@/hooks/useAuthenticatedMediaUrl';
 import { cn } from '@/lib/utils';
 import type { ParsedVideoData } from '@/types/video';
@@ -143,6 +143,7 @@ export function VideoGrid({ videos, loading = false, className, navigationContex
   const { openLoginDialog } = useLoginDialog();
   const [hoveredVideo, setHoveredVideo] = useState<string | null>(null);
   const [failedThumbnails, setFailedThumbnails] = useState<Set<string>>(new Set());
+  const [discoveredAgeRestrictedVideos, setDiscoveredAgeRestrictedVideos] = useState<Set<string>>(new Set());
   const videoRefs = useRef<Map<string, HTMLVideoElement>>(new Map());
 
   const handleVideoClick = (videoId: string, index: number) => {
@@ -164,8 +165,18 @@ export function VideoGrid({ videos, loading = false, className, navigationContex
     }
   };
 
-  const handleThumbnailError = (videoId: string) => {
-    setFailedThumbnails((prev) => new Set(prev).add(videoId));
+  const handleThumbnailError = async (video: ParsedVideoData) => {
+    const urlToCheck = video.thumbnailUrl || video.videoUrl;
+
+    if (urlToCheck) {
+      const { authorized, status } = await checkMediaAuth(urlToCheck);
+      if (!authorized && (status === 401 || status === 403)) {
+        setDiscoveredAgeRestrictedVideos((prev) => new Set(prev).add(video.id));
+        return;
+      }
+    }
+
+    setFailedThumbnails((prev) => new Set(prev).add(video.id));
   };
 
   const handleAgeGateAction = () => {
@@ -248,7 +259,9 @@ export function VideoGrid({ videos, loading = false, className, navigationContex
       {videos.map((video, index) => {
         const isHovered = hoveredVideo === video.id;
         const thumbnailFailed = failedThumbnails.has(video.id);
-        const isAgeGated = video.ageRestricted === true && (!user || !isAdultVerified);
+        const isKnownAgeRestricted = video.ageRestricted === true || discoveredAgeRestrictedVideos.has(video.id);
+        const gridVideo = isKnownAgeRestricted ? { ...video, ageRestricted: true } : video;
+        const isAgeGated = isKnownAgeRestricted && (!user || !isAdultVerified);
 
         return (
           <Card
@@ -279,9 +292,9 @@ export function VideoGrid({ videos, loading = false, className, navigationContex
                 />
               ) : (
                 <VideoGridMedia
-                  video={video}
+                  video={gridVideo}
                   thumbnailFailed={thumbnailFailed}
-                  onThumbnailError={handleThumbnailError}
+                  onThumbnailError={() => void handleThumbnailError(gridVideo)}
                   videoRefs={videoRefs}
                 />
               )}

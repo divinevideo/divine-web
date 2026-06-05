@@ -16,6 +16,7 @@ import NotFound from "./pages/NotFound";
 import HomePage from "./pages/HomePage";
 import DiscoveryPage from "./pages/DiscoveryPage";
 import TrendingPage from "./pages/TrendingPage";
+import PopularPage from "./pages/PopularPage";
 import HashtagPage from "./pages/HashtagPage";
 import CategoryPage from "./pages/CategoryPage";
 import CategoriesIndexPage from "./pages/CategoriesIndexPage";
@@ -39,6 +40,9 @@ import AuthenticityPage from "./pages/AuthenticityPage";
 import DMCAPage from "./pages/DMCAPage";
 import HumanCreatedPage from "./pages/HumanCreatedPage";
 import { SafetyPage } from "./pages/SafetyPage";
+import { FamilyPage } from "./pages/FamilyPage";
+import { AgeReviewPage } from "./pages/AgeReviewPage";
+import { KidsPolicyPage } from "./pages/KidsPolicyPage";
 import { Support } from "./pages/Support";
 import { FAQPage } from "./pages/FAQPage";
 import MerchPage from "./pages/MerchPage";
@@ -63,13 +67,60 @@ const BrandPreview = import.meta.env.DEV
   : null;
 
 export function AppRouter() {
-  const { user } = useCurrentUser();
+  const { user, isSessionLoading } = useCurrentUser();
 
   // Check if user is logged in
-  const isLoggedIn = Boolean(user);
+  const canUseProtectedRoutes = Boolean(user) || isSessionLoading;
 
   // Check if we're on a subdomain profile (username.divine.video)
   const subdomainUser = getSubdomainUser();
+
+  const appShellRoutes = (
+    <>
+      {/* Public browsing routes - accessible without login */}
+      <Route path="/discovery" element={<DiscoveryPage />} />
+      <Route path="/discovery/:tab" element={<DiscoveryPage />} />
+      <Route path="/trending" element={<TrendingPage />} />
+      <Route path="/popular" element={<PopularPage />} />
+      <Route path="/hashtags" element={<HashtagDiscoveryPage />} />
+      <Route path="/hashtag/:tag" element={<HashtagPage />} />
+      <Route path="/category" element={<CategoriesIndexPage />} />
+      <Route path="/category/:name" element={<CategoryPage />} />
+      <Route path="/t/:tag" element={<TagPage />} />
+      <Route path="/profile/:npub" element={<ProfilePage />} />
+      <Route path="/video/:id" element={<VideoPage />} />
+      <Route path="/search" element={<SearchPage />} />
+      <Route path="/leaderboard" element={<LeaderboardPage />} />
+      <Route path="/merch" element={<MerchPage />} />
+      <Route path="/u/:userId" element={<UniversalUserPage />} />
+      <Route path="/list/:pubkey/:listId" element={<ListDetailPage />} />
+      <Route path="/event/:eventId" element={<EventPage />} />
+      <Route path="/event/a/:kind/:pubkey/:identifier" element={<EventPage />} />
+      <Route path="/:nip19" element={<NIP19Page />} />
+
+      {/* Protected routes - require login */}
+      {canUseProtectedRoutes && (
+        <>
+          <Route path="/home" element={<HomePage />} />
+          <Route path="/notifications" element={<NotificationsPage />} />
+          <Route path="/messages" element={<MessagesPage />} />
+          <Route path="/messages/:conversationId" element={<ConversationPage />} />
+          <Route path="/analytics" element={<AnalyticsPage />} />
+          <Route path="/lists" element={<ListsPage />} />
+          {/* DISABLED: Upload route - not supported on web at this time
+          <Route path="/upload" element={<UploadPage />} />
+          */}
+          <Route path="/settings/moderation" element={<ModerationSettingsPage />} />
+          <Route path="/settings/linked-accounts" element={<LinkedAccountsSettingsPage />} />
+          {/* Test pages for debugging */}
+          <Route path="/debug-video" element={<DebugVideoPage />} />
+        </>
+      )}
+
+      {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+      <Route path="*" element={<NotFound />} />
+    </>
+  );
 
   return (
     <BrowserRouter>
@@ -87,6 +138,9 @@ export function AppRouter() {
         <Route path="/human-created" element={<HumanCreatedPage />} />
         <Route path="/dmca" element={<DMCAPage />} />
         <Route path="/safety" element={<SafetyPage />} />
+        <Route path="/family" element={<FamilyPage />} />
+        <Route path="/age-review" element={<AgeReviewPage />} />
+        <Route path="/kids" element={<KidsPolicyPage />} />
         <Route path="/support" element={<Support />} />
         <Route path="/faq" element={<FAQPage />} />
         <Route path="/get-embed" element={<GetEmbedPage />} />
@@ -105,56 +159,10 @@ export function AppRouter() {
           />
         )}
 
-        {/* App routes - with AppLayout */}
         <Route element={<AppLayout />}>
           {/* Home/landing route - render profile directly on subdomain */}
-          <Route path="/" element={
-            subdomainUser
-              ? <ProfilePage />
-              : <Index />
-          } />
-
-          {/* Public browsing routes - accessible without login */}
-          <Route path="/discovery" element={<DiscoveryPage />} />
-          <Route path="/discovery/:tab" element={<DiscoveryPage />} />
-          <Route path="/trending" element={<TrendingPage />} />
-          <Route path="/hashtags" element={<HashtagDiscoveryPage />} />
-          <Route path="/hashtag/:tag" element={<HashtagPage />} />
-          <Route path="/category" element={<CategoriesIndexPage />} />
-          <Route path="/category/:name" element={<CategoryPage />} />
-          <Route path="/t/:tag" element={<TagPage />} />
-          <Route path="/profile/:npub" element={<ProfilePage />} />
-          <Route path="/video/:id" element={<VideoPage />} />
-          <Route path="/search" element={<SearchPage />} />
-          <Route path="/leaderboard" element={<LeaderboardPage />} />
-          <Route path="/merch" element={<MerchPage />} />
-          <Route path="/u/:userId" element={<UniversalUserPage />} />
-          <Route path="/list/:pubkey/:listId" element={<ListDetailPage />} />
-          <Route path="/event/:eventId" element={<EventPage />} />
-          <Route path="/event/a/:kind/:pubkey/:identifier" element={<EventPage />} />
-          <Route path="/:nip19" element={<NIP19Page />} />
-
-          {/* Protected routes - require login */}
-          {isLoggedIn && (
-            <>
-              <Route path="/home" element={<HomePage />} />
-              <Route path="/notifications" element={<NotificationsPage />} />
-              <Route path="/messages" element={<MessagesPage />} />
-              <Route path="/messages/:conversationId" element={<ConversationPage />} />
-              <Route path="/analytics" element={<AnalyticsPage />} />
-              <Route path="/lists" element={<ListsPage />} />
-              {/* DISABLED: Upload route - not supported on web at this time
-              <Route path="/upload" element={<UploadPage />} />
-              */}
-              <Route path="/settings/moderation" element={<ModerationSettingsPage />} />
-              <Route path="/settings/linked-accounts" element={<LinkedAccountsSettingsPage />} />
-              {/* Test pages for debugging */}
-              <Route path="/debug-video" element={<DebugVideoPage />} />
-            </>
-          )}
-
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
+          <Route path="/" element={subdomainUser ? <ProfilePage /> : <Index />} />
+          {appShellRoutes}
         </Route>
       </Routes>
     </BrowserRouter>

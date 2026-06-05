@@ -1,14 +1,11 @@
-// ABOUTME: Renders text with nostr:npub1... references replaced by @displayName
-// ABOUTME: Plain text output (no links), safe to use inside <a> tags and titles
-
 import { useMemo } from 'react';
 import { nip19 } from 'nostr-tools';
+import { SmartLink } from '@/components/SmartLink';
 import { useAuthor } from '@/hooks/useAuthor';
 import { genUserName } from '@/lib/genUserName';
 
-// Matches both prefixed (nostr:npub1...) and bare (npub1...) forms.
-// Word boundary keeps `xxxnpub1...yyy` mid-word strings from matching.
-const NOSTR_MENTION_REGEX = /(?:nostr:)?\b(npub1[023456789acdefghjklmnpqrstuvwxyz]+)\b/g;
+const NIP19_CHARS = '023456789acdefghjklmnpqrstuvwxyz';
+const NOSTR_MENTION_REGEX = new RegExp(`(?:nostr:)?\\b(npub1[${NIP19_CHARS}]{58})(?=$|[^A-Za-z0-9_]|nostr:)`, 'g');
 
 /** Extract all npub pubkeys from a text string */
 function extractPubkeys(text: string): string[] {
@@ -31,31 +28,46 @@ function extractPubkeys(text: string): string[] {
 /** Resolves a single pubkey to a display name */
 function MentionName({ pubkey }: { pubkey: string }) {
   const author = useAuthor(pubkey);
+  const npub = nip19.npubEncode(pubkey);
   const displayName = author.data?.metadata?.name || author.data?.metadata?.display_name || genUserName(pubkey);
-  return <>@{displayName}</>;
+
+  return (
+    <SmartLink to={`/${npub}`} ownerPubkey={pubkey} className="hover:underline">
+      @{displayName}
+    </SmartLink>
+  );
 }
 
 interface InlineNostrTextProps {
   text: string;
+  textLinkTo?: string;
+  textLinkOwnerPubkey?: string | null;
+  textLinkClassName?: string;
 }
 
-/**
- * Renders text with nostr:npub1... mentions replaced by @displayName.
- * Does NOT render links — safe to use inside other clickable elements.
- */
-export function InlineNostrText({ text }: InlineNostrTextProps) {
+export function InlineNostrText({ text, textLinkTo, textLinkOwnerPubkey, textLinkClassName }: InlineNostrTextProps) {
   const pubkeys = useMemo(() => extractPubkeys(text), [text]);
 
-  // No mentions — render as plain text (no hooks called conditionally)
   if (pubkeys.length === 0) {
-    return <>{text}</>;
+    return <TextPart text={text} linkTo={textLinkTo} ownerPubkey={textLinkOwnerPubkey} className={textLinkClassName} />;
   }
 
-  return <InlineNostrTextResolved text={text} />;
+  return <InlineNostrTextResolved text={text} textLinkTo={textLinkTo} textLinkOwnerPubkey={textLinkOwnerPubkey} textLinkClassName={textLinkClassName} />;
 }
 
-/** Inner component that renders text with resolved mentions */
-function InlineNostrTextResolved({ text }: { text: string }) {
+function TextPart({ text, linkTo, ownerPubkey, className }: { text: string; linkTo?: string; ownerPubkey?: string | null; className?: string }) {
+  if (!linkTo || text.trim() === '') {
+    return <span>{text}</span>;
+  }
+
+  return (
+    <SmartLink to={linkTo} ownerPubkey={ownerPubkey} className={className}>
+      {text}
+    </SmartLink>
+  );
+}
+
+function InlineNostrTextResolved({ text, textLinkTo, textLinkOwnerPubkey, textLinkClassName }: InlineNostrTextProps) {
   const parts = useMemo(() => {
     const result: { type: 'text' | 'mention'; value: string }[] = [];
     let lastIndex = 0;
@@ -92,7 +104,7 @@ function InlineNostrTextResolved({ text }: { text: string }) {
         part.type === 'mention' ? (
           <MentionName key={i} pubkey={part.value} />
         ) : (
-          <span key={i}>{part.value}</span>
+          <TextPart key={i} text={part.value} linkTo={textLinkTo} ownerPubkey={textLinkOwnerPubkey} className={textLinkClassName} />
         )
       )}
     </>
