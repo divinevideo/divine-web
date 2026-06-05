@@ -46,7 +46,6 @@ export function useHydratedNotifications(
   const flatRaw: RawNotification[] = useMemo(
     () =>
       (notificationsQuery.data?.pages ?? []).flatMap((page) => page.notifications),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [notificationsQuery.data?.pages],
   );
 
