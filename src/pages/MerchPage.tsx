@@ -135,7 +135,7 @@ export default function MerchPage() {
 
       <div className="mt-14 flex flex-col items-center gap-4 rounded-[22px] border-2 border-brand-green/40 bg-brand-cream/10 p-6 text-center">
         <StoreCta />
-        <p className="text-sm font-medium text-brand-cream">{TRUST}</p>
+        <p className="text-sm font-medium text-brand-cream">{t('merchPage.trust')}</p>
       </div>
     </div>
   );

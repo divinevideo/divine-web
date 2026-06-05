@@ -203,9 +203,12 @@ export function clearJwtCookie(): void {
  */
 export function hydrateLoginFromCookie(): void {
   const STORAGE_KEY = 'nostr:login';
-  const log = (...args: unknown[]) => {
-    if (import.meta.env.DEV) console.info('[crossSubdomainAuth]', ...args);
-  };
+  // hydrateLoginFromCookie runs once per page load, so this is low-volume
+  // (a handful of info lines per load, not per render). It stays on in
+  // production deliberately: the failure modes it diagnoses (Brave, Firefox
+  // ETP-Strict, Safari ITP dropping cross-subdomain cookies) only reproduce in
+  // real browsers, so prod is exactly where the diagnostics need to be visible.
+  const log = (...args: unknown[]) => console.info('[crossSubdomainAuth]', ...args);
 
   // --- JWT session hydration ---
   // JWT keys used by useDivineSession (must match those constants)
