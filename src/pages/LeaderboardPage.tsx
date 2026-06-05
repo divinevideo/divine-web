@@ -5,13 +5,14 @@ import { useState, useMemo, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useSeoMeta } from '@unhead/react';
+import { useTranslation } from 'react-i18next';
 import { Trophy, VideoCamera as Video, User, Clock, Calendar, CalendarDots as CalendarDays, CalendarBlank as CalendarRange, Infinity as InfinityIcon } from '@phosphor-icons/react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
-import { nip19 } from 'nostr-tools';
 import { getFunnelcakeBaseUrl } from '@/config/api';
+import { buildProfileLinkPath } from '@/lib/profileLinks';
 
 type TimePeriod = 'alltime' | 'day' | 'week' | 'month' | 'year';
 type LeaderboardType = 'videos' | 'creators';
@@ -48,6 +49,7 @@ interface CreatorLeaderboardItem {
   name?: string;
   display_name?: string;
   picture?: string;
+  nip05?: string;
   views: number;
   unique_viewers: number;
   loops: number;
@@ -69,13 +71,13 @@ function formatLoops(loops: number): string {
   return rounded.toLocaleString();
 }
 
-function getTimePeriodLabel(period: TimePeriod): string {
+function getTimePeriodLabel(period: TimePeriod, t: (key: string) => string): string {
   switch (period) {
-    case 'alltime': return 'All Time';
-    case 'day': return 'Today';
-    case 'week': return 'This Week';
-    case 'month': return 'This Month';
-    case 'year': return 'This Year';
+    case 'alltime': return t('leaderboardPage.allTime');
+    case 'day': return t('leaderboardPage.today');
+    case 'week': return t('leaderboardPage.thisWeek');
+    case 'month': return t('leaderboardPage.thisMonth');
+    case 'year': return t('leaderboardPage.thisYear');
   }
 }
 
@@ -98,8 +100,8 @@ function getHeadlineCount(entry: { views?: number; loops?: number }, period: Tim
   return entry.loops || 0;
 }
 
-function getHeadlineLabel(period: TimePeriod): string {
-  return period === 'alltime' ? 'plays' : 'loops';
+function getHeadlineLabel(period: TimePeriod, t: (key: string) => string): string {
+  return period === 'alltime' ? t('leaderboardPage.plays') : t('leaderboardPage.loops');
 }
 
 function VideoLeaderboardSkeleton() {
@@ -155,6 +157,7 @@ function RankBadge({ rank }: { rank: number }) {
 }
 
 function VideoLeaderboard({ period }: { period: TimePeriod }) {
+  const { t } = useTranslation();
   const { data: videos, isLoading, error } = useQuery({
     queryKey: ['leaderboard-videos', period],
     queryFn: async ({ signal }) => {
@@ -171,7 +174,7 @@ function VideoLeaderboard({ period }: { period: TimePeriod }) {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || 'Failed to fetch leaderboard');
+        throw new Error(errorData.error || t('leaderboardPage.errorFetchVideos'));
       }
 
       const data = await response.json();
@@ -231,7 +234,7 @@ function VideoLeaderboard({ period }: { period: TimePeriod }) {
   if (error) {
     return (
       <div className="text-center py-8 text-muted-foreground">
-        <p>Failed to load leaderboard</p>
+        <p>{t('leaderboardPage.errorLoadVideos')}</p>
         <p className="text-sm mt-2">{error.message}</p>
       </div>
     );
@@ -240,7 +243,7 @@ function VideoLeaderboard({ period }: { period: TimePeriod }) {
   if (!videos?.length) {
     return (
       <div className="text-center py-8 text-muted-foreground">
-        Nothing on the leaderboard yet. Zoom out or check back soon.
+        {t('leaderboardPage.emptyVideos')}
       </div>
     );
   }
@@ -248,12 +251,10 @@ function VideoLeaderboard({ period }: { period: TimePeriod }) {
   return (
     <div className="space-y-2">
       {videos.map((video, index) => {
-        let npub: string;
-        try {
-          npub = nip19.npubEncode(video.pubkey);
-        } catch {
-          npub = video.pubkey;
-        }
+        const authorProfilePath = buildProfileLinkPath({
+          pubkey: video.pubkey,
+          fallbackRoute: 'profile',
+        });
 
         return (
           <Link
@@ -273,20 +274,20 @@ function VideoLeaderboard({ period }: { period: TimePeriod }) {
 
             <div className="flex-1 min-w-0">
               <p className="font-medium truncate">
-                {video.title || 'Untitled'}
+                {video.title || t('leaderboardPage.untitled')}
               </p>
               <Link
-                to={`/profile/${npub}`}
+                to={authorProfilePath}
                 className="text-sm text-muted-foreground hover:text-foreground"
                 onClick={(e) => e.stopPropagation()}
               >
-                {video.author_name || 'Unknown'}
+                {video.author_name || t('leaderboardPage.unknown')}
               </Link>
             </div>
 
             <div className="text-right">
               <p className="font-bold text-lg">{formatLoops(getHeadlineCount(video, period))}</p>
-              <p className="text-xs text-muted-foreground">{getHeadlineLabel(period)}</p>
+              <p className="text-xs text-muted-foreground">{getHeadlineLabel(period, t)}</p>
             </div>
           </Link>
         );
@@ -296,6 +297,7 @@ function VideoLeaderboard({ period }: { period: TimePeriod }) {
 }
 
 function CreatorLeaderboard({ period }: { period: TimePeriod }) {
+  const { t } = useTranslation();
   const { data: creators, isLoading, error } = useQuery({
     queryKey: ['leaderboard-creators', period],
     queryFn: async ({ signal }) => {
@@ -312,7 +314,7 @@ function CreatorLeaderboard({ period }: { period: TimePeriod }) {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || 'Failed to fetch creator leaderboard');
+        throw new Error(errorData.error || t('leaderboardPage.errorFetchCreators'));
       }
 
       const data = await response.json();
@@ -332,7 +334,7 @@ function CreatorLeaderboard({ period }: { period: TimePeriod }) {
   if (error) {
     return (
       <div className="text-center py-8 text-muted-foreground">
-        <p>Failed to load creator leaderboard</p>
+        <p>{t('leaderboardPage.errorLoadCreators')}</p>
         <p className="text-sm mt-2">{error.message}</p>
       </div>
     );
@@ -341,7 +343,7 @@ function CreatorLeaderboard({ period }: { period: TimePeriod }) {
   if (!creators?.length) {
     return (
       <div className="text-center py-8 text-muted-foreground">
-        No creators here yet. The leaderboard is wide open.
+        {t('leaderboardPage.emptyCreators')}
       </div>
     );
   }
@@ -349,17 +351,16 @@ function CreatorLeaderboard({ period }: { period: TimePeriod }) {
   return (
     <div className="space-y-2">
       {creators.map((creator, index) => {
-        let npub: string;
-        try {
-          npub = nip19.npubEncode(creator.pubkey);
-        } catch {
-          npub = creator.pubkey;
-        }
+        const creatorProfilePath = buildProfileLinkPath({
+          pubkey: creator.pubkey,
+          nip05: creator.nip05,
+          fallbackRoute: 'profile',
+        });
 
         return (
           <Link
             key={creator.pubkey}
-            to={`/profile/${npub}`}
+            to={creatorProfilePath}
             className="flex items-center gap-4 p-3 rounded-lg hover:bg-brand-light-green dark:bg-brand-dark-green transition-colors"
           >
             <RankBadge rank={index + 1} />
@@ -373,16 +374,16 @@ function CreatorLeaderboard({ period }: { period: TimePeriod }) {
 
             <div className="flex-1 min-w-0">
               <p className="font-medium truncate">
-                {creator.display_name || creator.name || 'Unknown'}
+                {creator.display_name || creator.name || t('leaderboardPage.unknown')}
               </p>
               <p className="text-sm text-muted-foreground">
-                {creator.videos_with_views} videos
+                {t('leaderboardPage.videosCount', { count: creator.videos_with_views })}
               </p>
             </div>
 
             <div className="text-right">
               <p className="font-bold text-lg">{formatLoops(getHeadlineCount(creator, period))}</p>
-              <p className="text-xs text-muted-foreground">total {getHeadlineLabel(period)}</p>
+              <p className="text-xs text-muted-foreground">{t('leaderboardPage.totalLabel', { label: getHeadlineLabel(period, t) })}</p>
             </div>
           </Link>
         );
@@ -392,6 +393,7 @@ function CreatorLeaderboard({ period }: { period: TimePeriod }) {
 }
 
 export function LeaderboardPage() {
+  const { t } = useTranslation();
   const [leaderboardType, setLeaderboardType] = useState<LeaderboardType>(() => {
     if (typeof window === 'undefined') return 'videos';
     return parseLeaderboardHash(window.location.hash).type ?? 'videos';
@@ -422,10 +424,10 @@ export function LeaderboardPage() {
   }, []);
 
   useSeoMeta({
-    title: 'Leaderboard - Divine',
-    description: 'Top videos and creators by loops on Divine',
-    ogTitle: 'Leaderboard - Divine',
-    ogDescription: 'See the most popular videos and creators',
+    title: t('leaderboardPage.seoTitle'),
+    description: t('leaderboardPage.seoDescription'),
+    ogTitle: t('leaderboardPage.seoTitle'),
+    ogDescription: t('leaderboardPage.seoOgDescription'),
   });
 
   const TimePeriodIcon = useMemo(() => getTimePeriodIcon(timePeriod), [timePeriod]);
@@ -437,8 +439,8 @@ export function LeaderboardPage() {
         <div className="flex items-center gap-3">
           <Trophy className="h-8 w-8 text-yellow-500" />
           <div>
-            <h1 className="text-2xl font-bold">Leaderboard</h1>
-            <p className="text-muted-foreground">Top videos and creators by loops</p>
+            <h1 className="text-2xl font-bold">{t('leaderboardPage.heading')}</h1>
+            <p className="text-muted-foreground">{t('leaderboardPage.subheading')}</p>
           </div>
         </div>
 
@@ -447,11 +449,11 @@ export function LeaderboardPage() {
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="videos" className="gap-2">
               <Video className="h-4 w-4" />
-              Top Videos
+              {t('leaderboardPage.topVideos')}
             </TabsTrigger>
             <TabsTrigger value="creators" className="gap-2">
               <User className="h-4 w-4" />
-              Top Creators
+              {t('leaderboardPage.topCreators')}
             </TabsTrigger>
           </TabsList>
 
@@ -460,7 +462,7 @@ export function LeaderboardPage() {
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium flex items-center gap-2">
                 <TimePeriodIcon className="h-4 w-4" />
-                {getTimePeriodLabel(timePeriod)}
+                {getTimePeriodLabel(timePeriod, t)}
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-0">
@@ -481,7 +483,7 @@ export function LeaderboardPage() {
                       `}
                     >
                       <Icon className="h-3.5 w-3.5" />
-                      {getTimePeriodLabel(period)}
+                      {getTimePeriodLabel(period, t)}
                     </button>
                   );
                 })}

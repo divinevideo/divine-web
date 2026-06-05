@@ -5,11 +5,102 @@ import { useNostr } from '@nostrify/react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useNostrPublish } from '@/hooks/useNostrPublish';
-import type { NostrFilter } from '@nostrify/nostrify';
+import type { NostrEvent, NostrFilter } from '@nostrify/nostrify';
 import { SHORT_VIDEO_KIND } from '@/types/video';
 import { parseVideoListFromEvent, type PlayOrder, type VideoList } from '@/lib/parseVideoListFromEvent';
+import { resolveListPermissions } from '@/lib/listPermissions';
 
 export type { PlayOrder, VideoList };
+
+function buildListTags(
+  list: Pick<VideoList, 'id' | 'name' | 'description' | 'image' | 'tags' | 'isCollaborative' | 'allowedCollaborators' | 'thumbnailEventId' | 'playOrder'>,
+  videoCoordinates: string[],
+): string[][] {
+  const tags: string[][] = [
+    ['d', list.id],
+    ['title', list.name],
+  ];
+
+  if (list.description) {
+    tags.push(['description', list.description]);
+  }
+
+  if (list.image) {
+    tags.push(['image', list.image]);
+  }
+
+  if (list.tags && list.tags.length > 0) {
+    list.tags.forEach((tag) => {
+      tags.push(['t', tag]);
+    });
+  }
+
+  if (list.isCollaborative) {
+    tags.push(['collaborative', 'true']);
+    if (list.allowedCollaborators && list.allowedCollaborators.length > 0) {
+      list.allowedCollaborators.forEach((pubkey) => {
+        tags.push(['collaborator', pubkey]);
+      });
+    }
+  }
+
+  if (list.thumbnailEventId) {
+    tags.push(['thumbnail-event', list.thumbnailEventId]);
+  }
+
+  if (list.playOrder && list.playOrder !== 'chronological') {
+    tags.push(['play-order', list.playOrder]);
+  }
+
+  videoCoordinates.forEach((coord) => {
+    tags.push(['a', coord]);
+  });
+
+  return tags;
+}
+
+async function fetchListByOwner(
+  nostr: { query: (filters: NostrFilter[], options: { signal: AbortSignal }) => Promise<NostrEvent[]> },
+  ownerPubkey: string,
+  listId: string,
+  signal: AbortSignal,
+): Promise<VideoList> {
+  const ownerEvents = await nostr.query([{
+    kinds: [30005],
+    authors: [ownerPubkey],
+    '#d': [listId],
+    limit: 1,
+  }], { signal });
+
+  if (ownerEvents.length === 0) {
+    throw new Error('List not found');
+  }
+
+  const ownerList = parseVideoListFromEvent(ownerEvents[0]);
+  if (!ownerList) {
+    throw new Error('Invalid list format');
+  }
+
+  if (!ownerList.isCollaborative || !ownerList.allowedCollaborators || ownerList.allowedCollaborators.length === 0) {
+    return ownerList;
+  }
+
+  const participantPubkeys = Array.from(new Set([ownerPubkey, ...ownerList.allowedCollaborators]));
+  const participantEvents = await nostr.query([{
+    kinds: [30005],
+    authors: participantPubkeys,
+    '#d': [listId],
+    limit: 50,
+  }], { signal });
+
+  const participantSet = new Set(participantPubkeys);
+  const latestList = participantEvents
+    .map(parseVideoListFromEvent)
+    .filter((list): list is VideoList => list !== null && participantSet.has(list.pubkey))
+    .sort((a, b) => b.createdAt - a.createdAt)[0];
+
+  return latestList || ownerList;
+}
 
 /**
  * Hook to fetch video lists
@@ -219,62 +310,39 @@ export function useCreateVideoList() {
  */
 export function useAddVideoToList() {
   const { nostr } = useNostr();
-  const { mutate: publishEvent } = useNostrPublish();
+  const { mutateAsync: publishEvent } = useNostrPublish();
   const queryClient = useQueryClient();
   const { user } = useCurrentUser();
 
   return useMutation({
     mutationFn: async ({
       listId,
+      ownerPubkey,
       videoCoordinate
     }: {
       listId: string;
+      ownerPubkey: string;
       videoCoordinate: string;
     }) => {
       if (!user) throw new Error('Must be logged in to modify lists');
 
-      // Fetch current list
       const signal = AbortSignal.timeout(5000);
-      const events = await nostr.query([{
-        kinds: [30005],
-        authors: [user.pubkey],
-        '#d': [listId],
-        limit: 1
-      }], { signal });
-
-      if (events.length === 0) {
-        throw new Error('List not found');
+      const currentList = await fetchListByOwner(nostr, ownerPubkey, listId, signal);
+      const permissions = resolveListPermissions({
+        ownerPubkey,
+        isCollaborative: currentList.isCollaborative,
+        allowedCollaborators: currentList.allowedCollaborators,
+      }, user.pubkey);
+      if (!permissions.canEditContent) {
+        throw new Error('You do not have permission to edit this list');
       }
-
-      const currentList = parseVideoListFromEvent(events[0]);
-      if (!currentList) throw new Error('Invalid list format');
 
       // Check if video already in list
       if (currentList.videoCoordinates.includes(videoCoordinate)) {
         return; // Already in list
       }
 
-      // Rebuild tags with new video
-      const tags: string[][] = [
-        ['d', listId],
-        ['title', currentList.name]
-      ];
-
-      if (currentList.description) {
-        tags.push(['description', currentList.description]);
-      }
-
-      if (currentList.image) {
-        tags.push(['image', currentList.image]);
-      }
-
-      // Add all existing videos
-      currentList.videoCoordinates.forEach(coord => {
-        tags.push(['a', coord]);
-      });
-
-      // Add new video
-      tags.push(['a', videoCoordinate]);
+      const tags = buildListTags(currentList, [...currentList.videoCoordinates, videoCoordinate]);
 
       await publishEvent({
         kind: 30005,
@@ -282,9 +350,11 @@ export function useAddVideoToList() {
         tags
       });
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['video-lists'] });
       queryClient.invalidateQueries({ queryKey: ['videos-in-lists'] });
+      queryClient.invalidateQueries({ queryKey: ['list-videos'] });
+      queryClient.invalidateQueries({ queryKey: ['list-detail', variables.ownerPubkey, variables.listId] });
     }
   });
 }
@@ -294,86 +364,39 @@ export function useAddVideoToList() {
  */
 export function useRemoveVideoFromList() {
   const { nostr } = useNostr();
-  const { mutate: publishEvent } = useNostrPublish();
+  const { mutateAsync: publishEvent } = useNostrPublish();
   const queryClient = useQueryClient();
   const { user } = useCurrentUser();
 
   return useMutation({
     mutationFn: async ({
       listId,
+      ownerPubkey,
       videoCoordinate
     }: {
       listId: string;
+      ownerPubkey: string;
       videoCoordinate: string;
     }) => {
       if (!user) throw new Error('Must be logged in to modify lists');
 
-      // Fetch current list
       const signal = AbortSignal.timeout(5000);
-      const events = await nostr.query([{
-        kinds: [30005],
-        authors: [user.pubkey],
-        '#d': [listId],
-        limit: 1
-      }], { signal });
-
-      if (events.length === 0) {
-        throw new Error('List not found');
+      const currentList = await fetchListByOwner(nostr, ownerPubkey, listId, signal);
+      const permissions = resolveListPermissions({
+        ownerPubkey,
+        isCollaborative: currentList.isCollaborative,
+        allowedCollaborators: currentList.allowedCollaborators,
+      }, user.pubkey);
+      if (!permissions.canEditContent) {
+        throw new Error('You do not have permission to edit this list');
       }
-
-      const currentList = parseVideoListFromEvent(events[0]);
-      if (!currentList) throw new Error('Invalid list format');
 
       // Filter out the video to remove
       const updatedCoordinates = currentList.videoCoordinates.filter(
         coord => coord !== videoCoordinate
       );
 
-      // Rebuild tags without the removed video
-      const tags: string[][] = [
-        ['d', listId],
-        ['title', currentList.name]
-      ];
-
-      if (currentList.description) {
-        tags.push(['description', currentList.description]);
-      }
-
-      if (currentList.image) {
-        tags.push(['image', currentList.image]);
-      }
-
-      // Add categorization tags
-      if (currentList.tags && currentList.tags.length > 0) {
-        currentList.tags.forEach(tag => {
-          tags.push(['t', tag]);
-        });
-      }
-
-      // Add collaborative settings
-      if (currentList.isCollaborative) {
-        tags.push(['collaborative', 'true']);
-        if (currentList.allowedCollaborators && currentList.allowedCollaborators.length > 0) {
-          currentList.allowedCollaborators.forEach(pubkey => {
-            tags.push(['collaborator', pubkey]);
-          });
-        }
-      }
-
-      // Add featured thumbnail
-      if (currentList.thumbnailEventId) {
-        tags.push(['thumbnail-event', currentList.thumbnailEventId]);
-      }
-
-      // Add play order
-      if (currentList.playOrder && currentList.playOrder !== 'chronological') {
-        tags.push(['play-order', currentList.playOrder]);
-      }
-
-      // Add remaining videos
-      updatedCoordinates.forEach(coord => {
-        tags.push(['a', coord]);
-      });
+      const tags = buildListTags(currentList, updatedCoordinates);
 
       await publishEvent({
         kind: 30005,
@@ -381,10 +404,11 @@ export function useRemoveVideoFromList() {
         tags
       });
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['video-lists'] });
       queryClient.invalidateQueries({ queryKey: ['videos-in-lists'] });
       queryClient.invalidateQueries({ queryKey: ['list-videos'] });
+      queryClient.invalidateQueries({ queryKey: ['list-detail', variables.ownerPubkey, variables.listId] });
     }
   });
 }
@@ -438,8 +462,11 @@ export function useDeleteVideoList() {
   const { user } = useCurrentUser();
 
   return useMutation({
-    mutationFn: async ({ listId }: { listId: string }) => {
+    mutationFn: async ({ listId, ownerPubkey }: { listId: string; ownerPubkey: string }) => {
       if (!user) throw new Error('Must be logged in to delete lists');
+      if (user.pubkey !== ownerPubkey) {
+        throw new Error('Only the list owner can delete this list');
+      }
 
       // Publish a kind 5 deletion event targeting the list
       // The 'a' tag references the addressable event to delete
@@ -447,21 +474,22 @@ export function useDeleteVideoList() {
         kind: 5, // NIP-09 deletion event
         content: 'List deleted by owner',
         tags: [
-          ['a', `30005:${user.pubkey}:${listId}`],
+          ['a', `30005:${ownerPubkey}:${listId}`],
         ]
       });
 
-      return { listId };
+      return { listId, ownerPubkey };
     },
-    onSuccess: ({ listId }) => {
+    onSuccess: ({ listId, ownerPubkey }) => {
       // Remove from cache immediately
-      if (user) {
+      if (user && user.pubkey === ownerPubkey) {
         queryClient.setQueryData<VideoList[]>(
-          ['video-lists', user.pubkey],
+          ['video-lists', ownerPubkey],
           (oldLists) => oldLists?.filter(l => l.id !== listId) || []
         );
       }
       queryClient.invalidateQueries({ queryKey: ['video-lists'] });
+      queryClient.invalidateQueries({ queryKey: ['list-detail', ownerPubkey, listId] });
       queryClient.invalidateQueries({ queryKey: ['trending-video-lists'] });
       queryClient.invalidateQueries({ queryKey: ['followed-users-lists'] });
     }

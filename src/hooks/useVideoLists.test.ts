@@ -317,6 +317,7 @@ describe('useVideoLists hooks', () => {
       mockPublishAsync.mockClear();
       await result.current.mutateAsync({
         listId: 'my-list',
+        ownerPubkey: TEST_PUBKEY,
         videoCoordinate: coord,
       });
 
@@ -331,6 +332,7 @@ describe('useVideoLists hooks', () => {
       await expect(
         result.current.mutateAsync({
           listId: 'missing',
+          ownerPubkey: TEST_PUBKEY,
           videoCoordinate: `${SHORT_VIDEO_KIND}:${TEST_PUBKEY}:x`,
         })
       ).rejects.toThrow('List not found');
@@ -346,6 +348,7 @@ describe('useVideoLists hooks', () => {
       await expect(
         result.current.mutateAsync({
           listId: 'irrelevant',
+          ownerPubkey: TEST_PUBKEY,
           videoCoordinate: `${SHORT_VIDEO_KIND}:${TEST_PUBKEY}:x`,
         })
       ).rejects.toThrow('Invalid list format');
@@ -371,6 +374,7 @@ describe('useVideoLists hooks', () => {
       mockPublishAsync.mockClear();
       await result.current.mutateAsync({
         listId: 'my-list',
+        ownerPubkey: TEST_PUBKEY,
         videoCoordinate: incoming,
       });
 
@@ -395,6 +399,7 @@ describe('useVideoLists hooks', () => {
       await expect(
         result.current.mutateAsync({
           listId: 'x',
+          ownerPubkey: TEST_PUBKEY,
           videoCoordinate: `${SHORT_VIDEO_KIND}:${TEST_PUBKEY}:v`,
         })
       ).rejects.toThrow('List not found');
@@ -408,6 +413,7 @@ describe('useVideoLists hooks', () => {
       await expect(
         result.current.mutateAsync({
           listId: 'any',
+          ownerPubkey: TEST_PUBKEY,
           videoCoordinate: `${SHORT_VIDEO_KIND}:${TEST_PUBKEY}:v`,
         })
       ).rejects.toThrow('Invalid list format');
@@ -438,6 +444,7 @@ describe('useVideoLists hooks', () => {
       mockPublishAsync.mockClear();
       await result.current.mutateAsync({
         listId: 'my-list',
+        ownerPubkey: TEST_PUBKEY,
         videoCoordinate: coord1,
       });
 
@@ -462,7 +469,7 @@ describe('useVideoLists hooks', () => {
       const { useDeleteVideoList } = await import('./useVideoLists');
       const { result } = renderHook(() => useDeleteVideoList(), { wrapper: createWrapper() });
 
-      await result.current.mutateAsync({ listId: 'to-delete' });
+      await result.current.mutateAsync({ listId: 'to-delete', ownerPubkey: TEST_PUBKEY });
 
       expect(mockPublishAsync).toHaveBeenCalledWith({
         kind: 5,
@@ -504,7 +511,7 @@ describe('useVideoLists hooks', () => {
       const { result } = renderHook(() => useDeleteVideoList(), { wrapper });
 
       mockPublishAsync.mockClear();
-      await result.current.mutateAsync({ listId: 'del-me' });
+      await result.current.mutateAsync({ listId: 'del-me', ownerPubkey: TEST_PUBKEY });
 
       const data = queryClient.getQueryData<VideoList[]>(['video-lists', TEST_PUBKEY]);
       expect(data?.map((l) => l.id)).toEqual(['keep']);

@@ -1,0 +1,12 @@
+{
+  "title": "FAQ",
+  "subtitle": "Lahat ng kailangan mong alamin tungkol sa Divine",
+  "sections": {
+    "gettingStarted": "Para Mag-umpisa",
+    "accounts": "Accounts at Authentication",
+    "posting": "Pag-post at Content",
+    "privacySafety": "Privacy at Safety",
+    "features": "Features at Interactions",
+    "technical": "Technical na Tanong"
+  }
+}

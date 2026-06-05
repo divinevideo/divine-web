@@ -1,52 +1,32 @@
 # Repository Guidelines
 
-## Project Structure & Module Organization
-- Source: `src/` with `components/`, `pages/` (e.g., `HomePage.tsx`), `hooks/`, `lib/`, `contexts/`, `types/`, and test utilities under `src/test/`.
-- Entry points: `index.html`, `src/main.tsx`, `src/App.tsx`, `src/AppRouter.tsx`.
-- Assets: `public/` (e.g., `manifest.webmanifest`, redirects). Build output: `dist/`.
-- Config: `vite.config.ts`, `tailwind.config.ts`, `eslint.config.js`, `tsconfig*.json`, custom rules in `eslint-rules/`.
-- Aliases: import app code via `@/…` (configured in `tsconfig` and Vite).
+## AI Acknowledgment
 
-## Build, Test, and Development Commands
-- `npm run dev`: Install deps and start Vite on `http://localhost:8080`.
-- `npm run build`: Install deps, build, and copy `index.html` to `404.html`.
-- `npm run test`: Type-check, lint (TS + HTML), run unit tests (Vitest/jsdom), then build.
-- Deploy: `npm run deploy` (nostr-deploy-cli), `npm run deploy:cloudflare`, `npm run deploy:preview`.
-- Example: `vitest run` executes tests in CI mode.
+Check for `.ai-ack` in the repository root (next to `.git`) before any other
+work. If the file is missing, read `HUMAN_VS_MACHINE.md` and follow its
+instructions before proceeding.
 
-## Worktree Workflow
-- Always start new work from a fresh git worktree based on `main`.
-- Before making changes, update `main`, then create a dedicated branch and worktree for the task.
-- Example: `git fetch origin && git checkout main && git pull --ff-only && git worktree add ../divine-web-<task> -b <task> main`.
-- Do not begin implementation in an existing feature branch worktree unless the user explicitly asks for that branch.
+## Read First
 
-## Coding Style & Naming Conventions
-- Language: TypeScript + React 18. Components in `.tsx`; utilities in `.ts`.
-- Naming: Components `PascalCase`, hooks `useX`, pages `*Page.tsx`, tests `*.test.ts(x)` colocated with code.
-- Styling: TailwindCSS; prefer utility classes and `tailwind-merge` to resolve conflicts.
-- Linting: ESLint (TypeScript, React Hooks, HTML) + custom rules in `eslint-rules/`.
-  - No inline `eslint-disable`. Avoid placeholder comments and inline `<script>` in HTML.
+- `CONTRIBUTING.md`: PR rules, testing expectations, scope discipline.
+- `ARCHITECTURE.md`: project structure, naming conventions, module organization.
+  When changing files referenced there, update it in the same commit.
+- `HUMAN_VS_MACHINE.md`: human/machine collaboration protocol.
+- `.agents/SKILLS.md`: on-demand skill modules for specific work areas.
 
-## Testing Guidelines
-- Frameworks: Vitest + `@testing-library/react` with `jsdom`.
-- Global setup: `src/test/setup.ts`.
-- Place tests next to code (`*.test.ts` / `*.test.tsx`). Favor user-facing assertions.
-- Run: `npm run test` or `vitest run`. Keep tests deterministic; mock browser APIs as needed.
+## Quick Commands
 
-## Commit & Pull Request Guidelines
-- Commits: imperative, present tense (e.g., "Add profile page"); keep focused; reference issue IDs when applicable.
-- PRs: include summary, motivation, screenshots for UI changes, and tests for new logic.
-- CI hygiene: ensure `npm run test` passes locally before opening/merging PRs.
-- PR titles must use Conventional Commit format: `type(scope): summary` or `type: summary`.
-- Set the correct PR title when opening the PR instead of relying on title edits afterward.
-- If a PR title must be fixed after opening, verify that the semantic PR title check reruns successfully.
-- Keep PRs tightly scoped to the task. Do not include unrelated formatting churn, lockfile noise, drive-by refactors, or incidental cleanup.
-- Do not mention corporate partners, customers, brands, campaign names, or other sensitive external identities in public issue titles, PR titles, branch names, screenshots, or descriptions unless a maintainer explicitly approves it. Use generic descriptors instead, such as "partner subdomain", "brand account", or "external partner".
-- Temporary or transitional code must include `TODO(#issue):` with a tracking issue for later removal.
-- UI changes should include screenshots or video in the PR, or explicitly state that there is no visual change.
-- PR descriptions should include a concise summary, motivation, linked issue, and manual test plan.
-- Do not continue speculative feature implementation after exploratory UI work if maintainer alignment on scope or UX is still missing.
+- `npm run dev`: install deps, start Vite on `http://localhost:8080`.
+- `npm run test`: type-check, lint (TS + HTML), run unit tests (Vitest/jsdom),
+  build.
+- `npm run build`: install deps, build, copy `index.html` to `404.html`.
+- `vitest run`: execute tests in CI mode.
+- `npx eslint src/`: lint TypeScript and HTML.
+- Deploy: `npm run deploy` (nostr-deploy-cli), `npm run deploy:cloudflare`,
+  `npm run deploy:preview`.
 
-## Security & Deployment Notes
-- Do not commit secrets. Configure deploy targets via `wrangler.toml` and environment variables.
-- Verify `public/manifest.webmanifest` and required HTML meta (HTML ESLint rules) before deploy.
+## Security
+
+Do not commit secrets. Configure deploy targets via `wrangler.toml` and
+environment variables. Verify `public/manifest.webmanifest` and required HTML
+meta tags (enforced by HTML ESLint rules) before deploy.

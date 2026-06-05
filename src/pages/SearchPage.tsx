@@ -1,18 +1,17 @@
 // ABOUTME: Comprehensive search page with debounced input, filter tabs, infinite scroll, and sort modes
 // ABOUTME: Supports searching videos, users, hashtags with NIP-50 full-text search
 
-import { useState, useEffect, useRef, useMemo, type ClipboardEvent } from 'react';
+import { useState, useEffect, useRef, useMemo, type ClipboardEvent, type KeyboardEvent } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';
 import { useNostr } from '@nostrify/react';
 import { useSubdomainNavigate } from '@/hooks/useSubdomainNavigate';
-import { nip19 } from 'nostr-tools';
 import { useSeoMeta } from '@unhead/react';
 import { MagnifyingGlass as Search, Hash, Play, Users, VideoCamera as Video, CircleNotch as Loader2 } from '@phosphor-icons/react';
 import { trackSearch } from '@/lib/analytics';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
@@ -45,10 +44,18 @@ import {
   buildCompilationPlaybackUrl,
   parseCompilationPlaybackParams,
 } from '@/lib/compilationPlayback';
+import { buildProfileLinkPath } from '@/lib/profileLinks';
 
 type SearchFilter = 'all' | 'videos' | 'users' | 'hashtags';
 
+function getValidSearchSortMode(sortParam: string | null): SortMode | 'relevance' {
+  return SORT_MODES.some(mode => mode.value === sortParam)
+    ? (sortParam as SortMode | 'relevance')
+    : 'hot';
+}
+
 export function SearchPage() {
+  const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
   const compilationRequest = useMemo(
     () => parseCompilationPlaybackParams(searchParams),
@@ -58,8 +65,8 @@ export function SearchPage() {
   const navigate = useSubdomainNavigate();
   const { config } = useAppContext();
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
-  const [sortMode, setSortMode] = useState<SortMode | 'relevance'>(
-    (searchParams.get('sort') as SortMode | 'relevance') || 'relevance'
+  const [sortMode, setSortMode] = useState<SortMode | 'relevance'>(() =>
+    getValidSearchSortMode(searchParams.get('sort'))
   );
   const [activeFilter, setActiveFilter] = useState<SearchFilter>(
     (searchParams.get('filter') as SearchFilter) || 'all'
@@ -148,7 +155,7 @@ export function SearchPage() {
       debouncedSearchQuery.current = searchQuery;
       const params = new URLSearchParams();
       if (searchQuery) params.set('q', searchQuery);
-      if (sortMode !== 'relevance') params.set('sort', sortMode);
+      if (sortMode !== 'hot') params.set('sort', sortMode);
       if (activeFilter !== 'all') params.set('filter', activeFilter);
       if (compilationRequest.play) {
         params.set('play', 'compilation');
@@ -294,6 +301,31 @@ export function SearchPage() {
     setActiveFilter(filter);
   };
 
+  const handleSortRadioKeyDown = (
+    event: KeyboardEvent<HTMLButtonElement>,
+    index: number,
+  ) => {
+    const lastIndex = SORT_MODES.length - 1;
+    const nextIndexByKey: Partial<Record<string, number>> = {
+      ArrowRight: index === lastIndex ? 0 : index + 1,
+      ArrowDown: index === lastIndex ? 0 : index + 1,
+      ArrowLeft: index === 0 ? lastIndex : index - 1,
+      ArrowUp: index === 0 ? lastIndex : index - 1,
+      Home: 0,
+      End: lastIndex,
+    };
+    const nextIndex = nextIndexByKey[event.key];
+
+    if (nextIndex === undefined) return;
+
+    event.preventDefault();
+    setSortMode(SORT_MODES[nextIndex].value);
+    event.currentTarget.parentElement
+      ?.querySelectorAll<HTMLButtonElement>('[role="radio"]')
+      .item(nextIndex)
+      ?.focus();
+  };
+
   // Loading state based on active filter
   const isLoading = (() => {
     switch (activeFilter) {
@@ -347,7 +379,7 @@ export function SearchPage() {
     const trimmedQuery = searchQuery.trim();
 
     if (trimmedQuery) params.set('q', trimmedQuery);
-    if (sortMode !== 'relevance') params.set('sort', sortMode);
+    if (sortMode !== 'hot') params.set('sort', sortMode);
     if (activeFilter !== 'all') params.set('filter', activeFilter);
 
     const query = params.toString();
@@ -410,23 +442,38 @@ export function SearchPage() {
 
           {/* Sort mode selector for video results */}
           {(activeFilter === 'all' || activeFilter === 'videos') && searchQuery.trim() && (
-            <div className="flex items-center gap-2 justify-end">
-              <span className="text-sm text-muted-foreground">Sort:</span>
-              <Select value={sortMode} onValueChange={(value) => setSortMode(value as SortMode)}>
-                <SelectTrigger className="w-[160px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {SORT_MODES.map(mode => (
-                    <SelectItem key={mode.value} value={mode.value}>
-                      <div className="flex items-center gap-2">
-                        <mode.icon className="h-4 w-4" />
-                        {mode.label}
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <div
+              role="radiogroup"
+              aria-label="Sort search results"
+              data-testid="search-sort-pills"
+              className="flex flex-wrap gap-2"
+            >
+              {SORT_MODES.map((mode, index) => {
+                const ModeIcon = mode.icon;
+                const isSelected = sortMode === mode.value;
+                return (
+                  <button
+                    key={mode.value}
+                    type="button"
+                    role="radio"
+                    aria-checked={isSelected}
+                    tabIndex={isSelected ? 0 : -1}
+                    data-testid={`search-sort-${mode.value}`}
+                    onClick={() => setSortMode(mode.value)}
+                    onKeyDown={(event) => handleSortRadioKeyDown(event, index)}
+                    className={`
+                      flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all
+                      ${isSelected
+                        ? 'bg-primary text-primary-foreground shadow-md'
+                        : 'bg-brand-light-green dark:bg-brand-dark-green hover:bg-muted text-muted-foreground hover:text-foreground'
+                      }
+                    `}
+                  >
+                    <ModeIcon className="h-4 w-4" />
+                    <span>{mode.label}</span>
+                  </button>
+                );
+              })}
             </div>
           )}
 
@@ -497,7 +544,7 @@ export function SearchPage() {
                   className="gap-2"
                 >
                   <Play className="h-4 w-4" />
-                  Play all
+                  {t('common.playAll')}
                 </Button>
               )}
             </div>
@@ -703,6 +750,7 @@ interface UserCardMetadata {
   name?: string;
   about?: string;
   picture?: string;
+  nip05?: string;
 }
 
 // User card component
@@ -712,10 +760,13 @@ function UserCard({ user }: { user: { pubkey: string; metadata?: UserCardMetadat
   const username = user.metadata?.name || genUserName(user.pubkey);
   const about = user.metadata?.about;
   const picture = getSafeProfileImage(user.metadata?.picture);
-  const npub = nip19.npubEncode(user.pubkey);
+  const profilePath = buildProfileLinkPath({
+    pubkey: user.pubkey,
+    nip05: user.metadata?.nip05,
+  });
 
   const handleClick = () => {
-    navigate(`/${npub}`);
+    navigate(profilePath);
   };
 
   const handleKeyDown = (event: React.KeyboardEvent) => {
