@@ -207,7 +207,7 @@ export function VideoPage() {
   // Social interaction hooks
   const [showCommentsForVideo, setShowCommentsForVideo] = useState<string | null>(null);
   const { user } = useCurrentUser();
-  const { openLoginDialog, isOpen: loginDialogOpen, closeLoginDialog } = useLoginDialog();
+  const { openLoginDialog, isOpen: loginDialogOpen } = useLoginDialog();
   const pendingSocialAction = useRef<{ action: 'like' | 'repost'; video: ParsedVideoData } | null>(null);
 
   // Batch fetch all user interactions in ONE query instead of per-video
