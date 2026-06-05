@@ -1,13 +1,13 @@
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 
-const ROUTES = ['/', '/discovery', '/search', '/merch', '/__brand-preview'];
+const ROUTES = ['/', '/discovery', '/search', '/merch', '/family', '/age-review', '/kids', '/__brand-preview'];
 
 for (const route of ROUTES) {
   test(`a11y: ${route} has no WCAG 2 A/AA violations`, async ({ page }) => {
     test.setTimeout(60_000); // discovery + search do a fair bit of fetching
-    await page.goto(route);
-    await page.waitForLoadState('networkidle');
+    await page.goto(route, { waitUntil: 'domcontentloaded' });
+    await expect(page.locator('body')).toBeVisible();
     const builder = new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa']);
     // Color-swatch chips on the brand-preview page are reference tiles, not
     // content; their visible label is decorative. Axe's color-contrast rule

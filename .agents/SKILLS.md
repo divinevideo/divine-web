@@ -10,3 +10,4 @@ in that area.
 | `pr-conventions` | Creating commits, writing PR descriptions, preparing branches |
 | `project-structure` | Creating new files, moving code, navigating the codebase |
 | `spa-subdomain-root-render` | Subdomain routing that renders at / without URL redirect |
+| `cloudflare-agent-setup` | Installing Cloudflare skills and MCP servers for this agent |

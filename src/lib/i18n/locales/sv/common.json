@@ -28,7 +28,9 @@
     "openSource": "Oppen kallkod",
     "donate": "Donera",
     "help": "Hjalp",
-    "merch": "Merch"
+    "merch": "Merch",
+    "familyResources": "Familjeresurser",
+    "kidsPolicy": "Policy for barn"
   },
   "theme": {
     "lightMode": "Ljust lage",
