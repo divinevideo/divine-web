@@ -439,7 +439,7 @@
     "errorFileNoValidKey": "الملف لا يحتوي على مفتاح سري صالح.",
     "errorFileReadFailed": "تعذّرت قراءة الملف.",
     "errorInviteValidationFailed": "تعذّر التحقق من رمز الدعوة",
-            "errorInviteCodeUsed": "This invite code has already been used",
+    "errorInviteCodeUsed": "تم استخدام رمز الدعوة هذا من قبل",
     "errorSignInStartFailed": "تعذّر بدء تسجيل الدخول",
     "errorWaitlistJoinFailed": "تعذّر الانضمام إلى قائمة الانتظار"
   },
@@ -1403,14 +1403,14 @@
     "joinWaitlist": "ليس لديك دعوة؟ انضم إلى قائمة الانتظار."
   },
   "invitesLandingPage": {
-    "seoTitle": "Join diVine with invite code {{code}}",
-    "seoTitleDefault": "Join diVine",
-    "seoDescription": "You've been invited! Use invite code {{code}} to join diVine.",
-    "seoDescriptionDefault": "Use your invite code to join diVine and start sharing video.",
-    "heading": "You're Invited!",
-    "subheading": "Enter your invite code to join diVine",
-    "alreadyHaveAccount": "Already have an account?",
-    "signIn": "Sign in"
+    "seoTitle": "انضم إلى diVine برمز الدعوة {{code}}",
+    "seoTitleDefault": "انضم إلى diVine",
+    "seoDescription": "لقد تلقيت دعوة! استخدم الرمز {{code}} للانضمام إلى diVine.",
+    "seoDescriptionDefault": "استخدم رمز الدعوة للانضمام إلى diVine وبدء مشاركة الفيديو.",
+    "heading": "أنت مدعو!",
+    "subheading": "أدخل رمز الدعوة للانضمام إلى diVine",
+    "alreadyHaveAccount": "هل لديك حساب بالفعل؟",
+    "signIn": "تسجيل الدخول"
   },
   "applePodcastEmbed": {
     "defaultTitle": "Vine Revisited and The Fight Against AI Slop",

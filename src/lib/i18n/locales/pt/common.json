@@ -435,7 +435,7 @@
     "errorFileNoValidKey": "O arquivo não contém uma chave secreta válida.",
     "errorFileReadFailed": "Falha ao ler o arquivo.",
     "errorInviteValidationFailed": "Não foi possível validar o código de convite",
-            "errorInviteCodeUsed": "This invite code has already been used",
+    "errorInviteCodeUsed": "Este código de convite já foi usado",
     "errorSignInStartFailed": "Não foi possível iniciar o login",
     "errorWaitlistJoinFailed": "Não foi possível entrar na lista de espera"
   },
@@ -1399,14 +1399,14 @@
     "joinWaitlist": "Sem convite? Entre na lista de espera."
   },
   "invitesLandingPage": {
-    "seoTitle": "Join diVine with invite code {{code}}",
-    "seoTitleDefault": "Join diVine",
-    "seoDescription": "You've been invited! Use invite code {{code}} to join diVine.",
-    "seoDescriptionDefault": "Use your invite code to join diVine and start sharing video.",
-    "heading": "You're Invited!",
-    "subheading": "Enter your invite code to join diVine",
-    "alreadyHaveAccount": "Already have an account?",
-    "signIn": "Sign in"
+    "seoTitle": "Entre no diVine com o código de convite {{code}}",
+    "seoTitleDefault": "Entre no diVine",
+    "seoDescription": "Você recebeu um convite! Use o código {{code}} para entrar no diVine.",
+    "seoDescriptionDefault": "Use seu código de convite para entrar no diVine e começar a compartilhar vídeo.",
+    "heading": "Você recebeu um convite!",
+    "subheading": "Digite seu código de convite para entrar no diVine",
+    "alreadyHaveAccount": "Já tem uma conta?",
+    "signIn": "Entrar"
   },
   "applePodcastEmbed": {
     "defaultTitle": "Vine Revisited and The Fight Against AI Slop",

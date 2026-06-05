@@ -435,7 +435,7 @@
     "errorFileNoValidKey": "Dosya geçerli bir gizli anahtar içermiyor.",
     "errorFileReadFailed": "Dosya okunamadı.",
     "errorInviteValidationFailed": "Davet kodu doğrulanamadı",
-            "errorInviteCodeUsed": "This invite code has already been used",
+    "errorInviteCodeUsed": "Bu davet kodu zaten kullanılmış",
     "errorSignInStartFailed": "Giriş başlatılamadı",
     "errorWaitlistJoinFailed": "Bekleme listesine katılınamadı"
   },
@@ -1399,14 +1399,14 @@
     "joinWaitlist": "Davetin yok mu? Bekleme listesine katıl."
   },
   "invitesLandingPage": {
-    "seoTitle": "Join diVine with invite code {{code}}",
-    "seoTitleDefault": "Join diVine",
-    "seoDescription": "You've been invited! Use invite code {{code}} to join diVine.",
-    "seoDescriptionDefault": "Use your invite code to join diVine and start sharing video.",
-    "heading": "You're Invited!",
-    "subheading": "Enter your invite code to join diVine",
-    "alreadyHaveAccount": "Already have an account?",
-    "signIn": "Sign in"
+    "seoTitle": "{{code}} davet koduyla diVine'a katıl",
+    "seoTitleDefault": "diVine'a katıl",
+    "seoDescription": "Davet edildin! diVine'a katılmak için {{code}} kodunu kullan.",
+    "seoDescriptionDefault": "diVine'a katılıp video paylaşmaya başlamak için davet kodunu kullan.",
+    "heading": "Davetlisin!",
+    "subheading": "diVine'a katılmak için davet kodunu gir",
+    "alreadyHaveAccount": "Zaten hesabın var mı?",
+    "signIn": "Giriş yap"
   },
   "applePodcastEmbed": {
     "defaultTitle": "Vine Revisited and The Fight Against AI Slop",

@@ -435,7 +435,7 @@
     "errorFileNoValidKey": "Bestand bevat geen geldige geheime sleutel.",
     "errorFileReadFailed": "Bestand lezen mislukt.",
     "errorInviteValidationFailed": "Kan uitnodigingscode niet valideren",
-            "errorInviteCodeUsed": "This invite code has already been used",
+    "errorInviteCodeUsed": "Deze uitnodigingscode is al gebruikt",
     "errorSignInStartFailed": "Kan inloggen niet starten",
     "errorWaitlistJoinFailed": "Kan niet aansluiten bij de wachtlijst"
   },
@@ -1399,14 +1399,14 @@
     "joinWaitlist": "Geen uitnodiging? Zet je op de wachtlijst."
   },
   "invitesLandingPage": {
-    "seoTitle": "Join diVine with invite code {{code}}",
-    "seoTitleDefault": "Join diVine",
-    "seoDescription": "You've been invited! Use invite code {{code}} to join diVine.",
-    "seoDescriptionDefault": "Use your invite code to join diVine and start sharing video.",
-    "heading": "You're Invited!",
-    "subheading": "Enter your invite code to join diVine",
-    "alreadyHaveAccount": "Already have an account?",
-    "signIn": "Sign in"
+    "seoTitle": "Word lid van diVine met uitnodigingscode {{code}}",
+    "seoTitleDefault": "Word lid van diVine",
+    "seoDescription": "Je bent uitgenodigd! Gebruik code {{code}} om lid te worden van diVine.",
+    "seoDescriptionDefault": "Gebruik je uitnodigingscode om lid te worden van diVine en video te delen.",
+    "heading": "Je bent uitgenodigd!",
+    "subheading": "Voer je uitnodigingscode in om lid te worden van diVine",
+    "alreadyHaveAccount": "Heb je al een account?",
+    "signIn": "Inloggen"
   },
   "applePodcastEmbed": {
     "defaultTitle": "Vine Revisited and The Fight Against AI Slop",

@@ -435,7 +435,7 @@
     "errorFileNoValidKey": "Filen innehåller ingen giltig hemlig nyckel.",
     "errorFileReadFailed": "Kunde inte läsa filen.",
     "errorInviteValidationFailed": "Kunde inte validera inbjudningskoden",
-            "errorInviteCodeUsed": "This invite code has already been used",
+    "errorInviteCodeUsed": "Den här inbjudningskoden har redan använts",
     "errorSignInStartFailed": "Kunde inte starta inloggning",
     "errorWaitlistJoinFailed": "Kunde inte gå med i väntelistan"
   },
@@ -1399,14 +1399,14 @@
     "joinWaitlist": "Ingen inbjudan? Ställ dig på väntelistan."
   },
   "invitesLandingPage": {
-    "seoTitle": "Join diVine with invite code {{code}}",
-    "seoTitleDefault": "Join diVine",
-    "seoDescription": "You've been invited! Use invite code {{code}} to join diVine.",
-    "seoDescriptionDefault": "Use your invite code to join diVine and start sharing video.",
-    "heading": "You're Invited!",
-    "subheading": "Enter your invite code to join diVine",
-    "alreadyHaveAccount": "Already have an account?",
-    "signIn": "Sign in"
+    "seoTitle": "Gå med i diVine med inbjudningskoden {{code}}",
+    "seoTitleDefault": "Gå med i diVine",
+    "seoDescription": "Du har blivit inbjuden! Använd koden {{code}} för att gå med i diVine.",
+    "seoDescriptionDefault": "Använd din inbjudningskod för att gå med i diVine och börja dela video.",
+    "heading": "Du är inbjuden!",
+    "subheading": "Ange din inbjudningskod för att gå med i diVine",
+    "alreadyHaveAccount": "Har du redan ett konto?",
+    "signIn": "Logga in"
   },
   "applePodcastEmbed": {
     "defaultTitle": "Vine Revisited and The Fight Against AI Slop",

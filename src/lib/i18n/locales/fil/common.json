@@ -435,7 +435,7 @@
     "errorFileNoValidKey": "Walang valid na secret key sa file.",
     "errorFileReadFailed": "Hindi mabasa ang file.",
     "errorInviteValidationFailed": "Hindi ma-validate ang invite code",
-            "errorInviteCodeUsed": "This invite code has already been used",
+    "errorInviteCodeUsed": "Nagamit na ang invite code na ito",
     "errorSignInStartFailed": "Hindi masimulan ang sign-in",
     "errorWaitlistJoinFailed": "Hindi maka-join sa waitlist"
   },
@@ -1399,14 +1399,14 @@
     "joinWaitlist": "Walang invite? Sumali sa waitlist."
   },
   "invitesLandingPage": {
-    "seoTitle": "Join diVine with invite code {{code}}",
-    "seoTitleDefault": "Join diVine",
-    "seoDescription": "You've been invited! Use invite code {{code}} to join diVine.",
-    "seoDescriptionDefault": "Use your invite code to join diVine and start sharing video.",
-    "heading": "You're Invited!",
-    "subheading": "Enter your invite code to join diVine",
-    "alreadyHaveAccount": "Already have an account?",
-    "signIn": "Sign in"
+    "seoTitle": "Sumali sa diVine gamit ang invite code {{code}}",
+    "seoTitleDefault": "Sumali sa diVine",
+    "seoDescription": "Inimbitahan ka! Gamitin ang code {{code}} para sumali sa diVine.",
+    "seoDescriptionDefault": "Gamitin ang invite code mo para sumali sa diVine at magsimulang mag-share ng video.",
+    "heading": "Imbitado Ka!",
+    "subheading": "Ilagay ang invite code mo para sumali sa diVine",
+    "alreadyHaveAccount": "May account ka na?",
+    "signIn": "Mag-sign in"
   },
   "applePodcastEmbed": {
     "defaultTitle": "Vine Revisited at ang Laban Kontra AI Slop",
