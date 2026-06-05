@@ -27,10 +27,8 @@ import { useSubdomainNavigate } from '@/hooks/useSubdomainNavigate';
 import { enhanceAuthorData } from '@/lib/generateProfile';
 import { genUserName } from '@/lib/genUserName';
 import { formatDistanceToNow } from 'date-fns';
-import { nip19 } from 'nostr-tools';
 import { formatClassicVineViewBreakdown, formatCount, formatViewCount } from '@/lib/formatUtils';
 import { getSafeProfileImage } from '@/lib/imageUtils';
-import { buildProfilePath } from '@/lib/eventRouting';
 import { useBadges } from '@/hooks/useBadges';
 import { InlineBadges } from '@/components/InlineBadges';
 import { cn } from '@/lib/utils';
@@ -43,6 +41,7 @@ import { useSubtitles } from '@/hooks/useSubtitles';
 import { VideoVerificationBadgeRow } from '@/components/VideoVerificationBadgeRow';
 import type { ParsedVideoData } from '@/types/video';
 import { buildDmSharePayloadFromVideo, buildDmShareQueryString } from '@/lib/dm';
+import { buildProfileLinkPath } from '@/lib/profileLinks';
 
 interface FullscreenVideoItemProps {
   video: ParsedVideoData;
@@ -144,8 +143,10 @@ export function FullscreenVideoItem({
   const profileImage = getSafeProfileImage(
     rawMetadata?.picture || video.authorAvatar || metadata.picture
   );
-  const npub = nip19.npubEncode(video.pubkey);
-  const profileUrl = buildProfilePath(npub);
+  const profileUrl = buildProfileLinkPath({
+    pubkey: video.pubkey,
+    nip05: rawMetadata?.nip05,
+  });
 
   // Format timestamp
   const timestamp = video.originalVineTimestamp || video.createdAt;

@@ -20,7 +20,7 @@ import { useVideoSocialMetrics } from '@/hooks/useVideoSocialMetrics';
 import { useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/useToast';
 import { genUserName } from '@/lib/genUserName';
-import { nip19 } from 'nostr-tools';
+import { buildProfileLinkPath } from '@/lib/profileLinks';
 import { debugLog } from '@/lib/debug';
 import { reportFunnelcakeFallback } from '@/lib/funnelcakeFallbackReporting';
 import type { ParsedVideoData, UserInteractions } from '@/types/video';
@@ -261,12 +261,10 @@ export function VideoPage() {
     if (context?.source === 'hashtag' && context.hashtag) {
       navigate(`/hashtag/${context.hashtag}`);
     } else if (context?.source === 'profile' && context.pubkey) {
-      try {
-        const npub = nip19.npubEncode(context.pubkey);
-        navigate(`/profile/${npub}`, { ownerPubkey: context.pubkey });
-      } catch {
-        navigate(`/profile/${context.pubkey}`, { ownerPubkey: context.pubkey });
-      }
+      navigate(buildProfileLinkPath({
+        pubkey: context.pubkey,
+        fallbackRoute: 'profile',
+      }), { ownerPubkey: context.pubkey });
     } else if (context?.source === 'search') {
       const params = new URLSearchParams();
       if (context.query) params.set('q', context.query);
