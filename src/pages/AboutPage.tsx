@@ -179,6 +179,21 @@ export function AboutPage() {
               pre-AI era videos a new home on the decentralized web. We're committed to restoring creator ownership
               and attribution when possible, honoring those who created these cultural artifacts.
             </p>
+            <p className="text-muted-foreground">
+              Huge thanks to{" "}
+              <a href="https://missaustraliana.net/" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                Miss Australiana
+              </a>{" "}
+              for sharing more recovered Vines with us, the volunteer archivists at{" "}
+              <a href="https://wiki.archiveteam.org/index.php/Vine" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                ArchiveTeam
+              </a>{" "}
+              who raced to save the platform before it went dark, and{" "}
+              <a href="https://archive.org/" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                the Internet Archive
+              </a>{" "}
+              for keeping the lights on so these videos still have a home.
+            </p>
             <blockquote className="border-l-4 border-primary pl-4 italic text-muted-foreground">
               "Do it for the Vine!" — A motto from the creative community, circa 2015
             </blockquote>

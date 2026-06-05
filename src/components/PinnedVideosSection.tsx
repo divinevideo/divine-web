@@ -2,6 +2,7 @@
 // ABOUTME: Resolves video coordinates from pin list into compact video cards
 
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNostr } from '@nostrify/react';
 import { useQuery } from '@tanstack/react-query';
 import { PushPin as Pin, PushPinSlash as PinOff } from '@phosphor-icons/react';
@@ -21,6 +22,7 @@ interface PinnedVideosSectionProps {
 }
 
 export function PinnedVideosSection({ pubkey, isOwnProfile }: PinnedVideosSectionProps) {
+  const { t } = useTranslation();
   const { nostr } = useNostr();
   const { data: coordinates = [], isLoading: coordsLoading } = usePinnedVideos(pubkey);
   const { mutateAsync: unpinVideo } = useUnpinVideo();
@@ -132,9 +134,9 @@ export function PinnedVideosSection({ pubkey, isOwnProfile }: PinnedVideosSectio
 
     try {
       await unpinVideo({ coordinate: coord });
-      toast({ title: 'Unpinned.', description: `"${video.title || 'Video'}" is off your pins.` });
+      toast({ title: t('pinnedVideosSection.unpinnedTitle'), description: t('pinnedVideosSection.unpinnedDescription', { title: video.title || t('pinnedVideosSection.fallbackVideoTitle') }) });
     } catch {
-      toast({ title: 'Unpin snagged.', description: 'Couldn\'t unpin. Try again?', variant: 'destructive' });
+      toast({ title: t('pinnedVideosSection.unpinErrorTitle'), description: t('pinnedVideosSection.unpinErrorDescription'), variant: 'destructive' });
     }
   };
 
@@ -146,7 +148,7 @@ export function PinnedVideosSection({ pubkey, isOwnProfile }: PinnedVideosSectio
     <div className="space-y-3">
       <div className="flex items-center gap-2">
         <Pin className="h-4 w-4 text-muted-foreground" />
-        <SectionHeader as="h3" className="text-sm text-muted-foreground">Pinned</SectionHeader>
+        <SectionHeader as="h3" className="text-sm text-muted-foreground">{t('pinnedVideosSection.heading')}</SectionHeader>
       </div>
 
       {videosLoading ? (
@@ -173,7 +175,7 @@ export function PinnedVideosSection({ pubkey, isOwnProfile }: PinnedVideosSectio
                   onClick={() => handleUnpin(video)}
                 >
                   <PinOff className="h-3 w-3 mr-1" />
-                  Unpin
+                  {t('pinnedVideosSection.unpin')}
                 </Button>
               ))}
             </div>

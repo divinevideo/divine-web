@@ -6,6 +6,21 @@ import { getAnalytics, logEvent, setUserId, setAnalyticsCollectionEnabled, type 
 import { getPerformance, trace, type FirebasePerformance } from 'firebase/performance';
 import { onAnalyticsConsentChanged } from './cookieConsent';
 
+// Sim-suppression hard block. Set by divine-brain's virtual-persona
+// PR runner via Stagehand `page.addInitScript` BEFORE any document is
+// parsed, so this runs before initializeApp ever fires. Without this,
+// Firebase auto-tracking (via GTM) emits `page_view` to G-FTDHC8JHYF
+// even before the GDPR consent listener gets a chance — verified
+// empirically via divine-brain/sim/experiments/smoke-one-persona.ts
+// on 2026-05-08 (2 first-visit sessions polluted prod GA4 in a 32s
+// headless scroll). Production traffic is unaffected because the flag
+// is never set there.
+function isSuppressed(): boolean {
+  if (typeof window === 'undefined') return false;
+  return !!(window as unknown as { __DIVINE_ANALYTICS_DISABLED__?: boolean })
+    .__DIVINE_ANALYTICS_DISABLED__;
+}
+
 const firebaseConfig = {
   apiKey: "AIzaSyDiq-KGmtI9wHNxSkL-QT4HzRckdS_0vQw",
   authDomain: "divine-web-e8688.firebaseapp.com",
@@ -28,6 +43,15 @@ let analyticsEnabled = false;
 export function initializeAnalytics() {
   try {
     if (typeof window === 'undefined') return;
+
+    // Hard block — never even call initializeApp under the suppression
+    // flag. Firebase's auto-tracking + GTM bootstrap (page_view,
+    // installations, remoteconfig) fire from initializeApp regardless
+    // of consent state, so blocking only enableAnalytics is too late.
+    if (isSuppressed()) {
+      console.log('[Analytics] Suppressed by __DIVINE_ANALYTICS_DISABLED__');
+      return;
+    }
 
     app = initializeApp(firebaseConfig);
     console.log('[Analytics] Firebase App initialized (analytics pending consent)');
@@ -74,7 +98,7 @@ function disableAnalytics() {
  * Log a custom analytics event
  */
 export function trackEvent(eventName: string, params?: Record<string, unknown>) {
-  if (!analytics) return;
+  if (isSuppressed() || !analytics) return;
 
   try {
     logEvent(analytics, eventName, params);

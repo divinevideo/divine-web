@@ -24,7 +24,19 @@ vi.mock('@/lib/debug', () => ({
 }));
 
 describe('ThumbnailPlayer', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
+    const { initializeI18n } = await import('@/lib/i18n');
+    const storage = new Map<string, string>();
+    Object.defineProperty(window, 'localStorage', {
+      configurable: true,
+      value: {
+        getItem: (key: string) => storage.get(key) ?? null,
+        setItem: (key: string, value: string) => storage.set(key, value),
+        removeItem: (key: string) => storage.delete(key),
+        clear: () => storage.clear(),
+      } satisfies Pick<Storage, 'getItem' | 'setItem' | 'removeItem' | 'clear'>,
+    });
+    await initializeI18n({ force: true, languages: ['en-US'] });
     vi.clearAllMocks();
     mockUseAdultVerification.mockReturnValue({
       isVerified: true,

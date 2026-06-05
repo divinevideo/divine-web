@@ -1,7 +1,7 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { Tag } from '@phosphor-icons/react';
 import { MemoryRouter } from 'react-router-dom';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { LOCALE_STORAGE_KEY } from '@/lib/i18n/config';
 import { initializeI18n } from '@/lib/i18n';
 import { AppSidebar } from './AppSidebar';
@@ -77,6 +77,33 @@ describe('AppSidebar', () => {
     mockCategories.length = 0;
   });
 
+  afterEach(() => {
+    document.head.querySelectorAll('script[src*="itunes.apple.com/lookup"]').forEach((script) => script.remove());
+  });
+
+  function setLanguages(languages: readonly string[]) {
+    Object.defineProperty(window.navigator, 'languages', {
+      configurable: true,
+      value: languages,
+    });
+  }
+
+  async function resolveLatestAppStoreLookup(result: unknown) {
+    let script: HTMLScriptElement | null = null;
+    await waitFor(() => {
+      script = document.head.querySelector<HTMLScriptElement>('script[src*="itunes.apple.com/lookup"]');
+      expect(script).not.toBeNull();
+    });
+
+    const callback = new URL(script!.src).searchParams.get('callback');
+    expect(callback).toBeTruthy();
+
+    await act(async () => {
+      (window as unknown as Record<string, (value: unknown) => void>)[callback!](result);
+      await Promise.resolve();
+    });
+  }
+
   it('renders translated shell labels and a translated DMCA action', () => {
     render(
       <MemoryRouter>
@@ -94,6 +121,45 @@ describe('AppSidebar', () => {
     fireEvent.click(dmcaButton);
 
     expect(mockNavigate).toHaveBeenCalledWith('/dmca');
+  });
+
+  it('shows the App Store badge when Apple lookup finds the regional listing', async () => {
+    setLanguages(['en-NZ']);
+
+    render(
+      <MemoryRouter>
+        <AppSidebar />
+      </MemoryRouter>,
+    );
+
+    await resolveLatestAppStoreLookup({
+      resultCount: 1,
+      results: [{ trackViewUrl: 'https://apps.apple.com/nz/app/divine-video/id6747959501?uo=4' }],
+    });
+
+    expect(await screen.findByRole('link', { name: 'Download Divine on the App Store' })).toHaveAttribute(
+      'href',
+      'https://apps.apple.com/nz/app/divine-video/id6747959501?uo=4',
+    );
+  });
+
+  it('hides the App Store badge when Apple lookup has no regional listing', async () => {
+    setLanguages(['en-US']);
+
+    render(
+      <MemoryRouter>
+        <AppSidebar />
+      </MemoryRouter>,
+    );
+
+    await resolveLatestAppStoreLookup({
+      resultCount: 0,
+      results: [],
+    });
+
+    await waitFor(() => {
+      expect(screen.queryByRole('link', { name: 'Download Divine on the App Store' })).not.toBeInTheDocument();
+    });
   });
 
   it('renders translated category labels from category config', () => {

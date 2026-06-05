@@ -54,14 +54,14 @@ async function funnelcakeRequest<T>(
   apiUrl: string,
   endpoint: string,
   params: Record<string, string | number | boolean | undefined> = {},
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  timeoutMs: number = API_CONFIG.funnelcake.timeout
 ): Promise<T> {
   const url = buildUrl(apiUrl, endpoint, params);
-  const timeout = API_CONFIG.funnelcake.timeout;
 
   debugLog(`[FunnelcakeClient] Request: ${url}`);
 
-  const timeoutSignal = AbortSignal.timeout(timeout);
+  const timeoutSignal = AbortSignal.timeout(timeoutMs);
   const combinedSignal = signal
     ? AbortSignal.any([signal, timeoutSignal])
     : timeoutSignal;
@@ -211,6 +211,75 @@ export async function fetchVideos(
     videos,
     has_more: videoCount >= limit,
     next_cursor,
+  };
+}
+
+/**
+ * Fetch videos from Funnelcake v2 API (`/api/v2/videos`).
+ *
+ * v2 differs from v1 in two ways:
+ * - response is an envelope: `{ data: VideoListItemDoc[], pagination: { next_cursor, has_more } }`
+ * - pagination uses an opaque `cursor` query param (not `before`)
+ *
+ * Item field names overlap with v1 (`embedded_likes`, `tags`, `thumbnail`, etc.), so the
+ * existing `transformFunnelcakeVideo` works once we map the envelope back to FunnelcakeResponse.
+ *
+ * Supports the v2-only `sort=watching` mode (24h CDN view count, no age decay).
+ */
+export async function fetchVideosV2(
+  apiUrl: string = API_CONFIG.funnelcake.baseUrl,
+  options: FunnelcakeFetchOptions = {}
+): Promise<FunnelcakeResponse> {
+  const {
+    sort = 'watching',
+    period,
+    limit = 20,
+    before,
+    offset,
+    classic,
+    platform,
+    exclude_platform,
+    category,
+    signal,
+  } = options;
+
+  const params: Record<string, string | number | boolean | undefined> = {
+    sort,
+    period,
+    limit,
+    classic,
+    platform,
+    exclude_platform,
+    category,
+  };
+
+  if (offset !== undefined) {
+    params.offset = offset;
+  } else if (before !== undefined) {
+    // v2 uses opaque `cursor` query param; the hook threads the prior page's
+    // next_cursor through `before` to keep one shared option shape.
+    params.cursor = before;
+  }
+
+  type V2Envelope = {
+    data: FunnelcakeVideoRaw[];
+    pagination?: { next_cursor?: string | null; has_more?: boolean };
+  };
+
+  const envelope = await funnelcakeRequest<V2Envelope>(
+    apiUrl,
+    API_CONFIG.funnelcake.endpoints.videosV2,
+    params,
+    signal
+  );
+
+  const videos = Array.isArray(envelope?.data) ? envelope.data : [];
+  const pagination = envelope?.pagination ?? {};
+
+  return {
+    videos,
+    has_more: pagination.has_more === true,
+    next_cursor: pagination.next_cursor ?? undefined,
   };
 }
 
@@ -679,7 +748,8 @@ export async function fetchVideoById(
         apiUrl,
         `${API_CONFIG.funnelcake.endpoints.videos}/${identifier}`,
         {},
-        signal
+        signal,
+        15000
       );
 
       if (response && response.event) {

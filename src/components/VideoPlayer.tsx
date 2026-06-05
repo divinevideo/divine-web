@@ -2,6 +2,7 @@
 // ABOUTME: Supports MP4 and GIF formats with preloading, seamless playback, and blurhash placeholders
 
 import { useRef, useEffect, useState, forwardRef, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { useInView } from 'react-intersection-observer';
 import { useVideoPlayback } from '@/hooks/useVideoPlayback';
@@ -111,6 +112,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
     },
     ref
   ) => {
+    const { t } = useTranslation();
     const videoRef = useRef<HTMLVideoElement | null>(null);
     const hlsRef = useRef<Hls | null>(null);
     const containerRef = useRef<HTMLDivElement | null>(null);
@@ -125,14 +127,16 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
     const [currentUrlIndex, setCurrentUrlIndex] = useState(0);
     const [allUrls, setAllUrls] = useState<string[]>([]);
     const [triedHls, setTriedHls] = useState(false); // Track if we've fallen back to HLS
+    const [discoveredAgeRestricted, setDiscoveredAgeRestricted] = useState(false);
     const isChangingMuteState = useRef(false);
     const blobUrlRef = useRef<string | null>(null); // Track blob URL for cleanup to prevent memory leaks
 
     // Adult verification hook
     const { isVerified: isAdultVerified, getAuthHeader } = useAdultVerification();
+    const isKnownAgeRestricted = videoData?.ageRestricted === true || discoveredAgeRestricted;
     const { mediaUrl: authenticatedPosterUrl } = useAuthenticatedMediaUrl(poster, {
       enabled: !!poster && !requiresAuth && !authCheckPending,
-      ageRestricted: !!videoData?.ageRestricted,
+      ageRestricted: isKnownAgeRestricted,
     });
     const overlayPosterUrl = authenticatedPosterUrl ||
       (poster && !isProtectedDivineMediaUrl(poster) ? poster : undefined);
@@ -566,8 +570,29 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
       onLoadedData?.();
     };
 
-    const handleError = useCallback(() => {
+    const handleError = useCallback(async () => {
       debugError(`[VideoPlayer ${videoId}] Error loading video from URL index ${currentUrlIndex}: ${allUrls[currentUrlIndex]}`);
+
+      const failedUrl = allUrls[currentUrlIndex] || hlsUrl || src;
+      if (failedUrl && isProtectedDivineMediaUrl(failedUrl)) {
+        const { authorized, status } = await checkMediaAuth(failedUrl);
+        if (!authorized && (status === 401 || status === 403)) {
+          debugError(`[VideoPlayer ${videoId}] Media auth required after load failure (${status})`);
+
+          setHasError(false);
+          if (isAdultVerified) {
+            setDiscoveredAgeRestricted(true);
+            setIsLoading(true);
+            setAuthDeniedAfterVerification(false);
+            setAuthRetryCount(prev => prev + 1);
+            setCurrentUrlIndex(0);
+          } else {
+            setRequiresAuth(true);
+            setIsLoading(false);
+          }
+          return;
+        }
+      }
 
       // Try next fallback URL if available
       if (currentUrlIndex < allUrls.length - 1) {
@@ -587,7 +612,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
         setHasError(true);
         onError?.();
       }
-    }, [videoId, currentUrlIndex, allUrls, hlsUrl, triedHls, onError]);
+    }, [videoId, currentUrlIndex, allUrls, hlsUrl, src, triedHls, isAdultVerified, onError]);
 
     const handleEnded = () => {
       verboseLog(
@@ -775,7 +800,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
         // Add custom auth loader only when the video is age-restricted.
         // Public HLS streams must not carry an Authorization header — divine-blossom
         // rejects any malformed auth header with 401 even when the blob is public.
-        if (isAdultVerified && videoData?.ageRestricted) {
+        if (isAdultVerified && isKnownAgeRestricted) {
           verboseLog(`[VideoPlayer ${videoId}] Using NIP-98 auth loader for each HLS request`);
           hlsConfig.loader = createAuthLoader(getAuthHeader);
         }
@@ -843,11 +868,13 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
           // rejects any malformed auth header with 401 even when the blob is public,
           // so attaching auth optimistically locks users out of public content
           // whenever their signer produces an invalid event (e.g., JWT signer bugs).
-          if (isAdultVerified && videoData?.ageRestricted) {
+          if (isAdultVerified && isKnownAgeRestricted) {
             verboseLog(`[VideoPlayer ${videoId}] Fetching MP4 with NIP-98 auth`);
             (async () => {
               try {
-                const authHeader = await getAuthHeader(currentUrl, 'GET', videoData?.sha256);
+                // NIP-98 (not BUD-01): Blossom's viewer auth path only accepts
+                // BUD-01 list events, rejecting get events with an action mismatch.
+                const authHeader = await getAuthHeader(currentUrl, 'GET');
                 // Check if request was aborted while getting auth header
                 if (abortController.signal.aborted) {
                   verboseLog(`[VideoPlayer ${videoId}] Fetch aborted before starting`);
@@ -925,7 +952,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
         }
       };
 
-    }, [hlsUrl, currentUrlIndex, allUrls, videoId, requiresAuth, isAdultVerified, authRetryCount, getAuthHeader, videoData?.sha256, videoData?.ageRestricted]); // React to HLS URL, fallback, and auth changes
+    }, [hlsUrl, currentUrlIndex, allUrls, videoId, requiresAuth, isAdultVerified, authRetryCount, getAuthHeader, isKnownAgeRestricted]); // React to HLS URL, fallback, and auth changes
 
     // Cleanup on unmount
     useEffect(() => {
@@ -962,7 +989,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
         <div className={cn('relative overflow-hidden', className)}>
           <img
             src={currentUrl}
-            alt="Video GIF"
+            alt={t('videoPlayer.gifAlt')}
             className="w-full h-full object-contain"
             onLoad={() => setIsLoading(false)}
             onError={() => setHasError(true)}
@@ -974,7 +1001,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
           )}
           {hasError && (
             <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
-              Failed to load GIF
+              {t('videoPlayer.gifLoadFailed')}
             </div>
           )}
         </div>
@@ -1060,7 +1087,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
             )}
             <img
               src="/ui-icons/loading-brand.svg"
-              alt="Loading..."
+              alt={t('videoPlayer.loading')}
               className="w-24 h-24 opacity-75"
             />
           </div>
@@ -1069,8 +1096,8 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
         {/* Auth denied after verification */}
         {authDeniedAfterVerification && (
           <AgeRestrictedMediaPlaceholder
-            title="Age-restricted video"
-            actionLabel="Retry"
+            title={t('videoPlayer.ageRestrictedTitle')}
+            actionLabel={t('videoPlayer.retry')}
             onAction={handleAgeVerified}
           />
         )}
@@ -1079,9 +1106,9 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
         {hasError && !requiresAuth && !authDeniedAfterVerification && (
           <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
             <div className="text-center">
-              <div>Failed to load video</div>
+              <div>{t('videoPlayer.loadFailed')}</div>
               {isMobile && (
-                <div className="text-sm mt-2">Tap to retry</div>
+                <div className="text-sm mt-2">{t('videoPlayer.tapToRetry')}</div>
               )}
             </div>
           </div>

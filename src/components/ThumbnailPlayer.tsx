@@ -2,6 +2,7 @@
 // ABOUTME: Shows poster image with play button overlay and click-to-play functionality
 
 import { useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Play } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -36,6 +37,7 @@ export function ThumbnailPlayer({
   onError,
   onVideoDimensions,
 }: ThumbnailPlayerProps) {
+  const { t } = useTranslation();
   const [thumbnailError, setThumbnailError] = useState(false);
   const [useVideoFallback, setUseVideoFallback] = useState(false);
   const [requiresAuth, setRequiresAuth] = useState(false);
@@ -139,7 +141,7 @@ export function ThumbnailPlayer({
         >
           <div className="text-center">
             <Play className="h-12 w-12 mx-auto mb-2 opacity-50" />
-            <p className="text-sm">Video Preview</p>
+            <p className="text-sm">{t('thumbnailPlayer.videoPreview')}</p>
           </div>
         </div>
       ) : !thumbnailError && effectiveThumbnailUrl ? (
@@ -161,7 +163,7 @@ export function ThumbnailPlayer({
           <img
             key={`img-${authRetryKey}`}
             src={effectiveThumbnailUrl}
-            alt="Video thumbnail"
+            alt={t('thumbnailPlayer.thumbnailAlt')}
             className="w-full h-full object-cover"
             crossOrigin="anonymous"
             data-testid="video-thumbnail"
@@ -176,7 +178,7 @@ export function ThumbnailPlayer({
         >
           <div className="text-center">
             <Play className="h-12 w-12 mx-auto mb-2 opacity-50" />
-            <p className="text-sm">Video Preview</p>
+            <p className="text-sm">{t('thumbnailPlayer.videoPreview')}</p>
           </div>
         </div>
       )}
@@ -189,7 +191,7 @@ export function ThumbnailPlayer({
             size="icon"
             className="w-16 h-16 rounded-full bg-black/50 hover:bg-black/70 text-white backdrop-blur-sm"
             data-testid="thumbnail-play-button"
-            aria-label="Play video"
+            aria-label={t('thumbnailPlayer.playVideo')}
             onClick={(event) => {
               event.preventDefault();
               event.stopPropagation();
