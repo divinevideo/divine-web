@@ -292,7 +292,7 @@ export function Comment({ root, comment, depth = 0, maxDepth = 3, limit, parentC
         open={showReportDialog}
         onClose={() => setShowReportDialog(false)}
         eventId={reportType === 'comment' ? comment.id : undefined}
-        pubkey={reportType === 'user' ? comment.pubkey : undefined}
+        pubkey={comment.pubkey}
         contentType={reportType}
       />
 

@@ -20,9 +20,8 @@ export function NoteContent({
   const content = useMemo(() => {
     const text = event.content;
     
-    // Regex to find URLs, Nostr references (with optional `nostr:` prefix), and hashtags.
-    // Word boundaries (\b) prevent mid-word false positives like `xxxnpub1...yyy`.
-    const regex = /(https?:\/\/[^\s]+)|(?:nostr:)?\b((?:npub1|note1|nprofile1|nevent1|naddr1)[023456789acdefghjklmnpqrstuvwxyz]+)\b|(#\w+)/g;
+    const nip19Chars = '023456789acdefghjklmnpqrstuvwxyz';
+    const regex = new RegExp(`(https?:\\/\\/[^\\s]+)|(?:nostr:)?\\b((?:npub1|note1)[${nip19Chars}]{58}|(?:nprofile1|nevent1|naddr1)[${nip19Chars}]+)(?=$|[^A-Za-z0-9_]|nostr:)|(#\\w+)`, 'g');
 
     const parts: React.ReactNode[] = [];
     let lastIndex = 0;
@@ -119,8 +118,8 @@ export function NoteContent({
 function NostrMention({ pubkey }: { pubkey: string }) {
   const author = useAuthor(pubkey);
   const npub = nip19.npubEncode(pubkey);
-  const hasRealName = !!author.data?.metadata?.name;
-  const displayName = author.data?.metadata?.name ?? genUserName(pubkey);
+  const hasRealName = !!(author.data?.metadata?.name || author.data?.metadata?.display_name);
+  const displayName = author.data?.metadata?.name || author.data?.metadata?.display_name || genUserName(pubkey);
 
   return (
     <SmartLink

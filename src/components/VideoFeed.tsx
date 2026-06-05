@@ -27,16 +27,19 @@ import { useVideoPlayback } from '@/hooks/useVideoPlayback';
 import { useVideoPrefetch } from '@/hooks/useVideoPrefetch';
 import { useCompilationFullscreen } from '@/hooks/useCompilationFullscreen';
 import { buildCompilationPlaybackUrl } from '@/lib/compilationPlayback';
+import type { PopularPeriod, PopularSource } from '@/hooks/useInfiniteVideosFunnelcake';
 
 type ViewMode = 'feed' | 'grid';
 
 interface VideoFeedProps {
-  feedType?: 'discovery' | 'home' | 'trending' | 'hashtag' | 'profile' | 'recent' | 'classics' | 'foryou' | 'category';
+  feedType?: 'discovery' | 'home' | 'trending' | 'hashtag' | 'profile' | 'recent' | 'classics' | 'foryou' | 'category' | 'popular';
   hashtag?: string;
   category?: string;
   pubkey?: string;
   limit?: number;
   sortMode?: SortMode; // NIP-50 sort mode (hot, top, rising, controversial)
+  popularSource?: PopularSource;
+  popularPeriod?: PopularPeriod;
   viewMode?: ViewMode; // Display mode: feed (full cards) or grid (thumbnails)
   className?: string;
   verifiedOnly?: boolean; // Filter to show only ProofMode verified videos
@@ -59,6 +62,8 @@ export function VideoFeed({
   pubkey,
   limit = 12, // Smaller first page improves initial paint on REST-backed feeds
   sortMode,
+  popularSource,
+  popularPeriod,
   viewMode = 'feed',
   className,
   verifiedOnly = false,
@@ -94,6 +99,8 @@ export function VideoFeed({
     pubkey,
     pageSize: limit,
     sortMode,
+    popularSource,
+    popularPeriod,
   });
   const { feedRootRef, trackInitialRender, trackFirstPlayback } = useFeedPerformanceInstrumentation({
     feedType,

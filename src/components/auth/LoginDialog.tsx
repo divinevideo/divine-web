@@ -55,6 +55,7 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin }) =
   const [waitlistContact, setWaitlistContact] = useState('');
   const [waitlistEnabled, setWaitlistEnabled] = useState(false);
   const [waitlistError, setWaitlistError] = useState<string | null>(null);
+  const [waitlistNewsletterOptIn, setWaitlistNewsletterOptIn] = useState(false);
   const [waitlistSuccess, setWaitlistSuccess] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const login = useLoginActions();
@@ -84,6 +85,7 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin }) =
     setWaitlistContact('');
     setWaitlistEnabled(false);
     setWaitlistError(null);
+    setWaitlistNewsletterOptIn(false);
     setWaitlistSuccess(false);
 
     let isCancelled = false;
@@ -263,7 +265,7 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin }) =
     setIsWaitlistLoading(true);
 
     try {
-      await joinInviteWaitlist(waitlistContact);
+      await joinInviteWaitlist(waitlistContact, waitlistNewsletterOptIn);
       setWaitlistSuccess(true);
     } catch (caughtError) {
       setWaitlistError(caughtError instanceof Error ? caughtError.message : t('loginDialog.errorWaitlistJoinFailed'));
@@ -339,8 +341,10 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin }) =
                   error={waitlistError}
                   isLoading={isWaitlistLoading}
                   isSuccess={waitlistSuccess}
+                  newsletterOptIn={waitlistNewsletterOptIn}
                   onBack={() => setRegisterView('invite')}
                   onContactChange={setWaitlistContact}
+                  onNewsletterOptInChange={setWaitlistNewsletterOptIn}
                   onSubmit={handleWaitlistSubmit}
                 />
               )}

@@ -7,7 +7,7 @@ import type { NostrEvent } from '@nostrify/nostrify';
 
 vi.mock('@/hooks/useAuthor', () => ({
   useAuthor: () => ({
-    data: { metadata: { name: 'rabble' } },
+    data: { metadata: { display_name: 'rabble' } },
     isLoading: false,
   }),
 }));
@@ -86,11 +86,24 @@ describe('NoteContent — prefixed nostr: form (regression)', () => {
     const link = screen.getByRole('link');
     expect(link).toHaveAttribute('href', `/${NOTE}`);
   });
+
+  it('still linkifies adjacent nostr:npub1... mentions as profile links', () => {
+    renderContent(`hello nostr:${NPUB}nostr:${NPUB}`);
+    const links = screen.getAllByRole('link', { name: '@rabble' });
+    expect(links).toHaveLength(2);
+    expect(links[0]).toHaveAttribute('href', `/${NPUB}`);
+    expect(links[1]).toHaveAttribute('href', `/${NPUB}`);
+  });
 });
 
 describe('NoteContent — non-matches', () => {
   it('does not linkify a bech32-shaped id mid-word', () => {
     renderContent(`xxx${NPUB}yyy`);
+    expect(screen.queryByRole('link')).not.toBeInTheDocument();
+  });
+
+  it('does not linkify npub strings followed by an underscore word suffix', () => {
+    renderContent(`${NPUB}_suffix`);
     expect(screen.queryByRole('link')).not.toBeInTheDocument();
   });
 

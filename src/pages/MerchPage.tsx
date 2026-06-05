@@ -70,7 +70,7 @@ function ProductCard({ product, accent }: { product: Product; accent: (typeof AC
         </div>
         <div className="flex flex-1 flex-col gap-1 border-t-2 border-brand-dark-green bg-brand-off-white px-5 py-4 text-brand-dark-green">
           {showCampaignOverline ? (
-            <p className="text-xs font-semibold tracking-wide text-brand-dark-green/60">
+            <p className="text-xs font-semibold tracking-wide text-brand-dark-green/70">
               {product.campaignTitle}
             </p>
           ) : null}

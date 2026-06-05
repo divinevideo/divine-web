@@ -4,7 +4,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Heart, ChatCircle as MessageCircle, Repeat as Repeat2, Share, SpeakerHigh as Volume2, SpeakerX as VolumeX, DownloadSimple as Download, ListPlus, Users, DotsThreeVertical as MoreVertical, Flag, UserMinus as UserX, Code, Trash as Trash2, Eye, ClosedCaptioning as Captions } from '@phosphor-icons/react';
-import { nip19 } from 'nostr-tools';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -28,8 +27,10 @@ import { useSubdomainNavigate } from '@/hooks/useSubdomainNavigate';
 import { enhanceAuthorData } from '@/lib/generateProfile';
 import { genUserName } from '@/lib/genUserName';
 import { formatDistanceToNow } from 'date-fns';
+import { nip19 } from 'nostr-tools';
 import { formatClassicVineViewBreakdown, formatCount, formatViewCount } from '@/lib/formatUtils';
 import { getSafeProfileImage } from '@/lib/imageUtils';
+import { buildProfilePath } from '@/lib/eventRouting';
 import { useBadges } from '@/hooks/useBadges';
 import { InlineBadges } from '@/components/InlineBadges';
 import { cn } from '@/lib/utils';
@@ -134,7 +135,6 @@ export function FullscreenVideoItem({
   const badgesQuery = useBadges(video.pubkey);
   const metadata = author.metadata;
 
-  const npub = nip19.npubEncode(video.pubkey);
   // Use raw author data to detect real vs generated names
   const rawMetadata = authorData.data?.metadata;
   const hasRealName = rawMetadata?.display_name || rawMetadata?.name;
@@ -144,7 +144,8 @@ export function FullscreenVideoItem({
   const profileImage = getSafeProfileImage(
     rawMetadata?.picture || video.authorAvatar || metadata.picture
   );
-  const profileUrl = `/${npub}`;
+  const npub = nip19.npubEncode(video.pubkey);
+  const profileUrl = buildProfilePath(npub);
 
   // Format timestamp
   const timestamp = video.originalVineTimestamp || video.createdAt;

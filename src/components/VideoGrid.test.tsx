@@ -24,6 +24,7 @@ vi.mock('@/hooks/useCurrentUser', () => ({
 
 vi.mock('@/hooks/useAdultVerification', () => ({
   useAdultVerification: () => mockUseAdultVerification(),
+  checkMediaAuth: vi.fn().mockResolvedValue({ authorized: true, status: 200 }),
   fetchWithAuth: vi.fn(async (url: string, authHeader: string | null) => fetch(url, {
     headers: authHeader ? { Authorization: authHeader } : {},
   })),
@@ -99,6 +100,35 @@ describe('VideoGrid age-restricted gating', () => {
 
     expect(mockOpenLoginDialog).toHaveBeenCalledTimes(1);
     expect(mockNavigate).not.toHaveBeenCalled();
+  });
+
+  it('shows the age-restricted gate when a thumbnail media error probes as 401', async () => {
+    const { checkMediaAuth } = await import('@/hooks/useAdultVerification');
+    (checkMediaAuth as ReturnType<typeof vi.fn>).mockResolvedValue({
+      authorized: false,
+      status: 401,
+    });
+
+    render(
+      <VideoGrid
+        videos={[
+          makeVideo({
+            id: 'unknown-restricted-video',
+            ageRestricted: false,
+          }),
+        ]}
+      />
+    );
+
+    fireEvent.error(screen.getByTestId('video-thumbnail-unknown-restricted-video'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Log in to view')).toBeInTheDocument();
+    });
+
+    expect(screen.getByText('Age-restricted')).toBeInTheDocument();
+    expect(screen.queryByTestId('video-thumbnail-unknown-restricted-video')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('video-player-unknown-restricted-video')).not.toBeInTheDocument();
   });
 
   it('renders unrestricted videos with their thumbnail media as before', () => {
