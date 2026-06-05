@@ -28,7 +28,9 @@
     "openSource": "Open source",
     "donate": "Faire un don",
     "help": "Aide",
-    "merch": "Merch"
+    "merch": "Merch",
+    "familyResources": "Ressources famille",
+    "kidsPolicy": "Politique enfants"
   },
   "theme": {
     "lightMode": "Mode clair",

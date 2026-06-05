@@ -28,7 +28,9 @@
     "openSource": "오픈 소스",
     "donate": "후원",
     "help": "도움말",
-    "merch": "Merch"
+    "merch": "Merch",
+    "familyResources": "가족 리소스",
+    "kidsPolicy": "어린이 정책"
   },
   "theme": {
     "lightMode": "라이트 모드",
