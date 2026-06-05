@@ -1038,8 +1038,7 @@
       "likes": "Gillamarkeringar",
       "comments": "Kommentarer",
       "follows": "Följare",
-      "reposts": "Återpubliceringar",
-      "zaps": "Zaps"
+      "reposts": "Återpubliceringar"
     },
     "empty": {
       "all": {
@@ -1065,16 +1064,23 @@
       "reposts": {
         "title": "Inga återpubliceringsnotiser än.",
         "description": "Återpubliceringar av dina videor dyker upp här."
-      },
-      "zaps": {
-        "title": "Inga zap-notiser än.",
-        "description": "Zaps på dina videor dyker upp här."
       }
     },
     "errorTitle": "Kunde inte ladda notiser",
     "errorFallback": "Försök igen senare",
     "sectionNew": "Nytt",
-    "sectionEarlier": "Tidigare"
+    "sectionEarlier": "Tidigare",
+    "message": {
+      "liked": "liked your video",
+      "commented": "commented on your video",
+      "reposted": "reposted your video",
+      "followed": "followed you",
+      "andOthers_one": "and {{count}} other",
+      "andOthers_other": "and {{count}} others"
+    },
+    "video": {
+      "untitled": "your video"
+    }
   },
   "getEmbedPage": {
     "title": "Bädda in Divine-widget",

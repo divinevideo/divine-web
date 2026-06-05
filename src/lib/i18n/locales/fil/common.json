@@ -1038,8 +1038,7 @@
       "likes": "Mga Like",
       "comments": "Mga Komento",
       "follows": "Mga Follow",
-      "reposts": "Mga Repost",
-      "zaps": "Mga Zap"
+      "reposts": "Mga Repost"
     },
     "empty": {
       "all": {
@@ -1065,16 +1064,23 @@
       "reposts": {
         "title": "Wala pang abiso ng repost.",
         "description": "Lalabas dito ang mga repost ng mga video mo."
-      },
-      "zaps": {
-        "title": "Wala pang abiso ng zap.",
-        "description": "Lalabas dito ang mga zap sa mga video mo."
       }
     },
     "errorTitle": "Hindi na-load ang mga abiso",
     "errorFallback": "Pakisubukang muli mamaya",
     "sectionNew": "Bago",
-    "sectionEarlier": "Mas Maaga"
+    "sectionEarlier": "Mas Maaga",
+    "message": {
+      "liked": "liked your video",
+      "commented": "commented on your video",
+      "reposted": "reposted your video",
+      "followed": "followed you",
+      "andOthers_one": "and {{count}} other",
+      "andOthers_other": "and {{count}} others"
+    },
+    "video": {
+      "untitled": "your video"
+    }
   },
   "getEmbedPage": {
     "title": "I-embed ang Divine Widget",

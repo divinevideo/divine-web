@@ -1038,8 +1038,7 @@
       "likes": "Likes",
       "comments": "Comments",
       "follows": "Follows",
-      "reposts": "Reposts",
-      "zaps": "Zaps"
+      "reposts": "Reposts"
     },
     "empty": {
       "all": {
@@ -1065,10 +1064,6 @@
       "reposts": {
         "title": "No repost notifications yet.",
         "description": "Reposts of your videos will show up here."
-      },
-      "zaps": {
-        "title": "No zap notifications yet.",
-        "description": "Zaps on your videos will show up here."
       }
     },
     "message": {

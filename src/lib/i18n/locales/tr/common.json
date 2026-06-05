@@ -1038,8 +1038,7 @@
       "likes": "Beğeniler",
       "comments": "Yorumlar",
       "follows": "Takipler",
-      "reposts": "Yeniden paylaşımlar",
-      "zaps": "Zap'ler"
+      "reposts": "Yeniden paylaşımlar"
     },
     "empty": {
       "all": {
@@ -1065,16 +1064,23 @@
       "reposts": {
         "title": "Henüz yeniden paylaşım bildirimi yok.",
         "description": "Videolarının yeniden paylaşımları burada görünür."
-      },
-      "zaps": {
-        "title": "Henüz zap bildirimi yok.",
-        "description": "Videolarına gelen zap'ler burada görünür."
       }
     },
     "errorTitle": "Bildirimler yüklenemedi",
     "errorFallback": "Lütfen daha sonra tekrar dene",
     "sectionNew": "Yeni",
-    "sectionEarlier": "Daha önce"
+    "sectionEarlier": "Daha önce",
+    "message": {
+      "liked": "liked your video",
+      "commented": "commented on your video",
+      "reposted": "reposted your video",
+      "followed": "followed you",
+      "andOthers_one": "and {{count}} other",
+      "andOthers_other": "and {{count}} others"
+    },
+    "video": {
+      "untitled": "your video"
+    }
   },
   "getEmbedPage": {
     "title": "Divine Widget'ı göm",

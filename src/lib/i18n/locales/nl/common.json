@@ -1038,8 +1038,7 @@
       "likes": "Likes",
       "comments": "Reacties",
       "follows": "Volgers",
-      "reposts": "Reposts",
-      "zaps": "Zaps"
+      "reposts": "Reposts"
     },
     "empty": {
       "all": {
@@ -1065,16 +1064,23 @@
       "reposts": {
         "title": "Nog geen repost-notificaties.",
         "description": "Reposts van je video's verschijnen hier."
-      },
-      "zaps": {
-        "title": "Nog geen zap-notificaties.",
-        "description": "Zaps op je video's verschijnen hier."
       }
     },
     "errorTitle": "Notificaties laden mislukt",
     "errorFallback": "Probeer het later nog eens",
     "sectionNew": "Nieuw",
-    "sectionEarlier": "Eerder"
+    "sectionEarlier": "Eerder",
+    "message": {
+      "liked": "liked your video",
+      "commented": "commented on your video",
+      "reposted": "reposted your video",
+      "followed": "followed you",
+      "andOthers_one": "and {{count}} other",
+      "andOthers_other": "and {{count}} others"
+    },
+    "video": {
+      "untitled": "your video"
+    }
   },
   "getEmbedPage": {
     "title": "Divine-widget embedden",

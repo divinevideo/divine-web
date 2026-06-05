@@ -1038,8 +1038,7 @@
       "likes": "Curtidas",
       "comments": "Comentários",
       "follows": "Seguidores",
-      "reposts": "Reposts",
-      "zaps": "Zaps"
+      "reposts": "Reposts"
     },
     "empty": {
       "all": {
@@ -1065,16 +1064,23 @@
       "reposts": {
         "title": "Nenhuma notificação de repost ainda.",
         "description": "Reposts dos seus vídeos aparecem aqui."
-      },
-      "zaps": {
-        "title": "Nenhuma notificação de zap ainda.",
-        "description": "Zaps nos seus vídeos aparecem aqui."
       }
     },
     "errorTitle": "Falha ao carregar notificações",
     "errorFallback": "Tenta de novo daqui a pouco",
     "sectionNew": "Novas",
-    "sectionEarlier": "Anteriores"
+    "sectionEarlier": "Anteriores",
+    "message": {
+      "liked": "liked your video",
+      "commented": "commented on your video",
+      "reposted": "reposted your video",
+      "followed": "followed you",
+      "andOthers_one": "and {{count}} other",
+      "andOthers_other": "and {{count}} others"
+    },
+    "video": {
+      "untitled": "your video"
+    }
   },
   "getEmbedPage": {
     "title": "Embedar widget Divine",
