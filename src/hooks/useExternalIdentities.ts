@@ -26,6 +26,23 @@ export interface PlatformConfig {
   canVerifyInBrowser: boolean;
 }
 
+function buildYouTubeProfileUrl(identity: string): string {
+  const normalized = identity.trim();
+  if (normalized.startsWith('@')) return `https://www.youtube.com/${normalized}`;
+  if (normalized.startsWith('channel/') || normalized.startsWith('c/') || normalized.startsWith('user/')) {
+    return `https://www.youtube.com/${normalized}`;
+  }
+  return `https://www.youtube.com/@${normalized}`;
+}
+
+function buildYouTubeProofUrl(proof: string): string {
+  const normalized = proof.trim();
+  if (normalized.startsWith('shorts/') || normalized.startsWith('watch?') || normalized.startsWith('live/')) {
+    return `https://www.youtube.com/${normalized}`;
+  }
+  return `https://www.youtube.com/watch?v=${normalized}`;
+}
+
 /** Well-known platforms with their profile URL patterns per NIP-39 */
 const PLATFORM_CONFIG: Record<string, PlatformConfig> = {
   github: {
@@ -104,6 +121,26 @@ const PLATFORM_CONFIG: Record<string, PlatformConfig> = {
     ],
     canVerifyInBrowser: false,
   },
+  youtube: {
+    label: 'YouTube',
+    profileUrl: (id) => buildYouTubeProfileUrl(id),
+    proofUrl: (_id, proof) => buildYouTubeProofUrl(proof),
+    verificationText: (npub) => [
+      `verify connecting this account with my divine account: ${npub}`,
+      `Verifying that I control the following Nostr public key: "${npub}"`,
+    ],
+    canVerifyInBrowser: false,
+  },
+  tiktok: {
+    label: 'TikTok',
+    profileUrl: (id) => `https://www.tiktok.com/@${id.replace(/^@/, '')}`,
+    proofUrl: (id, proof) => `https://www.tiktok.com/@${id.replace(/^@/, '')}/video/${proof}`,
+    verificationText: (npub) => [
+      `verify connecting this account with my divine account: ${npub}`,
+      `Verifying that I control the following Nostr public key: "${npub}"`,
+    ],
+    canVerifyInBrowser: false,
+  },
 };
 
 export const SUPPORTED_PLATFORMS = PLATFORM_CONFIG;
@@ -114,7 +151,8 @@ export function parseIdentityTag(tag: string[]): ExternalIdentity | null {
   const colonIndex = tag[1].indexOf(':');
   if (colonIndex === -1) return null;
 
-  const platform = tag[1].slice(0, colonIndex).toLowerCase();
+  const rawPlatform = tag[1].slice(0, colonIndex).toLowerCase();
+  const platform = rawPlatform === 'x' ? 'twitter' : rawPlatform;
   const identity = tag[1].slice(colonIndex + 1);
   const proof = tag[2] || '';
 
@@ -177,6 +215,14 @@ function cleanProofId(platform: string, proof: string): string {
       case 'bluesky': return parts.pop() || proof;
       case 'telegram': return parts.slice(-2).join('/') || proof;
       case 'discord': return parts.pop() || proof;
+      case 'youtube': {
+        if (url.hostname.includes('youtu.be')) return parts[0] || proof;
+        if (parts[0] === 'watch') return url.searchParams.get('v') || proof;
+        if (parts[0] === 'shorts' || parts[0] === 'live') return parts[1] || proof;
+        return parts.pop() || proof;
+      }
+      case 'tiktok':
+        return parts.pop() || proof;
       default: return proof;
     }
   } catch {
