@@ -404,6 +404,47 @@ describe('VideoPlayer', () => {
   });
 
   describe('protected media auth failures', () => {
+    it('continues direct playback when auth preflight returns no result', async () => {
+      const { checkMediaAuth } = await import('@/hooks/useAdultVerification');
+      (checkMediaAuth as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
+
+      const { container } = render(
+        <VideoPlayer
+          videoId="missing-preflight-result"
+          src="https://media.divine.video/protected-video"
+          videoData={{
+            id: 'missing-preflight-result',
+            pubkey: 'pub',
+            kind: 34236,
+            createdAt: 0,
+            content: '',
+            videoUrl: 'https://media.divine.video/protected-video',
+            hashtags: [],
+            vineId: null,
+            reposts: [],
+            isVineMigrated: false,
+            ageRestricted: false,
+          }}
+        />
+      );
+
+      const video = container.querySelector('video');
+      expect(video).not.toBeNull();
+      if (!video) {
+        throw new Error('expected rendered video element');
+      }
+
+      await waitFor(() => {
+        expect(checkMediaAuth).toHaveBeenCalledWith('https://media.divine.video/protected-video');
+      });
+
+      await waitFor(() => {
+        expect(video.src).toBe('https://media.divine.video/protected-video');
+      });
+
+      expect(screen.queryByTestId('age-restricted-media-placeholder')).not.toBeInTheDocument();
+    });
+
     it('shows age verification when an unverified direct media error probes as 401', async () => {
       const { checkMediaAuth } = await import('@/hooks/useAdultVerification');
       (checkMediaAuth as ReturnType<typeof vi.fn>).mockResolvedValue({
