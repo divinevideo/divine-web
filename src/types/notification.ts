@@ -1,49 +1,73 @@
 // ABOUTME: Type definitions for the notifications feature
-// ABOUTME: Maps Funnelcake API notification responses to app-level types
+// ABOUTME: RawNotification (fetch stage) + sealed VideoNotification|ActorNotification UI union
 
-/** Notification types supported by the app */
-export type NotificationType = 'like' | 'comment' | 'follow' | 'repost' | 'zap';
+export type NotificationType = 'like' | 'comment' | 'follow' | 'repost';
+export type NotificationApiType = 'reaction' | 'reply' | 'follow' | 'repost' | 'mention';
 
-/** Raw notification types accepted by the backend filter API */
-export type NotificationApiType = 'reaction' | 'reply' | 'follow' | 'repost' | 'zap' | 'mention';
-
-/** Notification tabs supported by the notifications page */
 export type NotificationCategory =
   | 'all'
   | 'unread'
   | 'likes'
   | 'comments'
   | 'follows'
-  | 'reposts'
-  | 'zaps';
+  | 'reposts';
 
-/** Filters used when fetching notifications */
 export interface NotificationFilters {
   category: NotificationCategory;
 }
 
-/** A single notification in app format */
-export interface Notification {
+export interface ActorInfo {
+  pubkey: string;
+  displayName: string;
+  avatarUrl?: string;
+  nip05?: string;
+}
+
+interface BaseGroupedNotification {
+  id: string;
+  rawIds: string[];
+  timestamp: number;
+  isRead: boolean;
+}
+
+export interface VideoNotification extends BaseGroupedNotification {
+  kind: 'video';
+  type: 'like' | 'comment' | 'repost';
+  videoEventId: string;
+  videoTitle?: string;
+  videoThumbnailUrl?: string;
+  actors: ActorInfo[];
+  totalCount: number;
+  commentText?: string;
+}
+
+export interface ActorNotification extends BaseGroupedNotification {
+  kind: 'actor';
+  type: 'follow';
+  actor: ActorInfo;
+}
+
+export type NotificationItem = VideoNotification | ActorNotification;
+
+export interface RawNotification {
   id: string;
   type: NotificationType;
   actorPubkey: string;
-  timestamp: number;       // Unix seconds
+  timestamp: number;
   isRead: boolean;
-  targetEventId?: string;  // The video being referenced
-  sourceEventId: string;   // The event that caused the notification
+  targetEventId?: string;
+  sourceEventId: string;
   sourceKind: number;
-  commentText?: string;    // For comment notifications
+  commentText?: string;
 }
 
-/** Paginated response from the notifications API */
 export interface NotificationsResponse {
-  notifications: Notification[];
+  notifications: RawNotification[];
   unreadCount: number;
   nextCursor?: string;
   hasMore: boolean;
 }
 
-/** Raw notification shape from Funnelcake API */
 export interface RawApiNotification {
   id: string;
   source_pubkey: string;
@@ -56,7 +80,6 @@ export interface RawApiNotification {
   content?: string;
 }
 
-/** Raw paginated response from Funnelcake API */
 export interface RawNotificationsApiResponse {
   notifications: RawApiNotification[];
   unread_count: number;
