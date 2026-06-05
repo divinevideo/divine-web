@@ -103,7 +103,7 @@ describe('VideoNotificationRow', () => {
     expect(screen.queryByText(/others/)).not.toBeInTheDocument();
   });
 
-  it('totalCount 14 with 3 actors shows +11 overflow and "13 others"', () => {
+  it('totalCount 14 with 3 actors shows +11 overflow and "and 13 others"', () => {
     const notification = buildVideoNotification({
       actors: [
         { pubkey: 'a'.repeat(64), displayName: 'Alice', avatarUrl: undefined },
@@ -117,26 +117,46 @@ describe('VideoNotificationRow', () => {
     // Overflow circle
     expect(screen.getByText('+11')).toBeInTheDocument();
 
-    // "13 others" in message
-    expect(screen.getByText('13 others')).toBeInTheDocument();
+    // "and 13 others" in message (full conjunction phrase, not bare "13 others")
+    expect(screen.getByText('and 13 others')).toBeInTheDocument();
   });
 
-  it('comment row with commentText shows muted quote and timestamp text', () => {
+  it('renders "and N others" phrase as a single i18n string (no bare English "and" literal)', () => {
+    // Regression guard: ensures the "and" comes from i18n, not a hardcoded JSX literal
+    const notification = buildVideoNotification({
+      actors: [
+        { pubkey: 'a'.repeat(64), displayName: 'Samm', avatarUrl: undefined },
+      ],
+      totalCount: 14,
+    });
+    render(<VideoNotificationRow notification={notification} />);
+
+    // The full conjunction phrase must be present as a rendered text node
+    expect(screen.getByText('and 13 others')).toBeInTheDocument();
+    // There must be no standalone "and" text node
+    expect(screen.queryByText(/^and$/)).not.toBeInTheDocument();
+  });
+
+  it('comment row with commentText shows muted quote and timestamp inside quote box', () => {
     const notification = buildVideoNotification({
       type: 'comment',
       commentText: 'Great video!',
     });
     render(<VideoNotificationRow notification={notification} />);
 
-    expect(screen.getByText('Great video!')).toBeInTheDocument();
     expect(screen.getByText('commented on your video')).toBeInTheDocument();
 
-    // Timestamp text is present (relative time, just check it's non-empty)
+    // Timestamp is inside the comment quote box (not at end of message paragraph)
     const timestampEl = screen.getByTestId('notification-timestamp');
     expect(timestampEl.textContent).not.toBe('');
+
+    // The quote box paragraph contains both the comment text and the timestamp
+    const quoteBox = timestampEl.closest('p');
+    expect(quoteBox).toBeInTheDocument();
+    expect(quoteBox?.textContent).toContain('Great video!');
   });
 
-  it('missing thumbnail renders a placeholder with accessible text', () => {
+  it('missing thumbnail renders a placeholder with accessible text and BrandLogo', () => {
     const notification = buildVideoNotification({
       videoThumbnailUrl: undefined,
     });
@@ -144,14 +164,46 @@ describe('VideoNotificationRow', () => {
 
     const placeholder = screen.getByLabelText('Video thumbnail unavailable');
     expect(placeholder).toBeInTheDocument();
+
+    // BrandLogo (renders "Divine" text) is inside the placeholder
+    expect(placeholder.textContent).toContain('Divine');
+  });
+
+  it('empty-string thumbnail also renders BrandLogo placeholder (falsy check)', () => {
+    const notification = buildVideoNotification({
+      videoThumbnailUrl: '',
+    });
+    render(<VideoNotificationRow notification={notification} />);
+
+    const placeholder = screen.getByLabelText('Video thumbnail unavailable');
+    expect(placeholder).toBeInTheDocument();
+    expect(placeholder.textContent).toContain('Divine');
+  });
+
+  it('like row timestamp is inlined inside the message paragraph', () => {
+    const notification = buildVideoNotification({ type: 'like' });
+    render(<VideoNotificationRow notification={notification} />);
+
+    const timestampEl = screen.getByTestId('notification-timestamp');
+    expect(timestampEl.textContent).not.toBe('');
+
+    // The timestamp must be inside the message <p>, not a separate paragraph
+    const parentParagraph = timestampEl.closest('p');
+    expect(parentParagraph).toBeInTheDocument();
+    expect(parentParagraph?.textContent).toContain('Alice');
+    expect(parentParagraph?.textContent).toContain('liked your video');
   });
 
   it('thumbnail click navigates to /video/:videoEventId and does not double-fire row navigation', () => {
     const notification = buildVideoNotification();
     render(<VideoNotificationRow notification={notification} />);
 
-    const thumbBtn = screen.getByRole('button', { name: /My Cool Loop/i });
-    fireEvent.click(thumbBtn);
+    // The thumbnail is a <button> with explicit aria-label matching the title exactly.
+    // Use getAllByRole and pick the one that is a <button> element (not the row div).
+    const allTitleButtons = screen.getAllByRole('button', { name: /My Cool Loop/i });
+    const thumbBtn = allTitleButtons.find((el) => el.tagName === 'BUTTON');
+    expect(thumbBtn).toBeInTheDocument();
+    fireEvent.click(thumbBtn!);
 
     expect(mockNavigate).toHaveBeenCalledTimes(1);
     expect(mockNavigate).toHaveBeenCalledWith('/video/event-abc123');
@@ -159,10 +211,12 @@ describe('VideoNotificationRow', () => {
 
   it('row body click navigates to /video/:videoEventId', () => {
     const notification = buildVideoNotification();
-    render(<VideoNotificationRow notification={notification} />);
+    const { container } = render(<VideoNotificationRow notification={notification} />);
 
-    const row = screen.getByRole('button', { name: /row/i });
-    fireEvent.click(row);
+    // The row is a div[role="button"] — query by role without a name since C2 removed aria-label
+    const row = container.querySelector('[role="button"]');
+    expect(row).toBeInTheDocument();
+    fireEvent.click(row!);
 
     expect(mockNavigate).toHaveBeenCalledWith('/video/event-abc123');
   });
@@ -199,7 +253,7 @@ describe('ActorNotificationRow', () => {
 
   it('follow row shows one avatar, followed you, and navigates to profile on click', () => {
     const notification = buildActorNotification();
-    render(<ActorNotificationRow notification={notification} />);
+    const { container } = render(<ActorNotificationRow notification={notification} />);
 
     // Actor name
     expect(screen.getByText('Bob')).toBeInTheDocument();
@@ -207,9 +261,10 @@ describe('ActorNotificationRow', () => {
     // Message
     expect(screen.getByText('followed you')).toBeInTheDocument();
 
-    // Row click navigates to profile
-    const row = screen.getByRole('button', { name: /row/i });
-    fireEvent.click(row);
+    // Row click navigates to profile — query div[role="button"] directly (C2: no aria-label)
+    const row = container.querySelector('[role="button"]');
+    expect(row).toBeInTheDocument();
+    fireEvent.click(row!);
 
     expect(mockNavigate).toHaveBeenCalledTimes(1);
     expect(mockNavigate.mock.calls[0][0]).toContain('/u/bob');

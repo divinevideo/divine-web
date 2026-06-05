@@ -2,8 +2,9 @@
 // ABOUTME: Renders VideoNotificationRow (like/comment/repost) and ActorNotificationRow (follow)
 
 import { useTranslation } from 'react-i18next';
-import { Heart, Repeat, ChatCircle, UserPlus, Play, Image } from '@phosphor-icons/react';
+import { Heart, Repeat, ChatCircle, UserPlus } from '@phosphor-icons/react';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { BrandLogo } from '@/components/brand/BrandLogo';
 import { useSubdomainNavigate } from '@/hooks/useSubdomainNavigate';
 import { buildProfileLinkPath } from '@/lib/profileLinks';
 import { formatRelativeTime } from '@/lib/notificationTransform';
@@ -50,14 +51,14 @@ function NotificationAvatarStack({
           )}
           style={{ zIndex: visible.length - index }}
         >
-          <Avatar size="xs">
+          <Avatar size="xs" className="h-7 w-7">
             <AvatarImage src={actor.avatarUrl} alt={actor.displayName} />
             <AvatarFallback>{actor.displayName[0]?.toUpperCase() ?? '?'}</AvatarFallback>
           </Avatar>
         </button>
       ))}
       {overflow > 0 && (
-        <span className="-ml-2 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-background bg-muted text-[10px] font-semibold text-muted-foreground">
+        <span className="-ml-2 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-background bg-muted text-[10px] font-semibold text-muted-foreground">
           +{overflow}
         </span>
       )}
@@ -121,7 +122,7 @@ function NotificationVideoThumbnail({
         e.stopPropagation();
         onClick(e);
       }}
-      className="h-[72px] w-[72px] shrink-0 overflow-hidden rounded-[14px] border border-border focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+      className="h-[72px] w-[72px] shrink-0 overflow-hidden rounded-[14px] border-2 border-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
     >
       {thumbnailUrl ? (
         <img
@@ -134,11 +135,7 @@ function NotificationVideoThumbnail({
           aria-label="Video thumbnail unavailable"
           className="flex h-full w-full items-center justify-center bg-muted"
         >
-          {thumbnailUrl === undefined ? (
-            <Play className="h-6 w-6 text-muted-foreground" weight="bold" />
-          ) : (
-            <Image className="h-6 w-6 text-muted-foreground" weight="bold" />
-          )}
+          <BrandLogo className="text-[10px] text-muted-foreground dark:text-muted-foreground" />
         </span>
       )}
     </button>
@@ -211,7 +208,6 @@ export function VideoNotificationRow({
     <div
       role="button"
       tabIndex={0}
-      aria-label="notification row"
       onClick={handleRowActivate}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {
@@ -238,36 +234,42 @@ export function VideoNotificationRow({
           }}
         />
 
-        {/* Message text */}
+        {/* Message text — timestamp inlined at end (omitted for comment rows; see quote box below) */}
         <p className="text-sm leading-snug">
           <span className="font-semibold">{firstName}</span>
           {othersText && (
             <>
               {' '}
-              <span className="text-muted-foreground">and</span>{' '}
-              <span className="font-semibold">{othersText}</span>
+              <span className="text-muted-foreground">{othersText}</span>
             </>
           )}
           {' '}
           <span className="text-muted-foreground">{verbText}</span>
           {' '}
           <span className="font-semibold">{titleText}</span>
+          {notification.type !== 'comment' && (
+            <>
+              {' · '}
+              <span
+                data-testid="notification-timestamp"
+                className="text-xs text-muted-foreground"
+              >
+                {formatRelativeTime(notification.timestamp)}
+              </span>
+            </>
+          )}
         </p>
 
-        {/* Comment quote */}
+        {/* Comment quote — timestamp lives inside the quote box for comment rows */}
         {notification.type === 'comment' && notification.commentText && (
           <p className="mt-0.5 line-clamp-2 rounded bg-muted/50 px-2 py-1 text-xs text-muted-foreground">
             {notification.commentText}
+            {' · '}
+            <span data-testid="notification-timestamp">
+              {formatRelativeTime(notification.timestamp)}
+            </span>
           </p>
         )}
-
-        {/* Timestamp */}
-        <p
-          data-testid="notification-timestamp"
-          className="text-xs text-muted-foreground"
-        >
-          {formatRelativeTime(notification.timestamp)}
-        </p>
       </div>
 
       {/* Right: thumbnail */}
@@ -302,7 +304,6 @@ export function ActorNotificationRow({
     <div
       role="button"
       tabIndex={0}
-      aria-label="notification row"
       onClick={handleRowActivate}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {
@@ -328,7 +329,7 @@ export function ActorNotificationRow({
         }}
         className="shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
       >
-        <Avatar size="xs">
+        <Avatar size="xs" className="h-7 w-7">
           <AvatarImage src={actor.avatarUrl} alt={actor.displayName} />
           <AvatarFallback>{actor.displayName[0]?.toUpperCase() ?? '?'}</AvatarFallback>
         </Avatar>

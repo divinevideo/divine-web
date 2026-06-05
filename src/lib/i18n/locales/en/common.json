@@ -1076,8 +1076,8 @@
       "commented": "commented on your video",
       "reposted": "reposted your video",
       "followed": "followed you",
-      "andOthers_one": "{{count}} other",
-      "andOthers_other": "{{count}} others"
+      "andOthers_one": "and {{count}} other",
+      "andOthers_other": "and {{count}} others"
     },
     "video": {
       "untitled": "your video"
