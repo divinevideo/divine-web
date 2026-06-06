@@ -11,6 +11,7 @@ import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { DIVINE_IOS_APP_ID } from '@/lib/mobileStoreLinks';
 import { setInviteHandoff } from '@/lib/authHandoff';
 import { buildSignupRedirect } from '@/lib/divineLogin';
+import { DIVINE_LOGIN_ORIGIN } from '@/lib/divineLoginOrigin';
 import { validateInviteCode, InviteApiError } from '@/lib/inviteApi';
 
 const InvitesLandingPage = () => {
@@ -44,6 +45,11 @@ const InvitesLandingPage = () => {
   });
 
   useEffect(() => {
+    if (user?.pubkey) {
+      setIsValidating(false);
+      return;
+    }
+
     if (!code) {
       setIsValidating(false);
       setValidationError(t('loginDialog.errorInviteValidationFailed'));
@@ -81,7 +87,7 @@ const InvitesLandingPage = () => {
     return () => {
       isCancelled = true;
     };
-  }, [code, t]);
+  }, [code, t, user?.pubkey]);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -153,7 +159,7 @@ const InvitesLandingPage = () => {
           {/* Footer */}
           <p className="text-sm text-muted-foreground">
             {t('invitesLandingPage.alreadyHaveAccount')}{' '}
-            <a className="font-medium text-primary hover:underline" href="https://login.divine.video">
+            <a className="font-medium text-primary hover:underline" href={DIVINE_LOGIN_ORIGIN}>
               {t('invitesLandingPage.signIn')}
             </a>
           </p>

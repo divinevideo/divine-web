@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { LOCALE_STORAGE_KEY } from '@/lib/i18n/config';
 import { initializeI18n } from '@/lib/i18n';
+import { InviteApiError } from '@/lib/inviteApi';
 import InvitesLandingPage from './InvitesLandingPage';
 
 const { mockValidateInviteCode, mockNavigate, mockCurrentUser } = vi.hoisted(() => ({
@@ -82,21 +83,15 @@ describe('InvitesLandingPage', () => {
     renderAt('/invite/ABCD-1234');
 
     expect(screen.getByRole('heading', { name: "You're Invited!" })).toBeInTheDocument();
-    expect(screen.getByLabelText('Invite code')).toHaveValue('ABCD-1234');
+    await waitFor(() => {
+      expect(screen.getByLabelText('Invite code')).toHaveValue('ABCD-1234');
+    });
     expect(mockNavigate).not.toHaveBeenCalled();
   });
 
   it('shows a specific used-code message when the API returns status: "used"', async () => {
     mockValidateInviteCode.mockRejectedValue(
-      new (class extends Error {
-        code = 'invalid_invite' as const;
-        status = 400;
-        inviteStatus = 'used';
-        constructor() {
-          super('This invite code has already been used');
-          this.name = 'InviteApiError';
-        }
-      })(),
+      new InviteApiError('Invite already claimed', 'invalid_invite', 400, 'used'),
     );
 
     renderAt('/invite/ZHV5-HECU');
@@ -108,15 +103,7 @@ describe('InvitesLandingPage', () => {
 
   it('falls back to the generic error message for codes the API marks as invalid', async () => {
     mockValidateInviteCode.mockRejectedValue(
-      new (class extends Error {
-        code = 'invalid_invite' as const;
-        status = 400;
-        inviteStatus = 'invalid';
-        constructor() {
-          super('Unable to validate invite code');
-          this.name = 'InviteApiError';
-        }
-      })(),
+      new InviteApiError('Invite not found', 'invalid_invite', 400, 'invalid'),
     );
 
     renderAt('/invite/NOTREAL-9999');
@@ -135,5 +122,6 @@ describe('InvitesLandingPage', () => {
     await waitFor(() => {
       expect(mockNavigate).toHaveBeenCalledWith('/home', { replace: true });
     });
+    expect(mockValidateInviteCode).not.toHaveBeenCalled();
   });
 });
