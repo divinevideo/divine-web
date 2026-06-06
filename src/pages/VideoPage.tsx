@@ -207,8 +207,7 @@ export function VideoPage() {
   // Social interaction hooks
   const [showCommentsForVideo, setShowCommentsForVideo] = useState<string | null>(null);
   const { user } = useCurrentUser();
-  const { openLoginDialog, isOpen: loginDialogOpen } = useLoginDialog();
-  const pendingSocialAction = useRef<{ action: 'like' | 'repost'; video: ParsedVideoData } | null>(null);
+  const { openLoginDialog } = useLoginDialog();
 
   // Batch fetch all user interactions in ONE query instead of per-video
   const { interactions: batchedInteractions } = useBatchedVideoInteractions(
@@ -285,7 +284,6 @@ export function VideoPage() {
   // Social interaction handlers (same as VideoFeed)
   const handleLike = useCallback(async (video: ParsedVideoData) => {
     if (!user) {
-      pendingSocialAction.current = { action: 'like', video };
       openLoginDialog();
       return;
     }
@@ -327,7 +325,6 @@ export function VideoPage() {
 
   const handleRepost = useCallback(async (video: ParsedVideoData) => {
     if (!user) {
-      pendingSocialAction.current = { action: 'repost', video };
       openLoginDialog();
       return;
     }
@@ -373,25 +370,6 @@ export function VideoPage() {
       });
     }
   }, [user, t, openLoginDialog, repostVideo, isReposting, toast, queryClient]);
-
-  // Auto-execute pending like/repost after user signs in
-  useEffect(() => {
-    if (!user || !pendingSocialAction.current) return;
-    const { action, video } = pendingSocialAction.current;
-    pendingSocialAction.current = null;
-    if (action === 'like') {
-      void handleLike(video);
-    } else {
-      void handleRepost(video);
-    }
-  }, [user, handleLike, handleRepost]);
-
-  // Clear pending social action if dialog is dismissed without successful login.
-  // This prevents a stale pending action from replaying on an unrelated future login.
-  useEffect(() => {
-    if (loginDialogOpen) return;
-    pendingSocialAction.current = null;
-  }, [loginDialogOpen]);
 
   const handleUnlike = async (likeEventId: string) => {
     if (!user) return;

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { fireEvent, render } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import type { HTMLAttributes, ReactNode } from 'react';
 import VideoPage from './VideoPage';
@@ -9,9 +9,8 @@ const { mockNavigate } = vi.hoisted(() => ({
   mockNavigate: vi.fn(),
 }));
 
-const { openLoginDialogMock, closeLoginDialogMock } = vi.hoisted(() => ({
+const { openLoginDialogMock } = vi.hoisted(() => ({
   openLoginDialogMock: vi.fn(),
-  closeLoginDialogMock: vi.fn(),
 }));
 
 vi.mock('@unhead/react', () => ({
@@ -147,16 +146,16 @@ vi.mock('@/contexts/LoginDialogContext', () => ({
   useLoginDialog: () => ({
     isOpen: false,
     openLoginDialog: openLoginDialogMock,
-    closeLoginDialog: closeLoginDialogMock,
+    closeLoginDialog: vi.fn(),
   }),
 }));
 
 vi.mock('@/components/VideoCard', () => ({
-  VideoCard: ({ video, onLike }: { video: { id: string }; onLike?: () => void }) => (
+  VideoCard: ({ video, onLike, onRepost }: { video: { id: string }; onLike?: () => void; onRepost?: () => void }) => (
     <div data-testid="video-card">
       {video.id}
-      <button aria-label="Like video" data-testid="like-button" onClick={onLike} />
-      <button aria-label="Repost video" data-testid="repost-button" />
+      <button aria-label="Like video" onClick={onLike} />
+      <button aria-label="Repost video" onClick={onRepost} />
     </div>
   ),
 }));
@@ -221,19 +220,13 @@ describe('VideoPage', () => {
     expect(url.searchParams.get('index')).toBe('2');
   });
 
-  it('clears pending social action when login dialog is dismissed without successful login', async () => {
-    openLoginDialogMock.mockReset();
-    closeLoginDialogMock.mockReset();
-
+  it('opens the login dialog when a signed-out viewer likes or reposts', () => {
     renderPage('/video/video-2');
 
-    const likeButton = document.querySelector('[data-testid="like-button"]') as HTMLButtonElement;
-    expect(likeButton).not.toBeNull();
-    fireEvent.click(likeButton);
+    fireEvent.click(screen.getByRole('button', { name: /like video/i }));
     expect(openLoginDialogMock).toHaveBeenCalledTimes(1);
 
-    closeLoginDialogMock();
-    fireEvent.click(likeButton);
+    fireEvent.click(screen.getByRole('button', { name: /repost video/i }));
     expect(openLoginDialogMock).toHaveBeenCalledTimes(2);
   });
 });
