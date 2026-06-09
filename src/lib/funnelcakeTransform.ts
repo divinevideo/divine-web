@@ -36,6 +36,15 @@ function parseLoopsFromTags(tags?: string[][]): number | null {
   return Number.isFinite(loops) && loops > 0 ? loops : null;
 }
 
+function getVineExternalId(raw: FunnelcakeVideoRaw): string {
+  const originTag = raw.tags?.find((tag) => tag[0] === 'origin');
+  if (originTag?.[1]?.toLowerCase() === 'vine' && originTag[2]) {
+    return originTag[2];
+  }
+
+  return raw.d_tag || '';
+}
+
 /**
  * Transform a single Funnelcake video to ParsedVideoData format
  */
@@ -55,9 +64,10 @@ export function transformFunnelcakeVideo(raw: FunnelcakeVideoRaw): ParsedVideoDa
   }
 
   const taggedPlatform = raw.tags?.find((tag) => tag[0] === 'platform')?.[1]?.toLowerCase();
+  const originPlatform = raw.tags?.find((tag) => tag[0] === 'origin')?.[1]?.toLowerCase();
 
   // Single-video lookups can omit top-level platform/classic fields, so fall back to tags.
-  const isVineMigrated = raw.platform === 'vine' || raw.classic === true || taggedPlatform === 'vine';
+  const isVineMigrated = raw.platform === 'vine' || raw.classic === true || taggedPlatform === 'vine' || originPlatform === 'vine';
   const archivedLoopCount = parseLoopsFromTags(raw.tags)
     ?? parseLoopsFromContent(raw.content)
     ?? parseLoopsFromContent(raw.title);
@@ -115,7 +125,7 @@ export function transformFunnelcakeVideo(raw: FunnelcakeVideoRaw): ParsedVideoDa
     isVineMigrated,
     origin: isVineMigrated ? {
       platform: 'vine',
-      externalId: raw.d_tag || '',
+      externalId: getVineExternalId(raw),
     } : undefined,
 
     // Subtitle / text track fields from API

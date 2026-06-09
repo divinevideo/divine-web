@@ -192,6 +192,18 @@ async function handleRequest(event) {
       console.log('Falling through to SPA handler');
     }
 
+    if (url.pathname.startsWith('/v/')) {
+      console.log('Handling legacy Vine vanity URL for crawler, path:', url.pathname);
+      const legacyId = url.pathname.split('/v/')[1]?.split('?')[0];
+      if (legacyId) {
+        const ogResponse = await handleVideoOgTags(request, legacyId, url, funnelcakeTarget);
+        if (ogResponse) {
+          return ogResponse;
+        }
+      }
+      console.log('Falling through to SPA handler');
+    }
+
     if (url.pathname.startsWith('/profile/')) {
       const ogResponse = await handleProfileOgTags(request, url, funnelcakeTarget);
       if (ogResponse) {
@@ -1051,6 +1063,12 @@ async function handleVideoOgTags(request, videoId, url, funnelcakeTarget) {
       imageWidth: videoMeta?.imageWidth || 1200,
       imageHeight: videoMeta?.imageHeight || 630,
       video: videoBlock,
+      alternate: videoMeta?.originExternalId ? [{
+        rel: 'alternate',
+        type: 'text/html',
+        href: `https://divine.video/v/${videoMeta.originExternalId}`,
+        title: 'Legacy Vine URL',
+      }] : undefined,
     });
 
     console.log('Generated OG HTML, length:', html.length);

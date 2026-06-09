@@ -2,7 +2,7 @@ import { useParams, useSearchParams } from 'react-router-dom';
 import { useSubdomainNavigate } from '@/hooks/useSubdomainNavigate';
 import { useEffect, useCallback, useState, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useSeoMeta } from '@unhead/react';
+import { useSeoMeta, useHead } from '@unhead/react';
 import { Hash, User, X, CircleNotch as Loader2 } from '@phosphor-icons/react';
 import InfiniteScroll from 'react-infinite-scroll-component';
 import { Card, CardContent } from '@/components/ui/card';
@@ -254,6 +254,17 @@ export function VideoPage() {
     twitterTitle: currentVideo?.title || t('videoPage.seoTitle'),
     twitterDescription: currentVideo?.content || t('videoPage.seoDescription'),
     twitterImage: currentVideo?.thumbnailUrl || '/og.avif',
+  });
+
+  useHead({
+    link: currentVideo?.origin?.platform === 'vine' && currentVideo.origin.externalId
+      ? [{
+          rel: 'alternate',
+          type: 'text/html',
+          href: `https://divine.video/v/${currentVideo.origin.externalId}`,
+          title: 'Legacy Vine URL',
+        }]
+      : [],
   });
 
   // Navigation back to source

@@ -33,6 +33,7 @@ export function buildCrawlerHtml({
   imageHeight = null,
   siteName = 'Divine',
   video = null,
+  alternate = null,
 }) {
   const e = escapeHtml;
   const imageDimsBlock = (imageWidth && imageHeight) ? `
@@ -49,6 +50,9 @@ export function buildCrawlerHtml({
   <meta name="twitter:player:height" content="${Number(video.height) || 1280}" />
   <meta name="twitter:player:stream" content="${e(video.url)}" />
   <meta name="twitter:player:stream:content_type" content="${e(video.type || 'video/mp4')}" />` : ''}` : '';
+  const alternateBlock = alternate?.map(a =>
+    `  <link rel="${e(a.rel)}" type="${e(a.type)}" href="${e(a.href)}"${a.title ? ` title="${e(a.title)}"` : ''} />`
+  ).join('\n') || '';
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -71,6 +75,7 @@ ${videoBlock}
   ${twitterCreator ? `<meta name="twitter:creator" content="${e(twitterCreator)}" />` : ''}
 
   <link rel="canonical" href="${e(url)}" />
+${alternateBlock}
 </head>
 <body>
   <p><a href="${e(url)}">${e(title)}</a></p>

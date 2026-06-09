@@ -11,6 +11,7 @@ const { mockNavigate } = vi.hoisted(() => ({
 
 vi.mock('@unhead/react', () => ({
   useSeoMeta: vi.fn(),
+  useHead: vi.fn(),
 }));
 
 vi.mock('@/hooks/useSubdomainNavigate', () => ({

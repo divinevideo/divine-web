@@ -32,6 +32,22 @@ describe('transformFunnelcakeVideo', () => {
     });
   });
 
+  it('prefers the Vine origin tag external id over the d tag', () => {
+    const video = transformFunnelcakeVideo(makeRawVideo({
+      d_tag: 'addressable-d-tag',
+      tags: [
+        ['origin', 'vine', 'origin-id', 'https://vine.co/v/origin-id'],
+        ['d', 'addressable-d-tag'],
+      ],
+    }));
+
+    expect(video.isVineMigrated).toBe(true);
+    expect(video.origin).toEqual({
+      platform: 'vine',
+      externalId: 'origin-id',
+    });
+  });
+
   it('prefers archived Vine loop tags over current Divine loop fields', () => {
     const video = transformFunnelcakeVideo(makeRawVideo({
       platform: 'vine',

@@ -97,6 +97,25 @@ describe('buildCrawlerHtml', () => {
     expect(html).toContain('<link rel="canonical" href="https://example.com/page"');
   });
 
+  it('emits escaped alternate links when provided', () => {
+    const html = buildCrawlerHtml({
+      ...baseArgs,
+      alternate: [{
+        rel: 'alternate',
+        type: 'text/html',
+        href: 'https://divine.video/v/a&b"<',
+        title: 'Legacy Vine URL',
+      }],
+    });
+
+    expect(html).toContain('<link rel="alternate" type="text/html" href="https://divine.video/v/a&amp;b&quot;&lt;" title="Legacy Vine URL"');
+  });
+
+  it('omits alternate links when none are provided', () => {
+    const html = buildCrawlerHtml(baseArgs);
+    expect(html).not.toContain('rel="alternate"');
+  });
+
   it('emits twitter:creator only when provided', () => {
     const without = buildCrawlerHtml(baseArgs);
     expect(without).not.toContain('twitter:creator');

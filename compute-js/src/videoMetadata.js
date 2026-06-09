@@ -26,6 +26,20 @@ function parseDim(dim) {
   return [Number(m[1]), Number(m[2])];
 }
 
+function getVineExternalId(event) {
+  const originTag = event.tags?.find((t) => t[0] === 'origin');
+  if (originTag?.[1]?.toLowerCase() === 'vine' && originTag[2]) {
+    return originTag[2];
+  }
+
+  const platformTag = event.tags?.find((t) => t[0] === 'platform');
+  if (platformTag?.[1]?.toLowerCase() !== 'vine') {
+    return null;
+  }
+
+  return event.tags?.find((t) => t[0] === 'd')?.[1] || null;
+}
+
 export function transformVideoApiResponse(result, { defaultOgImage = null } = {}) {
   if (!result?.event) return null;
   const event = result.event;
@@ -70,5 +84,6 @@ export function transformVideoApiResponse(result, { defaultOgImage = null } = {}
     videoHeight: videoHeight || null,
     imageWidth: imageW || null,
     imageHeight: imageH || null,
+    originExternalId: getVineExternalId(event),
   };
 }
