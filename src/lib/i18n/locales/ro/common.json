@@ -438,6 +438,7 @@
     "errorFileNoValidKey": "Fișierul nu conține o cheie secretă validă.",
     "errorFileReadFailed": "Citirea fișierului a eșuat.",
     "errorInviteValidationFailed": "Codul de invitație nu poate fi validat",
+    "errorInviteCodeUsed": "Acest cod de invitație a fost deja folosit",
     "errorSignInStartFailed": "Conectarea nu poate fi pornită",
     "errorWaitlistJoinFailed": "Înscrierea pe lista de așteptare a eșuat"
   },
@@ -1402,6 +1403,16 @@
     "checking": "Se verifică...",
     "continue": "Continuă",
     "joinWaitlist": "N-ai invitație? Înscrie-te pe lista de așteptare."
+  },
+  "invitesLandingPage": {
+    "seoTitle": "Alătură-te diVine cu codul de invitație {{code}}",
+    "seoTitleDefault": "Alătură-te diVine",
+    "seoDescription": "Ai fost invitat! Folosește codul {{code}} ca să te alături diVine.",
+    "seoDescriptionDefault": "Folosește codul tău de invitație ca să te alături diVine și să începi să distribui video.",
+    "heading": "Ești invitat!",
+    "subheading": "Introdu codul de invitație ca să te alături diVine",
+    "alreadyHaveAccount": "Ai deja un cont?",
+    "signIn": "Conectează-te"
   },
   "applePodcastEmbed": {
     "defaultTitle": "Vine Revisited and The Fight Against AI Slop",

@@ -437,6 +437,7 @@
     "errorFileNoValidKey": "Bestand bevat geen geldige geheime sleutel.",
     "errorFileReadFailed": "Bestand lezen mislukt.",
     "errorInviteValidationFailed": "Kan uitnodigingscode niet valideren",
+    "errorInviteCodeUsed": "Deze uitnodigingscode is al gebruikt",
     "errorSignInStartFailed": "Kan inloggen niet starten",
     "errorWaitlistJoinFailed": "Kan niet aansluiten bij de wachtlijst"
   },
@@ -1401,6 +1402,16 @@
     "checking": "Bezig met controleren...",
     "continue": "Doorgaan",
     "joinWaitlist": "Geen uitnodiging? Zet je op de wachtlijst."
+  },
+  "invitesLandingPage": {
+    "seoTitle": "Word lid van diVine met uitnodigingscode {{code}}",
+    "seoTitleDefault": "Word lid van diVine",
+    "seoDescription": "Je bent uitgenodigd! Gebruik code {{code}} om lid te worden van diVine.",
+    "seoDescriptionDefault": "Gebruik je uitnodigingscode om lid te worden van diVine en video te delen.",
+    "heading": "Je bent uitgenodigd!",
+    "subheading": "Voer je uitnodigingscode in om lid te worden van diVine",
+    "alreadyHaveAccount": "Heb je al een account?",
+    "signIn": "Inloggen"
   },
   "applePodcastEmbed": {
     "defaultTitle": "Vine Revisited and The Fight Against AI Slop",

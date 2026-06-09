@@ -439,6 +439,7 @@
     "errorFileNoValidKey": "Plik nie zawiera prawidłowego klucza prywatnego.",
     "errorFileReadFailed": "Nie udało się odczytać pliku.",
     "errorInviteValidationFailed": "Nie można zweryfikować kodu zaproszenia",
+    "errorInviteCodeUsed": "Ten kod zaproszenia został już użyty",
     "errorSignInStartFailed": "Nie można rozpocząć logowania",
     "errorWaitlistJoinFailed": "Nie można dołączyć do listy oczekujących"
   },
@@ -1403,6 +1404,16 @@
     "checking": "Sprawdzanie...",
     "continue": "Dalej",
     "joinWaitlist": "Nie masz zaproszenia? Zapisz się na listę oczekujących."
+  },
+  "invitesLandingPage": {
+    "seoTitle": "Dołącz do diVine z kodem zaproszenia {{code}}",
+    "seoTitleDefault": "Dołącz do diVine",
+    "seoDescription": "Masz zaproszenie! Użyj kodu {{code}}, aby dołączyć do diVine.",
+    "seoDescriptionDefault": "Użyj kodu zaproszenia, aby dołączyć do diVine i zacząć udostępniać wideo.",
+    "heading": "Masz zaproszenie!",
+    "subheading": "Wpisz kod zaproszenia, aby dołączyć do diVine",
+    "alreadyHaveAccount": "Masz już konto?",
+    "signIn": "Zaloguj się"
   },
   "applePodcastEmbed": {
     "defaultTitle": "Vine Revisited and The Fight Against AI Slop",

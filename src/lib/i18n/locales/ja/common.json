@@ -437,6 +437,7 @@
     "errorFileNoValidKey": "ファイルに有効な秘密鍵が含まれていません。",
     "errorFileReadFailed": "ファイルの読み込みに失敗しました。",
     "errorInviteValidationFailed": "招待コードを検証できません",
+    "errorInviteCodeUsed": "この招待コードはすでに使用されています",
     "errorSignInStartFailed": "サインインを開始できません",
     "errorWaitlistJoinFailed": "順番待ちリストに参加できません"
   },
@@ -1401,6 +1402,16 @@
     "checking": "確認中...",
     "continue": "続ける",
     "joinWaitlist": "招待がない?ウェイトリストに登録してください。"
+  },
+  "invitesLandingPage": {
+    "seoTitle": "招待コード {{code}} でdiVineに参加",
+    "seoTitleDefault": "diVineに参加",
+    "seoDescription": "招待されています！コード {{code}} を使ってdiVineに参加しましょう。",
+    "seoDescriptionDefault": "招待コードを使ってdiVineに参加し、動画の共有を始めましょう。",
+    "heading": "招待されています！",
+    "subheading": "diVineに参加するには招待コードを入力してください",
+    "alreadyHaveAccount": "すでにアカウントをお持ちですか？",
+    "signIn": "サインイン"
   },
   "applePodcastEmbed": {
     "defaultTitle": "Vine Revisited and The Fight Against AI Slop",

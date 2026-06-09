@@ -437,6 +437,7 @@
     "errorFileNoValidKey": "Walang valid na secret key sa file.",
     "errorFileReadFailed": "Hindi mabasa ang file.",
     "errorInviteValidationFailed": "Hindi ma-validate ang invite code",
+    "errorInviteCodeUsed": "Nagamit na ang invite code na ito",
     "errorSignInStartFailed": "Hindi masimulan ang sign-in",
     "errorWaitlistJoinFailed": "Hindi maka-join sa waitlist"
   },
@@ -1401,6 +1402,16 @@
     "checking": "Sinusuri...",
     "continue": "Magpatuloy",
     "joinWaitlist": "Walang invite? Sumali sa waitlist."
+  },
+  "invitesLandingPage": {
+    "seoTitle": "Sumali sa diVine gamit ang invite code {{code}}",
+    "seoTitleDefault": "Sumali sa diVine",
+    "seoDescription": "Inimbitahan ka! Gamitin ang code {{code}} para sumali sa diVine.",
+    "seoDescriptionDefault": "Gamitin ang invite code mo para sumali sa diVine at magsimulang mag-share ng video.",
+    "heading": "Imbitado Ka!",
+    "subheading": "Ilagay ang invite code mo para sumali sa diVine",
+    "alreadyHaveAccount": "May account ka na?",
+    "signIn": "Mag-sign in"
   },
   "applePodcastEmbed": {
     "defaultTitle": "Vine Revisited at ang Laban Kontra AI Slop",

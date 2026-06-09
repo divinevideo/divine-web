@@ -437,6 +437,7 @@
     "errorFileNoValidKey": "파일에 유효한 비밀키가 없어요.",
     "errorFileReadFailed": "파일을 읽을 수 없어요.",
     "errorInviteValidationFailed": "초대 코드를 확인할 수 없음",
+    "errorInviteCodeUsed": "이 초대 코드는 이미 사용되었습니다",
     "errorSignInStartFailed": "로그인을 시작할 수 없음",
     "errorWaitlistJoinFailed": "대기자 명단에 등록할 수 없음"
   },
@@ -1401,6 +1402,16 @@
     "checking": "확인 중...",
     "continue": "계속",
     "joinWaitlist": "초대 코드가 없나요? 대기자 명단에 등록하세요."
+  },
+  "invitesLandingPage": {
+    "seoTitle": "초대 코드 {{code}}로 diVine에 가입",
+    "seoTitleDefault": "diVine에 가입",
+    "seoDescription": "초대받았어요! 코드 {{code}}를 사용해 diVine에 가입하세요.",
+    "seoDescriptionDefault": "초대 코드를 사용해 diVine에 가입하고 동영상 공유를 시작하세요.",
+    "heading": "초대받았어요!",
+    "subheading": "diVine에 가입하려면 초대 코드를 입력하세요",
+    "alreadyHaveAccount": "이미 계정이 있나요?",
+    "signIn": "로그인"
   },
   "applePodcastEmbed": {
     "defaultTitle": "Vine Revisited and The Fight Against AI Slop",

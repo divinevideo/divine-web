@@ -437,6 +437,7 @@
     "errorFileNoValidKey": "Dosya geçerli bir gizli anahtar içermiyor.",
     "errorFileReadFailed": "Dosya okunamadı.",
     "errorInviteValidationFailed": "Davet kodu doğrulanamadı",
+    "errorInviteCodeUsed": "Bu davet kodu zaten kullanılmış",
     "errorSignInStartFailed": "Giriş başlatılamadı",
     "errorWaitlistJoinFailed": "Bekleme listesine katılınamadı"
   },
@@ -1401,6 +1402,16 @@
     "checking": "Kontrol ediliyor...",
     "continue": "Devam et",
     "joinWaitlist": "Davetin yok mu? Bekleme listesine katıl."
+  },
+  "invitesLandingPage": {
+    "seoTitle": "{{code}} davet koduyla diVine'a katıl",
+    "seoTitleDefault": "diVine'a katıl",
+    "seoDescription": "Davet edildin! diVine'a katılmak için {{code}} kodunu kullan.",
+    "seoDescriptionDefault": "diVine'a katılıp video paylaşmaya başlamak için davet kodunu kullan.",
+    "heading": "Davetlisin!",
+    "subheading": "diVine'a katılmak için davet kodunu gir",
+    "alreadyHaveAccount": "Zaten hesabın var mı?",
+    "signIn": "Giriş yap"
   },
   "applePodcastEmbed": {
     "defaultTitle": "Vine Revisited and The Fight Against AI Slop",

@@ -437,6 +437,7 @@
     "errorFileNoValidKey": "File tidak berisi kunci rahasia yang valid.",
     "errorFileReadFailed": "Gagal membaca file.",
     "errorInviteValidationFailed": "Tidak bisa memvalidasi kode invite",
+    "errorInviteCodeUsed": "Kode invite ini sudah digunakan",
     "errorSignInStartFailed": "Tidak bisa memulai sign-in",
     "errorWaitlistJoinFailed": "Tidak bisa bergabung ke waitlist"
   },
@@ -1401,6 +1402,16 @@
     "checking": "Mengecek...",
     "continue": "Lanjut",
     "joinWaitlist": "Belum punya undangan? Masuk waitlist."
+  },
+  "invitesLandingPage": {
+    "seoTitle": "Gabung diVine dengan kode invite {{code}}",
+    "seoTitleDefault": "Gabung diVine",
+    "seoDescription": "Kamu diundang! Gunakan kode {{code}} untuk bergabung ke diVine.",
+    "seoDescriptionDefault": "Gunakan kode invite kamu untuk bergabung ke diVine dan mulai berbagi video.",
+    "heading": "Kamu Diundang!",
+    "subheading": "Masukkan kode invite kamu untuk bergabung ke diVine",
+    "alreadyHaveAccount": "Sudah punya akun?",
+    "signIn": "Masuk"
   },
   "applePodcastEmbed": {
     "defaultTitle": "Vine Revisited and The Fight Against AI Slop",

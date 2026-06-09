@@ -437,6 +437,7 @@
     "errorFileNoValidKey": "O arquivo não contém uma chave secreta válida.",
     "errorFileReadFailed": "Falha ao ler o arquivo.",
     "errorInviteValidationFailed": "Não foi possível validar o código de convite",
+    "errorInviteCodeUsed": "Este código de convite já foi usado",
     "errorSignInStartFailed": "Não foi possível iniciar o login",
     "errorWaitlistJoinFailed": "Não foi possível entrar na lista de espera"
   },
@@ -1401,6 +1402,16 @@
     "checking": "Verificando...",
     "continue": "Continuar",
     "joinWaitlist": "Sem convite? Entre na lista de espera."
+  },
+  "invitesLandingPage": {
+    "seoTitle": "Entre no diVine com o código de convite {{code}}",
+    "seoTitleDefault": "Entre no diVine",
+    "seoDescription": "Você recebeu um convite! Use o código {{code}} para entrar no diVine.",
+    "seoDescriptionDefault": "Use seu código de convite para entrar no diVine e começar a compartilhar vídeo.",
+    "heading": "Você recebeu um convite!",
+    "subheading": "Digite seu código de convite para entrar no diVine",
+    "alreadyHaveAccount": "Já tem uma conta?",
+    "signIn": "Entrar"
   },
   "applePodcastEmbed": {
     "defaultTitle": "Vine Revisited and The Fight Against AI Slop",
