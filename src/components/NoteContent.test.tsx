@@ -1,13 +1,19 @@
-import { describe, it, expect, vi } from 'vitest';
+import { beforeEach, describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { nip19 } from 'nostr-tools';
 import { NoteContent } from './NoteContent';
 import type { NostrEvent } from '@nostrify/nostrify';
 
+const authorMocks = vi.hoisted(() => ({
+  metadata: {
+    display_name: 'rabble',
+  } as Record<string, unknown>,
+}));
+
 vi.mock('@/hooks/useAuthor', () => ({
   useAuthor: () => ({
-    data: { metadata: { display_name: 'rabble' } },
+    data: { metadata: authorMocks.metadata },
     isLoading: false,
   }),
 }));
@@ -40,11 +46,26 @@ function renderContent(content: string) {
 }
 
 describe('NoteContent — bare nostr identifiers', () => {
+  beforeEach(() => {
+    authorMocks.metadata = { display_name: 'rabble' };
+  });
+
   it('linkifies a bare npub1... as @mention', () => {
     renderContent(`hello ${NPUB}`);
     const link = screen.getByRole('link');
     expect(link).toHaveAttribute('href', `/${NPUB}`);
     expect(link.textContent).toBe('@rabble');
+  });
+
+  it('keeps npub mention links direct when author metadata includes a NIP-05 alias', () => {
+    authorMocks.metadata = {
+      display_name: 'rabble',
+      nip05: '_@rabble.divine.video',
+    };
+
+    renderContent(`hello ${NPUB}`);
+
+    expect(screen.getByRole('link', { name: '@rabble' })).toHaveAttribute('href', `/${NPUB}`);
   });
 
   it('linkifies a bare note1...', () => {
