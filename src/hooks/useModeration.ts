@@ -26,7 +26,10 @@ export const MUTE_LIST_KIND = 10000;
 const EMPTY_MUTE_LIST: MuteItem[] = [];
 
 /**
- * Parse a mute list event (kind 10001)
+ * Parse the mute-relevant tags from a NIP-51 mute list event (kind 10000).
+ * Returns only p/t/word/e tags the UI understands. Other tags (a pins, d, etc.)
+ * are preserved on the event itself and must round-trip through the mutation
+ * helpers below.
  */
 function parseMuteList(event: NostrEvent): MuteItem[] {
   const items: MuteItem[] = [];
@@ -34,7 +37,6 @@ function parseMuteList(event: NostrEvent): MuteItem[] {
   for (const tag of event.tags) {
     const [type, value, reason] = tag;
 
-    // Check if it's a valid mute type
     if (type === 'p' || type === 't' || type === 'word' || type === 'e') {
       if (value) {
         items.push({
@@ -48,6 +50,17 @@ function parseMuteList(event: NostrEvent): MuteItem[] {
   }
 
   return items;
+}
+
+/**
+ * Return the most recent event from a Nostr relay response, or null.
+ * Sort is descending by created_at; ties broken by event id for determinism.
+ */
+function latestEvent(events: NostrEvent[]): NostrEvent | null {
+  if (events.length === 0) return null;
+  return events
+    .slice()
+    .sort((a, b) => b.created_at - a.created_at || (a.id < b.id ? 1 : -1))[0];
 }
 
 /**
