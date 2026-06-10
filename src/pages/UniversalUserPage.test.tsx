@@ -108,7 +108,7 @@ describe('UniversalUserPage', () => {
     });
   });
 
-  it('prefers exact legacy Vine username matches before the openvine fallback', async () => {
+  it('prefers exact legacy Vine username matches over the default-apex NIP-05 candidates', async () => {
     const legacyPubkey = 'b'.repeat(64);
     const fallbackPubkey = 'c'.repeat(64);
     mockNostrQuery.mockResolvedValue([
@@ -147,12 +147,12 @@ describe('UniversalUserPage', () => {
     });
   });
 
-  it('falls back to openvine NIP-05 when there is no legacy Vine username match', async () => {
+  it('falls back to the default-apex NIP-05 candidates when there is no legacy Vine username match', async () => {
     const pubkey = 'e'.repeat(64);
     mockNostrQuery.mockResolvedValue([
       createProfileEvent(pubkey, {
-        name: 'OpenVine User',
-        nip05: 'someuser@openvine.co',
+        name: 'Default Apex User',
+        nip05: 'someuser@divine.video',
       }),
     ]);
 
@@ -176,5 +176,97 @@ describe('UniversalUserPage', () => {
     expect(await screen.findByText('User Not Found')).toBeInTheDocument();
     expect(screen.getByText(/missinguser/)).toBeInTheDocument();
     expect(mockNavigate).not.toHaveBeenCalled();
+  });
+
+  it('resolves a bare-name URL via the default-apex NIP-05 candidate list', async () => {
+    const pubkey = '1'.repeat(64);
+    mockNostrQuery.mockResolvedValue([
+      createProfileEvent(pubkey, {
+        name: 'Jacky!',
+        nip05: '_@jacky.divine.video',
+      }),
+    ]);
+
+    renderPage('/u/jacky');
+
+    await waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalledWith(`/${nip19.npubEncode(pubkey)}`, { replace: true });
+    });
+  });
+
+  it('resolves an explicit default-apex URL when only the non-underscore variant is set', async () => {
+    const pubkey = '2'.repeat(64);
+    mockNostrQuery.mockResolvedValue([
+      createProfileEvent(pubkey, {
+        name: 'Alice',
+        nip05: 'alice@divine.video',
+      }),
+    ]);
+
+    renderPage('/u/alice.divine.video');
+
+    await waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalledWith(`/${nip19.npubEncode(pubkey)}`, { replace: true });
+    });
+  });
+
+  it('resolves an explicit alternate-apex URL', async () => {
+    const pubkey = '3'.repeat(64);
+    mockNostrQuery.mockResolvedValue([
+      createProfileEvent(pubkey, {
+        name: 'Sam',
+        nip05: '_@sam.dvine.video',
+      }),
+    ]);
+
+    renderPage('/u/sam.dvine.video');
+
+    await waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalledWith(`/${nip19.npubEncode(pubkey)}`, { replace: true });
+    });
+  });
+
+  it('falls back to NIP-05 DNS when no kind-0 profile matches a bare name', async () => {
+    const pubkey = '4'.repeat(64);
+    mockNostrQuery.mockResolvedValue([]);
+
+    const originalFetch = globalThis.fetch;
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ names: { _: pubkey } }),
+    });
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+    try {
+      renderPage('/u/jacky');
+
+      await waitFor(() => {
+        expect(mockNavigate).toHaveBeenCalledWith(`/${nip19.npubEncode(pubkey)}`, { replace: true });
+      });
+      expect(fetchMock).toHaveBeenCalled();
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+
+  it('does not try the legacy Vine branch for subdomain-shaped inputs', async () => {
+    const pubkey = '5'.repeat(64);
+    mockNostrQuery.mockResolvedValue([
+      createProfileEvent('6'.repeat(64), {
+        name: 'Wrong Match',
+        vine_metadata: {
+          username: 'jacky.divine.video',
+        },
+      }),
+      createProfileEvent(pubkey, {
+        name: 'Jacky!',
+        nip05: '_@jacky.divine.video',
+      }),
+    ]);
+
+    renderPage('/u/jacky.divine.video');
+
+    await waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalledWith(`/${nip19.npubEncode(pubkey)}`, { replace: true });
+    });
   });
 });

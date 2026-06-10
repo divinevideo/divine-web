@@ -11,6 +11,8 @@ import type { TFunction } from 'i18next';
 import { Card, CardContent } from '@/components/ui/card';
 import { WarningCircle as AlertCircle, CircleNotch as Loader2 } from '@phosphor-icons/react';
 import { debugLog } from '@/lib/debug';
+import { nip05CandidatesFromUrlSegment } from '@/lib/profileLinks';
+import { resolveNip05ToPubkey } from '@/lib/nip05Resolve';
 
 const VINE_USER_ID_PATTERN = /^\d{15,20}$/;
 const VINE_HOSTNAME_PATTERN = /(^|\.)vine\.co$/i;
@@ -166,7 +168,9 @@ function getLookupLabel(identifier: string, t: TFunction): string {
     return t('universalUserPage.lookupLabel.vineId');
   }
 
-  return decodeIdentifier(identifier).includes('@')
+  const decoded = decodeIdentifier(identifier);
+  const looksLikeNip05 = decoded.includes('@') || decoded.includes('.');
+  return looksLikeNip05
     ? t('universalUserPage.lookupLabel.nip05')
     : t('universalUserPage.lookupLabel.legacyOrNip05');
 }
@@ -176,7 +180,9 @@ function getNotFoundDescription(identifier: string, t: TFunction): string {
     return t('universalUserPage.notFoundDescription.vine');
   }
 
-  return decodeIdentifier(identifier).includes('@')
+  const decoded = decodeIdentifier(identifier);
+  const looksLikeNip05 = decoded.includes('@') || decoded.includes('.');
+  return looksLikeNip05
     ? t('universalUserPage.notFoundDescription.nip05')
     : t('universalUserPage.notFoundDescription.legacy');
 }
@@ -206,7 +212,6 @@ function useUniversalUserLookup(identifier: string | undefined) {
       const profiles = getParsedProfiles(events);
 
       if (isVineUserId(decodedIdentifier)) {
-        // Handle Vine user ID lookup
         debugLog(`[UniversalUserPage] Looking up Vine user ID: ${decodedIdentifier}`);
         debugLog(`[UniversalUserPage] Searching through ${profiles.length} profiles for Vine ID`);
 
@@ -222,42 +227,67 @@ function useUniversalUserLookup(identifier: string | undefined) {
         }
 
         throw new UserNotFoundError(`No user found with Vine ID: ${decodedIdentifier}`);
-      } else {
-        debugLog(`[UniversalUserPage] Looking up username or NIP-05: ${decodedIdentifier}`);
+      }
 
-        const normalizedIdentifier = decodedIdentifier.toLowerCase();
-        if (!decodedIdentifier.includes('@')) {
-          for (const profile of profiles) {
-            const legacyUsername = extractLegacyVineUsername(profile.metadata);
-            if (legacyUsername?.toLowerCase() === normalizedIdentifier) {
-              debugLog(`[UniversalUserPage] Found legacy Vine user: ${profile.metadata.name}`);
-              return {
-                pubkey: profile.pubkey,
-                metadata: profile.metadata,
-                type: 'vine',
-              } satisfies ProfileLookupResult;
-            }
-          }
-        }
+      debugLog(`[UniversalUserPage] Looking up username or NIP-05: ${decodedIdentifier}`);
 
-        const nip05Identifier = decodedIdentifier.includes('@')
-          ? decodedIdentifier
-          : `${decodedIdentifier}@openvine.co`;
-
+      // Legacy Vine username: no '@' and no '.' — try matching against
+      // `vine_metadata.username` / `website` profiles.
+      const normalizedIdentifier = decodedIdentifier.toLowerCase();
+      if (!decodedIdentifier.includes('@') && !decodedIdentifier.includes('.')) {
         for (const profile of profiles) {
-          const nip05 = getStringRecordValue(profile.metadata, 'nip05');
-          if (nip05?.toLowerCase() === nip05Identifier.toLowerCase()) {
-            debugLog(`[UniversalUserPage] Found NIP-05 user: ${profile.metadata.name}`);
+          const legacyUsername = extractLegacyVineUsername(profile.metadata);
+          if (legacyUsername?.toLowerCase() === normalizedIdentifier) {
+            debugLog(`[UniversalUserPage] Found legacy Vine user: ${profile.metadata.name}`);
             return {
               pubkey: profile.pubkey,
               metadata: profile.metadata,
-              type: 'nip05',
+              type: 'vine',
             } satisfies ProfileLookupResult;
           }
         }
-
-        throw new UserNotFoundError(`No user found with NIP-05: ${nip05Identifier}`);
       }
+
+      // NIP-05 path: expand the URL segment into the canonical NIP-05 strings we
+      // expect to find in kind-0 metadata (or resolve via NIP-05 DNS).
+      const nip05Candidates = nip05CandidatesFromUrlSegment(decodedIdentifier);
+      debugLog(`[UniversalUserPage] NIP-05 candidates for "${decodedIdentifier}": ${JSON.stringify(nip05Candidates)}`);
+
+      const normalizedCandidates = new Set(nip05Candidates.map(c => c.toLowerCase()));
+      for (const profile of profiles) {
+        const nip = getStringRecordValue(profile.metadata, 'nip05');
+        if (nip && normalizedCandidates.has(nip.toLowerCase())) {
+          debugLog(`[UniversalUserPage] Found NIP-05 user: ${profile.metadata.name}`);
+          return {
+            pubkey: profile.pubkey,
+            metadata: profile.metadata,
+            type: 'nip05',
+          } satisfies ProfileLookupResult;
+        }
+      }
+
+      // DNS NIP-05 fallback. We only attempt this for candidates that contain an
+      // '@' (third-party segments with no '@' can't be resolved via DNS — they
+      // are tried against kind-0 above and reported as not-found if no match).
+      for (const candidate of nip05Candidates) {
+        if (!candidate.includes('@')) continue;
+        try {
+          const pubkey = await resolveNip05ToPubkey(candidate, { signal });
+          if (pubkey) {
+            debugLog(`[UniversalUserPage] Resolved NIP-05 via DNS: ${candidate} -> ${pubkey}`);
+            return {
+              pubkey,
+              metadata: {},
+              type: 'nip05',
+            } satisfies ProfileLookupResult;
+          }
+        } catch (err) {
+          if (err instanceof DOMException && err.name === 'AbortError') throw err;
+          debugLog(`[UniversalUserPage] DNS NIP-05 lookup failed for ${candidate}: ${(err as Error).message}`);
+        }
+      }
+
+      throw new UserNotFoundError(`No user found for identifier: ${decodedIdentifier}`);
     },
     enabled: !!identifier,
     staleTime: 300000,
