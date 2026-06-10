@@ -17,6 +17,7 @@ import { useNostrPublish } from '@/hooks/useNostrPublish';
 import { useRepostVideo } from '@/hooks/usePublishVideo';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useVideoSocialMetrics } from '@/hooks/useVideoSocialMetrics';
+import { useLoginDialog } from '@/contexts/LoginDialogContext';
 import { useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/useToast';
 import { genUserName } from '@/lib/genUserName';
@@ -206,6 +207,7 @@ export function VideoPage() {
   // Social interaction hooks
   const [showCommentsForVideo, setShowCommentsForVideo] = useState<string | null>(null);
   const { user } = useCurrentUser();
+  const { openLoginDialog } = useLoginDialog();
 
   // Batch fetch all user interactions in ONE query instead of per-video
   const { interactions: batchedInteractions } = useBatchedVideoInteractions(
@@ -289,13 +291,9 @@ export function VideoPage() {
   }, [context, navigate]);
 
   // Social interaction handlers (same as VideoFeed)
-  const handleLike = async (video: ParsedVideoData) => {
+  const handleLike = useCallback(async (video: ParsedVideoData) => {
     if (!user) {
-      toast({
-        title: t('videoPage.loginRequiredTitle'),
-        description: t('videoPage.loginRequiredLikeDescription'),
-        variant: 'destructive',
-      });
+      openLoginDialog();
       return;
     }
 
@@ -332,15 +330,11 @@ export function VideoPage() {
         variant: 'destructive',
       });
     }
-  };
+  }, [user, t, openLoginDialog, publishEvent, toast, queryClient]);
 
-  const handleRepost = async (video: ParsedVideoData) => {
+  const handleRepost = useCallback(async (video: ParsedVideoData) => {
     if (!user) {
-      toast({
-        title: t('videoPage.loginRequiredTitle'),
-        description: t('videoPage.loginRequiredRepostDescription'),
-        variant: 'destructive',
-      });
+      openLoginDialog();
       return;
     }
 
@@ -384,7 +378,7 @@ export function VideoPage() {
         variant: 'destructive',
       });
     }
-  };
+  }, [user, t, openLoginDialog, repostVideo, isReposting, toast, queryClient]);
 
   const handleUnlike = async (likeEventId: string) => {
     if (!user) return;

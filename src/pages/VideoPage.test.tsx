@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { fireEvent, render } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import type { HTMLAttributes, ReactNode } from 'react';
 import VideoPage from './VideoPage';
@@ -7,6 +7,10 @@ import { initializeI18n } from '@/lib/i18n';
 
 const { mockNavigate } = vi.hoisted(() => ({
   mockNavigate: vi.fn(),
+}));
+
+const { openLoginDialogMock } = vi.hoisted(() => ({
+  openLoginDialogMock: vi.fn(),
 }));
 
 vi.mock('@unhead/react', () => ({
@@ -139,8 +143,22 @@ vi.mock('@/hooks/useToast', () => ({
   }),
 }));
 
+vi.mock('@/contexts/LoginDialogContext', () => ({
+  useLoginDialog: () => ({
+    isOpen: false,
+    openLoginDialog: openLoginDialogMock,
+    closeLoginDialog: vi.fn(),
+  }),
+}));
+
 vi.mock('@/components/VideoCard', () => ({
-  VideoCard: ({ video }: { video: { id: string } }) => <div data-testid="video-card">{video.id}</div>,
+  VideoCard: ({ video, onLike, onRepost }: { video: { id: string }; onLike?: () => void; onRepost?: () => void }) => (
+    <div data-testid="video-card">
+      {video.id}
+      <button aria-label="Like video" onClick={onLike} />
+      <button aria-label="Repost video" onClick={onRepost} />
+    </div>
+  ),
 }));
 
 vi.mock('@/components/ui/card', () => ({
@@ -201,5 +219,15 @@ describe('VideoPage', () => {
     expect(url.searchParams.get('q')).toBe('twerking');
     expect(url.searchParams.get('sort')).toBe('top');
     expect(url.searchParams.get('index')).toBe('2');
+  });
+
+  it('opens the login dialog when a signed-out viewer likes or reposts', () => {
+    renderPage('/video/video-2');
+
+    fireEvent.click(screen.getByRole('button', { name: /like video/i }));
+    expect(openLoginDialogMock).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(screen.getByRole('button', { name: /repost video/i }));
+    expect(openLoginDialogMock).toHaveBeenCalledTimes(2);
   });
 });
