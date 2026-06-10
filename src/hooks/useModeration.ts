@@ -121,47 +121,47 @@ export function useMuteItem() {
     }) => {
       if (!user) throw new Error('Must be logged in to mute content');
 
-      // Fetch current mute list
       const signal = AbortSignal.timeout(5000);
       const events = await nostr.query([{
-        kinds: [10001],
+        kinds: [MUTE_LIST_KIND],
         authors: [user.pubkey],
         limit: 1
       }], { signal });
 
-      // Get existing items
-      let existingItems: MuteItem[] = [];
-      if (events.length > 0) {
-        existingItems = parseMuteList(events[0]);
-      }
+      const latest = latestEvent(events);
+      // Preserve every existing tag — pin a-tags, foreign tags, anything
+      // another app wrote — so we don't clobber unrelated state.
+      const existingTags: string[][] = latest ? latest.tags : [];
+      const existingContent = latest ? latest.content : '';
 
-      // Check if already muted
+      // Deduplicate against the muted-items projection, not raw tags, so a
+      // raw `p` tag with extra positional fields (rare but legal) still
+      // de-dupes on (type,value).
+      const existingItems = latest ? parseMuteList(latest) : [];
       const alreadyMuted = existingItems.some(
         item => item.type === type && item.value === value
       );
+      if (alreadyMuted) return;
 
-      if (alreadyMuted) {
-        return; // Already in mute list
-      }
-
-      // Build tags with new item
-      const tags: string[][] = [];
-
-      // Add existing items
-      existingItems.forEach(item => {
-        const tag = [item.type, item.value];
-        if (item.reason) tag.push(item.reason);
-        tags.push(tag);
-      });
-
-      // Add new item
+      // Build the new tag while preserving order. We strip any existing
+      // entries that collide on (type,value,reason) to make repeated mutes
+      // idempotent and to keep the published list compact.
       const newTag = [type, value];
       if (reason) newTag.push(reason);
-      tags.push(newTag);
+      const filtered = existingTags.filter(tag => {
+        if (tag[0] !== type) return true;
+        if (tag[1] !== value) return true;
+        // Keep tags that differ in the reason slot — those are distinct entries
+        return (tag[2] ?? '') !== (reason ?? '');
+      });
+
+      const tags: string[][] = [...filtered, newTag];
 
       await publishEvent({
-        kind: 10001,
-        content: '',
+        kind: MUTE_LIST_KIND,
+        // NIP-51 mute lists may carry NIP-44 encrypted private entries in
+        // content; we must round-trip whatever the latest event had.
+        content: existingContent,
         tags
       });
     },
