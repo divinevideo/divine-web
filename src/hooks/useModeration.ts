@@ -190,35 +190,25 @@ export function useUnmuteItem() {
     }) => {
       if (!user) throw new Error('Must be logged in to unmute content');
 
-      // Fetch current mute list
       const signal = AbortSignal.timeout(5000);
       const events = await nostr.query([{
-        kinds: [10001],
+        kinds: [MUTE_LIST_KIND],
         authors: [user.pubkey],
         limit: 1
       }], { signal });
 
-      if (events.length === 0) {
-        return; // No mute list exists
-      }
+      const latest = latestEvent(events);
+      if (!latest) return;
 
-      const existingItems = parseMuteList(events[0]);
-
-      // Filter out the item to unmute
-      const updatedItems = existingItems.filter(
-        item => !(item.type === type && item.value === value)
+      // Drop every tag that matches (type,value) regardless of trailing
+      // fields; preserve everything else, in order.
+      const tags = latest.tags.filter(
+        tag => !(tag[0] === type && tag[1] === value)
       );
 
-      // Build tags
-      const tags: string[][] = updatedItems.map(item => {
-        const tag = [item.type, item.value];
-        if (item.reason) tag.push(item.reason);
-        return tag;
-      });
-
       await publishEvent({
-        kind: 10001,
-        content: '',
+        kind: MUTE_LIST_KIND,
+        content: latest.content,
         tags
       });
     },
