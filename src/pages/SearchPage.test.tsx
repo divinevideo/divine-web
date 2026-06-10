@@ -19,6 +19,7 @@ const {
   mockFetchVideoById,
   mockNostrQuery,
   mockUseInfiniteSearchVideos,
+  mockUseSearchUsers,
   mockEnterFullscreen,
   mockSetVideosForFullscreen,
   mockUpdateVideos,
@@ -28,6 +29,7 @@ const {
   mockFetchVideoById: vi.fn(),
   mockNostrQuery: vi.fn(),
   mockUseInfiniteSearchVideos: vi.fn(),
+  mockUseSearchUsers: vi.fn(),
   mockEnterFullscreen: vi.fn(),
   mockSetVideosForFullscreen: vi.fn(),
   mockUpdateVideos: vi.fn(),
@@ -154,11 +156,7 @@ vi.mock('@/hooks/useInfiniteSearchVideos', () => ({
 }));
 
 vi.mock('@/hooks/useSearchUsers', () => ({
-  useSearchUsers: () => ({
-    data: [],
-    isLoading: false,
-    error: null,
-  }),
+  useSearchUsers: mockUseSearchUsers,
 }));
 
 vi.mock('@/hooks/useSearchHashtags', () => ({
@@ -214,6 +212,11 @@ describe('SearchPage', () => {
       data: { pages: [{ videos: [] }] },
       fetchNextPage: vi.fn(),
       hasNextPage: false,
+      isLoading: false,
+      error: null,
+    });
+    mockUseSearchUsers.mockReturnValue({
+      data: [],
       isLoading: false,
       error: null,
     });
@@ -656,5 +659,90 @@ describe('SearchPage', () => {
     await waitFor(() => {
       expect(screen.getByTestId('location-display').textContent).not.toContain('sort=');
     });
+  });
+
+  it('shows the divine NIP-05 as the secondary identifier on user cards, not the legacy Vine username', () => {
+    mockUseSearchUsers.mockReturnValue({
+      data: [
+        {
+          pubkey: '1'.repeat(64),
+          metadata: {
+            display_name: 'Jacky!',
+            name: 'Minimal Mouse 1',
+            nip05: '_@jacky.divine.video',
+            about: 'Neo-Bwa Kale',
+          },
+        },
+      ],
+      isLoading: false,
+      error: null,
+    });
+
+    renderPage(['/search?q=jacky&filter=users']);
+
+    expect(screen.getAllByText('@jacky.divine.video').length).toBeGreaterThan(0);
+    expect(screen.queryAllByText('@Minimal Mouse 1')).toHaveLength(0);
+  });
+
+  it('shows the third-party NIP-05 in friendly form on user cards', () => {
+    mockUseSearchUsers.mockReturnValue({
+      data: [
+        {
+          pubkey: '2'.repeat(64),
+          metadata: {
+            display_name: 'Alice',
+            name: 'alice_vine',
+            nip05: 'alice@primal.net',
+          },
+        },
+      ],
+      isLoading: false,
+      error: null,
+    });
+
+    renderPage(['/search?q=alice&filter=users']);
+
+    expect(screen.getAllByText('@alice.primal.net').length).toBeGreaterThan(0);
+  });
+
+  it('falls back to the legacy Vine username when no NIP-05 is set', () => {
+    mockUseSearchUsers.mockReturnValue({
+      data: [
+        {
+          pubkey: '3'.repeat(64),
+          metadata: {
+            display_name: 'bob_legacy',
+            name: 'bob_legacy',
+          },
+        },
+      ],
+      isLoading: false,
+      error: null,
+    });
+
+    renderPage(['/search?q=bob&filter=users']);
+
+    expect(screen.getAllByText('@bob_legacy').length).toBeGreaterThan(0);
+  });
+
+  it('uses the friendly-path profile link for users with a NIP-05', () => {
+    mockUseSearchUsers.mockReturnValue({
+      data: [
+        {
+          pubkey: '4'.repeat(64),
+          metadata: {
+            display_name: 'Sam',
+            nip05: '_@sam.dvine.video',
+          },
+        },
+      ],
+      isLoading: false,
+      error: null,
+    });
+
+    renderPage(['/search?q=sam&filter=users']);
+
+    fireEvent.click(screen.getAllByRole('button', { name: /view profile of sam/i })[0]!);
+    expect(mockNavigate).toHaveBeenCalledWith('/u/sam.dvine.video');
   });
 });
