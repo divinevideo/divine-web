@@ -1,4 +1,4 @@
-// ABOUTME: Hooks for content moderation using NIP-51 mute lists and NIP-56 reporting
+// ABOUTME: Hooks for content moderation using NIP-51 mute lists (kind 10000) and NIP-56 reporting
 // ABOUTME: Manages user's mute list, content filtering, and reporting
 
 import { useCallback } from 'react';
@@ -16,6 +16,11 @@ import {
   ContentSeverity
 } from '@/types/moderation';
 import { submitReportToZendesk, buildContentUrl } from '@/lib/reportApi';
+
+// NIP-51 mute list. Replaces kind 10001 (pin list) which was incorrectly used
+// for muting — that collided with usePinnedVideos and was rejected by
+// relay.divine.video's kind allowlist.
+export const MUTE_LIST_KIND = 10000;
 
 // Stable empty array to prevent infinite re-renders when user is not logged in
 const EMPTY_MUTE_LIST: MuteItem[] = [];
