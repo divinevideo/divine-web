@@ -82,19 +82,17 @@ export function useMuteList(pubkey?: string) {
       ]);
 
       const filter: NostrFilter = {
-        kinds: [10001], // Mute list
+        kinds: [MUTE_LIST_KIND], // NIP-51 mute list
         authors: [targetPubkey],
         limit: 1
       };
 
       const events = await nostr.query([filter], { signal });
 
-      if (events.length === 0) return [];
+      const latest = latestEvent(events);
+      if (!latest) return [];
 
-      // Get the most recent mute list
-      const latestEvent = events.sort((a, b) => b.created_at - a.created_at)[0];
-
-      return parseMuteList(latestEvent);
+      return parseMuteList(latest);
     },
     enabled: !!targetPubkey,
     staleTime: 60000, // 1 minute
