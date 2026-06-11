@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { transformFunnelcakeVideo, transformToVideoPage } from './funnelcakeTransform';
+import { parseFullEvent, transformFunnelcakeVideo, transformToVideoPage } from './funnelcakeTransform';
 import type { FunnelcakeVideoRaw, FunnelcakeResponse } from '@/types/funnelcake';
 
 function makeRawVideo(overrides: Partial<FunnelcakeVideoRaw> = {}): FunnelcakeVideoRaw {
@@ -171,6 +171,75 @@ describe('transformFunnelcakeVideo', () => {
     expect(video.proofMode?.c2paManifestId).toBe('summary:present');
   });
 
+  it('caps verified_* summary levels to basic_proof when status is not verified', () => {
+    const present = transformFunnelcakeVideo(makeRawVideo({
+      proof: {
+        status: 'present',
+        level: 'verified_mobile',
+        version: 1,
+        checks: {
+          proofmode_present: true,
+          proofmode_parse_ok: true,
+        },
+      },
+    }));
+
+    expect(present.proofMode?.level).toBe('basic_proof');
+
+    const partial = transformFunnelcakeVideo(makeRawVideo({
+      proof: {
+        status: 'partial',
+        level: 'verified_web',
+        version: 1,
+        checks: {
+          pgp_signature_present: true,
+          pgp_signature_valid: null,
+        },
+      },
+    }));
+
+    expect(partial.proofMode?.level).toBe('basic_proof');
+  });
+
+  it('honors verified_* summary levels when status is verified', () => {
+    const video = transformFunnelcakeVideo(makeRawVideo({
+      proof: {
+        status: 'verified',
+        level: 'verified_mobile',
+        version: 1,
+        checks: {
+          proofmode_present: true,
+          proofmode_parse_ok: true,
+          device_attestation_present: true,
+          device_attestation_valid: true,
+        },
+      },
+    }));
+
+    expect(video.proofMode?.level).toBe('verified_mobile');
+  });
+
+  it('ignores verified summaries with no usable components', () => {
+    const video = transformFunnelcakeVideo(makeRawVideo({
+      proof: {
+        status: 'verified',
+        version: 1,
+        checks: {
+          proofmode_present: false,
+          proofmode_parse_ok: null,
+          pgp_signature_present: true,
+          pgp_signature_valid: false,
+          device_attestation_present: false,
+          device_attestation_valid: null,
+          c2pa_manifest_present: false,
+          c2pa_manifest_valid: null,
+        },
+      },
+    }));
+
+    expect(video.proofMode).toBeUndefined();
+  });
+
   it('does not mark explicitly invalid proof components as present', () => {
     const video = transformFunnelcakeVideo(makeRawVideo({
       proof: {
@@ -245,6 +314,91 @@ describe('transformFunnelcakeVideo', () => {
 
     expect(video.title).toBe('A title with no description');
     expect(video.content).toBe('');
+  });
+});
+
+describe('parseFullEvent', () => {
+  const verificationTags = [
+    ['d', 'vine-id'],
+    ['verification', 'verified_mobile'],
+  ];
+
+  const fullEventPayload = {
+    id: 'json-id',
+    pubkey: 'json-pubkey',
+    created_at: 1800000000,
+    kind: 34236,
+    tags: verificationTags,
+    content: 'from event_json',
+    sig: 'json-sig',
+  };
+
+  it('parses a string event_json payload', () => {
+    const event = parseFullEvent(
+      makeRawVideo({ event_json: JSON.stringify(fullEventPayload) }),
+      'video-1',
+      'pubkey-1',
+    );
+
+    expect(event).toEqual(fullEventPayload);
+  });
+
+  it('passes through an object event_json payload', () => {
+    const event = parseFullEvent(
+      makeRawVideo({ event_json: fullEventPayload }),
+      'video-1',
+      'pubkey-1',
+    );
+
+    expect(event).toEqual(fullEventPayload);
+  });
+
+  it('falls back to top-level tags when event_json is malformed', () => {
+    const event = parseFullEvent(
+      makeRawVideo({ event_json: '{not valid json', tags: verificationTags }),
+      'video-1',
+      'pubkey-1',
+    );
+
+    expect(event?.id).toBe('video-1');
+    expect(event?.pubkey).toBe('pubkey-1');
+    expect(event?.tags).toEqual(verificationTags);
+  });
+
+  it('returns undefined when event_json is malformed and no tags exist', () => {
+    const event = parseFullEvent(
+      makeRawVideo({ event_json: '{not valid json' }),
+      'video-1',
+      'pubkey-1',
+    );
+
+    expect(event).toBeUndefined();
+  });
+
+  it('defaults missing event fields from the raw payload', () => {
+    const event = parseFullEvent(
+      makeRawVideo({ event_json: { tags: verificationTags } }),
+      'video-1',
+      'pubkey-1',
+    );
+
+    expect(event).toEqual({
+      id: 'video-1',
+      pubkey: 'pubkey-1',
+      created_at: 1700000000,
+      kind: 34236,
+      tags: verificationTags,
+      content: 'Test content',
+      sig: '',
+    });
+  });
+
+  it('feeds event_json tags into proofMode extraction', () => {
+    const video = transformFunnelcakeVideo(makeRawVideo({
+      event_json: JSON.stringify(fullEventPayload),
+    }));
+
+    expect(video.proofMode?.level).toBe('verified_mobile');
   });
 });
 
