@@ -1,6 +1,6 @@
 // ABOUTME: Vitest unit tests for buildCrawlerHtml, escapeHtml, and truncateText
 import { describe, expect, it } from 'vitest';
-import { buildCrawlerHtml, escapeHtml, truncateText } from './ogTags.js';
+import { buildCrawlerHtml, escapeHtml, escapeJsonForScript, truncateText } from './ogTags.js';
 
 const baseArgs = {
   title: 'Hello',
@@ -149,5 +149,32 @@ describe('truncateText', () => {
   });
   it('collapses whitespace before truncating', () => {
     expect(truncateText('hi   there', 80)).toBe('hi there');
+  });
+});
+
+describe('escapeJsonForScript', () => {
+  it('escapes </script> breakout sequences', () => {
+    const out = escapeJsonForScript({ title: '</script><img src=x onerror=alert(1)>' });
+    expect(out).not.toContain('<');
+    expect(out).not.toContain('>');
+  });
+
+  it('escapes ampersands', () => {
+    expect(escapeJsonForScript('a&b')).not.toContain('&');
+  });
+
+  it('round-trips back to the original value through JSON.parse', () => {
+    const value = { title: '</script>', n: 5, nested: { a: '&<>' }, list: ['<', '>'] };
+    expect(JSON.parse(escapeJsonForScript(value))).toEqual(value);
+  });
+
+  it('handles plain strings (used for feedType)', () => {
+    expect(JSON.parse(escapeJsonForScript('trending'))).toBe('trending');
+  });
+
+  it('escapes U+2028/U+2029 line separators', () => {
+    const out = escapeJsonForScript('a\u2028b\u2029c');
+    expect(out).not.toMatch(/[\u2028\u2029]/);
+    expect(JSON.parse(out)).toBe('a\u2028b\u2029c');
   });
 });
