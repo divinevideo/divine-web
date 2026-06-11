@@ -1,18 +1,19 @@
 // ABOUTME: Pure transform functions for notification API responses
-// ABOUTME: Maps raw Funnelcake notification data to app-level Notification types
+// ABOUTME: Maps raw Funnelcake notification data to app-level RawNotification types
 
 import type {
-  Notification,
   NotificationType,
   NotificationsResponse,
   RawApiNotification,
+  RawNotification,
   RawNotificationsApiResponse,
 } from '@/types/notification';
 
 /**
  * Map the API notification_type string to our app NotificationType.
+ * Returns null for 'zap' and any unknown type (they are filtered out).
  */
-export function mapNotificationType(apiType: string): NotificationType {
+export function mapNotificationType(apiType: string): NotificationType | null {
   switch (apiType) {
     case 'reaction':
       return 'like';
@@ -22,18 +23,27 @@ export function mapNotificationType(apiType: string): NotificationType {
       return 'follow';
     case 'repost':
       return 'repost';
-    case 'zap':
-      return 'zap';
     default:
-      return 'like'; // Fallback for unknown types
+      return null;
   }
 }
 
 /**
- * Transform a single raw API notification to app Notification type.
+ * Transform a single raw API notification to app RawNotification type.
+ * Returns null when:
+ * - the type maps to null (zap, unknown)
+ * - type is not 'follow' and referenced_event_id is missing
  */
-export function transformNotification(raw: RawApiNotification): Notification {
+export function transformNotification(raw: RawApiNotification): RawNotification | null {
   const type = mapNotificationType(raw.notification_type);
+
+  if (type === null) {
+    return null;
+  }
+
+  if (type !== 'follow' && !raw.referenced_event_id) {
+    return null;
+  }
 
   return {
     id: raw.id,
@@ -50,16 +60,25 @@ export function transformNotification(raw: RawApiNotification): Notification {
 
 /**
  * Deduplicate follow notifications — keep only the most recent per actor.
- * The API may return multiple follow events from the same user (e.g. unfollow/refollow).
+ * Sorts newest-first before deduping so behavior does not depend on API order.
  */
-export function deduplicateFollows(notifications: Notification[]): Notification[] {
+export function deduplicateFollows(notifications: RawNotification[]): RawNotification[] {
+  // Sort newest-first so the first occurrence we encounter per actor is always the newest
+  const sorted = [...notifications].sort((a, b) => b.timestamp - a.timestamp);
+
   const seenFollows = new Set<string>();
-  return notifications.filter((n) => {
-    if (n.type !== 'follow') return true;
-    if (seenFollows.has(n.actorPubkey)) return false;
-    seenFollows.add(n.actorPubkey);
-    return true;
-  });
+  const result: RawNotification[] = [];
+
+  for (const n of sorted) {
+    if (n.type !== 'follow') {
+      result.push(n);
+    } else if (!seenFollows.has(n.actorPubkey)) {
+      seenFollows.add(n.actorPubkey);
+      result.push(n);
+    }
+  }
+
+  return result;
 }
 
 /**
@@ -68,41 +87,16 @@ export function deduplicateFollows(notifications: Notification[]): Notification[
 export function transformNotificationsResponse(
   raw: RawNotificationsApiResponse,
 ): NotificationsResponse {
-  const all = (raw.notifications ?? []).map(transformNotification);
+  const transformed = (raw.notifications ?? [])
+    .map(transformNotification)
+    .filter((n): n is RawNotification => n !== null);
+
   return {
-    notifications: deduplicateFollows(all),
+    notifications: deduplicateFollows(transformed),
     unreadCount: raw.unread_count ?? 0,
     nextCursor: raw.next_cursor,
     hasMore: raw.has_more ?? false,
   };
-}
-
-/**
- * Generate a human-readable notification message.
- *
- * @param type - The notification type
- * @param actorName - Display name of the actor (optional)
- */
-export function generateNotificationMessage(
-  type: NotificationType,
-  actorName?: string,
-): string {
-  const name = actorName || 'Someone';
-
-  switch (type) {
-    case 'like':
-      return `${name} liked your video`;
-    case 'comment':
-      return `${name} commented on your video`;
-    case 'follow':
-      return `${name} started following you`;
-    case 'repost':
-      return `${name} reposted your video`;
-    case 'zap':
-      return `${name} zapped your video`;
-    default:
-      return `${name} interacted with your content`;
-  }
 }
 
 /**

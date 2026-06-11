@@ -1038,8 +1038,7 @@
       "likes": "Polubienia",
       "comments": "Komentarze",
       "follows": "Obserwujący",
-      "reposts": "Udostępnienia",
-      "zaps": "Zapy"
+      "reposts": "Udostępnienia"
     },
     "empty": {
       "all": {
@@ -1065,16 +1064,23 @@
       "reposts": {
         "title": "Brak powiadomień o udostępnieniach.",
         "description": "Udostępnienia twoich filmów pojawią się tutaj."
-      },
-      "zaps": {
-        "title": "Brak powiadomień o zapach.",
-        "description": "Zapy do twoich filmów pojawią się tutaj."
       }
     },
     "errorTitle": "Nie udało się załadować powiadomień",
     "errorFallback": "Spróbuj ponownie później",
     "sectionNew": "Nowe",
-    "sectionEarlier": "Wcześniejsze"
+    "sectionEarlier": "Wcześniejsze",
+    "message": {
+      "liked": "liked your video",
+      "commented": "commented on your video",
+      "reposted": "reposted your video",
+      "followed": "followed you",
+      "andOthers_one": "and {{count}} other",
+      "andOthers_other": "and {{count}} others"
+    },
+    "video": {
+      "untitled": "your video"
+    }
   },
   "getEmbedPage": {
     "title": "Osadź widget Divine",
