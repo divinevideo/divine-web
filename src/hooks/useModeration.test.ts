@@ -54,7 +54,6 @@ vi.mock('@/hooks/useCurrentUser', () => ({
 vi.mock('@/hooks/useNostrPublish', () => ({
   useNostrPublish: () => ({
     mutateAsync: mockPublishEvent,
-    mutate: mockPublishEvent,
   }),
 }));
 
@@ -221,9 +220,10 @@ function makeMuteEvent(
   pubkey: string = mockUserPubkey,
   created_at: number = Math.floor(Date.now() / 1000),
   content: string = '',
+  id?: string,
 ): NostrEvent {
   return {
-    id: `mute-${created_at}-${Math.random().toString(36).slice(2, 8)}`,
+    id: id ?? `mute-${created_at}-${Math.random().toString(36).slice(2, 8)}`,
     pubkey,
     created_at,
     kind: MUTE_LIST_KIND,
@@ -300,6 +300,21 @@ describe('useMuteList', () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data).toHaveLength(1);
     expect(result.current.data?.[0].value).toBe('new');
+  });
+
+  it('picks lowest id on created_at tie (NIP-01)', async () => {
+    const ts = 1_700_000_000;
+    const high = makeMuteEvent([['p', 'high-id']], mockUserPubkey, ts, '', 'zzzzzz');
+    const low = makeMuteEvent([['p', 'low-id']], mockUserPubkey, ts, '', 'aaaaaa');
+    mockMuteQuery.mockResolvedValue([high, low]);
+
+    const { result } = renderHook(() => useMuteList(mockUserPubkey), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data).toHaveLength(1);
+    expect(result.current.data?.[0].value).toBe('low-id');
   });
 });
 

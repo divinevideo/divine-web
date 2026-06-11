@@ -60,7 +60,7 @@ function latestEvent(events: NostrEvent[]): NostrEvent | null {
   if (events.length === 0) return null;
   return events
     .slice()
-    .sort((a, b) => b.created_at - a.created_at || (a.id < b.id ? 1 : -1))[0];
+    .sort((a, b) => b.created_at - a.created_at || (a.id < b.id ? -1 : 1))[0];
 }
 
 /**
@@ -105,7 +105,7 @@ export function useMuteList(pubkey?: string) {
  */
 export function useMuteItem() {
   const { nostr } = useNostr();
-  const { mutate: publishEvent } = useNostrPublish();
+  const { mutateAsync: publishEvent } = useNostrPublish();
   const queryClient = useQueryClient();
   const { user } = useCurrentUser();
 
@@ -143,19 +143,9 @@ export function useMuteItem() {
       );
       if (alreadyMuted) return;
 
-      // Build the new tag while preserving order. We strip any existing
-      // entries that collide on (type,value,reason) to make repeated mutes
-      // idempotent and to keep the published list compact.
       const newTag = [type, value];
       if (reason) newTag.push(reason);
-      const filtered = existingTags.filter(tag => {
-        if (tag[0] !== type) return true;
-        if (tag[1] !== value) return true;
-        // Keep tags that differ in the reason slot — those are distinct entries
-        return (tag[2] ?? '') !== (reason ?? '');
-      });
-
-      const tags: string[][] = [...filtered, newTag];
+      const tags: string[][] = [...existingTags, newTag];
 
       await publishEvent({
         kind: MUTE_LIST_KIND,
@@ -176,7 +166,7 @@ export function useMuteItem() {
  */
 export function useUnmuteItem() {
   const { nostr } = useNostr();
-  const { mutate: publishEvent } = useNostrPublish();
+  const { mutateAsync: publishEvent } = useNostrPublish();
   const queryClient = useQueryClient();
   const { user } = useCurrentUser();
 
