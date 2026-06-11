@@ -31,7 +31,6 @@ function ReactionUserItem({ pubkey, timestamp }: { pubkey: string; timestamp: nu
   const profileImage = getSafeProfileImage(metadata?.picture);
   const profileUrl = buildProfileLinkPath({
     pubkey,
-    nip05: metadata?.nip05,
   });
 
   const date = new Date(timestamp * 1000);

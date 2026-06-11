@@ -42,7 +42,6 @@ export function NotificationItem({ notification }: NotificationItemProps) {
     if (notification.type === 'follow') {
       navigate(buildProfileLinkPath({
         pubkey: notification.actorPubkey,
-        nip05: metadata?.nip05,
         fallbackRoute: 'profile',
       }));
     } else if (notification.targetEventId) {

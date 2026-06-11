@@ -19,6 +19,7 @@ const {
   mockFetchVideoById,
   mockNostrQuery,
   mockUseInfiniteSearchVideos,
+  mockUseSearchUsers,
   mockEnterFullscreen,
   mockSetVideosForFullscreen,
   mockUpdateVideos,
@@ -28,6 +29,7 @@ const {
   mockFetchVideoById: vi.fn(),
   mockNostrQuery: vi.fn(),
   mockUseInfiniteSearchVideos: vi.fn(),
+  mockUseSearchUsers: vi.fn(),
   mockEnterFullscreen: vi.fn(),
   mockSetVideosForFullscreen: vi.fn(),
   mockUpdateVideos: vi.fn(),
@@ -154,11 +156,7 @@ vi.mock('@/hooks/useInfiniteSearchVideos', () => ({
 }));
 
 vi.mock('@/hooks/useSearchUsers', () => ({
-  useSearchUsers: () => ({
-    data: [],
-    isLoading: false,
-    error: null,
-  }),
+  useSearchUsers: mockUseSearchUsers,
 }));
 
 vi.mock('@/hooks/useSearchHashtags', () => ({
@@ -217,6 +215,11 @@ describe('SearchPage', () => {
       isLoading: false,
       error: null,
     });
+    mockUseSearchUsers.mockReturnValue({
+      data: [],
+      isLoading: false,
+      error: null,
+    });
   });
 
   afterEach(() => {
@@ -241,6 +244,32 @@ describe('SearchPage', () => {
     unmount();
 
     expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it('navigates user results directly to the npub profile even when metadata has a NIP-05 alias', () => {
+    const pubkey = 'd'.repeat(64);
+    mockUseSearchUsers.mockReturnValue({
+      data: [
+        {
+          pubkey,
+          metadata: {
+            name: 'alice',
+            display_name: 'Alice',
+            nip05: 'alice@divine.video',
+          },
+        },
+      ],
+      isLoading: false,
+      error: null,
+    });
+
+    renderPage(['/search?q=alice']);
+
+    fireEvent.click(
+      screen.getAllByRole('button', { name: 'View profile of Alice' })[0],
+    );
+
+    expect(mockNavigate).toHaveBeenCalledWith(`/${nip19.npubEncode(pubkey)}`);
   });
 
   it('navigates directly when the query is an npub', () => {
