@@ -3,6 +3,7 @@ import {
   buildProfileLinkPath,
   nip05CandidatesFromUrlSegment,
   normalizeNip05Identifier,
+  normalizeUrlSegmentToFriendly,
   toFriendlyPath,
 } from './profileLinks';
 
@@ -160,5 +161,37 @@ describe('nip05CandidatesFromUrlSegment', () => {
   it('returns an empty list for empty / whitespace input', () => {
     expect(nip05CandidatesFromUrlSegment('')).toEqual([]);
     expect(nip05CandidatesFromUrlSegment('   ')).toEqual([]);
+  });
+});
+
+describe('normalizeUrlSegmentToFriendly', () => {
+  it('normalizes a raw NIP-05 with underscore on the default apex', () => {
+    expect(normalizeUrlSegmentToFriendly('_@jimmyhere.divine.video')).toBe('jimmyhere');
+  });
+
+  it('normalizes a percent-encoded raw NIP-05', () => {
+    expect(normalizeUrlSegmentToFriendly('jimmyhere%40divine.video')).toBe('jimmyhere');
+  });
+
+  it('returns an already-bare segment unchanged', () => {
+    expect(normalizeUrlSegmentToFriendly('jimmyhere')).toBe('jimmyhere');
+  });
+
+  it('returns a third-party dotted segment unchanged', () => {
+    expect(normalizeUrlSegmentToFriendly('alice.primal.net')).toBe('alice.primal.net');
+  });
+
+  it('handles whitespace by trimming', () => {
+    expect(normalizeUrlSegmentToFriendly('  _@jimmyhere.divine.video  ')).toBe('jimmyhere');
+  });
+
+  it('returns null for empty input', () => {
+    expect(normalizeUrlSegmentToFriendly('')).toBeNull();
+    expect(normalizeUrlSegmentToFriendly('   ')).toBeNull();
+  });
+
+  it('lowercases the result', () => {
+    expect(normalizeUrlSegmentToFriendly('JACKY.DIVINE.VIDEO')).toBe('jacky.divine.video');
+    expect(normalizeUrlSegmentToFriendly('_@JACKY.DIVINE.VIDEO')).toBe('jacky');
   });
 });

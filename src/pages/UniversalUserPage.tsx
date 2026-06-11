@@ -5,14 +5,14 @@ import { useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useNostr } from '@nostrify/react';
 import { useQuery } from '@tanstack/react-query';
-import { nip19 } from 'nostr-tools';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import { Card, CardContent } from '@/components/ui/card';
 import { WarningCircle as AlertCircle, CircleNotch as Loader2 } from '@phosphor-icons/react';
 import { debugLog } from '@/lib/debug';
-import { nip05CandidatesFromUrlSegment } from '@/lib/profileLinks';
+import { nip05CandidatesFromUrlSegment, normalizeUrlSegmentToFriendly } from '@/lib/profileLinks';
 import { resolveNip05ToPubkey } from '@/lib/nip05Resolve';
+import ProfilePage from './ProfilePage';
 
 const VINE_USER_ID_PATTERN = /^\d{15,20}$/;
 const VINE_HOSTNAME_PATTERN = /(^|\.)vine\.co$/i;
@@ -303,13 +303,16 @@ export function UniversalUserPage() {
   const { data, isLoading, error } = useUniversalUserLookup(userId);
 
   useEffect(() => {
-    if (data?.pubkey) {
-      // Redirect to the Nostr profile page
-      const npub = nip19.npubEncode(data.pubkey);
-      debugLog(`[UniversalUserPage] Redirecting to profile: ${npub}`);
-      navigate(`/${npub}`, { replace: true });
-    }
-  }, [data, navigate]);
+    if (!userId) return;
+    const canonical = normalizeUrlSegmentToFriendly(userId);
+    if (!canonical || canonical === userId) return;
+    const { search, hash } = window.location;
+    window.history.replaceState(null, '', `/u/${canonical}${search}${hash}`);
+  }, [userId]);
+
+  if (data?.pubkey) {
+    return <ProfilePage pubkeyOverride={data.pubkey} />;
+  }
 
   if (isLoading) {
     return (
@@ -359,7 +362,6 @@ export function UniversalUserPage() {
     );
   }
 
-  // While redirecting
   return (
     <div className="container max-w-4xl mx-auto px-4 py-8">
       <Card className="border-dashed">

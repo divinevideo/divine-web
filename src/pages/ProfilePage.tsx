@@ -33,14 +33,14 @@ import { PinnedVideosSection } from '@/components/PinnedVideosSection';
 import { useLoginDialog } from '@/contexts/LoginDialogContext';
 import { toast } from '@/hooks/useToast';
 import { debugLog } from '@/lib/debug';
-import { getDivineNip05Info } from '@/lib/nip05Utils';
 import { useNip05Validation } from '@/hooks/useNip05Validation';
 import { genUserName } from '@/lib/genUserName';
 import { parseLegacySocials } from '@/lib/legacySocials';
 import { buildProfileStats } from '@/lib/profileStats';
+import { buildProfileLinkPath } from '@/lib/profileLinks';
 import type { SortMode } from '@/types/nostr';
 
-export function ProfilePage() {
+export function ProfilePage({ pubkeyOverride }: { pubkeyOverride?: string } = {}) {
   const { t } = useTranslation();
   const { npub, nip19: nip19Param } = useParams<{ npub?: string; nip19?: string }>();
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
@@ -53,8 +53,11 @@ export function ProfilePage() {
   // Get the identifier from route params, or from subdomain user if rendered at /
   const subdomainUser = getSubdomainUser();
   const resolved = useResolveSubdomainPubkey();
-  // Use resolved pubkey when KV store mapping is stale
-  const identifier = npub || nip19Param || (resolved.isResolved ? resolved.npub : subdomainUser?.npub);
+  // Use override from UniversalUserPage if provided (e.g., /u/jacky -> resolved pubkey)
+  const identifier = pubkeyOverride
+    || npub
+    || nip19Param
+    || (resolved.isResolved ? resolved.npub : subdomainUser?.npub);
 
   // Decode npub to get pubkey. Accepts npub1..., 64-char hex, or a NIP-05 (name@domain).
   let pubkey: string | null = null;
@@ -157,27 +160,34 @@ export function ProfilePage() {
     _stillLoadingName: stillLoadingName,
   };
 
-  // Redirect to subdomain if user has a verified divine.video NIP-05 and we're on the apex domain
+  // Rewrite the URL to the vanity /u/:username form when the user has a
+  // verified divine.video NIP-05 and we're already on the apex domain.
   const nip05 = metadata.nip05;
   const nip05Validation = useNip05Validation(
     !subdomainUser ? nip05 : undefined,
     pubkey || '',
   );
   useEffect(() => {
-    // Skip redirect in development mode
     if (import.meta.env.DEV) return;
-    // Only redirect if we're on the apex domain (not already on a subdomain)
     if (subdomainUser) return;
     if (!nip05) return;
-    // Only redirect after NIP-05 is verified to belong to this pubkey
     if (!nip05Validation.isValid) return;
 
-    const divineInfo = getDivineNip05Info(nip05);
-    if (divineInfo) {
-      debugLog('[ProfilePage] Redirecting to subdomain:', divineInfo.href);
-      window.location.href = divineInfo.href;
+    const friendlyPath = buildProfileLinkPath({ pubkey: pubkey || '', nip05, fallbackRoute: 'profile' });
+    if (!friendlyPath.startsWith('/u/')) return;
+
+    const { pathname, search, hash } = window.location;
+    if (pathname === friendlyPath) return;
+    if (!pathname.startsWith('/profile/')
+        && !pathname.startsWith('/npub1')
+        && !/^\/[0-9a-fA-F]{64}$/.test(pathname)) {
+      return;
     }
-  }, [nip05, subdomainUser, nip05Validation.isValid]);
+    if (pathname.startsWith('/u/')) return;
+
+    debugLog('[ProfilePage] Rewriting URL to vanity form:', friendlyPath);
+    window.history.replaceState(null, '', `${friendlyPath}${search}${hash}`);
+  }, [nip05, subdomainUser, nip05Validation.isValid, pubkey]);
 
   // Use actual loaded video count once all pages are loaded (API video_count may be inflated by dups)
   const allLoaded = !hasNextPage && videos.length > 0;

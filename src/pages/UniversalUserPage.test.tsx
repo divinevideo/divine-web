@@ -37,6 +37,12 @@ vi.mock('@/components/ui/card', () => ({
   CardContent: ({ children, ...props }: HTMLAttributes<HTMLDivElement>) => <div {...props}>{children}</div>,
 }));
 
+vi.mock('./ProfilePage', () => ({
+  default: ({ pubkeyOverride }: { pubkeyOverride?: string }) => (
+    <div data-testid="profile-page" data-pubkey-override={pubkeyOverride}>Profile Page</div>
+  ),
+}));
+
 function renderPage(initialEntry: string) {
   const queryClient = new QueryClient({
     defaultOptions: {
@@ -51,10 +57,9 @@ function renderPage(initialEntry: string) {
       <MemoryRouter initialEntries={[initialEntry]}>
         <Routes>
           <Route path="/u/:userId" element={<UniversalUserPage />} />
-          <Route path="/:npub" element={<div data-testid="profile-page">Profile page</div>} />
         </Routes>
       </MemoryRouter>
-    </QueryClientProvider>
+    </QueryClientProvider>,
   );
 }
 
@@ -90,7 +95,7 @@ describe('UniversalUserPage', () => {
     vi.useRealTimers();
   });
 
-  it('resolves numeric Vine user IDs from vine metadata', async () => {
+  it('resolves numeric Vine user IDs from vine metadata and renders ProfilePage', async () => {
     const pubkey = 'a'.repeat(64);
     mockNostrQuery.mockResolvedValue([
       createProfileEvent(pubkey, {
@@ -104,8 +109,13 @@ describe('UniversalUserPage', () => {
     renderPage('/u/1080167736266633216');
 
     await waitFor(() => {
-      expect(mockNavigate).toHaveBeenCalledWith(`/${nip19.npubEncode(pubkey)}`, { replace: true });
+      expect(screen.getByTestId('profile-page')).toBeInTheDocument();
     });
+    expect(screen.getByTestId('profile-page').dataset.pubkeyOverride).toBe(pubkey);
+    expect(mockNavigate).not.toHaveBeenCalledWith(
+      `/${nip19.npubEncode(pubkey)}`,
+      expect.anything(),
+    );
   });
 
   it('prefers exact legacy Vine username matches over the default-apex NIP-05 candidates', async () => {
@@ -127,8 +137,9 @@ describe('UniversalUserPage', () => {
     renderPage('/u/someuser');
 
     await waitFor(() => {
-      expect(mockNavigate).toHaveBeenCalledWith(`/${nip19.npubEncode(legacyPubkey)}`, { replace: true });
+      expect(screen.getByTestId('profile-page')).toBeInTheDocument();
     });
+    expect(screen.getByTestId('profile-page').dataset.pubkeyOverride).toBe(legacyPubkey);
   });
 
   it('resolves legacy Vine usernames from vine profile website urls', async () => {
@@ -143,8 +154,9 @@ describe('UniversalUserPage', () => {
     renderPage('/u/someuser');
 
     await waitFor(() => {
-      expect(mockNavigate).toHaveBeenCalledWith(`/${nip19.npubEncode(pubkey)}`, { replace: true });
+      expect(screen.getByTestId('profile-page')).toBeInTheDocument();
     });
+    expect(screen.getByTestId('profile-page').dataset.pubkeyOverride).toBe(pubkey);
   });
 
   it('falls back to the default-apex NIP-05 candidates when there is no legacy Vine username match', async () => {
@@ -159,8 +171,9 @@ describe('UniversalUserPage', () => {
     renderPage('/u/someuser');
 
     await waitFor(() => {
-      expect(mockNavigate).toHaveBeenCalledWith(`/${nip19.npubEncode(pubkey)}`, { replace: true });
+      expect(screen.getByTestId('profile-page')).toBeInTheDocument();
     });
+    expect(screen.getByTestId('profile-page').dataset.pubkeyOverride).toBe(pubkey);
   });
 
   it('shows the not-found state when no legacy or NIP-05 match exists', async () => {
@@ -175,7 +188,7 @@ describe('UniversalUserPage', () => {
 
     expect(await screen.findByText('User Not Found')).toBeInTheDocument();
     expect(screen.getByText(/missinguser/)).toBeInTheDocument();
-    expect(mockNavigate).not.toHaveBeenCalled();
+    expect(screen.queryByTestId('profile-page')).not.toBeInTheDocument();
   });
 
   it('resolves a bare-name URL via the default-apex NIP-05 candidate list', async () => {
@@ -190,8 +203,9 @@ describe('UniversalUserPage', () => {
     renderPage('/u/jacky');
 
     await waitFor(() => {
-      expect(mockNavigate).toHaveBeenCalledWith(`/${nip19.npubEncode(pubkey)}`, { replace: true });
+      expect(screen.getByTestId('profile-page')).toBeInTheDocument();
     });
+    expect(screen.getByTestId('profile-page').dataset.pubkeyOverride).toBe(pubkey);
   });
 
   it('resolves an explicit default-apex URL when only the non-underscore variant is set', async () => {
@@ -206,8 +220,9 @@ describe('UniversalUserPage', () => {
     renderPage('/u/alice.divine.video');
 
     await waitFor(() => {
-      expect(mockNavigate).toHaveBeenCalledWith(`/${nip19.npubEncode(pubkey)}`, { replace: true });
+      expect(screen.getByTestId('profile-page')).toBeInTheDocument();
     });
+    expect(screen.getByTestId('profile-page').dataset.pubkeyOverride).toBe(pubkey);
   });
 
   it('resolves an explicit alternate-apex URL', async () => {
@@ -222,8 +237,9 @@ describe('UniversalUserPage', () => {
     renderPage('/u/sam.dvine.video');
 
     await waitFor(() => {
-      expect(mockNavigate).toHaveBeenCalledWith(`/${nip19.npubEncode(pubkey)}`, { replace: true });
+      expect(screen.getByTestId('profile-page')).toBeInTheDocument();
     });
+    expect(screen.getByTestId('profile-page').dataset.pubkeyOverride).toBe(pubkey);
   });
 
   it('falls back to NIP-05 DNS when no kind-0 profile matches a bare name', async () => {
@@ -240,8 +256,9 @@ describe('UniversalUserPage', () => {
       renderPage('/u/jacky');
 
       await waitFor(() => {
-        expect(mockNavigate).toHaveBeenCalledWith(`/${nip19.npubEncode(pubkey)}`, { replace: true });
+        expect(screen.getByTestId('profile-page')).toBeInTheDocument();
       });
+      expect(screen.getByTestId('profile-page').dataset.pubkeyOverride).toBe(pubkey);
       expect(fetchMock).toHaveBeenCalled();
     } finally {
       globalThis.fetch = originalFetch;
@@ -266,7 +283,32 @@ describe('UniversalUserPage', () => {
     renderPage('/u/jacky.divine.video');
 
     await waitFor(() => {
-      expect(mockNavigate).toHaveBeenCalledWith(`/${nip19.npubEncode(pubkey)}`, { replace: true });
+      expect(screen.getByTestId('profile-page')).toBeInTheDocument();
     });
+    expect(screen.getByTestId('profile-page').dataset.pubkeyOverride).toBe(pubkey);
+  });
+
+  it('normalizes a raw NIP-05 URL segment to the canonical friendly form', () => {
+    const originalReplaceState = window.history.replaceState;
+    const replaceStateSpy = vi.fn();
+    window.history.replaceState = replaceStateSpy;
+
+    renderPage('/u/_@jimmyhere.divine.video');
+
+    expect(replaceStateSpy).toHaveBeenCalledWith(null, '', '/u/jimmyhere');
+
+    window.history.replaceState = originalReplaceState;
+  });
+
+  it('does not normalize an already-canonical URL segment', () => {
+    const originalReplaceState = window.history.replaceState;
+    const replaceStateSpy = vi.fn();
+    window.history.replaceState = replaceStateSpy;
+
+    renderPage('/u/jimmyhere');
+
+    expect(replaceStateSpy).not.toHaveBeenCalled();
+
+    window.history.replaceState = originalReplaceState;
   });
 });
