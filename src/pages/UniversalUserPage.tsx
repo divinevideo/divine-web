@@ -10,8 +10,9 @@ import type { TFunction } from 'i18next';
 import { Card, CardContent } from '@/components/ui/card';
 import { WarningCircle as AlertCircle, CircleNotch as Loader2 } from '@phosphor-icons/react';
 import { debugLog } from '@/lib/debug';
-import { nip05CandidatesFromUrlSegment, normalizeUrlSegmentToFriendly } from '@/lib/profileLinks';
+import { nip05CandidatesFromUrlSegment } from '@/lib/profileLinks';
 import { resolveNip05ToPubkey } from '@/lib/nip05Resolve';
+import { DIVINE_APEX_DOMAINS } from '@/lib/nip05Utils';
 import ProfilePage from './ProfilePage';
 
 const VINE_USER_ID_PATTERN = /^\d{15,20}$/;
@@ -190,6 +191,25 @@ function getNotFoundDescription(identifier: string, t: TFunction): string {
 /**
  * Looks up a user by either NIP-05 or Vine user ID
  */
+/**
+ * Strip the NIP-05 envelope from a /u/ URL segment, leaving the bare local
+ * part. We deliberately do NOT resolve the raw NIP-05 string itself — only
+ * the canonical /u/<sub> path runs through the lookup. Third-party segments
+ * (anything that doesn't match a known divine.video apex) pass through
+ * unchanged and the lookup below will report not-found.
+ */
+const NIP05_ENVELOPE_PATTERN = new RegExp(
+  `^(_@([^.]+)\\.(?:${DIVINE_APEX_DOMAINS.join('|')})|([^@]+)@${DIVINE_APEX_DOMAINS.map(a => a.replace('.', '\\.')).join('|')})$`,
+  'i',
+);
+
+function stripNip05Envelope(segment: string): string | null {
+  const decoded = decodeURIComponent(segment).trim();
+  const match = decoded.match(NIP05_ENVELOPE_PATTERN);
+  if (!match) return null;
+  return (match[2] ?? match[3]).toLowerCase();
+}
+
 function useUniversalUserLookup(identifier: string | undefined) {
   const { nostr } = useNostr();
 
@@ -304,10 +324,10 @@ export function UniversalUserPage() {
 
   useEffect(() => {
     if (!userId) return;
-    const canonical = normalizeUrlSegmentToFriendly(userId);
-    if (!canonical || canonical === userId) return;
+    const normalized = stripNip05Envelope(userId);
+    if (normalized === null) return;
     const { search, hash } = window.location;
-    window.history.replaceState(null, '', `/u/${canonical}${search}${hash}`);
+    window.history.replaceState(null, '', `/u/${normalized}${search}${hash}`);
   }, [userId]);
 
   if (data?.pubkey) {

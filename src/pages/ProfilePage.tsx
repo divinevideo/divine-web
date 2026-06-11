@@ -178,12 +178,8 @@ export function ProfilePage({ pubkeyOverride }: { pubkeyOverride?: string } = {}
 
     const { pathname, search, hash } = window.location;
     if (pathname === friendlyPath) return;
-    if (!pathname.startsWith('/profile/')
-        && !pathname.startsWith('/npub1')
-        && !/^\/[0-9a-fA-F]{64}$/.test(pathname)) {
-      return;
-    }
     if (pathname.startsWith('/u/')) return;
+    if (!pathname.startsWith('/profile/')) return;
 
     debugLog('[ProfilePage] Rewriting URL to vanity form:', friendlyPath);
     window.history.replaceState(null, '', `${friendlyPath}${search}${hash}`);

@@ -161,28 +161,6 @@ export function nip05CandidatesFromUrlSegment(segment: string): string[] {
   ];
 }
 
-/**
- * Normalize a /u/ URL segment to the canonical friendly form.
- *
- *   '_@jimmyhere.divine.video'  -> 'jimmyhere'
- *   'jimmyhere%40divine.video'  -> 'jimmyhere'
- *   'jimmyhere'                 -> 'jimmyhere'
- *   'alice.primal.net'          -> 'alice.primal.net'
- *
- * Returns null if the segment is malformed and cannot be interpreted as a NIP-05.
- */
-export function normalizeUrlSegmentToFriendly(segment: string): string | null {
-  const decoded = decodeURIComponent(segment).trim().toLowerCase();
-  if (!decoded) return null;
-
-  if (decoded.includes('@')) {
-    const path = buildProfileLinkPath({ pubkey: '0'.repeat(64), nip05: decoded });
-    if (path.startsWith('/u/')) return path.slice(3);
-    return null;
-  }
-  return decoded;
-}
-
 function toNpub(pubkey: string): string {
   const normalized = pubkey.trim();
   if (normalized.startsWith('npub1')) {
