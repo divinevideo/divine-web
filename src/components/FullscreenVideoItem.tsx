@@ -145,7 +145,6 @@ export function FullscreenVideoItem({
   );
   const profileUrl = buildProfileLinkPath({
     pubkey: video.pubkey,
-    nip05: rawMetadata?.nip05,
   });
 
   // Format timestamp

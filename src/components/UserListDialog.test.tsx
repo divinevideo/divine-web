@@ -1,5 +1,6 @@
-import { render, screen } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { fireEvent, render, screen } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { nip19 } from 'nostr-tools';
 import { UserListDialog } from './UserListDialog';
 
 const {
@@ -34,6 +35,41 @@ vi.mock('@/lib/sentry', () => ({
 }));
 
 describe('UserListDialog', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockStartInactiveSpan.mockReturnValue({
+      end: vi.fn(),
+      setAttribute: vi.fn(),
+    });
+  });
+
+  it('navigates directly to the npub profile even when metadata has a NIP-05 alias', async () => {
+    const pubkey = 'a'.repeat(64);
+    mockUseBatchedAuthors.mockReturnValue({
+      data: {
+        [pubkey]: {
+          metadata: { name: 'alice', nip05: 'alice@divine.video' },
+        },
+      },
+    });
+
+    render(
+      <UserListDialog
+        open
+        onOpenChange={vi.fn()}
+        title="Followers"
+        pubkeys={[pubkey]}
+      />,
+    );
+
+    fireEvent.click(await screen.findByText('alice'));
+
+    expect(mockNavigate).toHaveBeenCalledWith(
+      `/profile/${nip19.npubEncode(pubkey)}`,
+      { ownerPubkey: pubkey },
+    );
+  });
+
   it('renders visible fallback rows before author metadata resolves', async () => {
     mockUseBatchedAuthors.mockReturnValue({ data: {} });
 

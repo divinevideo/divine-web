@@ -353,7 +353,6 @@ function CreatorLeaderboard({ period }: { period: TimePeriod }) {
       {creators.map((creator, index) => {
         const creatorProfilePath = buildProfileLinkPath({
           pubkey: creator.pubkey,
-          nip05: creator.nip05,
           fallbackRoute: 'profile',
         });
 

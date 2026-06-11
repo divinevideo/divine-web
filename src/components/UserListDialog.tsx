@@ -35,7 +35,7 @@ interface UserListDialogProps {
 interface UserRowProps {
   pubkey: string;
   metadata?: NostrMetadata;
-  onNavigate: (pubkey: string, nip05?: string) => void;
+  onNavigate: (pubkey: string) => void;
 }
 
 const UserRow = memo(function UserRow({ pubkey, metadata, onNavigate }: UserRowProps) {
@@ -45,7 +45,7 @@ const UserRow = memo(function UserRow({ pubkey, metadata, onNavigate }: UserRowP
   return (
     <button
       className="flex items-center gap-3 w-full p-2 rounded-lg hover:bg-muted transition-colors text-left"
-      onClick={() => onNavigate(pubkey, metadata?.nip05)}
+      onClick={() => onNavigate(pubkey)}
     >
       <Avatar size="md" className="shrink-0">
         <AvatarImage src={profileImage} alt={displayName} />
@@ -150,11 +150,10 @@ export function UserListDialog({
   const { data: authorsData } = useBatchedAuthors(open ? visiblePubkeys : []);
 
   const handleNavigate = useCallback(
-    (pubkey: string, nip05?: string) => {
+    (pubkey: string) => {
       onOpenChange(false);
       navigate(buildProfileLinkPath({
         pubkey,
-        nip05,
         fallbackRoute: 'profile',
       }), { ownerPubkey: pubkey });
     },
