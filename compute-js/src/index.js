@@ -10,7 +10,7 @@ import rc from '../static-publish.rc.js';
 import { buildFunnelcakeUrl, getFunnelcakeOriginForApiHost } from './funnelcakeOrigin.js';
 import { handleAuthPersistCookie } from './authPersistCookie.js';
 import { isJsonWellKnownPath, shouldServeWellKnownBeforeWwwRedirect } from './wellKnownPaths.js';
-import { buildCrawlerHtml, escapeHtml, cleanText, truncateText } from './ogTags.js';
+import { buildCrawlerHtml, escapeHtml, escapeJsonForScript, cleanText, truncateText } from './ogTags.js';
 import { hexToNpub } from './bech32.js';
 import {
   handleAtUsernameOg,
@@ -322,7 +322,7 @@ async function handleRequest(event) {
         const feedType = discoveryFeedType || 'trending';
         const feedData = await fetchFeedData(feedType, funnelcakeTarget);
         if (feedData) {
-          let injection = `<script>window.__DIVINE_FEED__=${JSON.stringify(feedData)};window.__DIVINE_FEED_TYPE__="${feedType}";</script>`;
+          let injection = `<script>window.__DIVINE_FEED__=${escapeJsonForScript(feedData)};window.__DIVINE_FEED_TYPE__=${escapeJsonForScript(feedType)};</script>`;
           const firstVideo = feedData.videos?.[0] || feedData[0];
           const firstVideoUrl = firstVideo?.video_url;
           const firstThumbnail = firstVideo?.thumbnail;
@@ -902,7 +902,7 @@ async function handleSubdomainProfile(subdomain, url, request, originalHostname)
   };
 
   // Inject the user data as a global variable before the main script
-  const userScript = `<script>window.__DIVINE_USER__ = ${JSON.stringify(divineUser)};</script>`;
+  const userScript = `<script>window.__DIVINE_USER__ = ${escapeJsonForScript(divineUser)};</script>`;
 
   // Update OG tags for the profile
   const ogTitle = divineUser.displayName + ' on Divine';
