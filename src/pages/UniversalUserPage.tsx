@@ -5,12 +5,15 @@ import { useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useNostr } from '@nostrify/react';
 import { useQuery } from '@tanstack/react-query';
-import { nip19 } from 'nostr-tools';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import { Card, CardContent } from '@/components/ui/card';
 import { WarningCircle as AlertCircle, CircleNotch as Loader2 } from '@phosphor-icons/react';
 import { debugLog } from '@/lib/debug';
+import { nip05CandidatesFromUrlSegment } from '@/lib/profileLinks';
+import { resolveNip05ToPubkey } from '@/lib/nip05Resolve';
+import { DIVINE_APEX_DOMAINS } from '@/lib/nip05Utils';
+import ProfilePage from './ProfilePage';
 
 const VINE_USER_ID_PATTERN = /^\d{15,20}$/;
 const VINE_HOSTNAME_PATTERN = /(^|\.)vine\.co$/i;
@@ -166,7 +169,9 @@ function getLookupLabel(identifier: string, t: TFunction): string {
     return t('universalUserPage.lookupLabel.vineId');
   }
 
-  return decodeIdentifier(identifier).includes('@')
+  const decoded = decodeIdentifier(identifier);
+  const looksLikeNip05 = decoded.includes('@') || decoded.includes('.');
+  return looksLikeNip05
     ? t('universalUserPage.lookupLabel.nip05')
     : t('universalUserPage.lookupLabel.legacyOrNip05');
 }
@@ -176,7 +181,9 @@ function getNotFoundDescription(identifier: string, t: TFunction): string {
     return t('universalUserPage.notFoundDescription.vine');
   }
 
-  return decodeIdentifier(identifier).includes('@')
+  const decoded = decodeIdentifier(identifier);
+  const looksLikeNip05 = decoded.includes('@') || decoded.includes('.');
+  return looksLikeNip05
     ? t('universalUserPage.notFoundDescription.nip05')
     : t('universalUserPage.notFoundDescription.legacy');
 }
@@ -184,6 +191,25 @@ function getNotFoundDescription(identifier: string, t: TFunction): string {
 /**
  * Looks up a user by either NIP-05 or Vine user ID
  */
+/**
+ * Strip the NIP-05 envelope from a /u/ URL segment, leaving the bare local
+ * part. We deliberately do NOT resolve the raw NIP-05 string itself — only
+ * the canonical /u/<sub> path runs through the lookup. Third-party segments
+ * (anything that doesn't match a known divine.video apex) pass through
+ * unchanged and the lookup below will report not-found.
+ */
+const NIP05_ENVELOPE_PATTERN = new RegExp(
+  `^(_@([^.]+)\\.(?:${DIVINE_APEX_DOMAINS.join('|')})|([^@]+)@${DIVINE_APEX_DOMAINS.map(a => a.replace('.', '\\.')).join('|')})$`,
+  'i',
+);
+
+function stripNip05Envelope(segment: string): string | null {
+  const decoded = decodeURIComponent(segment).trim();
+  const match = decoded.match(NIP05_ENVELOPE_PATTERN);
+  if (!match) return null;
+  return (match[2] ?? match[3]).toLowerCase();
+}
+
 function useUniversalUserLookup(identifier: string | undefined) {
   const { nostr } = useNostr();
 
@@ -206,7 +232,6 @@ function useUniversalUserLookup(identifier: string | undefined) {
       const profiles = getParsedProfiles(events);
 
       if (isVineUserId(decodedIdentifier)) {
-        // Handle Vine user ID lookup
         debugLog(`[UniversalUserPage] Looking up Vine user ID: ${decodedIdentifier}`);
         debugLog(`[UniversalUserPage] Searching through ${profiles.length} profiles for Vine ID`);
 
@@ -222,42 +247,67 @@ function useUniversalUserLookup(identifier: string | undefined) {
         }
 
         throw new UserNotFoundError(`No user found with Vine ID: ${decodedIdentifier}`);
-      } else {
-        debugLog(`[UniversalUserPage] Looking up username or NIP-05: ${decodedIdentifier}`);
+      }
 
-        const normalizedIdentifier = decodedIdentifier.toLowerCase();
-        if (!decodedIdentifier.includes('@')) {
-          for (const profile of profiles) {
-            const legacyUsername = extractLegacyVineUsername(profile.metadata);
-            if (legacyUsername?.toLowerCase() === normalizedIdentifier) {
-              debugLog(`[UniversalUserPage] Found legacy Vine user: ${profile.metadata.name}`);
-              return {
-                pubkey: profile.pubkey,
-                metadata: profile.metadata,
-                type: 'vine',
-              } satisfies ProfileLookupResult;
-            }
-          }
-        }
+      debugLog(`[UniversalUserPage] Looking up username or NIP-05: ${decodedIdentifier}`);
 
-        const nip05Identifier = decodedIdentifier.includes('@')
-          ? decodedIdentifier
-          : `${decodedIdentifier}@openvine.co`;
-
+      // Legacy Vine username: no '@' and no '.' — try matching against
+      // `vine_metadata.username` / `website` profiles.
+      const normalizedIdentifier = decodedIdentifier.toLowerCase();
+      if (!decodedIdentifier.includes('@') && !decodedIdentifier.includes('.')) {
         for (const profile of profiles) {
-          const nip05 = getStringRecordValue(profile.metadata, 'nip05');
-          if (nip05?.toLowerCase() === nip05Identifier.toLowerCase()) {
-            debugLog(`[UniversalUserPage] Found NIP-05 user: ${profile.metadata.name}`);
+          const legacyUsername = extractLegacyVineUsername(profile.metadata);
+          if (legacyUsername?.toLowerCase() === normalizedIdentifier) {
+            debugLog(`[UniversalUserPage] Found legacy Vine user: ${profile.metadata.name}`);
             return {
               pubkey: profile.pubkey,
               metadata: profile.metadata,
-              type: 'nip05',
+              type: 'vine',
             } satisfies ProfileLookupResult;
           }
         }
-
-        throw new UserNotFoundError(`No user found with NIP-05: ${nip05Identifier}`);
       }
+
+      // NIP-05 path: expand the URL segment into the canonical NIP-05 strings we
+      // expect to find in kind-0 metadata (or resolve via NIP-05 DNS).
+      const nip05Candidates = nip05CandidatesFromUrlSegment(decodedIdentifier);
+      debugLog(`[UniversalUserPage] NIP-05 candidates for "${decodedIdentifier}": ${JSON.stringify(nip05Candidates)}`);
+
+      const normalizedCandidates = new Set(nip05Candidates.map(c => c.toLowerCase()));
+      for (const profile of profiles) {
+        const nip = getStringRecordValue(profile.metadata, 'nip05');
+        if (nip && normalizedCandidates.has(nip.toLowerCase())) {
+          debugLog(`[UniversalUserPage] Found NIP-05 user: ${profile.metadata.name}`);
+          return {
+            pubkey: profile.pubkey,
+            metadata: profile.metadata,
+            type: 'nip05',
+          } satisfies ProfileLookupResult;
+        }
+      }
+
+      // DNS NIP-05 fallback. We only attempt this for candidates that contain an
+      // '@' (third-party segments with no '@' can't be resolved via DNS — they
+      // are tried against kind-0 above and reported as not-found if no match).
+      for (const candidate of nip05Candidates) {
+        if (!candidate.includes('@')) continue;
+        try {
+          const pubkey = await resolveNip05ToPubkey(candidate, { signal });
+          if (pubkey) {
+            debugLog(`[UniversalUserPage] Resolved NIP-05 via DNS: ${candidate} -> ${pubkey}`);
+            return {
+              pubkey,
+              metadata: {},
+              type: 'nip05',
+            } satisfies ProfileLookupResult;
+          }
+        } catch (err) {
+          if (err instanceof DOMException && err.name === 'AbortError') throw err;
+          debugLog(`[UniversalUserPage] DNS NIP-05 lookup failed for ${candidate}: ${(err as Error).message}`);
+        }
+      }
+
+      throw new UserNotFoundError(`No user found for identifier: ${decodedIdentifier}`);
     },
     enabled: !!identifier,
     staleTime: 300000,
@@ -273,13 +323,16 @@ export function UniversalUserPage() {
   const { data, isLoading, error } = useUniversalUserLookup(userId);
 
   useEffect(() => {
-    if (data?.pubkey) {
-      // Redirect to the Nostr profile page
-      const npub = nip19.npubEncode(data.pubkey);
-      debugLog(`[UniversalUserPage] Redirecting to profile: ${npub}`);
-      navigate(`/${npub}`, { replace: true });
-    }
-  }, [data, navigate]);
+    if (!userId) return;
+    const normalized = stripNip05Envelope(userId);
+    if (normalized === null) return;
+    const { search, hash } = window.location;
+    window.history.replaceState(null, '', `/u/${normalized}${search}${hash}`);
+  }, [userId]);
+
+  if (data?.pubkey) {
+    return <ProfilePage pubkeyOverride={data.pubkey} />;
+  }
 
   if (isLoading) {
     return (
@@ -329,7 +382,6 @@ export function UniversalUserPage() {
     );
   }
 
-  // While redirecting
   return (
     <div className="container max-w-4xl mx-auto px-4 py-8">
       <Card className="border-dashed">
