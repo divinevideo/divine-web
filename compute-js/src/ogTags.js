@@ -11,6 +11,21 @@ export function escapeHtml(str) {
     .replace(/'/g, '&#039;');
 }
 
+/**
+ * Serialize a value as JSON that is safe to embed inside a <script> element.
+ * JSON.stringify alone does not escape < > & - a string containing
+ * "</script>" would terminate the script element (XSS). Unicode-escaping
+ * keeps the output valid JSON/JS, so JSON.parse round-trips exactly.
+ */
+export function escapeJsonForScript(value) {
+  return JSON.stringify(value)
+    .replace(/</g, '\\u003c')
+    .replace(/>/g, '\\u003e')
+    .replace(/&/g, '\\u0026')
+    .replace(/\u2028/g, '\\u2028')
+    .replace(/\u2029/g, '\\u2029');
+}
+
 export function cleanText(value) {
   return (value || '').replace(/\s+/g, ' ').trim();
 }
