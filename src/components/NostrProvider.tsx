@@ -7,6 +7,7 @@ import { useAppContext } from '@/hooks/useAppContext';
 import { debugLog, verboseLog } from '@/lib/debug';
 import { createCachedNostr } from '@/lib/cachedNostr';
 import { PROFILE_RELAYS, getRelayUrls } from '@/config/relays';
+import { MUTE_LIST_KIND } from '@/hooks/useModeration';
 
 interface NostrProviderProps {
   children: React.ReactNode;
@@ -143,6 +144,12 @@ const NostrProvider: React.FC<NostrProviderProps> = (props) => {
         if (LIST_KINDS.includes(event.kind)) {
           // Add common relays where lists should be stored
           getRelayUrls(PROFILE_RELAYS).forEach(url => allRelays.add(url));
+        }
+
+        // Mute lists must stay primary-relay-only to avoid clobbering a
+        // user's populated mute list on public relays where we never read.
+        if (event.kind === MUTE_LIST_KIND) {
+          return [...allRelays];
         }
 
         // Also publish to the preset relays, capped to 5
