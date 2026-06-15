@@ -127,7 +127,7 @@ export function toFriendlyPath(nip05: string | null | undefined): string | null 
  * Returns an empty array for inputs that can't be interpreted as a NIP-05.
  */
 export function nip05CandidatesFromUrlSegment(segment: string): string[] {
-  const decoded = segment.trim().toLowerCase();
+  const decoded = decodeURIComponent(segment).trim().toLowerCase();
   if (!decoded) return [];
 
   // 1. Literal NIP-05 — has '@'.
@@ -152,7 +152,7 @@ export function nip05CandidatesFromUrlSegment(segment: string): string[] {
     // Third-party domain — return the literal for kind-0 matching, plus
     // the @ forms for DNS fallback (since kind-0 has the @ form).
     // Convert the last dot to @ to get the NIP-05 form: alice.primal.net -> alice@primal.net
-    const atIndex = decoded.lastIndexOf('.');
+    const atIndex = decoded.indexOf('.');
     if (atIndex > 0) {
       const atForm = decoded.slice(0, atIndex) + '@' + decoded.slice(atIndex + 1);
       return [

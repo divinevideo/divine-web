@@ -141,16 +141,14 @@ describe('nip05CandidatesFromUrlSegment', () => {
   it('passes a third-party segment through unchanged', () => {
     expect(nip05CandidatesFromUrlSegment('alice.primal.net')).toEqual([
       'alice.primal.net',
-      'alice.primal@net',
+      'alice@primal.net',
       '_@alice.primal.net',
     ]);
   });
 
   it('passes a literal NIP-05 through unchanged', () => {
     expect(nip05CandidatesFromUrlSegment('alice%40primal.net')).toEqual([
-      'alice%40primal.net',
-      'alice%40primal@net',
-      '_@alice%40primal.net',
+      'alice@primal.net',
     ]);
   });
 
