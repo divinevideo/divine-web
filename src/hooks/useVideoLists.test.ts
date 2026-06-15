@@ -586,3 +586,5 @@ describe('useVideoLists hooks', () => {
       );
       expect((result.current.data ?? []).every((l) => l.videoCoordinates.length > 0)).toBe(true);
     });
+  });
+});

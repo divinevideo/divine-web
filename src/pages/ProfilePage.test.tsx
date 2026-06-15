@@ -9,6 +9,15 @@ import { ProfilePage } from './ProfilePage';
 
 // ---- stub all hooks ProfilePage depends on ----------------------------------
 
+vi.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key: string, options?: { defaultValue?: string }) => {
+      if (key === 'profilePage.videosHeading') return 'Videos';
+      return options?.defaultValue ?? key;
+    },
+  }),
+}));
+
 vi.mock('@/hooks/useCurrentUser', () => ({
   useCurrentUser: () => ({ user: null }),
 }));
