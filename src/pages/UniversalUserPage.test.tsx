@@ -289,15 +289,9 @@ describe('UniversalUserPage', () => {
   });
 
   it('normalizes a raw NIP-05 URL segment to the canonical friendly form', () => {
-    const originalReplaceState = window.history.replaceState;
-    const replaceStateSpy = vi.fn();
-    window.history.replaceState = replaceStateSpy;
-
     renderPage('/u/_@jimmyhere.divine.video');
 
-    expect(replaceStateSpy).toHaveBeenCalledWith(null, '', '/u/jimmyhere');
-
-    window.history.replaceState = originalReplaceState;
+    expect(mockNavigate).toHaveBeenCalledWith('/u/jimmyhere', { replace: true });
   });
 
   it('does not normalize an already-canonical URL segment', () => {
@@ -313,15 +307,9 @@ describe('UniversalUserPage', () => {
   });
 
   it('normalizes a percent-encoded raw NIP-05 URL segment to the canonical friendly form', () => {
-    const originalReplaceState = window.history.replaceState;
-    const replaceStateSpy = vi.fn();
-    window.history.replaceState = replaceStateSpy;
-
     renderPage('/u/jimmyhere%40divine.video');
 
-    expect(replaceStateSpy).toHaveBeenCalledWith(null, '', '/u/jimmyhere');
-
-    window.history.replaceState = originalReplaceState;
+    expect(mockNavigate).toHaveBeenCalledWith('/u/jimmyhere', { replace: true });
   });
 
   it('does not normalize a third-party dotted segment that is already canonical', () => {

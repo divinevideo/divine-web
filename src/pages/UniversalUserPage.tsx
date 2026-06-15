@@ -199,7 +199,7 @@ function getNotFoundDescription(identifier: string, t: TFunction): string {
  * unchanged and the lookup below will report not-found.
  */
 const NIP05_ENVELOPE_PATTERN = new RegExp(
-  `^(_@([^.]+)\\.(?:${DIVINE_APEX_DOMAINS.map(a => a.replace('.', '\\.')).join('|')})|([^@]+)@(?:${DIVINE_APEX_DOMAINS.map(a => a.replace('.', '\\.')).join('|')})$`,
+  `^(_@([^.]+)\\.(?:${DIVINE_APEX_DOMAINS.map(a => a.replace('.', '\\.')).join('|')})|([^@]+)@(?:${DIVINE_APEX_DOMAINS.map(a => a.replace('.', '\\.')).join('|')}))$`,
   'i',
 );
 
