@@ -28,7 +28,7 @@ export function useLoggedInAccounts() {
   const activeLogins = useMemo(
     () => logins.filter((login) => {
       if (login.type === 'extension' && !isNip07Available) {
-        return false;
+        return Boolean(login.pubkey);
       }
 
       try {

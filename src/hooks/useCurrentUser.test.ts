@@ -76,6 +76,7 @@ describe('useCurrentUser', () => {
   });
 
   afterEach(() => {
+    vi.useRealTimers();
     vi.restoreAllMocks();
     resetNostrProvider();
   });
@@ -214,11 +215,11 @@ describe('useCurrentUser', () => {
 
     const { result } = renderHook(() => useCurrentUser());
 
-    expect(result.current.user).toBeUndefined();
-    expect(result.current.users).toEqual([]);
+    expect(result.current.user?.pubkey).toBe('pub123');
+    expect(result.current.users).toEqual([{ pubkey: 'pub123' }]);
     expect(result.current.signer).toBeUndefined();
     expect(result.current.isAuthRestoring).toBe(true);
-    expect(mockUseAuthor).toHaveBeenCalledWith(undefined);
+    expect(mockUseAuthor).toHaveBeenCalledWith('pub123');
   });
 
   it('recovers extension login when provider appears shortly after mount', async () => {
@@ -232,7 +233,9 @@ describe('useCurrentUser', () => {
 
     const { result } = renderHook(() => useCurrentUser());
 
-    expect(result.current.user).toBeUndefined();
+    expect(result.current.user?.pubkey).toBe('pub123');
+    expect(result.current.signer).toBeUndefined();
+    expect(result.current.isAuthRestoring).toBe(true);
 
     await act(async () => {
       setNostrProvider();
@@ -240,7 +243,42 @@ describe('useCurrentUser', () => {
 
     await waitFor(() => {
       expect(result.current.user?.pubkey).toBe('pub123');
+      expect(result.current.signer).toBeDefined();
+      expect(result.current.isAuthRestoring).toBe(false);
     });
+  });
+
+  it('keeps extension auth in restoring mode and recovers after a delayed provider injection', () => {
+    vi.useFakeTimers();
+
+    mockLogins.push({
+      id: 'extension:pub123',
+      type: 'extension',
+      pubkey: 'pub123',
+      createdAt: '2026-03-10T00:00:00.000Z',
+      data: null,
+    });
+
+    const { result } = renderHook(() => useCurrentUser());
+
+    expect(result.current.user?.pubkey).toBe('pub123');
+    expect(result.current.signer).toBeUndefined();
+    expect(result.current.isAuthRestoring).toBe(true);
+
+    act(() => {
+      vi.advanceTimersByTime(5000);
+    });
+
+    expect(result.current.user?.pubkey).toBe('pub123');
+    expect(result.current.isAuthRestoring).toBe(true);
+
+    act(() => {
+      setNostrProvider();
+      vi.advanceTimersByTime(2500);
+    });
+
+    expect(result.current.signer).toBeDefined();
+    expect(result.current.isAuthRestoring).toBe(false);
   });
 
   it('returns an extension user and signer when a browser extension is available', () => {
