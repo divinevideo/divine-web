@@ -7,7 +7,7 @@ import { useSearchParams } from 'react-router-dom';
 import { useNostr } from '@nostrify/react';
 import { useSubdomainNavigate } from '@/hooks/useSubdomainNavigate';
 import { useSeoMeta } from '@unhead/react';
-import { MagnifyingGlass as Search, Hash, Play, Users, VideoCamera as Video, CircleNotch as Loader2 } from '@phosphor-icons/react';
+import { MagnifyingGlass as Search, Hash, Play, Users, VideoCamera as Video, CircleNotch as Loader2, SquaresFour } from '@phosphor-icons/react';
 import { trackSearch } from '@/lib/analytics';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -22,6 +22,8 @@ import { useInfiniteSearchVideos } from '@/hooks/useInfiniteSearchVideos';
 import { useCompilationFullscreen } from '@/hooks/useCompilationFullscreen';
 import { useSearchUsers } from '@/hooks/useSearchUsers';
 import { useSearchHashtags, type HashtagResult } from '@/hooks/useSearchHashtags';
+import { useSearchLists } from '@/hooks/useSearchLists';
+import { UnifiedListCard } from '@/components/UnifiedListCard';
 import { getFunnelcakeBaseUrl } from '@/config/api';
 import { genUserName } from '@/lib/genUserName';
 import { getSafeProfileImage } from '@/lib/imageUtils';
@@ -46,7 +48,7 @@ import {
 } from '@/lib/compilationPlayback';
 import { buildProfileLinkPath } from '@/lib/profileLinks';
 
-type SearchFilter = 'all' | 'videos' | 'users' | 'hashtags';
+type SearchFilter = 'all' | 'videos' | 'users' | 'hashtags' | 'lists';
 
 function getValidSearchSortMode(sortParam: string | null): SortMode | 'relevance' {
   return SORT_MODES.some(mode => mode.value === sortParam)
@@ -126,6 +128,15 @@ export function SearchPage() {
     limit: 20,
   });
 
+  const {
+    data: listResults = [],
+    isLoading: isLoadingLists,
+    error: listError,
+  } = useSearchLists({
+    query: searchQuery,
+    limit: 50,
+  });
+
   // Popular hashtags for suggestions
   const {
     data: popularHashtags = [],
@@ -169,7 +180,7 @@ export function SearchPage() {
 
       // Track search analytics when user stops typing
       if (searchQuery.trim()) {
-        const totalResults = videoResults.length + userResults.length + hashtagResults.length;
+        const totalResults = videoResults.length + userResults.length + hashtagResults.length + listResults.length;
         trackSearch(searchQuery, activeFilter, totalResults);
       }
     }, 500);
@@ -185,6 +196,7 @@ export function SearchPage() {
     compilationRequest.start,
     compilationRequest.videoId,
     hashtagResults.length,
+    listResults.length,
     searchQuery,
     setSearchParams,
     sortMode,
@@ -335,8 +347,10 @@ export function SearchPage() {
         return isLoadingUsers;
       case 'hashtags':
         return isLoadingHashtags;
+      case 'lists':
+        return isLoadingLists;
       default:
-        return isLoadingVideos || isLoadingUsers || isLoadingHashtags;
+        return isLoadingVideos || isLoadingUsers || isLoadingHashtags || isLoadingLists;
     }
   })();
 
@@ -349,8 +363,10 @@ export function SearchPage() {
         return userError;
       case 'hashtags':
         return hashtagError;
+      case 'lists':
+        return listError;
       default:
-        return videoError || userError || hashtagError;
+        return videoError || userError || hashtagError || listError;
     }
   })();
 
@@ -363,13 +379,15 @@ export function SearchPage() {
         return userResults.length;
       case 'hashtags':
         return hashtagResults.length;
+      case 'lists':
+        return listResults.length;
       default:
-        return videoResults.length + userResults.length + hashtagResults.length;
+        return videoResults.length + userResults.length + hashtagResults.length + listResults.length;
     }
   };
 
   // Check if we have any results
-  const hasResults = videoResults.length > 0 || userResults.length > 0 || hashtagResults.length > 0;
+  const hasResults = videoResults.length > 0 || userResults.length > 0 || hashtagResults.length > 0 || listResults.length > 0;
   const showCompilationButton =
     searchQuery.trim().length > 0 &&
     videoResults.length > 0 &&
@@ -506,7 +524,7 @@ export function SearchPage() {
 
         {/* Search tabs */}
         <Tabs value={activeFilter} onValueChange={handleFilterChange} className="w-full">
-          <TabsList className="grid w-full max-w-md mx-auto grid-cols-4 mb-6">
+          <TabsList className="grid w-full max-w-md mx-auto grid-cols-5 mb-6">
             <TabsTrigger value="all" className="gap-2">
               <Search className="h-4 w-4 flex-shrink-0" />
               <span className="hidden sm:inline">All</span>
@@ -522,6 +540,10 @@ export function SearchPage() {
             <TabsTrigger value="hashtags" className="gap-2">
               <Hash className="h-4 w-4 flex-shrink-0" />
               <span className="hidden sm:inline">Hashtags</span>
+            </TabsTrigger>
+            <TabsTrigger value="lists" className="gap-2">
+              <SquaresFour className="h-4 w-4 flex-shrink-0" weight="bold" />
+              <span className="hidden sm:inline">Lists</span>
             </TabsTrigger>
           </TabsList>
 
@@ -734,6 +756,28 @@ export function SearchPage() {
                     key={hashtag.hashtag}
                     hashtag={hashtag}
                     onClick={() => handleHashtagClick(hashtag.hashtag)}
+                  />
+                ))}
+              </div>
+            )}
+          </TabsContent>
+
+          {/* Lists only tab */}
+          <TabsContent value="lists" className="mt-0">
+            {!searchQuery.trim() ? (
+              <EmptySearchState />
+            ) : isLoadingLists ? (
+              <LoadingState />
+            ) : listError ? (
+              <ErrorState />
+            ) : listResults.length === 0 ? (
+              <NoResultsState />
+            ) : (
+              <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
+                {listResults.map((result) => (
+                  <UnifiedListCard
+                    key={result.kind === 30000 ? `30000:${result.list.pubkey}:${result.list.id}` : `30005:${result.list.pubkey}:${result.list.id}`}
+                    {...result}
                   />
                 ))}
               </div>

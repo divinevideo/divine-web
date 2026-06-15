@@ -138,8 +138,8 @@ const NostrProvider: React.FC<NostrProviderProps> = (props) => {
           getRelayUrls(PROFILE_RELAYS).forEach(url => allRelays.add(url));
         }
 
-        // For list events (kind 30000, 30001, 30005), publish to multiple relays for better discoverability
-        const LIST_KINDS = [30000, 30001, 30005];
+        // For list events (kind 30000 follow sets, 30001 generic lists, 30003 saved-lists / NIP-51 bookmark sets, 30005 video curation sets), publish to multiple relays for better discoverability
+        const LIST_KINDS = [30000, 30001, 30003, 30005];
         if (LIST_KINDS.includes(event.kind)) {
           // Add common relays where lists should be stored
           getRelayUrls(PROFILE_RELAYS).forEach(url => allRelays.add(url));

@@ -474,7 +474,10 @@ describe('useVideoLists hooks', () => {
       expect(mockPublishAsync).toHaveBeenCalledWith({
         kind: 5,
         content: 'List deleted by owner',
-        tags: [['a', `30005:${TEST_PUBKEY}:to-delete`]],
+        tags: [
+          ['a', `30005:${TEST_PUBKEY}:to-delete`],
+          ['k', '30005'],
+        ],
       });
     });
 

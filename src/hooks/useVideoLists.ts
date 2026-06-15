@@ -12,6 +12,10 @@ import { resolveListPermissions } from '@/lib/listPermissions';
 
 export type { PlayOrder, VideoList };
 
+export function parseVideoList(event: NostrEvent): VideoList | null {
+  return parseVideoListFromEvent(event);
+}
+
 function buildListTags(
   list: Pick<VideoList, 'id' | 'name' | 'description' | 'image' | 'tags' | 'isCollaborative' | 'allowedCollaborators' | 'thumbnailEventId' | 'playOrder'>,
   videoCoordinates: string[],
@@ -475,6 +479,7 @@ export function useDeleteVideoList() {
         content: 'List deleted by owner',
         tags: [
           ['a', `30005:${ownerPubkey}:${listId}`],
+          ['k', '30005'], // NIP-09: k tag names the kind being deleted
         ]
       });
 
