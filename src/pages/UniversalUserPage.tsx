@@ -199,7 +199,7 @@ function getNotFoundDescription(identifier: string, t: TFunction): string {
  * unchanged and the lookup below will report not-found.
  */
 const NIP05_ENVELOPE_PATTERN = new RegExp(
-  `^(_@([^.]+)\\.(?:${DIVINE_APEX_DOMAINS.join('|')})|([^@]+)@${DIVINE_APEX_DOMAINS.map(a => a.replace('.', '\\.')).join('|')})$`,
+  `^(_@([^.]+)\\.(?:${DIVINE_APEX_DOMAINS.map(a => a.replace('.', '\\.')).join('|')})|([^@]+)@(?:${DIVINE_APEX_DOMAINS.map(a => a.replace('.', '\\.')).join('|')})$`,
   'i',
 );
 
@@ -207,7 +207,9 @@ function stripNip05Envelope(segment: string): string | null {
   const decoded = decodeURIComponent(segment).trim();
   const match = decoded.match(NIP05_ENVELOPE_PATTERN);
   if (!match) return null;
-  return (match[2] ?? match[3]).toLowerCase();
+  const captured = match[2] ?? match[3];
+  if (!captured) return null;
+  return captured.toLowerCase();
 }
 
 function useUniversalUserLookup(identifier: string | undefined) {
@@ -327,8 +329,8 @@ export function UniversalUserPage() {
     const normalized = stripNip05Envelope(userId);
     if (normalized === null) return;
     const { search, hash } = window.location;
-    window.history.replaceState(null, '', `/u/${normalized}${search}${hash}`);
-  }, [userId]);
+    navigate(`/u/${normalized}${search}${hash}`, { replace: true });
+  }, [userId, navigate]);
 
   if (data?.pubkey) {
     return <ProfilePage pubkeyOverride={data.pubkey} />;

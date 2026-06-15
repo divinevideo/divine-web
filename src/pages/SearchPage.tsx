@@ -46,6 +46,7 @@ import {
 } from '@/lib/compilationPlayback';
 import { buildProfileLinkPath, toFriendlyPath } from '@/lib/profileLinks';
 import { getDivineNip05Info } from '@/lib/nip05Utils';
+import { useNip05Validation } from '@/hooks/useNip05Validation';
 
 type SearchFilter = 'all' | 'videos' | 'users' | 'hashtags';
 
@@ -760,10 +761,10 @@ function UserCard({ user }: { user: { pubkey: string; metadata?: UserCardMetadat
   const displayName = user.metadata?.display_name || user.metadata?.name || genUserName(user.pubkey);
   const username = user.metadata?.name || genUserName(user.pubkey);
   const nip05 = user.metadata?.nip05;
-  // Prefer the NIP-05 as the user-visible identifier when it's set. A NIP-05 is
-  // a network-routable handle and a stable identity; the legacy Vine username is
-  // only useful for context. Match the display format ProfileHeader uses.
-  const nip05Display = nip05
+  const { state: nip05State } = useNip05Validation(nip05, user.pubkey);
+  // Only show NIP-05 as the user-visible identifier when it's validated.
+  // Unvalidated NIP-05s could be spoofed by anyone claiming a handle.
+  const nip05Display = nip05 && nip05State === 'valid'
     ? (getDivineNip05Info(nip05)?.displayName ?? `@${toFriendlyPath(nip05) ?? nip05}`)
     : null;
   const about = user.metadata?.about;

@@ -149,8 +149,18 @@ export function nip05CandidatesFromUrlSegment(segment: string): string[] {
         }
       }
     }
-    // Third-party domain — keep the segment as-is for kind-0 matching and let
-    // callers attempt DNS resolution with `${local}@${domain}` derived separately.
+    // Third-party domain — return the literal for kind-0 matching, plus
+    // the @ forms for DNS fallback (since kind-0 has the @ form).
+    // Convert the last dot to @ to get the NIP-05 form: alice.primal.net -> alice@primal.net
+    const atIndex = decoded.lastIndexOf('.');
+    if (atIndex > 0) {
+      const atForm = decoded.slice(0, atIndex) + '@' + decoded.slice(atIndex + 1);
+      return [
+        decoded,
+        atForm,
+        `_@${decoded}`,
+      ];
+    }
     return [decoded];
   }
 
