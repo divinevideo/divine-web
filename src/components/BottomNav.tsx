@@ -50,6 +50,7 @@ export function BottomNav() {
         <Button
           variant="ghost"
           size="sm"
+          aria-label="Home"
           onClick={() => navigate('/')}
           className={cn(
             "flex flex-col items-center justify-center gap-1 rounded-none hover:bg-transparent p-0",
@@ -63,6 +64,7 @@ export function BottomNav() {
         <Button
           variant="ghost"
           size="sm"
+          aria-label="Search"
           onClick={() => navigate('/discovery')}
           className={cn(
             "flex flex-col items-center justify-center gap-1 rounded-none hover:bg-transparent p-0",
@@ -76,6 +78,7 @@ export function BottomNav() {
         <Button
           variant="ghost"
           size="sm"
+          aria-label="Upload"
           onClick={() => handleAuthAction(() => navigate('/upload'))}
           className="flex items-center justify-center bg-[#27c58b] rounded-[20px] px-5 py-2 hover:bg-[#27c58b]/90 text-white p-0"
         >
@@ -86,6 +89,7 @@ export function BottomNav() {
         <Button
           variant="ghost"
           size="sm"
+          aria-label="Notifications"
           onClick={() => handleAuthAction(() => navigate('/notifications'))}
           className={cn(
             "flex flex-col items-center justify-center gap-1 rounded-none hover:bg-transparent p-0",
@@ -106,6 +110,7 @@ export function BottomNav() {
         <Button
           variant="ghost"
           size="sm"
+          aria-label="Profile"
           onClick={handleProfileClick}
           className={cn(
             "flex flex-col items-center justify-center gap-1 rounded-none hover:bg-transparent p-0",

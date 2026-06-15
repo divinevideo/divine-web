@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, useLocation } from 'react-router-dom';
+import { LoginDialogProvider } from '@/contexts/LoginDialogContext';
 import { initializeI18n } from '@/lib/i18n';
 import { BottomNav } from './BottomNav';
 
@@ -22,8 +23,10 @@ async function renderBottomNav(initialEntry = '/') {
   await initializeI18n({ force: true, languages: ['en-US'] });
   return render(
     <MemoryRouter initialEntries={[initialEntry]}>
-      <BottomNav />
-      <LocationDisplay />
+      <LoginDialogProvider>
+        <BottomNav />
+        <LocationDisplay />
+      </LoginDialogProvider>
     </MemoryRouter>
   );
 }
@@ -43,12 +46,12 @@ describe('BottomNav', () => {
     });
   });
 
-  it('links mobile users to the popular page', async () => {
+  it('links mobile users to the discovery page', async () => {
     const user = userEvent.setup();
     await renderBottomNav('/');
 
-    await user.click(screen.getByRole('button', { name: 'Popular' }));
+    await user.click(screen.getByRole('button', { name: 'Search' }));
 
-    expect(screen.getByTestId('location-display')).toHaveTextContent('/popular');
+    expect(screen.getByTestId('location-display')).toHaveTextContent('/discovery');
   });
 });

@@ -60,7 +60,7 @@ export function MobileVideoItem({
   const effectiveHlsUrl = video.hlsUrl || (optimalHlsUrl !== video.videoUrl ? optimalHlsUrl : undefined);
   const { setActiveVideo } = useVideoPlayback();
   const { cues: subtitleCues, hasSubtitles } = useSubtitles(video);
-  const [subtitlesVisible, setSubtitlesVisible] = useState(true);
+  const [subtitlesVisible] = useState(true);
   const showSubtitles = subtitlesVisible && hasSubtitles;
 
   const [videoError, setVideoError] = useState(false);
@@ -223,8 +223,8 @@ export function MobileVideoItem({
         )}
       </div>
 
-      {/* Gradient overlay */}
-      <div className="absolute bottom-0 left-0 right-0 h-[40%] bg-gradient-to-t from-black/40 via-black/20 via-[18%] to-transparent pointer-events-none z-[5]" />
+      {/* Flat scrim keeps overlay text readable without violating brand gradient rules. */}
+      <div className="absolute bottom-0 left-0 right-0 h-[40%] bg-black/25 pointer-events-none z-[5]" />
 
       {/* Heart animation (z-20) */}
       {showHeartAnimation && (
