@@ -7,6 +7,11 @@ export interface ResolvedNip05 extends ParsedNip05 {
   pubkey: string;
 }
 
+export interface Nip05Parts {
+  name: string;
+  domain: string;
+}
+
 export function parseNip05Handle(raw: string): ParsedNip05 | null {
   if (!raw) return null;
   const trimmed = raw.trim();
@@ -30,6 +35,20 @@ export function parseNip05Handle(raw: string): ParsedNip05 | null {
   return null;
 }
 
+export function parseNip05(nip05: string): Nip05Parts | null {
+  const trimmed = nip05.trim();
+  const atIndex = trimmed.lastIndexOf('@');
+  if (atIndex === -1) return null;
+
+  const name = trimmed.slice(0, atIndex) || '_';
+  const domain = trimmed.slice(atIndex + 1);
+
+  if (!domain || !/^[a-zA-Z0-9.-]+$/.test(domain)) return null;
+  if (!/^[a-zA-Z0-9._-]+$/.test(name)) return null;
+
+  return { name, domain };
+}
+
 export async function resolveNip05(
   handle: string,
   signal?: AbortSignal,
@@ -47,4 +66,12 @@ export async function resolveNip05(
   } catch {
     return null;
   }
+}
+
+export async function resolveNip05ToPubkey(
+  nip05: string,
+  options: { signal?: AbortSignal } = {},
+): Promise<string | null> {
+  const resolved = await resolveNip05(nip05, options.signal);
+  return resolved?.pubkey ?? null;
 }
