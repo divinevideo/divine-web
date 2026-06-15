@@ -31,7 +31,7 @@ export function useCurrentUser() {
   const hasExtensionLogin = useMemo(() => (
     logins.some((login) => login.type === 'extension')
   ), [logins]);
-  const isNip07Available = useNip07Availability(hasExtensionLogin);
+  const { isAvailable: isNip07Available } = useNip07Availability(hasExtensionLogin);
   const jwtSigner = useMemo(() => (
     token ? new DivineJWTSigner({ token }) : null
   ), [token]);
