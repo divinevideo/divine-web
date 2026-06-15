@@ -6,17 +6,179 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useNostr } from '@nostrify/react';
 import { useQuery } from '@tanstack/react-query';
 import { nip19 } from 'nostr-tools';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { Card, CardContent } from '@/components/ui/card';
-import { AlertCircle, Loader2 } from 'lucide-react';
+import { WarningCircle as AlertCircle, CircleNotch as Loader2 } from '@phosphor-icons/react';
 import { debugLog } from '@/lib/debug';
+
+const VINE_USER_ID_PATTERN = /^\d{15,20}$/;
+const VINE_HOSTNAME_PATTERN = /(^|\.)vine\.co$/i;
+const VINE_RESERVED_PATHS = new Set([
+  'about',
+  'explore',
+  'help',
+  'login',
+  'messages',
+  'privacy',
+  'search',
+  'settings',
+  'u',
+  'v',
+  'terms',
+]);
+
+type ProfileMetadata = Record<string, unknown>;
+type UserLookupType = 'vine' | 'nip05';
+
+interface ProfileLookupResult {
+  pubkey: string;
+  metadata: ProfileMetadata;
+  type: UserLookupType;
+}
+
+interface ParsedProfile {
+  pubkey: string;
+  metadata: ProfileMetadata;
+}
+
+class UserNotFoundError extends Error {}
 
 /**
  * Determines if a string is likely a Vine user ID (all numeric) or NIP-05 identifier
  */
 function isVineUserId(identifier: string): boolean {
-  // Vine user IDs are typically long numeric strings (16-19 digits)
-  // Example: 1080167736266633216
-  return /^\d{15,20}$/.test(identifier);
+  return VINE_USER_ID_PATTERN.test(identifier);
+}
+
+function decodeIdentifier(identifier: string): string {
+  try {
+    return decodeURIComponent(identifier);
+  } catch {
+    return identifier;
+  }
+}
+
+function parseHttpUrl(value: string): URL | null {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  const candidates = trimmed.startsWith('http://') || trimmed.startsWith('https://')
+    ? [trimmed]
+    : [`https://${trimmed}`];
+
+  for (const candidate of candidates) {
+    try {
+      const url = new URL(candidate);
+      if (url.protocol === 'http:' || url.protocol === 'https:') {
+        return url;
+      }
+    } catch {
+      continue;
+    }
+  }
+
+  return null;
+}
+
+function parseProfileMetadata(content: string): ProfileMetadata | null {
+  try {
+    const parsed = JSON.parse(content);
+    return parsed && typeof parsed === 'object' ? parsed as ProfileMetadata : null;
+  } catch {
+    return null;
+  }
+}
+
+function getStringRecordValue(record: unknown, key: string): string | null {
+  if (!record || typeof record !== 'object') {
+    return null;
+  }
+
+  const value = (record as Record<string, unknown>)[key];
+  return typeof value === 'string' ? value.trim() || null : null;
+}
+
+function parseLegacyVineProfileUsername(value: string): string | null {
+  const url = parseHttpUrl(value);
+  if (!url || !VINE_HOSTNAME_PATTERN.test(url.hostname)) {
+    return null;
+  }
+
+  const segments = url.pathname.split('/').filter(Boolean);
+  if (segments.length !== 1) {
+    return null;
+  }
+
+  const username = decodeIdentifier(segments[0]).trim();
+  if (!username || VINE_RESERVED_PATHS.has(username.toLowerCase())) {
+    return null;
+  }
+
+  return username;
+}
+
+function extractLegacyVineUsername(metadata: ProfileMetadata): string | null {
+  const vineUsername = getStringRecordValue(metadata.vine_metadata, 'username');
+  if (vineUsername) {
+    return vineUsername;
+  }
+
+  return typeof metadata.website === 'string'
+    ? parseLegacyVineProfileUsername(metadata.website)
+    : null;
+}
+
+function extractVineUserId(metadata: ProfileMetadata): string | null {
+  const vineUserId = getStringRecordValue(metadata.vine_metadata, 'user_id');
+  if (vineUserId) {
+    return vineUserId;
+  }
+
+  if (typeof metadata.website !== 'string') {
+    return null;
+  }
+
+  const url = parseHttpUrl(metadata.website);
+  if (!url || !VINE_HOSTNAME_PATTERN.test(url.hostname)) {
+    return null;
+  }
+
+  const segments = url.pathname.split('/').filter(Boolean);
+  if (segments[0] !== 'u' || segments.length !== 2) {
+    return null;
+  }
+
+  return VINE_USER_ID_PATTERN.test(segments[1]) ? segments[1] : null;
+}
+
+function getParsedProfiles(events: Array<{ pubkey: string; content: string }>): ParsedProfile[] {
+  return events.flatMap((event) => {
+    const metadata = parseProfileMetadata(event.content);
+    return metadata ? [{ pubkey: event.pubkey, metadata }] : [];
+  });
+}
+
+function getLookupLabel(identifier: string, t: TFunction): string {
+  if (isVineUserId(identifier)) {
+    return t('universalUserPage.lookupLabel.vineId');
+  }
+
+  return decodeIdentifier(identifier).includes('@')
+    ? t('universalUserPage.lookupLabel.nip05')
+    : t('universalUserPage.lookupLabel.legacyOrNip05');
+}
+
+function getNotFoundDescription(identifier: string, t: TFunction): string {
+  if (isVineUserId(identifier)) {
+    return t('universalUserPage.notFoundDescription.vine');
+  }
+
+  return decodeIdentifier(identifier).includes('@')
+    ? t('universalUserPage.notFoundDescription.nip05')
+    : t('universalUserPage.notFoundDescription.legacy');
 }
 
 /**
@@ -32,94 +194,82 @@ function useUniversalUserLookup(identifier: string | undefined) {
         throw new Error('No identifier provided');
       }
 
+      const decodedIdentifier = decodeIdentifier(identifier).trim();
       const signal = AbortSignal.any([
         context.signal,
         AbortSignal.timeout(10000),
       ]);
+      const events = await nostr.query([{
+        kinds: [0],
+        limit: 500,
+      }], { signal });
+      const profiles = getParsedProfiles(events);
 
-      if (isVineUserId(identifier)) {
+      if (isVineUserId(decodedIdentifier)) {
         // Handle Vine user ID lookup
-        debugLog(`[UniversalUserPage] Looking up Vine user ID: ${identifier}`);
+        debugLog(`[UniversalUserPage] Looking up Vine user ID: ${decodedIdentifier}`);
+        debugLog(`[UniversalUserPage] Searching through ${profiles.length} profiles for Vine ID`);
 
-        // Query for kind 0 events and search for matching vine_metadata.user_id
-        // Use smaller batches for better performance
-        const events = await nostr.query([{
-          kinds: [0],
-          limit: 500, // Reduced from 5000 for performance
-        }], { signal });
-
-        debugLog(`[UniversalUserPage] Searching through ${events.length} profiles for Vine ID`);
-
-        for (const event of events) {
-          try {
-            const metadata = JSON.parse(event.content);
-            // Check both vine_metadata.user_id and website URL
-            if (metadata.vine_metadata?.user_id === identifier || 
-                metadata.website?.includes(`/u/${identifier}`)) {
-              debugLog(`[UniversalUserPage] Found Vine user: ${metadata.name}`);
-              return {
-                pubkey: event.pubkey,
-                metadata,
-                type: 'vine',
-              };
-            }
-          } catch {
-            continue;
+        for (const profile of profiles) {
+          if (extractVineUserId(profile.metadata) === decodedIdentifier) {
+            debugLog(`[UniversalUserPage] Found Vine user: ${profile.metadata.name}`);
+            return {
+              pubkey: profile.pubkey,
+              metadata: profile.metadata,
+              type: 'vine',
+            } satisfies ProfileLookupResult;
           }
         }
 
-        throw new Error(`No user found with Vine ID: ${identifier}`);
+        throw new UserNotFoundError(`No user found with Vine ID: ${decodedIdentifier}`);
       } else {
-        // Handle NIP-05 lookup
-        debugLog(`[UniversalUserPage] Looking up NIP-05: ${identifier}`);
-        
-        // For NIP-05, we need to handle the @ symbol properly
-        // The identifier might come as "username" and we need to add the domain
-        let nip05Identifier = identifier;
-        
-        // If it doesn't contain @, assume it's a username for openvine.co
-        if (!identifier.includes('@')) {
-          nip05Identifier = `${identifier}@openvine.co`;
-        } else {
-          // URL decode in case @ was encoded
-          nip05Identifier = decodeURIComponent(identifier);
-        }
+        debugLog(`[UniversalUserPage] Looking up username or NIP-05: ${decodedIdentifier}`);
 
-        // Query for kind 0 events with matching NIP-05
-        const events = await nostr.query([{
-          kinds: [0],
-          limit: 500, // Reduced from 5000 for performance
-        }], { signal });
-
-        for (const event of events) {
-          try {
-            const metadata = JSON.parse(event.content);
-            if (metadata.nip05?.toLowerCase() === nip05Identifier.toLowerCase()) {
-              debugLog(`[UniversalUserPage] Found NIP-05 user: ${metadata.name}`);
+        const normalizedIdentifier = decodedIdentifier.toLowerCase();
+        if (!decodedIdentifier.includes('@')) {
+          for (const profile of profiles) {
+            const legacyUsername = extractLegacyVineUsername(profile.metadata);
+            if (legacyUsername?.toLowerCase() === normalizedIdentifier) {
+              debugLog(`[UniversalUserPage] Found legacy Vine user: ${profile.metadata.name}`);
               return {
-                pubkey: event.pubkey,
-                metadata,
-                type: 'nip05',
-              };
+                pubkey: profile.pubkey,
+                metadata: profile.metadata,
+                type: 'vine',
+              } satisfies ProfileLookupResult;
             }
-          } catch {
-            continue;
           }
         }
 
-        throw new Error(`No user found with NIP-05: ${nip05Identifier}`);
+        const nip05Identifier = decodedIdentifier.includes('@')
+          ? decodedIdentifier
+          : `${decodedIdentifier}@openvine.co`;
+
+        for (const profile of profiles) {
+          const nip05 = getStringRecordValue(profile.metadata, 'nip05');
+          if (nip05?.toLowerCase() === nip05Identifier.toLowerCase()) {
+            debugLog(`[UniversalUserPage] Found NIP-05 user: ${profile.metadata.name}`);
+            return {
+              pubkey: profile.pubkey,
+              metadata: profile.metadata,
+              type: 'nip05',
+            } satisfies ProfileLookupResult;
+          }
+        }
+
+        throw new UserNotFoundError(`No user found with NIP-05: ${nip05Identifier}`);
       }
     },
     enabled: !!identifier,
     staleTime: 300000,
     gcTime: 600000,
-    retry: 2,
+    retry: (failureCount, error) => !(error instanceof UserNotFoundError) && failureCount < 2,
   });
 }
 
 export function UniversalUserPage() {
   const { userId } = useParams<{ userId: string }>();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const { data, isLoading, error } = useUniversalUserLookup(userId);
 
   useEffect(() => {
@@ -139,10 +289,10 @@ export function UniversalUserPage() {
             <div className="flex flex-col items-center justify-center space-y-4">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
               <p className="text-muted-foreground">
-                Looking up {isVineUserId(userId || '') ? 'Vine' : 'NIP-05'} user...
+                {t('universalUserPage.lookingUp')}
               </p>
               <p className="text-sm text-muted-foreground">
-                {isVineUserId(userId || '') ? 'User ID' : 'NIP-05'}: {userId}
+                {getLookupLabel(userId || '', t)}: {userId}
               </p>
             </div>
           </CardContent>
@@ -152,28 +302,25 @@ export function UniversalUserPage() {
   }
 
   if (error) {
-    const isVineId = isVineUserId(userId || '');
     return (
       <div className="container max-w-4xl mx-auto px-4 py-8">
         <Card className="border-destructive">
           <CardContent className="py-12">
             <div className="flex flex-col items-center justify-center space-y-4">
               <AlertCircle className="h-12 w-12 text-destructive" />
-              <h2 className="text-xl font-semibold">User Not Found</h2>
+              <h2 className="text-xl font-semibold">{t('universalUserPage.userNotFound')}</h2>
               <p className="text-muted-foreground text-center max-w-md">
-                Could not find a user with {isVineId ? 'Vine ID' : 'NIP-05 identifier'}: 
+                {t('universalUserPage.couldNotFind', { label: getLookupLabel(userId || '', t) })}
                 <code className="text-sm bg-muted px-2 py-1 rounded ml-2">{userId}</code>
               </p>
               <p className="text-sm text-muted-foreground text-center max-w-md">
-                {isVineId 
-                  ? 'This Vine user may not have been imported to the Nostr network yet.'
-                  : 'Please check the NIP-05 identifier is correct.'}
+                {getNotFoundDescription(userId || '', t)}
               </p>
               <button
                 onClick={() => navigate('/')}
-                className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
+                className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:brightness-110 transition-colors"
               >
-                Go to Home
+                {t('universalUserPage.goHome')}
               </button>
             </div>
           </CardContent>
@@ -189,7 +336,7 @@ export function UniversalUserPage() {
         <CardContent className="py-12">
           <div className="flex flex-col items-center justify-center space-y-4">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <p className="text-muted-foreground">Redirecting to profile...</p>
+            <p className="text-muted-foreground">{t('universalUserPage.redirecting')}</p>
           </div>
         </CardContent>
       </Card>

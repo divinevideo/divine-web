@@ -1,13 +1,18 @@
 // ABOUTME: Page component for viewing individual video lists
 // ABOUTME: Shows list details, videos in the list, and allows editing for list owners
 
+import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { nip19 } from 'nostr-tools';
 import { useNostr } from '@nostrify/react';
 import { useQuery } from '@tanstack/react-query';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useAuthor } from '@/hooks/useAuthor';
-import { useRemoveVideoFromList, type PlayOrder } from '@/hooks/useVideoLists';
+import { useRemoveVideoFromList, useDeleteVideoList } from '@/hooks/useVideoLists';
+import { parseVideoListFromEvent, type PlayOrder, type VideoList } from '@/lib/parseVideoListFromEvent';
+import { EditListDialog } from '@/components/EditListDialog';
+import { DeleteListDialog } from '@/components/DeleteListDialog';
 import { VideoGrid } from '@/components/VideoGrid';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -15,81 +20,19 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { ArrowLeft, List, Video, Clock, Edit, Share2, Users, Shuffle, ArrowUpDown, MoreVertical, Trash2 } from 'lucide-react';
+import { ArrowLeft, List, VideoCamera as Video, Clock, PencilSimple as Edit, ShareNetwork as Share2, Users, Shuffle, ArrowsDownUp as ArrowUpDown, DotsThreeVertical as MoreVertical, Trash as Trash2 } from '@phosphor-icons/react';
 import { genUserName } from '@/lib/genUserName';
 import { formatDistanceToNow } from 'date-fns';
 import { useToast } from '@/hooks/useToast';
+import { useShare } from '@/hooks/useShare';
+import { useAppContext } from '@/hooks/useAppContext';
+import { getListShareData } from '@/lib/shareUtils';
 import { getSafeProfileImage } from '@/lib/imageUtils';
+import { getEventLookupRelayUrls } from '@/config/relays';
 import type { NostrEvent, NostrFilter } from '@nostrify/nostrify';
 import { SHORT_VIDEO_KIND, VIDEO_KINDS, type ParsedVideoData } from '@/types/video';
 import { parseVideoEvent, getVineId, getThumbnailUrl, getOriginalVineTimestamp, getLoopCount, getProofModeData, getOriginalLikeCount, getOriginalRepostCount, getOriginalCommentCount, getOriginPlatform, isVineMigrated } from '@/lib/videoParser';
-
-interface VideoList {
-  id: string;
-  name: string;
-  description?: string;
-  image?: string;
-  pubkey: string;
-  createdAt: number;
-  videoCoordinates: string[];
-  tags?: string[];
-  isCollaborative?: boolean;
-  allowedCollaborators?: string[];
-  thumbnailEventId?: string;
-  playOrder?: PlayOrder;
-}
-
-function parseVideoList(event: NostrEvent): VideoList | null {
-  const dTag = event.tags.find(tag => tag[0] === 'd')?.[1];
-  if (!dTag) return null;
-
-  const title = event.tags.find(tag => tag[0] === 'title')?.[1] || dTag;
-  const description = event.tags.find(tag => tag[0] === 'description')?.[1];
-  const image = event.tags.find(tag => tag[0] === 'image')?.[1];
-
-  const videoCoordinates = event.tags
-    .filter(tag => {
-      if (tag[0] !== 'a' || !tag[1]) return false;
-      // Check if the coordinate starts with any of the supported video kinds
-      return VIDEO_KINDS.some(kind => tag[1].startsWith(`${kind}:`));
-    })
-    .map(tag => tag[1]);
-
-  // Extract categorization tags
-  const tags = event.tags
-    .filter(tag => tag[0] === 't')
-    .map(tag => tag[1]);
-
-  // Extract collaborative settings
-  const isCollaborative = event.tags.find(tag => tag[0] === 'collaborative')?.[1] === 'true';
-  const allowedCollaborators = event.tags
-    .filter(tag => tag[0] === 'collaborator')
-    .map(tag => tag[1]);
-
-  // Extract featured thumbnail
-  const thumbnailEventId = event.tags.find(tag => tag[0] === 'thumbnail-event')?.[1];
-
-  // Extract play order
-  const playOrderTag = event.tags.find(tag => tag[0] === 'play-order')?.[1];
-  const playOrder: PlayOrder = playOrderTag === 'reverse' || playOrderTag === 'manual' || playOrderTag === 'shuffle'
-    ? playOrderTag
-    : 'chronological';
-
-  return {
-    id: dTag,
-    name: title,
-    description,
-    image,
-    pubkey: event.pubkey,
-    createdAt: event.created_at,
-    videoCoordinates,
-    tags,
-    isCollaborative,
-    allowedCollaborators,
-    thumbnailEventId,
-    playOrder
-  };
-}
+import { resolveListPermissions } from '@/lib/listPermissions';
 
 async function fetchListVideos(
   nostr: { query: (filters: NostrFilter[], options: { signal: AbortSignal }) => Promise<NostrEvent[]> },
@@ -198,55 +141,124 @@ const PlayOrderIcon = ({ order }: { order?: PlayOrder }) => {
 };
 
 const PlayOrderLabel = ({ order }: { order?: PlayOrder }) => {
+  const { t } = useTranslation();
   switch (order) {
     case 'shuffle':
-      return 'Shuffle';
+      return t('listDetailPage.playOrderShuffle');
     case 'reverse':
-      return 'Newest First';
+      return t('listDetailPage.playOrderReverse');
     case 'manual':
-      return 'Custom Order';
+      return t('listDetailPage.playOrderManual');
     default:
-      return 'Oldest First';
+      return t('listDetailPage.playOrderChronological');
   }
 };
 
 export default function ListDetailPage() {
+  const { t } = useTranslation();
   const { pubkey, listId } = useParams<{ pubkey: string; listId: string }>();
   const navigate = useNavigate();
   const { nostr } = useNostr();
+  const { config } = useAppContext();
+  const listLookupRelayKey = (config.relayUrls || [config.relayUrl]).join(',');
   const { user } = useCurrentUser();
   const { toast } = useToast();
+  const { share } = useShare();
   const removeVideo = useRemoveVideoFromList();
+  const deleteList = useDeleteVideoList();
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
-  const isOwner = user?.pubkey === pubkey;
-  const canEdit = isOwner; // TODO: Add collaborator check
+  const listOwnerPubkey = pubkey || undefined;
+
+  const handleDeleteList = async () => {
+    if (!list || !listOwnerPubkey) return;
+    setIsDeleting(true);
+    try {
+      await deleteList.mutateAsync({ listId: list.id, ownerPubkey: listOwnerPubkey });
+      toast({
+        title: t('listDetailPage.listDeletedTitle'),
+        description: t('listDetailPage.listDeletedDescription', { name: list.name }),
+      });
+      navigate('/lists');
+    } catch (error) {
+      toast({
+        title: t('listDetailPage.errorTitle'),
+        description: error instanceof Error ? error.message : t('listDetailPage.deleteFailedDescription'),
+        variant: 'destructive',
+      });
+    } finally {
+      setIsDeleting(false);
+      setShowDeleteDialog(false);
+    }
+  };
 
   // Fetch list details
   const { data: list, isLoading: listLoading } = useQuery({
-    queryKey: ['list-detail', pubkey, listId],
+    queryKey: ['list-detail', pubkey, listId, listLookupRelayKey],
     queryFn: async (context) => {
-      if (!pubkey || !listId) throw new Error('Invalid list parameters');
+      if (!pubkey || !listId) throw new Error(t('listDetailPage.invalidParamsError'));
 
       const signal = AbortSignal.any([
         context.signal,
         AbortSignal.timeout(5000)
       ]);
 
-      const events = await nostr.query([{
+      const ownerEvents = await nostr.query([{
         kinds: [30005],
         authors: [pubkey],
         '#d': [listId],
         limit: 1
-      }], { signal });
+      }], {
+        signal,
+        relays: getEventLookupRelayUrls({
+          configuredRelayUrls: config.relayUrls || [config.relayUrl],
+        }),
+      });
 
-      if (events.length === 0) {
-        throw new Error('List not found');
+      if (ownerEvents.length === 0) {
+        throw new Error(t('listDetailPage.notFoundError'));
       }
 
-      return parseVideoList(events[0]);
+      const ownerList = parseVideoListFromEvent(ownerEvents[0]);
+      if (!ownerList) {
+        throw new Error(t('listDetailPage.notFoundError'));
+      }
+
+      if (!ownerList.isCollaborative || !ownerList.allowedCollaborators || ownerList.allowedCollaborators.length === 0) {
+        return ownerList;
+      }
+
+      const participantPubkeys = Array.from(new Set([pubkey, ...ownerList.allowedCollaborators]));
+      const participantEvents = await nostr.query([{
+        kinds: [30005],
+        authors: participantPubkeys,
+        '#d': [listId],
+        limit: 50,
+      }], {
+        signal,
+        relays: getEventLookupRelayUrls({
+          configuredRelayUrls: config.relayUrls || [config.relayUrl],
+        }),
+      });
+
+      const participantSet = new Set(participantPubkeys);
+      const latestList = participantEvents
+        .map(parseVideoListFromEvent)
+        .filter((candidate): candidate is VideoList => candidate !== null && participantSet.has(candidate.pubkey))
+        .sort((a, b) => b.createdAt - a.createdAt)[0];
+
+      return latestList || ownerList;
     },
     enabled: !!pubkey && !!listId
   });
+
+  const permissions = resolveListPermissions({
+    ownerPubkey: listOwnerPubkey,
+    isCollaborative: list?.isCollaborative,
+    allowedCollaborators: list?.allowedCollaborators,
+  }, user?.pubkey);
 
   // Fetch videos in the list
   const { data: videos, isLoading: videosLoading } = useQuery({
@@ -269,27 +281,9 @@ export default function ListDetailPage() {
   const authorMetadata = author.data?.metadata;
   const authorName = authorMetadata?.name || genUserName(pubkey || '');
 
-  const handleShare = async () => {
-    const url = window.location.href;
-
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: list?.name || 'Video List',
-          text: list?.description || 'Check out this video list',
-          url
-        });
-      } catch {
-        // User cancelled or error
-      }
-    } else {
-      // Fallback to clipboard
-      await navigator.clipboard.writeText(url);
-      toast({
-        title: 'Link copied',
-        description: 'List link copied to clipboard',
-      });
-    }
+  const handleShare = () => {
+    if (!pubkey || !listId) return;
+    share(getListShareData(pubkey, listId));
   };
 
   if (listLoading) {
@@ -324,13 +318,13 @@ export default function ListDetailPage() {
         <Card className="border-dashed">
           <CardContent className="py-12 text-center">
             <List className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-            <p className="text-lg font-medium mb-2">List not found</p>
+            <p className="text-lg font-medium mb-2">{t('listDetailPage.notFoundTitle')}</p>
             <p className="text-muted-foreground mb-4">
-              This list may have been deleted or doesn't exist
+              {t('listDetailPage.notFoundDescription')}
             </p>
             <Button onClick={() => navigate('/lists')}>
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Browse Lists
+              {t('listDetailPage.browseLists')}
             </Button>
           </CardContent>
         </Card>
@@ -349,7 +343,7 @@ export default function ListDetailPage() {
           className="mb-4"
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Lists
+          {t('listDetailPage.backToLists')}
         </Button>
 
         {/* List Header */}
@@ -384,20 +378,20 @@ export default function ListDetailPage() {
                   href={`/profile/${pubkey ? nip19.npubEncode(pubkey) : ''}`}
                   className="flex items-center gap-2 hover:opacity-80 transition-opacity"
                 >
-                  <Avatar className="h-8 w-8">
+                  <Avatar size="sm">
                     <AvatarImage src={getSafeProfileImage(authorMetadata?.picture)} />
                     <AvatarFallback>{authorName[0]?.toUpperCase()}</AvatarFallback>
                   </Avatar>
                   <div>
                     <p className="font-medium">{authorName}</p>
-                    <p className="text-xs text-muted-foreground">List creator</p>
+                    <p className="text-xs text-muted-foreground">{t('listDetailPage.listCreator')}</p>
                   </div>
                 </a>
 
                 <div className="flex items-center gap-4 text-sm text-muted-foreground flex-wrap">
                   <div className="flex items-center gap-1">
                     <Video className="h-4 w-4" />
-                    <span>{list.videoCoordinates.length} videos</span>
+                    <span>{t('listDetailPage.videoCount', { count: list.videoCoordinates.length })}</span>
                   </div>
                   <div className="flex items-center gap-1">
                     <Clock className="h-4 w-4" />
@@ -412,7 +406,7 @@ export default function ListDetailPage() {
                   {list.isCollaborative && (
                     <div className="flex items-center gap-1 text-green-600">
                       <Users className="h-4 w-4" />
-                      <span>Collaborative</span>
+                      <span>{t('listDetailPage.collaborative')}</span>
                     </div>
                   )}
                 </div>
@@ -431,15 +425,21 @@ export default function ListDetailPage() {
 
               {/* Actions */}
               <div className="flex gap-2">
-                {isOwner && (
-                  <Button variant="outline" size="sm">
-                    <Edit className="h-4 w-4 mr-2" />
-                    Edit List
-                  </Button>
+                {permissions.canEditMetadata && (
+                  <>
+                    <Button variant="outline" size="sm" onClick={() => setShowEditDialog(true)}>
+                      <Edit className="h-4 w-4 mr-2" />
+                      {t('listDetailPage.editList')}
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => setShowDeleteDialog(true)}>
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      {t('listDetailPage.delete')}
+                    </Button>
+                  </>
                 )}
                 <Button variant="outline" size="sm" onClick={handleShare}>
                   <Share2 className="h-4 w-4 mr-2" />
-                  Share
+                  {t('listDetailPage.share')}
                 </Button>
               </div>
             </div>
@@ -455,9 +455,9 @@ export default function ListDetailPage() {
           </div>
         ) : videos && videos.length > 0 ? (
           <div>
-            <h2 className="text-lg font-semibold mb-4">Videos in this list</h2>
+            <h2 className="text-lg font-semibold mb-4">{t('listDetailPage.videosInList')}</h2>
 
-            {canEdit ? (
+            {permissions.canEditContent ? (
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 {videos.map((video) => {
                   const videoCoord = `${video.kind}:${video.pubkey}:${video.vineId}`;
@@ -467,7 +467,7 @@ export default function ListDetailPage() {
                         videos={[video]}
                         navigationContext={{
                           source: 'profile',
-                          pubkey: list.pubkey,
+                          pubkey: listOwnerPubkey || list.pubkey,
                         }}
                       />
                       <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -487,16 +487,17 @@ export default function ListDetailPage() {
                                 try {
                                   await removeVideo.mutateAsync({
                                     listId: list.id,
+                                    ownerPubkey: listOwnerPubkey || list.pubkey,
                                     videoCoordinate: videoCoord
                                   });
                                   toast({
-                                    title: 'Video removed',
-                                    description: 'Video removed from list',
+                                    title: t('listDetailPage.videoRemovedTitle'),
+                                    description: t('listDetailPage.videoRemovedDescription'),
                                   });
-                                } catch {
+                                } catch (error) {
                                   toast({
-                                    title: 'Error',
-                                    description: 'Failed to remove video',
+                                    title: t('listDetailPage.errorTitle'),
+                                    description: error instanceof Error ? error.message : t('listDetailPage.removeVideoFailedDescription'),
                                     variant: 'destructive',
                                   });
                                 }
@@ -504,7 +505,7 @@ export default function ListDetailPage() {
                               className="text-destructive focus:text-destructive"
                             >
                               <Trash2 className="h-4 w-4 mr-2" />
-                              Remove from list
+                              {t('listDetailPage.removeFromList')}
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -518,7 +519,7 @@ export default function ListDetailPage() {
                 videos={videos}
                 navigationContext={{
                   source: 'profile',
-                  pubkey: list.pubkey,
+                  pubkey: listOwnerPubkey || list.pubkey,
                 }}
               />
             )}
@@ -528,17 +529,37 @@ export default function ListDetailPage() {
             <CardContent className="py-12 text-center">
               <Video className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
               <p className="text-muted-foreground">
-                This list doesn't have any videos yet
+                {t('listDetailPage.emptyList')}
               </p>
-              {isOwner && (
+              {permissions.canEditContent && (
                 <p className="text-sm text-muted-foreground mt-2">
-                  Browse videos and add them to your list
+                  {t('listDetailPage.emptyListOwnerHint')}
                 </p>
               )}
             </CardContent>
           </Card>
         )}
       </div>
+
+      {/* Edit List Dialog */}
+      {list && showEditDialog && (
+        <EditListDialog
+          open={showEditDialog}
+          onClose={() => setShowEditDialog(false)}
+          list={list}
+        />
+      )}
+
+      {/* Delete List Dialog */}
+      {list && showDeleteDialog && (
+        <DeleteListDialog
+          open={showDeleteDialog}
+          onClose={() => setShowDeleteDialog(false)}
+          onConfirm={handleDeleteList}
+          listName={list.name}
+          isDeleting={isDeleting}
+        />
+      )}
     </div>
   );
 }

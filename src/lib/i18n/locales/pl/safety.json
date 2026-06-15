@@ -1,0 +1,20 @@
+{
+  "title": "Standardy bezpieczeństwa",
+  "updated": "Ostatnia aktualizacja: 30 marca 2026 r",
+  "sections": {
+    "overview": "1. Przegląd",
+    "definitions": "2. Definicje",
+    "prohibited": "3. Zabronione treści i zachowania",
+    "childSafety": "4. Bezpieczeństwo dzieci",
+    "matureContent": "5. Treść dla dorosłych",
+    "integrity": "6. Integralność platformy i nadużycia",
+    "enforcement": "7. Egzekucja",
+    "moderation": "8. Metody moderacji",
+    "reporting": "9. Raportowanie",
+    "userControls": "10. Kontrola użytkownika",
+    "decentralization": "11. Ograniczenie decentralizacji",
+    "automated": "12. Zautomatyzowane podejmowanie decyzji",
+    "appeals": "13. Odwołania",
+    "updates": "14. Aktualizacje"
+  }
+}

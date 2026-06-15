@@ -2,7 +2,8 @@
 // ABOUTME: Shows user's lists, trending lists, and allows list creation
 
 import { useState } from 'react';
-import { useVideoLists, useTrendingVideoLists } from '@/hooks/useVideoLists';
+import { useVideoLists, useTrendingVideoLists, useFollowedUsersLists } from '@/hooks/useVideoLists';
+import { useFollowList } from '@/hooks/useFollowList';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useAuthor } from '@/hooks/useAuthor';
 import { Link } from 'react-router-dom';
@@ -12,7 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { List, TrendingUp, Plus, Users, Video, Clock } from 'lucide-react';
+import { List, TrendUp as TrendingUp, Plus, Users, VideoCamera as Video, Clock } from '@phosphor-icons/react';
 import { genUserName } from '@/lib/genUserName';
 import { CreateListDialog } from '@/components/CreateListDialog';
 import { formatDistanceToNow } from 'date-fns';
@@ -68,7 +69,7 @@ function ListCard({ list }: { list: ListCardProps }) {
             to={`/profile/${nip19.npubEncode(list.pubkey)}`}
             className="flex items-center gap-2 hover:opacity-80 transition-opacity"
           >
-            <Avatar className="h-6 w-6">
+            <Avatar size="xs">
               <AvatarImage src={getSafeProfileImage(authorMetadata?.picture)} />
               <AvatarFallback>{authorName[0]?.toUpperCase()}</AvatarFallback>
             </Avatar>
@@ -104,6 +105,8 @@ export default function ListsPage() {
   const { data: userLists, isLoading: userListsLoading } = useVideoLists(user?.pubkey);
   const { data: trendingLists, isLoading: trendingLoading } = useTrendingVideoLists();
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const { data: followedPubkeys } = useFollowList();
+  const { data: followedUsersLists, isLoading: discoverLoading } = useFollowedUsersLists(followedPubkeys);
 
   return (
     <div className="container max-w-6xl mx-auto px-4 py-8">
@@ -218,7 +221,7 @@ export default function ListsPage() {
               <CardContent className="py-12 text-center">
                 <TrendingUp className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
                 <p className="text-muted-foreground">
-                  No trending lists found
+                  No lists trending right now. Be the curator we need.
                 </p>
               </CardContent>
             </Card>
@@ -227,15 +230,63 @@ export default function ListsPage() {
 
         {/* Discover Tab */}
         <TabsContent value="discover" className="space-y-6">
-          <div className="text-center py-12">
-            <Users className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-            <p className="text-muted-foreground mb-4">
-              Discover lists from creators you follow
-            </p>
-            <p className="text-sm text-muted-foreground">
-              Coming soon...
-            </p>
-          </div>
+          {!user ? (
+            <Card className="border-dashed">
+              <CardContent className="py-12 text-center">
+                <Users className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                <p className="text-muted-foreground mb-4">
+                  Log in to see what your people are curating.
+                </p>
+              </CardContent>
+            </Card>
+          ) : discoverLoading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {[...Array(6)].map((_, i) => (
+                <Card key={i}>
+                  <CardHeader>
+                    <Skeleton className="h-6 w-32" />
+                    <Skeleton className="h-4 w-full mt-2" />
+                  </CardHeader>
+                  <CardContent>
+                    <Skeleton className="h-8 w-full" />
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : followedUsersLists && followedUsersLists.length > 0 ? (
+            <>
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Users className="h-4 w-4" />
+                <span>Lists from people you follow</span>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {followedUsersLists.map((list) => (
+                  <ListCard key={`${list.pubkey}-${list.id}`} list={list} />
+                ))}
+              </div>
+            </>
+          ) : followedPubkeys && followedPubkeys.length > 0 ? (
+            <Card className="border-dashed">
+              <CardContent className="py-12 text-center">
+                <Users className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                <p className="text-muted-foreground">
+                  Nobody you follow has dropped a list yet.
+                </p>
+                <p className="text-sm text-muted-foreground mt-2">
+                  Circle back soon, or poke around trending.
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card className="border-dashed">
+              <CardContent className="py-12 text-center">
+                <Users className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                <p className="text-muted-foreground mb-4">
+                  Follow a few creators — their lists land here.
+                </p>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
       </Tabs>
 

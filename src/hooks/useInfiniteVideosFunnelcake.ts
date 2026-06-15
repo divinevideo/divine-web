@@ -1,0 +1,493 @@
+// ABOUTME: Infinite scroll hook for video feeds using Funnelcake REST API
+// ABOUTME: Provides pre-computed trending scores and efficient cursor-based pagination
+
+import { useInfiniteQuery } from '@tanstack/react-query';
+import { useState } from 'react';
+import { getFunnelcakeBaseUrl } from '@/config/api';
+import { useCurrentUser } from '@/hooks/useCurrentUser';
+import type { ParsedVideoData } from '@/types/video';
+import type { FunnelcakeFetchOptions } from '@/types/funnelcake';
+import { fetchVideos, fetchVideosV2, searchVideos, fetchUserVideos, fetchUserFeed, fetchRecommendations } from '@/lib/funnelcakeClient';
+import { enrichAgeRestrictedVideos } from '@/lib/ageRestrictedVideos';
+import { transformToVideoPage } from '@/lib/funnelcakeTransform';
+import { debugLog } from '@/lib/debug';
+import { performanceMonitor } from '@/lib/performanceMonitoring';
+
+export type FunnelcakeFeedType = 'trending' | 'recent' | 'classics' | 'hashtag' | 'profile' | 'home' | 'recommendations' | 'category' | 'popular';
+export type FunnelcakeSortMode = 'trending' | 'recent' | 'loops' | 'engagement' | 'classic' | 'watching';
+export type PopularSource = 'new' | 'classic' | 'all';
+export type PopularPeriod = 'now' | 'today' | 'week' | 'month' | 'all';
+
+interface UseInfiniteVideosFunnelcakeOptions {
+  feedType: FunnelcakeFeedType;
+  apiUrl?: string;          // Override API URL (for classics always using Divine)
+  sortMode?: FunnelcakeSortMode;
+  popularSource?: PopularSource;
+  popularPeriod?: PopularPeriod;
+  hashtag?: string;         // For hashtag feed
+  category?: string;        // For category feed
+  pubkey?: string;          // For profile and home feeds
+  pageSize?: number;
+  enabled?: boolean;
+  randomizeWithinTop?: number;  // Randomize starting offset within top N results (e.g. 500)
+}
+
+interface FunnelcakeVideoPage {
+  videos: ParsedVideoData[];
+  nextCursor: number | undefined;
+  offset?: number;
+  /** Opaque cursor string for recommendations pagination */
+  recommendationsCursor?: string;
+  /** Opaque cursor string for v2 endpoints (trending) */
+  v2Cursor?: string;
+  mode?: 'recommendations' | 'popular';
+}
+
+function getVideoKey(video: Pick<ParsedVideoData, 'pubkey' | 'kind' | 'vineId' | 'id'>): string {
+  return `${video.pubkey}:${video.kind}:${video.vineId || video.id}`;
+}
+
+function getUniqueVideoCount(pages: FunnelcakeVideoPage[]): number {
+  const seenKeys = new Set<string>();
+
+  for (const page of pages) {
+    for (const video of page.videos) {
+      seenKeys.add(getVideoKey(video));
+    }
+  }
+
+  return seenKeys.size;
+}
+
+function isPopularFallbackPageParam(
+  pageParam: unknown
+): pageParam is { mode: 'popular'; offset: number } {
+  return typeof pageParam === 'object'
+    && pageParam !== null
+    && 'mode' in pageParam
+    && (pageParam as { mode?: string }).mode === 'popular'
+    && 'offset' in pageParam
+    && typeof (pageParam as { offset?: unknown }).offset === 'number';
+}
+
+function isRecommendationsCursorPageParam(
+  pageParam: unknown
+): pageParam is {
+  mode: 'recommendations';
+  cursor: string;
+  seenVideoKeys: string[];
+  popularOffset: number;
+} {
+  return typeof pageParam === 'object'
+    && pageParam !== null
+    && 'mode' in pageParam
+    && (pageParam as { mode?: string }).mode === 'recommendations'
+    && 'cursor' in pageParam
+    && typeof (pageParam as { cursor?: unknown }).cursor === 'string'
+    && 'seenVideoKeys' in pageParam
+    && Array.isArray((pageParam as { seenVideoKeys?: unknown }).seenVideoKeys)
+    && 'popularOffset' in pageParam
+    && typeof (pageParam as { popularOffset?: unknown }).popularOffset === 'number';
+}
+
+/**
+ * Map feed type and sort mode to Funnelcake API options
+ */
+function getFetchOptions(
+  feedType: FunnelcakeFeedType,
+  sortMode?: FunnelcakeSortMode,
+  pageSize: number = 20,
+  popularSource?: PopularSource,
+  popularPeriod?: PopularPeriod
+): FunnelcakeFetchOptions {
+  const baseOptions: FunnelcakeFetchOptions = {
+    limit: pageSize,
+  };
+
+  switch (feedType) {
+    case 'popular':
+      return {
+        ...baseOptions,
+        sort: 'popular',
+        period: popularPeriod ?? 'now',
+        ...(popularSource === 'new' ? { exclude_platform: 'vine' } : {}),
+        ...(popularSource === 'classic' ? { platform: 'vine' } : {}),
+      };
+
+    case 'classics':
+      // Classic Vines: filter by platform=vine, sort by loops
+      return {
+        ...baseOptions,
+        classic: true,
+        platform: 'vine',
+        sort: 'loops',
+      };
+
+    case 'trending':
+      // Trending uses /api/v2/videos with sort=watching by default — 24h CDN view
+      // count with no age decay, surfaces classic Vines getting current attention.
+      return {
+        ...baseOptions,
+        sort: sortMode === 'classic' ? 'loops' : (sortMode || 'watching'),
+        ...(sortMode === 'classic' ? { classic: true, platform: 'vine' } : {}),
+      };
+
+    case 'recent':
+      return {
+        ...baseOptions,
+        sort: 'recent',
+      };
+
+    case 'hashtag':
+      return {
+        ...baseOptions,
+        sort: sortMode === 'classic' ? 'loops' : (sortMode || 'trending'),
+        ...(sortMode === 'classic' ? { classic: true, platform: 'vine' } : {}),
+      };
+
+    case 'profile':
+      return {
+        ...baseOptions,
+        sort: sortMode === 'classic' ? 'loops' : (sortMode || 'recent'),
+        ...(sortMode === 'classic' ? { classic: true, platform: 'vine' } : {}),
+      };
+
+    case 'home':
+      return {
+        ...baseOptions,
+        sort: sortMode === 'classic' ? 'loops' : (sortMode || 'recent'),
+        ...(sortMode === 'classic' ? { classic: true, platform: 'vine' } : {}),
+      };
+
+    case 'category':
+      return {
+        ...baseOptions,
+        sort: sortMode === 'classic' ? 'loops' : (sortMode || 'trending'),
+        ...(sortMode === 'classic' ? { classic: true, platform: 'vine' } : {}),
+      };
+
+    case 'recommendations':
+      return {
+        ...baseOptions,
+        // Recommendations endpoint handles its own sorting
+      };
+
+    default:
+      return baseOptions;
+  }
+}
+
+/**
+ * Infinite scroll hook for Funnelcake-powered video feeds
+ *
+ * Supports:
+ * - trending: Videos sorted by trending score
+ * - recent: Chronological videos
+ * - classics: Classic Vine archive (always uses Divine's Funnelcake)
+ * - hashtag: Videos with specific hashtag
+ * - profile: Videos by specific user
+ * - home: Personalized feed for logged-in user
+ * - recommendations: AI-powered personalized recommendations (requires login)
+ */
+export function useInfiniteVideosFunnelcake({
+  feedType,
+  apiUrl,
+  sortMode,
+  popularSource = 'new',
+  popularPeriod = 'now',
+  hashtag,
+  category,
+  pubkey,
+  pageSize = 12,
+  enabled = true,
+  randomizeWithinTop,
+}: UseInfiniteVideosFunnelcakeOptions) {
+  const { user } = useCurrentUser();
+
+  // For randomized feeds: pick a random page-aligned starting offset on mount
+  const totalPages = randomizeWithinTop ? Math.floor(randomizeWithinTop / pageSize) : 0;
+  const [randomStartPage] = useState(() =>
+    totalPages > 0 ? Math.floor(Math.random() * totalPages) : 0
+  );
+  const randomStartOffset = randomStartPage * pageSize;
+
+  // Determine API URL:
+  // - Classics always use Divine's Funnelcake
+  // - Other feeds use provided apiUrl or default
+  const effectiveApiUrl = feedType === 'classics'
+    ? getFunnelcakeBaseUrl()
+    : (apiUrl || getFunnelcakeBaseUrl());
+
+  return useInfiniteQuery<FunnelcakeVideoPage, Error>({
+    queryKey: ['funnelcake-videos', feedType, effectiveApiUrl, sortMode, popularSource, popularPeriod, hashtag, category, pubkey, pageSize, randomStartOffset],
+
+    queryFn: async ({ pageParam, signal }) => {
+      const totalStart = performance.now();
+
+      // On the first page, check for edge-injected data matching this feed type
+      // The Fastly edge worker injects window.__DIVINE_FEED__ to avoid a client round-trip
+      const edgeFeedType = typeof window !== 'undefined' ? window.__DIVINE_FEED_TYPE__ : undefined;
+      const edgeMatchesFeed = edgeFeedType === feedType || (edgeFeedType === undefined && feedType === 'trending');
+      if (!pageParam && edgeMatchesFeed && typeof window !== 'undefined' && window.__DIVINE_FEED__) {
+        const edgeData = window.__DIVINE_FEED__;
+        delete window.__DIVINE_FEED__; // Consume once
+        delete window.__DIVINE_FEED_TYPE__;
+        debugLog(`[useInfiniteVideosFunnelcake] Using edge-injected ${feedType} feed data`);
+
+        const page = transformToVideoPage(edgeData);
+        performanceMonitor.recordFeedLoad({
+          feedType: 'funnelcake-trending',
+          queryTime: 0,
+          parseTime: performance.now() - totalStart,
+          totalTime: performance.now() - totalStart,
+          videoCount: page.videos.length,
+          sortMode,
+        });
+        return {
+          videos: page.videos,
+          nextCursor: page.nextCursor,
+          offset: page.offset,
+        };
+      }
+
+      // Handle pagination cursor
+      const isPopularFallback = isPopularFallbackPageParam(pageParam);
+      const isRecommendationsCursorParam = isRecommendationsCursorPageParam(pageParam);
+      const isOffsetParam = typeof pageParam === 'object'
+        && pageParam !== null
+        && 'offset' in pageParam
+        && !isPopularFallback
+        && !isRecommendationsCursorParam;
+      const before = isOffsetParam
+        ? String((pageParam as { offset: number }).offset)
+        : pageParam
+          ? String(pageParam)
+          : undefined;
+
+      const options = getFetchOptions(feedType, sortMode, pageSize, popularSource, popularPeriod);
+      options.signal = signal;
+
+      // For randomized feeds, use offset directly instead of before cursor
+      if (randomizeWithinTop && isOffsetParam) {
+        options.offset = (pageParam as { offset: number }).offset;
+      } else {
+        options.before = before;
+      }
+
+      debugLog(`[useInfiniteVideosFunnelcake] Fetching ${feedType} feed from ${effectiveApiUrl}`, {
+        sortMode,
+        before,
+        pageSize,
+        hashtag,
+        pubkey,
+      });
+
+      const queryStart = performance.now();
+      let response;
+      let responseMode: FunnelcakeVideoPage['mode'];
+      let cursorType: 'timestamp' | 'offset' | 'cursor' =
+        feedType === 'recommendations' || feedType === 'trending' || feedType === 'popular' ? 'cursor' : 'timestamp';
+
+      try {
+        switch (feedType) {
+          case 'hashtag':
+            if (!hashtag) throw new Error('Hashtag required for hashtag feed');
+            response = await searchVideos(effectiveApiUrl, {
+              ...options,
+              tag: hashtag.toLowerCase(),
+            });
+            break;
+
+          case 'profile':
+            if (!pubkey) throw new Error('Pubkey required for profile feed');
+            response = await fetchUserVideos(effectiveApiUrl, pubkey, options);
+            break;
+
+          case 'home':
+            if (!user?.pubkey) {
+              debugLog('[useInfiniteVideosFunnelcake] No user logged in for home feed');
+              return { videos: [], nextCursor: undefined };
+            }
+            response = await fetchUserFeed(effectiveApiUrl, {
+              ...options,
+              pubkey: user.pubkey,
+            });
+            break;
+
+          case 'recommendations': {
+            if (!user?.pubkey) {
+              debugLog('[useInfiniteVideosFunnelcake] No user logged in for recommendations feed');
+              return { videos: [], nextCursor: undefined };
+            }
+            if (isPopularFallback) {
+              responseMode = 'popular';
+              cursorType = 'offset';
+              response = await fetchVideos(effectiveApiUrl, {
+                limit: pageSize,
+                sort: 'popular',
+                offset: pageParam.offset,
+                signal,
+              });
+            } else {
+              responseMode = 'recommendations';
+              // Recommendations use cursor-based pagination, with numeric-offset
+              // fallback for older servers that do not return cursor metadata yet.
+              const recCursor = isRecommendationsCursorParam
+                ? pageParam.cursor
+                : typeof pageParam === 'string'
+                  ? pageParam
+                  : undefined;
+              const recOffset = recCursor ? parseInt(recCursor, 10) : undefined;
+              const isNumericOffset = recOffset !== undefined && !isNaN(recOffset);
+              response = await fetchRecommendations(effectiveApiUrl, {
+                pubkey: user.pubkey,
+                limit: pageSize,
+                cursor: recCursor,
+                offset: isNumericOffset ? recOffset : undefined,
+                fallback: 'popular', // Fall back to popular videos if no personalized recs
+                signal,
+              });
+            }
+            break;
+          }
+
+          case 'category':
+            if (!category) throw new Error('Category required for category feed');
+            response = await fetchVideos(effectiveApiUrl, {
+              ...options,
+              category,
+            });
+            break;
+
+          case 'popular':
+          case 'trending':
+            // v2 endpoint with sort=watching default; opaque cursor pagination.
+            response = await fetchVideosV2(effectiveApiUrl, options);
+            break;
+
+          default:
+            // recent, classics
+            response = await fetchVideos(effectiveApiUrl, options);
+        }
+      } catch (err) {
+        debugLog(`[useInfiniteVideosFunnelcake] Fetch error:`, err);
+        throw err;
+      }
+
+      const queryTime = performance.now() - queryStart;
+
+      // Transform response to video page.
+      const parseStart = performance.now();
+      let page = transformToVideoPage(response, cursorType);
+
+      if (feedType === 'recommendations' && responseMode === 'recommendations' && isRecommendationsCursorParam) {
+        const seenKeys = new Set(pageParam.seenVideoKeys);
+        const hasNewVideos = page.videos.some(video => !seenKeys.has(getVideoKey(video)));
+
+        if (!hasNewVideos) {
+          responseMode = 'popular';
+          cursorType = 'offset';
+          response = await fetchVideos(effectiveApiUrl, {
+            limit: pageSize,
+            sort: 'popular',
+            offset: pageParam.popularOffset,
+            signal,
+          });
+          page = transformToVideoPage(response, cursorType);
+        }
+      }
+
+      const enrichedVideos = feedType === 'profile'
+        ? await enrichAgeRestrictedVideos(page.videos, signal)
+        : page.videos;
+      const parseTime = performance.now() - parseStart;
+
+      const totalTime = performance.now() - totalStart;
+
+      // Record performance metrics
+      performanceMonitor.recordQuery({
+        relayUrl: effectiveApiUrl,
+        queryType: `funnelcake-${feedType}`,
+        duration: queryTime,
+        eventCount: enrichedVideos.length,
+        filters: JSON.stringify({ feedType, sortMode, hashtag, pubkey }),
+      });
+
+      performanceMonitor.recordFeedLoad({
+        feedType: `funnelcake-${feedType}`,
+        queryTime,
+        parseTime,
+        totalTime,
+        videoCount: enrichedVideos.length,
+        sortMode,
+      });
+
+      debugLog(`[useInfiniteVideosFunnelcake] Got ${enrichedVideos.length} videos in ${queryTime.toFixed(0)}ms`, {
+        hasMore: page.hasMore,
+        nextCursor: page.nextCursor,
+      });
+
+      return {
+        videos: enrichedVideos,
+        nextCursor: page.nextCursor,
+        offset: page.offset,
+        recommendationsCursor: responseMode === 'recommendations' ? page.rawCursor : undefined,
+        v2Cursor: feedType === 'trending' || feedType === 'popular' ? page.rawCursor : undefined,
+        mode: responseMode,
+      };
+    },
+
+    getNextPageParam: (lastPage, allPages) => {
+      // Randomized pool: wrap around within top N, stop after all pages covered
+      if (randomizeWithinTop && totalPages > 0) {
+        if (allPages.length >= totalPages) return undefined; // All pages fetched
+        const nextOffset = (randomStartOffset + allPages.length * pageSize) % randomizeWithinTop;
+        return { offset: nextOffset };
+      }
+      if (feedType === 'recommendations') {
+        if (lastPage.mode === 'popular') {
+          return lastPage.offset !== undefined
+            ? { mode: 'popular' as const, offset: lastPage.offset }
+            : undefined;
+        }
+
+        if (lastPage.recommendationsCursor) {
+          return {
+            mode: 'recommendations' as const,
+            cursor: lastPage.recommendationsCursor,
+            seenVideoKeys: allPages.flatMap(page => page.videos.map(getVideoKey)),
+            popularOffset: getUniqueVideoCount(allPages),
+          };
+        }
+
+        return {
+          mode: 'popular' as const,
+          offset: getUniqueVideoCount(allPages),
+        };
+      }
+      // Trending uses opaque v2 cursors — pass through as a string page param
+      if (feedType === 'trending' || feedType === 'popular') {
+        return lastPage.v2Cursor;
+      }
+      // Use offset for sorted pagination, timestamp for chronological
+      if (lastPage.offset !== undefined) {
+        return { offset: lastPage.offset };
+      }
+      return lastPage.nextCursor;
+    },
+
+    initialPageParam: randomizeWithinTop
+      ? { offset: randomStartOffset }
+      : undefined,
+
+    enabled: enabled && ((feedType !== 'home' && feedType !== 'recommendations') || !!user?.pubkey),
+
+    staleTime: 60000,  // 1 minute
+    gcTime: 600000,    // 10 minutes
+
+    meta: {
+      source: 'funnelcake',
+      apiUrl: effectiveApiUrl,
+    },
+  });
+}

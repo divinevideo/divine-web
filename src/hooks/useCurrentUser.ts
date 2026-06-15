@@ -1,29 +1,77 @@
 import { type NLoginType, NUser, useNostrLogin } from '@nostrify/react/login';
 import { useNostr } from '@nostrify/react';
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import type { NostrSigner } from '@nostrify/nostrify';
+import { DivineJWTSigner } from '@/lib/DivineJWTSigner';
+import { createUserFromLogin, getSafeUserSigner } from '@/lib/nostrLogin';
+import { selectCurrentUsers, isJwtResolving } from '@/lib/selectCurrentUsers';
 
 import { useAuthor } from './useAuthor.ts';
+import { useDivineSession } from './useDivineSession';
+
+type CurrentUser = {
+  pubkey: string;
+  signer?: NostrSigner;
+};
+
+// The result of resolving a hosted-JWT signer, tagged with the token it belongs
+// to. Tagging lets us ignore a resolution from a previous token after a swap, so
+// we never pair a stale pubkey (or stale error) with the current signer.
+type JwtResolution =
+  | { token: string; pubkey: string }
+  | { token: string; error: true };
 
 export function useCurrentUser() {
   const { nostr } = useNostr();
   const { logins } = useNostrLogin();
+  const { getValidToken } = useDivineSession();
+  const token = getValidToken();
+  const [jwtResolution, setJwtResolution] = useState<JwtResolution>();
+  const jwtSigner = useMemo(() => (
+    token ? new DivineJWTSigner({ token }) : null
+  ), [token]);
 
   const loginToUser = useCallback((login: NLoginType): NUser  => {
-    switch (login.type) {
-      case 'nsec': // Nostr login with secret key
-        return NUser.fromNsecLogin(login);
-      case 'bunker': // Nostr login with NIP-46 "bunker://" URI
-        return NUser.fromBunkerLogin(login, nostr);
-      case 'extension': // Nostr login with NIP-07 browser extension
-        return NUser.fromExtensionLogin(login);
-      // Other login types can be defined here
-      default:
-        throw new Error(`Unsupported login type: ${login.type}`);
-    }
+    return createUserFromLogin(login, nostr);
   }, [nostr]);
 
-  const users = useMemo(() => {
-    const users: NUser[] = [];
+  useEffect(() => {
+    let isCancelled = false;
+
+    if (!jwtSigner || !token) {
+      return;
+    }
+
+    jwtSigner.getPublicKey()
+      .then((pubkey) => {
+        if (!isCancelled) {
+          setJwtResolution({ token, pubkey });
+        }
+      })
+      .catch((error) => {
+        if (!isCancelled) {
+          console.warn('Skipped invalid JWT session', error);
+          setJwtResolution({ token, error: true });
+        }
+      });
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [jwtSigner, token]);
+
+  // Only honor a resolution that belongs to the CURRENT token. After a token
+  // swap, the prior resolution is ignored (both pubkey and error), so the new
+  // signer reads as "resolving" rather than briefly pairing with stale data.
+  const jwtPubkey =
+    jwtResolution && jwtResolution.token === token && 'pubkey' in jwtResolution
+      ? jwtResolution.pubkey
+      : undefined;
+  const jwtError =
+    !!jwtResolution && jwtResolution.token === token && 'error' in jwtResolution;
+
+  const manualUsers = useMemo(() => {
+    const users: CurrentUser[] = [];
 
     for (const login of logins) {
       try {
@@ -37,12 +85,37 @@ export function useCurrentUser() {
     return users;
   }, [logins, loginToUser]);
 
-  const user = users[0] as NUser | undefined;
+  const jwtUser = useMemo<CurrentUser | undefined>(() => {
+    if (!jwtSigner || !jwtPubkey) {
+      return undefined;
+    }
+
+    return {
+      pubkey: jwtPubkey,
+      signer: jwtSigner,
+    };
+  }, [jwtPubkey, jwtSigner]);
+
+  const users = useMemo(
+    () => selectCurrentUsers({ hasToken: !!token, jwtUser, jwtError, manualUsers }),
+    [token, jwtUser, jwtError, manualUsers],
+  );
+
+  const isResolvingJwt = isJwtResolving({
+    hasSigner: !!jwtSigner,
+    jwtPubkey,
+    jwtError,
+  });
+
+  const user = users[0];
+  const signer = useMemo(() => getSafeUserSigner(user), [user]);
   const author = useAuthor(user?.pubkey);
 
   return {
     user,
     users,
+    signer,
+    isResolvingJwt,
     ...author.data,
   };
 }

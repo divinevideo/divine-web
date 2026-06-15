@@ -1,0 +1,20 @@
+{
+  "title": "Normas de seguridad",
+  "updated": "Última actualización: 30 de marzo de 2026",
+  "sections": {
+    "overview": "1. Descripción general",
+    "definitions": "2. Definiciones",
+    "prohibited": "3. Contenido y conducta prohibidos",
+    "childSafety": "4. Seguridad infantil",
+    "matureContent": "5. Contenido para adultos",
+    "integrity": "6. Integridad y abuso de la plataforma",
+    "enforcement": "7. Aplicación",
+    "moderation": "8. Métodos de moderación",
+    "reporting": "9. Informes",
+    "userControls": "10. Controles de usuario",
+    "decentralization": "11. Limitación de la descentralización",
+    "automated": "12. Toma de decisiones automatizada",
+    "appeals": "13. Apelaciones",
+    "updates": "14. Actualizaciones"
+  }
+}

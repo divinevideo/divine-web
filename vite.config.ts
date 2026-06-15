@@ -1,14 +1,23 @@
 import path from "node:path";
 
 import react from "@vitejs/plugin-react-swc";
-import { defineConfig } from "vitest/config";
-import { VitePWA } from 'vite-plugin-pwa';
+import { configDefaults, defineConfig } from "vitest/config";
 
 // https://vitejs.dev/config/
 export default defineConfig(() => ({
+  define: {
+    __BUILD_TIME__: JSON.stringify(new Date().toISOString()),
+    __BUILD_DATE__: JSON.stringify(new Date().toISOString().split('T')[0]),
+  },
+  preview: {
+    host: "::",
+    port: 4173,
+    allowedHosts: ['host.docker.internal', 'localhost', '127.0.0.1'],
+  },
   server: {
     host: "::",
     port: 8080,
+    allowedHosts: ['host.docker.internal', 'localhost', '127.0.0.1'],
     proxy: {
       // Proxy CDN requests to avoid CORS issues in development
       '/cdn-proxy': {
@@ -28,6 +37,12 @@ export default defineConfig(() => ({
           });
         },
       },
+      '/api/moderation/check-result': {
+        target: 'https://moderation-api.divine.video',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/moderation\/check-result/, '/check-result'),
+        secure: true,
+      },
     },
   },
   build: {
@@ -40,78 +55,12 @@ export default defineConfig(() => ({
   },
   plugins: [
     react(),
-VitePWA({
-      registerType: 'autoUpdate',
-      injectRegister: 'auto',
-      devOptions: {
-        enabled: false
-      },
-      workbox: {
-        // Disable all caching - network only
-        skipWaiting: true,
-        clientsClaim: true,
-        navigateFallback: null,
-        runtimeCaching: []
-      },
-      includeAssets: [
-        'app_icon.avif',
-        'og.avif',
-        'no-ai-icon.svg',
-        'divine_icon_transparent.avif',
-        'browserconfig.xml'
-      ],
-      manifest: {
-        name: 'diVine Web - Short-form Looping Videos',
-        short_name: 'diVine',
-        description: 'Watch and share 6-second looping videos on the decentralized Nostr network.',
-        theme_color: '#00b488',
-        background_color: '#09090b',
-        display: 'standalone',
-        orientation: 'portrait-primary',
-        scope: '/',
-        start_url: '/',
-        categories: ['entertainment', 'video', 'social'],
-        screenshots: [
-          {
-            src: '/screenshots/iPad 13 inch-0.avif',
-            sizes: '2048x2732',
-            type: 'image/avif',
-            form_factor: 'wide'
-          },
-          {
-            src: '/screenshots/iPad 13 inch-1.avif',
-            sizes: '2048x2732',
-            type: 'image/avif',
-            form_factor: 'wide'
-          },
-          {
-            src: '/screenshots/iPad 13 inch-2.avif',
-            sizes: '2048x2732',
-            type: 'image/avif',
-            form_factor: 'wide'
-          }
-        ],
-        icons: [
-          {
-            src: 'app_icon.avif',
-            sizes: '256x256',
-            type: 'image/avif',
-            purpose: 'any'
-          },
-          {
-            src: 'app_icon.avif',
-            sizes: '256x256 512x512',
-            type: 'image/avif',
-            purpose: 'maskable'
-          }
-        ]
-      }
-    })
   ],
   test: {
     globals: true,
     environment: 'jsdom',
     setupFiles: './src/test/setup.ts',
+    exclude: [...configDefaults.exclude, '**/.worktrees/**', '**/worktrees/**', 'tests/visual/**'],
     onConsoleLog(log) {
       return !log.includes("React Router Future Flag Warning");
     },
@@ -122,6 +71,9 @@ VitePWA({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      // Fastly virtual modules — not available outside the Fastly runtime;
+      // tests that import them must vi.mock() the module in the test file.
+      "fastly:kv-store": path.resolve(__dirname, "./compute-js/src/__mocks__/fastly-kv-store.js"),
     },
   },
 }));

@@ -51,8 +51,8 @@ export function useVideoUpload() {
       // Check if FFmpeg.wasm is available (optional enhancement)
       // For MVP, we'll just use the first segment and warn the user
       toast({
-        title: 'Multi-segment Recording',
-        description: 'Multiple segments detected. Using first segment only. Full segment merging coming soon!',
+        title: 'Multi-clip recording.',
+        description: 'Using the first clip for now — full merging is coming soon.',
         variant: 'default',
       });
 
@@ -120,8 +120,8 @@ export function useVideoUpload() {
     onError: (error) => {
       console.error('Upload failed:', error);
       toast({
-        title: 'Upload Failed',
-        description: error instanceof Error ? error.message : 'Failed to upload video',
+        title: 'Upload snagged.',
+        description: error instanceof Error ? error.message : 'Couldn\'t send your loop. Try again?',
         variant: 'destructive',
       });
     },

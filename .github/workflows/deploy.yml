@@ -1,4 +1,4 @@
-# ABOUTME: GitHub Actions workflow for deploying to Cloudflare Pages production
+# ABOUTME: GitHub Actions workflow for deploying to Fastly (primary) and Cloudflare Pages (backup)
 # ABOUTME: Triggers on push to main branch
 
 name: Deploy to Production
@@ -9,12 +9,8 @@ on:
       - main
 
 jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      deployments: write
-
+  build:
+    runs-on: ubuntu-24.04-16core
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -31,7 +27,125 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Deploy to Cloudflare Pages
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+          retention-days: 1
+          include-hidden-files: true
+
+  deploy-fastly:
+    needs: build
+    runs-on: ubuntu-24.04-16core
+    permissions:
+      contents: read
+      deployments: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: compute-js/package-lock.json
+
+      - name: Install Fastly CLI
+        run: npm install -g @fastly/cli
+
+      - name: Install Fastly compute dependencies
+        working-directory: compute-js
+        run: npm ci
+
+      - name: Deploy to Fastly Compute (edge worker)
+        working-directory: compute-js
+        env:
+          FASTLY_API_TOKEN: ${{ secrets.FASTLY_API_TOKEN }}
+        run: fastly compute publish --non-interactive --token=$FASTLY_API_TOKEN
+
+      - name: Publish static content to KV Store
+        working-directory: compute-js
+        env:
+          FASTLY_API_TOKEN: ${{ secrets.FASTLY_API_TOKEN }}
+        run: npx @fastly/compute-js-static-publish publish-content
+
+      - name: Purge Fastly cache
+        working-directory: compute-js
+        env:
+          FASTLY_API_TOKEN: ${{ secrets.FASTLY_API_TOKEN }}
+        run: |
+          set -euo pipefail
+          service_id="$(awk -F' = ' '/^service_id/ {gsub(/"/, "", $2); print $2}' fastly.toml)"
+          test -n "$service_id" || {
+            echo "Failed to read service_id from compute-js/fastly.toml" >&2
+            exit 1
+          }
+          fastly purge --all --service-id "$service_id" --token="$FASTLY_API_TOKEN"
+
+      - name: Verify live .well-known endpoints
+        run: |
+          set -euo pipefail
+
+          check_json_endpoint() {
+            url="$1"
+            for attempt in $(seq 1 12); do
+              headers="$(curl -sSI "$url" || true)"
+              printf '%s\n' "$headers"
+
+              status="$(printf '%s\n' "$headers" | awk 'tolower($1) ~ /^http/ {print $2; exit}')"
+              content_type="$(printf '%s\n' "$headers" | awk -F': ' 'tolower($1) == "content-type" {print tolower($2); exit}' | tr -d '\r')"
+
+              if [ "$status" = "200" ]; then
+                case "$content_type" in
+                  application/json*|application/pkcs7-mime*)
+                    return 0
+                    ;;
+                esac
+              fi
+
+              echo "Attempt $attempt failed for $url (status=${status:-missing} content-type=${content_type:-missing})"
+
+              if [ "$attempt" -lt 12 ]; then
+                sleep 10
+              fi
+            done
+
+            echo "Timed out waiting for $url to return 200 JSON" >&2
+            exit 1
+          }
+
+          check_json_endpoint "https://divine.video/.well-known/apple-app-site-association"
+          check_json_endpoint "https://www.divine.video/.well-known/apple-app-site-association"
+          check_json_endpoint "https://divine.video/.well-known/assetlinks.json"
+          check_json_endpoint "https://www.divine.video/.well-known/assetlinks.json"
+
+  deploy-cloudflare:
+    needs: build
+    runs-on: ubuntu-24.04-16core
+    permissions:
+      contents: read
+      deployments: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+      - name: Deploy to Cloudflare Pages (backup)
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}

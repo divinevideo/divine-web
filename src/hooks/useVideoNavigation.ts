@@ -5,11 +5,14 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useCallback, useMemo } from 'react';
 import { useVideoEvents } from './useVideoEvents';
 import type { ParsedVideoData } from '@/types/video';
+import type { SortMode } from '@/types/nostr';
 
 export interface VideoNavigationContext {
-  source: 'hashtag' | 'profile' | 'discovery' | 'home' | 'trending' | 'recent';
+  source: 'hashtag' | 'profile' | 'discovery' | 'home' | 'trending' | 'popular' | 'recent' | 'classics' | 'foryou' | 'category' | 'search';
   hashtag?: string;
   pubkey?: string;
+  query?: string;
+  sortMode?: SortMode | 'relevance';
   currentIndex?: number;
 }
 
@@ -24,9 +27,14 @@ interface VideoNavigationHook {
   isLoading: boolean;
 }
 
-export function useVideoNavigation(videoId: string): VideoNavigationHook {
+interface UseVideoNavigationOptions {
+  enabled?: boolean;
+}
+
+export function useVideoNavigation(videoId: string, options: UseVideoNavigationOptions = {}): VideoNavigationHook {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { enabled = true } = options;
 
   // Parse navigation context from URL params
   const context: VideoNavigationContext | null = useMemo(() => {
@@ -37,21 +45,31 @@ export function useVideoNavigation(videoId: string): VideoNavigationHook {
       source,
       hashtag: searchParams.get('hashtag') || undefined,
       pubkey: searchParams.get('pubkey') || undefined,
+      query: searchParams.get('q') || undefined,
+      sortMode: searchParams.get('sort') as VideoNavigationContext['sortMode'],
       currentIndex: searchParams.get('index') ? parseInt(searchParams.get('index')!) : undefined,
     };
   }, [searchParams]);
 
   // Fetch videos based on context
+  // Map 'foryou' to 'trending' for WebSocket fallback (foryou only works via Funnelcake API)
+  const feedTypeForWebSocket = context?.source === 'foryou' || context?.source === 'popular'
+    ? 'trending'
+    : context?.source === 'search'
+      ? 'discovery'
+      : context?.source;
   const { data: videos, isLoading } = useVideoEvents(
     context ? {
-      feedType: context.source,
+      feedType: feedTypeForWebSocket,
       hashtag: context.hashtag,
       pubkey: context.pubkey,
       limit: 50, // Get enough videos for navigation
+      enabled,
     } : {
       filter: { ids: [videoId] },
       limit: 1,
       feedType: 'discovery',
+      enabled,
     }
   );
 
@@ -80,6 +98,8 @@ export function useVideoNavigation(videoId: string): VideoNavigationHook {
 
     if (context.hashtag) params.set('hashtag', context.hashtag);
     if (context.pubkey) params.set('pubkey', context.pubkey);
+    if (context.query) params.set('q', context.query);
+    if (context.sortMode) params.set('sort', context.sortMode);
 
     return `/video/${video.id}?${params.toString()}`;
   }, [context]);
@@ -120,6 +140,8 @@ export function buildVideoNavigationUrl(
 
   if (context.hashtag) params.set('hashtag', context.hashtag);
   if (context.pubkey) params.set('pubkey', context.pubkey);
+  if (context.query) params.set('q', context.query);
+  if (context.sortMode) params.set('sort', context.sortMode);
   if (index !== undefined) params.set('index', index.toString());
 
   return `/video/${videoId}?${params.toString()}`;

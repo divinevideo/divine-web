@@ -1,43 +1,57 @@
 // ABOUTME: Video feed component for displaying scrollable lists of videos with infinite scroll
-// ABOUTME: Uses optimized useInfiniteVideos hook with NIP-50 search and cursor pagination
+// ABOUTME: Uses video provider hook with automatic Funnelcake/WebSocket selection
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { useLocation } from 'react-router-dom';
 import { performanceMonitor } from '@/lib/performanceMonitoring';
-import { Video } from 'lucide-react';
-import { VideoCard } from '@/components/VideoCard';
+import { VideoCamera as Video, CircleNotch as Loader2, Play } from '@phosphor-icons/react';
+import { VideoCardWithMetrics } from '@/components/VideoCardWithMetrics';
 import { VideoGrid } from '@/components/VideoGrid';
 import { AddToListDialog } from '@/components/AddToListDialog';
-import { useInfiniteVideos } from '@/hooks/useInfiniteVideos';
+import { useVideoProvider } from '@/hooks/useVideoProvider';
 import { useBatchedAuthors } from '@/hooks/useBatchedAuthors';
-import { useDeferredVideoMetrics } from '@/hooks/useDeferredVideoMetrics';
-import { useOptimisticLike } from '@/hooks/useOptimisticLike';
-import { useOptimisticRepost } from '@/hooks/useOptimisticRepost';
-import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useContentModeration } from '@/hooks/useModeration';
-import { Card, CardContent } from '@/components/ui/card';
-import { useToast } from '@/hooks/useToast';
-import { useLoginDialog } from '@/contexts/LoginDialogContext';
-import { Loader2 } from 'lucide-react';
+import { useFeedPerformanceInstrumentation } from '@/hooks/useFeedPerformanceInstrumentation';
+import { useProofModeEnrichment } from '@/hooks/useProofModeEnrichment';
+import { Card, CardContent, type CardAccent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import InfiniteScroll from 'react-infinite-scroll-component';
 import type { ParsedVideoData } from '@/types/video';
 import { debugLog, debugWarn } from '@/lib/debug';
 import type { SortMode } from '@/types/nostr';
-import { useNavigate } from 'react-router-dom';
-import { useVideoPlayback } from '@/hooks/useVideoPlayback';
+//import { useNavigate } from 'react-router-dom';
 import { useAutoScroll } from '@/hooks/useAutoScroll';
+import { useSubdomainNavigate } from '@/hooks/useSubdomainNavigate';
+import { useCallback } from 'react';
+import { useFullscreenFeed } from '@/contexts/FullscreenFeedContext';
+import { useVideoPlayback } from '@/hooks/useVideoPlayback';
+import { useVideoPrefetch } from '@/hooks/useVideoPrefetch';
+import { useCompilationFullscreen } from '@/hooks/useCompilationFullscreen';
+import { buildCompilationPlaybackUrl } from '@/lib/compilationPlayback';
+import type { PopularPeriod, PopularSource } from '@/hooks/useInfiniteVideosFunnelcake';
 
 type ViewMode = 'feed' | 'grid';
 
 interface VideoFeedProps {
-  feedType?: 'discovery' | 'home' | 'trending' | 'hashtag' | 'profile' | 'recent';
+  feedType?: 'discovery' | 'home' | 'trending' | 'hashtag' | 'profile' | 'recent' | 'classics' | 'foryou' | 'category' | 'popular';
   hashtag?: string;
+  category?: string;
   pubkey?: string;
   limit?: number;
   sortMode?: SortMode; // NIP-50 sort mode (hot, top, rising, controversial)
+  popularSource?: PopularSource;
+  popularPeriod?: PopularPeriod;
   viewMode?: ViewMode; // Display mode: feed (full cards) or grid (thumbnails)
   className?: string;
   verifiedOnly?: boolean; // Filter to show only ProofMode verified videos
   mode?: 'auto-play' | 'thumbnail'; // Display mode for video cards
+  /**
+   * Brand accent color applied to each VideoCard's offset shadow.
+   * Used to give each feed type a distinct visual identity
+   * (e.g. pink = trending, violet = classics). Defaults to green.
+   */
+  accent?: CardAccent;
   'data-testid'?: string;
   'data-hashtag-testid'?: string;
   'data-profile-testid'?: string;
@@ -48,59 +62,85 @@ interface VideoFeedProps {
 export function VideoFeed({
   feedType = 'discovery',
   hashtag,
+  category,
   pubkey,
-  limit = 20, // Page size for infinite scroll
+  limit = 12, // Smaller first page improves initial paint on REST-backed feeds
   sortMode,
+  popularSource,
+  popularPeriod,
   viewMode = 'feed',
   className,
   verifiedOnly = false,
   mode = 'auto-play',
+  accent,
   'data-testid': testId,
   'data-hashtag-testid': hashtagTestId,
   'data-profile-testid': profileTestId,
   autoScrollTimeout = 2000,
   autoScrollAlignment = 'center',
 }: VideoFeedProps) {
-  const [showCommentsForVideo, setShowCommentsForVideo] = useState<string | null>(null);
-  const [showListDialog, setShowListDialog] = useState<{ videoId: string; videoPubkey: string } | null>(null);
-  const mountTimeRef = useRef<number | null>(null);
-
   const videoCardsListRef = useRef<HTMLDivElement | null>(null);
   const activeVideoIndexRef = useRef<number | null>(null);
   const autoScrollTimeoutIdRef = useRef<number | null>(null);
 
-  const { user } = useCurrentUser();
-  const { toast } = useToast();
-  const { toggleLike } = useOptimisticLike();
-  const { toggleRepost } = useOptimisticRepost();
+  const { t } = useTranslation();
+  const location = useLocation();
+  const [showCommentsForVideo, setShowCommentsForVideo] = useState<string | null>(null);
+  const [showListDialog, setShowListDialog] = useState<{ videoId: string; videoPubkey: string } | null>(null);
+  const mountTimeRef = useRef<number | null>(null);
+
   const { checkContent } = useContentModeration();
-  const { openLoginDialog } = useLoginDialog();
+  const navigate = useSubdomainNavigate();
+  const { enterFullscreen } = useFullscreenFeed();
   const { autoScroll } = useAutoScroll();
-  const navigate = useNavigate();
 
-  const { activeVideoId, registerVideo, unregisterVideo, updateVideoVisibility, globalMuted, setGlobalMuted } = useVideoPlayback();
-
-  // Use new infinite scroll hook with NIP-50 support
+  // Use video provider hook - automatically selects Funnelcake or WebSocket
   const {
     data,
     fetchNextPage,
     hasNextPage,
     isLoading,
     error,
-    refetch
-  } = useInfiniteVideos({
+    refetch,
+    dataSource,
+  } = useVideoProvider({
     feedType,
     hashtag,
+    category,
     pubkey,
     pageSize: limit,
     sortMode,
+    popularSource,
+    popularPeriod,
+  });
+  const { feedRootRef, trackInitialRender, trackFirstPlayback } = useFeedPerformanceInstrumentation({
+    feedType,
+    dataSource,
+    sortMode,
+    verifiedOnly,
   });
 
-  // Flatten all pages into single array
-  const allVideos = useMemo(() =>
-    data?.pages.flatMap(page => page.videos) ?? [],
-    [data]
-  );
+  // Log data source for debugging
+  useEffect(() => {
+    debugLog(`[VideoFeed] Using ${dataSource} for ${feedType} feed`);
+  }, [dataSource, feedType]);
+
+  // Flatten all pages into single array, deduplicating by pubkey:kind:d-tag
+  // (addressable event key per NIP-33, not just event ID)
+  const dedupedVideos = useMemo(() => {
+    const videos = data?.pages.flatMap(page => page.videos) ?? [];
+    const seen = new Set<string>();
+    return videos.filter(video => {
+      const key = `${video.pubkey}:${video.kind}:${video.vineId || video.id}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }, [data]);
+
+  // Enrich Funnelcake feed videos with ProofMode data via WebSocket
+  // Feed videos from REST API don't have event tags, so proofMode is always undefined
+  const allVideos = useProofModeEnrichment(dedupedVideos);
 
   // Filter videos based on mute list and verification status
   const filteredVideos = useMemo(() => {
@@ -124,7 +164,8 @@ export function VideoFeed({
       if (verifiedOnly) {
         return video.proofMode &&
                (video.proofMode.level === 'verified_mobile' ||
-                video.proofMode.level === 'verified_web');
+                video.proofMode.level === 'verified_web' ||
+                video.proofMode.level === 'basic_proof');
       }
 
       return true;
@@ -146,6 +187,15 @@ export function VideoFeed({
       });
     }
   };
+  
+  useEffect(() => {
+    if (!isLoading && filteredVideos.length > 0) {
+      trackInitialRender({
+        renderedVideos: filteredVideos.length,
+        totalVideos: allVideos.length,
+      });
+    }
+  }, [allVideos.length, filteredVideos.length, isLoading, trackInitialRender]);
 
   // Track perceived first-render time for the Recent feed
   useEffect(() => {
@@ -182,6 +232,10 @@ export function VideoFeed({
   // Prefetch all authors in a single query
   useBatchedAuthors(authorPubkeys);
 
+  // Prefetch next 2-3 video URLs while current video plays
+  const { activeVideoId } = useVideoPlayback();
+  useVideoPrefetch(activeVideoId, filteredVideos);
+
   // Auto-navigate to discovery if home feed is empty
   useEffect(() => {
     // Only navigate if we have empty filtered videos but we're done loading
@@ -215,6 +269,29 @@ export function VideoFeed({
 
   // Check if we have videos but they're all filtered (before early return)
   const allFiltered = allVideos && allVideos.length > 0 && (!filteredVideos || filteredVideos.length === 0);
+  const currentSurface = `${location.pathname}${location.search}`;
+  const compilationUrl = filteredVideos.length > 0
+    ? buildCompilationPlaybackUrl(currentSurface, {
+        start: 0,
+        extraParams: {
+          sort: sortMode,
+        },
+      })
+    : null;
+  const compilationLauncher = compilationUrl ? (
+    <div className="mb-4 flex justify-end">
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        onClick={() => navigate(compilationUrl)}
+        className="gap-2"
+      >
+        <Play className="h-4 w-4" />
+        {t('common.playAll')}
+      </Button>
+    </div>
+  ) : null;
 
   // Redirect empty home feed to discovery (must be before ALL early returns)
   useEffect(() => {
@@ -246,10 +323,41 @@ export function VideoFeed({
     activeVideoId
   ]);
 
+  // Register videos for fullscreen mode
+  useCompilationFullscreen({
+    videos: filteredVideos,
+    fetchNextPage,
+    hasNextPage: hasNextPage ?? false,
+  });
+
+  // Stable callbacks for comment handling - MUST be before any early returns
+  // to ensure hooks are called in the same order on every render
+  const handleOpenComments = useCallback((video: ParsedVideoData) => {
+    setShowCommentsForVideo(video.id);
+  }, []);
+
+  const handleCloseComments = useCallback(() => {
+    setShowCommentsForVideo(null);
+  }, []);
+
+  // Enter fullscreen at a specific video index
+  const handleEnterFullscreen = useCallback((index: number) => {
+    enterFullscreen(filteredVideos, index);
+  }, [filteredVideos, enterFullscreen]);
+
+  const handlePlaybackStarted = useCallback((video: ParsedVideoData) => {
+    trackFirstPlayback({
+      renderedVideos: filteredVideos.length,
+      totalVideos: allVideos.length,
+      videoId: video.id,
+    });
+  }, [allVideos.length, filteredVideos.length, trackFirstPlayback]);
+
   // Loading state (initial load only)
   if (isLoading && !data) {
     return (
       <div
+        ref={feedRootRef}
         className={`feed-root ${className || ''}`}
         data-testid={testId}
         data-hashtag-testid={hashtagTestId}
@@ -259,21 +367,21 @@ export function VideoFeed({
           {[...Array(3)].map((_, i) => (
             <Card key={i} className="overflow-hidden" data-testid="video-skeleton">
               <div className="flex items-center gap-3 p-4">
-                <div className="h-10 w-10 rounded-full bg-muted/50 animate-pulse" />
+                <div className="h-10 w-10 rounded-2xl bg-muted animate-pulse" />
                 <div className="space-y-2">
-                  <div className="h-4 w-24 bg-muted/50 rounded animate-pulse" />
-                  <div className="h-3 w-16 bg-muted/50 rounded animate-pulse" />
+                  <div className="h-4 w-24 bg-muted rounded animate-pulse" />
+                  <div className="h-3 w-16 bg-muted rounded animate-pulse" />
                 </div>
               </div>
-              <div className="aspect-square w-full bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center">
+              <div className="aspect-square w-full bg-brand-light-green dark:bg-brand-dark-green flex items-center justify-center">
                 <div className="relative w-12 h-12">
-                  <div className="absolute inset-0 border-4 border-primary/20 rounded-full" />
+                  <div className="absolute inset-0 border-4 border-brand-light-green dark:border-brand-dark-green rounded-full" />
                   <div className="absolute inset-0 border-4 border-transparent border-t-primary rounded-full animate-spin" />
                 </div>
               </div>
               <div className="p-4 space-y-2">
-                <div className="h-4 w-full bg-muted/50 rounded animate-pulse" />
-                <div className="h-4 w-4/5 bg-muted/50 rounded animate-pulse" />
+                <div className="h-4 w-full bg-muted rounded animate-pulse" />
+                <div className="h-4 w-4/5 bg-muted rounded animate-pulse" />
               </div>
             </Card>
           ))}
@@ -286,6 +394,7 @@ export function VideoFeed({
   if (error) {
     return (
       <div
+        ref={feedRootRef}
         className={`feed-root ${className || ''}`}
         data-testid={testId}
         data-hashtag-testid={hashtagTestId}
@@ -313,16 +422,17 @@ export function VideoFeed({
 
     return (
       <div
+        ref={feedRootRef}
         className={`feed-root ${className || ''}`}
         data-testid={testId}
         data-hashtag-testid={hashtagTestId}
         data-profile-testid={profileTestId}
       >
-        <Card className="border-dashed border-2 border-primary/20 bg-primary/5">
+        <Card className="border-dashed border-2 border-brand-light-green dark:border-brand-dark-green bg-brand-light-green dark:bg-brand-dark-green">
           <CardContent className="py-16 px-8 text-center">
             <div className="max-w-md mx-auto space-y-6">
-              {/* Show reclining Divine image for discovery/trending feeds when no videos */}
-              {(feedType === 'discovery' || feedType === 'trending') && !allFiltered ? (
+              {/* Show reclining Divine image for discovery/trending/classics feeds when no videos */}
+              {(feedType === 'discovery' || feedType === 'trending' || feedType === 'classics') && !allFiltered ? (
                 <>
                   <div className="mx-auto -mx-8 -mt-16">
                     <img
@@ -338,15 +448,15 @@ export function VideoFeed({
                     <p className="text-sm text-muted-foreground">
                       Check back soon for new videos
                     </p>
-                    <p className="text-xs text-muted-foreground/60 italic mt-4">
+                    <p className="text-xs text-muted-foreground font-light italic mt-4">
                       Photo by Marcus Leatherdale
                     </p>
                   </div>
                 </>
               ) : (
                 <>
-                  <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
-                    <Video className="h-8 w-8 text-primary/60" />
+                  <div className="w-16 h-16 rounded-full bg-brand-light-green dark:bg-brand-dark-green flex items-center justify-center mx-auto">
+                    <Video className="h-8 w-8 text-primary" />
                   </div>
                   <div className="space-y-2">
                     <p className="text-lg font-medium text-foreground">
@@ -383,134 +493,19 @@ export function VideoFeed({
     );
   }
 
-  const handleOpenComments = (video: ParsedVideoData) => {
-    setShowCommentsForVideo(video.id);
-  };
-
-  const handleCloseComments = () => {
-    setShowCommentsForVideo(null);
-  };
-
-  // Note: handleAddToList is not currently used as VideoListBadges handles its own dialog
-  // const handleAddToList = (video: ParsedVideoData) => {
-  //   if (!user) {
-  //     toast({
-  //       title: 'Login Required',
-  //       description: 'Please log in to add videos to lists',
-  //       variant: 'destructive',
-  //     });
-  //     return;
-  //   }
-
-  //   if (!video.vineId) {
-  //     toast({
-  //       title: 'Error',
-  //       description: 'Cannot add this video to a list',
-  //       variant: 'destructive',
-  //     });
-  //     return;
-  //   }
-
-  //   setShowListDialog({ videoId: video.vineId, videoPubkey: video.pubkey });
-  // };
-
-  // Helper component to provide social metrics data for each video
-  function VideoCardWithMetrics({ video, index }: { video: ParsedVideoData; index: number }) {
-    // Use deferred loading: render video immediately, load metrics after a short delay
-    // First 3 videos load immediately, rest have a staggered delay for progressive enhancement
-    const delay = index < 3 ? 0 : Math.min(index * 50, 500);
-    const { socialMetrics, userInteractions, isLoading: _isLoading } = useDeferredVideoMetrics({
-      videoId: video.id,
-      videoPubkey: video.pubkey,
-      vineId: video.vineId,
-      userPubkey: user?.pubkey,
-      delay,
-      immediate: index < 3, // Load first 3 immediately for perceived speed
-    });
-
-    const handleVideoLike = async () => {
-      // Check authentication first, show login dialog if not authenticated
-      if (!user) {
-        openLoginDialog();
-        return;
-      }
-
-      debugLog('Toggle like for video:', video.id);
-      await toggleLike({
-        videoId: video.id,
-        videoPubkey: video.pubkey,
-        vineId: video.vineId,
-        userPubkey: user.pubkey,
-        isCurrentlyLiked: userInteractions.data?.hasLiked || false,
-        currentLikeEventId: userInteractions.data?.likeEventId || null,
-      });
-    };
-
-    const handleVideoRepost = async () => {
-      // Check authentication first, show login dialog if not authenticated
-      if (!user) {
-        openLoginDialog();
-        return;
-      }
-
-      if (!video.vineId) {
-        toast({
-          title: 'Error',
-          description: 'Cannot repost this video',
-          variant: 'destructive',
-        });
-        return;
-      }
-
-      debugLog('Toggle repost for video:', video.id);
-      await toggleRepost({
-        videoId: video.id,
-        videoPubkey: video.pubkey,
-        vineId: video.vineId,
-        userPubkey: user.pubkey,
-        isCurrentlyReposted: userInteractions.data?.hasReposted || false,
-        currentRepostEventId: userInteractions.data?.repostEventId || null,
-      });
-    };
-
-    return (
-      <VideoCard
-        key={video.id}
-        video={video}
-        mode={mode}
-        onLike={handleVideoLike}
-        onRepost={handleVideoRepost}
-        onOpenComments={() => handleOpenComments(video)}
-        onCloseComments={handleCloseComments}
-        isLiked={userInteractions.data?.hasLiked || false}
-        isReposted={userInteractions.data?.hasReposted || false}
-        likeCount={(video.likeCount ?? 0) + (socialMetrics.data?.likeCount ?? 0)}
-        repostCount={(video.repostCount ?? 0) + (socialMetrics.data?.repostCount ?? 0)}
-        commentCount={(video.commentCount ?? 0) + (socialMetrics.data?.commentCount ?? 0)}
-        viewCount={(socialMetrics.data?.viewCount ?? 0) + (video.loopCount ?? 0)}
-        showComments={showCommentsForVideo === video.id}
-        navigationContext={{
-          source: feedType,
-          hashtag,
-          pubkey,
-        }}
-        videoIndex={index}
-        data-testid="video-card"
-      />
-    );
-  }
-
   // Only create VideoCard components for videos in the visible range
   // Use infinite scroll component for smooth pagination
   // Grid mode uses VideoGrid component for thumbnail display
   if (viewMode === 'grid') {
     return (
       <div
+        ref={feedRootRef}
         className={`feed-root ${className || ''}`}
         data-testid={testId}
         data-hashtag-testid={hashtagTestId}
         data-profile-testid={profileTestId}
       >
+        {compilationLauncher}
         <InfiniteScroll
           dataLength={filteredVideos.length}
           next={fetchNextPage}
@@ -558,11 +553,13 @@ export function VideoFeed({
   // Feed mode uses full VideoCard components
   return (
     <div
+      ref={feedRootRef}
       className={className}
       data-testid={testId}
       data-hashtag-testid={hashtagTestId}
       data-profile-testid={profileTestId}
     >
+      {compilationLauncher}
       <InfiniteScroll
         dataLength={filteredVideos.length}
         next={fetchNextPage}
@@ -589,6 +586,19 @@ export function VideoFeed({
               key={video.id}
               video={video}
               index={index}
+              mode={mode}
+              isPriority={index === 0}
+              showComments={showCommentsForVideo === video.id}
+              onOpenComments={() => handleOpenComments(video)}
+              onCloseComments={handleCloseComments}
+              onEnterFullscreen={() => handleEnterFullscreen(index)}
+              onPlaybackStarted={() => handlePlaybackStarted(video)}
+              accent={accent}
+              navigationContext={{
+                source: feedType,
+                hashtag,
+                pubkey,
+              }}
             />
           ))}
         </div>

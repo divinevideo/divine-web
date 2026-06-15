@@ -1,13 +1,14 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Heart, Repeat2, Loader2 } from 'lucide-react';
+import { Heart, Repeat as Repeat2, CircleNotch as Loader2 } from '@phosphor-icons/react';
 import { useAuthor } from '@/hooks/useAuthor';
 import { useBatchedAuthors } from '@/hooks/useBatchedAuthors';
 import { enhanceAuthorData } from '@/lib/generateProfile';
+import { genUserName } from '@/lib/genUserName';
 import { getSafeProfileImage } from '@/lib/imageUtils';
 import { formatDistanceToNow } from 'date-fns';
-import { Link } from 'react-router-dom';
-import { nip19 } from 'nostr-tools';
+import { SmartLink } from '@/components/SmartLink';
+import { buildProfileLinkPath } from '@/lib/profileLinks';
 import { cn } from '@/lib/utils';
 import type { VideoReactions } from '@/hooks/useVideoReactions';
 
@@ -24,26 +25,29 @@ function ReactionUserItem({ pubkey, timestamp }: { pubkey: string; timestamp: nu
   const author = enhanceAuthorData(authorData.data, pubkey);
   const metadata = author.metadata;
 
-  const npub = nip19.npubEncode(pubkey);
   const displayName = authorData.isLoading
     ? "Loading..."
-    : (metadata?.display_name || metadata?.name || `${npub.slice(0, 12)}...`);
+    : (metadata?.display_name || metadata?.name || genUserName(pubkey));
   const profileImage = getSafeProfileImage(metadata?.picture);
-  const profileUrl = `/${npub}`;
+  const profileUrl = buildProfileLinkPath({
+    pubkey,
+    nip05: metadata?.nip05,
+  });
 
   const date = new Date(timestamp * 1000);
   const timeAgo = formatDistanceToNow(date, { addSuffix: true });
 
   return (
-    <Link
+    <SmartLink
       to={profileUrl}
+      ownerPubkey={pubkey}
       className="flex items-center gap-3 p-3 rounded-lg hover:bg-accent transition-colors"
       onClick={(e) => {
         // Close modal when clicking on a user
         e.stopPropagation();
       }}
     >
-      <Avatar className="h-10 w-10">
+      <Avatar size="md">
         <AvatarImage src={profileImage} alt={displayName} />
         <AvatarFallback>{displayName[0]?.toUpperCase()}</AvatarFallback>
       </Avatar>
@@ -51,7 +55,7 @@ function ReactionUserItem({ pubkey, timestamp }: { pubkey: string; timestamp: nu
         <p className="font-medium truncate">{displayName}</p>
         <p className="text-xs text-muted-foreground">{timeAgo}</p>
       </div>
-    </Link>
+    </SmartLink>
   );
 }
 
@@ -98,9 +102,9 @@ export function VideoReactionsModal({
             </div>
           ) : !items || items.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-64 text-center px-6">
-              <Icon className={cn('h-12 w-12 text-muted-foreground/50 mb-4', type === 'likes' && 'fill-muted-foreground/50')} />
+              <Icon className={cn('h-12 w-12 text-muted-foreground mb-4', type === 'likes' && 'fill-muted-foreground')} />
               <p className="text-muted-foreground">No {title.toLowerCase()} yet</p>
-              <p className="text-sm text-muted-foreground/70 mt-1">
+              <p className="text-sm text-muted-foreground font-light mt-1">
                 Be the first to {type === 'likes' ? 'like' : 'repost'} this video!
               </p>
             </div>
@@ -120,4 +124,3 @@ export function VideoReactionsModal({
     </Dialog>
   );
 }
-

@@ -1,44 +1,88 @@
 // ABOUTME: Comprehensive search page with debounced input, filter tabs, infinite scroll, and sort modes
 // ABOUTME: Supports searching videos, users, hashtags with NIP-50 full-text search
 
-import { useState, useEffect, useRef } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
-import { nip19 } from 'nostr-tools';
+import { useState, useEffect, useRef, useMemo, type ClipboardEvent, type KeyboardEvent } from 'react';
+import { useTranslation } from 'react-i18next';
+import { useSearchParams } from 'react-router-dom';
+import { useNostr } from '@nostrify/react';
+import { useSubdomainNavigate } from '@/hooks/useSubdomainNavigate';
 import { useSeoMeta } from '@unhead/react';
-import { Search, Hash, Users, Video } from 'lucide-react';
+import { MagnifyingGlass as Search, Hash, Play, Users, VideoCamera as Video, CircleNotch as Loader2 } from '@phosphor-icons/react';
+import { trackSearch } from '@/lib/analytics';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { VideoCard } from '@/components/VideoCard';
-import { Loader2 } from 'lucide-react';
+import { VideoCardWithMetrics } from '@/components/VideoCardWithMetrics';
 import InfiniteScroll from 'react-infinite-scroll-component';
 import { useInfiniteSearchVideos } from '@/hooks/useInfiniteSearchVideos';
+import { useCompilationFullscreen } from '@/hooks/useCompilationFullscreen';
 import { useSearchUsers } from '@/hooks/useSearchUsers';
-import { useSearchHashtags } from '@/hooks/useSearchHashtags';
+import { useSearchHashtags, type HashtagResult } from '@/hooks/useSearchHashtags';
+import { getFunnelcakeBaseUrl } from '@/config/api';
 import { genUserName } from '@/lib/genUserName';
 import { getSafeProfileImage } from '@/lib/imageUtils';
 import type { SortMode } from '@/types/nostr';
 import { SEARCH_SORT_MODES as SORT_MODES } from '@/lib/constants/sortModes';
+import { useAppContext } from '@/hooks/useAppContext';
+import { getFunnelcakeUrl } from '@/config/relays';
+import { fetchVideoById } from '@/lib/funnelcakeClient';
+import { fetchEventById } from '@/lib/eventLookup';
+import { buildResolvedEventRoute, buildVideoPath } from '@/lib/eventRouting';
+import type { VideoNavigationContext } from '@/hooks/useVideoNavigation';
+import {
+  buildProfilePath,
+  getDirectSearchTarget,
+  isHexIdentifier,
+  isLikelyOpaqueVideoIdentifier,
+  normalizeDirectSearchInput,
+} from '@/lib/directSearch';
+import {
+  buildCompilationPlaybackUrl,
+  parseCompilationPlaybackParams,
+} from '@/lib/compilationPlayback';
+import { buildProfileLinkPath } from '@/lib/profileLinks';
 
 type SearchFilter = 'all' | 'videos' | 'users' | 'hashtags';
 
+function getValidSearchSortMode(sortParam: string | null): SortMode | 'relevance' {
+  return SORT_MODES.some(mode => mode.value === sortParam)
+    ? (sortParam as SortMode | 'relevance')
+    : 'hot';
+}
+
 export function SearchPage() {
+  const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
-  const navigate = useNavigate();
+  const compilationRequest = useMemo(
+    () => parseCompilationPlaybackParams(searchParams),
+    [searchParams]
+  );
+  const { nostr } = useNostr();
+  const navigate = useSubdomainNavigate();
+  const { config } = useAppContext();
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
-  const [sortMode, setSortMode] = useState<SortMode | 'relevance'>(
-    (searchParams.get('sort') as SortMode | 'relevance') || 'relevance'
+  const [sortMode, setSortMode] = useState<SortMode | 'relevance'>(() =>
+    getValidSearchSortMode(searchParams.get('sort'))
   );
   const [activeFilter, setActiveFilter] = useState<SearchFilter>(
     (searchParams.get('filter') as SearchFilter) || 'all'
   );
   const [showSuggestions, setShowSuggestions] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const suggestionsBlurTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const directLookupAbortRef = useRef<AbortController | null>(null);
+  const pastedLookupQueryRef = useRef<string | null>(null);
+
+  const clearSuggestionsBlurTimer = () => {
+    if (!suggestionsBlurTimerRef.current) return;
+
+    clearTimeout(suggestionsBlurTimerRef.current);
+    suggestionsBlurTimerRef.current = null;
+  };
 
   // Video search with infinite scroll and NIP-50
   const {
@@ -50,10 +94,19 @@ export function SearchPage() {
   } = useInfiniteSearchVideos({
     query: searchQuery,
     sortMode,
-    pageSize: 20,
+    pageSize: 12,
   });
 
-  const videoResults = videoData?.pages.flatMap(page => page.videos) ?? [];
+  // Deduplicate videos by ID (React Strict Mode can cause duplicate fetches)
+  const videoResults = useMemo(() => {
+    const videos = videoData?.pages.flatMap(page => page.videos) ?? [];
+    const seen = new Set<string>();
+    return videos.filter(video => {
+      if (seen.has(video.id)) return false;
+      seen.add(video.id);
+      return true;
+    });
+  }, [videoData]);
 
   const {
     data: userResults = [],
@@ -82,41 +135,158 @@ export function SearchPage() {
   });
 
   useSeoMeta({
-    title: searchQuery ? `Search: ${searchQuery} - diVine Web` : 'Search - diVine Web',
+    title: searchQuery ? `Search: ${searchQuery} - Divine Web` : 'Search - Divine Web',
     description: 'Search for videos, users, and hashtags on Divine Web',
   });
 
-  // Update URL when search changes
+  // Debounced URL update - only update URL after user stops typing for 300ms
+  // This prevents analytics from firing on every keystroke
+  const debouncedSearchQuery = useRef(searchQuery);
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+
   useEffect(() => {
-    const params = new URLSearchParams();
-    if (searchQuery) params.set('q', searchQuery);
-    if (sortMode !== 'relevance') params.set('sort', sortMode);
-    if (activeFilter !== 'all') params.set('filter', activeFilter);
-    setSearchParams(params, { replace: true });
-  }, [searchQuery, sortMode, activeFilter, setSearchParams]);
+    // Clear any existing timer
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+
+    // Set new timer to update URL after 300ms of no typing
+    debounceTimerRef.current = setTimeout(() => {
+      debouncedSearchQuery.current = searchQuery;
+      const params = new URLSearchParams();
+      if (searchQuery) params.set('q', searchQuery);
+      if (sortMode !== 'hot') params.set('sort', sortMode);
+      if (activeFilter !== 'all') params.set('filter', activeFilter);
+      if (compilationRequest.play) {
+        params.set('play', 'compilation');
+        if (compilationRequest.videoId) {
+          params.set('video', compilationRequest.videoId);
+        } else if (compilationRequest.start !== undefined) {
+          params.set('start', String(compilationRequest.start));
+        }
+      }
+      setSearchParams(params, { replace: true });
+
+      // Track search analytics when user stops typing
+      if (searchQuery.trim()) {
+        const totalResults = videoResults.length + userResults.length + hashtagResults.length;
+        trackSearch(searchQuery, activeFilter, totalResults);
+      }
+    }, 500);
+
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, [
+    activeFilter,
+    compilationRequest.play,
+    compilationRequest.start,
+    compilationRequest.videoId,
+    hashtagResults.length,
+    searchQuery,
+    setSearchParams,
+    sortMode,
+    userResults.length,
+    videoResults.length,
+  ]);
+
+  useEffect(() => {
+    return () => {
+      clearSuggestionsBlurTimer();
+      directLookupAbortRef.current?.abort();
+    };
+  }, []);
+
+  useEffect(() => {
+    const normalized = normalizeDirectSearchInput(searchQuery);
+    const allowShortTokens = pastedLookupQueryRef.current === normalized;
+
+    if (!isLikelyOpaqueVideoIdentifier(normalized, allowShortTokens)) {
+      if (pastedLookupQueryRef.current !== normalized) {
+        pastedLookupQueryRef.current = null;
+      }
+      directLookupAbortRef.current?.abort();
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      directLookupAbortRef.current?.abort();
+      const controller = new AbortController();
+      directLookupAbortRef.current = controller;
+      const funnelcakeUrl = getFunnelcakeUrl(config.relayUrl) || getFunnelcakeBaseUrl();
+      const configuredRelayUrls = config.relayUrls || [config.relayUrl];
+
+      if (isHexIdentifier(normalized)) {
+        void fetchEventById(nostr, normalized, controller.signal, {
+          relayUrls: configuredRelayUrls,
+        })
+          .then(event => {
+            if (controller.signal.aborted) {
+              return;
+            }
+
+            if (event) {
+              navigate(buildResolvedEventRoute(event));
+              return;
+            }
+
+            navigate(buildProfilePath(normalized));
+          })
+          .catch(() => {
+            // Fall through to normal search results when identifier lookup fails.
+          });
+      } else {
+        void fetchVideoById(funnelcakeUrl, normalized, undefined, controller.signal)
+          .then(video => {
+            if (controller.signal.aborted || !video) {
+              return;
+            }
+
+            navigate(buildVideoPath(normalized));
+          })
+          .catch(() => {
+            // Fall through to normal search results when identifier lookup fails.
+          });
+      }
+
+      if (pastedLookupQueryRef.current === normalized) {
+        pastedLookupQueryRef.current = null;
+      }
+    }, allowShortTokens ? 0 : 500);
+
+    return () => {
+      clearTimeout(timer);
+      directLookupAbortRef.current?.abort();
+    };
+  }, [config.relayUrl, config.relayUrls, navigate, nostr, searchQuery]);
 
   // Handle search input changes
   const handleSearchChange = (value: string) => {
-    // Detect and redirect to npub/nprofile profiles
-    const trimmedValue = value.trim();
-    if (trimmedValue.startsWith('npub1') || trimmedValue.startsWith('nprofile1')) {
-      try {
-        const decoded = nip19.decode(trimmedValue);
-        if (decoded.type === 'npub') {
-          navigate(`/${trimmedValue}`);
-          return;
-        } else if (decoded.type === 'nprofile') {
-          const npub = nip19.npubEncode(decoded.data.pubkey);
-          navigate(`/${npub}`);
-          return;
-        }
-      } catch {
-        // Invalid npub/nprofile, continue with normal search
-      }
+    const directTarget = getDirectSearchTarget(value);
+    if (directTarget) {
+      navigate(directTarget.path);
+      return;
+    }
+
+    if (normalizeDirectSearchInput(value) !== pastedLookupQueryRef.current) {
+      pastedLookupQueryRef.current = null;
     }
 
     setSearchQuery(value);
     setShowSuggestions(false);
+  };
+
+  const handleSearchPaste = (event: ClipboardEvent<HTMLInputElement>) => {
+    const pastedValue = event.clipboardData.getData('text');
+    const directTarget = getDirectSearchTarget(pastedValue);
+    if (directTarget) {
+      navigate(directTarget.path);
+      return;
+    }
+
+    pastedLookupQueryRef.current = normalizeDirectSearchInput(pastedValue) || null;
   };
 
   // Handle hashtag suggestion click
@@ -129,6 +299,31 @@ export function SearchPage() {
   // Handle filter tab change
   const handleFilterChange = (filter: SearchFilter) => {
     setActiveFilter(filter);
+  };
+
+  const handleSortRadioKeyDown = (
+    event: KeyboardEvent<HTMLButtonElement>,
+    index: number,
+  ) => {
+    const lastIndex = SORT_MODES.length - 1;
+    const nextIndexByKey: Partial<Record<string, number>> = {
+      ArrowRight: index === lastIndex ? 0 : index + 1,
+      ArrowDown: index === lastIndex ? 0 : index + 1,
+      ArrowLeft: index === 0 ? lastIndex : index - 1,
+      ArrowUp: index === 0 ? lastIndex : index - 1,
+      Home: 0,
+      End: lastIndex,
+    };
+    const nextIndex = nextIndexByKey[event.key];
+
+    if (nextIndex === undefined) return;
+
+    event.preventDefault();
+    setSortMode(SORT_MODES[nextIndex].value);
+    event.currentTarget.parentElement
+      ?.querySelectorAll<HTMLButtonElement>('[role="radio"]')
+      .item(nextIndex)
+      ?.focus();
   };
 
   // Loading state based on active filter
@@ -175,6 +370,44 @@ export function SearchPage() {
 
   // Check if we have any results
   const hasResults = videoResults.length > 0 || userResults.length > 0 || hashtagResults.length > 0;
+  const showCompilationButton =
+    searchQuery.trim().length > 0 &&
+    videoResults.length > 0 &&
+    (activeFilter === 'all' || activeFilter === 'videos');
+  const compilationReturnPath = useMemo(() => {
+    const params = new URLSearchParams();
+    const trimmedQuery = searchQuery.trim();
+
+    if (trimmedQuery) params.set('q', trimmedQuery);
+    if (sortMode !== 'hot') params.set('sort', sortMode);
+    if (activeFilter !== 'all') params.set('filter', activeFilter);
+
+    const query = params.toString();
+    return query ? `/search?${query}` : '/search';
+  }, [activeFilter, searchQuery, sortMode]);
+  const compilationUrl = showCompilationButton
+    ? buildCompilationPlaybackUrl(compilationReturnPath, {
+        start: 0,
+      })
+    : null;
+
+  const searchNavigationContext = useMemo<VideoNavigationContext | undefined>(() => {
+    const trimmedQuery = searchQuery.trim();
+    if (!trimmedQuery) return undefined;
+
+    return {
+      source: 'search',
+      query: trimmedQuery,
+      sortMode,
+    };
+  }, [searchQuery, sortMode]);
+
+  useCompilationFullscreen({
+    videos: videoResults,
+    fetchNextPage: fetchNextVideos,
+    hasNextPage: hasNextVideos ?? false,
+    enabled: activeFilter === 'all' || activeFilter === 'videos',
+  });
 
   return (
     <div className="min-h-screen bg-background">
@@ -187,11 +420,21 @@ export function SearchPage() {
             <Input
               ref={searchInputRef}
               type="text"
-              placeholder="Search for videos, users, or hashtags..."
+              placeholder="Search — or paste an npub, note, nevent, naddr, or d tag..."
               value={searchQuery}
               onChange={(e) => handleSearchChange(e.target.value)}
-              onFocus={() => setShowSuggestions(!searchQuery.trim())}
-              onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+              onPaste={handleSearchPaste}
+              onFocus={() => {
+                clearSuggestionsBlurTimer();
+                setShowSuggestions(!searchQuery.trim());
+              }}
+              onBlur={() => {
+                clearSuggestionsBlurTimer();
+                suggestionsBlurTimerRef.current = setTimeout(() => {
+                  suggestionsBlurTimerRef.current = null;
+                  setShowSuggestions(false);
+                }, 200);
+              }}
               className="pl-10 pr-4"
               autoFocus
             />
@@ -199,23 +442,38 @@ export function SearchPage() {
 
           {/* Sort mode selector for video results */}
           {(activeFilter === 'all' || activeFilter === 'videos') && searchQuery.trim() && (
-            <div className="flex items-center gap-2 justify-end">
-              <span className="text-sm text-muted-foreground">Sort:</span>
-              <Select value={sortMode} onValueChange={(value) => setSortMode(value as SortMode)}>
-                <SelectTrigger className="w-[160px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {SORT_MODES.map(mode => (
-                    <SelectItem key={mode.value} value={mode.value}>
-                      <div className="flex items-center gap-2">
-                        <mode.icon className="h-4 w-4" />
-                        {mode.label}
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <div
+              role="radiogroup"
+              aria-label="Sort search results"
+              data-testid="search-sort-pills"
+              className="flex flex-wrap gap-2"
+            >
+              {SORT_MODES.map((mode, index) => {
+                const ModeIcon = mode.icon;
+                const isSelected = sortMode === mode.value;
+                return (
+                  <button
+                    key={mode.value}
+                    type="button"
+                    role="radio"
+                    aria-checked={isSelected}
+                    tabIndex={isSelected ? 0 : -1}
+                    data-testid={`search-sort-${mode.value}`}
+                    onClick={() => setSortMode(mode.value)}
+                    onKeyDown={(event) => handleSortRadioKeyDown(event, index)}
+                    className={`
+                      flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all
+                      ${isSelected
+                        ? 'bg-primary text-primary-foreground shadow-md'
+                        : 'bg-brand-light-green dark:bg-brand-dark-green hover:bg-muted text-muted-foreground hover:text-foreground'
+                      }
+                    `}
+                  >
+                    <ModeIcon className="h-4 w-4" />
+                    <span>{mode.label}</span>
+                  </button>
+                );
+              })}
             </div>
           )}
 
@@ -231,13 +489,13 @@ export function SearchPage() {
                 <div className="flex flex-wrap gap-2">
                   {popularHashtags.slice(0, 8).map((hashtag) => (
                     <Button
-                      key={hashtag.tag}
+                      key={hashtag.hashtag}
                       variant="ghost"
                       size="sm"
-                      onClick={() => handleHashtagClick(hashtag.tag)}
+                      onClick={() => handleHashtagClick(hashtag.hashtag)}
                       className="h-auto px-2 py-1 text-xs"
                     >
-                      #{hashtag.tag}
+                      #{hashtag.hashtag}
                     </Button>
                   ))}
                 </div>
@@ -267,27 +525,27 @@ export function SearchPage() {
             </TabsTrigger>
           </TabsList>
 
-          {/* Results count */}
+          {/* Status message */}
           {searchQuery.trim() && (
-            <div className="text-center mb-4">
+            <div className="mb-4 flex flex-col items-center gap-3">
               {isLoading ? (
                 <p className="text-muted-foreground">Searching...</p>
               ) : error ? (
                 <p className="text-destructive">Search error occurred</p>
-              ) : (
-                <p className="text-muted-foreground">
-                  {getResultsCount() === 0
-                    ? 'No results found'
-                    : `${getResultsCount()} ${
-                        activeFilter === 'all'
-                          ? 'results'
-                          : activeFilter === 'videos'
-                          ? 'videos'
-                          : activeFilter === 'users'
-                          ? 'users'
-                          : 'hashtags'
-                      } found`}
-                </p>
+              ) : getResultsCount() === 0 ? (
+                <p className="text-muted-foreground">Nada. Try something different?</p>
+              ) : null}
+              {compilationUrl && !isLoading && !error && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => navigate(compilationUrl)}
+                  className="gap-2"
+                >
+                  <Play className="h-4 w-4" />
+                  {t('common.playAll')}
+                </Button>
               )}
             </div>
           )}
@@ -310,7 +568,7 @@ export function SearchPage() {
                     <div className="flex items-center justify-between mb-4">
                       <h2 className="text-lg font-semibold flex items-center gap-2">
                         <Video className="h-5 w-5" />
-                        Videos ({videoResults.length}{hasNextVideos ? '+' : ''})
+                        Videos
                       </h2>
                       <Button
                         variant="outline"
@@ -321,8 +579,17 @@ export function SearchPage() {
                       </Button>
                     </div>
                     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                      {videoResults.slice(0, 6).map((video) => (
-                        <VideoCard key={video.id} video={video} mode="thumbnail" />
+                      {videoResults.slice(0, 6).map((video, index) => (
+                        <VideoCardWithMetrics
+                          key={video.id}
+                          video={video}
+                          index={index}
+                          mode="thumbnail"
+                          showComments={false}
+                          onOpenComments={() => undefined}
+                          onCloseComments={() => undefined}
+                          navigationContext={searchNavigationContext}
+                        />
                       ))}
                     </div>
                   </section>
@@ -333,7 +600,7 @@ export function SearchPage() {
                   <section>
                     <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
                       <Users className="h-5 w-5" />
-                      Users ({userResults.length})
+                      Users
                     </h2>
                     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                       {userResults.slice(0, 6).map((user) => (
@@ -346,7 +613,7 @@ export function SearchPage() {
                           variant="outline"
                           onClick={() => setActiveFilter('users')}
                         >
-                          View all {userResults.length} users
+                          View all users
                         </Button>
                       </div>
                     )}
@@ -358,14 +625,14 @@ export function SearchPage() {
                   <section>
                     <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
                       <Hash className="h-5 w-5" />
-                      Hashtags ({hashtagResults.length})
+                      Hashtags
                     </h2>
                     <div className="flex flex-wrap gap-2">
                       {hashtagResults.slice(0, 12).map((hashtag) => (
                         <HashtagCard
-                          key={hashtag.tag}
+                          key={hashtag.hashtag}
                           hashtag={hashtag}
-                          onClick={() => handleHashtagClick(hashtag.tag)}
+                          onClick={() => handleHashtagClick(hashtag.hashtag)}
                         />
                       ))}
                     </div>
@@ -375,7 +642,7 @@ export function SearchPage() {
                           variant="outline"
                           onClick={() => setActiveFilter('hashtags')}
                         >
-                          View all {hashtagResults.length} hashtags
+                          View all hashtags
                         </Button>
                       </div>
                     )}
@@ -408,14 +675,23 @@ export function SearchPage() {
                 endMessage={
                   videoResults.length > 10 ? (
                     <div className="py-8 text-center text-sm text-muted-foreground">
-                      <p>No more results</p>
+                      <p>That's the whole haul.</p>
                     </div>
                   ) : null
                 }
               >
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  {videoResults.map((video) => (
-                    <VideoCard key={video.id} video={video} mode="thumbnail" />
+                  {videoResults.map((video, index) => (
+                    <VideoCardWithMetrics
+                      key={video.id}
+                      video={video}
+                      index={index}
+                      mode="thumbnail"
+                      showComments={false}
+                      onOpenComments={() => undefined}
+                      onCloseComments={() => undefined}
+                      navigationContext={searchNavigationContext}
+                    />
                   ))}
                 </div>
               </InfiniteScroll>
@@ -455,9 +731,9 @@ export function SearchPage() {
               <div className="flex flex-wrap gap-2">
                 {hashtagResults.map((hashtag) => (
                   <HashtagCard
-                    key={hashtag.tag}
+                    key={hashtag.hashtag}
                     hashtag={hashtag}
-                    onClick={() => handleHashtagClick(hashtag.tag)}
+                    onClick={() => handleHashtagClick(hashtag.hashtag)}
                   />
                 ))}
               </div>
@@ -474,19 +750,23 @@ interface UserCardMetadata {
   name?: string;
   about?: string;
   picture?: string;
+  nip05?: string;
 }
 
 // User card component
 function UserCard({ user }: { user: { pubkey: string; metadata?: UserCardMetadata } }) {
-  const navigate = useNavigate();
+  const navigate = useSubdomainNavigate();
   const displayName = user.metadata?.display_name || user.metadata?.name || genUserName(user.pubkey);
   const username = user.metadata?.name || genUserName(user.pubkey);
   const about = user.metadata?.about;
   const picture = getSafeProfileImage(user.metadata?.picture);
-  const npub = nip19.npubEncode(user.pubkey);
+  const profilePath = buildProfileLinkPath({
+    pubkey: user.pubkey,
+    nip05: user.metadata?.nip05,
+  });
 
   const handleClick = () => {
-    navigate(`/${npub}`);
+    navigate(profilePath);
   };
 
   const handleKeyDown = (event: React.KeyboardEvent) => {
@@ -507,7 +787,7 @@ function UserCard({ user }: { user: { pubkey: string; metadata?: UserCardMetadat
     >
       <CardContent className="p-4">
         <div className="flex items-start gap-3">
-          <Avatar className="h-12 w-12">
+          <Avatar size="lg">
             <AvatarImage src={picture} alt={displayName} />
             <AvatarFallback>{displayName.slice(0, 2).toUpperCase()}</AvatarFallback>
           </Avatar>
@@ -531,7 +811,7 @@ function HashtagCard({
   hashtag,
   onClick
 }: {
-  hashtag: { tag: string; count: number };
+  hashtag: HashtagResult;
   onClick: () => void;
 }) {
   return (
@@ -540,8 +820,8 @@ function HashtagCard({
       className="cursor-pointer hover:bg-secondary/80 px-3 py-1"
       onClick={onClick}
     >
-      #{hashtag.tag}
-      <span className="ml-2 text-xs opacity-70">{hashtag.count} videos</span>
+      #{hashtag.hashtag}
+      <span className="ml-2 text-xs opacity-70">{hashtag.video_count} videos</span>
     </Badge>
   );
 }
@@ -570,12 +850,12 @@ function EmptySearchState() {
   return (
     <div className="text-center py-12">
       <Search className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-      <h3 className="text-lg font-semibold mb-2">Search Divine Web</h3>
+      <h3 className="text-lg font-semibold mb-2">Hunt for something.</h3>
       <p className="text-muted-foreground mb-4">
-        Find videos, users, and hashtags across the Nostr network
+        Loops, people, hashtags — it's all searchable.
       </p>
       <p className="text-sm text-muted-foreground">
-        Try searching for #dance, #music, or any creator's name
+        Try #dance, #music, or a creator's name.
       </p>
     </div>
   );
@@ -590,9 +870,9 @@ function NoResultsState() {
           <div className="max-w-sm mx-auto space-y-6">
             <Search className="h-12 w-12 text-muted-foreground mx-auto" />
             <div>
-              <h3 className="text-lg font-semibold mb-2">No results found</h3>
+              <h3 className="text-lg font-semibold mb-2">Nada.</h3>
               <p className="text-muted-foreground mb-4">
-                Try different keywords
+                Try different keywords.
               </p>
             </div>
           </div>

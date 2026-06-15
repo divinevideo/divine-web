@@ -1,0 +1,20 @@
+{
+  "title": "Standar Keamanan",
+  "updated": "Terakhir Diperbarui: 30 Maret 2026",
+  "sections": {
+    "overview": "1. Ikhtisar",
+    "definitions": "2. Definisi",
+    "prohibited": "3. Konten dan Perilaku yang Dilarang",
+    "childSafety": "4. Keamanan Anak",
+    "matureContent": "5. Konten Dewasa",
+    "integrity": "6. Integritas dan Penyalahgunaan Platform",
+    "enforcement": "7. Penegakan",
+    "moderation": "8. Metode Moderasi",
+    "reporting": "9. Pelaporan",
+    "userControls": "10. Kontrol Pengguna",
+    "decentralization": "11. Batasan Desentralisasi",
+    "automated": "12. Pengambilan Keputusan Otomatis",
+    "appeals": "13. Banding",
+    "updates": "14. Pembaruan"
+  }
+}

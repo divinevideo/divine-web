@@ -3,6 +3,56 @@
 All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
+- **PERFORMANCE**: Migrate to Funnelcake REST API for faster data loading
+  - `useProfileStats` now uses REST API first (10s → <500ms), falls back to WebSocket
+  - `useBatchedAuthors` now uses bulk REST endpoint instead of individual WebSocket queries
+  - New `useBulkVideoStats` hook for fetching multiple video stats in single request
+  - New `useFollowers` and `useFollowing` hooks with pagination support
+  - New `fetchBulkUsers` and `fetchBulkVideoStats` client functions
+  - Added `batchUtils.ts` with `dedupeArray` and `chunkArray` utilities
+  - Added `socialCache.ts` for localStorage caching with 5-minute TTL
+  - Comprehensive test coverage for all new functionality (86 tests pass)
+- **UI**: Profile stats improvements
+  - Renamed "Total Views" to "diVine Loops"
+  - "Joined" field now shows "Classic Viner" for unclaimed classic accounts
+- **PERFORMANCE**: Fix slow profile page loading (20s → <1s)
+  - Fixed Funnelcake API response parsing - profile data is nested under `profile`, `social`, `stats` objects
+  - Removed circuit breaker checks that were blocking fast API requests
+  - Removed expensive Nostr queries for profile stats (10,000+ events) - now uses Funnelcake stats
+  - Reduced API timeout from 15s to 5s
+  - Profile metadata always returns object (never undefined) so UI renders immediately
+- **FEATURE**: NIP-05 validation with visual feedback
+  - New `useNip05Validation` hook validates NIP-05 via .well-known/nostr.json
+  - Shows loading spinner (grey) while validating
+  - Shows checkmark (green) when validated
+  - Shows strikethrough (grey) when invalid
+  - Never shows unvalidated NIP-05 with checkmark
+- **UI**: Profile shows truncated npub instead of generated placeholder names
+  - Removed fake names like "MysticNebula950"
+  - Shows `npub1xxx...xxxx` while loading, real name when available
+- **FEATURE**: Funnelcake REST API integration for faster video loading
+  - New `funnelcakeClient.ts` - REST API client with circuit breaker health tracking
+  - New `funnelcakeTransform.ts` - transforms API responses to ParsedVideoData format
+  - New `useInfiniteVideosFunnelcake` hook for paginated video feeds via REST
+  - New `useVideoProvider` hook that auto-selects Funnelcake vs WebSocket based on relay
+  - New `useVideoByIdFunnelcake` hook for fast single-video lookups on VideoPage
+  - VideoPage now loads via REST first, falls back to WebSocket (faster initial load)
+- **FEATURE**: Classic Viner profile stats
+  - ProfileHeader now shows "Classic Vine Stats" section for users with migrated Vines
+  - Displays original Vine loop counts (total loops from all videos)
+  - Shows count of classic Vines from the original platform (2013-2017)
+- **FEATURE**: Classic Viners row on Discovery page
+  - New `ClassicVinersRow` component showing popular Vine creators
+  - Horizontal scrollable avatars with links to creator profiles
+  - Fetches from Funnelcake `/api/viners` endpoint with fallback to video extraction
+- **IMPROVEMENT**: Video cards display cached author names/avatars from Funnelcake
+  - Added `authorName` and `authorAvatar` fields to ParsedVideoData
+  - VideoCard prefers real Nostr profile, falls back to cached Funnelcake data
+  - Eliminates "MysticComet590" placeholder names for classic Viners
+- **CONFIG**: Switch primary relay from relay.divine.video to relay.dvines.org
+  - Updated PRIMARY_RELAY in relays.ts
+  - Added relay.dvines.org to PROFILE_RELAYS for kind 0 profile queries
+  - Added `hasFunnelcake()` and `getFunnelcakeUrl()` helpers for relay capability detection
 - **BUGFIX**: Fix .well-known files (assetlinks.json, apple-app-site-association) returning 404 on divine.video
   - Added `_routes.json` to exclude `.well-known/*` from Pages Functions routing
   - Updated `functions/[[path]].ts` to pass through `.well-known` paths directly

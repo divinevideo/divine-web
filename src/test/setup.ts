@@ -1,5 +1,62 @@
 import '@testing-library/jest-dom';
+import { TextDecoder, TextEncoder } from 'node:util';
 import { vi } from 'vitest';
+
+Object.defineProperty(global, 'TextEncoder', {
+  writable: true,
+  value: TextEncoder,
+});
+
+Object.defineProperty(global, 'TextDecoder', {
+  writable: true,
+  value: TextDecoder,
+});
+
+Object.defineProperty(window, 'TextEncoder', {
+  writable: true,
+  value: TextEncoder,
+});
+
+Object.defineProperty(window, 'TextDecoder', {
+  writable: true,
+  value: TextDecoder,
+});
+
+Object.defineProperty(window, 'Uint8Array', {
+  writable: true,
+  value: Uint8Array,
+});
+
+Object.defineProperty(window, 'ArrayBuffer', {
+  writable: true,
+  value: ArrayBuffer,
+});
+
+// Mock indexedDB
+const mockIDBRequest = {
+  result: null,
+  error: null,
+  onerror: null as ((event: Event) => void) | null,
+  onsuccess: null as ((event: Event) => void) | null,
+  onupgradeneeded: null as ((event: Event) => void) | null,
+};
+
+const mockIndexedDB = {
+  open: vi.fn().mockImplementation(() => {
+    setTimeout(() => {
+      if (mockIDBRequest.onsuccess) {
+        mockIDBRequest.onsuccess(new Event('success'));
+      }
+    }, 0);
+    return mockIDBRequest;
+  }),
+  deleteDatabase: vi.fn().mockReturnValue(mockIDBRequest),
+};
+
+Object.defineProperty(global, 'indexedDB', {
+  writable: true,
+  value: mockIndexedDB,
+});
 
 // Mock window.matchMedia
 Object.defineProperty(window, 'matchMedia', {

@@ -1,42 +1,37 @@
-// ABOUTME: Hook for searching hashtags across video events with usage counts and autocomplete
-// ABOUTME: Aggregates hashtag data from recent videos and provides filtered suggestions
+// ABOUTME: Hook for searching hashtags using Funnelcake REST API
+// ABOUTME: Provides trending hashtags with video counts and search filtering
 
-import { useNostr } from '@nostrify/react';
 import { useQuery } from '@tanstack/react-query';
-import { useMemo } from 'react';
-import type { NostrEvent } from '@nostrify/nostrify';
-import { VIDEO_KINDS } from '@/types/video';
+import { useState, useEffect } from 'react';
+import { getFunnelcakeBaseUrl } from '@/config/api';
+import { fetchTrendingHashtags } from '@/lib/funnelcakeClient';
 
 interface UseSearchHashtagsOptions {
   query: string;
   limit?: number;
-  daysBack?: number; // How many days back to search for hashtags
 }
 
-interface HashtagResult {
-  tag: string;
-  count: number;
+export interface HashtagResult {
+  hashtag: string;
+  video_count: number;
 }
 
 /**
- * Extract hashtags from video events and count usage
+ * Proper debounce hook
  */
-function extractHashtagCounts(events: NostrEvent[]): Map<string, number> {
-  const hashtagCounts = new Map<string, number>();
+function useDebouncedValue(value: string, delay: number): string {
+  const [debounced, setDebounced] = useState(value);
 
-  events.forEach(event => {
-    // Extract 't' tags (hashtags)
-    const hashtags = event.tags
-      .filter(tag => tag[0] === 't' && tag[1])
-      .map(tag => tag[1]);
+  useEffect(() => {
+    if (delay <= 0) {
+      setDebounced(value);
+      return;
+    }
+    const timer = setTimeout(() => setDebounced(value), delay);
+    return () => clearTimeout(timer);
+  }, [value, delay]);
 
-    hashtags.forEach(hashtag => {
-      const count = hashtagCounts.get(hashtag) || 0;
-      hashtagCounts.set(hashtag, count + 1);
-    });
-  });
-
-  return hashtagCounts;
+  return debounced;
 }
 
 /**
@@ -46,74 +41,67 @@ function filterHashtagsByQuery(hashtags: HashtagResult[], query: string): Hashta
   if (!query.trim()) {
     return hashtags;
   }
-  
+
   const searchValue = query.toLowerCase();
-  
+
   return hashtags.filter(hashtag =>
-    hashtag.tag.toLowerCase().includes(searchValue)
+    hashtag.hashtag.toLowerCase().includes(searchValue)
   );
 }
 
 /**
- * Search hashtags across video events with usage counts
+ * Search hashtags using Funnelcake trending hashtags API
  */
 export function useSearchHashtags(options: UseSearchHashtagsOptions) {
-  const { nostr } = useNostr();
-  const { query, limit = 20, daysBack = 7 } = options;
-  
-  // Debounce the query - disable in test environment
-  const isTest = process.env.NODE_ENV === 'test';
-  const debounceDelay = isTest ? 0 : 300;
-  
-  const debouncedQuery = useMemo(() => {
-    let timeoutId: NodeJS.Timeout;
-    return new Promise<string>((resolve) => {
-      clearTimeout(timeoutId);
-      timeoutId = setTimeout(() => resolve(query), debounceDelay);
-    });
-  }, [query, debounceDelay]);
-  
-  return useQuery({
-    queryKey: ['search-hashtags', query, limit, daysBack],
-    queryFn: async (context) => {
-      // Wait for debounced query
-      const actualQuery = await debouncedQuery;
-      
-      const signal = AbortSignal.any([
-        context.signal,
-        AbortSignal.timeout(10000)
-      ]);
-      
-      // Get recent videos to extract hashtags from
-      const since = Math.floor(Date.now() / 1000) - (daysBack * 24 * 60 * 60);
-      
-      const events = await nostr.query([{
-        kinds: VIDEO_KINDS,
-        since,
-        limit: 100, // Reduced for performance while maintaining decent hashtag coverage
-      }], { signal });
-      
-      // Extract and count hashtags
-      const hashtagCounts = extractHashtagCounts(events);
+  const { query, limit = 20 } = options;
 
-      // Convert to array and sort by usage count
-      const allHashtags: HashtagResult[] = Array.from(hashtagCounts.entries())
-        .map(([tag, count]) => ({ tag, count }))
-        .sort((a, b) => {
-          // Sort by count descending, then alphabetically
-          if (a.count !== b.count) {
-            return b.count - a.count;
-          }
-          return a.tag.localeCompare(b.tag);
-        });
-      
-      // Filter by search query
-      const filteredHashtags = filterHashtagsByQuery(allHashtags, actualQuery);
-      
-      // Apply limit
-      return filteredHashtags.slice(0, limit);
+  const isTest = process.env.NODE_ENV === 'test';
+  const debounceMs = isTest ? 0 : 300;
+  const debouncedQuery = useDebouncedValue(query, debounceMs);
+
+  return useQuery({
+    queryKey: ['search-hashtags', debouncedQuery, limit],
+    queryFn: async ({ signal }) => {
+      const requestStartedAt = performance.now();
+      const requestContext = {
+        query: debouncedQuery,
+        limit,
+        mode: debouncedQuery.trim() ? 'search' : 'popular',
+      };
+
+      console.info('[search/hashtags] starting', {
+        ...requestContext,
+        debounceMs,
+      });
+
+      const fetchStartedAt = performance.now();
+      const hashtags = await fetchTrendingHashtags(
+        getFunnelcakeBaseUrl(),
+        100,
+        signal,
+      );
+      const fetchCompletedAt = performance.now();
+
+      const allHashtags: HashtagResult[] = hashtags.map(hashtag => ({
+        hashtag: hashtag.hashtag,
+        video_count: hashtag.video_count,
+      }));
+
+      const filteredHashtags = filterHashtagsByQuery(allHashtags, debouncedQuery);
+      const finalHashtags = filteredHashtags.slice(0, limit);
+
+      console.info('[search/hashtags] completed', {
+        ...requestContext,
+        apiMs: Math.round(fetchCompletedAt - fetchStartedAt),
+        totalMs: Math.round(fetchCompletedAt - requestStartedAt),
+        fetchedHashtagCount: allHashtags.length,
+        matchedHashtagCount: filteredHashtags.length,
+        returnedHashtagCount: finalHashtags.length,
+      });
+
+      return finalHashtags;
     },
-    staleTime: 30000, // 30 seconds
-    gcTime: 300000, // 5 minutes
+    staleTime: 60_000,
+    gcTime: 300_000,
   });
 }

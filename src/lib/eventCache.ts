@@ -32,10 +32,18 @@ class IndexedDBStore implements NStore {
   }
 
   private async init(): Promise<void> {
-    return new Promise((resolve, reject) => {
+    if (typeof indexedDB === 'undefined') {
+      return; // Gracefully degrade to memory-only cache
+    }
+
+    return new Promise((resolve) => {
       const request = indexedDB.open(DB_NAME, DB_VERSION);
 
-      request.onerror = () => reject(request.error);
+      request.onerror = () => {
+        // User may have denied IDB permission (e.g. restricted Android browsers)
+        // Gracefully degrade to memory-only cache
+        resolve();
+      };
       request.onsuccess = () => {
         this.db = request.result;
         resolve();
@@ -61,33 +69,38 @@ class IndexedDBStore implements NStore {
     });
   }
 
-  private async ensureDB(): Promise<IDBDatabase> {
+  private async ensureDB(): Promise<IDBDatabase | null> {
     await this.initPromise;
-    if (!this.db) {
-      throw new Error('IndexedDB not initialized');
-    }
     return this.db;
   }
 
   async event(event: NostrEvent): Promise<void> {
     const db = await this.ensureDB();
+    if (!db) return;
+
     const cachedEvent: CachedEvent = {
       event,
       cached_at: Date.now(),
     };
-    
-    return new Promise((resolve, reject) => {
-      const transaction = db.transaction([STORE_NAME], 'readwrite');
-      const store = transaction.objectStore(STORE_NAME);
-      const request = store.put(cachedEvent);
 
-      request.onsuccess = () => resolve();
-      request.onerror = () => reject(request.error);
+    return new Promise((resolve, reject) => {
+      try {
+        const transaction = db.transaction([STORE_NAME], 'readwrite');
+        const store = transaction.objectStore(STORE_NAME);
+        const request = store.put(cachedEvent);
+
+        request.onsuccess = () => resolve();
+        request.onerror = () => reject(request.error);
+      } catch {
+        // IDB connection may be closing (e.g. page backgrounded on iOS)
+        resolve();
+      }
     });
   }
 
   async query(filters: NostrFilter[]): Promise<NostrEvent[]> {
     const db = await this.ensureDB();
+    if (!db) return [];
     const allCachedEvents: CachedEvent[] = [];
 
     for (const filter of filters) {
@@ -120,7 +133,14 @@ class IndexedDBStore implements NStore {
 
   private async queryFilter(db: IDBDatabase, filter: NostrFilter): Promise<CachedEvent[]> {
     return new Promise((resolve, reject) => {
-      const transaction = db.transaction([STORE_NAME], 'readonly');
+      let transaction: IDBTransaction;
+      try {
+        transaction = db.transaction([STORE_NAME], 'readonly');
+      } catch {
+        // IDB connection may be closing (e.g. page backgrounded on iOS)
+        resolve([]);
+        return;
+      }
       const store = transaction.objectStore(STORE_NAME);
       const cachedEvents: CachedEvent[] = [];
 
@@ -151,7 +171,16 @@ class IndexedDBStore implements NStore {
           if (this.matchesFilter(cachedEvt.event, filter)) {
             cachedEvents.push(cachedEvt);
           }
-          cursor.continue();
+          try {
+            cursor.continue();
+          } catch {
+            // iOS Safari can auto-commit transactions during cursor iteration
+            // when the device is under memory pressure or the iteration is slow.
+            // Return whatever we've collected so far.
+            const limited = filter.limit ? cachedEvents.slice(0, filter.limit) : cachedEvents;
+            resolve(limited);
+            return;
+          }
         } else {
           // Apply limit
           const limited = filter.limit ? cachedEvents.slice(0, filter.limit) : cachedEvents;
@@ -209,18 +238,25 @@ class IndexedDBStore implements NStore {
 
   async remove(filters: NostrFilter[]): Promise<void> {
     const db = await this.ensureDB();
+    if (!db) return;
+
     const eventsToRemove = await this.query(filters);
 
     return new Promise((resolve, reject) => {
-      const transaction = db.transaction([STORE_NAME], 'readwrite');
-      const store = transaction.objectStore(STORE_NAME);
+      try {
+        const transaction = db.transaction([STORE_NAME], 'readwrite');
+        const store = transaction.objectStore(STORE_NAME);
 
-      eventsToRemove.forEach(event => {
-        store.delete(event.id);
-      });
+        eventsToRemove.forEach(event => {
+          store.delete(event.id);
+        });
 
-      transaction.oncomplete = () => resolve();
-      transaction.onerror = () => reject(transaction.error);
+        transaction.oncomplete = () => resolve();
+        transaction.onerror = () => reject(transaction.error);
+      } catch {
+        // IDB connection may be closing (e.g. page backgrounded on iOS)
+        resolve();
+      }
     });
   }
 
@@ -234,13 +270,20 @@ class IndexedDBStore implements NStore {
    */
   async clear(): Promise<void> {
     const db = await this.ensureDB();
-    return new Promise((resolve, reject) => {
-      const transaction = db.transaction([STORE_NAME], 'readwrite');
-      const store = transaction.objectStore(STORE_NAME);
-      const request = store.clear();
+    if (!db) return;
 
-      request.onsuccess = () => resolve();
-      request.onerror = () => reject(request.error);
+    return new Promise((resolve, reject) => {
+      try {
+        const transaction = db.transaction([STORE_NAME], 'readwrite');
+        const store = transaction.objectStore(STORE_NAME);
+        const request = store.clear();
+
+        request.onsuccess = () => resolve();
+        request.onerror = () => reject(request.error);
+      } catch {
+        // IDB connection may be closing (e.g. page backgrounded on iOS)
+        resolve();
+      }
     });
   }
 }

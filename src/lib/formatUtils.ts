@@ -36,3 +36,15 @@ export function formatViewCount(count: number): string {
   const formatted = formatCount(count);
   return count === 1 ? `${formatted} view` : `${formatted} views`;
 }
+
+/**
+ * Format a classic Vine summary using the original archive loop count.
+ */
+export function formatClassicVineViewBreakdown(_totalViews: number, originalLoops: number): string | null {
+  if (originalLoops <= 0) {
+    return null;
+  }
+
+  const loopLabel = originalLoops === 1 ? 'Loop' : 'Loops';
+  return `${formatCount(originalLoops)} ${loopLabel}`;
+}

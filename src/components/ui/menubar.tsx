@@ -1,8 +1,6 @@
 import * as React from "react"
 import * as MenubarPrimitive from "@radix-ui/react-menubar"
-import { Check, ChevronRight, Circle } from "lucide-react"
-
-import { cn } from "@/lib/utils"
+import { Check, CaretRight as ChevronRight, Circle } from '@phosphor-icons/react';import { cn } from "@/lib/utils"
 
 const MenubarMenu = MenubarPrimitive.Menu
 

@@ -1,7 +1,8 @@
 // NOTE: This file is stable and usually should not be modified.
 // It is important that all functionality in this file is preserved, and should only be modified if explicitly requested.
 
-import { ChevronDown, LogOut, UserIcon, UserPlus, User, Settings, Moon, Sun /*, Wallet */ } from 'lucide-react';
+import { CaretDown as ChevronDown, SignOut as LogOut, User as UserIcon, UserPlus, User, Gear as Settings, LinkSimple as Link2 } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { nip19 } from 'nostr-tools';
 import {
@@ -14,22 +15,32 @@ import {
 } from '@/components/ui/dropdown-menu.tsx';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar.tsx';
 // import { WalletModal } from '@/components/WalletModal';
+import { useNostrLogin } from '@nostrify/react/login';
 import { useLoggedInAccounts, type Account } from '@/hooks/useLoggedInAccounts';
-import { useTheme } from '@/hooks/useTheme';
+import { useDivineSession } from '@/hooks/useDivineSession';
+import { clearLoginCookie, clearJwtCookie } from '@/lib/crossSubdomainAuth';
 import { genUserName } from '@/lib/genUserName';
 import { getSafeProfileImage } from '@/lib/imageUtils';
+import { getActiveLocalNsecLogin } from '@/lib/localNsecAccount';
+import { OVERLAY_LAYERS } from '@/lib/overlayLayers';
 import { RelaySelector } from '@/components/RelaySelector';
+import { LocalNsecBanner } from './LocalNsecBanner';
 
 interface AccountSwitcherProps {
   onAddAccountClick: () => void;
 }
 
 export function AccountSwitcher({ onAddAccountClick }: AccountSwitcherProps) {
+  const { t } = useTranslation();
+  const { logins } = useNostrLogin();
   const { currentUser, otherUsers, setLogin, removeLogin } = useLoggedInAccounts();
+  const { clearSession } = useDivineSession();
   const navigate = useNavigate();
-  const { displayTheme, setTheme } = useTheme();
+  const localNsecLogin = getActiveLocalNsecLogin(logins);
 
   if (!currentUser) return null;
+
+  const isJwtCurrentUser = currentUser.id.startsWith('jwt:');
 
   const getDisplayName = (account: Account): string => {
     return account.metadata.name ?? genUserName(account.pubkey);
@@ -40,99 +51,111 @@ export function AccountSwitcher({ onAddAccountClick }: AccountSwitcherProps) {
     navigate(`/profile/${npub}`);
   };
 
-  const toggleTheme = () => {
-    setTheme(displayTheme === 'dark' ? 'light' : 'dark');
+  const handleLogout = () => {
+    if (isJwtCurrentUser) {
+      clearSession();
+      clearJwtCookie();
+      clearLoginCookie();
+      return;
+    }
+
+    removeLogin(currentUser.id);
   };
 
   return (
-    <DropdownMenu modal={false}>
-      <DropdownMenuTrigger asChild>
-        <button className='flex items-center gap-3 p-3 rounded-full hover:bg-accent transition-all w-full text-foreground'>
-          <Avatar className='w-10 h-10'>
-            <AvatarImage src={getSafeProfileImage(currentUser.metadata.picture)} alt={getDisplayName(currentUser)} />
-            <AvatarFallback>{getDisplayName(currentUser).charAt(0)}</AvatarFallback>
-          </Avatar>
-          <div className='flex-1 text-left hidden md:block truncate'>
-            <p className='font-medium text-sm truncate'>{getDisplayName(currentUser)}</p>
-          </div>
-          <ChevronDown className='w-4 h-4 text-muted-foreground' />
-        </button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent className='w-56 p-2 animate-scale-in' onCloseAutoFocus={(e) => e.preventDefault()}>
-        <DropdownMenuItem
-          onClick={handleMyProfileClick}
-          className='flex items-center gap-2 cursor-pointer p-2 rounded-md'
-        >
-          <User className='w-4 h-4' />
-          <span>My Profile</span>
-        </DropdownMenuItem>
-        <DropdownMenuItem
-          onClick={toggleTheme}
-          className='flex items-center gap-2 cursor-pointer p-2 rounded-md'
-        >
-          {displayTheme === 'dark' ? (
-            <Sun className='w-4 h-4' />
-          ) : (
-            <Moon className='w-4 h-4' />
-          )}
-          <span>{displayTheme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
-        </DropdownMenuItem>
-        <DropdownMenuItem
-          onClick={() => navigate('/settings/moderation')}
-          className='flex items-center gap-2 cursor-pointer p-2 rounded-md'
-        >
-          <Settings className='w-4 h-4' />
-          <span>Settings</span>
-        </DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <DropdownMenuLabel>Switch Relay</DropdownMenuLabel>
-        <DropdownMenuItem onSelect={(e) => e.preventDefault()} className='p-2'>
-          <RelaySelector className='w-full' />
-        </DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <DropdownMenuLabel>Switch Account</DropdownMenuLabel>
-        {otherUsers.map((user) => (
-          <DropdownMenuItem
-            key={user.id}
-            onClick={() => setLogin(user.id)}
-            className='flex items-center gap-2 cursor-pointer p-2 rounded-md'
-          >
-            <Avatar className='w-8 h-8'>
-              <AvatarImage src={getSafeProfileImage(user.metadata.picture)} alt={getDisplayName(user)} />
-              <AvatarFallback>{getDisplayName(user)?.charAt(0) || <UserIcon />}</AvatarFallback>
+    <div className='account-switcher w-full min-w-0 max-w-full space-y-3'>
+      {localNsecLogin ? <LocalNsecBanner nsec={localNsecLogin.data.nsec} /> : null}
+      <DropdownMenu modal={false}>
+        <DropdownMenuTrigger asChild>
+          <button className='flex w-full min-w-0 items-center gap-3 rounded-full p-3 text-foreground transition-all hover:bg-accent'>
+            <Avatar size="md">
+              <AvatarImage src={getSafeProfileImage(currentUser.metadata.picture)} alt={getDisplayName(currentUser)} />
+              <AvatarFallback>{getDisplayName(currentUser).charAt(0)}</AvatarFallback>
             </Avatar>
-            <div className='flex-1 truncate'>
-              <p className='text-sm font-medium'>{getDisplayName(user)}</p>
+            <div className='hidden min-w-0 flex-1 truncate text-left md:block'>
+              <p className='font-medium text-sm truncate'>{getDisplayName(currentUser)}</p>
             </div>
-            {user.id === currentUser.id && <div className='w-2 h-2 rounded-full bg-primary'></div>}
-          </DropdownMenuItem>
-        ))}
-        <DropdownMenuSeparator />
-        {/* Wallet Settings temporarily hidden */}
-        {/* <WalletModal>
+            <ChevronDown className='w-4 h-4 text-muted-foreground' />
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent className='w-56 p-2 animate-scale-in' onCloseAutoFocus={(e) => e.preventDefault()}>
           <DropdownMenuItem
+            onClick={handleMyProfileClick}
             className='flex items-center gap-2 cursor-pointer p-2 rounded-md'
-            onSelect={(e) => e.preventDefault()}
           >
-            <Wallet className='w-4 h-4' />
-            <span>Wallet Settings</span>
+            <User className='w-4 h-4' />
+            <span>{t('accountSwitcher.myProfile')}</span>
           </DropdownMenuItem>
-        </WalletModal> */}
-        <DropdownMenuItem
-          onClick={onAddAccountClick}
-          className='flex items-center gap-2 cursor-pointer p-2 rounded-md'
-        >
-          <UserPlus className='w-4 h-4' />
-          <span>Add another account</span>
-        </DropdownMenuItem>
-        <DropdownMenuItem
-          onClick={() => removeLogin(currentUser.id)}
-          className='flex items-center gap-2 cursor-pointer p-2 rounded-md text-red-500'
-        >
-          <LogOut className='w-4 h-4' />
-          <span>Log out</span>
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+          <DropdownMenuItem
+            onClick={() => navigate('/settings/moderation')}
+            className='flex items-center gap-2 cursor-pointer p-2 rounded-md'
+          >
+            <Settings className='w-4 h-4' />
+            <span>{t('accountSwitcher.settings')}</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={() => navigate('/settings/linked-accounts')}
+            className='flex items-center gap-2 cursor-pointer p-2 rounded-md'
+          >
+            <Link2 className='w-4 h-4' />
+            <span>{t('accountSwitcher.linkedAccounts')}</span>
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuLabel>{t('accountSwitcher.switchRelay')}</DropdownMenuLabel>
+          <DropdownMenuItem onSelect={(e) => e.preventDefault()} className='p-2'>
+            <RelaySelector className='w-full' contentClassName={OVERLAY_LAYERS.nestedOverlayFloating} />
+          </DropdownMenuItem>
+          {!isJwtCurrentUser ? (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel>{t('accountSwitcher.switchAccount')}</DropdownMenuLabel>
+              {otherUsers.map((user) => (
+                <DropdownMenuItem
+                  key={user.id}
+                  onClick={() => setLogin(user.id)}
+                  className='flex items-center gap-2 cursor-pointer p-2 rounded-md'
+                >
+                  <Avatar size="sm">
+                    <AvatarImage src={getSafeProfileImage(user.metadata.picture)} alt={getDisplayName(user)} />
+                    <AvatarFallback>{getDisplayName(user)?.charAt(0) || <UserIcon />}</AvatarFallback>
+                  </Avatar>
+                  <div className='flex-1 truncate'>
+                    <p className='text-sm font-medium'>{getDisplayName(user)}</p>
+                  </div>
+                  {user.id === currentUser.id && <div className='w-2 h-2 rounded-full bg-primary'></div>}
+                </DropdownMenuItem>
+              ))}
+              <DropdownMenuSeparator />
+            </>
+          ) : null}
+          {/* Wallet Settings temporarily hidden */}
+          {/* <WalletModal>
+            <DropdownMenuItem
+              className='flex items-center gap-2 cursor-pointer p-2 rounded-md'
+              onSelect={(e) => e.preventDefault()}
+            >
+              <Wallet className='w-4 h-4' />
+              <span>Wallet Settings</span>
+            </DropdownMenuItem>
+          </WalletModal> */}
+          {!isJwtCurrentUser ? (
+            <DropdownMenuItem
+              onClick={onAddAccountClick}
+              className='flex items-center gap-2 cursor-pointer p-2 rounded-md'
+            >
+              <UserPlus className='w-4 h-4' />
+              <span>{t('accountSwitcher.addAnotherAccount')}</span>
+            </DropdownMenuItem>
+          ) : null}
+          <DropdownMenuItem
+            onClick={handleLogout}
+            className='flex items-center gap-2 cursor-pointer p-2 rounded-md text-red-500'
+          >
+            <LogOut className='w-4 h-4' />
+            <span>{t('accountSwitcher.logOut')}</span>
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
   );
 }

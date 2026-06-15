@@ -1,5 +1,6 @@
 import { useState, forwardRef } from 'react';
-import { Wallet, Plus, Trash2, Zap, Globe, WalletMinimal, CheckCircle, X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { Wallet, Plus, Trash as Trash2, Lightning as Zap, Globe, Wallet as WalletMinimal, CheckCircle, X } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -41,19 +42,21 @@ const AddWalletContent = forwardRef<HTMLDivElement, {
   setAlias: (value: string) => void;
   connectionUri: string;
   setConnectionUri: (value: string) => void;
-}>(({ alias, setAlias, connectionUri, setConnectionUri }, ref) => (
+}>(({ alias, setAlias, connectionUri, setConnectionUri }, ref) => {
+  const { t } = useTranslation();
+  return (
   <div className="space-y-4 px-4" ref={ref}>
     <div>
-      <Label htmlFor="alias">Wallet Name (optional)</Label>
+      <Label htmlFor="alias">{t('walletModal.walletNameLabel')}</Label>
       <Input
         id="alias"
-        placeholder="My Lightning Wallet"
+        placeholder={t('walletModal.walletNamePlaceholder')}
         value={alias}
         onChange={(e) => setAlias(e.target.value)}
       />
     </div>
     <div>
-      <Label htmlFor="connection-uri">Connection URI</Label>
+      <Label htmlFor="connection-uri">{t('walletModal.connectionUriLabel')}</Label>
       <Textarea
         id="connection-uri"
         placeholder="nostr+walletconnect://..."
@@ -63,7 +66,8 @@ const AddWalletContent = forwardRef<HTMLDivElement, {
       />
     </div>
   </div>
-));
+  );
+});
 AddWalletContent.displayName = 'AddWalletContent';
 
 // Extracted WalletContent to prevent re-renders
@@ -87,25 +91,27 @@ const WalletContent = forwardRef<HTMLDivElement, {
   handleSetActive,
   handleRemoveConnection,
   setAddDialogOpen
-}, ref) => (
+}, ref) => {
+  const { t } = useTranslation();
+  return (
   <div className="space-y-6 px-4 pb-4" ref={ref}>
     {/* Current Status */}
     <div className="space-y-3">
-      <h3 className="font-medium">Current Status</h3>
+      <h3 className="font-medium">{t('walletModal.currentStatus')}</h3>
       <div className="grid gap-3">
         {/* WebLN */}
         <div className="flex items-center justify-between p-3 border rounded-lg">
           <div className="flex items-center gap-3">
             <Globe className="h-4 w-4 text-muted-foreground" />
             <div>
-              <p className="text-sm font-medium">WebLN</p>
-              <p className="text-xs text-muted-foreground">Browser extension</p>
+              <p className="text-sm font-medium">{t('walletModal.webln')}</p>
+              <p className="text-xs text-muted-foreground">{t('walletModal.browserExtension')}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
             {hasWebLN && <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />}
             <Badge variant={hasWebLN ? "default" : "secondary"} className="text-xs">
-              {isDetecting ? "..." : hasWebLN ? "Ready" : "Not Found"}
+              {isDetecting ? t('walletModal.detecting') : hasWebLN ? t('walletModal.ready') : t('walletModal.notFound')}
             </Badge>
           </div>
         </div>
@@ -114,11 +120,11 @@ const WalletContent = forwardRef<HTMLDivElement, {
           <div className="flex items-center gap-3">
             <WalletMinimal className="h-4 w-4 text-muted-foreground" />
             <div>
-              <p className="text-sm font-medium">Nostr Wallet Connect</p>
+              <p className="text-sm font-medium">{t('walletModal.nostrWalletConnect')}</p>
               <p className="text-xs text-muted-foreground">
                 {connections.length > 0
-                  ? `${connections.length} wallet${connections.length !== 1 ? 's' : ''} connected`
-                  : "Remote wallet connection"
+                  ? t('walletModal.walletsConnected', { count: connections.length })
+                  : t('walletModal.remoteWalletConnection')
                 }
               </p>
             </div>
@@ -126,7 +132,7 @@ const WalletContent = forwardRef<HTMLDivElement, {
           <div className="flex items-center gap-2">
             {hasNWC && <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />}
             <Badge variant={hasNWC ? "default" : "secondary"} className="text-xs">
-              {hasNWC ? "Ready" : "None"}
+              {hasNWC ? t('walletModal.ready') : t('walletModal.none')}
             </Badge>
           </div>
         </div>
@@ -136,16 +142,16 @@ const WalletContent = forwardRef<HTMLDivElement, {
     {/* NWC Management */}
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="font-medium">Nostr Wallet Connect</h3>
+        <h3 className="font-medium">{t('walletModal.nostrWalletConnect')}</h3>
         <Button size="sm" variant="outline" onClick={() => setAddDialogOpen(true)}>
           <Plus className="h-4 w-4 mr-1" />
-          Add
+          {t('walletModal.add')}
         </Button>
       </div>
       {/* Connected Wallets List */}
       {connections.length === 0 ? (
         <div className="text-center py-6 text-muted-foreground">
-          <p className="text-sm">No wallets connected</p>
+          <p className="text-sm">{t('walletModal.noWalletsYet')}</p>
         </div>
       ) : (
         <div className="space-y-2">
@@ -158,10 +164,10 @@ const WalletContent = forwardRef<HTMLDivElement, {
                   <WalletMinimal className="h-4 w-4 text-muted-foreground" />
                   <div>
                     <p className="text-sm font-medium">
-                      {connection.alias || info?.alias || 'Lightning Wallet'}
+                      {connection.alias || info?.alias || t('walletModal.lightningWallet')}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      NWC Connection
+                      {t('walletModal.nwcConnection')}
                     </p>
                   </div>
                 </div>
@@ -196,16 +202,18 @@ const WalletContent = forwardRef<HTMLDivElement, {
         <Separator />
         <div className="text-center py-4 space-y-2">
           <p className="text-sm text-muted-foreground">
-            Install a WebLN extension or connect a NWC wallet for zaps.
+            {t('walletModal.installHelp')}
           </p>
         </div>
       </>
     )}
   </div>
-));
+  );
+});
 WalletContent.displayName = 'WalletContent';
 
 export function WalletModal({ children, className }: WalletModalProps) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [connectionUri, setConnectionUri] = useState('');
@@ -230,8 +238,8 @@ export function WalletModal({ children, className }: WalletModalProps) {
   const handleAddConnection = async () => {
     if (!connectionUri.trim()) {
       toast({
-        title: 'Connection URI required',
-        description: 'Please enter a valid NWC connection URI.',
+        title: t('walletModal.connectionUriRequiredTitle'),
+        description: t('walletModal.connectionUriRequiredDescription'),
         variant: 'destructive',
       });
       return;
@@ -257,8 +265,8 @@ export function WalletModal({ children, className }: WalletModalProps) {
   const handleSetActive = (connectionString: string) => {
     setActiveConnection(connectionString);
     toast({
-      title: 'Active wallet changed',
-      description: 'The selected wallet is now active for zaps.',
+      title: t('walletModal.activeWalletChangedTitle'),
+      description: t('walletModal.activeWalletChangedDescription'),
     });
   };
 
@@ -278,9 +286,9 @@ export function WalletModal({ children, className }: WalletModalProps) {
     <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Connect NWC Wallet</DialogTitle>
+          <DialogTitle>{t('walletModal.connectNwcWalletTitle')}</DialogTitle>
           <DialogDescription>
-            Enter your connection string from a compatible wallet.
+            {t('walletModal.connectNwcWalletDescription')}
           </DialogDescription>
         </DialogHeader>
         <AddWalletContent
@@ -295,7 +303,7 @@ export function WalletModal({ children, className }: WalletModalProps) {
             disabled={isConnecting || !connectionUri.trim()}
             className="w-full"
           >
-            {isConnecting ? 'Connecting...' : 'Connect'}
+            {isConnecting ? t('walletModal.connecting') : t('walletModal.connect')}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -310,7 +318,7 @@ export function WalletModal({ children, className }: WalletModalProps) {
             {children || (
               <Button variant="outline" size="sm" className={className}>
                 <Wallet className="h-4 w-4 mr-2" />
-                Wallet Settings
+                {t('walletModal.walletSettings')}
               </Button>
             )}
           </DrawerTrigger>
@@ -319,15 +327,15 @@ export function WalletModal({ children, className }: WalletModalProps) {
               <DrawerClose asChild>
                 <Button variant="ghost" size="sm" className="absolute right-4 top-4">
                   <X className="h-4 w-4" />
-                  <span className="sr-only">Close</span>
+                  <span className="sr-only">{t('walletModal.close')}</span>
                 </Button>
               </DrawerClose>
               <DrawerTitle className="flex items-center justify-center gap-2 pt-2">
                 <Wallet className="h-5 w-5" />
-                Lightning Wallet
+                {t('walletModal.lightningWalletTitle')}
               </DrawerTitle>
               <DrawerDescription>
-                Connect your lightning wallet to send zaps instantly.
+                {t('walletModal.lightningWalletDescription')}
               </DrawerDescription>
             </DrawerHeader>
             <div className="overflow-y-auto">
@@ -339,9 +347,9 @@ export function WalletModal({ children, className }: WalletModalProps) {
         <Drawer open={addDialogOpen} onOpenChange={setAddDialogOpen}>
           <DrawerContent>
             <DrawerHeader>
-              <DrawerTitle>Connect NWC Wallet</DrawerTitle>
+              <DrawerTitle>{t('walletModal.connectNwcWalletTitle')}</DrawerTitle>
               <DrawerDescription>
-                Enter your connection string from a compatible wallet.
+                {t('walletModal.connectNwcWalletDescription')}
               </DrawerDescription>
             </DrawerHeader>
             <AddWalletContent
@@ -356,7 +364,7 @@ export function WalletModal({ children, className }: WalletModalProps) {
                 disabled={isConnecting || !connectionUri.trim()}
                 className="w-full"
               >
-                {isConnecting ? 'Connecting...' : 'Connect'}
+                {isConnecting ? t('walletModal.connecting') : t('walletModal.connect')}
               </Button>
             </div>
           </DrawerContent>
@@ -372,7 +380,7 @@ export function WalletModal({ children, className }: WalletModalProps) {
           {children || (
             <Button variant="outline" size="sm" className={className}>
               <Wallet className="h-4 w-4 mr-2" />
-              Wallet Settings
+              {t('walletModal.walletSettings')}
             </Button>
           )}
         </DialogTrigger>
@@ -380,10 +388,10 @@ export function WalletModal({ children, className }: WalletModalProps) {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Wallet className="h-5 w-5" />
-              Lightning Wallet
+              {t('walletModal.lightningWalletTitle')}
             </DialogTitle>
             <DialogDescription>
-              Connect your lightning wallet to send zaps instantly.
+              {t('walletModal.lightningWalletDescription')}
             </DialogDescription>
           </DialogHeader>
           <WalletContent {...walletContentProps} />

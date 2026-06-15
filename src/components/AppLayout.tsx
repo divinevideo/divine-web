@@ -1,34 +1,89 @@
-import { Outlet, useLocation } from 'react-router-dom';
+import { Outlet, useLocation, useSearchParams } from 'react-router-dom';
 import { AppHeader } from '@/components/AppHeader';
-import { AppFooter } from '@/components/AppFooter';
 import { BottomNav } from '@/components/BottomNav';
 import { PWAInstallPrompt } from '@/components/PWAInstallPrompt';
-import { useNostrLogin } from '@nostrify/react/login';
+import { FullscreenFeed } from '@/components/FullscreenFeed';
+import { AppSidebar } from '@/components/AppSidebar';
 import { useAppContext } from '@/hooks/useAppContext';
+import { useFullscreenFeed } from '@/contexts/FullscreenFeedContext';
+import { getSubdomainUser } from '@/hooks/useSubdomainUser';
+import { useCurrentUser } from '@/hooks/useCurrentUser';
+import {
+  clearCompilationPlaybackParams,
+  parseCompilationPlaybackParams,
+} from '@/lib/compilationPlayback';
 
 export function AppLayout() {
   const location = useLocation();
-  const { logins } = useNostrLogin();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { user } = useCurrentUser();
   const { isRecording } = useAppContext();
+  const { state: fullscreenState, exitFullscreen, onLoadMore, hasMore } = useFullscreenFeed();
+  const compilationRequest = parseCompilationPlaybackParams(searchParams);
 
-  // Only consider user logged in if they have active logins, not just a token
-  const isLoggedIn = logins.length > 0;
+  const isLoggedIn = Boolean(user);
 
-  // Hide header on landing page (when logged out on root path)
-  const isLandingPage = location.pathname === '/' && !isLoggedIn;
+  // Hide header/sidebar on landing page (when logged out on root path), but NOT on subdomain profiles
+  const isLandingPage = location.pathname === '/' && !isLoggedIn && !getSubdomainUser();
+
+  const handleCloseFullscreen = () => {
+    exitFullscreen();
+
+    if (!compilationRequest.play) {
+      return;
+    }
+
+    const nextParams = new URLSearchParams(searchParams);
+    clearCompilationPlaybackParams(nextParams);
+    setSearchParams(nextParams, { replace: true });
+  };
+
+  const handleCompilationVideoChange = (videoId: string) => {
+    if (!compilationRequest.play) {
+      return;
+    }
+
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.set('video', videoId);
+    nextParams.delete('start');
+    setSearchParams(nextParams, { replace: true });
+  };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      {!isLandingPage && <AppHeader />}
-      <div className="flex-1 pb-[calc(4rem+env(safe-area-inset-bottom))] md:pb-0">
-        <Outlet />
+    <>
+      {/* Sidebar - desktop only (fixed position), hidden on landing page */}
+      {!isLandingPage && <AppSidebar className="hidden md:flex" />}
+
+      {/* Main content area - offset by sidebar width on desktop */}
+      <div className={`flex min-h-screen flex-col bg-background ${!isLandingPage ? 'md:ml-[240px]' : ''}`}>
+        {/* Header - mobile only (sidebar replaces it on desktop), hidden on landing page */}
+        {!isLandingPage && <AppHeader className="md:hidden" />}
+
+        {/* Main content */}
+        <main className="flex-1 pb-[calc(4rem+env(safe-area-inset-bottom))] md:pb-0">
+          <Outlet />
+        </main>
+
+        {/* Bottom nav - mobile only */}
+        {!isLandingPage && !isRecording && <BottomNav />}
+
+        <PWAInstallPrompt />
       </div>
-      <AppFooter />
-      {!isLandingPage && !isRecording && <BottomNav />}
-      <PWAInstallPrompt />
-    </div>
+
+      {/* Fullscreen video feed overlay */}
+      {fullscreenState.isOpen && (
+        <FullscreenFeed
+          videos={fullscreenState.videos}
+          startIndex={fullscreenState.startIndex}
+          onClose={handleCloseFullscreen}
+          onLoadMore={onLoadMore}
+          hasMore={hasMore}
+          autoAdvance={compilationRequest.play}
+          onVideoChange={handleCompilationVideoChange}
+        />
+      )}
+    </>
   );
 }
 
 export default AppLayout;
-

@@ -1,0 +1,20 @@
+{
+  "title": "Padrões de segurança",
+  "updated": "Última atualização: 30 de março de 2026",
+  "sections": {
+    "overview": "1. Visão geral",
+    "definitions": "2. Definições",
+    "prohibited": "3. Conteúdo e Conduta Proibidos",
+    "childSafety": "4. Segurança infantil",
+    "matureContent": "5. Conteúdo adulto",
+    "integrity": "6. Integridade e abuso da plataforma",
+    "enforcement": "7. Aplicação",
+    "moderation": "8. Métodos de moderação",
+    "reporting": "9. Relatórios",
+    "userControls": "10. Controles do usuário",
+    "decentralization": "11. Limitação de descentralização",
+    "automated": "12. Tomada de decisão automatizada",
+    "appeals": "13. Recursos",
+    "updates": "14. Atualizações"
+  }
+}

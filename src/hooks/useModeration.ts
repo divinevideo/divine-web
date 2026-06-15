@@ -15,6 +15,10 @@ import {
   type ModerationResult,
   ContentSeverity
 } from '@/types/moderation';
+import { submitReportToZendesk, buildContentUrl } from '@/lib/reportApi';
+
+// Stable empty array to prevent infinite re-renders when user is not logged in
+const EMPTY_MUTE_LIST: MuteItem[] = [];
 
 /**
  * Parse a mute list event (kind 10001)
@@ -52,12 +56,7 @@ export function useMuteList(pubkey?: string) {
   return useQuery({
     queryKey: ['mute-list', targetPubkey],
     queryFn: async (context) => {
-      if (!targetPubkey) {
-        console.log('[useMuteList] No target pubkey, returning empty list');
-        return [];
-      }
-
-      console.log('[useMuteList] Fetching mute list for:', targetPubkey);
+      if (!targetPubkey) return [];
 
       const signal = AbortSignal.any([
         context.signal,
@@ -72,19 +71,12 @@ export function useMuteList(pubkey?: string) {
 
       const events = await nostr.query([filter], { signal });
 
-      console.log('[useMuteList] Found', events.length, 'mute list events');
-
       if (events.length === 0) return [];
 
       // Get the most recent mute list
       const latestEvent = events.sort((a, b) => b.created_at - a.created_at)[0];
 
-      console.log('[useMuteList] Latest mute list event:', latestEvent);
-
-      const items = parseMuteList(latestEvent);
-      console.log('[useMuteList] Parsed', items.length, 'mute items:', items);
-
-      return items;
+      return parseMuteList(latestEvent);
     },
     enabled: !!targetPubkey,
     staleTime: 60000, // 1 minute
@@ -221,10 +213,59 @@ export function useUnmuteItem() {
 }
 
 /**
+ * Map app-level ContentFilterReason to one of the NIP-56 standard report type
+ * strings: nudity, malware, profanity, illegal, spam, impersonation, other.
+ * Aligned with mobile's _toNip56ReportType in content_reporting_service.dart.
+ */
+export function toNip56ReportType(reason: ContentFilterReason): string {
+  switch (reason) {
+    case ContentFilterReason.SPAM: return 'spam';
+    // NIP-56 has no harassment category; profanity is the closest fit per mobile alignment
+    case ContentFilterReason.HARASSMENT: return 'profanity';
+    // Violence escalates to illegal per platform policy (aligned with mobile)
+    case ContentFilterReason.VIOLENCE: return 'illegal';
+    case ContentFilterReason.SEXUAL_CONTENT: return 'nudity';
+    case ContentFilterReason.COPYRIGHT: return 'illegal';
+    case ContentFilterReason.FALSE_INFO: return 'other';
+    case ContentFilterReason.CHILD_SAFETY: return 'other';
+    // CSAM is a subset of illegal content in NIP-56's taxonomy
+    case ContentFilterReason.CSAM: return 'illegal';
+    case ContentFilterReason.UNDERAGE_USER: return 'other';
+    case ContentFilterReason.AI_GENERATED: return 'other';
+    case ContentFilterReason.IMPERSONATION: return 'impersonation';
+    case ContentFilterReason.ILLEGAL: return 'illegal';
+    case ContentFilterReason.OTHER: return 'other';
+  }
+}
+
+/**
+ * Map app-level ContentFilterReason to the NIP-32 label value used by
+ * downstream moderation UIs (social.nos.ontology namespace).
+ * Aligned with mobile's _toNip32ReportLabel in content_reporting_service.dart.
+ */
+export function toNip32ReportLabel(reason: ContentFilterReason): string {
+  switch (reason) {
+    case ContentFilterReason.SPAM: return 'NS-spam';
+    case ContentFilterReason.HARASSMENT: return 'NS-harassment';
+    case ContentFilterReason.VIOLENCE: return 'NS-violence';
+    case ContentFilterReason.SEXUAL_CONTENT: return 'NS-sexualContent';
+    case ContentFilterReason.COPYRIGHT: return 'NS-copyright';
+    case ContentFilterReason.FALSE_INFO: return 'NS-falseInformation';
+    case ContentFilterReason.CHILD_SAFETY: return 'NS-childSafety';
+    case ContentFilterReason.CSAM: return 'NS-csam';
+    case ContentFilterReason.UNDERAGE_USER: return 'NS-underageUser';
+    case ContentFilterReason.AI_GENERATED: return 'NS-aiGenerated';
+    case ContentFilterReason.IMPERSONATION: return 'NS-impersonation';
+    case ContentFilterReason.ILLEGAL: return 'NS-illegal';
+    case ContentFilterReason.OTHER: return 'NS-other';
+  }
+}
+
+/**
  * Hook to report content (NIP-56)
  */
 export function useReportContent() {
-  const { mutate: publishEvent } = useNostrPublish();
+  const { mutateAsync: publishEvent } = useNostrPublish();
   const queryClient = useQueryClient();
   const { user } = useCurrentUser();
 
@@ -233,33 +274,59 @@ export function useReportContent() {
       eventId,
       pubkey,
       reason,
-      details
+      details,
+      contentType = 'video',
+      reporterName,
     }: {
       eventId?: string;
-      pubkey?: string;
+      pubkey: string;
       reason: ContentFilterReason;
       details?: string;
+      contentType?: 'video' | 'user' | 'comment';
+      reporterName?: string;
     }) => {
       if (!user) throw new Error('Must be logged in to report content');
 
+      // NIP-56: p tag is required for all kind:1984 reports
       const tags: string[][] = [];
 
-      // Add reported event or pubkey
+      const nip56Type = toNip56ReportType(reason);
+      const nip32Label = toNip32ReportLabel(reason);
+
+      // NIP-56: always include p for the reported user
+      tags.push(['p', pubkey, nip56Type]);
+
+      // Include e when reporting a specific note or comment
       if (eventId) {
-        tags.push(['e', eventId, reason]);
-      }
-      if (pubkey) {
-        tags.push(['p', pubkey, reason]);
+        tags.push(['e', eventId, nip56Type]);
       }
 
       // Add label namespace (NIP-32)
       tags.push(['L', 'social.nos.ontology']);
-      tags.push(['l', `NS-${reason}`, 'social.nos.ontology']);
+      tags.push(['l', nip32Label, 'social.nos.ontology']);
+
+      // Identify report source for trusted reporter gating
+      tags.push(['client', 'divine-web']);
 
       await publishEvent({
         kind: 1984, // Reporting event
         content: details || `Reporting ${reason}`,
         tags
+      });
+
+      // Fire-and-forget Zendesk ticket creation
+      submitReportToZendesk({
+        reporterPubkey: user.pubkey,
+        reporterName,
+        eventId,
+        pubkey,
+        contentType,
+        reason,
+        details,
+        contentUrl: buildContentUrl(eventId, pubkey),
+        timestamp: Date.now(),
+      }).catch((err) => {
+        console.warn('[useReportContent] Zendesk ticket creation failed:', err);
       });
 
       // Store report locally for user history
@@ -305,10 +372,7 @@ export function useReportHistory() {
  * Hook to check if content should be filtered
  */
 export function useContentModeration() {
-  const { data: muteList = [] } = useMuteList();
-
-  // Debug: Log mute list when it changes
-  console.log('[useContentModeration] Mute list loaded:', muteList.length, 'items', muteList);
+  const { data: muteList = EMPTY_MUTE_LIST } = useMuteList();
 
   const checkContent = useCallback((content: {
     pubkey?: string;
@@ -325,7 +389,6 @@ export function useContentModeration() {
         item => item.type === MuteType.USER && item.value === content.pubkey
       );
       if (mutedUser) {
-        console.log('[useContentModeration] MATCHED muted user:', content.pubkey, mutedUser);
         matchingItems.push(mutedUser);
         reasons.push(ContentFilterReason.OTHER);
       }
@@ -337,7 +400,6 @@ export function useContentModeration() {
         item => item.type === MuteType.EVENT && item.value === content.eventId
       );
       if (mutedEvent) {
-        console.log('[useContentModeration] MATCHED muted event:', content.eventId);
         matchingItems.push(mutedEvent);
         reasons.push(ContentFilterReason.OTHER);
       }
@@ -351,7 +413,6 @@ export function useContentModeration() {
                   item.value.toLowerCase() === hashtag.toLowerCase()
         );
         if (mutedHashtag) {
-          console.log('[useContentModeration] MATCHED muted hashtag:', hashtag);
           matchingItems.push(mutedHashtag);
           reasons.push(ContentFilterReason.OTHER);
         }
@@ -365,7 +426,6 @@ export function useContentModeration() {
 
       for (const keyword of keywords) {
         if (lowerText.includes(keyword.value.toLowerCase())) {
-          console.log('[useContentModeration] MATCHED muted keyword:', keyword.value);
           matchingItems.push(keyword);
           reasons.push(ContentFilterReason.OTHER);
         }

@@ -43,8 +43,8 @@ export function useNWCInternal() {
     const parsed = parseNWCUri(uri);
     if (!parsed) {
       toast({
-        title: 'Invalid NWC URI',
-        description: 'Please check the connection string and try again.',
+        title: 'That URI isn\'t right.',
+        description: 'Double-check the connection string and try again.',
         variant: 'destructive',
       });
       return false;
@@ -53,7 +53,7 @@ export function useNWCInternal() {
     const existingConnection = connections.find(c => c.connectionString === parsed.connectionString);
     if (existingConnection) {
       toast({
-        title: 'Connection already exists',
+        title: 'Already plugged in.',
         description: 'This wallet is already connected.',
         variant: 'destructive',
       });
@@ -103,8 +103,8 @@ export function useNWCInternal() {
         setActiveConnection(parsed.connectionString);
 
       toast({
-        title: 'Wallet connected',
-        description: `Successfully connected to ${connection.alias}.`,
+        title: 'Wallet connected.',
+        description: `${connection.alias} is ready to zap.`,
       });
 
       return true;
@@ -113,8 +113,8 @@ export function useNWCInternal() {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
 
       toast({
-        title: 'Connection failed',
-        description: `Could not connect to the wallet: ${errorMessage}`,
+        title: 'Connection didn\'t take.',
+        description: `Couldn't reach the wallet: ${errorMessage}`,
         variant: 'destructive',
       });
       return false;
@@ -138,8 +138,8 @@ export function useNWCInternal() {
     });
 
     toast({
-      title: 'Wallet disconnected',
-      description: 'The wallet connection has been removed.',
+      title: 'Wallet unplugged.',
+      description: 'Connection removed.',
     });
   };
 

@@ -1,0 +1,629 @@
+// ABOUTME: Individual fullscreen video component for TikTok-style vertical swipe feed
+// ABOUTME: Displays video with overlay UI including back button, author info, and action buttons
+
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
+import { ArrowLeft, Heart, ChatCircle as MessageCircle, Repeat as Repeat2, Share, SpeakerHigh as Volume2, SpeakerX as VolumeX, DownloadSimple as Download, ListPlus, Users, DotsThreeVertical as MoreVertical, Flag, UserMinus as UserX, Code, Trash as Trash2, Eye, ClosedCaptioning as Captions } from '@phosphor-icons/react';
+import { Button } from '@/components/ui/button';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { VideoPlayer } from '@/components/VideoPlayer';
+import { VideoCommentsModal } from '@/components/VideoCommentsModal';
+import { VideoReactionsModal } from '@/components/VideoReactionsModal';
+import { NoteContent } from '@/components/NoteContent';
+import { AddToListDialog } from '@/components/AddToListDialog';
+import { ReportContentDialog } from '@/components/ReportContentDialog';
+import { DeleteVideoDialog } from '@/components/DeleteVideoDialog';
+import { ViewSourceDialog } from '@/components/ViewSourceDialog';
+import { useAuthor } from '@/hooks/useAuthor';
+import { useVideoPlayback } from '@/hooks/useVideoPlayback';
+import { useVideoReactions } from '@/hooks/useVideoReactions';
+import { useVideosInLists } from '@/hooks/useVideoLists';
+import { useMuteItem } from '@/hooks/useModeration';
+import { useDeleteVideo, useCanDeleteVideo } from '@/hooks/useDeleteVideo';
+import { useDmCapability } from '@/hooks/useDirectMessages';
+import { useToast } from '@/hooks/useToast';
+import { useSubdomainNavigate } from '@/hooks/useSubdomainNavigate';
+import { enhanceAuthorData } from '@/lib/generateProfile';
+import { genUserName } from '@/lib/genUserName';
+import { formatDistanceToNow } from 'date-fns';
+import { formatClassicVineViewBreakdown, formatCount, formatViewCount } from '@/lib/formatUtils';
+import { getSafeProfileImage } from '@/lib/imageUtils';
+import { useBadges } from '@/hooks/useBadges';
+import { InlineBadges } from '@/components/InlineBadges';
+import { cn } from '@/lib/utils';
+import { MuteType } from '@/types/moderation';
+import { getOptimalVideoUrl } from '@/lib/bandwidthTracker';
+import { useBandwidthTier } from '@/hooks/useBandwidthTier';
+import { SmartLink } from '@/components/SmartLink';
+import type { ViewTrafficSource } from '@/hooks/useViewEventPublisher';
+import { useSubtitles } from '@/hooks/useSubtitles';
+import { VideoVerificationBadgeRow } from '@/components/VideoVerificationBadgeRow';
+import type { ParsedVideoData } from '@/types/video';
+import { buildDmSharePayloadFromVideo, buildDmShareQueryString } from '@/lib/dm';
+import { buildProfileLinkPath } from '@/lib/profileLinks';
+
+interface FullscreenVideoItemProps {
+  video: ParsedVideoData;
+  isActive: boolean;
+  playbackId?: string;
+  trafficSource?: ViewTrafficSource;
+  onBack: () => void;
+  onEnded?: () => void;
+  loopPlayback?: boolean;
+  onLike: () => void;
+  onRepost: () => void;
+  onShare: () => void;
+  onDownload: () => void;
+  isLiked: boolean;
+  isReposted: boolean;
+  likeCount: number;
+  repostCount: number;
+  commentCount: number;
+  viewCount?: number;
+}
+
+export function FullscreenVideoItem({
+  video,
+  isActive,
+  playbackId,
+  onBack,
+  onEnded,
+  loopPlayback = true,
+  onLike,
+  onRepost,
+  onShare,
+  onDownload,
+  isLiked,
+  isReposted,
+  likeCount,
+  repostCount,
+  commentCount,
+  viewCount = 0,
+  trafficSource,
+}: FullscreenVideoItemProps) {
+  const { t } = useTranslation();
+  // Subscribe to bandwidth tier changes for adaptive HLS quality
+  const _bandwidthTier = useBandwidthTier();
+
+  // Compute optimal HLS URL based on current bandwidth tier
+  const optimalHlsUrl = getOptimalVideoUrl(video.videoUrl);
+  // Classic Vine detection — used for HLS skip and forced square aspect ratio
+  // Vine shut down Jan 17, 2017 (unix 1484611200) — videos with originalVineTimestamp
+  // before that date are almost certainly classic Vines even without origin/platform tags
+  const isClassicVine = video.isVineMigrated ||
+    (video.originalVineTimestamp !== undefined && video.originalVineTimestamp < 1484611200);
+  // SKIP HLS for short-form videos — HLS adds 2 extra round-trips (manifest + segment)
+  // that are unnecessary for small ~6-second videos (~2-4MB). Direct MP4 loads in a single request.
+  // Classic Vines also skip HLS because the transcoder distorts square 480x480 aspect ratio.
+  const isShortForm = !video.duration || video.duration <= 60;
+  const effectiveHlsUrl = (isClassicVine || isShortForm) ? undefined : (video.hlsUrl || (optimalHlsUrl !== video.videoUrl ? optimalHlsUrl : undefined));
+
+  const [showComments, setShowComments] = useState(false);
+  const [videoError, setVideoError] = useState(false);
+  const [showHeartAnimation, setShowHeartAnimation] = useState(false);
+  const [showReactionsModal, setShowReactionsModal] = useState<'likes' | 'reposts' | null>(null);
+  const [showAddToListDialog, setShowAddToListDialog] = useState(false);
+  const [showReportDialog, setShowReportDialog] = useState(false);
+  const [showReportUserDialog, setShowReportUserDialog] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showViewSourceDialog, setShowViewSourceDialog] = useState(false);
+  const videoContainerRef = useRef<HTMLDivElement>(null);
+  const { globalMuted, setGlobalMuted, setActiveVideo } = useVideoPlayback();
+  const { cues: subtitleCues, hasSubtitles } = useSubtitles(video);
+  // Subtitles default to ON when available, independent of mute state
+  const [subtitlesVisible, setSubtitlesVisible] = useState(true);
+  const showSubtitles = subtitlesVisible && hasSubtitles;
+
+  const { toast } = useToast();
+  const navigate = useSubdomainNavigate();
+  const { canUseDirectMessages } = useDmCapability();
+  const muteUser = useMuteItem();
+  const { mutate: deleteVideo, isPending: isDeleting } = useDeleteVideo();
+  const canDelete = useCanDeleteVideo(video);
+  const { data: reactions } = useVideoReactions(video.id, video.pubkey, video.vineId);
+  const { data: lists } = useVideosInLists(video.vineId ?? undefined);
+  const classicViewBreakdown = formatClassicVineViewBreakdown(viewCount, video.loopCount ?? 0);
+
+  // Get author data
+  const authorData = useAuthor(video.pubkey, {
+    initialName: video.authorName,
+    initialAvatar: video.authorAvatar,
+  });
+  const author = enhanceAuthorData(authorData.data, video.pubkey);
+  const badgesQuery = useBadges(video.pubkey);
+  const metadata = author.metadata;
+
+  // Use raw author data to detect real vs generated names
+  const rawMetadata = authorData.data?.metadata;
+  const hasRealName = rawMetadata?.display_name || rawMetadata?.name;
+  const displayName = hasRealName
+    ? (rawMetadata.display_name || rawMetadata.name!)
+    : (video.authorName || genUserName(video.pubkey));
+  const profileImage = getSafeProfileImage(
+    rawMetadata?.picture || video.authorAvatar || metadata.picture
+  );
+  const profileUrl = buildProfileLinkPath({
+    pubkey: video.pubkey,
+    nip05: rawMetadata?.nip05,
+  });
+
+  // Format timestamp
+  const timestamp = video.originalVineTimestamp || video.createdAt;
+  const date = new Date(timestamp * 1000);
+  const isFrom2025 = date.getFullYear() >= 2025;
+  let timeAgo: string | null = null;
+  if (!isFrom2025) {
+    const now = new Date();
+    const yearsDiff = now.getFullYear() - date.getFullYear();
+    if (yearsDiff > 1 || (yearsDiff === 1 && now.getTime() < new Date(date).setFullYear(date.getFullYear() + 1))) {
+      timeAgo = date.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric'
+      });
+    } else {
+      timeAgo = formatDistanceToNow(date, { addSuffix: true });
+    }
+  }
+
+  // Set this video as active when it becomes visible
+  useEffect(() => {
+    if (isActive) {
+      setActiveVideo(playbackId ?? video.id);
+    }
+  }, [isActive, playbackId, video.id, setActiveVideo]);
+
+  // Handle tap on video area to toggle play/pause
+  const handleOverlayClick = useCallback(() => {
+    // Find the video element and toggle play
+    const videoEl = document.querySelector(`video`) as HTMLVideoElement;
+    if (videoEl) {
+      if (videoEl.paused) {
+        videoEl.play().catch(() => { /* handled by VideoPlayer */ });
+      } else {
+        videoEl.pause();
+      }
+    }
+  }, []);
+
+  // Handle double-tap to like
+  const handleDoubleTap = useCallback(() => {
+    onLike();
+    // Show heart animation
+    setShowHeartAnimation(true);
+    setTimeout(() => setShowHeartAnimation(false), 800);
+  }, [onLike]);
+
+  // Handle swipe right to exit
+  const handleSwipeRight = useCallback(() => {
+    onBack();
+  }, [onBack]);
+
+  // Handle mute user
+  const handleMuteUser = async () => {
+    try {
+      await muteUser.mutateAsync({
+        type: MuteType.USER,
+        value: video.pubkey,
+        reason: 'Muted from fullscreen video'
+      });
+      toast({
+        title: t('fullscreenVideoItem.muteSuccessTitle'),
+        description: t('fullscreenVideoItem.muteSuccessDescription', { name: displayName }),
+      });
+    } catch {
+      toast({
+        title: t('fullscreenVideoItem.muteErrorTitle'),
+        description: t('fullscreenVideoItem.muteErrorDescription'),
+        variant: 'destructive',
+      });
+    }
+  };
+
+  // Handle delete video
+  const handleDeleteVideo = (reason?: string) => {
+    deleteVideo(
+      { video, reason },
+      {
+        onSuccess: () => {
+          setShowDeleteDialog(false);
+          onBack();
+        },
+      }
+    );
+  };
+
+  // Check if this is a migrated Vine
+  return (
+    <div
+      ref={videoContainerRef}
+      className="h-screen w-full snap-start snap-always relative bg-black flex items-center justify-center"
+    >
+      {/* Video player - full screen, behind overlay */}
+      <div className="absolute inset-0 z-0 flex items-center justify-center">
+        {!videoError ? (
+          <VideoPlayer
+            videoId={video.id}
+            playbackId={playbackId}
+            src={video.videoUrl}
+            hlsUrl={effectiveHlsUrl}
+            fallbackUrls={video.fallbackVideoUrls}
+            poster={video.thumbnailUrl}
+            blurhash={video.blurhash}
+            className="w-full h-full object-contain"
+            onError={() => setVideoError(true)}
+            onEnded={onEnded}
+            loopPlayback={loopPlayback}
+            onSwipeRight={handleSwipeRight}
+            onDoubleTap={handleDoubleTap}
+            subtitleCues={subtitleCues}
+            subtitlesVisible={showSubtitles}
+            videoData={video}
+            trafficSource={trafficSource}
+          />
+        ) : (
+          <div className="flex items-center justify-center h-full text-white">
+            <p>{t('fullscreenVideoItem.loadError')}</p>
+          </div>
+        )}
+      </div>
+
+      {/* Heart animation on double-tap */}
+      {showHeartAnimation && (
+        <div className="absolute inset-0 z-40 flex items-center justify-center pointer-events-none">
+          <Heart
+            className="h-24 w-24 text-red-500 animate-ping"
+            weight="fill"
+            style={{ animationDuration: '0.6s' }}
+          />
+        </div>
+      )}
+
+      {/* Overlay UI - z-50 */}
+      <div className="absolute inset-0 z-50 pointer-events-none">
+        {/* Tap area for play/pause - covers the center, behind buttons */}
+        <div
+          className="absolute inset-0 pointer-events-auto"
+          onClick={handleOverlayClick}
+        />
+
+        {/* Back button - top left */}
+        <Button
+          variant="ghost"
+          size="icon"
+          className="absolute top-4 left-4 bg-black/50 hover:bg-black/70 text-white backdrop-blur-sm rounded-full w-10 h-10 pointer-events-auto"
+          onClick={(e) => { e.stopPropagation(); onBack(); }}
+        >
+          <ArrowLeft className="h-5 w-5" />
+        </Button>
+
+        {/* CC button - top right, next to mute */}
+        {hasSubtitles && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className={cn(
+              "absolute top-4 right-16 backdrop-blur-sm rounded-full w-10 h-10 pointer-events-auto",
+              "bg-black/50 hover:bg-black/70",
+              showSubtitles ? "text-white" : "text-white/50"
+            )}
+            onClick={(e) => {
+              e.stopPropagation();
+              setSubtitlesVisible(prev => !prev);
+            }}
+          >
+            <Captions className="h-5 w-5" />
+          </Button>
+        )}
+
+        {/* Mute/Unmute button - top right */}
+        <Button
+          variant="ghost"
+          size="icon"
+          className="absolute top-4 right-4 bg-black/50 hover:bg-black/70 text-white backdrop-blur-sm rounded-full w-10 h-10 pointer-events-auto"
+          onClick={(e) => { e.stopPropagation(); setGlobalMuted(!globalMuted); }}
+        >
+          {globalMuted ? (
+            <VolumeX className="h-5 w-5" />
+          ) : (
+            <Volume2 className="h-5 w-5" />
+          )}
+        </Button>
+
+        {/* Bottom overlay - author info and actions */}
+        <div className="absolute bottom-0 left-0 right-0 pb-8" onClick={(e) => e.stopPropagation()}>
+          <div className="flex items-end justify-between px-4">
+            {/* Left side - Author info */}
+            <div className="flex-1 max-w-[70%]">
+              <SmartLink to={profileUrl} ownerPubkey={video.pubkey} className="flex items-center gap-3 mb-2 pointer-events-auto" onClick={(e) => e.stopPropagation()}>
+                <Avatar size="md" className="border-2 border-white">
+                  <AvatarImage src={profileImage} alt={displayName} />
+                  <AvatarFallback className="bg-gray-800 text-white">
+                    {displayName[0]?.toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <p className="font-semibold text-white drop-shadow-lg">{displayName}</p>
+                    {badgesQuery.data && badgesQuery.data.length > 0 && (
+                      <InlineBadges badges={badgesQuery.data} />
+                    )}
+                    <VideoVerificationBadgeRow video={video} />
+                  </div>
+                  {timeAgo && (
+                    <p className="text-sm text-white/80 drop-shadow-lg">{timeAgo}</p>
+                  )}
+                </div>
+              </SmartLink>
+
+              {/* Title/Description with NoteContent parsing */}
+              {(video.title || video.content) && (
+                <div className="text-white text-sm drop-shadow-lg line-clamp-2 mb-2 pointer-events-auto">
+                  <NoteContent
+                    event={{
+                      id: video.id,
+                      pubkey: video.pubkey,
+                      created_at: video.createdAt,
+                      kind: 1,
+                      content: video.title || video.content || '',
+                      tags: [],
+                      sig: ''
+                    }}
+                    className="text-sm text-white"
+                  />
+                </div>
+              )}
+
+              {/* Hashtags */}
+              {video.hashtags.length > 0 && (
+                <div className="flex flex-wrap gap-1 pointer-events-auto">
+                  {video.hashtags.slice(0, 3).map((tag) => (
+                    <SmartLink
+                      key={tag}
+                      to={`/hashtag/${tag}`}
+                      className="text-sm text-[#00bf8f] drop-shadow-lg"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      #{tag}
+                    </SmartLink>
+                  ))}
+                  {video.hashtags.length > 3 && (
+                    <span className="text-sm text-white/60">+{video.hashtags.length - 3}</span>
+                  )}
+                </div>
+              )}
+
+              {/* View count */}
+              {viewCount > 0 && (
+                <div className="flex items-center gap-1 text-sm text-white/80 drop-shadow-lg mt-1">
+                  <Eye className="h-3 w-3" />
+                  <span>{classicViewBreakdown || formatViewCount(viewCount)}</span>
+                </div>
+              )}
+            </div>
+
+            {/* Right side - Action buttons */}
+            <div className="flex flex-col items-center gap-4 pointer-events-auto">
+              {/* Like button with clickable count */}
+              <div className="flex flex-col items-center">
+                <button
+                  onClick={(e) => { e.stopPropagation(); onLike(); }}
+                  className="flex flex-col items-center"
+                >
+                  <div className={cn(
+                    "w-12 h-12 rounded-full flex items-center justify-center bg-black/50 backdrop-blur-sm",
+                    isLiked && "bg-red-500/80"
+                  )}>
+                    <Heart className="h-6 w-6 text-white" weight={isLiked ? 'fill' : 'bold'} />
+                  </div>
+                </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); setShowReactionsModal('likes'); }}
+                  className="text-white text-xs mt-1 drop-shadow-lg hover:underline"
+                >
+                  {formatCount(likeCount)}
+                </button>
+              </div>
+
+              {/* Comment button */}
+              <button
+                onClick={(e) => { e.stopPropagation(); setShowComments(true); }}
+                className="flex flex-col items-center"
+              >
+                <div className="w-12 h-12 rounded-full flex items-center justify-center bg-black/50 backdrop-blur-sm">
+                  <MessageCircle className="h-6 w-6 text-white" />
+                </div>
+                <span className="text-white text-xs mt-1 drop-shadow-lg">{formatCount(commentCount)}</span>
+              </button>
+
+              {/* Repost button with clickable count */}
+              <div className="flex flex-col items-center">
+                <button
+                  onClick={(e) => { e.stopPropagation(); onRepost(); }}
+                  className="flex flex-col items-center"
+                >
+                  <div className={cn(
+                    "w-12 h-12 rounded-full flex items-center justify-center bg-black/50 backdrop-blur-sm",
+                    isReposted && "bg-green-500/80"
+                  )}>
+                    <Repeat2 className="h-6 w-6 text-white" weight={isReposted ? 'fill' : 'bold'} />
+                  </div>
+                </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); setShowReactionsModal('reposts'); }}
+                  className="text-white text-xs mt-1 drop-shadow-lg hover:underline"
+                >
+                  {formatCount(repostCount)}
+                </button>
+              </div>
+
+              {/* Share button */}
+              <button
+                onClick={(e) => { e.stopPropagation(); onShare(); }}
+                className="flex flex-col items-center"
+              >
+                <div className="w-12 h-12 rounded-full flex items-center justify-center bg-black/50 backdrop-blur-sm">
+                  <Share className="h-6 w-6 text-white" />
+                </div>
+              </button>
+
+              {/* Download button */}
+              <button
+                onClick={(e) => { e.stopPropagation(); onDownload(); }}
+                className="flex flex-col items-center"
+              >
+                <div className="w-12 h-12 rounded-full flex items-center justify-center bg-black/50 backdrop-blur-sm">
+                  <Download className="h-6 w-6 text-white" />
+                </div>
+              </button>
+
+              {/* Lists button */}
+              {video.vineId && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); setShowAddToListDialog(true); }}
+                  className="flex flex-col items-center"
+                >
+                  <div className="w-12 h-12 rounded-full flex items-center justify-center bg-black/50 backdrop-blur-sm">
+                    {(lists?.length ?? 0) > 0 ? <Users className="h-6 w-6 text-white" /> : <ListPlus className="h-6 w-6 text-white" />}
+                  </div>
+                </button>
+              )}
+
+              {/* More menu */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="flex flex-col items-center">
+                    <div className="w-12 h-12 rounded-full flex items-center justify-center bg-black/50 backdrop-blur-sm">
+                      <MoreVertical className="h-6 w-6 text-white" />
+                    </div>
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="bg-black/90 border-white/20 text-white">
+                  {canDelete && (
+                    <>
+                      <DropdownMenuItem
+                        onClick={() => setShowDeleteDialog(true)}
+                        className="text-red-400 focus:text-red-400 focus:bg-red-500/20"
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        {t('fullscreenVideoItem.deleteVideo')}
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator className="bg-white/20" />
+                    </>
+                  )}
+                  <DropdownMenuItem
+                    onClick={() => setShowReportDialog(true)}
+                    className="focus:bg-white/10"
+                  >
+                    <Flag className="h-4 w-4 mr-2" />
+                    {t('fullscreenVideoItem.reportVideo')}
+                  </DropdownMenuItem>
+                  {canUseDirectMessages && (
+                    <DropdownMenuItem
+                      onClick={() => navigate(`/messages?${buildDmShareQueryString(buildDmSharePayloadFromVideo(video))}`)}
+                      className="focus:bg-white/10"
+                    >
+                      <MessageCircle className="h-4 w-4 mr-2" />
+                      {t('fullscreenVideoItem.sendViaMessage')}
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuItem
+                    onClick={() => setShowReportUserDialog(true)}
+                    className="focus:bg-white/10"
+                  >
+                    <Flag className="h-4 w-4 mr-2" />
+                    {t('fullscreenVideoItem.reportUser')}
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator className="bg-white/20" />
+                  <DropdownMenuItem
+                    onClick={handleMuteUser}
+                    className="text-red-400 focus:text-red-400 focus:bg-red-500/20"
+                  >
+                    <UserX className="h-4 w-4 mr-2" />
+                    {t('fullscreenVideoItem.muteUser', { name: displayName })}
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator className="bg-white/20" />
+                  <DropdownMenuItem
+                    onClick={() => setShowViewSourceDialog(true)}
+                    className="focus:bg-white/10"
+                  >
+                    <Code className="h-4 w-4 mr-2" />
+                    {t('fullscreenVideoItem.viewSource')}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Comments modal */}
+      <VideoCommentsModal
+        video={video}
+        open={showComments}
+        onOpenChange={setShowComments}
+      />
+
+      {/* Reactions modal - shows who liked/reposted */}
+      <VideoReactionsModal
+        open={showReactionsModal !== null}
+        onOpenChange={(open) => !open && setShowReactionsModal(null)}
+        reactions={reactions}
+        type={showReactionsModal || 'likes'}
+      />
+
+      {/* Add to List Dialog */}
+      {video.vineId && showAddToListDialog && (
+        <AddToListDialog
+          videoId={video.vineId}
+          videoPubkey={video.pubkey}
+          open={showAddToListDialog}
+          onClose={() => setShowAddToListDialog(false)}
+        />
+      )}
+
+      {/* Report video dialog */}
+      {showReportDialog && (
+        <ReportContentDialog
+          open={showReportDialog}
+          onClose={() => setShowReportDialog(false)}
+          eventId={video.id}
+          pubkey={video.pubkey}
+          contentType="video"
+        />
+      )}
+
+      {/* Report user dialog */}
+      {showReportUserDialog && (
+        <ReportContentDialog
+          open={showReportUserDialog}
+          onClose={() => setShowReportUserDialog(false)}
+          pubkey={video.pubkey}
+          contentType="user"
+        />
+      )}
+
+      {/* Delete video dialog */}
+      {showDeleteDialog && (
+        <DeleteVideoDialog
+          open={showDeleteDialog}
+          onClose={() => setShowDeleteDialog(false)}
+          onConfirm={handleDeleteVideo}
+          video={video}
+          isDeleting={isDeleting}
+        />
+      )}
+
+      {/* View source dialog */}
+      {showViewSourceDialog && (
+        <ViewSourceDialog
+          open={showViewSourceDialog}
+          onClose={() => setShowViewSourceDialog(false)}
+          video={video}
+          title={t('fullscreenVideoItem.videoEventSource')}
+        />
+      )}
+    </div>
+  );
+}

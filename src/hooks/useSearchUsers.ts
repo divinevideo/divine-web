@@ -1,186 +1,202 @@
-// ABOUTME: Hook for searching Kind 0 user metadata events by name, display_name, nip05, and about
-// ABOUTME: Supports debounced queries, case-insensitive search, and deduplication by pubkey
+// ABOUTME: Hook for searching user profiles via Funnelcake REST API
+// ABOUTME: Fast, ranked results with follower/video counts and NIP-05 info
 
-import { useNostr } from '@nostrify/react';
 import { useQuery } from '@tanstack/react-query';
-import { useMemo } from 'react';
-import type { NostrEvent, NostrMetadata } from '@nostrify/nostrify';
-// Search will prefer the app's primary relay. If it doesn't support NIP-50,
-// we fall back to fetching recent metadata and client-side filtering.
+import { useNostr } from '@nostrify/react';
+import { useState, useEffect } from 'react';
+import { searchProfiles, type FunnelcakeProfileResult } from '@/lib/funnelcakeClient';
+import { API_CONFIG } from '@/config/api';
+import { debugLog } from '@/lib/debug';
+import { reportFunnelcakeFallback } from '@/lib/funnelcakeFallbackReporting';
+import { isFunnelcakeAvailable } from '@/lib/funnelcakeHealth';
+import { isUrlLikeQuery } from '@/lib/searchUtils';
+import type { NostrMetadata, NostrEvent } from '@nostrify/nostrify';
 
 interface UseSearchUsersOptions {
   query: string;
   limit?: number;
 }
 
-interface SearchUserResult {
+export interface SearchUserResult {
   pubkey: string;
   metadata?: NostrMetadata;
 }
 
+const FUNNELCAKE_PROFILE_SEARCH_TIMEOUT_MS = 5000;
+
 /**
- * Parse and validate user metadata
+ * Convert Funnelcake profile result to SearchUserResult for compatibility
  */
-function parseUserMetadata(event: NostrEvent): SearchUserResult | null {
+function toSearchUserResult(profile: FunnelcakeProfileResult): SearchUserResult {
+  return {
+    pubkey: profile.pubkey,
+    metadata: {
+      name: profile.name,
+      display_name: profile.display_name,
+      nip05: profile.nip05 || undefined,
+      about: profile.about || undefined,
+      picture: profile.picture || undefined,
+      banner: profile.banner || undefined,
+    },
+  };
+}
+
+/**
+ * Parse kind:0 event into SearchUserResult
+ */
+function parseUserEvent(event: NostrEvent): SearchUserResult | null {
   try {
     const metadata = JSON.parse(event.content) as NostrMetadata;
-    return {
-      pubkey: event.pubkey,
-      metadata,
-    };
+    return { pubkey: event.pubkey, metadata };
   } catch {
     return null;
   }
 }
 
 /**
- * Deduplicate users by pubkey, keeping the most recent metadata
+ * Proper debounce hook that returns a stable debounced value
  */
-function deduplicateUsers(users: SearchUserResult[], events: NostrEvent[]): SearchUserResult[] {
-  const userMap = new Map<string, { user: SearchUserResult; timestamp: number }>();
+function useDebouncedValue(value: string, delay: number): string {
+  const [debounced, setDebounced] = useState(value);
 
-  users.forEach((user, index) => {
-    const event = events[index];
-    const existing = userMap.get(user.pubkey);
-
-    if (!existing || event.created_at > existing.timestamp) {
-      userMap.set(user.pubkey, {
-        user,
-        timestamp: event.created_at,
-      });
+  useEffect(() => {
+    if (delay <= 0) {
+      setDebounced(value);
+      return;
     }
-  });
+    const timer = setTimeout(() => setDebounced(value), delay);
+    return () => clearTimeout(timer);
+  }, [value, delay]);
 
-  return Array.from(userMap.values()).map(({ user }) => user);
+  return debounced;
 }
 
 /**
- * Check if user metadata matches search query
- */
-function userMatchesQuery(user: SearchUserResult, query: string): boolean {
-  if (!user.metadata) return false;
-
-  const searchValue = query.toLowerCase();
-  const metadata = user.metadata;
-
-  return (
-    metadata.name?.toLowerCase().includes(searchValue) ||
-    metadata.display_name?.toLowerCase().includes(searchValue) ||
-    metadata.nip05?.toLowerCase().includes(searchValue) ||
-    metadata.about?.toLowerCase().includes(searchValue) ||
-    false
-  );
-}
-
-/**
- * Search users by name, display_name, nip05, and about fields
+ * Search users via Funnelcake REST API (/api/search/profiles)
+ * Falls back to NIP-50 WebSocket if Funnelcake fails
  */
 export function useSearchUsers(options: UseSearchUsersOptions) {
   const { nostr } = useNostr();
-  const { query, limit = 50 } = options;
+  const { query, limit = 20 } = options;
+  const apiUrl = API_CONFIG.funnelcake.baseUrl;
 
-  // Debounce the query - disable in test environment
   const isTest = process.env.NODE_ENV === 'test';
-  const debounceDelay = isTest ? 0 : 300;
-
-  const debouncedQuery = useMemo(() => {
-    let timeoutId: NodeJS.Timeout;
-    return new Promise<string>((resolve) => {
-      clearTimeout(timeoutId);
-      timeoutId = setTimeout(() => resolve(query), debounceDelay);
-    });
-  }, [query, debounceDelay]);
+  const debounceMs = isTest ? 0 : 300;
+  const debouncedQuery = useDebouncedValue(query, debounceMs);
 
   return useQuery({
-    queryKey: ['search-users', query, limit],
-    queryFn: async (context) => {
-      // Wait for debounced query
-      const actualQuery = await debouncedQuery;
-
-      if (!actualQuery.trim()) {
+    queryKey: ['search-users', debouncedQuery, limit],
+    queryFn: async ({ signal }) => {
+      if (!debouncedQuery.trim()) {
         return [];
       }
 
-      const signal = AbortSignal.any([
-        context.signal,
-        AbortSignal.timeout(8000)
-      ]);
-
-      let events: NostrEvent[] = [];
-
-      // Attempt NIP-50 search on the app's active relays first.
-      try {
-        events = await nostr.query([
-          {
-            kinds: [0],
-            search: actualQuery,
-            limit: Math.min(limit * 2, 200),
-          },
-        ], { signal });
-
-        // If relay doesn't support NIP-50 or returns empty, fall back below.
-        if (!Array.isArray(events) || events.length === 0) {
-          throw new Error('No search results; falling back to client filter');
-        }
-      } catch {
-        // Fallback: query recent metadata and filter client-side
-        events = await nostr.query([
-          {
-            kinds: [0],
-            limit: Math.min(limit * 10, 1000),
-          },
-        ], { signal });
+      // Skip URL-like queries that cause Funnelcake 500 errors (#166)
+      if (isUrlLikeQuery(debouncedQuery)) {
+        return [];
       }
 
-      // Parse user metadata
-      const users = events
-        .map(parseUserMetadata)
-        .filter((user): user is SearchUserResult => user !== null);
+      const requestStartedAt = performance.now();
+      const requestContext = {
+        query: debouncedQuery,
+        limit,
+      };
 
-      // Deduplicate by pubkey (keep most recent)
-      const deduplicatedUsers = deduplicateUsers(users, events);
-
-      // Filter by search query if relay search wasn't used
-      let filteredUsers = deduplicatedUsers;
-      if (events.length > limit * 2) {
-        // We got a lot of results, likely from fallback, so filter client-side
-        filteredUsers = deduplicatedUsers.filter(user =>
-          userMatchesQuery(user, actualQuery)
-        );
-      }
-
-      // Sort by relevance (exact name matches first, then partial matches)
-      const searchValue = actualQuery.toLowerCase();
-      filteredUsers.sort((a, b) => {
-        const aName = a.metadata?.name?.toLowerCase() || '';
-        const bName = b.metadata?.name?.toLowerCase() || '';
-        const aDisplayName = a.metadata?.display_name?.toLowerCase() || '';
-        const bDisplayName = b.metadata?.display_name?.toLowerCase() || '';
-
-        // Exact name matches first
-        if (aName === searchValue && bName !== searchValue) return -1;
-        if (bName === searchValue && aName !== searchValue) return 1;
-
-        // Exact display name matches second
-        if (aDisplayName === searchValue && bDisplayName !== searchValue) return -1;
-        if (bDisplayName === searchValue && aDisplayName !== searchValue) return 1;
-
-        // Name starts with search value
-        if (aName.startsWith(searchValue) && !bName.startsWith(searchValue)) return -1;
-        if (bName.startsWith(searchValue) && !aName.startsWith(searchValue)) return 1;
-
-        // Display name starts with search value
-        if (aDisplayName.startsWith(searchValue) && !bDisplayName.startsWith(searchValue)) return -1;
-        if (bDisplayName.startsWith(searchValue) && !aDisplayName.startsWith(searchValue)) return 1;
-
-        // Alphabetical by name
-        return aName.localeCompare(bName);
+      console.info('[search/users] starting', {
+        ...requestContext,
+        debounceMs,
       });
 
-      return filteredUsers.slice(0, limit);
+      if (isFunnelcakeAvailable(apiUrl)) {
+        try {
+          const apiStartedAt = performance.now();
+          const profiles = await searchProfiles(
+            apiUrl,
+            {
+              query: debouncedQuery,
+              limit,
+              sortBy: 'relevance',
+              signal: AbortSignal.any([signal, AbortSignal.timeout(FUNNELCAKE_PROFILE_SEARCH_TIMEOUT_MS)]),
+            },
+          );
+          const finalUsers = profiles.map(toSearchUserResult);
+          const apiCompletedAt = performance.now();
+
+          console.info('[search/users] funnelcake query complete', {
+            ...requestContext,
+            apiMs: Math.round(apiCompletedAt - apiStartedAt),
+            totalMs: Math.round(apiCompletedAt - requestStartedAt),
+            profileCount: profiles.length,
+            returnedUserCount: finalUsers.length,
+          });
+
+          return finalUsers;
+        } catch (error) {
+          console.warn('[search/users] falling back to relay search', {
+            ...requestContext,
+            error,
+            totalMs: Math.round(performance.now() - requestStartedAt),
+          });
+          debugLog('[useSearchUsers] Funnelcake profile search failed, falling back to NIP-50:', error);
+          reportFunnelcakeFallback({
+            source: 'useSearchUsers',
+            apiUrl,
+            reason: error instanceof Error ? error.message : String(error),
+            dedupeKey: `useSearchUsers:${debouncedQuery}`,
+            context: {
+              query: debouncedQuery,
+            },
+          });
+        }
+      } else {
+        console.warn('[search/users] funnelcake unavailable, falling back to relay search', {
+          ...requestContext,
+          totalMs: Math.round(performance.now() - requestStartedAt),
+        });
+        reportFunnelcakeFallback({
+          source: 'useSearchUsers',
+          apiUrl,
+          reason: 'Funnelcake unavailable or circuit breaker open',
+          dedupeKey: `useSearchUsers:${debouncedQuery}:unavailable`,
+          context: {
+            query: debouncedQuery,
+          },
+        });
+      }
+
+      const relayStartedAt = performance.now();
+      const events = await nostr.query(
+        [{ kinds: [0], search: debouncedQuery, limit: Math.min(limit * 2, 100) }],
+        { signal: AbortSignal.any([signal, AbortSignal.timeout(8000)]) },
+      );
+
+      const seen = new Set<string>();
+      const results: SearchUserResult[] = [];
+      for (const event of events) {
+        if (seen.has(event.pubkey)) continue;
+        seen.add(event.pubkey);
+        const parsed = parseUserEvent(event);
+        if (parsed) {
+          results.push(parsed);
+        }
+      }
+
+      const finalUsers = results.slice(0, limit);
+      const relayCompletedAt = performance.now();
+
+      console.info('[search/users] completed', {
+        ...requestContext,
+        mode: 'nip50',
+        relayMs: Math.round(relayCompletedAt - relayStartedAt),
+        totalMs: Math.round(relayCompletedAt - requestStartedAt),
+        rawEventCount: events.length,
+        returnedUserCount: finalUsers.length,
+      });
+
+      return finalUsers;
     },
-    enabled: !!query.trim(),
-    staleTime: 60000, // 1 minute - user data changes less frequently
-    gcTime: 300000, // 5 minutes
+    enabled: !!debouncedQuery.trim(),
+    staleTime: 60_000,
+    gcTime: 300_000,
   });
 }

@@ -1,9 +1,9 @@
 // ABOUTME: React hook for JWT-based window.nostr injection
-// ABOUTME: Uses Keycast REST API with JWT authentication for signing
+// ABOUTME: Uses the hosted Divine login RPC API with JWT authentication for signing
 
 import { useEffect, useRef, useState } from 'react';
 import type { NostrSigner } from '@nostrify/nostrify';
-import { KeycastJWTSigner } from '@/lib/KeycastJWTSigner';
+import { DivineJWTSigner } from '@/lib/DivineJWTSigner';
 import { injectWindowNostr, removeWindowNostr } from '@/lib/bunkerToWindowNostr';
 
 export interface UseWindowNostrJWTOptions {
@@ -35,13 +35,13 @@ export interface UseWindowNostrJWTReturn {
 /**
  * Hook to manage JWT-based window.nostr injection
  *
- * Creates a NostrSigner that signs events via Keycast REST API with JWT authentication,
+ * Creates a NostrSigner that signs events via the hosted Divine RPC API with JWT authentication,
  * and optionally injects it as window.nostr for compatibility with existing Nostr libraries.
  *
  * @example
  * ```tsx
  * function MyComponent() {
- *   const { getValidToken } = useKeycastSession();
+ *   const { getValidToken } = useDivineSession();
  *   const token = getValidToken();
  *
  *   const { signer, isInitializing, error, isInjected } = useWindowNostrJWT({
@@ -69,7 +69,7 @@ export function useWindowNostrJWT(
 
   // Track the current token to detect changes
   const lastToken = useRef<string | null>(null);
-  const signerRef = useRef<KeycastJWTSigner | null>(null);
+  const signerRef = useRef<DivineJWTSigner | null>(null);
 
   // Create or update signer when token changes
   useEffect(() => {
@@ -95,7 +95,7 @@ export function useWindowNostrJWT(
 
     try {
       // Create new JWT signer
-      const newSigner = new KeycastJWTSigner({ token, timeout });
+      const newSigner = new DivineJWTSigner({ token, timeout });
       signerRef.current = newSigner;
 
       // Verify it works by fetching pubkey

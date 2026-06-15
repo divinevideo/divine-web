@@ -26,6 +26,11 @@ class FollowListCache {
   }
 
   private async initIndexedDB(): Promise<void> {
+    if (typeof indexedDB === 'undefined') {
+      debugWarn('[FollowListCache] IndexedDB not available, using localStorage only');
+      return;
+    }
+
     return new Promise((resolve) => {
       const request = indexedDB.open(DB_NAME, DB_VERSION);
 

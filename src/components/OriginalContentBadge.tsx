@@ -1,7 +1,8 @@
 // ABOUTME: Badge for original user-created content (non-repost, non-Vine)
 // ABOUTME: Matches Flutter app's OriginalContentBadge styling and behavior
 
-import { CheckCircle } from 'lucide-react';
+import { CheckCircle } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 
@@ -11,20 +12,21 @@ interface OriginalContentBadgeProps {
 }
 
 export function OriginalContentBadge({ className, size = 'small' }: OriginalContentBadgeProps) {
+  const { t } = useTranslation();
   const sizeConfig = getSizeConfig(size);
 
   return (
     <Badge
       variant="outline"
       className={cn(
-        'flex items-center gap-1 font-medium border-cyan-600 text-cyan-600 bg-cyan-50 dark:bg-cyan-950/20',
+        'flex items-center gap-1 font-medium border-brand-blue text-brand-blue-dark bg-brand-blue-light dark:bg-brand-blue-dark dark:text-brand-blue',
         sizeConfig.className,
         className
       )}
-      title="Original content created by this user"
+      title={t('originalContentBadge.tooltip')}
     >
       <CheckCircle className={sizeConfig.iconSize} />
-      <span>Original</span>
+      <span>{t('originalContentBadge.label')}</span>
     </Badge>
   );
 }

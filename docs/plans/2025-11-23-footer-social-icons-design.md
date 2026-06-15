@@ -13,7 +13,7 @@ Add social media icon links to the AppFooter component, allowing users to easily
 ### Platforms
 - Instagram: https://instagram.com/divinevideapp
 - Reddit: https://www.reddit.com/r/divinevideo/
-- Discord: https://discord.gg/sHb4HMSF
+- Discord: https://discord.gg/RZVbzuQ5qM
 - Twitter: https://twitter.com/divinevideoapp
 - Bluesky: https://bsky.app/profile/divine.video
 

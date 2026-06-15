@@ -63,8 +63,8 @@ export function useOptimisticLike() {
         }
 
         toast({
-          title: 'Unliked!',
-          description: 'Your like has been removed',
+          title: 'Unliked.',
+          description: 'Taken it back. All good.',
         });
       } else {
         // Optimistic like
@@ -80,15 +80,17 @@ export function useOptimisticLike() {
 
         debugLog('Optimistically liking video:', videoId);
 
+        const tags = [
+          ['e', videoId],
+          ...(vineId ? [['a', `${SHORT_VIDEO_KIND}:${videoPubkey}:${vineId}`]] : []),
+          ['p', videoPubkey],
+        ];
+
         // Actually publish the like event
         const event = await publishEvent({
           kind: 7, // Reaction event
           content: '+',
-          tags: [
-            ['e', videoId],
-            ['a', `${SHORT_VIDEO_KIND}:${videoPubkey}:${vineId}`],
-            ['p', videoPubkey],
-          ],
+          tags,
         });
 
         // Update with real event ID
@@ -98,8 +100,8 @@ export function useOptimisticLike() {
         }));
 
         toast({
-          title: 'Liked!',
-          description: 'Your reaction has been published',
+          title: 'Liked.',
+          description: 'Love, sent.',
         });
       }
     } catch (error) {

@@ -1,0 +1,120 @@
+# Lucide → Phosphor codemod report
+
+- Mode: **write**
+- Files modified: **107**
+- strokeWidth props stripped: **1**
+- Unmapped icons: **0**
+
+## Unmapped icons
+
+_None._
+
+## Files that would change
+
+- `src/components/AddToListDialog.tsx`
+- `src/components/AgeVerificationOverlay.tsx`
+- `src/components/AppHeader.tsx`
+- `src/components/AppSidebar.test.tsx`
+- `src/components/AppSidebar.tsx`
+- `src/components/ApplePodcastEmbed.tsx`
+- `src/components/BadgeDetailModal.tsx`
+- `src/components/BottomNav.tsx`
+- `src/components/CameraRecorder.tsx`
+- `src/components/ClassicVinersRow.tsx`
+- `src/components/ContentOriginBadges.tsx`
+- `src/components/CreateListDialog.tsx`
+- `src/components/DeleteCommentDialog.tsx`
+- `src/components/DeleteListDialog.tsx`
+- `src/components/DeleteVideoDialog.tsx`
+- `src/components/EditListDialog.tsx`
+- `src/components/EditProfileForm.tsx`
+- `src/components/FollowListSafetyDialog.tsx`
+- `src/components/FullscreenVideoItem.tsx`
+- `src/components/HashtagExplorer.tsx`
+- `src/components/LanguageMenu.tsx`
+- `src/components/LinkedAccounts.tsx`
+- `src/components/NotificationItem.tsx`
+- `src/components/OriginalContentBadge.tsx`
+- `src/components/PWAInstallPrompt.tsx`
+- `src/components/PinnedVideosSection.tsx`
+- `src/components/PopularHashtagsCard.tsx`
+- `src/components/ProfileHeader.tsx`
+- `src/components/ProofModeBadge.tsx`
+- `src/components/ReportContentDialog.tsx`
+- `src/components/ThumbnailPlayer.tsx`
+- `src/components/VerifiedOnlyToggle.tsx`
+- `src/components/VideoCard.tsx`
+- `src/components/VideoFeed.tsx`
+- `src/components/VideoGrid.tsx`
+- `src/components/VideoListBadges.tsx`
+- `src/components/VideoMetadataForm.tsx`
+- `src/components/VideoReactionsModal.tsx`
+- `src/components/VideoVerificationDetailsDialog.tsx`
+- `src/components/ViewSourceDialog.tsx`
+- `src/components/WalletModal.tsx`
+- `src/components/ZapButton.tsx`
+- `src/components/ZapDialog.tsx`
+- `src/components/auth/AccountSwitcher.tsx`
+- `src/components/auth/LoginArea.tsx`
+- `src/components/auth/LoginDialog.tsx`
+- `src/components/auth/SignupDialog.tsx`
+- `src/components/comments/Comment.tsx`
+- `src/components/comments/CommentForm.tsx`
+- `src/components/comments/CommentsSection.tsx`
+- `src/components/landing/AuthenticDemo.tsx`
+- `src/components/landing/DecentralizedDemo.tsx`
+- `src/components/landing/VerifiedDemo.tsx`
+- `src/components/ui/accordion.tsx`
+- `src/components/ui/avatar.tsx`
+- `src/components/ui/breadcrumb.tsx`
+- `src/components/ui/calendar.tsx`
+- `src/components/ui/carousel.tsx`
+- `src/components/ui/checkbox.tsx`
+- `src/components/ui/command.tsx`
+- `src/components/ui/context-menu.tsx`
+- `src/components/ui/dialog.tsx`
+- `src/components/ui/dropdown-menu.tsx`
+- `src/components/ui/input-otp.tsx`
+- `src/components/ui/menubar.tsx`
+- `src/components/ui/navigation-menu.tsx`
+- `src/components/ui/pagination.tsx`
+- `src/components/ui/radio-group.tsx`
+- `src/components/ui/resizable.tsx`
+- `src/components/ui/select.tsx`
+- `src/components/ui/sheet.tsx`
+- `src/components/ui/sidebar.tsx`
+- `src/components/ui/toast.tsx`
+- `src/lib/constants/categories.ts`
+- `src/lib/constants/sortModes.ts`
+- `src/pages/AboutPage.tsx`
+- `src/pages/AnalyticsPage.tsx`
+- `src/pages/AtUsernamePage.tsx`
+- `src/pages/AuthenticityPage.tsx`
+- `src/pages/CategoryPage.tsx`
+- `src/pages/ConversationPage.tsx`
+- `src/pages/DiscoveryPage.test.tsx`
+- `src/pages/DiscoveryPage.tsx`
+- `src/pages/EventPage.tsx`
+- `src/pages/FAQPage.tsx`
+- `src/pages/GetEmbedPage.tsx`
+- `src/pages/HashtagPage.tsx`
+- `src/pages/HomePage.tsx`
+- `src/pages/HumanCreatedPage.tsx`
+- `src/pages/Index.tsx`
+- `src/pages/LeaderboardPage.tsx`
+- `src/pages/LinkedAccountsSettingsPage.tsx`
+- `src/pages/ListDetailPage.tsx`
+- `src/pages/ListsPage.tsx`
+- `src/pages/MessagesPage.tsx`
+- `src/pages/ModerationSettingsPage.tsx`
+- `src/pages/NotificationsPage.tsx`
+- `src/pages/OpenSourcePage.tsx`
+- `src/pages/ProfilePage.tsx`
+- `src/pages/ProofModePage.tsx`
+- `src/pages/SearchPage.tsx`
+- `src/pages/Support.tsx`
+- `src/pages/TagPage.tsx`
+- `src/pages/TrendingPage.tsx`
+- `src/pages/UniversalUserPage.tsx`
+- `src/pages/UploadPage.tsx`
+- `src/pages/VideoPage.tsx`

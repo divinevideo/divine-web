@@ -1,3 +1,12 @@
+# Embeddable widget — allow iframe embedding from any origin
+/embed.html
+  Content-Security-Policy: frame-ancestors *
+  Cache-Control: public, max-age=1800
+
+/embed
+  Content-Security-Policy: frame-ancestors *
+  Cache-Control: public, max-age=1800
+
 # Apple App Site Association
 /.well-known/apple-app-site-association
   Content-Type: application/json

@@ -1,7 +1,9 @@
 import { useNostr } from '@nostrify/react';
 import { NLogin, useNostrLogin } from '@nostrify/react/login';
 import { followListCache } from '@/lib/followListCache';
+import { setLoginCookie, clearLoginCookie } from '@/lib/crossSubdomainAuth';
 import { debugLog } from '@/lib/debug';
+import { getActiveLocalNsecLogin } from '@/lib/localNsecAccount';
 import { nip19 } from 'nostr-tools';
 
 // NOTE: This file should not be edited except for adding new login methods.
@@ -15,16 +17,22 @@ export function useLoginActions() {
     nsec(nsec: string): void {
       const login = NLogin.fromNsec(nsec);
       addLogin(login);
+      setLoginCookie({ type: 'nsec', pubkey: login.pubkey });
     },
     // Login with a NIP-46 "bunker://" URI
     async bunker(uri: string): Promise<void> {
       const login = await NLogin.fromBunker(uri, nostr);
       addLogin(login);
+      setLoginCookie({ type: 'bunker', pubkey: login.pubkey, bunkerData: login.data });
     },
     // Login with a NIP-07 browser extension
     async extension(): Promise<void> {
       const login = await NLogin.fromExtension();
       addLogin(login);
+      setLoginCookie({ type: 'extension', pubkey: login.pubkey });
+    },
+    exportCurrentNsec(): string | null {
+      return getActiveLocalNsecLogin(logins)?.data.nsec ?? null;
     },
     // Log out the current user
     async logout(): Promise<void> {
@@ -56,6 +64,7 @@ export function useLoginActions() {
         }
 
         removeLogin(login.id);
+        clearLoginCookie();
       }
     }
   };
