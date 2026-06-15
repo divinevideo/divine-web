@@ -11,6 +11,7 @@ import type { TFunction } from 'i18next';
 import { Card, CardContent } from '@/components/ui/card';
 import { WarningCircle as AlertCircle, CircleNotch as Loader2 } from '@phosphor-icons/react';
 import { debugLog } from '@/lib/debug';
+import { AppPage, AppPageHeader } from '@/components/AppPage';
 
 const VINE_USER_ID_PATTERN = /^\d{15,20}$/;
 const VINE_HOSTNAME_PATTERN = /(^|\.)vine\.co$/i;
@@ -283,8 +284,13 @@ export function UniversalUserPage() {
 
   if (isLoading) {
     return (
-      <div className="container max-w-4xl mx-auto px-4 py-8">
-        <Card className="border-dashed">
+      <AppPage width="detail">
+        <AppPageHeader
+          eyebrow="Profile lookup"
+          title="Finding user"
+          description={`Resolving ${isVineUserId(userId || '') ? 'Vine' : 'NIP-05'} identifier ${userId || ''}.`}
+        />
+        <Card className="app-surface border-2 border-dashed">
           <CardContent className="py-12">
             <div className="flex flex-col items-center justify-center space-y-4">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -297,14 +303,19 @@ export function UniversalUserPage() {
             </div>
           </CardContent>
         </Card>
-      </div>
+      </AppPage>
     );
   }
 
   if (error) {
     return (
-      <div className="container max-w-4xl mx-auto px-4 py-8">
-        <Card className="border-destructive">
+      <AppPage width="detail">
+        <AppPageHeader
+          eyebrow="Profile lookup"
+          title="User not found"
+          description="We could not resolve this identifier into a diVine profile."
+        />
+        <Card className="app-surface border-destructive">
           <CardContent className="py-12">
             <div className="flex flex-col items-center justify-center space-y-4">
               <AlertCircle className="h-12 w-12 text-destructive" />
@@ -325,14 +336,19 @@ export function UniversalUserPage() {
             </div>
           </CardContent>
         </Card>
-      </div>
+      </AppPage>
     );
   }
 
   // While redirecting
   return (
-    <div className="container max-w-4xl mx-auto px-4 py-8">
-      <Card className="border-dashed">
+    <AppPage width="detail">
+      <AppPageHeader
+        eyebrow="Profile lookup"
+        title="Redirecting"
+        description="We found a matching user and are opening their profile."
+      />
+      <Card className="app-surface border-2 border-dashed">
         <CardContent className="py-12">
           <div className="flex flex-col items-center justify-center space-y-4">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -340,6 +356,6 @@ export function UniversalUserPage() {
           </div>
         </CardContent>
       </Card>
-    </div>
+    </AppPage>
   );
 }
