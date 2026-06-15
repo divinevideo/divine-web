@@ -194,6 +194,7 @@ export function VideoListContent({ list, pubkey, dTag }: VideoListContentProps) 
                             try {
                               await removeVideo.mutateAsync({
                                 listId: list.id,
+                                ownerPubkey: pubkey,
                                 videoCoordinate: videoCoord
                               });
                               toast({
