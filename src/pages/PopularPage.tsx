@@ -9,6 +9,9 @@ import { VideoFeed } from '@/components/VideoFeed';
 import { cn } from '@/lib/utils';
 import type { PopularPeriod, PopularSource } from '@/hooks/useInfiniteVideosFunnelcake';
 
+import { AutoScrollToggle } from '@/components/AutoScrollToggle';
+import { useAutoScroll } from '@/hooks/useAutoScroll';
+
 interface PopularOption<TValue extends string> {
   value: TValue;
   labelKey: string;
@@ -50,6 +53,8 @@ function buildCanonicalParams(source: PopularSource, period: PopularPeriod): URL
 export function PopularPage() {
   const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
+  
+  const {autoScroll, setAutoScroll} = useAutoScroll();
 
   const source = parseSource(searchParams.get('source'));
   const period = parsePeriod(searchParams.get('period'));
@@ -81,9 +86,17 @@ export function PopularPage() {
     <div className="container mx-auto px-4 py-6">
       <div className="mx-auto max-w-2xl">
         <header className="mb-6 space-y-4">
-          <div>
-            <h1 className="text-2xl font-bold">{t('popularPage.heading')}</h1>
-            <p className="text-muted-foreground">{t(subheadingKey)}</p>
+          <div className="flex flex-col gap-4 items-start justify-between mb-4 sm:flex-row">
+            <div>
+              <h1 className="text-2xl font-bold">{t('popularPage.heading')}</h1>
+              <p className="text-muted-foreground">{t(subheadingKey)}</p>
+            </div>
+            <div className="flex flex-row gap-10">
+              <AutoScrollToggle
+                enabled={autoScroll}
+                onToggle={setAutoScroll}
+              />
+            </div>
           </div>
 
           <div className="space-y-3" aria-label={t('popularPage.controlsLabel')}>
