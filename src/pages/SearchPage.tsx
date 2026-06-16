@@ -44,7 +44,9 @@ import {
   buildCompilationPlaybackUrl,
   parseCompilationPlaybackParams,
 } from '@/lib/compilationPlayback';
-import { buildProfileLinkPath } from '@/lib/profileLinks';
+import { buildProfileLinkPath, toFriendlyPath } from '@/lib/profileLinks';
+import { getDivineNip05Info } from '@/lib/nip05Utils';
+import { useNip05Validation } from '@/hooks/useNip05Validation';
 
 type SearchFilter = 'all' | 'videos' | 'users' | 'hashtags';
 
@@ -758,11 +760,18 @@ function UserCard({ user }: { user: { pubkey: string; metadata?: UserCardMetadat
   const navigate = useSubdomainNavigate();
   const displayName = user.metadata?.display_name || user.metadata?.name || genUserName(user.pubkey);
   const username = user.metadata?.name || genUserName(user.pubkey);
+  const nip05 = user.metadata?.nip05;
+  const { state: nip05State } = useNip05Validation(nip05, user.pubkey);
+  // Only show NIP-05 as the user-visible identifier when it's validated.
+  // Unvalidated NIP-05s could be spoofed by anyone claiming a handle.
+  const nip05Display = nip05 && nip05State === 'valid'
+    ? (getDivineNip05Info(nip05)?.displayName ?? `@${toFriendlyPath(nip05) ?? nip05}`)
+    : null;
   const about = user.metadata?.about;
   const picture = getSafeProfileImage(user.metadata?.picture);
   const profilePath = buildProfileLinkPath({
     pubkey: user.pubkey,
-    nip05: user.metadata?.nip05,
+    nip05,
   });
 
   const handleClick = () => {
@@ -793,7 +802,11 @@ function UserCard({ user }: { user: { pubkey: string; metadata?: UserCardMetadat
           </Avatar>
           <div className="flex-1 min-w-0">
             <h3 className="font-semibold truncate">{displayName}</h3>
-            <p className="text-sm text-muted-foreground truncate">@{username}</p>
+            {nip05Display ? (
+              <p className="text-sm text-muted-foreground truncate">{nip05Display}</p>
+            ) : (
+              <p className="text-sm text-muted-foreground truncate">@{username}</p>
+            )}
             {about && (
               <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
                 {about}
