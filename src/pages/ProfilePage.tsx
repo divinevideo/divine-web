@@ -182,6 +182,8 @@ export function ProfilePage({ pubkeyOverride }: { pubkeyOverride?: string } = {}
     if (!pathname.startsWith('/profile/')) return;
 
     debugLog('[ProfilePage] Rewriting URL to vanity form:', friendlyPath);
+    // Keep the already-loaded profile mounted; a router navigation would remount
+    // through UniversalUserPage and repeat the same lookup.
     window.history.replaceState(null, '', `${friendlyPath}${search}${hash}`);
   }, [nip05, subdomainUser, nip05Validation.isValid, pubkey]);
 

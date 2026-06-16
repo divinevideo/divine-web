@@ -2,6 +2,7 @@ import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, useLocation } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type {
   ButtonHTMLAttributes,
   HTMLAttributes,
@@ -20,6 +21,7 @@ const {
   mockNostrQuery,
   mockUseInfiniteSearchVideos,
   mockUseSearchUsers,
+  mockUseNip05Validation,
   mockEnterFullscreen,
   mockSetVideosForFullscreen,
   mockUpdateVideos,
@@ -30,6 +32,7 @@ const {
   mockNostrQuery: vi.fn(),
   mockUseInfiniteSearchVideos: vi.fn(),
   mockUseSearchUsers: vi.fn(),
+  mockUseNip05Validation: vi.fn(),
   mockEnterFullscreen: vi.fn(),
   mockSetVideosForFullscreen: vi.fn(),
   mockUpdateVideos: vi.fn(),
@@ -159,6 +162,10 @@ vi.mock('@/hooks/useSearchUsers', () => ({
   useSearchUsers: mockUseSearchUsers,
 }));
 
+vi.mock('@/hooks/useNip05Validation', () => ({
+  useNip05Validation: mockUseNip05Validation,
+}));
+
 vi.mock('@/hooks/useSearchHashtags', () => ({
   useSearchHashtags: ({ query }: { query: string }) => ({
     data: query ? [] : [],
@@ -176,11 +183,16 @@ vi.mock('@/lib/eventLookup', () => ({
 }));
 
 function renderPage(initialEntries: string[] = ['/search']) {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+  });
   return render(
-    <MemoryRouter initialEntries={initialEntries}>
-      <SearchPage />
-      <LocationDisplay />
-    </MemoryRouter>
+    <QueryClientProvider client={queryClient}>
+      <MemoryRouter initialEntries={initialEntries}>
+        <SearchPage />
+        <LocationDisplay />
+      </MemoryRouter>
+    </QueryClientProvider>
   );
 }
 
@@ -219,6 +231,14 @@ describe('SearchPage', () => {
       data: [],
       isLoading: false,
       error: null,
+    });
+    // Default: NIP-05 not yet validated, so cards show the legacy @username.
+    mockUseNip05Validation.mockReturnValue({
+      isValid: false,
+      isLoading: false,
+      isInvalid: true,
+      state: 'invalid',
+      nip05: undefined,
     });
   });
 
@@ -662,6 +682,9 @@ describe('SearchPage', () => {
   });
 
   it('shows the divine NIP-05 as the secondary identifier on user cards, not the legacy Vine username', () => {
+    mockUseNip05Validation.mockReturnValue({
+      isValid: true, isLoading: false, isInvalid: false, state: 'valid', nip05: '_@jacky.divine.video',
+    });
     mockUseSearchUsers.mockReturnValue({
       data: [
         {
@@ -685,6 +708,9 @@ describe('SearchPage', () => {
   });
 
   it('shows the third-party NIP-05 in friendly form on user cards', () => {
+    mockUseNip05Validation.mockReturnValue({
+      isValid: true, isLoading: false, isInvalid: false, state: 'valid', nip05: 'alice@primal.net',
+    });
     mockUseSearchUsers.mockReturnValue({
       data: [
         {

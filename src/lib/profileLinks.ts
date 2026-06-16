@@ -3,6 +3,7 @@ import { nip19 } from 'nostr-tools';
 const HEX_PUBKEY_PATTERN = /^[0-9a-f]{64}$/i;
 const DEFAULT_APEX_DOMAIN = 'divine.video';
 const ALTERNATE_APEX_DOMAIN = 'dvine.video';
+const LEGACY_OPENVINE_DOMAIN = 'openvine.co';
 const APEX_DOMAINS = [DEFAULT_APEX_DOMAIN, ALTERNATE_APEX_DOMAIN] as const;
 
 export type ProfileFallbackRoute = 'root' | 'profile';
@@ -117,11 +118,11 @@ export function toFriendlyPath(nip05: string | null | undefined): string | null 
  * should try to match against a kind-0 profile's `nip05` field (or resolve via
  * NIP-05 DNS). Always returns lowercased forms.
  *
- *   'jacky'                      -> ['jacky@divine.video', '_@jacky.divine.video']
+ *   'jacky'                      -> ['jacky@divine.video', '_@jacky.divine.video', 'jacky@openvine.co']
  *   'jacky.divine.video'         -> ['jacky@divine.video', '_@jacky.divine.video']
  *   'jacky.dvine.video'          -> ['jacky@dvine.video',  '_@jacky.dvine.video']
  *   'a.b.divine.video'           -> ['a.b@divine.video',   '_@a.b.divine.video']
- *   'alice.primal.net'           -> ['alice.primal.net']   (no @ to insert)
+ *   'alice.primal.net'           -> ['alice.primal.net', 'alice@primal.net', '_@alice.primal.net']
  *   'jacky.divine.video'         (third-party case)       -> ['jacky.divine.video']
  *
  * Returns an empty array for inputs that can't be interpreted as a NIP-05.
@@ -149,26 +150,33 @@ export function nip05CandidatesFromUrlSegment(segment: string): string[] {
         }
       }
     }
-    // Third-party domain — return the literal for kind-0 matching, plus
-    // the @ forms for DNS fallback (since kind-0 has the @ form).
-    // Convert the last dot to @ to get the NIP-05 form: alice.primal.net -> alice@primal.net
-    const atIndex = decoded.indexOf('.');
-    if (atIndex > 0) {
-      const atForm = decoded.slice(0, atIndex) + '@' + decoded.slice(atIndex + 1);
-      return [
-        decoded,
-        atForm,
-        `_@${decoded}`,
-      ];
-    }
-    return [decoded];
+    // Third-party domain — keep the literal for older friendly metadata, then
+    // try every split whose domain side still looks domain-shaped.
+    return [
+      decoded,
+      ...thirdPartyNip05Candidates(decoded),
+      `_@${decoded}`,
+    ];
   }
 
   // 3. Bare local part — assume the default apex.
   return [
     `${decoded}@${DEFAULT_APEX_DOMAIN}`,
     `_@${decoded}.${DEFAULT_APEX_DOMAIN}`,
+    `${decoded}@${LEGACY_OPENVINE_DOMAIN}`,
   ];
+}
+
+function thirdPartyNip05Candidates(decoded: string): string[] {
+  const candidates: string[] = [];
+  for (let index = decoded.indexOf('.'); index > 0; index = decoded.indexOf('.', index + 1)) {
+    const local = decoded.slice(0, index);
+    const domain = decoded.slice(index + 1);
+    if (domain.includes('.')) {
+      candidates.push(`${local}@${domain}`);
+    }
+  }
+  return candidates;
 }
 
 function toNpub(pubkey: string): string {

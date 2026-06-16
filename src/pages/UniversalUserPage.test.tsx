@@ -176,7 +176,29 @@ describe('UniversalUserPage', () => {
     expect(screen.getByTestId('profile-page').dataset.pubkeyOverride).toBe(pubkey);
   });
 
+  it('falls back to legacy openvine.co NIP-05 when there is no newer bare-name match', async () => {
+    const pubkey = '7'.repeat(64);
+    mockNostrQuery.mockResolvedValue([
+      createProfileEvent(pubkey, {
+        name: 'OpenVine User',
+        nip05: 'someuser@openvine.co',
+      }),
+    ]);
+
+    renderPage('/u/someuser');
+
+    await waitFor(() => {
+      expect(screen.getByTestId('profile-page')).toBeInTheDocument();
+    });
+    expect(screen.getByTestId('profile-page').dataset.pubkeyOverride).toBe(pubkey);
+  });
+
   it('shows the not-found state when no legacy or NIP-05 match exists', async () => {
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 404,
+    }) as unknown as typeof fetch;
     mockNostrQuery.mockResolvedValue([
       createProfileEvent('f'.repeat(64), {
         name: 'Someone Else',
@@ -184,11 +206,15 @@ describe('UniversalUserPage', () => {
       }),
     ]);
 
-    renderPage('/u/missinguser');
+    try {
+      renderPage('/u/missinguser');
 
-    expect(await screen.findByText('User Not Found')).toBeInTheDocument();
-    expect(screen.getByText(/missinguser/)).toBeInTheDocument();
-    expect(screen.queryByTestId('profile-page')).not.toBeInTheDocument();
+      expect(await screen.findByText('User Not Found')).toBeInTheDocument();
+      expect(screen.getByText(/missinguser/)).toBeInTheDocument();
+      expect(screen.queryByTestId('profile-page')).not.toBeInTheDocument();
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
   });
 
   it('resolves a bare-name URL via the default-apex NIP-05 candidate list', async () => {

@@ -114,6 +114,7 @@ describe('nip05CandidatesFromUrlSegment', () => {
     expect(nip05CandidatesFromUrlSegment('jacky')).toEqual([
       'jacky@divine.video',
       '_@jacky.divine.video',
+      'jacky@openvine.co',
     ]);
   });
 
@@ -143,6 +144,15 @@ describe('nip05CandidatesFromUrlSegment', () => {
       'alice.primal.net',
       'alice@primal.net',
       '_@alice.primal.net',
+    ]);
+  });
+
+  it('tries dotted third-party local parts without dropping the dot', () => {
+    expect(nip05CandidatesFromUrlSegment('bob.smith.primal.net')).toEqual([
+      'bob.smith.primal.net',
+      'bob@smith.primal.net',
+      'bob.smith@primal.net',
+      '_@bob.smith.primal.net',
     ]);
   });
 
