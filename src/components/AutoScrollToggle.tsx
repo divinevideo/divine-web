@@ -14,12 +14,12 @@ export function AutoScrollToggle({ enabled, onToggle, className }: AutoScrollTog
     <div className={className}>
       <div className="flex items-center space-x-2">
         <Switch
-          id="verified-only"
+          id="auto-scroll"
           checked={enabled}
           onCheckedChange={onToggle}
         />
         <Label
-          htmlFor="verified-only"
+          htmlFor="auto-scroll"
           className="flex items-center gap-2 cursor-pointer text-sm text-foreground"
         >
           <span>Auto-Scroll</span>
