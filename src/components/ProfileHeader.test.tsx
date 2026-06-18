@@ -8,7 +8,6 @@ import { initializeI18n } from '@/lib/i18n';
 
 vi.mock('./LinkedAccounts', () => ({
   LinkedAccounts: () => <div data-testid="linked-accounts" />,
-  LinkedAccountsDebug: () => null,
 }));
 
 vi.mock('./ProfileBadges', () => ({

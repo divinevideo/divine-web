@@ -298,33 +298,3 @@ export function LinkedAccounts({ pubkey, className }: LinkedAccountsProps) {
     </div>
   );
 }
-
-export function LinkedAccountsDebug({ pubkey }: { pubkey: string }) {
-  const query = useExternalIdentities(pubkey);
-  if (typeof window === 'undefined') return null;
-  if (!new URLSearchParams(window.location.search).has('debug')) return null;
-  return (
-    <pre
-      data-testid="linked-accounts-debug"
-      className="mt-2 max-w-2xl whitespace-pre-wrap break-all rounded-md border bg-muted/30 p-3 text-xs text-foreground"
-    >
-{JSON.stringify(
-        {
-          pubkeyProp: pubkey,
-          queryKey: ['external-identities', pubkey],
-          status: query.status,
-          fetchStatus: query.fetchStatus,
-          isLoading: query.isLoading,
-          isFetching: query.isFetching,
-          isError: query.isError,
-          error: query.error ? String(query.error) : null,
-          dataUpdatedAt: query.dataUpdatedAt,
-          identitiesCount: query.data?.length ?? 0,
-          identities: query.data,
-        },
-        null,
-        2,
-      )}
-    </pre>
-  );
-}

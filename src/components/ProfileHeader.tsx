@@ -22,7 +22,7 @@ import { feedUrls } from '@/lib/feedUrls';
 import { useRssFeedAvailable } from '@/hooks/useRssFeedAvailable';
 import { ReportContentDialog } from '@/components/ReportContentDialog';
 import { UserListDialog } from '@/components/UserListDialog';
-import { LinkedAccounts, LinkedAccountsDebug } from '@/components/LinkedAccounts';
+import { LinkedAccounts } from '@/components/LinkedAccounts';
 import { useNip05Validation } from '@/hooks/useNip05Validation';
 import { useFollowers, getAllFollowerPubkeys } from '@/hooks/useFollowers';
 import { useFollowing } from '@/hooks/useFollowing';
@@ -272,7 +272,6 @@ export function ProfileHeader({
             <LinkedAccounts pubkey={pubkey} />
             <ProfileBadges badges={badgesQuery.data ?? []} />
           </div>
-          <LinkedAccountsDebug pubkey={pubkey} />
 
           {stats?.isClassicViner && legacySocials && legacySocials.length > 0 && (
             <div
