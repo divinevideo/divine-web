@@ -672,7 +672,13 @@
     "proofLink": "Nachweis",
     "linkedAccountsLabel": "Verknüpfte Accounts",
     "identityVerificationTitle": "Identitätsverifizierung",
-    "identityVerificationDescription": "Verknüpfte Accounts werden über NIP-39-Identitätsnachweise verifiziert. Es werden nur verifizierte Accounts angezeigt."
+    "showUnverified": "Show unverified",
+    "showUnverifiedAria": "Show unverified linked accounts",
+    "hideUnverified": "Hide unverified",
+    "notAutoVerified": "Not auto-verified",
+    "verifyManually": "Verify manually",
+    "verifyManuallyDescription": "We couldn't confirm this automatically. Check the profile to verify it yourself.",
+    "unverifiedBadgeTooltip": "Not auto-verified — click to check the proof"
   },
   "analyticsPage": {
     "seoTitle": "Creator-Analytics - Divine",

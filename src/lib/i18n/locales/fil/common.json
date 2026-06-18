@@ -672,7 +672,13 @@
     "proofLink": "Patunay",
     "linkedAccountsLabel": "Mga linked account",
     "identityVerificationTitle": "Pag-verify ng identity",
-    "identityVerificationDescription": "Ang mga linked account ay na-verify gamit ang mga NIP-39 identity proof. Mga na-verify lang ang ipinapakita."
+    "showUnverified": "Show unverified",
+    "showUnverifiedAria": "Show unverified linked accounts",
+    "hideUnverified": "Hide unverified",
+    "notAutoVerified": "Not auto-verified",
+    "verifyManually": "Verify manually",
+    "verifyManuallyDescription": "We couldn't confirm this automatically. Check the profile to verify it yourself.",
+    "unverifiedBadgeTooltip": "Not auto-verified — click to check the proof"
   },
   "analyticsPage": {
     "seoTitle": "Analytics ng Creator - Divine",
