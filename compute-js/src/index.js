@@ -11,7 +11,7 @@ import { buildFunnelcakeUrl, getFunnelcakeOriginForApiHost } from './funnelcakeO
 import { handleAuthPersistCookie } from './authPersistCookie.js';
 import { isJsonWellKnownPath, shouldServeWellKnownBeforeWwwRedirect } from './wellKnownPaths.js';
 import { buildCrawlerHtml, escapeHtml, cleanText, truncateText } from './ogTags.js';
-import { hexToNpub } from './bech32.js';
+import { hexToNpub, decodeNpubToHex } from './bech32.js';
 import {
   handleAtUsernameOg,
   handleHashtagOgTags,
@@ -50,7 +50,8 @@ async function handleRequest(event) {
 
   // Check for original host passed by divine-router
   const originalHost = request.headers.get('X-Original-Host');
-  const hostnameToUse = originalHost || url.hostname;
+  const forwardedHost = request.headers.get('X-Forwarded-Host');
+  const hostnameToUse = originalHost || forwardedHost || url.hostname;
   const funnelcakeTarget = getFunnelcakeOriginForApiHost(hostnameToUse);
 
   console.log('Request hostname:', url.hostname, 'original:', originalHost, 'path:', url.pathname);
@@ -961,6 +962,11 @@ function isSocialMediaCrawler(request) {
     'baiduspider',
     'facebot',
     'ia_archiver',
+    'googlebot',
+    'bingbot',
+    'yandexbot',
+    'duckduckbot',
+    'applebot',
   ];
 
   return crawlerPatterns.some(pattern => userAgent.includes(pattern));
