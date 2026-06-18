@@ -18,6 +18,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { LinkSimple as Link2, Plus, Trash as Trash2, PencilSimple as Pencil, CheckCircle as CheckCircle2, Warning as AlertTriangle, CircleNotch as Loader2, ArrowSquareOut as ExternalLink, GithubLogo as Github, ChatCircle as MessageCircle, At as AtSign, Shield, Copy, Check, X, ArrowLeft } from '@phosphor-icons/react';
 import { useToast } from '@/hooks/useToast';
 import { nip19 } from 'nostr-tools';
+import { LinkedAccountsDebug } from '@/components/LinkedAccounts';
 
 // X/Twitter icon (simple)
 function XIcon({ className }: { className?: string }) {
@@ -540,6 +541,7 @@ export default function LinkedAccountsSettingsPage() {
           )}
         </CardContent>
       </Card>
+      {user?.pubkey && <LinkedAccountsDebug pubkey={user.pubkey} />}
 
       {/* Add / Edit Account */}
       <Card ref={formRef}>
