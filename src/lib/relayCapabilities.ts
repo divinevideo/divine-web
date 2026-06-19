@@ -74,7 +74,6 @@ export function getOptimisticRelayCapabilities(relayUrl: string): RelayCapabilit
         source: 'optimistic',
       });
 
-    case 'relay.ditto.pub':
     case 'relay.nostr.wine':
     case 'relay.openvine.co':
     case 'relay2.openvine.co':
