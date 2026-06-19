@@ -1,7 +1,7 @@
 // NOTE: This file is stable and usually should not be modified.
 // It is important that all functionality in this file is preserved, and should only be modified if explicitly requested.
 
-import { CaretDown as ChevronDown, SignOut as LogOut, User as UserIcon, UserPlus, User, Gear as Settings, LinkSimple as Link2 } from '@phosphor-icons/react';
+import { CaretDown as ChevronDown, SignOut as LogOut, User as UserIcon, UserPlus, User, Gear as Settings, LinkSimple as Link2, CloudArrowUp as Server } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { nip19 } from 'nostr-tools';
@@ -103,6 +103,13 @@ export function AccountSwitcher({ onAddAccountClick }: AccountSwitcherProps) {
           >
             <Link2 className='w-4 h-4' />
             <span>{t('accountSwitcher.linkedAccounts')}</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={() => navigate('/settings/relays')}
+            className='flex items-center gap-2 cursor-pointer p-2 rounded-md'
+          >
+            <Server className='w-4 h-4' />
+            <span>{t('accountSwitcher.relays', 'Relays')}</span>
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuLabel>{t('accountSwitcher.switchRelay')}</DropdownMenuLabel>
