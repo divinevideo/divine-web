@@ -1,5 +1,5 @@
 # ABOUTME: GitHub Actions workflow for deploying to Fastly (primary) and Cloudflare Pages (backup)
-# ABOUTME: Triggers on push to main branch
+# ABOUTME: Triggers on push to main, or manual dispatch
 
 name: Deploy to Production
 
@@ -7,6 +7,10 @@ on:
   push:
     branches:
       - main
+  # Allow manually re-running a clean production deploy of the current main
+  # through the approved workflow (build -> publish -> purge -> verify) instead
+  # of re-running a past run.
+  workflow_dispatch:
 
 jobs:
   build:
