@@ -30,11 +30,11 @@ export function HubSpotSignup() {
           --hsf-background__padding: 0;
           --hsf-row__vertical-spacing: 0;
           --hsf-row__horizontal-spacing: 8px;
-          --hsf-button__background-color: #27C58B;
-          --hsf-button__color: white;
-          --hsf-button__border-radius: 4px;
+          --hsf-button__background-color: hsl(var(--brand-lime));
+          --hsf-button__color: hsl(var(--brand-lime-dark));
+          --hsf-button__border-radius: 9999px;
           --hsf-button__padding: 0 16px;
-          --hsf-button__font-weight: 500;
+          --hsf-button__font-weight: 700;
           --hsf-button__font-size: 0.875rem;
           --hsf-field-input__font-size: 0.875rem;
           --hsf-field-input__background-color: hsl(var(--input));
