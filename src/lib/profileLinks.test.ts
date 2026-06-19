@@ -114,7 +114,6 @@ describe('nip05CandidatesFromUrlSegment', () => {
     expect(nip05CandidatesFromUrlSegment('jacky')).toEqual([
       'jacky@divine.video',
       '_@jacky.divine.video',
-      'jacky@openvine.co',
     ]);
   });
 

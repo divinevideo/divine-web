@@ -1201,7 +1201,7 @@
     "notFoundDescription": {
       "vine": "Pengguna Vine ini mungkin belum diimpor ke jaringan Nostr.",
       "nip05": "Cek lagi pengenal NIP-05 nya benar atau tidak.",
-      "legacy": "Username ini tidak cocok dengan profil Vine lama atau handle OpenVine."
+      "legacy": "Username ini tidak cocok dengan profil yang dikenal."
     }
   },
   "atUsernamePage": {

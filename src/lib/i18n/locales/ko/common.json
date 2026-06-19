@@ -1201,7 +1201,7 @@
     "notFoundDescription": {
       "vine": "이 Vine 사용자는 아직 Nostr 네트워크로 가져오지 않았을 수 있어요.",
       "nip05": "NIP-05 식별자가 정확한지 확인해 주세요.",
-      "legacy": "이 사용자명은 레거시 Vine 프로필이나 OpenVine 핸들과 일치하지 않아요."
+      "legacy": "이 사용자명은 알려진 프로필과 일치하지 않습니다."
     }
   },
   "atUsernamePage": {
