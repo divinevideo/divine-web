@@ -16,7 +16,7 @@ export function AppFooter() {
             <div className="flex flex-col gap-2 lg:max-w-md">
               <div className="text-sm font-semibold text-brand-green">Divine Inspiration</div>
               <p className="text-sm text-brand-off-white mb-2">
-                Divine is now live in the app stores with invite codes. If you'd like to join the waitlist for a code and hear our news, sign up here.
+                Divine is now live in the app stores with invite codes. If you'd like to receive a code and hear our news, sign up here.
               </p>
               <HubSpotSignup />
             </div>
