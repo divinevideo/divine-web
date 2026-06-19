@@ -3,6 +3,7 @@
 
 import type { SortMode } from '@/types/nostr';
 import { VIDEO_KINDS } from '@/types/video';
+import { recordProbe } from './relayHealth';
 
 type CapabilitySource = 'optimistic' | 'nip11' | 'probe' | 'fallback';
 
@@ -217,6 +218,12 @@ export async function detectRelayCapabilities(relayUrl: string): Promise<RelayCa
       source,
     });
 
+    recordProbe(relayUrl, {
+      nip50: capabilities.supportsNIP50,
+      nip05: false,
+      funnelcake: capabilities.supportsVideoSorts,
+    });
+
     capabilitiesCache.set(relayUrl, capabilities);
     return capabilities;
   } catch (error) {
@@ -225,6 +232,12 @@ export async function detectRelayCapabilities(relayUrl: string): Promise<RelayCa
       detectedAt: Date.now(),
       source: 'fallback',
       error: error instanceof Error ? error.message : 'Unknown error',
+    });
+
+    recordProbe(relayUrl, {
+      nip50: fallbackCapabilities.supportsNIP50,
+      nip05: false,
+      funnelcake: fallbackCapabilities.supportsVideoSorts,
     });
 
     capabilitiesCache.set(relayUrl, fallbackCapabilities);
