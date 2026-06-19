@@ -30,6 +30,7 @@ import ListsPage from "./pages/ListsPage";
 import ListDetailPage from "./pages/ListDetailPage";
 import ModerationSettingsPage from "./pages/ModerationSettingsPage";
 import LinkedAccountsSettingsPage from "./pages/LinkedAccountsSettingsPage";
+import RelaysSettingsPage from "./pages/RelaysSettingsPage";
 // import { NIP05ProfilePage } from "./pages/NIP05ProfilePage";
 import { UniversalUserPage } from "./pages/UniversalUserPage";
 import EventPage from "./pages/EventPage";
@@ -124,6 +125,7 @@ export function AppRouter() {
           */}
           <Route path="/settings/moderation" element={<ModerationSettingsPage />} />
           <Route path="/settings/linked-accounts" element={<LinkedAccountsSettingsPage />} />
+          <Route path="/settings/relays" element={<RelaysSettingsPage />} />
           {/* Test pages for debugging */}
           <Route path="/debug-video" element={<DebugVideoPage />} />
         </>
