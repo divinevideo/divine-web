@@ -133,6 +133,14 @@ export function HubSpotSignup() {
           height: 36px !important;
           box-sizing: border-box !important;
         }
+        /* Force the site's sans-serif stack: HubSpot sets no font-family on
+           these and its own Inter webfont is blocked by our font-src CSP, so
+           it would otherwise fall back to a serif default. */
+        .hs-form-html [data-hsfc-id="Renderer"],
+        .hs-form-html .hsfc-Button,
+        .hs-form-html .hsfc-TextInput {
+          font-family: 'Inter Variable', 'Inter', system-ui, -apple-system, sans-serif !important;
+        }
 
         /* Landing page card variant - larger with 70/30 split */
         .hs-form-landing .hs-form-html [data-hsfc-id="Renderer"] {
