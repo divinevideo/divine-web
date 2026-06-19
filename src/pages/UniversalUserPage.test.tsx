@@ -43,12 +43,13 @@ vi.mock('./ProfilePage', () => ({
   ),
 }));
 
-function renderPage(initialEntry: string) {
+function renderPage(
+  initialEntry: string,
+  queryDefaults: Record<string, unknown> = { retry: false },
+) {
   const queryClient = new QueryClient({
     defaultOptions: {
-      queries: {
-        retry: false,
-      },
+      queries: queryDefaults,
     },
   });
 
@@ -286,6 +287,59 @@ describe('UniversalUserPage', () => {
       });
       expect(screen.getByTestId('profile-page').dataset.pubkeyOverride).toBe(pubkey);
       expect(fetchMock).toHaveBeenCalled();
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+
+  it('resolves a NIP-05 handle via DNS when the relay kind-0 query fails', async () => {
+    // Repro for the resolution race: the relay sample query and the NIP-05 DNS
+    // fallback must not share a single budget. When the relay query fails or is
+    // aborted (e.g. it exhausted the timeout), the deterministic DNS lookup must
+    // still run instead of being starved, otherwise a divine.video handle 404s.
+    const pubkey = '8'.repeat(64);
+    mockNostrQuery.mockRejectedValue(new DOMException('Aborted', 'AbortError'));
+
+    const originalFetch = globalThis.fetch;
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ names: { jacky: pubkey } }),
+    });
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+    try {
+      renderPage('/u/jacky');
+
+      await waitFor(() => {
+        expect(screen.getByTestId('profile-page')).toBeInTheDocument();
+      });
+      expect(screen.getByTestId('profile-page').dataset.pubkeyOverride).toBe(pubkey);
+      expect(fetchMock).toHaveBeenCalled();
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+
+  it('retries after a transient relay failure and resolves once the relay recovers', async () => {
+    // The hook's retry predicate retries non-UserNotFound errors. A transient
+    // relay failure (with no DNS match to recover) should rethrow as retryable
+    // and resolve on the next attempt, rather than showing a definitive not-found.
+    const pubkey = '9'.repeat(64);
+    mockNostrQuery
+      .mockRejectedValueOnce(new DOMException('Aborted', 'AbortError'))
+      .mockResolvedValue([
+        createProfileEvent(pubkey, { name: 'Recovered', nip05: 'recovered@divine.video' }),
+      ]);
+
+    const originalFetch = globalThis.fetch;
+    // No DNS match on the first attempt, so the relay error is what propagates.
+    globalThis.fetch = vi.fn().mockResolvedValue({ ok: false, status: 404 }) as unknown as typeof fetch;
+    try {
+      renderPage('/u/recovered', { retry: 2, retryDelay: 0 });
+
+      await waitFor(() => {
+        expect(screen.getByTestId('profile-page')).toBeInTheDocument();
+      });
+      expect(screen.getByTestId('profile-page').dataset.pubkeyOverride).toBe(pubkey);
     } finally {
       globalThis.fetch = originalFetch;
     }
