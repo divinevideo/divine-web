@@ -47,13 +47,12 @@ function readPersistedSecretKey(): Uint8Array | null {
 
 function persistSecretKey(sk: Uint8Array): void {
   if (typeof window === 'undefined') return;
+  getPublicKey(sk);
   localStorage.setItem(ANONYMOUS_SIGNER_SK_KEY, bytesToHex(sk));
   localStorage.setItem(
     ANONYMOUS_SIGNER_EXPIRY_KEY,
     String(Date.now() + ANONYMOUS_SIGNER_TTL_MS),
   );
-  // Validate that the key yields a pubkey — dead-check against weird storage corruption
-  getPublicKey(sk);
 }
 
 /**

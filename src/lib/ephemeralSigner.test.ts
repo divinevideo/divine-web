@@ -1,7 +1,17 @@
 // ABOUTME: Tests for the device-scoped ephemeral Nostr signer used for anonymous NIP-98 auth
 // ABOUTME: Covers generation, persistence, expiry, and signEvent output shape.
 
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+vi.mock('nostr-tools', async () => {
+  const actual = await vi.importActual<typeof import('nostr-tools')>('nostr-tools');
+  return {
+    ...actual,
+    getPublicKey: vi.fn(actual.getPublicKey),
+  };
+});
+
+import { getPublicKey } from 'nostr-tools';
 
 import {
   clearAnonymousSigner,
@@ -12,6 +22,8 @@ import {
 } from './ephemeralSigner';
 
 describe('ephemeralSigner', () => {
+  const originalLocalStorageDescriptor = Object.getOwnPropertyDescriptor(window, 'localStorage');
+
   beforeEach(() => {
     const storage = new Map<string, string>();
     Object.defineProperty(window, 'localStorage', {
@@ -25,6 +37,13 @@ describe('ephemeralSigner', () => {
         key: (i: number) => Array.from(storage.keys())[i] ?? null,
       } satisfies Storage,
     });
+  });
+
+  afterEach(() => {
+    if (originalLocalStorageDescriptor) {
+      Object.defineProperty(window, 'localStorage', originalLocalStorageDescriptor);
+    }
+    vi.restoreAllMocks();
   });
 
   it('generates a new secret key and persists it on first call', async () => {
@@ -95,5 +114,15 @@ describe('ephemeralSigner', () => {
 
   it('TTL constant matches the 30-day age-verification window', () => {
     expect(ANONYMOUS_SIGNER_TTL_MS).toBe(30 * 24 * 60 * 60 * 1000);
+  });
+
+  it('does NOT persist the key if validation throws (regression #263)', () => {
+    vi.mocked(getPublicKey).mockImplementationOnce(() => {
+      throw new Error('corrupt key — refuse to persist');
+    });
+
+    expect(() => getOrCreateAnonymousSigner()).toThrow(/corrupt key/);
+    expect(localStorage.getItem(ANONYMOUS_SIGNER_SK_KEY)).toBeNull();
+    expect(localStorage.getItem(ANONYMOUS_SIGNER_EXPIRY_KEY)).toBeNull();
   });
 });
