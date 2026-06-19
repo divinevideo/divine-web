@@ -38,8 +38,8 @@ export async function verifyLiveBundle({
   expected,
   urls,
   fetchImpl = fetch,
-  attempts = 12,
-  delayMs = 10000,
+  attempts = 18,
+  delayMs = 20000,
   sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
   log = () => {},
 }) {
@@ -117,8 +117,12 @@ if (invokedDirectly) {
     const parsed = Number(process.env[name]);
     return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
   };
-  const attempts = numberFromEnv('VERIFY_BUNDLE_ATTEMPTS', 12);
-  const delayMs = numberFromEnv('VERIFY_BUNDLE_DELAY_MS', 10000);
+  // ~6 min budget (18 x 20s). Only the failure path waits this long; a healthy
+  // deploy passes on the first attempt. Sized to outlast Fastly KV propagation
+  // of the new index after publish (the publisher's own blob-upload retries run
+  // earlier, inside publish-content, so they don't eat this budget).
+  const attempts = numberFromEnv('VERIFY_BUNDLE_ATTEMPTS', 18);
+  const delayMs = numberFromEnv('VERIFY_BUNDLE_DELAY_MS', 20000);
 
   try {
     await verifyLiveBundle({ expected, urls, attempts, delayMs, log: (message) => console.log(message) });
