@@ -12,8 +12,23 @@ on:
   # of re-running a past run.
   workflow_dispatch:
 
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
 jobs:
+  guard-main-ref:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Verify production deploy ref
+        run: |
+          test "${{ github.ref }}" = "refs/heads/main" || {
+            echo "Production deploys must run from refs/heads/main, got ${{ github.ref }}" >&2
+            exit 1
+          }
+
   build:
+    needs: guard-main-ref
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout
