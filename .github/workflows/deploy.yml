@@ -1,5 +1,5 @@
 # ABOUTME: GitHub Actions workflow for deploying to Fastly (primary) and Cloudflare Pages (backup)
-# ABOUTME: Triggers on push to main branch
+# ABOUTME: Triggers on push to main, or manual dispatch
 
 name: Deploy to Production
 
@@ -7,9 +7,28 @@ on:
   push:
     branches:
       - main
+  # Allow manually re-running a clean production deploy of the current main
+  # through the approved workflow (build -> publish -> purge -> verify) instead
+  # of re-running a past run.
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
 
 jobs:
+  guard-main-ref:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Verify production deploy ref
+        run: |
+          test "${{ github.ref }}" = "refs/heads/main" || {
+            echo "Production deploys must run from refs/heads/main, got ${{ github.ref }}" >&2
+            exit 1
+          }
+
   build:
+    needs: guard-main-ref
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout
