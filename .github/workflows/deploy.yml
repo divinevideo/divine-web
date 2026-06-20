@@ -57,10 +57,12 @@ jobs:
   deploy-fastly:
     needs: build
     runs-on: ubuntu-24.04
-    # Ceiling so a wedged step (e.g. the ~6 min bundle verify polling a hung
-    # origin) fails loudly instead of holding the deploy-production concurrency
-    # lock for hours.
-    timeout-minutes: 20
+    # Ceiling so a wedged step (e.g. the bundle verify polling a hung origin)
+    # fails loudly instead of holding the deploy-production concurrency lock for
+    # hours. Set above the verify's own worst case (~6 min of sleeps + up to two
+    # 10s fetches per attempt) so the verifier's descriptive failure surfaces
+    # before this generic timeout would.
+    timeout-minutes: 25
     permissions:
       contents: read
       deployments: write

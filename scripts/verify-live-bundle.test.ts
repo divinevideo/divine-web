@@ -126,7 +126,7 @@ describe('verifyLiveBundle', () => {
     const expected = '/assets/index-CkdwgBUK.js';
     let calls = 0;
     const fetchImpl = vi.fn(async (url: string) => {
-      // Only count HTML (origin) fetches; the asset HEAD always 200s here.
+      // Only count HTML (origin) fetches; the asset GET always 200s here.
       if (url.endsWith('.js')) return { ok: true, status: 200, text: async () => '' };
       calls += 1;
       if (calls === 1) return { ok: false, status: 503, text: async () => '' };
