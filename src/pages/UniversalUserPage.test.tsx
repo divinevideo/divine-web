@@ -345,6 +345,42 @@ describe('UniversalUserPage', () => {
     }
   });
 
+  it('retries after a DNS timeout and resolves on the next attempt', async () => {
+    const pubkey = 'a9'.repeat(32);
+    let dnsTimeouts = 0;
+    vi.spyOn(AbortSignal, 'timeout').mockImplementation((milliseconds: number) => {
+      const controller = new AbortController();
+      if (milliseconds === 6000 && dnsTimeouts++ === 0) {
+        controller.abort(new DOMException('Timeout', 'TimeoutError'));
+      }
+      return controller.signal;
+    });
+    mockNostrQuery.mockResolvedValue([]);
+
+    const originalFetch = globalThis.fetch;
+    const fetchMock = vi.fn((_: RequestInfo | URL, init?: RequestInit) => {
+      if (init?.signal?.aborted) {
+        return Promise.reject(new DOMException('Timeout', 'TimeoutError'));
+      }
+      return Promise.resolve({
+        ok: true,
+        json: async () => ({ names: { jacky: pubkey } }),
+      });
+    });
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+    try {
+      renderPage('/u/jacky', { retry: 2, retryDelay: 0 });
+
+      await waitFor(() => {
+        expect(screen.getByTestId('profile-page')).toBeInTheDocument();
+      });
+      expect(screen.getByTestId('profile-page').dataset.pubkeyOverride).toBe(pubkey);
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+
   it('does not try the legacy Vine branch for subdomain-shaped inputs', async () => {
     const pubkey = '5'.repeat(64);
     mockNostrQuery.mockResolvedValue([

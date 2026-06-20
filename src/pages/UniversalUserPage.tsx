@@ -189,9 +189,6 @@ function getNotFoundDescription(identifier: string, t: TFunction): string {
 }
 
 /**
- * Looks up a user by either NIP-05 or Vine user ID
- */
-/**
  * Strip the NIP-05 envelope from a /u/ URL segment, leaving the bare local
  * part. We deliberately do NOT resolve the raw NIP-05 string itself — only
  * the canonical /u/<sub> path runs through the lookup. Third-party segments
@@ -345,8 +342,10 @@ function useUniversalUserLookup(identifier: string | undefined) {
             } satisfies ProfileLookupResult;
           }
         } catch (err) {
-          // A caller-driven abort ends the lookup; a DNS timeout just moves on.
+          // A caller-driven abort ends the lookup; a DNS budget timeout is
+          // transient and should retry rather than become a definitive not-found.
           if (context.signal.aborted) throw err;
+          if (dnsSignal.aborted) throw err;
           debugLog(`[UniversalUserPage] DNS NIP-05 lookup failed for ${candidate}: ${(err as Error).message}`);
         }
       }
