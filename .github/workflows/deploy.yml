@@ -128,6 +128,12 @@ jobs:
           check_json_endpoint "https://divine.video/.well-known/assetlinks.json"
           check_json_endpoint "https://www.divine.video/.well-known/assetlinks.json"
 
+      # The well-known checks above only cover static app-link files, which rarely
+      # change — so a stale frontend bundle can sail through a green deploy. This
+      # asserts the live origins actually serve the entry bundle we just built.
+      - name: Verify live frontend bundle matches the build
+        run: node scripts/verify-live-bundle.mjs
+
   deploy-cloudflare:
     needs: build
     runs-on: ubuntu-24.04
