@@ -133,10 +133,12 @@ if (invokedDirectly) {
     const parsed = Number(process.env[name]);
     return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
   };
-  // ~6 min budget (18 x 20s). Only the failure path waits this long; a healthy
-  // deploy passes on the first attempt. Sized to outlast Fastly KV propagation
-  // of the new index after publish (the publisher's own blob-upload retries run
-  // earlier, inside publish-content, so they don't eat this budget).
+  // ~6 min of sleeps (18 x 20s), plus up to two fetches per attempt (index.html
+  // + the referenced asset, each bounded by FETCH_TIMEOUT_MS). Only the failure
+  // path waits; a healthy deploy passes on the first attempt. Sized to outlast
+  // Fastly KV propagation of the new index after publish (the publisher's own
+  // blob-upload retries run earlier, inside publish-content, so they don't eat
+  // this budget).
   const attempts = numberFromEnv('VERIFY_BUNDLE_ATTEMPTS', 18);
   const delayMs = numberFromEnv('VERIFY_BUNDLE_DELAY_MS', 20000);
 
