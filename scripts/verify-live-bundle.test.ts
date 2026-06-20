@@ -55,7 +55,7 @@ describe('verifyLiveBundle', () => {
       }),
     ).resolves.toMatchObject({ ok: true });
 
-    expect(fetchImpl).toHaveBeenCalledTimes(2); // one per origin, no retries needed
+    expect(fetchImpl).toHaveBeenCalledTimes(4); // per origin: HTML + asset check
   });
 
   it('retries a stale origin until it flips to the expected bundle', async () => {
@@ -78,7 +78,7 @@ describe('verifyLiveBundle', () => {
       }),
     ).resolves.toMatchObject({ ok: true });
 
-    expect(fetchImpl).toHaveBeenCalledTimes(2);
+    expect(fetchImpl).toHaveBeenCalledTimes(3);
     expect(noopSleep).toHaveBeenCalled();
   });
 
@@ -119,13 +119,15 @@ describe('verifyLiveBundle', () => {
       }),
     ).resolves.toMatchObject({ ok: true });
 
-    expect(fetchImpl).toHaveBeenCalledTimes(2);
+    expect(fetchImpl).toHaveBeenCalledTimes(3); // html throw, html ok, asset check
   });
 
   it('treats a non-200 response as not-yet-live and keeps polling', async () => {
     const expected = '/assets/index-CkdwgBUK.js';
     let calls = 0;
-    const fetchImpl = vi.fn(async () => {
+    const fetchImpl = vi.fn(async (url: string) => {
+      // Only count HTML (origin) fetches; the asset HEAD always 200s here.
+      if (url.endsWith('.js')) return { ok: true, status: 200, text: async () => '' };
       calls += 1;
       if (calls === 1) return { ok: false, status: 503, text: async () => '' };
       return okResponse(htmlWith(expected));
@@ -140,7 +142,73 @@ describe('verifyLiveBundle', () => {
         sleep: vi.fn(async () => {}),
       }),
     ).resolves.toMatchObject({ ok: true });
+  });
 
-    expect(fetchImpl).toHaveBeenCalledTimes(2);
+  it('does not converge when the entry HTML matches but the referenced JS asset is not yet 200', async () => {
+    // The index.html pointer can converge before the JS blob is fetchable
+    // (eventually-consistent KV, or a swallowed dropped blob). Verify must check
+    // the asset itself, not just the pointer.
+    const expected = '/assets/index-CkdwgBUK.js';
+    let assetCalls = 0;
+    const fetchImpl = vi.fn(async (url: string) => {
+      if (url.endsWith('.js')) {
+        assetCalls += 1;
+        // 404 on the first check, 200 once the blob converges.
+        return { ok: assetCalls >= 2, status: assetCalls >= 2 ? 200 : 404, text: async () => '' };
+      }
+      return okResponse(htmlWith(expected)); // pointer is already converged
+    });
+
+    await expect(
+      verifyLiveBundle({
+        expected,
+        urls: ['https://divine.video/'],
+        fetchImpl,
+        attempts: 5,
+        sleep: vi.fn(async () => {}),
+      }),
+    ).resolves.toMatchObject({ ok: true });
+
+    expect(assetCalls).toBe(2); // re-checked the asset until it returned 200
+  });
+
+  it('throws when the JS asset never returns 200 even though the HTML matches', async () => {
+    const expected = '/assets/index-CkdwgBUK.js';
+    const fetchImpl = vi.fn(async (url: string) => {
+      if (url.endsWith('.js')) return { ok: false, status: 404, text: async () => '' };
+      return okResponse(htmlWith(expected));
+    });
+
+    await expect(
+      verifyLiveBundle({
+        expected,
+        urls: ['https://divine.video/'],
+        fetchImpl,
+        attempts: 2,
+        sleep: vi.fn(async () => {}),
+      }),
+    ).rejects.toThrow(/index-CkdwgBUK\.js/);
+  });
+
+  it('requests the asset on the same origin that served the HTML', async () => {
+    const expected = '/assets/index-CkdwgBUK.js';
+    const assetUrls: string[] = [];
+    const fetchImpl = vi.fn(async (url: string) => {
+      if (url.endsWith('.js')) {
+        assetUrls.push(url);
+        return { ok: true, status: 200, text: async () => '' };
+      }
+      return okResponse(htmlWith(expected));
+    });
+
+    await verifyLiveBundle({
+      expected,
+      urls: ['https://www.divine.video/'],
+      fetchImpl,
+      attempts: 2,
+      sleep: vi.fn(async () => {}),
+    });
+
+    expect(assetUrls).toContain('https://www.divine.video/assets/index-CkdwgBUK.js');
   });
 });

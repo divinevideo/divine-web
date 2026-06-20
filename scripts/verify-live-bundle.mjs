@@ -63,12 +63,28 @@ export async function verifyLiveBundle({
         if (response.ok) {
           const served = extractEntryScript(await response.text());
           if (served === expected) {
-            log(`[verify-live-bundle] ${url} serves ${expected} (attempt ${attempt}/${attempts})`);
-            matched = true;
-            break;
+            // The index.html pointer converged — but it and the hashed JS bundle
+            // resolve through the same KV index, and the bundle blob can lag the
+            // pointer (eventually-consistent KV) or be a swallowed dropped upload.
+            // Confirm the referenced asset is actually fetchable on this origin,
+            // not just that the pointer names it.
+            const assetUrl = new URL(expected, url).href;
+            const assetResponse = await fetchImpl(assetUrl, {
+              method: 'GET',
+              cache: 'no-store',
+              signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+            });
+            if (assetResponse.ok) {
+              log(`[verify-live-bundle] ${url} serves ${expected} and the asset is reachable (attempt ${attempt}/${attempts})`);
+              matched = true;
+              break;
+            }
+            lastObserved = `entry ${expected} but asset HTTP ${assetResponse.status}`;
+            log(`[verify-live-bundle] ${url} ${lastObserved} (attempt ${attempt}/${attempts})`);
+          } else {
+            lastObserved = served ?? 'no entry script';
+            log(`[verify-live-bundle] ${url} served ${lastObserved}, expected ${expected} (attempt ${attempt}/${attempts})`);
           }
-          lastObserved = served ?? 'no entry script';
-          log(`[verify-live-bundle] ${url} served ${lastObserved}, expected ${expected} (attempt ${attempt}/${attempts})`);
         } else {
           lastObserved = `HTTP ${response.status}`;
           log(`[verify-live-bundle] ${url} returned ${lastObserved} (attempt ${attempt}/${attempts})`);
