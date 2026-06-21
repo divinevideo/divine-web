@@ -63,12 +63,28 @@ export async function verifyLiveBundle({
         if (response.ok) {
           const served = extractEntryScript(await response.text());
           if (served === expected) {
-            log(`[verify-live-bundle] ${url} serves ${expected} (attempt ${attempt}/${attempts})`);
-            matched = true;
-            break;
+            // The index.html pointer converged — but it and the hashed JS bundle
+            // resolve through the same KV index, and the bundle blob can lag the
+            // pointer (eventually-consistent KV) or be a swallowed dropped upload.
+            // Confirm the referenced asset is actually fetchable on this origin,
+            // not just that the pointer names it.
+            const assetUrl = new URL(expected, url).href;
+            const assetResponse = await fetchImpl(assetUrl, {
+              method: 'GET',
+              cache: 'no-store',
+              signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+            });
+            if (assetResponse.ok) {
+              log(`[verify-live-bundle] ${url} serves ${expected} and the asset is reachable (attempt ${attempt}/${attempts})`);
+              matched = true;
+              break;
+            }
+            lastObserved = `entry ${expected} but asset HTTP ${assetResponse.status}`;
+            log(`[verify-live-bundle] ${url} ${lastObserved} (attempt ${attempt}/${attempts})`);
+          } else {
+            lastObserved = served ?? 'no entry script';
+            log(`[verify-live-bundle] ${url} served ${lastObserved}, expected ${expected} (attempt ${attempt}/${attempts})`);
           }
-          lastObserved = served ?? 'no entry script';
-          log(`[verify-live-bundle] ${url} served ${lastObserved}, expected ${expected} (attempt ${attempt}/${attempts})`);
         } else {
           lastObserved = `HTTP ${response.status}`;
           log(`[verify-live-bundle] ${url} returned ${lastObserved} (attempt ${attempt}/${attempts})`);
@@ -117,10 +133,12 @@ if (invokedDirectly) {
     const parsed = Number(process.env[name]);
     return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
   };
-  // ~6 min budget (18 x 20s). Only the failure path waits this long; a healthy
-  // deploy passes on the first attempt. Sized to outlast Fastly KV propagation
-  // of the new index after publish (the publisher's own blob-upload retries run
-  // earlier, inside publish-content, so they don't eat this budget).
+  // ~6 min of sleeps (18 x 20s), plus up to two fetches per attempt (index.html
+  // + the referenced asset, each bounded by FETCH_TIMEOUT_MS). Only the failure
+  // path waits; a healthy deploy passes on the first attempt. Sized to outlast
+  // Fastly KV propagation of the new index after publish (the publisher's own
+  // blob-upload retries run earlier, inside publish-content, so they don't eat
+  // this budget).
   const attempts = numberFromEnv('VERIFY_BUNDLE_ATTEMPTS', 18);
   const delayMs = numberFromEnv('VERIFY_BUNDLE_DELAY_MS', 20000);
 

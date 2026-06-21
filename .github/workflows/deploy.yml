@@ -57,6 +57,12 @@ jobs:
   deploy-fastly:
     needs: build
     runs-on: ubuntu-24.04
+    # Ceiling so a wedged step (e.g. the bundle verify polling a hung origin)
+    # fails loudly instead of holding the deploy-production concurrency lock for
+    # hours. Set above the verify's own worst case (~6 min of sleeps + up to two
+    # 10s fetches per attempt) so the verifier's descriptive failure surfaces
+    # before this generic timeout would.
+    timeout-minutes: 25
     permissions:
       contents: read
       deployments: write
@@ -95,7 +101,20 @@ jobs:
         working-directory: compute-js
         env:
           FASTLY_API_TOKEN: ${{ secrets.FASTLY_API_TOKEN }}
-        run: npx @fastly/compute-js-static-publish publish-content
+        run: |
+          set -euo pipefail
+          # publish-content (compute-js-static-publish, pinned to 7.0.3 via
+          # package-lock) retries per-file uploads but, on final failure, logs
+          # "  ❌ Failed: <key> → <msg>" and still exits 0 (the error is swallowed).
+          # Capture the output and fail the step if any upload was dropped, so a
+          # partial publish can't go green. We match the stable ASCII "Failed:"
+          # rather than the emoji so a locale/encoding change can't silently
+          # disable this guard. See #426.
+          npx @fastly/compute-js-static-publish publish-content 2>&1 | tee /tmp/publish-content.log
+          if grep -qF 'Failed:' /tmp/publish-content.log; then
+            echo "::error::publish-content dropped one or more uploads (see 'Failed:' above)."
+            exit 1
+          fi
 
       - name: Purge Fastly cache
         working-directory: compute-js
@@ -149,7 +168,10 @@ jobs:
 
       # The well-known checks above only cover static app-link files, which rarely
       # change — so a stale frontend bundle can sail through a green deploy. This
-      # asserts the live origins actually serve the entry bundle we just built.
+      # asserts the live origins actually serve the entry bundle we just built AND
+      # that the referenced JS asset is reachable (not just the index.html
+      # pointer), waiting out Fastly KV eventual consistency within the budget and
+      # failing the deploy if it never converges. See #426.
       - name: Verify live frontend bundle matches the build
         run: node scripts/verify-live-bundle.mjs
 
