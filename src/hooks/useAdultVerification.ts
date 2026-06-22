@@ -4,6 +4,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { createMediaViewerAuthHeader } from '@/lib/mediaViewerAuth';
+import { clearAnonymousSigner, getOrCreateAnonymousSigner } from '@/lib/ephemeralSigner';
 
 const STORAGE_KEY = 'adult-verification-confirmed';
 const STORAGE_EXPIRY_KEY = 'adult-verification-expiry';
@@ -52,7 +53,7 @@ export function useAdultVerification(): AdultVerificationState {
   const [storedIsVerified, setStoredIsVerified] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const { signer } = useCurrentUser();
-  const isVerified = storedIsVerified && !!signer;
+  const isVerified = storedIsVerified;
 
   useEffect(() => {
     const syncFromStorage = () => {
@@ -90,20 +91,24 @@ export function useAdultVerification(): AdultVerificationState {
     localStorage.removeItem(STORAGE_KEY);
     localStorage.removeItem(STORAGE_EXPIRY_KEY);
     setStoredIsVerified(false);
+    clearAnonymousSigner();
     notifyVerificationChange();
   }, []);
 
-  // Generate viewer auth header for a given URL (Blossom or NIP-98 depending on inputs)
+  // Generate viewer auth header for a given URL (Blossom or NIP-98 depending on inputs).
+  // Prefers the logged-in user's signer; falls back to a device-scoped anonymous signer
+  // once the viewer has confirmed adult content.
   const getAuthHeader = useCallback(
     async (
       url: string,
       method: string = 'GET',
       sha256?: string,
     ): Promise<string | null> => {
-      if (!signer || !isVerified) {
+      if (!isVerified) {
         return null;
       }
-      return createMediaViewerAuthHeader({ signer, url, sha256, method });
+      const effectiveSigner = signer ?? getOrCreateAnonymousSigner();
+      return createMediaViewerAuthHeader({ signer: effectiveSigner, url, sha256, method });
     },
     [signer, isVerified],
   );
@@ -111,7 +116,7 @@ export function useAdultVerification(): AdultVerificationState {
   return {
     isVerified,
     isLoading,
-    hasSigner: !!signer,
+    hasSigner: !!signer || isVerified,
     confirmAdult,
     revokeVerification,
     getAuthHeader,

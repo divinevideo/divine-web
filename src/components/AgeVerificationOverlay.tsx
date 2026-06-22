@@ -6,8 +6,6 @@ import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Warning as AlertTriangle, ShieldCheck } from '@phosphor-icons/react';
 import { useAdultVerification } from '@/hooks/useAdultVerification';
-import { useCurrentUser } from '@/hooks/useCurrentUser';
-import { useLoginDialog } from '@/contexts/LoginDialogContext';
 import { cn } from '@/lib/utils';
 
 interface AgeVerificationOverlayProps {
@@ -25,8 +23,6 @@ export function AgeVerificationOverlay({
 }: AgeVerificationOverlayProps) {
   const { t } = useTranslation();
   const { confirmAdult, isVerified } = useAdultVerification();
-  const { user } = useCurrentUser();
-  const { openLoginDialog } = useLoginDialog();
   const [isConfirming, setIsConfirming] = useState(false);
   const hasCalledOnVerified = useRef(false);
   const isConfirmingRef = useRef(false);
@@ -34,15 +30,21 @@ export function AgeVerificationOverlay({
   const handleConfirm = () => {
     // Prevent double-clicks
     if (isConfirmingRef.current) return;
-    
+
     isConfirmingRef.current = true;
     setIsConfirming(true);
-    confirmAdult();
-    
-    // Call onVerified synchronously with guard to prevent multiple calls
-    if (!hasCalledOnVerified.current) {
-      hasCalledOnVerified.current = true;
-      onVerified();
+    try {
+      confirmAdult();
+
+      // Call onVerified synchronously with guard to prevent multiple calls
+      if (!hasCalledOnVerified.current) {
+        hasCalledOnVerified.current = true;
+        onVerified();
+      }
+    } finally {
+      // Always release the lock so a throw doesn't permanently disable the button
+      isConfirmingRef.current = false;
+      setIsConfirming(false);
     }
   };
 
@@ -78,55 +80,34 @@ export function AgeVerificationOverlay({
 
       <div className="relative z-10 flex flex-col items-center gap-4 p-6 text-center max-w-sm">
         <div className="w-16 h-16 rounded-full bg-yellow-500/20 flex items-center justify-center">
-          {user ? (
-            <AlertTriangle className="w-8 h-8 text-yellow-500" />
-          ) : (
-            <ShieldCheck className="w-8 h-8 text-yellow-500" />
-          )}
+          <AlertTriangle className="w-8 h-8 text-yellow-500" />
         </div>
 
-        {user ? (
-          <>
-            <div className="space-y-2">
-              <h3 className="text-lg font-semibold text-white">{t('ageVerificationOverlay.restrictedHeading')}</h3>
-              <p className="text-sm text-gray-300">
-                {t('ageVerificationOverlay.restrictedBody')}
-              </p>
-            </div>
-            <Button
-              onClick={handleConfirm}
-              disabled={isConfirming}
-              className="gap-2 bg-white text-black hover:bg-gray-200 touch-manipulation"
-            >
-              {isConfirming ? (
-                <>{t('ageVerificationOverlay.verifying')}</>
-              ) : (
-                <>
-                  <ShieldCheck className="w-4 h-4" />
-                  {t('ageVerificationOverlay.confirmButton')}
-                </>
-              )}
-            </Button>
-            <p className="text-xs text-gray-500 max-w-xs">
-              {t('ageVerificationOverlay.rememberNote')}
-            </p>
-          </>
-        ) : (
-          <>
-            <div className="space-y-2">
-              <h3 className="text-lg font-semibold text-white">{t('ageVerificationOverlay.signInHeading')}</h3>
-              <p className="text-sm text-gray-300">
-                {t('ageVerificationOverlay.signInBody')}
-              </p>
-            </div>
-            <Button
-              onClick={openLoginDialog}
-              className="gap-2 bg-white text-black hover:bg-gray-200 touch-manipulation"
-            >
-              {t('ageVerificationOverlay.signInButton')}
-            </Button>
-          </>
-        )}
+        <div className="space-y-2">
+          <h3 className="text-lg font-semibold text-white">{t('ageVerificationOverlay.restrictedHeading')}</h3>
+          <p className="text-sm text-gray-300">
+            {t('ageVerificationOverlay.restrictedBody')}
+          </p>
+        </div>
+
+        <Button
+          onClick={handleConfirm}
+          disabled={isConfirming}
+          className="gap-2 bg-white text-black hover:bg-gray-200 touch-manipulation"
+        >
+          {isConfirming ? (
+            <>{t('ageVerificationOverlay.verifying')}</>
+          ) : (
+            <>
+              <ShieldCheck className="w-4 h-4" />
+              {t('ageVerificationOverlay.confirmButton')}
+            </>
+          )}
+        </Button>
+
+        <p className="text-xs text-gray-500 max-w-xs">
+          {t('ageVerificationOverlay.rememberNote')}
+        </p>
       </div>
     </div>
   );
