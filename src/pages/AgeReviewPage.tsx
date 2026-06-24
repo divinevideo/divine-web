@@ -1,5 +1,5 @@
 // ABOUTME: External moderation-flow page at /age-review for accounts flagged as possibly under 16
-// ABOUTME: Deadline-shaped: 15-day window, 13–15 parent video, 16+ mistake-flag; policy context lives at /kids
+// ABOUTME: Deadline-shaped: 15-day window, Divine Greenlight (13-15) parent video, 16+ mistake-flag; policy context lives at /kids
 
 import {
   Info,
@@ -30,17 +30,18 @@ const SUPPORT_EMAIL = "support@divine.video";
 const REVIEW_WINDOW_DAYS = 15;
 
 const SECTIONS: SectionAnchor[] = [
-  { id: "path-13-15", title: "If you're 13 to 15" },
+  { id: "path-13-15", title: "Divine Greenlight (13-15)" },
   { id: "path-mistake", title: "If you're 16 or older" },
   { id: "no-response", title: "If we don't hear from you" },
 ];
 
-// Mirrors the 13-15 parent-consent email in divine-mobile
+// Mirrors the Divine Greenlight (13-15) parent-consent email in divine-mobile
 // (minorAccountReviewParentConsentEmailSubject / ...Body) so the in-app flow
-// and this page open the same prefilled message.
-const TEEN_REVIEW_EMAIL_SUBJECT = "13-15 account review help";
+// and this page open the same prefilled message. NOTE: divine-mobile must be
+// updated to match this Divine Greenlight subject/body or the two will diverge.
+const TEEN_REVIEW_EMAIL_SUBJECT = "Divine Greenlight review help (ages 13-15)";
 const TEEN_REVIEW_EMAIL_BODY =
-  "Hi Divine support,\n\nI am contacting Divine about an account for a teen who is 13 to 15.\n\nI have attached a short private video that shows:\n- the teen\n- a parent or guardian speaking on camera\n- that the teen has permission to use Divine\n- that the parent or guardian knows about the account and will supervise its use\n\nCountry/ies of residence:\n\nHelpful context:\n\nThanks.";
+  "Hi Divine support,\n\nI am contacting Divine about Divine Greenlight for a teen who is 13-15.\n\nI have attached a short private video that shows:\n- the teen\n- a parent or guardian speaking on camera\n- that the teen has permission to use Divine\n- that the parent or guardian knows about the account and will supervise its use\n\nCountry/ies of residence:\n\nHelpful context:\n\nThanks.";
 const TEEN_REVIEW_MAILTO = buildMailtoLink(
   SUPPORT_EMAIL,
   TEEN_REVIEW_EMAIL_SUBJECT,
@@ -98,7 +99,7 @@ export function AgeReviewPage() {
       <div className="container mx-auto px-4 py-14 md:py-16 max-w-4xl space-y-14">
         {/* Note for under-13 readers—placed first so a kid
             reading the page lands on this before scrolling through the
-            13–15 instructions and assuming a parent video might apply.
+            13-15 instructions and assuming a parent video might apply.
             Intentionally not a path-shaped card (no CardHeader, no
             mailto button)—the action paths below don't apply, and
             emailing doesn't pause the clock for under-13. */}
@@ -121,10 +122,10 @@ export function AgeReviewPage() {
         {/* 1. 13-15 path */}
         <Anchor id="path-13-15">
           <SectionHero
-            eyebrow="If you're 13 to 15"
+            eyebrow="If you're 13-15"
             icon={<VideoCamera weight="fill" className="h-7 w-7" />}
-            title="A guided start"
-            lead={`Where local rules allow it, teens 13 to 15 can use Divine with a parent or guardian who's aware and involved. To keep the account open, a parent or guardian sends a short private video confirming the situation. The email needs to land within ${REVIEW_WINDOW_DAYS} days of the in-app notice.`}
+            title="Divine Greenlight: a guided start"
+            lead={`Where local rules allow it, teens 13-15 can use Divine through Divine Greenlight, with a parent or guardian who's aware and involved. To keep the account open, a parent or guardian sends a short private video confirming the situation. The email needs to land within ${REVIEW_WINDOW_DAYS} days of the in-app notice.`}
           />
 
           <div className="grid gap-6 md:grid-cols-2">
@@ -365,7 +366,7 @@ export function AgeReviewPage() {
                 </li>
               </ul>
               <p className="text-sm text-muted-foreground pt-2">
-                For 13-to-15 accounts, an email to{" "}
+                For Divine Greenlight (13-15) accounts, an email to{" "}
                 <a
                   href={`mailto:${SUPPORT_EMAIL}`}
                   className="text-brand-dark-green dark:text-brand-green underline underline-offset-2 hover:opacity-80 break-all"
