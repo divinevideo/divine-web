@@ -1201,7 +1201,7 @@
     "notFoundDescription": {
       "vine": "Den här Vine-användaren har kanske inte importerats till Nostr-nätverket än.",
       "nip05": "Kontrollera att NIP-05-identifieraren är korrekt.",
-      "legacy": "Det här användarnamnet matchar ingen äldre Vine-profil eller OpenVine-handle."
+      "legacy": "Det här användarnamnet matchar ingen känd profil."
     }
   },
   "atUsernamePage": {

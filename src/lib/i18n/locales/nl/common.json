@@ -1201,7 +1201,7 @@
     "notFoundDescription": {
       "vine": "Deze Vine-gebruiker is mogelijk nog niet geïmporteerd naar het Nostr-netwerk.",
       "nip05": "Controleer of de NIP-05-identifier klopt.",
-      "legacy": "Deze gebruikersnaam komt niet overeen met een oud Vine-profiel of OpenVine-handle."
+      "legacy": "Deze gebruikersnaam komt niet overeen met een bekend profiel."
     }
   },
   "atUsernamePage": {

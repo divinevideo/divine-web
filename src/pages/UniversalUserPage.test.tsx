@@ -124,8 +124,8 @@ describe('UniversalUserPage', () => {
     const fallbackPubkey = 'c'.repeat(64);
     mockNostrQuery.mockResolvedValue([
       createProfileEvent(fallbackPubkey, {
-        name: 'OpenVine User',
-        nip05: 'someuser@openvine.co',
+        name: 'Default Apex User',
+        nip05: '_@someuser.divine.video',
       }),
       createProfileEvent(legacyPubkey, {
         name: 'Legacy Vine User',
@@ -177,23 +177,6 @@ describe('UniversalUserPage', () => {
     expect(screen.getByTestId('profile-page').dataset.pubkeyOverride).toBe(pubkey);
   });
 
-  it('falls back to legacy openvine.co NIP-05 when there is no newer bare-name match', async () => {
-    const pubkey = '7'.repeat(64);
-    mockNostrQuery.mockResolvedValue([
-      createProfileEvent(pubkey, {
-        name: 'OpenVine User',
-        nip05: 'someuser@openvine.co',
-      }),
-    ]);
-
-    renderPage('/u/someuser');
-
-    await waitFor(() => {
-      expect(screen.getByTestId('profile-page')).toBeInTheDocument();
-    });
-    expect(screen.getByTestId('profile-page').dataset.pubkeyOverride).toBe(pubkey);
-  });
-
   it('shows the not-found state when no legacy or NIP-05 match exists', async () => {
     const originalFetch = globalThis.fetch;
     globalThis.fetch = vi.fn().mockResolvedValue({
@@ -203,7 +186,7 @@ describe('UniversalUserPage', () => {
     mockNostrQuery.mockResolvedValue([
       createProfileEvent('f'.repeat(64), {
         name: 'Someone Else',
-        nip05: 'other@openvine.co',
+        nip05: '_@other.divine.video',
       }),
     ]);
 

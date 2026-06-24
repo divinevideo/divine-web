@@ -1201,7 +1201,7 @@
     "notFoundDescription": {
       "vine": "Maaaring hindi pa na-import sa Nostr network ang Vine user na ito.",
       "nip05": "Pakitiyak na tama ang NIP-05 identifier.",
-      "legacy": "Hindi tugma ang username na ito sa anumang legacy Vine profile o OpenVine handle."
+      "legacy": "Hindi tugma ang username na ito sa anumang kilalang profile."
     }
   },
   "atUsernamePage": {
