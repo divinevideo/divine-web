@@ -38,7 +38,6 @@ const EXTERNAL_REDIRECTS = {
   '/discord': { url: 'https://discord.gg/d6HpB6XnHp', status: 302 },
 };
 
-// eslint-disable-next-line no-restricted-globals
 addEventListener("fetch", (event) => event.respondWith(handleRequest(event)));
 
 async function handleRequest(event) {
@@ -315,6 +314,10 @@ async function handleRequest(event) {
     // Add Vary: X-Original-Host so CDN doesn't mix subdomain and apex cached responses
     const headers = new Headers(response.headers);
     headers.append('Vary', 'X-Original-Host');
+    if (response.headers.get('Content-Type')?.includes('text/html')) {
+      headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+      headers.set('Surrogate-Control', 'no-store');
+    }
 
     // Inject feed data into HTML pages for faster LCP
     if (shouldInjectFeed && response.headers.get('Content-Type')?.includes('text/html')) {

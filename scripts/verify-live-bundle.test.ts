@@ -211,4 +211,31 @@ describe('verifyLiveBundle', () => {
 
     expect(assetUrls).toContain('https://www.divine.video/assets/index-CkdwgBUK.js');
   });
+
+  it('requests live HTML with no-cache headers', async () => {
+    const expected = '/assets/index-CkdwgBUK.js';
+    const fetchImpl = vi.fn(async (url: string) => {
+      if (url.endsWith('.js')) return { ok: true, status: 200, text: async () => '' };
+      return okResponse(htmlWith(expected));
+    });
+
+    await verifyLiveBundle({
+      expected,
+      urls: ['https://divine.video/'],
+      fetchImpl,
+      attempts: 2,
+      sleep: vi.fn(async () => {}),
+    });
+
+    expect(fetchImpl).toHaveBeenCalledWith(
+      'https://divine.video/',
+      expect.objectContaining({
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache',
+          Pragma: 'no-cache',
+        },
+      }),
+    );
+  });
 });
