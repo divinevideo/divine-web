@@ -54,6 +54,7 @@ vi.mock('@/hooks/useCurrentUser', () => ({
 vi.mock('@/hooks/useNostrPublish', () => ({
   useNostrPublish: () => ({
     mutateAsync: mockPublishEvent,
+    mutate: mockPublishEvent,
   }),
 }));
 
@@ -306,7 +307,9 @@ describe('useMuteList', () => {
     const ts = 1_700_000_000;
     const high = makeMuteEvent([['p', 'high-id']], mockUserPubkey, ts, '', 'zzzzzz');
     const low = makeMuteEvent([['p', 'low-id']], mockUserPubkey, ts, '', 'aaaaaa');
-    mockMuteQuery.mockResolvedValue([high, low]);
+    // Input reversed so a buggy "pick last" comparator would return
+    // 'high-id' and fail this assertion.
+    mockMuteQuery.mockResolvedValue([low, high]);
 
     const { result } = renderHook(() => useMuteList(mockUserPubkey), {
       wrapper: createWrapper(),
@@ -443,6 +446,26 @@ describe('useMuteItem', () => {
 
     expect(mockPublishEvent).not.toHaveBeenCalled();
   });
+
+  it('propagates publish failures', async () => {
+    mockMuteQuery.mockResolvedValue([]);
+    mockPublishEvent.mockRejectedValue(new Error('relay timeout'));
+
+    const { result } = renderHook(() => useMuteItem(), { wrapper: createWrapper() });
+
+    let error: unknown;
+    await act(async () => {
+      try {
+        await result.current.mutateAsync({ type: MuteType.USER, value: 'x' });
+      } catch (e) {
+        error = e;
+      }
+    });
+
+    expect(mockPublishEvent).toHaveBeenCalledOnce();
+    expect(error).toBeInstanceOf(Error);
+    expect((error as Error).message).toBe('relay timeout');
+  });
 });
 
 describe('useUnmuteItem', () => {
@@ -536,5 +559,26 @@ describe('useUnmuteItem', () => {
     expect(call.tags).toContainEqual(['p', 'keep']);
     expect(call.tags).not.toContainEqual(['p', 'latest-remove']);
     expect(call.tags).not.toContainEqual(['p', 'stale-remove']);
+  });
+
+  it('propagates publish failures', async () => {
+    const existing = makeMuteEvent([['p', 'a']]);
+    mockMuteQuery.mockResolvedValue([existing]);
+    mockPublishEvent.mockRejectedValue(new Error('relay timeout'));
+
+    const { result } = renderHook(() => useUnmuteItem(), { wrapper: createWrapper() });
+
+    let error: unknown;
+    await act(async () => {
+      try {
+        await result.current.mutateAsync({ type: MuteType.USER, value: 'a' });
+      } catch (e) {
+        error = e;
+      }
+    });
+
+    expect(mockPublishEvent).toHaveBeenCalledOnce();
+    expect(error).toBeInstanceOf(Error);
+    expect((error as Error).message).toBe('relay timeout');
   });
 });

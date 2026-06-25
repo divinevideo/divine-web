@@ -54,7 +54,8 @@ function parseMuteList(event: NostrEvent): MuteItem[] {
 
 /**
  * Return the most recent event from a Nostr relay response, or null.
- * Sort is descending by created_at; ties broken by event id for determinism.
+ * NIP-01: newest `created_at` wins. On a tie, the lowest event id wins
+ * so relays deterministically converge on one canonical copy.
  */
 function latestEvent(events: NostrEvent[]): NostrEvent | null {
   if (events.length === 0) return null;
