@@ -7,14 +7,13 @@ import { useSearchParams } from 'react-router-dom';
 import { useNostr } from '@nostrify/react';
 import { useSubdomainNavigate } from '@/hooks/useSubdomainNavigate';
 import { useSeoMeta } from '@unhead/react';
-import { MagnifyingGlass as Search, Hash, Play, Users, VideoCamera as Video, CircleNotch as Loader2 } from '@phosphor-icons/react';
+import { ArrowRight, MagnifyingGlass as Search, Hash, Play, Users, VideoCamera as Video, CircleNotch as Loader2 } from '@phosphor-icons/react';
 import { trackSearch } from '@/lib/analytics';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { VideoCardWithMetrics } from '@/components/VideoCardWithMetrics';
 import InfiniteScroll from 'react-infinite-scroll-component';
@@ -629,15 +628,11 @@ export function SearchPage() {
                       <Hash className="h-5 w-5" />
                       Hashtags
                     </h2>
-                    <div className="flex flex-wrap gap-2">
-                      {hashtagResults.slice(0, 12).map((hashtag) => (
-                        <HashtagCard
-                          key={hashtag.hashtag}
-                          hashtag={hashtag}
-                          onClick={() => handleHashtagClick(hashtag.hashtag)}
-                        />
-                      ))}
-                    </div>
+                    <HashtagResultsList
+                      hashtags={hashtagResults.slice(0, 12)}
+                      onHashtagClick={handleHashtagClick}
+                      variant="preview"
+                    />
                     {hashtagResults.length > 12 && (
                       <div className="text-center mt-4">
                         <Button
@@ -730,15 +725,12 @@ export function SearchPage() {
             ) : hashtagResults.length === 0 ? (
               <NoResultsState />
             ) : (
-              <div className="flex flex-wrap gap-2">
-                {hashtagResults.map((hashtag) => (
-                  <HashtagCard
-                    key={hashtag.hashtag}
-                    hashtag={hashtag}
-                    onClick={() => handleHashtagClick(hashtag.hashtag)}
-                  />
-                ))}
-              </div>
+              <HashtagResultsList
+                hashtags={hashtagResults}
+                onHashtagClick={handleHashtagClick}
+                query={searchQuery}
+                variant="full"
+              />
             )}
           </TabsContent>
         </Tabs>
@@ -819,23 +811,105 @@ function UserCard({ user }: { user: { pubkey: string; metadata?: UserCardMetadat
   );
 }
 
-// Hashtag card component
-function HashtagCard({
+function formatVideoCount(count: number): string {
+  return `${count.toLocaleString()} ${count === 1 ? 'video' : 'videos'}`;
+}
+
+function HashtagResultsList({
+  hashtags,
+  onHashtagClick,
+  query,
+  variant,
+}: {
+  hashtags: HashtagResult[];
+  onHashtagClick: (hashtag: string) => void;
+  query?: string;
+  variant: 'preview' | 'full';
+}) {
+  const [featuredHashtag, ...remainingHashtags] = hashtags;
+  const isFull = variant === 'full';
+  const trimmedQuery = query?.trim();
+
+  if (!featuredHashtag) return null;
+
+  return (
+    <section className="mx-auto w-full max-w-5xl space-y-4" aria-label="Hashtag search results">
+      {isFull && (
+        <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h2 className="flex items-center gap-2 text-lg font-semibold">
+              <Hash className="h-5 w-5" />
+              Hashtags
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              {hashtags.length.toLocaleString()} matches for {trimmedQuery ? `"${trimmedQuery}"` : 'this search'}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {isFull && (
+        <HashtagResultCard
+          hashtag={featuredHashtag}
+          onClick={() => onHashtagClick(featuredHashtag.hashtag)}
+          featured
+        />
+      )}
+
+      <div className={`grid gap-3 ${isFull ? 'sm:grid-cols-2 xl:grid-cols-3' : 'sm:grid-cols-2 lg:grid-cols-3'}`}>
+        {(isFull ? remainingHashtags : hashtags).map((hashtag) => (
+          <HashtagResultCard
+            key={hashtag.hashtag}
+            hashtag={hashtag}
+            onClick={() => onHashtagClick(hashtag.hashtag)}
+          />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function HashtagResultCard({
   hashtag,
-  onClick
+  onClick,
+  featured = false,
 }: {
   hashtag: HashtagResult;
   onClick: () => void;
+  featured?: boolean;
 }) {
+  const countLabel = formatVideoCount(hashtag.video_count);
+
   return (
-    <Badge
-      variant="secondary"
-      className="cursor-pointer hover:bg-secondary/80 px-3 py-1"
+    <button
+      type="button"
+      className={
+        featured
+          ? 'group flex w-full items-center justify-between gap-4 rounded-lg border-2 border-brand-dark-green bg-brand-dark-green p-5 text-left text-background shadow-md transition-all hover:-translate-y-0.5 hover:shadow-lg dark:border-brand-light-green/30 dark:text-card-foreground'
+          : 'group flex min-h-[92px] w-full items-center justify-between gap-3 rounded-lg border border-brand-dark-green/20 bg-card p-4 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary hover:bg-brand-light-green/60 hover:shadow-md dark:border-brand-light-green/20 dark:hover:bg-brand-dark-green'
+      }
       onClick={onClick}
+      aria-label={`Search hashtag #${hashtag.hashtag}, ${countLabel}`}
     >
-      #{hashtag.hashtag}
-      <span className="ml-2 text-xs opacity-70">{hashtag.video_count} videos</span>
-    </Badge>
+      <span className="min-w-0">
+        <span className={featured ? 'block truncate text-2xl font-bold' : 'block truncate text-lg font-semibold'}>
+          #{hashtag.hashtag}
+        </span>
+        <span className={featured ? 'mt-1 block text-sm text-background/75 dark:text-muted-foreground' : 'mt-1 block text-sm text-muted-foreground'}>
+          {countLabel}
+        </span>
+      </span>
+      <span
+        className={
+          featured
+            ? 'flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground transition-transform group-hover:translate-x-1'
+            : 'flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-brand-light-green text-brand-dark-green transition-transform group-hover:translate-x-1'
+        }
+        aria-hidden="true"
+      >
+        <ArrowRight className={featured ? 'h-5 w-5' : 'h-4 w-4'} />
+      </span>
+    </button>
   );
 }
 
