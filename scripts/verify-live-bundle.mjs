@@ -29,10 +29,10 @@ export function extractEntryScript(html) {
 /**
  * Poll each live origin until it serves the expected entry bundle, or fail.
  *
- * `index.html` is served `cache-control: no-store` (read live from the Compute
- * worker/KV), so a successful publish is reflected within seconds; the retry
- * budget only covers KV propagation. A persistent mismatch means the deploy
- * reported success while the edge keeps serving a stale bundle.
+ * `index.html` is served `cache-control: no-store` and requested with
+ * `Cache-Control: no-cache` so verification reads through the Compute worker/KV.
+ * The retry budget only covers KV propagation. A persistent mismatch means the
+ * deploy reported success while the edge keeps serving a stale bundle.
  */
 export async function verifyLiveBundle({
   expected,
@@ -58,6 +58,10 @@ export async function verifyLiveBundle({
       try {
         const response = await fetchImpl(url, {
           cache: 'no-store',
+          headers: {
+            'Cache-Control': 'no-cache',
+            Pragma: 'no-cache',
+          },
           signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
         });
         if (response.ok) {
