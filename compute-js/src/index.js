@@ -322,13 +322,16 @@ async function handleRequest(event) {
     // serveRequest response reads back empty in the worker, which previously
     // blanked these pages (#435). On ANY failure we fall through to the untouched
     // publisher response below, so injection can never blank the page.
-    if (shouldInjectFeed && response.headers.get('Content-Type')?.includes('text/html')) {
+    // status === 200 so we only inject into the SPA index, never the 404 fallback.
+    if (shouldInjectFeed && response.status === 200 && response.headers.get('Content-Type')?.includes('text/html')) {
       try {
         let html = await readSpaIndexHtml();
         const feedType = discoveryFeedType || 'trending';
         const feedData = await fetchFeedData(feedType, funnelcakeTarget);
         if (feedData) {
-          let injection = `<script>window.__DIVINE_FEED__=${JSON.stringify(feedData)};window.__DIVINE_FEED_TYPE__="${feedType}";</script>`;
+          // Escape '<' in the JSON so a feed value containing '</script>' cannot break out of the inline script.
+          const feedJson = JSON.stringify(feedData).replace(/</g, '\\u003c');
+          let injection = `<script>window.__DIVINE_FEED__=${feedJson};window.__DIVINE_FEED_TYPE__="${feedType}";</script>`;
           const firstVideo = feedData.videos?.[0] || feedData[0];
           const firstVideoUrl = firstVideo?.video_url;
           const firstThumbnail = firstVideo?.thumbnail;
@@ -343,6 +346,9 @@ async function handleRequest(event) {
         // readSpaIndexHtml returns identity (uncompressed) HTML, but `headers` was
         // copied from the publisher response and describes its (possibly br/gzip)
         // body. Drop the body-specific headers so we don't mislabel the plain string.
+        // Cache-Control is intentionally inherited: the injected feed is the global
+        // "trending" snapshot (not per-user) and fetchFeedData already caches it ~60s,
+        // so brief edge caching of the injected page is fine.
         const injectedHeaders = new Headers(headers);
         injectedHeaders.delete('Content-Encoding');
         injectedHeaders.delete('Content-Length');

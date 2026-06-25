@@ -38,5 +38,7 @@ export async function readSpaIndexHtml() {
   if (!contentEntry) {
     throw new Error(`Content not found: ${contentKey}`);
   }
-  return await contentEntry.text();
+  const html = await contentEntry.text();
+  console.log('Read index.html from KV, sha256:', sha256.slice(0, 16) + '...', 'length:', html.length);
+  return html;
 }
