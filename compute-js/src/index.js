@@ -316,8 +316,14 @@ async function handleRequest(event) {
     const headers = new Headers(response.headers);
     headers.append('Vary', 'X-Original-Host');
 
-    // Inject feed data into HTML pages for faster LCP
-    if (shouldInjectFeed && response.headers.get('Content-Type')?.includes('text/html')) {
+    // HOTFIX (2026-06-25 incident, see #435): apex feed injection DISABLED.
+    // `await response.text()` on the publisher's serveRequest response returns an empty
+    // string (verified by local repro; encoding-independent and NOT feed-dependent), so
+    // this block emitted a blank `/`, `/index.html`, and `/discovery/<tab>` while every
+    // non-injected route served fine. Short-circuit with `false` so these fall through to
+    // the untouched `new Response(response.body, ...)` below (same path as all other
+    // routes). Re-enable only after injection reads the page directly from KV (see #435).
+    if (false && shouldInjectFeed && response.headers.get('Content-Type')?.includes('text/html')) {
       try {
         let html = await response.text();
         const feedType = discoveryFeedType || 'trending';
