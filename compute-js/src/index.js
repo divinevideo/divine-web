@@ -317,10 +317,14 @@ async function handleRequest(event) {
     const headers = new Headers(response.headers);
     headers.append('Vary', 'X-Original-Host');
 
-    // Inject feed data into HTML pages for faster LCP
+    // Inject feed data into the homepage / discovery HTML for faster LCP.
+    // The HTML is read directly from KV (readSpaIndexHtml): the body of the
+    // serveRequest response reads back empty in the worker, which previously
+    // blanked these pages (#435). On ANY failure we fall through to the untouched
+    // publisher response below, so injection can never blank the page.
     if (shouldInjectFeed && response.headers.get('Content-Type')?.includes('text/html')) {
       try {
-        let html = await response.text();
+        let html = await readSpaIndexHtml();
         const feedType = discoveryFeedType || 'trending';
         const feedData = await fetchFeedData(feedType, funnelcakeTarget);
         if (feedData) {
@@ -336,10 +340,18 @@ async function handleRequest(event) {
           }
           html = html.replace('</head>', injection + '</head>');
         }
-        return new Response(html, { status: response.status, headers });
+        // readSpaIndexHtml returns identity (uncompressed) HTML, but `headers` was
+        // copied from the publisher response and describes its (possibly br/gzip)
+        // body. Drop the body-specific headers so we don't mislabel the plain string.
+        const injectedHeaders = new Headers(headers);
+        injectedHeaders.delete('Content-Encoding');
+        injectedHeaders.delete('Content-Length');
+        injectedHeaders.delete('ETag');
+        injectedHeaders.set('Content-Type', 'text/html; charset=utf-8');
+        return new Response(html, { status: response.status, headers: injectedHeaders });
       } catch (err) {
         console.error('Feed injection error:', err.message);
-        // Fall through to serve unmodified response
+        // Fall through to serve the untouched publisher response (never blank).
       }
     }
 
