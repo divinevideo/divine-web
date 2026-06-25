@@ -210,12 +210,17 @@ jobs:
   # webhook exists, and a Slack post failure never masks the original deploy
   # failure. Posts via an Incoming Webhook (single channel, no token/scopes).
   notify-failure:
-    needs: [deploy-fastly, deploy-cloudflare]
-    # failure() is true if any ancestor job failed (incl. build/guard, whose
-    # failure skips the deploy jobs) — so any broken production-deploy run pings
-    # the channel, not just a failed Fastly/Cloudflare step.
-    if: failure()
+    # List every upstream job so a failure anywhere in the run is detectable.
+    # When guard/build fails, the deploy jobs are *skipped* (not failed), and a
+    # bare `if: failure()` over skipped needs would not fire — so a broken build
+    # would produce no alert. always() lets this job run despite skipped needs;
+    # contains(needs.*.result, 'failure') fires on any failed ancestor while
+    # staying silent on an all-success (or cancelled) run.
+    needs: [guard-main-ref, build, deploy-fastly, deploy-cloudflare]
+    if: ${{ always() && contains(needs.*.result, 'failure') }}
     runs-on: ubuntu-24.04
+    permissions:
+      contents: read
     steps:
       - name: Probe live site and alert #divine-alerts
         env:
