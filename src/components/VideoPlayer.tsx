@@ -133,6 +133,12 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
 
     // Adult verification hook
     const { isVerified: isAdultVerified, getAuthHeader } = useAdultVerification();
+    // Keep the latest auth-header generator in a ref. getAuthHeader is keyed on the
+    // signer, so a late-resolving signer (e.g. a browser extension that injects after
+    // load) hands us a new reference. Reading it through a ref keeps it out of the load
+    // effect's dependency array, so resolving auth never aborts an in-flight video load.
+    const getAuthHeaderRef = useRef(getAuthHeader);
+    getAuthHeaderRef.current = getAuthHeader;
     const isKnownAgeRestricted = videoData?.ageRestricted === true || discoveredAgeRestricted;
     const { mediaUrl: authenticatedPosterUrl } = useAuthenticatedMediaUrl(poster, {
       enabled: !!poster && !requiresAuth && !authCheckPending,
@@ -751,30 +757,43 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
         hlsRef.current = null;
       }
 
-      // Preflight auth check for HLS URL
-      const checkAuth = async () => {
-        const urlToCheck = hlsUrl || allUrls[currentUrlIndex];
-        if (urlToCheck && !isAdultVerified) {
-          const authResult = await checkMediaAuth(urlToCheck);
-          setAuthCheckPending(false);
-          if (authResult && !authResult.authorized && (authResult.status === 401 || authResult.status === 403)) {
-            verboseLog(`[VideoPlayer ${videoId}] Preflight check: auth required (${authResult.status})`);
-            setRequiresAuth(true);
-            setIsLoading(false);
-            return false;
-          }
-        } else {
-          // Already verified or no URL to check
-          setAuthCheckPending(false);
+      // Playback must never wait on the auth probe. The previous code awaited a HEAD
+      // request to checkMediaAuth before setting video.src, which delayed (and on a
+      // slow probe, effectively blocked) the first frame for every non-verified viewer.
+      const urlToCheck = hlsUrl || allUrls[currentUrlIndex];
+
+      const handleProbeResult = (authResult: Awaited<ReturnType<typeof checkMediaAuth>> | undefined) => {
+        if (abortController.signal.aborted) return;
+        setAuthCheckPending(false);
+        if (authResult && !authResult.authorized && (authResult.status === 401 || authResult.status === 403)) {
+          verboseLog(`[VideoPlayer ${videoId}] Auth required (${authResult.status})`);
+          setRequiresAuth(true);
+          setIsLoading(false);
         }
-        return true;
       };
 
-      // Run preflight check then load video
-      checkAuth().then((authorized) => {
-        if (!authorized) return;
+      if (isKnownAgeRestricted && !isAdultVerified && urlToCheck) {
+        // Known age-restricted media keeps the blocking gate: show the age check
+        // before ever requesting the protected blob.
+        checkMediaAuth(urlToCheck).then((authResult) => {
+          if (abortController.signal.aborted) return;
+          handleProbeResult(authResult);
+          if (!(authResult && !authResult.authorized && (authResult.status === 401 || authResult.status === 403))) {
+            loadVideoSource();
+          }
+        });
+      } else {
+        // Fast path: start playback immediately. For unmarked media we still probe in
+        // the background — if it's actually protected, the probe (or the element's own
+        // error handler) flips requiresAuth and swaps in the age gate. Public media just
+        // plays without waiting on anything.
         loadVideoSource();
-      });
+        if (urlToCheck && !isAdultVerified) {
+          checkMediaAuth(urlToCheck).then(handleProbeResult);
+        } else {
+          setAuthCheckPending(false);
+        }
+      }
 
       function loadVideoSource() {
         if (!video) return; // Guard for TypeScript - video was checked before calling
@@ -802,7 +821,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
         // rejects any malformed auth header with 401 even when the blob is public.
         if (isAdultVerified && isKnownAgeRestricted) {
           verboseLog(`[VideoPlayer ${videoId}] Using NIP-98 auth loader for each HLS request`);
-          hlsConfig.loader = createAuthLoader(getAuthHeader);
+          hlsConfig.loader = createAuthLoader(getAuthHeaderRef.current);
         }
 
         const hls = new Hls(hlsConfig);
@@ -874,7 +893,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
               try {
                 // NIP-98 (not BUD-01): Blossom's viewer auth path only accepts
                 // BUD-01 list events, rejecting get events with an action mismatch.
-                const authHeader = await getAuthHeader(currentUrl, 'GET');
+                const authHeader = await getAuthHeaderRef.current(currentUrl, 'GET');
                 // Check if request was aborted while getting auth header
                 if (abortController.signal.aborted) {
                   verboseLog(`[VideoPlayer ${videoId}] Fetch aborted before starting`);
@@ -952,7 +971,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
         }
       };
 
-    }, [hlsUrl, currentUrlIndex, allUrls, videoId, requiresAuth, isAdultVerified, authRetryCount, getAuthHeader, isKnownAgeRestricted]); // React to HLS URL, fallback, and auth changes
+    }, [hlsUrl, currentUrlIndex, allUrls, videoId, requiresAuth, isAdultVerified, authRetryCount, isKnownAgeRestricted]); // React to HLS URL, fallback, and auth changes (getAuthHeader is read via ref to avoid restarting loads on signer churn)
 
     // Cleanup on unmount
     useEffect(() => {
