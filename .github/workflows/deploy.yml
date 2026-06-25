@@ -198,3 +198,70 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: pages deploy dist --project-name=divine-web-direct-deploy --branch=main
+
+  # A failed production deploy currently only emails the one person who
+  # triggered it (easy to miss, and reads like routine flaky-CI noise). This
+  # surfaces it to the whole team in #divine-alerts AND probes the live apex
+  # so the alert states the real-world impact — is the site actually serving a
+  # page, or handing visitors a blank one? Fires only when a deploy job fails.
+  #
+  # Graceful by design: no-ops (logs and exits 0) when the
+  # SLACK_DIVINE_ALERTS_WEBHOOK secret isn't set, so it can land before the
+  # webhook exists, and a Slack post failure never masks the original deploy
+  # failure. Posts via an Incoming Webhook (single channel, no token/scopes).
+  notify-failure:
+    needs: [deploy-fastly, deploy-cloudflare]
+    # failure() is true if any ancestor job failed (incl. build/guard, whose
+    # failure skips the deploy jobs) — so any broken production-deploy run pings
+    # the channel, not just a failed Fastly/Cloudflare step.
+    if: failure()
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Probe live site and alert #divine-alerts
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_DIVINE_ALERTS_WEBHOOK }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          COMMIT_SHA: ${{ github.sha }}
+          # Empty on workflow_dispatch (no head_commit); handled below.
+          COMMIT_MSG: ${{ github.event.head_commit.message }}
+        run: |
+          set -uo pipefail
+
+          if [ -z "${SLACK_WEBHOOK:-}" ]; then
+            echo "SLACK_DIVINE_ALERTS_WEBHOOK not set; skipping Slack notification."
+            exit 0
+          fi
+
+          # index.html is served cache-control: no-store, so this probe reflects
+          # what real visitors get right now. The outage class we care about is a
+          # 200 OK with an empty/short body (the bundle pointer resolved but the
+          # body isn't served), so we check status, size, AND the root element.
+          probe_url="https://divine.video/?ci-probe=${GITHUB_RUN_ID}"
+          : > /tmp/probe-body
+          status="$(curl -sS -o /tmp/probe-body -w '%{http_code}' --max-time 15 "$probe_url" 2>/dev/null || true)"
+          status="${status:-000}"
+          bytes="$(wc -c < /tmp/probe-body | tr -d ' ')"
+
+          if [ "$status" = "200" ] && [ "${bytes:-0}" -gt 100 ] && grep -q 'id="root"' /tmp/probe-body; then
+            site_line="🟡 Live site still appears to serve a real page (HTTP ${status}, ${bytes} bytes). The deploy failed but visitors may be unaffected — confirm before standing down."
+          else
+            site_line="🔴 Live site looks BROKEN (HTTP ${status}, ${bytes} bytes). Visitors may be seeing a blank page. Re-run the deploy or roll back."
+          fi
+
+          commit_short="${COMMIT_SHA:0:8}"
+          commit_subject="$(printf '%s' "${COMMIT_MSG:-(manual run)}" | head -n1)"
+
+          # Literal backticks are intentional (Slack `code` markdown); the format
+          # string must stay single-quoted, so no expansion is expected here.
+          # shellcheck disable=SC2016
+          text="$(printf '*Production deploy failed* — divine-web\n%s\n\nCommit `%s` — %s\n<%s|View the failed run>  ·  confirm at https://divine.video' \
+            "$site_line" "$commit_short" "$commit_subject" "$RUN_URL")"
+
+          payload="$(jq -n --arg t "$text" '{text: $t}')"
+
+          if curl -sS -X POST -H 'Content-type: application/json' \
+               --max-time 15 --data "$payload" "$SLACK_WEBHOOK" >/dev/null; then
+            echo "Posted deploy-failure alert to #divine-alerts."
+          else
+            echo "WARNING: failed to POST to Slack webhook (deploy failure still stands)."
+          fi
