@@ -760,4 +760,85 @@ describe('VideoPlayer', () => {
       );
     });
   });
+
+  describe('playback is not blocked by auth', () => {
+    // Helper: track every truthy value assigned to a <video> element's src.
+    const trackVideoSrc = (srcValues: string[]) => {
+      const originalCreateElement = document.createElement.bind(document);
+      vi.spyOn(document, 'createElement').mockImplementation((tagName: string) => {
+        const element = originalCreateElement(tagName);
+        if (tagName === 'video') {
+          let currentSrc = '';
+          Object.defineProperty(element, 'src', {
+            get: () => currentSrc,
+            set: (value: string) => {
+              currentSrc = value;
+              if (value) srcValues.push(value);
+            },
+            configurable: true,
+          });
+        }
+        return element;
+      });
+    };
+
+    it('sets src for a public video even when the auth preflight never resolves', async () => {
+      // Regression: checkMediaAuth ran *before* loadVideoSource, so a slow or hanging
+      // HEAD preflight delayed (or fully blocked) playback for every non-verified viewer.
+      // Public playback must never wait on the auth probe.
+      const { checkMediaAuth } = await import('@/hooks/useAdultVerification');
+      let resolveProbe: ((value: { authorized: boolean; status: number }) => void) | undefined;
+      (checkMediaAuth as ReturnType<typeof vi.fn>).mockReturnValue(
+        new Promise((resolve) => {
+          resolveProbe = resolve;
+        }),
+      );
+
+      const src = 'https://example.com/public-no-auth.mp4';
+      const srcValues: string[] = [];
+      trackVideoSrc(srcValues);
+
+      render(<VideoPlayer videoId="public-no-auth" src={src} />);
+
+      // src must be set without the probe ever resolving.
+      await waitFor(() => {
+        expect(srcValues).toContain(src);
+      }, { timeout: 1000 });
+
+      // Sanity: the probe really was still pending when src was set.
+      expect(resolveProbe).toBeDefined();
+    });
+
+    it('does not restart a public video load when getAuthHeader changes reference', async () => {
+      // Regression: getAuthHeader (keyed on the signer) was in the load effect's deps.
+      // A late-injecting signer/extension produced a new getAuthHeader reference, which
+      // re-ran the effect and aborted the in-flight load — repeatedly — stalling playback.
+      const { useAdultVerification } = await import('@/hooks/useAdultVerification');
+      (useAdultVerification as ReturnType<typeof vi.fn>).mockImplementation(() => ({
+        isVerified: false,
+        isLoading: false,
+        hasSigner: false,
+        // NEW reference on every render, simulating a resolving signer.
+        getAuthHeader: vi.fn().mockResolvedValue(null),
+      }));
+
+      const src = 'https://example.com/stable-public.mp4';
+      const srcValues: string[] = [];
+      trackVideoSrc(srcValues);
+
+      const { rerender } = render(<VideoPlayer videoId="stable-public" src={src} />);
+
+      await waitFor(() => {
+        expect(srcValues).toContain(src);
+      }, { timeout: 1000 });
+
+      // Force re-renders: each hands the component a fresh getAuthHeader reference.
+      rerender(<VideoPlayer videoId="stable-public" src={src} />);
+      rerender(<VideoPlayer videoId="stable-public" src={src} />);
+      await new Promise((resolve) => setTimeout(resolve, 50));
+
+      // The source must have been assigned exactly once — no abort/reload churn.
+      expect(srcValues.filter((value) => value === src)).toHaveLength(1);
+    });
+  });
 });
