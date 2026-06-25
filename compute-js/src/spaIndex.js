@@ -12,8 +12,10 @@ const CONTENT_STORE = 'divine-web-content';
  * Any worker path that needs the page HTML as a mutable string must read the KV
  * entry directly: the body of a `publisherServer.serveRequest()` response reads
  * back empty via `.text()` in the worker runtime, which silently blanks pages
- * that mutate the HTML (see #435). Throws if the index or content entry is
- * missing so callers can decide how to degrade.
+ * that mutate the HTML (see #435). This is the same read that handleSubdomainProfile
+ * has used in production to dodge that gotcha; extracting it here makes the proven
+ * approach shared and tested rather than a one-off. Throws if the index or content
+ * entry is missing so callers can decide how to degrade.
  *
  * @returns {Promise<string>} the full index.html
  */
