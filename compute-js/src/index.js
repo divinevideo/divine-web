@@ -326,6 +326,8 @@ async function handleRequest(event) {
     if (shouldInjectFeed && response.status === 200 && response.headers.get('Content-Type')?.includes('text/html')) {
       try {
         let html = await readSpaIndexHtml();
+        // feedType is a closed, server-controlled enum (discoveryFeedType or 'trending'),
+        // so interpolating it unescaped into the inline script below is safe.
         const feedType = discoveryFeedType || 'trending';
         const feedData = await fetchFeedData(feedType, funnelcakeTarget);
         if (feedData) {
@@ -346,14 +348,16 @@ async function handleRequest(event) {
         // readSpaIndexHtml returns identity (uncompressed) HTML, but `headers` was
         // copied from the publisher response and describes its (possibly br/gzip)
         // body. Drop the body-specific headers so we don't mislabel the plain string.
-        // Cache-Control is intentionally inherited: the injected feed is the global
-        // "trending" snapshot (not per-user) and fetchFeedData already caches it ~60s,
-        // so brief edge caching of the injected page is fine.
         const injectedHeaders = new Headers(headers);
         injectedHeaders.delete('Content-Encoding');
         injectedHeaders.delete('Content-Length');
         injectedHeaders.delete('ETag');
         injectedHeaders.set('Content-Type', 'text/html; charset=utf-8');
+        // The injected page carries the dynamic trending feed, but the apex inherits
+        // no Cache-Control from the publisher (Fastly's long default edge TTL would
+        // pin a stale feed). Set an explicit short cache matching fetchFeedData's ~60s
+        // snapshot, applied uniformly to apex and discovery.
+        injectedHeaders.set('Cache-Control', 'public, max-age=60');
         return new Response(html, { status: response.status, headers: injectedHeaders });
       } catch (err) {
         console.error('Feed injection error:', err.message);
