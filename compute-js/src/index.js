@@ -21,6 +21,7 @@ import {
 } from './crawlerHandlers.js';
 import { transformVideoApiResponse } from './videoMetadata.js';
 import { renderEmbedPage } from './embedPage.js';
+import { readSpaIndexHtml } from './spaIndex.js';
 
 const publisherServer = PublisherServer.fromStaticPublishRc(rc);
 const DEFAULT_OG_IMAGE = 'https://divine.video/og.png';
@@ -837,36 +838,10 @@ async function handleSubdomainProfile(subdomain, url, request, originalHostname)
     }
   }
 
-  // Read index.html directly from KV store
-  // (PublisherServer.serveRequest returns empty body for synthetic requests)
+  // Read index.html directly from KV (see readSpaIndexHtml / #435).
   let html;
   try {
-    const contentStore = new KVStore('divine-web-content');
-
-    // Read the file index: publishId_index_collectionName
-    const indexEntry = await contentStore.get('default_index_live');
-    if (!indexEntry) {
-      throw new Error('Content index not found in KV');
-    }
-    const kvIndex = JSON.parse(await indexEntry.text());
-
-    // Find index.html in the index and get its content hash
-    const htmlAsset = kvIndex['/index.html'];
-    if (!htmlAsset) {
-      throw new Error('index.html not in content index');
-    }
-    // Asset format: { key: "sha256:<hash>", size, contentType, variants }
-    // KV content key format: default_files_sha256_<hash>
-    const assetKey = htmlAsset.key; // e.g. "sha256:abc123..."
-    const sha256 = assetKey.replace('sha256:', '');
-    const contentKey = `default_files_sha256_${sha256}`;
-    console.log('Reading index.html from KV, sha256:', sha256.slice(0, 16) + '...');
-    const contentEntry = await contentStore.get(contentKey);
-    if (!contentEntry) {
-      throw new Error(`Content not found: ${contentKey}`);
-    }
-    html = await contentEntry.text();
-    console.log('Got index.html from KV, length:', html.length);
+    html = await readSpaIndexHtml();
   } catch (err) {
     console.error('KV read error:', err.message);
     const profileUrl = `https://${apexDomain}/profile/${npub}`;
