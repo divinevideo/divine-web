@@ -118,7 +118,7 @@ describe('chooseVideoDataSource', () => {
   });
 
   it('falls back to canonical Funnelcake for hot feeds on relays without video-sort support', () => {
-    relayUrl = 'wss://relay.ditto.pub';
+    relayUrl = 'wss://relay.damus.io';
 
     const decision = chooseVideoDataSource({
       feedType: 'trending',

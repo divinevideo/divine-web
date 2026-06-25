@@ -89,11 +89,6 @@ export const PROFILE_RELAYS: RelayConfig[] = [
     purpose: 'profile',
   },
   {
-    url: 'wss://relay.ditto.pub',
-    name: 'Ditto',
-    purpose: 'profile',
-  },
-  {
     url: 'wss://relay.primal.net',
     name: 'Primal',
     purpose: 'profile',
@@ -114,10 +109,6 @@ export const PRESET_RELAYS: RelayConfig[] = [
     url: 'wss://relay.divine.video',
     name: 'Divine',
     capabilities: { nip50: true, funnelcake: true },
-  },
-  {
-    url: 'wss://relay.ditto.pub',
-    name: 'Ditto',
   },
   {
     url: 'wss://relay.damus.io',
@@ -176,11 +167,6 @@ export const EVENT_LOOKUP_RELAYS: RelayConfig[] = [
   {
     url: 'wss://relay.primal.net',
     name: 'Primal',
-    purpose: 'backup',
-  },
-  {
-    url: 'wss://relay.ditto.pub',
-    name: 'Ditto',
     purpose: 'backup',
   },
   {

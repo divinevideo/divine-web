@@ -74,7 +74,6 @@ export function getOptimisticRelayCapabilities(relayUrl: string): RelayCapabilit
         source: 'optimistic',
       });
 
-    case 'relay.ditto.pub':
     case 'relay.nostr.wine':
       return createCapabilities(relayUrl, {
         supportsNIP50: true,
