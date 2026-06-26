@@ -318,8 +318,9 @@ async function handleRequest(event) {
 
     // Inject feed data into HTML pages for faster LCP
     if (shouldInjectFeed && isHtmlResponse) {
+      let html;
       try {
-        let html = await response.text();
+        html = await response.text();
         const feedType = discoveryFeedType || 'trending';
         const feedData = await fetchFeedData(feedType, funnelcakeTarget);
         if (feedData) {
@@ -338,7 +339,9 @@ async function handleRequest(event) {
         return new Response(html, { status: response.status, headers });
       } catch (err) {
         console.error('Feed injection error:', err.message);
-        // Fall through to serve unmodified response
+        if (html !== undefined) {
+          return new Response(html, { status: response.status, headers });
+        }
       }
     }
 
