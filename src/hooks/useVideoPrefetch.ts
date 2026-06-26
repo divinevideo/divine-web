@@ -7,6 +7,10 @@ import { debugLog } from '@/lib/debug';
 
 const PREFETCH_COUNT = 5;
 
+interface VideoPrefetchOptions {
+  prefetchVideos?: boolean;
+}
+
 function isProtectedDivineMediaUrl(url: string): boolean {
   try {
     return new URL(url).hostname === 'media.divine.video';
@@ -34,7 +38,8 @@ function preconnectToMediaDomains() {
  */
 export function useVideoPrefetch(
   activeVideoId: string | null,
-  videos: ParsedVideoData[]
+  videos: ParsedVideoData[],
+  { prefetchVideos = true }: VideoPrefetchOptions = {}
 ) {
   const prefetchLinksRef = useRef<HTMLLinkElement[]>([]);
 
@@ -72,7 +77,7 @@ export function useVideoPrefetch(
     for (const video of nextVideos) {
       const shouldSkipProtectedMediaPrefetch = !!video.ageRestricted;
 
-      if (video.videoUrl && !(shouldSkipProtectedMediaPrefetch && isProtectedDivineMediaUrl(video.videoUrl))) {
+      if (prefetchVideos && video.videoUrl && !(shouldSkipProtectedMediaPrefetch && isProtectedDivineMediaUrl(video.videoUrl))) {
         urlsToPrefetch.push({ url: video.videoUrl, as: 'video' });
       }
       if (video.thumbnailUrl && !(shouldSkipProtectedMediaPrefetch && isProtectedDivineMediaUrl(video.thumbnailUrl))) {
@@ -100,5 +105,5 @@ export function useVideoPrefetch(
     );
 
     return cleanup;
-  }, [activeVideoId, videos]);
+  }, [activeVideoId, prefetchVideos, videos]);
 }
