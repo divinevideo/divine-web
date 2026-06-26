@@ -61,12 +61,18 @@ beforeEach(async () => {
 });
 
 describe('useInfiniteVideosFunnelcake', () => {
-  it('does not send watching sort to hashtag video feeds', async () => {
-    mockSearchVideos.mockResolvedValueOnce({
-      videos: [{}],
-      has_more: false,
-      next_cursor: undefined,
-    });
+  it('falls back to loop-count sorting when watching has no hashtag videos', async () => {
+    mockSearchVideos
+      .mockResolvedValueOnce({
+        videos: [],
+        has_more: false,
+        next_cursor: undefined,
+      })
+      .mockResolvedValueOnce({
+        videos: [{}],
+        has_more: false,
+        next_cursor: undefined,
+      });
     mockTransformToVideoPage.mockReturnValueOnce({
       videos: [{ id: 'video-1', pubkey: 'p1', kind: 34236, createdAt: 101, vineId: 'd-1' }],
       nextCursor: undefined,
@@ -87,11 +93,22 @@ describe('useInfiniteVideosFunnelcake', () => {
       expect(result.current.isSuccess).toBe(true);
     });
 
-    expect(mockSearchVideos).toHaveBeenCalledWith(
+    expect(mockSearchVideos).toHaveBeenNthCalledWith(
+      1,
       'https://api.divine.video',
       expect.objectContaining({
         tag: 'twerkvine',
-        sort: 'trending',
+        sort: 'watching',
+        limit: 12,
+        signal: expect.any(AbortSignal),
+      })
+    );
+    expect(mockSearchVideos).toHaveBeenNthCalledWith(
+      2,
+      'https://api.divine.video',
+      expect.objectContaining({
+        tag: 'twerkvine',
+        sort: 'loops',
         limit: 12,
         signal: expect.any(AbortSignal),
       })

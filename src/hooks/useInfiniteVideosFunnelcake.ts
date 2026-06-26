@@ -141,11 +141,7 @@ function getFetchOptions(
     case 'hashtag':
       return {
         ...baseOptions,
-        sort: sortMode === 'classic'
-          ? 'loops'
-          : sortMode === 'watching'
-            ? 'trending'
-            : (sortMode || 'trending'),
+        sort: sortMode === 'classic' ? 'loops' : (sortMode || 'trending'),
         ...(sortMode === 'classic' ? { classic: true, platform: 'vine' } : {}),
       };
 
@@ -300,6 +296,13 @@ export function useInfiniteVideosFunnelcake({
               ...options,
               tag: hashtag.toLowerCase(),
             });
+            if (sortMode === 'watching' && response.videos.length === 0) {
+              response = await searchVideos(effectiveApiUrl, {
+                ...options,
+                sort: 'loops',
+                tag: hashtag.toLowerCase(),
+              });
+            }
             break;
 
           case 'profile':
