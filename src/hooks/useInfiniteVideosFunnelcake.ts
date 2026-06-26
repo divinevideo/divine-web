@@ -141,7 +141,11 @@ function getFetchOptions(
     case 'hashtag':
       return {
         ...baseOptions,
-        sort: sortMode === 'classic' ? 'loops' : (sortMode || 'trending'),
+        sort: sortMode === 'classic'
+          ? 'loops'
+          : sortMode === 'watching'
+            ? 'trending'
+            : (sortMode || 'trending'),
         ...(sortMode === 'classic' ? { classic: true, platform: 'vine' } : {}),
       };
 
