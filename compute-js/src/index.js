@@ -12,6 +12,7 @@ import { handleAuthPersistCookie } from './authPersistCookie.js';
 import { isJsonWellKnownPath, shouldServeWellKnownBeforeWwwRedirect } from './wellKnownPaths.js';
 import { buildCrawlerHtml, escapeHtml, cleanText, truncateText } from './ogTags.js';
 import { hexToNpub, decodeNpubToHex } from './bech32.js';
+import { buildWwwRedirectResponse } from './hostRedirect.js';
 import { applyStaticResponseHeaders } from './staticResponseHeaders.js';
 import {
   handleAtUsernameOg,
@@ -64,10 +65,9 @@ async function handleRequest(event) {
   }
 
   // 1. Redirect www.* to apex domain (e.g., www.divine.video -> divine.video)
-  if (hostnameToUse.startsWith('www.')) {
-    const newUrl = new URL(url);
-    newUrl.hostname = hostnameToUse.slice(4); // remove 'www.'
-    return Response.redirect(newUrl.toString(), 301);
+  const wwwRedirect = buildWwwRedirectResponse(url, hostnameToUse);
+  if (wwwRedirect) {
+    return wwwRedirect;
   }
 
   // 2. Check if this is a subdomain request (e.g., alice.dvine.video)
