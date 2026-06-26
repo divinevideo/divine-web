@@ -95,7 +95,21 @@ jobs:
         working-directory: compute-js
         env:
           FASTLY_API_TOKEN: ${{ secrets.FASTLY_API_TOKEN }}
-        run: fastly compute publish --non-interactive --token=$FASTLY_API_TOKEN
+        run: |
+          set -euo pipefail
+          for attempt in $(seq 1 5); do
+            if fastly compute publish --non-interactive --token="$FASTLY_API_TOKEN"; then
+              exit 0
+            fi
+
+            if [ "$attempt" -lt 5 ]; then
+              echo "Fastly compute publish failed on attempt $attempt/5; retrying in 45 seconds."
+              sleep 45
+            fi
+          done
+
+          echo "::error::Fastly compute publish failed after 5 attempts."
+          exit 1
 
       - name: Publish static content to KV Store
         working-directory: compute-js
