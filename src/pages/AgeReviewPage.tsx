@@ -119,7 +119,7 @@ export function AgeReviewPage() {
               when you're 13 or older. If you're 13 to 15, you'll need to
               complete the{" "}
               <a
-                href="/kids#13-15"
+                href="https://divine.video/age-review#path-13-15"
                 className="text-brand-dark-green dark:text-brand-green underline underline-offset-2 hover:opacity-80"
               >
                 Divine Greenlight
