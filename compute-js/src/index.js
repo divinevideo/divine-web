@@ -12,6 +12,7 @@ import { handleAuthPersistCookie } from './authPersistCookie.js';
 import { isJsonWellKnownPath, shouldServeWellKnownBeforeWwwRedirect } from './wellKnownPaths.js';
 import { buildCrawlerHtml, escapeHtml, cleanText, truncateText } from './ogTags.js';
 import { hexToNpub, decodeNpubToHex } from './bech32.js';
+import { applyStaticResponseHeaders } from './staticResponseHeaders.js';
 import {
   handleAtUsernameOg,
   handleHashtagOgTags,
@@ -312,12 +313,11 @@ async function handleRequest(event) {
 
   const response = await publisherServer.serveRequest(request);
   if (response != null) {
-    // Add Vary: X-Original-Host so CDN doesn't mix subdomain and apex cached responses
-    const headers = new Headers(response.headers);
-    headers.append('Vary', 'X-Original-Host');
+    const isHtmlResponse = response.headers.get('Content-Type')?.includes('text/html') ?? false;
+    const headers = applyStaticResponseHeaders(response.headers, { isHtml: isHtmlResponse });
 
     // Inject feed data into HTML pages for faster LCP
-    if (shouldInjectFeed && response.headers.get('Content-Type')?.includes('text/html')) {
+    if (shouldInjectFeed && isHtmlResponse) {
       try {
         let html = await response.text();
         const feedType = discoveryFeedType || 'trending';
