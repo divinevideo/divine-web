@@ -47,14 +47,19 @@ jobs:
             const deploymentUrl = '${{ steps.deploy.outputs.deployment-url }}';
             const sha = '${{ github.event.pull_request.head.sha }}'.substring(0, 7);
             const branch = '${{ github.event.pull_request.head.ref }}';
+            const updatedAt = new Date().toISOString();
+            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
 
             const body = `## 🚀 Preview Deployment
+
+            Last updated: <relative-time datetime="${updatedAt}">${updatedAt}</relative-time>
 
             | Property | Value |
             |----------|-------|
             | **Preview URL** | ${deploymentUrl} |
             | **Commit** | \`${sha}\` |
-            | **Branch** | \`${branch}\` |`;
+            | **Branch** | \`${branch}\` |
+            | **Workflow run** | [#${context.runNumber}](${runUrl}) |`;
 
             const { data: comments } = await github.rest.issues.listComments({
               owner: context.repo.owner,
