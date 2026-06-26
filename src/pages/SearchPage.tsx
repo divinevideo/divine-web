@@ -290,11 +290,12 @@ export function SearchPage() {
     pastedLookupQueryRef.current = normalizeDirectSearchInput(pastedValue) || null;
   };
 
-  // Handle hashtag suggestion click
   const handleHashtagClick = (hashtag: string) => {
-    setSearchQuery(`#${hashtag}`);
+    const normalizedHashtag = hashtag.trim().replace(/^#+/, '').toLowerCase();
+    if (!normalizedHashtag) return;
+
     setShowSuggestions(false);
-    searchInputRef.current?.focus();
+    navigate(`/hashtag/${encodeURIComponent(normalizedHashtag)}`);
   };
 
   // Handle filter tab change
@@ -879,19 +880,43 @@ function HashtagResultCard({
   featured?: boolean;
 }) {
   const countLabel = formatVideoCount(hashtag.video_count);
+  const thumbnailSizeClass = featured ? 'h-16 w-16 sm:h-20 sm:w-20' : 'h-14 w-14';
+  const [thumbnailFailed, setThumbnailFailed] = useState(false);
+  const thumbnail = thumbnailFailed ? undefined : hashtag.thumbnail;
+  const thumbnailClass = `${thumbnailSizeClass} flex-shrink-0 rounded-md object-cover`;
 
   return (
     <button
       type="button"
       className={
         featured
-          ? 'group flex w-full items-center justify-between gap-4 rounded-lg border-2 border-brand-dark-green bg-brand-dark-green p-5 text-left text-background shadow-md transition-all hover:-translate-y-0.5 hover:shadow-lg dark:border-brand-light-green/30 dark:text-card-foreground'
+          ? 'group flex w-full items-center justify-between gap-4 rounded-lg border-2 border-brand-dark-green bg-brand-dark-green p-4 text-left text-background shadow-md transition-all hover:-translate-y-0.5 hover:shadow-lg dark:border-brand-light-green/30 dark:text-card-foreground sm:p-5'
           : 'group flex min-h-[92px] w-full items-center justify-between gap-3 rounded-lg border border-brand-dark-green/20 bg-card p-4 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary hover:bg-brand-light-green/60 hover:shadow-md dark:border-brand-light-green/20 dark:hover:bg-brand-dark-green'
       }
       onClick={onClick}
       aria-label={`Search hashtag #${hashtag.hashtag}, ${countLabel}`}
     >
-      <span className="min-w-0">
+      {thumbnail ? (
+        <img
+          src={thumbnail}
+          alt={`Preview for #${hashtag.hashtag}`}
+          loading="lazy"
+          onError={() => setThumbnailFailed(true)}
+          className={thumbnailClass}
+        />
+      ) : (
+        <span
+          className={`${thumbnailSizeClass} flex flex-shrink-0 items-center justify-center rounded-md ${
+            featured
+              ? 'bg-background/10 text-background/80 dark:bg-card/60 dark:text-card-foreground'
+              : 'bg-brand-light-green text-brand-dark-green'
+          }`}
+          aria-hidden="true"
+        >
+          <Hash className={featured ? 'h-8 w-8' : 'h-6 w-6'} />
+        </span>
+      )}
+      <span className="min-w-0 flex-1">
         <span className={featured ? 'block truncate text-2xl font-bold' : 'block truncate text-lg font-semibold'}>
           #{hashtag.hashtag}
         </span>

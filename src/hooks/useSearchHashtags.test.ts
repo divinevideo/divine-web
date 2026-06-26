@@ -32,7 +32,11 @@ describe('useSearchHashtags', () => {
 
   it('passes hashtag searches to Funnelcake instead of filtering only popular tags', async () => {
     vi.mocked(fetchTrendingHashtags).mockResolvedValueOnce([
-      { hashtag: 'twerking', video_count: 255 },
+      {
+        hashtag: 'twerking',
+        video_count: 255,
+        thumbnail: 'https://media.divine.video/twerking.jpg',
+      },
     ] as Awaited<ReturnType<typeof fetchTrendingHashtags>>);
 
     const { result } = renderHook(
@@ -49,7 +53,11 @@ describe('useSearchHashtags', () => {
       'twerking',
     );
     expect(result.current.data).toEqual([
-      { hashtag: 'twerking', video_count: 255 },
+      {
+        hashtag: 'twerking',
+        video_count: 255,
+        thumbnail: 'https://media.divine.video/twerking.jpg',
+      },
     ]);
   });
 

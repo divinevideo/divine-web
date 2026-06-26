@@ -569,8 +569,16 @@ describe('SearchPage', () => {
     mockUseSearchHashtags.mockImplementation(({ query }: { query: string }) => ({
       data: query
         ? [
-            { hashtag: 'twerking', video_count: 255 },
-            { hashtag: 'twerkingvine', video_count: 4 },
+            {
+              hashtag: 'twerking',
+              video_count: 255,
+              thumbnail: 'https://media.divine.video/twerking.jpg',
+            },
+            {
+              hashtag: 'twerkingvine',
+              video_count: 4,
+              thumbnail: 'https://media.divine.video/twerkingvine.jpg',
+            },
           ]
         : [],
       isLoading: false,
@@ -586,6 +594,58 @@ describe('SearchPage', () => {
     expect(screen.getAllByRole('button', {
       name: 'Search hashtag #twerkingvine, 4 videos',
     }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole('img', {
+      name: 'Preview for #twerking',
+    })[0]).toHaveAttribute('src', 'https://media.divine.video/twerking.jpg');
+    expect(screen.getAllByRole('img', {
+      name: 'Preview for #twerkingvine',
+    })[0]).toHaveAttribute('src', 'https://media.divine.video/twerkingvine.jpg');
+  });
+
+  it('opens the hashtag video feed when a hashtag result is clicked', async () => {
+    const user = userEvent.setup();
+    mockUseSearchHashtags.mockImplementation(({ query }: { query: string }) => ({
+      data: query
+        ? [{ hashtag: 'twerking', video_count: 255 }]
+        : [],
+      isLoading: false,
+      error: null,
+    }));
+
+    renderPage(['/search?q=twerking&filter=hashtags']);
+
+    await user.click(screen.getAllByRole('button', {
+      name: 'Search hashtag #twerking, 255 videos',
+    })[0]);
+
+    expect(mockNavigate).toHaveBeenCalledWith('/hashtag/twerking');
+  });
+
+  it('hides a hashtag thumbnail when the media URL fails to load', async () => {
+    mockUseSearchHashtags.mockImplementation(({ query }: { query: string }) => ({
+      data: query
+        ? [{
+            hashtag: 'twerking',
+            video_count: 255,
+            thumbnail: 'https://media.divine.video/missing.jpg',
+          }]
+        : [],
+      isLoading: false,
+      error: null,
+    }));
+
+    renderPage(['/search?q=twerking&filter=hashtags']);
+
+    const thumbnails = screen.getAllByRole('img', {
+      name: 'Preview for #twerking',
+    });
+    thumbnails.forEach(thumbnail => fireEvent.error(thumbnail));
+
+    await waitFor(() => {
+      expect(screen.queryAllByRole('img', {
+        name: 'Preview for #twerking',
+      })).toHaveLength(0);
+    });
   });
 
   it('defaults to hot sort when no sort param is in the URL and passes it to useInfiniteSearchVideos', () => {

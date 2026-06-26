@@ -14,6 +14,7 @@ interface UseSearchHashtagsOptions {
 export interface HashtagResult {
   hashtag: string;
   video_count: number;
+  thumbnail?: string;
 }
 
 /**
@@ -79,6 +80,7 @@ export function useSearchHashtags(options: UseSearchHashtagsOptions) {
       const finalHashtags: HashtagResult[] = hashtags.map(hashtag => ({
         hashtag: hashtag.hashtag,
         video_count: hashtag.video_count,
+        thumbnail: hashtag.thumbnail,
       }));
 
       console.info('[search/hashtags] completed', {
