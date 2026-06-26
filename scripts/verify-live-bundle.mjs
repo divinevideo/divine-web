@@ -2,8 +2,10 @@
 // ABOUTME: freshly built entry bundle, so a green deploy can't silently serve stale assets.
 
 import { readFile } from 'node:fs/promises';
+import { execFile } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { promisify } from 'node:util';
 
 // Vite emits a single hashed module entry as <script type="module" src="/assets/index-<hash>.js">.
 // Other chunks are referenced via <link rel="modulepreload">, which we ignore (we only match
@@ -16,6 +18,42 @@ const ENTRY_SCRIPT_RE = /<script\b[^>]*\bsrc=["'](\/assets\/[^"']+\.js)["'][^>]*
 // class this guard targets) counts as a failed attempt and retries, rather than blocking
 // the await until the GitHub Actions job timeout.
 const FETCH_TIMEOUT_MS = 10000;
+const execFileAsync = promisify(execFile);
+const CURL_STATUS_MARKER = '\n__HTTP_STATUS__:';
+
+async function fetchWithCurl(url, options = {}) {
+  const method = options.method ?? 'GET';
+  const { stdout } = await execFileAsync('curl', [
+    '-sS',
+    '-L',
+    '--max-time',
+    String(Math.ceil(FETCH_TIMEOUT_MS / 1000)),
+    '-X',
+    method,
+    '-w',
+    `${CURL_STATUS_MARKER}%{http_code}`,
+    url,
+  ], {
+    maxBuffer: 12 * 1024 * 1024,
+  });
+
+  const markerIndex = stdout.lastIndexOf(CURL_STATUS_MARKER);
+  if (markerIndex === -1) {
+    throw new Error('curl did not report an HTTP status');
+  }
+
+  const body = stdout.slice(0, markerIndex);
+  const status = Number(stdout.slice(markerIndex + CURL_STATUS_MARKER.length).trim());
+  if (!Number.isFinite(status)) {
+    throw new Error('curl reported an invalid HTTP status');
+  }
+
+  return {
+    ok: status >= 200 && status < 300,
+    status,
+    text: async () => body,
+  };
+}
 
 /**
  * Extract the hashed entry bundle path (e.g. "/assets/index-CkdwgBUK.js") from an
@@ -143,7 +181,14 @@ if (invokedDirectly) {
   const delayMs = numberFromEnv('VERIFY_BUNDLE_DELAY_MS', 20000);
 
   try {
-    await verifyLiveBundle({ expected, urls, attempts, delayMs, log: (message) => console.log(message) });
+    await verifyLiveBundle({
+      expected,
+      urls,
+      attempts,
+      delayMs,
+      fetchImpl: fetchWithCurl,
+      log: (message) => console.log(message),
+    });
     console.log(`✓ Live origins serve the freshly built bundle ${expected}`);
   } catch (err) {
     console.error(`✗ ${err.message}`);
