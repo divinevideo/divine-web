@@ -10,7 +10,7 @@ import rc from '../static-publish.rc.js';
 import { buildFunnelcakeUrl, getFunnelcakeOriginForApiHost } from './funnelcakeOrigin.js';
 import { handleAuthPersistCookie } from './authPersistCookie.js';
 import { isJsonWellKnownPath, shouldServeWellKnownBeforeWwwRedirect } from './wellKnownPaths.js';
-import { buildCrawlerHtml, escapeHtml, cleanText, truncateText } from './ogTags.js';
+import { buildCrawlerHtml, escapeHtml, escapeFeedJson, cleanText, truncateText } from './ogTags.js';
 import { hexToNpub, decodeNpubToHex } from './bech32.js';
 import { buildWwwRedirectResponse } from './hostRedirect.js';
 import { applyStaticResponseHeaders } from './staticResponseHeaders.js';
@@ -319,6 +319,10 @@ async function handleRequest(event) {
 
     // Inject feed data into HTML pages for faster LCP
     if (shouldInjectFeed && isHtmlResponse) {
+      // response.text() below decodes the body to an identity (plain) string, so the
+      // returned bytes are no longer brotli/gzip. Strip the compression-coupled headers
+      // (Content-Encoding/Content-Length/ETag) or the browser fails to decode -> #435.
+      const decodedHeaders = applyStaticResponseHeaders(response.headers, { isHtml: true, decoded: true });
       let html;
       try {
         html = await response.text();
@@ -329,7 +333,11 @@ async function handleRequest(event) {
         const feedType = discoveryFeedType || 'trending';
         const feedData = await fetchFeedData(feedType, funnelcakeTarget);
         if (feedData) {
-          let injection = `<script>window.__DIVINE_FEED__=${JSON.stringify(feedData)};window.__DIVINE_FEED_TYPE__="${feedType}";</script>`;
+          // feedData carries user-controlled strings (video titles etc), so escape it for
+          // safe <script> embedding. feedType is a fixed allowlist value
+          // (getDiscoveryFeedType), so it needs no escaping.
+          const feedJson = escapeFeedJson(feedData);
+          let injection = `<script>window.__DIVINE_FEED__=${feedJson};window.__DIVINE_FEED_TYPE__="${feedType}";</script>`;
           const firstVideo = feedData.videos?.[0] || feedData[0];
           const firstVideoUrl = firstVideo?.video_url;
           const firstThumbnail = firstVideo?.thumbnail;
@@ -341,11 +349,11 @@ async function handleRequest(event) {
           }
           html = html.replace('</head>', injection + '</head>');
         }
-        return new Response(html, { status: response.status, headers });
+        return new Response(html, { status: response.status, headers: decodedHeaders });
       } catch (err) {
         console.error('Feed injection error:', err.message);
         if (html !== undefined) {
-          return new Response(html, { status: response.status, headers });
+          return new Response(html, { status: response.status, headers: decodedHeaders });
         }
       }
     }

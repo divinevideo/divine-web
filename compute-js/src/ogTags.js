@@ -11,6 +11,18 @@ export function escapeHtml(str) {
     .replace(/'/g, '&#039;');
 }
 
+// Serialize a value to JSON for safe embedding inside an inline <script> element.
+// JSON.stringify alone is unsafe here: it leaves `<` raw (so a string containing
+// `</script>` breaks out of the tag) and leaves the JS line terminators U+2028/U+2029
+// raw (valid in JSON, but they terminate a script's string literals). Escaping those
+// three keeps the embedded data inert while still parsing back to the original value.
+export function escapeFeedJson(value) {
+  return JSON.stringify(value)
+    .replace(/</g, "\\u003c")
+    .replace(/\u2028/g, "\\u2028")
+    .replace(/\u2029/g, "\\u2029");
+}
+
 export function cleanText(value) {
   return (value || '').replace(/\s+/g, ' ').trim();
 }
