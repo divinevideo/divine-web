@@ -110,11 +110,22 @@ export function AgeReviewPage() {
               <span>A note for anyone under 13 reading this</span>
             </div>
             <p>
-              We're sorry. Divine must close an under-13 account and delete the data it holds once it confirms or has actual knowledge that the account holder is under 13, and in all cases no later than the 15-day mark. Emailing
-              won't pause the clock here—the rules around services for
-              kids under 13 tie our hands. Where the rules allow, the same
-              person can come back and create a new account when they're 13
-              or older (with parental consent required between ages 13-15).
+              We're sorry. Divine cannot offer accounts to kids under 13.
+              Once we confirm or otherwise learn that an account holder is
+              under 13, we're required to close the account and delete the
+              data we hold within 15 days. Emailing us or asking to keep the
+              account open cannot change that requirement. Where the rules
+              allow, you may be able to come back and create a new account
+              when you're 13 or older. If you're 13 to 15, you'll need to
+              complete the{" "}
+              <a
+                href="/kids#13-15"
+                className="text-brand-dark-green dark:text-brand-green underline underline-offset-2 hover:opacity-80"
+              >
+                Divine Greenlight
+              </a>{" "}
+              process with your parent or guardian so we can confirm their
+              consent and supervision.
             </p>
           </CardContent>
         </Card>
