@@ -642,18 +642,20 @@ export async function fetchPopularHashtags(
  * @param apiUrl - Base URL of the Funnelcake API
  * @param limit - Maximum number of hashtags to return
  * @param signal - Optional abort signal
+ * @param query - Optional hashtag name substring to search server-side
  * @returns Promise with trending hashtags
  */
 export async function fetchTrendingHashtags(
   apiUrl: string = API_CONFIG.funnelcake.baseUrl,
   limit: number = 20,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  query?: string
 ): Promise<FunnelcakeHashtag[]> {
   // API returns array directly
   return funnelcakeRequest<FunnelcakeHashtag[]>(
     apiUrl,
     API_CONFIG.funnelcake.endpoints.trendingHashtags,
-    { limit },
+    { limit, q: query },
     signal
   );
 }

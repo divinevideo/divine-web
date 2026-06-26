@@ -296,6 +296,13 @@ export function useInfiniteVideosFunnelcake({
               ...options,
               tag: hashtag.toLowerCase(),
             });
+            if (sortMode === 'watching' && response.videos.length === 0) {
+              response = await searchVideos(effectiveApiUrl, {
+                ...options,
+                sort: 'loops',
+                tag: hashtag.toLowerCase(),
+              });
+            }
             break;
 
           case 'profile':
