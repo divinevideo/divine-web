@@ -13,6 +13,9 @@ import {
   recordError,
   recordOpen,
   recordPublish,
+  recordReqFirstResponse,
+  recordReqStart,
+  recordReqStartClear,
   refreshSticky,
   reset as resetRelayHealth,
   snapshot as relayHealthSnapshot,
@@ -100,6 +103,30 @@ const NostrProvider: React.FC<NostrProviderProps> = (props) => {
           // socket wiring is best-effort; we still get telemetry from
           // explicit recordReqEnd / recordPublish below.
         }
+
+        // Wrap relay.req to record per-URL latency for the relayHealth score.
+        // Time from REQ start to first EVENT or EOSE per relay. Errors land via
+        // the socket listeners above and don't reset the timer.
+        const innerReq = relay.req.bind(relay);
+        (relay as { req: typeof innerReq }).req = async function* (
+          filters: Parameters<typeof innerReq>[0],
+          opts?: Parameters<typeof innerReq>[1],
+        ) {
+          recordReqStart(url);
+          let resolved = false;
+          try {
+            for await (const msg of innerReq(filters, opts)) {
+              if (!resolved && (msg[0] === 'EVENT' || msg[0] === 'EOSE')) {
+                recordReqFirstResponse(url, msg[0] === 'EVENT');
+                resolved = true;
+              }
+              yield msg;
+            }
+          } finally {
+            if (!resolved) recordReqStartClear(url);
+          }
+        };
+
         verboseLog('[NostrProvider] NRelay1 instance created, readyState:', relay.socket?.readyState);
         return relay;
       },

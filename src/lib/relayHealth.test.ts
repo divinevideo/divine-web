@@ -8,6 +8,8 @@ import {
   recordPublish,
   recordReconnecting,
   recordReqEnd,
+  recordReqFirstResponse,
+  recordReqStart,
   refreshSticky,
   reset,
   score,
@@ -195,5 +197,42 @@ describe('recordPublish()', () => {
     const s = snapshot().find((x) => x.url === URL_A);
     expect(s?.successCount).toBe(1);
     expect(s?.errorCount).toBe(1);
+  });
+});
+
+describe('recordReqStart / recordReqFirstResponse', () => {
+  it('times latency from start to first response', () => {
+    recordReqStart(URL_A);
+    vi.advanceTimersByTime(150);
+    recordReqFirstResponse(URL_A, true);
+    const s = snapshot().find((x) => x.url === URL_A);
+    expect(s?.ewmaLatencyMs).toBe(150);
+    expect(s?.successCount).toBe(1);
+  });
+
+  it('does nothing if no start was recorded', () => {
+    recordReqFirstResponse(URL_A, true);
+    const s = snapshot().find((x) => x.url === URL_A);
+    expect(s).toBeUndefined();
+  });
+
+  it('clears the start so a second response is a no-op', () => {
+    recordReqStart(URL_A);
+    vi.advanceTimersByTime(100);
+    recordReqFirstResponse(URL_A, true);
+    vi.advanceTimersByTime(500);
+    recordReqFirstResponse(URL_A, true);
+    const s = snapshot().find((x) => x.url === URL_A);
+    expect(s?.ewmaLatencyMs).toBe(100);
+    expect(s?.successCount).toBe(1);
+  });
+
+  it('counts error when first response is not OK', () => {
+    recordReqStart(URL_A);
+    vi.advanceTimersByTime(80);
+    recordReqFirstResponse(URL_A, false);
+    const s = snapshot().find((x) => x.url === URL_A);
+    expect(s?.errorCount).toBe(1);
+    expect(s?.ewmaLatencyMs).toBe(0);
   });
 });

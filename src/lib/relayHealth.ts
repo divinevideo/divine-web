@@ -92,6 +92,23 @@ export function recordReqEnd(
   }
 }
 
+const reqStartTimes = new Map<string, number>();
+
+export function recordReqStart(url: string): void {
+  reqStartTimes.set(url, Date.now());
+}
+
+export function recordReqStartClear(url: string): void {
+  reqStartTimes.delete(url);
+}
+
+export function recordReqFirstResponse(url: string, ok: boolean): void {
+  const start = reqStartTimes.get(url);
+  reqStartTimes.delete(url);
+  if (start === undefined) return;
+  recordReqEnd(url, Date.now() - start, ok);
+}
+
 export function recordPublish(url: string, ok: boolean): void {
   const s = ensure(url);
   if (ok) {
