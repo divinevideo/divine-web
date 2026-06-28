@@ -66,6 +66,7 @@ export function recordError(url: string): void {
   const s = ensure(url);
   s.errorCount += 1;
   s.lastErrorAt = Date.now();
+  s.sticky = null;
 }
 
 export function recordReconnecting(url: string): void {
