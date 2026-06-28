@@ -35,7 +35,11 @@ ROUTES=(
   "/video/${REAL_VIDEO_ID}|real video page|twitter_card_player_present && og_video_present && twitter_player_present"
   "/embed/${REAL_VIDEO_ID}|embed iframe page|frame_ancestors_header && video_tag_present && noindex_header"
   "/profile/${REAL_NPUB}|real npub (Thomas Sanders)|og_title_not_brand && og_url_matches_path"
-  "/profile/${SYNTHETIC_NPUB}|synthetic npub (does not exist)|og_title_not_brand"
+  # Synthetic npub is structurally invalid (fails bech32 padding check at
+  # compute-js/src/bech32.js:87-90). The worker correctly falls through to the
+  # SPA shell with brand-default OG. Serving rich OG would mislead crawlers
+  # about a nonexistent profile. See issue #450.
+  "/profile/${SYNTHETIC_NPUB}|synthetic npub (does not exist)|og_title_is_brand"
   "/category/dance|category with video count|og_title_not_brand && og_url_matches_path"
   "/category|category index|og_title_not_brand && og_url_matches_path"
   "/family|family resource hub|og_title_not_brand && og_url_matches_path"
@@ -179,6 +183,20 @@ run_check() {
           all_passed=false
           echo "    FAIL: og:title is generic brand fallback (no per-route handler fired)"
           echo "          got: ${og_title}"
+        fi
+        ;;
+      og_title_is_brand)
+        # Inverse of og_title_not_brand. Passes when the response falls through to
+        # the SPA shell with the brand-default title. Use this for negative tests
+        # where the worker correctly does NOT produce per-route OG (e.g. structurally
+        # invalid npubs, where decodeNpubToHex returns null).
+        local og_title
+        og_title=$(extract_meta "$body" "og:title")
+        if [[ "$og_title" != "Divine Web - Short-form Looping Videos on Nostr" ]]; then
+          all_passed=false
+          echo "    FAIL: og:title is NOT the brand-default SPA shell fallback"
+          echo "          got: ${og_title}"
+          echo "          want: Divine Web - Short-form Looping Videos on Nostr"
         fi
         ;;
       og_url_matches_path)
