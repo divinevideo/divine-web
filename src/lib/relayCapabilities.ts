@@ -217,7 +217,6 @@ export async function detectRelayCapabilities(relayUrl: string): Promise<RelayCa
 
     recordProbe(relayUrl, {
       nip50: capabilities.supportsNIP50,
-      nip05: false,
       funnelcake: capabilities.supportsVideoSorts,
     });
 
@@ -233,7 +232,6 @@ export async function detectRelayCapabilities(relayUrl: string): Promise<RelayCa
 
     recordProbe(relayUrl, {
       nip50: fallbackCapabilities.supportsNIP50,
-      nip05: false,
       funnelcake: fallbackCapabilities.supportsVideoSorts,
     });
 

@@ -13,9 +13,8 @@ Each relay has a single score in `[0, 1]`. Higher is better. Default is
 - **Latency** (30% weight): 1 − clamp(latency_ms / 5000, 0, 1).
 - **Recency** (20% weight): 1 if just succeeded, decays linearly to 0
   over 5 minutes.
-- **Reconnecting penalty**: −0.5 if currently reconnecting.
 - **Capability bonus**: +0.1 for video kind (34236) if the relay has
-  Funnelcake, or for kinds 0/3/10011 if it has NIP-05.
+  Funnelcake.
 
 The score is recomputed on every read of the map (cheap, no cache).
 
@@ -23,7 +22,7 @@ The score is recomputed on every read of the map (cheap, no cache).
 
 `pickTopN(urls, n, kind)` forces a sticky relay to the top of the result
 for its kind. Sticky applies only to `VIDEO_KINDS` (kind 34236). Window:
-30 s, refreshed on successful use, expired on error. Score floor: 0.2
+30 s, set on use, not renewed while active, and cleared on error. Score floor: 0.2
 (a degraded relay loses its sticky).
 
 ## Reconnect behavior
@@ -55,7 +54,6 @@ interface RelaySnapshot {
   successCount: number;
   lastSuccessAt: number;   // unix ms
   lastErrorAt: number;     // unix ms
-  reconnecting: boolean;
   sticky: { kind: number; expiresAt: number } | null;
 }
 ```

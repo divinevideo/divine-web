@@ -9,7 +9,6 @@ const STICKY_WINDOW_MS = 30 * 1000;
 
 export type CapabilityBonus = {
   nip50?: boolean;
-  nip05?: boolean;
   funnelcake?: boolean;
 };
 
@@ -20,7 +19,6 @@ type RelayState = {
   successCount: number;
   lastSuccessAt: number;
   lastErrorAt: number;
-  reconnecting: boolean;
   sticky: { kind: number; expiresAt: number } | null;
   capabilities: CapabilityBonus;
   source: 'live' | 'fallback';
@@ -38,7 +36,6 @@ function ensure(url: string): RelayState {
       successCount: 0,
       lastSuccessAt: 0,
       lastErrorAt: 0,
-      reconnecting: false,
       sticky: null,
       capabilities: {},
       source: 'fallback',
@@ -50,7 +47,6 @@ function ensure(url: string): RelayState {
 
 export function recordOpen(url: string): void {
   const s = ensure(url);
-  s.reconnecting = false;
   s.lastSuccessAt = Date.now();
 }
 
@@ -67,10 +63,6 @@ export function recordError(url: string): void {
   s.errorCount += 1;
   s.lastErrorAt = Date.now();
   s.sticky = null;
-}
-
-export function recordReconnecting(url: string): void {
-  ensure(url).reconnecting = true;
 }
 
 export function recordReqEnd(
@@ -95,21 +87,21 @@ export function recordReqEnd(
 
 type ReqHandle = symbol;
 
-const reqHandles = new Map<ReqHandle, { url: string; startedAt: number }>();
+const reqStartTimes = new Map<ReqHandle, { url: string; startedAt: number }>();
 
 export function recordReqStart(url: string): ReqHandle {
   const handle = Symbol(url);
-  reqHandles.set(handle, { url, startedAt: Date.now() });
+  reqStartTimes.set(handle, { url, startedAt: Date.now() });
   return handle;
 }
 
 export function recordReqStartClear(handle: ReqHandle): void {
-  reqHandles.delete(handle);
+  reqStartTimes.delete(handle);
 }
 
 export function recordReqFirstResponse(handle: ReqHandle, ok: boolean): void {
-  const pending = reqHandles.get(handle);
-  reqHandles.delete(handle);
+  const pending = reqStartTimes.get(handle);
+  reqStartTimes.delete(handle);
   if (!pending) return;
   recordReqEnd(pending.url, Date.now() - pending.startedAt, ok);
 }
@@ -159,7 +151,6 @@ function recencyFactor(s: RelayState, now: number): number {
 function capabilityBonus(s: RelayState, kind?: number): number {
   if (kind === undefined) return 0;
   if (kind === 34236 && s.capabilities.funnelcake) return 0.1;
-  if ((kind === 0 || kind === 3 || kind === 10011) && s.capabilities.nip05) return 0.1;
   return 0;
 }
 
@@ -170,8 +161,7 @@ export function score(url: string, kind?: number, now: number = Date.now()): num
     0.5 * (1 - normalizedErrorRate(s)) +
     0.3 * (1 - normalizedLatency(s)) +
     0.2 * recencyFactor(s, now) +
-    capabilityBonus(s, kind) -
-    (s.reconnecting ? 0.5 : 0);
+    capabilityBonus(s, kind);
   return Math.max(0, Math.min(1, raw));
 }
 
@@ -206,6 +196,7 @@ export function pickTopN(
 export function refreshSticky(url: string, kind: number, now: number = Date.now()): void {
   const s = ensure(url);
   if (score(url, kind, now) < SCORE_FLOOR) return;
+  if (s.sticky?.kind === kind && s.sticky.expiresAt >= now) return;
   s.sticky = { kind, expiresAt: now + STICKY_WINDOW_MS };
 }
 
@@ -222,7 +213,6 @@ export interface RelaySnapshot {
   successCount: number;
   lastSuccessAt: number;
   lastErrorAt: number;
-  reconnecting: boolean;
   sticky: { kind: number; expiresAt: number } | null;
 }
 
@@ -236,14 +226,13 @@ export function snapshot(): RelaySnapshot[] {
     successCount: s.successCount,
     lastSuccessAt: s.lastSuccessAt,
     lastErrorAt: s.lastErrorAt,
-    reconnecting: s.reconnecting,
     sticky: s.sticky ? { ...s.sticky } : null,
   }));
 }
 
 export function reset(): void {
   state.clear();
-  reqHandles.clear();
+  reqStartTimes.clear();
 }
 
 export const RELAY_HEALTH_CONSTANTS = {

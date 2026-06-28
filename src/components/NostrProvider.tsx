@@ -114,7 +114,8 @@ const NostrProvider: React.FC<NostrProviderProps> = (props) => {
             socket.addEventListener(WebsocketEvent.error, () => recordError(url));
           }
         } catch {
-          // socket wiring is best-effort; routing still falls back to default scores.
+          // socket wiring is best-effort; we still get telemetry from
+          // req/publish wrappers below.
         }
 
         // Wrap relay.req to record per-URL latency for the relayHealth score.

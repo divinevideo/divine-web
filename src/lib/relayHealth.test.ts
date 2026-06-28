@@ -6,7 +6,6 @@ import {
   recordOpen,
   recordProbe,
   recordPublish,
-  recordReconnecting,
   recordReqEnd,
   recordReqFirstResponse,
   recordReqStart,
@@ -58,7 +57,7 @@ describe('score()', () => {
     expect(stale).toBeLessThan(fresh);
   });
 
-  it('applies a reconnecting penalty', () => {
+  it('penalizes recorded errors', () => {
     recordOpen(URL_A);
     for (let i = 0; i < 10; i += 1) {
       recordReqEnd(URL_A, 50, true);
@@ -129,9 +128,22 @@ describe('sticky routing', () => {
     for (let i = 0; i < 20; i += 1) {
       recordError(URL_B);
     }
-    recordReconnecting(URL_B);
     refreshSticky(URL_B, 34236);
     expect(pickTopN([URL_A, URL_B], 1, 34236)).toEqual([URL_A]);
+  });
+
+  it('does not renew an active sticky window', () => {
+    recordOpen(URL_A);
+    recordReqEnd(URL_A, 50, true);
+    recordOpen(URL_B);
+    recordReqEnd(URL_B, 50, true);
+
+    refreshSticky(URL_B, 34236);
+    const firstExpiry = snapshot().find((x) => x.url === URL_B)?.sticky?.expiresAt;
+    vi.advanceTimersByTime(10_000);
+    refreshSticky(URL_B, 34236);
+
+    expect(snapshot().find((x) => x.url === URL_B)?.sticky?.expiresAt).toBe(firstExpiry);
   });
 
   it('only applies sticky when the kind matches', () => {
@@ -236,18 +248,32 @@ describe('recordReqStart / recordReqFirstResponse', () => {
     expect(s?.errorCount).toBe(1);
     expect(s?.ewmaLatencyMs).toBe(0);
   });
+
+  it('tracks concurrent requests to the same relay independently', () => {
+    const first = recordReqStart(URL_A);
+    vi.advanceTimersByTime(50);
+    const second = recordReqStart(URL_A);
+    vi.advanceTimersByTime(50);
+    recordReqFirstResponse(second, true);
+    vi.advanceTimersByTime(50);
+    recordReqFirstResponse(first, true);
+
+    const s = snapshot().find((x) => x.url === URL_A);
+    expect(s?.successCount).toBe(2);
+    expect(s?.ewmaLatencyMs).toBe(80);
+  });
 });
 
 describe('recordError() clears sticky', () => {
   it('drops a sticky relay the moment an error is recorded', () => {
     recordOpen(URL_A);
-    recordReqStart(URL_A);
+    const reqA = recordReqStart(URL_A);
     vi.advanceTimersByTime(50);
-    recordReqFirstResponse(URL_A, true);
+    recordReqFirstResponse(reqA, true);
     recordOpen(URL_B);
-    recordReqStart(URL_B);
+    const reqB = recordReqStart(URL_B);
     vi.advanceTimersByTime(50);
-    recordReqFirstResponse(URL_B, true);
+    recordReqFirstResponse(reqB, true);
     refreshSticky(URL_B, 34236);
     expect(snapshot().find((x) => x.url === URL_B)?.sticky).not.toBeNull();
     recordError(URL_B);
