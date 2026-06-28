@@ -237,3 +237,20 @@ describe('recordReqStart / recordReqFirstResponse', () => {
     expect(s?.ewmaLatencyMs).toBe(0);
   });
 });
+
+describe('recordError() clears sticky', () => {
+  it('drops a sticky relay the moment an error is recorded', () => {
+    recordOpen(URL_A);
+    recordReqStart(URL_A);
+    vi.advanceTimersByTime(50);
+    recordReqFirstResponse(URL_A, true);
+    recordOpen(URL_B);
+    recordReqStart(URL_B);
+    vi.advanceTimersByTime(50);
+    recordReqFirstResponse(URL_B, true);
+    refreshSticky(URL_B, 34236);
+    expect(snapshot().find((x) => x.url === URL_B)?.sticky).not.toBeNull();
+    recordError(URL_B);
+    expect(snapshot().find((x) => x.url === URL_B)?.sticky).toBeNull();
+  });
+});
