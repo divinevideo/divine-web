@@ -14,6 +14,8 @@
 // localStorage (no production code was reading it yet). This module
 // is the read.
 
+import { isWssUrl } from './relayUrl';
+
 const STORAGE_KEY = 'DIVINE_RELAY_OVERRIDE';
 
 /**
@@ -26,7 +28,7 @@ export function resolveRelayUrl(defaultUrl: string): string {
   if (typeof window === 'undefined') return defaultUrl;
   try {
     const v = window.localStorage.getItem(STORAGE_KEY);
-    if (v && /^wss:\/\//.test(v)) return v;
+    if (v && isWssUrl(v)) return v;
   } catch {
     // localStorage may be blocked (private mode, sandbox, etc.) — fall through.
   }
@@ -41,7 +43,7 @@ export function resolveRelayUrls(defaults: string[]): string[] {
   if (typeof window === 'undefined') return defaults;
   try {
     const v = window.localStorage.getItem(STORAGE_KEY);
-    if (v && /^wss:\/\//.test(v)) {
+    if (v && isWssUrl(v)) {
       // Replace the production relay everywhere it appears in the
       // default set; preserve any others. This keeps preset relays
       // (search relays, profile relays) intact while routing the

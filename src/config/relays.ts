@@ -106,11 +106,6 @@ export const PRESET_RELAYS: RelayConfig[] = [
     capabilities: { nip50: true, funnelcake: true },
   },
   {
-    url: 'wss://relay.divine.video',
-    name: 'Divine',
-    capabilities: { nip50: true, funnelcake: true },
-  },
-  {
     url: 'wss://relay.damus.io',
     name: 'Damus',
   },
