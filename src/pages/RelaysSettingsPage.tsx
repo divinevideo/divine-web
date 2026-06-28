@@ -11,17 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Plus, Trash } from '@phosphor-icons/react';
 import { useToast } from '@/hooks/useToast';
-
-function isValidWssUrl(value: string): boolean {
-  if (!value) return false;
-  if (!/^wss:\/\//.test(value)) return false;
-  try {
-    new URL(value);
-    return true;
-  } catch {
-    return false;
-  }
-}
+import { isWssUrl } from '@/lib/relayUrl';
 
 export default function RelaysSettingsPage() {
   const { config, updateConfig } = useAppContext();
@@ -42,7 +32,7 @@ export default function RelaysSettingsPage() {
   };
 
   const addCustom = () => {
-    if (!isValidWssUrl(newUrl)) {
+    if (!isWssUrl(newUrl)) {
       toast({ title: 'Invalid relay URL. Use wss://...', variant: 'destructive' });
       return;
     }
