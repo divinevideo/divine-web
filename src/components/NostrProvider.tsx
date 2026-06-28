@@ -13,6 +13,10 @@ import {
   recordClose,
   recordError,
   recordOpen,
+  recordPublish,
+  recordReqFirstResponse,
+  recordReqStart,
+  recordReqStartClear,
   refreshSticky,
   reset as resetRelayHealth,
   snapshot as relayHealthSnapshot,
@@ -112,6 +116,47 @@ const NostrProvider: React.FC<NostrProviderProps> = (props) => {
         } catch {
           // socket wiring is best-effort; routing still falls back to default scores.
         }
+
+        // Wrap relay.req to record per-URL latency for the relayHealth score.
+        // Time from REQ start to first EVENT or EOSE per relay. Errors land via
+        // the socket listeners above and don't reset the timer.
+        const innerReq = relay.req.bind(relay);
+        (relay as { req: typeof innerReq }).req = async function* (
+          filters: Parameters<typeof innerReq>[0],
+          opts?: Parameters<typeof innerReq>[1],
+        ) {
+          const reqHandle = recordReqStart(url);
+          let resolved = false;
+          try {
+            for await (const msg of innerReq(filters, opts)) {
+              if (!resolved && (msg[0] === 'EVENT' || msg[0] === 'EOSE')) {
+                recordReqFirstResponse(reqHandle, true);
+                resolved = true;
+              } else if (!resolved && msg[0] === 'CLOSED') {
+                recordReqFirstResponse(reqHandle, false);
+                resolved = true;
+              }
+              yield msg;
+            }
+          } finally {
+            if (!resolved) recordReqStartClear(reqHandle);
+          }
+        };
+
+        const innerEvent = relay.event.bind(relay);
+        (relay as { event: typeof innerEvent }).event = async (
+          event: Parameters<typeof innerEvent>[0],
+          opts?: Parameters<typeof innerEvent>[1],
+        ) => {
+          try {
+            await innerEvent(event, opts);
+            recordPublish(url, true);
+          } catch (error) {
+            recordPublish(url, false);
+            throw error;
+          }
+        };
+
         verboseLog('[NostrProvider] NRelay1 instance created, readyState:', relay.socket?.readyState);
         return relay;
       },

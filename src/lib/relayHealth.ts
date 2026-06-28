@@ -92,6 +92,27 @@ export function recordReqEnd(
   }
 }
 
+type ReqHandle = symbol;
+
+const reqHandles = new Map<ReqHandle, { url: string; startedAt: number }>();
+
+export function recordReqStart(url: string): ReqHandle {
+  const handle = Symbol(url);
+  reqHandles.set(handle, { url, startedAt: Date.now() });
+  return handle;
+}
+
+export function recordReqStartClear(handle: ReqHandle): void {
+  reqHandles.delete(handle);
+}
+
+export function recordReqFirstResponse(handle: ReqHandle, ok: boolean): void {
+  const pending = reqHandles.get(handle);
+  reqHandles.delete(handle);
+  if (!pending) return;
+  recordReqEnd(pending.url, Date.now() - pending.startedAt, ok);
+}
+
 export function recordPublish(url: string, ok: boolean): void {
   const s = ensure(url);
   if (ok) {
@@ -221,6 +242,7 @@ export function snapshot(): RelaySnapshot[] {
 
 export function reset(): void {
   state.clear();
+  reqHandles.clear();
 }
 
 export const RELAY_HEALTH_CONSTANTS = {
