@@ -942,31 +942,87 @@ async function readIndexHtmlFromKv() {
 function isSocialMediaCrawler(request) {
   const userAgent = (request.headers.get('User-Agent') || '').toLowerCase();
 
-  // Common social media and link preview crawlers
+  // Social media and link preview crawlers, grouped by source. Substring match
+  // is case-insensitive (userAgent is lowercased above). New entries must use
+  // distinctive substrings to avoid false-positive matches against browser UAs.
   const crawlerPatterns = [
+    // === Mainstream social / messaging crawlers ===
     'facebookexternalhit',
+    'facebot',
     'twitterbot',
+    'xbot',
     'linkedinbot',
     'slackbot',
     'discordbot',
     'telegrambot',
     'whatsapp',
     'signal',
-    'embedly',
-    'quora link preview',
-    'showyoubot',
-    'outbrain',
+    'teams',
+    'skypeuripreview',
+    'redditbot',
+    'tumblr',
     'pinterest',
     'vkshare',
-    'w3c_validator',
-    'baiduspider',
-    'facebot',
-    'ia_archiver',
+    'mastodon',
+    'matrix',
+    'element',
+    'rocketchat',
+    'mattermost',
+    'irc',
+    'xmpp',
+
+    // === Link-preview / embed services (generic) ===
+    'embedly',
+    'iframely',
+    'linkpreview',
+    'preview',
+    'microlink',
+    'microsummary',
+    'outbrain',
+    'showyoubot',
+    'quora link preview',
+    'nuzzel',
+    'socialrank',
+    'opengraph',
+    'oembed',
+
+    // === Search engine crawlers ===
     'googlebot',
     'bingbot',
     'yandexbot',
     'duckduckbot',
+    'baiduspider',
     'applebot',
+    'ia_archiver',
+    'w3c_validator',
+
+    // === Nostr client link unfurlers ===
+    'damus',
+    'amethyst',
+    'irisapp',
+    'iris.to',
+    'coracle',
+    'primal',
+    'snort',
+    'yakihonne',
+    'nos',
+    'current',
+    'plebstr',
+    'nostrudel',
+    'habla',
+    'lume',
+    'grain',
+    'jellysocial',
+    'olas',
+
+    // === Bluesky / CardyB (link-preview fetcher) ===
+    // Bluesky's server-side link fetcher identifies itself in UA as
+    // `Bluesky Cardyb/<version>`. The robots.txt token is BlueskyPreviewBot.
+    // `bluesky` is a broader catch for any Bluesky-system crawler; false-positive
+    // risk is negligible.
+    'cardyb',
+    'blueskypreviewbot',
+    'bluesky',
   ];
 
   return crawlerPatterns.some(pattern => userAgent.includes(pattern));

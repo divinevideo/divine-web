@@ -1,0 +1,74 @@
+# ABOUTME: GitHub Actions workflow that audits OG/Twitter Card parity on production and
+# ABOUTME: the latest main-branch Cloudflare Pages preview deployment.
+
+name: OG/Twitter Card parity audit
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'compute-js/**'
+      - 'functions/**'
+      - 'src/lib/serverSocialMeta.ts'
+      - 'scripts/verify-og-tags.sh'
+      - '.github/workflows/og-audit.yml'
+      - 'package.json'
+  schedule:
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit-production:
+    name: Audit production (divine.video)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run OG parity audit against production
+        env:
+          BASE_URL: https://divine.video
+        run: bash scripts/verify-og-tags.sh
+
+  audit-cloudflare-preview:
+    name: Audit Cloudflare preview (latest main-branch deployment)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install wrangler
+        run: npm install -g wrangler
+
+      - name: Find latest Cloudflare Pages main-branch preview deployment URL
+        id: find-preview
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${CLOUDFLARE_API_TOKEN:-}" ]]; then
+            echo "::notice::CLOUDFLARE_API_TOKEN not set; skipping Cloudflare preview audit."
+            exit 0
+          fi
+          # Project name matches deploy.yml and preview.yml (divine-web-direct-deploy).
+          # Filter to Branch=main so we audit the post-merge preview, not PR previews.
+          URL=$(wrangler pages deployment list \
+            --project-name divine-web-direct-deploy \
+            --json 2>/dev/null \
+            | jq -r '[.[] | select(.Environment == "Preview" and .Branch == "main")] | first | .Deployment // empty')
+          if [[ -z "$URL" ]]; then
+            echo "::notice::No main-branch preview deployment found; skipping."
+            exit 0
+          fi
+          echo "preview_url=$URL" >> "$GITHUB_OUTPUT"
+
+      - name: Run OG parity audit against Cloudflare preview
+        if: steps.find-preview.outputs.preview_url != ''
+        env:
+          BASE_URL: ${{ steps.find-preview.outputs.preview_url }}
+        run: bash scripts/verify-og-tags.sh
