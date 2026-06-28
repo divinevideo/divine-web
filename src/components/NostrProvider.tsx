@@ -217,49 +217,44 @@ const NostrProvider: React.FC<NostrProviderProps> = (props) => {
         return result as ReadonlyMap<string, NostrFilter[]>;
       },
       eventRouter(event: NostrEvent) {
-        // Publish to the selected relay
         const disabled = new Set(disabledPresetUrls.current);
         const allRelays = new Set<string>([relayUrl.current]);
 
-        // For profiles (kind 0), contact lists (kind 3), and identity claims (kind 10011), publish to multiple relays for better availability
-        if (event.kind === 0 || event.kind === 3 || event.kind === 10011) {
-          getRelayUrls(PROFILE_RELAYS)
-            .filter((u) => !disabled.has(u))
-            .forEach((url) => allRelays.add(url));
-        }
-
-        // For list events (kind 30000, 30001, 30005), publish to multiple relays for better discoverability
+        const PROFILE_KINDS = [0, 3, 10011];
         const LIST_KINDS = [30000, 30001, 30005];
-        if (LIST_KINDS.includes(event.kind)) {
+        const isProfileOrList =
+          PROFILE_KINDS.includes(event.kind) || LIST_KINDS.includes(event.kind);
+
+        if (isProfileOrList) {
           getRelayUrls(PROFILE_RELAYS)
             .filter((u) => !disabled.has(u))
             .forEach((url) => allRelays.add(url));
         }
 
-        // Custom relays the user added
         for (const url of customRelayUrls.current) {
           if (!disabled.has(url)) allRelays.add(url);
         }
 
-        // Also publish to the preset relays, capped to 5
-        for (const { url } of (presetRelays ?? [])) {
-          if (disabled.has(url)) continue;
-          allRelays.add(url);
-
-          if (allRelays.size >= 5) {
-            break;
+        // Cap the candidate set at 5 for non-profile kinds. Profile/list
+        // kinds fan out to all enabled PROFILE_RELAYS for read/write
+        // symmetry with reqRouter — see #415 follow-up.
+        if (!isProfileOrList) {
+          for (const { url } of (presetRelays ?? [])) {
+            if (disabled.has(url)) continue;
+            allRelays.add(url);
+            if (allRelays.size >= 5) break;
           }
         }
 
         const ranked = pickTopN(Array.from(allRelays), 5);
-        for (const url of ranked) {
-          // We mark publishes as success; failures land via recordError from
-          // the relay socket events. This is a coarse approximation suitable
-          // for adaptive ranking; an exact per-relay OK signal requires
-          // wrapping publish() itself, which is out of scope for this iteration.
+        const finalSet = isProfileOrList
+          ? Array.from(new Set([...ranked, ...getRelayUrls(PROFILE_RELAYS).filter((u) => !disabled.has(u))]))
+          : ranked;
+
+        for (const url of finalSet) {
           recordPublish(url, true);
         }
-        return ranked;
+        return finalSet;
       },
     });
 
