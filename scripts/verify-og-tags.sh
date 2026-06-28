@@ -45,7 +45,7 @@ ROUTES=(
   "/search?q=cats|search results|og_title_not_brand && og_url_matches_path"
   "/discovery|discovery (trending)|og_title_not_brand && og_url_matches_path"
   "/discovery/recent|discovery (recent)|og_title_not_brand && og_url_matches_path"
-  "/@jacky|at-username apex|og_title_not_brand"
+  "/@jalcine|at-username apex|og_title_not_brand"
   "/|apex home|og_title_not_brand"
 )
 
