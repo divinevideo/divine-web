@@ -32,14 +32,7 @@ jobs:
       - name: Run OG parity audit against production
         env:
           BASE_URL: https://divine.video
-        continue-on-error: true
-        id: audit-prod
         run: bash scripts/verify-og-tags.sh
-
-      - name: Annotate production audit result
-        if: always() && steps.audit-prod.outcome == 'failure'
-        run: |
-          echo "::warning::OG parity audit against production failed. This is expected until the known OG parity gaps are fixed — see https://github.com/divinevideo/divine-web/issues for the tracking issue. The audit is intentionally non-blocking."
 
   audit-cloudflare-preview:
     name: Audit Cloudflare preview (latest main-branch deployment)
@@ -56,7 +49,6 @@ jobs:
         id: find-preview
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-        continue-on-error: true
         run: |
           set -euo pipefail
           if [[ -z "${CLOUDFLARE_API_TOKEN:-}" ]]; then
@@ -79,11 +71,4 @@ jobs:
         if: steps.find-preview.outputs.preview_url != ''
         env:
           BASE_URL: ${{ steps.find-preview.outputs.preview_url }}
-        continue-on-error: true
-        id: audit-preview
         run: bash scripts/verify-og-tags.sh
-
-      - name: Annotate Cloudflare preview audit result
-        if: always() && steps.audit-preview.outcome == 'failure'
-        run: |
-          echo "::warning::OG parity audit against the Cloudflare preview failed. This is expected until the known OG parity gaps are fixed — see https://github.com/divinevideo/divine-web/issues for the tracking issue. The audit is intentionally non-blocking."
