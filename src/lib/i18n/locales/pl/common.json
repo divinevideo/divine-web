@@ -1204,7 +1204,7 @@
     "notFoundDescription": {
       "vine": "Ten użytkownik Vine mógł jeszcze nie zostać zaimportowany do sieci Nostr.",
       "nip05": "Sprawdź, czy identyfikator NIP-05 jest poprawny.",
-      "legacy": "Ta nazwa użytkownika nie pasuje do starego profilu Vine ani uchwytu OpenVine."
+      "legacy": "Ta nazwa użytkownika nie pasuje do żadnego znanego profilu."
     }
   },
   "atUsernamePage": {

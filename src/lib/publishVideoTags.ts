@@ -11,7 +11,7 @@ export function generateVineId(): string {
 }
 
 /**
- * Build imeta tag from video metadata (NIP-71 / OpenVine).
+ * Build imeta tag from video metadata (NIP-71).
  */
 export function buildImetaTag(metadata: VideoMetadata): string[] {
   const tag = ['imeta'];

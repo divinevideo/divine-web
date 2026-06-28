@@ -10,8 +10,11 @@ import rc from '../static-publish.rc.js';
 import { buildFunnelcakeUrl, getFunnelcakeOriginForApiHost } from './funnelcakeOrigin.js';
 import { handleAuthPersistCookie } from './authPersistCookie.js';
 import { isJsonWellKnownPath, shouldServeWellKnownBeforeWwwRedirect } from './wellKnownPaths.js';
-import { buildCrawlerHtml, escapeHtml, cleanText, truncateText } from './ogTags.js';
-import { hexToNpub } from './bech32.js';
+import { buildCrawlerHtml, escapeHtml, escapeFeedJson, cleanText, truncateText } from './ogTags.js';
+import { hexToNpub, decodeNpubToHex } from './bech32.js';
+import { buildWwwRedirectResponse } from './hostRedirect.js';
+import { applyStaticResponseHeaders } from './staticResponseHeaders.js';
+import { hasViteEntryScript, readPublishedStaticFile } from './staticContent.js';
 import {
   handleAtUsernameOg,
   handleHashtagOgTags,
@@ -50,7 +53,8 @@ async function handleRequest(event) {
 
   // Check for original host passed by divine-router
   const originalHost = request.headers.get('X-Original-Host');
-  const hostnameToUse = originalHost || url.hostname;
+  const forwardedHost = request.headers.get('X-Forwarded-Host');
+  const hostnameToUse = originalHost || forwardedHost || url.hostname;
   const funnelcakeTarget = getFunnelcakeOriginForApiHost(hostnameToUse);
 
   console.log('Request hostname:', url.hostname, 'original:', originalHost, 'path:', url.pathname);
@@ -62,10 +66,9 @@ async function handleRequest(event) {
   }
 
   // 1. Redirect www.* to apex domain (e.g., www.divine.video -> divine.video)
-  if (hostnameToUse.startsWith('www.')) {
-    const newUrl = new URL(url);
-    newUrl.hostname = hostnameToUse.slice(4); // remove 'www.'
-    return Response.redirect(newUrl.toString(), 301);
+  const wwwRedirect = buildWwwRedirectResponse(url, hostnameToUse);
+  if (wwwRedirect) {
+    return wwwRedirect;
   }
 
   // 2. Check if this is a subdomain request (e.g., alice.dvine.video)
@@ -311,18 +314,30 @@ async function handleRequest(event) {
 
   const response = await publisherServer.serveRequest(request);
   if (response != null) {
-    // Add Vary: X-Original-Host so CDN doesn't mix subdomain and apex cached responses
-    const headers = new Headers(response.headers);
-    headers.append('Vary', 'X-Original-Host');
+    const isHtmlResponse = response.headers.get('Content-Type')?.includes('text/html') ?? false;
+    const headers = applyStaticResponseHeaders(response.headers, { isHtml: isHtmlResponse });
 
     // Inject feed data into HTML pages for faster LCP
-    if (shouldInjectFeed && response.headers.get('Content-Type')?.includes('text/html')) {
+    if (shouldInjectFeed && isHtmlResponse) {
+      // response.text() below decodes the body to an identity (plain) string, so the
+      // returned bytes are no longer brotli/gzip. Strip the compression-coupled headers
+      // (Content-Encoding/Content-Length/ETag) or the browser fails to decode -> #435.
+      const decodedHeaders = applyStaticResponseHeaders(response.headers, { isHtml: true, decoded: true });
+      let html;
       try {
-        let html = await response.text();
+        html = await response.text();
+        if (!html || !hasViteEntryScript(html)) {
+          console.error('Publisher returned unusable HTML for', url.pathname, 'length:', html?.length ?? 0);
+          html = await readIndexHtmlFromKv();
+        }
         const feedType = discoveryFeedType || 'trending';
         const feedData = await fetchFeedData(feedType, funnelcakeTarget);
         if (feedData) {
-          let injection = `<script>window.__DIVINE_FEED__=${JSON.stringify(feedData)};window.__DIVINE_FEED_TYPE__="${feedType}";</script>`;
+          // feedData carries user-controlled strings (video titles etc), so escape it for
+          // safe <script> embedding. feedType is a fixed allowlist value
+          // (getDiscoveryFeedType), so it needs no escaping.
+          const feedJson = escapeFeedJson(feedData);
+          let injection = `<script>window.__DIVINE_FEED__=${feedJson};window.__DIVINE_FEED_TYPE__="${feedType}";</script>`;
           const firstVideo = feedData.videos?.[0] || feedData[0];
           const firstVideoUrl = firstVideo?.video_url;
           const firstThumbnail = firstVideo?.thumbnail;
@@ -334,10 +349,12 @@ async function handleRequest(event) {
           }
           html = html.replace('</head>', injection + '</head>');
         }
-        return new Response(html, { status: response.status, headers });
+        return new Response(html, { status: response.status, headers: decodedHeaders });
       } catch (err) {
         console.error('Feed injection error:', err.message);
-        // Fall through to serve unmodified response
+        if (html !== undefined) {
+          return new Response(html, { status: response.status, headers: decodedHeaders });
+        }
       }
     }
 
@@ -840,31 +857,9 @@ async function handleSubdomainProfile(subdomain, url, request, originalHostname)
   // (PublisherServer.serveRequest returns empty body for synthetic requests)
   let html;
   try {
-    const contentStore = new KVStore('divine-web-content');
-
-    // Read the file index: publishId_index_collectionName
-    const indexEntry = await contentStore.get('default_index_live');
-    if (!indexEntry) {
-      throw new Error('Content index not found in KV');
-    }
-    const kvIndex = JSON.parse(await indexEntry.text());
-
-    // Find index.html in the index and get its content hash
-    const htmlAsset = kvIndex['/index.html'];
-    if (!htmlAsset) {
-      throw new Error('index.html not in content index');
-    }
-    // Asset format: { key: "sha256:<hash>", size, contentType, variants }
-    // KV content key format: default_files_sha256_<hash>
-    const assetKey = htmlAsset.key; // e.g. "sha256:abc123..."
-    const sha256 = assetKey.replace('sha256:', '');
-    const contentKey = `default_files_sha256_${sha256}`;
+    const { body, sha256 } = await readPublishedStaticFile('/index.html');
     console.log('Reading index.html from KV, sha256:', sha256.slice(0, 16) + '...');
-    const contentEntry = await contentStore.get(contentKey);
-    if (!contentEntry) {
-      throw new Error(`Content not found: ${contentKey}`);
-    }
-    html = await contentEntry.text();
+    html = body;
     console.log('Got index.html from KV, length:', html.length);
   } catch (err) {
     console.error('KV read error:', err.message);
@@ -935,6 +930,12 @@ async function handleSubdomainProfile(subdomain, url, request, originalHostname)
   });
 }
 
+async function readIndexHtmlFromKv() {
+  const { body, sha256 } = await readPublishedStaticFile('/index.html');
+  console.log('Got index.html from KV fallback, sha256:', sha256.slice(0, 16) + '...', 'length:', body.length);
+  return body;
+}
+
 /**
  * Detect if request is from a social media crawler (for OG tag injection)
  */
@@ -961,6 +962,11 @@ function isSocialMediaCrawler(request) {
     'baiduspider',
     'facebot',
     'ia_archiver',
+    'googlebot',
+    'bingbot',
+    'yandexbot',
+    'duckduckbot',
+    'applebot',
   ];
 
   return crawlerPatterns.some(pattern => userAgent.includes(pattern));

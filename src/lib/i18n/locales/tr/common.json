@@ -1202,7 +1202,7 @@
     "notFoundDescription": {
       "vine": "Bu Vine kullanıcısı henüz Nostr ağına aktarılmamış olabilir.",
       "nip05": "Lütfen NIP-05 tanımlayıcısının doğru olduğunu kontrol et.",
-      "legacy": "Bu kullanıcı adı eski bir Vine profili veya OpenVine kullanıcı adıyla eşleşmiyor."
+      "legacy": "Bu kullanıcı adı bilinen bir profille eşleşmiyor."
     }
   },
   "atUsernamePage": {

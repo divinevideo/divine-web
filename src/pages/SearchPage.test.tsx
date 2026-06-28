@@ -21,6 +21,7 @@ const {
   mockNostrQuery,
   mockUseInfiniteSearchVideos,
   mockUseSearchUsers,
+  mockUseSearchHashtags,
   mockUseNip05Validation,
   mockEnterFullscreen,
   mockSetVideosForFullscreen,
@@ -32,6 +33,7 @@ const {
   mockNostrQuery: vi.fn(),
   mockUseInfiniteSearchVideos: vi.fn(),
   mockUseSearchUsers: vi.fn(),
+  mockUseSearchHashtags: vi.fn(),
   mockUseNip05Validation: vi.fn(),
   mockEnterFullscreen: vi.fn(),
   mockSetVideosForFullscreen: vi.fn(),
@@ -167,11 +169,7 @@ vi.mock('@/hooks/useNip05Validation', () => ({
 }));
 
 vi.mock('@/hooks/useSearchHashtags', () => ({
-  useSearchHashtags: ({ query }: { query: string }) => ({
-    data: query ? [] : [],
-    isLoading: false,
-    error: null,
-  }),
+  useSearchHashtags: mockUseSearchHashtags,
 }));
 
 vi.mock('@/lib/funnelcakeClient', () => ({
@@ -232,6 +230,11 @@ describe('SearchPage', () => {
       isLoading: false,
       error: null,
     });
+    mockUseSearchHashtags.mockImplementation(({ query }: { query: string }) => ({
+      data: query ? [] : [],
+      isLoading: false,
+      error: null,
+    }));
     // Default: NIP-05 not yet validated, so cards show the legacy @username.
     mockUseNip05Validation.mockReturnValue({
       isValid: false,
@@ -560,6 +563,89 @@ describe('SearchPage', () => {
 
     expect(screen.getAllByTestId('video-card-video-2').length).toBeGreaterThan(0);
     expect(screen.queryAllByTestId('bare-video-card-video-2')).toHaveLength(0);
+  });
+
+  it('renders hashtag results as structured search result cards', () => {
+    mockUseSearchHashtags.mockImplementation(({ query }: { query: string }) => ({
+      data: query
+        ? [
+            {
+              hashtag: 'twerking',
+              video_count: 255,
+              thumbnail: 'https://media.divine.video/twerking.jpg',
+            },
+            {
+              hashtag: 'twerkingvine',
+              video_count: 4,
+              thumbnail: 'https://media.divine.video/twerkingvine.jpg',
+            },
+          ]
+        : [],
+      isLoading: false,
+      error: null,
+    }));
+
+    renderPage(['/search?q=twerking&filter=hashtags']);
+
+    expect(screen.getByText('2 matches for "twerking"')).toBeInTheDocument();
+    expect(screen.getAllByRole('button', {
+      name: 'Search hashtag #twerking, 255 videos',
+    }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole('button', {
+      name: 'Search hashtag #twerkingvine, 4 videos',
+    }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole('img', {
+      name: 'Preview for #twerking',
+    })[0]).toHaveAttribute('src', 'https://media.divine.video/twerking.jpg');
+    expect(screen.getAllByRole('img', {
+      name: 'Preview for #twerkingvine',
+    })[0]).toHaveAttribute('src', 'https://media.divine.video/twerkingvine.jpg');
+  });
+
+  it('opens the hashtag video feed when a hashtag result is clicked', async () => {
+    const user = userEvent.setup();
+    mockUseSearchHashtags.mockImplementation(({ query }: { query: string }) => ({
+      data: query
+        ? [{ hashtag: 'twerking', video_count: 255 }]
+        : [],
+      isLoading: false,
+      error: null,
+    }));
+
+    renderPage(['/search?q=twerking&filter=hashtags']);
+
+    await user.click(screen.getAllByRole('button', {
+      name: 'Search hashtag #twerking, 255 videos',
+    })[0]);
+
+    expect(mockNavigate).toHaveBeenCalledWith('/hashtag/twerking');
+  });
+
+  it('hides a hashtag thumbnail when the media URL fails to load', async () => {
+    mockUseSearchHashtags.mockImplementation(({ query }: { query: string }) => ({
+      data: query
+        ? [{
+            hashtag: 'twerking',
+            video_count: 255,
+            thumbnail: 'https://media.divine.video/missing.jpg',
+          }]
+        : [],
+      isLoading: false,
+      error: null,
+    }));
+
+    renderPage(['/search?q=twerking&filter=hashtags']);
+
+    const thumbnails = screen.getAllByRole('img', {
+      name: 'Preview for #twerking',
+    });
+    thumbnails.forEach(thumbnail => fireEvent.error(thumbnail));
+
+    await waitFor(() => {
+      expect(screen.queryAllByRole('img', {
+        name: 'Preview for #twerking',
+      })).toHaveLength(0);
+    });
   });
 
   it('defaults to hot sort when no sort param is in the URL and passes it to useInfiniteSearchVideos', () => {

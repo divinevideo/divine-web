@@ -1203,7 +1203,7 @@
     "notFoundDescription": {
       "vine": "Acest utilizator Vine poate să nu fi fost încă importat în rețeaua Nostr.",
       "nip05": "Verifică dacă identificatorul NIP-05 e corect.",
-      "legacy": "Acest nume de utilizator nu se potrivește cu un profil Vine vechi sau un handle OpenVine."
+      "legacy": "Acest nume de utilizator nu se potrivește cu niciun profil cunoscut."
     }
   },
   "atUsernamePage": {

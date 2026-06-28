@@ -1202,7 +1202,7 @@
     "notFoundDescription": {
       "vine": "Esse usuário do Vine talvez ainda não tenha sido importado pra rede Nostr.",
       "nip05": "Confere se o identificador NIP-05 tá certo.",
-      "legacy": "Esse username não corresponde a um perfil antigo do Vine nem a um handle do OpenVine."
+      "legacy": "Esse username não corresponde a nenhum perfil conhecido."
     }
   },
   "atUsernamePage": {

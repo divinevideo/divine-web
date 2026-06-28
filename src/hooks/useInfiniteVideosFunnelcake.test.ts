@@ -5,6 +5,7 @@ import React from 'react';
 
 const mockFetchVideos = vi.fn();
 const mockFetchVideosV2 = vi.fn();
+const mockSearchVideos = vi.fn();
 const mockFetchRecommendations = vi.fn();
 const mockTransformToVideoPage = vi.fn();
 
@@ -17,7 +18,7 @@ vi.mock('@/hooks/useCurrentUser', () => ({
 vi.mock('@/lib/funnelcakeClient', () => ({
   fetchVideos: mockFetchVideos,
   fetchVideosV2: mockFetchVideosV2,
-  searchVideos: vi.fn(),
+  searchVideos: mockSearchVideos,
   fetchUserVideos: vi.fn(),
   fetchUserFeed: vi.fn(),
   fetchRecommendations: mockFetchRecommendations,
@@ -60,6 +61,60 @@ beforeEach(async () => {
 });
 
 describe('useInfiniteVideosFunnelcake', () => {
+  it('falls back to loop-count sorting when watching has no hashtag videos', async () => {
+    mockSearchVideos
+      .mockResolvedValueOnce({
+        videos: [],
+        has_more: false,
+        next_cursor: undefined,
+      })
+      .mockResolvedValueOnce({
+        videos: [{}],
+        has_more: false,
+        next_cursor: undefined,
+      });
+    mockTransformToVideoPage.mockReturnValueOnce({
+      videos: [{ id: 'video-1', pubkey: 'p1', kind: 34236, createdAt: 101, vineId: 'd-1' }],
+      nextCursor: undefined,
+      hasMore: false,
+    });
+
+    const { result } = renderHook(
+      () => useInfiniteVideosFunnelcake({
+        feedType: 'hashtag',
+        hashtag: 'twerkvine',
+        sortMode: 'watching',
+        pageSize: 12,
+      }),
+      { wrapper: createWrapper() }
+    );
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+
+    expect(mockSearchVideos).toHaveBeenNthCalledWith(
+      1,
+      'https://api.divine.video',
+      expect.objectContaining({
+        tag: 'twerkvine',
+        sort: 'watching',
+        limit: 12,
+        signal: expect.any(AbortSignal),
+      })
+    );
+    expect(mockSearchVideos).toHaveBeenNthCalledWith(
+      2,
+      'https://api.divine.video',
+      expect.objectContaining({
+        tag: 'twerkvine',
+        sort: 'loops',
+        limit: 12,
+        signal: expect.any(AbortSignal),
+      })
+    );
+  });
+
   it('requests native popular videos with period and excludes classic Vines', async () => {
     mockFetchVideosV2.mockResolvedValueOnce({
       videos: [{}],

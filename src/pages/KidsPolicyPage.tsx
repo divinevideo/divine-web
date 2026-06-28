@@ -30,7 +30,7 @@ const SECTIONS: SectionAnchor[] = [
   { id: "tiers", title: "At a glance" },
   { id: "why", title: "Why we work this way" },
   { id: "under-13", title: "Under-13 accounts" },
-  { id: "13-15", title: "13 to 15 accounts" },
+  { id: "13-15", title: "Divine Greenlight (13-15)" },
   { id: "family-account", title: "Families on Divine" },
   { id: "family-guidance", title: "More family guidance" },
 ];
@@ -118,12 +118,13 @@ export function KidsPolicyPage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-xl">
                   <VideoCamera weight="fill" className="h-5 w-5 text-brand-green" />
-                  13 to 15
+                  13-15
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-2 text-base leading-relaxed">
                 <p>
-                  Where local rules allow it, Divine offers a parent-supported path for teens 13 to 15.
+                  Where local rules allow it, Divine offers{" "}
+                  <strong>Divine Greenlight</strong>, a parent-supported path for teens 13-15.
                 </p>
                 <p className="text-muted-foreground text-sm">
                   This path requires a short private video from the teen and a parent or guardian confirming the teen’s age, permission to use Divine, and parent or guardian awareness and supervision. In some places, including countries with under-16 social media restrictions or stricter age-assurance rules, this path may not be available or may require additional steps.
@@ -178,7 +179,8 @@ export function KidsPolicyPage() {
                 are.
               </p>
               <p>
-                Where the rules allow, Divine offers a different path for teens 13 to 15: a short private
+                Where the rules allow, Divine offers a different path for teens 13-15,
+                called <strong>Divine Greenlight</strong>: a short private
                 video with a parent or guardian on camera. It's a real
                 human check, but it doesn't require Divine to operate an
                 ID-and-payment verification pipeline, and it doesn't
@@ -303,8 +305,8 @@ export function KidsPolicyPage() {
           <SectionHero
             eyebrow="13-15 accounts"
             icon={<VideoCamera weight="fill" className="h-7 w-7" />}
-            title="Teen-held accounts need a parent or guardian video"
-            lead="Where permitted by law, teens 13 to 15 can use Divine with a parent or guardian who's aware and involved. The video is how Divine knows that consent and supervision are real, without running an intrusive verification system. Depending on where the teen lives, Divine may require additional or different age-assurance, parental-consent, privacy, or account-safety steps before the account can stay open."
+            title="Divine Greenlight: teen-held accounts need a parent or guardian video"
+            lead="Where permitted by law, teens 13-15 can use Divine through Divine Greenlight, with a parent or guardian who's aware and involved. The video is how Divine knows that consent and supervision are real, without running an intrusive verification system. Depending on where the teen lives, Divine may require additional or different age-assurance, parental-consent, privacy, or account-safety steps before the account can stay open."
           />
 
           <Card variant="brand" accent="green">
@@ -392,8 +394,8 @@ export function KidsPolicyPage() {
               <p>
                 What Divine won't host is a solo account in a child's
                 hands. Under 13, the account has to be the parent or
-                guardian's. From 13 to 15, the account can be the teen's
-                with the video step above, subject to any additional requirements that apply based on the teen's location. Pick whichever path fits your
+                guardian's. For ages 13-15, the account can be the teen's
+                through Divine Greenlight, the video step above, subject to any additional requirements that apply based on the teen's location. Pick whichever path fits your
                 family.
               </p>
               <p className="text-muted-foreground">

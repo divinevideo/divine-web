@@ -1202,7 +1202,7 @@
     "notFoundDescription": {
       "vine": "This Vine user may not have been imported to the Nostr network yet.",
       "nip05": "Please check the NIP-05 identifier is correct.",
-      "legacy": "This username does not match a legacy Vine profile or OpenVine handle."
+      "legacy": "This username does not match any known profile. Try the full NIP-05 (e.g. name@divine.video)."
     }
   },
   "atUsernamePage": {

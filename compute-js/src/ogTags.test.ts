@@ -1,6 +1,6 @@
-// ABOUTME: Vitest unit tests for buildCrawlerHtml, escapeHtml, and truncateText
+// ABOUTME: Vitest unit tests for buildCrawlerHtml, escapeHtml, escapeFeedJson, and truncateText
 import { describe, expect, it } from 'vitest';
-import { buildCrawlerHtml, escapeHtml, truncateText } from './ogTags.js';
+import { buildCrawlerHtml, escapeHtml, escapeFeedJson, truncateText } from './ogTags.js';
 
 const baseArgs = {
   title: 'Hello',
@@ -134,6 +134,38 @@ describe('escapeHtml', () => {
   });
   it('coerces non-string input safely', () => {
     expect(escapeHtml(42)).toBe('42');
+  });
+});
+
+describe('escapeFeedJson', () => {
+  // Built via fromCharCode so the literal line terminators never appear in this
+  // source file (they would break the test module the same way they break a <script>).
+  const LS = String.fromCharCode(0x2028);
+  const PS = String.fromCharCode(0x2029);
+
+  it('escapes < so a </script> payload cannot break out of the tag', () => {
+    const out = escapeFeedJson({ title: 'evil</script><script>alert(1)</script>' });
+    expect(out).not.toContain('</script>');
+    expect(out).not.toContain('<');
+    expect(out).toContain('\\u003c');
+  });
+
+  it('escapes the U+2028/U+2029 line terminators JSON.stringify leaves raw', () => {
+    const out = escapeFeedJson({ sep: `a${LS}b${PS}c` });
+    expect(out).not.toContain(LS);
+    expect(out).not.toContain(PS);
+    expect(out).toContain('\\u2028');
+    expect(out).toContain('\\u2029');
+  });
+
+  it('round-trips to the original value once embedded and evaluated', () => {
+    const value = { videos: [{ title: 'hi</script>', sep: `x${LS}y` }], n: 3 };
+    const evaluated = (0, eval)(`(${escapeFeedJson(value)})`);
+    expect(evaluated).toEqual(value);
+  });
+
+  it('leaves ordinary content untouched apart from the escapes', () => {
+    expect(escapeFeedJson({ a: 1, b: 'plain' })).toBe('{"a":1,"b":"plain"}');
   });
 });
 

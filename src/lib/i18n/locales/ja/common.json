@@ -1202,7 +1202,7 @@
     "notFoundDescription": {
       "vine": "このVineユーザーはまだNostrネットワークにインポートされていない可能性があります。",
       "nip05": "NIP-05識別子が正しいかご確認ください。",
-      "legacy": "このユーザー名は旧VineプロフィールやOpenVineハンドルと一致しません。"
+      "legacy": "このユーザー名は既知のプロフィールと一致しません。"
     }
   },
   "atUsernamePage": {

@@ -4,6 +4,7 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { DIVINE_IOS_APP_ID } from '@/lib/mobileStoreLinks';
 
 type Platform = 'android' | 'ios' | 'desktop';
 
@@ -14,7 +15,7 @@ function detectPlatform(): Platform {
   return 'desktop';
 }
 
-const APP_STORE_URL = 'https://apps.apple.com/app/divine/id6744894353';
+const APP_STORE_URL = `https://apps.apple.com/us/app/divine-video/id${DIVINE_IOS_APP_ID}`;
 const PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=co.openvine.app';
 
 export function AppCallbackPage() {

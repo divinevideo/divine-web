@@ -1,5 +1,5 @@
 # ABOUTME: GitHub Actions workflow for deploying to Fastly (primary) and Cloudflare Pages (backup)
-# ABOUTME: Triggers on push to main branch
+# ABOUTME: Triggers on push to main, or manual dispatch
 
 name: Deploy to Production
 
@@ -7,9 +7,28 @@ on:
   push:
     branches:
       - main
+  # Allow manually re-running a clean production deploy of the current main
+  # through the approved workflow (build -> publish -> purge -> verify) instead
+  # of re-running a past run.
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
 
 jobs:
+  guard-main-ref:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Verify production deploy ref
+        run: |
+          test "${{ github.ref }}" = "refs/heads/main" || {
+            echo "Production deploys must run from refs/heads/main, got ${{ github.ref }}" >&2
+            exit 1
+          }
+
   build:
+    needs: guard-main-ref
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout
@@ -38,6 +57,12 @@ jobs:
   deploy-fastly:
     needs: build
     runs-on: ubuntu-24.04
+    # Ceiling so a wedged step (e.g. the bundle verify polling a hung origin)
+    # fails loudly instead of holding the deploy-production concurrency lock for
+    # hours. Set above the verify's own worst case (~6 min of sleeps + up to two
+    # 10s fetches per attempt) so the verifier's descriptive failure surfaces
+    # before this generic timeout would.
+    timeout-minutes: 25
     permissions:
       contents: read
       deployments: write
@@ -70,13 +95,40 @@ jobs:
         working-directory: compute-js
         env:
           FASTLY_API_TOKEN: ${{ secrets.FASTLY_API_TOKEN }}
-        run: fastly compute publish --non-interactive --token=$FASTLY_API_TOKEN
+        run: |
+          set -euo pipefail
+          for attempt in $(seq 1 5); do
+            if fastly compute publish --non-interactive --token="$FASTLY_API_TOKEN"; then
+              exit 0
+            fi
+
+            if [ "$attempt" -lt 5 ]; then
+              echo "Fastly compute publish failed on attempt $attempt/5; retrying in 45 seconds."
+              sleep 45
+            fi
+          done
+
+          echo "::error::Fastly compute publish failed after 5 attempts."
+          exit 1
 
       - name: Publish static content to KV Store
         working-directory: compute-js
         env:
           FASTLY_API_TOKEN: ${{ secrets.FASTLY_API_TOKEN }}
-        run: npx @fastly/compute-js-static-publish publish-content
+        run: |
+          set -euo pipefail
+          # publish-content (compute-js-static-publish, pinned to 7.0.3 via
+          # package-lock) retries per-file uploads but, on final failure, logs
+          # "  ❌ Failed: <key> → <msg>" and still exits 0 (the error is swallowed).
+          # Capture the output and fail the step if any upload was dropped, so a
+          # partial publish can't go green. We match the stable ASCII "Failed:"
+          # rather than the emoji so a locale/encoding change can't silently
+          # disable this guard. See #426.
+          npx @fastly/compute-js-static-publish publish-content 2>&1 | tee /tmp/publish-content.log
+          if grep -qF 'Failed:' /tmp/publish-content.log; then
+            echo "::error::publish-content dropped one or more uploads (see 'Failed:' above)."
+            exit 1
+          fi
 
       - name: Purge Fastly cache
         working-directory: compute-js
@@ -128,6 +180,15 @@ jobs:
           check_json_endpoint "https://divine.video/.well-known/assetlinks.json"
           check_json_endpoint "https://www.divine.video/.well-known/assetlinks.json"
 
+      # The well-known checks above only cover static app-link files, which rarely
+      # change — so a stale frontend bundle can sail through a green deploy. This
+      # asserts the live origins actually serve the entry bundle we just built AND
+      # that the referenced JS asset is reachable (not just the index.html
+      # pointer), waiting out Fastly KV eventual consistency within the budget and
+      # failing the deploy if it never converges. See #426.
+      - name: Verify live frontend bundle matches the build
+        run: node scripts/verify-live-bundle.mjs
+
   deploy-cloudflare:
     needs: build
     runs-on: ubuntu-24.04
@@ -151,3 +212,75 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: pages deploy dist --project-name=divine-web-direct-deploy --branch=main
+
+  # A failed production deploy currently only emails the one person who
+  # triggered it (easy to miss, and reads like routine flaky-CI noise). This
+  # surfaces it to the whole team in #divine-alerts AND probes the live apex
+  # so the alert states the real-world impact — is the site actually serving a
+  # page, or handing visitors a blank one? Fires only when a deploy job fails.
+  #
+  # Graceful by design: no-ops (logs and exits 0) when the
+  # SLACK_DIVINE_ALERTS_WEBHOOK secret isn't set, so it can land before the
+  # webhook exists, and a Slack post failure never masks the original deploy
+  # failure. Posts via an Incoming Webhook (single channel, no token/scopes).
+  notify-failure:
+    # List every upstream job so a failure anywhere in the run is detectable.
+    # When guard/build fails, the deploy jobs are *skipped* (not failed), and a
+    # bare `if: failure()` over skipped needs would not fire — so a broken build
+    # would produce no alert. always() lets this job run despite skipped needs;
+    # contains(needs.*.result, 'failure') fires on any failed ancestor while
+    # staying silent on an all-success (or cancelled) run.
+    needs: [guard-main-ref, build, deploy-fastly, deploy-cloudflare]
+    if: ${{ always() && contains(needs.*.result, 'failure') }}
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - name: Probe live site and alert #divine-alerts
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_DIVINE_ALERTS_WEBHOOK }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          COMMIT_SHA: ${{ github.sha }}
+          # Empty on workflow_dispatch (no head_commit); handled below.
+          COMMIT_MSG: ${{ github.event.head_commit.message }}
+        run: |
+          set -uo pipefail
+
+          if [ -z "${SLACK_WEBHOOK:-}" ]; then
+            echo "SLACK_DIVINE_ALERTS_WEBHOOK not set; skipping Slack notification."
+            exit 0
+          fi
+
+          # index.html is served cache-control: no-store, so this probe reflects
+          # what real visitors get right now. The outage class we care about is a
+          # 200 OK with an empty/short body (the bundle pointer resolved but the
+          # body isn't served), so we check status, size, AND the root element.
+          probe_url="https://divine.video/?ci-probe=${GITHUB_RUN_ID}"
+          : > /tmp/probe-body
+          status="$(curl -sS -o /tmp/probe-body -w '%{http_code}' --max-time 15 "$probe_url" 2>/dev/null || true)"
+          status="${status:-000}"
+          bytes="$(wc -c < /tmp/probe-body | tr -d ' ')"
+
+          if [ "$status" = "200" ] && [ "${bytes:-0}" -gt 100 ] && grep -q 'id="root"' /tmp/probe-body; then
+            site_line="🟡 Live site still appears to serve a real page (HTTP ${status}, ${bytes} bytes). The deploy failed but visitors may be unaffected — confirm before standing down."
+          else
+            site_line="🔴 Live site looks BROKEN (HTTP ${status}, ${bytes} bytes). Visitors may be seeing a blank page. Re-run the deploy or roll back."
+          fi
+
+          commit_short="${COMMIT_SHA:0:8}"
+          commit_subject="$(printf '%s' "${COMMIT_MSG:-(manual run)}" | head -n1)"
+
+          # Literal backticks are intentional (Slack `code` markdown); the format
+          # string must stay single-quoted, so no expansion is expected here.
+          # shellcheck disable=SC2016
+          text="$(printf '*Production deploy failed* — divine-web\n%s\n\nCommit `%s` — %s\n<%s|View the failed run>  ·  confirm at https://divine.video' \
+            "$site_line" "$commit_short" "$commit_subject" "$RUN_URL")"
+
+          payload="$(jq -n --arg t "$text" '{text: $t}')"
+
+          if curl -sS -X POST -H 'Content-type: application/json' \
+               --max-time 15 --data "$payload" "$SLACK_WEBHOOK" >/dev/null; then
+            echo "Posted deploy-failure alert to #divine-alerts."
+          else
+            echo "WARNING: failed to POST to Slack webhook (deploy failure still stands)."
+          fi
