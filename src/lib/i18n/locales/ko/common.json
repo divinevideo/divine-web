@@ -445,6 +445,7 @@
     "myProfile": "내 프로필",
     "settings": "설정",
     "linkedAccounts": "연결된 계정",
+    "relays": "Relays",
     "switchRelay": "Relay 전환",
     "switchAccount": "계정 전환",
     "addAnotherAccount": "다른 계정 추가",
