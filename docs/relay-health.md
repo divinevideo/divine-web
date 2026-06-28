@@ -15,7 +15,7 @@ Each relay has a single score in `[0, 1]`. Higher is better. Default is
   over 5 minutes.
 - **Reconnecting penalty**: −0.5 if currently reconnecting.
 - **Capability bonus**: +0.1 for video kind (34236) if the relay has
-  Funnelcake, or for kinds 0/3/10011 if it has NIP-05.
+  Funnelcake.
 
 The score is recomputed on every read of the map (cheap, no cache).
 

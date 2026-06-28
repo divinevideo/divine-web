@@ -43,3 +43,10 @@ describe('relay.ditto.pub removal (#415)', () => {
     expect(EVENT_LOOKUP_RELAYS.map((r) => r.url)).not.toContain('wss://relay.ditto.pub');
   });
 });
+
+describe('PRESET_RELAYS', () => {
+  it('does not contain duplicate URLs', () => {
+    const urls = PRESET_RELAYS.map((r) => r.url);
+    expect(new Set(urls).size).toBe(urls.length);
+  });
+});

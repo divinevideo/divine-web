@@ -9,7 +9,6 @@ const STICKY_WINDOW_MS = 30 * 1000;
 
 export type CapabilityBonus = {
   nip50?: boolean;
-  nip05?: boolean;
   funnelcake?: boolean;
 };
 
@@ -93,21 +92,25 @@ export function recordReqEnd(
   }
 }
 
-const reqStartTimes = new Map<string, number>();
+type ReqHandle = symbol;
 
-export function recordReqStart(url: string): void {
-  reqStartTimes.set(url, Date.now());
+const reqStartTimes = new Map<ReqHandle, { url: string; startedAt: number }>();
+
+export function recordReqStart(url: string): ReqHandle {
+  const handle = Symbol(url);
+  reqStartTimes.set(handle, { url, startedAt: Date.now() });
+  return handle;
 }
 
-export function recordReqStartClear(url: string): void {
-  reqStartTimes.delete(url);
+export function recordReqStartClear(handle: ReqHandle): void {
+  reqStartTimes.delete(handle);
 }
 
-export function recordReqFirstResponse(url: string, ok: boolean): void {
-  const start = reqStartTimes.get(url);
-  reqStartTimes.delete(url);
-  if (start === undefined) return;
-  recordReqEnd(url, Date.now() - start, ok);
+export function recordReqFirstResponse(handle: ReqHandle, ok: boolean): void {
+  const pending = reqStartTimes.get(handle);
+  reqStartTimes.delete(handle);
+  if (!pending) return;
+  recordReqEnd(pending.url, Date.now() - pending.startedAt, ok);
 }
 
 export function recordPublish(url: string, ok: boolean): void {
@@ -155,7 +158,6 @@ function recencyFactor(s: RelayState, now: number): number {
 function capabilityBonus(s: RelayState, kind?: number): number {
   if (kind === undefined) return 0;
   if (kind === 34236 && s.capabilities.funnelcake) return 0.1;
-  if ((kind === 0 || kind === 3 || kind === 10011) && s.capabilities.nip05) return 0.1;
   return 0;
 }
 
@@ -239,6 +241,7 @@ export function snapshot(): RelaySnapshot[] {
 
 export function reset(): void {
   state.clear();
+  reqStartTimes.clear();
 }
 
 export const RELAY_HEALTH_CONSTANTS = {

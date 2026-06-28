@@ -101,7 +101,7 @@ const NostrProvider: React.FC<NostrProviderProps> = (props) => {
           }
         } catch {
           // socket wiring is best-effort; we still get telemetry from
-          // explicit recordReqEnd / recordPublish below.
+          // req/publish wrappers below.
         }
 
         // Wrap relay.req to record per-URL latency for the relayHealth score.
@@ -112,18 +112,32 @@ const NostrProvider: React.FC<NostrProviderProps> = (props) => {
           filters: Parameters<typeof innerReq>[0],
           opts?: Parameters<typeof innerReq>[1],
         ) {
-          recordReqStart(url);
+          const reqHandle = recordReqStart(url);
           let resolved = false;
           try {
             for await (const msg of innerReq(filters, opts)) {
               if (!resolved && (msg[0] === 'EVENT' || msg[0] === 'EOSE')) {
-                recordReqFirstResponse(url, msg[0] === 'EVENT');
+                recordReqFirstResponse(reqHandle, msg[0] === 'EVENT');
                 resolved = true;
               }
               yield msg;
             }
           } finally {
-            if (!resolved) recordReqStartClear(url);
+            if (!resolved) recordReqStartClear(reqHandle);
+          }
+        };
+
+        const innerEvent = relay.event.bind(relay);
+        (relay as { event: typeof innerEvent }).event = async (
+          event: Parameters<typeof innerEvent>[0],
+          opts?: Parameters<typeof innerEvent>[1],
+        ) => {
+          try {
+            await innerEvent(event, opts);
+            recordPublish(url, true);
+          } catch (error) {
+            recordPublish(url, false);
+            throw error;
           }
         };
 
@@ -251,9 +265,6 @@ const NostrProvider: React.FC<NostrProviderProps> = (props) => {
           ? Array.from(new Set([...ranked, ...getRelayUrls(PROFILE_RELAYS).filter((u) => !disabled.has(u))]))
           : ranked;
 
-        for (const url of finalSet) {
-          recordPublish(url, true);
-        }
         return finalSet;
       },
     });
