@@ -270,7 +270,9 @@ export async function verifyIdentityClaim(
 
   // Only attempt browser-based verification for CORS-friendly platforms
   if (!config.canVerifyInBrowser) {
-    return { verified: false, error: 'manual' };
+    const manualResult = { verified: false, error: 'manual' };
+    setCachedVerification(cleanedIdentity.platform, cleanedIdentity.identity, cleanedIdentity.proof, manualResult);
+    return manualResult;
   }
 
   const npub = nip19.npubEncode(pubkey);

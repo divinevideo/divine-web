@@ -672,7 +672,13 @@
     "proofLink": "Prueba",
     "linkedAccountsLabel": "Cuentas vinculadas",
     "identityVerificationTitle": "Verificación de identidad",
-    "identityVerificationDescription": "Las cuentas vinculadas se verifican usando pruebas de identidad NIP-39. Solo se muestran las cuentas verificadas."
+    "showUnverified": "Show unverified",
+    "showUnverifiedAria": "Show unverified linked accounts",
+    "hideUnverified": "Hide unverified",
+    "notAutoVerified": "Not auto-verified",
+    "verifyManually": "Verify manually",
+    "verifyManuallyDescription": "We couldn't confirm this automatically. Check the profile to verify it yourself.",
+    "unverifiedBadgeTooltip": "Not auto-verified — click to check the proof"
   },
   "analyticsPage": {
     "seoTitle": "Estadísticas de creador - Divine",

@@ -4,7 +4,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
-import { GithubLogo as Github, ArrowSquareOut as ExternalLink, CheckCircle, Warning as AlertTriangle, CircleNotch as Loader2, LinkSimple as Link2, Shield } from '@phosphor-icons/react';
+import { GithubLogo as Github, ArrowSquareOut as ExternalLink, CheckCircle, Warning as AlertTriangle, CircleNotch as Loader2, Eye, LinkSimple as Link2, Question, Shield } from '@phosphor-icons/react';
 import { Badge } from '@/components/ui/badge';
 import {
   Popover,
@@ -19,7 +19,12 @@ import {
   type ExternalIdentity,
 } from '@/hooks/useExternalIdentities';
 import { getCachedVerification } from '@/lib/verificationCache';
+import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { API_CONFIG } from '@/config/api';
+
+function buildManualVerifyUrl(identity: ExternalIdentity, pubkey: string): string {
+  return `${API_CONFIG.verificationService.baseUrl}/verify/${encodeURIComponent(identity.platform)}/${encodeURIComponent(identity.identity)}/${encodeURIComponent(identity.proof)}?pubkey=${pubkey}`;
+}
 
 /** Platform icon mapping */
 function PlatformIcon({ platform, className }: { platform: string; className?: string }) {
@@ -74,18 +79,24 @@ function PlatformIcon({ platform, className }: { platform: string; className?: s
   }
 }
 
-function IdentityBadge({ identity, pubkey }: { identity: ExternalIdentity; pubkey: string }) {
+function IdentityBadge({
+  identity,
+  pubkey,
+  showUnverified,
+}: {
+  identity: ExternalIdentity;
+  pubkey: string;
+  showUnverified: boolean;
+}) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
 
   const config = SUPPORTED_PLATFORMS[identity.platform];
   const label = config?.label || identity.platform;
 
-  // Seed from localStorage cache if available (skip stale 'manual' results so they get re-verified)
-  const rawCached = identity.proof
+  const cachedResult = identity.proof
     ? getCachedVerification(identity.platform, identity.identity, identity.proof)
     : undefined;
-  const cachedResult = rawCached?.error === 'manual' ? undefined : rawCached;
 
   // Eager verification — runs as soon as proof exists (uses verifyer service for all platforms)
   const verification = useQuery({
@@ -98,9 +109,12 @@ function IdentityBadge({ identity, pubkey }: { identity: ExternalIdentity; pubke
     initialData: cachedResult ?? undefined,
   });
 
-  // Only show externally-verifiable claims that are currently verified.
   const isVerified = verification.data?.verified;
-  if (!isVerified) return null;
+  const isManual = verification.data?.error === 'manual';
+  const isPending = !verification.data && (verification.isLoading || verification.isPending);
+  const isUnverified = isManual || isPending || (verification.data && !isVerified);
+
+  if (!isVerified && !(showUnverified && isUnverified)) return null;
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -109,14 +123,19 @@ function IdentityBadge({ identity, pubkey }: { identity: ExternalIdentity; pubke
           variant="ghost"
           size="sm"
           className="h-7 gap-1.5 px-2 text-muted-foreground hover:text-foreground"
-          data-testid={`identity-badge-${identity.platform}`}
+          data-testid={`identity-badge-${identity.platform}${isVerified ? '' : '-unverified'}`}
+          title={isVerified ? undefined : t('linkedAccounts.unverifiedBadgeTooltip')}
         >
           <PlatformIcon platform={identity.platform} className="h-3.5 w-3.5" />
           <span className="text-xs">{identity.identity}</span>
-          {isVerified && <CheckCircle className="h-3 w-3 text-green-500" />}
+          {isVerified ? (
+            <CheckCircle className="h-3 w-3 text-green-500" />
+          ) : (
+            <Question className="h-3 w-3 text-muted-foreground" weight="fill" aria-hidden="true" />
+          )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-64 p-3" align="start">
+      <PopoverContent className="w-64 p-3" align="start" data-testid={`identity-popover-${identity.platform}`}>
         <div className="space-y-2">
           <div className="flex items-center gap-2">
             <PlatformIcon platform={identity.platform} className="h-4 w-4" />
@@ -127,30 +146,35 @@ function IdentityBadge({ identity, pubkey }: { identity: ExternalIdentity; pubke
           {/* Verification status */}
           {identity.proof ? (
             <div className="flex items-center gap-1.5 text-xs">
-              {verification.isLoading ? (
+              {isPending ? (
                 <>
                   <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
                   <span className="text-muted-foreground">{t('linkedAccounts.verifying')}</span>
                 </>
-              ) : verification.data?.verified ? (
+              ) : isVerified ? (
                 <>
                   <CheckCircle className="h-3.5 w-3.5 text-green-500" />
                   <span className="text-green-600 dark:text-green-400">{t('linkedAccounts.verified')}</span>
                 </>
-              ) : verification.data?.error === 'manual' ? (
-                <a
-                  href={`${API_CONFIG.verificationService.baseUrl}/verify/${encodeURIComponent(identity.platform)}/${encodeURIComponent(identity.identity)}/${encodeURIComponent(identity.proof)}?pubkey=${pubkey}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-1.5 text-primary hover:underline"
-                >
-                  <ExternalLink className="h-3.5 w-3.5" />
-                  <span>{t('linkedAccounts.checkProof')}</span>
-                </a>
+              ) : isManual ? (
+                <>
+                  <Question className="h-3.5 w-3.5 text-muted-foreground" weight="fill" aria-hidden="true" />
+                  <span className="text-muted-foreground">{t('linkedAccounts.notAutoVerified')}</span>
+                  <a
+                    href={buildManualVerifyUrl(identity, pubkey)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="ml-auto flex items-center gap-1 text-primary hover:underline"
+                    data-testid={`verify-manually-${identity.platform}`}
+                  >
+                    <ExternalLink className="h-3 w-3" />
+                    {t('linkedAccounts.verifyManually')}
+                  </a>
+                </>
               ) : (
                 <>
                   <AlertTriangle className="h-3.5 w-3.5 text-yellow-500" />
-                  <span className="text-yellow-600 dark:text-yellow-400">
+                  <span className="text-yellow-600 dark:text-yellow-400" data-testid={`verification-error-${identity.platform}`}>
                     {verification.data?.error || t('linkedAccounts.unverified')}
                   </span>
                 </>
@@ -158,6 +182,12 @@ function IdentityBadge({ identity, pubkey }: { identity: ExternalIdentity; pubke
             </div>
           ) : (
             <Badge variant="outline" className="text-xs">{t('linkedAccounts.noProof')}</Badge>
+          )}
+
+          {isManual && (
+            <p className="text-xs text-muted-foreground">
+              {t('linkedAccounts.verifyManuallyDescription')}
+            </p>
           )}
 
           {/* Links */}
@@ -191,8 +221,8 @@ function IdentityBadge({ identity, pubkey }: { identity: ExternalIdentity; pubke
   );
 }
 
-// Note: VerificationSummary is rendered but individual badges hide themselves
-// if verification fails, so this just provides context for what's visible
+// Note: VerificationSummary provides context for what's visible.
+// Individual badges gate their render on the showUnverified toggle.
 function VerificationSummary({ identities }: { identities: ExternalIdentity[] }) {
   const { t } = useTranslation();
   const proofCount = identities.filter((id) => !!id.proof).length;
@@ -230,17 +260,39 @@ interface LinkedAccountsProps {
 
 export function LinkedAccounts({ pubkey, className }: LinkedAccountsProps) {
   const { data: identities, isLoading } = useExternalIdentities(pubkey);
+  const { t } = useTranslation();
+  const [showUnverified, setShowUnverified] = useLocalStorage<boolean>(
+    'divine.show-unverified-claims',
+    false,
+  );
 
   if (isLoading || !identities || identities.length === 0) return null;
+
+  const hasProofs = identities.some((id) => !!id.proof);
 
   return (
     <div className={`flex flex-wrap gap-1 ${className || ''}`} data-testid="linked-accounts">
       <VerificationSummary identities={identities} />
+      {hasProofs && (
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-7 gap-1.5 px-2 text-muted-foreground hover:text-foreground"
+          onClick={() => setShowUnverified((prev) => !prev)}
+          aria-pressed={showUnverified}
+          aria-label={showUnverified ? t('linkedAccounts.hideUnverified') : t('linkedAccounts.showUnverifiedAria')}
+          data-testid="show-unverified-toggle"
+        >
+          <Eye className="h-3.5 w-3.5" />
+          <span className="text-xs">{t('linkedAccounts.showUnverified')}</span>
+        </Button>
+      )}
       {identities.map((identity) => (
         <IdentityBadge
           key={`${identity.platform}:${identity.identity}`}
           identity={identity}
           pubkey={pubkey}
+          showUnverified={showUnverified}
         />
       ))}
     </div>

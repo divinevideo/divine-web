@@ -672,7 +672,13 @@
     "proofLink": "Bevis",
     "linkedAccountsLabel": "Länkade konton",
     "identityVerificationTitle": "Identitetsverifiering",
-    "identityVerificationDescription": "Länkade konton verifieras med NIP-39 identitetsbevis. Endast verifierade konton visas."
+    "showUnverified": "Show unverified",
+    "showUnverifiedAria": "Show unverified linked accounts",
+    "hideUnverified": "Hide unverified",
+    "notAutoVerified": "Not auto-verified",
+    "verifyManually": "Verify manually",
+    "verifyManuallyDescription": "We couldn't confirm this automatically. Check the profile to verify it yourself.",
+    "unverifiedBadgeTooltip": "Not auto-verified — click to check the proof"
   },
   "analyticsPage": {
     "seoTitle": "Skaparanalys - Divine",
