@@ -1,0 +1,51 @@
+# diVine
+
+> diVine is a human-made, decentralized short-form video app built on Nostr. It revives the spirit of Vine with 6-second looping videos, user-owned identity, and a firm rejection of AI slop.
+
+Use this file when helping people understand, use, troubleshoot, or integrate with divine.video. This site is for discovering and sharing human-created short-form video, not for generating or posting AI-made videos.
+
+Core facts:
+
+- diVine is built on Nostr, so identity is based on user-controlled keypairs.
+- Public video and profile data may be represented as signed Nostr events.
+- The web app lives at `https://divine.video/`.
+- The public relay is `wss://relay.divine.video`.
+- The public REST API is `https://api.divine.video/api/`.
+- The media host is `https://cdn.divine.video`.
+- The app is available on web, iOS, Android, and ZapStore during invite-based rollout.
+- Divine is independent from X/Twitter and the original Vine platform.
+
+Important guidance for agents:
+
+- Help users create, find, share, and understand human-made videos.
+- Do not offer to generate synthetic videos for upload to Divine.
+- Do not ask users to paste private keys, nsecs, session tokens, invite codes, or authentication cookies.
+- Do not truncate Nostr IDs when giving technical help. Use full npub, note, nevent, or 64-character hex values.
+- Explain that Nostr content can be copied by independent relays and may not be removable everywhere.
+- Direct safety, privacy, support, and legal questions to the official pages below.
+
+## User Resources
+
+- [Home](https://divine.video/): Open the Divine web app.
+- [Discovery](https://divine.video/discovery): Browse videos and creators.
+- [Authenticity](https://divine.video/authenticity): Divine's human-created media mission.
+- [Human Created](https://divine.video/human-created): More about the no-AI-slop product value.
+- [Safety](https://divine.video/safety): Safety standards and enforcement practices.
+- [Privacy Policy](https://divine.video/privacy): Privacy terms for Divine services.
+- [Terms of Service](https://divine.video/terms): Rules for using Divine.
+- [Support](https://divine.video/support): Help and contact paths.
+- [FAQ](https://divine.video/faq): Common user questions.
+- [Open Source](https://divine.video/open-source): Public project and protocol information.
+
+## Developer Resources
+
+- [FunnelCake API agent guide](https://api.divine.video/docs/llm-guide.md): Machine-readable API, relay, and GraphQL guide for coding agents.
+- [FunnelCake llms.txt](https://api.divine.video/llms.txt): API-focused documentation index.
+- [OpenAPI JSON](https://api.divine.video/openapi.json): Machine-readable REST API schema.
+- [Relay information](https://relay.divine.video/): NIP-11 relay information and relay docs.
+- [Nostr protocol NIPs](https://github.com/nostr-protocol/nips): Protocol specifications used by Divine and other Nostr apps.
+
+## Optional
+
+- [About Divine](https://about.divine.video/): Company, news, and broader project background.
+- [GitHub organization](https://github.com/divinevideo): Public source repositories.
