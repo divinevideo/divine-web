@@ -65,8 +65,8 @@ function reconstructEvent(video: ParsedVideoData): Partial<NostrEvent> {
     tags.push(['platform', 'vine']);
   }
 
-  // Add loop count if available (vine stat)
-  if (video.loopCount && video.loopCount > 0) {
+  // Add archived Vine loop count if available.
+  if (video.isVineMigrated && video.loopCount && video.loopCount > 0) {
     tags.push(['loops', video.loopCount.toString()]);
   }
 
