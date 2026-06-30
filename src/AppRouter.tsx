@@ -59,6 +59,7 @@ import NotificationsPage from "./pages/NotificationsPage";
 import AnalyticsPage from "./pages/AnalyticsPage";
 import MessagesPage from "./pages/MessagesPage";
 import ConversationPage from "./pages/ConversationPage";
+import CollabsPage from "./pages/CollabsPage";
 // import { UploadPage } from "./pages/UploadPage"; // DISABLED: Upload route is commented out
 
 // Dev-only: static preview surface for the brand system. The `lazy()` call
@@ -122,6 +123,8 @@ export function AppRouter() {
           {/* DISABLED: Upload route - not supported on web at this time
           <Route path="/upload" element={<UploadPage />} />
           */}
+          <Route path="/collabs" element={<CollabsPage />} />
+          <Route path="/collabs/:tab" element={<CollabsPage />} />
           <Route path="/settings/moderation" element={<ModerationSettingsPage />} />
           <Route path="/settings/linked-accounts" element={<LinkedAccountsSettingsPage />} />
           {/* Test pages for debugging */}
