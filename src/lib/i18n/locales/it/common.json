@@ -1036,8 +1036,7 @@
       "likes": "Mi piace",
       "comments": "Commenti",
       "follows": "Follower",
-      "reposts": "Ripubblicazioni",
-      "zaps": "Zap"
+      "reposts": "Ripubblicazioni"
     },
     "empty": {
       "all": {
@@ -1063,16 +1062,23 @@
       "reposts": {
         "title": "Ancora nessuna ripubblicazione.",
         "description": "Le ripubblicazioni dei tuoi video appariranno qui."
-      },
-      "zaps": {
-        "title": "Ancora nessuno zap.",
-        "description": "Gli zap sui tuoi video appariranno qui."
       }
     },
     "errorTitle": "Caricamento notifiche fallito",
     "errorFallback": "Riprova più tardi",
     "sectionNew": "Nuove",
-    "sectionEarlier": "Precedenti"
+    "sectionEarlier": "Precedenti",
+    "message": {
+      "liked": "liked your video",
+      "commented": "commented on your video",
+      "reposted": "reposted your video",
+      "followed": "followed you",
+      "andOthers_one": "and {{count}} other",
+      "andOthers_other": "and {{count}} others"
+    },
+    "video": {
+      "untitled": "your video"
+    }
   },
   "getEmbedPage": {
     "title": "Incorpora il widget Divine",

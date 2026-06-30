@@ -2,25 +2,32 @@ import userEvent from '@testing-library/user-event';
 import { render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import type { Notification } from '@/types/notification';
+import type { NotificationItem, VideoNotification, ActorNotification } from '@/types/notification';
 import { initializeI18n } from '@/lib/i18n';
 import NotificationsPage from './NotificationsPage';
 
-const { mockMarkReadMutate, mockUseNotifications } = vi.hoisted(() => ({
+const { mockMarkReadMutate, mockUseHydratedNotifications } = vi.hoisted(() => ({
   mockMarkReadMutate: vi.fn(),
-  mockUseNotifications: vi.fn(),
+  mockUseHydratedNotifications: vi.fn(),
+}));
+
+vi.mock('@/hooks/useHydratedNotifications', () => ({
+  useHydratedNotifications: (filters?: { category?: string }) =>
+    mockUseHydratedNotifications(filters),
 }));
 
 vi.mock('@/hooks/useNotifications', () => ({
-  useNotifications: (filters?: { category?: string }) => mockUseNotifications(filters),
   useMarkNotificationsRead: () => ({
     mutate: mockMarkReadMutate,
   }),
 }));
 
-vi.mock('@/components/NotificationItem', () => ({
-  NotificationItem: ({ notification }: { notification: Notification }) => (
-    <div>{notification.id}</div>
+vi.mock('@/components/notifications/NotificationRows', () => ({
+  VideoNotificationRow: ({ notification }: { notification: VideoNotification }) => (
+    <div data-testid="video-notification-row">{notification.id}</div>
+  ),
+  ActorNotificationRow: ({ notification }: { notification: ActorNotification }) => (
+    <div data-testid="actor-notification-row">{notification.id}</div>
   ),
 }));
 
@@ -28,15 +35,45 @@ vi.mock('@/components/ui/skeleton', () => ({
   Skeleton: () => <div>loading</div>,
 }));
 
-function buildNotification(overrides: Partial<Notification>): Notification {
+function buildVideoNotification(overrides: Partial<VideoNotification> = {}): VideoNotification {
   return {
-    id: 'notification-1',
+    id: 'video-notif-1',
+    kind: 'video',
     type: 'like',
-    actorPubkey: 'a'.repeat(64),
+    rawIds: ['raw-1'],
     timestamp: 1_700_000_000,
     isRead: true,
-    sourceEventId: 'b'.repeat(64),
-    sourceKind: 7,
+    videoEventId: 'a'.repeat(64),
+    videoTitle: 'Test Video',
+    actors: [{ pubkey: 'b'.repeat(64), displayName: 'Alice' }],
+    totalCount: 1,
+    ...overrides,
+  };
+}
+
+function buildActorNotification(overrides: Partial<ActorNotification> = {}): ActorNotification {
+  return {
+    id: 'actor-notif-1',
+    kind: 'actor',
+    type: 'follow',
+    rawIds: ['raw-2'],
+    timestamp: 1_700_000_000,
+    isRead: true,
+    actor: { pubkey: 'c'.repeat(64), displayName: 'Bob' },
+    ...overrides,
+  };
+}
+
+function makeHookResult(items: NotificationItem[], overrides = {}) {
+  return {
+    items,
+    isLoading: false,
+    isError: false,
+    error: null,
+    fetchNextPage: vi.fn(),
+    hasNextPage: false,
+    isFetchingNextPage: false,
+    unreadCount: 0,
     ...overrides,
   };
 }
@@ -57,56 +94,38 @@ describe('NotificationsPage', () => {
     });
     await initializeI18n({ force: true, languages: ['en-US'] });
 
-    mockUseNotifications.mockImplementation((filters?: { category?: string }) => {
+    mockUseHydratedNotifications.mockImplementation((filters?: { category?: string }) => {
       const category = filters?.category ?? 'all';
 
       if (category === 'likes') {
-        return {
-          data: {
-            pages: [
-              {
-                notifications: [
-                  buildNotification({ id: 'like-1', type: 'like', isRead: true }),
-                ],
-              },
-            ],
-          },
-          isLoading: false,
-          isError: false,
-          error: null,
-          fetchNextPage: vi.fn(),
-          hasNextPage: false,
-          isFetchingNextPage: false,
-        };
+        return makeHookResult([
+          buildVideoNotification({ id: 'like-1', type: 'like', isRead: true }),
+        ]);
       }
 
-      return {
-        data: {
-          pages: [
-            {
-              notifications: [
-                buildNotification({ id: 'new-1', isRead: false }),
-                buildNotification({ id: 'earlier-1', type: 'follow', isRead: true }),
-              ],
-            },
-          ],
-        },
-        isLoading: false,
-        isError: false,
-        error: null,
-        fetchNextPage: vi.fn(),
-        hasNextPage: false,
-        isFetchingNextPage: false,
-      };
+      return makeHookResult([
+        buildVideoNotification({ id: 'new-1', rawIds: ['raw-new-1'], isRead: false }),
+        buildActorNotification({ id: 'earlier-1', rawIds: ['raw-earlier-1'], isRead: true }),
+      ]);
     });
   });
 
-  it('shows New and Earlier sections and marks all read on open', async () => {
+  it('renders All, Unread, Likes, Comments, Follows, Reposts tabs and NOT Zaps', async () => {
+    render(<NotificationsPage />);
+
+    expect(screen.getByRole('tab', { name: 'All' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Unread' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Likes' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Comments' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Follows' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Reposts' })).toBeInTheDocument();
+    expect(screen.queryByRole('tab', { name: 'Zaps' })).not.toBeInTheDocument();
+  });
+
+  it('shows New and Earlier sections and marks all read on open (category all)', async () => {
     render(<NotificationsPage />);
 
     expect(screen.getByRole('heading', { name: 'Notifications' })).toBeInTheDocument();
-    expect(screen.getByText('All')).toBeInTheDocument();
-    expect(screen.getByText('Likes')).toBeInTheDocument();
     expect(await screen.findByText('New')).toBeInTheDocument();
     expect(screen.getByText('Earlier')).toBeInTheDocument();
     expect(screen.getByText('new-1')).toBeInTheDocument();
@@ -117,7 +136,16 @@ describe('NotificationsPage', () => {
     });
   });
 
-  it('switches to a category tab and shows the filtered notification list', async () => {
+  it('renders VideoNotificationRow for video kind and ActorNotificationRow for actor kind', async () => {
+    render(<NotificationsPage />);
+
+    await screen.findByText('new-1');
+
+    expect(screen.getAllByTestId('video-notification-row').length).toBeGreaterThan(0);
+    expect(screen.getAllByTestId('actor-notification-row').length).toBeGreaterThan(0);
+  });
+
+  it('switches to Likes tab and shows video rows without New/Earlier split', async () => {
     const user = userEvent.setup();
 
     render(<NotificationsPage />);
@@ -126,6 +154,28 @@ describe('NotificationsPage', () => {
 
     expect(await screen.findByText('like-1')).toBeInTheDocument();
     expect(screen.queryByText('new-1')).not.toBeInTheDocument();
+    expect(screen.queryByText('Earlier')).not.toBeInTheDocument();
+    expect(screen.queryByText('New')).not.toBeInTheDocument();
+  });
+
+  it('category unread does NOT use the New/Earlier split', async () => {
+    mockUseHydratedNotifications.mockImplementation((filters?: { category?: string }) => {
+      const category = filters?.category ?? 'all';
+      if (category === 'unread') {
+        return makeHookResult([
+          buildVideoNotification({ id: 'unread-1', rawIds: ['raw-u-1'], isRead: false }),
+        ]);
+      }
+      return makeHookResult([]);
+    });
+
+    const user = userEvent.setup();
+    render(<NotificationsPage />);
+
+    await user.click(screen.getByRole('tab', { name: 'Unread' }));
+
+    expect(await screen.findByText('unread-1')).toBeInTheDocument();
+    expect(screen.queryByText('New')).not.toBeInTheDocument();
     expect(screen.queryByText('Earlier')).not.toBeInTheDocument();
   });
 });

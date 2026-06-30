@@ -1036,8 +1036,7 @@
       "likes": "Likes",
       "comments": "Kommentare",
       "follows": "Follows",
-      "reposts": "Reposts",
-      "zaps": "Zaps"
+      "reposts": "Reposts"
     },
     "empty": {
       "all": {
@@ -1063,16 +1062,23 @@
       "reposts": {
         "title": "Noch keine Repost-Benachrichtigungen.",
         "description": "Reposts deiner Videos tauchen hier auf."
-      },
-      "zaps": {
-        "title": "Noch keine Zap-Benachrichtigungen.",
-        "description": "Zaps auf deine Videos erscheinen hier."
       }
     },
     "errorTitle": "Benachrichtigungen konnten nicht geladen werden",
     "errorFallback": "Versuch es später nochmal",
     "sectionNew": "Neu",
-    "sectionEarlier": "Älter"
+    "sectionEarlier": "Älter",
+    "message": {
+      "liked": "liked your video",
+      "commented": "commented on your video",
+      "reposted": "reposted your video",
+      "followed": "followed you",
+      "andOthers_one": "and {{count}} other",
+      "andOthers_other": "and {{count}} others"
+    },
+    "video": {
+      "untitled": "your video"
+    }
   },
   "getEmbedPage": {
     "title": "Divine-Widget einbetten",

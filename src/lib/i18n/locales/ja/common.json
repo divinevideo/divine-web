@@ -1036,8 +1036,7 @@
       "likes": "いいね",
       "comments": "コメント",
       "follows": "フォロー",
-      "reposts": "リポスト",
-      "zaps": "Zap"
+      "reposts": "リポスト"
     },
     "empty": {
       "all": {
@@ -1063,16 +1062,23 @@
       "reposts": {
         "title": "リポストの通知はまだありません。",
         "description": "あなたの動画のリポストがここに表示されます。"
-      },
-      "zaps": {
-        "title": "Zapの通知はまだありません。",
-        "description": "動画へのZapがここに表示されます。"
       }
     },
     "errorTitle": "通知の読み込みに失敗しました",
     "errorFallback": "あとでもう一度お試しください",
     "sectionNew": "新着",
-    "sectionEarlier": "これまで"
+    "sectionEarlier": "これまで",
+    "message": {
+      "liked": "liked your video",
+      "commented": "commented on your video",
+      "reposted": "reposted your video",
+      "followed": "followed you",
+      "andOthers_one": "and {{count}} other",
+      "andOthers_other": "and {{count}} others"
+    },
+    "video": {
+      "untitled": "your video"
+    }
   },
   "getEmbedPage": {
     "title": "Divineウィジェットを埋め込む",
