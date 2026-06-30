@@ -122,7 +122,6 @@ function NostrMention({ pubkey }: { pubkey: string }) {
   const displayName = author.data?.metadata?.name || author.data?.metadata?.display_name || genUserName(pubkey);
   const profilePath = buildProfileLinkPath({
     pubkey,
-    nip05: author.data?.metadata?.nip05,
   });
 
   return (

@@ -297,7 +297,7 @@ export function VideoCard({
   );
   const profileUrl = buildProfileLinkPath({
     pubkey: video.pubkey,
-    nip05: rawMetadata?.nip05,
+    fallbackRoute: 'profile',
   });
 
   const reposterName = reposterData.isLoading

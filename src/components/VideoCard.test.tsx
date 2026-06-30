@@ -1,4 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/react';
+import { nip19 } from 'nostr-tools';
 import type {
   ButtonHTMLAttributes,
   HTMLAttributes,
@@ -28,6 +29,13 @@ const authMocks = vi.hoisted(() => ({
   confirmAdult: vi.fn(),
   useCurrentUser: vi.fn(),
   useAdultVerification: vi.fn(),
+}));
+
+const authorMocks = vi.hoisted(() => ({
+  metadata: {
+    name: 'Video Author',
+    picture: 'https://example.com/avatar.jpg',
+  } as Record<string, unknown>,
 }));
 
 vi.mock('@/components/ui/card', () => ({
@@ -165,19 +173,17 @@ vi.mock('@/components/SmartLink', () => ({
   SmartLink: ({
     children,
     ownerPubkey: _ownerPubkey,
+    to,
     ...props
-  }: HTMLAttributes<HTMLAnchorElement> & { ownerPubkey?: string }) => (
-    <a {...props}>{children}</a>
+  }: HTMLAttributes<HTMLAnchorElement> & { ownerPubkey?: string; to: string }) => (
+    <a href={to} {...props}>{children}</a>
   ),
 }));
 
 vi.mock('@/hooks/useAuthor', () => ({
   useAuthor: () => ({
     data: {
-      metadata: {
-        name: 'Video Author',
-        picture: 'https://example.com/avatar.jpg',
-      },
+      metadata: authorMocks.metadata,
     },
     isLoading: false,
   }),
@@ -387,6 +393,10 @@ describe('VideoCard', () => {
     playbackMocks.navigate.mockClear();
     playbackMocks.toast.mockClear();
     playbackMocks.share.mockClear();
+    authorMocks.metadata = {
+      name: 'Video Author',
+      picture: 'https://example.com/avatar.jpg',
+    };
     authMocks.openLoginDialog.mockClear();
     authMocks.confirmAdult.mockClear();
     authMocks.useCurrentUser.mockReturnValue({ user: null });
@@ -407,6 +417,22 @@ describe('VideoCard', () => {
 
     expect(playbackMocks.setActiveVideo).toHaveBeenCalledWith(baseVideo.id);
     expect(screen.getByTestId(`video-player-${baseVideo.id}`)).toBeTruthy();
+  });
+
+  it('links the author name directly to the known profile pubkey when metadata has a NIP-05 alias', () => {
+    authorMocks.metadata = {
+      name: 'Video Author',
+      picture: 'https://example.com/avatar.jpg',
+      nip05: '_@video-author.divine.video',
+    };
+    const expectedNpub = nip19.npubEncode(baseVideo.pubkey);
+
+    render(<VideoCard video={baseVideo} />);
+
+    expect(screen.getByRole('link', { name: 'Video Author' })).toHaveAttribute(
+      'href',
+      `/profile/${expectedNpub}`,
+    );
   });
 
   it('keeps the thumbnail visible until inline playback actually starts', () => {
