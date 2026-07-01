@@ -1,5 +1,9 @@
 import { createElement, type ReactNode } from 'react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import {
+  focusManager,
+  QueryClient,
+  QueryClientProvider,
+} from '@tanstack/react-query';
 import { renderHook, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
@@ -34,6 +38,7 @@ describe('useProtectedMinorStatus', () => {
   afterEach(() => {
     vi.restoreAllMocks();
     vi.unstubAllGlobals();
+    focusManager.setFocused(undefined); // back to default focus tracking
   });
 
   it('is not protected and does not fetch when signed out', () => {
@@ -145,5 +150,35 @@ describe('useProtectedMinorStatus', () => {
 
     await waitFor(() => expect(fetchSpy).toHaveBeenCalled());
     expect(result.current).toBe(false);
+  });
+
+  it('self-heals on window focus (refetchOnWindowFocus override)', async () => {
+    focusManager.setFocused(true);
+    mockUseDivineSession.mockReturnValue({ session: { token: 'minor' } });
+
+    // First load fails, so the flag reads not-protected (cached under the key).
+    const failing = vi.fn().mockResolvedValue({ ok: false, status: 500 });
+    vi.stubGlobal('fetch', failing);
+    const { result } = renderHook(() => useIsProtectedMinor(), {
+      wrapper: makeWrapper(),
+    });
+    await waitFor(() => expect(failing).toHaveBeenCalled());
+    expect(result.current).toBe(false);
+
+    // The fetch now succeeds. Regaining window focus must trigger a refetch —
+    // which only happens because the hook sets refetchOnWindowFocus:true (the
+    // wrapper default, mirroring the app, is false). No remount here.
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => ({ verified_minor: true }),
+      }),
+    );
+    focusManager.setFocused(false);
+    focusManager.setFocused(true);
+
+    await waitFor(() => expect(result.current).toBe(true));
   });
 });
