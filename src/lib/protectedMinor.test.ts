@@ -23,7 +23,9 @@ describe('fetchProtectedMinorStatus', () => {
 
     const status = await fetchProtectedMinorStatus('tok123', fetchImpl);
 
+    expect(status.state).toBe('protected');
     expect(status.isProtectedMinor).toBe(true);
+    expect(status.isKnown).toBe(true);
     expect(status.verifiedMinorAt).toEqual(new Date('2026-06-30T12:00:00Z'));
     expect(fetchImpl).toHaveBeenCalledWith(
       ACCOUNT_URL,
@@ -38,7 +40,9 @@ describe('fetchProtectedMinorStatus', () => {
 
     const status = await fetchProtectedMinorStatus('', fetchSpy);
 
+    expect(status.state).toBe('not_protected');
     expect(status.isProtectedMinor).toBe(false);
+    expect(status.isKnown).toBe(true);
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 
@@ -58,6 +62,7 @@ describe('fetchProtectedMinorStatus', () => {
     );
 
     expect(status.isProtectedMinor).toBe(false);
+    expect(status.state).toBe('not_protected');
     expect(status.verifiedMinorAt).toBeNull();
   });
 
@@ -80,22 +85,26 @@ describe('fetchProtectedMinorStatus', () => {
     expect(status.verifiedMinorAt).toBeNull();
   });
 
-  it('fails to not-protected on a non-ok response', async () => {
+  it('is unknown on a non-ok response', async () => {
     const status = await fetchProtectedMinorStatus(
       't',
       fetchReturning({}, false),
     );
 
+    expect(status.state).toBe('unknown');
     expect(status.isProtectedMinor).toBe(false);
+    expect(status.isKnown).toBe(false);
   });
 
-  it('fails to not-protected when fetch throws', async () => {
+  it('is unknown when fetch throws', async () => {
     const fetchImpl = vi
       .fn()
       .mockRejectedValue(new Error('network')) as unknown as typeof fetch;
 
     const status = await fetchProtectedMinorStatus('t', fetchImpl);
 
+    expect(status.state).toBe('unknown');
     expect(status.isProtectedMinor).toBe(false);
+    expect(status.isKnown).toBe(false);
   });
 });

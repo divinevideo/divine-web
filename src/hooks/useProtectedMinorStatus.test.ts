@@ -50,7 +50,9 @@ describe('useProtectedMinorStatus', () => {
       wrapper: makeWrapper(),
     });
 
+    expect(result.current.state).toBe('not_protected');
     expect(result.current.isProtectedMinor).toBe(false);
+    expect(result.current.isKnown).toBe(true);
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 
@@ -117,12 +119,14 @@ describe('useProtectedMinorStatus', () => {
 
     mockUseDivineSession.mockReturnValue({ session: { token: 'minor' } });
 
-    // First mount: the fetch fails, so the flag reads not-protected.
+    // First mount: the fetch fails, so the status is explicitly unknown.
     const failing = vi.fn().mockResolvedValue({ ok: false, status: 500 });
     vi.stubGlobal('fetch', failing);
-    const first = renderHook(() => useIsProtectedMinor(), { wrapper });
+    const first = renderHook(() => useProtectedMinorStatus(), { wrapper });
     await waitFor(() => expect(failing).toHaveBeenCalled());
-    expect(first.result.current).toBe(false);
+    expect(first.result.current.state).toBe('unknown');
+    expect(first.result.current.isProtectedMinor).toBe(false);
+    expect(first.result.current.isKnown).toBe(false);
     first.unmount();
 
     // Recovery: the fetch now succeeds; because staleTime is 0 the remount
@@ -135,35 +139,39 @@ describe('useProtectedMinorStatus', () => {
         json: async () => ({ verified_minor: true }),
       }),
     );
-    const second = renderHook(() => useIsProtectedMinor(), { wrapper });
-    await waitFor(() => expect(second.result.current).toBe(true));
+    const second = renderHook(() => useProtectedMinorStatus(), { wrapper });
+    await waitFor(() => expect(second.result.current.state).toBe('protected'));
+    expect(second.result.current.isProtectedMinor).toBe(true);
   });
 
-  it('stays not protected when the fetch fails for an authenticated session', async () => {
+  it('is unknown when the fetch fails for an authenticated session', async () => {
     mockUseDivineSession.mockReturnValue({ session: { token: 'tok' } });
     const fetchSpy = vi.fn().mockResolvedValue({ ok: false, status: 500 });
     vi.stubGlobal('fetch', fetchSpy);
 
-    const { result } = renderHook(() => useIsProtectedMinor(), {
+    const { result } = renderHook(() => useProtectedMinorStatus(), {
       wrapper: makeWrapper(),
     });
 
+    expect(result.current.state).toBe('unknown');
+    expect(result.current.isProtectedMinor).toBe(false);
+    expect(result.current.isKnown).toBe(false);
     await waitFor(() => expect(fetchSpy).toHaveBeenCalled());
-    expect(result.current).toBe(false);
+    expect(result.current.state).toBe('unknown');
   });
 
   it('self-heals on window focus (refetchOnWindowFocus override)', async () => {
     focusManager.setFocused(true);
     mockUseDivineSession.mockReturnValue({ session: { token: 'minor' } });
 
-    // First load fails, so the flag reads not-protected (cached under the key).
+    // First load fails, so the explicit unknown state is cached under the key.
     const failing = vi.fn().mockResolvedValue({ ok: false, status: 500 });
     vi.stubGlobal('fetch', failing);
-    const { result } = renderHook(() => useIsProtectedMinor(), {
+    const { result } = renderHook(() => useProtectedMinorStatus(), {
       wrapper: makeWrapper(),
     });
     await waitFor(() => expect(failing).toHaveBeenCalled());
-    expect(result.current).toBe(false);
+    expect(result.current.state).toBe('unknown');
 
     // The fetch now succeeds. Regaining window focus must trigger a refetch —
     // which only happens because the hook sets refetchOnWindowFocus:true (the
@@ -179,6 +187,7 @@ describe('useProtectedMinorStatus', () => {
     focusManager.setFocused(false);
     focusManager.setFocused(true);
 
-    await waitFor(() => expect(result.current).toBe(true));
+    await waitFor(() => expect(result.current.state).toBe('protected'));
+    expect(result.current.isProtectedMinor).toBe(true);
   });
 });
