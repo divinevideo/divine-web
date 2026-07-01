@@ -12,9 +12,19 @@ vi.mock('@/hooks/useDivineSession', () => ({
   useDivineSession: () => mockUseDivineSession(),
 }));
 
+// Mirror the app-global QueryClient defaults (src/App.tsx) so these tests only
+// pass BECAUSE the hook overrides staleTime/refetchOnWindowFocus. If the hook
+// dropped those overrides, the self-heal/refetch tests would fail here instead
+// of silently passing on React Query's permissive library defaults.
 function makeWrapper() {
   const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
+    defaultOptions: {
+      queries: {
+        staleTime: 60_000,
+        refetchOnWindowFocus: false,
+        retry: false,
+      },
+    },
   });
   return ({ children }: { children: ReactNode }) =>
     createElement(QueryClientProvider, { client: queryClient }, children);
@@ -95,11 +105,10 @@ describe('useProtectedMinorStatus', () => {
   });
 
   it('self-heals: a transient failure recovers on remount', async () => {
-    const queryClient = new QueryClient({
-      defaultOptions: { queries: { retry: false } },
-    });
-    const wrapper = ({ children }: { children: ReactNode }) =>
-      createElement(QueryClientProvider, { client: queryClient }, children);
+    // One wrapper (one shared QueryClient) reused across mount/unmount/remount,
+    // using the app-global defaults — so recovery on remount can only happen
+    // because the hook overrides staleTime to 0.
+    const wrapper = makeWrapper();
 
     mockUseDivineSession.mockReturnValue({ session: { token: 'minor' } });
 
