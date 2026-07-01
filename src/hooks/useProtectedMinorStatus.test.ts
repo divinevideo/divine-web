@@ -59,4 +59,42 @@ describe('useProtectedMinorStatus', () => {
 
     await waitFor(() => expect(result.current).toBe(true));
   });
+
+  it('refetches and updates when the session token changes (no cross-user leak)', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (_url: string, opts?: RequestInit) => {
+        const auth = (opts?.headers as Record<string, string> | undefined)
+          ?.Authorization;
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ verified_minor: auth === 'Bearer minor' }),
+        };
+      }),
+    );
+
+    mockUseDivineSession.mockReturnValue({ session: { token: 'minor' } });
+    const { result, rerender } = renderHook(() => useIsProtectedMinor(), {
+      wrapper: makeWrapper(),
+    });
+    await waitFor(() => expect(result.current).toBe(true));
+
+    mockUseDivineSession.mockReturnValue({ session: { token: 'adult' } });
+    rerender();
+    await waitFor(() => expect(result.current).toBe(false));
+  });
+
+  it('stays not protected when the fetch fails for an authenticated session', async () => {
+    mockUseDivineSession.mockReturnValue({ session: { token: 'tok' } });
+    const fetchSpy = vi.fn().mockResolvedValue({ ok: false, status: 500 });
+    vi.stubGlobal('fetch', fetchSpy);
+
+    const { result } = renderHook(() => useIsProtectedMinor(), {
+      wrapper: makeWrapper(),
+    });
+
+    await waitFor(() => expect(fetchSpy).toHaveBeenCalled());
+    expect(result.current).toBe(false);
+  });
 });

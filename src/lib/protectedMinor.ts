@@ -31,11 +31,13 @@ function parseVerifiedMinorAt(raw: unknown): Date | null {
 export async function fetchProtectedMinorStatus(
   token: string,
   fetchImpl: typeof fetch = fetch,
+  signal?: AbortSignal,
 ): Promise<ProtectedMinorStatus> {
   if (!token) return NOT_PROTECTED;
   try {
     const response = await fetchImpl(`${DIVINE_LOGIN_ORIGIN}/api/user/account`, {
       headers: { Authorization: `Bearer ${token}` },
+      signal,
     });
     if (!response.ok) return NOT_PROTECTED;
 

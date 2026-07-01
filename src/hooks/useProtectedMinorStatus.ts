@@ -22,14 +22,19 @@ export function useProtectedMinorStatus(): ProtectedMinorStatus {
   const { session } = useDivineSession();
   const token = session?.token ?? null;
 
-  // No staleTime on purpose: the flag changes ~never, but because queryFn never
-  // throws, a transient failure resolves to NOT_PROTECTED and self-heals on the
-  // next refetch/focus. A long staleTime would instead make that false-negative
-  // stick, so leave it at the default until refetch churn is an actual concern.
+  // queryFn never throws, so a transient failure resolves to NOT_PROTECTED. Keep
+  // that self-healing rather than sticky: set staleTime 0 + refetch-on-focus
+  // explicitly here, overriding the app-global defaults (staleTime 60s,
+  // refetchOnWindowFocus false) which would otherwise pin a false-negative for
+  // the mounted lifetime. Protections (#175/#176) lean on this seam, so a stale
+  // "not protected" must recover on the next mount or focus.
   const { data } = useQuery({
     queryKey: ['protected-minor', token],
     enabled: !!token,
-    queryFn: () => fetchProtectedMinorStatus(token as string),
+    staleTime: 0,
+    refetchOnWindowFocus: true,
+    queryFn: ({ signal }) =>
+      fetchProtectedMinorStatus(token as string, fetch, signal),
   });
 
   return data ?? NOT_PROTECTED;
