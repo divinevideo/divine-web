@@ -1,0 +1,110 @@
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { DIVINE_LOGIN_ORIGIN } from './divineLoginOrigin';
+import { fetchProtectedMinorStatus } from './protectedMinor';
+
+const ACCOUNT_URL = `${DIVINE_LOGIN_ORIGIN}/api/user/account`;
+
+function fetchReturning(body: unknown, ok = true): typeof fetch {
+  return vi.fn().mockResolvedValue({
+    ok,
+    status: ok ? 200 : 500,
+    json: async () => body,
+  }) as unknown as typeof fetch;
+}
+
+describe('fetchProtectedMinorStatus', () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  it('is protected with a timestamp when verified_minor is true', async () => {
+    const fetchImpl = fetchReturning({
+      verified_minor: true,
+      verified_minor_at: '2026-06-30T12:00:00Z',
+    });
+
+    const status = await fetchProtectedMinorStatus('tok123', fetchImpl);
+
+    expect(status.state).toBe('protected');
+    expect(status.isProtectedMinor).toBe(true);
+    expect(status.isKnown).toBe(true);
+    expect(status.verifiedMinorAt).toEqual(new Date('2026-06-30T12:00:00Z'));
+    expect(fetchImpl).toHaveBeenCalledWith(
+      ACCOUNT_URL,
+      expect.objectContaining({
+        headers: expect.objectContaining({ Authorization: 'Bearer tok123' }),
+      }),
+    );
+  });
+
+  it('does not call fetch and is not protected for an empty token', async () => {
+    const fetchSpy = vi.fn() as unknown as typeof fetch;
+
+    const status = await fetchProtectedMinorStatus('', fetchSpy);
+
+    expect(status.state).toBe('not_protected');
+    expect(status.isProtectedMinor).toBe(false);
+    expect(status.isKnown).toBe(true);
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it('is not protected when verified_minor is truthy but not strictly true', async () => {
+    const status = await fetchProtectedMinorStatus(
+      't',
+      fetchReturning({ verified_minor: 'true' }),
+    );
+
+    expect(status.isProtectedMinor).toBe(false);
+  });
+
+  it('is not protected when verified_minor is false', async () => {
+    const status = await fetchProtectedMinorStatus(
+      't',
+      fetchReturning({ verified_minor: false }),
+    );
+
+    expect(status.isProtectedMinor).toBe(false);
+    expect(status.state).toBe('not_protected');
+    expect(status.verifiedMinorAt).toBeNull();
+  });
+
+  it('is not protected when the flag is absent', async () => {
+    const status = await fetchProtectedMinorStatus(
+      't',
+      fetchReturning({ email: 'a@b.com' }),
+    );
+
+    expect(status.isProtectedMinor).toBe(false);
+  });
+
+  it('stays protected with a null timestamp on a bad date', async () => {
+    const status = await fetchProtectedMinorStatus(
+      't',
+      fetchReturning({ verified_minor: true, verified_minor_at: 'not-a-date' }),
+    );
+
+    expect(status.isProtectedMinor).toBe(true);
+    expect(status.verifiedMinorAt).toBeNull();
+  });
+
+  it('is unknown on a non-ok response', async () => {
+    const status = await fetchProtectedMinorStatus(
+      't',
+      fetchReturning({}, false),
+    );
+
+    expect(status.state).toBe('unknown');
+    expect(status.isProtectedMinor).toBe(false);
+    expect(status.isKnown).toBe(false);
+  });
+
+  it('is unknown when fetch throws', async () => {
+    const fetchImpl = vi
+      .fn()
+      .mockRejectedValue(new Error('network')) as unknown as typeof fetch;
+
+    const status = await fetchProtectedMinorStatus('t', fetchImpl);
+
+    expect(status.state).toBe('unknown');
+    expect(status.isProtectedMinor).toBe(false);
+    expect(status.isKnown).toBe(false);
+  });
+});
