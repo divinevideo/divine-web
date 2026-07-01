@@ -33,6 +33,24 @@ describe('fetchProtectedMinorStatus', () => {
     );
   });
 
+  it('does not call fetch and is not protected for an empty token', async () => {
+    const fetchSpy = vi.fn() as unknown as typeof fetch;
+
+    const status = await fetchProtectedMinorStatus('', fetchSpy);
+
+    expect(status.isProtectedMinor).toBe(false);
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it('is not protected when verified_minor is truthy but not strictly true', async () => {
+    const status = await fetchProtectedMinorStatus(
+      't',
+      fetchReturning({ verified_minor: 'true' }),
+    );
+
+    expect(status.isProtectedMinor).toBe(false);
+  });
+
   it('is not protected when verified_minor is false', async () => {
     const status = await fetchProtectedMinorStatus(
       't',

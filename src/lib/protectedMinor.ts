@@ -8,10 +8,12 @@ export interface ProtectedMinorStatus {
   verifiedMinorAt: Date | null;
 }
 
-export const NOT_PROTECTED: ProtectedMinorStatus = {
+// Frozen so this shared sentinel can't be mutated by a consumer and poisoned
+// for every other caller (it's returned by reference from the lib and hook).
+export const NOT_PROTECTED: ProtectedMinorStatus = Object.freeze({
   isProtectedMinor: false,
   verifiedMinorAt: null,
-};
+});
 
 function parseVerifiedMinorAt(raw: unknown): Date | null {
   if (typeof raw !== 'string') return null;

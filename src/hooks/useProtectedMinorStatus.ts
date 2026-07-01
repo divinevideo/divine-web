@@ -22,6 +22,10 @@ export function useProtectedMinorStatus(): ProtectedMinorStatus {
   const { session } = useDivineSession();
   const token = session?.token ?? null;
 
+  // No staleTime on purpose: the flag changes ~never, but because queryFn never
+  // throws, a transient failure resolves to NOT_PROTECTED and self-heals on the
+  // next refetch/focus. A long staleTime would instead make that false-negative
+  // stick, so leave it at the default until refetch churn is an actual concern.
   const { data } = useQuery({
     queryKey: ['protected-minor', token],
     enabled: !!token,
