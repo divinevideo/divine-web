@@ -1,5 +1,5 @@
-// ABOUTME: Reads the keycast verified_minor flag (GET /user/account) and maps it
-// ABOUTME: to a non-blocking protected-minor (13-15) state for web (#452 / #174).
+// ABOUTME: Reads the keycast verified_minor flag (GET /api/user/account) and maps
+// ABOUTME: it to a non-blocking protected-minor (13-15) state for web (#452 / #174).
 
 import { DIVINE_LOGIN_ORIGIN } from './divineLoginOrigin';
 
@@ -24,7 +24,7 @@ function parseVerifiedMinorAt(raw: unknown): Date | null {
 /**
  * Fetches the protected-minor state from keycast for the given session token.
  *
- * Reads `verified_minor` from `GET /user/account` (keycast#263). Any failure —
+ * Reads `verified_minor` from `GET /api/user/account` (keycast#263). Any failure —
  * non-ok response, network error, or an empty (signed-out) token — resolves to
  * {@link NOT_PROTECTED}: #452 is detection-only, so it fails to not-protected.
  */

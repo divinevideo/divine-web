@@ -60,29 +60,69 @@ describe('useProtectedMinorStatus', () => {
     await waitFor(() => expect(result.current).toBe(true));
   });
 
-  it('refetches and updates when the session token changes (no cross-user leak)', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async (_url: string, opts?: RequestInit) => {
-        const auth = (opts?.headers as Record<string, string> | undefined)
-          ?.Authorization;
-        return {
-          ok: true,
-          status: 200,
-          json: async () => ({ verified_minor: auth === 'Bearer minor' }),
-        };
-      }),
-    );
+  it('refetches with the new token on account switch (no cross-user leak)', async () => {
+    const fetchMock = vi.fn(async (_url: string, opts?: RequestInit) => {
+      const auth = (opts?.headers as Record<string, string> | undefined)
+        ?.Authorization;
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({ verified_minor: auth === 'Bearer minor' }),
+      };
+    });
+    vi.stubGlobal('fetch', fetchMock);
 
     mockUseDivineSession.mockReturnValue({ session: { token: 'minor' } });
     const { result, rerender } = renderHook(() => useIsProtectedMinor(), {
       wrapper: makeWrapper(),
     });
+    // Only true once the 'minor' fetch actually resolves (not a default).
     await waitFor(() => expect(result.current).toBe(true));
 
     mockUseDivineSession.mockReturnValue({ session: { token: 'adult' } });
     rerender();
+    // Prove the new token was fetched (refetch + isolation), not just the
+    // key-change transient, then that it resolves to not-protected.
+    await waitFor(() =>
+      expect(fetchMock).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({
+          headers: expect.objectContaining({ Authorization: 'Bearer adult' }),
+        }),
+      ),
+    );
     await waitFor(() => expect(result.current).toBe(false));
+  });
+
+  it('self-heals: a transient failure recovers on remount', async () => {
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const wrapper = ({ children }: { children: ReactNode }) =>
+      createElement(QueryClientProvider, { client: queryClient }, children);
+
+    mockUseDivineSession.mockReturnValue({ session: { token: 'minor' } });
+
+    // First mount: the fetch fails, so the flag reads not-protected.
+    const failing = vi.fn().mockResolvedValue({ ok: false, status: 500 });
+    vi.stubGlobal('fetch', failing);
+    const first = renderHook(() => useIsProtectedMinor(), { wrapper });
+    await waitFor(() => expect(failing).toHaveBeenCalled());
+    expect(first.result.current).toBe(false);
+    first.unmount();
+
+    // Recovery: the fetch now succeeds; because staleTime is 0 the remount
+    // refetches instead of serving the stale not-protected value.
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => ({ verified_minor: true }),
+      }),
+    );
+    const second = renderHook(() => useIsProtectedMinor(), { wrapper });
+    await waitFor(() => expect(second.result.current).toBe(true));
   });
 
   it('stays not protected when the fetch fails for an authenticated session', async () => {
