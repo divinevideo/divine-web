@@ -6,12 +6,20 @@ import type { ButtonHTMLAttributes, HTMLAttributes, ReactNode } from 'react';
 import { initializeI18n } from '@/lib/i18n';
 import { VideoFeed } from './VideoFeed';
 
-const { mockNavigate, mockUseVideoProvider, mockEnterFullscreen, mockSetVideosForFullscreen, mockUpdateVideos } = vi.hoisted(() => ({
+const {
+  mockNavigate,
+  mockUseVideoProvider,
+  mockEnterFullscreen,
+  mockSetVideosForFullscreen,
+  mockUpdateVideos,
+  mockUseVideoPrefetch,
+} = vi.hoisted(() => ({
   mockNavigate: vi.fn(),
   mockUseVideoProvider: vi.fn(),
   mockEnterFullscreen: vi.fn(),
   mockSetVideosForFullscreen: vi.fn(),
   mockUpdateVideos: vi.fn(),
+  mockUseVideoPrefetch: vi.fn(),
 }));
 
 vi.mock('@/hooks/useVideoProvider', () => ({
@@ -59,7 +67,7 @@ vi.mock('@/hooks/useVideoPlayback', () => ({
 }));
 
 vi.mock('@/hooks/useVideoPrefetch', () => ({
-  useVideoPrefetch: vi.fn(),
+  useVideoPrefetch: mockUseVideoPrefetch,
 }));
 
 vi.mock('@/lib/debug', () => ({
@@ -173,6 +181,20 @@ describe('VideoFeed', () => {
     expect(mockEnterFullscreen).toHaveBeenCalledWith(
       [expect.objectContaining({ id: 'video-1' })],
       0,
+    );
+  });
+
+  it('does not prefetch full video files before first playback', () => {
+    render(
+      <MemoryRouter initialEntries={['/popular']}>
+        <VideoFeed feedType="popular" />
+      </MemoryRouter>
+    );
+
+    expect(mockUseVideoPrefetch).toHaveBeenCalledWith(
+      null,
+      [expect.objectContaining({ id: 'video-1' })],
+      { prefetchVideos: false },
     );
   });
 });
