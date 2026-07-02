@@ -21,19 +21,41 @@ const FETCH_TIMEOUT_MS = 10000;
 const execFileAsync = promisify(execFile);
 const CURL_STATUS_MARKER = '\n__HTTP_STATUS__:';
 
-async function fetchWithCurl(url, options = {}) {
+function headerEntries(headers = {}) {
+  if (typeof Headers !== 'undefined' && headers instanceof Headers) {
+    return Array.from(headers.entries());
+  }
+
+  if (Array.isArray(headers)) {
+    return headers;
+  }
+
+  return Object.entries(headers);
+}
+
+// curl ignores anything it is not handed on argv, so request headers must be
+// emitted as `-H` flags here.
+export function buildCurlArgs(url, options = {}) {
   const method = options.method ?? 'GET';
-  const { stdout } = await execFileAsync('curl', [
+  const headerArgs = headerEntries(options.headers).flatMap(
+    ([name, value]) => ['-H', `${name}: ${String(value)}`],
+  );
+  return [
     '-sS',
     '-L',
     '--max-time',
     String(Math.ceil(FETCH_TIMEOUT_MS / 1000)),
     '-X',
     method,
+    ...headerArgs,
     '-w',
     `${CURL_STATUS_MARKER}%{http_code}`,
     url,
-  ], {
+  ];
+}
+
+async function fetchWithCurl(url, options = {}) {
+  const { stdout } = await execFileAsync('curl', buildCurlArgs(url, options), {
     maxBuffer: 12 * 1024 * 1024,
   });
 
@@ -68,9 +90,11 @@ export function extractEntryScript(html) {
  * Poll each live origin until it serves the expected entry bundle, or fail.
  *
  * `index.html` is served `cache-control: no-store` (read live from the Compute
- * worker/KV), so a successful publish is reflected within seconds; the retry
- * budget only covers KV propagation. A persistent mismatch means the deploy
- * reported success while the edge keeps serving a stale bundle.
+ * worker/KV) and polled with `Cache-Control: no-cache` request headers so any
+ * intermediary is forced to revalidate rather than answer from cache. A successful
+ * publish is therefore reflected within seconds; the retry budget only covers KV
+ * propagation. A persistent mismatch means the deploy reported success while the
+ * edge keeps serving a stale bundle.
  */
 export async function verifyLiveBundle({
   expected,
@@ -96,6 +120,10 @@ export async function verifyLiveBundle({
       try {
         const response = await fetchImpl(url, {
           cache: 'no-store',
+          headers: {
+            'Cache-Control': 'no-cache',
+            Pragma: 'no-cache',
+          },
           signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
         });
         if (response.ok) {

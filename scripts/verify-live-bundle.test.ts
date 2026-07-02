@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { extractEntryScript, verifyLiveBundle } from './verify-live-bundle.mjs';
+import { buildCurlArgs, extractEntryScript, verifyLiveBundle } from './verify-live-bundle.mjs';
 
 const htmlWith = (entry: string) =>
   `<!doctype html><html><head>` +
@@ -210,5 +210,64 @@ describe('verifyLiveBundle', () => {
     });
 
     expect(assetUrls).toContain('https://www.divine.video/assets/index-CkdwgBUK.js');
+  });
+
+  it('polls live HTML with no-cache request headers', async () => {
+    const expected = '/assets/index-CkdwgBUK.js';
+    const fetchImpl = vi.fn(async (url: string) => {
+      if (url.endsWith('.js')) return { ok: true, status: 200, text: async () => '' };
+      return okResponse(htmlWith(expected));
+    });
+
+    await verifyLiveBundle({
+      expected,
+      urls: ['https://divine.video/'],
+      fetchImpl,
+      attempts: 2,
+      sleep: vi.fn(async () => {}),
+    });
+
+    expect(fetchImpl).toHaveBeenCalledWith(
+      'https://divine.video/',
+      expect.objectContaining({
+        headers: { 'Cache-Control': 'no-cache', Pragma: 'no-cache' },
+      }),
+    );
+  });
+});
+
+describe('buildCurlArgs', () => {
+  it('emits request headers as -H flags so they actually reach curl', () => {
+    const args = buildCurlArgs('https://divine.video/', {
+      headers: { 'Cache-Control': 'no-cache', Pragma: 'no-cache' },
+    });
+
+    expect(args).toContain('https://divine.video/');
+    expect(args).toEqual(
+      expect.arrayContaining(['-H', 'Cache-Control: no-cache', '-H', 'Pragma: no-cache']),
+    );
+  });
+
+  it('accepts Headers instances when emitting -H flags', () => {
+    const args = buildCurlArgs('https://divine.video/', {
+      headers: new Headers({ 'Cache-Control': 'no-cache' }),
+    });
+
+    expect(args).toEqual(expect.arrayContaining(['-H', 'cache-control: no-cache']));
+  });
+
+  it('accepts header tuples when emitting -H flags', () => {
+    const args = buildCurlArgs('https://divine.video/', {
+      headers: [['Pragma', 'no-cache']],
+    });
+
+    expect(args).toEqual(expect.arrayContaining(['-H', 'Pragma: no-cache']));
+  });
+
+  it('defaults to GET and omits -H when no headers are provided', () => {
+    const args = buildCurlArgs('https://divine.video/');
+
+    expect(args).toEqual(expect.arrayContaining(['-X', 'GET']));
+    expect(args).not.toContain('-H');
   });
 });

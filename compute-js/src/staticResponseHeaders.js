@@ -7,6 +7,8 @@ export function applyStaticResponseHeaders(headers, { isHtml = false, decoded = 
 
   if (isHtml) {
     next.set('Cache-Control', 'no-store');
+    // Fastly's surrogate cache honors Surrogate-Control when present.
+    next.set('Surrogate-Control', 'no-store');
   }
 
   // When the caller has read the body back as a string (e.g. response.text() to
