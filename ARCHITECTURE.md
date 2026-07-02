@@ -129,3 +129,17 @@ Nostr relays are configured in [`src/config/relays.ts`](./src/config/relays.ts).
 Firebase Analytics runs behind GDPR cookie consent. Sentry handles error
 tracking. Media assets come from cdn.divine.video. Content moderation uses
 moderation-api.divine.video. HubSpot provides the cookie consent banner.
+
+### Relay Routing
+
+[`src/lib/relayRouting.ts`](./src/lib/relayRouting.ts) defines the
+`reqRouter` and `eventRouter` factories used by
+[`src/components/NostrProvider.tsx`](./src/components/NostrProvider.tsx).
+Reads split filters into profile (kinds 0/3/10011), badge
+(8/30008/30009), and other groups; each group is fanned out to its
+relay set. Writes fan out to the primary relay plus `PROFILE_RELAYS`
+for kind 0/3/10011 and to `PRESET_RELAYS` (capped at 5) for everything
+else. **Mute lists (kind 10000) are write-restricted to
+`{primary} ∪ PROFILE_RELAYS`** so the write set is aligned with the
+read set and a user's populated list on a public relay is not
+clobbered by a web-side write that the web read path would never see.

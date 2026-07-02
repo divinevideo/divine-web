@@ -1,4 +1,4 @@
-// ABOUTME: Hooks for content moderation using NIP-51 mute lists and NIP-56 reporting
+// ABOUTME: Hooks for content moderation using NIP-51 mute lists (kind 10000) and NIP-56 reporting
 // ABOUTME: Manages user's mute list, content filtering, and reporting
 
 import { useCallback } from 'react';
@@ -17,11 +17,19 @@ import {
 } from '@/types/moderation';
 import { submitReportToZendesk, buildContentUrl } from '@/lib/reportApi';
 
+// NIP-51 mute list. Replaces kind 10001 (pin list) which was incorrectly used
+// for muting — that collided with usePinnedVideos and was rejected by
+// relay.divine.video's kind allowlist.
+export const MUTE_LIST_KIND = 10000;
+
 // Stable empty array to prevent infinite re-renders when user is not logged in
 const EMPTY_MUTE_LIST: MuteItem[] = [];
 
 /**
- * Parse a mute list event (kind 10001)
+ * Parse the mute-relevant tags from a NIP-51 mute list event (kind 10000).
+ * Returns only p/t/word/e tags the UI understands. Other tags (a pins, d, etc.)
+ * are preserved on the event itself and must round-trip through the mutation
+ * helpers below.
  */
 function parseMuteList(event: NostrEvent): MuteItem[] {
   const items: MuteItem[] = [];
@@ -29,7 +37,6 @@ function parseMuteList(event: NostrEvent): MuteItem[] {
   for (const tag of event.tags) {
     const [type, value, reason] = tag;
 
-    // Check if it's a valid mute type
     if (type === 'p' || type === 't' || type === 'word' || type === 'e') {
       if (value) {
         items.push({
@@ -43,6 +50,18 @@ function parseMuteList(event: NostrEvent): MuteItem[] {
   }
 
   return items;
+}
+
+/**
+ * Return the most recent event from a Nostr relay response, or null.
+ * NIP-01: newest `created_at` wins. On a tie, the lowest event id wins
+ * so relays deterministically converge on one canonical copy.
+ */
+function latestEvent(events: NostrEvent[]): NostrEvent | null {
+  if (events.length === 0) return null;
+  return events
+    .slice()
+    .sort((a, b) => b.created_at - a.created_at || (a.id < b.id ? -1 : 1))[0];
 }
 
 /**
@@ -64,19 +83,17 @@ export function useMuteList(pubkey?: string) {
       ]);
 
       const filter: NostrFilter = {
-        kinds: [10001], // Mute list
+        kinds: [MUTE_LIST_KIND], // NIP-51 mute list
         authors: [targetPubkey],
         limit: 1
       };
 
       const events = await nostr.query([filter], { signal });
 
-      if (events.length === 0) return [];
+      const latest = latestEvent(events);
+      if (!latest) return [];
 
-      // Get the most recent mute list
-      const latestEvent = events.sort((a, b) => b.created_at - a.created_at)[0];
-
-      return parseMuteList(latestEvent);
+      return parseMuteList(latest);
     },
     enabled: !!targetPubkey,
     staleTime: 60000, // 1 minute
@@ -89,7 +106,7 @@ export function useMuteList(pubkey?: string) {
  */
 export function useMuteItem() {
   const { nostr } = useNostr();
-  const { mutate: publishEvent } = useNostrPublish();
+  const { mutateAsync: publishEvent } = useNostrPublish();
   const queryClient = useQueryClient();
   const { user } = useCurrentUser();
 
@@ -105,47 +122,37 @@ export function useMuteItem() {
     }) => {
       if (!user) throw new Error('Must be logged in to mute content');
 
-      // Fetch current mute list
       const signal = AbortSignal.timeout(5000);
       const events = await nostr.query([{
-        kinds: [10001],
+        kinds: [MUTE_LIST_KIND],
         authors: [user.pubkey],
         limit: 1
       }], { signal });
 
-      // Get existing items
-      let existingItems: MuteItem[] = [];
-      if (events.length > 0) {
-        existingItems = parseMuteList(events[0]);
-      }
+      const latest = latestEvent(events);
+      // Preserve every existing tag — pin a-tags, foreign tags, anything
+      // another app wrote — so we don't clobber unrelated state.
+      const existingTags: string[][] = latest ? latest.tags : [];
+      const existingContent = latest ? latest.content : '';
 
-      // Check if already muted
+      // Deduplicate against the muted-items projection, not raw tags, so a
+      // raw `p` tag with extra positional fields (rare but legal) still
+      // de-dupes on (type,value).
+      const existingItems = latest ? parseMuteList(latest) : [];
       const alreadyMuted = existingItems.some(
         item => item.type === type && item.value === value
       );
+      if (alreadyMuted) return;
 
-      if (alreadyMuted) {
-        return; // Already in mute list
-      }
-
-      // Build tags with new item
-      const tags: string[][] = [];
-
-      // Add existing items
-      existingItems.forEach(item => {
-        const tag = [item.type, item.value];
-        if (item.reason) tag.push(item.reason);
-        tags.push(tag);
-      });
-
-      // Add new item
       const newTag = [type, value];
       if (reason) newTag.push(reason);
-      tags.push(newTag);
+      const tags: string[][] = [...existingTags, newTag];
 
       await publishEvent({
-        kind: 10001,
-        content: '',
+        kind: MUTE_LIST_KIND,
+        // NIP-51 mute lists may carry NIP-44 encrypted private entries in
+        // content; we must round-trip whatever the latest event had.
+        content: existingContent,
         tags
       });
     },
@@ -160,7 +167,7 @@ export function useMuteItem() {
  */
 export function useUnmuteItem() {
   const { nostr } = useNostr();
-  const { mutate: publishEvent } = useNostrPublish();
+  const { mutateAsync: publishEvent } = useNostrPublish();
   const queryClient = useQueryClient();
   const { user } = useCurrentUser();
 
@@ -174,35 +181,25 @@ export function useUnmuteItem() {
     }) => {
       if (!user) throw new Error('Must be logged in to unmute content');
 
-      // Fetch current mute list
       const signal = AbortSignal.timeout(5000);
       const events = await nostr.query([{
-        kinds: [10001],
+        kinds: [MUTE_LIST_KIND],
         authors: [user.pubkey],
         limit: 1
       }], { signal });
 
-      if (events.length === 0) {
-        return; // No mute list exists
-      }
+      const latest = latestEvent(events);
+      if (!latest) return;
 
-      const existingItems = parseMuteList(events[0]);
-
-      // Filter out the item to unmute
-      const updatedItems = existingItems.filter(
-        item => !(item.type === type && item.value === value)
+      // Drop every tag that matches (type,value) regardless of trailing
+      // fields; preserve everything else, in order.
+      const tags = latest.tags.filter(
+        tag => !(tag[0] === type && tag[1] === value)
       );
 
-      // Build tags
-      const tags: string[][] = updatedItems.map(item => {
-        const tag = [item.type, item.value];
-        if (item.reason) tag.push(item.reason);
-        return tag;
-      });
-
       await publishEvent({
-        kind: 10001,
-        content: '',
+        kind: MUTE_LIST_KIND,
+        content: latest.content,
         tags
       });
     },
