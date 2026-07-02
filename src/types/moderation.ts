@@ -1,5 +1,5 @@
 // ABOUTME: Type definitions for content moderation system
-// ABOUTME: Implements NIP-51 mute lists (kind 10001) and NIP-56 reporting (kind 1984)
+// ABOUTME: Implements NIP-51 mute lists (kind 10000) and NIP-56 reporting (kind 1984)
 
 /**
  * Content filter reasons (NIP-56)

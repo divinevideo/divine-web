@@ -1,12 +1,11 @@
 import React, { useEffect, useRef } from 'react';
-import { NostrEvent, NostrFilter, NPool, NRelay1 } from '@nostrify/nostrify';
-import { BADGE_RELAYS } from '@/config/relays';
+import { NPool, NRelay1 } from '@nostrify/nostrify';
 import { NostrContext } from '@nostrify/react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAppContext } from '@/hooks/useAppContext';
 import { debugLog, verboseLog } from '@/lib/debug';
 import { createCachedNostr } from '@/lib/cachedNostr';
-import { PROFILE_RELAYS, getRelayUrls } from '@/config/relays';
+import { buildEventRouter, buildReqRouter } from '@/lib/relayRouting';
 
 interface NostrProviderProps {
   children: React.ReactNode;
@@ -73,89 +72,16 @@ const NostrProvider: React.FC<NostrProviderProps> = (props) => {
         verboseLog('[NostrProvider] NRelay1 instance created, readyState:', relay.socket?.readyState);
         return relay;
       },
-      reqRouter(filters): ReadonlyMap<string, NostrFilter[]> {
-        // debugLog('[NostrProvider] ========== reqRouter called ==========');
-        // debugLog('[NostrProvider] Filters:', filters);
-
-        const result = new Map<string, NostrFilter[]>();
-
-        // Separate filters by kind for kind-specific relay routing
-        const profileRelayFilters: NostrFilter[] = []; // Kind 0 (profiles) and Kind 3 (contact lists)
-        const badgeRelayFilters: NostrFilter[] = []; // Kind 30009, 8, 30008 (NIP-58 badges)
-        const otherFilters: NostrFilter[] = [];
-
-        const BADGE_KINDS = [30009, 8, 30008];
-
-        for (const filter of filters) {
-          if (filter.kinds?.includes(0) || filter.kinds?.includes(3) || filter.kinds?.includes(10011)) {
-            // Kind 0 (profile metadata), Kind 3 (contact lists), Kind 10011 (NIP-39 identities) - route to profile relays
-            profileRelayFilters.push(filter);
-          } else if (filter.kinds?.some(k => BADGE_KINDS.includes(k))) {
-            // NIP-58 badge events - route to badge relays
-            badgeRelayFilters.push(filter);
-          } else {
-            // All other kinds (or id-only queries) - route to main relay
-            otherFilters.push(filter);
-          }
-        }
-
-        // Route kind 0 and kind 3 queries to profile-specific relays for better availability
-        if (profileRelayFilters.length > 0) {
-          const profileRelayUrls = getRelayUrls(PROFILE_RELAYS);
-
-          // debugLog(`[NostrProvider] Routing ${profileRelayFilters.length} profile/contact filters to ${profileRelayUrls.length} relays`);
-
-          for (const relay of profileRelayUrls) {
-            result.set(relay, profileRelayFilters);
-          }
-        }
-
-        // Route NIP-58 badge queries to badge-specific relays
-        if (badgeRelayFilters.length > 0) {
-          for (const relay of BADGE_RELAYS) {
-            const existing = result.get(relay.url) || [];
-            result.set(relay.url, [...existing, ...badgeRelayFilters]);
-          }
-        }
-
-        // Route other queries to all configured relays
-        if (otherFilters.length > 0) {
-          // Query all configured relays
-          for (const url of relayUrls.current) {
-            result.set(url, otherFilters);
-          }
-        }
-
-        // debugLog('[NostrProvider] Router result:', Array.from(result.entries()));
-        return result as ReadonlyMap<string, NostrFilter[]>;
-      },
-      eventRouter(event: NostrEvent) {
-        // Publish to the selected relay
-        const allRelays = new Set<string>([relayUrl.current]);
-
-        // For profiles (kind 0), contact lists (kind 3), and identity claims (kind 10011), publish to multiple relays for better availability
-        if (event.kind === 0 || event.kind === 3 || event.kind === 10011) {
-          getRelayUrls(PROFILE_RELAYS).forEach(url => allRelays.add(url));
-        }
-
-        // For list events (kind 30000, 30001, 30005), publish to multiple relays for better discoverability
-        const LIST_KINDS = [30000, 30001, 30005];
-        if (LIST_KINDS.includes(event.kind)) {
-          // Add common relays where lists should be stored
-          getRelayUrls(PROFILE_RELAYS).forEach(url => allRelays.add(url));
-        }
-
-        // Also publish to the preset relays, capped to 5
-        for (const { url } of (presetRelays ?? [])) {
-          allRelays.add(url);
-
-          if (allRelays.size >= 5) {
-            break;
-          }
-        }
-
-        return [...allRelays];
-      },
+      reqRouter: buildReqRouter({
+        get relayUrl() { return relayUrl.current; },
+        get relayUrls() { return relayUrls.current; },
+        presetRelays,
+      }),
+      eventRouter: buildEventRouter({
+        get relayUrl() { return relayUrl.current; },
+        get relayUrls() { return relayUrls.current; },
+        presetRelays,
+      }),
     });
 
     // Wrap with caching layer for profile/contact queries
