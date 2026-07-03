@@ -65,16 +65,39 @@ export function useFeedBlocklist(): ReadonlySet<string> {
         AbortSignal.timeout(8000),
       ]);
 
-      const filters: NostrFilter[] = [
+      const candidateFilters: NostrFilter[] = [
         // Authors who muted or blocked the viewer. The d=block check happens
         // client-side because not all relays support #d filtering.
         { kinds: [MUTE_LIST_KIND, BLOCK_LIST_KIND], '#p': [viewerPubkey], limit: 1000 },
         // The viewer's own kind 30000 d=block list (published by Divine mobile)
-        { kinds: [BLOCK_LIST_KIND], authors: [viewerPubkey], limit: 10 },
+        { kinds: [BLOCK_LIST_KIND], authors: [viewerPubkey], limit: 1000 },
       ];
 
       try {
-        const events = await nostr.query(filters, { signal });
+        const candidateEvents = await nostr.query(candidateFilters, { signal });
+        const candidateAuthors = Array.from(new Set(
+          candidateEvents
+            .filter(event => event.pubkey !== viewerPubkey)
+            .map(event => event.pubkey)
+        ));
+        // A #p query only finds lists that currently tag the viewer. Fetch the
+        // candidate authors' latest lists too, so a newer list without the
+        // viewer p-tag correctly un-mutes/un-blocks them.
+        const latestEvents = candidateAuthors.length > 0
+          ? await nostr.query([
+              {
+                kinds: [MUTE_LIST_KIND],
+                authors: candidateAuthors,
+                limit: Math.min(1000, Math.max(10, candidateAuthors.length * 5)),
+              },
+              {
+                kinds: [BLOCK_LIST_KIND],
+                authors: candidateAuthors,
+                limit: Math.min(1000, Math.max(10, candidateAuthors.length * 10)),
+              },
+            ], { signal })
+          : [];
+        const events = [...candidateEvents, ...latestEvents];
         return {
           mutersOfViewer: parseMutersOfViewer(events, viewerPubkey),
           blockersOfViewer: parseBlockersOfViewer(events, viewerPubkey),

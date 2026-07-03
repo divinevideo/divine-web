@@ -7,6 +7,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
 import type { NostrEvent, NostrFilter } from '@nostrify/nostrify';
 import { useFeedBlocklist } from './useFeedBlocklist';
+import { MuteType } from '@/types/moderation';
 
 const VIEWER = 'v'.repeat(64);
 const MUTER = 'a'.repeat(64);
@@ -17,6 +18,7 @@ const OWN_BLOCKED = 'e'.repeat(64);
 
 const mockQuery = vi.fn();
 let mockUser: { pubkey: string } | undefined;
+let mockMuteList: { type: MuteType; value: string }[];
 
 vi.mock('@nostrify/react', () => ({
   useNostr: () => ({ nostr: { query: mockQuery } }),
@@ -24,6 +26,11 @@ vi.mock('@nostrify/react', () => ({
 
 vi.mock('@/hooks/useCurrentUser', () => ({
   useCurrentUser: () => ({ user: mockUser }),
+}));
+
+vi.mock('@/hooks/useModeration', () => ({
+  MUTE_LIST_KIND: 10000,
+  useMuteList: () => ({ data: mockMuteList }),
 }));
 
 let eventCounter = 0;
@@ -69,8 +76,9 @@ function respondWith(events: NostrEvent[]) {
 
 describe('useFeedBlocklist', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    mockQuery.mockReset();
     mockUser = { pubkey: VIEWER };
+    mockMuteList = [];
   });
 
   it('returns an empty set without querying when logged out', async () => {
@@ -88,12 +96,56 @@ describe('useFeedBlocklist', () => {
     await waitFor(() => expect(result.current.has(MUTER)).toBe(true));
   });
 
+  it('does not include a muter when their latest mute list removed the viewer', async () => {
+    const staleMute = makeEvent({
+      pubkey: MUTER,
+      kind: 10000,
+      created_at: 100,
+      tags: [['p', VIEWER]],
+    });
+    const latestMute = makeEvent({
+      pubkey: MUTER,
+      kind: 10000,
+      created_at: 200,
+      tags: [],
+    });
+    mockQuery
+      .mockResolvedValueOnce([staleMute])
+      .mockResolvedValueOnce([latestMute]);
+
+    const { result } = renderHook(() => useFeedBlocklist(), { wrapper: createWrapper() });
+    await waitFor(() => expect(mockQuery).toHaveBeenCalledTimes(2));
+    expect(result.current.has(MUTER)).toBe(false);
+  });
+
   it('includes authors who blocked the viewer (kind 30000 d=block p-tagging viewer)', async () => {
     respondWith([
       makeEvent({ pubkey: BLOCKER, kind: 30000, tags: [['d', 'block'], ['p', VIEWER]] }),
     ]);
     const { result } = renderHook(() => useFeedBlocklist(), { wrapper: createWrapper() });
     await waitFor(() => expect(result.current.has(BLOCKER)).toBe(true));
+  });
+
+  it('does not include a blocker when their latest block list removed the viewer', async () => {
+    const staleBlock = makeEvent({
+      pubkey: BLOCKER,
+      kind: 30000,
+      created_at: 100,
+      tags: [['d', 'block'], ['p', VIEWER]],
+    });
+    const latestBlock = makeEvent({
+      pubkey: BLOCKER,
+      kind: 30000,
+      created_at: 200,
+      tags: [['d', 'block']],
+    });
+    mockQuery
+      .mockResolvedValueOnce([staleBlock])
+      .mockResolvedValueOnce([latestBlock]);
+
+    const { result } = renderHook(() => useFeedBlocklist(), { wrapper: createWrapper() });
+    await waitFor(() => expect(mockQuery).toHaveBeenCalledTimes(2));
+    expect(result.current.has(BLOCKER)).toBe(false);
   });
 
   it('ignores kind 30000 lists with other d-tags (follow sets are not blocks)', async () => {
@@ -108,9 +160,8 @@ describe('useFeedBlocklist', () => {
   });
 
   it("includes the viewer's own muted pubkeys (own kind 10000 p-tags)", async () => {
-    respondWith([
-      makeEvent({ pubkey: VIEWER, kind: 10000, tags: [['p', OWN_MUTED]] }),
-    ]);
+    respondWith([]);
+    mockMuteList = [{ type: MuteType.USER, value: OWN_MUTED }];
     const { result } = renderHook(() => useFeedBlocklist(), { wrapper: createWrapper() });
     await waitFor(() => expect(result.current.has(OWN_MUTED)).toBe(true));
   });
@@ -127,9 +178,9 @@ describe('useFeedBlocklist', () => {
     respondWith([
       makeEvent({ pubkey: MUTER, kind: 10000, tags: [['p', VIEWER]] }),
       makeEvent({ pubkey: BLOCKER, kind: 30000, tags: [['d', 'block'], ['p', VIEWER]] }),
-      makeEvent({ pubkey: VIEWER, kind: 10000, tags: [['p', OWN_MUTED]] }),
       makeEvent({ pubkey: VIEWER, kind: 30000, tags: [['d', 'block'], ['p', OWN_BLOCKED]] }),
     ]);
+    mockMuteList = [{ type: MuteType.USER, value: OWN_MUTED }];
     const { result } = renderHook(() => useFeedBlocklist(), { wrapper: createWrapper() });
     await waitFor(() =>
       expect(result.current).toEqual(new Set([MUTER, BLOCKER, OWN_MUTED, OWN_BLOCKED]))
