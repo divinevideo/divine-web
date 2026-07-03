@@ -5,7 +5,7 @@
   "author": "you@example.com",
   "type": "module",
   "devDependencies": {
-    "@fastly/cli": "^11.2.0",
+    "@fastly/cli": "^15.3.1",
     "@fastly/compute-js-static-publish": "^7.0.3"
   },
   "dependencies": {
