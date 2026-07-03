@@ -1,11 +1,14 @@
 // ABOUTME: Unified video provider hook that selects between Funnelcake and WebSocket
 // ABOUTME: Uses an explicit support matrix so unsupported feeds never collapse into generic queries
 
+import { useMemo } from 'react';
 import { useAppContext } from '@/hooks/useAppContext';
 import { getFunnelcakeBaseUrl } from '@/config/api';
 import { useInfiniteVideos } from '@/hooks/useInfiniteVideos';
 import { useResolvedRelayCapabilities } from '@/hooks/useRelayCapabilities';
 import { useInfiniteVideosFunnelcake, type FunnelcakeFeedType, type FunnelcakeSortMode, type PopularPeriod, type PopularSource } from '@/hooks/useInfiniteVideosFunnelcake';
+import { useFeedBlocklist } from '@/hooks/useFeedBlocklist';
+import { filterBlockedVideoPages } from '@/lib/blocklistFilter';
 import { hasFunnelcake, getFunnelcakeUrl } from '@/config/relays';
 import { debugLog } from '@/lib/debug';
 import type { RelayCapabilities } from '@/lib/relayCapabilities';
@@ -276,8 +279,20 @@ export function useVideoProvider({
     ? 'websocket'
     : (shouldUseFunnelcake ? 'funnelcake' : 'websocket');
 
+  // Per-viewer block/mute filtering (divine-web#399). Funnelcake REST applies
+  // platform moderation only, so blocked/muted authors are dropped here at the
+  // hook boundary — every feed surface (hashtag/discovery/profile/home)
+  // inherits it. Pagination cursors are unaffected: they derive from the
+  // unfiltered pages inside the underlying query hooks.
+  const blockedPubkeys = useFeedBlocklist();
+  const rawData = activeQuery.data;
+  const filteredData = useMemo(
+    () => filterBlockedVideoPages(rawData, blockedPubkeys),
+    [rawData, blockedPubkeys]
+  );
+
   return {
-    data: activeQuery.data,
+    data: filteredData,
     fetchNextPage: activeQuery.fetchNextPage,
     hasNextPage: activeQuery.hasNextPage,
     isLoading: activeQuery.isLoading,
