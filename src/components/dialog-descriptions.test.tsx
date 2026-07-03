@@ -32,6 +32,7 @@ const video: ParsedVideoData = {
   hashtags: ['comedy'],
   vineId: 'test-vine-id',
   isVineMigrated: false,
+  reposts: [],
 };
 
 const awardEvent: NostrEvent = {
@@ -44,6 +45,16 @@ const awardEvent: NostrEvent = {
   sig: 'd'.repeat(128),
 };
 
+const definitionEvent: NostrEvent = {
+  id: 'e'.repeat(64),
+  pubkey: PUBKEY,
+  created_at: 1700000000,
+  kind: 30009,
+  tags: [['d', 'test-badge']],
+  content: '',
+  sig: 'f'.repeat(128),
+};
+
 const badge: ValidatedBadge = {
   definition: {
     dTag: 'test-badge',
@@ -54,6 +65,7 @@ const badge: ValidatedBadge = {
     issuerPubkey: PUBKEY,
     naddr: `30009:${PUBKEY}:test-badge`,
     isOfficial: false,
+    event: definitionEvent,
   },
   awardEvent,
   awardedAt: 1700000000,
