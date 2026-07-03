@@ -964,7 +964,8 @@
   "thumbnailPlayer": {
     "videoPreview": "معاينة الفيديو",
     "thumbnailAlt": "صورة الفيديو المصغرة",
-    "playVideo": "تشغيل الفيديو"
+    "playVideo": "تشغيل الفيديو",
+    "openVideo": "فتح الفيديو"
   },
   "hashtagExplorer": {
     "heading": "مستكشف الوسوم",

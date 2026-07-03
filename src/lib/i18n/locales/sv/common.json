@@ -960,7 +960,8 @@
   "thumbnailPlayer": {
     "videoPreview": "Förhandsvisning av video",
     "thumbnailAlt": "Videominiatyr",
-    "playVideo": "Spela video"
+    "playVideo": "Spela video",
+    "openVideo": "Öppna video"
   },
   "hashtagExplorer": {
     "heading": "Hashtaggsutforskaren",

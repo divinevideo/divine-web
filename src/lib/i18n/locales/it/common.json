@@ -960,7 +960,8 @@
   "thumbnailPlayer": {
     "videoPreview": "Anteprima video",
     "thumbnailAlt": "Miniatura video",
-    "playVideo": "Riproduci video"
+    "playVideo": "Riproduci video",
+    "openVideo": "Apri il video"
   },
   "hashtagExplorer": {
     "heading": "Esploratore hashtag",

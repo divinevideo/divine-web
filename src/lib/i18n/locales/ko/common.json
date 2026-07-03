@@ -960,7 +960,8 @@
   "thumbnailPlayer": {
     "videoPreview": "비디오 미리보기",
     "thumbnailAlt": "비디오 썸네일",
-    "playVideo": "비디오 재생"
+    "playVideo": "비디오 재생",
+    "openVideo": "동영상 열기"
   },
   "hashtagExplorer": {
     "heading": "해시태그 탐색",

@@ -2,11 +2,11 @@
 // ABOUTME: Shows video thumbnails with play overlays and metadata on hover
 
 import { useState, useRef } from 'react';
-import { useSubdomainNavigate } from '@/hooks/useSubdomainNavigate';
 import { Play, Repeat } from '@phosphor-icons/react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { AgeRestrictedMediaPlaceholder } from '@/components/AgeRestrictedMediaPlaceholder';
+import { SmartLink } from '@/components/SmartLink';
 import { useLoginDialog } from '@/contexts/LoginDialogContext';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { checkMediaAuth, useAdultVerification } from '@/hooks/useAdultVerification';
@@ -137,7 +137,6 @@ function VideoGridMedia({
 }
 
 export function VideoGrid({ videos, loading = false, className, navigationContext }: VideoGridProps) {
-  const navigate = useSubdomainNavigate();
   const { user } = useCurrentUser();
   const { isVerified: isAdultVerified, confirmAdult } = useAdultVerification();
   const { openLoginDialog } = useLoginDialog();
@@ -146,22 +145,18 @@ export function VideoGrid({ videos, loading = false, className, navigationContex
   const [discoveredAgeRestrictedVideos, setDiscoveredAgeRestrictedVideos] = useState<Set<string>>(new Set());
   const videoRefs = useRef<Map<string, HTMLVideoElement>>(new Map());
 
-  const handleVideoClick = (videoId: string, index: number) => {
-    const url = navigationContext
+  const buildVideoUrl = (videoId: string, index: number) => {
+    return navigationContext
       ? buildVideoNavigationUrl(videoId, navigationContext, index)
       : `/video/${videoId}`;
-    navigate(url);
   };
 
-  const handleKeyDown = (event: React.KeyboardEvent, videoId: string, index: number, isAgeGated: boolean) => {
+  // Keyboard activation for age-gated tiles only — unrestricted tiles are
+  // real links, so Enter activation comes for free from the anchor element.
+  const handleGatedKeyDown = (event: React.KeyboardEvent) => {
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault();
-      if (isAgeGated) {
-        handleAgeGateAction();
-        return;
-      }
-
-      handleVideoClick(videoId, index);
+      handleAgeGateAction();
     }
   };
 
@@ -263,25 +258,7 @@ export function VideoGrid({ videos, loading = false, className, navigationContex
         const gridVideo = isKnownAgeRestricted ? { ...video, ageRestricted: true } : video;
         const isAgeGated = isKnownAgeRestricted && (!user || !isAdultVerified);
 
-        return (
-          <Card
-            key={video.id}
-            className="overflow-hidden cursor-pointer transition-transform hover:scale-105 group"
-            data-testid="video-grid-item"
-            onClick={() => {
-              if (isAgeGated) {
-                handleAgeGateAction();
-                return;
-              }
-
-              handleVideoClick(video.id, index);
-            }}
-            onKeyDown={(e) => handleKeyDown(e, video.id, index, isAgeGated)}
-            onMouseEnter={() => handleMouseEnter(video.id, isAgeGated)}
-            onMouseLeave={() => handleMouseLeave(video.id, isAgeGated)}
-            tabIndex={0}
-            data-video-id={video.id}
-          >
+        const tile = (
             <div className="aspect-square relative bg-muted" data-thumbnail-container="true">
               {/* Video Thumbnail or Actual Video */}
               {isAgeGated ? (
@@ -344,6 +321,38 @@ export function VideoGrid({ videos, loading = false, className, navigationContex
                 </div>
               )}
             </div>
+        );
+
+        return (
+          <Card
+            key={video.id}
+            className="overflow-hidden cursor-pointer transition-transform hover:scale-105 group"
+            data-testid="video-grid-item"
+            onMouseEnter={() => handleMouseEnter(video.id, isAgeGated)}
+            onMouseLeave={() => handleMouseLeave(video.id, isAgeGated)}
+            data-video-id={video.id}
+            {...(isAgeGated
+              ? {
+                  onClick: handleAgeGateAction,
+                  onKeyDown: handleGatedKeyDown,
+                  tabIndex: 0,
+                }
+              : {})}
+          >
+            {isAgeGated ? (
+              tile
+            ) : (
+              // Real link so middle-click / right-click → open in new tab work;
+              // plain left-click stays SPA navigation via SmartLink.
+              <SmartLink
+                to={buildVideoUrl(video.id, index)}
+                ownerPubkey={video.pubkey}
+                className="block"
+                aria-label={video.title || video.content || 'Open video'}
+              >
+                {tile}
+              </SmartLink>
+            )}
           </Card>
         );
       })}

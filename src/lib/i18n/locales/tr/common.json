@@ -960,7 +960,8 @@
   "thumbnailPlayer": {
     "videoPreview": "Video Önizlemesi",
     "thumbnailAlt": "Video küçük resmi",
-    "playVideo": "Videoyu oynat"
+    "playVideo": "Videoyu oynat",
+    "openVideo": "Videoyu aç"
   },
   "hashtagExplorer": {
     "heading": "Hashtag Kâşifi",

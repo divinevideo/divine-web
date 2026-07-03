@@ -960,7 +960,8 @@
   "thumbnailPlayer": {
     "videoPreview": "動画プレビュー",
     "thumbnailAlt": "動画サムネイル",
-    "playVideo": "動画を再生"
+    "playVideo": "動画を再生",
+    "openVideo": "動画を開く"
   },
   "hashtagExplorer": {
     "heading": "ハッシュタグエクスプローラー",

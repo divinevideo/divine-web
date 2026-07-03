@@ -960,7 +960,8 @@
   "thumbnailPlayer": {
     "videoPreview": "Pratinjau Video",
     "thumbnailAlt": "Thumbnail video",
-    "playVideo": "Putar video"
+    "playVideo": "Putar video",
+    "openVideo": "Buka video"
   },
   "hashtagExplorer": {
     "heading": "Hashtag Explorer",

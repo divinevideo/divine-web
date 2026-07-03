@@ -1,7 +1,13 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
+import type { ReactElement } from 'react';
 import { VideoGrid } from './VideoGrid';
 import type { ParsedVideoData } from '@/types/video';
+
+function renderGrid(ui: ReactElement) {
+  return render(<MemoryRouter>{ui}</MemoryRouter>);
+}
 
 const mockNavigate = vi.fn();
 const mockOpenLoginDialog = vi.fn();
@@ -66,7 +72,7 @@ describe('VideoGrid age-restricted gating', () => {
   });
 
   it('renders a logged-out gated tile without mounting restricted media elements', () => {
-    render(
+    renderGrid(
       <VideoGrid
         videos={[
           makeVideo({
@@ -85,7 +91,7 @@ describe('VideoGrid age-restricted gating', () => {
   });
 
   it('opens the login dialog when the gated tile is clicked', () => {
-    render(
+    renderGrid(
       <VideoGrid
         videos={[
           makeVideo({
@@ -109,7 +115,7 @@ describe('VideoGrid age-restricted gating', () => {
       status: 401,
     });
 
-    render(
+    renderGrid(
       <VideoGrid
         videos={[
           makeVideo({
@@ -132,7 +138,7 @@ describe('VideoGrid age-restricted gating', () => {
   });
 
   it('renders unrestricted videos with their thumbnail media as before', () => {
-    render(
+    renderGrid(
       <VideoGrid
         videos={[
           makeVideo({
@@ -155,7 +161,7 @@ describe('VideoGrid age-restricted gating', () => {
       getAuthHeader: vi.fn().mockResolvedValue('Nostr grid-auth-header'),
     });
 
-    render(
+    renderGrid(
       <VideoGrid
         videos={[
           makeVideo({
@@ -179,5 +185,57 @@ describe('VideoGrid age-restricted gating', () => {
     });
 
     expect(screen.getByTestId('video-thumbnail-verified-restricted-video')).toHaveAttribute('src', 'blob:grid-thumb');
+  });
+});
+
+describe('VideoGrid native link navigation', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockUseCurrentUser.mockReturnValue({ user: null });
+    mockUseAdultVerification.mockReturnValue({ isVerified: false, confirmAdult: vi.fn(), getAuthHeader: vi.fn() });
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      blob: async () => new Blob(['thumb'], { type: 'image/jpeg' }),
+    }) as typeof fetch;
+    global.URL.createObjectURL = vi.fn().mockReturnValue('blob:grid-thumb');
+    global.URL.revokeObjectURL = vi.fn();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('renders unrestricted tiles as real links to the video page', () => {
+    renderGrid(
+      <VideoGrid videos={[makeVideo({ id: 'public-video' })]} />
+    );
+
+    const link = screen.getByRole('link');
+    expect(link).toHaveAttribute('href', '/video/public-video');
+  });
+
+  it('builds the link href from the navigation context when provided', () => {
+    renderGrid(
+      <VideoGrid
+        videos={[makeVideo({ id: 'ctx-video' })]}
+        navigationContext={{ source: 'profile', pubkey: 'f'.repeat(64) }}
+      />
+    );
+
+    const href = screen.getByRole('link').getAttribute('href') ?? '';
+    expect(href).toContain('/video/ctx-video');
+    expect(href).toContain('source=profile');
+    expect(href).toContain('index=0');
+  });
+
+  it('does not render a link for age-gated tiles', () => {
+    renderGrid(
+      <VideoGrid
+        videos={[makeVideo({ id: 'restricted-video', ageRestricted: true })]}
+      />
+    );
+
+    expect(screen.queryByRole('link')).not.toBeInTheDocument();
   });
 });

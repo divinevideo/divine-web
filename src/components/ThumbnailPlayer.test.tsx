@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ThumbnailPlayer } from './ThumbnailPlayer';
 
@@ -119,5 +120,58 @@ describe('ThumbnailPlayer', () => {
       'src',
       'blob:protected-thumb'
     );
+  });
+
+  it('renders a real link to the video page when linkTo is provided', () => {
+    render(
+      <MemoryRouter>
+        <ThumbnailPlayer
+          videoId="video-123"
+          src="https://example.com/video.mp4"
+          thumbnailUrl="https://example.com/thumb.jpg"
+          linkTo="/video/video-123"
+        />
+      </MemoryRouter>
+    );
+
+    const link = screen.getByRole('link', { name: 'Open video' });
+    expect(link).toHaveAttribute('href', '/video/video-123');
+  });
+
+  it('keeps the play button outside the link so it does not navigate', () => {
+    const handlePlayButtonClick = vi.fn();
+
+    render(
+      <MemoryRouter>
+        <ThumbnailPlayer
+          videoId="video-123"
+          src="https://example.com/video.mp4"
+          thumbnailUrl="https://example.com/thumb.jpg"
+          linkTo="/video/video-123"
+          onPlayButtonClick={handlePlayButtonClick}
+        />
+      </MemoryRouter>
+    );
+
+    const playButton = screen.getByLabelText('Play video');
+    const link = screen.getByRole('link', { name: 'Open video' });
+    expect(link.contains(playButton)).toBe(false);
+
+    fireEvent.click(playButton);
+    expect(handlePlayButtonClick).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not render a link when linkTo is omitted', () => {
+    render(
+      <MemoryRouter>
+        <ThumbnailPlayer
+          videoId="video-123"
+          src="https://example.com/video.mp4"
+          thumbnailUrl="https://example.com/thumb.jpg"
+        />
+      </MemoryRouter>
+    );
+
+    expect(screen.queryByRole('link')).not.toBeInTheDocument();
   });
 });
