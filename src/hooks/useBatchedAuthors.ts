@@ -9,7 +9,7 @@ import { API_CONFIG } from '@/config/api';
 import { fetchBulkUsers } from '@/lib/funnelcakeClient';
 import { isFunnelcakeAvailable } from '@/lib/funnelcakeHealth';
 import { debugLog } from '@/lib/debug';
-import { reportFunnelcakeFallback } from '@/lib/funnelcakeFallbackReporting';
+import { isAbortError, reportFunnelcakeFallback } from '@/lib/funnelcakeFallbackReporting';
 
 interface AuthorData {
   event?: NostrEvent;
@@ -74,6 +74,11 @@ export function useBatchedAuthors(pubkeys: string[]) {
           debugLog(`[useBatchedAuthors] REST API returned ${response.users.length} users, ${response.missing.length} missing`);
           return authorsMap;
         } catch (err) {
+          // Cancelled queries are not failures — surface the abort to
+          // React Query without reporting or falling back (#459)
+          if (isAbortError(err)) {
+            throw err;
+          }
           debugLog(`[useBatchedAuthors] REST API failed, falling back to WebSocket:`, err);
           reportFallback(err instanceof Error ? err.message : String(err));
           // Fall through to WebSocket fallback

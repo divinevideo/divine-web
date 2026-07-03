@@ -22,6 +22,14 @@ type SentryEventLike = {
 };
 
 const MEDIA_HOSTNAME = 'media.divine.video';
+const FUNNELCAKE_API_HOSTNAMES = new Set([
+  'api.divine.video',
+  'api.staging.divine.video',
+]);
+const FUNNELCAKE_RELAY_HOSTNAMES = new Set([
+  'relay.divine.video',
+  'relay.staging.divine.video',
+]);
 const HTTP_CLIENT_MESSAGE_RE = /^HTTP Client Error with status code:\s*(\d{3})$/i;
 const OPTIONAL_IMAGE_EXTENSION_RE = /\.(?:avif|gif|jpe?g|png|webp)$/i;
 const OPTIONAL_PREVIEW_PATH_SEGMENT_RE = /\/(?:poster|preview|thumbnail|thumb)(?:\/|$)/i;
@@ -115,6 +123,40 @@ function isOptionalPreviewPath(pathname: string): boolean {
  * - 401/403 on gated media assets
  * - 404/422 on optional subtitles and preview/poster images
  */
+/**
+ * Filters raw "HTTP Client Error" events for Funnelcake REST API requests.
+ *
+ * The Funnelcake client already handles every failed response: it throws
+ * FunnelcakeApiError, records the failure in the circuit breaker, and the
+ * calling hook reports a single FunnelcakeFallbackError to Sentry. The raw
+ * httpClientIntegration event is a duplicate of that canonical signal (#459),
+ * so genuine backend 500s still surface — exactly once.
+ */
+export function shouldDropFunnelcakeHttpClientEvent(event: SentryEventLike): boolean {
+  if (!isHttpClientEvent(event)) {
+    return false;
+  }
+
+  const requestUrl = toSafeString(event.request?.url);
+  if (!requestUrl) {
+    return false;
+  }
+
+  let parsedUrl: URL;
+  try {
+    parsedUrl = new URL(requestUrl);
+  } catch {
+    return false;
+  }
+
+  if (FUNNELCAKE_API_HOSTNAMES.has(parsedUrl.hostname)) {
+    return true;
+  }
+
+  return FUNNELCAKE_RELAY_HOSTNAMES.has(parsedUrl.hostname)
+    && parsedUrl.pathname.startsWith('/api/');
+}
+
 export function shouldDropHandledMediaHttpClientEvent(event: SentryEventLike): boolean {
   if (!isHttpClientEvent(event)) {
     return false;

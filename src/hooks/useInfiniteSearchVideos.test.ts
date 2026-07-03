@@ -7,6 +7,12 @@ const mockNostrQuery = vi.fn();
 const mockSearchVideos = vi.fn();
 const mockTransformToVideoPage = vi.fn();
 const mockParseVideoEvents = vi.fn();
+const mockReportFunnelcakeFallback = vi.fn();
+
+vi.mock('@/lib/funnelcakeFallbackReporting', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/funnelcakeFallbackReporting')>()),
+  reportFunnelcakeFallback: mockReportFunnelcakeFallback,
+}));
 
 vi.mock('@nostrify/react', () => ({
   useNostr: () => ({
@@ -174,6 +180,24 @@ describe('useInfiniteSearchVideos', () => {
       })
     );
     expect(result.current.data?.pages[0].videos).toEqual(relayVideos);
+  });
+
+  it('rethrows AbortError from cancelled queries without reporting or falling back', async () => {
+    mockSearchVideos.mockRejectedValue(
+      new DOMException('signal is aborted without reason', 'AbortError'),
+    );
+
+    const { result } = renderHook(
+      () => useInfiniteSearchVideos({ query: 'jack', sortMode: 'relevance', pageSize: 20 }),
+      { wrapper: createWrapper() }
+    );
+
+    await waitFor(() => {
+      expect(result.current.isError).toBe(true);
+    }, { timeout: 3000 });
+
+    expect(mockReportFunnelcakeFallback).not.toHaveBeenCalled();
+    expect(mockNostrQuery).not.toHaveBeenCalled();
   });
 });
 

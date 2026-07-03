@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { shouldDropHandledMediaHttpClientEvent } from '@/lib/sentryHttpClientFilter';
+import {
+  shouldDropFunnelcakeHttpClientEvent,
+  shouldDropHandledMediaHttpClientEvent,
+} from '@/lib/sentryHttpClientFilter';
 
 interface TestEventOptions {
   url?: string;
@@ -134,5 +137,77 @@ describe('shouldDropHandledMediaHttpClientEvent', () => {
     });
 
     expect(shouldDropHandledMediaHttpClientEvent(event)).toBe(false);
+  });
+});
+
+describe('shouldDropFunnelcakeHttpClientEvent', () => {
+  it('drops 500 failures on the Funnelcake API host', () => {
+    const event = createHttpClientEvent({
+      url: 'https://api.divine.video/api/videos?sort=trending',
+      statusCode: 500,
+    });
+
+    expect(shouldDropFunnelcakeHttpClientEvent(event)).toBe(true);
+  });
+
+  it('drops failures on the staging Funnelcake API host', () => {
+    const event = createHttpClientEvent({
+      url: 'https://api.staging.divine.video/api/search/profiles?q=jack',
+      statusCode: 502,
+    });
+
+    expect(shouldDropFunnelcakeHttpClientEvent(event)).toBe(true);
+  });
+
+  it('drops failures on the relay backup /api/ path', () => {
+    const event = createHttpClientEvent({
+      url: 'https://relay.divine.video/api/notifications?pubkey=abc',
+      statusCode: 500,
+    });
+
+    expect(shouldDropFunnelcakeHttpClientEvent(event)).toBe(true);
+  });
+
+  it('keeps relay failures outside the /api/ path', () => {
+    const event = createHttpClientEvent({
+      url: 'https://relay.divine.video/health',
+      statusCode: 500,
+    });
+
+    expect(shouldDropFunnelcakeHttpClientEvent(event)).toBe(false);
+  });
+
+  it('keeps http client failures on unrelated hosts', () => {
+    const event = createHttpClientEvent({
+      url: 'https://media.divine.video/43debb/hls/master.m3u8',
+      statusCode: 500,
+    });
+
+    expect(shouldDropFunnelcakeHttpClientEvent(event)).toBe(false);
+  });
+
+  it('keeps non-http-client events that mention the Funnelcake host', () => {
+    const event = {
+      request: { url: 'https://api.divine.video/api/videos' },
+      exception: {
+        values: [
+          {
+            value: 'Funnelcake fallback to WebSocket in useAuthor: Funnelcake API error: 500',
+            mechanism: { type: 'generic' },
+          },
+        ],
+      },
+    };
+
+    expect(shouldDropFunnelcakeHttpClientEvent(event)).toBe(false);
+  });
+
+  it('keeps events with invalid URLs', () => {
+    const event = createHttpClientEvent({
+      url: 'not-a-valid-url',
+      statusCode: 500,
+    });
+
+    expect(shouldDropFunnelcakeHttpClientEvent(event)).toBe(false);
   });
 });
