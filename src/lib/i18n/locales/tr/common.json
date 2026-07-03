@@ -516,6 +516,7 @@
     "signInButton": "Giriş yap"
   },
   "badgeDetailModal": {
+    "description": "Bu rozetin tüm hikâyesi — kim, ne zaman verdi.",
     "title": "Rozet Detayları",
     "officialBadge": "✦ Resmi Divine Rozeti",
     "issuedBy": "Veren",
@@ -943,6 +944,7 @@
     "placeholderMessage": "Bir mesaj yaz..."
   },
   "videoCommentsModal": {
+    "description": "İnsanların ne dediğine bak ve kendi yorumunu bırak.",
     "title": "Yorumlar",
     "loading": "Yorumlar yükleniyor...",
     "emptyMessage": "Henüz yorum yok",

@@ -517,6 +517,7 @@
     "signInButton": "Conectează-te"
   },
   "badgeDetailModal": {
+    "description": "Povestea completă a acestei insigne — cine a acordat-o și când.",
     "title": "Detalii insignă",
     "officialBadge": "✦ Insignă oficială Divine",
     "issuedBy": "Emisă de",
@@ -944,6 +945,7 @@
     "placeholderMessage": "Scrie un mesaj..."
   },
   "videoCommentsModal": {
+    "description": "Vezi ce spun ceilalți și lasă propriul tău comentariu.",
     "title": "Comentarii",
     "loading": "Se încarcă comentariile...",
     "emptyMessage": "Niciun comentariu încă",

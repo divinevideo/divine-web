@@ -516,6 +516,7 @@
     "signInButton": "로그인"
   },
   "badgeDetailModal": {
+    "description": "이 배지의 전체 이야기 — 누가 언제 발급했는지.",
     "title": "배지 정보",
     "officialBadge": "✦ 공식 Divine 배지",
     "issuedBy": "발급자",
@@ -943,6 +944,7 @@
     "placeholderMessage": "메시지를 입력하세요..."
   },
   "videoCommentsModal": {
+    "description": "다른 사람들의 댓글을 보고 직접 댓글을 남겨보세요.",
     "title": "댓글",
     "loading": "댓글 불러오는 중...",
     "emptyMessage": "아직 댓글이 없어요",

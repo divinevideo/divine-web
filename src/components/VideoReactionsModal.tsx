@@ -1,4 +1,4 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Heart, Repeat as Repeat2, CircleNotch as Loader2 } from '@phosphor-icons/react';
 import { useAuthor } from '@/hooks/useAuthor';
@@ -90,6 +90,9 @@ export function VideoReactionsModal({
             <Icon className={cn('h-5 w-5', type === 'likes' && 'fill-red-500 text-red-500')} />
             {title} ({count})
           </DialogTitle>
+          <DialogDescription className="sr-only">
+            Everyone who {type === 'likes' ? 'liked' : 'reposted'} this video.
+          </DialogDescription>
         </DialogHeader>
 
         <div className="overflow-y-auto max-h-[calc(80vh-80px)]">

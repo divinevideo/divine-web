@@ -516,6 +516,7 @@
     "signInButton": "Masuk"
   },
   "badgeDetailModal": {
+    "description": "Cerita lengkap lencana ini — siapa yang memberikannya dan kapan.",
     "title": "Detail Badge",
     "officialBadge": "✦ Badge Resmi Divine",
     "issuedBy": "Diterbitkan oleh",
@@ -943,6 +944,7 @@
     "placeholderMessage": "Tulis pesan..."
   },
   "videoCommentsModal": {
+    "description": "Lihat apa kata orang dan tinggalkan komentarmu sendiri.",
     "title": "Komentar",
     "loading": "Memuat komentar...",
     "emptyMessage": "Belum ada komentar",

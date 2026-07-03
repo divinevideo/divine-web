@@ -516,6 +516,7 @@
     "signInButton": "Anmelden"
   },
   "badgeDetailModal": {
+    "description": "Alles zu diesem Abzeichen — wer es vergeben hat und wann.",
     "title": "Badge-Details",
     "officialBadge": "✦ Offizielles Divine-Badge",
     "issuedBy": "Ausgestellt von",
@@ -943,6 +944,7 @@
     "placeholderMessage": "Schreib eine Nachricht..."
   },
   "videoCommentsModal": {
+    "description": "Sieh, was andere sagen, und schreib deinen eigenen Kommentar.",
     "title": "Kommentare",
     "loading": "Kommentare werden geladen...",
     "emptyMessage": "Noch keine Kommentare",

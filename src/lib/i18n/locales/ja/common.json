@@ -516,6 +516,7 @@
     "signInButton": "サインイン"
   },
   "badgeDetailModal": {
+    "description": "このバッジの詳細 — 発行者と授与日。",
     "title": "バッジ詳細",
     "officialBadge": "✦ 公式Divineバッジ",
     "issuedBy": "発行者",
@@ -943,6 +944,7 @@
     "placeholderMessage": "メッセージを書く..."
   },
   "videoCommentsModal": {
+    "description": "みんなのコメントを見て、自分のコメントも残そう。",
     "title": "コメント",
     "loading": "コメントを読み込み中...",
     "emptyMessage": "まだコメントがありません",

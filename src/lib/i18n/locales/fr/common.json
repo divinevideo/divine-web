@@ -516,6 +516,7 @@
     "signInButton": "Se connecter"
   },
   "badgeDetailModal": {
+    "description": "Toute l'histoire de ce badge — qui l'a décerné et quand.",
     "title": "Détails du badge",
     "officialBadge": "✦ Badge Divine officiel",
     "issuedBy": "Émis par",
@@ -943,6 +944,7 @@
     "placeholderMessage": "Écris un message..."
   },
   "videoCommentsModal": {
+    "description": "Regarde ce que les gens disent et laisse ton propre commentaire.",
     "title": "Commentaires",
     "loading": "Chargement des commentaires...",
     "emptyMessage": "Aucun commentaire pour l'instant",
