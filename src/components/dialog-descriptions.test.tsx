@@ -4,7 +4,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { TestApp } from '@/test/TestApp';
 import { VideoCommentsModal } from '@/components/VideoCommentsModal';
 import { VideoReactionsModal } from '@/components/VideoReactionsModal';
 import { BadgeDetailModal } from '@/components/BadgeDetailModal';
@@ -17,6 +16,21 @@ import { initializeI18n } from '@/lib/i18n';
 
 vi.mock('@/hooks/useIsMobile', () => ({
   useIsMobile: () => true,
+}));
+
+vi.mock('@/hooks/useAuthor', () => ({
+  useAuthor: () => ({
+    data: {
+      metadata: {
+        name: 'Badge Issuer',
+        picture: 'https://media.divine.video/issuer.png',
+      },
+    },
+  }),
+}));
+
+vi.mock('@/hooks/useBatchedAuthors', () => ({
+  useBatchedAuthors: () => undefined,
 }));
 
 const PUBKEY = 'a'.repeat(64);
@@ -73,6 +87,7 @@ const badge: ValidatedBadge = {
 
 let warnSpy: ReturnType<typeof vi.spyOn>;
 let errorSpy: ReturnType<typeof vi.spyOn>;
+let fetchSpy: ReturnType<typeof vi.spyOn>;
 
 beforeEach(async () => {
   const storage = new Map<string, string>();
@@ -86,11 +101,16 @@ beforeEach(async () => {
     } satisfies Pick<Storage, 'getItem' | 'setItem' | 'removeItem' | 'clear'>,
   });
   await initializeI18n({ force: true, languages: ['en-US'] });
+  fetchSpy = vi
+    .spyOn(globalThis, 'fetch')
+    .mockRejectedValue(new Error('Unexpected network call'));
   warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
   errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 });
 
 afterEach(() => {
+  expect(fetchSpy).not.toHaveBeenCalled();
+  fetchSpy.mockRestore();
   warnSpy.mockRestore();
   errorSpy.mockRestore();
 });
@@ -118,48 +138,40 @@ async function expectDescribedDialog() {
 describe('dialog descriptions (a11y)', () => {
   it('VideoCommentsModal renders with an accessible description', async () => {
     render(
-      <TestApp>
-        <VideoCommentsModal
-          video={video}
-          open={true}
-          onOpenChange={() => {}}
-          isLoadingComments={true}
-        />
-      </TestApp>
+      <VideoCommentsModal
+        video={video}
+        open={true}
+        onOpenChange={() => {}}
+        isLoadingComments={true}
+      />
     );
     await expectDescribedDialog();
   });
 
   it('VideoReactionsModal renders with an accessible description', async () => {
     render(
-      <TestApp>
-        <VideoReactionsModal
-          open={true}
-          onOpenChange={() => {}}
-          reactions={{ likes: [], reposts: [] }}
-          type="likes"
-        />
-      </TestApp>
+      <VideoReactionsModal
+        open={true}
+        onOpenChange={() => {}}
+        reactions={{ likes: [], reposts: [] }}
+        type="likes"
+      />
     );
     await expectDescribedDialog();
   });
 
   it('BadgeDetailModal renders with an accessible description', async () => {
     render(
-      <TestApp>
-        <BadgeDetailModal badge={badge} open={true} onOpenChange={() => {}} />
-      </TestApp>
+      <BadgeDetailModal badge={badge} open={true} onOpenChange={() => {}} />
     );
     await expectDescribedDialog();
   });
 
   it('CommandDialog renders with an accessible description', async () => {
     render(
-      <TestApp>
-        <CommandDialog open={true}>
-          <CommandInput placeholder="Search..." />
-        </CommandDialog>
-      </TestApp>
+      <CommandDialog open={true}>
+        <CommandInput placeholder="Search..." />
+      </CommandDialog>
     );
     await expectDescribedDialog();
   });
@@ -167,14 +179,12 @@ describe('dialog descriptions (a11y)', () => {
   it('mobile Sidebar sheet renders with an accessible description', async () => {
     const user = userEvent.setup();
     render(
-      <TestApp>
-        <SidebarProvider>
-          <Sidebar>
-            <div>Sidebar content</div>
-          </Sidebar>
-          <SidebarTrigger />
-        </SidebarProvider>
-      </TestApp>
+      <SidebarProvider>
+        <Sidebar>
+          <div>Sidebar content</div>
+        </Sidebar>
+        <SidebarTrigger />
+      </SidebarProvider>
     );
 
     await user.click(screen.getByRole('button', { name: /sidebar/i }));
