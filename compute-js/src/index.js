@@ -10,7 +10,7 @@ import rc from '../static-publish.rc.js';
 import { buildFunnelcakeUrl, getFunnelcakeOriginForApiHost } from './funnelcakeOrigin.js';
 import { handleAuthPersistCookie } from './authPersistCookie.js';
 import { isJsonWellKnownPath, shouldServeWellKnownBeforeWwwRedirect } from './wellKnownPaths.js';
-import { buildCrawlerHtml, escapeHtml, escapeFeedJson, cleanText, truncateText } from './ogTags.js';
+import { buildCrawlerHtml, buildUserScript, escapeHtml, escapeFeedJson, cleanText, truncateText } from './ogTags.js';
 import { hexToNpub, decodeNpubToHex } from './bech32.js';
 import { buildWwwRedirectResponse } from './hostRedirect.js';
 import { applyStaticResponseHeaders } from './staticResponseHeaders.js';
@@ -897,7 +897,7 @@ async function handleSubdomainProfile(subdomain, url, request, originalHostname)
   };
 
   // Inject the user data as a global variable before the main script
-  const userScript = `<script>window.__DIVINE_USER__ = ${JSON.stringify(divineUser)};</script>`;
+  const userScript = buildUserScript(divineUser);
 
   // Update OG tags for the profile
   const ogTitle = divineUser.displayName + ' on Divine';
