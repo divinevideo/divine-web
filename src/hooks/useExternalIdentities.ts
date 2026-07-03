@@ -3,6 +3,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { useNostr } from '@nostrify/react';
+import type { NostrEvent } from '@nostrify/nostrify';
 import { nip19 } from 'nostr-tools';
 import { getCachedVerification, setCachedVerification } from '@/lib/verificationCache';
 import { API_CONFIG, getFeatureFlag } from '@/config/api';
@@ -167,6 +168,14 @@ export function parseIdentityTag(tag: string[]): ExternalIdentity | null {
   };
 }
 
+/**
+ * How long to wait for the kind:10011 relay fan-out before settling with
+ * whatever arrived. Kind 10011 is replaceable, so NPool.query waits for every
+ * routed relay to EOSE — a single unreachable relay (hung WebSocket that never
+ * opens or closes) would otherwise block the query forever. See issue #415.
+ */
+const IDENTITIES_QUERY_TIMEOUT_MS = 5000;
+
 export function useExternalIdentities(pubkey: string | undefined) {
   const { nostr } = useNostr();
 
@@ -175,10 +184,19 @@ export function useExternalIdentities(pubkey: string | undefined) {
     queryFn: async ({ signal }) => {
       if (!pubkey || !nostr) return [];
 
-      const events = await nostr.query(
-        [{ kinds: [10011], authors: [pubkey], limit: 1 }],
-        { signal },
-      );
+      let events: NostrEvent[] = [];
+      try {
+        events = await nostr.query(
+          [{ kinds: [10011], authors: [pubkey], limit: 1 }],
+          { signal: AbortSignal.any([signal, AbortSignal.timeout(IDENTITIES_QUERY_TIMEOUT_MS)]) },
+        );
+      } catch {
+        // NPool.query returns partial results when the signal aborts, but
+        // other NRelay implementations may throw. Settle with no identities
+        // rather than an error state that would retry-loop and suppress
+        // badges anyway.
+        events = [];
+      }
 
       if (events.length === 0) return [];
 

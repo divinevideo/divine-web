@@ -1,8 +1,8 @@
 // ABOUTME: Tests for NIP-39 external identity parsing and verification
 // ABOUTME: Tests parseIdentityTag, verifyIdentityClaim, and useExternalIdentities hook
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { renderHook, waitFor } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { act, renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
 
@@ -515,6 +515,10 @@ describe('useExternalIdentities', () => {
     vi.resetAllMocks();
   });
 
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it('returns empty array when no events found', async () => {
     mockNostrQuery.mockResolvedValueOnce([]);
 
@@ -617,6 +621,72 @@ describe('useExternalIdentities', () => {
     );
 
     expect(result.current.fetchStatus).toBe('idle');
+  });
+
+  it('is bounded: resolves with the events NPool returns on abort when a relay hangs forever (issue #415)', async () => {
+    vi.useFakeTimers();
+
+    // Simulate NPool.query against a fan-out where one relay never opens or
+    // closes: the promise only settles (with partial results) once the
+    // caller-provided signal aborts. Without a timeout signal, it hangs forever.
+    mockNostrQuery.mockImplementation(
+      (_filters: unknown, opts: { signal: AbortSignal }) =>
+        new Promise((resolve) => {
+          opts.signal.addEventListener('abort', () => {
+            resolve([{
+              kind: 10011,
+              pubkey: TEST_PUBKEY,
+              created_at: 1700000000,
+              tags: [['i', 'github:semisol', '9721ce4ee4fceb3c7b532b0c']],
+              content: '',
+              id: 'abc',
+              sig: 'def',
+            }]);
+          });
+        }),
+    );
+
+    const { result } = renderHook(
+      () => useExternalIdentities(TEST_PUBKEY),
+      { wrapper: createWrapper() },
+    );
+
+    // Advance well past any reasonable timeout; the query must settle.
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(10_000);
+    });
+    vi.useRealTimers();
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data).toHaveLength(1);
+    expect(result.current.data![0].identity).toBe('semisol');
+  });
+
+  it('settles with an empty result (not an error) if the aborted query throws', async () => {
+    vi.useFakeTimers();
+
+    mockNostrQuery.mockImplementation(
+      (_filters: unknown, opts: { signal: AbortSignal }) =>
+        new Promise((_resolve, reject) => {
+          opts.signal.addEventListener('abort', () => {
+            reject(new DOMException('The operation was aborted.', 'AbortError'));
+          });
+        }),
+    );
+
+    const { result } = renderHook(
+      () => useExternalIdentities(TEST_PUBKEY),
+      { wrapper: createWrapper() },
+    );
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(10_000);
+    });
+    vi.useRealTimers();
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data).toEqual([]);
+    expect(result.current.isError).toBe(false);
   });
 
   it('queries kind 10011 with correct filters', async () => {

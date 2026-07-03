@@ -23,13 +23,22 @@ import {
  * 3. Validate the chain: definition → award → user
  * 4. Return only validated badges in display order
  */
+/**
+ * Shared time budget for the whole badge fan-out (kinds 30008/30009 are
+ * addressable, so NPool waits for every relay to EOSE — one hung relay would
+ * otherwise block the query forever; same failure mode as issue #415).
+ */
+const BADGES_QUERY_TIMEOUT_MS = 8000;
+
 export function useBadges(pubkey: string | undefined) {
   const { nostr } = useNostr();
 
   return useQuery<ValidatedBadge[]>({
     queryKey: ['badges', pubkey ?? ''],
-    queryFn: async ({ signal }) => {
+    queryFn: async ({ signal: querySignal }) => {
       if (!pubkey || !nostr) return [];
+
+      const signal = AbortSignal.any([querySignal, AbortSignal.timeout(BADGES_QUERY_TIMEOUT_MS)]);
 
       // Step 1: Fetch profile badges (kind 30008)
       const profileBadgeFilter: NostrFilter = {
