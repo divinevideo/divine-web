@@ -113,6 +113,27 @@ describe('ProfileHeader', () => {
     expect(screen.getByText('Divine Loops')).toBeInTheDocument();
   });
 
+  it('keeps the joined stat in the two-column mobile stats grid', () => {
+    render(
+      <MemoryRouter>
+        <ProfileHeader
+          pubkey={'a'.repeat(64)}
+          metadata={{ display_name: 'Modern Creator' }}
+          stats={{ ...baseStats, joinedDate: new Date('2024-01-01T00:00:00Z') }}
+          isOwnProfile={false}
+          isFollowing={false}
+          onFollowToggle={vi.fn()}
+        />
+      </MemoryRouter>
+    );
+
+    const statsGrid = screen.getByTestId('profile-stats');
+    expect(statsGrid).toHaveClass('grid-cols-2', 'sm:grid-cols-4');
+
+    const joinedStat = screen.getByText(/Joined January 2024/).closest('.text-center');
+    expect(joinedStat).not.toHaveClass('col-span-2');
+  });
+
   it('shows clickable legacy socials for classic viners only', () => {
     render(
       <MemoryRouter>
