@@ -123,7 +123,7 @@ export function FullscreenVideoItem({
   const canDelete = useCanDeleteVideo(video);
   const { data: reactions } = useVideoReactions(video.id, video.pubkey, video.vineId);
   const { data: lists } = useVideosInLists(video.vineId ?? undefined);
-  const playbackCountLabel = isClassicVine
+  const playbackCountLabel = video.isVineMigrated
     ? formatClassicVineViewBreakdown(viewCount, video.loopCount ?? 0)
     : formatLoopCount(viewCount);
 

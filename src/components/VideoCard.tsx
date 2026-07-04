@@ -152,7 +152,7 @@ export function VideoCard({
   const reposterPubkey = latestRepost?.reposterPubkey;
   const reposterData = useAuthor(reposterPubkey || '');
   const shouldShowReposter = hasReposts && reposterPubkey;
-  const playbackCountLabel = isClassicVine
+  const playbackCountLabel = video.isVineMigrated
     ? formatClassicVineViewBreakdown(viewCount, video.loopCount ?? 0)
     : formatLoopCount(viewCount);
   const [videoError, setVideoError] = useState(false);

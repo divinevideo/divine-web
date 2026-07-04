@@ -540,6 +540,22 @@ describe('VideoCard', () => {
     expect(screen.queryByText('10 Classic Loops')).not.toBeInTheDocument();
   });
 
+  it('uses native loop labeling for non-migrated videos with old publish timestamps', () => {
+    render(
+      <VideoCard
+        video={makeVideo({
+          loopCount: 10,
+          isVineMigrated: false,
+          originalVineTimestamp: 1_400_000_000,
+        })}
+        viewCount={31}
+      />
+    );
+
+    expect(screen.getByText('31 Loops')).toBeInTheDocument();
+    expect(screen.queryByText('10 Classic Loops')).not.toBeInTheDocument();
+  });
+
   it('keeps migrated Vine cards on the archived loop count', () => {
     render(
       <VideoCard

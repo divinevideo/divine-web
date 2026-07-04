@@ -14,6 +14,7 @@ import { useAuthenticatedMediaUrl } from '@/hooks/useAuthenticatedMediaUrl';
 import { cn } from '@/lib/utils';
 import type { ParsedVideoData } from '@/types/video';
 import { buildVideoNavigationUrl, type VideoNavigationContext } from '@/hooks/useVideoNavigation';
+import { getVisiblePlaybackCount } from '@/lib/playbackCount';
 
 interface VideoGridProps {
   videos: ParsedVideoData[];
@@ -257,6 +258,11 @@ export function VideoGrid({ videos, loading = false, className, navigationContex
         const isKnownAgeRestricted = video.ageRestricted === true || discoveredAgeRestrictedVideos.has(video.id);
         const gridVideo = isKnownAgeRestricted ? { ...video, ageRestricted: true } : video;
         const isAgeGated = isKnownAgeRestricted && (!user || !isAdultVerified);
+        const visiblePlaybackCount = getVisiblePlaybackCount({
+          isVineMigrated: video.isVineMigrated,
+          loopCount: video.loopCount,
+          viewStartCount: video.divineViewCount,
+        });
 
         const tile = (
             <div className="aspect-square relative bg-muted" data-thumbnail-container="true">
@@ -289,11 +295,11 @@ export function VideoGrid({ videos, loading = false, className, navigationContex
               )}
 
               {/* Loop Count Badge */}
-              {!isAgeGated && video.loopCount !== undefined && video.loopCount > 0 && (
+              {!isAgeGated && visiblePlaybackCount > 0 && (
                 <div className="absolute bottom-2 right-2">
                   <Badge variant="secondary" className="text-xs bg-black/80 text-white">
                     <Repeat className="w-3 h-3 mr-1" />
-                    {formatLoops(video.loopCount)}
+                    {formatLoops(visiblePlaybackCount)}
                   </Badge>
                 </div>
               )}
