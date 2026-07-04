@@ -147,6 +147,14 @@ describe('topPostToPerformance', () => {
     expect(perf.reactions).toBe(0);
   });
 
+  it('treats an explicit zero-view top_post metric as view data', () => {
+    const post: FunnelcakeCreatorTopPost = { id: 'zero-view', views: 0 };
+    const perf = topPostToPerformance(post, new Map());
+
+    expect(perf.views).toBe(0);
+    expect(perf.hasViewData).toBe(true);
+  });
+
   it('falls back to embedded_* counts when canonical fields are absent', () => {
     const post: FunnelcakeCreatorTopPost = { id: 'v2' };
     const video = makeVideo({

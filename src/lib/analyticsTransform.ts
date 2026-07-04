@@ -64,7 +64,7 @@ export function topPostToPerformance(
     thumbnail: video?.thumbnail,
     createdAt: video?.created_at ?? 0,
     views: views ?? 0,
-    hasViewData: post.views != null && post.views > 0,
+    hasViewData: post.views != null,
     reactions,
     comments,
     reposts,

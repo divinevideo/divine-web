@@ -1262,7 +1262,7 @@ async function authenticatedFunnelcakeRequest<T>(
   if (!response.ok) {
     const errorText = await response.text().catch(() => 'Unknown error');
     throw new FunnelcakeApiError(
-      `Notification API error: ${response.status} ${response.statusText}`,
+      `Funnelcake API error: ${response.status} ${response.statusText}`,
       response.status,
       errorText,
     );
@@ -1414,7 +1414,7 @@ export interface FunnelcakeBulkVideosResponse {
  * returns 400 past that - callers should batch if they need more.
  */
 export async function fetchBulkVideos(
-  apiUrl: string = API_CONFIG.funnelcake.baseUrl,
+  apiUrl: string,
   eventIds: string[],
   signal?: AbortSignal,
 ): Promise<FunnelcakeBulkVideosResponse> {
