@@ -17,6 +17,23 @@ export function escapeHtml(str) {
 }
 
 /**
+ * Serialize JSON safely for executable script context.
+ */
+export function serializeJsonForScript(value) {
+  return JSON.stringify(value)
+    .replace(/</g, '\\u003c')
+    .replace(/\u2028/g, '\\u2028')
+    .replace(/\u2029/g, '\\u2029');
+}
+
+export function escapeJsonForScript(json) {
+  return String(json)
+    .replace(/</g, '\\u003c')
+    .replace(/\u2028/g, '\\u2028')
+    .replace(/\u2029/g, '\\u2029');
+}
+
+/**
  * Format large numbers for display (e.g., 1234 -> "1.2K").
  */
 export function formatCount(n) {

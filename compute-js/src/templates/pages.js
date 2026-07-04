@@ -1,7 +1,12 @@
 // ABOUTME: Full page composer functions for edge-templated HTML
 // ABOUTME: Combines shell, components, and data to produce complete HTML documents
 
-import { renderShell, escapeHtml } from './shell.js';
+import {
+  escapeHtml,
+  escapeJsonForScript,
+  renderShell,
+  serializeJsonForScript,
+} from './shell.js';
 import { navbar, discoveryTabs, videoGrid, videoDetail, profileHeader, footer } from './components.js';
 
 /**
@@ -49,7 +54,7 @@ export function renderFeedPage({ videos, feedType = 'trending', feedJson = '', s
 
   // Inject a compact version of feed data for React (strip bulky Nostr event tags)
   const jsonInjection = feedJson
-    ? `<script>window.__DIVINE_FEED__=${feedJson};window.__DIVINE_FEED_TYPE__="${escapeHtml(feedType)}";</script>`
+    ? `<script>window.__DIVINE_FEED__=${escapeJsonForScript(feedJson)};window.__DIVINE_FEED_TYPE__=${serializeJsonForScript(feedType)};</script>`
     : '';
 
   return renderShell({
@@ -90,7 +95,7 @@ export function renderVideoPage({ video, videoId, staticAssets = null }) {
   }
 
   // Inject feed data for hydration (single video)
-  const feedJson = JSON.stringify({
+  const feedJson = serializeJsonForScript({
     videos: [video],
     type: 'single',
   });
@@ -135,7 +140,7 @@ export function renderProfilePage({ profile, videos = [], staticAssets = null })
 </div>`;
 
   // Inject profile data for hydration
-  const jsonInjection = `<script>window.__DIVINE_USER__=${JSON.stringify(profile)};</script>`;
+  const jsonInjection = `<script>window.__DIVINE_USER__=${serializeJsonForScript(profile)};</script>`;
 
   return renderShell({
     title: ogTitle,
