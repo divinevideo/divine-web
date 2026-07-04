@@ -176,6 +176,13 @@ export function parseIdentityTag(tag: string[]): ExternalIdentity | null {
  */
 const IDENTITIES_QUERY_TIMEOUT_MS = 5000;
 
+function isAbortLikeError(error: unknown): boolean {
+  const name = typeof error === 'object' && error !== null && 'name' in error
+    ? String(error.name)
+    : '';
+  return name === 'AbortError' || name === 'TimeoutError';
+}
+
 export function useExternalIdentities(pubkey: string | undefined) {
   const { nostr } = useNostr();
 
@@ -190,11 +197,11 @@ export function useExternalIdentities(pubkey: string | undefined) {
           [{ kinds: [10011], authors: [pubkey], limit: 1 }],
           { signal: AbortSignal.any([signal, AbortSignal.timeout(IDENTITIES_QUERY_TIMEOUT_MS)]) },
         );
-      } catch {
+      } catch (error) {
         // NPool.query returns partial results when the signal aborts, but
         // other NRelay implementations may throw. Settle with no identities
-        // rather than an error state that would retry-loop and suppress
-        // badges anyway.
+        // rather than an error state that would retry-loop.
+        if (!isAbortLikeError(error)) throw error;
         events = [];
       }
 

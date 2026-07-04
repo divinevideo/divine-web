@@ -30,6 +30,13 @@ import {
  */
 const BADGES_QUERY_TIMEOUT_MS = 8000;
 
+function isAbortLikeError(error: unknown): boolean {
+  const name = typeof error === 'object' && error !== null && 'name' in error
+    ? String(error.name)
+    : '';
+  return name === 'AbortError' || name === 'TimeoutError';
+}
+
 export function useBadges(pubkey: string | undefined) {
   const { nostr } = useNostr();
 
@@ -48,10 +55,16 @@ export function useBadges(pubkey: string | undefined) {
         limit: 1,
       };
 
-      const profileBadgeEvents = await nostr.query(
-        [profileBadgeFilter],
-        { signal }
-      );
+      let profileBadgeEvents: NostrEvent[] = [];
+      try {
+        profileBadgeEvents = await nostr.query(
+          [profileBadgeFilter],
+          { signal }
+        );
+      } catch (error) {
+        if (!isAbortLikeError(error)) throw error;
+        return [];
+      }
 
       // Fallback: if no profile_badges event, show all awarded badges
       if (!profileBadgeEvents.length) {
@@ -61,7 +74,13 @@ export function useBadges(pubkey: string | undefined) {
           '#p': [pubkey],
           limit: 20,
         };
-        const awards = await nostr.query([awardFilter], { signal });
+        let awards: NostrEvent[] = [];
+        try {
+          awards = await nostr.query([awardFilter], { signal });
+        } catch (error) {
+          if (!isAbortLikeError(error)) throw error;
+          return [];
+        }
         if (!awards.length) return [];
 
         // For each award, extract the badge definition reference and fetch it

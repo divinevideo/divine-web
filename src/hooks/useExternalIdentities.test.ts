@@ -689,6 +689,17 @@ describe('useExternalIdentities', () => {
     expect(result.current.isError).toBe(false);
   });
 
+  it('surfaces non-abort relay query failures', async () => {
+    mockNostrQuery.mockRejectedValueOnce(new Error('relay exploded'));
+
+    const { result } = renderHook(
+      () => useExternalIdentities(TEST_PUBKEY),
+      { wrapper: createWrapper() },
+    );
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+  });
+
   it('queries kind 10011 with correct filters', async () => {
     mockNostrQuery.mockResolvedValueOnce([]);
 
