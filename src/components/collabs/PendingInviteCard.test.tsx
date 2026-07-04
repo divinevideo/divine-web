@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
+import { nip19 } from 'nostr-tools';
 import { TestApp } from '@/test/TestApp';
 import { PendingInviteCard } from './PendingInviteCard';
 import type { NostrEvent } from '@nostrify/nostrify';
@@ -27,6 +28,24 @@ describe('PendingInviteCard', () => {
     );
     expect(screen.getByText('Hello world')).toBeInTheDocument();
     expect(screen.getByText(/actor/i)).toBeInTheDocument();
+  });
+
+  it('links to the invited video and the creator profile before approval', () => {
+    render(
+      <PendingInviteCard
+        video={video}
+        myPubkey={'a'.repeat(64)}
+        onApprove={() => {}}
+        approving={false}
+      />,
+      { wrapper: TestApp },
+    );
+
+    expect(screen.getByRole('link', { name: 'Hello world' })).toHaveAttribute('href', '/video/vid1');
+
+    const creatorNpub = nip19.npubEncode('b'.repeat(64));
+    expect(screen.getByRole('link', { name: `Creator ${creatorNpub.slice(0, 12)}...` }))
+      .toHaveAttribute('href', `/${creatorNpub}`);
   });
 
   it('falls back to "Collaborator" when the p-tag has no role', () => {

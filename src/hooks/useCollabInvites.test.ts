@@ -14,7 +14,7 @@ function video(d: string, opts: Partial<NostrEvent> = {}): NostrEvent {
     created_at: opts.created_at ?? 1700000000,
     kind: 34236,
     content: '',
-    tags: [['d', d], ['p', ME], ...(opts.tags ?? [])],
+    tags: [['d', d], ['p', ME, 'actor'], ...(opts.tags ?? [])],
     sig: '',
   };
 }
@@ -82,6 +82,16 @@ describe('useCollabInvites', () => {
       .mockResolvedValueOnce([video('vid1', { pubkey: ME })])
       .mockResolvedValueOnce([]);
     const { result } = renderHook(() => useCollabInvites(), { wrapper: TestApp });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data).toEqual([]);
+  });
+
+  it('drops role-less p-tags because they may be ordinary mentions', async () => {
+    const roleless = { ...video('vid1'), tags: [['d', 'vid1'], ['p', ME]] };
+    queryMock.mockResolvedValueOnce([roleless]).mockResolvedValueOnce([]);
+
+    const { result } = renderHook(() => useCollabInvites(), { wrapper: TestApp });
+
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data).toEqual([]);
   });

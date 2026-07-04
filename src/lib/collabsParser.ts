@@ -26,8 +26,14 @@ export interface PTagCollaborator {
 
 export function parsePTagCollaborator(tag: string[]): PTagCollaborator | null {
   if (tag[0] !== 'p' || !tag[1]) return null;
-  const role = tag[2];
+  const role = tag[2]?.trim();
   return role ? { pubkey: tag[1], role } : { pubkey: tag[1] };
+}
+
+function hasCollabTagFor(event: NostrEvent, pubkey: string): boolean {
+  return event.tags
+    .map(parsePTagCollaborator)
+    .some((tag) => tag?.pubkey === pubkey && Boolean(tag.role));
 }
 
 export function dedupeAndSubtract(
@@ -38,6 +44,7 @@ export function dedupeAndSubtract(
   const latestByCoord = new Map<string, NostrEvent>();
   for (const v of taggedVideos) {
     if (v.pubkey === mePubkey) continue;
+    if (!hasCollabTagFor(v, mePubkey)) continue;
     let coord: string;
     try { coord = coordOf(v); } catch { continue; }
     const prev = latestByCoord.get(coord);

@@ -105,6 +105,25 @@ describe('useInviteCollaborators', () => {
     expect(publishMutate).not.toHaveBeenCalled();
   });
 
+  it('dedupes duplicate additions in the same publish request', async () => {
+    queryMock.mockResolvedValueOnce([baseVideo]);
+    const { result } = renderHook(() => useInviteCollaborators(), { wrapper: TestApp });
+    await act(async () => {
+      await result.current.mutateAsync({
+        original: baseVideo,
+        additions: [
+          { pubkey: TOM, role: 'actor' },
+          { pubkey: TOM, role: 'cameo' },
+        ],
+      });
+    });
+
+    const sent = publishMutate.mock.calls[0][0];
+    expect(sent.tags.filter((t: string[]) => t[0] === 'p' && t[1] === TOM)).toEqual([
+      ['p', TOM, 'actor'],
+    ]);
+  });
+
   it('falls back to the supplied event if the relay returns nothing', async () => {
     queryMock.mockResolvedValueOnce([]);
     const { result } = renderHook(() => useInviteCollaborators(), { wrapper: TestApp });

@@ -38,9 +38,12 @@ export function useInviteCollaborators() {
       const existingP = new Set(
         latest.tags.filter((t) => t[0] === 'p' && t[1]).map((t) => t[1]),
       );
-      const newPTags = additions
-        .filter((a) => !existingP.has(a.pubkey))
-        .map((a) => a.role ? ['p', a.pubkey, a.role] : ['p', a.pubkey]);
+      const newPTags: string[][] = [];
+      for (const addition of additions) {
+        if (existingP.has(addition.pubkey)) continue;
+        existingP.add(addition.pubkey);
+        newPTags.push(addition.role ? ['p', addition.pubkey, addition.role] : ['p', addition.pubkey]);
+      }
 
       if (newPTags.length === 0) return null;
 

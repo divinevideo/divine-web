@@ -1467,6 +1467,8 @@ export async function fetchBulkVideos(
   }
 }
 
+// Collabs landed before a shared list-envelope helper; keep this local unwrap
+// narrow to the response shape this endpoint returns.
 function asVideoArray(raw: unknown): FunnelcakeVideoRaw[] {
   if (Array.isArray(raw)) return raw as FunnelcakeVideoRaw[];
   if (raw && typeof raw === 'object' && Array.isArray((raw as { data?: unknown }).data)) {
