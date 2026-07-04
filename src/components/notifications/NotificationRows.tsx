@@ -161,6 +161,7 @@ interface MessageParts {
   othersText: string | null;
   verbText: string;
   titleText: string;
+  hasVideoTitle: boolean;
 }
 
 function formatGroupedMessage(notification: VideoNotification, t: TFunction): MessageParts {
@@ -171,9 +172,11 @@ function formatGroupedMessage(notification: VideoNotification, t: TFunction): Me
       ? t('notificationsPage.message.andOthers', { count: othersCount })
       : null;
   const verbText = t(getVerbKey(notification.type));
-  const titleText = notification.videoTitle ?? t('notificationsPage.video.untitled');
+  const videoTitle = notification.videoTitle?.trim();
+  const hasVideoTitle = Boolean(videoTitle);
+  const titleText = videoTitle || t('notificationsPage.video.untitled');
 
-  return { firstName, othersText, verbText, titleText };
+  return { firstName, othersText, verbText, titleText, hasVideoTitle };
 }
 
 // ---------------------------------------------------------------------------
@@ -188,7 +191,8 @@ export function VideoNotificationRow({
   const { t } = useTranslation('common');
   const navigate = useSubdomainNavigate();
 
-  const { firstName, othersText, verbText, titleText } = formatGroupedMessage(notification, t);
+  const { firstName, othersText, verbText, titleText, hasVideoTitle } = formatGroupedMessage(notification, t);
+  const showInlineTimestamp = notification.type !== 'comment' || !notification.commentText;
 
   const handleRowActivate = () => {
     navigate(`/video/${notification.videoEventId}`);
@@ -245,9 +249,13 @@ export function VideoNotificationRow({
           )}
           {' '}
           <span className="text-muted-foreground">{verbText}</span>
-          {' '}
-          <span className="font-semibold">{titleText}</span>
-          {notification.type !== 'comment' && (
+          {hasVideoTitle && (
+            <>
+              {' '}
+              <span className="font-semibold">{titleText}</span>
+            </>
+          )}
+          {showInlineTimestamp && (
             <>
               {' · '}
               <span

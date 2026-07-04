@@ -103,6 +103,19 @@ describe('VideoNotificationRow', () => {
     expect(screen.queryByText(/others/)).not.toBeInTheDocument();
   });
 
+  it('does not repeat "your video" as both verb copy and fallback title for untitled videos', () => {
+    const notification = buildVideoNotification({
+      videoTitle: undefined,
+    });
+    render(<VideoNotificationRow notification={notification} />);
+
+    const timestampEl = screen.getByTestId('notification-timestamp');
+    const messageText = timestampEl.closest('p')?.textContent ?? '';
+
+    expect(messageText).toContain('Alice liked your video');
+    expect(messageText).not.toContain('liked your video your video');
+  });
+
   it('totalCount 14 with 3 actors shows +11 overflow and "and 13 others"', () => {
     const notification = buildVideoNotification({
       actors: [
@@ -154,6 +167,17 @@ describe('VideoNotificationRow', () => {
     const quoteBox = timestampEl.closest('p');
     expect(quoteBox).toBeInTheDocument();
     expect(quoteBox?.textContent).toContain('Great video!');
+  });
+
+  it('comment row without commentText still shows a timestamp', () => {
+    const notification = buildVideoNotification({
+      type: 'comment',
+      commentText: '',
+    });
+    render(<VideoNotificationRow notification={notification} />);
+
+    const timestampEl = screen.getByTestId('notification-timestamp');
+    expect(timestampEl.textContent).not.toBe('');
   });
 
   it('missing thumbnail renders a placeholder with accessible text and BrandLogo', () => {
