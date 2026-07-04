@@ -140,6 +140,31 @@ describe('transformFunnelcakeVideo', () => {
     expect(video.proofMode?.c2paManifestId).toBeUndefined();
   });
 
+  it('uses compact proof summary when full event tags contain no proof data', () => {
+    const video = transformFunnelcakeVideo(makeRawVideo({
+      tags: [
+        ['d', 'vine-id-1'],
+        ['title', 'Plain tagged video'],
+      ],
+      proof: {
+        status: 'present',
+        level: 'basic_proof',
+        checked_at: 1779494400,
+        version: 1,
+        checks: {
+          proofmode_present: true,
+          proofmode_parse_ok: true,
+          pgp_signature_present: true,
+          pgp_signature_valid: null,
+        },
+      },
+    }));
+
+    expect(video.proofMode?.level).toBe('basic_proof');
+    expect(video.proofMode?.manifest).toBe('summary:present');
+    expect(video.proofMode?.pgpFingerprint).toBe('summary:present');
+  });
+
   it('ignores invalid compact proof summaries', () => {
     const video = transformFunnelcakeVideo(makeRawVideo({
       proof: {

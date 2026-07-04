@@ -170,6 +170,7 @@ export function transformFunnelcakeVideo(raw: FunnelcakeVideoRaw): ParsedVideoDa
     ?? parseLoopsFromContent(raw.title);
 
   const fullEvent = parseFullEvent(raw, id, pubkey);
+  const fullEventProofMode = fullEvent ? getProofModeData(fullEvent) : undefined;
 
   const video: ParsedVideoData = {
     id,
@@ -222,7 +223,7 @@ export function transformFunnelcakeVideo(raw: FunnelcakeVideoRaw): ParsedVideoDa
     textTrackContent: raw.text_track_content,
 
     // ProofMode data - extract from tags when available (single video endpoint)
-    proofMode: fullEvent ? getProofModeData(fullEvent) : proofSummaryToProofMode(raw),
+    proofMode: fullEventProofMode ?? proofSummaryToProofMode(raw),
 
     // Empty reposts array (Funnelcake doesn't return individual reposts)
     reposts: [],
