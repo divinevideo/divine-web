@@ -56,16 +56,17 @@ export async function resolveNip05(
   const parsed = parseNip05Handle(handle);
   if (!parsed) return null;
   const url = `https://${parsed.domain}/.well-known/nostr.json?name=${encodeURIComponent(parsed.name)}`;
-  try {
-    const res = await fetch(url, { signal: signal ?? AbortSignal.timeout(5000) });
-    if (!res.ok) return null;
-    const body = await res.json() as { names?: Record<string, string> };
-    const pubkey = body?.names?.[parsed.name];
-    if (typeof pubkey !== 'string' || !/^[0-9a-f]{64}$/i.test(pubkey)) return null;
-    return { pubkey: pubkey.toLowerCase(), name: parsed.name, domain: parsed.domain };
-  } catch {
-    return null;
-  }
+
+  const res = await fetch(url, {
+    signal: signal ?? AbortSignal.timeout(5000),
+    headers: { Accept: 'application/json' },
+  });
+  if (!res.ok) return null;
+
+  const body = await res.json().catch(() => null) as { names?: Record<string, string> } | null;
+  const pubkey = body?.names?.[parsed.name];
+  if (typeof pubkey !== 'string' || !/^[0-9a-f]{64}$/i.test(pubkey)) return null;
+  return { pubkey: pubkey.toLowerCase(), name: parsed.name, domain: parsed.domain };
 }
 
 export async function resolveNip05ToPubkey(

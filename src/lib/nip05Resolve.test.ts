@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
-import { resolveNip05, parseNip05Handle } from './nip05Resolve';
+import { resolveNip05, resolveNip05ToPubkey, parseNip05Handle } from './nip05Resolve';
 
 describe('parseNip05Handle', () => {
   it.each([
@@ -80,5 +80,12 @@ describe('resolveNip05', () => {
   it('returns null on a malformed handle', async () => {
     expect(await resolveNip05('garbage')).toBeNull();
     expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it('rejects transport failures so callers can retry', async () => {
+    const timeout = new DOMException('Timeout', 'TimeoutError');
+    vi.mocked(fetch).mockRejectedValueOnce(timeout);
+
+    await expect(resolveNip05ToPubkey('alice@divine.video')).rejects.toBe(timeout);
   });
 });
