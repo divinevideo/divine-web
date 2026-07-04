@@ -204,6 +204,9 @@ export function ThumbnailPlayer({
           className="absolute inset-0 z-10"
           aria-label={t('thumbnailPlayer.openVideo')}
           data-testid="thumbnail-link"
+          onClick={(event) => {
+            event.stopPropagation();
+          }}
         />
       )}
 

@@ -138,6 +138,26 @@ describe('ThumbnailPlayer', () => {
     expect(link).toHaveAttribute('href', '/video/video-123');
   });
 
+  it('does not also fire the thumbnail click action when the link is clicked', () => {
+    const handleThumbnailClick = vi.fn();
+
+    render(
+      <MemoryRouter>
+        <ThumbnailPlayer
+          videoId="video-123"
+          src="https://example.com/video.mp4"
+          thumbnailUrl="https://example.com/thumb.jpg"
+          linkTo="/video/video-123"
+          onClick={handleThumbnailClick}
+        />
+      </MemoryRouter>
+    );
+
+    fireEvent.click(screen.getByRole('link', { name: 'Open video' }));
+
+    expect(handleThumbnailClick).not.toHaveBeenCalled();
+  });
+
   it('keeps the play button outside the link so it does not navigate', () => {
     const handlePlayButtonClick = vi.fn();
 
