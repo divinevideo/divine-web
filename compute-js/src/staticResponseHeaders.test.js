@@ -9,7 +9,7 @@ describe('applyStaticResponseHeaders', () => {
     }), { isHtml: true });
 
     expect(headers.get('Cache-Control')).toBe('no-store');
-    expect(headers.get('Surrogate-Control')).toBe('no-store');
+    expect(headers.get('Surrogate-Control')).toBe('max-age=0');
     expect(headers.get('Vary')).toContain('X-Original-Host');
   });
 
