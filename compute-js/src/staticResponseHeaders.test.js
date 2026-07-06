@@ -9,6 +9,7 @@ describe('applyStaticResponseHeaders', () => {
     }), { isHtml: true });
 
     expect(headers.get('Cache-Control')).toBe('no-store');
+    expect(headers.get('Surrogate-Control')).toBe('max-age=0');
     expect(headers.get('Vary')).toContain('X-Original-Host');
   });
 
@@ -19,6 +20,7 @@ describe('applyStaticResponseHeaders', () => {
     }), { isHtml: false });
 
     expect(headers.get('Cache-Control')).toBe('public, max-age=31536000, immutable');
+    expect(headers.get('Surrogate-Control')).toBeNull();
     expect(headers.get('Vary')).toContain('X-Original-Host');
   });
 

@@ -4,7 +4,6 @@
 /// <reference types="@fastly/js-compute" />
 import { env } from 'fastly:env';
 
-// eslint-disable-next-line no-restricted-globals
 addEventListener("fetch", (event) => event.respondWith(handleRequest(event)));
 
 async function handleRequest(event) {
