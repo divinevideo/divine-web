@@ -1,7 +1,7 @@
 import type { NostrSigner } from '@nostrify/nostrify';
 
 import { getFunnelcakeBaseUrl } from '@/config/api';
-import { getAnalyticsConsent } from '@/lib/cookieConsent';
+import { getAnalyticsConsent, onAnalyticsConsentChanged } from '@/lib/cookieConsent';
 import { ProductEventQueue, productEventQueue } from '@/lib/eventQueue';
 
 export const PRODUCT_ANALYTICS_EVENT_KIND = 22237;
@@ -89,6 +89,13 @@ export class ProductAnalyticsClient {
     this.queue = options.queue ?? productEventQueue;
     this.batchSize = options.batchSize ?? 50;
     this.registerFlushTriggers();
+    // Withdrawn consent must also discard events queued while consent was
+    // granted — the gate on track/flush alone would leave them on disk.
+    onAnalyticsConsentChanged((consented) => {
+      if (!consented) {
+        void this.queue.clear();
+      }
+    });
   }
 
   async track(eventName: ProductAnalyticsEventName, props: ProductAnalyticsProps = {}): Promise<string | null> {

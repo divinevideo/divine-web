@@ -1,9 +1,20 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { NostrSigner } from '@nostrify/nostrify';
 
-const consent = vi.hoisted(() => ({ value: true as boolean | null }));
+const consent = vi.hoisted(() => ({
+  value: true as boolean | null,
+  listeners: [] as Array<(consented: boolean) => void>,
+  set(next: boolean) {
+    this.value = next;
+    for (const listener of this.listeners) listener(next);
+  },
+}));
 vi.mock('./cookieConsent', () => ({
   getAnalyticsConsent: () => consent.value,
+  onAnalyticsConsentChanged: (callback: (consented: boolean) => void) => {
+    consent.listeners.push(callback);
+    if (consent.value !== null) callback(consent.value);
+  },
 }));
 
 const pubkey = 'b'.repeat(64);
@@ -38,6 +49,7 @@ describe('analyticsClient', () => {
     vi.resetModules();
     vi.clearAllMocks();
     consent.value = true;
+    consent.listeners.length = 0;
     Object.defineProperty(globalThis, 'indexedDB', {
       writable: true,
       value: undefined,
@@ -68,6 +80,21 @@ describe('analyticsClient', () => {
     await productAnalytics.track('session_started', { surface: 'home' });
 
     expect(await productAnalytics.queue.getFlushableBatch(10)).toHaveLength(0);
+  });
+
+  it('purges queued events when the user withdraws analytics consent', async () => {
+    // A hanging flush keeps the tracked event pending in the queue.
+    vi.stubGlobal('fetch', vi.fn(() => new Promise<Response>(() => {})));
+    const { productAnalytics, configureProductAnalyticsIdentity } = await import('./analyticsClient');
+    configureProductAnalyticsIdentity({ userPubkey: pubkey, signer });
+    await productAnalytics.track('session_started', { surface: 'home' });
+    expect(await productAnalytics.queue.getFlushableBatch(10)).toHaveLength(1);
+
+    consent.set(false);
+
+    await vi.waitFor(async () => {
+      expect(await productAnalytics.queue.getFlushableBatch(10)).toHaveLength(0);
+    });
   });
 
   it('does not enqueue events when simulation suppression is active', async () => {
