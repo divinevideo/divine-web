@@ -562,6 +562,15 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
       setHasLoadedOnce(true);
       setAuthDeniedAfterVerification(false);
 
+      if (isActive && !hasError && videoRef.current?.paused) {
+        videoRef.current.play().catch((error) => {
+          debugError(`[VideoPlayer ${videoId}] Failed to resume after load:`, error);
+          if (error.name === 'NotSupportedError') {
+            handleError();
+          }
+        });
+      }
+
       // Emit first video load metric (only once)
       if (loadDuration > 0 && typeof window !== 'undefined') {
         trackFirstVideoPlayback();
