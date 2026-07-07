@@ -21,7 +21,10 @@ dcadenas on the PR before merge.
   mass-revoke support access); network failure keeps last-known state
   (pin-trusted on cold start). 1h TTL for the background/inbound cache, plus
   **send-time freshness**: the async send path awaits a fresh resolution when
-  the cache is stale. Per-entry canonical identifier. The mobile spec's
+  the cache is stale; and **receive-time revalidation**: inbound from a
+  stale-cached tier-2 counterparty triggers background re-resolution with the
+  filter re-applied on result, so the TTL is a backstop in both directions.
+  Per-entry canonical identifier. The mobile spec's
   "Threat model and accepted risks" section (reachability-bounded revocation,
   storage-clear un-revocation, client-side-only inbound enforcement) and its
   pre-merge ops launch checklist (revocation runbook, tier-2 name monitoring,
