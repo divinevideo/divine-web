@@ -1,6 +1,6 @@
 # Lock adult-content settings for protected minors on web (divine-web#453)
 
-**Status:** WIP design — implementation follows on this branch.
+**Status:** Implemented on this branch; PR stays draft until Matt green-lights review.
 **Part of:** support-trust-safety#175 / epic support-trust-safety#173. Web parity
 with the merged mobile lock (divine-mobile#5744). Builds on the merged
 protected-minor state (#452 / PR #456).
@@ -26,9 +26,13 @@ every consumer inherits the lock with no per-component changes:
    verification exists (confirmed before protection landed, or a shared
    browser), clear it (`revokeVerification` path) so the stale attestation
    doesn't survive age-up/revocation boundaries incorrectly.
-4. Fail-safe follows #456 semantics: unknown/loading protected-minor state does
-   not lock (non-blocking state, per the #174 foundation's fail-open naming);
-   a resolved `true` locks.
+4. Fail-safe: unknown/loading protected-minor state **fails closed for
+   granting** — folded into the hook's `isLoading` (consumers keep their
+   loading treatment; no flicker-grant for a minor, no hard "not verified"
+   for an adult mid-refetch), `confirmAdult` no-ops, and the stored
+   attestation is NOT purged (purge only on known-true). This matches the
+   #452/#456 foundation's stated intent that #175 gates fail closed on
+   unknown, corrected from this spec's earlier fail-open draft.
 
 ## Out of scope
 

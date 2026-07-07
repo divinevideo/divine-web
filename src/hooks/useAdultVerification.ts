@@ -3,6 +3,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { useProtectedMinorStatus } from '@/hooks/useProtectedMinorStatus';
 import { createMediaViewerAuthHeader } from '@/lib/mediaViewerAuth';
 
 const STORAGE_KEY = 'adult-verification-confirmed';
@@ -50,14 +51,29 @@ function notifyVerificationChange(): void {
 
 export function useAdultVerification(): AdultVerificationState {
   const [storedIsVerified, setStoredIsVerified] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isStorageLoading, setIsStorageLoading] = useState(true);
   const { signer } = useCurrentUser();
-  const isVerified = storedIsVerified && !!signer;
+
+  // Protected-minor lock (#453 / support-trust-safety#175): a protected minor
+  // (13-15, keycast verified_minor) must not be able to pass or retain the
+  // adult gate. Gating here, at the single seam every adult-content consumer
+  // reads, locks them all at once.
+  const minorStatus = useProtectedMinorStatus();
+  const minorLocked = minorStatus.isProtectedMinor;
+  // Unknown only occurs for authenticated sessions (signed-out resolves to
+  // not-protected), and the check was designed for #175 to fail closed on it.
+  // Fold unknown into isLoading rather than isVerified so a transient check
+  // renders as "still loading" — it can neither flicker-grant a minor nor
+  // read as a hard "not verified" for an adult mid-refetch.
+  const minorUnknown = !minorStatus.isKnown;
+
+  const isVerified = !minorLocked && !minorUnknown && storedIsVerified && !!signer;
+  const isLoading = isStorageLoading || minorUnknown;
 
   useEffect(() => {
     const syncFromStorage = () => {
       setStoredIsVerified(getStoredVerificationState());
-      setIsLoading(false);
+      setIsStorageLoading(false);
     };
 
     const handleStorageChange = (event: Event) => {
@@ -78,13 +94,30 @@ export function useAdultVerification(): AdultVerificationState {
     };
   }, []);
 
+  // Self-heal: purge a stale stored attestation once protection is KNOWN true
+  // (attested before protection landed, or a shared browser). Known-true only —
+  // an adult's attestation must survive transient unknown states.
+  useEffect(() => {
+    if (minorLocked && getStoredVerificationState()) {
+      localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem(STORAGE_EXPIRY_KEY);
+      setStoredIsVerified(false);
+      notifyVerificationChange();
+    }
+  }, [minorLocked, storedIsVerified]);
+
   const confirmAdult = useCallback(() => {
+    // Locked for protected minors; unknown fails closed (no new attestation
+    // until the check resolves).
+    if (minorLocked || minorUnknown) {
+      return;
+    }
     const expiryTime = Date.now() + VERIFICATION_DURATION_MS;
     localStorage.setItem(STORAGE_KEY, 'true');
     localStorage.setItem(STORAGE_EXPIRY_KEY, expiryTime.toString());
     setStoredIsVerified(true);
     notifyVerificationChange();
-  }, []);
+  }, [minorLocked, minorUnknown]);
 
   const revokeVerification = useCallback(() => {
     localStorage.removeItem(STORAGE_KEY);
