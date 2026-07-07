@@ -62,9 +62,8 @@ export function useAdultVerification(): AdultVerificationState {
   const minorLocked = minorStatus.isProtectedMinor;
   // Unknown only occurs for authenticated sessions (signed-out resolves to
   // not-protected), and the check was designed for #175 to fail closed on it.
-  // Fold unknown into isLoading rather than isVerified so a transient check
-  // renders as "still loading" — it can neither flicker-grant a minor nor
-  // read as a hard "not verified" for an adult mid-refetch.
+  // Unknown is also exposed through isLoading for consumers that can surface
+  // that state, but today's gate decisions still key off isVerified.
   const minorUnknown = !minorStatus.isKnown;
 
   const isVerified = !minorLocked && !minorUnknown && storedIsVerified && !!signer;
@@ -94,18 +93,6 @@ export function useAdultVerification(): AdultVerificationState {
     };
   }, []);
 
-  // Self-heal: purge a stale stored attestation once protection is KNOWN true
-  // (attested before protection landed, or a shared browser). Known-true only —
-  // an adult's attestation must survive transient unknown states.
-  useEffect(() => {
-    if (minorLocked && getStoredVerificationState()) {
-      localStorage.removeItem(STORAGE_KEY);
-      localStorage.removeItem(STORAGE_EXPIRY_KEY);
-      setStoredIsVerified(false);
-      notifyVerificationChange();
-    }
-  }, [minorLocked, storedIsVerified]);
-
   const confirmAdult = useCallback(() => {
     // Locked for protected minors; unknown fails closed (no new attestation
     // until the check resolves).
@@ -125,6 +112,15 @@ export function useAdultVerification(): AdultVerificationState {
     setStoredIsVerified(false);
     notifyVerificationChange();
   }, []);
+
+  // Self-heal: purge a stale stored attestation once protection is KNOWN true
+  // (attested before protection landed, or a shared browser). Known-true only —
+  // an adult's attestation must survive transient unknown states.
+  useEffect(() => {
+    if (minorLocked && getStoredVerificationState()) {
+      revokeVerification();
+    }
+  }, [minorLocked, revokeVerification, storedIsVerified]);
 
   // Generate viewer auth header for a given URL (Blossom or NIP-98 depending on inputs)
   const getAuthHeader = useCallback(

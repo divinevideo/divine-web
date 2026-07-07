@@ -137,7 +137,7 @@ describe('useAdultVerification', () => {
 
       const { result } = renderHook(() => useAdultVerification());
 
-      // Unknown folds into isLoading so consumers keep their loading treatment.
+      // Unknown is exposed through isLoading and still fails closed for granting.
       expect(result.current.isLoading).toBe(true);
       expect(result.current.isVerified).toBe(false);
 

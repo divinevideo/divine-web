@@ -1,6 +1,6 @@
 # Lock adult-content settings for protected minors on web (divine-web#453)
 
-**Status:** Implemented on this branch; PR stays draft until Matt green-lights review.
+**Status:** Implemented on this branch.
 **Part of:** support-trust-safety#175 / epic support-trust-safety#173. Web parity
 with the merged mobile lock (divine-mobile#5744). Builds on the merged
 protected-minor state (#452 / PR #456).
@@ -17,7 +17,7 @@ All adult-gating consumers (`VideoCard`, `VideoGrid`, `ThumbnailPlayer`,
 `AgeVerificationOverlay`) read `useAdultVerification`. Lock inside that hook so
 every consumer inherits the lock with no per-component changes:
 
-1. Consume `useIsProtectedMinor()` (from `useProtectedMinorStatus`, #456)
+1. Consume `useProtectedMinorStatus()` (#456)
    inside `useAdultVerification`.
 2. When protected: `isVerified` is forced `false` (regardless of localStorage
    or signer), `confirmAdult()` is a no-op, and `getAuthHeader` therefore keeps
@@ -27,12 +27,15 @@ every consumer inherits the lock with no per-component changes:
    browser), clear it (`revokeVerification` path) so the stale attestation
    doesn't survive age-up/revocation boundaries incorrectly.
 4. Fail-safe: unknown/loading protected-minor state **fails closed for
-   granting** — folded into the hook's `isLoading` (consumers keep their
-   loading treatment; no flicker-grant for a minor, no hard "not verified"
-   for an adult mid-refetch), `confirmAdult` no-ops, and the stored
-   attestation is NOT purged (purge only on known-true). This matches the
-   #452/#456 foundation's stated intent that #175 gates fail closed on
-   unknown, corrected from this spec's earlier fail-open draft.
+   granting**: `isVerified` is forced false, `confirmAdult` no-ops, and the
+   stored attestation is NOT purged (purge only on known-true). The hook also
+   exposes unknown through `isLoading` for consumers that can surface it, but
+   the current adult-content consumers key their gate decisions off
+   `isVerified`, `confirmAdult`, and `getAuthHeader`, so confirmed adults may
+   see a brief locked state while the protected-minor check resolves. Smoothing
+   that adult experience stays in the follow-up support-trust-safety#180. This
+   matches the #452/#456 foundation's stated intent that #175 gates fail closed
+   on unknown, corrected from this spec's earlier fail-open draft.
 
 ## Out of scope
 
