@@ -15,8 +15,18 @@ dcadenas on the PR before merge.
     / `_@divinehq.divine.video`, minorContactable
   - Divine Moderation `8fd5eb6d8f362163bc00a5ab6b4a3167dbf32d00ec4efdbcf43b3c9514433b7e`
     / `moderation@divine.video`, minorContactable
-- **NIP-05 leg:** fail open on network failure, fail closed on affirmative
-  mismatch; 1h TTL; per-entry canonical identifier.
+- **NIP-05 leg (amended 2026-07-07 after pressure-testing):** graded drop
+  signals — different-key resolution drops immediately; affirmative absence
+  requires a confirming ~5-minute recheck (a name-server hiccup must not
+  mass-revoke support access); network failure keeps last-known state
+  (pin-trusted on cold start). 1h TTL for the background/inbound cache, plus
+  **send-time freshness**: the async send path awaits a fresh resolution when
+  the cache is stale. Per-entry canonical identifier. The mobile spec's
+  "Threat model and accepted risks" section (reachability-bounded revocation,
+  storage-clear un-revocation, client-side-only inbound enforcement) and its
+  pre-merge ops launch checklist (revocation runbook, tier-2 name monitoring,
+  two-person-rule decision) apply to web identically — web persists last-known
+  leg state in localStorage.
 - **Activation:** enforce when `useProtectedMinorStatus` resolves `protected`;
   never-resolved unknown does not enforce; sticky through transient unknowns
   (persist last-known protected, lift only on positive not-protected — web adds
