@@ -680,6 +680,8 @@ describe('VideoPlayer', () => {
         throw new Error('expected rendered video element');
       }
 
+      playSpy.mockClear();
+
       let currentTimeValue = 6.4;
       Object.defineProperty(video, 'currentTime', {
         get: () => currentTimeValue,
@@ -758,6 +760,33 @@ describe('VideoPlayer', () => {
         'shared-video-id',
         expect.any(HTMLVideoElement)
       );
+    });
+  });
+
+  describe('active playback startup', () => {
+    it('starts an active video before loadeddata fires', async () => {
+      const playSpy = vi.fn().mockResolvedValue(undefined);
+      HTMLMediaElement.prototype.play = playSpy;
+
+      const { useVideoPlayback } = await import('@/hooks/useVideoPlayback');
+      (useVideoPlayback as ReturnType<typeof vi.fn>).mockImplementation(() => ({
+        activeVideoId: 'ios-metadata-only',
+        registerVideo: mockRegisterVideo,
+        unregisterVideo: mockUnregisterVideo,
+        updateVideoVisibility: mockUpdateVideoVisibility,
+        globalMuted: true,
+      }));
+
+      render(
+        <VideoPlayer
+          videoId="ios-metadata-only"
+          src="https://example.com/ios-metadata-only.mp4"
+        />
+      );
+
+      await waitFor(() => {
+        expect(playSpy).toHaveBeenCalledTimes(1);
+      });
     });
   });
 

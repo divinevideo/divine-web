@@ -270,7 +270,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
 
       // Actually control the video element
       if (videoRef.current) {
-        if (isActive && !isLoading && !hasError) {
+        if (isActive && !hasError) {
           verboseLog(`[VideoPlayer ${videoId}] Starting playback`);
           // Ensure video is not already playing before calling play()
           if (videoRef.current.paused) {
@@ -289,13 +289,13 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
           videoRef.current.currentTime = 0;
         }
       }
-    }, [isActive, videoId, isLoading, hasError]);
+    }, [isActive, videoId, hasError]);
 
     // Sync video muted state with global muted state
     useEffect(() => {
       if (videoRef.current) {
         const video = videoRef.current;
-        const shouldBePlayingCheck = isActive && !isLoading && !hasError;
+        const shouldBePlayingCheck = isActive && !hasError;
 
         verboseLog(`[VideoPlayer ${videoId}] Syncing muted state to: ${globalMuted}, isActive: ${isActive}, shouldBePlaying: ${shouldBePlayingCheck}`);
 
@@ -331,7 +331,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
           }, 100);
         }
       }
-    }, [globalMuted, videoId, isActive, isLoading, hasError]);
+    }, [globalMuted, videoId, isActive, hasError]);
 
     // Handle play/pause
     const togglePlay = useCallback(() => {
