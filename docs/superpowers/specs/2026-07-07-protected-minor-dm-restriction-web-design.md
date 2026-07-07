@@ -130,3 +130,35 @@ channel, an unprovisioned/404 `divinehq` well-known reads as affirmative-absence
 and (after the 5-min recheck) revokes the primary support channel for every
 protected minor. The launch-checklist monitor must probe the `divinehq`
 subdomain origin specifically, as its own dependency, before this ships.
+
+## Corrections round 2 — second adversarial review + fail-safe decision (2026-07-07)
+
+### C-B3 — web protected-state fails CLOSED and PERSISTENT (reverses fail-open)
+
+`useProtectedMinorStatus` is `staleTime: 0` + `refetchOnWindowFocus: true` and
+its own comment says "self-healing rather than sticky"; `fetchProtectedMinorStatus`
+RETURNS `UNKNOWN` on failure (not throws), so React Query stores it as success
+and OVERWRITES a prior `protected` on any focus-refetch failure — web fails open
+on every window refocus. No localStorage store exists. Required (mirrors mobile
+C-B2): persist last-known `protected` to localStorage; on `unknown`, fall back to
+the persisted value and never overwrite a `protected` entry with `unknown`; the
+safety requirement wins over the hook's "self-healing not sticky" intent for
+this tier. Same suppression logic as mobile: the restricted party can force the
+failed refetch, so it must fail closed.
+
+### C-S4 — bridge the support-key migration so minors don't lose in-flight threads
+
+Migrating `DIVINE_SUPPORT_PUBKEY` (`78a5c21b…`) to HQ orphans any existing
+minor↔`78a5c21b` support conversation: for a protected minor it is filtered out
+(not in the approved set) AND the synthetic support row now points at HQ, so the
+minor loses the thread and can't receive replies on it. Grandfather `78a5c21b`
+as read-allowed for existing threads (or migrate conversation ids), and confirm
+HQ's DM inbox is actually staffed before pointing minors at it. Sweep all four
+sites (`dm.ts`, `MessagesPage.tsx`, `Support.tsx`, `ConversationPage.tsx`).
+
+### Web metadata leak: none new — unread inherits the filter
+
+`useUnreadDmCount` derives from `useDmConversations`→`groupDmConversations`, the
+same seam the filter lands on, so it inherits filtering (unlike mobile's
+independent cubit) provided the filter is applied inside/after
+`groupDmConversations`.
