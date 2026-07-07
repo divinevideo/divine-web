@@ -87,3 +87,46 @@ migration renders HQ. Follow the existing `dm.ts`/hooks test harnesses.
 Web this branch/PR. Depends on nothing new — protected-minor state (#456) is
 merged and currently unconsumed on this surface. The #453 adult-content lock
 lands separately (PR #473). Parent-approved allowlist is #455 [later].
+
+## Corrections after adversarial review (2026-07-07)
+
+Independent adversarial review (verified against code) found web-specific holes;
+these supersede conflicting text above.
+
+### C-H3 — thread view needs its own guard (was: only conversation-list filtered)
+
+Enforcement point #2 filtered `useDmConversations` (:310), but the thread renders
+through the separate `useDmConversation` (:363) → `useDmMessages` raw cache, which
+is unfiltered. `ConversationPage` decodes the peer from the URL, so a protected
+minor deep-linking to `/messages/<non-approved-peer>` sees full history. Add a
+**thread-route guard** mirroring mobile: when protected and the conversation
+counterparty is non-approved, block the thread render (redirect to inbox with a
+notice) — not merely hide compose. Also re-apply the approved predicate inside
+`useDmConversation`'s result so a revoked counterparty's already-open thread
+clears on revalidation.
+
+### C-H2/M2 — `resolveNip05` gets the same discriminated result + limits
+
+`src/lib/officialAccounts.ts` `resolveNip05` returns
+`{ matched | differentKey | absent | networkError }` with fetch timeout,
+redirect cap, size cap, and lowercase+trim hex normalization (mirrors the mobile
+resolver corrections C-H2/M1/M3). The graded drop / fail-open rules attach to
+this, and send-time freshness awaits any in-flight resolution rather than
+treating concurrency as failure.
+
+### C-L2 — the personal-key migration must sweep ALL sites
+
+`78a5c21b…2738` is referenced in `src/lib/dm.ts`, `src/pages/MessagesPage.tsx`,
+`src/pages/Support.tsx`, and `src/pages/ConversationPage.tsx` — not just
+MessagesPage. Migrating only one leaves the personal key a reachable compose
+target that is not an approved recipient. Sweep all four; the constant should
+resolve to the HQ account (or be removed in favor of `PINNED_OFFICIAL_ACCOUNTS`).
+
+### C-M4 — HQ's subdomain is a distinct failure domain the migration depends on
+
+`_@divinehq.divine.video` resolves against the `divinehq.divine.video` origin,
+separate from `divine.video`. Since the migration makes HQ the primary support
+channel, an unprovisioned/404 `divinehq` well-known reads as affirmative-absence
+and (after the 5-min recheck) revokes the primary support channel for every
+protected minor. The launch-checklist monitor must probe the `divinehq`
+subdomain origin specifically, as its own dependency, before this ships.
