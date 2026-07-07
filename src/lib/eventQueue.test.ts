@@ -1,19 +1,28 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { NostrEvent } from '@nostrify/nostrify';
 
-import type { ProductAnalyticsEvent } from './eventQueue';
-
-const baseEvent: ProductAnalyticsEvent = {
-  event_id: '018ff7d7-0000-7000-8000-000000000001',
-  event_name: 'session_started',
-  occurred_at: '2026-07-07T00:00:00.000Z',
-  anonymous_id: '018ff7d7-0000-7000-8000-000000000002',
-  session_id: '018ff7d7-0000-7000-8000-000000000003',
-  user_pubkey: 'a'.repeat(64),
-  platform: 'web',
-  app_version: '0.0.0',
-  surface: 'home',
-  schema_version: 1,
-  properties: {},
+const baseEvent: NostrEvent = {
+  id: '018ff7d7000070008000000000000001',
+  pubkey: 'a'.repeat(64),
+  created_at: 1783382400,
+  kind: 22237,
+  tags: [
+    ['client', 'divine-web'],
+    ['schema', 'product_analytics_v1'],
+    ['event_name', 'session_started'],
+  ],
+  content: JSON.stringify({
+    event_name: 'session_started',
+    occurred_at: '2026-07-07T00:00:00.000Z',
+    anonymous_id: '018ff7d7-0000-7000-8000-000000000002',
+    session_id: '018ff7d7-0000-7000-8000-000000000003',
+    platform: 'web',
+    app_version: '0.0.0',
+    surface: 'home',
+    schema_version: 1,
+    properties: {},
+  }),
+  sig: 'b'.repeat(128),
 };
 
 describe('ProductEventQueue', () => {

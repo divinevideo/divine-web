@@ -1,10 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { NostrSigner } from '@nostrify/nostrify';
 
-vi.mock('./nip98Auth', () => ({
-  createNip98AuthHeader: vi.fn().mockResolvedValue('Nostr signed-auth'),
-}));
-
 const consent = vi.hoisted(() => ({ value: true as boolean | null }));
 vi.mock('./cookieConsent', () => ({
   getAnalyticsConsent: () => consent.value,
@@ -12,7 +8,12 @@ vi.mock('./cookieConsent', () => ({
 
 const pubkey = 'b'.repeat(64);
 const signer = {
-  signEvent: vi.fn(),
+  signEvent: vi.fn(async (template) => ({
+    ...template,
+    id: 'c'.repeat(64),
+    pubkey,
+    sig: 'd'.repeat(128),
+  })),
 } as unknown as NostrSigner;
 
 function createStorage() {
@@ -79,9 +80,8 @@ describe('analyticsClient', () => {
     expect(await productAnalytics.queue.getFlushableBatch(10)).toHaveLength(0);
   });
 
-  it('posts a signed batch and preserves the event id until the server accepts it', async () => {
-    const { createNip98AuthHeader } = await import('./nip98Auth');
-    const { productAnalytics, configureProductAnalyticsIdentity } = await import('./analyticsClient');
+  it('posts a batch of signed custom Nostr telemetry events', async () => {
+    const { productAnalytics, configureProductAnalyticsIdentity, PRODUCT_ANALYTICS_EVENT_KIND } = await import('./analyticsClient');
     configureProductAnalyticsIdentity({ userPubkey: pubkey, signer });
 
     const eventId = await productAnalytics.track('session_started', { surface: 'home' });
@@ -92,20 +92,31 @@ describe('analyticsClient', () => {
     expect(fetchCall[1]?.method).toBe('POST');
     expect(fetchCall[1]?.headers).toMatchObject({
       Accept: 'application/json',
-      Authorization: 'Nostr signed-auth',
       'Content-Type': 'application/json',
     });
-    expect(createNip98AuthHeader).toHaveBeenCalledWith(
-      signer,
-      'https://api.divine.video/api/analytics/events',
-      'POST',
-      fetchCall[1]?.body,
-    );
-    expect(JSON.parse(fetchCall[1]?.body as string).events[0].event_id).toBe(eventId);
+    expect(signer.signEvent).toHaveBeenCalledWith(expect.objectContaining({
+      kind: PRODUCT_ANALYTICS_EVENT_KIND,
+      content: expect.stringContaining('"event_name":"session_started"'),
+      tags: expect.arrayContaining([
+        ['client', 'divine-web'],
+        ['schema', 'product_analytics_v1'],
+        ['event_name', 'session_started'],
+        ['surface', 'home'],
+      ]),
+    }));
+    const event = JSON.parse(fetchCall[1]?.body as string).events[0];
+    expect(event.id).toBe(eventId);
+    expect(event.pubkey).toBe(pubkey);
+    expect(event.kind).toBe(PRODUCT_ANALYTICS_EVENT_KIND);
+    expect(JSON.parse(event.content)).toMatchObject({
+      event_name: 'session_started',
+      user_pubkey: pubkey,
+      surface: 'home',
+    });
     expect(await productAnalytics.queue.getFlushableBatch(10)).toHaveLength(0);
   });
 
-  it('keeps events queued when signing is unavailable', async () => {
+  it('does not enqueue events when signing is unavailable', async () => {
     const { productAnalytics, configureProductAnalyticsIdentity } = await import('./analyticsClient');
     configureProductAnalyticsIdentity({ userPubkey: pubkey });
 
@@ -113,6 +124,6 @@ describe('analyticsClient', () => {
     await productAnalytics.flush();
 
     expect(fetch).not.toHaveBeenCalled();
-    expect(await productAnalytics.queue.getFlushableBatch(10)).toHaveLength(1);
+    expect(await productAnalytics.queue.getFlushableBatch(10)).toHaveLength(0);
   });
 });

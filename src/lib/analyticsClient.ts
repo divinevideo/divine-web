@@ -2,8 +2,42 @@ import type { NostrSigner } from '@nostrify/nostrify';
 
 import { getFunnelcakeBaseUrl } from '@/config/api';
 import { getAnalyticsConsent } from '@/lib/cookieConsent';
-import { ProductEventQueue, productEventQueue, type ProductAnalyticsEvent } from '@/lib/eventQueue';
-import { createNip98AuthHeader } from '@/lib/nip98Auth';
+import { ProductEventQueue, productEventQueue } from '@/lib/eventQueue';
+
+export const PRODUCT_ANALYTICS_EVENT_KIND = 22237;
+
+interface ProductAnalyticsPayload {
+  event_name: ProductAnalyticsEventName;
+  occurred_at: string;
+  anonymous_id: string;
+  session_id: string;
+  user_pubkey: string;
+  platform: 'web';
+  app_version: string;
+  surface: string;
+  schema_version: 1;
+  properties: Record<string, unknown>;
+  build_number?: string;
+  locale?: string;
+  country?: string;
+  entry_point?: string;
+  flow_name?: string;
+  step_name?: string;
+  result?: string;
+  reason_code?: string;
+  content_id?: string;
+  creator_pubkey?: string;
+  feed_algorithm?: string;
+  traffic_source?: string;
+  feature_key?: string;
+  experiment_key?: string;
+  variant_key?: string;
+  variation_id?: number;
+  duration_ms?: number;
+  position_ms?: number;
+  loop_count?: number;
+  value?: number;
+}
 
 export type ProductAnalyticsEventName =
   | 'session_started'
@@ -14,8 +48,8 @@ export type ProductAnalyticsEventName =
   | 'sentiment_prompt_answered';
 
 export type ProductAnalyticsProps = Partial<Omit<
-  ProductAnalyticsEvent,
-  'event_id' | 'event_name' | 'occurred_at' | 'anonymous_id' | 'session_id' | 'platform' | 'app_version' | 'schema_version'
+  ProductAnalyticsPayload,
+  'event_name' | 'occurred_at' | 'anonymous_id' | 'session_id' | 'platform' | 'app_version' | 'schema_version'
 >> & {
   properties?: Record<string, unknown>;
 };
@@ -62,17 +96,17 @@ export class ProductAnalyticsClient {
       return null;
     }
 
+    const signer = currentIdentity.signer;
     const userPubkey = props.user_pubkey ?? currentIdentity.userPubkey;
-    if (!userPubkey) {
+    if (!userPubkey || !signer) {
       return null;
     }
 
-    const eventId = createUuid();
-    const event: ProductAnalyticsEvent = compactEvent({
+    const occurredAt = new Date();
+    const payload: ProductAnalyticsPayload = compactPayload({
       ...props,
-      event_id: eventId,
       event_name: eventName,
-      occurred_at: new Date().toISOString(),
+      occurred_at: occurredAt.toISOString(),
       anonymous_id: getAnonymousId(),
       session_id: getSessionId(),
       user_pubkey: userPubkey,
@@ -83,15 +117,20 @@ export class ProductAnalyticsClient {
       schema_version: 1,
       properties: props.properties ?? {},
     });
+    const signedEvent = await signer.signEvent({
+      kind: PRODUCT_ANALYTICS_EVENT_KIND,
+      content: JSON.stringify(payload),
+      created_at: Math.floor(occurredAt.getTime() / 1000),
+      tags: buildTelemetryTags(payload),
+    });
 
-    await this.queue.enqueue(event);
+    await this.queue.enqueue(signedEvent);
     void this.flush();
-    return eventId;
+    return signedEvent.id;
   }
 
   async flush(): Promise<void> {
-    const signer = currentIdentity.signer;
-    if (!signer || !canCollectAnalytics()) {
+    if (!canCollectAnalytics()) {
       return;
     }
 
@@ -106,17 +145,12 @@ export class ProductAnalyticsClient {
       sent_at: new Date().toISOString(),
       events: records.map((record) => record.event),
     });
-    const authHeader = await createNip98AuthHeader(signer, url, 'POST', body);
-    if (!authHeader) {
-      return;
-    }
 
     try {
       const response = await fetch(url, {
         method: 'POST',
         headers: {
           Accept: 'application/json',
-          Authorization: authHeader,
           'Content-Type': 'application/json',
         },
         body,
@@ -216,10 +250,36 @@ function createUuid(): string {
   });
 }
 
-function compactEvent(event: ProductAnalyticsEvent): ProductAnalyticsEvent {
+function buildTelemetryTags(payload: ProductAnalyticsPayload): string[][] {
+  const tags: string[][] = [
+    ['client', 'divine-web'],
+    ['schema', 'product_analytics_v1'],
+    ['event_name', payload.event_name],
+    ['surface', payload.surface],
+    ['session', payload.session_id],
+    ['platform', payload.platform],
+  ];
+
+  if (payload.content_id) {
+    tags.push(['e', payload.content_id]);
+  }
+  if (payload.creator_pubkey) {
+    tags.push(['p', payload.creator_pubkey]);
+  }
+  if (payload.feature_key) {
+    tags.push(['feature_key', payload.feature_key]);
+  }
+  if (payload.experiment_key) {
+    tags.push(['experiment_key', payload.experiment_key]);
+  }
+
+  return tags;
+}
+
+function compactPayload(payload: ProductAnalyticsPayload): ProductAnalyticsPayload {
   return Object.fromEntries(
-    Object.entries(event).filter(([, value]) => value !== undefined),
-  ) as ProductAnalyticsEvent;
+    Object.entries(payload).filter(([, value]) => value !== undefined),
+  ) as ProductAnalyticsPayload;
 }
 
 export const productAnalytics = new ProductAnalyticsClient();

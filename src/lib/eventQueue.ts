@@ -1,46 +1,14 @@
+import type { NostrEvent } from '@nostrify/nostrify';
+
 export const PRODUCT_EVENT_MAX_ATTEMPTS = 5;
 
 const DB_NAME = 'divine_product_events';
 const DB_VERSION = 1;
 const STORE_NAME = 'product_event_queue';
 
-export interface ProductAnalyticsEvent {
-  event_id: string;
-  event_name: string;
-  occurred_at: string;
-  anonymous_id: string;
-  session_id: string;
-  user_pubkey: string;
-  platform: 'web';
-  app_version: string;
-  surface: string;
-  schema_version: 1;
-  properties: Record<string, unknown>;
-  build_number?: string;
-  locale?: string;
-  country?: string;
-  entry_point?: string;
-  flow_name?: string;
-  step_name?: string;
-  result?: string;
-  reason_code?: string;
-  content_id?: string;
-  creator_pubkey?: string;
-  feed_algorithm?: string;
-  traffic_source?: string;
-  feature_key?: string;
-  experiment_key?: string;
-  variant_key?: string;
-  variation_id?: number;
-  duration_ms?: number;
-  position_ms?: number;
-  loop_count?: number;
-  value?: number;
-}
-
 export interface ProductEventQueueRecord {
   id: string;
-  event: ProductAnalyticsEvent;
+  event: NostrEvent;
   created_at: number;
   next_attempt_at: number;
   attempt_count: number;
@@ -62,9 +30,9 @@ export class ProductEventQueue {
     this.initPromise = this.init();
   }
 
-  async enqueue(event: ProductAnalyticsEvent): Promise<void> {
+  async enqueue(event: NostrEvent): Promise<void> {
     const record: ProductEventQueueRecord = {
-      id: event.event_id,
+      id: event.id,
       event,
       created_at: Date.now(),
       next_attempt_at: Date.now(),
