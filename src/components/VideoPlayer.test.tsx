@@ -680,6 +680,8 @@ describe('VideoPlayer', () => {
         throw new Error('expected rendered video element');
       }
 
+      playSpy.mockClear();
+
       let currentTimeValue = 6.4;
       Object.defineProperty(video, 'currentTime', {
         get: () => currentTimeValue,
@@ -758,6 +760,78 @@ describe('VideoPlayer', () => {
         'shared-video-id',
         expect.any(HTMLVideoElement)
       );
+    });
+  });
+
+  describe('active playback startup', () => {
+    it('starts an active video before loadeddata fires', async () => {
+      const playSpy = vi.fn().mockResolvedValue(undefined);
+      HTMLMediaElement.prototype.play = playSpy;
+
+      const { useVideoPlayback } = await import('@/hooks/useVideoPlayback');
+      (useVideoPlayback as ReturnType<typeof vi.fn>).mockImplementation(() => ({
+        activeVideoId: 'ios-metadata-only',
+        registerVideo: mockRegisterVideo,
+        unregisterVideo: mockUnregisterVideo,
+        updateVideoVisibility: mockUpdateVideoVisibility,
+        globalMuted: true,
+      }));
+
+      render(
+        <VideoPlayer
+          videoId="ios-metadata-only"
+          src="https://example.com/ios-metadata-only.mp4"
+        />
+      );
+
+      await waitFor(() => {
+        expect(playSpy).toHaveBeenCalledTimes(1);
+      });
+    });
+
+    it('resumes an active video after switching to a fallback URL', async () => {
+      const playSpy = vi.fn().mockResolvedValue(undefined);
+      HTMLMediaElement.prototype.play = playSpy;
+
+      const { useVideoPlayback } = await import('@/hooks/useVideoPlayback');
+      (useVideoPlayback as ReturnType<typeof vi.fn>).mockImplementation(() => ({
+        activeVideoId: 'fallback-resume',
+        registerVideo: mockRegisterVideo,
+        unregisterVideo: mockUnregisterVideo,
+        updateVideoVisibility: mockUpdateVideoVisibility,
+        globalMuted: true,
+      }));
+
+      const { container } = render(
+        <VideoPlayer
+          videoId="fallback-resume"
+          src="https://example.com/primary.mp4"
+          fallbackUrls={['https://example.com/fallback.mp4']}
+        />
+      );
+
+      const video = container.querySelector('video');
+      expect(video).not.toBeNull();
+      if (!video) {
+        throw new Error('expected rendered video element');
+      }
+
+      await waitFor(() => {
+        expect(playSpy).toHaveBeenCalledTimes(1);
+      });
+
+      playSpy.mockClear();
+      fireEvent.error(video);
+
+      await waitFor(() => {
+        expect(video.src).toBe('https://example.com/fallback.mp4');
+      });
+
+      fireEvent.loadedData(video);
+
+      await waitFor(() => {
+        expect(playSpy).toHaveBeenCalledTimes(1);
+      });
     });
   });
 
