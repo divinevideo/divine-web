@@ -20,6 +20,7 @@ import { UserPlus, UserCheck, CheckCircle, PencilSimple as Pencil, Copy, DotsThr
 import { useNavigate } from 'react-router-dom';
 import { feedUrls } from '@/lib/feedUrls';
 import { useRssFeedAvailable } from '@/hooks/useRssFeedAvailable';
+import { useDmComposeGuard } from '@/hooks/useDmComposeGuard';
 import { ReportContentDialog } from '@/components/ReportContentDialog';
 import { UserListDialog } from '@/components/UserListDialog';
 import { LinkedAccounts } from '@/components/LinkedAccounts';
@@ -105,6 +106,10 @@ export function ProfileHeader({
   const [showReportDialog, setShowReportDialog] = useState(false);
   const [userListDialog, setUserListDialog] = useState<'followers' | 'following' | null>(null);
   const { canUseDirectMessages } = useDmCapability();
+  // Protected-minor DM restriction (#176): hide the Message affordance when a
+  // protected minor views a non-approved profile (the send gate + route guard
+  // would block it anyway; this avoids the dead end).
+  const { isComposeBlocked } = useDmComposeGuard();
 
   // Fetch followers/following when dialog is open
   const followersQuery = useFollowers(userListDialog === 'followers' ? pubkey : '');
@@ -352,7 +357,7 @@ export function ProfileHeader({
                 </>
               )}
             </Button>
-            {canUseDirectMessages && (
+            {canUseDirectMessages && !isComposeBlocked(pubkey) && (
               <Button
                 variant="outline"
                 size="sm"

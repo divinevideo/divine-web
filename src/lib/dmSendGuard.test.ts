@@ -1,5 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
-import { assertMinorDmRecipientsAllowed, DmSendBlockedError } from './dmSendGuard';
+import {
+  assertMinorDmRecipientsAllowed,
+  DmSendBlockedError,
+  isDmComposeBlockedForMinor,
+} from './dmSendGuard';
 
 const HQ = 'c4a39f1291291d452405cd8ddd798c4a29a3858c52cd0d843f1f6852cf17682e';
 const STRANGER = 'de'.repeat(32);
@@ -35,5 +39,27 @@ describe('assertMinorDmRecipientsAllowed', () => {
         service,
       }),
     ).rejects.toBeInstanceOf(DmSendBlockedError);
+  });
+});
+
+describe('isDmComposeBlockedForMinor', () => {
+  const isApproved = (pubkey: string) => pubkey === HQ;
+
+  it('never blocks a non-restricted user', () => {
+    expect(
+      isDmComposeBlockedForMinor(STRANGER, { isProtectedMinor: false, isApproved }),
+    ).toBe(false);
+  });
+
+  it('allows a protected minor to compose to an approved account', () => {
+    expect(
+      isDmComposeBlockedForMinor(HQ, { isProtectedMinor: true, isApproved }),
+    ).toBe(false);
+  });
+
+  it('blocks a protected minor composing to a non-approved account', () => {
+    expect(
+      isDmComposeBlockedForMinor(STRANGER, { isProtectedMinor: true, isApproved }),
+    ).toBe(true);
   });
 });

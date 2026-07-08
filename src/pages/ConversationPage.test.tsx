@@ -44,6 +44,16 @@ const {
   } as Record<string, { metadata: { display_name?: string; name?: string; picture?: string; nip05?: string } }>,
 }));
 
+vi.mock('@/hooks/useProtectedMinorStatus', () => ({
+  useIsProtectedMinor: () => false,
+  useProtectedMinorStatus: () => ({
+    state: 'not_protected',
+    isProtectedMinor: false,
+    isKnown: true,
+    verifiedMinorAt: null,
+  }),
+}));
+
 vi.mock('@/hooks/useDirectMessages', () => ({
   useDmCapability: () => ({ canUseDirectMessages: true, isCheckingDmCapability: false }),
   useDmConversation: () => ({

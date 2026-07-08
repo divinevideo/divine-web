@@ -34,3 +34,17 @@ export async function assertMinorDmRecipientsAllowed(
     }
   }
 }
+
+/**
+ * Whether the compose affordance to [recipientPubkey] should be HIDDEN — a
+ * protected minor composing to a non-approved account. Sync (for rendering);
+ * backed by the same approval the send gate enforces, so hiding it just avoids
+ * a dead-end that the gate would block anyway. Never blocks a non-restricted
+ * user.
+ */
+export function isDmComposeBlockedForMinor(
+  recipientPubkey: string,
+  opts: { isProtectedMinor: boolean; isApproved: (pubkey: string) => boolean },
+): boolean {
+  return opts.isProtectedMinor && !opts.isApproved(recipientPubkey);
+}

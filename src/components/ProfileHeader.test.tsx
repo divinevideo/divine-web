@@ -26,6 +26,16 @@ vi.mock('@/hooks/useRssFeedAvailable', () => ({
   useRssFeedAvailable: () => false,
 }));
 
+vi.mock('@/hooks/useProtectedMinorStatus', () => ({
+  useIsProtectedMinor: () => false,
+  useProtectedMinorStatus: () => ({
+    state: 'not_protected',
+    isProtectedMinor: false,
+    isKnown: true,
+    verifiedMinorAt: null,
+  }),
+}));
+
 vi.mock('@/hooks/useDirectMessages', () => ({
   useDmCapability: () => ({ canUseDirectMessages: false }),
 }));
