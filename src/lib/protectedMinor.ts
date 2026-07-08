@@ -53,17 +53,25 @@ export async function fetchProtectedMinorStatus(
     });
     if (!response.ok) return UNKNOWN_PROTECTED_MINOR_STATUS;
 
-    const body = (await response.json()) as {
+    const body = (await response.json()) as unknown;
+    // A malformed 200 (non-object body — an error page, truncated response, or
+    // a bare primitive) carries no trustworthy signal. Only a well-formed object
+    // with an explicit verified_minor is authoritative; otherwise stay unknown
+    // so the sticky store's last-known `protected` is never overwritten by junk.
+    if (typeof body !== 'object' || body === null || Array.isArray(body)) {
+      return UNKNOWN_PROTECTED_MINOR_STATUS;
+    }
+    const account = body as {
       verified_minor?: unknown;
       verified_minor_at?: unknown;
     };
-    if (body.verified_minor !== true) return NOT_PROTECTED;
+    if (account.verified_minor !== true) return NOT_PROTECTED;
 
     return {
       state: 'protected',
       isProtectedMinor: true,
       isKnown: true,
-      verifiedMinorAt: parseVerifiedMinorAt(body.verified_minor_at),
+      verifiedMinorAt: parseVerifiedMinorAt(account.verified_minor_at),
     };
   } catch {
     return UNKNOWN_PROTECTED_MINOR_STATUS;

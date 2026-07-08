@@ -96,6 +96,18 @@ describe('fetchProtectedMinorStatus', () => {
     expect(status.isKnown).toBe(false);
   });
 
+  it('is unknown (not not_protected) on a malformed non-object 200 body', async () => {
+    // A malformed 200 (an error page or truncated body deserialized to a
+    // non-object) must NOT read as a positive not_protected: through the sticky
+    // store that would overwrite a confirmed `protected`. Only a well-formed
+    // object with an explicit verified_minor is authoritative; anything else
+    // carries no trustworthy signal.
+    for (const body of ['unexpected', 42, ['x'], true] as const) {
+      const status = await fetchProtectedMinorStatus('t', fetchReturning(body));
+      expect(status.state).toBe('unknown');
+    }
+  });
+
   it('is unknown when fetch throws', async () => {
     const fetchImpl = vi
       .fn()
