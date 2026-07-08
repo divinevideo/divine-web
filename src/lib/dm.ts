@@ -386,6 +386,11 @@ function createWrapEvent(seal: NostrEvent, targetPubkey: string): NostrEvent {
  * use this function for the self copy — a self-wrap failure must not
  * abort delivery to the actual recipients (mirrors the pattern in
  * mobile/packages/dm_repository/lib/src/nip17_message_service.dart).
+ *
+ * INVARIANT (#176): the only caller is `useDmSend`, which runs the
+ * protected-minor send gate (`assertMinorDmRecipientsAllowed`) BEFORE this. Any
+ * new caller MUST gate first — this builder does not, so a bypass here would
+ * let a protected minor DM a non-approved account.
  */
 export async function createRecipientGiftWraps(input: CreateDmGiftWrapsInput): Promise<NostrEvent[]> {
   const { signer, senderPubkey, recipientPubkeys, content, additionalTags = [] } = input;
