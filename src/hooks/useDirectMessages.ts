@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useReducer, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNostrLogin } from '@nostrify/react/login';
 
@@ -10,6 +10,7 @@ import {
   assertMinorDmRecipientsAllowed,
   DmSendBlockedError,
 } from '@/lib/dmSendGuard';
+import { filterProtectedMinorConversations } from '@/lib/dmInboundFilter';
 import { officialAccountsService } from '@/lib/officialAccounts';
 import {
   buildDmShareTags,
@@ -317,11 +318,37 @@ export function useDmConversations(limit = 200) {
   const { user } = useCurrentUser();
   const messagesQuery = useDmMessages(limit);
   const { readState } = useDmReadState(user?.pubkey);
+  const isProtectedMinor = useIsProtectedMinor();
 
-  const conversations = useMemo<DmConversation[]>(
+  // Receive-time revalidation (#176): re-render when a persisted verdict flips
+  // so the list re-filters and a just-revoked official drops.
+  const [, bumpVerdicts] = useReducer((x: number) => x + 1, 0);
+  useEffect(() => officialAccountsService.onVerdictChanged(bumpVerdicts), []);
+
+  const grouped = useMemo<DmConversation[]>(
     () => groupDmConversations(messagesQuery.data?.messages || [], readState),
     [messagesQuery.data, readState],
   );
+
+  // Receive-time revalidation kick (#176): refresh each counterparty's verdict
+  // so a server-side revocation is pulled into the sync answer below; a flip
+  // re-renders via `bumpVerdicts`.
+  if (isProtectedMinor) {
+    for (const conversation of grouped) {
+      for (const pubkey of conversation.participantPubkeys) {
+        void officialAccountsService.isApprovedMinorDmRecipient(pubkey);
+      }
+    }
+  }
+
+  // Inbound filter (#176). Filtered each render — not memoized — so the fresh
+  // sync verdict always applies. Non-restricted users get `grouped` back by
+  // identity, so `useUnreadDmCount` (derived below) is unaffected for them.
+  const conversations = filterProtectedMinorConversations(grouped, {
+    isProtectedMinor,
+    isApproved: (pubkey) =>
+      officialAccountsService.isApprovedMinorDmRecipientSync(pubkey),
+  });
 
   return {
     ...messagesQuery,

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useReducer, useState } from 'react';
 import { ArrowLeft, ArrowUp, LinkSimple as Link2, X } from '@phosphor-icons/react';
 import { Link, useLocation, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -15,6 +15,8 @@ import {
   useParsedDmShare,
 } from '@/hooks/useDirectMessages';
 import { useSubdomainNavigate } from '@/hooks/useSubdomainNavigate';
+import { useIsProtectedMinor } from '@/hooks/useProtectedMinorStatus';
+import { officialAccountsService } from '@/lib/officialAccounts';
 import {
   DIVINE_SUPPORT_PUBKEY,
   decodeConversationId,
@@ -206,6 +208,31 @@ export function ConversationPage() {
       markConversationRead();
     }
   }, [lastReadAt, latestMessageAt, markConversationRead]);
+
+  // Thread route guard (#176): a protected minor must not open a thread with a
+  // non-approved counterparty via deep-link or a stale route (send + list
+  // already block those paths). Computed each render so a verdict flip
+  // re-evaluates; the counterparties are revalidated so a revoked official is
+  // caught after mount.
+  const isProtectedMinor = useIsProtectedMinor();
+  const [, bumpVerdicts] = useReducer((x: number) => x + 1, 0);
+  useEffect(() => officialAccountsService.onVerdictChanged(bumpVerdicts), []);
+  useEffect(() => {
+    if (isProtectedMinor) {
+      for (const pubkey of peerPubkeys) {
+        void officialAccountsService.isApprovedMinorDmRecipient(pubkey);
+      }
+    }
+  }, [isProtectedMinor, peerPubkeys]);
+  const threadBlocked =
+    isProtectedMinor &&
+    peerPubkeys.length > 0 &&
+    !peerPubkeys.every((pubkey) =>
+      officialAccountsService.isApprovedMinorDmRecipientSync(pubkey),
+    );
+  useEffect(() => {
+    if (threadBlocked) navigate('/messages', { replace: true });
+  }, [threadBlocked, navigate]);
 
   const peerNames = peerPubkeys.map((pubkey) => getDisplayName(pubkey, authorMap[pubkey]?.metadata, t));
   const title = peerNames.length === 1
