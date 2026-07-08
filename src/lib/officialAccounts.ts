@@ -293,3 +293,10 @@ export class OfficialAccountsService {
     }
   }
 }
+
+/**
+ * App-wide singleton (browser default: real fetch + localStorage). Shared by the
+ * send gate and the inbound filter so the last-known cache + onVerdictChanged
+ * stream are consistent across both.
+ */
+export const officialAccountsService = new OfficialAccountsService();

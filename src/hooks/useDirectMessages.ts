@@ -5,6 +5,12 @@ import { useNostrLogin } from '@nostrify/react/login';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { toast } from '@/hooks/useToast';
 import { useAppContext } from '@/hooks/useAppContext';
+import { useIsProtectedMinor } from '@/hooks/useProtectedMinorStatus';
+import {
+  assertMinorDmRecipientsAllowed,
+  DmSendBlockedError,
+} from '@/lib/dmSendGuard';
+import { officialAccountsService } from '@/lib/officialAccounts';
 import {
   buildDmShareTags,
   createRecipientGiftWraps,
@@ -389,6 +395,9 @@ export function useDmSend() {
   const queryClient = useQueryClient();
   const { user, signer } = useCurrentUser();
   const { config } = useAppContext();
+  // Protected-minor DM restriction (#176): captured per render so the send-time
+  // gate below sees the current status.
+  const isProtectedMinor = useIsProtectedMinor();
 
   return useMutation<{ relayUrls: string[] }, Error, SendDmInput, SendDmMutationContext>({
     onMutate: ({ clientId, participantPubkeys, content, share }) => {
@@ -438,6 +447,14 @@ export function useDmSend() {
       if (!recipients.length) {
         throw new Error('Choose at least one person to message');
       }
+
+      // Send gate (#176): a protected minor may only DM approved official
+      // accounts; a group is all-or-nothing. Checked before any wrap build or
+      // publish, so a blocked send leaks no metadata. Throws DmSendBlockedError.
+      await assertMinorDmRecipientsAllowed(recipients, {
+        isProtectedMinor,
+        service: officialAccountsService,
+      });
 
       const relayUrls = await resolveDmWriteRelays({
         appRelayUrls: config.relayUrls || [config.relayUrl],
@@ -492,17 +509,26 @@ export function useDmSend() {
       });
     },
     onError: (error, _variables, context) => {
+      // Protected-minor block (#176): distinct, user-facing copy — not the raw
+      // internal error, and not a transient "try again" framing.
+      const isBlocked = error instanceof DmSendBlockedError;
+      const description = isBlocked
+        ? 'You can only message official Divine accounts.'
+        : error instanceof Error
+          ? error.message
+          : 'Unable to send your message right now';
+
       if (user?.pubkey && context?.clientId) {
-        markDmOutboxRecordFailed(user.pubkey, context.clientId, error.message);
+        markDmOutboxRecordFailed(user.pubkey, context.clientId, description);
         updateOptimisticDmInAllCaches(queryClient, user.pubkey, context.clientId, {
           deliveryState: 'failed',
-          errorMessage: error.message,
+          errorMessage: description,
         });
       }
 
       toast({
-        title: 'Message failed',
-        description: error instanceof Error ? error.message : 'Unable to send your message right now',
+        title: isBlocked ? 'Message not sent' : 'Message failed',
+        description,
         variant: 'destructive',
       });
     },
