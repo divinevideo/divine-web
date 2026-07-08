@@ -32,7 +32,7 @@ folded in.
 1. Web has a **full** NIP-17 DM implementation (`src/lib/dm.ts`,
    `useDirectMessages.ts`, `MessagesPage`/`ConversationPage`), so this is a real
    send-block + inbound filter, not a future-surface guard.
-2. `DIVINE_SUPPORT_PUBKEY` (`dm.ts:17`) is the **personal key**
+2. `DIVINE_SUPPORT_PUBKEY` (`dm.ts`) was the **personal key**
    `78a5c21b5166dc1474b64ddf7454bf79e6b5d6b4a77148593bf1e866b73c2738`, referenced
    in `dm.ts`, `MessagesPage.tsx`, `Support.tsx`, and `ConversationPage.tsx`
    (four sites). Per #4948 it migrates to the pinned **Moderation** account
