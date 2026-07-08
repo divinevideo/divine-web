@@ -100,6 +100,19 @@ export interface OfficialAccount {
   minorContactable: boolean;
 }
 
+/** Divine HQ pinned pubkey (`_@divinehq.divine.video`). */
+export const DIVINE_HQ_PUBKEY =
+  'c4a39f1291291d452405cd8ddd798c4a29a3858c52cd0d843f1f6852cf17682e';
+
+/**
+ * Divine Moderation pinned pubkey (`moderation@divine.video`) — the official,
+ * NIP-05-verified support/contact identity. Re-exported as `DIVINE_SUPPORT_PUBKEY`
+ * (dm.ts) so the "Message Support" surfaces point at a pinned, minorContactable
+ * account rather than an unverifiable personal key.
+ */
+export const DIVINE_MODERATION_PUBKEY =
+  '8fd5eb6d8f362163bc00a5ab6b4a3167dbf32d00ec4efdbcf43b3c9514433b7e';
+
 /**
  * The pinned child-contactable set (verified live 2026-07-07). Additions are
  * release-gated by design — this is a child-contact list, so requiring a deploy
@@ -108,15 +121,13 @@ export interface OfficialAccount {
  */
 export const PINNED_OFFICIAL_ACCOUNTS: OfficialAccount[] = [
   {
-    pubkeyHex:
-      'c4a39f1291291d452405cd8ddd798c4a29a3858c52cd0d843f1f6852cf17682e',
+    pubkeyHex: DIVINE_HQ_PUBKEY,
     nip05: '_@divinehq.divine.video',
     role: 'hq',
     minorContactable: true,
   },
   {
-    pubkeyHex:
-      '8fd5eb6d8f362163bc00a5ab6b4a3167dbf32d00ec4efdbcf43b3c9514433b7e',
+    pubkeyHex: DIVINE_MODERATION_PUBKEY,
     nip05: 'moderation@divine.video',
     role: 'moderation',
     minorContactable: true,
