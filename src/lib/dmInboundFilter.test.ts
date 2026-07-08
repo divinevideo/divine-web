@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import type { DmConversation } from './dm';
-import { filterProtectedMinorConversations } from './dmInboundFilter';
+import {
+  filterProtectedMinorConversations,
+  isThreadAllowedForProtectedMinor,
+} from './dmInboundFilter';
 
 const HQ = 'c4a39f1291291d452405cd8ddd798c4a29a3858c52cd0d843f1f6852cf17682e';
 const STRANGER = 'de'.repeat(32);
@@ -44,5 +47,43 @@ describe('filterProtectedMinorConversations', () => {
       isApproved,
     });
     expect(out).toEqual([]);
+  });
+});
+
+describe('isThreadAllowedForProtectedMinor', () => {
+  it('allows any thread for a non-restricted user', () => {
+    expect(
+      isThreadAllowedForProtectedMinor([STRANGER], {
+        isProtectedMinor: false,
+        isApproved,
+      }),
+    ).toBe(true);
+  });
+
+  it('allows a thread whose peers are all approved', () => {
+    expect(
+      isThreadAllowedForProtectedMinor([HQ], {
+        isProtectedMinor: true,
+        isApproved,
+      }),
+    ).toBe(true);
+  });
+
+  it('blocks a thread with any non-approved peer', () => {
+    expect(
+      isThreadAllowedForProtectedMinor([HQ, STRANGER], {
+        isProtectedMinor: true,
+        isApproved,
+      }),
+    ).toBe(false);
+  });
+
+  it('allows an empty peer set (nothing to reveal)', () => {
+    expect(
+      isThreadAllowedForProtectedMinor([], {
+        isProtectedMinor: true,
+        isApproved,
+      }),
+    ).toBe(true);
   });
 });

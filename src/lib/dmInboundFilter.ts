@@ -22,3 +22,22 @@ export function filterProtectedMinorConversations(
     conversation.participantPubkeys.every(opts.isApproved),
   );
 }
+
+/**
+ * Whether a protected minor may view a single thread (all peers approved).
+ * Applied INSIDE the thread hook to clear the messages — defense-in-depth
+ * alongside the route guard, which redirects asynchronously and could otherwise
+ * flash history first. Empty peers (nothing loaded yet) is allowed — there's
+ * nothing to evaluate or reveal.
+ */
+export function isThreadAllowedForProtectedMinor(
+  peerPubkeys: string[],
+  opts: {
+    isProtectedMinor: boolean;
+    isApproved: (pubkey: string) => boolean;
+  },
+): boolean {
+  if (!opts.isProtectedMinor) return true;
+  if (peerPubkeys.length === 0) return true;
+  return peerPubkeys.every(opts.isApproved);
+}

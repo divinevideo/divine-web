@@ -10,7 +10,10 @@ import {
   assertMinorDmRecipientsAllowed,
   DmSendBlockedError,
 } from '@/lib/dmSendGuard';
-import { filterProtectedMinorConversations } from '@/lib/dmInboundFilter';
+import {
+  filterProtectedMinorConversations,
+  isThreadAllowedForProtectedMinor,
+} from '@/lib/dmInboundFilter';
 import { officialAccountsService } from '@/lib/officialAccounts';
 import {
   buildDmShareTags,
@@ -397,11 +400,32 @@ export function useDmConversation(conversationId: string | undefined, limit = 30
   const { user } = useCurrentUser();
   const messagesQuery = useDmMessages(limit);
   const { readState, markConversationRead } = useDmReadState(user?.pubkey);
+  const isProtectedMinor = useIsProtectedMinor();
+  const [, bumpVerdicts] = useReducer((x: number) => x + 1, 0);
+  useEffect(() => officialAccountsService.onVerdictChanged(bumpVerdicts), []);
 
-  const messages = useMemo<DmMessage[]>(
+  const threadMessages = useMemo<DmMessage[]>(
     () => (messagesQuery.data?.messages || []).filter((message) => message.conversationId === conversationId),
     [conversationId, messagesQuery.data],
   );
+
+  // Thread filter (#176): clear the thread when a protected minor's counterparty
+  // is not approved — defense-in-depth alongside ConversationPage's route guard
+  // (which redirects asynchronously, so history could otherwise flash). Checked
+  // each render so a verdict flip re-applies; peers are revalidated.
+  const peerPubkeys = threadMessages[0]?.peerPubkeys ?? [];
+  if (isProtectedMinor) {
+    for (const pubkey of peerPubkeys) {
+      void officialAccountsService.isApprovedMinorDmRecipient(pubkey);
+    }
+  }
+  const messages = isThreadAllowedForProtectedMinor(peerPubkeys, {
+    isProtectedMinor,
+    isApproved: (pubkey) =>
+      officialAccountsService.isApprovedMinorDmRecipientSync(pubkey),
+  })
+    ? threadMessages
+    : [];
 
   const latestMessageAt = messages[messages.length - 1]?.createdAt || 0;
   const lastReadAt = conversationId ? readState[conversationId] || 0 : 0;
