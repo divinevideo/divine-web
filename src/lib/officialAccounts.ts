@@ -44,7 +44,13 @@ export async function resolveOfficialNip05(
     response = await fetchImpl(url, {
       signal: controller.signal,
       headers: { Accept: 'application/json' },
-      redirect: 'follow',
+      // NIP-05 (§05): the .well-known/nostr.json endpoint MUST NOT redirect and
+      // fetchers MUST ignore redirects. Following a 30x is a spurious-APPROVE
+      // vector (a MITM/misconfigured origin could bounce the lookup to an
+      // attacker host that returns the expected key for a burner). `error`
+      // makes fetch reject on any redirect, which the catch maps to
+      // networkError (no signal) rather than trusting a redirect target's body.
+      redirect: 'error',
     });
   } catch {
     // Offline, timeout (abort), DNS, connection reset — no signal.

@@ -86,6 +86,25 @@ describe('resolveOfficialNip05', () => {
     expect(res).toEqual({ kind: 'networkError' });
   });
 
+  it('does not follow redirects (NIP-05: fetchers MUST ignore redirects)', async () => {
+    // Following a 30x lets a MITM/misconfigured origin bounce the well-known
+    // lookup to an attacker host whose 200 body returns the expected key for a
+    // burner — a spurious APPROVE. `redirect: 'error'` makes fetch reject on any
+    // redirect, which the catch maps to networkError (no signal).
+    const fetchImpl = fetchReturning({ names: { _: HQ } });
+    await resolveOfficialNip05(HQ_NIP05, HQ, { fetchImpl });
+    const init = (fetchImpl as unknown as { mock: { calls: unknown[][] } }).mock
+      .calls[0][1] as RequestInit;
+    expect(init.redirect).toBe('error');
+  });
+
+  it('a redirect (fetch rejects under redirect:error) is networkError, never matched', async () => {
+    const res = await resolveOfficialNip05(HQ_NIP05, HQ, {
+      fetchImpl: vi.fn().mockRejectedValue(new TypeError('redirect not allowed')) as unknown as typeof fetch,
+    });
+    expect(res).toEqual({ kind: 'networkError' });
+  });
+
   it('case+whitespace-normalized compare: padded/uppercase still matches', async () => {
     const res = await resolveOfficialNip05(HQ_NIP05, HQ, {
       fetchImpl: fetchReturning({ names: { _: `  ${HQ.toUpperCase()}\n` } }),

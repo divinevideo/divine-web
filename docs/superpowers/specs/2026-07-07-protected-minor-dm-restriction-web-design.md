@@ -35,7 +35,11 @@ folded in.
 2. `DIVINE_SUPPORT_PUBKEY` (`dm.ts:17`) is the **personal key**
    `78a5c21b5166dc1474b64ddf7454bf79e6b5d6b4a77148593bf1e866b73c2738`, referenced
    in `dm.ts`, `MessagesPage.tsx`, `Support.tsx`, and `ConversationPage.tsx`
-   (four sites). Per #4948 it migrates to HQ across **all four**.
+   (four sites). Per #4948 it migrates to the pinned **Moderation** account
+   (`8fd5eb6d…` / `moderation@divine.video`) across **all four** — single-sourced
+   via `DIVINE_SUPPORT_PUBKEY = DIVINE_MODERATION_PUBKEY` (`dm.ts`), so the three
+   consumer sites pick it up transitively. (Decision: Moderation, not HQ, because
+   its DM inbox is staffed for support and it is already in the approved set.)
 
 ## Architecture
 
@@ -78,14 +82,22 @@ folded in.
    revalidation. Group inbound requires ALL non-self participants approved.
    Unread count already inherits the filter (`useUnreadDmCount` derives from
    `groupDmConversations`), provided the filter is applied inside/after it.
-3. **Support-key migration (bridge, do not orphan):** migrating
-   `78a5c21b…` → HQ orphans any existing minor↔`78a5c21b` support thread — for a
-   protected minor it is filtered out AND the synthetic support row now points at
-   HQ, so the minor loses the thread and replies. Grandfather `78a5c21b` as
-   read-allowed for existing threads (or migrate conversation ids), sweep all
-   four sites, and confirm HQ's DM inbox is staffed before pointing minors there.
+3. **Support-key migration (orphan risk accepted, no bridge built — decided):**
+   repointing `78a5c21b…` → Moderation means any pre-existing minor↔`78a5c21b`
+   support thread is filtered out for a protected minor (the peer `78a5c21b` is
+   not in the approved set), so the minor would lose visibility of that thread.
+   **We accept this and do NOT build a grandfather bridge**, because: (a) the
+   protected-minor feature is unshipped, so no protected minor has an existing
+   `78a5c21b` thread today; the repoint lands before any protected minor exists,
+   so new support threads go to Moderation (approved) from the start; (b) the
+   failure is fail-**closed** — an orphaned old thread is hidden, never leaked;
+   (c) the only residual case is a user who messaged web "Message Support"
+   (→`78a5c21b`) before ship AND later becomes a protected minor, losing an old
+   support thread's history — negligible and non-safety. If that case ever
+   matters, grandfather `78a5c21b` as read-allowed for inbound display only
+   (never send-approved) as a follow-up.
 4. **Affordances:** hide compose paths to non-approved accounts when protected;
-   the `MessagesPage` support row points at HQ post-migration.
+   the `MessagesPage` support row points at Moderation post-repoint.
 
 ## Tests
 
@@ -94,7 +106,8 @@ different-key drop+persist, absence-recheck, network retention, TTL, case
 normalization); useDmSend gate (typed rejection, nothing published); list +
 **thread-view** filtering; group requires all participants; unread inherits;
 protected-state persistence (fails closed on unknown, never overwrites protected,
-localStorage survives reload); support-row migration renders HQ without orphaning.
+localStorage survives reload); support-row repoint renders the Moderation account
+(orphan of old-key threads accepted per §3, no bridge).
 Follow the existing `dm.ts`/hooks harnesses.
 
 ## Scope

@@ -69,6 +69,33 @@ vi.mock('@/hooks/useToast', () => ({
   toast: (...args: unknown[]) => mockToast(...args),
 }));
 
+// Mutable protected-minor state (#176) so enforcement tests can flip protection
+// and the approved set. Defaults preserve every existing test's non-protected
+// behavior. The real dmSendGuard / dmInboundFilter run against this stub service.
+const pm = vi.hoisted(() => ({
+  isProtectedMinor: false,
+  approved: new Set<string>(),
+}));
+
+vi.mock('@/hooks/useProtectedMinorStatus', () => ({
+  useIsProtectedMinor: () => pm.isProtectedMinor,
+  useProtectedMinorStatus: () => ({
+    state: pm.isProtectedMinor ? 'protected' : 'not_protected',
+    isProtectedMinor: pm.isProtectedMinor,
+    isKnown: true,
+    verifiedMinorAt: null,
+  }),
+}));
+
+vi.mock('@/lib/officialAccounts', async (orig) => ({
+  ...(await orig<typeof import('@/lib/officialAccounts')>()),
+  officialAccountsService: {
+    isApprovedMinorDmRecipientSync: (pk: string) => pm.approved.has(pk),
+    isApprovedMinorDmRecipient: async (pk: string) => pm.approved.has(pk),
+    onVerdictChanged: () => () => {},
+  },
+}));
+
 vi.mock('@/lib/dm', async () => {
   const actual = await vi.importActual<typeof import('@/lib/dm')>('@/lib/dm');
   return {
@@ -84,6 +111,7 @@ vi.mock('@/lib/dm', async () => {
 });
 
 import { encodeConversationId } from '@/lib/dm';
+import { DmSendBlockedError } from '@/lib/dmSendGuard';
 import { readDmOutbox, writeDmOutbox } from '@/lib/dmOutbox';
 import { useDmCapability, useDmConversation, useDmInboxStatus, useDmSend } from './useDirectMessages';
 
@@ -97,6 +125,8 @@ describe('useDirectMessages', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
     vi.clearAllMocks();
+    pm.isProtectedMinor = false;
+    pm.approved.clear();
     localStorageMock.clear();
     mockResolveDmReadRelays.mockResolvedValue(['wss://relay.example']);
     mockResolveDmWriteRelays.mockResolvedValue(['wss://relay.example']);
@@ -597,6 +627,118 @@ describe('useDirectMessages', () => {
         variant: 'destructive',
       }),
     );
+  });
+
+  describe('protected-minor enforcement wiring (#176)', () => {
+    it('blocks a protected minor from sending to a non-approved recipient and publishes nothing', async () => {
+      pm.isProtectedMinor = true; // RECIPIENT_PUBKEY is NOT in pm.approved
+
+      const queryClient = new QueryClient({
+        defaultOptions: {
+          queries: { retry: false },
+          mutations: { retry: false },
+        },
+      });
+
+      const { result } = renderHook(() => useDmSend(), {
+        wrapper: createWrapper(queryClient),
+      });
+
+      await expect(
+        result.current.mutateAsync({
+          participantPubkeys: [RECIPIENT_PUBKEY],
+          content: 'trying to reach a stranger',
+        }),
+      ).rejects.toThrow(DmSendBlockedError);
+
+      // The gate runs before any wrap build or publish — nothing leaks.
+      expect(mockCreateRecipientGiftWraps).not.toHaveBeenCalled();
+      expect(mockPublishDmMessages).not.toHaveBeenCalled();
+    });
+
+    it('allows a protected minor to send to an approved official recipient', async () => {
+      pm.isProtectedMinor = true;
+      pm.approved.add(RECIPIENT_PUBKEY);
+
+      const queryClient = new QueryClient({
+        defaultOptions: {
+          queries: { retry: false },
+          mutations: { retry: false },
+        },
+      });
+
+      const { result } = renderHook(() => useDmSend(), {
+        wrapper: createWrapper(queryClient),
+      });
+
+      await act(async () => {
+        await result.current.mutateAsync({
+          participantPubkeys: [RECIPIENT_PUBKEY],
+          content: 'hi support',
+        });
+      });
+
+      expect(mockPublishDmMessages).toHaveBeenCalled();
+    });
+
+    it('blocks a group send when any recipient is non-approved (all-or-nothing), publishing nothing', async () => {
+      const APPROVED = 'c'.repeat(64);
+      pm.isProtectedMinor = true;
+      pm.approved.add(APPROVED); // RECIPIENT_PUBKEY stays non-approved
+
+      const queryClient = new QueryClient({
+        defaultOptions: {
+          queries: { retry: false },
+          mutations: { retry: false },
+        },
+      });
+
+      const { result } = renderHook(() => useDmSend(), {
+        wrapper: createWrapper(queryClient),
+      });
+
+      await expect(
+        result.current.mutateAsync({
+          participantPubkeys: [APPROVED, RECIPIENT_PUBKEY],
+          content: 'group with one stranger',
+        }),
+      ).rejects.toThrow(DmSendBlockedError);
+
+      expect(mockPublishDmMessages).not.toHaveBeenCalled();
+    });
+
+    it('clears a thread with a non-approved peer for a protected minor', async () => {
+      vi.spyOn(Date, 'now').mockReturnValue(1_234_567_890_000);
+      pm.isProtectedMinor = true; // RECIPIENT_PUBKEY not approved
+
+      // A persisted outbox message to the non-approved peer would otherwise
+      // surface in the thread; the inbound filter must clear it.
+      writeDmOutbox(TEST_PUBKEY, [{
+        clientId: 'local-1',
+        ownerPubkey: TEST_PUBKEY,
+        participantPubkeys: [RECIPIENT_PUBKEY],
+        content: 'history that must not show',
+        createdAt: 1_234_567_890,
+        lastAttemptAt: 1_234_567_890,
+        deliveryState: 'sending',
+        retryCount: 0,
+      }]);
+
+      const queryClient = new QueryClient({
+        defaultOptions: {
+          queries: { retry: false },
+          mutations: { retry: false },
+        },
+      });
+
+      const { result } = renderHook(
+        () => useDmConversation(encodeConversationId([RECIPIENT_PUBKEY])),
+        { wrapper: createWrapper(queryClient) },
+      );
+
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+      expect(result.current.data).toEqual([]);
+    });
   });
 });
 
