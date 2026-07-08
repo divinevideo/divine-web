@@ -44,14 +44,28 @@ const {
   } as Record<string, { metadata: { display_name?: string; name?: string; picture?: string; nip05?: string } }>,
 }));
 
+const pm = vi.hoisted(() => ({
+  isProtectedMinor: false,
+  approved: new Set<string>(),
+}));
+
 vi.mock('@/hooks/useProtectedMinorStatus', () => ({
-  useIsProtectedMinor: () => false,
+  useIsProtectedMinor: () => pm.isProtectedMinor,
   useProtectedMinorStatus: () => ({
-    state: 'not_protected',
-    isProtectedMinor: false,
+    state: pm.isProtectedMinor ? 'protected' : 'not_protected',
+    isProtectedMinor: pm.isProtectedMinor,
     isKnown: true,
     verifiedMinorAt: null,
   }),
+}));
+
+vi.mock('@/lib/officialAccounts', async (orig) => ({
+  ...(await orig<typeof import('@/lib/officialAccounts')>()),
+  officialAccountsService: {
+    isApprovedMinorDmRecipientSync: (pk: string) => pm.approved.has(pk),
+    isApprovedMinorDmRecipient: async (pk: string) => pm.approved.has(pk),
+    onVerdictChanged: () => () => {},
+  },
 }));
 
 vi.mock('@/hooks/useDirectMessages', () => ({
@@ -115,6 +129,8 @@ function renderPage() {
 describe('ConversationPage', () => {
   beforeEach(async () => {
     vi.clearAllMocks();
+    pm.isProtectedMinor = false;
+    pm.approved.clear();
     const storage = new Map<string, string>();
     Object.defineProperty(window, 'localStorage', {
       configurable: true,
@@ -141,6 +157,37 @@ describe('ConversationPage', () => {
     directMessageState.share = null;
     mockSendMutate.mockImplementation(() => undefined);
     mockSendMutateAsync.mockImplementation(() => new Promise<void>(() => undefined));
+  });
+
+  describe('protected-minor thread route guard (#176)', () => {
+    it('redirects a protected minor away from a non-approved thread', async () => {
+      pm.isProtectedMinor = true; // RECIPIENT_PUBKEY not approved
+      renderPage();
+      await waitFor(() =>
+        expect(mockNavigate).toHaveBeenCalledWith('/messages', {
+          replace: true,
+        }),
+      );
+    });
+
+    it('does NOT redirect when the thread peer is an approved official', async () => {
+      pm.isProtectedMinor = true;
+      pm.approved.add(RECIPIENT_PUBKEY);
+      renderPage();
+      // let the guard effect run
+      await new Promise((r) => setTimeout(r, 20));
+      expect(mockNavigate).not.toHaveBeenCalledWith('/messages', {
+        replace: true,
+      });
+    });
+
+    it('does NOT redirect a non-protected user', async () => {
+      renderPage();
+      await new Promise((r) => setTimeout(r, 20));
+      expect(mockNavigate).not.toHaveBeenCalledWith('/messages', {
+        replace: true,
+      });
+    });
   });
 
   it('renders the composer with a two-line baseline', () => {

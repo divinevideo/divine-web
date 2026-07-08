@@ -41,7 +41,10 @@ const {
     },
   ] as DmConversation[],
   mockAuthorMap: {
-    ['78a5c21b5166dc1474b64ddf7454bf79e6b5d6b4a77148593bf1e866b73c2738']: {
+    // DIVINE_SUPPORT_PUBKEY now resolves to the Moderation pinned key (#176);
+    // key the support metadata under it so this exercises real metadata
+    // resolution rather than only the hard-coded display-name fallback.
+    ['8fd5eb6d8f362163bc00a5ab6b4a3167dbf32d00ec4efdbcf43b3c9514433b7e']: {
       metadata: {
         display_name: 'Divine Support',
         picture: 'https://example.com/support.png',
@@ -78,14 +81,28 @@ const {
   }>,
 }));
 
+const pm = vi.hoisted(() => ({
+  isProtectedMinor: false,
+  approved: new Set<string>(),
+}));
+
 vi.mock('@/hooks/useProtectedMinorStatus', () => ({
-  useIsProtectedMinor: () => false,
+  useIsProtectedMinor: () => pm.isProtectedMinor,
   useProtectedMinorStatus: () => ({
-    state: 'not_protected',
-    isProtectedMinor: false,
+    state: pm.isProtectedMinor ? 'protected' : 'not_protected',
+    isProtectedMinor: pm.isProtectedMinor,
     isKnown: true,
     verifiedMinorAt: null,
   }),
+}));
+
+vi.mock('@/lib/officialAccounts', async (orig) => ({
+  ...(await orig<typeof import('@/lib/officialAccounts')>()),
+  officialAccountsService: {
+    isApprovedMinorDmRecipientSync: (pk: string) => pm.approved.has(pk),
+    isApprovedMinorDmRecipient: async (pk: string) => pm.approved.has(pk),
+    onVerdictChanged: () => () => {},
+  },
 }));
 
 vi.mock('@/hooks/useDirectMessages', () => ({
@@ -121,6 +138,8 @@ function renderPage() {
 
 describe('MessagesPage', () => {
   beforeEach(async () => {
+    pm.isProtectedMinor = false;
+    pm.approved.clear();
     mockSearchResults.length = 0;
     mockInboxStatus.value = 'ok';
     mockConversations.length = 0;
@@ -250,5 +269,24 @@ describe('MessagesPage', () => {
 
     expect(screen.getByText('Alice')).toBeInTheDocument();
     expect(screen.queryByText('Rabble')).not.toBeInTheDocument();
+  });
+
+  it('filters compose search results to approved accounts for a protected minor (#176)', async () => {
+    const user = userEvent.setup();
+    const HQ = 'c4a39f1291291d452405cd8ddd798c4a29a3858c52cd0d843f1f6852cf17682e';
+    pm.isProtectedMinor = true;
+    pm.approved.add(HQ);
+
+    mockSearchResults.push(
+      { pubkey: HQ, metadata: { display_name: 'Divine HQ' } },
+      { pubkey: otherUserPubkey, metadata: { display_name: 'Alice' } },
+    );
+
+    renderPage();
+    await user.type(screen.getByRole('textbox'), 'a');
+
+    // Only the approved official is offered as a compose target.
+    expect(screen.getByText('Divine HQ')).toBeInTheDocument();
+    expect(screen.queryByText('Alice')).not.toBeInTheDocument();
   });
 });

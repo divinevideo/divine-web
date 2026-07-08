@@ -26,18 +26,35 @@ vi.mock('@/hooks/useRssFeedAvailable', () => ({
   useRssFeedAvailable: () => false,
 }));
 
+// Mutable so protected-minor tests can flip the state (#176). Defaults preserve
+// the prior behavior (non-protected, DMs off).
+const pm = vi.hoisted(() => ({
+  isProtectedMinor: false,
+  canUseDirectMessages: false,
+  approved: new Set<string>(),
+}));
+
 vi.mock('@/hooks/useProtectedMinorStatus', () => ({
-  useIsProtectedMinor: () => false,
+  useIsProtectedMinor: () => pm.isProtectedMinor,
   useProtectedMinorStatus: () => ({
-    state: 'not_protected',
-    isProtectedMinor: false,
+    state: pm.isProtectedMinor ? 'protected' : 'not_protected',
+    isProtectedMinor: pm.isProtectedMinor,
     isKnown: true,
     verifiedMinorAt: null,
   }),
 }));
 
 vi.mock('@/hooks/useDirectMessages', () => ({
-  useDmCapability: () => ({ canUseDirectMessages: false }),
+  useDmCapability: () => ({ canUseDirectMessages: pm.canUseDirectMessages }),
+}));
+
+vi.mock('@/lib/officialAccounts', async (orig) => ({
+  ...(await orig<typeof import('@/lib/officialAccounts')>()),
+  officialAccountsService: {
+    isApprovedMinorDmRecipientSync: (pk: string) => pm.approved.has(pk),
+    isApprovedMinorDmRecipient: async (pk: string) => pm.approved.has(pk),
+    onVerdictChanged: () => () => {},
+  },
 }));
 
 vi.mock('@/hooks/useFollowers', () => ({
@@ -89,6 +106,9 @@ const baseStats: ProfileStats = {
 
 describe('ProfileHeader', () => {
   beforeEach(async () => {
+    pm.isProtectedMinor = false;
+    pm.canUseDirectMessages = false;
+    pm.approved.clear();
     const storage = new Map<string, string>();
     Object.defineProperty(window, 'localStorage', {
       configurable: true,
@@ -100,6 +120,52 @@ describe('ProfileHeader', () => {
       } satisfies Pick<Storage, 'getItem' | 'setItem' | 'removeItem' | 'clear'>,
     });
     await initializeI18n({ force: true, languages: ['en-US'] });
+  });
+
+  describe('protected-minor Message affordance (#176)', () => {
+    const HQ =
+      'c4a39f1291291d452405cd8ddd798c4a29a3858c52cd0d843f1f6852cf17682e';
+    const renderFor = (pubkey: string) =>
+      render(
+        <MemoryRouter>
+          <ProfileHeader
+            pubkey={pubkey}
+            metadata={{ display_name: 'Someone' }}
+            stats={baseStats}
+            legacySocials={[]}
+            isOwnProfile={false}
+            isFollowing={false}
+            onFollowToggle={vi.fn()}
+          />
+        </MemoryRouter>,
+      );
+
+    it('shows the Message button for a non-protected user', () => {
+      pm.canUseDirectMessages = true;
+      renderFor('a'.repeat(64));
+      expect(
+        screen.getByRole('button', { name: /message/i }),
+      ).toBeInTheDocument();
+    });
+
+    it('hides the Message button when a protected minor views a non-approved profile', () => {
+      pm.canUseDirectMessages = true;
+      pm.isProtectedMinor = true; // 'a'*64 is not in the approved set
+      renderFor('a'.repeat(64));
+      expect(
+        screen.queryByRole('button', { name: /message/i }),
+      ).not.toBeInTheDocument();
+    });
+
+    it('shows the Message button when a protected minor views an approved official profile', () => {
+      pm.canUseDirectMessages = true;
+      pm.isProtectedMinor = true;
+      pm.approved.add(HQ);
+      renderFor(HQ);
+      expect(
+        screen.getByRole('button', { name: /message/i }),
+      ).toBeInTheDocument();
+    });
   });
 
   it('shows clickable legacy socials for classic viners only', () => {

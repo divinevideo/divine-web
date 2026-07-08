@@ -78,6 +78,14 @@ describe('resolveOfficialNip05', () => {
     expect(res).toEqual({ kind: 'networkError' });
   });
 
+  it('networkError: a non-hex value for the name does not revoke (malformed entry)', async () => {
+    const res = await resolveOfficialNip05(HQ_NIP05, HQ, {
+      fetchImpl: fetchReturning({ names: { _: 'not-a-valid-hex-pubkey' } }),
+    });
+    // Must NOT be differentKey — garbage should keep last-known, not drop.
+    expect(res).toEqual({ kind: 'networkError' });
+  });
+
   it('case+whitespace-normalized compare: padded/uppercase still matches', async () => {
     const res = await resolveOfficialNip05(HQ_NIP05, HQ, {
       fetchImpl: fetchReturning({ names: { _: `  ${HQ.toUpperCase()}\n` } }),

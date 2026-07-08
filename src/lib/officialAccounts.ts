@@ -86,6 +86,12 @@ export async function resolveOfficialNip05(
   // Normalize BOTH sides identically: the pin is the trust anchor, and a
   // checksummed/padded nostr.json must not read as a different key.
   const norm = resolved.trim().toLowerCase();
+  if (!/^[0-9a-f]{64}$/.test(norm)) {
+    // A non-hex value isn't a usable pubkey — a malformed directory entry
+    // carries no trustworthy signal. Treat as networkError (keep last-known),
+    // NOT differentKey, so garbage from the name server can't spuriously revoke.
+    return { kind: 'networkError' };
+  }
   if (norm === expectedPubkey.trim().toLowerCase()) {
     return { kind: 'matched', resolvedPubkey: norm };
   }
