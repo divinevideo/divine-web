@@ -74,13 +74,21 @@ export async function fetchProtectedMinorStatus(
       verified_minor?: unknown;
       verified_minor_at?: unknown;
     };
-    if (account.verified_minor !== true) return NOT_PROTECTED;
-
-    return {
-      state: 'protected',
-      isKnown: true,
-      verifiedMinorAt: parseVerifiedMinorAt(account.verified_minor_at),
-    };
+    if (account.verified_minor === true) {
+      return {
+        state: 'protected',
+        isKnown: true,
+        verifiedMinorAt: parseVerifiedMinorAt(account.verified_minor_at),
+      };
+    }
+    // Fail closed on schema drift: a truthy non-boolean verified_minor (e.g.
+    // the string "true") is not a trustworthy negative, so it must not lift
+    // protection. Absent or false stays a positive not_protected — keycast
+    // omits the flag for ordinary accounts, so treating absence as unknown
+    // would restrict every adult.
+    return account.verified_minor
+      ? UNKNOWN_PROTECTED_MINOR_STATUS
+      : NOT_PROTECTED;
   } catch {
     return UNKNOWN_PROTECTED_MINOR_STATUS;
   }

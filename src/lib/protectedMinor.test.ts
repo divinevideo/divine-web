@@ -44,13 +44,18 @@ describe('fetchProtectedMinorStatus', () => {
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 
-  it('is not protected when verified_minor is truthy but not strictly true', async () => {
-    const status = await fetchProtectedMinorStatus(
-      't',
-      fetchReturning({ verified_minor: 'true' }),
-    );
-
-    expect(status.state).toBe('not_protected');
+  it('fails closed on a truthy non-boolean verified_minor (schema drift)', async () => {
+    // A stringly "true" (or any truthy non-boolean) is not a trustworthy
+    // NEGATIVE: mapping it to not_protected would lift protection for an
+    // actual minor if keycast's schema ever drifts. Only explicit booleans
+    // are authoritative; anything else truthy stays unknown.
+    for (const drifted of ['true', 1, {}] as const) {
+      const status = await fetchProtectedMinorStatus(
+        't',
+        fetchReturning({ verified_minor: drifted }),
+      );
+      expect(status.state).toBe('unknown');
+    }
   });
 
   it('is not protected when verified_minor is false', async () => {
