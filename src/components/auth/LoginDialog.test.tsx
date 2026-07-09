@@ -225,6 +225,26 @@ describe('LoginDialog', () => {
       expect(screen.queryByRole('button', { name: /Login with Extension/i })).not.toBeInTheDocument();
     });
 
+    it('does not reopen the Nostr disclosure unprompted after a restriction interlude', async () => {
+      const user = userEvent.setup();
+
+      const { rerender } = render(<LoginDialog isOpen onClose={vi.fn()} onLogin={vi.fn()} />);
+
+      await user.click(await screen.findByRole('tab', { name: /^Sign in$/i }));
+      await user.click(screen.getByRole('button', { name: /Use Nostr instead/i }));
+      expect(await screen.findByRole('button', { name: /Login with Extension/i })).toBeInTheDocument();
+
+      mockUseProtectedMinorStatus.mockReturnValue(PROTECTED_STATUS);
+      rerender(<LoginDialog isOpen onClose={vi.fn()} onLogin={vi.fn()} />);
+      expect(screen.queryByRole('button', { name: /Login with Extension/i })).not.toBeInTheDocument();
+
+      mockUseProtectedMinorStatus.mockReturnValue(NOT_PROTECTED);
+      rerender(<LoginDialog isOpen onClose={vi.fn()} onLogin={vi.fn()} />);
+
+      expect(await screen.findByRole('button', { name: /Use Nostr instead/i })).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /Login with Extension/i })).not.toBeInTheDocument();
+    });
+
     it('fails closed: hides the banner and the Nostr disclosure while the status is unknown', async () => {
       const user = userEvent.setup();
       mockUseProtectedMinorStatus.mockReturnValue(UNKNOWN_PROTECTED_MINOR_STATUS);

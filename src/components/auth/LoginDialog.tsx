@@ -69,6 +69,15 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin }) =
   // the ordinary login paths are unaffected.
   const keyHandoverRestricted = isMinorKeyHandoverRestricted(protectedMinorState);
 
+  // The render-side gates below stay closed synchronously; this only clears the
+  // stale toggle state so the disclosure doesn't pop back open unprompted if
+  // the restriction later lifts (e.g. a transient unknown that resolves).
+  useEffect(() => {
+    if (keyHandoverRestricted) {
+      setAdvancedOpen(false);
+    }
+  }, [keyHandoverRestricted]);
+
   useEffect(() => {
     if (!isOpen) {
       return;
