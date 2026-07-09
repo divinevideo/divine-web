@@ -52,7 +52,6 @@ const pm = vi.hoisted(() => ({
 vi.mock('@/hooks/useProtectedMinorStatus', () => ({
   useProtectedMinorStatus: () => ({
     state: pm.state,
-    isProtectedMinor: pm.state === 'protected',
     isKnown: pm.state !== 'unknown',
     verifiedMinorAt: null,
   }),

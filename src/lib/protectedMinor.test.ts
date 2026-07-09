@@ -24,7 +24,6 @@ describe('fetchProtectedMinorStatus', () => {
     const status = await fetchProtectedMinorStatus('tok123', fetchImpl);
 
     expect(status.state).toBe('protected');
-    expect(status.isProtectedMinor).toBe(true);
     expect(status.isKnown).toBe(true);
     expect(status.verifiedMinorAt).toEqual(new Date('2026-06-30T12:00:00Z'));
     expect(fetchImpl).toHaveBeenCalledWith(
@@ -41,7 +40,6 @@ describe('fetchProtectedMinorStatus', () => {
     const status = await fetchProtectedMinorStatus('', fetchSpy);
 
     expect(status.state).toBe('not_protected');
-    expect(status.isProtectedMinor).toBe(false);
     expect(status.isKnown).toBe(true);
     expect(fetchSpy).not.toHaveBeenCalled();
   });
@@ -52,7 +50,7 @@ describe('fetchProtectedMinorStatus', () => {
       fetchReturning({ verified_minor: 'true' }),
     );
 
-    expect(status.isProtectedMinor).toBe(false);
+    expect(status.state).toBe('not_protected');
   });
 
   it('is not protected when verified_minor is false', async () => {
@@ -61,7 +59,6 @@ describe('fetchProtectedMinorStatus', () => {
       fetchReturning({ verified_minor: false }),
     );
 
-    expect(status.isProtectedMinor).toBe(false);
     expect(status.state).toBe('not_protected');
     expect(status.verifiedMinorAt).toBeNull();
   });
@@ -72,7 +69,7 @@ describe('fetchProtectedMinorStatus', () => {
       fetchReturning({ email: 'a@b.com' }),
     );
 
-    expect(status.isProtectedMinor).toBe(false);
+    expect(status.state).toBe('not_protected');
   });
 
   it('stays protected with a null timestamp on a bad date', async () => {
@@ -81,7 +78,7 @@ describe('fetchProtectedMinorStatus', () => {
       fetchReturning({ verified_minor: true, verified_minor_at: 'not-a-date' }),
     );
 
-    expect(status.isProtectedMinor).toBe(true);
+    expect(status.state).toBe('protected');
     expect(status.verifiedMinorAt).toBeNull();
   });
 
@@ -92,7 +89,6 @@ describe('fetchProtectedMinorStatus', () => {
     );
 
     expect(status.state).toBe('unknown');
-    expect(status.isProtectedMinor).toBe(false);
     expect(status.isKnown).toBe(false);
   });
 
@@ -116,7 +112,6 @@ describe('fetchProtectedMinorStatus', () => {
     const status = await fetchProtectedMinorStatus('t', fetchImpl);
 
     expect(status.state).toBe('unknown');
-    expect(status.isProtectedMinor).toBe(false);
     expect(status.isKnown).toBe(false);
   });
 });

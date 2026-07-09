@@ -5,7 +5,6 @@ import { DIVINE_LOGIN_ORIGIN } from './divineLoginOrigin';
 
 export interface ProtectedMinorStatus {
   state: 'protected' | 'not_protected' | 'unknown';
-  isProtectedMinor: boolean;
   isKnown: boolean;
   verifiedMinorAt: Date | null;
 }
@@ -26,14 +25,12 @@ export function isMinorDmRestricted(state: ProtectedMinorState): boolean {
 // for every other caller (it's returned by reference from the lib and hook).
 export const NOT_PROTECTED: ProtectedMinorStatus = Object.freeze({
   state: 'not_protected',
-  isProtectedMinor: false,
   isKnown: true,
   verifiedMinorAt: null,
 });
 
 export const UNKNOWN_PROTECTED_MINOR_STATUS: ProtectedMinorStatus = Object.freeze({
   state: 'unknown',
-  isProtectedMinor: false,
   isKnown: false,
   verifiedMinorAt: null,
 });
@@ -81,7 +78,6 @@ export async function fetchProtectedMinorStatus(
 
     return {
       state: 'protected',
-      isProtectedMinor: true,
       isKnown: true,
       verifiedMinorAt: parseVerifiedMinorAt(account.verified_minor_at),
     };

@@ -71,14 +71,15 @@ folded in.
    `protected` block throws `DmSendBlockedError` (official-accounts-only copy);
    an `unknown`-status block throws `DmSendUnverifiedError` (retriable
    "couldn't verify" copy — the definitive copy would be wrong for an adult
-   whose status check merely failed). Defense-in-depth guard inside
-   `createRecipientGiftWraps` (`dm.ts:384`) behind an options flag. Group send
-   requires all recipients approved. (Web has no durable outgoing queue, so no
+   whose status check merely failed). `createRecipientGiftWraps` (`dm.ts`) has
+   NO runtime backstop; it carries a documented INVARIANT instead: its only
+   caller is `useDmSend`, which gates first, and any new caller must gate
+   before building wraps. Group send requires all recipients approved. (Web has no durable outgoing queue, so no
    drain re-check needed — the mobile enqueue-before-gate hazard does not apply.)
 2. **Inbound filter — list AND thread.** `useDmConversations`
    (`groupDmConversations`) drops non-approved counterparties when
    protected; sender identity is the seal-validated `senderPubkey`
-   (`dm.ts:501` rejects seal≠rumor, built `:525`). **The thread view is a
+   (`dm.ts` rejects seal≠rumor at parse time). **The thread view is a
    separate seam:** `useDmConversation` → `useDmMessages` raw cache is
    NOT filtered by the list, so a deep link to `/messages/<non-approved-peer>`
    would show full history. Add a **thread-route guard** (redirect to inbox when

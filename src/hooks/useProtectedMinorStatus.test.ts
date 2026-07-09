@@ -80,7 +80,6 @@ describe('useProtectedMinorStatus', () => {
     });
 
     expect(result.current.state).toBe('not_protected');
-    expect(result.current.isProtectedMinor).toBe(false);
     expect(result.current.isKnown).toBe(true);
     expect(fetchSpy).not.toHaveBeenCalled();
   });
@@ -104,7 +103,6 @@ describe('useProtectedMinorStatus', () => {
     });
 
     await waitFor(() => expect(result.current.state).toBe('protected'));
-    expect(result.current.isProtectedMinor).toBe(true);
   });
 
   it('refetches with the new token on account switch (no cross-user leak)', async () => {
@@ -155,7 +153,6 @@ describe('useProtectedMinorStatus', () => {
     const first = renderHook(() => useProtectedMinorStatus(), { wrapper });
     await waitFor(() => expect(failing).toHaveBeenCalled());
     expect(first.result.current.state).toBe('unknown');
-    expect(first.result.current.isProtectedMinor).toBe(false);
     expect(first.result.current.isKnown).toBe(false);
     first.unmount();
 
@@ -171,7 +168,6 @@ describe('useProtectedMinorStatus', () => {
     );
     const second = renderHook(() => useProtectedMinorStatus(), { wrapper });
     await waitFor(() => expect(second.result.current.state).toBe('protected'));
-    expect(second.result.current.isProtectedMinor).toBe(true);
   });
 
   it('is unknown when the fetch fails for an authenticated session', async () => {
@@ -184,7 +180,6 @@ describe('useProtectedMinorStatus', () => {
     });
 
     expect(result.current.state).toBe('unknown');
-    expect(result.current.isProtectedMinor).toBe(false);
     expect(result.current.isKnown).toBe(false);
     await waitFor(() => expect(fetchSpy).toHaveBeenCalled());
     expect(result.current.state).toBe('unknown');
@@ -222,7 +217,6 @@ describe('useProtectedMinorStatus', () => {
     // The refetch runs; the effective status must remain protected.
     await new Promise((r) => setTimeout(r, 30));
     expect(result.current.state).toBe('protected');
-    expect(result.current.isProtectedMinor).toBe(true);
   });
 
   it('#180: an unknown check with no prior verdict fails closed (stays unknown)', async () => {
@@ -237,7 +231,6 @@ describe('useProtectedMinorStatus', () => {
       expect((globalThis.fetch as ReturnType<typeof vi.fn>)).toHaveBeenCalled(),
     );
     expect(result.current.state).toBe('unknown');
-    expect(result.current.isProtectedMinor).toBe(false);
   });
 
   it('self-heals on window focus (refetchOnWindowFocus override)', async () => {
@@ -268,6 +261,5 @@ describe('useProtectedMinorStatus', () => {
     focusManager.setFocused(true);
 
     await waitFor(() => expect(result.current.state).toBe('protected'));
-    expect(result.current.isProtectedMinor).toBe(true);
   });
 });

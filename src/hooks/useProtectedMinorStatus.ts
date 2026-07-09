@@ -22,7 +22,6 @@ import {
 // `unknown`).
 const PROTECTED_STICKY: ProtectedMinorStatus = Object.freeze({
   state: 'protected',
-  isProtectedMinor: true,
   isKnown: true,
   verifiedMinorAt: null,
 });
