@@ -5,23 +5,32 @@ import { DIVINE_LOGIN_ORIGIN } from './divineLoginOrigin';
 
 export interface ProtectedMinorStatus {
   state: 'protected' | 'not_protected' | 'unknown';
-  isProtectedMinor: boolean;
   isKnown: boolean;
   verifiedMinorAt: Date | null;
+}
+
+export type ProtectedMinorState = ProtectedMinorStatus['state'];
+
+/**
+ * DM-restriction verdict for the safety gates (#176). Fails CLOSED: only a
+ * positive `not_protected` verdict lifts the restriction, so `unknown`
+ * (cold start, keycast failure) restricts exactly like `protected`. Signed-out
+ * sessions resolve to {@link NOT_PROTECTED} upstream and are never restricted.
+ */
+export function isMinorDmRestricted(state: ProtectedMinorState): boolean {
+  return state !== 'not_protected';
 }
 
 // Frozen so this shared sentinel can't be mutated by a consumer and poisoned
 // for every other caller (it's returned by reference from the lib and hook).
 export const NOT_PROTECTED: ProtectedMinorStatus = Object.freeze({
   state: 'not_protected',
-  isProtectedMinor: false,
   isKnown: true,
   verifiedMinorAt: null,
 });
 
 export const UNKNOWN_PROTECTED_MINOR_STATUS: ProtectedMinorStatus = Object.freeze({
   state: 'unknown',
-  isProtectedMinor: false,
   isKnown: false,
   verifiedMinorAt: null,
 });
@@ -53,18 +62,33 @@ export async function fetchProtectedMinorStatus(
     });
     if (!response.ok) return UNKNOWN_PROTECTED_MINOR_STATUS;
 
-    const body = (await response.json()) as {
+    const body = (await response.json()) as unknown;
+    // A malformed 200 (non-object body — an error page, truncated response, or
+    // a bare primitive) carries no trustworthy signal. Only a well-formed object
+    // with an explicit verified_minor is authoritative; otherwise stay unknown
+    // so the sticky store's last-known `protected` is never overwritten by junk.
+    if (typeof body !== 'object' || body === null || Array.isArray(body)) {
+      return UNKNOWN_PROTECTED_MINOR_STATUS;
+    }
+    const account = body as {
       verified_minor?: unknown;
       verified_minor_at?: unknown;
     };
-    if (body.verified_minor !== true) return NOT_PROTECTED;
-
-    return {
-      state: 'protected',
-      isProtectedMinor: true,
-      isKnown: true,
-      verifiedMinorAt: parseVerifiedMinorAt(body.verified_minor_at),
-    };
+    if (account.verified_minor === true) {
+      return {
+        state: 'protected',
+        isKnown: true,
+        verifiedMinorAt: parseVerifiedMinorAt(account.verified_minor_at),
+      };
+    }
+    // Fail closed on schema drift: a truthy non-boolean verified_minor (e.g.
+    // the string "true") is not a trustworthy negative, so it must not lift
+    // protection. Absent or false stays a positive not_protected — keycast
+    // omits the flag for ordinary accounts, so treating absence as unknown
+    // would restrict every adult.
+    return account.verified_minor
+      ? UNKNOWN_PROTECTED_MINOR_STATUS
+      : NOT_PROTECTED;
   } catch {
     return UNKNOWN_PROTECTED_MINOR_STATUS;
   }

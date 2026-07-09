@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { DIVINE_LOGIN_ORIGIN } from './divineLoginOrigin';
-import { fetchProtectedMinorStatus } from './protectedMinor';
+import { fetchProtectedMinorStatus, isMinorDmRestricted } from './protectedMinor';
 
 const ACCOUNT_URL = `${DIVINE_LOGIN_ORIGIN}/api/user/account`;
 
@@ -24,7 +24,6 @@ describe('fetchProtectedMinorStatus', () => {
     const status = await fetchProtectedMinorStatus('tok123', fetchImpl);
 
     expect(status.state).toBe('protected');
-    expect(status.isProtectedMinor).toBe(true);
     expect(status.isKnown).toBe(true);
     expect(status.verifiedMinorAt).toEqual(new Date('2026-06-30T12:00:00Z'));
     expect(fetchImpl).toHaveBeenCalledWith(
@@ -41,18 +40,22 @@ describe('fetchProtectedMinorStatus', () => {
     const status = await fetchProtectedMinorStatus('', fetchSpy);
 
     expect(status.state).toBe('not_protected');
-    expect(status.isProtectedMinor).toBe(false);
     expect(status.isKnown).toBe(true);
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 
-  it('is not protected when verified_minor is truthy but not strictly true', async () => {
-    const status = await fetchProtectedMinorStatus(
-      't',
-      fetchReturning({ verified_minor: 'true' }),
-    );
-
-    expect(status.isProtectedMinor).toBe(false);
+  it('fails closed on a truthy non-boolean verified_minor (schema drift)', async () => {
+    // A stringly "true" (or any truthy non-boolean) is not a trustworthy
+    // NEGATIVE: mapping it to not_protected would lift protection for an
+    // actual minor if keycast's schema ever drifts. Only explicit booleans
+    // are authoritative; anything else truthy stays unknown.
+    for (const drifted of ['true', 1, {}] as const) {
+      const status = await fetchProtectedMinorStatus(
+        't',
+        fetchReturning({ verified_minor: drifted }),
+      );
+      expect(status.state).toBe('unknown');
+    }
   });
 
   it('is not protected when verified_minor is false', async () => {
@@ -61,7 +64,6 @@ describe('fetchProtectedMinorStatus', () => {
       fetchReturning({ verified_minor: false }),
     );
 
-    expect(status.isProtectedMinor).toBe(false);
     expect(status.state).toBe('not_protected');
     expect(status.verifiedMinorAt).toBeNull();
   });
@@ -72,7 +74,7 @@ describe('fetchProtectedMinorStatus', () => {
       fetchReturning({ email: 'a@b.com' }),
     );
 
-    expect(status.isProtectedMinor).toBe(false);
+    expect(status.state).toBe('not_protected');
   });
 
   it('stays protected with a null timestamp on a bad date', async () => {
@@ -81,7 +83,7 @@ describe('fetchProtectedMinorStatus', () => {
       fetchReturning({ verified_minor: true, verified_minor_at: 'not-a-date' }),
     );
 
-    expect(status.isProtectedMinor).toBe(true);
+    expect(status.state).toBe('protected');
     expect(status.verifiedMinorAt).toBeNull();
   });
 
@@ -92,8 +94,19 @@ describe('fetchProtectedMinorStatus', () => {
     );
 
     expect(status.state).toBe('unknown');
-    expect(status.isProtectedMinor).toBe(false);
     expect(status.isKnown).toBe(false);
+  });
+
+  it('is unknown (not not_protected) on a malformed non-object 200 body', async () => {
+    // A malformed 200 (an error page or truncated body deserialized to a
+    // non-object) must NOT read as a positive not_protected: through the sticky
+    // store that would overwrite a confirmed `protected`. Only a well-formed
+    // object with an explicit verified_minor is authoritative; anything else
+    // carries no trustworthy signal.
+    for (const body of ['unexpected', 42, ['x'], true] as const) {
+      const status = await fetchProtectedMinorStatus('t', fetchReturning(body));
+      expect(status.state).toBe('unknown');
+    }
   });
 
   it('is unknown when fetch throws', async () => {
@@ -104,7 +117,20 @@ describe('fetchProtectedMinorStatus', () => {
     const status = await fetchProtectedMinorStatus('t', fetchImpl);
 
     expect(status.state).toBe('unknown');
-    expect(status.isProtectedMinor).toBe(false);
     expect(status.isKnown).toBe(false);
+  });
+});
+
+describe('isMinorDmRestricted', () => {
+  it('restricts a protected account', () => {
+    expect(isMinorDmRestricted('protected')).toBe(true);
+  });
+
+  it('fails closed: restricts while the status is unknown', () => {
+    expect(isMinorDmRestricted('unknown')).toBe(true);
+  });
+
+  it('lifts the restriction only on a positive not_protected verdict', () => {
+    expect(isMinorDmRestricted('not_protected')).toBe(false);
   });
 });

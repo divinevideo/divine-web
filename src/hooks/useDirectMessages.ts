@@ -1,10 +1,22 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useReducer, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNostrLogin } from '@nostrify/react/login';
 
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { toast } from '@/hooks/useToast';
 import { useAppContext } from '@/hooks/useAppContext';
+import { useProtectedMinorStatus } from '@/hooks/useProtectedMinorStatus';
+import {
+  assertMinorDmRecipientsAllowed,
+  DmSendBlockedError,
+  DmSendUnverifiedError,
+} from '@/lib/dmSendGuard';
+import { isMinorDmRestricted } from '@/lib/protectedMinor';
+import {
+  filterProtectedMinorConversations,
+  isThreadAllowedForProtectedMinor,
+} from '@/lib/dmInboundFilter';
+import { officialAccountsService } from '@/lib/officialAccounts';
 import {
   buildDmShareTags,
   createRecipientGiftWraps,
@@ -311,11 +323,37 @@ export function useDmConversations(limit = 200) {
   const { user } = useCurrentUser();
   const messagesQuery = useDmMessages(limit);
   const { readState } = useDmReadState(user?.pubkey);
+  const { state: minorState } = useProtectedMinorStatus();
 
-  const conversations = useMemo<DmConversation[]>(
+  // Receive-time revalidation (#176): re-render when a persisted verdict flips
+  // so the list re-filters and a just-revoked official drops.
+  const [, bumpVerdicts] = useReducer((x: number) => x + 1, 0);
+  useEffect(() => officialAccountsService.onVerdictChanged(bumpVerdicts), []);
+
+  const grouped = useMemo<DmConversation[]>(
     () => groupDmConversations(messagesQuery.data?.messages || [], readState),
     [messagesQuery.data, readState],
   );
+
+  // Receive-time revalidation kick (#176): refresh each counterparty's verdict
+  // so a server-side revocation is pulled into the sync answer below; a flip
+  // re-renders via `bumpVerdicts`.
+  if (isMinorDmRestricted(minorState)) {
+    for (const conversation of grouped) {
+      for (const pubkey of conversation.participantPubkeys) {
+        void officialAccountsService.isApprovedMinorDmRecipient(pubkey);
+      }
+    }
+  }
+
+  // Inbound filter (#176). Filtered each render — not memoized — so the fresh
+  // sync verdict always applies. Non-restricted users get `grouped` back by
+  // identity, so `useUnreadDmCount` (derived below) is unaffected for them.
+  const conversations = filterProtectedMinorConversations(grouped, {
+    state: minorState,
+    isApproved: (pubkey) =>
+      officialAccountsService.isApprovedMinorDmRecipientSync(pubkey),
+  });
 
   return {
     ...messagesQuery,
@@ -364,11 +402,32 @@ export function useDmConversation(conversationId: string | undefined, limit = 30
   const { user } = useCurrentUser();
   const messagesQuery = useDmMessages(limit);
   const { readState, markConversationRead } = useDmReadState(user?.pubkey);
+  const { state: minorState } = useProtectedMinorStatus();
+  const [, bumpVerdicts] = useReducer((x: number) => x + 1, 0);
+  useEffect(() => officialAccountsService.onVerdictChanged(bumpVerdicts), []);
 
-  const messages = useMemo<DmMessage[]>(
+  const threadMessages = useMemo<DmMessage[]>(
     () => (messagesQuery.data?.messages || []).filter((message) => message.conversationId === conversationId),
     [conversationId, messagesQuery.data],
   );
+
+  // Thread filter (#176): clear the thread when a restricted user's counterparty
+  // is not approved — defense-in-depth alongside ConversationPage's route guard
+  // (which redirects asynchronously, so history could otherwise flash). Checked
+  // each render so a verdict flip re-applies; peers are revalidated.
+  const peerPubkeys = threadMessages[0]?.peerPubkeys ?? [];
+  if (isMinorDmRestricted(minorState)) {
+    for (const pubkey of peerPubkeys) {
+      void officialAccountsService.isApprovedMinorDmRecipient(pubkey);
+    }
+  }
+  const messages = isThreadAllowedForProtectedMinor(peerPubkeys, {
+    state: minorState,
+    isApproved: (pubkey) =>
+      officialAccountsService.isApprovedMinorDmRecipientSync(pubkey),
+  })
+    ? threadMessages
+    : [];
 
   const latestMessageAt = messages[messages.length - 1]?.createdAt || 0;
   const lastReadAt = conversationId ? readState[conversationId] || 0 : 0;
@@ -389,6 +448,9 @@ export function useDmSend() {
   const queryClient = useQueryClient();
   const { user, signer } = useCurrentUser();
   const { config } = useAppContext();
+  // Protected-minor DM restriction (#176): captured per render so the send-time
+  // gate below sees the current tri-state status (unknown fails closed).
+  const { state: minorState } = useProtectedMinorStatus();
 
   return useMutation<{ relayUrls: string[] }, Error, SendDmInput, SendDmMutationContext>({
     onMutate: ({ clientId, participantPubkeys, content, share }) => {
@@ -438,6 +500,15 @@ export function useDmSend() {
       if (!recipients.length) {
         throw new Error('Choose at least one person to message');
       }
+
+      // Send gate (#176): a restricted user (protected minor, or unknown
+      // status — fail closed) may only DM approved official accounts; a group
+      // is all-or-nothing. Checked before any wrap build or publish, so a
+      // blocked send leaks no metadata.
+      await assertMinorDmRecipientsAllowed(recipients, {
+        state: minorState,
+        service: officialAccountsService,
+      });
 
       const relayUrls = await resolveDmWriteRelays({
         appRelayUrls: config.relayUrls || [config.relayUrl],
@@ -492,17 +563,31 @@ export function useDmSend() {
       });
     },
     onError: (error, _variables, context) => {
+      // Protected-minor block (#176): distinct, user-facing copy — not the raw
+      // internal error. A definitive block is non-retriable; an unverified
+      // block (status unknown) gets retriable framing, since "official accounts
+      // only" would be wrong for an adult whose status check merely failed.
+      const isBlocked = error instanceof DmSendBlockedError;
+      const isUnverified = error instanceof DmSendUnverifiedError;
+      const description = isBlocked
+        ? 'You can only message official Divine accounts.'
+        : isUnverified
+          ? "We couldn't verify your account just now. Try again in a minute."
+          : error instanceof Error
+            ? error.message
+            : 'Unable to send your message right now';
+
       if (user?.pubkey && context?.clientId) {
-        markDmOutboxRecordFailed(user.pubkey, context.clientId, error.message);
+        markDmOutboxRecordFailed(user.pubkey, context.clientId, description);
         updateOptimisticDmInAllCaches(queryClient, user.pubkey, context.clientId, {
           deliveryState: 'failed',
-          errorMessage: error.message,
+          errorMessage: description,
         });
       }
 
       toast({
-        title: 'Message failed',
-        description: error instanceof Error ? error.message : 'Unable to send your message right now',
+        title: isBlocked || isUnverified ? 'Message not sent' : 'Message failed',
+        description,
         variant: 'destructive',
       });
     },
