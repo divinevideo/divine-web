@@ -29,17 +29,16 @@ vi.mock('@/hooks/useRssFeedAvailable', () => ({
 // Mutable so protected-minor tests can flip the state (#176). Defaults preserve
 // the prior behavior (non-protected, DMs off).
 const pm = vi.hoisted(() => ({
-  isProtectedMinor: false,
+  state: 'not_protected' as 'protected' | 'not_protected' | 'unknown',
   canUseDirectMessages: false,
   approved: new Set<string>(),
 }));
 
 vi.mock('@/hooks/useProtectedMinorStatus', () => ({
-  useIsProtectedMinor: () => pm.isProtectedMinor,
   useProtectedMinorStatus: () => ({
-    state: pm.isProtectedMinor ? 'protected' : 'not_protected',
-    isProtectedMinor: pm.isProtectedMinor,
-    isKnown: true,
+    state: pm.state,
+    isProtectedMinor: pm.state === 'protected',
+    isKnown: pm.state !== 'unknown',
     verifiedMinorAt: null,
   }),
 }));
@@ -106,7 +105,7 @@ const baseStats: ProfileStats = {
 
 describe('ProfileHeader', () => {
   beforeEach(async () => {
-    pm.isProtectedMinor = false;
+    pm.state = 'not_protected';
     pm.canUseDirectMessages = false;
     pm.approved.clear();
     const storage = new Map<string, string>();
@@ -150,7 +149,7 @@ describe('ProfileHeader', () => {
 
     it('hides the Message button when a protected minor views a non-approved profile', () => {
       pm.canUseDirectMessages = true;
-      pm.isProtectedMinor = true; // 'a'*64 is not in the approved set
+      pm.state = 'protected'; // 'a'*64 is not in the approved set
       renderFor('a'.repeat(64));
       expect(
         screen.queryByRole('button', { name: /message/i }),
@@ -159,7 +158,26 @@ describe('ProfileHeader', () => {
 
     it('shows the Message button when a protected minor views an approved official profile', () => {
       pm.canUseDirectMessages = true;
-      pm.isProtectedMinor = true;
+      pm.state = 'protected';
+      pm.approved.add(HQ);
+      renderFor(HQ);
+      expect(
+        screen.getByRole('button', { name: /message/i }),
+      ).toBeInTheDocument();
+    });
+
+    it('fails closed on unknown: hides the Message button for a non-approved profile', () => {
+      pm.canUseDirectMessages = true;
+      pm.state = 'unknown'; // 'a'*64 is not in the approved set
+      renderFor('a'.repeat(64));
+      expect(
+        screen.queryByRole('button', { name: /message/i }),
+      ).not.toBeInTheDocument();
+    });
+
+    it('keeps the Message button for an approved official while unknown', () => {
+      pm.canUseDirectMessages = true;
+      pm.state = 'unknown';
       pm.approved.add(HQ);
       renderFor(HQ);
       expect(

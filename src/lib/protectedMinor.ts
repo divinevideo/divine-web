@@ -10,6 +10,18 @@ export interface ProtectedMinorStatus {
   verifiedMinorAt: Date | null;
 }
 
+export type ProtectedMinorState = ProtectedMinorStatus['state'];
+
+/**
+ * DM-restriction verdict for the safety gates (#176). Fails CLOSED: only a
+ * positive `not_protected` verdict lifts the restriction, so `unknown`
+ * (cold start, keycast failure) restricts exactly like `protected`. Signed-out
+ * sessions resolve to {@link NOT_PROTECTED} upstream and are never restricted.
+ */
+export function isMinorDmRestricted(state: ProtectedMinorState): boolean {
+  return state !== 'not_protected';
+}
+
 // Frozen so this shared sentinel can't be mutated by a consumer and poisoned
 // for every other caller (it's returned by reference from the lib and hook).
 export const NOT_PROTECTED: ProtectedMinorStatus = Object.freeze({

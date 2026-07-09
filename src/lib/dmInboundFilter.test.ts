@@ -21,11 +21,11 @@ function convo(id: string, participants: string[]): DmConversation {
 const isApproved = (pubkey: string) => pubkey === HQ;
 
 describe('filterProtectedMinorConversations', () => {
-  it('is a pass-through for a non-restricted user', () => {
+  it('is a pass-through for a positively not-protected user', () => {
     const list = [convo('a', [HQ]), convo('b', [STRANGER])];
     expect(
       filterProtectedMinorConversations(list, {
-        isProtectedMinor: false,
+        state: 'not_protected',
         isApproved,
       }),
     ).toBe(list);
@@ -34,7 +34,7 @@ describe('filterProtectedMinorConversations', () => {
   it('keeps only conversations with an approved counterparty', () => {
     const list = [convo('a', [HQ]), convo('b', [STRANGER])];
     const out = filterProtectedMinorConversations(list, {
-      isProtectedMinor: true,
+      state: 'protected',
       isApproved,
     });
     expect(out.map((c) => c.id)).toEqual(['a']);
@@ -43,18 +43,27 @@ describe('filterProtectedMinorConversations', () => {
   it('drops a group unless every participant is approved', () => {
     const list = [convo('g', [HQ, OTHER])];
     const out = filterProtectedMinorConversations(list, {
-      isProtectedMinor: true,
+      state: 'protected',
       isApproved,
     });
     expect(out).toEqual([]);
   });
+
+  it('fails closed on unknown: filters like protected', () => {
+    const list = [convo('a', [HQ]), convo('b', [STRANGER])];
+    const out = filterProtectedMinorConversations(list, {
+      state: 'unknown',
+      isApproved,
+    });
+    expect(out.map((c) => c.id)).toEqual(['a']);
+  });
 });
 
 describe('isThreadAllowedForProtectedMinor', () => {
-  it('allows any thread for a non-restricted user', () => {
+  it('allows any thread for a positively not-protected user', () => {
     expect(
       isThreadAllowedForProtectedMinor([STRANGER], {
-        isProtectedMinor: false,
+        state: 'not_protected',
         isApproved,
       }),
     ).toBe(true);
@@ -63,7 +72,7 @@ describe('isThreadAllowedForProtectedMinor', () => {
   it('allows a thread whose peers are all approved', () => {
     expect(
       isThreadAllowedForProtectedMinor([HQ], {
-        isProtectedMinor: true,
+        state: 'protected',
         isApproved,
       }),
     ).toBe(true);
@@ -72,7 +81,7 @@ describe('isThreadAllowedForProtectedMinor', () => {
   it('blocks a thread with any non-approved peer', () => {
     expect(
       isThreadAllowedForProtectedMinor([HQ, STRANGER], {
-        isProtectedMinor: true,
+        state: 'protected',
         isApproved,
       }),
     ).toBe(false);
@@ -81,7 +90,25 @@ describe('isThreadAllowedForProtectedMinor', () => {
   it('allows an empty peer set (nothing to reveal)', () => {
     expect(
       isThreadAllowedForProtectedMinor([], {
-        isProtectedMinor: true,
+        state: 'protected',
+        isApproved,
+      }),
+    ).toBe(true);
+  });
+
+  it('fails closed on unknown: blocks a thread with a non-approved peer', () => {
+    expect(
+      isThreadAllowedForProtectedMinor([STRANGER], {
+        state: 'unknown',
+        isApproved,
+      }),
+    ).toBe(false);
+  });
+
+  it('still allows an all-approved thread while unknown', () => {
+    expect(
+      isThreadAllowedForProtectedMinor([HQ], {
+        state: 'unknown',
         isApproved,
       }),
     ).toBe(true);

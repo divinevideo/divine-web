@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { DIVINE_LOGIN_ORIGIN } from './divineLoginOrigin';
-import { fetchProtectedMinorStatus } from './protectedMinor';
+import { fetchProtectedMinorStatus, isMinorDmRestricted } from './protectedMinor';
 
 const ACCOUNT_URL = `${DIVINE_LOGIN_ORIGIN}/api/user/account`;
 
@@ -118,5 +118,19 @@ describe('fetchProtectedMinorStatus', () => {
     expect(status.state).toBe('unknown');
     expect(status.isProtectedMinor).toBe(false);
     expect(status.isKnown).toBe(false);
+  });
+});
+
+describe('isMinorDmRestricted', () => {
+  it('restricts a protected account', () => {
+    expect(isMinorDmRestricted('protected')).toBe(true);
+  });
+
+  it('fails closed: restricts while the status is unknown', () => {
+    expect(isMinorDmRestricted('unknown')).toBe(true);
+  });
+
+  it('lifts the restriction only on a positive not_protected verdict', () => {
+    expect(isMinorDmRestricted('not_protected')).toBe(false);
   });
 });

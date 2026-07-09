@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   assertMinorDmRecipientsAllowed,
   DmSendBlockedError,
+  DmSendUnverifiedError,
   isDmComposeBlockedForMinor,
 } from './dmSendGuard';
 
@@ -15,10 +16,10 @@ function serviceApproving(approved: Set<string>) {
 }
 
 describe('assertMinorDmRecipientsAllowed', () => {
-  it('is a no-op for a non-protected user (never consults the service)', async () => {
+  it('is a no-op for a positively not-protected user (never consults the service)', async () => {
     const service = serviceApproving(new Set());
     await assertMinorDmRecipientsAllowed([STRANGER], {
-      isProtectedMinor: false,
+      state: 'not_protected',
       service,
     });
     expect(service.isApprovedMinorDmRecipient).not.toHaveBeenCalled();
@@ -27,7 +28,7 @@ describe('assertMinorDmRecipientsAllowed', () => {
   it('resolves when a protected minor sends to all-approved recipients', async () => {
     const service = serviceApproving(new Set([HQ]));
     await expect(
-      assertMinorDmRecipientsAllowed([HQ], { isProtectedMinor: true, service }),
+      assertMinorDmRecipientsAllowed([HQ], { state: 'protected', service }),
     ).resolves.toBeUndefined();
   });
 
@@ -35,31 +36,57 @@ describe('assertMinorDmRecipientsAllowed', () => {
     const service = serviceApproving(new Set([HQ]));
     await expect(
       assertMinorDmRecipientsAllowed([HQ, STRANGER], {
-        isProtectedMinor: true,
+        state: 'protected',
         service,
       }),
     ).rejects.toBeInstanceOf(DmSendBlockedError);
+  });
+
+  it('fails closed on unknown: throws DmSendUnverifiedError for a non-approved recipient', async () => {
+    const service = serviceApproving(new Set([HQ]));
+    await expect(
+      assertMinorDmRecipientsAllowed([STRANGER], { state: 'unknown', service }),
+    ).rejects.toBeInstanceOf(DmSendUnverifiedError);
+  });
+
+  it('still allows an approved official recipient while unknown', async () => {
+    const service = serviceApproving(new Set([HQ]));
+    await expect(
+      assertMinorDmRecipientsAllowed([HQ], { state: 'unknown', service }),
+    ).resolves.toBeUndefined();
   });
 });
 
 describe('isDmComposeBlockedForMinor', () => {
   const isApproved = (pubkey: string) => pubkey === HQ;
 
-  it('never blocks a non-restricted user', () => {
+  it('never blocks a positively not-protected user', () => {
     expect(
-      isDmComposeBlockedForMinor(STRANGER, { isProtectedMinor: false, isApproved }),
+      isDmComposeBlockedForMinor(STRANGER, { state: 'not_protected', isApproved }),
     ).toBe(false);
   });
 
   it('allows a protected minor to compose to an approved account', () => {
     expect(
-      isDmComposeBlockedForMinor(HQ, { isProtectedMinor: true, isApproved }),
+      isDmComposeBlockedForMinor(HQ, { state: 'protected', isApproved }),
     ).toBe(false);
   });
 
   it('blocks a protected minor composing to a non-approved account', () => {
     expect(
-      isDmComposeBlockedForMinor(STRANGER, { isProtectedMinor: true, isApproved }),
+      isDmComposeBlockedForMinor(STRANGER, { state: 'protected', isApproved }),
     ).toBe(true);
+  });
+
+  it('fails closed on unknown: blocks compose to a non-approved account', () => {
+    expect(
+      isDmComposeBlockedForMinor(STRANGER, { state: 'unknown', isApproved }),
+    ).toBe(true);
+  });
+
+  it('keeps an approved official composable while unknown', () => {
+    expect(
+      isDmComposeBlockedForMinor(HQ, { state: 'unknown', isApproved }),
+    ).toBe(false);
   });
 });

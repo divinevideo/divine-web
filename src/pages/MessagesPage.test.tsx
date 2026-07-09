@@ -82,16 +82,15 @@ const {
 }));
 
 const pm = vi.hoisted(() => ({
-  isProtectedMinor: false,
+  state: 'not_protected' as 'protected' | 'not_protected' | 'unknown',
   approved: new Set<string>(),
 }));
 
 vi.mock('@/hooks/useProtectedMinorStatus', () => ({
-  useIsProtectedMinor: () => pm.isProtectedMinor,
   useProtectedMinorStatus: () => ({
-    state: pm.isProtectedMinor ? 'protected' : 'not_protected',
-    isProtectedMinor: pm.isProtectedMinor,
-    isKnown: true,
+    state: pm.state,
+    isProtectedMinor: pm.state === 'protected',
+    isKnown: pm.state !== 'unknown',
     verifiedMinorAt: null,
   }),
 }));
@@ -138,7 +137,7 @@ function renderPage() {
 
 describe('MessagesPage', () => {
   beforeEach(async () => {
-    pm.isProtectedMinor = false;
+    pm.state = 'not_protected';
     pm.approved.clear();
     mockSearchResults.length = 0;
     mockInboxStatus.value = 'ok';
@@ -274,7 +273,7 @@ describe('MessagesPage', () => {
   it('filters compose search results to approved accounts for a protected minor (#176)', async () => {
     const user = userEvent.setup();
     const HQ = 'c4a39f1291291d452405cd8ddd798c4a29a3858c52cd0d843f1f6852cf17682e';
-    pm.isProtectedMinor = true;
+    pm.state = 'protected';
     pm.approved.add(HQ);
 
     mockSearchResults.push(
@@ -286,6 +285,24 @@ describe('MessagesPage', () => {
     await user.type(screen.getByRole('textbox'), 'a');
 
     // Only the approved official is offered as a compose target.
+    expect(screen.getByText('Divine HQ')).toBeInTheDocument();
+    expect(screen.queryByText('Alice')).not.toBeInTheDocument();
+  });
+
+  it('fails closed on unknown: compose search offers only approved accounts', async () => {
+    const user = userEvent.setup();
+    const HQ = 'c4a39f1291291d452405cd8ddd798c4a29a3858c52cd0d843f1f6852cf17682e';
+    pm.state = 'unknown';
+    pm.approved.add(HQ);
+
+    mockSearchResults.push(
+      { pubkey: HQ, metadata: { display_name: 'Divine HQ' } },
+      { pubkey: otherUserPubkey, metadata: { display_name: 'Alice' } },
+    );
+
+    renderPage();
+    await user.type(screen.getByRole('textbox'), 'a');
+
     expect(screen.getByText('Divine HQ')).toBeInTheDocument();
     expect(screen.queryByText('Alice')).not.toBeInTheDocument();
   });

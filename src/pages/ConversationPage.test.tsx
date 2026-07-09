@@ -45,16 +45,15 @@ const {
 }));
 
 const pm = vi.hoisted(() => ({
-  isProtectedMinor: false,
+  state: 'not_protected' as 'protected' | 'not_protected' | 'unknown',
   approved: new Set<string>(),
 }));
 
 vi.mock('@/hooks/useProtectedMinorStatus', () => ({
-  useIsProtectedMinor: () => pm.isProtectedMinor,
   useProtectedMinorStatus: () => ({
-    state: pm.isProtectedMinor ? 'protected' : 'not_protected',
-    isProtectedMinor: pm.isProtectedMinor,
-    isKnown: true,
+    state: pm.state,
+    isProtectedMinor: pm.state === 'protected',
+    isKnown: pm.state !== 'unknown',
     verifiedMinorAt: null,
   }),
 }));
@@ -129,7 +128,7 @@ function renderPage() {
 describe('ConversationPage', () => {
   beforeEach(async () => {
     vi.clearAllMocks();
-    pm.isProtectedMinor = false;
+    pm.state = 'not_protected';
     pm.approved.clear();
     const storage = new Map<string, string>();
     Object.defineProperty(window, 'localStorage', {
@@ -161,7 +160,7 @@ describe('ConversationPage', () => {
 
   describe('protected-minor thread route guard (#176)', () => {
     it('redirects a protected minor away from a non-approved thread', async () => {
-      pm.isProtectedMinor = true; // RECIPIENT_PUBKEY not approved
+      pm.state = 'protected'; // RECIPIENT_PUBKEY not approved
       renderPage();
       await waitFor(() =>
         expect(mockNavigate).toHaveBeenCalledWith('/messages', {
@@ -171,7 +170,7 @@ describe('ConversationPage', () => {
     });
 
     it('does NOT redirect when the thread peer is an approved official', async () => {
-      pm.isProtectedMinor = true;
+      pm.state = 'protected';
       pm.approved.add(RECIPIENT_PUBKEY);
       renderPage();
       // let the guard effect run
@@ -182,6 +181,26 @@ describe('ConversationPage', () => {
     });
 
     it('does NOT redirect a non-protected user', async () => {
+      renderPage();
+      await new Promise((r) => setTimeout(r, 20));
+      expect(mockNavigate).not.toHaveBeenCalledWith('/messages', {
+        replace: true,
+      });
+    });
+
+    it('fails closed on unknown: redirects away from a non-approved thread', async () => {
+      pm.state = 'unknown'; // RECIPIENT_PUBKEY not approved
+      renderPage();
+      await waitFor(() =>
+        expect(mockNavigate).toHaveBeenCalledWith('/messages', {
+          replace: true,
+        }),
+      );
+    });
+
+    it('does NOT redirect from an approved-official thread while unknown', async () => {
+      pm.state = 'unknown';
+      pm.approved.add(RECIPIENT_PUBKEY);
       renderPage();
       await new Promise((r) => setTimeout(r, 20));
       expect(mockNavigate).not.toHaveBeenCalledWith('/messages', {

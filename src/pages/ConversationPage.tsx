@@ -15,7 +15,8 @@ import {
   useParsedDmShare,
 } from '@/hooks/useDirectMessages';
 import { useSubdomainNavigate } from '@/hooks/useSubdomainNavigate';
-import { useIsProtectedMinor } from '@/hooks/useProtectedMinorStatus';
+import { useProtectedMinorStatus } from '@/hooks/useProtectedMinorStatus';
+import { isMinorDmRestricted } from '@/lib/protectedMinor';
 import { officialAccountsService } from '@/lib/officialAccounts';
 import {
   DIVINE_SUPPORT_PUBKEY,
@@ -209,23 +210,24 @@ export function ConversationPage() {
     }
   }, [lastReadAt, latestMessageAt, markConversationRead]);
 
-  // Thread route guard (#176): a protected minor must not open a thread with a
-  // non-approved counterparty via deep-link or a stale route (send + list
-  // already block those paths). Computed each render so a verdict flip
-  // re-evaluates; the counterparties are revalidated so a revoked official is
-  // caught after mount.
-  const isProtectedMinor = useIsProtectedMinor();
+  // Thread route guard (#176): a restricted user (protected minor, or unknown
+  // status — fail closed) must not open a thread with a non-approved
+  // counterparty via deep-link or a stale route (send + list already block
+  // those paths). Computed each render so a verdict flip re-evaluates; the
+  // counterparties are revalidated so a revoked official is caught after mount.
+  const { state: minorState } = useProtectedMinorStatus();
+  const isDmRestricted = isMinorDmRestricted(minorState);
   const [, bumpVerdicts] = useReducer((x: number) => x + 1, 0);
   useEffect(() => officialAccountsService.onVerdictChanged(bumpVerdicts), []);
   useEffect(() => {
-    if (isProtectedMinor) {
+    if (isDmRestricted) {
       for (const pubkey of peerPubkeys) {
         void officialAccountsService.isApprovedMinorDmRecipient(pubkey);
       }
     }
-  }, [isProtectedMinor, peerPubkeys]);
+  }, [isDmRestricted, peerPubkeys]);
   const threadBlocked =
-    isProtectedMinor &&
+    isDmRestricted &&
     peerPubkeys.length > 0 &&
     !peerPubkeys.every((pubkey) =>
       officialAccountsService.isApprovedMinorDmRecipientSync(pubkey),

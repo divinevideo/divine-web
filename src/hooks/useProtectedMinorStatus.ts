@@ -18,7 +18,8 @@ import {
 
 // Fail-safe fallback returned when the live check is `unknown` but this account
 // was last seen `protected` (#180). verifiedMinorAt is not persisted; safety
-// gates only read `isProtectedMinor`/`state`.
+// gates only read `state` (via isMinorDmRestricted, which fails closed on
+// `unknown`).
 const PROTECTED_STICKY: ProtectedMinorStatus = Object.freeze({
   state: 'protected',
   isProtectedMinor: true,
@@ -92,9 +93,4 @@ export function useProtectedMinorStatus(): ProtectedMinorStatus {
     if (lastKnown === 'not_protected') return NOT_PROTECTED;
   }
   return UNKNOWN_PROTECTED_MINOR_STATUS;
-}
-
-/** Convenience boolean for display-only callers; safety gates should inspect state. */
-export function useIsProtectedMinor(): boolean {
-  return useProtectedMinorStatus().isProtectedMinor;
 }

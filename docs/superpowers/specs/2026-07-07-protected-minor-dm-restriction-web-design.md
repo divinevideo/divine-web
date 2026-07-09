@@ -6,7 +6,7 @@
 This doc is the clean web mirror: it inherits every decision there and records
 only the web-specific seams and deltas. Two adversarial reviews (2026-07-07)
 folded in.
-**Status:** Design complete; implementation held pending @dcadenas design-level review.
+**Status:** Implemented in this branch (PR #474).
 
 ## Inherited from the mobile spec (unchanged on web)
 
@@ -18,7 +18,9 @@ folded in.
 - **Fail-safe: FAIL CLOSED and PERSISTENT.** Enforce on `unknown`/cold-start when
   ever-seen-protected; the restricted party can suppress the check, so it must
   fail closed on suppression; a persistent last-known store relaxes only for
-  accounts positively seen `not_protected`.
+  accounts positively seen `not_protected`. On web every gate consumes the
+  tri-state `state` via `isMinorDmRestricted` (`unknown` restricts like
+  `protected`); there is no boolean convenience hook for gates to misuse.
 - **Graded NIP-05 leg:** different-key drops immediately; absence needs a
   confirming ~5-min recheck; network failure keeps last-known (pin-trusted cold
   start); 1h TTL with send-time freshness + receive-time revalidation as the
@@ -63,18 +65,21 @@ folded in.
 
 ### Enforcement points (seams verified 2026-07-07)
 
-1. **Send gate:** in `useDmSend` (`useDirectMessages.ts:427-460`), reject
-   recipients failing the predicate with a typed error BEFORE
-   `createRecipientGiftWraps` (`:453`); surfaced inline in
-   `ConversationPage.handleSend` (`:220`). Defense-in-depth guard inside
+1. **Send gate:** in `useDmSend` (`useDirectMessages.ts`), reject recipients
+   failing the predicate with a typed error BEFORE `createRecipientGiftWraps`;
+   surfaced inline in `ConversationPage.handleSend`. Two typed errors: a definitive
+   `protected` block throws `DmSendBlockedError` (official-accounts-only copy);
+   an `unknown`-status block throws `DmSendUnverifiedError` (retriable
+   "couldn't verify" copy — the definitive copy would be wrong for an adult
+   whose status check merely failed). Defense-in-depth guard inside
    `createRecipientGiftWraps` (`dm.ts:384`) behind an options flag. Group send
    requires all recipients approved. (Web has no durable outgoing queue, so no
    drain re-check needed — the mobile enqueue-before-gate hazard does not apply.)
 2. **Inbound filter — list AND thread.** `useDmConversations`
-   (`:316`, `groupDmConversations`) drops non-approved counterparties when
+   (`groupDmConversations`) drops non-approved counterparties when
    protected; sender identity is the seal-validated `senderPubkey`
    (`dm.ts:501` rejects seal≠rumor, built `:525`). **The thread view is a
-   separate seam:** `useDmConversation` (`:363`) → `useDmMessages` raw cache is
+   separate seam:** `useDmConversation` → `useDmMessages` raw cache is
    NOT filtered by the list, so a deep link to `/messages/<non-approved-peer>`
    would show full history. Add a **thread-route guard** (redirect to inbox when
    protected + counterparty non-approved) AND re-apply the predicate inside

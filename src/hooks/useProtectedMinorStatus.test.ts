@@ -6,10 +6,7 @@ import {
 } from '@tanstack/react-query';
 import { renderHook, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import {
-  useIsProtectedMinor,
-  useProtectedMinorStatus,
-} from './useProtectedMinorStatus';
+import { useProtectedMinorStatus } from './useProtectedMinorStatus';
 
 const mockUseDivineSession = vi.fn();
 vi.mock('@/hooks/useDivineSession', () => ({
@@ -102,11 +99,12 @@ describe('useProtectedMinorStatus', () => {
       }),
     );
 
-    const { result } = renderHook(() => useIsProtectedMinor(), {
+    const { result } = renderHook(() => useProtectedMinorStatus(), {
       wrapper: makeWrapper(),
     });
 
-    await waitFor(() => expect(result.current).toBe(true));
+    await waitFor(() => expect(result.current.state).toBe('protected'));
+    expect(result.current.isProtectedMinor).toBe(true);
   });
 
   it('refetches with the new token on account switch (no cross-user leak)', async () => {
@@ -122,11 +120,11 @@ describe('useProtectedMinorStatus', () => {
     vi.stubGlobal('fetch', fetchMock);
 
     mockUseDivineSession.mockReturnValue({ session: { token: 'minor' } });
-    const { result, rerender } = renderHook(() => useIsProtectedMinor(), {
+    const { result, rerender } = renderHook(() => useProtectedMinorStatus(), {
       wrapper: makeWrapper(),
     });
-    // Only true once the 'minor' fetch actually resolves (not a default).
-    await waitFor(() => expect(result.current).toBe(true));
+    // Only protected once the 'minor' fetch actually resolves (not a default).
+    await waitFor(() => expect(result.current.state).toBe('protected'));
 
     mockUseDivineSession.mockReturnValue({ session: { token: 'adult' } });
     rerender();
@@ -140,7 +138,7 @@ describe('useProtectedMinorStatus', () => {
         }),
       ),
     );
-    await waitFor(() => expect(result.current).toBe(false));
+    await waitFor(() => expect(result.current.state).toBe('not_protected'));
   });
 
   it('self-heals: a transient failure recovers on remount', async () => {

@@ -73,16 +73,15 @@ vi.mock('@/hooks/useToast', () => ({
 // and the approved set. Defaults preserve every existing test's non-protected
 // behavior. The real dmSendGuard / dmInboundFilter run against this stub service.
 const pm = vi.hoisted(() => ({
-  isProtectedMinor: false,
+  state: 'not_protected' as 'protected' | 'not_protected' | 'unknown',
   approved: new Set<string>(),
 }));
 
 vi.mock('@/hooks/useProtectedMinorStatus', () => ({
-  useIsProtectedMinor: () => pm.isProtectedMinor,
   useProtectedMinorStatus: () => ({
-    state: pm.isProtectedMinor ? 'protected' : 'not_protected',
-    isProtectedMinor: pm.isProtectedMinor,
-    isKnown: true,
+    state: pm.state,
+    isProtectedMinor: pm.state === 'protected',
+    isKnown: pm.state !== 'unknown',
     verifiedMinorAt: null,
   }),
 }));
@@ -113,7 +112,7 @@ vi.mock('@/lib/dm', async () => {
 import { encodeConversationId } from '@/lib/dm';
 import { DmSendBlockedError } from '@/lib/dmSendGuard';
 import { readDmOutbox, writeDmOutbox } from '@/lib/dmOutbox';
-import { useDmCapability, useDmConversation, useDmInboxStatus, useDmSend } from './useDirectMessages';
+import { useDmCapability, useDmConversation, useDmConversations, useDmInboxStatus, useDmSend } from './useDirectMessages';
 
 function createWrapper(queryClient: QueryClient) {
   return function Wrapper({ children }: { children: React.ReactNode }) {
@@ -125,7 +124,7 @@ describe('useDirectMessages', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
     vi.clearAllMocks();
-    pm.isProtectedMinor = false;
+    pm.state = 'not_protected';
     pm.approved.clear();
     localStorageMock.clear();
     mockResolveDmReadRelays.mockResolvedValue(['wss://relay.example']);
@@ -631,7 +630,7 @@ describe('useDirectMessages', () => {
 
   describe('protected-minor enforcement wiring (#176)', () => {
     it('blocks a protected minor from sending to a non-approved recipient and publishes nothing', async () => {
-      pm.isProtectedMinor = true; // RECIPIENT_PUBKEY is NOT in pm.approved
+      pm.state = 'protected'; // RECIPIENT_PUBKEY is NOT in pm.approved
 
       const queryClient = new QueryClient({
         defaultOptions: {
@@ -657,7 +656,7 @@ describe('useDirectMessages', () => {
     });
 
     it('allows a protected minor to send to an approved official recipient', async () => {
-      pm.isProtectedMinor = true;
+      pm.state = 'protected';
       pm.approved.add(RECIPIENT_PUBKEY);
 
       const queryClient = new QueryClient({
@@ -683,7 +682,7 @@ describe('useDirectMessages', () => {
 
     it('blocks a group send when any recipient is non-approved (all-or-nothing), publishing nothing', async () => {
       const APPROVED = 'c'.repeat(64);
-      pm.isProtectedMinor = true;
+      pm.state = 'protected';
       pm.approved.add(APPROVED); // RECIPIENT_PUBKEY stays non-approved
 
       const queryClient = new QueryClient({
@@ -709,12 +708,135 @@ describe('useDirectMessages', () => {
 
     it('clears a thread with a non-approved peer for a protected minor', async () => {
       vi.spyOn(Date, 'now').mockReturnValue(1_234_567_890_000);
-      pm.isProtectedMinor = true; // RECIPIENT_PUBKEY not approved
+      pm.state = 'protected'; // RECIPIENT_PUBKEY not approved
 
       // A persisted outbox message to the non-approved peer would otherwise
       // surface in the thread; the inbound filter must clear it.
       writeDmOutbox(TEST_PUBKEY, [{
         clientId: 'local-1',
+        ownerPubkey: TEST_PUBKEY,
+        participantPubkeys: [RECIPIENT_PUBKEY],
+        content: 'history that must not show',
+        createdAt: 1_234_567_890,
+        lastAttemptAt: 1_234_567_890,
+        deliveryState: 'sending',
+        retryCount: 0,
+      }]);
+
+      const queryClient = new QueryClient({
+        defaultOptions: {
+          queries: { retry: false },
+          mutations: { retry: false },
+        },
+      });
+
+      const { result } = renderHook(
+        () => useDmConversation(encodeConversationId([RECIPIENT_PUBKEY])),
+        { wrapper: createWrapper(queryClient) },
+      );
+
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+      expect(result.current.data).toEqual([]);
+    });
+
+    it('fails closed on unknown: blocks a send to a non-approved recipient with retriable copy', async () => {
+      pm.state = 'unknown'; // RECIPIENT_PUBKEY not approved
+
+      const queryClient = new QueryClient({
+        defaultOptions: {
+          queries: { retry: false },
+          mutations: { retry: false },
+        },
+      });
+
+      const { result } = renderHook(() => useDmSend(), {
+        wrapper: createWrapper(queryClient),
+      });
+
+      await expect(
+        result.current.mutateAsync({
+          participantPubkeys: [RECIPIENT_PUBKEY],
+          content: 'sent before the status check resolved',
+        }),
+      ).rejects.toThrow();
+
+      // Nothing is built or published, exactly like the protected block.
+      expect(mockCreateRecipientGiftWraps).not.toHaveBeenCalled();
+      expect(mockPublishDmMessages).not.toHaveBeenCalled();
+
+      // The user-facing copy is the retriable "couldn't verify" framing, NOT
+      // the definitive official-accounts-only copy (wrong for an adult whose
+      // status check merely failed).
+      await waitFor(() =>
+        expect(mockToast).toHaveBeenCalledWith(
+          expect.objectContaining({
+            description: expect.stringContaining("couldn't verify your account"),
+          }),
+        ),
+      );
+    });
+
+    it('still allows a send to an approved official while unknown', async () => {
+      pm.state = 'unknown';
+      pm.approved.add(RECIPIENT_PUBKEY);
+
+      const queryClient = new QueryClient({
+        defaultOptions: {
+          queries: { retry: false },
+          mutations: { retry: false },
+        },
+      });
+
+      const { result } = renderHook(() => useDmSend(), {
+        wrapper: createWrapper(queryClient),
+      });
+
+      await act(async () => {
+        await result.current.mutateAsync({
+          participantPubkeys: [RECIPIENT_PUBKEY],
+          content: 'hi support, before my status resolved',
+        });
+      });
+
+      expect(mockPublishDmMessages).toHaveBeenCalled();
+    });
+
+    it('fails closed on unknown: filters a non-approved conversation from the list', async () => {
+      vi.spyOn(Date, 'now').mockReturnValue(1_234_567_890_000);
+      pm.state = 'unknown'; // RECIPIENT_PUBKEY not approved
+
+      writeDmOutbox(TEST_PUBKEY, [{
+        clientId: 'local-unknown-list',
+        ownerPubkey: TEST_PUBKEY,
+        participantPubkeys: [RECIPIENT_PUBKEY],
+        content: 'conversation that must not list',
+        createdAt: 1_234_567_890,
+        lastAttemptAt: 1_234_567_890,
+        deliveryState: 'sending',
+        retryCount: 0,
+      }]);
+
+      const queryClient = new QueryClient({
+        defaultOptions: {
+          queries: { retry: false },
+          mutations: { retry: false },
+        },
+      });
+
+      const { result } = renderHook(() => useDmConversations(), {
+        wrapper: createWrapper(queryClient),
+      });
+
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+      expect(result.current.data).toEqual([]);
+    });
+
+    it('fails closed on unknown: clears a thread with a non-approved peer', async () => {
+      vi.spyOn(Date, 'now').mockReturnValue(1_234_567_890_000);
+      pm.state = 'unknown'; // RECIPIENT_PUBKEY not approved
+
+      writeDmOutbox(TEST_PUBKEY, [{
+        clientId: 'local-unknown-thread',
         ownerPubkey: TEST_PUBKEY,
         participantPubkeys: [RECIPIENT_PUBKEY],
         content: 'history that must not show',
