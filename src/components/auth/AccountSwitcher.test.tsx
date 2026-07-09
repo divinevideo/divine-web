@@ -13,6 +13,8 @@ const {
   mockRelaySelector,
   mockSetLogin,
   mockUseLoggedInAccounts,
+  mockUseNostrLogin,
+  mockUseProtectedMinorStatus,
 } = vi.hoisted(() => ({
   mockClearJwtCookie: vi.fn(),
   mockClearLoginCookie: vi.fn(),
@@ -22,6 +24,8 @@ const {
   mockRelaySelector: vi.fn(),
   mockSetLogin: vi.fn(),
   mockUseLoggedInAccounts: vi.fn(),
+  mockUseNostrLogin: vi.fn(),
+  mockUseProtectedMinorStatus: vi.fn(),
 }));
 
 vi.mock('react-router-dom', () => ({
@@ -29,9 +33,11 @@ vi.mock('react-router-dom', () => ({
 }));
 
 vi.mock('@nostrify/react/login', () => ({
-  useNostrLogin: () => ({
-    logins: [],
-  }),
+  useNostrLogin: () => mockUseNostrLogin(),
+}));
+
+vi.mock('@/hooks/useProtectedMinorStatus', () => ({
+  useProtectedMinorStatus: () => mockUseProtectedMinorStatus(),
 }));
 
 vi.mock('@/hooks/useLoggedInAccounts', () => ({
@@ -80,11 +86,28 @@ vi.mock('@/components/RelaySelector', () => ({
 }));
 
 vi.mock('./LocalNsecBanner', () => ({
-  LocalNsecBanner: () => null,
+  LocalNsecBanner: () => <div data-testid="local-nsec-banner" />,
 }));
 
 import { AccountSwitcher } from './AccountSwitcher';
 import { OVERLAY_LAYERS } from '@/lib/overlayLayers';
+import {
+  NOT_PROTECTED,
+  UNKNOWN_PROTECTED_MINOR_STATUS,
+  type ProtectedMinorStatus,
+} from '@/lib/protectedMinor';
+
+const PROTECTED_STATUS: ProtectedMinorStatus = Object.freeze({
+  state: 'protected',
+  isKnown: true,
+  verifiedMinorAt: null,
+});
+
+const LOCAL_NSEC_LOGIN = {
+  id: 'nsec-login',
+  type: 'nsec',
+  data: { nsec: 'nsec1localsecret' },
+};
 
 describe('AccountSwitcher', () => {
   beforeEach(async () => {
@@ -107,6 +130,10 @@ describe('AccountSwitcher', () => {
     mockRemoveLogin.mockClear();
     mockRelaySelector.mockClear();
     mockSetLogin.mockClear();
+    mockUseNostrLogin.mockReset();
+    mockUseNostrLogin.mockReturnValue({ logins: [] });
+    mockUseProtectedMinorStatus.mockReset();
+    mockUseProtectedMinorStatus.mockReturnValue(NOT_PROTECTED);
     mockUseLoggedInAccounts.mockReturnValue({
       currentUser: {
         id: `jwt:${'a'.repeat(64)}`,
@@ -141,5 +168,33 @@ describe('AccountSwitcher', () => {
         contentClassName: OVERLAY_LAYERS.nestedOverlayFloating,
       }),
     );
+  });
+
+  describe('nsec backup banner gating (#182)', () => {
+    beforeEach(() => {
+      mockUseNostrLogin.mockReturnValue({ logins: [LOCAL_NSEC_LOGIN] });
+    });
+
+    it('shows the backup banner for a positively not-protected user with a local nsec login', () => {
+      render(<AccountSwitcher onAddAccountClick={vi.fn()} />);
+
+      expect(screen.getByTestId('local-nsec-banner')).toBeInTheDocument();
+    });
+
+    it('hides the backup banner for a protected minor', () => {
+      mockUseProtectedMinorStatus.mockReturnValue(PROTECTED_STATUS);
+
+      render(<AccountSwitcher onAddAccountClick={vi.fn()} />);
+
+      expect(screen.queryByTestId('local-nsec-banner')).not.toBeInTheDocument();
+    });
+
+    it('fails closed: hides the backup banner while the status is unknown', () => {
+      mockUseProtectedMinorStatus.mockReturnValue(UNKNOWN_PROTECTED_MINOR_STATUS);
+
+      render(<AccountSwitcher onAddAccountClick={vi.fn()} />);
+
+      expect(screen.queryByTestId('local-nsec-banner')).not.toBeInTheDocument();
+    });
   });
 });

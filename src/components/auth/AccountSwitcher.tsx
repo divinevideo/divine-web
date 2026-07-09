@@ -18,10 +18,12 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar.tsx'
 import { useNostrLogin } from '@nostrify/react/login';
 import { useLoggedInAccounts, type Account } from '@/hooks/useLoggedInAccounts';
 import { useDivineSession } from '@/hooks/useDivineSession';
+import { useProtectedMinorStatus } from '@/hooks/useProtectedMinorStatus';
 import { clearLoginCookie, clearJwtCookie } from '@/lib/crossSubdomainAuth';
 import { genUserName } from '@/lib/genUserName';
 import { getSafeProfileImage } from '@/lib/imageUtils';
 import { getActiveLocalNsecLogin } from '@/lib/localNsecAccount';
+import { isMinorKeyHandoverRestricted } from '@/lib/protectedMinor';
 import { OVERLAY_LAYERS } from '@/lib/overlayLayers';
 import { RelaySelector } from '@/components/RelaySelector';
 import { LocalNsecBanner } from './LocalNsecBanner';
@@ -35,8 +37,12 @@ export function AccountSwitcher({ onAddAccountClick }: AccountSwitcherProps) {
   const { logins } = useNostrLogin();
   const { currentUser, otherUsers, setLogin, removeLogin } = useLoggedInAccounts();
   const { clearSession } = useDivineSession();
+  const { state: protectedMinorState } = useProtectedMinorStatus();
   const navigate = useNavigate();
   const localNsecLogin = getActiveLocalNsecLogin(logins);
+  // #182: a protected-minor session (or one whose status is still unknown —
+  // fail closed) must not be offered the raw-key backup/copy affordance.
+  const keyHandoverRestricted = isMinorKeyHandoverRestricted(protectedMinorState);
 
   if (!currentUser) return null;
 
@@ -64,7 +70,7 @@ export function AccountSwitcher({ onAddAccountClick }: AccountSwitcherProps) {
 
   return (
     <div className='account-switcher w-full min-w-0 max-w-full space-y-3'>
-      {localNsecLogin ? <LocalNsecBanner nsec={localNsecLogin.data.nsec} /> : null}
+      {localNsecLogin && !keyHandoverRestricted ? <LocalNsecBanner nsec={localNsecLogin.data.nsec} /> : null}
       <DropdownMenu modal={false}>
         <DropdownMenuTrigger asChild>
           <button className='flex w-full min-w-0 items-center gap-3 rounded-full p-3 text-foreground transition-all hover:bg-accent'>

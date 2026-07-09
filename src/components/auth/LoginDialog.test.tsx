@@ -3,7 +3,18 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { initializeI18n } from '@/lib/i18n';
+import {
+  NOT_PROTECTED,
+  UNKNOWN_PROTECTED_MINOR_STATUS,
+  type ProtectedMinorStatus,
+} from '@/lib/protectedMinor';
 import LoginDialog from './LoginDialog';
+
+const PROTECTED_STATUS: ProtectedMinorStatus = Object.freeze({
+  state: 'protected',
+  isKnown: true,
+  verifiedMinorAt: null,
+});
 
 const {
   mockBuildLoginRedirect,
@@ -13,6 +24,7 @@ const {
   mockJoinInviteWaitlist,
   mockLoginActions,
   mockSetInviteHandoff,
+  mockUseProtectedMinorStatus,
   mockValidateInviteCode,
 } = vi.hoisted(() => ({
   mockBuildLoginRedirect: vi.fn(),
@@ -26,6 +38,7 @@ const {
     nsec: vi.fn(),
   },
   mockSetInviteHandoff: vi.fn(),
+  mockUseProtectedMinorStatus: vi.fn(),
   mockValidateInviteCode: vi.fn(),
 }));
 
@@ -56,6 +69,10 @@ vi.mock('@/hooks/useLoginActions', () => ({
   useLoginActions: () => mockLoginActions,
 }));
 
+vi.mock('@/hooks/useProtectedMinorStatus', () => ({
+  useProtectedMinorStatus: () => mockUseProtectedMinorStatus(),
+}));
+
 vi.mock('@/lib/localNsecAccount', async () => {
   const actual = await vi.importActual<typeof import('@/lib/localNsecAccount')>('@/lib/localNsecAccount');
 
@@ -84,6 +101,7 @@ describe('LoginDialog', () => {
       waitlistEnabled: true,
     });
     mockGetStoredLocalNsecLogin.mockReturnValue(null);
+    mockUseProtectedMinorStatus.mockReturnValue(NOT_PROTECTED);
     mockBuildSignupRedirect.mockResolvedValue({
       state: 'signup-state',
       url: 'https://login.divine.video/api/oauth/authorize?client_id=divine-web',
@@ -177,6 +195,54 @@ describe('LoginDialog', () => {
 
     expect(await screen.findByRole('button', { name: /Secure with divine.video login/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Back up nsec/i })).toBeInTheDocument();
+  });
+
+  describe('key-handover gating for protected minors (#182)', () => {
+    it('hides the local nsec banner for a protected minor even when a browser-local key exists', async () => {
+      mockUseProtectedMinorStatus.mockReturnValue(PROTECTED_STATUS);
+      mockGetStoredLocalNsecLogin.mockReturnValue({
+        type: 'nsec',
+        data: { nsec: 'nsec1example' },
+      });
+
+      render(<LoginDialog isOpen onClose={vi.fn()} onLogin={vi.fn()} />);
+
+      expect(await screen.findByRole('tab', { name: /^Register$/i })).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /Back up nsec/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /Secure with divine.video login/i })).not.toBeInTheDocument();
+    });
+
+    it('hides the Nostr key-import disclosure on the sign-in tab for a protected minor', async () => {
+      const user = userEvent.setup();
+      mockUseProtectedMinorStatus.mockReturnValue(PROTECTED_STATUS);
+
+      render(<LoginDialog isOpen onClose={vi.fn()} onLogin={vi.fn()} />);
+
+      await user.click(await screen.findByRole('tab', { name: /^Sign in$/i }));
+
+      expect(await screen.findByRole('button', { name: /^Sign in at login\.divine\.video$/i })).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /Use Nostr instead/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /Login with Extension/i })).not.toBeInTheDocument();
+    });
+
+    it('fails closed: hides the banner and the Nostr disclosure while the status is unknown', async () => {
+      const user = userEvent.setup();
+      mockUseProtectedMinorStatus.mockReturnValue(UNKNOWN_PROTECTED_MINOR_STATUS);
+      mockGetStoredLocalNsecLogin.mockReturnValue({
+        type: 'nsec',
+        data: { nsec: 'nsec1example' },
+      });
+
+      render(<LoginDialog isOpen onClose={vi.fn()} onLogin={vi.fn()} />);
+
+      expect(await screen.findByRole('tab', { name: /^Register$/i })).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /Back up nsec/i })).not.toBeInTheDocument();
+
+      await user.click(screen.getByRole('tab', { name: /^Sign in$/i }));
+
+      expect(await screen.findByRole('button', { name: /^Sign in at login\.divine\.video$/i })).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /Use Nostr instead/i })).not.toBeInTheDocument();
+    });
   });
 
   it('validates an invite, stores the handoff, and redirects to login.divine.video', async () => {

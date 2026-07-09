@@ -12,8 +12,10 @@ import { setInviteHandoff } from '@/lib/authHandoff';
 import { buildLoginRedirect, buildSignupRedirect } from '@/lib/divineLogin';
 import { getInviteClientConfig, joinInviteWaitlist, validateInviteCode } from '@/lib/inviteApi';
 import { getStoredLocalNsecLogin } from '@/lib/localNsecAccount';
+import { isMinorKeyHandoverRestricted } from '@/lib/protectedMinor';
 import { cn } from '@/lib/utils';
 import { useLoginActions } from '@/hooks/useLoginActions';
+import { useProtectedMinorStatus } from '@/hooks/useProtectedMinorStatus';
 
 import InviteCodeForm from './InviteCodeForm';
 import LocalNsecBanner from './LocalNsecBanner';
@@ -59,6 +61,13 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin }) =
   const [waitlistSuccess, setWaitlistSuccess] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const login = useLoginActions();
+  const { state: protectedMinorState } = useProtectedMinorStatus();
+  // #182: while a protected-minor session is active (or its status is still
+  // unknown — fail closed), this dialog must not surface raw-key affordances:
+  // no stored-nsec backup banner, no nsec/key-file/bunker/extension import.
+  // Signed-out visitors have no session token and resolve not_protected, so
+  // the ordinary login paths are unaffected.
+  const keyHandoverRestricted = isMinorKeyHandoverRestricted(protectedMinorState);
 
   useEffect(() => {
     if (!isOpen) {
@@ -300,7 +309,7 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin }) =
         </DialogHeader>
 
         <div className="space-y-4 px-6 pb-6 pt-2">
-          {storedLocalNsec ? <LocalNsecBanner nsec={storedLocalNsec} /> : null}
+          {storedLocalNsec && !keyHandoverRestricted ? <LocalNsecBanner nsec={storedLocalNsec} /> : null}
 
           {generalError ? (
             <Alert variant="destructive">
@@ -356,9 +365,10 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin }) =
                 isLoading={isLoginLoading}
                 onContinue={handleExistingAccountLogin}
                 onToggleAdvanced={() => setAdvancedOpen((current) => !current)}
+                showNostrOptions={!keyHandoverRestricted}
               />
 
-              <Collapsible open={advancedOpen}>
+              <Collapsible open={advancedOpen && !keyHandoverRestricted}>
                 <CollapsibleContent className="space-y-4 pt-2">
                   <Tabs className="w-full" defaultValue="extension">
                     <TabsList className="grid w-full grid-cols-3 rounded-lg bg-muted">
