@@ -59,7 +59,7 @@ export function useAdultVerification(): AdultVerificationState {
   // adult gate. Gating here, at the single seam every adult-content consumer
   // reads, locks them all at once.
   const minorStatus = useProtectedMinorStatus();
-  const minorLocked = minorStatus.isProtectedMinor;
+  const minorLocked = minorStatus.state === 'protected';
   // Unknown only occurs for authenticated sessions (signed-out resolves to
   // not-protected), and the check was designed for #175 to fail closed on it.
   // Unknown is also exposed through isLoading for consumers that can surface

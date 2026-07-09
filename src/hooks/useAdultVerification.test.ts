@@ -18,7 +18,7 @@ vi.mock('@/lib/mediaViewerAuth', () => ({
 // Protected-minor lock (#453): default to a known not-protected session so the
 // pre-existing behavior tests run unlocked; lock tests override per-case.
 const PROTECTED: ProtectedMinorStatus = Object.freeze({
-  state: 'protected' as const, isProtectedMinor: true, isKnown: true, verifiedMinorAt: new Date('2026-05-01T00:00:00Z'),
+  state: 'protected' as const, isKnown: true, verifiedMinorAt: new Date('2026-05-01T00:00:00Z'),
 });
 let minorStatus: ProtectedMinorStatus = NOT_PROTECTED;
 vi.mock('@/hooks/useProtectedMinorStatus', () => ({
