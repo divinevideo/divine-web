@@ -53,6 +53,9 @@ export function LocalNsecBanner(props: LocalNsecBannerProps) {
       // Fall through to file download when clipboard access is unavailable.
     }
 
+    // Re-check after the await: a clipboard write can reject late (permission
+    // prompt, focus loss) and the nsec would leave the app in the file below.
+    if (keyHandoverRestrictedRef.current) return;
     const didDownload = downloadBackup(nsec);
     setStatus(didDownload
       ? 'Backup file downloaded. Stash it somewhere safe.'

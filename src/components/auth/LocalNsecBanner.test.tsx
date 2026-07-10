@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -122,22 +122,61 @@ describe('LocalNsecBanner', () => {
         url: 'https://login.divine.video/api/oauth/authorize?client_id=divine-web',
       });
       // Let the pending handleSecure continuation run to completion. The
-      // happy-path test above proves this rig reaches location.assign when
-      // unrestricted, so not-called here is a real verdict, not a vacuous one.
+      // happy-path test above proves this code path reaches location.assign
+      // when unrestricted, so not-called here is a real verdict.
       await new Promise((resolve) => setTimeout(resolve, 10));
 
       expect(locationAssign).not.toHaveBeenCalled();
     });
 
+    // fireEvent (not userEvent) for the clipboard paths: userEvent.setup()
+    // installs its own navigator.clipboard stub, which would detach the
+    // clipboardWriteText spy these two tests assert on.
+    it('aborts the download fall-through when the restriction engages while the clipboard write is pending', async () => {
+      let rejectWrite!: (error: Error) => void;
+      clipboardWriteText.mockImplementation(
+        () => new Promise((_resolve, reject) => { rejectWrite = reject; }),
+      );
+      const createObjectURL = vi.fn(() => 'blob:stub');
+      Object.defineProperty(URL, 'createObjectURL', {
+        value: createObjectURL,
+        writable: true,
+        configurable: true,
+      });
+
+      const { rerender } = render(<LocalNsecBanner nsec="nsec1example" />);
+
+      fireEvent.click(screen.getByRole('button', { name: /Back up nsec/i }));
+      expect(clipboardWriteText).toHaveBeenCalled();
+
+      mockUseProtectedMinorStatus.mockReturnValue(PROTECTED_STATUS);
+      rerender(<LocalNsecBanner nsec="nsec1example" />);
+
+      // A clipboard write can reject late (permission prompt, focus loss); the
+      // catch fall-through must not hand the key over via a file download.
+      rejectWrite(new Error('NotAllowedError'));
+      await new Promise((resolve) => setTimeout(resolve, 10));
+
+      expect(createObjectURL).not.toHaveBeenCalled();
+      expect(screen.queryByText(/somewhere safe/i)).not.toBeInTheDocument();
+    });
+
     it('refuses to copy or download the nsec when rendered by an ungated parent while restricted', async () => {
-      const user = userEvent.setup();
+      const createObjectURL = vi.fn(() => 'blob:stub');
+      Object.defineProperty(URL, 'createObjectURL', {
+        value: createObjectURL,
+        writable: true,
+        configurable: true,
+      });
       mockUseProtectedMinorStatus.mockReturnValue(PROTECTED_STATUS);
 
       render(<LocalNsecBanner nsec="nsec1example" />);
 
-      await user.click(screen.getByRole('button', { name: /Back up nsec/i }));
+      fireEvent.click(screen.getByRole('button', { name: /Back up nsec/i }));
+      await new Promise((resolve) => setTimeout(resolve, 10));
 
       expect(clipboardWriteText).not.toHaveBeenCalled();
+      expect(createObjectURL).not.toHaveBeenCalled();
       expect(screen.queryByText(/somewhere safe/i)).not.toBeInTheDocument();
     });
 

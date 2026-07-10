@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -286,7 +286,9 @@ describe('LoginDialog', () => {
         mockUseProtectedMinorStatus.mockReturnValue(PROTECTED_STATUS);
         rerender(<LoginDialog isOpen onClose={vi.fn()} onLogin={vi.fn()} />);
 
-        vi.advanceTimersByTime(100);
+        act(() => {
+          vi.advanceTimersByTime(100);
+        });
       } finally {
         vi.useRealTimers();
       }
