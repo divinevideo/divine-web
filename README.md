@@ -1,4 +1,6 @@
-# diVine Web
+# Divine Web
+
+Divine is a decentralized short-form video app reviving Vine's 6-second format, built on Nostr — human-made content only, no AI slop. This repo is the web client.
 
 OpenVine-compatible Nostr client for short-form looping videos. Built with React 18.x, TailwindCSS 3.x, Vite, shadcn/ui, and Nostrify.
 
@@ -56,3 +58,7 @@ For detailed relay documentation, see [docs/relay-architecture.md](docs/relay-ar
 ## Development
 
 Built with MKStack template - a starter for Nostr client applications.
+
+---
+
+Part of [Divine](https://divine.video) — your playground for human creativity · [Brand guidelines](https://github.com/divinevideo/brand-guidelines)
