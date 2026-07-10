@@ -296,6 +296,70 @@ describe('LoginDialog', () => {
       expect(mockLoginActions.nsec).not.toHaveBeenCalled();
     });
 
+    // fireEvent (not userEvent) so the local clipboard spy stays attached;
+    // userEvent.setup() installs its own navigator.clipboard stub.
+    it('aborts an in-flight nsec backup when the restriction engages mid-flight (real parent path)', async () => {
+      mockGetStoredLocalNsecLogin.mockReturnValue({
+        type: 'nsec',
+        data: { nsec: 'nsec1example' },
+      });
+
+      let rejectWrite!: (error: Error) => void;
+      const clipboardWriteText = vi.fn(
+        () => new Promise<void>((_resolve, reject) => { rejectWrite = reject; }),
+      );
+      const originalClipboard = Object.getOwnPropertyDescriptor(window.navigator, 'clipboard');
+      const originalCreateObjectURL = Object.getOwnPropertyDescriptor(URL, 'createObjectURL');
+      const originalRevokeObjectURL = Object.getOwnPropertyDescriptor(URL, 'revokeObjectURL');
+      const createObjectURL = vi.fn(() => 'blob:stub');
+      Object.defineProperty(window.navigator, 'clipboard', {
+        value: { writeText: clipboardWriteText }, writable: true, configurable: true,
+      });
+      Object.defineProperty(URL, 'createObjectURL', {
+        value: createObjectURL, writable: true, configurable: true,
+      });
+      Object.defineProperty(URL, 'revokeObjectURL', {
+        value: vi.fn(), writable: true, configurable: true,
+      });
+
+      try {
+        const { rerender } = render(<LoginDialog isOpen onClose={vi.fn()} onLogin={vi.fn()} />);
+
+        fireEvent.click(await screen.findByRole('button', { name: /Back up nsec/i }));
+        expect(clipboardWriteText).toHaveBeenCalled();
+
+        mockUseProtectedMinorStatus.mockReturnValue(PROTECTED_STATUS);
+        rerender(<LoginDialog isOpen onClose={vi.fn()} onLogin={vi.fn()} />);
+        // The affordance disappears from the DOM...
+        expect(screen.queryByRole('button', { name: /Back up nsec/i })).not.toBeInTheDocument();
+
+        // ...and the flip must reach the in-flight continuation too: a late
+        // clipboard rejection must not fall through to a plaintext download.
+        // This goes through the real parent (not an in-place banner rerender)
+        // so the banner's mount lifecycle is the production one.
+        rejectWrite(new Error('NotAllowedError'));
+        await new Promise((resolve) => setTimeout(resolve, 10));
+
+        expect(createObjectURL).not.toHaveBeenCalled();
+      } finally {
+        if (originalClipboard) {
+          Object.defineProperty(window.navigator, 'clipboard', originalClipboard);
+        } else {
+          delete (window.navigator as { clipboard?: unknown }).clipboard;
+        }
+        if (originalCreateObjectURL) {
+          Object.defineProperty(URL, 'createObjectURL', originalCreateObjectURL);
+        } else {
+          delete (URL as { createObjectURL?: unknown }).createObjectURL;
+        }
+        if (originalRevokeObjectURL) {
+          Object.defineProperty(URL, 'revokeObjectURL', originalRevokeObjectURL);
+        } else {
+          delete (URL as { revokeObjectURL?: unknown }).revokeObjectURL;
+        }
+      }
+    });
+
     it('fails closed: hides the banner and the Nostr disclosure while the status is unknown', async () => {
       const user = userEvent.setup();
       mockUseProtectedMinorStatus.mockReturnValue(UNKNOWN_PROTECTED_MINOR_STATUS);

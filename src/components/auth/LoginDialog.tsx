@@ -64,9 +64,9 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin }) =
   const { state: protectedMinorState } = useProtectedMinorStatus();
   // #182: while a protected-minor session is active (or its status is still
   // unknown — fail closed), this dialog must not surface raw-key affordances:
-  // no stored-nsec backup banner, no nsec/key-file/bunker/extension import.
-  // Signed-out visitors have no session token and resolve not_protected, so
-  // the ordinary login paths are unaffected.
+  // no nsec/key-file/bunker/extension import (the stored-nsec backup banner
+  // gates itself). Signed-out visitors have no session token and resolve
+  // not_protected, so the ordinary login paths are unaffected.
   const keyHandoverRestricted = isMinorKeyHandoverRestricted(protectedMinorState);
   // #182 command-boundary re-check (mirrors the divine-mobile #5991 review
   // finding): the render gates below hide the import affordances, but pending
@@ -332,7 +332,12 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin }) =
         </DialogHeader>
 
         <div className="space-y-4 px-6 pb-6 pt-2">
-          {storedLocalNsec && !keyHandoverRestricted ? <LocalNsecBanner nsec={storedLocalNsec} /> : null}
+          {/* #182: the banner gates itself for protected minors. It must render
+              unconditionally here so a restricted flip keeps it mounted
+              (rendering null) and its command-boundary re-checks stay live; a
+              gate at this level would unmount it mid-flight (dcadenas review
+              on #476). */}
+          {storedLocalNsec ? <LocalNsecBanner nsec={storedLocalNsec} /> : null}
 
           {generalError ? (
             <Alert variant="destructive">

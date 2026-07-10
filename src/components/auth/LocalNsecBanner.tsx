@@ -32,14 +32,13 @@ export function LocalNsecBanner(props: LocalNsecBannerProps) {
   const [status, setStatus] = useState<string | null>(null);
   const { state: protectedMinorState } = useProtectedMinorStatus();
   // #182 command-boundary re-check (mirrors the divine-mobile #5991 review
-  // finding): render-time gating in the parents decides whether this banner
-  // shows, but a pending continuation (the secure-redirect await below)
-  // captures its closure before a live status check can resolve `protected`
-  // mid-interaction. A ref always holds the latest verdict, so each raw-key
-  // handover re-checks at the moment it happens, and a stale-rendered banner
-  // under a future ungated parent cannot hand the key over either.
+  // finding): a pending continuation (the clipboard-reject fall-through, the
+  // secure-redirect await) captures its closure before a live status check can
+  // resolve `protected` mid-interaction. A ref always holds the latest verdict,
+  // so each raw-key handover re-checks at the moment it happens.
+  const keyHandoverRestricted = isMinorKeyHandoverRestricted(protectedMinorState);
   const keyHandoverRestrictedRef = useRef(false);
-  keyHandoverRestrictedRef.current = isMinorKeyHandoverRestricted(protectedMinorState);
+  keyHandoverRestrictedRef.current = keyHandoverRestricted;
 
   const handleBackUp = async () => {
     if (keyHandoverRestrictedRef.current) return;
@@ -70,6 +69,15 @@ export function LocalNsecBanner(props: LocalNsecBannerProps) {
     if (keyHandoverRestrictedRef.current) return;
     window.location.assign(redirect.url);
   };
+
+  // The banner gates itself (dcadenas review on #476): parents must render it
+  // unconditionally so a restricted flip keeps this component MOUNTED rendering
+  // null instead of unmounting it. An unmounting component never re-renders, so
+  // a parent-side gate would freeze the ref above at its pre-flip value and the
+  // re-checks in the handlers would never see the restriction engage.
+  if (keyHandoverRestricted) {
+    return null;
+  }
 
   return (
     <Alert className="border-brand-green/30 bg-brand-light-green/40 dark:bg-brand-dark-green/20">

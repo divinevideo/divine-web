@@ -93,7 +93,6 @@ import { AccountSwitcher } from './AccountSwitcher';
 import { OVERLAY_LAYERS } from '@/lib/overlayLayers';
 import {
   NOT_PROTECTED,
-  UNKNOWN_PROTECTED_MINOR_STATUS,
   type ProtectedMinorStatus,
 } from '@/lib/protectedMinor';
 
@@ -170,27 +169,32 @@ describe('AccountSwitcher', () => {
     );
   });
 
-  describe('nsec backup banner gating (#182)', () => {
+  describe('nsec backup banner mounting (#182)', () => {
     beforeEach(() => {
       mockUseNostrLogin.mockReturnValue({ logins: [LOCAL_NSEC_LOGIN] });
     });
 
-    it('shows the backup banner for a positively not-protected user with a local nsec login', () => {
+    it('renders the backup banner whenever a local nsec login exists', () => {
       render(<AccountSwitcher onAddAccountClick={vi.fn()} />);
 
       expect(screen.getByTestId('local-nsec-banner')).toBeInTheDocument();
     });
 
-    it('hides the backup banner for a protected minor', () => {
+    // The banner gates itself for protected minors (LocalNsecBanner.test.tsx;
+    // real-parent flip coverage in LoginDialog.test.tsx). This parent must NOT
+    // gate it: unmounting on a restricted flip would freeze the banner's
+    // command-boundary re-checks at their pre-flip verdict (dcadenas review on
+    // #476), so the banner stays mounted here even while restricted.
+    it('keeps the banner mounted while restricted so its own gate stays live', () => {
       mockUseProtectedMinorStatus.mockReturnValue(PROTECTED_STATUS);
 
       render(<AccountSwitcher onAddAccountClick={vi.fn()} />);
 
-      expect(screen.queryByTestId('local-nsec-banner')).not.toBeInTheDocument();
+      expect(screen.getByTestId('local-nsec-banner')).toBeInTheDocument();
     });
 
-    it('fails closed: hides the backup banner while the status is unknown', () => {
-      mockUseProtectedMinorStatus.mockReturnValue(UNKNOWN_PROTECTED_MINOR_STATUS);
+    it('renders no banner without a local nsec login', () => {
+      mockUseNostrLogin.mockReturnValue({ logins: [] });
 
       render(<AccountSwitcher onAddAccountClick={vi.fn()} />);
 

@@ -209,30 +209,24 @@ describe('LocalNsecBanner', () => {
       }
     });
 
-    it('refuses to copy or download the nsec when rendered by an ungated parent while restricted', async () => {
-      const createObjectURL = stubObjectUrl();
+    // The banner is its own gate (dcadenas review on #476): parents render it
+    // unconditionally so a restricted flip keeps it mounted, and the banner
+    // renders null itself. These two pin the render-side of that gate; the
+    // flip tests above pin the command-boundary side.
+    it('renders nothing while the account is a protected minor', () => {
       mockUseProtectedMinorStatus.mockReturnValue(PROTECTED_STATUS);
 
-      render(<LocalNsecBanner nsec="nsec1example" />);
+      const { container } = render(<LocalNsecBanner nsec="nsec1example" />);
 
-      fireEvent.click(screen.getByRole('button', { name: /Back up nsec/i }));
-      await new Promise((resolve) => setTimeout(resolve, 10));
-
-      expect(clipboardWriteText).not.toHaveBeenCalled();
-      expect(createObjectURL).not.toHaveBeenCalled();
-      expect(screen.queryByText(/somewhere safe/i)).not.toBeInTheDocument();
+      expect(container).toBeEmptyDOMElement();
     });
 
-    it('fails closed: refuses to start the secure-account redirect while the status is unknown', async () => {
-      const user = userEvent.setup();
+    it('fails closed: renders nothing while the status is unknown', () => {
       mockUseProtectedMinorStatus.mockReturnValue(UNKNOWN_PROTECTED_MINOR_STATUS);
 
-      render(<LocalNsecBanner nsec="nsec1example" />);
+      const { container } = render(<LocalNsecBanner nsec="nsec1example" />);
 
-      await user.click(screen.getByRole('button', { name: /Secure with divine.video login/i }));
-
-      expect(mockBuildSecureAccountRedirect).not.toHaveBeenCalled();
-      expect(locationAssign).not.toHaveBeenCalled();
+      expect(container).toBeEmptyDOMElement();
     });
   });
 });
