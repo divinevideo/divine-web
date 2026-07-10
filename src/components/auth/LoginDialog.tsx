@@ -148,7 +148,13 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin }) =
         throw new Error(t('loginDialog.errorExtensionNotFound'));
       }
 
-      await login.extension();
+      // The pre-click ref check above goes stale while the extension prompt is
+      // open; the beforeCommit guard re-checks at the moment the signer would
+      // be committed. Not committed → stop silently, like the nsec path.
+      const committed = await login.extension({
+        beforeCommit: () => !keyHandoverRestrictedRef.current,
+      });
+      if (!committed) return;
       onLogin();
       onClose();
     } catch (caughtError) {
@@ -208,7 +214,12 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin }) =
     setBunkerError(null);
 
     try {
-      await login.bunker(bunkerUri);
+      // Same commit-boundary re-check as the extension path: the pre-click
+      // check goes stale while the bunker connect is pending.
+      const committed = await login.bunker(bunkerUri, {
+        beforeCommit: () => !keyHandoverRestrictedRef.current,
+      });
+      if (!committed) return;
       onLogin();
       onClose();
       setBunkerUri('');

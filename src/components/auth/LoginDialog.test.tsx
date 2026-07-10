@@ -296,6 +296,105 @@ describe('LoginDialog', () => {
       expect(mockLoginActions.nsec).not.toHaveBeenCalled();
     });
 
+    it('logs in via extension when positively not protected (positive control)', async () => {
+      const user = userEvent.setup();
+      (window as unknown as { nostr?: object }).nostr = {};
+      mockLoginActions.extension.mockResolvedValue(true);
+      const onLogin = vi.fn();
+      const onClose = vi.fn();
+
+      try {
+        render(<LoginDialog isOpen onClose={onClose} onLogin={onLogin} />);
+
+        await user.click(await screen.findByRole('tab', { name: /^Sign in$/i }));
+        await user.click(screen.getByRole('button', { name: /Use Nostr instead/i }));
+        await user.click(await screen.findByRole('button', { name: /Login with Extension/i }));
+
+        await waitFor(() => {
+          expect(onLogin).toHaveBeenCalled();
+          expect(onClose).toHaveBeenCalled();
+        });
+      } finally {
+        delete (window as unknown as { nostr?: object }).nostr;
+      }
+    });
+
+    it('blocks a pending extension login when the restriction engages during the handshake', async () => {
+      const user = userEvent.setup();
+      (window as unknown as { nostr?: object }).nostr = {};
+      let resolveHandshake!: () => void;
+      const handshake = new Promise<void>((resolve) => { resolveHandshake = resolve; });
+      // Faithful to the real contract (pinned in useLoginActions.test.ts): the
+      // action runs the caller's guard at commit time and reports whether the
+      // signer was committed.
+      mockLoginActions.extension.mockImplementation(
+        async (options?: { beforeCommit?: () => boolean }) => {
+          await handshake;
+          return options?.beforeCommit?.() ?? true;
+        },
+      );
+      const onLogin = vi.fn();
+      const onClose = vi.fn();
+
+      try {
+        const { rerender } = render(<LoginDialog isOpen onClose={onClose} onLogin={onLogin} />);
+
+        await user.click(await screen.findByRole('tab', { name: /^Sign in$/i }));
+        await user.click(screen.getByRole('button', { name: /Use Nostr instead/i }));
+        await user.click(await screen.findByRole('button', { name: /Login with Extension/i }));
+        expect(mockLoginActions.extension).toHaveBeenCalled();
+
+        // The verdict flips to protected while the extension prompt is open.
+        mockUseProtectedMinorStatus.mockReturnValue(PROTECTED_STATUS);
+        rerender(<LoginDialog isOpen onClose={onClose} onLogin={onLogin} />);
+
+        resolveHandshake();
+        await new Promise((resolve) => setTimeout(resolve, 10));
+
+        expect(onLogin).not.toHaveBeenCalled();
+        expect(onClose).not.toHaveBeenCalled();
+      } finally {
+        delete (window as unknown as { nostr?: object }).nostr;
+      }
+    });
+
+    it('blocks a pending bunker login when the restriction engages during the connect', async () => {
+      const user = userEvent.setup();
+      let resolveConnect!: () => void;
+      const connect = new Promise<void>((resolve) => { resolveConnect = resolve; });
+      mockLoginActions.bunker.mockImplementation(
+        async (_uri: string, options?: { beforeCommit?: () => boolean }) => {
+          await connect;
+          return options?.beforeCommit?.() ?? true;
+        },
+      );
+      const onLogin = vi.fn();
+      const onClose = vi.fn();
+
+      const { rerender } = render(<LoginDialog isOpen onClose={onClose} onLogin={onLogin} />);
+
+      await user.click(await screen.findByRole('tab', { name: /^Sign in$/i }));
+      await user.click(screen.getByRole('button', { name: /Use Nostr instead/i }));
+      // The trigger renders both the full and sm:hidden short labels, so the
+      // accessible name is "Bunker Bnkr" - no exact match.
+      await user.click(await screen.findByRole('tab', { name: /Bunker/i }));
+      fireEvent.change(screen.getByLabelText(/Bunker URI/i), {
+        target: { value: 'bunker://remote-signer.example?relay=wss%3A%2F%2Frelay.example' },
+      });
+      await user.click(screen.getByRole('button', { name: /Login with Bunker/i }));
+      expect(mockLoginActions.bunker).toHaveBeenCalled();
+
+      // The verdict flips to protected while the bunker connect is pending.
+      mockUseProtectedMinorStatus.mockReturnValue(PROTECTED_STATUS);
+      rerender(<LoginDialog isOpen onClose={onClose} onLogin={onLogin} />);
+
+      resolveConnect();
+      await new Promise((resolve) => setTimeout(resolve, 10));
+
+      expect(onLogin).not.toHaveBeenCalled();
+      expect(onClose).not.toHaveBeenCalled();
+    });
+
     // fireEvent (not userEvent) so the local clipboard spy stays attached;
     // userEvent.setup() installs its own navigator.clipboard stub.
     it('aborts an in-flight nsec backup when the restriction engages mid-flight (real parent path)', async () => {
