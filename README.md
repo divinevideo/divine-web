@@ -1,63 +1,77 @@
 # Divine Web
 
-Divine is a decentralized short-form video app reviving Vine's 6-second format, built on Nostr — human-made content only, no AI slop. This repo is the web client.
-
-OpenVine-compatible Nostr client for short-form looping videos. Built with React 18.x, TailwindCSS 3.x, Vite, shadcn/ui, and Nostrify.
+Divine is 6-second, human-made video on Nostr — no AI slop. This repo is the web client that powers [divine.video](https://divine.video): a React 18 + TypeScript single-page app, built with Vite, that reads and writes short-form looping videos as Nostr events and renders them in feeds, profiles, and embeds. It ships as a static bundle served from a Fastly Compute edge worker, with a Cloudflare Pages backup.
 
 ## Features
 
-- **6-second looping videos** (Kind 34236)
-- **MP4 and GIF support** with auto-loop playback
-- **Blurhash placeholders** for smooth progressive loading
-- **Social features**: Likes, reposts, follows, hashtag discovery
-- **Feed types**: Home (following), Discovery, Trending, Hashtag, Profile
-- **Primary relay**: wss://relay.divine.video
+- **6-second looping videos** as Nostr kind `34236` (NIP-71 addressable short video), with MP4 and HLS playback and Blurhash placeholders for progressive loading.
+- **Feeds**: Home (following), Discovery, Trending/Popular, Hashtag, Categories, and per-user Profile feeds.
+- **Search** using [NIP-50](https://github.com/nostr-protocol/nips/blob/master/50.md) full-text search against `relay.divine.video`, including relay-side sort modes (`sort:hot`, `sort:top`, `sort:rising`, `sort:controversial`). Non-NIP-50 relays fall back to chronological results.
+- **Social**: likes, reposts, follows, comments/conversations, notifications, direct messages, lists, and leaderboards.
+- **Subdomain profiles**: `alice.divine.video` resolves a user's Nostr profile via NIP-05 and renders their feed.
+- **Legacy Vine archive** pages for preserving and browsing classic Vine content.
+- **Trust & safety**: content moderation settings, age review, and protected-minor safeguards (locked adult-content settings, restricted DMs).
+- **Video upload** to Blossom media servers with a metadata form.
+- **Internationalization** across 16 locales (`ar de en es fil fr id it ja ko nl pl pt ro sv tr`).
+- **Installable PWA** with an offline service worker (apex domain only).
+- **Server-rendered embeds and social previews**: the edge worker injects Open Graph tags and serves embed pages so shared links unfurl correctly for crawlers.
 
-## Relay Architecture
+## Architecture
 
-**relay.divine.video** is a high-performance OpenSearch-backed relay with NIP-50 search extensions.
+The app is a client-side SPA. The entry flow is `index.html → src/main.tsx → src/App.tsx → src/AppRouter.tsx`; routing uses `react-router-dom` v6. Server state comes from `@tanstack/react-query` via `@nostrify/react`, which handles Nostr queries, mutations, and subscriptions. Cross-component state flows through React contexts. Styling is TailwindCSS with Radix UI primitives wrapped in `src/components/ui/` (shadcn/ui conventions).
 
-### NIP-50 Search Support
+See [`ARCHITECTURE.md`](ARCHITECTURE.md) for the full module layout, state model, and relay-routing details.
 
-The relay implements [NIP-50](https://github.com/nostr-protocol/nips/blob/master/50.md) full-text search with advanced sorting:
+How it fits the Divine platform:
 
-```typescript
-{
-  kinds: VIDEO_KINDS,
-  search: "sort:hot",  // Recent + high engagement
-  limit: 50
-}
+- **Nostr** is the data layer. The primary relay is `wss://relay.divine.video`; relay routing (`src/lib/relayRouting.ts`) splits reads and writes across profile, badge, and general relay sets. Relay configuration lives in [`src/config/relays.ts`](src/config/relays.ts).
+- **Auth** uses [`@divinevideo/login`](https://github.com/divinevideo/login) with a Keycast remote signer, hydrated from cross-subdomain cookies so a session is shared across `*.divine.video`.
+- **Blossom** media servers store and serve uploaded video and images; playback also pulls from `cdn.divine.video`.
+- **Funnelcake** is the Divine REST API (`api.divine.video`, staging at `api.staging.divine.video`), used alongside the relay for feeds and video metadata. Configured in [`src/config/api.ts`](src/config/api.ts).
+- **Moderation** is backed by `moderation-api.divine.video`.
+- **Edge worker** (`compute-js/`) is a Fastly Compute JavaScript app that handles crawler requests, Open Graph tags, embed pages, `.well-known` app-link files, and host redirects, proxying to the funnelcake backend for video metadata.
+
+## Getting started
+
+Requires Node.js 20 (see `.node-version`) and npm.
+
+```bash
+npm run dev      # start the Vite dev server on http://localhost:8080
+npm run build    # production build to dist/ (+ 404.html, .well-known, prerendered legal pages)
+npm run preview  # preview the production build
+npm test         # type-check, lint, unit tests (Vitest), then build — the CI gate
 ```
 
-**Supported sort modes:**
-- `sort:hot` - Recent events with high engagement (trending)
-- `sort:top` - Most referenced events (popular all-time)
-- `sort:rising` - Recently created events gaining engagement
-- `sort:controversial` - Events with mixed reactions
+Visual regression tests run under Playwright:
 
-**Combined search and sort:**
-```typescript
-{
-  kinds: VIDEO_KINDS,
-  search: "sort:hot bitcoin",  // Hot bitcoin videos
-  limit: 50
-}
+```bash
+npm run test:visual          # run snapshot tests
+npm run test:visual:update   # update snapshots
 ```
 
-**Feed types using NIP-50:**
-- Trending (sort:hot)
-- Discovery (sort:top)
-- Home following feed (sort:top)
-- Hashtag feeds (sort:hot)
-- Full-text search (with relevance scoring)
+## Configuration
 
-**Fallback:** Standard Nostr relays without NIP-50 will return chronological results.
+Copy `.env.example` to `.env`. Environment variables (all optional):
 
-For detailed relay documentation, see [docs/relay-architecture.md](docs/relay-architecture.md).
+- `VITE_SENTRY_DSN` — Sentry DSN for error tracking.
+- `VITE_SENTRY_DEV_ENABLED` — set to `true` to enable Sentry in development (disabled by default).
 
-## Development
+Relay endpoints are defined in [`src/config/relays.ts`](src/config/relays.ts) and API base URLs in [`src/config/api.ts`](src/config/api.ts).
 
-Built with MKStack template - a starter for Nostr client applications.
+## Deployment
+
+Pushing to `main` triggers the `Deploy to Production` GitHub Actions workflow ([`.github/workflows/deploy.yml`](.github/workflows/deploy.yml)), which builds the bundle once and then deploys it to two targets:
+
+1. **Fastly Compute (primary)** — publishes the edge worker from `compute-js/`, uploads the static bundle to the Fastly KV store, purges the cache, and verifies that the live `.well-known` endpoints and frontend bundle match the build before finishing.
+2. **Cloudflare Pages (backup)** — deploys `dist/` to the `divine-web-direct-deploy` project via Wrangler.
+
+A failed deploy probes the live apex and alerts `#divine-alerts`. To run the Fastly worker locally:
+
+```bash
+npm run fastly:local   # build, then start the local Fastly Compute server
+```
+
+`DEPLOYMENT.md` documents the Cloudflare Pages backup path in more detail.
 
 ---
 
