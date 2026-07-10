@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -243,6 +243,55 @@ describe('LoginDialog', () => {
 
       expect(await screen.findByRole('button', { name: /Use Nostr instead/i })).toBeInTheDocument();
       expect(screen.queryByRole('button', { name: /Login with Extension/i })).not.toBeInTheDocument();
+    });
+
+    it('logs in with a pasted nsec when positively not protected (positive control)', async () => {
+      const user = userEvent.setup();
+
+      render(<LoginDialog isOpen onClose={vi.fn()} onLogin={vi.fn()} />);
+
+      await user.click(await screen.findByRole('tab', { name: /^Sign in$/i }));
+      await user.click(screen.getByRole('button', { name: /Use Nostr instead/i }));
+      await user.click(await screen.findByRole('tab', { name: /^Key$/i }));
+      fireEvent.change(screen.getByLabelText(/Secret key/i), {
+        target: { value: 'nsec1czx9vnnpgx8dlf72xct3ntry2l2suss2kv4ll496geja4qjmwn9sh3qlyn' },
+      });
+      fireEvent.click(screen.getByRole('button', { name: /^Log In$/i }));
+
+      await waitFor(() => {
+        expect(mockLoginActions.nsec).toHaveBeenCalledWith('nsec1czx9vnnpgx8dlf72xct3ntry2l2suss2kv4ll496geja4qjmwn9sh3qlyn');
+      });
+    });
+
+    it('blocks a pending nsec import when the restriction engages before the deferred login runs', async () => {
+      const user = userEvent.setup();
+
+      const { rerender } = render(<LoginDialog isOpen onClose={vi.fn()} onLogin={vi.fn()} />);
+
+      await user.click(await screen.findByRole('tab', { name: /^Sign in$/i }));
+      await user.click(screen.getByRole('button', { name: /Use Nostr instead/i }));
+      await user.click(await screen.findByRole('tab', { name: /^Key$/i }));
+      fireEvent.change(screen.getByLabelText(/Secret key/i), {
+        target: { value: 'nsec1czx9vnnpgx8dlf72xct3ntry2l2suss2kv4ll496geja4qjmwn9sh3qlyn' },
+      });
+
+      // Schedule the deferred login (50ms window), then flip the status to
+      // protected before the timer fires - the shape of the mobile #5991
+      // finding: a live check resolving mid-interaction must beat a pending
+      // continuation to the raw-key handover.
+      vi.useFakeTimers();
+      try {
+        fireEvent.click(screen.getByRole('button', { name: /^Log In$/i }));
+
+        mockUseProtectedMinorStatus.mockReturnValue(PROTECTED_STATUS);
+        rerender(<LoginDialog isOpen onClose={vi.fn()} onLogin={vi.fn()} />);
+
+        vi.advanceTimersByTime(100);
+      } finally {
+        vi.useRealTimers();
+      }
+
+      expect(mockLoginActions.nsec).not.toHaveBeenCalled();
     });
 
     it('fails closed: hides the banner and the Nostr disclosure while the status is unknown', async () => {

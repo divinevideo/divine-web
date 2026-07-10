@@ -68,6 +68,14 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin }) =
   // Signed-out visitors have no session token and resolve not_protected, so
   // the ordinary login paths are unaffected.
   const keyHandoverRestricted = isMinorKeyHandoverRestricted(protectedMinorState);
+  // #182 command-boundary re-check (mirrors the divine-mobile #5991 review
+  // finding): the render gates below hide the import affordances, but pending
+  // continuations (the deferred nsec login timer, a FileReader callback, an
+  // open native file picker) capture their closures before a live status
+  // check can resolve `protected` mid-interaction. The ref always holds the
+  // latest verdict so each signer-swap re-checks when it actually runs.
+  const keyHandoverRestrictedRef = useRef(false);
+  keyHandoverRestrictedRef.current = keyHandoverRestricted;
 
   // The render-side gates below stay closed synchronously; this only clears the
   // stale toggle state so the disclosure doesn't pop back open unprompted if
@@ -131,6 +139,7 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin }) =
   }, [isOpen]);
 
   const handleExtensionLogin = async () => {
+    if (keyHandoverRestrictedRef.current) return;
     setIsLoginLoading(true);
     setGeneralError(null);
 
@@ -154,6 +163,10 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin }) =
     setKeyError(null);
 
     window.setTimeout(() => {
+      if (keyHandoverRestrictedRef.current) {
+        setIsLoginLoading(false);
+        return;
+      }
       try {
         login.nsec(nextNsec);
         onLogin();
@@ -190,6 +203,7 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin }) =
       return;
     }
 
+    if (keyHandoverRestrictedRef.current) return;
     setIsLoginLoading(true);
     setBunkerError(null);
 

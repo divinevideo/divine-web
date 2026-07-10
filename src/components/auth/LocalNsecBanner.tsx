@@ -1,9 +1,11 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
+import { useProtectedMinorStatus } from '@/hooks/useProtectedMinorStatus';
 import { buildSecureAccountRedirect } from '@/lib/divineLogin';
 import { buildNsecDownload } from '@/lib/localNsecAccount';
+import { isMinorKeyHandoverRestricted } from '@/lib/protectedMinor';
 
 interface LocalNsecBannerProps {
   nsec: string;
@@ -28,8 +30,19 @@ function downloadBackup(nsec: string): boolean {
 export function LocalNsecBanner(props: LocalNsecBannerProps) {
   const { nsec } = props;
   const [status, setStatus] = useState<string | null>(null);
+  const { state: protectedMinorState } = useProtectedMinorStatus();
+  // #182 command-boundary re-check (mirrors the divine-mobile #5991 review
+  // finding): render-time gating in the parents decides whether this banner
+  // shows, but a pending continuation (the secure-redirect await below)
+  // captures its closure before a live status check can resolve `protected`
+  // mid-interaction. A ref always holds the latest verdict, so each raw-key
+  // handover re-checks at the moment it happens, and a stale-rendered banner
+  // under a future ungated parent cannot hand the key over either.
+  const keyHandoverRestrictedRef = useRef(false);
+  keyHandoverRestrictedRef.current = isMinorKeyHandoverRestricted(protectedMinorState);
 
   const handleBackUp = async () => {
+    if (keyHandoverRestrictedRef.current) return;
     try {
       if (navigator.clipboard?.writeText) {
         await navigator.clipboard.writeText(nsec);
@@ -47,8 +60,11 @@ export function LocalNsecBanner(props: LocalNsecBannerProps) {
   };
 
   const handleSecure = async () => {
+    if (keyHandoverRestrictedRef.current) return;
     const returnPath = `${window.location.pathname}${window.location.search}`;
     const redirect = await buildSecureAccountRedirect(nsec, { returnPath });
+    // Re-check after the await: the nsec leaves the app in this URL.
+    if (keyHandoverRestrictedRef.current) return;
     window.location.assign(redirect.url);
   };
 

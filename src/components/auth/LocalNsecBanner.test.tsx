@@ -3,10 +3,26 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { LocalNsecBanner } from './LocalNsecBanner';
+import {
+  NOT_PROTECTED,
+  UNKNOWN_PROTECTED_MINOR_STATUS,
+  type ProtectedMinorStatus,
+} from '@/lib/protectedMinor';
 
-const { mockBuildSecureAccountRedirect } = vi.hoisted(() => ({
+const { mockBuildSecureAccountRedirect, mockUseProtectedMinorStatus } = vi.hoisted(() => ({
   mockBuildSecureAccountRedirect: vi.fn(),
+  mockUseProtectedMinorStatus: vi.fn(),
 }));
+
+vi.mock('@/hooks/useProtectedMinorStatus', () => ({
+  useProtectedMinorStatus: () => mockUseProtectedMinorStatus(),
+}));
+
+const PROTECTED_STATUS: ProtectedMinorStatus = Object.freeze({
+  state: 'protected',
+  isKnown: true,
+  verifiedMinorAt: null,
+});
 
 const originalLocation = window.location;
 const locationAssign = vi.fn();
@@ -23,6 +39,7 @@ vi.mock('@/lib/divineLogin', async () => {
 
 describe('LocalNsecBanner', () => {
   beforeEach(() => {
+    mockUseProtectedMinorStatus.mockReturnValue(NOT_PROTECTED);
     mockBuildSecureAccountRedirect.mockResolvedValue({
       state: 'secure-state',
       pubkey: 'pubkey-123',
@@ -80,6 +97,60 @@ describe('LocalNsecBanner', () => {
         returnPath: '/settings/linked-accounts',
       });
       expect(locationAssign).toHaveBeenCalledWith('https://login.divine.video/api/oauth/authorize?client_id=divine-web');
+    });
+  });
+
+  describe('command-boundary re-check (#182)', () => {
+    it('aborts a pending secure-account redirect when the restriction engages mid-flight', async () => {
+      const user = userEvent.setup();
+      let resolveRedirect!: (value: { state: string; pubkey: string; url: string }) => void;
+      mockBuildSecureAccountRedirect.mockImplementation(
+        () => new Promise((resolve) => { resolveRedirect = resolve; }),
+      );
+
+      const { rerender } = render(<LocalNsecBanner nsec="nsec1example" />);
+
+      await user.click(screen.getByRole('button', { name: /Secure with divine.video login/i }));
+      expect(mockBuildSecureAccountRedirect).toHaveBeenCalled();
+
+      mockUseProtectedMinorStatus.mockReturnValue(PROTECTED_STATUS);
+      rerender(<LocalNsecBanner nsec="nsec1example" />);
+
+      resolveRedirect({
+        state: 'secure-state',
+        pubkey: 'pubkey-123',
+        url: 'https://login.divine.video/api/oauth/authorize?client_id=divine-web',
+      });
+      // Let the pending handleSecure continuation run to completion. The
+      // happy-path test above proves this rig reaches location.assign when
+      // unrestricted, so not-called here is a real verdict, not a vacuous one.
+      await new Promise((resolve) => setTimeout(resolve, 10));
+
+      expect(locationAssign).not.toHaveBeenCalled();
+    });
+
+    it('refuses to copy or download the nsec when rendered by an ungated parent while restricted', async () => {
+      const user = userEvent.setup();
+      mockUseProtectedMinorStatus.mockReturnValue(PROTECTED_STATUS);
+
+      render(<LocalNsecBanner nsec="nsec1example" />);
+
+      await user.click(screen.getByRole('button', { name: /Back up nsec/i }));
+
+      expect(clipboardWriteText).not.toHaveBeenCalled();
+      expect(screen.queryByText(/somewhere safe/i)).not.toBeInTheDocument();
+    });
+
+    it('fails closed: refuses to start the secure-account redirect while the status is unknown', async () => {
+      const user = userEvent.setup();
+      mockUseProtectedMinorStatus.mockReturnValue(UNKNOWN_PROTECTED_MINOR_STATUS);
+
+      render(<LocalNsecBanner nsec="nsec1example" />);
+
+      await user.click(screen.getByRole('button', { name: /Secure with divine.video login/i }));
+
+      expect(mockBuildSecureAccountRedirect).not.toHaveBeenCalled();
+      expect(locationAssign).not.toHaveBeenCalled();
     });
   });
 });
