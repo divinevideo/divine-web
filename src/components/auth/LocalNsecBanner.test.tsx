@@ -25,8 +25,22 @@ const PROTECTED_STATUS: ProtectedMinorStatus = Object.freeze({
 });
 
 const originalLocation = window.location;
+const originalCreateObjectURL = Object.getOwnPropertyDescriptor(URL, 'createObjectURL');
+const originalRevokeObjectURL = Object.getOwnPropertyDescriptor(URL, 'revokeObjectURL');
 const locationAssign = vi.fn();
 const clipboardWriteText = vi.fn();
+
+/** Install a controllable download rig (jsdom lacks both URL blob helpers). */
+function stubObjectUrl(): ReturnType<typeof vi.fn> {
+  const createObjectURL = vi.fn(() => 'blob:stub');
+  Object.defineProperty(URL, 'createObjectURL', {
+    value: createObjectURL, writable: true, configurable: true,
+  });
+  Object.defineProperty(URL, 'revokeObjectURL', {
+    value: vi.fn(), writable: true, configurable: true,
+  });
+  return createObjectURL;
+}
 
 vi.mock('@/lib/divineLogin', async () => {
   const actual = await vi.importActual<typeof import('@/lib/divineLogin')>('@/lib/divineLogin');
@@ -66,6 +80,18 @@ describe('LocalNsecBanner', () => {
       writable: true,
       configurable: true,
     });
+    // Restore the URL blob helpers so a test that stubs them can't order-couple
+    // the next one (jsdom's default is that both are absent).
+    if (originalCreateObjectURL) {
+      Object.defineProperty(URL, 'createObjectURL', originalCreateObjectURL);
+    } else {
+      delete (URL as { createObjectURL?: unknown }).createObjectURL;
+    }
+    if (originalRevokeObjectURL) {
+      Object.defineProperty(URL, 'revokeObjectURL', originalRevokeObjectURL);
+    } else {
+      delete (URL as { revokeObjectURL?: unknown }).revokeObjectURL;
+    }
   });
 
   it('renders the secure-account and backup call to action set', () => {
@@ -137,12 +163,7 @@ describe('LocalNsecBanner', () => {
       clipboardWriteText.mockImplementation(
         () => new Promise((_resolve, reject) => { rejectWrite = reject; }),
       );
-      const createObjectURL = vi.fn(() => 'blob:stub');
-      Object.defineProperty(URL, 'createObjectURL', {
-        value: createObjectURL,
-        writable: true,
-        configurable: true,
-      });
+      const createObjectURL = stubObjectUrl();
 
       const { rerender } = render(<LocalNsecBanner nsec="nsec1example" />);
 
@@ -161,13 +182,26 @@ describe('LocalNsecBanner', () => {
       expect(screen.queryByText(/somewhere safe/i)).not.toBeInTheDocument();
     });
 
+    it('falls through to a file download when the clipboard rejects and the user is not restricted (positive control)', async () => {
+      let rejectWrite!: (error: Error) => void;
+      clipboardWriteText.mockImplementation(
+        () => new Promise((_resolve, reject) => { rejectWrite = reject; }),
+      );
+      const createObjectURL = stubObjectUrl();
+
+      render(<LocalNsecBanner nsec="nsec1example" />);
+
+      fireEvent.click(screen.getByRole('button', { name: /Back up nsec/i }));
+      rejectWrite(new Error('NotAllowedError'));
+      await screen.findByText(/somewhere safe/i);
+
+      // Guarantees the guard the negative tests rely on isn't just always-on:
+      // an unrestricted user still gets the download fall-through.
+      expect(createObjectURL).toHaveBeenCalled();
+    });
+
     it('refuses to copy or download the nsec when rendered by an ungated parent while restricted', async () => {
-      const createObjectURL = vi.fn(() => 'blob:stub');
-      Object.defineProperty(URL, 'createObjectURL', {
-        value: createObjectURL,
-        writable: true,
-        configurable: true,
-      });
+      const createObjectURL = stubObjectUrl();
       mockUseProtectedMinorStatus.mockReturnValue(PROTECTED_STATUS);
 
       render(<LocalNsecBanner nsec="nsec1example" />);
