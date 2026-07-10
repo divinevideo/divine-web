@@ -188,16 +188,25 @@ describe('LocalNsecBanner', () => {
         () => new Promise((_resolve, reject) => { rejectWrite = reject; }),
       );
       const createObjectURL = stubObjectUrl();
+      // downloadBackup reaches anchor.click(); jsdom logs an unimplemented-
+      // navigation stack for that, so stub it to keep the run output clean.
+      const anchorClick = vi
+        .spyOn(HTMLAnchorElement.prototype, 'click')
+        .mockImplementation(() => {});
 
-      render(<LocalNsecBanner nsec="nsec1example" />);
+      try {
+        render(<LocalNsecBanner nsec="nsec1example" />);
 
-      fireEvent.click(screen.getByRole('button', { name: /Back up nsec/i }));
-      rejectWrite(new Error('NotAllowedError'));
-      await screen.findByText(/somewhere safe/i);
+        fireEvent.click(screen.getByRole('button', { name: /Back up nsec/i }));
+        rejectWrite(new Error('NotAllowedError'));
+        await screen.findByText(/somewhere safe/i);
 
-      // Guarantees the guard the negative tests rely on isn't just always-on:
-      // an unrestricted user still gets the download fall-through.
-      expect(createObjectURL).toHaveBeenCalled();
+        // Guarantees the guard the negative tests rely on isn't just always-on:
+        // an unrestricted user still gets the download fall-through.
+        expect(createObjectURL).toHaveBeenCalled();
+      } finally {
+        anchorClick.mockRestore();
+      }
     });
 
     it('refuses to copy or download the nsec when rendered by an ungated parent while restricted', async () => {
