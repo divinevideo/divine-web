@@ -44,7 +44,7 @@ When people arrive, we want the feeling to be simple: Welcome Home.
 - Agency over your feed and followers
 - Your content and data stay yours
 - Space to play and experiment
-- Access to 100,000+ archived Vine videos from the original era
+- Access to 2.1 million archived Vine videos from the original era
 - A place that feels like arrival, not conversion
 
 ---
