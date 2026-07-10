@@ -57,7 +57,7 @@ We have three tone of voice principles that shape how we sound. They ensure cons
 | Instead of | Try |
 |------------|-----|
 | "Vine Revisited - A Return to the Halcyon Days of the Internet" | "Our Divine right to AI-free, human-made creativity" |
-| "Divine includes access to more than 100,000 archived Vine videos and lets people create their own six-second looping videos. We are aiming to provide an experience that is free of AI-generated content." | "We've brought back to life 100,000 Vines from the original archives. At Divine, we want everyone to show up as they are to our human-made, no-slop playground." |
+| "Divine includes access to more than 2.1 million archived Vine videos and lets people create their own six-second looping videos. We are aiming to provide an experience that is free of AI-generated content." | "We've brought back to life 2.1 million Vines from the original archives. At Divine, we want everyone to show up as they are to our human-made, no-slop playground." |
 
 ---
 

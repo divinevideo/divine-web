@@ -4,6 +4,12 @@ Use this as a fast lookup when writing copy, designing UI, or making product dec
 
 ---
 
+## Brand Name (read first)
+
+Always write the name as **Divine** — capital D, lowercase rest. Never "DiVine" or "diVine" in text. The stylized "V" only exists in the logotype artwork, never in written copy, UI, docs, or code.
+
+---
+
 ## One-Line Summary
 
 Divine is a decentralized short-form video app reviving Vine's 6-second format, built on Nostr, championing human creativity over AI slop.
@@ -56,7 +62,7 @@ Divine is a decentralized short-form video app reviving Vine's 6-second format, 
 - **User ownership**: Your content, your data, your feed. Built on Nostr where you own everything.
 - **Joy scrolling**: Trade doom scrolling for delight. Quick bursts of real human creativity.
 - **Community-built**: Open source, decentralized, built with and for the community.
-- **Vine nostalgia**: 100,000+ archived Vines brought back to life. The golden days of the internet, reimagined.
+- **Vine nostalgia**: 2.1 million archived Vines brought back to life. The golden days of the internet, reimagined.
 
 ---
 
