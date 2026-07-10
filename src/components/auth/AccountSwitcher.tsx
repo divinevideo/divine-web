@@ -64,6 +64,10 @@ export function AccountSwitcher({ onAddAccountClick }: AccountSwitcherProps) {
 
   return (
     <div className='account-switcher w-full min-w-0 max-w-full space-y-3'>
+      {/* #182: the banner gates itself for protected minors. It must render
+          unconditionally here so a restricted flip keeps it mounted (rendering
+          null) and its command-boundary re-checks stay live; a gate at this
+          level would unmount it mid-flight (dcadenas review on #476). */}
       {localNsecLogin ? <LocalNsecBanner nsec={localNsecLogin.data.nsec} /> : null}
       <DropdownMenu modal={false}>
         <DropdownMenuTrigger asChild>

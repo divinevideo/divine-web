@@ -12,8 +12,10 @@ import { setInviteHandoff } from '@/lib/authHandoff';
 import { buildLoginRedirect, buildSignupRedirect } from '@/lib/divineLogin';
 import { getInviteClientConfig, joinInviteWaitlist, validateInviteCode } from '@/lib/inviteApi';
 import { getStoredLocalNsecLogin } from '@/lib/localNsecAccount';
+import { isMinorKeyHandoverRestricted } from '@/lib/protectedMinor';
 import { cn } from '@/lib/utils';
 import { useLoginActions } from '@/hooks/useLoginActions';
+import { useProtectedMinorStatus } from '@/hooks/useProtectedMinorStatus';
 
 import InviteCodeForm from './InviteCodeForm';
 import LocalNsecBanner from './LocalNsecBanner';
@@ -59,6 +61,30 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin }) =
   const [waitlistSuccess, setWaitlistSuccess] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const login = useLoginActions();
+  const { state: protectedMinorState } = useProtectedMinorStatus();
+  // #182: while a protected-minor session is active (or its status is still
+  // unknown — fail closed), this dialog must not surface raw-key affordances:
+  // no nsec/key-file/bunker/extension import (the stored-nsec backup banner
+  // gates itself). Signed-out visitors have no session token and resolve
+  // not_protected, so the ordinary login paths are unaffected.
+  const keyHandoverRestricted = isMinorKeyHandoverRestricted(protectedMinorState);
+  // #182 command-boundary re-check (mirrors the divine-mobile #5991 review
+  // finding): the render gates below hide the import affordances, but pending
+  // continuations (the deferred nsec login timer, a FileReader callback, an
+  // open native file picker) capture their closures before a live status
+  // check can resolve `protected` mid-interaction. The ref always holds the
+  // latest verdict so each signer-swap re-checks when it actually runs.
+  const keyHandoverRestrictedRef = useRef(false);
+  keyHandoverRestrictedRef.current = keyHandoverRestricted;
+
+  // The render-side gates below stay closed synchronously; this only clears the
+  // stale toggle state so the disclosure doesn't pop back open unprompted if
+  // the restriction later lifts (e.g. a transient unknown that resolves).
+  useEffect(() => {
+    if (keyHandoverRestricted) {
+      setAdvancedOpen(false);
+    }
+  }, [keyHandoverRestricted]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -113,6 +139,7 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin }) =
   }, [isOpen]);
 
   const handleExtensionLogin = async () => {
+    if (keyHandoverRestrictedRef.current) return;
     setIsLoginLoading(true);
     setGeneralError(null);
 
@@ -121,7 +148,13 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin }) =
         throw new Error(t('loginDialog.errorExtensionNotFound'));
       }
 
-      await login.extension();
+      // The pre-click ref check above goes stale while the extension prompt is
+      // open; the beforeCommit guard re-checks at the moment the signer would
+      // be committed. Not committed → stop silently, like the nsec path.
+      const committed = await login.extension({
+        beforeCommit: () => !keyHandoverRestrictedRef.current,
+      });
+      if (!committed) return;
       onLogin();
       onClose();
     } catch (caughtError) {
@@ -136,6 +169,10 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin }) =
     setKeyError(null);
 
     window.setTimeout(() => {
+      if (keyHandoverRestrictedRef.current) {
+        setIsLoginLoading(false);
+        return;
+      }
       try {
         login.nsec(nextNsec);
         onLogin();
@@ -172,11 +209,17 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin }) =
       return;
     }
 
+    if (keyHandoverRestrictedRef.current) return;
     setIsLoginLoading(true);
     setBunkerError(null);
 
     try {
-      await login.bunker(bunkerUri);
+      // Same commit-boundary re-check as the extension path: the pre-click
+      // check goes stale while the bunker connect is pending.
+      const committed = await login.bunker(bunkerUri, {
+        beforeCommit: () => !keyHandoverRestrictedRef.current,
+      });
+      if (!committed) return;
       onLogin();
       onClose();
       setBunkerUri('');
@@ -300,6 +343,11 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin }) =
         </DialogHeader>
 
         <div className="space-y-4 px-6 pb-6 pt-2">
+          {/* #182: the banner gates itself for protected minors. It must render
+              unconditionally here so a restricted flip keeps it mounted
+              (rendering null) and its command-boundary re-checks stay live; a
+              gate at this level would unmount it mid-flight (dcadenas review
+              on #476). */}
           {storedLocalNsec ? <LocalNsecBanner nsec={storedLocalNsec} /> : null}
 
           {generalError ? (
@@ -356,9 +404,10 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin }) =
                 isLoading={isLoginLoading}
                 onContinue={handleExistingAccountLogin}
                 onToggleAdvanced={() => setAdvancedOpen((current) => !current)}
+                showNostrOptions={!keyHandoverRestricted}
               />
 
-              <Collapsible open={advancedOpen}>
+              <Collapsible open={advancedOpen && !keyHandoverRestricted}>
                 <CollapsibleContent className="space-y-4 pt-2">
                   <Tabs className="w-full" defaultValue="extension">
                     <TabsList className="grid w-full grid-cols-3 rounded-lg bg-muted">

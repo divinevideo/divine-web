@@ -21,6 +21,17 @@ export function isMinorDmRestricted(state: ProtectedMinorState): boolean {
   return state !== 'not_protected';
 }
 
+/**
+ * Key-handover verdict for #182: whether the current account may be offered
+ * raw-key affordances (nsec backup/copy/download, key-import sign-in methods).
+ * Same fail-closed posture as {@link isMinorDmRestricted} — only a positive
+ * `not_protected` verdict lifts it — but a separate predicate so the key and
+ * DM policies can diverge without silently coupling.
+ */
+export function isMinorKeyHandoverRestricted(state: ProtectedMinorState): boolean {
+  return state !== 'not_protected';
+}
+
 // Frozen so this shared sentinel can't be mutated by a consumer and poisoned
 // for every other caller (it's returned by reference from the lib and hook).
 export const NOT_PROTECTED: ProtectedMinorStatus = Object.freeze({
