@@ -26,6 +26,10 @@
             "comment": "Invite redemption deep links"
           },
           {
+            "/": "/list/*",
+            "comment": "Playlist (curated list) deep links"
+          },
+          {
             "/": "/app/callback",
             "comment": "OAuth callback for Divine app"
           }
