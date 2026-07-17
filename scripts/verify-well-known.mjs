@@ -23,7 +23,7 @@ if (!Array.isArray(appIds) || appIds.length === 0) {
   throw new Error('apple-app-site-association is missing applinks.details[].appIDs');
 }
 
-const requiredPaths = new Set(['/video/*', '/profile/*', '/invite/*']);
+const requiredPaths = new Set(['/video/*', '/profile/*', '/invite/*', '/list/*']);
 const declaredPaths = new Set(
   aasa?.applinks?.details?.flatMap((detail) =>
     (detail.components ?? []).map((component) => component?.['/']).filter(Boolean),

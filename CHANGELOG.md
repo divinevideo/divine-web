@@ -3,6 +3,7 @@
 All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
+- **FEATURE**: iOS Universal Links for playlists — added `/list/*` to `apple-app-site-association` (and to the build's `verify-well-known` check) so playlist links open the Divine app when installed; app-side handling in divinevideo/divine-mobile#6094
 - **PERFORMANCE**: Migrate to Funnelcake REST API for faster data loading
   - `useProfileStats` now uses REST API first (10s → <500ms), falls back to WebSocket
   - `useBatchedAuthors` now uses bulk REST endpoint instead of individual WebSocket queries
