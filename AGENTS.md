@@ -19,12 +19,6 @@ Read `<context-dir>/AGENT_CONTEXT.md` and follow its instructions. If unavailabl
 
 If a Divine Brain search or ask tool is available, you may use it for company memory. Treat it as optional and credentialed: tool names vary by client, and work must continue when Brain is unavailable. When Brain results influence work, cite the returned document ids. Never commit Brain credentials or expose Brain-derived sensitive content in public PRs, issues, branch names, commit messages, code comments, logs, screenshots, release notes, or externally shared agent transcripts.
 
-## AI Acknowledgment
-
-Check for `.ai-ack` in the repository root (next to `.git`) before any other
-work. If the file is missing, read `HUMAN_VS_MACHINE.md` and follow its
-instructions before proceeding.
-
 ## Read First
 
 - `CONTRIBUTING.md`: PR rules, testing expectations, scope discipline.
@@ -92,7 +86,7 @@ Running only deploy without publish means the new frontend code won't be served!
 
 ### Git Conventions
 - Commit format: `type: description` (feat, fix, perf, docs, refactor, test)
-- Include `Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>` when AI-assisted
+- Do not add AI co-author trailers unless explicitly requested.
 - Don't amend commits after hook failures - create new commits
 
 ## Funnelcake REST API

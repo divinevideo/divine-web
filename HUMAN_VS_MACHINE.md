@@ -8,17 +8,17 @@ components that exist just to make the linter shut up. No filler comments
 restating what the code already says. If you wouldn't ship it to production,
 don't commit it.
 
-Before you touch anything:
+Before you touch code, use the repo instructions already provided in your
+agent context:
 
-1. Read `CONTRIBUTING.md` and `ARCHITECTURE.md`. Both of them, all the way
-   through. Not skimmed.
-2. Explain every rule back to the human sitting at the keyboard. The whole
-   thing, not a summary. Make sure they actually understand what's required.
-3. Ask them to confirm with the exact words: **yes i understood**
-4. Only after that confirmation, create `.ai-ack` next to `.git` and get to
-   work.
+1. Read `CONTRIBUTING.md` and `ARCHITECTURE.md` when they are relevant to the
+   work in front of you.
+2. Verify facts with the code, tests, docs, or live state before making claims.
+3. Keep the diff focused on the requested change.
+4. Run the smallest useful verification first, then broaden it when risk calls
+   for it.
 
-If the human is confused or unsure about any rule, slow down and explain it
-more. Don't barrel ahead. Confirmation matters.
+If the human is confused or unsure about any rule, slow down and explain it.
+If a requirement conflicts with verified evidence, stop and ask before acting.
 
 Keep the web weird. Make it good.

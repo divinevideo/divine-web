@@ -36,11 +36,13 @@ dist-ssr
 # Private journal
 .private-journal
 
+# Obsolete local agent acknowledgement files
+.ai-ack
+
 # Git worktrees
 .worktrees/
 .claude/worktrees/
 .playwright-mcp/
-.ai-ack
 
 # Fastly Compute
 compute-js/static-publisher/

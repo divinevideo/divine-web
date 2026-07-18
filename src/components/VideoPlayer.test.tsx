@@ -790,7 +790,12 @@ describe('VideoPlayer', () => {
     });
 
     it('resumes an active video after switching to a fallback URL', async () => {
-      const playSpy = vi.fn().mockResolvedValue(undefined);
+      let isPaused = true;
+      vi.spyOn(HTMLMediaElement.prototype, 'paused', 'get').mockImplementation(() => isPaused);
+      const playSpy = vi.fn().mockImplementation(() => {
+        isPaused = false;
+        return Promise.resolve();
+      });
       HTMLMediaElement.prototype.play = playSpy;
 
       const { useVideoPlayback } = await import('@/hooks/useVideoPlayback');
@@ -827,6 +832,7 @@ describe('VideoPlayer', () => {
         expect(video.src).toBe('https://example.com/fallback.mp4');
       });
 
+      isPaused = true;
       fireEvent.loadedData(video);
 
       await waitFor(() => {
