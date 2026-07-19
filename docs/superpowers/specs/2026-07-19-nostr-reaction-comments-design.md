@@ -1,152 +1,22 @@
 # Nostr-Native Reaction Comments
 
 **Date:** 2026-07-19
-**Status:** Approved protocol direction; pending design review
-**Scope:** Search, select, upload, publish, render, and count reusable animated
-reaction media in video comment threads.
+**Status:** Design review iteration 1
+**Initial client:** Divine Web
+**Scope:** Reusable animated reactions in NIP-22 video comments, including
+verified discovery of the videos that use a reaction.
 
-## Problem
+## Summary
 
-People should be able to respond to a video with a reusable animated reaction
-without depending on a centralized GIF catalog. The reaction needs a stable
-Nostr identity so Divine and other clients can find every comment—and therefore
-every root video—that uses it.
+A reusable reaction is a signed NIP-94 `kind:1063` event. A comment using that
+reaction is a standard NIP-22 `kind:1111` event with:
 
-## User Cases
+- the normal uppercase root and lowercase parent tags;
+- exactly one `q` tag citing the canonical `kind:1063`;
+- one matching NIP-92 `imeta` tag; and
+- optional human-written caption text.
 
-1. **A signed-in viewer wants to search for a reaction so that they can respond
-   without leaving the comment composer.** When they search, the picker returns
-   matching, moderated NIP-94 media events and supports keyboard and touch
-   selection.
-2. **A signed-in viewer wants to choose a reaction so that their response is
-   published as an interoperable NIP-22 comment.** When they choose one, the
-   comment cites the canonical NIP-94 event and carries enough NIP-92 metadata
-   to render without an additional metadata fetch.
-3. **A signed-in viewer wants to upload a new reaction so that they can use
-   media not already in the catalog.** When upload completes, the client
-   publishes a NIP-94 event, uses it immediately in the comment, and makes it
-   available in the uploader's personal library.
-4. **A viewer wants to see an animated reaction inline so that the conversation
-   remains understandable.** When the media is available, the client shows a
-   muted looping preview with accessible alternative text and a reduced-motion
-   fallback.
-5. **A creator or viewer wants to inspect where a reaction is used so that they
-   can discover the videos participating in the conversation.** When usage is
-   requested, the client queries comments by the reaction event ID and resolves
-   each comment's NIP-22 root video reference.
-
-## Goals
-
-- Use existing Nostr and Blossom standards; introduce no Divine-only event
-  kind.
-- Give every reusable reaction a stable `kind:1063` event identity.
-- Make every use queryable through the standard indexed `q` tag.
-- Let uploaders use new reactions immediately.
-- Preserve media ownership, relay portability, and blob integrity.
-- Support GIF, animated WebP, and short muted MP4 media while presenting one
-  "reaction" concept in the UI.
-
-## Non-Goals
-
-- Building a centralized licensed-media catalog.
-- Treating reactions as NIP-25 likes or votes.
-- Extending NIP-30 to `kind:1111`.
-- Automatically placing reaction uploads into the main short-video feed.
-- Guaranteeing deletion from relays or third-party Blossom servers.
-
-## Standards
-
-| Concern | Standard | Use |
-| --- | --- | --- |
-| Comment thread | NIP-22 | `kind:1111`, uppercase root tags, lowercase parent tags |
-| Inline media | NIP-92 | Media URL in content plus matching `imeta` |
-| Reaction identity | NIP-94 | `kind:1063` file metadata event |
-| Reaction citation | NIP-22 / NIP-18 | `q` tag referencing the `kind:1063` event |
-| Search | NIP-50 | Search `kind:1063` descriptions and indexed tags |
-| Usage count | NIP-45 | Count `kind:1111` events filtered by `#q` |
-| Media storage | Blossom | Content-addressed upload and retrieval |
-| User media host | Blossom BUD-03 / NIP-B7 | `kind:10063` preferred server list |
-| Personal packs | NIP-51 | `kind:10030` preferences and `kind:30030` sets |
-
-NIP-30 does not currently specify custom emoji rendering for `kind:1111`.
-Emoji lists may organize the picker, but a reaction comment uses NIP-92 media
-and a NIP-94 citation.
-
-## Chosen Architecture
-
-### Canonical reaction
-
-A reusable reaction is a signed NIP-94 `kind:1063` event. Its event ID is the
-reaction's canonical social identity. Its `x` tag identifies the underlying
-blob content.
-
-```json
-{
-  "kind": 1063,
-  "content": "Side-eye reaction",
-  "tags": [
-    ["url", "https://blossom.example/<sha256>.mp4"],
-    ["m", "video/mp4"],
-    ["x", "<sha256>"],
-    ["size", "183240"],
-    ["dim", "480x480"],
-    ["duration", "2.4"],
-    ["thumb", "https://blossom.example/<thumb-sha256>.webp"],
-    ["alt", "A person giving a skeptical side-eye"],
-    ["t", "side-eye"],
-    ["t", "skeptical"]
-  ]
-}
-```
-
-The client computes the SHA-256 before upload. Search results may group
-duplicate `kind:1063` events by `x`, but citations remain event-specific. When
-the picker selects a result, the selected event ID is the canonical ID used by
-the comment.
-
-### Reaction comment
-
-The comment is a standard `kind:1111` event. It retains all NIP-22 root and
-parent tags, cites the selected `kind:1063` event with `q`, and copies the
-rendering metadata into `imeta`.
-
-```json
-{
-  "kind": 1111,
-  "content": "https://blossom.example/<sha256>.mp4 nostr:nevent1...",
-  "tags": [
-    ["E", "<root-video-event-id>", "<relay-hint>", "<root-author>"],
-    ["A", "34236:<root-author>:<d-tag>", "<relay-hint>"],
-    ["K", "34236"],
-    ["P", "<root-author>", "<relay-hint>"],
-    ["e", "<parent-event-id>", "<relay-hint>", "<parent-author>"],
-    ["k", "<parent-kind>"],
-    ["p", "<parent-author>", "<relay-hint>"],
-    ["q", "<reaction-1063-event-id>", "<relay-hint>", "<reaction-author>"],
-    [
-      "imeta",
-      "url https://blossom.example/<sha256>.mp4",
-      "m video/mp4",
-      "x <sha256>",
-      "dim 480x480",
-      "alt A person giving a skeptical side-eye"
-    ]
-  ]
-}
-```
-
-For a top-level comment, the lowercase parent references the root video. For a
-reply, it references the immediate `kind:1111` parent. The reaction event must
-never be placed in `e`, `E`, `a`, `A`, `k`, or `K`; those tags belong to the
-NIP-22 thread structure.
-
-The `nostr:nevent` citation in `content` corresponds to the `q` tag. Clients
-with rich reaction support may hide the raw URL and citation while rendering
-the attachment. Plain clients still expose portable media and event links.
-
-### Usage discovery
-
-All comments using an exact reaction are fetched with:
+The standard interoperability query is:
 
 ```json
 {
@@ -155,156 +25,584 @@ All comments using an exact reaction are fetched with:
 }
 ```
 
-The root videos are the unique uppercase `A` addresses, falling back to
-uppercase `E` event IDs for non-addressable roots. A NIP-45 count request with
-the same filter gives the exact-event usage count.
+That query finds citations. Divine's public count and "videos using this
+reaction" list are stricter: Funnelcake exposes only verified uses whose
+comment, citation, media metadata, root video, and moderation state all agree.
 
-If a product surface intentionally wants blob-level rather than event-level
-usage, it first finds all `kind:1063` events sharing the same `x`, then queries
-comments for the resulting set of `q` IDs. Exact-event usage remains the
-default because it preserves authorship and catalog identity.
+The first product launch is web-only, Divine-hosted, and fail-closed. It does
+not autoplay arbitrary third-party media, use unreviewed uploads, or treat raw
+relay counts as trusted usage counts.
 
-## User Flows
+## Problem
 
-### Search and choose
+People should be able to answer a video with a short visual reaction without
+depending on a proprietary GIF catalog. The reaction needs a stable identity
+that remains portable across Nostr clients. The comment must also cite that
+identity in an indexed tag so clients can find the videos participating in the
+same visual conversation.
 
-1. The viewer opens the reaction picker from the comment composer.
-2. The picker shows recent personal reactions and moderated trending results.
-3. Search sends a debounced NIP-50 query restricted to `kind:1063`.
-4. The client accepts supported animated MIME types and validates required
-   NIP-94 tags.
-5. Selecting a result adds the reaction preview to the composer.
-6. Submission publishes one `kind:1111` event with NIP-22, `q`, and `imeta`
-   tags.
+Existing Divine comments are text-only. Existing Funnelcake handling of
+`kind:1063` assumes audio metadata. Adding reactions without first separating
+media roles would pollute sound discovery and recommendations. Search and
+moderation prerequisites therefore ship before the composer.
 
-### Upload and use
+## Product Contract
 
-1. The viewer chooses a local animated image or short video.
-2. The client validates type, dimensions, duration, and size before upload.
-3. The client computes SHA-256 and checks for an existing trusted NIP-94 event
-   with the same `x`.
-4. If no reusable event is selected, the client uploads to the first compatible
-   server in the user's `kind:10063` list, with Divine Blossom as fallback.
-5. The client publishes a signed `kind:1063` event with a human description,
-   alternative text, and search tags.
-6. The new reaction is immediately available to the uploader and attached to
-   the pending comment.
-7. Public discovery includes it only after normal moderation and indexing.
+### Composer behavior
 
-### Render
+- A comment may contain one reaction and optional caption text.
+- Reaction-only comments are valid.
+- Text-only comments remain valid.
+- The submit button is enabled when trimmed caption text is non-empty or a
+  ready reaction is selected.
+- Selecting another reaction replaces the current selection after confirmation
+  only when an upload is still in progress. Otherwise replacement is
+  immediate.
+- A selected reaction has visible Remove and Replace actions.
+- Closing the comment modal preserves the draft for seven days.
+- A comment cannot be published while its selected upload is pending,
+  rejected, or failed.
 
-1. The client validates that the `imeta` URL appears in `content`.
-2. It verifies supported HTTPS schemes and uses `m`, `x`, dimensions, and
-   thumbnail metadata.
-3. Reactions render muted and looped, with playback paused when off-screen.
-4. Reduced-motion users see the thumbnail or first frame until they opt in.
-5. Load failure falls back to alternative text and a safe external link.
+The published `content` is deterministic:
 
-## Moderation and Security
+```text
+<optional caption followed by one newline>
+https://media.divine.video/<sha256>.mp4
+nostr:nevent1...
+```
 
-- Only signed `kind:1063` and `kind:1111` events are accepted.
-- Upload limits apply before transferring data: supported MIME allowlist,
-  maximum bytes, maximum pixel area, and maximum duration.
-- Servers verify declared MIME type, file signature, SHA-256, and any generated
-  derivatives.
-- Clients never render arbitrary HTML from event content or metadata.
-- Media URLs must use HTTPS; redirects and proxying follow existing SSRF
-  protections.
-- Public search excludes blocked, restricted, age-restricted, spam, and
-  unreviewed uploads according to Divine's existing moderation policy.
-- Muted authors and reported reactions remain hidden under existing Nostr mute
-  and report behavior.
-- The uploader can request deletion from Blossom and relays, but the UI does
-  not promise global deletion.
+The caption line is omitted when empty. The renderer hides only the exact media
+URL and `nostr:nevent` token that match the validated reaction attachment. It
+does not remove arbitrary links or Nostr references from human-written text.
+
+### Picker behavior
+
+The picker opens as an anchored popover on desktop and a nested sheet on narrow
+screens. It contains:
+
+1. Search
+2. Personal reactions
+3. Approved catalog results
+4. Upload new
+
+The picker supports one selection, never multi-select. Personal reactions are
+the signed-in user's valid, authored `kind:1063` events tagged
+`["t", "reaction"]`. This makes the library portable across devices. A bounded
+local cache of the last 24 selected event IDs supplies Recents; it is an
+optimization, not the source of truth.
+
+Public catalog search is enabled only when at least 250 Active reactions are
+indexed. Before that threshold, users see their personal library and Upload
+new. Empty public search ranks reactions by verified unique-video uses over the
+previous seven days. Text search ranks normalized textual relevance first and
+uses verified usage as a tie-breaker.
+
+Removing a personal reaction hides it locally and may publish a NIP-09
+`kind:5` deletion request for an event owned by the current user. The UI says
+that Nostr deletion is a request and does not promise global erasure. Editable
+NIP-51 reaction packs are deferred.
+
+### Usage discovery
+
+The reaction detail surface shows:
+
+- the reaction preview and alt text;
+- its author;
+- a verified use count; and
+- a cursor-paginated list of root videos using it.
+
+The count and list cover events indexed by Divine's configured Funnelcake
+ingest, not the entire Nostr network. The UI labels this "Used in N Divine
+videos," not "Used everywhere."
+
+The list deduplicates addressable videos by `A` address and falls back to `E`
+event ID for non-addressable roots. A deleted or newly restricted reaction
+keeps historical comments as signed Nostr data, but Divine stops rendering its
+media and removes its uses from public catalog surfaces until policy permits
+them again.
+
+## Standards
+
+| Concern | Standard | Divine use |
+| --- | --- | --- |
+| Comment thread | NIP-22 | `kind:1111`, uppercase root, lowercase parent |
+| Inline media | NIP-92 | Content URL plus matching `imeta` |
+| Reaction identity | NIP-94 | `kind:1063` file metadata event |
+| Reaction citation | NIP-18 / NIP-22 | Indexed `q` tag |
+| Raw search | NIP-50 | Interoperability and diagnostics only |
+| Raw count | NIP-45 | Approximate citation count only |
+| Media storage | Blossom | Divine upload and content-addressed retrieval |
+| Deletion request | NIP-09 | Owner-authored `kind:5` |
+| Future personal packs | NIP-51 | Deferred |
+
+`duration` is a Divine NIP-94 extension field, not a normative NIP-94 field.
+NIP-30 custom emoji rendering is not used because it does not define this
+`kind:1111` attachment and citation model.
+
+## Protocol Encoding
+
+### Canonical reaction event
+
+A reusable reaction is a signed NIP-94 event:
+
+```json
+{
+  "kind": 1063,
+  "content": "A person giving a skeptical side-eye",
+  "tags": [
+    ["url", "https://media.divine.video/<sha256>.mp4"],
+    ["m", "video/mp4"],
+    ["x", "<sha256>"],
+    ["size", "183240"],
+    ["dim", "480x480"],
+    ["duration", "2.4"],
+    ["thumb", "https://media.divine.video/<thumb-sha256>.webp"],
+    ["alt", "A person giving a skeptical side-eye"],
+    ["t", "reaction"],
+    ["t", "side-eye"],
+    ["t", "skeptical"]
+  ]
+}
+```
+
+The event ID is the canonical social identity. The `x` tag is the canonical
+blob identity. Catalog results may group duplicate blobs by `x`, but a comment
+always cites the exact selected event ID and preserves that event's authorship.
+
+A reaction candidate is valid only when it has:
+
+- kind `1063`;
+- exactly one valid `url`, `m`, `x`, `dim`, and `alt` value;
+- one `["t", "reaction"]` marker;
+- a supported non-audio media MIME;
+- a 64-character lowercase hexadecimal SHA-256;
+- an HTTPS Divine media URL for autoplay eligibility; and
+- an Active moderation state for both event ID and blob hash.
+
+### Reaction comment
+
+```json
+{
+  "kind": 1111,
+  "content": "that look says everything\nhttps://media.divine.video/<sha256>.mp4\nnostr:nevent1...",
+  "tags": [
+    ["E", "<root-video-event-id>", "<relay-hint>", "<root-author>"],
+    ["A", "34236:<root-author>:<d-tag>", "<relay-hint>"],
+    ["K", "34236"],
+    ["P", "<root-author>", "<relay-hint>"],
+    ["e", "<parent-event-id>", "<relay-hint>", "<parent-author>"],
+    ["k", "<parent-kind>"],
+    ["p", "<parent-author>", "<relay-hint>"],
+    ["q", "<reaction-event-id>", "<relay-hint>", "<reaction-author>"],
+    [
+      "imeta",
+      "url https://media.divine.video/<sha256>.mp4",
+      "m video/mp4",
+      "x <sha256>",
+      "dim 480x480",
+      "image https://media.divine.video/<thumb-sha256>.webp",
+      "alt A person giving a skeptical side-eye"
+    ]
+  ]
+}
+```
+
+For a top-level comment, lowercase parent tags reference the root video. For a
+reply, they reference the immediate `kind:1111` parent. The reaction is never
+placed in `e`, `E`, `a`, `A`, `k`, or `K`.
+
+Generated comments contain exactly one supported reaction `q` and one
+corresponding `imeta`. A future multi-attachment design requires a new review;
+the parser does not guess among multiple reaction candidates.
+
+### Verified-use predicate
+
+A raw `#q` match is a citation, not proof that the cited media was used. A
+comment becomes a Divine verified use only when all checks pass:
+
+1. The `kind:1111` signature and event ID are valid.
+2. There is exactly one supported reaction `q`.
+3. The cited event exists, has a valid signature and event ID, and is
+   `kind:1063`.
+4. The `q` author field matches the cited event's pubkey.
+5. The cited event is marked as a reaction and has supported media metadata.
+6. The comment has exactly one matching reaction `imeta`.
+7. `imeta` URL, MIME, SHA-256, dimensions, and thumbnail match the cited
+   event's canonical descriptor.
+8. The exact media URL and exact `nostr:nevent` citation appear in `content`.
+9. The uppercase NIP-22 root resolves to a valid indexed video. `A`, `E`, `K`,
+   and `P` are mutually consistent.
+10. The reaction event, author, blob hash, root video, and comment pass current
+    moderation policy.
+
+Any failed or unknown check is fail-closed for Divine counts, lists, catalog
+ranking, and autoplay. Funnelcake recomputes validity when moderation or source
+events change.
+
+Raw relay clients remain free to query `#q`. NIP-45 counts of those matches are
+displayed only in developer diagnostics as unverified citation counts. Divine
+product surfaces use the verified Funnelcake index.
+
+## Backend Architecture
+
+### Media-role separation
+
+Before ingesting reaction media, Funnelcake separates `kind:1063` records by
+product role:
+
+- audio: supported audio MIME and existing sound metadata rules;
+- reaction: supported non-audio MIME, `["t", "reaction"]`, valid reaction
+  descriptor;
+- other: retained as generic NIP-94 metadata but excluded from both products.
+
+Reaction records must not enter the existing audio read model, sound pages,
+Gorse items, or sound recommendations. Audio records must not enter the
+reaction catalog.
+
+Funnelcake's search migration currently omits `kind:1063`; the reaction read
+model receives its own searchable normalized fields and moderation join rather
+than broadening the existing video/text index indiscriminately.
+
+### Proposed REST contract
+
+```text
+GET /api/reactions?search=<text>&cursor=<opaque>&limit=<n>
+GET /api/reactions/<event-id>
+GET /api/reactions/<event-id>/uses?cursor=<opaque>&limit=<n>
+```
+
+`limit` defaults to 20 and is capped at 50. Cursors are opaque and stable for
+the response ordering. Search requests are debounced by 250 ms and canceled
+when input changes.
+
+The catalog response contains only Active reaction descriptors. The use
+response contains the verified count plus a page of unique root video
+addresses/IDs. Funnelcake's configured relay ingest defines the completeness
+boundary. Relay result caps do not truncate the REST cursor.
+
+No NIP-50 or NIP-45 support is required from the web client's relay pool for
+the product experience. Those standards remain useful for external clients and
+diagnostics.
+
+### Moderation ownership
+
+Divine Blossom owns upload scanning, canonical derivative generation, blob
+state, and blob blocking. Funnelcake joins that state with event, author,
+comment, and root-video policy to own catalog and verified-use eligibility.
+The web client consumes those decisions and fails closed on unknown state.
+
+Moderation states are:
+
+- Pending
+- Active
+- AgeRestricted
+- Restricted
+- Banned
+- Deleted
+
+The MVP catalog and composer accept only Active reactions. Age-restricted
+reaction media is excluded rather than introducing a second age-verification
+flow inside comments. Reports name the reaction event ID, uploader pubkey, and
+blob `x`. Reporting the surrounding comment is a separate action because the
+comment author may differ from the reaction author.
+
+## Upload Pipeline
+
+The MVP uploads local files only to Divine Blossom. It does not accept remote
+URL imports, arbitrary Blossom servers, or the user's `kind:10063` preferred
+server list. Preferred-server support is deferred until routing, SSRF, auth,
+moderation, and availability rules are designed across clients.
+
+Allowed source formats are GIF, animated WebP, and MP4. Shared client/server
+constants enforce:
+
+- maximum source size: 10 MiB;
+- maximum duration: 6 seconds;
+- maximum width or height: 1080 pixels;
+- maximum pixels per frame: 2,073,600;
+- maximum decoded frames: 120;
+- maximum total decoded pixels: 120,000,000;
+- required alt text: 1–280 Unicode characters; and
+- at most 8 normalized search tags, each 1–32 characters.
+
+The server sniffs and decodes the file instead of trusting extension or
+declared MIME. It strips metadata and audio, then produces:
+
+- a muted H.264 MP4 canonical derivative; and
+- a static WebP thumbnail.
+
+Both outputs are content-addressed and size-checked. The upload API enforces,
+per pubkey and IP, at most 2 concurrent uploads, 10 uploads per rolling hour,
+and 50 MiB of accepted sources per day. Reaction search is limited to 60
+requests per minute and use-list requests to 30 per minute. A `429` includes a
+retry delay; the client backs off without discarding the draft.
+
+### Publication state machine
+
+```text
+idle
+  -> selecting
+  -> uploading
+  -> moderating
+  -> publishingMetadata
+  -> ready
+  -> publishingComment
+  -> idle
+```
+
+Every active state may enter `failed` with a retry target. While Pending, only
+the uploader sees a local object-URL preview. Other clients never receive or
+fetch pending media. The client publishes the `kind:1063` only after the
+canonical derivative is Active, and publishes the comment only after the
+signed metadata event is accepted by at least one configured write relay.
+
+The draft key includes current pubkey, root video address/ID, and parent event
+ID. It stores caption text, the selected reaction descriptor, upload receipt,
+canonical hashes, publication state, and already-signed event JSON for seven
+days. It stores no private keys or auth headers.
+
+Retries reuse the canonical blob hash and exact signed event. Before signing a
+replacement metadata event, the client queries configured write relays for the
+known event ID. Before retrying the comment, it similarly checks the known
+comment ID. This prevents double publication caused by an ambiguous timeout.
+
+Canceling an upload stops local work and requests best-effort deletion of an
+owned unreferenced blob. A server cleanup job removes expired Pending and
+unreferenced uploaded derivatives. Published Nostr events remain governed by
+NIP-09 semantics.
+
+## Rendering and Accessibility
+
+A dedicated `ReactionAttachment` renders only a validated descriptor. Generic
+`NoteContent` remains responsible for text and links.
+
+- The attachment reserves the validated aspect ratio to prevent layout shift.
+- Active Divine media may autoplay muted and loop while visible.
+- It uses `preload="none"`, `playsInline`, `muted`,
+  `crossOrigin="anonymous"`, and `referrerPolicy="no-referrer"`.
+- Playback pauses off-screen.
+- With reduced motion, the static thumbnail renders first and animation begins
+  only after an explicit Play action.
+- Unknown, Pending, restricted, blocked, malformed, or mismatched media never
+  autoloads.
+- Valid third-party NIP-92 media is shown as an external click-to-load link
+  until Divine has sanitized and indexed it.
+- Broken media falls back to alt text and the cited `nevent` link.
+- Reply previews and notifications show optional caption plus "Reaction"
+  instead of raw machine-generated URL/citation lines.
+
+The desktop picker uses a combobox search field and selectable result grid
+inside the existing modal focus trap. The mobile sheet follows the same
+semantics. Arrow keys move the active result, Enter selects, Escape closes the
+nested picker before the parent modal, and Tab follows visible controls.
+Loading, result count, selection, upload progress, and errors are announced in
+a polite live region. Focus returns to the reaction trigger after close.
 
 ## Failure Behavior
 
-- **Search unavailable:** show personal/recent reactions and allow upload.
-- **Preferred Blossom unavailable:** try the next declared server, then the
-  Divine fallback.
-- **Existing blob but missing metadata event:** publish a new signed
-  `kind:1063` event after validating the blob descriptor.
-- **Metadata publish fails after upload:** do not publish the comment; preserve
-  the local draft and retry metadata publication.
-- **Comment publish fails:** preserve the chosen reaction and comment draft for
-  retry.
-- **Reaction event unavailable while rendering:** render from valid NIP-92
-  metadata already carried by the comment.
-- **Media unavailable:** show alt text and the Nostr citation rather than an
-  empty card.
+- **Catalog unavailable:** show cached personal reactions and Upload new.
+- **Catalog below cold-start threshold:** omit public search without an error.
+- **Relay cannot fetch personal events:** show Recents and Upload new.
+- **Upload rejected:** retain caption and local file metadata, explain the
+  violated limit or moderation state, and do not publish.
+- **Upload canceled:** remove local preview and run best-effort orphan cleanup.
+- **Metadata relay timeout:** retain the exact signed event and verify its ID
+  before retry.
+- **Comment relay timeout:** retain the exact signed comment and verify its ID
+  before retry.
+- **Reaction reclassified after publication:** stop autoplay and remove it from
+  public search/count/list while retaining a safe unavailable placeholder.
+- **Malformed comment:** render its ordinary human text and safe links, but not
+  a reaction attachment.
+- **Funnelcake use endpoint unavailable:** show "Usage unavailable"; do not
+  substitute a raw relay count as verified.
 
-## Alternatives Considered
+## Privacy and Abuse Controls
 
-### Use `kind:34236` reactions
+- Public reactions, comments, and citations are signed public Nostr data.
+- The upload UI says the reaction may be reused by other people and deletion
+  cannot be guaranteed across Nostr.
+- Client telemetry never records caption text, alt text, raw search text,
+  media bytes, or Nostr private material.
+- Search telemetry records only query-length buckets and result count.
+- Media is decoded in isolated, resource-limited server workers.
+- Redirects and arbitrary outbound fetches are absent from the MVP pipeline.
+- Existing CSP media origins are changed only if the fixed Divine media origin
+  requires it.
+- Mute and report decisions are applied before rendering or counting.
+- A reaction report propagates by event ID and blob hash to every indexed use;
+  a comment report affects that comment independently.
 
-This aligns with Divine's existing recorded video replies, but it mixes
-reusable catalog assets with feed videos and makes image/GIF reactions awkward.
-It remains appropriate for original recorded video replies, not the reusable
-reaction library.
+## Delivery Slices
 
-### Use only NIP-30 emoji tags and `kind:30030` sets
+Each slice is independently deployable and reviewable. Backend changes deploy
+before the web feature flag is enabled.
 
-This provides useful personal packs, but NIP-30 does not define `kind:1111`
-rendering and does not provide the same file metadata or usage citation model.
-It is an optional organization layer, not the comment encoding.
+### 0. Funnelcake and Blossom prerequisites
 
-### Introduce a custom reaction event kind or tag
+- Separate audio, reaction, and other `kind:1063` media roles.
+- Add the moderated reaction read model and search endpoint.
+- Add verified-use validation, count, and cursor-paginated root-video endpoint.
+- Add fixed Divine upload sanitization, moderation state, quotas, and cleanup.
+- Add metrics and alerting.
 
-This could encode Divine-specific semantics directly, but would reduce
-interoperability and duplicate the combination of NIP-94, NIP-92, NIP-22, and
-`q`. It is rejected.
+### 1. Pure web protocol model
+
+- Add pure NIP-94 reaction parser and descriptor validation under `src/lib`.
+- Add pure `kind:1111` builder and verified attachment parser.
+- Test top-level and nested NIP-22 tags, exact `q`/`imeta` matching, malformed
+  events, and machine-token stripping.
+
+### 2. Safe inline rendering
+
+- Render valid existing reaction comments with `ReactionAttachment`.
+- Add reduced-motion, broken-media, notification, and reply-preview behavior.
+- Keep third-party or unverified media click-to-load.
+
+### 3. Select and publish existing reactions
+
+- Add the one-reaction composer model and deterministic content.
+- Add personal authored reactions and approved REST catalog selection.
+- Preserve and retry drafts with idempotent signed-event reuse.
+
+### 4. Upload and publish new reactions
+
+- Add local validation, alt/search metadata form, upload pipeline, progress,
+  cancellation, moderation wait, and metadata publication.
+- Never publish a comment before the reaction reaches Active and its
+  `kind:1063` is relay-visible.
+
+### 5. Picker completion
+
+- Add responsive popover/sheet behavior, catalog cold-start gate, Recents,
+  keyboard grid navigation, live announcements, and local owner hide/delete
+  requests.
+
+### 6. Usage discovery
+
+- Add reaction detail and cursor-paginated "videos using this reaction."
+- Display verified Divine count and scope language.
+- Add independent reaction and comment reporting.
+
+Mobile publication and rendering are a separate parity project. Mobile can
+continue to treat these comments as ordinary text/links until it implements
+the same parser. Preferred Blossom servers and NIP-51 packs are later designs.
 
 ## Test Strategy
 
-### Protocol unit tests
+### Protocol and validator tests
 
-- Build top-level and nested reaction comments with correct NIP-22 tags.
-- Assert exactly one `q` tag references the selected `kind:1063` event.
-- Assert no thread tag is repurposed for the reaction.
-- Assert the NIP-92 URL appears in content and matches `imeta`.
-- Parse supported GIF, WebP, and MP4 metadata.
-- Reject unsupported schemes, MIME mismatches, invalid hashes, and oversized
-  files.
+- Generated comments have 100% valid NIP-22 root/parent tags.
+- Generated reaction comments have exactly one valid `q` and matching `imeta`.
+- Reaction `q` never changes thread ancestry.
+- Caption extraction removes only exact generated machine tokens.
+- Every verified-use predicate failure is rejected independently.
+- Addressable roots deduplicate by `pubkey:kind:d`, not event ID.
 
-### Query tests
+### Backend tests
 
-- Query `kind:1111` by `#q` and resolve unique root `A`/`E` references.
-- Count exact-event usage with the same filter.
-- Group catalog duplicates by NIP-94 `x` without changing stored citations.
-- Verify addressable video roots are deduplicated by address, not event ID.
+- Reaction `kind:1063` never enters audio/Gorse models.
+- Audio `kind:1063` never enters reaction results.
+- Search, moderation, cursors, ranking, and cold-start counts are deterministic.
+- Citation poisoning with mismatched `q`, author, `imeta`, URL, MIME, `x`, root,
+  or moderation state never creates a verified use.
+- Reclassification invalidates catalog and usage materializations.
+- Decoder bombs, MIME lies, metadata, audio tracks, oversize files, quotas, and
+  orphan cleanup are covered.
 
-### UI tests
+### Web component tests
 
-- Search, empty, loading, offline, and error states.
-- Select existing reaction and upload a new reaction.
-- Keyboard navigation, focus management, alt text, and reduced motion.
-- Inline rendering, off-screen pause, broken-media fallback, and retry.
-- Draft preservation when metadata or comment publication fails.
+- Text-only, reaction-only, and caption-plus-reaction submission.
+- Select, replace, remove, cancel, retry, modal close, refresh, and seven-day
+  draft expiry.
+- Exact signed-event reuse after ambiguous relay timeouts.
+- Search debounce/cancel, empty/error/offline, cold start, pagination, and
+  deduplication.
+- Combobox/grid semantics, focus return, live announcements, alt text, and
+  reduced motion.
+- Active, unknown, blocked, malformed, broken, and third-party render states.
 
-### Integration tests
+### End-to-end tests
 
-- Blossom upload to signed NIP-94 publication to NIP-22 comment publication.
-- A second client discovers the reaction comment from relay data alone.
-- Usage lookup returns all root videos citing the canonical reaction event.
-- Moderated reactions are excluded from public discovery but remain subject to
-  owner/admin access rules.
+- Existing reaction selection through signed `1111` relay publication.
+- Upload through sanitization, Active state, `1063`, and `1111` publication.
+- A second web session discovers and renders the signed comment.
+- Usage detail lists the correct unique root videos from verified uses.
+- Desktop, mobile-width nested sheet, keyboard-only, reduced-motion, offline,
+  and upload-rejection Playwright paths.
+- Axe WCAG 2 A/AA checks introduce no violations.
+
+## Observability and Rollout
+
+The web feature is protected by a server-controlled flag. It remains off until
+slice 0 is deployed, health checks pass, and at least 250 Active catalog
+reactions exist. Rollout proceeds to staff, 5%, 25%, then 100%.
+
+Privacy-safe counters and histograms cover:
+
+- picker opened, source selected, selection removed, and publish outcome;
+- upload accepted/rejected, stage duration, moderation result, and cleanup;
+- search latency, result-count bucket, and zero-result rate;
+- metadata/comment relay acceptance and ambiguous-timeout recovery;
+- verified-use rejection reason;
+- attachment render/fallback reason; and
+- report rate by surface, without content.
+
+Automatic rollback or flag disable occurs when:
+
+- any unreviewed or non-Active reaction autoloads publicly;
+- any generated published reaction comment lacks a valid matching `q`/`imeta`;
+- publish failure exceeds 5% for 30 minutes;
+- p95 catalog latency exceeds 2 seconds for 30 minutes; or
+- crash-free sessions regress by more than 0.5 percentage points.
 
 ## Success Criteria
 
-- At least 99% of successfully published reaction comments contain a valid
-  `q` reference and matching NIP-92 metadata.
-- A usage lookup returns all indexed comments citing the exact reaction event,
-  with no thread-tag ambiguity.
-- The uploader can use a successfully uploaded reaction immediately.
-- Picker search reaches usable results within one second at the 95th percentile
-  when the search relay is healthy.
-- Inline reactions introduce no WCAG 2 A/AA violations and honor reduced
-  motion.
-- Publication failure never loses the user's selected reaction or draft text.
+- 100% of generated published reaction comments pass the shared protocol
+  validator; one malformed event is a release blocker.
+- At least 95% of existing-reaction submit attempts reach relay acceptance.
+- p95 catalog search is below 1 second under normal service health.
+- p95 accepted upload-to-Active time is below 15 seconds.
+- The top-100 normalized search queries have less than 20% zero-result rate
+  after two weeks at full rollout.
+- At least 35% of picker opens produce a published reaction comment after the
+  first two weeks; this is evaluated alongside cancellation and error rates,
+  not used to pressure users.
+- Verified-use count and pages contain no known citation-poisoning false
+  positives.
+- Reduced-motion, keyboard, and screen-reader paths pass their automated and
+  manual acceptance checks.
+- Publication failure never loses caption text, selected reaction, upload
+  receipt, or already-signed events within the seven-day draft lifetime.
 
-## Delivery Boundary
+## Rejected Alternatives
 
-The first implementation may ship personal/recent reactions, NIP-50 search,
-upload, `q`-linked publication, inline rendering, and exact-event usage counts.
-Public pack creation, blob-level aggregate counts, recommendations, and
-reaction analytics beyond usage count are follow-up work.
+### Use `kind:34236` for reusable reactions
+
+That mixes catalog assets with authored feed videos, pollutes video discovery,
+and poorly represents animated images. `kind:34236` remains appropriate for an
+original recorded video reply.
+
+### Use only NIP-30 emoji tags
+
+NIP-30 does not define this `kind:1111` attachment behavior, carry the required
+file metadata, or create an indexed citation that discovers root videos.
+
+### Trust raw `#q` or NIP-45 counts
+
+Anyone can cite a `kind:1063` while attaching unrelated media. Raw queries are
+important for interoperability, but Divine needs the verified-use predicate
+for trusted counts, ranking, and lists.
+
+### Upload to arbitrary preferred Blossom servers in the MVP
+
+This expands SSRF, authentication, availability, moderation, and cleanup
+boundaries before the core interaction is proven. The signed `kind:1063` and
+`1111` events remain portable even though initial sanitization uses Divine
+hosting.
+
+### Ship web and mobile publication together
+
+The clients currently have different comment and media models. A web-first
+launch keeps the first change reviewable while preserving standard event data
+that mobile can render as ordinary links until parity work lands.
