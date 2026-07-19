@@ -1,7 +1,7 @@
 # Nostr-Native Reaction Comments
 
-**Date:** 2026-07-19  
-**Status:** Approved protocol direction; pending design review  
+**Date:** 2026-07-19
+**Status:** Approved protocol direction; pending design review
 **Scope:** Search, select, upload, publish, render, and count reusable animated
 reaction media in video comment threads.
 
