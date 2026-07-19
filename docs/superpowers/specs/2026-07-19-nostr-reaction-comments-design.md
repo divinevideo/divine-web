@@ -1,7 +1,7 @@
 # Nostr-Native Reaction Comments
 
 **Date:** 2026-07-19
-**Status:** Design review iteration 2
+**Status:** Design gate approved; pending user approval
 **Initial client:** Divine Web
 **Scope:** Reusable animated reactions in NIP-22 video comments, including
 verified discovery of the videos that use a reaction.
