@@ -1,6 +1,25 @@
 // ABOUTME: TypeScript types for Funnelcake REST API responses
 // ABOUTME: Defines interfaces for video data, search results, and API responses
 
+export interface FunnelcakeProofChecks {
+  proofmode_present?: boolean | null;
+  proofmode_parse_ok?: boolean | null;
+  pgp_signature_present?: boolean | null;
+  pgp_signature_valid?: boolean | null;
+  device_attestation_present?: boolean | null;
+  device_attestation_valid?: boolean | null;
+  c2pa_manifest_present?: boolean | null;
+  c2pa_manifest_valid?: boolean | null;
+}
+
+export interface FunnelcakeProofSummary {
+  status: 'unknown' | 'present' | 'invalid' | 'partial' | 'verified';
+  level?: string;
+  checked_at?: number;
+  version: number;
+  checks: FunnelcakeProofChecks;
+}
+
 /**
  * Raw video data from Funnelcake API
  * Note: id and pubkey are hex strings from the API
@@ -50,6 +69,8 @@ export interface FunnelcakeVideoRaw {
 
   // Full event tags (only present from /api/videos/{id} endpoint)
   tags?: string[][];      // Nostr event tags for ProofMode extraction
+  event_json?: string | Record<string, unknown>; // Full Nostr event payload when provided by detail APIs
+  proof?: FunnelcakeProofSummary; // Compact ProofMode summary for list/feed endpoints
 }
 
 /**
