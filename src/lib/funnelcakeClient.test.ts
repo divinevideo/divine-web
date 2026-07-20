@@ -34,6 +34,7 @@ describe('funnelcakeClient', () => {
   let markNotificationsRead: typeof import('./funnelcakeClient').markNotificationsRead;
   let fetchNotifications: typeof import('./funnelcakeClient').fetchNotifications;
   let fetchVideoById: typeof import('./funnelcakeClient').fetchVideoById;
+  let fetchCreatorAnalytics: typeof import('./funnelcakeClient').fetchCreatorAnalytics;
 
   beforeEach(async () => {
     vi.resetModules();
@@ -51,6 +52,7 @@ describe('funnelcakeClient', () => {
     markNotificationsRead = client.markNotificationsRead;
     fetchNotifications = client.fetchNotifications;
     fetchVideoById = client.fetchVideoById;
+    fetchCreatorAnalytics = client.fetchCreatorAnalytics;
   });
 
   afterEach(() => {
@@ -421,6 +423,20 @@ describe('funnelcakeClient', () => {
           }),
         }),
       );
+    });
+  });
+
+  describe('fetchCreatorAnalytics', () => {
+    it('throws a generic Funnelcake auth error on HTTP failure', async () => {
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        ok: false,
+        status: 403,
+        statusText: 'Forbidden',
+        text: () => Promise.resolve('not yours'),
+      });
+
+      await expect(fetchCreatorAnalytics(API_URL, TEST_PUBKEY, TEST_SIGNER, { window: '30d' }))
+        .rejects.toThrow('Funnelcake API error: 403 Forbidden');
     });
   });
 

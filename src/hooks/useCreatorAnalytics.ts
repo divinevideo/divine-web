@@ -1,105 +1,73 @@
 // ABOUTME: Hook for fetching creator analytics data from Funnelcake REST API
-// ABOUTME: Fetches user videos + bulk stats + profile, computes KPIs and top content
+// ABOUTME: Single server-aggregated call + small bulk metadata fetch for top-N posts
 
 import { useQuery } from '@tanstack/react-query';
 import { API_CONFIG } from '@/config/api';
+import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { isFunnelcakeAvailable } from '@/lib/funnelcakeHealth';
 import {
   fetchUserProfile,
-  fetchUserVideos,
-  fetchBulkVideoStats,
+  fetchCreatorAnalytics,
+  fetchBulkVideos,
 } from '@/lib/funnelcakeClient';
 import { buildAnalyticsData } from '@/lib/analyticsTransform';
 import { debugLog } from '@/lib/debug';
-import type { FunnelcakeVideoRaw } from '@/types/funnelcake';
-import type { CreatorAnalyticsData } from '@/types/creatorAnalytics';
+import type {
+  CreatorAnalyticsData,
+  CreatorAnalyticsWindow,
+} from '@/types/creatorAnalytics';
 
-const MAX_PAGES = 4;
-const PAGE_SIZE = 50;
+const DEFAULT_WINDOW: CreatorAnalyticsWindow = '30d';
 
 /**
- * Paginate through all user videos (up to MAX_PAGES * PAGE_SIZE)
- * Deduplicates by pubkey:kind:d_tag
+ * Fetch and assemble creator analytics for the dashboard.
+ *
+ * Issues at most two API calls:
+ *   1. `GET /api/users/{pubkey}/analytics` (NIP-98) - totals, timeseries, top-N IDs
+ *   2. `POST /api/videos/bulk` - metadata for just the top-N IDs (≤10 by default)
+ * Plus an unauthenticated profile fetch for the absolute follower count.
+ *
+ * Caller must be authenticated as `pubkey` (the analytics endpoint refuses
+ * cross-account access); the dashboard page already gates on that.
  */
-async function fetchAllUserVideos(
-  apiUrl: string,
+export function useCreatorAnalytics(
   pubkey: string,
-  signal: AbortSignal,
-): Promise<FunnelcakeVideoRaw[]> {
-  const allVideos: FunnelcakeVideoRaw[] = [];
-
-  for (let page = 0; page < MAX_PAGES; page++) {
-    const offset = page * PAGE_SIZE;
-    const response = await fetchUserVideos(apiUrl, pubkey, {
-      limit: PAGE_SIZE,
-      offset,
-      signal,
-    });
-
-    allVideos.push(...response.videos);
-
-    if (!response.has_more) break;
-  }
-
-  // Deduplicate by pubkey:kind:d_tag (addressable event key)
-  const seen = new Set<string>();
-  return allVideos.filter(v => {
-    const key = `${v.pubkey}:${v.kind}:${v.d_tag}`;
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
-}
-
-/**
- * Hook to fetch and compute creator analytics
- *
- * Fetches user profile, all user videos (paginated), and bulk stats,
- * then computes KPIs and top content rankings.
- *
- * @param pubkey - Creator's hex public key
- * @returns React Query result with CreatorAnalyticsData
- */
-export function useCreatorAnalytics(pubkey: string) {
+  window: CreatorAnalyticsWindow = DEFAULT_WINDOW,
+) {
   const apiUrl = API_CONFIG.funnelcake.baseUrl;
+  const { signer } = useCurrentUser();
 
   return useQuery<CreatorAnalyticsData>({
-    queryKey: ['creator-analytics', pubkey],
+    queryKey: ['creator-analytics', pubkey, window],
     queryFn: async ({ signal }) => {
       if (!pubkey) throw new Error('No pubkey provided');
+      if (!signer) throw new Error('Signer not available - cannot authenticate analytics request');
 
-      // Check circuit breaker
       if (!isFunnelcakeAvailable(apiUrl)) {
         throw new Error('Funnelcake API is not available');
       }
 
-      debugLog(`[useCreatorAnalytics] Fetching analytics for ${pubkey}`);
+      debugLog(`[useCreatorAnalytics] Fetching analytics for ${pubkey} window=${window}`);
 
-      // 1. Fetch user videos and profile in parallel
-      const [videos, profile] = await Promise.all([
-        fetchAllUserVideos(apiUrl, pubkey, signal),
+      const [analytics, profile] = await Promise.all([
+        fetchCreatorAnalytics(apiUrl, pubkey, signer, { window, signal }),
         fetchUserProfile(apiUrl, pubkey, signal),
       ]);
 
-      debugLog(`[useCreatorAnalytics] Got ${videos.length} videos`);
+      debugLog(
+        `[useCreatorAnalytics] Got analytics: ${analytics.summary.video_count ?? 0} videos, ${analytics.top_posts.length} top posts`,
+      );
 
-      // 2. Fetch bulk stats for all videos
-      const videoIds = videos
-        .map(v => v.id)
-        .filter(id => id && typeof id === 'string' && id.length > 0);
+      const topIds = analytics.top_posts.map(p => p.id).filter(Boolean);
+      const topVideoMetadata = topIds.length > 0
+        ? (await fetchBulkVideos(apiUrl, topIds, signal)).videos
+        : [];
 
-      const bulkStats = videoIds.length > 0
-        ? await fetchBulkVideoStats(apiUrl, videoIds, signal)
-        : { stats: [], missing: [] };
-
-      debugLog(`[useCreatorAnalytics] Got stats for ${bulkStats.stats.length} videos`);
-
-      // 3. Build analytics data from raw responses
-      return buildAnalyticsData(videos, bulkStats, profile);
+      return buildAnalyticsData(analytics, topVideoMetadata, profile);
     },
-    enabled: !!pubkey,
-    staleTime: 60_000,   // 1 minute
-    gcTime: 300_000,     // 5 minutes
+    enabled: !!pubkey && !!signer,
+    staleTime: 60_000,
+    gcTime: 300_000,
     retry: 2,
   });
 }
