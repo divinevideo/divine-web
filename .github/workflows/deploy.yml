@@ -117,7 +117,7 @@ jobs:
           FASTLY_API_TOKEN: ${{ secrets.FASTLY_API_TOKEN }}
         run: |
           set -euo pipefail
-          # publish-content (compute-js-static-publish, pinned to 7.0.3 via
+          # publish-content (compute-js-static-publish, pinned via
           # package-lock) retries per-file uploads but, on final failure, logs
           # "  ❌ Failed: <key> → <msg>" and still exits 0 (the error is swallowed).
           # Capture the output and fail the step if any upload was dropped, so a
