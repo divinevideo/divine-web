@@ -56,8 +56,8 @@ export interface FunnelcakeVideoRaw {
 
   engagement_score?: number; // Computed engagement metric
   trending_score?: number;   // Time-weighted popularity score
-  loops?: number | null;     // Original Vine loop count (only in main videos endpoint)
-  views?: number | null;     // Divine-native views on the archived video
+  loops?: number | null;     // Safe loop count: archived loops for Vine, computed loops for native videos
+  views?: number | null;     // User-facing view count from the logical video aggregate
 
   // Platform origin (for filtering classic vines)
   platform?: string;      // 'vine', 'tiktok', etc.

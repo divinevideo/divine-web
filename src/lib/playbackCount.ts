@@ -18,5 +18,5 @@ export function getVisiblePlaybackCount({
   const loops = positiveCount(loopCount);
   const views = positiveCount(viewStartCount);
 
-  return isVineMigrated ? loops : loops + views;
+  return isVineMigrated ? loops : Math.max(loops, views);
 }
