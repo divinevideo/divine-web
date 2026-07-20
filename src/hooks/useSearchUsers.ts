@@ -65,6 +65,15 @@ function isLowSignalProfile(profile: FunnelcakeProfileResult): boolean {
     !normalizeSearchValue(profile.picture);
 }
 
+function isExactProfileMatch(profile: FunnelcakeProfileResult, query: string): boolean {
+  const searchValue = normalizeSearchValue(query);
+  if (!searchValue) return false;
+
+  return normalizeSearchValue(profile.name) === searchValue ||
+    normalizeSearchValue(profile.display_name) === searchValue ||
+    getNip05LocalPart(profile.nip05) === searchValue;
+}
+
 function getProfileSearchScore(profile: FunnelcakeProfileResult, query: string): number {
   const searchValue = normalizeSearchValue(query);
   const name = normalizeSearchValue(profile.name);
@@ -78,6 +87,7 @@ function getProfileSearchScore(profile: FunnelcakeProfileResult, query: string):
   if (name === searchValue) score += 500;
   if (displayName === searchValue) score += 450;
   if (nip05Local === searchValue) score += 425;
+  if (isExactProfileMatch(profile, query)) score += 400;
 
   if (name.startsWith(searchValue)) score += 220;
   if (displayName.startsWith(searchValue)) score += 180;
@@ -96,7 +106,7 @@ function getProfileSearchScore(profile: FunnelcakeProfileResult, query: string):
   if (profile.about) score += 10;
   if (profile.display_name) score += 10;
 
-  if (isLowSignalProfile(profile)) score -= 150;
+  if (isLowSignalProfile(profile) && !isExactProfileMatch(profile, query)) score -= 150;
 
   return score;
 }
@@ -201,7 +211,8 @@ export function useSearchUsers(options: UseSearchUsersOptions) {
             .filter(profile => !isSuspiciousProfile(profile))
             .sort((a, b) => getProfileSearchScore(b, debouncedQuery) - getProfileSearchScore(a, debouncedQuery));
 
-          const preferredProfiles = rankedProfiles.filter(profile => !isLowSignalProfile(profile));
+          const preferredProfiles = rankedProfiles
+            .filter(profile => !isLowSignalProfile(profile) || isExactProfileMatch(profile, debouncedQuery));
           const visibleProfiles = preferredProfiles.length >= Math.min(limit, 2)
             ? preferredProfiles
             : rankedProfiles;
