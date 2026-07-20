@@ -2,6 +2,7 @@ name: CI
 
 on:
   push:
+    branches: [main]
   pull_request:
 
 jobs:
@@ -26,4 +27,3 @@ jobs:
 
       - name: Run tests (includes lint, type-check, and build)
         run: npm test
-
