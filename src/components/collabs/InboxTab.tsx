@@ -1,6 +1,7 @@
 import { useCollabInvites } from '@/hooks/useCollabInvites';
 import { useApproveCollab } from '@/hooks/useApproveCollab';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { dTagOf } from '@/lib/collabsParser';
 import { PendingInviteCard } from './PendingInviteCard';
 
 export function InboxTab() {
@@ -41,7 +42,11 @@ export function InboxTab() {
           key={video.id}
           video={video}
           myPubkey={user.pubkey}
-          approving={approve.isPending}
+          approving={
+            approve.isPending
+            && approve.variables?.creatorPubkey === video.pubkey
+            && approve.variables?.videoDTag === dTagOf(video)
+          }
           onApprove={(args) => approve.mutate(args)}
         />
       ))}

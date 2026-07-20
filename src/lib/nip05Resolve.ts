@@ -12,6 +12,16 @@ export interface Nip05Parts {
   domain: string;
 }
 
+const NIP05_NAME_RE = /^[a-zA-Z0-9._-]+$/;
+const NIP05_DOMAIN_RE = /^[a-zA-Z0-9.-]+$/;
+
+function isValidNip05Parts(name: string, domain: string): boolean {
+  return Boolean(domain)
+    && domain.includes('.')
+    && NIP05_DOMAIN_RE.test(domain)
+    && NIP05_NAME_RE.test(name);
+}
+
 export function parseNip05Handle(raw: string): ParsedNip05 | null {
   if (!raw) return null;
   const trimmed = raw.trim();
@@ -19,17 +29,12 @@ export function parseNip05Handle(raw: string): ParsedNip05 | null {
 
   if (trimmed.includes('@')) {
     const [namePart, domainPart] = trimmed.split('@', 2);
-    if (namePart === '') {
-      if (domainPart && domainPart.includes('.')) {
-        return { name: '_', domain: domainPart };
-      }
-      return null;
-    }
-    if (!domainPart || !domainPart.includes('.')) return null;
-    return { name: namePart, domain: domainPart };
+    const name = namePart || '_';
+    if (!domainPart || !isValidNip05Parts(name, domainPart)) return null;
+    return { name, domain: domainPart };
   }
 
-  if (trimmed.includes('.')) {
+  if (isValidNip05Parts('_', trimmed)) {
     return { name: '_', domain: trimmed };
   }
   return null;
@@ -43,8 +48,8 @@ export function parseNip05(nip05: string): Nip05Parts | null {
   const name = trimmed.slice(0, atIndex) || '_';
   const domain = trimmed.slice(atIndex + 1);
 
-  if (!domain || !/^[a-zA-Z0-9.-]+$/.test(domain)) return null;
-  if (!/^[a-zA-Z0-9._-]+$/.test(name)) return null;
+  if (!domain || !NIP05_DOMAIN_RE.test(domain)) return null;
+  if (!NIP05_NAME_RE.test(name)) return null;
 
   return { name, domain };
 }

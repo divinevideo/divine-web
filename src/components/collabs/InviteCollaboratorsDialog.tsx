@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { nip19 } from 'nostr-tools';
 import type { NostrEvent } from '@nostrify/nostrify';
 import {
-  Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle,
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -66,6 +66,14 @@ export function InviteCollaboratorsDialog({ video, open, onOpenChange }: Props) 
         setError("Couldn't find that handle.");
         return;
       }
+      if (existing.some((c) => c.pubkey === pubkey)) {
+        setError('That collaborator is already tagged.');
+        return;
+      }
+      if (pending.some((p) => p.pubkey === pubkey)) {
+        setError('That collaborator is already queued.');
+        return;
+      }
       setPending((p) => [...p, { pubkey, role: role || undefined, label: trimmed }]);
       setHandle('');
       setRole('');
@@ -86,6 +94,9 @@ export function InviteCollaboratorsDialog({ video, open, onOpenChange }: Props) 
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Invite collaborators</DialogTitle>
+          <DialogDescription className="sr-only">
+            Add partner accounts to this video by NIP-05 handle or npub.
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">

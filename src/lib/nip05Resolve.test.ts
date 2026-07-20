@@ -12,7 +12,16 @@ describe('parseNip05Handle', () => {
     expect(parseNip05Handle(input)).toEqual(expected);
   });
 
-  it.each(['', '@', 'no-dot', 'a@', '@a'])('rejects %s', (input) => {
+  it.each([
+    '',
+    '@',
+    'no-dot',
+    'a@',
+    '@a',
+    'alice@bad domain.test',
+    'bad name@divine.video',
+    'bad domain.test',
+  ])('rejects %s', (input) => {
     expect(parseNip05Handle(input)).toBeNull();
   });
 });
