@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseFullEvent, transformFunnelcakeVideo, transformToVideoPage } from './funnelcakeTransform';
+import { mergeVideoStats, parseFullEvent, transformFunnelcakeVideo, transformToVideoPage } from './funnelcakeTransform';
 import type { FunnelcakeVideoRaw, FunnelcakeResponse } from '@/types/funnelcake';
 
 function makeRawVideo(overrides: Partial<FunnelcakeVideoRaw> = {}): FunnelcakeVideoRaw {
@@ -61,6 +61,19 @@ describe('transformFunnelcakeVideo', () => {
     }));
 
     expect(video.loopCount).toBe(296752);
+  });
+
+  it('preserves native Divine loop counts separately from view starts', () => {
+    const video = transformFunnelcakeVideo(makeRawVideo({
+      platform: '',
+      classic: false,
+      loops: 11,
+      views: 23,
+    }));
+
+    expect(video.isVineMigrated).toBe(false);
+    expect(video.loopCount).toBe(11);
+    expect(video.divineViewCount).toBe(23);
   });
 
   it('preserves the age-restricted flag from the API payload', () => {
@@ -496,5 +509,20 @@ describe('transformToVideoPage', () => {
     expect(page.nextCursor).toBeUndefined();
     expect(page.offset).toBeUndefined();
     expect(page.rawCursor).toBeUndefined();
+  });
+});
+
+describe('mergeVideoStats', () => {
+  it('refreshes native Divine loop counts from stats', () => {
+    const video = transformFunnelcakeVideo(makeRawVideo({
+      platform: '',
+      classic: false,
+      loops: 2,
+      views: 7,
+    }));
+
+    const merged = mergeVideoStats(video, { loops: 11 });
+
+    expect(merged.loopCount).toBe(11);
   });
 });

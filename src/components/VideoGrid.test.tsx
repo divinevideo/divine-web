@@ -239,3 +239,30 @@ describe('VideoGrid native link navigation', () => {
     expect(screen.queryByRole('link')).not.toBeInTheDocument();
   });
 });
+
+describe('VideoGrid playback count badge', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockUseCurrentUser.mockReturnValue({ user: null });
+    mockUseAdultVerification.mockReturnValue({ isVerified: false, confirmAdult: vi.fn(), getAuthHeader: vi.fn() });
+  });
+
+  it('shows native video playback counts without adding view starts and loops together', () => {
+    renderGrid(
+      <VideoGrid
+        videos={[
+          makeVideo({
+            id: 'native-video',
+            loopCount: 11,
+            divineViewCount: 20,
+            isVineMigrated: false,
+          }),
+        ]}
+      />
+    );
+
+    expect(screen.getByText('20 loops')).toBeInTheDocument();
+    expect(screen.queryByText('11 loops')).not.toBeInTheDocument();
+    expect(screen.queryByText('31 loops')).not.toBeInTheDocument();
+  });
+});

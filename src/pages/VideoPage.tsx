@@ -23,6 +23,7 @@ import { useToast } from '@/hooks/useToast';
 import { genUserName } from '@/lib/genUserName';
 import { buildProfileLinkPath } from '@/lib/profileLinks';
 import { debugLog } from '@/lib/debug';
+import { getVisiblePlaybackCount } from '@/lib/playbackCount';
 import { reportFunnelcakeFallback } from '@/lib/funnelcakeFallbackReporting';
 import type { ParsedVideoData, UserInteractions } from '@/types/video';
 
@@ -456,7 +457,21 @@ export function VideoPage() {
     const socialMetrics = useVideoSocialMetrics(video.id, video.pubkey, video.vineId, {
       enabled: true,
     });
-    const divineViewCount = Math.max(video.divineViewCount ?? 0, socialMetrics.data?.viewCount ?? 0);
+    const loopCount = video.isVineMigrated
+      ? (video.loopCount ?? 0)
+      : Math.max(video.loopCount ?? 0, socialMetrics.data?.loopCount ?? 0);
+    const viewStartCount = Math.max(video.divineViewCount ?? 0, socialMetrics.data?.viewCount ?? 0);
+    const displayCount = getVisiblePlaybackCount({
+      isVineMigrated: video.isVineMigrated,
+      loopCount,
+      viewStartCount,
+    });
+    const videoForCard = useMemo(
+      () => loopCount !== (video.loopCount ?? 0)
+        ? { ...video, loopCount }
+        : video,
+      [loopCount, video]
+    );
 
     const handleVideoLike = async () => {
       if (userInteractions?.hasLiked) {
@@ -484,7 +499,7 @@ export function VideoPage() {
 
     return (
       <VideoCard
-        video={video}
+        video={videoForCard}
         className="max-w-xl mx-auto"
         layout="vertical"
         onLike={handleVideoLike}
@@ -496,7 +511,7 @@ export function VideoPage() {
         likeCount={video.likeCount ?? 0}
         repostCount={video.repostCount ?? 0}
         commentCount={video.commentCount ?? 0}
-        viewCount={(video.loopCount ?? 0) + divineViewCount}
+        viewCount={displayCount}
         showComments={showCommentsForVideo === video.id}
         navigationContext={context || undefined}
       />
