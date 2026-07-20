@@ -516,6 +516,7 @@
     "signInButton": "Sign in"
   },
   "badgeDetailModal": {
+    "description": "The full story on this badge — who issued it and when.",
     "title": "Badge Details",
     "officialBadge": "✦ Official Divine Badge",
     "issuedBy": "Issued by",
@@ -943,6 +944,7 @@
     "placeholderMessage": "Write a message..."
   },
   "videoCommentsModal": {
+    "description": "See what people are saying and drop your own comment.",
     "title": "Comments",
     "loading": "Loading comments...",
     "emptyMessage": "No comments yet",

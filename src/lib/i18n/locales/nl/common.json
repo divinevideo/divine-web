@@ -516,6 +516,7 @@
     "signInButton": "Inloggen"
   },
   "badgeDetailModal": {
+    "description": "Het hele verhaal achter deze badge — wie hem uitgaf en wanneer.",
     "title": "Badge-details",
     "officialBadge": "✦ Officiële Divine-badge",
     "issuedBy": "Uitgegeven door",
@@ -943,6 +944,7 @@
     "placeholderMessage": "Schrijf een bericht..."
   },
   "videoCommentsModal": {
+    "description": "Bekijk wat anderen zeggen en plaats je eigen reactie.",
     "title": "Reacties",
     "loading": "Reacties laden...",
     "emptyMessage": "Nog geen reacties",

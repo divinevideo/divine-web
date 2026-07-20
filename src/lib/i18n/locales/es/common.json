@@ -516,6 +516,7 @@
     "signInButton": "Iniciar sesión"
   },
   "badgeDetailModal": {
+    "description": "Toda la historia de esta insignia: quién la emitió y cuándo.",
     "title": "Detalles de la insignia",
     "officialBadge": "✦ Insignia oficial de Divine",
     "issuedBy": "Emitida por",
@@ -943,6 +944,7 @@
     "placeholderMessage": "Escribe un mensaje..."
   },
   "videoCommentsModal": {
+    "description": "Mira lo que dice la gente y deja tu propio comentario.",
     "title": "Comentarios",
     "loading": "Cargando comentarios...",
     "emptyMessage": "Aún no hay comentarios",

@@ -516,6 +516,7 @@
     "signInButton": "Mag-log in"
   },
   "badgeDetailModal": {
+    "description": "Ang buong kuwento ng badge na ito — kung sino ang nagbigay at kailan.",
     "title": "Mga Detalye ng Badge",
     "officialBadge": "✦ Opisyal na Divine Badge",
     "issuedBy": "Ibinigay ni",
@@ -943,6 +944,7 @@
     "placeholderMessage": "Ipasok ang mensahe..."
   },
   "videoCommentsModal": {
+    "description": "Tingnan ang sinasabi ng iba at mag-iwan ng sarili mong komento.",
     "title": "Mga komento",
     "loading": "Naglo-load ng mga komento...",
     "emptyMessage": "Wala pang komento.",

@@ -516,6 +516,7 @@
     "signInButton": "Logga in"
   },
   "badgeDetailModal": {
+    "description": "Hela historien om det här märket — vem som delade ut det och när.",
     "title": "Märkesinformation",
     "officialBadge": "✦ Officiellt Divine-märke",
     "issuedBy": "Utfärdat av",
@@ -943,6 +944,7 @@
     "placeholderMessage": "Skriv ett meddelande..."
   },
   "videoCommentsModal": {
+    "description": "Se vad folk säger och lämna en egen kommentar.",
     "title": "Kommentarer",
     "loading": "Laddar kommentarer...",
     "emptyMessage": "Inga kommentarer ännu",

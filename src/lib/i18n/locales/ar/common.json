@@ -520,6 +520,7 @@
     "signInButton": "تسجيل الدخول"
   },
   "badgeDetailModal": {
+    "description": "القصة الكاملة لهذه الشارة — من أصدرها ومتى.",
     "title": "تفاصيل الشارة",
     "officialBadge": "✦ شارة Divine الرسمية",
     "issuedBy": "صادرة من",
@@ -947,6 +948,7 @@
     "placeholderMessage": "اكتب رسالة..."
   },
   "videoCommentsModal": {
+    "description": "شاهد ما يقوله الناس وأضف تعليقك.",
     "title": "التعليقات",
     "loading": "جارٍ تحميل التعليقات...",
     "emptyMessage": "لا توجد تعليقات بعد",

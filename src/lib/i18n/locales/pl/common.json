@@ -518,6 +518,7 @@
     "signInButton": "Zaloguj się"
   },
   "badgeDetailModal": {
+    "description": "Cała historia tej odznaki — kto ją przyznał i kiedy.",
     "title": "Szczegóły odznaki",
     "officialBadge": "✦ Oficjalna odznaka Divine",
     "issuedBy": "Wydane przez",
@@ -945,6 +946,7 @@
     "placeholderMessage": "Napisz wiadomość..."
   },
   "videoCommentsModal": {
+    "description": "Zobacz, co mówią inni, i dodaj własny komentarz.",
     "title": "Komentarze",
     "loading": "Ładowanie komentarzy...",
     "emptyMessage": "Jeszcze żadnych komentarzy",

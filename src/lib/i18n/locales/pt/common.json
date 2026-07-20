@@ -516,6 +516,7 @@
     "signInButton": "Entrar"
   },
   "badgeDetailModal": {
+    "description": "A história completa deste selo — quem o emitiu e quando.",
     "title": "Detalhes do badge",
     "officialBadge": "✦ Badge oficial Divine",
     "issuedBy": "Emitido por",
@@ -943,6 +944,7 @@
     "placeholderMessage": "Escreva uma mensagem..."
   },
   "videoCommentsModal": {
+    "description": "Veja o que as pessoas estão dizendo e deixe seu próprio comentário.",
     "title": "Comentários",
     "loading": "Carregando comentários...",
     "emptyMessage": "Nenhum comentário ainda",
