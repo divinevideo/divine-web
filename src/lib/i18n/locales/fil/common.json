@@ -960,7 +960,8 @@
   "thumbnailPlayer": {
     "videoPreview": "Preview ng video",
     "thumbnailAlt": "Thumbnail ng video",
-    "playVideo": "I-play ang video"
+    "playVideo": "I-play ang video",
+    "openVideo": "Buksan ang video"
   },
   "hashtagExplorer": {
     "heading": "Mga hashtag",

@@ -352,18 +352,20 @@ export function VideoCard({
     }
   };
 
-  const handleThumbnailClick = () => {
-    // In thumbnail mode (grid view), navigate to video page instead of playing inline
-    if (mode === 'thumbnail') {
-      const targetUrl = navigationContext
+  // In thumbnail mode (grid view), the thumbnail is a real link to the video
+  // page so native browser behaviors (middle-click, open in new tab) work.
+  const thumbnailLinkTo = mode === 'thumbnail'
+    ? (navigationContext
         ? buildVideoNavigationUrl(video.id, navigationContext, videoIndex)
-        : `/video/${video.id}`;
-      navigate(targetUrl, { ownerPubkey: video.pubkey });
-    } else {
-      setActiveVideo(video.id);
-      setIsPlaying(true);
-      onPlay?.();
-    }
+        : `/video/${video.id}`)
+    : undefined;
+
+  const handleThumbnailClick = () => {
+    // Thumbnail mode: navigation is handled by the real link inside ThumbnailPlayer
+    if (mode === 'thumbnail') return;
+    setActiveVideo(video.id);
+    setIsPlaying(true);
+    onPlay?.();
   };
 
   const handleThumbnailPlayButtonClick = () => {
@@ -617,6 +619,8 @@ export function VideoCard({
                   duration={video.duration}
                   ageRestricted={video.ageRestricted}
                   className="w-full h-full"
+                  linkTo={thumbnailLinkTo}
+                  linkOwnerPubkey={video.pubkey}
                   onClick={handleThumbnailClick}
                   onPlayButtonClick={handleThumbnailPlayButtonClick}
                   onError={() => setVideoError(true)}

@@ -108,11 +108,18 @@ vi.mock('@/components/ThumbnailPlayer', () => ({
   ThumbnailPlayer: ({
     onClick,
     onPlayButtonClick,
+    linkTo,
   }: {
     onClick?: () => void;
     onPlayButtonClick?: () => void;
+    linkTo?: string;
   }) => (
     <div data-testid="thumbnail-player">
+      {linkTo && (
+        <a href={linkTo} data-testid="thumbnail-link">
+          Open video
+        </a>
+      )}
       <button onClick={onClick} type="button">
         Thumbnail
       </button>
@@ -398,6 +405,37 @@ describe('VideoCard', () => {
       isLoading: false,
       hasSigner: false,
     });
+  });
+
+  it('renders the thumbnail as a real link to the video page in thumbnail mode', () => {
+    render(<VideoCard video={baseVideo} mode="thumbnail" />);
+
+    const link = screen.getByTestId('thumbnail-link');
+    expect(link).toHaveAttribute('href', `/video/${baseVideo.id}`);
+    expect(playbackMocks.navigate).not.toHaveBeenCalled();
+  });
+
+  it('builds the thumbnail link from the navigation context when provided', () => {
+    render(
+      <VideoCard
+        video={baseVideo}
+        mode="thumbnail"
+        navigationContext={{ source: 'search', query: 'cats' }}
+        videoIndex={2}
+      />
+    );
+
+    const href = screen.getByTestId('thumbnail-link').getAttribute('href') ?? '';
+    expect(href).toContain(`/video/${baseVideo.id}`);
+    expect(href).toContain('source=search');
+    expect(href).toContain('q=cats');
+    expect(href).toContain('index=2');
+  });
+
+  it('does not render a thumbnail link in auto-play mode', () => {
+    render(<VideoCard video={makeVideo({ id: 'video-1' })} mode="auto-play" />);
+
+    expect(screen.queryByTestId('thumbnail-link')).not.toBeInTheDocument();
   });
 
   it('marks a thumbnail-mode video active when inline playback starts', () => {
