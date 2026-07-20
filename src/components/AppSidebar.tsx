@@ -2,7 +2,7 @@
 // ABOUTME: Shows main nav, login/signup, expandable Divine links section
 
 import { Link, useLocation } from 'react-router-dom';
-import { House as Home, Compass, MagnifyingGlass as Search, Bell, User, Sun, Moon, CaretDown as ChevronDown, Headphones, ChartBar as BarChart3, SquaresFour as LayoutGrid, Rss, ChatCircle as MessageCircle, TrendUp } from '@phosphor-icons/react';
+import { House as Home, Compass, MagnifyingGlass as Search, Bell, User, Sun, Moon, CaretDown as ChevronDown, Headphones, ChartBar as BarChart3, SquaresFour as LayoutGrid, Rss, ChatCircle as MessageCircle, TrendUp, Handshake } from '@phosphor-icons/react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCategories } from '@/hooks/useCategories';
@@ -237,6 +237,15 @@ export function AppSidebar({ className }: { className?: string }) {
               label={t('nav.notifications')}
               onClick={() => navigate('/notifications')}
               isActive={isActive('/notifications')}
+            />
+          )}
+
+          {user && (
+            <NavItem
+              icon={<Handshake className="h-[18px] w-[18px]" weight={location.pathname === '/collabs' || location.pathname.startsWith('/collabs/') ? 'fill' : 'bold'} />}
+              label="Collabs"
+              onClick={() => navigate('/collabs')}
+              isActive={location.pathname === '/collabs' || location.pathname.startsWith('/collabs/')}
             />
           )}
 
