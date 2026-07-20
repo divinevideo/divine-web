@@ -23,13 +23,29 @@ import {
  * 3. Validate the chain: definition → award → user
  * 4. Return only validated badges in display order
  */
+/**
+ * Shared time budget for the whole badge fan-out (kinds 30008/30009 are
+ * addressable, so NPool waits for every relay to EOSE — one hung relay would
+ * otherwise block the query forever; same failure mode as issue #415).
+ */
+const BADGES_QUERY_TIMEOUT_MS = 8000;
+
+function isAbortLikeError(error: unknown): boolean {
+  const name = typeof error === 'object' && error !== null && 'name' in error
+    ? String(error.name)
+    : '';
+  return name === 'AbortError' || name === 'TimeoutError';
+}
+
 export function useBadges(pubkey: string | undefined) {
   const { nostr } = useNostr();
 
   return useQuery<ValidatedBadge[]>({
     queryKey: ['badges', pubkey ?? ''],
-    queryFn: async ({ signal }) => {
+    queryFn: async ({ signal: querySignal }) => {
       if (!pubkey || !nostr) return [];
+
+      const signal = AbortSignal.any([querySignal, AbortSignal.timeout(BADGES_QUERY_TIMEOUT_MS)]);
 
       // Step 1: Fetch profile badges (kind 30008)
       const profileBadgeFilter: NostrFilter = {
@@ -39,10 +55,16 @@ export function useBadges(pubkey: string | undefined) {
         limit: 1,
       };
 
-      const profileBadgeEvents = await nostr.query(
-        [profileBadgeFilter],
-        { signal }
-      );
+      let profileBadgeEvents: NostrEvent[] = [];
+      try {
+        profileBadgeEvents = await nostr.query(
+          [profileBadgeFilter],
+          { signal }
+        );
+      } catch (error) {
+        if (!isAbortLikeError(error)) throw error;
+        return [];
+      }
 
       // Fallback: if no profile_badges event, show all awarded badges
       if (!profileBadgeEvents.length) {
@@ -52,7 +74,13 @@ export function useBadges(pubkey: string | undefined) {
           '#p': [pubkey],
           limit: 20,
         };
-        const awards = await nostr.query([awardFilter], { signal });
+        let awards: NostrEvent[] = [];
+        try {
+          awards = await nostr.query([awardFilter], { signal });
+        } catch (error) {
+          if (!isAbortLikeError(error)) throw error;
+          return [];
+        }
         if (!awards.length) return [];
 
         // For each award, extract the badge definition reference and fetch it
