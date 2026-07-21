@@ -14,7 +14,7 @@ import { buildCrawlerHtml, buildUserScript, escapeHtml, cleanText, truncateText 
 import { hexToNpub, decodeNpubToHex } from './bech32.js';
 import { buildWwwRedirectResponse } from './hostRedirect.js';
 import { applyStaticResponseHeaders } from './staticResponseHeaders.js';
-import { hasViteEntryScript, readPublishedStaticFile } from './staticContent.js';
+import { readPublishedStaticFile } from './staticContent.js';
 import {
   handleAtUsernameOg,
   handleHashtagOgTags,
@@ -24,7 +24,7 @@ import {
 } from './crawlerHandlers.js';
 import { transformVideoApiResponse } from './videoMetadata.js';
 import { renderEmbedPage } from './embedPage.js';
-import { injectFeedDataIntoHtml } from './feedInjection.js';
+import { resolveFeedInjectedHtml } from './feedInjection.js';
 
 const publisherServer = PublisherServer.fromStaticPublishRc(rc);
 const DEFAULT_OG_IMAGE = 'https://divine.video/og.png';
@@ -327,20 +327,15 @@ async function handleRequest(event) {
       // (Content-Encoding/Content-Length/ETag). Any failure degrades to the untouched static
       // passthrough below, so injection can never 500.
       const decodedHeaders = applyStaticResponseHeaders(response.headers, { isHtml: true, decoded: true });
-      try {
-        const html = await readIndexHtmlFromKv();
-        if (html && hasViteEntryScript(html)) {
-          const feedType = discoveryFeedType || 'trending';
-          const feedData = await fetchFeedData(feedType, funnelcakeTarget);
-          let finalHtml = html;
-          if (feedData) {
-            finalHtml = injectFeedDataIntoHtml({ html, feedType, feedData });
-          }
-          return new Response(finalHtml, { status: response.status, headers: decodedHeaders });
-        }
-        console.error('Publisher returned unusable KV HTML for', url.pathname, 'length:', html?.length ?? 0);
-      } catch (err) {
-        console.error('Feed injection error:', err.message);
+      const feedType = discoveryFeedType || 'trending';
+      const finalHtml = await resolveFeedInjectedHtml({
+        readHtml: readIndexHtmlFromKv,
+        fetchFeedData: (type) => fetchFeedData(type, funnelcakeTarget),
+        feedType,
+        pathname: url.pathname,
+      });
+      if (finalHtml) {
+        return new Response(finalHtml, { status: response.status, headers: decodedHeaders });
       }
       // fall through to the untouched static passthrough below
     }

@@ -1,7 +1,5 @@
-import { describe, expect, it } from 'vitest';
-import { brotliCompressSync, brotliDecompressSync } from 'node:zlib';
-import { injectFeedDataIntoHtml } from './feedInjection.js';
-import { hasViteEntryScript } from './staticContent.js';
+import { describe, expect, it, vi } from 'vitest';
+import { injectFeedDataIntoHtml, resolveFeedInjectedHtml } from './feedInjection.js';
 
 const makeHtml = (entry = '/assets/index-abc123.js') =>
   `<!doctype html><html><head>` +
@@ -78,7 +76,7 @@ describe('injectFeedDataIntoHtml', () => {
       feedType: 'trending',
       feedData: malicious,
     });
-    const dataMatch = result.match(/__DIVINE_FEED__=([^<]+);/);
+    const dataMatch = result.match(/window\.__DIVINE_FEED__=(.*?);window\.__DIVINE_FEED_TYPE__/);
     expect(dataMatch).not.toBeNull();
     expect(dataMatch[1]).not.toContain('</script>');
     expect(dataMatch[1]).toContain('\\u003c/script>');
@@ -96,37 +94,95 @@ describe('injectFeedDataIntoHtml', () => {
       feedType: 'trending',
       feedData: malicious,
     });
-    expect(result).toContain('&quot;');
+    expect(result).toContain('href="https://example.com/&quot;onload=&quot;alert(1)"');
+  });
+
+  it('escapes feedType as JavaScript data', () => {
+    const result = injectFeedDataIntoHtml({
+      html: makeHtml(),
+      feedType: 'x";alert(1);//',
+      feedData,
+    });
+
+    expect(result).toContain('window.__DIVINE_FEED_TYPE__="x\\";alert(1);//"');
+    expect(result).not.toContain('window.__DIVINE_FEED_TYPE__="x";alert(1);//"');
   });
 });
 
-describe('regression: compressed body injection path (#489)', () => {
-  it('injectFeedDataIntoHtml works on decompressed brotli HTML', () => {
-    const html = makeHtml();
-    const compressed = brotliCompressSync(html);
-    const decompressed = brotliDecompressSync(compressed).toString();
-
-    expect(hasViteEntryScript(decompressed)).toBe(true);
-
-    const result = injectFeedDataIntoHtml({
-      html: decompressed,
+describe('resolveFeedInjectedHtml', () => {
+  it('reads identity HTML, fetches feed data, and injects it', async () => {
+    const result = await resolveFeedInjectedHtml({
+      readHtml: () => Promise.resolve(makeHtml()),
+      fetchFeedData: vi.fn(() => Promise.resolve(feedData)),
       feedType: 'trending',
-      feedData,
+      pathname: '/',
     });
+
     expect(result).toContain('window.__DIVINE_FEED__=');
     expect(result).toContain('rel="preload"');
   });
 
-  it('returns valid HTML structure after injection', () => {
+  it('returns valid HTML structure after injection', async () => {
     const html = makeHtml();
-    const result = injectFeedDataIntoHtml({
-      html,
+    const result = await resolveFeedInjectedHtml({
+      readHtml: () => Promise.resolve(html),
+      fetchFeedData: () => Promise.resolve(feedData),
       feedType: 'classics',
-      feedData,
+      pathname: '/discovery/classics',
     });
 
     expect(result).toMatch(/^<!doctype html>/i);
     expect(result).toContain('</html>');
     expect(result.split('</head>').length - 1).toBe(1);
+  });
+
+  it('returns null when reading HTML fails so the worker can serve static passthrough', async () => {
+    const logger = { error: vi.fn() };
+
+    const result = await resolveFeedInjectedHtml({
+      readHtml: () => Promise.reject(new Error('malformed UTF-8')),
+      fetchFeedData: () => Promise.resolve(feedData),
+      feedType: 'trending',
+      pathname: '/',
+      logger,
+    });
+
+    expect(result).toBeNull();
+    expect(logger.error).toHaveBeenCalledWith('Feed injection error:', 'malformed UTF-8');
+  });
+
+  it('returns null when KV HTML is missing the Vite entry script', async () => {
+    const logger = { error: vi.fn() };
+
+    const result = await resolveFeedInjectedHtml({
+      readHtml: () => Promise.resolve('<!doctype html><html><head></head><body></body></html>'),
+      fetchFeedData: () => Promise.resolve(feedData),
+      feedType: 'trending',
+      pathname: '/',
+      logger,
+    });
+
+    expect(result).toBeNull();
+    expect(logger.error).toHaveBeenCalledWith(
+      'Publisher returned unusable KV HTML for',
+      '/',
+      'length:',
+      54,
+    );
+  });
+
+  it('returns null when fetching feed data throws', async () => {
+    const logger = { error: vi.fn() };
+
+    const result = await resolveFeedInjectedHtml({
+      readHtml: () => Promise.resolve(makeHtml()),
+      fetchFeedData: () => Promise.reject(new Error('feed unavailable')),
+      feedType: 'trending',
+      pathname: '/',
+      logger,
+    });
+
+    expect(result).toBeNull();
+    expect(logger.error).toHaveBeenCalledWith('Feed injection error:', 'feed unavailable');
   });
 });
