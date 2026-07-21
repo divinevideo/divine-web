@@ -1,6 +1,6 @@
 # diVine
 
-Last updated: 2026-07-03
+Last updated: 2026-07-21
 
 > diVine is a human-made, decentralized short-form video app built on Nostr. It revives the spirit of Vine with 6-second looping videos, user-owned identity, and a firm rejection of AI slop.
 
@@ -13,7 +13,7 @@ Core facts:
 - The web app lives at `https://divine.video/`.
 - The public relay is `wss://relay.divine.video`.
 - The public REST API is `https://api.divine.video/api/`.
-- The media host is `https://cdn.divine.video`.
+- The media host is `https://media.divine.video`.
 - The web app is publicly available. iOS and Android betas are invite-only (TestFlight currently full). See https://divine.video/support for current availability.
 - Divine is independent from X/Twitter and the original Vine platform.
 

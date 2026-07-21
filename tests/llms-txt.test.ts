@@ -4,8 +4,6 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 describe('public llms.txt', () => {
-  // vitest pins cwd to the project root; import.meta.url is not a file: URL
-  // under the jsdom environment, so cwd-relative is the reliable option here.
   const llmsTxt = readFileSync(join(process.cwd(), 'public/llms.txt'), 'utf8');
 
   it('describes divine.video for end-user agents', () => {
@@ -32,5 +30,10 @@ describe('public llms.txt', () => {
     expect(llmsTxt).toContain('[Privacy Policy](https://divine.video/privacy)');
     expect(llmsTxt).toContain('[Terms of Service](https://divine.video/terms)');
     expect(llmsTxt).toContain('[FunnelCake API agent guide](https://api.divine.video/docs/llm-guide.md)');
+  });
+
+  it('references the correct media host', () => {
+    expect(llmsTxt).toContain('https://media.divine.video');
+    expect(llmsTxt).not.toContain('cdn.divine.video');
   });
 });
