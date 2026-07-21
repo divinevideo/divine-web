@@ -764,7 +764,7 @@ function UserCard({ user }: { user: { pubkey: string; metadata?: UserCardMetadat
   const picture = getSafeProfileImage(user.metadata?.picture);
   const profilePath = buildProfileLinkPath({
     pubkey: user.pubkey,
-    nip05,
+    nip05: nip05State === 'valid' ? nip05 : undefined,
   });
 
   const handleClick = () => {

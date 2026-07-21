@@ -6,6 +6,7 @@ import type {
   ReactNode,
 } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { nip19 } from 'nostr-tools';
 import type { ParsedVideoData } from '@/types/video';
 import { initializeI18n } from '@/lib/i18n';
 import { VideoCard } from './VideoCard';
@@ -28,6 +29,14 @@ const authMocks = vi.hoisted(() => ({
   confirmAdult: vi.fn(),
   useCurrentUser: vi.fn(),
   useAdultVerification: vi.fn(),
+}));
+
+const authorMocks = vi.hoisted(() => ({
+  metadata: {
+    name: 'Video Author',
+    picture: 'https://example.com/avatar.jpg',
+  } as Record<string, unknown>,
+  useNip05Validation: vi.fn(),
 }));
 
 vi.mock('@/components/ui/card', () => ({
@@ -172,22 +181,24 @@ vi.mock('@/components/SmartLink', () => ({
   SmartLink: ({
     children,
     ownerPubkey: _ownerPubkey,
+    to,
     ...props
-  }: HTMLAttributes<HTMLAnchorElement> & { ownerPubkey?: string }) => (
-    <a {...props}>{children}</a>
+  }: HTMLAttributes<HTMLAnchorElement> & { ownerPubkey?: string; to: string }) => (
+    <a href={to} {...props}>{children}</a>
   ),
 }));
 
 vi.mock('@/hooks/useAuthor', () => ({
   useAuthor: () => ({
     data: {
-      metadata: {
-        name: 'Video Author',
-        picture: 'https://example.com/avatar.jpg',
-      },
+      metadata: authorMocks.metadata,
     },
     isLoading: false,
   }),
+}));
+
+vi.mock('@/hooks/useNip05Validation', () => ({
+  useNip05Validation: authorMocks.useNip05Validation,
 }));
 
 vi.mock('@/hooks/useIsMobile', () => ({
@@ -407,6 +418,17 @@ describe('VideoCard', () => {
       isLoading: false,
       hasSigner: false,
     });
+    authorMocks.metadata = {
+      name: 'Video Author',
+      picture: 'https://example.com/avatar.jpg',
+    };
+    authorMocks.useNip05Validation.mockReturnValue({
+      isValid: false,
+      isLoading: false,
+      isInvalid: true,
+      state: 'invalid',
+      nip05: undefined,
+    });
   });
 
   it('renders the thumbnail as a real link to the video page in thumbnail mode', () => {
@@ -415,6 +437,40 @@ describe('VideoCard', () => {
     const link = screen.getByTestId('thumbnail-link');
     expect(link).toHaveAttribute('href', `/video/${baseVideo.id}`);
     expect(playbackMocks.navigate).not.toHaveBeenCalled();
+  });
+
+  it('links the author through a friendly profile path when NIP-05 is valid', () => {
+    authorMocks.metadata = {
+      name: 'Video Author',
+      picture: 'https://example.com/avatar.jpg',
+      nip05: '_@author.divine.video',
+    };
+    authorMocks.useNip05Validation.mockReturnValue({
+      isValid: true,
+      isLoading: false,
+      isInvalid: false,
+      state: 'valid',
+      nip05: '_@author.divine.video',
+    });
+
+    render(<VideoCard video={baseVideo} mode="thumbnail" />);
+
+    expect(screen.getByRole('link', { name: 'Video Author' })).toHaveAttribute('href', '/u/author');
+  });
+
+  it('links the author through npub when NIP-05 is invalid', () => {
+    authorMocks.metadata = {
+      name: 'Video Author',
+      picture: 'https://example.com/avatar.jpg',
+      nip05: 'author@spoofed.example',
+    };
+
+    render(<VideoCard video={baseVideo} mode="thumbnail" />);
+
+    expect(screen.getByRole('link', { name: 'Video Author' })).toHaveAttribute(
+      'href',
+      `/${nip19.npubEncode(baseVideo.pubkey)}`,
+    );
   });
 
   it('builds the thumbnail link from the navigation context when provided', () => {
