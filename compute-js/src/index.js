@@ -316,45 +316,46 @@ async function handleRequest(event) {
     const isHtmlResponse = response.headers.get('Content-Type')?.includes('text/html') ?? false;
     const headers = applyStaticResponseHeaders(response.headers, { isHtml: isHtmlResponse });
 
-    // Inject feed data into HTML pages for faster LCP
+    // Inject feed data into HTML pages for faster LCP.
     if (shouldInjectFeed && isHtmlResponse) {
-      // response.text() below decodes the body to an identity (plain) string, so the
-      // returned bytes are no longer brotli/gzip. Strip the compression-coupled headers
-      // (Content-Encoding/Content-Length/ETag) or the browser fails to decode -> #435.
+      // The static body is brotli/gzip-compressed for browsers, and the Fastly SDK's
+      // Response.text() does NOT decompress it — reading it throws "malformed UTF-8" and
+      // consumes the stream, which previously fell through to a hard 500 on the injected
+      // routes (apex + /discovery/{new,hot,classics,top}); see #435. Read the identity shell
+      // from KV instead and serve it with the compression-coupled headers stripped
+      // (Content-Encoding/Content-Length/ETag). Any failure degrades to the untouched static
+      // passthrough below, so injection can never 500.
       const decodedHeaders = applyStaticResponseHeaders(response.headers, { isHtml: true, decoded: true });
-      let html;
       try {
-        html = await response.text();
-        if (!html || !hasViteEntryScript(html)) {
-          console.error('Publisher returned unusable HTML for', url.pathname, 'length:', html?.length ?? 0);
-          html = await readIndexHtmlFromKv();
-        }
-        const feedType = discoveryFeedType || 'trending';
-        const feedData = await fetchFeedData(feedType, funnelcakeTarget);
-        if (feedData) {
-          // feedData carries user-controlled strings (video titles etc), so escape it for
-          // safe <script> embedding. feedType is a fixed allowlist value
-          // (getDiscoveryFeedType), so it needs no escaping.
-          const feedJson = escapeFeedJson(feedData);
-          let injection = `<script>window.__DIVINE_FEED__=${feedJson};window.__DIVINE_FEED_TYPE__="${feedType}";</script>`;
-          const firstVideo = feedData.videos?.[0] || feedData[0];
-          const firstVideoUrl = firstVideo?.video_url;
-          const firstThumbnail = firstVideo?.thumbnail;
-          if (firstVideoUrl) {
-            injection += `\n<link rel="preload" href="${escapeHtml(firstVideoUrl)}" as="video" type="video/mp4">`;
+        const html = await readIndexHtmlFromKv();
+        if (html && hasViteEntryScript(html)) {
+          const feedType = discoveryFeedType || 'trending';
+          const feedData = await fetchFeedData(feedType, funnelcakeTarget);
+          let finalHtml = html;
+          if (feedData) {
+            // feedData carries user-controlled strings (video titles etc), so escape it for
+            // safe <script> embedding. feedType is a fixed allowlist value
+            // (getDiscoveryFeedType), so it needs no escaping.
+            const feedJson = escapeFeedJson(feedData);
+            let injection = `<script>window.__DIVINE_FEED__=${feedJson};window.__DIVINE_FEED_TYPE__="${feedType}";</script>`;
+            const firstVideo = feedData.videos?.[0] || feedData[0];
+            const firstVideoUrl = firstVideo?.video_url;
+            const firstThumbnail = firstVideo?.thumbnail;
+            if (firstVideoUrl) {
+              injection += `\n<link rel="preload" href="${escapeHtml(firstVideoUrl)}" as="video" type="video/mp4">`;
+            }
+            if (firstThumbnail) {
+              injection += `\n<link rel="preload" href="${escapeHtml(firstThumbnail)}" as="image" fetchpriority="high">`;
+            }
+            finalHtml = html.replace('</head>', injection + '</head>');
           }
-          if (firstThumbnail) {
-            injection += `\n<link rel="preload" href="${escapeHtml(firstThumbnail)}" as="image" fetchpriority="high">`;
-          }
-          html = html.replace('</head>', injection + '</head>');
+          return new Response(finalHtml, { status: response.status, headers: decodedHeaders });
         }
-        return new Response(html, { status: response.status, headers: decodedHeaders });
+        console.error('Publisher returned unusable KV HTML for', url.pathname, 'length:', html?.length ?? 0);
       } catch (err) {
         console.error('Feed injection error:', err.message);
-        if (html !== undefined) {
-          return new Response(html, { status: response.status, headers: decodedHeaders });
-        }
       }
+      // fall through to the untouched static passthrough below
     }
 
     return new Response(response.body, {
