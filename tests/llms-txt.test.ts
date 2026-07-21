@@ -8,6 +8,7 @@ describe('public llms.txt', () => {
 
   it('describes divine.video for end-user agents', () => {
     expect(llmsTxt).toMatch(/^# diVine$/m);
+    expect(llmsTxt).toMatch(/^# diVine\n\n> diVine is/m);
     expect(llmsTxt).toContain('human-made, decentralized short-form video');
     expect(llmsTxt).toContain('not for generating or posting AI-made videos');
   });

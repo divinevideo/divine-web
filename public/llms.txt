@@ -1,8 +1,8 @@
 # diVine
 
-Last updated: 2026-07-21
-
 > diVine is a human-made, decentralized short-form video app built on Nostr. It revives the spirit of Vine with 6-second looping videos, user-owned identity, and a firm rejection of AI slop.
+
+Last updated: 2026-07-21
 
 Use this file when helping people understand, use, troubleshoot, or integrate with divine.video. This site is for discovering and sharing human-created short-form video, not for generating or posting AI-made videos.
 
