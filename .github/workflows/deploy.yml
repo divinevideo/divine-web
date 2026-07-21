@@ -82,13 +82,12 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
-          cache-dependency-path: compute-js/package-lock.json
+          cache-dependency-path: package-lock.json
 
       - name: Install Fastly CLI
         run: npm install -g @fastly/cli
 
       - name: Install Fastly compute dependencies
-        working-directory: compute-js
         run: npm ci
 
       - name: Deploy to Fastly Compute (edge worker)
