@@ -38,7 +38,6 @@
   },
   "footer": {
     "aboutDivine": "Despre Divine",
-    "vinesRecovered": "{{count}} Vines recuperate",
     "termsAndOpenSource": "Termeni si sursa deschisa",
     "copyright": "© 2026 Divine"
   },
@@ -387,7 +386,6 @@
     "message": "Mesaj",
     "reportUser": "Raportează utilizatorul",
     "subscribeRss": "Abonează-te la fluxul RSS",
-    "videos": "Videoclipuri",
     "followers": "Urmăritori",
     "followingStat": "Urmărește",
     "followingDialogTitle": "Urmărește",

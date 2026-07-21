@@ -38,7 +38,6 @@
   },
   "footer": {
     "aboutDivine": "Divine について",
-    "vinesRecovered": "{{count}} 件の Vine を復元",
     "termsAndOpenSource": "利用規約とオープンソース",
     "copyright": "© 2026 Divine"
   },
@@ -386,7 +385,6 @@
     "message": "メッセージ",
     "reportUser": "ユーザーを報告",
     "subscribeRss": "RSSフィードを購読",
-    "videos": "動画",
     "followers": "フォロワー",
     "followingStat": "フォロー中",
     "followingDialogTitle": "フォロー中",

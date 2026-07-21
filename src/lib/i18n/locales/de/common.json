@@ -38,7 +38,6 @@
   },
   "footer": {
     "aboutDivine": "Uber Divine",
-    "vinesRecovered": "{{count}} Vines wiederhergestellt",
     "termsAndOpenSource": "Bedingungen und Open Source",
     "copyright": "© 2026 Divine"
   },
@@ -386,7 +385,6 @@
     "message": "Nachricht",
     "reportUser": "Nutzer melden",
     "subscribeRss": "RSS-Feed abonnieren",
-    "videos": "Videos",
     "followers": "Follower",
     "followingStat": "Folge ich",
     "followingDialogTitle": "Folge ich",

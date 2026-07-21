@@ -50,10 +50,6 @@ vi.mock('@/hooks/useRssFeedAvailable', () => ({
   useRssFeedAvailable: () => false,
 }));
 
-vi.mock('@/hooks/usePlatformStats', () => ({
-  usePlatformStats: () => ({ data: undefined }),
-}));
-
 describe('AppSidebar', () => {
   beforeEach(async () => {
     const storage = new Map<string, string>();
@@ -79,6 +75,7 @@ describe('AppSidebar', () => {
 
   afterEach(() => {
     document.head.querySelectorAll('script[src*="itunes.apple.com/lookup"]').forEach((script) => script.remove());
+    vi.unstubAllGlobals();
   });
 
   function setLanguages(languages: readonly string[]) {
@@ -121,6 +118,20 @@ describe('AppSidebar', () => {
     fireEvent.click(dmcaButton);
 
     expect(mockNavigate).toHaveBeenCalledWith('/dmca');
+  });
+
+  it('hides the sidebar imported Vines total', () => {
+    const fetchSpy = vi.fn();
+    vi.stubGlobal('fetch', fetchSpy);
+
+    render(
+      <MemoryRouter>
+        <AppSidebar />
+      </MemoryRouter>,
+    );
+
+    expect(screen.queryByText(/vines (recovered|recuperados)/i)).not.toBeInTheDocument();
+    expect(fetchSpy).not.toHaveBeenCalled();
   });
 
   it('shows the App Store badge when Apple lookup finds the regional listing', async () => {

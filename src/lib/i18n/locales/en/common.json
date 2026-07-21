@@ -38,7 +38,6 @@
   },
   "footer": {
     "aboutDivine": "About Divine",
-    "vinesRecovered": "{{count}} Vines recovered",
     "termsAndOpenSource": "Terms & Open Source",
     "copyright": "© 2026 Divine"
   },
@@ -386,7 +385,6 @@
     "message": "Message",
     "reportUser": "Report user",
     "subscribeRss": "Subscribe to RSS feed",
-    "videos": "Videos",
     "followers": "Followers",
     "followingStat": "Following",
     "followingDialogTitle": "Following",
