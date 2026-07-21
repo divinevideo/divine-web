@@ -88,7 +88,6 @@ jobs:
         run: npm install -g @fastly/cli
 
       - name: Install Fastly compute dependencies
-        working-directory: compute-js
         run: npm ci
 
       - name: Deploy to Fastly Compute (edge worker)
