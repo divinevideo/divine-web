@@ -1,5 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
-import { buildCurlArgs, extractEntryScript, verifyLiveBundle } from './verify-live-bundle.mjs';
+import {
+  buildCurlArgs,
+  extractEntryScript,
+  verifyLiveBundle,
+  verifyInjectedRoutesOk,
+} from './verify-live-bundle.mjs';
 
 const htmlWith = (entry: string) =>
   `<!doctype html><html><head>` +
@@ -233,6 +238,101 @@ describe('verifyLiveBundle', () => {
         headers: { 'Cache-Control': 'no-cache', Pragma: 'no-cache' },
       }),
     );
+  });
+});
+
+describe('verifyInjectedRoutesOk', () => {
+  const noopSleep = vi.fn(async () => {});
+
+  it('passes when every injected route returns 2xx to a browser client', async () => {
+    const fetchImpl = vi.fn(async () => ({ ok: true, status: 200, text: async () => '' }));
+
+    await expect(
+      verifyInjectedRoutesOk({
+        urls: ['https://divine.video/', 'https://divine.video/discovery/classics'],
+        fetchImpl,
+        attempts: 3,
+        sleep: noopSleep,
+      }),
+    ).resolves.toMatchObject({ ok: true });
+
+    expect(fetchImpl).toHaveBeenCalledTimes(2); // one healthy check per route
+  });
+
+  it('sends a browser Accept-Encoding so the compressed HTML path is exercised', async () => {
+    // The bundle check fetches identity HTML to read the entry <script>, so it never
+    // sees the compressed 500 browsers get (#489). This check must send br.
+    const fetchImpl = vi.fn(async () => ({ ok: true, status: 200, text: async () => '' }));
+
+    await verifyInjectedRoutesOk({
+      urls: ['https://divine.video/'],
+      fetchImpl,
+      attempts: 1,
+      sleep: noopSleep,
+    });
+
+    expect(fetchImpl).toHaveBeenCalledWith(
+      'https://divine.video/',
+      expect.objectContaining({
+        headers: expect.objectContaining({ 'Accept-Encoding': 'gzip, deflate, br' }),
+      }),
+    );
+  });
+
+  it('fails the deploy when an injected route 500s for a browser', async () => {
+    const fetchImpl = vi.fn(async () => ({ ok: false, status: 500, text: async () => '' }));
+
+    await expect(
+      verifyInjectedRoutesOk({
+        urls: ['https://divine.video/'],
+        fetchImpl,
+        attempts: 2,
+        sleep: noopSleep,
+      }),
+    ).rejects.toThrow(/https:\/\/divine\.video\//);
+
+    expect(fetchImpl).toHaveBeenCalledTimes(2); // retried, then failed
+  });
+
+  it('treats a transient non-2xx as retryable and passes once it recovers', async () => {
+    let calls = 0;
+    const fetchImpl = vi.fn(async () => {
+      calls += 1;
+      if (calls === 1) return { ok: false, status: 503, text: async () => '' };
+      return { ok: true, status: 200, text: async () => '' };
+    });
+
+    await expect(
+      verifyInjectedRoutesOk({
+        urls: ['https://divine.video/'],
+        fetchImpl,
+        attempts: 3,
+        sleep: noopSleep,
+      }),
+    ).resolves.toMatchObject({ ok: true });
+
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+    expect(noopSleep).toHaveBeenCalled();
+  });
+
+  it('treats a thrown fetch as a failed attempt and keeps polling', async () => {
+    let calls = 0;
+    const fetchImpl = vi.fn(async () => {
+      calls += 1;
+      if (calls === 1) throw new DOMException('The operation timed out.', 'TimeoutError');
+      return { ok: true, status: 200, text: async () => '' };
+    });
+
+    await expect(
+      verifyInjectedRoutesOk({
+        urls: ['https://divine.video/'],
+        fetchImpl,
+        attempts: 3,
+        sleep: vi.fn(async () => {}),
+      }),
+    ).resolves.toMatchObject({ ok: true });
+
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
   });
 });
 

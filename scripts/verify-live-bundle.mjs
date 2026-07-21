@@ -21,6 +21,12 @@ const FETCH_TIMEOUT_MS = 10000;
 const execFileAsync = promisify(execFile);
 const CURL_STATUS_MARKER = '\n__HTTP_STATUS__:';
 
+// What every real browser sends. The bundle check below fetches identity HTML (so it can
+// read the entry <script>), which means it never exercises the compressed response path —
+// so a compressed-only 500 (#489) sails through a green deploy. verifyInjectedRoutesOk uses
+// this to assert the injected routes actually serve browsers.
+const BROWSER_ACCEPT_ENCODING = 'gzip, deflate, br';
+
 function headerEntries(headers = {}) {
   if (typeof Headers !== 'undefined' && headers instanceof Headers) {
     return Array.from(headers.entries());
@@ -176,6 +182,69 @@ export async function verifyLiveBundle({
   return { ok: true, expected, urls };
 }
 
+/**
+ * Assert that edge-injected routes (apex + /discovery tabs) return 2xx to a browser-like
+ * client. verifyLiveBundle above fetches identity HTML to read the entry <script>, so it
+ * never exercises the compressed path real browsers get, and a compressed-only 500 (#489)
+ * sails through a green deploy. This sends a browser Accept-Encoding and checks status only —
+ * the body is compressed and intentionally not decoded.
+ */
+export async function verifyInjectedRoutesOk({
+  urls,
+  fetchImpl = fetch,
+  acceptEncoding = BROWSER_ACCEPT_ENCODING,
+  attempts = 3,
+  delayMs = 10000,
+  sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+  log = () => {},
+}) {
+  if (!Array.isArray(urls) || urls.length === 0) {
+    throw new Error('verifyInjectedRoutesOk: at least one url is required');
+  }
+
+  for (const url of urls) {
+    let lastObserved = 'none';
+    let ok = false;
+
+    for (let attempt = 1; attempt <= attempts; attempt += 1) {
+      try {
+        const response = await fetchImpl(url, {
+          cache: 'no-store',
+          headers: {
+            'Accept-Encoding': acceptEncoding,
+            'Cache-Control': 'no-cache',
+          },
+          signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+        });
+        if (response.ok) {
+          log(`[verify-injected-routes] ${url} -> HTTP ${response.status} (attempt ${attempt}/${attempts})`);
+          ok = true;
+          break;
+        }
+        lastObserved = `HTTP ${response.status}`;
+        log(`[verify-injected-routes] ${url} ${lastObserved} (attempt ${attempt}/${attempts})`);
+      } catch (err) {
+        lastObserved = `fetch error: ${err?.message ?? err}`;
+        log(`[verify-injected-routes] ${url} ${lastObserved} (attempt ${attempt}/${attempts})`);
+      }
+
+      if (attempt < attempts) {
+        await sleep(delayMs);
+      }
+    }
+
+    if (!ok) {
+      throw new Error(
+        `Injected route ${url} did not return 2xx to a browser (Accept-Encoding: ${acceptEncoding}); ` +
+        `last observed ${lastObserved} after ${attempts} attempts. This is the compressed-HTML 500 class ` +
+        `(#489): the deploy reported success but the edge 500s for real browsers.`,
+      );
+    }
+  }
+
+  return { ok: true, urls };
+}
+
 const invokedDirectly =
   Boolean(process.argv[1]) && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
 
@@ -208,6 +277,18 @@ if (invokedDirectly) {
   const attempts = numberFromEnv('VERIFY_BUNDLE_ATTEMPTS', 18);
   const delayMs = numberFromEnv('VERIFY_BUNDLE_DELAY_MS', 20000);
 
+  // Edge-injected routes (apex landing + a /discovery tab) are the only ones that read and
+  // rewrite the HTML at the edge, so they are the only ones that can 500 on compressed input
+  // (#489). A deterministic 500 here won't self-heal, so use a short retry budget that only
+  // absorbs a cold-start blip rather than the KV-propagation window the bundle check needs.
+  const injectedUrls = (process.env.VERIFY_INJECTED_URLS
+    ?? 'https://divine.video/,https://divine.video/discovery/classics')
+    .split(',')
+    .map((value) => value.trim())
+    .filter(Boolean);
+  const injectedAttempts = numberFromEnv('VERIFY_INJECTED_ATTEMPTS', 3);
+  const injectedDelayMs = numberFromEnv('VERIFY_INJECTED_DELAY_MS', 10000);
+
   try {
     await verifyLiveBundle({
       expected,
@@ -218,6 +299,15 @@ if (invokedDirectly) {
       log: (message) => console.log(message),
     });
     console.log(`✓ Live origins serve the freshly built bundle ${expected}`);
+
+    await verifyInjectedRoutesOk({
+      urls: injectedUrls,
+      attempts: injectedAttempts,
+      delayMs: injectedDelayMs,
+      fetchImpl: fetchWithCurl,
+      log: (message) => console.log(message),
+    });
+    console.log('✓ Injected routes return 2xx to a browser (Accept-Encoding: br)');
   } catch (err) {
     console.error(`✗ ${err.message}`);
     process.exit(1);
