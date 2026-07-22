@@ -22,13 +22,13 @@ REAL_VIDEO_ID="3ca833a0027dd6240b2956dec98643032ff43ee75c0f0cde9d2096186b4b2605"
 REAL_NPUB="npub1smznz0v5cfh3f9e5vp5j9h6tzn4dlp3eqnxx6p2wujr40ftnz5qqhzf22n"
 SYNTHETIC_NPUB="npub1sg6plzptd64u62a878hep2kev88swjh3tw00gjsfl8f237lmu63s0c24qfh"
 
-declare -A USER_AGENTS=(
-  ["slackbot"]="Slackbot-LinkExpanding 1.0 (+https://api.slack.com/robots)"
-  ["facebook"]="facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)"
-  ["twitter"]="Twitterbot/1.0"
-  ["linkedin"]="LinkedInBot/1.0 (compatible; Mozilla/5.0)"
-  ["discord"]="Mozilla/5.0 (compatible; Discordbot/2.0; +https://discordapp.com)"
-  ["chrome"]="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36"
+USER_AGENTS=(
+  "slackbot|Slackbot-LinkExpanding 1.0 (+https://api.slack.com/robots)"
+  "facebook|facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)"
+  "twitter|Twitterbot/1.0"
+  "linkedin|LinkedInBot/1.0 (compatible; Mozilla/5.0)"
+  "discord|Mozilla/5.0 (compatible; Discordbot/2.0; +https://discordapp.com)"
+  "chrome|Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36"
 )
 
 ROUTES=(
@@ -239,6 +239,23 @@ run_check() {
   fi
 }
 
+get_user_agent() {
+  local wanted_label="$1"
+  local user_agent_entry
+
+  for user_agent_entry in "${USER_AGENTS[@]}"; do
+    local label="${user_agent_entry%%|*}"
+    local value="${user_agent_entry#*|}"
+
+    if [[ "$label" == "$wanted_label" ]]; then
+      printf '%s' "$value"
+      return 0
+    fi
+  done
+
+  return 1
+}
+
 print_summary() {
   echo
   echo "=========================================================================="
@@ -287,7 +304,12 @@ main() {
         continue
       fi
 
-      local ua_value="${USER_AGENTS[$ua_label]}"
+      local ua_value
+      if ! ua_value=$(get_user_agent "$ua_label"); then
+        echo "ERROR: unknown User-Agent label '${ua_label}'"
+        exit 2
+      fi
+
       total_checks=$((total_checks + 1))
       run_check "$path" "$description" "$assertions" "$ua_label" "$ua_value"
     done
