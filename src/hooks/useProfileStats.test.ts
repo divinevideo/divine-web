@@ -36,7 +36,8 @@ vi.mock('@/lib/debug', () => ({
   debugError: vi.fn(),
 }));
 
-vi.mock('@/lib/funnelcakeFallbackReporting', () => ({
+vi.mock('@/lib/funnelcakeFallbackReporting', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/funnelcakeFallbackReporting')>()),
   reportFunnelcakeFallback: vi.fn(),
 }));
 

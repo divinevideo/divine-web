@@ -12,7 +12,7 @@ import { API_CONFIG } from '@/config/api';
 import { isFunnelcakeAvailable } from '@/lib/funnelcakeHealth';
 import { debugLog } from '@/lib/debug';
 import { transformToVideoPage } from '@/lib/funnelcakeTransform';
-import { reportFunnelcakeFallback } from '@/lib/funnelcakeFallbackReporting';
+import { isAbortError, reportFunnelcakeFallback } from '@/lib/funnelcakeFallbackReporting';
 import { isUrlLikeQuery } from '@/lib/searchUtils';
 
 interface UseInfiniteSearchVideosOptions {
@@ -208,7 +208,14 @@ export function useInfiniteSearchVideos({
             };
           }
         } catch (error) {
-          console.warn('[search/videos] funnelcake query failed, falling back to relay search', {
+          // Cancelled queries (fast typing, navigation away) are not failures —
+          // surface the abort to React Query without reporting or falling back (#459)
+          if (isAbortError(error)) {
+            throw error;
+          }
+          // console.info: Sentry's captureConsoleIntegration captures warn/error,
+          // and the fallback already reports one canonical FunnelcakeFallbackError (#459)
+          console.info('[search/videos] funnelcake query failed, falling back to relay search', {
             ...requestContext,
             error,
             totalMs: Math.round(performance.now() - requestStartedAt),
@@ -218,6 +225,7 @@ export function useInfiniteSearchVideos({
             source: 'useInfiniteSearchVideos',
             apiUrl,
             reason: error instanceof Error ? error.message : String(error),
+            error,
             dedupeKey: `useInfiniteSearchVideos:${searchParams.type}:${debouncedQuery}`,
             context: {
               query: debouncedQuery,
@@ -226,7 +234,7 @@ export function useInfiniteSearchVideos({
           });
         }
       } else {
-        console.warn('[search/videos] funnelcake unavailable, falling back to relay search', {
+        console.info('[search/videos] funnelcake unavailable, falling back to relay search', {
           ...requestContext,
           totalMs: Math.round(performance.now() - requestStartedAt),
         });

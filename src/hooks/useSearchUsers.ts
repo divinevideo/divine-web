@@ -7,7 +7,7 @@ import { useState, useEffect } from 'react';
 import { searchProfiles, type FunnelcakeProfileResult } from '@/lib/funnelcakeClient';
 import { API_CONFIG } from '@/config/api';
 import { debugLog } from '@/lib/debug';
-import { reportFunnelcakeFallback } from '@/lib/funnelcakeFallbackReporting';
+import { isAbortError, reportFunnelcakeFallback } from '@/lib/funnelcakeFallbackReporting';
 import { isFunnelcakeAvailable } from '@/lib/funnelcakeHealth';
 import { isUrlLikeQuery } from '@/lib/searchUtils';
 import type { NostrMetadata, NostrEvent } from '@nostrify/nostrify';
@@ -230,7 +230,14 @@ export function useSearchUsers(options: UseSearchUsersOptions) {
 
           return finalUsers;
         } catch (error) {
-          console.warn('[search/users] falling back to relay search', {
+          // Cancelled queries (fast typing, navigation away) are not failures —
+          // surface the abort to React Query without reporting or falling back (#459)
+          if (isAbortError(error)) {
+            throw error;
+          }
+          // console.info: Sentry's captureConsoleIntegration captures warn/error,
+          // and the fallback already reports one canonical FunnelcakeFallbackError (#459)
+          console.info('[search/users] falling back to relay search', {
             ...requestContext,
             error,
             totalMs: Math.round(performance.now() - requestStartedAt),
@@ -240,6 +247,7 @@ export function useSearchUsers(options: UseSearchUsersOptions) {
             source: 'useSearchUsers',
             apiUrl,
             reason: error instanceof Error ? error.message : String(error),
+            error,
             dedupeKey: `useSearchUsers:${debouncedQuery}`,
             context: {
               query: debouncedQuery,
@@ -247,7 +255,7 @@ export function useSearchUsers(options: UseSearchUsersOptions) {
           });
         }
       } else {
-        console.warn('[search/users] funnelcake unavailable, falling back to relay search', {
+        console.info('[search/users] funnelcake unavailable, falling back to relay search', {
           ...requestContext,
           totalMs: Math.round(performance.now() - requestStartedAt),
         });

@@ -22,6 +22,15 @@ type SentryEventLike = {
 };
 
 const MEDIA_HOSTNAME = 'media.divine.video';
+const FUNNELCAKE_API_HOSTNAMES = new Set([
+  'api.divine.video',
+  'api.staging.divine.video',
+]);
+const FUNNELCAKE_RELAY_HOSTNAMES = new Set([
+  'relay.divine.video',
+  'relay.staging.divine.video',
+]);
+const HEX_64_RE = /^[a-f0-9]{64}$/i;
 const HTTP_CLIENT_MESSAGE_RE = /^HTTP Client Error with status code:\s*(\d{3})$/i;
 const OPTIONAL_IMAGE_EXTENSION_RE = /\.(?:avif|gif|jpe?g|png|webp)$/i;
 const OPTIONAL_PREVIEW_PATH_SEGMENT_RE = /\/(?:poster|preview|thumbnail|thumb)(?:\/|$)/i;
@@ -106,6 +115,65 @@ function isOptionalPreviewPath(pathname: string): boolean {
   }
 
   return OPTIONAL_IMAGE_EXTENSION_RE.test(pathname);
+}
+
+function isFunnelcakeFallbackReportedPath(pathname: string): boolean {
+  const normalizedPath = pathname.replace(/\/+$/, '') || '/';
+  const segments = normalizedPath.split('/').filter(Boolean);
+
+  if (normalizedPath === '/api/search' || normalizedPath === '/api/search/profiles') {
+    return true;
+  }
+
+  if (normalizedPath === '/api/users/bulk' || normalizedPath === '/api/leaderboard/creators') {
+    return true;
+  }
+
+  if (segments.length === 3 && segments[0] === 'api' && segments[1] === 'users') {
+    return HEX_64_RE.test(segments[2]);
+  }
+
+  if (segments.length === 3 && segments[0] === 'api' && segments[1] === 'videos') {
+    return segments[2].length > 0 && segments[2] !== 'stats';
+  }
+
+  return false;
+}
+
+/**
+ * Filters raw "HTTP Client Error" events for Funnelcake REST API requests.
+ *
+ * Only suppress endpoints whose call sites emit a replacement
+ * FunnelcakeFallbackError. Other Funnelcake REST failures must keep their raw
+ * HTTP-client event so Sentry does not lose the only signal for that failure.
+ */
+export function shouldDropFunnelcakeHttpClientEvent(event: SentryEventLike): boolean {
+  if (!isHttpClientEvent(event)) {
+    return false;
+  }
+
+  const requestUrl = toSafeString(event.request?.url);
+  if (!requestUrl) {
+    return false;
+  }
+
+  let parsedUrl: URL;
+  try {
+    parsedUrl = new URL(requestUrl);
+  } catch {
+    return false;
+  }
+
+  if (!isFunnelcakeFallbackReportedPath(parsedUrl.pathname)) {
+    return false;
+  }
+
+  if (FUNNELCAKE_API_HOSTNAMES.has(parsedUrl.hostname)) {
+    return true;
+  }
+
+  return FUNNELCAKE_RELAY_HOSTNAMES.has(parsedUrl.hostname)
+    && parsedUrl.pathname.startsWith('/api/');
 }
 
 /**

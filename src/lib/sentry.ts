@@ -2,7 +2,10 @@
 // ABOUTME: Provides crash reporting with stack traces, issue grouping, and performance metrics
 
 import * as Sentry from '@sentry/react';
-import { shouldDropHandledMediaHttpClientEvent } from '@/lib/sentryHttpClientFilter';
+import {
+  shouldDropFunnelcakeHttpClientEvent,
+  shouldDropHandledMediaHttpClientEvent,
+} from '@/lib/sentryHttpClientFilter';
 
 const BENIGN_SUBTITLE_VTT_STATUS_CODES = new Set([404, 410, 422]);
 
@@ -202,6 +205,12 @@ export function initializeSentry() {
     // Don't send PII
     beforeSend(event) {
       if (shouldDropHandledMediaHttpClientEvent(event)) {
+        return null;
+      }
+
+      // Funnelcake REST failures are reported once as FunnelcakeFallbackError;
+      // drop the duplicate raw HTTP Client Error (#459)
+      if (shouldDropFunnelcakeHttpClientEvent(event)) {
         return null;
       }
 
