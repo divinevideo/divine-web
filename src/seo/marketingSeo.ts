@@ -2,6 +2,7 @@
 // ABOUTME: Consumed by page components (client head tags), the SSG prerender script, and tests
 
 export const SITE_ORIGIN = 'https://divine.video';
+export const MARKETING_PUBLICATION_DATE = '2026-07-22';
 
 export interface MarketingSeoRoute {
   path: string;

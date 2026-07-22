@@ -1,7 +1,11 @@
 // ABOUTME: JSON-LD structured data components for family pages (Article, FAQPage, BreadcrumbList)
 // ABOUTME: Rendered as inline scripts so the SSG prerender bakes them into served HTML
 
-import { SITE_ORIGIN, type MarketingSeoRoute } from "@/seo/marketingSeo";
+import {
+  MARKETING_PUBLICATION_DATE,
+  SITE_ORIGIN,
+  type MarketingSeoRoute,
+} from "@/seo/marketingSeo";
 
 function JsonLdScript({ data }: { data: Record<string, unknown> }) {
   return (
@@ -56,8 +60,8 @@ export function ArticleJsonLd({
         image: seo.ogImage,
         url: seo.canonical,
         mainEntityOfPage: seo.canonical,
-        datePublished: "2026-07-23",
-        dateModified: "2026-07-23",
+        datePublished: MARKETING_PUBLICATION_DATE,
+        dateModified: MARKETING_PUBLICATION_DATE,
         author: PUBLISHER,
         publisher: PUBLISHER,
         ...(citeStirLab ? { citation: STIR_CITATIONS } : {}),

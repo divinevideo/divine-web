@@ -19,7 +19,7 @@ function escapeHtml(value) {
     .replace(/"/g, '&quot;');
 }
 
-// Extract CSS bundle links, fonts, inline styles, and the JS entry from the built index.html
+// Extract shell head tags, CSS bundle links, fonts, inline styles, and the JS entry from the built index.html
 function getShellTemplate(indexHtml) {
   const collect = (re) => {
     const out = [];
@@ -35,18 +35,47 @@ function getShellTemplate(indexHtml) {
   const styleBlocks = collect(/<style[^>]*>[\s\S]*?<\/style>/gi);
   const scriptMatch = indexHtml.match(/<script[^>]+type="module"[^>]+src="[^"]+"[^>]*><\/script>/);
   const modulePreloads = collect(/<link[^>]+rel="modulepreload"[^>]*>/gi);
+  const shellHeadTags = [
+    ...collect(/<meta[^>]+>/gi).filter((tag) => {
+      const lower = tag.toLowerCase();
+      return !lower.includes('charset=')
+        && !lower.includes('name="viewport"')
+        && !lower.includes('name="description"')
+        && !lower.includes('name="theme-color"')
+        && !lower.includes('property="og:')
+        && !lower.includes('name="twitter:');
+    }),
+    ...collect(/<link[^>]+>/gi).filter((tag) => {
+      const lower = tag.toLowerCase();
+      return !lower.includes('rel="canonical"')
+        && !lower.includes('rel="stylesheet"')
+        && !lower.includes('rel="modulepreload"')
+        && !lower.includes('rel="icon"')
+        && !lower.includes('rel="apple-touch-icon"')
+        && !lower.includes('fonts.googleapis.com')
+        && !lower.includes('fonts.gstatic.com');
+    }),
+  ];
 
-  return { fontLinks, cssLinks, styleBlocks, modulePreloads, script: scriptMatch ? scriptMatch[0] : '' };
+  return {
+    fontLinks,
+    cssLinks,
+    styleBlocks,
+    modulePreloads,
+    shellHeadTags,
+    script: scriptMatch ? scriptMatch[0] : '',
+  };
 }
 
 function buildPage({ seo, appHtml, shell }) {
-  const { fontLinks, cssLinks, styleBlocks, modulePreloads, script } = shell;
+  const { fontLinks, cssLinks, styleBlocks, modulePreloads, shellHeadTags, script } = shell;
 
   return `<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
+    ${shellHeadTags.join('\n    ')}
     <title>${escapeHtml(seo.title)}</title>
     <meta name="description" content="${escapeHtml(seo.description)}">
     <meta name="theme-color" content="#27C58B">

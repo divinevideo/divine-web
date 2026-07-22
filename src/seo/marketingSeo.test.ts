@@ -3,7 +3,12 @@
 
 import { describe, expect, it } from 'vitest';
 
-import { FAMILY_SEO, getFamilySeo, SITE_ORIGIN } from './marketingSeo';
+import {
+  FAMILY_SEO,
+  MARKETING_PUBLICATION_DATE,
+  getFamilySeo,
+  SITE_ORIGIN,
+} from './marketingSeo';
 
 describe('FAMILY_SEO', () => {
   const paths = [
@@ -90,5 +95,9 @@ describe('FAMILY_SEO', () => {
 
   it('returns undefined for unknown paths', () => {
     expect(getFamilySeo('/nope')).toBeUndefined();
+  });
+
+  it('uses the real publication date, not a future placeholder', () => {
+    expect(MARKETING_PUBLICATION_DATE).toBe('2026-07-22');
   });
 });
