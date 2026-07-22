@@ -1,15 +1,24 @@
-import { describe, it, expect, vi } from 'vitest';
+import { beforeEach, describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { nip19 } from 'nostr-tools';
 import { NoteContent } from './NoteContent';
 import type { NostrEvent } from '@nostrify/nostrify';
 
+const noteMocks = vi.hoisted(() => ({
+  metadata: { display_name: 'rabble' } as Record<string, unknown>,
+  useNip05Validation: vi.fn(),
+}));
+
 vi.mock('@/hooks/useAuthor', () => ({
   useAuthor: () => ({
-    data: { metadata: { display_name: 'rabble' } },
+    data: { metadata: noteMocks.metadata },
     isLoading: false,
   }),
+}));
+
+vi.mock('@/hooks/useNip05Validation', () => ({
+  useNip05Validation: noteMocks.useNip05Validation,
 }));
 
 const PUBKEY_HEX = 'a'.repeat(64);
@@ -38,6 +47,17 @@ function renderContent(content: string) {
     </MemoryRouter>,
   );
 }
+
+beforeEach(() => {
+  noteMocks.metadata = { display_name: 'rabble' };
+  noteMocks.useNip05Validation.mockReturnValue({
+    isValid: false,
+    isLoading: false,
+    isInvalid: true,
+    state: 'invalid',
+    nip05: undefined,
+  });
+});
 
 describe('NoteContent — bare nostr identifiers', () => {
   it('linkifies a bare npub1... as @mention', () => {
@@ -70,6 +90,35 @@ describe('NoteContent — bare nostr identifiers', () => {
     renderContent(`hi ${NPROFILE}`);
     const link = screen.getByRole('link');
     expect(link).toHaveAttribute('href', `/${NPROFILE}`);
+  });
+
+  it('uses a friendly mention profile link when the NIP-05 is valid', () => {
+    noteMocks.metadata = {
+      display_name: 'rabble',
+      nip05: '_@rabble.divine.video',
+    };
+    noteMocks.useNip05Validation.mockReturnValue({
+      isValid: true,
+      isLoading: false,
+      isInvalid: false,
+      state: 'valid',
+      nip05: '_@rabble.divine.video',
+    });
+
+    renderContent(`hello ${NPUB}`);
+
+    expect(screen.getByRole('link', { name: '@rabble' })).toHaveAttribute('href', '/u/rabble');
+  });
+
+  it('uses the npub mention profile link when the NIP-05 is invalid', () => {
+    noteMocks.metadata = {
+      display_name: 'rabble',
+      nip05: 'rabble@spoofed.example',
+    };
+
+    renderContent(`hello ${NPUB}`);
+
+    expect(screen.getByRole('link', { name: '@rabble' })).toHaveAttribute('href', `/${NPUB}`);
   });
 });
 

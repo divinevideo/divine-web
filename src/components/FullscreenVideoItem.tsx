@@ -41,7 +41,7 @@ import { useSubtitles } from '@/hooks/useSubtitles';
 import { VideoVerificationBadgeRow } from '@/components/VideoVerificationBadgeRow';
 import type { ParsedVideoData } from '@/types/video';
 import { buildDmSharePayloadFromVideo, buildDmShareQueryString } from '@/lib/dm';
-import { buildProfileLinkPath } from '@/lib/profileLinks';
+import { useValidatedProfileLinkPath } from '@/hooks/useValidatedProfileLinkPath';
 
 interface FullscreenVideoItemProps {
   video: ParsedVideoData;
@@ -145,7 +145,7 @@ export function FullscreenVideoItem({
   const profileImage = getSafeProfileImage(
     rawMetadata?.picture || video.authorAvatar || metadata.picture
   );
-  const profileUrl = buildProfileLinkPath({
+  const profileUrl = useValidatedProfileLinkPath({
     pubkey: video.pubkey,
     nip05: rawMetadata?.nip05,
   });
