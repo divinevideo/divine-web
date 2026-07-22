@@ -11,7 +11,7 @@ const PLAY_ICON_SVG = `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/sv
 export function navbar({ currentPath = '/', apexDomain = 'divine.video' } = {}) {
   const isActive = (path) => currentPath === path ? ' divine-nav-link--active' : '';
   return `<nav class="divine-nav">
-  <a href="https://${escapeHtml(apexDomain)}/" class="divine-nav-logo">diVine</a>
+  <a href="https://${escapeHtml(apexDomain)}/" class="divine-nav-logo">Divine</a>
   <div class="divine-nav-links">
     <a href="/" class="divine-nav-link${isActive('/')}">Home</a>
     <a href="/discovery/hot" class="divine-nav-link${isActive('/discovery')}">Discover</a>
@@ -90,7 +90,7 @@ export function videoGrid(videos) {
  * Video detail view with poster and inline play.
  */
 export function videoDetail(video) {
-  const title = escapeHtml(video.title || 'Video on diVine');
+  const title = escapeHtml(video.title || 'Video on Divine');
   const description = escapeHtml(video.description || video.content || '');
   const thumbnail = escapeHtml(video.thumbnail || '');
   const videoUrl = escapeHtml(video.video_url || video.videoUrl || '');
@@ -193,6 +193,6 @@ export function profileHeader(profile) {
  */
 export function footer() {
   return `<footer class="divine-footer">
-  <p>diVine &mdash; Short-form looping videos on Nostr</p>
+  <p>Divine &mdash; Short-form looping videos on Nostr</p>
 </footer>`;
 }

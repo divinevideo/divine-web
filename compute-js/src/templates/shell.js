@@ -59,7 +59,7 @@ export function formatCount(n) {
  * @param {Object} [options.staticAssets] - Map of asset paths from the build manifest
  */
 export function renderShell({
-  title = 'diVine Web - Short-form Looping Videos on Nostr',
+  title = 'Divine Web - Short-form Looping Videos on Nostr',
   description = 'Watch and share 6-second looping videos on the decentralized Nostr network.',
   ogImage = 'https://divine.video/og.png',
   ogUrl = 'https://divine.video/',
@@ -75,8 +75,7 @@ export function renderShell({
   const safeOgImage = escapeHtml(ogImage);
   const safeOgUrl = escapeHtml(ogUrl);
 
-  // Determine main script/CSS paths from static assets if available
-  const mainScript = staticAssets?.mainJs || '/src/main.tsx';
+  const mainScript = staticAssets?.mainJs || '';
   const mainCss = staticAssets?.mainCss || '';
 
   return `<!DOCTYPE html>
@@ -98,8 +97,8 @@ export function renderShell({
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-  <meta name="apple-mobile-web-app-title" content="diVine" />
-  <meta name="application-name" content="diVine" />
+  <meta name="apple-mobile-web-app-title" content="Divine" />
+  <meta name="application-name" content="Divine" />
 
   <!-- Open Graph -->
   <meta property="og:type" content="${escapeHtml(ogType)}" />
@@ -107,7 +106,7 @@ export function renderShell({
   <meta property="og:title" content="${safeTitle}" />
   <meta property="og:description" content="${safeDesc}" />
   <meta property="og:image" content="${safeOgImage}" />
-  <meta property="og:site_name" content="diVine" />
+  <meta property="og:site_name" content="Divine" />
 
   <!-- Twitter -->
   <meta name="twitter:card" content="summary_large_image" />
@@ -146,7 +145,7 @@ export function renderShell({
   <!-- HubSpot tracking & GDPR cookie consent -->
   <script type="text/javascript" id="hs-script-loader" async defer src="https://js-na2.hs-scripts.com/244466832.js"></script>
 
-  <script type="module" src="${escapeHtml(mainScript)}"></script>
+  ${mainScript ? `<script type="module" src="${escapeHtml(mainScript)}"></script>` : ''}
 </body>
 </html>`;
 }

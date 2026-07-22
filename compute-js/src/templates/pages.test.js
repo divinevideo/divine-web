@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { CRITICAL_CSS } from './css.js';
 import { renderFeedPage, renderProfilePage, renderVideoPage } from './pages.js';
 
 const BREAKOUT = '</script><script>alert(1)</script>\u2028\u2029';
@@ -48,5 +49,29 @@ describe('edge page templates', () => {
     expect(html).not.toContain('</script><script>alert(1)</script>');
     expect(html).toContain('\\u003c/script>\\u003cscript>alert(1)\\u003c/script>');
     expect(html).toContain('\\u2028\\u2029');
+  });
+
+  it('uses the resolved production app entry script when provided', () => {
+    const html = renderFeedPage({
+      videos: [],
+      staticAssets: {
+        mainJs: '/assets/index-abc123.js',
+        mainCss: '/assets/index-abc123.css',
+      },
+    });
+
+    expect(html).toContain('<script type="module" src="/assets/index-abc123.js"></script>');
+    expect(html).toContain('<link rel="stylesheet" href="/assets/index-abc123.css" />');
+    expect(html).not.toContain('/src/main.tsx');
+  });
+
+  it('does not fall back to the Vite dev entry when static assets are absent', () => {
+    const html = renderFeedPage({ videos: [] });
+
+    expect(html).not.toContain('/src/main.tsx');
+  });
+
+  it('keeps critical CSS free of layout gradients', () => {
+    expect(CRITICAL_CSS).not.toMatch(/(?:linear|radial)-gradient\(/);
   });
 });

@@ -12,6 +12,21 @@ export function hasViteEntryScript(html) {
   return /\/assets\/index-[^"']+\.js/.test(html);
 }
 
+export function extractStaticAssetsFromHtml(html) {
+  const scriptSources = [...String(html).matchAll(/<script\b[^>]*\bsrc=(["'])([^"']+\.js)\1[^>]*>/gi)]
+    .map(match => match[2]);
+  const mainJs = scriptSources.find(src => /\/assets\/index-[^/"']+\.js$/.test(src)) || null;
+  if (!mainJs) return null;
+
+  const cssSources = [...String(html).matchAll(/<link\b[^>]*\bhref=(["'])([^"']+\.css)\1[^>]*>/gi)]
+    .map(match => match[2]);
+
+  return {
+    mainJs,
+    mainCss: cssSources[0] || '',
+  };
+}
+
 export async function readPublishedStaticFile(pathname, options = {}) {
   const {
     store = new KVStore(DEFAULT_CONTENT_STORE),

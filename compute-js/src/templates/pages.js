@@ -28,7 +28,7 @@ export function renderFeedPage({ videos, feedType = 'trending', feedJson = '', s
     classics: 'Classic Vines',
     top: 'Top Videos',
   };
-  const pageTitle = `${titleMap[feedType] || 'Videos'} - diVine`;
+  const pageTitle = `${titleMap[feedType] || 'Videos'} - Divine`;
   const isHome = feedType === 'trending';
   const currentPath = isHome ? '/' : '/discovery';
 
@@ -58,7 +58,7 @@ export function renderFeedPage({ videos, feedType = 'trending', feedJson = '', s
     : '';
 
   return renderShell({
-    title: isHome ? 'diVine Web - Short-form Looping Videos on Nostr' : pageTitle,
+    title: isHome ? 'Divine Web - Short-form Looping Videos on Nostr' : pageTitle,
     body,
     jsonInjection,
     preloadLinks,
@@ -75,8 +75,8 @@ export function renderFeedPage({ videos, feedType = 'trending', feedJson = '', s
  * @param {Object} [options.staticAssets] - Build manifest asset paths
  */
 export function renderVideoPage({ video, videoId, staticAssets = null }) {
-  const title = video.title || 'Video on diVine';
-  const description = video.description || video.content || 'Watch this short video on diVine';
+  const title = video.title || 'Video on Divine';
+  const description = video.description || video.content || 'Watch this short video on Divine';
   const thumbnail = video.thumbnail || 'https://divine.video/og.avif';
   const ogUrl = `https://divine.video/video/${escapeHtml(videoId)}`;
 
@@ -102,7 +102,7 @@ export function renderVideoPage({ video, videoId, staticAssets = null }) {
   const jsonInjection = `<script>window.__DIVINE_FEED__=${feedJson};</script>`;
 
   return renderShell({
-    title: `${title} - diVine`,
+    title: `${title} - Divine`,
     description,
     ogImage: thumbnail,
     ogUrl,
@@ -124,8 +124,8 @@ export function renderVideoPage({ video, videoId, staticAssets = null }) {
  */
 export function renderProfilePage({ profile, videos = [], staticAssets = null }) {
   const name = profile.displayName || profile.username || 'Unknown';
-  const ogTitle = `${name} on diVine`;
-  const ogDescription = profile.about || `Watch ${name}'s videos on diVine`;
+  const ogTitle = `${name} on Divine`;
+  const ogDescription = profile.about || `Watch ${name}'s videos on Divine`;
   const ogImage = profile.picture || 'https://divine.video/og.png';
   const ogUrl = `https://${escapeHtml(profile.subdomain)}.${escapeHtml(profile.apexDomain || 'divine.video')}/`;
 
@@ -179,8 +179,8 @@ export function renderSearchPage({ query = '', results = [], staticAssets = null
 </div>`;
 
   return renderShell({
-    title: query ? `"${query}" - diVine Search` : 'Search - diVine',
-    description: query ? `Search results for "${query}" on diVine` : 'Search videos on diVine',
+    title: query ? `"${query}" - Divine Search` : 'Search - Divine',
+    description: query ? `Search results for "${query}" on Divine` : 'Search videos on Divine',
     body,
     staticAssets,
   });

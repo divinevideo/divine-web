@@ -78,7 +78,7 @@ img, video { max-width: 100%; display: block; }
 
 /* Profile page */
 .divine-profile { max-width: 1024px; margin: 0 auto; padding: 0 16px; }
-.divine-profile-banner { width: 100%; height: 200px; object-fit: cover; background: linear-gradient(135deg, #27C58B 0%, #0f4a35 100%); border-radius: 0 0 16px 16px; }
+.divine-profile-banner { width: 100%; height: 200px; object-fit: cover; background: #27C58B; border-radius: 0 0 16px 16px; }
 .divine-profile-header { display: flex; gap: 16px; align-items: flex-end; margin-top: -40px; padding: 0 16px; position: relative; z-index: 1; }
 .divine-profile-avatar { width: 80px; height: 80px; border-radius: 50%; border: 4px solid #fff; object-fit: cover; background: #d1d5db; flex-shrink: 0; }
 .divine-profile-info { padding-bottom: 8px; }

@@ -14,7 +14,7 @@ import { buildCrawlerHtml, escapeHtml, cleanText, truncateText } from './ogTags.
 import { hexToNpub, decodeNpubToHex } from './bech32.js';
 import { buildWwwRedirectResponse } from './hostRedirect.js';
 import { applyStaticResponseHeaders } from './staticResponseHeaders.js';
-import { readPublishedStaticFile } from './staticContent.js';
+import { extractStaticAssetsFromHtml, readPublishedStaticFile } from './staticContent.js';
 import {
   handleAtUsernameOg,
   handleHashtagOgTags,
@@ -41,33 +41,14 @@ async function getStaticAssets() {
   if (_staticAssets) return _staticAssets;
 
   try {
-    const contentStore = new KVStore('divine-web-content');
-    const indexEntry = await contentStore.get('default_index_live');
-    if (!indexEntry) return null;
+    const { body, sha256 } = await readPublishedStaticFile('/index.html');
+    _staticAssets = extractStaticAssetsFromHtml(body);
+    if (!_staticAssets) {
+      console.error('Published index.html is missing the Vite app entry script, sha256:', sha256.slice(0, 16) + '...');
+      return null;
+    }
 
-    const kvIndex = JSON.parse(await indexEntry.text());
-    const htmlAsset = kvIndex['/index.html'];
-    if (!htmlAsset) return null;
-
-    const sha256 = htmlAsset.key.replace('sha256:', '');
-    const contentKey = `default_files_sha256_${sha256}`;
-    const contentEntry = await contentStore.get(contentKey);
-    if (!contentEntry) return null;
-
-    const html = await contentEntry.text();
-
-    // Extract script and CSS paths from the built HTML
-    const jsMatch = html.match(/<script[^>]+src="([^"]+\.js)"/);
-    const cssMatch = html.match(/<link[^>]+href="([^"]+\.css)"[^>]*rel="stylesheet"/);
-    // Also try reversed attribute order
-    const cssMatch2 = html.match(/<link[^>]+rel="stylesheet"[^>]+href="([^"]+\.css)"/);
-
-    _staticAssets = {
-      mainJs: jsMatch?.[1] || '/src/main.tsx',
-      mainCss: cssMatch?.[1] || cssMatch2?.[1] || '',
-    };
-
-    console.log('Resolved static assets:', _staticAssets);
+    console.log('Resolved static assets:', _staticAssets, 'sha256:', sha256.slice(0, 16) + '...');
     return _staticAssets;
   } catch (e) {
     console.error('Failed to resolve static assets:', e.message);
@@ -225,36 +206,13 @@ async function handleRequest(event) {
     }
   }
 
-  // 4b. Diagnostic endpoint — test edge template rendering
-  if (url.pathname === '/_divine/diag') {
-    try {
-      const testResp = await fetchFromFunnelcake(funnelcakeTarget, '/api/videos?sort=trending&limit=1');
-      const testData = testResp.ok ? await testResp.json() : null;
-      const templateCheck = typeof renderVideoPage === 'function' ? 'OK' : 'MISSING';
-      return new Response(JSON.stringify({
-        backend: testResp.ok ? 'OK' : `FAIL:${testResp.status}`,
-        templateImport: templateCheck,
-        videoCount: testData ? (testData.length || 0) : 0,
-        firstVideo: testData?.[0]?.title || 'none',
-      }, null, 2), {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' },
-      });
-    } catch (e) {
-      return new Response(JSON.stringify({ error: e.message, stack: e.stack }), {
-        status: 500,
-        headers: { 'Content-Type': 'application/json' },
-      });
-    }
-  }
-
   // 5. Handle video pages — serve full edge-templated HTML for all visitors
-  if (url.pathname.startsWith('/video/')) {
+  if (!isSocialMediaCrawler(request) && url.pathname.startsWith('/video/')) {
     const videoId = url.pathname.split('/video/')[1]?.split('?')[0];
     if (videoId) {
       console.log('Handling video page, id:', videoId);
       try {
-        const videoPageResponse = await handleVideoPage(request, videoId, url);
+        const videoPageResponse = await handleVideoPage(request, videoId, url, funnelcakeTarget);
         if (videoPageResponse) {
           return videoPageResponse;
         }
@@ -390,9 +348,8 @@ async function handleRequest(event) {
   const isApexDomain = APEX_DOMAINS.includes(hostnameToUse) || hostnameToUse.endsWith('.edgecompute.app');
   const isApexLanding = isApexDomain && (url.pathname === '/' || url.pathname === '/index.html');
   const discoveryFeedType = isApexDomain ? getDiscoveryFeedType(url.pathname) : null;
-  const isCategoryPage = isApexDomain && url.pathname.startsWith('/category/');
   const isSearchPage = isApexDomain && url.pathname === '/search';
-  const shouldRenderFeedPage = isApexLanding || discoveryFeedType || isCategoryPage;
+  const shouldRenderFeedPage = isApexLanding || discoveryFeedType;
 
   if (isApexLanding && isSocialMediaCrawler(request)) {
     const ogResponse = await handleApexOgTags();
@@ -403,7 +360,7 @@ async function handleRequest(event) {
   if (shouldRenderFeedPage) {
     try {
       const feedType = discoveryFeedType || 'trending';
-      const feedPageResponse = await handleFeedPage(feedType);
+      const feedPageResponse = await handleFeedPage(feedType, funnelcakeTarget);
       if (feedPageResponse) {
         return feedPageResponse;
       }
@@ -416,7 +373,7 @@ async function handleRequest(event) {
   // Edge-templated search page
   if (isSearchPage && url.searchParams.get('q')) {
     try {
-      const searchResponse = await handleSearchPage(url.searchParams.get('q'));
+      const searchResponse = await handleSearchPage(url.searchParams.get('q'), funnelcakeTarget);
       if (searchResponse) {
         return searchResponse;
       }
@@ -958,11 +915,7 @@ async function handleSubdomainProfile(subdomain, url, request, originalHostname)
   // Fetch user's videos for the profile page
   let userVideos = [];
   try {
-    const videosResp = await fetch(`https://relay.divine.video/api/users/${userData.pubkey}/videos?limit=12`, {
-      backend: 'funnelcake',
-      method: 'GET',
-      headers: { 'Accept': 'application/json', 'Host': 'relay.divine.video' },
-    });
+    const videosResp = await fetchFromFunnelcake(funnelcakeTarget, `/api/users/${userData.pubkey}/videos?limit=12`);
     if (videosResp.ok) {
       const videosData = await videosResp.json();
       userVideos = videosData.videos || videosData || [];
@@ -973,6 +926,10 @@ async function handleSubdomainProfile(subdomain, url, request, originalHostname)
 
   // Render full edge-templated profile page
   const staticAssets = await getStaticAssets();
+  if (!staticAssets) {
+    const profileUrl = `https://${apexDomain}/profile/${npub}`;
+    return Response.redirect(profileUrl, 302);
+  }
   const profileHtml = renderProfilePage({ profile: divineUser, videos: userVideos, staticAssets });
 
   return new Response(profileHtml, {
@@ -985,12 +942,6 @@ async function handleSubdomainProfile(subdomain, url, request, originalHostname)
       'X-Divine-Edge': 'template',
     },
   });
-}
-
-async function readIndexHtmlFromKv() {
-  const { body, sha256 } = await readPublishedStaticFile('/index.html');
-  console.log('Got index.html from KV fallback, sha256:', sha256.slice(0, 16) + '...', 'length:', body.length);
-  return body;
 }
 
 /**
@@ -1154,10 +1105,12 @@ async function handleVideoOgTags(request, videoId, url, funnelcakeTarget) {
  * Handle video page requests — serve full edge-templated HTML for all visitors.
  * Falls back to SPA shell on error.
  */
-async function handleVideoPage(request, videoId, url) {
+async function handleVideoPage(request, videoId, url, funnelcakeTarget) {
   const CACHE_KEY = `page:video:${videoId}`;
   const CACHE_TTL = 300;
   const contentStore = new KVStore('divine-web-content');
+  const staticAssets = await getStaticAssets();
+  if (!staticAssets) return null;
 
   // 1. Check KV page cache
   try {
@@ -1165,7 +1118,7 @@ async function handleVideoPage(request, videoId, url) {
     if (cached) {
       const parsed = JSON.parse(await cached.text());
       const age = Math.floor(Date.now() / 1000) - parsed.timestamp;
-      if (age < CACHE_TTL) {
+      if (age < CACHE_TTL && parsed.assetMainJs === staticAssets.mainJs) {
         console.log(`Video page cache hit, id: ${videoId}, age: ${age}s`);
         return new Response(parsed.html, {
           status: 200,
@@ -1185,7 +1138,7 @@ async function handleVideoPage(request, videoId, url) {
   // 2. Fetch video metadata
   let videoMeta = null;
   try {
-    videoMeta = await fetchVideoMetadata(videoId);
+    videoMeta = await fetchVideoMetadata(videoId, funnelcakeTarget);
   } catch (e) {
     console.error('Failed to fetch video metadata:', e.message);
   }
@@ -1196,7 +1149,6 @@ async function handleVideoPage(request, videoId, url) {
   }
 
   // 3. Render full HTML page
-  const staticAssets = await getStaticAssets();
   const html = renderVideoPage({ video: videoMeta, videoId, staticAssets });
   console.log('Rendered video page, id:', videoId, 'length:', html.length);
 
@@ -1205,6 +1157,7 @@ async function handleVideoPage(request, videoId, url) {
     await contentStore.put(CACHE_KEY, JSON.stringify({
       html,
       timestamp: Math.floor(Date.now() / 1000),
+      assetMainJs: staticAssets.mainJs,
     }));
   } catch (e) {
     console.error('Video page cache write error:', e.message);
@@ -1224,10 +1177,12 @@ async function handleVideoPage(request, videoId, url) {
 /**
  * Handle feed/discovery pages — render edge-templated HTML with video grid.
  */
-async function handleFeedPage(feedType) {
+async function handleFeedPage(feedType, funnelcakeTarget) {
   const CACHE_KEY = `page:feed:${feedType}`;
   const CACHE_TTL = 60;
   const contentStore = new KVStore('divine-web-content');
+  const staticAssets = await getStaticAssets();
+  if (!staticAssets) return null;
 
   // 1. Check KV page cache
   try {
@@ -1235,7 +1190,7 @@ async function handleFeedPage(feedType) {
     if (cached) {
       const parsed = JSON.parse(await cached.text());
       const age = Math.floor(Date.now() / 1000) - parsed.timestamp;
-      if (age < CACHE_TTL) {
+      if (age < CACHE_TTL && parsed.assetMainJs === staticAssets.mainJs) {
         console.log(`Feed page cache hit, type: ${feedType}, age: ${age}s`);
         return new Response(parsed.html, {
           status: 200,
@@ -1253,7 +1208,7 @@ async function handleFeedPage(feedType) {
   }
 
   // 2. Fetch feed data
-  const feedData = await fetchFeedData(feedType);
+  const feedData = await fetchFeedData(feedType, funnelcakeTarget);
   if (!feedData) {
     return null;
   }
@@ -1271,7 +1226,6 @@ async function handleFeedPage(feedType) {
     author_name: v.author_name, author_avatar: v.author_avatar,
   }));
   const feedJson = JSON.stringify(feedData.videos ? { ...feedData, videos: compactVideos } : compactVideos);
-  const staticAssets = await getStaticAssets();
   const html = renderFeedPage({ videos, feedType, feedJson, staticAssets });
   console.log('Rendered feed page, type:', feedType, 'videos:', videos.length, 'length:', html.length);
 
@@ -1280,6 +1234,7 @@ async function handleFeedPage(feedType) {
     await contentStore.put(CACHE_KEY, JSON.stringify({
       html,
       timestamp: Math.floor(Date.now() / 1000),
+      assetMainJs: staticAssets.mainJs,
     }));
   } catch (e) {
     console.error('Feed page cache write error:', e.message);
@@ -1299,15 +1254,14 @@ async function handleFeedPage(feedType) {
 /**
  * Handle search page with query — render edge-templated HTML with results.
  */
-async function handleSearchPage(query) {
+async function handleSearchPage(query, funnelcakeTarget) {
   if (!query || !query.trim()) return null;
 
   try {
-    const resp = await fetch(`https://relay.divine.video/api/search?q=${encodeURIComponent(query)}&limit=20`, {
-      backend: 'funnelcake',
-      method: 'GET',
-      headers: { 'Accept': 'application/json', 'Host': 'relay.divine.video' },
-    });
+    const staticAssets = await getStaticAssets();
+    if (!staticAssets) return null;
+
+    const resp = await fetchFromFunnelcake(funnelcakeTarget, `/api/search?q=${encodeURIComponent(query)}&limit=20`);
 
     if (!resp.ok) {
       console.error('Search API error:', resp.status);
@@ -1317,7 +1271,6 @@ async function handleSearchPage(query) {
     const data = await resp.json();
     const results = data.videos || data.results || data || [];
 
-    const staticAssets = await getStaticAssets();
     const html = renderSearchPage({ query, results, staticAssets });
     console.log('Rendered search page, query:', query, 'results:', results.length);
 
