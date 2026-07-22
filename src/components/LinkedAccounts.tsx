@@ -4,7 +4,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
-import { GithubLogo as Github, ArrowSquareOut as ExternalLink, CheckCircle, Warning as AlertTriangle, CircleNotch as Loader2, Eye, LinkSimple as Link2, Question, Shield } from '@phosphor-icons/react';
+import { GithubLogo as Github, ArrowSquareOut as ExternalLink, CheckCircle, CircleNotch as Loader2, Eye, LinkSimple as Link2, Question, Shield } from '@phosphor-icons/react';
 import { Badge } from '@/components/ui/badge';
 import {
   Popover,
@@ -111,8 +111,8 @@ function IdentityBadge({
 
   const isVerified = verification.data?.verified;
   const isManual = verification.data?.error === 'manual';
-  const isPending = !verification.data && (verification.isLoading || verification.isPending);
-  const isUnverified = isManual || isPending || (verification.data && !isVerified);
+  const isPending = !!identity.proof && !verification.data && (verification.isLoading || verification.isPending);
+  const isUnverified = isManual || isPending;
 
   if (!isVerified && !(showUnverified && isUnverified)) return null;
 
@@ -171,14 +171,7 @@ function IdentityBadge({
                     {t('linkedAccounts.verifyManually')}
                   </a>
                 </>
-              ) : (
-                <>
-                  <AlertTriangle className="h-3.5 w-3.5 text-yellow-500" />
-                  <span className="text-yellow-600 dark:text-yellow-400" data-testid={`verification-error-${identity.platform}`}>
-                    {verification.data?.error || t('linkedAccounts.unverified')}
-                  </span>
-                </>
-              )}
+              ) : null}
             </div>
           ) : (
             <Badge variant="outline" className="text-xs">{t('linkedAccounts.noProof')}</Badge>
@@ -280,7 +273,7 @@ export function LinkedAccounts({ pubkey, className }: LinkedAccountsProps) {
           className="h-7 gap-1.5 px-2 text-muted-foreground hover:text-foreground"
           onClick={() => setShowUnverified((prev) => !prev)}
           aria-pressed={showUnverified}
-          aria-label={showUnverified ? t('linkedAccounts.hideUnverified') : t('linkedAccounts.showUnverifiedAria')}
+          aria-label={t('linkedAccounts.showUnverified')}
           data-testid="show-unverified-toggle"
         >
           <Eye className="h-3.5 w-3.5" />
