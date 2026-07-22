@@ -41,7 +41,11 @@ import AuthenticityPage from "./pages/AuthenticityPage";
 import DMCAPage from "./pages/DMCAPage";
 import HumanCreatedPage from "./pages/HumanCreatedPage";
 import { SafetyPage } from "./pages/SafetyPage";
-import { FamilyPage } from "./pages/FamilyPage";
+import { FamilyHubPage } from "./pages/family/FamilyHubPage";
+import { TalkingToYourTeenPage } from "./pages/family/TalkingToYourTeenPage";
+import { MediaPlanPage } from "./pages/family/MediaPlanPage";
+import { WhenSomethingGoesWrongPage } from "./pages/family/WhenSomethingGoesWrongPage";
+import { SafetyToolsPage } from "./pages/family/SafetyToolsPage";
 import { AgeReviewPage } from "./pages/AgeReviewPage";
 import { KidsPolicyPage } from "./pages/KidsPolicyPage";
 import { Support } from "./pages/Support";
@@ -153,7 +157,11 @@ export function AppRouter() {
         <Route path="/human-created" element={<HumanCreatedPage />} />
         <Route path="/dmca" element={<DMCAPage />} />
         <Route path="/safety" element={<SafetyPage />} />
-        <Route path="/family" element={<FamilyPage />} />
+        <Route path="/family" element={<FamilyHubPage />} />
+        <Route path="/family/talking-to-your-teen" element={<TalkingToYourTeenPage />} />
+        <Route path="/family/media-plan" element={<MediaPlanPage />} />
+        <Route path="/family/when-something-goes-wrong" element={<WhenSomethingGoesWrongPage />} />
+        <Route path="/family/safety-tools" element={<SafetyToolsPage />} />
         <Route path="/age-review" element={<AgeReviewPage />} />
         <Route path="/kids" element={<KidsPolicyPage />} />
         <Route path="/support" element={<Support />} />

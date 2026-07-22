@@ -13,7 +13,13 @@ interface ZendeskWidgetProps {
 // To restore: set ZENDESK_ENABLED to true (and in Support.tsx)
 const ZENDESK_ENABLED = false;
 
-export function ZendeskWidget({ hideOnMobile = true }: ZendeskWidgetProps) {
+export function ZendeskWidget(props: ZendeskWidgetProps) {
+  // Build-time prerender (SSG) has no NostrProvider and no DOM; the widget is browser-only
+  if (typeof window === 'undefined') return null;
+  return <ZendeskWidgetBrowser {...props} />;
+}
+
+function ZendeskWidgetBrowser({ hideOnMobile = true }: ZendeskWidgetProps) {
   const { user, metadata } = useCurrentUser();
   const displayName = metadata?.display_name || metadata?.name;
 

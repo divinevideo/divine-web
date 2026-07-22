@@ -7,7 +7,7 @@
   "license": "MPL-2.0",
   "scripts": {
     "dev": "npm i --workspaces=false && vite",
-    "build": "npm i --workspaces=false && vite build && cp dist/index.html dist/404.html && node scripts/copy-well-known.mjs && node scripts/prerender-legal.mjs && node scripts/verify-well-known.mjs",
+    "build": "npm i --workspaces=false && vite build && cp dist/index.html dist/404.html && node scripts/copy-well-known.mjs && node scripts/prerender-legal.mjs && node scripts/prerender-marketing.mjs && node scripts/verify-well-known.mjs",
     "preview": "vite preview",
     "test": "npm i --workspaces=false && tsc -p tsconfig.app.json --noEmit && eslint && vitest run && vite build",
     "deploy": "npm run build && npx -y nostr-deploy-cli deploy --skip-setup",
