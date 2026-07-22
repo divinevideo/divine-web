@@ -1,7 +1,7 @@
 // ABOUTME: "Talking with your teen" section content, moved verbatim from FamilyPage
 // ABOUTME: Two guidance cards plus the conversation-starters card
 
-import { ChatsCircle, HandHeart, Pause } from "@phosphor-icons/react";
+import { HandHeart, Pause } from "@phosphor-icons/react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -79,5 +79,3 @@ export function TalkingContent() {
     </>
   );
 }
-
-export const TALKING_ICON = ChatsCircle;
