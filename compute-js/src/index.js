@@ -10,11 +10,11 @@ import rc from '../static-publish.rc.js';
 import { buildFunnelcakeUrl, getFunnelcakeOriginForApiHost } from './funnelcakeOrigin.js';
 import { handleAuthPersistCookie } from './authPersistCookie.js';
 import { isJsonWellKnownPath, shouldServeWellKnownBeforeWwwRedirect } from './wellKnownPaths.js';
-import { buildCrawlerHtml, buildUserScript, escapeHtml, escapeFeedJson, cleanText, truncateText } from './ogTags.js';
+import { buildCrawlerHtml, buildUserScript, escapeHtml, cleanText, truncateText } from './ogTags.js';
 import { hexToNpub, decodeNpubToHex } from './bech32.js';
 import { buildWwwRedirectResponse } from './hostRedirect.js';
 import { applyStaticResponseHeaders } from './staticResponseHeaders.js';
-import { hasViteEntryScript, readPublishedStaticFile } from './staticContent.js';
+import { readPublishedStaticFile } from './staticContent.js';
 import {
   handleAtUsernameOg,
   handleHashtagOgTags,
@@ -24,6 +24,7 @@ import {
 } from './crawlerHandlers.js';
 import { transformVideoApiResponse } from './videoMetadata.js';
 import { renderEmbedPage } from './embedPage.js';
+import { resolveFeedInjectedHtml } from './feedInjection.js';
 
 const publisherServer = PublisherServer.fromStaticPublishRc(rc);
 const DEFAULT_OG_IMAGE = 'https://divine.video/og.png';
@@ -326,34 +327,15 @@ async function handleRequest(event) {
       // (Content-Encoding/Content-Length/ETag). Any failure degrades to the untouched static
       // passthrough below, so injection can never 500.
       const decodedHeaders = applyStaticResponseHeaders(response.headers, { isHtml: true, decoded: true });
-      try {
-        const html = await readIndexHtmlFromKv();
-        if (html && hasViteEntryScript(html)) {
-          const feedType = discoveryFeedType || 'trending';
-          const feedData = await fetchFeedData(feedType, funnelcakeTarget);
-          let finalHtml = html;
-          if (feedData) {
-            // feedData carries user-controlled strings (video titles etc), so escape it for
-            // safe <script> embedding. feedType is a fixed allowlist value
-            // (getDiscoveryFeedType), so it needs no escaping.
-            const feedJson = escapeFeedJson(feedData);
-            let injection = `<script>window.__DIVINE_FEED__=${feedJson};window.__DIVINE_FEED_TYPE__="${feedType}";</script>`;
-            const firstVideo = feedData.videos?.[0] || feedData[0];
-            const firstVideoUrl = firstVideo?.video_url;
-            const firstThumbnail = firstVideo?.thumbnail;
-            if (firstVideoUrl) {
-              injection += `\n<link rel="preload" href="${escapeHtml(firstVideoUrl)}" as="video" type="video/mp4">`;
-            }
-            if (firstThumbnail) {
-              injection += `\n<link rel="preload" href="${escapeHtml(firstThumbnail)}" as="image" fetchpriority="high">`;
-            }
-            finalHtml = html.replace('</head>', injection + '</head>');
-          }
-          return new Response(finalHtml, { status: response.status, headers: decodedHeaders });
-        }
-        console.error('Publisher returned unusable KV HTML for', url.pathname, 'length:', html?.length ?? 0);
-      } catch (err) {
-        console.error('Feed injection error:', err.message);
+      const feedType = discoveryFeedType || 'trending';
+      const finalHtml = await resolveFeedInjectedHtml({
+        readHtml: readIndexHtmlFromKv,
+        fetchFeedData: (type) => fetchFeedData(type, funnelcakeTarget),
+        feedType,
+        pathname: url.pathname,
+      });
+      if (finalHtml) {
+        return new Response(finalHtml, { status: response.status, headers: decodedHeaders });
       }
       // fall through to the untouched static passthrough below
     }
