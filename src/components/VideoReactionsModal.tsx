@@ -8,7 +8,7 @@ import { genUserName } from '@/lib/genUserName';
 import { getSafeProfileImage } from '@/lib/imageUtils';
 import { formatDistanceToNow } from 'date-fns';
 import { SmartLink } from '@/components/SmartLink';
-import { buildProfileLinkPath } from '@/lib/profileLinks';
+import { useValidatedProfileLinkPath } from '@/hooks/useValidatedProfileLinkPath';
 import { cn } from '@/lib/utils';
 import type { VideoReactions } from '@/hooks/useVideoReactions';
 
@@ -29,7 +29,7 @@ function ReactionUserItem({ pubkey, timestamp }: { pubkey: string; timestamp: nu
     ? "Loading..."
     : (metadata?.display_name || metadata?.name || genUserName(pubkey));
   const profileImage = getSafeProfileImage(metadata?.picture);
-  const profileUrl = buildProfileLinkPath({
+  const profileUrl = useValidatedProfileLinkPath({
     pubkey,
     nip05: metadata?.nip05,
   });

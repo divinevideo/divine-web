@@ -54,8 +54,7 @@ import { useSubtitles } from '@/hooks/useSubtitles';
 import { debugLog } from '@/lib/debug';
 import { useLoginDialog } from '@/contexts/LoginDialogContext';
 import { AgeRestrictedMediaPlaceholder } from '@/components/AgeRestrictedMediaPlaceholder';
-import { buildProfileLinkPath } from '@/lib/profileLinks';
-import { useNip05Validation } from '@/hooks/useNip05Validation';
+import { useValidatedProfileLinkPath } from '@/hooks/useValidatedProfileLinkPath';
 
 interface VideoCardProps {
   video: ParsedVideoData;
@@ -299,10 +298,9 @@ export function VideoCard({
     rawMetadata?.picture || video.authorAvatar || metadata.picture
   );
   const authorNip05 = rawMetadata?.nip05;
-  const { state: authorNip05State } = useNip05Validation(authorNip05, video.pubkey);
-  const profileUrl = buildProfileLinkPath({
+  const profileUrl = useValidatedProfileLinkPath({
     pubkey: video.pubkey,
-    nip05: authorNip05State === 'valid' ? authorNip05 : undefined,
+    nip05: authorNip05,
   });
 
   const reposterName = reposterData.isLoading

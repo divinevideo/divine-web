@@ -5,10 +5,10 @@ import { Heart, ChatCircle as MessageCircle, UserPlus, Repeat as Repeat2, Lightn
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuthor } from '@/hooks/useAuthor';
 import { useSubdomainNavigate } from '@/hooks/useSubdomainNavigate';
+import { useValidatedProfileLinkPath } from '@/hooks/useValidatedProfileLinkPath';
 import { genUserName } from '@/lib/genUserName';
 import { getSafeProfileImage } from '@/lib/imageUtils';
 import { generateNotificationMessage, formatRelativeTime } from '@/lib/notificationTransform';
-import { buildProfileLinkPath } from '@/lib/profileLinks';
 import { cn } from '@/lib/utils';
 import type { Notification, NotificationType } from '@/types/notification';
 
@@ -37,14 +37,15 @@ export function NotificationItem({ notification }: NotificationItemProps) {
   const { icon: TypeIcon, color: iconColor } = TYPE_CONFIG[notification.type];
   const message = generateNotificationMessage(notification.type, displayName);
   const timeAgo = formatRelativeTime(notification.timestamp);
+  const actorProfilePath = useValidatedProfileLinkPath({
+    pubkey: notification.actorPubkey,
+    nip05: metadata?.nip05,
+    fallbackRoute: 'profile',
+  });
 
   const handleClick = () => {
     if (notification.type === 'follow') {
-      navigate(buildProfileLinkPath({
-        pubkey: notification.actorPubkey,
-        nip05: metadata?.nip05,
-        fallbackRoute: 'profile',
-      }));
+      navigate(actorProfilePath);
     } else if (notification.targetEventId) {
       navigate(`/video/${notification.targetEventId}`);
     }
