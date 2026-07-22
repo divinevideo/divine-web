@@ -22,6 +22,7 @@ import {
   type SectionAnchor,
 } from "@/components/static-pages";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { FamilySectionNav } from "@/components/family/FamilySectionNav";
 import { buildMailtoLink } from "@/lib/mailto";
 
 const SUPPORT_EMAIL = "support@divine.video";
@@ -438,6 +439,8 @@ export function KidsPolicyPage() {
               <ArrowSquareOut className="h-5 w-5 flex-shrink-0 text-brand-dark-green dark:text-brand-green group-hover:translate-x-0.5 transition-transform" />
             </div>
           </a>
+
+          <FamilySectionNav className="mt-6" />
         </Anchor>
 
         {/* Closing note */}
