@@ -30,6 +30,7 @@ const FUNNELCAKE_RELAY_HOSTNAMES = new Set([
   'relay.divine.video',
   'relay.staging.divine.video',
 ]);
+const HEX_64_RE = /^[a-f0-9]{64}$/i;
 const HTTP_CLIENT_MESSAGE_RE = /^HTTP Client Error with status code:\s*(\d{3})$/i;
 const OPTIONAL_IMAGE_EXTENSION_RE = /\.(?:avif|gif|jpe?g|png|webp)$/i;
 const OPTIONAL_PREVIEW_PATH_SEGMENT_RE = /\/(?:poster|preview|thumbnail|thumb)(?:\/|$)/i;
@@ -116,21 +117,35 @@ function isOptionalPreviewPath(pathname: string): boolean {
   return OPTIONAL_IMAGE_EXTENSION_RE.test(pathname);
 }
 
-/**
- * Filters handled media fetch failures produced by Sentry's httpClientIntegration.
- *
- * Keep narrow allowlists to avoid hiding actionable production failures:
- * - 401/403 on gated media assets
- * - 404/422 on optional subtitles and preview/poster images
- */
+function isFunnelcakeFallbackReportedPath(pathname: string): boolean {
+  const normalizedPath = pathname.replace(/\/+$/, '') || '/';
+  const segments = normalizedPath.split('/').filter(Boolean);
+
+  if (normalizedPath === '/api/search' || normalizedPath === '/api/search/profiles') {
+    return true;
+  }
+
+  if (normalizedPath === '/api/users/bulk' || normalizedPath === '/api/leaderboard/creators') {
+    return true;
+  }
+
+  if (segments.length === 3 && segments[0] === 'api' && segments[1] === 'users') {
+    return HEX_64_RE.test(segments[2]);
+  }
+
+  if (segments.length === 3 && segments[0] === 'api' && segments[1] === 'videos') {
+    return segments[2].length > 0 && segments[2] !== 'stats';
+  }
+
+  return false;
+}
+
 /**
  * Filters raw "HTTP Client Error" events for Funnelcake REST API requests.
  *
- * The Funnelcake client already handles every failed response: it throws
- * FunnelcakeApiError, records the failure in the circuit breaker, and the
- * calling hook reports a single FunnelcakeFallbackError to Sentry. The raw
- * httpClientIntegration event is a duplicate of that canonical signal (#459),
- * so genuine backend 500s still surface — exactly once.
+ * Only suppress endpoints whose call sites emit a replacement
+ * FunnelcakeFallbackError. Other Funnelcake REST failures must keep their raw
+ * HTTP-client event so Sentry does not lose the only signal for that failure.
  */
 export function shouldDropFunnelcakeHttpClientEvent(event: SentryEventLike): boolean {
   if (!isHttpClientEvent(event)) {
@@ -149,6 +164,10 @@ export function shouldDropFunnelcakeHttpClientEvent(event: SentryEventLike): boo
     return false;
   }
 
+  if (!isFunnelcakeFallbackReportedPath(parsedUrl.pathname)) {
+    return false;
+  }
+
   if (FUNNELCAKE_API_HOSTNAMES.has(parsedUrl.hostname)) {
     return true;
   }
@@ -157,6 +176,13 @@ export function shouldDropFunnelcakeHttpClientEvent(event: SentryEventLike): boo
     && parsedUrl.pathname.startsWith('/api/');
 }
 
+/**
+ * Filters handled media fetch failures produced by Sentry's httpClientIntegration.
+ *
+ * Keep narrow allowlists to avoid hiding actionable production failures:
+ * - 401/403 on gated media assets
+ * - 404/422 on optional subtitles and preview/poster images
+ */
 export function shouldDropHandledMediaHttpClientEvent(event: SentryEventLike): boolean {
   if (!isHttpClientEvent(event)) {
     return false;

@@ -6,22 +6,11 @@ import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
 
-const mockFetchUserProfile = vi.fn();
 const mockNostrQuery = vi.fn();
 const mockReportFunnelcakeFallback = vi.fn();
 const mockIsFunnelcakeAvailable = vi.fn();
-
-vi.mock('@/lib/funnelcakeClient', () => ({
-  fetchUserProfile: mockFetchUserProfile,
-}));
-
-vi.mock('@/config/api', () => ({
-  API_CONFIG: {
-    funnelcake: {
-      baseUrl: 'https://funnelcake.example',
-    },
-  },
-}));
+const mockRecordFunnelcakeFailure = vi.fn();
+const mockRecordFunnelcakeSuccess = vi.fn();
 
 vi.mock('@/lib/debug', () => ({
   debugLog: vi.fn(),
@@ -43,6 +32,8 @@ vi.mock('@/lib/funnelcakeFallbackReporting', async (importOriginal) => ({
 
 vi.mock('@/lib/funnelcakeHealth', () => ({
   isFunnelcakeAvailable: mockIsFunnelcakeAvailable,
+  recordFunnelcakeFailure: mockRecordFunnelcakeFailure,
+  recordFunnelcakeSuccess: mockRecordFunnelcakeSuccess,
 }));
 
 vi.mock('@nostrify/react', () => ({
@@ -72,6 +63,7 @@ let useAuthor: typeof import('./useAuthor').useAuthor;
 beforeEach(async () => {
   vi.resetModules();
   vi.clearAllMocks();
+  global.fetch = vi.fn();
 
   ({ useAuthor } = await import('./useAuthor'));
 
@@ -81,7 +73,12 @@ beforeEach(async () => {
 
 describe('useAuthor', () => {
   it('reports a fallback and queries the relay when the REST call fails', async () => {
-    mockFetchUserProfile.mockRejectedValue(new Error('Funnelcake API error: 500 Internal Server Error'));
+    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      ok: false,
+      status: 500,
+      statusText: 'Internal Server Error',
+      text: () => Promise.resolve('Server error'),
+    });
 
     const { result } = renderHook(
       () => useAuthor('pubkey-1'),
@@ -94,30 +91,27 @@ describe('useAuthor', () => {
 
     expect(mockReportFunnelcakeFallback).toHaveBeenCalledWith(expect.objectContaining({
       source: 'useAuthor',
-      reason: 'Funnelcake API error: 500 Internal Server Error',
+      reason: 'REST returned no profile',
     }));
     expect(mockNostrQuery).toHaveBeenCalledTimes(1);
   });
 
   it('rethrows AbortError from cancelled queries without reporting or falling back', async () => {
-    mockFetchUserProfile.mockRejectedValue(
+    (global.fetch as ReturnType<typeof vi.fn>).mockRejectedValueOnce(
       new DOMException('signal is aborted without reason', 'AbortError'),
     );
 
-    const { result } = renderHook(
+    renderHook(
       () => useAuthor('pubkey-1'),
       { wrapper: createWrapper() }
     );
 
-    // useAuthor sets retry: 2, so wait for the first attempt instead of final error state
     await waitFor(() => {
-      expect(mockFetchUserProfile).toHaveBeenCalled();
+      expect(global.fetch).toHaveBeenCalled();
     });
-    await new Promise((resolve) => setTimeout(resolve, 50));
 
     expect(mockReportFunnelcakeFallback).not.toHaveBeenCalled();
+    expect(mockRecordFunnelcakeFailure).not.toHaveBeenCalled();
     expect(mockNostrQuery).not.toHaveBeenCalled();
-
-    expect(result.current.isSuccess).toBe(false);
   });
 });

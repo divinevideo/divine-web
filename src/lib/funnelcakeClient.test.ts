@@ -27,6 +27,7 @@ const TEST_SIGNER = { signEvent: vi.fn() } as unknown as NostrSigner;
 
 describe('funnelcakeClient', () => {
   let fetchUserProfile: typeof import('./funnelcakeClient').fetchUserProfile;
+  let fetchUserLoopStats: typeof import('./funnelcakeClient').fetchUserLoopStats;
   let fetchBulkUsers: typeof import('./funnelcakeClient').fetchBulkUsers;
   let fetchBulkVideoStats: typeof import('./funnelcakeClient').fetchBulkVideoStats;
   let searchProfiles: typeof import('./funnelcakeClient').searchProfiles;
@@ -44,6 +45,7 @@ describe('funnelcakeClient', () => {
     // Import after mocking
     const client = await import('./funnelcakeClient');
     fetchUserProfile = client.fetchUserProfile;
+    fetchUserLoopStats = client.fetchUserLoopStats;
     fetchBulkUsers = client.fetchBulkUsers;
     fetchBulkVideoStats = client.fetchBulkVideoStats;
     searchProfiles = client.searchProfiles;
@@ -155,17 +157,36 @@ describe('funnelcakeClient', () => {
       expect(result?.follower_count).toBe(0);
     });
 
-    it('supports AbortSignal cancellation', async () => {
+    it('passes through AbortError cancellation without converting it to null', async () => {
       const controller = new AbortController();
       controller.abort();
+      const health = await import('./funnelcakeHealth');
 
       (global.fetch as ReturnType<typeof vi.fn>).mockRejectedValueOnce(
         new DOMException('Aborted', 'AbortError')
       );
 
-      const result = await fetchUserProfile(API_URL, TEST_PUBKEY, controller.signal);
+      await expect(fetchUserProfile(API_URL, TEST_PUBKEY, controller.signal))
+        .rejects.toMatchObject({ name: 'AbortError' });
 
-      expect(result).toBeNull();
+      expect(health.recordFunnelcakeFailure).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('fetchUserLoopStats', () => {
+    it('passes through AbortError cancellation without converting it to null', async () => {
+      const controller = new AbortController();
+      controller.abort();
+      const health = await import('./funnelcakeHealth');
+
+      (global.fetch as ReturnType<typeof vi.fn>).mockRejectedValueOnce(
+        new DOMException('Aborted', 'AbortError')
+      );
+
+      await expect(fetchUserLoopStats(API_URL, TEST_PUBKEY, controller.signal))
+        .rejects.toMatchObject({ name: 'AbortError' });
+
+      expect(health.recordFunnelcakeFailure).not.toHaveBeenCalled();
     });
   });
 
@@ -230,6 +251,21 @@ describe('funnelcakeClient', () => {
 
       await expect(fetchBulkUsers(API_URL, ['a'.repeat(64)]))
         .rejects.toThrow();
+    });
+
+    it('passes through AbortError cancellation without recording a circuit-breaker failure', async () => {
+      const controller = new AbortController();
+      controller.abort();
+      const health = await import('./funnelcakeHealth');
+
+      (global.fetch as ReturnType<typeof vi.fn>).mockRejectedValueOnce(
+        new DOMException('Aborted', 'AbortError')
+      );
+
+      await expect(fetchBulkUsers(API_URL, ['a'.repeat(64)], controller.signal))
+        .rejects.toMatchObject({ name: 'AbortError' });
+
+      expect(health.recordFunnelcakeFailure).not.toHaveBeenCalled();
     });
 
     it('returns empty users array for empty input', async () => {

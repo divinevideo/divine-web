@@ -141,9 +141,36 @@ describe('shouldDropHandledMediaHttpClientEvent', () => {
 });
 
 describe('shouldDropFunnelcakeHttpClientEvent', () => {
-  it('drops 500 failures on the Funnelcake API host', () => {
+  it('keeps list feed failures without a replacement fallback report', () => {
     const event = createHttpClientEvent({
       url: 'https://api.divine.video/api/videos?sort=trending',
+      statusCode: 500,
+    });
+
+    expect(shouldDropFunnelcakeHttpClientEvent(event)).toBe(false);
+  });
+
+  it('drops single-video lookup failures that have a VideoPage fallback report', () => {
+    const event = createHttpClientEvent({
+      url: `https://api.divine.video/api/videos/${'a'.repeat(64)}`,
+      statusCode: 500,
+    });
+
+    expect(shouldDropFunnelcakeHttpClientEvent(event)).toBe(true);
+  });
+
+  it('drops user profile failures that have hook fallback reports', () => {
+    const event = createHttpClientEvent({
+      url: `https://api.divine.video/api/users/${'a'.repeat(64)}`,
+      statusCode: 500,
+    });
+
+    expect(shouldDropFunnelcakeHttpClientEvent(event)).toBe(true);
+  });
+
+  it('drops bulk user failures that have a hook fallback report', () => {
+    const event = createHttpClientEvent({
+      url: 'https://api.divine.video/api/users/bulk',
       statusCode: 500,
     });
 
@@ -161,11 +188,29 @@ describe('shouldDropFunnelcakeHttpClientEvent', () => {
 
   it('drops failures on the relay backup /api/ path', () => {
     const event = createHttpClientEvent({
-      url: 'https://relay.divine.video/api/notifications?pubkey=abc',
+      url: 'https://relay.divine.video/api/search/profiles?q=jack',
       statusCode: 500,
     });
 
     expect(shouldDropFunnelcakeHttpClientEvent(event)).toBe(true);
+  });
+
+  it('keeps notification failures without a replacement fallback report', () => {
+    const event = createHttpClientEvent({
+      url: `https://relay.divine.video/api/users/${'a'.repeat(64)}/notifications`,
+      statusCode: 500,
+    });
+
+    expect(shouldDropFunnelcakeHttpClientEvent(event)).toBe(false);
+  });
+
+  it('keeps platform stats failures without a replacement fallback report', () => {
+    const event = createHttpClientEvent({
+      url: 'https://api.divine.video/api/stats',
+      statusCode: 500,
+    });
+
+    expect(shouldDropFunnelcakeHttpClientEvent(event)).toBe(false);
   });
 
   it('keeps relay failures outside the /api/ path', () => {

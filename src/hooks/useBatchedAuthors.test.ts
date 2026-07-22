@@ -6,22 +6,11 @@ import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
 
-const mockFetchBulkUsers = vi.fn();
 const mockNostrQuery = vi.fn();
 const mockReportFunnelcakeFallback = vi.fn();
 const mockIsFunnelcakeAvailable = vi.fn();
-
-vi.mock('@/lib/funnelcakeClient', () => ({
-  fetchBulkUsers: mockFetchBulkUsers,
-}));
-
-vi.mock('@/config/api', () => ({
-  API_CONFIG: {
-    funnelcake: {
-      baseUrl: 'https://funnelcake.example',
-    },
-  },
-}));
+const mockRecordFunnelcakeFailure = vi.fn();
+const mockRecordFunnelcakeSuccess = vi.fn();
 
 vi.mock('@/lib/debug', () => ({
   debugLog: vi.fn(),
@@ -34,6 +23,8 @@ vi.mock('@/lib/funnelcakeFallbackReporting', async (importOriginal) => ({
 
 vi.mock('@/lib/funnelcakeHealth', () => ({
   isFunnelcakeAvailable: mockIsFunnelcakeAvailable,
+  recordFunnelcakeFailure: mockRecordFunnelcakeFailure,
+  recordFunnelcakeSuccess: mockRecordFunnelcakeSuccess,
 }));
 
 vi.mock('@nostrify/react', () => ({
@@ -63,6 +54,7 @@ let useBatchedAuthors: typeof import('./useBatchedAuthors').useBatchedAuthors;
 beforeEach(async () => {
   vi.resetModules();
   vi.clearAllMocks();
+  global.fetch = vi.fn();
 
   ({ useBatchedAuthors } = await import('./useBatchedAuthors'));
 
@@ -72,7 +64,12 @@ beforeEach(async () => {
 
 describe('useBatchedAuthors', () => {
   it('reports a fallback and queries the relay when the REST call fails', async () => {
-    mockFetchBulkUsers.mockRejectedValue(new Error('Funnelcake API error: 500 Internal Server Error'));
+    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      ok: false,
+      status: 500,
+      statusText: 'Internal Server Error',
+      text: () => Promise.resolve('Server error'),
+    });
 
     const { result } = renderHook(
       () => useBatchedAuthors(['pubkey-1']),
@@ -85,13 +82,13 @@ describe('useBatchedAuthors', () => {
 
     expect(mockReportFunnelcakeFallback).toHaveBeenCalledWith(expect.objectContaining({
       source: 'useBatchedAuthors',
-      reason: 'Funnelcake API error: 500 Internal Server Error',
+      reason: 'Funnelcake bulk users error: 500 Internal Server Error',
     }));
     expect(mockNostrQuery).toHaveBeenCalledTimes(1);
   });
 
   it('rethrows AbortError from cancelled queries without reporting or falling back', async () => {
-    mockFetchBulkUsers.mockRejectedValue(
+    (global.fetch as ReturnType<typeof vi.fn>).mockRejectedValueOnce(
       new DOMException('signal is aborted without reason', 'AbortError'),
     );
 
@@ -105,6 +102,7 @@ describe('useBatchedAuthors', () => {
     }, { timeout: 3000 });
 
     expect(mockReportFunnelcakeFallback).not.toHaveBeenCalled();
+    expect(mockRecordFunnelcakeFailure).not.toHaveBeenCalled();
     expect(mockNostrQuery).not.toHaveBeenCalled();
   });
 });
