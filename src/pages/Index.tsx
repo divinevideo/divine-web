@@ -1,4 +1,4 @@
-import { useSeoMeta } from '@unhead/react';
+import { useHead, useSeoMeta } from '@unhead/react';
 import { useTranslation } from 'react-i18next';
 import { VideoFeed } from '@/components/VideoFeed';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
@@ -18,6 +18,12 @@ const Index = () => {
   useSeoMeta({
     title: t('indexPage.seoTitle'),
     description: t('indexPage.seoDescription'),
+  });
+
+  // The static shell carries no canonical (it is served for every route);
+  // the homepage claims its own here.
+  useHead({
+    link: [{ rel: 'canonical', href: 'https://divine.video/' }],
   });
 
   // Show discovery feed for non-logged-in users (no interstitial landing page)

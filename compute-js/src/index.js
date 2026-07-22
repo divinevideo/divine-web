@@ -239,8 +239,8 @@ async function handleRequest(event) {
       if (ogResponse) return ogResponse;
     }
 
-    // Family resource hub at /family on apex.
-    if (url.pathname === '/family') {
+    // Family resource hub and child guides at /family[/*] on apex.
+    if (url.pathname === '/family' || url.pathname.startsWith('/family/')) {
       const ogResponse = handleFamilyOgTags(url, hostnameToUse);
       if (ogResponse) {
         return ogResponse;
@@ -1183,16 +1183,56 @@ async function handleCategoryOgTags(request, url, funnelcakeTarget) {
   }
 }
 
+// Mirrors src/seo/marketingSeo.ts — keep the two tables in sync.
+const FAMILY_CRAWLER_META = {
+  '/family': {
+    title: 'For Families on Divine',
+    description:
+      "Conversation over surveillance. What our safety tools do, what they can't, and how to talk with your teen about it.",
+    image: 'https://divine.video/og-family.png',
+    ogType: 'website',
+  },
+  '/family/talking-to-your-teen': {
+    title: 'How to Talk With Your Teen About Social Media',
+    description:
+      'The goal is not to win the conversation. It is to keep having one. Conversation starters and guidance drawn from youth online-safety research.',
+    image: 'https://divine.video/og-family-talking.png',
+    ogType: 'article',
+  },
+  '/family/media-plan': {
+    title: 'Creating a Family Media Plan',
+    description:
+      'A plan that everyone helped write is a plan that everyone is more likely to follow. Templates and habits for household screen use.',
+    image: 'https://divine.video/og-family-media-plan.png',
+    ogType: 'article',
+  },
+  '/family/when-something-goes-wrong': {
+    title: 'What to Do if Your Child Saw Something Upsetting Online',
+    description:
+      'What helps most is not a perfect filter. It is a parent who reacts in a way that makes the next conversation possible. Four concrete steps.',
+    image: 'https://divine.video/og-family-when-something-goes-wrong.png',
+    ogType: 'article',
+  },
+  '/family/safety-tools': {
+    title: "Divine's Safety Tools and Content Settings",
+    description:
+      'Settings are a useful layer. They are not a guarantee. How adult-content gating, filters, blocking, and reporting work on Divine.',
+    image: 'https://divine.video/og-family-safety-tools.png',
+    ogType: 'article',
+  },
+};
+
 function handleFamilyOgTags(url, hostnameToUse) {
   try {
+    const meta = FAMILY_CRAWLER_META[url.pathname];
+    if (!meta) return null;
     const canonical = `https://${hostnameToUse}${url.pathname}`;
     const html = buildCrawlerHtml({
-      title: 'For families on Divine — Conversation-first guidance for parents and teens',
-      description:
-        'A practical guide for families on Divine: how to talk with your teen about social media, what Divine can and can’t do, content settings, healthy feed habits, and trusted outside resources.',
-      image: DEFAULT_OG_IMAGE,
+      title: meta.title,
+      description: meta.description,
+      image: meta.image,
       url: canonical,
-      ogType: 'website',
+      ogType: meta.ogType,
       twitterCard: 'summary_large_image',
       imageWidth: 1200,
       imageHeight: 630,
