@@ -466,6 +466,15 @@ function makeResponse(overrides: Partial<FunnelcakeResponse> = {}): FunnelcakeRe
 }
 
 describe('transformToVideoPage', () => {
+  it('normalizes bare edge-injected video arrays', () => {
+    const page = transformToVideoPage([makeRawVideo()]);
+
+    expect(page.videos).toHaveLength(1);
+    expect(page.videos[0]?.id).toBe('video-1');
+    expect(page.hasMore).toBe(false);
+    expect(page.nextCursor).toBeUndefined();
+  });
+
   describe('cursor type (recommendations)', () => {
     it('returns raw cursor string when cursorType is cursor', () => {
       const page = transformToVideoPage(makeResponse({ next_cursor: 'opaque-cursor-xyz' }), 'cursor');
