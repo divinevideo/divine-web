@@ -19,6 +19,11 @@ vi.mock('@/lib/debug', () => ({
   debugLog: vi.fn(),
 }));
 
+const mockTrackProductEvent = vi.fn().mockResolvedValue('event-id');
+vi.mock('@/lib/analyticsClient', () => ({
+  trackProductEvent: (...args: unknown[]) => mockTrackProductEvent(...args),
+}));
+
 const makeVideo = (id: string): ParsedVideoData => ({
   id,
   pubkey: 'abc123pubkey',
@@ -275,6 +280,36 @@ describe('useVideoMetricsTracker', () => {
     expect(mockPublishViewEvent).toHaveBeenCalledWith(
       expect.objectContaining({ source: 'trending' })
     );
+  });
+
+  it('tracks first-party video engagement summary when watch time is published', () => {
+    const video = makeVideo('v1');
+    const { unmount } = renderHook(() =>
+      useVideoMetricsTracker({
+        video,
+        isPlaying: true,
+        currentTime: 3,
+        duration: 6,
+        source: 'trending',
+      })
+    );
+
+    act(() => { vi.advanceTimersByTime(3000); });
+    unmount();
+
+    expect(mockTrackProductEvent).toHaveBeenCalledWith('video_engagement_summary', {
+      surface: 'video',
+      content_id: video.id,
+      creator_pubkey: video.pubkey,
+      traffic_source: 'trending',
+      duration_ms: expect.any(Number),
+      position_ms: 0,
+      loop_count: 0,
+      properties: {
+        vine_id: video.vineId,
+        watched_seconds: expect.any(Number),
+      },
+    });
   });
 
   it('detects video loops and increments loopCount', () => {

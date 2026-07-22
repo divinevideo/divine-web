@@ -4,6 +4,7 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { useViewEventPublisher, type ViewTrafficSource } from './useViewEventPublisher';
 import { debugLog } from '@/lib/debug';
+import { trackProductEvent } from '@/lib/analyticsClient';
 import type { ParsedVideoData } from '@/types/video';
 
 interface UseVideoMetricsTrackerOptions {
@@ -79,6 +80,22 @@ export function useVideoMetricsTracker({
     lastUpdateTimeRef.current = now;
   }, []);
 
+  const trackEngagementSummary = useCallback((currentVideo: ParsedVideoData, watchedSeconds: number) => {
+    void trackProductEvent('video_engagement_summary', {
+      surface: 'video',
+      content_id: currentVideo.id,
+      creator_pubkey: currentVideo.pubkey,
+      traffic_source: sourceRef.current,
+      duration_ms: watchedSeconds * 1000,
+      position_ms: 0,
+      loop_count: metricsRef.current.loopCount,
+      properties: {
+        vine_id: currentVideo.vineId,
+        watched_seconds: watchedSeconds,
+      },
+    });
+  }, []);
+
   // Publish a view event and reset the accumulator (stable, reads from refs)
   const publishAndReset = useCallback(async () => {
     const currentVideo = videoRef.current;
@@ -100,6 +117,8 @@ export function useVideoMetricsTracker({
     watchTimeAccumulatorRef.current = 0;
     lastUpdateTimeRef.current = Date.now();
 
+    trackEngagementSummary(currentVideo, watchedSeconds);
+
     await publishViewEventRef.current({
       video: currentVideo,
       startSeconds: 0,
@@ -108,7 +127,7 @@ export function useVideoMetricsTracker({
     }).catch((error) => {
       debugLog('[VideoMetricsTracker] Failed to publish view event:', error);
     });
-  }, []); // No deps — reads everything from refs
+  }, [trackEngagementSummary]); // Reads playback state from refs
 
   // Reset metrics when video ID changes (primitive comparison, stable)
   useEffect(() => {
@@ -195,6 +214,7 @@ export function useVideoMetricsTracker({
       const watchedSeconds = Math.floor(watchTimeAccumulatorRef.current);
 
       if (currentVideo && watchedSeconds >= 1 && isAuthenticatedRef.current && enabledRef.current) {
+        trackEngagementSummary(currentVideo, watchedSeconds);
         publishViewEventRef.current({
           video: currentVideo,
           startSeconds: 0,
@@ -205,7 +225,7 @@ export function useVideoMetricsTracker({
         });
       }
     };
-  }, []); // Empty deps — fires only on unmount
+  }, [trackEngagementSummary]); // Fires only on unmount
 
   // Return current metrics for debugging/display purposes
   return {

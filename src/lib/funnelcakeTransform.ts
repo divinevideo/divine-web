@@ -244,13 +244,15 @@ export function transformFunnelcakeVideo(raw: FunnelcakeVideoRaw): ParsedVideoDa
 /**
  * Transform a Funnelcake API response to an array of ParsedVideoData
  */
-export function transformFunnelcakeResponse(response: FunnelcakeResponse): ParsedVideoData[] {
-  if (!response.videos || !Array.isArray(response.videos)) {
+export function transformFunnelcakeResponse(response: FunnelcakeResponse | FunnelcakeVideoRaw[]): ParsedVideoData[] {
+  const rawVideos = Array.isArray(response) ? response : response.videos;
+
+  if (!Array.isArray(rawVideos)) {
     debugLog('[FunnelcakeTransform] No videos in response');
     return [];
   }
 
-  const transformed = response.videos
+  const transformed = rawVideos
     .map(raw => {
       try {
         return transformFunnelcakeVideo(raw);
@@ -274,7 +276,7 @@ export function transformFunnelcakeResponse(response: FunnelcakeResponse): Parse
   if (videos.length < transformed.length) {
     debugLog(`[FunnelcakeTransform] Deduplicated ${transformed.length} → ${videos.length} videos`);
   }
-  debugLog(`[FunnelcakeTransform] Transformed ${videos.length}/${response.videos.length} videos`);
+  debugLog(`[FunnelcakeTransform] Transformed ${videos.length}/${rawVideos.length} videos`);
 
   return videos;
 }
@@ -283,7 +285,7 @@ export function transformFunnelcakeResponse(response: FunnelcakeResponse): Parse
  * Transform Funnelcake response to video page format for infinite scroll hooks
  */
 export function transformToVideoPage(
-  response: FunnelcakeResponse,
+  response: FunnelcakeResponse | FunnelcakeVideoRaw[],
   cursorType: 'timestamp' | 'offset' | 'cursor' = 'timestamp'
 ): {
   videos: ParsedVideoData[];
@@ -300,15 +302,18 @@ export function transformToVideoPage(
   let offset: number | undefined;
   let rawCursor: string | undefined;
 
-  if (response.has_more && response.next_cursor) {
+  const hasMore = !Array.isArray(response) && response.has_more;
+  const nextCursorValue = !Array.isArray(response) ? response.next_cursor : undefined;
+
+  if (hasMore && nextCursorValue) {
     if (cursorType === 'cursor') {
       // Opaque cursor: pass through as-is (recommendations)
-      rawCursor = response.next_cursor;
+      rawCursor = nextCursorValue;
     } else if (cursorType === 'offset') {
-      offset = parseInt(response.next_cursor, 10);
+      offset = parseInt(nextCursorValue, 10);
     } else {
       // Timestamp cursor - parse as number
-      nextCursor = parseInt(response.next_cursor, 10);
+      nextCursor = parseInt(nextCursorValue, 10);
       // If parsing fails, use last video's timestamp
       if (isNaN(nextCursor) && videos.length > 0) {
         nextCursor = videos[videos.length - 1].createdAt - 1;
@@ -321,7 +326,7 @@ export function transformToVideoPage(
     nextCursor,
     offset,
     rawCursor,
-    hasMore: response.has_more,
+    hasMore,
   };
 }
 
