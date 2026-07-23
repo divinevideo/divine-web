@@ -38,7 +38,6 @@
   },
   "footer": {
     "aboutDivine": "Divine hakkinda",
-    "vinesRecovered": "{{count}} Vine kurtarildi",
     "termsAndOpenSource": "Kosullar ve Acik Kaynak",
     "copyright": "© 2026 Divine"
   },
@@ -386,7 +385,6 @@
     "message": "Mesaj",
     "reportUser": "Kullanıcıyı bildir",
     "subscribeRss": "RSS akışına abone ol",
-    "videos": "Videolar",
     "followers": "Takipçi",
     "followingStat": "Takip edilen",
     "followingDialogTitle": "Takip edilenler",

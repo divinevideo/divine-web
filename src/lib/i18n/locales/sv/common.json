@@ -38,7 +38,6 @@
   },
   "footer": {
     "aboutDivine": "Om Divine",
-    "vinesRecovered": "{{count}} Vines aterstallda",
     "termsAndOpenSource": "Villkor och oppen kallkod",
     "copyright": "© 2026 Divine"
   },
@@ -386,7 +385,6 @@
     "message": "Meddelande",
     "reportUser": "Rapportera användare",
     "subscribeRss": "Prenumerera på RSS-flöde",
-    "videos": "Videor",
     "followers": "Följare",
     "followingStat": "Följer",
     "followingDialogTitle": "Följer",
