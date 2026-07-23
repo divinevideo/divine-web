@@ -18,7 +18,7 @@ export function ImmersiveTopBar({ title = 'Home', variant = 'transparent' }: Imm
   return (
     <>
       <header
-        className={`fixed left-0 top-0 z-50 w-screen overflow-hidden pt-[env(safe-area-inset-top)] lg:hidden ${
+        className={`fixed left-0 top-0 z-50 h-[var(--top-bar-height)] w-screen overflow-hidden pt-[var(--sat)] lg:hidden ${
           variant === 'solid' ? 'bg-background' : 'bg-transparent'
         }`}
       >

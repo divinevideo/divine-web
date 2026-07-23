@@ -469,6 +469,7 @@ export function VideoFeed({
   // Mobile/tablet snap-scroll feed (< 1024px, feed mode only)
   if (isMobileFeed && viewMode === 'feed') {
     const commentsVideo = filteredVideos.find(video => video.id === showCommentsForVideo);
+    const usesTransparentTopBar = feedType === 'home' && (location.pathname === '/' || location.pathname === '/home');
 
     return (
       <>
@@ -477,6 +478,7 @@ export function VideoFeed({
           onLoadMore={fetchNextPage}
           hasMore={hasNextPage}
           onOpenComments={handleOpenComments}
+          transparentTopBar={usesTransparentTopBar}
         />
         {commentsVideo && (
           <VideoCommentsModal

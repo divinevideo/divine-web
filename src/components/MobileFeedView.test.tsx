@@ -14,7 +14,7 @@ vi.mock('@/components/MobileVideoItem', () => ({
     isActive: boolean;
     onOpenComments?: (video: ParsedVideoData) => void;
   }) => (
-    <section data-active={isActive}>
+    <section data-testid="mobile-video-item" data-active={isActive}>
       <p>{video.title}</p>
       <button type="button" onClick={() => onOpenComments?.(video)}>
         Comments for {video.title}
@@ -50,6 +50,15 @@ describe('MobileFeedView', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Comments for Video one' }));
 
     expect(onOpenComments).toHaveBeenCalledWith(video);
+  });
+
+  it('mounts only nearby video items while preserving snap positions', () => {
+    const videos = Array.from({ length: 12 }, (_, index) => makeVideo(`${index}`));
+
+    render(<MobileFeedView videos={videos} />);
+
+    expect(screen.getAllByTestId('mobile-video-item')).toHaveLength(4);
+    expect(screen.queryByText('Video 4')).not.toBeInTheDocument();
   });
 
   it('uses feed keyboard shortcuts outside editable controls', () => {

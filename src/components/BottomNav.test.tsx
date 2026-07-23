@@ -6,8 +6,12 @@ import { LoginDialogProvider } from '@/contexts/LoginDialogContext';
 import { initializeI18n } from '@/lib/i18n';
 import { BottomNav } from './BottomNav';
 
+type MockCurrentUser = { user: { pubkey: string } | null };
+
+const mockCurrentUser = vi.fn((): MockCurrentUser => ({ user: null }));
+
 vi.mock('@/hooks/useCurrentUser', () => ({
-  useCurrentUser: () => ({ user: null }),
+  useCurrentUser: () => mockCurrentUser(),
 }));
 
 vi.mock('@/hooks/useNotifications', () => ({
@@ -34,6 +38,7 @@ async function renderBottomNav(initialEntry = '/') {
 describe('BottomNav', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockCurrentUser.mockReturnValue({ user: null });
     const storage = new Map<string, string>();
     Object.defineProperty(window, 'localStorage', {
       configurable: true,
@@ -53,5 +58,17 @@ describe('BottomNav', () => {
     await user.click(screen.getByRole('button', { name: 'Discover' }));
 
     expect(screen.getByTestId('location-display')).toHaveTextContent('/discovery');
+  });
+
+  it('explains why camera uploads are unavailable instead of routing to upload', async () => {
+    const user = userEvent.setup();
+    mockCurrentUser.mockReturnValue({ user: { pubkey: 'a'.repeat(64) } });
+    await renderBottomNav('/');
+
+    await user.click(screen.getByRole('button', { name: 'Camera' }));
+
+    expect(screen.getByRole('dialog')).toHaveTextContent('Why no upload?');
+    expect(screen.getByRole('dialog')).toHaveTextContent('What you see on Divine is human-made');
+    expect(screen.getByTestId('location-display')).toHaveTextContent('/');
   });
 });
