@@ -18,15 +18,15 @@ export function ImmersiveTopBar({ title = 'Home', variant = 'transparent' }: Imm
   return (
     <>
       <header
-        className={`fixed top-0 left-0 right-0 z-50 lg:hidden pt-[env(safe-area-inset-top)] ${
+        className={`fixed left-0 top-0 z-50 w-screen overflow-hidden pt-[env(safe-area-inset-top)] lg:hidden ${
           variant === 'solid' ? 'bg-background' : 'bg-transparent'
         }`}
       >
-        <div className="flex h-14 items-center justify-between px-4">
+        <div className="grid h-14 grid-cols-[48px_1fr_48px] items-center px-4">
           {/* Left: Menu button in scrim pill */}
           <button
             onClick={() => setDrawerOpen(true)}
-            className="flex items-center justify-center bg-black/65 rounded-[20px] p-3"
+            className="flex h-12 w-12 items-center justify-center rounded-[20px] bg-black/65"
             aria-label="Open menu"
           >
             <Menu className="h-6 w-6 text-white" />
@@ -34,7 +34,7 @@ export function ImmersiveTopBar({ title = 'Home', variant = 'transparent' }: Imm
 
           {/* Center: Page title */}
           <span
-            className="font-extrabold text-xl text-white"
+            className="min-w-0 justify-self-center truncate px-3 text-xl font-extrabold text-white"
             style={{ fontFamily: "'Bricolage Grotesque', system-ui, sans-serif" }}
           >
             {title}
@@ -43,7 +43,7 @@ export function ImmersiveTopBar({ title = 'Home', variant = 'transparent' }: Imm
           {/* Right: Search button in scrim pill */}
           <button
             onClick={() => navigate('/search')}
-            className="flex items-center justify-center bg-black/65 rounded-[20px] p-3"
+            className="flex h-12 w-12 items-center justify-center rounded-[20px] bg-black/65"
             aria-label="Search"
           >
             <Search className="h-6 w-6 text-white" />

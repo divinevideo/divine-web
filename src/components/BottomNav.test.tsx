@@ -50,7 +50,7 @@ describe('BottomNav', () => {
     const user = userEvent.setup();
     await renderBottomNav('/');
 
-    await user.click(screen.getByRole('button', { name: 'Search' }));
+    await user.click(screen.getByRole('button', { name: 'Discover' }));
 
     expect(screen.getByTestId('location-display')).toHaveTextContent('/discovery');
   });

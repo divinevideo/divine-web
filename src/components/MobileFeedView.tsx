@@ -12,6 +12,12 @@ interface MobileFeedViewProps {
   onOpenComments?: (video: ParsedVideoData) => void;
 }
 
+function isEditableTarget(target: EventTarget | null) {
+  if (!(target instanceof HTMLElement)) return false;
+
+  return Boolean(target.closest('input, textarea, select, [contenteditable="true"], [role="textbox"]'));
+}
+
 export function MobileFeedView({
   videos,
   onLoadMore,
@@ -43,13 +49,17 @@ export function MobileFeedView({
   // Keyboard navigation: ArrowDown/j = next, ArrowUp/k = previous
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (isEditableTarget(e.target)) return;
+
       if (e.key === 'ArrowDown' || e.key === 'j') {
         if (currentIndex < videos.length - 1) {
+          e.preventDefault();
           const target = containerRef.current?.children[currentIndex + 1] as HTMLElement;
           target?.scrollIntoView({ behavior: 'smooth' });
         }
       } else if (e.key === 'ArrowUp' || e.key === 'k') {
         if (currentIndex > 0) {
+          e.preventDefault();
           const target = containerRef.current?.children[currentIndex - 1] as HTMLElement;
           target?.scrollIntoView({ behavior: 'smooth' });
         }

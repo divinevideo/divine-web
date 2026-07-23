@@ -7,7 +7,6 @@ import {
   ChatCircle as MessageCircle,
   Repeat as Repeat2,
   ShareNetwork as Share2,
-  CaretDown as ChevronDown,
 } from '@phosphor-icons/react';
 import { VideoPlayer } from '@/components/VideoPlayer';
 import { VideoCommentsModal } from '@/components/VideoCommentsModal';
@@ -66,7 +65,6 @@ export function MobileVideoItem({
   const [videoError, setVideoError] = useState(false);
   const [showHeartAnimation, setShowHeartAnimation] = useState(false);
   const [showComments, setShowComments] = useState(false);
-  const [showMoreMenu, setShowMoreMenu] = useState(false);
 
   // --- Auth & social ---
   const { user } = useCurrentUser();
@@ -192,9 +190,6 @@ export function MobileVideoItem({
     badgeTexts.push('Classic Viner');
   }
 
-  // Location from author profile (if available)
-  const location = rawMetadata?.about ? undefined : undefined; // Location not reliably available
-
   return (
     <div
       className="h-[var(--feed-height)] w-full snap-start snap-always relative bg-black overflow-hidden"
@@ -295,14 +290,6 @@ export function MobileVideoItem({
           <Share2 className="w-8 h-8 text-white drop-shadow-lg" />
         </button>
 
-        {/* More */}
-        <button
-          className="flex flex-col items-center gap-1 p-2 rounded-[20px]"
-          onClick={(e) => { e.stopPropagation(); setShowMoreMenu(!showMoreMenu); }}
-          aria-label="More options"
-        >
-          <ChevronDown className="w-8 h-8 text-white drop-shadow-lg" />
-        </button>
       </div>
 
       {/* Author overlay (bottom-left, z-10) */}
@@ -332,13 +319,6 @@ export function MobileVideoItem({
             <VideoVerificationBadgeRow video={video} />
           </div>
         </SmartLink>
-
-        {/* Location byline */}
-        {location && (
-          <span className="text-[11px] font-semibold text-white/75 drop-shadow-lg">
-            {location}
-          </span>
-        )}
 
         {/* Caption */}
         {(video.title || video.content) && (

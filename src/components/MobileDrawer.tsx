@@ -8,8 +8,6 @@ import {
   MagnifyingGlass as Search,
   Bell,
   User,
-  Sun,
-  Moon,
   ChatCircle as MessageCircle,
   ChartBar as BarChart3,
   SquaresFour as LayoutGrid,
@@ -33,7 +31,6 @@ import { useUnreadNotificationCount } from '@/hooks/useNotifications';
 import { useDmCapability, useUnreadDmCount } from '@/hooks/useDirectMessages';
 import { useSubdomainNavigate } from '@/hooks/useSubdomainNavigate';
 import { getSubdomainUser } from '@/hooks/useSubdomainUser';
-import { useTheme } from '@/hooks/useTheme';
 import { useCategories } from '@/hooks/useCategories';
 import { LoginArea } from '@/components/auth/LoginArea';
 import { buildProfileLinkPath } from '@/lib/profileLinks';
@@ -76,7 +73,6 @@ export function MobileDrawer({ open, onOpenChange }: MobileDrawerProps) {
   const location = useLocation();
   const { user } = useCurrentUser();
   const { canUseDirectMessages } = useDmCapability();
-  const { displayTheme, setTheme } = useTheme();
   const subdomainUser = getSubdomainUser();
   const { data: unreadCount } = useUnreadNotificationCount();
   const { data: unreadDmCount } = useUnreadDmCount();
@@ -96,10 +92,6 @@ export function MobileDrawer({ open, onOpenChange }: MobileDrawerProps) {
   const navigateAndClose = (path: string, ownerPubkey?: string | null) => {
     navigate(path, { ownerPubkey });
     onOpenChange(false);
-  };
-
-  const toggleTheme = () => {
-    setTheme(displayTheme === 'dark' ? 'light' : 'dark');
   };
 
   return (
@@ -241,23 +233,6 @@ export function MobileDrawer({ open, onOpenChange }: MobileDrawerProps) {
             </Collapsible>
           </div>
         )}
-
-        {/* Theme Toggle */}
-        <div className="mt-4 px-3">
-          <button
-            onClick={toggleTheme}
-            className="group flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-[15px] font-normal text-muted-foreground transition-all duration-150 hover:bg-muted hover:text-foreground hover:font-medium"
-          >
-            <span className="transition-transform duration-150 group-hover:scale-105">
-              {displayTheme === 'dark' ? (
-                <Sun className="h-[18px] w-[18px]" />
-              ) : (
-                <Moon className="h-[18px] w-[18px]" />
-              )}
-            </span>
-            <span>{displayTheme === 'dark' ? 'Light mode' : 'Dark mode'}</span>
-          </button>
-        </div>
 
         {/* Auth / Login */}
         <div className="mt-6 px-4 pb-6">

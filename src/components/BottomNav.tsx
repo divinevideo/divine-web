@@ -1,4 +1,4 @@
-import { House as Home, MagnifyingGlass as Search, VideoCamera as Video, Bell, UserCircle } from '@phosphor-icons/react';
+import { House as Home, Compass, VideoCamera as Video, Bell, UserCircle } from '@phosphor-icons/react';
 import { useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useLoginDialog } from '@/contexts/LoginDialogContext';
@@ -45,7 +45,7 @@ export function BottomNav() {
 
   return (
     <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-[#00150d] pb-[env(safe-area-inset-bottom)]">
-      <div className="flex items-center justify-center gap-12 h-16 px-2">
+      <div className="flex items-center justify-between h-16 px-8 max-[360px]:px-4">
         {/* Home */}
         <Button
           variant="ghost"
@@ -60,18 +60,18 @@ export function BottomNav() {
           <Home className="w-8 h-8" weight={isHomePage ? 'fill' : 'bold'} />
         </Button>
 
-        {/* Search */}
+        {/* Discover */}
         <Button
           variant="ghost"
           size="sm"
-          aria-label="Search"
+          aria-label="Discover"
           onClick={() => navigate('/discovery')}
           className={cn(
             "flex flex-col items-center justify-center gap-1 rounded-none hover:bg-transparent p-0",
             isActive('/discovery') ? "text-primary" : "text-white"
           )}
         >
-          <Search className="w-8 h-8" weight={isActive('/discovery') ? 'bold' : 'regular'} />
+          <Compass className="w-8 h-8" weight={isActive('/discovery') ? 'fill' : 'bold'} />
         </Button>
 
         {/* Camera - green pill */}

@@ -7,6 +7,7 @@ import { useLocation } from 'react-router-dom';
 import { performanceMonitor } from '@/lib/performanceMonitoring';
 import { VideoCamera as Video, CircleNotch as Loader2, Play } from '@phosphor-icons/react';
 import { VideoCardWithMetrics } from '@/components/VideoCardWithMetrics';
+import { VideoCommentsModal } from '@/components/VideoCommentsModal';
 import { VideoGrid } from '@/components/VideoGrid';
 import { AddToListDialog } from '@/components/AddToListDialog';
 import { useVideoProvider } from '@/hooks/useVideoProvider';
@@ -467,13 +468,28 @@ export function VideoFeed({
 
   // Mobile/tablet snap-scroll feed (< 1024px, feed mode only)
   if (isMobileFeed && viewMode === 'feed') {
+    const commentsVideo = filteredVideos.find(video => video.id === showCommentsForVideo);
+
     return (
-      <MobileFeedView
-        videos={filteredVideos}
-        onLoadMore={fetchNextPage}
-        hasMore={hasNextPage}
-        onOpenComments={handleOpenComments}
-      />
+      <>
+        <MobileFeedView
+          videos={filteredVideos}
+          onLoadMore={fetchNextPage}
+          hasMore={hasNextPage}
+          onOpenComments={handleOpenComments}
+        />
+        {commentsVideo && (
+          <VideoCommentsModal
+            video={commentsVideo}
+            open={true}
+            onOpenChange={(open) => {
+              if (!open) {
+                handleCloseComments();
+              }
+            }}
+          />
+        )}
+      </>
     );
   }
 

@@ -81,7 +81,11 @@ export function AppLayout() {
         )}
 
         {/* Main content */}
-        <main className="flex-1 pb-[calc(4rem+env(safe-area-inset-bottom))] lg:pb-0">
+        <main
+          className={`flex-1 pb-[var(--bottom-nav-height)] lg:pb-0 ${
+            !isLandingPage && topBarConfig.variant === 'solid' ? 'pt-[var(--top-bar-height)] lg:pt-0' : ''
+          }`}
+        >
           <Outlet />
         </main>
 
