@@ -11,6 +11,10 @@ const mockVerifyIdentityClaim = vi.fn();
 vi.mock('@/hooks/useExternalIdentities', () => ({
   useExternalIdentities: (...args: unknown[]) => mockUseExternalIdentities(...args),
   verifyIdentityClaim: (...args: unknown[]) => mockVerifyIdentityClaim(...args),
+  cleanIdentityProof: (platform: string, proof: string) => {
+    if (platform !== 'github' || !proof.startsWith('http')) return proof;
+    return proof.split('/').filter(Boolean).pop() ?? proof;
+  },
   SUPPORTED_PLATFORMS: {
     github: {
       label: 'GitHub',
@@ -238,6 +242,34 @@ describe('LinkedAccounts', () => {
           platform: 'github',
           identity: 'alice',
           proof: 'abc123',
+          profileUrl: 'https://github.com/alice',
+          proofUrl: 'https://gist.github.com/alice/abc123',
+        },
+      ],
+      isLoading: false,
+    });
+    mockVerifyIdentityClaim.mockResolvedValue({ verified: false, error: 'manual' });
+
+    render(withQueryClient(<LinkedAccounts pubkey={'a'.repeat(64)} />));
+
+    const badge = await screen.findByTestId('identity-badge-github-unverified');
+    fireEvent.click(badge);
+
+    const link = await screen.findByTestId('verify-manually-github');
+    expect(link).toHaveAttribute(
+      'href',
+      'https://verifyer.divine.video/verify/github/alice/abc123?pubkey=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+    );
+  });
+
+  it('cleans a full proof URL before building the manual verify link', async () => {
+    mockShowUnverified = true;
+    mockUseExternalIdentities.mockReturnValue({
+      data: [
+        {
+          platform: 'github',
+          identity: 'alice',
+          proof: 'https://gist.github.com/alice/abc123',
           profileUrl: 'https://github.com/alice',
           proofUrl: 'https://gist.github.com/alice/abc123',
         },

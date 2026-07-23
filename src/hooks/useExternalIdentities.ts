@@ -203,7 +203,7 @@ export function useExternalIdentities(pubkey: string | undefined) {
  * Extract just the proof ID if someone stored a full URL as the proof.
  * e.g. "https://gist.github.com/rabble/abc123" → "abc123"
  */
-function cleanProofId(platform: string, proof: string): string {
+export function cleanIdentityProof(platform: string, proof: string): string {
   if (!proof.startsWith('http')) return proof;
   try {
     const url = new URL(proof);
@@ -250,7 +250,7 @@ export async function verifyIdentityClaim(
   }
 
   // Clean up proof in case a full URL was stored instead of just the ID
-  const cleanedProof = cleanProofId(identity.platform, identity.proof);
+  const cleanedProof = cleanIdentityProof(identity.platform, identity.proof);
   const cleanedIdentity = { ...identity, proof: cleanedProof };
   // Rebuild proofUrl from cleaned proof if needed
   if (cleanedProof !== identity.proof) {

@@ -669,8 +669,6 @@
   "linkedAccounts": {
     "verifying": "جارٍ التحقق...",
     "verified": "مُتحقَّق",
-    "unverified": "غير مُتحقَّق",
-    "checkProof": "تحقق من الإثبات",
     "noProof": "لا يوجد إثبات",
     "profileLink": "الملف الشخصي",
     "proofLink": "الإثبات",

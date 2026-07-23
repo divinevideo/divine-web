@@ -665,8 +665,6 @@
   "linkedAccounts": {
     "verifying": "Sinusuri...",
     "verified": "Na-verify",
-    "unverified": "Hindi pa na-verify",
-    "checkProof": "Tingnan ang patunay",
     "noProof": "Walang patunay",
     "profileLink": "Profile",
     "proofLink": "Patunay",

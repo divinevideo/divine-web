@@ -665,8 +665,6 @@
   "linkedAccounts": {
     "verifying": "確認中...",
     "verified": "検証済み",
-    "unverified": "未検証",
-    "checkProof": "証明を確認",
     "noProof": "証明なし",
     "profileLink": "プロフィール",
     "proofLink": "証明",

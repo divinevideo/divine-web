@@ -665,8 +665,6 @@
   "linkedAccounts": {
     "verifying": "Memverifikasi...",
     "verified": "Terverifikasi",
-    "unverified": "Belum terverifikasi",
-    "checkProof": "Cek bukti",
     "noProof": "Tidak ada bukti",
     "profileLink": "Profil",
     "proofLink": "Bukti",

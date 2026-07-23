@@ -665,8 +665,6 @@
   "linkedAccounts": {
     "verifying": "Doğrulanıyor...",
     "verified": "Doğrulandı",
-    "unverified": "Doğrulanmadı",
-    "checkProof": "Kanıtı kontrol et",
     "noProof": "Kanıt yok",
     "profileLink": "Profil",
     "proofLink": "Kanıt",

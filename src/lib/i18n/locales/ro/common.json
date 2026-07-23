@@ -666,8 +666,6 @@
   "linkedAccounts": {
     "verifying": "Se verifică...",
     "verified": "Verificat",
-    "unverified": "Neverificat",
-    "checkProof": "Verifică dovada",
     "noProof": "Nicio dovadă",
     "profileLink": "Profil",
     "proofLink": "Dovadă",

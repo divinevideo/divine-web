@@ -16,6 +16,7 @@ import {
   useExternalIdentities,
   verifyIdentityClaim,
   SUPPORTED_PLATFORMS,
+  cleanIdentityProof,
   type ExternalIdentity,
 } from '@/hooks/useExternalIdentities';
 import { getCachedVerification } from '@/lib/verificationCache';
@@ -23,7 +24,8 @@ import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { API_CONFIG } from '@/config/api';
 
 function buildManualVerifyUrl(identity: ExternalIdentity, pubkey: string): string {
-  return `${API_CONFIG.verificationService.baseUrl}/verify/${encodeURIComponent(identity.platform)}/${encodeURIComponent(identity.identity)}/${encodeURIComponent(identity.proof)}?pubkey=${pubkey}`;
+  const proof = cleanIdentityProof(identity.platform, identity.proof);
+  return `${API_CONFIG.verificationService.baseUrl}/verify/${encodeURIComponent(identity.platform)}/${encodeURIComponent(identity.identity)}/${encodeURIComponent(proof)}?pubkey=${pubkey}`;
 }
 
 /** Platform icon mapping */
@@ -93,16 +95,17 @@ function IdentityBadge({
 
   const config = SUPPORTED_PLATFORMS[identity.platform];
   const label = config?.label || identity.platform;
+  const proof = identity.proof ? cleanIdentityProof(identity.platform, identity.proof) : '';
 
-  const cachedResult = identity.proof
-    ? getCachedVerification(identity.platform, identity.identity, identity.proof)
+  const cachedResult = proof
+    ? getCachedVerification(identity.platform, identity.identity, proof)
     : undefined;
 
   // Eager verification — runs as soon as proof exists (uses verifyer service for all platforms)
   const verification = useQuery({
-    queryKey: ['identity-verify', identity.platform, identity.identity, identity.proof],
+    queryKey: ['identity-verify', identity.platform, identity.identity, proof],
     queryFn: () => verifyIdentityClaim(identity, pubkey),
-    enabled: !!identity.proof,
+    enabled: !!proof,
     staleTime: 10 * 60 * 1000, // Cache 10 min (re-check periodically)
     gcTime: 30 * 60 * 1000,
     retry: 2,
@@ -111,7 +114,7 @@ function IdentityBadge({
 
   const isVerified = verification.data?.verified;
   const isManual = verification.data?.error === 'manual';
-  const isPending = !!identity.proof && !verification.data && (verification.isLoading || verification.isPending);
+  const isPending = !!proof && !verification.data && (verification.isLoading || verification.isPending);
   const isUnverified = isManual || isPending;
 
   if (!isVerified && !(showUnverified && isUnverified)) return null;
@@ -144,7 +147,7 @@ function IdentityBadge({
           <div className="text-sm text-muted-foreground">{identity.identity}</div>
 
           {/* Verification status */}
-          {identity.proof ? (
+          {proof ? (
             <div className="flex items-center gap-1.5 text-xs">
               {isPending ? (
                 <>

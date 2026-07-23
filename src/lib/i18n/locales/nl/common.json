@@ -665,8 +665,6 @@
   "linkedAccounts": {
     "verifying": "Verifiëren...",
     "verified": "Geverifieerd",
-    "unverified": "Niet geverifieerd",
-    "checkProof": "Bewijs controleren",
     "noProof": "Geen bewijs",
     "profileLink": "Profiel",
     "proofLink": "Bewijs",
