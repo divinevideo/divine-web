@@ -1043,8 +1043,7 @@
       "likes": "الإعجابات",
       "comments": "التعليقات",
       "follows": "المتابعات",
-      "reposts": "إعادة النشر",
-      "zaps": "Zaps"
+      "reposts": "إعادة النشر"
     },
     "empty": {
       "all": {
@@ -1070,16 +1069,23 @@
       "reposts": {
         "title": "لا توجد إشعارات إعادة نشر بعد.",
         "description": "ستظهر هنا عمليات إعادة نشر مقاطعك."
-      },
-      "zaps": {
-        "title": "لا توجد إشعارات Zaps بعد.",
-        "description": "ستظهر هنا Zaps على مقاطعك."
       }
     },
     "errorTitle": "تعذّر تحميل الإشعارات",
     "errorFallback": "يرجى المحاولة لاحقًا",
     "sectionNew": "جديد",
-    "sectionEarlier": "في وقت سابق"
+    "sectionEarlier": "في وقت سابق",
+    "message": {
+      "liked": "liked your video",
+      "commented": "commented on your video",
+      "reposted": "reposted your video",
+      "followed": "followed you",
+      "andOthers_one": "and {{count}} other",
+      "andOthers_other": "and {{count}} others"
+    },
+    "video": {
+      "untitled": "your video"
+    }
   },
   "getEmbedPage": {
     "title": "تضمين أداة Divine",

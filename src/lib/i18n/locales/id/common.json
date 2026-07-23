@@ -1039,8 +1039,7 @@
       "likes": "Suka",
       "comments": "Komentar",
       "follows": "Pengikut",
-      "reposts": "Repost",
-      "zaps": "Zap"
+      "reposts": "Repost"
     },
     "empty": {
       "all": {
@@ -1066,16 +1065,23 @@
       "reposts": {
         "title": "Belum ada notifikasi repost.",
         "description": "Repost video kamu akan muncul di sini."
-      },
-      "zaps": {
-        "title": "Belum ada notifikasi zap.",
-        "description": "Zap di video kamu akan muncul di sini."
       }
     },
     "errorTitle": "Gagal memuat notifikasi",
     "errorFallback": "Coba lagi nanti ya",
     "sectionNew": "Baru",
-    "sectionEarlier": "Sebelumnya"
+    "sectionEarlier": "Sebelumnya",
+    "message": {
+      "liked": "liked your video",
+      "commented": "commented on your video",
+      "reposted": "reposted your video",
+      "followed": "followed you",
+      "andOthers_one": "and {{count}} other",
+      "andOthers_other": "and {{count}} others"
+    },
+    "video": {
+      "untitled": "your video"
+    }
   },
   "getEmbedPage": {
     "title": "Embed Widget Divine",

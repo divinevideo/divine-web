@@ -7,10 +7,9 @@ import {
   transformNotification,
   transformNotificationsResponse,
   deduplicateFollows,
-  generateNotificationMessage,
   formatRelativeTime,
 } from './notificationTransform';
-import type { RawApiNotification, RawNotificationsApiResponse, Notification, NotificationType } from '@/types/notification';
+import type { RawApiNotification, RawNotificationsApiResponse, RawNotification } from '@/types/notification';
 
 describe('notificationTransform', () => {
   describe('mapNotificationType', () => {
@@ -30,12 +29,17 @@ describe('notificationTransform', () => {
       expect(mapNotificationType('repost')).toBe('repost');
     });
 
-    it('maps "zap" to "zap"', () => {
-      expect(mapNotificationType('zap')).toBe('zap');
+    it('returns null for "zap"', () => {
+      expect(mapNotificationType('zap')).toBeNull();
     });
 
-    it('falls back to "like" for unknown types', () => {
-      expect(mapNotificationType('unknown')).toBe('like');
+    it('returns null for unknown types', () => {
+      expect(mapNotificationType('unknown')).toBeNull();
+      expect(mapNotificationType('')).toBeNull();
+    });
+
+    it('preserves "mention" notifications through the existing video path', () => {
+      expect(mapNotificationType('mention')).toBe('like');
     });
   });
 
@@ -54,15 +58,16 @@ describe('notificationTransform', () => {
 
     it('transforms a reaction notification', () => {
       const result = transformNotification(raw);
-      expect(result.id).toBe('notif-123');
-      expect(result.type).toBe('like');
-      expect(result.actorPubkey).toBe('abc123');
-      expect(result.timestamp).toBe(1700000000);
-      expect(result.isRead).toBe(false);
-      expect(result.targetEventId).toBe('video-789');
-      expect(result.sourceEventId).toBe('event-456');
-      expect(result.sourceKind).toBe(7);
-      expect(result.commentText).toBeUndefined();
+      expect(result).not.toBeNull();
+      expect(result!.id).toBe('notif-123');
+      expect(result!.type).toBe('like');
+      expect(result!.actorPubkey).toBe('abc123');
+      expect(result!.timestamp).toBe(1700000000);
+      expect(result!.isRead).toBe(false);
+      expect(result!.targetEventId).toBe('video-789');
+      expect(result!.sourceEventId).toBe('event-456');
+      expect(result!.sourceKind).toBe(7);
+      expect(result!.commentText).toBeUndefined();
     });
 
     it('includes commentText for reply notifications', () => {
@@ -73,13 +78,88 @@ describe('notificationTransform', () => {
         content: 'Great video!',
       };
       const result = transformNotification(reply);
-      expect(result.type).toBe('comment');
-      expect(result.commentText).toBe('Great video!');
+      expect(result).not.toBeNull();
+      expect(result!.type).toBe('comment');
+      expect(result!.commentText).toBe('Great video!');
     });
 
     it('does not include commentText for non-reply types', () => {
       const result = transformNotification(raw);
-      expect(result.commentText).toBeUndefined();
+      expect(result!.commentText).toBeUndefined();
+    });
+
+    it('returns null for zap notifications', () => {
+      const zap: RawApiNotification = {
+        ...raw,
+        notification_type: 'zap',
+      };
+      expect(transformNotification(zap)).toBeNull();
+    });
+
+    it('returns null for unknown notification types', () => {
+      const unknown: RawApiNotification = {
+        ...raw,
+        notification_type: 'unknown_type',
+      };
+      expect(transformNotification(unknown)).toBeNull();
+    });
+
+    it('transforms mention notifications instead of dropping them', () => {
+      const mention: RawApiNotification = {
+        ...raw,
+        notification_type: 'mention',
+        source_kind: 1,
+      };
+
+      const result = transformNotification(mention);
+      expect(result).not.toBeNull();
+      expect(result!.type).toBe('like');
+      expect(result!.targetEventId).toBe('video-789');
+    });
+
+    it('returns null for like without referenced_event_id', () => {
+      const noRef: RawApiNotification = {
+        ...raw,
+        notification_type: 'reaction',
+        referenced_event_id: undefined,
+      };
+      expect(transformNotification(noRef)).toBeNull();
+    });
+
+    it('returns null for comment without referenced_event_id', () => {
+      const noRef: RawApiNotification = {
+        ...raw,
+        notification_type: 'reply',
+        referenced_event_id: undefined,
+        content: 'hello',
+      };
+      expect(transformNotification(noRef)).toBeNull();
+    });
+
+    it('returns null for repost without referenced_event_id', () => {
+      const noRef: RawApiNotification = {
+        ...raw,
+        notification_type: 'repost',
+        referenced_event_id: undefined,
+      };
+      expect(transformNotification(noRef)).toBeNull();
+    });
+
+    it('preserves follow rows without referenced_event_id', () => {
+      const follow: RawApiNotification = {
+        id: 'notif-follow',
+        source_pubkey: 'follower-pk',
+        source_event_id: 'follow-event',
+        source_kind: 3,
+        notification_type: 'follow',
+        created_at: 1700000000,
+        read: false,
+        // no referenced_event_id
+      };
+      const result = transformNotification(follow);
+      expect(result).not.toBeNull();
+      expect(result!.type).toBe('follow');
+      expect(result!.targetEventId).toBeUndefined();
     });
   });
 
@@ -92,6 +172,7 @@ describe('notificationTransform', () => {
             source_pubkey: 'pk1',
             source_event_id: 'e1',
             source_kind: 7,
+            referenced_event_id: 'video-1',
             notification_type: 'reaction',
             created_at: 1700000000,
             read: false,
@@ -113,8 +194,9 @@ describe('notificationTransform', () => {
 
       const result = transformNotificationsResponse(raw);
       expect(result.notifications).toHaveLength(2);
-      expect(result.notifications[0].type).toBe('like');
-      expect(result.notifications[1].type).toBe('follow');
+      // deduplicateFollows sorts newest-first, so follow (ts=1700000001) comes before like (ts=1700000000)
+      expect(result.notifications[0].type).toBe('follow');
+      expect(result.notifications[1].type).toBe('like');
       expect(result.unreadCount).toBe(5);
       expect(result.nextCursor).toBe('cursor-abc');
       expect(result.hasMore).toBe(true);
@@ -133,10 +215,94 @@ describe('notificationTransform', () => {
       expect(result.hasMore).toBe(false);
       expect(result.nextCursor).toBeUndefined();
     });
+
+    it('omits zap notifications from the response', () => {
+      const raw: RawNotificationsApiResponse = {
+        notifications: [
+          {
+            id: 'n1',
+            source_pubkey: 'pk1',
+            source_event_id: 'e1',
+            source_kind: 9,
+            referenced_event_id: 'video-1',
+            notification_type: 'zap',
+            created_at: 1700000000,
+            read: false,
+          },
+          {
+            id: 'n2',
+            source_pubkey: 'pk2',
+            source_event_id: 'e2',
+            source_kind: 7,
+            referenced_event_id: 'video-1',
+            notification_type: 'reaction',
+            created_at: 1700000001,
+            read: false,
+          },
+        ],
+        unread_count: 2,
+        has_more: false,
+      };
+      const result = transformNotificationsResponse(raw);
+      expect(result.notifications).toHaveLength(1);
+      expect(result.notifications[0].type).toBe('like');
+    });
+
+    it('omits unknown notification types from the response', () => {
+      const raw: RawNotificationsApiResponse = {
+        notifications: [
+          {
+            id: 'n1',
+            source_pubkey: 'pk1',
+            source_event_id: 'e1',
+            source_kind: 0,
+            referenced_event_id: 'video-1',
+            notification_type: 'some_future_type',
+            created_at: 1700000000,
+            read: false,
+          },
+        ],
+        unread_count: 0,
+        has_more: false,
+      };
+      const result = transformNotificationsResponse(raw);
+      expect(result.notifications).toHaveLength(0);
+    });
+
+    it('omits like/comment/repost rows without referenced_event_id', () => {
+      const raw: RawNotificationsApiResponse = {
+        notifications: [
+          {
+            id: 'n1',
+            source_pubkey: 'pk1',
+            source_event_id: 'e1',
+            source_kind: 7,
+            // no referenced_event_id
+            notification_type: 'reaction',
+            created_at: 1700000000,
+            read: false,
+          },
+          {
+            id: 'n2',
+            source_pubkey: 'pk2',
+            source_event_id: 'e2',
+            source_kind: 3,
+            notification_type: 'follow',
+            created_at: 1700000001,
+            read: false,
+          },
+        ],
+        unread_count: 0,
+        has_more: false,
+      };
+      const result = transformNotificationsResponse(raw);
+      expect(result.notifications).toHaveLength(1);
+      expect(result.notifications[0].type).toBe('follow');
+    });
   });
 
   describe('deduplicateFollows', () => {
-    const makeNotif = (overrides: Partial<Notification> & { id: string; type: NotificationType; actorPubkey: string }): Notification => ({
+    const makeNotif = (overrides: Partial<RawNotification> & { id: string; type: 'like' | 'comment' | 'follow' | 'repost'; actorPubkey: string }): RawNotification => ({
       timestamp: 1700000000,
       isRead: false,
       sourceEventId: 'se1',
@@ -144,16 +310,28 @@ describe('notificationTransform', () => {
       ...overrides,
     });
 
-    it('removes duplicate follow notifications from same actor', () => {
+    it('removes duplicate follow notifications from same actor, keeps newest', () => {
       const notifications = [
+        makeNotif({ id: 'n3', type: 'follow', actorPubkey: 'pk1', timestamp: 1700000001 }),
         makeNotif({ id: 'n1', type: 'follow', actorPubkey: 'pk1', timestamp: 1700000003 }),
         makeNotif({ id: 'n2', type: 'follow', actorPubkey: 'pk1', timestamp: 1700000002 }),
-        makeNotif({ id: 'n3', type: 'follow', actorPubkey: 'pk1', timestamp: 1700000001 }),
       ];
 
       const result = deduplicateFollows(notifications);
       expect(result).toHaveLength(1);
-      expect(result[0].id).toBe('n1'); // keeps the first (most recent)
+      expect(result[0].id).toBe('n1'); // newest by timestamp
+    });
+
+    it('keeps newest regardless of input order', () => {
+      // API order is reversed from timestamp order
+      const notifications = [
+        makeNotif({ id: 'oldest', type: 'follow', actorPubkey: 'pk1', timestamp: 1700000001 }),
+        makeNotif({ id: 'newest', type: 'follow', actorPubkey: 'pk1', timestamp: 1700000005 }),
+      ];
+
+      const result = deduplicateFollows(notifications);
+      expect(result).toHaveLength(1);
+      expect(result[0].id).toBe('newest');
     });
 
     it('keeps follows from different actors', () => {
@@ -185,32 +363,6 @@ describe('notificationTransform', () => {
 
       const result = deduplicateFollows(notifications);
       expect(result).toHaveLength(2); // follow n1 + like n2 (follow n3 deduped)
-    });
-  });
-
-  describe('generateNotificationMessage', () => {
-    it('generates like message with name', () => {
-      expect(generateNotificationMessage('like', 'Alice')).toBe('Alice liked your video');
-    });
-
-    it('generates comment message with name', () => {
-      expect(generateNotificationMessage('comment', 'Bob')).toBe('Bob commented on your video');
-    });
-
-    it('generates follow message with name', () => {
-      expect(generateNotificationMessage('follow', 'Charlie')).toBe('Charlie started following you');
-    });
-
-    it('generates repost message with name', () => {
-      expect(generateNotificationMessage('repost', 'Dana')).toBe('Dana reposted your video');
-    });
-
-    it('generates zap message with name', () => {
-      expect(generateNotificationMessage('zap', 'Eve')).toBe('Eve zapped your video');
-    });
-
-    it('uses "Someone" when name is undefined', () => {
-      expect(generateNotificationMessage('like')).toBe('Someone liked your video');
     });
   });
 

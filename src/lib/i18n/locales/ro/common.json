@@ -1040,8 +1040,7 @@
       "likes": "Aprecieri",
       "comments": "Comentarii",
       "follows": "Urmăriri",
-      "reposts": "Repostări",
-      "zaps": "Zaps"
+      "reposts": "Repostări"
     },
     "empty": {
       "all": {
@@ -1067,16 +1066,23 @@
       "reposts": {
         "title": "Nicio repostare încă.",
         "description": "Repostările videoclipurilor tale apar aici."
-      },
-      "zaps": {
-        "title": "Niciun zap încă.",
-        "description": "Zaps-urile pe videoclipurile tale apar aici."
       }
     },
     "errorTitle": "Notificările n-au putut fi încărcate",
     "errorFallback": "Încearcă din nou mai târziu",
     "sectionNew": "Noi",
-    "sectionEarlier": "Mai vechi"
+    "sectionEarlier": "Mai vechi",
+    "message": {
+      "liked": "liked your video",
+      "commented": "commented on your video",
+      "reposted": "reposted your video",
+      "followed": "followed you",
+      "andOthers_one": "and {{count}} other",
+      "andOthers_other": "and {{count}} others"
+    },
+    "video": {
+      "untitled": "your video"
+    }
   },
   "getEmbedPage": {
     "title": "Inserează widget-ul Divine",
