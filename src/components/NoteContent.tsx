@@ -3,6 +3,7 @@ import { type NostrEvent } from '@nostrify/nostrify';
 import { SmartLink } from '@/components/SmartLink';
 import { nip19 } from 'nostr-tools';
 import { useAuthor } from '@/hooks/useAuthor';
+import { useNip05Validation } from '@/hooks/useNip05Validation';
 import { genUserName } from '@/lib/genUserName';
 import { buildProfileLinkPath } from '@/lib/profileLinks';
 import { cn } from '@/lib/utils';
@@ -120,9 +121,11 @@ function NostrMention({ pubkey }: { pubkey: string }) {
   const author = useAuthor(pubkey);
   const hasRealName = !!(author.data?.metadata?.name || author.data?.metadata?.display_name);
   const displayName = author.data?.metadata?.name || author.data?.metadata?.display_name || genUserName(pubkey);
+  const nip05 = author.data?.metadata?.nip05;
+  const { state: nip05State } = useNip05Validation(nip05, pubkey);
   const profilePath = buildProfileLinkPath({
     pubkey,
-    nip05: author.data?.metadata?.nip05,
+    nip05: nip05State === 'valid' ? nip05 : undefined,
   });
 
   return (
