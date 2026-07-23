@@ -3,6 +3,7 @@
 
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { ArrowRight } from "@phosphor-icons/react";
 
 export function MarketingHeader() {
   const { t } = useTranslation();
@@ -10,9 +11,8 @@ export function MarketingHeader() {
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-brand-dark-green border-b border-brand-green">
       <div className="container mx-auto px-4">
-        <div className="flex items-center justify-between h-16">
-          {/* Logo */}
-          <Link to="/">
+        <div className="flex h-16 items-center justify-between gap-4">
+          <Link to="/" className="shrink-0">
             <img
               src="/divine-logo.svg"
               alt="Divine"
@@ -20,8 +20,7 @@ export function MarketingHeader() {
             />
           </Link>
 
-          {/* Navigation Links */}
-          <div className="flex items-center gap-8">
+          <div className="hidden items-center gap-8 md:flex">
             <a
               href="https://about.divine.video/"
               className="text-sm font-medium text-brand-off-white hover:text-brand-green transition-colors"
@@ -52,16 +51,14 @@ export function MarketingHeader() {
             >
               {t('menu.merch')}
             </Link>
-            <Link
-              to="/discovery"
-              className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold bg-primary text-primary-foreground rounded-full hover:brightness-110 transition-colors"
-            >
-              Try it
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-              </svg>
-            </Link>
           </div>
+          <Link
+            to="/discovery"
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:brightness-110"
+          >
+            Try it
+            <ArrowRight className="h-4 w-4" />
+          </Link>
         </div>
       </div>
     </nav>

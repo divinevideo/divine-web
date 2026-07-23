@@ -1,5 +1,25 @@
 /* Divine brand utilities — applied in @layer components so they compose with tailwind */
 @layer components {
+  .marketing-shell {
+    width: 100%;
+  }
+
+  .marketing-page {
+    width: 100%;
+    margin-inline: auto;
+    padding: 2rem max(1rem, var(--sar));
+  }
+
+  .marketing-page--default {
+    max-width: 56rem;
+  }
+
+  .marketing-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+  }
+
   .app-page {
     width: 100%;
     padding: 1rem max(1rem, var(--sar)) calc(5rem + var(--sab)) max(1rem, var(--sal));
@@ -84,7 +104,35 @@
     box-shadow: 3px 3px 0 0 hsl(var(--brand-dark-green));
   }
 
+  .app-surface {
+    border-color: hsl(var(--brand-light-green));
+    background: hsl(var(--card));
+    color: hsl(var(--card-foreground));
+  }
+
+  .app-surface-muted {
+    border: 1px solid hsl(var(--border));
+    border-radius: 1rem;
+    background: hsl(var(--background) / 0.95);
+    color: hsl(var(--foreground));
+    box-shadow: 0 1px 0 0 hsl(var(--border));
+    backdrop-filter: blur(12px);
+  }
+
+  .app-tab-list {
+    display: grid;
+    width: 100%;
+    height: auto;
+    min-height: 3rem;
+    align-items: center;
+    gap: 0.25rem;
+  }
+
   @media (min-width: 768px) {
+    .marketing-page {
+      padding: 2.5rem max(1.5rem, var(--sar));
+    }
+
     .app-page {
       padding: 1.5rem max(1.5rem, var(--sar)) 2.5rem max(1.5rem, var(--sal));
     }
