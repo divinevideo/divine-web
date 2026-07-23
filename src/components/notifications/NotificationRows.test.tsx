@@ -110,7 +110,7 @@ describe('VideoNotificationRow', () => {
     render(<VideoNotificationRow notification={notification} />);
 
     const timestampEl = screen.getByTestId('notification-timestamp');
-    const messageText = timestampEl.closest('p')?.textContent ?? '';
+    const messageText = timestampEl.closest('button')?.textContent ?? '';
 
     expect(messageText).toContain('Alice liked your video');
     expect(messageText).not.toContain('liked your video your video');
@@ -211,36 +211,28 @@ describe('VideoNotificationRow', () => {
     const timestampEl = screen.getByTestId('notification-timestamp');
     expect(timestampEl.textContent).not.toBe('');
 
-    // The timestamp must be inside the message <p>, not a separate paragraph
-    const parentParagraph = timestampEl.closest('p');
-    expect(parentParagraph).toBeInTheDocument();
-    expect(parentParagraph?.textContent).toContain('Alice');
-    expect(parentParagraph?.textContent).toContain('liked your video');
+    const messageButton = timestampEl.closest('button');
+    expect(messageButton).toBeInTheDocument();
+    expect(messageButton?.textContent).toContain('Alice');
+    expect(messageButton?.textContent).toContain('liked your video');
   });
 
   it('thumbnail click navigates to /video/:videoEventId and does not double-fire row navigation', () => {
     const notification = buildVideoNotification();
     render(<VideoNotificationRow notification={notification} />);
 
-    // The thumbnail is a <button> with explicit aria-label matching the title exactly.
-    // Use getAllByRole and pick the one that is a <button> element (not the row div).
-    const allTitleButtons = screen.getAllByRole('button', { name: /My Cool Loop/i });
-    const thumbBtn = allTitleButtons.find((el) => el.tagName === 'BUTTON');
-    expect(thumbBtn).toBeInTheDocument();
-    fireEvent.click(thumbBtn!);
+    const thumbBtn = screen.getByRole('button', { name: /Open My Cool Loop/i });
+    fireEvent.click(thumbBtn);
 
     expect(mockNavigate).toHaveBeenCalledTimes(1);
     expect(mockNavigate).toHaveBeenCalledWith('/video/event-abc123');
   });
 
-  it('row body click navigates to /video/:videoEventId', () => {
+  it('message click navigates to /video/:videoEventId', () => {
     const notification = buildVideoNotification();
-    const { container } = render(<VideoNotificationRow notification={notification} />);
+    render(<VideoNotificationRow notification={notification} />);
 
-    // The row is a div[role="button"] — query by role without a name since C2 removed aria-label
-    const row = container.querySelector('[role="button"]');
-    expect(row).toBeInTheDocument();
-    fireEvent.click(row!);
+    fireEvent.click(screen.getByRole('button', { name: /Alice liked your video My Cool Loop/i }));
 
     expect(mockNavigate).toHaveBeenCalledWith('/video/event-abc123');
   });
@@ -255,6 +247,14 @@ describe('VideoNotificationRow', () => {
     expect(mockNavigate).toHaveBeenCalledTimes(1);
     // Should navigate to profile, not video (nip05 is URL-encoded)
     expect(mockNavigate.mock.calls[0][0]).toContain('/u/alice');
+  });
+
+  it('does not render nested interactive row buttons', () => {
+    const notification = buildVideoNotification();
+    const { container } = render(<VideoNotificationRow notification={notification} />);
+
+    expect(container.querySelector('[role="button"] button')).not.toBeInTheDocument();
+    expect(container.querySelector('button button')).not.toBeInTheDocument();
   });
 });
 
@@ -275,9 +275,9 @@ describe('ActorNotificationRow', () => {
     await initializeI18n({ force: true, languages: ['en-US'] });
   });
 
-  it('follow row shows one avatar, followed you, and navigates to profile on click', () => {
+  it('follow row shows one avatar, followed you, and navigates to profile on message click', () => {
     const notification = buildActorNotification();
-    const { container } = render(<ActorNotificationRow notification={notification} />);
+    render(<ActorNotificationRow notification={notification} />);
 
     // Actor name
     expect(screen.getByText('Bob')).toBeInTheDocument();
@@ -285,12 +285,17 @@ describe('ActorNotificationRow', () => {
     // Message
     expect(screen.getByText('followed you')).toBeInTheDocument();
 
-    // Row click navigates to profile — query div[role="button"] directly (C2: no aria-label)
-    const row = container.querySelector('[role="button"]');
-    expect(row).toBeInTheDocument();
-    fireEvent.click(row!);
+    fireEvent.click(screen.getByRole('button', { name: /Bob followed you/i }));
 
     expect(mockNavigate).toHaveBeenCalledTimes(1);
     expect(mockNavigate.mock.calls[0][0]).toContain('/u/bob');
+  });
+
+  it('does not render nested interactive row buttons', () => {
+    const notification = buildActorNotification();
+    const { container } = render(<ActorNotificationRow notification={notification} />);
+
+    expect(container.querySelector('[role="button"] button')).not.toBeInTheDocument();
+    expect(container.querySelector('button button')).not.toBeInTheDocument();
   });
 });

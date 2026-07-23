@@ -35,8 +35,11 @@ describe('notificationTransform', () => {
 
     it('returns null for unknown types', () => {
       expect(mapNotificationType('unknown')).toBeNull();
-      expect(mapNotificationType('mention')).toBeNull();
       expect(mapNotificationType('')).toBeNull();
+    });
+
+    it('preserves "mention" notifications through the existing video path', () => {
+      expect(mapNotificationType('mention')).toBe('like');
     });
   });
 
@@ -99,6 +102,19 @@ describe('notificationTransform', () => {
         notification_type: 'unknown_type',
       };
       expect(transformNotification(unknown)).toBeNull();
+    });
+
+    it('transforms mention notifications instead of dropping them', () => {
+      const mention: RawApiNotification = {
+        ...raw,
+        notification_type: 'mention',
+        source_kind: 1,
+      };
+
+      const result = transformNotification(mention);
+      expect(result).not.toBeNull();
+      expect(result!.type).toBe('like');
+      expect(result!.targetEventId).toBe('video-789');
     });
 
     it('returns null for like without referenced_event_id', () => {

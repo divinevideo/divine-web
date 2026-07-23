@@ -23,7 +23,7 @@ function NotificationAvatarStack({
 }: {
   actors: ActorInfo[];
   totalCount: number;
-  onAvatarClick: (actor: ActorInfo, e: React.MouseEvent | React.KeyboardEvent) => void;
+  onAvatarClick: (actor: ActorInfo) => void;
 }) {
   const visible = actors.slice(0, 3);
   const overflow = totalCount - actors.length;
@@ -37,13 +37,7 @@ function NotificationAvatarStack({
           aria-label={`${actor.displayName} profile`}
           onClick={(e) => {
             e.stopPropagation();
-            onAvatarClick(actor, e);
-          }}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-              e.stopPropagation();
-              onAvatarClick(actor, e);
-            }
+            onAvatarClick(actor);
           }}
           className={cn(
             'relative shrink-0 rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-primary',
@@ -117,7 +111,7 @@ function NotificationVideoThumbnail({
   return (
     <button
       type="button"
-      aria-label={title}
+      aria-label={`Open ${title}`}
       onClick={(e) => {
         e.stopPropagation();
         onClick(e);
@@ -194,7 +188,7 @@ export function VideoNotificationRow({
   const { firstName, othersText, verbText, titleText, hasVideoTitle } = formatGroupedMessage(notification, t);
   const showInlineTimestamp = notification.type !== 'comment' || !notification.commentText;
 
-  const handleRowActivate = () => {
+  const handleVideoActivate = () => {
     navigate(`/video/${notification.videoEventId}`);
   };
 
@@ -204,23 +198,10 @@ export function VideoNotificationRow({
     );
   };
 
-  const handleThumbnailClick = () => {
-    navigate(`/video/${notification.videoEventId}`);
-  };
-
   return (
     <div
-      role="button"
-      tabIndex={0}
-      onClick={handleRowActivate}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          handleRowActivate();
-        }
-      }}
       className={cn(
-        'flex w-full cursor-pointer items-start gap-3 p-3 transition-colors hover:bg-muted/50',
+        'flex w-full items-start gap-3 p-3 transition-colors hover:bg-muted/50',
         !notification.isRead && 'bg-muted/30',
       )}
     >
@@ -232,14 +213,17 @@ export function VideoNotificationRow({
         <NotificationAvatarStack
           actors={notification.actors}
           totalCount={notification.totalCount}
-          onAvatarClick={(actor, e) => {
-            e.stopPropagation();
+          onAvatarClick={(actor) => {
             handleAvatarClick(actor);
           }}
         />
 
         {/* Message text — timestamp inlined at end (omitted for comment rows; see quote box below) */}
-        <p className="text-sm leading-snug">
+        <button
+          type="button"
+          onClick={handleVideoActivate}
+          className="block w-full text-left text-sm leading-snug focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+        >
           <span className="font-semibold">{firstName}</span>
           {othersText && (
             <>
@@ -266,7 +250,7 @@ export function VideoNotificationRow({
               </span>
             </>
           )}
-        </p>
+        </button>
 
         {/* Comment quote — timestamp lives inside the quote box for comment rows */}
         {notification.type === 'comment' && notification.commentText && (
@@ -284,7 +268,7 @@ export function VideoNotificationRow({
       <NotificationVideoThumbnail
         thumbnailUrl={notification.videoThumbnailUrl}
         title={titleText}
-        onClick={handleThumbnailClick}
+        onClick={handleVideoActivate}
       />
     </div>
   );
@@ -310,17 +294,8 @@ export function ActorNotificationRow({
 
   return (
     <div
-      role="button"
-      tabIndex={0}
-      onClick={handleRowActivate}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          handleRowActivate();
-        }
-      }}
       className={cn(
-        'flex w-full cursor-pointer items-center gap-3 p-3 transition-colors hover:bg-muted/50',
+        'flex w-full items-center gap-3 p-3 transition-colors hover:bg-muted/50',
         !notification.isRead && 'bg-muted/30',
       )}
     >
@@ -344,12 +319,16 @@ export function ActorNotificationRow({
       </button>
 
       {/* Message text */}
-      <p className="flex-1 text-sm leading-snug">
+      <button
+        type="button"
+        onClick={handleRowActivate}
+        className="flex-1 text-left text-sm leading-snug focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+      >
         <span className="font-semibold">{actor.displayName}</span>{' '}
         <span className="text-muted-foreground">{verbText}</span>
         {' · '}
         <span className="text-xs text-muted-foreground">{timeText}</span>
-      </p>
+      </button>
     </div>
   );
 }

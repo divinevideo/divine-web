@@ -80,16 +80,18 @@ export function useHydratedNotifications(
   }, [flatRaw]);
 
   const videosQuery = useQuery({
-    queryKey: ['notification-videos', sortedIds.join(',')],
-    queryFn: async ({ signal }) => {
+    queryKey: ['notification-videos', sortedIds],
+    queryFn: async () => {
       const entries = await Promise.all(
         sortedIds.map(async (id) => {
           try {
             const result = await queryClient.ensureQueryData<NotificationVideoMeta>({
               queryKey: ['notification-video', id],
-              queryFn: async () => {
+              queryFn: async ({ signal }) => {
                 const video = await fetchVideoById(apiUrl, id, undefined, signal);
-                if (!video) return {};
+                if (signal.aborted || !video) {
+                  throw new Error('Video metadata unavailable');
+                }
                 return {
                   title: video.title,
                   thumbnailUrl: video.thumbnail,
@@ -99,7 +101,6 @@ export function useHydratedNotifications(
             });
             return [id, result] as const;
           } catch {
-            // Per-video failure stored as empty object — row still shown
             return [id, {} as NotificationVideoMeta] as const;
           }
         }),
@@ -108,7 +109,7 @@ export function useHydratedNotifications(
       return Object.fromEntries(entries);
     },
     enabled: sortedIds.length > 0,
-    staleTime: 10 * 60 * 1000,
+    staleTime: 0,
     gcTime: 30 * 60 * 1000,
   });
 

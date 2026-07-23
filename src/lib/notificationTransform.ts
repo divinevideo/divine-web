@@ -11,7 +11,7 @@ import type {
 
 /**
  * Map the API notification_type string to our app NotificationType.
- * Returns null for 'zap' and any unknown type (they are filtered out).
+ * Returns null for 'zap' and unknown types (they are filtered out).
  */
 export function mapNotificationType(apiType: string): NotificationType | null {
   switch (apiType) {
@@ -23,6 +23,8 @@ export function mapNotificationType(apiType: string): NotificationType | null {
       return 'follow';
     case 'repost':
       return 'repost';
+    case 'mention':
+      return 'like';
     default:
       return null;
   }

@@ -50,16 +50,21 @@ vi.mock('@/config/api', () => ({
 // Helpers
 // ---------------------------------------------------------------------------
 
-function createWrapper() {
+function createWrapperWithClient() {
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: { retry: false },
       mutations: { retry: false },
     },
   });
-  return function Wrapper({ children }: { children: React.ReactNode }) {
+  const wrapper = function Wrapper({ children }: { children: React.ReactNode }) {
     return React.createElement(QueryClientProvider, { client: queryClient }, children);
   };
+  return { queryClient, wrapper };
+}
+
+function createWrapper() {
+  return createWrapperWithClient().wrapper;
 }
 
 const PUBKEY_A = 'a'.repeat(64);
@@ -260,6 +265,36 @@ describe('useHydratedNotifications', () => {
       expect(item.videoTitle).toBeUndefined();
       expect(item.videoThumbnailUrl).toBeUndefined();
     }
+  });
+
+  it('does not cache empty per-video metadata when hydration returns null', async () => {
+    const like = makeLike('like-1', PUBKEY_A, VIDEO_ID, 1000);
+    const { queryClient, wrapper } = createWrapperWithClient();
+
+    mockUseNotifications.mockReturnValue(
+      makeInfiniteQueryResult([makeNotificationsPage([like])]),
+    );
+    mockUseBatchedAuthors.mockReturnValue({ data: {} });
+    mockFetchVideoById.mockResolvedValue(null);
+
+    const { useHydratedNotifications } = await import('./useHydratedNotifications');
+
+    const { result } = renderHook(
+      () => useHydratedNotifications({ category: 'all' }),
+      { wrapper },
+    );
+
+    await waitFor(() => {
+      expect(mockFetchVideoById).toHaveBeenCalledWith(
+        'https://api.divine.video',
+        VIDEO_ID,
+        undefined,
+        expect.any(AbortSignal),
+      );
+    });
+
+    expect(queryClient.getQueryData(['notification-video', VIDEO_ID])).toBeUndefined();
+    expect(result.current.items).toHaveLength(1);
   });
 
   it('exposes paging state and functions from useNotifications', async () => {
