@@ -1,42 +1,117 @@
-// Behavior coverage: smoke test that NostrProvider renders with the
-// relayHealth module wired up, and that pickTopN is exported and callable
-// with the expected signature. Full pickTopN / score / sticky behavior
-// is covered in relayHealth.test.ts; full reqRouter behavior is exercised
-// in the manual smoke test described in the plan.
-
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render } from '@testing-library/react';
 import * as relayHealth from '@/lib/relayHealth';
 import NostrProvider from './NostrProvider';
 
-vi.mock('@/hooks/useAppContext', () => ({
-  useAppContext: () => ({
+const mocks = vi.hoisted(() => {
+  const resetQueries = vi.fn();
+  const relayInstances = new Map<string, { close: ReturnType<typeof vi.fn> }>();
+  const appContext = {
     config: {
       theme: 'system',
       relayUrl: 'wss://relay.divine.video',
       relayUrls: ['wss://relay.divine.video', 'wss://relay.damus.io'],
       customRelayUrls: ['wss://custom.example'],
-      disabledPresetUrls: [],
+      disabledPresetUrls: [] as string[],
     },
     presetRelays: [
       { name: 'DVines', url: 'wss://relay.divine.video' },
       { name: 'Damus', url: 'wss://relay.damus.io' },
     ],
-  }),
+  };
+
+  return { appContext, relayInstances, resetQueries };
+});
+
+vi.mock('@nostrify/nostrify', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@nostrify/nostrify')>();
+
+  class NRelay1 {
+    close = vi.fn();
+    socket = { readyState: 0, addEventListener: vi.fn() };
+
+    constructor(public url: string) {
+      mocks.relayInstances.set(url, this);
+    }
+
+    async *req() {
+      yield ['EOSE'];
+    }
+
+    async event() {
+      return undefined;
+    }
+  }
+
+  class NPool {
+    relays = new Map<string, NRelay1>();
+
+    constructor(private opts: { open: (url: string) => NRelay1 }) {}
+
+    relay(url: string) {
+      let relay = this.relays.get(url);
+      if (!relay) {
+        relay = this.opts.open(url);
+        this.relays.set(url, relay);
+      }
+      return relay;
+    }
+  }
+
+  return { ...actual, NPool, NRelay1 };
+});
+
+vi.mock('@/hooks/useAppContext', () => ({
+  useAppContext: () => mocks.appContext,
 }));
 
 vi.mock('@tanstack/react-query', () => ({
-  useQueryClient: () => ({ resetQueries: vi.fn() }),
+  useQueryClient: () => ({ resetQueries: mocks.resetQueries }),
 }));
 
 describe('NostrProvider', () => {
+  beforeEach(() => {
+    mocks.relayInstances.clear();
+    mocks.resetQueries.mockClear();
+    mocks.appContext.config = {
+      theme: 'system',
+      relayUrl: 'wss://relay.divine.video',
+      relayUrls: ['wss://relay.divine.video', 'wss://relay.damus.io'],
+      customRelayUrls: ['wss://custom.example'],
+      disabledPresetUrls: [],
+    };
+  });
+
   it('renders without error when relayHealth is wired up', () => {
-    const { container } = render(
+    const { getByTestId } = render(
       <NostrProvider>
         <div data-testid="child" />
       </NostrProvider>,
     );
-    expect(container.querySelector('[data-testid="child"]')).not.toBeNull();
+    expect(getByTestId('child')).toBeInTheDocument();
+  });
+
+  it('closes newly disabled preset relay sockets and resets cached queries', () => {
+    const { rerender } = render(
+      <NostrProvider>
+        <div />
+      </NostrProvider>,
+    );
+    const damusRelay = mocks.relayInstances.get('wss://relay.damus.io');
+    expect(damusRelay).toBeDefined();
+
+    mocks.appContext.config = {
+      ...mocks.appContext.config,
+      disabledPresetUrls: ['wss://relay.damus.io'],
+    };
+    rerender(
+      <NostrProvider>
+        <div />
+      </NostrProvider>,
+    );
+
+    expect(damusRelay?.close).toHaveBeenCalledTimes(1);
+    expect(mocks.resetQueries).toHaveBeenCalledTimes(1);
   });
 
   it('exposes pickTopN with the expected arity for the integration', () => {

@@ -125,9 +125,11 @@ describe('sticky routing', () => {
     recordOpen(URL_A);
     recordReqEnd(URL_A, 50, true);
     recordOpen(URL_B);
+    recordReqEnd(URL_B, RELAY_HEALTH_CONSTANTS.LATENCY_CAP_MS, true);
     for (let i = 0; i < 20; i += 1) {
       recordError(URL_B);
     }
+    vi.advanceTimersByTime(RELAY_HEALTH_CONSTANTS.RECENCY_WINDOW_MS + 1);
     refreshSticky(URL_B, 34236);
     expect(pickTopN([URL_A, URL_B], 1, 34236)).toEqual([URL_A]);
   });

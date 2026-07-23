@@ -1,9 +1,9 @@
 import React, { useEffect, useMemo, useRef } from 'react';
 import { NPool, NRelay1 } from '@nostrify/nostrify';
 import { WebsocketEvent } from 'websocket-ts';
-
 import { NostrContext } from '@nostrify/react';
 import { useQueryClient } from '@tanstack/react-query';
+
 import { useAppContext } from '@/hooks/useAppContext';
 import { debugLog, verboseLog } from '@/lib/debug';
 import { createCachedNostr } from '@/lib/cachedNostr';
@@ -57,6 +57,7 @@ const NostrProvider: React.FC<NostrProviderProps> = (props) => {
     const oldEnabledRoutingUrls = Array.from(
       new Set([...relayUrls.current, ...customRelayUrls.current]),
     ).filter((url) => !disabledPresetUrls.current.includes(url));
+    const oldDisabledPresetUrls = disabledPresetUrls.current;
     relayUrl.current = config.relayUrl;
     relayUrls.current = config.relayUrls || [config.relayUrl];
     customRelayUrls.current = config.customRelayUrls ?? [];
@@ -64,15 +65,29 @@ const NostrProvider: React.FC<NostrProviderProps> = (props) => {
 
     const routingUrlsChanged =
       JSON.stringify(oldEnabledRoutingUrls) !== JSON.stringify(enabledRoutingUrls);
-    if (routingUrlsChanged && pool.current) {
+    const disabledUrlsChanged =
+      JSON.stringify(oldDisabledPresetUrls) !== JSON.stringify(disabledPresetUrls.current);
+    if ((routingUrlsChanged || disabledUrlsChanged) && pool.current) {
       debugLog('[NostrProvider] Relays changed from', oldEnabledRoutingUrls, 'to', enabledRoutingUrls);
 
+      const closedUrls = new Set<string>();
       for (const oldUrl of oldEnabledRoutingUrls) {
         if (!enabledRoutingUrls.includes(oldUrl)) {
           const oldRelay = pool.current.relays.get(oldUrl);
           if (oldRelay) {
             debugLog('[NostrProvider] Closing old relay connection:', oldUrl);
             oldRelay.close();
+            closedUrls.add(oldUrl);
+          }
+        }
+      }
+
+      for (const disabledUrl of disabledPresetUrls.current) {
+        if (!oldDisabledPresetUrls.includes(disabledUrl) && !closedUrls.has(disabledUrl)) {
+          const disabledRelay = pool.current.relays.get(disabledUrl);
+          if (disabledRelay) {
+            debugLog('[NostrProvider] Closing disabled preset relay connection:', disabledUrl);
+            disabledRelay.close();
           }
         }
       }
