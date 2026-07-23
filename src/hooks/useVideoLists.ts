@@ -468,13 +468,14 @@ export function useDeleteVideoList() {
         throw new Error('Only the list owner can delete this list');
       }
 
-      // Publish a kind 5 deletion event targeting the list
-      // The 'a' tag references the addressable event to delete
+      // Publish a kind 5 deletion event targeting the list.
+      // The 'a' tag references the addressable event, and 'k' names its kind.
       await publishEvent({
         kind: 5, // NIP-09 deletion event
         content: 'List deleted by owner',
         tags: [
           ['a', `30005:${ownerPubkey}:${listId}`],
+          ['k', '30005'],
         ]
       });
 
