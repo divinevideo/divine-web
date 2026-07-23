@@ -40,6 +40,11 @@ function getVineExternalId(event) {
   return event.tags?.find((t) => t[0] === 'd')?.[1] || null;
 }
 
+function parsePositiveCount(value) {
+  const count = Number.parseInt(String(value || '').replace(/,/g, ''), 10);
+  return Number.isFinite(count) && count > 0 ? count : 0;
+}
+
 export function transformVideoApiResponse(result, { defaultOgImage = null } = {}) {
   if (!result?.event) return null;
   const event = result.event;
@@ -76,8 +81,11 @@ export function transformVideoApiResponse(result, { defaultOgImage = null } = {}
     description,
     thumbnail: imeta.image || defaultOgImage,
     authorName: cleanText(getTag('author')) || cleanText(stats.author_name) || '',
+    authorAvatar: cleanText(stats.author_avatar) || '',
     reactions: stats.reactions || 0,
     comments: stats.comments || 0,
+    reposts: parsePositiveCount(stats.reposts) || parsePositiveCount(stats.embedded_reposts),
+    loops: parsePositiveCount(stats.embedded_loops) || parsePositiveCount(stats.loops) || parsePositiveCount(getTag('loops')) || parsePositiveCount(getTag('loop_count')),
     videoUrl: imeta.url || null,
     videoMime: imeta.m || null,
     videoWidth: videoWidth || null,
