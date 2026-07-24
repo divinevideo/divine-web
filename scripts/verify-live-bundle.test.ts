@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   buildCurlArgs,
   extractEntryScript,
+  resolveInjectedUrls,
   verifyLiveBundle,
   verifyInjectedRoutesOk,
 } from './verify-live-bundle.mjs';
@@ -333,6 +334,28 @@ describe('verifyInjectedRoutesOk', () => {
     ).resolves.toMatchObject({ ok: true });
 
     expect(fetchImpl).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('resolveInjectedUrls', () => {
+  it('defaults to no injected routes in showcase mode', () => {
+    expect(resolveInjectedUrls({ env: { VITE_WEB_MODE: 'showcase' } })).toEqual([]);
+  });
+
+  it('defaults to the feed-injected routes in full mode', () => {
+    expect(resolveInjectedUrls({ env: { VITE_WEB_MODE: 'full' } })).toEqual([
+      'https://divine.video/',
+      'https://divine.video/discovery/classics',
+    ]);
+  });
+
+  it('lets VERIFY_INJECTED_URLS override the mode default', () => {
+    expect(resolveInjectedUrls({
+      env: {
+        VITE_WEB_MODE: 'showcase',
+        VERIFY_INJECTED_URLS: 'https://example.test/a, https://example.test/b',
+      },
+    })).toEqual(['https://example.test/a', 'https://example.test/b']);
   });
 });
 

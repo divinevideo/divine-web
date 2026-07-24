@@ -1,5 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { enrichAgeRestrictedVideos } from './ageRestrictedVideos';
+import { mapVideoEvent } from './fetchListVideos';
+import type { NostrEvent } from '@nostrify/nostrify';
 import type { ParsedVideoData } from '@/types/video';
 
 const mockFetchVideoModerationStatus = vi.fn();
@@ -56,6 +58,33 @@ describe('enrichAgeRestrictedVideos', () => {
     expect(result[0].ageRestricted).toBe(true);
     expect(mockFetchVideoModerationStatus).toHaveBeenCalledWith(
       '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
+      undefined,
+    );
+  });
+
+  it('can enrich videos produced by the shared Nostr event mapper', async () => {
+    mockFetchVideoModerationStatus.mockResolvedValue({
+      ageRestricted: true,
+    });
+    const event: NostrEvent = {
+      id: 'a'.repeat(64),
+      pubkey: 'b'.repeat(64),
+      kind: 34236,
+      created_at: 1700000000,
+      tags: [
+        ['d', 'mapped-video'],
+        ['imeta', 'url https://media.divine.video/mapped.mp4', 'm video/mp4', 'x abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789'],
+      ],
+      content: '',
+      sig: 'c'.repeat(128),
+    };
+
+    const mapped = mapVideoEvent(event);
+    const result = await enrichAgeRestrictedVideos(mapped ? [mapped] : []);
+
+    expect(result[0].ageRestricted).toBe(true);
+    expect(mockFetchVideoModerationStatus).toHaveBeenCalledWith(
+      'abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789',
       undefined,
     );
   });

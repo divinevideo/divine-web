@@ -18,7 +18,7 @@ import { fetchListVideos } from '@/lib/fetchListVideos';
 import { enrichAgeRestrictedVideos } from '@/lib/ageRestrictedVideos';
 import { filterShowcaseSafeVideos } from '@/lib/showcaseSafety';
 import { shuffle } from '@/lib/shuffle';
-import type { NostrEvent } from '@nostrify/nostrify';
+import type { NostrEvent, NostrFilter } from '@nostrify/nostrify';
 import type { ParsedVideoData } from '@/types/video';
 
 const CURATION_LIST_KIND = 30005;
@@ -79,8 +79,6 @@ export function mergeCuratedRefs(events: NostrEvent[], options: MergeOptions = {
 
 export interface CuratedShowcaseResult {
   videos: ParsedVideoData[];
-  /** True when no curators and no seed lists are configured — the reel cannot load. */
-  isUnconfigured: boolean;
 }
 
 /**
@@ -113,7 +111,7 @@ export function useCuratedShowcase() {
       const signal = AbortSignal.any([context.signal, AbortSignal.timeout(8000)]);
       const relays = getEventLookupRelayUrls({ configuredRelayUrls: relayUrls });
 
-      const listFilters = [];
+      const listFilters: NostrFilter[] = [];
       // All 30005 lists from allowlisted curators — title-filtered client side,
       // since Nostr can't filter on an arbitrary tag value.
       if (CURATION_ADMIN_PUBKEYS.length > 0) {
@@ -130,12 +128,12 @@ export function useCuratedShowcase() {
         listFilters.push({ kinds: [CURATION_LIST_KIND], authors: [pubkey], '#d': dTags });
       }
 
-      if (listFilters.length === 0) return { videos: [], isUnconfigured: false };
+      if (listFilters.length === 0) return { videos: [] };
 
       const listEvents = await nostr.query(listFilters, { signal, relays });
 
       const refs = mergeCuratedRefs(listEvents);
-      if (refs.length === 0) return { videos: [], isUnconfigured: false };
+      if (refs.length === 0) return { videos: [] };
 
       const videos = await fetchListVideos(nostr, refs, signal);
 
@@ -146,7 +144,6 @@ export function useCuratedShowcase() {
 
       return {
         videos: filterShowcaseSafeVideos(enriched),
-        isUnconfigured: false,
       };
     },
   });

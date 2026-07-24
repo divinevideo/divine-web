@@ -495,6 +495,7 @@ describe('useVideoLists hooks', () => {
           pubkey: TEST_PUBKEY,
           createdAt: 1,
           videoCoordinates: [],
+          videoEventIds: [],
           public: true,
         },
         {
@@ -503,6 +504,7 @@ describe('useVideoLists hooks', () => {
           pubkey: TEST_PUBKEY,
           createdAt: 2,
           videoCoordinates: [],
+          videoEventIds: [],
           public: true,
         },
       ]);

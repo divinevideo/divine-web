@@ -5,8 +5,6 @@ import { trackEvent } from "@/lib/analytics";
 import { HubSpotSignup } from "@/components/HubSpotSignup";
 import { buildStoreLinks } from "@/lib/mobileStoreLinks";
 
-export { buildStoreLinks };
-
 interface StoreBadgesCtaProps {
   /** utm_campaign value; use the route slug */
   campaign: string;

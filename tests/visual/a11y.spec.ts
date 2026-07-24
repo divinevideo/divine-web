@@ -1,12 +1,15 @@
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 
-// Showcase mode is the default build, so /discovery and /search 404 here and
-// are covered by the full-mode suite instead.
-const ROUTES = ['/', '/merch', '/family', '/safety', '/age-review', '/kids', '/__brand-preview'];
+const SHOWCASE_ROUTES = ['/', '/merch', '/family', '/safety', '/age-review', '/kids', '/__brand-preview'];
+const FULL_MODE_ROUTES = ['/', '/discovery', '/search', '/merch', '/family', '/safety', '/age-review', '/kids', '/__brand-preview'];
+const ROUTES = Array.from(new Set([...SHOWCASE_ROUTES, ...FULL_MODE_ROUTES]));
 
 for (const route of ROUTES) {
-  test(`a11y: ${route} has no WCAG 2 A/AA violations`, async ({ page }) => {
+  test(`a11y: ${route} has no WCAG 2 A/AA violations`, async ({ page }, testInfo) => {
+    const routes = testInfo.project.name === 'full-mode-a11y' ? FULL_MODE_ROUTES : SHOWCASE_ROUTES;
+    test.skip(!routes.includes(route), `${route} is not served in ${testInfo.project.name}`);
+
     test.setTimeout(60_000); // discovery + search do a fair bit of fetching
     await page.goto(route, { waitUntil: 'domcontentloaded' });
     await expect(page.locator('body')).toBeVisible();

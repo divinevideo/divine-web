@@ -26,6 +26,7 @@ const CURL_STATUS_MARKER = '\n__HTTP_STATUS__:';
 // so a compressed-only 500 (#489) sails through a green deploy. verifyInjectedRoutesOk uses
 // this to assert the injected routes actually serve browsers.
 const BROWSER_ACCEPT_ENCODING = 'gzip, deflate, br';
+const FULL_MODE_INJECTED_URLS = ['https://divine.video/', 'https://divine.video/discovery/classics'];
 
 function headerEntries(headers = {}) {
   if (typeof Headers !== 'undefined' && headers instanceof Headers) {
@@ -90,6 +91,17 @@ async function fetchWithCurl(url, options = {}) {
 export function extractEntryScript(html) {
   const match = typeof html === 'string' ? html.match(ENTRY_SCRIPT_RE) : null;
   return match ? match[1] : null;
+}
+
+export function resolveInjectedUrls({ env = process.env } = {}) {
+  if (env.VERIFY_INJECTED_URLS !== undefined) {
+    return env.VERIFY_INJECTED_URLS
+      .split(',')
+      .map((value) => value.trim())
+      .filter(Boolean);
+  }
+
+  return env.VITE_WEB_MODE === 'full' ? FULL_MODE_INJECTED_URLS : [];
 }
 
 /**
@@ -277,15 +289,11 @@ if (invokedDirectly) {
   const attempts = numberFromEnv('VERIFY_BUNDLE_ATTEMPTS', 18);
   const delayMs = numberFromEnv('VERIFY_BUNDLE_DELAY_MS', 20000);
 
-  // Edge-injected routes (apex landing + a /discovery tab) are the only ones that read and
-  // rewrite the HTML at the edge, so they are the only ones that can 500 on compressed input
-  // (#489). A deterministic 500 here won't self-heal, so use a short retry budget that only
-  // absorbs a cold-start blip rather than the KV-propagation window the bundle check needs.
-  const injectedUrls = (process.env.VERIFY_INJECTED_URLS
-    ?? 'https://divine.video/,https://divine.video/discovery/classics')
-    .split(',')
-    .map((value) => value.trim())
-    .filter(Boolean);
+  // In full mode, edge-injected routes (apex landing + a /discovery tab) are the only
+  // ones that read and rewrite HTML at the edge, so they are the only ones that can
+  // 500 on compressed input (#489). Showcase mode deliberately disables that feed
+  // injection; VERIFY_INJECTED_URLS can still force a custom check when needed.
+  const injectedUrls = resolveInjectedUrls();
   const injectedAttempts = numberFromEnv('VERIFY_INJECTED_ATTEMPTS', 3);
   const injectedDelayMs = numberFromEnv('VERIFY_INJECTED_DELAY_MS', 10000);
 
@@ -300,14 +308,18 @@ if (invokedDirectly) {
     });
     console.log(`✓ Live origins serve the freshly built bundle ${expected}`);
 
-    await verifyInjectedRoutesOk({
-      urls: injectedUrls,
-      attempts: injectedAttempts,
-      delayMs: injectedDelayMs,
-      fetchImpl: fetchWithCurl,
-      log: (message) => console.log(message),
-    });
-    console.log('✓ Injected routes return 2xx to a browser (Accept-Encoding: br)');
+    if (injectedUrls.length > 0) {
+      await verifyInjectedRoutesOk({
+        urls: injectedUrls,
+        attempts: injectedAttempts,
+        delayMs: injectedDelayMs,
+        fetchImpl: fetchWithCurl,
+        log: (message) => console.log(message),
+      });
+      console.log('✓ Injected routes return 2xx to a browser (Accept-Encoding: br)');
+    } else {
+      console.log('- Skipping injected-route check; showcase mode has no feed-injected routes');
+    }
   } catch (err) {
     console.error(`✗ ${err.message}`);
     process.exit(1);

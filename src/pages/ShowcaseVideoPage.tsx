@@ -1,6 +1,7 @@
 // ABOUTME: Public single-video landing in showcase mode — the target of shared links
 // ABOUTME: One video in a phone frame, download CTAs, safety-gated; no app shell, no login
 
+import { useEffect, useRef, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useSeoMeta } from '@unhead/react';
 import { ShareNetwork } from '@phosphor-icons/react';
@@ -15,18 +16,32 @@ import { useShowcaseShare } from '@/hooks/useShowcaseShare';
 import { getVideoShareData } from '@/lib/shareUtils';
 import { resolveDisplayName } from '@/lib/showcaseDisplayName';
 import { getSafeProfileImage } from '@/lib/imageUtils';
+import { parseAspectRatio, pickObjectFit } from '@/lib/showcaseVideoFit';
 
 export default function ShowcaseVideoPage() {
   const { id } = useParams<{ id: string }>();
   const { data: video, isLoading } = useShowcaseVideo(id);
   const author = useAuthor(video?.pubkey);
   const share = useShowcaseShare();
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [objectFit, setObjectFit] = useState<'cover' | 'contain'>('cover');
 
   const metadata = author.data?.metadata;
   const displayName = video
     ? resolveDisplayName(metadata, video.pubkey, video.authorName)
     : '';
   const avatar = getSafeProfileImage(metadata?.picture ?? video?.authorAvatar);
+
+  useEffect(() => {
+    setObjectFit(pickObjectFit(parseAspectRatio(video?.dimensions)));
+  }, [video?.dimensions]);
+
+  const handleLoadedMetadata = () => {
+    const el = videoRef.current;
+    if (el?.videoWidth && el.videoHeight) {
+      setObjectFit(pickObjectFit(el.videoWidth / el.videoHeight));
+    }
+  };
 
   useSeoMeta({
     title: video?.title ? `${video.title} · Divine` : 'Divine',
@@ -45,13 +60,16 @@ export default function ShowcaseVideoPage() {
               {isLoading && <Skeleton className="h-full w-full rounded-none" />}
               {!isLoading && video && (
                 <video
+                  ref={videoRef}
                   src={video.videoUrl}
                   poster={video.thumbnailUrl}
                   controls
                   autoPlay
+                  muted
                   loop
                   playsInline
-                  className="h-full w-full object-cover"
+                  onLoadedMetadata={handleLoadedMetadata}
+                  className={`h-full w-full ${objectFit === 'contain' ? 'object-contain' : 'object-cover'}`}
                 />
               )}
               {!isLoading && !video && (

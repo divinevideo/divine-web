@@ -4,19 +4,10 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { DIVINE_IOS_APP_ID } from '@/lib/mobileStoreLinks';
+import { detectPlatform, type Platform } from '@/lib/detectPlatform';
+import { buildStoreLinks } from '@/lib/mobileStoreLinks';
 
-type Platform = 'android' | 'ios' | 'desktop';
-
-function detectPlatform(): Platform {
-  const ua = navigator.userAgent;
-  if (/Android/i.test(ua)) return 'android';
-  if (/iPhone|iPad|iPod/i.test(ua)) return 'ios';
-  return 'desktop';
-}
-
-const APP_STORE_URL = `https://apps.apple.com/us/app/divine-video/id${DIVINE_IOS_APP_ID}`;
-const PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=co.openvine.app';
+const STORE_LINKS = buildStoreLinks('app_callback', 'app_callback');
 
 export function AppCallbackPage() {
   const [searchParams] = useSearchParams();
@@ -32,7 +23,7 @@ export function AppCallbackPage() {
 
       // Use S.browser_fallback_url to prevent redirect loops
       // If app not installed, Android will go to Play Store instead of looping
-      const fallbackUrl = encodeURIComponent(PLAY_STORE_URL);
+      const fallbackUrl = encodeURIComponent(STORE_LINKS.playStore);
       const intentUrl = `intent://divine.video/app/callback?code=${encodeURIComponent(code)}#Intent;scheme=https;package=co.openvine.app;S.browser_fallback_url=${fallbackUrl};end`;
 
       window.location.href = intentUrl;
@@ -53,7 +44,7 @@ export function AppCallbackPage() {
           </p>
           <div className="flex gap-4 justify-center pt-4">
             <a
-              href={APP_STORE_URL}
+              href={STORE_LINKS.appStore}
               target="_blank"
               rel="noopener noreferrer"
               className="px-4 py-2 bg-primary text-primary-foreground rounded-lg font-medium hover:opacity-90 transition-opacity"
@@ -61,7 +52,7 @@ export function AppCallbackPage() {
               {t('appCallbackPage.appStore')}
             </a>
             <a
-              href={PLAY_STORE_URL}
+              href={STORE_LINKS.playStore}
               target="_blank"
               rel="noopener noreferrer"
               className="px-4 py-2 bg-primary text-primary-foreground rounded-lg font-medium hover:opacity-90 transition-opacity"
@@ -75,7 +66,7 @@ export function AppCallbackPage() {
   }
 
   // Mobile users (iOS or Android after intent attempt)
-  const storeUrl = platform === 'ios' ? APP_STORE_URL : PLAY_STORE_URL;
+  const storeUrl = platform === 'ios' ? STORE_LINKS.appStore : STORE_LINKS.playStore;
   const storeName = platform === 'ios' ? t('appCallbackPage.appStore') : t('appCallbackPage.googlePlay');
 
   return (

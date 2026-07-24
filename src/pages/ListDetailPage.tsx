@@ -167,7 +167,7 @@ export default function ListDetailPage() {
 
   // Fetch videos in the list
   const { data: videos, isLoading: videosLoading } = useQuery({
-    queryKey: ['list-videos', pubkey, listId, list?.videoCoordinates],
+    queryKey: ['list-videos', pubkey, listId, list?.videoCoordinates, list?.videoEventIds],
     queryFn: async (context) => {
       if (!list) return [];
 
@@ -176,7 +176,7 @@ export default function ListDetailPage() {
         AbortSignal.timeout(10000)
       ]);
 
-      return fetchListVideos(nostr, list.videoCoordinates, signal);
+      return fetchListVideos(nostr, [...list.videoCoordinates, ...list.videoEventIds], signal);
     },
     enabled: !!list
   });

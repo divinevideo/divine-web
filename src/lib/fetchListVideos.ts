@@ -5,6 +5,7 @@ import type { NostrEvent, NostrFilter } from '@nostrify/nostrify';
 import { SHORT_VIDEO_KIND, VIDEO_KINDS, type ParsedVideoData } from '@/types/video';
 import {
   parseVideoEvent,
+  validateVideoEvent,
   getVineId,
   getThumbnailUrl,
   getOriginalVineTimestamp,
@@ -15,6 +16,7 @@ import {
   getOriginalCommentCount,
   getOriginPlatform,
   isVineMigrated,
+  getTextTrackRef,
 } from '@/lib/videoParser';
 
 type NostrQuerier = {
@@ -34,13 +36,20 @@ function isEventIdRef(ref: string): boolean {
  * by the single-video showcase share page.
  */
 export function mapVideoEvent(event: NostrEvent): ParsedVideoData | null {
+  if (!validateVideoEvent(event)) return null;
+
   const videoEvent = parseVideoEvent(event);
   if (!videoEvent?.videoMetadata?.url) return null;
+
+  const duration = videoEvent.videoMetadata?.duration;
+  if (duration !== undefined && duration >= 7) return null;
+
+  const textTrack = getTextTrackRef(event);
 
   return {
     id: event.id,
     pubkey: event.pubkey,
-    kind: SHORT_VIDEO_KIND,
+    kind: event.kind as typeof SHORT_VIDEO_KIND,
     createdAt: event.created_at,
     originalVineTimestamp: getOriginalVineTimestamp(event),
     content: event.content,
@@ -48,9 +57,11 @@ export function mapVideoEvent(event: NostrEvent): ParsedVideoData | null {
     fallbackVideoUrls: videoEvent.videoMetadata?.fallbackUrls,
     hlsUrl: videoEvent.videoMetadata?.hlsUrl,
     thumbnailUrl: getThumbnailUrl(videoEvent),
+    blurhash: videoEvent.videoMetadata?.blurhash,
     title: videoEvent.title,
     duration: videoEvent.videoMetadata?.duration,
     dimensions: videoEvent.videoMetadata?.dimensions,
+    sha256: videoEvent.videoMetadata?.hash,
     hashtags: videoEvent.hashtags || [],
     vineId: getVineId(event),
     loopCount: getLoopCount(event),
@@ -60,6 +71,8 @@ export function mapVideoEvent(event: NostrEvent): ParsedVideoData | null {
     proofMode: getProofModeData(event),
     origin: getOriginPlatform(event),
     isVineMigrated: isVineMigrated(event),
+    textTrackRef: textTrack?.ref,
+    textTrackLanguage: textTrack?.language,
     reposts: [], // List videos don't include repost data
     originalEvent: event, // Retained so callers can inspect moderation tags
   };
@@ -111,7 +124,7 @@ export async function fetchListVideos(
 
   // One batched filter for the `e` event ids.
   if (eventIds.size > 0) {
-    filters.push({ ids: [...eventIds], limit: eventIds.size });
+    filters.push({ kinds: VIDEO_KINDS, ids: [...eventIds], limit: eventIds.size });
   }
 
   if (filters.length === 0) return [];

@@ -19,7 +19,14 @@ function videoEvent(eventId: string, dTag: string, pubkey = AUTHOR_A): NostrEven
     tags: [
       ['d', dTag],
       ['title', `video ${dTag}`],
-      ['imeta', `url https://cdn.divine.video/${dTag}.mp4`, 'm video/mp4'],
+      [
+        'imeta',
+        `url https://cdn.divine.video/${dTag}.mp4`,
+        'm video/mp4',
+        'x 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
+        'dim 480x480',
+        'blurhash LEHV6nWB2yk8pyo0adR*.7kCMdnj',
+      ],
     ],
     content: '',
     sig: 'f'.repeat(128),
@@ -48,8 +55,9 @@ describe('fetchListVideos', () => {
     const videos = await fetchListVideos(nostr, [id(1), id(2)], signal);
 
     expect(videos.map(v => v.id)).toEqual([id(1), id(2)]);
+    expect(videos[0].sha256).toBe('0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef');
     // e-ids are batched into a single ids filter.
-    expect(nostr.calls[0].some(f => Array.isArray(f.ids))).toBe(true);
+    expect(nostr.calls[0].some(f => Array.isArray(f.ids) && Array.isArray(f.kinds))).toBe(true);
   });
 
   it('resolves a-tag coordinates', async () => {
@@ -105,6 +113,27 @@ describe('fetchListVideos', () => {
       sig: 'f'.repeat(128),
     };
     const nostr = querierReturning([noMedia]);
+    expect(await fetchListVideos(nostr, [id(1)], signal)).toEqual([]);
+  });
+
+  it('drops non-video events returned by an event-id lookup', async () => {
+    const wrongKind = { ...videoEvent(id(1), 'one'), kind: 1 };
+    const nostr = querierReturning([wrongKind]);
+
+    expect(await fetchListVideos(nostr, [id(1)], signal)).toEqual([]);
+  });
+
+  it('drops videos that exceed the short-form duration limit', async () => {
+    const longVideo: NostrEvent = {
+      ...videoEvent(id(1), 'one'),
+      tags: [
+        ['d', 'one'],
+        ['title', 'too long'],
+        ['imeta', 'url https://cdn.divine.video/one.mp4', 'm video/mp4', 'duration 7'],
+      ],
+    };
+    const nostr = querierReturning([longVideo]);
+
     expect(await fetchListVideos(nostr, [id(1)], signal)).toEqual([]);
   });
 
