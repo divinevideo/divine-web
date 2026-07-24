@@ -18,6 +18,7 @@
     "fastly:publish": "npm run build && npm i && npm run -w divine-web-edge fastly:publish",
     "fastly:release": "npm run fastly:deploy && npm run fastly:publish",
     "verify:well-known": "node scripts/verify-well-known.mjs",
+    "verify:og": "bash scripts/verify-og-tags.sh",
     "precalculate-thumbnails": "tsx scripts/precalculate-hashtag-thumbnails.ts",
     "generate-icons": "node scripts/generate-icons.js",
     "test:visual": "playwright test",

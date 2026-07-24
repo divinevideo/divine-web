@@ -22,20 +22,24 @@ REAL_VIDEO_ID="3ca833a0027dd6240b2956dec98643032ff43ee75c0f0cde9d2096186b4b2605"
 REAL_NPUB="npub1smznz0v5cfh3f9e5vp5j9h6tzn4dlp3eqnxx6p2wujr40ftnz5qqhzf22n"
 SYNTHETIC_NPUB="npub1sg6plzptd64u62a878hep2kev88swjh3tw00gjsfl8f237lmu63s0c24qfh"
 
-declare -A USER_AGENTS=(
-  ["slackbot"]="Slackbot-LinkExpanding 1.0 (+https://api.slack.com/robots)"
-  ["facebook"]="facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)"
-  ["twitter"]="Twitterbot/1.0"
-  ["linkedin"]="LinkedInBot/1.0 (compatible; Mozilla/5.0)"
-  ["discord"]="Mozilla/5.0 (compatible; Discordbot/2.0; +https://discordapp.com)"
-  ["chrome"]="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36"
+USER_AGENTS=(
+  "slackbot|Slackbot-LinkExpanding 1.0 (+https://api.slack.com/robots)"
+  "facebook|facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)"
+  "twitter|Twitterbot/1.0"
+  "linkedin|LinkedInBot/1.0 (compatible; Mozilla/5.0)"
+  "discord|Mozilla/5.0 (compatible; Discordbot/2.0; +https://discordapp.com)"
+  "chrome|Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36"
 )
 
 ROUTES=(
   "/video/${REAL_VIDEO_ID}|real video page|twitter_card_player_present && og_video_present && twitter_player_present"
   "/embed/${REAL_VIDEO_ID}|embed iframe page|frame_ancestors_header && video_tag_present && noindex_header"
   "/profile/${REAL_NPUB}|real npub (Thomas Sanders)|og_title_not_brand && og_url_matches_path"
-  "/profile/${SYNTHETIC_NPUB}|synthetic npub (does not exist)|og_title_not_brand"
+  # Synthetic npub is structurally invalid (fails bech32 padding check at
+  # compute-js/src/bech32.js:87-90). The worker correctly falls through to the
+  # SPA shell with brand-default OG. Serving rich OG would mislead crawlers
+  # about a nonexistent profile. See issue #450.
+  "/profile/${SYNTHETIC_NPUB}|synthetic npub (does not exist)|og_title_is_brand"
   "/category/dance|category with video count|og_title_not_brand && og_url_matches_path"
   "/category|category index|og_title_not_brand && og_url_matches_path"
   "/family|family resource hub|og_title_not_brand && og_url_matches_path"
@@ -45,7 +49,7 @@ ROUTES=(
   "/search?q=cats|search results|og_title_not_brand && og_url_matches_path"
   "/discovery|discovery (trending)|og_title_not_brand && og_url_matches_path"
   "/discovery/recent|discovery (recent)|og_title_not_brand && og_url_matches_path"
-  "/@jacky|at-username apex|og_title_not_brand"
+  "/@jalcine|at-username apex|og_title_not_brand"
   "/|apex home|og_title_not_brand"
 )
 
@@ -181,6 +185,20 @@ run_check() {
           echo "          got: ${og_title}"
         fi
         ;;
+      og_title_is_brand)
+        # Inverse of og_title_not_brand. Passes when the response falls through to
+        # the SPA shell with the brand-default title. Use this for negative tests
+        # where the worker correctly does NOT produce per-route OG (e.g. structurally
+        # invalid npubs, where decodeNpubToHex returns null).
+        local og_title
+        og_title=$(extract_meta "$body" "og:title")
+        if [[ "$og_title" != "Divine Web - Short-form Looping Videos on Nostr" ]]; then
+          all_passed=false
+          echo "    FAIL: og:title is NOT the brand-default SPA shell fallback"
+          echo "          got: ${og_title}"
+          echo "          want: Divine Web - Short-form Looping Videos on Nostr"
+        fi
+        ;;
       og_url_matches_path)
         local og_url
         og_url=$(extract_meta "$body" "og:url")
@@ -219,6 +237,23 @@ run_check() {
     rm -f "$tmp_headers" "$tmp_body"
     return 1
   fi
+}
+
+get_user_agent() {
+  local wanted_label="$1"
+  local user_agent_entry
+
+  for user_agent_entry in "${USER_AGENTS[@]}"; do
+    local label="${user_agent_entry%%|*}"
+    local value="${user_agent_entry#*|}"
+
+    if [[ "$label" == "$wanted_label" ]]; then
+      printf '%s' "$value"
+      return 0
+    fi
+  done
+
+  return 1
 }
 
 print_summary() {
@@ -269,7 +304,12 @@ main() {
         continue
       fi
 
-      local ua_value="${USER_AGENTS[$ua_label]}"
+      local ua_value
+      if ! ua_value=$(get_user_agent "$ua_label"); then
+        echo "ERROR: unknown User-Agent label '${ua_label}'"
+        exit 2
+      fi
+
       total_checks=$((total_checks + 1))
       run_check "$path" "$description" "$assertions" "$ua_label" "$ua_value"
     done
