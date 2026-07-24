@@ -18,6 +18,8 @@ interface AppProviderProps {
 const AppConfigSchema: z.ZodType<AppConfig, z.ZodTypeDef, unknown> = z.object({
   theme: z.enum(['dark', 'light', 'system']),
   relayUrl: z.string().url(),
+  customRelayUrls: z.array(z.string().url()).optional(),
+  disabledPresetUrls: z.array(z.string().url()).optional(),
 });
 
 export function AppProvider(props: AppProviderProps) {
@@ -41,6 +43,8 @@ export function AppProvider(props: AppProviderProps) {
         return {
           ...validated,
           relayUrls: defaultConfig.relayUrls,
+          customRelayUrls: validated.customRelayUrls ?? [],
+          disabledPresetUrls: validated.disabledPresetUrls ?? [],
         };
       }
     }

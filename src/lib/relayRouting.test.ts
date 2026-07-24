@@ -1,10 +1,12 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import type { NostrEvent, NostrFilter } from '@nostrify/nostrify';
 import { buildEventRouter, buildReqRouter, type RoutingContext } from './relayRouting';
 import { BADGE_RELAYS, PROFILE_RELAYS, getRelayUrls } from '@/config/relays';
 import { MUTE_LIST_KIND } from '@/hooks/useModeration';
 
 const PRESET_ONLY_URL = 'wss://test-preset-only.example.com';
+const CUSTOM_URL = 'wss://custom.example.com';
+const DISABLED_URL = 'wss://disabled.example.com';
 
 const ctx: RoutingContext = {
   relayUrl: 'wss://relay.divine.video',
@@ -26,24 +28,52 @@ function makeEvent(kind: number, opts: Partial<NostrEvent> = {}): NostrEvent {
 }
 
 describe('buildEventRouter — mute list carve-out', () => {
-  it('routes MUTE_LIST_KIND (10000) only to {primary} ∪ PROFILE_RELAYS, never to presetRelays', () => {
-    const targets = buildEventRouter(ctx)(makeEvent(MUTE_LIST_KIND));
+  it('routes MUTE_LIST_KIND (10000) only to the primary relay', () => {
+    const targets = buildEventRouter({
+      ...ctx,
+      customRelayUrls: [CUSTOM_URL],
+      presetRelays: [{ url: PRESET_ONLY_URL }, { url: DISABLED_URL }],
+      disabledPresetUrls: [DISABLED_URL],
+    })(makeEvent(MUTE_LIST_KIND));
     expect(targets).toContain('wss://relay.divine.video');
     expect(targets).not.toContain(PRESET_ONLY_URL);
-    const allowed = new Set<string>([ctx.relayUrl, ...getRelayUrls(PROFILE_RELAYS)]);
-    for (const url of targets) {
-      expect(allowed.has(url)).toBe(true);
+    expect(targets).not.toContain(CUSTOM_URL);
+    expect(targets).not.toContain(DISABLED_URL);
+    expect(targets).toEqual([ctx.relayUrl]);
+  });
+
+  it('kind 0 fans out to profile relays, not unrelated preset relays', () => {
+    const targets = buildEventRouter(ctx)(makeEvent(0));
+    expect(targets).not.toContain(PRESET_ONLY_URL);
+    for (const url of getRelayUrls(PROFILE_RELAYS)) {
+      expect(targets).toContain(url);
     }
   });
 
-  it('kind 0 still fans out to presetRelays (regression)', () => {
-    const targets = buildEventRouter(ctx)(makeEvent(0));
-    expect(targets).toContain(PRESET_ONLY_URL);
+  it('LIST_KINDS (30000) fan out to profile relays, not unrelated preset relays', () => {
+    const targets = buildEventRouter(ctx)(makeEvent(30000));
+    expect(targets).not.toContain(PRESET_ONLY_URL);
+    for (const url of getRelayUrls(PROFILE_RELAYS)) {
+      expect(targets).toContain(url);
+    }
   });
 
-  it('LIST_KINDS (30000) still fans out to presetRelays (regression)', () => {
-    const targets = buildEventRouter(ctx)(makeEvent(30000));
-    expect(targets).toContain(PRESET_ONLY_URL);
+  it('routes non-profile publishes through ranked preset and custom candidates', () => {
+    const pickTopN = vi.fn((urls: string[]) => urls);
+    const targets = buildEventRouter({
+      ...ctx,
+      customRelayUrls: [CUSTOM_URL],
+      presetRelays: [{ url: PRESET_ONLY_URL }, { url: DISABLED_URL }],
+      disabledPresetUrls: [DISABLED_URL],
+      pickTopN,
+    })(makeEvent(1));
+
+    expect(pickTopN).toHaveBeenCalledWith(
+      [ctx.relayUrl, CUSTOM_URL, PRESET_ONLY_URL],
+      5,
+      undefined,
+    );
+    expect(targets).toEqual([ctx.relayUrl, CUSTOM_URL, PRESET_ONLY_URL]);
   });
 });
 
@@ -63,5 +93,38 @@ describe('buildReqRouter — kind-based routing', () => {
     for (const url of result.keys()) {
       expect(BADGE_RELAYS.some((r) => r.url === url)).toBe(true);
     }
+  });
+
+  it('routes video filters through health-ranked relays and marks sticky', () => {
+    const pickTopN = vi.fn((_urls: string[]) => [CUSTOM_URL, ctx.relayUrl]);
+    const refreshSticky = vi.fn();
+    const result = buildReqRouter({
+      ...ctx,
+      customRelayUrls: [CUSTOM_URL],
+      pickTopN,
+      refreshSticky,
+    })([{ kinds: [34236] }]);
+
+    expect(pickTopN).toHaveBeenCalledWith(
+      expect.arrayContaining([ctx.relayUrl, CUSTOM_URL, ...getRelayUrls(PROFILE_RELAYS)]),
+      2,
+      34236,
+    );
+    expect([...result.keys()]).toEqual([CUSTOM_URL, ctx.relayUrl]);
+    expect(refreshSticky).toHaveBeenCalledWith(CUSTOM_URL, 34236);
+    expect(refreshSticky).toHaveBeenCalledWith(ctx.relayUrl, 34236);
+  });
+
+  it('excludes disabled preset URLs from adaptive read candidates', () => {
+    const pickTopN = vi.fn((urls: string[]) => urls);
+    buildReqRouter({
+      ...ctx,
+      relayUrls: [ctx.relayUrl, DISABLED_URL],
+      customRelayUrls: [CUSTOM_URL],
+      disabledPresetUrls: [DISABLED_URL],
+      pickTopN,
+    })([{ kinds: [1] }]);
+
+    expect(pickTopN).toHaveBeenCalledWith([ctx.relayUrl, CUSTOM_URL], 2, undefined);
   });
 });
