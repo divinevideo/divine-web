@@ -2,11 +2,16 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, useLocation } from 'react-router-dom';
+import { LoginDialogProvider } from '@/contexts/LoginDialogContext';
 import { initializeI18n } from '@/lib/i18n';
 import { BottomNav } from './BottomNav';
 
+type MockCurrentUser = { user: { pubkey: string } | null };
+
+const mockCurrentUser = vi.fn((): MockCurrentUser => ({ user: null }));
+
 vi.mock('@/hooks/useCurrentUser', () => ({
-  useCurrentUser: () => ({ user: null }),
+  useCurrentUser: () => mockCurrentUser(),
 }));
 
 vi.mock('@/hooks/useNotifications', () => ({
@@ -22,8 +27,10 @@ async function renderBottomNav(initialEntry = '/') {
   await initializeI18n({ force: true, languages: ['en-US'] });
   return render(
     <MemoryRouter initialEntries={[initialEntry]}>
-      <BottomNav />
-      <LocationDisplay />
+      <LoginDialogProvider>
+        <BottomNav />
+        <LocationDisplay />
+      </LoginDialogProvider>
     </MemoryRouter>
   );
 }
@@ -31,6 +38,7 @@ async function renderBottomNav(initialEntry = '/') {
 describe('BottomNav', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockCurrentUser.mockReturnValue({ user: null });
     const storage = new Map<string, string>();
     Object.defineProperty(window, 'localStorage', {
       configurable: true,
@@ -43,12 +51,24 @@ describe('BottomNav', () => {
     });
   });
 
-  it('links mobile users to the popular page', async () => {
+  it('links mobile users to the discovery page', async () => {
     const user = userEvent.setup();
     await renderBottomNav('/');
 
-    await user.click(screen.getByRole('button', { name: 'Popular' }));
+    await user.click(screen.getByRole('button', { name: 'Discover' }));
 
-    expect(screen.getByTestId('location-display')).toHaveTextContent('/popular');
+    expect(screen.getByTestId('location-display')).toHaveTextContent('/discovery');
+  });
+
+  it('explains why camera uploads are unavailable instead of routing to upload', async () => {
+    const user = userEvent.setup();
+    mockCurrentUser.mockReturnValue({ user: { pubkey: 'a'.repeat(64) } });
+    await renderBottomNav('/');
+
+    await user.click(screen.getByRole('button', { name: 'Camera' }));
+
+    expect(screen.getByRole('dialog')).toHaveTextContent('Why no upload?');
+    expect(screen.getByRole('dialog')).toHaveTextContent('What you see on Divine is human-made');
+    expect(screen.getByTestId('location-display')).toHaveTextContent('/');
   });
 });
