@@ -12,7 +12,13 @@ export interface VideoList {
   image?: string;
   pubkey: string;
   createdAt: number;
+  /** Addressable `a` references (`kind:pubkey:dtag`). Used by web-authored lists. */
   videoCoordinates: string[];
+  /**
+   * Raw `e` event-id references. The mobile app writes video refs this way, so
+   * a list created on a phone populates this rather than `videoCoordinates`.
+   */
+  videoEventIds: string[];
   public: boolean;
   tags?: string[];
   isCollaborative?: boolean;
@@ -38,6 +44,12 @@ export function parseVideoListFromEvent(event: NostrEvent): VideoList | null {
       if (tag[0] !== 'a' || !tag[1]) return false;
       return VIDEO_KINDS.some(kind => tag[1]!.startsWith(`${kind}:`));
     })
+    .map(tag => tag[1]!);
+
+  // Video refs by raw event id. NIP-51 permits `e` tags in a set, and the
+  // mobile app uses them exclusively; keep only 64-char hex to skip stray tags.
+  const videoEventIds = event.tags
+    .filter(tag => tag[0] === 'e' && /^[0-9a-f]{64}$/i.test(tag[1] ?? ''))
     .map(tag => tag[1]!);
 
   const tags = event.tags
@@ -74,6 +86,7 @@ export function parseVideoListFromEvent(event: NostrEvent): VideoList | null {
     pubkey: event.pubkey,
     createdAt: event.created_at,
     videoCoordinates: [...videoCoordinates, ...privateCoordinates],
+    videoEventIds,
     public: true,
     tags,
     isCollaborative,

@@ -38,6 +38,7 @@ describe('parseVideoListFromEvent', () => {
       pubkey: OWNER,
       createdAt: 1700,
       videoCoordinates: [],
+      videoEventIds: [],
       public: true,
       tags: [],
       isCollaborative: false,
@@ -63,6 +64,21 @@ describe('parseVideoListFromEvent', () => {
       ],
     });
     expect(parseVideoListFromEvent(ev)?.videoCoordinates).toEqual([COORD]);
+  });
+
+  it('collects e-tag event ids (mobile-authored lists)', () => {
+    const id1 = 'a'.repeat(64);
+    const id2 = 'b'.repeat(64);
+    const ev = baseEvent({
+      tags: [
+        ['d', 'l1'],
+        ['title', 'T'],
+        ['e', id1],
+        ['e', id2],
+        ['e', 'too-short'],
+      ],
+    });
+    expect(parseVideoListFromEvent(ev)?.videoEventIds).toEqual([id1, id2]);
   });
 
   it('collects t tags in order', () => {

@@ -25,6 +25,7 @@ import {
 import { transformVideoApiResponse } from './videoMetadata.js';
 import { renderEmbedPage } from './embedPage.js';
 import { resolveFeedInjectedHtml } from './feedInjection.js';
+import { isShowcaseMode } from './webMode.js';
 
 const publisherServer = PublisherServer.fromStaticPublishRc(rc);
 const DEFAULT_OG_IMAGE = 'https://divine.video/og.png';
@@ -305,10 +306,17 @@ async function handleRequest(event) {
   const isApexDomain = APEX_DOMAINS.includes(hostnameToUse);
   const isApexLanding = isApexDomain && (url.pathname === '/' || url.pathname === '/index.html');
   const discoveryFeedType = isApexDomain ? getDiscoveryFeedType(url.pathname) : null;
-  const shouldInjectFeed = isApexLanding || discoveryFeedType;
+  // In showcase mode the homepage renders a hand-curated, all-ages set and the
+  // /discovery routes do not exist. Injecting the trending feed here would put
+  // uncurated content on the one page that exists to guarantee curation, so the
+  // LCP optimization is switched off rather than pointed somewhere else.
+  const shouldInjectFeed = !isShowcaseMode() && (isApexLanding || discoveryFeedType);
 
   if (isApexLanding && isSocialMediaCrawler(request)) {
-    const ogResponse = await handleApexOgTags();
+    // Same reasoning: handleApexOgTags() seeds the social preview image from the
+    // top trending video, which is not curated. Fall through to the static
+    // shell's own OG tags in showcase mode.
+    const ogResponse = isShowcaseMode() ? null : await handleApexOgTags();
     if (ogResponse) return ogResponse;
   }
 

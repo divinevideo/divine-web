@@ -1,7 +1,9 @@
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 
-const ROUTES = ['/', '/discovery', '/search', '/merch', '/family', '/age-review', '/kids', '/__brand-preview'];
+// Showcase mode is the default build, so /discovery and /search 404 here and
+// are covered by the full-mode suite instead.
+const ROUTES = ['/', '/merch', '/family', '/safety', '/age-review', '/kids', '/__brand-preview'];
 
 for (const route of ROUTES) {
   test(`a11y: ${route} has no WCAG 2 A/AA violations`, async ({ page }) => {

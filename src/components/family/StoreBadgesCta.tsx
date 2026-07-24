@@ -3,22 +3,9 @@
 
 import { trackEvent } from "@/lib/analytics";
 import { HubSpotSignup } from "@/components/HubSpotSignup";
+import { buildStoreLinks } from "@/lib/mobileStoreLinks";
 
-const APP_STORE_BASE = "https://apps.apple.com/us/app/divine-video/id6747959501";
-const PLAY_STORE_BASE = "https://play.google.com/store/apps/details";
-
-export function buildStoreLinks(campaign: string) {
-  const utm = new URLSearchParams({
-    utm_source: "divine_site",
-    utm_medium: "family_page",
-    utm_campaign: campaign,
-  });
-  const play = new URLSearchParams({ id: "co.openvine.app" });
-  return {
-    appStore: `${APP_STORE_BASE}?${utm.toString()}`,
-    playStore: `${PLAY_STORE_BASE}?${play.toString()}&${utm.toString()}`,
-  };
-}
+export { buildStoreLinks };
 
 interface StoreBadgesCtaProps {
   /** utm_campaign value; use the route slug */

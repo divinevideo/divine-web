@@ -56,6 +56,16 @@
   .brand-link-card-violet:hover { box-shadow: 8px 8px 0 0 hsl(var(--brand-violet)); }
   .brand-link-card-yellow:hover { box-shadow: 8px 8px 0 0 hsl(var(--brand-yellow)); }
 
+  /* Hide the scrollbar while keeping the element scrollable — used by the
+     phone-frame reel so the swipe surface reads as a clean app screen. */
+  .hide-scrollbar {
+    scrollbar-width: none;          /* Firefox */
+    -ms-overflow-style: none;       /* legacy Edge */
+  }
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;                  /* WebKit */
+  }
+
   /* Respect reduced-motion */
   @media (prefers-reduced-motion: reduce) {
     .brand-sticker { transition: none; }

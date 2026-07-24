@@ -149,10 +149,16 @@ describe('family pages', () => {
       </TestApp>
     );
 
-    const appStore = container.querySelector(
+    // Scope to the page's own CTA block. The marketing header also carries an
+    // App Store link in showcase mode, and it is attributed to the header, not
+    // to this page.
+    const cta = container.querySelector('[data-testid="store-badges-cta"]');
+    expect(cta, 'store badges CTA missing').toBeTruthy();
+
+    const appStore = cta!.querySelector(
       'a[href*="apps.apple.com"][href*="id6747959501"]'
     ) as HTMLAnchorElement | null;
-    const playStore = container.querySelector(
+    const playStore = cta!.querySelector(
       'a[href*="play.google.com"][href*="co.openvine.app"]'
     ) as HTMLAnchorElement | null;
 

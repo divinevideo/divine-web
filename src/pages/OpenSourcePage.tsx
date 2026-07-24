@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { GithubLogo as Github, Globe, DeviceMobile as Smartphone, Code as Code2, Users, Heart } from '@phosphor-icons/react';
 import { ZendeskWidget } from '@/components/ZendeskWidget';
 import { MarketingLayout } from '@/components/MarketingLayout';
+import { isShowcaseMode } from '@/config/webMode';
 import { useTranslation } from 'react-i18next';
 
 export function OpenSourcePage() {
@@ -46,7 +47,14 @@ export function OpenSourcePage() {
                 </p>
                 <p className="flex items-center gap-2">
                   <Globe className="h-4 w-4 text-blue-500" />
-                  <strong className="text-brand-off-white">Web:</strong> <span className="text-brand-light-green">You're already here!</span> <Link to="/discovery" className="text-brand-green hover:text-brand-light-green">Start exploring</Link>
+                  <strong className="text-brand-off-white">Web:</strong>{' '}
+                  {isShowcaseMode() ? (
+                    <span className="text-brand-light-green">Documents and a curated preview—the full app lives on mobile</span>
+                  ) : (
+                    <>
+                      <span className="text-brand-light-green">You're already here!</span> <Link to="/discovery" className="text-brand-green hover:text-brand-light-green">Start exploring</Link>
+                    </>
+                  )}
                 </p>
               </div>
             </div>
