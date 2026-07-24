@@ -10,11 +10,11 @@ import rc from '../static-publish.rc.js';
 import { buildFunnelcakeUrl, getFunnelcakeOriginForApiHost } from './funnelcakeOrigin.js';
 import { handleAuthPersistCookie } from './authPersistCookie.js';
 import { isJsonWellKnownPath, shouldServeWellKnownBeforeWwwRedirect } from './wellKnownPaths.js';
-import { buildCrawlerHtml, buildUserScript, escapeHtml, cleanText, truncateText } from './ogTags.js';
+import { buildCrawlerHtml, escapeHtml, cleanText, truncateText } from './ogTags.js';
 import { hexToNpub, decodeNpubToHex } from './bech32.js';
 import { buildWwwRedirectResponse } from './hostRedirect.js';
 import { applyStaticResponseHeaders } from './staticResponseHeaders.js';
-import { readPublishedStaticFile } from './staticContent.js';
+import { extractStaticAssetsFromHtml, readPublishedStaticFile } from './staticContent.js';
 import {
   handleAtUsernameOg,
   handleHashtagOgTags,
@@ -24,11 +24,37 @@ import {
 } from './crawlerHandlers.js';
 import { transformVideoApiResponse } from './videoMetadata.js';
 import { renderEmbedPage } from './embedPage.js';
-import { resolveFeedInjectedHtml } from './feedInjection.js';
+import { renderFeedPage, renderVideoPage, renderProfilePage, renderSearchPage } from './templates/pages.js';
 
 const publisherServer = PublisherServer.fromStaticPublishRc(rc);
 const DEFAULT_OG_IMAGE = 'https://divine.video/og.png';
 const DEFAULT_SITE_DESCRIPTION = 'Watch and share 6-second looping videos on the decentralized Nostr network.';
+
+// Cached static asset paths (extracted from built index.html)
+let _staticAssets = null;
+
+/**
+ * Extract JS/CSS asset paths from the built index.html in KV store.
+ * Caches the result for the lifetime of the worker instance.
+ */
+async function getStaticAssets() {
+  if (_staticAssets) return _staticAssets;
+
+  try {
+    const { body, sha256 } = await readPublishedStaticFile('/index.html');
+    _staticAssets = extractStaticAssetsFromHtml(body);
+    if (!_staticAssets) {
+      console.error('Published index.html is missing the Vite app entry script, sha256:', sha256.slice(0, 16) + '...');
+      return null;
+    }
+
+    console.log('Resolved static assets:', _staticAssets, 'sha256:', sha256.slice(0, 16) + '...');
+    return _staticAssets;
+  } catch (e) {
+    console.error('Failed to resolve static assets:', e.message);
+    return null;
+  }
+}
 
 // Apex domains we serve (used to detect subdomains)
 const APEX_DOMAINS = ['dvine.video', 'divine.video'];
@@ -180,6 +206,23 @@ async function handleRequest(event) {
     }
   }
 
+  // 5. Handle video pages — serve full edge-templated HTML for all visitors
+  if (!isSocialMediaCrawler(request) && url.pathname.startsWith('/video/')) {
+    const videoId = url.pathname.split('/video/')[1]?.split('?')[0];
+    if (videoId) {
+      console.log('Handling video page, id:', videoId);
+      try {
+        const videoPageResponse = await handleVideoPage(request, videoId, url, funnelcakeTarget);
+        if (videoPageResponse) {
+          return videoPageResponse;
+        }
+      } catch (err) {
+        console.error('Video page handler error:', err.message, err.stack);
+      }
+    }
+    console.log('Video page fallthrough to SPA handler');
+  }
+
   // 6. Handle dynamic OG meta tags for crawler requests
   if (isSocialMediaCrawler(request)) {
     if (url.pathname.startsWith('/video/')) {
@@ -302,43 +345,48 @@ async function handleRequest(event) {
 
   // 9. Serve static content with SPA fallback (handled by PublisherServer config)
   // Detect pages that benefit from edge-injected feed data
-  const isApexDomain = APEX_DOMAINS.includes(hostnameToUse);
+  const isApexDomain = APEX_DOMAINS.includes(hostnameToUse) || hostnameToUse.endsWith('.edgecompute.app');
   const isApexLanding = isApexDomain && (url.pathname === '/' || url.pathname === '/index.html');
   const discoveryFeedType = isApexDomain ? getDiscoveryFeedType(url.pathname) : null;
-  const shouldInjectFeed = isApexLanding || discoveryFeedType;
+  const isSearchPage = isApexDomain && url.pathname === '/search';
+  const shouldRenderFeedPage = isApexLanding || discoveryFeedType;
 
   if (isApexLanding && isSocialMediaCrawler(request)) {
     const ogResponse = await handleApexOgTags();
     if (ogResponse) return ogResponse;
   }
 
+  // Edge-templated feed pages
+  if (shouldRenderFeedPage) {
+    try {
+      const feedType = discoveryFeedType || 'trending';
+      const feedPageResponse = await handleFeedPage(feedType, funnelcakeTarget);
+      if (feedPageResponse) {
+        return feedPageResponse;
+      }
+    } catch (err) {
+      console.error('Edge template feed page error:', err.message);
+      // Fall through to SPA
+    }
+  }
+
+  // Edge-templated search page
+  if (isSearchPage && url.searchParams.get('q')) {
+    try {
+      const searchResponse = await handleSearchPage(url.searchParams.get('q'), funnelcakeTarget);
+      if (searchResponse) {
+        return searchResponse;
+      }
+    } catch (err) {
+      console.error('Edge template search page error:', err.message);
+    }
+  }
+
+  // Serve static content (JS, CSS, images, etc.) with SPA fallback
   const response = await publisherServer.serveRequest(request);
   if (response != null) {
     const isHtmlResponse = response.headers.get('Content-Type')?.includes('text/html') ?? false;
     const headers = applyStaticResponseHeaders(response.headers, { isHtml: isHtmlResponse });
-
-    // Inject feed data into HTML pages for faster LCP.
-    if (shouldInjectFeed && isHtmlResponse) {
-      // The static body is brotli/gzip-compressed for browsers, and the Fastly SDK's
-      // Response.text() does NOT decompress it — reading it throws "malformed UTF-8" and
-      // consumes the stream, which previously fell through to a hard 500 on the injected
-      // routes (apex + /discovery/{new,hot,classics,top}); see #435. Read the identity shell
-      // from KV instead and serve it with the compression-coupled headers stripped
-      // (Content-Encoding/Content-Length/ETag). Any failure degrades to the untouched static
-      // passthrough below, so injection can never 500.
-      const decodedHeaders = applyStaticResponseHeaders(response.headers, { isHtml: true, decoded: true });
-      const feedType = discoveryFeedType || 'trending';
-      const finalHtml = await resolveFeedInjectedHtml({
-        readHtml: readIndexHtmlFromKv,
-        fetchFeedData: (type) => fetchFeedData(type, funnelcakeTarget),
-        feedType,
-        pathname: url.pathname,
-      });
-      if (finalHtml) {
-        return new Response(finalHtml, { status: response.status, headers: decodedHeaders });
-      }
-      // fall through to the untouched static passthrough below
-    }
 
     return new Response(response.body, {
       status: response.status,
@@ -835,20 +883,6 @@ async function handleSubdomainProfile(subdomain, url, request, originalHostname)
     }
   }
 
-  // Read index.html directly from KV store
-  // (PublisherServer.serveRequest returns empty body for synthetic requests)
-  let html;
-  try {
-    const { body, sha256 } = await readPublishedStaticFile('/index.html');
-    console.log('Reading index.html from KV, sha256:', sha256.slice(0, 16) + '...');
-    html = body;
-    console.log('Got index.html from KV, length:', html.length);
-  } catch (err) {
-    console.error('KV read error:', err.message);
-    const profileUrl = `https://${apexDomain}/profile/${npub}`;
-    return Response.redirect(profileUrl, 302);
-  }
-
   // Detect NIP-05 mismatch: the profile's NIP-05 doesn't match this subdomain,
   // which means the KV store may be pointing to a stale (old) pubkey.
   const profileNip05 = profileData?.profile?.nip05 || null;
@@ -878,44 +912,36 @@ async function handleSubdomainProfile(subdomain, url, request, originalHostname)
     apexDomain: apexDomain,
   };
 
-  // Inject the user data as a global variable before the main script
-  const userScript = buildUserScript(divineUser);
+  // Fetch user's videos for the profile page
+  let userVideos = [];
+  try {
+    const videosResp = await fetchFromFunnelcake(funnelcakeTarget, `/api/users/${userData.pubkey}/videos?limit=12`);
+    if (videosResp.ok) {
+      const videosData = await videosResp.json();
+      userVideos = videosData.videos || videosData || [];
+    }
+  } catch (e) {
+    console.error('Failed to fetch user videos:', e.message);
+  }
 
-  // Update OG tags for the profile
-  const ogTitle = divineUser.displayName + ' on Divine';
-  const ogDescription = divineUser.about || `Watch ${divineUser.displayName}'s videos on Divine`;
-  const ogImage = divineUser.picture || 'https://divine.video/og.png';
-  const ogUrl = `https://${subdomain}.${apexDomain}/`;
+  // Render full edge-templated profile page
+  const staticAssets = await getStaticAssets();
+  if (!staticAssets) {
+    const profileUrl = `https://${apexDomain}/profile/${npub}`;
+    return Response.redirect(profileUrl, 302);
+  }
+  const profileHtml = renderProfilePage({ profile: divineUser, videos: userVideos, staticAssets });
 
-  // Replace OG tags in HTML
-  html = html.replace(/<meta property="og:title" content="[^"]*" \/>/, `<meta property="og:title" content="${escapeHtml(ogTitle)}" />`);
-  html = html.replace(/<meta property="og:description" content="[^"]*" \/>/, `<meta property="og:description" content="${escapeHtml(ogDescription)}" />`);
-  html = html.replace(/<meta property="og:image" content="[^"]*" \/>/, `<meta property="og:image" content="${escapeHtml(ogImage)}" />`);
-  html = html.replace(/<meta property="og:url" content="[^"]*" \/>/, `<meta property="og:url" content="${escapeHtml(ogUrl)}" />`);
-  html = html.replace(/<meta name="twitter:title" content="[^"]*" \/>/, `<meta name="twitter:title" content="${escapeHtml(ogTitle)}" />`);
-  html = html.replace(/<meta name="twitter:description" content="[^"]*" \/>/, `<meta name="twitter:description" content="${escapeHtml(ogDescription)}" />`);
-  html = html.replace(/<meta name="twitter:image" content="[^"]*" \/>/, `<meta name="twitter:image" content="${escapeHtml(ogImage)}" />`);
-  html = html.replace(/<title>[^<]*<\/title>/, `<title>${escapeHtml(ogTitle)}</title>`);
-
-  // Add a debug comment and inject the script before the closing </head> tag
-  const debugComment = `<!-- DIVINE_SUBDOMAIN_PROFILE: ${subdomain} -->`;
-  html = html.replace('</head>', debugComment + userScript + '</head>');
-
-  return new Response(html, {
+  return new Response(profileHtml, {
     status: 200,
     headers: {
       'Content-Type': 'text/html; charset=utf-8',
-      'Cache-Control': 'public, max-age=60', // Short cache for profile pages
-      'Vary': 'X-Original-Host', // Cache varies by original hostname (from divine-router)
-      'X-Divine-Subdomain': subdomain, // Debug header to verify subdomain handling
+      'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
+      'Vary': 'X-Original-Host',
+      'X-Divine-Subdomain': subdomain,
+      'X-Divine-Edge': 'template',
     },
   });
-}
-
-async function readIndexHtmlFromKv() {
-  const { body, sha256 } = await readPublishedStaticFile('/index.html');
-  console.log('Got index.html from KV fallback, sha256:', sha256.slice(0, 16) + '...', 'length:', body.length);
-  return body;
 }
 
 /**
@@ -1066,13 +1092,200 @@ async function handleVideoOgTags(request, videoId, url, funnelcakeTarget) {
       headers: {
         'Content-Type': 'text/html; charset=utf-8',
         'Cache-Control': 'public, max-age=300',
-        'Vary': 'User-Agent', // Cache different versions for crawlers vs browsers
+        'Vary': 'User-Agent',
       },
     });
   } catch (err) {
     console.error('handleVideoOgTags error:', err.message, err.stack);
-    // Return the normal SPA on error
     return await publisherServer.serveRequest(request);
+  }
+}
+
+/**
+ * Handle video page requests — serve full edge-templated HTML for all visitors.
+ * Falls back to SPA shell on error.
+ */
+async function handleVideoPage(request, videoId, url, funnelcakeTarget) {
+  const CACHE_KEY = `page:video:${videoId}`;
+  const CACHE_TTL = 300;
+  const contentStore = new KVStore('divine-web-content');
+  const staticAssets = await getStaticAssets();
+  if (!staticAssets) return null;
+
+  // 1. Check KV page cache
+  try {
+    const cached = await contentStore.get(CACHE_KEY);
+    if (cached) {
+      const parsed = JSON.parse(await cached.text());
+      const age = Math.floor(Date.now() / 1000) - parsed.timestamp;
+      if (age < CACHE_TTL && parsed.assetMainJs === staticAssets.mainJs) {
+        console.log(`Video page cache hit, id: ${videoId}, age: ${age}s`);
+        return new Response(parsed.html, {
+          status: 200,
+          headers: {
+            'Content-Type': 'text/html; charset=utf-8',
+            'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
+            'Vary': 'X-Original-Host',
+            'X-Divine-Edge': 'template',
+          },
+        });
+      }
+    }
+  } catch (e) {
+    console.error('Video page cache read error:', e.message);
+  }
+
+  // 2. Fetch video metadata
+  let videoMeta = null;
+  try {
+    videoMeta = await fetchVideoMetadata(videoId, funnelcakeTarget);
+  } catch (e) {
+    console.error('Failed to fetch video metadata:', e.message);
+  }
+
+  if (!videoMeta) {
+    // Video not found — fall through to SPA
+    return null;
+  }
+
+  // 3. Render full HTML page
+  const html = renderVideoPage({ video: videoMeta, videoId, staticAssets });
+  console.log('Rendered video page, id:', videoId, 'length:', html.length);
+
+  // 4. Cache in KV (fire and forget)
+  try {
+    await contentStore.put(CACHE_KEY, JSON.stringify({
+      html,
+      timestamp: Math.floor(Date.now() / 1000),
+      assetMainJs: staticAssets.mainJs,
+    }));
+  } catch (e) {
+    console.error('Video page cache write error:', e.message);
+  }
+
+  return new Response(html, {
+    status: 200,
+    headers: {
+      'Content-Type': 'text/html; charset=utf-8',
+      'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
+      'Vary': 'X-Original-Host',
+      'X-Divine-Edge': 'template',
+    },
+  });
+}
+
+/**
+ * Handle feed/discovery pages — render edge-templated HTML with video grid.
+ */
+async function handleFeedPage(feedType, funnelcakeTarget) {
+  const CACHE_KEY = `page:feed:${feedType}`;
+  const CACHE_TTL = 60;
+  const contentStore = new KVStore('divine-web-content');
+  const staticAssets = await getStaticAssets();
+  if (!staticAssets) return null;
+
+  // 1. Check KV page cache
+  try {
+    const cached = await contentStore.get(CACHE_KEY);
+    if (cached) {
+      const parsed = JSON.parse(await cached.text());
+      const age = Math.floor(Date.now() / 1000) - parsed.timestamp;
+      if (age < CACHE_TTL && parsed.assetMainJs === staticAssets.mainJs) {
+        console.log(`Feed page cache hit, type: ${feedType}, age: ${age}s`);
+        return new Response(parsed.html, {
+          status: 200,
+          headers: {
+            'Content-Type': 'text/html; charset=utf-8',
+            'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
+            'Vary': 'X-Original-Host',
+            'X-Divine-Edge': 'template',
+          },
+        });
+      }
+    }
+  } catch (e) {
+    console.error('Feed page cache read error:', e.message);
+  }
+
+  // 2. Fetch feed data
+  const feedData = await fetchFeedData(feedType, funnelcakeTarget);
+  if (!feedData) {
+    return null;
+  }
+
+  // 3. Normalize videos array
+  const videos = feedData.videos || feedData;
+
+  // 4. Build compact feed JSON for React (strip bulky Nostr event data)
+  const compactVideos = (Array.isArray(videos) ? videos : []).map(v => ({
+    id: v.id, pubkey: v.pubkey, kind: v.kind, d_tag: v.d_tag,
+    title: v.title, content: v.content, thumbnail: v.thumbnail,
+    video_url: v.video_url, created_at: v.created_at,
+    reactions: v.reactions, comments: v.comments, reposts: v.reposts,
+    loops: v.loops, views: v.views, engagement_score: v.engagement_score,
+    author_name: v.author_name, author_avatar: v.author_avatar,
+  }));
+  const feedJson = JSON.stringify(feedData.videos ? { ...feedData, videos: compactVideos } : compactVideos);
+  const html = renderFeedPage({ videos, feedType, feedJson, staticAssets });
+  console.log('Rendered feed page, type:', feedType, 'videos:', videos.length, 'length:', html.length);
+
+  // 5. Cache in KV
+  try {
+    await contentStore.put(CACHE_KEY, JSON.stringify({
+      html,
+      timestamp: Math.floor(Date.now() / 1000),
+      assetMainJs: staticAssets.mainJs,
+    }));
+  } catch (e) {
+    console.error('Feed page cache write error:', e.message);
+  }
+
+  return new Response(html, {
+    status: 200,
+    headers: {
+      'Content-Type': 'text/html; charset=utf-8',
+      'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
+      'Vary': 'X-Original-Host',
+      'X-Divine-Edge': 'template',
+    },
+  });
+}
+
+/**
+ * Handle search page with query — render edge-templated HTML with results.
+ */
+async function handleSearchPage(query, funnelcakeTarget) {
+  if (!query || !query.trim()) return null;
+
+  try {
+    const staticAssets = await getStaticAssets();
+    if (!staticAssets) return null;
+
+    const resp = await fetchFromFunnelcake(funnelcakeTarget, `/api/search?q=${encodeURIComponent(query)}&limit=20`);
+
+    if (!resp.ok) {
+      console.error('Search API error:', resp.status);
+      return null;
+    }
+
+    const data = await resp.json();
+    const results = data.videos || data.results || data || [];
+
+    const html = renderSearchPage({ query, results, staticAssets });
+    console.log('Rendered search page, query:', query, 'results:', results.length);
+
+    return new Response(html, {
+      status: 200,
+      headers: {
+        'Content-Type': 'text/html; charset=utf-8',
+        'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=60',
+        'Vary': 'X-Original-Host',
+        'X-Divine-Edge': 'template',
+      },
+    });
+  } catch (e) {
+    console.error('Search page error:', e.message);
+    return null;
   }
 }
 
