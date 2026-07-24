@@ -66,6 +66,8 @@ export default function ShowcasePage() {
                 </p>
               )}
             </div>
+
+            <FamilyWelcomeSection />
           </div>
 
           {/* Right column (desktop) / below the copy (mobile): the phone,
@@ -78,10 +80,6 @@ export default function ShowcasePage() {
             <ShowcasePhone isLoading={isLoading} isEmpty={isEmpty} videos={videos} />
           </div>
         </div>
-
-        {/* Full width below the hero grid: who else this is for, and the two
-            doors into the family material. */}
-        <FamilyWelcomeSection />
       </main>
     </MarketingLayout>
   );

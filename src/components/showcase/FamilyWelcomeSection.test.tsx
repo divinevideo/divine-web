@@ -10,7 +10,7 @@ describe("FamilyWelcomeSection", () => {
   it("points families at the family hub", () => {
     render(<FamilyWelcomeSection />);
 
-    const link = screen.getByRole("link", { name: /families on divine/i });
+    const link = screen.getByRole("link", { name: /family guides/i });
     expect(link).toHaveAttribute("href", "/family");
   });
 
