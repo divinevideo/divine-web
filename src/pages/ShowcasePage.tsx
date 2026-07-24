@@ -7,6 +7,7 @@ import { MarketingLayout } from "@/components/MarketingLayout";
 import { SectionHeader } from "@/components/brand/SectionHeader";
 import { GetAppButton } from "@/components/GetAppButton";
 import { ShowcasePhone } from "@/components/showcase/ShowcasePhone";
+import { FamilyWelcomeSection } from "@/components/showcase/FamilyWelcomeSection";
 import { useCuratedShowcase } from "@/hooks/useCuratedShowcase";
 
 export default function ShowcasePage() {
@@ -77,6 +78,10 @@ export default function ShowcasePage() {
             <ShowcasePhone isLoading={isLoading} isEmpty={isEmpty} videos={videos} />
           </div>
         </div>
+
+        {/* Full width below the hero grid: who else this is for, and the two
+            doors into the family material. */}
+        <FamilyWelcomeSection />
       </main>
     </MarketingLayout>
   );
