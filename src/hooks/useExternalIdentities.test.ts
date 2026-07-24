@@ -41,6 +41,7 @@ import {
   verifyIdentityClaim,
   useExternalIdentities,
   SUPPORTED_PLATFORMS,
+  cleanIdentityProof,
   type ExternalIdentity,
 } from './useExternalIdentities';
 
@@ -505,6 +506,35 @@ describe('verifyIdentityClaim', () => {
       'github', 'alice', 'abc123',
       expect.objectContaining({ verified: expect.any(Boolean) }),
     );
+  });
+
+  it('caches manual results under the cleaned proof ID', async () => {
+    const identity: ExternalIdentity = {
+      platform: 'bluesky',
+      identity: 'alice.bsky.social',
+      proof: 'https://bsky.app/profile/alice.bsky.social/post/3jxh5kdbmop2o',
+      profileUrl: 'https://bsky.app/profile/alice.bsky.social',
+      proofUrl: 'https://bsky.app/profile/alice.bsky.social/post/3jxh5kdbmop2o',
+    };
+
+    const result = await verifyIdentityClaim(identity, TEST_PUBKEY);
+
+    expect(result).toEqual({ verified: false, error: 'manual' });
+    expect(mockSetCached).toHaveBeenCalledWith(
+      'bluesky', 'alice.bsky.social', '3jxh5kdbmop2o',
+      { verified: false, error: 'manual' },
+    );
+  });
+});
+
+describe('cleanIdentityProof', () => {
+  it('extracts a Bluesky proof ID from a full proof URL', () => {
+    expect(
+      cleanIdentityProof(
+        'bluesky',
+        'https://bsky.app/profile/alice.bsky.social/post/3jxh5kdbmop2o',
+      ),
+    ).toBe('3jxh5kdbmop2o');
   });
 });
 

@@ -666,14 +666,17 @@
   "linkedAccounts": {
     "verifying": "확인 중...",
     "verified": "확인됨",
-    "unverified": "미확인",
-    "checkProof": "증명 확인",
     "noProof": "증명 없음",
     "profileLink": "프로필",
     "proofLink": "증명",
     "linkedAccountsLabel": "연결된 계정",
     "identityVerificationTitle": "신원 확인",
-    "identityVerificationDescription": "연결된 계정은 NIP-39 신원 증명으로 확인됩니다. 확인된 계정만 표시돼요."
+    "identityVerificationDescription": "Linked accounts use NIP-39 identity proofs. Verified accounts show automatically; unverifiable claims stay hidden unless you choose to show them.",
+    "showUnverified": "Show unverified",
+    "notAutoVerified": "Not auto-verified",
+    "verifyManually": "Verify manually",
+    "verifyManuallyDescription": "We couldn't confirm this automatically. Check the profile to verify it yourself.",
+    "unverifiedBadgeTooltip": "Not auto-verified — click to check the proof"
   },
   "analyticsPage": {
     "seoTitle": "크리에이터 분석 - Divine",

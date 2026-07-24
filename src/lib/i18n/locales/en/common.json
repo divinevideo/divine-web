@@ -666,14 +666,17 @@
   "linkedAccounts": {
     "verifying": "Verifying...",
     "verified": "Verified",
-    "unverified": "Unverified",
-    "checkProof": "Check proof",
     "noProof": "No proof",
     "profileLink": "Profile",
     "proofLink": "Proof",
     "linkedAccountsLabel": "Linked accounts",
     "identityVerificationTitle": "Identity verification",
-    "identityVerificationDescription": "Linked accounts are verified using NIP-39 identity proofs. Only verified accounts are shown."
+    "identityVerificationDescription": "Linked accounts use NIP-39 identity proofs. Verified accounts show automatically; unverifiable claims stay hidden unless you choose to show them.",
+    "showUnverified": "Show unverified",
+    "notAutoVerified": "Not auto-verified",
+    "verifyManually": "Verify manually",
+    "verifyManuallyDescription": "We couldn't confirm this automatically. Check the profile to verify it yourself.",
+    "unverifiedBadgeTooltip": "Not auto-verified — click to check the proof"
   },
   "analyticsPage": {
     "seoTitle": "Creator Analytics - Divine",

@@ -666,14 +666,17 @@
   "linkedAccounts": {
     "verifying": "確認中...",
     "verified": "検証済み",
-    "unverified": "未検証",
-    "checkProof": "証明を確認",
     "noProof": "証明なし",
     "profileLink": "プロフィール",
     "proofLink": "証明",
     "linkedAccountsLabel": "連携アカウント",
     "identityVerificationTitle": "本人確認",
-    "identityVerificationDescription": "連携アカウントはNIP-39の本人確認証明を使って検証されます。検証済みのアカウントのみが表示されます。"
+    "identityVerificationDescription": "Linked accounts use NIP-39 identity proofs. Verified accounts show automatically; unverifiable claims stay hidden unless you choose to show them.",
+    "showUnverified": "Show unverified",
+    "notAutoVerified": "Not auto-verified",
+    "verifyManually": "Verify manually",
+    "verifyManuallyDescription": "We couldn't confirm this automatically. Check the profile to verify it yourself.",
+    "unverifiedBadgeTooltip": "Not auto-verified — click to check the proof"
   },
   "analyticsPage": {
     "seoTitle": "クリエイター分析 - Divine",

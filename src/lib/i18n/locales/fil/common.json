@@ -666,14 +666,17 @@
   "linkedAccounts": {
     "verifying": "Sinusuri...",
     "verified": "Na-verify",
-    "unverified": "Hindi pa na-verify",
-    "checkProof": "Tingnan ang patunay",
     "noProof": "Walang patunay",
     "profileLink": "Profile",
     "proofLink": "Patunay",
     "linkedAccountsLabel": "Mga linked account",
     "identityVerificationTitle": "Pag-verify ng identity",
-    "identityVerificationDescription": "Ang mga linked account ay na-verify gamit ang mga NIP-39 identity proof. Mga na-verify lang ang ipinapakita."
+    "identityVerificationDescription": "Linked accounts use NIP-39 identity proofs. Verified accounts show automatically; unverifiable claims stay hidden unless you choose to show them.",
+    "showUnverified": "Show unverified",
+    "notAutoVerified": "Not auto-verified",
+    "verifyManually": "Verify manually",
+    "verifyManuallyDescription": "We couldn't confirm this automatically. Check the profile to verify it yourself.",
+    "unverifiedBadgeTooltip": "Not auto-verified — click to check the proof"
   },
   "analyticsPage": {
     "seoTitle": "Analytics ng Creator - Divine",

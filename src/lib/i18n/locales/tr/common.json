@@ -666,14 +666,17 @@
   "linkedAccounts": {
     "verifying": "Doğrulanıyor...",
     "verified": "Doğrulandı",
-    "unverified": "Doğrulanmadı",
-    "checkProof": "Kanıtı kontrol et",
     "noProof": "Kanıt yok",
     "profileLink": "Profil",
     "proofLink": "Kanıt",
     "linkedAccountsLabel": "Bağlı hesaplar",
     "identityVerificationTitle": "Kimlik doğrulama",
-    "identityVerificationDescription": "Bağlı hesaplar NIP-39 kimlik kanıtları kullanılarak doğrulanır. Sadece doğrulanmış hesaplar gösterilir."
+    "identityVerificationDescription": "Linked accounts use NIP-39 identity proofs. Verified accounts show automatically; unverifiable claims stay hidden unless you choose to show them.",
+    "showUnverified": "Show unverified",
+    "notAutoVerified": "Not auto-verified",
+    "verifyManually": "Verify manually",
+    "verifyManuallyDescription": "We couldn't confirm this automatically. Check the profile to verify it yourself.",
+    "unverifiedBadgeTooltip": "Not auto-verified — click to check the proof"
   },
   "analyticsPage": {
     "seoTitle": "Yaratıcı Analizleri - Divine",
