@@ -89,3 +89,39 @@ test('showcase page renders its real mobile layout', async ({ page }) => {
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
   await expect(page.getByTestId('curated-showcase')).toBeVisible();
 });
+
+test.describe('showcase hero ordering', () => {
+  // The phone has to come before the family copy on a phone-sized screen: the
+  // reel is the thing the page is showing off, and burying it under every
+  // paragraph pushes it off the first screenful entirely.
+  test('puts the reel above the family block on mobile', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
+
+    const phone = await page.getByTestId('curated-showcase').boundingBox();
+    const family = await page.getByTestId('family-welcome').boundingBox();
+
+    expect(phone, 'reel has no box').not.toBeNull();
+    expect(family, 'family block has no box').not.toBeNull();
+    expect(
+      phone!.y,
+      `reel starts at ${phone!.y}, family block at ${family!.y}`,
+    ).toBeLessThan(family!.y);
+  });
+
+  // On desktop the two share a row instead of stacking, so the family block
+  // stays in the left column beside the phone rather than dropping below it.
+  test('keeps the family block beside the reel on desktop', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
+
+    const phone = await page.getByTestId('curated-showcase').boundingBox();
+    const family = await page.getByTestId('family-welcome').boundingBox();
+
+    expect(family!.x, 'family block should sit left of the reel').toBeLessThan(phone!.x);
+    expect(
+      family!.y,
+      'family block should start before the reel ends',
+    ).toBeLessThan(phone!.y + phone!.height);
+  });
+});

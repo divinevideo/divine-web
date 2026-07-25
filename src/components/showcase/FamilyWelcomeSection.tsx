@@ -2,14 +2,19 @@
 // ABOUTME: Styled to match the joyscrolling block above it — heading plus one muted paragraph
 
 import { SectionHeader } from "@/components/brand/SectionHeader";
+import { cn } from "@/lib/utils";
 
 // Inline link treatment for body copy on a light surface, same as the static pages.
 const LINK_CLASS =
   "text-brand-dark-green dark:text-brand-green underline underline-offset-2 hover:opacity-80";
 
-export function FamilyWelcomeSection() {
+export function FamilyWelcomeSection({ className }: { className?: string }) {
   return (
-    <section aria-labelledby="family-welcome" className="mt-8" data-testid="family-welcome">
+    <section
+      aria-labelledby="family-welcome"
+      className={cn("mt-8", className)}
+      data-testid="family-welcome"
+    >
       <SectionHeader as="h2" id="family-welcome" className="text-xl sm:text-2xl mb-2">
         Building a healthier social media experience
       </SectionHeader>
