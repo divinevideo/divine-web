@@ -41,7 +41,7 @@ export default function ShowcasePage() {
               Authentic moments. Human creativity.
             </h1>
             <p className="mt-4 text-base sm:text-lg text-muted-foreground text-pretty">
-              In a world of AI-generated content, Divine is putting creativity back in
+              In a world of AI slop, Divine is putting creativity back in
               human hands. Create, share, and discover old gems and new favorites. This is
               social media for humans, by humans. 6 seconds at a time.
             </p>
