@@ -14,9 +14,9 @@ import {
   getSupportDmConversationPath,
   isSupportDmRecipient,
   isSupportOnlyDmPeerSet,
-  SUPPORT_ONLY_DM_ERROR_MESSAGE,
 } from '@/lib/dmAccessPolicy';
 
+const CURRENT_USER_PUBKEY = 'cd'.repeat(32);
 const OTHER_PUBKEY = 'ab'.repeat(32);
 
 function message(id: string, peerPubkeys: string[]): DmMessage {
@@ -25,7 +25,7 @@ function message(id: string, peerPubkeys: string[]): DmMessage {
     wrapId: `wrap-${id}`,
     rumorId: `rumor-${id}`,
     senderPubkey: OTHER_PUBKEY,
-    participantPubkeys: peerPubkeys,
+    participantPubkeys: [CURRENT_USER_PUBKEY, ...peerPubkeys],
     peerPubkeys,
     content: 'Need help',
     createdAt: 1,
@@ -52,9 +52,11 @@ describe('support-only DM access policy', () => {
     expect(isSupportOnlyDmPeerSet([DIVINE_SUPPORT_PUBKEY, OTHER_PUBKEY])).toBe(false);
   });
 
-  it('throws the typed error for peer sets other than Support alone', () => {
+  it('allows only Support alone as DM recipients', () => {
+    expect(() => assertSupportOnlyDmRecipients([DIVINE_SUPPORT_PUBKEY])).not.toThrow();
+    expect(() => assertSupportOnlyDmRecipients([])).toThrow(DmSupportOnlyError);
     expect(() => assertSupportOnlyDmRecipients([OTHER_PUBKEY])).toThrow(DmSupportOnlyError);
-    expect(() => assertSupportOnlyDmRecipients([OTHER_PUBKEY])).toThrow(SUPPORT_ONLY_DM_ERROR_MESSAGE);
+    expect(() => assertSupportOnlyDmRecipients([DIVINE_SUPPORT_PUBKEY, OTHER_PUBKEY])).toThrow(DmSupportOnlyError);
   });
 
   it('retains only Support messages', () => {
