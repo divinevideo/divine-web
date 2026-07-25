@@ -1,4 +1,4 @@
-// ABOUTME: Homepage copy block inviting families in and pointing teens at Divine Greenlight
+// ABOUTME: Homepage copy block on healthier social media, linking the family guides and Divine Greenlight
 // ABOUTME: Styled to match the joyscrolling block above it — heading plus one muted paragraph
 
 import { SectionHeader } from "@/components/brand/SectionHeader";
@@ -11,21 +11,20 @@ export function FamilyWelcomeSection() {
   return (
     <section aria-labelledby="family-welcome" className="mt-8" data-testid="family-welcome">
       <SectionHeader as="h2" id="family-welcome" className="text-xl sm:text-2xl mb-2">
-        Bring the whole house
+        Building a healthier social media experience
       </SectionHeader>
       <p className="max-w-xl text-muted-foreground text-pretty">
-        In most homes, social media is a thing to argue about—screen time, what they
-        saw, who they're talking to. We're building for the opposite. Parents and kids
-        make loops together here, and our{" "}
+        Screen time is a fight in a lot of homes. It doesn't have to be. Parents and
+        kids make loops together here, and some of our favorite videos are theirs. Our{" "}
         <a href="/family" className={LINK_CLASS}>
           family guides
         </a>{" "}
-        cover the rest. Where local rules allow it, teens 13-15 can start with a parent
-        or guardian alongside them through{" "}
+        cover the conversations that help, and{" "}
         <a href="/kids#13-15" className={LINK_CLASS}>
           Divine Greenlight
-        </a>
-        .
+        </a>{" "}
+        gives teens 13-15 a guided start with a parent or guardian alongside them, where
+        local rules allow it.
       </p>
     </section>
   );
