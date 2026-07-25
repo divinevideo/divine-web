@@ -14,10 +14,11 @@ export function FamilyWelcomeSection() {
         Building a healthier social media experience
       </SectionHeader>
       <p className="max-w-xl text-muted-foreground text-pretty">
-        We're trying to rethink social media. No app has all the answers, and we do not
-        pretend to. We are parents and social media users, too, working to make our
-        little corner of the internet a bit healthier by helping families navigate tough
-        conversations about screens and build positive online habits together. Our{" "}
+        No app has all the answers, and we don’t pretend to. We’re parents and social
+        media users, too, trying to make the internet more thoughtful, creative, and
+        human. That means helping families have productive conversations about screens,
+        decide what works for them, and build healthier online habits together. Our
+        research-backed{" "}
         <a href="/family" className={LINK_CLASS}>
           family guides
         </a>{" "}
