@@ -54,9 +54,9 @@ export default function ShowcasePage() {
                 Your joyscrolling era starts now
               </SectionHeader>
               <p className="max-w-xl text-muted-foreground text-pretty">
-                Enjoy this hand-crafted set of what's happening on Divine right now, from
-                nostalgic classics to fresh, new takes. Want more? Grab the app to join in
-                the fun.
+                Explore a handpicked mix of what’s happening on Divine right now, from
+                nostalgic classics to fresh new takes. Ready for more? Download the app
+                and join the fun.
               </p>
               {isEmpty && (
                 <p className="mt-4 text-muted-foreground" data-testid="showcase-empty">
