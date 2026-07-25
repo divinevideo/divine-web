@@ -1,10 +1,11 @@
 // ABOUTME: Vertical scroll-snap reel of curated videos, framed like a phone
-// ABOUTME: Swipe/scroll, or tap top/bottom of the screen; read-only, share only
+// ABOUTME: Tap top/bottom or arrow-key through it in a loop; read-only, share only
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useShowcaseShare } from '@/hooks/useShowcaseShare';
 import { getVideoShareData } from '@/lib/shareUtils';
 import { ShowcaseSlide } from '@/components/showcase/ShowcaseSlide';
+import { isWrap, wrapIndex } from '@/lib/wrapIndex';
 import type { ParsedVideoData } from '@/types/video';
 
 interface ShowcaseReelProps {
@@ -50,16 +51,38 @@ export function ShowcaseReel({ videos }: ShowcaseReelProps) {
     return () => observer.disconnect();
   }, [videos.length]);
 
-  const scrollToSlide = useCallback((index: number) => {
-    const scroller = scrollerRef.current;
-    if (!scroller) return;
-    const clamped = Math.max(0, Math.min(index, slideRefs.current.length - 1));
-    // Scroll the reel container itself rather than scrollIntoView(), which would
-    // also scroll every ancestor — including the window — and shove the whole
-    // page up so the phone's top clips under the header. Each slide is exactly
-    // the scroller's height, so slide N sits at N × clientHeight.
-    scroller.scrollTo({ top: clamped * scroller.clientHeight, behavior: 'smooth' });
-  }, []);
+  // Step the reel by a number of slides, looping past either end.
+  //
+  // The current slide comes from the scroller's own scrollTop rather than from
+  // `activeIndex`: that state is set by an IntersectionObserver callback, so it
+  // trails the actual scroll position by a frame or more. Reading it here meant
+  // a second tap landing before the observer caught up computed its target from
+  // a stale index and jumped to the wrong clip. Scroll position is authoritative
+  // and always current.
+  const stepSlides = useCallback(
+    (delta: number) => {
+      const scroller = scrollerRef.current;
+      if (!scroller) return;
+      const count = videos.length;
+      if (count === 0) return;
+
+      const current = Math.round(scroller.scrollTop / scroller.clientHeight);
+      const requested = current + delta;
+      // Scroll the reel container itself rather than scrollIntoView(), which would
+      // also scroll every ancestor — including the window — and shove the whole
+      // page up so the phone's top clips under the header. Each slide is exactly
+      // the scroller's height, so slide N sits at N × clientHeight.
+      //
+      // A wrap jumps instantly instead of animating: smooth-scrolling from the
+      // last slide back to the first would rewind through every clip in between,
+      // which reads as a glitch rather than a loop.
+      scroller.scrollTo({
+        top: wrapIndex(requested, count) * scroller.clientHeight,
+        behavior: isWrap(requested, count) ? 'auto' : 'smooth',
+      });
+    },
+    [videos.length],
+  );
 
   // Arrow keys page the reel when it (or a child) holds focus — the keyboard
   // equivalent of the tap zones.
@@ -67,13 +90,13 @@ export function ShowcaseReel({ videos }: ShowcaseReelProps) {
     (e: React.KeyboardEvent) => {
       if (e.key === 'ArrowDown') {
         e.preventDefault();
-        scrollToSlide(activeIndex + 1);
+        stepSlides(1);
       } else if (e.key === 'ArrowUp') {
         e.preventDefault();
-        scrollToSlide(activeIndex - 1);
+        stepSlides(-1);
       }
     },
-    [activeIndex, scrollToSlide],
+    [stepSlides],
   );
 
   return (
@@ -99,8 +122,8 @@ export function ShowcaseReel({ videos }: ShowcaseReelProps) {
               muted={muted}
               onToggleMute={onToggleMute}
               onShare={onShare}
-              onTapPrev={() => scrollToSlide(activeIndex - 1)}
-              onTapNext={() => scrollToSlide(activeIndex + 1)}
+              onTapPrev={() => stepSlides(-1)}
+              onTapNext={() => stepSlides(1)}
             />
           </div>
         ))}
