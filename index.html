@@ -15,8 +15,13 @@
          with self-referencing canonicals at build time. -->
 
     <!-- PWA Meta Tags -->
-    <title>Divine Web - Short-form Looping Videos on Nostr</title>
-    <meta name="description" content="Watch and share 6-second looping videos on the decentralized Nostr network." />
+    <!-- These are the shell defaults, and on the apex they are also what social
+         crawlers actually read: / is not prerendered, and in showcase mode the
+         edge worker no longer injects OG tags for the homepage. Crawlers do not
+         run JS, so ShowcasePage's useSeoMeta never reaches them. Keep these in
+         sync with the useSeoMeta call in src/pages/ShowcasePage.tsx. -->
+    <title>Divine — short video on an open protocol</title>
+    <meta name="description" content="Six-second loops, no algorithm feeding you slop. Get Divine on iOS, Android, Zapstore, or build it yourself." />
     <meta name="theme-color" content="#27C58B" />
     <!-- X-Frame-Options must be set by server headers; remove meta to avoid console error -->
     
@@ -30,18 +35,18 @@
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://divine.video/" />
-    <meta property="og:title" content="Divine Web - Short-form Looping Videos on Nostr" />
-    <meta property="og:description" content="Watch and share 6-second looping videos on the decentralized Nostr network." />
+    <meta property="og:title" content="Divine — short video on an open protocol" />
+    <meta property="og:description" content="Six-second loops, no algorithm feeding you slop. Get Divine on iOS, Android, Zapstore, or build it yourself." />
     <meta property="og:image" content="https://divine.video/og.png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
-    <meta property="og:image:alt" content="Divine Web - Short-form looping videos on the Nostr network" />
+    <meta property="og:image:alt" content="Divine — six-second looping videos from real humans" />
     <meta property="og:image:type" content="image/png" />
 
     <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Divine Web - Short-form Looping Videos on Nostr" />
-    <meta name="twitter:description" content="Watch and share 6-second looping videos on the decentralized Nostr network." />
+    <meta name="twitter:title" content="Divine — short video on an open protocol" />
+    <meta name="twitter:description" content="Six-second loops, no algorithm feeding you slop. Get Divine on iOS, Android, Zapstore, or build it yourself." />
     <meta name="twitter:image" content="https://divine.video/og.png" />
 
     <!-- Icons -->

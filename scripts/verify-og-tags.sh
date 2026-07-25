@@ -175,7 +175,11 @@ run_check() {
       og_title_not_brand)
         local og_title
         og_title=$(extract_meta "$body" "og:title")
-        if [[ "$og_title" == "Divine Web - Short-form Looping Videos on Nostr" ]]; then
+        # Both the current shell default and the one it replaced count as "no
+        # handler fired". Keeping the old string means this still catches a
+        # stale cached shell being served from the edge.
+        if [[ "$og_title" == "Divine — short video on an open protocol" ]] \
+          || [[ "$og_title" == "Divine Web - Short-form Looping Videos on Nostr" ]]; then
           all_passed=false
           echo "    FAIL: og:title is generic brand fallback (no per-route handler fired)"
           echo "          got: ${og_title}"
