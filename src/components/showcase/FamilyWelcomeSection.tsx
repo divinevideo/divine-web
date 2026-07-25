@@ -14,12 +14,12 @@ export function FamilyWelcomeSection() {
         Building a healthier social media experience
       </SectionHeader>
       <p className="max-w-xl text-muted-foreground text-pretty">
-        Screen time is a fight in a lot of homes. It doesn't have to be. Some of our
-        favorite videos come from parents and kids creating together, and our{" "}
+        Screen time is a battle in many homes. It does not have to be. Some of our
+        favorite videos are made by parents and kids together, and our{" "}
         <a href="/family" className={LINK_CLASS}>
           family guides
         </a>{" "}
-        cover the conversations that help.
+        help start the conversations that matter.
       </p>
       {/*
         Second paragraph tracks /kids and the Terms: 16+ without parental
@@ -27,13 +27,14 @@ export function FamilyWelcomeSection() {
         local law allows. Keep these three claims in sync with those pages.
       */}
       <p className="mt-3 max-w-xl text-muted-foreground text-pretty">
-        Divine is built for 16 and up, but we live in the real world. We don't host solo
-        accounts for under-13s—a parent or guardian holds the account, and kids can be
-        in the videos. Where local rules allow it,{" "}
+        Divine is designed for ages 16 and up, but we know younger people may still want
+        to participate. Children under 13 cannot hold their own accounts; a parent or
+        guardian must manage the account, though kids can appear in videos. Where local
+        rules permit,{" "}
         <a href="/kids#13-15" className={LINK_CLASS}>
           Divine Greenlight
         </a>{" "}
-        gives teens 13-15 a guided start with a parent or guardian alongside them.
+        gives teens ages 13–15 a guided start alongside a parent or guardian.
       </p>
     </section>
   );
