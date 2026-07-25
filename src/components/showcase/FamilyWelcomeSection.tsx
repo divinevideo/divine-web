@@ -14,8 +14,8 @@ export function FamilyWelcomeSection() {
         Building a healthier social media experience
       </SectionHeader>
       <p className="max-w-xl text-muted-foreground text-pretty">
-        Screen time is a fight in a lot of homes. It doesn't have to be. Parents and
-        kids make loops together here, and some of our favorite videos are theirs. Our{" "}
+        Screen time is a fight in a lot of homes. It doesn't have to be. Some of our
+        favorite videos come from parents and kids creating together. Our{" "}
         <a href="/family" className={LINK_CLASS}>
           family guides
         </a>{" "}
