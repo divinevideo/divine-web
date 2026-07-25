@@ -10,14 +10,14 @@ describe("FamilyWelcomeSection", () => {
   it("points families at the family hub", () => {
     render(<FamilyWelcomeSection />);
 
-    const link = screen.getByRole("link", { name: /family guides/i });
+    const link = screen.getByRole("link", { name: /resources/i });
     expect(link).toHaveAttribute("href", "/family");
   });
 
   it("points readers at the kids policy", () => {
     render(<FamilyWelcomeSection />);
 
-    const link = screen.getByRole("link", { name: /kids policy/i });
+    const link = screen.getByRole("link", { name: /tools/i });
     expect(link).toHaveAttribute("href", "/kids");
   });
 
