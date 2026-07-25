@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderHook, waitFor, act } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
@@ -15,6 +15,14 @@ vi.mock('@/hooks/useCurrentUser', () => ({
   }),
 }));
 
+const mockNormalizeVideoArrayResponse = vi.fn(
+  (videos: unknown[], { limit = 20 }: { limit?: number } = {}) => ({
+    videos,
+    has_more: videos.length >= limit,
+    next_cursor: videos.length >= limit ? '1234567' : undefined,
+  })
+);
+
 vi.mock('@/lib/funnelcakeClient', () => ({
   fetchVideos: mockFetchVideos,
   fetchVideosV2: mockFetchVideosV2,
@@ -22,6 +30,7 @@ vi.mock('@/lib/funnelcakeClient', () => ({
   fetchUserVideos: vi.fn(),
   fetchUserFeed: vi.fn(),
   fetchRecommendations: mockFetchRecommendations,
+  normalizeVideoArrayResponse: mockNormalizeVideoArrayResponse,
 }));
 
 vi.mock('@/lib/funnelcakeTransform', () => ({
@@ -58,6 +67,100 @@ let useInfiniteVideosFunnelcake: typeof import('./useInfiniteVideosFunnelcake').
 beforeEach(async () => {
   vi.clearAllMocks();
   ({ useInfiniteVideosFunnelcake } = await import('./useInfiniteVideosFunnelcake'));
+});
+
+describe('edge-injected feed handling', () => {
+  afterEach(() => {
+    delete window.__DIVINE_FEED__;
+    delete window.__DIVINE_FEED_TYPE__;
+  });
+
+  it('uses an injected envelope with videos and skips the network fetch', async () => {
+    window.__DIVINE_FEED__ = {
+      videos: [{ id: 'raw-1' }],
+      has_more: true,
+      next_cursor: 'o:10',
+    } as never;
+    window.__DIVINE_FEED_TYPE__ = 'trending';
+    mockTransformToVideoPage.mockReturnValueOnce({
+      videos: [{ id: 'video-1', pubkey: 'p1', kind: 34236, createdAt: 101, vineId: 'd-1' }],
+      nextCursor: 'o:10',
+      hasMore: true,
+    });
+
+    const { result } = renderHook(
+      () => useInfiniteVideosFunnelcake({ feedType: 'trending', pageSize: 10 }),
+      { wrapper: createWrapper() }
+    );
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+
+    // Opaque-cursor feed: injected envelope passed straight through with 'cursor' type
+    expect(mockTransformToVideoPage).toHaveBeenCalledWith(
+      expect.objectContaining({ next_cursor: 'o:10' }),
+      'cursor'
+    );
+    expect(mockFetchVideosV2).not.toHaveBeenCalled();
+    expect(result.current.data?.pages[0].videos).toHaveLength(1);
+    expect(window.__DIVINE_FEED__).toBeUndefined();
+  });
+
+  it('falls back to the network fetch when the injected payload parses empty', async () => {
+    window.__DIVINE_FEED__ = [] as never;
+    window.__DIVINE_FEED_TYPE__ = 'trending';
+    mockTransformToVideoPage
+      .mockReturnValueOnce({ videos: [], nextCursor: undefined, hasMore: false })
+      .mockReturnValueOnce({
+        videos: [{ id: 'video-1', pubkey: 'p1', kind: 34236, createdAt: 101, vineId: 'd-1' }],
+        nextCursor: undefined,
+        hasMore: false,
+      });
+    mockFetchVideosV2.mockResolvedValueOnce({ videos: [{}], has_more: false, next_cursor: undefined });
+
+    const { result } = renderHook(
+      () => useInfiniteVideosFunnelcake({ feedType: 'trending', pageSize: 10 }),
+      { wrapper: createWrapper() }
+    );
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+
+    expect(mockFetchVideosV2).toHaveBeenCalled();
+    expect(result.current.data?.pages[0].videos).toHaveLength(1);
+  });
+
+  it('wraps injected bare arrays for v1-paginated feeds so scrolling can continue', async () => {
+    const rawVideos = Array.from({ length: 10 }, (_, i) => ({ id: `raw-${i}`, created_at: 1000 - i }));
+    window.__DIVINE_FEED__ = rawVideos as never;
+    window.__DIVINE_FEED_TYPE__ = 'recent';
+    mockTransformToVideoPage.mockReturnValueOnce({
+      videos: [{ id: 'video-1', pubkey: 'p1', kind: 34236, createdAt: 101, vineId: 'd-1' }],
+      nextCursor: 1234567,
+      hasMore: true,
+    });
+
+    const { result } = renderHook(
+      () => useInfiniteVideosFunnelcake({ feedType: 'recent', pageSize: 10 }),
+      { wrapper: createWrapper() }
+    );
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+
+    expect(mockNormalizeVideoArrayResponse).toHaveBeenCalledWith(rawVideos, {
+      sort: 'recent',
+      limit: 10,
+    });
+    expect(mockTransformToVideoPage).toHaveBeenCalledWith(
+      expect.objectContaining({ videos: rawVideos, has_more: true }),
+      'timestamp'
+    );
+    expect(mockFetchVideos).not.toHaveBeenCalled();
+  });
 });
 
 describe('useInfiniteVideosFunnelcake', () => {

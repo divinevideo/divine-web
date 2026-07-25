@@ -157,6 +157,29 @@ export async function checkFunnelcakeAvailable(
 }
 
 /**
+ * Wrap a bare v1 video array in the FunnelcakeResponse envelope, synthesizing
+ * the pagination cursor the same way fetchVideos does for direct fetches:
+ * offset-based for sorted feeds, timestamp for chronological (sort=recent).
+ * Used for edge-injected feeds, which arrive as raw v1 arrays.
+ */
+export function normalizeVideoArrayResponse(
+  videos: FunnelcakeVideoRaw[],
+  { sort = 'trending', limit = 20, offset = 0 }: { sort?: string; limit?: number; offset?: number } = {}
+): FunnelcakeResponse {
+  const videoCount = videos.length;
+  const nextOffset = offset + videoCount;
+  const next_cursor = videoCount >= limit
+    ? (sort !== 'recent' ? String(nextOffset) : String(videos[videoCount - 1].created_at))
+    : undefined;
+
+  return {
+    videos,
+    has_more: videoCount >= limit,
+    next_cursor,
+  };
+}
+
+/**
  * Fetch videos from Funnelcake API
  *
  * @param apiUrl - Base URL of the Funnelcake API

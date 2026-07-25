@@ -7,7 +7,7 @@ import { getFunnelcakeBaseUrl } from '@/config/api';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import type { ParsedVideoData } from '@/types/video';
 import type { FunnelcakeFetchOptions } from '@/types/funnelcake';
-import { fetchVideos, fetchVideosV2, searchVideos, fetchUserVideos, fetchUserFeed, fetchRecommendations } from '@/lib/funnelcakeClient';
+import { fetchVideos, fetchVideosV2, searchVideos, fetchUserVideos, fetchUserFeed, fetchRecommendations, normalizeVideoArrayResponse } from '@/lib/funnelcakeClient';
 import { enrichAgeRestrictedVideos } from '@/lib/ageRestrictedVideos';
 import { transformToVideoPage } from '@/lib/funnelcakeTransform';
 import { debugLog } from '@/lib/debug';
@@ -232,22 +232,48 @@ export function useInfiniteVideosFunnelcake({
         const edgeData = window.__DIVINE_FEED__;
         delete window.__DIVINE_FEED__; // Consume once
         delete window.__DIVINE_FEED_TYPE__;
-        debugLog(`[useInfiniteVideosFunnelcake] Using edge-injected ${feedType} feed data`);
 
-        const page = transformToVideoPage(edgeData);
-        performanceMonitor.recordFeedLoad({
-          feedType: 'funnelcake-trending',
-          queryTime: 0,
-          parseTime: performance.now() - totalStart,
-          totalTime: performance.now() - totalStart,
-          videoCount: page.videos.length,
-          sortMode,
-        });
-        return {
-          videos: page.videos,
-          nextCursor: page.nextCursor,
-          offset: page.offset,
-        };
+        // Injected trending/popular pages paginate with the v2 opaque cursor,
+        // matching the cursorType used for network fetches of the same feed.
+        const edgeCursorType =
+          feedType === 'recommendations' || feedType === 'trending' || feedType === 'popular'
+            ? 'cursor'
+            : 'timestamp';
+
+        // The worker may inject a bare v1 array. For v1-paginated feeds, wrap it
+        // with a synthesized cursor (same rules as fetchVideos) so scrolling
+        // continues past the injected page. Opaque-cursor (v2) feeds can't
+        // synthesize a valid cursor from an array, so those render as a single
+        // page — the worker injects a v2 envelope for them instead.
+        const edgePayload =
+          Array.isArray(edgeData) && edgeCursorType === 'timestamp'
+            ? normalizeVideoArrayResponse(edgeData, {
+                sort: feedType === 'classics' ? 'loops' : 'recent',
+                limit: 10,
+              })
+            : edgeData;
+        const page = transformToVideoPage(edgePayload, edgeCursorType);
+
+        // An empty or unparseable injected payload must never become the first
+        // page (it would render the empty state and stop pagination) — fall
+        // through to a normal network fetch instead.
+        if (page.videos.length > 0) {
+          debugLog(`[useInfiniteVideosFunnelcake] Using edge-injected ${feedType} feed data`);
+          performanceMonitor.recordFeedLoad({
+            feedType: 'funnelcake-trending',
+            queryTime: 0,
+            parseTime: performance.now() - totalStart,
+            totalTime: performance.now() - totalStart,
+            videoCount: page.videos.length,
+            sortMode,
+          });
+          return {
+            videos: page.videos,
+            nextCursor: page.nextCursor,
+            offset: page.offset,
+          };
+        }
+        debugLog(`[useInfiniteVideosFunnelcake] Edge-injected ${feedType} feed empty or unparseable; fetching from network`);
       }
 
       // Handle pagination cursor

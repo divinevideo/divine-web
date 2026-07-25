@@ -24,7 +24,7 @@ import {
 } from './crawlerHandlers.js';
 import { transformVideoApiResponse } from './videoMetadata.js';
 import { renderEmbedPage } from './embedPage.js';
-import { resolveFeedInjectedHtml } from './feedInjection.js';
+import { resolveFeedInjectedHtml, normalizeFeedResponse } from './feedInjection.js';
 
 const publisherServer = PublisherServer.fromStaticPublishRc(rc);
 const DEFAULT_OG_IMAGE = 'https://divine.video/og.png';
@@ -386,7 +386,9 @@ function getDiscoveryFeedType(pathname) {
  */
 function getFeedApiUrl(feedType) {
   switch (feedType) {
-    case 'trending': return '/api/videos?sort=trending&limit=10';
+    // v2 envelope carries the opaque cursor the client needs to keep paginating
+    // past the injected first page; v1 arrays cannot express one for this feed.
+    case 'trending': return '/api/v2/videos?sort=watching&limit=10';
     case 'recent': return '/api/videos?sort=recent&limit=10';
     case 'classics': return '/api/videos?sort=loops&limit=10';
     default: return '/api/videos?sort=trending&limit=10';
@@ -442,7 +444,7 @@ async function fetchFeedData(feedType = 'trending', funnelcakeTarget = getFunnel
     const apiPath = getFeedApiUrl(feedType);
     const resp = await fetchFromFunnelcake(funnelcakeTarget, apiPath);
     if (resp.ok) {
-      feedData = await resp.json();
+      feedData = normalizeFeedResponse(await resp.json());
       // 3. Update KV cache (fire and forget)
       try {
         await contentStore.put(CACHE_KEY, JSON.stringify({
