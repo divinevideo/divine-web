@@ -14,23 +14,15 @@ export function FamilyWelcomeSection() {
         Building a healthier social media experience
       </SectionHeader>
       <p className="max-w-xl text-muted-foreground text-pretty">
-        Social media is facing understandable scrutiny around the world. Divine is not
-        built for children under 13, and account rules vary by age and location. Where
-        permitted, teens ages 13–15 can join through{" "}
-        <a href="/kids#13-15" className={LINK_CLASS}>
-          Divine Greenlight
-        </a>{" "}
-        with an involved parent or guardian. Families are welcome to enjoy Divine
-        together, and our{" "}
-        <a href="/kids" className={LINK_CLASS}>
-          tools
-        </a>{" "}
-        and{" "}
+        Social media is facing understandable scrutiny around the world. We believe the
+        challenges of an increasingly digital world call for better solutions than
+        blanket bans or mass surveillance. As part of our commitment to a more
+        human-centered internet, we’ve created research-backed tools to help families
+        build healthy online habits together. Visit our{" "}
         <a href="/family" className={LINK_CLASS}>
-          resources
+          family resources page
         </a>{" "}
-        are designed to help them make informed choices as we work toward a better
-        internet for everyone.
+        to learn more.
       </p>
     </section>
   );

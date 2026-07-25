@@ -10,24 +10,16 @@ describe("FamilyWelcomeSection", () => {
   it("points families at the family hub", () => {
     render(<FamilyWelcomeSection />);
 
-    const link = screen.getByRole("link", { name: /resources/i });
+    const link = screen.getByRole("link", { name: /family resources page/i });
     expect(link).toHaveAttribute("href", "/family");
   });
 
-  it("points readers at the kids policy", () => {
+  it("sends readers to exactly one destination", () => {
     render(<FamilyWelcomeSection />);
 
-    const link = screen.getByRole("link", { name: /tools/i });
-    expect(link).toHaveAttribute("href", "/kids");
-  });
-
-  it("points teens at the Divine Greenlight section of the kids policy", () => {
-    render(<FamilyWelcomeSection />);
-
-    const link = screen.getByRole("link", { name: /divine greenlight/i });
-    // The 13-15 anchor is the Greenlight section on /kids; a bare /kids link
-    // would drop the reader at the top of a long policy page.
-    expect(link).toHaveAttribute("href", "/kids#13-15");
+    // The block deliberately carries a single call to action. /kids stays
+    // reachable through the footer, and Greenlight is a section within it.
+    expect(screen.getAllByRole("link")).toHaveLength(1);
   });
 
   it("renders as an h2 section so it nests under the page h1", () => {
