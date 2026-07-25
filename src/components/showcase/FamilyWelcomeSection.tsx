@@ -14,19 +14,23 @@ export function FamilyWelcomeSection() {
         Building a healthier social media experience
       </SectionHeader>
       <p className="max-w-xl text-muted-foreground text-pretty">
-        No app has all the answers, and we don’t pretend to. We’re parents and social
-        media users, too, trying to make the internet more thoughtful, creative, and
-        human. That means helping families have productive conversations about screens,
-        decide what works for them, and build healthier online habits together. Our
-        research-backed{" "}
+        No app has all the answers, and we don’t pretend to. We’re simply trying to make
+        the internet more thoughtful, creative, and human. When it comes to kids and
+        Divine, that means giving families tools to have productive conversations about
+        social media, decide what works for them, and build healthier online habits
+        together. Our research-backed{" "}
+        <a href="/kids" className={LINK_CLASS}>
+          kids policy
+        </a>
+        ,{" "}
         <a href="/family" className={LINK_CLASS}>
           family guides
-        </a>{" "}
-        and{" "}
+        </a>
+        , and{" "}
         <a href="/kids#13-15" className={LINK_CLASS}>
           Divine Greenlight
         </a>{" "}
-        are here to help.
+        are here to support them.
       </p>
     </section>
   );

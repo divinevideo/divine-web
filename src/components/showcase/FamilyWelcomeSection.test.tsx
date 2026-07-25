@@ -14,6 +14,13 @@ describe("FamilyWelcomeSection", () => {
     expect(link).toHaveAttribute("href", "/family");
   });
 
+  it("points readers at the kids policy", () => {
+    render(<FamilyWelcomeSection />);
+
+    const link = screen.getByRole("link", { name: /kids policy/i });
+    expect(link).toHaveAttribute("href", "/kids");
+  });
+
   it("points teens at the Divine Greenlight section of the kids policy", () => {
     render(<FamilyWelcomeSection />);
 
