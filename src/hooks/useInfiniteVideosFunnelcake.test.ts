@@ -3,6 +3,8 @@ import { renderHook, waitFor, act } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
 
+import type { FunnelcakeVideoRaw } from '@/types/funnelcake';
+
 const mockFetchVideos = vi.fn();
 const mockFetchVideosV2 = vi.fn();
 const mockSearchVideos = vi.fn();
@@ -64,6 +66,20 @@ function createWrapper() {
 
 let useInfiniteVideosFunnelcake: typeof import('./useInfiniteVideosFunnelcake').useInfiniteVideosFunnelcake;
 
+function makeRawVideo(overrides: Partial<FunnelcakeVideoRaw> = {}): FunnelcakeVideoRaw {
+  return {
+    id: 'video-1',
+    pubkey: 'pubkey-1',
+    created_at: 1700000000,
+    kind: 34236,
+    d_tag: 'vine-id',
+    title: 'Test title',
+    content: 'Test content',
+    video_url: 'https://media.divine.video/0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef.mp4',
+    ...overrides,
+  };
+}
+
 beforeEach(async () => {
   vi.clearAllMocks();
   ({ useInfiniteVideosFunnelcake } = await import('./useInfiniteVideosFunnelcake'));
@@ -76,17 +92,17 @@ describe('edge-injected feed handling', () => {
   });
 
   it('uses an injected envelope with videos and skips the network fetch', async () => {
+    const { transformToVideoPage } = await vi.importActual<typeof import('@/lib/funnelcakeTransform')>(
+      '@/lib/funnelcakeTransform'
+    );
+    mockTransformToVideoPage.mockImplementationOnce(transformToVideoPage);
+
     window.__DIVINE_FEED__ = {
-      videos: [{ id: 'raw-1' }],
+      videos: [makeRawVideo()],
       has_more: true,
       next_cursor: 'o:10',
     } as never;
     window.__DIVINE_FEED_TYPE__ = 'trending';
-    mockTransformToVideoPage.mockReturnValueOnce({
-      videos: [{ id: 'video-1', pubkey: 'p1', kind: 34236, createdAt: 101, vineId: 'd-1' }],
-      nextCursor: 'o:10',
-      hasMore: true,
-    });
 
     const { result } = renderHook(
       () => useInfiniteVideosFunnelcake({ feedType: 'trending', pageSize: 10 }),
@@ -104,6 +120,7 @@ describe('edge-injected feed handling', () => {
     );
     expect(mockFetchVideosV2).not.toHaveBeenCalled();
     expect(result.current.data?.pages[0].videos).toHaveLength(1);
+    expect(result.current.hasNextPage).toBe(true);
     expect(window.__DIVINE_FEED__).toBeUndefined();
   });
 

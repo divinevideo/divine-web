@@ -13,6 +13,8 @@ import { transformToVideoPage } from '@/lib/funnelcakeTransform';
 import { debugLog } from '@/lib/debug';
 import { performanceMonitor } from '@/lib/performanceMonitoring';
 
+const EDGE_INJECTED_FEED_LIMIT = 10;
+
 export type FunnelcakeFeedType = 'trending' | 'recent' | 'classics' | 'hashtag' | 'profile' | 'home' | 'recommendations' | 'category' | 'popular';
 export type FunnelcakeSortMode = 'trending' | 'recent' | 'loops' | 'engagement' | 'classic' | 'watching';
 export type PopularSource = 'new' | 'classic' | 'all';
@@ -249,7 +251,7 @@ export function useInfiniteVideosFunnelcake({
           Array.isArray(edgeData) && edgeCursorType === 'timestamp'
             ? normalizeVideoArrayResponse(edgeData, {
                 sort: feedType === 'classics' ? 'loops' : 'recent',
-                limit: 10,
+                limit: EDGE_INJECTED_FEED_LIMIT,
               })
             : edgeData;
         const page = transformToVideoPage(edgePayload, edgeCursorType);
@@ -260,7 +262,7 @@ export function useInfiniteVideosFunnelcake({
         if (page.videos.length > 0) {
           debugLog(`[useInfiniteVideosFunnelcake] Using edge-injected ${feedType} feed data`);
           performanceMonitor.recordFeedLoad({
-            feedType: 'funnelcake-trending',
+            feedType: `funnelcake-${feedType}`,
             queryTime: 0,
             parseTime: performance.now() - totalStart,
             totalTime: performance.now() - totalStart,
@@ -271,6 +273,8 @@ export function useInfiniteVideosFunnelcake({
             videos: page.videos,
             nextCursor: page.nextCursor,
             offset: page.offset,
+            recommendationsCursor: feedType === 'recommendations' ? page.rawCursor : undefined,
+            v2Cursor: feedType === 'trending' || feedType === 'popular' ? page.rawCursor : undefined,
           };
         }
         debugLog(`[useInfiniteVideosFunnelcake] Edge-injected ${feedType} feed empty or unparseable; fetching from network`);

@@ -221,20 +221,8 @@ export async function fetchVideos(
     signal
   );
 
-  const videoCount = videos.length;
   const currentOffset = offset ?? (params.offset as number | undefined) ?? 0;
-  const nextOffset = currentOffset + videoCount;
-
-  // For sorted feeds, return offset-based cursor; for chronological, return timestamp
-  const next_cursor = videoCount >= limit
-    ? (sort !== 'recent' ? String(nextOffset) : String(videos[videoCount - 1].created_at))
-    : undefined;
-
-  return {
-    videos,
-    has_more: videoCount >= limit,
-    next_cursor,
-  };
+  return normalizeVideoArrayResponse(videos, { sort, limit, offset: currentOffset });
 }
 
 /**
