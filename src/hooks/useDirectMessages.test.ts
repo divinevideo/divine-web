@@ -4,7 +4,8 @@ import { act, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const TEST_PUBKEY = 'a'.repeat(64);
-const RECIPIENT_PUBKEY = 'b'.repeat(64);
+const RECIPIENT_PUBKEY = DIVINE_SUPPORT_PUBKEY;
+const NON_SUPPORT_PUBKEY = 'b'.repeat(64);
 
 const mockResolveDmReadRelays = vi.fn();
 const mockResolveDmWriteRelays = vi.fn();
@@ -108,10 +109,18 @@ vi.mock('@/lib/dm', async () => {
   };
 });
 
-import { encodeConversationId } from '@/lib/dm';
+import { DIVINE_SUPPORT_PUBKEY, encodeConversationId } from '@/lib/dm';
+import { DmSupportOnlyError } from '@/lib/dmAccessPolicy';
 import { DmSendBlockedError } from '@/lib/dmSendGuard';
 import { readDmOutbox, writeDmOutbox } from '@/lib/dmOutbox';
-import { useDmCapability, useDmConversation, useDmConversations, useDmInboxStatus, useDmSend } from './useDirectMessages';
+import {
+  useDmCapability,
+  useDmConversation,
+  useDmConversations,
+  useDmInboxStatus,
+  useDmSend,
+  useUnreadDmCount,
+} from './useDirectMessages';
 
 function createWrapper(queryClient: QueryClient) {
   return function Wrapper({ children }: { children: React.ReactNode }) {
@@ -293,6 +302,157 @@ describe('useDirectMessages', () => {
     ]);
   });
 
+  it('hides non-Support outbox conversations from the conversation list', async () => {
+    vi.spyOn(Date, 'now').mockReturnValue(1_234_567_890_000);
+
+    writeDmOutbox(TEST_PUBKEY, [
+      {
+        clientId: 'support-outbox',
+        ownerPubkey: TEST_PUBKEY,
+        participantPubkeys: [RECIPIENT_PUBKEY],
+        content: 'support history',
+        createdAt: 1_234_567_890,
+        lastAttemptAt: 1_234_567_890,
+        deliveryState: 'sending',
+        retryCount: 0,
+      },
+      {
+        clientId: 'non-support-outbox',
+        ownerPubkey: TEST_PUBKEY,
+        participantPubkeys: [NON_SUPPORT_PUBKEY],
+        content: 'hidden history',
+        createdAt: 1_234_567_891,
+        lastAttemptAt: 1_234_567_891,
+        deliveryState: 'sending',
+        retryCount: 0,
+      },
+    ]);
+
+    const queryClient = new QueryClient({
+      defaultOptions: {
+        queries: { retry: false },
+        mutations: { retry: false },
+      },
+    });
+
+    const { result } = renderHook(() => useDmConversations(), {
+      wrapper: createWrapper(queryClient),
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data).toHaveLength(1);
+    expect(result.current.data?.[0]).toEqual(
+      expect.objectContaining({
+        id: encodeConversationId([RECIPIENT_PUBKEY]),
+        participantPubkeys: [RECIPIENT_PUBKEY],
+      }),
+    );
+  });
+
+  it('hides a non-Support conversation route even when outbox history exists', async () => {
+    vi.spyOn(Date, 'now').mockReturnValue(1_234_567_890_000);
+
+    writeDmOutbox(TEST_PUBKEY, [{
+      clientId: 'non-support-thread',
+      ownerPubkey: TEST_PUBKEY,
+      participantPubkeys: [NON_SUPPORT_PUBKEY],
+      content: 'hidden history',
+      createdAt: 1_234_567_890,
+      lastAttemptAt: 1_234_567_890,
+      deliveryState: 'sending',
+      retryCount: 0,
+    }]);
+
+    const queryClient = new QueryClient({
+      defaultOptions: {
+        queries: { retry: false },
+        mutations: { retry: false },
+      },
+    });
+
+    const { result } = renderHook(
+      () => useDmConversation(encodeConversationId([NON_SUPPORT_PUBKEY])),
+      { wrapper: createWrapper(queryClient) },
+    );
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data).toEqual([]);
+  });
+
+  it('counts unread messages only from Support', async () => {
+    mockFetchDmMessages.mockResolvedValue({
+      messages: [
+        {
+          conversationId: encodeConversationId([RECIPIENT_PUBKEY]),
+          wrapId: 'support-wrap-id',
+          rumorId: 'support-rumor-id',
+          senderPubkey: RECIPIENT_PUBKEY,
+          participantPubkeys: [RECIPIENT_PUBKEY, TEST_PUBKEY].sort(),
+          peerPubkeys: [RECIPIENT_PUBKEY],
+          content: 'support reply',
+          createdAt: 1_234_567_892,
+          isOutgoing: false,
+        },
+        {
+          conversationId: encodeConversationId([NON_SUPPORT_PUBKEY]),
+          wrapId: 'non-support-wrap-id',
+          rumorId: 'non-support-rumor-id',
+          senderPubkey: NON_SUPPORT_PUBKEY,
+          participantPubkeys: [NON_SUPPORT_PUBKEY, TEST_PUBKEY].sort(),
+          peerPubkeys: [NON_SUPPORT_PUBKEY],
+          content: 'hidden reply',
+          createdAt: 1_234_567_893,
+          isOutgoing: false,
+        },
+      ],
+      fetchedCount: 2,
+      decryptFailures: 0,
+      malformedCount: 0,
+    });
+
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    const { result } = renderHook(() => useUnreadDmCount(), {
+      wrapper: createWrapper(queryClient),
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data).toBe(1);
+  });
+
+  it('rejects a non-Support send before resolving relays or creating wraps', async () => {
+    const queryClient = new QueryClient({
+      defaultOptions: {
+        queries: { retry: false },
+        mutations: { retry: false },
+      },
+    });
+
+    const { result } = renderHook(() => useDmSend(), {
+      wrapper: createWrapper(queryClient),
+    });
+
+    await expect(
+      result.current.mutateAsync({
+        participantPubkeys: [NON_SUPPORT_PUBKEY],
+        content: 'hello',
+      }),
+    ).rejects.toThrow(DmSupportOnlyError);
+
+    await waitFor(() => {
+      expect(mockToast).toHaveBeenCalledWith({
+        title: 'Message not sent',
+        description: 'For now, you can only message Divine Support.',
+        variant: 'destructive',
+      });
+    });
+    expect(mockResolveDmWriteRelays).not.toHaveBeenCalled();
+    expect(mockCreateRecipientGiftWraps).not.toHaveBeenCalled();
+    expect(mockPublishDmMessages).not.toHaveBeenCalled();
+  });
+
   it('adds an optimistic sending message before publish resolves', async () => {
     vi.spyOn(Date, 'now').mockReturnValue(1_234_567_890_000);
 
@@ -364,6 +524,7 @@ describe('useDirectMessages', () => {
         deliveryState: 'sent',
       }),
     ]);
+    expect(mockPublishDmMessages).toHaveBeenCalled();
     expect(mockToast).not.toHaveBeenCalled();
   });
 
@@ -679,10 +840,9 @@ describe('useDirectMessages', () => {
       expect(mockPublishDmMessages).toHaveBeenCalled();
     });
 
-    it('blocks a group send when any recipient is non-approved (all-or-nothing), publishing nothing', async () => {
-      const APPROVED = 'c'.repeat(64);
+    it('blocks a group containing non-Support before protected-minor enforcement', async () => {
       pm.state = 'protected';
-      pm.approved.add(APPROVED); // RECIPIENT_PUBKEY stays non-approved
+      pm.approved.add(RECIPIENT_PUBKEY);
 
       const queryClient = new QueryClient({
         defaultOptions: {
@@ -697,11 +857,13 @@ describe('useDirectMessages', () => {
 
       await expect(
         result.current.mutateAsync({
-          participantPubkeys: [APPROVED, RECIPIENT_PUBKEY],
+          participantPubkeys: [RECIPIENT_PUBKEY, NON_SUPPORT_PUBKEY],
           content: 'group with one stranger',
         }),
-      ).rejects.toThrow(DmSendBlockedError);
+      ).rejects.toThrow(DmSupportOnlyError);
 
+      expect(mockResolveDmWriteRelays).not.toHaveBeenCalled();
+      expect(mockCreateRecipientGiftWraps).not.toHaveBeenCalled();
       expect(mockPublishDmMessages).not.toHaveBeenCalled();
     });
 
@@ -1037,5 +1199,35 @@ describe('useDmInboxStatus', () => {
     });
 
     await waitFor(() => expect(result.current).toBe('ok'));
+  });
+
+  it("returns 'empty' when only a non-Support message decrypted", async () => {
+    mockFetchDmMessages.mockResolvedValue({
+      messages: [{
+        conversationId: encodeConversationId([NON_SUPPORT_PUBKEY]),
+        wrapId: 'non-support-wrap-id',
+        rumorId: 'non-support-rumor-id',
+        senderPubkey: NON_SUPPORT_PUBKEY,
+        participantPubkeys: [NON_SUPPORT_PUBKEY, TEST_PUBKEY].sort(),
+        peerPubkeys: [NON_SUPPORT_PUBKEY],
+        content: 'hidden',
+        createdAt: 1_234_567_892,
+        isOutgoing: false,
+      }],
+      fetchedCount: 1,
+      decryptFailures: 0,
+      malformedCount: 0,
+    });
+
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    const { result } = renderHook(() => useDmInboxStatus(), {
+      wrapper: createWrapper(queryClient),
+    });
+
+    await waitFor(() => expect(result.current).not.toBe('loading'));
+    expect(result.current).toBe('empty');
   });
 });
