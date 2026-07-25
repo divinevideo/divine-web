@@ -60,6 +60,8 @@ routing resolves user profiles (e.g., `alice.divine.video/`) by reading the
 subdomain and loading the corresponding Nostr profile. Static hosts use
 `404.html` (copied from [`index.html`](./index.html) during build) as a
 catch-all fallback.
+The retired `/discovery/new` chronological feed redirects to
+`/discovery/hot`; Discovery does not expose or mount an all-new-video feed.
 
 ## Styling
 

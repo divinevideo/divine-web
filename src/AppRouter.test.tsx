@@ -1,5 +1,5 @@
 import { Outlet } from 'react-router-dom';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import AppRouter from './AppRouter';
 
@@ -42,6 +42,10 @@ vi.mock('./pages/NIP19Page', () => ({
   NIP19Page: () => <div data-testid="nip19-page" />,
 }));
 
+vi.mock('./pages/DiscoveryPage', () => ({
+  default: () => <div data-testid="discovery-page" />,
+}));
+
 describe('AppRouter', () => {
   beforeEach(() => {
     mockUseCurrentUser.mockReset();
@@ -59,5 +63,16 @@ describe('AppRouter', () => {
 
     expect(screen.getByTestId('analytics-page')).toBeInTheDocument();
     expect(screen.queryByTestId('nip19-page')).not.toBeInTheDocument();
+  });
+
+  it('redirects the retired new-video feed to hot', async () => {
+    window.history.pushState({}, '', '/discovery/new');
+
+    render(<AppRouter />);
+
+    await waitFor(() => {
+      expect(window.location.pathname).toBe('/discovery/hot');
+    });
+    expect(screen.getByTestId('discovery-page')).toBeInTheDocument();
   });
 });

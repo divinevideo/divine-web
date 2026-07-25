@@ -3,7 +3,7 @@
  */
 
 import { lazy, Suspense } from "react";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { ScrollToTop } from "./components/ScrollToTop";
 import { AnalyticsPageTracker } from "./components/AnalyticsPageTracker";
 import { AnalyticsUserTracker } from "./components/AnalyticsUserTracker";
@@ -94,6 +94,7 @@ export function AppRouter() {
   const appShellRoutes = (
     <>
       {/* Public browsing routes - accessible without login */}
+      <Route path="/discovery/new" element={<Navigate to="/discovery/hot" replace />} />
       <Route path="/discovery" element={<DiscoveryPage />} />
       <Route path="/discovery/:tab" element={<DiscoveryPage />} />
       <Route path="/trending" element={<TrendingPage />} />
