@@ -3,13 +3,18 @@ import { render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import type { DmMessage } from '@/lib/dm';
-import { encodeConversationId } from '@/lib/dm';
-import ConversationPage from './ConversationPage';
+import {
+  DIVINE_SUPPORT_PUBKEY,
+  encodeConversationId,
+  type DmMessage,
+} from '@/lib/dm';
+import { getSupportDmConversationPath } from '@/lib/dmAccessPolicy';
 import { initializeI18n } from '@/lib/i18n';
+import ConversationPage from './ConversationPage';
 
-const RECIPIENT_PUBKEY = 'b'.repeat(64);
+const RECIPIENT_PUBKEY = DIVINE_SUPPORT_PUBKEY;
 const CONVERSATION_ID = encodeConversationId([RECIPIENT_PUBKEY]);
+const NON_SUPPORT_PUBKEY = 'b'.repeat(64);
 
 const {
   currentUserPubkey,
@@ -33,37 +38,14 @@ const {
   mockMarkConversationRead: vi.fn(),
   mockSendMutate: vi.fn(),
   mockSendMutateAsync: vi.fn(),
-  mockAuthorMap: {
-    ['b'.repeat(64)]: {
-      metadata: {
-        display_name: 'Inbox Friend',
-        name: 'inboxfriend',
-        picture: 'https://example.com/friend.png',
-      },
-    },
-  } as Record<string, { metadata: { display_name?: string; name?: string; picture?: string; nip05?: string } }>,
-}));
-
-const pm = vi.hoisted(() => ({
-  state: 'not_protected' as 'protected' | 'not_protected' | 'unknown',
-  approved: new Set<string>(),
-}));
-
-vi.mock('@/hooks/useProtectedMinorStatus', () => ({
-  useProtectedMinorStatus: () => ({
-    state: pm.state,
-    isKnown: pm.state !== 'unknown',
-    verifiedMinorAt: null,
-  }),
-}));
-
-vi.mock('@/lib/officialAccounts', async (orig) => ({
-  ...(await orig<typeof import('@/lib/officialAccounts')>()),
-  officialAccountsService: {
-    isApprovedMinorDmRecipientSync: (pk: string) => pm.approved.has(pk),
-    isApprovedMinorDmRecipient: async (pk: string) => pm.approved.has(pk),
-    onVerdictChanged: () => () => {},
-  },
+  mockAuthorMap: {} as Record<string, {
+    metadata: {
+      display_name?: string;
+      name?: string;
+      picture?: string;
+      nip05?: string;
+    };
+  }>,
 }));
 
 vi.mock('@/hooks/useDirectMessages', () => ({
@@ -104,8 +86,8 @@ function buildMessage(overrides: Partial<DmMessage> = {}): DmMessage {
     conversationId: CONVERSATION_ID,
     wrapId: 'wrap-1',
     rumorId: 'rumor-1',
-    senderPubkey: 'a'.repeat(64),
-    participantPubkeys: ['a'.repeat(64), RECIPIENT_PUBKEY],
+    senderPubkey: currentUserPubkey,
+    participantPubkeys: [currentUserPubkey, RECIPIENT_PUBKEY],
     peerPubkeys: [RECIPIENT_PUBKEY],
     content: 'hello',
     createdAt: 1_234_567_890,
@@ -114,21 +96,31 @@ function buildMessage(overrides: Partial<DmMessage> = {}): DmMessage {
   };
 }
 
-function renderPage() {
+function renderConversationRoute(conversationId: string) {
   return render(
-    <MemoryRouter initialEntries={[`/messages/${CONVERSATION_ID}`]}>
+    <MemoryRouter initialEntries={[`/messages/${conversationId}`]}>
       <Routes>
         <Route path="/messages/:conversationId" element={<ConversationPage />} />
       </Routes>
-    </MemoryRouter>
+    </MemoryRouter>,
   );
+}
+
+function renderConversation(peers: string | string[]) {
+  const conversationId = encodeConversationId(
+    typeof peers === 'string' ? [peers] : peers,
+  );
+
+  return renderConversationRoute(conversationId);
+}
+
+function renderPage() {
+  return renderConversation(RECIPIENT_PUBKEY);
 }
 
 describe('ConversationPage', () => {
   beforeEach(async () => {
     vi.clearAllMocks();
-    pm.state = 'not_protected';
-    pm.approved.clear();
     const storage = new Map<string, string>();
     Object.defineProperty(window, 'localStorage', {
       configurable: true,
@@ -140,11 +132,14 @@ describe('ConversationPage', () => {
       } satisfies Pick<Storage, 'getItem' | 'setItem' | 'removeItem' | 'clear'>,
     });
     await initializeI18n({ force: true, languages: ['en-US'] });
+    for (const pubkey of Object.keys(mockAuthorMap)) {
+      delete mockAuthorMap[pubkey];
+    }
     mockAuthorMap[RECIPIENT_PUBKEY] = {
       metadata: {
-        display_name: 'Inbox Friend',
-        name: 'inboxfriend',
-        picture: 'https://example.com/friend.png',
+        display_name: 'Divine Support',
+        name: 'support',
+        picture: 'https://example.com/support.png',
       },
     };
     directMessageState.messages = [];
@@ -157,55 +152,67 @@ describe('ConversationPage', () => {
     mockSendMutateAsync.mockImplementation(() => new Promise<void>(() => undefined));
   });
 
-  describe('protected-minor thread route guard (#176)', () => {
-    it('redirects a protected minor away from a non-approved thread', async () => {
-      pm.state = 'protected'; // RECIPIENT_PUBKEY not approved
-      renderPage();
-      await waitFor(() =>
-        expect(mockNavigate).toHaveBeenCalledWith('/messages', {
-          replace: true,
-        }),
-      );
-    });
+  it('keeps the support route open with the existing conversation UI', () => {
+    directMessageState.messages = [
+      buildMessage({
+        content: 'Support history stays visible',
+        isOutgoing: false,
+      }),
+    ];
 
-    it('does NOT redirect when the thread peer is an approved official', async () => {
-      pm.state = 'protected';
-      pm.approved.add(RECIPIENT_PUBKEY);
-      renderPage();
-      // let the guard effect run
-      await new Promise((r) => setTimeout(r, 20));
-      expect(mockNavigate).not.toHaveBeenCalledWith('/messages', {
+    renderPage();
+
+    expect(screen.getByRole('heading', { name: 'Divine Support' })).toBeInTheDocument();
+    expect(screen.getByText('Private support chat')).toBeInTheDocument();
+    expect(screen.getByText('Support history stays visible')).toBeInTheDocument();
+    expect(screen.getByRole('textbox')).toBeInTheDocument();
+    expect(mockNavigate).not.toHaveBeenCalledWith(getSupportDmConversationPath(), {
+      replace: true,
+    });
+  });
+
+  it('redirects a non-support deep link without rendering its history', async () => {
+    directMessageState.messages = [
+      buildMessage({
+        content: 'Secret non-support history',
+        peerPubkeys: [NON_SUPPORT_PUBKEY],
+      }),
+    ];
+
+    const { container } = renderConversation(NON_SUPPORT_PUBKEY);
+
+    await waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalledWith(getSupportDmConversationPath(), {
         replace: true,
       });
     });
+    expect(container).toBeEmptyDOMElement();
+    expect(screen.queryByText('Secret non-support history')).not.toBeInTheDocument();
+  });
 
-    it('does NOT redirect a non-protected user', async () => {
-      renderPage();
-      await new Promise((r) => setTimeout(r, 20));
-      expect(mockNavigate).not.toHaveBeenCalledWith('/messages', {
+  it('redirects a support plus non-support group with replace', async () => {
+    const { container } = renderConversation([
+      RECIPIENT_PUBKEY,
+      NON_SUPPORT_PUBKEY,
+    ]);
+
+    await waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalledWith(getSupportDmConversationPath(), {
         replace: true,
       });
     });
+    expect(container).toBeEmptyDOMElement();
+  });
 
-    it('fails closed on unknown: redirects away from a non-approved thread', async () => {
-      pm.state = 'unknown'; // RECIPIENT_PUBKEY not approved
-      renderPage();
-      await waitFor(() =>
-        expect(mockNavigate).toHaveBeenCalledWith('/messages', {
-          replace: true,
-        }),
-      );
-    });
+  it('redirects a malformed peer route with replace', async () => {
+    const { container } = renderConversationRoute('not-a-conversation');
 
-    it('does NOT redirect from an approved-official thread while unknown', async () => {
-      pm.state = 'unknown';
-      pm.approved.add(RECIPIENT_PUBKEY);
-      renderPage();
-      await new Promise((r) => setTimeout(r, 20));
-      expect(mockNavigate).not.toHaveBeenCalledWith('/messages', {
+    await waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalledWith(getSupportDmConversationPath(), {
         replace: true,
       });
     });
+    expect(container).toBeEmptyDOMElement();
   });
 
   it('renders the composer with a two-line baseline', () => {
@@ -258,20 +265,6 @@ describe('ConversationPage', () => {
       share: undefined,
     }));
     expect(composer).toHaveValue('hello');
-  });
-
-  it('prefers nip05 in the header subtitle when it is available', () => {
-    mockAuthorMap[RECIPIENT_PUBKEY] = {
-      metadata: {
-        display_name: 'Rabble',
-        nip05: '_@rabble.divine.video',
-      },
-    };
-
-    renderPage();
-
-    expect(screen.getByRole('heading', { name: 'Rabble' })).toBeInTheDocument();
-    expect(screen.getByText('@rabble.divine.video')).toBeInTheDocument();
   });
 
   it('renders a sending indicator for optimistic messages', () => {

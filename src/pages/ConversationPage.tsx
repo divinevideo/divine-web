@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useReducer, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ArrowLeft, ArrowUp, LinkSimple as Link2, X } from '@phosphor-icons/react';
 import { Link, useLocation, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -15,15 +15,16 @@ import {
   useParsedDmShare,
 } from '@/hooks/useDirectMessages';
 import { useSubdomainNavigate } from '@/hooks/useSubdomainNavigate';
-import { useProtectedMinorStatus } from '@/hooks/useProtectedMinorStatus';
-import { isMinorDmRestricted } from '@/lib/protectedMinor';
-import { officialAccountsService } from '@/lib/officialAccounts';
 import {
   DIVINE_SUPPORT_PUBKEY,
   decodeConversationId,
   getDmConversationPath,
   type DmMessage,
 } from '@/lib/dm';
+import {
+  getSupportDmConversationPath,
+  isSupportOnlyDmPeerSet,
+} from '@/lib/dmAccessPolicy';
 import { genUserName } from '@/lib/genUserName';
 import { getSafeProfileImage } from '@/lib/imageUtils';
 import { getDivineNip05Info } from '@/lib/nip05Utils';
@@ -203,38 +204,23 @@ export function ConversationPage() {
   const latestMessageAt = conversationQuery.latestMessageAt;
   const lastReadAt = conversationQuery.lastReadAt;
   const markConversationRead = conversationQuery.markConversationRead;
+  const threadBlocked = !isSupportOnlyDmPeerSet(peerPubkeys);
 
   useEffect(() => {
-    if (latestMessageAt > lastReadAt) {
+    if (!threadBlocked && latestMessageAt > lastReadAt) {
       markConversationRead();
     }
-  }, [lastReadAt, latestMessageAt, markConversationRead]);
+  }, [lastReadAt, latestMessageAt, markConversationRead, threadBlocked]);
 
-  // Thread route guard (#176): a restricted user (protected minor, or unknown
-  // status — fail closed) must not open a thread with a non-approved
-  // counterparty via deep-link or a stale route (send + list already block
-  // those paths). Computed each render so a verdict flip re-evaluates; the
-  // counterparties are revalidated so a revoked official is caught after mount.
-  const { state: minorState } = useProtectedMinorStatus();
-  const isDmRestricted = isMinorDmRestricted(minorState);
-  const [, bumpVerdicts] = useReducer((x: number) => x + 1, 0);
-  useEffect(() => officialAccountsService.onVerdictChanged(bumpVerdicts), []);
   useEffect(() => {
-    if (isDmRestricted) {
-      for (const pubkey of peerPubkeys) {
-        void officialAccountsService.isApprovedMinorDmRecipient(pubkey);
-      }
+    if (threadBlocked) {
+      navigate(getSupportDmConversationPath(), { replace: true });
     }
-  }, [isDmRestricted, peerPubkeys]);
-  const threadBlocked =
-    isDmRestricted &&
-    peerPubkeys.length > 0 &&
-    !peerPubkeys.every((pubkey) =>
-      officialAccountsService.isApprovedMinorDmRecipientSync(pubkey),
-    );
-  useEffect(() => {
-    if (threadBlocked) navigate('/messages', { replace: true });
   }, [threadBlocked, navigate]);
+
+  if (threadBlocked) {
+    return null;
+  }
 
   const peerNames = peerPubkeys.map((pubkey) => getDisplayName(pubkey, authorMap[pubkey]?.metadata, t));
   const title = peerNames.length === 1
