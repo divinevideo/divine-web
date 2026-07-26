@@ -136,7 +136,8 @@ function normalizedErrorRate(s: RelayState): number {
 }
 
 function normalizedLatency(s: RelayState): number {
-  if (s.ewmaLatencyMs <= 0) return 0;
+  // No latency samples yet: unknown, so score neutral instead of perfect.
+  if (s.ewmaLatencyMs <= 0) return 0.5;
   return clamp01(s.ewmaLatencyMs / LATENCY_CAP_MS);
 }
 

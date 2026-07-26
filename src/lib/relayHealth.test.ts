@@ -66,6 +66,16 @@ describe('score()', () => {
     recordError(URL_A);
     expect(score(URL_A)).toBeLessThan(before);
   });
+
+  it('treats a relay with no latency samples as neutral, not perfect', () => {
+    recordOpen(URL_A); // connected but silent: no REQ responses measured
+    recordOpen(URL_B);
+    for (let i = 0; i < 10; i += 1) {
+      recordReqEnd(URL_B, 100, true); // proven fast latency
+    }
+    expect(score(URL_B)).toBeGreaterThan(score(URL_A));
+    expect(pickTopN([URL_A, URL_B], 1)).toEqual([URL_B]);
+  });
 });
 
 describe('pickTopN()', () => {

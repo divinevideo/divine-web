@@ -230,10 +230,8 @@ export async function detectRelayCapabilities(relayUrl: string): Promise<RelayCa
       error: error instanceof Error ? error.message : 'Unknown error',
     });
 
-    recordProbe(relayUrl, {
-      nip50: fallbackCapabilities.supportsNIP50,
-      funnelcake: fallbackCapabilities.supportsVideoSorts,
-    });
+    // No recordProbe here: a failed probe is not live evidence and must not
+    // grant capability bonuses or mark the relay source as 'live'.
 
     capabilitiesCache.set(relayUrl, fallbackCapabilities);
     return fallbackCapabilities;
