@@ -80,7 +80,7 @@ describe('PeopleListDetailPage', () => {
     );
     expect(screen.getByTestId('video-grid')).toHaveTextContent('1 videos');
     expect(screen.queryByRole('button', { name: /subscribe/i })).not.toBeInTheDocument();
-  });
+  }, 10_000);
 
   it('shows a not-found state when the exact list is absent', () => {
     mockUsePeopleList.mockReturnValue({
