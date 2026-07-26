@@ -670,7 +670,7 @@
     "proofLink": "Patunay",
     "linkedAccountsLabel": "Mga linked account",
     "identityVerificationTitle": "Pag-verify ng identity",
-    "identityVerificationDescription": "Linked accounts use NIP-39 identity proofs. Verified accounts show automatically; unverifiable claims stay hidden unless you choose to show them.",
+    "identityVerificationDescription": "Ang mga linked account ay na-verify gamit ang mga NIP-39 identity proof. Mga na-verify lang ang ipinapakita.",
     "showUnverified": "Show unverified",
     "notAutoVerified": "Not auto-verified",
     "verifyManually": "Verify manually",

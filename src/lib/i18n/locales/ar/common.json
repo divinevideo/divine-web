@@ -674,7 +674,7 @@
     "proofLink": "الإثبات",
     "linkedAccountsLabel": "الحسابات المرتبطة",
     "identityVerificationTitle": "التحقق من الهوية",
-    "identityVerificationDescription": "Linked accounts use NIP-39 identity proofs. Verified accounts show automatically; unverifiable claims stay hidden unless you choose to show them.",
+    "identityVerificationDescription": "تُتحقق الحسابات المرتبطة باستخدام إثباتات هوية NIP-39. تُعرض الحسابات المُتحقَّقة فقط.",
     "showUnverified": "Show unverified",
     "notAutoVerified": "Not auto-verified",
     "verifyManually": "Verify manually",

@@ -670,7 +670,7 @@
     "proofLink": "Bukti",
     "linkedAccountsLabel": "Akun tertaut",
     "identityVerificationTitle": "Verifikasi identitas",
-    "identityVerificationDescription": "Linked accounts use NIP-39 identity proofs. Verified accounts show automatically; unverifiable claims stay hidden unless you choose to show them.",
+    "identityVerificationDescription": "Akun tertaut diverifikasi menggunakan bukti identitas NIP-39. Hanya akun yang terverifikasi yang ditampilkan.",
     "showUnverified": "Show unverified",
     "notAutoVerified": "Not auto-verified",
     "verifyManually": "Verify manually",

@@ -672,7 +672,7 @@
     "proofLink": "Dowód",
     "linkedAccountsLabel": "Połączone konta",
     "identityVerificationTitle": "Weryfikacja tożsamości",
-    "identityVerificationDescription": "Linked accounts use NIP-39 identity proofs. Verified accounts show automatically; unverifiable claims stay hidden unless you choose to show them.",
+    "identityVerificationDescription": "Połączone konta są weryfikowane dowodami tożsamości NIP-39. Pokazujemy tylko zweryfikowane.",
     "showUnverified": "Show unverified",
     "notAutoVerified": "Not auto-verified",
     "verifyManually": "Verify manually",

@@ -670,7 +670,7 @@
     "proofLink": "Bewijs",
     "linkedAccountsLabel": "Gekoppelde accounts",
     "identityVerificationTitle": "Identiteitsverificatie",
-    "identityVerificationDescription": "Linked accounts use NIP-39 identity proofs. Verified accounts show automatically; unverifiable claims stay hidden unless you choose to show them.",
+    "identityVerificationDescription": "Gekoppelde accounts worden geverifieerd via NIP-39 identity proofs. Alleen geverifieerde accounts worden getoond.",
     "showUnverified": "Show unverified",
     "notAutoVerified": "Not auto-verified",
     "verifyManually": "Verify manually",

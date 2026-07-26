@@ -670,7 +670,7 @@
     "proofLink": "Prova",
     "linkedAccountsLabel": "Contas vinculadas",
     "identityVerificationTitle": "Verificação de identidade",
-    "identityVerificationDescription": "Linked accounts use NIP-39 identity proofs. Verified accounts show automatically; unverifiable claims stay hidden unless you choose to show them.",
+    "identityVerificationDescription": "Contas vinculadas são verificadas com provas de identidade NIP-39. Só contas verificadas aparecem aqui.",
     "showUnverified": "Show unverified",
     "notAutoVerified": "Not auto-verified",
     "verifyManually": "Verify manually",
