@@ -84,6 +84,7 @@ export function trackProductEvent(
 export class ProductAnalyticsClient {
   readonly queue: ProductEventQueue;
   private batchSize: number;
+  private flushing = false;
 
   constructor(options: ProductAnalyticsClientOptions = {}) {
     this.queue = options.queue ?? productEventQueue;
@@ -141,6 +142,21 @@ export class ProductAnalyticsClient {
       return;
     }
 
+    // Concurrent flushes (track() + interval + online/visibility triggers) would
+    // read the same pending batch and POST duplicates; skip while one is in flight.
+    if (this.flushing) {
+      return;
+    }
+    this.flushing = true;
+
+    try {
+      await this.flushBatch();
+    } finally {
+      this.flushing = false;
+    }
+  }
+
+  private async flushBatch(): Promise<void> {
     const records = await this.queue.getFlushableBatch(this.batchSize);
     if (records.length === 0) {
       return;

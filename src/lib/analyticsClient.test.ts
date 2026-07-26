@@ -112,7 +112,9 @@ describe('analyticsClient', () => {
     configureProductAnalyticsIdentity({ userPubkey: pubkey, signer });
 
     const eventId = await productAnalytics.track('session_started', { surface: 'home' });
+    // track() fires a flush; an explicit one no-ops while it is in flight.
     await productAnalytics.flush();
+    await vi.waitFor(() => expect(fetch).toHaveBeenCalled());
 
     const fetchCall = vi.mocked(fetch).mock.calls[0];
     expect(fetchCall[0]).toBe('https://api.divine.video/api/analytics/events');
@@ -141,6 +143,27 @@ describe('analyticsClient', () => {
       surface: 'home',
     });
     expect(await productAnalytics.queue.getFlushableBatch(10)).toHaveLength(0);
+  });
+
+  it('skips concurrent flushes while one is in flight', async () => {
+    let releaseFetch!: (response: Response) => void;
+    vi.stubGlobal('fetch', vi.fn(() => new Promise<Response>((resolve) => { releaseFetch = resolve; })));
+    const { productAnalytics, configureProductAnalyticsIdentity } = await import('./analyticsClient');
+    configureProductAnalyticsIdentity({ userPubkey: pubkey, signer });
+
+    await productAnalytics.track('session_started', { surface: 'home' });
+    // track() kicked off a flush against the hanging fetch; wait for it to be
+    // in flight, then concurrent flushes must no-op without a second POST.
+    await vi.waitFor(() => expect(fetch).toHaveBeenCalledTimes(1));
+    await productAnalytics.flush();
+    await productAnalytics.flush();
+
+    expect(fetch).toHaveBeenCalledTimes(1);
+
+    releaseFetch(new Response('{"accepted":1}', { status: 200 }));
+    await vi.waitFor(async () => {
+      expect(await productAnalytics.queue.getFlushableBatch(10)).toHaveLength(0);
+    });
   });
 
   it('does not enqueue events when signing is unavailable', async () => {

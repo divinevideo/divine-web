@@ -64,7 +64,12 @@ export class ProductEventQueue {
         const transaction = db.transaction([STORE_NAME], 'readwrite');
         const store = transaction.objectStore(STORE_NAME);
         ids.forEach((id) => store.delete(id));
-        transaction.oncomplete = () => resolve();
+        transaction.oncomplete = () => {
+          // Evict from the in-memory mirror too — getAllRecords() re-populates
+          // the map from IDB, so without this it grows unbounded per session.
+          ids.forEach((id) => this.memoryRecords.delete(id));
+          resolve();
+        };
         transaction.onerror = () => reject(transaction.error);
       } catch {
         ids.forEach((id) => this.memoryRecords.delete(id));
