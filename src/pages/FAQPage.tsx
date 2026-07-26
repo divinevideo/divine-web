@@ -765,12 +765,13 @@ export function FAQPage() {
                     don't post it on Divine.
                   </p>
                   <p className="font-semibold">
-                    Direct messages ARE private
+                    Private support messages
                   </p>
                   <p>
-                    However, direct messages between users are end-to-end encrypted. We cannot read your
-                    messages that you send between users or when you share videos privately via DM. Your
-                    private conversations are truly private.
+                    Divine's current private messaging channel is for contacting Divine Support.
+                    Messages use encrypted NIP-17 delivery, and the support team can read and
+                    respond to messages sent to that channel. User-to-user DMs and private video
+                    sharing are not available in Divine right now.
                   </p>
                 </div>
               </FAQQuestion>
