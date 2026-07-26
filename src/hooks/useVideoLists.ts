@@ -7,7 +7,7 @@ import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useNostrPublish } from '@/hooks/useNostrPublish';
 import type { NostrEvent, NostrFilter } from '@nostrify/nostrify';
 import { SHORT_VIDEO_KIND } from '@/types/video';
-import { parseVideoListFromEvent, type PlayOrder, type VideoList } from '@/lib/parseVideoListFromEvent';
+import { deduplicateVideoLists, parseVideoListFromEvent, type PlayOrder, type VideoList } from '@/lib/parseVideoListFromEvent';
 import { resolveListPermissions } from '@/lib/listPermissions';
 
 export type { PlayOrder, VideoList };
@@ -133,10 +133,7 @@ export function useVideoLists(pubkey?: string) {
 
       console.log('[useVideoLists] Found', events.length, 'list events');
 
-      const lists = events
-        .map(parseVideoListFromEvent)
-        .filter((list): list is VideoList => list !== null)
-        .sort((a, b) => b.createdAt - a.createdAt);
+      const lists = deduplicateVideoLists(events);
 
       console.log('[useVideoLists] Parsed', lists.length, 'valid lists');
 
@@ -171,10 +168,7 @@ export function useVideosInLists(videoId?: string) {
         limit: 100
       }], { signal });
 
-      const lists = events
-        .map(parseVideoListFromEvent)
-        .filter((list): list is VideoList => list !== null)
-        .sort((a, b) => b.createdAt - a.createdAt);
+      const lists = deduplicateVideoLists(events);
 
       return lists;
     },
@@ -435,9 +429,8 @@ export function useTrendingVideoLists() {
         limit: 50
       }], { signal });
 
-      const lists = events
-        .map(parseVideoListFromEvent)
-        .filter((list): list is VideoList => list !== null && list.videoCoordinates.length > 0)
+      const lists = deduplicateVideoLists(events)
+        .filter((list) => list.videoCoordinates.length > 0)
         .sort((a, b) => {
           // Sort by number of videos and recency
           const scoreA = a.videoCoordinates.length * 10 + (a.createdAt / 1000);
@@ -521,9 +514,8 @@ export function useFollowedUsersLists(followedPubkeys: string[] | undefined) {
         limit: 100
       }], { signal });
 
-      const lists = events
-        .map(parseVideoListFromEvent)
-        .filter((list): list is VideoList => list !== null && list.videoCoordinates.length > 0)
+      const lists = deduplicateVideoLists(events)
+        .filter((list) => list.videoCoordinates.length > 0)
         .sort((a, b) => b.createdAt - a.createdAt);
 
       return lists;
