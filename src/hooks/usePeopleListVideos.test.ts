@@ -4,11 +4,37 @@ import React from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { NostrEvent } from '@nostrify/nostrify';
 
 const mockNostrQuery = vi.fn();
 vi.mock('@nostrify/react', () => ({
   useNostr: () => ({ nostr: { query: mockNostrQuery } }),
 }));
+
+let mockBlocklist = new Set<string>();
+vi.mock('@/hooks/useFeedBlocklist', () => ({
+  useFeedBlocklist: () => mockBlocklist,
+}));
+
+const ALICE = 'b'.repeat(64);
+const BOB = 'c'.repeat(64);
+
+let fixtureCounter = 0;
+function videoEvent(pubkey: string, dTag: string, createdAt: number): NostrEvent {
+  fixtureCounter += 1;
+  return {
+    id: fixtureCounter.toString(16).padStart(64, '0'),
+    pubkey,
+    kind: 34236,
+    created_at: createdAt,
+    tags: [
+      ['d', dTag],
+      ['imeta', `url https://cdn.example.com/${dTag}.mp4`, 'm video/mp4'],
+    ],
+    content: '',
+    sig: 'f'.repeat(128),
+  };
+}
 
 function createWrapper() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -20,6 +46,7 @@ function createWrapper() {
 describe('usePeopleListVideos', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockBlocklist = new Set();
     mockNostrQuery.mockResolvedValue([]);
   });
 
@@ -43,5 +70,58 @@ describe('usePeopleListVideos', () => {
 
     expect(result.current.fetchStatus).toBe('idle');
     expect(mockNostrQuery).not.toHaveBeenCalled();
+  });
+
+  it('hides videos from blocked or muted authors', async () => {
+    mockBlocklist = new Set([BOB]);
+    mockNostrQuery.mockResolvedValue([
+      videoEvent(ALICE, 'alice-loop', 200),
+      videoEvent(BOB, 'bob-loop', 100),
+    ]);
+    const { usePeopleListVideos } = await import('./usePeopleListVideos');
+
+    const { result } = renderHook(() => usePeopleListVideos([ALICE, BOB]), { wrapper: createWrapper() });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    const videos = result.current.data?.pages.flatMap((page) => page.videos) ?? [];
+    expect(videos).toHaveLength(1);
+    expect(videos[0].pubkey).toBe(ALICE);
+  });
+
+  it('keeps paginating when a full raw page dedupes below the page cap', async () => {
+    // 60 raw events that collapse to 2 addressable videos: dedupe must not
+    // be mistaken for the relay having no older events left.
+    const rawPage = [
+      ...Array.from({ length: 59 }, (_, index) => videoEvent(ALICE, 'dupe', 1000 + index)),
+      videoEvent(ALICE, 'unique', 1059),
+    ];
+    mockNostrQuery.mockResolvedValueOnce(rawPage).mockResolvedValue([]);
+    const { usePeopleListVideos } = await import('./usePeopleListVideos');
+
+    const { result } = renderHook(() => usePeopleListVideos([ALICE]), { wrapper: createWrapper() });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    expect(result.current.data?.pages[0].videos).toHaveLength(2);
+    expect(result.current.hasNextPage).toBe(true);
+
+    await result.current.fetchNextPage();
+    await waitFor(() => expect(mockNostrQuery).toHaveBeenCalledTimes(2));
+
+    // Cursor derives from the oldest raw event, not the deduped page size.
+    const secondFilters = mockNostrQuery.mock.calls[1][0];
+    expect(secondFilters[0].until).toBe(999);
+  });
+
+  it('stops paginating when the raw page comes back below the limit', async () => {
+    mockNostrQuery.mockResolvedValue([
+      videoEvent(ALICE, 'one', 200),
+      videoEvent(ALICE, 'two', 100),
+    ]);
+    const { usePeopleListVideos } = await import('./usePeopleListVideos');
+
+    const { result } = renderHook(() => usePeopleListVideos([ALICE]), { wrapper: createWrapper() });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    expect(result.current.hasNextPage).toBe(false);
   });
 });
