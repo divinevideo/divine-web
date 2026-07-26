@@ -280,22 +280,6 @@ export function ConversationPage() {
     }
   };
 
-  if (!conversationId || !peerPubkeys.length) {
-    return (
-      <div className="min-h-full bg-brand-off-white dark:bg-brand-dark-green">
-        <main className="container py-6">
-          <div className="mx-auto max-w-3xl rounded-[32px] border border-border/80 bg-card/80 px-6 py-12 text-center shadow-sm backdrop-blur-sm">
-            <p className="text-lg font-semibold text-foreground">{t('conversationPage.notFoundTitle')}</p>
-            <p className="mt-2 text-sm text-muted-foreground">{t('conversationPage.notFoundDescription')}</p>
-            <Button className="mt-5 rounded-full" onClick={() => navigate('/messages')}>
-              {t('conversationPage.backToInbox')}
-            </Button>
-          </div>
-        </main>
-      </div>
-    );
-  }
-
   // While the bunker NIP-44 healthcheck is in flight, render a neutral
   // skeleton instead of the "unavailable" copy — capability is unknown,
   // not negative, until the probe resolves.
