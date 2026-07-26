@@ -17,7 +17,7 @@ vi.mock('@/hooks/useVideoLists', () => ({
   useVideoLists: (...args: unknown[]) => mockUseVideoLists(...args),
 }));
 
-function renderPage(identifier = nip19.npubEncode(OWNER)) {
+function renderPage(identifier: string = nip19.npubEncode(OWNER)) {
   return render(
     <MemoryRouter initialEntries={[`/profile/${identifier}/lists`]}>
       <Routes>
