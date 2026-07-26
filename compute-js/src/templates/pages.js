@@ -94,12 +94,14 @@ export function renderVideoPage({ video, videoId, staticAssets = null }) {
     preloadLinks = `<link rel="preload" href="${escapeHtml(video.thumbnail)}" as="image" fetchpriority="high">`;
   }
 
-  // Inject feed data for hydration (single video)
+  // Inject feed data for hydration (single video). The feed type must be set:
+  // useInfiniteVideosFunnelcake treats an undefined __DIVINE_FEED_TYPE__ as a
+  // trending match and would consume this single-video payload as a feed page.
   const feedJson = serializeJsonForScript({
     videos: [video],
     type: 'single',
   });
-  const jsonInjection = `<script>window.__DIVINE_FEED__=${feedJson};</script>`;
+  const jsonInjection = `<script>window.__DIVINE_FEED__=${feedJson};window.__DIVINE_FEED_TYPE__="single";</script>`;
 
   return renderShell({
     title: `${title} - Divine`,

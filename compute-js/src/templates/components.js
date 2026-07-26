@@ -45,7 +45,9 @@ export function videoCard(video) {
   const thumbnail = escapeHtml(video.thumbnail || '');
   const authorName = escapeHtml(video.author_name || video.authorName || '');
   const authorAvatar = escapeHtml(video.author_avatar || video.authorAvatar || '');
-  const videoId = escapeHtml(video.d_tag || video.id || '');
+  // SPA convention is /video/{event.id}; d_tag resolution on that route is
+  // unverified for native videos, so only fall back to d_tag when id is absent.
+  const videoId = escapeHtml(video.id || video.d_tag || '');
   const href = videoId ? `/video/${videoId}` : '#';
 
   const stats = [];

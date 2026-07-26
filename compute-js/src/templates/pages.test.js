@@ -74,4 +74,27 @@ describe('edge page templates', () => {
   it('keeps critical CSS free of layout gradients', () => {
     expect(CRITICAL_CSS).not.toMatch(/(?:linear|radial)-gradient\(/);
   });
+
+  it('links video cards to /video/{event.id}, falling back to d_tag', () => {
+    const html = renderFeedPage({
+      videos: [
+        { id: 'event-id-1', d_tag: 'dtag-1', title: 'A' },
+        { d_tag: 'dtag-2', title: 'B' },
+      ],
+      feedType: 'trending',
+    });
+
+    expect(html).toContain('href="/video/event-id-1"');
+    expect(html).toContain('href="/video/dtag-2"');
+  });
+
+  it('marks video page hydration JSON with a non-feed feed type', () => {
+    const html = renderVideoPage({
+      videoId: 'video-1',
+      video: { id: 'video-1', title: 'A video' },
+    });
+
+    expect(html).toContain('window.__DIVINE_FEED__=');
+    expect(html).toContain('window.__DIVINE_FEED_TYPE__="single"');
+  });
 });
