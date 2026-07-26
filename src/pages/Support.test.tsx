@@ -1,12 +1,17 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { getSupportDmConversationPath } from '@/lib/dmAccessPolicy';
 import { initializeI18n } from '@/lib/i18n';
 import { LOCALE_STORAGE_KEY } from '@/lib/i18n/config';
 import { Support } from './Support';
 
-const { mockNavigate } = vi.hoisted(() => ({
+const { mockNavigate, supportState } = vi.hoisted(() => ({
   mockNavigate: vi.fn(),
+  supportState: {
+    user: null as { pubkey: string } | null,
+    canUseDirectMessages: false,
+  },
 }));
 
 vi.mock('@/components/MarketingLayout', () => ({
@@ -14,11 +19,13 @@ vi.mock('@/components/MarketingLayout', () => ({
 }));
 
 vi.mock('@/hooks/useCurrentUser', () => ({
-  useCurrentUser: () => ({ user: null }),
+  useCurrentUser: () => ({ user: supportState.user }),
 }));
 
 vi.mock('@/hooks/useDirectMessages', () => ({
-  useDmCapability: () => ({ canUseDirectMessages: false }),
+  useDmCapability: () => ({
+    canUseDirectMessages: supportState.canUseDirectMessages,
+  }),
 }));
 
 vi.mock('@/hooks/useSubdomainNavigate', () => ({
@@ -41,6 +48,9 @@ describe('Support page', () => {
 
     window.localStorage.setItem(LOCALE_STORAGE_KEY, 'es');
     await initializeI18n({ force: true, languages: ['en-US'] });
+    mockNavigate.mockReset();
+    supportState.user = null;
+    supportState.canUseDirectMessages = false;
   });
 
   it('renders support page copy in spanish', () => {
@@ -54,5 +64,18 @@ describe('Support page', () => {
     expect(screen.getByText('Necesitas ayuda? Estamos aqui para ayudarte.')).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Visitar el centro de ayuda de Divine' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Contactar con soporte' })).toBeInTheDocument();
+  });
+
+  it('opens the canonical Support conversation', () => {
+    supportState.user = { pubkey: 'a'.repeat(64) };
+    supportState.canUseDirectMessages = true;
+    render(
+      <MemoryRouter>
+        <Support />
+      </MemoryRouter>,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Abrir chat de soporte' }));
+    expect(mockNavigate).toHaveBeenCalledWith(getSupportDmConversationPath());
   });
 });

@@ -26,6 +26,7 @@ import { useRssFeedAvailable } from '@/hooks/useRssFeedAvailable';
 import { LanguageMenu } from '@/components/LanguageMenu';
 import { SocialLinks } from '@/components/SocialLinks';
 import { getTranslatedCategoryLabel } from '@/lib/constants/categories';
+import { getSupportDmConversationPath } from '@/lib/dmAccessPolicy';
 import { getPreferredAppStoreCountry, lookupAppStoreUrl, PLAY_STORE_URL } from '@/lib/mobileStoreLinks';
 
 interface NavItemProps {
@@ -213,8 +214,8 @@ export function AppSidebar({ className }: { className?: string }) {
                   )}
                 </div>
               }
-              label={t('nav.messages')}
-              onClick={() => navigate('/messages')}
+              label={t('support.messageSupportTitle')}
+              onClick={() => navigate(getSupportDmConversationPath())}
               isActive={isMessagesActive()}
             />
           )}

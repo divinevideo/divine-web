@@ -9,7 +9,7 @@ import { MarketingLayout } from '@/components/MarketingLayout';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useDmCapability } from '@/hooks/useDirectMessages';
 import { useSubdomainNavigate } from '@/hooks/useSubdomainNavigate';
-import { DIVINE_SUPPORT_PUBKEY, getDmConversationPath } from '@/lib/dm';
+import { getSupportDmConversationPath } from '@/lib/dmAccessPolicy';
 import { useTranslation } from 'react-i18next';
 
 export function Support() {
@@ -116,7 +116,7 @@ export function Support() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Button onClick={() => navigate(getDmConversationPath([DIVINE_SUPPORT_PUBKEY]))}>
+              <Button onClick={() => navigate(getSupportDmConversationPath())}>
                 {t('support.messageSupportCta')}
               </Button>
             </CardContent>

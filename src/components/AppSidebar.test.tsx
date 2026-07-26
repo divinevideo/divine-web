@@ -2,15 +2,20 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { Tag } from '@phosphor-icons/react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { getSupportDmConversationPath } from '@/lib/dmAccessPolicy';
 import { LOCALE_STORAGE_KEY } from '@/lib/i18n/config';
 import { initializeI18n } from '@/lib/i18n';
 import { AppSidebar } from './AppSidebar';
 import type { CategoryWithConfig } from '@/hooks/useCategories';
 
-const { mockNavigate, mockSetTheme, mockCategories } = vi.hoisted(() => ({
+const { mockNavigate, mockSetTheme, mockCategories, shell } = vi.hoisted(() => ({
   mockNavigate: vi.fn(),
   mockSetTheme: vi.fn(),
   mockCategories: [] as CategoryWithConfig[],
+  shell: {
+    user: null as { pubkey: string } | null,
+    canUseDirectMessages: false,
+  },
 }));
 
 vi.mock('@/hooks/useCategories', () => ({
@@ -22,7 +27,7 @@ vi.mock('@/hooks/useTheme', () => ({
 }));
 
 vi.mock('@/hooks/useCurrentUser', () => ({
-  useCurrentUser: () => ({ user: null }),
+  useCurrentUser: () => ({ user: shell.user }),
 }));
 
 vi.mock('@/hooks/useNotifications', () => ({
@@ -30,7 +35,9 @@ vi.mock('@/hooks/useNotifications', () => ({
 }));
 
 vi.mock('@/hooks/useDirectMessages', () => ({
-  useDmCapability: () => ({ canUseDirectMessages: false }),
+  useDmCapability: () => ({
+    canUseDirectMessages: shell.canUseDirectMessages,
+  }),
   useUnreadDmCount: () => ({ data: 0 }),
 }));
 
@@ -71,6 +78,8 @@ describe('AppSidebar', () => {
     mockNavigate.mockReset();
     mockSetTheme.mockReset();
     mockCategories.length = 0;
+    shell.user = null;
+    shell.canUseDirectMessages = false;
   });
 
   afterEach(() => {
@@ -207,5 +216,18 @@ describe('AppSidebar', () => {
     fireEvent.click(screen.getByRole('button', { name: /idioma: español/i }));
 
     expect(screen.getByRole('button', { name: 'English' })).toBeVisible();
+  });
+
+  it('labels and opens the canonical Support conversation', () => {
+    shell.user = { pubkey: 'a'.repeat(64) };
+    shell.canUseDirectMessages = true;
+    render(
+      <MemoryRouter>
+        <AppSidebar />
+      </MemoryRouter>,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Mensaje al soporte' }));
+    expect(mockNavigate).toHaveBeenCalledWith(getSupportDmConversationPath());
   });
 });

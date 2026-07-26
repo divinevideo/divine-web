@@ -3,6 +3,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { nip19 } from 'nostr-tools';
 import { ProfileHeader } from './ProfileHeader';
+import { DIVINE_SUPPORT_PUBKEY } from '@/lib/dm';
 import type { ProfileStats } from '@/lib/profileStats';
 import { initializeI18n } from '@/lib/i18n';
 
@@ -121,8 +122,6 @@ describe('ProfileHeader', () => {
   });
 
   describe('protected-minor Message affordance (#176)', () => {
-    const HQ =
-      'c4a39f1291291d452405cd8ddd798c4a29a3858c52cd0d843f1f6852cf17682e';
     const renderFor = (pubkey: string) =>
       render(
         <MemoryRouter>
@@ -138,9 +137,17 @@ describe('ProfileHeader', () => {
         </MemoryRouter>,
       );
 
-    it('shows the Message button for a non-protected user', () => {
+    it('hides the Message button on a non-support profile for every user', () => {
       pm.canUseDirectMessages = true;
       renderFor('a'.repeat(64));
+      expect(
+        screen.queryByRole('button', { name: /message/i }),
+      ).not.toBeInTheDocument();
+    });
+
+    it('shows the Message button on the Divine Support profile', () => {
+      pm.canUseDirectMessages = true;
+      renderFor(DIVINE_SUPPORT_PUBKEY);
       expect(
         screen.getByRole('button', { name: /message/i }),
       ).toBeInTheDocument();
@@ -158,8 +165,8 @@ describe('ProfileHeader', () => {
     it('shows the Message button when a protected minor views an approved official profile', () => {
       pm.canUseDirectMessages = true;
       pm.state = 'protected';
-      pm.approved.add(HQ);
-      renderFor(HQ);
+      pm.approved.add(DIVINE_SUPPORT_PUBKEY);
+      renderFor(DIVINE_SUPPORT_PUBKEY);
       expect(
         screen.getByRole('button', { name: /message/i }),
       ).toBeInTheDocument();
@@ -177,8 +184,8 @@ describe('ProfileHeader', () => {
     it('keeps the Message button for an approved official while unknown', () => {
       pm.canUseDirectMessages = true;
       pm.state = 'unknown';
-      pm.approved.add(HQ);
-      renderFor(HQ);
+      pm.approved.add(DIVINE_SUPPORT_PUBKEY);
+      renderFor(DIVINE_SUPPORT_PUBKEY);
       expect(
         screen.getByRole('button', { name: /message/i }),
       ).toBeInTheDocument();

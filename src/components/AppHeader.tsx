@@ -7,6 +7,7 @@ import { LoginArea } from '@/components/auth/LoginArea';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useUnreadNotificationCount } from '@/hooks/useNotifications';
 import { useDmCapability, useUnreadDmCount } from '@/hooks/useDirectMessages';
+import { getSupportDmConversationPath } from '@/lib/dmAccessPolicy';
 import { cn } from '@/lib/utils';
 import {
   DropdownMenu,
@@ -106,9 +107,9 @@ export function AppHeader({ className }: AppHeaderProps) {
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => navigate('/messages')}
+              onClick={() => navigate(getSupportDmConversationPath())}
               className="relative"
-              aria-label={t('nav.messages')}
+              aria-label={t('support.messageSupportTitle')}
             >
               <MessageCircle className="h-4 w-4" />
               {(unreadDmCount ?? 0) > 0 && (

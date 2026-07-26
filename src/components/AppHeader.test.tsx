@@ -1,13 +1,18 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { getSupportDmConversationPath } from '@/lib/dmAccessPolicy';
 import { LOCALE_STORAGE_KEY } from '@/lib/i18n/config';
 import { initializeI18n } from '@/lib/i18n';
 import { AppHeader } from './AppHeader';
 
-const { mockNavigate, mockSetTheme } = vi.hoisted(() => ({
+const { mockNavigate, mockSetTheme, shell } = vi.hoisted(() => ({
   mockNavigate: vi.fn(),
   mockSetTheme: vi.fn(),
+  shell: {
+    user: null as { pubkey: string } | null,
+    canUseDirectMessages: false,
+  },
 }));
 
 vi.mock('@/hooks/useSubdomainNavigate', () => ({
@@ -15,7 +20,7 @@ vi.mock('@/hooks/useSubdomainNavigate', () => ({
 }));
 
 vi.mock('@/hooks/useCurrentUser', () => ({
-  useCurrentUser: () => ({ user: null }),
+  useCurrentUser: () => ({ user: shell.user }),
 }));
 
 vi.mock('@/hooks/useNotifications', () => ({
@@ -23,7 +28,9 @@ vi.mock('@/hooks/useNotifications', () => ({
 }));
 
 vi.mock('@/hooks/useDirectMessages', () => ({
-  useDmCapability: () => ({ canUseDirectMessages: false }),
+  useDmCapability: () => ({
+    canUseDirectMessages: shell.canUseDirectMessages,
+  }),
   useUnreadDmCount: () => ({ data: 0 }),
 }));
 
@@ -84,6 +91,8 @@ describe('AppHeader', () => {
 
     mockNavigate.mockReset();
     mockSetTheme.mockReset();
+    shell.user = null;
+    shell.canUseDirectMessages = false;
   });
 
   it('renders translated shell labels and a translated DMCA action in the more menu', () => {
@@ -116,5 +125,18 @@ describe('AppHeader', () => {
     fireEvent.click(screen.getByRole('menuitem', { name: merchLabel }));
 
     expect(mockNavigate).toHaveBeenCalledWith('/merch');
+  });
+
+  it('labels and opens the canonical Support conversation', () => {
+    shell.user = { pubkey: 'a'.repeat(64) };
+    shell.canUseDirectMessages = true;
+    render(
+      <MemoryRouter>
+        <AppHeader />
+      </MemoryRouter>,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Mensaje al soporte' }));
+    expect(mockNavigate).toHaveBeenCalledWith(getSupportDmConversationPath());
   });
 });
