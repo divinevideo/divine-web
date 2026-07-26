@@ -4,6 +4,7 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
+  decodeConversationId,
   DIVINE_SUPPORT_PUBKEY,
   encodeConversationId,
   type DmMessage,
@@ -106,6 +107,13 @@ function renderConversationRoute(conversationId: string) {
   );
 }
 
+function encodeRawConversationId(value: string) {
+  return window.btoa(value)
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/g, '');
+}
+
 function renderConversation(peers: string | string[]) {
   const conversationId = encodeConversationId(
     typeof peers === 'string' ? [peers] : peers,
@@ -195,6 +203,42 @@ describe('ConversationPage', () => {
       RECIPIENT_PUBKEY,
       NON_SUPPORT_PUBKEY,
     ]);
+
+    await waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalledWith(getSupportDmConversationPath(), {
+        replace: true,
+      });
+    });
+    expect(container).toBeEmptyDOMElement();
+  });
+
+  it('redirects an encoded support plus junk route without rendering history', async () => {
+    const conversationId = encodeRawConversationId(`${RECIPIENT_PUBKEY},not-a-pubkey`);
+    directMessageState.messages = [
+      buildMessage({
+        content: 'History from a noncanonical route',
+      }),
+    ];
+
+    expect(decodeConversationId(conversationId)).toEqual([RECIPIENT_PUBKEY]);
+
+    const { container } = renderConversationRoute(conversationId);
+
+    await waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalledWith(getSupportDmConversationPath(), {
+        replace: true,
+      });
+    });
+    expect(container).toBeEmptyDOMElement();
+    expect(screen.queryByText('History from a noncanonical route')).not.toBeInTheDocument();
+  });
+
+  it('redirects a syntactically encoded empty peer route without rendering UI', async () => {
+    const conversationId = encodeRawConversationId('not-a-pubkey');
+
+    expect(decodeConversationId(conversationId)).toEqual([]);
+
+    const { container } = renderConversationRoute(conversationId);
 
     await waitFor(() => {
       expect(mockNavigate).toHaveBeenCalledWith(getSupportDmConversationPath(), {
