@@ -304,8 +304,8 @@ export function ConversationPage() {
             <p className="mt-2 text-sm text-muted-foreground">
               {t('conversationPage.dmUnavailableDescription')}
             </p>
-            <Button className="mt-5 rounded-full" onClick={() => navigate('/messages')}>
-              {t('conversationPage.backToInbox')}
+            <Button className="mt-5 rounded-full" onClick={() => navigate('/support')}>
+              {t('support.title')}
             </Button>
           </div>
         </main>
@@ -323,7 +323,8 @@ export function ConversationPage() {
                 variant="ghost"
                 size="icon"
                 className="rounded-full"
-                onClick={() => navigate('/messages')}
+                aria-label={t('support.title')}
+                onClick={() => navigate('/support')}
               >
                 <ArrowLeft className="h-5 w-5" />
               </Button>

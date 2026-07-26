@@ -19,6 +19,7 @@ const NON_SUPPORT_PUBKEY = 'b'.repeat(64);
 
 const {
   currentUserPubkey,
+  dmCapabilityState,
   mockAuthorMap,
   directMessageState,
   mockNavigate,
@@ -27,6 +28,10 @@ const {
   mockSendMutateAsync,
 } = vi.hoisted(() => ({
   currentUserPubkey: 'a'.repeat(64),
+  dmCapabilityState: {
+    canUseDirectMessages: true,
+    isCheckingDmCapability: false,
+  },
   directMessageState: {
     messages: [] as DmMessage[],
     latestMessageAt: 0,
@@ -50,7 +55,7 @@ const {
 }));
 
 vi.mock('@/hooks/useDirectMessages', () => ({
-  useDmCapability: () => ({ canUseDirectMessages: true, isCheckingDmCapability: false }),
+  useDmCapability: () => dmCapabilityState,
   useDmConversation: () => ({
     data: directMessageState.messages,
     isLoading: directMessageState.isLoading,
@@ -129,6 +134,8 @@ function renderPage() {
 describe('ConversationPage', () => {
   beforeEach(async () => {
     vi.clearAllMocks();
+    dmCapabilityState.canUseDirectMessages = true;
+    dmCapabilityState.isCheckingDmCapability = false;
     const storage = new Map<string, string>();
     Object.defineProperty(window, 'localStorage', {
       configurable: true,
@@ -177,6 +184,27 @@ describe('ConversationPage', () => {
     expect(mockNavigate).not.toHaveBeenCalledWith(getSupportDmConversationPath(), {
       replace: true,
     });
+  });
+
+  it('navigates from the thread header back to Support', async () => {
+    const user = userEvent.setup();
+
+    renderPage();
+
+    await user.click(screen.getByRole('button', { name: 'Support' }));
+
+    expect(mockNavigate).toHaveBeenCalledWith('/support');
+  });
+
+  it('offers a Support exit when direct messages are unavailable', async () => {
+    const user = userEvent.setup();
+    dmCapabilityState.canUseDirectMessages = false;
+
+    renderPage();
+
+    await user.click(screen.getByRole('button', { name: 'Support' }));
+
+    expect(mockNavigate).toHaveBeenCalledWith('/support');
   });
 
   it('redirects a non-support deep link without rendering its history', async () => {
