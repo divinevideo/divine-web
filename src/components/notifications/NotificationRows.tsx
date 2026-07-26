@@ -122,6 +122,9 @@ function NotificationVideoThumbnail({
         <img
           src={thumbnailUrl}
           alt={title}
+          width={72}
+          height={72}
+          loading="lazy"
           className="h-full w-full object-cover"
         />
       ) : (

@@ -4,7 +4,8 @@
 import { useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { API_CONFIG } from '@/config/api';
-import { fetchVideoById } from '@/lib/funnelcakeClient';
+import { fetchBulkVideos, fetchVideoById } from '@/lib/funnelcakeClient';
+import { isFunnelcakeAvailable } from '@/lib/funnelcakeHealth';
 import { genUserName } from '@/lib/genUserName';
 import { getSafeProfileImage } from '@/lib/imageUtils';
 import { groupRawNotifications, type NotificationVideoMeta } from '@/lib/notificationGrouping';
@@ -28,7 +29,8 @@ export interface HydratedNotificationsResult {
  * then groups them into the VideoNotification | ActorNotification UI union.
  *
  * - Profile data comes from useBatchedAuthors (REST-first, WebSocket fallback).
- * - Video data is fetched internally per-id via fetchVideoById and cached.
+ * - Video data is bulk-fetched via fetchBulkVideos (REST), seeding the
+ *   per-video cache; uncached/missing videos fall back to fetchVideoById.
  * - For category === 'unread', each raw notification is grouped individually
  *   to preserve one-per-raw behaviour while reusing the same rendering path.
  */
@@ -81,7 +83,26 @@ export function useHydratedNotifications(
 
   const videosQuery = useQuery({
     queryKey: ['notification-videos', sortedIds],
-    queryFn: async () => {
+    queryFn: async ({ signal }) => {
+      // Bulk-fetch all needed videos in one request, seeding the per-video
+      // cache so downstream consumers still hit ['notification-video', id].
+      if (isFunnelcakeAvailable(apiUrl)) {
+        try {
+          const { videos } = await fetchBulkVideos(apiUrl, sortedIds, signal);
+          for (const video of videos) {
+            queryClient.setQueryData<NotificationVideoMeta>(
+              ['notification-video', video.id],
+              {
+                title: video.title || undefined,
+                thumbnailUrl: video.thumbnail || undefined,
+              },
+            );
+          }
+        } catch {
+          // Bulk failed — fall through to the per-video path below.
+        }
+      }
+
       const entries = await Promise.all(
         sortedIds.map(async (id) => {
           try {

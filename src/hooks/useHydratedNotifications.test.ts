@@ -11,10 +11,12 @@ import type { RawNotification, NotificationsResponse } from '@/types/notificatio
 // ---------------------------------------------------------------------------
 // Hoisted mock factories
 // ---------------------------------------------------------------------------
-const { mockUseNotifications, mockUseBatchedAuthors, mockFetchVideoById } = vi.hoisted(() => ({
+const { mockUseNotifications, mockUseBatchedAuthors, mockFetchVideoById, mockFetchBulkVideos, mockIsFunnelcakeAvailable } = vi.hoisted(() => ({
   mockUseNotifications: vi.fn(),
   mockUseBatchedAuthors: vi.fn(),
   mockFetchVideoById: vi.fn(),
+  mockFetchBulkVideos: vi.fn(),
+  mockIsFunnelcakeAvailable: vi.fn(),
 }));
 
 vi.mock('@/hooks/useNotifications', () => ({
@@ -27,6 +29,11 @@ vi.mock('@/hooks/useBatchedAuthors', () => ({
 
 vi.mock('@/lib/funnelcakeClient', () => ({
   fetchVideoById: mockFetchVideoById,
+  fetchBulkVideos: mockFetchBulkVideos,
+}));
+
+vi.mock('@/lib/funnelcakeHealth', () => ({
+  isFunnelcakeAvailable: mockIsFunnelcakeAvailable,
 }));
 
 vi.mock('@/lib/debug', () => ({
@@ -126,6 +133,10 @@ function makeInfiniteQueryResult(pages: NotificationsResponse[], opts?: { isLoad
 describe('useHydratedNotifications', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+
+    // Default: funnelcake available, bulk returns nothing
+    mockIsFunnelcakeAvailable.mockReturnValue(true);
+    mockFetchBulkVideos.mockResolvedValue({ videos: [], missing: [] });
 
     // Default: no video metadata
     mockFetchVideoById.mockResolvedValue(null);
@@ -425,5 +436,104 @@ describe('useHydratedNotifications', () => {
       .map((i) => (i.kind === 'video' ? i.videoEventId : ''));
     expect(videoIds).toContain(VIDEO_ID);
     expect(videoIds).toContain(VIDEO_ID_2);
+  });
+
+  it('uses bulk fetch and skips per-video requests when funnelcake is available', async () => {
+    const like1 = makeLike('like-1', PUBKEY_A, VIDEO_ID, 2000);
+    const like2 = makeLike('like-2', PUBKEY_B, VIDEO_ID_2, 1000);
+
+    mockUseNotifications.mockReturnValue(
+      makeInfiniteQueryResult([makeNotificationsPage([like1, like2])]),
+    );
+    mockUseBatchedAuthors.mockReturnValue({ data: {} });
+    mockFetchBulkVideos.mockResolvedValue({
+      videos: [
+        { id: VIDEO_ID, pubkey: PUBKEY_A, title: 'Bulk Video One', thumbnail: 'https://example.com/one.jpg' },
+        { id: VIDEO_ID_2, pubkey: PUBKEY_B, title: 'Bulk Video Two', thumbnail: 'https://example.com/two.jpg' },
+      ],
+      missing: [],
+    });
+
+    const { useHydratedNotifications } = await import('./useHydratedNotifications');
+
+    const { result } = renderHook(
+      () => useHydratedNotifications({ category: 'all' }),
+      { wrapper: createWrapper() },
+    );
+
+    await waitFor(() => {
+      expect(mockFetchBulkVideos).toHaveBeenCalledWith(
+        'https://api.divine.video',
+        [VIDEO_ID, VIDEO_ID_2].sort(),
+        expect.any(AbortSignal),
+      );
+      const titles = result.current.items
+        .filter((i) => i.kind === 'video')
+        .map((i) => (i.kind === 'video' ? i.videoTitle : undefined));
+      expect(titles).toContain('Bulk Video One');
+      expect(titles).toContain('Bulk Video Two');
+    });
+
+    expect(mockFetchVideoById).not.toHaveBeenCalled();
+  });
+
+  it('falls back to per-video fetch when bulk request fails', async () => {
+    const like = makeLike('like-1', PUBKEY_A, VIDEO_ID, 1000);
+
+    mockUseNotifications.mockReturnValue(
+      makeInfiniteQueryResult([makeNotificationsPage([like])]),
+    );
+    mockUseBatchedAuthors.mockReturnValue({ data: {} });
+    mockFetchBulkVideos.mockRejectedValue(new Error('Bulk failed'));
+    mockFetchVideoById.mockResolvedValue({
+      id: VIDEO_ID,
+      title: 'Fallback Video',
+      thumbnail: 'https://example.com/fallback.jpg',
+    });
+
+    const { useHydratedNotifications } = await import('./useHydratedNotifications');
+
+    const { result } = renderHook(
+      () => useHydratedNotifications({ category: 'all' }),
+      { wrapper: createWrapper() },
+    );
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+      const item = result.current.items[0];
+      if (item.kind === 'video') {
+        expect(item.videoTitle).toBe('Fallback Video');
+      }
+    });
+
+    expect(mockFetchVideoById).toHaveBeenCalledWith(
+      'https://api.divine.video',
+      VIDEO_ID,
+      undefined,
+      expect.any(AbortSignal),
+    );
+  });
+
+  it('skips bulk fetch when circuit breaker is open', async () => {
+    const like = makeLike('like-1', PUBKEY_A, VIDEO_ID, 1000);
+
+    mockUseNotifications.mockReturnValue(
+      makeInfiniteQueryResult([makeNotificationsPage([like])]),
+    );
+    mockUseBatchedAuthors.mockReturnValue({ data: {} });
+    mockIsFunnelcakeAvailable.mockReturnValue(false);
+
+    const { useHydratedNotifications } = await import('./useHydratedNotifications');
+
+    renderHook(
+      () => useHydratedNotifications({ category: 'all' }),
+      { wrapper: createWrapper() },
+    );
+
+    await waitFor(() => {
+      expect(mockFetchVideoById).toHaveBeenCalled();
+    });
+
+    expect(mockFetchBulkVideos).not.toHaveBeenCalled();
   });
 });

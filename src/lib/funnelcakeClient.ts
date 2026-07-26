@@ -1209,6 +1209,86 @@ export async function fetchBulkVideoStats(
   }
 }
 
+/**
+ * Response from POST /api/videos/bulk endpoint
+ */
+export interface FunnelcakeBulkVideosResponse {
+  videos: Array<{
+    id: string;
+    pubkey: string;
+    title?: string;
+    thumbnail?: string;
+    video_url?: string;
+  }>;
+  missing: string[];
+}
+
+/**
+ * Fetch multiple videos in bulk via POST /api/videos/bulk
+ * Much more efficient than individual fetchVideoById calls
+ *
+ * @param apiUrl - Base URL of the Funnelcake API
+ * @param eventIds - Array of video event IDs (hex)
+ * @param signal - Optional abort signal
+ * @returns Promise with videos array and missing event IDs
+ */
+export async function fetchBulkVideos(
+  apiUrl: string = API_CONFIG.funnelcake.baseUrl,
+  eventIds: string[],
+  signal?: AbortSignal
+): Promise<FunnelcakeBulkVideosResponse> {
+  // Return early for empty input
+  if (eventIds.length === 0) {
+    return { videos: [], missing: [] };
+  }
+
+  debugLog(`[FunnelcakeClient] fetchBulkVideos: ${eventIds.length} event IDs`);
+
+  const timeout = API_CONFIG.funnelcake.timeout;
+  const timeoutSignal = AbortSignal.timeout(timeout);
+  const combinedSignal = signal
+    ? AbortSignal.any([signal, timeoutSignal])
+    : timeoutSignal;
+
+  try {
+    const response = await fetch(`${apiUrl}/api/videos/bulk`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ event_ids: eventIds }),
+      signal: combinedSignal,
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => 'Unknown error');
+      recordFunnelcakeFailure(apiUrl, `HTTP ${response.status}`);
+      throw new FunnelcakeApiError(
+        `Funnelcake bulk videos error: ${response.status} ${response.statusText}`,
+        response.status,
+        errorText
+      );
+    }
+
+    const data = await response.json();
+    recordFunnelcakeSuccess(apiUrl);
+
+    debugLog(`[FunnelcakeClient] Got ${data.videos?.length || 0} videos, ${data.missing?.length || 0} missing`);
+
+    return {
+      videos: data.videos || [],
+      missing: data.missing || [],
+    };
+  } catch (err) {
+    if (err instanceof FunnelcakeApiError) {
+      throw err;
+    }
+
+    const message = err instanceof Error ? err.message : 'Unknown error';
+    recordFunnelcakeFailure(apiUrl, message);
+    debugError(`[FunnelcakeClient] fetchBulkVideos failed: ${message}`);
+    throw new FunnelcakeApiError(message, null, undefined);
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Notification API functions (NIP-98 authenticated, bypass circuit breaker)
 // ---------------------------------------------------------------------------
