@@ -177,6 +177,15 @@ describe('shouldDropFunnelcakeHttpClientEvent', () => {
     expect(shouldDropFunnelcakeHttpClientEvent(event)).toBe(true);
   });
 
+  it('keeps leaderboard failures without a replacement fallback report', () => {
+    const event = createHttpClientEvent({
+      url: 'https://api.divine.video/api/leaderboard/creators?period=alltime&limit=500',
+      statusCode: 500,
+    });
+
+    expect(shouldDropFunnelcakeHttpClientEvent(event)).toBe(false);
+  });
+
   it('drops failures on the staging Funnelcake API host', () => {
     const event = createHttpClientEvent({
       url: 'https://api.staging.divine.video/api/search/profiles?q=jack',

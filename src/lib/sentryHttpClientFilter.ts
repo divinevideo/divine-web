@@ -125,7 +125,7 @@ function isFunnelcakeFallbackReportedPath(pathname: string): boolean {
     return true;
   }
 
-  if (normalizedPath === '/api/users/bulk' || normalizedPath === '/api/leaderboard/creators') {
+  if (normalizedPath === '/api/users/bulk') {
     return true;
   }
 

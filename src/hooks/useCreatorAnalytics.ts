@@ -4,6 +4,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { API_CONFIG } from '@/config/api';
 import { isFunnelcakeAvailable } from '@/lib/funnelcakeHealth';
+import { reportFunnelcakeFallback } from '@/lib/funnelcakeFallbackReporting';
 import {
   fetchUserProfile,
   fetchUserVideos,
@@ -80,6 +81,19 @@ export function useCreatorAnalytics(pubkey: string) {
         fetchAllUserVideos(apiUrl, pubkey, signal),
         fetchUserProfile(apiUrl, pubkey, signal),
       ]);
+
+      // fetchUserProfile swallows request errors and returns null, and the
+      // Sentry filter drops the raw /api/users/{pubkey} HTTP event; report
+      // here so this failure keeps a single signal (#467)
+      if (!profile) {
+        reportFunnelcakeFallback({
+          source: 'useCreatorAnalytics',
+          apiUrl,
+          reason: 'REST returned no profile',
+          dedupeKey: `useCreatorAnalytics:${pubkey}:no-profile`,
+          context: { pubkey },
+        });
+      }
 
       debugLog(`[useCreatorAnalytics] Got ${videos.length} videos`);
 
