@@ -1,7 +1,20 @@
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 
-const ROUTES = ['/', '/discovery', '/search', '/merch', '/family', '/age-review', '/kids', '/__brand-preview'];
+const PUBKEY = 'a'.repeat(64);
+const ROUTES = [
+  '/',
+  '/discovery',
+  '/search',
+  '/merch',
+  '/family',
+  '/age-review',
+  '/kids',
+  `/profile/${PUBKEY}`,
+  `/profile/${PUBKEY}/lists`,
+  `/people-lists/${PUBKEY}/friends`,
+  '/__brand-preview',
+];
 
 for (const route of ROUTES) {
   test(`a11y: ${route} has no WCAG 2 A/AA violations`, async ({ page }) => {

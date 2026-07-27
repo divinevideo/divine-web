@@ -15,10 +15,10 @@ import {
 } from '@/components/ui/dialog';
 import { useBatchedAuthors } from '@/hooks/useBatchedAuthors';
 import { useSubdomainNavigate } from '@/hooks/useSubdomainNavigate';
+import { useValidatedProfileLinkPath } from '@/hooks/useValidatedProfileLinkPath';
 import { getSafeProfileImage } from '@/lib/imageUtils';
 import { genUserName } from '@/lib/genUserName';
 import { Sentry } from '@/lib/sentry';
-import { buildProfileLinkPath } from '@/lib/profileLinks';
 
 const ESTIMATED_ROW_HEIGHT = 56;
 
@@ -35,17 +35,22 @@ interface UserListDialogProps {
 interface UserRowProps {
   pubkey: string;
   metadata?: NostrMetadata;
-  onNavigate: (pubkey: string, nip05?: string) => void;
+  onNavigate: (pubkey: string, profilePath: string) => void;
 }
 
 const UserRow = memo(function UserRow({ pubkey, metadata, onNavigate }: UserRowProps) {
   const displayName = metadata?.display_name || metadata?.name || genUserName(pubkey);
   const profileImage = getSafeProfileImage(metadata?.picture) || '/user-avatar.png';
+  const profilePath = useValidatedProfileLinkPath({
+    pubkey,
+    nip05: metadata?.nip05,
+    fallbackRoute: 'profile',
+  });
 
   return (
     <button
       className="flex items-center gap-3 w-full p-2 rounded-lg hover:bg-muted transition-colors text-left"
-      onClick={() => onNavigate(pubkey, metadata?.nip05)}
+      onClick={() => onNavigate(pubkey, profilePath)}
     >
       <Avatar size="md" className="shrink-0">
         <AvatarImage src={profileImage} alt={displayName} />
@@ -150,13 +155,9 @@ export function UserListDialog({
   const { data: authorsData } = useBatchedAuthors(open ? visiblePubkeys : []);
 
   const handleNavigate = useCallback(
-    (pubkey: string, nip05?: string) => {
+    (pubkey: string, profilePath: string) => {
       onOpenChange(false);
-      navigate(buildProfileLinkPath({
-        pubkey,
-        nip05,
-        fallbackRoute: 'profile',
-      }), { ownerPubkey: pubkey });
+      navigate(profilePath, { ownerPubkey: pubkey });
     },
     [navigate, onOpenChange],
   );

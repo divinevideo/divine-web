@@ -38,7 +38,6 @@
   },
   "footer": {
     "aboutDivine": "Divine 소개",
-    "vinesRecovered": "{{count}}개의 Vine 복구됨",
     "termsAndOpenSource": "약관 및 오픈 소스",
     "copyright": "© 2026 Divine"
   },
@@ -386,7 +385,6 @@
     "message": "메시지",
     "reportUser": "사용자 신고",
     "subscribeRss": "RSS 피드 구독",
-    "videos": "비디오",
     "followers": "팔로워",
     "followingStat": "팔로잉",
     "followingDialogTitle": "팔로잉",

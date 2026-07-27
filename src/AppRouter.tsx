@@ -3,7 +3,7 @@
  */
 
 import { lazy, Suspense } from "react";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { ScrollToTop } from "./components/ScrollToTop";
 import { AnalyticsPageTracker } from "./components/AnalyticsPageTracker";
 import { AnalyticsUserTracker } from "./components/AnalyticsUserTracker";
@@ -28,6 +28,8 @@ import { LegacyVineVideoPage } from "./pages/LegacyVineVideoPage";
 import { TagPage } from "./pages/TagPage";
 import ListsPage from "./pages/ListsPage";
 import ListDetailPage from "./pages/ListDetailPage";
+import ProfileListsPage from "./pages/ProfileListsPage";
+import PeopleListDetailPage from "./pages/PeopleListDetailPage";
 import ModerationSettingsPage from "./pages/ModerationSettingsPage";
 import LinkedAccountsSettingsPage from "./pages/LinkedAccountsSettingsPage";
 import RelaysSettingsPage from "./pages/RelaysSettingsPage";
@@ -95,6 +97,7 @@ export function AppRouter() {
   const appShellRoutes = (
     <>
       {/* Public browsing routes - accessible without login */}
+      <Route path="/discovery/new" element={<Navigate to="/discovery/hot" replace />} />
       <Route path="/discovery" element={<DiscoveryPage />} />
       <Route path="/discovery/:tab" element={<DiscoveryPage />} />
       <Route path="/trending" element={<TrendingPage />} />
@@ -105,6 +108,7 @@ export function AppRouter() {
       <Route path="/category/:name" element={<CategoryPage />} />
       <Route path="/t/:tag" element={<TagPage />} />
       <Route path="/profile/:npub" element={<ProfilePage />} />
+      <Route path="/profile/:npub/lists" element={<ProfileListsPage />} />
       <Route path="/video/:id" element={<VideoPage />} />
       <Route path="/v/:legacyVineId" element={<LegacyVineVideoPage />} />
       <Route path="/search" element={<SearchPage />} />
@@ -112,6 +116,7 @@ export function AppRouter() {
       <Route path="/merch" element={<MerchPage />} />
       <Route path="/u/:userId" element={<UniversalUserPage />} />
       <Route path="/list/:pubkey/:listId" element={<ListDetailPage />} />
+      <Route path="/people-lists/:pubkey/:listId" element={<PeopleListDetailPage />} />
       <Route path="/event/:eventId" element={<EventPage />} />
       <Route path="/event/a/:kind/:pubkey/:identifier" element={<EventPage />} />
       <Route path="/:nip19" element={<NIP19Page />} />

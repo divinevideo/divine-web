@@ -38,7 +38,6 @@
   },
   "footer": {
     "aboutDivine": "Tentang Divine",
-    "vinesRecovered": "{{count}} Vine dipulihkan",
     "termsAndOpenSource": "Ketentuan & sumber terbuka",
     "copyright": "© 2026 Divine"
   },
@@ -386,7 +385,6 @@
     "message": "Pesan",
     "reportUser": "Laporkan pengguna",
     "subscribeRss": "Berlangganan feed RSS",
-    "videos": "Video",
     "followers": "Pengikut",
     "followingStat": "Mengikuti",
     "followingDialogTitle": "Mengikuti",

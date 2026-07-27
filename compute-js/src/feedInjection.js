@@ -23,6 +23,22 @@ export async function resolveFeedInjectedHtml({
   }
 }
 
+// Map a Funnelcake v2 envelope ({ data, pagination }) to the client's expected
+// shape ({ videos, next_cursor, has_more }). Legacy v1 arrays and already-shaped
+// payloads pass through untouched — the client normalizes those itself.
+export function normalizeFeedResponse(feedData) {
+  if (!feedData || Array.isArray(feedData)) return feedData;
+  if (Array.isArray(feedData.data)) {
+    const pagination = feedData.pagination ?? {};
+    return {
+      videos: feedData.data,
+      next_cursor: pagination.next_cursor ?? undefined,
+      has_more: pagination.has_more ?? false,
+    };
+  }
+  return feedData;
+}
+
 export function injectFeedDataIntoHtml({ html, feedType, feedData }) {
   if (!feedData) return html;
 

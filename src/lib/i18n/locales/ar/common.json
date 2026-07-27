@@ -38,7 +38,6 @@
   },
   "footer": {
     "aboutDivine": "حول Divine",
-    "vinesRecovered": "تمت استعادة {{count}} من Vine",
     "termsAndOpenSource": "الشروط والمصدر المفتوح",
     "copyright": "© 2026 Divine"
   },
@@ -390,7 +389,6 @@
     "message": "رسالة",
     "reportUser": "الإبلاغ عن المستخدم",
     "subscribeRss": "اشترك في تغذية RSS",
-    "videos": "الفيديوهات",
     "followers": "المتابعون",
     "followingStat": "يتابع",
     "followingDialogTitle": "يتابع",

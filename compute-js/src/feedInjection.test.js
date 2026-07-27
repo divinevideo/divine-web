@@ -1,5 +1,35 @@
 import { describe, expect, it, vi } from 'vitest';
-import { injectFeedDataIntoHtml, resolveFeedInjectedHtml } from './feedInjection.js';
+import { injectFeedDataIntoHtml, normalizeFeedResponse, resolveFeedInjectedHtml } from './feedInjection.js';
+
+describe('normalizeFeedResponse', () => {
+  it('maps a v2 envelope to the client videos shape', () => {
+    const result = normalizeFeedResponse({
+      data: [{ id: 'a' }, { id: 'b' }],
+      pagination: { next_cursor: 'o:10', has_more: true },
+    });
+    expect(result).toEqual({
+      videos: [{ id: 'a' }, { id: 'b' }],
+      next_cursor: 'o:10',
+      has_more: true,
+    });
+  });
+
+  it('defaults missing pagination fields', () => {
+    const result = normalizeFeedResponse({ data: [] });
+    expect(result).toEqual({ videos: [], next_cursor: undefined, has_more: false });
+  });
+
+  it('passes legacy v1 arrays through untouched', () => {
+    const arr = [{ id: 'a' }];
+    expect(normalizeFeedResponse(arr)).toBe(arr);
+  });
+
+  it('passes null and already-shaped payloads through untouched', () => {
+    expect(normalizeFeedResponse(null)).toBeNull();
+    const shaped = { videos: [{ id: 'a' }] };
+    expect(normalizeFeedResponse(shaped)).toBe(shaped);
+  });
+});
 
 const makeHtml = (entry = '/assets/index-abc123.js') =>
   `<!doctype html><html><head>` +

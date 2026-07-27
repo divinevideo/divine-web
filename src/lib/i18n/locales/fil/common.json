@@ -38,7 +38,6 @@
   },
   "footer": {
     "aboutDivine": "Tungkol sa Divine",
-    "vinesRecovered": "{{count}} Vines na nabawi",
     "termsAndOpenSource": "Mga Tuntunin at Open Source",
     "copyright": "© 2026 Divine"
   },
@@ -386,7 +385,6 @@
     "message": "Mag-message",
     "reportUser": "I-report ang user",
     "subscribeRss": "Mag-subscribe sa RSS feed",
-    "videos": "Mga Video",
     "followers": "Mga Sumusunod",
     "followingStat": "Sinusundan",
     "followingDialogTitle": "Sinusundan",

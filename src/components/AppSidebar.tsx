@@ -23,7 +23,6 @@ import { LoginArea } from '@/components/auth/LoginArea';
 import { cn } from '@/lib/utils';
 import { feedUrls } from '@/lib/feedUrls';
 import { useRssFeedAvailable } from '@/hooks/useRssFeedAvailable';
-import { usePlatformStats } from '@/hooks/usePlatformStats';
 import { LanguageMenu } from '@/components/LanguageMenu';
 import { SocialLinks } from '@/components/SocialLinks';
 import { getTranslatedCategoryLabel } from '@/lib/constants/categories';
@@ -69,14 +68,12 @@ export function AppSidebar({ className }: { className?: string }) {
   const { data: unreadCount } = useUnreadNotificationCount();
   const { data: unreadDmCount } = useUnreadDmCount();
   const rssFeedAvailable = useRssFeedAvailable();
-  const { data: platformStats } = usePlatformStats();
   const [categoriesOpen, setCategoriesOpen] = useState(true);
   const [rssOpen, setRssOpen] = useState(false);
   const [divineOpen, setDivineOpen] = useState(false);
   const [termsOpen, setTermsOpen] = useState(false);
   const [appStoreUrl, setAppStoreUrl] = useState<string | null>(null);
   const { data: categories } = useCategories();
-  const classicVinesRecovered = platformStats?.vine_videos?.toLocaleString();
 
   const isActive = (path: string) => location.pathname === path;
   const isDiscoveryActive = () =>
@@ -414,19 +411,12 @@ export function AppSidebar({ className }: { className?: string }) {
         <Collapsible open={divineOpen} onOpenChange={setDivineOpen}>
           <CollapsibleTrigger asChild>
             <button
-              className="group flex w-full items-start justify-between gap-2 py-1.5 text-left text-[13px] font-semibold text-foreground transition-colors hover:text-primary"
+              className="group flex w-full items-center justify-between gap-2 py-1.5 text-left text-[13px] font-semibold text-foreground transition-colors hover:text-primary"
               style={{ fontFamily: "'Bricolage Grotesque', system-ui, sans-serif" }}
             >
-              <div className="min-w-0">
-                <div>{t('footer.aboutDivine')}</div>
-                {classicVinesRecovered && (
-                  <div className="mt-0.5 text-[11px] font-normal text-muted-foreground group-hover:text-muted-foreground">
-                    {t('footer.vinesRecovered', { count: classicVinesRecovered })}
-                  </div>
-                )}
-              </div>
+              <span>{t('footer.aboutDivine')}</span>
               <ChevronDown className={cn(
-                "mt-0.5 h-3.5 w-3.5 shrink-0 transition-transform duration-200",
+                "h-3.5 w-3.5 shrink-0 transition-transform duration-200",
                 divineOpen && "rotate-180"
               )} />
             </button>

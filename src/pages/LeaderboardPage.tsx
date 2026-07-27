@@ -13,6 +13,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { getFunnelcakeBaseUrl } from '@/config/api';
 import { buildProfileLinkPath } from '@/lib/profileLinks';
+import { useValidatedProfileLinkPath } from '@/hooks/useValidatedProfileLinkPath';
 
 type TimePeriod = 'alltime' | 'day' | 'week' | 'month' | 'year';
 type LeaderboardType = 'videos' | 'creators';
@@ -350,45 +351,62 @@ function CreatorLeaderboard({ period }: { period: TimePeriod }) {
 
   return (
     <div className="space-y-2">
-      {creators.map((creator, index) => {
-        const creatorProfilePath = buildProfileLinkPath({
-          pubkey: creator.pubkey,
-          nip05: creator.nip05,
-          fallbackRoute: 'profile',
-        });
-
-        return (
-          <Link
-            key={creator.pubkey}
-            to={creatorProfilePath}
-            className="flex items-center gap-4 p-3 rounded-lg hover:bg-brand-light-green dark:bg-brand-dark-green transition-colors"
-          >
-            <RankBadge rank={index + 1} />
-
-            <Avatar size="lg">
-              <AvatarImage src={creator.picture} alt={creator.display_name || creator.name} />
-              <AvatarFallback>
-                {(creator.display_name || creator.name || '?')[0].toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
-
-            <div className="flex-1 min-w-0">
-              <p className="font-medium truncate">
-                {creator.display_name || creator.name || t('leaderboardPage.unknown')}
-              </p>
-              <p className="text-sm text-muted-foreground">
-                {t('leaderboardPage.videosCount', { count: creator.videos_with_views })}
-              </p>
-            </div>
-
-            <div className="text-right">
-              <p className="font-bold text-lg">{formatLoops(getHeadlineCount(creator, period))}</p>
-              <p className="text-xs text-muted-foreground">{t('leaderboardPage.totalLabel', { label: getHeadlineLabel(period, t) })}</p>
-            </div>
-          </Link>
-        );
-      })}
+      {creators.map((creator, index) => (
+        <CreatorLeaderboardRow
+          key={creator.pubkey}
+          creator={creator}
+          period={period}
+          rank={index + 1}
+        />
+      ))}
     </div>
+  );
+}
+
+function CreatorLeaderboardRow({
+  creator,
+  period,
+  rank,
+}: {
+  creator: CreatorLeaderboardItem;
+  period: TimePeriod;
+  rank: number;
+}) {
+  const { t } = useTranslation();
+  const creatorProfilePath = useValidatedProfileLinkPath({
+    pubkey: creator.pubkey,
+    nip05: creator.nip05,
+    fallbackRoute: 'profile',
+  });
+
+  return (
+    <Link
+      to={creatorProfilePath}
+      className="flex items-center gap-4 p-3 rounded-lg hover:bg-brand-light-green dark:bg-brand-dark-green transition-colors"
+    >
+      <RankBadge rank={rank} />
+
+      <Avatar size="lg">
+        <AvatarImage src={creator.picture} alt={creator.display_name || creator.name} />
+        <AvatarFallback>
+          {(creator.display_name || creator.name || '?')[0].toUpperCase()}
+        </AvatarFallback>
+      </Avatar>
+
+      <div className="flex-1 min-w-0">
+        <p className="font-medium truncate">
+          {creator.display_name || creator.name || t('leaderboardPage.unknown')}
+        </p>
+        <p className="text-sm text-muted-foreground">
+          {t('leaderboardPage.videosCount', { count: creator.videos_with_views })}
+        </p>
+      </div>
+
+      <div className="text-right">
+        <p className="font-bold text-lg">{formatLoops(getHeadlineCount(creator, period))}</p>
+        <p className="text-xs text-muted-foreground">{t('leaderboardPage.totalLabel', { label: getHeadlineLabel(period, t) })}</p>
+      </div>
+    </Link>
   );
 }
 

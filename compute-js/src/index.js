@@ -24,7 +24,7 @@ import {
 } from './crawlerHandlers.js';
 import { transformVideoApiResponse } from './videoMetadata.js';
 import { renderEmbedPage } from './embedPage.js';
-import { resolveFeedInjectedHtml } from './feedInjection.js';
+import { resolveFeedInjectedHtml, normalizeFeedResponse } from './feedInjection.js';
 
 const publisherServer = PublisherServer.fromStaticPublishRc(rc);
 const DEFAULT_OG_IMAGE = 'https://divine.video/og.png';
@@ -322,7 +322,7 @@ async function handleRequest(event) {
       // The static body is brotli/gzip-compressed for browsers, and the Fastly SDK's
       // Response.text() does NOT decompress it — reading it throws "malformed UTF-8" and
       // consumes the stream, which previously fell through to a hard 500 on the injected
-      // routes (apex + /discovery/{new,hot,classics,top}); see #435. Read the identity shell
+      // routes (apex + /discovery/{new,hot}); see #435. Read the identity shell
       // from KV instead and serve it with the compression-coupled headers stripped
       // (Content-Encoding/Content-Length/ETag). Any failure degrades to the untouched static
       // passthrough below, so injection can never 500.
@@ -377,7 +377,9 @@ function getDiscoveryFeedType(pathname) {
   const tab = match[1];
   if (tab === 'new') return 'recent';
   if (tab === 'hot') return 'trending';
-  if (tab === 'classics' || tab === 'top') return 'classics';
+  // Classics starts from a randomized offset in the client, so the first query
+  // cannot consume an injected page without changing the feed ordering.
+  if (tab === 'classics' || tab === 'top') return null;
   return null;
 }
 
@@ -386,9 +388,10 @@ function getDiscoveryFeedType(pathname) {
  */
 function getFeedApiUrl(feedType) {
   switch (feedType) {
-    case 'trending': return '/api/videos?sort=trending&limit=10';
+    // v2 envelope carries the opaque cursor the client needs to keep paginating
+    // past the injected first page; v1 arrays cannot express one for this feed.
+    case 'trending': return '/api/v2/videos?sort=watching&limit=10';
     case 'recent': return '/api/videos?sort=recent&limit=10';
-    case 'classics': return '/api/videos?sort=loops&limit=10';
     default: return '/api/videos?sort=trending&limit=10';
   }
 }
@@ -442,7 +445,7 @@ async function fetchFeedData(feedType = 'trending', funnelcakeTarget = getFunnel
     const apiPath = getFeedApiUrl(feedType);
     const resp = await fetchFromFunnelcake(funnelcakeTarget, apiPath);
     if (resp.ok) {
-      feedData = await resp.json();
+      feedData = normalizeFeedResponse(await resp.json());
       // 3. Update KV cache (fire and forget)
       try {
         await contentStore.put(CACHE_KEY, JSON.stringify({
