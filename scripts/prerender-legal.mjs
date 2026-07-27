@@ -32,16 +32,26 @@ function getShellTemplate(indexHtml) {
     styleBlocks.push(m[0]);
   }
 
-  return { cssLinks, styleBlocks, fontLinks };
+  // Extract the CSP meta tag. These pages boot the full SPA, and the app's
+  // only CSP is this tag (_headers sets a policy for /embed alone), so a
+  // prerendered page without it would run the whole app unprotected for any
+  // session that entered through /terms, /faq, /services, and so on.
+  const cspMatch = indexHtml.match(
+    /<meta[^>]+http-equiv="Content-Security-Policy"[^>]*>/i
+  );
+  const cspMeta = cspMatch ? cspMatch[0] : '';
+
+  return { cssLinks, styleBlocks, fontLinks, cspMeta };
 }
 
 function buildPage({ title, description, path, content, shell }) {
-  const { cssLinks, styleBlocks, fontLinks } = shell;
+  const { cssLinks, styleBlocks, fontLinks, cspMeta } = shell;
 
   return `<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8">
+    ${cspMeta}
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
     <title>${title} - Divine Web</title>
     <meta name="description" content="${description}">
