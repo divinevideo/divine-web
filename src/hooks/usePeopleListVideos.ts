@@ -18,8 +18,25 @@ export interface PeopleListVideoPage {
   nextUntil?: number;
 }
 
-export function usePeopleListVideos(memberPubkeys: string[]) {
+interface UsePeopleListVideosOptions {
+  enabled?: boolean;
+}
+
+function getNextUntil(events: { created_at: number }[], mergedEvents: { created_at: number }[]): number | undefined {
+  if (mergedEvents.length >= PEOPLE_LIST_VIDEO_PAGE_SIZE) {
+    return mergedEvents[mergedEvents.length - 1].created_at - 1;
+  }
+
+  if (events.length >= PEOPLE_LIST_VIDEO_PAGE_SIZE && events.length > 0) {
+    return Math.min(...events.map((event) => event.created_at)) - 1;
+  }
+
+  return undefined;
+}
+
+export function usePeopleListVideos(memberPubkeys: string[], options: UsePeopleListVideosOptions = {}) {
   const { nostr } = useNostr();
+  const { enabled = true } = options;
   const stableMembers = Array.from(new Set(memberPubkeys)).sort();
 
   const query = useInfiniteQuery({
@@ -31,13 +48,7 @@ export function usePeopleListVideos(memberPubkeys: string[]) {
         signal: AbortSignal.any([signal, AbortSignal.timeout(10000)]),
       });
       const mergedEvents = mergePeopleListVideoEvents(events);
-      // Paginate whenever the raw result could have hit a per-filter limit,
-      // even if dedupe/trimming shrank the merged page below the cap. The
-      // cursor derives from the oldest raw event so discarded duplicates
-      // never make older videos unreachable.
-      const nextUntil = events.length >= PEOPLE_LIST_VIDEO_PAGE_SIZE
-        ? Math.min(...events.map((event) => event.created_at)) - 1
-        : undefined;
+      const nextUntil = getNextUntil(events, mergedEvents);
 
       return {
         videos: parseVideoEvents(mergedEvents),
@@ -46,7 +57,7 @@ export function usePeopleListVideos(memberPubkeys: string[]) {
     },
     initialPageParam: undefined as number | undefined,
     getNextPageParam: (lastPage) => lastPage.nextUntil,
-    enabled: stableMembers.length > 0,
+    enabled: enabled && stableMembers.length > 0,
     staleTime: 60_000,
     gcTime: 300_000,
   });

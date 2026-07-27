@@ -1,6 +1,6 @@
 // ABOUTME: Tests public people-list detail with people context and a video-primary feed
 
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { nip19 } from 'nostr-tools';
@@ -18,13 +18,20 @@ vi.mock('@/hooks/usePeopleLists', () => ({
 vi.mock('@/hooks/usePeopleListVideos', () => ({
   usePeopleListVideos: (...args: unknown[]) => mockUsePeopleListVideos(...args),
 }));
-vi.mock('@/hooks/useAuthor', () => ({
-  useAuthor: (pubkey: string) => ({
-    data: { metadata: { name: pubkey === ALICE ? 'Alice' : 'Bob' } },
+vi.mock('@/hooks/useBatchedAuthors', () => ({
+  useBatchedAuthors: () => ({
+    data: {
+      [ALICE]: { metadata: { name: 'Alice' } },
+      [BOB]: { metadata: { name: 'Bob' } },
+    },
   }),
 }));
 vi.mock('@/components/VideoGrid', () => ({
-  VideoGrid: ({ videos }: { videos: unknown[] }) => <div data-testid="video-grid">{videos.length} videos</div>,
+  VideoGrid: ({ videos, navigationContext }: { videos: unknown[]; navigationContext?: unknown }) => (
+    <div data-testid="video-grid" data-navigation-context={JSON.stringify(navigationContext)}>
+      {videos.length} videos
+    </div>
+  ),
 }));
 
 function renderPage() {
@@ -56,8 +63,10 @@ describe('PeopleListDetailPage', () => {
     mockUsePeopleListVideos.mockReturnValue({
       data: { pages: [{ videos: [{ id: 'video-1' }] }] },
       isLoading: false,
+      isError: false,
       hasNextPage: false,
       fetchNextPage: vi.fn(),
+      refetch: vi.fn(),
       isFetchingNextPage: false,
     });
   });
@@ -72,13 +81,17 @@ describe('PeopleListDetailPage', () => {
     expect(peopleHeading.compareDocumentPosition(videosHeading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(screen.getByRole('link', { name: /Alice/ })).toHaveAttribute(
       'href',
-      `/profile/${nip19.npubEncode(ALICE)}`,
+      `/${nip19.npubEncode(ALICE)}`,
     );
     expect(screen.getByRole('link', { name: /Bob/ })).toHaveAttribute(
       'href',
-      `/profile/${nip19.npubEncode(BOB)}`,
+      `/${nip19.npubEncode(BOB)}`,
     );
     expect(screen.getByTestId('video-grid')).toHaveTextContent('1 videos');
+    expect(screen.getByTestId('video-grid')).toHaveAttribute(
+      'data-navigation-context',
+      JSON.stringify({ source: 'people-list', pubkey: OWNER, listId: 'friends' }),
+    );
     expect(screen.queryByRole('button', { name: /subscribe/i })).not.toBeInTheDocument();
   }, 10_000);
 
@@ -91,5 +104,24 @@ describe('PeopleListDetailPage', () => {
     });
     renderPage();
     expect(screen.getByText('That people list could not be found.')).toBeInTheDocument();
+  });
+
+  it('keeps load more reachable when the loaded videos are filtered out', () => {
+    const fetchNextPage = vi.fn();
+    mockUsePeopleListVideos.mockReturnValue({
+      data: { pages: [{ videos: [] }] },
+      isLoading: false,
+      isError: false,
+      hasNextPage: true,
+      fetchNextPage,
+      refetch: vi.fn(),
+      isFetchingNextPage: false,
+    });
+
+    renderPage();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Load more' }));
+    expect(fetchNextPage).toHaveBeenCalledTimes(1);
+    expect(screen.queryByText('No loops from these people yet.')).not.toBeInTheDocument();
   });
 });

@@ -9,6 +9,8 @@ import ProfileListsPage from './ProfileListsPage';
 const OWNER = 'a'.repeat(64);
 const mockUsePeopleLists = vi.fn();
 const mockUseVideoLists = vi.fn();
+const mockRefetchPeople = vi.fn();
+const mockRefetchVideos = vi.fn();
 
 vi.mock('@/hooks/usePeopleLists', () => ({
   usePeopleLists: (...args: unknown[]) => mockUsePeopleLists(...args),
@@ -33,10 +35,14 @@ describe('ProfileListsPage', () => {
     mockUsePeopleLists.mockReturnValue({
       data: [{ id: 'people', name: 'My people', pubkey: OWNER, createdAt: 20, memberPubkeys: [] }],
       isLoading: false,
+      isError: false,
+      refetch: mockRefetchPeople,
     });
     mockUseVideoLists.mockReturnValue({
       data: [{ id: 'videos', name: 'My videos', pubkey: OWNER, createdAt: 10, videoCoordinates: [], public: true }],
       isLoading: false,
+      isError: false,
+      refetch: mockRefetchVideos,
     });
   });
 
@@ -61,5 +67,50 @@ describe('ProfileListsPage', () => {
     expect(screen.getByText('That profile link is not valid.')).toBeInTheDocument();
     expect(mockUsePeopleLists).not.toHaveBeenCalled();
     expect(mockUseVideoLists).not.toHaveBeenCalled();
+  });
+
+  it('shows a retryable error when both list queries fail', () => {
+    mockUsePeopleLists.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isError: true,
+      refetch: mockRefetchPeople,
+    });
+    mockUseVideoLists.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isError: true,
+      refetch: mockRefetchVideos,
+    });
+
+    renderPage();
+
+    expect(screen.getByText('Lists did not load.')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
+    expect(mockRefetchPeople).toHaveBeenCalledTimes(1);
+    expect(mockRefetchVideos).toHaveBeenCalledTimes(1);
+  });
+
+  it('preserves successful lists and offers retry when one query fails', () => {
+    mockUsePeopleLists.mockReturnValue({
+      data: [{ id: 'people', name: 'My people', pubkey: OWNER, createdAt: 20, memberPubkeys: [] }],
+      isLoading: false,
+      isError: false,
+      refetch: mockRefetchPeople,
+    });
+    mockUseVideoLists.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isError: true,
+      refetch: mockRefetchVideos,
+    });
+
+    renderPage();
+
+    expect(screen.getByText('My people')).toBeInTheDocument();
+    expect(screen.getByText('Some lists did not load.')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
+    expect(mockRefetchPeople).not.toHaveBeenCalled();
+    expect(mockRefetchVideos).toHaveBeenCalledTimes(1);
   });
 });

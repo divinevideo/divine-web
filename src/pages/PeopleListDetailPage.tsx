@@ -72,9 +72,19 @@ function PeopleListContent({ pubkey, listId }: { pubkey: string; listId: string 
           </p>
         ) : videosQuery.isLoading ? (
           <VideoGrid videos={[]} loading />
+        ) : videosQuery.isError ? (
+          <div className="rounded-2xl border border-dashed p-8 text-center text-muted-foreground">
+            <p>These loops did not load.</p>
+            <Button className="mt-4" variant="outline" onClick={() => videosQuery.refetch()}>
+              Try again
+            </Button>
+          </div>
         ) : videos.length > 0 ? (
           <>
-            <VideoGrid videos={videos} />
+            <VideoGrid
+              videos={videos}
+              navigationContext={{ source: 'people-list', pubkey, listId }}
+            />
             {videosQuery.hasNextPage && (
               <div className="flex justify-center">
                 <Button
@@ -87,6 +97,18 @@ function PeopleListContent({ pubkey, listId }: { pubkey: string; listId: string 
               </div>
             )}
           </>
+        ) : videosQuery.hasNextPage ? (
+          <div className="rounded-2xl border border-dashed p-8 text-center text-muted-foreground">
+            <p>More loops may be hiding on the next page.</p>
+            <Button
+              className="mt-4"
+              variant="outline"
+              onClick={() => videosQuery.fetchNextPage()}
+              disabled={videosQuery.isFetchingNextPage}
+            >
+              {videosQuery.isFetchingNextPage ? 'Loading...' : 'Load more'}
+            </Button>
+          </div>
         ) : (
           <p className="rounded-2xl border border-dashed p-8 text-center text-muted-foreground">
             No loops from these people yet.

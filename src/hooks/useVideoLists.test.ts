@@ -170,7 +170,7 @@ describe('useVideoLists hooks', () => {
   });
 
   describe('useVideosInLists', () => {
-    it('uses #a filter and is disabled without videoId', async () => {
+    it('queries public video lists without unsupported wildcards and filters locally', async () => {
       const { useVideosInLists } = await import('./useVideoLists');
 
       const { result: disabled } = renderHook(() => useVideosInLists(undefined), {
@@ -178,7 +178,22 @@ describe('useVideoLists hooks', () => {
       });
       expect(disabled.current.fetchStatus).toBe('idle');
 
-      mockNostrQuery.mockResolvedValue([]);
+      mockNostrQuery.mockResolvedValue([
+        listEvent({
+          tags: [
+            ['d', 'matching'],
+            ['title', 'Matching'],
+            ['a', `34236:${'b'.repeat(64)}:my-dtag`],
+          ],
+        }),
+        listEvent({
+          tags: [
+            ['d', 'other'],
+            ['title', 'Other'],
+            ['a', `34236:${'b'.repeat(64)}:other-dtag`],
+          ],
+        }),
+      ]);
       const { result } = renderHook(() => useVideosInLists('my-dtag'), { wrapper: createWrapper() });
 
       await waitFor(() => expect(result.current.isFetched).toBe(true));
@@ -187,12 +202,13 @@ describe('useVideoLists hooks', () => {
         [
           expect.objectContaining({
             kinds: [30005],
-            '#a': [`${SHORT_VIDEO_KIND}:*:my-dtag`],
             limit: 100,
           }),
         ],
         expect.any(Object)
       );
+      expect(mockNostrQuery.mock.calls[0][0][0]).not.toHaveProperty('#a');
+      expect(result.current.data?.map((list) => list.id)).toEqual(['matching']);
     });
   });
 

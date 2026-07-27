@@ -1,20 +1,23 @@
 // ABOUTME: Avatar link for one member of a public people list
 
-import { nip19 } from 'nostr-tools';
+import type { NostrMetadata } from '@nostrify/nostrify';
 import { Link } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { useAuthor } from '@/hooks/useAuthor';
 import { genUserName } from '@/lib/genUserName';
 import { getSafeProfileImage } from '@/lib/imageUtils';
+import { buildProfileLinkPath } from '@/lib/profileLinks';
 
-export function PeopleListMember({ pubkey }: { pubkey: string }) {
-  const author = useAuthor(pubkey);
-  const metadata = author.data?.metadata;
+interface PeopleListMemberProps {
+  pubkey: string;
+  metadata?: NostrMetadata;
+}
+
+export function PeopleListMember({ pubkey, metadata }: PeopleListMemberProps) {
   const name = metadata?.display_name || metadata?.name || genUserName(pubkey);
 
   return (
     <Link
-      to={`/profile/${nip19.npubEncode(pubkey)}`}
+      to={buildProfileLinkPath({ pubkey })}
       className="flex w-24 shrink-0 flex-col items-center gap-2 rounded-xl p-2 text-center hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
       <Avatar size="lg">

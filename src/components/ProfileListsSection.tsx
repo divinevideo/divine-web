@@ -15,6 +15,22 @@ export function ProfileListsSection({ pubkey }: { pubkey: string }) {
   const lists = mergeProfileLists(peopleQuery.data ?? [], videoQuery.data ?? []);
   const isLoading = peopleQuery.isLoading || videoQuery.isLoading;
 
+  if (isLoading && lists.length === 0) {
+    return (
+      <section aria-label="Loading lists">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: 3 }, (_, index) => (
+            <Skeleton
+              key={index}
+              data-list-skeleton
+              className="h-32 rounded-[22px]"
+            />
+          ))}
+        </div>
+      </section>
+    );
+  }
+
   if (!isLoading && lists.length === 0) return null;
 
   return (
@@ -29,17 +45,9 @@ export function ProfileListsSection({ pubkey }: { pubkey: string }) {
         </Link>
       </div>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {isLoading && lists.length === 0
-          ? Array.from({ length: 3 }, (_, index) => (
-              <Skeleton
-                key={index}
-                data-list-skeleton
-                className="h-32 rounded-[22px]"
-              />
-            ))
-          : lists.slice(0, 3).map((list) => (
-              <ProfileListCard key={list.key} list={list} />
-            ))}
+        {lists.slice(0, 3).map((list) => (
+          <ProfileListCard key={list.key} list={list} />
+        ))}
       </div>
     </section>
   );

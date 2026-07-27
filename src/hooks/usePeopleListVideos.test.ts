@@ -112,6 +112,26 @@ describe('usePeopleListVideos', () => {
     expect(secondFilters[0].until).toBe(999);
   });
 
+  it('continues from the oldest retained video when raw results exceed the page cap', async () => {
+    const rawPage = Array.from({ length: 120 }, (_, index) => (
+      videoEvent(ALICE, `video-${index}`, 1000 - index)
+    ));
+    mockNostrQuery.mockResolvedValueOnce(rawPage).mockResolvedValue([]);
+    const { usePeopleListVideos } = await import('./usePeopleListVideos');
+
+    const { result } = renderHook(() => usePeopleListVideos([ALICE]), { wrapper: createWrapper() });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    expect(result.current.data?.pages[0].videos).toHaveLength(60);
+    expect(result.current.hasNextPage).toBe(true);
+
+    await result.current.fetchNextPage();
+    await waitFor(() => expect(mockNostrQuery).toHaveBeenCalledTimes(2));
+
+    const secondFilters = mockNostrQuery.mock.calls[1][0];
+    expect(secondFilters[0].until).toBe(940);
+  });
+
   it('stops paginating when the raw page comes back below the limit', async () => {
     mockNostrQuery.mockResolvedValue([
       videoEvent(ALICE, 'one', 200),

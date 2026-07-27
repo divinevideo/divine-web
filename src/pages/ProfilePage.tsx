@@ -469,6 +469,7 @@ export function ProfilePage({ pubkeyOverride }: { pubkeyOverride?: string } = {}
                   variant={viewMode === 'grid' ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => setViewMode('grid')}
+                  aria-label="Grid view"
                   data-testid="grid-view-button"
                 >
                   <Grid className="w-4 h-4" />
@@ -477,6 +478,7 @@ export function ProfilePage({ pubkeyOverride }: { pubkeyOverride?: string } = {}
                   variant={viewMode === 'list' ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => setViewMode('list')}
+                  aria-label="List view"
                   data-testid="list-view-button"
                 >
                   <List className="w-4 h-4" />

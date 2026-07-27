@@ -31,6 +31,8 @@ describe('ProfileListsSection', () => {
     mockUsePeopleLists.mockReturnValue(listResult([], true));
     const { container } = render(<ProfileListsSection pubkey={OWNER} />, { wrapper: MemoryRouter });
     expect(container.querySelectorAll('[data-list-skeleton]')).toHaveLength(3);
+    expect(screen.queryByRole('heading', { name: 'Lists' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'See all' })).not.toBeInTheDocument();
   });
 
   it('hides after both sources finish empty', () => {
