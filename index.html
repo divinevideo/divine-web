@@ -9,7 +9,10 @@
     <meta http-equiv="X-Content-Type-Options" content="nosniff">
     <meta http-equiv="X-XSS-Protection" content="1; mode=block">
     <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
-    <link rel="canonical" href="https://divine.video/" />
+    <!-- No static canonical here: this shell is served for every SPA route, so a
+         hardcoded homepage canonical would mark every page as a duplicate of /.
+         Routes set their own canonical client-side; marketing routes are prerendered
+         with self-referencing canonicals at build time. -->
 
     <!-- PWA Meta Tags -->
     <title>Divine Web - Short-form Looping Videos on Nostr</title>

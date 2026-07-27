@@ -118,4 +118,43 @@ describe('transformVideoApiResponse', () => {
     });
     expect(result?.description).toBe('10 ❤️ • 3 💬 • 2 🔁 on Divine');
   });
+
+  it('uses the origin tag external id for Vine alternate links', () => {
+    const result = transformVideoApiResponse({
+      event: {
+        ...baseEvent,
+        tags: [['origin', 'vine', 'origin-id', 'https://vine.co/v/origin-id']],
+      },
+      stats: {},
+    });
+
+    expect(result?.originExternalId).toBe('origin-id');
+  });
+
+  it('falls back to the d tag for legacy platform Vine events', () => {
+    const result = transformVideoApiResponse({
+      event: {
+        ...baseEvent,
+        tags: [
+          ['platform', 'vine'],
+          ['d', 'legacy-d-id'],
+        ],
+      },
+      stats: {},
+    });
+
+    expect(result?.originExternalId).toBe('legacy-d-id');
+  });
+
+  it('does not set originExternalId for non-Vine events', () => {
+    const result = transformVideoApiResponse({
+      event: {
+        ...baseEvent,
+        tags: [['origin', 'youtube', 'external-id']],
+      },
+      stats: {},
+    });
+
+    expect(result?.originExternalId).toBeNull();
+  });
 });

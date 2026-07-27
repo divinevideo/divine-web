@@ -36,7 +36,7 @@ import type { ParsedVideoData } from '@/types/video';
 import { SHORT_VIDEO_KIND } from '@/types/video';
 import type { NostrMetadata } from '@nostrify/nostrify';
 import { cn } from '@/lib/utils';
-import { formatClassicVineViewBreakdown, formatViewCount, formatCount } from '@/lib/formatUtils';
+import { formatClassicVineViewBreakdown, formatLoopCount, formatCount } from '@/lib/formatUtils';
 import { getSafeProfileImage } from '@/lib/imageUtils';
 import type { ViewTrafficSource } from '@/hooks/useViewEventPublisher';
 import { buildVideoNavigationUrl, type VideoNavigationContext } from '@/hooks/useVideoNavigation';
@@ -54,7 +54,7 @@ import { useSubtitles } from '@/hooks/useSubtitles';
 import { debugLog } from '@/lib/debug';
 import { useLoginDialog } from '@/contexts/LoginDialogContext';
 import { AgeRestrictedMediaPlaceholder } from '@/components/AgeRestrictedMediaPlaceholder';
-import { buildProfileLinkPath } from '@/lib/profileLinks';
+import { useValidatedProfileLinkPath } from '@/hooks/useValidatedProfileLinkPath';
 
 interface VideoCardProps {
   video: ParsedVideoData;
@@ -152,7 +152,9 @@ export function VideoCard({
   const reposterPubkey = latestRepost?.reposterPubkey;
   const reposterData = useAuthor(reposterPubkey || '');
   const shouldShowReposter = hasReposts && reposterPubkey;
-  const classicViewBreakdown = formatClassicVineViewBreakdown(viewCount, video.loopCount ?? 0);
+  const playbackCountLabel = video.isVineMigrated
+    ? formatClassicVineViewBreakdown(viewCount, video.loopCount ?? 0)
+    : formatLoopCount(viewCount);
   const [videoError, setVideoError] = useState(false);
   const [retryAttempt, setRetryAttempt] = useState(0);
   // Always start with video player visible in auto-play mode, but let VideoPlaybackContext control actual playback
@@ -295,9 +297,10 @@ export function VideoCard({
   const profileImage = getSafeProfileImage(
     rawMetadata?.picture || video.authorAvatar || metadata.picture
   );
-  const profileUrl = buildProfileLinkPath({
+  const authorNip05 = rawMetadata?.nip05;
+  const profileUrl = useValidatedProfileLinkPath({
     pubkey: video.pubkey,
-    nip05: rawMetadata?.nip05,
+    nip05: authorNip05,
   });
 
   const reposterName = reposterData.isLoading
@@ -352,18 +355,20 @@ export function VideoCard({
     }
   };
 
-  const handleThumbnailClick = () => {
-    // In thumbnail mode (grid view), navigate to video page instead of playing inline
-    if (mode === 'thumbnail') {
-      const targetUrl = navigationContext
+  // In thumbnail mode (grid view), the thumbnail is a real link to the video
+  // page so native browser behaviors (middle-click, open in new tab) work.
+  const thumbnailLinkTo = mode === 'thumbnail'
+    ? (navigationContext
         ? buildVideoNavigationUrl(video.id, navigationContext, videoIndex)
-        : `/video/${video.id}`;
-      navigate(targetUrl, { ownerPubkey: video.pubkey });
-    } else {
-      setActiveVideo(video.id);
-      setIsPlaying(true);
-      onPlay?.();
-    }
+        : `/video/${video.id}`)
+    : undefined;
+
+  const handleThumbnailClick = () => {
+    // Thumbnail mode: navigation is handled by the real link inside ThumbnailPlayer
+    if (mode === 'thumbnail') return;
+    setActiveVideo(video.id);
+    setIsPlaying(true);
+    onPlay?.();
   };
 
   const handleThumbnailPlayButtonClick = () => {
@@ -617,6 +622,8 @@ export function VideoCard({
                   duration={video.duration}
                   ageRestricted={video.ageRestricted}
                   className="w-full h-full"
+                  linkTo={thumbnailLinkTo}
+                  linkOwnerPubkey={video.pubkey}
                   onClick={handleThumbnailClick}
                   onPlayButtonClick={handleThumbnailPlayButtonClick}
                   onError={() => setVideoError(true)}
@@ -849,10 +856,10 @@ export function VideoCard({
           </div>
 
           {/* Stats row - horizontal layout: show view/loop count only (likes/comments shown on buttons) */}
-          {isHorizontal && viewCount > 0 && (
+          {isHorizontal && viewCount > 0 && playbackCountLabel && (
             <SmartLink to={`/video/${video.id}`} ownerPubkey={video.pubkey} className="py-2 mt-auto hover:underline block">
               <span className="block text-sm text-muted-foreground">
-                {classicViewBreakdown || formatViewCount(viewCount)}
+                {playbackCountLabel}
               </span>
             </SmartLink>
           )}
@@ -861,10 +868,10 @@ export function VideoCard({
           {!isHorizontal && (
             <div className="px-4 py-2" data-testid="video-metadata">
               <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                {viewCount > 0 && (
+                {viewCount > 0 && playbackCountLabel && (
                   <SmartLink to={`/video/${video.id}`} ownerPubkey={video.pubkey} className="flex items-center gap-1 hover:underline">
                     <Eye className="h-3 w-3" />
-                    <span>{classicViewBreakdown || formatViewCount(viewCount)}</span>
+                    <span>{playbackCountLabel}</span>
                   </SmartLink>
                 )}
               </div>

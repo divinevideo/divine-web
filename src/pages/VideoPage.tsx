@@ -2,7 +2,7 @@ import { useParams, useSearchParams } from 'react-router-dom';
 import { useSubdomainNavigate } from '@/hooks/useSubdomainNavigate';
 import { useEffect, useCallback, useState, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useSeoMeta } from '@unhead/react';
+import { useSeoMeta, useHead } from '@unhead/react';
 import { Hash, User, X, CircleNotch as Loader2 } from '@phosphor-icons/react';
 import InfiniteScroll from 'react-infinite-scroll-component';
 import { Card, CardContent } from '@/components/ui/card';
@@ -17,11 +17,13 @@ import { useNostrPublish } from '@/hooks/useNostrPublish';
 import { useRepostVideo } from '@/hooks/usePublishVideo';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useVideoSocialMetrics } from '@/hooks/useVideoSocialMetrics';
+import { useLoginDialog } from '@/contexts/LoginDialogContext';
 import { useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/useToast';
 import { genUserName } from '@/lib/genUserName';
 import { buildProfileLinkPath } from '@/lib/profileLinks';
 import { debugLog } from '@/lib/debug';
+import { getVisiblePlaybackCount } from '@/lib/playbackCount';
 import { reportFunnelcakeFallback } from '@/lib/funnelcakeFallbackReporting';
 import type { ParsedVideoData, UserInteractions } from '@/types/video';
 
@@ -206,6 +208,7 @@ export function VideoPage() {
   // Social interaction hooks
   const [showCommentsForVideo, setShowCommentsForVideo] = useState<string | null>(null);
   const { user } = useCurrentUser();
+  const { openLoginDialog } = useLoginDialog();
 
   // Batch fetch all user interactions in ONE query instead of per-video
   const { interactions: batchedInteractions } = useBatchedVideoInteractions(
@@ -256,6 +259,17 @@ export function VideoPage() {
     twitterImage: currentVideo?.thumbnailUrl || '/og.avif',
   });
 
+  useHead({
+    link: currentVideo?.origin?.platform === 'vine' && currentVideo.origin.externalId
+      ? [{
+          rel: 'alternate',
+          type: 'text/html',
+          href: `https://divine.video/v/${currentVideo.origin.externalId}`,
+          title: 'Legacy Vine URL',
+        }]
+      : [],
+  });
+
   // Navigation back to source
   const handleGoBack = useCallback(() => {
     if (context?.source === 'hashtag' && context.hashtag) {
@@ -278,13 +292,9 @@ export function VideoPage() {
   }, [context, navigate]);
 
   // Social interaction handlers (same as VideoFeed)
-  const handleLike = async (video: ParsedVideoData) => {
+  const handleLike = useCallback(async (video: ParsedVideoData) => {
     if (!user) {
-      toast({
-        title: t('videoPage.loginRequiredTitle'),
-        description: t('videoPage.loginRequiredLikeDescription'),
-        variant: 'destructive',
-      });
+      openLoginDialog();
       return;
     }
 
@@ -321,15 +331,11 @@ export function VideoPage() {
         variant: 'destructive',
       });
     }
-  };
+  }, [user, t, openLoginDialog, publishEvent, toast, queryClient]);
 
-  const handleRepost = async (video: ParsedVideoData) => {
+  const handleRepost = useCallback(async (video: ParsedVideoData) => {
     if (!user) {
-      toast({
-        title: t('videoPage.loginRequiredTitle'),
-        description: t('videoPage.loginRequiredRepostDescription'),
-        variant: 'destructive',
-      });
+      openLoginDialog();
       return;
     }
 
@@ -373,7 +379,7 @@ export function VideoPage() {
         variant: 'destructive',
       });
     }
-  };
+  }, [user, t, openLoginDialog, repostVideo, isReposting, toast, queryClient]);
 
   const handleUnlike = async (likeEventId: string) => {
     if (!user) return;
@@ -451,7 +457,21 @@ export function VideoPage() {
     const socialMetrics = useVideoSocialMetrics(video.id, video.pubkey, video.vineId, {
       enabled: true,
     });
-    const divineViewCount = Math.max(video.divineViewCount ?? 0, socialMetrics.data?.viewCount ?? 0);
+    const loopCount = video.isVineMigrated
+      ? (video.loopCount ?? 0)
+      : Math.max(video.loopCount ?? 0, socialMetrics.data?.loopCount ?? 0);
+    const viewStartCount = Math.max(video.divineViewCount ?? 0, socialMetrics.data?.viewCount ?? 0);
+    const displayCount = getVisiblePlaybackCount({
+      isVineMigrated: video.isVineMigrated,
+      loopCount,
+      viewStartCount,
+    });
+    const videoForCard = useMemo(
+      () => loopCount !== (video.loopCount ?? 0)
+        ? { ...video, loopCount }
+        : video,
+      [loopCount, video]
+    );
 
     const handleVideoLike = async () => {
       if (userInteractions?.hasLiked) {
@@ -479,7 +499,7 @@ export function VideoPage() {
 
     return (
       <VideoCard
-        video={video}
+        video={videoForCard}
         className="max-w-xl mx-auto"
         layout="vertical"
         onLike={handleVideoLike}
@@ -491,7 +511,7 @@ export function VideoPage() {
         likeCount={video.likeCount ?? 0}
         repostCount={video.repostCount ?? 0}
         commentCount={video.commentCount ?? 0}
-        viewCount={(video.loopCount ?? 0) + divineViewCount}
+        viewCount={displayCount}
         showComments={showCommentsForVideo === video.id}
         navigationContext={context || undefined}
       />

@@ -3,7 +3,7 @@
  */
 
 import { lazy, Suspense } from "react";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { ScrollToTop } from "./components/ScrollToTop";
 import { AnalyticsPageTracker } from "./components/AnalyticsPageTracker";
 import { AnalyticsUserTracker } from "./components/AnalyticsUserTracker";
@@ -24,6 +24,7 @@ import HashtagDiscoveryPage from "./pages/HashtagDiscoveryPage";
 import ProfilePage from "./pages/ProfilePage";
 import SearchPage from "./pages/SearchPage";
 import VideoPage from "./pages/VideoPage";
+import { LegacyVineVideoPage } from "./pages/LegacyVineVideoPage";
 import { TagPage } from "./pages/TagPage";
 import ListsPage from "./pages/ListsPage";
 import ListDetailPage from "./pages/ListDetailPage";
@@ -40,7 +41,11 @@ import AuthenticityPage from "./pages/AuthenticityPage";
 import DMCAPage from "./pages/DMCAPage";
 import HumanCreatedPage from "./pages/HumanCreatedPage";
 import { SafetyPage } from "./pages/SafetyPage";
-import { FamilyPage } from "./pages/FamilyPage";
+import { FamilyHubPage } from "./pages/family/FamilyHubPage";
+import { TalkingToYourTeenPage } from "./pages/family/TalkingToYourTeenPage";
+import { MediaPlanPage } from "./pages/family/MediaPlanPage";
+import { WhenSomethingGoesWrongPage } from "./pages/family/WhenSomethingGoesWrongPage";
+import { SafetyToolsPage } from "./pages/family/SafetyToolsPage";
 import { AgeReviewPage } from "./pages/AgeReviewPage";
 import { KidsPolicyPage } from "./pages/KidsPolicyPage";
 import { Support } from "./pages/Support";
@@ -50,6 +55,7 @@ import { TermsPage } from "./pages/TermsPage";
 import GetEmbedPage from "./pages/GetEmbedPage";
 import AppCallbackPage from "./pages/AppCallbackPage";
 import AuthCallbackPage from "./pages/AuthCallbackPage";
+import InvitesLandingPage from "./pages/InvitesLandingPage";
 import { AppLayout } from "@/components/AppLayout";
 import { DebugVideoPage } from "./pages/DebugVideoPage";
 import LeaderboardPage from "./pages/LeaderboardPage";
@@ -57,6 +63,7 @@ import NotificationsPage from "./pages/NotificationsPage";
 import AnalyticsPage from "./pages/AnalyticsPage";
 import MessagesPage from "./pages/MessagesPage";
 import ConversationPage from "./pages/ConversationPage";
+import CollabsPage from "./pages/CollabsPage";
 // import { UploadPage } from "./pages/UploadPage"; // DISABLED: Upload route is commented out
 
 // Dev-only: static preview surface for the brand system. The `lazy()` call
@@ -87,6 +94,7 @@ export function AppRouter() {
   const appShellRoutes = (
     <>
       {/* Public browsing routes - accessible without login */}
+      <Route path="/discovery/new" element={<Navigate to="/discovery/hot" replace />} />
       <Route path="/discovery" element={<DiscoveryPage />} />
       <Route path="/discovery/:tab" element={<DiscoveryPage />} />
       <Route path="/trending" element={<TrendingPage />} />
@@ -98,6 +106,7 @@ export function AppRouter() {
       <Route path="/t/:tag" element={<TagPage />} />
       <Route path="/profile/:npub" element={<ProfilePage />} />
       <Route path="/video/:id" element={<VideoPage />} />
+      <Route path="/v/:legacyVineId" element={<LegacyVineVideoPage />} />
       <Route path="/search" element={<SearchPage />} />
       <Route path="/leaderboard" element={<LeaderboardPage />} />
       <Route path="/merch" element={<MerchPage />} />
@@ -119,6 +128,8 @@ export function AppRouter() {
           {/* DISABLED: Upload route - not supported on web at this time
           <Route path="/upload" element={<UploadPage />} />
           */}
+          <Route path="/collabs" element={<CollabsPage />} />
+          <Route path="/collabs/:tab" element={<CollabsPage />} />
           <Route path="/settings/moderation" element={<ModerationSettingsPage />} />
           <Route path="/settings/linked-accounts" element={<LinkedAccountsSettingsPage />} />
           {/* Test pages for debugging */}
@@ -147,7 +158,11 @@ export function AppRouter() {
         <Route path="/human-created" element={<HumanCreatedPage />} />
         <Route path="/dmca" element={<DMCAPage />} />
         <Route path="/safety" element={<SafetyPage />} />
-        <Route path="/family" element={<FamilyPage />} />
+        <Route path="/family" element={<FamilyHubPage />} />
+        <Route path="/family/talking-to-your-teen" element={<TalkingToYourTeenPage />} />
+        <Route path="/family/media-plan" element={<MediaPlanPage />} />
+        <Route path="/family/when-something-goes-wrong" element={<WhenSomethingGoesWrongPage />} />
+        <Route path="/family/safety-tools" element={<SafetyToolsPage />} />
         <Route path="/age-review" element={<AgeReviewPage />} />
         <Route path="/kids" element={<KidsPolicyPage />} />
         <Route path="/support" element={<Support />} />
@@ -155,6 +170,7 @@ export function AppRouter() {
         <Route path="/get-embed" element={<GetEmbedPage />} />
         <Route path="/app/callback" element={<AppCallbackPage />} />
         <Route path="/auth/callback" element={<AuthCallbackPage />} />
+        <Route path="/invite/:code" element={<InvitesLandingPage />} />
 
         {/* Dev-only brand primitives preview — tree-shaken in production */}
         {import.meta.env.DEV && BrandPreview && (

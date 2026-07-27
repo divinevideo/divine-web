@@ -220,8 +220,8 @@ export function LandingPage() {
             </h2>
 
             <p className="text-base md:text-lg text-brand-off-white/80">
-              The Divine beta is currently full. Drop your email and we'll
-              holler when the doors open — no spam, no slop.
+              Divine is now live in the app stores with invite codes. Drop your
+              email to join the waitlist for a code and hear our news.
             </p>
 
             <div className="hs-form-landing mx-auto max-w-xl rounded-[22px] border-2 border-brand-off-white/20 bg-brand-off-white p-6 md:p-8 text-brand-dark-green">
@@ -229,7 +229,7 @@ export function LandingPage() {
                 Divine Inspiration
               </h3>
               <p className="text-sm text-center mb-6 leading-5 text-brand-dark-green/80">
-                Be among the first to hear when the Divine app goes live.
+                Join the waitlist for an invite code and hear our news.
               </p>
               <HubSpotSignup />
             </div>

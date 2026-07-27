@@ -38,7 +38,6 @@
   },
   "footer": {
     "aboutDivine": "Over Divine",
-    "vinesRecovered": "{{count}} Vines hersteld",
     "termsAndOpenSource": "Voorwaarden en open source",
     "copyright": "© 2026 Divine"
   },
@@ -386,7 +385,6 @@
     "message": "Bericht",
     "reportUser": "Gebruiker melden",
     "subscribeRss": "Abonneer op RSS-feed",
-    "videos": "Video's",
     "followers": "Volgers",
     "followingStat": "Volgend",
     "followingDialogTitle": "Volgend",
@@ -437,6 +435,7 @@
     "errorFileNoValidKey": "Bestand bevat geen geldige geheime sleutel.",
     "errorFileReadFailed": "Bestand lezen mislukt.",
     "errorInviteValidationFailed": "Kan uitnodigingscode niet valideren",
+    "errorInviteCodeUsed": "Deze uitnodigingscode is al gebruikt",
     "errorSignInStartFailed": "Kan inloggen niet starten",
     "errorWaitlistJoinFailed": "Kan niet aansluiten bij de wachtlijst"
   },
@@ -515,6 +514,7 @@
     "signInButton": "Inloggen"
   },
   "badgeDetailModal": {
+    "description": "Het hele verhaal achter deze badge — wie hem uitgaf en wanneer.",
     "title": "Badge-details",
     "officialBadge": "✦ Officiële Divine-badge",
     "issuedBy": "Uitgegeven door",
@@ -808,9 +808,6 @@
     "seoTitle": "Video op Divine",
     "seoDescription": "Bekijk deze video op Divine",
     "seoDescriptionWithAuthor": "Bekijk deze video van {{name}} op Divine",
-    "loginRequiredTitle": "Inloggen vereist",
-    "loginRequiredLikeDescription": "Log in om video's leuk te vinden",
-    "loginRequiredRepostDescription": "Log in om video's te reposten",
     "errorTitle": "Fout",
     "likedTitle": "Geliket!",
     "likedDescription": "Je reactie is gepubliceerd",
@@ -945,6 +942,7 @@
     "placeholderMessage": "Schrijf een bericht..."
   },
   "videoCommentsModal": {
+    "description": "Bekijk wat anderen zeggen en plaats je eigen reactie.",
     "title": "Reacties",
     "loading": "Reacties laden...",
     "emptyMessage": "Nog geen reacties",
@@ -962,7 +960,8 @@
   "thumbnailPlayer": {
     "videoPreview": "Videovoorbeeld",
     "thumbnailAlt": "Videothumbnail",
-    "playVideo": "Video afspelen"
+    "playVideo": "Video afspelen",
+    "openVideo": "Video openen"
   },
   "hashtagExplorer": {
     "heading": "Hashtag Explorer",
@@ -1209,7 +1208,7 @@
     "notFoundDescription": {
       "vine": "Deze Vine-gebruiker is mogelijk nog niet geïmporteerd naar het Nostr-netwerk.",
       "nip05": "Controleer of de NIP-05-identifier klopt.",
-      "legacy": "Deze gebruikersnaam komt niet overeen met een oud Vine-profiel of OpenVine-handle."
+      "legacy": "Deze gebruikersnaam komt niet overeen met een bekend profiel."
     }
   },
   "atUsernamePage": {
@@ -1407,6 +1406,16 @@
     "checking": "Bezig met controleren...",
     "continue": "Doorgaan",
     "joinWaitlist": "Geen uitnodiging? Zet je op de wachtlijst."
+  },
+  "invitesLandingPage": {
+    "seoTitle": "Word lid van diVine met uitnodigingscode {{code}}",
+    "seoTitleDefault": "Word lid van diVine",
+    "seoDescription": "Je bent uitgenodigd! Gebruik code {{code}} om lid te worden van diVine.",
+    "seoDescriptionDefault": "Gebruik je uitnodigingscode om lid te worden van diVine en video te delen.",
+    "heading": "Je bent uitgenodigd!",
+    "subheading": "Voer je uitnodigingscode in om lid te worden van diVine",
+    "alreadyHaveAccount": "Heb je al een account?",
+    "signIn": "Inloggen"
   },
   "applePodcastEmbed": {
     "defaultTitle": "Vine Revisited and The Fight Against AI Slop",

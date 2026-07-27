@@ -4,7 +4,7 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useMuteList, useMuteItem, useUnmuteItem, useReportHistory } from '@/hooks/useModeration';
+import { useMuteList, useMuteItem, useUnmuteItem, useReportHistory, MUTE_LIST_KIND } from '@/hooks/useModeration';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useAuthor } from '@/hooks/useAuthor';
 import { useNostr } from '@nostrify/react';
@@ -116,7 +116,7 @@ export default function ModerationSettingsPage() {
     const fetchRawEvent = async () => {
       try {
         const events = await nostr.query([{
-          kinds: [10001],
+          kinds: [MUTE_LIST_KIND],
           authors: [user.pubkey],
           limit: 1
         }], { signal: AbortSignal.timeout(5000) });

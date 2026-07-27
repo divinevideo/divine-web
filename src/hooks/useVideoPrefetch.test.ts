@@ -68,4 +68,24 @@ describe('useVideoPrefetch', () => {
     expect(prefetchHrefs).toContain('https://media.divine.video/public-video');
     expect(prefetchHrefs).toContain('https://media.divine.video/public-video.jpg');
   });
+
+  it('prefetches thumbnails but not video files when video prefetching is disabled', () => {
+    renderHook(() =>
+      useVideoPrefetch('video-1', [
+        makeVideo({ id: 'video-1' }),
+        makeVideo({
+          id: 'public-video',
+          ageRestricted: false,
+          videoUrl: 'https://media.divine.video/public-video',
+          thumbnailUrl: 'https://media.divine.video/public-video.jpg',
+        }),
+      ], { prefetchVideos: false }),
+    );
+
+    const prefetchHrefs = Array.from(document.head.querySelectorAll('link[rel="prefetch"]'))
+      .map((link) => (link as HTMLLinkElement).href);
+
+    expect(prefetchHrefs).not.toContain('https://media.divine.video/public-video');
+    expect(prefetchHrefs).toContain('https://media.divine.video/public-video.jpg');
+  });
 });

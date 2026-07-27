@@ -59,11 +59,20 @@ https://divine.video/u/{identifier}
 
 Supports:
 - **Vine User IDs**: 15-20 digit numeric strings (e.g., `1080167736266633216`)
-- **NIP-05 identifiers**: Coming soon (e.g., `username@domain.com`)
+- **Bare NIP-05 local part on the default apex**: e.g. `jacky` resolves to
+  `_@jacky.divine.video` (and `jacky@divine.video`) — the same profile as
+  visiting `https://jacky.divine.video`.
+- **Explicit NIP-05 segments**: `_@x.divine.video` or `x.divine.video` for
+  the default apex, `_@x.dvine.video` or `x.dvine.video` for the alternate
+  apex, and any third-party `local.domain` for external NIP-05s.
 
-**Example:**
+**Examples:**
 ```
-https://divine.video/u/1080167736266633216
+https://divine.video/u/1080167736266633216     # Vine user ID
+https://divine.video/u/jacky                   # bare local part on the default apex
+https://divine.video/u/jacky.divine.video      # explicit default apex
+https://divine.video/u/jacky.dvine.video       # explicit alternate apex
+https://divine.video/u/alice.primal.net        # third-party NIP-05
 ```
 
 ### Using nprofile (Nostr Profile)
@@ -268,7 +277,6 @@ All video and profile URLs include Open Graph and Twitter Card metadata for rich
 
 Planned URL features:
 - Full `note` / `nevent` / `naddr` support for video links
-- NIP-05 username lookups in `/u/` route
 - Relay hint support in video URLs
 - Deep linking with video timestamps
 

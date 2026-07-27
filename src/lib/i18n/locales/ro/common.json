@@ -38,7 +38,6 @@
   },
   "footer": {
     "aboutDivine": "Despre Divine",
-    "vinesRecovered": "{{count}} Vines recuperate",
     "termsAndOpenSource": "Termeni si sursa deschisa",
     "copyright": "© 2026 Divine"
   },
@@ -387,7 +386,6 @@
     "message": "Mesaj",
     "reportUser": "Raportează utilizatorul",
     "subscribeRss": "Abonează-te la fluxul RSS",
-    "videos": "Videoclipuri",
     "followers": "Urmăritori",
     "followingStat": "Urmărește",
     "followingDialogTitle": "Urmărește",
@@ -438,6 +436,7 @@
     "errorFileNoValidKey": "Fișierul nu conține o cheie secretă validă.",
     "errorFileReadFailed": "Citirea fișierului a eșuat.",
     "errorInviteValidationFailed": "Codul de invitație nu poate fi validat",
+    "errorInviteCodeUsed": "Acest cod de invitație a fost deja folosit",
     "errorSignInStartFailed": "Conectarea nu poate fi pornită",
     "errorWaitlistJoinFailed": "Înscrierea pe lista de așteptare a eșuat"
   },
@@ -516,6 +515,7 @@
     "signInButton": "Conectează-te"
   },
   "badgeDetailModal": {
+    "description": "Povestea completă a acestei insigne — cine a acordat-o și când.",
     "title": "Detalii insignă",
     "officialBadge": "✦ Insignă oficială Divine",
     "issuedBy": "Emisă de",
@@ -809,9 +809,6 @@
     "seoTitle": "Videoclip pe Divine",
     "seoDescription": "Vezi acest videoclip pe Divine",
     "seoDescriptionWithAuthor": "Vezi acest videoclip de la {{name}} pe Divine",
-    "loginRequiredTitle": "Conectare necesară",
-    "loginRequiredLikeDescription": "Conectează-te ca să apreciezi videoclipuri",
-    "loginRequiredRepostDescription": "Conectează-te ca să redistribui videoclipuri",
     "errorTitle": "Eroare",
     "likedTitle": "Apreciat!",
     "likedDescription": "Reacția ta a fost publicată",
@@ -946,6 +943,7 @@
     "placeholderMessage": "Scrie un mesaj..."
   },
   "videoCommentsModal": {
+    "description": "Vezi ce spun ceilalți și lasă propriul tău comentariu.",
     "title": "Comentarii",
     "loading": "Se încarcă comentariile...",
     "emptyMessage": "Niciun comentariu încă",
@@ -963,7 +961,8 @@
   "thumbnailPlayer": {
     "videoPreview": "Previzualizare videoclip",
     "thumbnailAlt": "Miniatură videoclip",
-    "playVideo": "Redă videoclipul"
+    "playVideo": "Redă videoclipul",
+    "openVideo": "Deschide videoclipul"
   },
   "hashtagExplorer": {
     "heading": "Explorator de hashtag-uri",
@@ -1210,7 +1209,7 @@
     "notFoundDescription": {
       "vine": "Acest utilizator Vine poate să nu fi fost încă importat în rețeaua Nostr.",
       "nip05": "Verifică dacă identificatorul NIP-05 e corect.",
-      "legacy": "Acest nume de utilizator nu se potrivește cu un profil Vine vechi sau un handle OpenVine."
+      "legacy": "Acest nume de utilizator nu se potrivește cu niciun profil cunoscut."
     }
   },
   "atUsernamePage": {
@@ -1408,6 +1407,16 @@
     "checking": "Se verifică...",
     "continue": "Continuă",
     "joinWaitlist": "N-ai invitație? Înscrie-te pe lista de așteptare."
+  },
+  "invitesLandingPage": {
+    "seoTitle": "Alătură-te diVine cu codul de invitație {{code}}",
+    "seoTitleDefault": "Alătură-te diVine",
+    "seoDescription": "Ai fost invitat! Folosește codul {{code}} ca să te alături diVine.",
+    "seoDescriptionDefault": "Folosește codul tău de invitație ca să te alături diVine și să începi să distribui video.",
+    "heading": "Ești invitat!",
+    "subheading": "Introdu codul de invitație ca să te alături diVine",
+    "alreadyHaveAccount": "Ai deja un cont?",
+    "signIn": "Conectează-te"
   },
   "applePodcastEmbed": {
     "defaultTitle": "Vine Revisited and The Fight Against AI Slop",

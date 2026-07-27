@@ -38,7 +38,6 @@
   },
   "footer": {
     "aboutDivine": "Sobre a Divine",
-    "vinesRecovered": "{{count}} Vines recuperados",
     "termsAndOpenSource": "Termos e codigo aberto",
     "copyright": "© 2026 Divine"
   },
@@ -386,7 +385,6 @@
     "message": "Mensagem",
     "reportUser": "Denunciar usuário",
     "subscribeRss": "Assinar feed RSS",
-    "videos": "Vídeos",
     "followers": "Seguidores",
     "followingStat": "Seguindo",
     "followingDialogTitle": "Seguindo",
@@ -437,6 +435,7 @@
     "errorFileNoValidKey": "O arquivo não contém uma chave secreta válida.",
     "errorFileReadFailed": "Falha ao ler o arquivo.",
     "errorInviteValidationFailed": "Não foi possível validar o código de convite",
+    "errorInviteCodeUsed": "Este código de convite já foi usado",
     "errorSignInStartFailed": "Não foi possível iniciar o login",
     "errorWaitlistJoinFailed": "Não foi possível entrar na lista de espera"
   },
@@ -515,6 +514,7 @@
     "signInButton": "Entrar"
   },
   "badgeDetailModal": {
+    "description": "A história completa deste selo — quem o emitiu e quando.",
     "title": "Detalhes do badge",
     "officialBadge": "✦ Badge oficial Divine",
     "issuedBy": "Emitido por",
@@ -808,9 +808,6 @@
     "seoTitle": "Vídeo na Divine",
     "seoDescription": "Assista a este vídeo na Divine",
     "seoDescriptionWithAuthor": "Assista a este vídeo de {{name}} na Divine",
-    "loginRequiredTitle": "Login obrigatório",
-    "loginRequiredLikeDescription": "Faça login pra curtir vídeos",
-    "loginRequiredRepostDescription": "Faça login pra repostar vídeos",
     "errorTitle": "Erro",
     "likedTitle": "Curtido!",
     "likedDescription": "Sua reação foi publicada",
@@ -945,6 +942,7 @@
     "placeholderMessage": "Escreva uma mensagem..."
   },
   "videoCommentsModal": {
+    "description": "Veja o que as pessoas estão dizendo e deixe seu próprio comentário.",
     "title": "Comentários",
     "loading": "Carregando comentários...",
     "emptyMessage": "Nenhum comentário ainda",
@@ -962,7 +960,8 @@
   "thumbnailPlayer": {
     "videoPreview": "Pré-visualização do vídeo",
     "thumbnailAlt": "Thumbnail do vídeo",
-    "playVideo": "Reproduzir vídeo"
+    "playVideo": "Reproduzir vídeo",
+    "openVideo": "Abrir vídeo"
   },
   "hashtagExplorer": {
     "heading": "Explorador de hashtags",
@@ -1209,7 +1208,7 @@
     "notFoundDescription": {
       "vine": "Esse usuário do Vine talvez ainda não tenha sido importado pra rede Nostr.",
       "nip05": "Confere se o identificador NIP-05 tá certo.",
-      "legacy": "Esse username não corresponde a um perfil antigo do Vine nem a um handle do OpenVine."
+      "legacy": "Esse username não corresponde a nenhum perfil conhecido."
     }
   },
   "atUsernamePage": {
@@ -1407,6 +1406,16 @@
     "checking": "Verificando...",
     "continue": "Continuar",
     "joinWaitlist": "Sem convite? Entre na lista de espera."
+  },
+  "invitesLandingPage": {
+    "seoTitle": "Entre no diVine com o código de convite {{code}}",
+    "seoTitleDefault": "Entre no diVine",
+    "seoDescription": "Você recebeu um convite! Use o código {{code}} para entrar no diVine.",
+    "seoDescriptionDefault": "Use seu código de convite para entrar no diVine e começar a compartilhar vídeo.",
+    "heading": "Você recebeu um convite!",
+    "subheading": "Digite seu código de convite para entrar no diVine",
+    "alreadyHaveAccount": "Já tem uma conta?",
+    "signIn": "Entrar"
   },
   "applePodcastEmbed": {
     "defaultTitle": "Vine Revisited and The Fight Against AI Slop",

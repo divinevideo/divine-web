@@ -1,6 +1,8 @@
-import { renderHook, waitFor } from '@testing-library/react';
+import { act, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { NLoginType } from '@nostrify/react/login';
+
+import { NIP07_GRACE_MS, NIP07_POLL_INTERVAL_MS } from './useNip07Availability';
 
 const {
   mockGetValidToken,
@@ -203,24 +205,71 @@ describe('useCurrentUser', () => {
     expect(result.current.isResolvingJwt).toBe(true);
   });
 
-  it('skips extension logins when no browser extension is available', () => {
+  it('recovers an extension login when the provider injects shortly after mount', () => {
+    vi.useFakeTimers();
+    try {
+      mockLogins.push({
+        id: 'extension:pub123',
+        type: 'extension',
+        pubkey: 'pub123',
+        createdAt: '2026-03-10T00:00:00.000Z',
+        data: null,
+      });
+
+      const { result } = renderHook(() => useCurrentUser());
+
+      // Extension content script hasn't injected window.nostr yet.
+      expect(result.current.user).toBeUndefined();
+
+      setNostrProvider();
+      act(() => {
+        vi.advanceTimersByTime(NIP07_POLL_INTERVAL_MS);
+      });
+
+      expect(result.current.user?.pubkey).toBe('pub123');
+      expect(result.current.signer).toBeDefined();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('skips extension logins without a Sentry-visible warning when no extension appears', () => {
+    vi.useFakeTimers();
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const infoSpy = vi.spyOn(console, 'info').mockImplementation(() => {});
+    try {
+      mockLogins.push({
+        id: 'extension:pub123',
+        type: 'extension',
+        pubkey: 'pub123',
+        createdAt: '2026-03-10T00:00:00.000Z',
+        data: null,
+      });
 
-    mockLogins.push({
-      id: 'extension:pub123',
-      type: 'extension',
-      pubkey: 'pub123',
-      createdAt: '2026-03-10T00:00:00.000Z',
-      data: null,
-    });
+      const { result } = renderHook(() => useCurrentUser());
 
-    const { result } = renderHook(() => useCurrentUser());
+      // While the grace period runs, nothing is logged at all.
+      expect(result.current.user).toBeUndefined();
+      expect(warnSpy).not.toHaveBeenCalled();
+      expect(infoSpy).not.toHaveBeenCalled();
 
-    expect(result.current.user).toBeUndefined();
-    expect(result.current.users).toEqual([]);
-    expect(result.current.signer).toBeUndefined();
-    expect(mockUseAuthor).toHaveBeenCalledWith(undefined);
-    expect(warnSpy).toHaveBeenCalledWith('Skipped invalid login', 'extension:pub123', expect.any(Error));
+      act(() => {
+        vi.advanceTimersByTime(NIP07_GRACE_MS + NIP07_POLL_INTERVAL_MS);
+      });
+
+      expect(result.current.user).toBeUndefined();
+      expect(result.current.users).toEqual([]);
+      expect(result.current.signer).toBeUndefined();
+      // Sentry captures console.warn/error; a missing extension is an expected
+      // state and must stay at info level.
+      expect(warnSpy).not.toHaveBeenCalled();
+      expect(infoSpy).toHaveBeenCalledWith(
+        'Skipped extension login; no NIP-07 provider found',
+        'extension:pub123',
+      );
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('returns an extension user and signer when a browser extension is available', () => {

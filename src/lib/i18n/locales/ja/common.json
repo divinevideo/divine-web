@@ -38,7 +38,6 @@
   },
   "footer": {
     "aboutDivine": "Divine について",
-    "vinesRecovered": "{{count}} 件の Vine を復元",
     "termsAndOpenSource": "利用規約とオープンソース",
     "copyright": "© 2026 Divine"
   },
@@ -386,7 +385,6 @@
     "message": "メッセージ",
     "reportUser": "ユーザーを報告",
     "subscribeRss": "RSSフィードを購読",
-    "videos": "動画",
     "followers": "フォロワー",
     "followingStat": "フォロー中",
     "followingDialogTitle": "フォロー中",
@@ -437,6 +435,7 @@
     "errorFileNoValidKey": "ファイルに有効な秘密鍵が含まれていません。",
     "errorFileReadFailed": "ファイルの読み込みに失敗しました。",
     "errorInviteValidationFailed": "招待コードを検証できません",
+    "errorInviteCodeUsed": "この招待コードはすでに使用されています",
     "errorSignInStartFailed": "サインインを開始できません",
     "errorWaitlistJoinFailed": "順番待ちリストに参加できません"
   },
@@ -515,6 +514,7 @@
     "signInButton": "サインイン"
   },
   "badgeDetailModal": {
+    "description": "このバッジの詳細 — 発行者と授与日。",
     "title": "バッジ詳細",
     "officialBadge": "✦ 公式Divineバッジ",
     "issuedBy": "発行者",
@@ -808,9 +808,6 @@
     "seoTitle": "Divineの動画",
     "seoDescription": "Divineでこの動画を視聴",
     "seoDescriptionWithAuthor": "Divineで{{name}}のこの動画を視聴",
-    "loginRequiredTitle": "ログインが必要です",
-    "loginRequiredLikeDescription": "動画にいいねするにはログインしてください",
-    "loginRequiredRepostDescription": "動画をリポストするにはログインしてください",
     "errorTitle": "エラー",
     "likedTitle": "いいねしました！",
     "likedDescription": "リアクションが公開されました",
@@ -945,6 +942,7 @@
     "placeholderMessage": "メッセージを書く..."
   },
   "videoCommentsModal": {
+    "description": "みんなのコメントを見て、自分のコメントも残そう。",
     "title": "コメント",
     "loading": "コメントを読み込み中...",
     "emptyMessage": "まだコメントがありません",
@@ -962,7 +960,8 @@
   "thumbnailPlayer": {
     "videoPreview": "動画プレビュー",
     "thumbnailAlt": "動画サムネイル",
-    "playVideo": "動画を再生"
+    "playVideo": "動画を再生",
+    "openVideo": "動画を開く"
   },
   "hashtagExplorer": {
     "heading": "ハッシュタグエクスプローラー",
@@ -1209,7 +1208,7 @@
     "notFoundDescription": {
       "vine": "このVineユーザーはまだNostrネットワークにインポートされていない可能性があります。",
       "nip05": "NIP-05識別子が正しいかご確認ください。",
-      "legacy": "このユーザー名は旧VineプロフィールやOpenVineハンドルと一致しません。"
+      "legacy": "このユーザー名は既知のプロフィールと一致しません。"
     }
   },
   "atUsernamePage": {
@@ -1407,6 +1406,16 @@
     "checking": "確認中...",
     "continue": "続ける",
     "joinWaitlist": "招待がない?ウェイトリストに登録してください。"
+  },
+  "invitesLandingPage": {
+    "seoTitle": "招待コード {{code}} でdiVineに参加",
+    "seoTitleDefault": "diVineに参加",
+    "seoDescription": "招待されています！コード {{code}} を使ってdiVineに参加しましょう。",
+    "seoDescriptionDefault": "招待コードを使ってdiVineに参加し、動画の共有を始めましょう。",
+    "heading": "招待されています！",
+    "subheading": "diVineに参加するには招待コードを入力してください",
+    "alreadyHaveAccount": "すでにアカウントをお持ちですか？",
+    "signIn": "サインイン"
   },
   "applePodcastEmbed": {
     "defaultTitle": "Vine Revisited and The Fight Against AI Slop",

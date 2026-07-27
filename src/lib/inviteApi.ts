@@ -21,12 +21,14 @@ export interface WaitlistJoinResult {
 export class InviteApiError extends Error {
   code: InviteApiErrorCode;
   status: number;
+  inviteStatus?: string;
 
-  constructor(message: string, code: InviteApiErrorCode, status: number) {
+  constructor(message: string, code: InviteApiErrorCode, status: number, inviteStatus?: string) {
     super(message);
     this.name = 'InviteApiError';
     this.code = code;
     this.status = status;
+    this.inviteStatus = inviteStatus;
   }
 }
 
@@ -45,16 +47,17 @@ async function readJson(response: Response): Promise<Record<string, unknown>> {
 function toInviteApiError(response: Response, body: Record<string, unknown>): InviteApiError {
   const code = typeof body.code === 'string' ? body.code : undefined;
   const message = typeof body.error === 'string' ? body.error : 'Invite service request failed';
+  const inviteStatus = typeof body.status === 'string' ? body.status : undefined;
 
   if (response.status === 400 || response.status === 404 || code === 'invalid_invite') {
-    return new InviteApiError(message, 'invalid_invite', response.status);
+    return new InviteApiError(message, 'invalid_invite', response.status, inviteStatus);
   }
 
   if (response.status >= 500 || response.status === 0) {
-    return new InviteApiError(message, 'unavailable', response.status);
+    return new InviteApiError(message, 'unavailable', response.status, inviteStatus);
   }
 
-  return new InviteApiError(message, 'unknown', response.status);
+  return new InviteApiError(message, 'unknown', response.status, inviteStatus);
 }
 
 function toNetworkInviteApiError(error: unknown): InviteApiError {

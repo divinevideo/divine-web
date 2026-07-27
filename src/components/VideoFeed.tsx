@@ -77,6 +77,7 @@ export function VideoFeed({
   const location = useLocation();
   const [showCommentsForVideo, setShowCommentsForVideo] = useState<string | null>(null);
   const [showListDialog, setShowListDialog] = useState<{ videoId: string; videoPubkey: string } | null>(null);
+  const [hasFirstPlayback, setHasFirstPlayback] = useState(false);
   const mountTimeRef = useRef<number | null>(null);
 
   const { checkContent } = useContentModeration();
@@ -205,9 +206,9 @@ export function VideoFeed({
   // Prefetch all authors in a single query
   useBatchedAuthors(authorPubkeys);
 
-  // Prefetch next 2-3 video URLs while current video plays
+  // Prefetch upcoming media after the first video is actually playing.
   const { activeVideoId } = useVideoPlayback();
-  useVideoPrefetch(activeVideoId, filteredVideos);
+  useVideoPrefetch(activeVideoId, filteredVideos, { prefetchVideos: hasFirstPlayback });
 
   // Auto-navigate to discovery if home feed is empty
   useEffect(() => {
@@ -296,6 +297,7 @@ export function VideoFeed({
   }, [filteredVideos, enterFullscreen]);
 
   const handlePlaybackStarted = useCallback((video: ParsedVideoData) => {
+    setHasFirstPlayback(true);
     trackFirstPlayback({
       renderedVideos: filteredVideos.length,
       totalVideos: allVideos.length,

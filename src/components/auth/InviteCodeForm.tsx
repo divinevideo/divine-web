@@ -12,6 +12,7 @@ interface InviteCodeFormProps {
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
   value: string;
   waitlistEnabled: boolean;
+  inputClassName?: string;
 }
 
 export function InviteCodeForm(props: InviteCodeFormProps) {
@@ -24,6 +25,7 @@ export function InviteCodeForm(props: InviteCodeFormProps) {
     onSubmit,
     value,
     waitlistEnabled,
+    inputClassName,
   } = props;
 
   return (
@@ -34,6 +36,7 @@ export function InviteCodeForm(props: InviteCodeFormProps) {
         </label>
         <Input
           autoComplete="off"
+          className={inputClassName}
           id="invite-code"
           onChange={(event) => onInviteCodeChange(event.target.value)}
           placeholder={t('inviteCodeForm.placeholder')}

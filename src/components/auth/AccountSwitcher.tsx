@@ -18,7 +18,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar.tsx'
 import { useNostrLogin } from '@nostrify/react/login';
 import { useLoggedInAccounts, type Account } from '@/hooks/useLoggedInAccounts';
 import { useDivineSession } from '@/hooks/useDivineSession';
-import { clearLoginCookie } from '@/lib/crossSubdomainAuth';
+import { clearLoginCookie, clearJwtCookie } from '@/lib/crossSubdomainAuth';
 import { genUserName } from '@/lib/genUserName';
 import { getSafeProfileImage } from '@/lib/imageUtils';
 import { getActiveLocalNsecLogin } from '@/lib/localNsecAccount';
@@ -54,6 +54,7 @@ export function AccountSwitcher({ onAddAccountClick }: AccountSwitcherProps) {
   const handleLogout = () => {
     if (isJwtCurrentUser) {
       clearSession();
+      clearJwtCookie();
       clearLoginCookie();
       return;
     }
@@ -63,6 +64,10 @@ export function AccountSwitcher({ onAddAccountClick }: AccountSwitcherProps) {
 
   return (
     <div className='account-switcher w-full min-w-0 max-w-full space-y-3'>
+      {/* #182: the banner gates itself for protected minors. It must render
+          unconditionally here so a restricted flip keeps it mounted (rendering
+          null) and its command-boundary re-checks stay live; a gate at this
+          level would unmount it mid-flight (dcadenas review on #476). */}
       {localNsecLogin ? <LocalNsecBanner nsec={localNsecLogin.data.nsec} /> : null}
       <DropdownMenu modal={false}>
         <DropdownMenuTrigger asChild>

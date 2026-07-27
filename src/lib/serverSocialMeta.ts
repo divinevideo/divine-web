@@ -325,7 +325,7 @@ export function buildKidsPolicyPageMeta(url: URL): PageMeta {
   return {
     title: 'Kids on Divine — How accounts work for under-16s',
     description:
-      'How Divine handles accounts for people under 16 — the rules, the reasoning, and what families can do together regardless of age.',
+      'How Divine handles accounts for people under 16 — the rules, the reasoning, Divine Greenlight for teens 13-15, and what families can do together regardless of age.',
     ogType: 'website',
     url: url.toString(),
     image: DEFAULT_OG_IMAGE,

@@ -1,4 +1,4 @@
-// ABOUTME: About page explaining the OpenVine/Divine Web project
+// ABOUTME: About page explaining the Divine Web project
 // ABOUTME: Contains project history, mission, and creator information
 
 import { Link } from 'react-router-dom';

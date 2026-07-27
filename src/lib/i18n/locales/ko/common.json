@@ -38,7 +38,6 @@
   },
   "footer": {
     "aboutDivine": "Divine 소개",
-    "vinesRecovered": "{{count}}개의 Vine 복구됨",
     "termsAndOpenSource": "약관 및 오픈 소스",
     "copyright": "© 2026 Divine"
   },
@@ -386,7 +385,6 @@
     "message": "메시지",
     "reportUser": "사용자 신고",
     "subscribeRss": "RSS 피드 구독",
-    "videos": "비디오",
     "followers": "팔로워",
     "followingStat": "팔로잉",
     "followingDialogTitle": "팔로잉",
@@ -437,6 +435,7 @@
     "errorFileNoValidKey": "파일에 유효한 비밀키가 없어요.",
     "errorFileReadFailed": "파일을 읽을 수 없어요.",
     "errorInviteValidationFailed": "초대 코드를 확인할 수 없음",
+    "errorInviteCodeUsed": "이 초대 코드는 이미 사용되었습니다",
     "errorSignInStartFailed": "로그인을 시작할 수 없음",
     "errorWaitlistJoinFailed": "대기자 명단에 등록할 수 없음"
   },
@@ -515,6 +514,7 @@
     "signInButton": "로그인"
   },
   "badgeDetailModal": {
+    "description": "이 배지의 전체 이야기 — 누가 언제 발급했는지.",
     "title": "배지 정보",
     "officialBadge": "✦ 공식 Divine 배지",
     "issuedBy": "발급자",
@@ -808,9 +808,6 @@
     "seoTitle": "Divine의 비디오",
     "seoDescription": "Divine에서 이 비디오를 보세요",
     "seoDescriptionWithAuthor": "Divine에서 {{name}}님의 이 비디오를 보세요",
-    "loginRequiredTitle": "로그인 필요",
-    "loginRequiredLikeDescription": "비디오에 좋아요를 누르려면 로그인하세요",
-    "loginRequiredRepostDescription": "비디오를 리포스트하려면 로그인하세요",
     "errorTitle": "오류",
     "likedTitle": "좋아요!",
     "likedDescription": "반응이 발행됐어요",
@@ -945,6 +942,7 @@
     "placeholderMessage": "메시지를 입력하세요..."
   },
   "videoCommentsModal": {
+    "description": "다른 사람들의 댓글을 보고 직접 댓글을 남겨보세요.",
     "title": "댓글",
     "loading": "댓글 불러오는 중...",
     "emptyMessage": "아직 댓글이 없어요",
@@ -962,7 +960,8 @@
   "thumbnailPlayer": {
     "videoPreview": "비디오 미리보기",
     "thumbnailAlt": "비디오 썸네일",
-    "playVideo": "비디오 재생"
+    "playVideo": "비디오 재생",
+    "openVideo": "동영상 열기"
   },
   "hashtagExplorer": {
     "heading": "해시태그 탐색",
@@ -1209,7 +1208,7 @@
     "notFoundDescription": {
       "vine": "이 Vine 사용자는 아직 Nostr 네트워크로 가져오지 않았을 수 있어요.",
       "nip05": "NIP-05 식별자가 정확한지 확인해 주세요.",
-      "legacy": "이 사용자명은 레거시 Vine 프로필이나 OpenVine 핸들과 일치하지 않아요."
+      "legacy": "이 사용자명은 알려진 프로필과 일치하지 않습니다."
     }
   },
   "atUsernamePage": {
@@ -1407,6 +1406,16 @@
     "checking": "확인 중...",
     "continue": "계속",
     "joinWaitlist": "초대 코드가 없나요? 대기자 명단에 등록하세요."
+  },
+  "invitesLandingPage": {
+    "seoTitle": "초대 코드 {{code}}로 diVine에 가입",
+    "seoTitleDefault": "diVine에 가입",
+    "seoDescription": "초대받았어요! 코드 {{code}}를 사용해 diVine에 가입하세요.",
+    "seoDescriptionDefault": "초대 코드를 사용해 diVine에 가입하고 동영상 공유를 시작하세요.",
+    "heading": "초대받았어요!",
+    "subheading": "diVine에 가입하려면 초대 코드를 입력하세요",
+    "alreadyHaveAccount": "이미 계정이 있나요?",
+    "signIn": "로그인"
   },
   "applePodcastEmbed": {
     "defaultTitle": "Vine Revisited and The Fight Against AI Slop",

@@ -38,7 +38,6 @@
   },
   "footer": {
     "aboutDivine": "Tentang Divine",
-    "vinesRecovered": "{{count}} Vine dipulihkan",
     "termsAndOpenSource": "Ketentuan & sumber terbuka",
     "copyright": "© 2026 Divine"
   },
@@ -386,7 +385,6 @@
     "message": "Pesan",
     "reportUser": "Laporkan pengguna",
     "subscribeRss": "Berlangganan feed RSS",
-    "videos": "Video",
     "followers": "Pengikut",
     "followingStat": "Mengikuti",
     "followingDialogTitle": "Mengikuti",
@@ -437,6 +435,7 @@
     "errorFileNoValidKey": "File tidak berisi kunci rahasia yang valid.",
     "errorFileReadFailed": "Gagal membaca file.",
     "errorInviteValidationFailed": "Tidak bisa memvalidasi kode invite",
+    "errorInviteCodeUsed": "Kode invite ini sudah digunakan",
     "errorSignInStartFailed": "Tidak bisa memulai sign-in",
     "errorWaitlistJoinFailed": "Tidak bisa bergabung ke waitlist"
   },
@@ -515,6 +514,7 @@
     "signInButton": "Masuk"
   },
   "badgeDetailModal": {
+    "description": "Cerita lengkap lencana ini — siapa yang memberikannya dan kapan.",
     "title": "Detail Badge",
     "officialBadge": "✦ Badge Resmi Divine",
     "issuedBy": "Diterbitkan oleh",
@@ -808,9 +808,6 @@
     "seoTitle": "Video di Divine",
     "seoDescription": "Tonton video ini di Divine",
     "seoDescriptionWithAuthor": "Tonton video oleh {{name}} di Divine",
-    "loginRequiredTitle": "Login Diperlukan",
-    "loginRequiredLikeDescription": "Silakan masuk untuk menyukai video",
-    "loginRequiredRepostDescription": "Silakan masuk untuk me-repost video",
     "errorTitle": "Error",
     "likedTitle": "Disukai!",
     "likedDescription": "Reaksi kamu sudah dipublikasikan",
@@ -945,6 +942,7 @@
     "placeholderMessage": "Tulis pesan..."
   },
   "videoCommentsModal": {
+    "description": "Lihat apa kata orang dan tinggalkan komentarmu sendiri.",
     "title": "Komentar",
     "loading": "Memuat komentar...",
     "emptyMessage": "Belum ada komentar",
@@ -962,7 +960,8 @@
   "thumbnailPlayer": {
     "videoPreview": "Pratinjau Video",
     "thumbnailAlt": "Thumbnail video",
-    "playVideo": "Putar video"
+    "playVideo": "Putar video",
+    "openVideo": "Buka video"
   },
   "hashtagExplorer": {
     "heading": "Hashtag Explorer",
@@ -1209,7 +1208,7 @@
     "notFoundDescription": {
       "vine": "Pengguna Vine ini mungkin belum diimpor ke jaringan Nostr.",
       "nip05": "Cek lagi pengenal NIP-05 nya benar atau tidak.",
-      "legacy": "Username ini tidak cocok dengan profil Vine lama atau handle OpenVine."
+      "legacy": "Username ini tidak cocok dengan profil yang dikenal."
     }
   },
   "atUsernamePage": {
@@ -1407,6 +1406,16 @@
     "checking": "Mengecek...",
     "continue": "Lanjut",
     "joinWaitlist": "Belum punya undangan? Masuk waitlist."
+  },
+  "invitesLandingPage": {
+    "seoTitle": "Gabung diVine dengan kode invite {{code}}",
+    "seoTitleDefault": "Gabung diVine",
+    "seoDescription": "Kamu diundang! Gunakan kode {{code}} untuk bergabung ke diVine.",
+    "seoDescriptionDefault": "Gunakan kode invite kamu untuk bergabung ke diVine dan mulai berbagi video.",
+    "heading": "Kamu Diundang!",
+    "subheading": "Masukkan kode invite kamu untuk bergabung ke diVine",
+    "alreadyHaveAccount": "Sudah punya akun?",
+    "signIn": "Masuk"
   },
   "applePodcastEmbed": {
     "defaultTitle": "Vine Revisited and The Fight Against AI Slop",

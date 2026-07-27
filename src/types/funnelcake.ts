@@ -1,6 +1,25 @@
 // ABOUTME: TypeScript types for Funnelcake REST API responses
 // ABOUTME: Defines interfaces for video data, search results, and API responses
 
+export interface FunnelcakeProofChecks {
+  proofmode_present?: boolean | null;
+  proofmode_parse_ok?: boolean | null;
+  pgp_signature_present?: boolean | null;
+  pgp_signature_valid?: boolean | null;
+  device_attestation_present?: boolean | null;
+  device_attestation_valid?: boolean | null;
+  c2pa_manifest_present?: boolean | null;
+  c2pa_manifest_valid?: boolean | null;
+}
+
+export interface FunnelcakeProofSummary {
+  status: 'unknown' | 'present' | 'invalid' | 'partial' | 'verified';
+  level?: string;
+  checked_at?: number;
+  version: number;
+  checks: FunnelcakeProofChecks;
+}
+
 /**
  * Raw video data from Funnelcake API
  * Note: id and pubkey are hex strings from the API
@@ -37,8 +56,8 @@ export interface FunnelcakeVideoRaw {
 
   engagement_score?: number; // Computed engagement metric
   trending_score?: number;   // Time-weighted popularity score
-  loops?: number | null;     // Original Vine loop count (only in main videos endpoint)
-  views?: number | null;     // Divine-native views on the archived video
+  loops?: number | null;     // Safe loop count: archived loops for Vine, computed loops for native videos
+  views?: number | null;     // User-facing view count from the logical video aggregate
 
   // Platform origin (for filtering classic vines)
   platform?: string;      // 'vine', 'tiktok', etc.
@@ -50,6 +69,8 @@ export interface FunnelcakeVideoRaw {
 
   // Full event tags (only present from /api/videos/{id} endpoint)
   tags?: string[][];      // Nostr event tags for ProofMode extraction
+  event_json?: string | Record<string, unknown>; // Full Nostr event payload when provided by detail APIs
+  proof?: FunnelcakeProofSummary; // Compact ProofMode summary for list/feed endpoints
 }
 
 /**
@@ -73,6 +94,71 @@ export interface FunnelcakeVideoStats {
   loops: number;
   trending_score: number;
   engagement_score: number;
+}
+
+/**
+ * Aggregated KPI summary returned by /api/users/{pubkey}/analytics.
+ * Mirrors `CreatorAnalyticsSummary` in crates/clickhouse/src/queries.rs.
+ */
+export interface FunnelcakeCreatorAnalyticsSummary {
+  video_count: number;
+  views?: number | null;
+  unique_viewers?: number | null;
+  reactions: number;
+  comments: number;
+  reposts: number;
+  shares?: number | null;
+  saves?: number | null;
+  followers_gained?: number | null;
+  profile_visits?: number | null;
+  avg_watch_seconds?: number | null;
+  completion_rate?: number | null;
+  engagement_rate?: number | null;
+  has_view_data: boolean;
+}
+
+/**
+ * Single point in an analytics time series.
+ */
+export interface FunnelcakeAnalyticsSeriesPoint {
+  date: string;
+  value: number;
+}
+
+/**
+ * Time-series payload for the dashboard charts.
+ */
+export interface FunnelcakeCreatorAnalyticsTimeseries {
+  daily_views: FunnelcakeAnalyticsSeriesPoint[];
+  daily_interactions: FunnelcakeAnalyticsSeriesPoint[];
+  daily_follows: FunnelcakeAnalyticsSeriesPoint[];
+}
+
+/**
+ * Top post entry returned by the analytics endpoint. Only IDs + a couple of
+ * metrics - render metadata must be fetched separately (e.g. via bulk_videos).
+ */
+export interface FunnelcakeCreatorTopPost {
+  id: string;
+  views?: number | null;
+  engagement_rate?: number | null;
+}
+
+/**
+ * Full analytics response. Returned by `GET /api/users/{pubkey}/analytics`,
+ * requires NIP-98 auth as the requesting user.
+ */
+export interface FunnelcakeCreatorAnalyticsResponse {
+  total_views: number;
+  total_loops: number;
+  total_watch_time: number;
+  unique_viewers: number;
+  period: string;
+  pubkey: string;
+  window: string;
+  summary: FunnelcakeCreatorAnalyticsSummary;
+  timeseries: FunnelcakeCreatorAnalyticsTimeseries;
+  top_posts: FunnelcakeCreatorTopPost[];
 }
 
 /**

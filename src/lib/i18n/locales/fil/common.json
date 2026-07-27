@@ -38,7 +38,6 @@
   },
   "footer": {
     "aboutDivine": "Tungkol sa Divine",
-    "vinesRecovered": "{{count}} Vines na nabawi",
     "termsAndOpenSource": "Mga Tuntunin at Open Source",
     "copyright": "© 2026 Divine"
   },
@@ -386,7 +385,6 @@
     "message": "Mag-message",
     "reportUser": "I-report ang user",
     "subscribeRss": "Mag-subscribe sa RSS feed",
-    "videos": "Mga Video",
     "followers": "Mga Sumusunod",
     "followingStat": "Sinusundan",
     "followingDialogTitle": "Sinusundan",
@@ -437,6 +435,7 @@
     "errorFileNoValidKey": "Walang valid na secret key sa file.",
     "errorFileReadFailed": "Hindi mabasa ang file.",
     "errorInviteValidationFailed": "Hindi ma-validate ang invite code",
+    "errorInviteCodeUsed": "Nagamit na ang invite code na ito",
     "errorSignInStartFailed": "Hindi masimulan ang sign-in",
     "errorWaitlistJoinFailed": "Hindi maka-join sa waitlist"
   },
@@ -515,6 +514,7 @@
     "signInButton": "Mag-log in"
   },
   "badgeDetailModal": {
+    "description": "Ang buong kuwento ng badge na ito — kung sino ang nagbigay at kailan.",
     "title": "Mga Detalye ng Badge",
     "officialBadge": "✦ Opisyal na Divine Badge",
     "issuedBy": "Ibinigay ni",
@@ -808,9 +808,6 @@
     "seoTitle": "Loop sa Divine",
     "seoDescription": "Panoorin ang loop na 'to sa Divine",
     "seoDescriptionWithAuthor": "Panoorin ang loop na 'to ni {{name}} sa Divine",
-    "loginRequiredTitle": "Kailangan Mag-login",
-    "loginRequiredLikeDescription": "Mag-log in para mag-like ng loop",
-    "loginRequiredRepostDescription": "Mag-log in para mag-repost ng loop",
     "errorTitle": "May Mali",
     "likedTitle": "Na-like!",
     "likedDescription": "Na-publish na ang reaksyon mo",
@@ -945,6 +942,7 @@
     "placeholderMessage": "Ipasok ang mensahe..."
   },
   "videoCommentsModal": {
+    "description": "Tingnan ang sinasabi ng iba at mag-iwan ng sarili mong komento.",
     "title": "Mga komento",
     "loading": "Naglo-load ng mga komento...",
     "emptyMessage": "Wala pang komento.",
@@ -962,7 +960,8 @@
   "thumbnailPlayer": {
     "videoPreview": "Preview ng video",
     "thumbnailAlt": "Thumbnail ng video",
-    "playVideo": "I-play ang video"
+    "playVideo": "I-play ang video",
+    "openVideo": "Buksan ang video"
   },
   "hashtagExplorer": {
     "heading": "Mga hashtag",
@@ -1209,7 +1208,7 @@
     "notFoundDescription": {
       "vine": "Maaaring hindi pa na-import sa Nostr network ang Vine user na ito.",
       "nip05": "Pakitiyak na tama ang NIP-05 identifier.",
-      "legacy": "Hindi tugma ang username na ito sa anumang legacy Vine profile o OpenVine handle."
+      "legacy": "Hindi tugma ang username na ito sa anumang kilalang profile."
     }
   },
   "atUsernamePage": {
@@ -1407,6 +1406,16 @@
     "checking": "Sinusuri...",
     "continue": "Magpatuloy",
     "joinWaitlist": "Walang invite? Sumali sa waitlist."
+  },
+  "invitesLandingPage": {
+    "seoTitle": "Sumali sa diVine gamit ang invite code {{code}}",
+    "seoTitleDefault": "Sumali sa diVine",
+    "seoDescription": "Inimbitahan ka! Gamitin ang code {{code}} para sumali sa diVine.",
+    "seoDescriptionDefault": "Gamitin ang invite code mo para sumali sa diVine at magsimulang mag-share ng video.",
+    "heading": "Imbitado Ka!",
+    "subheading": "Ilagay ang invite code mo para sumali sa diVine",
+    "alreadyHaveAccount": "May account ka na?",
+    "signIn": "Mag-sign in"
   },
   "applePodcastEmbed": {
     "defaultTitle": "Vine Revisited at ang Laban Kontra AI Slop",

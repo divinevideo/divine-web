@@ -11,6 +11,25 @@ export function escapeHtml(str) {
     .replace(/'/g, '&#039;');
 }
 
+// Serialize a value to JSON for safe embedding inside an inline <script> element.
+// JSON.stringify alone is unsafe here: it leaves `<` raw (so a string containing
+// `</script>` breaks out of the tag) and leaves the JS line terminators U+2028/U+2029
+// raw (valid in JSON, but they terminate a script's string literals). Escaping those
+// three keeps the embedded data inert while still parsing back to the original value.
+export function escapeFeedJson(value) {
+  return JSON.stringify(value)
+    .replace(/</g, "\\u003c")
+    .replace(/\u2028/g, "\\u2028")
+    .replace(/\u2029/g, "\\u2029");
+}
+
+// The injected profile object carries user-controlled Nostr fields (displayName,
+// about, picture, ...), so it must go through escapeFeedJson, never raw
+// JSON.stringify.
+export function buildUserScript(divineUser) {
+  return `<script>window.__DIVINE_USER__ = ${escapeFeedJson(divineUser)};</script>`;
+}
+
 export function cleanText(value) {
   return (value || '').replace(/\s+/g, ' ').trim();
 }
@@ -33,6 +52,7 @@ export function buildCrawlerHtml({
   imageHeight = null,
   siteName = 'Divine',
   video = null,
+  alternate = null,
 }) {
   const e = escapeHtml;
   const imageDimsBlock = (imageWidth && imageHeight) ? `
@@ -49,6 +69,9 @@ export function buildCrawlerHtml({
   <meta name="twitter:player:height" content="${Number(video.height) || 1280}" />
   <meta name="twitter:player:stream" content="${e(video.url)}" />
   <meta name="twitter:player:stream:content_type" content="${e(video.type || 'video/mp4')}" />` : ''}` : '';
+  const alternateBlock = alternate?.map(a =>
+    `  <link rel="${e(a.rel)}" type="${e(a.type)}" href="${e(a.href)}"${a.title ? ` title="${e(a.title)}"` : ''} />`
+  ).join('\n') || '';
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -71,6 +94,7 @@ ${videoBlock}
   ${twitterCreator ? `<meta name="twitter:creator" content="${e(twitterCreator)}" />` : ''}
 
   <link rel="canonical" href="${e(url)}" />
+${alternateBlock}
 </head>
 <body>
   <p><a href="${e(url)}">${e(title)}</a></p>

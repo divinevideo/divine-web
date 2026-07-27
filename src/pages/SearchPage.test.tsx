@@ -2,6 +2,7 @@ import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, useLocation } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type {
   ButtonHTMLAttributes,
   HTMLAttributes,
@@ -19,6 +20,9 @@ const {
   mockFetchVideoById,
   mockNostrQuery,
   mockUseInfiniteSearchVideos,
+  mockUseSearchUsers,
+  mockUseSearchHashtags,
+  mockUseNip05Validation,
   mockEnterFullscreen,
   mockSetVideosForFullscreen,
   mockUpdateVideos,
@@ -28,6 +32,9 @@ const {
   mockFetchVideoById: vi.fn(),
   mockNostrQuery: vi.fn(),
   mockUseInfiniteSearchVideos: vi.fn(),
+  mockUseSearchUsers: vi.fn(),
+  mockUseSearchHashtags: vi.fn(),
+  mockUseNip05Validation: vi.fn(),
   mockEnterFullscreen: vi.fn(),
   mockSetVideosForFullscreen: vi.fn(),
   mockUpdateVideos: vi.fn(),
@@ -154,19 +161,15 @@ vi.mock('@/hooks/useInfiniteSearchVideos', () => ({
 }));
 
 vi.mock('@/hooks/useSearchUsers', () => ({
-  useSearchUsers: () => ({
-    data: [],
-    isLoading: false,
-    error: null,
-  }),
+  useSearchUsers: mockUseSearchUsers,
+}));
+
+vi.mock('@/hooks/useNip05Validation', () => ({
+  useNip05Validation: mockUseNip05Validation,
 }));
 
 vi.mock('@/hooks/useSearchHashtags', () => ({
-  useSearchHashtags: ({ query }: { query: string }) => ({
-    data: query ? [] : [],
-    isLoading: false,
-    error: null,
-  }),
+  useSearchHashtags: mockUseSearchHashtags,
 }));
 
 vi.mock('@/lib/funnelcakeClient', () => ({
@@ -178,11 +181,16 @@ vi.mock('@/lib/eventLookup', () => ({
 }));
 
 function renderPage(initialEntries: string[] = ['/search']) {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+  });
   return render(
-    <MemoryRouter initialEntries={initialEntries}>
-      <SearchPage />
-      <LocationDisplay />
-    </MemoryRouter>
+    <QueryClientProvider client={queryClient}>
+      <MemoryRouter initialEntries={initialEntries}>
+        <SearchPage />
+        <LocationDisplay />
+      </MemoryRouter>
+    </QueryClientProvider>
   );
 }
 
@@ -216,6 +224,24 @@ describe('SearchPage', () => {
       hasNextPage: false,
       isLoading: false,
       error: null,
+    });
+    mockUseSearchUsers.mockReturnValue({
+      data: [],
+      isLoading: false,
+      error: null,
+    });
+    mockUseSearchHashtags.mockImplementation(({ query }: { query: string }) => ({
+      data: query ? [] : [],
+      isLoading: false,
+      error: null,
+    }));
+    // Default: NIP-05 not yet validated, so cards show the legacy @username.
+    mockUseNip05Validation.mockReturnValue({
+      isValid: false,
+      isLoading: false,
+      isInvalid: true,
+      state: 'invalid',
+      nip05: undefined,
     });
   });
 
@@ -539,6 +565,89 @@ describe('SearchPage', () => {
     expect(screen.queryAllByTestId('bare-video-card-video-2')).toHaveLength(0);
   });
 
+  it('renders hashtag results as structured search result cards', () => {
+    mockUseSearchHashtags.mockImplementation(({ query }: { query: string }) => ({
+      data: query
+        ? [
+            {
+              hashtag: 'twerking',
+              video_count: 255,
+              thumbnail: 'https://media.divine.video/twerking.jpg',
+            },
+            {
+              hashtag: 'twerkingvine',
+              video_count: 4,
+              thumbnail: 'https://media.divine.video/twerkingvine.jpg',
+            },
+          ]
+        : [],
+      isLoading: false,
+      error: null,
+    }));
+
+    renderPage(['/search?q=twerking&filter=hashtags']);
+
+    expect(screen.getByText('2 matches for "twerking"')).toBeInTheDocument();
+    expect(screen.getAllByRole('button', {
+      name: 'Search hashtag #twerking, 255 videos',
+    }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole('button', {
+      name: 'Search hashtag #twerkingvine, 4 videos',
+    }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole('img', {
+      name: 'Preview for #twerking',
+    })[0]).toHaveAttribute('src', 'https://media.divine.video/twerking.jpg');
+    expect(screen.getAllByRole('img', {
+      name: 'Preview for #twerkingvine',
+    })[0]).toHaveAttribute('src', 'https://media.divine.video/twerkingvine.jpg');
+  });
+
+  it('opens the hashtag video feed when a hashtag result is clicked', async () => {
+    const user = userEvent.setup();
+    mockUseSearchHashtags.mockImplementation(({ query }: { query: string }) => ({
+      data: query
+        ? [{ hashtag: 'twerking', video_count: 255 }]
+        : [],
+      isLoading: false,
+      error: null,
+    }));
+
+    renderPage(['/search?q=twerking&filter=hashtags']);
+
+    await user.click(screen.getAllByRole('button', {
+      name: 'Search hashtag #twerking, 255 videos',
+    })[0]);
+
+    expect(mockNavigate).toHaveBeenCalledWith('/hashtag/twerking');
+  });
+
+  it('hides a hashtag thumbnail when the media URL fails to load', async () => {
+    mockUseSearchHashtags.mockImplementation(({ query }: { query: string }) => ({
+      data: query
+        ? [{
+            hashtag: 'twerking',
+            video_count: 255,
+            thumbnail: 'https://media.divine.video/missing.jpg',
+          }]
+        : [],
+      isLoading: false,
+      error: null,
+    }));
+
+    renderPage(['/search?q=twerking&filter=hashtags']);
+
+    const thumbnails = screen.getAllByRole('img', {
+      name: 'Preview for #twerking',
+    });
+    thumbnails.forEach(thumbnail => fireEvent.error(thumbnail));
+
+    await waitFor(() => {
+      expect(screen.queryAllByRole('img', {
+        name: 'Preview for #twerking',
+      })).toHaveLength(0);
+    });
+  });
+
   it('defaults to hot sort when no sort param is in the URL and passes it to useInfiniteSearchVideos', () => {
     mockUseInfiniteSearchVideos.mockReturnValue({
       data: { pages: [{ videos: [] }] },
@@ -656,5 +765,132 @@ describe('SearchPage', () => {
     await waitFor(() => {
       expect(screen.getByTestId('location-display').textContent).not.toContain('sort=');
     });
+  });
+
+  it('shows the divine NIP-05 as the secondary identifier on user cards, not the legacy Vine username', () => {
+    mockUseNip05Validation.mockReturnValue({
+      isValid: true, isLoading: false, isInvalid: false, state: 'valid', nip05: '_@jacky.divine.video',
+    });
+    mockUseSearchUsers.mockReturnValue({
+      data: [
+        {
+          pubkey: '1'.repeat(64),
+          metadata: {
+            display_name: 'Jacky!',
+            name: 'Minimal Mouse 1',
+            nip05: '_@jacky.divine.video',
+            about: 'Neo-Bwa Kale',
+          },
+        },
+      ],
+      isLoading: false,
+      error: null,
+    });
+
+    renderPage(['/search?q=jacky&filter=users']);
+
+    expect(screen.getAllByText('@jacky.divine.video').length).toBeGreaterThan(0);
+    expect(screen.queryAllByText('@Minimal Mouse 1')).toHaveLength(0);
+  });
+
+  it('shows the third-party NIP-05 in friendly form on user cards', () => {
+    mockUseNip05Validation.mockReturnValue({
+      isValid: true, isLoading: false, isInvalid: false, state: 'valid', nip05: 'alice@primal.net',
+    });
+    mockUseSearchUsers.mockReturnValue({
+      data: [
+        {
+          pubkey: '2'.repeat(64),
+          metadata: {
+            display_name: 'Alice',
+            name: 'alice_vine',
+            nip05: 'alice@primal.net',
+          },
+        },
+      ],
+      isLoading: false,
+      error: null,
+    });
+
+    renderPage(['/search?q=alice&filter=users']);
+
+    expect(screen.getAllByText('@alice.primal.net').length).toBeGreaterThan(0);
+  });
+
+  it('falls back to the legacy Vine username when no NIP-05 is set', () => {
+    mockUseSearchUsers.mockReturnValue({
+      data: [
+        {
+          pubkey: '3'.repeat(64),
+          metadata: {
+            display_name: 'bob_legacy',
+            name: 'bob_legacy',
+          },
+        },
+      ],
+      isLoading: false,
+      error: null,
+    });
+
+    renderPage(['/search?q=bob&filter=users']);
+
+    expect(screen.getAllByText('@bob_legacy').length).toBeGreaterThan(0);
+  });
+
+  it('uses the friendly-path profile link for users with a NIP-05', () => {
+    mockUseNip05Validation.mockReturnValue({
+      isValid: true,
+      isLoading: false,
+      isInvalid: false,
+      state: 'valid',
+      nip05: '_@sam.dvine.video',
+    });
+    mockUseSearchUsers.mockReturnValue({
+      data: [
+        {
+          pubkey: '4'.repeat(64),
+          metadata: {
+            display_name: 'Sam',
+            nip05: '_@sam.dvine.video',
+          },
+        },
+      ],
+      isLoading: false,
+      error: null,
+    });
+
+    renderPage(['/search?q=sam&filter=users']);
+
+    fireEvent.click(screen.getAllByRole('button', { name: /view profile of sam/i })[0]!);
+    expect(mockNavigate).toHaveBeenCalledWith('/u/sam.dvine.video');
+  });
+
+  it('uses the npub profile link for users with an unvalidated NIP-05', () => {
+    const pubkey = '5'.repeat(64);
+    mockUseNip05Validation.mockReturnValue({
+      isValid: false,
+      isLoading: false,
+      isInvalid: true,
+      state: 'invalid',
+      nip05: 'sam@spoofed.example',
+    });
+    mockUseSearchUsers.mockReturnValue({
+      data: [
+        {
+          pubkey,
+          metadata: {
+            display_name: 'Sam',
+            nip05: 'sam@spoofed.example',
+          },
+        },
+      ],
+      isLoading: false,
+      error: null,
+    });
+
+    renderPage(['/search?q=sam&filter=users']);
+
+    fireEvent.click(screen.getAllByRole('button', { name: /view profile of sam/i })[0]!);
+    expect(mockNavigate).toHaveBeenCalledWith(`/${nip19.npubEncode(pubkey)}`);
   });
 });

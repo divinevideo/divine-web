@@ -38,7 +38,6 @@
   },
   "footer": {
     "aboutDivine": "Om Divine",
-    "vinesRecovered": "{{count}} Vines aterstallda",
     "termsAndOpenSource": "Villkor och oppen kallkod",
     "copyright": "© 2026 Divine"
   },
@@ -386,7 +385,6 @@
     "message": "Meddelande",
     "reportUser": "Rapportera användare",
     "subscribeRss": "Prenumerera på RSS-flöde",
-    "videos": "Videor",
     "followers": "Följare",
     "followingStat": "Följer",
     "followingDialogTitle": "Följer",
@@ -437,6 +435,7 @@
     "errorFileNoValidKey": "Filen innehåller ingen giltig hemlig nyckel.",
     "errorFileReadFailed": "Kunde inte läsa filen.",
     "errorInviteValidationFailed": "Kunde inte validera inbjudningskoden",
+    "errorInviteCodeUsed": "Den här inbjudningskoden har redan använts",
     "errorSignInStartFailed": "Kunde inte starta inloggning",
     "errorWaitlistJoinFailed": "Kunde inte gå med i väntelistan"
   },
@@ -515,6 +514,7 @@
     "signInButton": "Logga in"
   },
   "badgeDetailModal": {
+    "description": "Hela historien om det här märket — vem som delade ut det och när.",
     "title": "Märkesinformation",
     "officialBadge": "✦ Officiellt Divine-märke",
     "issuedBy": "Utfärdat av",
@@ -808,9 +808,6 @@
     "seoTitle": "Video på Divine",
     "seoDescription": "Titta på den här videon på Divine",
     "seoDescriptionWithAuthor": "Titta på den här videon av {{name}} på Divine",
-    "loginRequiredTitle": "Inloggning krävs",
-    "loginRequiredLikeDescription": "Logga in för att gilla videor",
-    "loginRequiredRepostDescription": "Logga in för att reposta videor",
     "errorTitle": "Fel",
     "likedTitle": "Gillad!",
     "likedDescription": "Din reaktion har publicerats",
@@ -945,6 +942,7 @@
     "placeholderMessage": "Skriv ett meddelande..."
   },
   "videoCommentsModal": {
+    "description": "Se vad folk säger och lämna en egen kommentar.",
     "title": "Kommentarer",
     "loading": "Laddar kommentarer...",
     "emptyMessage": "Inga kommentarer ännu",
@@ -962,7 +960,8 @@
   "thumbnailPlayer": {
     "videoPreview": "Förhandsvisning av video",
     "thumbnailAlt": "Videominiatyr",
-    "playVideo": "Spela video"
+    "playVideo": "Spela video",
+    "openVideo": "Öppna video"
   },
   "hashtagExplorer": {
     "heading": "Hashtaggsutforskaren",
@@ -1209,7 +1208,7 @@
     "notFoundDescription": {
       "vine": "Den här Vine-användaren har kanske inte importerats till Nostr-nätverket än.",
       "nip05": "Kontrollera att NIP-05-identifieraren är korrekt.",
-      "legacy": "Det här användarnamnet matchar ingen äldre Vine-profil eller OpenVine-handle."
+      "legacy": "Det här användarnamnet matchar ingen känd profil."
     }
   },
   "atUsernamePage": {
@@ -1407,6 +1406,16 @@
     "checking": "Kollar...",
     "continue": "Fortsätt",
     "joinWaitlist": "Ingen inbjudan? Ställ dig på väntelistan."
+  },
+  "invitesLandingPage": {
+    "seoTitle": "Gå med i diVine med inbjudningskoden {{code}}",
+    "seoTitleDefault": "Gå med i diVine",
+    "seoDescription": "Du har blivit inbjuden! Använd koden {{code}} för att gå med i diVine.",
+    "seoDescriptionDefault": "Använd din inbjudningskod för att gå med i diVine och börja dela video.",
+    "heading": "Du är inbjuden!",
+    "subheading": "Ange din inbjudningskod för att gå med i diVine",
+    "alreadyHaveAccount": "Har du redan ett konto?",
+    "signIn": "Logga in"
   },
   "applePodcastEmbed": {
     "defaultTitle": "Vine Revisited and The Fight Against AI Slop",

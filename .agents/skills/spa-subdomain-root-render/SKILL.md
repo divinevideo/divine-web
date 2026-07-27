@@ -6,7 +6,7 @@ description: |
   (2) User sees blank page because component relies on useParams() but there's no route param at /,
   (3) Want username.domain.com/ to feel like a personal website without /profile/xyz in the URL.
   Pattern involves edge-injected global data + component fallback to that data when route params missing.
-author: Claude Code
+author: Divine Web agents
 version: 1.0.0
 date: 2026-02-03
 ---

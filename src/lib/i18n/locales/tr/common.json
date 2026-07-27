@@ -38,7 +38,6 @@
   },
   "footer": {
     "aboutDivine": "Divine hakkinda",
-    "vinesRecovered": "{{count}} Vine kurtarildi",
     "termsAndOpenSource": "Kosullar ve Acik Kaynak",
     "copyright": "© 2026 Divine"
   },
@@ -386,7 +385,6 @@
     "message": "Mesaj",
     "reportUser": "Kullanıcıyı bildir",
     "subscribeRss": "RSS akışına abone ol",
-    "videos": "Videolar",
     "followers": "Takipçi",
     "followingStat": "Takip edilen",
     "followingDialogTitle": "Takip edilenler",
@@ -437,6 +435,7 @@
     "errorFileNoValidKey": "Dosya geçerli bir gizli anahtar içermiyor.",
     "errorFileReadFailed": "Dosya okunamadı.",
     "errorInviteValidationFailed": "Davet kodu doğrulanamadı",
+    "errorInviteCodeUsed": "Bu davet kodu zaten kullanılmış",
     "errorSignInStartFailed": "Giriş başlatılamadı",
     "errorWaitlistJoinFailed": "Bekleme listesine katılınamadı"
   },
@@ -515,6 +514,7 @@
     "signInButton": "Giriş yap"
   },
   "badgeDetailModal": {
+    "description": "Bu rozetin tüm hikâyesi — kim, ne zaman verdi.",
     "title": "Rozet Detayları",
     "officialBadge": "✦ Resmi Divine Rozeti",
     "issuedBy": "Veren",
@@ -808,9 +808,6 @@
     "seoTitle": "Divine'da Video",
     "seoDescription": "Bu videoyu Divine'da izle",
     "seoDescriptionWithAuthor": "{{name}} tarafından bu videoyu Divine'da izle",
-    "loginRequiredTitle": "Giriş Gerekli",
-    "loginRequiredLikeDescription": "Videoları beğenmek için lütfen giriş yap",
-    "loginRequiredRepostDescription": "Videoları yeniden paylaşmak için lütfen giriş yap",
     "errorTitle": "Hata",
     "likedTitle": "Beğenildi!",
     "likedDescription": "Tepkin yayınlandı",
@@ -945,6 +942,7 @@
     "placeholderMessage": "Bir mesaj yaz..."
   },
   "videoCommentsModal": {
+    "description": "İnsanların ne dediğine bak ve kendi yorumunu bırak.",
     "title": "Yorumlar",
     "loading": "Yorumlar yükleniyor...",
     "emptyMessage": "Henüz yorum yok",
@@ -962,7 +960,8 @@
   "thumbnailPlayer": {
     "videoPreview": "Video Önizlemesi",
     "thumbnailAlt": "Video küçük resmi",
-    "playVideo": "Videoyu oynat"
+    "playVideo": "Videoyu oynat",
+    "openVideo": "Videoyu aç"
   },
   "hashtagExplorer": {
     "heading": "Hashtag Kâşifi",
@@ -1209,7 +1208,7 @@
     "notFoundDescription": {
       "vine": "Bu Vine kullanıcısı henüz Nostr ağına aktarılmamış olabilir.",
       "nip05": "Lütfen NIP-05 tanımlayıcısının doğru olduğunu kontrol et.",
-      "legacy": "Bu kullanıcı adı eski bir Vine profili veya OpenVine kullanıcı adıyla eşleşmiyor."
+      "legacy": "Bu kullanıcı adı bilinen bir profille eşleşmiyor."
     }
   },
   "atUsernamePage": {
@@ -1407,6 +1406,16 @@
     "checking": "Kontrol ediliyor...",
     "continue": "Devam et",
     "joinWaitlist": "Davetin yok mu? Bekleme listesine katıl."
+  },
+  "invitesLandingPage": {
+    "seoTitle": "{{code}} davet koduyla diVine'a katıl",
+    "seoTitleDefault": "diVine'a katıl",
+    "seoDescription": "Davet edildin! diVine'a katılmak için {{code}} kodunu kullan.",
+    "seoDescriptionDefault": "diVine'a katılıp video paylaşmaya başlamak için davet kodunu kullan.",
+    "heading": "Davetlisin!",
+    "subheading": "diVine'a katılmak için davet kodunu gir",
+    "alreadyHaveAccount": "Zaten hesabın var mı?",
+    "signIn": "Giriş yap"
   },
   "applePodcastEmbed": {
     "defaultTitle": "Vine Revisited and The Fight Against AI Slop",

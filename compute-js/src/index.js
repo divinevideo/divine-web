@@ -8,9 +8,13 @@ import { SecretStore } from 'fastly:secret-store';
 import { PublisherServer } from '@fastly/compute-js-static-publish';
 import rc from '../static-publish.rc.js';
 import { buildFunnelcakeUrl, getFunnelcakeOriginForApiHost } from './funnelcakeOrigin.js';
+import { handleAuthPersistCookie } from './authPersistCookie.js';
 import { isJsonWellKnownPath, shouldServeWellKnownBeforeWwwRedirect } from './wellKnownPaths.js';
-import { buildCrawlerHtml, escapeHtml, cleanText, truncateText } from './ogTags.js';
-import { hexToNpub } from './bech32.js';
+import { buildCrawlerHtml, buildUserScript, escapeHtml, cleanText, truncateText } from './ogTags.js';
+import { hexToNpub, decodeNpubToHex } from './bech32.js';
+import { buildWwwRedirectResponse } from './hostRedirect.js';
+import { applyStaticResponseHeaders } from './staticResponseHeaders.js';
+import { readPublishedStaticFile } from './staticContent.js';
 import {
   handleAtUsernameOg,
   handleHashtagOgTags,
@@ -20,6 +24,7 @@ import {
 } from './crawlerHandlers.js';
 import { transformVideoApiResponse } from './videoMetadata.js';
 import { renderEmbedPage } from './embedPage.js';
+import { resolveFeedInjectedHtml, normalizeFeedResponse } from './feedInjection.js';
 
 const publisherServer = PublisherServer.fromStaticPublishRc(rc);
 const DEFAULT_OG_IMAGE = 'https://divine.video/og.png';
@@ -37,7 +42,6 @@ const EXTERNAL_REDIRECTS = {
   '/discord': { url: 'https://discord.gg/d6HpB6XnHp', status: 302 },
 };
 
-// eslint-disable-next-line no-restricted-globals
 addEventListener("fetch", (event) => event.respondWith(handleRequest(event)));
 
 async function handleRequest(event) {
@@ -49,7 +53,8 @@ async function handleRequest(event) {
 
   // Check for original host passed by divine-router
   const originalHost = request.headers.get('X-Original-Host');
-  const hostnameToUse = originalHost || url.hostname;
+  const forwardedHost = request.headers.get('X-Forwarded-Host');
+  const hostnameToUse = originalHost || forwardedHost || url.hostname;
   const funnelcakeTarget = getFunnelcakeOriginForApiHost(hostnameToUse);
 
   console.log('Request hostname:', url.hostname, 'original:', originalHost, 'path:', url.pathname);
@@ -61,10 +66,9 @@ async function handleRequest(event) {
   }
 
   // 1. Redirect www.* to apex domain (e.g., www.divine.video -> divine.video)
-  if (hostnameToUse.startsWith('www.')) {
-    const newUrl = new URL(url);
-    newUrl.hostname = hostnameToUse.slice(4); // remove 'www.'
-    return Response.redirect(newUrl.toString(), 301);
+  const wwwRedirect = buildWwwRedirectResponse(url, hostnameToUse);
+  if (wwwRedirect) {
+    return wwwRedirect;
   }
 
   // 2. Check if this is a subdomain request (e.g., alice.dvine.video)
@@ -191,6 +195,18 @@ async function handleRequest(event) {
       console.log('Falling through to SPA handler');
     }
 
+    if (url.pathname.startsWith('/v/')) {
+      console.log('Handling legacy Vine vanity URL for crawler, path:', url.pathname);
+      const legacyId = url.pathname.split('/v/')[1]?.split('?')[0];
+      if (legacyId) {
+        const ogResponse = await handleVideoOgTags(request, legacyId, url, funnelcakeTarget);
+        if (ogResponse) {
+          return ogResponse;
+        }
+      }
+      console.log('Falling through to SPA handler');
+    }
+
     if (url.pathname.startsWith('/profile/')) {
       const ogResponse = await handleProfileOgTags(request, url, funnelcakeTarget);
       if (ogResponse) {
@@ -224,8 +240,8 @@ async function handleRequest(event) {
       if (ogResponse) return ogResponse;
     }
 
-    // Family resource hub at /family on apex.
-    if (url.pathname === '/family') {
+    // Family resource hub and child guides at /family[/*] on apex.
+    if (url.pathname === '/family' || url.pathname.startsWith('/family/')) {
       const ogResponse = handleFamilyOgTags(url, hostnameToUse);
       if (ogResponse) {
         return ogResponse;
@@ -268,6 +284,13 @@ async function handleRequest(event) {
     return await handleReport(request);
   }
 
+  // 8a. Server-set cross-subdomain auth cookie. Browsers handle Set-Cookie far
+  // more reliably than client-side document.cookie writes, which silently fail
+  // in some contexts (Brave, Firefox ETP-Strict, etc). Same-origin so no CORS.
+  if (url.pathname === '/api/auth/persist-cookie') {
+    return await handleAuthPersistCookie(request, hostnameToUse);
+  }
+
   // 8b. Proxy RSS feed requests to the relay backend (serves application/rss+xml)
   if (url.pathname.startsWith('/feed/') || url.pathname === '/feed') {
     console.log('Proxying RSS feed request to relay:', url.pathname);
@@ -291,34 +314,30 @@ async function handleRequest(event) {
 
   const response = await publisherServer.serveRequest(request);
   if (response != null) {
-    // Add Vary: X-Original-Host so CDN doesn't mix subdomain and apex cached responses
-    const headers = new Headers(response.headers);
-    headers.append('Vary', 'X-Original-Host');
+    const isHtmlResponse = response.headers.get('Content-Type')?.includes('text/html') ?? false;
+    const headers = applyStaticResponseHeaders(response.headers, { isHtml: isHtmlResponse });
 
-    // Inject feed data into HTML pages for faster LCP
-    if (shouldInjectFeed && response.headers.get('Content-Type')?.includes('text/html')) {
-      try {
-        let html = await response.text();
-        const feedType = discoveryFeedType || 'trending';
-        const feedData = await fetchFeedData(feedType, funnelcakeTarget);
-        if (feedData) {
-          let injection = `<script>window.__DIVINE_FEED__=${JSON.stringify(feedData)};window.__DIVINE_FEED_TYPE__="${feedType}";</script>`;
-          const firstVideo = feedData.videos?.[0] || feedData[0];
-          const firstVideoUrl = firstVideo?.video_url;
-          const firstThumbnail = firstVideo?.thumbnail;
-          if (firstVideoUrl) {
-            injection += `\n<link rel="preload" href="${escapeHtml(firstVideoUrl)}" as="video" type="video/mp4">`;
-          }
-          if (firstThumbnail) {
-            injection += `\n<link rel="preload" href="${escapeHtml(firstThumbnail)}" as="image" fetchpriority="high">`;
-          }
-          html = html.replace('</head>', injection + '</head>');
-        }
-        return new Response(html, { status: response.status, headers });
-      } catch (err) {
-        console.error('Feed injection error:', err.message);
-        // Fall through to serve unmodified response
+    // Inject feed data into HTML pages for faster LCP.
+    if (shouldInjectFeed && isHtmlResponse) {
+      // The static body is brotli/gzip-compressed for browsers, and the Fastly SDK's
+      // Response.text() does NOT decompress it — reading it throws "malformed UTF-8" and
+      // consumes the stream, which previously fell through to a hard 500 on the injected
+      // routes (apex + /discovery/{new,hot}); see #435. Read the identity shell
+      // from KV instead and serve it with the compression-coupled headers stripped
+      // (Content-Encoding/Content-Length/ETag). Any failure degrades to the untouched static
+      // passthrough below, so injection can never 500.
+      const decodedHeaders = applyStaticResponseHeaders(response.headers, { isHtml: true, decoded: true });
+      const feedType = discoveryFeedType || 'trending';
+      const finalHtml = await resolveFeedInjectedHtml({
+        readHtml: readIndexHtmlFromKv,
+        fetchFeedData: (type) => fetchFeedData(type, funnelcakeTarget),
+        feedType,
+        pathname: url.pathname,
+      });
+      if (finalHtml) {
+        return new Response(finalHtml, { status: response.status, headers: decodedHeaders });
       }
+      // fall through to the untouched static passthrough below
     }
 
     return new Response(response.body, {
@@ -358,7 +377,9 @@ function getDiscoveryFeedType(pathname) {
   const tab = match[1];
   if (tab === 'new') return 'recent';
   if (tab === 'hot') return 'trending';
-  if (tab === 'classics' || tab === 'top') return 'classics';
+  // Classics starts from a randomized offset in the client, so the first query
+  // cannot consume an injected page without changing the feed ordering.
+  if (tab === 'classics' || tab === 'top') return null;
   return null;
 }
 
@@ -367,9 +388,10 @@ function getDiscoveryFeedType(pathname) {
  */
 function getFeedApiUrl(feedType) {
   switch (feedType) {
-    case 'trending': return '/api/videos?sort=trending&limit=10';
+    // v2 envelope carries the opaque cursor the client needs to keep paginating
+    // past the injected first page; v1 arrays cannot express one for this feed.
+    case 'trending': return '/api/v2/videos?sort=watching&limit=10';
     case 'recent': return '/api/videos?sort=recent&limit=10';
-    case 'classics': return '/api/videos?sort=loops&limit=10';
     default: return '/api/videos?sort=trending&limit=10';
   }
 }
@@ -423,7 +445,7 @@ async function fetchFeedData(feedType = 'trending', funnelcakeTarget = getFunnel
     const apiPath = getFeedApiUrl(feedType);
     const resp = await fetchFromFunnelcake(funnelcakeTarget, apiPath);
     if (resp.ok) {
-      feedData = await resp.json();
+      feedData = normalizeFeedResponse(await resp.json());
       // 3. Update KV cache (fire and forget)
       try {
         await contentStore.put(CACHE_KEY, JSON.stringify({
@@ -820,31 +842,9 @@ async function handleSubdomainProfile(subdomain, url, request, originalHostname)
   // (PublisherServer.serveRequest returns empty body for synthetic requests)
   let html;
   try {
-    const contentStore = new KVStore('divine-web-content');
-
-    // Read the file index: publishId_index_collectionName
-    const indexEntry = await contentStore.get('default_index_live');
-    if (!indexEntry) {
-      throw new Error('Content index not found in KV');
-    }
-    const kvIndex = JSON.parse(await indexEntry.text());
-
-    // Find index.html in the index and get its content hash
-    const htmlAsset = kvIndex['/index.html'];
-    if (!htmlAsset) {
-      throw new Error('index.html not in content index');
-    }
-    // Asset format: { key: "sha256:<hash>", size, contentType, variants }
-    // KV content key format: default_files_sha256_<hash>
-    const assetKey = htmlAsset.key; // e.g. "sha256:abc123..."
-    const sha256 = assetKey.replace('sha256:', '');
-    const contentKey = `default_files_sha256_${sha256}`;
+    const { body, sha256 } = await readPublishedStaticFile('/index.html');
     console.log('Reading index.html from KV, sha256:', sha256.slice(0, 16) + '...');
-    const contentEntry = await contentStore.get(contentKey);
-    if (!contentEntry) {
-      throw new Error(`Content not found: ${contentKey}`);
-    }
-    html = await contentEntry.text();
+    html = body;
     console.log('Got index.html from KV, length:', html.length);
   } catch (err) {
     console.error('KV read error:', err.message);
@@ -882,7 +882,7 @@ async function handleSubdomainProfile(subdomain, url, request, originalHostname)
   };
 
   // Inject the user data as a global variable before the main script
-  const userScript = `<script>window.__DIVINE_USER__ = ${JSON.stringify(divineUser)};</script>`;
+  const userScript = buildUserScript(divineUser);
 
   // Update OG tags for the profile
   const ogTitle = divineUser.displayName + ' on Divine';
@@ -915,6 +915,12 @@ async function handleSubdomainProfile(subdomain, url, request, originalHostname)
   });
 }
 
+async function readIndexHtmlFromKv() {
+  const { body, sha256 } = await readPublishedStaticFile('/index.html');
+  console.log('Got index.html from KV fallback, sha256:', sha256.slice(0, 16) + '...', 'length:', body.length);
+  return body;
+}
+
 /**
  * Detect if request is from a social media crawler (for OG tag injection)
  */
@@ -941,6 +947,11 @@ function isSocialMediaCrawler(request) {
     'baiduspider',
     'facebot',
     'ia_archiver',
+    'googlebot',
+    'bingbot',
+    'yandexbot',
+    'duckduckbot',
+    'applebot',
   ];
 
   return crawlerPatterns.some(pattern => userAgent.includes(pattern));
@@ -1043,6 +1054,12 @@ async function handleVideoOgTags(request, videoId, url, funnelcakeTarget) {
       imageWidth: videoMeta?.imageWidth || 1200,
       imageHeight: videoMeta?.imageHeight || 630,
       video: videoBlock,
+      alternate: videoMeta?.originExternalId ? [{
+        rel: 'alternate',
+        type: 'text/html',
+        href: `https://divine.video/v/${videoMeta.originExternalId}`,
+        title: 'Legacy Vine URL',
+      }] : undefined,
     });
 
     console.log('Generated OG HTML, length:', html.length);
@@ -1151,16 +1168,56 @@ async function handleCategoryOgTags(request, url, funnelcakeTarget) {
   }
 }
 
+// Mirrors src/seo/marketingSeo.ts — keep the two tables in sync.
+const FAMILY_CRAWLER_META = {
+  '/family': {
+    title: 'For Families on Divine',
+    description:
+      "Conversation over surveillance. What our safety tools do, what they can't, and how to talk with your teen about it.",
+    image: 'https://divine.video/og-family.png',
+    ogType: 'website',
+  },
+  '/family/talking-to-your-teen': {
+    title: 'How to Talk With Your Teen About Social Media',
+    description:
+      'The goal is not to win the conversation. It is to keep having one. Conversation starters and guidance drawn from youth online-safety research.',
+    image: 'https://divine.video/og-family-talking.png',
+    ogType: 'article',
+  },
+  '/family/media-plan': {
+    title: 'Creating a Family Media Plan',
+    description:
+      'A plan that everyone helped write is a plan that everyone is more likely to follow. Templates and habits for household screen use.',
+    image: 'https://divine.video/og-family-media-plan.png',
+    ogType: 'article',
+  },
+  '/family/when-something-goes-wrong': {
+    title: 'What to Do if Your Child Saw Something Upsetting Online',
+    description:
+      'What helps most is not a perfect filter. It is a parent who reacts in a way that makes the next conversation possible. Four concrete steps.',
+    image: 'https://divine.video/og-family-when-something-goes-wrong.png',
+    ogType: 'article',
+  },
+  '/family/safety-tools': {
+    title: "Divine's Safety Tools and Content Settings",
+    description:
+      'Settings are a useful layer. They are not a guarantee. How adult-content gating, filters, blocking, and reporting work on Divine.',
+    image: 'https://divine.video/og-family-safety-tools.png',
+    ogType: 'article',
+  },
+};
+
 function handleFamilyOgTags(url, hostnameToUse) {
   try {
+    const meta = FAMILY_CRAWLER_META[url.pathname];
+    if (!meta) return null;
     const canonical = `https://${hostnameToUse}${url.pathname}`;
     const html = buildCrawlerHtml({
-      title: 'For families on Divine — Conversation-first guidance for parents and teens',
-      description:
-        'A practical guide for families on Divine: how to talk with your teen about social media, what Divine can and can’t do, content settings, healthy feed habits, and trusted outside resources.',
-      image: DEFAULT_OG_IMAGE,
+      title: meta.title,
+      description: meta.description,
+      image: meta.image,
       url: canonical,
-      ogType: 'website',
+      ogType: meta.ogType,
       twitterCard: 'summary_large_image',
       imageWidth: 1200,
       imageHeight: 630,

@@ -129,6 +129,27 @@ export class DivineJWTSigner implements NostrSigner {
       throw new Error('Invalid response: missing signed event');
     }
 
+    // Self-heal a stale pubkey cache. If the remote signer signed with a key
+    // whose pubkey differs from what we cached and put on the unsigned event,
+    // the returned event is internally consistent (signed against its own
+    // `pubkey` field) but our cache is wrong. Trust the returned event and
+    // update the cache so subsequent signEvent calls put the correct pubkey
+    // on the unsigned event. Without this, every subsequent NIP-98 / Blossom
+    // auth event would carry a pubkey that doesn't match its signature, and
+    // every viewer auth check downstream (divine-blossom, NIP-98 consumers)
+    // would 401 with "Invalid signature" until the signer is recreated.
+    if (signedEvent.pubkey && signedEvent.pubkey !== this.cachedPubkey) {
+      console.warn(
+        '[DivineJWTSigner] ⚠️  pubkey mismatch — cached',
+        this.cachedPubkey,
+        'but signed event reports',
+        signedEvent.pubkey,
+        '— updating cache',
+      );
+      this.cachedPubkey = signedEvent.pubkey;
+      DivineJWTSigner.sharedPubkeys.set(this.pubkeyCacheKey, signedEvent.pubkey);
+    }
+
     console.log('[DivineJWTSigner] ✅ Event signed:', signedEvent.id);
     return signedEvent;
   }

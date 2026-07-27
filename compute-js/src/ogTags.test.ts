@@ -1,6 +1,6 @@
-// ABOUTME: Vitest unit tests for buildCrawlerHtml, escapeHtml, and truncateText
+// ABOUTME: Vitest unit tests for buildCrawlerHtml, escapeHtml, escapeFeedJson, and truncateText
 import { describe, expect, it } from 'vitest';
-import { buildCrawlerHtml, escapeHtml, truncateText } from './ogTags.js';
+import { buildCrawlerHtml, buildUserScript, escapeHtml, escapeFeedJson, truncateText } from './ogTags.js';
 
 const baseArgs = {
   title: 'Hello',
@@ -97,6 +97,25 @@ describe('buildCrawlerHtml', () => {
     expect(html).toContain('<link rel="canonical" href="https://example.com/page"');
   });
 
+  it('emits escaped alternate links when provided', () => {
+    const html = buildCrawlerHtml({
+      ...baseArgs,
+      alternate: [{
+        rel: 'alternate',
+        type: 'text/html',
+        href: 'https://divine.video/v/a&b"<',
+        title: 'Legacy Vine URL',
+      }],
+    });
+
+    expect(html).toContain('<link rel="alternate" type="text/html" href="https://divine.video/v/a&amp;b&quot;&lt;" title="Legacy Vine URL"');
+  });
+
+  it('omits alternate links when none are provided', () => {
+    const html = buildCrawlerHtml(baseArgs);
+    expect(html).not.toContain('rel="alternate"');
+  });
+
   it('emits twitter:creator only when provided', () => {
     const without = buildCrawlerHtml(baseArgs);
     expect(without).not.toContain('twitter:creator');
@@ -118,6 +137,38 @@ describe('escapeHtml', () => {
   });
 });
 
+describe('escapeFeedJson', () => {
+  // Built via fromCharCode so the literal line terminators never appear in this
+  // source file (they would break the test module the same way they break a <script>).
+  const LS = String.fromCharCode(0x2028);
+  const PS = String.fromCharCode(0x2029);
+
+  it('escapes < so a </script> payload cannot break out of the tag', () => {
+    const out = escapeFeedJson({ title: 'evil</script><script>alert(1)</script>' });
+    expect(out).not.toContain('</script>');
+    expect(out).not.toContain('<');
+    expect(out).toContain('\\u003c');
+  });
+
+  it('escapes the U+2028/U+2029 line terminators JSON.stringify leaves raw', () => {
+    const out = escapeFeedJson({ sep: `a${LS}b${PS}c` });
+    expect(out).not.toContain(LS);
+    expect(out).not.toContain(PS);
+    expect(out).toContain('\\u2028');
+    expect(out).toContain('\\u2029');
+  });
+
+  it('round-trips to the original value once embedded and evaluated', () => {
+    const value = { videos: [{ title: 'hi</script>', sep: `x${LS}y` }], n: 3 };
+    const evaluated = (0, eval)(`(${escapeFeedJson(value)})`);
+    expect(evaluated).toEqual(value);
+  });
+
+  it('leaves ordinary content untouched apart from the escapes', () => {
+    expect(escapeFeedJson({ a: 1, b: 'plain' })).toBe('{"a":1,"b":"plain"}');
+  });
+});
+
 describe('truncateText', () => {
   it('returns short input unchanged', () => {
     expect(truncateText('hi there', 80)).toBe('hi there');
@@ -130,5 +181,28 @@ describe('truncateText', () => {
   });
   it('collapses whitespace before truncating', () => {
     expect(truncateText('hi   there', 80)).toBe('hi there');
+  });
+});
+
+describe('buildUserScript', () => {
+  it('escapes user-controlled profile fields so they cannot break out of the script tag', () => {
+    const script = buildUserScript({
+      displayName: 'Mallory',
+      about: '</script><script>alert(1)</script>',
+    });
+
+    // The one legitimate opening tag plus its closer; no injected tags in between.
+    expect(script.startsWith('<script>window.__DIVINE_USER__ = ')).toBe(true);
+    expect(script.endsWith(';</script>')).toBe(true);
+    expect(script.slice('<script>'.length, -'</script>'.length)).not.toContain('<');
+    expect(script).toContain('\\u003c');
+  });
+
+  it('round-trips the profile data through JSON.parse', () => {
+    const divineUser = { displayName: 'A</script>B', about: 'hi', followersCount: 3 };
+    const script = buildUserScript(divineUser);
+    const json = script.replace('<script>window.__DIVINE_USER__ = ', '').replace(';</script>', '');
+
+    expect(JSON.parse(json)).toEqual(divineUser);
   });
 });
