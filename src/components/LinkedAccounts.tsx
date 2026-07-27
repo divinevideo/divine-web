@@ -17,16 +17,11 @@ import {
   verifyIdentityClaim,
   SUPPORTED_PLATFORMS,
   cleanIdentityProof,
+  buildManualVerifyUrl,
   type ExternalIdentity,
 } from '@/hooks/useExternalIdentities';
 import { getCachedVerification } from '@/lib/verificationCache';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
-import { API_CONFIG } from '@/config/api';
-
-function buildManualVerifyUrl(identity: ExternalIdentity, pubkey: string): string {
-  const proof = cleanIdentityProof(identity.platform, identity.proof);
-  return `${API_CONFIG.verificationService.baseUrl}/verify/${encodeURIComponent(identity.platform)}/${encodeURIComponent(identity.identity)}/${encodeURIComponent(proof)}?pubkey=${pubkey}`;
-}
 
 /** Platform icon mapping */
 function PlatformIcon({ platform, className }: { platform: string; className?: string }) {
@@ -115,9 +110,8 @@ function IdentityBadge({
   const isVerified = verification.data?.verified;
   const isManual = verification.data?.error === 'manual';
   const isPending = !!proof && !verification.data && (verification.isLoading || verification.isPending);
-  const isUnverified = isManual || isPending;
 
-  if (!isVerified && !(showUnverified && isUnverified)) return null;
+  if (!isVerified && !(showUnverified && isManual)) return null;
 
   return (
     <Popover open={open} onOpenChange={setOpen}>

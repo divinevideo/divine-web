@@ -8,23 +8,26 @@ import { LinkedAccounts } from './LinkedAccounts';
 const mockUseExternalIdentities = vi.fn();
 const mockVerifyIdentityClaim = vi.fn();
 
-vi.mock('@/hooks/useExternalIdentities', () => ({
-  useExternalIdentities: (...args: unknown[]) => mockUseExternalIdentities(...args),
-  verifyIdentityClaim: (...args: unknown[]) => mockVerifyIdentityClaim(...args),
-  cleanIdentityProof: (platform: string, proof: string) => {
-    if (platform !== 'github' || !proof.startsWith('http')) return proof;
-    return proof.split('/').filter(Boolean).pop() ?? proof;
-  },
-  SUPPORTED_PLATFORMS: {
-    github: {
-      label: 'GitHub',
-      profileUrl: (id: string) => `https://github.com/${id}`,
-      proofUrl: (id: string, proof: string) => `https://gist.github.com/${id}/${proof}`,
-      verificationText: () => [],
-      canVerifyInBrowser: false,
+vi.mock('@/hooks/useExternalIdentities', async () => {
+  const actual = await vi.importActual<typeof import('@/hooks/useExternalIdentities')>(
+    '@/hooks/useExternalIdentities',
+  );
+
+  return {
+    ...actual,
+    useExternalIdentities: (...args: unknown[]) => mockUseExternalIdentities(...args),
+    verifyIdentityClaim: (...args: unknown[]) => mockVerifyIdentityClaim(...args),
+    SUPPORTED_PLATFORMS: {
+      github: {
+        label: 'GitHub',
+        profileUrl: (id: string) => `https://github.com/${id}`,
+        proofUrl: (id: string, proof: string) => `https://gist.github.com/${id}/${proof}`,
+        verificationText: () => [],
+        canVerifyInBrowser: false,
+      },
     },
-  },
-}));
+  };
+});
 
 vi.mock('@/lib/verificationCache', () => ({
   getCachedVerification: () => null,
@@ -157,6 +160,54 @@ describe('LinkedAccounts', () => {
     await waitFor(() => {
       expect(screen.queryByTestId('identity-badge-github-unverified')).not.toBeInTheDocument();
     });
+  });
+
+  it('keeps service-unavailable identity claims hidden when toggle is on', async () => {
+    mockShowUnverified = true;
+    mockUseExternalIdentities.mockReturnValue({
+      data: [
+        {
+          platform: 'github',
+          identity: 'alice',
+          proof: 'abc123',
+          profileUrl: 'https://github.com/alice',
+          proofUrl: 'https://gist.github.com/alice/abc123',
+        },
+      ],
+      isLoading: false,
+    });
+    mockVerifyIdentityClaim.mockResolvedValue({ verified: false, error: 'unavailable' });
+
+    render(withQueryClient(<LinkedAccounts pubkey={'a'.repeat(64)} />));
+
+    await waitFor(() => {
+      expect(mockVerifyIdentityClaim).toHaveBeenCalled();
+    });
+    expect(screen.queryByTestId('identity-badge-github-unverified')).not.toBeInTheDocument();
+  });
+
+  it('does not show a pending identity badge while verification is in flight', async () => {
+    mockShowUnverified = true;
+    mockUseExternalIdentities.mockReturnValue({
+      data: [
+        {
+          platform: 'github',
+          identity: 'alice',
+          proof: 'abc123',
+          profileUrl: 'https://github.com/alice',
+          proofUrl: 'https://gist.github.com/alice/abc123',
+        },
+      ],
+      isLoading: false,
+    });
+    mockVerifyIdentityClaim.mockReturnValue(new Promise(() => undefined));
+
+    render(withQueryClient(<LinkedAccounts pubkey={'a'.repeat(64)} />));
+
+    await waitFor(() => {
+      expect(mockVerifyIdentityClaim).toHaveBeenCalled();
+    });
+    expect(screen.queryByTestId('identity-badge-github-unverified')).not.toBeInTheDocument();
   });
 
   it('does not render the toggle when no identities have proofs', () => {

@@ -25,15 +25,19 @@ vi.mock('@/lib/verificationCache', () => ({
 }));
 
 // Mock API config
+let mockVerificationServiceBaseUrl = '';
+let mockUseVerificationService = false;
 vi.mock('@/config/api', () => ({
   API_CONFIG: {
     verificationService: {
-      baseUrl: '',
+      get baseUrl() {
+        return mockVerificationServiceBaseUrl;
+      },
       timeout: 10000,
       endpoints: { verify: '/api/verify' },
     },
   },
-  getFeatureFlag: () => false,
+  getFeatureFlag: () => mockUseVerificationService,
 }));
 
 import {
@@ -358,6 +362,8 @@ describe('SUPPORTED_PLATFORMS', () => {
 describe('verifyIdentityClaim', () => {
   beforeEach(() => {
     vi.resetAllMocks();
+    mockVerificationServiceBaseUrl = '';
+    mockUseVerificationService = false;
     global.fetch = vi.fn();
   });
 
@@ -375,7 +381,7 @@ describe('verifyIdentityClaim', () => {
     expect(result.error).toBe('No proof URL');
   });
 
-  it('returns manual for non-CORS platforms without fetching', async () => {
+  it('returns unavailable for non-CORS platforms when the verification service is unavailable', async () => {
     const platforms = ['twitter', 'mastodon', 'telegram', 'bluesky', 'discord', 'youtube', 'tiktok'] as const;
 
     for (const platform of platforms) {
@@ -389,11 +395,71 @@ describe('verifyIdentityClaim', () => {
 
       const result = await verifyIdentityClaim(identity, TEST_PUBKEY);
       expect(result.verified).toBe(false);
-      expect(result.error).toBe('manual');
+      expect(result.error).toBe('unavailable');
     }
 
     // fetch should never have been called (no service, no browser verification)
     expect(global.fetch).not.toHaveBeenCalled();
+    expect(mockSetCached).not.toHaveBeenCalled();
+  });
+
+  it('returns and caches manual when the verification service reports manual review', async () => {
+    mockVerificationServiceBaseUrl = 'https://verifyer.divine.video';
+    mockUseVerificationService = true;
+    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      ok: true,
+      json: () => Promise.resolve({ verified: false, error: 'manual' }),
+    });
+
+    const identity: ExternalIdentity = {
+      platform: 'bluesky',
+      identity: 'alice.bsky.social',
+      proof: '3jxh5kdbmop2o',
+      profileUrl: 'https://bsky.app/profile/alice.bsky.social',
+      proofUrl: 'https://bsky.app/profile/alice.bsky.social/post/3jxh5kdbmop2o',
+    };
+
+    const result = await verifyIdentityClaim(identity, TEST_PUBKEY);
+
+    expect(result).toEqual({ verified: false, error: 'manual' });
+    expect(global.fetch).toHaveBeenCalledWith(
+      'https://verifyer.divine.video/api/verify',
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({
+          platform: 'bluesky',
+          identity: 'alice.bsky.social',
+          proof: '3jxh5kdbmop2o',
+          pubkey: TEST_PUBKEY,
+        }),
+      }),
+    );
+    expect(mockSetCached).toHaveBeenCalledWith(
+      'bluesky', 'alice.bsky.social', '3jxh5kdbmop2o',
+      { verified: false, error: 'manual' },
+    );
+  });
+
+  it('does not convert verification service failures into manual results', async () => {
+    mockVerificationServiceBaseUrl = 'https://verifyer.divine.video';
+    mockUseVerificationService = true;
+    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      ok: false,
+      status: 500,
+    });
+
+    const identity: ExternalIdentity = {
+      platform: 'bluesky',
+      identity: 'alice.bsky.social',
+      proof: '3jxh5kdbmop2o',
+      profileUrl: 'https://bsky.app/profile/alice.bsky.social',
+      proofUrl: 'https://bsky.app/profile/alice.bsky.social/post/3jxh5kdbmop2o',
+    };
+
+    const result = await verifyIdentityClaim(identity, TEST_PUBKEY);
+
+    expect(result).toEqual({ verified: false, error: 'unavailable' });
+    expect(mockSetCached).not.toHaveBeenCalled();
   });
 
   it('fetches GitHub gist via API for verification', async () => {
@@ -508,7 +574,14 @@ describe('verifyIdentityClaim', () => {
     );
   });
 
-  it('caches manual results under the cleaned proof ID', async () => {
+  it('caches service-returned manual results under the cleaned proof ID', async () => {
+    mockVerificationServiceBaseUrl = 'https://verifyer.divine.video';
+    mockUseVerificationService = true;
+    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      ok: true,
+      json: () => Promise.resolve({ verified: false, error: 'manual' }),
+    });
+
     const identity: ExternalIdentity = {
       platform: 'bluesky',
       identity: 'alice.bsky.social',

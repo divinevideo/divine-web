@@ -26,6 +26,15 @@ export interface PlatformConfig {
   canVerifyInBrowser: boolean;
 }
 
+export interface VerificationResult {
+  verified: boolean;
+  error?: string;
+}
+
+type VerificationServiceResult =
+  | { status: 'result'; result: VerificationResult }
+  | { status: 'unavailable' };
+
 function buildYouTubeProfileUrl(identity: string): string {
   const normalized = identity.trim();
   if (normalized.startsWith('@')) return `https://www.youtube.com/${normalized}`;
@@ -230,6 +239,11 @@ export function cleanIdentityProof(platform: string, proof: string): string {
   }
 }
 
+export function buildManualVerifyUrl(identity: ExternalIdentity, pubkey: string): string {
+  const proof = cleanIdentityProof(identity.platform, identity.proof);
+  return `${API_CONFIG.verificationService.baseUrl}/verify/${encodeURIComponent(identity.platform)}/${encodeURIComponent(identity.identity)}/${encodeURIComponent(proof)}?pubkey=${pubkey}`;
+}
+
 /**
  * Verify an external identity claim by fetching the proof URL and checking for npub.
  * Checks localStorage cache first, then tries external verification service,
@@ -239,7 +253,7 @@ export function cleanIdentityProof(platform: string, proof: string): string {
 export async function verifyIdentityClaim(
   identity: ExternalIdentity,
   pubkey: string,
-): Promise<{ verified: boolean; error?: string }> {
+): Promise<VerificationResult> {
   if (!identity.proofUrl && !identity.proof) {
     return { verified: false, error: 'No proof URL' };
   }
@@ -263,16 +277,14 @@ export async function verifyIdentityClaim(
 
   // Try verification service if available
   const serviceResult = await verifyViaService(cleanedIdentity, pubkey);
-  if (serviceResult) {
-    setCachedVerification(cleanedIdentity.platform, cleanedIdentity.identity, cleanedIdentity.proof, serviceResult);
-    return serviceResult;
+  if (serviceResult.status === 'result') {
+    setCachedVerification(cleanedIdentity.platform, cleanedIdentity.identity, cleanedIdentity.proof, serviceResult.result);
+    return serviceResult.result;
   }
 
   // Only attempt browser-based verification for CORS-friendly platforms
   if (!config.canVerifyInBrowser) {
-    const manualResult = { verified: false, error: 'manual' };
-    setCachedVerification(cleanedIdentity.platform, cleanedIdentity.identity, cleanedIdentity.proof, manualResult);
-    return manualResult;
+    return { verified: false, error: 'unavailable' };
   }
 
   const npub = nip19.npubEncode(pubkey);
@@ -313,9 +325,9 @@ export async function verifyIdentityClaim(
 async function verifyViaService(
   identity: ExternalIdentity,
   pubkey: string,
-): Promise<{ verified: boolean; error?: string } | null> {
+): Promise<VerificationServiceResult> {
   const baseUrl = API_CONFIG.verificationService.baseUrl;
-  if (!baseUrl || !getFeatureFlag('useVerificationService')) return null;
+  if (!baseUrl || !getFeatureFlag('useVerificationService')) return { status: 'unavailable' };
 
   try {
     const response = await fetch(`${baseUrl}${API_CONFIG.verificationService.endpoints.verify}`, {
@@ -330,11 +342,14 @@ async function verifyViaService(
       signal: AbortSignal.timeout(API_CONFIG.verificationService.timeout),
     });
 
-    if (!response.ok) return null;
+    if (!response.ok) return { status: 'unavailable' };
 
     const data = await response.json();
-    return { verified: !!data.verified, error: data.error };
+    return {
+      status: 'result',
+      result: { verified: !!data.verified, error: data.error },
+    };
   } catch {
-    return null; // Service unavailable, fall through to browser verification
+    return { status: 'unavailable' };
   }
 }

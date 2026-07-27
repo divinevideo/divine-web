@@ -5,9 +5,8 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
-import { useExternalIdentities, SUPPORTED_PLATFORMS, verifyIdentityClaim, type ExternalIdentity } from '@/hooks/useExternalIdentities';
+import { useExternalIdentities, SUPPORTED_PLATFORMS, verifyIdentityClaim, buildManualVerifyUrl, type ExternalIdentity } from '@/hooks/useExternalIdentities';
 import { useAddIdentity, useRemoveIdentity } from '@/hooks/usePublishIdentity';
-import { API_CONFIG } from '@/config/api';
 import { getDivineNip05Info } from '@/lib/nip05Utils';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -264,7 +263,7 @@ function VerificationBadge({ identity, pubkey }: { identity: ExternalIdentity; p
     case 'failed':
       return error === 'manual' ? (
         <a
-          href={`${API_CONFIG.verificationService.baseUrl}/verify/${encodeURIComponent(identity.platform)}/${encodeURIComponent(identity.identity)}/${encodeURIComponent(identity.proof)}?pubkey=${pubkey}`}
+          href={buildManualVerifyUrl(identity, pubkey)}
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
