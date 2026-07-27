@@ -22,6 +22,7 @@ export interface VideoSocialMetrics {
   likeCount: number;
   repostCount: number;
   viewCount: number;
+  loopCount: number;
   commentCount: number;
   // Reaction data for showing who liked/reposted
   likes: VideoReaction[];
@@ -59,6 +60,7 @@ export function useVideoSocialMetrics(
         likeCount: 0,
         repostCount: 0,
         viewCount: 0,
+        loopCount: 0,
         commentCount: 0,
         likes: [],
         reposts: [],
@@ -73,6 +75,7 @@ export function useVideoSocialMetrics(
         return {
           ...emptyMetrics,
           viewCount: stats.views ?? 0,
+          loopCount: Math.max(0, Math.floor(stats.loops ?? 0)),
         };
       } catch (error) {
         debugLog('[useVideoSocialMetrics] Failed to fetch view stats:', error);

@@ -38,7 +38,6 @@
   },
   "footer": {
     "aboutDivine": "O Divine",
-    "vinesRecovered": "{{count}} odzyskanych Vine",
     "termsAndOpenSource": "Warunki i open source",
     "copyright": "© 2026 Divine"
   },
@@ -388,7 +387,6 @@
     "message": "Wiadomość",
     "reportUser": "Zgłoś użytkownika",
     "subscribeRss": "Subskrybuj kanał RSS",
-    "videos": "Wideo",
     "followers": "Obserwujący",
     "followingStat": "Obserwowani",
     "followingDialogTitle": "Obserwowani",
@@ -518,6 +516,7 @@
     "signInButton": "Zaloguj się"
   },
   "badgeDetailModal": {
+    "description": "Cała historia tej odznaki — kto ją przyznał i kiedy.",
     "title": "Szczegóły odznaki",
     "officialBadge": "✦ Oficjalna odznaka Divine",
     "issuedBy": "Wydane przez",
@@ -945,6 +944,7 @@
     "placeholderMessage": "Napisz wiadomość..."
   },
   "videoCommentsModal": {
+    "description": "Zobacz, co mówią inni, i dodaj własny komentarz.",
     "title": "Komentarze",
     "loading": "Ładowanie komentarzy...",
     "emptyMessage": "Jeszcze żadnych komentarzy",
@@ -962,7 +962,8 @@
   "thumbnailPlayer": {
     "videoPreview": "Podgląd wideo",
     "thumbnailAlt": "Miniatura wideo",
-    "playVideo": "Odtwórz wideo"
+    "playVideo": "Odtwórz wideo",
+    "openVideo": "Otwórz wideo"
   },
   "hashtagExplorer": {
     "heading": "Eksplorator hashtagów",

@@ -7,6 +7,8 @@ export function applyStaticResponseHeaders(headers, { isHtml = false, decoded = 
 
   if (isHtml) {
     next.set('Cache-Control', 'no-store');
+    // Fastly supports TTL directives for Surrogate-Control; zero keeps HTML stale at the edge.
+    next.set('Surrogate-Control', 'max-age=0');
   }
 
   // When the caller has read the body back as a string (e.g. response.text() to

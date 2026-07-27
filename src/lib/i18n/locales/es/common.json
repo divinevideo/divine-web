@@ -38,7 +38,6 @@
   },
   "footer": {
     "aboutDivine": "Acerca de Divine",
-    "vinesRecovered": "{{count}} Vines recuperados",
     "termsAndOpenSource": "Terminos y codigo abierto",
     "copyright": "© 2026 Divine"
   },
@@ -386,7 +385,6 @@
     "message": "Mensaje",
     "reportUser": "Reportar usuario",
     "subscribeRss": "Suscribirse al feed RSS",
-    "videos": "Videos",
     "followers": "Seguidores",
     "followingStat": "Siguiendo",
     "followingDialogTitle": "Siguiendo",
@@ -516,6 +514,7 @@
     "signInButton": "Iniciar sesión"
   },
   "badgeDetailModal": {
+    "description": "Toda la historia de esta insignia: quién la emitió y cuándo.",
     "title": "Detalles de la insignia",
     "officialBadge": "✦ Insignia oficial de Divine",
     "issuedBy": "Emitida por",
@@ -943,6 +942,7 @@
     "placeholderMessage": "Escribe un mensaje..."
   },
   "videoCommentsModal": {
+    "description": "Mira lo que dice la gente y deja tu propio comentario.",
     "title": "Comentarios",
     "loading": "Cargando comentarios...",
     "emptyMessage": "Aún no hay comentarios",
@@ -960,7 +960,8 @@
   "thumbnailPlayer": {
     "videoPreview": "Vista previa del video",
     "thumbnailAlt": "Miniatura del video",
-    "playVideo": "Reproducir video"
+    "playVideo": "Reproducir video",
+    "openVideo": "Abrir video"
   },
   "hashtagExplorer": {
     "heading": "Explorador de hashtags",

@@ -38,7 +38,6 @@
   },
   "footer": {
     "aboutDivine": "Tentang Divine",
-    "vinesRecovered": "{{count}} Vine dipulihkan",
     "termsAndOpenSource": "Ketentuan & sumber terbuka",
     "copyright": "© 2026 Divine"
   },
@@ -386,7 +385,6 @@
     "message": "Pesan",
     "reportUser": "Laporkan pengguna",
     "subscribeRss": "Berlangganan feed RSS",
-    "videos": "Video",
     "followers": "Pengikut",
     "followingStat": "Mengikuti",
     "followingDialogTitle": "Mengikuti",
@@ -516,6 +514,7 @@
     "signInButton": "Masuk"
   },
   "badgeDetailModal": {
+    "description": "Cerita lengkap lencana ini — siapa yang memberikannya dan kapan.",
     "title": "Detail Badge",
     "officialBadge": "✦ Badge Resmi Divine",
     "issuedBy": "Diterbitkan oleh",
@@ -943,6 +942,7 @@
     "placeholderMessage": "Tulis pesan..."
   },
   "videoCommentsModal": {
+    "description": "Lihat apa kata orang dan tinggalkan komentarmu sendiri.",
     "title": "Komentar",
     "loading": "Memuat komentar...",
     "emptyMessage": "Belum ada komentar",
@@ -960,7 +960,8 @@
   "thumbnailPlayer": {
     "videoPreview": "Pratinjau Video",
     "thumbnailAlt": "Thumbnail video",
-    "playVideo": "Putar video"
+    "playVideo": "Putar video",
+    "openVideo": "Buka video"
   },
   "hashtagExplorer": {
     "heading": "Hashtag Explorer",

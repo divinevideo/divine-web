@@ -38,7 +38,6 @@
   },
   "footer": {
     "aboutDivine": "Divine hakkinda",
-    "vinesRecovered": "{{count}} Vine kurtarildi",
     "termsAndOpenSource": "Kosullar ve Acik Kaynak",
     "copyright": "© 2026 Divine"
   },
@@ -386,7 +385,6 @@
     "message": "Mesaj",
     "reportUser": "Kullanıcıyı bildir",
     "subscribeRss": "RSS akışına abone ol",
-    "videos": "Videolar",
     "followers": "Takipçi",
     "followingStat": "Takip edilen",
     "followingDialogTitle": "Takip edilenler",
@@ -516,6 +514,7 @@
     "signInButton": "Giriş yap"
   },
   "badgeDetailModal": {
+    "description": "Bu rozetin tüm hikâyesi — kim, ne zaman verdi.",
     "title": "Rozet Detayları",
     "officialBadge": "✦ Resmi Divine Rozeti",
     "issuedBy": "Veren",
@@ -943,6 +942,7 @@
     "placeholderMessage": "Bir mesaj yaz..."
   },
   "videoCommentsModal": {
+    "description": "İnsanların ne dediğine bak ve kendi yorumunu bırak.",
     "title": "Yorumlar",
     "loading": "Yorumlar yükleniyor...",
     "emptyMessage": "Henüz yorum yok",
@@ -960,7 +960,8 @@
   "thumbnailPlayer": {
     "videoPreview": "Video Önizlemesi",
     "thumbnailAlt": "Video küçük resmi",
-    "playVideo": "Videoyu oynat"
+    "playVideo": "Videoyu oynat",
+    "openVideo": "Videoyu aç"
   },
   "hashtagExplorer": {
     "heading": "Hashtag Kâşifi",

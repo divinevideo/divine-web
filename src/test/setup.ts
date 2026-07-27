@@ -79,6 +79,22 @@ Object.defineProperty(window, 'scrollTo', {
   value: vi.fn(),
 });
 
+// Mock localStorage (jsdom requires a URL to expose localStorage; provide a
+// minimal in-memory implementation so providers like NostrLoginProvider work
+// in unit tests without a real browser origin).
+const _localStorageMap = new Map<string, string>();
+Object.defineProperty(window, 'localStorage', {
+  configurable: true,
+  value: {
+    getItem: (key: string) => _localStorageMap.get(key) ?? null,
+    setItem: (key: string, value: string) => { _localStorageMap.set(key, value); },
+    removeItem: (key: string) => { _localStorageMap.delete(key); },
+    clear: () => { _localStorageMap.clear(); },
+    key: (index: number) => Array.from(_localStorageMap.keys())[index] ?? null,
+    get length() { return _localStorageMap.size; },
+  } satisfies Storage,
+});
+
 // Mock IntersectionObserver
 global.IntersectionObserver = vi.fn().mockImplementation((_callback) => ({
   observe: vi.fn(),

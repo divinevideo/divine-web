@@ -38,7 +38,6 @@
   },
   "footer": {
     "aboutDivine": "Tungkol sa Divine",
-    "vinesRecovered": "{{count}} Vines na nabawi",
     "termsAndOpenSource": "Mga Tuntunin at Open Source",
     "copyright": "© 2026 Divine"
   },
@@ -386,7 +385,6 @@
     "message": "Mag-message",
     "reportUser": "I-report ang user",
     "subscribeRss": "Mag-subscribe sa RSS feed",
-    "videos": "Mga Video",
     "followers": "Mga Sumusunod",
     "followingStat": "Sinusundan",
     "followingDialogTitle": "Sinusundan",
@@ -516,6 +514,7 @@
     "signInButton": "Mag-log in"
   },
   "badgeDetailModal": {
+    "description": "Ang buong kuwento ng badge na ito — kung sino ang nagbigay at kailan.",
     "title": "Mga Detalye ng Badge",
     "officialBadge": "✦ Opisyal na Divine Badge",
     "issuedBy": "Ibinigay ni",
@@ -943,6 +942,7 @@
     "placeholderMessage": "Ipasok ang mensahe..."
   },
   "videoCommentsModal": {
+    "description": "Tingnan ang sinasabi ng iba at mag-iwan ng sarili mong komento.",
     "title": "Mga komento",
     "loading": "Naglo-load ng mga komento...",
     "emptyMessage": "Wala pang komento.",
@@ -960,7 +960,8 @@
   "thumbnailPlayer": {
     "videoPreview": "Preview ng video",
     "thumbnailAlt": "Thumbnail ng video",
-    "playVideo": "I-play ang video"
+    "playVideo": "I-play ang video",
+    "openVideo": "Buksan ang video"
   },
   "hashtagExplorer": {
     "heading": "Mga hashtag",

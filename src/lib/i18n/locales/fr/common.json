@@ -38,7 +38,6 @@
   },
   "footer": {
     "aboutDivine": "A propos de Divine",
-    "vinesRecovered": "{{count}} Vines recuperes",
     "termsAndOpenSource": "Conditions et open source",
     "copyright": "© 2026 Divine"
   },
@@ -386,7 +385,6 @@
     "message": "Message",
     "reportUser": "Signaler l'utilisateur",
     "subscribeRss": "S'abonner au flux RSS",
-    "videos": "Vidéos",
     "followers": "Abonnés",
     "followingStat": "Abonnements",
     "followingDialogTitle": "Abonnements",
@@ -516,6 +514,7 @@
     "signInButton": "Se connecter"
   },
   "badgeDetailModal": {
+    "description": "Toute l'histoire de ce badge — qui l'a décerné et quand.",
     "title": "Détails du badge",
     "officialBadge": "✦ Badge Divine officiel",
     "issuedBy": "Émis par",
@@ -943,6 +942,7 @@
     "placeholderMessage": "Écris un message..."
   },
   "videoCommentsModal": {
+    "description": "Regarde ce que les gens disent et laisse ton propre commentaire.",
     "title": "Commentaires",
     "loading": "Chargement des commentaires...",
     "emptyMessage": "Aucun commentaire pour l'instant",
@@ -960,7 +960,8 @@
   "thumbnailPlayer": {
     "videoPreview": "Aperçu de la vidéo",
     "thumbnailAlt": "Miniature de la vidéo",
-    "playVideo": "Lire la vidéo"
+    "playVideo": "Lire la vidéo",
+    "openVideo": "Ouvrir la vidéo"
   },
   "hashtagExplorer": {
     "heading": "Explorateur de hashtags",

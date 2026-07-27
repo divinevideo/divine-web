@@ -3,12 +3,28 @@
 This document is the canonical guide for AI coding agents (and humans) working on
 divine-web. Claude Code reads it via the `@AGENTS.md` import in `CLAUDE.md`.
 
-## AI Acknowledgment
+## Divine Context And Brain
 
-Check for `.ai-ack` in the repository root (next to `.git`) before any other
-work. If the file is missing, read `HUMAN_VS_MACHINE.md` and follow its
-instructions before proceeding.
+Before broad product, architecture, protocol, cross-repo, service-boundary, or pull-request authoring, review, or modification work, read the shared Divine context primer.
 
+Resolve the context directory and clone it there if it is missing:
+
+```bash
+CONTEXT_DIR="${DIVINE_CONTEXT_ROOT:-../divine-context}"
+[ -e "$CONTEXT_DIR/.git" ] || gh repo clone divinevideo/divine-context "$CONTEXT_DIR"
+```
+
+Use that value as `<context-dir>` below.
+
+The `divine-context` repo is private, so cloning requires GitHub access. If clone, network, or auth fails, continue from the local repo docs and avoid cross-repo assumptions.
+
+Before updating an existing context checkout, verify it is clean and on its default branch. If it is clean and on the default branch, update it with `git -C <context-dir> pull --ff-only`. If it is dirty, on another branch, cannot fast-forward, or network/auth fails, leave it untouched and say the context may be stale.
+
+Read `<context-dir>/AGENT_CONTEXT.md` and follow its instructions. If unavailable, continue from the local repo docs and avoid cross-repo assumptions.
+
+Before working on a pull request, follow `<context-dir>/PR_REVIEW.md` and use `<context-dir>/PR_REVIEW_TEAMS.md` to request the normal team and check takeover authority. Ordinary review remains open to any eligible Divine human. Before modifying a pull-request branch, enforce the mapping and every takeover gate; if the mapping cannot be read, feedback-only review may continue but automated takeover must stop. Request and verify required human review automatically when tooling permits. If the runbook is unavailable, leave the pull request open and report the blocker.
+
+If a Divine Brain search or ask tool is available, you may use it for company memory. Treat it as optional and credentialed: tool names vary by client, and work must continue when Brain is unavailable. When Brain results influence work, cite the returned document ids. Never commit Brain credentials or expose Brain-derived sensitive content in public PRs, issues, branch names, commit messages, code comments, logs, screenshots, release notes, or externally shared agent transcripts.
 ## Read First
 
 - `CONTRIBUTING.md`: PR rules, testing expectations, scope discipline.
@@ -76,7 +92,7 @@ Running only deploy without publish means the new frontend code won't be served!
 
 ### Git Conventions
 - Commit format: `type: description` (feat, fix, perf, docs, refactor, test)
-- Include `Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>` when AI-assisted
+- Do not add AI co-author trailers unless explicitly requested.
 - Don't amend commits after hook failures - create new commits
 
 ## Funnelcake REST API

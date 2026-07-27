@@ -38,7 +38,6 @@
   },
   "footer": {
     "aboutDivine": "Despre Divine",
-    "vinesRecovered": "{{count}} Vines recuperate",
     "termsAndOpenSource": "Termeni si sursa deschisa",
     "copyright": "© 2026 Divine"
   },
@@ -387,7 +386,6 @@
     "message": "Mesaj",
     "reportUser": "Raportează utilizatorul",
     "subscribeRss": "Abonează-te la fluxul RSS",
-    "videos": "Videoclipuri",
     "followers": "Urmăritori",
     "followingStat": "Urmărește",
     "followingDialogTitle": "Urmărește",
@@ -517,6 +515,7 @@
     "signInButton": "Conectează-te"
   },
   "badgeDetailModal": {
+    "description": "Povestea completă a acestei insigne — cine a acordat-o și când.",
     "title": "Detalii insignă",
     "officialBadge": "✦ Insignă oficială Divine",
     "issuedBy": "Emisă de",
@@ -944,6 +943,7 @@
     "placeholderMessage": "Scrie un mesaj..."
   },
   "videoCommentsModal": {
+    "description": "Vezi ce spun ceilalți și lasă propriul tău comentariu.",
     "title": "Comentarii",
     "loading": "Se încarcă comentariile...",
     "emptyMessage": "Niciun comentariu încă",
@@ -961,7 +961,8 @@
   "thumbnailPlayer": {
     "videoPreview": "Previzualizare videoclip",
     "thumbnailAlt": "Miniatură videoclip",
-    "playVideo": "Redă videoclipul"
+    "playVideo": "Redă videoclipul",
+    "openVideo": "Deschide videoclipul"
   },
   "hashtagExplorer": {
     "heading": "Explorator de hashtag-uri",

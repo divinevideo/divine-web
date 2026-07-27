@@ -38,7 +38,6 @@
   },
   "footer": {
     "aboutDivine": "Uber Divine",
-    "vinesRecovered": "{{count}} Vines wiederhergestellt",
     "termsAndOpenSource": "Bedingungen und Open Source",
     "copyright": "© 2026 Divine"
   },
@@ -386,7 +385,6 @@
     "message": "Nachricht",
     "reportUser": "Nutzer melden",
     "subscribeRss": "RSS-Feed abonnieren",
-    "videos": "Videos",
     "followers": "Follower",
     "followingStat": "Folge ich",
     "followingDialogTitle": "Folge ich",
@@ -516,6 +514,7 @@
     "signInButton": "Anmelden"
   },
   "badgeDetailModal": {
+    "description": "Alles zu diesem Abzeichen — wer es vergeben hat und wann.",
     "title": "Badge-Details",
     "officialBadge": "✦ Offizielles Divine-Badge",
     "issuedBy": "Ausgestellt von",
@@ -943,6 +942,7 @@
     "placeholderMessage": "Schreib eine Nachricht..."
   },
   "videoCommentsModal": {
+    "description": "Sieh, was andere sagen, und schreib deinen eigenen Kommentar.",
     "title": "Kommentare",
     "loading": "Kommentare werden geladen...",
     "emptyMessage": "Noch keine Kommentare",
@@ -960,7 +960,8 @@
   "thumbnailPlayer": {
     "videoPreview": "Videovorschau",
     "thumbnailAlt": "Video-Thumbnail",
-    "playVideo": "Video abspielen"
+    "playVideo": "Video abspielen",
+    "openVideo": "Video öffnen"
   },
   "hashtagExplorer": {
     "heading": "Hashtag-Explorer",

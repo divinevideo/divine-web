@@ -35,6 +35,7 @@ describe('funnelcakeClient', () => {
   let markNotificationsRead: typeof import('./funnelcakeClient').markNotificationsRead;
   let fetchNotifications: typeof import('./funnelcakeClient').fetchNotifications;
   let fetchVideoById: typeof import('./funnelcakeClient').fetchVideoById;
+  let fetchCreatorAnalytics: typeof import('./funnelcakeClient').fetchCreatorAnalytics;
 
   beforeEach(async () => {
     vi.resetModules();
@@ -53,6 +54,7 @@ describe('funnelcakeClient', () => {
     markNotificationsRead = client.markNotificationsRead;
     fetchNotifications = client.fetchNotifications;
     fetchVideoById = client.fetchVideoById;
+    fetchCreatorAnalytics = client.fetchCreatorAnalytics;
   });
 
   afterEach(() => {
@@ -460,6 +462,20 @@ describe('funnelcakeClient', () => {
     });
   });
 
+  describe('fetchCreatorAnalytics', () => {
+    it('throws a generic Funnelcake auth error on HTTP failure', async () => {
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        ok: false,
+        status: 403,
+        statusText: 'Forbidden',
+        text: () => Promise.resolve('not yours'),
+      });
+
+      await expect(fetchCreatorAnalytics(API_URL, TEST_PUBKEY, TEST_SIGNER, { window: '30d' }))
+        .rejects.toThrow('Funnelcake API error: 403 Forbidden');
+    });
+  });
+
   describe('fetchRecommendations', () => {
     it('sends cursor param when provided', async () => {
       (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
@@ -694,6 +710,35 @@ describe('funnelcakeClient', () => {
       expect(result.videos).toHaveLength(1);
       expect(result.has_more).toBe(true);
       expect(result.next_cursor).toBe('36');
+    });
+  });
+
+  describe('normalizeVideoArrayResponse', () => {
+    it('synthesizes an offset cursor for sorted feeds at a full page', async () => {
+      const { normalizeVideoArrayResponse } = await import('./funnelcakeClient');
+      const videos = Array.from({ length: 10 }, (_, i) => ({ id: `v${i}`, created_at: 2000 - i }));
+      const result = normalizeVideoArrayResponse(videos as never, { sort: 'loops', limit: 10 });
+      expect(result.has_more).toBe(true);
+      expect(result.next_cursor).toBe('10');
+      expect(result.videos).toHaveLength(10);
+    });
+
+    it('synthesizes a timestamp cursor for chronological feeds', async () => {
+      const { normalizeVideoArrayResponse } = await import('./funnelcakeClient');
+      const videos = Array.from({ length: 10 }, (_, i) => ({ id: `v${i}`, created_at: 2000 - i }));
+      const result = normalizeVideoArrayResponse(videos as never, { sort: 'recent', limit: 10 });
+      expect(result.has_more).toBe(true);
+      expect(result.next_cursor).toBe('1991');
+    });
+
+    it('marks a short page as final', async () => {
+      const { normalizeVideoArrayResponse } = await import('./funnelcakeClient');
+      const result = normalizeVideoArrayResponse([{ id: 'v0', created_at: 1 }] as never, {
+        sort: 'recent',
+        limit: 10,
+      });
+      expect(result.has_more).toBe(false);
+      expect(result.next_cursor).toBeUndefined();
     });
   });
 });

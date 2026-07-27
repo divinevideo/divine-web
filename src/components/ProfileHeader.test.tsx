@@ -26,8 +26,33 @@ vi.mock('@/hooks/useRssFeedAvailable', () => ({
   useRssFeedAvailable: () => false,
 }));
 
+// Mutable so protected-minor tests can flip the state (#176). Defaults preserve
+// the prior behavior (non-protected, DMs off).
+const pm = vi.hoisted(() => ({
+  state: 'not_protected' as 'protected' | 'not_protected' | 'unknown',
+  canUseDirectMessages: false,
+  approved: new Set<string>(),
+}));
+
+vi.mock('@/hooks/useProtectedMinorStatus', () => ({
+  useProtectedMinorStatus: () => ({
+    state: pm.state,
+    isKnown: pm.state !== 'unknown',
+    verifiedMinorAt: null,
+  }),
+}));
+
 vi.mock('@/hooks/useDirectMessages', () => ({
-  useDmCapability: () => ({ canUseDirectMessages: false }),
+  useDmCapability: () => ({ canUseDirectMessages: pm.canUseDirectMessages }),
+}));
+
+vi.mock('@/lib/officialAccounts', async (orig) => ({
+  ...(await orig<typeof import('@/lib/officialAccounts')>()),
+  officialAccountsService: {
+    isApprovedMinorDmRecipientSync: (pk: string) => pm.approved.has(pk),
+    isApprovedMinorDmRecipient: async (pk: string) => pm.approved.has(pk),
+    onVerdictChanged: () => () => {},
+  },
 }));
 
 vi.mock('@/hooks/useFollowers', () => ({
@@ -79,6 +104,9 @@ const baseStats: ProfileStats = {
 
 describe('ProfileHeader', () => {
   beforeEach(async () => {
+    pm.state = 'not_protected';
+    pm.canUseDirectMessages = false;
+    pm.approved.clear();
     const storage = new Map<string, string>();
     Object.defineProperty(window, 'localStorage', {
       configurable: true,
@@ -90,6 +118,113 @@ describe('ProfileHeader', () => {
       } satisfies Pick<Storage, 'getItem' | 'setItem' | 'removeItem' | 'clear'>,
     });
     await initializeI18n({ force: true, languages: ['en-US'] });
+  });
+
+  describe('protected-minor Message affordance (#176)', () => {
+    const HQ =
+      'c4a39f1291291d452405cd8ddd798c4a29a3858c52cd0d843f1f6852cf17682e';
+    const renderFor = (pubkey: string) =>
+      render(
+        <MemoryRouter>
+          <ProfileHeader
+            pubkey={pubkey}
+            metadata={{ display_name: 'Someone' }}
+            stats={baseStats}
+            legacySocials={[]}
+            isOwnProfile={false}
+            isFollowing={false}
+            onFollowToggle={vi.fn()}
+          />
+        </MemoryRouter>,
+      );
+
+    it('shows the Message button for a non-protected user', () => {
+      pm.canUseDirectMessages = true;
+      renderFor('a'.repeat(64));
+      expect(
+        screen.getByRole('button', { name: /message/i }),
+      ).toBeInTheDocument();
+    });
+
+    it('hides the Message button when a protected minor views a non-approved profile', () => {
+      pm.canUseDirectMessages = true;
+      pm.state = 'protected'; // 'a'*64 is not in the approved set
+      renderFor('a'.repeat(64));
+      expect(
+        screen.queryByRole('button', { name: /message/i }),
+      ).not.toBeInTheDocument();
+    });
+
+    it('shows the Message button when a protected minor views an approved official profile', () => {
+      pm.canUseDirectMessages = true;
+      pm.state = 'protected';
+      pm.approved.add(HQ);
+      renderFor(HQ);
+      expect(
+        screen.getByRole('button', { name: /message/i }),
+      ).toBeInTheDocument();
+    });
+
+    it('fails closed on unknown: hides the Message button for a non-approved profile', () => {
+      pm.canUseDirectMessages = true;
+      pm.state = 'unknown'; // 'a'*64 is not in the approved set
+      renderFor('a'.repeat(64));
+      expect(
+        screen.queryByRole('button', { name: /message/i }),
+      ).not.toBeInTheDocument();
+    });
+
+    it('keeps the Message button for an approved official while unknown', () => {
+      pm.canUseDirectMessages = true;
+      pm.state = 'unknown';
+      pm.approved.add(HQ);
+      renderFor(HQ);
+      expect(
+        screen.getByRole('button', { name: /message/i }),
+      ).toBeInTheDocument();
+    });
+  });
+
+  it('hides the total video count stat', () => {
+    render(
+      <MemoryRouter>
+        <ProfileHeader
+          pubkey={'a'.repeat(64)}
+          metadata={{ display_name: 'Modern Creator' }}
+          stats={baseStats}
+          isOwnProfile={false}
+          isFollowing={false}
+          onFollowToggle={vi.fn()}
+        />
+      </MemoryRouter>
+    );
+
+    expect(screen.queryByText('Videos')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('stat-skeleton-videos')).not.toBeInTheDocument();
+    expect(screen.getByText('Followers')).toBeInTheDocument();
+    expect(screen.getByText('Following')).toBeInTheDocument();
+    expect(screen.getByText('Divine Loops')).toBeInTheDocument();
+  });
+
+  it('keeps the joined stat in the two-column mobile stats grid', () => {
+    render(
+      <MemoryRouter>
+        <ProfileHeader
+          pubkey={'a'.repeat(64)}
+          metadata={{ display_name: 'Modern Creator' }}
+          stats={{ ...baseStats, joinedDate: new Date(2024, 0, 15) }}
+          isOwnProfile={false}
+          isFollowing={false}
+          onFollowToggle={vi.fn()}
+        />
+      </MemoryRouter>
+    );
+
+    const statsGrid = screen.getByTestId('profile-stats');
+    expect(statsGrid).toHaveClass('grid-cols-2', 'sm:grid-cols-4');
+
+    const joinedStat = screen.getByText(/Joined January 2024/).closest('.text-center');
+    expect(joinedStat).not.toHaveClass('col-span-2');
   });
 
   it('shows clickable legacy socials for classic viners only', () => {

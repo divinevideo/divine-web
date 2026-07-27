@@ -44,6 +44,28 @@ const {
   } as Record<string, { metadata: { display_name?: string; name?: string; picture?: string; nip05?: string } }>,
 }));
 
+const pm = vi.hoisted(() => ({
+  state: 'not_protected' as 'protected' | 'not_protected' | 'unknown',
+  approved: new Set<string>(),
+}));
+
+vi.mock('@/hooks/useProtectedMinorStatus', () => ({
+  useProtectedMinorStatus: () => ({
+    state: pm.state,
+    isKnown: pm.state !== 'unknown',
+    verifiedMinorAt: null,
+  }),
+}));
+
+vi.mock('@/lib/officialAccounts', async (orig) => ({
+  ...(await orig<typeof import('@/lib/officialAccounts')>()),
+  officialAccountsService: {
+    isApprovedMinorDmRecipientSync: (pk: string) => pm.approved.has(pk),
+    isApprovedMinorDmRecipient: async (pk: string) => pm.approved.has(pk),
+    onVerdictChanged: () => () => {},
+  },
+}));
+
 vi.mock('@/hooks/useDirectMessages', () => ({
   useDmCapability: () => ({ canUseDirectMessages: true, isCheckingDmCapability: false }),
   useDmConversation: () => ({
@@ -105,6 +127,8 @@ function renderPage() {
 describe('ConversationPage', () => {
   beforeEach(async () => {
     vi.clearAllMocks();
+    pm.state = 'not_protected';
+    pm.approved.clear();
     const storage = new Map<string, string>();
     Object.defineProperty(window, 'localStorage', {
       configurable: true,
@@ -131,6 +155,57 @@ describe('ConversationPage', () => {
     directMessageState.share = null;
     mockSendMutate.mockImplementation(() => undefined);
     mockSendMutateAsync.mockImplementation(() => new Promise<void>(() => undefined));
+  });
+
+  describe('protected-minor thread route guard (#176)', () => {
+    it('redirects a protected minor away from a non-approved thread', async () => {
+      pm.state = 'protected'; // RECIPIENT_PUBKEY not approved
+      renderPage();
+      await waitFor(() =>
+        expect(mockNavigate).toHaveBeenCalledWith('/messages', {
+          replace: true,
+        }),
+      );
+    });
+
+    it('does NOT redirect when the thread peer is an approved official', async () => {
+      pm.state = 'protected';
+      pm.approved.add(RECIPIENT_PUBKEY);
+      renderPage();
+      // let the guard effect run
+      await new Promise((r) => setTimeout(r, 20));
+      expect(mockNavigate).not.toHaveBeenCalledWith('/messages', {
+        replace: true,
+      });
+    });
+
+    it('does NOT redirect a non-protected user', async () => {
+      renderPage();
+      await new Promise((r) => setTimeout(r, 20));
+      expect(mockNavigate).not.toHaveBeenCalledWith('/messages', {
+        replace: true,
+      });
+    });
+
+    it('fails closed on unknown: redirects away from a non-approved thread', async () => {
+      pm.state = 'unknown'; // RECIPIENT_PUBKEY not approved
+      renderPage();
+      await waitFor(() =>
+        expect(mockNavigate).toHaveBeenCalledWith('/messages', {
+          replace: true,
+        }),
+      );
+    });
+
+    it('does NOT redirect from an approved-official thread while unknown', async () => {
+      pm.state = 'unknown';
+      pm.approved.add(RECIPIENT_PUBKEY);
+      renderPage();
+      await new Promise((r) => setTimeout(r, 20));
+      expect(mockNavigate).not.toHaveBeenCalledWith('/messages', {
+        replace: true,
+      });
+    });
   });
 
   it('renders the composer with a two-line baseline', () => {
