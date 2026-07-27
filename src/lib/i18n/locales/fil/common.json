@@ -915,8 +915,6 @@
     "retry": "Subukan ulit",
     "peopleCount_one": "{{count}} tao",
     "peopleCount_other": "{{count}} na tao",
-    "notFoundTitle": "Hindi nakita ang usapan",
-    "notFoundDescription": "Bumalik sa inbox mo at magsimula ng bagong mensahe.",
     "dmUnavailableTitle": "Hindi available ang direct messages",
     "dmUnavailableDescription": "Pwede kang i-authenticate ng signer na 'to, pero hindi nito available ang NIP-44 encryption na kailangan para sa pribadong mensahe.",
     "backToSupport": "Bumalik sa Suporta",

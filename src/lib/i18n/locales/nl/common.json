@@ -915,8 +915,6 @@
     "retry": "Opnieuw proberen",
     "peopleCount_one": "{{count}} persoon",
     "peopleCount_other": "{{count}} mensen",
-    "notFoundTitle": "Gesprek niet gevonden",
-    "notFoundDescription": "Ga terug naar je inbox en start een nieuw bericht.",
     "dmUnavailableTitle": "Privéberichten zijn niet beschikbaar",
     "dmUnavailableDescription": "Deze signer kan je authenticeren, maar biedt niet de NIP-44-encryptiemethoden die nodig zijn voor privéberichten.",
     "backToSupport": "Terug naar Support",

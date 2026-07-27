@@ -916,8 +916,6 @@
     "retry": "Reîncearcă",
     "peopleCount_one": "{{count}} persoană",
     "peopleCount_other": "{{count}} persoane",
-    "notFoundTitle": "Conversație negăsită",
-    "notFoundDescription": "Întoarce-te la inbox și începe un mesaj nou.",
     "dmUnavailableTitle": "Mesajele directe nu sunt disponibile",
     "dmUnavailableDescription": "Acest signer te poate autentifica, dar nu expune metodele de criptare NIP-44 necesare pentru mesaje private.",
     "backToSupport": "Înapoi la suport",

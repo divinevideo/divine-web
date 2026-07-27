@@ -915,8 +915,6 @@
     "retry": "Erneut versuchen",
     "peopleCount_one": "{{count}} Person",
     "peopleCount_other": "{{count}} Personen",
-    "notFoundTitle": "Unterhaltung nicht gefunden",
-    "notFoundDescription": "Geh zurück zu deinem Posteingang und starte eine neue Nachricht.",
     "dmUnavailableTitle": "Direktnachrichten sind nicht verfügbar",
     "dmUnavailableDescription": "Dieser Signer kann dich authentifizieren, gibt aber die NIP-44-Verschlüsselungsmethoden nicht frei, die für private Nachrichten nötig sind.",
     "backToSupport": "Zurück zum Support",

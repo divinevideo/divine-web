@@ -915,8 +915,6 @@
     "retry": "Coba lagi",
     "peopleCount_one": "{{count}} orang",
     "peopleCount_other": "{{count}} orang",
-    "notFoundTitle": "Percakapan tidak ditemukan",
-    "notFoundDescription": "Kembali ke inbox dan mulai pesan baru.",
     "dmUnavailableTitle": "Pesan langsung tidak tersedia",
     "dmUnavailableDescription": "Signer ini bisa mengautentikasi kamu, tapi tidak mengekspos metode enkripsi NIP-44 yang dibutuhkan untuk pesan privat.",
     "backToSupport": "Kembali ke Dukungan",

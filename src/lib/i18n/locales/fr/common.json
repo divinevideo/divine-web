@@ -915,8 +915,6 @@
     "retry": "Réessayer",
     "peopleCount_one": "{{count}} personne",
     "peopleCount_other": "{{count}} personnes",
-    "notFoundTitle": "Conversation introuvable",
-    "notFoundDescription": "Retourne dans ta boîte de réception et démarre un nouveau message.",
     "dmUnavailableTitle": "Les messages directs sont indisponibles",
     "dmUnavailableDescription": "Ce signer peut t'authentifier, mais il n'expose pas les méthodes de chiffrement NIP-44 nécessaires pour les messages privés.",
     "backToSupport": "Retour à l'assistance",

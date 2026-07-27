@@ -915,8 +915,6 @@
     "retry": "Tekrar dene",
     "peopleCount_one": "{{count}} kişi",
     "peopleCount_other": "{{count}} kişi",
-    "notFoundTitle": "Sohbet bulunamadı",
-    "notFoundDescription": "Gelen kutuna geri dön ve yeni bir mesaj başlat.",
     "dmUnavailableTitle": "Direkt mesajlar kullanılamıyor",
     "dmUnavailableDescription": "Bu signer seni doğrulayabilir, ancak özel mesajlaşma için gereken NIP-44 şifreleme metotlarını sağlamıyor.",
     "backToSupport": "Desteğe dön",

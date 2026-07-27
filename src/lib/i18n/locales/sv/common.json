@@ -915,8 +915,6 @@
     "retry": "Försök igen",
     "peopleCount_one": "{{count}} person",
     "peopleCount_other": "{{count}} personer",
-    "notFoundTitle": "Konversationen hittades inte",
-    "notFoundDescription": "Gå tillbaka till inkorgen och starta ett nytt meddelande.",
     "dmUnavailableTitle": "Direktmeddelanden är inte tillgängliga",
     "dmUnavailableDescription": "Den här signeraren kan autentisera dig, men den exponerar inte de NIP-44-krypteringsmetoder som krävs för privata meddelanden.",
     "backToSupport": "Tillbaka till Support",

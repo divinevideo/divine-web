@@ -915,8 +915,6 @@
     "retry": "再試行",
     "peopleCount_one": "{{count}}人",
     "peopleCount_other": "{{count}}人",
-    "notFoundTitle": "会話が見つかりません",
-    "notFoundDescription": "受信箱に戻って新しいメッセージを始めてください。",
     "dmUnavailableTitle": "ダイレクトメッセージは利用できません",
     "dmUnavailableDescription": "この署名ツールは認証はできますが、プライベートメッセージに必要なNIP-44の暗号化メソッドを公開していません。",
     "backToSupport": "サポートに戻る",

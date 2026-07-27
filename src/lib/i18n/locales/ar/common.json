@@ -919,8 +919,6 @@
     "retry": "إعادة المحاولة",
     "peopleCount_one": "{{count}} شخص",
     "peopleCount_other": "{{count}} أشخاص",
-    "notFoundTitle": "المحادثة غير موجودة",
-    "notFoundDescription": "ارجع إلى صندوق الوارد وابدأ رسالة جديدة.",
     "dmUnavailableTitle": "الرسائل المباشرة غير متاحة",
     "dmUnavailableDescription": "يستطيع هذا الموقّع مصادقتك، لكنه لا يوفّر طرق التشفير NIP-44 المطلوبة للمراسلة الخاصة.",
     "backToSupport": "العودة إلى الدعم",

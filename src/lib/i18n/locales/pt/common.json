@@ -915,8 +915,6 @@
     "retry": "Tentar de novo",
     "peopleCount_one": "{{count}} pessoa",
     "peopleCount_other": "{{count}} pessoas",
-    "notFoundTitle": "Conversa não encontrada",
-    "notFoundDescription": "Volta pra sua caixa de entrada e começa uma nova mensagem.",
     "dmUnavailableTitle": "Mensagens diretas indisponíveis",
     "dmUnavailableDescription": "Esse signer pode te autenticar, mas não expõe os métodos de criptografia NIP-44 necessários pra mensagens privadas.",
     "backToSupport": "Voltar pro suporte",

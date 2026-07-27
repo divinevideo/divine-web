@@ -915,8 +915,6 @@
     "retry": "Reintentar",
     "peopleCount_one": "{{count}} persona",
     "peopleCount_other": "{{count}} personas",
-    "notFoundTitle": "Conversación no encontrada",
-    "notFoundDescription": "Vuelve a tu bandeja de entrada y empieza un nuevo mensaje.",
     "dmUnavailableTitle": "Los mensajes directos no están disponibles",
     "dmUnavailableDescription": "Este firmador puede autenticarte, pero no expone los métodos de cifrado NIP-44 necesarios para mensajería privada.",
     "backToSupport": "Volver a soporte",
