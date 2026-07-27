@@ -50,6 +50,7 @@ import { AgeReviewPage } from "./pages/AgeReviewPage";
 import { KidsPolicyPage } from "./pages/KidsPolicyPage";
 import { Support } from "./pages/Support";
 import { FAQPage } from "./pages/FAQPage";
+import { ServicesPage } from "./pages/ServicesPage";
 import MerchPage from "./pages/MerchPage";
 import { TermsPage } from "./pages/TermsPage";
 import GetEmbedPage from "./pages/GetEmbedPage";
@@ -167,6 +168,7 @@ export function AppRouter() {
         <Route path="/kids" element={<KidsPolicyPage />} />
         <Route path="/support" element={<Support />} />
         <Route path="/faq" element={<FAQPage />} />
+        <Route path="/services" element={<ServicesPage />} />
         <Route path="/get-embed" element={<GetEmbedPage />} />
         <Route path="/app/callback" element={<AppCallbackPage />} />
         <Route path="/auth/callback" element={<AuthCallbackPage />} />
