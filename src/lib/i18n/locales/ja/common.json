@@ -8,6 +8,7 @@
     "home": "ホーム",
     "discover": "発見",
     "popular": "Popular",
+    "services": "Services",
     "search": "検索",
     "messages": "メッセージ",
     "notifications": "通知",
@@ -38,7 +39,6 @@
   },
   "footer": {
     "aboutDivine": "Divine について",
-    "vinesRecovered": "{{count}} 件の Vine を復元",
     "termsAndOpenSource": "利用規約とオープンソース",
     "copyright": "© 2026 Divine"
   },
@@ -134,6 +134,19 @@
     "communityDescription": "コミュニティの会話に参加し、Nostr 上の他の Divine ユーザーとつながりましょう。",
     "communityBody": "Divine は分散型ソーシャルプロトコル Nostr 上に構築されています。お気に入りの Nostr クライアントで見つけてください。"
   },
+  "servicesPage": {
+    "title": "Divine services",
+    "intro": "Divine is more than loops. These services help you make the most of it.",
+    "openService": "Open {{name}}",
+    "items": {
+      "space": "Your profile, your rules. Themes, Top 8, profile music.",
+      "sounds": "Trending sounds and a Creative Commons library for your loops.",
+      "badges": "Awards for creators who show up.",
+      "crossposter": "Post your loops to the other platforms — only when you opt in.",
+      "verifier": "Check where a video really came from.",
+      "status": "Is it us or is it you? Check here."
+    }
+  },
   "tagPage": {
     "notFoundTitle": "タグが見つかりません",
     "notFoundDescription": "指定されたタグは見つかりませんでした。",
@@ -146,7 +159,11 @@
     "emptyState": "現在利用できるカテゴリはありません。",
     "metaTitle": "カテゴリを探す - Divine",
     "metaDescription": "Divine でコメディ、音楽、ダンス、動物、スポーツ、食べ物などの動画カテゴリを探そう。",
+    "videoCount_zero": "{{count}} videos",
     "videoCount_one": "{{count}}本の動画",
+    "videoCount_two": "{{count}} videos",
+    "videoCount_few": "{{count}} videos",
+    "videoCount_many": "{{count}} videos",
     "videoCount_other": "{{count}}本の動画"
   },
   "vineBadge": {
@@ -386,7 +403,6 @@
     "message": "メッセージ",
     "reportUser": "ユーザーを報告",
     "subscribeRss": "RSSフィードを購読",
-    "videos": "動画",
     "followers": "フォロワー",
     "followingStat": "フォロー中",
     "followingDialogTitle": "フォロー中",
@@ -516,6 +532,7 @@
     "signInButton": "サインイン"
   },
   "badgeDetailModal": {
+    "description": "このバッジの詳細 — 発行者と授与日。",
     "title": "バッジ詳細",
     "officialBadge": "✦ 公式Divineバッジ",
     "issuedBy": "発行者",
@@ -943,6 +960,7 @@
     "placeholderMessage": "メッセージを書く..."
   },
   "videoCommentsModal": {
+    "description": "みんなのコメントを見て、自分のコメントも残そう。",
     "title": "コメント",
     "loading": "コメントを読み込み中...",
     "emptyMessage": "まだコメントがありません",
@@ -960,7 +978,8 @@
   "thumbnailPlayer": {
     "videoPreview": "動画プレビュー",
     "thumbnailAlt": "動画サムネイル",
-    "playVideo": "動画を再生"
+    "playVideo": "動画を再生",
+    "openVideo": "動画を開く"
   },
   "hashtagExplorer": {
     "heading": "ハッシュタグエクスプローラー",

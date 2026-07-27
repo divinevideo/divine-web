@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
@@ -43,6 +44,9 @@ export function BadgeDetailModal({ badge, open, onOpenChange }: BadgeDetailModal
             <Award className="h-5 w-5" />
             {t('badgeDetailModal.title')}
           </DialogTitle>
+          <DialogDescription className="sr-only">
+            {t('badgeDetailModal.description')}
+          </DialogDescription>
         </DialogHeader>
 
         <div className="flex flex-col items-center gap-4 py-4">

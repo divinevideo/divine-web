@@ -8,6 +8,7 @@
     "home": "Startseite",
     "discover": "Entdecken",
     "popular": "Popular",
+    "services": "Services",
     "search": "Suchen",
     "messages": "Nachrichten",
     "notifications": "Benachrichtigungen",
@@ -38,7 +39,6 @@
   },
   "footer": {
     "aboutDivine": "Uber Divine",
-    "vinesRecovered": "{{count}} Vines wiederhergestellt",
     "termsAndOpenSource": "Bedingungen und Open Source",
     "copyright": "© 2026 Divine"
   },
@@ -134,6 +134,19 @@
     "communityDescription": "Beteilige dich an unseren Community-Diskussionen und vernetze dich mit anderen Divine-Nutzern auf Nostr.",
     "communityBody": "Divine basiert auf Nostr, einem dezentralen sozialen Protokoll. Finde uns in deinem bevorzugten Nostr-Client."
   },
+  "servicesPage": {
+    "title": "Divine services",
+    "intro": "Divine is more than loops. These services help you make the most of it.",
+    "openService": "Open {{name}}",
+    "items": {
+      "space": "Your profile, your rules. Themes, Top 8, profile music.",
+      "sounds": "Trending sounds and a Creative Commons library for your loops.",
+      "badges": "Awards for creators who show up.",
+      "crossposter": "Post your loops to the other platforms — only when you opt in.",
+      "verifier": "Check where a video really came from.",
+      "status": "Is it us or is it you? Check here."
+    }
+  },
   "tagPage": {
     "notFoundTitle": "Tag nicht gefunden",
     "notFoundDescription": "Der angeforderte Tag konnte nicht gefunden werden.",
@@ -146,7 +159,11 @@
     "emptyState": "Derzeit sind keine Kategorien verfugbar.",
     "metaTitle": "Kategorien entdecken - Divine",
     "metaDescription": "Entdecke Videokategorien auf Divine - Comedy, Musik, Tanz, Tiere, Sport, Essen und mehr.",
+    "videoCount_zero": "{{count}} videos",
     "videoCount_one": "{{count}} Video",
+    "videoCount_two": "{{count}} videos",
+    "videoCount_few": "{{count}} videos",
+    "videoCount_many": "{{count}} videos",
     "videoCount_other": "{{count}} Videos"
   },
   "vineBadge": {
@@ -386,7 +403,6 @@
     "message": "Nachricht",
     "reportUser": "Nutzer melden",
     "subscribeRss": "RSS-Feed abonnieren",
-    "videos": "Videos",
     "followers": "Follower",
     "followingStat": "Folge ich",
     "followingDialogTitle": "Folge ich",
@@ -516,6 +532,7 @@
     "signInButton": "Anmelden"
   },
   "badgeDetailModal": {
+    "description": "Alles zu diesem Abzeichen — wer es vergeben hat und wann.",
     "title": "Badge-Details",
     "officialBadge": "✦ Offizielles Divine-Badge",
     "issuedBy": "Ausgestellt von",
@@ -943,6 +960,7 @@
     "placeholderMessage": "Schreib eine Nachricht..."
   },
   "videoCommentsModal": {
+    "description": "Sieh, was andere sagen, und schreib deinen eigenen Kommentar.",
     "title": "Kommentare",
     "loading": "Kommentare werden geladen...",
     "emptyMessage": "Noch keine Kommentare",
@@ -960,7 +978,8 @@
   "thumbnailPlayer": {
     "videoPreview": "Videovorschau",
     "thumbnailAlt": "Video-Thumbnail",
-    "playVideo": "Video abspielen"
+    "playVideo": "Video abspielen",
+    "openVideo": "Video öffnen"
   },
   "hashtagExplorer": {
     "heading": "Hashtag-Explorer",

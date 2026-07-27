@@ -23,6 +23,7 @@ import { useToast } from '@/hooks/useToast';
 import { genUserName } from '@/lib/genUserName';
 import { buildProfileLinkPath } from '@/lib/profileLinks';
 import { debugLog } from '@/lib/debug';
+import { getVisiblePlaybackCount } from '@/lib/playbackCount';
 import { reportFunnelcakeFallback } from '@/lib/funnelcakeFallbackReporting';
 import type { ParsedVideoData, UserInteractions } from '@/types/video';
 
@@ -41,11 +42,13 @@ export function VideoPage() {
       source,
       hashtag: searchParams.get('hashtag') || undefined,
       pubkey: searchParams.get('pubkey') || undefined,
+      listId: searchParams.get('listId') || undefined,
       query: searchParams.get('q') || undefined,
       sortMode: searchParams.get('sort') as VideoNavigationContext['sortMode'],
       currentIndex: searchParams.get('index') ? parseInt(searchParams.get('index')!) : undefined,
     };
   }, [searchParams]);
+  const profileContextPubkey = context?.source === 'profile' ? context.pubkey : undefined;
 
   // Fast video loading via Funnelcake REST API
   const {
@@ -56,9 +59,9 @@ export function VideoPage() {
     error: funnelcakeError,
   } = useVideoByIdFunnelcake({
     videoId: id || '',
-    pubkey: context?.pubkey,
-    hashtag: context?.hashtag,
-    query: context?.query,
+    pubkey: profileContextPubkey,
+    hashtag: context?.source === 'hashtag' ? context.hashtag : undefined,
+    query: context?.source === 'search' ? context.query : undefined,
     sortMode: context?.sortMode,
     currentIndex: context?.currentIndex,
     enabled: !!id,
@@ -106,6 +109,7 @@ export function VideoPage() {
 
     if (context.hashtag) params.set('hashtag', context.hashtag);
     if (context.pubkey) params.set('pubkey', context.pubkey);
+    if (context.listId) params.set('listId', context.listId);
     if (context.query) params.set('q', context.query);
     if (context.sortMode) params.set('sort', context.sortMode);
 
@@ -126,12 +130,12 @@ export function VideoPage() {
 
   // Get author data for profile context
   // Prefer cached author name from video/Funnelcake, then fetched profile, then generated fallback
-  const authorData = useAuthor(context?.pubkey || '', {
+  const authorData = useAuthor(profileContextPubkey || '', {
     initialName: currentVideo?.authorName,
     initialAvatar: currentVideo?.authorAvatar,
   });
-  const authorName = context?.pubkey
-    ? (authorData.data?.metadata?.display_name || authorData.data?.metadata?.name || currentVideo?.authorName || genUserName(context.pubkey))
+  const authorName = profileContextPubkey
+    ? (authorData.data?.metadata?.display_name || authorData.data?.metadata?.name || currentVideo?.authorName || genUserName(profileContextPubkey))
     : null;
 
   // Progressive rendering: only render a window of videos, expand on scroll
@@ -166,7 +170,7 @@ export function VideoPage() {
     if (!usingWebsocketFallback) return;
 
     const reason = funnelcakeError?.message || 'REST returned no matching video';
-    const fallbackKey = `VideoPage|${id}|${context?.pubkey ?? ''}|${context?.hashtag ?? ''}|${reason}`;
+    const fallbackKey = `VideoPage|${id}|${profileContextPubkey ?? ''}|${context?.hashtag ?? ''}|${reason}`;
 
     if (fallbackReportKeyRef.current === fallbackKey) {
       return;
@@ -179,13 +183,13 @@ export function VideoPage() {
       dedupeKey: fallbackKey,
       context: {
         videoId: id,
-        pubkey: context?.pubkey,
+        pubkey: profileContextPubkey,
         hashtag: context?.hashtag,
       },
     });
   }, [
     context?.hashtag,
-    context?.pubkey,
+    profileContextPubkey,
     funnelcakeError?.message,
     funnelcakeLoading,
     funnelcakeVideo,
@@ -285,6 +289,8 @@ export function VideoPage() {
       if (context.sortMode) params.set('sort', context.sortMode);
       const target = params.toString() ? `/search?${params.toString()}` : '/search';
       navigate(target);
+    } else if (context?.source === 'people-list' && context.pubkey && context.listId) {
+      navigate(`/people-lists/${context.pubkey}/${encodeURIComponent(context.listId)}`);
     } else {
       navigate(-1); // Browser back
     }
@@ -456,7 +462,21 @@ export function VideoPage() {
     const socialMetrics = useVideoSocialMetrics(video.id, video.pubkey, video.vineId, {
       enabled: true,
     });
-    const divineViewCount = Math.max(video.divineViewCount ?? 0, socialMetrics.data?.viewCount ?? 0);
+    const loopCount = video.isVineMigrated
+      ? (video.loopCount ?? 0)
+      : Math.max(video.loopCount ?? 0, socialMetrics.data?.loopCount ?? 0);
+    const viewStartCount = Math.max(video.divineViewCount ?? 0, socialMetrics.data?.viewCount ?? 0);
+    const displayCount = getVisiblePlaybackCount({
+      isVineMigrated: video.isVineMigrated,
+      loopCount,
+      viewStartCount,
+    });
+    const videoForCard = useMemo(
+      () => loopCount !== (video.loopCount ?? 0)
+        ? { ...video, loopCount }
+        : video,
+      [loopCount, video]
+    );
 
     const handleVideoLike = async () => {
       if (userInteractions?.hasLiked) {
@@ -484,7 +504,7 @@ export function VideoPage() {
 
     return (
       <VideoCard
-        video={video}
+        video={videoForCard}
         className="max-w-xl mx-auto"
         layout="vertical"
         onLike={handleVideoLike}
@@ -496,7 +516,7 @@ export function VideoPage() {
         likeCount={video.likeCount ?? 0}
         repostCount={video.repostCount ?? 0}
         commentCount={video.commentCount ?? 0}
-        viewCount={(video.loopCount ?? 0) + divineViewCount}
+        viewCount={displayCount}
         showComments={showCommentsForVideo === video.id}
         navigationContext={context || undefined}
       />
@@ -592,6 +612,9 @@ export function VideoPage() {
               {context.source === 'search' && (
                 <span>{context.query ? t('videoPage.searchPrefix', { query: context.query }) : t('videoPage.searchResults')}</span>
               )}
+              {context.source === 'people-list' && (
+                <span>People list</span>
+              )}
               {(context.source === 'discovery' || context.source === 'trending' || context.source === 'home') && (
                 <span className="capitalize">{context.source}</span>
               )}
@@ -652,6 +675,9 @@ export function VideoPage() {
               )}
               {context.source === 'search' && (
                 <span>{context.query ? t('videoPage.searchPrefix', { query: context.query }) : t('videoPage.searchResults')}</span>
+              )}
+              {context.source === 'people-list' && (
+                <span>People list</span>
               )}
               {(context.source === 'discovery' || context.source === 'trending' || context.source === 'home') && (
                 <span className="capitalize">{context.source}</span>
@@ -751,6 +777,14 @@ export function VideoPage() {
                 className="text-muted-foreground hover:text-primary transition-colors text-xs"
               >
                 {context.query ? t('videoPage.searchPrefix', { query: context.query }) : t('videoPage.searchResults')}
+              </button>
+            )}
+            {context.source === 'people-list' && (
+              <button
+                onClick={handleGoBack}
+                className="text-muted-foreground hover:text-primary transition-colors text-xs"
+              >
+                People list
               </button>
             )}
             {(context.source === 'discovery' || context.source === 'trending' || context.source === 'home') && (

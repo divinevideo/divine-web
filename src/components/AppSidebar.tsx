@@ -2,7 +2,7 @@
 // ABOUTME: Shows main nav, login/signup, expandable Divine links section
 
 import { Link, useLocation } from 'react-router-dom';
-import { House as Home, Compass, MagnifyingGlass as Search, Bell, User, Sun, Moon, CaretDown as ChevronDown, Headphones, ChartBar as BarChart3, SquaresFour as LayoutGrid, Rss, ChatCircle as MessageCircle, TrendUp } from '@phosphor-icons/react';
+import { House as Home, Compass, MagnifyingGlass as Search, Bell, User, Sun, Moon, CaretDown as ChevronDown, Headphones, ChartBar as BarChart3, SquaresFour as LayoutGrid, Rss, ChatCircle as MessageCircle, TrendUp, Handshake } from '@phosphor-icons/react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCategories } from '@/hooks/useCategories';
@@ -23,7 +23,6 @@ import { LoginArea } from '@/components/auth/LoginArea';
 import { cn } from '@/lib/utils';
 import { feedUrls } from '@/lib/feedUrls';
 import { useRssFeedAvailable } from '@/hooks/useRssFeedAvailable';
-import { usePlatformStats } from '@/hooks/usePlatformStats';
 import { LanguageMenu } from '@/components/LanguageMenu';
 import { SocialLinks } from '@/components/SocialLinks';
 import { getTranslatedCategoryLabel } from '@/lib/constants/categories';
@@ -69,16 +68,19 @@ export function AppSidebar({ className }: { className?: string }) {
   const { data: unreadCount } = useUnreadNotificationCount();
   const { data: unreadDmCount } = useUnreadDmCount();
   const rssFeedAvailable = useRssFeedAvailable();
-  const { data: platformStats } = usePlatformStats();
   const [categoriesOpen, setCategoriesOpen] = useState(true);
   const [rssOpen, setRssOpen] = useState(false);
   const [divineOpen, setDivineOpen] = useState(false);
   const [termsOpen, setTermsOpen] = useState(false);
   const [appStoreUrl, setAppStoreUrl] = useState<string | null>(null);
   const { data: categories } = useCategories();
-  const classicVinesRecovered = platformStats?.vine_videos?.toLocaleString();
 
-  const isActive = (path: string) => location.pathname === path;
+  // Prerendered routes are served from a directory (dist/services/index.html),
+  // and Cloudflare Pages 308-redirects /services to /services/. Match the
+  // trailing-slash form too so a direct hit highlights the same nav item that
+  // an in-app navigation does.
+  const isActive = (path: string) =>
+    location.pathname === path || location.pathname === `${path}/`;
   const isDiscoveryActive = () =>
     location.pathname === '/discovery' || location.pathname.startsWith('/discovery/');
   const isPopularActive = () => location.pathname === '/popular';
@@ -204,6 +206,13 @@ export function AppSidebar({ className }: { className?: string }) {
             isActive={isPopularActive()}
           />
 
+          <NavItem
+            icon={<LayoutGrid className="h-[18px] w-[18px]" weight={isActive('/services') ? 'fill' : 'bold'} />}
+            label={t('nav.services')}
+            onClick={() => navigate('/services')}
+            isActive={isActive('/services')}
+          />
+
           {user && canUseDirectMessages && (
             <NavItem
               icon={
@@ -237,6 +246,15 @@ export function AppSidebar({ className }: { className?: string }) {
               label={t('nav.notifications')}
               onClick={() => navigate('/notifications')}
               isActive={isActive('/notifications')}
+            />
+          )}
+
+          {user && (
+            <NavItem
+              icon={<Handshake className="h-[18px] w-[18px]" weight={location.pathname === '/collabs' || location.pathname.startsWith('/collabs/') ? 'fill' : 'bold'} />}
+              label="Collabs"
+              onClick={() => navigate('/collabs')}
+              isActive={location.pathname === '/collabs' || location.pathname.startsWith('/collabs/')}
             />
           )}
 
@@ -405,19 +423,12 @@ export function AppSidebar({ className }: { className?: string }) {
         <Collapsible open={divineOpen} onOpenChange={setDivineOpen}>
           <CollapsibleTrigger asChild>
             <button
-              className="group flex w-full items-start justify-between gap-2 py-1.5 text-left text-[13px] font-semibold text-foreground transition-colors hover:text-primary"
+              className="group flex w-full items-center justify-between gap-2 py-1.5 text-left text-[13px] font-semibold text-foreground transition-colors hover:text-primary"
               style={{ fontFamily: "'Bricolage Grotesque', system-ui, sans-serif" }}
             >
-              <div className="min-w-0">
-                <div>{t('footer.aboutDivine')}</div>
-                {classicVinesRecovered && (
-                  <div className="mt-0.5 text-[11px] font-normal text-muted-foreground group-hover:text-muted-foreground">
-                    {t('footer.vinesRecovered', { count: classicVinesRecovered })}
-                  </div>
-                )}
-              </div>
+              <span>{t('footer.aboutDivine')}</span>
               <ChevronDown className={cn(
-                "mt-0.5 h-3.5 w-3.5 shrink-0 transition-transform duration-200",
+                "h-3.5 w-3.5 shrink-0 transition-transform duration-200",
                 divineOpen && "rotate-180"
               )} />
             </button>
@@ -464,6 +475,12 @@ export function AppSidebar({ className }: { className?: string }) {
               >
                 {t('menu.mediaResources')}
               </a>
+              <Link
+                to="/services"
+                className="transition-colors hover:text-primary"
+              >
+                {t('nav.services')}
+              </Link>
               <Link
                 to="/merch"
                 className="transition-colors hover:text-primary"

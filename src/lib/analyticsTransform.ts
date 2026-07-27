@@ -1,68 +1,70 @@
 // ABOUTME: Pure transform functions for Creator Analytics dashboard
-// ABOUTME: Computes KPIs, ranks top content, and maps API data to analytics types
+// ABOUTME: Maps the server-aggregated analytics response into the dashboard's shape
 
-import type { FunnelcakeVideoRaw } from '@/types/funnelcake';
-import type { FunnelcakeBulkStatsResponse } from '@/lib/funnelcakeClient';
+import type {
+  FunnelcakeVideoRaw,
+  FunnelcakeCreatorAnalyticsResponse,
+  FunnelcakeCreatorTopPost,
+} from '@/types/funnelcake';
 import type { FunnelcakeProfile } from '@/lib/funnelcakeClient';
 import type {
   VideoPerformance,
   CreatorKPIs,
   CreatorAnalyticsData,
+  CreatorAnalyticsWindow,
 } from '@/types/creatorAnalytics';
 
 /**
- * A video enriched with its bulk stats, ready for analytics computation
+ * Build the dashboard's KPI block from the server-aggregated summary.
+ *
+ * The summary totals span the creator's whole catalogue for the requested
+ * window - they are not derived from the top_posts list and therefore are
+ * correct regardless of catalogue size.
  */
-interface EnrichedVideo {
-  video: FunnelcakeVideoRaw;
-  stats: {
-    reactions: number;
-    comments: number;
-    reposts: number;
-    views?: number;
-    loops?: number;
-  } | null;
-}
-
-/**
- * Merge user videos with their bulk stats by event ID
- * Returns enriched videos with stats attached
- */
-export function mergeVideosWithStats(
-  videos: FunnelcakeVideoRaw[],
-  bulkStats: FunnelcakeBulkStatsResponse,
-): EnrichedVideo[] {
-  const statsMap = new Map(
-    bulkStats.stats.map(s => [s.id, s]),
-  );
-
-  return videos.map(video => ({
-    video,
-    stats: statsMap.get(video.id) ?? null,
-  }));
-}
-
-/**
- * Convert an enriched video to a VideoPerformance record
- */
-export function toVideoPerformance(enriched: EnrichedVideo): VideoPerformance {
-  const { video, stats } = enriched;
-
-  // Prefer bulk stats, fall back to video-level counts
-  const reactions = stats?.reactions ?? video.reactions ?? video.embedded_likes ?? 0;
-  const comments = stats?.comments ?? video.comments ?? video.embedded_comments ?? 0;
-  const reposts = stats?.reposts ?? video.reposts ?? video.embedded_reposts ?? 0;
-  const views = stats?.views ?? 0;
-  const hasViewData = stats?.views != null && stats.views > 0;
+export function kpisFromAnalytics(
+  analytics: FunnelcakeCreatorAnalyticsResponse,
+): CreatorKPIs {
+  const s = analytics.summary;
+  const reactions = s.reactions ?? 0;
+  const comments = s.comments ?? 0;
+  const reposts = s.reposts ?? 0;
 
   return {
-    eventId: video.id,
-    dTag: video.d_tag,
-    title: video.title || 'Untitled',
-    thumbnail: video.thumbnail,
-    createdAt: video.created_at,
-    views,
-    hasViewData,
+    totalVideos: s.video_count ?? 0,
+    totalViews: s.views ?? analytics.total_views ?? 0,
+    hasViewData: s.has_view_data === true,
+    totalReactions: reactions,
+    totalComments: comments,
+    totalReposts: reposts,
+    totalEngagement: reactions + comments + reposts,
+  };
+}
+
+/**
+ * Merge a top_posts entry (id + a metric or two) with the full video record
+ * fetched separately via bulk_videos, producing the row shape the UI renders.
+ *
+ * `videoById` may be missing the entry (deleted/unindexed); in that case
+ * the row is rendered with the ID alone and a placeholder title.
+ */
+export function topPostToPerformance(
+  post: FunnelcakeCreatorTopPost,
+  videoById: Map<string, FunnelcakeVideoRaw>,
+): VideoPerformance {
+  const video = videoById.get(post.id);
+  const reactions = video?.reactions ?? video?.embedded_likes ?? 0;
+  const comments = video?.comments ?? video?.embedded_comments ?? 0;
+  const reposts = video?.reposts ?? video?.embedded_reposts ?? 0;
+  const views = post.views ?? video?.views ?? 0;
+
+  return {
+    eventId: post.id,
+    dTag: video?.d_tag ?? '',
+    title: video?.title || 'Untitled',
+    thumbnail: video?.thumbnail,
+    createdAt: video?.created_at ?? 0,
+    views: views ?? 0,
+    hasViewData: post.views != null,
     reactions,
     comments,
     reposts,
@@ -71,65 +73,29 @@ export function toVideoPerformance(enriched: EnrichedVideo): VideoPerformance {
 }
 
 /**
- * Compute aggregate KPIs from a list of video performances
- */
-export function computeKPIs(videos: VideoPerformance[]): CreatorKPIs {
-  let totalViews = 0;
-  let totalReactions = 0;
-  let totalComments = 0;
-  let totalReposts = 0;
-  let hasViewData = false;
-
-  for (const v of videos) {
-    totalViews += v.views;
-    totalReactions += v.reactions;
-    totalComments += v.comments;
-    totalReposts += v.reposts;
-    if (v.hasViewData) hasViewData = true;
-  }
-
-  return {
-    totalVideos: videos.length,
-    totalViews,
-    hasViewData,
-    totalReactions,
-    totalComments,
-    totalReposts,
-    totalEngagement: totalReactions + totalComments + totalReposts,
-  };
-}
-
-/**
- * Rank videos by total engagement, return top N
- */
-export function rankTopContent(
-  videos: VideoPerformance[],
-  limit: number = 10,
-): VideoPerformance[] {
-  return [...videos]
-    .sort((a, b) => b.totalEngagement - a.totalEngagement)
-    .slice(0, limit);
-}
-
-/**
- * Build complete analytics data from raw API responses
- * This is the main orchestration function called by the hook
+ * Assemble the full dashboard payload from the analytics response, the
+ * bulk-fetched metadata for the top posts, and the creator's profile.
+ *
+ * `profile` is used solely for the follower/following counts shown on the
+ * KPI cards - the summary block already carries `followers_gained` over
+ * the window, but the dashboard wants the absolute count.
  */
 export function buildAnalyticsData(
-  videos: FunnelcakeVideoRaw[],
-  bulkStats: FunnelcakeBulkStatsResponse,
+  analytics: FunnelcakeCreatorAnalyticsResponse,
+  topVideoMetadata: FunnelcakeVideoRaw[],
   profile: FunnelcakeProfile | null,
 ): CreatorAnalyticsData {
-  const enriched = mergeVideosWithStats(videos, bulkStats);
-  const performances = enriched.map(toVideoPerformance);
-  const kpis = computeKPIs(performances);
-  const topVideos = rankTopContent(performances, 10);
+  const videoById = new Map(topVideoMetadata.map(v => [v.id, v]));
+  const topVideos = analytics.top_posts.map(post =>
+    topPostToPerformance(post, videoById),
+  );
 
   return {
-    kpis,
+    kpis: kpisFromAnalytics(analytics),
     topVideos,
     followerCount: profile?.follower_count ?? 0,
     followingCount: profile?.following_count ?? 0,
+    window: (analytics.window || analytics.period || '30d') as CreatorAnalyticsWindow,
     fetchedAt: new Date(),
   };
 }

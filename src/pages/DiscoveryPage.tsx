@@ -1,5 +1,5 @@
-// ABOUTME: Discovery feed page showing all public videos with tabs for Classics, Hot, Rising, New, and Hashtags
-// ABOUTME: Each tab uses different sort modes; Classics uses Funnelcake REST API for pre-computed metrics
+// ABOUTME: Discovery feed page showing public videos with tabs for Classics, Hot, and Hashtags
+// ABOUTME: Each video tab uses a moderated or curated feed source
 // ABOUTME: For You tab shows personalized recommendations when user is logged in
 
 import { useEffect, useMemo, useState } from 'react';
@@ -11,16 +11,16 @@ import { VerifiedOnlyToggle } from '@/components/VerifiedOnlyToggle';
 import { HashtagExplorer } from '@/components/HashtagExplorer';
 import { ClassicVinersRow } from '@/components/ClassicVinersRow';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Star, Clock, Hash, Flame, Sparkle as Sparkles } from '@phosphor-icons/react';
+import { Star, Hash, Flame, Sparkle as Sparkles } from '@phosphor-icons/react';
 // Zap temporarily unused - will be needed when Rising tab is re-enabled
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useCategories } from '@/hooks/useCategories';
 import { getTranslatedCategoryLabel } from '@/lib/constants/categories';
 
 // All possible tab values (foryou only shown when logged in)
-type AllowedTab = 'foryou' | 'classics' | 'hot' | 'new' | 'hashtags';
-const ALL_TABS: AllowedTab[] = ['foryou', 'classics', 'hot', 'new', 'hashtags'];
-const BASE_TABS: AllowedTab[] = ['classics', 'hot', 'new', 'hashtags'];
+type AllowedTab = 'foryou' | 'classics' | 'hot' | 'hashtags';
+const ALL_TABS: AllowedTab[] = ['foryou', 'classics', 'hot', 'hashtags'];
+const BASE_TABS: AllowedTab[] = ['classics', 'hot', 'hashtags'];
 
 export function DiscoveryPage() {
   const navigate = useSubdomainNavigate();
@@ -122,7 +122,7 @@ export function DiscoveryPage() {
           }}
           className="space-y-6"
         >
-          <TabsList className={`w-full grid gap-1 ${isLoggedIn ? 'grid-cols-5' : 'grid-cols-4'}`}>
+          <TabsList className={`w-full grid gap-1 ${isLoggedIn ? 'grid-cols-4' : 'grid-cols-3'}`}>
             {isLoggedIn && (
               <TabsTrigger value="foryou" className="gap-1.5 sm:gap-2">
                 <Sparkles className="h-4 w-4" />
@@ -143,10 +143,6 @@ export function DiscoveryPage() {
               <span className="hidden sm:inline">Rising</span>
             </TabsTrigger>
             */}
-            <TabsTrigger value="new" className="gap-1.5 sm:gap-2">
-              <Clock className="h-4 w-4" />
-              <span className="hidden sm:inline">{t('discovery.new')}</span>
-            </TabsTrigger>
             <TabsTrigger value="hashtags" className="gap-1.5 sm:gap-2">
               <Hash className="h-4 w-4" />
               <span className="hidden sm:inline">{t('discovery.tags')}</span>
@@ -204,16 +200,6 @@ export function DiscoveryPage() {
             />
           </TabsContent>
           */}
-
-          <TabsContent value="new" className="mt-0 space-y-6">
-            <VideoFeed
-              feedType="recent"
-              verifiedOnly={verifiedOnly}
-              data-testid="video-feed-new"
-              className="space-y-6"
-              key="recent"
-            />
-          </TabsContent>
 
           <TabsContent value="hashtags" className="mt-0 space-y-6">
             <HashtagExplorer />

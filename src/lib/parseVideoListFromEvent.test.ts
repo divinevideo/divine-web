@@ -3,7 +3,7 @@
 import { describe, it, expect } from 'vitest';
 import type { NostrEvent } from '@nostrify/nostrify';
 import { SHORT_VIDEO_KIND } from '@/types/video';
-import { parseVideoListFromEvent } from './parseVideoListFromEvent';
+import { deduplicateVideoLists, parseVideoListFromEvent } from './parseVideoListFromEvent';
 
 const OWNER = 'b'.repeat(64);
 const COORD = `${SHORT_VIDEO_KIND}:${OWNER}:my-video`;
@@ -141,5 +141,18 @@ describe('parseVideoListFromEvent', () => {
     const list = parseVideoListFromEvent(ev);
     expect(list?.description).toBe('About');
     expect(list?.image).toBe('https://example.com/cover.jpg');
+  });
+});
+
+describe('deduplicateVideoLists', () => {
+  it('keeps the newest version of a full owner and d-tag address', () => {
+    const older = baseEvent({ created_at: 10, tags: [['d', 'same'], ['title', 'Old']] });
+    const newer = baseEvent({ created_at: 30, tags: [['d', 'same'], ['title', 'New']] });
+    const other = baseEvent({ created_at: 20, tags: [['d', 'other']] });
+
+    expect(deduplicateVideoLists([older, other, newer]).map((list) => list.name)).toEqual([
+      'New',
+      'other',
+    ]);
   });
 });

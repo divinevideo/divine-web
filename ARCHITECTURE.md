@@ -60,6 +60,13 @@ routing resolves user profiles (e.g., `alice.divine.video/`) by reading the
 subdomain and loading the corresponding Nostr profile. Static hosts use
 `404.html` (copied from [`index.html`](./index.html) during build) as a
 catch-all fallback.
+The retired `/discovery/new` chronological feed redirects to
+`/discovery/hot`; Discovery does not expose or mount an all-new-video feed.
+Public profiles expose a compact mixed NIP-51 list shelf and a filterable
+`/profile/:npub/lists` gallery. Kind `30005` video sets retain their
+owner-aware `/list/:pubkey/:listId` route; kind `30000` people sets use
+`/people-lists/:pubkey/:listId`, where member context appears above a primary
+video grid assembled from the listed pubkeys.
 
 ## Styling
 
@@ -129,3 +136,17 @@ Nostr relays are configured in [`src/config/relays.ts`](./src/config/relays.ts).
 Firebase Analytics runs behind GDPR cookie consent. Sentry handles error
 tracking. Media assets come from cdn.divine.video. Content moderation uses
 moderation-api.divine.video. HubSpot provides the cookie consent banner.
+
+### Relay Routing
+
+[`src/lib/relayRouting.ts`](./src/lib/relayRouting.ts) defines the
+`reqRouter` and `eventRouter` factories used by
+[`src/components/NostrProvider.tsx`](./src/components/NostrProvider.tsx).
+Reads split filters into profile (kinds 0/3/10011), badge
+(8/30008/30009), and other groups; each group is fanned out to its
+relay set. Writes fan out to the primary relay plus `PROFILE_RELAYS`
+for kind 0/3/10011 and to `PRESET_RELAYS` (capped at 5) for everything
+else. **Mute lists (kind 10000) are write-restricted to
+`{primary} ∪ PROFILE_RELAYS`** so the write set is aligned with the
+read set and a user's populated list on a public relay is not
+clobbered by a web-side write that the web read path would never see.

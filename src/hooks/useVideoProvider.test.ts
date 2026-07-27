@@ -49,6 +49,12 @@ vi.mock('@/hooks/useRelayCapabilities', () => ({
   useResolvedRelayCapabilities: mockUseResolvedRelayCapabilities,
 }));
 
+// Blocklist behavior is covered in useVideoProvider.blocklist.test.ts;
+// these routing tests run with an empty blocklist.
+vi.mock('@/hooks/useFeedBlocklist', () => ({
+  useFeedBlocklist: () => new Set<string>(),
+}));
+
 vi.mock('@/config/relays', async () => {
   const actual = await vi.importActual<typeof import('@/config/relays')>('@/config/relays');
   return actual;

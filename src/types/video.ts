@@ -45,11 +45,15 @@ export type ProofModeLevel = 'verified_mobile' | 'verified_web' | 'basic_proof' 
 
 export interface ProofModeData {
   level: ProofModeLevel;
-  manifest?: string; // Raw JSON string
+  // CAUTION: when this data is built from a compact Funnelcake proof summary
+  // (proofSummaryToProofMode in funnelcakeTransform.ts), the string fields
+  // below hold the sentinel 'summary:present' instead of real values. Treat
+  // them as presence flags — never render them verbatim in UI.
+  manifest?: string; // Raw JSON string (or 'summary:present' sentinel)
   manifestData?: Record<string, unknown>; // Parsed manifest object
-  deviceAttestation?: string; // Hardware attestation token (iOS App Attest / Android Play Integrity)
-  pgpFingerprint?: string; // PGP public key fingerprint for signature verification
-  c2paManifestId?: string; // Content Credentials manifest ID
+  deviceAttestation?: string; // Hardware attestation token (iOS App Attest / Android Play Integrity), or sentinel
+  pgpFingerprint?: string; // PGP public key fingerprint for signature verification, or sentinel
+  c2paManifestId?: string; // Content Credentials manifest ID, or sentinel
 }
 
 export interface OriginData {

@@ -8,6 +8,7 @@ import { selectCurrentUsers, isJwtResolving } from '@/lib/selectCurrentUsers';
 
 import { useAuthor } from './useAuthor.ts';
 import { useDivineSession } from './useDivineSession';
+import { useNip07Availability } from './useNip07Availability';
 
 type CurrentUser = {
   pubkey: string;
@@ -70,20 +71,35 @@ export function useCurrentUser() {
   const jwtError =
     !!jwtResolution && jwtResolution.token === token && 'error' in jwtResolution;
 
+  const hasExtensionLogin = logins.some((login) => login.type === 'extension');
+  const nip07Status = useNip07Availability(hasExtensionLogin);
+
   const manualUsers = useMemo(() => {
     const users: CurrentUser[] = [];
 
     for (const login of logins) {
+      // Extension content scripts can inject window.nostr after first render;
+      // hold off on extension logins until the availability check settles.
+      if (login.type === 'extension' && nip07Status === 'checking') {
+        continue;
+      }
+
       try {
         const user = loginToUser(login);
         users.push(user);
       } catch (error) {
-        console.warn('Skipped invalid login', login.id, error);
+        if (login.type === 'extension' && nip07Status === 'unavailable') {
+          // Expected when the extension was removed or disabled. Sentry
+          // captures console.warn, so keep this at info to avoid alert noise.
+          console.info('Skipped extension login; no NIP-07 provider found', login.id);
+        } else {
+          console.warn('Skipped invalid login', login.id, error);
+        }
       }
     }
 
     return users;
-  }, [logins, loginToUser]);
+  }, [logins, loginToUser, nip07Status]);
 
   const jwtUser = useMemo<CurrentUser | undefined>(() => {
     if (!jwtSigner || !jwtPubkey) {

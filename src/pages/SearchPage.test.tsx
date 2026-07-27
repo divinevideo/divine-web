@@ -838,6 +838,13 @@ describe('SearchPage', () => {
   });
 
   it('uses the friendly-path profile link for users with a NIP-05', () => {
+    mockUseNip05Validation.mockReturnValue({
+      isValid: true,
+      isLoading: false,
+      isInvalid: false,
+      state: 'valid',
+      nip05: '_@sam.dvine.video',
+    });
     mockUseSearchUsers.mockReturnValue({
       data: [
         {
@@ -856,5 +863,34 @@ describe('SearchPage', () => {
 
     fireEvent.click(screen.getAllByRole('button', { name: /view profile of sam/i })[0]!);
     expect(mockNavigate).toHaveBeenCalledWith('/u/sam.dvine.video');
+  });
+
+  it('uses the npub profile link for users with an unvalidated NIP-05', () => {
+    const pubkey = '5'.repeat(64);
+    mockUseNip05Validation.mockReturnValue({
+      isValid: false,
+      isLoading: false,
+      isInvalid: true,
+      state: 'invalid',
+      nip05: 'sam@spoofed.example',
+    });
+    mockUseSearchUsers.mockReturnValue({
+      data: [
+        {
+          pubkey,
+          metadata: {
+            display_name: 'Sam',
+            nip05: 'sam@spoofed.example',
+          },
+        },
+      ],
+      isLoading: false,
+      error: null,
+    });
+
+    renderPage(['/search?q=sam&filter=users']);
+
+    fireEvent.click(screen.getAllByRole('button', { name: /view profile of sam/i })[0]!);
+    expect(mockNavigate).toHaveBeenCalledWith(`/${nip19.npubEncode(pubkey)}`);
   });
 });

@@ -1,5 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
-import { extractEntryScript, verifyLiveBundle } from './verify-live-bundle.mjs';
+import {
+  buildCurlArgs,
+  extractEntryScript,
+  verifyLiveBundle,
+  verifyInjectedRoutesOk,
+} from './verify-live-bundle.mjs';
 
 const htmlWith = (entry: string) =>
   `<!doctype html><html><head>` +
@@ -210,5 +215,159 @@ describe('verifyLiveBundle', () => {
     });
 
     expect(assetUrls).toContain('https://www.divine.video/assets/index-CkdwgBUK.js');
+  });
+
+  it('polls live HTML with no-cache request headers', async () => {
+    const expected = '/assets/index-CkdwgBUK.js';
+    const fetchImpl = vi.fn(async (url: string) => {
+      if (url.endsWith('.js')) return { ok: true, status: 200, text: async () => '' };
+      return okResponse(htmlWith(expected));
+    });
+
+    await verifyLiveBundle({
+      expected,
+      urls: ['https://divine.video/'],
+      fetchImpl,
+      attempts: 2,
+      sleep: vi.fn(async () => {}),
+    });
+
+    expect(fetchImpl).toHaveBeenCalledWith(
+      'https://divine.video/',
+      expect.objectContaining({
+        headers: { 'Cache-Control': 'no-cache', Pragma: 'no-cache' },
+      }),
+    );
+  });
+});
+
+describe('verifyInjectedRoutesOk', () => {
+  const noopSleep = vi.fn(async () => {});
+
+  it('passes when every injected route returns 2xx to a browser client', async () => {
+    const fetchImpl = vi.fn(async () => ({ ok: true, status: 200, text: async () => '' }));
+
+    await expect(
+      verifyInjectedRoutesOk({
+        urls: ['https://divine.video/', 'https://divine.video/discovery/classics'],
+        fetchImpl,
+        attempts: 3,
+        sleep: noopSleep,
+      }),
+    ).resolves.toMatchObject({ ok: true });
+
+    expect(fetchImpl).toHaveBeenCalledTimes(2); // one healthy check per route
+  });
+
+  it('sends a browser Accept-Encoding so the compressed HTML path is exercised', async () => {
+    // The bundle check fetches identity HTML to read the entry <script>, so it never
+    // sees the compressed 500 browsers get (#489). This check must send br.
+    const fetchImpl = vi.fn(async () => ({ ok: true, status: 200, text: async () => '' }));
+
+    await verifyInjectedRoutesOk({
+      urls: ['https://divine.video/'],
+      fetchImpl,
+      attempts: 1,
+      sleep: noopSleep,
+    });
+
+    expect(fetchImpl).toHaveBeenCalledWith(
+      'https://divine.video/',
+      expect.objectContaining({
+        headers: expect.objectContaining({ 'Accept-Encoding': 'gzip, deflate, br' }),
+      }),
+    );
+  });
+
+  it('fails the deploy when an injected route 500s for a browser', async () => {
+    const fetchImpl = vi.fn(async () => ({ ok: false, status: 500, text: async () => '' }));
+
+    await expect(
+      verifyInjectedRoutesOk({
+        urls: ['https://divine.video/'],
+        fetchImpl,
+        attempts: 2,
+        sleep: noopSleep,
+      }),
+    ).rejects.toThrow(/https:\/\/divine\.video\//);
+
+    expect(fetchImpl).toHaveBeenCalledTimes(2); // retried, then failed
+  });
+
+  it('treats a transient non-2xx as retryable and passes once it recovers', async () => {
+    let calls = 0;
+    const fetchImpl = vi.fn(async () => {
+      calls += 1;
+      if (calls === 1) return { ok: false, status: 503, text: async () => '' };
+      return { ok: true, status: 200, text: async () => '' };
+    });
+
+    await expect(
+      verifyInjectedRoutesOk({
+        urls: ['https://divine.video/'],
+        fetchImpl,
+        attempts: 3,
+        sleep: noopSleep,
+      }),
+    ).resolves.toMatchObject({ ok: true });
+
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+    expect(noopSleep).toHaveBeenCalled();
+  });
+
+  it('treats a thrown fetch as a failed attempt and keeps polling', async () => {
+    let calls = 0;
+    const fetchImpl = vi.fn(async () => {
+      calls += 1;
+      if (calls === 1) throw new DOMException('The operation timed out.', 'TimeoutError');
+      return { ok: true, status: 200, text: async () => '' };
+    });
+
+    await expect(
+      verifyInjectedRoutesOk({
+        urls: ['https://divine.video/'],
+        fetchImpl,
+        attempts: 3,
+        sleep: vi.fn(async () => {}),
+      }),
+    ).resolves.toMatchObject({ ok: true });
+
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('buildCurlArgs', () => {
+  it('emits request headers as -H flags so they actually reach curl', () => {
+    const args = buildCurlArgs('https://divine.video/', {
+      headers: { 'Cache-Control': 'no-cache', Pragma: 'no-cache' },
+    });
+
+    expect(args).toContain('https://divine.video/');
+    expect(args).toEqual(
+      expect.arrayContaining(['-H', 'Cache-Control: no-cache', '-H', 'Pragma: no-cache']),
+    );
+  });
+
+  it('accepts Headers instances when emitting -H flags', () => {
+    const args = buildCurlArgs('https://divine.video/', {
+      headers: new Headers({ 'Cache-Control': 'no-cache' }),
+    });
+
+    expect(args).toEqual(expect.arrayContaining(['-H', 'cache-control: no-cache']));
+  });
+
+  it('accepts header tuples when emitting -H flags', () => {
+    const args = buildCurlArgs('https://divine.video/', {
+      headers: [['Pragma', 'no-cache']],
+    });
+
+    expect(args).toEqual(expect.arrayContaining(['-H', 'Pragma: no-cache']));
+  });
+
+  it('defaults to GET and omits -H when no headers are provided', () => {
+    const args = buildCurlArgs('https://divine.video/');
+
+    expect(args).toEqual(expect.arrayContaining(['-X', 'GET']));
+    expect(args).not.toContain('-H');
   });
 });

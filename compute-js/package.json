@@ -1,12 +1,12 @@
 {
-  "name": "divine-web",
+  "name": "divine-web-edge",
   "version": "0.1.0",
   "description": "Divine video app for Nostr",
   "author": "you@example.com",
   "type": "module",
   "devDependencies": {
-    "@fastly/cli": "^11.2.0",
-    "@fastly/compute-js-static-publish": "^7.0.3"
+    "@fastly/cli": "^15.3.1",
+    "@fastly/compute-js-static-publish": "^7.0.7"
   },
   "dependencies": {
     "@fastly/js-compute": "^3.26.0"
