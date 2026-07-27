@@ -9,8 +9,16 @@ import React from 'react';
 // Mock the funnelcakeClient module
 vi.mock('@/lib/funnelcakeClient', () => ({
   fetchUserProfile: vi.fn(),
-  fetchUserVideos: vi.fn(),
-  fetchBulkVideoStats: vi.fn(),
+  fetchCreatorAnalytics: vi.fn(),
+  fetchBulkVideos: vi.fn(),
+}));
+
+// Mock the current user (hook requires a signer for the NIP-98 analytics call)
+vi.mock('@/hooks/useCurrentUser', () => ({
+  useCurrentUser: () => ({
+    user: { pubkey: 'a'.repeat(64) },
+    signer: { signEvent: vi.fn() },
+  }),
 }));
 
 // Mock the funnelcakeHealth module
@@ -66,8 +74,8 @@ function createWrapper() {
 describe('useCreatorAnalytics', () => {
   let useCreatorAnalytics: typeof import('./useCreatorAnalytics').useCreatorAnalytics;
   let fetchUserProfile: ReturnType<typeof vi.fn>;
-  let fetchUserVideos: ReturnType<typeof vi.fn>;
-  let fetchBulkVideoStats: ReturnType<typeof vi.fn>;
+  let fetchCreatorAnalytics: ReturnType<typeof vi.fn>;
+  let fetchBulkVideos: ReturnType<typeof vi.fn>;
   let reportFunnelcakeFallback: ReturnType<typeof vi.fn>;
 
   beforeEach(async () => {
@@ -76,8 +84,8 @@ describe('useCreatorAnalytics', () => {
 
     const client = await import('@/lib/funnelcakeClient');
     fetchUserProfile = client.fetchUserProfile as ReturnType<typeof vi.fn>;
-    fetchUserVideos = client.fetchUserVideos as ReturnType<typeof vi.fn>;
-    fetchBulkVideoStats = client.fetchBulkVideoStats as ReturnType<typeof vi.fn>;
+    fetchCreatorAnalytics = client.fetchCreatorAnalytics as ReturnType<typeof vi.fn>;
+    fetchBulkVideos = client.fetchBulkVideos as ReturnType<typeof vi.fn>;
 
     const fallbackReporting = await import('@/lib/funnelcakeFallbackReporting');
     reportFunnelcakeFallback = fallbackReporting.reportFunnelcakeFallback as ReturnType<typeof vi.fn>;
@@ -85,9 +93,12 @@ describe('useCreatorAnalytics', () => {
     const hook = await import('./useCreatorAnalytics');
     useCreatorAnalytics = hook.useCreatorAnalytics;
 
-    // Default: empty video list, no stats needed
-    fetchUserVideos.mockResolvedValue({ videos: [], has_more: false });
-    fetchBulkVideoStats.mockResolvedValue({ stats: [], missing: [] });
+    // Default: empty analytics, no top posts
+    fetchCreatorAnalytics.mockResolvedValue({
+      summary: { video_count: 0 },
+      top_posts: [],
+    });
+    fetchBulkVideos.mockResolvedValue({ videos: [], missing: [] });
   });
 
   it('reports a fallback when the profile fetch returns null', async () => {
