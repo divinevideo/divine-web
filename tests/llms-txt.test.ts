@@ -20,9 +20,9 @@ describe('public llms.txt', () => {
     expect(llmsTxt).toMatch(/^Last updated: \d{4}-\d{2}-\d{2}$/m);
   });
 
-  it('states current availability without overselling the mobile betas', () => {
-    expect(llmsTxt).toContain('The web app is publicly available.');
-    expect(llmsTxt).toContain('iOS and Android betas are invite-only');
+  it('states current availability without a stale invite-only claim', () => {
+    expect(llmsTxt).toContain('The web app is publicly available, as are the iOS and Android apps.');
+    expect(llmsTxt).not.toContain('invite-only (TestFlight');
   });
 
   it('points agents at user-facing resources and public protocol docs', () => {
