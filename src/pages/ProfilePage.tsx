@@ -30,6 +30,7 @@ import { useClassicVineArchiveStats } from '@/hooks/useClassicVineArchiveStats';
 import { useFollowRelationship, useFollowUser, useUnfollowUser, FollowRaceError } from '@/hooks/useFollowRelationship';
 import { useFollowListSafetyCheck } from '@/hooks/useFollowListSafetyCheck';
 import { PinnedVideosSection } from '@/components/PinnedVideosSection';
+import { ProfileListsSection } from '@/components/ProfileListsSection';
 import { useLoginDialog } from '@/contexts/LoginDialogContext';
 import { toast } from '@/hooks/useToast';
 import { debugLog } from '@/lib/debug';
@@ -420,6 +421,9 @@ export function ProfilePage({ pubkeyOverride }: { pubkeyOverride?: string } = {}
         {/* Pinned Videos */}
         <PinnedVideosSection pubkey={pubkey} isOwnProfile={isOwnProfile} />
 
+        {/* Public Lists */}
+        <ProfileListsSection pubkey={pubkey} />
+
         {/* Content Section */}
         <div className="space-y-4">
           {/* View Mode Toggle + Sort */}
@@ -465,6 +469,7 @@ export function ProfilePage({ pubkeyOverride }: { pubkeyOverride?: string } = {}
                   variant={viewMode === 'grid' ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => setViewMode('grid')}
+                  aria-label="Grid view"
                   data-testid="grid-view-button"
                 >
                   <Grid className="w-4 h-4" />
@@ -473,6 +478,7 @@ export function ProfilePage({ pubkeyOverride }: { pubkeyOverride?: string } = {}
                   variant={viewMode === 'list' ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => setViewMode('list')}
+                  aria-label="List view"
                   data-testid="list-view-button"
                 >
                   <List className="w-4 h-4" />

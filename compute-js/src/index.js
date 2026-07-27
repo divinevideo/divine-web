@@ -23,7 +23,7 @@ import {
   handleApexOgTags,
 } from './crawlerHandlers.js';
 import { transformVideoApiResponse } from './videoMetadata.js';
-import { compactVideoForHydration } from './feedHydration.js';
+import { compactVideoForHydration, normalizeFeedResponse } from './feedHydration.js';
 import { renderEmbedPage } from './embedPage.js';
 import { renderFeedPage, renderVideoPage, renderProfilePage, renderSearchPage } from './templates/pages.js';
 
@@ -424,9 +424,13 @@ function getDiscoveryFeedType(pathname) {
   const match = pathname.match(/^\/discovery\/(new|hot|classics|top)$/);
   if (!match) return null;
   const tab = match[1];
-  if (tab === 'new') return 'recent';
+  // 'new' is disabled (#513: unmoderated new-video discovery) — let the SPA
+  // shell serve it so the client-side redirect to /discovery/hot runs.
+  if (tab === 'new') return null;
   if (tab === 'hot') return 'trending';
-  if (tab === 'classics' || tab === 'top') return 'classics';
+  // Classics starts from a randomized offset in the client, so the first query
+  // cannot consume an injected page without changing the feed ordering.
+  if (tab === 'classics' || tab === 'top') return null;
   return null;
 }
 
@@ -435,7 +439,9 @@ function getDiscoveryFeedType(pathname) {
  */
 function getFeedApiUrl(feedType) {
   switch (feedType) {
-    case 'trending': return '/api/videos?sort=trending&limit=10';
+    // v2 envelope carries the opaque cursor the client needs to keep paginating
+    // past the injected first page; v1 arrays cannot express one for this feed.
+    case 'trending': return '/api/v2/videos?sort=watching&limit=10';
     case 'recent': return '/api/videos?sort=recent&limit=10';
     case 'classics': return '/api/videos?sort=loops&limit=10';
     default: return '/api/videos?sort=trending&limit=10';
@@ -491,7 +497,7 @@ async function fetchFeedData(feedType = 'trending', funnelcakeTarget = getFunnel
     const apiPath = getFeedApiUrl(feedType);
     const resp = await fetchFromFunnelcake(funnelcakeTarget, apiPath);
     if (resp.ok) {
-      feedData = await resp.json();
+      feedData = normalizeFeedResponse(await resp.json());
       // 3. Update KV cache (fire and forget)
       try {
         await contentStore.put(CACHE_KEY, JSON.stringify({

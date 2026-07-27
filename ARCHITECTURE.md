@@ -60,6 +60,13 @@ routing resolves user profiles (e.g., `alice.divine.video/`) by reading the
 subdomain and loading the corresponding Nostr profile. Static hosts use
 `404.html` (copied from [`index.html`](./index.html) during build) as a
 catch-all fallback.
+The retired `/discovery/new` chronological feed redirects to
+`/discovery/hot`; Discovery does not expose or mount an all-new-video feed.
+Public profiles expose a compact mixed NIP-51 list shelf and a filterable
+`/profile/:npub/lists` gallery. Kind `30005` video sets retain their
+owner-aware `/list/:pubkey/:listId` route; kind `30000` people sets use
+`/people-lists/:pubkey/:listId`, where member context appears above a primary
+video grid assembled from the listed pubkeys.
 
 ## Styling
 

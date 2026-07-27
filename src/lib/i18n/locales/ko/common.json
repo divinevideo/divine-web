@@ -8,6 +8,7 @@
     "home": "홈",
     "discover": "탐색",
     "popular": "Popular",
+    "services": "Services",
     "search": "검색",
     "messages": "메시지",
     "notifications": "알림",
@@ -38,7 +39,6 @@
   },
   "footer": {
     "aboutDivine": "Divine 소개",
-    "vinesRecovered": "{{count}}개의 Vine 복구됨",
     "termsAndOpenSource": "약관 및 오픈 소스",
     "copyright": "© 2026 Divine"
   },
@@ -134,6 +134,19 @@
     "communityDescription": "커뮤니티 대화에 참여하고 Nostr 의 다른 Divine 사용자와 연결하세요.",
     "communityBody": "Divine 은 탈중앙화 소셜 프로토콜인 Nostr 위에 구축되었습니다. 즐겨 사용하는 Nostr 클라이언트에서 저희를 찾아보세요."
   },
+  "servicesPage": {
+    "title": "Divine services",
+    "intro": "Divine is more than loops. These services help you make the most of it.",
+    "openService": "Open {{name}}",
+    "items": {
+      "space": "Your profile, your rules. Themes, Top 8, profile music.",
+      "sounds": "Trending sounds and a Creative Commons library for your loops.",
+      "badges": "Awards for creators who show up.",
+      "crossposter": "Post your loops to the other platforms — only when you opt in.",
+      "verifier": "Check where a video really came from.",
+      "status": "Is it us or is it you? Check here."
+    }
+  },
   "tagPage": {
     "notFoundTitle": "태그를 찾을 수 없습니다",
     "notFoundDescription": "요청한 태그를 찾을 수 없습니다.",
@@ -146,7 +159,11 @@
     "emptyState": "현재 사용할 수 있는 카테고리가 없습니다.",
     "metaTitle": "카테고리 둘러보기 - Divine",
     "metaDescription": "Divine 에서 코미디, 음악, 댄스, 동물, 스포츠, 음식 등 다양한 동영상 카테고리를 둘러보세요.",
+    "videoCount_zero": "{{count}} videos",
     "videoCount_one": "동영상 {{count}}개",
+    "videoCount_two": "{{count}} videos",
+    "videoCount_few": "{{count}} videos",
+    "videoCount_many": "{{count}} videos",
     "videoCount_other": "동영상 {{count}}개"
   },
   "vineBadge": {
@@ -386,7 +403,6 @@
     "message": "메시지",
     "reportUser": "사용자 신고",
     "subscribeRss": "RSS 피드 구독",
-    "videos": "비디오",
     "followers": "팔로워",
     "followingStat": "팔로잉",
     "followingDialogTitle": "팔로잉",

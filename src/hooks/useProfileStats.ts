@@ -8,7 +8,7 @@ import type { ParsedVideoData } from '@/types/video';
 import { API_CONFIG } from '@/config/api';
 import { fetchUserProfile, fetchUserLoopStats } from '@/lib/funnelcakeClient';
 import { isFunnelcakeAvailable } from '@/lib/funnelcakeHealth';
-import { reportFunnelcakeFallback } from '@/lib/funnelcakeFallbackReporting';
+import { isAbortError, reportFunnelcakeFallback } from '@/lib/funnelcakeFallbackReporting';
 import type { ProfileStats } from '@/lib/profileStats';
 
 /**
@@ -91,6 +91,11 @@ export function useProfileStats(pubkey: string, videos?: ParsedVideoData[]) {
 
           reportFallback('REST returned no profile');
         } catch (err) {
+          // Cancelled queries are not failures — surface the abort to
+          // React Query without reporting or falling back (#459)
+          if (isAbortError(err)) {
+            throw err;
+          }
           debugLog(`[useProfileStats] REST API failed, falling back to WebSocket:`, err);
           reportFallback(err instanceof Error ? err.message : String(err));
           // Fall through to WebSocket fallback

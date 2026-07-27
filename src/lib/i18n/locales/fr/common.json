@@ -8,6 +8,7 @@
     "home": "Accueil",
     "discover": "Decouvrir",
     "popular": "Popular",
+    "services": "Services",
     "search": "Rechercher",
     "messages": "Messages",
     "notifications": "Notifications",
@@ -38,7 +39,6 @@
   },
   "footer": {
     "aboutDivine": "A propos de Divine",
-    "vinesRecovered": "{{count}} Vines recuperes",
     "termsAndOpenSource": "Conditions et open source",
     "copyright": "© 2026 Divine"
   },
@@ -134,6 +134,19 @@
     "communityDescription": "Rejoignez les discussions de la communaute et connectez-vous avec d'autres utilisateurs de Divine sur Nostr.",
     "communityBody": "Divine est construit sur Nostr, un protocole social decentralise. Retrouvez-nous sur votre client Nostr prefere."
   },
+  "servicesPage": {
+    "title": "Divine services",
+    "intro": "Divine is more than loops. These services help you make the most of it.",
+    "openService": "Open {{name}}",
+    "items": {
+      "space": "Your profile, your rules. Themes, Top 8, profile music.",
+      "sounds": "Trending sounds and a Creative Commons library for your loops.",
+      "badges": "Awards for creators who show up.",
+      "crossposter": "Post your loops to the other platforms — only when you opt in.",
+      "verifier": "Check where a video really came from.",
+      "status": "Is it us or is it you? Check here."
+    }
+  },
   "tagPage": {
     "notFoundTitle": "Tag introuvable",
     "notFoundDescription": "Le tag demande est introuvable.",
@@ -146,7 +159,11 @@
     "emptyState": "Aucune categorie disponible pour le moment.",
     "metaTitle": "Parcourir les categories - Divine",
     "metaDescription": "Explorez les categories de videos sur Divine - comedie, musique, danse, animaux, sport, cuisine et plus encore.",
+    "videoCount_zero": "{{count}} videos",
     "videoCount_one": "{{count}} video",
+    "videoCount_two": "{{count}} videos",
+    "videoCount_few": "{{count}} videos",
+    "videoCount_many": "{{count}} videos",
     "videoCount_other": "{{count}} videos"
   },
   "vineBadge": {
@@ -386,7 +403,6 @@
     "message": "Message",
     "reportUser": "Signaler l'utilisateur",
     "subscribeRss": "S'abonner au flux RSS",
-    "videos": "Vidéos",
     "followers": "Abonnés",
     "followingStat": "Abonnements",
     "followingDialogTitle": "Abonnements",

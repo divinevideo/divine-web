@@ -28,7 +28,9 @@ vi.mock('@/hooks/useCategories', () => ({
 }));
 
 vi.mock('@/components/VideoFeed', () => ({
-  VideoFeed: () => <div data-testid="video-feed" />,
+  VideoFeed: ({ feedType }: { feedType: string }) => (
+    <div data-testid={`video-feed-${feedType}`} />
+  ),
 }));
 
 vi.mock('@/components/HashtagExplorer', () => ({
@@ -83,5 +85,18 @@ describe('DiscoveryPage', () => {
     expect(screen.getByText('Explora videos de la red')).toBeInTheDocument();
     expect(screen.getByText('Clasico')).toBeInTheDocument();
     expect(screen.getByText('Musica')).toBeInTheDocument();
+  });
+
+  it('does not expose or render the all-new video feed', () => {
+    render(
+      <MemoryRouter initialEntries={['/discovery/new']}>
+        <Routes>
+          <Route path="/discovery/:tab" element={<DiscoveryPage />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    expect(screen.queryByRole('tab', { name: 'Nuevo' })).not.toBeInTheDocument();
+    expect(screen.queryByTestId('video-feed-recent')).not.toBeInTheDocument();
   });
 });

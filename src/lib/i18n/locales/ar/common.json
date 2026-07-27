@@ -8,6 +8,7 @@
     "home": "الرئيسية",
     "discover": "اكتشف",
     "popular": "Popular",
+    "services": "Services",
     "search": "بحث",
     "messages": "الرسائل",
     "notifications": "الإشعارات",
@@ -38,7 +39,6 @@
   },
   "footer": {
     "aboutDivine": "حول Divine",
-    "vinesRecovered": "تمت استعادة {{count}} من Vine",
     "termsAndOpenSource": "الشروط والمصدر المفتوح",
     "copyright": "© 2026 Divine"
   },
@@ -133,6 +133,19 @@
     "communityTitle": "المجتمع",
     "communityDescription": "انضم إلى نقاشات المجتمع وتواصل مع مستخدمي Divine الآخرين على Nostr.",
     "communityBody": "تم بناء Divine على Nostr، وهو بروتوكول اجتماعي لامركزي. اعثر علينا في عميل Nostr المفضل لديك."
+  },
+  "servicesPage": {
+    "title": "Divine services",
+    "intro": "Divine is more than loops. These services help you make the most of it.",
+    "openService": "Open {{name}}",
+    "items": {
+      "space": "Your profile, your rules. Themes, Top 8, profile music.",
+      "sounds": "Trending sounds and a Creative Commons library for your loops.",
+      "badges": "Awards for creators who show up.",
+      "crossposter": "Post your loops to the other platforms — only when you opt in.",
+      "verifier": "Check where a video really came from.",
+      "status": "Is it us or is it you? Check here."
+    }
   },
   "tagPage": {
     "notFoundTitle": "لم يتم العثور على الوسم",
@@ -390,7 +403,6 @@
     "message": "رسالة",
     "reportUser": "الإبلاغ عن المستخدم",
     "subscribeRss": "اشترك في تغذية RSS",
-    "videos": "الفيديوهات",
     "followers": "المتابعون",
     "followingStat": "يتابع",
     "followingDialogTitle": "يتابع",
