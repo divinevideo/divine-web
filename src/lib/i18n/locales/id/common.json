@@ -8,6 +8,7 @@
     "home": "Beranda",
     "discover": "Jelajahi",
     "popular": "Popular",
+    "services": "Services",
     "search": "Cari",
     "messages": "Pesan",
     "notifications": "Notifikasi",
@@ -133,6 +134,19 @@
     "communityDescription": "Bergabunglah dalam diskusi komunitas dan terhubung dengan pengguna Divine lainnya di Nostr.",
     "communityBody": "Divine dibangun di atas Nostr, protokol sosial yang terdesentralisasi. Temukan kami di klien Nostr favorit Anda."
   },
+  "servicesPage": {
+    "title": "Divine services",
+    "intro": "Divine is more than loops. These services help you make the most of it.",
+    "openService": "Open {{name}}",
+    "items": {
+      "space": "Your profile, your rules. Themes, Top 8, profile music.",
+      "sounds": "Trending sounds and a Creative Commons library for your loops.",
+      "badges": "Awards for creators who show up.",
+      "crossposter": "Post your loops to the other platforms — only when you opt in.",
+      "verifier": "Check where a video really came from.",
+      "status": "Is it us or is it you? Check here."
+    }
+  },
   "tagPage": {
     "notFoundTitle": "Tag tidak ditemukan",
     "notFoundDescription": "Tag yang diminta tidak dapat ditemukan.",
@@ -145,7 +159,11 @@
     "emptyState": "Belum ada kategori yang tersedia saat ini.",
     "metaTitle": "Jelajahi kategori - Divine",
     "metaDescription": "Jelajahi kategori video di Divine - komedi, musik, tarian, hewan, olahraga, makanan, dan lainnya.",
+    "videoCount_zero": "{{count}} videos",
     "videoCount_one": "{{count}} video",
+    "videoCount_two": "{{count}} videos",
+    "videoCount_few": "{{count}} videos",
+    "videoCount_many": "{{count}} videos",
     "videoCount_other": "{{count}} video"
   },
   "vineBadge": {
