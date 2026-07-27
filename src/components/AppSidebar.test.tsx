@@ -205,6 +205,20 @@ describe('AppSidebar', () => {
     expect(mockNavigate).toHaveBeenCalledWith('/services');
   });
 
+  it('marks the services nav item active on the prerendered /services/ URL', () => {
+    // Cloudflare Pages 308-redirects /services to /services/, so a direct hit,
+    // reload, or shared link always lands on the trailing-slash form.
+    render(
+      <MemoryRouter initialEntries={['/services/']}>
+        <AppSidebar />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole('button', { name: 'Services' })).toHaveClass(
+      'bg-primary',
+    );
+  });
+
   it('links to the services directory from the footer Divine links', async () => {
     render(
       <MemoryRouter>
