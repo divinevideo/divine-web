@@ -182,6 +182,12 @@ const PAGES = [
     description: 'Frequently Asked Questions about Divine Web - Everything you need to know about the platform.',
     contentFile: 'faq-content.html',
   },
+  {
+    path: '/services',
+    title: 'Divine Services',
+    description: 'Companion services that help you make the most of Divine: Space, Sounds, Badges, Crossposter, Verifier, and Status.',
+    contentFile: 'services-content.html',
+  },
 ];
 
 function extractContentFromTsx(sourcePath) {
