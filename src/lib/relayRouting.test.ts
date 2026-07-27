@@ -28,6 +28,18 @@ function makeEvent(kind: number, opts: Partial<NostrEvent> = {}): NostrEvent {
 }
 
 describe('buildEventRouter — mute list carve-out', () => {
+  // Verbatim invariant test from main: mute lists must never fan out to
+  // relays we don't read from. Kept alongside the stricter branch test below.
+  it('routes MUTE_LIST_KIND (10000) only to {primary} ∪ PROFILE_RELAYS, never to presetRelays', () => {
+    const targets = buildEventRouter(ctx)(makeEvent(MUTE_LIST_KIND));
+    expect(targets).toContain('wss://relay.divine.video');
+    expect(targets).not.toContain(PRESET_ONLY_URL);
+    const allowed = new Set<string>([ctx.relayUrl, ...getRelayUrls(PROFILE_RELAYS)]);
+    for (const url of targets) {
+      expect(allowed.has(url)).toBe(true);
+    }
+  });
+
   it('routes MUTE_LIST_KIND (10000) only to the primary relay', () => {
     const targets = buildEventRouter({
       ...ctx,

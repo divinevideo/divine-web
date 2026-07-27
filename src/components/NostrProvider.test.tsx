@@ -6,6 +6,8 @@ import NostrProvider from './NostrProvider';
 const mocks = vi.hoisted(() => {
   const resetQueries = vi.fn();
   const relayInstances = new Map<string, { close: ReturnType<typeof vi.fn> }>();
+  // Messages the mocked NRelay1.req generator yields, in order.
+  const reqScript: unknown[][] = [['EOSE']];
   const appContext = {
     config: {
       theme: 'system',
@@ -20,7 +22,7 @@ const mocks = vi.hoisted(() => {
     ],
   };
 
-  return { appContext, relayInstances, resetQueries };
+  return { appContext, relayInstances, resetQueries, reqScript };
 });
 
 vi.mock('@nostrify/nostrify', async (importOriginal) => {
@@ -35,7 +37,9 @@ vi.mock('@nostrify/nostrify', async (importOriginal) => {
     }
 
     async *req() {
-      yield ['EOSE'];
+      for (const msg of mocks.reqScript) {
+        yield msg;
+      }
     }
 
     async event() {
@@ -73,6 +77,9 @@ describe('NostrProvider', () => {
   beforeEach(() => {
     mocks.relayInstances.clear();
     mocks.resetQueries.mockClear();
+    mocks.reqScript.length = 0;
+    mocks.reqScript.push(['EOSE']);
+    relayHealth.reset();
     mocks.appContext.config = {
       theme: 'system',
       relayUrl: 'wss://relay.divine.video',
@@ -123,5 +130,51 @@ describe('NostrProvider', () => {
       34236,
     );
     expect(Array.isArray(result)).toBe(true);
+  });
+
+  it('scores a first-message EOSE as a healthy empty result, not an error', async () => {
+    render(
+      <NostrProvider>
+        <div />
+      </NostrProvider>,
+    );
+    const relay = mocks.relayInstances.get('wss://relay.divine.video');
+    expect(relay).toBeDefined();
+
+    // The provider wraps relay.req with health instrumentation at open()
+    // time. The mock yields a first-message EOSE: "I have no matching
+    // events" — a healthy response. Empty result ≠ failure, so this must
+    // bump successCount, never errorCount.
+    const instrumented = relay as unknown as {
+      req: (filters: unknown[]) => AsyncGenerator<unknown[]>;
+    };
+    for await (const _msg of instrumented.req([{ kinds: [0] }])) {
+      // drain the generator
+    }
+
+    const snap = relayHealth.snapshot().find((s) => s.url === 'wss://relay.divine.video');
+    expect(snap?.successCount).toBe(1);
+    expect(snap?.errorCount ?? 0).toBe(0);
+  });
+
+  it('scores a first-message CLOSED as an error', async () => {
+    mocks.reqScript.length = 0;
+    mocks.reqScript.push(['CLOSED', 'sub-id', 'error: rejected']);
+    render(
+      <NostrProvider>
+        <div />
+      </NostrProvider>,
+    );
+    const relay = mocks.relayInstances.get('wss://relay.divine.video');
+    const instrumented = relay as unknown as {
+      req: (filters: unknown[]) => AsyncGenerator<unknown[]>;
+    };
+    for await (const _msg of instrumented.req([{ kinds: [0] }])) {
+      // drain the generator
+    }
+
+    const snap = relayHealth.snapshot().find((s) => s.url === 'wss://relay.divine.video');
+    expect(snap?.errorCount).toBe(1);
+    expect(snap?.successCount ?? 0).toBe(0);
   });
 });

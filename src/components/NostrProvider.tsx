@@ -145,7 +145,14 @@ const NostrProvider: React.FC<NostrProviderProps> = (props) => {
           let resolved = false;
           try {
             for await (const msg of innerReq(filters, opts)) {
-              if (!resolved && (msg[0] === 'EVENT' || msg[0] === 'EOSE')) {
+              if (!resolved && msg[0] === 'EVENT') {
+                recordReqFirstResponse(reqHandle, true);
+                resolved = true;
+              } else if (!resolved && msg[0] === 'EOSE') {
+                // A first-message EOSE means "I have no matching events" —
+                // a healthy, empty result, NOT a failure. Counting it as an
+                // error would penalize healthy relays that simply don't hold
+                // the data when a query fans out across relays.
                 recordReqFirstResponse(reqHandle, true);
                 resolved = true;
               } else if (!resolved && msg[0] === 'CLOSED') {
