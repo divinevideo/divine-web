@@ -111,6 +111,7 @@ export function AppRouter() {
       <Route path="/search" element={<SearchPage />} />
       <Route path="/leaderboard" element={<LeaderboardPage />} />
       <Route path="/merch" element={<MerchPage />} />
+      <Route path="/services" element={<ServicesPage />} />
       <Route path="/u/:userId" element={<UniversalUserPage />} />
       <Route path="/list/:pubkey/:listId" element={<ListDetailPage />} />
       <Route path="/event/:eventId" element={<EventPage />} />
@@ -168,7 +169,6 @@ export function AppRouter() {
         <Route path="/kids" element={<KidsPolicyPage />} />
         <Route path="/support" element={<Support />} />
         <Route path="/faq" element={<FAQPage />} />
-        <Route path="/services" element={<ServicesPage />} />
         <Route path="/get-embed" element={<GetEmbedPage />} />
         <Route path="/app/callback" element={<AppCallbackPage />} />
         <Route path="/auth/callback" element={<AuthCallbackPage />} />

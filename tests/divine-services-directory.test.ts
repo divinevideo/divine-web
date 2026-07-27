@@ -28,4 +28,15 @@ describe('divine services prerender content', () => {
     expect(script).toContain("path: '/services'");
     expect(script).toContain('services-content.html');
   });
+
+  it('closes the injected bundle script tag so the app boots', () => {
+    // Regression guard: the script injection once dropped the closing
+    // </script>, which left every prerendered page static-only.
+    const script = readFileSync(
+      resolve(REPO_ROOT, 'scripts/prerender-legal.mjs'),
+      'utf8',
+    );
+
+    expect(script).toContain("scriptMatch[0] + '</script>'");
+  });
 });

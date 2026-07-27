@@ -1,16 +1,10 @@
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 
 import { initializeI18n } from '@/lib/i18n';
 import { DIVINE_SERVICES } from '@/config/divineServices';
 import ServicesPage from './ServicesPage';
-
-vi.mock('@/components/MarketingLayout', () => ({
-  MarketingLayout: ({ children }: { children: React.ReactNode }) => (
-    <div data-testid="marketing-layout">{children}</div>
-  ),
-}));
 
 describe('ServicesPage', () => {
   beforeEach(async () => {

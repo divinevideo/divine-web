@@ -37,7 +37,8 @@ and verifier were the first proof that this list will grow).
 
 ## User experience
 
-- Route `/services` renders a branded directory page:
+- Route `/services` renders a branded directory page inside the app shell
+  (sidebar stays mounted, like `/merch`):
   - `SectionHeader` title ("Divine services") and a short candid intro
     explaining Divine is more than the video app — these companion services
     help you make the most of it.

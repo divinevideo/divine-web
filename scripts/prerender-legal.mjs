@@ -256,10 +256,13 @@ function main() {
       shell,
     });
 
-    // Replace the placeholder script src with the actual bundle
+    // Replace the placeholder script src with the actual bundle. The regex
+    // only captures the opening tag, so re-add the closing </script> —
+    // without it the parser swallows the rest of the document and the app
+    // never boots on prerendered pages.
     const finalHtml = html.replace(
       '<script type="module" src="/src/main.tsx"></script>',
-      scriptMatch ? scriptMatch[0] : ''
+      scriptMatch ? scriptMatch[0] + '</script>' : ''
     );
 
     const outDir = join(DIST, page.path.slice(1));
