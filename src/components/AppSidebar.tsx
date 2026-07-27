@@ -2,7 +2,7 @@
 // ABOUTME: Shows main nav, login/signup, expandable Divine links section
 
 import { Link, useLocation } from 'react-router-dom';
-import { House as Home, Compass, MagnifyingGlass as Search, Bell, User, Sun, Moon, CaretDown as ChevronDown, Headphones, ChartBar as BarChart3, SquaresFour as LayoutGrid, Rss, ChatCircle as MessageCircle, TrendUp, Handshake } from '@phosphor-icons/react';
+import { House as Home, Compass, MagnifyingGlass as Search, Bell, User, Sun, Moon, CaretDown as ChevronDown, Headphones, ChartBar as BarChart3, SquaresFour as LayoutGrid, SquaresFour, Rss, ChatCircle as MessageCircle, TrendUp, Handshake } from '@phosphor-icons/react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCategories } from '@/hooks/useCategories';
@@ -199,6 +199,13 @@ export function AppSidebar({ className }: { className?: string }) {
             label={t('nav.popular')}
             onClick={() => navigate('/popular')}
             isActive={isPopularActive()}
+          />
+
+          <NavItem
+            icon={<SquaresFour className="h-[18px] w-[18px]" weight={isActive('/services') ? 'fill' : 'bold'} />}
+            label={t('nav.services')}
+            onClick={() => navigate('/services')}
+            isActive={isActive('/services')}
           />
 
           {user && canUseDirectMessages && (
@@ -463,6 +470,12 @@ export function AppSidebar({ className }: { className?: string }) {
               >
                 {t('menu.mediaResources')}
               </a>
+              <Link
+                to="/services"
+                className="transition-colors hover:text-primary"
+              >
+                {t('nav.services')}
+              </Link>
               <Link
                 to="/merch"
                 className="transition-colors hover:text-primary"
