@@ -9,7 +9,6 @@
     "discover": "Descobrir",
     "popular": "Popular",
     "search": "Pesquisar",
-    "messages": "Mensagens",
     "notifications": "Notificacoes",
     "profile": "Perfil",
     "analytics": "Analises"
@@ -100,19 +99,6 @@
     "reply": "Responder",
     "comment": "Comentar"
   },
-  "messages": {
-    "badge": "Mensagens",
-    "title": "Mensagens diretas",
-    "subtitle": "Fale com o suporte, envie vines em privado ou mantenha uma conversa com as pessoas que voce segue.",
-    "searchPlaceholder": "Encontre pessoas para enviar mensagem",
-    "newMessage": "Nova mensagem",
-    "readyToShare": "Pronto para compartilhar em privado.",
-    "shareWithTitle": "Sua proxima mensagem incluira “{{title}}”.",
-    "shareWithLink": "Sua proxima mensagem incluira um link de vine.",
-    "signerUnsupported": "Seu signer atual permite login, mas ainda nao oferece criptografia NIP-44. Troque para um nsec, bunker ou outro signer com suporte a NIP-44 para usar mensagens diretas na web.",
-    "supportBadge": "Suporte",
-    "supportSummary": "Pergunte sobre bugs, moderacao ou problemas de conta."
-  },
   "support": {
     "title": "Suporte",
     "subtitle": "Precisa de ajuda? Estamos aqui para ajudar voce.",
@@ -183,7 +169,6 @@
       "pinToProfile": "Fixar no perfil",
       "deleteVideo": "Excluir vídeo",
       "reportVideo": "Denunciar vídeo",
-      "sendViaMessage": "Enviar por mensagem",
       "reportUser": "Denunciar usuário",
       "muteUser": "Silenciar {{name}}",
       "viewSource": "Ver código-fonte"
@@ -932,13 +917,11 @@
     "peopleCount_other": "{{count}} pessoas",
     "notFoundTitle": "Conversa não encontrada",
     "notFoundDescription": "Volta pra sua caixa de entrada e começa uma nova mensagem.",
-    "backToInbox": "Voltar pra caixa de entrada",
     "dmUnavailableTitle": "Mensagens diretas indisponíveis",
     "dmUnavailableDescription": "Esse signer pode te autenticar, mas não expõe os métodos de criptografia NIP-44 necessários pra mensagens privadas.",
+    "backToSupport": "Voltar pro suporte",
     "noMessages": "Nenhuma mensagem ainda",
     "noMessagesHint": "Manda a primeira mensagem pra abrir essa conversa.",
-    "readyToShare": "Pronto pra compartilhar",
-    "placeholderShare": "Adicione um recado opcional...",
     "placeholderMessage": "Escreva uma mensagem..."
   },
   "videoCommentsModal": {
@@ -1330,7 +1313,6 @@
     "muteErrorDescription": "Não deu pra salvar o mute. Tenta de novo?",
     "deleteVideo": "Apagar vídeo",
     "reportVideo": "Denunciar vídeo",
-    "sendViaMessage": "Enviar por mensagem",
     "reportUser": "Denunciar usuário",
     "muteUser": "Silenciar {{name}}",
     "viewSource": "Ver fonte",

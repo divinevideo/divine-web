@@ -9,7 +9,6 @@
     "discover": "Decouvrir",
     "popular": "Popular",
     "search": "Rechercher",
-    "messages": "Messages",
     "notifications": "Notifications",
     "profile": "Profil",
     "analytics": "Analyses"
@@ -100,19 +99,6 @@
     "reply": "Repondre",
     "comment": "Commenter"
   },
-  "messages": {
-    "badge": "Messages",
-    "title": "Messages directs",
-    "subtitle": "Parlez au support, envoyez des vines en prive ou poursuivez une conversation avec les personnes que vous suivez.",
-    "searchPlaceholder": "Trouver des personnes a contacter",
-    "newMessage": "Nouveau message",
-    "readyToShare": "Pret a partager en prive.",
-    "shareWithTitle": "Votre prochain message inclura « {{title}} ».",
-    "shareWithLink": "Votre prochain message inclura un lien vine.",
-    "signerUnsupported": "Votre signer actuel peut vous connecter, mais il n'expose pas encore le chiffrement NIP-44. Passez a un nsec, un bunker ou un autre signer compatible NIP-44 pour utiliser les messages directs sur le web.",
-    "supportBadge": "Support",
-    "supportSummary": "Posez des questions sur les bugs, la moderation ou les problemes de compte."
-  },
   "support": {
     "title": "Assistance",
     "subtitle": "Besoin d'aide ? Nous sommes la pour vous aider.",
@@ -183,7 +169,6 @@
       "pinToProfile": "Épingler au profil",
       "deleteVideo": "Supprimer la vidéo",
       "reportVideo": "Signaler la vidéo",
-      "sendViaMessage": "Envoyer en message",
       "reportUser": "Signaler l'utilisateur",
       "muteUser": "Couper {{name}}",
       "viewSource": "Voir la source"
@@ -932,13 +917,11 @@
     "peopleCount_other": "{{count}} personnes",
     "notFoundTitle": "Conversation introuvable",
     "notFoundDescription": "Retourne dans ta boîte de réception et démarre un nouveau message.",
-    "backToInbox": "Retour à la boîte de réception",
     "dmUnavailableTitle": "Les messages directs sont indisponibles",
     "dmUnavailableDescription": "Ce signer peut t'authentifier, mais il n'expose pas les méthodes de chiffrement NIP-44 nécessaires pour les messages privés.",
+    "backToSupport": "Retour à l'assistance",
     "noMessages": "Aucun message pour l'instant",
     "noMessagesHint": "Envoie le premier message pour ouvrir ce fil.",
-    "readyToShare": "Prêt à partager",
-    "placeholderShare": "Ajoute une note (facultatif)...",
     "placeholderMessage": "Écris un message..."
   },
   "videoCommentsModal": {
@@ -1330,7 +1313,6 @@
     "muteErrorDescription": "Impossible d'enregistrer le masquage. On réessaie ?",
     "deleteVideo": "Supprimer la vidéo",
     "reportVideo": "Signaler la vidéo",
-    "sendViaMessage": "Envoyer par message",
     "reportUser": "Signaler l'utilisateur",
     "muteUser": "Masquer {{name}}",
     "viewSource": "Voir la source",

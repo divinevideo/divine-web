@@ -38,7 +38,6 @@ const {
     lastReadAt: 0,
     isLoading: false,
     isPending: false,
-    share: null as null,
   },
   mockNavigate: vi.fn(),
   mockMarkConversationRead: vi.fn(),
@@ -68,7 +67,6 @@ vi.mock('@/hooks/useDirectMessages', () => ({
     mutateAsync: mockSendMutateAsync,
     isPending: directMessageState.isPending,
   }),
-  useParsedDmShare: () => directMessageState.share,
 }));
 
 vi.mock('@/hooks/useBatchedAuthors', () => ({
@@ -162,7 +160,6 @@ describe('ConversationPage', () => {
     directMessageState.lastReadAt = 0;
     directMessageState.isLoading = false;
     directMessageState.isPending = false;
-    directMessageState.share = null;
     mockSendMutate.mockImplementation(() => undefined);
     mockSendMutateAsync.mockImplementation(() => new Promise<void>(() => undefined));
   });
@@ -191,7 +188,7 @@ describe('ConversationPage', () => {
 
     renderPage();
 
-    await user.click(screen.getByRole('button', { name: 'Support' }));
+    await user.click(screen.getByRole('button', { name: 'Back to Support' }));
 
     expect(mockNavigate).toHaveBeenCalledWith('/support');
   });
@@ -202,7 +199,7 @@ describe('ConversationPage', () => {
 
     renderPage();
 
-    await user.click(screen.getByRole('button', { name: 'Support' }));
+    await user.click(screen.getByRole('button', { name: 'Back to Support' }));
 
     expect(mockNavigate).toHaveBeenCalledWith('/support');
   });
@@ -311,7 +308,6 @@ describe('ConversationPage', () => {
     await waitFor(() => expect(mockSendMutateAsync).toHaveBeenCalledWith({
       participantPubkeys: [RECIPIENT_PUBKEY],
       content: 'hello',
-      share: undefined,
     }));
     expect(composer).toHaveValue('hello');
 
@@ -334,7 +330,6 @@ describe('ConversationPage', () => {
     await waitFor(() => expect(mockSendMutateAsync).toHaveBeenCalledWith({
       participantPubkeys: [RECIPIENT_PUBKEY],
       content: 'hello',
-      share: undefined,
     }));
     expect(composer).toHaveValue('hello');
   });
@@ -374,7 +369,6 @@ describe('ConversationPage', () => {
       clientId: 'local-1',
       participantPubkeys: [RECIPIENT_PUBKEY],
       content: 'hello again',
-      share: undefined,
     });
   });
 });

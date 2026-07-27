@@ -117,7 +117,6 @@ import {
   useDmCapability,
   useDmConversation,
   useDmConversations,
-  useDmInboxStatus,
   useDmSend,
   useUnreadDmCount,
 } from './useDirectMessages';
@@ -1117,117 +1116,5 @@ describe('useDmCapability with bunker healthcheck', () => {
 
     await waitFor(() => expect(result.current.canUseDirectMessages).toBe(true));
     expect(mockProbeBunkerNip44).toHaveBeenCalledTimes(2);
-  });
-});
-
-describe('useDmInboxStatus', () => {
-  beforeEach(() => {
-    vi.restoreAllMocks();
-    vi.clearAllMocks();
-    localStorageMock.clear();
-    mockResolveDmReadRelays.mockResolvedValue(['wss://relay.example']);
-  });
-
-  afterEach(() => {
-    localStorageMock.clear();
-  });
-
-  it("returns 'unavailable' when relays returned wraps but every one failed to decrypt", async () => {
-    mockFetchDmMessages.mockResolvedValue({
-      messages: [],
-      fetchedCount: 12,
-      decryptFailures: 12,
-      malformedCount: 0,
-    });
-
-    const queryClient = new QueryClient({
-      defaultOptions: { queries: { retry: false } },
-    });
-
-    const { result } = renderHook(() => useDmInboxStatus(), {
-      wrapper: createWrapper(queryClient),
-    });
-
-    await waitFor(() => expect(result.current).not.toBe('loading'));
-    expect(result.current).toBe('unavailable');
-  });
-
-  it("returns 'empty' when relays returned no wraps", async () => {
-    mockFetchDmMessages.mockResolvedValue({
-      messages: [],
-      fetchedCount: 0,
-      decryptFailures: 0,
-      malformedCount: 0,
-    });
-
-    const queryClient = new QueryClient({
-      defaultOptions: { queries: { retry: false } },
-    });
-
-    const { result } = renderHook(() => useDmInboxStatus(), {
-      wrapper: createWrapper(queryClient),
-    });
-
-    await waitFor(() => expect(result.current).not.toBe('loading'));
-    expect(result.current).toBe('empty');
-  });
-
-  it("returns 'ok' when at least one message is visible", async () => {
-    mockFetchDmMessages.mockResolvedValue({
-      messages: [{
-        conversationId: encodeConversationId([RECIPIENT_PUBKEY]),
-        wrapId: 'remote-wrap-id',
-        rumorId: 'remote-rumor-id',
-        senderPubkey: RECIPIENT_PUBKEY,
-        participantPubkeys: [RECIPIENT_PUBKEY, TEST_PUBKEY].sort(),
-        peerPubkeys: [RECIPIENT_PUBKEY],
-        content: 'hi',
-        createdAt: 1_234_567_892,
-        isOutgoing: false,
-      }],
-      fetchedCount: 1,
-      decryptFailures: 0,
-      malformedCount: 0,
-    });
-
-    const queryClient = new QueryClient({
-      defaultOptions: { queries: { retry: false } },
-    });
-
-    const { result } = renderHook(() => useDmInboxStatus(), {
-      wrapper: createWrapper(queryClient),
-    });
-
-    await waitFor(() => expect(result.current).toBe('ok'));
-  });
-
-  it("returns 'empty' when only a non-Support message decrypted", async () => {
-    mockFetchDmMessages.mockResolvedValue({
-      messages: [{
-        conversationId: encodeConversationId([NON_SUPPORT_PUBKEY]),
-        wrapId: 'non-support-wrap-id',
-        rumorId: 'non-support-rumor-id',
-        senderPubkey: NON_SUPPORT_PUBKEY,
-        participantPubkeys: [NON_SUPPORT_PUBKEY, TEST_PUBKEY].sort(),
-        peerPubkeys: [NON_SUPPORT_PUBKEY],
-        content: 'hidden',
-        createdAt: 1_234_567_892,
-        isOutgoing: false,
-      }],
-      fetchedCount: 1,
-      decryptFailures: 0,
-      malformedCount: 0,
-    });
-
-    const queryClient = new QueryClient({
-      defaultOptions: { queries: { retry: false } },
-    });
-
-    const { result } = renderHook(() => useDmInboxStatus(), {
-      wrapper: createWrapper(queryClient),
-    });
-
-    await waitFor(() => expect(result.current).not.toBe('loading'));
-    expect(result.current).toBe('empty');
   });
 });

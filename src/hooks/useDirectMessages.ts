@@ -10,7 +10,6 @@ import {
   assertSupportOnlyDmRecipients,
   DmSupportOnlyError,
   filterSupportOnlyDmConversations,
-  filterSupportOnlyDmMessages,
   isSupportOnlyDmPeerSet,
 } from '@/lib/dmAccessPolicy';
 import {
@@ -25,20 +24,17 @@ import {
 } from '@/lib/dmInboundFilter';
 import { officialAccountsService } from '@/lib/officialAccounts';
 import {
-  buildDmShareTags,
   createRecipientGiftWraps,
   createSelfGiftWrap,
   decodeConversationId,
   fetchDmMessages,
   groupDmConversations,
-  parseDmShareQuery,
   probeBunkerNip44,
   publishDmMessages,
   resolveDmReadRelays,
   resolveDmWriteRelays,
   type DmConversation,
   type DmMessage,
-  type DmSharePayload,
   type FetchDmMessagesResult,
 } from '@/lib/dm';
 import {
@@ -62,7 +58,6 @@ interface SendDmInput {
   clientId?: string;
   participantPubkeys: string[];
   content: string;
-  share?: DmSharePayload;
 }
 
 interface SendDmMutationContext {
@@ -370,29 +365,6 @@ export function useDmConversations(limit = 200) {
   };
 }
 
-/**
- * Status of the moderator/user inbox for the current signer.
- *
- * - `loading` — the initial fetch hasn't returned yet.
- * - `ok` — at least one message is visible.
- * - `unavailable` — relays returned wraps but every single one failed to
- *   decrypt. This usually means the signer (typically a NIP-46 bunker) is
- *   rejecting `nip44_decrypt` for this account. UI should render an
- *   explicit "inbox unavailable" state, not the generic empty state.
- * - `empty` — relays returned no wraps OR a partial-decrypt scenario where
- *   we have nothing to show. Render the generic empty state.
- */
-export type DmInboxStatus = 'loading' | 'ok' | 'empty' | 'unavailable';
-
-export function useDmInboxStatus(limit = 200): DmInboxStatus {
-  const { data, isLoading } = useDmMessages(limit);
-  if (isLoading) return 'loading';
-  if (!data) return 'empty';
-  if (filterSupportOnlyDmMessages(data.messages).length > 0) return 'ok';
-  if (data.fetchedCount > 0 && data.decryptFailures === data.fetchedCount) return 'unavailable';
-  return 'empty';
-}
-
 export function useUnreadDmCount(limit = 200) {
   const conversationsQuery = useDmConversations(limit);
 
@@ -467,7 +439,7 @@ export function useDmSend() {
   const { state: minorState } = useProtectedMinorStatus();
 
   return useMutation<{ relayUrls: string[] }, Error, SendDmInput, SendDmMutationContext>({
-    onMutate: ({ clientId, participantPubkeys, content, share }) => {
+    onMutate: ({ clientId, participantPubkeys, content }) => {
       if (!user?.pubkey) {
         return {};
       }
@@ -476,18 +448,15 @@ export function useDmSend() {
         ? markDmOutboxRecordSending(user.pubkey, clientId, {
           participantPubkeys,
           content,
-          share,
         }) || createDmOutboxRecord({
           ownerPubkey: user.pubkey,
           participantPubkeys,
           content,
-          share,
         })
         : createDmOutboxRecord({
           ownerPubkey: user.pubkey,
           participantPubkeys,
           content,
-          share,
         });
 
       const optimisticMessage = convertOutboxRecordToDmMessage(record);
@@ -500,7 +469,7 @@ export function useDmSend() {
         clientId: record.clientId,
       };
     },
-    mutationFn: async ({ participantPubkeys, content, share }: SendDmInput) => {
+    mutationFn: async ({ participantPubkeys, content }: SendDmInput) => {
       if (!user?.pubkey) {
         throw new Error('You need to log in before sending a message');
       }
@@ -533,8 +502,6 @@ export function useDmSend() {
         signal: AbortSignal.timeout(5000),
       });
 
-      const tags = buildDmShareTags(share);
-
       // Primary path: deliver to the recipients. Failure here rejects the
       // mutation so the UI shows the send as failed.
       const recipientWraps = await createRecipientGiftWraps({
@@ -542,7 +509,6 @@ export function useDmSend() {
         senderPubkey: user.pubkey,
         recipientPubkeys: recipients,
         content,
-        additionalTags: tags,
       });
       await publishDmMessages(relayUrls, recipientWraps, AbortSignal.timeout(10000));
 
@@ -555,7 +521,6 @@ export function useDmSend() {
         senderPubkey: user.pubkey,
         recipientPubkeys: recipients,
         content,
-        additionalTags: tags,
       });
       if (selfWrap) {
         try {
@@ -611,11 +576,4 @@ export function useDmSend() {
       });
     },
   });
-}
-
-export function useParsedDmShare(search: string) {
-  return useMemo(
-    () => parseDmShareQuery(new URLSearchParams(search)),
-    [search],
-  );
 }

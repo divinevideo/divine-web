@@ -9,7 +9,6 @@
     "discover": "اكتشف",
     "popular": "Popular",
     "search": "بحث",
-    "messages": "الرسائل",
     "notifications": "الإشعارات",
     "profile": "الملف الشخصي",
     "analytics": "التحليلات"
@@ -100,19 +99,6 @@
     "reply": "رد",
     "comment": "تعليق"
   },
-  "messages": {
-    "badge": "الرسائل",
-    "title": "الرسائل المباشرة",
-    "subtitle": "تحدث مع الدعم، وأرسل vines بشكل خاص، أو واصل المحادثة مع الأشخاص الذين تتابعهم.",
-    "searchPlaceholder": "ابحث عن أشخاص لمراسلتهم",
-    "newMessage": "رسالة جديدة",
-    "readyToShare": "جاهز للمشاركة بشكل خاص.",
-    "shareWithTitle": "ستتضمن رسالتك التالية “{{title}}”.",
-    "shareWithLink": "ستتضمن رسالتك التالية رابط vine.",
-    "signerUnsupported": "يمكن للموقّع الحالي تسجيل دخولك، لكنه لا يوفّر بعد تشفير NIP-44. انتقل إلى nsec أو bunker أو موقّع آخر يدعم NIP-44 لاستخدام الرسائل المباشرة على الويب.",
-    "supportBadge": "الدعم",
-    "supportSummary": "اسأل عن الأخطاء أو الإشراف أو مشكلات الحساب."
-  },
   "support": {
     "title": "الدعم",
     "subtitle": "هل تحتاج إلى مساعدة؟ نحن هنا لمساعدتك.",
@@ -187,7 +173,6 @@
       "pinToProfile": "تثبيت في الملف الشخصي",
       "deleteVideo": "حذف الفيديو",
       "reportVideo": "الإبلاغ عن الفيديو",
-      "sendViaMessage": "إرسال عبر رسالة",
       "reportUser": "الإبلاغ عن المستخدم",
       "muteUser": "كتم {{name}}",
       "viewSource": "عرض المصدر"
@@ -936,13 +921,11 @@
     "peopleCount_other": "{{count}} أشخاص",
     "notFoundTitle": "المحادثة غير موجودة",
     "notFoundDescription": "ارجع إلى صندوق الوارد وابدأ رسالة جديدة.",
-    "backToInbox": "العودة إلى الصندوق",
     "dmUnavailableTitle": "الرسائل المباشرة غير متاحة",
     "dmUnavailableDescription": "يستطيع هذا الموقّع مصادقتك، لكنه لا يوفّر طرق التشفير NIP-44 المطلوبة للمراسلة الخاصة.",
+    "backToSupport": "العودة إلى الدعم",
     "noMessages": "لا توجد رسائل بعد",
     "noMessagesHint": "أرسل أول رسالة لفتح هذا الخيط.",
-    "readyToShare": "جاهز للمشاركة",
-    "placeholderShare": "أضف ملاحظة اختيارية...",
     "placeholderMessage": "اكتب رسالة..."
   },
   "videoCommentsModal": {
@@ -1334,7 +1317,6 @@
     "muteErrorDescription": "تعذّر حفظ الكتم. أعد المحاولة؟",
     "deleteVideo": "حذف الفيديو",
     "reportVideo": "الإبلاغ عن الفيديو",
-    "sendViaMessage": "إرسال عبر رسالة",
     "reportUser": "الإبلاغ عن المستخدم",
     "muteUser": "كتم {{name}}",
     "viewSource": "عرض المصدر",

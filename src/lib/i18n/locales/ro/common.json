@@ -9,7 +9,6 @@
     "discover": "Descopera",
     "popular": "Popular",
     "search": "Cauta",
-    "messages": "Mesaje",
     "notifications": "Notificari",
     "profile": "Profil",
     "analytics": "Analitice"
@@ -100,19 +99,6 @@
     "reply": "Raspunde",
     "comment": "Comenteaza"
   },
-  "messages": {
-    "badge": "Mesaje",
-    "title": "Mesaje directe",
-    "subtitle": "Vorbeste cu suportul, trimite vines in privat sau continua o conversatie cu persoanele pe care le urmaresti.",
-    "searchPlaceholder": "Gaseste persoane carora sa le scrii",
-    "newMessage": "Mesaj nou",
-    "readyToShare": "Gata de partajare privata.",
-    "shareWithTitle": "Urmatorul tau mesaj va include “{{title}}”.",
-    "shareWithLink": "Urmatorul tau mesaj va include un link vine.",
-    "signerUnsupported": "Signerul tau actual te poate autentifica, dar nu ofera inca criptare NIP-44. Treci la un nsec, bunker sau alt signer care suporta NIP-44 pentru a folosi mesaje directe pe web.",
-    "supportBadge": "Suport",
-    "supportSummary": "Intreaba despre buguri, moderare sau probleme de cont."
-  },
   "support": {
     "title": "Suport",
     "subtitle": "Ai nevoie de ajutor? Suntem aici sa te ajutam.",
@@ -184,7 +170,6 @@
       "pinToProfile": "Fixează pe profil",
       "deleteVideo": "Șterge videoclipul",
       "reportVideo": "Raportează videoclipul",
-      "sendViaMessage": "Trimite prin mesaj",
       "reportUser": "Raportează utilizatorul",
       "muteUser": "Mută {{name}}",
       "viewSource": "Vezi sursa"
@@ -933,13 +918,11 @@
     "peopleCount_other": "{{count}} persoane",
     "notFoundTitle": "Conversație negăsită",
     "notFoundDescription": "Întoarce-te la inbox și începe un mesaj nou.",
-    "backToInbox": "Înapoi la inbox",
     "dmUnavailableTitle": "Mesajele directe nu sunt disponibile",
     "dmUnavailableDescription": "Acest signer te poate autentifica, dar nu expune metodele de criptare NIP-44 necesare pentru mesaje private.",
+    "backToSupport": "Înapoi la suport",
     "noMessages": "Niciun mesaj încă",
     "noMessagesHint": "Trimite primul mesaj ca să deschizi acest fir.",
-    "readyToShare": "Gata de distribuit",
-    "placeholderShare": "Adaugă o notă opțională...",
     "placeholderMessage": "Scrie un mesaj..."
   },
   "videoCommentsModal": {
@@ -1331,7 +1314,6 @@
     "muteErrorDescription": "Mute-ul n-a putut fi salvat. Mai încerci o dată?",
     "deleteVideo": "Șterge videoclipul",
     "reportVideo": "Raportează videoclipul",
-    "sendViaMessage": "Trimite prin mesaj",
     "reportUser": "Raportează utilizatorul",
     "muteUser": "Mute {{name}}",
     "viewSource": "Vezi sursa",

@@ -9,7 +9,6 @@
     "discover": "Utforska",
     "popular": "Popular",
     "search": "Sok",
-    "messages": "Meddelanden",
     "notifications": "Aviseringar",
     "profile": "Profil",
     "analytics": "Analys"
@@ -100,19 +99,6 @@
     "reply": "Svara",
     "comment": "Kommentera"
   },
-  "messages": {
-    "badge": "Meddelanden",
-    "title": "Direktmeddelanden",
-    "subtitle": "Prata med support, skicka vines privat eller hall igang en trad med personer du foljer.",
-    "searchPlaceholder": "Hitta personer att skicka meddelanden till",
-    "newMessage": "Nytt meddelande",
-    "readyToShare": "Redo att dela privat.",
-    "shareWithTitle": "Ditt nasta meddelande kommer att innehalla “{{title}}”.",
-    "shareWithLink": "Ditt nasta meddelande kommer att innehalla en vine-lank.",
-    "signerUnsupported": "Din nuvarande signer kan logga in dig, men den exponerar inte NIP-44-kryptering an. Byt till en nsec, bunker eller annan signer som stodjer NIP-44 for att anvanda direktmeddelanden pa webben.",
-    "supportBadge": "Support",
-    "supportSummary": "Fraga om buggar, moderering eller kontoproblem."
-  },
   "support": {
     "title": "Support",
     "subtitle": "Behöver du hjälp? Vi finns här för att hjälpa dig.",
@@ -183,7 +169,6 @@
       "pinToProfile": "Fäst på profilen",
       "deleteVideo": "Radera video",
       "reportVideo": "Rapportera video",
-      "sendViaMessage": "Skicka via meddelande",
       "reportUser": "Rapportera användare",
       "muteUser": "Tysta {{name}}",
       "viewSource": "Visa källa"
@@ -932,13 +917,11 @@
     "peopleCount_other": "{{count}} personer",
     "notFoundTitle": "Konversationen hittades inte",
     "notFoundDescription": "Gå tillbaka till inkorgen och starta ett nytt meddelande.",
-    "backToInbox": "Tillbaka till inkorgen",
     "dmUnavailableTitle": "Direktmeddelanden är inte tillgängliga",
     "dmUnavailableDescription": "Den här signeraren kan autentisera dig, men den exponerar inte de NIP-44-krypteringsmetoder som krävs för privata meddelanden.",
+    "backToSupport": "Tillbaka till Support",
     "noMessages": "Inga meddelanden ännu",
     "noMessagesHint": "Skicka det första meddelandet för att öppna tråden.",
-    "readyToShare": "Redo att dela",
-    "placeholderShare": "Lägg till en valfri notering...",
     "placeholderMessage": "Skriv ett meddelande..."
   },
   "videoCommentsModal": {
@@ -1330,7 +1313,6 @@
     "muteErrorDescription": "Kunde inte spara tystningen. Försök igen?",
     "deleteVideo": "Radera video",
     "reportVideo": "Rapportera video",
-    "sendViaMessage": "Skicka via meddelande",
     "reportUser": "Rapportera användare",
     "muteUser": "Tysta {{name}}",
     "viewSource": "Visa källa",

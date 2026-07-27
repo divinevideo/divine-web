@@ -3,8 +3,6 @@ import { NSecSigner, type NostrEvent, type NostrSigner } from '@nostrify/nostrif
 import { generateSecretKey, getPublicKey } from 'nostr-tools/pure';
 
 import {
-  buildDmSharePayloadFromVideo,
-  buildDmShareQueryString,
   createRecipientGiftWraps,
   createSelfGiftWrap,
   decodeConversationId,
@@ -12,27 +10,9 @@ import {
   encodeConversationId,
   getDmMessagePreview,
   groupDmConversations,
-  parseDmShareQuery,
   probeBunkerNip44,
   unwrapDmGiftWrap,
 } from '@/lib/dm';
-import type { ParsedVideoData } from '@/types/video';
-
-function makeVideo(overrides: Partial<ParsedVideoData> = {}): ParsedVideoData {
-  return {
-    id: 'video-event-id',
-    pubkey: 'a'.repeat(64),
-    kind: 34236,
-    createdAt: 1,
-    content: '',
-    videoUrl: 'https://cdn.divine.video/videos/test.mp4',
-    hashtags: [],
-    vineId: 'stable-vine-id',
-    isVineMigrated: false,
-    reposts: [],
-    ...overrides,
-  };
-}
 
 describe('dm utilities', () => {
   it('round-trips conversation ids', () => {
@@ -50,16 +30,6 @@ describe('dm utilities', () => {
       'b'.repeat(64),
       'f'.repeat(64),
     ]);
-  });
-
-  it('round-trips share payloads through query params', () => {
-    const share = buildDmSharePayloadFromVideo(makeVideo({
-      title: 'Loop of the day',
-    }));
-
-    const parsedShare = parseDmShareQuery(new URLSearchParams(buildDmShareQueryString(share)));
-
-    expect(parsedShare).toEqual(share);
   });
 
   it('prefers share titles in conversation previews when there is no text body', () => {

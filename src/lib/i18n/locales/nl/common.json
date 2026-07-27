@@ -9,7 +9,6 @@
     "discover": "Ontdekken",
     "popular": "Popular",
     "search": "Zoeken",
-    "messages": "Berichten",
     "notifications": "Meldingen",
     "profile": "Profiel",
     "analytics": "Analyse"
@@ -100,19 +99,6 @@
     "reply": "Antwoorden",
     "comment": "Reageren"
   },
-  "messages": {
-    "badge": "Berichten",
-    "title": "Directe berichten",
-    "subtitle": "Praat met support, stuur vines prive of houd een gesprek gaande met mensen die je volgt.",
-    "searchPlaceholder": "Zoek mensen om een bericht te sturen",
-    "newMessage": "Nieuw bericht",
-    "readyToShare": "Klaar om prive te delen.",
-    "shareWithTitle": "Je volgende bericht bevat “{{title}}”.",
-    "shareWithLink": "Je volgende bericht bevat een vine-link.",
-    "signerUnsupported": "Je huidige signer kan je laten inloggen, maar ondersteunt nog geen NIP-44-versleuteling. Schakel over naar een nsec, bunker of andere signer met NIP-44-ondersteuning om directe berichten op het web te gebruiken.",
-    "supportBadge": "Support",
-    "supportSummary": "Vraag naar bugs, moderatie of accountproblemen."
-  },
   "support": {
     "title": "Support",
     "subtitle": "Hulp nodig? We staan klaar om je te helpen.",
@@ -183,7 +169,6 @@
       "pinToProfile": "Vastmaken aan profiel",
       "deleteVideo": "Video verwijderen",
       "reportVideo": "Video melden",
-      "sendViaMessage": "Versturen via bericht",
       "reportUser": "Gebruiker melden",
       "muteUser": "{{name}} dempen",
       "viewSource": "Bron bekijken"
@@ -932,13 +917,11 @@
     "peopleCount_other": "{{count}} mensen",
     "notFoundTitle": "Gesprek niet gevonden",
     "notFoundDescription": "Ga terug naar je inbox en start een nieuw bericht.",
-    "backToInbox": "Terug naar inbox",
     "dmUnavailableTitle": "Privéberichten zijn niet beschikbaar",
     "dmUnavailableDescription": "Deze signer kan je authenticeren, maar biedt niet de NIP-44-encryptiemethoden die nodig zijn voor privéberichten.",
+    "backToSupport": "Terug naar Support",
     "noMessages": "Nog geen berichten",
     "noMessagesHint": "Stuur het eerste bericht om deze thread te openen.",
-    "readyToShare": "Klaar om te delen",
-    "placeholderShare": "Voeg een optionele notitie toe...",
     "placeholderMessage": "Schrijf een bericht..."
   },
   "videoCommentsModal": {
@@ -1330,7 +1313,6 @@
     "muteErrorDescription": "Kon de mute niet opslaan. Nog eens proberen?",
     "deleteVideo": "Video verwijderen",
     "reportVideo": "Video rapporteren",
-    "sendViaMessage": "Versturen via bericht",
     "reportUser": "Gebruiker rapporteren",
     "muteUser": "{{name}} muten",
     "viewSource": "Bron bekijken",

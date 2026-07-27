@@ -17,6 +17,22 @@ describe('support-only messaging entry points', () => {
     expect(source).not.toContain('buildDmSharePayloadFromVideo');
   });
 
+  it('keeps the DM share path fully removed from the messaging stack', () => {
+    for (const file of [
+      'src/pages/ConversationPage.tsx',
+      'src/hooks/useDirectMessages.ts',
+      'src/lib/dm.ts',
+    ]) {
+      const source = readFileSync(resolve(REPO_ROOT, file), 'utf8');
+
+      expect(source).not.toContain('useParsedDmShare');
+      expect(source).not.toContain('parseDmShareQuery');
+      expect(source).not.toContain('buildDmShareQueryString');
+      expect(source).not.toContain('buildDmSharePayloadFromVideo');
+      expect(source).not.toContain('buildDmShareTags');
+    }
+  });
+
   it('keeps the prerendered FAQ messaging accurate', () => {
     const source = readFileSync(
       resolve(REPO_ROOT, 'scripts/prerender-content/faq-content.html'),

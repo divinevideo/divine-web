@@ -9,7 +9,6 @@
     "discover": "Tuklasin",
     "popular": "Popular",
     "search": "Hanapin",
-    "messages": "Mga Mensahe",
     "notifications": "Mga Abiso",
     "profile": "Profile",
     "analytics": "Analytics"
@@ -100,19 +99,6 @@
     "reply": "Sumagot",
     "comment": "Magkomento"
   },
-  "messages": {
-    "badge": "Mga Mensahe",
-    "title": "Mga direktang mensahe",
-    "subtitle": "Kausapin ang support, magpadala ng loop nang pribado, o ituloy ang thread mo sa mga sinusundan mo.",
-    "searchPlaceholder": "Sino padadalhan?",
-    "newMessage": "Bagong mensahe",
-    "readyToShare": "Handa nang ipadala nang pribado.",
-    "shareWithTitle": "Kasama sa susunod mong mensahe ang “{{title}}”.",
-    "shareWithLink": "Kasama sa susunod mong mensahe ang vine link.",
-    "signerUnsupported": "Pwede ka namang mag-log in sa signer mo, pero hindi pa nito kayang gumamit ng NIP-44. Lumipat sa nsec, bunker, o iba pang signer na may NIP-44 support para magamit ang DMs dito.",
-    "supportBadge": "Suporta",
-    "supportSummary": "Mga bug, moderation, account — pakikinggan ka namin."
-  },
   "support": {
     "title": "Suporta",
     "subtitle": "Kailangan ng tulong? Sagot ka namin.",
@@ -183,7 +169,6 @@
       "pinToProfile": "I-pin sa profile",
       "deleteVideo": "Burahin ang video",
       "reportVideo": "I-report ang video",
-      "sendViaMessage": "Ipadala bilang mensahe",
       "reportUser": "I-report ang user",
       "muteUser": "I-mute si {{name}}",
       "viewSource": "Tingnan ang source"
@@ -932,13 +917,11 @@
     "peopleCount_other": "{{count}} na tao",
     "notFoundTitle": "Hindi nakita ang usapan",
     "notFoundDescription": "Bumalik sa inbox mo at magsimula ng bagong mensahe.",
-    "backToInbox": "Bumalik sa inbox",
     "dmUnavailableTitle": "Hindi available ang direct messages",
     "dmUnavailableDescription": "Pwede kang i-authenticate ng signer na 'to, pero hindi nito available ang NIP-44 encryption na kailangan para sa pribadong mensahe.",
+    "backToSupport": "Bumalik sa Suporta",
     "noMessages": "Walang mensahe pa.",
     "noMessagesHint": "Magpadala ng unang mensahe para buksan ang thread na 'to.",
-    "readyToShare": "Handa nang i-share",
-    "placeholderShare": "Magdagdag ng optional na note...",
     "placeholderMessage": "Ipasok ang mensahe..."
   },
   "videoCommentsModal": {
@@ -1330,7 +1313,6 @@
     "muteErrorDescription": "Hindi na-save ang mute. Subukan ulit?",
     "deleteVideo": "I-delete ang video",
     "reportVideo": "I-report ang video",
-    "sendViaMessage": "Ipadala bilang mensahe",
     "reportUser": "I-report ang user",
     "muteUser": "I-mute si {{name}}",
     "viewSource": "Tingnan ang source",

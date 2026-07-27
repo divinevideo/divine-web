@@ -9,7 +9,6 @@
     "discover": "発見",
     "popular": "Popular",
     "search": "検索",
-    "messages": "メッセージ",
     "notifications": "通知",
     "profile": "プロフィール",
     "analytics": "分析"
@@ -100,19 +99,6 @@
     "reply": "返信",
     "comment": "コメント"
   },
-  "messages": {
-    "badge": "メッセージ",
-    "title": "ダイレクトメッセージ",
-    "subtitle": "サポートに相談したり、vine を非公開で送ったり、フォロー中の人との会話を続けたりできます。",
-    "searchPlaceholder": "メッセージを送る相手を探す",
-    "newMessage": "新しいメッセージ",
-    "readyToShare": "非公開で共有する準備ができました。",
-    "shareWithTitle": "次のメッセージには「{{title}}」が含まれます。",
-    "shareWithLink": "次のメッセージには vine のリンクが含まれます。",
-    "signerUnsupported": "現在の signer ではログインできますが、まだ NIP-44 暗号化に対応していません。Web でダイレクトメッセージを使うには、NIP-44 に対応した nsec、bunker、または別の signer に切り替えてください。",
-    "supportBadge": "サポート",
-    "supportSummary": "不具合、モデレーション、またはアカウントの問題について相談できます。"
-  },
   "support": {
     "title": "サポート",
     "subtitle": "お困りですか。私たちがサポートします。",
@@ -183,7 +169,6 @@
       "pinToProfile": "プロフィールに固定",
       "deleteVideo": "動画を削除",
       "reportVideo": "動画を報告",
-      "sendViaMessage": "メッセージで送信",
       "reportUser": "ユーザーを報告",
       "muteUser": "{{name}}をミュート",
       "viewSource": "ソースを表示"
@@ -932,13 +917,11 @@
     "peopleCount_other": "{{count}}人",
     "notFoundTitle": "会話が見つかりません",
     "notFoundDescription": "受信箱に戻って新しいメッセージを始めてください。",
-    "backToInbox": "受信箱に戻る",
     "dmUnavailableTitle": "ダイレクトメッセージは利用できません",
     "dmUnavailableDescription": "この署名ツールは認証はできますが、プライベートメッセージに必要なNIP-44の暗号化メソッドを公開していません。",
+    "backToSupport": "サポートに戻る",
     "noMessages": "まだメッセージがありません",
     "noMessagesHint": "最初のメッセージを送信してこのスレッドを開始してください。",
-    "readyToShare": "シェアの準備完了",
-    "placeholderShare": "メモを追加（任意）...",
     "placeholderMessage": "メッセージを書く..."
   },
   "videoCommentsModal": {
@@ -1330,7 +1313,6 @@
     "muteErrorDescription": "ミュートを保存できませんでした。もう一度お試しください。",
     "deleteVideo": "動画を削除",
     "reportVideo": "動画を報告",
-    "sendViaMessage": "メッセージで送信",
     "reportUser": "ユーザーを報告",
     "muteUser": "{{name}}をミュート",
     "viewSource": "ソースを表示",

@@ -9,7 +9,6 @@
     "discover": "Discover",
     "popular": "Popular",
     "search": "Search",
-    "messages": "Messages",
     "notifications": "Notifications",
     "profile": "Profile",
     "analytics": "Analytics"
@@ -100,19 +99,6 @@
     "reply": "Reply",
     "comment": "Comment"
   },
-  "messages": {
-    "badge": "Messages",
-    "title": "Direct messages",
-    "subtitle": "Talk to support, slide a loop privately, or keep a thread going with the people you follow.",
-    "searchPlaceholder": "Find someone to message",
-    "newMessage": "New message",
-    "readyToShare": "Ready to send privately.",
-    "shareWithTitle": "Your next message will include “{{title}}”.",
-    "shareWithLink": "Your next message will include a vine link.",
-    "signerUnsupported": "Your current signer can log you in, but it doesn't speak NIP-44 yet. Switch to an nsec, bunker, or another signer with NIP-44 support to use DMs here.",
-    "supportBadge": "Support",
-    "supportSummary": "Bugs, moderation, account stuff — we're listening."
-  },
   "support": {
     "title": "Support",
     "subtitle": "Need a hand? We've got you.",
@@ -183,7 +169,6 @@
       "pinToProfile": "Pin to profile",
       "deleteVideo": "Delete video",
       "reportVideo": "Report video",
-      "sendViaMessage": "Send via message",
       "reportUser": "Report user",
       "muteUser": "Mute {{name}}",
       "viewSource": "View source"
@@ -932,13 +917,11 @@
     "peopleCount_other": "{{count}} people",
     "notFoundTitle": "Conversation not found",
     "notFoundDescription": "Go back to your inbox and start a new message.",
-    "backToInbox": "Back to inbox",
     "dmUnavailableTitle": "Direct messages are unavailable",
     "dmUnavailableDescription": "This signer can authenticate you, but it does not expose the NIP-44 encryption methods required for private messaging.",
+    "backToSupport": "Back to Support",
     "noMessages": "No messages yet",
     "noMessagesHint": "Send the first message to open this thread.",
-    "readyToShare": "Ready to share",
-    "placeholderShare": "Add an optional note...",
     "placeholderMessage": "Write a message..."
   },
   "videoCommentsModal": {
@@ -1330,7 +1313,6 @@
     "muteErrorDescription": "Couldn't save the mute. Try again?",
     "deleteVideo": "Delete video",
     "reportVideo": "Report video",
-    "sendViaMessage": "Send via message",
     "reportUser": "Report user",
     "muteUser": "Mute {{name}}",
     "viewSource": "View source",

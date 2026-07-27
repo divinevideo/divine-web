@@ -9,7 +9,6 @@
     "discover": "Jelajahi",
     "popular": "Popular",
     "search": "Cari",
-    "messages": "Pesan",
     "notifications": "Notifikasi",
     "profile": "Profil",
     "analytics": "Analitik"
@@ -100,19 +99,6 @@
     "reply": "Balas",
     "comment": "Komentar"
   },
-  "messages": {
-    "badge": "Pesan",
-    "title": "Pesan langsung",
-    "subtitle": "Hubungi dukungan, kirim vine secara pribadi, atau lanjutkan percakapan dengan orang yang Anda ikuti.",
-    "searchPlaceholder": "Cari orang untuk dikirimi pesan",
-    "newMessage": "Pesan baru",
-    "readyToShare": "Siap dibagikan secara pribadi.",
-    "shareWithTitle": "Pesan Anda berikutnya akan menyertakan “{{title}}”.",
-    "shareWithLink": "Pesan Anda berikutnya akan menyertakan tautan vine.",
-    "signerUnsupported": "Signer Anda saat ini bisa dipakai untuk masuk, tetapi belum mendukung enkripsi NIP-44. Gunakan nsec, bunker, atau signer lain yang mendukung NIP-44 untuk memakai pesan langsung di web.",
-    "supportBadge": "Dukungan",
-    "supportSummary": "Tanyakan tentang bug, moderasi, atau masalah akun."
-  },
   "support": {
     "title": "Dukungan",
     "subtitle": "Butuh bantuan? Kami siap membantu Anda.",
@@ -183,7 +169,6 @@
       "pinToProfile": "Pin ke profil",
       "deleteVideo": "Hapus video",
       "reportVideo": "Laporkan video",
-      "sendViaMessage": "Kirim lewat pesan",
       "reportUser": "Laporkan pengguna",
       "muteUser": "Bisukan {{name}}",
       "viewSource": "Lihat sumber"
@@ -932,13 +917,11 @@
     "peopleCount_other": "{{count}} orang",
     "notFoundTitle": "Percakapan tidak ditemukan",
     "notFoundDescription": "Kembali ke inbox dan mulai pesan baru.",
-    "backToInbox": "Kembali ke inbox",
     "dmUnavailableTitle": "Pesan langsung tidak tersedia",
     "dmUnavailableDescription": "Signer ini bisa mengautentikasi kamu, tapi tidak mengekspos metode enkripsi NIP-44 yang dibutuhkan untuk pesan privat.",
+    "backToSupport": "Kembali ke Dukungan",
     "noMessages": "Belum ada pesan",
     "noMessagesHint": "Kirim pesan pertama untuk membuka thread ini.",
-    "readyToShare": "Siap dibagikan",
-    "placeholderShare": "Tambah catatan opsional...",
     "placeholderMessage": "Tulis pesan..."
   },
   "videoCommentsModal": {
@@ -1330,7 +1313,6 @@
     "muteErrorDescription": "Tidak bisa menyimpan bisu. Coba lagi?",
     "deleteVideo": "Hapus video",
     "reportVideo": "Laporkan video",
-    "sendViaMessage": "Kirim via pesan",
     "reportUser": "Laporkan pengguna",
     "muteUser": "Bisukan {{name}}",
     "viewSource": "Lihat sumber",

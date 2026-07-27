@@ -9,7 +9,6 @@
     "discover": "Odkrywaj",
     "popular": "Popular",
     "search": "Szukaj",
-    "messages": "Wiadomosci",
     "notifications": "Powiadomienia",
     "profile": "Profil",
     "analytics": "Analityka"
@@ -100,19 +99,6 @@
     "reply": "Odpowiedz",
     "comment": "Komentarz"
   },
-  "messages": {
-    "badge": "Wiadomosci",
-    "title": "Wiadomosci bezposrednie",
-    "subtitle": "Porozmawiaj z supportem, wyslij vines prywatnie albo kontynuuj rozmowe z osobami, ktore obserwujesz.",
-    "searchPlaceholder": "Znajdz osoby, do ktorych chcesz napisac",
-    "newMessage": "Nowa wiadomosc",
-    "readyToShare": "Gotowe do prywatnego udostepnienia.",
-    "shareWithTitle": "Twoja nastepna wiadomosc bedzie zawierac “{{title}}”.",
-    "shareWithLink": "Twoja nastepna wiadomosc bedzie zawierac link do vine.",
-    "signerUnsupported": "Twoj obecny signer pozwala sie zalogowac, ale nie udostepnia jeszcze szyfrowania NIP-44. Przelacz sie na nsec, bunker lub inny signer obslugujacy NIP-44, aby korzystac z wiadomosci bezposrednich w sieci.",
-    "supportBadge": "Wsparcie",
-    "supportSummary": "Zapytaj o bledy, moderacje lub problemy z kontem."
-  },
   "support": {
     "title": "Wsparcie",
     "subtitle": "Potrzebujesz pomocy? Jestesmy tutaj, aby pomoc.",
@@ -185,7 +171,6 @@
       "pinToProfile": "Przypnij do profilu",
       "deleteVideo": "Usuń wideo",
       "reportVideo": "Zgłoś wideo",
-      "sendViaMessage": "Wyślij wiadomością",
       "reportUser": "Zgłoś użytkownika",
       "muteUser": "Wycisz {{name}}",
       "viewSource": "Zobacz źródło"
@@ -934,13 +919,11 @@
     "peopleCount_other": "{{count}} osób",
     "notFoundTitle": "Nie znaleziono rozmowy",
     "notFoundDescription": "Wróć do skrzynki i zacznij nową wiadomość.",
-    "backToInbox": "Wróć do skrzynki",
     "dmUnavailableTitle": "Wiadomości prywatne niedostępne",
     "dmUnavailableDescription": "Ten podpisywacz może cię uwierzytelnić, ale nie udostępnia metod szyfrowania NIP-44 wymaganych do prywatnych wiadomości.",
+    "backToSupport": "Wróć do pomocy",
     "noMessages": "Jeszcze żadnych wiadomości",
     "noMessagesHint": "Wyślij pierwszą wiadomość, żeby zacząć rozmowę.",
-    "readyToShare": "Gotowe do udostępnienia",
-    "placeholderShare": "Dodaj opcjonalną notkę...",
     "placeholderMessage": "Napisz wiadomość..."
   },
   "videoCommentsModal": {
@@ -1332,7 +1315,6 @@
     "muteErrorDescription": "Nie udało się zapisać wyciszenia. Spróbuj jeszcze raz?",
     "deleteVideo": "Usuń film",
     "reportVideo": "Zgłoś film",
-    "sendViaMessage": "Wyślij wiadomością",
     "reportUser": "Zgłoś użytkownika",
     "muteUser": "Wycisz {{name}}",
     "viewSource": "Zobacz źródło",

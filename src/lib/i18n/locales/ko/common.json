@@ -9,7 +9,6 @@
     "discover": "탐색",
     "popular": "Popular",
     "search": "검색",
-    "messages": "메시지",
     "notifications": "알림",
     "profile": "프로필",
     "analytics": "분석"
@@ -100,19 +99,6 @@
     "reply": "답글",
     "comment": "댓글"
   },
-  "messages": {
-    "badge": "메시지",
-    "title": "다이렉트 메시지",
-    "subtitle": "지원팀과 대화하고, vine을 비공개로 보내거나, 팔로우한 사람들과 대화를 이어가세요.",
-    "searchPlaceholder": "메시지를 보낼 사람 찾기",
-    "newMessage": "새 메시지",
-    "readyToShare": "비공개로 공유할 준비가 되었습니다.",
-    "shareWithTitle": "다음 메시지에는 “{{title}}”가 포함됩니다.",
-    "shareWithLink": "다음 메시지에는 vine 링크가 포함됩니다.",
-    "signerUnsupported": "현재 signer로 로그인할 수는 있지만 아직 NIP-44 암호화를 제공하지 않습니다. 웹에서 다이렉트 메시지를 사용하려면 NIP-44를 지원하는 nsec, bunker 또는 다른 signer로 전환하세요.",
-    "supportBadge": "지원",
-    "supportSummary": "버그, 모더레이션 또는 계정 문제에 대해 문의하세요."
-  },
   "support": {
     "title": "지원",
     "subtitle": "도움이 필요하신가요? 저희가 도와드리겠습니다.",
@@ -183,7 +169,6 @@
       "pinToProfile": "프로필에 고정",
       "deleteVideo": "비디오 삭제",
       "reportVideo": "비디오 신고",
-      "sendViaMessage": "메시지로 보내기",
       "reportUser": "사용자 신고",
       "muteUser": "{{name}} 음소거",
       "viewSource": "소스 보기"
@@ -932,13 +917,11 @@
     "peopleCount_other": "{{count}}명",
     "notFoundTitle": "대화를 찾을 수 없어요",
     "notFoundDescription": "받은편지함으로 돌아가서 새 메시지를 시작하세요.",
-    "backToInbox": "받은편지함으로 돌아가기",
     "dmUnavailableTitle": "다이렉트 메시지를 사용할 수 없어요",
     "dmUnavailableDescription": "이 사이너는 인증은 되지만, 비공개 메시지에 필요한 NIP-44 암호화 메서드를 제공하지 않아요.",
+    "backToSupport": "지원으로 돌아가기",
     "noMessages": "아직 메시지가 없어요",
     "noMessagesHint": "첫 메시지를 보내서 대화를 시작하세요.",
-    "readyToShare": "공유 준비 완료",
-    "placeholderShare": "메모 추가 (선택)...",
     "placeholderMessage": "메시지를 입력하세요..."
   },
   "videoCommentsModal": {
@@ -1330,7 +1313,6 @@
     "muteErrorDescription": "뮤트를 저장하지 못했어요. 다시 시도해 볼까요?",
     "deleteVideo": "비디오 삭제",
     "reportVideo": "비디오 신고",
-    "sendViaMessage": "메시지로 보내기",
     "reportUser": "사용자 신고",
     "muteUser": "{{name}} 뮤트",
     "viewSource": "소스 보기",

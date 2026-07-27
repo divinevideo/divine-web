@@ -9,7 +9,6 @@
     "discover": "Descubrir",
     "popular": "Popular",
     "search": "Buscar",
-    "messages": "Mensajes",
     "notifications": "Notificaciones",
     "profile": "Perfil",
     "analytics": "Analiticas"
@@ -100,19 +99,6 @@
     "reply": "Responder",
     "comment": "Comentar"
   },
-  "messages": {
-    "badge": "Mensajes",
-    "title": "Mensajes directos",
-    "subtitle": "Habla con soporte, envia vines en privado o mantén una conversacion con personas que sigues.",
-    "searchPlaceholder": "Busca personas para escribirles",
-    "newMessage": "Nuevo mensaje",
-    "readyToShare": "Listo para compartir en privado.",
-    "shareWithTitle": "Tu proximo mensaje incluira “{{title}}”.",
-    "shareWithLink": "Tu proximo mensaje incluira un enlace de vine.",
-    "signerUnsupported": "Tu firmador actual puede iniciar sesion, pero todavia no expone cifrado NIP-44. Cambia a un nsec, bunker u otro firmador que admita NIP-44 para usar mensajes directos en la web.",
-    "supportBadge": "Soporte",
-    "supportSummary": "Pregunta sobre errores, moderacion o problemas de cuenta."
-  },
   "support": {
     "title": "Soporte",
     "subtitle": "Necesitas ayuda? Estamos aqui para ayudarte.",
@@ -183,7 +169,6 @@
       "pinToProfile": "Fijar en el perfil",
       "deleteVideo": "Eliminar video",
       "reportVideo": "Reportar video",
-      "sendViaMessage": "Enviar por mensaje",
       "reportUser": "Reportar usuario",
       "muteUser": "Silenciar a {{name}}",
       "viewSource": "Ver fuente"
@@ -932,13 +917,11 @@
     "peopleCount_other": "{{count}} personas",
     "notFoundTitle": "Conversación no encontrada",
     "notFoundDescription": "Vuelve a tu bandeja de entrada y empieza un nuevo mensaje.",
-    "backToInbox": "Volver a la bandeja de entrada",
     "dmUnavailableTitle": "Los mensajes directos no están disponibles",
     "dmUnavailableDescription": "Este firmador puede autenticarte, pero no expone los métodos de cifrado NIP-44 necesarios para mensajería privada.",
+    "backToSupport": "Volver a soporte",
     "noMessages": "Aún no hay mensajes",
     "noMessagesHint": "Envía el primer mensaje para abrir este hilo.",
-    "readyToShare": "Listo para compartir",
-    "placeholderShare": "Añade una nota opcional...",
     "placeholderMessage": "Escribe un mensaje..."
   },
   "videoCommentsModal": {
@@ -1330,7 +1313,6 @@
     "muteErrorDescription": "No se pudo guardar el silencio. ¿Lo intentas de nuevo?",
     "deleteVideo": "Eliminar video",
     "reportVideo": "Reportar video",
-    "sendViaMessage": "Enviar por mensaje",
     "reportUser": "Reportar usuario",
     "muteUser": "Silenciar a {{name}}",
     "viewSource": "Ver fuente",

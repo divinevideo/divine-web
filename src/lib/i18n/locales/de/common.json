@@ -9,7 +9,6 @@
     "discover": "Entdecken",
     "popular": "Popular",
     "search": "Suchen",
-    "messages": "Nachrichten",
     "notifications": "Benachrichtigungen",
     "profile": "Profil",
     "analytics": "Analysen"
@@ -100,19 +99,6 @@
     "reply": "Antworten",
     "comment": "Kommentieren"
   },
-  "messages": {
-    "badge": "Nachrichten",
-    "title": "Direktnachrichten",
-    "subtitle": "Sprich mit dem Support, sende Vines privat oder fuhre Unterhaltungen mit Personen fort, denen du folgst.",
-    "searchPlaceholder": "Personen zum Anschreiben finden",
-    "newMessage": "Neue Nachricht",
-    "readyToShare": "Bereit zum privaten Teilen.",
-    "shareWithTitle": "Deine nachste Nachricht enthalt „{{title}}“.",
-    "shareWithLink": "Deine nachste Nachricht enthalt einen Vine-Link.",
-    "signerUnsupported": "Dein aktueller Signer kann dich anmelden, bietet aber noch keine NIP-44-Verschlusselung. Wechsle zu einem nsec, bunker oder einem anderen Signer mit NIP-44-Unterstutzung, um Direktnachrichten im Web zu nutzen.",
-    "supportBadge": "Support",
-    "supportSummary": "Frage nach Bugs, Moderation oder Kontoproblemen."
-  },
   "support": {
     "title": "Support",
     "subtitle": "Brauchst du Hilfe? Wir sind fur dich da.",
@@ -183,7 +169,6 @@
       "pinToProfile": "Ans Profil pinnen",
       "deleteVideo": "Video löschen",
       "reportVideo": "Video melden",
-      "sendViaMessage": "Per Nachricht senden",
       "reportUser": "Nutzer melden",
       "muteUser": "{{name}} stummschalten",
       "viewSource": "Quelle anzeigen"
@@ -932,13 +917,11 @@
     "peopleCount_other": "{{count}} Personen",
     "notFoundTitle": "Unterhaltung nicht gefunden",
     "notFoundDescription": "Geh zurück zu deinem Posteingang und starte eine neue Nachricht.",
-    "backToInbox": "Zurück zum Posteingang",
     "dmUnavailableTitle": "Direktnachrichten sind nicht verfügbar",
     "dmUnavailableDescription": "Dieser Signer kann dich authentifizieren, gibt aber die NIP-44-Verschlüsselungsmethoden nicht frei, die für private Nachrichten nötig sind.",
+    "backToSupport": "Zurück zum Support",
     "noMessages": "Noch keine Nachrichten",
     "noMessagesHint": "Schick die erste Nachricht, um diesen Thread zu starten.",
-    "readyToShare": "Bereit zum Teilen",
-    "placeholderShare": "Notiz hinzufügen (optional)...",
     "placeholderMessage": "Schreib eine Nachricht..."
   },
   "videoCommentsModal": {
@@ -1330,7 +1313,6 @@
     "muteErrorDescription": "Konnte den Mute nicht speichern. Nochmal versuchen?",
     "deleteVideo": "Video löschen",
     "reportVideo": "Video melden",
-    "sendViaMessage": "Per Nachricht senden",
     "reportUser": "Nutzer melden",
     "muteUser": "{{name}} muten",
     "viewSource": "Quelle ansehen",

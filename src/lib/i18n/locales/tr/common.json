@@ -9,7 +9,6 @@
     "discover": "Kesfet",
     "popular": "Popular",
     "search": "Ara",
-    "messages": "Mesajlar",
     "notifications": "Bildirimler",
     "profile": "Profil",
     "analytics": "Analitik"
@@ -100,19 +99,6 @@
     "reply": "Yanıtla",
     "comment": "Yorum yap"
   },
-  "messages": {
-    "badge": "Mesajlar",
-    "title": "Dogrudan mesajlar",
-    "subtitle": "Destekle konus, vine'lari ozel olarak gonder veya takip ettigin kisilerle konusmayi surdur.",
-    "searchPlaceholder": "Mesaj gonderecek kisi bul",
-    "newMessage": "Yeni mesaj",
-    "readyToShare": "Ozel olarak paylasmaya hazir.",
-    "shareWithTitle": "Bir sonraki mesajin “{{title}}” icerecek.",
-    "shareWithLink": "Bir sonraki mesajin bir vine baglantisi icerecek.",
-    "signerUnsupported": "Mevcut imzalayicin giris yapmana izin veriyor, ancak henuz NIP-44 sifrelemesini desteklemiyor. Web'de dogrudan mesaj kullanmak icin NIP-44 destekleyen bir nsec, bunker veya baska bir imzalayiciya gec.",
-    "supportBadge": "Destek",
-    "supportSummary": "Hatalar, moderasyon veya hesap sorunlari hakkinda sor."
-  },
   "support": {
     "title": "Destek",
     "subtitle": "Yardima mi ihtiyacin var? Yardim etmek icin buradayiz.",
@@ -183,7 +169,6 @@
       "pinToProfile": "Profile sabitle",
       "deleteVideo": "Videoyu sil",
       "reportVideo": "Videoyu bildir",
-      "sendViaMessage": "Mesajla gönder",
       "reportUser": "Kullanıcıyı bildir",
       "muteUser": "{{name}} kullanıcısını sustur",
       "viewSource": "Kaynağı gör"
@@ -932,13 +917,11 @@
     "peopleCount_other": "{{count}} kişi",
     "notFoundTitle": "Sohbet bulunamadı",
     "notFoundDescription": "Gelen kutuna geri dön ve yeni bir mesaj başlat.",
-    "backToInbox": "Gelen kutusuna dön",
     "dmUnavailableTitle": "Direkt mesajlar kullanılamıyor",
     "dmUnavailableDescription": "Bu signer seni doğrulayabilir, ancak özel mesajlaşma için gereken NIP-44 şifreleme metotlarını sağlamıyor.",
+    "backToSupport": "Desteğe dön",
     "noMessages": "Henüz mesaj yok",
     "noMessagesHint": "Bu konuşmayı açmak için ilk mesajı gönder.",
-    "readyToShare": "Paylaşmaya hazır",
-    "placeholderShare": "Opsiyonel bir not ekle...",
     "placeholderMessage": "Bir mesaj yaz..."
   },
   "videoCommentsModal": {
@@ -1330,7 +1313,6 @@
     "muteErrorDescription": "Susturma kaydedilemedi. Tekrar denemek ister misin?",
     "deleteVideo": "Videoyu sil",
     "reportVideo": "Videoyu bildir",
-    "sendViaMessage": "Mesajla gönder",
     "reportUser": "Kullanıcıyı bildir",
     "muteUser": "{{name}} adlı kullanıcıyı sustur",
     "viewSource": "Kaynağı gör",

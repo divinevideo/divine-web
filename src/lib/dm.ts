@@ -5,9 +5,7 @@ import { finalizeEvent, generateSecretKey, nip44, verifyEvent } from 'nostr-tool
 
 import { PRESET_RELAYS, PROFILE_RELAYS, getRelayUrls } from '@/config/relays';
 import { DIVINE_MODERATION_PUBKEY } from '@/lib/officialAccounts';
-import { getVideoShareUrl } from '@/lib/shareUtils';
 import { getApexShareUrl } from '@/lib/subdomainLinks';
-import type { ParsedVideoData } from '@/types/video';
 import { SHORT_VIDEO_KIND } from '@/types/video';
 
 export const DM_GIFT_WRAP_KIND = 1059;
@@ -797,64 +795,4 @@ export function groupDmConversations(
       } satisfies DmConversation;
     })
     .sort((a, b) => b.lastMessage.createdAt - a.lastMessage.createdAt);
-}
-
-export function buildDmSharePayloadFromVideo(video: ParsedVideoData): DmSharePayload {
-  return {
-    url: getVideoShareUrl(video),
-    title: video.title,
-    videoId: video.id,
-    videoPubkey: video.pubkey,
-    vineId: video.vineId || undefined,
-  };
-}
-
-export function buildDmShareTags(share?: DmSharePayload): string[][] {
-  if (!share) {
-    return [];
-  }
-
-  const tags: string[][] = [['r', share.url]];
-
-  if (share.title) {
-    tags.push(['title', share.title]);
-  }
-
-  if (share.vineId && share.videoPubkey) {
-    tags.push(['a', `${SHORT_VIDEO_KIND}:${share.videoPubkey}:${share.vineId}`]);
-  } else if (share.videoId) {
-    tags.push(['e', share.videoId]);
-  }
-
-  return tags;
-}
-
-export function buildDmShareQueryString(share?: DmSharePayload): string {
-  if (!share) {
-    return '';
-  }
-
-  const params = new URLSearchParams({ shareUrl: share.url });
-
-  if (share.title) params.set('shareTitle', share.title);
-  if (share.videoId) params.set('shareVideoId', share.videoId);
-  if (share.videoPubkey) params.set('shareVideoPubkey', share.videoPubkey);
-  if (share.vineId) params.set('shareVineId', share.vineId);
-
-  return params.toString();
-}
-
-export function parseDmShareQuery(searchParams: URLSearchParams): DmSharePayload | undefined {
-  const url = searchParams.get('shareUrl');
-  if (!url) {
-    return undefined;
-  }
-
-  return {
-    url,
-    title: searchParams.get('shareTitle') || undefined,
-    videoId: searchParams.get('shareVideoId') || undefined,
-    videoPubkey: searchParams.get('shareVideoPubkey') || undefined,
-    vineId: searchParams.get('shareVineId') || undefined,
-  };
 }
