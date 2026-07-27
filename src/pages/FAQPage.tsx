@@ -771,7 +771,7 @@ export function FAQPage() {
                     Divine's current private messaging channel is for contacting Divine Support.
                     Messages use encrypted NIP-17 delivery, and the support team can read and
                     respond to messages sent to that channel. User-to-user DMs and private video
-                    sharing are not available in Divine right now.
+                    sharing are not available on Divine Web right now.
                   </p>
                 </div>
               </FAQQuestion>

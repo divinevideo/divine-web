@@ -47,7 +47,7 @@ describe('support-only messaging entry points', () => {
       'Messages use encrypted NIP-17 delivery, and the support team can read and respond to messages sent to that channel.',
     );
     expect(source).toContain(
-      'User-to-user DMs and private video sharing are not available in Divine right now.',
+      'User-to-user DMs and private video sharing are not available on Divine Web right now.',
     );
     expect(source).not.toContain('Direct messages ARE private');
     expect(source).not.toContain('direct messages between users are end-to-end encrypted');
