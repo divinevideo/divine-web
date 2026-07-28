@@ -663,14 +663,12 @@
     "toastFailedRemove": "Kimlik kaldırılamadı"
   },
   "linkedAccounts": {
-    "verifying": "Doğrulanıyor...",
     "verified": "Doğrulandı",
-    "noProof": "Kanıt yok",
     "profileLink": "Profil",
     "proofLink": "Kanıt",
     "linkedAccountsLabel": "Bağlı hesaplar",
     "identityVerificationTitle": "Kimlik doğrulama",
-    "identityVerificationDescription": "Bağlı hesaplar NIP-39 kimlik kanıtları kullanılarak doğrulanır. Sadece doğrulanmış hesaplar gösterilir.",
+    "identityVerificationDescription": "Linked accounts use NIP-39 identity proofs. Verified accounts show automatically; unverifiable claims stay hidden unless you choose to show them.",
     "showUnverified": "Show unverified",
     "notAutoVerified": "Not auto-verified",
     "verifyManually": "Verify manually",

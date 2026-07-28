@@ -664,14 +664,12 @@
     "toastFailedRemove": "Eliminarea identității a eșuat"
   },
   "linkedAccounts": {
-    "verifying": "Se verifică...",
     "verified": "Verificat",
-    "noProof": "Nicio dovadă",
     "profileLink": "Profil",
     "proofLink": "Dovadă",
     "linkedAccountsLabel": "Conturi conectate",
     "identityVerificationTitle": "Verificare identitate",
-    "identityVerificationDescription": "Conturile conectate sunt verificate prin dovezi de identitate NIP-39. Sunt afișate doar conturile verificate.",
+    "identityVerificationDescription": "Linked accounts use NIP-39 identity proofs. Verified accounts show automatically; unverifiable claims stay hidden unless you choose to show them.",
     "showUnverified": "Show unverified",
     "notAutoVerified": "Not auto-verified",
     "verifyManually": "Verify manually",

@@ -663,14 +663,12 @@
     "toastFailedRemove": "Falha ao remover identidade"
   },
   "linkedAccounts": {
-    "verifying": "Verificando...",
     "verified": "Verificado",
-    "noProof": "Sem prova",
     "profileLink": "Perfil",
     "proofLink": "Prova",
     "linkedAccountsLabel": "Contas vinculadas",
     "identityVerificationTitle": "Verificação de identidade",
-    "identityVerificationDescription": "Contas vinculadas são verificadas com provas de identidade NIP-39. Só contas verificadas aparecem aqui.",
+    "identityVerificationDescription": "Linked accounts use NIP-39 identity proofs. Verified accounts show automatically; unverifiable claims stay hidden unless you choose to show them.",
     "showUnverified": "Show unverified",
     "notAutoVerified": "Not auto-verified",
     "verifyManually": "Verify manually",

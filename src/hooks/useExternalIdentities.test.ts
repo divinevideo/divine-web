@@ -46,6 +46,7 @@ import {
   useExternalIdentities,
   SUPPORTED_PLATFORMS,
   cleanIdentityProof,
+  canManuallyVerifyIdentityError,
   type ExternalIdentity,
 } from './useExternalIdentities';
 
@@ -608,6 +609,19 @@ describe('cleanIdentityProof', () => {
         'https://bsky.app/profile/alice.bsky.social/post/3jxh5kdbmop2o',
       ),
     ).toBe('3jxh5kdbmop2o');
+  });
+});
+
+describe('canManuallyVerifyIdentityError', () => {
+  it('keeps manual verification available for service manual results and verifier outages', () => {
+    expect(canManuallyVerifyIdentityError('manual')).toBe(true);
+    expect(canManuallyVerifyIdentityError('unavailable')).toBe(true);
+  });
+
+  it('does not offer manual verification links for hard verification failures', () => {
+    expect(canManuallyVerifyIdentityError('HTTP 404')).toBe(false);
+    expect(canManuallyVerifyIdentityError('npub not found in proof')).toBe(false);
+    expect(canManuallyVerifyIdentityError(undefined)).toBe(false);
   });
 });
 

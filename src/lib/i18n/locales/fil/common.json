@@ -663,14 +663,12 @@
     "toastFailedRemove": "Hindi na-alis ang identity"
   },
   "linkedAccounts": {
-    "verifying": "Sinusuri...",
     "verified": "Na-verify",
-    "noProof": "Walang patunay",
     "profileLink": "Profile",
     "proofLink": "Patunay",
     "linkedAccountsLabel": "Mga linked account",
     "identityVerificationTitle": "Pag-verify ng identity",
-    "identityVerificationDescription": "Ang mga linked account ay na-verify gamit ang mga NIP-39 identity proof. Mga na-verify lang ang ipinapakita.",
+    "identityVerificationDescription": "Linked accounts use NIP-39 identity proofs. Verified accounts show automatically; unverifiable claims stay hidden unless you choose to show them.",
     "showUnverified": "Show unverified",
     "notAutoVerified": "Not auto-verified",
     "verifyManually": "Verify manually",

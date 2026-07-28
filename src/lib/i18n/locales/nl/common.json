@@ -663,14 +663,12 @@
     "toastFailedRemove": "Identiteit verwijderen mislukt"
   },
   "linkedAccounts": {
-    "verifying": "Verifiëren...",
     "verified": "Geverifieerd",
-    "noProof": "Geen bewijs",
     "profileLink": "Profiel",
     "proofLink": "Bewijs",
     "linkedAccountsLabel": "Gekoppelde accounts",
     "identityVerificationTitle": "Identiteitsverificatie",
-    "identityVerificationDescription": "Gekoppelde accounts worden geverifieerd via NIP-39 identity proofs. Alleen geverifieerde accounts worden getoond.",
+    "identityVerificationDescription": "Linked accounts use NIP-39 identity proofs. Verified accounts show automatically; unverifiable claims stay hidden unless you choose to show them.",
     "showUnverified": "Show unverified",
     "notAutoVerified": "Not auto-verified",
     "verifyManually": "Verify manually",

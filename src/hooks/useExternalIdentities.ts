@@ -244,11 +244,15 @@ export function buildManualVerifyUrl(identity: ExternalIdentity, pubkey: string)
   return `${API_CONFIG.verificationService.baseUrl}/verify/${encodeURIComponent(identity.platform)}/${encodeURIComponent(identity.identity)}/${encodeURIComponent(proof)}?pubkey=${pubkey}`;
 }
 
+export function canManuallyVerifyIdentityError(error: string | undefined): boolean {
+  return error === 'manual' || error === 'unavailable';
+}
+
 /**
  * Verify an external identity claim by fetching the proof URL and checking for npub.
  * Checks localStorage cache first, then tries external verification service,
  * then falls back to browser-based verification (GitHub only).
- * For other platforms without service, returns 'manual'.
+ * For other platforms without an available service result, returns 'unavailable'.
  */
 export async function verifyIdentityClaim(
   identity: ExternalIdentity,
@@ -320,7 +324,7 @@ export async function verifyIdentityClaim(
 
 /**
  * Try to verify via external verification service.
- * Returns null if service is unavailable or feature flag is off.
+ * Returns an unavailable status if the service is unavailable or feature flag is off.
  */
 async function verifyViaService(
   identity: ExternalIdentity,

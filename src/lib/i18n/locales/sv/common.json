@@ -663,14 +663,12 @@
     "toastFailedRemove": "Kunde inte ta bort identiteten"
   },
   "linkedAccounts": {
-    "verifying": "Verifierar...",
     "verified": "Verifierad",
-    "noProof": "Inget bevis",
     "profileLink": "Profil",
     "proofLink": "Bevis",
     "linkedAccountsLabel": "Länkade konton",
     "identityVerificationTitle": "Identitetsverifiering",
-    "identityVerificationDescription": "Länkade konton verifieras med NIP-39 identitetsbevis. Endast verifierade konton visas.",
+    "identityVerificationDescription": "Linked accounts use NIP-39 identity proofs. Verified accounts show automatically; unverifiable claims stay hidden unless you choose to show them.",
     "showUnverified": "Show unverified",
     "notAutoVerified": "Not auto-verified",
     "verifyManually": "Verify manually",

@@ -663,9 +663,7 @@
     "toastFailedRemove": "Failed to remove identity"
   },
   "linkedAccounts": {
-    "verifying": "Verifying...",
     "verified": "Verified",
-    "noProof": "No proof",
     "profileLink": "Profile",
     "proofLink": "Proof",
     "linkedAccountsLabel": "Linked accounts",

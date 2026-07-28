@@ -86,6 +86,7 @@ describe('LinkedAccounts', () => {
     await waitFor(() => {
       expect(screen.getByTestId('identity-badge-github')).toBeInTheDocument();
     });
+    expect(screen.getByRole('button', { name: 'alice, Verified' })).toBeInTheDocument();
   });
 
   it('hides unverified identity badge by default (toggle off)', async () => {
@@ -134,6 +135,7 @@ describe('LinkedAccounts', () => {
     await waitFor(() => {
       expect(screen.getByTestId('identity-badge-github-unverified')).toBeInTheDocument();
     });
+    expect(screen.getByRole('button', { name: 'alice, Not auto-verified' })).toBeInTheDocument();
   });
 
   it('keeps hard-failed identity claims hidden when toggle is on', async () => {

@@ -5,7 +5,7 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
-import { useExternalIdentities, SUPPORTED_PLATFORMS, verifyIdentityClaim, buildManualVerifyUrl, type ExternalIdentity } from '@/hooks/useExternalIdentities';
+import { useExternalIdentities, SUPPORTED_PLATFORMS, verifyIdentityClaim, buildManualVerifyUrl, canManuallyVerifyIdentityError, type ExternalIdentity } from '@/hooks/useExternalIdentities';
 import { useAddIdentity, useRemoveIdentity } from '@/hooks/usePublishIdentity';
 import { getDivineNip05Info } from '@/lib/nip05Utils';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -261,7 +261,7 @@ function VerificationBadge({ identity, pubkey }: { identity: ExternalIdentity; p
         </Badge>
       );
     case 'failed':
-      return error === 'manual' ? (
+      return canManuallyVerifyIdentityError(error) ? (
         <a
           href={buildManualVerifyUrl(identity, pubkey)}
           target="_blank"
