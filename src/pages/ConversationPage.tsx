@@ -17,7 +17,6 @@ import { useSubdomainNavigate } from '@/hooks/useSubdomainNavigate';
 import {
   DIVINE_SUPPORT_PUBKEY,
   decodeConversationId,
-  encodeConversationId,
   type DmMessage,
 } from '@/lib/dm';
 import {
@@ -31,8 +30,6 @@ import { formatRelativeTime } from '@/lib/notificationTransform';
 import { cn } from '@/lib/utils';
 
 type TFn = (key: string, opts?: Record<string, unknown>) => string;
-
-const SUPPORT_CONVERSATION_ID = encodeConversationId([DIVINE_SUPPORT_PUBKEY]);
 
 function getDisplayName(pubkey: string, metadata?: { display_name?: string; name?: string }, t?: TFn) {
   if (pubkey === DIVINE_SUPPORT_PUBKEY) {
@@ -203,9 +200,9 @@ export function ConversationPage() {
   const latestMessageAt = conversationQuery.latestMessageAt;
   const lastReadAt = conversationQuery.lastReadAt;
   const markConversationRead = conversationQuery.markConversationRead;
-  const threadBlocked =
-    conversationId !== SUPPORT_CONVERSATION_ID ||
-    !isSupportOnlyDmPeerSet(peerPubkeys);
+  // The peer-set check canonicalizes the id (decode sorts pubkeys), so a raw
+  // string compare against SUPPORT_CONVERSATION_ID would be redundant.
+  const threadBlocked = !isSupportOnlyDmPeerSet(peerPubkeys);
 
   useEffect(() => {
     if (!threadBlocked && latestMessageAt > lastReadAt) {
