@@ -685,12 +685,12 @@
     "proofLink": "Bukti",
     "linkedAccountsLabel": "Akun tertaut",
     "identityVerificationTitle": "Verifikasi identitas",
-    "identityVerificationDescription": "Linked accounts use NIP-39 identity proofs. Verified accounts show automatically; unverifiable claims stay hidden unless you choose to show them.",
-    "showUnverified": "Show unverified",
-    "notAutoVerified": "Not auto-verified",
-    "verifyManually": "Verify manually",
-    "verifyManuallyDescription": "We couldn't confirm this automatically. Check the profile to verify it yourself.",
-    "unverifiedBadgeTooltip": "Not auto-verified — click to check the proof"
+    "identityVerificationDescription": "Akun tertaut menggunakan bukti identitas NIP-39. Akun terverifikasi ditampilkan otomatis; klaim yang tidak dapat diverifikasi tetap tersembunyi kecuali kamu memilih untuk menampilkannya.",
+    "showUnverified": "Tampilkan yang belum terverifikasi",
+    "notAutoVerified": "Belum terverifikasi otomatis",
+    "verifyManually": "Verifikasi manual",
+    "verifyManuallyDescription": "Kami tidak dapat mengonfirmasinya secara otomatis. Periksa profilnya untuk memverifikasi sendiri.",
+    "unverifiedBadgeTooltip": "Belum terverifikasi otomatis — klik untuk memeriksa buktinya"
   },
   "analyticsPage": {
     "seoTitle": "Analytics Kreator - Divine",

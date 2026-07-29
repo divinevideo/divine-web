@@ -685,12 +685,12 @@
     "proofLink": "証明",
     "linkedAccountsLabel": "連携アカウント",
     "identityVerificationTitle": "本人確認",
-    "identityVerificationDescription": "Linked accounts use NIP-39 identity proofs. Verified accounts show automatically; unverifiable claims stay hidden unless you choose to show them.",
-    "showUnverified": "Show unverified",
-    "notAutoVerified": "Not auto-verified",
-    "verifyManually": "Verify manually",
-    "verifyManuallyDescription": "We couldn't confirm this automatically. Check the profile to verify it yourself.",
-    "unverifiedBadgeTooltip": "Not auto-verified — click to check the proof"
+    "identityVerificationDescription": "リンク済みアカウントは NIP-39 の本人証明を使用します。認証済みアカウントは自動で表示され、確認できない申請は表示を選ばない限り非表示のままです。",
+    "showUnverified": "未認証を表示",
+    "notAutoVerified": "自動認証されていません",
+    "verifyManually": "手動で確認",
+    "verifyManuallyDescription": "自動で確認できませんでした。プロフィールをチェックして自分で確認してください。",
+    "unverifiedBadgeTooltip": "自動認証されていません — クリックして証明を確認"
   },
   "analyticsPage": {
     "seoTitle": "クリエイター分析 - Divine",

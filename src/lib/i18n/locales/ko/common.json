@@ -685,12 +685,12 @@
     "proofLink": "증명",
     "linkedAccountsLabel": "연결된 계정",
     "identityVerificationTitle": "신원 확인",
-    "identityVerificationDescription": "Linked accounts use NIP-39 identity proofs. Verified accounts show automatically; unverifiable claims stay hidden unless you choose to show them.",
-    "showUnverified": "Show unverified",
-    "notAutoVerified": "Not auto-verified",
-    "verifyManually": "Verify manually",
-    "verifyManuallyDescription": "We couldn't confirm this automatically. Check the profile to verify it yourself.",
-    "unverifiedBadgeTooltip": "Not auto-verified — click to check the proof"
+    "identityVerificationDescription": "연결된 계정은 NIP-39 신원 증명을 사용합니다. 인증된 계정은 자동으로 표시되며, 확인할 수 없는 주장은 직접 표시를 선택하지 않는 한 숨겨집니다.",
+    "showUnverified": "미인증 항목 표시",
+    "notAutoVerified": "자동 인증되지 않음",
+    "verifyManually": "수동으로 확인",
+    "verifyManuallyDescription": "자동으로 확인할 수 없었습니다. 프로필을 확인해 직접 인증하세요.",
+    "unverifiedBadgeTooltip": "자동 인증되지 않음 — 클릭하여 증명 확인"
   },
   "analyticsPage": {
     "seoTitle": "크리에이터 분석 - Divine",

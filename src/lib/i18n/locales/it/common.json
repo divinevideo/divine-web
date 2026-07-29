@@ -685,12 +685,12 @@
     "proofLink": "Prova",
     "linkedAccountsLabel": "Account collegati",
     "identityVerificationTitle": "Verifica identità",
-    "identityVerificationDescription": "Linked accounts use NIP-39 identity proofs. Verified accounts show automatically; unverifiable claims stay hidden unless you choose to show them.",
-    "showUnverified": "Show unverified",
-    "notAutoVerified": "Not auto-verified",
-    "verifyManually": "Verify manually",
-    "verifyManuallyDescription": "We couldn't confirm this automatically. Check the profile to verify it yourself.",
-    "unverifiedBadgeTooltip": "Not auto-verified — click to check the proof"
+    "identityVerificationDescription": "Gli account collegati usano prove di identità NIP-39. Gli account verificati vengono mostrati automaticamente; le dichiarazioni non verificabili restano nascoste a meno che tu non scelga di mostrarle.",
+    "showUnverified": "Mostra non verificati",
+    "notAutoVerified": "Non verificato automaticamente",
+    "verifyManually": "Verifica manualmente",
+    "verifyManuallyDescription": "Non siamo riusciti a confermarlo automaticamente. Controlla il profilo per verificarlo tu stesso.",
+    "unverifiedBadgeTooltip": "Non verificato automaticamente — clicca per controllare la prova"
   },
   "analyticsPage": {
     "seoTitle": "Analytics creator - Divine",

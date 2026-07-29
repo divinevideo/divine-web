@@ -685,12 +685,12 @@
     "proofLink": "Dovadă",
     "linkedAccountsLabel": "Conturi conectate",
     "identityVerificationTitle": "Verificare identitate",
-    "identityVerificationDescription": "Linked accounts use NIP-39 identity proofs. Verified accounts show automatically; unverifiable claims stay hidden unless you choose to show them.",
-    "showUnverified": "Show unverified",
-    "notAutoVerified": "Not auto-verified",
-    "verifyManually": "Verify manually",
-    "verifyManuallyDescription": "We couldn't confirm this automatically. Check the profile to verify it yourself.",
-    "unverifiedBadgeTooltip": "Not auto-verified — click to check the proof"
+    "identityVerificationDescription": "Conturile asociate folosesc dovezi de identitate NIP-39. Conturile verificate apar automat; afirmațiile neverificabile rămân ascunse, dacă nu alegi să le afișezi.",
+    "showUnverified": "Afișează neverificate",
+    "notAutoVerified": "Neverificat automat",
+    "verifyManually": "Verifică manual",
+    "verifyManuallyDescription": "Nu am putut confirma acest lucru automat. Verifică profilul pentru a-l confirma singur.",
+    "unverifiedBadgeTooltip": "Neverificat automat — clic pentru a vedea dovada"
   },
   "analyticsPage": {
     "seoTitle": "Analytics pentru creatori - Divine",

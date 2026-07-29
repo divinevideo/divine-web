@@ -685,12 +685,12 @@
     "proofLink": "الإثبات",
     "linkedAccountsLabel": "الحسابات المرتبطة",
     "identityVerificationTitle": "التحقق من الهوية",
-    "identityVerificationDescription": "Linked accounts use NIP-39 identity proofs. Verified accounts show automatically; unverifiable claims stay hidden unless you choose to show them.",
-    "showUnverified": "Show unverified",
-    "notAutoVerified": "Not auto-verified",
-    "verifyManually": "Verify manually",
-    "verifyManuallyDescription": "We couldn't confirm this automatically. Check the profile to verify it yourself.",
-    "unverifiedBadgeTooltip": "Not auto-verified — click to check the proof"
+    "identityVerificationDescription": "تستخدم الحسابات المرتبطة إثباتات الهوية NIP-39. تظهر الحسابات الموثّقة تلقائيًا؛ وتبقى الادعاءات غير القابلة للتحقق مخفية ما لم تختر إظهارها.",
+    "showUnverified": "إظهار غير الموثّقة",
+    "notAutoVerified": "غير موثّق تلقائيًا",
+    "verifyManually": "التحقق يدويًا",
+    "verifyManuallyDescription": "تعذّر علينا تأكيد ذلك تلقائيًا. راجع الملف الشخصي للتحقق منه بنفسك.",
+    "unverifiedBadgeTooltip": "غير موثّق تلقائيًا — انقر للاطلاع على الإثبات"
   },
   "analyticsPage": {
     "seoTitle": "تحليلات المنشئ - Divine",

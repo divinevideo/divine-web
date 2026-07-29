@@ -685,12 +685,12 @@
     "proofLink": "Kanıt",
     "linkedAccountsLabel": "Bağlı hesaplar",
     "identityVerificationTitle": "Kimlik doğrulama",
-    "identityVerificationDescription": "Linked accounts use NIP-39 identity proofs. Verified accounts show automatically; unverifiable claims stay hidden unless you choose to show them.",
-    "showUnverified": "Show unverified",
-    "notAutoVerified": "Not auto-verified",
-    "verifyManually": "Verify manually",
-    "verifyManuallyDescription": "We couldn't confirm this automatically. Check the profile to verify it yourself.",
-    "unverifiedBadgeTooltip": "Not auto-verified — click to check the proof"
+    "identityVerificationDescription": "Bağlı hesaplar NIP-39 kimlik kanıtlarını kullanır. Doğrulanmış hesaplar otomatik olarak gösterilir; doğrulanamayan iddialar, sen göstermeyi seçmedikçe gizli kalır.",
+    "showUnverified": "Doğrulanmamışları göster",
+    "notAutoVerified": "Otomatik doğrulanmadı",
+    "verifyManually": "Manuel doğrula",
+    "verifyManuallyDescription": "Bunu otomatik olarak doğrulayamadık. Kendin doğrulamak için profile göz at.",
+    "unverifiedBadgeTooltip": "Otomatik doğrulanmadı — kanıtı görmek için tıkla"
   },
   "analyticsPage": {
     "seoTitle": "Yaratıcı Analizleri - Divine",

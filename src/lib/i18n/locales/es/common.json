@@ -685,12 +685,12 @@
     "proofLink": "Prueba",
     "linkedAccountsLabel": "Cuentas vinculadas",
     "identityVerificationTitle": "Verificación de identidad",
-    "identityVerificationDescription": "Linked accounts use NIP-39 identity proofs. Verified accounts show automatically; unverifiable claims stay hidden unless you choose to show them.",
-    "showUnverified": "Show unverified",
-    "notAutoVerified": "Not auto-verified",
-    "verifyManually": "Verify manually",
-    "verifyManuallyDescription": "We couldn't confirm this automatically. Check the profile to verify it yourself.",
-    "unverifiedBadgeTooltip": "Not auto-verified — click to check the proof"
+    "identityVerificationDescription": "Las cuentas vinculadas usan pruebas de identidad NIP-39. Las cuentas verificadas se muestran automáticamente; las afirmaciones no verificables permanecen ocultas a menos que decidas mostrarlas.",
+    "showUnverified": "Mostrar no verificadas",
+    "notAutoVerified": "No verificada automáticamente",
+    "verifyManually": "Verificar manualmente",
+    "verifyManuallyDescription": "No pudimos confirmarlo automáticamente. Revisa el perfil para verificarlo tú mismo.",
+    "unverifiedBadgeTooltip": "No verificada automáticamente — haz clic para revisar la prueba"
   },
   "analyticsPage": {
     "seoTitle": "Estadísticas de creador - Divine",
