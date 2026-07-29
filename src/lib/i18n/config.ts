@@ -15,6 +15,10 @@ export const SUPPORTED_LOCALES = [
   'ko',
   'ar',
   'fil',
+  'vi',
+  'ur',
+  'zh',
+  'ms',
 ] as const;
 
 export type SupportedLocale = (typeof SUPPORTED_LOCALES)[number];
@@ -46,6 +50,10 @@ export const LOCALE_OPTIONS: LocaleOption[] = [
   { code: 'ko', name: 'Korean', nativeName: '한국어' },
   { code: 'ar', name: 'Arabic', nativeName: 'العربية' },
   { code: 'fil', name: 'Filipino', nativeName: 'Filipino' },
+  { code: 'vi', name: 'Vietnamese', nativeName: 'Tiếng Việt' },
+  { code: 'ur', name: 'Urdu', nativeName: 'اردو' },
+  { code: 'zh', name: 'Chinese (Simplified)', nativeName: '简体中文' },
+  { code: 'ms', name: 'Malay', nativeName: 'Bahasa Melayu' },
 ];
 
 const LOCALE_ALIASES: Record<string, SupportedLocale> = {
@@ -142,7 +150,7 @@ export function resolveInitialLocale(languages: readonly string[] | null | undef
 }
 
 export function getLocaleDirection(locale: SupportedLocale): LocaleDirection {
-  return locale === 'ar' ? 'rtl' : 'ltr';
+  return locale === 'ar' || locale === 'ur' ? 'rtl' : 'ltr';
 }
 
 export function applyDocumentLocale(locale: SupportedLocale): void {
