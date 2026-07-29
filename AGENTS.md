@@ -35,7 +35,7 @@ If a Divine Brain search or ask tool is available, you may use it for company me
 
 ## Project Overview
 
-**diVine** is a decentralized short-form video platform built on the Nostr protocol. Think "TikTok on Nostr" with 6-second looping videos (inspired by Vine). The codebase is a React 18.x SPA using Vite, TailwindCSS, shadcn/ui, and TanStack Query.
+**Divine** is a decentralized short-form video platform built on the Nostr protocol. Think "TikTok on Nostr" with 6-second looping videos (inspired by Vine). The codebase is a React 18.x SPA using Vite, TailwindCSS, shadcn/ui, and TanStack Query.
 
 ### Key Goals
 - Fast, responsive video feeds with instant loading

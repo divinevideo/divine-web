@@ -1159,7 +1159,7 @@
   "trendingPage": {
     "heading": "Em alta",
     "subheading": "Descubra o que tá bombando na comunidade",
-    "rssTitle": "DiVine - Em alta",
+    "rssTitle": "Divine - Em alta",
     "rssLink": "RSS"
   },
   "merchPage": {
@@ -1420,12 +1420,12 @@
     "joinWaitlist": "Sem convite? Entre na lista de espera."
   },
   "invitesLandingPage": {
-    "seoTitle": "Entre no diVine com o código de convite {{code}}",
-    "seoTitleDefault": "Entre no diVine",
-    "seoDescription": "Você recebeu um convite! Use o código {{code}} para entrar no diVine.",
-    "seoDescriptionDefault": "Use seu código de convite para entrar no diVine e começar a compartilhar vídeo.",
+    "seoTitle": "Entre no Divine com o código de convite {{code}}",
+    "seoTitleDefault": "Entre no Divine",
+    "seoDescription": "Você recebeu um convite! Use o código {{code}} para entrar no Divine.",
+    "seoDescriptionDefault": "Use seu código de convite para entrar no Divine e começar a compartilhar vídeo.",
     "heading": "Você recebeu um convite!",
-    "subheading": "Digite seu código de convite para entrar no diVine",
+    "subheading": "Digite seu código de convite para entrar no Divine",
     "alreadyHaveAccount": "Já tem uma conta?",
     "signIn": "Entrar"
   },

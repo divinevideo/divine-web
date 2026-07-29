@@ -1159,7 +1159,7 @@
   "trendingPage": {
     "heading": "Populärt",
     "subheading": "Upptäck vad som är populärt i communityn",
-    "rssTitle": "DiVine - Populärt",
+    "rssTitle": "Divine - Populärt",
     "rssLink": "RSS"
   },
   "merchPage": {
@@ -1420,12 +1420,12 @@
     "joinWaitlist": "Ingen inbjudan? Ställ dig på väntelistan."
   },
   "invitesLandingPage": {
-    "seoTitle": "Gå med i diVine med inbjudningskoden {{code}}",
-    "seoTitleDefault": "Gå med i diVine",
-    "seoDescription": "Du har blivit inbjuden! Använd koden {{code}} för att gå med i diVine.",
-    "seoDescriptionDefault": "Använd din inbjudningskod för att gå med i diVine och börja dela video.",
+    "seoTitle": "Gå med i Divine med inbjudningskoden {{code}}",
+    "seoTitleDefault": "Gå med i Divine",
+    "seoDescription": "Du har blivit inbjuden! Använd koden {{code}} för att gå med i Divine.",
+    "seoDescriptionDefault": "Använd din inbjudningskod för att gå med i Divine och börja dela video.",
     "heading": "Du är inbjuden!",
-    "subheading": "Ange din inbjudningskod för att gå med i diVine",
+    "subheading": "Ange din inbjudningskod för att gå med i Divine",
     "alreadyHaveAccount": "Har du redan ett konto?",
     "signIn": "Logga in"
   },

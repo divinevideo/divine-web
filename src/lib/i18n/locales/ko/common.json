@@ -1159,7 +1159,7 @@
   "trendingPage": {
     "heading": "인기",
     "subheading": "커뮤니티에서 인기 있는 콘텐츠를 발견해요",
-    "rssTitle": "DiVine - 인기",
+    "rssTitle": "Divine - 인기",
     "rssLink": "RSS"
   },
   "merchPage": {
@@ -1420,12 +1420,12 @@
     "joinWaitlist": "초대 코드가 없나요? 대기자 명단에 등록하세요."
   },
   "invitesLandingPage": {
-    "seoTitle": "초대 코드 {{code}}로 diVine에 가입",
-    "seoTitleDefault": "diVine에 가입",
-    "seoDescription": "초대받았어요! 코드 {{code}}를 사용해 diVine에 가입하세요.",
-    "seoDescriptionDefault": "초대 코드를 사용해 diVine에 가입하고 동영상 공유를 시작하세요.",
+    "seoTitle": "초대 코드 {{code}}로 Divine에 가입",
+    "seoTitleDefault": "Divine에 가입",
+    "seoDescription": "초대받았어요! 코드 {{code}}를 사용해 Divine에 가입하세요.",
+    "seoDescriptionDefault": "초대 코드를 사용해 Divine에 가입하고 동영상 공유를 시작하세요.",
     "heading": "초대받았어요!",
-    "subheading": "diVine에 가입하려면 초대 코드를 입력하세요",
+    "subheading": "Divine에 가입하려면 초대 코드를 입력하세요",
     "alreadyHaveAccount": "이미 계정이 있나요?",
     "signIn": "로그인"
   },

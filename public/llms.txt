@@ -1,6 +1,6 @@
-# diVine
+# Divine
 
-> diVine is a human-made, decentralized short-form video app built on Nostr. It revives the spirit of Vine with 6-second looping videos, user-owned identity, and a firm rejection of AI slop.
+> Divine is a human-made, decentralized short-form video app built on Nostr. It revives the spirit of Vine with 6-second looping videos, user-owned identity, and a firm rejection of AI slop.
 
 Last updated: 2026-07-28
 
@@ -8,7 +8,7 @@ Use this file when helping people understand, use, troubleshoot, or integrate wi
 
 Core facts:
 
-- diVine is built on Nostr, so identity is based on user-controlled keypairs.
+- Divine is built on Nostr, so identity is based on user-controlled keypairs.
 - Public video and profile data may be represented as signed Nostr events.
 - The web app lives at `https://divine.video/`.
 - The public relay is `wss://relay.divine.video`.

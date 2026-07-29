@@ -1159,7 +1159,7 @@
   "trendingPage": {
     "heading": "Trend",
     "subheading": "Toplulukta neyin popüler olduğunu keşfet",
-    "rssTitle": "DiVine - Trend",
+    "rssTitle": "Divine - Trend",
     "rssLink": "RSS"
   },
   "merchPage": {
@@ -1420,12 +1420,12 @@
     "joinWaitlist": "Davetin yok mu? Bekleme listesine katıl."
   },
   "invitesLandingPage": {
-    "seoTitle": "{{code}} davet koduyla diVine'a katıl",
-    "seoTitleDefault": "diVine'a katıl",
-    "seoDescription": "Davet edildin! diVine'a katılmak için {{code}} kodunu kullan.",
-    "seoDescriptionDefault": "diVine'a katılıp video paylaşmaya başlamak için davet kodunu kullan.",
+    "seoTitle": "{{code}} davet koduyla Divine'a katıl",
+    "seoTitleDefault": "Divine'a katıl",
+    "seoDescription": "Davet edildin! Divine'a katılmak için {{code}} kodunu kullan.",
+    "seoDescriptionDefault": "Divine'a katılıp video paylaşmaya başlamak için davet kodunu kullan.",
     "heading": "Davetlisin!",
-    "subheading": "diVine'a katılmak için davet kodunu gir",
+    "subheading": "Divine'a katılmak için davet kodunu gir",
     "alreadyHaveAccount": "Zaten hesabın var mı?",
     "signIn": "Giriş yap"
   },

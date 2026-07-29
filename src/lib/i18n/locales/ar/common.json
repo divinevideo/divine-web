@@ -1159,7 +1159,7 @@
   "trendingPage": {
     "heading": "الرائج",
     "subheading": "اكتشف ما هو شائع في المجتمع",
-    "rssTitle": "DiVine - الرائج",
+    "rssTitle": "Divine - الرائج",
     "rssLink": "RSS"
   },
   "merchPage": {
@@ -1420,12 +1420,12 @@
     "joinWaitlist": "ليس لديك دعوة؟ انضم إلى قائمة الانتظار."
   },
   "invitesLandingPage": {
-    "seoTitle": "انضم إلى diVine برمز الدعوة {{code}}",
-    "seoTitleDefault": "انضم إلى diVine",
-    "seoDescription": "لقد تلقيت دعوة! استخدم الرمز {{code}} للانضمام إلى diVine.",
-    "seoDescriptionDefault": "استخدم رمز الدعوة للانضمام إلى diVine وبدء مشاركة الفيديو.",
+    "seoTitle": "انضم إلى Divine برمز الدعوة {{code}}",
+    "seoTitleDefault": "انضم إلى Divine",
+    "seoDescription": "لقد تلقيت دعوة! استخدم الرمز {{code}} للانضمام إلى Divine.",
+    "seoDescriptionDefault": "استخدم رمز الدعوة للانضمام إلى Divine وبدء مشاركة الفيديو.",
     "heading": "أنت مدعو!",
-    "subheading": "أدخل رمز الدعوة للانضمام إلى diVine",
+    "subheading": "أدخل رمز الدعوة للانضمام إلى Divine",
     "alreadyHaveAccount": "هل لديك حساب بالفعل؟",
     "signIn": "تسجيل الدخول"
   },

@@ -1159,7 +1159,7 @@
   "trendingPage": {
     "heading": "Trending",
     "subheading": "Ontdek wat populair is in de community",
-    "rssTitle": "DiVine - Trending",
+    "rssTitle": "Divine - Trending",
     "rssLink": "RSS"
   },
   "merchPage": {
@@ -1420,12 +1420,12 @@
     "joinWaitlist": "Geen uitnodiging? Zet je op de wachtlijst."
   },
   "invitesLandingPage": {
-    "seoTitle": "Word lid van diVine met uitnodigingscode {{code}}",
-    "seoTitleDefault": "Word lid van diVine",
-    "seoDescription": "Je bent uitgenodigd! Gebruik code {{code}} om lid te worden van diVine.",
-    "seoDescriptionDefault": "Gebruik je uitnodigingscode om lid te worden van diVine en video te delen.",
+    "seoTitle": "Word lid van Divine met uitnodigingscode {{code}}",
+    "seoTitleDefault": "Word lid van Divine",
+    "seoDescription": "Je bent uitgenodigd! Gebruik code {{code}} om lid te worden van Divine.",
+    "seoDescriptionDefault": "Gebruik je uitnodigingscode om lid te worden van Divine en video te delen.",
     "heading": "Je bent uitgenodigd!",
-    "subheading": "Voer je uitnodigingscode in om lid te worden van diVine",
+    "subheading": "Voer je uitnodigingscode in om lid te worden van Divine",
     "alreadyHaveAccount": "Heb je al een account?",
     "signIn": "Inloggen"
   },

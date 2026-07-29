@@ -1159,7 +1159,7 @@
   "trendingPage": {
     "heading": "トレンド",
     "subheading": "コミュニティで人気のコンテンツをチェック",
-    "rssTitle": "DiVine - トレンド",
+    "rssTitle": "Divine - トレンド",
     "rssLink": "RSS"
   },
   "merchPage": {
@@ -1420,12 +1420,12 @@
     "joinWaitlist": "招待がない?ウェイトリストに登録してください。"
   },
   "invitesLandingPage": {
-    "seoTitle": "招待コード {{code}} でdiVineに参加",
-    "seoTitleDefault": "diVineに参加",
-    "seoDescription": "招待されています！コード {{code}} を使ってdiVineに参加しましょう。",
-    "seoDescriptionDefault": "招待コードを使ってdiVineに参加し、動画の共有を始めましょう。",
+    "seoTitle": "招待コード {{code}} でDivineに参加",
+    "seoTitleDefault": "Divineに参加",
+    "seoDescription": "招待されています！コード {{code}} を使ってDivineに参加しましょう。",
+    "seoDescriptionDefault": "招待コードを使ってDivineに参加し、動画の共有を始めましょう。",
     "heading": "招待されています！",
-    "subheading": "diVineに参加するには招待コードを入力してください",
+    "subheading": "Divineに参加するには招待コードを入力してください",
     "alreadyHaveAccount": "すでにアカウントをお持ちですか？",
     "signIn": "サインイン"
   },

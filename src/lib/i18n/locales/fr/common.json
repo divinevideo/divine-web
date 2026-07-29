@@ -1159,7 +1159,7 @@
   "trendingPage": {
     "heading": "Tendances",
     "subheading": "Découvre ce qui cartonne dans la communauté",
-    "rssTitle": "DiVine - Tendances",
+    "rssTitle": "Divine - Tendances",
     "rssLink": "RSS"
   },
   "merchPage": {
@@ -1420,12 +1420,12 @@
     "joinWaitlist": "Pas d'invitation ? Inscris-toi sur la liste d'attente."
   },
   "invitesLandingPage": {
-    "seoTitle": "Rejoins diVine avec le code d'invitation {{code}}",
-    "seoTitleDefault": "Rejoins diVine",
-    "seoDescription": "Tu as été invité ! Utilise le code {{code}} pour rejoindre diVine.",
-    "seoDescriptionDefault": "Utilise ton code d'invitation pour rejoindre diVine et commencer à partager des vidéos.",
+    "seoTitle": "Rejoins Divine avec le code d'invitation {{code}}",
+    "seoTitleDefault": "Rejoins Divine",
+    "seoDescription": "Tu as été invité ! Utilise le code {{code}} pour rejoindre Divine.",
+    "seoDescriptionDefault": "Utilise ton code d'invitation pour rejoindre Divine et commencer à partager des vidéos.",
     "heading": "Tu es invité !",
-    "subheading": "Entre ton code d'invitation pour rejoindre diVine",
+    "subheading": "Entre ton code d'invitation pour rejoindre Divine",
     "alreadyHaveAccount": "Tu as déjà un compte ?",
     "signIn": "Se connecter"
   },
