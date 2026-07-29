@@ -12,7 +12,7 @@ Divine is 6-second, human-made video on Nostr — no AI slop. This repo is the w
 - **Legacy Vine archive** pages for preserving and browsing classic Vine content.
 - **Trust & safety**: content moderation settings, age review, and protected-minor safeguards (locked adult-content settings, restricted DMs).
 - **Video upload** to Blossom media servers with a metadata form.
-- **Internationalization** across 16 locales (`ar de en es fil fr id it ja ko nl pl pt ro sv tr`).
+- **Internationalization** across 20 locales (`ar de en es fil fr id it ja ko ms nl pl pt ro sv tr ur vi zh`).
 - **Installable PWA** with an offline service worker (apex domain only).
 - **Server-rendered embeds and social previews**: the edge worker injects Open Graph tags and serves embed pages so shared links unfurl correctly for crawlers.
 
