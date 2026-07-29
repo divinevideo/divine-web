@@ -444,6 +444,16 @@ export function useDmSend() {
         return {};
       }
 
+      // Enforce the support-only policy before writing any outbox record, so a
+      // programmatic non-support send never leaves invisible garbage in outbox
+      // storage. The async protected-minor gate still runs in mutationFn.
+      const recipients = [...new Set(participantPubkeys.filter((pubkey) => pubkey !== user.pubkey))];
+      if (!recipients.length) {
+        // mutationFn reports "Choose at least one person to message".
+        return {};
+      }
+      assertSupportOnlyDmRecipients(recipients);
+
       const record = clientId
         ? markDmOutboxRecordSending(user.pubkey, clientId, {
           participantPubkeys,

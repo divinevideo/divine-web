@@ -450,6 +450,9 @@ describe('useDirectMessages', () => {
     expect(mockResolveDmWriteRelays).not.toHaveBeenCalled();
     expect(mockCreateRecipientGiftWraps).not.toHaveBeenCalled();
     expect(mockPublishDmMessages).not.toHaveBeenCalled();
+    // Policy is enforced in onMutate, before any outbox write: a blocked send
+    // must not leave an invisible failed record in outbox storage.
+    expect(readDmOutbox(TEST_PUBKEY)).toEqual([]);
   });
 
   it('adds an optimistic sending message before publish resolves', async () => {
