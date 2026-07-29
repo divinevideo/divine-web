@@ -17,7 +17,7 @@ export interface HydratedNotificationsResult {
   items: NotificationItem[];
   isLoading: boolean;
   isError: boolean;
-  error: unknown;
+  error: Error | null;
   fetchNextPage: () => void;
   hasNextPage: boolean;
   isFetchingNextPage: boolean;

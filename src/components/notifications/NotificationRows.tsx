@@ -121,7 +121,7 @@ function NotificationVideoThumbnail({
       {thumbnailUrl ? (
         <img
           src={thumbnailUrl}
-          alt={title}
+          alt=""
           width={72}
           height={72}
           loading="lazy"
@@ -129,7 +129,6 @@ function NotificationVideoThumbnail({
         />
       ) : (
         <span
-          aria-label="Video thumbnail unavailable"
           className="flex h-full w-full items-center justify-center bg-muted"
         >
           <BrandLogo className="text-[10px] text-muted-foreground dark:text-muted-foreground" />

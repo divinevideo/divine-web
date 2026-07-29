@@ -176,7 +176,7 @@ export default function NotificationsPage() {
         <div className="text-center py-12">
           <p className="text-destructive mb-2">{t('notificationsPage.errorTitle')}</p>
           <p className="text-sm text-muted-foreground">
-            {(error as Error)?.message || t('notificationsPage.errorFallback')}
+            {error?.message || t('notificationsPage.errorFallback')}
           </p>
         </div>
       )}

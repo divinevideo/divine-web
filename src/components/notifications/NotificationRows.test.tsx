@@ -93,10 +93,11 @@ describe('VideoNotificationRow', () => {
     // Video title
     expect(screen.getByText('My Cool Loop')).toBeInTheDocument();
 
-    // Thumbnail image rendered
-    const img = screen.getByRole('img', { name: /My Cool Loop/ });
+    // Thumbnail image rendered (decorative — the wrapping button carries the
+    // accessible name, so the img is presentation-only)
+    const img = document.querySelector('img[src="https://example.com/thumb.jpg"]');
     expect(img).toBeInTheDocument();
-    expect(img).toHaveAttribute('src', 'https://example.com/thumb.jpg');
+    expect(img).toHaveAttribute('alt', '');
 
     // No overflow text (totalCount === 1)
     expect(screen.queryByText(/\+/)).not.toBeInTheDocument();
@@ -180,17 +181,16 @@ describe('VideoNotificationRow', () => {
     expect(timestampEl.textContent).not.toBe('');
   });
 
-  it('missing thumbnail renders a placeholder with accessible text and BrandLogo', () => {
+  it('missing thumbnail renders a BrandLogo placeholder', () => {
     const notification = buildVideoNotification({
       videoThumbnailUrl: undefined,
     });
     render(<VideoNotificationRow notification={notification} />);
 
-    const placeholder = screen.getByLabelText('Video thumbnail unavailable');
-    expect(placeholder).toBeInTheDocument();
-
-    // BrandLogo (renders "Divine" text) is inside the placeholder
-    expect(placeholder.textContent).toContain('Divine');
+    // The thumbnail button keeps its accessible name from the video title;
+    // the placeholder span is presentational and contains the BrandLogo.
+    const thumbnailButton = screen.getAllByRole('button', { name: /My Cool Loop/i }).pop()!;
+    expect(thumbnailButton.textContent).toContain('Divine');
   });
 
   it('empty-string thumbnail also renders BrandLogo placeholder (falsy check)', () => {
@@ -199,9 +199,8 @@ describe('VideoNotificationRow', () => {
     });
     render(<VideoNotificationRow notification={notification} />);
 
-    const placeholder = screen.getByLabelText('Video thumbnail unavailable');
-    expect(placeholder).toBeInTheDocument();
-    expect(placeholder.textContent).toContain('Divine');
+    const thumbnailButton = screen.getAllByRole('button', { name: /My Cool Loop/i }).pop()!;
+    expect(thumbnailButton.textContent).toContain('Divine');
   });
 
   it('like row timestamp is inlined inside the message paragraph', () => {
