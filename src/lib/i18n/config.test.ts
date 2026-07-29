@@ -29,11 +29,20 @@ describe('i18n config', () => {
   it('matches regional browser locales to supported base locales', () => {
     expect(resolveInitialLocale(['es-MX', 'en-US'])).toBe('es');
     expect(resolveInitialLocale(['pt-BR'])).toBe('pt');
-    expect(resolveInitialLocale(['zh-CN', 'de-DE'])).toBe('de');
+    expect(resolveInitialLocale(['th-TH', 'de-DE'])).toBe('de');
   });
 
   it('falls back to english when no locale matches', () => {
-    expect(resolveInitialLocale(['zh-CN', 'th-TH'])).toBe(DEFAULT_LOCALE);
+    expect(resolveInitialLocale(['th-TH', 'uk-UA'])).toBe(DEFAULT_LOCALE);
+  });
+
+  it('resolves top-country locales (vi, ur, zh, ms) from regional variants', () => {
+    expect(resolveInitialLocale(['vi-VN'])).toBe('vi');
+    expect(resolveInitialLocale(['ur-PK'])).toBe('ur');
+    expect(resolveInitialLocale(['zh-SG'])).toBe('zh');
+    expect(resolveInitialLocale(['zh-CN'])).toBe('zh');
+    expect(resolveInitialLocale(['ms-MY'])).toBe('ms');
+    expect(resolveInitialLocale(['ms-SG'])).toBe('ms');
   });
 
   it('aliases legacy tagalog codes (tl, tl-PH) to fil', () => {
@@ -71,9 +80,10 @@ describe('i18n config', () => {
     expect(getStoredLocale()).toBeNull();
   });
 
-  it('uses rtl direction for arabic only', () => {
+  it('uses rtl direction for arabic and urdu', () => {
     expect(getLocaleDirection('ar')).toBe('rtl');
+    expect(getLocaleDirection('ur')).toBe('rtl');
     expect(getLocaleDirection('en')).toBe('ltr');
-    expect(getLocaleDirection('ja')).toBe('ltr');
+    expect(getLocaleDirection('zh')).toBe('ltr');
   });
 });
