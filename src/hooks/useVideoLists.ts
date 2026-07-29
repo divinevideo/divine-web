@@ -6,11 +6,23 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useNostrPublish } from '@/hooks/useNostrPublish';
 import type { NostrEvent, NostrFilter } from '@nostrify/nostrify';
-import { SHORT_VIDEO_KIND } from '@/types/video';
-import { parseVideoListFromEvent, type PlayOrder, type VideoList } from '@/lib/parseVideoListFromEvent';
+import { VIDEO_KINDS } from '@/types/video';
+import { deduplicateVideoLists, parseVideoListFromEvent, type PlayOrder, type VideoList } from '@/lib/parseVideoListFromEvent';
 import { resolveListPermissions } from '@/lib/listPermissions';
+import { debugLog } from '@/lib/debug';
 
 export type { PlayOrder, VideoList };
+
+function videoCoordinateMatchesId(coordinate: string, videoId: string): boolean {
+  const firstSeparator = coordinate.indexOf(':');
+  const secondSeparator = coordinate.indexOf(':', firstSeparator + 1);
+  if (firstSeparator < 0 || secondSeparator < 0) return false;
+
+  const kind = Number(coordinate.slice(0, firstSeparator));
+  const identifier = coordinate.slice(secondSeparator + 1);
+
+  return VIDEO_KINDS.includes(kind) && identifier === videoId;
+}
 
 function buildListTags(
   list: Pick<VideoList, 'id' | 'name' | 'description' | 'image' | 'tags' | 'isCollaborative' | 'allowedCollaborators' | 'thumbnailEventId' | 'playOrder'>,
@@ -127,18 +139,15 @@ export function useVideoLists(pubkey?: string) {
         filter.authors = [targetPubkey];
       }
 
-      console.log('[useVideoLists] Querying for lists with filter:', filter);
+      debugLog('[useVideoLists] Querying for lists with filter:', filter);
 
       const events = await nostr.query([filter], { signal });
 
-      console.log('[useVideoLists] Found', events.length, 'list events');
+      debugLog('[useVideoLists] Found', events.length, 'list events');
 
-      const lists = events
-        .map(parseVideoListFromEvent)
-        .filter((list): list is VideoList => list !== null)
-        .sort((a, b) => b.createdAt - a.createdAt);
+      const lists = deduplicateVideoLists(events);
 
-      console.log('[useVideoLists] Parsed', lists.length, 'valid lists');
+      debugLog('[useVideoLists] Parsed', lists.length, 'valid lists');
 
       return lists;
     },
@@ -164,17 +173,17 @@ export function useVideosInLists(videoId?: string) {
         AbortSignal.timeout(5000)
       ]);
 
-      // Query for lists that contain this video
+      // Relay tag filters require exact addressable coordinates, but this call
+      // only has the video's d tag. Query recent public lists and match locally.
       const events = await nostr.query([{
         kinds: [30005], // Video sets
-        '#a': [`${SHORT_VIDEO_KIND}:*:${videoId}`], // Search for any author with this d-tag
         limit: 100
       }], { signal });
 
-      const lists = events
-        .map(parseVideoListFromEvent)
-        .filter((list): list is VideoList => list !== null)
-        .sort((a, b) => b.createdAt - a.createdAt);
+      const lists = deduplicateVideoLists(events)
+        .filter((list) => list.videoCoordinates.some((coordinate) => (
+          videoCoordinateMatchesId(coordinate, videoId)
+        )));
 
       return lists;
     },
@@ -435,9 +444,8 @@ export function useTrendingVideoLists() {
         limit: 50
       }], { signal });
 
-      const lists = events
-        .map(parseVideoListFromEvent)
-        .filter((list): list is VideoList => list !== null && list.videoCoordinates.length > 0)
+      const lists = deduplicateVideoLists(events)
+        .filter((list) => list.videoCoordinates.length > 0)
         .sort((a, b) => {
           // Sort by number of videos and recency
           const scoreA = a.videoCoordinates.length * 10 + (a.createdAt / 1000);
@@ -522,9 +530,8 @@ export function useFollowedUsersLists(followedPubkeys: string[] | undefined) {
         limit: 100
       }], { signal });
 
-      const lists = events
-        .map(parseVideoListFromEvent)
-        .filter((list): list is VideoList => list !== null && list.videoCoordinates.length > 0)
+      const lists = deduplicateVideoLists(events)
+        .filter((list) => list.videoCoordinates.length > 0)
         .sort((a, b) => b.createdAt - a.createdAt);
 
       return lists;

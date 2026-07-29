@@ -8,6 +8,7 @@
     "home": "ホーム",
     "discover": "発見",
     "popular": "Popular",
+    "services": "Services",
     "search": "検索",
     "notifications": "通知",
     "profile": "プロフィール",
@@ -119,6 +120,19 @@
     "communityDescription": "コミュニティの会話に参加し、Nostr 上の他の Divine ユーザーとつながりましょう。",
     "communityBody": "Divine は分散型ソーシャルプロトコル Nostr 上に構築されています。お気に入りの Nostr クライアントで見つけてください。"
   },
+  "servicesPage": {
+    "title": "Divine services",
+    "intro": "Divine is more than loops. These services help you make the most of it.",
+    "openService": "Open {{name}}",
+    "items": {
+      "space": "Your profile, your rules. Themes, Top 8, profile music.",
+      "sounds": "Trending sounds and a Creative Commons library for your loops.",
+      "badges": "Awards for creators who show up.",
+      "crossposter": "Post your loops to the other platforms — only when you opt in.",
+      "verifier": "Check where a video really came from.",
+      "status": "Is it us or is it you? Check here."
+    }
+  },
   "tagPage": {
     "notFoundTitle": "タグが見つかりません",
     "notFoundDescription": "指定されたタグは見つかりませんでした。",
@@ -131,7 +145,11 @@
     "emptyState": "現在利用できるカテゴリはありません。",
     "metaTitle": "カテゴリを探す - Divine",
     "metaDescription": "Divine でコメディ、音楽、ダンス、動物、スポーツ、食べ物などの動画カテゴリを探そう。",
+    "videoCount_zero": "{{count}} videos",
     "videoCount_one": "{{count}}本の動画",
+    "videoCount_two": "{{count}} videos",
+    "videoCount_few": "{{count}} videos",
+    "videoCount_many": "{{count}} videos",
     "videoCount_other": "{{count}}本の動画"
   },
   "vineBadge": {

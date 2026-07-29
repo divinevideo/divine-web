@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { hasViteEntryScript, readPublishedStaticFile } from './staticContent.js';
+import { extractStaticAssetsFromHtml, hasViteEntryScript, readPublishedStaticFile } from './staticContent.js';
 
 function createStore(entries) {
   return {
@@ -18,6 +18,27 @@ describe('hasViteEntryScript', () => {
   it('rejects empty or scriptless HTML', () => {
     expect(hasViteEntryScript('')).toBe(false);
     expect(hasViteEntryScript('<!doctype html><html></html>')).toBe(false);
+  });
+});
+
+describe('extractStaticAssetsFromHtml', () => {
+  it('selects the Vite app entry instead of the first module script', () => {
+    const html = `
+      <script type="module" src="/assets/hubSpotLoader-AbCd.js"></script>
+      <link rel="stylesheet" href="/assets/index-EfGh.css">
+      <script type="module" src="/assets/index-IjKl.js"></script>
+    `;
+
+    expect(extractStaticAssetsFromHtml(html)).toEqual({
+      mainJs: '/assets/index-IjKl.js',
+      mainCss: '/assets/index-EfGh.css',
+    });
+  });
+
+  it('returns null when the app entry script is missing', () => {
+    const html = '<script type="module" src="/assets/hubSpotLoader-AbCd.js"></script>';
+
+    expect(extractStaticAssetsFromHtml(html)).toBeNull();
   });
 });
 

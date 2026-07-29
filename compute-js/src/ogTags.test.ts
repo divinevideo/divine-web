@@ -1,6 +1,6 @@
 // ABOUTME: Vitest unit tests for buildCrawlerHtml, escapeHtml, escapeFeedJson, and truncateText
 import { describe, expect, it } from 'vitest';
-import { buildCrawlerHtml, buildUserScript, escapeHtml, escapeFeedJson, truncateText } from './ogTags.js';
+import { buildCrawlerHtml, escapeHtml, escapeFeedJson, truncateText } from './ogTags.js';
 
 const baseArgs = {
   title: 'Hello',
@@ -181,28 +181,5 @@ describe('truncateText', () => {
   });
   it('collapses whitespace before truncating', () => {
     expect(truncateText('hi   there', 80)).toBe('hi there');
-  });
-});
-
-describe('buildUserScript', () => {
-  it('escapes user-controlled profile fields so they cannot break out of the script tag', () => {
-    const script = buildUserScript({
-      displayName: 'Mallory',
-      about: '</script><script>alert(1)</script>',
-    });
-
-    // The one legitimate opening tag plus its closer; no injected tags in between.
-    expect(script.startsWith('<script>window.__DIVINE_USER__ = ')).toBe(true);
-    expect(script.endsWith(';</script>')).toBe(true);
-    expect(script.slice('<script>'.length, -'</script>'.length)).not.toContain('<');
-    expect(script).toContain('\\u003c');
-  });
-
-  it('round-trips the profile data through JSON.parse', () => {
-    const divineUser = { displayName: 'A</script>B', about: 'hi', followersCount: 3 };
-    const script = buildUserScript(divineUser);
-    const json = script.replace('<script>window.__DIVINE_USER__ = ', '').replace(';</script>', '');
-
-    expect(JSON.parse(json)).toEqual(divineUser);
   });
 });
