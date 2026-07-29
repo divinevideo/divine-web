@@ -22,6 +22,12 @@ export function isSupportOnlyDmPeerSet(pubkeys: string[]): boolean {
   return pubkeys.length === 1 && isSupportDmRecipient(pubkeys[0]);
 }
 
+/**
+ * Throws unless the recipient set is exactly Divine Support. An empty list is
+ * NOT valid here — callers must handle "no recipients" (e.g. their own
+ * "choose at least one person" error) before calling, or it will surface as a
+ * support-only violation.
+ */
 export function assertSupportOnlyDmRecipients(recipients: string[]): void {
   if (!isSupportOnlyDmPeerSet(recipients)) {
     throw new DmSupportOnlyError();
