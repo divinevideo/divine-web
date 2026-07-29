@@ -3,7 +3,6 @@ import { nip19 } from 'nostr-tools';
 const HEX_PUBKEY_PATTERN = /^[0-9a-f]{64}$/i;
 const DEFAULT_APEX_DOMAIN = 'divine.video';
 const ALTERNATE_APEX_DOMAIN = 'dvine.video';
-const LEGACY_OPENVINE_DOMAIN = 'openvine.co';
 const APEX_DOMAINS = [DEFAULT_APEX_DOMAIN, ALTERNATE_APEX_DOMAIN] as const;
 
 export type ProfileFallbackRoute = 'root' | 'profile';
@@ -118,7 +117,7 @@ export function toFriendlyPath(nip05: string | null | undefined): string | null 
  * should try to match against a kind-0 profile's `nip05` field (or resolve via
  * NIP-05 DNS). Always returns lowercased forms.
  *
- *   'jacky'                      -> ['jacky@divine.video', '_@jacky.divine.video', 'jacky@openvine.co']
+ *   'jacky'                      -> ['jacky@divine.video', '_@jacky.divine.video']
  *   'jacky.divine.video'         -> ['jacky@divine.video', '_@jacky.divine.video']
  *   'jacky.dvine.video'          -> ['jacky@dvine.video',  '_@jacky.dvine.video']
  *   'a.b.divine.video'           -> ['a.b@divine.video',   '_@a.b.divine.video']
@@ -163,7 +162,6 @@ export function nip05CandidatesFromUrlSegment(segment: string): string[] {
   return [
     `${decoded}@${DEFAULT_APEX_DOMAIN}`,
     `_@${decoded}.${DEFAULT_APEX_DOMAIN}`,
-    `${decoded}@${LEGACY_OPENVINE_DOMAIN}`,
   ];
 }
 

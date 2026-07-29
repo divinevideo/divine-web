@@ -8,6 +8,7 @@
     "home": "Inicio",
     "discover": "Descobrir",
     "popular": "Popular",
+    "services": "Services",
     "search": "Pesquisar",
     "messages": "Mensagens",
     "notifications": "Notificacoes",
@@ -38,7 +39,6 @@
   },
   "footer": {
     "aboutDivine": "Sobre a Divine",
-    "vinesRecovered": "{{count}} Vines recuperados",
     "termsAndOpenSource": "Termos e codigo aberto",
     "copyright": "© 2026 Divine"
   },
@@ -134,6 +134,19 @@
     "communityDescription": "Participe das discussoes da comunidade e conecte-se com outros usuarios da Divine no Nostr.",
     "communityBody": "A Divine e construida sobre o Nostr, um protocolo social descentralizado. Encontre-nos no seu cliente Nostr favorito."
   },
+  "servicesPage": {
+    "title": "Divine services",
+    "intro": "Divine is more than loops. These services help you make the most of it.",
+    "openService": "Open {{name}}",
+    "items": {
+      "space": "Your profile, your rules. Themes, Top 8, profile music.",
+      "sounds": "Trending sounds and a Creative Commons library for your loops.",
+      "badges": "Awards for creators who show up.",
+      "crossposter": "Post your loops to the other platforms — only when you opt in.",
+      "verifier": "Check where a video really came from.",
+      "status": "Is it us or is it you? Check here."
+    }
+  },
   "tagPage": {
     "notFoundTitle": "Tag nao encontrada",
     "notFoundDescription": "Nao foi possivel encontrar a tag solicitada.",
@@ -146,7 +159,11 @@
     "emptyState": "Nenhuma categoria disponivel no momento.",
     "metaTitle": "Explorar categorias - Divine",
     "metaDescription": "Explore categorias de videos na Divine - comedia, musica, danca, animais, esportes, comida e mais.",
+    "videoCount_zero": "{{count}} videos",
     "videoCount_one": "{{count}} video",
+    "videoCount_two": "{{count}} videos",
+    "videoCount_few": "{{count}} videos",
+    "videoCount_many": "{{count}} videos",
     "videoCount_other": "{{count}} videos"
   },
   "vineBadge": {
@@ -386,7 +403,6 @@
     "message": "Mensagem",
     "reportUser": "Denunciar usuário",
     "subscribeRss": "Assinar feed RSS",
-    "videos": "Vídeos",
     "followers": "Seguidores",
     "followingStat": "Seguindo",
     "followingDialogTitle": "Seguindo",
@@ -516,6 +532,7 @@
     "signInButton": "Entrar"
   },
   "badgeDetailModal": {
+    "description": "A história completa deste selo — quem o emitiu e quando.",
     "title": "Detalhes do badge",
     "officialBadge": "✦ Badge oficial Divine",
     "issuedBy": "Emitido por",
@@ -944,6 +961,7 @@
     "placeholderMessage": "Escreva uma mensagem..."
   },
   "videoCommentsModal": {
+    "description": "Veja o que as pessoas estão dizendo e deixe seu próprio comentário.",
     "title": "Comentários",
     "loading": "Carregando comentários...",
     "emptyMessage": "Nenhum comentário ainda",
@@ -961,7 +979,8 @@
   "thumbnailPlayer": {
     "videoPreview": "Pré-visualização do vídeo",
     "thumbnailAlt": "Thumbnail do vídeo",
-    "playVideo": "Reproduzir vídeo"
+    "playVideo": "Reproduzir vídeo",
+    "openVideo": "Abrir vídeo"
   },
   "hashtagExplorer": {
     "heading": "Explorador de hashtags",
@@ -1202,7 +1221,7 @@
     "notFoundDescription": {
       "vine": "Esse usuário do Vine talvez ainda não tenha sido importado pra rede Nostr.",
       "nip05": "Confere se o identificador NIP-05 tá certo.",
-      "legacy": "Esse username não corresponde a um perfil antigo do Vine nem a um handle do OpenVine."
+      "legacy": "Esse username não corresponde a nenhum perfil conhecido."
     }
   },
   "atUsernamePage": {

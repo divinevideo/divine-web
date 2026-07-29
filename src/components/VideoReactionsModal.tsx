@@ -1,4 +1,4 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Heart, Repeat as Repeat2, CircleNotch as Loader2 } from '@phosphor-icons/react';
 import { useAuthor } from '@/hooks/useAuthor';
@@ -8,7 +8,7 @@ import { genUserName } from '@/lib/genUserName';
 import { getSafeProfileImage } from '@/lib/imageUtils';
 import { formatDistanceToNow } from 'date-fns';
 import { SmartLink } from '@/components/SmartLink';
-import { buildProfileLinkPath } from '@/lib/profileLinks';
+import { useValidatedProfileLinkPath } from '@/hooks/useValidatedProfileLinkPath';
 import { cn } from '@/lib/utils';
 import type { VideoReactions } from '@/hooks/useVideoReactions';
 
@@ -29,7 +29,7 @@ function ReactionUserItem({ pubkey, timestamp }: { pubkey: string; timestamp: nu
     ? "Loading..."
     : (metadata?.display_name || metadata?.name || genUserName(pubkey));
   const profileImage = getSafeProfileImage(metadata?.picture);
-  const profileUrl = buildProfileLinkPath({
+  const profileUrl = useValidatedProfileLinkPath({
     pubkey,
     nip05: metadata?.nip05,
   });
@@ -90,6 +90,9 @@ export function VideoReactionsModal({
             <Icon className={cn('h-5 w-5', type === 'likes' && 'fill-red-500 text-red-500')} />
             {title} ({count})
           </DialogTitle>
+          <DialogDescription className="sr-only">
+            Everyone who {type === 'likes' ? 'liked' : 'reposted'} this video.
+          </DialogDescription>
         </DialogHeader>
 
         <div className="overflow-y-auto max-h-[calc(80vh-80px)]">

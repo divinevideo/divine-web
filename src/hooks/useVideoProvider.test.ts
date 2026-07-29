@@ -49,6 +49,12 @@ vi.mock('@/hooks/useRelayCapabilities', () => ({
   useResolvedRelayCapabilities: mockUseResolvedRelayCapabilities,
 }));
 
+// Blocklist behavior is covered in useVideoProvider.blocklist.test.ts;
+// these routing tests run with an empty blocklist.
+vi.mock('@/hooks/useFeedBlocklist', () => ({
+  useFeedBlocklist: () => new Set<string>(),
+}));
+
 vi.mock('@/config/relays', async () => {
   const actual = await vi.importActual<typeof import('@/config/relays')>('@/config/relays');
   return actual;
@@ -118,7 +124,7 @@ describe('chooseVideoDataSource', () => {
   });
 
   it('falls back to canonical Funnelcake for hot feeds on relays without video-sort support', () => {
-    relayUrl = 'wss://relay.ditto.pub';
+    relayUrl = 'wss://relay.damus.io';
 
     const decision = chooseVideoDataSource({
       feedType: 'trending',

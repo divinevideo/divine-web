@@ -21,6 +21,10 @@ export interface VideoList {
   playOrder?: PlayOrder;
 }
 
+export function videoListAddress(list: VideoList): string {
+  return `${list.pubkey}:30005:${list.id}`;
+}
+
 /**
  * Parse a video list event (kind 30005) into a VideoList, or null if invalid.
  * Uses {@link VIDEO_KINDS} for `a` tag coordinates so supported kinds stay in one place.
@@ -81,4 +85,21 @@ export function parseVideoListFromEvent(event: NostrEvent): VideoList | null {
     thumbnailEventId,
     playOrder,
   };
+}
+
+export function deduplicateVideoLists(events: NostrEvent[]): VideoList[] {
+  const newestByAddress = new Map<string, VideoList>();
+
+  events
+    .map(parseVideoListFromEvent)
+    .filter((list): list is VideoList => list !== null)
+    .sort((a, b) => b.createdAt - a.createdAt)
+    .forEach((list) => {
+      const address = videoListAddress(list);
+      if (!newestByAddress.has(address)) {
+        newestByAddress.set(address, list);
+      }
+    });
+
+  return Array.from(newestByAddress.values());
 }

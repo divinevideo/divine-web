@@ -7,7 +7,7 @@ import { useState, useEffect } from 'react';
 import { searchProfiles, type FunnelcakeProfileResult } from '@/lib/funnelcakeClient';
 import { API_CONFIG } from '@/config/api';
 import { debugLog } from '@/lib/debug';
-import { reportFunnelcakeFallback } from '@/lib/funnelcakeFallbackReporting';
+import { isAbortError, reportFunnelcakeFallback } from '@/lib/funnelcakeFallbackReporting';
 import { isFunnelcakeAvailable } from '@/lib/funnelcakeHealth';
 import { isUrlLikeQuery } from '@/lib/searchUtils';
 import type { NostrMetadata, NostrEvent } from '@nostrify/nostrify';
@@ -23,6 +23,93 @@ export interface SearchUserResult {
 }
 
 const FUNNELCAKE_PROFILE_SEARCH_TIMEOUT_MS = 5000;
+
+function normalizeSearchValue(value?: string): string {
+  return value?.trim().toLowerCase() ?? '';
+}
+
+function getNip05LocalPart(nip05?: string): string {
+  const normalized = normalizeSearchValue(nip05);
+  const atIndex = normalized.indexOf('@');
+  return atIndex === -1 ? normalized : normalized.slice(0, atIndex);
+}
+
+function profileMatchesQuery(profile: FunnelcakeProfileResult, query: string): boolean {
+  const searchValue = normalizeSearchValue(query);
+  if (!searchValue) return true;
+
+  return [
+    profile.name,
+    profile.display_name,
+    profile.nip05,
+    getNip05LocalPart(profile.nip05),
+    profile.about,
+  ].some(field => normalizeSearchValue(field).includes(searchValue));
+}
+
+function isSuspiciousProfile(profile: FunnelcakeProfileResult): boolean {
+  const about = normalizeSearchValue(profile.about);
+  const picture = normalizeSearchValue(profile.picture);
+
+  return about.includes('<script') ||
+    about.includes('javascript:') ||
+    picture.includes('iplogger.');
+}
+
+function isLowSignalProfile(profile: FunnelcakeProfileResult): boolean {
+  return profile.follower_count <= 0 &&
+    profile.video_count <= 0 &&
+    !normalizeSearchValue(profile.display_name) &&
+    !normalizeSearchValue(profile.about) &&
+    !normalizeSearchValue(profile.nip05) &&
+    !normalizeSearchValue(profile.picture);
+}
+
+function isExactProfileMatch(profile: FunnelcakeProfileResult, query: string): boolean {
+  const searchValue = normalizeSearchValue(query);
+  if (!searchValue) return false;
+
+  return normalizeSearchValue(profile.name) === searchValue ||
+    normalizeSearchValue(profile.display_name) === searchValue ||
+    getNip05LocalPart(profile.nip05) === searchValue;
+}
+
+function getProfileSearchScore(profile: FunnelcakeProfileResult, query: string): number {
+  const searchValue = normalizeSearchValue(query);
+  const name = normalizeSearchValue(profile.name);
+  const displayName = normalizeSearchValue(profile.display_name);
+  const nip05 = normalizeSearchValue(profile.nip05);
+  const nip05Local = getNip05LocalPart(profile.nip05);
+  const about = normalizeSearchValue(profile.about);
+
+  let score = 0;
+
+  if (name === searchValue) score += 500;
+  if (displayName === searchValue) score += 450;
+  if (nip05Local === searchValue) score += 425;
+  if (isExactProfileMatch(profile, query)) score += 400;
+
+  if (name.startsWith(searchValue)) score += 220;
+  if (displayName.startsWith(searchValue)) score += 180;
+  if (nip05Local.startsWith(searchValue)) score += 160;
+
+  if (name.includes(searchValue)) score += 80;
+  if (displayName.includes(searchValue)) score += 60;
+  if (nip05.includes(searchValue)) score += 50;
+  if (about.includes(searchValue)) score += 25;
+
+  score += Math.min(profile.follower_count, 250);
+  score += Math.min(profile.video_count * 8, 160);
+
+  if (profile.nip05) score += 30;
+  if (profile.picture) score += 20;
+  if (profile.about) score += 10;
+  if (profile.display_name) score += 10;
+
+  if (isLowSignalProfile(profile) && !isExactProfileMatch(profile, query)) score -= 150;
+
+  return score;
+}
 
 /**
  * Convert Funnelcake profile result to SearchUserResult for compatibility
@@ -119,7 +206,17 @@ export function useSearchUsers(options: UseSearchUsersOptions) {
               signal: AbortSignal.any([signal, AbortSignal.timeout(FUNNELCAKE_PROFILE_SEARCH_TIMEOUT_MS)]),
             },
           );
-          const finalUsers = profiles.map(toSearchUserResult);
+          const rankedProfiles = profiles
+            .filter(profile => profileMatchesQuery(profile, debouncedQuery))
+            .filter(profile => !isSuspiciousProfile(profile))
+            .sort((a, b) => getProfileSearchScore(b, debouncedQuery) - getProfileSearchScore(a, debouncedQuery));
+
+          const preferredProfiles = rankedProfiles
+            .filter(profile => !isLowSignalProfile(profile) || isExactProfileMatch(profile, debouncedQuery));
+          const visibleProfiles = preferredProfiles.length >= Math.min(limit, 2)
+            ? preferredProfiles
+            : rankedProfiles;
+          const finalUsers = visibleProfiles.slice(0, limit).map(toSearchUserResult);
           const apiCompletedAt = performance.now();
 
           console.info('[search/users] funnelcake query complete', {
@@ -127,12 +224,20 @@ export function useSearchUsers(options: UseSearchUsersOptions) {
             apiMs: Math.round(apiCompletedAt - apiStartedAt),
             totalMs: Math.round(apiCompletedAt - requestStartedAt),
             profileCount: profiles.length,
+            rankedProfileCount: rankedProfiles.length,
             returnedUserCount: finalUsers.length,
           });
 
           return finalUsers;
         } catch (error) {
-          console.warn('[search/users] falling back to relay search', {
+          // Cancelled queries (fast typing, navigation away) are not failures —
+          // surface the abort to React Query without reporting or falling back (#459)
+          if (isAbortError(error)) {
+            throw error;
+          }
+          // console.info: Sentry's captureConsoleIntegration captures warn/error,
+          // and the fallback already reports one canonical FunnelcakeFallbackError (#459)
+          console.info('[search/users] falling back to relay search', {
             ...requestContext,
             error,
             totalMs: Math.round(performance.now() - requestStartedAt),
@@ -142,6 +247,7 @@ export function useSearchUsers(options: UseSearchUsersOptions) {
             source: 'useSearchUsers',
             apiUrl,
             reason: error instanceof Error ? error.message : String(error),
+            error,
             dedupeKey: `useSearchUsers:${debouncedQuery}`,
             context: {
               query: debouncedQuery,
@@ -149,7 +255,7 @@ export function useSearchUsers(options: UseSearchUsersOptions) {
           });
         }
       } else {
-        console.warn('[search/users] funnelcake unavailable, falling back to relay search', {
+        console.info('[search/users] funnelcake unavailable, falling back to relay search', {
           ...requestContext,
           totalMs: Math.round(performance.now() - requestStartedAt),
         });

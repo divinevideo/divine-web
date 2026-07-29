@@ -87,7 +87,6 @@ export function useFollowListSafetyCheck(pubkey: string | undefined, enabled: bo
               'divine.video',
               'divineweb',
               'divine web',
-              'openvine',
             ];
 
             isDivineClient = divineClientNames.some(name =>
@@ -99,7 +98,7 @@ export function useFollowListSafetyCheck(pubkey: string | undefined, enabled: bo
             if (clientTag) {
               debugLog('[SafetyCheck] Client tag lowercase:', clientTag.toLowerCase());
               debugLog('[SafetyCheck] Checking against divine identifiers:',
-                ['divine', 'divine.video', 'divineweb', 'divine web', 'openvine']);
+                ['divine', 'divine.video', 'divineweb', 'divine web']);
             }
           } catch (err) {
             debugLog('[SafetyCheck] Failed to parse profile metadata:', err);

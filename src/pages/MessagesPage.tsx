@@ -15,6 +15,7 @@ import {
   useParsedDmShare,
 } from '@/hooks/useDirectMessages';
 import { useSearchUsers } from '@/hooks/useSearchUsers';
+import { useDmComposeGuard } from '@/hooks/useDmComposeGuard';
 import { useSubdomainNavigate } from '@/hooks/useSubdomainNavigate';
 import {
   DIVINE_SUPPORT_PUBKEY,
@@ -203,6 +204,10 @@ export function MessagesPage() {
   const { t } = useTranslation();
   const { user } = useCurrentUser();
   const { canUseDirectMessages, isCheckingDmCapability } = useDmCapability();
+  // Protected-minor DM restriction (#176): a protected minor's user search may
+  // only surface approved accounts to compose to (the send gate blocks the rest
+  // anyway; this keeps the compose list from dead-ending).
+  const { isComposeBlocked } = useDmComposeGuard();
   const conversationsQuery = useDmConversations();
   const inboxStatus = useDmInboxStatus();
   const share = useParsedDmShare(location.search);
@@ -233,7 +238,9 @@ export function MessagesPage() {
   const supportDisplayName = getDisplayName(DIVINE_SUPPORT_PUBKEY, supportMetadata);
   const supportPicture = getSafeProfileImage(supportMetadata?.picture) || '/user-avatar.png';
 
-  const searchResults = (searchUsersQuery.data || []).filter((result) => result.pubkey !== user?.pubkey);
+  const searchResults = (searchUsersQuery.data || [])
+    .filter((result) => result.pubkey !== user?.pubkey)
+    .filter((result) => !isComposeBlocked(result.pubkey));
 
   return (
     <div className="min-h-full bg-brand-off-white dark:bg-brand-dark-green">

@@ -189,9 +189,6 @@ function getNotFoundDescription(identifier: string, t: TFunction): string {
 }
 
 /**
- * Looks up a user by either NIP-05 or Vine user ID
- */
-/**
  * Strip the NIP-05 envelope from a /u/ URL segment, leaving the bare local
  * part. We deliberately do NOT resolve the raw NIP-05 string itself — only
  * the canonical /u/<sub> path runs through the lookup. Third-party segments
@@ -212,6 +209,14 @@ function stripNip05Envelope(segment: string): string | null {
   return captured.toLowerCase();
 }
 
+// Independent budgets for the two resolution paths. They are deliberately NOT
+// shared: a slow relay query must not consume the budget the DNS fallback needs.
+// They run sequentially, so an all-timeouts unhappy lookup is bounded at roughly
+// RELAY + DNS per attempt (then retried per the useQuery config below); the
+// common path resolves in well under a second.
+const RELAY_QUERY_TIMEOUT_MS = 8000;
+const NIP05_DNS_TIMEOUT_MS = 6000;
+
 function useUniversalUserLookup(identifier: string | undefined) {
   const { nostr } = useNostr();
 
@@ -223,15 +228,36 @@ function useUniversalUserLookup(identifier: string | undefined) {
       }
 
       const decodedIdentifier = decodeIdentifier(identifier).trim();
-      const signal = AbortSignal.any([
+
+      // The relay kind-0 sample query and the NIP-05 DNS fallback get INDEPENDENT
+      // abort budgets. They used to share a single 10s AbortSignal, with DNS
+      // running only after the relay query settled — so a slow or failing relay
+      // query consumed the whole budget and the deterministic DNS lookup was
+      // called with an already-aborted signal (it never fired), leaving valid
+      // divine.video handles 404ing on the first try and only resolving on retry.
+      // Note: this does NOT address the unfiltered `limit: 500` sample itself,
+      // which is a separate reliability gap for legacy Vine-username links (no
+      // DNS path to recover with). Out of scope for this race fix.
+      const relaySignal = AbortSignal.any([
         context.signal,
-        AbortSignal.timeout(10000),
+        AbortSignal.timeout(RELAY_QUERY_TIMEOUT_MS),
       ]);
-      const events = await nostr.query([{
-        kinds: [0],
-        limit: 500,
-      }], { signal });
-      const profiles = getParsedProfiles(events);
+      let profiles: ParsedProfile[] = [];
+      let relayError: unknown = null;
+      try {
+        const events = await nostr.query([{
+          kinds: [0],
+          limit: 500,
+        }], { signal: relaySignal });
+        profiles = getParsedProfiles(events);
+      } catch (err) {
+        // Caller navigated away — abort the whole lookup, don't mask it.
+        if (context.signal.aborted) throw err;
+        // Relay was slow/unavailable. Remember it so a transient failure stays
+        // retryable, but continue: the NIP-05 DNS fallback may still resolve.
+        relayError = err;
+        debugLog(`[UniversalUserPage] relay kind-0 query failed, continuing to NIP-05 DNS fallback: ${(err as Error).message}`);
+      }
 
       if (isVineUserId(decodedIdentifier)) {
         debugLog(`[UniversalUserPage] Looking up Vine user ID: ${decodedIdentifier}`);
@@ -248,6 +274,9 @@ function useUniversalUserLookup(identifier: string | undefined) {
           }
         }
 
+        // Numeric Vine IDs have no DNS fallback. If the relay query itself failed,
+        // surface that (retryable) rather than a definitive not-found.
+        if (relayError) throw relayError;
         throw new UserNotFoundError(`No user found with Vine ID: ${decodedIdentifier}`);
       }
 
@@ -291,10 +320,19 @@ function useUniversalUserLookup(identifier: string | undefined) {
       // DNS NIP-05 fallback. We only attempt this for candidates that contain an
       // '@' (third-party segments with no '@' can't be resolved via DNS — they
       // are tried against kind-0 above and reported as not-found if no match).
+      // One budget for the whole DNS phase, independent of the relay query above
+      // (so a slow relay can't starve it). We deliberately do NOT give each
+      // candidate its own timeout: candidates are in priority order (the canonical
+      // divine.video handle first), so paying N× timeouts for the rarely-useful
+      // fallback candidates isn't worth the added worst-case latency.
+      const dnsSignal = AbortSignal.any([
+        context.signal,
+        AbortSignal.timeout(NIP05_DNS_TIMEOUT_MS),
+      ]);
       for (const candidate of nip05Candidates) {
         if (!candidate.includes('@')) continue;
         try {
-          const pubkey = await resolveNip05ToPubkey(candidate, { signal });
+          const pubkey = await resolveNip05ToPubkey(candidate, { signal: dnsSignal });
           if (pubkey) {
             debugLog(`[UniversalUserPage] Resolved NIP-05 via DNS: ${candidate} -> ${pubkey}`);
             return {
@@ -304,11 +342,17 @@ function useUniversalUserLookup(identifier: string | undefined) {
             } satisfies ProfileLookupResult;
           }
         } catch (err) {
-          if (err instanceof DOMException && err.name === 'AbortError') throw err;
+          // A caller-driven abort ends the lookup; a DNS budget timeout is
+          // transient and should retry rather than become a definitive not-found.
+          if (context.signal.aborted) throw err;
+          if (dnsSignal.aborted) throw err;
           debugLog(`[UniversalUserPage] DNS NIP-05 lookup failed for ${candidate}: ${(err as Error).message}`);
         }
       }
 
+      // Nothing resolved. If the relay query failed, surface that (retryable)
+      // instead of a definitive not-found, so a transient relay blip can recover.
+      if (relayError) throw relayError;
       throw new UserNotFoundError(`No user found for identifier: ${decodedIdentifier}`);
     },
     enabled: !!identifier,

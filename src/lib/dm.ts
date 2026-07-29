@@ -4,6 +4,7 @@ import { sha256 } from '@noble/hashes/sha256';
 import { finalizeEvent, generateSecretKey, nip44, verifyEvent } from 'nostr-tools';
 
 import { PRESET_RELAYS, PROFILE_RELAYS, getRelayUrls } from '@/config/relays';
+import { DIVINE_MODERATION_PUBKEY } from '@/lib/officialAccounts';
 import { getVideoShareUrl } from '@/lib/shareUtils';
 import { getApexShareUrl } from '@/lib/subdomainLinks';
 import type { ParsedVideoData } from '@/types/video';
@@ -14,7 +15,12 @@ export const DM_SEAL_KIND = 13;
 export const DM_RUMOR_KIND = 14;
 export const DM_RELAY_LIST_KIND = 10050;
 
-export const DIVINE_SUPPORT_PUBKEY = '78a5c21b5166dc1474b64ddf7454bf79e6b5d6b4a77148593bf1e866b73c2738';
+// The "Message Support" destination. Points at the pinned Divine Moderation
+// account (moderation@divine.video) — a NIP-05-verified, minorContactable
+// official identity — NOT an unverifiable personal key. This is what lets a
+// protected minor's support message through the #176 send gate + inbound filter.
+// Single-sourced from officialAccounts so the two can't drift.
+export const DIVINE_SUPPORT_PUBKEY = DIVINE_MODERATION_PUBKEY;
 
 const TWO_DAYS_IN_SECONDS = 2 * 24 * 60 * 60;
 const PUBKEY_PATTERN = /^[a-f0-9]{64}$/;
@@ -380,6 +386,11 @@ function createWrapEvent(seal: NostrEvent, targetPubkey: string): NostrEvent {
  * use this function for the self copy — a self-wrap failure must not
  * abort delivery to the actual recipients (mirrors the pattern in
  * mobile/packages/dm_repository/lib/src/nip17_message_service.dart).
+ *
+ * INVARIANT (#176): the only caller is `useDmSend`, which runs the
+ * protected-minor send gate (`assertMinorDmRecipientsAllowed`) BEFORE this. Any
+ * new caller MUST gate first — this builder does not, so a bypass here would
+ * let a protected minor DM a non-approved account.
  */
 export async function createRecipientGiftWraps(input: CreateDmGiftWrapsInput): Promise<NostrEvent[]> {
   const { signer, senderPubkey, recipientPubkeys, content, additionalTags = [] } = input;

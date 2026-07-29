@@ -43,12 +43,13 @@ vi.mock('./ProfilePage', () => ({
   ),
 }));
 
-function renderPage(initialEntry: string) {
+function renderPage(
+  initialEntry: string,
+  queryDefaults: Record<string, unknown> = { retry: false },
+) {
   const queryClient = new QueryClient({
     defaultOptions: {
-      queries: {
-        retry: false,
-      },
+      queries: queryDefaults,
     },
   });
 
@@ -123,8 +124,8 @@ describe('UniversalUserPage', () => {
     const fallbackPubkey = 'c'.repeat(64);
     mockNostrQuery.mockResolvedValue([
       createProfileEvent(fallbackPubkey, {
-        name: 'OpenVine User',
-        nip05: 'someuser@openvine.co',
+        name: 'Default Apex User',
+        nip05: '_@someuser.divine.video',
       }),
       createProfileEvent(legacyPubkey, {
         name: 'Legacy Vine User',
@@ -176,23 +177,6 @@ describe('UniversalUserPage', () => {
     expect(screen.getByTestId('profile-page').dataset.pubkeyOverride).toBe(pubkey);
   });
 
-  it('falls back to legacy openvine.co NIP-05 when there is no newer bare-name match', async () => {
-    const pubkey = '7'.repeat(64);
-    mockNostrQuery.mockResolvedValue([
-      createProfileEvent(pubkey, {
-        name: 'OpenVine User',
-        nip05: 'someuser@openvine.co',
-      }),
-    ]);
-
-    renderPage('/u/someuser');
-
-    await waitFor(() => {
-      expect(screen.getByTestId('profile-page')).toBeInTheDocument();
-    });
-    expect(screen.getByTestId('profile-page').dataset.pubkeyOverride).toBe(pubkey);
-  });
-
   it('shows the not-found state when no legacy or NIP-05 match exists', async () => {
     const originalFetch = globalThis.fetch;
     globalThis.fetch = vi.fn().mockResolvedValue({
@@ -202,7 +186,7 @@ describe('UniversalUserPage', () => {
     mockNostrQuery.mockResolvedValue([
       createProfileEvent('f'.repeat(64), {
         name: 'Someone Else',
-        nip05: 'other@openvine.co',
+        nip05: '_@other.divine.video',
       }),
     ]);
 
@@ -286,6 +270,95 @@ describe('UniversalUserPage', () => {
       });
       expect(screen.getByTestId('profile-page').dataset.pubkeyOverride).toBe(pubkey);
       expect(fetchMock).toHaveBeenCalled();
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+
+  it('resolves a NIP-05 handle via DNS when the relay kind-0 query fails', async () => {
+    // Repro for the resolution race: the relay sample query and the NIP-05 DNS
+    // fallback must not share a single budget. When the relay query fails or is
+    // aborted (e.g. it exhausted the timeout), the deterministic DNS lookup must
+    // still run instead of being starved, otherwise a divine.video handle 404s.
+    const pubkey = '8'.repeat(64);
+    mockNostrQuery.mockRejectedValue(new DOMException('Aborted', 'AbortError'));
+
+    const originalFetch = globalThis.fetch;
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ names: { jacky: pubkey } }),
+    });
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+    try {
+      renderPage('/u/jacky');
+
+      await waitFor(() => {
+        expect(screen.getByTestId('profile-page')).toBeInTheDocument();
+      });
+      expect(screen.getByTestId('profile-page').dataset.pubkeyOverride).toBe(pubkey);
+      expect(fetchMock).toHaveBeenCalled();
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+
+  it('retries after a transient relay failure and resolves once the relay recovers', async () => {
+    // The hook's retry predicate retries non-UserNotFound errors. A transient
+    // relay failure (with no DNS match to recover) should rethrow as retryable
+    // and resolve on the next attempt, rather than showing a definitive not-found.
+    const pubkey = '9'.repeat(64);
+    mockNostrQuery
+      .mockRejectedValueOnce(new DOMException('Aborted', 'AbortError'))
+      .mockResolvedValue([
+        createProfileEvent(pubkey, { name: 'Recovered', nip05: 'recovered@divine.video' }),
+      ]);
+
+    const originalFetch = globalThis.fetch;
+    // No DNS match on the first attempt, so the relay error is what propagates.
+    globalThis.fetch = vi.fn().mockResolvedValue({ ok: false, status: 404 }) as unknown as typeof fetch;
+    try {
+      renderPage('/u/recovered', { retry: 2, retryDelay: 0 });
+
+      await waitFor(() => {
+        expect(screen.getByTestId('profile-page')).toBeInTheDocument();
+      });
+      expect(screen.getByTestId('profile-page').dataset.pubkeyOverride).toBe(pubkey);
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+
+  it('retries after a DNS timeout and resolves on the next attempt', async () => {
+    const pubkey = 'a9'.repeat(32);
+    let dnsTimeouts = 0;
+    vi.spyOn(AbortSignal, 'timeout').mockImplementation((milliseconds: number) => {
+      const controller = new AbortController();
+      if (milliseconds === 6000 && dnsTimeouts++ === 0) {
+        controller.abort(new DOMException('Timeout', 'TimeoutError'));
+      }
+      return controller.signal;
+    });
+    mockNostrQuery.mockResolvedValue([]);
+
+    const originalFetch = globalThis.fetch;
+    const fetchMock = vi.fn((_: RequestInfo | URL, init?: RequestInit) => {
+      if (init?.signal?.aborted) {
+        return Promise.reject(new DOMException('Timeout', 'TimeoutError'));
+      }
+      return Promise.resolve({
+        ok: true,
+        json: async () => ({ names: { jacky: pubkey } }),
+      });
+    });
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+    try {
+      renderPage('/u/jacky', { retry: 2, retryDelay: 0 });
+
+      await waitFor(() => {
+        expect(screen.getByTestId('profile-page')).toBeInTheDocument();
+      });
+      expect(screen.getByTestId('profile-page').dataset.pubkeyOverride).toBe(pubkey);
+      expect(fetchMock).toHaveBeenCalledTimes(2);
     } finally {
       globalThis.fetch = originalFetch;
     }

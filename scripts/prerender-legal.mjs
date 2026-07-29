@@ -32,16 +32,26 @@ function getShellTemplate(indexHtml) {
     styleBlocks.push(m[0]);
   }
 
-  return { cssLinks, styleBlocks, fontLinks };
+  // Extract the CSP meta tag. These pages boot the full SPA, and the app's
+  // only CSP is this tag (_headers sets a policy for /embed alone), so a
+  // prerendered page without it would run the whole app unprotected for any
+  // session that entered through /terms, /faq, /services, and so on.
+  const cspMatch = indexHtml.match(
+    /<meta[^>]+http-equiv="Content-Security-Policy"[^>]*>/i
+  );
+  const cspMeta = cspMatch ? cspMatch[0] : '';
+
+  return { cssLinks, styleBlocks, fontLinks, cspMeta };
 }
 
 function buildPage({ title, description, path, content, shell }) {
-  const { cssLinks, styleBlocks, fontLinks } = shell;
+  const { cssLinks, styleBlocks, fontLinks, cspMeta } = shell;
 
   return `<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8">
+    ${cspMeta}
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
     <title>${title} - Divine Web</title>
     <meta name="description" content="${description}">
@@ -182,6 +192,12 @@ const PAGES = [
     description: 'Frequently Asked Questions about Divine Web - Everything you need to know about the platform.',
     contentFile: 'faq-content.html',
   },
+  {
+    path: '/services',
+    title: 'Divine Services',
+    description: 'Companion services that help you make the most of Divine: Space, Sounds, Badges, Crossposter, Verifier, and Status.',
+    contentFile: 'services-content.html',
+  },
 ];
 
 function extractContentFromTsx(sourcePath) {
@@ -250,10 +266,13 @@ function main() {
       shell,
     });
 
-    // Replace the placeholder script src with the actual bundle
+    // Replace the placeholder script src with the actual bundle. The regex
+    // only captures the opening tag, so re-add the closing </script> —
+    // without it the parser swallows the rest of the document and the app
+    // never boots on prerendered pages.
     const finalHtml = html.replace(
       '<script type="module" src="/src/main.tsx"></script>',
-      scriptMatch ? scriptMatch[0] : ''
+      scriptMatch ? scriptMatch[0] + '</script>' : ''
     );
 
     const outDir = join(DIST, page.path.slice(1));

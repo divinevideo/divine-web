@@ -3,10 +3,21 @@ import { NLogin, useNostrLogin } from '@nostrify/react/login';
 import { followListCache } from '@/lib/followListCache';
 import { setLoginCookie, clearLoginCookie } from '@/lib/crossSubdomainAuth';
 import { debugLog } from '@/lib/debug';
-import { getActiveLocalNsecLogin } from '@/lib/localNsecAccount';
 import { nip19 } from 'nostr-tools';
 
 // NOTE: This file should not be edited except for adding new login methods.
+// Policy stays out of this file: async login methods accept an optional
+// beforeCommit guard so the caller can re-check its own policy at the moment
+// the signer is committed (#182); the policy predicate lives with the caller.
+
+interface CommitGuardOptions {
+  /** Last-chance policy re-check, run after the handshake resolves and before
+   *  the signer is committed (addLogin + login cookie). Returning false aborts
+   *  the login: nothing is committed and the method resolves false. Needed
+   *  because a pre-handshake check goes stale while the extension prompt or
+   *  bunker connect is open (dcadenas review on #476). */
+  beforeCommit?: () => boolean;
+}
 
 export function useLoginActions() {
   const { nostr } = useNostr();
@@ -19,20 +30,21 @@ export function useLoginActions() {
       addLogin(login);
       setLoginCookie({ type: 'nsec', pubkey: login.pubkey });
     },
-    // Login with a NIP-46 "bunker://" URI
-    async bunker(uri: string): Promise<void> {
+    // Login with a NIP-46 "bunker://" URI; resolves whether the signer was committed
+    async bunker(uri: string, options?: CommitGuardOptions): Promise<boolean> {
       const login = await NLogin.fromBunker(uri, nostr);
+      if (options?.beforeCommit && !options.beforeCommit()) return false;
       addLogin(login);
       setLoginCookie({ type: 'bunker', pubkey: login.pubkey, bunkerData: login.data });
+      return true;
     },
-    // Login with a NIP-07 browser extension
-    async extension(): Promise<void> {
+    // Login with a NIP-07 browser extension; resolves whether the signer was committed
+    async extension(options?: CommitGuardOptions): Promise<boolean> {
       const login = await NLogin.fromExtension();
+      if (options?.beforeCommit && !options.beforeCommit()) return false;
       addLogin(login);
       setLoginCookie({ type: 'extension', pubkey: login.pubkey });
-    },
-    exportCurrentNsec(): string | null {
-      return getActiveLocalNsecLogin(logins)?.data.nsec ?? null;
+      return true;
     },
     // Log out the current user
     async logout(): Promise<void> {

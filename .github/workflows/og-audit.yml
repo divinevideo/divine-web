@@ -1,0 +1,104 @@
+# ABOUTME: GitHub Actions workflow that audits OG/Twitter Card parity on production and
+# ABOUTME: the latest main-branch Cloudflare Pages production deployment.
+
+name: OG/Twitter Card parity audit
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'compute-js/**'
+      - 'functions/**'
+      - 'src/lib/serverSocialMeta.ts'
+      - 'scripts/verify-og-tags.sh'
+      - '.github/workflows/og-audit.yml'
+      - 'package.json'
+  schedule:
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit-production:
+    name: Audit production (divine.video)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run OG parity audit against production
+        id: audit-prod
+        continue-on-error: ${{ github.event_name == 'schedule' }}
+        env:
+          BASE_URL: https://divine.video
+        run: bash scripts/verify-og-tags.sh
+
+      - name: Annotate scheduled production audit result
+        if: github.event_name == 'schedule' && steps.audit-prod.outcome == 'failure'
+        run: echo "::warning::Scheduled production OG audit failed. This monitors live production state and is warning-only on schedule."
+
+  audit-cloudflare-production:
+    name: Audit Cloudflare production (latest main-branch deployment)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install wrangler
+        run: npm install -g wrangler@4.31.0
+
+      - name: Find latest Cloudflare Pages main-branch production deployment URL
+        id: find-production
+        continue-on-error: ${{ github.event_name == 'schedule' }}
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${CLOUDFLARE_API_TOKEN:-}" ]]; then
+            echo "::error::CLOUDFLARE_API_TOKEN not set; cannot audit Cloudflare production."
+            exit 1
+          fi
+          if [[ -z "${CLOUDFLARE_ACCOUNT_ID:-}" ]]; then
+            echo "::error::CLOUDFLARE_ACCOUNT_ID not set; cannot audit Cloudflare production."
+            exit 1
+          fi
+          # Project name matches deploy.yml and preview.yml (divine-web-direct-deploy).
+          # Main has no preview deployments (previews are per-PR); audit the latest
+          # main-branch production deployment instead.
+          # wrangler 4.x prints a version banner before the JSON payload — strip it.
+          # Field names are PascalCase: Environment/Branch/Deployment.
+          if ! URL=$(wrangler pages deployment list \
+            --project-name divine-web-direct-deploy \
+            --environment production \
+            --json \
+            | sed -n '/^\[/,$p' \
+            | jq -er '(first(.[] | select(.Environment == "Production" and .Branch == "main" and (.Deployment // "") != "")) // empty) | .Deployment'); then
+            echo "::error::No main-branch Cloudflare production deployment found, or Wrangler could not list deployments."
+            exit 1
+          fi
+          if [[ -z "$URL" ]]; then
+            echo "::error::No main-branch Cloudflare production deployment found."
+            exit 1
+          fi
+          echo "production_url=$URL" >> "$GITHUB_OUTPUT"
+
+      - name: Annotate scheduled Cloudflare production discovery result
+        if: github.event_name == 'schedule' && steps.find-production.outcome == 'failure'
+        run: echo "::warning::Scheduled Cloudflare production discovery failed. This monitors live deployment state and is warning-only on schedule."
+
+      - name: Run OG parity audit against Cloudflare production
+        id: audit-production-cf
+        if: steps.find-production.outputs.production_url != ''
+        continue-on-error: ${{ github.event_name == 'schedule' }}
+        env:
+          BASE_URL: ${{ steps.find-production.outputs.production_url }}
+        run: bash scripts/verify-og-tags.sh
+
+      - name: Annotate scheduled Cloudflare production audit result
+        if: github.event_name == 'schedule' && steps.audit-production-cf.outcome == 'failure'
+        run: echo "::warning::Scheduled Cloudflare production OG audit failed. This monitors live deployment state and is warning-only on schedule."
