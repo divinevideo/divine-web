@@ -1,14 +1,13 @@
-# Top-Countries Localization — Design
+# Priority-Market Localization — Design
 
 Date: 2026-07-30
 Status: Approved (brainstorming session with Rabble)
 
 ## Goal
 
-Analytics show our top 10 countries are: Singapore, United States, Vietnam,
-Brazil, Canada, United Kingdom, Pakistan, Türkiye, France, Argentina. Every
-visitor from those countries should see Divine in their language,
-automatically, on first load.
+Visitors in high-priority growth markets should see Divine in their language
+automatically on first load when a supported locale matches their browser
+preferences.
 
 ## Current State
 
@@ -23,18 +22,9 @@ automatically, on first load.
 
 ## Gap Analysis
 
-| Country | Language | Status |
-|---|---|---|
-| Singapore | English (lingua franca), Mandarin, Malay | en covered; zh/ms missing |
-| United States | English | covered |
-| Vietnam | Vietnamese | **missing (vi)** |
-| Brazil | Portuguese | covered (pt) |
-| Canada | English / French | covered |
-| United Kingdom | English | covered |
-| Pakistan | Urdu | **missing (ur)** |
-| Türkiye | Turkish | covered |
-| France | French | covered |
-| Argentina | Spanish | covered |
+The existing catalog already covers English, Spanish, Portuguese, French, and
+several other core languages. The next localization gaps are Vietnamese, Urdu,
+Simplified Chinese for supported Simplified-script regions, and Malay.
 
 ## Scope
 
@@ -50,11 +40,10 @@ Chinese, Singapore standard), **ms** (Malay).
   اردو; Chinese (Simplified) / 简体中文; Malay / Bahasa Melayu.
 - `getLocaleDirection`: `'ur'` joins `'ar'` as RTL. `applyDocumentLocale`
   sets `<html dir="rtl">` automatically (same plumbing Arabic uses).
-- No detection changes: `normalizeLocale`'s base-language split already maps
-  `vi-VN→vi`, `ur-PK→ur`, `zh-SG/zh-CN→zh`, `ms-MY/ms-SG→ms`.
-- Accepted edge: `zh-TW`/`zh-HK` (Traditional) fall through to Simplified.
-  Not our top-10 audience; fix later via `LOCALE_ALIASES` if `zh-Hant` is
-  ever added.
+- Detection uses base-language fallback for most locales and explicit
+  Simplified Chinese aliases for `zh-CN`, `zh-SG`, and `zh-Hans`.
+- Traditional Chinese regional tags such as `zh-TW`, `zh-HK`, and `zh-Hant`
+  stay on English fallback until a Traditional Chinese catalog exists.
 - New resource dirs `src/lib/i18n/locales/{vi,ur,zh,ms}/` with all 11
   namespaces (about, authenticity, common, dmca, faq, humanCreated,
   openSource, privacy, proofmode, safety, terms). Vite glob auto-loads them;
@@ -89,15 +78,16 @@ Per-language style briefs:
 - Plural forms: catalog uses i18next `_one`/`_other` suffixes. vi/zh/ms have
   no grammatical plural — both keys present and identical; ur inflects both.
 
-Mechanics: one subagent per locale, given the style brief + English source,
-producing all 11 JSON files. Hard gates afterward (see below).
+Mechanics: produce one complete resource directory per locale from the style
+brief and English source. Hard gates afterward (see below).
 
 ### 3. Testing & verification (TDD)
 
 RED first:
 
 1. `config.test.ts`: `normalizeLocale('vi-VN')→'vi'`, `('ur-PK')→'ur'`,
-   `('zh-SG')→'zh'`, `('ms-MY')→'ms'`; `getLocaleDirection('ur')→'rtl'`.
+   `('zh-SG')→'zh'`, `('zh-TW')→null`, `('ms-MY')→'ms'`;
+   `getLocaleDirection('ur')→'rtl'`.
 2. Placeholder-parity test in `locales.test.ts`: every `{{var}}` in each
    English value must appear in the translated value, for all locales.
    (Applied to all locales; if it surfaces pre-existing drift in old

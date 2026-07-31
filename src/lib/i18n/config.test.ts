@@ -4,9 +4,11 @@ import {
   LOCALE_OPTIONS,
   LOCALE_STORAGE_KEY,
   SUPPORTED_LOCALES,
+  applyDocumentLocale,
   clearStoredLocale,
   getLocaleDirection,
   getStoredLocale,
+  normalizeLocale,
   resolveInitialLocale,
   setStoredLocale,
 } from './config';
@@ -42,13 +44,21 @@ describe('i18n config', () => {
     expect(resolveInitialLocale(['th-TH', 'uk-UA'])).toBe(DEFAULT_LOCALE);
   });
 
-  it('resolves top-country locales (vi, ur, zh, ms) from regional variants', () => {
+  it('resolves priority locales (vi, ur, zh, ms) from regional variants', () => {
     expect(resolveInitialLocale(['vi-VN'])).toBe('vi');
     expect(resolveInitialLocale(['ur-PK'])).toBe('ur');
     expect(resolveInitialLocale(['zh-SG'])).toBe('zh');
     expect(resolveInitialLocale(['zh-CN'])).toBe('zh');
+    expect(resolveInitialLocale(['zh-Hans'])).toBe('zh');
     expect(resolveInitialLocale(['ms-MY'])).toBe('ms');
     expect(resolveInitialLocale(['ms-SG'])).toBe('ms');
+  });
+
+  it('does not map traditional chinese regions to simplified chinese', () => {
+    expect(normalizeLocale('zh-TW')).toBeNull();
+    expect(normalizeLocale('zh-HK')).toBeNull();
+    expect(normalizeLocale('zh-Hant')).toBeNull();
+    expect(resolveInitialLocale(['zh-TW', 'en-US'])).toBe('en');
   });
 
   it('aliases legacy tagalog codes (tl, tl-PH) to fil', () => {
@@ -91,5 +101,12 @@ describe('i18n config', () => {
     expect(getLocaleDirection('ur')).toBe('rtl');
     expect(getLocaleDirection('en')).toBe('ltr');
     expect(getLocaleDirection('zh')).toBe('ltr');
+  });
+
+  it('uses a script-specific html lang tag for simplified chinese', () => {
+    applyDocumentLocale('zh');
+
+    expect(document.documentElement.lang).toBe('zh-Hans');
+    expect(document.documentElement.dir).toBe('ltr');
   });
 });

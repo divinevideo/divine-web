@@ -72,6 +72,14 @@ describe('i18n bootstrap', () => {
 
     expect(i18n.language).toBe('zh');
     expect(i18n.t('nav.home')).toBe('首页');
+    expect(document.documentElement.lang).toBe('zh-Hans');
+  });
+
+  it('falls back from traditional chinese regions until a catalog exists', async () => {
+    const i18n = await createI18nInstance({ languages: ['zh-TW'] });
+
+    expect(i18n.language).toBe('en');
+    expect(document.documentElement.lang).toBe('en');
   });
 
   it('initializes in malay', async () => {

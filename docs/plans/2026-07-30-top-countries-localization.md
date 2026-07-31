@@ -1,8 +1,6 @@
-# Top-Countries Localization Implementation Plan
+# Priority-Market Localization Implementation Plan
 
-> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
-
-**Goal:** Add Vietnamese (vi), Urdu (ur), Simplified Chinese (zh), and Malay (ms) locales so visitors from our top-10 countries get Divine in their language automatically.
+**Goal:** Add Vietnamese (vi), Urdu (ur), Simplified Chinese (zh), and Malay (ms) locales so visitors in priority growth markets get Divine in their language automatically.
 
 **Architecture:** Existing `react-i18next` setup with eager Vite glob loading (`src/lib/i18n/`). Detection already works via `navigator.languages` → base-language normalization → English fallback; manual override via `LanguageMenu`. This plan registers 4 new locales in config, adds Urdu RTL support, and drops in 44 translated JSON files produced from brand-voice style briefs. Design doc: `docs/plans/2026-07-30-top-countries-localization-design.md`.
 
@@ -19,7 +17,9 @@
 
 **Step 1: Update two existing tests that intentionally change behavior**
 
-Once `zh` is supported, `zh-CN` resolves to `zh` instead of falling through. Update the two tests that rely on `zh-CN` being unsupported (this is the intended feature, not a regression):
+Once `zh` is supported, known Simplified Chinese tags such as `zh-CN` resolve
+to `zh` instead of falling through. Update the tests that rely on `zh-CN` being
+unsupported while keeping Traditional Chinese tags on English fallback:
 
 In the `matches regional browser locales` test, change:
 
@@ -50,11 +50,12 @@ expect(resolveInitialLocale(['th-TH', 'uk-UA'])).toBe(DEFAULT_LOCALE);
 Append inside `describe('i18n config')`:
 
 ```ts
-  it('resolves top-country locales (vi, ur, zh, ms) from regional variants', () => {
+  it('resolves priority locales (vi, ur, zh, ms) from regional variants', () => {
     expect(resolveInitialLocale(['vi-VN'])).toBe('vi');
     expect(resolveInitialLocale(['ur-PK'])).toBe('ur');
     expect(resolveInitialLocale(['zh-SG'])).toBe('zh');
     expect(resolveInitialLocale(['zh-CN'])).toBe('zh');
+    expect(resolveInitialLocale(['zh-TW', 'en-US'])).toBe('en');
     expect(resolveInitialLocale(['ms-MY'])).toBe('ms');
     expect(resolveInitialLocale(['ms-SG'])).toBe('ms');
   });
@@ -202,7 +203,8 @@ git commit -m "test: guard interpolation placeholder parity across locales"
 
 ### Tasks 4–7: Translate the four locales
 
-One task per locale, executed by a fresh translation subagent each time. Each locale task is identical in mechanics; only the style brief differs.
+One task per locale. Each locale task is identical in mechanics; only the style
+brief differs.
 
 **Files (per locale `XX` ∈ {vi, ur, zh, ms}):**
 - Create: `src/lib/i18n/locales/XX/about.json`
@@ -218,7 +220,7 @@ One task per locale, executed by a fresh translation subagent each time. Each lo
 - Create: `src/lib/i18n/locales/XX/terms.json`
 - Source: `src/lib/i18n/locales/en/*.json` (read every file fully)
 
-**Shared translation rules (include verbatim in every subagent prompt):**
+**Shared translation rules:**
 
 1. Translate VALUES only. Never translate, rename, add, drop, or reorder JSON keys. Keep key order identical to English.
 2. Preserve every `{{placeholder}}` verbatim (e.g. `{{count}}`, `{{date}}`). Never translate placeholder names.
@@ -240,12 +242,15 @@ One task per locale, executed by a fresh translation subagent each time. Each lo
 
 **Steps per locale task (repeat for each of vi, ur, zh, ms):**
 
-**Step 1:** Dispatch a subagent with: the shared rules, the locale style brief, and instructions to read every `src/lib/i18n/locales/en/*.json` file fully and write the translated counterparts to `src/lib/i18n/locales/XX/`.
+**Step 1:** Use the shared rules and locale style brief to translate every
+`src/lib/i18n/locales/en/*.json` file into the matching
+`src/lib/i18n/locales/XX/` counterpart.
 
 **Step 2: Verify alignment + placeholders + validity**
 
 Run: `npx vitest run src/lib/i18n/locales.test.ts`
-Expected: PASS — no missing keys for `XX`, placeholder parity holds. If it fails, fix the reported keys (iterate with the subagent or directly) until green.
+Expected: PASS — no missing keys for `XX`, placeholder parity holds. If it
+fails, fix the reported keys until green.
 
 **Step 3: JSON parse sanity**
 
@@ -349,6 +354,6 @@ git commit -m "docs: note 20 locales in architecture overview"
 
 ## Execution Notes
 
-- Task order matters: 1 → 2 → 3 → 4–7 (any order among them, parallel subagents OK) → 8 → 9.
+- Task order matters: 1 → 2 → 3 → 4–7 (any order among them) → 8 → 9.
 - Do not bundle lockfile changes, formatting churn, or unrelated fixes into any commit (PR conventions).
 - If the placeholder-parity test (Task 3) exposes drift in the 16 pre-existing locales, report it; do not fix in this branch.

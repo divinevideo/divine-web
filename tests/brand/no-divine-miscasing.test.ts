@@ -12,7 +12,8 @@ function walk(dir: string, out: string[] = []): string[] {
 }
 
 // Brand rule: the name is always written "Divine". The stylized capital "V"
-// belongs to the logotype artwork only and never appears in text.
+// belongs to the logotype artwork only and never appears in text. Markdown is
+// intentionally excluded because brand docs include negative examples.
 // Pattern is assembled dynamically so this test's own source does not self-match.
 const MISCASING_RE = new RegExp(['[dD]', '[iI]', 'Vine'].join(''));
 
@@ -27,7 +28,10 @@ describe('brand rule: product name casing', () => {
       'public/manifest.webmanifest',
     ]) {
       const content = readFileSync(f, 'utf8');
-      if (MISCASING_RE.test(content)) violations.push(f);
+      content.split('\n').forEach((line, index) => {
+        const match = MISCASING_RE.exec(line);
+        if (match) violations.push(`${f}:${index + 1}: ${match[0]}`);
+      });
     }
 
     expect(violations).toEqual([]);

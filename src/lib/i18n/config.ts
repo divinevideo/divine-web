@@ -58,6 +58,9 @@ export const LOCALE_OPTIONS: LocaleOption[] = [
 
 const LOCALE_ALIASES: Record<string, SupportedLocale> = {
   tl: 'fil',
+  'zh-cn': 'zh',
+  'zh-hans': 'zh',
+  'zh-sg': 'zh',
 };
 
 function getStorage(): Storage | null {
@@ -96,6 +99,10 @@ export function normalizeLocale(input: string | null | undefined): SupportedLoca
   }
 
   const baseLanguage = lowercase.split('-')[0];
+  if (baseLanguage === 'zh') {
+    return null;
+  }
+
   if (isSupportedLocale(baseLanguage)) {
     return baseLanguage;
   }
@@ -158,6 +165,6 @@ export function applyDocumentLocale(locale: SupportedLocale): void {
     return;
   }
 
-  document.documentElement.lang = locale;
+  document.documentElement.lang = locale === 'zh' ? 'zh-Hans' : locale;
   document.documentElement.dir = getLocaleDirection(locale);
 }

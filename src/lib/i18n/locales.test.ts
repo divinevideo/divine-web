@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { resources } from './index';
 
+const PLURAL_SUFFIXES = new Set(['zero', 'one', 'two', 'few', 'many', 'other']);
+const LOCALES_REQUIRING_FULL_PLURAL_COVERAGE = new Set(['ar']);
+
 function flattenKeys(value: unknown, prefix = ''): string[] {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     return prefix ? [prefix] : [];
@@ -34,6 +37,24 @@ function getByPath(catalog: unknown, path: string): unknown {
           : undefined,
       catalog,
     );
+}
+
+function getPluralCategoryMap(keys: string[]): Map<string, Set<string>> {
+  const categoriesByBase = new Map<string, Set<string>>();
+
+  for (const key of keys) {
+    const match = key.match(/^(.*)_([^_.]+)$/);
+    if (!match || !PLURAL_SUFFIXES.has(match[2])) {
+      continue;
+    }
+
+    const [, base, category] = match;
+    const categories = categoriesByBase.get(base) ?? new Set<string>();
+    categories.add(category);
+    categoriesByBase.set(base, categories);
+  }
+
+  return categoriesByBase;
 }
 
 // Arabic plural categories embed the numeral grammatically (singular and dual
@@ -86,6 +107,30 @@ describe('i18n locale resources', () => {
             `${locale}.${namespace}:${key} must keep placeholders ${expected.join(' ')}`,
           ).toEqual(expected);
         }
+      }
+    }
+  });
+
+  it('covers every Intl plural category for locales with full plural forms', () => {
+    for (const [locale, namespaces] of Object.entries(resources)) {
+      if (!LOCALES_REQUIRING_FULL_PLURAL_COVERAGE.has(locale)) {
+        continue;
+      }
+
+      const requiredCategories = new Intl.PluralRules(locale).resolvedOptions().pluralCategories;
+
+      for (const [namespace, catalog] of Object.entries(namespaces)) {
+        const pluralBases = getPluralCategoryMap(flattenKeys(catalog));
+        const missingCategories = [...pluralBases.entries()].flatMap(([base, categories]) =>
+          requiredCategories
+            .filter((category) => !categories.has(category))
+            .map((category) => `${base}_${category}`),
+        );
+
+        expect(
+          missingCategories,
+          `${locale}.${namespace} is missing plural categories:\n${missingCategories.join('\n')}`,
+        ).toEqual([]);
       }
     }
   });
