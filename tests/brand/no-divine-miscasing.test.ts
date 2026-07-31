@@ -6,7 +6,7 @@ function walk(dir: string, out: string[] = []): string[] {
   for (const name of readdirSync(dir)) {
     const p = join(dir, name);
     if (statSync(p).isDirectory()) walk(p, out);
-    else if (['.ts', '.tsx', '.json'].includes(extname(p))) out.push(p);
+    else if (['.ts', '.tsx', '.json', '.html'].includes(extname(p))) out.push(p);
   }
   return out;
 }
@@ -17,17 +17,19 @@ function walk(dir: string, out: string[] = []): string[] {
 const MISCASING_RE = new RegExp(['[dD]', '[iI]', 'Vine'].join(''));
 
 describe('brand rule: product name casing', () => {
-  it('src/ contains no brand-name miscasing', () => {
+  it('shipped app surfaces contain no brand-name miscasing', () => {
     const violations: string[] = [];
-    for (const f of walk('src')) {
+
+    for (const f of [
+      ...walk('src'),
+      'index.html',
+      'public/llms.txt',
+      'public/manifest.webmanifest',
+    ]) {
       const content = readFileSync(f, 'utf8');
       if (MISCASING_RE.test(content)) violations.push(f);
     }
-    expect(violations).toEqual([]);
-  });
 
-  it('public/llms.txt uses the correct brand-name casing', () => {
-    const content = readFileSync('public/llms.txt', 'utf8');
-    expect(MISCASING_RE.test(content)).toBe(false);
+    expect(violations).toEqual([]);
   });
 });

@@ -1,7 +1,9 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import {
   DEFAULT_LOCALE,
+  LOCALE_OPTIONS,
   LOCALE_STORAGE_KEY,
+  SUPPORTED_LOCALES,
   clearStoredLocale,
   getLocaleDirection,
   getStoredLocale,
@@ -30,6 +32,10 @@ describe('i18n config', () => {
     expect(resolveInitialLocale(['es-MX', 'en-US'])).toBe('es');
     expect(resolveInitialLocale(['pt-BR'])).toBe('pt');
     expect(resolveInitialLocale(['th-TH', 'de-DE'])).toBe('de');
+  });
+
+  it('keeps supported locales and menu options in sync', () => {
+    expect(LOCALE_OPTIONS.map((option) => option.code)).toEqual(SUPPORTED_LOCALES);
   });
 
   it('falls back to english when no locale matches', () => {

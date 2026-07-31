@@ -340,6 +340,7 @@ Divine has an official brand identity. Full guidelines live in `docs/brand/`:
 - **No Tailwind `uppercase` class** in any `className` attribute — brand forbids all-caps copy. Guardrail: `tests/brand/no-uppercase-class.test.ts`. Legal-disclaimer exceptions (UCC § 2-316 conspicuousness) use inline `style={{ textTransform: 'uppercase' }}` instead, with an explanatory comment.
 - **No `bg-gradient-*` or `radial-gradient(` / `linear-gradient(` on layout surfaces.** Decorative illustration components are allowlisted. Guardrail: `tests/brand/no-gradients.test.ts`.
 - **No `lucide-react` imports.** All icons come from `@phosphor-icons/react`. App-wide default weight is `bold` via `<IconContext.Provider>` in `src/main.tsx`. Use `weight="fill"` for active/toggled states (liked heart, reposted, followed, active tab). Guardrail: `tests/brand/no-lucide-react.test.ts`.
+- **Brand-name casing is always `Divine` in shipped text.** The stylized `diVine`/`DiVine` casing belongs only to historical records, negative examples, and source strings. Guardrail: `tests/brand/no-divine-miscasing.test.ts`.
 - **Fonts**: Bricolage Grotesque (display, variable with opsz axis) + Inter Variable (body). Only these two faces. Pacifico and other decorative fonts are out.
 
 ### Brand primitives
