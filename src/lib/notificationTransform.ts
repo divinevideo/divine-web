@@ -16,8 +16,16 @@ import type {
  * `follow`, `zap`, and `list_add`. We render four of them:
  *
  * - `reply` and `comment` are both comments to the reader. The backend splits
- *   them (top-level comment vs threaded reply); the distinction is carried by
- *   `reply_context`, not by a separate row type in the UI.
+ *   them (top-level comment vs threaded reply); the UI deliberately renders one
+ *   row type for both. The response does carry a `reply_context` that could
+ *   distinguish them, but we neither model nor read it today.
+ *
+ * `reaction` maps to `like` unconditionally, which is not strictly true: the
+ * backend emits it for every kind 7, including a like on *your comment* on
+ * someone else's video, and resolves that row's root to the video. Such a row
+ * currently renders "liked your video" over a video that is not yours and joins
+ * that video's like bucket. `target_comment_id` is the signal that would
+ * separate them; how those rows should read is an open product question.
  * - `mention` is the materializer's catch-all for any source kind it does not
  *   recognise, so it has no single truthful verb. Relabelling it as a like put
  *   false statements on screen and inflated like counts, because grouping
@@ -144,9 +152,10 @@ export function transformNotification(raw: RawApiNotification): RawNotification 
     type,
     actorPubkey: raw.source_pubkey,
     timestamp: raw.created_at,
-    // `read` is an integer (0/1) on the wire. Coerce rather than pass through:
-    // RawNotification.isRead is a boolean and grouping copies it straight onto
-    // ActorNotification, so an uncoerced 0 reaches the UI union as a number.
+    // `read` arrives as `true`/`false` from the serializer even though the
+    // schema declares an integer. Coerce rather than pass through: isRead is a
+    // boolean and grouping copies it straight onto ActorNotification, so an
+    // uncoerced value reaches the UI union as whatever the wire happened to say.
     isRead: Boolean(raw.read),
     targetEventId,
     groupingKey: resolveGroupingKey(raw) ?? targetEventId,

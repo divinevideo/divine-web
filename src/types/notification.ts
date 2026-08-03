@@ -77,7 +77,14 @@ export interface RawNotification {
   sourceEventId: string;
   sourceKind: number;
   commentText?: string;
-  /** Comment to scroll to when opening the video's comment sheet. */
+  /**
+   * The comment this notification concerns, when there is one.
+   *
+   * Carried through from `target_comment_id` but not yet consumed: the rows
+   * navigate to the video, and VideoPage has no comment anchor to land on. Kept
+   * because it is the signal that distinguishes a like on your comment from a
+   * like on your video — see the note in `mapNotificationType`.
+   */
   targetCommentId?: string;
   /** Actor profile embedded in the response, when the API supplied one. */
   actorProfile?: EmbeddedActorProfile;
@@ -132,8 +139,14 @@ export interface RawApiNotification {
   source_kind: number;
   notification_type: string;
   created_at: number;
-  /** Integer in the schema: 0 = unread, 1 = read. Not a boolean. */
-  read: number;
+  /**
+   * The schema and the serializer disagree: `components.schemas.Notification`
+   * declares `{"type": "integer", "minimum": 0}`, but the Rust struct carries
+   * `#[serde(serialize_with = "serialize_u8_as_bool")]`, so the wire value is
+   * `true`/`false`. Accept either and let `Boolean()` in the transform settle
+   * it — do not narrow this to one of the two, and do not compare against `1`.
+   */
+  read: number | boolean;
   content?: string | null;
   /** Reaction/repost target, or for kind 1111 the NIP-22 lowercase `e` (parent). */
   referenced_event_id?: string | null;

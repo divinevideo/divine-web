@@ -88,13 +88,17 @@ describe('notificationTransform', () => {
       expect(result!.commentText).toBeUndefined();
     });
 
-    it('coerces the integer read flag to a real boolean', () => {
-      // `read` is an integer in components.schemas.Notification (0/1). Passing
-      // it through leaves ActorNotification.isRead holding a number, which is
-      // only invisible because 0 and 1 happen to be falsy and truthy.
+    it('coerces the read flag to a real boolean whichever shape it arrives in', () => {
+      // The schema declares an integer but the serializer emits a bool, so both
+      // shapes have to land on a boolean. Passing either through leaves
+      // ActorNotification.isRead holding whatever the wire said, which is only
+      // invisible because 0/1 happen to be falsy and truthy.
       expect(transformNotification({ ...raw, read: 1 })!.isRead).toBe(true);
       expect(transformNotification({ ...raw, read: 0 })!.isRead).toBe(false);
+      expect(transformNotification({ ...raw, read: true })!.isRead).toBe(true);
+      expect(transformNotification({ ...raw, read: false })!.isRead).toBe(false);
       expect(typeof transformNotification({ ...raw, read: 1 })!.isRead).toBe('boolean');
+      expect(typeof transformNotification({ ...raw, read: true })!.isRead).toBe('boolean');
     });
 
     it('includes commentText for reply notifications', () => {
