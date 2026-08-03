@@ -29,6 +29,10 @@ function makeRaw(
   };
 }
 
+const HEX_VIDEO_ID = 'a'.repeat(64);
+const VIDEO_D_TAG = 'vine-1712345678-ab12cd3';
+const VIDEO_COORDINATE = `34236:${'f'.repeat(64)}:${VIDEO_D_TAG}`;
+
 function makeActor(pubkey: string, displayName?: string): ActorInfo {
   return { pubkey, displayName: displayName ?? `User ${pubkey.slice(0, 4)}` };
 }
@@ -326,5 +330,82 @@ describe('groupRawNotifications', () => {
     const result = groupRawNotifications(raws, profiles, videos);
     expect(result).toHaveLength(1);
     expect(result[0].kind).toBe('actor');
+  });
+
+  describe('addressable identity', () => {
+    // divine-web publishes reposts with only an `a` tag, so they resolve to a
+    // d-tag; divine-mobile adds an `e` tag, so those resolve to a hex event id.
+    // Both carry the same addressable coordinate.
+    const webRepost = () =>
+      makeRaw({
+        type: 'repost',
+        actorPubkey: 'pk-web',
+        targetEventId: VIDEO_D_TAG,
+        groupingKey: VIDEO_COORDINATE,
+      });
+    const mobileRepost = () =>
+      makeRaw({
+        type: 'repost',
+        actorPubkey: 'pk-mobile',
+        targetEventId: HEX_VIDEO_ID,
+        groupingKey: VIDEO_COORDINATE,
+      });
+
+    it('groups reposts of one video into a single row across differing clients', () => {
+      const result = groupRawNotifications(
+        [webRepost(), mobileRepost()],
+        new Map([
+          ['pk-web', makeActor('pk-web')],
+          ['pk-mobile', makeActor('pk-mobile')],
+        ]),
+        new Map<string, NotificationVideoMeta>(),
+      );
+
+      expect(result).toHaveLength(1);
+      expect((result[0] as VideoNotification).totalCount).toBe(2);
+    });
+
+    it('navigates the grouped row by hex event id rather than the author-chosen d-tag', () => {
+      const result = groupRawNotifications(
+        [webRepost(), mobileRepost()],
+        new Map(),
+        new Map<string, NotificationVideoMeta>(),
+      );
+
+      // The d-tag row is newer, but a d-tag resolves globally in the API and can
+      // land on another author's video, so the unambiguous id wins.
+      expect((result[0] as VideoNotification).videoEventId).toBe(HEX_VIDEO_ID);
+    });
+
+    it('still separates genuinely different videos that share a type', () => {
+      const other = makeRaw({
+        type: 'repost',
+        actorPubkey: 'pk-other',
+        targetEventId: 'b'.repeat(64),
+        groupingKey: `34236:${'e'.repeat(64)}:another-vine`,
+      });
+
+      const result = groupRawNotifications(
+        [webRepost(), other],
+        new Map(),
+        new Map<string, NotificationVideoMeta>(),
+      );
+
+      expect(result).toHaveLength(2);
+    });
+
+    it('falls back to targetEventId when the API supplied no coordinate', () => {
+      const result = groupRawNotifications(
+        [
+          makeRaw({ type: 'like', actorPubkey: 'pk1', targetEventId: HEX_VIDEO_ID }),
+          makeRaw({ type: 'like', actorPubkey: 'pk2', targetEventId: HEX_VIDEO_ID }),
+        ],
+        new Map(),
+        new Map<string, NotificationVideoMeta>(),
+      );
+
+      expect(result).toHaveLength(1);
+      expect((result[0] as VideoNotification).totalCount).toBe(2);
+    });
   });
 });

@@ -65,6 +65,15 @@ export interface RawNotification {
   timestamp: number;
   isRead: boolean;
   targetEventId?: string;
+  /**
+   * Stable identity of the target for grouping purposes.
+   *
+   * `targetEventId` is whatever the app can *resolve* — a hex event id for some
+   * rows and a d-tag for others, depending on how the reposting client tagged
+   * the event. Bucketing on it splits one video across two rows. The addressable
+   * coordinate is the same for both shapes, so it is what identity keys off.
+   */
+  groupingKey?: string;
   sourceEventId: string;
   sourceKind: number;
   commentText?: string;

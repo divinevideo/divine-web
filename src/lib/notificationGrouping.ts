@@ -10,6 +10,9 @@ import type {
   VideoNotification,
 } from '@/types/notification';
 
+/** A bare 64-char hex event id, as opposed to an author-chosen d-tag. */
+const HEX_EVENT_ID = /^[0-9a-f]{64}$/i;
+
 export interface NotificationVideoMeta {
   title?: string;
   thumbnailUrl?: string;
@@ -19,7 +22,10 @@ export interface NotificationVideoMeta {
  * Group a flat list of RawNotifications into VideoNotification | ActorNotification rows.
  *
  * Rules:
- *  - Non-follow rows are bucketed by `${targetEventId}::${type}`.
+ *  - Non-follow rows are bucketed by `${groupingKey}::${type}`, where groupingKey
+ *    is the addressable coordinate when the API supplied one. Bucketing on the
+ *    resolvable id instead splits one video across two rows when different
+ *    clients tag their reposts differently.
  *  - Each bucket is sorted newest-first before deriving fields.
  *  - id         = newest raw id in the bucket (bucket[0].id after sort).
  *  - rawIds     = all raw ids newest-first.
@@ -49,7 +55,7 @@ export function groupRawNotifications(
       continue;
     }
 
-    const key = `${row.targetEventId}::${row.type}`;
+    const key = `${row.groupingKey ?? row.targetEventId}::${row.type}`;
     const bucket = buckets.get(key);
     if (bucket) {
       bucket.push(row);
@@ -65,7 +71,12 @@ export function groupRawNotifications(
     bucket.sort((a, b) => b.timestamp - a.timestamp);
 
     const newestRow = bucket[0];
-    const targetEventId = newestRow.targetEventId!;
+    // Rows in one bucket can carry different resolvable identifiers. Prefer a
+    // hex event id when any row has one: it identifies a single event, whereas
+    // a d-tag is author-chosen and `/api/videos/{d-tag}` resolves it globally.
+    const targetEventId =
+      bucket.find((r) => r.targetEventId && HEX_EVENT_ID.test(r.targetEventId))?.targetEventId ??
+      newestRow.targetEventId!;
     const type = newestRow.type as 'like' | 'comment' | 'repost';
 
     // Collect unique actor pubkeys newest-first

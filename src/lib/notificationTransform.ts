@@ -81,6 +81,23 @@ function resolveTargetEventId(raw: RawApiNotification): string | undefined {
   );
 }
 
+/**
+ * Resolve the identity used to group rows about the same video.
+ *
+ * `resolveTargetEventId` answers "what can we fetch and navigate to", and its
+ * answer legitimately differs per row: divine-web publishes reposts with only an
+ * `a` tag, so those resolve to a d-tag, while divine-mobile adds an `e` tag and
+ * those resolve to a hex event id. Keying buckets on that value splits a single
+ * video into two rows the moment it is reposted from both clients.
+ *
+ * `root_addressable_id` is derived from the `a` tag (or the resolved event) in
+ * both shapes, so it is identical across them and is the stable identity. It is
+ * deliberately *not* used for fetching — see `toResolvableIdentifier`.
+ */
+function resolveGroupingKey(raw: RawApiNotification): string | undefined {
+  return raw.root_addressable_id || undefined;
+}
+
 function resolveActorProfile(raw: RawApiNotification): RawNotification['actorProfile'] {
   const profile = raw.source_profile;
   if (!profile) return undefined;
@@ -132,6 +149,7 @@ export function transformNotification(raw: RawApiNotification): RawNotification 
     // ActorNotification, so an uncoerced 0 reaches the UI union as a number.
     isRead: Boolean(raw.read),
     targetEventId,
+    groupingKey: resolveGroupingKey(raw) ?? targetEventId,
     sourceEventId: raw.source_event_id,
     sourceKind: raw.source_kind,
     commentText:
