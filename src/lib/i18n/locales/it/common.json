@@ -446,6 +446,7 @@
     "myProfile": "Il mio profilo",
     "settings": "Impostazioni",
     "linkedAccounts": "Account collegati",
+    "relays": "Relays",
     "switchRelay": "Cambia relay",
     "switchAccount": "Cambia account",
     "addAnotherAccount": "Aggiungi un altro account",
@@ -1140,7 +1141,7 @@
   "trendingPage": {
     "heading": "Di tendenza",
     "subheading": "Scopri cosa va forte nella community",
-    "rssTitle": "DiVine - Di tendenza",
+    "rssTitle": "Divine - Di tendenza",
     "rssLink": "RSS"
   },
   "merchPage": {
@@ -1400,12 +1401,12 @@
     "joinWaitlist": "Niente invito? Mettiti in lista d'attesa."
   },
   "invitesLandingPage": {
-    "seoTitle": "Unisciti a diVine con il codice invito {{code}}",
-    "seoTitleDefault": "Unisciti a diVine",
-    "seoDescription": "Hai ricevuto un invito! Usa il codice {{code}} per unirti a diVine.",
-    "seoDescriptionDefault": "Usa il tuo codice invito per unirti a diVine e iniziare a condividere video.",
+    "seoTitle": "Unisciti a Divine con il codice invito {{code}}",
+    "seoTitleDefault": "Unisciti a Divine",
+    "seoDescription": "Hai ricevuto un invito! Usa il codice {{code}} per unirti a Divine.",
+    "seoDescriptionDefault": "Usa il tuo codice invito per unirti a Divine e iniziare a condividere video.",
     "heading": "Sei invitato!",
-    "subheading": "Inserisci il tuo codice invito per unirti a diVine",
+    "subheading": "Inserisci il tuo codice invito per unirti a Divine",
     "alreadyHaveAccount": "Hai già un account?",
     "signIn": "Accedi"
   },

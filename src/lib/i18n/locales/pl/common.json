@@ -446,6 +446,7 @@
     "myProfile": "Mój profil",
     "settings": "Ustawienia",
     "linkedAccounts": "Połączone konta",
+    "relays": "Relays",
     "switchRelay": "Zmień relay",
     "switchAccount": "Zmień konto",
     "addAnotherAccount": "Dodaj kolejne konto",
@@ -1140,7 +1141,7 @@
   "trendingPage": {
     "heading": "Na czasie",
     "subheading": "Sprawdź, co jest popularne w społeczności",
-    "rssTitle": "DiVine - Na czasie",
+    "rssTitle": "Divine - Na czasie",
     "rssLink": "RSS"
   },
   "merchPage": {
@@ -1400,12 +1401,12 @@
     "joinWaitlist": "Nie masz zaproszenia? Zapisz się na listę oczekujących."
   },
   "invitesLandingPage": {
-    "seoTitle": "Dołącz do diVine z kodem zaproszenia {{code}}",
-    "seoTitleDefault": "Dołącz do diVine",
-    "seoDescription": "Masz zaproszenie! Użyj kodu {{code}}, aby dołączyć do diVine.",
-    "seoDescriptionDefault": "Użyj kodu zaproszenia, aby dołączyć do diVine i zacząć udostępniać wideo.",
+    "seoTitle": "Dołącz do Divine z kodem zaproszenia {{code}}",
+    "seoTitleDefault": "Dołącz do Divine",
+    "seoDescription": "Masz zaproszenie! Użyj kodu {{code}}, aby dołączyć do Divine.",
+    "seoDescriptionDefault": "Użyj kodu zaproszenia, aby dołączyć do Divine i zacząć udostępniać wideo.",
     "heading": "Masz zaproszenie!",
-    "subheading": "Wpisz kod zaproszenia, aby dołączyć do diVine",
+    "subheading": "Wpisz kod zaproszenia, aby dołączyć do Divine",
     "alreadyHaveAccount": "Masz już konto?",
     "signIn": "Zaloguj się"
   },

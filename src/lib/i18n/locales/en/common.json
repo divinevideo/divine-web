@@ -446,6 +446,7 @@
     "myProfile": "My Profile",
     "settings": "Settings",
     "linkedAccounts": "Linked Accounts",
+    "relays": "Relays",
     "switchRelay": "Switch Relay",
     "switchAccount": "Switch Account",
     "addAnotherAccount": "Add another account",
@@ -1140,7 +1141,7 @@
   "trendingPage": {
     "heading": "Trending",
     "subheading": "Discover what's popular in the community",
-    "rssTitle": "DiVine - Trending",
+    "rssTitle": "Divine - Trending",
     "rssLink": "RSS"
   },
   "merchPage": {
@@ -1400,12 +1401,12 @@
     "joinWaitlist": "No invite? Get on the waitlist."
   },
   "invitesLandingPage": {
-    "seoTitle": "Join diVine with invite code {{code}}",
-    "seoTitleDefault": "Join diVine",
-    "seoDescription": "You've been invited! Use invite code {{code}} to join diVine.",
-    "seoDescriptionDefault": "Use your invite code to join diVine and start sharing video.",
+    "seoTitle": "Join Divine with invite code {{code}}",
+    "seoTitleDefault": "Join Divine",
+    "seoDescription": "You've been invited! Use invite code {{code}} to join Divine.",
+    "seoDescriptionDefault": "Use your invite code to join Divine and start sharing video.",
     "heading": "You're Invited!",
-    "subheading": "Enter your invite code to join diVine",
+    "subheading": "Enter your invite code to join Divine",
     "alreadyHaveAccount": "Already have an account?",
     "signIn": "Sign in"
   },

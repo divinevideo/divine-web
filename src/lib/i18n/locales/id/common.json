@@ -446,6 +446,7 @@
     "myProfile": "Profil Saya",
     "settings": "Pengaturan",
     "linkedAccounts": "Akun Tertaut",
+    "relays": "Relays",
     "switchRelay": "Ganti Relay",
     "switchAccount": "Ganti Akun",
     "addAnotherAccount": "Tambah akun lain",
@@ -1140,7 +1141,7 @@
   "trendingPage": {
     "heading": "Trending",
     "subheading": "Temukan apa yang lagi populer di komunitas",
-    "rssTitle": "DiVine - Trending",
+    "rssTitle": "Divine - Trending",
     "rssLink": "RSS"
   },
   "merchPage": {
@@ -1400,12 +1401,12 @@
     "joinWaitlist": "Belum punya undangan? Masuk waitlist."
   },
   "invitesLandingPage": {
-    "seoTitle": "Gabung diVine dengan kode invite {{code}}",
-    "seoTitleDefault": "Gabung diVine",
-    "seoDescription": "Kamu diundang! Gunakan kode {{code}} untuk bergabung ke diVine.",
-    "seoDescriptionDefault": "Gunakan kode invite kamu untuk bergabung ke diVine dan mulai berbagi video.",
+    "seoTitle": "Gabung Divine dengan kode invite {{code}}",
+    "seoTitleDefault": "Gabung Divine",
+    "seoDescription": "Kamu diundang! Gunakan kode {{code}} untuk bergabung ke Divine.",
+    "seoDescriptionDefault": "Gunakan kode invite kamu untuk bergabung ke Divine dan mulai berbagi video.",
     "heading": "Kamu Diundang!",
-    "subheading": "Masukkan kode invite kamu untuk bergabung ke diVine",
+    "subheading": "Masukkan kode invite kamu untuk bergabung ke Divine",
     "alreadyHaveAccount": "Sudah punya akun?",
     "signIn": "Masuk"
   },

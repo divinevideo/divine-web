@@ -7,8 +7,8 @@ describe('public llms.txt', () => {
   const llmsTxt = readFileSync(join(process.cwd(), 'public/llms.txt'), 'utf8');
 
   it('describes divine.video for end-user agents', () => {
-    expect(llmsTxt).toMatch(/^# diVine$/m);
-    expect(llmsTxt).toMatch(/^# diVine\n\n> diVine is/m);
+    expect(llmsTxt).toMatch(/^# Divine$/m);
+    expect(llmsTxt).toMatch(/^# Divine\n\n> Divine is/m);
     expect(llmsTxt).toContain('human-made, decentralized short-form video');
     expect(llmsTxt).toContain('not for generating or posting AI-made videos');
   });

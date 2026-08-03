@@ -51,6 +51,8 @@ const defaultConfig: AppConfig = {
   relayUrls: resolveRelayUrls([
     'wss://relay.divine.video',
   ]),
+  customRelayUrls: [],
+  disabledPresetUrls: [],
 };
 
 const presetRelays = toLegacyFormat(PRESET_RELAYS);

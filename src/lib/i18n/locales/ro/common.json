@@ -446,6 +446,7 @@
     "myProfile": "Profilul meu",
     "settings": "Setări",
     "linkedAccounts": "Conturi conectate",
+    "relays": "Relays",
     "switchRelay": "Schimbă releul",
     "switchAccount": "Schimbă contul",
     "addAnotherAccount": "Adaugă alt cont",
@@ -1140,7 +1141,7 @@
   "trendingPage": {
     "heading": "În tendințe",
     "subheading": "Descoperă ce e popular în comunitate",
-    "rssTitle": "DiVine - În tendințe",
+    "rssTitle": "Divine - În tendințe",
     "rssLink": "RSS"
   },
   "merchPage": {
@@ -1400,12 +1401,12 @@
     "joinWaitlist": "N-ai invitație? Înscrie-te pe lista de așteptare."
   },
   "invitesLandingPage": {
-    "seoTitle": "Alătură-te diVine cu codul de invitație {{code}}",
-    "seoTitleDefault": "Alătură-te diVine",
-    "seoDescription": "Ai fost invitat! Folosește codul {{code}} ca să te alături diVine.",
-    "seoDescriptionDefault": "Folosește codul tău de invitație ca să te alături diVine și să începi să distribui video.",
+    "seoTitle": "Alătură-te Divine cu codul de invitație {{code}}",
+    "seoTitleDefault": "Alătură-te Divine",
+    "seoDescription": "Ai fost invitat! Folosește codul {{code}} ca să te alături Divine.",
+    "seoDescriptionDefault": "Folosește codul tău de invitație ca să te alături Divine și să începi să distribui video.",
     "heading": "Ești invitat!",
-    "subheading": "Introdu codul de invitație ca să te alături diVine",
+    "subheading": "Introdu codul de invitație ca să te alături Divine",
     "alreadyHaveAccount": "Ai deja un cont?",
     "signIn": "Conectează-te"
   },
