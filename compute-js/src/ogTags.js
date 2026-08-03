@@ -23,13 +23,6 @@ export function escapeFeedJson(value) {
     .replace(/\u2029/g, "\\u2029");
 }
 
-// The injected profile object carries user-controlled Nostr fields (displayName,
-// about, picture, ...), so it must go through escapeFeedJson, never raw
-// JSON.stringify.
-export function buildUserScript(divineUser) {
-  return `<script>window.__DIVINE_USER__ = ${escapeFeedJson(divineUser)};</script>`;
-}
-
 export function cleanText(value) {
   return (value || '').replace(/\s+/g, ' ').trim();
 }

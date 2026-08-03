@@ -47,6 +47,10 @@ function buildUrl(baseUrl: string, endpoint: string, params: Record<string, stri
   return url.toString();
 }
 
+function isAbortRequestError(err: unknown): boolean {
+  return !!err && typeof err === 'object' && (err as { name?: unknown }).name === 'AbortError';
+}
+
 /**
  * Make a Funnelcake API request with error handling
  */
@@ -92,7 +96,7 @@ async function funnelcakeRequest<T>(
   } catch (err) {
     // Aborted requests (e.g. user typing fast in search) are not backend failures —
     // don't let them trip the circuit breaker (fixes #167)
-    if (err instanceof DOMException && err.name === 'AbortError') {
+    if (isAbortRequestError(err)) {
       debugLog(`[FunnelcakeClient] Request aborted (not a failure): ${endpoint}`);
       throw err;
     }
@@ -813,7 +817,11 @@ export async function fetchVideoById(
           tags: event.tags,
         };
       }
-    } catch {
+    } catch (err) {
+      if (isAbortRequestError(err)) {
+        throw err;
+      }
+
       debugLog(`[FunnelcakeClient] Direct lookup failed, trying fallbacks`);
     }
 
@@ -837,6 +845,10 @@ export async function fetchVideoById(
     debugLog(`[FunnelcakeClient] Video not found: ${identifier}`);
     return null;
   } catch (err) {
+    if (isAbortRequestError(err)) {
+      throw err;
+    }
+
     debugError(`[FunnelcakeClient] fetchVideoById error:`, err);
     return null;
   }
@@ -928,6 +940,10 @@ export async function fetchUserLoopStats(
       videos_with_views: entry.videos_with_views || 0,
     };
   } catch (err) {
+    if (isAbortRequestError(err)) {
+      throw err;
+    }
+
     debugLog(`[FunnelcakeClient] fetchUserLoopStats failed:`, err);
     return null;
   }
@@ -1030,6 +1046,10 @@ export async function fetchUserProfile(
     debugLog(`[FunnelcakeClient] Got profile:`, profile);
     return profile;
   } catch (err) {
+    if (isAbortRequestError(err)) {
+      throw err;
+    }
+
     debugLog(`[FunnelcakeClient] Profile fetch failed:`, err);
     return null;
   }
@@ -1134,6 +1154,10 @@ export async function fetchBulkUsers(
       missing: data.missing || [],
     };
   } catch (err) {
+    if (isAbortRequestError(err)) {
+      throw err;
+    }
+
     if (err instanceof FunnelcakeApiError) {
       throw err;
     }
@@ -1211,6 +1235,10 @@ export async function fetchBulkVideoStats(
       missing: data.missing || [],
     };
   } catch (err) {
+    if (isAbortRequestError(err)) {
+      throw err;
+    }
+
     if (err instanceof FunnelcakeApiError) {
       throw err;
     }

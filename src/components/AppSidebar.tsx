@@ -75,7 +75,12 @@ export function AppSidebar({ className }: { className?: string }) {
   const [appStoreUrl, setAppStoreUrl] = useState<string | null>(null);
   const { data: categories } = useCategories();
 
-  const isActive = (path: string) => location.pathname === path;
+  // Prerendered routes are served from a directory (dist/services/index.html),
+  // and Cloudflare Pages 308-redirects /services to /services/. Match the
+  // trailing-slash form too so a direct hit highlights the same nav item that
+  // an in-app navigation does.
+  const isActive = (path: string) =>
+    location.pathname === path || location.pathname === `${path}/`;
   const isDiscoveryActive = () =>
     location.pathname === '/discovery' || location.pathname.startsWith('/discovery/');
   const isPopularActive = () => location.pathname === '/popular';
@@ -199,6 +204,13 @@ export function AppSidebar({ className }: { className?: string }) {
             label={t('nav.popular')}
             onClick={() => navigate('/popular')}
             isActive={isPopularActive()}
+          />
+
+          <NavItem
+            icon={<LayoutGrid className="h-[18px] w-[18px]" weight={isActive('/services') ? 'fill' : 'bold'} />}
+            label={t('nav.services')}
+            onClick={() => navigate('/services')}
+            isActive={isActive('/services')}
           />
 
           {user && canUseDirectMessages && (
@@ -463,6 +475,12 @@ export function AppSidebar({ className }: { className?: string }) {
               >
                 {t('menu.mediaResources')}
               </a>
+              <Link
+                to="/services"
+                className="transition-colors hover:text-primary"
+              >
+                {t('nav.services')}
+              </Link>
               <Link
                 to="/merch"
                 className="transition-colors hover:text-primary"

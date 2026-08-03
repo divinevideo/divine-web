@@ -8,6 +8,7 @@
     "home": "Acasa",
     "discover": "Descopera",
     "popular": "Popular",
+    "services": "Services",
     "search": "Cauta",
     "messages": "Mesaje",
     "notifications": "Notificari",
@@ -133,6 +134,19 @@
     "communityDescription": "Alatura-te discutiilor comunitatii si conecteaza-te cu alti utilizatori Divine pe Nostr.",
     "communityBody": "Divine este construit pe Nostr, un protocol social descentralizat. Gaseste-ne in clientul tau Nostr preferat."
   },
+  "servicesPage": {
+    "title": "Divine services",
+    "intro": "Divine is more than loops. These services help you make the most of it.",
+    "openService": "Open {{name}}",
+    "items": {
+      "space": "Your profile, your rules. Themes, Top 8, profile music.",
+      "sounds": "Trending sounds and a Creative Commons library for your loops.",
+      "badges": "Awards for creators who show up.",
+      "crossposter": "Post your loops to the other platforms — only when you opt in.",
+      "verifier": "Check where a video really came from.",
+      "status": "Is it us or is it you? Check here."
+    }
+  },
   "tagPage": {
     "notFoundTitle": "Eticheta nu a fost gasita",
     "notFoundDescription": "Eticheta solicitata nu a putut fi gasita.",
@@ -145,8 +159,11 @@
     "emptyState": "Nu exista categorii disponibile acum.",
     "metaTitle": "Rasfoieste categoriile - Divine",
     "metaDescription": "Exploreaza categoriile video de pe Divine - comedie, muzica, dans, animale, sport, mancare si multe altele.",
+    "videoCount_zero": "{{count}} videos",
     "videoCount_one": "{{count}} videoclip",
+    "videoCount_two": "{{count}} videos",
     "videoCount_few": "{{count}} videoclipuri",
+    "videoCount_many": "{{count}} videos",
     "videoCount_other": "{{count}} de videoclipuri"
   },
   "vineBadge": {
@@ -1143,7 +1160,7 @@
   "trendingPage": {
     "heading": "În tendințe",
     "subheading": "Descoperă ce e popular în comunitate",
-    "rssTitle": "DiVine - În tendințe",
+    "rssTitle": "Divine - În tendințe",
     "rssLink": "RSS"
   },
   "merchPage": {
@@ -1404,12 +1421,12 @@
     "joinWaitlist": "N-ai invitație? Înscrie-te pe lista de așteptare."
   },
   "invitesLandingPage": {
-    "seoTitle": "Alătură-te diVine cu codul de invitație {{code}}",
-    "seoTitleDefault": "Alătură-te diVine",
-    "seoDescription": "Ai fost invitat! Folosește codul {{code}} ca să te alături diVine.",
-    "seoDescriptionDefault": "Folosește codul tău de invitație ca să te alături diVine și să începi să distribui video.",
+    "seoTitle": "Alătură-te Divine cu codul de invitație {{code}}",
+    "seoTitleDefault": "Alătură-te Divine",
+    "seoDescription": "Ai fost invitat! Folosește codul {{code}} ca să te alături Divine.",
+    "seoDescriptionDefault": "Folosește codul tău de invitație ca să te alături Divine și să începi să distribui video.",
     "heading": "Ești invitat!",
-    "subheading": "Introdu codul de invitație ca să te alături diVine",
+    "subheading": "Introdu codul de invitație ca să te alături Divine",
     "alreadyHaveAccount": "Ai deja un cont?",
     "signIn": "Conectează-te"
   },

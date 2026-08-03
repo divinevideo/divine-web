@@ -97,7 +97,7 @@ and React bindings. `@divinevideo/login` handles authentication.
 `@tanstack/react-query` manages server state. `react-router-dom` handles
 client-side routing. `@radix-ui/*` provides headless UI primitives.
 `react-hook-form`, `@hookform/resolvers`, and `zod` handle forms and
-validation. `i18next` and `react-i18next` power internationalization across 16
+validation. `i18next` and `react-i18next` power internationalization across 20
 locales. `@fontsource-variable/inter` supplies typography.
 `@phosphor-icons/react` is the icon library (migrated from lucide-react).
 `hls.js` handles HLS video playback. `@sentry/react` tracks errors.

@@ -24,7 +24,8 @@ vi.mock('@/lib/debug', () => ({
   debugLog: vi.fn(),
 }));
 
-vi.mock('@/lib/funnelcakeFallbackReporting', () => ({
+vi.mock('@/lib/funnelcakeFallbackReporting', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/funnelcakeFallbackReporting')>()),
   reportFunnelcakeFallback: mockReportFunnelcakeFallback,
 }));
 
@@ -143,6 +144,25 @@ describe('useSearchUsers', () => {
     expect(mockSearchProfiles).not.toHaveBeenCalled();
     expect(mockNostrQuery).not.toHaveBeenCalled();
     expect(result.current.data).toEqual([]);
+  });
+
+  it('rethrows AbortError from cancelled queries without reporting or falling back', async () => {
+    mockSearchProfiles.mockRejectedValue(
+      new DOMException('signal is aborted without reason', 'AbortError'),
+    );
+
+    const { result } = renderHook(
+      () => useSearchUsers({ query: 'jack', limit: 20 }),
+      { wrapper: createWrapper() }
+    );
+
+    await waitFor(() => {
+      expect(result.current.isError).toBe(true);
+    }, { timeout: 3000 });
+
+    expect(mockReportFunnelcakeFallback).not.toHaveBeenCalled();
+    expect(mockNostrQuery).not.toHaveBeenCalled();
+    expect(result.current.error?.name).toBe('AbortError');
   });
 
   it('skips Funnelcake entirely when the circuit breaker marks it unavailable', async () => {

@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { API_CONFIG } from '@/config/api';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { isFunnelcakeAvailable } from '@/lib/funnelcakeHealth';
+import { reportFunnelcakeFallback } from '@/lib/funnelcakeFallbackReporting';
 import {
   fetchUserProfile,
   fetchCreatorAnalytics,
@@ -53,6 +54,19 @@ export function useCreatorAnalytics(
         fetchCreatorAnalytics(apiUrl, pubkey, signer, { window, signal }),
         fetchUserProfile(apiUrl, pubkey, signal),
       ]);
+
+      // fetchUserProfile swallows request errors and returns null, and the
+      // Sentry filter drops the raw /api/users/{pubkey} HTTP event; report
+      // here so this failure keeps a single signal (#467)
+      if (!profile) {
+        reportFunnelcakeFallback({
+          source: 'useCreatorAnalytics',
+          apiUrl,
+          reason: 'REST returned no profile',
+          dedupeKey: `useCreatorAnalytics:${pubkey}:no-profile`,
+          context: { pubkey },
+        });
+      }
 
       debugLog(
         `[useCreatorAnalytics] Got analytics: ${analytics.summary.video_count ?? 0} videos, ${analytics.top_posts.length} top posts`,

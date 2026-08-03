@@ -53,6 +53,7 @@ import { AgeReviewPage } from "./pages/AgeReviewPage";
 import { KidsPolicyPage } from "./pages/KidsPolicyPage";
 import { Support } from "./pages/Support";
 import { FAQPage } from "./pages/FAQPage";
+import { ServicesPage } from "./pages/ServicesPage";
 import MerchPage from "./pages/MerchPage";
 import { TermsPage } from "./pages/TermsPage";
 import GetEmbedPage from "./pages/GetEmbedPage";
@@ -114,6 +115,7 @@ export function AppRouter() {
       <Route path="/search" element={<SearchPage />} />
       <Route path="/leaderboard" element={<LeaderboardPage />} />
       <Route path="/merch" element={<MerchPage />} />
+      <Route path="/services" element={<ServicesPage />} />
       <Route path="/u/:userId" element={<UniversalUserPage />} />
       <Route path="/list/:pubkey/:listId" element={<ListDetailPage />} />
       <Route path="/people-lists/:pubkey/:listId" element={<PeopleListDetailPage />} />
