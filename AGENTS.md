@@ -5,11 +5,16 @@ divine-web. Claude Code reads it via the `@AGENTS.md` import in `CLAUDE.md`.
 
 ## Divine Context And Brain
 
-Before broad product, architecture, protocol, cross-repo, or service-boundary work, read the shared Divine context primer.
+Before broad product, architecture, protocol, cross-repo, service-boundary, or pull-request authoring, review, or modification work, read the shared Divine context primer.
 
-Use `DIVINE_CONTEXT_ROOT` if set; otherwise look for `../divine-context`. If it is missing, try:
+Resolve the context directory and clone it there if it is missing:
 
-`gh repo clone divinevideo/divine-context ../divine-context`
+```bash
+CONTEXT_DIR="${DIVINE_CONTEXT_ROOT:-../divine-context}"
+[ -e "$CONTEXT_DIR/.git" ] || gh repo clone divinevideo/divine-context "$CONTEXT_DIR"
+```
+
+Use that value as `<context-dir>` below.
 
 The `divine-context` repo is private, so cloning requires GitHub access. If clone, network, or auth fails, continue from the local repo docs and avoid cross-repo assumptions.
 
@@ -17,8 +22,9 @@ Before updating an existing context checkout, verify it is clean and on its defa
 
 Read `<context-dir>/AGENT_CONTEXT.md` and follow its instructions. If unavailable, continue from the local repo docs and avoid cross-repo assumptions.
 
-If a Divine Brain search or ask tool is available, you may use it for company memory. Treat it as optional and credentialed: tool names vary by client, and work must continue when Brain is unavailable. When Brain results influence work, cite the returned document ids. Never commit Brain credentials or expose Brain-derived sensitive content in public PRs, issues, branch names, commit messages, code comments, logs, screenshots, release notes, or externally shared agent transcripts.
+Before working on a pull request, follow `<context-dir>/PR_REVIEW.md` and use `<context-dir>/PR_REVIEW_TEAMS.md` to request the normal team and check takeover authority. Ordinary review remains open to any eligible Divine human. Before modifying a pull-request branch, enforce the mapping and every takeover gate; if the mapping cannot be read, feedback-only review may continue but automated takeover must stop. Request and verify required human review automatically when tooling permits. If the runbook is unavailable, leave the pull request open and report the blocker.
 
+If a Divine Brain search or ask tool is available, you may use it for company memory. Treat it as optional and credentialed: tool names vary by client, and work must continue when Brain is unavailable. When Brain results influence work, cite the returned document ids. Never commit Brain credentials or expose Brain-derived sensitive content in public PRs, issues, branch names, commit messages, code comments, logs, screenshots, release notes, or externally shared agent transcripts.
 ## Read First
 
 - `CONTRIBUTING.md`: PR rules, testing expectations, scope discipline.
@@ -29,7 +35,7 @@ If a Divine Brain search or ask tool is available, you may use it for company me
 
 ## Project Overview
 
-**diVine** is a decentralized short-form video platform built on the Nostr protocol. Think "TikTok on Nostr" with 6-second looping videos (inspired by Vine). The codebase is a React 18.x SPA using Vite, TailwindCSS, shadcn/ui, and TanStack Query.
+**Divine** is a decentralized short-form video platform built on the Nostr protocol. Think "TikTok on Nostr" with 6-second looping videos (inspired by Vine). The codebase is a React 18.x SPA using Vite, TailwindCSS, shadcn/ui, and TanStack Query.
 
 ### Key Goals
 - Fast, responsive video feeds with instant loading
@@ -334,6 +340,7 @@ Divine has an official brand identity. Full guidelines live in `docs/brand/`:
 - **No Tailwind `uppercase` class** in any `className` attribute — brand forbids all-caps copy. Guardrail: `tests/brand/no-uppercase-class.test.ts`. Legal-disclaimer exceptions (UCC § 2-316 conspicuousness) use inline `style={{ textTransform: 'uppercase' }}` instead, with an explanatory comment.
 - **No `bg-gradient-*` or `radial-gradient(` / `linear-gradient(` on layout surfaces.** Decorative illustration components are allowlisted. Guardrail: `tests/brand/no-gradients.test.ts`.
 - **No `lucide-react` imports.** All icons come from `@phosphor-icons/react`. App-wide default weight is `bold` via `<IconContext.Provider>` in `src/main.tsx`. Use `weight="fill"` for active/toggled states (liked heart, reposted, followed, active tab). Guardrail: `tests/brand/no-lucide-react.test.ts`.
+- **Brand-name casing is always `Divine` in shipped text.** The stylized `diVine`/`DiVine` casing belongs only to historical records, negative examples, and source strings. Guardrail: `tests/brand/no-divine-miscasing.test.ts`.
 - **Fonts**: Bricolage Grotesque (display, variable with opsz axis) + Inter Variable (body). Only these two faces. Pacifico and other decorative fonts are out.
 
 ### Brand primitives

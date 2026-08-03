@@ -124,6 +124,19 @@ describe('useVideoLists hooks', () => {
       expect(lists.map((l) => l.id)).toEqual(['l2', 'my-list']);
     });
 
+    it('collapses duplicate relay versions of the same addressable list', async () => {
+      const { useVideoLists } = await import('./useVideoLists');
+      mockNostrQuery.mockResolvedValue([
+        listEvent({ created_at: 100, tags: [['d', 'same'], ['title', 'Old']] }),
+        listEvent({ created_at: 300, tags: [['d', 'same'], ['title', 'New']] }),
+      ]);
+
+      const { result } = renderHook(() => useVideoLists(TEST_PUBKEY), { wrapper: createWrapper() });
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+      expect(result.current.data?.map((list) => list.name)).toEqual(['New']);
+    });
+
     it('uses current user pubkey in filter when hook arg is omitted', async () => {
       const { useVideoLists } = await import('./useVideoLists');
       mockNostrQuery.mockResolvedValue([listEvent()]);
@@ -157,7 +170,7 @@ describe('useVideoLists hooks', () => {
   });
 
   describe('useVideosInLists', () => {
-    it('uses #a filter and is disabled without videoId', async () => {
+    it('queries public video lists without unsupported wildcards and filters locally', async () => {
       const { useVideosInLists } = await import('./useVideoLists');
 
       const { result: disabled } = renderHook(() => useVideosInLists(undefined), {
@@ -165,7 +178,22 @@ describe('useVideoLists hooks', () => {
       });
       expect(disabled.current.fetchStatus).toBe('idle');
 
-      mockNostrQuery.mockResolvedValue([]);
+      mockNostrQuery.mockResolvedValue([
+        listEvent({
+          tags: [
+            ['d', 'matching'],
+            ['title', 'Matching'],
+            ['a', `34236:${'b'.repeat(64)}:my-dtag`],
+          ],
+        }),
+        listEvent({
+          tags: [
+            ['d', 'other'],
+            ['title', 'Other'],
+            ['a', `34236:${'b'.repeat(64)}:other-dtag`],
+          ],
+        }),
+      ]);
       const { result } = renderHook(() => useVideosInLists('my-dtag'), { wrapper: createWrapper() });
 
       await waitFor(() => expect(result.current.isFetched).toBe(true));
@@ -174,12 +202,13 @@ describe('useVideoLists hooks', () => {
         [
           expect.objectContaining({
             kinds: [30005],
-            '#a': [`${SHORT_VIDEO_KIND}:*:my-dtag`],
             limit: 100,
           }),
         ],
         expect.any(Object)
       );
+      expect(mockNostrQuery.mock.calls[0][0][0]).not.toHaveProperty('#a');
+      expect(result.current.data?.map((list) => list.id)).toEqual(['matching']);
     });
   });
 
@@ -465,7 +494,7 @@ describe('useVideoLists hooks', () => {
   });
 
   describe('useDeleteVideoList', () => {
-    it('publishes kind 5 deletion with addressable a tag', async () => {
+    it('publishes kind 5 deletion with addressable a tag and deleted kind tag', async () => {
       const { useDeleteVideoList } = await import('./useVideoLists');
       const { result } = renderHook(() => useDeleteVideoList(), { wrapper: createWrapper() });
 
@@ -474,7 +503,10 @@ describe('useVideoLists hooks', () => {
       expect(mockPublishAsync).toHaveBeenCalledWith({
         kind: 5,
         content: 'List deleted by owner',
-        tags: [['a', `30005:${TEST_PUBKEY}:to-delete`]],
+        tags: [
+          ['a', `30005:${TEST_PUBKEY}:to-delete`],
+          ['k', '30005'],
+        ],
       });
     });
 

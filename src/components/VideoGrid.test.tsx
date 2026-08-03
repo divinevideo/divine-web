@@ -229,6 +229,23 @@ describe('VideoGrid native link navigation', () => {
     expect(href).toContain('index=0');
   });
 
+  it('preserves people-list navigation context in tile links', () => {
+    const owner = 'a'.repeat(64);
+    renderGrid(
+      <VideoGrid
+        videos={[makeVideo({ id: 'ctx-video' })]}
+        navigationContext={{ source: 'people-list', pubkey: owner, listId: 'friends' }}
+      />
+    );
+
+    const href = screen.getByRole('link').getAttribute('href') ?? '';
+    expect(href).toContain('/video/ctx-video');
+    expect(href).toContain('source=people-list');
+    expect(href).toContain(`pubkey=${owner}`);
+    expect(href).toContain('listId=friends');
+    expect(href).toContain('index=0');
+  });
+
   it('does not render a link for age-gated tiles', () => {
     renderGrid(
       <VideoGrid

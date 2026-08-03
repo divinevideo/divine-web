@@ -8,6 +8,7 @@
     "home": "Tahanan",
     "discover": "Tuklasin",
     "popular": "Popular",
+    "services": "Services",
     "search": "Hanapin",
     "messages": "Mga Mensahe",
     "notifications": "Mga Abiso",
@@ -38,7 +39,6 @@
   },
   "footer": {
     "aboutDivine": "Tungkol sa Divine",
-    "vinesRecovered": "{{count}} Vines na nabawi",
     "termsAndOpenSource": "Mga Tuntunin at Open Source",
     "copyright": "© 2026 Divine"
   },
@@ -134,6 +134,19 @@
     "communityDescription": "Tara, sumama sa komunidad ng Divine sa Nostr.",
     "communityBody": "Tumatakbo ang Divine sa Nostr, ang decentralized social protocol. Hanapin kami sa paboritong Nostr client mo."
   },
+  "servicesPage": {
+    "title": "Divine services",
+    "intro": "Divine is more than loops. These services help you make the most of it.",
+    "openService": "Open {{name}}",
+    "items": {
+      "space": "Your profile, your rules. Themes, Top 8, profile music.",
+      "sounds": "Trending sounds and a Creative Commons library for your loops.",
+      "badges": "Awards for creators who show up.",
+      "crossposter": "Post your loops to the other platforms — only when you opt in.",
+      "verifier": "Check where a video really came from.",
+      "status": "Is it us or is it you? Check here."
+    }
+  },
   "tagPage": {
     "notFoundTitle": "Wala ang tag.",
     "notFoundDescription": "Wala kaming mahanap dyan.",
@@ -146,7 +159,11 @@
     "emptyState": "Walang nilulutong kategorya ngayon.",
     "metaTitle": "Galugarin ang mga Kategorya - Divine",
     "metaDescription": "Tuklasin ang mga kategorya ng video sa Divine — komedya, musika, sayaw, hayop, sports, pagkain, at marami pa.",
+    "videoCount_zero": "{{count}} videos",
     "videoCount_one": "{{count}} video",
+    "videoCount_two": "{{count}} videos",
+    "videoCount_few": "{{count}} videos",
+    "videoCount_many": "{{count}} videos",
     "videoCount_other": "{{count}} mga video"
   },
   "vineBadge": {
@@ -386,7 +403,6 @@
     "message": "Mag-message",
     "reportUser": "I-report ang user",
     "subscribeRss": "Mag-subscribe sa RSS feed",
-    "videos": "Mga Video",
     "followers": "Mga Sumusunod",
     "followingStat": "Sinusundan",
     "followingDialogTitle": "Sinusundan",
@@ -445,6 +461,7 @@
     "myProfile": "Profile ko",
     "settings": "Settings",
     "linkedAccounts": "Mga Naka-link na Account",
+    "relays": "Relays",
     "switchRelay": "Lumipat ng Relay",
     "switchAccount": "Lumipat ng Account",
     "addAnotherAccount": "Magdagdag ng account",
@@ -1143,7 +1160,7 @@
   "trendingPage": {
     "heading": "Trending",
     "subheading": "Tuklasin kung ano ang sikat sa komunidad",
-    "rssTitle": "DiVine - Trending",
+    "rssTitle": "Divine - Trending",
     "rssLink": "RSS"
   },
   "merchPage": {
@@ -1404,12 +1421,12 @@
     "joinWaitlist": "Walang invite? Sumali sa waitlist."
   },
   "invitesLandingPage": {
-    "seoTitle": "Sumali sa diVine gamit ang invite code {{code}}",
-    "seoTitleDefault": "Sumali sa diVine",
-    "seoDescription": "Inimbitahan ka! Gamitin ang code {{code}} para sumali sa diVine.",
-    "seoDescriptionDefault": "Gamitin ang invite code mo para sumali sa diVine at magsimulang mag-share ng video.",
+    "seoTitle": "Sumali sa Divine gamit ang invite code {{code}}",
+    "seoTitleDefault": "Sumali sa Divine",
+    "seoDescription": "Inimbitahan ka! Gamitin ang code {{code}} para sumali sa Divine.",
+    "seoDescriptionDefault": "Gamitin ang invite code mo para sumali sa Divine at magsimulang mag-share ng video.",
     "heading": "Imbitado Ka!",
-    "subheading": "Ilagay ang invite code mo para sumali sa diVine",
+    "subheading": "Ilagay ang invite code mo para sumali sa Divine",
     "alreadyHaveAccount": "May account ka na?",
     "signIn": "Mag-sign in"
   },

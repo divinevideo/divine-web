@@ -43,9 +43,10 @@ import {
   buildCompilationPlaybackUrl,
   parseCompilationPlaybackParams,
 } from '@/lib/compilationPlayback';
-import { buildProfileLinkPath, toFriendlyPath } from '@/lib/profileLinks';
+import { toFriendlyPath } from '@/lib/profileLinks';
 import { getDivineNip05Info } from '@/lib/nip05Utils';
 import { useNip05Validation } from '@/hooks/useNip05Validation';
+import { useValidatedProfileLinkPath } from '@/hooks/useValidatedProfileLinkPath';
 
 type SearchFilter = 'all' | 'videos' | 'users' | 'hashtags';
 
@@ -762,7 +763,7 @@ function UserCard({ user }: { user: { pubkey: string; metadata?: UserCardMetadat
     : null;
   const about = user.metadata?.about;
   const picture = getSafeProfileImage(user.metadata?.picture);
-  const profilePath = buildProfileLinkPath({
+  const profilePath = useValidatedProfileLinkPath({
     pubkey: user.pubkey,
     nip05,
   });

@@ -7,7 +7,7 @@
   "license": "MPL-2.0",
   "scripts": {
     "dev": "npm i --workspaces=false && vite",
-    "build": "npm i --workspaces=false && vite build && cp dist/index.html dist/404.html && node scripts/copy-well-known.mjs && node scripts/prerender-legal.mjs && node scripts/verify-well-known.mjs",
+    "build": "npm i --workspaces=false && vite build && cp dist/index.html dist/404.html && node scripts/copy-well-known.mjs && node scripts/prerender-legal.mjs && node scripts/prerender-marketing.mjs && node scripts/verify-well-known.mjs",
     "preview": "vite preview",
     "test": "npm i --workspaces=false && tsc -p tsconfig.app.json --noEmit && eslint && vitest run && vite build",
     "deploy": "npm run build && npx -y nostr-deploy-cli deploy --skip-setup",
@@ -18,6 +18,7 @@
     "fastly:publish": "npm run build && npm i && npm run -w divine-web-edge fastly:publish",
     "fastly:release": "npm run fastly:deploy && npm run fastly:publish",
     "verify:well-known": "node scripts/verify-well-known.mjs",
+    "verify:og": "bash scripts/verify-og-tags.sh",
     "precalculate-thumbnails": "tsx scripts/precalculate-hashtag-thumbnails.ts",
     "generate-icons": "node scripts/generate-icons.js",
     "test:visual": "playwright test",
@@ -62,8 +63,8 @@
     "@sentry/react": "^10.38.0",
     "@tanstack/react-query": "^5.56.2",
     "@tanstack/react-virtual": "^3.13.18",
-    "@unhead/addons": "^2.0.10",
-    "@unhead/react": "^2.0.10",
+    "@unhead/addons": "^2.1.16",
+    "@unhead/react": "^2.1.16",
     "blurhash": "^2.0.5",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -71,7 +72,7 @@
     "date-fns": "^3.6.0",
     "embla-carousel-autoplay": "^8.6.0",
     "embla-carousel-react": "^8.3.0",
-    "firebase": "^12.4.0",
+    "firebase": "^12.16.0",
     "hls.js": "^1.6.13",
     "i18next": "^26.0.4",
     "input-otp": "^1.2.4",
@@ -86,17 +87,21 @@
     "react-infinite-scroll-component": "^6.1.0",
     "react-intersection-observer": "^9.16.0",
     "react-resizable-panels": "^2.1.3",
-    "react-router-dom": "^6.26.2",
+    "react-router-dom": "^6.30.4",
     "recharts": "^2.12.7",
     "sonner": "^1.5.0",
     "tailwind-merge": "^2.5.2",
     "tailwindcss-animate": "^1.0.7",
     "vaul": "^0.9.3",
     "webln": "^0.3.2",
+    "websocket-ts": "^2.2.1",
     "zod": "^3.25.71"
   },
   "overrides": {
-    "@jsr/nostrify__nostrify": "0.46.4"
+    "@jsr/nostrify__nostrify": "0.46.4",
+    "sucrase": {
+      "glob": "^10.5.0"
+    }
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.11.1",
@@ -121,16 +126,16 @@
     "globals": "^15.9.0",
     "jsdom": "^26.1.0",
     "playwright": "^1.55.0",
-    "postcss": "^8.4.47",
+    "postcss": "^8.5.20",
     "sharp": "^0.34.5",
     "tailwindcss": "^3.4.11",
     "tsx": "^4.20.6",
     "typescript": "^5.5.3",
     "typescript-eslint": "^8.0.1",
-    "vite": "^6.3.5",
+    "vite": "^6.4.3",
     "vite-plugin-pwa": "^1.1.0",
-    "vitest": "^3.1.4",
-    "workbox-build": "^7.3.0",
-    "wrangler": "^4.31.0"
+    "vitest": "^3.2.7",
+    "workbox-build": "^7.4.1",
+    "wrangler": "^4.112.0"
   }
 }

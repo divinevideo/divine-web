@@ -47,6 +47,10 @@ function buildUrl(baseUrl: string, endpoint: string, params: Record<string, stri
   return url.toString();
 }
 
+function isAbortRequestError(err: unknown): boolean {
+  return !!err && typeof err === 'object' && (err as { name?: unknown }).name === 'AbortError';
+}
+
 /**
  * Make a Funnelcake API request with error handling
  */
@@ -92,7 +96,7 @@ async function funnelcakeRequest<T>(
   } catch (err) {
     // Aborted requests (e.g. user typing fast in search) are not backend failures —
     // don't let them trip the circuit breaker (fixes #167)
-    if (err instanceof DOMException && err.name === 'AbortError') {
+    if (isAbortRequestError(err)) {
       debugLog(`[FunnelcakeClient] Request aborted (not a failure): ${endpoint}`);
       throw err;
     }
@@ -157,6 +161,29 @@ export async function checkFunnelcakeAvailable(
 }
 
 /**
+ * Wrap a bare v1 video array in the FunnelcakeResponse envelope, synthesizing
+ * the pagination cursor the same way fetchVideos does for direct fetches:
+ * offset-based for sorted feeds, timestamp for chronological (sort=recent).
+ * Used for edge-injected feeds, which arrive as raw v1 arrays.
+ */
+export function normalizeVideoArrayResponse(
+  videos: FunnelcakeVideoRaw[],
+  { sort = 'trending', limit = 20, offset = 0 }: { sort?: string; limit?: number; offset?: number } = {}
+): FunnelcakeResponse {
+  const videoCount = videos.length;
+  const nextOffset = offset + videoCount;
+  const next_cursor = videoCount >= limit
+    ? (sort !== 'recent' ? String(nextOffset) : String(videos[videoCount - 1].created_at))
+    : undefined;
+
+  return {
+    videos,
+    has_more: videoCount >= limit,
+    next_cursor,
+  };
+}
+
+/**
  * Fetch videos from Funnelcake API
  *
  * @param apiUrl - Base URL of the Funnelcake API
@@ -198,20 +225,8 @@ export async function fetchVideos(
     signal
   );
 
-  const videoCount = videos.length;
   const currentOffset = offset ?? (params.offset as number | undefined) ?? 0;
-  const nextOffset = currentOffset + videoCount;
-
-  // For sorted feeds, return offset-based cursor; for chronological, return timestamp
-  const next_cursor = videoCount >= limit
-    ? (sort !== 'recent' ? String(nextOffset) : String(videos[videoCount - 1].created_at))
-    : undefined;
-
-  return {
-    videos,
-    has_more: videoCount >= limit,
-    next_cursor,
-  };
+  return normalizeVideoArrayResponse(videos, { sort, limit, offset: currentOffset });
 }
 
 /**
@@ -802,7 +817,11 @@ export async function fetchVideoById(
           tags: event.tags,
         };
       }
-    } catch {
+    } catch (err) {
+      if (isAbortRequestError(err)) {
+        throw err;
+      }
+
       debugLog(`[FunnelcakeClient] Direct lookup failed, trying fallbacks`);
     }
 
@@ -826,6 +845,10 @@ export async function fetchVideoById(
     debugLog(`[FunnelcakeClient] Video not found: ${identifier}`);
     return null;
   } catch (err) {
+    if (isAbortRequestError(err)) {
+      throw err;
+    }
+
     debugError(`[FunnelcakeClient] fetchVideoById error:`, err);
     return null;
   }
@@ -917,6 +940,10 @@ export async function fetchUserLoopStats(
       videos_with_views: entry.videos_with_views || 0,
     };
   } catch (err) {
+    if (isAbortRequestError(err)) {
+      throw err;
+    }
+
     debugLog(`[FunnelcakeClient] fetchUserLoopStats failed:`, err);
     return null;
   }
@@ -1019,6 +1046,10 @@ export async function fetchUserProfile(
     debugLog(`[FunnelcakeClient] Got profile:`, profile);
     return profile;
   } catch (err) {
+    if (isAbortRequestError(err)) {
+      throw err;
+    }
+
     debugLog(`[FunnelcakeClient] Profile fetch failed:`, err);
     return null;
   }
@@ -1123,6 +1154,10 @@ export async function fetchBulkUsers(
       missing: data.missing || [],
     };
   } catch (err) {
+    if (isAbortRequestError(err)) {
+      throw err;
+    }
+
     if (err instanceof FunnelcakeApiError) {
       throw err;
     }
@@ -1200,6 +1235,10 @@ export async function fetchBulkVideoStats(
       missing: data.missing || [],
     };
   } catch (err) {
+    if (isAbortRequestError(err)) {
+      throw err;
+    }
+
     if (err instanceof FunnelcakeApiError) {
       throw err;
     }

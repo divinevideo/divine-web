@@ -8,6 +8,7 @@
     "home": "Hem",
     "discover": "Utforska",
     "popular": "Popular",
+    "services": "Services",
     "search": "Sok",
     "messages": "Meddelanden",
     "notifications": "Aviseringar",
@@ -38,7 +39,6 @@
   },
   "footer": {
     "aboutDivine": "Om Divine",
-    "vinesRecovered": "{{count}} Vines aterstallda",
     "termsAndOpenSource": "Villkor och oppen kallkod",
     "copyright": "© 2026 Divine"
   },
@@ -134,6 +134,19 @@
     "communityDescription": "Delta i våra gemenskapsdiskussioner och få kontakt med andra Divine-användare på Nostr.",
     "communityBody": "Divine är byggt på Nostr, ett decentraliserat socialt protokoll. Hitta oss i din favoritklient för Nostr."
   },
+  "servicesPage": {
+    "title": "Divine services",
+    "intro": "Divine is more than loops. These services help you make the most of it.",
+    "openService": "Open {{name}}",
+    "items": {
+      "space": "Your profile, your rules. Themes, Top 8, profile music.",
+      "sounds": "Trending sounds and a Creative Commons library for your loops.",
+      "badges": "Awards for creators who show up.",
+      "crossposter": "Post your loops to the other platforms — only when you opt in.",
+      "verifier": "Check where a video really came from.",
+      "status": "Is it us or is it you? Check here."
+    }
+  },
   "tagPage": {
     "notFoundTitle": "Tagg hittades inte",
     "notFoundDescription": "Den begarda taggen kunde inte hittas.",
@@ -146,7 +159,11 @@
     "emptyState": "Inga kategorier ar tillgangliga just nu.",
     "metaTitle": "Utforska kategorier - Divine",
     "metaDescription": "Utforska videokategorier pa Divine - komedi, musik, dans, djur, sport, mat och mer.",
+    "videoCount_zero": "{{count}} videos",
     "videoCount_one": "{{count}} video",
+    "videoCount_two": "{{count}} videos",
+    "videoCount_few": "{{count}} videos",
+    "videoCount_many": "{{count}} videos",
     "videoCount_other": "{{count}} videor"
   },
   "vineBadge": {
@@ -386,7 +403,6 @@
     "message": "Meddelande",
     "reportUser": "Rapportera användare",
     "subscribeRss": "Prenumerera på RSS-flöde",
-    "videos": "Videor",
     "followers": "Följare",
     "followingStat": "Följer",
     "followingDialogTitle": "Följer",
@@ -445,6 +461,7 @@
     "myProfile": "Min profil",
     "settings": "Inställningar",
     "linkedAccounts": "Länkade konton",
+    "relays": "Relays",
     "switchRelay": "Byt relä",
     "switchAccount": "Byt konto",
     "addAnotherAccount": "Lägg till ett annat konto",
@@ -1143,7 +1160,7 @@
   "trendingPage": {
     "heading": "Populärt",
     "subheading": "Upptäck vad som är populärt i communityn",
-    "rssTitle": "DiVine - Populärt",
+    "rssTitle": "Divine - Populärt",
     "rssLink": "RSS"
   },
   "merchPage": {
@@ -1404,12 +1421,12 @@
     "joinWaitlist": "Ingen inbjudan? Ställ dig på väntelistan."
   },
   "invitesLandingPage": {
-    "seoTitle": "Gå med i diVine med inbjudningskoden {{code}}",
-    "seoTitleDefault": "Gå med i diVine",
-    "seoDescription": "Du har blivit inbjuden! Använd koden {{code}} för att gå med i diVine.",
-    "seoDescriptionDefault": "Använd din inbjudningskod för att gå med i diVine och börja dela video.",
+    "seoTitle": "Gå med i Divine med inbjudningskoden {{code}}",
+    "seoTitleDefault": "Gå med i Divine",
+    "seoDescription": "Du har blivit inbjuden! Använd koden {{code}} för att gå med i Divine.",
+    "seoDescriptionDefault": "Använd din inbjudningskod för att gå med i Divine och börja dela video.",
     "heading": "Du är inbjuden!",
-    "subheading": "Ange din inbjudningskod för att gå med i diVine",
+    "subheading": "Ange din inbjudningskod för att gå med i Divine",
     "alreadyHaveAccount": "Har du redan ett konto?",
     "signIn": "Logga in"
   },

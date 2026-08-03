@@ -8,6 +8,7 @@
     "home": "Inicio",
     "discover": "Descubrir",
     "popular": "Popular",
+    "services": "Services",
     "search": "Buscar",
     "messages": "Mensajes",
     "notifications": "Notificaciones",
@@ -38,7 +39,6 @@
   },
   "footer": {
     "aboutDivine": "Acerca de Divine",
-    "vinesRecovered": "{{count}} Vines recuperados",
     "termsAndOpenSource": "Terminos y codigo abierto",
     "copyright": "© 2026 Divine"
   },
@@ -134,6 +134,19 @@
     "communityDescription": "Unete a nuestras conversaciones comunitarias y conecta con otros usuarios de Divine en Nostr.",
     "communityBody": "Divine esta construido sobre Nostr, un protocolo social descentralizado. Encuentranos en tu cliente de Nostr favorito."
   },
+  "servicesPage": {
+    "title": "Divine services",
+    "intro": "Divine is more than loops. These services help you make the most of it.",
+    "openService": "Open {{name}}",
+    "items": {
+      "space": "Your profile, your rules. Themes, Top 8, profile music.",
+      "sounds": "Trending sounds and a Creative Commons library for your loops.",
+      "badges": "Awards for creators who show up.",
+      "crossposter": "Post your loops to the other platforms — only when you opt in.",
+      "verifier": "Check where a video really came from.",
+      "status": "Is it us or is it you? Check here."
+    }
+  },
   "tagPage": {
     "notFoundTitle": "Etiqueta no encontrada",
     "notFoundDescription": "No se pudo encontrar la etiqueta solicitada.",
@@ -146,7 +159,11 @@
     "emptyState": "No hay categorias disponibles en este momento.",
     "metaTitle": "Explorar categorias - Divine",
     "metaDescription": "Explora categorias de video en Divine: comedia, musica, baile, animales, deportes, comida y mas.",
+    "videoCount_zero": "{{count}} videos",
     "videoCount_one": "{{count}} video",
+    "videoCount_two": "{{count}} videos",
+    "videoCount_few": "{{count}} videos",
+    "videoCount_many": "{{count}} videos",
     "videoCount_other": "{{count}} videos"
   },
   "vineBadge": {
@@ -386,7 +403,6 @@
     "message": "Mensaje",
     "reportUser": "Reportar usuario",
     "subscribeRss": "Suscribirse al feed RSS",
-    "videos": "Videos",
     "followers": "Seguidores",
     "followingStat": "Siguiendo",
     "followingDialogTitle": "Siguiendo",
@@ -445,6 +461,7 @@
     "myProfile": "Mi perfil",
     "settings": "Ajustes",
     "linkedAccounts": "Cuentas vinculadas",
+    "relays": "Relays",
     "switchRelay": "Cambiar relay",
     "switchAccount": "Cambiar cuenta",
     "addAnotherAccount": "Añadir otra cuenta",
@@ -1143,7 +1160,7 @@
   "trendingPage": {
     "heading": "Tendencias",
     "subheading": "Descubre qué es popular en la comunidad",
-    "rssTitle": "DiVine - Tendencias",
+    "rssTitle": "Divine - Tendencias",
     "rssLink": "RSS"
   },
   "merchPage": {
@@ -1404,12 +1421,12 @@
     "joinWaitlist": "¿Sin invitación? Apúntate a la lista de espera."
   },
   "invitesLandingPage": {
-    "seoTitle": "Únete a diVine con el código de invitación {{code}}",
-    "seoTitleDefault": "Únete a diVine",
-    "seoDescription": "¡Te han invitado! Usa el código {{code}} para unirte a diVine.",
-    "seoDescriptionDefault": "Usa tu código de invitación para unirte a diVine y empezar a compartir video.",
+    "seoTitle": "Únete a Divine con el código de invitación {{code}}",
+    "seoTitleDefault": "Únete a Divine",
+    "seoDescription": "¡Te han invitado! Usa el código {{code}} para unirte a Divine.",
+    "seoDescriptionDefault": "Usa tu código de invitación para unirte a Divine y empezar a compartir video.",
     "heading": "¡Estás invitado!",
-    "subheading": "Introduce tu código de invitación para unirte a diVine",
+    "subheading": "Introduce tu código de invitación para unirte a Divine",
     "alreadyHaveAccount": "¿Ya tienes cuenta?",
     "signIn": "Iniciar sesión"
   },

@@ -3,6 +3,7 @@
 
 import type { SortMode } from '@/types/nostr';
 import { VIDEO_KINDS } from '@/types/video';
+import { recordProbe } from './relayHealth';
 
 type CapabilitySource = 'optimistic' | 'nip11' | 'probe' | 'fallback';
 
@@ -214,6 +215,11 @@ export async function detectRelayCapabilities(relayUrl: string): Promise<RelayCa
       source,
     });
 
+    recordProbe(relayUrl, {
+      nip50: capabilities.supportsNIP50,
+      funnelcake: capabilities.supportsVideoSorts,
+    });
+
     capabilitiesCache.set(relayUrl, capabilities);
     return capabilities;
   } catch (error) {
@@ -223,6 +229,9 @@ export async function detectRelayCapabilities(relayUrl: string): Promise<RelayCa
       source: 'fallback',
       error: error instanceof Error ? error.message : 'Unknown error',
     });
+
+    // No recordProbe here: a failed probe is not live evidence and must not
+    // grant capability bonuses or mark the relay source as 'live'.
 
     capabilitiesCache.set(relayUrl, fallbackCapabilities);
     return fallbackCapabilities;

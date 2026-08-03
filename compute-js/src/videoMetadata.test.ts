@@ -119,6 +119,47 @@ describe('transformVideoApiResponse', () => {
     expect(result?.description).toBe('10 ❤️ • 3 💬 • 2 🔁 on Divine');
   });
 
+  it('returns visible video-page stats and author avatar from the direct video API shape', () => {
+    const result = transformVideoApiResponse({
+      event: {
+        ...baseEvent,
+        tags: [
+          ['title', 'Classic loop'],
+          ['loops', '296,752'],
+        ],
+      },
+      stats: {
+        reactions: 10,
+        comments: 3,
+        reposts: 2,
+        embedded_loops: 123456,
+        author_name: 'Alice',
+        author_avatar: 'https://example.com/avatar.jpg',
+      },
+    });
+
+    expect(result).toMatchObject({
+      authorName: 'Alice',
+      authorAvatar: 'https://example.com/avatar.jpg',
+      reactions: 10,
+      comments: 3,
+      reposts: 2,
+      loops: 123456,
+    });
+  });
+
+  it('falls back to loop tags when embedded loop stats are absent', () => {
+    const result = transformVideoApiResponse({
+      event: {
+        ...baseEvent,
+        tags: [['loop_count', '42']],
+      },
+      stats: {},
+    });
+
+    expect(result?.loops).toBe(42);
+  });
+
   it('uses the origin tag external id for Vine alternate links', () => {
     const result = transformVideoApiResponse({
       event: {
