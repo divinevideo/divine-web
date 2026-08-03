@@ -1088,18 +1088,18 @@
     "sectionNew": "Bago",
     "sectionEarlier": "Mas Maaga",
     "message": {
-      "liked": "liked your video",
-      "commented": "commented on your video",
-      "reposted": "reposted your video",
-      "followed": "followed you",
-      "andOthers_one": "and {{count}} other",
-      "andOthers_other": "and {{count}} others",
+      "liked": "nag-like ng video mo",
+      "commented": "nag-comment sa video mo",
+      "reposted": "nag-repost ng video mo",
+      "followed": "nag-follow sa iyo",
+      "andOthers_one": "at {{count}} pa",
+      "andOthers_other": "at {{count}} pa",
       "likedTitled": "nag-like ng {{title}}",
       "commentedTitled": "nag-comment sa {{title}}",
       "repostedTitled": "nag-repost ng {{title}}"
     },
     "video": {
-      "untitled": "your video"
+      "untitled": "video mo"
     },
     "a11y": {
       "openVideo": "Buksan ang {{title}}",

@@ -1088,18 +1088,20 @@
     "sectionNew": "Nowe",
     "sectionEarlier": "Wcześniejsze",
     "message": {
-      "liked": "liked your video",
-      "commented": "commented on your video",
-      "reposted": "reposted your video",
-      "followed": "followed you",
-      "andOthers_one": "and {{count}} other",
-      "andOthers_other": "and {{count}} others",
+      "liked": "polubił(a) twój film",
+      "commented": "skomentował(a) twój film",
+      "reposted": "udostępnił(a) twój film",
+      "followed": "zaczął(a) cię obserwować",
       "likedTitled": "polubił(a) {{title}}",
       "commentedTitled": "skomentował(a) {{title}}",
-      "repostedTitled": "udostępnił(a) {{title}}"
+      "repostedTitled": "udostępnił(a) {{title}}",
+      "andOthers_one": "i {{count}} inna osoba",
+      "andOthers_few": "i {{count}} inne osoby",
+      "andOthers_many": "i {{count}} innych osób",
+      "andOthers_other": "i {{count}} innych osób"
     },
     "video": {
-      "untitled": "your video"
+      "untitled": "twój film"
     },
     "a11y": {
       "openVideo": "Otwórz {{title}}",

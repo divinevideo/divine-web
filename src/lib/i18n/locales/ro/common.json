@@ -1088,18 +1088,19 @@
     "sectionNew": "Noi",
     "sectionEarlier": "Mai vechi",
     "message": {
-      "liked": "liked your video",
-      "commented": "commented on your video",
-      "reposted": "reposted your video",
-      "followed": "followed you",
-      "andOthers_one": "and {{count}} other",
-      "andOthers_other": "and {{count}} others",
+      "liked": "ți-a apreciat videoclipul",
+      "commented": "a comentat la videoclipul tău",
+      "reposted": "ți-a redistribuit videoclipul",
+      "followed": "a început să te urmărească",
       "likedTitled": "a apreciat {{title}}",
       "commentedTitled": "a comentat la {{title}}",
-      "repostedTitled": "a redistribuit {{title}}"
+      "repostedTitled": "a redistribuit {{title}}",
+      "andOthers_one": "și încă {{count}}",
+      "andOthers_few": "și încă {{count}}",
+      "andOthers_other": "și alți {{count}}"
     },
     "video": {
-      "untitled": "your video"
+      "untitled": "videoclipul tău"
     },
     "a11y": {
       "openVideo": "Deschide {{title}}",

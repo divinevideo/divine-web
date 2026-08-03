@@ -66,6 +66,18 @@ const PLACEHOLDER_PARITY_EXCEPTIONS = new Set([
   'ar.common:categoriesPage.videoCount_zero',
 ]);
 
+/**
+ * Whole-sentence keys that cannot legitimately be identical to English. Short
+ * labels are excluded on purpose: "Reposts", "Likes" and "Notifications" are
+ * genuinely the same word in several locales, so a blanket comparison would
+ * only produce noise. Key parity alone does not catch a locale that shipped
+ * the English string as a placeholder.
+ */
+const MUST_BE_TRANSLATED_PREFIXES = [
+  'notificationsPage.message.',
+  'notificationsPage.video.',
+];
+
 describe('i18n locale resources', () => {
   it('keeps every locale aligned with the english namespaces', () => {
     for (const [namespace, englishCatalog] of Object.entries(resources.en)) {
@@ -107,6 +119,59 @@ describe('i18n locale resources', () => {
             `${locale}.${namespace}:${key} must keep placeholders ${expected.join(' ')}`,
           ).toEqual(expected);
         }
+      }
+    }
+  });
+
+  it('does not ship english placeholders for whole-sentence keys', () => {
+    for (const [namespace, englishCatalog] of Object.entries(resources.en)) {
+      const englishKeys = flattenKeys(englishCatalog)
+        .filter((key) => MUST_BE_TRANSLATED_PREFIXES.some((prefix) => key.startsWith(prefix)))
+        .sort();
+
+      for (const [locale, namespaces] of Object.entries(resources)) {
+        if (locale === 'en') {
+          continue;
+        }
+
+        const localeCatalog = namespaces[namespace as keyof typeof namespaces];
+        const untranslated = englishKeys.filter(
+          (key) => getByPath(localeCatalog, key) === getByPath(englishCatalog, key),
+        );
+
+        expect(
+          untranslated,
+          `${locale}.${namespace} still holds the english string for:\n${untranslated.join('\n')}`,
+        ).toEqual([]);
+      }
+    }
+  });
+
+  it('covers every reachable plural category for whole-sentence keys', () => {
+    // A missing category is not a missing key: i18next resolves the suffix from
+    // Intl.PluralRules, finds nothing, and falls back to English. pl selects
+    // "many" for 13 and ro selects "few", so _one/_other alone leaves both
+    // rendering the english string for most counts.
+    for (const [locale, namespaces] of Object.entries(resources)) {
+      const requiredCategories = new Intl.PluralRules(locale).resolvedOptions().pluralCategories;
+
+      for (const [namespace, catalog] of Object.entries(namespaces)) {
+        const pluralBases = getPluralCategoryMap(
+          flattenKeys(catalog).filter((key) =>
+            MUST_BE_TRANSLATED_PREFIXES.some((prefix) => key.startsWith(prefix)),
+          ),
+        );
+
+        const missingCategories = [...pluralBases.entries()].flatMap(([base, categories]) =>
+          requiredCategories
+            .filter((category) => !categories.has(category))
+            .map((category) => `${base}_${category}`),
+        );
+
+        expect(
+          missingCategories,
+          `${locale}.${namespace} would fall back to english for:\n${missingCategories.join('\n')}`,
+        ).toEqual([]);
       }
     }
   });

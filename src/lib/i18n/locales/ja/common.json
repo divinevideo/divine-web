@@ -1088,18 +1088,18 @@
     "sectionNew": "新着",
     "sectionEarlier": "これまで",
     "message": {
-      "liked": "liked your video",
-      "commented": "commented on your video",
-      "reposted": "reposted your video",
-      "followed": "followed you",
-      "andOthers_one": "and {{count}} other",
-      "andOthers_other": "and {{count}} others",
+      "liked": "あなたの動画に「いいね」しました",
+      "commented": "あなたの動画にコメントしました",
+      "reposted": "あなたの動画をリポストしました",
+      "followed": "あなたをフォローしました",
+      "andOthers_one": "他{{count}}人",
+      "andOthers_other": "他{{count}}人",
       "likedTitled": "{{title}}に「いいね」しました",
       "commentedTitled": "{{title}}にコメントしました",
       "repostedTitled": "{{title}}をリポストしました"
     },
     "video": {
-      "untitled": "your video"
+      "untitled": "あなたの動画"
     },
     "a11y": {
       "openVideo": "{{title}}を開く",

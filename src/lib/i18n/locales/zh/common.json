@@ -1055,8 +1055,7 @@
       "likes": "点赞",
       "comments": "评论",
       "follows": "关注",
-      "reposts": "转发",
-      "zaps": "Zap"
+      "reposts": "转发"
     },
     "empty": {
       "all": {
@@ -1082,10 +1081,6 @@
       "reposts": {
         "title": "还没有转发通知。",
         "description": "你视频的转发会出现在这里。"
-      },
-      "zaps": {
-        "title": "还没有 Zap 通知。",
-        "description": "你视频收到的 Zap 会出现在这里。"
       }
     },
     "errorTitle": "通知加载失败",

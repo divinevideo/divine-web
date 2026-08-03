@@ -1088,18 +1088,18 @@
     "sectionNew": "Nytt",
     "sectionEarlier": "Tidigare",
     "message": {
-      "liked": "liked your video",
-      "commented": "commented on your video",
-      "reposted": "reposted your video",
-      "followed": "followed you",
-      "andOthers_one": "and {{count}} other",
-      "andOthers_other": "and {{count}} others",
+      "liked": "gillade din video",
+      "commented": "kommenterade din video",
+      "reposted": "delade din video",
+      "followed": "följer dig nu",
+      "andOthers_one": "och {{count}} annan",
+      "andOthers_other": "och {{count}} andra",
       "likedTitled": "gillade {{title}}",
       "commentedTitled": "kommenterade {{title}}",
       "repostedTitled": "delade {{title}}"
     },
     "video": {
-      "untitled": "your video"
+      "untitled": "din video"
     },
     "a11y": {
       "openVideo": "Öppna {{title}}",

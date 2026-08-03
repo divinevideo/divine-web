@@ -1088,18 +1088,18 @@
     "sectionNew": "Baru",
     "sectionEarlier": "Sebelumnya",
     "message": {
-      "liked": "liked your video",
-      "commented": "commented on your video",
-      "reposted": "reposted your video",
-      "followed": "followed you",
-      "andOthers_one": "and {{count}} other",
-      "andOthers_other": "and {{count}} others",
+      "liked": "menyukai video kamu",
+      "commented": "mengomentari video kamu",
+      "reposted": "memposting ulang video kamu",
+      "followed": "mengikuti kamu",
+      "andOthers_one": "dan {{count}} lainnya",
+      "andOthers_other": "dan {{count}} lainnya",
       "likedTitled": "menyukai {{title}}",
       "commentedTitled": "mengomentari {{title}}",
       "repostedTitled": "memposting ulang {{title}}"
     },
     "video": {
-      "untitled": "your video"
+      "untitled": "video kamu"
     },
     "a11y": {
       "openVideo": "Buka {{title}}",

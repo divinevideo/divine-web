@@ -1088,18 +1088,19 @@
     "sectionNew": "Nuove",
     "sectionEarlier": "Precedenti",
     "message": {
-      "liked": "liked your video",
-      "commented": "commented on your video",
-      "reposted": "reposted your video",
-      "followed": "followed you",
-      "andOthers_one": "and {{count}} other",
-      "andOthers_other": "and {{count}} others",
+      "liked": "ha messo mi piace al tuo video",
+      "commented": "ha commentato il tuo video",
+      "reposted": "ha ricondiviso il tuo video",
+      "followed": "ha iniziato a seguirti",
+      "andOthers_one": "e {{count}} altro",
+      "andOthers_other": "e altri {{count}}",
       "likedTitled": "ha messo mi piace a {{title}}",
       "commentedTitled": "ha commentato {{title}}",
-      "repostedTitled": "ha ricondiviso {{title}}"
+      "repostedTitled": "ha ricondiviso {{title}}",
+      "andOthers_many": "e altri {{count}}"
     },
     "video": {
-      "untitled": "your video"
+      "untitled": "il tuo video"
     },
     "a11y": {
       "openVideo": "Apri {{title}}",

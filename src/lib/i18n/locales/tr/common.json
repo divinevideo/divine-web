@@ -1088,18 +1088,18 @@
     "sectionNew": "Yeni",
     "sectionEarlier": "Daha önce",
     "message": {
-      "liked": "liked your video",
-      "commented": "commented on your video",
-      "reposted": "reposted your video",
-      "followed": "followed you",
-      "andOthers_one": "and {{count}} other",
-      "andOthers_other": "and {{count}} others",
+      "liked": "videonu beğendi",
+      "commented": "videona yorum yaptı",
+      "reposted": "videonu yeniden paylaştı",
+      "followed": "seni takip etmeye başladı",
+      "andOthers_one": "ve {{count}} kişi daha",
+      "andOthers_other": "ve {{count}} kişi daha",
       "likedTitled": "{{title}} gönderisini beğendi",
       "commentedTitled": "{{title}} gönderisine yorum yaptı",
       "repostedTitled": "{{title}} gönderisini yeniden paylaştı"
     },
     "video": {
-      "untitled": "your video"
+      "untitled": "videonu"
     },
     "a11y": {
       "openVideo": "{{title}} aç",

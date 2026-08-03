@@ -1055,8 +1055,7 @@
       "likes": "Suka",
       "comments": "Komen",
       "follows": "Ikutan",
-      "reposts": "Repost",
-      "zaps": "Zap"
+      "reposts": "Repost"
     },
     "empty": {
       "all": {
@@ -1082,10 +1081,6 @@
       "reposts": {
         "title": "Belum ada notifikasi repost.",
         "description": "Repost video anda akan muncul di sini."
-      },
-      "zaps": {
-        "title": "Belum ada notifikasi zap.",
-        "description": "Zap pada video anda akan muncul di sini."
       }
     },
     "errorTitle": "Gagal memuatkan notifikasi",

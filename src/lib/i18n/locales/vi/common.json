@@ -1055,8 +1055,7 @@
       "likes": "Lượt thích",
       "comments": "Bình luận",
       "follows": "Theo dõi",
-      "reposts": "Đăng lại",
-      "zaps": "Zap"
+      "reposts": "Đăng lại"
     },
     "empty": {
       "all": {
@@ -1082,10 +1081,6 @@
       "reposts": {
         "title": "Chưa có thông báo đăng lại nào.",
         "description": "Các bài đăng lại video của bạn sẽ hiện ở đây."
-      },
-      "zaps": {
-        "title": "Chưa có thông báo zap nào.",
-        "description": "Các cú zap cho video của bạn sẽ hiện ở đây."
       }
     },
     "errorTitle": "Không tải được thông báo",

@@ -1156,10 +1156,10 @@
     "sectionNew": "جديد",
     "sectionEarlier": "في وقت سابق",
     "message": {
-      "liked": "liked your video",
-      "commented": "commented on your video",
-      "reposted": "reposted your video",
-      "followed": "followed you",
+      "liked": "أعجب بفيديوك",
+      "commented": "علّق على فيديوك",
+      "reposted": "أعاد نشر فيديوك",
+      "followed": "تابعك",
       "andOthers_zero": "و{{count}} آخر",
       "andOthers_one": "و{{count}} آخر",
       "andOthers_two": "و{{count}} آخرَان",
@@ -1171,7 +1171,7 @@
       "repostedTitled": "أعاد نشر {{title}}"
     },
     "video": {
-      "untitled": "your video"
+      "untitled": "فيديوك"
     },
     "a11y": {
       "openVideo": "فتح {{title}}",

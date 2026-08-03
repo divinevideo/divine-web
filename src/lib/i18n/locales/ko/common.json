@@ -1088,18 +1088,18 @@
     "sectionNew": "새로운 소식",
     "sectionEarlier": "이전",
     "message": {
-      "liked": "liked your video",
-      "commented": "commented on your video",
-      "reposted": "reposted your video",
-      "followed": "followed you",
-      "andOthers_one": "and {{count}} other",
-      "andOthers_other": "and {{count}} others",
+      "liked": "회원님의 비디오를 좋아합니다",
+      "commented": "회원님의 비디오에 댓글을 남겼습니다",
+      "reposted": "회원님의 비디오를 리포스트했습니다",
+      "followed": "회원님을 팔로우했습니다",
+      "andOthers_one": "외 {{count}}명",
+      "andOthers_other": "외 {{count}}명",
       "likedTitled": "{{title}}을(를) 좋아합니다",
       "commentedTitled": "{{title}}에 댓글을 남겼습니다",
       "repostedTitled": "{{title}}을(를) 리포스트했습니다"
     },
     "video": {
-      "untitled": "your video"
+      "untitled": "회원님의 비디오"
     },
     "a11y": {
       "openVideo": "{{title}} 열기",

@@ -1088,18 +1088,18 @@
     "sectionNew": "Nieuw",
     "sectionEarlier": "Eerder",
     "message": {
-      "liked": "liked your video",
-      "commented": "commented on your video",
-      "reposted": "reposted your video",
-      "followed": "followed you",
-      "andOthers_one": "and {{count}} other",
-      "andOthers_other": "and {{count}} others",
+      "liked": "vindt je video leuk",
+      "commented": "reageerde op je video",
+      "reposted": "deelde je video",
+      "followed": "volgt je nu",
+      "andOthers_one": "en {{count}} ander",
+      "andOthers_other": "en {{count}} anderen",
       "likedTitled": "vindt {{title}} leuk",
       "commentedTitled": "reageerde op {{title}}",
       "repostedTitled": "deelde {{title}}"
     },
     "video": {
-      "untitled": "your video"
+      "untitled": "je video"
     },
     "a11y": {
       "openVideo": "{{title}} openen",
