@@ -3,7 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { useNotifications, useUnreadNotificationCount } from './useNotifications';
+import { useNotifications, useUnreadNotificationCount, useMarkNotificationsRead } from './useNotifications';
 
 const { mockFetchNotifications, mockFetchUnreadCount } = vi.hoisted(() => ({
   mockFetchNotifications: vi.fn(),
@@ -121,5 +121,33 @@ describe('useNotifications', () => {
       expect.any(Object),
       expect.any(AbortSignal),
     );
+  });
+
+  it('applies the optimistic read flag to the category-keyed list cache', async () => {
+    // The list is cached under ['notifications', pubkey, category]. An exact-key
+    // write to ['notifications', pubkey] matches nothing, leaving every row
+    // unread in cache and re-triggering mark-all-read on the next mount.
+    const pubkey = 'a'.repeat(64);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    });
+    const wrapper = ({ children }: { children: React.ReactNode }) =>
+      React.createElement(QueryClientProvider, { client: queryClient }, children);
+
+    queryClient.setQueryData(['notifications', pubkey, 'all'], {
+      pages: [{ notifications: [{ id: 'n1', isRead: false }], unreadCount: 1, hasMore: false }],
+      pageParams: [undefined],
+    });
+
+    const { result } = renderHook(() => useMarkNotificationsRead(), { wrapper });
+
+    result.current.mutate(undefined);
+
+    await waitFor(() => {
+      const cached = queryClient.getQueryData(['notifications', pubkey, 'all']) as {
+        pages: { notifications: { isRead: boolean }[] }[];
+      };
+      expect(cached.pages[0].notifications[0].isRead).toBe(true);
+    });
   });
 });

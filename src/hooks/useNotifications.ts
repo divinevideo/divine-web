@@ -122,12 +122,18 @@ export function useMarkNotificationsRead() {
       await queryClient.cancelQueries({ queryKey: ['notifications-unread-count', pubkey] });
 
       // Snapshot previous values for potential rollback
-      const previousNotifications = queryClient.getQueryData(['notifications', pubkey]);
+      // The list is cached per category (['notifications', pubkey, category]),
+      // so an exact-key read/write against ['notifications', pubkey] matches
+      // nothing. Use the prefix-matching variants or the optimistic update is a
+      // silent no-op and every remount re-issues mark-all-read.
+      const previousNotifications = queryClient.getQueriesData({
+        queryKey: ['notifications', pubkey],
+      });
       const previousCount = queryClient.getQueryData(['notifications-unread-count', pubkey]);
 
       // Optimistic update: mark notifications as read in cache
-      queryClient.setQueryData(
-        ['notifications', pubkey],
+      queryClient.setQueriesData(
+        { queryKey: ['notifications', pubkey] },
         (old: { pages: NotificationsResponse[]; pageParams: unknown[] } | undefined) => {
           if (!old) return old;
           const idsSet = notificationIds ? new Set(notificationIds) : null;
@@ -163,6 +169,7 @@ export function useMarkNotificationsRead() {
     onSettled: () => {
       // Refetch in background to ensure consistency
       queryClient.invalidateQueries({ queryKey: ['notifications-unread-count', pubkey] });
+      queryClient.invalidateQueries({ queryKey: ['notifications', pubkey] });
     },
   });
 }
