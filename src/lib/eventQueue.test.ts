@@ -1,29 +1,42 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { NostrEvent } from '@nostrify/nostrify';
+import type { ProductAnalyticsPayload } from './analyticsClient';
 
-const baseEvent: NostrEvent = {
-  id: '018ff7d7000070008000000000000001',
-  pubkey: 'a'.repeat(64),
-  created_at: 1783382400,
-  kind: 22237,
-  tags: [
-    ['client', 'divine-web'],
-    ['schema', 'product_analytics_v1'],
-    ['event_name', 'session_started'],
-  ],
-  content: JSON.stringify({
+function makeEvent(overrides: Partial<ProductAnalyticsPayload> = {}): ProductAnalyticsPayload {
+  return {
+    event_id: '018ff7d7-0000-7000-8000-000000000001',
     event_name: 'session_started',
     occurred_at: '2026-07-07T00:00:00.000Z',
     anonymous_id: '018ff7d7-0000-7000-8000-000000000002',
     session_id: '018ff7d7-0000-7000-8000-000000000003',
+    user_pubkey: 'a'.repeat(64),
     platform: 'web',
     app_version: '0.0.0',
+    build_number: '',
     surface: 'home',
     schema_version: 1,
     properties: {},
-  }),
-  sig: 'b'.repeat(128),
-};
+    entry_point: '',
+    flow_name: '',
+    step_name: '',
+    result: '',
+    reason_code: '',
+    content_id: '',
+    creator_pubkey: '',
+    feed_algorithm: '',
+    traffic_source: '',
+    feature_key: '',
+    experiment_key: '',
+    variant_key: '',
+    variation_id: 0,
+    duration_ms: 0,
+    position_ms: 0,
+    loop_count: 0,
+    value: 0,
+    ...overrides,
+  };
+}
+
+const baseEvent = makeEvent();
 
 describe('ProductEventQueue', () => {
   beforeEach(() => {
@@ -57,6 +70,59 @@ describe('ProductEventQueue', () => {
 
     expect(await queue.getFlushableBatch(10)).toHaveLength(0);
     expect(await queue.getDeadLetters()).toHaveLength(1);
+  });
+
+  it('caps the queue, dropping the oldest records first', async () => {
+    const { ProductEventQueue, PRODUCT_EVENT_MAX_RECORDS } = await import('./eventQueue');
+    const queue = new ProductEventQueue();
+
+    for (let i = 0; i < PRODUCT_EVENT_MAX_RECORDS + 20; i += 1) {
+      await queue.enqueue(makeEvent({ event_id: `event-${String(i).padStart(4, '0')}` }));
+    }
+
+    const records = await queue.getFlushableBatch(PRODUCT_EVENT_MAX_RECORDS + 50);
+    expect(records).toHaveLength(PRODUCT_EVENT_MAX_RECORDS);
+    // The 20 oldest are gone, the newest survive.
+    expect(records.some((r) => r.id === 'event-0000')).toBe(false);
+    expect(records.some((r) => r.id === `event-${String(PRODUCT_EVENT_MAX_RECORDS + 19).padStart(4, '0')}`)).toBe(true);
+  });
+
+  it('expires dead letters rather than keeping signed payloads forever', async () => {
+    vi.useFakeTimers();
+    try {
+      const { ProductEventQueue, PRODUCT_EVENT_MAX_ATTEMPTS, PRODUCT_EVENT_MAX_AGE_MS } =
+        await import('./eventQueue');
+      const queue = new ProductEventQueue({ baseRetryDelayMs: 0 });
+      await queue.enqueue(baseEvent);
+
+      for (let attempt = 0; attempt < PRODUCT_EVENT_MAX_ATTEMPTS; attempt += 1) {
+        const [record] = await queue.getFlushableBatch(1);
+        await queue.markFailed([record]);
+      }
+      expect(await queue.getDeadLetters()).toHaveLength(1);
+
+      vi.advanceTimersByTime(PRODUCT_EVENT_MAX_AGE_MS + 1);
+
+      expect(await queue.getDeadLetters()).toHaveLength(0);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('expires pending records that were never delivered', async () => {
+    vi.useFakeTimers();
+    try {
+      const { ProductEventQueue, PRODUCT_EVENT_MAX_AGE_MS } = await import('./eventQueue');
+      const queue = new ProductEventQueue();
+      await queue.enqueue(baseEvent);
+      expect(await queue.getFlushableBatch(10)).toHaveLength(1);
+
+      vi.advanceTimersByTime(PRODUCT_EVENT_MAX_AGE_MS + 1);
+
+      expect(await queue.getFlushableBatch(10)).toHaveLength(0);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('removes successfully flushed events', async () => {

@@ -3,10 +3,21 @@ import type { NostrSigner } from '@nostrify/nostrify';
 import { getFunnelcakeBaseUrl } from '@/config/api';
 import { getAnalyticsConsent, onAnalyticsConsentChanged } from '@/lib/cookieConsent';
 import { ProductEventQueue, productEventQueue } from '@/lib/eventQueue';
+import { createNip98AuthHeader } from '@/lib/nip98Auth';
 
-export const PRODUCT_ANALYTICS_EVENT_KIND = 22237;
-
-interface ProductAnalyticsPayload {
+/**
+ * Wire format for POST /api/analytics/events.
+ *
+ * The endpoint ingests flat event objects and dedupes on `event_id`; request
+ * authentication is NIP-98 at the request level, not a signature per event.
+ * divine-mobile's `analytics_ingest_client.dart` sends exactly this shape, and
+ * both clients must stay in step — see `ProductAnalyticsEvent.toJson()` there.
+ *
+ * The typed columns are always present, carrying '' or 0 when unset, so the
+ * ingest schema does not have to distinguish absent from empty.
+ */
+export interface ProductAnalyticsPayload {
+  event_id: string;
   event_name: ProductAnalyticsEventName;
   occurred_at: string;
   anonymous_id: string;
@@ -17,39 +28,61 @@ interface ProductAnalyticsPayload {
   surface: string;
   schema_version: 1;
   properties: Record<string, unknown>;
-  build_number?: string;
+  build_number: string;
+  entry_point: string;
+  flow_name: string;
+  step_name: string;
+  result: string;
+  reason_code: string;
+  content_id: string;
+  creator_pubkey: string;
+  feed_algorithm: string;
+  traffic_source: string;
+  feature_key: string;
+  experiment_key: string;
+  variant_key: string;
+  variation_id: number;
+  duration_ms: number;
+  position_ms: number;
+  loop_count: number;
+  value: number;
   locale?: string;
   country?: string;
-  entry_point?: string;
-  flow_name?: string;
-  step_name?: string;
-  result?: string;
-  reason_code?: string;
-  content_id?: string;
-  creator_pubkey?: string;
-  feed_algorithm?: string;
-  traffic_source?: string;
-  feature_key?: string;
-  experiment_key?: string;
-  variant_key?: string;
-  variation_id?: number;
-  duration_ms?: number;
-  position_ms?: number;
-  loop_count?: number;
-  value?: number;
 }
+
+const STRING_COLUMNS = [
+  'entry_point',
+  'flow_name',
+  'step_name',
+  'result',
+  'reason_code',
+  'content_id',
+  'creator_pubkey',
+  'feed_algorithm',
+  'traffic_source',
+  'feature_key',
+  'experiment_key',
+  'variant_key',
+] as const;
+
+const NUMBER_COLUMNS = [
+  'variation_id',
+  'duration_ms',
+  'position_ms',
+  'loop_count',
+  'value',
+] as const;
 
 export type ProductAnalyticsEventName =
   | 'session_started'
   | 'screen_time'
   | 'feed_scrolled'
   | 'video_engagement_summary'
-  | 'experiment_exposed'
-  | 'sentiment_prompt_answered';
+  | 'experiment_exposed';
 
 export type ProductAnalyticsProps = Partial<Omit<
   ProductAnalyticsPayload,
-  'event_name' | 'occurred_at' | 'anonymous_id' | 'session_id' | 'platform' | 'app_version' | 'schema_version'
+  'event_id' | 'event_name' | 'occurred_at' | 'anonymous_id' | 'session_id' | 'platform' | 'app_version' | 'schema_version'
 >> & {
   properties?: Record<string, unknown>;
 };
@@ -104,37 +137,25 @@ export class ProductAnalyticsClient {
       return null;
     }
 
-    const signer = currentIdentity.signer;
     const userPubkey = props.user_pubkey ?? currentIdentity.userPubkey;
-    if (!userPubkey || !signer) {
+    if (!userPubkey) {
       return null;
     }
 
+    // The signer is only needed to authenticate the request at flush time, so
+    // an event tracked before the signer is wired up is queued rather than
+    // dropped. AnalyticsPageTracker's one-shot session_started can otherwise
+    // mount before AnalyticsUserTracker has configured identity.
     const occurredAt = new Date();
-    const payload: ProductAnalyticsPayload = compactPayload({
-      ...props,
-      event_name: eventName,
-      occurred_at: occurredAt.toISOString(),
-      anonymous_id: getAnonymousId(),
-      session_id: getSessionId(),
-      user_pubkey: userPubkey,
-      platform: 'web',
-      app_version: getAppVersion(),
-      surface: props.surface ?? 'unknown',
-      locale: props.locale ?? getLocale(),
-      schema_version: 1,
-      properties: props.properties ?? {},
-    });
-    const signedEvent = await signer.signEvent({
-      kind: PRODUCT_ANALYTICS_EVENT_KIND,
-      content: JSON.stringify(payload),
-      created_at: Math.floor(occurredAt.getTime() / 1000),
-      tags: buildTelemetryTags(payload),
+    const payload = buildPayload(eventName, props, {
+      eventId: createUuid(),
+      occurredAt,
+      userPubkey,
     });
 
-    await this.queue.enqueue(signedEvent);
+    await this.queue.enqueue(payload);
     void this.flush();
-    return signedEvent.id;
+    return payload.event_id;
   }
 
   async flush(): Promise<void> {
@@ -157,6 +178,12 @@ export class ProductAnalyticsClient {
   }
 
   private async flushBatch(): Promise<void> {
+    const signer = currentIdentity.signer;
+    if (!signer) {
+      // Nothing can be authenticated yet; leave the batch queued.
+      return;
+    }
+
     const records = await this.queue.getFlushableBatch(this.batchSize);
     if (records.length === 0) {
       return;
@@ -164,10 +191,15 @@ export class ProductAnalyticsClient {
 
     const url = `${getFunnelcakeBaseUrl()}/api/analytics/events`;
     const body = JSON.stringify({
-      batch_id: createUuid(),
-      sent_at: new Date().toISOString(),
       events: records.map((record) => record.event),
     });
+
+    const authorization = await createNip98AuthHeader(signer, url, 'POST', body);
+    if (!authorization) {
+      // A transient signer failure must not burn a retry attempt or drop the
+      // batch — leave it pending and try again on the next flush.
+      return;
+    }
 
     try {
       const response = await fetch(url, {
@@ -175,8 +207,12 @@ export class ProductAnalyticsClient {
         headers: {
           Accept: 'application/json',
           'Content-Type': 'application/json',
+          Authorization: authorization,
         },
         body,
+        // Leave-time flushes run from a hidden tab; without keepalive the
+        // request is cancelled as the document unloads.
+        keepalive: true,
       });
 
       if (!response.ok) {
@@ -273,36 +309,66 @@ function createUuid(): string {
   });
 }
 
-function buildTelemetryTags(payload: ProductAnalyticsPayload): string[][] {
-  const tags: string[][] = [
-    ['client', 'divine-web'],
-    ['schema', 'product_analytics_v1'],
-    ['event_name', payload.event_name],
-    ['surface', payload.surface],
-    ['session', payload.session_id],
-    ['platform', payload.platform],
-  ];
+function buildPayload(
+  eventName: ProductAnalyticsEventName,
+  props: ProductAnalyticsProps,
+  context: { eventId: string; occurredAt: Date; userPubkey: string },
+): ProductAnalyticsPayload {
+  const payload: ProductAnalyticsPayload = {
+    event_id: context.eventId,
+    event_name: eventName,
+    occurred_at: context.occurredAt.toISOString(),
+    anonymous_id: getAnonymousId(),
+    session_id: getSessionId(),
+    user_pubkey: context.userPubkey,
+    platform: 'web',
+    app_version: getAppVersion(),
+    build_number: getBuildNumber(),
+    surface: props.surface ?? 'unknown',
+    schema_version: 1,
+    properties: props.properties ?? {},
+    entry_point: '',
+    flow_name: '',
+    step_name: '',
+    result: '',
+    reason_code: '',
+    content_id: '',
+    creator_pubkey: '',
+    feed_algorithm: '',
+    traffic_source: '',
+    feature_key: '',
+    experiment_key: '',
+    variant_key: '',
+    variation_id: 0,
+    duration_ms: 0,
+    position_ms: 0,
+    loop_count: 0,
+    value: 0,
+  };
 
-  if (payload.content_id) {
-    tags.push(['e', payload.content_id]);
-  }
-  if (payload.creator_pubkey) {
-    tags.push(['p', payload.creator_pubkey]);
-  }
-  if (payload.feature_key) {
-    tags.push(['feature_key', payload.feature_key]);
-  }
-  if (payload.experiment_key) {
-    tags.push(['experiment_key', payload.experiment_key]);
+  for (const column of STRING_COLUMNS) {
+    const value = props[column];
+    if (typeof value === 'string' && value) {
+      payload[column] = value;
+    }
   }
 
-  return tags;
+  for (const column of NUMBER_COLUMNS) {
+    const value = props[column];
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      payload[column] = value;
+    }
+  }
+
+  const locale = props.locale ?? getLocale();
+  if (locale) payload.locale = locale;
+  if (props.country) payload.country = props.country;
+
+  return payload;
 }
 
-function compactPayload(payload: ProductAnalyticsPayload): ProductAnalyticsPayload {
-  return Object.fromEntries(
-    Object.entries(payload).filter(([, value]) => value !== undefined),
-  ) as ProductAnalyticsPayload;
+function getBuildNumber(): string {
+  return import.meta.env.VITE_APP_BUILD_NUMBER || '';
 }
 
 export const productAnalytics = new ProductAnalyticsClient();

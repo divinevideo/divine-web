@@ -107,8 +107,8 @@ describe('analyticsClient', () => {
     expect(await productAnalytics.queue.getFlushableBatch(10)).toHaveLength(0);
   });
 
-  it('posts a batch of signed custom Nostr telemetry events', async () => {
-    const { productAnalytics, configureProductAnalyticsIdentity, PRODUCT_ANALYTICS_EVENT_KIND } = await import('./analyticsClient');
+  it('posts flat event objects on the platform ingest contract', async () => {
+    const { productAnalytics, configureProductAnalyticsIdentity } = await import('./analyticsClient');
     configureProductAnalyticsIdentity({ userPubkey: pubkey, signer });
 
     const eventId = await productAnalytics.track('session_started', { surface: 'home' });
@@ -119,30 +119,116 @@ describe('analyticsClient', () => {
     const fetchCall = vi.mocked(fetch).mock.calls[0];
     expect(fetchCall[0]).toBe('https://api.divine.video/api/analytics/events');
     expect(fetchCall[1]?.method).toBe('POST');
-    expect(fetchCall[1]?.headers).toMatchObject({
+
+    const body = JSON.parse(fetchCall[1]?.body as string);
+    // The endpoint ingests flat event objects keyed by event_id, exactly as
+    // divine-mobile's analytics_ingest_client.dart sends them.
+    expect(Object.keys(body)).toEqual(['events']);
+    const event = body.events[0];
+    expect(event.event_id).toBe(eventId);
+    expect(event.event_name).toBe('session_started');
+    expect(event.user_pubkey).toBe(pubkey);
+    expect(event.surface).toBe('home');
+    expect(event.platform).toBe('web');
+    expect(event.schema_version).toBe(1);
+    expect(event.properties).toEqual({});
+
+    // No Nostr envelope: no per-event signing, no kind/content/sig/tags.
+    expect(signer.signEvent).not.toHaveBeenCalledWith(
+      expect.objectContaining({ kind: 22237 }),
+    );
+    expect(event).not.toHaveProperty('kind');
+    expect(event).not.toHaveProperty('content');
+    expect(event).not.toHaveProperty('sig');
+    expect(event).not.toHaveProperty('tags');
+
+    expect(await productAnalytics.queue.getFlushableBatch(10)).toHaveLength(0);
+  });
+
+  it('sends the typed columns the ingest schema declares', async () => {
+    const { productAnalytics, configureProductAnalyticsIdentity } = await import('./analyticsClient');
+    configureProductAnalyticsIdentity({ userPubkey: pubkey, signer });
+
+    await productAnalytics.track('screen_time', {
+      surface: 'home',
+      duration_ms: 1500,
+      content_id: 'video-1',
+      properties: { path: '/' },
+    });
+    await vi.waitFor(() => expect(fetch).toHaveBeenCalled());
+
+    const event = JSON.parse(vi.mocked(fetch).mock.calls[0][1]?.body as string).events[0];
+    expect(event.duration_ms).toBe(1500);
+    expect(event.content_id).toBe('video-1');
+    expect(event.properties).toEqual({ path: '/' });
+    // Unset typed columns are still present with their zero value rather than
+    // omitted, matching the mobile client.
+    expect(event.position_ms).toBe(0);
+    expect(event.loop_count).toBe(0);
+    expect(event.value).toBe(0);
+    expect(event.entry_point).toBe('');
+    expect(event.flow_name).toBe('');
+  });
+
+  it('authenticates the batch with a NIP-98 Authorization header', async () => {
+    const { productAnalytics, configureProductAnalyticsIdentity } = await import('./analyticsClient');
+    configureProductAnalyticsIdentity({ userPubkey: pubkey, signer });
+
+    await productAnalytics.track('session_started', { surface: 'home' });
+    await vi.waitFor(() => expect(fetch).toHaveBeenCalled());
+
+    const init = vi.mocked(fetch).mock.calls[0][1];
+    expect(init?.headers).toMatchObject({
       Accept: 'application/json',
       'Content-Type': 'application/json',
+      Authorization: expect.stringMatching(/^Nostr /),
     });
-    expect(signer.signEvent).toHaveBeenCalledWith(expect.objectContaining({
-      kind: PRODUCT_ANALYTICS_EVENT_KIND,
-      content: expect.stringContaining('"event_name":"session_started"'),
-      tags: expect.arrayContaining([
-        ['client', 'divine-web'],
-        ['schema', 'product_analytics_v1'],
-        ['event_name', 'session_started'],
-        ['surface', 'home'],
-      ]),
-    }));
-    const event = JSON.parse(fetchCall[1]?.body as string).events[0];
-    expect(event.id).toBe(eventId);
-    expect(event.pubkey).toBe(pubkey);
-    expect(event.kind).toBe(PRODUCT_ANALYTICS_EVENT_KIND);
-    expect(JSON.parse(event.content)).toMatchObject({
-      event_name: 'session_started',
-      user_pubkey: pubkey,
-      surface: 'home',
-    });
-    expect(await productAnalytics.queue.getFlushableBatch(10)).toHaveLength(0);
+  });
+
+  it('does not POST when a NIP-98 header cannot be produced', async () => {
+    const failingSigner = {
+      signEvent: vi.fn(async () => {
+        throw new Error('signer unavailable');
+      }),
+    } as unknown as NostrSigner;
+
+    const { productAnalytics, configureProductAnalyticsIdentity } = await import('./analyticsClient');
+    configureProductAnalyticsIdentity({ userPubkey: pubkey, signer: failingSigner });
+
+    await productAnalytics.track('session_started', { surface: 'home' });
+    await productAnalytics.flush();
+
+    expect(fetch).not.toHaveBeenCalled();
+    // The event stays queued for a later attempt rather than being dropped.
+    expect(await productAnalytics.queue.getFlushableBatch(10)).toHaveLength(1);
+  });
+
+  it('uses keepalive transport so a leave-time flush is not cancelled', async () => {
+    const { productAnalytics, configureProductAnalyticsIdentity } = await import('./analyticsClient');
+    configureProductAnalyticsIdentity({ userPubkey: pubkey, signer });
+
+    await productAnalytics.track('session_started', { surface: 'home' });
+    await vi.waitFor(() => expect(fetch).toHaveBeenCalled());
+
+    expect(vi.mocked(fetch).mock.calls[0][1]?.keepalive).toBe(true);
+  });
+
+  it('queues events before a signer is configured and sends them once it is', async () => {
+    const { productAnalytics, configureProductAnalyticsIdentity } = await import('./analyticsClient');
+    // Identity arrives in two steps in the real app tree: the pubkey is known
+    // before the signer is wired up. A one-shot event must not be lost.
+    configureProductAnalyticsIdentity({ userPubkey: pubkey });
+
+    await productAnalytics.track('session_started', { surface: 'home' });
+    expect(await productAnalytics.queue.getFlushableBatch(10)).toHaveLength(1);
+    expect(fetch).not.toHaveBeenCalled();
+
+    configureProductAnalyticsIdentity({ userPubkey: pubkey, signer });
+    await productAnalytics.flush();
+    await vi.waitFor(() => expect(fetch).toHaveBeenCalled());
+
+    const event = JSON.parse(vi.mocked(fetch).mock.calls[0][1]?.body as string).events[0];
+    expect(event.event_name).toBe('session_started');
   });
 
   it('skips concurrent flushes while one is in flight', async () => {
@@ -166,9 +252,9 @@ describe('analyticsClient', () => {
     });
   });
 
-  it('does not enqueue events when signing is unavailable', async () => {
+  it('does not enqueue events when no user is identified', async () => {
     const { productAnalytics, configureProductAnalyticsIdentity } = await import('./analyticsClient');
-    configureProductAnalyticsIdentity({ userPubkey: pubkey });
+    configureProductAnalyticsIdentity({});
 
     await productAnalytics.track('session_started', { surface: 'home' });
     await productAnalytics.flush();

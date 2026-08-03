@@ -1,6 +1,17 @@
-import type { NostrEvent } from '@nostrify/nostrify';
+import type { ProductAnalyticsPayload } from '@/lib/analyticsClient';
 
 export const PRODUCT_EVENT_MAX_ATTEMPTS = 5;
+
+/**
+ * Hard bounds on what may sit on a user's disk.
+ *
+ * Records here contain a pubkey and a session id, and the ingest endpoint is
+ * not live yet, so without these every batch retries to dead and stays there
+ * forever. Dead letters expire; pending records expire; and the queue as a
+ * whole is capped, dropping the oldest first.
+ */
+export const PRODUCT_EVENT_MAX_RECORDS = 500;
+export const PRODUCT_EVENT_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 
 const DB_NAME = 'divine_product_events';
 const DB_VERSION = 1;
@@ -8,7 +19,7 @@ const STORE_NAME = 'product_event_queue';
 
 export interface ProductEventQueueRecord {
   id: string;
-  event: NostrEvent;
+  event: ProductAnalyticsPayload;
   created_at: number;
   next_attempt_at: number;
   attempt_count: number;
@@ -30,9 +41,9 @@ export class ProductEventQueue {
     this.initPromise = this.init();
   }
 
-  async enqueue(event: NostrEvent): Promise<void> {
+  async enqueue(event: ProductAnalyticsPayload): Promise<void> {
     const record: ProductEventQueueRecord = {
-      id: event.id,
+      id: event.event_id,
       event,
       created_at: Date.now(),
       next_attempt_at: Date.now(),
@@ -40,10 +51,11 @@ export class ProductEventQueue {
       status: 'pending',
     };
     await this.putRecord(record);
+    await this.enforceBounds();
   }
 
   async getFlushableBatch(limit: number): Promise<ProductEventQueueRecord[]> {
-    const records = await this.getAllRecords();
+    const records = await this.prune(await this.getAllRecords());
     const now = Date.now();
 
     return records
@@ -52,7 +64,39 @@ export class ProductEventQueue {
       .slice(0, limit);
   }
 
+  /**
+   * Drop expired records and trim the queue to its cap, oldest first. Returns
+   * the records that survived so callers can reuse the read.
+   */
+  private async prune(records: ProductEventQueueRecord[]): Promise<ProductEventQueueRecord[]> {
+    const cutoff = Date.now() - PRODUCT_EVENT_MAX_AGE_MS;
+    const live = records.filter((record) => record.created_at > cutoff);
+
+    const surplus = live.length - PRODUCT_EVENT_MAX_RECORDS;
+    const kept = surplus > 0
+      ? [...live].sort((a, b) => a.created_at - b.created_at).slice(surplus)
+      : live;
+
+    const keptIds = new Set(kept.map((record) => record.id));
+    const dropped = records.filter((record) => !keptIds.has(record.id));
+    if (dropped.length > 0) {
+      await this.deleteRecords(dropped.map((record) => record.id));
+    }
+
+    return kept;
+  }
+
+  private async enforceBounds(): Promise<void> {
+    await this.prune(await this.getAllRecords());
+  }
+
   async markSucceeded(ids: string[]): Promise<void> {
+    await this.deleteRecords(ids);
+  }
+
+  private async deleteRecords(ids: string[]): Promise<void> {
+    if (ids.length === 0) return;
+
     const db = await this.ensureDB();
     if (!db) {
       ids.forEach((id) => this.memoryRecords.delete(id));
@@ -92,7 +136,7 @@ export class ProductEventQueue {
   }
 
   async getDeadLetters(): Promise<ProductEventQueueRecord[]> {
-    const records = await this.getAllRecords();
+    const records = await this.prune(await this.getAllRecords());
     return records.filter((record) => record.status === 'dead');
   }
 
