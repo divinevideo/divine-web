@@ -7,7 +7,7 @@ import { API_CONFIG } from '@/config/api';
 import { fetchBulkVideos, fetchVideoById } from '@/lib/funnelcakeClient';
 import { isFunnelcakeAvailable } from '@/lib/funnelcakeHealth';
 import { genUserName } from '@/lib/genUserName';
-import { getSafeProfileImage } from '@/lib/imageUtils';
+import { getSafeProfileImage, getSafeThumbnailUrl } from '@/lib/imageUtils';
 import { groupRawNotifications, type NotificationVideoMeta } from '@/lib/notificationGrouping';
 import { useNotifications } from '@/hooks/useNotifications';
 import { useBatchedAuthors } from '@/hooks/useBatchedAuthors';
@@ -102,7 +102,7 @@ export function useHydratedNotifications(
       const existing = map.get(row.targetEventId);
       map.set(row.targetEventId, {
         title: existing?.title ?? row.videoMeta.title,
-        thumbnailUrl: existing?.thumbnailUrl ?? row.videoMeta.thumbnailUrl,
+        thumbnailUrl: existing?.thumbnailUrl ?? getSafeThumbnailUrl(row.videoMeta.thumbnailUrl),
       });
     }
     return map;
@@ -135,7 +135,7 @@ export function useHydratedNotifications(
               ['notification-video', video.id],
               {
                 title: video.title || undefined,
-                thumbnailUrl: video.thumbnail || undefined,
+                thumbnailUrl: getSafeThumbnailUrl(video.thumbnail || undefined),
               },
             );
           }
@@ -156,7 +156,7 @@ export function useHydratedNotifications(
                 }
                 return {
                   title: video.title,
-                  thumbnailUrl: video.thumbnail,
+                  thumbnailUrl: getSafeThumbnailUrl(video.thumbnail),
                 };
               },
               staleTime: 10 * 60 * 1000,
