@@ -390,6 +390,52 @@ describe('useHydratedNotifications', () => {
     );
   });
 
+  it('keeps hydrated metadata visible while a new page is loading', async () => {
+    // sortedIds is part of the query key, so page 2 mints a new key. Without
+    // keepPreviousData every already-hydrated row on screen blanks to the
+    // untitled fallback until the new bulk request resolves.
+    const page1 = makeNotificationsPage([makeLike('like-1', PUBKEY_A, VIDEO_ID, 2000)]);
+    mockUseNotifications.mockReturnValue(makeInfiniteQueryResult([page1]));
+    mockFetchBulkVideos.mockResolvedValue({
+      videos: [{ id: VIDEO_ID, title: 'Sunset Loop', thumbnail: 'https://cdn.example/t.jpg' }],
+      missing: [],
+    });
+
+    const { useHydratedNotifications } = await import('./useHydratedNotifications');
+    const { result, rerender } = renderHook(
+      () => useHydratedNotifications({ category: 'all' }),
+      { wrapper: createWrapper() },
+    );
+
+    await waitFor(() => {
+      const item = result.current.items[0];
+      expect(item?.kind === 'video' && item.videoTitle).toBe('Sunset Loop');
+    });
+
+    // Page 2 arrives with a new video, changing the id set and the query key.
+    let resolveBulk: ((value: unknown) => void) | undefined;
+    mockFetchBulkVideos.mockReturnValue(
+      new Promise((resolve) => {
+        resolveBulk = resolve;
+      }),
+    );
+    mockUseNotifications.mockReturnValue(
+      makeInfiniteQueryResult([
+        page1,
+        makeNotificationsPage([makeLike('like-2', PUBKEY_B, VIDEO_ID_2, 1000)]),
+      ]),
+    );
+    rerender();
+
+    // The first video must still show its title while page 2's fetch is open.
+    const stillHydrated = result.current.items.find(
+      (i) => i.kind === 'video' && i.videoEventId === VIDEO_ID,
+    );
+    expect(stillHydrated?.kind === 'video' && stillHydrated.videoTitle).toBe('Sunset Loop');
+
+    resolveBulk?.({ videos: [], missing: [VIDEO_ID_2] });
+  });
+
   it('fetches the thumbnail for a row the response described with a title only', async () => {
     // `referenced_event_title` without `referenced_video` is a partial answer.
     // Treating it as complete stranded the row on the placeholder thumbnail.

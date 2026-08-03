@@ -2,7 +2,7 @@
 // ABOUTME: Delegates paging to useNotifications; profile fetching to useBatchedAuthors; video fetching via internal query
 
 import { useMemo } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query';
 import { API_CONFIG } from '@/config/api';
 import { fetchBulkVideos, fetchVideoById } from '@/lib/funnelcakeClient';
 import { isFunnelcakeAvailable } from '@/lib/funnelcakeHealth';
@@ -171,6 +171,11 @@ export function useHydratedNotifications(
       return Object.fromEntries(entries);
     },
     enabled: sortedIds.length > 0,
+    // The key carries the id set, so every new page mints a new key and the
+    // previous result would otherwise blank to undefined mid-flight - dropping
+    // every already-hydrated row to "your video" and the placeholder thumbnail
+    // on each scroll. Keep the last result visible while the new one loads.
+    placeholderData: keepPreviousData,
     // Matches the per-video entries this query seeds. The key already carries
     // the id set, so a new target still fetches; staleTime 0 only bought a
     // repeat bulk POST every time the page remounted with the same ids.
