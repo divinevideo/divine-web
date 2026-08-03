@@ -11,6 +11,9 @@ import {
 } from './notificationTransform';
 import type { RawApiNotification, RawNotificationsApiResponse, RawNotification } from '@/types/notification';
 
+/** Coordinates only parse as coordinates with a full-length pubkey. */
+const AUTHOR_PUBKEY = '076c979382b90f5d3a2b21f95e1ee86b6033f14c92e79b7fad3fe1f1073f4886';
+
 describe('notificationTransform', () => {
   describe('mapNotificationType', () => {
     it('maps "reaction" to "like"', () => {
@@ -174,22 +177,68 @@ describe('notificationTransform', () => {
       expect(result!.targetEventId).toBe('video-789');
     });
 
-    it('keeps an addressable-only repost using its root addressable id', () => {
+    it('keeps an addressable-only repost, targeting its d-tag', () => {
       // divine-web publishes kind-16 reposts with an `a` tag and no `e` tag,
-      // so the backend has no 64-char referenced_event_id to report.
+      // so the backend has no 64-char referenced_event_id to report. The row
+      // must still resolve: /api/videos/{id} takes an event id or a d-tag.
       const repost: RawApiNotification = {
         ...raw,
         notification_type: 'repost',
         source_kind: 16,
         referenced_event_id: '',
         root_event_id: null,
-        root_addressable_id: '34236:author-pk:vine-id',
+        root_d_tag: 'vine-id',
+        root_addressable_id: `34236:${AUTHOR_PUBKEY}:vine-id`,
       };
 
       const result = transformNotification(repost);
       expect(result).not.toBeNull();
       expect(result!.type).toBe('repost');
-      expect(result!.targetEventId).toBe('34236:author-pk:vine-id');
+      expect(result!.targetEventId).toBe('vine-id');
+    });
+
+    it('strips the kind:pubkey prefix when only the coordinate is available', () => {
+      // /api/videos/bulk answers 500 for a whole batch containing a
+      // kind:pubkey:d-tag coordinate, and /api/videos/{coordinate} 404s.
+      const repost: RawApiNotification = {
+        ...raw,
+        notification_type: 'repost',
+        source_kind: 16,
+        referenced_event_id: '',
+        root_event_id: null,
+        root_d_tag: null,
+        referenced_d_tag: null,
+        root_addressable_id: `34236:${AUTHOR_PUBKEY}:vine-id`,
+      };
+
+      expect(transformNotification(repost)!.targetEventId).toBe('vine-id');
+    });
+
+    it('keeps colons that belong to the d-tag itself', () => {
+      const repost: RawApiNotification = {
+        ...raw,
+        notification_type: 'repost',
+        source_kind: 16,
+        referenced_event_id: '',
+        root_event_id: null,
+        root_addressable_id: `34236:${AUTHOR_PUBKEY}:vine:2015:07`,
+      };
+
+      expect(transformNotification(repost)!.targetEventId).toBe('vine:2015:07');
+    });
+
+    it('falls back to the embedded video d-tag before the coordinate', () => {
+      const repost: RawApiNotification = {
+        ...raw,
+        notification_type: 'repost',
+        source_kind: 16,
+        referenced_event_id: '',
+        root_event_id: null,
+        referenced_video: { title: 'Sunset Loop', thumbnail: null, d_tag: 'vine-id' },
+        root_addressable_id: `34236:${AUTHOR_PUBKEY}:stale-coordinate`,
+      };
+
+      expect(transformNotification(repost)!.targetEventId).toBe('vine-id');
     });
 
     it('carries the embedded source profile and video metadata forward', () => {

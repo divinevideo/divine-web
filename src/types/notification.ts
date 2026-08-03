@@ -129,7 +129,14 @@ export interface RawApiNotification {
   referenced_event_id?: string | null;
   /** Root navigation target. Prefer this over `referenced_event_id`. */
   root_event_id?: string | null;
-  /** `kind:pubkey:d-tag` root, populated for addressable targets. */
+  /** Root video d-tag. Resolvable by `/api/videos/{id}` and `/video/:id`. */
+  root_d_tag?: string | null;
+  /** d-tag of the referenced addressable event. */
+  referenced_d_tag?: string | null;
+  /**
+   * `kind:pubkey:d-tag` root, populated for addressable targets. Not a
+   * resolvable identifier — see `resolveTargetEventId`.
+   */
   root_addressable_id?: string | null;
   /** Specific comment to scroll to; set for `comment` and `reply`. */
   target_comment_id?: string | null;

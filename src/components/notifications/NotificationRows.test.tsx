@@ -254,6 +254,17 @@ describe('VideoNotificationRow', () => {
     expect(mockNavigate).toHaveBeenCalledWith('/video/event-abc123');
   });
 
+  it('percent-encodes a d-tag target so author-chosen identifiers survive the URL', () => {
+    // Addressable rows target a d-tag, which is an arbitrary author-chosen
+    // string — it can carry '/', '?' or '#'.
+    const notification = buildVideoNotification({ videoEventId: 'summer/2015?take#2' });
+    render(<VideoNotificationRow notification={notification} />);
+
+    fireEvent.click(screen.getByRole('button', { name: /Open My Cool Loop/i }));
+
+    expect(mockNavigate).toHaveBeenCalledWith('/video/summer%2F2015%3Ftake%232');
+  });
+
   it('avatar click navigates to actor profile path and does not trigger row navigation', () => {
     const notification = buildVideoNotification();
     render(<VideoNotificationRow notification={notification} />);

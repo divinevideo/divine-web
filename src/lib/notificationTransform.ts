@@ -40,6 +40,26 @@ export function mapNotificationType(apiType: string): NotificationType | null {
   }
 }
 
+/** `kind:pubkey:d-tag`, e.g. `34236:<64-hex>:my-vine`. */
+const ADDRESSABLE_COORDINATE = /^\d+:[0-9a-f]{64}:/i;
+
+/**
+ * Reduce an identifier to something the app can actually resolve.
+ *
+ * `/api/videos/{id}` documents exactly two accepted forms — a 64-char event id
+ * or a d-tag — and `/video/:id` resolves through it. A full `kind:pubkey:d-tag`
+ * coordinate is neither: the single lookup 404s and `/api/videos/bulk` returns
+ * 500 for the whole batch, so one addressable row would strand every thumbnail
+ * on the page. The d-tag suffix does resolve, so that is what we keep.
+ */
+function toResolvableIdentifier(value: string | null | undefined): string | undefined {
+  if (!value) return undefined;
+
+  const coordinate = ADDRESSABLE_COORDINATE.exec(value);
+  // d-tags may themselves contain ':', so keep everything after kind:pubkey.
+  return (coordinate ? value.slice(coordinate[0].length) : value) || undefined;
+}
+
 /**
  * Resolve the event this notification points at.
  *
@@ -47,10 +67,18 @@ export function mapNotificationType(apiType: string): NotificationType | null {
  * comments and replies it is the NIP-22 uppercase `E` tag (the video), whereas
  * `referenced_event_id` is the lowercase `e` (the parent comment). Reposts
  * published with only an `a` tag — which is what divine-web itself publishes —
- * have no 64-char event id at all and are addressed by `root_addressable_id`.
+ * have no 64-char event id at all, so we fall back to the d-tag the response
+ * carries alongside the coordinate.
  */
 function resolveTargetEventId(raw: RawApiNotification): string | undefined {
-  return raw.root_event_id || raw.referenced_event_id || raw.root_addressable_id || undefined;
+  return (
+    toResolvableIdentifier(raw.root_event_id) ??
+    toResolvableIdentifier(raw.referenced_event_id) ??
+    toResolvableIdentifier(raw.root_d_tag) ??
+    toResolvableIdentifier(raw.referenced_d_tag) ??
+    toResolvableIdentifier(raw.referenced_video?.d_tag) ??
+    toResolvableIdentifier(raw.root_addressable_id)
+  );
 }
 
 function resolveActorProfile(raw: RawApiNotification): RawNotification['actorProfile'] {

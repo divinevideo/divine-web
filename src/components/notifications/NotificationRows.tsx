@@ -6,6 +6,7 @@ import { Heart, Repeat, ChatCircle, UserPlus } from '@phosphor-icons/react';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { BrandLogo } from '@/components/brand/BrandLogo';
 import { useSubdomainNavigate } from '@/hooks/useSubdomainNavigate';
+import { buildVideoPath } from '@/lib/eventRouting';
 import { buildProfileLinkPath } from '@/lib/profileLinks';
 import { formatRelativeTime } from '@/lib/notificationTransform';
 import { cn } from '@/lib/utils';
@@ -206,7 +207,8 @@ export function VideoNotificationRow({
   const showInlineTimestamp = notification.type !== 'comment' || !notification.commentText;
 
   const handleVideoActivate = () => {
-    navigate(`/video/${notification.videoEventId}`);
+    // d-tags are author-chosen strings, so the identifier has to be encoded.
+    navigate(buildVideoPath(notification.videoEventId));
   };
 
   const handleAvatarClick = (actor: ActorInfo) => {
