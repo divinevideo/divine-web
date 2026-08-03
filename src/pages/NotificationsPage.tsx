@@ -70,24 +70,42 @@ export default function NotificationsPage() {
   const hasCapturedInitialUnread = useRef(false);
   const [initialUnreadIds, setInitialUnreadIds] = useState<Set<string>>(() => new Set());
 
-  // Mark all as read on page open (once, when first page loads).
-  // Keep a snapshot of initially unread rawIds so the list can still show
-  // what was new when the user arrived, even after optimistic updates flip
-  // everything to read in the cache.
+  // Keep a snapshot of unread rawIds so the list can still show what was new
+  // when the user arrived, even after optimistic updates flip everything to
+  // read in the cache.
+  //
+  // The snapshot accumulates across pages rather than latching on the first
+  // one: under infinite scroll a row that is still unread when page 2 arrives
+  // was also unread when the user landed, so it belongs under "New". The
+  // mark-read call stays one-shot for the visit.
   useEffect(() => {
     if (category !== 'all') return;
-    if (hasCapturedInitialUnread.current) return;
     if (items.length === 0) return;
 
     const unreadIds = items
       .filter((n) => !n.isRead)
       .flatMap((n) => n.rawIds);
+
+    const shouldMarkRead = !hasCapturedInitialUnread.current && unreadIds.length > 0;
     hasCapturedInitialUnread.current = true;
 
-    if (unreadIds.length === 0) return;
+    if (unreadIds.length > 0) {
+      setInitialUnreadIds((prev) => {
+        const next = new Set(prev);
+        let added = false;
+        for (const id of unreadIds) {
+          if (!next.has(id)) {
+            next.add(id);
+            added = true;
+          }
+        }
+        return added ? next : prev;
+      });
+    }
 
-    setInitialUnreadIds(new Set(unreadIds));
-    markRead.mutate(undefined);
+    if (shouldMarkRead) {
+      markRead.mutate(undefined);
+    }
   }, [category, items, markRead]);
 
   const newNotifications = useMemo(

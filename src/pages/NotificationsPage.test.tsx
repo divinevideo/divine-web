@@ -136,6 +136,35 @@ describe('NotificationsPage', () => {
     });
   });
 
+  it('files unread rows from a later page under New, and still marks read once', async () => {
+    const firstPage = [
+      buildVideoNotification({ id: 'new-1', rawIds: ['raw-new-1'], isRead: false }),
+      buildActorNotification({ id: 'earlier-1', rawIds: ['raw-earlier-1'], isRead: true }),
+    ];
+    mockUseHydratedNotifications.mockImplementation(() => makeHookResult(firstPage));
+
+    const { rerender } = render(<NotificationsPage />);
+    expect(await screen.findByText('New')).toBeInTheDocument();
+
+    // Page 2 arrives with a row that is still unread. It was unread when the
+    // user landed, so it belongs under New, not Earlier.
+    mockUseHydratedNotifications.mockImplementation(() =>
+      makeHookResult([
+        ...firstPage,
+        buildVideoNotification({ id: 'new-2', rawIds: ['raw-new-2'], isRead: false }),
+      ]),
+    );
+    rerender(<NotificationsPage />);
+
+    const newSection = (await screen.findByText('New')).parentElement;
+    await waitFor(() => {
+      expect(newSection?.textContent).toContain('new-2');
+    });
+
+    // The mark-read call still fires exactly once for the visit.
+    expect(mockMarkReadMutate).toHaveBeenCalledTimes(1);
+  });
+
   it('renders VideoNotificationRow for video kind and ActorNotificationRow for actor kind', async () => {
     render(<NotificationsPage />);
 
