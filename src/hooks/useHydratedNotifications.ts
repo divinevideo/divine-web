@@ -164,7 +164,10 @@ export function useHydratedNotifications(
       return Object.fromEntries(entries);
     },
     enabled: sortedIds.length > 0,
-    staleTime: 0,
+    // Matches the per-video entries this query seeds. The key already carries
+    // the id set, so a new target still fetches; staleTime 0 only bought a
+    // repeat bulk POST every time the page remounted with the same ids.
+    staleTime: 10 * 60 * 1000,
     gcTime: 30 * 60 * 1000,
   });
 

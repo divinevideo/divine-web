@@ -308,6 +308,32 @@ describe('useHydratedNotifications', () => {
     expect(result.current.items).toHaveLength(1);
   });
 
+  it('does not repeat the bulk video request when the page remounts', async () => {
+    const like = makeLike('like-1', PUBKEY_A, VIDEO_ID, 1000);
+    const { wrapper } = createWrapperWithClient();
+
+    mockUseNotifications.mockReturnValue(
+      makeInfiniteQueryResult([makeNotificationsPage([like])]),
+    );
+    mockUseBatchedAuthors.mockReturnValue({ data: {} });
+    mockIsFunnelcakeAvailable.mockReturnValue(true);
+    mockFetchBulkVideos.mockResolvedValue({
+      videos: [{ id: VIDEO_ID, title: 'Sunset Loop', thumbnail: 'https://cdn.example/t.jpg' }],
+      missing: [],
+    });
+
+    const { useHydratedNotifications } = await import('./useHydratedNotifications');
+
+    const first = renderHook(() => useHydratedNotifications({ category: 'all' }), { wrapper });
+    await waitFor(() => expect(mockFetchBulkVideos).toHaveBeenCalledTimes(1));
+    first.unmount();
+
+    const second = renderHook(() => useHydratedNotifications({ category: 'all' }), { wrapper });
+    await waitFor(() => expect(second.result.current.items).toHaveLength(1));
+
+    expect(mockFetchBulkVideos).toHaveBeenCalledTimes(1);
+  });
+
   it('uses video metadata embedded in the notification instead of refetching it', async () => {
     // The notifications response already carries `referenced_video`, so a row
     // that arrives with videoMeta must not cost a video request.
