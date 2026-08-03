@@ -62,7 +62,19 @@ function NotificationAvatarStack({
   );
 }
 
-/** 32×32 colored circle with a Phosphor icon. */
+/**
+ * 32×32 colored circle with a Phosphor icon.
+ *
+ * The icon sits on a 15% tint of its own hue, so the surface luminance tracks
+ * the theme and no single shade clears the WCAG 1.4.11 3:1 floor in both. Each
+ * icon therefore takes a light-theme shade and a dark-theme one; measured
+ * against the tint over --background, worst case (hover, muted/50):
+ *
+ *   like     red-600 / red-400        3.63 : 5.06
+ *   repost   green-700 / green-400    4.05 : 6.80
+ *   comment  blue-600 / blue-400      3.98 : 5.12
+ *   follow   violet-600 / violet-400  4.33 : 5.00
+ */
 function NotificationTypeIconChip({
   type,
   isRead,
@@ -76,25 +88,25 @@ function NotificationTypeIconChip({
     case 'like':
       return (
         <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-red-500/15">
-          <Heart className="h-4 w-4 text-red-500" weight={weight} />
+          <Heart className="h-4 w-4 text-red-600 dark:text-red-400" weight={weight} />
         </span>
       );
     case 'repost':
       return (
         <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-green-500/15">
-          <Repeat className="h-4 w-4 text-green-600" weight={weight} />
+          <Repeat className="h-4 w-4 text-green-700 dark:text-green-400" weight={weight} />
         </span>
       );
     case 'comment':
       return (
         <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-500/15">
-          <ChatCircle className="h-4 w-4 text-blue-500" weight={weight} />
+          <ChatCircle className="h-4 w-4 text-blue-600 dark:text-blue-400" weight={weight} />
         </span>
       );
     case 'follow':
       return (
         <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-violet-500/15">
-          <UserPlus className="h-4 w-4 text-violet-500" weight={weight} />
+          <UserPlus className="h-4 w-4 text-violet-600 dark:text-violet-400" weight={weight} />
         </span>
       );
   }
