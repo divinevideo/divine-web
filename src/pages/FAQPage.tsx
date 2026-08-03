@@ -768,7 +768,7 @@ export function FAQPage() {
                     Private support messages
                   </p>
                   <p>
-                    Divine's current private messaging channel is for contacting Divine Support.
+                    On Divine Web, the current private messaging channel is for contacting Divine Support.
                     Messages use encrypted NIP-17 delivery, and the support team can read and
                     respond to messages sent to that channel. User-to-user DMs and private video
                     sharing are not available on Divine Web right now.

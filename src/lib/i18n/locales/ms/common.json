@@ -10,7 +10,6 @@
     "popular": "Popular",
     "services": "Perkhidmatan",
     "search": "Cari",
-    "messages": "Mesej",
     "notifications": "Notifikasi",
     "profile": "Profil",
     "analytics": "Analitik"
@@ -101,19 +100,6 @@
     "reply": "Balas",
     "comment": "Komen"
   },
-  "messages": {
-    "badge": "Mesej",
-    "title": "Mesej langsung",
-    "subtitle": "Hubungi sokongan, hantar gelung secara peribadi, atau sambung perbualan dengan orang yang anda ikuti.",
-    "searchPlaceholder": "Cari seseorang untuk dimesej",
-    "newMessage": "Mesej baharu",
-    "readyToShare": "Sedia untuk dihantar secara peribadi.",
-    "shareWithTitle": "Mesej anda seterusnya akan menyertakan “{{title}}”.",
-    "shareWithLink": "Mesej anda seterusnya akan menyertakan pautan vine.",
-    "signerUnsupported": "Penandatangan semasa anda boleh melog masuk anda, tetapi ia belum menyokong NIP-44. Tukar kepada nsec, bunker atau penandatangan lain dengan sokongan NIP-44 untuk menggunakan DM di sini.",
-    "supportBadge": "Sokongan",
-    "supportSummary": "Pepijat, moderasi, hal akaun — kami mendengar."
-  },
   "support": {
     "title": "Sokongan",
     "subtitle": "Perlukan bantuan? Kami sedia membantu.",
@@ -201,7 +187,6 @@
       "pinToProfile": "Pin ke profil",
       "deleteVideo": "Padam video",
       "reportVideo": "Laporkan video",
-      "sendViaMessage": "Hantar melalui mesej",
       "reportUser": "Laporkan pengguna",
       "muteUser": "Senyapkan {{name}}",
       "viewSource": "Lihat sumber"
@@ -949,16 +934,11 @@
     "retry": "Cuba lagi",
     "peopleCount_one": "{{count}} orang",
     "peopleCount_other": "{{count}} orang",
-    "notFoundTitle": "Perbualan tidak ditemui",
-    "notFoundDescription": "Kembali ke peti masuk anda dan mulakan mesej baharu.",
-    "backToInbox": "Kembali ke peti masuk",
     "backToSupport": "Kembali ke Sokongan",
     "dmUnavailableTitle": "Mesej langsung tidak tersedia",
     "dmUnavailableDescription": "Penandatangan ini boleh mengesahkan anda, tetapi ia tidak mendedahkan kaedah penyulitan NIP-44 yang diperlukan untuk pemesejan peribadi.",
     "noMessages": "Belum ada mesej",
     "noMessagesHint": "Hantar mesej pertama untuk membuka thread ini.",
-    "readyToShare": "Sedia untuk dikongsi",
-    "placeholderShare": "Tambah nota pilihan...",
     "placeholderMessage": "Tulis mesej..."
   },
   "videoCommentsModal": {
@@ -1350,7 +1330,6 @@
     "muteErrorDescription": "Tak dapat menyimpan senyap. Cuba lagi?",
     "deleteVideo": "Padam video",
     "reportVideo": "Laporkan video",
-    "sendViaMessage": "Hantar melalui mesej",
     "reportUser": "Laporkan pengguna",
     "muteUser": "Senyapkan {{name}}",
     "viewSource": "Lihat sumber",

@@ -106,9 +106,8 @@ export function ProfileHeader({
   const [showReportDialog, setShowReportDialog] = useState(false);
   const [userListDialog, setUserListDialog] = useState<'followers' | 'following' | null>(null);
   const { canUseDirectMessages } = useDmCapability();
-  // Protected-minor DM restriction (#176): hide the Message affordance when a
-  // protected minor views a non-approved profile (the send gate + route guard
-  // would block it anyway; this avoids the dead end).
+  // Hide every non-Support compose affordance. Support still flows through the
+  // protected-minor approval check inside the compose guard.
   const { isComposeBlocked } = useDmComposeGuard();
 
   // Fetch followers/following when dialog is open

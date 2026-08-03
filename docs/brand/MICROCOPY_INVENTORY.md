@@ -38,7 +38,7 @@ updated EN files.
 | src/components/AppHeader.tsx | 77 | t() key | nav.home |  |  |
 | src/components/AppHeader.tsx | 90 | t() key | nav.discover |  |  |
 | src/components/AppHeader.tsx | 102 | t() key | nav.search |  |  |
-| src/components/AppHeader.tsx | 111 | t() key | nav.messages |  |  |
+| src/components/AppHeader.tsx | 112 | t() key | support.messageSupportTitle |  |  |
 | src/components/AppHeader.tsx | 127 | t() key | nav.notifications |  |  |
 | src/components/AppHeader.tsx | 153 | t() key | common.moreOptions |  |  |
 | src/components/AppHeader.tsx | 156 | t() key | common.moreOptions |  |  |
@@ -59,7 +59,7 @@ updated EN files.
 | src/components/AppSidebar.tsx | 121 | t() key | nav.search |  |  |
 | src/components/AppSidebar.tsx | 129 | t() key | nav.home |  |  |
 | src/components/AppSidebar.tsx | 137 | t() key | nav.discover |  |  |
-| src/components/AppSidebar.tsx | 154 | t() key | nav.messages |  |  |
+| src/components/AppSidebar.tsx | 229 | t() key | support.messageSupportTitle |  |  |
 | src/components/AppSidebar.tsx | 172 | t() key | nav.notifications |  |  |
 | src/components/AppSidebar.tsx | 181 | t() key | nav.profile |  |  |
 | src/components/AppSidebar.tsx | 190 | t() key | nav.analytics |  |  |

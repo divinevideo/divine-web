@@ -2,7 +2,6 @@ import {
   DIVINE_SUPPORT_PUBKEY,
   getDmConversationPath,
   type DmConversation,
-  type DmMessage,
 } from '@/lib/dm';
 
 export const SUPPORT_ONLY_DM_ERROR_MESSAGE = 'For now, you can only message Divine Support.';
@@ -32,10 +31,6 @@ export function assertSupportOnlyDmRecipients(recipients: string[]): void {
   if (!isSupportOnlyDmPeerSet(recipients)) {
     throw new DmSupportOnlyError();
   }
-}
-
-export function filterSupportOnlyDmMessages(messages: DmMessage[]): DmMessage[] {
-  return messages.filter((message) => isSupportOnlyDmPeerSet(message.peerPubkeys));
 }
 
 export function filterSupportOnlyDmConversations(conversations: DmConversation[]): DmConversation[] {

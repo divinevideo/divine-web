@@ -26,8 +26,16 @@ const {
   mockMarkConversationRead,
   mockSendMutate,
   mockSendMutateAsync,
+  protectedMinorState,
+  approvedMinorPubkeys,
+  mockRevalidateMinorRecipient,
 } = vi.hoisted(() => ({
   currentUserPubkey: 'a'.repeat(64),
+  protectedMinorState: {
+    value: 'not_protected' as 'not_protected' | 'protected' | 'unknown',
+  },
+  approvedMinorPubkeys: new Set<string>(),
+  mockRevalidateMinorRecipient: vi.fn(),
   dmCapabilityState: {
     canUseDirectMessages: true,
     isCheckingDmCapability: false,
@@ -85,6 +93,25 @@ vi.mock('@/hooks/useCurrentUser', () => ({
   }),
 }));
 
+vi.mock('@/hooks/useProtectedMinorStatus', () => ({
+  useProtectedMinorStatus: () => ({
+    state: protectedMinorState.value,
+  }),
+}));
+
+vi.mock('@/lib/officialAccounts', () => ({
+  DIVINE_MODERATION_PUBKEY: '8fd5eb6d8f362163bc00a5ab6b4a3167dbf32d00ec4efdbcf43b3c9514433b7e',
+  officialAccountsService: {
+    isApprovedMinorDmRecipient: (pubkey: string) => {
+      mockRevalidateMinorRecipient(pubkey);
+      return Promise.resolve(approvedMinorPubkeys.has(pubkey));
+    },
+    isApprovedMinorDmRecipientSync: (pubkey: string) =>
+      approvedMinorPubkeys.has(pubkey),
+    onVerdictChanged: () => () => undefined,
+  },
+}));
+
 function buildMessage(overrides: Partial<DmMessage> = {}): DmMessage {
   return {
     conversationId: CONVERSATION_ID,
@@ -132,6 +159,9 @@ function renderPage() {
 describe('ConversationPage', () => {
   beforeEach(async () => {
     vi.clearAllMocks();
+    protectedMinorState.value = 'not_protected';
+    approvedMinorPubkeys.clear();
+    approvedMinorPubkeys.add(RECIPIENT_PUBKEY);
     dmCapabilityState.canUseDirectMessages = true;
     dmCapabilityState.isCheckingDmCapability = false;
     const storage = new Map<string, string>();
@@ -281,6 +311,21 @@ describe('ConversationPage', () => {
         replace: true,
       });
     });
+    expect(container).toBeEmptyDOMElement();
+  });
+
+  it('redirects protected minors away when Support is not approved', async () => {
+    protectedMinorState.value = 'protected';
+    approvedMinorPubkeys.clear();
+
+    const { container } = renderPage();
+
+    await waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalledWith(getSupportDmConversationPath(), {
+        replace: true,
+      });
+    });
+    expect(mockRevalidateMinorRecipient).toHaveBeenCalledWith(RECIPIENT_PUBKEY);
     expect(container).toBeEmptyDOMElement();
   });
 

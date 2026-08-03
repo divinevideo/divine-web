@@ -41,7 +41,7 @@ describe('support-only messaging entry points', () => {
 
     expect(source).toContain('Private support messages');
     expect(source).toContain(
-      "Divine's current private messaging channel is for contacting Divine Support.",
+      'On Divine Web, the current private messaging channel is for contacting Divine Support.',
     );
     expect(source).toContain(
       'Messages use encrypted NIP-17 delivery, and the support team can read and respond to messages sent to that channel.',

@@ -10,7 +10,6 @@
     "popular": "مقبول",
     "services": "خدمات",
     "search": "تلاش",
-    "messages": "پیغامات",
     "notifications": "نوٹیفیکیشنز",
     "profile": "پروفائل",
     "analytics": "تجزیات"
@@ -101,19 +100,6 @@
     "reply": "جواب",
     "comment": "تبصرہ"
   },
-  "messages": {
-    "badge": "پیغامات",
-    "title": "ذاتی پیغامات",
-    "subtitle": "سپورٹ سے بات کریں، نجی طور پر لوپ بھیجیں، یا فالو کیے ہوئے لوگوں سے سلسلہ جاری رکھیں۔",
-    "searchPlaceholder": "کسی کو پیغام بھیجنے کے لیے تلاش کریں",
-    "newMessage": "نیا پیغام",
-    "readyToShare": "نجی طور پر بھیجنے کے لیے تیار۔",
-    "shareWithTitle": "آپ کے اگلے پیغام میں “{{title}}” شامل ہو گا۔",
-    "shareWithLink": "آپ کے اگلے پیغام میں ایک Vine لنک شامل ہو گا۔",
-    "signerUnsupported": "آپ کا موجودہ signer آپ کو لاگ اِن تو کروا سکتا ہے، لیکن ابھی NIP-44 نہیں بولتا۔ یہاں ذاتی پیغامات استعمال کرنے کے لیے کسی nsec، bunker یا NIP-44 سپورٹ والے دوسرے signer پر سوئچ کریں۔",
-    "supportBadge": "سپورٹ",
-    "supportSummary": "بگز، ماڈریشن، اکاؤنٹ کے معاملات — ہم سن رہے ہیں۔"
-  },
   "support": {
     "title": "سپورٹ",
     "subtitle": "مدد چاہیے؟ ہم حاضر ہیں۔",
@@ -201,7 +187,6 @@
       "pinToProfile": "پروفائل پر پن کریں",
       "deleteVideo": "ویڈیو ڈیلیٹ کریں",
       "reportVideo": "ویڈیو رپورٹ کریں",
-      "sendViaMessage": "پیغام سے بھیجیں",
       "reportUser": "صارف رپورٹ کریں",
       "muteUser": "{{name}} کو میوٹ کریں",
       "viewSource": "سورس دیکھیں"
@@ -949,16 +934,11 @@
     "retry": "دوبارہ کوشش کریں",
     "peopleCount_one": "{{count}} شخص",
     "peopleCount_other": "{{count}} لوگ",
-    "notFoundTitle": "گفتگو نہیں ملی",
-    "notFoundDescription": "اپنے ان باکس پر واپس جائیں اور نیا پیغام شروع کریں۔",
-    "backToInbox": "ان باکس پر واپس",
     "backToSupport": "سپورٹ پر واپس",
     "dmUnavailableTitle": "ذاتی پیغامات دستیاب نہیں",
     "dmUnavailableDescription": "یہ signer آپ کی تصدیق تو کر سکتا ہے، لیکن نجی پیغام رسانی کے لیے درکار NIP-44 انکرپشن طریقے فراہم نہیں کرتا۔",
     "noMessages": "ابھی کوئی پیغام نہیں",
     "noMessagesHint": "پہلا پیغام بھیجیں اور گفتگو شروع کریں۔",
-    "readyToShare": "شیئر کے لیے تیار",
-    "placeholderShare": "اختیاری نوٹ لکھیں...",
     "placeholderMessage": "پیغام لکھیں..."
   },
   "videoCommentsModal": {
@@ -1350,7 +1330,6 @@
     "muteErrorDescription": "میوٹ محفوظ نہیں ہو سکا۔ دوبارہ کوشش کریں؟",
     "deleteVideo": "ویڈیو ڈیلیٹ کریں",
     "reportVideo": "ویڈیو رپورٹ کریں",
-    "sendViaMessage": "پیغام سے بھیجیں",
     "reportUser": "صارف رپورٹ کریں",
     "muteUser": "{{name}} کو میوٹ کریں",
     "viewSource": "سورس دیکھیں",

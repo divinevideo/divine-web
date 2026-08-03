@@ -10,7 +10,6 @@
     "popular": "Phổ biến",
     "services": "Dịch vụ",
     "search": "Tìm kiếm",
-    "messages": "Tin nhắn",
     "notifications": "Thông báo",
     "profile": "Hồ sơ",
     "analytics": "Phân tích"
@@ -101,19 +100,6 @@
     "reply": "Trả lời",
     "comment": "Bình luận"
   },
-  "messages": {
-    "badge": "Tin nhắn",
-    "title": "Tin nhắn riêng",
-    "subtitle": "Chat với đội hỗ trợ, gửi riêng một vòng lặp, hoặc giữ mạch trò chuyện với những người bạn theo dõi.",
-    "searchPlaceholder": "Tìm người để nhắn tin",
-    "newMessage": "Tin nhắn mới",
-    "readyToShare": "Sẵn sàng gửi riêng.",
-    "shareWithTitle": "Tin nhắn tiếp theo của bạn sẽ kèm “{{title}}”.",
-    "shareWithLink": "Tin nhắn tiếp theo của bạn sẽ kèm một liên kết vine.",
-    "signerUnsupported": "Signer hiện tại của bạn đăng nhập được, nhưng nó chưa 'nói' được NIP-44. Hãy chuyển sang nsec, bunker hoặc signer khác có hỗ trợ NIP-44 để dùng tin nhắn riêng ở đây.",
-    "supportBadge": "Hỗ trợ",
-    "supportSummary": "Lỗi, kiểm duyệt, chuyện tài khoản — tụi mình đang lắng nghe."
-  },
   "support": {
     "title": "Hỗ trợ",
     "subtitle": "Cần giúp tay? Có tụi mình lo.",
@@ -201,7 +187,6 @@
       "pinToProfile": "Ghim vào hồ sơ",
       "deleteVideo": "Xóa video",
       "reportVideo": "Báo cáo video",
-      "sendViaMessage": "Gửi qua tin nhắn",
       "reportUser": "Báo cáo người dùng",
       "muteUser": "Tắt tiếng {{name}}",
       "viewSource": "Xem nguồn"
@@ -949,16 +934,11 @@
     "retry": "Thử lại",
     "peopleCount_one": "{{count}} người",
     "peopleCount_other": "{{count}} người",
-    "notFoundTitle": "Không tìm thấy cuộc trò chuyện",
-    "notFoundDescription": "Quay lại hộp thư và bắt đầu tin nhắn mới.",
-    "backToInbox": "Quay lại hộp thư",
     "backToSupport": "Quay lại Hỗ trợ",
     "dmUnavailableTitle": "Tin nhắn riêng hiện không khả dụng",
     "dmUnavailableDescription": "Signer này có thể xác thực bạn, nhưng không cung cấp các phương thức mã hóa NIP-44 cần thiết cho tin nhắn riêng tư.",
     "noMessages": "Chưa có tin nhắn nào",
     "noMessagesHint": "Gửi tin nhắn đầu tiên để mở cuộc trò chuyện này.",
-    "readyToShare": "Sẵn sàng chia sẻ",
-    "placeholderShare": "Thêm ghi chú (tùy chọn)...",
     "placeholderMessage": "Viết tin nhắn..."
   },
   "videoCommentsModal": {
@@ -1350,7 +1330,6 @@
     "muteErrorDescription": "Không lưu được thao tác tắt tiếng. Thử lại nhé?",
     "deleteVideo": "Xóa video",
     "reportVideo": "Báo cáo video",
-    "sendViaMessage": "Gửi qua tin nhắn",
     "reportUser": "Báo cáo người dùng",
     "muteUser": "Tắt tiếng {{name}}",
     "viewSource": "Xem nguồn",

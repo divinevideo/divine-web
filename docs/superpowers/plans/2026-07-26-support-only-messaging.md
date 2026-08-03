@@ -49,7 +49,6 @@ import {
   DmSupportOnlyError,
   assertSupportOnlyDmRecipients,
   filterSupportOnlyDmConversations,
-  filterSupportOnlyDmMessages,
   getSupportDmConversationPath,
   isSupportDmRecipient,
   isSupportOnlyDmPeerSet,
@@ -95,11 +94,7 @@ describe('support-only DM policy', () => {
     expect(() => assertSupportOnlyDmRecipients(pubkeys)).toThrow(DmSupportOnlyError);
   });
 
-  it('filters messages and conversations to Support only', () => {
-    expect(filterSupportOnlyDmMessages([
-      message([DIVINE_SUPPORT_PUBKEY]),
-      message([OTHER_PUBKEY]),
-    ])).toHaveLength(1);
+  it('filters conversations to Support only', () => {
     expect(filterSupportOnlyDmConversations([
       conversation('support', [DIVINE_SUPPORT_PUBKEY]),
       conversation('other', [OTHER_PUBKEY]),
@@ -156,10 +151,6 @@ export function assertSupportOnlyDmRecipients(recipients: string[]): void {
   if (!isSupportOnlyDmPeerSet(recipients)) {
     throw new DmSupportOnlyError();
   }
-}
-
-export function filterSupportOnlyDmMessages(messages: DmMessage[]): DmMessage[] {
-  return messages.filter((message) => isSupportOnlyDmPeerSet(message.peerPubkeys));
 }
 
 export function filterSupportOnlyDmConversations(
@@ -373,7 +364,6 @@ import {
   DmSupportOnlyError,
   assertSupportOnlyDmRecipients,
   filterSupportOnlyDmConversations,
-  filterSupportOnlyDmMessages,
   isSupportOnlyDmPeerSet,
 } from '@/lib/dmAccessPolicy';
 import { decodeConversationId } from '@/lib/dm';
@@ -426,12 +416,6 @@ const conversations = filterSupportOnlyDmConversations(
       officialAccountsService.isApprovedMinorDmRecipientSync(pubkey),
   }),
 );
-```
-
-Make inbox status use only visible messages:
-
-```ts
-if (filterSupportOnlyDmMessages(data.messages).length > 0) return 'ok';
 ```
 
 In `useDmConversation`, decode the route peers and require the Support-only

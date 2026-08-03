@@ -10,7 +10,6 @@ import {
   assertSupportOnlyDmRecipients,
   DmSupportOnlyError,
   filterSupportOnlyDmConversations,
-  filterSupportOnlyDmMessages,
   getSupportDmConversationPath,
   isSupportDmRecipient,
   isSupportOnlyDmPeerSet,
@@ -57,18 +56,6 @@ describe('support-only DM access policy', () => {
     expect(() => assertSupportOnlyDmRecipients([])).toThrow(DmSupportOnlyError);
     expect(() => assertSupportOnlyDmRecipients([OTHER_PUBKEY])).toThrow(DmSupportOnlyError);
     expect(() => assertSupportOnlyDmRecipients([DIVINE_SUPPORT_PUBKEY, OTHER_PUBKEY])).toThrow(DmSupportOnlyError);
-  });
-
-  it('retains only Support messages', () => {
-    const supportMessage = message('support', [DIVINE_SUPPORT_PUBKEY]);
-    const messages = [
-      supportMessage,
-      message('empty', []),
-      message('other', [OTHER_PUBKEY]),
-      message('group', [DIVINE_SUPPORT_PUBKEY, OTHER_PUBKEY]),
-    ];
-
-    expect(filterSupportOnlyDmMessages(messages)).toEqual([supportMessage]);
   });
 
   it('retains only Support conversations', () => {

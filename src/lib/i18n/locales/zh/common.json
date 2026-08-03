@@ -10,7 +10,6 @@
     "popular": "热门",
     "services": "服务",
     "search": "搜索",
-    "messages": "私信",
     "notifications": "通知",
     "profile": "个人资料",
     "analytics": "数据分析"
@@ -101,19 +100,6 @@
     "reply": "回复",
     "comment": "评论"
   },
-  "messages": {
-    "badge": "私信",
-    "title": "私信",
-    "subtitle": "找客服聊聊、私下甩个循环，或者和你关注的人一直聊下去。",
-    "searchPlaceholder": "找个人聊聊",
-    "newMessage": "新私信",
-    "readyToShare": "准备好了，私下发送。",
-    "shareWithTitle": "你的下一条私信会带上「{{title}}」。",
-    "shareWithLink": "你的下一条私信会带上一个 Vine 链接。",
-    "signerUnsupported": "你当前的签名器能登录，但还不支持 NIP-44。想用私信，请换成 nsec、bunker 或其他支持 NIP-44 的签名器。",
-    "supportBadge": "客服",
-    "supportSummary": "Bug、审核、账号问题——我们都听着呢。"
-  },
   "support": {
     "title": "支持",
     "subtitle": "需要帮忙？我们在。",
@@ -201,7 +187,6 @@
       "pinToProfile": "置顶到主页",
       "deleteVideo": "删除视频",
       "reportVideo": "举报视频",
-      "sendViaMessage": "私信发送",
       "reportUser": "举报用户",
       "muteUser": "屏蔽 {{name}}",
       "viewSource": "查看源数据"
@@ -949,16 +934,11 @@
     "retry": "重试",
     "peopleCount_one": "{{count}} 个人",
     "peopleCount_other": "{{count}} 个人",
-    "notFoundTitle": "找不到对话",
-    "notFoundDescription": "回到收件箱，发起一条新私信吧。",
-    "backToInbox": "返回收件箱",
     "backToSupport": "返回客服",
     "dmUnavailableTitle": "私信不可用",
     "dmUnavailableDescription": "这个签名器可以验证你的身份，但不提供私信所需的 NIP-44 加密方法。",
     "noMessages": "还没有消息",
     "noMessagesHint": "发出第一条消息，开启这个对话。",
-    "readyToShare": "可以分享了",
-    "placeholderShare": "顺手写句备注…",
     "placeholderMessage": "写条消息…"
   },
   "videoCommentsModal": {
@@ -1350,7 +1330,6 @@
     "muteErrorDescription": "屏蔽没存上，再试一次？",
     "deleteVideo": "删除视频",
     "reportVideo": "举报视频",
-    "sendViaMessage": "私信发送",
     "reportUser": "举报用户",
     "muteUser": "屏蔽 {{name}}",
     "viewSource": "查看源数据",

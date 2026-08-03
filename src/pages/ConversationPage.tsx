@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useReducer, useState } from 'react';
 import { ArrowLeft, ArrowUp, LinkSimple as Link2 } from '@phosphor-icons/react';
 import { Link, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Textarea } from '@/components/ui/textarea';
 import { useBatchedAuthors } from '@/hooks/useBatchedAuthors';
+import { useProtectedMinorStatus } from '@/hooks/useProtectedMinorStatus';
 import {
   useDmCapability,
   useDmConversation,
@@ -24,6 +25,9 @@ import {
   getSupportDmConversationPath,
   isSupportOnlyDmPeerSet,
 } from '@/lib/dmAccessPolicy';
+import { isThreadAllowedForProtectedMinor } from '@/lib/dmInboundFilter';
+import { officialAccountsService } from '@/lib/officialAccounts';
+import { isMinorDmRestricted } from '@/lib/protectedMinor';
 import { genUserName } from '@/lib/genUserName';
 import { getSafeProfileImage } from '@/lib/imageUtils';
 import { getDivineNip05Info } from '@/lib/nip05Utils';
@@ -194,6 +198,7 @@ export function ConversationPage() {
   const navigate = useSubdomainNavigate();
   const { conversationId } = useParams<{ conversationId: string }>();
   const { canUseDirectMessages, isCheckingDmCapability } = useDmCapability();
+  const { state: minorState } = useProtectedMinorStatus();
   const peerPubkeys = useMemo(() => decodeConversationId(conversationId || ''), [conversationId]);
   const { data: authorMap = {} } = useBatchedAuthors(peerPubkeys);
   const conversationQuery = useDmConversation(conversationId);
@@ -203,13 +208,30 @@ export function ConversationPage() {
   const latestMessageAt = conversationQuery.latestMessageAt;
   const lastReadAt = conversationQuery.lastReadAt;
   const markConversationRead = conversationQuery.markConversationRead;
+  const [, bumpVerdicts] = useReducer((x: number) => x + 1, 0);
+
+  useEffect(() => officialAccountsService.onVerdictChanged(bumpVerdicts), []);
+
+  useEffect(() => {
+    if (!isMinorDmRestricted(minorState)) return;
+    for (const pubkey of peerPubkeys) {
+      void officialAccountsService.isApprovedMinorDmRecipient(pubkey);
+    }
+  }, [minorState, peerPubkeys]);
+
+  const threadAllowedForMinor = isThreadAllowedForProtectedMinor(peerPubkeys, {
+    state: minorState,
+    isApproved: (pubkey) =>
+      officialAccountsService.isApprovedMinorDmRecipientSync(pubkey),
+  });
   // Both checks are load-bearing. decodeConversationId drops segments that are
   // not valid pubkeys, so a noncanonical id like `<support>,not-a-pubkey`
   // decodes to the support peer set and would pass isSupportOnlyDmPeerSet on
   // its own. The raw compare is what forces those routes to the canonical id.
   const threadBlocked =
     conversationId !== SUPPORT_CONVERSATION_ID ||
-    !isSupportOnlyDmPeerSet(peerPubkeys);
+    !isSupportOnlyDmPeerSet(peerPubkeys) ||
+    !threadAllowedForMinor;
 
   useEffect(() => {
     if (!threadBlocked && latestMessageAt > lastReadAt) {
