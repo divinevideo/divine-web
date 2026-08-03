@@ -408,3 +408,10 @@ npm run deploy:cloudflare  # Deploy to Cloudflare Pages
 Do not commit secrets. Configure deploy targets via `wrangler.toml` and
 environment variables. Verify `public/manifest.webmanifest` and required HTML
 meta tags (enforced by HTML ESLint rules) before deploy.
+
+Public issues, PRs, branch names, commit messages, screenshots, and
+descriptions must not mention corporate partners, customers, brands, campaign
+names, or other sensitive external identities unless a maintainer explicitly
+approves it. Use generic descriptors instead. The same applies to identifying
+values in code, tests, and fixtures — prefer keeping them in server-side
+configuration over committing them.
