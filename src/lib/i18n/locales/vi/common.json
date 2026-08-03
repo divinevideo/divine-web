@@ -952,6 +952,7 @@
     "notFoundTitle": "Không tìm thấy cuộc trò chuyện",
     "notFoundDescription": "Quay lại hộp thư và bắt đầu tin nhắn mới.",
     "backToInbox": "Quay lại hộp thư",
+    "backToSupport": "Quay lại Hỗ trợ",
     "dmUnavailableTitle": "Tin nhắn riêng hiện không khả dụng",
     "dmUnavailableDescription": "Signer này có thể xác thực bạn, nhưng không cung cấp các phương thức mã hóa NIP-44 cần thiết cho tin nhắn riêng tư.",
     "noMessages": "Chưa có tin nhắn nào",

@@ -952,6 +952,7 @@
     "notFoundTitle": "找不到对话",
     "notFoundDescription": "回到收件箱，发起一条新私信吧。",
     "backToInbox": "返回收件箱",
+    "backToSupport": "返回客服",
     "dmUnavailableTitle": "私信不可用",
     "dmUnavailableDescription": "这个签名器可以验证你的身份，但不提供私信所需的 NIP-44 加密方法。",
     "noMessages": "还没有消息",
@@ -1440,4 +1441,3 @@
     "playEpisode": "播放单集"
   }
 }
-

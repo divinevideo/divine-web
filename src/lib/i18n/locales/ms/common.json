@@ -952,6 +952,7 @@
     "notFoundTitle": "Perbualan tidak ditemui",
     "notFoundDescription": "Kembali ke peti masuk anda dan mulakan mesej baharu.",
     "backToInbox": "Kembali ke peti masuk",
+    "backToSupport": "Kembali ke Sokongan",
     "dmUnavailableTitle": "Mesej langsung tidak tersedia",
     "dmUnavailableDescription": "Penandatangan ini boleh mengesahkan anda, tetapi ia tidak mendedahkan kaedah penyulitan NIP-44 yang diperlukan untuk pemesejan peribadi.",
     "noMessages": "Belum ada mesej",
@@ -1440,4 +1441,3 @@
     "playEpisode": "Mainkan Episod"
   }
 }
-

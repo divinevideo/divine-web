@@ -952,6 +952,7 @@
     "notFoundTitle": "گفتگو نہیں ملی",
     "notFoundDescription": "اپنے ان باکس پر واپس جائیں اور نیا پیغام شروع کریں۔",
     "backToInbox": "ان باکس پر واپس",
+    "backToSupport": "سپورٹ پر واپس",
     "dmUnavailableTitle": "ذاتی پیغامات دستیاب نہیں",
     "dmUnavailableDescription": "یہ signer آپ کی تصدیق تو کر سکتا ہے، لیکن نجی پیغام رسانی کے لیے درکار NIP-44 انکرپشن طریقے فراہم نہیں کرتا۔",
     "noMessages": "ابھی کوئی پیغام نہیں",
