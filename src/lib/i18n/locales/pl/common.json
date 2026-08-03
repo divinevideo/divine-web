@@ -1093,10 +1093,17 @@
       "reposted": "reposted your video",
       "followed": "followed you",
       "andOthers_one": "and {{count}} other",
-      "andOthers_other": "and {{count}} others"
+      "andOthers_other": "and {{count}} others",
+      "likedTitled": "polubił(a) {{title}}",
+      "commentedTitled": "skomentował(a) {{title}}",
+      "repostedTitled": "udostępnił(a) {{title}}"
     },
     "video": {
       "untitled": "your video"
+    },
+    "a11y": {
+      "openVideo": "Otwórz {{title}}",
+      "viewProfile": "Profil {{name}}"
     }
   },
   "getEmbedPage": {

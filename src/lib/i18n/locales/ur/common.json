@@ -1091,7 +1091,25 @@
     "errorTitle": "نوٹیفیکیشنز لوڈ نہیں ہو سکیں",
     "errorFallback": "کچھ دیر بعد دوبارہ کوشش کریں",
     "sectionNew": "نئی",
-    "sectionEarlier": "پہلے کی"
+    "sectionEarlier": "پہلے کی",
+    "message": {
+      "liked": "آپ کی ویڈیو پسند کی",
+      "commented": "آپ کی ویڈیو پر تبصرہ کیا",
+      "reposted": "آپ کی ویڈیو دوبارہ پوسٹ کی",
+      "followed": "آپ کو فالو کیا",
+      "andOthers_one": "اور {{count}} اور",
+      "andOthers_other": "اور {{count}} اور",
+      "likedTitled": "{{title}} کو پسند کیا",
+      "commentedTitled": "{{title}} پر تبصرہ کیا",
+      "repostedTitled": "{{title}} کو دوبارہ پوسٹ کیا"
+    },
+    "video": {
+      "untitled": "آپ کی ویڈیو"
+    },
+    "a11y": {
+      "openVideo": "{{title}} کھولیں",
+      "viewProfile": "{{name}} کی پروفائل"
+    }
   },
   "getEmbedPage": {
     "title": "Divine ویجیٹ ایمبیڈ کریں",

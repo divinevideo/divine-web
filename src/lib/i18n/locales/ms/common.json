@@ -1091,7 +1091,25 @@
     "errorTitle": "Gagal memuatkan notifikasi",
     "errorFallback": "Sila cuba lagi nanti",
     "sectionNew": "Baharu",
-    "sectionEarlier": "Terdahulu"
+    "sectionEarlier": "Terdahulu",
+    "message": {
+      "liked": "menyukai video anda",
+      "commented": "mengulas video anda",
+      "reposted": "mengepos semula video anda",
+      "followed": "mengikuti anda",
+      "andOthers_one": "dan {{count}} yang lain",
+      "andOthers_other": "dan {{count}} yang lain",
+      "likedTitled": "menyukai {{title}}",
+      "commentedTitled": "mengulas {{title}}",
+      "repostedTitled": "mengepos semula {{title}}"
+    },
+    "video": {
+      "untitled": "video anda"
+    },
+    "a11y": {
+      "openVideo": "Buka {{title}}",
+      "viewProfile": "Profil {{name}}"
+    }
   },
   "getEmbedPage": {
     "title": "Sematkan Widget Divine",
@@ -1439,4 +1457,3 @@
     "playEpisode": "Mainkan Episod"
   }
 }
-

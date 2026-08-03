@@ -1091,7 +1091,25 @@
     "errorTitle": "通知加载失败",
     "errorFallback": "请稍后再试",
     "sectionNew": "新",
-    "sectionEarlier": "更早"
+    "sectionEarlier": "更早",
+    "message": {
+      "liked": "赞了你的视频",
+      "commented": "评论了你的视频",
+      "reposted": "转发了你的视频",
+      "followed": "关注了你",
+      "andOthers_one": "和另外 {{count}} 人",
+      "andOthers_other": "和另外 {{count}} 人",
+      "likedTitled": "赞了 {{title}}",
+      "commentedTitled": "评论了 {{title}}",
+      "repostedTitled": "转发了 {{title}}"
+    },
+    "video": {
+      "untitled": "你的视频"
+    },
+    "a11y": {
+      "openVideo": "打开 {{title}}",
+      "viewProfile": "{{name}} 的主页"
+    }
   },
   "getEmbedPage": {
     "title": "嵌入 Divine 小组件",
@@ -1439,4 +1457,3 @@
     "playEpisode": "播放单集"
   }
 }
-

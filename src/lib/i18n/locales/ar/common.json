@@ -1160,11 +1160,22 @@
       "commented": "commented on your video",
       "reposted": "reposted your video",
       "followed": "followed you",
-      "andOthers_one": "and {{count}} other",
-      "andOthers_other": "and {{count}} others"
+      "andOthers_zero": "و{{count}} آخر",
+      "andOthers_one": "و{{count}} آخر",
+      "andOthers_two": "و{{count}} آخرَان",
+      "andOthers_few": "و{{count}} آخرون",
+      "andOthers_many": "و{{count}} آخرًا",
+      "andOthers_other": "و{{count}} آخرون",
+      "likedTitled": "أعجب بـ {{title}}",
+      "commentedTitled": "علّق على {{title}}",
+      "repostedTitled": "أعاد نشر {{title}}"
     },
     "video": {
       "untitled": "your video"
+    },
+    "a11y": {
+      "openVideo": "فتح {{title}}",
+      "viewProfile": "الملف الشخصي لـ {{name}}"
     }
   },
   "getEmbedPage": {

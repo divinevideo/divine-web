@@ -1091,7 +1091,25 @@
     "errorTitle": "Không tải được thông báo",
     "errorFallback": "Vui lòng thử lại sau",
     "sectionNew": "Mới",
-    "sectionEarlier": "Trước đó"
+    "sectionEarlier": "Trước đó",
+    "message": {
+      "liked": "đã thích video của bạn",
+      "commented": "đã bình luận về video của bạn",
+      "reposted": "đã đăng lại video của bạn",
+      "followed": "đã theo dõi bạn",
+      "andOthers_one": "và {{count}} người khác",
+      "andOthers_other": "và {{count}} người khác",
+      "likedTitled": "đã thích {{title}}",
+      "commentedTitled": "đã bình luận về {{title}}",
+      "repostedTitled": "đã đăng lại {{title}}"
+    },
+    "video": {
+      "untitled": "video của bạn"
+    },
+    "a11y": {
+      "openVideo": "Mở {{title}}",
+      "viewProfile": "Trang cá nhân của {{name}}"
+    }
   },
   "getEmbedPage": {
     "title": "Nhúng widget Divine",

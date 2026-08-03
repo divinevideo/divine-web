@@ -1093,10 +1093,17 @@
       "reposted": "reposted your video",
       "followed": "followed you",
       "andOthers_one": "and {{count}} other",
-      "andOthers_other": "and {{count}} others"
+      "andOthers_other": "and {{count}} others",
+      "likedTitled": "{{title}}을(를) 좋아합니다",
+      "commentedTitled": "{{title}}에 댓글을 남겼습니다",
+      "repostedTitled": "{{title}}을(를) 리포스트했습니다"
     },
     "video": {
       "untitled": "your video"
+    },
+    "a11y": {
+      "openVideo": "{{title}} 열기",
+      "viewProfile": "{{name}} 프로필"
     }
   },
   "getEmbedPage": {

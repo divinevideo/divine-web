@@ -1093,10 +1093,17 @@
       "reposted": "reposted your video",
       "followed": "followed you",
       "andOthers_one": "and {{count}} other",
-      "andOthers_other": "and {{count}} others"
+      "andOthers_other": "and {{count}} others",
+      "likedTitled": "{{title}}に「いいね」しました",
+      "commentedTitled": "{{title}}にコメントしました",
+      "repostedTitled": "{{title}}をリポストしました"
     },
     "video": {
       "untitled": "your video"
+    },
+    "a11y": {
+      "openVideo": "{{title}}を開く",
+      "viewProfile": "{{name}}のプロフィール"
     }
   },
   "getEmbedPage": {

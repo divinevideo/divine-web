@@ -80,18 +80,17 @@ describe('VideoNotificationRow', () => {
     await initializeI18n({ force: true, languages: ['en-US'] });
   });
 
-  it('single-actor like row shows one avatar, the actor name, liked your video, title, and thumbnail', () => {
+  it('single-actor like row shows one avatar, a whole-sentence message, and a thumbnail', () => {
     const notification = buildVideoNotification();
     render(<VideoNotificationRow notification={notification} />);
 
     // Actor name visible
     expect(screen.getByText('Alice')).toBeInTheDocument();
 
-    // Message verb
-    expect(screen.getByText('liked your video')).toBeInTheDocument();
-
-    // Video title
-    expect(screen.getByText('My Cool Loop')).toBeInTheDocument();
+    // When the video has a title, the verb and the title are one translatable
+    // sentence rather than a verb fragment concatenated onto a bare title.
+    expect(screen.getByText('liked My Cool Loop')).toBeInTheDocument();
+    expect(screen.queryByText('liked your video')).not.toBeInTheDocument();
 
     // Thumbnail image rendered (decorative — the wrapping button carries the
     // accessible name, so the img is presentation-only)
@@ -158,7 +157,7 @@ describe('VideoNotificationRow', () => {
     });
     render(<VideoNotificationRow notification={notification} />);
 
-    expect(screen.getByText('commented on your video')).toBeInTheDocument();
+    expect(screen.getByText('commented on My Cool Loop')).toBeInTheDocument();
 
     // Timestamp is inside the comment quote box (not at end of message paragraph)
     const timestampEl = screen.getByTestId('notification-timestamp');
@@ -179,6 +178,25 @@ describe('VideoNotificationRow', () => {
 
     const timestampEl = screen.getByTestId('notification-timestamp');
     expect(timestampEl.textContent).not.toBe('');
+  });
+
+  it('falls back to the untitled sentence when the video has no title', () => {
+    const notification = buildVideoNotification({ videoTitle: undefined });
+    render(<VideoNotificationRow notification={notification} />);
+
+    // The untitled wording must actually reach the screen, not just the
+    // thumbnail's accessible name.
+    expect(screen.getByText('liked your video')).toBeInTheDocument();
+  });
+
+  it('localizes the thumbnail and avatar accessible names', async () => {
+    await initializeI18n({ force: true, languages: ['es'] });
+    const notification = buildVideoNotification();
+    render(<VideoNotificationRow notification={notification} />);
+
+    // Neither label may be hardcoded English.
+    expect(screen.queryByRole('button', { name: /^Open My Cool Loop$/ })).toBeNull();
+    expect(screen.queryByRole('button', { name: /^Alice profile$/ })).toBeNull();
   });
 
   it('missing thumbnail renders a BrandLogo placeholder', () => {
@@ -213,7 +231,7 @@ describe('VideoNotificationRow', () => {
     const messageButton = timestampEl.closest('button');
     expect(messageButton).toBeInTheDocument();
     expect(messageButton?.textContent).toContain('Alice');
-    expect(messageButton?.textContent).toContain('liked your video');
+    expect(messageButton?.textContent).toContain('liked My Cool Loop');
   });
 
   it('thumbnail click navigates to /video/:videoEventId and does not double-fire row navigation', () => {
@@ -231,7 +249,7 @@ describe('VideoNotificationRow', () => {
     const notification = buildVideoNotification();
     render(<VideoNotificationRow notification={notification} />);
 
-    fireEvent.click(screen.getByRole('button', { name: /Alice liked your video My Cool Loop/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Alice liked My Cool Loop/i }));
 
     expect(mockNavigate).toHaveBeenCalledWith('/video/event-abc123');
   });

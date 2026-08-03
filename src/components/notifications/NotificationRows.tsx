@@ -25,6 +25,7 @@ function NotificationAvatarStack({
   totalCount: number;
   onAvatarClick: (actor: ActorInfo) => void;
 }) {
+  const { t } = useTranslation('common');
   const visible = actors.slice(0, 3);
   const overflow = totalCount - actors.length;
 
@@ -34,7 +35,7 @@ function NotificationAvatarStack({
         <button
           key={actor.pubkey}
           type="button"
-          aria-label={`${actor.displayName} profile`}
+          aria-label={t('notificationsPage.a11y.viewProfile', { name: actor.displayName })}
           onClick={(e) => {
             e.stopPropagation();
             onAvatarClick(actor);
@@ -80,7 +81,7 @@ function NotificationTypeIconChip({
     case 'repost':
       return (
         <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-green-500/15">
-          <Repeat className="h-4 w-4 text-green-500" weight={weight} />
+          <Repeat className="h-4 w-4 text-green-600" weight={weight} />
         </span>
       );
     case 'comment':
@@ -108,10 +109,12 @@ function NotificationVideoThumbnail({
   title: string;
   onClick: (e: React.MouseEvent) => void;
 }) {
+  const { t } = useTranslation('common');
+
   return (
     <button
       type="button"
-      aria-label={`Open ${title}`}
+      aria-label={t('notificationsPage.a11y.openVideo', { title })}
       onClick={(e) => {
         e.stopPropagation();
         onClick(e);
@@ -140,24 +143,35 @@ function NotificationVideoThumbnail({
 
 type TFunction = ReturnType<typeof useTranslation>['t'];
 
-/** Format the grouped message text. Returns separate parts for bold/plain rendering. */
-function getVerbKey(type: VideoNotification['type']): string {
+/**
+ * Message keys come in two shapes so translators get a whole sentence rather
+ * than a verb fragment the JSX concatenates onto a bare title. Languages that
+ * put the verb last (ja, ko, tr) cannot reorder a fragment.
+ */
+function getVerbKey(type: VideoNotification['type'], hasTitle: boolean): string {
   switch (type) {
     case 'like':
-      return 'notificationsPage.message.liked';
+      return hasTitle
+        ? 'notificationsPage.message.likedTitled'
+        : 'notificationsPage.message.liked';
     case 'comment':
-      return 'notificationsPage.message.commented';
+      return hasTitle
+        ? 'notificationsPage.message.commentedTitled'
+        : 'notificationsPage.message.commented';
     case 'repost':
-      return 'notificationsPage.message.reposted';
+      return hasTitle
+        ? 'notificationsPage.message.repostedTitled'
+        : 'notificationsPage.message.reposted';
   }
 }
 
 interface MessageParts {
   firstName: string;
   othersText: string | null;
-  verbText: string;
+  /** Complete sentence: either "liked <title>" or "liked your video". */
+  messageText: string;
+  /** Accessible name for the thumbnail. */
   titleText: string;
-  hasVideoTitle: boolean;
 }
 
 function formatGroupedMessage(notification: VideoNotification, t: TFunction): MessageParts {
@@ -167,12 +181,13 @@ function formatGroupedMessage(notification: VideoNotification, t: TFunction): Me
     othersCount > 0
       ? t('notificationsPage.message.andOthers', { count: othersCount })
       : null;
-  const verbText = t(getVerbKey(notification.type));
   const videoTitle = notification.videoTitle?.trim();
-  const hasVideoTitle = Boolean(videoTitle);
   const titleText = videoTitle || t('notificationsPage.video.untitled');
+  const messageText = t(getVerbKey(notification.type, Boolean(videoTitle)), {
+    title: videoTitle,
+  });
 
-  return { firstName, othersText, verbText, titleText, hasVideoTitle };
+  return { firstName, othersText, messageText, titleText };
 }
 
 // ---------------------------------------------------------------------------
@@ -187,7 +202,7 @@ export function VideoNotificationRow({
   const { t } = useTranslation('common');
   const navigate = useSubdomainNavigate();
 
-  const { firstName, othersText, verbText, titleText, hasVideoTitle } = formatGroupedMessage(notification, t);
+  const { firstName, othersText, messageText, titleText } = formatGroupedMessage(notification, t);
   const showInlineTimestamp = notification.type !== 'comment' || !notification.commentText;
 
   const handleVideoActivate = () => {
@@ -234,13 +249,7 @@ export function VideoNotificationRow({
             </>
           )}
           {' '}
-          <span className="text-muted-foreground">{verbText}</span>
-          {hasVideoTitle && (
-            <>
-              {' '}
-              <span className="font-semibold">{titleText}</span>
-            </>
-          )}
+          <span className="text-muted-foreground">{messageText}</span>
           {showInlineTimestamp && (
             <>
               {' · '}
@@ -307,7 +316,7 @@ export function ActorNotificationRow({
       {/* Single avatar */}
       <button
         type="button"
-        aria-label={`${actor.displayName} profile`}
+        aria-label={t('notificationsPage.a11y.viewProfile', { name: actor.displayName })}
         onClick={(e) => {
           e.stopPropagation();
           handleRowActivate();

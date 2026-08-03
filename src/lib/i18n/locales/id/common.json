@@ -1093,10 +1093,17 @@
       "reposted": "reposted your video",
       "followed": "followed you",
       "andOthers_one": "and {{count}} other",
-      "andOthers_other": "and {{count}} others"
+      "andOthers_other": "and {{count}} others",
+      "likedTitled": "menyukai {{title}}",
+      "commentedTitled": "mengomentari {{title}}",
+      "repostedTitled": "memposting ulang {{title}}"
     },
     "video": {
       "untitled": "your video"
+    },
+    "a11y": {
+      "openVideo": "Buka {{title}}",
+      "viewProfile": "Profil {{name}}"
     }
   },
   "getEmbedPage": {

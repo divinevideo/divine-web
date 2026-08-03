@@ -1093,10 +1093,17 @@
       "reposted": "reposted your video",
       "followed": "followed you",
       "andOthers_one": "and {{count}} other",
-      "andOthers_other": "and {{count}} others"
+      "andOthers_other": "and {{count}} others",
+      "likedTitled": "nag-like ng {{title}}",
+      "commentedTitled": "nag-comment sa {{title}}",
+      "repostedTitled": "nag-repost ng {{title}}"
     },
     "video": {
       "untitled": "your video"
+    },
+    "a11y": {
+      "openVideo": "Buksan ang {{title}}",
+      "viewProfile": "Profile ni {{name}}"
     }
   },
   "getEmbedPage": {
