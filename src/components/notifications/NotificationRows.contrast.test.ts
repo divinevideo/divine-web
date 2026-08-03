@@ -31,11 +31,19 @@ function hslToRgb(h: number, s: number, l: number): Rgb {
 
 function hexToRgb(hex: string): Rgb {
   const v = hex.replace('#', '');
-  return [
+  const rgb: Rgb = [
     parseInt(v.slice(0, 2), 16),
     parseInt(v.slice(2, 4), 16),
     parseInt(v.slice(4, 6), 16),
   ];
+  // Tailwind v4 states palette colours as `oklch(...)`. parseInt would yield
+  // NaN, and `NaN < MIN_RATIO` is false, so every contrast check below would
+  // silently pass. Fail loudly instead of turning this suite into a no-op.
+  expect(
+    rgb.every(Number.isFinite),
+    `could not parse "${hex}" as #rrggbb — has the Tailwind palette format changed?`,
+  ).toBe(true);
+  return rgb;
 }
 
 function composite(foreground: Rgb, alpha: number, background: Rgb): Rgb {
@@ -90,35 +98,65 @@ interface Chip {
 /**
  * Pulls each chip's tint and its light/dark icon shades straight out of the
  * component, so the assertion tracks the real class names rather than a copy.
+ *
+ * Chips are discovered by their tint, which every chip has, and a chip that
+ * does not declare BOTH a light and a dark icon shade is reported as unpaired
+ * rather than skipped. Matching on the paired shape instead meant a chip added
+ * with a single shade — precisely the regression this file exists to prevent —
+ * silently left the measured set and every assertion still passed.
  */
-function readChips(): Map<string, Chip> {
+function readChips(): { chips: Map<string, Chip>; unpaired: string[] } {
   const source = readFileSync(COMPONENT, 'utf-8');
   const palette = colors as unknown as Record<string, Record<string, string>>;
   const chips = new Map<string, Chip>();
+  const unpaired: string[] = [];
 
-  const pattern =
-    /bg-(\w+)-(\d+)\/(\d+)"[\s\S]{0,200}?className="[^"]*?\btext-(\w+)-(\d+) dark:text-(\w+)-(\d+)\b/g;
+  const shade = (family: string, value: string, tintName: string): Rgb => {
+    const hex = palette[family]?.[value];
+    expect(hex, `${tintName}: no Tailwind colour for ${family}-${value}`).toBeTruthy();
+    return hexToRgb(hex);
+  };
 
-  for (const m of source.matchAll(pattern)) {
-    const [, tintFamily, tintShade, alpha, lightFamily, lightShade, darkFamily, darkShade] = m;
-    chips.set(`${tintFamily}-${tintShade}/${alpha}`, {
-      tint: hexToRgb(palette[tintFamily][tintShade]),
+  for (const tintMatch of source.matchAll(/bg-(\w+)-(\d+)\/(\d+)"/g)) {
+    const [, tintFamily, tintShade, alpha] = tintMatch;
+    const name = `${tintFamily}-${tintShade}/${alpha}`;
+    // The icon element follows its tint span closely; keep the window tight so
+    // one chip cannot borrow the next chip's shades.
+    const window = source.slice(tintMatch.index, tintMatch.index + 300);
+
+    const light = /(?<!dark:)\btext-(\w+)-(\d+)\b/.exec(window);
+    const dark = /\bdark:text-(\w+)-(\d+)\b/.exec(window);
+
+    if (!light) {
+      // No icon colour at all: nothing to measure, and silently dropping it is
+      // how a bad chip would slip through. Report it.
+      unpaired.push(name);
+      continue;
+    }
+
+    chips.set(name, {
+      tint: shade(tintFamily, tintShade, name),
       tintAlpha: Number(alpha) / 100,
-      light: hexToRgb(palette[lightFamily][lightShade]),
-      dark: hexToRgb(palette[darkFamily][darkShade]),
+      light: shade(light[1], light[2], name),
+      // Without a `dark:` variant the light shade is what renders in dark mode
+      // too, so measure it there rather than excusing the chip from the check.
+      dark: dark ? shade(dark[1], dark[2], name) : shade(light[1], light[2], name),
     });
   }
 
-  return chips;
+  return { chips, unpaired };
 }
 
 describe('notification type chip contrast', () => {
   const surfaces = readThemeSurfaces();
-  const chips = readChips();
+  const { chips, unpaired } = readChips();
 
-  it('finds every chip declared in NotificationRows', () => {
-    // like, repost, comment, follow
-    expect(chips.size).toBe(4);
+  it('measures every chip declared in NotificationRows', () => {
+    // A chip with no icon colour cannot be measured, so it fails here rather
+    // than quietly leaving the set the contrast checks iterate over.
+    expect(unpaired, `chips with no icon shade to measure: ${unpaired.join(', ')}`).toEqual([]);
+    // Guards against the parse itself breaking and measuring nothing at all.
+    expect(chips.size, 'no chips parsed out of NotificationRows').toBeGreaterThanOrEqual(4);
   });
 
   for (const theme of ['light', 'dark'] as const) {
