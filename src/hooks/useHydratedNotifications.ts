@@ -56,20 +56,54 @@ export function useHydratedNotifications(
   // -------------------------------------------------------------------------
   // Profile hydration
   // -------------------------------------------------------------------------
+  // The notifications response embeds `source_profile`, so only actors it did
+  // not describe need a profile lookup.
+  const embeddedProfiles = useMemo(() => {
+    const map = new Map<string, ActorInfo>();
+    for (const row of flatRaw) {
+      const embedded = row.actorProfile;
+      if (!embedded?.displayName || map.has(row.actorPubkey)) continue;
+      map.set(row.actorPubkey, {
+        pubkey: row.actorPubkey,
+        displayName: embedded.displayName,
+        avatarUrl: getSafeProfileImage(embedded.avatarUrl),
+        nip05: embedded.nip05,
+      });
+    }
+    return map;
+  }, [flatRaw]);
+
   const actorPubkeys = useMemo(
-    () => Array.from(new Set(flatRaw.map((r) => r.actorPubkey))),
-    [flatRaw],
+    () =>
+      Array.from(new Set(flatRaw.map((r) => r.actorPubkey))).filter(
+        (pubkey) => !embeddedProfiles.has(pubkey),
+      ),
+    [flatRaw, embeddedProfiles],
   );
   const authorsQuery = useBatchedAuthors(actorPubkeys);
 
-  const profiles = useMemo(
-    () => buildProfilesMap(actorPubkeys, authorsQuery.data ?? {}),
-    [actorPubkeys, authorsQuery.data],
-  );
+  const profiles = useMemo(() => {
+    const fetched = buildProfilesMap(actorPubkeys, authorsQuery.data ?? {});
+    return new Map([...embeddedProfiles, ...fetched]);
+  }, [actorPubkeys, authorsQuery.data, embeddedProfiles]);
 
   // -------------------------------------------------------------------------
   // Video hydration (internal — not exported)
   // -------------------------------------------------------------------------
+  // Likewise for `referenced_video` / `referenced_event_title`: rows that
+  // arrived with their own metadata do not need a video request.
+  const embeddedVideos = useMemo(() => {
+    const map = new Map<string, NotificationVideoMeta>();
+    for (const row of flatRaw) {
+      if (!row.targetEventId || !row.videoMeta || map.has(row.targetEventId)) continue;
+      map.set(row.targetEventId, {
+        title: row.videoMeta.title,
+        thumbnailUrl: row.videoMeta.thumbnailUrl,
+      });
+    }
+    return map;
+  }, [flatRaw]);
+
   const sortedIds = useMemo(() => {
     const ids = Array.from(
       new Set(
@@ -77,9 +111,9 @@ export function useHydratedNotifications(
           .filter((r) => r.type !== 'follow' && r.targetEventId)
           .map((r) => r.targetEventId as string),
       ),
-    );
+    ).filter((id) => !embeddedVideos.has(id));
     return ids.sort();
-  }, [flatRaw]);
+  }, [flatRaw, embeddedVideos]);
 
   const videosQuery = useQuery({
     queryKey: ['notification-videos', sortedIds],
@@ -135,8 +169,8 @@ export function useHydratedNotifications(
   });
 
   const videosMap: Map<string, NotificationVideoMeta> = useMemo(
-    () => new Map(Object.entries(videosQuery.data ?? {})),
-    [videosQuery.data],
+    () => new Map([...embeddedVideos, ...Object.entries(videosQuery.data ?? {})]),
+    [embeddedVideos, videosQuery.data],
   );
 
   // -------------------------------------------------------------------------

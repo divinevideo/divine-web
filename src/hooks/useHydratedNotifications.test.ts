@@ -308,6 +308,123 @@ describe('useHydratedNotifications', () => {
     expect(result.current.items).toHaveLength(1);
   });
 
+  it('uses video metadata embedded in the notification instead of refetching it', async () => {
+    // The notifications response already carries `referenced_video`, so a row
+    // that arrives with videoMeta must not cost a video request.
+    const like: RawNotification = {
+      ...makeLike('like-1', PUBKEY_A, VIDEO_ID, 1000),
+      videoMeta: { title: 'Sunset Loop', thumbnailUrl: 'https://cdn.example/t.jpg' },
+    };
+
+    mockUseNotifications.mockReturnValue(
+      makeInfiniteQueryResult([makeNotificationsPage([like])]),
+    );
+
+    const { useHydratedNotifications } = await import('./useHydratedNotifications');
+
+    const { result } = renderHook(
+      () => useHydratedNotifications({ category: 'all' }),
+      { wrapper: createWrapper() },
+    );
+
+    await waitFor(() => {
+      expect(result.current.items).toHaveLength(1);
+    });
+
+    const item = result.current.items[0];
+    if (item.kind === 'video') {
+      expect(item.videoTitle).toBe('Sunset Loop');
+      expect(item.videoThumbnailUrl).toBe('https://cdn.example/t.jpg');
+    }
+    expect(mockFetchBulkVideos).not.toHaveBeenCalled();
+    expect(mockFetchVideoById).not.toHaveBeenCalled();
+  });
+
+  it('still fetches video metadata for rows the response did not embed', async () => {
+    const embedded: RawNotification = {
+      ...makeLike('like-1', PUBKEY_A, VIDEO_ID, 2000),
+      videoMeta: { title: 'Sunset Loop' },
+    };
+    const bare = makeLike('like-2', PUBKEY_B, VIDEO_ID_2, 1000);
+
+    mockUseNotifications.mockReturnValue(
+      makeInfiniteQueryResult([makeNotificationsPage([embedded, bare])]),
+    );
+
+    const { useHydratedNotifications } = await import('./useHydratedNotifications');
+
+    renderHook(() => useHydratedNotifications({ category: 'all' }), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => {
+      expect(mockFetchBulkVideos).toHaveBeenCalled();
+    });
+
+    // Only the un-embedded video is requested.
+    expect(mockFetchBulkVideos).toHaveBeenCalledWith(
+      expect.any(String),
+      [VIDEO_ID_2],
+      expect.anything(),
+    );
+  });
+
+  it('uses the actor profile embedded in the notification', async () => {
+    const like: RawNotification = {
+      ...makeLike('like-1', PUBKEY_A, VIDEO_ID, 1000),
+      actorProfile: {
+        displayName: 'Alice',
+        avatarUrl: 'https://cdn.example/a.png',
+        nip05: 'alice@divine.video',
+      },
+    };
+
+    mockUseNotifications.mockReturnValue(
+      makeInfiniteQueryResult([makeNotificationsPage([like])]),
+    );
+    mockUseBatchedAuthors.mockReturnValue({ data: {} });
+
+    const { useHydratedNotifications } = await import('./useHydratedNotifications');
+
+    const { result } = renderHook(
+      () => useHydratedNotifications({ category: 'all' }),
+      { wrapper: createWrapper() },
+    );
+
+    await waitFor(() => {
+      expect(result.current.items).toHaveLength(1);
+    });
+
+    const item = result.current.items[0];
+    if (item.kind === 'video') {
+      expect(item.actors[0].displayName).toBe('Alice');
+      expect(item.actors[0].avatarUrl).toBe('https://cdn.example/a.png');
+      expect(item.actors[0].nip05).toBe('alice@divine.video');
+    }
+  });
+
+  it('only asks useBatchedAuthors for actors the response did not embed', async () => {
+    const embedded: RawNotification = {
+      ...makeLike('like-1', PUBKEY_A, VIDEO_ID, 2000),
+      actorProfile: { displayName: 'Alice' },
+    };
+    const bare = makeLike('like-2', PUBKEY_B, VIDEO_ID, 1000);
+
+    mockUseNotifications.mockReturnValue(
+      makeInfiniteQueryResult([makeNotificationsPage([embedded, bare])]),
+    );
+
+    const { useHydratedNotifications } = await import('./useHydratedNotifications');
+
+    renderHook(() => useHydratedNotifications({ category: 'all' }), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => {
+      expect(mockUseBatchedAuthors).toHaveBeenCalledWith([PUBKEY_B]);
+    });
+  });
+
   it('exposes paging state and functions from useNotifications', async () => {
     const fetchNextPage = vi.fn();
     mockUseNotifications.mockReturnValue({
