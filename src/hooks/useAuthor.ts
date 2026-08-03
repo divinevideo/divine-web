@@ -7,7 +7,7 @@ import { API_CONFIG } from '@/config/api';
 import { fetchUserProfile } from '@/lib/funnelcakeClient';
 import { isFunnelcakeAvailable } from '@/lib/funnelcakeHealth';
 import { debugLog } from '@/lib/debug';
-import { reportFunnelcakeFallback } from '@/lib/funnelcakeFallbackReporting';
+import { isAbortError, reportFunnelcakeFallback } from '@/lib/funnelcakeFallbackReporting';
 
 /**
  * Parse profile event content into metadata
@@ -84,6 +84,11 @@ export function useAuthor(pubkey: string | undefined, options?: UseAuthorOptions
 
           reportFallback('REST returned no profile');
         } catch (err) {
+          // Cancelled queries are not failures — surface the abort to
+          // React Query without reporting or falling back (#459)
+          if (isAbortError(err)) {
+            throw err;
+          }
           debugLog(`[useAuthor] REST failed for ${pubkey.slice(0, 8)}, falling back to WebSocket:`, err);
           reportFallback(err instanceof Error ? err.message : String(err));
         }

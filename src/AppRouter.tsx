@@ -28,6 +28,8 @@ import { LegacyVineVideoPage } from "./pages/LegacyVineVideoPage";
 import { TagPage } from "./pages/TagPage";
 import ListsPage from "./pages/ListsPage";
 import ListDetailPage from "./pages/ListDetailPage";
+import ProfileListsPage from "./pages/ProfileListsPage";
+import PeopleListDetailPage from "./pages/PeopleListDetailPage";
 import ModerationSettingsPage from "./pages/ModerationSettingsPage";
 import LinkedAccountsSettingsPage from "./pages/LinkedAccountsSettingsPage";
 // import { NIP05ProfilePage } from "./pages/NIP05ProfilePage";
@@ -50,6 +52,7 @@ import { AgeReviewPage } from "./pages/AgeReviewPage";
 import { KidsPolicyPage } from "./pages/KidsPolicyPage";
 import { Support } from "./pages/Support";
 import { FAQPage } from "./pages/FAQPage";
+import { ServicesPage } from "./pages/ServicesPage";
 import MerchPage from "./pages/MerchPage";
 import { TermsPage } from "./pages/TermsPage";
 import GetEmbedPage from "./pages/GetEmbedPage";
@@ -105,13 +108,16 @@ export function AppRouter() {
       <Route path="/category/:name" element={<CategoryPage />} />
       <Route path="/t/:tag" element={<TagPage />} />
       <Route path="/profile/:npub" element={<ProfilePage />} />
+      <Route path="/profile/:npub/lists" element={<ProfileListsPage />} />
       <Route path="/video/:id" element={<VideoPage />} />
       <Route path="/v/:legacyVineId" element={<LegacyVineVideoPage />} />
       <Route path="/search" element={<SearchPage />} />
       <Route path="/leaderboard" element={<LeaderboardPage />} />
       <Route path="/merch" element={<MerchPage />} />
+      <Route path="/services" element={<ServicesPage />} />
       <Route path="/u/:userId" element={<UniversalUserPage />} />
       <Route path="/list/:pubkey/:listId" element={<ListDetailPage />} />
+      <Route path="/people-lists/:pubkey/:listId" element={<PeopleListDetailPage />} />
       <Route path="/event/:eventId" element={<EventPage />} />
       <Route path="/event/a/:kind/:pubkey/:identifier" element={<EventPage />} />
       <Route path="/:nip19" element={<NIP19Page />} />

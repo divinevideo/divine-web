@@ -62,6 +62,11 @@ subdomain and loading the corresponding Nostr profile. Static hosts use
 catch-all fallback.
 The retired `/discovery/new` chronological feed redirects to
 `/discovery/hot`; Discovery does not expose or mount an all-new-video feed.
+Public profiles expose a compact mixed NIP-51 list shelf and a filterable
+`/profile/:npub/lists` gallery. Kind `30005` video sets retain their
+owner-aware `/list/:pubkey/:listId` route; kind `30000` people sets use
+`/people-lists/:pubkey/:listId`, where member context appears above a primary
+video grid assembled from the listed pubkeys.
 
 ## Styling
 
@@ -92,7 +97,7 @@ and React bindings. `@divinevideo/login` handles authentication.
 `@tanstack/react-query` manages server state. `react-router-dom` handles
 client-side routing. `@radix-ui/*` provides headless UI primitives.
 `react-hook-form`, `@hookform/resolvers`, and `zod` handle forms and
-validation. `i18next` and `react-i18next` power internationalization across 16
+validation. `i18next` and `react-i18next` power internationalization across 20
 locales. `@fontsource-variable/inter` supplies typography.
 `@phosphor-icons/react` is the icon library (migrated from lucide-react).
 `hls.js` handles HLS video playback. `@sentry/react` tracks errors.

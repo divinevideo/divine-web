@@ -8,6 +8,7 @@
     "home": "Strona glowna",
     "discover": "Odkrywaj",
     "popular": "Popular",
+    "services": "Services",
     "search": "Szukaj",
     "messages": "Wiadomosci",
     "notifications": "Powiadomienia",
@@ -133,6 +134,19 @@
     "communityDescription": "Dolacz do dyskusji spolecznosci i polacz sie z innymi uzytkownikami Divine na Nostr.",
     "communityBody": "Divine jest zbudowane na Nostr, zdecentralizowanym protokole spolecznosciowym. Znajdz nas w swoim ulubionym kliencie Nostr."
   },
+  "servicesPage": {
+    "title": "Divine services",
+    "intro": "Divine is more than loops. These services help you make the most of it.",
+    "openService": "Open {{name}}",
+    "items": {
+      "space": "Your profile, your rules. Themes, Top 8, profile music.",
+      "sounds": "Trending sounds and a Creative Commons library for your loops.",
+      "badges": "Awards for creators who show up.",
+      "crossposter": "Post your loops to the other platforms — only when you opt in.",
+      "verifier": "Check where a video really came from.",
+      "status": "Is it us or is it you? Check here."
+    }
+  },
   "tagPage": {
     "notFoundTitle": "Nie znaleziono tagu",
     "notFoundDescription": "Nie mozna znalezc podanego tagu.",
@@ -145,7 +159,9 @@
     "emptyState": "Obecnie brak dostepnych kategorii.",
     "metaTitle": "Przegladaj kategorie - Divine",
     "metaDescription": "Przegladaj kategorie wideo w Divine - komedia, muzyka, taniec, zwierzeta, sport, jedzenie i wiecej.",
+    "videoCount_zero": "{{count}} videos",
     "videoCount_one": "{{count}} film",
+    "videoCount_two": "{{count}} videos",
     "videoCount_few": "{{count}} filmy",
     "videoCount_many": "{{count}} filmow",
     "videoCount_other": "{{count}} filmu"
@@ -1149,7 +1165,7 @@
   "trendingPage": {
     "heading": "Na czasie",
     "subheading": "Sprawdź, co jest popularne w społeczności",
-    "rssTitle": "DiVine - Na czasie",
+    "rssTitle": "Divine - Na czasie",
     "rssLink": "RSS"
   },
   "merchPage": {
@@ -1410,12 +1426,12 @@
     "joinWaitlist": "Nie masz zaproszenia? Zapisz się na listę oczekujących."
   },
   "invitesLandingPage": {
-    "seoTitle": "Dołącz do diVine z kodem zaproszenia {{code}}",
-    "seoTitleDefault": "Dołącz do diVine",
-    "seoDescription": "Masz zaproszenie! Użyj kodu {{code}}, aby dołączyć do diVine.",
-    "seoDescriptionDefault": "Użyj kodu zaproszenia, aby dołączyć do diVine i zacząć udostępniać wideo.",
+    "seoTitle": "Dołącz do Divine z kodem zaproszenia {{code}}",
+    "seoTitleDefault": "Dołącz do Divine",
+    "seoDescription": "Masz zaproszenie! Użyj kodu {{code}}, aby dołączyć do Divine.",
+    "seoDescriptionDefault": "Użyj kodu zaproszenia, aby dołączyć do Divine i zacząć udostępniać wideo.",
     "heading": "Masz zaproszenie!",
-    "subheading": "Wpisz kod zaproszenia, aby dołączyć do diVine",
+    "subheading": "Wpisz kod zaproszenia, aby dołączyć do Divine",
     "alreadyHaveAccount": "Masz już konto?",
     "signIn": "Zaloguj się"
   },

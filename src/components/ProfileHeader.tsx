@@ -324,7 +324,7 @@ export function ProfileHeader({
             </Link>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" data-testid="own-profile-menu-button">
+                <Button variant="outline" size="sm" aria-label="More profile actions" data-testid="own-profile-menu-button">
                   <MoreVertical className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
@@ -368,7 +368,7 @@ export function ProfileHeader({
             )}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" data-testid="profile-menu-button">
+                <Button variant="outline" size="sm" aria-label="More profile actions" data-testid="profile-menu-button">
                   <MoreVertical className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>

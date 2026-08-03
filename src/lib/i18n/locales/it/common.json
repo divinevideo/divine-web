@@ -8,6 +8,7 @@
     "home": "Home",
     "discover": "Scopri",
     "popular": "Popular",
+    "services": "Services",
     "search": "Cerca",
     "messages": "Messaggi",
     "notifications": "Notifiche",
@@ -133,6 +134,19 @@
     "communityDescription": "Partecipa alle discussioni della comunita e connettiti con altri utenti Divine su Nostr.",
     "communityBody": "Divine e costruito su Nostr, un protocollo sociale decentralizzato. Trovaci nel tuo client Nostr preferito."
   },
+  "servicesPage": {
+    "title": "Divine services",
+    "intro": "Divine is more than loops. These services help you make the most of it.",
+    "openService": "Open {{name}}",
+    "items": {
+      "space": "Your profile, your rules. Themes, Top 8, profile music.",
+      "sounds": "Trending sounds and a Creative Commons library for your loops.",
+      "badges": "Awards for creators who show up.",
+      "crossposter": "Post your loops to the other platforms — only when you opt in.",
+      "verifier": "Check where a video really came from.",
+      "status": "Is it us or is it you? Check here."
+    }
+  },
   "tagPage": {
     "notFoundTitle": "Tag non trovata",
     "notFoundDescription": "Impossibile trovare la tag richiesta.",
@@ -145,7 +159,11 @@
     "emptyState": "Nessuna categoria disponibile in questo momento.",
     "metaTitle": "Esplora le categorie - Divine",
     "metaDescription": "Esplora le categorie video su Divine - commedia, musica, danza, animali, sport, cibo e altro.",
+    "videoCount_zero": "{{count}} videos",
     "videoCount_one": "{{count}} video",
+    "videoCount_two": "{{count}} videos",
+    "videoCount_few": "{{count}} videos",
+    "videoCount_many": "{{count}} videos",
     "videoCount_other": "{{count}} video"
   },
   "vineBadge": {
@@ -1147,7 +1165,7 @@
   "trendingPage": {
     "heading": "Di tendenza",
     "subheading": "Scopri cosa va forte nella community",
-    "rssTitle": "DiVine - Di tendenza",
+    "rssTitle": "Divine - Di tendenza",
     "rssLink": "RSS"
   },
   "merchPage": {
@@ -1408,12 +1426,12 @@
     "joinWaitlist": "Niente invito? Mettiti in lista d'attesa."
   },
   "invitesLandingPage": {
-    "seoTitle": "Unisciti a diVine con il codice invito {{code}}",
-    "seoTitleDefault": "Unisciti a diVine",
-    "seoDescription": "Hai ricevuto un invito! Usa il codice {{code}} per unirti a diVine.",
-    "seoDescriptionDefault": "Usa il tuo codice invito per unirti a diVine e iniziare a condividere video.",
+    "seoTitle": "Unisciti a Divine con il codice invito {{code}}",
+    "seoTitleDefault": "Unisciti a Divine",
+    "seoDescription": "Hai ricevuto un invito! Usa il codice {{code}} per unirti a Divine.",
+    "seoDescriptionDefault": "Usa il tuo codice invito per unirti a Divine e iniziare a condividere video.",
     "heading": "Sei invitato!",
-    "subheading": "Inserisci il tuo codice invito per unirti a diVine",
+    "subheading": "Inserisci il tuo codice invito per unirti a Divine",
     "alreadyHaveAccount": "Hai già un account?",
     "signIn": "Accedi"
   },

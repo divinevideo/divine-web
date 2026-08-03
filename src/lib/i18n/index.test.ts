@@ -50,4 +50,42 @@ describe('i18n bootstrap', () => {
     expect(i18n.language).toBe('fr');
     expect(document.documentElement.lang).toBe('fr');
   });
+
+  it('initializes in vietnamese from a regional browser locale', async () => {
+    const i18n = await createI18nInstance({ languages: ['vi-VN'] });
+
+    expect(i18n.language).toBe('vi');
+    expect(i18n.t('nav.home')).toBe('Trang chủ');
+    expect(document.documentElement.dir).toBe('ltr');
+  });
+
+  it('initializes in urdu with rtl direction', async () => {
+    const i18n = await createI18nInstance({ languages: ['ur-PK'] });
+
+    expect(i18n.language).toBe('ur');
+    expect(i18n.t('nav.search')).toBe('تلاش');
+    expect(document.documentElement.dir).toBe('rtl');
+  });
+
+  it('initializes in simplified chinese from singapore', async () => {
+    const i18n = await createI18nInstance({ languages: ['zh-SG'] });
+
+    expect(i18n.language).toBe('zh');
+    expect(i18n.t('nav.home')).toBe('首页');
+    expect(document.documentElement.lang).toBe('zh-Hans');
+  });
+
+  it('falls back from traditional chinese regions until a catalog exists', async () => {
+    const i18n = await createI18nInstance({ languages: ['zh-TW'] });
+
+    expect(i18n.language).toBe('en');
+    expect(document.documentElement.lang).toBe('en');
+  });
+
+  it('initializes in malay', async () => {
+    const i18n = await createI18nInstance({ languages: ['ms-MY'] });
+
+    expect(i18n.language).toBe('ms');
+    expect(i18n.t('nav.home')).toBe('Utama');
+  });
 });

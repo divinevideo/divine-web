@@ -109,6 +109,20 @@ export function trackEvent(eventName: string, params?: Record<string, unknown>) 
 }
 
 /**
+ * Serialize tracking context for console output — objects passed straight to
+ * console end up as "[object Object]" in Sentry's console capture (#459)
+ */
+function serializeContext(context?: Record<string, unknown>): string {
+  if (!context) return '';
+
+  try {
+    return JSON.stringify(context);
+  } catch {
+    return '[unserializable context]';
+  }
+}
+
+/**
  * Log an error event
  */
 export function trackError(error: Error, context?: Record<string, unknown>) {
@@ -121,14 +135,16 @@ export function trackError(error: Error, context?: Record<string, unknown>) {
       error_name: error.name,
       ...context,
     });
-    console.error('[Analytics] Error tracked:', error.message, context);
+    console.error('[Analytics] Error tracked:', error.message, serializeContext(context));
   } catch (err) {
     console.error('[Analytics] Failed to track error:', err);
   }
 }
 
 /**
- * Log a non-fatal exception event for correlation with Sentry issues
+ * Log a non-fatal exception event for correlation with Sentry issues.
+ * Logs at debug level: Sentry's captureConsoleIntegration captures warn/error,
+ * and this echo must not become a second Sentry event for the same incident (#459).
  */
 export function trackNonFatalError(error: Error, context?: Record<string, unknown>) {
   if (!analytics) return;
@@ -141,7 +157,7 @@ export function trackNonFatalError(error: Error, context?: Record<string, unknow
       error_stack: error.stack,
       ...context,
     });
-    console.warn('[Analytics] Non-fatal error tracked:', error.message, context);
+    console.debug('[Analytics] Non-fatal error tracked:', error.message, serializeContext(context));
   } catch (err) {
     console.error('[Analytics] Failed to track non-fatal error:', err);
   }
