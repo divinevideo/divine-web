@@ -12,7 +12,9 @@ const NOTIFICATIONS_PAGE_SIZE = 30;
 
 const CATEGORY_TYPES: Partial<Record<NotificationCategory, NotificationApiType[]>> = {
   likes: ['reaction'],
-  comments: ['reply'],
+  // The backend splits threaded replies (`reply`) from top-level comments on
+  // your video (`comment`). The Comments tab wants both.
+  comments: ['reply', 'comment'],
   follows: ['follow'],
   reposts: ['repost'],
 };

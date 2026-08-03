@@ -81,7 +81,7 @@ describe('useNotifications', () => {
     });
   });
 
-  it('maps the comments category to the backend reply filter on the notifications relay', async () => {
+  it('requests both backend comment types for the comments category', async () => {
     renderHook(() => useNotifications({ category: 'comments' }), {
       wrapper: createWrapper(),
     });
@@ -94,7 +94,9 @@ describe('useNotifications', () => {
         expect.objectContaining({
           limit: 30,
           before: undefined,
-          types: ['reply'],
+          // Funnelcake emits `comment` for top-level comments and `reply`
+          // for threaded replies; asking for only one hides the other.
+          types: ['reply', 'comment'],
           unreadOnly: false,
           signal: expect.any(AbortSignal),
         }),
