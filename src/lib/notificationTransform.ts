@@ -127,7 +127,10 @@ export function transformNotification(raw: RawApiNotification): RawNotification 
     type,
     actorPubkey: raw.source_pubkey,
     timestamp: raw.created_at,
-    isRead: raw.read,
+    // `read` is an integer (0/1) on the wire. Coerce rather than pass through:
+    // RawNotification.isRead is a boolean and grouping copies it straight onto
+    // ActorNotification, so an uncoerced 0 reaches the UI union as a number.
+    isRead: Boolean(raw.read),
     targetEventId,
     sourceEventId: raw.source_event_id,
     sourceKind: raw.source_kind,

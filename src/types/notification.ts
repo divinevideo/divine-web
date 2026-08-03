@@ -123,7 +123,8 @@ export interface RawApiNotification {
   source_kind: number;
   notification_type: string;
   created_at: number;
-  read: boolean;
+  /** Integer in the schema: 0 = unread, 1 = read. Not a boolean. */
+  read: number;
   content?: string | null;
   /** Reaction/repost target, or for kind 1111 the NIP-22 lowercase `e` (parent). */
   referenced_event_id?: string | null;

@@ -68,7 +68,7 @@ describe('notificationTransform', () => {
       root_event_id: 'video-789',
       notification_type: 'reaction',
       created_at: 1700000000,
-      read: false,
+      read: 0,
       content: '+',
     };
 
@@ -86,6 +86,15 @@ describe('notificationTransform', () => {
       expect(result!.sourceEventId).toBe('event-456');
       expect(result!.sourceKind).toBe(7);
       expect(result!.commentText).toBeUndefined();
+    });
+
+    it('coerces the integer read flag to a real boolean', () => {
+      // `read` is an integer in components.schemas.Notification (0/1). Passing
+      // it through leaves ActorNotification.isRead holding a number, which is
+      // only invisible because 0 and 1 happen to be falsy and truthy.
+      expect(transformNotification({ ...raw, read: 1 })!.isRead).toBe(true);
+      expect(transformNotification({ ...raw, read: 0 })!.isRead).toBe(false);
+      expect(typeof transformNotification({ ...raw, read: 1 })!.isRead).toBe('boolean');
     });
 
     it('includes commentText for reply notifications', () => {
@@ -320,7 +329,7 @@ describe('notificationTransform', () => {
         source_kind: 3,
         notification_type: 'follow',
         created_at: 1700000000,
-        read: false,
+        read: 0,
         // no referenced_event_id
       };
       const result = transformNotification(follow);
@@ -341,7 +350,7 @@ describe('notificationTransform', () => {
             referenced_event_id: 'video-1',
             notification_type: 'reaction',
             created_at: 1700000000,
-            read: false,
+            read: 0,
           },
           {
             source_pubkey: 'pk2',
@@ -349,7 +358,7 @@ describe('notificationTransform', () => {
             source_kind: 3,
             notification_type: 'follow',
             created_at: 1700000001,
-            read: true,
+            read: 1,
           },
         ],
         unread_count: 5,
@@ -391,7 +400,7 @@ describe('notificationTransform', () => {
             referenced_event_id: 'video-1',
             notification_type: 'zap',
             created_at: 1700000000,
-            read: false,
+            read: 0,
           },
           {
             source_pubkey: 'pk2',
@@ -400,7 +409,7 @@ describe('notificationTransform', () => {
             referenced_event_id: 'video-1',
             notification_type: 'reaction',
             created_at: 1700000001,
-            read: false,
+            read: 0,
           },
         ],
         unread_count: 2,
@@ -421,7 +430,7 @@ describe('notificationTransform', () => {
             referenced_event_id: 'video-1',
             notification_type: 'some_future_type',
             created_at: 1700000000,
-            read: false,
+            read: 0,
           },
         ],
         unread_count: 0,
@@ -441,7 +450,7 @@ describe('notificationTransform', () => {
             // no referenced_event_id
             notification_type: 'reaction',
             created_at: 1700000000,
-            read: false,
+            read: 0,
           },
           {
             source_pubkey: 'pk2',
@@ -449,7 +458,7 @@ describe('notificationTransform', () => {
             source_kind: 3,
             notification_type: 'follow',
             created_at: 1700000001,
-            read: false,
+            read: 0,
           },
         ],
         unread_count: 0,
