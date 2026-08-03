@@ -66,7 +66,9 @@ export default function NotificationsPage() {
     isFetchingNextPage,
   } = useHydratedNotifications({ category });
 
-  const markRead = useMarkNotificationsRead();
+  // Destructured because useMutation returns a fresh object every render, so
+  // depending on the whole result re-ran the effect below on every render.
+  const { mutate: markAllRead } = useMarkNotificationsRead();
   const hasCapturedInitialUnread = useRef(false);
   const [initialUnreadIds, setInitialUnreadIds] = useState<Set<string>>(() => new Set());
 
@@ -104,9 +106,9 @@ export default function NotificationsPage() {
     }
 
     if (shouldMarkRead) {
-      markRead.mutate(undefined);
+      markAllRead(undefined);
     }
-  }, [category, items, markRead]);
+  }, [category, items, markAllRead]);
 
   const newNotifications = useMemo(
     () => items.filter((n) => n.rawIds.some((id) => initialUnreadIds.has(id))),

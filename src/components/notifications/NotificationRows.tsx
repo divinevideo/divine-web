@@ -37,24 +37,24 @@ function NotificationAvatarStack({
           key={actor.pubkey}
           type="button"
           aria-label={t('notificationsPage.a11y.viewProfile', { name: actor.displayName })}
-          onClick={(e) => {
-            e.stopPropagation();
-            onAvatarClick(actor);
-          }}
+          onClick={() => onAvatarClick(actor)}
           className={cn(
             'relative shrink-0 rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-primary',
-            index > 0 && '-ml-2',
+            // Logical margin: the stack lays out right-to-left under dir="rtl",
+            // where a negative left margin pulls avatars apart instead of
+            // overlapping them.
+            index > 0 && '-ms-2',
           )}
           style={{ zIndex: visible.length - index }}
         >
-          <Avatar size="xs" className="h-7 w-7">
+          <Avatar size="xs" className="h-7 w-7 rounded-full">
             <AvatarImage src={actor.avatarUrl} alt={actor.displayName} />
             <AvatarFallback>{actor.displayName[0]?.toUpperCase() ?? '?'}</AvatarFallback>
           </Avatar>
         </button>
       ))}
       {overflow > 0 && (
-        <span className="-ml-2 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-background bg-muted text-[10px] font-semibold text-muted-foreground">
+        <span className="-ms-2 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-background bg-muted text-[10px] font-semibold text-muted-foreground">
           +{overflow}
         </span>
       )}
@@ -120,7 +120,7 @@ function NotificationVideoThumbnail({
 }: {
   thumbnailUrl?: string;
   title: string;
-  onClick: (e: React.MouseEvent) => void;
+  onClick: () => void;
 }) {
   const { t } = useTranslation('common');
 
@@ -128,10 +128,7 @@ function NotificationVideoThumbnail({
     <button
       type="button"
       aria-label={t('notificationsPage.a11y.openVideo', { title })}
-      onClick={(e) => {
-        e.stopPropagation();
-        onClick(e);
-      }}
+      onClick={onClick}
       className="h-[72px] w-[72px] shrink-0 overflow-hidden rounded-[14px] border-2 border-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
     >
       {thumbnailUrl ? (
@@ -253,7 +250,7 @@ export function VideoNotificationRow({
         <button
           type="button"
           onClick={handleVideoActivate}
-          className="block w-full text-left text-sm leading-snug focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          className="line-clamp-3 w-full break-words text-left text-sm leading-snug focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
         >
           <span className="font-semibold">{firstName}</span>
           {othersText && (
@@ -331,13 +328,10 @@ export function ActorNotificationRow({
       <button
         type="button"
         aria-label={t('notificationsPage.a11y.viewProfile', { name: actor.displayName })}
-        onClick={(e) => {
-          e.stopPropagation();
-          handleRowActivate();
-        }}
-        className="shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+        onClick={handleRowActivate}
+        className="shrink-0 rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
       >
-        <Avatar size="xs" className="h-7 w-7">
+        <Avatar size="xs" className="h-7 w-7 rounded-full">
           <AvatarImage src={actor.avatarUrl} alt={actor.displayName} />
           <AvatarFallback>{actor.displayName[0]?.toUpperCase() ?? '?'}</AvatarFallback>
         </Avatar>
