@@ -461,6 +461,7 @@
     "myProfile": "我的主页",
     "settings": "设置",
     "linkedAccounts": "关联账号",
+    "relays": "Relay",
     "switchRelay": "切换 Relay",
     "switchAccount": "切换账号",
     "addAnotherAccount": "添加另一个账号",
