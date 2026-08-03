@@ -153,8 +153,10 @@ export function AppRouter() {
   return (
     <BrowserRouter>
       <ScrollToTop />
-      <AnalyticsPageTracker />
+      {/* AnalyticsUserTracker first: it configures analytics identity, and
+          AnalyticsPageTracker's one-shot session_started needs it in place. */}
       <AnalyticsUserTracker />
+      <AnalyticsPageTracker />
       <Routes>
         {/* Marketing/informational pages - no app layout */}
         {/* /about redirects to about.divine.video via _redirects (301) */}

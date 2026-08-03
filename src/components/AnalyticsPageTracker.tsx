@@ -27,11 +27,18 @@ export function AnalyticsPageTracker() {
       return;
     }
 
-    sessionStarted.current = true;
+    // Latch only once the event was actually accepted. track() returns null
+    // when analytics identity is not configured yet, and this effect can run
+    // before that happens; latching on a dropped call would lose the session
+    // event for the whole visit.
     void trackProductEvent('session_started', {
       surface: getSurface(location.pathname),
       entry_point: document.referrer ? 'referrer' : 'direct',
       properties: { path: location.pathname },
+    }).then((eventId) => {
+      if (eventId) {
+        sessionStarted.current = true;
+      }
     });
   }, [location.pathname]);
 

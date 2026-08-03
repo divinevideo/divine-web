@@ -82,6 +82,39 @@ describe('AnalyticsPageTracker', () => {
     unmount();
   });
 
+  it('retries session_started on the next route change when it was dropped', async () => {
+    // track() returns null when identity is not configured yet. The one-shot
+    // must not latch on that, or the session event is lost for the whole visit.
+    trackProductEvent.mockResolvedValueOnce(null);
+
+    function NavigateOnce() {
+      const navigate = useNavigate();
+      useEffect(() => {
+        navigate('/discovery');
+      }, [navigate]);
+      return null;
+    }
+
+    render(
+      <MemoryRouter initialEntries={['/']}>
+        <AnalyticsPageTracker />
+        <Routes>
+          <Route path="/" element={<NavigateOnce />} />
+          <Route path="/discovery" element={<div />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    const sessionCalls = trackProductEvent.mock.calls.filter(
+      ([name]) => name === 'session_started',
+    );
+    expect(sessionCalls).toHaveLength(2);
+  });
+
   it('tracks feed scroll depth once per threshold', () => {
     render(
       <MemoryRouter initialEntries={['/discovery']}>
