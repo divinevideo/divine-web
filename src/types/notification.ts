@@ -2,7 +2,16 @@
 // ABOUTME: RawNotification (fetch stage) + sealed VideoNotification|ActorNotification UI union
 
 export type NotificationType = 'like' | 'comment' | 'follow' | 'repost';
-export type NotificationApiType = 'reaction' | 'reply' | 'follow' | 'repost' | 'mention';
+
+/**
+ * Values the notifications endpoint actually emits for `notification_type`.
+ * Source: `components.schemas.Notification` in https://api.divine.video/openapi.json
+ * — `reaction`, `reply`, `repost`, `mention`, `comment`, `follow`, `zap`, `list_add`.
+ *
+ * Only the subset we request or render is named here; `mention`, `zap`, and
+ * `list_add` are deliberately not surfaced (see `mapNotificationType`).
+ */
+export type NotificationApiType = 'reaction' | 'reply' | 'comment' | 'follow' | 'repost';
 
 export type NotificationCategory =
   | 'all'
@@ -59,6 +68,23 @@ export interface RawNotification {
   sourceEventId: string;
   sourceKind: number;
   commentText?: string;
+  /** Comment to scroll to when opening the video's comment sheet. */
+  targetCommentId?: string;
+  /** Actor profile embedded in the response, when the API supplied one. */
+  actorProfile?: EmbeddedActorProfile;
+  /** Video metadata embedded in the response, when the API supplied one. */
+  videoMeta?: EmbeddedVideoMeta;
+}
+
+export interface EmbeddedActorProfile {
+  displayName?: string;
+  avatarUrl?: string;
+  nip05?: string;
+}
+
+export interface EmbeddedVideoMeta {
+  title?: string;
+  thumbnailUrl?: string;
 }
 
 export interface NotificationsResponse {
@@ -68,16 +94,49 @@ export interface NotificationsResponse {
   hasMore: boolean;
 }
 
+/** Embedded actor profile — `NotificationSourceProfile` in the OpenAPI schema. */
+export interface RawApiSourceProfile {
+  display_name?: string | null;
+  picture?: string | null;
+  nip05?: string | null;
+}
+
+/** Embedded video metadata — `NotificationReferencedVideo` in the OpenAPI schema. */
+export interface RawApiReferencedVideo {
+  title?: string | null;
+  thumbnail?: string | null;
+  d_tag?: string | null;
+  blurhash?: string | null;
+}
+
+/**
+ * One row of `GET /api/notifications`, mirroring `components.schemas.Notification`.
+ *
+ * Note there is no `id` property — the response identifies a notification by
+ * `source_event_id`. Anything modelled here that the schema does not return
+ * silently becomes `undefined` at runtime, so keep this in step with
+ * https://api.divine.video/openapi.json.
+ */
 export interface RawApiNotification {
-  id: string;
   source_pubkey: string;
   source_event_id: string;
   source_kind: number;
-  referenced_event_id?: string;
   notification_type: string;
   created_at: number;
   read: boolean;
-  content?: string;
+  content?: string | null;
+  /** Reaction/repost target, or for kind 1111 the NIP-22 lowercase `e` (parent). */
+  referenced_event_id?: string | null;
+  /** Root navigation target. Prefer this over `referenced_event_id`. */
+  root_event_id?: string | null;
+  /** `kind:pubkey:d-tag` root, populated for addressable targets. */
+  root_addressable_id?: string | null;
+  /** Specific comment to scroll to; set for `comment` and `reply`. */
+  target_comment_id?: string | null;
+  referenced_event_title?: string | null;
+  referenced_video?: RawApiReferencedVideo | null;
+  source_profile?: RawApiSourceProfile | null;
+  comment_content?: string | null;
 }
 
 export interface RawNotificationsApiResponse {

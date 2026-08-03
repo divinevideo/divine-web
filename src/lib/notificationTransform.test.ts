@@ -38,18 +38,31 @@ describe('notificationTransform', () => {
       expect(mapNotificationType('')).toBeNull();
     });
 
-    it('preserves "mention" notifications through the existing video path', () => {
-      expect(mapNotificationType('mention')).toBe('like');
+    it('maps "comment" to "comment"', () => {
+      // Funnelcake emits `comment` for top-level comments on your video and
+      // `reply` for threaded replies. Both are comments to the reader.
+      expect(mapNotificationType('comment')).toBe('comment');
+    });
+
+    it('returns null for "mention"', () => {
+      // `mention` is the materializer's catch-all for any source kind it does
+      // not recognise, so it cannot be relabelled as a like without putting
+      // false statements on screen and inflating like counts.
+      expect(mapNotificationType('mention')).toBeNull();
+    });
+
+    it('returns null for "list_add"', () => {
+      expect(mapNotificationType('list_add')).toBeNull();
     });
   });
 
   describe('transformNotification', () => {
     const raw: RawApiNotification = {
-      id: 'notif-123',
       source_pubkey: 'abc123',
       source_event_id: 'event-456',
       source_kind: 7,
       referenced_event_id: 'video-789',
+      root_event_id: 'video-789',
       notification_type: 'reaction',
       created_at: 1700000000,
       read: false,
@@ -59,7 +72,9 @@ describe('notificationTransform', () => {
     it('transforms a reaction notification', () => {
       const result = transformNotification(raw);
       expect(result).not.toBeNull();
-      expect(result!.id).toBe('notif-123');
+      // The response carries no `id` field; the source event id is the stable
+      // per-notification identity.
+      expect(result!.id).toBe('event-456');
       expect(result!.type).toBe('like');
       expect(result!.actorPubkey).toBe('abc123');
       expect(result!.timestamp).toBe(1700000000);
@@ -104,17 +119,117 @@ describe('notificationTransform', () => {
       expect(transformNotification(unknown)).toBeNull();
     });
 
-    it('transforms mention notifications instead of dropping them', () => {
+    it('drops mention notifications rather than relabelling them as likes', () => {
       const mention: RawApiNotification = {
         ...raw,
         notification_type: 'mention',
         source_kind: 1,
       };
 
-      const result = transformNotification(mention);
+      expect(transformNotification(mention)).toBeNull();
+    });
+
+    it('transforms a top-level comment notification', () => {
+      const comment: RawApiNotification = {
+        ...raw,
+        notification_type: 'comment',
+        source_kind: 1111,
+        comment_content: 'First!',
+        target_comment_id: 'event-456',
+      };
+
+      const result = transformNotification(comment);
       expect(result).not.toBeNull();
-      expect(result!.type).toBe('like');
+      expect(result!.type).toBe('comment');
+      expect(result!.commentText).toBe('First!');
+      expect(result!.targetCommentId).toBe('event-456');
+    });
+
+    it('prefers comment_content over content for comment text', () => {
+      const comment: RawApiNotification = {
+        ...raw,
+        notification_type: 'comment',
+        source_kind: 1111,
+        content: 'raw content',
+        comment_content: 'rendered comment',
+      };
+
+      expect(transformNotification(comment)!.commentText).toBe('rendered comment');
+    });
+
+    it('navigates replies to the root video, not the parent comment', () => {
+      // NIP-22 puts the parent comment in lowercase `e` and the video in
+      // uppercase `E`. referenced_event_id is the parent, so grouping and
+      // navigation must use root_event_id.
+      const reply: RawApiNotification = {
+        ...raw,
+        notification_type: 'reply',
+        source_kind: 1111,
+        referenced_event_id: 'parent-comment-id',
+        root_event_id: 'video-789',
+        comment_content: 'agreed',
+      };
+
+      const result = transformNotification(reply);
       expect(result!.targetEventId).toBe('video-789');
+    });
+
+    it('keeps an addressable-only repost using its root addressable id', () => {
+      // divine-web publishes kind-16 reposts with an `a` tag and no `e` tag,
+      // so the backend has no 64-char referenced_event_id to report.
+      const repost: RawApiNotification = {
+        ...raw,
+        notification_type: 'repost',
+        source_kind: 16,
+        referenced_event_id: '',
+        root_event_id: null,
+        root_addressable_id: '34236:author-pk:vine-id',
+      };
+
+      const result = transformNotification(repost);
+      expect(result).not.toBeNull();
+      expect(result!.type).toBe('repost');
+      expect(result!.targetEventId).toBe('34236:author-pk:vine-id');
+    });
+
+    it('carries the embedded source profile and video metadata forward', () => {
+      const withEmbeds: RawApiNotification = {
+        ...raw,
+        source_profile: {
+          display_name: 'Alice',
+          picture: 'https://cdn.example/a.png',
+          nip05: 'alice@divine.video',
+        },
+        referenced_video: {
+          title: 'Sunset Loop',
+          thumbnail: 'https://cdn.example/t.jpg',
+          d_tag: 'vine-id',
+          blurhash: 'LKO2',
+        },
+      };
+
+      const result = transformNotification(withEmbeds);
+      expect(result!.actorProfile).toEqual({
+        displayName: 'Alice',
+        avatarUrl: 'https://cdn.example/a.png',
+        nip05: 'alice@divine.video',
+      });
+      expect(result!.videoMeta).toEqual({
+        title: 'Sunset Loop',
+        thumbnailUrl: 'https://cdn.example/t.jpg',
+      });
+    });
+
+    it('falls back to referenced_event_title when referenced_video is absent', () => {
+      const titled: RawApiNotification = {
+        ...raw,
+        referenced_event_title: 'Sunset Loop',
+      };
+
+      expect(transformNotification(titled)!.videoMeta).toEqual({
+        title: 'Sunset Loop',
+        thumbnailUrl: undefined,
+      });
     });
 
     it('returns null for like without referenced_event_id', () => {
@@ -122,6 +237,7 @@ describe('notificationTransform', () => {
         ...raw,
         notification_type: 'reaction',
         referenced_event_id: undefined,
+        root_event_id: null,
       };
       expect(transformNotification(noRef)).toBeNull();
     });
@@ -131,6 +247,7 @@ describe('notificationTransform', () => {
         ...raw,
         notification_type: 'reply',
         referenced_event_id: undefined,
+        root_event_id: null,
         content: 'hello',
       };
       expect(transformNotification(noRef)).toBeNull();
@@ -141,13 +258,14 @@ describe('notificationTransform', () => {
         ...raw,
         notification_type: 'repost',
         referenced_event_id: undefined,
+        root_event_id: null,
+        root_addressable_id: null,
       };
       expect(transformNotification(noRef)).toBeNull();
     });
 
     it('preserves follow rows without referenced_event_id', () => {
       const follow: RawApiNotification = {
-        id: 'notif-follow',
         source_pubkey: 'follower-pk',
         source_event_id: 'follow-event',
         source_kind: 3,
@@ -168,7 +286,6 @@ describe('notificationTransform', () => {
       const raw: RawNotificationsApiResponse = {
         notifications: [
           {
-            id: 'n1',
             source_pubkey: 'pk1',
             source_event_id: 'e1',
             source_kind: 7,
@@ -178,7 +295,6 @@ describe('notificationTransform', () => {
             read: false,
           },
           {
-            id: 'n2',
             source_pubkey: 'pk2',
             source_event_id: 'e2',
             source_kind: 3,
@@ -220,7 +336,6 @@ describe('notificationTransform', () => {
       const raw: RawNotificationsApiResponse = {
         notifications: [
           {
-            id: 'n1',
             source_pubkey: 'pk1',
             source_event_id: 'e1',
             source_kind: 9,
@@ -230,7 +345,6 @@ describe('notificationTransform', () => {
             read: false,
           },
           {
-            id: 'n2',
             source_pubkey: 'pk2',
             source_event_id: 'e2',
             source_kind: 7,
@@ -252,7 +366,6 @@ describe('notificationTransform', () => {
       const raw: RawNotificationsApiResponse = {
         notifications: [
           {
-            id: 'n1',
             source_pubkey: 'pk1',
             source_event_id: 'e1',
             source_kind: 0,
@@ -273,7 +386,6 @@ describe('notificationTransform', () => {
       const raw: RawNotificationsApiResponse = {
         notifications: [
           {
-            id: 'n1',
             source_pubkey: 'pk1',
             source_event_id: 'e1',
             source_kind: 7,
@@ -283,7 +395,6 @@ describe('notificationTransform', () => {
             read: false,
           },
           {
-            id: 'n2',
             source_pubkey: 'pk2',
             source_event_id: 'e2',
             source_kind: 3,
