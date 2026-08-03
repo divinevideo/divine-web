@@ -89,7 +89,14 @@ export function groupRawNotifications(
       }
     }
 
-    const videoMeta = videos.get(targetEventId);
+    // Metadata is keyed by resolvable id, and rows in one bucket can carry
+    // different ones, so fall back to any sibling row's id before giving up.
+    const videoMeta =
+      videos.get(targetEventId) ??
+      bucket.reduce<NotificationVideoMeta | undefined>(
+        (found, r) => found ?? (r.targetEventId ? videos.get(r.targetEventId) : undefined),
+        undefined,
+      );
 
     const item: VideoNotification = {
       kind: 'video',

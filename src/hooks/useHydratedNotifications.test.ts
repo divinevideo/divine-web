@@ -367,14 +367,10 @@ describe('useHydratedNotifications', () => {
   });
 
   it('still fetches video metadata for rows the response did not embed', async () => {
-    const embedded: RawNotification = {
-      ...makeLike('like-1', PUBKEY_A, VIDEO_ID, 2000),
-      videoMeta: { title: 'Sunset Loop' },
-    };
     const bare = makeLike('like-2', PUBKEY_B, VIDEO_ID_2, 1000);
 
     mockUseNotifications.mockReturnValue(
-      makeInfiniteQueryResult([makeNotificationsPage([embedded, bare])]),
+      makeInfiniteQueryResult([makeNotificationsPage([bare])]),
     );
 
     const { useHydratedNotifications } = await import('./useHydratedNotifications');
@@ -387,12 +383,79 @@ describe('useHydratedNotifications', () => {
       expect(mockFetchBulkVideos).toHaveBeenCalled();
     });
 
-    // Only the un-embedded video is requested.
     expect(mockFetchBulkVideos).toHaveBeenCalledWith(
       expect.any(String),
       [VIDEO_ID_2],
       expect.anything(),
     );
+  });
+
+  it('fetches the thumbnail for a row the response described with a title only', async () => {
+    // `referenced_event_title` without `referenced_video` is a partial answer.
+    // Treating it as complete stranded the row on the placeholder thumbnail.
+    const titleOnly: RawNotification = {
+      ...makeLike('like-1', PUBKEY_A, VIDEO_ID, 2000),
+      videoMeta: { title: 'Sunset Loop' },
+    };
+
+    mockUseNotifications.mockReturnValue(
+      makeInfiniteQueryResult([makeNotificationsPage([titleOnly])]),
+    );
+    mockFetchBulkVideos.mockResolvedValue({
+      videos: [{ id: VIDEO_ID, title: 'Sunset Loop', thumbnail: 'https://cdn.example/t.jpg' }],
+      missing: [],
+    });
+
+    const { useHydratedNotifications } = await import('./useHydratedNotifications');
+
+    const { result } = renderHook(
+      () => useHydratedNotifications({ category: 'all' }),
+      { wrapper: createWrapper() },
+    );
+
+    await waitFor(() => {
+      expect(mockFetchBulkVideos).toHaveBeenCalledWith(
+        expect.any(String),
+        [VIDEO_ID],
+        expect.anything(),
+      );
+    });
+
+    await waitFor(() => {
+      const item = result.current.items[0];
+      expect(item?.kind === 'video' && item.videoThumbnailUrl).toBe('https://cdn.example/t.jpg');
+    });
+  });
+
+  it('keeps embedded metadata that a later fetch did not resolve', async () => {
+    const titleOnly: RawNotification = {
+      ...makeLike('like-1', PUBKEY_A, VIDEO_ID, 2000),
+      videoMeta: { title: 'Sunset Loop' },
+    };
+
+    mockUseNotifications.mockReturnValue(
+      makeInfiniteQueryResult([makeNotificationsPage([titleOnly])]),
+    );
+    // Bulk resolves the thumbnail but returns no title.
+    mockFetchBulkVideos.mockResolvedValue({
+      videos: [{ id: VIDEO_ID, title: '', thumbnail: 'https://cdn.example/t.jpg' }],
+      missing: [],
+    });
+
+    const { useHydratedNotifications } = await import('./useHydratedNotifications');
+
+    const { result } = renderHook(
+      () => useHydratedNotifications({ category: 'all' }),
+      { wrapper: createWrapper() },
+    );
+
+    await waitFor(() => {
+      const item = result.current.items[0];
+      expect(item?.kind === 'video' && item.videoThumbnailUrl).toBe('https://cdn.example/t.jpg');
+    });
+
+    const item = result.current.items[0];
+    expect(item.kind === 'video' && item.videoTitle).toBe('Sunset Loop');
   });
 
   it('uses the actor profile embedded in the notification', async () => {

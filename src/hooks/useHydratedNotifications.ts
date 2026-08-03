@@ -95,10 +95,14 @@ export function useHydratedNotifications(
   const embeddedVideos = useMemo(() => {
     const map = new Map<string, NotificationVideoMeta>();
     for (const row of flatRaw) {
-      if (!row.targetEventId || !row.videoMeta || map.has(row.targetEventId)) continue;
+      if (!row.targetEventId || !row.videoMeta) continue;
+      // Two rows about one video can each carry a different half of its
+      // metadata (a title from `referenced_event_title`, a thumbnail from
+      // `referenced_video`), so fill gaps instead of letting the first row win.
+      const existing = map.get(row.targetEventId);
       map.set(row.targetEventId, {
-        title: row.videoMeta.title,
-        thumbnailUrl: row.videoMeta.thumbnailUrl,
+        title: existing?.title ?? row.videoMeta.title,
+        thumbnailUrl: existing?.thumbnailUrl ?? row.videoMeta.thumbnailUrl,
       });
     }
     return map;
@@ -111,7 +115,10 @@ export function useHydratedNotifications(
           .filter((r) => r.type !== 'follow' && r.targetEventId)
           .map((r) => r.targetEventId as string),
       ),
-    ).filter((id) => !embeddedVideos.has(id));
+      // Only a row carrying BOTH fields is fully hydrated. Treating any
+      // embedded metadata as complete meant a title-only response permanently
+      // suppressed the thumbnail fetch.
+    ).filter((id) => !isCompleteVideoMeta(embeddedVideos.get(id)));
     return ids.sort();
   }, [flatRaw, embeddedVideos]);
 
@@ -171,10 +178,19 @@ export function useHydratedNotifications(
     gcTime: 30 * 60 * 1000,
   });
 
-  const videosMap: Map<string, NotificationVideoMeta> = useMemo(
-    () => new Map([...embeddedVideos, ...Object.entries(videosQuery.data ?? {})]),
-    [embeddedVideos, videosQuery.data],
-  );
+  const videosMap: Map<string, NotificationVideoMeta> = useMemo(() => {
+    const merged = new Map(embeddedVideos);
+    for (const [id, fetched] of Object.entries(videosQuery.data ?? {})) {
+      // A fetch that resolved only one field must not blank out the other one
+      // the response already gave us.
+      const embedded = merged.get(id);
+      merged.set(id, {
+        title: fetched.title ?? embedded?.title,
+        thumbnailUrl: fetched.thumbnailUrl ?? embedded?.thumbnailUrl,
+      });
+    }
+    return merged;
+  }, [embeddedVideos, videosQuery.data]);
 
   // -------------------------------------------------------------------------
   // Grouping
@@ -205,6 +221,11 @@ export function useHydratedNotifications(
 // ---------------------------------------------------------------------------
 // Private helpers
 // ---------------------------------------------------------------------------
+
+/** A row needs no video request only when the response supplied both fields. */
+function isCompleteVideoMeta(meta: NotificationVideoMeta | undefined): boolean {
+  return Boolean(meta?.title && meta?.thumbnailUrl);
+}
 
 function buildProfilesMap(
   pubkeys: string[],
