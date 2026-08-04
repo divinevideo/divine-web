@@ -1096,7 +1096,9 @@
       "andOthers_other": "ve {{count}} kişi daha",
       "likedTitled": "{{title}} gönderisini beğendi",
       "commentedTitled": "{{title}} gönderisine yorum yaptı",
-      "repostedTitled": "{{title}} gönderisini yeniden paylaştı"
+      "repostedTitled": "{{title}} gönderisini yeniden paylaştı",
+      "likedComment": "yorumunu beğendi",
+      "likedCommentTitled": "{{title}} içindeki yorumunu beğendi"
     },
     "video": {
       "untitled": "videonu"

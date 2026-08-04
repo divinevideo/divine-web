@@ -1092,7 +1092,9 @@
       "andOthers_other": "and {{count}} others",
       "likedTitled": "liked {{title}}",
       "commentedTitled": "commented on {{title}}",
-      "repostedTitled": "reposted {{title}}"
+      "repostedTitled": "reposted {{title}}",
+      "likedComment": "liked your comment",
+      "likedCommentTitled": "liked your comment on {{title}}"
     },
     "video": {
       "untitled": "your video"

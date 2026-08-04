@@ -57,6 +57,21 @@ describe('notificationTransform', () => {
     it('returns null for "list_add"', () => {
       expect(mapNotificationType('list_add')).toBeNull();
     });
+
+    it('maps a "reaction" carrying a target comment to "commentLike"', () => {
+      // The backend emits `reaction` for every kind 7 and resolves the row's
+      // root to the video, so a like on your comment under someone else's video
+      // otherwise reads "liked your video" over a video that is not yours.
+      expect(mapNotificationType('reaction', { hasTargetComment: true })).toBe('commentLike');
+      expect(mapNotificationType('reaction', { hasTargetComment: false })).toBe('like');
+    });
+
+    it('does not reroute comments and replies that carry a target comment', () => {
+      // `target_comment_id` is set for `comment` and `reply` too, where it is
+      // the anchor to scroll to rather than the thing being reacted to.
+      expect(mapNotificationType('comment', { hasTargetComment: true })).toBe('comment');
+      expect(mapNotificationType('reply', { hasTargetComment: true })).toBe('comment');
+    });
   });
 
   describe('transformNotification', () => {

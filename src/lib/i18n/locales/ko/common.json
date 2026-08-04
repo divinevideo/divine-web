@@ -1096,7 +1096,9 @@
       "andOthers_other": "외 {{count}}명",
       "likedTitled": "{{title}}을(를) 좋아합니다",
       "commentedTitled": "{{title}}에 댓글을 남겼습니다",
-      "repostedTitled": "{{title}}을(를) 리포스트했습니다"
+      "repostedTitled": "{{title}}을(를) 리포스트했습니다",
+      "likedComment": "회원님의 댓글을 좋아합니다",
+      "likedCommentTitled": "{{title}}에 남긴 회원님의 댓글을 좋아합니다"
     },
     "video": {
       "untitled": "회원님의 비디오"

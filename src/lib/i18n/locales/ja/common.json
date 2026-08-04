@@ -1096,7 +1096,9 @@
       "andOthers_other": "他{{count}}人",
       "likedTitled": "{{title}}に「いいね」しました",
       "commentedTitled": "{{title}}にコメントしました",
-      "repostedTitled": "{{title}}をリポストしました"
+      "repostedTitled": "{{title}}をリポストしました",
+      "likedComment": "あなたのコメントにいいねしました",
+      "likedCommentTitled": "{{title}} へのあなたのコメントにいいねしました"
     },
     "video": {
       "untitled": "あなたの動画"

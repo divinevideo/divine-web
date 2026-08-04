@@ -77,7 +77,7 @@ export function groupRawNotifications(
     const targetEventId =
       bucket.find((r) => r.targetEventId && HEX_EVENT_ID.test(r.targetEventId))?.targetEventId ??
       newestRow.targetEventId!;
-    const type = newestRow.type as 'like' | 'comment' | 'repost';
+    const type = newestRow.type as 'like' | 'commentLike' | 'comment' | 'repost';
 
     // Collect unique actor pubkeys newest-first
     const seenPubkeys = new Set<string>();

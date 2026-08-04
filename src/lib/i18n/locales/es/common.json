@@ -1097,7 +1097,9 @@
       "likedTitled": "le gustó {{title}}",
       "commentedTitled": "comentó en {{title}}",
       "repostedTitled": "republicó {{title}}",
-      "andOthers_many": "y {{count}} más"
+      "andOthers_many": "y {{count}} más",
+      "likedComment": "le gustó tu comentario",
+      "likedCommentTitled": "le gustó tu comentario en {{title}}"
     },
     "video": {
       "untitled": "tu video"

@@ -1096,7 +1096,9 @@
       "andOthers_other": "اور {{count}} اور",
       "likedTitled": "{{title}} کو پسند کیا",
       "commentedTitled": "{{title}} پر تبصرہ کیا",
-      "repostedTitled": "{{title}} کو دوبارہ پوسٹ کیا"
+      "repostedTitled": "{{title}} کو دوبارہ پوسٹ کیا",
+      "likedComment": "نے آپ کے تبصرے کو پسند کیا",
+      "likedCommentTitled": "نے {{title}} پر آپ کے تبصرے کو پسند کیا"
     },
     "video": {
       "untitled": "آپ کی ویڈیو"

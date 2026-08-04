@@ -1168,7 +1168,9 @@
       "andOthers_other": "و{{count}} آخرون",
       "likedTitled": "أعجب بـ {{title}}",
       "commentedTitled": "علّق على {{title}}",
-      "repostedTitled": "أعاد نشر {{title}}"
+      "repostedTitled": "أعاد نشر {{title}}",
+      "likedComment": "أعجب بتعليقك",
+      "likedCommentTitled": "أعجب بتعليقك على {{title}}"
     },
     "video": {
       "untitled": "فيديوك"

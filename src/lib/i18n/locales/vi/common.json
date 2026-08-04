@@ -1096,7 +1096,9 @@
       "andOthers_other": "và {{count}} người khác",
       "likedTitled": "đã thích {{title}}",
       "commentedTitled": "đã bình luận về {{title}}",
-      "repostedTitled": "đã đăng lại {{title}}"
+      "repostedTitled": "đã đăng lại {{title}}",
+      "likedComment": "đã thích bình luận của bạn",
+      "likedCommentTitled": "đã thích bình luận của bạn về {{title}}"
     },
     "video": {
       "untitled": "video của bạn"

@@ -85,7 +85,10 @@ function NotificationTypeIconChip({
   const weight = isRead ? 'bold' : 'fill';
 
   switch (type) {
+    // A like on your comment is still a like, so it keeps the heart chip; the
+    // message copy is what distinguishes it from a like on your video.
     case 'like':
+    case 'commentLike':
       return (
         <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-red-500/15">
           <Heart className="h-4 w-4 text-red-600 dark:text-red-400" weight={weight} />
@@ -178,6 +181,10 @@ function getVerbKey(type: VideoNotification['type'], hasTitle: boolean): string 
       return hasTitle
         ? 'notificationsPage.message.likedTitled'
         : 'notificationsPage.message.liked';
+    case 'commentLike':
+      return hasTitle
+        ? 'notificationsPage.message.likedCommentTitled'
+        : 'notificationsPage.message.likedComment';
     case 'comment':
       return hasTitle
         ? 'notificationsPage.message.commentedTitled'

@@ -1096,7 +1096,9 @@
       "andOthers_other": "und {{count}} weitere Personen",
       "likedTitled": "gefällt {{title}}",
       "commentedTitled": "hat {{title}} kommentiert",
-      "repostedTitled": "hat {{title}} geteilt"
+      "repostedTitled": "hat {{title}} geteilt",
+      "likedComment": "gefällt dein Kommentar",
+      "likedCommentTitled": "gefällt dein Kommentar zu {{title}}"
     },
     "video": {
       "untitled": "dein Video"

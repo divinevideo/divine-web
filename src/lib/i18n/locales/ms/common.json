@@ -1096,7 +1096,9 @@
       "andOthers_other": "dan {{count}} yang lain",
       "likedTitled": "menyukai {{title}}",
       "commentedTitled": "mengulas {{title}}",
-      "repostedTitled": "mengepos semula {{title}}"
+      "repostedTitled": "mengepos semula {{title}}",
+      "likedComment": "menyukai komen anda",
+      "likedCommentTitled": "menyukai komen anda pada {{title}}"
     },
     "video": {
       "untitled": "video anda"

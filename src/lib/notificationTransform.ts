@@ -20,22 +20,28 @@ import type {
  *   row type for both. The response does carry a `reply_context` that could
  *   distinguish them, but we neither model nor read it today.
  *
- * `reaction` maps to `like` unconditionally, which is not strictly true: the
- * backend emits it for every kind 7, including a like on *your comment* on
- * someone else's video, and resolves that row's root to the video. Such a row
- * currently renders "liked your video" over a video that is not yours and joins
- * that video's like bucket. `target_comment_id` is the signal that would
- * separate them; how those rows should read is an open product question.
+ * `reaction` covers every kind 7, including a like on *your comment* on someone
+ * else's video, and the backend resolves that row's root to the video. Mapping
+ * all of them to `like` put "liked your video" over a video that was not yours
+ * and merged the row into that video's like bucket. `target_comment_id` is what
+ * separates the two, so a reaction carrying one becomes `commentLike`, which
+ * has its own copy and its own bucket.
+ *
+ * Only `reaction` branches on it: `comment` and `reply` set the same field to
+ * mark the comment to scroll to, which says nothing about what was reacted to.
  * - `mention` is the materializer's catch-all for any source kind it does not
  *   recognise, so it has no single truthful verb. Relabelling it as a like put
  *   false statements on screen and inflated like counts, because grouping
  *   buckets on target + type. It is dropped until it has a real render path.
  * - `zap` is hidden by product decision; `list_add` has no row design yet.
  */
-export function mapNotificationType(apiType: string): NotificationType | null {
+export function mapNotificationType(
+  apiType: string,
+  options?: { hasTargetComment?: boolean },
+): NotificationType | null {
   switch (apiType) {
     case 'reaction':
-      return 'like';
+      return options?.hasTargetComment ? 'commentLike' : 'like';
     case 'reply':
     case 'comment':
       return 'comment';
@@ -134,7 +140,9 @@ function resolveVideoMeta(raw: RawApiNotification): RawNotification['videoMeta']
  * - type is not 'follow' and no target event can be resolved
  */
 export function transformNotification(raw: RawApiNotification): RawNotification | null {
-  const type = mapNotificationType(raw.notification_type);
+  const type = mapNotificationType(raw.notification_type, {
+    hasTargetComment: Boolean(raw.target_comment_id),
+  });
 
   if (type === null) {
     return null;

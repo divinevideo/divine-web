@@ -103,6 +103,26 @@ describe('VideoNotificationRow', () => {
     expect(screen.queryByText(/others/)).not.toBeInTheDocument();
   });
 
+  it('says a comment was liked, not the video, for commentLike rows', () => {
+    render(
+      <VideoNotificationRow notification={buildVideoNotification({ type: 'commentLike' })} />,
+    );
+
+    expect(screen.getByText('liked your comment on My Cool Loop')).toBeInTheDocument();
+    expect(screen.queryByText('liked My Cool Loop')).not.toBeInTheDocument();
+  });
+
+  it('falls back to untitled comment-like copy when the video has no title', () => {
+    render(
+      <VideoNotificationRow
+        notification={buildVideoNotification({ type: 'commentLike', videoTitle: undefined })}
+      />,
+    );
+
+    expect(screen.getByText('liked your comment')).toBeInTheDocument();
+    expect(screen.queryByText('liked your video')).not.toBeInTheDocument();
+  });
+
   it('announces unread state to assistive tech, not only as a background tint', () => {
     const { rerender } = render(
       <VideoNotificationRow notification={buildVideoNotification({ isRead: false })} />,

@@ -1097,7 +1097,9 @@
       "repostedTitled": "a redistribuit {{title}}",
       "andOthers_one": "și încă {{count}}",
       "andOthers_few": "și încă {{count}}",
-      "andOthers_other": "și alți {{count}}"
+      "andOthers_other": "și alți {{count}}",
+      "likedComment": "a apreciat comentariul tău",
+      "likedCommentTitled": "a apreciat comentariul tău la {{title}}"
     },
     "video": {
       "untitled": "videoclipul tău"

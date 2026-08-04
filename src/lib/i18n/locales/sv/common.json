@@ -1096,7 +1096,9 @@
       "andOthers_other": "och {{count}} andra",
       "likedTitled": "gillade {{title}}",
       "commentedTitled": "kommenterade {{title}}",
-      "repostedTitled": "delade {{title}}"
+      "repostedTitled": "delade {{title}}",
+      "likedComment": "gillade din kommentar",
+      "likedCommentTitled": "gillade din kommentar på {{title}}"
     },
     "video": {
       "untitled": "din video"

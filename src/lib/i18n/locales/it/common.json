@@ -1097,7 +1097,9 @@
       "likedTitled": "ha messo mi piace a {{title}}",
       "commentedTitled": "ha commentato {{title}}",
       "repostedTitled": "ha ricondiviso {{title}}",
-      "andOthers_many": "e altri {{count}}"
+      "andOthers_many": "e altri {{count}}",
+      "likedComment": "ha messo mi piace al tuo commento",
+      "likedCommentTitled": "ha messo mi piace al tuo commento su {{title}}"
     },
     "video": {
       "untitled": "il tuo video"

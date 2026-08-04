@@ -1097,7 +1097,9 @@
       "likedTitled": "a aimé {{title}}",
       "commentedTitled": "a commenté {{title}}",
       "repostedTitled": "a republié {{title}}",
-      "andOthers_many": "et {{count}} autres"
+      "andOthers_many": "et {{count}} autres",
+      "likedComment": "a aimé ton commentaire",
+      "likedCommentTitled": "a aimé ton commentaire sur {{title}}"
     },
     "video": {
       "untitled": "ta vidéo"

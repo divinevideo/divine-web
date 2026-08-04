@@ -1096,7 +1096,9 @@
       "andOthers_other": "en {{count}} anderen",
       "likedTitled": "vindt {{title}} leuk",
       "commentedTitled": "reageerde op {{title}}",
-      "repostedTitled": "deelde {{title}}"
+      "repostedTitled": "deelde {{title}}",
+      "likedComment": "vindt je reactie leuk",
+      "likedCommentTitled": "vindt je reactie op {{title}} leuk"
     },
     "video": {
       "untitled": "je video"

@@ -1098,7 +1098,9 @@
       "andOthers_one": "i {{count}} inna osoba",
       "andOthers_few": "i {{count}} inne osoby",
       "andOthers_many": "i {{count}} innych osób",
-      "andOthers_other": "i {{count}} innych osób"
+      "andOthers_other": "i {{count}} innych osób",
+      "likedComment": "polubił(a) Twój komentarz",
+      "likedCommentTitled": "polubił(a) Twój komentarz pod {{title}}"
     },
     "video": {
       "untitled": "twój film"

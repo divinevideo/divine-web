@@ -1097,7 +1097,9 @@
       "likedTitled": "curtiu {{title}}",
       "commentedTitled": "comentou em {{title}}",
       "repostedTitled": "repostou {{title}}",
-      "andOthers_many": "e mais {{count}}"
+      "andOthers_many": "e mais {{count}}",
+      "likedComment": "curtiu seu comentário",
+      "likedCommentTitled": "curtiu seu comentário em {{title}}"
     },
     "video": {
       "untitled": "seu vídeo"

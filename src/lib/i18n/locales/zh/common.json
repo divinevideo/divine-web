@@ -1096,7 +1096,9 @@
       "andOthers_other": "和另外 {{count}} 人",
       "likedTitled": "赞了 {{title}}",
       "commentedTitled": "评论了 {{title}}",
-      "repostedTitled": "转发了 {{title}}"
+      "repostedTitled": "转发了 {{title}}",
+      "likedComment": "赞了你的评论",
+      "likedCommentTitled": "赞了你在 {{title}} 的评论"
     },
     "video": {
       "untitled": "你的视频"

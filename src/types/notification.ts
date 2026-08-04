@@ -1,7 +1,12 @@
 // ABOUTME: Type definitions for the notifications feature
 // ABOUTME: RawNotification (fetch stage) + sealed VideoNotification|ActorNotification UI union
 
-export type NotificationType = 'like' | 'comment' | 'follow' | 'repost';
+/**
+ * `commentLike` has no API counterpart. The backend emits `reaction` for every
+ * kind 7; `target_comment_id` is what separates a like on your comment from a
+ * like on your video, and the two need different copy and different buckets.
+ */
+export type NotificationType = 'like' | 'commentLike' | 'comment' | 'follow' | 'repost';
 
 /**
  * Values the notifications endpoint actually emits for `notification_type`.
@@ -41,7 +46,7 @@ interface BaseGroupedNotification {
 
 export interface VideoNotification extends BaseGroupedNotification {
   kind: 'video';
-  type: 'like' | 'comment' | 'repost';
+  type: 'like' | 'commentLike' | 'comment' | 'repost';
   videoEventId: string;
   videoTitle?: string;
   videoThumbnailUrl?: string;

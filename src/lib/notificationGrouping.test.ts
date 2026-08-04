@@ -108,6 +108,33 @@ describe('groupRawNotifications', () => {
     expect(types).toContain('comment');
   });
 
+  it('keeps likes on your comment out of the video like bucket', () => {
+    // Both are kind 7 on the same video, but one is a like on the video and the
+    // other a like on your comment under it. Merging them counted a comment
+    // like toward the video's like total and rendered "liked your video".
+    const raws = [
+      makeRaw({ type: 'like', actorPubkey: 'pk1', targetEventId: 'video-1' }),
+      makeRaw({
+        type: 'commentLike',
+        actorPubkey: 'pk2',
+        targetEventId: 'video-1',
+        targetCommentId: 'comment-9',
+      }),
+    ];
+    const profiles = new Map([
+      ['pk1', makeActor('pk1')],
+      ['pk2', makeActor('pk2')],
+    ]);
+    const videos = new Map([['video-1', makeVideoMeta()]]);
+
+    const result = groupRawNotifications(raws, profiles, videos);
+
+    expect(result).toHaveLength(2);
+    const byType = new Map(result.map((r) => [(r as VideoNotification).type, r as VideoNotification]));
+    expect(byType.get('like')?.totalCount).toBe(1);
+    expect(byType.get('commentLike')?.totalCount).toBe(1);
+  });
+
   // 4. Notifications for different videos produce separate rows
   it('produces separate rows for different videos', () => {
     const raws = [

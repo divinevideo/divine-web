@@ -1096,7 +1096,9 @@
       "andOthers_other": "at {{count}} pa",
       "likedTitled": "nag-like ng {{title}}",
       "commentedTitled": "nag-comment sa {{title}}",
-      "repostedTitled": "nag-repost ng {{title}}"
+      "repostedTitled": "nag-repost ng {{title}}",
+      "likedComment": "nag-like sa komento mo",
+      "likedCommentTitled": "nag-like sa komento mo sa {{title}}"
     },
     "video": {
       "untitled": "video mo"
