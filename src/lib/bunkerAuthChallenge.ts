@@ -33,7 +33,22 @@ export function presentAuthChallenge(rawUrl: string): AuthChallengePresentation 
     return { url: null, opened: false };
   }
 
-  const opened = window.open(rawUrl, '_blank', 'noopener,noreferrer');
+  // `window.open` returns null whenever the feature string sets `noopener`,
+  // and `noreferrer` implies `noopener`. That happens whether or not the tab
+  // actually opened. Passing either made `opened` permanently false, so every user was
+  // told their popup had been blocked even when it had not. Open with no
+  // features so the return value means something, then sever the opener
+  // reference by hand: `opener` is settable cross-origin, so a hostile signer's
+  // page still cannot reach back into this one.
+  //
+  // The cost of dropping `noreferrer` is that the signer sees this page's URL
+  // in the Referer header. That is a party the user is deliberately
+  // authenticating against, so it is preferred over lying about the outcome.
+  const popup = window.open(rawUrl, '_blank');
 
-  return { url: rawUrl, opened: !!opened };
+  if (popup) {
+    popup.opener = null;
+  }
+
+  return { url: rawUrl, opened: !!popup };
 }

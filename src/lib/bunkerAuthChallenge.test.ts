@@ -18,12 +18,29 @@ describe('presentAuthChallenge', () => {
   it('opens the challenge in a new tab', () => {
     const result = presentAuthChallenge('https://signer.example/auth?token=abc');
 
-    expect(openSpy).toHaveBeenCalledWith(
-      'https://signer.example/auth?token=abc',
-      '_blank',
-      'noopener,noreferrer'
-    );
+    expect(openSpy).toHaveBeenCalledWith('https://signer.example/auth?token=abc', '_blank');
     expect(result).toEqual({ url: 'https://signer.example/auth?token=abc', opened: true });
+  });
+
+  // Regression guard. `window.open` returns null whenever the feature string
+  // sets `noopener`, and `noreferrer` implies `noopener`. Passing either makes
+  // `opened` permanently false in real browsers, so the dialog claims the popup
+  // was blocked every single time. The jsdom mock cannot reproduce that, so
+  // pin the call shape instead.
+  it('opens without noopener/noreferrer so the return value stays meaningful', () => {
+    presentAuthChallenge('https://signer.example/auth');
+
+    const features = openSpy.mock.calls[0][2];
+    expect(features).toBeUndefined();
+  });
+
+  it('severs the opener reference on the tab it opened', () => {
+    const popup = {} as Window;
+    openSpy.mockReturnValue(popup);
+
+    presentAuthChallenge('https://signer.example/auth');
+
+    expect(popup.opener).toBeNull();
   });
 
   it('reports the URL for a link fallback when the popup is blocked', () => {
