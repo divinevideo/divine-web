@@ -116,6 +116,28 @@ describe('ScrollToTop restoration against late-loading content', () => {
     expect(window.scrollY).toBe(300);
   });
 
+  // Grabbing the scrollbar fires neither wheel nor touchstart nor keydown, and
+  // it is the natural way out of a page the retry loop cannot satisfy.
+  it('stops fighting the user if they drag the scrollbar during restoration', async () => {
+    const TestApp = makeTestApp(await loadScrollToTop());
+    render(<TestApp />);
+
+    scrollY = 1800;
+    fireEvent.click(screen.getByRole('link', { name: 'Details' }));
+
+    scrollY = 0;
+    maxScroll = 150;
+    fireEvent.click(screen.getByRole('button', { name: 'Back' }));
+    expect(window.scrollY).toBe(150);
+
+    fireEvent.mouseDown(window);
+    maxScroll = 10_000;
+    scrollY = 300;
+    await nextFrame();
+
+    expect(window.scrollY).toBe(300);
+  });
+
   it('still lands at the top on forward navigation', async () => {
     const TestApp = makeTestApp(await loadScrollToTop());
     render(<TestApp />);

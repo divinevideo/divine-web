@@ -38,12 +38,16 @@ function restoreScrollPosition(target: number): () => void {
     window.removeEventListener('wheel', stop);
     window.removeEventListener('touchstart', stop);
     window.removeEventListener('keydown', stop);
+    window.removeEventListener('mousedown', stop);
   };
 
   // Once the viewer takes over, stop dragging them back to where they were.
+  // `mousedown` covers grabbing the scrollbar, which fires none of the others
+  // and is exactly how someone escapes a page the loop cannot satisfy.
   window.addEventListener('wheel', stop, { passive: true });
   window.addEventListener('touchstart', stop, { passive: true });
   window.addEventListener('keydown', stop);
+  window.addEventListener('mousedown', stop, { passive: true });
 
   const attempt = () => {
     if (stopped) return;
