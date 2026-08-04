@@ -76,6 +76,16 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin }) =
   // check can resolve `protected` mid-interaction. The ref always holds the
   // latest verdict so each signer-swap re-checks when it actually runs.
   const keyHandoverRestrictedRef = useRef(false);
+  // LoginArea renders this dialog unconditionally and only toggles `isOpen`, so
+  // dismissing it never unmounts the component and never settles an in-flight
+  // bunker handshake. These track whether the attempt that is resolving is
+  // still the one the user is waiting on.
+  const isOpenRef = useRef(isOpen);
+  const bunkerAttemptRef = useRef(0);
+
+  useEffect(() => {
+    isOpenRef.current = isOpen;
+  }, [isOpen]);
   keyHandoverRestrictedRef.current = keyHandoverRestricted;
 
   // The render-side gates below stay closed synchronously; this only clears the
@@ -216,15 +226,23 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin }) =
     setBunkerError(null);
     setBunkerAuthUrl(null);
 
+    const attempt = ++bunkerAttemptRef.current;
+    const isCurrentAttempt = () => attempt === bunkerAttemptRef.current;
+
     try {
       // Same commit-boundary re-check as the extension path: the pre-click
       // check goes stale while the bunker connect is pending.
       const committed = await login.bunker(bunkerUri, {
-        beforeCommit: () => !keyHandoverRestrictedRef.current,
+        // A NIP-46 handshake can sit unresolved indefinitely while the user
+        // approves out of band, and the dialog stays mounted the whole time. If
+        // they gave up and closed it, or started a fresh attempt, this one must
+        // not silently log them in and set the cross-subdomain cookie.
+        beforeCommit: () =>
+          !keyHandoverRestrictedRef.current && isOpenRef.current && isCurrentAttempt(),
         // The signer wants the user to approve in its own UI. We open a tab
         // for them; keep the URL around in case the popup was blocked.
         onAuthChallenge: ({ url, opened }) => {
-          if (url && !opened) setBunkerAuthUrl(url);
+          if (url && !opened && isCurrentAttempt()) setBunkerAuthUrl(url);
         },
       });
       if (!committed) return;
@@ -233,9 +251,11 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin }) =
       setBunkerUri('');
       setBunkerAuthUrl(null);
     } catch {
-      setBunkerError(t('loginDialog.errorBunkerConnectFailed'));
+      if (isCurrentAttempt()) setBunkerError(t('loginDialog.errorBunkerConnectFailed'));
     } finally {
-      setIsLoginLoading(false);
+      // A superseded attempt settling must not clear the spinner belonging to
+      // the attempt the user is actually waiting on.
+      if (isCurrentAttempt()) setIsLoginLoading(false);
     }
   };
 
