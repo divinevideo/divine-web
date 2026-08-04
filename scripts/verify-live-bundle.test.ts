@@ -1,8 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
   buildCurlArgs,
+  extractCsp,
   extractEntryScript,
   verifyLiveBundle,
+  verifyLiveCsp,
   verifyInjectedRoutesOk,
 } from './verify-live-bundle.mjs';
 
@@ -369,5 +371,90 @@ describe('buildCurlArgs', () => {
 
     expect(args).toEqual(expect.arrayContaining(['-X', 'GET']));
     expect(args).not.toContain('-H');
+  });
+});
+
+const CSP = "default-src 'self'; script-src 'self' 'unsafe-inline'; img-src 'self' data:;";
+const htmlWithCsp = (csp: string) =>
+  `<!doctype html><html><head><meta charset="utf-8">` +
+  `<meta http-equiv="Content-Security-Policy" content="${csp}">` +
+  `<meta http-equiv="X-Content-Type-Options" content="nosniff">` +
+  `</head><body></body></html>`;
+
+describe('extractCsp', () => {
+  it('returns the policy from the CSP meta tag', () => {
+    expect(extractCsp(htmlWithCsp(CSP))).toBe(CSP);
+  });
+
+  it('does not match a different http-equiv meta tag', () => {
+    const html = `<html><head><meta http-equiv="X-Content-Type-Options" content="nosniff"></head></html>`;
+    expect(extractCsp(html)).toBeNull();
+  });
+
+  it('returns null when there is no CSP meta tag', () => {
+    expect(extractCsp('<html><head></head><body></body></html>')).toBeNull();
+  });
+});
+
+describe('verifyLiveCsp', () => {
+  const noopSleep = vi.fn(async () => {});
+
+  it('passes when every route serves the built policy', async () => {
+    const fetchImpl = vi.fn(async () => okResponse(htmlWithCsp(CSP)));
+
+    await expect(
+      verifyLiveCsp({
+        expected: CSP,
+        urls: ['https://divine.video/', 'https://divine.video/discovery/classics'],
+        fetchImpl,
+        attempts: 3,
+        sleep: noopSleep,
+      }),
+    ).resolves.toMatchObject({ ok: true });
+
+    expect(fetchImpl).toHaveBeenCalledTimes(2); // one healthy check per route
+  });
+
+  it('fails when the edge shell serves a policy missing a directive source', async () => {
+    // The exact split that hid the App Store badge: index.html allowed a host in
+    // script-src and the Wasm-embedded edge shell did not.
+    const drifted = CSP.replace("script-src 'self'", "script-src 'self' https://example.com");
+    const fetchImpl = vi.fn(async () => okResponse(htmlWithCsp(drifted)));
+
+    await expect(
+      verifyLiveCsp({
+        expected: CSP,
+        urls: ['https://divine.video/'],
+        fetchImpl,
+        attempts: 2,
+        sleep: noopSleep,
+      }),
+    ).rejects.toThrow(/Live CSP mismatch at https:\/\/divine\.video\//);
+
+    expect(fetchImpl).toHaveBeenCalledTimes(2); // retried, then gave up
+  });
+
+  it('fails when a route serves no CSP at all', async () => {
+    const fetchImpl = vi.fn(async () => okResponse('<html><head></head><body></body></html>'));
+
+    await expect(
+      verifyLiveCsp({ expected: CSP, urls: ['https://divine.video/'], fetchImpl, attempts: 1, sleep: noopSleep }),
+    ).rejects.toThrow(/no CSP meta tag/);
+  });
+
+  it('recovers when a stale cache serves the old policy on the first attempt', async () => {
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValueOnce(okResponse(htmlWithCsp("default-src 'self';")))
+      .mockResolvedValueOnce(okResponse(htmlWithCsp(CSP)));
+
+    await expect(
+      verifyLiveCsp({ expected: CSP, urls: ['https://divine.video/'], fetchImpl, attempts: 3, sleep: noopSleep }),
+    ).resolves.toMatchObject({ ok: true });
+  });
+
+  it('requires an expected policy and at least one url', async () => {
+    await expect(verifyLiveCsp({ urls: ['https://divine.video/'] })).rejects.toThrow(/expected CSP is required/);
+    await expect(verifyLiveCsp({ expected: CSP, urls: [] })).rejects.toThrow(/at least one url/);
   });
 });

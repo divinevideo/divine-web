@@ -14,6 +14,16 @@ import { promisify } from 'node:util';
 // is ever added (vite.config.ts plugins is currently just react()).
 const ENTRY_SCRIPT_RE = /<script\b[^>]*\bsrc=["'](\/assets\/[^"']+\.js)["'][^>]*>/i;
 
+// The CSP is a meta tag, not a response header, and it exists twice: in index.html
+// and in the Fastly edge shell (compute-js/src/templates/shell.js). Those two are
+// pinned to each other by tests/csp-single-source.test.ts, but the Wasm worker and
+// the KV static content deploy separately — so the repo can be consistent while the
+// edge still serves a stale policy. Only a live fetch catches that.
+// The content attribute must be double-quoted: every real policy contains single
+// quotes ('self', 'unsafe-inline'), so a single-quoted attribute cannot occur and
+// allowing one here would truncate the match at the first 'self'.
+const CSP_META_RE = /<meta\b[^>]*\bhttp-equiv=["']Content-Security-Policy["'][^>]*\bcontent="([^"]*)"/i;
+
 // Per-request ceiling so a hung origin (connection accepted, no response — the brownout
 // class this guard targets) counts as a failed attempt and retries, rather than blocking
 // the await until the GitHub Actions job timeout.
@@ -90,6 +100,92 @@ async function fetchWithCurl(url, options = {}) {
 export function extractEntryScript(html) {
   const match = typeof html === 'string' ? html.match(ENTRY_SCRIPT_RE) : null;
   return match ? match[1] : null;
+}
+
+/**
+ * Extract the Content-Security-Policy meta tag content from an index.html string.
+ * Returns null when no CSP meta tag is present.
+ */
+export function extractCsp(html) {
+  const match = typeof html === 'string' ? html.match(CSP_META_RE) : null;
+  return match ? match[1] : null;
+}
+
+/**
+ * Assert every live route serves the CSP from the freshly built index.html.
+ *
+ * Catches the split-deploy case the unit test cannot: `fastly:deploy` ships the
+ * Wasm worker (which carries the edge shell's copy of the policy) and
+ * `fastly:publish` ships index.html to KV, so running only one leaves the two
+ * serving different policies. A missing directive here silently breaks whatever
+ * depended on it, on only some routes.
+ *
+ * Short retry budget — a mismatch is deterministic and will not self-heal; the
+ * retries only absorb a cold-start blip or a cache that has not yet revalidated.
+ */
+export async function verifyLiveCsp({
+  expected,
+  urls,
+  fetchImpl = fetch,
+  attempts = 3,
+  delayMs = 10000,
+  sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+  log = () => {},
+}) {
+  if (!expected) {
+    throw new Error('verifyLiveCsp: expected CSP is required');
+  }
+  if (!Array.isArray(urls) || urls.length === 0) {
+    throw new Error('verifyLiveCsp: at least one url is required');
+  }
+
+  for (const url of urls) {
+    let lastObserved = 'none';
+    let matched = false;
+
+    for (let attempt = 1; attempt <= attempts; attempt += 1) {
+      try {
+        const response = await fetchImpl(url, {
+          cache: 'no-store',
+          headers: {
+            'Cache-Control': 'no-cache',
+            Pragma: 'no-cache',
+          },
+          signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+        });
+        if (response.ok) {
+          const served = extractCsp(await response.text());
+          if (served === expected) {
+            log(`[verify-live-csp] ${url} serves the built CSP (attempt ${attempt}/${attempts})`);
+            matched = true;
+            break;
+          }
+          lastObserved = served ? `a different policy (${served.length} chars)` : 'no CSP meta tag';
+          log(`[verify-live-csp] ${url} served ${lastObserved} (attempt ${attempt}/${attempts})`);
+        } else {
+          lastObserved = `HTTP ${response.status}`;
+          log(`[verify-live-csp] ${url} returned ${lastObserved} (attempt ${attempt}/${attempts})`);
+        }
+      } catch (err) {
+        lastObserved = `fetch error: ${err?.message ?? err}`;
+        log(`[verify-live-csp] ${url} ${lastObserved} (attempt ${attempt}/${attempts})`);
+      }
+
+      if (attempt < attempts) {
+        await sleep(delayMs);
+      }
+    }
+
+    if (!matched) {
+      throw new Error(
+        `Live CSP mismatch at ${url}: last observed ${lastObserved} after ${attempts} attempts. ` +
+        `The edge shell and index.html are serving different policies — run both ` +
+        `\`npm run fastly:deploy\` and \`npm run fastly:publish\`.`,
+      );
+    }
+  }
+
+  return { ok: true, urls };
 }
 
 /**
@@ -289,6 +385,17 @@ if (invokedDirectly) {
   const injectedAttempts = numberFromEnv('VERIFY_INJECTED_ATTEMPTS', 3);
   const injectedDelayMs = numberFromEnv('VERIFY_INJECTED_DELAY_MS', 10000);
 
+  // One edge-templated route (`/`, x-divine-edge: template) and one static route,
+  // so a policy that drifted between the Wasm shell and the published index.html
+  // fails here rather than in a user's browser console.
+  const cspUrls = (process.env.VERIFY_CSP_URLS
+    ?? 'https://divine.video/,https://divine.video/discovery/classics')
+    .split(',')
+    .map((value) => value.trim())
+    .filter(Boolean);
+  const cspAttempts = numberFromEnv('VERIFY_CSP_ATTEMPTS', 3);
+  const cspDelayMs = numberFromEnv('VERIFY_CSP_DELAY_MS', 10000);
+
   try {
     await verifyLiveBundle({
       expected,
@@ -308,6 +415,22 @@ if (invokedDirectly) {
       log: (message) => console.log(message),
     });
     console.log('✓ Injected routes return 2xx to a browser (Accept-Encoding: br)');
+
+    const expectedCsp = extractCsp(html);
+    if (expectedCsp) {
+      await verifyLiveCsp({
+        expected: expectedCsp,
+        urls: cspUrls,
+        attempts: cspAttempts,
+        delayMs: cspDelayMs,
+        fetchImpl: fetchWithCurl,
+        log: (message) => console.log(message),
+      });
+      console.log('✓ Edge shell and index.html serve the same CSP');
+    } else {
+      console.error(`✗ Could not find a Content-Security-Policy meta tag in ${distIndex}`);
+      process.exit(1);
+    }
   } catch (err) {
     console.error(`✗ ${err.message}`);
     process.exit(1);
