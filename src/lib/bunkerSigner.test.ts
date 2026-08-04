@@ -19,10 +19,21 @@ const bunkerInstance = {
   close: vi.fn(async () => {}),
 };
 
-const fromBunker = vi.fn(() => bunkerInstance);
+interface BunkerPointerArg {
+  pubkey: string;
+  relays: string[];
+  secret: string | null;
+}
+interface BunkerParamsArg {
+  onauth?: (url: string) => void;
+}
+
+const fromBunker = vi.fn(
+  (_sk: Uint8Array, _bp: BunkerPointerArg, _params: BunkerParamsArg) => bunkerInstance
+);
 
 vi.mock('nostr-tools/nip46', () => ({
-  BunkerSigner: { fromBunker: (...args: unknown[]) => fromBunker(...(args as [])) },
+  BunkerSigner: { fromBunker },
 }));
 
 const presentAuthChallenge = vi.fn(() => ({ url: 'https://signer.example/auth', opened: true }));
@@ -64,7 +75,7 @@ describe('createBunkerSigner', () => {
     });
 
     expect(fromBunker).toHaveBeenCalledTimes(1);
-    const [sk, bp] = fromBunker.mock.calls[0] as [Uint8Array, Record<string, unknown>];
+    const [sk, bp] = fromBunker.mock.calls[0];
     expect(sk).toBe(clientSecretKey);
     expect(bp).toEqual({ pubkey: REMOTE_PUBKEY, relays: [RELAY], secret: 'connect-token' });
   });
@@ -83,7 +94,7 @@ describe('createBunkerSigner', () => {
       onAuthChallenge,
     });
 
-    const params = (fromBunker.mock.calls[0] as [Uint8Array, unknown, { onauth?: (u: string) => void }])[2];
+    const params = fromBunker.mock.calls[0][2];
     expect(typeof params.onauth).toBe('function');
 
     params.onauth!('https://signer.example/auth');
@@ -104,7 +115,7 @@ describe('createBunkerSigner', () => {
       onAuthChallenge,
     });
 
-    const params = (fromBunker.mock.calls[0] as [Uint8Array, unknown, { onauth?: (u: string) => void }])[2];
+    const params = fromBunker.mock.calls[0][2];
     params.onauth!('https://signer.example/auth');
 
     expect(onAuthChallenge).toHaveBeenCalledWith({ url: 'https://signer.example/auth', opened: false });
@@ -150,7 +161,7 @@ describe('loginWithBunker', () => {
       relays: [RELAY],
     });
 
-    const [passedSk] = fromBunker.mock.calls[0] as [Uint8Array];
+    const [passedSk] = fromBunker.mock.calls[0];
     expect(getPublicKey(passedSk)).toBe(getPublicKey(sk));
   });
 });
