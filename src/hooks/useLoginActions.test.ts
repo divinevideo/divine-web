@@ -24,7 +24,6 @@ vi.mock('@nostrify/react', () => ({
 
 vi.mock('@nostrify/react/login', () => ({
   NLogin: {
-    fromBunker: mockFromBunker,
     fromExtension: mockFromExtension,
   },
   useNostrLogin: () => ({
@@ -32,6 +31,12 @@ vi.mock('@nostrify/react/login', () => ({
     addLogin: mockAddLogin,
     removeLogin: vi.fn(),
   }),
+}));
+
+// Bunker logins go through our own NIP-46 client so auth challenges stay
+// non-terminal (#485); the commit guard below is unaffected by that swap.
+vi.mock('@/lib/bunkerSigner', () => ({
+  loginWithBunker: mockFromBunker,
 }));
 
 vi.mock('@/lib/crossSubdomainAuth', () => ({
@@ -116,7 +121,7 @@ describe('useLoginActions commit-time guard (#182)', () => {
       const { result } = renderHook(() => useLoginActions());
 
       const pending = result.current.bunker(BUNKER_URI, { beforeCommit });
-      expect(mockFromBunker).toHaveBeenCalledWith(BUNKER_URI, expect.anything());
+      expect(mockFromBunker).toHaveBeenCalledWith(BUNKER_URI, undefined);
       expect(beforeCommit).not.toHaveBeenCalled();
 
       resolveConnect(BUNKER_LOGIN);

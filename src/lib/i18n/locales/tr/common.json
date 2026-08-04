@@ -424,6 +424,8 @@
     "bunkerLabel": "Bunker URI'si",
     "bunkerPlaceholder": "bunker://",
     "bunkerButton": "Bunker ile Giriş Yap",
+    "bunkerAuthPrompt": "İmzalayıcın onayını bekliyor. Sayfasını açmayı denedik ama tarayıcın engelledi — buradan aç:",
+    "bunkerAuthLink": "İmzalayıcında onayla",
     "connecting": "Bağlanıyor...",
     "errorInviteServiceUnavailable": "Davet servisi kullanılamıyor",
     "errorExtensionNotFound": "Nostr eklentisi bulunamadı. Lütfen bir NIP-07 eklentisi yükle.",

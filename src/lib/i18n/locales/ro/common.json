@@ -424,6 +424,8 @@
     "bunkerLabel": "URI Bunker",
     "bunkerPlaceholder": "bunker://",
     "bunkerButton": "Conectează-te cu Bunker",
+    "bunkerAuthPrompt": "Semnatarul tău are nevoie de aprobare. Am încercat să deschidem pagina lui, dar browserul a blocat-o — deschide-o aici:",
+    "bunkerAuthLink": "Aprobă în semnatar",
     "connecting": "Se conectează...",
     "errorInviteServiceUnavailable": "Serviciul de invitații e indisponibil",
     "errorExtensionNotFound": "Extensie Nostr negăsită. Te rugăm instalează o extensie NIP-07.",

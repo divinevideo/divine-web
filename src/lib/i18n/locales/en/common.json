@@ -424,6 +424,8 @@
     "bunkerLabel": "Bunker URI",
     "bunkerPlaceholder": "bunker://",
     "bunkerButton": "Login with Bunker",
+    "bunkerAuthPrompt": "Your signer needs you to approve this. We tried to open its page and your browser blocked it — open it here:",
+    "bunkerAuthLink": "Approve in your signer",
     "connecting": "Connecting...",
     "errorInviteServiceUnavailable": "Invite service unavailable",
     "errorExtensionNotFound": "Nostr extension not found. Please install a NIP-07 extension.",

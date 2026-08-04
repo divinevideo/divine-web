@@ -424,6 +424,8 @@
     "bunkerLabel": "Bunker URI",
     "bunkerPlaceholder": "bunker://",
     "bunkerButton": "Mag-log in gamit ang Bunker",
+    "bunkerAuthPrompt": "Kailangan ng iyong signer na aprubahan mo ito. Sinubukan naming buksan ang pahina nito pero hinarang ito ng browser mo — buksan dito:",
+    "bunkerAuthLink": "Aprubahan sa iyong signer",
     "connecting": "Kumokonekta...",
     "errorInviteServiceUnavailable": "Hindi available ang invite service",
     "errorExtensionNotFound": "Walang nakitang Nostr extension. Mag-install ng NIP-07 extension.",
