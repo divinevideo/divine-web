@@ -2,6 +2,14 @@
 // ABOUTME: Keeps app download URLs consistent across shell surfaces
 
 export const DIVINE_IOS_APP_ID = '6747959501';
+
+/**
+ * Country-less on purpose. Apple 301-redirects this to the visitor's own
+ * storefront, which is more accurate than anything we could derive client-side —
+ * `navigator.languages` reports the browser's language, not the user's location.
+ */
+export const APP_STORE_URL = `https://apps.apple.com/app/id${DIVINE_IOS_APP_ID}`;
+
 export const PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=co.openvine.app&gl=us&hl=en';
 
 type AppleLookupResponse = {

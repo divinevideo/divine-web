@@ -1,5 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
+  APP_STORE_URL,
+  DIVINE_IOS_APP_ID,
   getPreferredAppStoreCountry,
   lookupAppStoreUrl,
 } from './mobileStoreLinks';
@@ -18,6 +20,16 @@ describe('mobileStoreLinks', () => {
   afterEach(() => {
     document.head.querySelectorAll('script[src*="itunes.apple.com/lookup"]').forEach((script) => script.remove());
     vi.restoreAllMocks();
+  });
+
+  it('points at the Divine App Store listing', () => {
+    expect(APP_STORE_URL).toBe(`https://apps.apple.com/app/id${DIVINE_IOS_APP_ID}`);
+  });
+
+  it('omits the storefront country so Apple redirects to the visitor’s own', () => {
+    // A hardcoded /us/ or /nz/ segment would send everyone to one storefront.
+    // Apple 301s the country-less form to the right one.
+    expect(APP_STORE_URL).not.toMatch(/apps\.apple\.com\/[a-z]{2}\//);
   });
 
   it('derives the App Store country from browser languages', () => {

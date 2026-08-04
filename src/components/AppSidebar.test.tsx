@@ -1,10 +1,11 @@
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { Tag } from '@phosphor-icons/react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { getSupportDmConversationPath } from '@/lib/dmAccessPolicy';
 import { LOCALE_STORAGE_KEY } from '@/lib/i18n/config';
 import { initializeI18n } from '@/lib/i18n';
+import { APP_STORE_URL, PLAY_STORE_URL } from '@/lib/mobileStoreLinks';
 import { AppSidebar } from './AppSidebar';
 import type { CategoryWithConfig } from '@/hooks/useCategories';
 
@@ -83,7 +84,6 @@ describe('AppSidebar', () => {
   });
 
   afterEach(() => {
-    document.head.querySelectorAll('script[src*="itunes.apple.com/lookup"]').forEach((script) => script.remove());
     vi.unstubAllGlobals();
   });
 
@@ -91,22 +91,6 @@ describe('AppSidebar', () => {
     Object.defineProperty(window.navigator, 'languages', {
       configurable: true,
       value: languages,
-    });
-  }
-
-  async function resolveLatestAppStoreLookup(result: unknown) {
-    let script: HTMLScriptElement | null = null;
-    await waitFor(() => {
-      script = document.head.querySelector<HTMLScriptElement>('script[src*="itunes.apple.com/lookup"]');
-      expect(script).not.toBeNull();
-    });
-
-    const callback = new URL(script!.src).searchParams.get('callback');
-    expect(callback).toBeTruthy();
-
-    await act(async () => {
-      (window as unknown as Record<string, (value: unknown) => void>)[callback!](result);
-      await Promise.resolve();
     });
   }
 
@@ -143,28 +127,27 @@ describe('AppSidebar', () => {
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 
-  it('shows the App Store badge when Apple lookup finds the regional listing', async () => {
-    setLanguages(['en-NZ']);
-
+  it('shows both store badges', () => {
     render(
       <MemoryRouter>
         <AppSidebar />
       </MemoryRouter>,
     );
 
-    await resolveLatestAppStoreLookup({
-      resultCount: 1,
-      results: [{ trackViewUrl: 'https://apps.apple.com/nz/app/divine-video/id6747959501?uo=4' }],
-    });
-
-    expect(await screen.findByRole('link', { name: 'Download Divine on the App Store' })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: 'Download Divine on the App Store' })).toHaveAttribute(
       'href',
-      'https://apps.apple.com/nz/app/divine-video/id6747959501?uo=4',
+      APP_STORE_URL,
+    );
+    expect(screen.getByRole('link', { name: 'Get Divine on Google Play' })).toHaveAttribute(
+      'href',
+      PLAY_STORE_URL,
     );
   });
 
-  it('hides the App Store badge when Apple lookup has no regional listing', async () => {
-    setLanguages(['en-US']);
+  it('shows the App Store badge regardless of browser locale', () => {
+    // A bare language tag with no region used to skip the storefront lookup
+    // entirely, which hid the badge. The link is static now.
+    setLanguages(['en']);
 
     render(
       <MemoryRouter>
@@ -172,14 +155,22 @@ describe('AppSidebar', () => {
       </MemoryRouter>,
     );
 
-    await resolveLatestAppStoreLookup({
-      resultCount: 0,
-      results: [],
-    });
+    expect(screen.getByRole('link', { name: 'Download Divine on the App Store' })).toBeVisible();
+  });
 
-    await waitFor(() => {
-      expect(screen.queryByRole('link', { name: 'Download Divine on the App Store' })).not.toBeInTheDocument();
-    });
+  it('renders the App Store badge without injecting a third-party script', () => {
+    // The badge must not depend on a network call: under the Fastly edge
+    // shell's CSP the lookup script was blocked and the badge disappeared.
+    const scriptsBefore = document.head.getElementsByTagName('script').length;
+
+    render(
+      <MemoryRouter>
+        <AppSidebar />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole('link', { name: 'Download Divine on the App Store' })).toBeVisible();
+    expect(document.head.getElementsByTagName('script')).toHaveLength(scriptsBefore);
   });
 
   it('renders translated category labels from category config', () => {

@@ -3,7 +3,7 @@
 
 import { Link, useLocation } from 'react-router-dom';
 import { House as Home, Compass, MagnifyingGlass as Search, Bell, User, Sun, Moon, CaretDown as ChevronDown, Headphones, ChartBar as BarChart3, SquaresFour as LayoutGrid, Rss, ChatCircle as MessageCircle, TrendUp, Handshake } from '@phosphor-icons/react';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCategories } from '@/hooks/useCategories';
 import { nip19 } from 'nostr-tools';
@@ -27,7 +27,7 @@ import { LanguageMenu } from '@/components/LanguageMenu';
 import { SocialLinks } from '@/components/SocialLinks';
 import { getTranslatedCategoryLabel } from '@/lib/constants/categories';
 import { getSupportDmConversationPath } from '@/lib/dmAccessPolicy';
-import { getPreferredAppStoreCountry, lookupAppStoreUrl, PLAY_STORE_URL } from '@/lib/mobileStoreLinks';
+import { APP_STORE_URL, PLAY_STORE_URL } from '@/lib/mobileStoreLinks';
 
 interface NavItemProps {
   icon: React.ReactNode;
@@ -73,7 +73,6 @@ export function AppSidebar({ className }: { className?: string }) {
   const [rssOpen, setRssOpen] = useState(false);
   const [divineOpen, setDivineOpen] = useState(false);
   const [termsOpen, setTermsOpen] = useState(false);
-  const [appStoreUrl, setAppStoreUrl] = useState<string | null>(null);
   const { data: categories } = useCategories();
 
   // Prerendered routes are served from a directory (dist/services/index.html),
@@ -96,28 +95,6 @@ export function AppSidebar({ className }: { className?: string }) {
   const profilePath = user?.pubkey
     ? `/profile/${nip19.npubEncode(user.pubkey)}`
     : null;
-
-  useEffect(() => {
-    const country = getPreferredAppStoreCountry();
-    let cancelled = false;
-
-    if (!country) {
-      setAppStoreUrl(null);
-      return () => {
-        cancelled = true;
-      };
-    }
-
-    lookupAppStoreUrl(country).then((url) => {
-      if (!cancelled) {
-        setAppStoreUrl(url);
-      }
-    });
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   return (
     <aside
@@ -145,21 +122,19 @@ export function AppSidebar({ className }: { className?: string }) {
       <div className="flex-1 overflow-y-auto overflow-x-hidden">
         {/* App Store Badges */}
         <div className="flex flex-col gap-2 px-5 pb-2">
-          {appStoreUrl && (
-            <a
-              href={appStoreUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="Download Divine on the App Store"
-              className="block transition-opacity hover:opacity-80"
-            >
-              <img
-                src="/store-badges/app-store-badge.svg"
-                alt="Download on the App Store"
-                className="h-10 w-auto"
-              />
-            </a>
-          )}
+          <a
+            href={APP_STORE_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Download Divine on the App Store"
+            className="block transition-opacity hover:opacity-80"
+          >
+            <img
+              src="/store-badges/app-store-badge.svg"
+              alt="Download on the App Store"
+              className="h-10 w-auto"
+            />
+          </a>
           <a
             href={PLAY_STORE_URL}
             target="_blank"
