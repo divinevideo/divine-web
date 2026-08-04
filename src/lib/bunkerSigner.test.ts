@@ -150,6 +150,27 @@ describe('loginWithBunker', () => {
     await expect(loginWithBunker(`bunker://${REMOTE_PUBKEY}?secret=tok`)).rejects.toThrow();
   });
 
+  // The handshake signer opens sockets when it is constructed and the session
+  // builds its own signer from the persisted data, so this one must not be left
+  // running, on the failure path either.
+  it('closes the handshake signer once the login data is captured', async () => {
+    const { loginWithBunker } = await import('./bunkerSigner');
+
+    await loginWithBunker(`bunker://${REMOTE_PUBKEY}?relay=${encodeURIComponent(RELAY)}`);
+
+    expect(bunkerInstance.close).toHaveBeenCalledTimes(1);
+  });
+
+  it('closes the handshake signer when the handshake fails', async () => {
+    bunkerInstance.connect.mockRejectedValueOnce(new Error('signer unreachable'));
+    const { loginWithBunker } = await import('./bunkerSigner');
+
+    await expect(
+      loginWithBunker(`bunker://${REMOTE_PUBKEY}?relay=${encodeURIComponent(RELAY)}`)
+    ).rejects.toThrow('signer unreachable');
+    expect(bunkerInstance.close).toHaveBeenCalledTimes(1);
+  });
+
   it('rebuilds the same client identity from stored login data', async () => {
     const { bunkerSignerFromLogin } = await import('./bunkerSigner');
     const sk = generateSecretKey();
@@ -164,4 +185,5 @@ describe('loginWithBunker', () => {
     const [passedSk] = fromBunker.mock.calls[0];
     expect(getPublicKey(passedSk)).toBe(getPublicKey(sk));
   });
+
 });
