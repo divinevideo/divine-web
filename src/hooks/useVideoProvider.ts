@@ -11,6 +11,7 @@ import { useFeaturedTabVideos } from '@/hooks/useFeaturedTabVideos';
 import { useFeedBlocklist } from '@/hooks/useFeedBlocklist';
 import { FEED_PAGE_SIZE } from '@/config/feed';
 import { filterBlockedVideoPages } from '@/lib/blocklistFilter';
+import { countFetchedVideos } from '@/lib/feedPagination';
 import { hasFunnelcake, getFunnelcakeUrl } from '@/config/relays';
 import { debugLog } from '@/lib/debug';
 import type { RelayCapabilities } from '@/lib/relayCapabilities';
@@ -41,6 +42,11 @@ interface VideoProviderResult {
   isLoading: boolean;
   error: Error | null;
   refetch: () => void;
+  /**
+   * Rows fetched across every loaded page, before dedup and block filtering.
+   * Infinite-scroll triggers must key off this rather than the rendered length,
+   * which can stay flat when a page collapses and would stall pagination.
+   */
   fetchedCount: number;
   // Additional metadata
   dataSource: 'funnelcake' | 'websocket';
@@ -307,9 +313,12 @@ export function useVideoProvider({
     () => filterBlockedVideoPages(rawData, blockedPubkeys),
     [rawData, blockedPubkeys]
   );
+  // Counted from the unfiltered pages on purpose (divine-web#380).
+  const fetchedCount = useMemo(() => countFetchedVideos(rawData?.pages), [rawData]);
 
   return {
     data: filteredData,
+    fetchedCount,
     fetchNextPage: activeQuery.fetchNextPage,
     hasNextPage: activeQuery.hasNextPage,
     isLoading: activeQuery.isLoading,

@@ -512,6 +512,9 @@ export function ProfilePage({ pubkeyOverride }: { pubkeyOverride?: string } = {}
             </Card>
           ) : viewMode === 'grid' ? (
             <InfiniteScroll
+              // Fetched rows, not rendered ones: a page that dedupes away or is
+              // entirely blocked authors leaves the rendered length unchanged,
+              // and the scroll trigger only re-arms when this value moves.
               dataLength={fetchedCount}
               next={fetchNextPage}
               hasMore={hasNextPage ?? false}
