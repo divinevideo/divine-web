@@ -150,6 +150,27 @@ describe('loginWithBunker', () => {
     await expect(loginWithBunker(`bunker://${REMOTE_PUBKEY}?secret=tok`)).rejects.toThrow();
   });
 
+  // The URI is pasted by the user and the pubkey it carries decides who every
+  // later request is encrypted to, so both halves are validated. Neither guard
+  // had a test holding it.
+  it('rejects a URI that is not a bunker: URI', async () => {
+    const { loginWithBunker } = await import('./bunkerSigner');
+    await expect(
+      loginWithBunker(`https://${REMOTE_PUBKEY}?relay=${encodeURIComponent(RELAY)}`)
+    ).rejects.toThrow('Invalid bunker URI');
+  });
+
+  it.each([
+    ['too short', 'abc'],
+    ['non-hex characters', 'z'.repeat(64)],
+    ['too long', 'b'.repeat(65)],
+  ])('rejects a remote-signer pubkey that is %s', async (_label, pubkey) => {
+    const { loginWithBunker } = await import('./bunkerSigner');
+    await expect(
+      loginWithBunker(`bunker://${pubkey}?relay=${encodeURIComponent(RELAY)}`)
+    ).rejects.toThrow('Invalid bunker URI');
+  });
+
   // The handshake signer opens sockets when it is constructed and the session
   // builds its own signer from the persisted data, so this one must not be left
   // running, on the failure path either.
@@ -186,4 +207,19 @@ describe('loginWithBunker', () => {
     expect(getPublicKey(passedSk)).toBe(getPublicKey(sk));
   });
 
+  // Stored login data is attacker-reachable if anything ever writes to
+  // localStorage; a non-nsec bech32 would otherwise reach generateSecretKey's
+  // consumer as a hex string instead of key bytes.
+  it('refuses stored login data whose client key is not an nsec', async () => {
+    const { bunkerSignerFromLogin } = await import('./bunkerSigner');
+    const npub = nip19.npubEncode(REMOTE_PUBKEY);
+
+    expect(() =>
+      bunkerSignerFromLogin({
+        bunkerPubkey: REMOTE_PUBKEY,
+        clientNsec: npub as `nsec1${string}`,
+        relays: [RELAY],
+      })
+    ).toThrow('Invalid client key for bunker login');
+  });
 });
