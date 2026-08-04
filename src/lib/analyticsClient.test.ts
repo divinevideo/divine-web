@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { NostrSigner } from '@nostrify/nostrify';
 
 const consent = vi.hoisted(() => ({
@@ -14,6 +14,10 @@ vi.mock('./cookieConsent', () => ({
   onAnalyticsConsentChanged: (callback: (consented: boolean) => void) => {
     consent.listeners.push(callback);
     if (consent.value !== null) callback(consent.value);
+    return () => {
+      const index = consent.listeners.indexOf(callback);
+      if (index >= 0) consent.listeners.splice(index, 1);
+    };
   },
 }));
 
@@ -53,6 +57,7 @@ describe('analyticsClient', () => {
     // failure staged by one test would otherwise leak into the next and make
     // its "did not POST" assertions pass for the wrong reason.
     vi.mocked(signer.signEvent).mockReset().mockImplementation(signEvent);
+    vi.stubEnv('VITE_PRODUCT_ANALYTICS_ENABLED', 'true');
     consent.value = true;
     consent.listeners.length = 0;
     Object.defineProperty(globalThis, 'indexedDB', {
@@ -75,6 +80,23 @@ describe('analyticsClient', () => {
     window.localStorage.clear();
     window.sessionStorage.clear();
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('{"accepted":1}', { status: 200 })));
+  });
+
+  afterEach(async () => {
+    const { productAnalytics } = await import('./analyticsClient');
+    productAnalytics.dispose();
+    vi.unstubAllEnvs();
+  });
+
+  it('does not enqueue events while the product analytics launch flag is off', async () => {
+    vi.stubEnv('VITE_PRODUCT_ANALYTICS_ENABLED', 'false');
+    const { productAnalytics, configureProductAnalyticsIdentity } = await import('./analyticsClient');
+    configureProductAnalyticsIdentity({ userPubkey: pubkey, signer });
+
+    await productAnalytics.track('session_started', { surface: 'home' });
+
+    expect(fetch).not.toHaveBeenCalled();
+    expect(await productAnalytics.queue.getFlushableBatch(10)).toHaveLength(0);
   });
 
   it('does not enqueue events when analytics consent is absent', async () => {
@@ -299,8 +321,6 @@ describe('analyticsClient', () => {
     const eventId = await productAnalytics.track('session_started', { surface: 'home' });
     configureProductAnalyticsIdentity({ userPubkey: pubkey, signer });
 
-    // Clients built by earlier tests keep their own document listeners, so
-    // count only the POSTs carrying this test's event.
     const postsForThisEvent = () => vi.mocked(fetch).mock.calls
       .filter(([, init]) => String(init?.body).includes(String(eventId)));
 
@@ -326,5 +346,29 @@ describe('analyticsClient', () => {
 
     expect(fetch).not.toHaveBeenCalled();
     expect(await productAnalytics.queue.getFlushableBatch(10)).toHaveLength(0);
+  });
+
+  it('disposes global triggers and the consent subscription for constructed clients', async () => {
+    const addWindowListener = vi.spyOn(window, 'addEventListener');
+    const removeWindowListener = vi.spyOn(window, 'removeEventListener');
+    const addDocumentListener = vi.spyOn(document, 'addEventListener');
+    const removeDocumentListener = vi.spyOn(document, 'removeEventListener');
+    const setIntervalSpy = vi.spyOn(window, 'setInterval');
+    const clearIntervalSpy = vi.spyOn(window, 'clearInterval');
+
+    const { ProductAnalyticsClient } = await import('./analyticsClient');
+    const listenersBefore = consent.listeners.length;
+    const client = new ProductAnalyticsClient();
+    expect(consent.listeners).toHaveLength(listenersBefore + 1);
+
+    client.dispose();
+
+    expect(removeWindowListener).toHaveBeenCalledWith('online', expect.any(Function));
+    expect(removeDocumentListener).toHaveBeenCalledWith('visibilitychange', expect.any(Function));
+    expect(clearIntervalSpy).toHaveBeenCalledWith(expect.anything());
+    expect(consent.listeners).toHaveLength(listenersBefore);
+    expect(addWindowListener).toHaveBeenCalledWith('online', expect.any(Function));
+    expect(addDocumentListener).toHaveBeenCalledWith('visibilitychange', expect.any(Function));
+    expect(setIntervalSpy).toHaveBeenCalledWith(expect.any(Function), 30_000);
   });
 });

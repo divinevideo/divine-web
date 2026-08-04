@@ -11,12 +11,19 @@ let initialized = false;
  * Register a callback for when analytics consent changes.
  * Fires immediately if consent state is already known (return visitor).
  */
-export function onAnalyticsConsentChanged(callback: ConsentCallback): void {
+export function onAnalyticsConsentChanged(callback: ConsentCallback): () => void {
   listeners.push(callback);
 
   if (analyticsConsented !== null) {
     callback(analyticsConsented);
   }
+
+  return () => {
+    const index = listeners.indexOf(callback);
+    if (index >= 0) {
+      listeners.splice(index, 1);
+    }
+  };
 }
 
 /** Current analytics consent state. null = not yet determined. */

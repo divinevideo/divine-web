@@ -34,6 +34,7 @@ export class ProductEventQueue {
   private db: IDBDatabase | null = null;
   private initPromise: Promise<void>;
   private memoryRecords = new Map<string, ProductEventQueueRecord>();
+  private deletedRecordIds = new Set<string>();
   private baseRetryDelayMs: number;
 
   constructor(options: ProductEventQueueOptions = {}) {
@@ -113,12 +114,13 @@ export class ProductEventQueue {
     }
 
     await new Promise<void>((resolve) => {
-      // Evict from the in-memory mirror whatever the durable store does —
-      // getAllRecords() re-populates the map from IDB, so without this it grows
-      // unbounded per session, and a record left in memory after a failed
-      // delete would be re-sent on the next flush.
-      const settle = () => {
+      const settle = (deletedFromIndexedDB: boolean) => {
         ids.forEach((id) => this.memoryRecords.delete(id));
+        if (deletedFromIndexedDB) {
+          ids.forEach((id) => this.deletedRecordIds.delete(id));
+        } else {
+          ids.forEach((id) => this.deletedRecordIds.add(id));
+        }
         resolve();
       };
 
@@ -126,11 +128,11 @@ export class ProductEventQueue {
         const transaction = db.transaction([STORE_NAME], 'readwrite');
         const store = transaction.objectStore(STORE_NAME);
         ids.forEach((id) => store.delete(id));
-        transaction.oncomplete = settle;
-        transaction.onerror = settle;
-        transaction.onabort = settle;
+        transaction.oncomplete = () => settle(true);
+        transaction.onerror = () => settle(false);
+        transaction.onabort = () => settle(false);
       } catch {
-        settle();
+        settle(false);
       }
     });
   }
@@ -155,21 +157,30 @@ export class ProductEventQueue {
 
   async clear(): Promise<void> {
     const db = await this.ensureDB();
+    const ids = (await this.getAllRecords()).map((record) => record.id);
     this.memoryRecords.clear();
-    if (!db) return;
+    if (!db) {
+      this.deletedRecordIds.clear();
+      return;
+    }
 
-    await new Promise<void>((resolve) => {
+    const clearedFromIndexedDB = await new Promise<boolean>((resolve) => {
       try {
         const transaction = db.transaction([STORE_NAME], 'readwrite');
         const request = transaction.objectStore(STORE_NAME).clear();
-        request.onsuccess = () => resolve();
-        request.onerror = () => resolve();
-        transaction.onerror = () => resolve();
-        transaction.onabort = () => resolve();
+        request.onsuccess = () => resolve(true);
+        request.onerror = () => resolve(false);
+        transaction.onerror = () => resolve(false);
+        transaction.onabort = () => resolve(false);
       } catch {
-        resolve();
+        resolve(false);
       }
     });
+    if (clearedFromIndexedDB) {
+      this.deletedRecordIds.clear();
+      return;
+    }
+    ids.forEach((id) => this.deletedRecordIds.add(id));
   }
 
   private retryDelay(attemptCount: number): number {
@@ -208,6 +219,7 @@ export class ProductEventQueue {
 
   private async putRecord(record: ProductEventQueueRecord): Promise<void> {
     const db = await this.ensureDB();
+    this.deletedRecordIds.delete(record.id);
     this.memoryRecords.set(record.id, record);
     if (!db) return;
 
@@ -240,7 +252,8 @@ export class ProductEventQueue {
         const transaction = db.transaction([STORE_NAME], 'readonly');
         const request = transaction.objectStore(STORE_NAME).getAll();
         request.onsuccess = () => {
-          const records = request.result as ProductEventQueueRecord[];
+          const records = (request.result as ProductEventQueueRecord[])
+            .filter((record) => !this.deletedRecordIds.has(record.id));
           records.forEach((record) => this.memoryRecords.set(record.id, record));
           resolve(records);
         };

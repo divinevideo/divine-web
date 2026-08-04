@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ProductAnalyticsPayload } from './analyticsClient';
+import type { ProductEventQueueRecord } from './eventQueue';
 
 function makeEvent(overrides: Partial<ProductAnalyticsPayload> = {}): ProductAnalyticsPayload {
   return {
@@ -65,6 +66,75 @@ function createFailingIndexedDB(): IDBFactory {
       onabort: null,
       error: new DOMException('QuotaExceededError'),
     }),
+  };
+
+  return {
+    open: () => {
+      const request = { onsuccess: null, onerror: null, onupgradeneeded: null, result: db } as unknown as IDBOpenDBRequest & {
+        onsuccess: ((event: Event) => void) | null;
+      };
+      queueMicrotask(() => request.onsuccess?.(new Event('success')));
+      return request;
+    },
+  } as unknown as IDBFactory;
+}
+
+function createDeleteFailingIndexedDB(options: { failClear?: boolean } = {}): IDBFactory {
+  const records = new Map<string, ProductEventQueueRecord>();
+  const makeRequest = <T>(result: T) => {
+    const request = { onsuccess: null, onerror: null, result } as unknown as IDBRequest<T> & {
+      onsuccess: ((event: Event) => void) | null;
+      onerror: ((event: Event) => void) | null;
+    };
+    queueMicrotask(() => request.onsuccess?.(new Event('success')));
+    return request;
+  };
+
+  const db = {
+    objectStoreNames: { contains: () => false },
+    createObjectStore: () => ({ createIndex: () => {} }),
+    transaction: (_storeNames: string[], _mode: IDBTransactionMode) => {
+      let deleteAttempted = false;
+      let clearFailed = false;
+      const transaction = {
+        objectStore: () => ({
+          put: (record: { id: string }) => {
+            records.set(record.id, record as ProductEventQueueRecord);
+            return makeRequest(record.id);
+          },
+          delete: (_id: string) => {
+            deleteAttempted = true;
+            return makeRequest(undefined);
+          },
+          clear: () => {
+            if (options.failClear) {
+              clearFailed = true;
+            } else {
+              records.clear();
+            }
+            return makeRequest(undefined);
+          },
+          getAll: () => makeRequest(Array.from(records.values())),
+        }),
+        oncomplete: null,
+        onerror: null,
+        onabort: null,
+        error: new DOMException('QuotaExceededError'),
+      } as unknown as IDBTransaction & {
+        oncomplete: ((event: Event) => void) | null;
+        onerror: ((event: Event) => void) | null;
+      };
+
+      queueMicrotask(() => {
+        if (deleteAttempted || clearFailed) {
+          transaction.onerror?.(new Event('error'));
+          return;
+        }
+        transaction.oncomplete?.(new Event('complete'));
+      });
+
+      return transaction;
+    },
   };
 
   return {
@@ -214,5 +284,33 @@ describe('ProductEventQueue', () => {
       await expect(queue.clear()).resolves.toBeUndefined();
       expect(await queue.getFlushableBatch(10)).toHaveLength(0);
     });
+  });
+
+  it('does not make a succeeded record flushable again when durable delete fails but later reads work', async () => {
+    Object.defineProperty(globalThis, 'indexedDB', {
+      writable: true,
+      value: createDeleteFailingIndexedDB(),
+    });
+    const { ProductEventQueue } = await import('./eventQueue');
+    const queue = new ProductEventQueue();
+    await queue.enqueue(baseEvent);
+
+    await queue.markSucceeded([baseEvent.event_id]);
+
+    expect(await queue.getFlushableBatch(10)).toHaveLength(0);
+  });
+
+  it('does not make cleared records flushable again when durable clear fails but later reads work', async () => {
+    Object.defineProperty(globalThis, 'indexedDB', {
+      writable: true,
+      value: createDeleteFailingIndexedDB({ failClear: true }),
+    });
+    const { ProductEventQueue } = await import('./eventQueue');
+    const queue = new ProductEventQueue();
+    await queue.enqueue(baseEvent);
+
+    await queue.clear();
+
+    expect(await queue.getFlushableBatch(10)).toHaveLength(0);
   });
 });

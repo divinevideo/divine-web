@@ -4,20 +4,47 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { trackPageView } from '@/lib/analytics';
-import { trackProductEvent } from '@/lib/analyticsClient';
+import { onProductAnalyticsIdentityChanged, trackProductEvent } from '@/lib/analyticsClient';
+import { onAnalyticsConsentChanged } from '@/lib/cookieConsent';
 
 const FEED_PATHS = new Set(['/', '/discovery', '/search']);
 const SCROLL_DEBOUNCE_MS = 200;
+const PATH_TEMPLATES: Array<[RegExp, string]> = [
+  [/^\/profile\/[^/]+$/, '/profile/:npub'],
+  [/^\/profile\/[^/]+\/lists$/, '/profile/:npub/lists'],
+  [/^\/video\/[^/]+$/, '/video/:id'],
+  [/^\/v\/[^/]+$/, '/v/:legacyVineId'],
+  [/^\/hashtag\/[^/]+$/, '/hashtag/:tag'],
+  [/^\/category\/[^/]+$/, '/category/:name'],
+  [/^\/t\/[^/]+$/, '/t/:tag'],
+  [/^\/u\/[^/]+$/, '/u/:userId'],
+  [/^\/list\/[^/]+\/[^/]+$/, '/list/:pubkey/:listId'],
+  [/^\/people-lists\/[^/]+\/[^/]+$/, '/people-lists/:pubkey/:listId'],
+  [/^\/event\/[^/]+$/, '/event/:eventId'],
+  [/^\/event\/a\/[^/]+\/[^/]+\/[^/]+$/, '/event/a/:kind/:pubkey/:identifier'],
+  [/^\/messages\/[^/]+$/, '/messages/:conversationId'],
+  [/^\/collabs\/[^/]+$/, '/collabs/:tab'],
+  [/^\/discovery\/[^/]+$/, '/discovery/:tab'],
+  [/^\/invite\/[^/]+$/, '/invite/:code'],
+];
 
 function getSurface(pathname: string): string {
   if (pathname === '/') return 'home';
   return pathname.split('/').filter(Boolean)[0] ?? 'unknown';
 }
 
+function getAnalyticsPath(pathname: string): string {
+  return PATH_TEMPLATES.find(([pattern]) => pattern.test(pathname))?.[1] ?? pathname;
+}
+
+function isDocumentVisible(): boolean {
+  return typeof document === 'undefined' || document.visibilityState !== 'hidden';
+}
+
 export function AnalyticsPageTracker() {
   const location = useLocation();
   const lastTrackedPath = useRef<string | null>(null);
-  const currentPathStartedAt = useRef<number>(Date.now());
+  const currentPathStartedAt = useRef<number | null>(isDocumentVisible() ? Date.now() : null);
   const sessionStarted = useRef(false);
   const sessionStartInFlight = useRef(false);
   const [sessionStartAttempt, setSessionStartAttempt] = useState(0);
@@ -51,7 +78,7 @@ export function AnalyticsPageTracker() {
     void trackProductEvent('session_started', {
       surface: getSurface(attemptedPath),
       entry_point: document.referrer ? 'referrer' : 'direct',
-      properties: { path: attemptedPath },
+      properties: { path: getAnalyticsPath(attemptedPath) },
     })
       .then((eventId) => {
         if (eventId) {
@@ -67,30 +94,46 @@ export function AnalyticsPageTracker() {
       });
   }, [location.pathname, sessionStartAttempt]);
 
-  /**
-   * Emit the time spent on the current screen and restart the clock.
-   *
-   * Leave-time signals overlap — visibilitychange to hidden, then pagehide,
-   * then possibly unmount — so resetting the start time here is what keeps a
-   * single departure from being counted several times. A zero-length span has
-   * nothing to report and is skipped.
-   */
-  const emitScreenTime = useCallback(() => {
+  useEffect(() => {
+    const retrySessionStart = () => {
+      if (!sessionStarted.current) {
+        setSessionStartAttempt((attempt) => attempt + 1);
+      }
+    };
+    const unsubscribeConsent = onAnalyticsConsentChanged((consented) => {
+      if (consented) {
+        retrySessionStart();
+      }
+    });
+    const unsubscribeIdentity = onProductAnalyticsIdentityChanged(retrySessionStart);
+
+    return () => {
+      unsubscribeConsent();
+      unsubscribeIdentity();
+    };
+  }, []);
+
+  const emitScreenTime = useCallback((restartClock: boolean) => {
     const path = lastTrackedPath.current;
-    if (!path) {
+    const startedAt = currentPathStartedAt.current;
+    if (!path || startedAt === null) {
+      if (restartClock) {
+        currentPathStartedAt.current = Date.now();
+      }
       return;
     }
 
-    const durationMs = Math.max(0, Date.now() - currentPathStartedAt.current);
+    const now = Date.now();
+    const durationMs = Math.max(0, now - startedAt);
+    currentPathStartedAt.current = restartClock ? now : null;
     if (durationMs <= 0) {
       return;
     }
 
-    currentPathStartedAt.current = Date.now();
     void trackProductEvent('screen_time', {
       surface: getSurface(path),
       duration_ms: durationMs,
-      properties: { path },
+      properties: { path: getAnalyticsPath(path) },
     });
   }, []);
 
@@ -98,33 +141,33 @@ export function AnalyticsPageTracker() {
     // Only track page view when pathname changes, not on every query param change
     // This prevents tracking every keystroke in search (search tracks separately)
     if (lastTrackedPath.current !== location.pathname) {
-      emitScreenTime();
+      emitScreenTime(false);
 
       lastTrackedPath.current = location.pathname;
-      currentPathStartedAt.current = Date.now();
+      currentPathStartedAt.current = isDocumentVisible() ? Date.now() : null;
       maxScrollThreshold.current = 0;
       trackPageView(location.pathname + location.search, document.title);
     }
   }, [emitScreenTime, location]);
 
   useEffect(() => {
-    // Unmount is not a reliable tab-close signal. Without these the final
-    // screen of a single-page session never reports its duration at all, so
-    // time on site is systematically under-counted.
-    const onHidden = () => {
-      if (document.visibilityState !== 'hidden') {
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        emitScreenTime(false);
         return;
       }
-      emitScreenTime();
+      currentPathStartedAt.current = Date.now();
     };
 
-    document.addEventListener('visibilitychange', onHidden);
-    window.addEventListener('pagehide', emitScreenTime);
+    const onPageHide = () => emitScreenTime(false);
+
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    window.addEventListener('pagehide', onPageHide);
 
     return () => {
-      document.removeEventListener('visibilitychange', onHidden);
-      window.removeEventListener('pagehide', emitScreenTime);
-      emitScreenTime();
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+      window.removeEventListener('pagehide', onPageHide);
+      emitScreenTime(false);
     };
   }, [emitScreenTime]);
 
@@ -152,7 +195,7 @@ export function AnalyticsPageTracker() {
           surface: getSurface(location.pathname),
           value: threshold,
           properties: {
-            path: location.pathname,
+            path: getAnalyticsPath(location.pathname),
             scroll_depth_percent: threshold,
           },
         });

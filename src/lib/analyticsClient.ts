@@ -77,8 +77,7 @@ export type ProductAnalyticsEventName =
   | 'session_started'
   | 'screen_time'
   | 'feed_scrolled'
-  | 'video_engagement_summary'
-  | 'experiment_exposed';
+  | 'video_engagement_summary';
 
 export type ProductAnalyticsProps = Partial<Omit<
   ProductAnalyticsPayload,
@@ -92,6 +91,8 @@ interface ProductAnalyticsIdentity {
   signer?: NostrSigner;
 }
 
+type ProductAnalyticsIdentityCallback = () => void;
+
 interface ProductAnalyticsClientOptions {
   queue?: ProductEventQueue;
   batchSize?: number;
@@ -100,11 +101,27 @@ interface ProductAnalyticsClientOptions {
 const SESSION_ID_KEY = 'divine_product_analytics_session_id';
 const ANONYMOUS_ID_KEY = 'divine_product_analytics_anonymous_id';
 const DEFAULT_APP_VERSION = '0.0.0';
+const PRODUCT_ANALYTICS_ENABLED = import.meta.env.VITE_PRODUCT_ANALYTICS_ENABLED === 'true';
 
 let currentIdentity: ProductAnalyticsIdentity = {};
+const identityListeners: ProductAnalyticsIdentityCallback[] = [];
 
 export function configureProductAnalyticsIdentity(identity: ProductAnalyticsIdentity): void {
   currentIdentity = identity;
+  for (const listener of identityListeners) {
+    listener();
+  }
+}
+
+export function onProductAnalyticsIdentityChanged(callback: ProductAnalyticsIdentityCallback): () => void {
+  identityListeners.push(callback);
+
+  return () => {
+    const index = identityListeners.indexOf(callback);
+    if (index >= 0) {
+      identityListeners.splice(index, 1);
+    }
+  };
 }
 
 export function trackProductEvent(
@@ -118,14 +135,22 @@ export class ProductAnalyticsClient {
   readonly queue: ProductEventQueue;
   private batchSize: number;
   private flushing = false;
+  private disposed = false;
+  private onlineHandler?: () => void;
+  private visibilityHandler?: () => void;
+  private intervalId?: number;
+  private unsubscribeConsent?: () => void;
 
   constructor(options: ProductAnalyticsClientOptions = {}) {
     this.queue = options.queue ?? productEventQueue;
     this.batchSize = options.batchSize ?? 50;
+    if (!PRODUCT_ANALYTICS_ENABLED) {
+      return;
+    }
     this.registerFlushTriggers();
     // Withdrawn consent must also discard events queued while consent was
     // granted — the gate on track/flush alone would leave them on disk.
-    onAnalyticsConsentChanged((consented) => {
+    this.unsubscribeConsent = onAnalyticsConsentChanged((consented) => {
       if (!consented) {
         void this.queue.clear();
       }
@@ -133,7 +158,7 @@ export class ProductAnalyticsClient {
   }
 
   async track(eventName: ProductAnalyticsEventName, props: ProductAnalyticsProps = {}): Promise<string | null> {
-    if (!canCollectAnalytics()) {
+    if (this.disposed || !canCollectAnalytics()) {
       return null;
     }
 
@@ -142,6 +167,8 @@ export class ProductAnalyticsClient {
       return null;
     }
 
+    // Web product analytics is intentionally authenticated-only: Funnelcake
+    // ingest batches require NIP-98, so logged-out traffic is left to GA4.
     // The signer is only needed to authenticate the request at flush time, so
     // an event tracked before the signer is wired up is queued rather than
     // dropped. AnalyticsPageTracker's one-shot session_started can otherwise
@@ -159,7 +186,7 @@ export class ProductAnalyticsClient {
   }
 
   async flush(): Promise<void> {
-    if (!canCollectAnalytics()) {
+    if (this.disposed || !canCollectAnalytics()) {
       return;
     }
 
@@ -237,24 +264,48 @@ export class ProductAnalyticsClient {
     }
 
     // Retry when connectivity returns.
-    window.addEventListener('online', () => {
+    this.onlineHandler = () => {
       void this.flush();
-    });
+    };
+    window.addEventListener('online', this.onlineHandler);
     // Leave time. `visibilityState` is only 'hidden' or 'visible', so testing
     // for both is the same as no test at all; a flush on becoming visible has
     // no batch that the interval below would not already have sent.
-    document.addEventListener('visibilitychange', () => {
+    this.visibilityHandler = () => {
       if (document.visibilityState === 'hidden') {
         void this.flush();
       }
-    });
-    window.setInterval(() => {
+    };
+    document.addEventListener('visibilitychange', this.visibilityHandler);
+    this.intervalId = window.setInterval(() => {
       void this.flush();
     }, 30_000);
+  }
+
+  dispose(): void {
+    if (this.disposed) {
+      return;
+    }
+
+    this.disposed = true;
+    if (this.onlineHandler) {
+      window.removeEventListener('online', this.onlineHandler);
+    }
+    if (this.visibilityHandler) {
+      document.removeEventListener('visibilitychange', this.visibilityHandler);
+    }
+    if (this.intervalId !== undefined) {
+      window.clearInterval(this.intervalId);
+    }
+    this.unsubscribeConsent?.();
   }
 }
 
 function canCollectAnalytics(): boolean {
+  if (!PRODUCT_ANALYTICS_ENABLED) {
+    return false;
+  }
+
   if (typeof window !== 'undefined' && window.__DIVINE_ANALYTICS_DISABLED__) {
     return false;
   }
