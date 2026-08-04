@@ -163,12 +163,16 @@ export function useHydratedNotifications(
             });
             return [id, result] as const;
           } catch {
-            return [id, {} as NotificationVideoMeta] as const;
+            // Leave the id out of the map entirely. An all-undefined entry is
+            // truthy, so `videos.get(id) ?? bucket.reduce(...)` in
+            // notificationGrouping would short-circuit and hide metadata a
+            // sibling row in the same bucket actually carries.
+            return null;
           }
         }),
       );
 
-      return Object.fromEntries(entries);
+      return Object.fromEntries(entries.filter((entry) => entry !== null));
     },
     enabled: sortedIds.length > 0,
     // The key carries the id set, so every new page mints a new key and the

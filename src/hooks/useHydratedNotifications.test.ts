@@ -308,6 +308,60 @@ describe('useHydratedNotifications', () => {
     expect(result.current.items).toHaveLength(1);
   });
 
+  it('lets a sibling row supply metadata when the chosen id fails to hydrate', async () => {
+    // One video reposted from two clients: divine-mobile tags a hex event id,
+    // divine-web tags only a d-tag, and `groupingKey` puts both in one bucket.
+    // Grouping prefers the hex id, so if that id's fetch fails its entry must
+    // be absent from the map - an all-undefined entry is truthy and would
+    // short-circuit the bucket fallback that finds the d-tag's metadata.
+    const D_TAG = 'my-video-d-tag';
+    const fromMobile: RawNotification = {
+      ...makeLike('repost-1', PUBKEY_A, VIDEO_ID, 2000),
+      type: 'repost',
+      sourceKind: 16,
+      groupingKey: `34236:${PUBKEY_B}:${D_TAG}`,
+    };
+    const fromWeb: RawNotification = {
+      ...makeLike('repost-2', PUBKEY_B, D_TAG, 1000),
+      type: 'repost',
+      sourceKind: 16,
+      groupingKey: `34236:${PUBKEY_B}:${D_TAG}`,
+      videoMeta: { title: 'Reposted from web', thumbnailUrl: 'https://cdn.divine.video/t.jpg' },
+    };
+
+    const { queryClient, wrapper } = createWrapperWithClient();
+
+    mockUseNotifications.mockReturnValue(
+      makeInfiniteQueryResult([makeNotificationsPage([fromMobile, fromWeb])]),
+    );
+    mockUseBatchedAuthors.mockReturnValue({ data: {} });
+    // The hex id has no metadata anywhere; the d-tag row carries it inline.
+    mockFetchVideoById.mockResolvedValue(null);
+
+    const { useHydratedNotifications } = await import('./useHydratedNotifications');
+
+    const { result } = renderHook(
+      () => useHydratedNotifications({ category: 'all' }),
+      { wrapper },
+    );
+
+    // Assert only once the video query has settled. Before it resolves the
+    // bucket fallback runs anyway, so an early assertion passes either way.
+    await waitFor(() => {
+      expect(queryClient.getQueryState(['notification-videos', [VIDEO_ID]])?.status).toBe(
+        'success',
+      );
+    });
+
+    expect(result.current.items).toHaveLength(1);
+    const item = result.current.items[0];
+    expect(item.kind).toBe('video');
+    if (item.kind === 'video') {
+      expect(item.videoTitle).toBe('Reposted from web');
+      expect(item.videoThumbnailUrl).toBe('https://cdn.divine.video/t.jpg');
+    }
+  });
+
   it('does not repeat the bulk video request when the page remounts', async () => {
     const like = makeLike('like-1', PUBKEY_A, VIDEO_ID, 1000);
     const { wrapper } = createWrapperWithClient();
