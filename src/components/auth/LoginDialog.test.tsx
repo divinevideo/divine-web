@@ -419,6 +419,9 @@ describe('LoginDialog', () => {
 
       const link = await screen.findByRole('link', { name: /Approve in your signer/i });
       expect(link).toHaveAttribute('href', 'https://signer.example/approve');
+      // The signer picks this URL, so the destination must be visible rather
+      // than hidden behind our own localized label.
+      expect(screen.getByText('(signer.example)')).toBeInTheDocument();
       expect(link).toHaveAttribute('target', '_blank');
       expect(link).toHaveAttribute('rel', expect.stringContaining('noopener'));
     });

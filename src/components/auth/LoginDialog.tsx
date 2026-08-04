@@ -35,6 +35,16 @@ type RegisterView = 'invite' | 'waitlist';
 const validateNsec = (nsec: string) => /^nsec1[a-zA-Z0-9]{58}$/.test(nsec);
 const validateBunkerUri = (uri: string) => uri.startsWith('bunker://');
 
+/** Host of a NIP-46 challenge URL, so the user can see where a link they were
+ *  handed by a remote signer actually leads. Null if it will not parse. */
+const getChallengeHost = (url: string): string | null => {
+  try {
+    return new URL(url).host;
+  } catch {
+    return null;
+  }
+};
+
 const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin }) => {
   const { t } = useTranslation();
   const [advancedOpen, setAdvancedOpen] = useState(false);
@@ -536,6 +546,16 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin }) =
                             >
                               {t('loginDialog.bunkerAuthLink')}
                             </a>
+                            {/* The remote signer chooses this URL, so show where
+                                the link actually goes rather than hiding an
+                                arbitrary destination behind our own wording.
+                                A hostname is data, not copy, so no locale
+                                needs updating. */}
+                            {getChallengeHost(bunkerAuthUrl) ? (
+                              <span className="ml-1 text-muted-foreground break-all">
+                                ({getChallengeHost(bunkerAuthUrl)})
+                              </span>
+                            ) : null}
                           </div>
                         ) : null}
                       </div>
