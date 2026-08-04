@@ -424,6 +424,8 @@
     "bunkerLabel": "URI bunker",
     "bunkerPlaceholder": "bunker://",
     "bunkerButton": "Đăng nhập bằng Bunker",
+    "bunkerAuthPrompt": "Trình ký của bạn cần bạn phê duyệt. Chúng tôi đã thử mở trang của nó nhưng trình duyệt chặn — mở tại đây:",
+    "bunkerAuthLink": "Phê duyệt trong trình ký",
     "connecting": "Đang kết nối...",
     "errorInviteServiceUnavailable": "Dịch vụ thư mời không khả dụng",
     "errorExtensionNotFound": "Không tìm thấy tiện ích mở rộng Nostr. Vui lòng cài một tiện ích NIP-07.",

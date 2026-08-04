@@ -444,6 +444,8 @@
     "bunkerLabel": "رابط Bunker",
     "bunkerPlaceholder": "bunker://",
     "bunkerButton": "تسجيل الدخول عبر Bunker",
+    "bunkerAuthPrompt": "يحتاج موقّعك إلى موافقتك. حاولنا فتح صفحته لكن متصفحك منع ذلك — افتحها من هنا:",
+    "bunkerAuthLink": "الموافقة في الموقّع",
     "connecting": "جارٍ الاتصال...",
     "errorInviteServiceUnavailable": "خدمة الدعوات غير متاحة",
     "errorExtensionNotFound": "لم يتم العثور على إضافة Nostr. يرجى تثبيت إضافة NIP-07.",

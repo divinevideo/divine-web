@@ -40,6 +40,7 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin }) =
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [bunkerError, setBunkerError] = useState<string | null>(null);
   const [bunkerUri, setBunkerUri] = useState('');
+  const [bunkerAuthUrl, setBunkerAuthUrl] = useState<string | null>(null);
   const [generalError, setGeneralError] = useState<string | null>(null);
   const [inviteConfigError, setInviteConfigError] = useState<string | null>(null);
   const [inviteCode, setInviteCode] = useState('');
@@ -94,6 +95,7 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin }) =
     setAdvancedOpen(false);
     setBunkerError(null);
     setBunkerUri('');
+    setBunkerAuthUrl(null);
     setGeneralError(null);
     setInviteConfigError(null);
     setInviteCode('');
@@ -212,17 +214,24 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin }) =
     if (keyHandoverRestrictedRef.current) return;
     setIsLoginLoading(true);
     setBunkerError(null);
+    setBunkerAuthUrl(null);
 
     try {
       // Same commit-boundary re-check as the extension path: the pre-click
       // check goes stale while the bunker connect is pending.
       const committed = await login.bunker(bunkerUri, {
         beforeCommit: () => !keyHandoverRestrictedRef.current,
+        // The signer wants the user to approve in its own UI. We open a tab
+        // for them; keep the URL around in case the popup was blocked.
+        onAuthChallenge: ({ url, opened }) => {
+          if (url && !opened) setBunkerAuthUrl(url);
+        },
       });
       if (!committed) return;
       onLogin();
       onClose();
       setBunkerUri('');
+      setBunkerAuthUrl(null);
     } catch {
       setBunkerError(t('loginDialog.errorBunkerConnectFailed'));
     } finally {
@@ -496,6 +505,19 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin }) =
                           value={bunkerUri}
                         />
                         {bunkerError ? <p className="text-sm text-red-500">{bunkerError}</p> : null}
+                        {bunkerAuthUrl ? (
+                          <div className="space-y-1 text-sm">
+                            <p className="text-muted-foreground">{t('loginDialog.bunkerAuthPrompt')}</p>
+                            <a
+                              className="font-medium underline underline-offset-2"
+                              href={bunkerAuthUrl}
+                              rel="noopener noreferrer"
+                              target="_blank"
+                            >
+                              {t('loginDialog.bunkerAuthLink')}
+                            </a>
+                          </div>
+                        ) : null}
                       </div>
 
                       <Button

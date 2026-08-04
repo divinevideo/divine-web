@@ -1,5 +1,4 @@
 import { type NLoginType, NUser, useNostrLogin } from '@nostrify/react/login';
-import { useNostr } from '@nostrify/react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { NostrSigner } from '@nostrify/nostrify';
 import { DivineJWTSigner } from '@/lib/DivineJWTSigner';
@@ -23,7 +22,6 @@ type JwtResolution =
   | { token: string; error: true };
 
 export function useCurrentUser() {
-  const { nostr } = useNostr();
   const { logins } = useNostrLogin();
   const { getValidToken } = useDivineSession();
   const token = getValidToken();
@@ -33,8 +31,8 @@ export function useCurrentUser() {
   ), [token]);
 
   const loginToUser = useCallback((login: NLoginType): NUser  => {
-    return createUserFromLogin(login, nostr);
-  }, [nostr]);
+    return createUserFromLogin(login);
+  }, []);
 
   useEffect(() => {
     let isCancelled = false;

@@ -424,6 +424,8 @@
     "bunkerLabel": "URI de Bunker",
     "bunkerPlaceholder": "bunker://",
     "bunkerButton": "Iniciar sesión con Bunker",
+    "bunkerAuthPrompt": "Tu firmante necesita que lo apruebes. Intentamos abrir su página y tu navegador lo bloqueó: ábrela aquí:",
+    "bunkerAuthLink": "Aprobar en tu firmante",
     "connecting": "Conectando...",
     "errorInviteServiceUnavailable": "Servicio de invitaciones no disponible",
     "errorExtensionNotFound": "Extensión Nostr no encontrada. Instala una extensión NIP-07.",

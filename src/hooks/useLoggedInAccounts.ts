@@ -32,13 +32,13 @@ export function useLoggedInAccounts() {
       }
 
       try {
-        createUserFromLogin(login, nostr);
+        createUserFromLogin(login);
         return true;
       } catch {
         return false;
       }
     }),
-    [logins, nostr, nip07Status],
+    [logins, nip07Status],
   );
 
   const jwtCurrentUser = useMemo<Account | undefined>(() => {

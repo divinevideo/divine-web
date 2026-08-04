@@ -424,6 +424,8 @@
     "bunkerLabel": "Bunker-URI",
     "bunkerPlaceholder": "bunker://",
     "bunkerButton": "Logga in med Bunker",
+    "bunkerAuthPrompt": "Din signerare behöver ditt godkännande. Vi försökte öppna sidan men din webbläsare blockerade den — öppna den här:",
+    "bunkerAuthLink": "Godkänn i din signerare",
     "connecting": "Ansluter...",
     "errorInviteServiceUnavailable": "Inbjudningstjänsten är inte tillgänglig",
     "errorExtensionNotFound": "Hittade inget Nostr-tillägg. Installera ett NIP-07-tillägg.",

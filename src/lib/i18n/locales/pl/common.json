@@ -424,6 +424,8 @@
     "bunkerLabel": "URI Bunker",
     "bunkerPlaceholder": "bunker://",
     "bunkerButton": "Zaloguj przez Bunker",
+    "bunkerAuthPrompt": "Twój podpisujący czeka na zatwierdzenie. Próbowaliśmy otworzyć jego stronę, ale przeglądarka to zablokowała — otwórz ją tutaj:",
+    "bunkerAuthLink": "Zatwierdź w podpisującym",
     "connecting": "Łączenie...",
     "errorInviteServiceUnavailable": "Usługa zaproszeń niedostępna",
     "errorExtensionNotFound": "Nie znaleziono rozszerzenia Nostr. Zainstaluj rozszerzenie NIP-07.",

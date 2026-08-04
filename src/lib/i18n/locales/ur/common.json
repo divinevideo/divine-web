@@ -424,6 +424,8 @@
     "bunkerLabel": "Bunker URI",
     "bunkerPlaceholder": "bunker://",
     "bunkerButton": "Bunker سے لاگ اِن",
+    "bunkerAuthPrompt": "آپ کے دستخط کنندہ کو آپ کی منظوری درکار ہے۔ ہم نے اس کا صفحہ کھولنے کی کوشش کی مگر براؤزر نے روک دیا — یہاں سے کھولیں:",
+    "bunkerAuthLink": "دستخط کنندہ میں منظوری دیں",
     "connecting": "جڑ رہا ہے...",
     "errorInviteServiceUnavailable": "دعوت نامہ سروس دستیاب نہیں",
     "errorExtensionNotFound": "Nostr ایکسٹینشن نہیں ملی۔ براہِ کرم NIP-07 ایکسٹینشن انسٹال کریں۔",

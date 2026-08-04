@@ -1,14 +1,22 @@
-import { useNostr } from '@nostrify/react';
 import { NLogin, useNostrLogin } from '@nostrify/react/login';
 import { followListCache } from '@/lib/followListCache';
 import { setLoginCookie, clearLoginCookie } from '@/lib/crossSubdomainAuth';
 import { debugLog } from '@/lib/debug';
+import { loginWithBunker } from '@/lib/bunkerSigner';
+import type { AuthChallengePresentation } from '@/lib/bunkerAuthChallenge';
 import { nip19 } from 'nostr-tools';
 
 // NOTE: This file should not be edited except for adding new login methods.
 // Policy stays out of this file: async login methods accept an optional
 // beforeCommit guard so the caller can re-check its own policy at the moment
 // the signer is committed (#182); the policy predicate lives with the caller.
+
+interface BunkerLoginOptions extends CommitGuardOptions {
+  /** Called when the remote signer asks the user to approve out of band.
+   *  The challenge URL is opened in a new tab; `opened: false` means the
+   *  popup was blocked and the caller should render the URL as a link. */
+  onAuthChallenge?: (challenge: AuthChallengePresentation) => void;
+}
 
 interface CommitGuardOptions {
   /** Last-chance policy re-check, run after the handshake resolves and before
@@ -20,7 +28,6 @@ interface CommitGuardOptions {
 }
 
 export function useLoginActions() {
-  const { nostr } = useNostr();
   const { logins, addLogin, removeLogin } = useNostrLogin();
 
   return {
@@ -31,8 +38,8 @@ export function useLoginActions() {
       setLoginCookie({ type: 'nsec', pubkey: login.pubkey });
     },
     // Login with a NIP-46 "bunker://" URI; resolves whether the signer was committed
-    async bunker(uri: string, options?: CommitGuardOptions): Promise<boolean> {
-      const login = await NLogin.fromBunker(uri, nostr);
+    async bunker(uri: string, options?: BunkerLoginOptions): Promise<boolean> {
+      const login = await loginWithBunker(uri, options?.onAuthChallenge);
       if (options?.beforeCommit && !options.beforeCommit()) return false;
       addLogin(login);
       setLoginCookie({ type: 'bunker', pubkey: login.pubkey, bunkerData: login.data });

@@ -1,7 +1,6 @@
 import type { NostrSigner } from '@nostrify/nostrify';
 import { NUser, type NLoginType } from '@nostrify/react/login';
-
-type NostrClient = Parameters<typeof NUser.fromBunkerLogin>[1];
+import { bunkerSignerFromLogin } from '@/lib/bunkerSigner';
 
 export function hasNip07Provider(): boolean {
   if (typeof window === 'undefined') return false;
@@ -22,12 +21,15 @@ export function getSafeUserSigner(
   }
 }
 
-export function createUserFromLogin(login: NLoginType, nostr: NostrClient): NUser {
+export function createUserFromLogin(login: NLoginType): NUser {
   switch (login.type) {
     case 'nsec':
       return NUser.fromNsecLogin(login);
     case 'bunker':
-      return NUser.fromBunkerLogin(login, nostr);
+      // Not NUser.fromBunkerLogin: that builds a signer which treats a NIP-46
+      // auth challenge as a fatal error, so a signer that asks for approval
+      // mid-session breaks every subsequent request (divine-web#485).
+      return new NUser('bunker', login.pubkey, bunkerSignerFromLogin(login.data));
     case 'extension': {
       if (!hasNip07Provider()) {
         throw new Error('Browser extension not available');

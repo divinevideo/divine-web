@@ -395,6 +395,56 @@ describe('LoginDialog', () => {
       expect(onClose).not.toHaveBeenCalled();
     });
 
+    // divine-web#485: a NIP-46 signer can answer with an auth challenge instead
+    // of a result. We open it in a tab, but that fires after an await so popup
+    // blockers routinely eat it — the dialog has to offer the link.
+    it('shows the auth challenge link when the browser blocks the popup', async () => {
+      const user = userEvent.setup();
+      mockLoginActions.bunker.mockImplementation(
+        async (_uri: string, options?: { onAuthChallenge?: (c: { url: string; opened: boolean }) => void }) => {
+          options?.onAuthChallenge?.({ url: 'https://signer.example/approve', opened: false });
+          return new Promise(() => {}); // still waiting on the signer
+        }
+      );
+
+      render(<LoginDialog isOpen onClose={vi.fn()} onLogin={vi.fn()} />);
+
+      await user.click(await screen.findByRole('tab', { name: /^Sign in$/i }));
+      await user.click(screen.getByRole('button', { name: /Use Nostr instead/i }));
+      await user.click(await screen.findByRole('tab', { name: /Bunker/i }));
+      fireEvent.change(screen.getByLabelText(/Bunker URI/i), {
+        target: { value: 'bunker://remote-signer.example?relay=wss%3A%2F%2Frelay.example' },
+      });
+      await user.click(screen.getByRole('button', { name: /Login with Bunker/i }));
+
+      const link = await screen.findByRole('link', { name: /Approve in your signer/i });
+      expect(link).toHaveAttribute('href', 'https://signer.example/approve');
+      expect(link).toHaveAttribute('target', '_blank');
+      expect(link).toHaveAttribute('rel', expect.stringContaining('noopener'));
+    });
+
+    it('stays quiet when the challenge tab opened successfully', async () => {
+      const user = userEvent.setup();
+      mockLoginActions.bunker.mockImplementation(
+        async (_uri: string, options?: { onAuthChallenge?: (c: { url: string; opened: boolean }) => void }) => {
+          options?.onAuthChallenge?.({ url: 'https://signer.example/approve', opened: true });
+          return new Promise(() => {});
+        }
+      );
+
+      render(<LoginDialog isOpen onClose={vi.fn()} onLogin={vi.fn()} />);
+
+      await user.click(await screen.findByRole('tab', { name: /^Sign in$/i }));
+      await user.click(screen.getByRole('button', { name: /Use Nostr instead/i }));
+      await user.click(await screen.findByRole('tab', { name: /Bunker/i }));
+      fireEvent.change(screen.getByLabelText(/Bunker URI/i), {
+        target: { value: 'bunker://remote-signer.example?relay=wss%3A%2F%2Frelay.example' },
+      });
+      await user.click(screen.getByRole('button', { name: /Login with Bunker/i }));
+
+      expect(screen.queryByRole('link', { name: /Approve in your signer/i })).toBeNull();
+    });
+
     // fireEvent (not userEvent) so the local clipboard spy stays attached;
     // userEvent.setup() installs its own navigator.clipboard stub.
     it('aborts an in-flight nsec backup when the restriction engages mid-flight (real parent path)', async () => {
