@@ -18,10 +18,16 @@ function getScrollKey(pathname: string, search: string) {
  * near the top. Retrying across frames lets the position land once the cached
  * pages render. Returns a function that stops the attempt.
  */
-function restoreScrollPosition(target: number): () => void {
+interface ScrollRestoration {
+  stop: () => void;
+  /** True while the loop is still chasing a position it has not reached. */
+  isPending: () => boolean;
+}
+
+function restoreScrollPosition(target: number): ScrollRestoration {
   if (target <= 0) {
     window.scrollTo(0, 0);
-    return () => {};
+    return { stop: () => {}, isPending: () => false };
   }
 
   let frame: number | null = null;
@@ -63,7 +69,7 @@ function restoreScrollPosition(target: number): () => void {
 
   attempt();
 
-  return stop;
+  return { stop, isPending: () => !stopped };
 }
 
 export function ScrollToTop() {
@@ -127,11 +133,22 @@ export function ScrollToTop() {
     // so footer/sidebar/nav links always land at the top of the destination.
     const savedPosition =
       navigationType === 'POP' ? (scrollPositions.get(scrollKey) ?? 0) : 0;
-    const stopRestoring = restoreScrollPosition(savedPosition);
+    const restoration = restoreScrollPosition(savedPosition);
 
     return () => {
-      stopRestoring();
-      scrollPositions.set(scrollKey, window.scrollY);
+      // Navigating away mid-restore leaves the window clamped short of the
+      // saved offset, because the content that would make room for it has not
+      // rendered. Persisting that partial value would overwrite the real
+      // position and walk the feed closer to the top on every interrupted
+      // back-navigation. A restore that settled, by reaching its target,
+      // timing out, or being handed over to the viewer, leaves a position
+      // worth saving.
+      const wasInterrupted = restoration.isPending();
+      restoration.stop();
+
+      if (!wasInterrupted) {
+        scrollPositions.set(scrollKey, window.scrollY);
+      }
     };
   }, [scrollKey, hash, navigationType]);
 
