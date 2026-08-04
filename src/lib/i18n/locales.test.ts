@@ -76,6 +76,8 @@ const PLACEHOLDER_PARITY_EXCEPTIONS = new Set([
 const MUST_BE_TRANSLATED_PREFIXES = [
   'notificationsPage.message.',
   'notificationsPage.video.',
+  'notificationsPage.empty.',
+  'notificationsPage.a11y.',
 ];
 
 describe('i18n locale resources', () => {
