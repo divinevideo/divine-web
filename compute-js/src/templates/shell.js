@@ -4,6 +4,19 @@
 import { CRITICAL_CSS } from './css.js';
 
 /**
+ * Content-Security-Policy served by the edge shell.
+ *
+ * MUST stay byte-identical to the CSP meta tag in the repo-root index.html.
+ * Fastly serves this shell for some routes (`x-divine-edge: template`) and the
+ * static index.html for the rest, so a directive present in one and not the
+ * other makes a feature work on some routes and silently fail on others —
+ * which is exactly how the App Store badge disappeared from the sidebar.
+ *
+ * Pinned by tests/csp-single-source.test.ts. Edit both files together.
+ */
+export const SHELL_CSP = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.gstatic.com https://www.googletagmanager.com https://static.zdassets.com https://ekr.zdassets.com https://*.zendesk.com https://v2.zopim.com https://static.cloudflareinsights.com https://*.hsforms.net https://*.hsforms.com https://*.hubspot.com https://*.hubspotusercontent-na2.net https://*.hsappstatic.net https://*.hs-scripts.com https://*.hs-banner.com https://*.hs-analytics.net https://*.hscollectedforms.net https://*.usemessages.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://static.zdassets.com; frame-src 'self' https: https://static.zdassets.com https://*.hubspot.com https://*.hsforms.net https://*.hsforms.com; font-src 'self' data: https://fonts.gstatic.com https://static.zdassets.com; base-uri 'self'; manifest-src 'self'; worker-src 'self' blob:; connect-src 'self' blob: https: wss: https://www.google-analytics.com https://analytics.google.com https://firebaseinstallations.googleapis.com https://ekr.zdassets.com wss://*.zopim.com wss://*.zendesk.com https://*.hsforms.com https://*.hubspot.com https://*.hubapi.com https://*.hs-banner.com https://*.hscollectedforms.net; img-src 'self' data: blob: https: https://www.google-analytics.com https://static.zdassets.com https://v2assets.zopim.io https://*.hsforms.com https://*.hubspot.com; media-src 'self' blob: https:;";
+
+/**
  * Escape HTML special characters to prevent XSS.
  */
 export function escapeHtml(str) {
@@ -84,7 +97,7 @@ export function renderShell({
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover" />
 
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.gstatic.com https://www.googletagmanager.com https://static.zdassets.com https://ekr.zdassets.com https://*.zendesk.com https://v2.zopim.com https://static.cloudflareinsights.com https://*.hsforms.net https://*.hsforms.com https://*.hubspot.com https://*.hubspotusercontent-na2.net https://*.hsappstatic.net https://*.hs-scripts.com https://*.hs-banner.com https://*.hs-analytics.net https://*.hscollectedforms.net https://*.usemessages.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://static.zdassets.com; frame-src 'self' https: https://static.zdassets.com https://*.hubspot.com https://*.hsforms.net https://*.hsforms.com; font-src 'self' data: https://fonts.gstatic.com https://static.zdassets.com; base-uri 'self'; manifest-src 'self'; worker-src 'self' blob:; connect-src 'self' blob: https: wss: https://www.google-analytics.com https://analytics.google.com https://firebaseinstallations.googleapis.com https://ekr.zdassets.com wss://*.zopim.com wss://*.zendesk.com https://*.hsforms.com https://*.hubspot.com https://*.hubapi.com https://*.hs-banner.com https://*.hscollectedforms.net; img-src 'self' data: blob: https: https://www.google-analytics.com https://static.zdassets.com https://v2assets.zopim.io https://*.hsforms.com https://*.hubspot.com; media-src 'self' blob: https:;">
+  <meta http-equiv="Content-Security-Policy" content="${SHELL_CSP}">
   <meta http-equiv="X-Content-Type-Options" content="nosniff">
   <meta http-equiv="X-XSS-Protection" content="1; mode=block">
   <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
