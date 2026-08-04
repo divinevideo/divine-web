@@ -3,6 +3,7 @@
 
 import { BunkerSigner } from 'nostr-tools/nip46';
 import { generateSecretKey, nip19 } from 'nostr-tools';
+import { SimplePool, type AbstractSimplePool } from 'nostr-tools/pool';
 import type { NostrEvent, NostrSigner } from '@nostrify/nostrify';
 import { presentAuthChallenge, type AuthChallengePresentation } from '@/lib/bunkerAuthChallenge';
 
@@ -30,6 +31,13 @@ export interface CreateBunkerSignerOptions {
   secret?: string | null;
   /** Called when the signer asks the user to approve out of band. */
   onAuthChallenge?: (challenge: AuthChallengePresentation) => void;
+  /**
+   * Relay pool to run this signer on. `BunkerSigner` opens sockets during
+   * construction, so a caller that only needs a signer briefly should pass a
+   * pool it owns and destroy it afterwards. `close()` drops the subscription
+   * but leaves the pool's connections up.
+   */
+  pool?: AbstractSimplePool;
 }
 
 export interface BunkerNostrSigner extends NostrSigner {
@@ -48,12 +56,13 @@ export interface BunkerNostrSigner extends NostrSigner {
  * fails the call and drops the subscription that the answer arrives on.
  */
 export function createBunkerSigner(options: CreateBunkerSignerOptions): BunkerNostrSigner {
-  const { clientSecretKey, bunkerPubkey, relays, secret = null, onAuthChallenge } = options;
+  const { clientSecretKey, bunkerPubkey, relays, secret = null, onAuthChallenge, pool } = options;
 
   const bunker = BunkerSigner.fromBunker(
     clientSecretKey,
     { pubkey: bunkerPubkey, relays, secret },
     {
+      ...(pool ? { pool } : {}),
       onauth: (url: string) => {
         onAuthChallenge?.(presentAuthChallenge(url));
       },
@@ -127,16 +136,28 @@ export async function loginWithBunker(
   const { bunkerPubkey, relays, secret } = parseBunkerUri(uri);
 
   const clientSecretKey = generateSecretKey();
+  // This signer exists only to complete the handshake; the session builds its
+  // own from the persisted data. Give it a pool we own so the sockets it opens
+  // during construction can be released, whether or not the handshake succeeds.
+  const pool = new SimplePool();
   const signer = createBunkerSigner({
     clientSecretKey,
     bunkerPubkey,
     relays,
     secret,
     onAuthChallenge,
+    pool,
   });
 
-  await signer.connect();
-  const pubkey = await signer.getPublicKey();
+  let pubkey: string;
+
+  try {
+    await signer.connect();
+    pubkey = await signer.getPublicKey();
+  } finally {
+    await signer.close().catch(() => {});
+    pool.destroy();
+  }
 
   return {
     id: `bunker:${pubkey}`,
