@@ -3,8 +3,63 @@ import { useLocation, useNavigationType } from 'react-router-dom';
 
 const scrollPositions = new Map<string, number>();
 
+/** How long to keep chasing a saved position while content loads in. */
+const RESTORE_TIMEOUT_MS = 3000;
+
 function getScrollKey(pathname: string, search: string) {
   return `${pathname}${search}`;
+}
+
+/**
+ * Scroll to `target`, retrying while the document is too short to honour it.
+ *
+ * Feeds restore into a page whose rows have not laid out yet, so a single
+ * `scrollTo` gets clamped to the current document height and the viewer lands
+ * near the top. Retrying across frames lets the position land once the cached
+ * pages render. Returns a function that stops the attempt.
+ */
+function restoreScrollPosition(target: number): () => void {
+  if (target <= 0) {
+    window.scrollTo(0, 0);
+    return () => {};
+  }
+
+  let frame: number | null = null;
+  let stopped = false;
+  const deadline = Date.now() + RESTORE_TIMEOUT_MS;
+
+  const stop = () => {
+    if (stopped) return;
+    stopped = true;
+    if (frame !== null) {
+      window.cancelAnimationFrame(frame);
+      frame = null;
+    }
+    window.removeEventListener('wheel', stop);
+    window.removeEventListener('touchstart', stop);
+    window.removeEventListener('keydown', stop);
+  };
+
+  // Once the viewer takes over, stop dragging them back to where they were.
+  window.addEventListener('wheel', stop, { passive: true });
+  window.addEventListener('touchstart', stop, { passive: true });
+  window.addEventListener('keydown', stop);
+
+  const attempt = () => {
+    if (stopped) return;
+    window.scrollTo(0, target);
+
+    if (window.scrollY >= target || Date.now() > deadline) {
+      stop();
+      return;
+    }
+
+    frame = window.requestAnimationFrame(attempt);
+  };
+
+  attempt();
+
+  return stop;
 }
 
 export function ScrollToTop() {
@@ -68,9 +123,10 @@ export function ScrollToTop() {
     // so footer/sidebar/nav links always land at the top of the destination.
     const savedPosition =
       navigationType === 'POP' ? (scrollPositions.get(scrollKey) ?? 0) : 0;
-    window.scrollTo(0, savedPosition);
+    const stopRestoring = restoreScrollPosition(savedPosition);
 
     return () => {
+      stopRestoring();
       scrollPositions.set(scrollKey, window.scrollY);
     };
   }, [scrollKey, hash, navigationType]);
