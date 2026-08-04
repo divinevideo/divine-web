@@ -1,7 +1,7 @@
 // ABOUTME: Component that tracks page views automatically as user navigates
 // ABOUTME: Uses React Router location changes to log analytics page_view events
 
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { trackPageView } from '@/lib/analytics';
 import { trackProductEvent } from '@/lib/analyticsClient';
@@ -19,61 +19,114 @@ export function AnalyticsPageTracker() {
   const lastTrackedPath = useRef<string | null>(null);
   const currentPathStartedAt = useRef<number>(Date.now());
   const sessionStarted = useRef(false);
+  const sessionStartInFlight = useRef(false);
+  const [sessionStartAttempt, setSessionStartAttempt] = useState(0);
   const scrollTimeout = useRef<number>();
   const maxScrollThreshold = useRef(0);
 
+  // Read inside the resolve handler below, where `location` is the value
+  // captured when the call started rather than the current route.
+  const currentPath = useRef(location.pathname);
+  currentPath.current = location.pathname;
+
   useEffect(() => {
-    if (sessionStarted.current) {
+    if (sessionStarted.current || sessionStartInFlight.current) {
       return;
     }
 
-    // Latch only once the event was actually accepted. track() returns null
-    // when analytics identity is not configured yet, and this effect can run
-    // before that happens; latching on a dropped call would lose the session
-    // event for the whole visit.
+    // Two guards, because they answer different questions.
+    //
+    // The in-flight flag is synchronous, so a redirect that re-runs this effect
+    // before the call settles cannot emit a second session_started with a
+    // different event id.
+    //
+    // The latch is set only once the event was actually accepted. track()
+    // returns null when analytics identity is not configured yet, and this
+    // effect can run before that happens, so latching on a dropped call would
+    // lose the session event for the whole visit. A drop retries on the next
+    // route change — including one that happened while the call was in flight,
+    // which the in-flight guard would otherwise have swallowed.
+    const attemptedPath = location.pathname;
+    sessionStartInFlight.current = true;
     void trackProductEvent('session_started', {
-      surface: getSurface(location.pathname),
+      surface: getSurface(attemptedPath),
       entry_point: document.referrer ? 'referrer' : 'direct',
-      properties: { path: location.pathname },
-    }).then((eventId) => {
-      if (eventId) {
-        sessionStarted.current = true;
-      }
+      properties: { path: attemptedPath },
+    })
+      .then((eventId) => {
+        if (eventId) {
+          sessionStarted.current = true;
+          return;
+        }
+        if (currentPath.current !== attemptedPath) {
+          setSessionStartAttempt((attempt) => attempt + 1);
+        }
+      })
+      .finally(() => {
+        sessionStartInFlight.current = false;
+      });
+  }, [location.pathname, sessionStartAttempt]);
+
+  /**
+   * Emit the time spent on the current screen and restart the clock.
+   *
+   * Leave-time signals overlap — visibilitychange to hidden, then pagehide,
+   * then possibly unmount — so resetting the start time here is what keeps a
+   * single departure from being counted several times. A zero-length span has
+   * nothing to report and is skipped.
+   */
+  const emitScreenTime = useCallback(() => {
+    const path = lastTrackedPath.current;
+    if (!path) {
+      return;
+    }
+
+    const durationMs = Math.max(0, Date.now() - currentPathStartedAt.current);
+    if (durationMs <= 0) {
+      return;
+    }
+
+    currentPathStartedAt.current = Date.now();
+    void trackProductEvent('screen_time', {
+      surface: getSurface(path),
+      duration_ms: durationMs,
+      properties: { path },
     });
-  }, [location.pathname]);
+  }, []);
 
   useEffect(() => {
     // Only track page view when pathname changes, not on every query param change
     // This prevents tracking every keystroke in search (search tracks separately)
     if (lastTrackedPath.current !== location.pathname) {
-      if (lastTrackedPath.current) {
-        void trackProductEvent('screen_time', {
-          surface: getSurface(lastTrackedPath.current),
-          duration_ms: Math.max(0, Date.now() - currentPathStartedAt.current),
-          properties: { path: lastTrackedPath.current },
-        });
-      }
+      emitScreenTime();
 
       lastTrackedPath.current = location.pathname;
       currentPathStartedAt.current = Date.now();
       maxScrollThreshold.current = 0;
       trackPageView(location.pathname + location.search, document.title);
     }
-  }, [location]);
+  }, [emitScreenTime, location]);
 
   useEffect(() => {
-    return () => {
-      if (!lastTrackedPath.current) {
+    // Unmount is not a reliable tab-close signal. Without these the final
+    // screen of a single-page session never reports its duration at all, so
+    // time on site is systematically under-counted.
+    const onHidden = () => {
+      if (document.visibilityState !== 'hidden') {
         return;
       }
-
-      void trackProductEvent('screen_time', {
-        surface: getSurface(lastTrackedPath.current),
-        duration_ms: Math.max(0, Date.now() - currentPathStartedAt.current),
-        properties: { path: lastTrackedPath.current },
-      });
+      emitScreenTime();
     };
-  }, []);
+
+    document.addEventListener('visibilitychange', onHidden);
+    window.addEventListener('pagehide', emitScreenTime);
+
+    return () => {
+      document.removeEventListener('visibilitychange', onHidden);
+      window.removeEventListener('pagehide', emitScreenTime);
+      emitScreenTime();
+    };
+  }, [emitScreenTime]);
 
   useEffect(() => {
     if (!FEED_PATHS.has(location.pathname)) {

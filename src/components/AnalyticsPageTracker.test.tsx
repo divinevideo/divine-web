@@ -14,10 +14,22 @@ vi.mock('@/lib/analytics', () => ({
   trackPageView: vi.fn(),
 }));
 
+function setVisibilityState(state: DocumentVisibilityState) {
+  Object.defineProperty(document, 'visibilityState', {
+    configurable: true,
+    get: () => state,
+  });
+}
+
+function screenTimeCalls() {
+  return trackProductEvent.mock.calls.filter(([name]) => name === 'screen_time');
+}
+
 describe('AnalyticsPageTracker', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.useFakeTimers();
+    setVisibilityState('visible');
     Object.defineProperty(document, 'title', {
       configurable: true,
       value: 'Divine',
@@ -113,6 +125,106 @@ describe('AnalyticsPageTracker', () => {
       ([name]) => name === 'session_started',
     );
     expect(sessionCalls).toHaveLength(2);
+  });
+
+  it('emits session_started once when a redirect races the first call', async () => {
+    // The one-shot guard latches on the resolved event id. A redirect before
+    // that resolution re-runs the effect, so without a synchronous in-flight
+    // guard the visit reports two session starts with different event ids.
+    let resolveFirst: (value: string) => void = () => {};
+    trackProductEvent.mockImplementationOnce(
+      () => new Promise<string>((resolve) => {
+        resolveFirst = resolve;
+      }),
+    );
+
+    function NavigateOnce() {
+      const navigate = useNavigate();
+      useEffect(() => {
+        navigate('/discovery');
+      }, [navigate]);
+      return null;
+    }
+
+    render(
+      <MemoryRouter initialEntries={['/']}>
+        <AnalyticsPageTracker />
+        <Routes>
+          <Route path="/" element={<NavigateOnce />} />
+          <Route path="/discovery" element={<div />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    await act(async () => {
+      resolveFirst('event-id');
+      await Promise.resolve();
+    });
+
+    const sessionCalls = trackProductEvent.mock.calls.filter(
+      ([name]) => name === 'session_started',
+    );
+    expect(sessionCalls).toHaveLength(1);
+  });
+
+  it('emits the current screen duration when the tab is hidden', () => {
+    render(
+      <MemoryRouter initialEntries={['/discovery']}>
+        <AnalyticsPageTracker />
+      </MemoryRouter>,
+    );
+
+    vi.advanceTimersByTime(2000);
+
+    act(() => {
+      setVisibilityState('hidden');
+      document.dispatchEvent(new Event('visibilitychange'));
+    });
+
+    expect(trackProductEvent).toHaveBeenCalledWith('screen_time', expect.objectContaining({
+      surface: 'discovery',
+      properties: { path: '/discovery' },
+    }));
+    expect(screenTimeCalls()).toHaveLength(1);
+  });
+
+  it('emits the current screen duration on pagehide', () => {
+    render(
+      <MemoryRouter initialEntries={['/discovery']}>
+        <AnalyticsPageTracker />
+      </MemoryRouter>,
+    );
+
+    vi.advanceTimersByTime(2000);
+
+    act(() => {
+      window.dispatchEvent(new Event('pagehide'));
+    });
+
+    const [, props] = screenTimeCalls()[0];
+    expect(props).toMatchObject({ surface: 'discovery' });
+    expect((props as { duration_ms: number }).duration_ms).toBeGreaterThan(0);
+  });
+
+  it('does not re-count a duration already emitted at leave time', () => {
+    // pagehide often follows visibilitychange, and unmount can follow both.
+    // Each emission resets the clock, so the later ones have nothing to report.
+    const { unmount } = render(
+      <MemoryRouter initialEntries={['/discovery']}>
+        <AnalyticsPageTracker />
+      </MemoryRouter>,
+    );
+
+    vi.advanceTimersByTime(2000);
+
+    act(() => {
+      setVisibilityState('hidden');
+      document.dispatchEvent(new Event('visibilitychange'));
+      window.dispatchEvent(new Event('pagehide'));
+    });
+    unmount();
+
+    expect(screenTimeCalls()).toHaveLength(1);
   });
 
   it('tracks feed scroll depth once per threshold', () => {
