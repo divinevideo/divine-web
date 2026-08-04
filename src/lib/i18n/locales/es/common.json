@@ -1104,7 +1104,8 @@
     },
     "a11y": {
       "openVideo": "Abrir {{title}}",
-      "viewProfile": "Perfil de {{name}}"
+      "viewProfile": "Perfil de {{name}}",
+      "unread": "No leída"
     }
   },
   "getEmbedPage": {

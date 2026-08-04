@@ -1103,7 +1103,8 @@
     },
     "a11y": {
       "openVideo": "Buksan ang {{title}}",
-      "viewProfile": "Profile ni {{name}}"
+      "viewProfile": "Profile ni {{name}}",
+      "unread": "Hindi pa nababasa"
     }
   },
   "getEmbedPage": {

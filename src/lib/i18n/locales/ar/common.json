@@ -1175,7 +1175,8 @@
     },
     "a11y": {
       "openVideo": "فتح {{title}}",
-      "viewProfile": "الملف الشخصي لـ {{name}}"
+      "viewProfile": "الملف الشخصي لـ {{name}}",
+      "unread": "غير مقروءة"
     }
   },
   "getEmbedPage": {

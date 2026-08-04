@@ -1103,7 +1103,8 @@
     "sectionEarlier": "Earlier",
     "a11y": {
       "openVideo": "Open {{title}}",
-      "viewProfile": "{{name}} profile"
+      "viewProfile": "{{name}} profile",
+      "unread": "Unread"
     }
   },
   "getEmbedPage": {

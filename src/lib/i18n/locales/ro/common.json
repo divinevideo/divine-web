@@ -1104,7 +1104,8 @@
     },
     "a11y": {
       "openVideo": "Deschide {{title}}",
-      "viewProfile": "Profilul {{name}}"
+      "viewProfile": "Profilul {{name}}",
+      "unread": "Necitită"
     }
   },
   "getEmbedPage": {

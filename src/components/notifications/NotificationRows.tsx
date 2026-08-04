@@ -113,6 +113,20 @@ function NotificationTypeIconChip({
 }
 
 /** 72×72 thumbnail with placeholder when thumbnailUrl is missing. */
+/**
+ * Unread state otherwise reaches the DOM only as a background tint and a
+ * heavier icon weight, neither of which carries into an accessible name. The
+ * New/Earlier headings cover some of this, but they render only on the `all`
+ * tab, so every other tab exposed no unread state at all.
+ */
+function UnreadMarker({ isRead }: { isRead: boolean }) {
+  const { t } = useTranslation();
+
+  if (isRead) return null;
+
+  return <span className="sr-only">{t('notificationsPage.a11y.unread')}</span>;
+}
+
 function NotificationVideoThumbnail({
   thumbnailUrl,
   title,
@@ -233,6 +247,8 @@ export function VideoNotificationRow({
         !notification.isRead && 'bg-muted/30',
       )}
     >
+      <UnreadMarker isRead={notification.isRead} />
+
       {/* Leading type icon chip */}
       <NotificationTypeIconChip type={notification.type} isRead={notification.isRead} />
 
@@ -321,6 +337,8 @@ export function ActorNotificationRow({
         !notification.isRead && 'bg-muted/30',
       )}
     >
+      <UnreadMarker isRead={notification.isRead} />
+
       {/* Leading type icon chip */}
       <NotificationTypeIconChip type="follow" isRead={notification.isRead} />
 

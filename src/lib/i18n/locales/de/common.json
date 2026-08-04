@@ -1103,7 +1103,8 @@
     },
     "a11y": {
       "openVideo": "{{title}} öffnen",
-      "viewProfile": "Profil von {{name}}"
+      "viewProfile": "Profil von {{name}}",
+      "unread": "Ungelesen"
     }
   },
   "getEmbedPage": {

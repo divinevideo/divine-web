@@ -1103,7 +1103,8 @@
     },
     "a11y": {
       "openVideo": "{{title}} 열기",
-      "viewProfile": "{{name}} 프로필"
+      "viewProfile": "{{name}} 프로필",
+      "unread": "읽지 않음"
     }
   },
   "getEmbedPage": {

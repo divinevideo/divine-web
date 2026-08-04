@@ -1103,7 +1103,8 @@
     },
     "a11y": {
       "openVideo": "打开 {{title}}",
-      "viewProfile": "{{name}} 的主页"
+      "viewProfile": "{{name}} 的主页",
+      "unread": "未读"
     }
   },
   "getEmbedPage": {

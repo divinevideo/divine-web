@@ -1103,7 +1103,8 @@
     },
     "a11y": {
       "openVideo": "{{title}} aç",
-      "viewProfile": "{{name}} profili"
+      "viewProfile": "{{name}} profili",
+      "unread": "Okunmadı"
     }
   },
   "getEmbedPage": {

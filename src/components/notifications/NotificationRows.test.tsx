@@ -103,6 +103,19 @@ describe('VideoNotificationRow', () => {
     expect(screen.queryByText(/others/)).not.toBeInTheDocument();
   });
 
+  it('announces unread state to assistive tech, not only as a background tint', () => {
+    const { rerender } = render(
+      <VideoNotificationRow notification={buildVideoNotification({ isRead: false })} />,
+    );
+
+    // Unread is otherwise conveyed only by `bg-muted/30` and the icon weight,
+    // neither of which reaches an accessible name.
+    expect(screen.getByText('Unread')).toBeInTheDocument();
+
+    rerender(<VideoNotificationRow notification={buildVideoNotification({ isRead: true })} />);
+    expect(screen.queryByText('Unread')).not.toBeInTheDocument();
+  });
+
   it('does not repeat "your video" as both verb copy and fallback title for untitled videos', () => {
     const notification = buildVideoNotification({
       videoTitle: undefined,
@@ -301,6 +314,11 @@ describe('ActorNotificationRow', () => {
       } satisfies Pick<Storage, 'getItem' | 'setItem' | 'removeItem' | 'clear'>,
     });
     await initializeI18n({ force: true, languages: ['en-US'] });
+  });
+
+  it('announces unread state to assistive tech, not only as a background tint', () => {
+    render(<ActorNotificationRow notification={buildActorNotification({ isRead: false })} />);
+    expect(screen.getByText('Unread')).toBeInTheDocument();
   });
 
   it('follow row shows one avatar, followed you, and navigates to profile on message click', () => {

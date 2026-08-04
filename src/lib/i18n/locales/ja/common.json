@@ -1103,7 +1103,8 @@
     },
     "a11y": {
       "openVideo": "{{title}}を開く",
-      "viewProfile": "{{name}}のプロフィール"
+      "viewProfile": "{{name}}のプロフィール",
+      "unread": "未読"
     }
   },
   "getEmbedPage": {

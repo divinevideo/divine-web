@@ -1103,7 +1103,8 @@
     },
     "a11y": {
       "openVideo": "Mở {{title}}",
-      "viewProfile": "Trang cá nhân của {{name}}"
+      "viewProfile": "Trang cá nhân của {{name}}",
+      "unread": "Chưa đọc"
     }
   },
   "getEmbedPage": {

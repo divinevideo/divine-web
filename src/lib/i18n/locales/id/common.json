@@ -1103,7 +1103,8 @@
     },
     "a11y": {
       "openVideo": "Buka {{title}}",
-      "viewProfile": "Profil {{name}}"
+      "viewProfile": "Profil {{name}}",
+      "unread": "Belum dibaca"
     }
   },
   "getEmbedPage": {

@@ -1103,7 +1103,8 @@
     },
     "a11y": {
       "openVideo": "{{title}} کھولیں",
-      "viewProfile": "{{name}} کی پروفائل"
+      "viewProfile": "{{name}} کی پروفائل",
+      "unread": "غیر پڑھا ہوا"
     }
   },
   "getEmbedPage": {
