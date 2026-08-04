@@ -138,6 +138,35 @@ describe('ScrollToTop restoration against late-loading content', () => {
     expect(window.scrollY).toBe(300);
   });
 
+  // An interrupted restore is holding a clamped position, not a real one.
+  // Saving it would overwrite the offset the restore was chasing and walk the
+  // feed toward the top on every interrupted back-navigation.
+  it('does not overwrite the saved position when a restore is interrupted', async () => {
+    const TestApp = makeTestApp(await loadScrollToTop());
+    render(<TestApp />);
+
+    scrollY = 1800;
+    fireEvent.click(screen.getByRole('link', { name: 'Details' }));
+
+    // Back, but the grid has not laid out, so the restore clamps to 150.
+    scrollY = 0;
+    maxScroll = 150;
+    fireEvent.click(screen.getByRole('button', { name: 'Back' }));
+    expect(window.scrollY).toBe(150);
+
+    // Navigate away again before the retry loop can land the position.
+    fireEvent.click(screen.getByRole('link', { name: 'Details' }));
+
+    // Back once more, this time with the page fully laid out. The original
+    // 1800 must have survived the interrupted attempt.
+    scrollY = 0;
+    maxScroll = 10_000;
+    fireEvent.click(screen.getByRole('button', { name: 'Back' }));
+    await nextFrame();
+
+    expect(window.scrollY).toBe(1800);
+  });
+
   it('still lands at the top on forward navigation', async () => {
     const TestApp = makeTestApp(await loadScrollToTop());
     render(<TestApp />);
