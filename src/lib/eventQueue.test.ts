@@ -38,6 +38,46 @@ function makeEvent(overrides: Partial<ProductAnalyticsPayload> = {}): ProductAna
 
 const baseEvent = makeEvent();
 
+/**
+ * An IndexedDB whose database opens but whose every request and transaction
+ * fails, standing in for quota exhaustion or a corrupt store.
+ */
+function createFailingIndexedDB(): IDBFactory {
+  const fail = <T extends { onerror?: ((event: Event) => void) | null }>(target: T): T => {
+    queueMicrotask(() => target.onerror?.(new Event('error')));
+    return target;
+  };
+
+  const store = {
+    put: () => fail({ onsuccess: null, onerror: null, error: new DOMException('QuotaExceededError') }),
+    delete: () => fail({ onsuccess: null, onerror: null, error: new DOMException('QuotaExceededError') }),
+    clear: () => fail({ onsuccess: null, onerror: null, error: new DOMException('QuotaExceededError') }),
+    getAll: () => fail({ onsuccess: null, onerror: null, error: new DOMException('QuotaExceededError') }),
+  };
+
+  const db = {
+    objectStoreNames: { contains: () => false },
+    createObjectStore: () => ({ createIndex: () => {} }),
+    transaction: () => fail({
+      objectStore: () => store,
+      oncomplete: null,
+      onerror: null,
+      onabort: null,
+      error: new DOMException('QuotaExceededError'),
+    }),
+  };
+
+  return {
+    open: () => {
+      const request = { onsuccess: null, onerror: null, onupgradeneeded: null, result: db } as unknown as IDBOpenDBRequest & {
+        onsuccess: ((event: Event) => void) | null;
+      };
+      queueMicrotask(() => request.onsuccess?.(new Event('success')));
+      return request;
+    },
+  } as unknown as IDBFactory;
+}
+
 describe('ProductEventQueue', () => {
   beforeEach(() => {
     vi.resetModules();
@@ -134,5 +174,45 @@ describe('ProductEventQueue', () => {
     await queue.markSucceeded([record.id]);
 
     expect(await queue.getFlushableBatch(10)).toHaveLength(0);
+  });
+
+  describe('when IndexedDB rejects every operation', () => {
+    beforeEach(() => {
+      Object.defineProperty(globalThis, 'indexedDB', {
+        writable: true,
+        value: createFailingIndexedDB(),
+      });
+    });
+
+    // Analytics is fire-and-forget: callers `void track()` and `void flush()`.
+    // Storage pressure must degrade to the in-memory mirror, not surface as an
+    // unhandled rejection in the app.
+    it('enqueues without rejecting when the write transaction fails', async () => {
+      const { ProductEventQueue } = await import('./eventQueue');
+      const queue = new ProductEventQueue();
+
+      await expect(queue.enqueue(baseEvent)).resolves.toBeUndefined();
+      expect(await queue.getFlushableBatch(10)).toHaveLength(1);
+    });
+
+    it('marks records succeeded without rejecting when the delete fails', async () => {
+      const { ProductEventQueue } = await import('./eventQueue');
+      const queue = new ProductEventQueue();
+      await queue.enqueue(baseEvent);
+
+      await expect(queue.markSucceeded([baseEvent.event_id])).resolves.toBeUndefined();
+      // The durable copy could not be removed, but the record must not be
+      // re-sent from memory on the next flush.
+      expect(await queue.getFlushableBatch(10)).toHaveLength(0);
+    });
+
+    it('clears without rejecting when the clear request fails', async () => {
+      const { ProductEventQueue } = await import('./eventQueue');
+      const queue = new ProductEventQueue();
+      await queue.enqueue(baseEvent);
+
+      await expect(queue.clear()).resolves.toBeUndefined();
+      expect(await queue.getFlushableBatch(10)).toHaveLength(0);
+    });
   });
 });

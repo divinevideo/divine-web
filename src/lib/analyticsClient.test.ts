@@ -18,13 +18,14 @@ vi.mock('./cookieConsent', () => ({
 }));
 
 const pubkey = 'b'.repeat(64);
+const signEvent = async (template: Record<string, unknown>) => ({
+  ...template,
+  id: 'c'.repeat(64),
+  pubkey,
+  sig: 'd'.repeat(128),
+});
 const signer = {
-  signEvent: vi.fn(async (template) => ({
-    ...template,
-    id: 'c'.repeat(64),
-    pubkey,
-    sig: 'd'.repeat(128),
-  })),
+  signEvent: vi.fn(signEvent),
 } as unknown as NostrSigner;
 
 function createStorage() {
@@ -48,6 +49,10 @@ describe('analyticsClient', () => {
   beforeEach(() => {
     vi.resetModules();
     vi.clearAllMocks();
+    // clearAllMocks does not drop a queued mockRejectedValueOnce, so a signer
+    // failure staged by one test would otherwise leak into the next and make
+    // its "did not POST" assertions pass for the wrong reason.
+    vi.mocked(signer.signEvent).mockReset().mockImplementation(signEvent);
     consent.value = true;
     consent.listeners.length = 0;
     Object.defineProperty(globalThis, 'indexedDB', {
@@ -250,6 +255,66 @@ describe('analyticsClient', () => {
     await vi.waitFor(async () => {
       expect(await productAnalytics.queue.getFlushableBatch(10)).toHaveLength(0);
     });
+  });
+
+  it('never sends one account\'s queued events under another account\'s signature', async () => {
+    const otherPubkey = 'e'.repeat(64);
+    const { productAnalytics, configureProductAnalyticsIdentity } = await import('./analyticsClient');
+
+    // Account A tracks before its signer is wired up, so the event stays on
+    // disk. A logs out and B logs in with a signer.
+    configureProductAnalyticsIdentity({ userPubkey: otherPubkey });
+    await productAnalytics.track('session_started', { surface: 'home' });
+    expect(await productAnalytics.queue.getFlushableBatch(10)).toHaveLength(1);
+
+    configureProductAnalyticsIdentity({});
+    configureProductAnalyticsIdentity({ userPubkey: pubkey, signer });
+    await productAnalytics.flush();
+
+    // A's event carries A's pubkey and session id; POSTing it under B's NIP-98
+    // signature would attribute A's activity to B.
+    expect(fetch).not.toHaveBeenCalled();
+    expect(await productAnalytics.queue.getFlushableBatch(10)).toHaveLength(1);
+
+    // It is still A's to send when A comes back.
+    configureProductAnalyticsIdentity({ userPubkey: otherPubkey, signer });
+    await productAnalytics.flush();
+    await vi.waitFor(() => expect(fetch).toHaveBeenCalled());
+
+    const event = JSON.parse(vi.mocked(fetch).mock.calls[0][1]?.body as string).events[0];
+    expect(event.user_pubkey).toBe(otherPubkey);
+  });
+
+  it('flushes when the tab is hidden and not when it becomes visible', async () => {
+    const setVisibility = (state: DocumentVisibilityState) => {
+      Object.defineProperty(document, 'visibilityState', {
+        configurable: true,
+        get: () => state,
+      });
+    };
+
+    setVisibility('visible');
+    const { productAnalytics, configureProductAnalyticsIdentity } = await import('./analyticsClient');
+    configureProductAnalyticsIdentity({ userPubkey: pubkey });
+    const eventId = await productAnalytics.track('session_started', { surface: 'home' });
+    configureProductAnalyticsIdentity({ userPubkey: pubkey, signer });
+
+    // Clients built by earlier tests keep their own document listeners, so
+    // count only the POSTs carrying this test's event.
+    const postsForThisEvent = () => vi.mocked(fetch).mock.calls
+      .filter(([, init]) => String(init?.body).includes(String(eventId)));
+
+    // Becoming visible is not a leave-time signal; the interval and the online
+    // handler cover retries while the tab is open.
+    document.dispatchEvent(new Event('visibilitychange'));
+    // flush() awaits the queue read and the NIP-98 header before it POSTs, so
+    // give a triggered flush enough turns to actually reach fetch.
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(postsForThisEvent()).toHaveLength(0);
+
+    setVisibility('hidden');
+    document.dispatchEvent(new Event('visibilitychange'));
+    await vi.waitFor(() => expect(postsForThisEvent()).toHaveLength(1));
   });
 
   it('does not enqueue events when no user is identified', async () => {

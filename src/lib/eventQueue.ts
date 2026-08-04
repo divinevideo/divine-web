@@ -54,12 +54,21 @@ export class ProductEventQueue {
     await this.enforceBounds();
   }
 
-  async getFlushableBatch(limit: number): Promise<ProductEventQueueRecord[]> {
+  /**
+   * Pending records ready to send, oldest first.
+   *
+   * `ownerPubkey` scopes the read to one account. Records outlive the session
+   * that queued them, so an unscoped read lets account A's backlog be POSTed
+   * under account B's request signature once B logs in. Callers that send
+   * always pass the owner; the bare form exists for inspection and tests.
+   */
+  async getFlushableBatch(limit: number, ownerPubkey?: string): Promise<ProductEventQueueRecord[]> {
     const records = await this.prune(await this.getAllRecords());
     const now = Date.now();
 
     return records
       .filter((record) => record.status === 'pending' && record.next_attempt_at <= now)
+      .filter((record) => !ownerPubkey || record.event.user_pubkey === ownerPubkey)
       .sort((a, b) => a.created_at - b.created_at)
       .slice(0, limit);
   }
@@ -103,21 +112,25 @@ export class ProductEventQueue {
       return;
     }
 
-    await new Promise<void>((resolve, reject) => {
+    await new Promise<void>((resolve) => {
+      // Evict from the in-memory mirror whatever the durable store does —
+      // getAllRecords() re-populates the map from IDB, so without this it grows
+      // unbounded per session, and a record left in memory after a failed
+      // delete would be re-sent on the next flush.
+      const settle = () => {
+        ids.forEach((id) => this.memoryRecords.delete(id));
+        resolve();
+      };
+
       try {
         const transaction = db.transaction([STORE_NAME], 'readwrite');
         const store = transaction.objectStore(STORE_NAME);
         ids.forEach((id) => store.delete(id));
-        transaction.oncomplete = () => {
-          // Evict from the in-memory mirror too — getAllRecords() re-populates
-          // the map from IDB, so without this it grows unbounded per session.
-          ids.forEach((id) => this.memoryRecords.delete(id));
-          resolve();
-        };
-        transaction.onerror = () => reject(transaction.error);
+        transaction.oncomplete = settle;
+        transaction.onerror = settle;
+        transaction.onabort = settle;
       } catch {
-        ids.forEach((id) => this.memoryRecords.delete(id));
-        resolve();
+        settle();
       }
     });
   }
@@ -145,12 +158,14 @@ export class ProductEventQueue {
     this.memoryRecords.clear();
     if (!db) return;
 
-    await new Promise<void>((resolve, reject) => {
+    await new Promise<void>((resolve) => {
       try {
         const transaction = db.transaction([STORE_NAME], 'readwrite');
         const request = transaction.objectStore(STORE_NAME).clear();
         request.onsuccess = () => resolve();
-        request.onerror = () => reject(request.error);
+        request.onerror = () => resolve();
+        transaction.onerror = () => resolve();
+        transaction.onabort = () => resolve();
       } catch {
         resolve();
       }
@@ -196,12 +211,18 @@ export class ProductEventQueue {
     this.memoryRecords.set(record.id, record);
     if (!db) return;
 
-    await new Promise<void>((resolve, reject) => {
+    // Every failure path resolves rather than rejects. Callers fire and forget
+    // (`void track()`), so a QuotaExceededError or a failed transaction has to
+    // degrade to the in-memory mirror set above, not become an unhandled
+    // rejection in the app.
+    await new Promise<void>((resolve) => {
       try {
         const transaction = db.transaction([STORE_NAME], 'readwrite');
         const request = transaction.objectStore(STORE_NAME).put(record);
         request.onsuccess = () => resolve();
-        request.onerror = () => reject(request.error);
+        request.onerror = () => resolve();
+        transaction.onerror = () => resolve();
+        transaction.onabort = () => resolve();
       } catch {
         resolve();
       }

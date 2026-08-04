@@ -178,13 +178,18 @@ export class ProductAnalyticsClient {
   }
 
   private async flushBatch(): Promise<void> {
-    const signer = currentIdentity.signer;
-    if (!signer) {
+    const { signer, userPubkey } = currentIdentity;
+    if (!signer || !userPubkey) {
       // Nothing can be authenticated yet; leave the batch queued.
       return;
     }
 
-    const records = await this.queue.getFlushableBatch(this.batchSize);
+    // Scoped to the signed-in account. Queued records outlive the session that
+    // created them, so an unscoped read would send an earlier account's events
+    // — carrying that account's pubkey and session id — under this account's
+    // NIP-98 signature. The other account's backlog stays queued for its own
+    // next flush, bounded by the queue's cap and TTL.
+    const records = await this.queue.getFlushableBatch(this.batchSize, userPubkey);
     if (records.length === 0) {
       return;
     }
@@ -231,11 +236,15 @@ export class ProductAnalyticsClient {
       return;
     }
 
+    // Retry when connectivity returns.
     window.addEventListener('online', () => {
       void this.flush();
     });
+    // Leave time. `visibilityState` is only 'hidden' or 'visible', so testing
+    // for both is the same as no test at all; a flush on becoming visible has
+    // no batch that the interval below would not already have sent.
     document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'hidden' || document.visibilityState === 'visible') {
+      if (document.visibilityState === 'hidden') {
         void this.flush();
       }
     });
