@@ -18,7 +18,7 @@ vi.mock('./cookieConsent', () => ({
 }));
 
 const pubkey = 'b'.repeat(64);
-const signEvent = async (template: Record<string, unknown>) => ({
+const signEvent: NostrSigner['signEvent'] = async (template) => ({
   ...template,
   id: 'c'.repeat(64),
   pubkey,
