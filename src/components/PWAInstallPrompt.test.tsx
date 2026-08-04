@@ -1,6 +1,7 @@
-import { act, render, screen, waitFor } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { APP_STORE_URL } from '@/lib/mobileStoreLinks';
 import { PWAInstallPrompt } from './PWAInstallPrompt';
 
 function renderPrompt() {
@@ -35,22 +36,6 @@ function setNavigator(options: { userAgent: string; languages: readonly string[]
   });
 }
 
-async function resolveLatestAppStoreLookup(result: unknown) {
-  let script: HTMLScriptElement | null = null;
-  await waitFor(() => {
-    script = document.head.querySelector<HTMLScriptElement>('script[src*="itunes.apple.com/lookup"]');
-    expect(script).not.toBeNull();
-  });
-
-  const callback = new URL(script!.src).searchParams.get('callback');
-  expect(callback).toBeTruthy();
-
-  await act(async () => {
-    (window as unknown as Record<string, (value: unknown) => void>)[callback!](result);
-    await Promise.resolve();
-  });
-}
-
 describe('PWAInstallPrompt', () => {
   beforeEach(async () => {
     const { initializeI18n } = await import('@/lib/i18n');
@@ -77,7 +62,6 @@ describe('PWAInstallPrompt', () => {
   });
 
   afterEach(() => {
-    document.head.querySelectorAll('script[src*="itunes.apple.com/lookup"]').forEach((script) => script.remove());
     vi.restoreAllMocks();
   });
 
@@ -94,7 +78,7 @@ describe('PWAInstallPrompt', () => {
     expect(screen.queryByText('Install Divine Web')).not.toBeInTheDocument();
   });
 
-  it('shows an App Store action only when Apple lookup finds the regional listing', async () => {
+  it('shows the App Store action on iOS', async () => {
     setNavigator({
       userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 Version/18.0 Mobile/15E148 Safari/604.1',
       languages: ['en-NZ'],
@@ -102,15 +86,38 @@ describe('PWAInstallPrompt', () => {
 
     renderPrompt();
 
-    await resolveLatestAppStoreLookup({
-      resultCount: 1,
-      results: [{ trackViewUrl: 'https://apps.apple.com/nz/app/divine-video/id6747959501?uo=4' }],
-    });
-
     expect(await screen.findByRole('heading', { name: 'Get Divine' })).toBeVisible();
     expect(screen.getByRole('link', { name: 'Download Divine on the App Store' })).toHaveAttribute(
       'href',
-      'https://apps.apple.com/nz/app/divine-video/id6747959501?uo=4',
+      APP_STORE_URL,
     );
+    expect(screen.queryByRole('link', { name: 'Get Divine on Google Play' })).not.toBeInTheDocument();
+  });
+
+  it('shows the App Store action on iOS with a region-less locale', async () => {
+    // A bare language tag used to skip the storefront lookup, leaving an iOS
+    // visitor with no store action at all — and so no prompt.
+    setNavigator({
+      userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 Version/18.0 Mobile/15E148 Safari/604.1',
+      languages: ['en'],
+    });
+
+    renderPrompt();
+
+    expect(await screen.findByRole('link', { name: 'Download Divine on the App Store' })).toBeVisible();
+  });
+
+  it('does not inject a third-party lookup script', async () => {
+    setNavigator({
+      userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 Version/18.0 Mobile/15E148 Safari/604.1',
+      languages: ['en-NZ'],
+    });
+
+    const scriptsBefore = document.head.getElementsByTagName('script').length;
+
+    renderPrompt();
+
+    expect(await screen.findByRole('link', { name: 'Download Divine on the App Store' })).toBeVisible();
+    expect(document.head.getElementsByTagName('script')).toHaveLength(scriptsBefore);
   });
 });

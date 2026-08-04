@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useLocation } from 'react-router-dom';
 import { DownloadSimple as Download, X } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
-import { getPreferredAppStoreCountry, lookupAppStoreUrl, PLAY_STORE_URL } from '@/lib/mobileStoreLinks';
+import { APP_STORE_URL, PLAY_STORE_URL } from '@/lib/mobileStoreLinks';
 
 interface BeforeInstallPromptEvent extends Event {
   readonly platforms: string[];
@@ -28,7 +28,11 @@ export function PWAInstallPrompt({ delayMs = 10000 }: { delayMs?: number } = {})
   const [isStandalone, setIsStandalone] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [hasLeftLanding, setHasLeftLanding] = useState(false);
-  const [appStoreUrl, setAppStoreUrl] = useState<string | null>(null);
+
+  // Declared above the effects below, which read it. Both store links are static,
+  // so the only thing that decides visibility is which platform the visitor is on.
+  const showAppStore = !isAndroid;
+  const showGooglePlay = !isIOS;
 
   // Track when user leaves the landing page
   useEffect(() => {
@@ -89,33 +93,6 @@ export function PWAInstallPrompt({ delayMs = 10000 }: { delayMs?: number } = {})
     };
   }, []);
 
-  useEffect(() => {
-    if (!isMobile || isAndroid) {
-      setAppStoreUrl(null);
-      return;
-    }
-
-    const country = getPreferredAppStoreCountry();
-    let cancelled = false;
-
-    if (!country) {
-      setAppStoreUrl(null);
-      return () => {
-        cancelled = true;
-      };
-    }
-
-    lookupAppStoreUrl(country).then((url) => {
-      if (!cancelled) {
-        setAppStoreUrl(url);
-      }
-    });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [isAndroid, isMobile]);
-
   // Show prompt after user has been on a non-landing page for 10 seconds
   useEffect(() => {
     if (!hasLeftLanding) return;
@@ -124,13 +101,13 @@ export function PWAInstallPrompt({ delayMs = 10000 }: { delayMs?: number } = {})
     const timer = setTimeout(() => {
       // Check if user hasn't dismissed this before
       const dismissed = localStorage.getItem('pwa-install-dismissed');
-      if (!dismissed && (appStoreUrl || !isIOS || deferredPrompt)) {
+      if (!dismissed && (showAppStore || showGooglePlay || deferredPrompt)) {
         setShowPrompt(true);
       }
     }, delayMs); // Show after 10 seconds on non-landing page
 
     return () => clearTimeout(timer);
-  }, [appStoreUrl, hasLeftLanding, location.pathname, deferredPrompt, isIOS, delayMs]);
+  }, [showAppStore, showGooglePlay, hasLeftLanding, location.pathname, deferredPrompt, delayMs]);
 
   const handleInstallClick = async () => {
     if (!deferredPrompt) return;
@@ -163,8 +140,10 @@ export function PWAInstallPrompt({ delayMs = 10000 }: { delayMs?: number } = {})
     return null;
   }
 
-  const showGooglePlay = !isIOS;
-  const hasNativeStoreAction = Boolean(appStoreUrl || showGooglePlay);
+  // Always true past the isMobile guard above: a visitor is either on iOS, on
+  // Android, or on neither (in which case both store links show). The web-install
+  // copy below is kept for the PWA path, which is under review — see AGENTS.md.
+  const hasNativeStoreAction = showAppStore || showGooglePlay;
 
   if (!showPrompt) {
     return null;
@@ -196,9 +175,9 @@ export function PWAInstallPrompt({ delayMs = 10000 }: { delayMs?: number } = {})
           </p>
 
           <div className="flex flex-wrap gap-2">
-            {appStoreUrl && (
+            {showAppStore && (
               <Button asChild size="sm" className="flex-1 min-w-0">
-                <a href={appStoreUrl} target="_blank" rel="noopener noreferrer" aria-label={t('pwaInstallPrompt.appStoreAria')}>
+                <a href={APP_STORE_URL} target="_blank" rel="noopener noreferrer" aria-label={t('pwaInstallPrompt.appStoreAria')}>
                   <Download className="h-4 w-4 mr-2" />
                   {t('pwaInstallPrompt.appStore')}
                 </a>
