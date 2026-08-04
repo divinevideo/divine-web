@@ -85,6 +85,14 @@ When deploying to Fastly, ALWAYS run BOTH commands:
 
 Running only deploy without publish means the new frontend code won't be served!
 
+The two halves also carry the two copies of the Content-Security-Policy —
+`SHELL_CSP` in `compute-js/src/templates/shell.js` ships with the Wasm worker,
+`index.html` ships to KV — so running only one can leave the edge serving a
+different policy than the rest of the site. That drift is silent: it surfaces
+only as a blocked request in a visitor's console, on some routes but not
+others. `index.html` is the source of truth; edit both together. See the "Edge
+Shell And The Content-Security-Policy" section in `ARCHITECTURE.md`.
+
 ### Other Deployment Options
 - `npm run deploy` - Deploy via nostr-deploy-cli.
 - `npm run deploy:cloudflare` - Deploy to Cloudflare Pages.

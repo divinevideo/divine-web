@@ -90,6 +90,34 @@ Dev server runs on port 8080 with CORS proxies for `/cdn-proxy`
 Configuration lives in [`vite.config.ts`](./vite.config.ts). Deploy targets are
 `nostr-deploy-cli` or Cloudflare Pages (`wrangler pages deploy`).
 
+## Edge Shell And The Content-Security-Policy
+
+On Fastly, some routes are not served from
+[`index.html`](./index.html) at all. The Compute worker in
+[`compute-js/`](./compute-js) renders its own HTML document from
+[`compute-js/src/templates/shell.js`](./compute-js/src/templates/shell.js) —
+identifiable by the `x-divine-edge: template` response header — and that shell
+boots the same SPA bundle. `/` and `/discovery/hot` go through it today;
+[`compute-js/src/index.js`](./compute-js/src/index.js) can route more.
+
+The CSP therefore exists as **two copies**: the meta tag in `index.html` and
+`SHELL_CSP` in `shell.js`. They must stay byte-identical. A directive present
+in one and not the other makes a feature work on some routes and fail silently
+on others, with no server-side error — the failure surfaces only as a blocked
+request in the visitor's console.
+
+- `index.html` is the source of truth. Edit it, then copy the same string into
+  `SHELL_CSP`.
+- [`tests/csp-single-source.test.ts`](./tests/csp-single-source.test.ts) fails
+  the build if they diverge.
+- [`scripts/verify-live-bundle.mjs`](./scripts/verify-live-bundle.mjs) checks
+  the policy the edge actually serves after deploy, because the two halves ship
+  separately: `fastly:deploy` publishes the Wasm worker carrying `SHELL_CSP`,
+  `fastly:publish` pushes `index.html` to the KV store. Run **both**.
+
+Note the CSP is meta-only — there is no CSP response header, so `report-uri`
+and `report-to` are ignored and violations are never reported back.
+
 ## Key Dependencies
 
 `@nostrify/nostrify` and `@nostrify/react` provide the Nostr protocol client
