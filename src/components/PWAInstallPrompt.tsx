@@ -5,15 +5,6 @@ import { DownloadSimple as Download, X } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
 import { APP_STORE_URL, PLAY_STORE_URL } from '@/lib/mobileStoreLinks';
 
-interface BeforeInstallPromptEvent extends Event {
-  readonly platforms: string[];
-  readonly userChoice: Promise<{
-    outcome: 'accepted' | 'dismissed';
-    platform: string;
-  }>;
-  prompt(): Promise<void>;
-}
-
 interface NavigatorWithStandalone extends Navigator {
   standalone?: boolean;
 }
@@ -21,7 +12,6 @@ interface NavigatorWithStandalone extends Navigator {
 export function PWAInstallPrompt({ delayMs = 10000 }: { delayMs?: number } = {}) {
   const { t } = useTranslation();
   const location = useLocation();
-  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [showPrompt, setShowPrompt] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
   const [isAndroid, setIsAndroid] = useState(false);
@@ -29,8 +19,6 @@ export function PWAInstallPrompt({ delayMs = 10000 }: { delayMs?: number } = {})
   const [isMobile, setIsMobile] = useState(false);
   const [hasLeftLanding, setHasLeftLanding] = useState(false);
 
-  // Declared above the effects below, which read it. Both store links are static,
-  // so the only thing that decides visibility is which platform the visitor is on.
   const showAppStore = !isAndroid;
   const showGooglePlay = !isIOS;
 
@@ -79,16 +67,7 @@ export function PWAInstallPrompt({ delayMs = 10000 }: { delayMs?: number } = {})
 
     checkIOS();
 
-    // Listen for the beforeinstallprompt event
-    const handler = (e: Event) => {
-      e.preventDefault();
-      setDeferredPrompt(e as BeforeInstallPromptEvent);
-    };
-
-    window.addEventListener('beforeinstallprompt', handler);
-
     return () => {
-      window.removeEventListener('beforeinstallprompt', handler);
       window.removeEventListener('resize', handleResize);
     };
   }, []);
@@ -101,33 +80,13 @@ export function PWAInstallPrompt({ delayMs = 10000 }: { delayMs?: number } = {})
     const timer = setTimeout(() => {
       // Check if user hasn't dismissed this before
       const dismissed = localStorage.getItem('pwa-install-dismissed');
-      if (!dismissed && (showAppStore || showGooglePlay || deferredPrompt)) {
+      if (!dismissed) {
         setShowPrompt(true);
       }
     }, delayMs); // Show after 10 seconds on non-landing page
 
     return () => clearTimeout(timer);
-  }, [showAppStore, showGooglePlay, hasLeftLanding, location.pathname, deferredPrompt, delayMs]);
-
-  const handleInstallClick = async () => {
-    if (!deferredPrompt) return;
-
-    // Show the install prompt
-    deferredPrompt.prompt();
-
-    // Wait for the user to respond to the prompt
-    const { outcome } = await deferredPrompt.userChoice;
-
-    if (outcome === 'accepted') {
-      console.log('[PWA] User accepted the install prompt');
-    } else {
-      console.log('[PWA] User dismissed the install prompt');
-    }
-
-    // Clear the deferredPrompt
-    setDeferredPrompt(null);
-    setShowPrompt(false);
-  };
+  }, [hasLeftLanding, location.pathname, delayMs]);
 
   const handleDismiss = () => {
     setShowPrompt(false);
@@ -139,11 +98,6 @@ export function PWAInstallPrompt({ delayMs = 10000 }: { delayMs?: number } = {})
   if (isStandalone || !isMobile) {
     return null;
   }
-
-  // Always true past the isMobile guard above: a visitor is either on iOS, on
-  // Android, or on neither (in which case both store links show). The web-install
-  // copy below is kept for the PWA path, which is under review — see AGENTS.md.
-  const hasNativeStoreAction = showAppStore || showGooglePlay;
 
   if (!showPrompt) {
     return null;
@@ -166,12 +120,10 @@ export function PWAInstallPrompt({ delayMs = 10000 }: { delayMs?: number } = {})
 
         <div className="flex-1 min-w-0">
           <h3 className="font-semibold text-foreground mb-1">
-            {hasNativeStoreAction ? t('pwaInstallPrompt.getDivine') : t('pwaInstallPrompt.installDivineWeb')}
+            {t('pwaInstallPrompt.getDivine')}
           </h3>
           <p className="text-sm text-muted-foreground mb-3">
-            {hasNativeStoreAction
-              ? t('pwaInstallPrompt.descriptionNative')
-              : t('pwaInstallPrompt.descriptionWeb')}
+            {t('pwaInstallPrompt.descriptionNative')}
           </p>
 
           <div className="flex flex-wrap gap-2">
@@ -189,16 +141,6 @@ export function PWAInstallPrompt({ delayMs = 10000 }: { delayMs?: number } = {})
                   <Download className="h-4 w-4 mr-2" />
                   {t('pwaInstallPrompt.googlePlay')}
                 </a>
-              </Button>
-            )}
-            {!hasNativeStoreAction && deferredPrompt && (
-              <Button
-                onClick={handleInstallClick}
-                size="sm"
-                className="flex-1"
-              >
-                <Download className="h-4 w-4 mr-2" />
-                {t('pwaInstallPrompt.install')}
               </Button>
             )}
             <Button

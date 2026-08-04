@@ -1298,14 +1298,11 @@
   "pwaInstallPrompt": {
     "close": "閉じる",
     "getDivine": "Divineを入手",
-    "installDivineWeb": "Divine Webをインストール",
     "descriptionNative": "ネイティブアプリをインストールすると、Divineを最高の体験で楽しめます",
-    "descriptionWeb": "アプリをインストールするとさらに快適に使えます",
     "appStore": "App Store",
     "appStoreAria": "App StoreでDivineをダウンロード",
     "googlePlay": "Google Play",
     "googlePlayAria": "Google PlayでDivineを入手",
-    "install": "インストール",
     "notNow": "あとで"
   },
   "relaySelector": {

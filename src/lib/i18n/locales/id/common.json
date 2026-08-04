@@ -1298,14 +1298,11 @@
   "pwaInstallPrompt": {
     "close": "Tutup",
     "getDivine": "Dapatkan Divine",
-    "installDivineWeb": "Install Divine Web",
     "descriptionNative": "Install aplikasi native untuk pengalaman Divine terbaik",
-    "descriptionWeb": "Install aplikasi kami untuk pengalaman lebih baik",
     "appStore": "App Store",
     "appStoreAria": "Download Divine di App Store",
     "googlePlay": "Google Play",
     "googlePlayAria": "Dapatkan Divine di Google Play",
-    "install": "Install",
     "notNow": "Nanti saja"
   },
   "relaySelector": {

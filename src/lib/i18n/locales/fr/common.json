@@ -1298,14 +1298,11 @@
   "pwaInstallPrompt": {
     "close": "Fermer",
     "getDivine": "Obtenir Divine",
-    "installDivineWeb": "Installer Divine Web",
     "descriptionNative": "Installe l'app native pour la meilleure expérience Divine",
-    "descriptionWeb": "Installe notre app pour une meilleure expérience",
     "appStore": "App Store",
     "appStoreAria": "Télécharger Divine sur l'App Store",
     "googlePlay": "Google Play",
     "googlePlayAria": "Obtenir Divine sur Google Play",
-    "install": "Installer",
     "notNow": "Pas maintenant"
   },
   "relaySelector": {

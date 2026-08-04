@@ -1298,14 +1298,11 @@
   "pwaInstallPrompt": {
     "close": "Đóng",
     "getDivine": "Tải Divine",
-    "installDivineWeb": "Cài Divine Web",
     "descriptionNative": "Cài ứng dụng native để có trải nghiệm Divine tốt nhất",
-    "descriptionWeb": "Cài ứng dụng của tụi mình để trải nghiệm tốt hơn",
     "appStore": "App Store",
     "appStoreAria": "Tải Divine trên App Store",
     "googlePlay": "Google Play",
     "googlePlayAria": "Tải Divine trên Google Play",
-    "install": "Cài đặt",
     "notNow": "Để sau"
   },
   "relaySelector": {

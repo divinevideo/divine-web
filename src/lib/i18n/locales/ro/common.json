@@ -1298,14 +1298,11 @@
   "pwaInstallPrompt": {
     "close": "Închide",
     "getDivine": "Ia Divine",
-    "installDivineWeb": "Instalează Divine Web",
     "descriptionNative": "Instalează aplicația nativă pentru cea mai bună experiență Divine",
-    "descriptionWeb": "Instalează aplicația noastră pentru o experiență mai bună",
     "appStore": "App Store",
     "appStoreAria": "Descarcă Divine din App Store",
     "googlePlay": "Google Play",
     "googlePlayAria": "Ia Divine de pe Google Play",
-    "install": "Instalează",
     "notNow": "Nu acum"
   },
   "relaySelector": {

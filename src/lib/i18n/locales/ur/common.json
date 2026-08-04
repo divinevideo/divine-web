@@ -1298,14 +1298,11 @@
   "pwaInstallPrompt": {
     "close": "بند کریں",
     "getDivine": "Divine حاصل کریں",
-    "installDivineWeb": "Divine Web انسٹال کریں",
     "descriptionNative": "بہترین Divine تجربے کے لیے نیٹو ایپ انسٹال کریں",
-    "descriptionWeb": "بہتر تجربے کے لیے ہماری ایپ انسٹال کریں",
     "appStore": "App Store",
     "appStoreAria": "App Store سے Divine ڈاؤن لوڈ کریں",
     "googlePlay": "Google Play",
     "googlePlayAria": "Google Play سے Divine حاصل کریں",
-    "install": "انسٹال",
     "notNow": "ابھی نہیں"
   },
   "relaySelector": {

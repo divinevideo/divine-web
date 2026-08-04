@@ -1298,14 +1298,11 @@
   "pwaInstallPrompt": {
     "close": "Kapat",
     "getDivine": "Divine'ı edin",
-    "installDivineWeb": "Divine Web'i yükle",
     "descriptionNative": "En iyi Divine deneyimi için yerel uygulamayı yükle",
-    "descriptionWeb": "Daha iyi bir deneyim için uygulamamızı yükle",
     "appStore": "App Store",
     "appStoreAria": "Divine'ı App Store'dan indir",
     "googlePlay": "Google Play",
     "googlePlayAria": "Divine'ı Google Play'den edin",
-    "install": "Yükle",
     "notNow": "Şimdi değil"
   },
   "relaySelector": {

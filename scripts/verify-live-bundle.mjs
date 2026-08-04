@@ -389,7 +389,7 @@ if (invokedDirectly) {
   // so a policy that drifted between the Wasm shell and the published index.html
   // fails here rather than in a user's browser console.
   const cspUrls = (process.env.VERIFY_CSP_URLS
-    ?? 'https://divine.video/,https://divine.video/discovery/classics')
+    ?? 'https://divine.video/,https://divine.video/settings')
     .split(',')
     .map((value) => value.trim())
     .filter(Boolean);

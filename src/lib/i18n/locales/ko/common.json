@@ -1298,14 +1298,11 @@
   "pwaInstallPrompt": {
     "close": "닫기",
     "getDivine": "Divine 받기",
-    "installDivineWeb": "Divine Web 설치",
     "descriptionNative": "최고의 Divine 경험을 위해 네이티브 앱을 설치하세요",
-    "descriptionWeb": "더 나은 경험을 위해 앱을 설치하세요",
     "appStore": "App Store",
     "appStoreAria": "App Store에서 Divine 다운로드",
     "googlePlay": "Google Play",
     "googlePlayAria": "Google Play에서 Divine 받기",
-    "install": "설치",
     "notNow": "나중에"
   },
   "relaySelector": {

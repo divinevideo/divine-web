@@ -1298,14 +1298,11 @@
   "pwaInstallPrompt": {
     "close": "关闭",
     "getDivine": "获取 Divine",
-    "installDivineWeb": "安装 Divine 网页版",
     "descriptionNative": "安装原生 App，获得最佳 Divine 体验",
-    "descriptionWeb": "安装我们的 App，体验更好",
     "appStore": "App Store",
     "appStoreAria": "在 App Store 下载 Divine",
     "googlePlay": "Google Play",
     "googlePlayAria": "在 Google Play 获取 Divine",
-    "install": "安装",
     "notNow": "以后再说"
   },
   "relaySelector": {

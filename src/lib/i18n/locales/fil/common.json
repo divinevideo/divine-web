@@ -1298,14 +1298,11 @@
   "pwaInstallPrompt": {
     "close": "Isara",
     "getDivine": "Kunin ang Divine",
-    "installDivineWeb": "I-install ang Divine Web",
     "descriptionNative": "I-install ang native app para sa pinakamagandang karanasan sa Divine",
-    "descriptionWeb": "I-install ang aming app para sa mas magandang karanasan",
     "appStore": "App Store",
     "appStoreAria": "I-download ang Divine sa App Store",
     "googlePlay": "Google Play",
     "googlePlayAria": "Kunin ang Divine sa Google Play",
-    "install": "I-install",
     "notNow": "Hindi ngayon"
   },
   "relaySelector": {
