@@ -3,8 +3,8 @@
 
 import { trackEvent } from "@/lib/analytics";
 import { HubSpotSignup } from "@/components/HubSpotSignup";
+import { APP_STORE_URL } from "@/lib/mobileStoreLinks";
 
-const APP_STORE_BASE = "https://apps.apple.com/us/app/divine-video/id6747959501";
 const PLAY_STORE_BASE = "https://play.google.com/store/apps/details";
 
 export function buildStoreLinks(campaign: string) {
@@ -15,7 +15,9 @@ export function buildStoreLinks(campaign: string) {
   });
   const play = new URLSearchParams({ id: "co.openvine.app" });
   return {
-    appStore: `${APP_STORE_BASE}?${utm.toString()}`,
+    // Apple drops the query string when it redirects to the visitor's
+    // storefront, so these utm params are for our own click analytics only.
+    appStore: `${APP_STORE_URL}?${utm.toString()}`,
     playStore: `${PLAY_STORE_BASE}?${play.toString()}&${utm.toString()}`,
   };
 }
