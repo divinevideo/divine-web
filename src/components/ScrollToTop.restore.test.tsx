@@ -195,6 +195,40 @@ describe('ScrollToTop restoration against late-loading content', () => {
     expect(window.scrollY).toBe(1800);
   });
 
+  // Cancelling the retry loop is not the same as moving the page. A click hands
+  // control back without scrolling anywhere, so what is on screen is still the
+  // clamped offset the loop wrote — persisting it loses the one being chased.
+  // The case above passes either way because `fireEvent.click` dispatches no
+  // `mousedown`, and the scrollbar-drag case sets a new `scrollY` afterwards,
+  // which is the branch where the viewer really did move.
+  it('does not overwrite the saved position when a click cancels a restore', async () => {
+    const TestApp = makeTestApp(await loadScrollToTop());
+    render(<TestApp />);
+
+    scrollY = 1800;
+    fireEvent.click(screen.getByRole('link', { name: 'Details' }));
+
+    scrollY = 0;
+    maxScroll = 150;
+    fireEvent.click(screen.getByRole('button', { name: 'Back' }));
+    expect(window.scrollY).toBe(150);
+
+    // The viewer clicks a video while the grid is still filling in. The
+    // viewport never moved off the clamped 150.
+    fireEvent.mouseDown(window);
+    maxScroll = 10_000;
+    await nextFrame();
+    expect(window.scrollY).toBe(150);
+
+    // Follow the click through, then come back to a fully laid out page.
+    fireEvent.click(screen.getByRole('link', { name: 'Details' }));
+    scrollY = 0;
+    fireEvent.click(screen.getByRole('button', { name: 'Back' }));
+    await nextFrame();
+
+    expect(window.scrollY).toBe(1800);
+  });
+
   it('still lands at the top on forward navigation', async () => {
     const TestApp = makeTestApp(await loadScrollToTop());
     render(<TestApp />);

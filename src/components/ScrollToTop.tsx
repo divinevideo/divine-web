@@ -19,17 +19,24 @@ function getScrollKey(pathname: string, search: string) {
  * pages render. Returns a function that stops the attempt.
  */
 interface ScrollRestoration {
+  /**
+   * True when the page sits where the viewer put it, rather than where this
+   * loop last left it. Only a position the viewer chose is worth persisting.
+   */
+  isViewerChosen: () => boolean;
   stop: () => void;
-  /** True while the loop is still chasing a position it has not reached. */
-  isPending: () => boolean;
 }
 
 function restoreScrollPosition(target: number): ScrollRestoration {
   if (target <= 0) {
+    // Nothing to chase, so wherever the viewer ends up on this route is theirs.
     window.scrollTo(0, 0);
-    return { stop: () => {}, isPending: () => false };
+    return { stop: () => {}, isViewerChosen: () => true };
   }
 
+  // The offset this loop last left on the page, read back after the write so it
+  // holds what the browser accepted rather than what we asked for.
+  let written = 0;
   let frame: number | null = null;
   let stopped = false;
   const deadline = Date.now() + RESTORE_TIMEOUT_MS;
@@ -67,8 +74,9 @@ function restoreScrollPosition(target: number): ScrollRestoration {
     // page kept travelling to the target after the viewer had taken over,
     // defeating the handover listeners above.
     window.scrollTo({ top: target, behavior: 'instant' });
+    written = window.scrollY;
 
-    if (window.scrollY >= target || Date.now() > deadline) {
+    if (written >= target || Date.now() > deadline) {
       stop();
       return;
     }
@@ -78,7 +86,7 @@ function restoreScrollPosition(target: number): ScrollRestoration {
 
   attempt();
 
-  return { stop, isPending: () => !stopped };
+  return { stop, isViewerChosen: () => window.scrollY !== written };
 }
 
 export function ScrollToTop() {
@@ -145,17 +153,18 @@ export function ScrollToTop() {
     const restoration = restoreScrollPosition(savedPosition);
 
     return () => {
-      // Navigating away mid-restore leaves the window clamped short of the
-      // saved offset, because the content that would make room for it has not
-      // rendered. Persisting that partial value would overwrite the real
-      // position and walk the feed closer to the top on every interrupted
-      // back-navigation. A restore that settled, by reaching its target,
-      // timing out, or being handed over to the viewer, leaves a position
-      // worth saving.
-      const wasInterrupted = restoration.isPending();
+      // Only persist an offset the viewer chose. A restore that never reached
+      // its target is holding a value clamped by a page that had not finished
+      // laying out; saving that would overwrite the offset the restore was
+      // chasing and walk the feed toward the top on every interrupted
+      // back-navigation. Cancelling the loop is not the same as moving the
+      // page — a click or a keystroke hands control back without scrolling
+      // anywhere — so "did the loop stop" cannot stand in for "is this the
+      // viewer's position". Compare against what the loop last wrote instead.
+      const viewerChose = restoration.isViewerChosen();
       restoration.stop();
 
-      if (!wasInterrupted) {
+      if (viewerChose) {
         scrollPositions.set(scrollKey, window.scrollY);
       }
     };
