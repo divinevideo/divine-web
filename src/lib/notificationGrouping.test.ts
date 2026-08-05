@@ -393,8 +393,12 @@ describe('groupRawNotifications', () => {
     });
 
     it('navigates the grouped row by hex event id rather than the author-chosen d-tag', () => {
+      // `makeRaw` stamps timestamps from a monotonic counter, so the LAST
+      // argument constructed is the newest. Build the d-tag row second: with
+      // the hex row newest, `newestRow.targetEventId` returns it anyway and
+      // this test passes whether or not the preference exists.
       const result = groupRawNotifications(
-        [webRepost(), mobileRepost()],
+        [mobileRepost(), webRepost()],
         new Map(),
         new Map<string, NotificationVideoMeta>(),
       );
