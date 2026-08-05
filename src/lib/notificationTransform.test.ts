@@ -205,6 +205,37 @@ describe('notificationTransform', () => {
       expect(result!.targetEventId).toBe('video-789');
     });
 
+    it('routes a reaction carrying target_comment_id to commentLike', () => {
+      // mapNotificationType is unit-tested directly, but nothing exercised the
+      // call site that supplies its options. Drop the argument there and every
+      // like on a comment silently reverts to "liked your video".
+      const likeOnComment: RawApiNotification = {
+        ...raw,
+        notification_type: 'reaction',
+        target_comment_id: 'comment-123',
+      };
+
+      expect(transformNotification(likeOnComment)!.type).toBe('commentLike');
+      expect(transformNotification({ ...raw, target_comment_id: null })!.type).toBe('like');
+    });
+
+    it('takes the grouping key from root_addressable_id', () => {
+      // resolveGroupingKey is what keeps one video's rows in one bucket when
+      // clients tag their reposts differently. Without this the field falls
+      // back to targetEventId and the cross-client split returns unnoticed.
+      const coordinate = `34236:${AUTHOR_PUBKEY}:vine-id`;
+      const withCoordinate: RawApiNotification = {
+        ...raw,
+        root_addressable_id: coordinate,
+      };
+
+      expect(transformNotification(withCoordinate)!.groupingKey).toBe(coordinate);
+      // Absent the coordinate, identity falls back to the resolvable id.
+      expect(transformNotification({ ...raw, root_addressable_id: null })!.groupingKey).toBe(
+        'video-789',
+      );
+    });
+
     it('keeps an addressable-only repost, targeting its d-tag', () => {
       // divine-web publishes kind-16 reposts with an `a` tag and no `e` tag,
       // so the backend has no 64-char referenced_event_id to report. The row
