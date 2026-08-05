@@ -46,9 +46,13 @@ describe('ScrollToTop', () => {
       configurable: true,
       get: () => scrollY,
     });
-    vi.mocked(window.scrollTo).mockImplementation((_x, y) => {
-      scrollY = Number(y);
-    });
+    // `window.scrollTo` is overloaded; the restore uses the options form.
+    vi.mocked(window.scrollTo).mockImplementation(
+      (...args: [x: number, y: number] | [options?: ScrollToOptions]) => {
+        const [first, second] = args;
+        scrollY = Number(typeof first === 'number' ? second : first?.top);
+      },
+    );
   });
 
   it('scrolls to the top on forward (PUSH) navigation, even with a saved position', () => {
@@ -84,6 +88,8 @@ describe('ScrollToTop', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Back' }));
 
     expect(screen.getByRole('heading', { name: 'Feed' })).toBeInTheDocument();
-    expect(window.scrollTo).toHaveBeenLastCalledWith(0, 420);
+    // The restore opts out of `html { scroll-behavior: smooth }`; an animated
+    // restore would read short of its target on every frame.
+    expect(window.scrollTo).toHaveBeenLastCalledWith({ top: 420, behavior: 'instant' });
   });
 });
