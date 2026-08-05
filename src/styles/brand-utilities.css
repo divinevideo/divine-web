@@ -1,5 +1,155 @@
 /* Divine brand utilities — applied in @layer components so they compose with tailwind */
 @layer components {
+  .marketing-shell {
+    width: 100%;
+  }
+
+  .marketing-page {
+    width: 100%;
+    margin-inline: auto;
+    padding: 2rem max(1rem, var(--sar));
+  }
+
+  .marketing-page--default {
+    max-width: 56rem;
+  }
+
+  .marketing-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+  }
+
+  .app-page {
+    width: 100%;
+    padding: 1rem max(1rem, var(--sar)) calc(5rem + var(--sab)) max(1rem, var(--sal));
+  }
+
+  .app-page__inner {
+    width: 100%;
+    margin-inline: auto;
+  }
+
+  .app-page__header {
+    margin-bottom: 1.25rem;
+  }
+
+  .app-eyebrow {
+    color: hsl(var(--primary));
+    font-size: 0.8125rem;
+    font-weight: 700;
+    line-height: 1.2;
+    letter-spacing: 0;
+  }
+
+  .app-title {
+    color: hsl(var(--foreground));
+    font-family: 'Bricolage Grotesque', system-ui, -apple-system, sans-serif;
+    font-size: 1.75rem;
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .app-subtitle {
+    max-width: 42rem;
+    color: hsl(var(--muted-foreground));
+    font-size: 0.9375rem;
+    line-height: 1.55;
+    letter-spacing: 0;
+  }
+
+  .app-chip-row {
+    margin-bottom: 1rem;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+  }
+
+  .app-chip-row::-webkit-scrollbar {
+    display: none;
+  }
+
+  .app-chip {
+    display: inline-flex;
+    min-height: 2.5rem;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    border: 2px solid hsl(var(--border));
+    border-radius: 999px;
+    background: hsl(var(--background));
+    color: hsl(var(--foreground));
+    padding: 0.5rem 0.875rem;
+    font-size: 0.875rem;
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: 0;
+    white-space: nowrap;
+    transition: background-color 150ms cubic-bezier(0.4, 0, 0.2, 1),
+                border-color 150ms cubic-bezier(0.4, 0, 0.2, 1),
+                box-shadow 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .app-chip:hover {
+    border-color: hsl(var(--brand-dark-green));
+    background: hsl(var(--accent));
+  }
+
+  .app-chip-active {
+    border-color: hsl(var(--brand-dark-green));
+    background: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
+    box-shadow: 3px 3px 0 0 hsl(var(--brand-dark-green));
+  }
+
+  .app-surface {
+    border-color: hsl(var(--brand-light-green));
+    background: hsl(var(--card));
+    color: hsl(var(--card-foreground));
+  }
+
+  .app-surface-muted {
+    border: 1px solid hsl(var(--border));
+    border-radius: 1rem;
+    background: hsl(var(--background) / 0.95);
+    color: hsl(var(--foreground));
+    box-shadow: 0 1px 0 0 hsl(var(--border));
+    backdrop-filter: blur(12px);
+  }
+
+  .app-tab-list {
+    display: grid;
+    width: 100%;
+    height: auto;
+    min-height: 3rem;
+    align-items: center;
+    gap: 0.25rem;
+  }
+
+  @media (min-width: 768px) {
+    .marketing-page {
+      padding: 2.5rem max(1.5rem, var(--sar));
+    }
+
+    .app-page {
+      padding: 1.5rem max(1.5rem, var(--sar)) 2.5rem max(1.5rem, var(--sal));
+    }
+
+    .app-page__header {
+      margin-bottom: 1.5rem;
+    }
+
+    .app-title {
+      font-size: 2.25rem;
+    }
+
+    .app-subtitle {
+      font-size: 1rem;
+    }
+  }
+
   /* Chunky offset shadows — no blur, solid color. Named by accent. */
   .brand-offset-shadow-green  { box-shadow: 6px 6px 0 0 hsl(var(--brand-green)); }
   .brand-offset-shadow-pink   { box-shadow: 6px 6px 0 0 hsl(var(--brand-pink)); }

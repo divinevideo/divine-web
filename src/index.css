@@ -76,6 +76,7 @@
     --sar: env(safe-area-inset-right, 0px);
     --sab: env(safe-area-inset-bottom, 0px);
     --sal: env(safe-area-inset-left, 0px);
+    --app-header-height: 4rem;
 
     /* Design tokens for improved styling */
     --radius-small: 0.5rem;
@@ -182,6 +183,12 @@
     --sidebar-border: 158 40% 18%;
 
     --sidebar-ring: 158 67% 46%;
+  }
+
+  @media (min-width: 768px) {
+    :root {
+      --app-header-height: 0px;
+    }
   }
 }
 
