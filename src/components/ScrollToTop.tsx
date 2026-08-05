@@ -57,7 +57,16 @@ function restoreScrollPosition(target: number): ScrollRestoration {
 
   const attempt = () => {
     if (stopped) return;
-    window.scrollTo(0, target);
+    // Options form, not `scrollTo(0, target)`. The positional form scrolls with
+    // behavior "auto", which resolves to the root's computed `scroll-behavior` —
+    // and that is `smooth` app-wide (src/index.css:233). An animated restore
+    // reads short of its target on every frame, so the loop ends up chasing its
+    // own animation rather than the page's height: measured in Chromium at 154
+    // frames over 1.3s on a page already tall enough to honour the offset in
+    // one. Worse, cancelling the loop does not cancel the animation, so the
+    // page kept travelling to the target after the viewer had taken over,
+    // defeating the handover listeners above.
+    window.scrollTo({ top: target, behavior: 'instant' });
 
     if (window.scrollY >= target || Date.now() > deadline) {
       stop();
