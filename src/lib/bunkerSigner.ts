@@ -22,6 +22,19 @@ export interface BunkerLogin {
   data: BunkerLoginData;
 }
 
+/**
+ * How long a single NIP-46 request may wait for its response.
+ *
+ * `BunkerSigner.sendRequest` registers a listener and settles only when a
+ * matching response arrives, so without a bound a signer that is unreachable —
+ * but whose relay still accepts the publish — leaves the promise pending
+ * forever. `loginWithBunker` never returns, `LoginDialog`'s `finally` never
+ * runs, and the dialog sits on "Connecting…" with no error. The signer this
+ * replaced (`NConnectSigner`, via `NLogin.fromBunker`) bounded every request at
+ * the same 60s.
+ */
+export const BUNKER_REQUEST_TIMEOUT_MS = 60_000;
+
 export interface CreateBunkerSignerOptions {
   /** Our half of the NIP-46 conversation. Stable across sessions. */
   clientSecretKey: Uint8Array;
@@ -38,6 +51,11 @@ export interface CreateBunkerSignerOptions {
    * but leaves the pool's connections up.
    */
   pool?: AbstractSimplePool;
+  /**
+   * How long one request may wait for its response, in ms. Pass `0` to wait
+   * indefinitely. Defaults to {@link BUNKER_REQUEST_TIMEOUT_MS}.
+   */
+  requestTimeoutMs?: number;
 }
 
 export interface BunkerNostrSigner extends NostrSigner {
@@ -56,7 +74,19 @@ export interface BunkerNostrSigner extends NostrSigner {
  * fails the call and drops the subscription that the answer arrives on.
  */
 export function createBunkerSigner(options: CreateBunkerSignerOptions): BunkerNostrSigner {
-  const { clientSecretKey, bunkerPubkey, relays, secret = null, onAuthChallenge, pool } = options;
+  const {
+    clientSecretKey,
+    bunkerPubkey,
+    relays,
+    secret = null,
+    onAuthChallenge,
+    pool,
+    requestTimeoutMs = BUNKER_REQUEST_TIMEOUT_MS,
+  } = options;
+
+  // Every in-flight request parks a way to restart its own clock here, so an
+  // auth challenge can extend them all at once.
+  const restartDeadlines = new Set<() => void>();
 
   const bunker = BunkerSigner.fromBunker(
     clientSecretKey,
@@ -64,23 +94,79 @@ export function createBunkerSigner(options: CreateBunkerSignerOptions): BunkerNo
     {
       ...(pool ? { pool } : {}),
       onauth: (url: string) => {
+        // The signer answered, so it is reachable and the rest of the wait is
+        // on a human approving out of band. Restart the clocks instead of
+        // timing out with the approval tab still open.
+        for (const restart of [...restartDeadlines]) {
+          restart();
+        }
+
         onAuthChallenge?.(presentAuthChallenge(url));
       },
     }
   );
 
+  function withDeadline<T>(method: string, run: () => Promise<T>): Promise<T> {
+    if (!(requestTimeoutMs > 0)) {
+      return run();
+    }
+
+    return new Promise<T>((resolve, reject) => {
+      let settled = false;
+      let timer: ReturnType<typeof setTimeout>;
+
+      function restart() {
+        if (settled) return;
+        clearTimeout(timer);
+        timer = setTimeout(expire, requestTimeoutMs);
+      }
+
+      function release() {
+        settled = true;
+        clearTimeout(timer);
+        restartDeadlines.delete(restart);
+      }
+
+      function expire() {
+        if (settled) return;
+        release();
+        reject(new Error(`Bunker request timed out: ${method}`));
+      }
+
+      restartDeadlines.add(restart);
+      timer = setTimeout(expire, requestTimeoutMs);
+
+      run().then(
+        (value) => {
+          if (settled) return;
+          release();
+          resolve(value);
+        },
+        (error: unknown) => {
+          if (settled) return;
+          release();
+          reject(error);
+        }
+      );
+    });
+  }
+
   return {
-    connect: () => bunker.connect(),
+    connect: () => withDeadline('connect', () => bunker.connect()),
     close: () => bunker.close(),
-    getPublicKey: () => bunker.getPublicKey(),
-    signEvent: (event) => bunker.signEvent(event) as Promise<NostrEvent>,
+    getPublicKey: () => withDeadline('get_public_key', () => bunker.getPublicKey()),
+    signEvent: (event) => withDeadline('sign_event', () => bunker.signEvent(event) as Promise<NostrEvent>),
     nip04: {
-      encrypt: (pubkey, plaintext) => bunker.nip04Encrypt(pubkey, plaintext),
-      decrypt: (pubkey, ciphertext) => bunker.nip04Decrypt(pubkey, ciphertext),
+      encrypt: (pubkey, plaintext) =>
+        withDeadline('nip04_encrypt', () => bunker.nip04Encrypt(pubkey, plaintext)),
+      decrypt: (pubkey, ciphertext) =>
+        withDeadline('nip04_decrypt', () => bunker.nip04Decrypt(pubkey, ciphertext)),
     },
     nip44: {
-      encrypt: (pubkey, plaintext) => bunker.nip44Encrypt(pubkey, plaintext),
-      decrypt: (pubkey, ciphertext) => bunker.nip44Decrypt(pubkey, ciphertext),
+      encrypt: (pubkey, plaintext) =>
+        withDeadline('nip44_encrypt', () => bunker.nip44Encrypt(pubkey, plaintext)),
+      decrypt: (pubkey, ciphertext) =>
+        withDeadline('nip44_decrypt', () => bunker.nip44Decrypt(pubkey, ciphertext)),
     },
   };
 }

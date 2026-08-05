@@ -1,8 +1,16 @@
 // ABOUTME: Tests the NIP-46 bunker signer built on nostr-tools BunkerSigner
 // ABOUTME: divine-web#485 — auth challenges must be surfaced, not fatal
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { generateSecretKey, getPublicKey, nip19 } from 'nostr-tools';
+import type { NostrEvent } from '@nostrify/nostrify';
+
+/** Just the surface the deadline cases exercise. */
+interface BunkerNostrSignerLike {
+  connect(): Promise<void>;
+  getPublicKey(): Promise<string>;
+  signEvent(event: { kind: number; content: string; created_at: number; tags: string[][] }): Promise<NostrEvent>;
+}
 
 const REMOTE_PUBKEY = 'b'.repeat(64);
 const USER_PUBKEY = 'c'.repeat(64);
@@ -103,6 +111,131 @@ describe('createBunkerSigner', () => {
     expect(onAuthChallenge).toHaveBeenCalledWith({ url: 'https://signer.example/auth', opened: true });
   });
 
+  // `BunkerSigner.sendRequest` settles only when a matching response arrives.
+  // A signer that is unreachable behind a relay that still accepts the publish
+  // therefore hangs forever, which is what left the dialog on "Connecting…".
+  describe('request deadline', () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    // Stall only the method under test: an unconsumed `mockImplementationOnce`
+    // survives `clearAllMocks` and would strand a later test instead.
+    async function neverAnswers(method: 'connect' | 'getPublicKey' | 'signEvent') {
+      const { createBunkerSigner, BUNKER_REQUEST_TIMEOUT_MS } = await import('./bunkerSigner');
+      bunkerInstance[method].mockImplementationOnce((() => new Promise(() => {})) as never);
+
+      return {
+        timeout: BUNKER_REQUEST_TIMEOUT_MS,
+        signer: createBunkerSigner({
+          clientSecretKey: generateSecretKey(),
+          bunkerPubkey: REMOTE_PUBKEY,
+          relays: [RELAY],
+        }),
+      };
+    }
+
+    it('rejects a request the signer never answers', async () => {
+      const { signer, timeout } = await neverAnswers('connect');
+      const pending = expect(signer.connect()).rejects.toThrow('Bunker request timed out: connect');
+
+      await vi.advanceTimersByTimeAsync(timeout);
+      await pending;
+    });
+
+    it.each([
+      ['getPublicKey', (s: BunkerNostrSignerLike) => s.getPublicKey()],
+      ['signEvent', (s: BunkerNostrSignerLike) => s.signEvent({ kind: 1, content: '', created_at: 1, tags: [] })],
+    ] as const)('bounds %s too, so a mid-session request cannot hang', async (label, call) => {
+      const { signer, timeout } = await neverAnswers(label);
+      const pending = expect(call(signer)).rejects.toThrow('Bunker request timed out');
+
+      await vi.advanceTimersByTimeAsync(timeout);
+      await pending;
+    });
+
+    it('does not reject a request that answers in time', async () => {
+      const { createBunkerSigner, BUNKER_REQUEST_TIMEOUT_MS } = await import('./bunkerSigner');
+      const signer = createBunkerSigner({
+        clientSecretKey: generateSecretKey(),
+        bunkerPubkey: REMOTE_PUBKEY,
+        relays: [RELAY],
+      });
+
+      await expect(signer.getPublicKey()).resolves.toBe(USER_PUBKEY);
+      // The deadline must not fire after the request already settled.
+      await vi.advanceTimersByTimeAsync(BUNKER_REQUEST_TIMEOUT_MS * 2);
+    });
+
+    // Approval happens on a human's schedule. An `auth_url` proves the signer
+    // is alive, so it restarts the clock rather than expiring while the
+    // approval tab is still open.
+    it('restarts the clock when the signer asks for approval', async () => {
+      const { createBunkerSigner, BUNKER_REQUEST_TIMEOUT_MS } = await import('./bunkerSigner');
+      let approve: (pubkey: string) => void = () => {};
+      bunkerInstance.getPublicKey.mockImplementationOnce(
+        () => new Promise<string>((resolve) => { approve = resolve; })
+      );
+
+      const signer = createBunkerSigner({
+        clientSecretKey: generateSecretKey(),
+        bunkerPubkey: REMOTE_PUBKEY,
+        relays: [RELAY],
+      });
+      const pending = signer.getPublicKey();
+      const onauth = fromBunker.mock.calls[0][2].onauth!;
+
+      // Challenge lands just before the original deadline would have fired.
+      await vi.advanceTimersByTimeAsync(BUNKER_REQUEST_TIMEOUT_MS - 1_000);
+      onauth('https://signer.example/auth');
+
+      // Past the original deadline, still waiting on the user.
+      await vi.advanceTimersByTimeAsync(BUNKER_REQUEST_TIMEOUT_MS - 1_000);
+      approve(USER_PUBKEY);
+      await expect(pending).resolves.toBe(USER_PUBKEY);
+    });
+
+    // Without this the restarted clock would never fire, trading a hang on a
+    // dead signer for a hang on an abandoned approval.
+    it('still expires once the restarted clock runs out', async () => {
+      const { createBunkerSigner, BUNKER_REQUEST_TIMEOUT_MS } = await import('./bunkerSigner');
+      bunkerInstance.getPublicKey.mockImplementationOnce(() => new Promise<string>(() => {}));
+
+      const signer = createBunkerSigner({
+        clientSecretKey: generateSecretKey(),
+        bunkerPubkey: REMOTE_PUBKEY,
+        relays: [RELAY],
+      });
+      const pending = expect(signer.getPublicKey()).rejects.toThrow('Bunker request timed out');
+
+      fromBunker.mock.calls[0][2].onauth!('https://signer.example/auth');
+      await vi.advanceTimersByTimeAsync(BUNKER_REQUEST_TIMEOUT_MS);
+      await pending;
+    });
+
+    it('waits indefinitely when the deadline is disabled', async () => {
+      const { createBunkerSigner, BUNKER_REQUEST_TIMEOUT_MS } = await import('./bunkerSigner');
+      bunkerInstance.getPublicKey.mockImplementationOnce(
+        () => new Promise<string>((resolve) => setTimeout(() => resolve(USER_PUBKEY), BUNKER_REQUEST_TIMEOUT_MS * 3))
+      );
+
+      const signer = createBunkerSigner({
+        clientSecretKey: generateSecretKey(),
+        bunkerPubkey: REMOTE_PUBKEY,
+        relays: [RELAY],
+        requestTimeoutMs: 0,
+      });
+      const pending = signer.getPublicKey();
+
+      await vi.advanceTimersByTimeAsync(BUNKER_REQUEST_TIMEOUT_MS * 3);
+      await expect(pending).resolves.toBe(USER_PUBKEY);
+    });
+  });
+
   it('still notifies the caller when the popup was blocked, so a link can be shown', async () => {
     presentAuthChallenge.mockReturnValue({ url: 'https://signer.example/auth', opened: false });
     const { createBunkerSigner } = await import('./bunkerSigner');
@@ -190,6 +323,29 @@ describe('loginWithBunker', () => {
       loginWithBunker(`bunker://${REMOTE_PUBKEY}?relay=${encodeURIComponent(RELAY)}`)
     ).rejects.toThrow('signer unreachable');
     expect(bunkerInstance.close).toHaveBeenCalledTimes(1);
+  });
+
+  // The dialog's `finally` only runs when this settles. Left pending, the
+  // relay having accepted the publish is enough to strand it on "Connecting…"
+  // with `isLoginLoading` stuck true and no error ever rendered.
+  it('fails the login rather than hanging when the signer never answers', async () => {
+    vi.useFakeTimers();
+
+    try {
+      const { loginWithBunker, BUNKER_REQUEST_TIMEOUT_MS } = await import('./bunkerSigner');
+      bunkerInstance.connect.mockImplementationOnce(() => new Promise<void>(() => {}));
+
+      const pending = expect(
+        loginWithBunker(`bunker://${REMOTE_PUBKEY}?relay=${encodeURIComponent(RELAY)}`)
+      ).rejects.toThrow('Bunker request timed out');
+
+      await vi.advanceTimersByTimeAsync(BUNKER_REQUEST_TIMEOUT_MS);
+      await pending;
+      // The handshake pool still has to come down on this path.
+      expect(bunkerInstance.close).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('rebuilds the same client identity from stored login data', async () => {
