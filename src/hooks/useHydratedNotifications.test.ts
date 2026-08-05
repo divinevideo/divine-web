@@ -362,6 +362,58 @@ describe('useHydratedNotifications', () => {
     }
   });
 
+  it('does not let a row whose only thumbnail is on a dead CDN blank its bucket', async () => {
+    // `resolveVideoMeta` returns an object when EITHER field is set, so a row
+    // carrying a v.cdn.vine.co thumbnail and no title arrives with videoMeta
+    // present. The sanitizer drops that thumbnail, leaving both fields
+    // undefined - and a truthy all-undefined entry short-circuits the bucket
+    // fallback that would otherwise find the sibling row's real metadata.
+    const D_TAG = 'vine-archive-d-tag';
+    const fromMobile: RawNotification = {
+      ...makeLike('repost-1', PUBKEY_A, VIDEO_ID, 2000),
+      type: 'repost',
+      sourceKind: 16,
+      groupingKey: `34236:${PUBKEY_B}:${D_TAG}`,
+      videoMeta: { thumbnailUrl: 'https://v.cdn.vine.co/r/videos/abc.mp4.jpg' },
+    };
+    const fromWeb: RawNotification = {
+      ...makeLike('repost-2', PUBKEY_B, D_TAG, 1000),
+      type: 'repost',
+      sourceKind: 16,
+      groupingKey: `34236:${PUBKEY_B}:${D_TAG}`,
+      videoMeta: { title: 'Classic Vine', thumbnailUrl: 'https://cdn.divine.video/t.jpg' },
+    };
+
+    const { queryClient, wrapper } = createWrapperWithClient();
+
+    mockUseNotifications.mockReturnValue(
+      makeInfiniteQueryResult([makeNotificationsPage([fromMobile, fromWeb])]),
+    );
+    mockUseBatchedAuthors.mockReturnValue({ data: {} });
+    mockFetchVideoById.mockResolvedValue(null);
+
+    const { useHydratedNotifications } = await import('./useHydratedNotifications');
+
+    const { result } = renderHook(
+      () => useHydratedNotifications({ category: 'all' }),
+      { wrapper },
+    );
+
+    await waitFor(() => {
+      expect(queryClient.getQueryState(['notification-videos', [VIDEO_ID]])?.status).toBe(
+        'success',
+      );
+    });
+
+    expect(result.current.items).toHaveLength(1);
+    const item = result.current.items[0];
+    expect(item.kind).toBe('video');
+    if (item.kind === 'video') {
+      expect(item.videoTitle).toBe('Classic Vine');
+      expect(item.videoThumbnailUrl).toBe('https://cdn.divine.video/t.jpg');
+    }
+  });
+
   it('does not repeat the bulk video request when the page remounts', async () => {
     const like = makeLike('like-1', PUBKEY_A, VIDEO_ID, 1000);
     const { wrapper } = createWrapperWithClient();

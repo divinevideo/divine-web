@@ -100,10 +100,17 @@ export function useHydratedNotifications(
       // metadata (a title from `referenced_event_title`, a thumbnail from
       // `referenced_video`), so fill gaps instead of letting the first row win.
       const existing = map.get(row.targetEventId);
-      map.set(row.targetEventId, {
-        title: existing?.title ?? row.videoMeta.title,
-        thumbnailUrl: existing?.thumbnailUrl ?? getSafeThumbnailUrl(row.videoMeta.thumbnailUrl),
-      });
+      const title = existing?.title ?? row.videoMeta.title;
+      const thumbnailUrl =
+        existing?.thumbnailUrl ?? getSafeThumbnailUrl(row.videoMeta.thumbnailUrl);
+      // `resolveVideoMeta` returns an object when EITHER field is set, and
+      // `getSafeThumbnailUrl` drops thumbnails on expired CDNs — so a row whose
+      // only metadata is a v.cdn.vine.co thumbnail reduces to an entry with both
+      // fields undefined. That entry is still truthy, and `groupRawNotifications`
+      // reads `videos.get(id) ?? bucket.reduce(...)`, so it short-circuits the
+      // sibling-row fallback and hides metadata another row in the bucket has.
+      if (!title && !thumbnailUrl) continue;
+      map.set(row.targetEventId, { title, thumbnailUrl });
     }
     return map;
   }, [flatRaw]);
