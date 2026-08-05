@@ -3,7 +3,7 @@ import { useNostrLogin } from '@nostrify/react/login';
 import { useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
 import { NSchema as n, NostrEvent, NostrMetadata } from '@nostrify/nostrify';
-import { createUserFromLogin } from '@/lib/nostrLogin';
+import { canCreateUserFromLogin } from '@/lib/nostrLogin';
 import { useCurrentUser } from './useCurrentUser';
 import { useDivineSession } from './useDivineSession';
 import { useNip07Availability } from './useNip07Availability';
@@ -31,12 +31,9 @@ export function useLoggedInAccounts() {
         return false;
       }
 
-      try {
-        createUserFromLogin(login);
-        return true;
-      } catch {
-        return false;
-      }
+      // Validity check only — the built user was always discarded here, and
+      // for a bunker login building one opens a connection.
+      return canCreateUserFromLogin(login);
     }),
     [logins, nip07Status],
   );

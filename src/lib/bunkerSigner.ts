@@ -258,19 +258,30 @@ export async function loginWithBunker(
   };
 }
 
-/** Rebuild a signer for an already-established bunker login. */
-export function bunkerSignerFromLogin(
-  data: BunkerLoginData,
-  onAuthChallenge?: (challenge: AuthChallengePresentation) => void
-): BunkerNostrSigner {
+/**
+ * Decode the client key out of stored login data.
+ *
+ * Separate from {@link bunkerSignerFromLogin} so a caller that only needs to
+ * know whether a stored login is usable can check it without building a
+ * signer — constructing one opens a socket to every relay in the login.
+ */
+export function clientSecretKeyFromLogin(data: BunkerLoginData): Uint8Array {
   const decoded = nip19.decode(data.clientNsec);
 
   if (decoded.type !== 'nsec') {
     throw new Error('Invalid client key for bunker login');
   }
 
+  return decoded.data;
+}
+
+/** Rebuild a signer for an already-established bunker login. */
+export function bunkerSignerFromLogin(
+  data: BunkerLoginData,
+  onAuthChallenge?: (challenge: AuthChallengePresentation) => void
+): BunkerNostrSigner {
   return createBunkerSigner({
-    clientSecretKey: decoded.data,
+    clientSecretKey: clientSecretKeyFromLogin(data),
     bunkerPubkey: data.bunkerPubkey,
     relays: data.relays,
     onAuthChallenge,

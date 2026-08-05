@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { NostrSigner } from '@nostrify/nostrify';
 import { DivineJWTSigner } from '@/lib/DivineJWTSigner';
 import { createUserFromLogin, getSafeUserSigner } from '@/lib/nostrLogin';
+import { releaseBunkerSignersExcept } from '@/lib/bunkerSignerRegistry';
 import { selectCurrentUsers, isJwtResolving } from '@/lib/selectCurrentUsers';
 
 import { useAuthor } from './useAuthor.ts';
@@ -71,6 +72,15 @@ export function useCurrentUser() {
 
   const hasExtensionLogin = logins.some((login) => login.type === 'extension');
   const nip07Status = useNip07Availability(hasExtensionLogin);
+
+  const loginIds = logins.map((login) => login.id).join(';');
+
+  // A removed login's signer is the last thing holding its sockets open.
+  // Reconciling against the surviving ids covers every logout path, including
+  // account switching and a login dropped as invalid.
+  useEffect(() => {
+    releaseBunkerSignersExcept(loginIds ? loginIds.split(';') : []);
+  }, [loginIds]);
 
   const manualUsers = useMemo(() => {
     const users: CurrentUser[] = [];

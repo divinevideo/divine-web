@@ -8,6 +8,7 @@ const {
   mockGetValidToken,
   mockJwtSigner,
   mockLogins,
+  mockReleaseBunkerSignersExcept,
   mockUseAuthor,
 } = vi.hoisted(() => ({
   mockGetValidToken: vi.fn<() => string | null>(() => null),
@@ -16,7 +17,13 @@ const {
     signEvent: vi.fn(),
   },
   mockLogins: [] as NLoginType[],
+  mockReleaseBunkerSignersExcept: vi.fn<(ids: Iterable<string>) => void>(),
   mockUseAuthor: vi.fn<(pubkey?: string) => { data: Record<string, never> }>(() => ({ data: {} })),
+}));
+
+vi.mock('@/lib/bunkerSignerRegistry', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/bunkerSignerRegistry')>()),
+  releaseBunkerSignersExcept: (ids: Iterable<string>) => mockReleaseBunkerSignersExcept(ids),
 }));
 
 vi.mock('@nostrify/react', () => ({
@@ -74,7 +81,38 @@ describe('useCurrentUser', () => {
     mockJwtSigner.getPublicKey.mockReset();
     mockJwtSigner.signEvent.mockReset();
     mockUseAuthor.mockClear();
+    mockReleaseBunkerSignersExcept.mockClear();
     resetNostrProvider();
+  });
+
+  // A removed login's signer is the last thing holding its sockets open, and
+  // nothing else releases it.
+  describe('bunker signer release', () => {
+    const bunkerLogin = (id: string): NLoginType => ({
+      id,
+      type: 'bunker',
+      pubkey: id.slice(-64).padStart(64, 'd'),
+      createdAt: '2026-03-10T00:00:00.000Z',
+      data: {
+        bunkerPubkey: 'b'.repeat(64),
+        clientNsec: 'nsec1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq',
+        relays: ['wss://relay.example'],
+      },
+    });
+
+    it('keeps the signers of every surviving login', () => {
+      mockLogins.push(bunkerLogin('bunker:one'), bunkerLogin('bunker:two'));
+
+      renderHook(() => useCurrentUser());
+
+      expect(mockReleaseBunkerSignersExcept).toHaveBeenCalledWith(['bunker:one', 'bunker:two']);
+    });
+
+    it('releases everything once the last login is gone', () => {
+      renderHook(() => useCurrentUser());
+
+      expect(mockReleaseBunkerSignersExcept).toHaveBeenCalledWith([]);
+    });
   });
 
   afterEach(() => {
