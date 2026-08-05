@@ -479,6 +479,14 @@ describe('LoginDialog', () => {
       rerender(<LoginDialog isOpen={false} onClose={vi.fn()} onLogin={vi.fn()} />);
 
       expect(capturedBeforeCommit?.()).toBe(false);
+
+      // Reopening must not re-arm the guard. Anything that calls
+      // openLoginDialog() later, a like button for instance, reopens this same
+      // mounted instance, and the abandoned approval can still be in flight
+      // because nothing bounds how long the signer takes.
+      rerender(<LoginDialog isOpen onClose={vi.fn()} onLogin={vi.fn()} />);
+
+      expect(capturedBeforeCommit?.()).toBe(false);
     });
 
     // fireEvent (not userEvent) so the local clipboard spy stays attached;

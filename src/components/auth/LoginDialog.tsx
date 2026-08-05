@@ -109,6 +109,13 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin }) =
 
   useEffect(() => {
     if (!isOpen) {
+      // Retire any in-flight bunker attempt on close. Checking `isOpenRef`
+      // alone is not enough: this effect re-arms it when the dialog is reopened
+      // later, so an approval the user abandoned would land against a guard
+      // that passes again. Bumping the counter means a superseded attempt can
+      // never become current, whatever happens to `isOpen` afterwards, and it
+      // also stops a stale challenge writing into the fresh dialog's state.
+      bunkerAttemptRef.current++;
       return;
     }
 
