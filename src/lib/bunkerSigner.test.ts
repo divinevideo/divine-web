@@ -379,6 +379,43 @@ describe('loginWithBunker', () => {
     }
   });
 
+  // `BunkerSigner` keeps its pool private and `close()` only drops the
+  // subscription, so a pool it creates internally can never be released. A
+  // session signer closed on logout would otherwise leave a socket per bunker
+  // relay connected for the life of the tab.
+  it('destroys the pool it created when the signer is closed', async () => {
+    const { bunkerSignerFromLogin } = await import('./bunkerSigner');
+    const signer = bunkerSignerFromLogin({
+      bunkerPubkey: REMOTE_PUBKEY,
+      clientNsec: nip19.nsecEncode(generateSecretKey()),
+      relays: [RELAY],
+    });
+
+    expect(fromBunker.mock.calls[0][2].pool).toBe(poolInstance);
+
+    await signer.close();
+
+    expect(bunkerInstance.close).toHaveBeenCalledTimes(1);
+    expect(poolInstance.destroy).toHaveBeenCalledTimes(1);
+  });
+
+  it('leaves a pool the caller supplied alone, since the caller still owns it', async () => {
+    const { createBunkerSigner } = await import('./bunkerSigner');
+    const callerPool = { destroy: vi.fn(), close: vi.fn() };
+
+    const signer = createBunkerSigner({
+      clientSecretKey: generateSecretKey(),
+      bunkerPubkey: REMOTE_PUBKEY,
+      relays: [RELAY],
+      pool: callerPool as unknown as Parameters<typeof createBunkerSigner>[0]['pool'],
+    });
+
+    await signer.close();
+
+    expect(callerPool.destroy).not.toHaveBeenCalled();
+    expect(poolInstance.destroy).not.toHaveBeenCalled();
+  });
+
   it('rebuilds the same client identity from stored login data', async () => {
     const { bunkerSignerFromLogin } = await import('./bunkerSigner');
     const sk = generateSecretKey();

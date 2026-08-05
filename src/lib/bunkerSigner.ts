@@ -88,11 +88,17 @@ export function createBunkerSigner(options: CreateBunkerSignerOptions): BunkerNo
   // auth challenge can extend them all at once.
   const restartDeadlines = new Set<() => void>();
 
+  // Own the pool whenever the caller did not supply one. `BunkerSigner` keeps
+  // its pool private and `close()` only drops the subscription, so a pool we
+  // let it create internally could never be released and its sockets would
+  // outlive the signer. Creating it here keeps a handle to destroy.
+  const ownedPool = pool ?? new SimplePool();
+
   const bunker = BunkerSigner.fromBunker(
     clientSecretKey,
     { pubkey: bunkerPubkey, relays, secret },
     {
-      ...(pool ? { pool } : {}),
+      pool: ownedPool,
       onauth: (url: string) => {
         // The signer answered, so it is reachable and the rest of the wait is
         // on a human approving out of band. Restart the clocks instead of
@@ -153,7 +159,15 @@ export function createBunkerSigner(options: CreateBunkerSignerOptions): BunkerNo
 
   return {
     connect: () => withDeadline('connect', () => bunker.connect()),
-    close: () => bunker.close(),
+    close: async () => {
+      await bunker.close();
+
+      // Only what we created. A caller that passed its own pool is responsible
+      // for that one, and may still be using it.
+      if (!pool) {
+        ownedPool.destroy();
+      }
+    },
     getPublicKey: () => withDeadline('get_public_key', () => bunker.getPublicKey()),
     signEvent: (event) => withDeadline('sign_event', () => bunker.signEvent(event) as Promise<NostrEvent>),
     nip04: {
