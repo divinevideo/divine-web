@@ -34,6 +34,7 @@ interface BunkerPointerArg {
 }
 interface BunkerParamsArg {
   onauth?: (url: string) => void;
+  pool?: unknown;
 }
 
 const fromBunker = vi.fn(
@@ -42,6 +43,14 @@ const fromBunker = vi.fn(
 
 vi.mock('nostr-tools/nip46', () => ({
   BunkerSigner: { fromBunker },
+}));
+
+// `close()` drops the subscription but leaves the pool's sockets connected, so
+// releasing them is a separate call. Mock the pool to make that observable.
+const poolInstance = { destroy: vi.fn(), close: vi.fn() };
+const SimplePoolMock = vi.fn(() => poolInstance);
+vi.mock('nostr-tools/pool', () => ({
+  SimplePool: SimplePoolMock,
 }));
 
 const presentAuthChallenge = vi.fn(() => ({ url: 'https://signer.example/auth', opened: true }));
@@ -313,6 +322,28 @@ describe('loginWithBunker', () => {
     await loginWithBunker(`bunker://${REMOTE_PUBKEY}?relay=${encodeURIComponent(RELAY)}`);
 
     expect(bunkerInstance.close).toHaveBeenCalledTimes(1);
+  });
+
+  // Closing the signer is not enough on its own: the sockets belong to the
+  // pool, so the leak this commit exists to prevent only closes if the pool is
+  // destroyed too, on both paths.
+  it('destroys the pool it owns once the handshake completes', async () => {
+    const { loginWithBunker } = await import('./bunkerSigner');
+
+    await loginWithBunker(`bunker://${REMOTE_PUBKEY}?relay=${encodeURIComponent(RELAY)}`);
+
+    expect(fromBunker.mock.calls[0][2].pool).toBe(poolInstance);
+    expect(poolInstance.destroy).toHaveBeenCalledTimes(1);
+  });
+
+  it('destroys the pool it owns when the handshake fails', async () => {
+    bunkerInstance.connect.mockRejectedValueOnce(new Error('signer unreachable'));
+    const { loginWithBunker } = await import('./bunkerSigner');
+
+    await expect(
+      loginWithBunker(`bunker://${REMOTE_PUBKEY}?relay=${encodeURIComponent(RELAY)}`)
+    ).rejects.toThrow('signer unreachable');
+    expect(poolInstance.destroy).toHaveBeenCalledTimes(1);
   });
 
   it('closes the handshake signer when the handshake fails', async () => {
