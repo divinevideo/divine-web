@@ -150,4 +150,33 @@ describe('useNotifications', () => {
       expect(cached.pages[0].notifications[0].isRead).toBe(true);
     });
   });
+
+  it('invalidates the cached list once mark-read settles', async () => {
+    // The optimistic write is the fast path; the invalidation is what lets the
+    // server correct it. Without it the list keeps whatever the optimistic
+    // update guessed until its staleTime expires.
+    const pubkey = 'a'.repeat(64);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    });
+    const wrapper = ({ children }: { children: React.ReactNode }) =>
+      React.createElement(QueryClientProvider, { client: queryClient }, children);
+
+    queryClient.setQueryData(['notifications', pubkey, 'all'], {
+      pages: [{ notifications: [{ id: 'n1', isRead: false }], unreadCount: 1, hasMore: false }],
+      pageParams: [undefined],
+    });
+
+    expect(queryClient.getQueryState(['notifications', pubkey, 'all'])?.isInvalidated).toBe(false);
+
+    const { result } = renderHook(() => useMarkNotificationsRead(), { wrapper });
+
+    result.current.mutate(undefined);
+
+    await waitFor(() => {
+      expect(queryClient.getQueryState(['notifications', pubkey, 'all'])?.isInvalidated).toBe(
+        true,
+      );
+    });
+  });
 });
