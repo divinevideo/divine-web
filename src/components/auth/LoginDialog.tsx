@@ -35,11 +35,22 @@ type RegisterView = 'invite' | 'waitlist';
 const validateNsec = (nsec: string) => /^nsec1[a-zA-Z0-9]{58}$/.test(nsec);
 const validateBunkerUri = (uri: string) => uri.startsWith('bunker://');
 
+/** Host of a NIP-46 challenge URL, so the user can see where a link they were
+ *  handed by a remote signer actually leads. Null if it will not parse. */
+const getChallengeHost = (url: string): string | null => {
+  try {
+    return new URL(url).host;
+  } catch {
+    return null;
+  }
+};
+
 const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin }) => {
   const { t } = useTranslation();
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [bunkerError, setBunkerError] = useState<string | null>(null);
   const [bunkerUri, setBunkerUri] = useState('');
+  const [bunkerAuthUrl, setBunkerAuthUrl] = useState<string | null>(null);
   const [generalError, setGeneralError] = useState<string | null>(null);
   const [inviteConfigError, setInviteConfigError] = useState<string | null>(null);
   const [inviteCode, setInviteCode] = useState('');
@@ -75,6 +86,16 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin }) =
   // check can resolve `protected` mid-interaction. The ref always holds the
   // latest verdict so each signer-swap re-checks when it actually runs.
   const keyHandoverRestrictedRef = useRef(false);
+  // LoginArea renders this dialog unconditionally and only toggles `isOpen`, so
+  // dismissing it never unmounts the component and never settles an in-flight
+  // bunker handshake. These track whether the attempt that is resolving is
+  // still the one the user is waiting on.
+  const isOpenRef = useRef(isOpen);
+  const bunkerAttemptRef = useRef(0);
+
+  useEffect(() => {
+    isOpenRef.current = isOpen;
+  }, [isOpen]);
   keyHandoverRestrictedRef.current = keyHandoverRestricted;
 
   // The render-side gates below stay closed synchronously; this only clears the
@@ -88,12 +109,20 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin }) =
 
   useEffect(() => {
     if (!isOpen) {
+      // Retire any in-flight bunker attempt on close. Checking `isOpenRef`
+      // alone is not enough: this effect re-arms it when the dialog is reopened
+      // later, so an approval the user abandoned would land against a guard
+      // that passes again. Bumping the counter means a superseded attempt can
+      // never become current, whatever happens to `isOpen` afterwards, and it
+      // also stops a stale challenge writing into the fresh dialog's state.
+      bunkerAttemptRef.current++;
       return;
     }
 
     setAdvancedOpen(false);
     setBunkerError(null);
     setBunkerUri('');
+    setBunkerAuthUrl(null);
     setGeneralError(null);
     setInviteConfigError(null);
     setInviteCode('');
@@ -212,21 +241,38 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin }) =
     if (keyHandoverRestrictedRef.current) return;
     setIsLoginLoading(true);
     setBunkerError(null);
+    setBunkerAuthUrl(null);
+
+    const attempt = ++bunkerAttemptRef.current;
+    const isCurrentAttempt = () => attempt === bunkerAttemptRef.current;
 
     try {
       // Same commit-boundary re-check as the extension path: the pre-click
       // check goes stale while the bunker connect is pending.
       const committed = await login.bunker(bunkerUri, {
-        beforeCommit: () => !keyHandoverRestrictedRef.current,
+        // A NIP-46 handshake can sit unresolved indefinitely while the user
+        // approves out of band, and the dialog stays mounted the whole time. If
+        // they gave up and closed it, or started a fresh attempt, this one must
+        // not silently log them in and set the cross-subdomain cookie.
+        beforeCommit: () =>
+          !keyHandoverRestrictedRef.current && isOpenRef.current && isCurrentAttempt(),
+        // The signer wants the user to approve in its own UI. We open a tab
+        // for them; keep the URL around in case the popup was blocked.
+        onAuthChallenge: ({ url, opened }) => {
+          if (url && !opened && isCurrentAttempt()) setBunkerAuthUrl(url);
+        },
       });
       if (!committed) return;
       onLogin();
       onClose();
       setBunkerUri('');
+      setBunkerAuthUrl(null);
     } catch {
-      setBunkerError(t('loginDialog.errorBunkerConnectFailed'));
+      if (isCurrentAttempt()) setBunkerError(t('loginDialog.errorBunkerConnectFailed'));
     } finally {
-      setIsLoginLoading(false);
+      // A superseded attempt settling must not clear the spinner belonging to
+      // the attempt the user is actually waiting on.
+      if (isCurrentAttempt()) setIsLoginLoading(false);
     }
   };
 
@@ -496,6 +542,29 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin }) =
                           value={bunkerUri}
                         />
                         {bunkerError ? <p className="text-sm text-red-500">{bunkerError}</p> : null}
+                        {bunkerAuthUrl ? (
+                          <div className="space-y-1 text-sm">
+                            <p className="text-muted-foreground">{t('loginDialog.bunkerAuthPrompt')}</p>
+                            <a
+                              className="font-medium underline underline-offset-2"
+                              href={bunkerAuthUrl}
+                              rel="noopener noreferrer"
+                              target="_blank"
+                            >
+                              {t('loginDialog.bunkerAuthLink')}
+                            </a>
+                            {/* The remote signer chooses this URL, so show where
+                                the link actually goes rather than hiding an
+                                arbitrary destination behind our own wording.
+                                A hostname is data, not copy, so no locale
+                                needs updating. */}
+                            {getChallengeHost(bunkerAuthUrl) ? (
+                              <span className="ml-1 text-muted-foreground break-all">
+                                ({getChallengeHost(bunkerAuthUrl)})
+                              </span>
+                            ) : null}
+                          </div>
+                        ) : null}
                       </div>
 
                       <Button

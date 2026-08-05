@@ -1,9 +1,9 @@
 import { type NLoginType, NUser, useNostrLogin } from '@nostrify/react/login';
-import { useNostr } from '@nostrify/react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { NostrSigner } from '@nostrify/nostrify';
 import { DivineJWTSigner } from '@/lib/DivineJWTSigner';
 import { createUserFromLogin, getSafeUserSigner } from '@/lib/nostrLogin';
+import { releaseBunkerSignersExcept } from '@/lib/bunkerSignerRegistry';
 import { selectCurrentUsers, isJwtResolving } from '@/lib/selectCurrentUsers';
 
 import { useAuthor } from './useAuthor.ts';
@@ -23,7 +23,6 @@ type JwtResolution =
   | { token: string; error: true };
 
 export function useCurrentUser() {
-  const { nostr } = useNostr();
   const { logins } = useNostrLogin();
   const { getValidToken } = useDivineSession();
   const token = getValidToken();
@@ -33,8 +32,8 @@ export function useCurrentUser() {
   ), [token]);
 
   const loginToUser = useCallback((login: NLoginType): NUser  => {
-    return createUserFromLogin(login, nostr);
-  }, [nostr]);
+    return createUserFromLogin(login);
+  }, []);
 
   useEffect(() => {
     let isCancelled = false;
@@ -73,6 +72,15 @@ export function useCurrentUser() {
 
   const hasExtensionLogin = logins.some((login) => login.type === 'extension');
   const nip07Status = useNip07Availability(hasExtensionLogin);
+
+  const loginIds = logins.map((login) => login.id).join(';');
+
+  // A removed login's signer is the last thing holding its sockets open.
+  // Reconciling against the surviving ids covers every logout path, including
+  // account switching and a login dropped as invalid.
+  useEffect(() => {
+    releaseBunkerSignersExcept(loginIds ? loginIds.split(';') : []);
+  }, [loginIds]);
 
   const manualUsers = useMemo(() => {
     const users: CurrentUser[] = [];

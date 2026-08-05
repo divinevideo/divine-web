@@ -424,6 +424,8 @@
     "bunkerLabel": "Bunker-URI",
     "bunkerPlaceholder": "bunker://",
     "bunkerButton": "Mit Bunker anmelden",
+    "bunkerAuthPrompt": "Dein Signer braucht deine Freigabe. Wir wollten seine Seite öffnen, dein Browser hat das blockiert — hier öffnen:",
+    "bunkerAuthLink": "Im Signer freigeben",
     "connecting": "Wird verbunden...",
     "errorInviteServiceUnavailable": "Einladungsdienst nicht verfügbar",
     "errorExtensionNotFound": "Nostr-Erweiterung nicht gefunden. Bitte installiere eine NIP-07-Erweiterung.",

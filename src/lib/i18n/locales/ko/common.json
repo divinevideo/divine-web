@@ -424,6 +424,8 @@
     "bunkerLabel": "Bunker URI",
     "bunkerPlaceholder": "bunker://",
     "bunkerButton": "Bunker로 로그인",
+    "bunkerAuthPrompt": "서명 앱의 승인이 필요합니다. 페이지를 열려고 했지만 브라우저가 차단했습니다 — 여기서 열어 주세요:",
+    "bunkerAuthLink": "서명 앱에서 승인하기",
     "connecting": "연결 중...",
     "errorInviteServiceUnavailable": "초대 서비스를 사용할 수 없음",
     "errorExtensionNotFound": "Nostr 확장을 찾을 수 없어요. NIP-07 확장을 설치하세요.",

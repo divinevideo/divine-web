@@ -424,6 +424,8 @@
     "bunkerLabel": "Bunker URI",
     "bunkerPlaceholder": "bunker://",
     "bunkerButton": "用 Bunker 登录",
+    "bunkerAuthPrompt": "你的签名器需要你确认。我们尝试打开它的页面但被浏览器拦截了——在这里打开：",
+    "bunkerAuthLink": "在签名器中确认",
     "connecting": "连接中…",
     "errorInviteServiceUnavailable": "邀请服务不可用",
     "errorExtensionNotFound": "没找到 Nostr 扩展。请安装一个 NIP-07 扩展。",

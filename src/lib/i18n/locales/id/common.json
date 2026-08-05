@@ -424,6 +424,8 @@
     "bunkerLabel": "URI Bunker",
     "bunkerPlaceholder": "bunker://",
     "bunkerButton": "Masuk dengan Bunker",
+    "bunkerAuthPrompt": "Penanda tangan Anda butuh persetujuan. Kami mencoba membuka halamannya tetapi diblokir peramban — buka di sini:",
+    "bunkerAuthLink": "Setujui di penanda tangan",
     "connecting": "Menghubungkan...",
     "errorInviteServiceUnavailable": "Layanan invite tidak tersedia",
     "errorExtensionNotFound": "Ekstensi Nostr tidak ditemukan. Silakan pasang ekstensi NIP-07.",
