@@ -39,7 +39,7 @@ describe('support-only messaging entry points', () => {
       'utf8',
     ).replace(/\s+/g, ' ');
 
-    expect(source).toContain('Private support messages');
+    expect(source).toContain('Private messages');
     expect(source).toContain(
       'On Divine Web, the current private messaging channel is for contacting Divine Support.',
     );
@@ -49,6 +49,17 @@ describe('support-only messaging entry points', () => {
     expect(source).toContain(
       'User-to-user DMs and private video sharing are not available on Divine Web right now.',
     );
+    // The answer is product-wide, so scoping the web half without stating the
+    // mobile half leaves the reader to conclude support can read any Divine DM.
+    expect(source).toContain(
+      'In the Divine mobile app you can also message people directly and share vines privately.',
+    );
+    expect(source).toContain(
+      'Those messages are end-to-end encrypted, and we cannot read them.',
+    );
+    // Still barred: the pre-PR copy's *unscoped* privacy promise. An E2E claim
+    // is accurate for mobile and wrong for web, so what these guard is the
+    // absence of a surface, not the words "end-to-end encrypted".
     expect(source).not.toContain('Direct messages ARE private');
     expect(source).not.toContain('direct messages between users are end-to-end encrypted');
   });
