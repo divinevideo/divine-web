@@ -166,7 +166,17 @@ export interface RawApiNotification {
    * resolvable identifier — see `resolveTargetEventId`.
    */
   root_addressable_id?: string | null;
-  /** Specific comment to scroll to; set for `comment` and `reply`. */
+  /**
+   * The comment this notification concerns.
+   *
+   * Set for `comment` and `reply` (where it equals `source_event_id`), and
+   * ALSO for a `reaction` whose referenced event is a kind 1111 comment —
+   * which is what separates a like on your comment from a like on your video.
+   * The published OpenAPI description still says "`None` for other types";
+   * that text is stale. The materializer sets it from the referenced event at
+   * divine-funnelcake `crates/clickhouse/src/client.rs` (`target_comment_id`),
+   * and `mapNotificationType` depends on that behaviour.
+   */
   target_comment_id?: string | null;
   referenced_event_title?: string | null;
   referenced_video?: RawApiReferencedVideo | null;
