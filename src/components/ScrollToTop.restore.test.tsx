@@ -47,6 +47,15 @@ function makeTestApp(ScrollToTop: React.ComponentType) {
 
 const nextFrame = () => new Promise(resolve => setTimeout(resolve, 32));
 
+/** `window.scrollTo` is overloaded; a mock has to handle either call shape. */
+type ScrollToArgs = [x: number, y: number] | [options?: ScrollToOptions];
+
+/** The requested offset, from either `scrollTo(x, y)` or `scrollTo({ top })`. */
+function requestedOffset(args: ScrollToArgs): number {
+  const [first, second] = args;
+  return Number(typeof first === 'number' ? second : first?.top);
+}
+
 describe('ScrollToTop restoration against late-loading content', () => {
   let scrollY = 0;
   /** Tallest position the "browser" will accept — grows as content lays out. */
@@ -62,8 +71,8 @@ describe('ScrollToTop restoration against late-loading content', () => {
     // Real browsers clamp a scroll request to the current document height. An
     // infinite grid that hasn't rendered its rows yet is short, so the restore
     // lands near the top.
-    vi.mocked(window.scrollTo).mockImplementation((_x, y) => {
-      scrollY = Math.min(Number(y), maxScroll);
+    vi.mocked(window.scrollTo).mockImplementation((...args: ScrollToArgs) => {
+      scrollY = Math.min(requestedOffset(args), maxScroll);
     });
   });
 
@@ -93,6 +102,25 @@ describe('ScrollToTop restoration against late-loading content', () => {
     await nextFrame();
 
     expect(window.scrollY).toBe(1800);
+  });
+
+  // `html { scroll-behavior: smooth }` applies app-wide, and the positional
+  // `scrollTo(x, y)` form scrolls with behavior "auto", which resolves to it.
+  // That animates the restore, so every frame reads short of the target and the
+  // loop chases its own animation instead of the page height — and stopping the
+  // loop does not stop the animation, so the page keeps travelling after the
+  // viewer takes over. The restore must opt out of it explicitly.
+  it('restores without starting the page-level smooth scroll', async () => {
+    const TestApp = makeTestApp(await loadScrollToTop());
+    render(<TestApp />);
+
+    scrollY = 1800;
+    fireEvent.click(screen.getByRole('link', { name: 'Details' }));
+
+    scrollY = 0;
+    fireEvent.click(screen.getByRole('button', { name: 'Back' }));
+
+    expect(window.scrollTo).toHaveBeenLastCalledWith({ top: 1800, behavior: 'instant' });
   });
 
   it('stops fighting the user if they scroll during restoration', async () => {
