@@ -2,7 +2,7 @@
 // ABOUTME: divine-web#380 — a page that dedupes away must still re-arm the trigger
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { TestApp } from '@/test/TestApp';
 
 const PUBKEY = 'a'.repeat(64);
@@ -93,6 +93,30 @@ vi.mock('@/hooks/useSubdomainUser', () => ({
   getSubdomainUser: () => null,
 }));
 
+// Everything below is chrome around the grid. Stubbing it keeps this test on
+// the scroll wiring instead of the whole profile page's data fetching.
+vi.mock('@/components/ProfileHeader', () => ({
+  ProfileHeader: () => <div data-testid="profile-header" />,
+}));
+
+vi.mock('@/components/PinnedVideosSection', () => ({
+  PinnedVideosSection: () => null,
+}));
+
+vi.mock('@/components/ProfileListsSection', () => ({
+  ProfileListsSection: () => null,
+}));
+
+vi.mock('@/components/VideoGrid', () => ({
+  VideoGrid: ({ videos }: { videos: unknown[] }) => (
+    <div data-testid="video-grid" data-count={videos.length} />
+  ),
+}));
+
+vi.mock('@/components/VideoFeed', () => ({
+  VideoFeed: () => null,
+}));
+
 describe('ProfilePage infinite scroll', () => {
   beforeEach(() => {
     infiniteScrollProps.length = 0;
@@ -115,5 +139,9 @@ describe('ProfilePage infinite scroll', () => {
     // leaves it unchanged and the scroll trigger never re-arms.
     expect(props?.dataLength).toBe(3);
     expect(props?.hasMore).toBe(true);
-  });
+    // ...while the grid itself still renders only the deduplicated videos.
+    expect(screen.getByTestId('video-grid')).toHaveAttribute('data-count', '2');
+    // Rendering the whole page pulls in a large module graph; the default 5s
+    // budget is tight for it when the suite runs in parallel.
+  }, 20_000);
 });
