@@ -107,6 +107,7 @@ export function ProfilePage({ pubkeyOverride }: { pubkeyOverride?: string } = {}
     error: videosError,
     fetchNextPage,
     hasNextPage,
+    fetchedCount,
   } = useVideoProvider({
     feedType: 'profile',
     sortMode,
@@ -503,7 +504,10 @@ export function ProfilePage({ pubkeyOverride }: { pubkeyOverride?: string } = {}
             </Card>
           ) : viewMode === 'grid' ? (
             <InfiniteScroll
-              dataLength={videos.length}
+              // Fetched rows, not rendered ones: a page that dedupes away or is
+              // entirely blocked authors leaves the rendered length unchanged,
+              // and the scroll trigger only re-arms when this value moves.
+              dataLength={fetchedCount}
               next={fetchNextPage}
               hasMore={hasNextPage ?? false}
               loader={
