@@ -732,6 +732,45 @@ describe('useHydratedNotifications', () => {
     }
   });
 
+  it('drops a fetched thumbnail served from an expired CDN', async () => {
+    // The archive's thumbnails live on v.cdn.vine.co, whose certificate has
+    // expired. Every other fixture uses an already-safe URL, so the sanitizer
+    // was a pass-through everywhere and could be removed unnoticed.
+    const like = makeLike('like-1', PUBKEY_A, VIDEO_ID, 1000);
+
+    mockUseNotifications.mockReturnValue(
+      makeInfiniteQueryResult([makeNotificationsPage([like])]),
+    );
+    mockUseBatchedAuthors.mockReturnValue({ data: {} });
+    mockFetchVideoById.mockResolvedValue({
+      id: VIDEO_ID,
+      title: 'Classic Vine',
+      thumbnail: 'https://v.cdn.vine.co/r/videos/abc.mp4.jpg',
+    });
+
+    const { useHydratedNotifications } = await import('./useHydratedNotifications');
+
+    const { result } = renderHook(
+      () => useHydratedNotifications({ category: 'all' }),
+      { wrapper: createWrapper() },
+    );
+
+    await waitFor(() => {
+      const item = result.current.items[0];
+      if (item?.kind === 'video') {
+        expect(item.videoTitle).toBe('Classic Vine');
+      }
+    });
+
+    const item = result.current.items[0];
+    expect(item.kind).toBe('video');
+    if (item.kind === 'video') {
+      // Title survives; the unusable thumbnail is dropped so the row falls
+      // back to the placeholder rather than rendering a broken image.
+      expect(item.videoThumbnailUrl).toBeUndefined();
+    }
+  });
+
   it('handles follow notifications as singleton actor rows', async () => {
     const follow = makeFollow('follow-1', PUBKEY_A, 1000);
 
