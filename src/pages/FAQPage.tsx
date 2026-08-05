@@ -765,13 +765,17 @@ export function FAQPage() {
                     don't post it on Divine.
                   </p>
                   <p className="font-semibold">
-                    Private support messages
+                    Private messages
                   </p>
                   <p>
                     On Divine Web, the current private messaging channel is for contacting Divine Support.
                     Messages use encrypted NIP-17 delivery, and the support team can read and
                     respond to messages sent to that channel. User-to-user DMs and private video
                     sharing are not available on Divine Web right now.
+                  </p>
+                  <p>
+                    In the Divine mobile app you can also message people directly and share vines
+                    privately. Those messages are end-to-end encrypted, and we cannot read them.
                   </p>
                 </div>
               </FAQQuestion>
