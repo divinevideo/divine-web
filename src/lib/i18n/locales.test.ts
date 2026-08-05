@@ -78,6 +78,12 @@ const MUST_BE_TRANSLATED_PREFIXES = [
   'notificationsPage.video.',
   'notificationsPage.empty.',
   'notificationsPage.a11y.',
+  // Full sentences that sit directly under `notificationsPage`, so no prefix
+  // above reaches them. Named individually rather than widening to
+  // `notificationsPage.` — that would pull in tabs.* and the short labels the
+  // docstring above excludes on purpose.
+  'notificationsPage.errorTitle',
+  'notificationsPage.errorFallback',
 ];
 
 describe('i18n locale resources', () => {
