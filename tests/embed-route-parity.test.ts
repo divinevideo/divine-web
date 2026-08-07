@@ -4,6 +4,14 @@
 import { readFileSync } from 'node:fs';
 import { describe, it, expect } from 'vitest';
 
+// @ts-expect-error - plain JS module in the Fastly compute package, no type declarations
+import {
+  EMBED_WIDGET_ASSET,
+  EMBED_WIDGET_MARKER,
+  applyEmbedWidgetHeaders,
+  isEmbedWidgetPath,
+} from '../compute-js/src/embedWidget.js';
+
 /**
  * The embed widget lives at `public/embed.html`, but users are given the clean
  * `/embed` URL. Three places have to agree on that mapping, one per surface:
@@ -19,6 +27,7 @@ import { describe, it, expect } from 'vitest';
  */
 const GENERATOR = readFileSync('src/pages/GetEmbedPage.tsx', 'utf8');
 const REDIRECTS = readFileSync('public/_redirects', 'utf8');
+const HEADERS = readFileSync('public/_headers', 'utf8');
 const FASTLY_WORKER = readFileSync('compute-js/src/index.js', 'utf8');
 
 describe('embed route parity', () => {
@@ -31,28 +40,58 @@ describe('embed route parity', () => {
       (line) => /^\/embed\s/.test(line.trim()),
     );
     expect(rule, 'public/_redirects has no /embed rule').toBeDefined();
-    expect(rule).toContain('/embed.html');
+    expect(rule).toContain(EMBED_WIDGET_ASSET);
   });
 
   it('the Fastly worker rewrites /embed to the widget', () => {
     // Fastly serves production and never reads _redirects, so the rewrite has
-    // to exist here independently.
+    // to exist here independently. Nothing executes this worker before it is
+    // deployed, so wiring is all a test can check from here.
     expect(
       FASTLY_WORKER,
-      'compute-js must special-case the bare /embed path',
-    ).toMatch(/pathname === '\/embed'/);
-    expect(FASTLY_WORKER).toContain("new URL('/embed.html'");
+      'compute-js must route the bare /embed path through isEmbedWidgetPath',
+    ).toContain('isEmbedWidgetPath(url.pathname)');
+    expect(FASTLY_WORKER).toContain("from './embedWidget.js'");
+  });
+
+  it('the rewrite target actually ships', () => {
+    // Every assertion above checks that three files agree on a path. None of
+    // them notices if the file that path points at stops existing, which
+    // silently returns production to the SPA-shell-in-an-iframe bug.
+    const widget = readFileSync(`public${EMBED_WIDGET_ASSET}`, 'utf8');
+    expect(widget).toContain('<title>Divine Video Widget</title>');
+  });
+
+  it('the widget carries the marker the worker verifies it by', () => {
+    // The worker cannot distinguish the widget from the SPA fallback by status
+    // or content type — both are HTML at 200 — so it greps for this string. If
+    // the script is ever renamed, the worker starts rejecting the real widget.
+    expect(readFileSync(`public${EMBED_WIDGET_ASSET}`, 'utf8')).toContain(EMBED_WIDGET_MARKER);
   });
 
   it('keeps the widget framable from third-party origins on both targets', () => {
     // A widget browsers refuse to frame is as broken as a missing route.
-    expect(REDIRECTS.includes('/embed') && FASTLY_WORKER.includes('frame-ancestors *')).toBe(true);
-    expect(readFileSync('public/_headers', 'utf8')).toContain('frame-ancestors *');
+    expect(HEADERS).toContain('frame-ancestors *');
+    expect(applyEmbedWidgetHeaders(new Headers()).get('Content-Security-Policy'))
+      .toBe('frame-ancestors *');
+  });
+
+  it('caches the widget shell instead of inheriting no-store from app HTML', () => {
+    // The shell is static; the viewer script fetches live data over its own
+    // relay connections. public/_headers asks for the same 30 minutes.
+    const headers = applyEmbedWidgetHeaders(new Headers({ 'Cache-Control': 'no-store' }));
+    expect(headers.get('Cache-Control')).toBe('public, max-age=1800');
+    expect(headers.get('Surrogate-Control')).toBe('max-age=1800');
+    expect(HEADERS).toContain('max-age=1800');
   });
 
   it('does not collide with the /embed/:id video player', () => {
-    // The oEmbed player matches `startsWith('/embed/')`, which requires the
-    // trailing slash. If that ever loosens, the widget rewrite would swallow it.
-    expect(FASTLY_WORKER).toContain("startsWith('/embed/')");
+    // The oEmbed player owns every path below /embed/. The widget owns the bare
+    // path and nothing else.
+    expect(isEmbedWidgetPath('/embed')).toBe(true);
+    expect(isEmbedWidgetPath('/embed/')).toBe(true);
+    expect(isEmbedWidgetPath('/embed/abc123')).toBe(false);
+    expect(isEmbedWidgetPath('/embedded')).toBe(false);
+    expect(isEmbedWidgetPath('/')).toBe(false);
   });
 });
