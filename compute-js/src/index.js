@@ -383,6 +383,32 @@ async function handleRequest(event) {
     }
   }
 
+  // `/embed` is the clean URL for the profile widget that lives at
+  // public/embed.html, and it is what GetEmbedPage hands users. public/_redirects
+  // declares the rewrite, but that file is a Cloudflare Pages / Netlify
+  // convention this worker never reads, so on Fastly the path fell through to
+  // the SPA shell below. `embed` is a single segment, so the client router
+  // matched `/:nip19` and rendered the 404 page inside the subscriber's iframe.
+  // Note this is distinct from the `/embed/:id` video player handled above;
+  // that check requires the trailing slash, so the two do not collide.
+  if (url.pathname === '/embed' || url.pathname === '/embed/') {
+    const widgetUrl = new URL('/embed.html', url.origin);
+    widgetUrl.search = url.search;
+    const widgetResponse = await publisherServer.serveRequest(new Request(widgetUrl, request));
+    if (widgetResponse != null) {
+      const headers = applyStaticResponseHeaders(widgetResponse.headers, { isHtml: true });
+      // The widget is meant to be framed by third parties; public/_headers sets
+      // this for the Cloudflare deploy and it has to be set here too.
+      headers.set('Content-Security-Policy', 'frame-ancestors *');
+      // Match the caching public/_headers asks for. The shell is static — the
+      // viewer script fetches live data — so the `no-store` that
+      // applyStaticResponseHeaders applies to app HTML is wrong here.
+      headers.set('Cache-Control', 'public, max-age=1800');
+      headers.set('Surrogate-Control', 'max-age=1800');
+      return new Response(widgetResponse.body, { status: widgetResponse.status, headers });
+    }
+  }
+
   // Serve static content (JS, CSS, images, etc.) with SPA fallback
   const response = await publisherServer.serveRequest(request);
   if (response != null) {
