@@ -25,6 +25,12 @@ import {
 import { transformVideoApiResponse } from './videoMetadata.js';
 import { compactVideoForHydration, normalizeFeedResponse } from './feedHydration.js';
 import { renderEmbedPage } from './embedPage.js';
+import {
+  EMBED_WIDGET_ASSET,
+  EMBED_WIDGET_MARKER,
+  applyEmbedWidgetHeaders,
+  isEmbedWidgetPath,
+} from './embedWidget.js';
 import { renderFeedPage, renderVideoPage, renderProfilePage, renderSearchPage } from './templates/pages.js';
 
 const publisherServer = PublisherServer.fromStaticPublishRc(rc);
@@ -380,6 +386,47 @@ async function handleRequest(event) {
       }
     } catch (err) {
       console.error('Edge template search page error:', err.message);
+    }
+  }
+
+  // `/embed` is the clean URL for the profile widget that lives at
+  // public/embed.html, and it is what GetEmbedPage hands users. public/_redirects
+  // declares the rewrite, but that file is a Cloudflare Pages / Netlify
+  // convention this worker never reads, so on Fastly the path fell through to
+  // the SPA shell below. `embed` is a single segment, so the client router
+  // matched `/:nip19` and rendered the 404 page inside the subscriber's iframe.
+  // Note this is distinct from the `/embed/:id` video player handled above;
+  // that check requires the trailing slash, so the two do not collide.
+  if (isEmbedWidgetPath(url.pathname)) {
+    const widgetUrl = new URL(EMBED_WIDGET_ASSET, url.origin);
+    widgetUrl.search = url.search;
+    const widgetHeaders = new Headers(request.headers);
+    // The publisher hands back the br/gzip KV variant whenever the client
+    // accepts one, and those bytes are not text. Ask for identity so the body
+    // can be read; the shell is 1.1KB and the edge caches it for 30 minutes.
+    widgetHeaders.delete('Accept-Encoding');
+    // Reading the body back drops the publisher's ETag, so never let it answer
+    // a 304 from validators the response no longer issues.
+    widgetHeaders.delete('If-None-Match');
+    widgetHeaders.delete('If-Modified-Since');
+    const widgetResponse = await publisherServer.serveRequest(
+      new Request(widgetUrl, { method: request.method, headers: widgetHeaders }),
+    );
+    if (widgetResponse != null && widgetResponse.status === 200) {
+      // The publisher answers a missing asset with the SPA shell at HTTP 200,
+      // so a non-null response is not proof we got the widget. Framing and
+      // caching the 404 page for half an hour is the failure this route exists
+      // to prevent, so verify the body before committing to those headers.
+      const body = await widgetResponse.text();
+      if (body.includes(EMBED_WIDGET_MARKER)) {
+        return new Response(body, {
+          status: 200,
+          headers: applyEmbedWidgetHeaders(
+            applyStaticResponseHeaders(widgetResponse.headers, { decoded: true }),
+          ),
+        });
+      }
+      console.error('Embed widget missing from published assets; falling through to SPA');
     }
   }
 
