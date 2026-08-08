@@ -4,8 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Divine Video Widget</title>
-    <link rel="stylesheet" href="embed-styles.css">
-    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <!-- Root-absolute: this document is also served at /embed and /embed/, where
+         relative hrefs would resolve under /embed/ and hit the oEmbed player. -->
+    <link rel="stylesheet" href="/embed-styles.css">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
     <script>
         // Apply theme immediately to prevent flash
         var t = new URLSearchParams(window.location.search).get('theme');
@@ -29,6 +31,6 @@
         </div>
     </div>
 
-    <script src="embed-viewer.js"></script>
+    <script src="/embed-viewer.js"></script>
 </body>
 </html>

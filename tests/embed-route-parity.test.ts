@@ -62,6 +62,25 @@ describe('embed route parity', () => {
     expect(widget).toContain('<title>Divine Video Widget</title>');
   });
 
+  it('loads its own assets from the site root, not relative to the request path', () => {
+    // The same document is served at three URLs — /embed.html, /embed and
+    // /embed/ — so a relative href resolves differently depending on which one
+    // the subscriber pasted. Under /embed/ it resolves to /embed/<asset>, and
+    // every path below /embed/ belongs to the oEmbed video player, which
+    // answers 404 for anything that is not a video id. The widget would render
+    // an unstyled, scriptless "Loading..." and the 30-minute Cache-Control
+    // below would keep it that way.
+    const widget = readFileSync(`public${EMBED_WIDGET_ASSET}`, 'utf8');
+    const refs = [...widget.matchAll(/(?:href|src)="([^"]*)"/g)].map((match) => match[1]);
+    const sameOrigin = refs.filter((ref) => !/^(?:[a-z][a-z0-9+.-]*:)?\/\//i.test(ref));
+
+    expect(sameOrigin.length).toBeGreaterThan(0);
+    for (const ref of sameOrigin) {
+      expect(ref, `"${ref}" must start with / or it breaks when /embed/ serves this file`)
+        .toMatch(/^\//);
+    }
+  });
+
   it('the widget carries the marker the worker verifies it by', () => {
     // The worker cannot distinguish the widget from the SPA fallback by status
     // or content type — both are HTML at 200 — so it greps for this string. If
