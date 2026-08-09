@@ -68,13 +68,13 @@ people sets use separate owner-aware detail routes: `/list/:pubkey/:listId`
 for video lists and `/people-lists/:pubkey/:listId` for people lists. Keeping
 people lists outside `/list/*` preserves compatibility with installed mobile
 apps, which claim `/list/*` for video-list deep links. Kind `30000` is not
-uniformly a people set: Divine's legacy block list is a kind `30000` event
-with `d=block`, which
+uniformly a people set: Divine reserves some d-tags for private or moderation
+lists (`block`, `mute`, `hidden`, `denylist`, and `dm-contacts`), which
 [`parsePeopleListFromEvent`](./src/lib/parsePeopleListFromEvent.ts) rejects,
 so the route builders in
-[`src/lib/eventRouting.ts`](./src/lib/eventRouting.ts) leave that one d-tag on
-the generic event route rather than sending it to a detail page that cannot
-render it.
+[`src/lib/eventRouting.ts`](./src/lib/eventRouting.ts) leave those d-tags on
+the generic event route rather than sending them to a detail page that cannot
+render them.
 
 ## Styling
 

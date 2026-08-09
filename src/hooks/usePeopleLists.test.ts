@@ -47,7 +47,8 @@ describe('people list hooks', () => {
     mockNostrQuery.mockResolvedValue([
       peopleListEvent({ created_at: 10, tags: [['d', 'friends'], ['title', 'Old']] }),
       peopleListEvent({ created_at: 20, tags: [['d', 'friends'], ['title', 'New']] }),
-      peopleListEvent({ created_at: 30, tags: [['d', 'block'], ['p', MEMBER]] }),
+      peopleListEvent({ created_at: 30, tags: [['d', 'block'], ['title', 'Blocked'], ['p', MEMBER]] }),
+      peopleListEvent({ created_at: 40, tags: [['d', 'mute'], ['title', 'Muted'], ['p', MEMBER]] }),
     ]);
     const { usePeopleLists } = await import('./usePeopleLists');
 

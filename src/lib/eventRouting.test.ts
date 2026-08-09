@@ -63,19 +63,22 @@ describe('eventRouting', () => {
     );
   });
 
-  it('keeps legacy block list events on the generic event route', () => {
-    const event = makeEvent({
-      id: 'b'.repeat(64),
-      kind: 30000,
-      pubkey: 'a'.repeat(64),
-      tags: [['d', 'block']],
-    });
+  it.each(['block', 'mute', 'hidden', 'denylist', 'dm-contacts'])(
+    'keeps reserved people list d tag %s on the generic event route',
+    (dTag) => {
+      const event = makeEvent({
+        id: 'b'.repeat(64),
+        kind: 30000,
+        pubkey: 'a'.repeat(64),
+        tags: [['d', dTag]],
+      });
 
-    expect(buildAddressableRoute(30000, event.pubkey, 'block')).toBe(
-      buildAddressableEventPath(30000, event.pubkey, 'block'),
-    );
-    expect(buildResolvedEventRoute(event)).toBe(buildEventPath(event.id));
-  });
+      expect(buildAddressableRoute(30000, event.pubkey, dTag)).toBe(
+        buildAddressableEventPath(30000, event.pubkey, dTag),
+      );
+      expect(buildResolvedEventRoute(event)).toBe(buildEventPath(event.id));
+    },
+  );
 
   it('keeps people and video list paths distinct under one d tag', () => {
     const pubkey = 'a'.repeat(64);

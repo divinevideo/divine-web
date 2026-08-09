@@ -1,7 +1,8 @@
 // ABOUTME: Parses public NIP-51 kind 30000 follow sets into discoverable people lists
 
 import type { NostrEvent } from '@nostrify/nostrify';
-import { BLOCK_LIST_D_TAG } from '@/lib/blocklistFilter';
+
+import { isReservedPeopleListDTag } from '@/lib/peopleListConstants';
 
 export interface PeopleList {
   id: string;
@@ -21,7 +22,7 @@ export function parsePeopleListFromEvent(event: NostrEvent): PeopleList | null {
   if (event.kind !== 30000) return null;
 
   const id = event.tags.find((tag) => tag[0] === 'd')?.[1];
-  if (!id || id === BLOCK_LIST_D_TAG) return null;
+  if (!id || isReservedPeopleListDTag(id)) return null;
 
   const memberPubkeys = Array.from(new Set(
     event.tags
@@ -43,10 +44,10 @@ export function parsePeopleListFromEvent(event: NostrEvent): PeopleList | null {
 export function deduplicatePeopleLists(events: NostrEvent[]): PeopleList[] {
   const newestByAddress = new Map<string, PeopleList>();
 
-  events
+  [...events]
+    .sort((a, b) => b.created_at - a.created_at || a.id.localeCompare(b.id))
     .map(parsePeopleListFromEvent)
     .filter((list): list is PeopleList => list !== null)
-    .sort((a, b) => b.createdAt - a.createdAt)
     .forEach((list) => {
       const address = peopleListAddress(list);
       if (!newestByAddress.has(address)) {

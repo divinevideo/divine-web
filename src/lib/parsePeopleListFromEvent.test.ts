@@ -51,11 +51,33 @@ describe('parsePeopleListFromEvent', () => {
     expect(parsePeopleListFromEvent(event)?.name).toBe('makers');
   });
 
+  it('accepts empty lists', () => {
+    expect(parsePeopleListFromEvent(peopleListEvent({ tags: [
+      ['d', 'makers'],
+      ['title', 'Makers'],
+    ] }))?.memberPubkeys).toEqual([]);
+  });
+
   it('rejects missing d tags, the reserved block list, and other event kinds', () => {
     expect(parsePeopleListFromEvent(peopleListEvent({ tags: [] }))).toBeNull();
-    expect(parsePeopleListFromEvent(peopleListEvent({ tags: [['d', 'block']] }))).toBeNull();
+    expect(parsePeopleListFromEvent(peopleListEvent({ tags: [
+      ['d', 'block'],
+      ['title', 'Blocked'],
+      ['p', ALICE],
+    ] }))).toBeNull();
     expect(parsePeopleListFromEvent(peopleListEvent({ kind: 30005 }))).toBeNull();
   });
+
+  it.each(['block', 'mute', 'hidden', 'denylist', 'dm-contacts'])(
+    'rejects reserved public-list d tag %s',
+    (id) => {
+      expect(parsePeopleListFromEvent(peopleListEvent({ tags: [
+        ['d', id],
+        ['title', 'Reserved'],
+        ['p', ALICE],
+      ] }))).toBeNull();
+    },
+  );
 
   it('uses the complete addressable coordinate as its key', () => {
     const list = parsePeopleListFromEvent(peopleListEvent());
@@ -73,5 +95,20 @@ describe('deduplicatePeopleLists', () => {
       'New',
       'makers',
     ]);
+  });
+
+  it('uses the lowest event id as the tie-breaker for equal timestamps', () => {
+    const higherId = peopleListEvent({
+      id: 'f'.repeat(64),
+      created_at: 20,
+      tags: [['d', 'friends'], ['title', 'Higher']],
+    });
+    const lowerId = peopleListEvent({
+      id: '0'.repeat(64),
+      created_at: 20,
+      tags: [['d', 'friends'], ['title', 'Lower']],
+    });
+
+    expect(deduplicatePeopleLists([higherId, lowerId])[0]?.name).toBe('Lower');
   });
 });
