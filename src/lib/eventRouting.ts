@@ -20,8 +20,6 @@ const NOTE_EVENT_KINDS = new Set([1, 1111]);
 export const PEOPLE_LIST_EVENT_KIND = 30000;
 export const VIDEO_LIST_EVENT_KIND = 30005;
 
-const LIST_DETAIL_EVENT_KINDS = new Set([PEOPLE_LIST_EVENT_KIND, VIDEO_LIST_EVENT_KIND]);
-
 export function buildVideoPath(identifier: string): string {
   return `/video/${encodeURIComponent(identifier)}`;
 }
@@ -55,10 +53,6 @@ export function isListEventKind(kind: number): boolean {
 
 export function isNoteEventKind(kind: number): boolean {
   return NOTE_EVENT_KINDS.has(kind);
-}
-
-export function isListDetailEventKind(kind: number): boolean {
-  return LIST_DETAIL_EVENT_KINDS.has(kind);
 }
 
 export function getEventDTag(event: Pick<NostrEvent, 'tags'>): string | null {

@@ -8,7 +8,6 @@ import {
   buildPeopleListPath,
   buildResolvedEventRoute,
   buildVideoPath,
-  isListDetailEventKind,
   isListEventKind,
   isNoteEventKind,
 } from './eventRouting';
@@ -80,9 +79,6 @@ describe('eventRouting', () => {
   it('classifies note and list kinds for rendering', () => {
     expect(isNoteEventKind(1)).toBe(true);
     expect(isNoteEventKind(1111)).toBe(true);
-    expect(isListDetailEventKind(30000)).toBe(true);
-    expect(isListDetailEventKind(30005)).toBe(true);
-    expect(isListDetailEventKind(30001)).toBe(false);
     expect(isListEventKind(30001)).toBe(true);
     expect(isListEventKind(22)).toBe(false);
   });
