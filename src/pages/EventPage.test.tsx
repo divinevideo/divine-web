@@ -171,6 +171,23 @@ describe('EventPage', () => {
     expect(await screen.findByTestId('list-page')).toBeInTheDocument();
   });
 
+  it('redirects people lists to the shared list page', async () => {
+    const pubkey = 'a'.repeat(64);
+    mockFetchEventById.mockResolvedValue({
+      id: 'c'.repeat(64),
+      pubkey,
+      created_at: 1_700_000_000,
+      kind: 30000,
+      tags: [['d', 'friends']],
+      content: '',
+      sig: '1'.repeat(128),
+    });
+
+    renderPage([`/event/${'c'.repeat(64)}`]);
+
+    expect(await screen.findByTestId('list-page')).toBeInTheDocument();
+  });
+
   it('shows generic list-style events with reference links and raw json', async () => {
     const authorPubkey = 'c'.repeat(64);
     const referencedPubkey = 'd'.repeat(64);

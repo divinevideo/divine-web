@@ -36,9 +36,9 @@ vi.mock('@/components/VideoGrid', () => ({
 
 function renderPage() {
   return render(
-    <MemoryRouter initialEntries={[`/people-lists/${OWNER}/friends`]}>
+    <MemoryRouter initialEntries={[`/list/${OWNER}/friends`]}>
       <Routes>
-        <Route path="/people-lists/:pubkey/:listId" element={<PeopleListDetailPage />} />
+        <Route path="/list/:pubkey/:listId" element={<PeopleListDetailPage />} />
       </Routes>
     </MemoryRouter>,
   );

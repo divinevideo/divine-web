@@ -63,10 +63,12 @@ catch-all fallback.
 The retired `/discovery/new` chronological feed redirects to
 `/discovery/hot`; Discovery does not expose or mount an all-new-video feed.
 Public profiles expose a compact mixed NIP-51 list shelf and a filterable
-`/profile/:npub/lists` gallery. Kind `30005` video sets retain their
-owner-aware `/list/:pubkey/:listId` route; kind `30000` people sets use
-`/people-lists/:pubkey/:listId`, where member context appears above a primary
-video grid assembled from the listed pubkeys.
+`/profile/:npub/lists` gallery. Kind `30005` video sets and kind `30000`
+people sets share the owner-aware `/list/:pubkey/:listId` route, which
+dispatches to the matching detail surface after resolving the list event. If
+both kinds use the same owner and `d` tag, the route preserves existing behavior
+by rendering the video-list surface. The retired `/people-lists/:pubkey/:listId`
+shape redirects to the shared route.
 
 ## Styling
 

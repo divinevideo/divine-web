@@ -12,7 +12,7 @@ const ROUTES = [
   '/kids',
   `/profile/${PUBKEY}`,
   `/profile/${PUBKEY}/lists`,
-  `/people-lists/${PUBKEY}/friends`,
+  `/list/${PUBKEY}/friends`,
   '/__brand-preview',
 ];
 

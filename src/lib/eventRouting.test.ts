@@ -2,10 +2,12 @@ import { describe, expect, it } from 'vitest';
 import type { NostrEvent } from '@nostrify/nostrify';
 import { SHORT_VIDEO_KIND } from '@/types/video';
 import {
+  buildAddressableRoute,
   buildAddressableEventPath,
   buildListPath,
   buildResolvedEventRoute,
   buildVideoPath,
+  isListDetailEventKind,
   isListEventKind,
   isNoteEventKind,
 } from './eventRouting';
@@ -43,6 +45,17 @@ describe('eventRouting', () => {
     expect(buildResolvedEventRoute(event)).toBe(buildListPath(event.pubkey, 'favorites'));
   });
 
+  it('routes people list events to the public list page', () => {
+    const event = makeEvent({
+      kind: 30000,
+      pubkey: 'a'.repeat(64),
+      tags: [['d', 'friends']],
+    });
+
+    expect(buildAddressableRoute(30000, event.pubkey, 'friends')).toBe(buildListPath(event.pubkey, 'friends'));
+    expect(buildResolvedEventRoute(event)).toBe(buildListPath(event.pubkey, 'friends'));
+  });
+
   it('keeps generic addressable events on the generic event route', () => {
     expect(buildAddressableEventPath(30023, 'b'.repeat(64), 'post-123')).toBe(
       '/event/a/30023/' + 'b'.repeat(64) + '/post-123'
@@ -52,6 +65,9 @@ describe('eventRouting', () => {
   it('classifies note and list kinds for rendering', () => {
     expect(isNoteEventKind(1)).toBe(true);
     expect(isNoteEventKind(1111)).toBe(true);
+    expect(isListDetailEventKind(30000)).toBe(true);
+    expect(isListDetailEventKind(30005)).toBe(true);
+    expect(isListDetailEventKind(30001)).toBe(false);
     expect(isListEventKind(30001)).toBe(true);
     expect(isListEventKind(22)).toBe(false);
   });

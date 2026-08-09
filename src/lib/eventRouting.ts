@@ -16,6 +16,7 @@ const LIST_EVENT_KINDS = new Set([
 ]);
 
 const NOTE_EVENT_KINDS = new Set([1, 1111]);
+const LIST_DETAIL_EVENT_KINDS = new Set([30000, 30005]);
 
 export function buildVideoPath(identifier: string): string {
   return `/video/${encodeURIComponent(identifier)}`;
@@ -48,6 +49,10 @@ export function isNoteEventKind(kind: number): boolean {
   return NOTE_EVENT_KINDS.has(kind);
 }
 
+export function isListDetailEventKind(kind: number): boolean {
+  return LIST_DETAIL_EVENT_KINDS.has(kind);
+}
+
 export function getEventDTag(event: Pick<NostrEvent, 'tags'>): string | null {
   return event.tags.find(tag => tag[0] === 'd')?.[1] || null;
 }
@@ -57,7 +62,7 @@ export function buildAddressableRoute(kind: number, pubkey: string, identifier: 
     return buildVideoPath(identifier);
   }
 
-  if (kind === 30005) {
+  if (isListDetailEventKind(kind)) {
     return buildListPath(pubkey, identifier);
   }
 
@@ -70,7 +75,7 @@ export function buildResolvedEventRoute(event: Pick<NostrEvent, 'id' | 'kind' | 
   }
 
   const dTag = getEventDTag(event);
-  if (event.kind === 30005 && dTag) {
+  if (dTag && isListDetailEventKind(event.kind)) {
     return buildListPath(event.pubkey, dTag);
   }
 

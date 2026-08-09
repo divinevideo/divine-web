@@ -8,6 +8,7 @@ import {
   toDiscoverablePeopleList,
   toDiscoverableVideoList,
 } from './profileLists';
+import { buildListPath } from './eventRouting';
 
 const OWNER = 'a'.repeat(64);
 
@@ -34,7 +35,7 @@ describe('profile list presentation', () => {
       key: `30000:${OWNER}:friends`,
       type: 'people',
       itemCount: 2,
-      href: `/people-lists/${OWNER}/friends`,
+      href: buildListPath(OWNER, 'friends'),
     });
   });
 
@@ -43,7 +44,7 @@ describe('profile list presentation', () => {
       key: `30005:${OWNER}:favorites`,
       type: 'videos',
       itemCount: 1,
-      href: `/list/${OWNER}/favorites`,
+      href: buildListPath(OWNER, 'favorites'),
     });
   });
 
