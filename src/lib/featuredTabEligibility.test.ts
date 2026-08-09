@@ -59,4 +59,36 @@ describe('featured tab eligibility', () => {
       disclosureLabel: 'Featured',
     });
   });
+
+  it('skips configurations whose slug is not a usable discovery route', () => {
+    const options = { now, minorState: 'not_protected' as const, locale: 'en' };
+
+    // Discovery lowercases the route segment before matching, so a mixed-case
+    // slug renders a tab that a reload cannot resolve.
+    expect(selectFeaturedTab([makeConfig({ slug: 'Seasonal-Theme' })], options)).toBeNull();
+    expect(selectFeaturedTab([makeConfig({ slug: 'seasonal theme' })], options)).toBeNull();
+    expect(selectFeaturedTab([makeConfig({ slug: '../admin' })], options)).toBeNull();
+    // Reserved values would shadow a built-in tab and hide the featured panel.
+    expect(selectFeaturedTab([makeConfig({ slug: 'hot' })], options)).toBeNull();
+    expect(selectFeaturedTab([makeConfig({ slug: 'top' })], options)).toBeNull();
+  });
+
+  it('falls through to the next eligible configuration when a slug is unusable', () => {
+    const selected = selectFeaturedTab([
+      makeConfig({ id: 'ft_bad_slug', slug: 'hashtags' }),
+      makeConfig({ id: 'ft_eligible', label: { default: 'Default', es: 'Especial' }, disclosure_label: 'Featured' }),
+    ], {
+      now,
+      minorState: 'not_protected',
+      locale: 'es-MX',
+    });
+
+    expect(selected).toEqual({
+      id: 'ft_eligible',
+      slug: 'seasonal-theme',
+      label: 'Especial',
+      position: { after: 'hot' },
+      disclosureLabel: 'Featured',
+    });
+  });
 });

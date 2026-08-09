@@ -10,6 +10,11 @@ import type {
 const MAX_LABEL_LENGTH = 24;
 const MAX_DISCLOSURE_LENGTH = 16;
 const DISCOVERY_TAB_NAMES = new Set<DiscoveryTabName>(['foryou', 'classics', 'hot', 'hashtags']);
+// The slug is both the `/discovery/:tab` route segment and the Radix Tabs value.
+// The route comparison lowercases `params.tab`, so anything outside this shape
+// either breaks the URL or renders a tab that cannot be resolved on reload.
+const FEATURED_TAB_SLUG_PATTERN = /^[a-z0-9][a-z0-9-]{0,31}$/;
+const RESERVED_TAB_SLUGS = new Set<string>([...DISCOVERY_TAB_NAMES, 'top']);
 
 function cleanShortString(value: string, maxLength: number): string {
   return value.trim().replace(/\s+/g, ' ').slice(0, maxLength);
@@ -20,6 +25,19 @@ function parseDiscoveryTabName(value: unknown): DiscoveryTabName | null {
   return DISCOVERY_TAB_NAMES.has(value as DiscoveryTabName)
     ? (value as DiscoveryTabName)
     : null;
+}
+
+export function parseFeaturedTabSlug(value: unknown): string | null {
+  if (typeof value !== 'string') return null;
+
+  const slug = value.trim();
+  if (!FEATURED_TAB_SLUG_PATTERN.test(slug)) return null;
+  // A slug that shadows a built-in tab would collide on the Tabs value, so the
+  // built-in wins the lookup and the featured panel never renders. `top` is the
+  // legacy alias Discovery rewrites to `classics`, so it is unroutable too.
+  if (RESERVED_TAB_SLUGS.has(slug)) return null;
+
+  return slug;
 }
 
 export function pickFeaturedTabLabel(

@@ -1,4 +1,9 @@
-import { parseFeaturedTabDisclosure, parseFeaturedTabPosition, pickFeaturedTabLabel } from '@/lib/featuredTabsTransform';
+import {
+  parseFeaturedTabDisclosure,
+  parseFeaturedTabPosition,
+  parseFeaturedTabSlug,
+  pickFeaturedTabLabel,
+} from '@/lib/featuredTabsTransform';
 import { isFeaturedTabMinorRestricted, type ProtectedMinorState } from '@/lib/protectedMinor';
 import type { FeaturedTabConfigRaw, ResolvedFeaturedTab } from '@/types/featuredTabs';
 
@@ -38,12 +43,15 @@ export function selectFeaturedTab(
   for (const config of configs) {
     if (!isFeaturedTabEligible(config, now, minorState)) continue;
 
+    const slug = parseFeaturedTabSlug(config.slug);
+    if (!slug) continue;
+
     const label = pickFeaturedTabLabel(config.label, locale);
     if (!label) continue;
 
     return {
       id: config.id,
-      slug: config.slug,
+      slug,
       label,
       position: parseFeaturedTabPosition(config.position),
       disclosureLabel: parseFeaturedTabDisclosure(config.disclosure_label),
