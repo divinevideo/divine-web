@@ -19,14 +19,36 @@ const DISCOVERY_TAB_NAMES = new Set<DiscoveryTabName>(['foryou', 'classics', 'ho
 const FEATURED_TAB_SLUG_PATTERN = /^[a-z0-9][a-z0-9-]{0,31}$/;
 const RESERVED_TAB_SLUGS = new Set<string>([...DISCOVERY_TAB_NAMES, 'top']);
 
-// Bidi overrides and other invisible formatting characters would let a
-// server-supplied string reorder or hide the text around it in the tab bar.
-// eslint-disable-next-line no-control-regex
-const INVISIBLE_FORMATTING = /[\u0000-\u001f\u007f\u200b-\u200f\u202a-\u202e\u2066-\u2069\ufeff]/g;
+/**
+ * Bidi overrides and other invisible formatting characters would let a
+ * server-supplied string reorder or hide the text around it in the tab bar, so
+ * they are dropped before the string is measured or rendered. Control
+ * characters collapse to a space instead of vanishing, so a label carrying a
+ * newline stays two words. Written as a codepoint test rather than a character
+ * class because the repository sets `noInlineConfig`, which leaves no way to
+ * silence `no-control-regex` on the equivalent literal.
+ */
+function isInvisibleFormatting(code: number): boolean {
+  return (code >= 0x200b && code <= 0x200f)   // zero-width and directional marks
+    || (code >= 0x202a && code <= 0x202e)     // bidi embedding and override
+    || (code >= 0x2066 && code <= 0x2069)     // bidi isolates
+    || code === 0xfeff;                       // zero-width no-break space
+}
+
+function stripInvisibleFormatting(value: string): string {
+  let out = '';
+
+  for (const char of value) {
+    const code = char.codePointAt(0) ?? 0;
+    if (isInvisibleFormatting(code)) continue;
+    out += code < 0x20 || code === 0x7f ? ' ' : char;
+  }
+
+  return out;
+}
 
 function cleanShortString(value: string, maxLength: number): string {
-  return value
-    .replace(INVISIBLE_FORMATTING, '')
+  return stripInvisibleFormatting(value)
     .trim()
     .replace(/\s+/g, ' ')
     .slice(0, maxLength);
