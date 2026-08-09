@@ -5,7 +5,10 @@ import type { VideoList } from '@/lib/parseVideoListFromEvent';
 import {
   buildListPath,
   buildPeopleListPath,
+  PEOPLE_LIST_EVENT_KIND,
+  VIDEO_LIST_EVENT_KIND,
 } from '@/lib/eventRouting';
+import { buildAddressableCoordinate } from '@/lib/nostrCoordinates';
 
 export interface DiscoverableList {
   key: string;
@@ -22,7 +25,7 @@ export interface DiscoverableList {
 
 export function toDiscoverablePeopleList(list: PeopleList): DiscoverableList {
   return {
-    key: `30000:${list.pubkey}:${list.id}`,
+    key: buildAddressableCoordinate(PEOPLE_LIST_EVENT_KIND, list.pubkey, list.id),
     type: 'people',
     id: list.id,
     name: list.name,
@@ -37,7 +40,7 @@ export function toDiscoverablePeopleList(list: PeopleList): DiscoverableList {
 
 export function toDiscoverableVideoList(list: VideoList): DiscoverableList {
   return {
-    key: `30005:${list.pubkey}:${list.id}`,
+    key: buildAddressableCoordinate(VIDEO_LIST_EVENT_KIND, list.pubkey, list.id),
     type: 'videos',
     id: list.id,
     name: list.name,

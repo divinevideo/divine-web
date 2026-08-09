@@ -13,6 +13,7 @@ import {
   cacheDefinition,
   type ValidatedBadge,
 } from '@/lib/badges';
+import { parseAddressableCoordinate } from '@/lib/nostrCoordinates';
 
 /**
  * Fetch and validate all displayable badges for a given pubkey.
@@ -89,16 +90,16 @@ export function useBadges(pubkey: string | undefined) {
           const aTag = award.tags.find(t => t[0] === 'a');
           if (!aTag) continue;
           const naddr = aTag[1]; // e.g. "30009:<pubkey>:beta-tester"
-          const parts = naddr.split(':');
-          if (parts.length < 3) continue;
+          const parsed = parseAddressableCoordinate(naddr);
+          if (!parsed) continue;
 
           let def = getCachedDefinition(naddr);
           if (!def) {
             try {
               const defEvents = await nostr.query([{
                 kinds: [BADGE_KINDS.DEFINITION],
-                authors: [parts[1]],
-                '#d': [parts[2]],
+                authors: [parsed.pubkey],
+                '#d': [parsed.dTag],
               }], { signal });
               for (const ev of defEvents) {
                 const parsed = parseBadgeDefinition(ev);
@@ -136,10 +137,10 @@ export function useBadges(pubkey: string | undefined) {
       const uncachedNaddrs = badgeRefs
         .filter(ref => !getCachedDefinition(ref.naddr))
         .map(ref => {
-          const parts = ref.naddr.split(':');
-          return { author: parts[1], dTag: parts[2] };
+          const parsed = parseAddressableCoordinate(ref.naddr);
+          return parsed ? { author: parsed.pubkey, dTag: parsed.dTag } : null;
         })
-        .filter(p => p.author && p.dTag);
+        .filter((p): p is { author: string; dTag: string } => p !== null);
 
       // Fetch definitions
       if (uncachedNaddrs.length > 0) {

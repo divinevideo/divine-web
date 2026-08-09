@@ -4,6 +4,7 @@
 import { useNostr } from '@nostrify/react';
 import { useQuery } from '@tanstack/react-query';
 import { parseVtt, type VttCue } from '@/lib/vttParser';
+import { parseAddressableCoordinate } from '@/lib/nostrCoordinates';
 import type { ParsedVideoData } from '@/types/video';
 import { useAdultVerification } from '@/hooks/useAdultVerification';
 import { isProtectedDivineMediaUrl } from '@/hooks/useAuthenticatedMediaUrl';
@@ -19,16 +20,7 @@ interface UseSubtitlesResult {
  * Format: "39307:<pubkey>:subtitles:<d-tag>"
  */
 function parseTextTrackRef(ref: string): { kind: number; pubkey: string; dTag: string } | null {
-  const parts = ref.split(':');
-  if (parts.length < 4) return null;
-  const kind = parseInt(parts[0], 10);
-  const pubkey = parts[1];
-  // d-tag may contain colons, so rejoin remaining parts after pubkey:identifier
-  const identifier = parts[2]; // e.g. "subtitles"
-  const dTagParts = parts.slice(3);
-  const dTag = `${identifier}:${dTagParts.join(':')}`;
-  if (isNaN(kind) || !pubkey) return null;
-  return { kind, pubkey, dTag };
+  return parseAddressableCoordinate(ref);
 }
 
 /**

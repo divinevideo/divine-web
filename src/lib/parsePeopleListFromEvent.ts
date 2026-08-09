@@ -2,6 +2,10 @@
 
 import type { NostrEvent } from '@nostrify/nostrify';
 import { BLOCK_LIST_D_TAG } from '@/lib/blocklistFilter';
+import { PEOPLE_LIST_EVENT_KIND } from '@/lib/eventRouting';
+import { buildAddressableCoordinate, isHex64 } from '@/lib/nostrCoordinates';
+
+const RESERVED_LIST_DTAGS = new Set([BLOCK_LIST_D_TAG]);
 
 export interface PeopleList {
   id: string;
@@ -13,19 +17,23 @@ export interface PeopleList {
   memberPubkeys: string[];
 }
 
+export function isReservedListDTag(dTag: string): boolean {
+  return RESERVED_LIST_DTAGS.has(dTag.trim().toLowerCase());
+}
+
 export function peopleListAddress(list: PeopleList): string {
-  return `${list.pubkey}:30000:${list.id}`;
+  return buildAddressableCoordinate(PEOPLE_LIST_EVENT_KIND, list.pubkey, list.id);
 }
 
 export function parsePeopleListFromEvent(event: NostrEvent): PeopleList | null {
-  if (event.kind !== 30000) return null;
+  if (event.kind !== PEOPLE_LIST_EVENT_KIND) return null;
 
   const id = event.tags.find((tag) => tag[0] === 'd')?.[1];
-  if (!id || id === BLOCK_LIST_D_TAG) return null;
+  if (!id || isReservedListDTag(id)) return null;
 
   const memberPubkeys = Array.from(new Set(
     event.tags
-      .filter((tag) => tag[0] === 'p' && Boolean(tag[1]))
+      .filter((tag) => tag[0] === 'p' && Boolean(tag[1]) && isHex64(tag[1]))
       .map((tag) => tag[1]),
   ));
 

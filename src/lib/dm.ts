@@ -6,6 +6,7 @@ import { finalizeEvent, generateSecretKey, nip44, verifyEvent } from 'nostr-tool
 import { PRESET_RELAYS, PROFILE_RELAYS, getRelayUrls } from '@/config/relays';
 import { DIVINE_MODERATION_PUBKEY } from '@/lib/officialAccounts';
 import { getApexShareUrl } from '@/lib/subdomainLinks';
+import { parseAddressableCoordinate } from '@/lib/nostrCoordinates';
 import { SHORT_VIDEO_KIND } from '@/types/video';
 
 export const DM_GIFT_WRAP_KIND = 1059;
@@ -236,7 +237,9 @@ function getRumorShare(rumor: DmRumorEvent): DmSharePayload | undefined {
   }
 
   if (coordinate) {
-    const [, videoPubkey, vineId] = coordinate.split(':');
+    const parsed = parseAddressableCoordinate(coordinate);
+    if (!parsed) return undefined;
+    const { pubkey: videoPubkey, dTag: vineId } = parsed;
     return {
       url: taggedUrl || getApexShareUrl(`/video/${vineId}`),
       title,

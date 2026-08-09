@@ -12,6 +12,7 @@ import { SectionHeader } from '@/components/brand/SectionHeader';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/useToast';
 import { parseVideoEvent, getVineId, getThumbnailUrl, getOriginalVineTimestamp, getLoopCount, getProofModeData, getOriginPlatform, isVineMigrated, getOriginalLikeCount, getOriginalRepostCount, getOriginalCommentCount } from '@/lib/videoParser';
+import { parseAddressableCoordinate } from '@/lib/nostrCoordinates';
 import { SHORT_VIDEO_KIND, VIDEO_KINDS } from '@/types/video';
 import type { ParsedVideoData } from '@/types/video';
 import type { NostrFilter } from '@nostrify/nostrify';
@@ -42,11 +43,10 @@ export function PinnedVideosSection({ pubkey, isOwnProfile }: PinnedVideosSectio
       // Parse coordinates into pubkey + d-tag groups
       const pubkeyGroups = new Map<string, string[]>();
       coordinates.forEach(coord => {
-        const [kind, pk, dTag] = coord.split(':');
-        const kindNum = parseInt(kind, 10);
-        if (VIDEO_KINDS.includes(kindNum) && pk && dTag) {
-          if (!pubkeyGroups.has(pk)) pubkeyGroups.set(pk, []);
-          pubkeyGroups.get(pk)!.push(dTag);
+        const parsed = parseAddressableCoordinate(coord);
+        if (parsed && VIDEO_KINDS.includes(parsed.kind)) {
+          if (!pubkeyGroups.has(parsed.pubkey)) pubkeyGroups.set(parsed.pubkey, []);
+          pubkeyGroups.get(parsed.pubkey)!.push(parsed.dTag);
         }
       });
 
@@ -104,8 +104,9 @@ export function PinnedVideosSection({ pubkey, isOwnProfile }: PinnedVideosSectio
       // Return in pin-list order, skipping unresolvable coordinates
       const ordered: ParsedVideoData[] = [];
       coordinates.forEach(coord => {
-        const parts = coord.split(':');
-        const key = `${parts[1]}:${parts[2]}`;
+        const parsed = parseAddressableCoordinate(coord);
+        if (!parsed) return;
+        const key = `${parsed.pubkey}:${parsed.dTag}`;
         const video = videoMap.get(key);
         if (video) ordered.push(video);
       });
@@ -121,9 +122,10 @@ export function PinnedVideosSection({ pubkey, isOwnProfile }: PinnedVideosSectio
   const coordinateForVideo = useMemo(() => {
     const map = new Map<string, string>();
     coordinates.forEach(coord => {
-      const parts = coord.split(':');
+      const parsed = parseAddressableCoordinate(coord);
+      if (!parsed) return;
       // Map vineId (d-tag) to full coordinate for unpin
-      map.set(parts[2], coord);
+      map.set(parsed.dTag, coord);
     });
     return map;
   }, [coordinates]);

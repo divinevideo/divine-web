@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import type { NostrEvent } from '@nostrify/nostrify';
 import {
   deduplicatePeopleLists,
+  isReservedListDTag,
   parsePeopleListFromEvent,
   peopleListAddress,
 } from './parsePeopleListFromEvent';
@@ -11,6 +12,7 @@ import {
 const OWNER = 'a'.repeat(64);
 const ALICE = 'b'.repeat(64);
 const BOB = 'c'.repeat(64);
+const CAROL = 'f'.repeat(64);
 
 function peopleListEvent(overrides: Partial<NostrEvent> = {}): NostrEvent {
   return {
@@ -57,9 +59,36 @@ describe('parsePeopleListFromEvent', () => {
     expect(parsePeopleListFromEvent(peopleListEvent({ kind: 30005 }))).toBeNull();
   });
 
+  it('only reserves the block-list d tag Divine publishes', () => {
+    expect(parsePeopleListFromEvent(peopleListEvent({ tags: [['d', ' Block ']] }))).toBeNull();
+    expect(parsePeopleListFromEvent(peopleListEvent({ tags: [['d', 'hidden']] }))?.id).toBe('hidden');
+  });
+
+  it('ignores invalid p tags', () => {
+    const event = peopleListEvent({
+      tags: [
+        ['d', 'friends'],
+        ['p', ALICE],
+        ['p', 'not-a-pubkey'],
+        ['p', 'g'.repeat(64)],
+        ['p', CAROL],
+      ],
+    });
+
+    expect(parsePeopleListFromEvent(event)?.memberPubkeys).toEqual([ALICE, CAROL]);
+  });
+
   it('uses the complete addressable coordinate as its key', () => {
     const list = parsePeopleListFromEvent(peopleListEvent());
-    expect(list && peopleListAddress(list)).toBe(`${OWNER}:30000:friends`);
+    expect(list && peopleListAddress(list)).toBe(`30000:${OWNER}:friends`);
+  });
+});
+
+describe('isReservedListDTag', () => {
+  it('matches reserved d tags after trimming and case folding', () => {
+    expect(isReservedListDTag(' Block ')).toBe(true);
+    expect(isReservedListDTag('BlockList')).toBe(false);
+    expect(isReservedListDTag('friends')).toBe(false);
   });
 });
 

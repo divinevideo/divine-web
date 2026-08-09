@@ -2,9 +2,8 @@
 
 import { useNostr } from '@nostrify/react';
 import { useQuery } from '@tanstack/react-query';
+import { PEOPLE_LIST_EVENT_KIND } from '@/lib/eventRouting';
 import { deduplicatePeopleLists } from '@/lib/parsePeopleListFromEvent';
-
-const PEOPLE_LIST_KIND = 30000;
 
 export function usePeopleLists(pubkey: string | undefined) {
   const { nostr } = useNostr();
@@ -13,7 +12,7 @@ export function usePeopleLists(pubkey: string | undefined) {
     queryKey: ['people-lists', pubkey],
     queryFn: async ({ signal }) => {
       const events = await nostr.query([{
-        kinds: [PEOPLE_LIST_KIND],
+        kinds: [PEOPLE_LIST_EVENT_KIND],
         authors: [pubkey!],
         limit: 100,
       }], {
@@ -35,7 +34,7 @@ export function usePeopleList(pubkey: string | undefined, listId: string | undef
     queryKey: ['people-list', pubkey, listId],
     queryFn: async ({ signal }) => {
       const events = await nostr.query([{
-        kinds: [PEOPLE_LIST_KIND],
+        kinds: [PEOPLE_LIST_EVENT_KIND],
         authors: [pubkey!],
         '#d': [listId!],
         limit: 10,

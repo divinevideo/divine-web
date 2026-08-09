@@ -12,6 +12,7 @@ import { SHORT_VIDEO_KIND, VIDEO_KINDS, REPOST_KIND, type ParsedVideoData } from
 import type { NIP50Filter } from '@/types/nostr';
 import { parseVideoEvent, getVineId, getThumbnailUrl, getLoopCount, getOriginalVineTimestamp, getProofModeData, getOriginalLikeCount, getOriginalRepostCount, getOriginalCommentCount, getOriginPlatform, isVineMigrated, getLatestRepostTime, validateVideoEvent, getTextTrackRef } from '@/lib/videoParser';
 import { debugLog, debugError, verboseLog } from '@/lib/debug';
+import { parseAddressableCoordinate } from '@/lib/nostrCoordinates';
 import type { SortMode } from '@/types/nostr';
 
 interface UseVideoEventsOptions {
@@ -164,16 +165,15 @@ async function parseVideoEvents(
     }
 
     // Parse addressable coordinate
-    const [kind, pubkey, dTag] = aTag[1].split(':');
-    const kindNum = parseInt(kind, 10);
-    if (!VIDEO_KINDS.includes(kindNum) || !pubkey || !dTag) {
+    const coordinate = parseAddressableCoordinate(aTag[1]);
+    if (!coordinate || !VIDEO_KINDS.includes(coordinate.kind)) {
       repostsSkipped++;
       continue;
     }
 
     // Use pubkey:kind:d-tag as unique key for addressable event deduplication
-    const vineId = dTag;
-    const uniqueKey = `${pubkey}:${kindNum}:${vineId}`;
+    const { pubkey, dTag: vineId, kind } = coordinate;
+    const uniqueKey = `${pubkey}:${kind}:${vineId}`;
 
     // Check if we already have this video in our map
     let videoData = videoMap.get(uniqueKey);
