@@ -256,19 +256,13 @@ export function DiscoveryPage() {
                 key={value}
                 value={value}
                 className="min-w-0 gap-1.5 px-2 sm:gap-2 sm:px-4"
-                aria-label={disclosureLabel ? `${label} — ${disclosureLabel}` : undefined}
+                aria-label={disclosureLabel ? `${label}: ${disclosureLabel}` : undefined}
               >
                 <Icon className="h-4 w-4 shrink-0" />
                 <span className="hidden min-w-0 truncate sm:inline" title={label}>{label}</span>
                 {disclosureLabel && (
-                  // This marks a paid or sponsored placement, so the full text
-                  // has to stay reachable: the parser no longer pre-clips it,
-                  // `title` and the trigger's aria-label carry it whole. The
-                  // width bound is still needed because neither TabsTrigger nor
-                  // TabsList clips overflow, so an unbounded pill would spill
-                  // the tab bar at narrow widths.
                   <span
-                    className="max-w-[7rem] shrink truncate rounded-full bg-background/80 px-1.5 py-0.5 text-[10px] leading-none text-foreground"
+                    className="hidden max-w-[7rem] shrink truncate rounded-full bg-background/80 px-1.5 py-0.5 text-[10px] leading-none text-foreground sm:inline"
                     title={disclosureLabel}
                   >
                     {disclosureLabel}
@@ -323,6 +317,13 @@ export function DiscoveryPage() {
 
           {activeTabItem?.featuredTab && (
             <TabsContent value={activeTabItem.featuredTab.slug} className="mt-0 space-y-6">
+              {activeTabItem.featuredTab.disclosureLabel && (
+                <div className="flex justify-center">
+                  <span className="inline-flex max-w-full rounded-full border border-border bg-background px-3 py-1 text-sm font-medium text-foreground">
+                    {activeTabItem.featuredTab.disclosureLabel}
+                  </span>
+                </div>
+              )}
               <VideoFeed
                 feedType="featured"
                 featuredTabId={activeTabItem.featuredTab.id}

@@ -94,8 +94,6 @@ function mapToFunnelcakeFeedType(feedType: VideoFeedType): FunnelcakeFeedType {
       return 'category';
     case 'popular':
       return 'popular';
-    case 'featured':
-      return 'trending';
     default:
       return 'trending';
   }

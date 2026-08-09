@@ -248,7 +248,7 @@ describe('DiscoveryPage', () => {
       slug: 'seasonal-theme',
       label: 'Especial',
       position: { after: 'hot' },
-      disclosureLabel: null,
+      disclosureLabel: 'Sponsored',
     };
 
     render(
@@ -260,5 +260,6 @@ describe('DiscoveryPage', () => {
     );
 
     expect(screen.getByTestId('video-feed-featured')).toHaveAttribute('data-featured-tab-id', 'ft_1234abcd');
+    expect(screen.getAllByText('Sponsored')).not.toHaveLength(0);
   });
 });

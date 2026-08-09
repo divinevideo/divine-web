@@ -32,14 +32,17 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
-function createWrapper() {
-  const queryClient = new QueryClient({
+function createQueryClient() {
+  return new QueryClient({
     defaultOptions: {
       queries: {
         retry: false,
       },
     },
   });
+}
+
+function createWrapper(queryClient = createQueryClient()) {
 
   return function Wrapper({ children }: { children: React.ReactNode }) {
     return React.createElement(QueryClientProvider, { client: queryClient }, children);
@@ -74,20 +77,18 @@ async function flushQuery(): Promise<void> {
 }
 
 let useFeaturedTab: typeof import('./useFeaturedTab').useFeaturedTab;
-let clearFeaturedTabCacheForTests: typeof import('./useFeaturedTab').clearFeaturedTabCacheForTests;
 
 beforeEach(async () => {
   vi.useFakeTimers();
   vi.setSystemTime(new Date('2026-08-08T12:00:00Z'));
   vi.clearAllMocks();
+  mockFetchFeaturedTabs.mockReset();
   minorState = 'not_protected';
   language = 'es-MX';
   apiUrl = 'https://api.divine.video';
 
   const hook = await import('./useFeaturedTab');
   useFeaturedTab = hook.useFeaturedTab;
-  clearFeaturedTabCacheForTests = hook.clearFeaturedTabCacheForTests;
-  clearFeaturedTabCacheForTests();
 });
 
 afterEach(() => {
@@ -125,23 +126,25 @@ describe('useFeaturedTab', () => {
     });
   });
 
-  it('uses a fresh last-good config through one transient refresh failure', async () => {
+  it('uses a fresh cached config through one transient refresh failure', async () => {
+    const queryClient = createQueryClient();
     mockFetchFeaturedTabs.mockResolvedValueOnce(makeResponse());
-    const first = renderHook(() => useFeaturedTab(), { wrapper: createWrapper() });
+    const first = renderHook(() => useFeaturedTab(), { wrapper: createWrapper(queryClient) });
 
     await flushQuery();
     expect(first.result.current.tab?.id).toBe('ft_1234abcd');
     first.unmount();
 
     mockFetchFeaturedTabs.mockRejectedValueOnce(new Error('temporary outage'));
-    const second = renderHook(() => useFeaturedTab(), { wrapper: createWrapper() });
+    const second = renderHook(() => useFeaturedTab(), { wrapper: createWrapper(queryClient) });
 
     expect(second.result.current.tab?.id).toBe('ft_1234abcd');
   });
 
-  it('keeps the last-good config across the poll boundary and drops it after the grace window', async () => {
+  it('keeps the cached config across the poll boundary and drops it after the grace window', async () => {
+    const queryClient = createQueryClient();
     mockFetchFeaturedTabs.mockResolvedValueOnce(makeResponse());
-    const first = renderHook(() => useFeaturedTab(), { wrapper: createWrapper() });
+    const first = renderHook(() => useFeaturedTab(), { wrapper: createWrapper(queryClient) });
 
     await flushQuery();
     expect(first.result.current.tab?.id).toBe('ft_1234abcd');
@@ -151,21 +154,23 @@ describe('useFeaturedTab', () => {
     // dropping the tab here would bounce a reader off the tab they are on.
     vi.setSystemTime(new Date('2026-08-08T12:05:01Z'));
     mockFetchFeaturedTabs.mockRejectedValueOnce(new Error('temporary outage'));
-    const second = renderHook(() => useFeaturedTab(), { wrapper: createWrapper() });
+    const second = renderHook(() => useFeaturedTab(), { wrapper: createWrapper(queryClient) });
     expect(second.result.current.tab?.id).toBe('ft_1234abcd');
     second.unmount();
 
     // Past the poll interval plus its grace: the kill switch takes effect.
     vi.setSystemTime(new Date('2026-08-08T12:10:01Z'));
     mockFetchFeaturedTabs.mockRejectedValueOnce(new Error('sustained outage'));
-    const third = renderHook(() => useFeaturedTab(), { wrapper: createWrapper() });
+    const third = renderHook(() => useFeaturedTab(), { wrapper: createWrapper(queryClient) });
 
     expect(third.result.current.tab).toBeNull();
+    expect(third.result.current.isResolved).toBe(false);
   });
 
   it('ignores a cached config that belongs to a different Funnelcake host', async () => {
+    const queryClient = createQueryClient();
     mockFetchFeaturedTabs.mockResolvedValueOnce(makeResponse());
-    const first = renderHook(() => useFeaturedTab(), { wrapper: createWrapper() });
+    const first = renderHook(() => useFeaturedTab(), { wrapper: createWrapper(queryClient) });
 
     await flushQuery();
     expect(first.result.current.tab?.id).toBe('ft_1234abcd');
@@ -173,19 +178,20 @@ describe('useFeaturedTab', () => {
 
     apiUrl = 'https://relay.staging.dvines.org';
     mockFetchFeaturedTabs.mockRejectedValueOnce(new Error('staging outage'));
-    const second = renderHook(() => useFeaturedTab(), { wrapper: createWrapper() });
+    const second = renderHook(() => useFeaturedTab(), { wrapper: createWrapper(queryClient) });
 
     expect(second.result.current.tab).toBeNull();
   });
 
   it('clamps a hostile poll interval so it cannot extend the kill switch', async () => {
+    const queryClient = createQueryClient();
     // Without an upper clamp the grace window is a function of this number, so
     // a config endpoint could keep a killed tab on screen indefinitely.
     mockFetchFeaturedTabs.mockResolvedValueOnce({
       ...makeResponse(),
       poll_interval_seconds: 86400,
     });
-    const first = renderHook(() => useFeaturedTab(), { wrapper: createWrapper() });
+    const first = renderHook(() => useFeaturedTab(), { wrapper: createWrapper(queryClient) });
 
     await flushQuery();
     expect(first.result.current.tab?.id).toBe('ft_1234abcd');
@@ -194,9 +200,37 @@ describe('useFeaturedTab', () => {
     // 20 minutes: past the 15 minute clamp plus its grace, well inside 24 hours.
     vi.setSystemTime(new Date('2026-08-08T12:20:00Z'));
     mockFetchFeaturedTabs.mockRejectedValueOnce(new Error('sustained outage'));
-    const second = renderHook(() => useFeaturedTab(), { wrapper: createWrapper() });
+    const second = renderHook(() => useFeaturedTab(), { wrapper: createWrapper(queryClient) });
 
     expect(second.result.current.tab).toBeNull();
+  });
+
+  it('does not mark an expired cached config as resolved while the shared QueryClient refetches', async () => {
+    const queryClient = createQueryClient();
+    mockFetchFeaturedTabs.mockResolvedValueOnce(makeResponse());
+    const first = renderHook(() => useFeaturedTab(), { wrapper: createWrapper(queryClient) });
+
+    await flushQuery();
+    expect(first.result.current.tab?.slug).toBe('seasonal-theme');
+    first.unmount();
+
+    let release: (value: unknown) => void = () => {};
+    mockFetchFeaturedTabs.mockImplementationOnce(() => new Promise((resolve) => {
+      release = resolve;
+    }));
+    vi.setSystemTime(new Date('2026-08-08T12:10:00Z'));
+    const second = renderHook(() => useFeaturedTab(), { wrapper: createWrapper(queryClient) });
+
+    expect(second.result.current.tab).toBeNull();
+    expect(second.result.current.isResolved).toBe(false);
+
+    await act(async () => {
+      release(makeResponse());
+      await vi.advanceTimersByTimeAsync(0);
+    });
+
+    expect(second.result.current.tab?.slug).toBe('seasonal-theme');
+    expect(second.result.current.isResolved).toBe(true);
   });
 
   it('re-checks the editorial window against the clock, not the response identity', async () => {
@@ -248,14 +282,15 @@ describe('useFeaturedTab', () => {
   });
 
   it('stays resolved through a failed refresh while a cached config is still fresh', async () => {
+    const queryClient = createQueryClient();
     mockFetchFeaturedTabs.mockResolvedValueOnce(makeResponse());
-    const first = renderHook(() => useFeaturedTab(), { wrapper: createWrapper() });
+    const first = renderHook(() => useFeaturedTab(), { wrapper: createWrapper(queryClient) });
 
     await flushQuery();
     first.unmount();
 
     mockFetchFeaturedTabs.mockRejectedValueOnce(new Error('temporary outage'));
-    const second = renderHook(() => useFeaturedTab(), { wrapper: createWrapper() });
+    const second = renderHook(() => useFeaturedTab(), { wrapper: createWrapper(queryClient) });
 
     expect(second.result.current.isResolved).toBe(true);
   });

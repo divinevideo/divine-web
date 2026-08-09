@@ -25,18 +25,9 @@ export function useFeaturedTabVideos({
   return useInfiniteQuery<FeaturedTabVideoPage, Error>({
     queryKey: ['featured-tab-videos', apiUrl, configId, pageSize],
     queryFn: async ({ pageParam, signal }) => {
-      if (!configId) {
-        return {
-          videos: [],
-          nextCursor: undefined,
-          rawCursor: undefined,
-          hasMore: false,
-        };
-      }
-
       const response = await fetchFeaturedTabVideos(
         apiUrl,
-        configId,
+        configId!,
         typeof pageParam === 'string' ? pageParam : undefined,
         pageSize,
         signal

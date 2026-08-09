@@ -1,4 +1,3 @@
-import { useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { getFunnelcakeBaseUrl } from '@/config/api';
@@ -32,12 +31,6 @@ export interface FeaturedTabState {
   isResolved: boolean;
 }
 
-let lastGoodConfig: {
-  apiUrl: string;
-  response: FeaturedTabsResponse;
-  refreshedAt: number;
-} | null = null;
-
 function getRefetchIntervalMs(response: FeaturedTabsResponse | undefined): number {
   const seconds = response?.poll_interval_seconds;
   if (!Number.isFinite(seconds) || !seconds || seconds <= 0) {
@@ -50,65 +43,40 @@ function getRefetchIntervalMs(response: FeaturedTabsResponse | undefined): numbe
   );
 }
 
-function getFreshCachedConfig(apiUrl: string, now: number): FeaturedTabsResponse | null {
-  if (!lastGoodConfig || lastGoodConfig.apiUrl !== apiUrl) return null;
+function getFreshCachedConfig(
+  response: FeaturedTabsResponse | undefined,
+  refreshedAt: number,
+  now: number
+): FeaturedTabsResponse | null {
+  if (!response || !refreshedAt) return null;
 
-  const maxAgeMs = getRefetchIntervalMs(lastGoodConfig.response) + STALE_CONFIG_GRACE_MS;
-  return now - lastGoodConfig.refreshedAt <= maxAgeMs
-    ? lastGoodConfig.response
+  const maxAgeMs = getRefetchIntervalMs(response) + STALE_CONFIG_GRACE_MS;
+  return now - refreshedAt <= maxAgeMs
+    ? response
     : null;
-}
-
-function isSameResolvedTab(
-  a: ResolvedFeaturedTab | null,
-  b: ResolvedFeaturedTab | null
-): boolean {
-  if (a === b) return true;
-  if (!a || !b) return false;
-
-  return a.id === b.id
-    && a.slug === b.slug
-    && a.label === b.label
-    && a.disclosureLabel === b.disclosureLabel
-    && a.position?.after === b.position?.after
-    && a.position?.before === b.position?.before;
-}
-
-export function clearFeaturedTabCacheForTests(): void {
-  lastGoodConfig = null;
 }
 
 export function useFeaturedTab(): FeaturedTabState {
   const apiUrl = getFunnelcakeBaseUrl();
   const { i18n } = useTranslation();
   const minorStatus = useProtectedMinorStatus();
-  const lastResolved = useRef<ResolvedFeaturedTab | null>(null);
 
-  const { isSuccess } = useQuery({
+  const { data, dataUpdatedAt } = useQuery({
     queryKey: ['featured-tabs', apiUrl],
-    queryFn: async ({ signal }) => {
-      const response = await fetchFeaturedTabs(apiUrl, signal);
-      lastGoodConfig = {
-        apiUrl,
-        response,
-        refreshedAt: Date.now(),
-      };
-      return response;
-    },
+    queryFn: ({ signal }) => fetchFeaturedTabs(apiUrl, signal),
     staleTime: 60 * 1000,
     gcTime: GC_TIME_MS,
     refetchOnWindowFocus: true,
     refetchInterval: (queryState) => getRefetchIntervalMs(queryState.state.data),
   });
 
-  const response = getFreshCachedConfig(apiUrl, Date.now());
+  const response = getFreshCachedConfig(data, dataUpdatedAt, Date.now());
 
   // Deliberately not memoized on the response identity: `starts_at` / `ends_at`
   // are evaluated against the current time, and a memo keyed on the response
   // would hold a decision taken before the editorial window opened or closed
   // until the next successful poll replaced the object. Selection is a scan of
-  // a short list, so it runs per render and the reference is stabilised below
-  // to keep consumers' effects and memos from churning.
+  // a short list, so it runs per render.
   const resolved = response
     ? selectFeaturedTab(response.featured_tabs, {
         now: new Date(),
@@ -117,16 +85,12 @@ export function useFeaturedTab(): FeaturedTabState {
       })
     : null;
 
-  if (!isSameResolvedTab(lastResolved.current, resolved)) {
-    lastResolved.current = resolved;
-  }
-
   return {
-    tab: lastResolved.current,
+    tab: resolved,
     // A failed request is not an answer. `isError` deliberately does not count:
     // without a config in hand we do not know whether a given slug names a live
     // featured tab, and a caller that redirected on it would throw away a valid
     // shared link during a config outage. Unknown stays unknown.
-    isResolved: isSuccess || response !== null,
+    isResolved: response !== null,
   };
 }
