@@ -154,7 +154,9 @@ https://divine.video/lists
 ```
 
 ### Specific List
-View a specific list's videos (requires login):
+View a specific list. Both NIP-51 list kinds share this route — kind `30005`
+video sets render the video list, kind `30000` people sets render the people
+list:
 ```
 https://divine.video/list/{pubkey}/{listId}
 ```
@@ -162,6 +164,14 @@ https://divine.video/list/{pubkey}/{listId}
 **Example:**
 ```
 https://divine.video/list/abc123.../my-favorites
+```
+
+An owner can hold both kinds under the same `d` tag, so links built inside the
+app pin the kind with a `?kind=` param. A bare URL resolves the kind from the
+relays and prefers the video list:
+```
+https://divine.video/list/abc123.../friends?kind=30000
+https://divine.video/list/abc123.../my-favorites?kind=30005
 ```
 
 ## Nostr Integration
