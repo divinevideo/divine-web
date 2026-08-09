@@ -14,11 +14,13 @@ const {
   mockFeaturedTab,
   mockCurrentUser,
   mockTrackEvent,
+  mockFeaturedResolved,
 } = vi.hoisted(() => ({
   mockNavigate: vi.fn(),
   mockTrackEvent: vi.fn(),
   mockCategories: [] as CategoryWithConfig[],
   mockFeaturedTab: { current: null as ResolvedFeaturedTab | null },
+  mockFeaturedResolved: { current: true },
   mockCurrentUser: { current: null as { pubkey: string } | null },
 }));
 
@@ -35,7 +37,10 @@ vi.mock('@/hooks/useCategories', () => ({
 }));
 
 vi.mock('@/hooks/useFeaturedTab', () => ({
-  useFeaturedTab: () => mockFeaturedTab.current,
+  useFeaturedTab: () => ({
+    tab: mockFeaturedTab.current,
+    isResolved: mockFeaturedResolved.current,
+  }),
 }));
 
 vi.mock('@/lib/analytics', () => ({
@@ -77,6 +82,7 @@ describe('DiscoveryPage', () => {
     mockTrackEvent.mockReset();
     mockCategories.length = 0;
     mockFeaturedTab.current = null;
+    mockFeaturedResolved.current = true;
     mockCurrentUser.current = null;
   });
 
@@ -184,6 +190,34 @@ describe('DiscoveryPage', () => {
     rerender(tree());
 
     expect(mockTrackEvent).toHaveBeenCalledTimes(1);
+  });
+
+  it('sends a slug no configuration claims back to the default tab', () => {
+    render(
+      <MemoryRouter initialEntries={['/discovery/expired-campaign']}>
+        <Routes>
+          <Route path="/discovery/:tab" element={<DiscoveryPage />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    expect(mockNavigate).toHaveBeenCalledWith('/discovery/classics', { replace: true });
+  });
+
+  it('leaves an unknown slug alone while the featured configuration is still loading', () => {
+    // The slug may still turn out to be a valid featured tab, so redirecting
+    // here would break a deep link into a live campaign.
+    mockFeaturedResolved.current = false;
+
+    render(
+      <MemoryRouter initialEntries={['/discovery/seasonal-theme']}>
+        <Routes>
+          <Route path="/discovery/:tab" element={<DiscoveryPage />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    expect(mockNavigate).not.toHaveBeenCalled();
   });
 
   it('resolves direct navigation to the configured featured slug', () => {

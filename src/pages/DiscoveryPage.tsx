@@ -11,7 +11,7 @@ import { VerifiedOnlyToggle } from '@/components/VerifiedOnlyToggle';
 import { HashtagExplorer } from '@/components/HashtagExplorer';
 import { ClassicVinersRow } from '@/components/ClassicVinersRow';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Star, Hash, Flame, Sparkle as Sparkles } from '@phosphor-icons/react';
+import { Star, Hash, Flame, Sparkle as Sparkles, Confetti } from '@phosphor-icons/react';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useCategories } from '@/hooks/useCategories';
 import { useFeaturedTab } from '@/hooks/useFeaturedTab';
@@ -39,7 +39,10 @@ function insertFeaturedTab(
   const item: DiscoveryTabItem = {
     value: featuredTab.slug,
     label: featuredTab.label,
-    Icon: Hash,
+    // Not Hash: the hashtags tab already owns that glyph, and below `sm` the
+    // labels are hidden, so a second Hash would make the editorial tab
+    // indistinguishable from it on mobile.
+    Icon: Confetti,
     disclosureLabel: featuredTab.disclosureLabel,
     featuredTab,
   };
@@ -68,7 +71,7 @@ export function DiscoveryPage() {
   const { user } = useCurrentUser();
   const isLoggedIn = !!user?.pubkey;
   const { data: categories } = useCategories();
-  const featuredTab = useFeaturedTab();
+  const { tab: featuredTab, isResolved: isFeaturedConfigResolved } = useFeaturedTab();
 
   const baseTabs = useMemo<DiscoveryTabItem[]>(() => {
     const tabs: DiscoveryTabItem[] = [
@@ -141,6 +144,25 @@ export function DiscoveryPage() {
       navigate(`/discovery/${defaultTab}`, { replace: true });
     }
   }, [activeTab, allowedTabs, defaultTab, navigate]);
+
+  // A slug that no configuration claims — expired campaign, shared link, typo —
+  // otherwise renders the default tab while the address bar keeps the dead
+  // route, so a reload or a re-share carries the phantom slug onward. Wait for
+  // the featured config to resolve first: before then, an unknown slug may
+  // still turn out to be a valid featured tab.
+  useEffect(() => {
+    if (!routeTab || !isFeaturedConfigResolved) return;
+    if (allowedTabs.includes(normalizedTab as AllowedTab)) return;
+
+    navigate(`/discovery/${defaultTab}`, { replace: true });
+  }, [
+    routeTab,
+    normalizedTab,
+    allowedTabs,
+    defaultTab,
+    isFeaturedConfigResolved,
+    navigate,
+  ]);
 
   // Handle edge case: user logs out while on 'foryou' tab
   useEffect(() => {

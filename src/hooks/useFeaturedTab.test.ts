@@ -106,7 +106,7 @@ describe('useFeaturedTab', () => {
     await flushQuery();
 
     expect(mockFetchFeaturedTabs).toHaveBeenCalled();
-    expect(result.current).toBeNull();
+    expect(result.current.tab).toBeNull();
   });
 
   it('resolves an eligible localized featured tab', async () => {
@@ -116,7 +116,7 @@ describe('useFeaturedTab', () => {
 
     await flushQuery();
 
-    expect(result.current).toEqual({
+    expect(result.current.tab).toEqual({
       id: 'ft_1234abcd',
       slug: 'seasonal-theme',
       label: 'Especial',
@@ -130,13 +130,13 @@ describe('useFeaturedTab', () => {
     const first = renderHook(() => useFeaturedTab(), { wrapper: createWrapper() });
 
     await flushQuery();
-    expect(first.result.current?.id).toBe('ft_1234abcd');
+    expect(first.result.current.tab?.id).toBe('ft_1234abcd');
     first.unmount();
 
     mockFetchFeaturedTabs.mockRejectedValueOnce(new Error('temporary outage'));
     const second = renderHook(() => useFeaturedTab(), { wrapper: createWrapper() });
 
-    expect(second.result.current?.id).toBe('ft_1234abcd');
+    expect(second.result.current.tab?.id).toBe('ft_1234abcd');
   });
 
   it('keeps the last-good config across the poll boundary and drops it after the grace window', async () => {
@@ -144,7 +144,7 @@ describe('useFeaturedTab', () => {
     const first = renderHook(() => useFeaturedTab(), { wrapper: createWrapper() });
 
     await flushQuery();
-    expect(first.result.current?.id).toBe('ft_1234abcd');
+    expect(first.result.current.tab?.id).toBe('ft_1234abcd');
     first.unmount();
 
     // One poll interval (300s) has elapsed and the refresh is still in flight:
@@ -152,15 +152,15 @@ describe('useFeaturedTab', () => {
     vi.setSystemTime(new Date('2026-08-08T12:05:01Z'));
     mockFetchFeaturedTabs.mockRejectedValueOnce(new Error('temporary outage'));
     const second = renderHook(() => useFeaturedTab(), { wrapper: createWrapper() });
-    expect(second.result.current?.id).toBe('ft_1234abcd');
+    expect(second.result.current.tab?.id).toBe('ft_1234abcd');
     second.unmount();
 
-    // Two intervals with no successful refresh: the kill switch takes effect.
+    // Past the poll interval plus its grace: the kill switch takes effect.
     vi.setSystemTime(new Date('2026-08-08T12:10:01Z'));
     mockFetchFeaturedTabs.mockRejectedValueOnce(new Error('sustained outage'));
     const third = renderHook(() => useFeaturedTab(), { wrapper: createWrapper() });
 
-    expect(third.result.current).toBeNull();
+    expect(third.result.current.tab).toBeNull();
   });
 
   it('ignores a cached config that belongs to a different Funnelcake host', async () => {
@@ -168,14 +168,70 @@ describe('useFeaturedTab', () => {
     const first = renderHook(() => useFeaturedTab(), { wrapper: createWrapper() });
 
     await flushQuery();
-    expect(first.result.current?.id).toBe('ft_1234abcd');
+    expect(first.result.current.tab?.id).toBe('ft_1234abcd');
     first.unmount();
 
     apiUrl = 'https://relay.staging.dvines.org';
     mockFetchFeaturedTabs.mockRejectedValueOnce(new Error('staging outage'));
     const second = renderHook(() => useFeaturedTab(), { wrapper: createWrapper() });
 
-    expect(second.result.current).toBeNull();
+    expect(second.result.current.tab).toBeNull();
+  });
+
+  it('clamps a hostile poll interval so it cannot extend the kill switch', async () => {
+    // Without an upper clamp the grace window is a function of this number, so
+    // a config endpoint could keep a killed tab on screen indefinitely.
+    mockFetchFeaturedTabs.mockResolvedValueOnce({
+      ...makeResponse(),
+      poll_interval_seconds: 86400,
+    });
+    const first = renderHook(() => useFeaturedTab(), { wrapper: createWrapper() });
+
+    await flushQuery();
+    expect(first.result.current.tab?.id).toBe('ft_1234abcd');
+    first.unmount();
+
+    // 20 minutes: past the 15 minute clamp plus its grace, well inside 24 hours.
+    vi.setSystemTime(new Date('2026-08-08T12:20:00Z'));
+    mockFetchFeaturedTabs.mockRejectedValueOnce(new Error('sustained outage'));
+    const second = renderHook(() => useFeaturedTab(), { wrapper: createWrapper() });
+
+    expect(second.result.current.tab).toBeNull();
+  });
+
+  it('re-checks the editorial window against the clock, not the response identity', async () => {
+    mockFetchFeaturedTabs.mockResolvedValueOnce(makeResponse({
+      ends_at: '2026-08-08T12:02:00Z',
+    }));
+    const { result, rerender } = renderHook(() => useFeaturedTab(), { wrapper: createWrapper() });
+
+    await flushQuery();
+    expect(result.current.tab?.id).toBe('ft_1234abcd');
+
+    // Same cached response object, later clock: ends_at has passed.
+    vi.setSystemTime(new Date('2026-08-08T12:03:00Z'));
+    rerender();
+
+    expect(result.current.tab).toBeNull();
+  });
+
+  it('reports the configuration as unresolved until the first request settles', async () => {
+    let release: (value: unknown) => void = () => {};
+    mockFetchFeaturedTabs.mockImplementationOnce(() => new Promise((resolve) => {
+      release = resolve;
+    }));
+
+    const { result } = renderHook(() => useFeaturedTab(), { wrapper: createWrapper() });
+
+    expect(result.current.isResolved).toBe(false);
+
+    await act(async () => {
+      release(makeResponse());
+      await vi.advanceTimersByTimeAsync(0);
+    });
+
+    expect(result.current.isResolved).toBe(true);
+    expect(result.current.tab?.id).toBe('ft_1234abcd');
   });
 
   it('hides minor-restricted tabs when protected-minor status is unknown', async () => {
@@ -187,6 +243,6 @@ describe('useFeaturedTab', () => {
     await flushQuery();
 
     expect(mockFetchFeaturedTabs).toHaveBeenCalled();
-    expect(result.current).toBeNull();
+    expect(result.current.tab).toBeNull();
   });
 });
