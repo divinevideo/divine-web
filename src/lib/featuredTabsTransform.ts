@@ -46,12 +46,13 @@ export function parseFeaturedTabPosition(value: unknown): FeaturedTabPosition | 
   const after = parseDiscoveryTabName((web as { after?: unknown }).after);
   const before = parseDiscoveryTabName((web as { before?: unknown }).before);
 
-  if (!after && !before) return null;
+  // `after` and `before` are mutually exclusive anchors. Keeping both would let
+  // a placement contradict itself (anchor from one key, side from the other),
+  // so resolve the conflict here rather than in the insertion code.
+  if (after) return { after };
+  if (before) return { before };
 
-  return {
-    ...(after ? { after } : {}),
-    ...(before ? { before } : {}),
-  };
+  return null;
 }
 
 export function parseFeaturedTabDisclosure(value: unknown): string | null {

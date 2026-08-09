@@ -25,6 +25,13 @@ describe('featured tab transforms', () => {
     expect(parseFeaturedTabPosition({ web: { before: 'hashtags' } })).toEqual({ before: 'hashtags' });
   });
 
+  it('keeps a single anchor when the backend sends both after and before', () => {
+    expect(parseFeaturedTabPosition({ web: { after: 'hot', before: 'hashtags' } }))
+      .toEqual({ after: 'hot' });
+    expect(parseFeaturedTabPosition({ web: { after: 'rising', before: 'hashtags' } }))
+      .toEqual({ before: 'hashtags' });
+  });
+
   it('only accepts string disclosure labels', () => {
     expect(parseFeaturedTabDisclosure({ text: 'Ad' })).toBeNull();
     expect(parseFeaturedTabDisclosure(' Sponsored collection ')).toBe('Sponsored collec');
