@@ -38,7 +38,7 @@ export function useFeaturedTab(): ResolvedFeaturedTab | null {
   const { i18n } = useTranslation();
   const minorStatus = useProtectedMinorStatus();
 
-  const query = useQuery({
+  useQuery({
     queryKey: ['featured-tabs', apiUrl],
     queryFn: async ({ signal }) => {
       const response = await fetchFeaturedTabs(apiUrl, signal);
