@@ -112,6 +112,7 @@ function renderPage(initialEntries: string[]) {
           <Route path="/event/:eventId" element={<EventPage />} />
           <Route path="/event/a/:kind/:pubkey/:identifier" element={<EventPage />} />
           <Route path="/list/:pubkey/:listId" element={<div data-testid="list-page">List page</div>} />
+          <Route path="/people-lists/:pubkey/:listId" element={<div data-testid="people-list-page">People list page</div>} />
           <Route path="/video/:id" element={<div data-testid="video-page">Video page</div>} />
           <Route path="/profile/:npub" element={<div data-testid="profile-page">Profile page</div>} />
           <Route path="/t/:tag" element={<div data-testid="tag-page">Tag page</div>} />
@@ -171,7 +172,7 @@ describe('EventPage', () => {
     expect(await screen.findByTestId('list-page')).toBeInTheDocument();
   });
 
-  it('redirects people lists to the shared list page', async () => {
+  it('redirects people lists to the people-list page', async () => {
     const pubkey = 'a'.repeat(64);
     mockFetchEventById.mockResolvedValue({
       id: 'c'.repeat(64),
@@ -185,7 +186,7 @@ describe('EventPage', () => {
 
     renderPage([`/event/${'c'.repeat(64)}`]);
 
-    expect(await screen.findByTestId('list-page')).toBeInTheDocument();
+    expect(await screen.findByTestId('people-list-page')).toBeInTheDocument();
   });
 
   it('shows generic list-style events with reference links and raw json', async () => {

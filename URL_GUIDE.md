@@ -153,10 +153,8 @@ View all lists for the logged-in user (requires login):
 https://divine.video/lists
 ```
 
-### Specific List
-View a specific list. Both NIP-51 list kinds share this route — kind `30005`
-video sets render the video list, kind `30000` people sets render the people
-list:
+### Specific Video List
+View a specific NIP-51 kind `30005` video list:
 ```
 https://divine.video/list/{pubkey}/{listId}
 ```
@@ -166,12 +164,15 @@ https://divine.video/list/{pubkey}/{listId}
 https://divine.video/list/abc123.../my-favorites
 ```
 
-An owner can hold both kinds under the same `d` tag, so links built inside the
-app pin the kind with a `?kind=` param. A bare URL resolves the kind from the
-relays and prefers the video list:
+### Specific People List
+View a specific NIP-51 kind `30000` people list:
 ```
-https://divine.video/list/abc123.../friends?kind=30000
-https://divine.video/list/abc123.../my-favorites?kind=30005
+https://divine.video/people-lists/{pubkey}/{listId}
+```
+
+**Example:**
+```
+https://divine.video/people-lists/abc123.../friends
 ```
 
 ## Nostr Integration
@@ -264,7 +265,7 @@ All video and profile URLs include Open Graph and Twitter Card metadata for rich
 
 ### Login-Required Routes
 - Home feed: `/home`
-- Lists: `/lists`, `/list/{pubkey}/{listId}`
+- Lists: `/lists`, `/list/{pubkey}/{listId}`, `/people-lists/{pubkey}/{listId}`
 - Moderation settings: `/settings/moderation`
 
 ## Best Practices

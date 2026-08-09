@@ -15,7 +15,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { List, TrendUp as TrendingUp, Plus, Users, VideoCamera as Video, Clock } from '@phosphor-icons/react';
 import { genUserName } from '@/lib/genUserName';
-import { VIDEO_LIST_EVENT_KIND, buildListPath } from '@/lib/eventRouting';
+import { buildListPath } from '@/lib/eventRouting';
 import { CreateListDialog } from '@/components/CreateListDialog';
 import { formatDistanceToNow } from 'date-fns';
 import { getSafeProfileImage } from '@/lib/imageUtils';
@@ -42,7 +42,7 @@ function ListCard({ list }: { list: ListCardProps }) {
           <div className="flex-1">
             <CardTitle className="text-lg">
               <Link
-                to={buildListPath(list.pubkey, list.id, VIDEO_LIST_EVENT_KIND)}
+                to={buildListPath(list.pubkey, list.id)}
                 className="hover:text-primary transition-colors"
               >
                 {list.name}
@@ -90,7 +90,7 @@ function ListCard({ list }: { list: ListCardProps }) {
           </div>
 
           {/* View Button */}
-          <Link to={buildListPath(list.pubkey, list.id, VIDEO_LIST_EVENT_KIND)}>
+          <Link to={buildListPath(list.pubkey, list.id)}>
             <Button variant="outline" size="sm" className="w-full">
               View List
             </Button>

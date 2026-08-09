@@ -5,6 +5,7 @@ import {
   buildAddressableEventPath,
   buildEventPath,
   buildListPath,
+  buildPeopleListPath,
   buildVideoPath,
 } from '@/lib/eventRouting';
 import {
@@ -94,11 +95,11 @@ describe('directSearch', () => {
     });
 
     expect(getDirectSearchTarget(videoListNaddr)).toEqual({
-      path: buildListPath(pubkey, listId, 30005),
+      path: buildListPath(pubkey, listId),
       entity: 'event',
     });
     expect(getDirectSearchTarget(peopleListNaddr)).toEqual({
-      path: buildListPath(pubkey, 'friends', 30000),
+      path: buildPeopleListPath(pubkey, 'friends'),
       entity: 'event',
     });
     expect(getDirectSearchTarget(article)).toEqual({

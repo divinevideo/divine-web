@@ -12,8 +12,8 @@ const ROUTES = [
   '/kids',
   `/profile/${PUBKEY}`,
   `/profile/${PUBKEY}/lists`,
-  `/list/${PUBKEY}/friends?kind=30000`,
-  `/list/${PUBKEY}/favorites?kind=30005`,
+  `/people-lists/${PUBKEY}/friends`,
+  `/list/${PUBKEY}/favorites`,
   '/__brand-preview',
 ];
 

@@ -3,9 +3,8 @@
 import type { PeopleList } from '@/lib/parsePeopleListFromEvent';
 import type { VideoList } from '@/lib/parseVideoListFromEvent';
 import {
-  PEOPLE_LIST_EVENT_KIND,
-  VIDEO_LIST_EVENT_KIND,
   buildListPath,
+  buildPeopleListPath,
 } from '@/lib/eventRouting';
 
 export interface DiscoverableList {
@@ -32,7 +31,7 @@ export function toDiscoverablePeopleList(list: PeopleList): DiscoverableList {
     ownerPubkey: list.pubkey,
     createdAt: list.createdAt,
     itemCount: list.memberPubkeys.length,
-    href: buildListPath(list.pubkey, list.id, PEOPLE_LIST_EVENT_KIND),
+    href: buildPeopleListPath(list.pubkey, list.id),
   };
 }
 
@@ -47,7 +46,7 @@ export function toDiscoverableVideoList(list: VideoList): DiscoverableList {
     ownerPubkey: list.pubkey,
     createdAt: list.createdAt,
     itemCount: list.videoCoordinates.length,
-    href: buildListPath(list.pubkey, list.id, VIDEO_LIST_EVENT_KIND),
+    href: buildListPath(list.pubkey, list.id),
   };
 }
 

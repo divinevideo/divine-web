@@ -27,7 +27,8 @@ import VideoPage from "./pages/VideoPage";
 import { LegacyVineVideoPage } from "./pages/LegacyVineVideoPage";
 import { TagPage } from "./pages/TagPage";
 import ListsPage from "./pages/ListsPage";
-import ListRoutePage, { LegacyPeopleListRedirect } from "./pages/ListRoutePage";
+import ListDetailPage from "./pages/ListDetailPage";
+import PeopleListDetailPage from "./pages/PeopleListDetailPage";
 import ProfileListsPage from "./pages/ProfileListsPage";
 import ModerationSettingsPage from "./pages/ModerationSettingsPage";
 import LinkedAccountsSettingsPage from "./pages/LinkedAccountsSettingsPage";
@@ -116,8 +117,8 @@ export function AppRouter() {
       <Route path="/merch" element={<MerchPage />} />
       <Route path="/services" element={<ServicesPage />} />
       <Route path="/u/:userId" element={<UniversalUserPage />} />
-      <Route path="/list/:pubkey/:listId" element={<ListRoutePage />} />
-      <Route path="/people-lists/:pubkey/:listId" element={<LegacyPeopleListRedirect />} />
+      <Route path="/list/:pubkey/:listId" element={<ListDetailPage />} />
+      <Route path="/people-lists/:pubkey/:listId" element={<PeopleListDetailPage />} />
       <Route path="/event/:eventId" element={<EventPage />} />
       <Route path="/event/a/:kind/:pubkey/:identifier" element={<EventPage />} />
       <Route path="/:nip19" element={<NIP19Page />} />

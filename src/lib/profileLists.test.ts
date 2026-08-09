@@ -9,9 +9,8 @@ import {
   toDiscoverableVideoList,
 } from './profileLists';
 import {
-  PEOPLE_LIST_EVENT_KIND,
-  VIDEO_LIST_EVENT_KIND,
   buildListPath,
+  buildPeopleListPath,
 } from './eventRouting';
 
 const OWNER = 'a'.repeat(64);
@@ -39,7 +38,7 @@ describe('profile list presentation', () => {
       key: `30000:${OWNER}:friends`,
       type: 'people',
       itemCount: 2,
-      href: buildListPath(OWNER, 'friends', PEOPLE_LIST_EVENT_KIND),
+      href: buildPeopleListPath(OWNER, 'friends'),
     });
   });
 
@@ -48,7 +47,7 @@ describe('profile list presentation', () => {
       key: `30005:${OWNER}:favorites`,
       type: 'videos',
       itemCount: 1,
-      href: buildListPath(OWNER, 'favorites', VIDEO_LIST_EVENT_KIND),
+      href: buildListPath(OWNER, 'favorites'),
     });
   });
 
@@ -68,8 +67,8 @@ describe('profile list presentation', () => {
 
     expect(new Set(merged.map((list) => list.href)).size).toBe(2);
     expect(merged.map((list) => list.href)).toEqual([
-      buildListPath(OWNER, sharedId, PEOPLE_LIST_EVENT_KIND),
-      buildListPath(OWNER, sharedId, VIDEO_LIST_EVENT_KIND),
+      buildPeopleListPath(OWNER, sharedId),
+      buildListPath(OWNER, sharedId),
     ]);
   });
 });
