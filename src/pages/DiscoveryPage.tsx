@@ -157,13 +157,18 @@ export function DiscoveryPage() {
     }
   }, [params.tab, navigate, defaultTab]);
 
+  // Keyed on the identifiers rather than the resolved object: the config poll
+  // hands back a fresh object every refresh, which would otherwise re-count an
+  // impression every few minutes for a viewer who never left the tab.
+  const featuredTabId = featuredTab?.id;
+  const featuredTabSlug = featuredTab?.slug;
   useEffect(() => {
-    if (featuredTab && activeTab === featuredTab.slug) {
+    if (featuredTabId && activeTab === featuredTabSlug) {
       trackEvent('featured_tab_impression', {
-        featured_tab_id: featuredTab.id,
+        featured_tab_id: featuredTabId,
       });
     }
-  }, [activeTab, featuredTab]);
+  }, [activeTab, featuredTabId, featuredTabSlug]);
 
   const activeTabItem = tabItems.find((tab) => tab.value === activeTab);
 

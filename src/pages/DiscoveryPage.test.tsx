@@ -13,8 +13,10 @@ const {
   mockCategories,
   mockFeaturedTab,
   mockCurrentUser,
+  mockTrackEvent,
 } = vi.hoisted(() => ({
   mockNavigate: vi.fn(),
+  mockTrackEvent: vi.fn(),
   mockCategories: [] as CategoryWithConfig[],
   mockFeaturedTab: { current: null as ResolvedFeaturedTab | null },
   mockCurrentUser: { current: null as { pubkey: string } | null },
@@ -37,7 +39,7 @@ vi.mock('@/hooks/useFeaturedTab', () => ({
 }));
 
 vi.mock('@/lib/analytics', () => ({
-  trackEvent: vi.fn(),
+  trackEvent: mockTrackEvent,
 }));
 
 vi.mock('@/components/VideoFeed', () => ({
@@ -72,6 +74,7 @@ describe('DiscoveryPage', () => {
     await initializeI18n({ force: true, languages: ['en-US'] });
 
     mockNavigate.mockReset();
+    mockTrackEvent.mockReset();
     mockCategories.length = 0;
     mockFeaturedTab.current = null;
     mockCurrentUser.current = null;
@@ -151,6 +154,36 @@ describe('DiscoveryPage', () => {
       'EspecialNew',
       'Etiquetas',
     ]);
+  });
+
+  it('counts one featured tab impression across configuration refreshes', () => {
+    const config = (): ResolvedFeaturedTab => ({
+      id: 'ft_1234abcd',
+      slug: 'seasonal-theme',
+      label: 'Especial',
+      position: { after: 'hot' },
+      disclosureLabel: null,
+    });
+    mockFeaturedTab.current = config();
+
+    const tree = () => (
+      <MemoryRouter initialEntries={['/discovery/seasonal-theme']}>
+        <Routes>
+          <Route path="/discovery/:tab" element={<DiscoveryPage />} />
+        </Routes>
+      </MemoryRouter>
+    );
+    const { rerender } = render(tree());
+
+    expect(mockTrackEvent).toHaveBeenCalledExactlyOnceWith('featured_tab_impression', {
+      featured_tab_id: 'ft_1234abcd',
+    });
+
+    // The 5-minute config poll resolves the same tab into a fresh object.
+    mockFeaturedTab.current = config();
+    rerender(tree());
+
+    expect(mockTrackEvent).toHaveBeenCalledTimes(1);
   });
 
   it('resolves direct navigation to the configured featured slug', () => {
