@@ -70,4 +70,14 @@ describe('featured tab transforms', () => {
     expect(response.next_cursor).toBe('cursor-2');
     expect(response.has_more).toBe(true);
   });
+
+  it('treats a malformed pagination envelope as the last page', () => {
+    expect(transformFeaturedTabVideosResponse({ data: [] } as never))
+      .toEqual({ videos: [], next_cursor: undefined, has_more: false });
+
+    expect(transformFeaturedTabVideosResponse({
+      data: [],
+      pagination: { has_more: true },
+    })).toEqual({ videos: [], next_cursor: undefined, has_more: false });
+  });
 });

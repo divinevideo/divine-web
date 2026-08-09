@@ -38,9 +38,11 @@ export interface FeaturedTabVideoRaw extends Omit<FunnelcakeVideoRaw, 'created_a
 
 export interface FeaturedTabVideosResponseRaw {
   data: FeaturedTabVideoRaw[];
-  pagination: {
+  // Optional because the transform treats a malformed envelope as "no more
+  // pages" rather than throwing.
+  pagination?: {
     next_cursor?: string | null;
-    has_more: boolean;
+    has_more?: boolean;
   };
 }
 

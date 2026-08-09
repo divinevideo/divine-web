@@ -94,11 +94,18 @@ export function toFunnelcakeVideo(raw: FeaturedTabVideoRaw): FunnelcakeVideoRaw 
 export function transformFeaturedTabVideosResponse(
   response: FeaturedTabVideosResponseRaw
 ): FunnelcakeResponse {
+  // `pagination` is guarded like `data`: a payload missing it would otherwise
+  // throw outside the client's try/catch, so the circuit breaker never sees it.
+  const pagination = response.pagination ?? {};
+  const nextCursor = typeof pagination.next_cursor === 'string' && pagination.next_cursor
+    ? pagination.next_cursor
+    : undefined;
+
   return {
     videos: Array.isArray(response.data)
       ? response.data.map(toFunnelcakeVideo)
       : [],
-    next_cursor: response.pagination.next_cursor ?? undefined,
-    has_more: response.pagination.has_more,
+    next_cursor: nextCursor,
+    has_more: pagination.has_more === true && !!nextCursor,
   };
 }
