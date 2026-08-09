@@ -29,6 +29,32 @@ describe('featured tab eligibility', () => {
     expect(isFeaturedTabEligible(makeConfig({ ends_at: '2026-08-07T00:00:00Z' }), now, 'not_protected')).toBe(false);
   });
 
+  it('fails closed when the gate flags arrive as non-boolean values', () => {
+    // The string "false" is truthy in JS, so a serializer or proxy that stringifies
+    // booleans must not be able to open the audience gate or defeat the kill switch.
+    expect(isFeaturedTabEligible(
+      makeConfig({ visible_to_minors: 'false' as never }), now, 'protected',
+    )).toBe(false);
+    expect(isFeaturedTabEligible(
+      makeConfig({ visible_to_minors: 'false' as never }), now, 'unknown',
+    )).toBe(false);
+    expect(isFeaturedTabEligible(makeConfig({ enabled: 'false' as never }), now, 'not_protected')).toBe(false);
+    expect(isFeaturedTabEligible(makeConfig({ has_content: 'false' as never }), now, 'not_protected')).toBe(false);
+    expect(isFeaturedTabEligible(makeConfig({ enabled: 1 as never }), now, 'not_protected')).toBe(false);
+  });
+
+  it('resolves to no featured tab when the payload is not a usable list', () => {
+    const options = { now, minorState: 'not_protected' as const, locale: 'en' };
+
+    // An HTTP 200 with a malformed envelope must degrade, not throw in render.
+    expect(selectFeaturedTab(undefined, options)).toBeNull();
+    expect(selectFeaturedTab(null, options)).toBeNull();
+    expect(selectFeaturedTab({ featured_tabs: [] }, options)).toBeNull();
+    expect(selectFeaturedTab([null, 'nope', 42], options)).toBeNull();
+    expect(selectFeaturedTab([makeConfig({ id: '' as never })], options)).toBeNull();
+    expect(selectFeaturedTab([makeConfig({ id: 42 as never })], options)).toBeNull();
+  });
+
   it('fails closed for known or unknown protected minor states', () => {
     const config = makeConfig({ visible_to_minors: false });
 
