@@ -261,11 +261,12 @@ All video and profile URLs include Open Graph and Twitter Card metadata for rich
 - Profile pages: `/profile/{npub}`, `/u/{userId}`
 - Video pages: `/video/{id}`
 - Search: `/search`
+- List detail: `/list/{pubkey}/{listId}`, `/people-lists/{pubkey}/{listId}`
 - All informational pages: `/about`, `/faq`, `/privacy`, etc.
 
 ### Login-Required Routes
 - Home feed: `/home`
-- Lists: `/lists`, `/list/{pubkey}/{listId}`, `/people-lists/{pubkey}/{listId}`
+- Own list gallery: `/lists`
 - Moderation settings: `/settings/moderation`
 
 ## Best Practices
