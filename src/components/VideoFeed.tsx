@@ -82,6 +82,9 @@ export function VideoFeed({
   const [showListDialog, setShowListDialog] = useState<{ videoId: string; videoPubkey: string } | null>(null);
   const [hasFirstPlayback, setHasFirstPlayback] = useState(false);
   const mountTimeRef = useRef<number | null>(null);
+  // The impression effect re-runs on every appended page; this keeps the
+  // featured-tab event to one per feed mount, like trackInitialRender.
+  const featuredImpressionSentRef = useRef<string | null>(null);
 
   const { checkContent } = useContentModeration();
   const navigate = useSubdomainNavigate();
@@ -173,7 +176,12 @@ export function VideoFeed({
         totalVideos: allVideos.length,
       });
 
-      if (feedType === 'featured' && featuredTabId) {
+      if (
+        feedType === 'featured' &&
+        featuredTabId &&
+        featuredImpressionSentRef.current !== featuredTabId
+      ) {
+        featuredImpressionSentRef.current = featuredTabId;
         trackEvent('featured_tab_video_impression', {
           featured_tab_id: featuredTabId,
           rendered_videos: filteredVideos.length,
