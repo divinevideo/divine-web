@@ -62,6 +62,11 @@ describe('getListShareUrl', () => {
     const url = getListShareUrl('pubkey-abc', 'my-list');
     expect(url).toBe('https://divine.video/list/pubkey-abc/my-list');
   });
+
+  it('encodes the list d tag through the route builder', () => {
+    const url = getListShareUrl('pubkey-abc', 'name with/slash');
+    expect(url).toBe('https://divine.video/list/pubkey-abc/name%20with%2Fslash');
+  });
 });
 
 describe('getListShareData', () => {

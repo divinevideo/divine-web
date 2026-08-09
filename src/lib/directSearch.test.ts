@@ -86,6 +86,11 @@ describe('directSearch', () => {
       pubkey,
       kind: 30000,
     });
+    const blockListNaddr = nip19.naddrEncode({
+      identifier: 'block',
+      pubkey,
+      kind: 30000,
+    });
     const articleId = 'post-123';
     const article = nip19.naddrEncode({
       identifier: articleId,
@@ -100,6 +105,10 @@ describe('directSearch', () => {
     });
     expect(getDirectSearchTarget(peopleListNaddr)).toEqual({
       path: buildPeopleListPath(pubkey, 'friends'),
+      entity: 'event',
+    });
+    expect(getDirectSearchTarget(blockListNaddr)).toEqual({
+      path: buildAddressableEventPath(30000, pubkey, 'block'),
       entity: 'event',
     });
     expect(getDirectSearchTarget(article)).toEqual({

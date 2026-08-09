@@ -1,5 +1,6 @@
 import type { NostrEvent } from '@nostrify/nostrify';
 import { VIDEO_KINDS } from '@/types/video';
+import { BLOCK_LIST_D_TAG } from '@/lib/blocklistFilter';
 import { buildProfileLinkPath } from '@/lib/profileLinks';
 
 const LIST_EVENT_KINDS = new Set([
@@ -68,7 +69,7 @@ export function buildAddressableRoute(kind: number, pubkey: string, identifier: 
     return buildListPath(pubkey, identifier);
   }
 
-  if (kind === PEOPLE_LIST_EVENT_KIND) {
+  if (kind === PEOPLE_LIST_EVENT_KIND && identifier !== BLOCK_LIST_D_TAG) {
     return buildPeopleListPath(pubkey, identifier);
   }
 
@@ -85,7 +86,7 @@ export function buildResolvedEventRoute(event: Pick<NostrEvent, 'id' | 'kind' | 
     return buildListPath(event.pubkey, dTag);
   }
 
-  if (dTag && event.kind === PEOPLE_LIST_EVENT_KIND) {
+  if (dTag && event.kind === PEOPLE_LIST_EVENT_KIND && dTag !== BLOCK_LIST_D_TAG) {
     return buildPeopleListPath(event.pubkey, dTag);
   }
 

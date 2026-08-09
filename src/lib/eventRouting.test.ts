@@ -4,6 +4,7 @@ import { SHORT_VIDEO_KIND } from '@/types/video';
 import {
   buildAddressableRoute,
   buildAddressableEventPath,
+  buildEventPath,
   buildListPath,
   buildPeopleListPath,
   buildResolvedEventRoute,
@@ -60,6 +61,20 @@ describe('eventRouting', () => {
     expect(buildResolvedEventRoute(event)).toBe(
       buildPeopleListPath(event.pubkey, 'friends'),
     );
+  });
+
+  it('keeps legacy block list events on the generic event route', () => {
+    const event = makeEvent({
+      id: 'b'.repeat(64),
+      kind: 30000,
+      pubkey: 'a'.repeat(64),
+      tags: [['d', 'block']],
+    });
+
+    expect(buildAddressableRoute(30000, event.pubkey, 'block')).toBe(
+      buildAddressableEventPath(30000, event.pubkey, 'block'),
+    );
+    expect(buildResolvedEventRoute(event)).toBe(buildEventPath(event.id));
   });
 
   it('keeps people and video list paths distinct under one d tag', () => {

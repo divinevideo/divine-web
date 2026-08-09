@@ -2,6 +2,7 @@
 // ABOUTME: Single source of truth for all share link construction across the app
 
 import { getApexShareUrl } from '@/lib/subdomainLinks';
+import { buildListPath } from '@/lib/eventRouting';
 import type { ParsedVideoData } from '@/types/video';
 
 /** Build a shareable video URL (always apex domain, stable d-tag ID). */
@@ -20,7 +21,7 @@ export function getVideoShareData(video: ParsedVideoData): { url: string } {
 
 /** Build a shareable list URL (always apex domain). */
 export function getListShareUrl(pubkey: string, listId: string): string {
-  return getApexShareUrl(`/list/${pubkey}/${listId}`);
+  return getApexShareUrl(buildListPath(pubkey, listId));
 }
 
 /** Build shareable data for a list (URL only — matches video share behavior). */
