@@ -12,7 +12,7 @@ import type { SortMode } from '@/types/nostr';
 type WebSocketFeedType = 'discovery' | 'home' | 'trending' | 'hashtag' | 'profile' | 'recent' | 'classics' | 'category';
 
 export interface VideoNavigationContext {
-  source: 'hashtag' | 'profile' | 'discovery' | 'home' | 'trending' | 'popular' | 'recent' | 'classics' | 'foryou' | 'category' | 'search' | 'people-list';
+  source: 'hashtag' | 'profile' | 'discovery' | 'home' | 'trending' | 'popular' | 'recent' | 'classics' | 'foryou' | 'category' | 'search' | 'people-list' | 'featured';
   hashtag?: string;
   pubkey?: string;
   listId?: string;
@@ -76,7 +76,7 @@ export function useVideoNavigation(videoId: string, options: UseVideoNavigationO
   const feedTypeForWebSocket: WebSocketFeedType | undefined = (() => {
     if (!context) return undefined;
     if (isPeopleListContext) return 'discovery';
-    if (context.source === 'foryou' || context.source === 'popular') return 'trending';
+    if (context.source === 'foryou' || context.source === 'popular' || context.source === 'featured') return 'trending';
     if (context.source === 'search') return 'discovery';
     if (
       context.source === 'hashtag' ||

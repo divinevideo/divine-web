@@ -38,6 +38,7 @@ export interface FunnelcakeVideoRaw {
   content?: string;       // Video content/description (user videos endpoint)
   thumbnail?: string;     // Thumbnail URL
   video_url: string;      // Primary video URL
+  sha256?: string;        // Blossom/media SHA-256 when supplied by compact endpoints
   blurhash?: string;      // Progressive loading placeholder
   dim?: string;           // Video dimensions, v1 (e.g., "1080x1920")
   dimensions?: string;    // Video dimensions, v2 (e.g., "1080x1920")

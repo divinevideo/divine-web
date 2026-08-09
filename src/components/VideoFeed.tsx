@@ -28,13 +28,15 @@ import { useVideoPrefetch } from '@/hooks/useVideoPrefetch';
 import { useCompilationFullscreen } from '@/hooks/useCompilationFullscreen';
 import { buildCompilationPlaybackUrl } from '@/lib/compilationPlayback';
 import type { PopularPeriod, PopularSource } from '@/hooks/useInfiniteVideosFunnelcake';
+import { trackEvent } from '@/lib/analytics';
 
 type ViewMode = 'feed' | 'grid';
 
 interface VideoFeedProps {
-  feedType?: 'discovery' | 'home' | 'trending' | 'hashtag' | 'profile' | 'recent' | 'classics' | 'foryou' | 'category' | 'popular';
+  feedType?: 'discovery' | 'home' | 'trending' | 'hashtag' | 'profile' | 'recent' | 'classics' | 'foryou' | 'category' | 'popular' | 'featured';
   hashtag?: string;
   category?: string;
+  featuredTabId?: string;
   pubkey?: string;
   limit?: number;
   sortMode?: SortMode; // NIP-50 sort mode (hot, top, rising, controversial)
@@ -59,6 +61,7 @@ export function VideoFeed({
   feedType = 'discovery',
   hashtag,
   category,
+  featuredTabId,
   pubkey,
   limit = 12, // Smaller first page improves initial paint on REST-backed feeds
   sortMode,
@@ -97,6 +100,7 @@ export function VideoFeed({
     feedType,
     hashtag,
     category,
+    featuredTabId,
     pubkey,
     pageSize: limit,
     sortMode,
@@ -168,8 +172,15 @@ export function VideoFeed({
         renderedVideos: filteredVideos.length,
         totalVideos: allVideos.length,
       });
+
+      if (feedType === 'featured' && featuredTabId) {
+        trackEvent('featured_tab_video_impression', {
+          featured_tab_id: featuredTabId,
+          rendered_videos: filteredVideos.length,
+        });
+      }
     }
-  }, [allVideos.length, filteredVideos.length, isLoading, trackInitialRender]);
+  }, [allVideos.length, featuredTabId, feedType, filteredVideos.length, isLoading, trackInitialRender]);
 
   // Track perceived first-render time for the Recent feed
   useEffect(() => {
