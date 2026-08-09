@@ -234,6 +234,32 @@ describe('useFeaturedTab', () => {
     expect(result.current.tab?.id).toBe('ft_1234abcd');
   });
 
+  it('stays unresolved when the request fails and no config was ever cached', async () => {
+    // "Request failed" is not "no such tab": callers redirect on isResolved, and
+    // treating an outage as an answer discards a valid shared featured link.
+    mockFetchFeaturedTabs.mockRejectedValueOnce(new Error('cold start outage'));
+
+    const { result } = renderHook(() => useFeaturedTab(), { wrapper: createWrapper() });
+
+    await flushQuery();
+
+    expect(result.current.tab).toBeNull();
+    expect(result.current.isResolved).toBe(false);
+  });
+
+  it('stays resolved through a failed refresh while a cached config is still fresh', async () => {
+    mockFetchFeaturedTabs.mockResolvedValueOnce(makeResponse());
+    const first = renderHook(() => useFeaturedTab(), { wrapper: createWrapper() });
+
+    await flushQuery();
+    first.unmount();
+
+    mockFetchFeaturedTabs.mockRejectedValueOnce(new Error('temporary outage'));
+    const second = renderHook(() => useFeaturedTab(), { wrapper: createWrapper() });
+
+    expect(second.result.current.isResolved).toBe(true);
+  });
+
   it('hides minor-restricted tabs when protected-minor status is unknown', async () => {
     minorState = 'unknown';
     mockFetchFeaturedTabs.mockResolvedValueOnce(makeResponse({ visible_to_minors: false }));

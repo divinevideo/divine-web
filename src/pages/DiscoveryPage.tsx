@@ -68,7 +68,7 @@ export function DiscoveryPage() {
   const navigate = useSubdomainNavigate();
   const { t } = useTranslation();
   const params = useParams<{ tab?: string }>();
-  const { user } = useCurrentUser();
+  const { user, isResolvingJwt } = useCurrentUser();
   const isLoggedIn = !!user?.pubkey;
   const { data: categories } = useCategories();
   const { tab: featuredTab, isResolved: isFeaturedConfigResolved } = useFeaturedTab();
@@ -147,11 +147,17 @@ export function DiscoveryPage() {
 
   // A slug that no configuration claims — expired campaign, shared link, typo —
   // otherwise renders the default tab while the address bar keeps the dead
-  // route, so a reload or a re-share carries the phantom slug onward. Wait for
-  // the featured config to resolve first: before then, an unknown slug may
-  // still turn out to be a valid featured tab.
+  // route, so a reload or a re-share carries the phantom slug onward.
+  //
+  // Both guards below are about not mistaking "still loading" for "no such
+  // tab", because this navigates with `replace` and so destroys the original
+  // URL. An unknown slug may still be a live featured tab until the config
+  // resolves; and a hosted session reports no user while the JWT resolves, so
+  // `foryou` is briefly absent from `allowedTabs` — redirecting then would
+  // replace a logged-in reader's bookmark. AppRouter and AnalyticsPage guard
+  // that same transient state.
   useEffect(() => {
-    if (!routeTab || !isFeaturedConfigResolved) return;
+    if (!routeTab || !isFeaturedConfigResolved || isResolvingJwt) return;
     if (allowedTabs.includes(normalizedTab as AllowedTab)) return;
 
     navigate(`/discovery/${defaultTab}`, { replace: true });
@@ -161,6 +167,7 @@ export function DiscoveryPage() {
     allowedTabs,
     defaultTab,
     isFeaturedConfigResolved,
+    isResolvingJwt,
     navigate,
   ]);
 
@@ -245,15 +252,23 @@ export function DiscoveryPage() {
             style={{ gridTemplateColumns: `repeat(${tabItems.length}, minmax(0, 1fr))` }}
           >
             {tabItems.map(({ value, label, Icon, disclosureLabel }) => (
-              <TabsTrigger key={value} value={value} className="min-w-0 gap-1.5 px-2 sm:gap-2 sm:px-4">
+              <TabsTrigger
+                key={value}
+                value={value}
+                className="min-w-0 gap-1.5 px-2 sm:gap-2 sm:px-4"
+                aria-label={disclosureLabel ? `${label} — ${disclosureLabel}` : undefined}
+              >
                 <Icon className="h-4 w-4 shrink-0" />
                 <span className="hidden min-w-0 truncate sm:inline" title={label}>{label}</span>
                 {disclosureLabel && (
-                  // Rendered whole, not clipped: this marks a paid or sponsored
-                  // placement, and a disclosure the reader cannot finish reading
-                  // is not a disclosure. The parser already caps its length.
+                  // This marks a paid or sponsored placement, so the full text
+                  // has to stay reachable: the parser no longer pre-clips it,
+                  // `title` and the trigger's aria-label carry it whole. The
+                  // width bound is still needed because neither TabsTrigger nor
+                  // TabsList clips overflow, so an unbounded pill would spill
+                  // the tab bar at narrow widths.
                   <span
-                    className="shrink-0 whitespace-nowrap rounded-full bg-background/80 px-1.5 py-0.5 text-[10px] leading-none text-foreground"
+                    className="max-w-[7rem] shrink truncate rounded-full bg-background/80 px-1.5 py-0.5 text-[10px] leading-none text-foreground"
                     title={disclosureLabel}
                   >
                     {disclosureLabel}

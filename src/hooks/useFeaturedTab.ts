@@ -84,7 +84,7 @@ export function useFeaturedTab(): FeaturedTabState {
   const minorStatus = useProtectedMinorStatus();
   const lastResolved = useRef<ResolvedFeaturedTab | null>(null);
 
-  const { isSuccess, isError } = useQuery({
+  const { isSuccess } = useQuery({
     queryKey: ['featured-tabs', apiUrl],
     queryFn: async ({ signal }) => {
       const response = await fetchFeaturedTabs(apiUrl, signal);
@@ -123,6 +123,10 @@ export function useFeaturedTab(): FeaturedTabState {
 
   return {
     tab: lastResolved.current,
-    isResolved: isSuccess || isError || response !== null,
+    // A failed request is not an answer. `isError` deliberately does not count:
+    // without a config in hand we do not know whether a given slug names a live
+    // featured tab, and a caller that redirected on it would throw away a valid
+    // shared link during a config outage. Unknown stays unknown.
+    isResolved: isSuccess || response !== null,
   };
 }

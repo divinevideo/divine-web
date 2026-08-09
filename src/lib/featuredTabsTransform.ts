@@ -129,7 +129,7 @@ export function transformFeaturedTabVideosResponse(
   response: FeaturedTabVideosResponseRaw
 ): FunnelcakeResponse {
   // `pagination` is guarded like `data`: a payload missing it would otherwise
-  // throw outside the client's try/catch, so the circuit breaker never sees it.
+  // throw a TypeError here, turning a merely malformed page into a broken feed.
   const pagination = response.pagination ?? {};
   const nextCursor = typeof pagination.next_cursor === 'string' && pagination.next_cursor
     ? pagination.next_cursor

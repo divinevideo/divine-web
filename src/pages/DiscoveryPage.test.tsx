@@ -15,6 +15,7 @@ const {
   mockCurrentUser,
   mockTrackEvent,
   mockFeaturedResolved,
+  mockResolvingJwt,
 } = vi.hoisted(() => ({
   mockNavigate: vi.fn(),
   mockTrackEvent: vi.fn(),
@@ -22,6 +23,7 @@ const {
   mockFeaturedTab: { current: null as ResolvedFeaturedTab | null },
   mockFeaturedResolved: { current: true },
   mockCurrentUser: { current: null as { pubkey: string } | null },
+  mockResolvingJwt: { current: false },
 }));
 
 vi.mock('@/hooks/useSubdomainNavigate', () => ({
@@ -29,7 +31,10 @@ vi.mock('@/hooks/useSubdomainNavigate', () => ({
 }));
 
 vi.mock('@/hooks/useCurrentUser', () => ({
-  useCurrentUser: () => ({ user: mockCurrentUser.current }),
+  useCurrentUser: () => ({
+    user: mockCurrentUser.current,
+    isResolvingJwt: mockResolvingJwt.current,
+  }),
 }));
 
 vi.mock('@/hooks/useCategories', () => ({
@@ -83,6 +88,7 @@ describe('DiscoveryPage', () => {
     mockCategories.length = 0;
     mockFeaturedTab.current = null;
     mockFeaturedResolved.current = true;
+    mockResolvingJwt.current = false;
     mockCurrentUser.current = null;
   });
 
@@ -211,6 +217,22 @@ describe('DiscoveryPage', () => {
 
     render(
       <MemoryRouter initialEntries={['/discovery/seasonal-theme']}>
+        <Routes>
+          <Route path="/discovery/:tab" element={<DiscoveryPage />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    expect(mockNavigate).not.toHaveBeenCalled();
+  });
+
+  it('keeps a logged-in foryou deep link while the hosted session is still resolving', () => {
+    // The JWT has not resolved, so there is no user yet and `foryou` is briefly
+    // absent from the tab list. Redirecting here would replace the bookmark.
+    mockResolvingJwt.current = true;
+
+    render(
+      <MemoryRouter initialEntries={['/discovery/foryou']}>
         <Routes>
           <Route path="/discovery/:tab" element={<DiscoveryPage />} />
         </Routes>
