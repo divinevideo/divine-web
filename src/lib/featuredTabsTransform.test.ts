@@ -32,9 +32,17 @@ describe('featured tab transforms', () => {
       .toEqual({ before: 'hashtags' });
   });
 
-  it('only accepts string disclosure labels', () => {
+  it('only accepts string disclosure labels and keeps the phrase readable', () => {
     expect(parseFeaturedTabDisclosure({ text: 'Ad' })).toBeNull();
-    expect(parseFeaturedTabDisclosure(' Sponsored collection ')).toBe('Sponsored collec');
+    expect(parseFeaturedTabDisclosure(' Sponsored collection ')).toBe('Sponsored collection');
+    expect(parseFeaturedTabDisclosure('Paid partnership')).toBe('Paid partnership');
+  });
+
+  it('strips invisible formatting from server-supplied strings', () => {
+    // A bidi override could otherwise reorder the tab bar around the label.
+    expect(pickFeaturedTabLabel({ default: 'Sea\u202esonal' }, 'en')).toBe('Seasonal');
+    expect(parseFeaturedTabDisclosure('Spon\u200bsored')).toBe('Sponsored');
+    expect(parseFeaturedTabDisclosure('\u200b\u202e')).toBeNull();
   });
 
   it('maps featured video envelopes without reordering server data', () => {

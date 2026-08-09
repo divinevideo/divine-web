@@ -8,7 +8,10 @@ import type {
 } from '@/types/featuredTabs';
 
 const MAX_LABEL_LENGTH = 24;
-const MAX_DISCLOSURE_LENGTH = 16;
+// A disclosure is the one server-supplied string here whose meaning is legal
+// rather than decorative — "Sponsored", "Paid partnership". Room for the phrases
+// that matter, and the tab renders it in full rather than clipping it again.
+const MAX_DISCLOSURE_LENGTH = 24;
 const DISCOVERY_TAB_NAMES = new Set<DiscoveryTabName>(['foryou', 'classics', 'hot', 'hashtags']);
 // The slug is both the `/discovery/:tab` route segment and the Radix Tabs value.
 // The route comparison lowercases `params.tab`, so anything outside this shape
@@ -16,8 +19,17 @@ const DISCOVERY_TAB_NAMES = new Set<DiscoveryTabName>(['foryou', 'classics', 'ho
 const FEATURED_TAB_SLUG_PATTERN = /^[a-z0-9][a-z0-9-]{0,31}$/;
 const RESERVED_TAB_SLUGS = new Set<string>([...DISCOVERY_TAB_NAMES, 'top']);
 
+// Bidi overrides and other invisible formatting characters would let a
+// server-supplied string reorder or hide the text around it in the tab bar.
+// eslint-disable-next-line no-control-regex
+const INVISIBLE_FORMATTING = /[\u0000-\u001f\u007f\u200b-\u200f\u202a-\u202e\u2066-\u2069\ufeff]/g;
+
 function cleanShortString(value: string, maxLength: number): string {
-  return value.trim().replace(/\s+/g, ' ').slice(0, maxLength);
+  return value
+    .replace(INVISIBLE_FORMATTING, '')
+    .trim()
+    .replace(/\s+/g, ' ')
+    .slice(0, maxLength);
 }
 
 function parseDiscoveryTabName(value: unknown): DiscoveryTabName | null {

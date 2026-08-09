@@ -249,7 +249,13 @@ export function DiscoveryPage() {
                 <Icon className="h-4 w-4 shrink-0" />
                 <span className="hidden min-w-0 truncate sm:inline" title={label}>{label}</span>
                 {disclosureLabel && (
-                  <span className="max-w-12 shrink-0 truncate rounded-full bg-background/80 px-1.5 py-0.5 text-[10px] leading-none text-foreground">
+                  // Rendered whole, not clipped: this marks a paid or sponsored
+                  // placement, and a disclosure the reader cannot finish reading
+                  // is not a disclosure. The parser already caps its length.
+                  <span
+                    className="shrink-0 whitespace-nowrap rounded-full bg-background/80 px-1.5 py-0.5 text-[10px] leading-none text-foreground"
+                    title={disclosureLabel}
+                  >
                     {disclosureLabel}
                   </span>
                 )}
