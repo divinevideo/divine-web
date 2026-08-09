@@ -269,6 +269,7 @@ export function useInfiniteVideosFunnelcake({
           });
           return {
             videos: page.videos,
+            fetchedRows: page.fetchedRows,
             nextCursor: page.nextCursor,
             offset: page.offset,
             recommendationsCursor: feedType === 'recommendations' ? page.rawCursor : undefined,
@@ -464,6 +465,7 @@ export function useInfiniteVideosFunnelcake({
 
       return {
         videos: enrichedVideos,
+        fetchedRows: page.fetchedRows,
         nextCursor: page.nextCursor,
         offset: page.offset,
         recommendationsCursor: responseMode === 'recommendations' ? page.rawCursor : undefined,

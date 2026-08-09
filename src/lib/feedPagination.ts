@@ -2,6 +2,8 @@
 // ABOUTME: Counts fetched rows so infinite scroll re-arms on every loaded page
 
 interface CountablePage {
+  /** Rows the API returned, before any were dropped. Preferred when present. */
+  fetchedRows?: number;
   videos?: readonly unknown[];
 }
 
@@ -16,7 +18,19 @@ interface CountablePage {
  *
  * Pass the unfiltered query pages: block/mute filtering happens downstream, and
  * counting already-filtered pages reintroduces the stall.
+ *
+ * `fetchedRows` is preferred over `videos.length` because a page's `videos` has
+ * already lost the rows that duplicated within that page and any the transform
+ * had to drop. Keying pagination on what survived that is the same mistake as
+ * keying it on the rendered list, one layer down; the count the API returned
+ * cannot collapse. Pages without it (the websocket path) fall back to the
+ * parsed length.
  */
 export function countFetchedVideos(pages: readonly CountablePage[] | undefined): number {
-  return pages?.reduce((total, page) => total + (page.videos?.length ?? 0), 0) ?? 0;
+  return (
+    pages?.reduce(
+      (total, page) => total + (page.fetchedRows ?? page.videos?.length ?? 0),
+      0
+    ) ?? 0
+  );
 }

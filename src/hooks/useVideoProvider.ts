@@ -43,8 +43,8 @@ interface VideoProviderResult {
   error: Error | null;
   refetch: () => void;
   /**
-   * Rows fetched across every loaded page, before cross-page dedup and block
-   * filtering. (The funnelcake path already dedupes within a single page.)
+   * Rows fetched across every loaded page, as the API returned them — before
+   * transform failures, dedup, and block filtering take any of them out.
    * Infinite-scroll triggers must key off this rather than the rendered length,
    * which can stay flat when a page collapses and would stall pagination.
    */

@@ -44,6 +44,24 @@ describe('countFetchedVideos', () => {
       .toBeGreaterThan(countFetchedVideos(firstPageOnly));
   });
 
+  // A page's `videos` has already lost rows to within-page dedup and to any
+  // transform drop, so counting it makes pagination depend on how much of the
+  // page survived — the same mistake as counting the rendered list, one layer
+  // down. `fetchedRows` is the count the API actually returned.
+  it('prefers the raw fetched-row count over the parsed length', () => {
+    expect(countFetchedVideos([
+      { fetchedRows: 20, videos: [{ id: 'a' }] },
+      { fetchedRows: 20, videos: [] },
+    ])).toBe(40);
+  });
+
+  it('falls back to the parsed length for pages without a raw count', () => {
+    expect(countFetchedVideos([
+      { fetchedRows: 20, videos: [{ id: 'a' }] },
+      { videos: [{ id: 'b' }, { id: 'c' }] },
+    ])).toBe(22);
+  });
+
   // Callers must feed this the *unfiltered* query pages. Per-viewer block/mute
   // filtering runs before the page reaches the component, so counting filtered
   // pages would stall again the moment a page is entirely blocked authors.

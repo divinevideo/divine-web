@@ -309,6 +309,14 @@ export function transformToVideoPage(
   cursorType: 'timestamp' | 'offset' | 'cursor' = 'timestamp'
 ): {
   videos: ParsedVideoData[];
+  /**
+   * Rows the API returned for this page, before any of them were dropped.
+   *
+   * `videos` is what survived within-page dedup and any transform drop, so it
+   * under-reports what the page carried. Infinite-scroll accounting needs a
+   * count that tracks fetching rather than survival (divine-web#380).
+   */
+  fetchedRows: number;
   nextCursor: number | undefined;
   offset?: number;
   /** Raw opaque cursor string for cursor-based pagination (recommendations) */
@@ -316,6 +324,8 @@ export function transformToVideoPage(
   hasMore: boolean;
 } {
   const videos = transformFunnelcakeResponse(response);
+  const rawRows = Array.isArray(response) ? response : response.videos;
+  const fetchedRows = Array.isArray(rawRows) ? rawRows.length : 0;
 
   // Parse next cursor based on pagination type
   let nextCursor: number | undefined;
@@ -343,6 +353,7 @@ export function transformToVideoPage(
 
   return {
     videos,
+    fetchedRows,
     nextCursor,
     offset,
     rawCursor,

@@ -574,6 +574,29 @@ describe('transformToVideoPage', () => {
     });
   });
 
+  // divine-web#380: infinite scroll re-arms only when its `dataLength` moves,
+  // and `videos` has already lost the rows that duplicated within the page and
+  // any that `transformFunnelcakeResponse` had to drop. The count the feed
+  // paginates on should not depend on how many rows survived that, so the row
+  // count the API returned travels alongside the parsed list.
+  describe('fetchedRows', () => {
+    it('reports the rows the API returned, not the parsed ones', () => {
+      const duplicate = makeRawVideo();
+      const page = transformToVideoPage(makeResponse({ videos: [duplicate, duplicate] }));
+
+      expect(page.videos).toHaveLength(1);
+      expect(page.fetchedRows).toBe(2);
+    });
+
+    it('counts bare edge-injected arrays too', () => {
+      expect(transformToVideoPage([makeRawVideo()]).fetchedRows).toBe(1);
+    });
+
+    it('is 0 when the response carries no videos array', () => {
+      expect(transformToVideoPage(makeResponse({ videos: undefined })).fetchedRows).toBe(0);
+    });
+  });
+
   it('stops pagination when has_more is false', () => {
     const page = transformToVideoPage(makeResponse({ has_more: false }));
     expect(page.hasMore).toBe(false);
