@@ -2,6 +2,7 @@
 // ABOUTME: Shows user's lists, trending lists, and allows list creation
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useVideoLists, useTrendingVideoLists, useFollowedUsersLists } from '@/hooks/useVideoLists';
 import { useFollowList } from '@/hooks/useFollowList';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
@@ -11,11 +12,13 @@ import { nip19 } from 'nostr-tools';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { List, TrendUp as TrendingUp, Plus, Users, VideoCamera as Video, Clock } from '@phosphor-icons/react';
 import { genUserName } from '@/lib/genUserName';
 import { CreateListDialog } from '@/components/CreateListDialog';
+import { CreatePeopleListDialog } from '@/components/CreatePeopleListDialog';
 import { formatDistanceToNow } from 'date-fns';
 import { getSafeProfileImage } from '@/lib/imageUtils';
 
@@ -100,11 +103,46 @@ function ListCard({ list }: { list: ListCardProps }) {
   );
 }
 
+function CreateListMenu({
+  label,
+  onCreateVideoList,
+  onCreatePeopleList,
+}: {
+  label: string;
+  onCreateVideoList: () => void;
+  onCreatePeopleList: () => void;
+}) {
+  const { t } = useTranslation();
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button>
+          <Plus className="h-4 w-4 mr-2" />
+          {label}
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem onClick={onCreateVideoList}>
+          <Video className="h-4 w-4 mr-2" />
+          {t('listsPage.createVideoList')}
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={onCreatePeopleList}>
+          <Users className="h-4 w-4 mr-2" />
+          {t('listsPage.createPeopleList')}
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
 export default function ListsPage() {
+  const { t } = useTranslation();
   const { user } = useCurrentUser();
   const { data: userLists, isLoading: userListsLoading } = useVideoLists(user?.pubkey);
   const { data: trendingLists, isLoading: trendingLoading } = useTrendingVideoLists();
-  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [showCreateVideoDialog, setShowCreateVideoDialog] = useState(false);
+  const [showCreatePeopleDialog, setShowCreatePeopleDialog] = useState(false);
   const { data: followedPubkeys } = useFollowList();
   const { data: followedUsersLists, isLoading: discoverLoading } = useFollowedUsersLists(followedPubkeys);
 
@@ -118,10 +156,11 @@ export default function ListsPage() {
             Video Lists
           </h1>
           {user && (
-            <Button onClick={() => setShowCreateDialog(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Create List
-            </Button>
+            <CreateListMenu
+              label={t('listsPage.createList')}
+              onCreateVideoList={() => setShowCreateVideoDialog(true)}
+              onCreatePeopleList={() => setShowCreatePeopleDialog(true)}
+            />
           )}
         </div>
         <p className="text-muted-foreground">
@@ -178,10 +217,11 @@ export default function ListsPage() {
                   <p className="text-muted-foreground mb-4">
                     You haven't created any lists yet
                   </p>
-                  <Button onClick={() => setShowCreateDialog(true)}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Create Your First List
-                  </Button>
+                  <CreateListMenu
+                    label={t('listsPage.createFirstList')}
+                    onCreateVideoList={() => setShowCreateVideoDialog(true)}
+                    onCreatePeopleList={() => setShowCreatePeopleDialog(true)}
+                  />
                 </CardContent>
               </Card>
             )}
@@ -290,11 +330,17 @@ export default function ListsPage() {
         </TabsContent>
       </Tabs>
 
-      {/* Create List Dialog */}
-      {showCreateDialog && (
+      {showCreateVideoDialog && (
         <CreateListDialog
-          open={showCreateDialog}
-          onClose={() => setShowCreateDialog(false)}
+          open={showCreateVideoDialog}
+          onClose={() => setShowCreateVideoDialog(false)}
+        />
+      )}
+
+      {showCreatePeopleDialog && (
+        <CreatePeopleListDialog
+          open={showCreatePeopleDialog}
+          onOpenChange={setShowCreatePeopleDialog}
         />
       )}
     </div>

@@ -1,6 +1,7 @@
 // ABOUTME: Parses public NIP-51 kind 30000 follow sets into discoverable people lists
 
 import type { NostrEvent } from '@nostrify/nostrify';
+import { isReservedPeopleListDTag, PEOPLE_LIST_KIND } from '@/lib/peopleListConstants';
 
 export interface PeopleList {
   id: string;
@@ -13,14 +14,14 @@ export interface PeopleList {
 }
 
 export function peopleListAddress(list: PeopleList): string {
-  return `${list.pubkey}:30000:${list.id}`;
+  return `${list.pubkey}:${PEOPLE_LIST_KIND}:${list.id}`;
 }
 
 export function parsePeopleListFromEvent(event: NostrEvent): PeopleList | null {
-  if (event.kind !== 30000) return null;
+  if (event.kind !== PEOPLE_LIST_KIND) return null;
 
   const id = event.tags.find((tag) => tag[0] === 'd')?.[1];
-  if (!id || id === 'block') return null;
+  if (!id || isReservedPeopleListDTag(id)) return null;
 
   const memberPubkeys = Array.from(new Set(
     event.tags

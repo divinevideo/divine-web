@@ -22,6 +22,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/useToast';
 import { genUserName } from '@/lib/genUserName';
 import { buildProfileLinkPath } from '@/lib/profileLinks';
+import { buildListPath } from '@/lib/eventRouting';
 import { debugLog } from '@/lib/debug';
 import { getVisiblePlaybackCount } from '@/lib/playbackCount';
 import { reportFunnelcakeFallback } from '@/lib/funnelcakeFallbackReporting';
@@ -290,7 +291,7 @@ export function VideoPage() {
       const target = params.toString() ? `/search?${params.toString()}` : '/search';
       navigate(target);
     } else if (context?.source === 'people-list' && context.pubkey && context.listId) {
-      navigate(`/people-lists/${context.pubkey}/${encodeURIComponent(context.listId)}`);
+      navigate(buildListPath(context.pubkey, context.listId));
     } else {
       navigate(-1); // Browser back
     }

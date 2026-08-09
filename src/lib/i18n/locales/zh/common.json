@@ -1431,5 +1431,69 @@
     "podcastEpisode": "播客单集",
     "openInApplePodcasts": "在 Apple 播客中打开",
     "playEpisode": "播放单集"
+  },
+  "createPeopleListDialog": {
+    "title": "Create People List",
+    "description": "Group people together and watch their latest loops in one place.",
+    "nameLabel": "List Name *",
+    "namePlaceholder": "Favorite Creators",
+    "descriptionLabel": "Description",
+    "descriptionPlaceholder": "People whose loops you never miss...",
+    "imageLabel": "Cover Image URL",
+    "imagePlaceholder": "https://example.com/image.jpg",
+    "nameRequired": "Name it first.",
+    "reservedName": "That name is reserved for a system list.",
+    "imageInvalid": "Use a full image URL.",
+    "cancelButton": "Cancel",
+    "creatingButton": "Creating...",
+    "createButton": "Create List",
+    "createdTitle": "People list created.",
+    "createdDescription": "\"{{name}}\" is ready.",
+    "failedTitle": "Didn't make it.",
+    "failedDescription": "People list creation hit a snag. Try again?"
+  },
+  "deleteListDialog": {
+    "title": "Delete List?",
+    "videosDescription": "This will permanently delete the list \"{{name}}\". Videos in the list will not be affected.",
+    "peopleDescription": "This will permanently delete the list \"{{name}}\". People in the list will not be affected.",
+    "noteLabel": "Note:",
+    "relayNote": "This action sends a deletion request to relays. Most relays will honor this request, but deletion is not guaranteed on all relays.",
+    "cancelButton": "Cancel",
+    "deletingButton": "Deleting...",
+    "deleteButton": "Delete List"
+  },
+  "editPeopleListDialog": {
+    "title": "Edit People List",
+    "description": "Update the name, description, or cover image for this list.",
+    "nameLabel": "List Name *",
+    "namePlaceholder": "Favorite Creators",
+    "descriptionLabel": "Description",
+    "descriptionPlaceholder": "People whose loops you never miss...",
+    "imageLabel": "Cover Image URL",
+    "imagePlaceholder": "https://example.com/image.jpg",
+    "nameRequired": "Name it first.",
+    "imageInvalid": "Use a full image URL.",
+    "cancelButton": "Cancel",
+    "savingButton": "Saving...",
+    "saveButton": "Save",
+    "savedTitle": "Saved.",
+    "savedDescription": "\"{{name}}\" is updated.",
+    "failedTitle": "Didn't save.",
+    "failedDescription": "People list updates hit a snag. Try again?"
+  },
+  "listsPage": {
+    "createList": "Create List",
+    "createFirstList": "Create Your First List",
+    "createVideoList": "Video list",
+    "createPeopleList": "People list"
+  },
+  "peopleListDetailPage": {
+    "editList": "Edit",
+    "delete": "Delete",
+    "share": "Share",
+    "deletedTitle": "People list deleted.",
+    "deletedDescription": "\"{{name}}\" has been removed.",
+    "deleteFailedTitle": "Delete failed.",
+    "deleteFailedDescription": "People list deletion hit a snag. Try again?"
   }
 }

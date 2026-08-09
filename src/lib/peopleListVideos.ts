@@ -4,7 +4,15 @@ import type { NostrEvent, NostrFilter } from '@nostrify/nostrify';
 import { VIDEO_KINDS } from '@/types/video';
 
 const AUTHORS_PER_FILTER = 100;
+export const PEOPLE_LIST_VIDEO_RELAY_LIMIT = 60;
 export const PEOPLE_LIST_VIDEO_PAGE_SIZE = 60;
+
+export function peopleListVideoAddress(event: NostrEvent): string | undefined {
+  const dTag = event.tags.find((tag) => tag[0] === 'd')?.[1];
+  if (!dTag) return undefined;
+
+  return `${event.pubkey}:${event.kind}:${dTag}`;
+}
 
 export function buildPeopleListVideoFilters(
   pubkeys: string[],
@@ -17,7 +25,7 @@ export function buildPeopleListVideoFilters(
     filters.push({
       kinds: VIDEO_KINDS,
       authors: uniquePubkeys.slice(index, index + AUTHORS_PER_FILTER),
-      limit: PEOPLE_LIST_VIDEO_PAGE_SIZE,
+      limit: PEOPLE_LIST_VIDEO_RELAY_LIMIT,
       ...(until !== undefined ? { until } : {}),
     });
   }
@@ -32,10 +40,8 @@ export function mergePeopleListVideoEvents(events: NostrEvent[]): NostrEvent[] {
     .filter((event) => VIDEO_KINDS.includes(event.kind))
     .sort((a, b) => b.created_at - a.created_at)
     .forEach((event) => {
-      const dTag = event.tags.find((tag) => tag[0] === 'd')?.[1];
-      if (!dTag) return;
-
-      const address = `${event.pubkey}:${event.kind}:${dTag}`;
+      const address = peopleListVideoAddress(event);
+      if (!address) return;
       if (!newestByAddress.has(address)) {
         newestByAddress.set(address, event);
       }

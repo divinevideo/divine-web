@@ -3,11 +3,14 @@
 import { useMemo } from 'react';
 import { useNostr } from '@nostrify/react';
 import { useInfiniteQuery } from '@tanstack/react-query';
+import type { InfiniteData } from '@tanstack/react-query';
 import { parseVideoEvents } from '@/lib/videoParser';
 import {
   buildPeopleListVideoFilters,
   mergePeopleListVideoEvents,
+  peopleListVideoAddress,
   PEOPLE_LIST_VIDEO_PAGE_SIZE,
+  PEOPLE_LIST_VIDEO_RELAY_LIMIT,
 } from '@/lib/peopleListVideos';
 import { useFeedBlocklist } from '@/hooks/useFeedBlocklist';
 import { filterBlockedVideoPages } from '@/lib/blocklistFilter';
@@ -15,6 +18,7 @@ import type { ParsedVideoData } from '@/types/video';
 
 export interface PeopleListVideoPage {
   videos: ParsedVideoData[];
+  videoAddresses: string[];
   nextUntil?: number;
 }
 
@@ -24,14 +28,51 @@ interface UsePeopleListVideosOptions {
 
 function getNextUntil(events: { created_at: number }[], mergedEvents: { created_at: number }[]): number | undefined {
   if (mergedEvents.length >= PEOPLE_LIST_VIDEO_PAGE_SIZE) {
-    return mergedEvents[mergedEvents.length - 1].created_at - 1;
+    return mergedEvents[mergedEvents.length - 1].created_at;
   }
 
-  if (events.length >= PEOPLE_LIST_VIDEO_PAGE_SIZE && events.length > 0) {
-    return Math.min(...events.map((event) => event.created_at)) - 1;
+  if (events.length >= PEOPLE_LIST_VIDEO_RELAY_LIMIT && events.length > 0) {
+    return Math.min(...events.map((event) => event.created_at));
   }
 
   return undefined;
+}
+
+function videoDataAddress(video: ParsedVideoData): string | undefined {
+  if (!video.vineId) return undefined;
+  return `${video.pubkey}:${video.kind}:${video.vineId}`;
+}
+
+function pageAddsNewVideos(lastPage: PeopleListVideoPage, pages: PeopleListVideoPage[]): boolean {
+  const previousAddresses = new Set(
+    pages
+      .slice(0, -1)
+      .flatMap((page) => page.videoAddresses),
+  );
+
+  return lastPage.videoAddresses.some((address) => !previousAddresses.has(address));
+}
+
+function dedupeVideoPages(
+  data: InfiniteData<PeopleListVideoPage> | undefined,
+): InfiniteData<PeopleListVideoPage> | undefined {
+  if (!data) return data;
+
+  const seen = new Set<string>();
+
+  return {
+    ...data,
+    pages: data.pages.map((page) => ({
+      ...page,
+      videos: page.videos.filter((video) => {
+        const address = videoDataAddress(video);
+        if (!address) return true;
+        if (seen.has(address)) return false;
+        seen.add(address);
+        return true;
+      }),
+    })),
+  };
 }
 
 export function usePeopleListVideos(memberPubkeys: string[], options: UsePeopleListVideosOptions = {}) {
@@ -52,11 +93,18 @@ export function usePeopleListVideos(memberPubkeys: string[], options: UsePeopleL
 
       return {
         videos: parseVideoEvents(mergedEvents),
+        videoAddresses: mergedEvents
+          .map(peopleListVideoAddress)
+          .filter((address): address is string => Boolean(address)),
         nextUntil,
       };
     },
     initialPageParam: undefined as number | undefined,
-    getNextPageParam: (lastPage) => lastPage.nextUntil,
+    getNextPageParam: (lastPage, allPages) => {
+      if (!lastPage.nextUntil) return undefined;
+      if (!pageAddsNewVideos(lastPage, allPages)) return undefined;
+      return lastPage.nextUntil;
+    },
     enabled: enabled && stableMembers.length > 0,
     staleTime: 60_000,
     gcTime: 300_000,
@@ -67,7 +115,7 @@ export function usePeopleListVideos(memberPubkeys: string[], options: UsePeopleL
   // from query results, same as the other WebSocket feeds.
   const blockedPubkeys = useFeedBlocklist();
   const data = useMemo(
-    () => filterBlockedVideoPages(query.data, blockedPubkeys),
+    () => dedupeVideoPages(filterBlockedVideoPages(query.data, blockedPubkeys)),
     [query.data, blockedPubkeys],
   );
 
