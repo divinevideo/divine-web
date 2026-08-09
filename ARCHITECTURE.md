@@ -65,10 +65,12 @@ The retired `/discovery/new` chronological feed redirects to
 Public profiles expose a compact mixed NIP-51 list shelf and a filterable
 `/profile/:npub/lists` gallery. Kind `30005` video sets and kind `30000`
 people sets share the owner-aware `/list/:pubkey/:listId` route, which
-dispatches to the matching detail surface after resolving the list event. If
-both kinds use the same owner and `d` tag, the route preserves existing behavior
-by rendering the video-list surface. The retired `/people-lists/:pubkey/:listId`
-shape redirects to the shared route.
+dispatches to the matching detail surface. Links built inside the app pin the
+kind with a `?kind=30000` or `?kind=30005` search param, so the route renders
+immediately and an owner who holds both kinds under one `d` tag keeps a
+reachable URL for each. A bare URL without the pin resolves the kind from the
+relays first and prefers the video-list surface. The retired
+`/people-lists/:pubkey/:listId` shape redirects to the pinned people-list route.
 
 ## Styling
 

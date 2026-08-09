@@ -8,7 +8,11 @@ import {
   toDiscoverablePeopleList,
   toDiscoverableVideoList,
 } from './profileLists';
-import { buildListPath } from './eventRouting';
+import {
+  PEOPLE_LIST_EVENT_KIND,
+  VIDEO_LIST_EVENT_KIND,
+  buildListPath,
+} from './eventRouting';
 
 const OWNER = 'a'.repeat(64);
 
@@ -35,7 +39,7 @@ describe('profile list presentation', () => {
       key: `30000:${OWNER}:friends`,
       type: 'people',
       itemCount: 2,
-      href: buildListPath(OWNER, 'friends'),
+      href: buildListPath(OWNER, 'friends', PEOPLE_LIST_EVENT_KIND),
     });
   });
 
@@ -44,7 +48,7 @@ describe('profile list presentation', () => {
       key: `30005:${OWNER}:favorites`,
       type: 'videos',
       itemCount: 1,
-      href: buildListPath(OWNER, 'favorites'),
+      href: buildListPath(OWNER, 'favorites', VIDEO_LIST_EVENT_KIND),
     });
   });
 
@@ -52,6 +56,20 @@ describe('profile list presentation', () => {
     expect(mergeProfileLists([peopleList], [videoList]).map((list) => list.type)).toEqual([
       'people',
       'videos',
+    ]);
+  });
+
+  it('keeps both surfaces reachable when the two kinds share a d tag', () => {
+    const sharedId = 'friends';
+    const merged = mergeProfileLists(
+      [peopleList],
+      [{ ...videoList, id: sharedId, name: 'Friends' }],
+    );
+
+    expect(new Set(merged.map((list) => list.href)).size).toBe(2);
+    expect(merged.map((list) => list.href)).toEqual([
+      buildListPath(OWNER, sharedId, PEOPLE_LIST_EVENT_KIND),
+      buildListPath(OWNER, sharedId, VIDEO_LIST_EVENT_KIND),
     ]);
   });
 });

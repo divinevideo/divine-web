@@ -94,11 +94,11 @@ describe('directSearch', () => {
     });
 
     expect(getDirectSearchTarget(videoListNaddr)).toEqual({
-      path: buildListPath(pubkey, listId),
+      path: buildListPath(pubkey, listId, 30005),
       entity: 'event',
     });
     expect(getDirectSearchTarget(peopleListNaddr)).toEqual({
-      path: buildListPath(pubkey, 'friends'),
+      path: buildListPath(pubkey, 'friends', 30000),
       entity: 'event',
     });
     expect(getDirectSearchTarget(article)).toEqual({

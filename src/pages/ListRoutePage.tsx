@@ -1,8 +1,13 @@
-import { Navigate, useParams } from 'react-router-dom';
+import { Navigate, useParams, useSearchParams } from 'react-router-dom';
 
 import { Skeleton } from '@/components/ui/skeleton';
 import { useListRouteKind } from '@/hooks/useListRouteKind';
-import { buildListPath } from '@/lib/eventRouting';
+import {
+  LIST_KIND_PARAM,
+  PEOPLE_LIST_EVENT_KIND,
+  buildListPath,
+  parseListKindParam,
+} from '@/lib/eventRouting';
 import ListDetailPage from '@/pages/ListDetailPage';
 import PeopleListDetailPage from '@/pages/PeopleListDetailPage';
 
@@ -23,12 +28,18 @@ export function LegacyPeopleListRedirect() {
     return <Navigate to="/lists" replace />;
   }
 
-  return <Navigate to={buildListPath(pubkey, listId)} replace />;
+  return <Navigate to={buildListPath(pubkey, listId, PEOPLE_LIST_EVENT_KIND)} replace />;
 }
 
 export default function ListRoutePage() {
   const { pubkey, listId } = useParams<{ pubkey: string; listId: string }>();
-  const routeKind = useListRouteKind(pubkey, listId);
+  const [searchParams] = useSearchParams();
+  const pinnedKind = parseListKindParam(searchParams.get(LIST_KIND_PARAM));
+  const routeKind = useListRouteKind(pubkey, listId, { enabled: pinnedKind === null });
+
+  if (pinnedKind !== null) {
+    return pinnedKind === PEOPLE_LIST_EVENT_KIND ? <PeopleListDetailPage /> : <ListDetailPage />;
+  }
 
   if (routeKind.isLoading) {
     return <ListRouteLoadingState />;

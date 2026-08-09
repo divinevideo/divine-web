@@ -4,26 +4,30 @@ import { useQuery } from '@tanstack/react-query';
 
 import { getEventLookupRelayUrls } from '@/config/relays';
 import { useAppContext } from '@/hooks/useAppContext';
+import { PEOPLE_LIST_EVENT_KIND, VIDEO_LIST_EVENT_KIND } from '@/lib/eventRouting';
 
 export type ListRouteKind = 'videos' | 'people' | 'missing';
 
-const VIDEO_LIST_KIND = 30005;
-const PEOPLE_LIST_KIND = 30000;
-const LIST_ROUTE_KINDS = [VIDEO_LIST_KIND, PEOPLE_LIST_KIND];
+const LIST_ROUTE_KINDS = [VIDEO_LIST_EVENT_KIND, PEOPLE_LIST_EVENT_KIND];
 
 export function resolveListRouteKind(events: Array<Pick<NostrEvent, 'kind'>>): ListRouteKind {
-  if (events.some(event => event.kind === VIDEO_LIST_KIND)) {
+  if (events.some(event => event.kind === VIDEO_LIST_EVENT_KIND)) {
     return 'videos';
   }
 
-  if (events.some(event => event.kind === PEOPLE_LIST_KIND)) {
+  if (events.some(event => event.kind === PEOPLE_LIST_EVENT_KIND)) {
     return 'people';
   }
 
   return 'missing';
 }
 
-export function useListRouteKind(pubkey: string | undefined, listId: string | undefined) {
+export function useListRouteKind(
+  pubkey: string | undefined,
+  listId: string | undefined,
+  options: { enabled?: boolean } = {},
+) {
+  const { enabled = true } = options;
   const { nostr } = useNostr();
   const { config } = useAppContext();
   const configuredRelayUrls = config.relayUrls || [config.relayUrl];
@@ -44,7 +48,7 @@ export function useListRouteKind(pubkey: string | undefined, listId: string | un
 
       return resolveListRouteKind(events);
     },
-    enabled: Boolean(pubkey && listId),
+    enabled: enabled && Boolean(pubkey && listId),
     staleTime: 60_000,
     gcTime: 300_000,
   });

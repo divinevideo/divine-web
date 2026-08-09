@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCreateVideoList, type PlayOrder } from '@/hooks/useVideoLists';
 import { useNavigate } from 'react-router-dom';
+import { VIDEO_LIST_EVENT_KIND, buildListPath } from '@/lib/eventRouting';
 import {
   Dialog,
   DialogContent,
@@ -94,7 +95,7 @@ export function CreateListDialog({ open, onClose }: CreateListDialogProps) {
       });
 
       // Navigate to the new list
-      navigate(`/list/${user.pubkey}/${listId}`);
+      navigate(buildListPath(user.pubkey, listId, VIDEO_LIST_EVENT_KIND));
       onClose();
     } catch {
       toast({
