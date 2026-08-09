@@ -8,9 +8,14 @@ import type { FeaturedTabsResponse } from '@/types/featuredTabs';
 const mockFetchFeaturedTabs = vi.fn();
 let minorState: 'protected' | 'not_protected' | 'unknown' = 'not_protected';
 let language = 'es-MX';
+let apiUrl = 'https://api.divine.video';
 
 vi.mock('@/lib/featuredTabsClient', () => ({
   fetchFeaturedTabs: mockFetchFeaturedTabs,
+}));
+
+vi.mock('@/config/api', () => ({
+  getFunnelcakeBaseUrl: () => apiUrl,
 }));
 
 vi.mock('@/hooks/useProtectedMinorStatus', () => ({
@@ -77,6 +82,7 @@ beforeEach(async () => {
   vi.clearAllMocks();
   minorState = 'not_protected';
   language = 'es-MX';
+  apiUrl = 'https://api.divine.video';
 
   const hook = await import('./useFeaturedTab');
   useFeaturedTab = hook.useFeaturedTab;
@@ -133,7 +139,7 @@ describe('useFeaturedTab', () => {
     expect(second.result.current?.id).toBe('ft_1234abcd');
   });
 
-  it('drops the last-good config after the 5 minute TTL', async () => {
+  it('keeps the last-good config across the poll boundary and drops it after the grace window', async () => {
     mockFetchFeaturedTabs.mockResolvedValueOnce(makeResponse());
     const first = renderHook(() => useFeaturedTab(), { wrapper: createWrapper() });
 
@@ -141,8 +147,32 @@ describe('useFeaturedTab', () => {
     expect(first.result.current?.id).toBe('ft_1234abcd');
     first.unmount();
 
+    // One poll interval (300s) has elapsed and the refresh is still in flight:
+    // dropping the tab here would bounce a reader off the tab they are on.
     vi.setSystemTime(new Date('2026-08-08T12:05:01Z'));
+    mockFetchFeaturedTabs.mockRejectedValueOnce(new Error('temporary outage'));
+    const second = renderHook(() => useFeaturedTab(), { wrapper: createWrapper() });
+    expect(second.result.current?.id).toBe('ft_1234abcd');
+    second.unmount();
+
+    // Two intervals with no successful refresh: the kill switch takes effect.
+    vi.setSystemTime(new Date('2026-08-08T12:10:01Z'));
     mockFetchFeaturedTabs.mockRejectedValueOnce(new Error('sustained outage'));
+    const third = renderHook(() => useFeaturedTab(), { wrapper: createWrapper() });
+
+    expect(third.result.current).toBeNull();
+  });
+
+  it('ignores a cached config that belongs to a different Funnelcake host', async () => {
+    mockFetchFeaturedTabs.mockResolvedValueOnce(makeResponse());
+    const first = renderHook(() => useFeaturedTab(), { wrapper: createWrapper() });
+
+    await flushQuery();
+    expect(first.result.current?.id).toBe('ft_1234abcd');
+    first.unmount();
+
+    apiUrl = 'https://relay.staging.dvines.org';
+    mockFetchFeaturedTabs.mockRejectedValueOnce(new Error('staging outage'));
     const second = renderHook(() => useFeaturedTab(), { wrapper: createWrapper() });
 
     expect(second.result.current).toBeNull();
