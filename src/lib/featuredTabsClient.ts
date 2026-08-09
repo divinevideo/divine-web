@@ -1,5 +1,5 @@
 import { API_CONFIG } from '@/config/api';
-import { isFunnelcakeAvailable, recordFunnelcakeFailure, recordFunnelcakeSuccess } from '@/lib/funnelcakeHealth';
+import { isFunnelcakeAvailable } from '@/lib/funnelcakeHealth';
 import { transformFeaturedTabVideosResponse } from '@/lib/featuredTabsTransform';
 import type { FunnelcakeResponse } from '@/types/funnelcake';
 import type { FeaturedTabsResponse, FeaturedTabVideosResponseRaw } from '@/types/featuredTabs';
@@ -16,10 +16,15 @@ function buildUrl(baseUrl: string, endpoint: string, params: Record<string, stri
   return url.toString();
 }
 
-function isAbortRequestError(err: unknown): boolean {
-  return !!err && typeof err === 'object' && (err as { name?: unknown }).name === 'AbortError';
-}
-
+/**
+ * Featured tabs read the shared Funnelcake circuit breaker but never write to
+ * it. The breaker is keyed by API host and is what the core feeds — classics,
+ * hot, trending, hashtag, profile — use to decide between REST and the relay.
+ * Featured is an optional editorial surface with its own last-good grace
+ * window, so letting its polls count toward the shared failure threshold would
+ * let one non-critical route push every core feed onto the relay. Reading the
+ * breaker still keeps featured off a host that is already known to be down.
+ */
 async function featuredTabsRequest<T>(
   apiUrl: string,
   endpoint: string,
@@ -35,28 +40,18 @@ async function featuredTabsRequest<T>(
     ? AbortSignal.any([signal, timeoutSignal])
     : timeoutSignal;
 
-  try {
-    const response = await fetch(buildUrl(apiUrl, endpoint, params), {
-      signal: combinedSignal,
-      headers: {
-        Accept: 'application/json',
-      },
-    });
+  const response = await fetch(buildUrl(apiUrl, endpoint, params), {
+    signal: combinedSignal,
+    headers: {
+      Accept: 'application/json',
+    },
+  });
 
-    if (!response.ok) {
-      throw new Error(`Featured tabs request failed: ${response.status} ${response.statusText}`);
-    }
-
-    const data = await response.json();
-    recordFunnelcakeSuccess(apiUrl);
-    return data as T;
-  } catch (err) {
-    if (isAbortRequestError(err)) throw err;
-
-    const message = err instanceof Error ? err.message : 'Unknown featured tabs error';
-    recordFunnelcakeFailure(apiUrl, message);
-    throw err;
+  if (!response.ok) {
+    throw new Error(`Featured tabs request failed: ${response.status} ${response.statusText}`);
   }
+
+  return await response.json() as T;
 }
 
 export function fetchFeaturedTabs(
