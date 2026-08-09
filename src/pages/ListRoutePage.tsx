@@ -1,3 +1,6 @@
+// ABOUTME: Dispatches /list/:pubkey/:listId to the video or people list surface
+// ABOUTME: Honors a ?kind= pin when present, otherwise resolves the kind from relays
+
 import { Navigate, useParams, useSearchParams } from 'react-router-dom';
 
 import { Skeleton } from '@/components/ui/skeleton';

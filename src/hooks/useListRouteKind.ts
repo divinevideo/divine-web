@@ -1,3 +1,6 @@
+// ABOUTME: Resolves which list kind an unpinned /list/:pubkey/:listId URL points at
+// ABOUTME: Only runs as a fallback; links built with a kind pin skip this lookup
+
 import type { NostrEvent } from '@nostrify/nostrify';
 import { useNostr } from '@nostrify/react';
 import { useQuery } from '@tanstack/react-query';
