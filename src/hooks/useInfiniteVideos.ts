@@ -12,6 +12,12 @@ import type { NIP50Filter, SortMode } from '@/types/nostr';
 import { parseVideoEvents } from '@/lib/videoParser';
 import { debugLog } from '@/lib/debug';
 import { performanceMonitor } from '@/lib/performanceMonitoring';
+import {
+  nextSortedOffset,
+  SORTED_FEED_BACKFILL_ATTEMPTS,
+  sortedFeedHasMore,
+  sortedFeedWindowSize,
+} from '@/lib/sortedFeedWindow';
 
 interface UseInfiniteVideosOptions {
   feedType: 'discovery' | 'home' | 'trending' | 'hashtag' | 'profile' | 'recent';
@@ -72,19 +78,17 @@ export function useInfiniteVideos({
       const offset = isOffsetParam ? (pageParam as { offset: number }).offset : 0;
       const cursor = !isOffsetParam ? (pageParam as number | undefined) : undefined;
 
-      // Build filter based on feed type
+      const useSortedPagination = !!(effectiveSortMode && ['top', 'hot', 'rising', 'controversial'].includes(effectiveSortMode));
+
+      // Build filter based on feed type. Sorted relay pagination uses a
+      // growing prefix because NIP-50 has no offset parameter. That means
+      // relay traffic grows with depth and will stop at the relay's limit cap.
       const filter: NIP50Filter = {
         kinds: VIDEO_KINDS,
-        limit: pageSize
+        limit: useSortedPagination ? offset + pageSize : pageSize
       };
 
-      // For sorted feeds, we need to request all items up to current offset + pageSize
-      // and then slice to get just the new page (since NIP-50 doesn't support offset)
-      const useSortedPagination = effectiveSortMode && ['top', 'hot', 'rising', 'controversial'].includes(effectiveSortMode);
-
-      if (useSortedPagination && offset > 0) {
-        // Request enough to cover offset + new page
-        filter.limit = offset + pageSize;
+      if (useSortedPagination) {
         debugLog(`[useInfiniteVideos] Sorted pagination: requesting ${filter.limit} to get offset ${offset}`);
       } else if (cursor) {
         // Use timestamp cursor for chronological pagination
@@ -169,88 +173,117 @@ export function useInfiniteVideos({
 
       debugLog(`[useInfiniteVideos] 📡 Fetching ${feedType} feed, cursor: ${cursor || 'none'}, sort: ${effectiveSortMode || 'none'}, filter:`, filter);
 
-      // Fetch events with performance tracking
-      const queryStart = performance.now();
-      const events = await nostr.query([filter], {
-        signal: AbortSignal.any([
-          signal,
-          AbortSignal.timeout(10000)
-        ])
-      });
-      const queryTime = performance.now() - queryStart;
+      let events: Awaited<ReturnType<typeof nostr.query>> = [];
+      let pageVideos: ParsedVideoData[] = [];
+      let queryTime = 0;
+      let parseTime = 0;
+      let requestedLimit = filter.limit ?? pageSize;
 
-      // Record query performance
-      performanceMonitor.recordQuery({
-        relayUrl: config.relayUrl,
-        queryType: `infinite-${feedType}`,
-        duration: queryTime,
-        eventCount: events.length,
-        filters: JSON.stringify(filter)
-      });
+      for (let attempt = 0; attempt < SORTED_FEED_BACKFILL_ATTEMPTS; attempt++) {
+        if (useSortedPagination) {
+          requestedLimit = offset + sortedFeedWindowSize(pageSize, attempt);
+          filter.limit = requestedLimit;
+        } else {
+          requestedLimit = pageSize;
+          filter.limit = requestedLimit;
+        }
 
-      debugLog(`[useInfiniteVideos] Got ${events.length} events for ${feedType} in ${queryTime.toFixed(0)}ms`);
-
-      // Log the first few events to see what we're getting
-      if (events.length > 0) {
-        debugLog(`[useInfiniteVideos] First 3 events timestamps:`,
-          events.slice(0, 3).map(e => ({
-            created_at: e.created_at,
-            date: new Date(e.created_at * 1000).toISOString(),
-            id: e.id.substring(0, 8)
-          }))
-        );
-      }
-
-      // Parse and filter
-      const parseStart = performance.now();
-      let videos = parseVideoEvents(events);
-
-      // Sort Classic Vines by loop count (original Vine popularity metric)
-      // NIP-50's 'top' sort uses Nostr engagement, not original Vine loops
-      if (effectiveSortMode === 'top' && feedType === 'trending') {
-        videos = videos.sort((a, b) => {
-          const aLoops = a.loopCount || 0;
-          const bLoops = b.loopCount || 0;
-          return bLoops - aLoops; // Descending order (most loops first)
+        const queryFilter = { ...filter };
+        const queryStart = performance.now();
+        events = await nostr.query([queryFilter], {
+          signal: AbortSignal.any([
+            signal,
+            AbortSignal.timeout(10000)
+          ])
         });
-        debugLog(`[useInfiniteVideos] 🔄 Sorted ${videos.length} Classic Vines by loop count`);
-      }
+        const attemptQueryTime = performance.now() - queryStart;
+        queryTime += attemptQueryTime;
 
-      // Client-side sorting for hashtag feeds (relay doesn't support #t + search combo)
-      if (feedType === 'hashtag' && sortMode && videos.length > 1) {
-        debugLog(`[useInfiniteVideos] 🔄 Applying client-side sort:${sortMode} for hashtag feed`);
-        videos = videos.sort((a, b) => {
-          switch (sortMode) {
-            case 'top':
-              // Sort by loop count (popularity)
-              return (b.loopCount || 0) - (a.loopCount || 0);
-            case 'hot': {
-              // Hot = engagement weighted by recency (loop count + time decay)
-              const aScore = (a.loopCount || 0) / Math.pow((Date.now() / 1000 - a.createdAt) / 3600 + 1, 1.5);
-              const bScore = (b.loopCount || 0) / Math.pow((Date.now() / 1000 - b.createdAt) / 3600 + 1, 1.5);
-              return bScore - aScore;
-            }
-            case 'rising': {
-              // Rising = recent with some engagement
-              const aRising = (a.loopCount || 0) * Math.max(0, 1 - (Date.now() / 1000 - a.createdAt) / 86400);
-              const bRising = (b.loopCount || 0) * Math.max(0, 1 - (Date.now() / 1000 - b.createdAt) / 86400);
-              return bRising - aRising;
-            }
-            default:
-              // Default: chronological (newest first)
-              return b.createdAt - a.createdAt;
-          }
+        performanceMonitor.recordQuery({
+          relayUrl: config.relayUrl,
+          queryType: `infinite-${feedType}`,
+          duration: attemptQueryTime,
+          eventCount: events.length,
+          filters: JSON.stringify(queryFilter)
         });
+
+        debugLog(`[useInfiniteVideos] Got ${events.length} events for ${feedType} in ${attemptQueryTime.toFixed(0)}ms`);
+
+        if (events.length > 0) {
+          debugLog(`[useInfiniteVideos] First 3 events timestamps:`,
+            events.slice(0, 3).map(e => ({
+              created_at: e.created_at,
+              date: new Date(e.created_at * 1000).toISOString(),
+              id: e.id.substring(0, 8)
+            }))
+          );
+        }
+
+        const parseStart = performance.now();
+        const eventsToParse = useSortedPagination ? events.slice(offset) : events;
+        let videos = parseVideoEvents(eventsToParse);
+
+        // Sort Classic Vines by loop count (original Vine popularity metric)
+        // NIP-50's 'top' sort uses Nostr engagement, not original Vine loops
+        if (effectiveSortMode === 'top' && feedType === 'trending') {
+          videos = videos.sort((a, b) => {
+            const aLoops = a.loopCount || 0;
+            const bLoops = b.loopCount || 0;
+            return bLoops - aLoops; // Descending order (most loops first)
+          });
+          debugLog(`[useInfiniteVideos] 🔄 Sorted ${videos.length} Classic Vines by loop count`);
+        }
+
+        // Client-side sorting for hashtag feeds (relay doesn't support #t + search combo)
+        if (feedType === 'hashtag' && sortMode && videos.length > 1) {
+          debugLog(`[useInfiniteVideos] 🔄 Applying client-side sort:${sortMode} for hashtag feed`);
+          videos = videos.sort((a, b) => {
+            switch (sortMode) {
+              case 'top':
+                // Sort by loop count (popularity)
+                return (b.loopCount || 0) - (a.loopCount || 0);
+              case 'hot': {
+                // Hot = engagement weighted by recency (loop count + time decay)
+                const aScore = (a.loopCount || 0) / Math.pow((Date.now() / 1000 - a.createdAt) / 3600 + 1, 1.5);
+                const bScore = (b.loopCount || 0) / Math.pow((Date.now() / 1000 - b.createdAt) / 3600 + 1, 1.5);
+                return bScore - aScore;
+              }
+              case 'rising': {
+                // Rising = recent with some engagement
+                const aRising = (a.loopCount || 0) * Math.max(0, 1 - (Date.now() / 1000 - a.createdAt) / 86400);
+                const bRising = (b.loopCount || 0) * Math.max(0, 1 - (Date.now() / 1000 - b.createdAt) / 86400);
+                return bRising - aRising;
+              }
+              default:
+                // Default: chronological (newest first)
+                return b.createdAt - a.createdAt;
+            }
+          });
+        }
+
+        parseTime += performance.now() - parseStart;
+        pageVideos = videos;
+
+        if (pageVideos.length > 0 || events.length < requestedLimit) {
+          break;
+        }
+
+        if (useSortedPagination) {
+          debugLog(`[useInfiniteVideos] Sorted page at offset ${offset} parsed empty; expanding raw window`);
+          continue;
+        }
+
+        const lastEvent = events[events.length - 1];
+        if (!lastEvent) {
+          break;
+        }
+        filter.until = lastEvent.created_at - 1;
+        debugLog(`[useInfiniteVideos] Chronological page parsed empty; advancing raw cursor to ${filter.until}`);
       }
 
-      // For sorted pagination, slice to get only the new page
-      let pageVideos = videos;
-      if (useSortedPagination && offset > 0) {
-        pageVideos = videos.slice(offset, offset + pageSize);
-        debugLog(`[useInfiniteVideos] Sliced sorted results: ${videos.length} total -> ${pageVideos.length} for page (offset ${offset})`);
+      if (useSortedPagination) {
+        debugLog(`[useInfiniteVideos] Sliced sorted raw results: ${events.length} total -> ${pageVideos.length} parsed for page (offset ${offset})`);
       }
-
-      const parseTime = performance.now() - parseStart;
 
       const totalTime = performance.now() - totalStart;
 
@@ -266,9 +299,9 @@ export function useInfiniteVideos({
 
       // Determine next cursor/offset
       if (useSortedPagination) {
-        // For sorted feeds, use offset-based pagination
-        const newOffset = offset + pageVideos.length;
-        const hasMore = pageVideos.length === pageSize; // If we got a full page, there might be more
+        // For sorted feeds, advance by raw events consumed, not parsed videos.
+        const newOffset = nextSortedOffset(events.length, offset);
+        const hasMore = pageVideos.length > 0 && sortedFeedHasMore(events.length, requestedLimit);
         debugLog(`[useInfiniteVideos] Sorted pagination: offset ${offset} -> ${newOffset}, hasMore: ${hasMore}`);
         return {
           videos: pageVideos,
@@ -277,9 +310,10 @@ export function useInfiniteVideos({
         };
       } else {
         // For chronological feeds, use timestamp cursor
-        const nextCursor = pageVideos.length > 0
-          ? pageVideos[pageVideos.length - 1].createdAt - 1
+        const rawCursor = events.length > 0
+          ? events[events.length - 1].created_at - 1
           : undefined;
+        const nextCursor = pageVideos.length > 0 ? rawCursor : undefined;
         return {
           videos: pageVideos,
           nextCursor
