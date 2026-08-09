@@ -229,6 +229,70 @@ describe('ScrollToTop restoration against late-loading content', () => {
     expect(window.scrollY).toBe(1800);
   });
 
+  // The mirror of the two cases above. Not persisting an interrupted restore
+  // must not cost the viewer a position they really did choose — and the
+  // offset most at risk is the one the interrupted loop happened to leave
+  // behind, because a clamped restore on a grid that has not laid out leaves
+  // exactly `0`. Asking whether the loop stopped, or comparing the final offset
+  // against what the loop last wrote, both read this as "not the viewer's".
+  it('persists the top of the feed after an interrupted restore', async () => {
+    const TestApp = makeTestApp(await loadScrollToTop());
+    render(<TestApp />);
+
+    scrollY = 1800;
+    fireEvent.click(screen.getByRole('link', { name: 'Details' }));
+
+    // Back onto a grid with no rows yet: the restore is clamped all the way to
+    // the top, which is the offset the loop is now holding.
+    scrollY = 0;
+    maxScroll = 0;
+    fireEvent.click(screen.getByRole('button', { name: 'Back' }));
+    expect(window.scrollY).toBe(0);
+
+    // The viewer clicks, taking control without moving the page.
+    fireEvent.mouseDown(window);
+    maxScroll = 10_000;
+    await nextFrame();
+
+    // They read down, then come back to the top and open a video from there.
+    scrollY = 3000;
+    fireEvent.scroll(window);
+    scrollY = 0;
+    fireEvent.scroll(window);
+    fireEvent.click(screen.getByRole('link', { name: 'Details' }));
+
+    // The top is where they left the feed, so that is where they come back to.
+    scrollY = 900;
+    fireEvent.click(screen.getByRole('button', { name: 'Back' }));
+    await nextFrame();
+
+    expect(window.scrollY).toBe(0);
+  });
+
+  it('persists a position the viewer scrolls to after a restore lands', async () => {
+    const TestApp = makeTestApp(await loadScrollToTop());
+    render(<TestApp />);
+
+    scrollY = 1800;
+    fireEvent.click(screen.getByRole('link', { name: 'Details' }));
+
+    scrollY = 0;
+    fireEvent.click(screen.getByRole('button', { name: 'Back' }));
+    await nextFrame();
+    expect(window.scrollY).toBe(1800);
+
+    // The restore is done; the viewer reads on and leaves from 4000.
+    scrollY = 4000;
+    fireEvent.scroll(window);
+    fireEvent.click(screen.getByRole('link', { name: 'Details' }));
+
+    scrollY = 0;
+    fireEvent.click(screen.getByRole('button', { name: 'Back' }));
+    await nextFrame();
+
+    expect(window.scrollY).toBe(4000);
+  });
+
   it('still lands at the top on forward navigation', async () => {
     const TestApp = makeTestApp(await loadScrollToTop());
     render(<TestApp />);
