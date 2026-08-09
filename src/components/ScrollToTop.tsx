@@ -40,46 +40,62 @@ function restoreScrollPosition(target: number): ScrollRestoration {
   let frame: number | null = null;
   let stopped = false;
   let viewerMoved = false;
+  let viewerTookOver = false;
   const deadline = Date.now() + RESTORE_TIMEOUT_MS;
 
-  // After handover the loop no longer writes, so a scroll that lands anywhere
-  // other than the offset the loop last wrote is the viewer's own. Latching it
-  // as it happens is what separates "the viewer settled here" from "the loop
-  // was interrupted here", even when the two offsets end up equal: a viewer who
+  // A scroll only counts once the viewer has taken the page with a real input,
+  // and only when it lands somewhere other than the offset the loop last wrote.
+  //
+  // The input requirement matters because plenty of scrolls are not the
+  // viewer's: scroll anchoring (`overflow-anchor: auto` is the default), the
+  // browser clamping `scrollY` when the document shrinks, and focus-driven
+  // scrolling on mount all fire one. A restore times out precisely *because*
+  // content is still laying out, which is when those are most likely — so
+  // without the gate, one stray event would let an interrupted restore's
+  // clamped offset overwrite the position it was chasing.
+  //
+  // The offset comparison then separates "the viewer settled here" from "the
+  // loop was interrupted here" even when the two end up equal: a viewer who
   // reads down and comes back to the top passed through other offsets on the
   // way, and each one fired this. Reading the offsets equal at teardown cannot
-  // tell those apart. The trailing scroll event from the loop's own last write
-  // reads `written`, so it does not latch.
+  // tell those apart. The loop's own writes never latch — they land on
+  // `written`, and by the time the listener exists the loop has stopped.
   const noteViewerScroll = () => {
-    if (window.scrollY !== written) viewerMoved = true;
+    if (viewerTookOver && window.scrollY !== written) viewerMoved = true;
   };
 
-  const handOver = () => {
+  // Once the viewer takes over, stop dragging them back to where they were.
+  // `mousedown` covers grabbing the scrollbar, which fires none of the others
+  // and is exactly how someone escapes a page the loop cannot satisfy.
+  const inputEvents = ['wheel', 'touchstart', 'keydown', 'mousedown'] as const;
+
+  const noteViewerInput = () => {
+    viewerTookOver = true;
+    handOver();
+  };
+
+  // Stops the loop writing. The input listeners outlive it: handover can also
+  // come from reaching the target or from the deadline, and a viewer who takes
+  // the page after either of those still needs to be recognised.
+  function handOver() {
     if (stopped) return;
     stopped = true;
     if (frame !== null) {
       window.cancelAnimationFrame(frame);
       frame = null;
     }
-    window.removeEventListener('wheel', handOver);
-    window.removeEventListener('touchstart', handOver);
-    window.removeEventListener('keydown', handOver);
-    window.removeEventListener('mousedown', handOver);
     window.addEventListener('scroll', noteViewerScroll, { passive: true });
-  };
+  }
 
   const stop = () => {
     handOver();
     window.removeEventListener('scroll', noteViewerScroll);
+    for (const event of inputEvents) window.removeEventListener(event, noteViewerInput);
   };
 
-  // Once the viewer takes over, stop dragging them back to where they were.
-  // `mousedown` covers grabbing the scrollbar, which fires none of the others
-  // and is exactly how someone escapes a page the loop cannot satisfy.
-  window.addEventListener('wheel', handOver, { passive: true });
-  window.addEventListener('touchstart', handOver, { passive: true });
-  window.addEventListener('keydown', handOver);
-  window.addEventListener('mousedown', handOver, { passive: true });
+  for (const event of inputEvents) {
+    window.addEventListener(event, noteViewerInput, { passive: true });
+  }
 
   const attempt = () => {
     if (stopped) return;
@@ -113,6 +129,7 @@ export function ScrollToTop() {
   const navigationType = useNavigationType();
   const scrollKey = getScrollKey(pathname, search);
   const timeoutRef = useRef<number | null>(null);
+  const restorationRef = useRef<ScrollRestoration | null>(null);
 
   useEffect(() => {
     if ('scrollRestoration' in window.history) {
@@ -127,6 +144,13 @@ export function ScrollToTop() {
 
   useEffect(() => {
     const saveCurrentPosition = () => {
+      // Same guard as the layout-effect cleanup below, for the same reason.
+      // `pagehide` fires on tab and app switches and on entry to the
+      // back-forward cache, where this module scope — and so `scrollPositions`
+      // — survives, so a save here outlives the event just as an in-app one
+      // does. Writing an in-flight restore's clamped offset would overwrite the
+      // position that restore is still chasing.
+      if (restorationRef.current && !restorationRef.current.isViewerChosen()) return;
       scrollPositions.set(scrollKey, window.scrollY);
     };
 
@@ -170,6 +194,7 @@ export function ScrollToTop() {
     const savedPosition =
       navigationType === 'POP' ? (scrollPositions.get(scrollKey) ?? 0) : 0;
     const restoration = restoreScrollPosition(savedPosition);
+    restorationRef.current = restoration;
 
     return () => {
       // Only persist an offset the viewer chose. A restore that never reached
@@ -182,6 +207,7 @@ export function ScrollToTop() {
       // viewer's position". Ask whether the viewer actually scrolled instead.
       const viewerChose = restoration.isViewerChosen();
       restoration.stop();
+      restorationRef.current = null;
 
       if (viewerChose) {
         scrollPositions.set(scrollKey, window.scrollY);

@@ -72,7 +72,14 @@ describe('ScrollToTop restoration against late-loading content', () => {
     // infinite grid that hasn't rendered its rows yet is short, so the restore
     // lands near the top.
     vi.mocked(window.scrollTo).mockImplementation((...args: ScrollToArgs) => {
-      scrollY = Math.min(requestedOffset(args), maxScroll);
+      const landed = Math.min(requestedOffset(args), maxScroll);
+      if (landed === scrollY) return;
+      scrollY = landed;
+      // A programmatic scroll fires a `scroll` event in a real browser exactly
+      // as a viewer's does. The restore loop's own writes therefore have to be
+      // distinguishable from the viewer taking the page over; a mock that moved
+      // the offset silently would let a broken guard pass.
+      window.dispatchEvent(new Event('scroll'));
     });
   });
 
@@ -282,6 +289,7 @@ describe('ScrollToTop restoration against late-loading content', () => {
     expect(window.scrollY).toBe(1800);
 
     // The restore is done; the viewer reads on and leaves from 4000.
+    fireEvent.wheel(window);
     scrollY = 4000;
     fireEvent.scroll(window);
     fireEvent.click(screen.getByRole('link', { name: 'Details' }));
@@ -291,6 +299,70 @@ describe('ScrollToTop restoration against late-loading content', () => {
     await nextFrame();
 
     expect(window.scrollY).toBe(4000);
+  });
+
+  // Not every scroll is the viewer's. Scroll anchoring, the browser clamping
+  // `scrollY` when the document shrinks, and focus-driven scrolling on mount all
+  // fire one — and a restore is in flight precisely while content is still
+  // laying out, which is when those are most likely. Treating a bare `scroll` as
+  // intent would let a stray event hand the clamped offset back into storage.
+  it('ignores a scroll the viewer did not cause', async () => {
+    const TestApp = makeTestApp(await loadScrollToTop());
+    render(<TestApp />);
+
+    scrollY = 1800;
+    fireEvent.click(screen.getByRole('link', { name: 'Details' }));
+
+    scrollY = 0;
+    fireEvent.click(screen.getByRole('button', { name: 'Back' }));
+    await nextFrame();
+    expect(window.scrollY).toBe(1800);
+
+    // The page reflows and the browser moves the viewport on its own. No wheel,
+    // no touch, no key, no mousedown.
+    scrollY = 300;
+    fireEvent.scroll(window);
+    fireEvent.click(screen.getByRole('link', { name: 'Details' }));
+
+    scrollY = 0;
+    fireEvent.click(screen.getByRole('button', { name: 'Back' }));
+    await nextFrame();
+
+    expect(window.scrollY).toBe(1800);
+  });
+
+  // `pagehide` fires on tab and app switches and on entry to the back-forward
+  // cache. The module scope survives bfcache, so a save from there outlives the
+  // event exactly as an in-app one does and has to clear the same guard.
+  //
+  // Only the negative direction is testable here: `pagehide` shares
+  // `isViewerChosen` with the layout-effect cleanup, and any in-app navigation
+  // that would let a test read the stored value runs that cleanup afterwards
+  // and overwrites whatever `pagehide` wrote. The positive direction of the
+  // guard is pinned by the two tests above.
+  it('does not let pagehide persist an in-flight restore', async () => {
+    const TestApp = makeTestApp(await loadScrollToTop());
+    render(<TestApp />);
+
+    scrollY = 1800;
+    fireEvent.click(screen.getByRole('link', { name: 'Details' }));
+
+    scrollY = 0;
+    maxScroll = 150;
+    fireEvent.click(screen.getByRole('button', { name: 'Back' }));
+    expect(window.scrollY).toBe(150);
+
+    // The viewer switches tabs while the grid is still filling in.
+    fireEvent(window, new Event('pagehide'));
+
+    // Back to a laid-out page: the clamped 150 must not have replaced 1800.
+    maxScroll = 10_000;
+    fireEvent.click(screen.getByRole('link', { name: 'Details' }));
+    scrollY = 0;
+    fireEvent.click(screen.getByRole('button', { name: 'Back' }));
+    await nextFrame();
+
+    expect(window.scrollY).toBe(1800);
   });
 
   it('still lands at the top on forward navigation', async () => {
