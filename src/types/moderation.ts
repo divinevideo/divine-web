@@ -1,6 +1,11 @@
 // ABOUTME: Type definitions for content moderation system
 // ABOUTME: Implements NIP-51 mute lists (kind 10000) and NIP-56 reporting (kind 1984)
 
+// NIP-51 mute list. Replaces kind 10001 (pin list) which was incorrectly used
+// for muting — that collided with usePinnedVideos and was rejected by
+// relay.divine.video's kind allowlist.
+export const MUTE_LIST_KIND = 10000;
+
 /**
  * Content filter reasons (NIP-56)
  */

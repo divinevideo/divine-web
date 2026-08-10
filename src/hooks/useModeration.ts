@@ -8,6 +8,7 @@ import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useNostrPublish } from '@/hooks/useNostrPublish';
 import type { NostrEvent, NostrFilter } from '@nostrify/nostrify';
 import {
+  MUTE_LIST_KIND,
   MuteType,
   type MuteItem,
   type ContentReport,
@@ -17,10 +18,9 @@ import {
 } from '@/types/moderation';
 import { submitReportToZendesk, buildContentUrl } from '@/lib/reportApi';
 
-// NIP-51 mute list. Replaces kind 10001 (pin list) which was incorrectly used
-// for muting — that collided with usePinnedVideos and was rejected by
-// relay.divine.video's kind allowlist.
-export const MUTE_LIST_KIND = 10000;
+// Canonical definition lives in @/types/moderation so pure modules can read the
+// kind without importing this hook module. Re-exported for existing callers.
+export { MUTE_LIST_KIND };
 
 // Stable empty array to prevent infinite re-renders when user is not logged in
 const EMPTY_MUTE_LIST: MuteItem[] = [];
