@@ -7,7 +7,7 @@ import { useNostrPublish } from '@/hooks/useNostrPublish';
 import { useToast } from '@/hooks/useToast';
 import { debugLog } from '@/lib/debug';
 import type { VideoSocialMetrics } from '@/hooks/useVideoSocialMetrics';
-import { SHORT_VIDEO_KIND } from '@/types/video';
+import { buildVideoLikeTags } from '@/lib/buildVideoLikeTags';
 
 interface OptimisticLikeParams {
   videoId: string;
@@ -80,12 +80,7 @@ export function useOptimisticLike() {
 
         debugLog('Optimistically liking video:', videoId);
 
-        const tags = [
-          ['e', videoId],
-          ...(vineId ? [['a', `${SHORT_VIDEO_KIND}:${videoPubkey}:${vineId}`]] : []),
-          ['p', videoPubkey],
-          ['k', SHORT_VIDEO_KIND.toString()],
-        ];
+        const tags = buildVideoLikeTags({ videoId, videoPubkey, vineId });
 
         // Actually publish the like event
         const event = await publishEvent({
