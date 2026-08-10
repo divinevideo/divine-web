@@ -189,6 +189,34 @@ describe('EventPage', () => {
     expect(await screen.findByTestId('people-list-page')).toBeInTheDocument();
   });
 
+  it('keeps legacy block list coordinates on the generic event page', async () => {
+    // Divine's block list is a kind 30000 event with d=block, and the
+    // people-list parser rejects it on purpose. Routing it to /people-lists/*
+    // with the other kind 30000 sets would surface "could not be found" for an
+    // event that resolved fine.
+    const authorPubkey = 'a'.repeat(64);
+    const event = {
+      id: 'b'.repeat(64),
+      pubkey: authorPubkey,
+      created_at: 1_700_000_000,
+      kind: 30000,
+      tags: [
+        ['d', 'block'],
+        ['p', 'd'.repeat(64)],
+      ],
+      content: '',
+      sig: '3'.repeat(128),
+    };
+    mockFetchAddressableEvent.mockResolvedValue(event);
+    mockFetchEventById.mockResolvedValue(event);
+
+    renderPage([`/event/a/30000/${authorPubkey}/block`]);
+
+    expect(await screen.findByText('List Items')).toBeInTheDocument();
+    expect(screen.queryByTestId('people-list-page')).not.toBeInTheDocument();
+    expect(document.querySelector('pre')?.textContent).toContain('"kind": 30000');
+  });
+
   it('shows generic list-style events with reference links and raw json', async () => {
     const authorPubkey = 'c'.repeat(64);
     const referencedPubkey = 'd'.repeat(64);
