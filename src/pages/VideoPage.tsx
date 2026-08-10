@@ -25,7 +25,7 @@ import { buildProfileLinkPath } from '@/lib/profileLinks';
 import { debugLog } from '@/lib/debug';
 import { getVisiblePlaybackCount } from '@/lib/playbackCount';
 import { reportFunnelcakeFallback } from '@/lib/funnelcakeFallbackReporting';
-import type { ParsedVideoData, UserInteractions } from '@/types/video';
+import { SHORT_VIDEO_KIND, type ParsedVideoData, type UserInteractions } from '@/types/video';
 
 export function VideoPage() {
   const { t } = useTranslation();
@@ -310,7 +310,13 @@ export function VideoPage() {
         content: '+', // Positive reaction
         tags: [
           ['e', video.id], // Reference to the video event
+          // The video is addressable: an id-only reaction strands the moment the
+          // author edits, since that id is superseded. The coordinate outlives it.
+          ...(video.vineId
+            ? [['a', `${SHORT_VIDEO_KIND}:${video.pubkey}:${video.vineId}`]]
+            : []),
           ['p', video.pubkey], // Reference to the video author
+          ['k', SHORT_VIDEO_KIND.toString()], // Kind of the reacted event
         ],
       });
 

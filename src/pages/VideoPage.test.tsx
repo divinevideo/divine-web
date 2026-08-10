@@ -1,9 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import type { HTMLAttributes, ReactNode } from 'react';
 import VideoPage from './VideoPage';
 import { initializeI18n } from '@/lib/i18n';
+
+const { VIDEO_1_AUTHOR_PK, VIDEO_2_AUTHOR_PK, VIDEO_3_AUTHOR_PK, VIEWER_PK } = vi.hoisted(() => ({
+  VIDEO_1_AUTHOR_PK: 'a'.repeat(64),
+  VIDEO_2_AUTHOR_PK: 'b'.repeat(64),
+  VIDEO_3_AUTHOR_PK: 'c'.repeat(64),
+  VIEWER_PK: 'f'.repeat(64),
+}));
 
 const { mockNavigate } = vi.hoisted(() => ({
   mockNavigate: vi.fn(),
@@ -11,6 +18,11 @@ const { mockNavigate } = vi.hoisted(() => ({
 
 const { openLoginDialogMock } = vi.hoisted(() => ({
   openLoginDialogMock: vi.fn(),
+}));
+
+const { publishAsyncMock, currentUser } = vi.hoisted(() => ({
+  publishAsyncMock: vi.fn(),
+  currentUser: { value: null as { pubkey: string } | null },
 }));
 
 vi.mock('@unhead/react', () => ({
@@ -23,43 +35,48 @@ vi.mock('@/hooks/useSubdomainNavigate', () => ({
 }));
 
 vi.mock('@/hooks/useVideoByIdFunnelcake', () => ({
-  useVideoByIdFunnelcake: (options: { query?: string }) => {
+  useVideoByIdFunnelcake: (options: { videoId: string; query?: string }) => {
     const videos = [
       {
         id: 'video-1',
-        pubkey: 'a'.repeat(64),
+        pubkey: VIDEO_1_AUTHOR_PK,
         kind: 34236,
         createdAt: 1,
         content: 'one',
         videoUrl: 'https://example.com/1.mp4',
+        vineId: null,
         hashtags: [],
         reposts: [],
       },
       {
         id: 'video-2',
-        pubkey: 'b'.repeat(64),
+        pubkey: VIDEO_2_AUTHOR_PK,
         kind: 34236,
         createdAt: 2,
         content: 'two',
         videoUrl: 'https://example.com/2.mp4',
+        vineId: 'vine-two',
         hashtags: [],
         reposts: [],
       },
       {
         id: 'video-3',
-        pubkey: 'c'.repeat(64),
+        pubkey: VIDEO_3_AUTHOR_PK,
         kind: 34236,
         createdAt: 3,
         content: 'three',
         videoUrl: 'https://example.com/3.mp4',
+        vineId: 'vine-three',
         hashtags: [],
         reposts: [],
       },
     ];
 
+    const video = videos.find((v) => v.id === options.videoId) ?? videos[1];
+
     if (options.query === 'twerking') {
       return {
-        video: videos[1],
+        video,
         videos,
         windowOffset: 0,
         isLoading: false,
@@ -68,7 +85,7 @@ vi.mock('@/hooks/useVideoByIdFunnelcake', () => ({
     }
 
     return {
-      video: videos[1],
+      video,
       videos: null,
       windowOffset: 0,
       isLoading: false,
@@ -104,7 +121,7 @@ vi.mock('@/hooks/useBatchedVideoInteractions', () => ({
 
 vi.mock('@/hooks/useNostrPublish', () => ({
   useNostrPublish: () => ({
-    mutateAsync: vi.fn(),
+    mutateAsync: publishAsyncMock,
   }),
 }));
 
@@ -117,7 +134,7 @@ vi.mock('@/hooks/usePublishVideo', () => ({
 
 vi.mock('@/hooks/useCurrentUser', () => ({
   useCurrentUser: () => ({
-    user: null,
+    user: currentUser.value,
   }),
 }));
 
@@ -191,6 +208,8 @@ function renderPage(path: string) {
 describe('VideoPage', () => {
   beforeEach(async () => {
     vi.clearAllMocks();
+    currentUser.value = null;
+    publishAsyncMock.mockResolvedValue({ id: 'like-event-id' });
     const storage = new Map<string, string>();
     Object.defineProperty(window, 'localStorage', {
       configurable: true,
@@ -229,5 +248,44 @@ describe('VideoPage', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /repost video/i }));
     expect(openLoginDialogMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('likes with the video coordinate so the reaction survives an edit', async () => {
+    currentUser.value = { pubkey: VIEWER_PK };
+
+    renderPage('/video/video-2');
+
+    fireEvent.click(screen.getByRole('button', { name: /like video/i }));
+
+    await waitFor(() => expect(publishAsyncMock).toHaveBeenCalledTimes(1));
+    expect(publishAsyncMock).toHaveBeenCalledWith({
+      kind: 7,
+      content: '+',
+      tags: [
+        ['e', 'video-2'],
+        ['a', `34236:${VIDEO_2_AUTHOR_PK}:vine-two`],
+        ['p', VIDEO_2_AUTHOR_PK],
+        ['k', '34236'],
+      ],
+    });
+  });
+
+  it('omits the coordinate when the video has no d tag to address it by', async () => {
+    currentUser.value = { pubkey: VIEWER_PK };
+
+    renderPage('/video/video-1');
+
+    fireEvent.click(screen.getByRole('button', { name: /like video/i }));
+
+    await waitFor(() => expect(publishAsyncMock).toHaveBeenCalledTimes(1));
+    expect(publishAsyncMock).toHaveBeenCalledWith({
+      kind: 7,
+      content: '+',
+      tags: [
+        ['e', 'video-1'],
+        ['p', VIDEO_1_AUTHOR_PK],
+        ['k', '34236'],
+      ],
+    });
   });
 });

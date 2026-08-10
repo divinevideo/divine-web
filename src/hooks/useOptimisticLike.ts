@@ -84,6 +84,7 @@ export function useOptimisticLike() {
           ['e', videoId],
           ...(vineId ? [['a', `${SHORT_VIDEO_KIND}:${videoPubkey}:${vineId}`]] : []),
           ['p', videoPubkey],
+          ['k', SHORT_VIDEO_KIND.toString()],
         ];
 
         // Actually publish the like event
