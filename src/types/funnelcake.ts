@@ -33,7 +33,7 @@ export interface FunnelcakeVideoRaw {
   pubkey: string;         // Hex string pubkey
   created_at: number;     // Unix timestamp
   kind: number;           // Nostr event kind (34236 for videos)
-  d_tag: string;          // Unique identifier for addressable event
+  d_tag?: string;         // Unique identifier for addressable event; thin list payloads can omit it
   title?: string;         // Video title
   content?: string;       // Video content/description (user videos endpoint)
   thumbnail?: string;     // Thumbnail URL

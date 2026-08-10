@@ -27,7 +27,7 @@ export function useClassicVineArchiveStats(pubkey: string, enabled: boolean = tr
 
         for (const rawVideo of response.videos) {
           const video = transformFunnelcakeVideo(rawVideo);
-          if (!video.isVineMigrated) {
+          if (!video?.isVineMigrated) {
             continue;
           }
 

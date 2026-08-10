@@ -22,10 +22,17 @@ export function ConfirmedTab() {
       </div>
     );
   }
+  // The transform refuses a row with no `d` tag, since there is no coordinate to
+  // address it by — drop those rather than rendering a card nothing can act on.
+  const videos = data.flatMap((raw) => {
+    const video = transformFunnelcakeVideo(raw);
+    return video ? [video] : [];
+  });
+
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-      {data.map((raw) => (
-        <VideoCard key={raw.id} video={transformFunnelcakeVideo(raw)} />
+      {videos.map((video) => (
+        <VideoCard key={video.id} video={video} />
       ))}
     </div>
   );

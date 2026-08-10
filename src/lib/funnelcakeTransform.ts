@@ -5,7 +5,7 @@ import { parseByteArrayId } from './funnelcakeClient';
 import { SHORT_VIDEO_KIND, type ParsedVideoData, type ProofModeData, type ProofModeLevel } from '@/types/video';
 import type { FunnelcakeVideoRaw, FunnelcakeResponse } from '@/types/funnelcake';
 import { debugLog } from './debug';
-import { getProofModeData } from './videoParser';
+import { getProofModeData, getVineId } from './videoParser';
 import { extractSha256FromVideoUrl, normalizeSha256 } from './videoVerification';
 import type { NostrEvent } from '@nostrify/nostrify';
 
@@ -149,9 +149,17 @@ function proofSummaryToProofMode(raw: FunnelcakeVideoRaw): ProofModeData | undef
 }
 
 /**
- * Transform a single Funnelcake video to ParsedVideoData format
+ * Transform a single Funnelcake video to ParsedVideoData format.
+ *
+ * Returns null when the row carries no `d` tag. Every row here becomes a kind
+ * 34236 event, and an addressable event with no `d` has no coordinate to be
+ * addressed by, so anything keyed on that coordinate — likes, reposts, view
+ * events — silently narrows to the event id, which is superseded the first time
+ * the author edits. `videoParser` already refuses these on the relay path
+ * (`if (!vineId && event.kind === SHORT_VIDEO_KIND) continue`); this keeps the
+ * REST path from admitting what the relay path rejects.
  */
-export function transformFunnelcakeVideo(raw: FunnelcakeVideoRaw): ParsedVideoData {
+export function transformFunnelcakeVideo(raw: FunnelcakeVideoRaw): ParsedVideoData | null {
   // Handle byte array conversion for id and pubkey
   const id = Array.isArray(raw.id) ? parseByteArrayId(raw.id) : String(raw.id);
   const pubkey = Array.isArray(raw.pubkey) ? parseByteArrayId(raw.pubkey) : String(raw.pubkey);
@@ -178,6 +186,14 @@ export function transformFunnelcakeVideo(raw: FunnelcakeVideoRaw): ParsedVideoDa
   const fullEvent = parseFullEvent(raw, id, pubkey);
   const fullEventProofMode = fullEvent ? getProofModeData(fullEvent) : undefined;
 
+  // Thin list payloads can omit the top-level d_tag while still carrying the
+  // event's tags, so read those before giving up on the coordinate.
+  const vineId = raw.d_tag || (fullEvent ? getVineId(fullEvent) : null);
+  if (!vineId) {
+    debugLog('[FunnelcakeTransform] Dropping video with no d tag:', id);
+    return null;
+  }
+
   const video: ParsedVideoData = {
     id,
     pubkey,
@@ -199,7 +215,7 @@ export function transformFunnelcakeVideo(raw: FunnelcakeVideoRaw): ParsedVideoDa
     hashtags,
 
     // Vine-specific fields
-    vineId: raw.d_tag || null, // d_tag is the unique identifier
+    vineId, // The `d` tag: the addressable event's unique identifier
     // For Vine imports, `loopCount` is the original archive count. For native
     // Divine videos, it is the current playback loop count from Funnelcake.
     loopCount: isVineMigrated

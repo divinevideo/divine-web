@@ -9,6 +9,7 @@ import { getFunnelcakeUrl } from '@/config/relays';
 import { useAppContext } from '@/hooks/useAppContext';
 import { debugLog } from '@/lib/debug';
 import type { ParsedVideoData } from '@/types/video';
+import type { FunnelcakeVideoRaw } from '@/types/funnelcake';
 import type { SortMode } from '@/types/nostr';
 
 interface UseVideoByIdOptions {
@@ -30,6 +31,14 @@ interface UseVideoByIdResult {
 }
 
 const NAVIGATION_WINDOW_SIZE = 16;
+
+/** Drop rows the transform refuses — a video with no `d` tag has no coordinate. */
+function transformNavigationVideos(rawVideos: FunnelcakeVideoRaw[]): ParsedVideoData[] {
+  return rawVideos.flatMap(raw => {
+    const video = transformFunnelcakeVideo(raw);
+    return video ? [video] : [];
+  });
+}
 
 function getNavigationWindowOffset(currentIndex?: number): number {
   if (currentIndex === undefined || currentIndex < 0) {
@@ -86,7 +95,7 @@ export function useVideoByIdFunnelcake(options: UseVideoByIdOptions): UseVideoBy
         signal,
       });
 
-      return response.videos.map(transformFunnelcakeVideo);
+      return transformNavigationVideos(response.videos);
     },
     enabled: enabled && !!pubkey,
     staleTime: 300000, // 5 minutes
@@ -107,7 +116,7 @@ export function useVideoByIdFunnelcake(options: UseVideoByIdOptions): UseVideoBy
         signal,
       });
 
-      return response.videos.map(transformFunnelcakeVideo);
+      return transformNavigationVideos(response.videos);
     },
     enabled: enabled && !!hashtag && !pubkey, // Only fetch if hashtag context and no pubkey
     staleTime: 300000, // 5 minutes
@@ -131,7 +140,7 @@ export function useVideoByIdFunnelcake(options: UseVideoByIdOptions): UseVideoBy
         signal,
       });
 
-      return response.videos.map(transformFunnelcakeVideo);
+      return transformNavigationVideos(response.videos);
     },
     enabled: enabled && !!searchValue && !pubkey && !hashtag,
     staleTime: 300000,
