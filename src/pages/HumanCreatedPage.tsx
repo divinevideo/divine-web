@@ -12,7 +12,7 @@ export default function HumanCreatedPage() {
 
   return (
     <MarketingLayout>
-      <div className="container max-w-4xl mx-auto px-4 py-8">
+      <div className="marketing-page marketing-page--default marketing-stack">
       <div className="space-y-8">
         {/* Header */}
         <div className="text-center space-y-4">
