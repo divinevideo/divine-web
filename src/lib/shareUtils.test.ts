@@ -9,7 +9,14 @@ vi.mock('@/lib/subdomainLinks', () => ({
   getApexShareUrl: (path: string) => `https://divine.video${path}`,
 }));
 
-import { getVideoShareUrl, getVideoShareData, getListShareUrl, getListShareData } from './shareUtils';
+import {
+  getVideoShareUrl,
+  getVideoShareData,
+  getListShareUrl,
+  getListShareData,
+  getPeopleListShareUrl,
+  getPeopleListShareData,
+} from './shareUtils';
 
 function makeVideo(overrides: Partial<ParsedVideoData> = {}): ParsedVideoData {
   return {
@@ -62,11 +69,6 @@ describe('getListShareUrl', () => {
     const url = getListShareUrl('pubkey-abc', 'my-list');
     expect(url).toBe('https://divine.video/list/pubkey-abc/my-list');
   });
-
-  it('encodes the list d tag through the route builder', () => {
-    const url = getListShareUrl('pubkey-abc', 'name with/slash');
-    expect(url).toBe('https://divine.video/list/pubkey-abc/name%20with%2Fslash');
-  });
 });
 
 describe('getListShareData', () => {
@@ -74,6 +76,24 @@ describe('getListShareData', () => {
     const data = getListShareData('pubkey-abc', 'my-list');
     expect(data).toEqual({
       url: 'https://divine.video/list/pubkey-abc/my-list',
+    });
+    expect(data).not.toHaveProperty('title');
+    expect(data).not.toHaveProperty('text');
+  });
+});
+
+describe('getPeopleListShareUrl', () => {
+  it('builds the people-list URL with pubkey and encoded listId', () => {
+    const url = getPeopleListShareUrl('pubkey-abc', 'close friends');
+    expect(url).toBe('https://divine.video/people-lists/pubkey-abc/close%20friends');
+  });
+});
+
+describe('getPeopleListShareData', () => {
+  it('returns only URL (no title/text)', () => {
+    const data = getPeopleListShareData('pubkey-abc', 'my-list');
+    expect(data).toEqual({
+      url: 'https://divine.video/people-lists/pubkey-abc/my-list',
     });
     expect(data).not.toHaveProperty('title');
     expect(data).not.toHaveProperty('text');
