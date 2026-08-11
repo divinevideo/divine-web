@@ -101,10 +101,10 @@ export function usePeopleListVideos(memberPubkeys: string[], options: UsePeopleL
     },
     initialPageParam: undefined as number | undefined,
     getNextPageParam: (lastPage, allPages) => {
-      if (!lastPage.nextUntil) return undefined;
-      // If a single timestamp contains more than one relay page, stop at the
-      // duplicate boundary instead of looping forever.
-      if (!pageAddsNewVideos(lastPage, allPages)) return undefined;
+      if (lastPage.nextUntil === undefined) return undefined;
+      // If an inclusive boundary page repeats without adding videos, step past
+      // that timestamp so older videos stay reachable.
+      if (!pageAddsNewVideos(lastPage, allPages)) return lastPage.nextUntil - 1;
       return lastPage.nextUntil;
     },
     enabled: enabled && stableMembers.length > 0,
