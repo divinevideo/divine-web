@@ -55,7 +55,7 @@ describe('support-only messaging entry points', () => {
       'In the Divine mobile app you can also message people directly and share vines privately.',
     );
     expect(source).toContain(
-      'Those messages are end-to-end encrypted, and we cannot read them.',
+      'Those messages are end-to-end encrypted and don\'t reach Divine Support.',
     );
     // Still barred: the pre-PR copy's *unscoped* privacy promise. An E2E claim
     // is accurate for mobile and wrong for web, so what these guard is the

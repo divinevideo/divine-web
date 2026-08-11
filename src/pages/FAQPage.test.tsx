@@ -38,6 +38,10 @@ describe('FAQPage', () => {
       .toBeInTheDocument();
     expect(screen.getByText(/in the Divine mobile app you can also message people directly/i))
       .toBeInTheDocument();
+    // Guard the privacy sentence on the SPA surface too, not just its first clause,
+    // so it can't silently diverge from the prerendered mirror.
+    expect(screen.getByText(/those messages are end-to-end encrypted and don't reach Divine Support/i))
+      .toBeInTheDocument();
     expect(screen.queryByText(/direct messages between users/i))
       .not.toBeInTheDocument();
   });

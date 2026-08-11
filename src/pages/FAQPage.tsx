@@ -775,7 +775,7 @@ export function FAQPage() {
                   </p>
                   <p>
                     In the Divine mobile app you can also message people directly and share vines
-                    privately. Those messages are end-to-end encrypted, and we cannot read them.
+                    privately. Those messages are end-to-end encrypted and don't reach Divine Support.
                   </p>
                 </div>
               </FAQQuestion>
