@@ -25,9 +25,13 @@ export function useFeaturedTabVideos({
   return useInfiniteQuery<FeaturedTabVideoPage, Error>({
     queryKey: ['featured-tab-videos', apiUrl, configId, pageSize],
     queryFn: async ({ pageParam, signal }) => {
+      if (!configId) {
+        throw new Error('Featured tab config id is required');
+      }
+
       const response = await fetchFeaturedTabVideos(
         apiUrl,
-        configId!,
+        configId,
         typeof pageParam === 'string' ? pageParam : undefined,
         pageSize,
         signal

@@ -62,6 +62,8 @@ subdomain and loading the corresponding Nostr profile. Static hosts use
 catch-all fallback.
 The retired `/discovery/new` chronological feed redirects to
 `/discovery/hot`; Discovery does not expose or mount an all-new-video feed.
+`/discovery/:tab` accepts the built-in Discovery tabs plus the currently
+eligible server-configured featured tab slug, when Funnelcake serves one.
 Public profiles expose a compact mixed NIP-51 list shelf and a filterable
 `/profile/:npub/lists` gallery. Kind `30005` video sets retain their
 owner-aware `/list/:pubkey/:listId` route; kind `30000` people sets use

@@ -126,6 +126,23 @@ describe('useFeaturedTab', () => {
     });
   });
 
+  it('fetches configuration from the supplied Funnelcake host', async () => {
+    mockFetchFeaturedTabs.mockResolvedValueOnce(makeResponse());
+
+    const { result } = renderHook(
+      () => useFeaturedTab({ apiUrl: 'https://api.staging.divine.video' }),
+      { wrapper: createWrapper() }
+    );
+
+    await flushQuery();
+
+    expect(mockFetchFeaturedTabs).toHaveBeenCalledWith(
+      'https://api.staging.divine.video',
+      expect.any(AbortSignal)
+    );
+    expect(result.current.tab?.id).toBe('ft_1234abcd');
+  });
+
   it('uses a fresh cached config through one transient refresh failure', async () => {
     const queryClient = createQueryClient();
     mockFetchFeaturedTabs.mockResolvedValueOnce(makeResponse());

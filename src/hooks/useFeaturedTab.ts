@@ -56,8 +56,11 @@ function getFreshCachedConfig(
     : null;
 }
 
-export function useFeaturedTab(): FeaturedTabState {
-  const apiUrl = getFunnelcakeBaseUrl();
+export function useFeaturedTab({
+  apiUrl = getFunnelcakeBaseUrl(),
+}: {
+  apiUrl?: string;
+} = {}): FeaturedTabState {
   const { i18n } = useTranslation();
   const minorStatus = useProtectedMinorStatus();
 

@@ -15,15 +15,13 @@ import { Star, Hash, Flame, Sparkle as Sparkles, Confetti } from '@phosphor-icon
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useCategories } from '@/hooks/useCategories';
 import { useFeaturedTab } from '@/hooks/useFeaturedTab';
+import { useFunnelcakeSupport } from '@/hooks/useVideoProvider';
 import { getTranslatedCategoryLabel } from '@/lib/constants/categories';
 import { trackEvent } from '@/lib/analytics';
-import type { DiscoveryTabName, ResolvedFeaturedTab } from '@/types/featuredTabs';
-
-// All possible tab values (foryou only shown when logged in)
-type AllowedTab = DiscoveryTabName | string;
+import type { ResolvedFeaturedTab } from '@/types/featuredTabs';
 
 interface DiscoveryTabItem {
-  value: AllowedTab;
+  value: string;
   label: string;
   Icon: ComponentType<{ className?: string }>;
   disclosureLabel?: string | null;
@@ -71,7 +69,10 @@ export function DiscoveryPage() {
   const { user, isResolvingJwt } = useCurrentUser();
   const isLoggedIn = !!user?.pubkey;
   const { data: categories } = useCategories();
-  const { tab: featuredTab, isResolved: isFeaturedConfigResolved } = useFeaturedTab();
+  const { apiUrl: featuredApiUrl } = useFunnelcakeSupport();
+  const { tab: featuredTab, isResolved: isFeaturedConfigResolved } = useFeaturedTab({
+    apiUrl: featuredApiUrl,
+  });
 
   const baseTabs = useMemo<DiscoveryTabItem[]>(() => {
     const tabs: DiscoveryTabItem[] = [
@@ -117,9 +118,9 @@ export function DiscoveryPage() {
   // Support legacy 'top' route by mapping to 'classics'
   const normalizedTab = routeTab === 'top' ? 'classics' : routeTab;
   // Default to 'foryou' for logged-in users, 'classics' for anonymous
-  const defaultTab: AllowedTab = isLoggedIn ? 'foryou' : 'classics';
-  const initialTab: AllowedTab = allowedTabs.includes(normalizedTab as AllowedTab) ? (normalizedTab as AllowedTab) : defaultTab;
-  const [activeTab, setActiveTab] = useState<AllowedTab>(initialTab);
+  const defaultTab = isLoggedIn ? 'foryou' : 'classics';
+  const initialTab = allowedTabs.includes(normalizedTab) ? normalizedTab : defaultTab;
+  const [activeTab, setActiveTab] = useState(initialTab);
   const [verifiedOnly, setVerifiedOnly] = useState(false);
 
   // Note: We no longer force relay changes here as it causes navigation delays
@@ -133,17 +134,25 @@ export function DiscoveryPage() {
       navigate('/discovery/classics', { replace: true });
       return;
     }
-    if (allowedTabs.includes(normalizedTab as AllowedTab)) {
-      setActiveTab(normalizedTab as AllowedTab);
+    if (allowedTabs.includes(normalizedTab)) {
+      setActiveTab(normalizedTab);
     }
   }, [routeTab, normalizedTab, allowedTabs, navigate]);
 
   useEffect(() => {
+    if (!isFeaturedConfigResolved || isResolvingJwt) return;
     if (!allowedTabs.includes(activeTab)) {
       setActiveTab(defaultTab);
       navigate(`/discovery/${defaultTab}`, { replace: true });
     }
-  }, [activeTab, allowedTabs, defaultTab, navigate]);
+  }, [
+    activeTab,
+    allowedTabs,
+    defaultTab,
+    isFeaturedConfigResolved,
+    isResolvingJwt,
+    navigate,
+  ]);
 
   // A slug that no configuration claims — expired campaign, shared link, typo —
   // otherwise renders the default tab while the address bar keeps the dead
@@ -158,7 +167,7 @@ export function DiscoveryPage() {
   // that same transient state.
   useEffect(() => {
     if (!routeTab || !isFeaturedConfigResolved || isResolvingJwt) return;
-    if (allowedTabs.includes(normalizedTab as AllowedTab)) return;
+    if (allowedTabs.includes(normalizedTab)) return;
 
     navigate(`/discovery/${defaultTab}`, { replace: true });
   }, [
@@ -170,14 +179,6 @@ export function DiscoveryPage() {
     isResolvingJwt,
     navigate,
   ]);
-
-  // Handle edge case: user logs out while on 'foryou' tab
-  useEffect(() => {
-    if (!isLoggedIn && activeTab === 'foryou') {
-      setActiveTab('classics');
-      navigate('/discovery/classics', { replace: true });
-    }
-  }, [isLoggedIn, activeTab, navigate]);
 
   // Redirect bare /discovery to default tab (foryou for logged in, classics for anonymous)
   useEffect(() => {
@@ -256,7 +257,7 @@ export function DiscoveryPage() {
                 key={value}
                 value={value}
                 className="min-w-0 gap-1.5 px-2 sm:gap-2 sm:px-4"
-                aria-label={disclosureLabel ? `${label}: ${disclosureLabel}` : undefined}
+                aria-label={disclosureLabel ? `${label}: ${disclosureLabel}` : label}
               >
                 <Icon className="h-4 w-4 shrink-0" />
                 <span className="hidden min-w-0 truncate sm:inline" title={label}>{label}</span>

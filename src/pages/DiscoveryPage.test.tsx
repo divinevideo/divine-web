@@ -16,6 +16,8 @@ const {
   mockTrackEvent,
   mockFeaturedResolved,
   mockResolvingJwt,
+  mockFeaturedApiUrl,
+  mockUseFeaturedTabArgs,
 } = vi.hoisted(() => ({
   mockNavigate: vi.fn(),
   mockTrackEvent: vi.fn(),
@@ -24,6 +26,8 @@ const {
   mockFeaturedResolved: { current: true },
   mockCurrentUser: { current: null as { pubkey: string } | null },
   mockResolvingJwt: { current: false },
+  mockFeaturedApiUrl: { current: 'https://api.divine.video' },
+  mockUseFeaturedTabArgs: [] as Array<{ apiUrl?: string } | undefined>,
 }));
 
 vi.mock('@/hooks/useSubdomainNavigate', () => ({
@@ -42,9 +46,20 @@ vi.mock('@/hooks/useCategories', () => ({
 }));
 
 vi.mock('@/hooks/useFeaturedTab', () => ({
-  useFeaturedTab: () => ({
-    tab: mockFeaturedTab.current,
-    isResolved: mockFeaturedResolved.current,
+  useFeaturedTab: (args?: { apiUrl?: string }) => {
+    mockUseFeaturedTabArgs.push(args);
+    return {
+      tab: mockFeaturedTab.current,
+      isResolved: mockFeaturedResolved.current,
+    };
+  },
+}));
+
+vi.mock('@/hooks/useVideoProvider', () => ({
+  useFunnelcakeSupport: () => ({
+    apiUrl: mockFeaturedApiUrl.current,
+    supported: true,
+    enabled: true,
   }),
 }));
 
@@ -90,6 +105,8 @@ describe('DiscoveryPage', () => {
     mockFeaturedResolved.current = true;
     mockResolvingJwt.current = false;
     mockCurrentUser.current = null;
+    mockFeaturedApiUrl.current = 'https://api.divine.video';
+    mockUseFeaturedTabArgs.length = 0;
   });
 
   it('renders localized discovery copy and category pills', () => {
@@ -141,6 +158,22 @@ describe('DiscoveryPage', () => {
 
     expect(screen.queryByTestId('video-feed-featured')).not.toBeInTheDocument();
     expect(screen.getAllByRole('tab').map((tab) => tab.getAttribute('data-state'))).toHaveLength(3);
+  });
+
+  it('uses the same Funnelcake host for featured config that feeds use for featured videos', () => {
+    mockFeaturedApiUrl.current = 'https://api.staging.divine.video';
+
+    render(
+      <MemoryRouter initialEntries={['/discovery/classics']}>
+        <Routes>
+          <Route path="/discovery/:tab" element={<DiscoveryPage />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    expect(mockUseFeaturedTabArgs.at(-1)).toEqual({
+      apiUrl: 'https://api.staging.divine.video',
+    });
   });
 
   it('inserts an eligible featured tab after the configured tab and renders disclosure text', () => {
@@ -226,6 +259,35 @@ describe('DiscoveryPage', () => {
     expect(mockNavigate).not.toHaveBeenCalled();
   });
 
+  it('keeps the active featured route while the cached config is temporarily unresolved', () => {
+    mockFeaturedTab.current = {
+      id: 'ft_1234abcd',
+      slug: 'seasonal-theme',
+      label: 'Especial',
+      position: { after: 'hot' },
+      disclosureLabel: null,
+    };
+
+    const tree = () => (
+      <MemoryRouter initialEntries={['/discovery/seasonal-theme']}>
+        <Routes>
+          <Route path="/discovery/:tab" element={<DiscoveryPage />} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    const { rerender } = render(tree());
+
+    expect(screen.getByTestId('video-feed-featured')).toHaveAttribute('data-featured-tab-id', 'ft_1234abcd');
+    mockNavigate.mockReset();
+
+    mockFeaturedTab.current = null;
+    mockFeaturedResolved.current = false;
+    rerender(tree());
+
+    expect(mockNavigate).not.toHaveBeenCalled();
+  });
+
   it('keeps a logged-in foryou deep link while the hosted session is still resolving', () => {
     // The JWT has not resolved, so there is no user yet and `foryou` is briefly
     // absent from the tab list. Redirecting here would replace the bookmark.
@@ -261,5 +323,30 @@ describe('DiscoveryPage', () => {
 
     expect(screen.getByTestId('video-feed-featured')).toHaveAttribute('data-featured-tab-id', 'ft_1234abcd');
     expect(screen.getAllByText('Sponsored')).not.toHaveLength(0);
+  });
+
+  it('names every tab trigger when labels are visually hidden on mobile', () => {
+    mockFeaturedTab.current = {
+      id: 'ft_1234abcd',
+      slug: 'seasonal-theme',
+      label: 'Especial',
+      position: { after: 'hot' },
+      disclosureLabel: 'Sponsored',
+    };
+
+    render(
+      <MemoryRouter initialEntries={['/discovery/classics']}>
+        <Routes>
+          <Route path="/discovery/:tab" element={<DiscoveryPage />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    expect(screen.getAllByRole('tab').map((tab) => tab.getAttribute('aria-label'))).toEqual([
+      'Clasico',
+      'Popular',
+      'Especial: Sponsored',
+      'Etiquetas',
+    ]);
   });
 });
