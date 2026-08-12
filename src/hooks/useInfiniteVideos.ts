@@ -309,7 +309,12 @@ export function useInfiniteVideos({
           offset: hasMore ? newOffset : undefined
         };
       } else {
-        // For chronological feeds, use timestamp cursor
+        // For chronological feeds, use timestamp cursor. Advancing by the last
+        // raw event's timestamp (not the last parsed video's) is what unsticks
+        // pagination when a full page parses short. This relies on nostr.query
+        // returning non-search results newest-first: NPool sorts non-search
+        // filters by created_at desc and video feeds bypass the profile/contact
+        // cache, so events[last] is the oldest event fetched.
         const rawCursor = events.length > 0
           ? events[events.length - 1].created_at - 1
           : undefined;
