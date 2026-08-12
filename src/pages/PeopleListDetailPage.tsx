@@ -81,6 +81,7 @@ function PeopleListContent({ pubkey, listId }: { pubkey: string; listId: string 
         title: t('peopleListDetailPage.deletedTitle'),
         description: t('peopleListDetailPage.deletedDescription', { name: listQuery.data.name }),
       });
+      setShowDeleteDialog(false);
       navigate(`/profile/${nip19.npubEncode(pubkey)}/lists`);
     } catch (error) {
       toast({
@@ -88,8 +89,6 @@ function PeopleListContent({ pubkey, listId }: { pubkey: string; listId: string 
         description: error instanceof Error ? error.message : t('peopleListDetailPage.deleteFailedDescription'),
         variant: 'destructive',
       });
-    } finally {
-      setShowDeleteDialog(false);
     }
   };
 
@@ -125,7 +124,7 @@ function PeopleListContent({ pubkey, listId }: { pubkey: string; listId: string 
       </Link>
 
       <header className="space-y-5">
-        <div className="flex items-start justify-between gap-4">
+        <div className="flex flex-col items-start justify-between gap-4 sm:flex-row">
           <div className="flex min-w-0 items-start gap-4">
             <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-brand-light-green dark:bg-brand-dark-green">
               <UsersThree className="h-7 w-7 text-brand-dark-green dark:text-brand-green" aria-hidden="true" />
@@ -277,5 +276,5 @@ export default function PeopleListDetailPage() {
     );
   }
 
-  return <PeopleListContent pubkey={pubkey} listId={listId} />;
+  return <PeopleListContent pubkey={pubkey.toLowerCase()} listId={listId} />;
 }

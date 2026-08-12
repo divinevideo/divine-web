@@ -1479,8 +1479,8 @@
   },
   "deleteListDialog": {
     "title": "Delete List?",
-    "videosDescription": "This will permanently delete the list \"{{name}}\". Videos in the list will not be affected.",
-    "peopleDescription": "This will permanently delete the list \"{{name}}\". People in the list will not be affected.",
+    "videosDescription": "This will request deletion of the list \"{{name}}\". Videos in the list will not be affected.",
+    "peopleDescription": "This will request deletion of the list \"{{name}}\". People in the list will not be affected.",
     "noteLabel": "Note:",
     "relayNote": "This action sends a deletion request to relays. Most relays will honor this request, but deletion is not guaranteed on all relays.",
     "cancelButton": "Cancel",

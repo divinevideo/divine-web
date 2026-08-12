@@ -130,4 +130,26 @@ describe('EditPeopleListDialog', () => {
       image: undefined,
     });
   });
+
+  it('marks the name field invalid when the required value is blank', () => {
+    render(
+      <EditPeopleListDialog
+        open
+        onOpenChange={vi.fn()}
+        list={{
+          id: 'friends',
+          name: 'Friends',
+          pubkey: OWNER,
+          createdAt: 1,
+          memberPubkeys: [],
+        }}
+      />,
+    );
+
+    fireEvent.change(screen.getByLabelText('List Name *'), { target: { value: '   ' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    expect(screen.getByLabelText('List Name *')).toHaveAttribute('aria-invalid', 'true');
+    expect(mockUpdatePeopleList).not.toHaveBeenCalled();
+  });
 });
