@@ -133,6 +133,7 @@ export function useCreatePeopleList() {
   return useMutation({
     mutationFn: async ({ id, name, description, image, memberPubkeys = [] }: CreatePeopleListInput) => {
       if (!user) throw new Error('Must be logged in to create people lists');
+      if (!id.trim()) throw new Error('List id is required');
       if (isReservedListDTag(id)) throw new Error('That list name is reserved');
       if (memberPubkeys.some((pubkey) => !isHex64(pubkey))) throw new Error('Invalid member pubkey');
 

@@ -153,6 +153,17 @@ describe('usePeopleListMutations', () => {
     expect(mockPublishAsync).not.toHaveBeenCalled();
   });
 
+  it.each(['', '   '])('refuses to create a people list with blank id %j', async (id) => {
+    const { useCreatePeopleList } = await import('./usePeopleListMutations');
+    const { result } = renderHook(() => useCreatePeopleList(), { wrapper: createWrapper() });
+
+    await expect(result.current.mutateAsync({ id, name: 'Blank' })).rejects.toThrow(
+      'List id is required',
+    );
+    expect(mockNostrQuery).not.toHaveBeenCalled();
+    expect(mockPublishAsync).not.toHaveBeenCalled();
+  });
+
   it('refuses to create over an existing people list coordinate', async () => {
     mockNostrQuery.mockResolvedValue([peopleListEvent({ content: 'keep-me' })]);
     const { useCreatePeopleList } = await import('./usePeopleListMutations');
