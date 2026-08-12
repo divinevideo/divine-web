@@ -9,6 +9,7 @@ import { GithubLogo as Github, Globe, DeviceMobile as Smartphone, Code as Code2,
 import { ZendeskWidget } from '@/components/ZendeskWidget';
 import { MarketingLayout } from '@/components/MarketingLayout';
 import { useTranslation } from 'react-i18next';
+import { PLAY_STORE_URL, APP_STORE_URL } from '@/lib/mobileStoreLinks';
 
 export function OpenSourcePage() {
   const { t } = useTranslation('openSource');
@@ -25,24 +26,30 @@ export function OpenSourcePage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Code2 className="h-5 w-5 text-primary" />
-              {t('sections.beta')}
+              {t('sections.mobileApps')}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-lg text-muted-foreground">
               Divine is a decentralized, open-source platform for short-form looping videos, built on the Nostr protocol.
-              We're currently in <strong>beta testing</strong> and invite you to join us in shaping the future of creative video sharing!
+              The mobile apps are live now, and the web app is open for exploring.
             </p>
             <div className="bg-brand-dark-green p-4 rounded-lg border border-brand-green">
-              <h3 className="font-semibold mb-3 text-brand-off-white">Join the Beta</h3>
+              <h3 className="font-semibold mb-3 text-brand-off-white">Get the App</h3>
               <div className="space-y-2 text-sm">
                 <p className="flex items-center gap-2">
                   <Smartphone className="h-4 w-4 text-blue-500" />
-                  <strong className="text-brand-off-white">iOS:</strong> <span className="text-brand-light-green">Beta is full (10k sign ups in 4 hours!) - Stay tuned for updates</span>
+                  <strong className="text-brand-off-white">iOS:</strong>{' '}
+                  <a href={APP_STORE_URL} target="_blank" rel="noopener noreferrer" className="text-brand-green hover:text-brand-light-green">
+                    App Store
+                  </a>
                 </p>
                 <p className="flex items-center gap-2">
                   <Smartphone className="h-4 w-4 text-green-500" />
-                  <strong className="text-brand-off-white">Android:</strong> <span className="text-brand-light-green">Beta is full - Stay tuned for updates</span>
+                  <strong className="text-brand-off-white">Android:</strong>{' '}
+                  <a href={PLAY_STORE_URL} target="_blank" rel="noopener noreferrer" className="text-brand-green hover:text-brand-light-green">
+                    Google Play
+                  </a>
                 </p>
                 <p className="flex items-center gap-2">
                   <Globe className="h-4 w-4 text-blue-500" />
@@ -76,7 +83,7 @@ export function OpenSourcePage() {
                   <Smartphone className="h-5 w-5 text-blue-500" />
                   <span>iOS</span>
                 </div>
-                <Badge className="bg-yellow-500">Beta</Badge>
+                <Badge className="bg-green-500">Live</Badge>
               </div>
 
               <div className="flex items-center justify-between p-3 rounded-lg border">
@@ -84,7 +91,7 @@ export function OpenSourcePage() {
                   <Smartphone className="h-5 w-5 text-green-500" />
                   <span>Android</span>
                 </div>
-                <Badge className="bg-yellow-500">Beta</Badge>
+                <Badge className="bg-green-500">Live</Badge>
               </div>
             </div>
           </CardContent>

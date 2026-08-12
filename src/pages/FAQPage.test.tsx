@@ -51,6 +51,7 @@ describe('FAQPage', () => {
       screen.getByRole('button', { name: /which account will i sign into/i }),
     );
 
+    expect(document.getElementById('app-store-account')).toBeInTheDocument();
     // Same app/sign-in across TestFlight and App Store.
     expect(
       screen.getByText(/it's the same app with the same sign-in/i),

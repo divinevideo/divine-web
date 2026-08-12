@@ -123,7 +123,7 @@ describe('static pages i18n', () => {
     );
 
     expect(screen.getByRole('heading', { name: 'Proyecto de código abierto' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: '¡La beta ya está activa!' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Aplicaciones móviles disponibles' })).toBeInTheDocument();
   });
 
   it('renders authenticity copy in spanish', () => {

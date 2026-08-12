@@ -391,7 +391,7 @@ export function FAQPage() {
                 </div>
               </FAQQuestion>
 
-              <FAQQuestion value="app-store-signin" question="If I move from TestFlight to the App Store, which account will I sign into?">
+              <FAQQuestion value="app-store-account" question="If I move from TestFlight to the App Store, which account will I sign into?">
                 <div className="text-muted-foreground space-y-2">
                   <p>
                     Whether you installed Divine from TestFlight or the App Store, it's the same app with the
