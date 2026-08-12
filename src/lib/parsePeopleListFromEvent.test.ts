@@ -97,4 +97,17 @@ describe('deduplicatePeopleLists', () => {
       'makers',
     ]);
   });
+
+  it('uses the lowest event id when replaceable events share a timestamp', () => {
+    const higherId = peopleListEvent({
+      id: 'f'.repeat(64),
+      tags: [['d', 'friends'], ['title', 'Higher id']],
+    });
+    const lowerId = peopleListEvent({
+      id: '0'.repeat(64),
+      tags: [['d', 'friends'], ['title', 'Lower id']],
+    });
+
+    expect(deduplicatePeopleLists([higherId, lowerId])[0]?.name).toBe('Lower id');
+  });
 });

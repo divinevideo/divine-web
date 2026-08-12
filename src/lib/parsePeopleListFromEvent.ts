@@ -69,10 +69,10 @@ export function parsePeopleListFromEvent(event: NostrEvent): PeopleList | null {
 export function deduplicatePeopleLists(events: NostrEvent[]): PeopleList[] {
   const newestByAddress = new Map<string, PeopleList>();
 
-  events
+  [...events]
+    .sort((a, b) => b.created_at - a.created_at || a.id.localeCompare(b.id))
     .map(parsePeopleListFromEvent)
     .filter((list): list is PeopleList => list !== null)
-    .sort((a, b) => b.createdAt - a.createdAt)
     .forEach((list) => {
       const address = peopleListAddress(list);
       if (!newestByAddress.has(address)) {
