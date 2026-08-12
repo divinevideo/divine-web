@@ -127,7 +127,12 @@ export function buildEventRouter(ctx: RoutingContext): EventRouter {
       profileRelayUrls.forEach((url) => allRelays.add(url));
     }
 
-    if (LIST_KINDS.includes(event.kind)) {
+    const isListEvent = LIST_KINDS.includes(event.kind);
+    const isListDeletion = event.kind === 5 && event.tags.some(
+      ([name, kind]) => name === 'k' && LIST_KINDS.includes(Number(kind)),
+    );
+
+    if (isListEvent || isListDeletion) {
       profileRelayUrls.forEach((url) => allRelays.add(url));
     }
 
@@ -145,7 +150,8 @@ export function buildEventRouter(ctx: RoutingContext): EventRouter {
       event.kind === 0 ||
       event.kind === 3 ||
       event.kind === 10011 ||
-      LIST_KINDS.includes(event.kind);
+      isListEvent ||
+      isListDeletion;
 
     if (!isProfileOrList) {
       for (const { url } of (ctx.presetRelays ?? [])) {

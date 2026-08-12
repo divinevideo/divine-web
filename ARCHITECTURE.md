@@ -181,8 +181,9 @@ moderation-api.divine.video. HubSpot provides the cookie consent banner.
 Reads split filters into profile (kinds 0/3/10011), badge
 (8/30008/30009), and other groups; each group is fanned out to its
 relay set. Writes fan out to the primary relay plus `PROFILE_RELAYS`
-for kind 0/3/10011 and to `PRESET_RELAYS` (capped at 5) for everything
-else. **Mute lists (kind 10000) are write-restricted to
+for kind 0/3/10011, list kinds 30000/30001/30005, and NIP-09 deletion
+requests whose `k` tag targets one of those list kinds. Other writes use
+`PRESET_RELAYS` (capped at 5). **Mute lists (kind 10000) are write-restricted to
 `{primary} ∪ PROFILE_RELAYS`** so the write set is aligned with the
 read set and a user's populated list on a public relay is not
 clobbered by a web-side write that the web read path would never see.

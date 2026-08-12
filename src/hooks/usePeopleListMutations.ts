@@ -50,7 +50,11 @@ function assertOwner(userPubkey: string | undefined, ownerPubkey: string) {
 }
 
 function uniquePubkeys(pubkeys: string[]): string[] {
-  return Array.from(new Set(pubkeys.filter(Boolean)));
+  if (pubkeys.some((pubkey) => !/^[0-9a-f]{64}$/i.test(pubkey))) {
+    throw new Error('Invalid member pubkey');
+  }
+
+  return Array.from(new Set(pubkeys.map((pubkey) => pubkey.toLowerCase())));
 }
 
 function peopleListsKey(ownerPubkey: string) {
@@ -76,7 +80,9 @@ async function fetchCurrentPeopleListEvent(
     { signal: AbortSignal.timeout(5000) },
   );
 
-  const event = [...events].sort((a, b) => b.created_at - a.created_at)[0];
+  const event = [...events].sort((a, b) => (
+    b.created_at - a.created_at || a.id.localeCompare(b.id)
+  ))[0];
   if (!event) {
     throw new Error('People list not found');
   }

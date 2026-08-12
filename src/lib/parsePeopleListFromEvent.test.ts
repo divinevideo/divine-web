@@ -66,7 +66,7 @@ describe('parsePeopleListFromEvent', () => {
     expect(isReservedPeopleListDTag('friends')).toBe(false);
   });
 
-  it('parses only valid hex64 public member p tags', () => {
+  it('parses only valid hex64 public member p tags and normalizes them for relay filters', () => {
     const list = parsePeopleListFromEvent(peopleListEvent({
       tags: [
         ['d', 'friends'],
@@ -77,7 +77,7 @@ describe('parsePeopleListFromEvent', () => {
       ],
     }));
 
-    expect(list?.memberPubkeys).toEqual([ALICE, BOB.toUpperCase()]);
+    expect(list?.memberPubkeys).toEqual([ALICE, BOB]);
   });
 
   it('uses the complete addressable coordinate as its key', () => {

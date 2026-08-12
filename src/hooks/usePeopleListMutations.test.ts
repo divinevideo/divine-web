@@ -124,6 +124,31 @@ describe('usePeopleListMutations', () => {
     });
   });
 
+  it('normalizes member pubkeys and refuses malformed values before publishing', async () => {
+    const { useCreatePeopleList } = await import('./usePeopleListMutations');
+    const { result } = renderHook(() => useCreatePeopleList(), {
+      wrapper: createWrapper(),
+    });
+
+    await result.current.mutateAsync({
+      name: 'Cool People',
+      memberPubkeys: [ALICE.toUpperCase(), ALICE],
+    });
+
+    expect(mocks.publishEvent).toHaveBeenCalledWith(expect.objectContaining({
+      tags: expect.arrayContaining([['p', ALICE]]),
+    }));
+    expect(mocks.publishEvent.mock.calls[0][0].tags.filter(
+      (tag: string[]) => tag[0] === 'p',
+    )).toEqual([['p', ALICE]]);
+
+    await expect(result.current.mutateAsync({
+      name: 'Malformed Members',
+      memberPubkeys: ['not-a-pubkey'],
+    })).rejects.toThrow('Invalid member pubkey');
+    expect(mocks.publishEvent).toHaveBeenCalledTimes(1);
+  });
+
   it('refuses to replace an existing people list with the same slug', async () => {
     mocks.nostrQuery.mockResolvedValueOnce([
       peopleListEvent({
@@ -169,6 +194,36 @@ describe('usePeopleListMutations', () => {
         ['p', ALICE],
       ],
     });
+  });
+
+  it('uses the lowest event id when current versions share a timestamp', async () => {
+    mocks.nostrQuery.mockResolvedValueOnce([
+      peopleListEvent({
+        id: 'f'.repeat(64),
+        content: 'losing-content',
+        tags: [['d', 'friends'], ['p', BOB]],
+      }),
+      peopleListEvent({
+        id: '0'.repeat(64),
+        content: 'winning-content',
+        tags: [['d', 'friends'], ['p', ALICE]],
+      }),
+    ]);
+    const { useUpdatePeopleList } = await import('./usePeopleListMutations');
+    const { result } = renderHook(() => useUpdatePeopleList(), {
+      wrapper: createWrapper(),
+    });
+
+    await result.current.mutateAsync({
+      ownerPubkey: OWNER,
+      listId: 'friends',
+      name: 'Best people',
+    });
+
+    expect(mocks.publishEvent).toHaveBeenCalledWith(expect.objectContaining({
+      content: 'winning-content',
+      tags: expect.arrayContaining([['p', ALICE]]),
+    }));
   });
 
   it('refuses to publish metadata updates when the current event cannot be fetched', async () => {

@@ -52,7 +52,7 @@ export function parsePeopleListFromEvent(event: NostrEvent): PeopleList | null {
   const memberPubkeys = Array.from(new Set(
     event.tags
       .filter((tag) => tag[0] === 'p' && isHexPubkey(tag[1]))
-      .map((tag) => tag[1]),
+      .map((tag) => tag[1].toLowerCase()),
   ));
 
   return {
