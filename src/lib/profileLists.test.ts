@@ -8,6 +8,10 @@ import {
   toDiscoverablePeopleList,
   toDiscoverableVideoList,
 } from './profileLists';
+import {
+  buildListPath,
+  buildPeopleListPath,
+} from './eventRouting';
 
 const OWNER = 'a'.repeat(64);
 
@@ -34,7 +38,7 @@ describe('profile list presentation', () => {
       key: `30000:${OWNER}:friends`,
       type: 'people',
       itemCount: 2,
-      href: `/people-lists/${OWNER}/friends`,
+      href: buildPeopleListPath(OWNER, 'friends'),
     });
   });
 
@@ -43,7 +47,7 @@ describe('profile list presentation', () => {
       key: `30005:${OWNER}:favorites`,
       type: 'videos',
       itemCount: 1,
-      href: `/list/${OWNER}/favorites`,
+      href: buildListPath(OWNER, 'favorites'),
     });
   });
 
@@ -51,6 +55,20 @@ describe('profile list presentation', () => {
     expect(mergeProfileLists([peopleList], [videoList]).map((list) => list.type)).toEqual([
       'people',
       'videos',
+    ]);
+  });
+
+  it('keeps both surfaces reachable when the two kinds share a d tag', () => {
+    const sharedId = 'friends';
+    const merged = mergeProfileLists(
+      [peopleList],
+      [{ ...videoList, id: sharedId, name: 'Friends' }],
+    );
+
+    expect(new Set(merged.map((list) => list.href)).size).toBe(2);
+    expect(merged.map((list) => list.href)).toEqual([
+      buildPeopleListPath(OWNER, sharedId),
+      buildListPath(OWNER, sharedId),
     ]);
   });
 });

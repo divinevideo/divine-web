@@ -134,6 +134,8 @@ GET  /api/users/{pubkey}/following  - Following list
 POST /api/users/bulk                - Bulk user profiles
 GET  /api/search?q=                 - Full-text search
 GET  /api/hashtags/trending         - Trending hashtags
+GET  /api/featured-tabs             - Active featured Discovery tabs
+GET  /api/featured-tabs/{id}/videos - Curated videos for a featured tab
 ```
 
 ### Bulk Endpoint Pattern

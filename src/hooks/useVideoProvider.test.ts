@@ -4,6 +4,7 @@ import type { RelayCapabilities } from '@/lib/relayCapabilities';
 
 const mockUseInfiniteVideos = vi.fn();
 const mockUseInfiniteVideosFunnelcake = vi.fn();
+const mockUseFeaturedTabVideos = vi.fn();
 const mockUseResolvedRelayCapabilities = vi.fn();
 
 let relayUrl = 'wss://relay.divine.video';
@@ -45,6 +46,10 @@ vi.mock('@/hooks/useInfiniteVideosFunnelcake', () => ({
   useInfiniteVideosFunnelcake: mockUseInfiniteVideosFunnelcake,
 }));
 
+vi.mock('@/hooks/useFeaturedTabVideos', () => ({
+  useFeaturedTabVideos: mockUseFeaturedTabVideos,
+}));
+
 vi.mock('@/hooks/useRelayCapabilities', () => ({
   useResolvedRelayCapabilities: mockUseResolvedRelayCapabilities,
 }));
@@ -76,6 +81,7 @@ beforeEach(async () => {
 
   mockUseInfiniteVideos.mockReturnValue(queryResult);
   mockUseInfiniteVideosFunnelcake.mockReturnValue(queryResult);
+  mockUseFeaturedTabVideos.mockReturnValue(queryResult);
   mockUseResolvedRelayCapabilities.mockReturnValue(makeCapabilities());
 
   const hook = await import('./useVideoProvider');
@@ -223,6 +229,48 @@ describe('useVideoProvider', () => {
       enabled: false,
     }));
     expect(result.current.dataSource).toBe('funnelcake');
+  });
+
+  it('routes featured feeds to the REST-only featured hook with no WebSocket fallback', () => {
+    const { result } = renderHook(() =>
+      useVideoProvider({
+        feedType: 'featured',
+        featuredTabId: 'ft_1234abcd',
+      })
+    );
+
+    expect(mockUseInfiniteVideosFunnelcake).toHaveBeenCalledWith(expect.objectContaining({
+      enabled: false,
+    }));
+    expect(mockUseFeaturedTabVideos).toHaveBeenCalledWith(expect.objectContaining({
+      configId: 'ft_1234abcd',
+      apiUrl: 'https://api.divine.video',
+      enabled: true,
+    }));
+    expect(mockUseInfiniteVideos).toHaveBeenCalledWith(expect.objectContaining({
+      enabled: false,
+    }));
+    expect(result.current.dataSource).toBe('funnelcake');
+  });
+
+  it('does not fall back to WebSocket when a featured REST query errors', () => {
+    mockUseFeaturedTabVideos.mockReturnValue({
+      ...queryResult,
+      error: new Error('No featured videos'),
+    });
+
+    const { result } = renderHook(() =>
+      useVideoProvider({
+        feedType: 'featured',
+        featuredTabId: 'ft_1234abcd',
+      })
+    );
+
+    expect(mockUseInfiniteVideos).toHaveBeenCalledWith(expect.objectContaining({
+      enabled: false,
+    }));
+    expect(result.current.dataSource).toBe('funnelcake');
+    expect(result.current.error?.message).toBe('No featured videos');
   });
 
   it('prefers Funnelcake for Divine hot feeds', () => {

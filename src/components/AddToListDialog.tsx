@@ -25,6 +25,7 @@ import { Plus, List, Check, CircleNotch as Loader2, ArrowSquareOut as ExternalLi
 import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/useToast';
+import { buildListPath } from '@/lib/eventRouting';
 import { SHORT_VIDEO_KIND } from '@/types/video';
 
 interface AddToListDialogProps {
@@ -173,7 +174,7 @@ export function AddToListDialog({
                 const owner = list.pubkey;
                 return (
                   <Link
-                    to={`/list/${owner}/${encodeURIComponent(list.id)}`}
+                    to={buildListPath(owner, list.id)}
                     key={list.id + owner}
                     className="flex items-center justify-between rounded-md border p-2 hover:bg-accent"
                     onClick={() => onClose()}

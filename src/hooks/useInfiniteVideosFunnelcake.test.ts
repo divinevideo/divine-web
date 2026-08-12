@@ -275,6 +275,32 @@ describe('useInfiniteVideosFunnelcake', () => {
     expect(result.current.hasNextPage).toBe(true);
   });
 
+  it('stops v2 cursor pagination when a cursor page transforms to zero videos', async () => {
+    mockFetchVideosV2.mockResolvedValueOnce({
+      videos: [{}],
+      has_more: true,
+      next_cursor: 'o:12',
+    });
+    mockTransformToVideoPage.mockReturnValueOnce({
+      videos: [],
+      nextCursor: undefined,
+      rawCursor: 'o:12',
+      hasMore: true,
+    });
+
+    const { result } = renderHook(
+      () => useInfiniteVideosFunnelcake({ feedType: 'trending', pageSize: 12 }),
+      { wrapper: createWrapper() }
+    );
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+
+    expect(result.current.data?.pages[0].videos).toEqual([]);
+    expect(result.current.hasNextPage).toBe(false);
+  });
+
   it('uses cursor-based pagination for recommendations', async () => {
     // Page 1: server returns cursor for next page
     mockFetchRecommendations

@@ -93,7 +93,7 @@ export function useInfiniteSearchVideos({
   const debounceMs = isTest ? 0 : 300;
   const debouncedQuery = useDebouncedValue(query, debounceMs);
 
-  return useInfiniteQuery<VideoPage, Error>({
+  const queryResult = useInfiniteQuery<VideoPage, Error>({
     queryKey: ['infinite-search-videos', debouncedQuery, searchType, sortMode, pageSize],
     queryFn: async ({ pageParam, signal }) => {
       if (!debouncedQuery.trim()) {
@@ -311,4 +311,11 @@ export function useInfiniteSearchVideos({
     staleTime: 60_000,
     gcTime: 300_000,
   });
+
+  const fetchedCount = queryResult.data?.pages.reduce((sum, page) => sum + page.videos.length, 0) ?? 0;
+
+  return {
+    ...queryResult,
+    fetchedCount,
+  };
 }

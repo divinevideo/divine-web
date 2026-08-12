@@ -112,6 +112,7 @@ function renderPage(initialEntries: string[]) {
           <Route path="/event/:eventId" element={<EventPage />} />
           <Route path="/event/a/:kind/:pubkey/:identifier" element={<EventPage />} />
           <Route path="/list/:pubkey/:listId" element={<div data-testid="list-page">List page</div>} />
+          <Route path="/people-lists/:pubkey/:listId" element={<div data-testid="people-list-page">People list page</div>} />
           <Route path="/video/:id" element={<div data-testid="video-page">Video page</div>} />
           <Route path="/profile/:npub" element={<div data-testid="profile-page">Profile page</div>} />
           <Route path="/t/:tag" element={<div data-testid="tag-page">Tag page</div>} />
@@ -169,6 +170,51 @@ describe('EventPage', () => {
     renderPage([`/event/${'b'.repeat(64)}`]);
 
     expect(await screen.findByTestId('list-page')).toBeInTheDocument();
+  });
+
+  it('redirects people lists to the people-list page', async () => {
+    const pubkey = 'a'.repeat(64);
+    mockFetchEventById.mockResolvedValue({
+      id: 'c'.repeat(64),
+      pubkey,
+      created_at: 1_700_000_000,
+      kind: 30000,
+      tags: [['d', 'friends']],
+      content: '',
+      sig: '1'.repeat(128),
+    });
+
+    renderPage([`/event/${'c'.repeat(64)}`]);
+
+    expect(await screen.findByTestId('people-list-page')).toBeInTheDocument();
+  });
+
+  it('keeps legacy block list coordinates on the generic event page', async () => {
+    // Divine's block list is a kind 30000 event with d=block, and the
+    // people-list parser rejects it on purpose. Routing it to /people-lists/*
+    // with the other kind 30000 sets would surface "could not be found" for an
+    // event that resolved fine.
+    const authorPubkey = 'a'.repeat(64);
+    const event = {
+      id: 'b'.repeat(64),
+      pubkey: authorPubkey,
+      created_at: 1_700_000_000,
+      kind: 30000,
+      tags: [
+        ['d', 'block'],
+        ['p', 'd'.repeat(64)],
+      ],
+      content: '',
+      sig: '3'.repeat(128),
+    };
+    mockFetchAddressableEvent.mockResolvedValue(event);
+    mockFetchEventById.mockResolvedValue(event);
+
+    renderPage([`/event/a/30000/${authorPubkey}/block`]);
+
+    expect(await screen.findByText('List Items')).toBeInTheDocument();
+    expect(screen.queryByTestId('people-list-page')).not.toBeInTheDocument();
+    expect(document.querySelector('pre')?.textContent).toContain('"kind": 30000');
   });
 
   it('shows generic list-style events with reference links and raw json', async () => {

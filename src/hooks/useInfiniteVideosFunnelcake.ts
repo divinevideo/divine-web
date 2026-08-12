@@ -504,7 +504,7 @@ export function useInfiniteVideosFunnelcake({
       }
       // Trending uses opaque v2 cursors — pass through as a string page param
       if (feedType === 'trending' || feedType === 'popular') {
-        return lastPage.v2Cursor;
+        return lastPage.videos.length > 0 ? lastPage.v2Cursor : undefined;
       }
       // Use offset for sorted pagination, timestamp for chronological
       if (lastPage.offset !== undefined) {

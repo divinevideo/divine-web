@@ -2,7 +2,7 @@
 // ABOUTME: muters/blockers-of-viewer), mirroring divine-mobile's ContentBlocklistRepository.shouldFilterFromFeeds
 
 import type { NostrEvent } from '@nostrify/nostrify';
-import { MUTE_LIST_KIND } from '@/hooks/useModeration';
+import { MUTE_LIST_KIND } from '@/types/moderation';
 
 // Divine's legacy block list: NIP-51 kind 30000 addressable list with d=block.
 // Any other d-tag on kind 30000 (follow sets, etc.) is NOT a block list.

@@ -7,6 +7,7 @@ import { getFunnelcakeBaseUrl } from '@/config/api';
 import { useInfiniteVideos } from '@/hooks/useInfiniteVideos';
 import { useResolvedRelayCapabilities } from '@/hooks/useRelayCapabilities';
 import { useInfiniteVideosFunnelcake, type FunnelcakeFeedType, type FunnelcakeSortMode, type PopularPeriod, type PopularSource } from '@/hooks/useInfiniteVideosFunnelcake';
+import { useFeaturedTabVideos } from '@/hooks/useFeaturedTabVideos';
 import { useFeedBlocklist } from '@/hooks/useFeedBlocklist';
 import { filterBlockedVideoPages } from '@/lib/blocklistFilter';
 import { hasFunnelcake, getFunnelcakeUrl } from '@/config/relays';
@@ -15,7 +16,7 @@ import type { RelayCapabilities } from '@/lib/relayCapabilities';
 import type { SortMode } from '@/types/nostr';
 
 // Feed types that can be provided
-export type VideoFeedType = 'discovery' | 'home' | 'trending' | 'hashtag' | 'profile' | 'recent' | 'classics' | 'foryou' | 'category' | 'popular';
+export type VideoFeedType = 'discovery' | 'home' | 'trending' | 'hashtag' | 'profile' | 'recent' | 'classics' | 'foryou' | 'category' | 'popular' | 'featured';
 type WebsocketVideoFeedType = 'discovery' | 'home' | 'trending' | 'hashtag' | 'profile' | 'recent';
 const CLASSICS_RANDOMIZATION_WINDOW = 120;
 
@@ -26,6 +27,7 @@ interface UseVideoProviderOptions {
   popularPeriod?: PopularPeriod;
   hashtag?: string;
   category?: string;
+  featuredTabId?: string;
   pubkey?: string;
   pageSize?: number;
   enabled?: boolean;
@@ -63,6 +65,7 @@ function canServeFeedViaFunnelcake(feedType: VideoFeedType): boolean {
     case 'foryou':
     case 'category':
     case 'popular':
+    case 'featured':
       return true;
   }
 }
@@ -143,6 +146,7 @@ export function canServeFeedViaWebsocket(
     case 'foryou':
     case 'category':
     case 'popular':
+    case 'featured':
       return false;
 
     case 'discovery':
@@ -222,6 +226,7 @@ export function useVideoProvider({
   popularPeriod,
   hashtag,
   category,
+  featuredTabId,
   pubkey,
   pageSize = 12,
   enabled = true,
@@ -238,6 +243,7 @@ export function useVideoProvider({
   });
 
   const shouldUseFunnelcake = decision.dataSource === 'funnelcake';
+  const isFeaturedFeed = feedType === 'featured';
 
   debugLog(`[useVideoProvider] Feed: ${feedType}, Relay: ${relayUrl}, Source: ${decision.dataSource}, Reason: ${decision.reason}`);
 
@@ -252,14 +258,22 @@ export function useVideoProvider({
     category,
     pubkey,
     pageSize,
-    enabled: enabled && shouldUseFunnelcake,
+    enabled: enabled && shouldUseFunnelcake && !isFeaturedFeed,
     // Keep Classics in a low, stable offset window.
     // Higher offsets on loops+classic queries are currently prone to backend timeouts.
     randomizeWithinTop: feedType === 'classics' ? CLASSICS_RANDOMIZATION_WINDOW : undefined,
   });
 
+  const featuredQuery = useFeaturedTabVideos({
+    configId: featuredTabId,
+    apiUrl: decision.apiUrl,
+    pageSize,
+    enabled: enabled && shouldUseFunnelcake && isFeaturedFeed && !!featuredTabId,
+  });
+
   const shouldEnableWebsocket =
     enabled &&
+    !isFeaturedFeed &&
     !!decision.websocketFeedType &&
     (!shouldUseFunnelcake || !!funnelcakeQuery.error);
 
@@ -272,10 +286,10 @@ export function useVideoProvider({
     enabled: shouldEnableWebsocket,
   });
 
-  const usingWebsocketFallback = shouldUseFunnelcake && !!funnelcakeQuery.error && !!decision.websocketFeedType;
+  const usingWebsocketFallback = shouldUseFunnelcake && !!funnelcakeQuery.error && !!decision.websocketFeedType && !isFeaturedFeed;
   const activeQuery = usingWebsocketFallback
     ? websocketQuery
-    : (shouldUseFunnelcake ? funnelcakeQuery : websocketQuery);
+    : (isFeaturedFeed ? featuredQuery : (shouldUseFunnelcake ? funnelcakeQuery : websocketQuery));
   const activeDataSource = usingWebsocketFallback
     ? 'websocket'
     : (shouldUseFunnelcake ? 'funnelcake' : 'websocket');

@@ -5,6 +5,7 @@ import {
   buildAddressableEventPath,
   buildEventPath,
   buildListPath,
+  buildPeopleListPath,
   buildVideoPath,
 } from '@/lib/eventRouting';
 import {
@@ -73,12 +74,22 @@ describe('directSearch', () => {
     });
   });
 
-  it('routes video lists and generic addressable events to useful paths', () => {
+  it('routes list naddrs and generic addressable events to useful paths', () => {
     const listId = 'spring-picks';
-    const listNaddr = nip19.naddrEncode({
+    const videoListNaddr = nip19.naddrEncode({
       identifier: listId,
       pubkey,
       kind: 30005,
+    });
+    const peopleListNaddr = nip19.naddrEncode({
+      identifier: 'friends',
+      pubkey,
+      kind: 30000,
+    });
+    const blockListNaddr = nip19.naddrEncode({
+      identifier: 'block',
+      pubkey,
+      kind: 30000,
     });
     const articleId = 'post-123';
     const article = nip19.naddrEncode({
@@ -88,8 +99,16 @@ describe('directSearch', () => {
       relays: ['wss://relay.example'],
     });
 
-    expect(getDirectSearchTarget(listNaddr)).toEqual({
+    expect(getDirectSearchTarget(videoListNaddr)).toEqual({
       path: buildListPath(pubkey, listId),
+      entity: 'event',
+    });
+    expect(getDirectSearchTarget(peopleListNaddr)).toEqual({
+      path: buildPeopleListPath(pubkey, 'friends'),
+      entity: 'event',
+    });
+    expect(getDirectSearchTarget(blockListNaddr)).toEqual({
+      path: buildAddressableEventPath(30000, pubkey, 'block'),
       entity: 'event',
     });
     expect(getDirectSearchTarget(article)).toEqual({

@@ -15,6 +15,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { genUserName } from '@/lib/genUserName';
+import { buildListPath } from '@/lib/eventRouting';
 import { useState } from 'react';
 import { AddToListDialog } from './AddToListDialog';
 
@@ -44,7 +45,7 @@ function ListBadge({
     <TooltipProvider>
       <Tooltip>
         <TooltipTrigger asChild>
-          <Link to={`/list/${listPubkey}/${listId}`}>
+          <Link to={buildListPath(listPubkey, listId)}>
             <Badge 
               variant="secondary" 
               className="hover:bg-primary hover:text-primary-foreground transition-colors cursor-pointer"

@@ -93,6 +93,7 @@ export function SearchPage() {
     hasNextPage: hasNextVideos,
     isLoading: isLoadingVideos,
     error: videoError,
+    fetchedCount: fetchedVideoCount,
   } = useInfiniteSearchVideos({
     query: searchQuery,
     sortMode,
@@ -663,7 +664,7 @@ export function SearchPage() {
               <NoResultsState />
             ) : (
               <InfiniteScroll
-                dataLength={videoResults.length}
+                dataLength={fetchedVideoCount}
                 next={fetchNextVideos}
                 hasMore={hasNextVideos ?? false}
                 loader={

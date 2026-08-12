@@ -22,9 +22,11 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/useToast';
 import { genUserName } from '@/lib/genUserName';
 import { buildProfileLinkPath } from '@/lib/profileLinks';
+import { buildPeopleListPath } from '@/lib/eventRouting';
 import { debugLog } from '@/lib/debug';
 import { getVisiblePlaybackCount } from '@/lib/playbackCount';
 import { reportFunnelcakeFallback } from '@/lib/funnelcakeFallbackReporting';
+import { buildVideoLikeTags } from '@/lib/buildVideoLikeTags';
 import type { ParsedVideoData, UserInteractions } from '@/types/video';
 
 export function VideoPage() {
@@ -290,7 +292,7 @@ export function VideoPage() {
       const target = params.toString() ? `/search?${params.toString()}` : '/search';
       navigate(target);
     } else if (context?.source === 'people-list' && context.pubkey && context.listId) {
-      navigate(`/people-lists/${context.pubkey}/${encodeURIComponent(context.listId)}`);
+      navigate(buildPeopleListPath(context.pubkey, context.listId));
     } else {
       navigate(-1); // Browser back
     }
@@ -308,10 +310,11 @@ export function VideoPage() {
       await publishEvent({
         kind: 7, // Reaction event
         content: '+', // Positive reaction
-        tags: [
-          ['e', video.id], // Reference to the video event
-          ['p', video.pubkey], // Reference to the video author
-        ],
+        tags: buildVideoLikeTags({
+          videoId: video.id,
+          videoPubkey: video.pubkey,
+          vineId: video.vineId,
+        }),
       });
 
       toast({

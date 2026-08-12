@@ -62,11 +62,21 @@ subdomain and loading the corresponding Nostr profile. Static hosts use
 catch-all fallback.
 The retired `/discovery/new` chronological feed redirects to
 `/discovery/hot`; Discovery does not expose or mount an all-new-video feed.
+`/discovery/:tab` accepts the built-in Discovery tabs plus the currently
+eligible server-configured featured tab slug, when Funnelcake serves one.
 Public profiles expose a compact mixed NIP-51 list shelf and a filterable
-`/profile/:npub/lists` gallery. Kind `30005` video sets retain their
-owner-aware `/list/:pubkey/:listId` route; kind `30000` people sets use
-`/people-lists/:pubkey/:listId`, where member context appears above a primary
-video grid assembled from the listed pubkeys.
+`/profile/:npub/lists` gallery. Kind `30005` video sets and kind `30000`
+people sets use separate owner-aware detail routes: `/list/:pubkey/:listId`
+for video lists and `/people-lists/:pubkey/:listId` for people lists. Keeping
+people lists outside `/list/*` preserves compatibility with installed mobile
+apps, which claim `/list/*` for video-list deep links. Kind `30000` is not
+uniformly a people set: Divine's legacy block list is a kind `30000` event
+with `d=block`, which
+[`parsePeopleListFromEvent`](./src/lib/parsePeopleListFromEvent.ts) rejects,
+so the route builders in
+[`src/lib/eventRouting.ts`](./src/lib/eventRouting.ts) leave that one d-tag on
+the generic event route rather than sending it to a detail page that cannot
+render it.
 
 ## Styling
 

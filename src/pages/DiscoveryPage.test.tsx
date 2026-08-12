@@ -6,13 +6,28 @@ import { LOCALE_STORAGE_KEY } from '@/lib/i18n/config';
 import { initializeI18n } from '@/lib/i18n';
 import DiscoveryPage from './DiscoveryPage';
 import type { CategoryWithConfig } from '@/hooks/useCategories';
+import type { ResolvedFeaturedTab } from '@/types/featuredTabs';
 
 const {
   mockNavigate,
   mockCategories,
+  mockFeaturedTab,
+  mockCurrentUser,
+  mockTrackEvent,
+  mockFeaturedResolved,
+  mockResolvingJwt,
+  mockFeaturedApiUrl,
+  mockUseFeaturedTabArgs,
 } = vi.hoisted(() => ({
   mockNavigate: vi.fn(),
+  mockTrackEvent: vi.fn(),
   mockCategories: [] as CategoryWithConfig[],
+  mockFeaturedTab: { current: null as ResolvedFeaturedTab | null },
+  mockFeaturedResolved: { current: true },
+  mockCurrentUser: { current: null as { pubkey: string } | null },
+  mockResolvingJwt: { current: false },
+  mockFeaturedApiUrl: { current: 'https://api.divine.video' },
+  mockUseFeaturedTabArgs: [] as Array<{ apiUrl?: string } | undefined>,
 }));
 
 vi.mock('@/hooks/useSubdomainNavigate', () => ({
@@ -20,16 +35,41 @@ vi.mock('@/hooks/useSubdomainNavigate', () => ({
 }));
 
 vi.mock('@/hooks/useCurrentUser', () => ({
-  useCurrentUser: () => ({ user: null }),
+  useCurrentUser: () => ({
+    user: mockCurrentUser.current,
+    isResolvingJwt: mockResolvingJwt.current,
+  }),
 }));
 
 vi.mock('@/hooks/useCategories', () => ({
   useCategories: () => ({ data: mockCategories }),
 }));
 
+vi.mock('@/hooks/useFeaturedTab', () => ({
+  useFeaturedTab: (args?: { apiUrl?: string }) => {
+    mockUseFeaturedTabArgs.push(args);
+    return {
+      tab: mockFeaturedTab.current,
+      isResolved: mockFeaturedResolved.current,
+    };
+  },
+}));
+
+vi.mock('@/hooks/useVideoProvider', () => ({
+  useFunnelcakeSupport: () => ({
+    apiUrl: mockFeaturedApiUrl.current,
+    supported: true,
+    enabled: true,
+  }),
+}));
+
+vi.mock('@/lib/analytics', () => ({
+  trackEvent: mockTrackEvent,
+}));
+
 vi.mock('@/components/VideoFeed', () => ({
-  VideoFeed: ({ feedType }: { feedType: string }) => (
-    <div data-testid={`video-feed-${feedType}`} />
+  VideoFeed: ({ feedType, featuredTabId }: { feedType: string; featuredTabId?: string }) => (
+    <div data-testid={`video-feed-${feedType}`} data-featured-tab-id={featuredTabId} />
   ),
 }));
 
@@ -59,7 +99,14 @@ describe('DiscoveryPage', () => {
     await initializeI18n({ force: true, languages: ['en-US'] });
 
     mockNavigate.mockReset();
+    mockTrackEvent.mockReset();
     mockCategories.length = 0;
+    mockFeaturedTab.current = null;
+    mockFeaturedResolved.current = true;
+    mockResolvingJwt.current = false;
+    mockCurrentUser.current = null;
+    mockFeaturedApiUrl.current = 'https://api.divine.video';
+    mockUseFeaturedTabArgs.length = 0;
   });
 
   it('renders localized discovery copy and category pills', () => {
@@ -98,5 +145,208 @@ describe('DiscoveryPage', () => {
 
     expect(screen.queryByRole('tab', { name: 'Nuevo' })).not.toBeInTheDocument();
     expect(screen.queryByTestId('video-feed-recent')).not.toBeInTheDocument();
+  });
+
+  it('renders no featured tab or content feed when no configuration is eligible', () => {
+    render(
+      <MemoryRouter initialEntries={['/discovery/classics']}>
+        <Routes>
+          <Route path="/discovery/:tab" element={<DiscoveryPage />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    expect(screen.queryByTestId('video-feed-featured')).not.toBeInTheDocument();
+    expect(screen.getAllByRole('tab').map((tab) => tab.getAttribute('data-state'))).toHaveLength(3);
+  });
+
+  it('uses the same Funnelcake host for featured config that feeds use for featured videos', () => {
+    mockFeaturedApiUrl.current = 'https://api.staging.divine.video';
+
+    render(
+      <MemoryRouter initialEntries={['/discovery/classics']}>
+        <Routes>
+          <Route path="/discovery/:tab" element={<DiscoveryPage />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    expect(mockUseFeaturedTabArgs.at(-1)).toEqual({
+      apiUrl: 'https://api.staging.divine.video',
+    });
+  });
+
+  it('inserts an eligible featured tab after the configured tab and renders disclosure text', () => {
+    mockFeaturedTab.current = {
+      id: 'ft_1234abcd',
+      slug: 'seasonal-theme',
+      label: 'Especial',
+      position: { after: 'hot' },
+      disclosureLabel: 'New',
+    };
+
+    render(
+      <MemoryRouter initialEntries={['/discovery/classics']}>
+        <Routes>
+          <Route path="/discovery/:tab" element={<DiscoveryPage />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    expect(screen.getAllByRole('tab').map((tab) => tab.textContent)).toEqual([
+      'Clasico',
+      'Popular',
+      'EspecialNew',
+      'Etiquetas',
+    ]);
+  });
+
+  it('counts one featured tab impression across configuration refreshes', () => {
+    const config = (): ResolvedFeaturedTab => ({
+      id: 'ft_1234abcd',
+      slug: 'seasonal-theme',
+      label: 'Especial',
+      position: { after: 'hot' },
+      disclosureLabel: null,
+    });
+    mockFeaturedTab.current = config();
+
+    const tree = () => (
+      <MemoryRouter initialEntries={['/discovery/seasonal-theme']}>
+        <Routes>
+          <Route path="/discovery/:tab" element={<DiscoveryPage />} />
+        </Routes>
+      </MemoryRouter>
+    );
+    const { rerender } = render(tree());
+
+    expect(mockTrackEvent).toHaveBeenCalledExactlyOnceWith('featured_tab_impression', {
+      featured_tab_id: 'ft_1234abcd',
+    });
+
+    // The 5-minute config poll resolves the same tab into a fresh object.
+    mockFeaturedTab.current = config();
+    rerender(tree());
+
+    expect(mockTrackEvent).toHaveBeenCalledTimes(1);
+  });
+
+  it('sends a slug no configuration claims back to the default tab', () => {
+    render(
+      <MemoryRouter initialEntries={['/discovery/expired-campaign']}>
+        <Routes>
+          <Route path="/discovery/:tab" element={<DiscoveryPage />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    expect(mockNavigate).toHaveBeenCalledWith('/discovery/classics', { replace: true });
+  });
+
+  it('leaves an unknown slug alone while the featured configuration is still loading', () => {
+    // The slug may still turn out to be a valid featured tab, so redirecting
+    // here would break a deep link into a live campaign.
+    mockFeaturedResolved.current = false;
+
+    render(
+      <MemoryRouter initialEntries={['/discovery/seasonal-theme']}>
+        <Routes>
+          <Route path="/discovery/:tab" element={<DiscoveryPage />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    expect(mockNavigate).not.toHaveBeenCalled();
+  });
+
+  it('keeps the active featured route while the cached config is temporarily unresolved', () => {
+    mockFeaturedTab.current = {
+      id: 'ft_1234abcd',
+      slug: 'seasonal-theme',
+      label: 'Especial',
+      position: { after: 'hot' },
+      disclosureLabel: null,
+    };
+
+    const tree = () => (
+      <MemoryRouter initialEntries={['/discovery/seasonal-theme']}>
+        <Routes>
+          <Route path="/discovery/:tab" element={<DiscoveryPage />} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    const { rerender } = render(tree());
+
+    expect(screen.getByTestId('video-feed-featured')).toHaveAttribute('data-featured-tab-id', 'ft_1234abcd');
+    mockNavigate.mockReset();
+
+    mockFeaturedTab.current = null;
+    mockFeaturedResolved.current = false;
+    rerender(tree());
+
+    expect(mockNavigate).not.toHaveBeenCalled();
+  });
+
+  it('keeps a logged-in foryou deep link while the hosted session is still resolving', () => {
+    // The JWT has not resolved, so there is no user yet and `foryou` is briefly
+    // absent from the tab list. Redirecting here would replace the bookmark.
+    mockResolvingJwt.current = true;
+
+    render(
+      <MemoryRouter initialEntries={['/discovery/foryou']}>
+        <Routes>
+          <Route path="/discovery/:tab" element={<DiscoveryPage />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    expect(mockNavigate).not.toHaveBeenCalled();
+  });
+
+  it('resolves direct navigation to the configured featured slug', () => {
+    mockFeaturedTab.current = {
+      id: 'ft_1234abcd',
+      slug: 'seasonal-theme',
+      label: 'Especial',
+      position: { after: 'hot' },
+      disclosureLabel: 'Sponsored',
+    };
+
+    render(
+      <MemoryRouter initialEntries={['/discovery/seasonal-theme']}>
+        <Routes>
+          <Route path="/discovery/:tab" element={<DiscoveryPage />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByTestId('video-feed-featured')).toHaveAttribute('data-featured-tab-id', 'ft_1234abcd');
+    expect(screen.getAllByText('Sponsored')).not.toHaveLength(0);
+  });
+
+  it('names every tab trigger when labels are visually hidden on mobile', () => {
+    mockFeaturedTab.current = {
+      id: 'ft_1234abcd',
+      slug: 'seasonal-theme',
+      label: 'Especial',
+      position: { after: 'hot' },
+      disclosureLabel: 'Sponsored',
+    };
+
+    render(
+      <MemoryRouter initialEntries={['/discovery/classics']}>
+        <Routes>
+          <Route path="/discovery/:tab" element={<DiscoveryPage />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    expect(screen.getAllByRole('tab').map((tab) => tab.getAttribute('aria-label'))).toEqual([
+      'Clasico',
+      'Popular',
+      'Especial: Sponsored',
+      'Etiquetas',
+    ]);
   });
 });

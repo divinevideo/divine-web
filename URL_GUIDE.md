@@ -153,8 +153,8 @@ View all lists for the logged-in user (requires login):
 https://divine.video/lists
 ```
 
-### Specific List
-View a specific list's videos (requires login):
+### Specific Video List
+View a specific NIP-51 kind `30005` video list:
 ```
 https://divine.video/list/{pubkey}/{listId}
 ```
@@ -162,6 +162,17 @@ https://divine.video/list/{pubkey}/{listId}
 **Example:**
 ```
 https://divine.video/list/abc123.../my-favorites
+```
+
+### Specific People List
+View a specific NIP-51 kind `30000` people list:
+```
+https://divine.video/people-lists/{pubkey}/{listId}
+```
+
+**Example:**
+```
+https://divine.video/people-lists/abc123.../friends
 ```
 
 ## Nostr Integration
@@ -250,11 +261,12 @@ All video and profile URLs include Open Graph and Twitter Card metadata for rich
 - Profile pages: `/profile/{npub}`, `/u/{userId}`
 - Video pages: `/video/{id}`
 - Search: `/search`
+- List detail: `/list/{pubkey}/{listId}`, `/people-lists/{pubkey}/{listId}`
 - All informational pages: `/about`, `/faq`, `/privacy`, etc.
 
 ### Login-Required Routes
 - Home feed: `/home`
-- Lists: `/lists`, `/list/{pubkey}/{listId}`
+- Own list gallery: `/lists`
 - Moderation settings: `/settings/moderation`
 
 ## Best Practices

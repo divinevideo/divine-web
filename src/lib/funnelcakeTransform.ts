@@ -6,7 +6,7 @@ import { SHORT_VIDEO_KIND, type ParsedVideoData, type ProofModeData, type ProofM
 import type { FunnelcakeVideoRaw, FunnelcakeResponse } from '@/types/funnelcake';
 import { debugLog } from './debug';
 import { getProofModeData } from './videoParser';
-import { extractSha256FromVideoUrl } from './videoVerification';
+import { extractSha256FromVideoUrl, normalizeSha256 } from './videoVerification';
 import type { NostrEvent } from '@nostrify/nostrify';
 
 /**
@@ -191,7 +191,10 @@ export function transformFunnelcakeVideo(raw: FunnelcakeVideoRaw): ParsedVideoDa
     blurhash: raw.blurhash,
     title: raw.title,
     dimensions: raw.dim ?? raw.dimensions, // Video dimensions from API (e.g., "1080x1920"); v2 uses `dimensions`
-    sha256: extractSha256FromVideoUrl(raw.video_url),
+    // Validated before it wins: a truthy but malformed backend hash would
+    // otherwise shadow the URL-derived one, and downstream moderation lookups
+    // silently no-op on anything that is not 64 hex.
+    sha256: normalizeSha256(raw.sha256) ?? extractSha256FromVideoUrl(raw.video_url),
     ageRestricted: raw.age_restricted === true || raw.moderation_status === 'age_restricted',
     hashtags,
 

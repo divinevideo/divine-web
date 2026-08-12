@@ -2,7 +2,7 @@
 // ABOUTME: Each video tab uses a moderated or curated feed source
 // ABOUTME: For You tab shows personalized recommendations when user is logged in
 
-import { useEffect, useMemo, useState } from 'react';
+import { type ComponentType, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router-dom';
 import { useSubdomainNavigate } from '@/hooks/useSubdomainNavigate';
@@ -11,38 +11,116 @@ import { VerifiedOnlyToggle } from '@/components/VerifiedOnlyToggle';
 import { HashtagExplorer } from '@/components/HashtagExplorer';
 import { ClassicVinersRow } from '@/components/ClassicVinersRow';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Star, Hash, Flame, Sparkle as Sparkles } from '@phosphor-icons/react';
-// Zap temporarily unused - will be needed when Rising tab is re-enabled
+import { Star, Hash, Flame, Sparkle as Sparkles, Confetti } from '@phosphor-icons/react';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useCategories } from '@/hooks/useCategories';
+import { useFeaturedTab } from '@/hooks/useFeaturedTab';
+import { useFunnelcakeSupport } from '@/hooks/useVideoProvider';
 import { getTranslatedCategoryLabel } from '@/lib/constants/categories';
+import { trackEvent } from '@/lib/analytics';
+import type { ResolvedFeaturedTab } from '@/types/featuredTabs';
 
-// All possible tab values (foryou only shown when logged in)
-type AllowedTab = 'foryou' | 'classics' | 'hot' | 'hashtags';
-const ALL_TABS: AllowedTab[] = ['foryou', 'classics', 'hot', 'hashtags'];
-const BASE_TABS: AllowedTab[] = ['classics', 'hot', 'hashtags'];
+interface DiscoveryTabItem {
+  value: string;
+  label: string;
+  Icon: ComponentType<{ className?: string }>;
+  disclosureLabel?: string | null;
+  featuredTab?: ResolvedFeaturedTab;
+}
+
+function insertFeaturedTab(
+  tabs: DiscoveryTabItem[],
+  featuredTab: ResolvedFeaturedTab | null
+): DiscoveryTabItem[] {
+  if (!featuredTab) return tabs;
+
+  const item: DiscoveryTabItem = {
+    value: featuredTab.slug,
+    label: featuredTab.label,
+    // Not Hash: the hashtags tab already owns that glyph, and below `sm` the
+    // labels are hidden, so a second Hash would make the editorial tab
+    // indistinguishable from it on mobile.
+    Icon: Confetti,
+    disclosureLabel: featuredTab.disclosureLabel,
+    featuredTab,
+  };
+  const position = featuredTab.position;
+  const target = position?.after ?? position?.before;
+  const targetIndex = target
+    ? tabs.findIndex((tab) => tab.value === target)
+    : -1;
+
+  if (targetIndex === -1) {
+    return [...tabs, item];
+  }
+
+  const insertAt = position?.before ? targetIndex : targetIndex + 1;
+  return [
+    ...tabs.slice(0, insertAt),
+    item,
+    ...tabs.slice(insertAt),
+  ];
+}
 
 export function DiscoveryPage() {
   const navigate = useSubdomainNavigate();
   const { t } = useTranslation();
   const params = useParams<{ tab?: string }>();
-  const { user } = useCurrentUser();
+  const { user, isResolvingJwt } = useCurrentUser();
   const isLoggedIn = !!user?.pubkey;
   const { data: categories } = useCategories();
+  const { apiUrl: featuredApiUrl } = useFunnelcakeSupport();
+  const { tab: featuredTab, isResolved: isFeaturedConfigResolved } = useFeaturedTab({
+    apiUrl: featuredApiUrl,
+  });
 
-  // Tabs include 'foryou' only when logged in
-  // Note: 'rising' temporarily removed
+  const baseTabs = useMemo<DiscoveryTabItem[]>(() => {
+    const tabs: DiscoveryTabItem[] = [
+      {
+        value: 'classics',
+        label: t('discovery.classic'),
+        Icon: Star,
+      },
+      {
+        value: 'hot',
+        label: t('discovery.hot'),
+        Icon: Flame,
+      },
+      {
+        value: 'hashtags',
+        label: t('discovery.tags'),
+        Icon: Hash,
+      },
+    ];
+
+    return isLoggedIn
+      ? [
+          {
+            value: 'foryou',
+            label: t('discovery.forYou'),
+            Icon: Sparkles,
+          },
+          ...tabs,
+        ]
+      : tabs;
+  }, [isLoggedIn, t]);
+
+  const tabItems = useMemo(
+    () => insertFeaturedTab(baseTabs, featuredTab),
+    [baseTabs, featuredTab]
+  );
+
   const allowedTabs = useMemo(() => {
-    return isLoggedIn ? ALL_TABS : BASE_TABS;
-  }, [isLoggedIn]);
+    return tabItems.map((tab) => tab.value);
+  }, [tabItems]);
 
   const routeTab = (params.tab || '').toLowerCase();
   // Support legacy 'top' route by mapping to 'classics'
   const normalizedTab = routeTab === 'top' ? 'classics' : routeTab;
   // Default to 'foryou' for logged-in users, 'classics' for anonymous
-  const defaultTab: AllowedTab = isLoggedIn ? 'foryou' : 'classics';
-  const initialTab: AllowedTab = allowedTabs.includes(normalizedTab as AllowedTab) ? (normalizedTab as AllowedTab) : defaultTab;
-  const [activeTab, setActiveTab] = useState<AllowedTab>(initialTab);
+  const defaultTab = isLoggedIn ? 'foryou' : 'classics';
+  const initialTab = allowedTabs.includes(normalizedTab) ? normalizedTab : defaultTab;
+  const [activeTab, setActiveTab] = useState(initialTab);
   const [verifiedOnly, setVerifiedOnly] = useState(false);
 
   // Note: We no longer force relay changes here as it causes navigation delays
@@ -56,18 +134,51 @@ export function DiscoveryPage() {
       navigate('/discovery/classics', { replace: true });
       return;
     }
-    if (allowedTabs.includes(normalizedTab as AllowedTab)) {
-      setActiveTab(normalizedTab as AllowedTab);
+    if (allowedTabs.includes(normalizedTab)) {
+      setActiveTab(normalizedTab);
     }
   }, [routeTab, normalizedTab, allowedTabs, navigate]);
 
-  // Handle edge case: user logs out while on 'foryou' tab
   useEffect(() => {
-    if (!isLoggedIn && activeTab === 'foryou') {
-      setActiveTab('classics');
-      navigate('/discovery/classics', { replace: true });
+    if (!isFeaturedConfigResolved || isResolvingJwt) return;
+    if (!allowedTabs.includes(activeTab)) {
+      setActiveTab(defaultTab);
+      navigate(`/discovery/${defaultTab}`, { replace: true });
     }
-  }, [isLoggedIn, activeTab, navigate]);
+  }, [
+    activeTab,
+    allowedTabs,
+    defaultTab,
+    isFeaturedConfigResolved,
+    isResolvingJwt,
+    navigate,
+  ]);
+
+  // A slug that no configuration claims — expired campaign, shared link, typo —
+  // otherwise renders the default tab while the address bar keeps the dead
+  // route, so a reload or a re-share carries the phantom slug onward.
+  //
+  // Both guards below are about not mistaking "still loading" for "no such
+  // tab", because this navigates with `replace` and so destroys the original
+  // URL. An unknown slug may still be a live featured tab until the config
+  // resolves; and a hosted session reports no user while the JWT resolves, so
+  // `foryou` is briefly absent from `allowedTabs` — redirecting then would
+  // replace a logged-in reader's bookmark. AppRouter and AnalyticsPage guard
+  // that same transient state.
+  useEffect(() => {
+    if (!routeTab || !isFeaturedConfigResolved || isResolvingJwt) return;
+    if (allowedTabs.includes(normalizedTab)) return;
+
+    navigate(`/discovery/${defaultTab}`, { replace: true });
+  }, [
+    routeTab,
+    normalizedTab,
+    allowedTabs,
+    defaultTab,
+    isFeaturedConfigResolved,
+    isResolvingJwt,
+    navigate,
+  ]);
 
   // Redirect bare /discovery to default tab (foryou for logged in, classics for anonymous)
   useEffect(() => {
@@ -75,6 +186,21 @@ export function DiscoveryPage() {
       navigate(`/discovery/${defaultTab}`, { replace: true });
     }
   }, [params.tab, navigate, defaultTab]);
+
+  // Keyed on the identifiers rather than the resolved object: the config poll
+  // hands back a fresh object every refresh, which would otherwise re-count an
+  // impression every few minutes for a viewer who never left the tab.
+  const featuredTabId = featuredTab?.id;
+  const featuredTabSlug = featuredTab?.slug;
+  useEffect(() => {
+    if (featuredTabId && activeTab === featuredTabSlug) {
+      trackEvent('featured_tab_impression', {
+        featured_tab_id: featuredTabId,
+      });
+    }
+  }, [activeTab, featuredTabId, featuredTabSlug]);
+
+  const activeTabItem = tabItems.find((tab) => tab.value === activeTab);
 
   return (
     <div className="container mx-auto px-4 py-6">
@@ -115,38 +241,36 @@ export function DiscoveryPage() {
         <Tabs
           value={activeTab}
           onValueChange={(val) => {
-            if (allowedTabs.includes(val as AllowedTab)) {
-              setActiveTab(val as AllowedTab);
+            if (allowedTabs.includes(val)) {
+              setActiveTab(val);
               navigate(`/discovery/${val}`);
             }
           }}
           className="space-y-6"
         >
-          <TabsList className={`w-full grid gap-1 ${isLoggedIn ? 'grid-cols-4' : 'grid-cols-3'}`}>
-            {isLoggedIn && (
-              <TabsTrigger value="foryou" className="gap-1.5 sm:gap-2">
-                <Sparkles className="h-4 w-4" />
-                <span className="hidden sm:inline">{t('discovery.forYou')}</span>
+          <TabsList
+            className="grid w-full gap-1"
+            style={{ gridTemplateColumns: `repeat(${tabItems.length}, minmax(0, 1fr))` }}
+          >
+            {tabItems.map(({ value, label, Icon, disclosureLabel }) => (
+              <TabsTrigger
+                key={value}
+                value={value}
+                className="min-w-0 gap-1.5 px-2 sm:gap-2 sm:px-4"
+                aria-label={disclosureLabel ? `${label}: ${disclosureLabel}` : label}
+              >
+                <Icon className="h-4 w-4 shrink-0" />
+                <span className="hidden min-w-0 truncate sm:inline" title={label}>{label}</span>
+                {disclosureLabel && (
+                  <span
+                    className="hidden max-w-[7rem] shrink truncate rounded-full bg-background/80 px-1.5 py-0.5 text-[10px] leading-none text-foreground sm:inline"
+                    title={disclosureLabel}
+                  >
+                    {disclosureLabel}
+                  </span>
+                )}
               </TabsTrigger>
-            )}
-            <TabsTrigger value="classics" className="gap-1.5 sm:gap-2">
-              <Star className="h-4 w-4" />
-              <span className="hidden sm:inline">{t('discovery.classic')}</span>
-            </TabsTrigger>
-            <TabsTrigger value="hot" className="gap-1.5 sm:gap-2">
-              <Flame className="h-4 w-4" />
-              <span className="hidden sm:inline">{t('discovery.hot')}</span>
-            </TabsTrigger>
-            {/* Rising tab temporarily disabled
-            <TabsTrigger value="rising" className="gap-1.5 sm:gap-2">
-              <Zap className="h-4 w-4" />
-              <span className="hidden sm:inline">Rising</span>
-            </TabsTrigger>
-            */}
-            <TabsTrigger value="hashtags" className="gap-1.5 sm:gap-2">
-              <Hash className="h-4 w-4" />
-              <span className="hidden sm:inline">{t('discovery.tags')}</span>
-            </TabsTrigger>
+            ))}
           </TabsList>
 
           {isLoggedIn && (
@@ -188,22 +312,29 @@ export function DiscoveryPage() {
             />
           </TabsContent>
 
-          {/* Rising tab temporarily disabled
-          <TabsContent value="rising" className="mt-0 space-y-6">
-            <VideoFeed
-              feedType="trending"
-              sortMode="rising"
-              verifiedOnly={verifiedOnly}
-              data-testid="video-feed-rising"
-              className="space-y-6"
-              key="rising"
-            />
-          </TabsContent>
-          */}
-
           <TabsContent value="hashtags" className="mt-0 space-y-6">
             <HashtagExplorer />
           </TabsContent>
+
+          {activeTabItem?.featuredTab && (
+            <TabsContent value={activeTabItem.featuredTab.slug} className="mt-0 space-y-6">
+              {activeTabItem.featuredTab.disclosureLabel && (
+                <div className="flex justify-center">
+                  <span className="inline-flex max-w-full rounded-full border border-border bg-background px-3 py-1 text-sm font-medium text-foreground">
+                    {activeTabItem.featuredTab.disclosureLabel}
+                  </span>
+                </div>
+              )}
+              <VideoFeed
+                feedType="featured"
+                featuredTabId={activeTabItem.featuredTab.id}
+                verifiedOnly={verifiedOnly}
+                data-testid="video-feed-featured"
+                className="space-y-6"
+                key={activeTabItem.featuredTab.id}
+              />
+            </TabsContent>
+          )}
         </Tabs>
       </div>
     </div>

@@ -26,6 +26,7 @@ const {
   mockEnterFullscreen,
   mockSetVideosForFullscreen,
   mockUpdateVideos,
+  mockInfiniteScroll,
 } = vi.hoisted(() => ({
   mockNavigate: vi.fn(),
   mockFetchEventById: vi.fn(),
@@ -38,6 +39,7 @@ const {
   mockEnterFullscreen: vi.fn(),
   mockSetVideosForFullscreen: vi.fn(),
   mockUpdateVideos: vi.fn(),
+  mockInfiniteScroll: vi.fn(),
 }));
 
 vi.mock('@unhead/react', () => ({
@@ -124,7 +126,10 @@ vi.mock('@/components/VideoCardWithMetrics', () => ({
 }));
 
 vi.mock('react-infinite-scroll-component', () => ({
-  default: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+  default: ({ children, dataLength }: { children: ReactNode; dataLength: number }) => {
+    mockInfiniteScroll({ dataLength });
+    return <div>{children}</div>;
+  },
 }));
 
 vi.mock('@/hooks/useSubdomainNavigate', () => ({
@@ -224,6 +229,7 @@ describe('SearchPage', () => {
       hasNextPage: false,
       isLoading: false,
       error: null,
+      fetchedCount: 0,
     });
     mockUseSearchUsers.mockReturnValue({
       data: [],
@@ -416,6 +422,7 @@ describe('SearchPage', () => {
       hasNextPage: false,
       isLoading: false,
       error: null,
+      fetchedCount: 2,
     });
 
     renderPage(['/search?q=twerking&filter=videos&sort=top']);
@@ -441,6 +448,7 @@ describe('SearchPage', () => {
       hasNextPage: false,
       isLoading: false,
       error: null,
+      fetchedCount: 1,
     });
 
     renderPage(['/search?q=twerking&filter=videos']);
@@ -467,6 +475,7 @@ describe('SearchPage', () => {
       hasNextPage: false,
       isLoading: false,
       error: null,
+      fetchedCount: 1,
     });
 
     renderPage(['/search?q=vine&filter=videos']);
@@ -493,6 +502,7 @@ describe('SearchPage', () => {
       hasNextPage: false,
       isLoading: false,
       error: null,
+      fetchedCount: 1,
     });
 
     renderPage(['/search?q=twerking&filter=videos&play=compilation&start=0']);
@@ -519,6 +529,7 @@ describe('SearchPage', () => {
       hasNextPage: false,
       isLoading: false,
       error: null,
+      fetchedCount: 1,
     });
 
     renderPage(['/search?q=twerking&filter=videos&play=compilation&video=video-1']);
@@ -542,6 +553,7 @@ describe('SearchPage', () => {
       hasNextPage: false,
       isLoading: false,
       error: null,
+      fetchedCount: 1,
     });
 
     renderPage(['/search?q=dance']);
@@ -557,6 +569,7 @@ describe('SearchPage', () => {
       hasNextPage: false,
       isLoading: false,
       error: null,
+      fetchedCount: 1,
     });
 
     renderPage(['/search?q=dance&filter=videos']);
@@ -655,6 +668,7 @@ describe('SearchPage', () => {
       hasNextPage: false,
       isLoading: false,
       error: null,
+      fetchedCount: 0,
     });
 
     renderPage(['/search?q=dogs']);
@@ -667,6 +681,29 @@ describe('SearchPage', () => {
     expect(screen.getByTestId('search-sort-relevance')).toHaveAttribute('aria-checked', 'false');
   });
 
+  it('keys video infinite scroll from fetched count instead of deduped rendered count', () => {
+    mockUseInfiniteSearchVideos.mockReturnValue({
+      data: {
+        pages: [{
+          videos: [
+            { id: 'video-1', pubkey: 'a'.repeat(64), videoUrl: 'https://example.com/video-1.mp4' },
+            { id: 'video-1', pubkey: 'a'.repeat(64), videoUrl: 'https://example.com/video-1-copy.mp4' },
+          ],
+        }],
+      },
+      fetchNextPage: vi.fn(),
+      hasNextPage: true,
+      isLoading: false,
+      error: null,
+      fetchedCount: 2,
+    });
+
+    renderPage(['/search?q=dogs&filter=videos']);
+
+    expect(screen.getAllByTestId('video-card-video-1')).toHaveLength(2);
+    expect(mockInfiniteScroll).toHaveBeenCalledWith({ dataLength: 2 });
+  });
+
   it('honors the sort URL param on initial load', () => {
     mockUseInfiniteSearchVideos.mockReturnValue({
       data: { pages: [{ videos: [] }] },
@@ -674,6 +711,7 @@ describe('SearchPage', () => {
       hasNextPage: false,
       isLoading: false,
       error: null,
+      fetchedCount: 0,
     });
 
     renderPage(['/search?q=dogs&sort=top']);
@@ -690,6 +728,7 @@ describe('SearchPage', () => {
       hasNextPage: false,
       isLoading: false,
       error: null,
+      fetchedCount: 0,
     });
 
     renderPage(['/search?q=dogs&sort=garbage']);
@@ -711,6 +750,7 @@ describe('SearchPage', () => {
       hasNextPage: false,
       isLoading: false,
       error: null,
+      fetchedCount: 0,
     });
 
     renderPage(['/search?q=dogs']);
@@ -750,6 +790,7 @@ describe('SearchPage', () => {
       hasNextPage: false,
       isLoading: false,
       error: null,
+      fetchedCount: 0,
     });
 
     renderPage(['/search?q=dogs']);

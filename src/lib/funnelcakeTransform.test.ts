@@ -521,6 +521,29 @@ describe('transformToVideoPage', () => {
   });
 });
 
+describe('transformFunnelcakeVideo sha256', () => {
+  const urlHash = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+  const bodyHash = 'fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210';
+
+  it('prefers a well-formed backend hash over the URL-derived one', () => {
+    expect(transformFunnelcakeVideo(makeRawVideo({ sha256: bodyHash })).sha256).toBe(bodyHash);
+    expect(transformFunnelcakeVideo(makeRawVideo({ sha256: bodyHash.toUpperCase() })).sha256).toBe(bodyHash);
+  });
+
+  it('falls back to the URL when the backend hash is malformed', () => {
+    // A truthy non-hash must not shadow the derivation: moderation lookups
+    // return null for anything that is not 64 hex, so the age-gate check
+    // would silently no-op.
+    expect(transformFunnelcakeVideo(makeRawVideo({ sha256: 'not-a-hash' })).sha256).toBe(urlHash);
+    expect(transformFunnelcakeVideo(makeRawVideo({ sha256: bodyHash.slice(0, 63) })).sha256).toBe(urlHash);
+    expect(transformFunnelcakeVideo(makeRawVideo({ sha256: '  ' })).sha256).toBe(urlHash);
+  });
+
+  it('still derives from the URL when the backend sends no hash', () => {
+    expect(transformFunnelcakeVideo(makeRawVideo()).sha256).toBe(urlHash);
+  });
+});
+
 describe('mergeVideoStats', () => {
   it('refreshes native Divine loop counts from stats', () => {
     const video = transformFunnelcakeVideo(makeRawVideo({

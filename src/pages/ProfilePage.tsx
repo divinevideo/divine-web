@@ -107,6 +107,7 @@ export function ProfilePage({ pubkeyOverride }: { pubkeyOverride?: string } = {}
     error: videosError,
     fetchNextPage,
     hasNextPage,
+    fetchedCount,
   } = useVideoProvider({
     feedType: 'profile',
     sortMode,
@@ -503,7 +504,7 @@ export function ProfilePage({ pubkeyOverride }: { pubkeyOverride?: string } = {}
             </Card>
           ) : viewMode === 'grid' ? (
             <InfiniteScroll
-              dataLength={videos.length}
+              dataLength={fetchedCount}
               next={fetchNextPage}
               hasMore={hasNextPage ?? false}
               loader={
