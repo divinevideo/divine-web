@@ -1431,5 +1431,69 @@
     "podcastEpisode": "팟캐스트 에피소드",
     "openInApplePodcasts": "Apple Podcasts에서 열기",
     "playEpisode": "에피소드 재생"
+  },
+  "listsPage": {
+    "createList": "리스트 만들기",
+    "createFirstList": "첫 리스트 만들기",
+    "createVideoList": "동영상 리스트",
+    "createPeopleList": "사람 리스트"
+  },
+  "createPeopleListDialog": {
+    "title": "사람 리스트 만들기",
+    "description": "사람들을 한데 모아 최신 루프를 한 곳에서 보세요.",
+    "nameLabel": "리스트 이름 *",
+    "namePlaceholder": "좋아하는 크리에이터",
+    "descriptionLabel": "설명",
+    "descriptionPlaceholder": "루프를 놓치고 싶지 않은 사람들...",
+    "imageLabel": "커버 이미지 URL",
+    "imagePlaceholder": "https://example.com/image.jpg",
+    "nameRequired": "먼저 이름부터 지어 주세요.",
+    "reservedName": "그 이름은 시스템 리스트용으로 예약되어 있어요.",
+    "imageInvalid": "전체 이미지 URL을 입력해 주세요.",
+    "cancelButton": "취소",
+    "creatingButton": "만드는 중...",
+    "createButton": "리스트 만들기",
+    "createdTitle": "사람 리스트를 만들었어요.",
+    "createdDescription": "‘{{name}}’ 준비 완료.",
+    "failedTitle": "안 됐어요.",
+    "failedDescription": "사람 리스트를 만들다 막혔어요. 다시 해볼까요?"
+  },
+  "editPeopleListDialog": {
+    "title": "사람 리스트 편집",
+    "description": "이 리스트의 이름, 설명, 커버 이미지를 수정하세요.",
+    "nameLabel": "리스트 이름 *",
+    "namePlaceholder": "좋아하는 크리에이터",
+    "descriptionLabel": "설명",
+    "descriptionPlaceholder": "루프를 놓치고 싶지 않은 사람들...",
+    "imageLabel": "커버 이미지 URL",
+    "imagePlaceholder": "https://example.com/image.jpg",
+    "nameRequired": "먼저 이름부터 지어 주세요.",
+    "imageInvalid": "전체 이미지 URL을 입력해 주세요.",
+    "cancelButton": "취소",
+    "savingButton": "저장 중...",
+    "saveButton": "저장",
+    "savedTitle": "저장했어요.",
+    "savedDescription": "‘{{name}}’ 업데이트했어요.",
+    "failedTitle": "저장하지 못했어요.",
+    "failedDescription": "사람 리스트를 수정하다 막혔어요. 다시 해볼까요?"
+  },
+  "deleteListDialog": {
+    "title": "리스트를 삭제할까요?",
+    "videosDescription": "‘{{name}}’ 리스트가 영구히 삭제돼요. 리스트 안의 동영상은 그대로 남아요.",
+    "peopleDescription": "‘{{name}}’ 리스트가 영구히 삭제돼요. 리스트 안의 사람은 그대로 남아요.",
+    "noteLabel": "참고:",
+    "relayNote": "이 작업은 릴레이에 삭제 요청을 보냅니다. 대부분의 릴레이가 요청을 따르지만 모든 릴레이에서 삭제가 보장되지는 않아요.",
+    "cancelButton": "취소",
+    "deletingButton": "삭제 중...",
+    "deleteButton": "리스트 삭제"
+  },
+  "peopleListDetailPage": {
+    "editList": "편집",
+    "delete": "삭제",
+    "share": "공유",
+    "deletedTitle": "사람 리스트를 삭제했어요.",
+    "deletedDescription": "‘{{name}}’ 삭제했어요.",
+    "deleteFailedTitle": "삭제하지 못했어요.",
+    "deleteFailedDescription": "사람 리스트를 삭제하다 막혔어요. 다시 해볼까요?"
   }
 }

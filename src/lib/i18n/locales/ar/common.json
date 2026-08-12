@@ -1515,5 +1515,69 @@
     "podcastEpisode": "حلقة بودكاست",
     "openInApplePodcasts": "فتح في Apple Podcasts",
     "playEpisode": "تشغيل الحلقة"
+  },
+  "listsPage": {
+    "createList": "إنشاء قائمة",
+    "createFirstList": "أنشئ قائمتك الأولى",
+    "createVideoList": "قائمة فيديوهات",
+    "createPeopleList": "قائمة أشخاص"
+  },
+  "createPeopleListDialog": {
+    "title": "إنشاء قائمة أشخاص",
+    "description": "اجمع الأشخاص في مكان واحد وشاهد أحدث لقطاتهم المتكررة.",
+    "nameLabel": "اسم القائمة *",
+    "namePlaceholder": "المبدعون المفضّلون",
+    "descriptionLabel": "الوصف",
+    "descriptionPlaceholder": "أشخاص لا تفوّت لقطاتهم أبدًا...",
+    "imageLabel": "رابط صورة الغلاف",
+    "imagePlaceholder": "https://example.com/image.jpg",
+    "nameRequired": "سمّها أولًا.",
+    "reservedName": "هذا الاسم محجوز لقائمة نظام.",
+    "imageInvalid": "استخدم رابط صورة كاملًا.",
+    "cancelButton": "إلغاء",
+    "creatingButton": "جارٍ الإنشاء...",
+    "createButton": "إنشاء قائمة",
+    "createdTitle": "تم إنشاء قائمة الأشخاص.",
+    "createdDescription": "«{{name}}» جاهزة.",
+    "failedTitle": "لم تنجح.",
+    "failedDescription": "تعثّر إنشاء قائمة الأشخاص. نجرب مرة أخرى؟"
+  },
+  "editPeopleListDialog": {
+    "title": "تعديل قائمة الأشخاص",
+    "description": "حدّث اسم هذه القائمة أو وصفها أو صورة غلافها.",
+    "nameLabel": "اسم القائمة *",
+    "namePlaceholder": "المبدعون المفضّلون",
+    "descriptionLabel": "الوصف",
+    "descriptionPlaceholder": "أشخاص لا تفوّت لقطاتهم أبدًا...",
+    "imageLabel": "رابط صورة الغلاف",
+    "imagePlaceholder": "https://example.com/image.jpg",
+    "nameRequired": "سمّها أولًا.",
+    "imageInvalid": "استخدم رابط صورة كاملًا.",
+    "cancelButton": "إلغاء",
+    "savingButton": "جارٍ الحفظ...",
+    "saveButton": "حفظ",
+    "savedTitle": "تم الحفظ.",
+    "savedDescription": "تم تحديث «{{name}}».",
+    "failedTitle": "لم يتم الحفظ.",
+    "failedDescription": "تعثّر تحديث قائمة الأشخاص. نجرب مرة أخرى؟"
+  },
+  "deleteListDialog": {
+    "title": "حذف القائمة؟",
+    "videosDescription": "سيؤدي هذا إلى حذف القائمة «{{name}}» نهائيًا. لن تتأثر الفيديوهات الموجودة في القائمة.",
+    "peopleDescription": "سيؤدي هذا إلى حذف القائمة «{{name}}» نهائيًا. لن يتأثر الأشخاص الموجودون في القائمة.",
+    "noteLabel": "ملاحظة:",
+    "relayNote": "يرسل هذا الإجراء طلب حذف إلى المُرحّلات. تستجيب معظم المُرحّلات للطلب، لكن الحذف غير مضمون على جميع المُرحّلات.",
+    "cancelButton": "إلغاء",
+    "deletingButton": "جارٍ الحذف...",
+    "deleteButton": "حذف القائمة"
+  },
+  "peopleListDetailPage": {
+    "editList": "تعديل",
+    "delete": "حذف",
+    "share": "مشاركة",
+    "deletedTitle": "تم حذف قائمة الأشخاص.",
+    "deletedDescription": "تمت إزالة «{{name}}».",
+    "deleteFailedTitle": "فشل الحذف.",
+    "deleteFailedDescription": "تعثّر حذف قائمة الأشخاص. نجرب مرة أخرى؟"
   }
 }

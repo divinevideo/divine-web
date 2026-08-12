@@ -1431,5 +1431,69 @@
     "podcastEpisode": "Podcast Bölümü",
     "openInApplePodcasts": "Apple Podcasts'te aç",
     "playEpisode": "Bölümü oynat"
+  },
+  "listsPage": {
+    "createList": "Liste oluştur",
+    "createFirstList": "İlk listeni oluştur",
+    "createVideoList": "Video listesi",
+    "createPeopleList": "Kişi listesi"
+  },
+  "createPeopleListDialog": {
+    "title": "Kişi listesi oluştur",
+    "description": "İnsanları bir araya getir, en yeni looplarını tek yerde izle.",
+    "nameLabel": "Liste adı *",
+    "namePlaceholder": "Favori üreticiler",
+    "descriptionLabel": "Açıklama",
+    "descriptionPlaceholder": "Looplarını hiç kaçırmadığın kişiler...",
+    "imageLabel": "Kapak görseli URL’si",
+    "imagePlaceholder": "https://example.com/image.jpg",
+    "nameRequired": "Önce bir ad ver.",
+    "reservedName": "Bu ad bir sistem listesi için ayrılmış.",
+    "imageInvalid": "Tam bir görsel URL’si kullan.",
+    "cancelButton": "İptal",
+    "creatingButton": "Oluşturuluyor...",
+    "createButton": "Liste oluştur",
+    "createdTitle": "Kişi listesi oluşturuldu.",
+    "createdDescription": "“{{name}}” hazır.",
+    "failedTitle": "Olmadı.",
+    "failedDescription": "Kişi listesi oluşturulurken takıldı. Tekrar deneyelim mi?"
+  },
+  "editPeopleListDialog": {
+    "title": "Kişi listesini düzenle",
+    "description": "Bu listenin adını, açıklamasını veya kapak görselini güncelle.",
+    "nameLabel": "Liste adı *",
+    "namePlaceholder": "Favori üreticiler",
+    "descriptionLabel": "Açıklama",
+    "descriptionPlaceholder": "Looplarını hiç kaçırmadığın kişiler...",
+    "imageLabel": "Kapak görseli URL’si",
+    "imagePlaceholder": "https://example.com/image.jpg",
+    "nameRequired": "Önce bir ad ver.",
+    "imageInvalid": "Tam bir görsel URL’si kullan.",
+    "cancelButton": "İptal",
+    "savingButton": "Kaydediliyor...",
+    "saveButton": "Kaydet",
+    "savedTitle": "Kaydedildi.",
+    "savedDescription": "“{{name}}” güncellendi.",
+    "failedTitle": "Kaydedilmedi.",
+    "failedDescription": "Kişi listesi güncellenirken takıldı. Tekrar deneyelim mi?"
+  },
+  "deleteListDialog": {
+    "title": "Liste silinsin mi?",
+    "videosDescription": "Bu işlem “{{name}}” listesini kalıcı olarak siler. Listedeki videolar etkilenmez.",
+    "peopleDescription": "Bu işlem “{{name}}” listesini kalıcı olarak siler. Listedeki kişiler etkilenmez.",
+    "noteLabel": "Not:",
+    "relayNote": "Bu işlem relaylere bir silme isteği gönderir. Çoğu relay bunu uygular ama silme her yerde garanti değildir.",
+    "cancelButton": "İptal",
+    "deletingButton": "Siliniyor...",
+    "deleteButton": "Listeyi sil"
+  },
+  "peopleListDetailPage": {
+    "editList": "Düzenle",
+    "delete": "Sil",
+    "share": "Paylaş",
+    "deletedTitle": "Kişi listesi silindi.",
+    "deletedDescription": "“{{name}}” kaldırıldı.",
+    "deleteFailedTitle": "Silinemedi.",
+    "deleteFailedDescription": "Kişi listesi silinirken takıldı. Tekrar deneyelim mi?"
   }
 }

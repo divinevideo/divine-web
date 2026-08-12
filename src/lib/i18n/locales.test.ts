@@ -66,69 +66,6 @@ const PLACEHOLDER_PARITY_EXCEPTIONS = new Set([
   'ar.common:categoriesPage.videoCount_zero',
 ]);
 
-// New feature copy may ship English-first while UI text is still settling;
-// remove keys from this set as localization catches up.
-const ENGLISH_FALLBACK_KEYS = new Set([
-  'createPeopleListDialog.cancelButton',
-  'createPeopleListDialog.createButton',
-  'createPeopleListDialog.createdDescription',
-  'createPeopleListDialog.createdTitle',
-  'createPeopleListDialog.creatingButton',
-  'createPeopleListDialog.description',
-  'createPeopleListDialog.descriptionLabel',
-  'createPeopleListDialog.descriptionPlaceholder',
-  'createPeopleListDialog.failedDescription',
-  'createPeopleListDialog.failedTitle',
-  'createPeopleListDialog.imageInvalid',
-  'createPeopleListDialog.imageLabel',
-  'createPeopleListDialog.imagePlaceholder',
-  'createPeopleListDialog.nameLabel',
-  'createPeopleListDialog.namePlaceholder',
-  'createPeopleListDialog.nameRequired',
-  'createPeopleListDialog.reservedName',
-  'createPeopleListDialog.title',
-  'deleteListDialog.cancelButton',
-  'deleteListDialog.deleteButton',
-  'deleteListDialog.deletingButton',
-  'deleteListDialog.noteLabel',
-  'deleteListDialog.peopleDescription',
-  'deleteListDialog.relayNote',
-  'deleteListDialog.title',
-  'deleteListDialog.videosDescription',
-  'editPeopleListDialog.cancelButton',
-  'editPeopleListDialog.description',
-  'editPeopleListDialog.descriptionLabel',
-  'editPeopleListDialog.descriptionPlaceholder',
-  'editPeopleListDialog.failedDescription',
-  'editPeopleListDialog.failedTitle',
-  'editPeopleListDialog.imageInvalid',
-  'editPeopleListDialog.imageLabel',
-  'editPeopleListDialog.imagePlaceholder',
-  'editPeopleListDialog.nameLabel',
-  'editPeopleListDialog.namePlaceholder',
-  'editPeopleListDialog.nameRequired',
-  'editPeopleListDialog.saveButton',
-  'editPeopleListDialog.savedDescription',
-  'editPeopleListDialog.savedTitle',
-  'editPeopleListDialog.savingButton',
-  'editPeopleListDialog.title',
-  'listsPage.createFirstList',
-  'listsPage.createList',
-  'listsPage.createPeopleList',
-  'listsPage.createVideoList',
-  'peopleListDetailPage.delete',
-  'peopleListDetailPage.deleteFailedDescription',
-  'peopleListDetailPage.deleteFailedTitle',
-  'peopleListDetailPage.deletedDescription',
-  'peopleListDetailPage.deletedTitle',
-  'peopleListDetailPage.editList',
-  'peopleListDetailPage.share',
-]);
-
-function allowsEnglishFallback(key: string): boolean {
-  return ENGLISH_FALLBACK_KEYS.has(key);
-}
-
 /**
  * Whole-sentence keys that cannot legitimately be identical to English. Short
  * labels are excluded on purpose: "Reposts", "Likes" and "Notifications" are
@@ -157,7 +94,7 @@ describe('i18n locale resources', () => {
       for (const [locale, namespaces] of Object.entries(resources)) {
         const localeCatalog = namespaces[namespace as keyof typeof namespaces];
         const localeKeys = new Set(flattenKeys(localeCatalog));
-        const missingKeys = englishKeys.filter((key) => !localeKeys.has(key) && !allowsEnglishFallback(key));
+        const missingKeys = englishKeys.filter((key) => !localeKeys.has(key));
 
         expect(
           missingKeys,
@@ -179,9 +116,6 @@ describe('i18n locale resources', () => {
 
         for (const [locale, namespaces] of Object.entries(resources)) {
           if (PLACEHOLDER_PARITY_EXCEPTIONS.has(`${locale}.${namespace}:${key}`)) {
-            continue;
-          }
-          if (locale !== 'en' && allowsEnglishFallback(key)) {
             continue;
           }
 

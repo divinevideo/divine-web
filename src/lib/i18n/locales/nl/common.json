@@ -1431,5 +1431,69 @@
     "podcastEpisode": "Podcastaflevering",
     "openInApplePodcasts": "Openen in Apple Podcasts",
     "playEpisode": "Aflevering afspelen"
+  },
+  "listsPage": {
+    "createList": "Lijst maken",
+    "createFirstList": "Maak je eerste lijst",
+    "createVideoList": "Videolijst",
+    "createPeopleList": "Personenlijst"
+  },
+  "createPeopleListDialog": {
+    "title": "Personenlijst maken",
+    "description": "Zet mensen bij elkaar en bekijk hun nieuwste loops op één plek.",
+    "nameLabel": "Lijstnaam *",
+    "namePlaceholder": "Favoriete creators",
+    "descriptionLabel": "Beschrijving",
+    "descriptionPlaceholder": "Mensen van wie je geen loop mist...",
+    "imageLabel": "URL van omslagafbeelding",
+    "imagePlaceholder": "https://example.com/image.jpg",
+    "nameRequired": "Geef ’m eerst een naam.",
+    "reservedName": "Die naam is gereserveerd voor een systeemlijst.",
+    "imageInvalid": "Gebruik een volledige afbeeldings-URL.",
+    "cancelButton": "Annuleren",
+    "creatingButton": "Bezig met maken...",
+    "createButton": "Lijst maken",
+    "createdTitle": "Personenlijst gemaakt.",
+    "createdDescription": "‘{{name}}’ staat klaar.",
+    "failedTitle": "Niet gelukt.",
+    "failedDescription": "Het maken van de personenlijst liep vast. Opnieuw?"
+  },
+  "editPeopleListDialog": {
+    "title": "Personenlijst bewerken",
+    "description": "Werk de naam, beschrijving of omslagafbeelding van deze lijst bij.",
+    "nameLabel": "Lijstnaam *",
+    "namePlaceholder": "Favoriete creators",
+    "descriptionLabel": "Beschrijving",
+    "descriptionPlaceholder": "Mensen van wie je geen loop mist...",
+    "imageLabel": "URL van omslagafbeelding",
+    "imagePlaceholder": "https://example.com/image.jpg",
+    "nameRequired": "Geef ’m eerst een naam.",
+    "imageInvalid": "Gebruik een volledige afbeeldings-URL.",
+    "cancelButton": "Annuleren",
+    "savingButton": "Bezig met opslaan...",
+    "saveButton": "Opslaan",
+    "savedTitle": "Opgeslagen.",
+    "savedDescription": "‘{{name}}’ is bijgewerkt.",
+    "failedTitle": "Niet opgeslagen.",
+    "failedDescription": "Het bijwerken van de personenlijst liep vast. Opnieuw?"
+  },
+  "deleteListDialog": {
+    "title": "Lijst verwijderen?",
+    "videosDescription": "Hiermee wordt de lijst ‘{{name}}’ definitief verwijderd. Video’s in de lijst blijven bestaan.",
+    "peopleDescription": "Hiermee wordt de lijst ‘{{name}}’ definitief verwijderd. Mensen in de lijst blijven bestaan.",
+    "noteLabel": "Let op:",
+    "relayNote": "Deze actie stuurt een verwijderverzoek naar relays. De meeste relays honoreren dat, maar verwijdering is niet overal gegarandeerd.",
+    "cancelButton": "Annuleren",
+    "deletingButton": "Bezig met verwijderen...",
+    "deleteButton": "Lijst verwijderen"
+  },
+  "peopleListDetailPage": {
+    "editList": "Bewerken",
+    "delete": "Verwijderen",
+    "share": "Delen",
+    "deletedTitle": "Personenlijst verwijderd.",
+    "deletedDescription": "‘{{name}}’ is verwijderd.",
+    "deleteFailedTitle": "Verwijderen mislukt.",
+    "deleteFailedDescription": "Het verwijderen van de personenlijst liep vast. Opnieuw?"
   }
 }

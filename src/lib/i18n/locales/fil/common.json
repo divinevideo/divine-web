@@ -1431,5 +1431,69 @@
     "podcastEpisode": "Podcast Episode",
     "openInApplePodcasts": "Buksan sa Apple Podcasts",
     "playEpisode": "I-play ang Episode"
+  },
+  "listsPage": {
+    "createList": "Gumawa ng listahan",
+    "createFirstList": "Gawin ang iyong unang listahan",
+    "createVideoList": "Listahan ng video",
+    "createPeopleList": "Listahan ng tao"
+  },
+  "createPeopleListDialog": {
+    "title": "Gumawa ng listahan ng tao",
+    "description": "Pagsama-samahin ang mga tao at panoorin ang pinakabago nilang mga loop sa isang lugar.",
+    "nameLabel": "Pangalan ng listahan *",
+    "namePlaceholder": "Mga paboritong creator",
+    "descriptionLabel": "Paglalarawan",
+    "descriptionPlaceholder": "Mga taong hindi mo pinapalampas ang loop...",
+    "imageLabel": "URL ng cover image",
+    "imagePlaceholder": "https://example.com/image.jpg",
+    "nameRequired": "Pangalanan mo muna.",
+    "reservedName": "Nakalaan ang pangalang iyon para sa listahan ng sistema.",
+    "imageInvalid": "Gumamit ng kumpletong URL ng larawan.",
+    "cancelButton": "Kanselahin",
+    "creatingButton": "Ginagawa...",
+    "createButton": "Gumawa ng listahan",
+    "createdTitle": "Nagawa na ang listahan ng tao.",
+    "createdDescription": "Handa na ang “{{name}}”.",
+    "failedTitle": "Hindi natuloy.",
+    "failedDescription": "May sablay sa paggawa ng listahan ng tao. Subukan ulit?"
+  },
+  "editPeopleListDialog": {
+    "title": "I-edit ang listahan ng tao",
+    "description": "I-update ang pangalan, paglalarawan, o cover image ng listahang ito.",
+    "nameLabel": "Pangalan ng listahan *",
+    "namePlaceholder": "Mga paboritong creator",
+    "descriptionLabel": "Paglalarawan",
+    "descriptionPlaceholder": "Mga taong hindi mo pinapalampas ang loop...",
+    "imageLabel": "URL ng cover image",
+    "imagePlaceholder": "https://example.com/image.jpg",
+    "nameRequired": "Pangalanan mo muna.",
+    "imageInvalid": "Gumamit ng kumpletong URL ng larawan.",
+    "cancelButton": "Kanselahin",
+    "savingButton": "Sine-save...",
+    "saveButton": "I-save",
+    "savedTitle": "Na-save.",
+    "savedDescription": "Na-update ang “{{name}}”.",
+    "failedTitle": "Hindi na-save.",
+    "failedDescription": "May sablay sa pag-update ng listahan ng tao. Subukan ulit?"
+  },
+  "deleteListDialog": {
+    "title": "Burahin ang listahan?",
+    "videosDescription": "Permanenteng buburahin nito ang listahang “{{name}}”. Hindi maaapektuhan ang mga video sa listahan.",
+    "peopleDescription": "Permanenteng buburahin nito ang listahang “{{name}}”. Hindi maaapektuhan ang mga tao sa listahan.",
+    "noteLabel": "Paalala:",
+    "relayNote": "Nagpapadala ang aksyong ito ng kahilingang pagbura sa mga relay. Karamihan ay susunod, pero hindi garantisado ang pagbura sa lahat ng relay.",
+    "cancelButton": "Kanselahin",
+    "deletingButton": "Binubura...",
+    "deleteButton": "Burahin ang listahan"
+  },
+  "peopleListDetailPage": {
+    "editList": "I-edit",
+    "delete": "Burahin",
+    "share": "Ibahagi",
+    "deletedTitle": "Nabura ang listahan ng tao.",
+    "deletedDescription": "Naalis na ang “{{name}}”.",
+    "deleteFailedTitle": "Hindi nabura.",
+    "deleteFailedDescription": "May sablay sa pagbura ng listahan ng tao. Subukan ulit?"
   }
 }

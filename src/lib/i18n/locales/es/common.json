@@ -1432,5 +1432,69 @@
     "podcastEpisode": "Episodio del podcast",
     "openInApplePodcasts": "Abrir en Apple Podcasts",
     "playEpisode": "Reproducir episodio"
+  },
+  "listsPage": {
+    "createList": "Crear lista",
+    "createFirstList": "Crea tu primera lista",
+    "createVideoList": "Lista de videos",
+    "createPeopleList": "Lista de personas"
+  },
+  "createPeopleListDialog": {
+    "title": "Crear lista de personas",
+    "description": "Reúne a varias personas y mira sus últimos loops en un solo lugar.",
+    "nameLabel": "Nombre de la lista *",
+    "namePlaceholder": "Creadores favoritos",
+    "descriptionLabel": "Descripción",
+    "descriptionPlaceholder": "Personas cuyos loops nunca te pierdes...",
+    "imageLabel": "URL de la imagen de portada",
+    "imagePlaceholder": "https://example.com/image.jpg",
+    "nameRequired": "Ponle un nombre primero.",
+    "reservedName": "Ese nombre está reservado para una lista del sistema.",
+    "imageInvalid": "Usa una URL de imagen completa.",
+    "cancelButton": "Cancelar",
+    "creatingButton": "Creando...",
+    "createButton": "Crear lista",
+    "createdTitle": "Lista de personas creada.",
+    "createdDescription": "«{{name}}» está lista.",
+    "failedTitle": "No salió.",
+    "failedDescription": "La creación de la lista de personas se atascó. ¿Lo intentamos de nuevo?"
+  },
+  "editPeopleListDialog": {
+    "title": "Editar lista de personas",
+    "description": "Actualiza el nombre, la descripción o la imagen de portada de esta lista.",
+    "nameLabel": "Nombre de la lista *",
+    "namePlaceholder": "Creadores favoritos",
+    "descriptionLabel": "Descripción",
+    "descriptionPlaceholder": "Personas cuyos loops nunca te pierdes...",
+    "imageLabel": "URL de la imagen de portada",
+    "imagePlaceholder": "https://example.com/image.jpg",
+    "nameRequired": "Ponle un nombre primero.",
+    "imageInvalid": "Usa una URL de imagen completa.",
+    "cancelButton": "Cancelar",
+    "savingButton": "Guardando...",
+    "saveButton": "Guardar",
+    "savedTitle": "Guardado.",
+    "savedDescription": "«{{name}}» se actualizó.",
+    "failedTitle": "No se guardó.",
+    "failedDescription": "La actualización de la lista de personas se atascó. ¿Lo intentamos de nuevo?"
+  },
+  "deleteListDialog": {
+    "title": "¿Eliminar lista?",
+    "videosDescription": "Esto eliminará de forma permanente la lista «{{name}}». Los videos de la lista no se verán afectados.",
+    "peopleDescription": "Esto eliminará de forma permanente la lista «{{name}}». Las personas de la lista no se verán afectadas.",
+    "noteLabel": "Nota:",
+    "relayNote": "Esta acción envía una solicitud de eliminación a los relays. La mayoría la respetará, pero la eliminación no está garantizada en todos.",
+    "cancelButton": "Cancelar",
+    "deletingButton": "Eliminando...",
+    "deleteButton": "Eliminar lista"
+  },
+  "peopleListDetailPage": {
+    "editList": "Editar",
+    "delete": "Eliminar",
+    "share": "Compartir",
+    "deletedTitle": "Lista de personas eliminada.",
+    "deletedDescription": "«{{name}}» se eliminó.",
+    "deleteFailedTitle": "No se pudo eliminar.",
+    "deleteFailedDescription": "La eliminación de la lista de personas se atascó. ¿Lo intentamos de nuevo?"
   }
 }

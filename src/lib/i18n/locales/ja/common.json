@@ -1431,5 +1431,69 @@
     "podcastEpisode": "ポッドキャストエピソード",
     "openInApplePodcasts": "Apple Podcastsで開く",
     "playEpisode": "エピソードを再生"
+  },
+  "listsPage": {
+    "createList": "リストを作成",
+    "createFirstList": "最初のリストを作成",
+    "createVideoList": "動画リスト",
+    "createPeopleList": "ピープルリスト"
+  },
+  "createPeopleListDialog": {
+    "title": "ピープルリストを作成",
+    "description": "気になる人をまとめて、最新のループを一か所で楽しもう。",
+    "nameLabel": "リスト名 *",
+    "namePlaceholder": "お気に入りのクリエイター",
+    "descriptionLabel": "説明",
+    "descriptionPlaceholder": "ループを見逃したくない人たち…",
+    "imageLabel": "カバー画像のURL",
+    "imagePlaceholder": "https://example.com/image.jpg",
+    "nameRequired": "まず名前をつけてね。",
+    "reservedName": "その名前はシステムリスト用に予約されています。",
+    "imageInvalid": "完全な画像URLを入力してね。",
+    "cancelButton": "キャンセル",
+    "creatingButton": "作成中...",
+    "createButton": "リストを作成",
+    "createdTitle": "ピープルリストを作成しました。",
+    "createdDescription": "「{{name}}」の準備ができました。",
+    "failedTitle": "うまくいきませんでした。",
+    "failedDescription": "ピープルリストの作成でつまずきました。もう一度試す？"
+  },
+  "editPeopleListDialog": {
+    "title": "ピープルリストを編集",
+    "description": "このリストの名前・説明・カバー画像を更新します。",
+    "nameLabel": "リスト名 *",
+    "namePlaceholder": "お気に入りのクリエイター",
+    "descriptionLabel": "説明",
+    "descriptionPlaceholder": "ループを見逃したくない人たち…",
+    "imageLabel": "カバー画像のURL",
+    "imagePlaceholder": "https://example.com/image.jpg",
+    "nameRequired": "まず名前をつけてね。",
+    "imageInvalid": "完全な画像URLを入力してね。",
+    "cancelButton": "キャンセル",
+    "savingButton": "保存中...",
+    "saveButton": "保存",
+    "savedTitle": "保存しました。",
+    "savedDescription": "「{{name}}」を更新しました。",
+    "failedTitle": "保存できませんでした。",
+    "failedDescription": "ピープルリストの更新でつまずきました。もう一度試す？"
+  },
+  "deleteListDialog": {
+    "title": "リストを削除しますか？",
+    "videosDescription": "リスト「{{name}}」を完全に削除します。リスト内の動画には影響しません。",
+    "peopleDescription": "リスト「{{name}}」を完全に削除します。リスト内の人には影響しません。",
+    "noteLabel": "注意:",
+    "relayNote": "この操作はリレーに削除リクエストを送信します。多くのリレーは応じますが、すべてのリレーで削除される保証はありません。",
+    "cancelButton": "キャンセル",
+    "deletingButton": "削除中...",
+    "deleteButton": "リストを削除"
+  },
+  "peopleListDetailPage": {
+    "editList": "編集",
+    "delete": "削除",
+    "share": "シェア",
+    "deletedTitle": "ピープルリストを削除しました。",
+    "deletedDescription": "「{{name}}」を削除しました。",
+    "deleteFailedTitle": "削除できませんでした。",
+    "deleteFailedDescription": "ピープルリストの削除でつまずきました。もう一度試す？"
   }
 }

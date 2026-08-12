@@ -1431,5 +1431,69 @@
     "podcastEpisode": "播客单集",
     "openInApplePodcasts": "在 Apple 播客中打开",
     "playEpisode": "播放单集"
+  },
+  "listsPage": {
+    "createList": "创建列表",
+    "createFirstList": "创建你的第一个列表",
+    "createVideoList": "视频列表",
+    "createPeopleList": "人物列表"
+  },
+  "createPeopleListDialog": {
+    "title": "创建人物列表",
+    "description": "把感兴趣的人聚在一起，在一个地方看他们的最新循环。",
+    "nameLabel": "列表名称 *",
+    "namePlaceholder": "喜欢的创作者",
+    "descriptionLabel": "描述",
+    "descriptionPlaceholder": "你从不错过其循环的人……",
+    "imageLabel": "封面图片链接",
+    "imagePlaceholder": "https://example.com/image.jpg",
+    "nameRequired": "先起个名字吧。",
+    "reservedName": "该名称已保留给系统列表。",
+    "imageInvalid": "请填写完整的图片链接。",
+    "cancelButton": "取消",
+    "creatingButton": "创建中...",
+    "createButton": "创建列表",
+    "createdTitle": "人物列表已创建。",
+    "createdDescription": "“{{name}}”准备好了。",
+    "failedTitle": "没成功。",
+    "failedDescription": "创建人物列表时卡住了。再试一次？"
+  },
+  "editPeopleListDialog": {
+    "title": "编辑人物列表",
+    "description": "更新此列表的名称、描述或封面图片。",
+    "nameLabel": "列表名称 *",
+    "namePlaceholder": "喜欢的创作者",
+    "descriptionLabel": "描述",
+    "descriptionPlaceholder": "你从不错过其循环的人……",
+    "imageLabel": "封面图片链接",
+    "imagePlaceholder": "https://example.com/image.jpg",
+    "nameRequired": "先起个名字吧。",
+    "imageInvalid": "请填写完整的图片链接。",
+    "cancelButton": "取消",
+    "savingButton": "保存中...",
+    "saveButton": "保存",
+    "savedTitle": "已保存。",
+    "savedDescription": "“{{name}}”已更新。",
+    "failedTitle": "没保存上。",
+    "failedDescription": "更新人物列表时卡住了。再试一次？"
+  },
+  "deleteListDialog": {
+    "title": "删除列表？",
+    "videosDescription": "这会永久删除列表“{{name}}”。列表中的视频不受影响。",
+    "peopleDescription": "这会永久删除列表“{{name}}”。列表中的人不受影响。",
+    "noteLabel": "注意：",
+    "relayNote": "此操作会向中继发送删除请求。多数中继会遵从，但并非所有中继都保证删除。",
+    "cancelButton": "取消",
+    "deletingButton": "删除中...",
+    "deleteButton": "删除列表"
+  },
+  "peopleListDetailPage": {
+    "editList": "编辑",
+    "delete": "删除",
+    "share": "分享",
+    "deletedTitle": "人物列表已删除。",
+    "deletedDescription": "“{{name}}”已移除。",
+    "deleteFailedTitle": "删除失败。",
+    "deleteFailedDescription": "删除人物列表时卡住了。再试一次？"
   }
 }

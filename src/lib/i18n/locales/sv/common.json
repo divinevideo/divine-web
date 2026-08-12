@@ -1431,5 +1431,69 @@
     "podcastEpisode": "Podcast-avsnitt",
     "openInApplePodcasts": "Öppna i Apple Podcasts",
     "playEpisode": "Spela avsnitt"
+  },
+  "listsPage": {
+    "createList": "Skapa lista",
+    "createFirstList": "Skapa din första lista",
+    "createVideoList": "Videolista",
+    "createPeopleList": "Personlista"
+  },
+  "createPeopleListDialog": {
+    "title": "Skapa personlista",
+    "description": "Samla folk på ett ställe och se deras senaste loopar.",
+    "nameLabel": "Listnamn *",
+    "namePlaceholder": "Favoritkreatörer",
+    "descriptionLabel": "Beskrivning",
+    "descriptionPlaceholder": "Folk vars loopar du aldrig missar...",
+    "imageLabel": "URL till omslagsbild",
+    "imagePlaceholder": "https://example.com/image.jpg",
+    "nameRequired": "Ge den ett namn först.",
+    "reservedName": "Det namnet är reserverat för en systemlista.",
+    "imageInvalid": "Använd en fullständig bild-URL.",
+    "cancelButton": "Avbryt",
+    "creatingButton": "Skapar...",
+    "createButton": "Skapa lista",
+    "createdTitle": "Personlista skapad.",
+    "createdDescription": "”{{name}}” är redo.",
+    "failedTitle": "Det gick inte.",
+    "failedDescription": "Det hakade upp sig när personlistan skulle skapas. Försöka igen?"
+  },
+  "editPeopleListDialog": {
+    "title": "Redigera personlista",
+    "description": "Uppdatera namn, beskrivning eller omslagsbild för den här listan.",
+    "nameLabel": "Listnamn *",
+    "namePlaceholder": "Favoritkreatörer",
+    "descriptionLabel": "Beskrivning",
+    "descriptionPlaceholder": "Folk vars loopar du aldrig missar...",
+    "imageLabel": "URL till omslagsbild",
+    "imagePlaceholder": "https://example.com/image.jpg",
+    "nameRequired": "Ge den ett namn först.",
+    "imageInvalid": "Använd en fullständig bild-URL.",
+    "cancelButton": "Avbryt",
+    "savingButton": "Sparar...",
+    "saveButton": "Spara",
+    "savedTitle": "Sparat.",
+    "savedDescription": "”{{name}}” är uppdaterad.",
+    "failedTitle": "Sparades inte.",
+    "failedDescription": "Det hakade upp sig när personlistan skulle uppdateras. Försöka igen?"
+  },
+  "deleteListDialog": {
+    "title": "Radera listan?",
+    "videosDescription": "Det här raderar listan ”{{name}}” permanent. Videorna i listan påverkas inte.",
+    "peopleDescription": "Det här raderar listan ”{{name}}” permanent. Personerna i listan påverkas inte.",
+    "noteLabel": "Obs:",
+    "relayNote": "Den här åtgärden skickar en raderingsbegäran till reläer. De flesta reläer respekterar den, men radering är inte garanterad överallt.",
+    "cancelButton": "Avbryt",
+    "deletingButton": "Raderar...",
+    "deleteButton": "Radera lista"
+  },
+  "peopleListDetailPage": {
+    "editList": "Redigera",
+    "delete": "Radera",
+    "share": "Dela",
+    "deletedTitle": "Personlista raderad.",
+    "deletedDescription": "”{{name}}” har tagits bort.",
+    "deleteFailedTitle": "Raderingen misslyckades.",
+    "deleteFailedDescription": "Det hakade upp sig när personlistan skulle raderas. Försöka igen?"
   }
 }

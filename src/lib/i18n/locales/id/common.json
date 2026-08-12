@@ -1431,5 +1431,69 @@
     "podcastEpisode": "Episode Podcast",
     "openInApplePodcasts": "Buka di Apple Podcasts",
     "playEpisode": "Putar Episode"
+  },
+  "listsPage": {
+    "createList": "Buat daftar",
+    "createFirstList": "Buat daftar pertamamu",
+    "createVideoList": "Daftar video",
+    "createPeopleList": "Daftar orang"
+  },
+  "createPeopleListDialog": {
+    "title": "Buat daftar orang",
+    "description": "Kumpulkan orang-orang dan tonton loop terbaru mereka di satu tempat.",
+    "nameLabel": "Nama daftar *",
+    "namePlaceholder": "Kreator favorit",
+    "descriptionLabel": "Deskripsi",
+    "descriptionPlaceholder": "Orang yang loop-nya tak pernah kamu lewatkan...",
+    "imageLabel": "URL gambar sampul",
+    "imagePlaceholder": "https://example.com/image.jpg",
+    "nameRequired": "Kasih nama dulu.",
+    "reservedName": "Nama itu dipakai untuk daftar sistem.",
+    "imageInvalid": "Pakai URL gambar lengkap.",
+    "cancelButton": "Batal",
+    "creatingButton": "Membuat...",
+    "createButton": "Buat daftar",
+    "createdTitle": "Daftar orang dibuat.",
+    "createdDescription": "“{{name}}” sudah siap.",
+    "failedTitle": "Gagal.",
+    "failedDescription": "Pembuatan daftar orang tersendat. Coba lagi?"
+  },
+  "editPeopleListDialog": {
+    "title": "Edit daftar orang",
+    "description": "Perbarui nama, deskripsi, atau gambar sampul daftar ini.",
+    "nameLabel": "Nama daftar *",
+    "namePlaceholder": "Kreator favorit",
+    "descriptionLabel": "Deskripsi",
+    "descriptionPlaceholder": "Orang yang loop-nya tak pernah kamu lewatkan...",
+    "imageLabel": "URL gambar sampul",
+    "imagePlaceholder": "https://example.com/image.jpg",
+    "nameRequired": "Kasih nama dulu.",
+    "imageInvalid": "Pakai URL gambar lengkap.",
+    "cancelButton": "Batal",
+    "savingButton": "Menyimpan...",
+    "saveButton": "Simpan",
+    "savedTitle": "Tersimpan.",
+    "savedDescription": "“{{name}}” diperbarui.",
+    "failedTitle": "Tidak tersimpan.",
+    "failedDescription": "Pembaruan daftar orang tersendat. Coba lagi?"
+  },
+  "deleteListDialog": {
+    "title": "Hapus daftar?",
+    "videosDescription": "Ini akan menghapus permanen daftar “{{name}}”. Video di dalam daftar tidak terpengaruh.",
+    "peopleDescription": "Ini akan menghapus permanen daftar “{{name}}”. Orang di dalam daftar tidak terpengaruh.",
+    "noteLabel": "Catatan:",
+    "relayNote": "Tindakan ini mengirim permintaan penghapusan ke relay. Sebagian besar relay akan mematuhinya, tetapi penghapusan tidak dijamin di semua relay.",
+    "cancelButton": "Batal",
+    "deletingButton": "Menghapus...",
+    "deleteButton": "Hapus daftar"
+  },
+  "peopleListDetailPage": {
+    "editList": "Edit",
+    "delete": "Hapus",
+    "share": "Bagikan",
+    "deletedTitle": "Daftar orang dihapus.",
+    "deletedDescription": "“{{name}}” telah dihapus.",
+    "deleteFailedTitle": "Gagal menghapus.",
+    "deleteFailedDescription": "Penghapusan daftar orang tersendat. Coba lagi?"
   }
 }

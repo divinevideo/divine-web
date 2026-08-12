@@ -1432,5 +1432,69 @@
     "podcastEpisode": "Épisode de podcast",
     "openInApplePodcasts": "Ouvrir dans Apple Podcasts",
     "playEpisode": "Lire l'épisode"
+  },
+  "listsPage": {
+    "createList": "Créer une liste",
+    "createFirstList": "Crée ta première liste",
+    "createVideoList": "Liste de vidéos",
+    "createPeopleList": "Liste de personnes"
+  },
+  "createPeopleListDialog": {
+    "title": "Créer une liste de personnes",
+    "description": "Regroupe des gens et regarde leurs derniers loops au même endroit.",
+    "nameLabel": "Nom de la liste *",
+    "namePlaceholder": "Créateurs favoris",
+    "descriptionLabel": "Description",
+    "descriptionPlaceholder": "Les gens dont tu ne rates aucun loop...",
+    "imageLabel": "URL de l’image de couverture",
+    "imagePlaceholder": "https://example.com/image.jpg",
+    "nameRequired": "Donne-lui d’abord un nom.",
+    "reservedName": "Ce nom est réservé à une liste système.",
+    "imageInvalid": "Utilise une URL d’image complète.",
+    "cancelButton": "Annuler",
+    "creatingButton": "Création...",
+    "createButton": "Créer la liste",
+    "createdTitle": "Liste de personnes créée.",
+    "createdDescription": "« {{name}} » est prête.",
+    "failedTitle": "Ça n’a pas marché.",
+    "failedDescription": "La création de la liste de personnes a coincé. On réessaie ?"
+  },
+  "editPeopleListDialog": {
+    "title": "Modifier la liste de personnes",
+    "description": "Mets à jour le nom, la description ou l’image de couverture de cette liste.",
+    "nameLabel": "Nom de la liste *",
+    "namePlaceholder": "Créateurs favoris",
+    "descriptionLabel": "Description",
+    "descriptionPlaceholder": "Les gens dont tu ne rates aucun loop...",
+    "imageLabel": "URL de l’image de couverture",
+    "imagePlaceholder": "https://example.com/image.jpg",
+    "nameRequired": "Donne-lui d’abord un nom.",
+    "imageInvalid": "Utilise une URL d’image complète.",
+    "cancelButton": "Annuler",
+    "savingButton": "Enregistrement...",
+    "saveButton": "Enregistrer",
+    "savedTitle": "Enregistré.",
+    "savedDescription": "« {{name}} » est à jour.",
+    "failedTitle": "Pas enregistré.",
+    "failedDescription": "La mise à jour de la liste de personnes a coincé. On réessaie ?"
+  },
+  "deleteListDialog": {
+    "title": "Supprimer la liste ?",
+    "videosDescription": "Cela supprimera définitivement la liste « {{name}} ». Les vidéos de la liste ne seront pas touchées.",
+    "peopleDescription": "Cela supprimera définitivement la liste « {{name}} ». Les personnes de la liste ne seront pas touchées.",
+    "noteLabel": "Note :",
+    "relayNote": "Cette action envoie une demande de suppression aux relais. La plupart la respectent, mais la suppression n’est pas garantie partout.",
+    "cancelButton": "Annuler",
+    "deletingButton": "Suppression...",
+    "deleteButton": "Supprimer la liste"
+  },
+  "peopleListDetailPage": {
+    "editList": "Modifier",
+    "delete": "Supprimer",
+    "share": "Partager",
+    "deletedTitle": "Liste de personnes supprimée.",
+    "deletedDescription": "« {{name}} » a été retirée.",
+    "deleteFailedTitle": "Échec de la suppression.",
+    "deleteFailedDescription": "La suppression de la liste de personnes a coincé. On réessaie ?"
   }
 }

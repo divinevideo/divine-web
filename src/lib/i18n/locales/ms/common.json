@@ -1431,5 +1431,69 @@
     "podcastEpisode": "Episod Podcast",
     "openInApplePodcasts": "Buka dalam Apple Podcasts",
     "playEpisode": "Mainkan Episod"
+  },
+  "listsPage": {
+    "createList": "Cipta senarai",
+    "createFirstList": "Cipta senarai pertama anda",
+    "createVideoList": "Senarai video",
+    "createPeopleList": "Senarai orang"
+  },
+  "createPeopleListDialog": {
+    "title": "Cipta senarai orang",
+    "description": "Kumpulkan orang dan tonton loop terbaru mereka di satu tempat.",
+    "nameLabel": "Nama senarai *",
+    "namePlaceholder": "Pencipta kegemaran",
+    "descriptionLabel": "Penerangan",
+    "descriptionPlaceholder": "Orang yang loop mereka anda tidak pernah terlepas...",
+    "imageLabel": "URL imej kulit",
+    "imagePlaceholder": "https://example.com/image.jpg",
+    "nameRequired": "Beri nama dahulu.",
+    "reservedName": "Nama itu dikhaskan untuk senarai sistem.",
+    "imageInvalid": "Guna URL imej yang lengkap.",
+    "cancelButton": "Batal",
+    "creatingButton": "Mencipta...",
+    "createButton": "Cipta senarai",
+    "createdTitle": "Senarai orang dicipta.",
+    "createdDescription": "“{{name}}” sudah sedia.",
+    "failedTitle": "Tak menjadi.",
+    "failedDescription": "Penciptaan senarai orang tersekat. Cuba lagi?"
+  },
+  "editPeopleListDialog": {
+    "title": "Edit senarai orang",
+    "description": "Kemas kini nama, penerangan atau imej kulit senarai ini.",
+    "nameLabel": "Nama senarai *",
+    "namePlaceholder": "Pencipta kegemaran",
+    "descriptionLabel": "Penerangan",
+    "descriptionPlaceholder": "Orang yang loop mereka anda tidak pernah terlepas...",
+    "imageLabel": "URL imej kulit",
+    "imagePlaceholder": "https://example.com/image.jpg",
+    "nameRequired": "Beri nama dahulu.",
+    "imageInvalid": "Guna URL imej yang lengkap.",
+    "cancelButton": "Batal",
+    "savingButton": "Menyimpan...",
+    "saveButton": "Simpan",
+    "savedTitle": "Disimpan.",
+    "savedDescription": "“{{name}}” dikemas kini.",
+    "failedTitle": "Tidak disimpan.",
+    "failedDescription": "Kemas kini senarai orang tersekat. Cuba lagi?"
+  },
+  "deleteListDialog": {
+    "title": "Padam senarai?",
+    "videosDescription": "Ini akan memadam senarai “{{name}}” secara kekal. Video dalam senarai tidak terjejas.",
+    "peopleDescription": "Ini akan memadam senarai “{{name}}” secara kekal. Orang dalam senarai tidak terjejas.",
+    "noteLabel": "Nota:",
+    "relayNote": "Tindakan ini menghantar permintaan pemadaman kepada relay. Kebanyakan relay akan mematuhinya, tetapi pemadaman tidak dijamin pada semua relay.",
+    "cancelButton": "Batal",
+    "deletingButton": "Memadam...",
+    "deleteButton": "Padam senarai"
+  },
+  "peopleListDetailPage": {
+    "editList": "Edit",
+    "delete": "Padam",
+    "share": "Kongsi",
+    "deletedTitle": "Senarai orang dipadam.",
+    "deletedDescription": "“{{name}}” telah dibuang.",
+    "deleteFailedTitle": "Gagal memadam.",
+    "deleteFailedDescription": "Pemadaman senarai orang tersekat. Cuba lagi?"
   }
 }

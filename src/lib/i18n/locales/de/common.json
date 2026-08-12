@@ -1431,5 +1431,69 @@
     "podcastEpisode": "Podcast-Episode",
     "openInApplePodcasts": "In Apple Podcasts öffnen",
     "playEpisode": "Episode abspielen"
+  },
+  "listsPage": {
+    "createList": "Liste erstellen",
+    "createFirstList": "Erstelle deine erste Liste",
+    "createVideoList": "Videoliste",
+    "createPeopleList": "Personenliste"
+  },
+  "createPeopleListDialog": {
+    "title": "Personenliste erstellen",
+    "description": "Fasse Leute zusammen und sieh dir ihre neuesten Loops an einem Ort an.",
+    "nameLabel": "Listenname *",
+    "namePlaceholder": "Lieblings-Creator",
+    "descriptionLabel": "Beschreibung",
+    "descriptionPlaceholder": "Leute, deren Loops du nie verpasst ...",
+    "imageLabel": "URL des Titelbilds",
+    "imagePlaceholder": "https://example.com/image.jpg",
+    "nameRequired": "Gib ihr erst einen Namen.",
+    "reservedName": "Dieser Name ist für eine Systemliste reserviert.",
+    "imageInvalid": "Nutze eine vollständige Bild-URL.",
+    "cancelButton": "Abbrechen",
+    "creatingButton": "Wird erstellt ...",
+    "createButton": "Liste erstellen",
+    "createdTitle": "Personenliste erstellt.",
+    "createdDescription": "„{{name}}“ ist bereit.",
+    "failedTitle": "Hat nicht geklappt.",
+    "failedDescription": "Beim Erstellen der Personenliste hat es gehakt. Nochmal?"
+  },
+  "editPeopleListDialog": {
+    "title": "Personenliste bearbeiten",
+    "description": "Aktualisiere Name, Beschreibung oder Titelbild dieser Liste.",
+    "nameLabel": "Listenname *",
+    "namePlaceholder": "Lieblings-Creator",
+    "descriptionLabel": "Beschreibung",
+    "descriptionPlaceholder": "Leute, deren Loops du nie verpasst ...",
+    "imageLabel": "URL des Titelbilds",
+    "imagePlaceholder": "https://example.com/image.jpg",
+    "nameRequired": "Gib ihr erst einen Namen.",
+    "imageInvalid": "Nutze eine vollständige Bild-URL.",
+    "cancelButton": "Abbrechen",
+    "savingButton": "Wird gespeichert ...",
+    "saveButton": "Speichern",
+    "savedTitle": "Gespeichert.",
+    "savedDescription": "„{{name}}“ ist aktualisiert.",
+    "failedTitle": "Nicht gespeichert.",
+    "failedDescription": "Beim Aktualisieren der Personenliste hat es gehakt. Nochmal?"
+  },
+  "deleteListDialog": {
+    "title": "Liste löschen?",
+    "videosDescription": "Damit wird die Liste „{{name}}“ endgültig gelöscht. Videos in der Liste bleiben erhalten.",
+    "peopleDescription": "Damit wird die Liste „{{name}}“ endgültig gelöscht. Personen in der Liste bleiben erhalten.",
+    "noteLabel": "Hinweis:",
+    "relayNote": "Diese Aktion sendet eine Löschanfrage an die Relays. Die meisten Relays befolgen sie, garantiert ist das Löschen aber nicht überall.",
+    "cancelButton": "Abbrechen",
+    "deletingButton": "Wird gelöscht ...",
+    "deleteButton": "Liste löschen"
+  },
+  "peopleListDetailPage": {
+    "editList": "Bearbeiten",
+    "delete": "Löschen",
+    "share": "Teilen",
+    "deletedTitle": "Personenliste gelöscht.",
+    "deletedDescription": "„{{name}}“ wurde entfernt.",
+    "deleteFailedTitle": "Löschen fehlgeschlagen.",
+    "deleteFailedDescription": "Beim Löschen der Personenliste hat es gehakt. Nochmal?"
   }
 }

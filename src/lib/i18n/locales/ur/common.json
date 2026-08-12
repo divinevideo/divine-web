@@ -1431,5 +1431,69 @@
     "podcastEpisode": "پوڈکاسٹ قسط",
     "openInApplePodcasts": "Apple Podcasts میں کھولیں",
     "playEpisode": "قسط چلائیں"
+  },
+  "listsPage": {
+    "createList": "فہرست بنائیں",
+    "createFirstList": "اپنی پہلی فہرست بنائیں",
+    "createVideoList": "ویڈیو فہرست",
+    "createPeopleList": "لوگوں کی فہرست"
+  },
+  "createPeopleListDialog": {
+    "title": "لوگوں کی فہرست بنائیں",
+    "description": "لوگوں کو ایک جگہ جمع کریں اور ان کے تازہ ترین لوپس ایک ہی جگہ دیکھیں۔",
+    "nameLabel": "فہرست کا نام *",
+    "namePlaceholder": "پسندیدہ تخلیق کار",
+    "descriptionLabel": "تفصیل",
+    "descriptionPlaceholder": "وہ لوگ جن کے لوپس آپ کبھی نہیں چھوڑتے...",
+    "imageLabel": "سرورق تصویر کا یو آر ایل",
+    "imagePlaceholder": "https://example.com/image.jpg",
+    "nameRequired": "پہلے اس کا نام رکھیں۔",
+    "reservedName": "یہ نام سسٹم فہرست کے لیے مخصوص ہے۔",
+    "imageInvalid": "مکمل تصویری یو آر ایل استعمال کریں۔",
+    "cancelButton": "منسوخ کریں",
+    "creatingButton": "بنایا جا رہا ہے...",
+    "createButton": "فہرست بنائیں",
+    "createdTitle": "لوگوں کی فہرست بن گئی۔",
+    "createdDescription": "«{{name}}» تیار ہے۔",
+    "failedTitle": "نہیں بن سکی۔",
+    "failedDescription": "لوگوں کی فہرست بناتے ہوئے رکاوٹ آئی۔ دوبارہ کوشش کریں؟"
+  },
+  "editPeopleListDialog": {
+    "title": "لوگوں کی فہرست میں ترمیم",
+    "description": "اس فہرست کا نام، تفصیل یا سرورق تصویر اپ ڈیٹ کریں۔",
+    "nameLabel": "فہرست کا نام *",
+    "namePlaceholder": "پسندیدہ تخلیق کار",
+    "descriptionLabel": "تفصیل",
+    "descriptionPlaceholder": "وہ لوگ جن کے لوپس آپ کبھی نہیں چھوڑتے...",
+    "imageLabel": "سرورق تصویر کا یو آر ایل",
+    "imagePlaceholder": "https://example.com/image.jpg",
+    "nameRequired": "پہلے اس کا نام رکھیں۔",
+    "imageInvalid": "مکمل تصویری یو آر ایل استعمال کریں۔",
+    "cancelButton": "منسوخ کریں",
+    "savingButton": "محفوظ ہو رہا ہے...",
+    "saveButton": "محفوظ کریں",
+    "savedTitle": "محفوظ ہو گیا۔",
+    "savedDescription": "«{{name}}» اپ ڈیٹ ہو گئی۔",
+    "failedTitle": "محفوظ نہیں ہوا۔",
+    "failedDescription": "لوگوں کی فہرست اپ ڈیٹ کرتے ہوئے رکاوٹ آئی۔ دوبارہ کوشش کریں؟"
+  },
+  "deleteListDialog": {
+    "title": "فہرست حذف کریں؟",
+    "videosDescription": "اس سے فہرست «{{name}}» مستقل طور پر حذف ہو جائے گی۔ فہرست میں موجود ویڈیوز متاثر نہیں ہوں گی۔",
+    "peopleDescription": "اس سے فہرست «{{name}}» مستقل طور پر حذف ہو جائے گی۔ فہرست میں موجود لوگ متاثر نہیں ہوں گے۔",
+    "noteLabel": "نوٹ:",
+    "relayNote": "یہ عمل ریلے کو حذف کرنے کی درخواست بھیجتا ہے۔ زیادہ تر ریلے اسے مانتے ہیں، لیکن ہر ریلے پر حذف ہونا یقینی نہیں۔",
+    "cancelButton": "منسوخ کریں",
+    "deletingButton": "حذف ہو رہا ہے...",
+    "deleteButton": "فہرست حذف کریں"
+  },
+  "peopleListDetailPage": {
+    "editList": "ترمیم",
+    "delete": "حذف کریں",
+    "share": "شیئر کریں",
+    "deletedTitle": "لوگوں کی فہرست حذف ہو گئی۔",
+    "deletedDescription": "«{{name}}» ہٹا دی گئی۔",
+    "deleteFailedTitle": "حذف نہیں ہو سکی۔",
+    "deleteFailedDescription": "لوگوں کی فہرست حذف کرتے ہوئے رکاوٹ آئی۔ دوبارہ کوشش کریں؟"
   }
 }

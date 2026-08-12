@@ -1431,5 +1431,69 @@
     "podcastEpisode": "Tập podcast",
     "openInApplePodcasts": "Mở trong Apple Podcasts",
     "playEpisode": "Phát tập"
+  },
+  "listsPage": {
+    "createList": "Tạo danh sách",
+    "createFirstList": "Tạo danh sách đầu tiên của bạn",
+    "createVideoList": "Danh sách video",
+    "createPeopleList": "Danh sách người"
+  },
+  "createPeopleListDialog": {
+    "title": "Tạo danh sách người",
+    "description": "Gom mọi người lại và xem loop mới nhất của họ ở cùng một chỗ.",
+    "nameLabel": "Tên danh sách *",
+    "namePlaceholder": "Nhà sáng tạo yêu thích",
+    "descriptionLabel": "Mô tả",
+    "descriptionPlaceholder": "Những người mà bạn không bao giờ bỏ lỡ loop...",
+    "imageLabel": "URL ảnh bìa",
+    "imagePlaceholder": "https://example.com/image.jpg",
+    "nameRequired": "Đặt tên trước đã.",
+    "reservedName": "Tên đó được dành riêng cho danh sách hệ thống.",
+    "imageInvalid": "Dùng URL ảnh đầy đủ.",
+    "cancelButton": "Hủy",
+    "creatingButton": "Đang tạo...",
+    "createButton": "Tạo danh sách",
+    "createdTitle": "Đã tạo danh sách người.",
+    "createdDescription": "“{{name}}” đã sẵn sàng.",
+    "failedTitle": "Không xong rồi.",
+    "failedDescription": "Việc tạo danh sách người bị trục trặc. Thử lại nhé?"
+  },
+  "editPeopleListDialog": {
+    "title": "Sửa danh sách người",
+    "description": "Cập nhật tên, mô tả hoặc ảnh bìa của danh sách này.",
+    "nameLabel": "Tên danh sách *",
+    "namePlaceholder": "Nhà sáng tạo yêu thích",
+    "descriptionLabel": "Mô tả",
+    "descriptionPlaceholder": "Những người mà bạn không bao giờ bỏ lỡ loop...",
+    "imageLabel": "URL ảnh bìa",
+    "imagePlaceholder": "https://example.com/image.jpg",
+    "nameRequired": "Đặt tên trước đã.",
+    "imageInvalid": "Dùng URL ảnh đầy đủ.",
+    "cancelButton": "Hủy",
+    "savingButton": "Đang lưu...",
+    "saveButton": "Lưu",
+    "savedTitle": "Đã lưu.",
+    "savedDescription": "“{{name}}” đã được cập nhật.",
+    "failedTitle": "Chưa lưu được.",
+    "failedDescription": "Việc cập nhật danh sách người bị trục trặc. Thử lại nhé?"
+  },
+  "deleteListDialog": {
+    "title": "Xóa danh sách?",
+    "videosDescription": "Thao tác này sẽ xóa vĩnh viễn danh sách “{{name}}”. Các video trong danh sách không bị ảnh hưởng.",
+    "peopleDescription": "Thao tác này sẽ xóa vĩnh viễn danh sách “{{name}}”. Những người trong danh sách không bị ảnh hưởng.",
+    "noteLabel": "Lưu ý:",
+    "relayNote": "Thao tác này gửi yêu cầu xóa tới các relay. Hầu hết relay sẽ thực hiện, nhưng việc xóa không được đảm bảo trên mọi relay.",
+    "cancelButton": "Hủy",
+    "deletingButton": "Đang xóa...",
+    "deleteButton": "Xóa danh sách"
+  },
+  "peopleListDetailPage": {
+    "editList": "Sửa",
+    "delete": "Xóa",
+    "share": "Chia sẻ",
+    "deletedTitle": "Đã xóa danh sách người.",
+    "deletedDescription": "“{{name}}” đã bị gỡ.",
+    "deleteFailedTitle": "Xóa không thành công.",
+    "deleteFailedDescription": "Việc xóa danh sách người bị trục trặc. Thử lại nhé?"
   }
 }

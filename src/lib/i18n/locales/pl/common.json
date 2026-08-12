@@ -1433,5 +1433,69 @@
     "podcastEpisode": "Odcinek podcastu",
     "openInApplePodcasts": "Otwórz w Apple Podcasts",
     "playEpisode": "Odtwórz odcinek"
+  },
+  "listsPage": {
+    "createList": "Utwórz listę",
+    "createFirstList": "Utwórz swoją pierwszą listę",
+    "createVideoList": "Lista wideo",
+    "createPeopleList": "Lista osób"
+  },
+  "createPeopleListDialog": {
+    "title": "Utwórz listę osób",
+    "description": "Zbierz ludzi w jednym miejscu i oglądaj ich najnowsze loopy.",
+    "nameLabel": "Nazwa listy *",
+    "namePlaceholder": "Ulubieni twórcy",
+    "descriptionLabel": "Opis",
+    "descriptionPlaceholder": "Osoby, których loopów nigdy nie przegapiasz...",
+    "imageLabel": "Adres URL okładki",
+    "imagePlaceholder": "https://example.com/image.jpg",
+    "nameRequired": "Najpierw nadaj jej nazwę.",
+    "reservedName": "Ta nazwa jest zarezerwowana dla listy systemowej.",
+    "imageInvalid": "Użyj pełnego adresu URL obrazu.",
+    "cancelButton": "Anuluj",
+    "creatingButton": "Tworzenie...",
+    "createButton": "Utwórz listę",
+    "createdTitle": "Lista osób utworzona.",
+    "createdDescription": "„{{name}}” jest gotowa.",
+    "failedTitle": "Nie wyszło.",
+    "failedDescription": "Tworzenie listy osób się zacięło. Spróbujesz jeszcze raz?"
+  },
+  "editPeopleListDialog": {
+    "title": "Edytuj listę osób",
+    "description": "Zaktualizuj nazwę, opis lub okładkę tej listy.",
+    "nameLabel": "Nazwa listy *",
+    "namePlaceholder": "Ulubieni twórcy",
+    "descriptionLabel": "Opis",
+    "descriptionPlaceholder": "Osoby, których loopów nigdy nie przegapiasz...",
+    "imageLabel": "Adres URL okładki",
+    "imagePlaceholder": "https://example.com/image.jpg",
+    "nameRequired": "Najpierw nadaj jej nazwę.",
+    "imageInvalid": "Użyj pełnego adresu URL obrazu.",
+    "cancelButton": "Anuluj",
+    "savingButton": "Zapisywanie...",
+    "saveButton": "Zapisz",
+    "savedTitle": "Zapisano.",
+    "savedDescription": "„{{name}}” zaktualizowana.",
+    "failedTitle": "Nie zapisano.",
+    "failedDescription": "Aktualizacja listy osób się zacięła. Spróbujesz jeszcze raz?"
+  },
+  "deleteListDialog": {
+    "title": "Usunąć listę?",
+    "videosDescription": "Lista „{{name}}” zostanie trwale usunięta. Filmy z listy pozostaną nienaruszone.",
+    "peopleDescription": "Lista „{{name}}” zostanie trwale usunięta. Osoby z listy pozostaną nienaruszone.",
+    "noteLabel": "Uwaga:",
+    "relayNote": "Ta akcja wysyła żądanie usunięcia do przekaźników. Większość je uszanuje, ale usunięcie nie jest gwarantowane wszędzie.",
+    "cancelButton": "Anuluj",
+    "deletingButton": "Usuwanie...",
+    "deleteButton": "Usuń listę"
+  },
+  "peopleListDetailPage": {
+    "editList": "Edytuj",
+    "delete": "Usuń",
+    "share": "Udostępnij",
+    "deletedTitle": "Lista osób usunięta.",
+    "deletedDescription": "„{{name}}” została usunięta.",
+    "deleteFailedTitle": "Nie udało się usunąć.",
+    "deleteFailedDescription": "Usuwanie listy osób się zacięło. Spróbujesz jeszcze raz?"
   }
 }

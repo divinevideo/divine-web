@@ -1432,5 +1432,69 @@
     "podcastEpisode": "Episod de podcast",
     "openInApplePodcasts": "Deschide în Apple Podcasts",
     "playEpisode": "Redă episodul"
+  },
+  "listsPage": {
+    "createList": "Creează listă",
+    "createFirstList": "Creează prima ta listă",
+    "createVideoList": "Listă video",
+    "createPeopleList": "Listă de persoane"
+  },
+  "createPeopleListDialog": {
+    "title": "Creează listă de persoane",
+    "description": "Adună oameni la un loc și vezi cele mai noi loopuri ale lor.",
+    "nameLabel": "Numele listei *",
+    "namePlaceholder": "Creatori favoriți",
+    "descriptionLabel": "Descriere",
+    "descriptionPlaceholder": "Oameni ale căror loopuri nu le ratezi niciodată...",
+    "imageLabel": "URL-ul imaginii de copertă",
+    "imagePlaceholder": "https://example.com/image.jpg",
+    "nameRequired": "Dă-i mai întâi un nume.",
+    "reservedName": "Numele acesta este rezervat pentru o listă de sistem.",
+    "imageInvalid": "Folosește un URL complet de imagine.",
+    "cancelButton": "Anulează",
+    "creatingButton": "Se creează...",
+    "createButton": "Creează lista",
+    "createdTitle": "Listă de persoane creată.",
+    "createdDescription": "„{{name}}” e gata.",
+    "failedTitle": "N-a mers.",
+    "failedDescription": "Crearea listei de persoane s-a poticnit. Mai încerci?"
+  },
+  "editPeopleListDialog": {
+    "title": "Editează lista de persoane",
+    "description": "Actualizează numele, descrierea sau imaginea de copertă a acestei liste.",
+    "nameLabel": "Numele listei *",
+    "namePlaceholder": "Creatori favoriți",
+    "descriptionLabel": "Descriere",
+    "descriptionPlaceholder": "Oameni ale căror loopuri nu le ratezi niciodată...",
+    "imageLabel": "URL-ul imaginii de copertă",
+    "imagePlaceholder": "https://example.com/image.jpg",
+    "nameRequired": "Dă-i mai întâi un nume.",
+    "imageInvalid": "Folosește un URL complet de imagine.",
+    "cancelButton": "Anulează",
+    "savingButton": "Se salvează...",
+    "saveButton": "Salvează",
+    "savedTitle": "Salvat.",
+    "savedDescription": "„{{name}}” este actualizată.",
+    "failedTitle": "Nu s-a salvat.",
+    "failedDescription": "Actualizarea listei de persoane s-a poticnit. Mai încerci?"
+  },
+  "deleteListDialog": {
+    "title": "Ștergi lista?",
+    "videosDescription": "Lista „{{name}}” va fi ștearsă definitiv. Videoclipurile din listă nu vor fi afectate.",
+    "peopleDescription": "Lista „{{name}}” va fi ștearsă definitiv. Persoanele din listă nu vor fi afectate.",
+    "noteLabel": "Notă:",
+    "relayNote": "Această acțiune trimite o cerere de ștergere către relee. Majoritatea o respectă, dar ștergerea nu este garantată peste tot.",
+    "cancelButton": "Anulează",
+    "deletingButton": "Se șterge...",
+    "deleteButton": "Șterge lista"
+  },
+  "peopleListDetailPage": {
+    "editList": "Editează",
+    "delete": "Șterge",
+    "share": "Distribuie",
+    "deletedTitle": "Listă de persoane ștearsă.",
+    "deletedDescription": "„{{name}}” a fost eliminată.",
+    "deleteFailedTitle": "Ștergerea a eșuat.",
+    "deleteFailedDescription": "Ștergerea listei de persoane s-a poticnit. Mai încerci?"
   }
 }
