@@ -3,6 +3,7 @@
 
 import type { NostrEvent } from '@nostrify/nostrify';
 import { MUTE_LIST_KIND } from '@/types/moderation';
+import { latestEventsByKey } from '@/lib/nostrEvents';
 
 // Divine's legacy block list: NIP-51 kind 30000 addressable list with d=block.
 // Any other d-tag on kind 30000 (follow sets, etc.) is NOT a block list.
@@ -20,29 +21,6 @@ function hasBlockDTag(event: NostrEvent): boolean {
 
 function pTagsInclude(event: NostrEvent, pubkey: string): boolean {
   return event.tags.some(t => t[0] === 'p' && t[1] === pubkey);
-}
-
-/**
- * Deduplicate replaceable/addressable events, keeping the canonical copy per key.
- * NIP-01: newest created_at wins; on a tie the lowest event id wins.
- */
-function latestEventsByKey(
-  events: NostrEvent[],
-  keyFn: (event: NostrEvent) => string
-): Map<string, NostrEvent> {
-  const latest = new Map<string, NostrEvent>();
-  for (const event of events) {
-    const key = keyFn(event);
-    const existing = latest.get(key);
-    if (
-      !existing ||
-      event.created_at > existing.created_at ||
-      (event.created_at === existing.created_at && event.id < existing.id)
-    ) {
-      latest.set(key, event);
-    }
-  }
-  return latest;
 }
 
 /**

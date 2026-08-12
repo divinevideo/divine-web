@@ -8,6 +8,7 @@ import { CreatePeopleListDialog } from './CreatePeopleListDialog';
 const mockCreatePeopleList = vi.fn();
 const mockToast = vi.fn();
 const mockNavigate = vi.fn();
+const OWNER = 'a'.repeat(64);
 
 vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual<typeof import('react-router-dom')>('react-router-dom');
@@ -60,6 +61,10 @@ vi.mock('@/hooks/usePeopleListMutations', () => ({
   }),
 }));
 
+vi.mock('@/hooks/useCurrentUser', () => ({
+  useCurrentUser: () => ({ user: { pubkey: OWNER } }),
+}));
+
 vi.mock('@/hooks/useToast', () => ({
   useToast: () => ({
     toast: mockToast,
@@ -77,11 +82,7 @@ function renderDialog() {
 describe('CreatePeopleListDialog', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockCreatePeopleList.mockResolvedValue({
-      id: 'favorite-creators',
-      name: 'Favorite Creators',
-      pubkey: 'a'.repeat(64),
-    });
+    mockCreatePeopleList.mockResolvedValue(undefined);
   });
 
   it('blocks reserved system list names before publishing', () => {
@@ -106,12 +107,13 @@ describe('CreatePeopleListDialog', () => {
 
     await waitFor(() => {
       expect(mockCreatePeopleList).toHaveBeenCalledWith({
+        id: 'favorite-creators',
         name: 'Favorite Creators',
         description: undefined,
         image: undefined,
         memberPubkeys: ['b'.repeat(64)],
       });
     });
-    expect(mockNavigate).toHaveBeenCalledWith(`/people-lists/${'a'.repeat(64)}/favorite-creators`);
+    expect(mockNavigate).toHaveBeenCalledWith(`/people-lists/${OWNER}/favorite-creators`);
   });
 });

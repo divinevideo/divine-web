@@ -1,24 +1,29 @@
 // ABOUTME: Parses public NIP-51 kind 30000 follow sets into discoverable people lists
 
 import type { NostrEvent } from '@nostrify/nostrify';
-import { BLOCK_LIST_D_TAG } from '@/lib/blocklistFilter';
+import { buildAddressableCoordinate, isHex64 } from '@/lib/nostrCoordinates';
 
 export const PEOPLE_LIST_KIND = 30000;
 
-export const RESERVED_PEOPLE_LIST_D_TAGS = [
+const RESERVED_LIST_DTAGS = new Set([
   'mute',
   'mutelist',
   'mute-list',
+  'mute list',
   'muted',
-  BLOCK_LIST_D_TAG,
+  'block',
   'blocklist',
   'block-list',
+  'block list',
   'blocked',
   'dm-contacts',
+  'dm contacts',
+  'dmcontacts',
   'hidden',
   'denylist',
   'deny-list',
-] as const;
+  'deny list',
+]);
 
 export interface PeopleList {
   id: string;
@@ -30,28 +35,23 @@ export interface PeopleList {
   memberPubkeys: string[];
 }
 
+export function isReservedListDTag(dTag: string): boolean {
+  return RESERVED_LIST_DTAGS.has(dTag.trim().toLowerCase());
+}
+
 export function peopleListAddress(list: PeopleList): string {
-  return `${list.pubkey}:${PEOPLE_LIST_KIND}:${list.id}`;
-}
-
-export function isReservedPeopleListDTag(dTag: string): boolean {
-  const normalizedDTag = dTag.trim().toLowerCase();
-  return RESERVED_PEOPLE_LIST_D_TAGS.includes(normalizedDTag as typeof RESERVED_PEOPLE_LIST_D_TAGS[number]);
-}
-
-function isHexPubkey(pubkey: string | undefined): pubkey is string {
-  return Boolean(pubkey && /^[0-9a-f]{64}$/i.test(pubkey));
+  return buildAddressableCoordinate(PEOPLE_LIST_KIND, list.pubkey, list.id);
 }
 
 export function parsePeopleListFromEvent(event: NostrEvent): PeopleList | null {
   if (event.kind !== PEOPLE_LIST_KIND) return null;
 
   const id = event.tags.find((tag) => tag[0] === 'd')?.[1];
-  if (!id || isReservedPeopleListDTag(id)) return null;
+  if (!id || isReservedListDTag(id)) return null;
 
   const memberPubkeys = Array.from(new Set(
     event.tags
-      .filter((tag) => tag[0] === 'p' && isHexPubkey(tag[1]))
+      .filter((tag) => tag[0] === 'p' && Boolean(tag[1]) && isHex64(tag[1]))
       .map((tag) => tag[1]),
   ));
 

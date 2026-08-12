@@ -101,7 +101,7 @@ describe('EditPeopleListDialog', () => {
     expect(screen.getByLabelText('List Name *')).toHaveValue('Typed name');
   });
 
-  it('submits metadata updates with the owner pubkey and list id', async () => {
+  it('submits metadata updates for the list id, clearing emptied fields', async () => {
     render(
       <EditPeopleListDialog
         open
@@ -120,14 +120,16 @@ describe('EditPeopleListDialog', () => {
     fireEvent.change(screen.getByLabelText('List Name *'), {
       target: { value: 'Best People' },
     });
+    fireEvent.change(screen.getByLabelText('Description'), {
+      target: { value: '  ' },
+    });
     fireEvent.click(screen.getByRole('button', { name: 'Save' }));
 
     expect(mockUpdatePeopleList).toHaveBeenCalledWith({
-      ownerPubkey: OWNER,
       listId: 'friends',
       name: 'Best People',
-      description: 'Original',
-      image: undefined,
+      description: '',
+      image: '',
     });
   });
 });

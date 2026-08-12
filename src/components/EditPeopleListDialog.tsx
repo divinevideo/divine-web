@@ -77,12 +77,12 @@ export function EditPeopleListDialog({
     }
 
     try {
+      // Empty strings clear the tag; undefined would leave the current value in place.
       await updatePeopleList.mutateAsync({
-        ownerPubkey: list.pubkey,
         listId: list.id,
         name: trimmedName,
-        description: description.trim() || undefined,
-        image: image.trim() || undefined,
+        description: description.trim(),
+        image: image.trim(),
       });
 
       toast({

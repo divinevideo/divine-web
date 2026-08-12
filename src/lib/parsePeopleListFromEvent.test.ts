@@ -3,16 +3,17 @@
 import { describe, expect, it } from 'vitest';
 import type { NostrEvent } from '@nostrify/nostrify';
 import {
-  PEOPLE_LIST_KIND,
   deduplicatePeopleLists,
-  isReservedPeopleListDTag,
+  isReservedListDTag,
   parsePeopleListFromEvent,
+  PEOPLE_LIST_KIND,
   peopleListAddress,
 } from './parsePeopleListFromEvent';
 
 const OWNER = 'a'.repeat(64);
 const ALICE = 'b'.repeat(64);
 const BOB = 'c'.repeat(64);
+const CAROL = 'f'.repeat(64);
 
 function peopleListEvent(overrides: Partial<NostrEvent> = {}): NostrEvent {
   return {
@@ -53,36 +54,64 @@ describe('parsePeopleListFromEvent', () => {
     expect(parsePeopleListFromEvent(event)?.name).toBe('makers');
   });
 
-  it('rejects missing d tags, reserved system lists, and other event kinds', () => {
+  it('rejects missing d tags, the reserved block list, and other event kinds', () => {
     expect(parsePeopleListFromEvent(peopleListEvent({ tags: [] }))).toBeNull();
-    expect(parsePeopleListFromEvent(peopleListEvent({ tags: [['d', ' blocklist ']] }))).toBeNull();
-    expect(parsePeopleListFromEvent(peopleListEvent({ tags: [['d', 'DM-CONTACTS']] }))).toBeNull();
+    expect(parsePeopleListFromEvent(peopleListEvent({ tags: [['d', 'block']] }))).toBeNull();
     expect(parsePeopleListFromEvent(peopleListEvent({ kind: 30005 }))).toBeNull();
   });
 
-  it('recognizes reserved people-list d tags case-insensitively after trimming', () => {
-    expect(isReservedPeopleListDTag(' Muted ')).toBe(true);
-    expect(isReservedPeopleListDTag('deny-list')).toBe(true);
-    expect(isReservedPeopleListDTag('friends')).toBe(false);
+  it('filters normalized system d tags without hiding curated lists', () => {
+    expect(parsePeopleListFromEvent(peopleListEvent({ tags: [['d', ' Block ']] }))).toBeNull();
+    expect(parsePeopleListFromEvent(peopleListEvent({ tags: [['d', 'close-friends']] }))?.id).toBe(
+      'close-friends',
+    );
   });
 
-  it('parses only valid hex64 public member p tags', () => {
-    const list = parsePeopleListFromEvent(peopleListEvent({
+  it('ignores invalid p tags', () => {
+    const event = peopleListEvent({
       tags: [
         ['d', 'friends'],
         ['p', ALICE],
-        ['p', 'npub1nothex'],
-        ['p', 'f'.repeat(63)],
-        ['p', BOB.toUpperCase()],
+        ['p', 'not-a-pubkey'],
+        ['p', 'g'.repeat(64)],
+        ['p', CAROL],
       ],
-    }));
+    });
 
-    expect(list?.memberPubkeys).toEqual([ALICE, BOB.toUpperCase()]);
+    expect(parsePeopleListFromEvent(event)?.memberPubkeys).toEqual([ALICE, CAROL]);
   });
 
   it('uses the complete addressable coordinate as its key', () => {
     const list = parsePeopleListFromEvent(peopleListEvent());
-    expect(list && peopleListAddress(list)).toBe(`${OWNER}:${PEOPLE_LIST_KIND}:friends`);
+    expect(list && peopleListAddress(list)).toBe(`30000:${OWNER}:friends`);
+  });
+});
+
+describe('isReservedListDTag', () => {
+  it('matches reserved d tags after trimming and case folding', () => {
+    const reservedDTags = [
+      'mute',
+      'Mute',
+      'mutelist',
+      'mute-list',
+      'mute list',
+      'muted',
+      'block',
+      'Block List',
+      'block-list',
+      'blocklist',
+      'blocked',
+      'dm-contacts',
+      'dm contacts',
+      'dmcontacts',
+      'hidden',
+      'denylist',
+      'deny-list',
+      'deny list',
+    ];
+
+    reservedDTags.forEach((dTag) => expect(isReservedListDTag(` ${dTag} `)).toBe(true));
+    expect(isReservedListDTag('friends')).toBe(false);
   });
 });
 

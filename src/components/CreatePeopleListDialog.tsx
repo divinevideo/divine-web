@@ -15,11 +15,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useCreatePeopleList } from '@/hooks/usePeopleListMutations';
 import { useToast } from '@/hooks/useToast';
 import { buildPeopleListPath } from '@/lib/eventRouting';
 import { isValidOptionalUrl, slugifyListName } from '@/lib/listFormUtils';
-import { isReservedPeopleListDTag } from '@/lib/parsePeopleListFromEvent';
+import { isReservedListDTag } from '@/lib/parsePeopleListFromEvent';
 
 interface CreatePeopleListDialogProps {
   open: boolean;
@@ -35,6 +36,7 @@ export function CreatePeopleListDialog({
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user } = useCurrentUser();
   const createPeopleList = useCreatePeopleList();
 
   const [name, setName] = useState('');
@@ -66,7 +68,7 @@ export function CreatePeopleListDialog({
       return;
     }
 
-    if (isReservedPeopleListDTag(listId)) {
+    if (isReservedListDTag(listId)) {
       setNameError(t('createPeopleListDialog.reservedName'));
       return;
     }
@@ -77,7 +79,8 @@ export function CreatePeopleListDialog({
     }
 
     try {
-      const list = await createPeopleList.mutateAsync({
+      await createPeopleList.mutateAsync({
+        id: listId,
         name: trimmedName,
         description: description.trim() || undefined,
         image: image.trim() || undefined,
@@ -86,10 +89,10 @@ export function CreatePeopleListDialog({
 
       toast({
         title: t('createPeopleListDialog.createdTitle'),
-        description: t('createPeopleListDialog.createdDescription', { name: list.name }),
+        description: t('createPeopleListDialog.createdDescription', { name: trimmedName }),
       });
       onOpenChange(false);
-      navigate(buildPeopleListPath(list.pubkey, list.id));
+      if (user) navigate(buildPeopleListPath(user.pubkey, listId));
     } catch (error) {
       toast({
         title: t('createPeopleListDialog.failedTitle'),

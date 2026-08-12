@@ -13,7 +13,9 @@ const {
   mockSetVideosForFullscreen,
   mockUpdateVideos,
   mockUseVideoPrefetch,
+  mockTrackEvent,
 } = vi.hoisted(() => ({
+  mockTrackEvent: vi.fn(),
   mockNavigate: vi.fn(),
   mockUseVideoProvider: vi.fn(),
   mockEnterFullscreen: vi.fn(),
@@ -24,6 +26,10 @@ const {
 
 vi.mock('@/hooks/useVideoProvider', () => ({
   useVideoProvider: mockUseVideoProvider,
+}));
+
+vi.mock('@/lib/analytics', () => ({
+  trackEvent: mockTrackEvent,
 }));
 
 vi.mock('@/hooks/useBatchedAuthors', () => ({
@@ -182,6 +188,55 @@ describe('VideoFeed', () => {
       [expect.objectContaining({ id: 'video-1' })],
       0,
     );
+  });
+
+  it('reports one featured impression per mount, not one per appended page', () => {
+    const makeVideos = (count: number) =>
+      Array.from({ length: count }, (_, index) => ({
+        id: `video-${index + 1}`,
+        pubkey: 'a'.repeat(64),
+        videoUrl: `https://example.com/video-${index + 1}.mp4`,
+      }));
+
+    mockUseVideoProvider.mockReturnValue({
+      data: { pages: [{ videos: makeVideos(1) }] },
+      fetchNextPage: vi.fn(),
+      hasNextPage: true,
+      isLoading: false,
+      error: null,
+      refetch: vi.fn(),
+      dataSource: 'funnelcake',
+    });
+
+    const { rerender } = render(
+      <MemoryRouter initialEntries={['/discovery/seasonal-theme']}>
+        <VideoFeed feedType="featured" featuredTabId="ft_1234abcd" />
+      </MemoryRouter>
+    );
+
+    expect(mockTrackEvent).toHaveBeenCalledExactlyOnceWith('featured_tab_video_impression', {
+      featured_tab_id: 'ft_1234abcd',
+      rendered_videos: 1,
+    });
+
+    // Second page arrives; the impression must not be counted again.
+    mockUseVideoProvider.mockReturnValue({
+      data: { pages: [{ videos: makeVideos(1) }, { videos: makeVideos(3).slice(1) }] },
+      fetchNextPage: vi.fn(),
+      hasNextPage: false,
+      isLoading: false,
+      error: null,
+      refetch: vi.fn(),
+      dataSource: 'funnelcake',
+    });
+
+    rerender(
+      <MemoryRouter initialEntries={['/discovery/seasonal-theme']}>
+        <VideoFeed feedType="featured" featuredTabId="ft_1234abcd" />
+      </MemoryRouter>
+    );
+
+    expect(mockTrackEvent).toHaveBeenCalledTimes(1);
   });
 
   it('does not prefetch full video files before first playback', () => {

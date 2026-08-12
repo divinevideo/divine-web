@@ -32,6 +32,16 @@ export function isMinorKeyHandoverRestricted(state: ProtectedMinorState): boolea
   return state !== 'not_protected';
 }
 
+/**
+ * Featured tab audience verdict. The Funnelcake public response is cacheable
+ * and only carries an advisory `visible_to_minors` flag, so web must enforce
+ * the rule for Divine sessions with a known minor state. Session-less visitors
+ * resolve to `not_protected` upstream because web has no age-band signal there.
+ */
+export function isFeaturedTabMinorRestricted(state: ProtectedMinorState): boolean {
+  return state !== 'not_protected';
+}
+
 // Frozen so this shared sentinel can't be mutated by a consumer and poisoned
 // for every other caller (it's returned by reference from the lib and hook).
 export const NOT_PROTECTED: ProtectedMinorStatus = Object.freeze({

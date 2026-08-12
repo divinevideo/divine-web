@@ -1,163 +1,148 @@
-import type { NostrEvent } from '@nostrify/nostrify';
+// ABOUTME: Mutation hooks for publishing NIP-51 kind 30000 people lists without erasing private content
+
 import { useNostr } from '@nostrify/react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import type { NostrEvent } from '@nostrify/nostrify';
 
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useNostrPublish } from '@/hooks/useNostrPublish';
+import { latestEvent } from '@/lib/nostrEvents';
 import {
-  type PeopleList,
-  isReservedPeopleListDTag,
-  PEOPLE_LIST_KIND,
+  isReservedListDTag,
   parsePeopleListFromEvent,
+  PEOPLE_LIST_KIND,
+  type PeopleList,
 } from '@/lib/parsePeopleListFromEvent';
-import { slugifyListName } from '@/lib/listFormUtils';
-
-interface PeopleListMutationInput {
-  listId: string;
-  ownerPubkey: string;
-}
+import { buildAddressableCoordinate, isHex64 } from '@/lib/nostrCoordinates';
 
 interface CreatePeopleListInput {
+  id: string;
   name: string;
   description?: string;
   image?: string;
   memberPubkeys?: string[];
 }
 
-interface UpdatePeopleListInput extends PeopleListMutationInput {
-  name: string;
+interface UpdatePeopleListInput {
+  listId: string;
+  name?: string;
   description?: string;
   image?: string;
 }
 
-interface PeopleListMutationSnapshot {
-  list?: PeopleList | null;
-  lists?: PeopleList[];
+interface MemberMutationInput {
+  listId: string;
+  memberPubkey: string;
 }
 
-type NostrQueryClient = {
-  query: (filters: unknown[], options: unknown) => Promise<NostrEvent[]>;
-};
+interface DeletePeopleListInput {
+  listId: string;
+}
 
-function assertOwner(userPubkey: string | undefined, ownerPubkey: string) {
-  if (!userPubkey) {
-    throw new Error('Must be logged in to update people lists');
+function peopleListQueryKey(pubkey: string, listId: string) {
+  return ['people-list', pubkey, listId] as const;
+}
+
+function peopleListsQueryKey(pubkey: string) {
+  return ['people-lists', pubkey] as const;
+}
+
+function uniqueHexPubkeys(pubkeys: string[]): string[] {
+  return Array.from(new Set(pubkeys.filter(isHex64)));
+}
+
+function removeTags(tags: string[][], names: Set<string>): string[][] {
+  return tags.filter((tag) => !names.has(tag[0]));
+}
+
+function withMetadataTags(
+  originalTags: string[][],
+  listId: string,
+  metadata: { name?: string; description?: string; image?: string },
+): string[][] {
+  const replacedTags = new Set(['d']);
+  if (metadata.name !== undefined) replacedTags.add('title');
+  if (metadata.description !== undefined) replacedTags.add('description');
+  if (metadata.image !== undefined) replacedTags.add('image');
+
+  const tags = removeTags(originalTags, replacedTags);
+
+  return [
+    ['d', listId],
+    ...(metadata.name ? [['title', metadata.name]] : []),
+    ...(metadata.description ? [['description', metadata.description]] : []),
+    ...(metadata.image ? [['image', metadata.image]] : []),
+    ...tags,
+  ];
+}
+
+function withMemberTags(originalTags: string[][], memberPubkeys: string[]): string[][] {
+  const existingPTags = new Map<string, string[]>();
+  const preservedPTags: string[][] = [];
+  for (const tag of originalTags) {
+    if (tag[0] !== 'p') continue;
+    if (tag[1] && isHex64(tag[1])) {
+      if (!existingPTags.has(tag[1])) existingPTags.set(tag[1], tag);
+    } else {
+      preservedPTags.push(tag);
+    }
   }
 
-  if (userPubkey !== ownerPubkey) {
-    throw new Error('Only the list owner can update this people list');
-  }
+  return [
+    ...removeTags(originalTags, new Set(['p'])),
+    ...preservedPTags,
+    ...uniqueHexPubkeys(memberPubkeys).map((pubkey) => existingPTags.get(pubkey) ?? ['p', pubkey]),
+  ];
 }
 
-function uniquePubkeys(pubkeys: string[]): string[] {
-  return Array.from(new Set(pubkeys.filter(Boolean)));
-}
-
-function peopleListsKey(ownerPubkey: string) {
-  return ['people-lists', ownerPubkey] as const;
-}
-
-function peopleListKey(ownerPubkey: string, listId: string) {
-  return ['people-list', ownerPubkey, listId] as const;
+function eventToPeopleList(event: NostrEvent): PeopleList {
+  const list = parsePeopleListFromEvent(event);
+  if (!list) throw new Error('Invalid people list event');
+  return list;
 }
 
 async function fetchCurrentPeopleListEvent(
-  nostr: NostrQueryClient,
-  ownerPubkey: string,
+  nostr: { query: (filters: unknown[], options: { signal: AbortSignal }) => Promise<NostrEvent[]> },
+  pubkey: string,
   listId: string,
 ): Promise<{ event: NostrEvent; list: PeopleList }> {
   const events = await nostr.query(
-    [{
-      kinds: [PEOPLE_LIST_KIND],
-      authors: [ownerPubkey],
-      '#d': [listId],
-      limit: 10,
-    }],
+    [{ kinds: [PEOPLE_LIST_KIND], authors: [pubkey], '#d': [listId], limit: 10 }],
     { signal: AbortSignal.timeout(5000) },
   );
+  const event = latestEvent(events);
 
-  const event = [...events].sort((a, b) => b.created_at - a.created_at)[0];
-  if (!event) {
-    throw new Error('People list not found');
-  }
+  if (!event) throw new Error('People list not found');
 
-  const list = parsePeopleListFromEvent(event);
-  if (!list) {
-    throw new Error('People list is not editable');
-  }
-
-  return { event, list };
+  return { event, list: eventToPeopleList(event) };
 }
 
-async function fetchExistingPeopleList(
-  nostr: NostrQueryClient,
-  ownerPubkey: string,
-  listId: string,
-): Promise<PeopleList | null> {
-  const events = await nostr.query(
-    [{
-      kinds: [PEOPLE_LIST_KIND],
-      authors: [ownerPubkey],
-      '#d': [listId],
-      limit: 1,
-    }],
-    { signal: AbortSignal.timeout(5000) },
-  );
-
-  return events.map(parsePeopleListFromEvent).find((list): list is PeopleList => list !== null) ?? null;
+/**
+ * Mirrors what `withMetadataTags` publishes: an omitted field keeps the current
+ * value, and an empty one clears the tag — which makes the parsed name fall
+ * back to the d tag.
+ */
+function withMetadata(
+  list: PeopleList,
+  metadata: { name?: string; description?: string; image?: string },
+): PeopleList {
+  return {
+    ...list,
+    name: metadata.name === undefined ? list.name : metadata.name || list.id,
+    description: metadata.description === undefined ? list.description : metadata.description || undefined,
+    image: metadata.image === undefined ? list.image : metadata.image || undefined,
+  };
 }
 
-function buildPeopleListTags({
-  listId,
-  name,
-  description,
-  image,
-  memberPubkeys,
-}: {
-  listId: string;
-  name: string;
-  description?: string;
-  image?: string;
-  memberPubkeys: string[];
-}): string[][] {
-  const tags: string[][] = [
-    ['d', listId],
-    ['title', name],
-  ];
+function updateListCache(
+  oldLists: PeopleList[] | undefined,
+  nextList: PeopleList,
+): PeopleList[] {
+  const lists = oldLists ?? [];
+  const index = lists.findIndex((list) => list.pubkey === nextList.pubkey && list.id === nextList.id);
+  if (index === -1) return [nextList, ...lists];
 
-  if (description) {
-    tags.push(['description', description]);
-  }
-
-  if (image) {
-    tags.push(['image', image]);
-  }
-
-  for (const pubkey of uniquePubkeys(memberPubkeys)) {
-    tags.push(['p', pubkey]);
-  }
-
-  return tags;
-}
-
-function replacePeopleListMetadataTags(
-  originalTags: string[][],
-  input: UpdatePeopleListInput,
-): string[][] {
-  const preservedTags = originalTags.filter(([name]) => (
-    name !== 'd' && name !== 'title' && name !== 'description' && name !== 'image'
-  ));
-
-  return [
-    ...buildPeopleListTags({
-      listId: input.listId,
-      name: input.name,
-      description: input.description,
-      image: input.image,
-      memberPubkeys: [],
-    }),
-    ...preservedTags,
-  ];
+  return lists.map((list, currentIndex) => (currentIndex === index ? nextList : list));
 }
 
 export function useCreatePeopleList() {
@@ -167,60 +152,33 @@ export function useCreatePeopleList() {
   const { user } = useCurrentUser();
 
   return useMutation({
-    mutationFn: async ({
-      name,
-      description,
-      image,
-      memberPubkeys = [],
-    }: CreatePeopleListInput): Promise<PeopleList> => {
-      if (!user) {
-        throw new Error('Must be logged in to create people lists');
-      }
+    mutationFn: async ({ id, name, description, image, memberPubkeys = [] }: CreatePeopleListInput) => {
+      if (!user) throw new Error('Must be logged in to create people lists');
+      if (!id.trim()) throw new Error('List id is required');
+      if (isReservedListDTag(id)) throw new Error('That list name is reserved');
+      if (memberPubkeys.some((pubkey) => !isHex64(pubkey))) throw new Error('Invalid member pubkey');
 
-      const listId = slugifyListName(name);
-      if (!listId) {
-        throw new Error('People list needs a name');
-      }
+      const events = await nostr.query(
+        [{ kinds: [PEOPLE_LIST_KIND], authors: [user.pubkey], '#d': [id], limit: 1 }],
+        { signal: AbortSignal.timeout(5000) },
+      );
+      if (events.length > 0) throw new Error('People list already exists');
 
-      if (isReservedPeopleListDTag(listId)) {
-        throw new Error('That list name is reserved');
-      }
+      const tags = withMemberTags(
+        withMetadataTags([], id, { name, description, image }),
+        memberPubkeys,
+      );
 
-      const existingList = await fetchExistingPeopleList(nostr, user.pubkey, listId);
-      if (existingList) {
-        throw new Error('A people list with that name already exists');
-      }
-
-      const members = uniquePubkeys(memberPubkeys);
-      const event = await publishEvent({
+      await publishEvent({
         kind: PEOPLE_LIST_KIND,
         content: '',
-        tags: buildPeopleListTags({
-          listId,
-          name,
-          description,
-          image,
-          memberPubkeys: members,
-        }),
+        tags,
       });
-
-      return {
-        id: listId,
-        name,
-        description,
-        image,
-        pubkey: user.pubkey,
-        createdAt: event.created_at,
-        memberPubkeys: members,
-      };
     },
-    onSuccess: (newList) => {
-      queryClient.setQueryData<PeopleList[]>(
-        peopleListsKey(newList.pubkey),
-        (oldLists) => [newList, ...(oldLists ?? []).filter((list) => list.id !== newList.id)],
-      );
-      queryClient.setQueryData(peopleListKey(newList.pubkey, newList.id), newList);
-      queryClient.invalidateQueries({ queryKey: ['people-lists', newList.pubkey] });
+    onSuccess: (_data, variables) => {
+      if (!user) return;
+      queryClient.invalidateQueries({ queryKey: peopleListsQueryKey(user.pubkey) });
+      queryClient.invalidateQueries({ queryKey: peopleListQueryKey(user.pubkey, variables.id) });
     },
   });
 }
@@ -232,52 +190,177 @@ export function useUpdatePeopleList() {
   const { user } = useCurrentUser();
 
   return useMutation({
-    mutationFn: async (input: UpdatePeopleListInput) => {
-      assertOwner(user?.pubkey, input.ownerPubkey);
-      const { event } = await fetchCurrentPeopleListEvent(nostr, input.ownerPubkey, input.listId);
+    mutationFn: async ({ listId, name, description, image }: UpdatePeopleListInput) => {
+      if (!user) throw new Error('Must be logged in to update people lists');
+
+      const { event } = await fetchCurrentPeopleListEvent(nostr, user.pubkey, listId);
+      const tags = withMetadataTags(event.tags, listId, {
+        name,
+        description,
+        image,
+      });
 
       await publishEvent({
         kind: PEOPLE_LIST_KIND,
         content: event.content,
-        tags: replacePeopleListMetadataTags(event.tags, input),
+        tags,
       });
     },
-    onMutate: async (input): Promise<PeopleListMutationSnapshot> => {
-      await Promise.all([
-        queryClient.cancelQueries({ queryKey: peopleListKey(input.ownerPubkey, input.listId) }),
-        queryClient.cancelQueries({ queryKey: peopleListsKey(input.ownerPubkey) }),
-      ]);
+    onMutate: async ({ listId, name, description, image }) => {
+      if (!user) return undefined;
+      const listKey = peopleListQueryKey(user.pubkey, listId);
+      const listsKey = peopleListsQueryKey(user.pubkey);
 
-      const snapshot = {
-        list: queryClient.getQueryData<PeopleList | null>(peopleListKey(input.ownerPubkey, input.listId)),
-        lists: queryClient.getQueryData<PeopleList[]>(peopleListsKey(input.ownerPubkey)),
+      await queryClient.cancelQueries({ queryKey: listKey });
+      await queryClient.cancelQueries({ queryKey: listsKey });
+
+      const previousList = queryClient.getQueryData<PeopleList | null>(listKey);
+      const previousLists = queryClient.getQueryData<PeopleList[]>(listsKey);
+
+      const update = (list: PeopleList | null | undefined): PeopleList | null | undefined => (
+        list ? withMetadata(list, { name, description, image }) : list
+      );
+
+      queryClient.setQueryData<PeopleList | null>(listKey, update);
+      queryClient.setQueryData<PeopleList[]>(listsKey, (oldLists) => {
+        const list = update(oldLists?.find((item) => item.id === listId && item.pubkey === user.pubkey));
+        if (!list) return oldLists;
+        return updateListCache(oldLists, list);
+      });
+
+      return { listKey, listsKey, previousList, previousLists };
+    },
+    onError: (_error, _variables, context) => {
+      if (!context) return;
+      queryClient.setQueryData(context.listKey, context.previousList);
+      queryClient.setQueryData(context.listsKey, context.previousLists);
+    },
+    onSuccess: (_data, variables) => {
+      if (!user) return;
+      queryClient.invalidateQueries({ queryKey: peopleListsQueryKey(user.pubkey) });
+      queryClient.invalidateQueries({ queryKey: peopleListQueryKey(user.pubkey, variables.listId) });
+    },
+  });
+}
+
+export function useAddToPeopleList() {
+  const { nostr } = useNostr();
+  const { mutateAsync: publishEvent } = useNostrPublish();
+  const queryClient = useQueryClient();
+  const { user } = useCurrentUser();
+
+  return useMutation({
+    mutationFn: async ({ listId, memberPubkey }: MemberMutationInput) => {
+      if (!user) throw new Error('Must be logged in to update people lists');
+      if (!isHex64(memberPubkey)) throw new Error('Invalid member pubkey');
+
+      const { event, list } = await fetchCurrentPeopleListEvent(nostr, user.pubkey, listId);
+      if (list.memberPubkeys.includes(memberPubkey)) return;
+
+      await publishEvent({
+        kind: PEOPLE_LIST_KIND,
+        content: event.content,
+        tags: withMemberTags(event.tags, [...list.memberPubkeys, memberPubkey]),
+      });
+    },
+    onMutate: async ({ listId, memberPubkey }) => {
+      if (!user) return undefined;
+      const listKey = peopleListQueryKey(user.pubkey, listId);
+      const listsKey = peopleListsQueryKey(user.pubkey);
+
+      await queryClient.cancelQueries({ queryKey: listKey });
+      await queryClient.cancelQueries({ queryKey: listsKey });
+
+      const previousList = queryClient.getQueryData<PeopleList | null>(listKey);
+      const previousLists = queryClient.getQueryData<PeopleList[]>(listsKey);
+
+      const update = (list: PeopleList | null | undefined): PeopleList | null | undefined => {
+        if (!list || list.memberPubkeys.includes(memberPubkey)) return list;
+        return { ...list, memberPubkeys: [...list.memberPubkeys, memberPubkey] };
       };
 
-      const updateList = (list: PeopleList): PeopleList => ({
-        ...list,
-        name: input.name,
-        description: input.description || undefined,
-        image: input.image || undefined,
+      queryClient.setQueryData<PeopleList | null>(listKey, update);
+      queryClient.setQueryData<PeopleList[]>(listsKey, (oldLists) => {
+        const list = update(oldLists?.find((item) => item.id === listId && item.pubkey === user.pubkey));
+        if (!list) return oldLists;
+        return updateListCache(oldLists, list);
       });
 
-      queryClient.setQueryData<PeopleList | null>(
-        peopleListKey(input.ownerPubkey, input.listId),
-        (oldList) => oldList ? updateList(oldList) : oldList,
-      );
-      queryClient.setQueryData<PeopleList[]>(
-        peopleListsKey(input.ownerPubkey),
-        (oldLists) => oldLists?.map((list) => list.id === input.listId ? updateList(list) : list),
-      );
+      return { listKey, listsKey, previousList, previousLists };
+    },
+    onError: (_error, _variables, context) => {
+      if (!context) return;
+      queryClient.setQueryData(context.listKey, context.previousList);
+      queryClient.setQueryData(context.listsKey, context.previousLists);
+    },
+    onSuccess: (_data, variables) => {
+      if (!user) return;
+      queryClient.invalidateQueries({ queryKey: peopleListsQueryKey(user.pubkey) });
+      queryClient.invalidateQueries({ queryKey: peopleListQueryKey(user.pubkey, variables.listId) });
+    },
+  });
+}
 
-      return snapshot;
+export function useRemoveFromPeopleList() {
+  const { nostr } = useNostr();
+  const { mutateAsync: publishEvent } = useNostrPublish();
+  const queryClient = useQueryClient();
+  const { user } = useCurrentUser();
+
+  return useMutation({
+    mutationFn: async ({ listId, memberPubkey }: MemberMutationInput) => {
+      if (!user) throw new Error('Must be logged in to update people lists');
+      if (!isHex64(memberPubkey)) throw new Error('Invalid member pubkey');
+
+      const { event, list } = await fetchCurrentPeopleListEvent(nostr, user.pubkey, listId);
+      if (!list.memberPubkeys.includes(memberPubkey)) return;
+
+      await publishEvent({
+        kind: PEOPLE_LIST_KIND,
+        content: event.content,
+        tags: withMemberTags(
+          event.tags,
+          list.memberPubkeys.filter((pubkey) => pubkey !== memberPubkey),
+        ),
+      });
     },
-    onError: (_error, input, snapshot) => {
-      queryClient.setQueryData(peopleListKey(input.ownerPubkey, input.listId), snapshot?.list);
-      queryClient.setQueryData(peopleListsKey(input.ownerPubkey), snapshot?.lists);
+    onMutate: async ({ listId, memberPubkey }) => {
+      if (!user) return undefined;
+      const listKey = peopleListQueryKey(user.pubkey, listId);
+      const listsKey = peopleListsQueryKey(user.pubkey);
+
+      await queryClient.cancelQueries({ queryKey: listKey });
+      await queryClient.cancelQueries({ queryKey: listsKey });
+
+      const previousList = queryClient.getQueryData<PeopleList | null>(listKey);
+      const previousLists = queryClient.getQueryData<PeopleList[]>(listsKey);
+
+      const update = (list: PeopleList | null | undefined): PeopleList | null | undefined => {
+        if (!list) return list;
+        return {
+          ...list,
+          memberPubkeys: list.memberPubkeys.filter((pubkey) => pubkey !== memberPubkey),
+        };
+      };
+
+      queryClient.setQueryData<PeopleList | null>(listKey, update);
+      queryClient.setQueryData<PeopleList[]>(listsKey, (oldLists) => {
+        const list = update(oldLists?.find((item) => item.id === listId && item.pubkey === user.pubkey));
+        if (!list) return oldLists;
+        return updateListCache(oldLists, list);
+      });
+
+      return { listKey, listsKey, previousList, previousLists };
     },
-    onSettled: (_data, _error, input) => {
-      queryClient.invalidateQueries({ queryKey: peopleListKey(input.ownerPubkey, input.listId) });
-      queryClient.invalidateQueries({ queryKey: peopleListsKey(input.ownerPubkey) });
+    onError: (_error, _variables, context) => {
+      if (!context) return;
+      queryClient.setQueryData(context.listKey, context.previousList);
+      queryClient.setQueryData(context.listsKey, context.previousLists);
+    },
+    onSuccess: (_data, variables) => {
+      if (!user) return;
+      queryClient.invalidateQueries({ queryKey: peopleListsQueryKey(user.pubkey) });
+      queryClient.invalidateQueries({ queryKey: peopleListQueryKey(user.pubkey, variables.listId) });
     },
   });
 }
@@ -288,28 +371,29 @@ export function useDeletePeopleList() {
   const { user } = useCurrentUser();
 
   return useMutation({
-    mutationFn: async ({ listId, ownerPubkey }: PeopleListMutationInput) => {
-      assertOwner(user?.pubkey, ownerPubkey);
+    mutationFn: async ({ listId }: DeletePeopleListInput) => {
+      if (!user) throw new Error('Must be logged in to delete people lists');
 
       await publishEvent({
         kind: 5,
         content: 'People list deleted by owner',
         tags: [
-          ['a', `${PEOPLE_LIST_KIND}:${ownerPubkey}:${listId}`],
+          ['a', buildAddressableCoordinate(PEOPLE_LIST_KIND, user.pubkey, listId)],
           ['k', String(PEOPLE_LIST_KIND)],
         ],
       });
-
-      return { listId, ownerPubkey };
     },
-    onSuccess: ({ listId, ownerPubkey }) => {
+    onSuccess: (_data, variables) => {
+      if (!user) return;
+      const listsKey = peopleListsQueryKey(user.pubkey);
+
       queryClient.setQueryData<PeopleList[]>(
-        peopleListsKey(ownerPubkey),
-        (oldLists) => oldLists?.filter((list) => list.id !== listId) ?? [],
+        listsKey,
+        (oldLists) => oldLists?.filter((list) => list.id !== variables.listId) ?? [],
       );
-      queryClient.setQueryData(peopleListKey(ownerPubkey, listId), null);
-      queryClient.invalidateQueries({ queryKey: ['people-lists'] });
-      queryClient.invalidateQueries({ queryKey: ['people-list', ownerPubkey, listId] });
+      queryClient.setQueryData(peopleListQueryKey(user.pubkey, variables.listId), null);
+      queryClient.invalidateQueries({ queryKey: listsKey });
+      queryClient.invalidateQueries({ queryKey: peopleListQueryKey(user.pubkey, variables.listId) });
     },
   });
 }

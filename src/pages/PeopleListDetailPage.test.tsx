@@ -211,10 +211,7 @@ describe('PeopleListDetailPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Confirm delete' }));
 
     await waitFor(() => {
-      expect(mockDeletePeopleList).toHaveBeenCalledWith({
-        ownerPubkey: OWNER,
-        listId: 'friends',
-      });
+      expect(mockDeletePeopleList).toHaveBeenCalledWith({ listId: 'friends' });
     });
   });
 

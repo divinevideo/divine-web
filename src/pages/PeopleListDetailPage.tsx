@@ -73,10 +73,7 @@ function PeopleListContent({ pubkey, listId }: { pubkey: string; listId: string 
     if (!listQuery.data) return;
 
     try {
-      await deletePeopleList.mutateAsync({
-        ownerPubkey: pubkey,
-        listId,
-      });
+      await deletePeopleList.mutateAsync({ listId });
       toast({
         title: t('peopleListDetailPage.deletedTitle'),
         description: t('peopleListDetailPage.deletedDescription', { name: listQuery.data.name }),
