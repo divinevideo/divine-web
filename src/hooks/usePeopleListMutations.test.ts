@@ -171,6 +171,80 @@ describe('usePeopleListMutations', () => {
     });
   });
 
+  it('refuses to publish metadata updates when the current event cannot be fetched', async () => {
+    mocks.nostrQuery.mockResolvedValueOnce([]);
+    const { useUpdatePeopleList } = await import('./usePeopleListMutations');
+    const { result } = renderHook(() => useUpdatePeopleList(), {
+      wrapper: createWrapper(),
+    });
+
+    await expect(result.current.mutateAsync({
+      ownerPubkey: OWNER,
+      listId: 'friends',
+      name: 'Best people',
+    })).rejects.toThrow('People list not found');
+
+    expect(mocks.publishEvent).not.toHaveBeenCalled();
+  });
+
+  it('refuses to publish metadata updates when the current event cannot be parsed', async () => {
+    mocks.nostrQuery.mockResolvedValueOnce([
+      peopleListEvent({ tags: [['d', 'block']] }),
+    ]);
+    const { useUpdatePeopleList } = await import('./usePeopleListMutations');
+    const { result } = renderHook(() => useUpdatePeopleList(), {
+      wrapper: createWrapper(),
+    });
+
+    await expect(result.current.mutateAsync({
+      ownerPubkey: OWNER,
+      listId: 'block',
+      name: 'Best people',
+    })).rejects.toThrow('People list is not editable');
+
+    expect(mocks.publishEvent).not.toHaveBeenCalled();
+  });
+
+  it('rolls back optimistic metadata updates when publishing fails', async () => {
+    mocks.nostrQuery.mockResolvedValueOnce([peopleListEvent()]);
+    mocks.publishEvent.mockRejectedValueOnce(new Error('publish failed'));
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    });
+    const originalList: PeopleList = {
+      id: 'friends',
+      name: 'Friends',
+      description: 'Good people',
+      pubkey: OWNER,
+      createdAt: 2000,
+      memberPubkeys: [ALICE],
+    };
+    const otherList: PeopleList = {
+      id: 'makers',
+      name: 'Makers',
+      pubkey: OWNER,
+      createdAt: 1000,
+      memberPubkeys: [BOB],
+    };
+    queryClient.setQueryData(['people-list', OWNER, 'friends'], originalList);
+    queryClient.setQueryData(['people-lists', OWNER], [originalList, otherList]);
+
+    const { useUpdatePeopleList } = await import('./usePeopleListMutations');
+    const { result } = renderHook(() => useUpdatePeopleList(), {
+      wrapper: createWrapper(queryClient),
+    });
+
+    await expect(result.current.mutateAsync({
+      ownerPubkey: OWNER,
+      listId: 'friends',
+      name: 'Best people',
+      description: 'Updated',
+    })).rejects.toThrow('publish failed');
+
+    expect(queryClient.getQueryData(['people-list', OWNER, 'friends'])).toEqual(originalList);
+    expect(queryClient.getQueryData(['people-lists', OWNER])).toEqual([originalList, otherList]);
+  });
+
   it('publishes deletion events with address and kind tags and enforces owner', async () => {
     const { useDeletePeopleList } = await import('./usePeopleListMutations');
     const { result } = renderHook(() => useDeletePeopleList(), {

@@ -22,6 +22,7 @@ import { Switch } from '@/components/ui/switch';
 import { CircleNotch as Loader2, List, X } from '@phosphor-icons/react';
 import { useToast } from '@/hooks/useToast';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { slugifyListName } from '@/lib/listFormUtils';
 
 interface CreateListDialogProps {
   open: boolean;
@@ -76,7 +77,7 @@ export function CreateListDialog({ open, onClose }: CreateListDialogProps) {
 
     setIsCreating(true);
     try {
-      const listId = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+      const listId = slugifyListName(name);
 
       await createList.mutateAsync({
         id: listId,

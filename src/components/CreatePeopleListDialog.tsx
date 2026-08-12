@@ -18,23 +18,13 @@ import { Textarea } from '@/components/ui/textarea';
 import { useCreatePeopleList } from '@/hooks/usePeopleListMutations';
 import { useToast } from '@/hooks/useToast';
 import { buildPeopleListPath } from '@/lib/eventRouting';
-import { isReservedPeopleListDTag, slugifyPeopleListName } from '@/lib/peopleListConstants';
+import { isValidOptionalUrl, slugifyListName } from '@/lib/listFormUtils';
+import { isReservedPeopleListDTag } from '@/lib/parsePeopleListFromEvent';
 
 interface CreatePeopleListDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   prefilledMembers?: string[];
-}
-
-function isValidOptionalUrl(url: string): boolean {
-  if (!url) return true;
-
-  try {
-    new URL(url);
-    return true;
-  } catch {
-    return false;
-  }
 }
 
 export function CreatePeopleListDialog({
@@ -69,7 +59,7 @@ export function CreatePeopleListDialog({
     setImageError('');
 
     const trimmedName = name.trim();
-    const listId = slugifyPeopleListName(trimmedName);
+    const listId = slugifyListName(trimmedName);
 
     if (!trimmedName || !listId) {
       setNameError(t('createPeopleListDialog.nameRequired'));

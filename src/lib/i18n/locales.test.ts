@@ -66,6 +66,8 @@ const PLACEHOLDER_PARITY_EXCEPTIONS = new Set([
   'ar.common:categoriesPage.videoCount_zero',
 ]);
 
+// New feature copy may ship English-first while UI text is still settling;
+// remove keys from this set as localization catches up.
 const ENGLISH_FALLBACK_KEYS = new Set([
   'createPeopleListDialog.cancelButton',
   'createPeopleListDialog.createButton',

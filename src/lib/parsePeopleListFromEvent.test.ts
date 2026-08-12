@@ -3,7 +3,9 @@
 import { describe, expect, it } from 'vitest';
 import type { NostrEvent } from '@nostrify/nostrify';
 import {
+  PEOPLE_LIST_KIND,
   deduplicatePeopleLists,
+  isReservedPeopleListDTag,
   parsePeopleListFromEvent,
   peopleListAddress,
 } from './parsePeopleListFromEvent';
@@ -16,7 +18,7 @@ function peopleListEvent(overrides: Partial<NostrEvent> = {}): NostrEvent {
   return {
     id: 'd'.repeat(64),
     pubkey: OWNER,
-    kind: 30000,
+    kind: PEOPLE_LIST_KIND,
     created_at: 100,
     tags: [
       ['d', 'friends'],
@@ -51,15 +53,36 @@ describe('parsePeopleListFromEvent', () => {
     expect(parsePeopleListFromEvent(event)?.name).toBe('makers');
   });
 
-  it('rejects missing d tags, the reserved block list, and other event kinds', () => {
+  it('rejects missing d tags, reserved system lists, and other event kinds', () => {
     expect(parsePeopleListFromEvent(peopleListEvent({ tags: [] }))).toBeNull();
-    expect(parsePeopleListFromEvent(peopleListEvent({ tags: [['d', 'block']] }))).toBeNull();
+    expect(parsePeopleListFromEvent(peopleListEvent({ tags: [['d', ' blocklist ']] }))).toBeNull();
+    expect(parsePeopleListFromEvent(peopleListEvent({ tags: [['d', 'DM-CONTACTS']] }))).toBeNull();
     expect(parsePeopleListFromEvent(peopleListEvent({ kind: 30005 }))).toBeNull();
+  });
+
+  it('recognizes reserved people-list d tags case-insensitively after trimming', () => {
+    expect(isReservedPeopleListDTag(' Muted ')).toBe(true);
+    expect(isReservedPeopleListDTag('deny-list')).toBe(true);
+    expect(isReservedPeopleListDTag('friends')).toBe(false);
+  });
+
+  it('parses only valid hex64 public member p tags', () => {
+    const list = parsePeopleListFromEvent(peopleListEvent({
+      tags: [
+        ['d', 'friends'],
+        ['p', ALICE],
+        ['p', 'npub1nothex'],
+        ['p', 'f'.repeat(63)],
+        ['p', BOB.toUpperCase()],
+      ],
+    }));
+
+    expect(list?.memberPubkeys).toEqual([ALICE, BOB.toUpperCase()]);
   });
 
   it('uses the complete addressable coordinate as its key', () => {
     const list = parsePeopleListFromEvent(peopleListEvent());
-    expect(list && peopleListAddress(list)).toBe(`${OWNER}:30000:friends`);
+    expect(list && peopleListAddress(list)).toBe(`${OWNER}:${PEOPLE_LIST_KIND}:friends`);
   });
 });
 

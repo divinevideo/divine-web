@@ -4,12 +4,13 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useNostrPublish } from '@/hooks/useNostrPublish';
-import { type PeopleList, parsePeopleListFromEvent } from '@/lib/parsePeopleListFromEvent';
 import {
+  type PeopleList,
   isReservedPeopleListDTag,
   PEOPLE_LIST_KIND,
-  slugifyPeopleListName,
-} from '@/lib/peopleListConstants';
+  parsePeopleListFromEvent,
+} from '@/lib/parsePeopleListFromEvent';
+import { slugifyListName } from '@/lib/listFormUtils';
 
 interface PeopleListMutationInput {
   listId: string;
@@ -176,7 +177,7 @@ export function useCreatePeopleList() {
         throw new Error('Must be logged in to create people lists');
       }
 
-      const listId = slugifyPeopleListName(name);
+      const listId = slugifyListName(name);
       if (!listId) {
         throw new Error('People list needs a name');
       }

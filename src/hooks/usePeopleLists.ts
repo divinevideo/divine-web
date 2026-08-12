@@ -2,9 +2,7 @@
 
 import { useNostr } from '@nostrify/react';
 import { useQuery } from '@tanstack/react-query';
-import { deduplicatePeopleLists } from '@/lib/parsePeopleListFromEvent';
-
-const PEOPLE_LIST_KIND = 30000;
+import { PEOPLE_LIST_KIND, deduplicatePeopleLists } from '@/lib/parsePeopleListFromEvent';
 
 export function usePeopleLists(pubkey: string | undefined) {
   const { nostr } = useNostr();

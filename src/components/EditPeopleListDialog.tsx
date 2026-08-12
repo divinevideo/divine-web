@@ -16,23 +16,13 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useUpdatePeopleList } from '@/hooks/usePeopleListMutations';
 import { useToast } from '@/hooks/useToast';
+import { isValidOptionalUrl } from '@/lib/listFormUtils';
 import type { PeopleList } from '@/lib/parsePeopleListFromEvent';
 
 interface EditPeopleListDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   list: PeopleList;
-}
-
-function isValidOptionalUrl(url: string): boolean {
-  if (!url) return true;
-
-  try {
-    new URL(url);
-    return true;
-  } catch {
-    return false;
-  }
 }
 
 export function EditPeopleListDialog({

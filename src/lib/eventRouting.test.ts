@@ -63,16 +63,16 @@ describe('eventRouting', () => {
     );
   });
 
-  it('keeps legacy block list events on the generic event route', () => {
+  it('keeps reserved people list events on the generic event route', () => {
     const event = makeEvent({
       id: 'b'.repeat(64),
       kind: 30000,
       pubkey: 'a'.repeat(64),
-      tags: [['d', 'block']],
+      tags: [['d', ' BlockList ']],
     });
 
-    expect(buildAddressableRoute(30000, event.pubkey, 'block')).toBe(
-      buildAddressableEventPath(30000, event.pubkey, 'block'),
+    expect(buildAddressableRoute(30000, event.pubkey, ' BlockList ')).toBe(
+      buildAddressableEventPath(30000, event.pubkey, ' BlockList '),
     );
     expect(buildResolvedEventRoute(event)).toBe(buildEventPath(event.id));
   });

@@ -3,6 +3,23 @@
 import type { NostrEvent } from '@nostrify/nostrify';
 import { BLOCK_LIST_D_TAG } from '@/lib/blocklistFilter';
 
+export const PEOPLE_LIST_KIND = 30000;
+
+export const RESERVED_PEOPLE_LIST_D_TAGS = [
+  'mute',
+  'mutelist',
+  'mute-list',
+  'muted',
+  BLOCK_LIST_D_TAG,
+  'blocklist',
+  'block-list',
+  'blocked',
+  'dm-contacts',
+  'hidden',
+  'denylist',
+  'deny-list',
+] as const;
+
 export interface PeopleList {
   id: string;
   name: string;
@@ -14,18 +31,27 @@ export interface PeopleList {
 }
 
 export function peopleListAddress(list: PeopleList): string {
-  return `${list.pubkey}:30000:${list.id}`;
+  return `${list.pubkey}:${PEOPLE_LIST_KIND}:${list.id}`;
+}
+
+export function isReservedPeopleListDTag(dTag: string): boolean {
+  const normalizedDTag = dTag.trim().toLowerCase();
+  return RESERVED_PEOPLE_LIST_D_TAGS.includes(normalizedDTag as typeof RESERVED_PEOPLE_LIST_D_TAGS[number]);
+}
+
+function isHexPubkey(pubkey: string | undefined): pubkey is string {
+  return Boolean(pubkey && /^[0-9a-f]{64}$/i.test(pubkey));
 }
 
 export function parsePeopleListFromEvent(event: NostrEvent): PeopleList | null {
-  if (event.kind !== 30000) return null;
+  if (event.kind !== PEOPLE_LIST_KIND) return null;
 
   const id = event.tags.find((tag) => tag[0] === 'd')?.[1];
-  if (!id || id === BLOCK_LIST_D_TAG) return null;
+  if (!id || isReservedPeopleListDTag(id)) return null;
 
   const memberPubkeys = Array.from(new Set(
     event.tags
-      .filter((tag) => tag[0] === 'p' && Boolean(tag[1]))
+      .filter((tag) => tag[0] === 'p' && isHexPubkey(tag[1]))
       .map((tag) => tag[1]),
   ));
 
