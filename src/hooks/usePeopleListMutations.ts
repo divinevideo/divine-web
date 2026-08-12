@@ -6,11 +6,11 @@ import type { NostrEvent } from '@nostrify/nostrify';
 
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useNostrPublish } from '@/hooks/useNostrPublish';
-import { PEOPLE_LIST_EVENT_KIND } from '@/lib/eventRouting';
 import { latestEvent } from '@/lib/nostrEvents';
 import {
   isReservedListDTag,
   parsePeopleListFromEvent,
+  PEOPLE_LIST_KIND,
   type PeopleList,
 } from '@/lib/parsePeopleListFromEvent';
 import { isHex64 } from '@/lib/nostrCoordinates';
@@ -103,7 +103,7 @@ async function fetchCurrentPeopleListEvent(
   listId: string,
 ): Promise<{ event: NostrEvent; list: PeopleList }> {
   const events = await nostr.query(
-    [{ kinds: [PEOPLE_LIST_EVENT_KIND], authors: [pubkey], '#d': [listId], limit: 10 }],
+    [{ kinds: [PEOPLE_LIST_KIND], authors: [pubkey], '#d': [listId], limit: 10 }],
     { signal: AbortSignal.timeout(5000) },
   );
   const event = latestEvent(events);
@@ -137,7 +137,7 @@ export function useCreatePeopleList() {
       if (memberPubkeys.some((pubkey) => !isHex64(pubkey))) throw new Error('Invalid member pubkey');
 
       const events = await nostr.query(
-        [{ kinds: [PEOPLE_LIST_EVENT_KIND], authors: [user.pubkey], '#d': [id], limit: 1 }],
+        [{ kinds: [PEOPLE_LIST_KIND], authors: [user.pubkey], '#d': [id], limit: 1 }],
         { signal: AbortSignal.timeout(5000) },
       );
       if (events.length > 0) throw new Error('People list already exists');
@@ -148,7 +148,7 @@ export function useCreatePeopleList() {
       );
 
       await publishEvent({
-        kind: PEOPLE_LIST_EVENT_KIND,
+        kind: PEOPLE_LIST_KIND,
         content: '',
         tags,
       });
@@ -179,7 +179,7 @@ export function useUpdatePeopleList() {
       });
 
       await publishEvent({
-        kind: PEOPLE_LIST_EVENT_KIND,
+        kind: PEOPLE_LIST_KIND,
         content: event.content,
         tags,
       });
@@ -207,7 +207,7 @@ export function useAddToPeopleList() {
       if (list.memberPubkeys.includes(memberPubkey)) return;
 
       await publishEvent({
-        kind: PEOPLE_LIST_EVENT_KIND,
+        kind: PEOPLE_LIST_KIND,
         content: event.content,
         tags: withMemberTags(event.tags, [...list.memberPubkeys, memberPubkey]),
       });
@@ -265,7 +265,7 @@ export function useRemoveFromPeopleList() {
       if (!list.memberPubkeys.includes(memberPubkey)) return;
 
       await publishEvent({
-        kind: PEOPLE_LIST_EVENT_KIND,
+        kind: PEOPLE_LIST_KIND,
         content: event.content,
         tags: withMemberTags(
           event.tags,

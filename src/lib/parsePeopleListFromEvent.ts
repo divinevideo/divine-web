@@ -1,11 +1,27 @@
 // ABOUTME: Parses public NIP-51 kind 30000 follow sets into discoverable people lists
 
 import type { NostrEvent } from '@nostrify/nostrify';
-import { BLOCK_LIST_D_TAG } from '@/lib/blocklistFilter';
-import { PEOPLE_LIST_EVENT_KIND } from '@/lib/eventRouting';
 import { buildAddressableCoordinate, isHex64 } from '@/lib/nostrCoordinates';
 
-const RESERVED_LIST_DTAGS = new Set([BLOCK_LIST_D_TAG]);
+export const PEOPLE_LIST_KIND = 30000;
+
+const RESERVED_LIST_DTAGS = new Set([
+  'mute',
+  'mutelist',
+  'mute-list',
+  'mute list',
+  'muted',
+  'block',
+  'blocklist',
+  'block-list',
+  'block list',
+  'blocked',
+  'dm-contacts',
+  'dm contacts',
+  'dmcontacts',
+  'hidden',
+  'denylist',
+]);
 
 export interface PeopleList {
   id: string;
@@ -22,11 +38,11 @@ export function isReservedListDTag(dTag: string): boolean {
 }
 
 export function peopleListAddress(list: PeopleList): string {
-  return buildAddressableCoordinate(PEOPLE_LIST_EVENT_KIND, list.pubkey, list.id);
+  return buildAddressableCoordinate(PEOPLE_LIST_KIND, list.pubkey, list.id);
 }
 
 export function parsePeopleListFromEvent(event: NostrEvent): PeopleList | null {
-  if (event.kind !== PEOPLE_LIST_EVENT_KIND) return null;
+  if (event.kind !== PEOPLE_LIST_KIND) return null;
 
   const id = event.tags.find((tag) => tag[0] === 'd')?.[1];
   if (!id || isReservedListDTag(id)) return null;

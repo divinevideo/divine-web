@@ -6,6 +6,7 @@ import {
   deduplicatePeopleLists,
   isReservedListDTag,
   parsePeopleListFromEvent,
+  PEOPLE_LIST_KIND,
   peopleListAddress,
 } from './parsePeopleListFromEvent';
 
@@ -18,7 +19,7 @@ function peopleListEvent(overrides: Partial<NostrEvent> = {}): NostrEvent {
   return {
     id: 'd'.repeat(64),
     pubkey: OWNER,
-    kind: 30000,
+    kind: PEOPLE_LIST_KIND,
     created_at: 100,
     tags: [
       ['d', 'friends'],
@@ -59,9 +60,11 @@ describe('parsePeopleListFromEvent', () => {
     expect(parsePeopleListFromEvent(peopleListEvent({ kind: 30005 }))).toBeNull();
   });
 
-  it('only reserves the block-list d tag Divine publishes', () => {
+  it('filters normalized system d tags without hiding curated lists', () => {
     expect(parsePeopleListFromEvent(peopleListEvent({ tags: [['d', ' Block ']] }))).toBeNull();
-    expect(parsePeopleListFromEvent(peopleListEvent({ tags: [['d', 'hidden']] }))?.id).toBe('hidden');
+    expect(parsePeopleListFromEvent(peopleListEvent({ tags: [['d', 'close-friends']] }))?.id).toBe(
+      'close-friends',
+    );
   });
 
   it('ignores invalid p tags', () => {
@@ -86,8 +89,26 @@ describe('parsePeopleListFromEvent', () => {
 
 describe('isReservedListDTag', () => {
   it('matches reserved d tags after trimming and case folding', () => {
-    expect(isReservedListDTag(' Block ')).toBe(true);
-    expect(isReservedListDTag('BlockList')).toBe(false);
+    const reservedDTags = [
+      'mute',
+      'Mute',
+      'mutelist',
+      'mute-list',
+      'mute list',
+      'muted',
+      'block',
+      'Block List',
+      'block-list',
+      'blocklist',
+      'blocked',
+      'dm-contacts',
+      'dm contacts',
+      'dmcontacts',
+      'hidden',
+      'denylist',
+    ];
+
+    reservedDTags.forEach((dTag) => expect(isReservedListDTag(` ${dTag} `)).toBe(true));
     expect(isReservedListDTag('friends')).toBe(false);
   });
 });

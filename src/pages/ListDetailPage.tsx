@@ -33,7 +33,6 @@ import type { NostrEvent, NostrFilter } from '@nostrify/nostrify';
 import { SHORT_VIDEO_KIND, VIDEO_KINDS, type ParsedVideoData } from '@/types/video';
 import { parseVideoEvent, getVineId, getThumbnailUrl, getOriginalVineTimestamp, getLoopCount, getProofModeData, getOriginalLikeCount, getOriginalRepostCount, getOriginalCommentCount, getOriginPlatform, isVineMigrated } from '@/lib/videoParser';
 import { resolveListPermissions } from '@/lib/listPermissions';
-import { parseAddressableCoordinate } from '@/lib/nostrCoordinates';
 
 async function fetchListVideos(
   nostr: { query: (filters: NostrFilter[], options: { signal: AbortSignal }) => Promise<NostrEvent[]> },
@@ -47,9 +46,10 @@ async function fetchListVideos(
   const coordinateMap = new Map<string, { pubkey: string; dTag: string }>();
 
   coordinates.forEach(coord => {
-    const parsed = parseAddressableCoordinate(coord);
-    if (parsed && VIDEO_KINDS.includes(parsed.kind)) {
-      coordinateMap.set(`${parsed.pubkey}:${parsed.dTag}`, { pubkey: parsed.pubkey, dTag: parsed.dTag });
+    const [kind, pubkey, dTag] = coord.split(':');
+    const kindNum = parseInt(kind, 10);
+    if (VIDEO_KINDS.includes(kindNum) && pubkey && dTag) {
+      coordinateMap.set(`${pubkey}:${dTag}`, { pubkey, dTag });
     }
   });
 
@@ -116,9 +116,8 @@ async function fetchListVideos(
   // Return videos in the order they appear in the list
   const orderedVideos: ParsedVideoData[] = [];
   coordinates.forEach(coord => {
-    const parsed = parseAddressableCoordinate(coord);
-    if (!parsed) return;
-    const key = `${parsed.pubkey}:${parsed.dTag}`;
+    const [_, pubkey, dTag] = coord.split(':');
+    const key = `${pubkey}:${dTag}`;
     const video = videoMap.get(key);
     if (video) {
       orderedVideos.push(video);
