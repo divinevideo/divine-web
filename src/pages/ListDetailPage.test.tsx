@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -9,8 +9,9 @@ import ListDetailPage from './ListDetailPage';
 const OWNER = 'a'.repeat(64);
 const COLLABORATOR = 'b'.repeat(64);
 const OUTSIDER = 'c'.repeat(64);
-const { mockCurrentUser, mockQuery } = vi.hoisted(() => ({
+const { mockCurrentUser, mockDeleteVideoList, mockQuery } = vi.hoisted(() => ({
   mockCurrentUser: vi.fn(),
+  mockDeleteVideoList: vi.fn(),
   mockQuery: vi.fn(),
 }));
 
@@ -47,7 +48,7 @@ vi.mock('@/hooks/useAuthor', () => ({
 
 vi.mock('@/hooks/useVideoLists', () => ({
   useRemoveVideoFromList: () => ({ mutateAsync: vi.fn() }),
-  useDeleteVideoList: () => ({ mutateAsync: vi.fn() }),
+  useDeleteVideoList: () => ({ mutateAsync: mockDeleteVideoList }),
 }));
 
 vi.mock('@/hooks/useAppContext', () => ({
@@ -72,7 +73,9 @@ vi.mock('@/components/EditListDialog', () => ({
 }));
 
 vi.mock('@/components/DeleteListDialog', () => ({
-  DeleteListDialog: () => <div />,
+  DeleteListDialog: ({ open, onConfirm }: { open: boolean; onConfirm: () => void }) => (
+    open ? <button onClick={onConfirm}>confirm-delete</button> : null
+  ),
 }));
 
 function makeListEvent(): NostrEvent {
@@ -147,5 +150,16 @@ describe('ListDetailPage permissions', () => {
     expect(screen.queryByText('listDetailPage.emptyListOwnerHint')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /listDetailPage.editList/ })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /listDetailPage.delete/ })).not.toBeInTheDocument();
+  });
+
+  it('keeps the delete dialog open when video-list deletion fails', async () => {
+    mockDeleteVideoList.mockRejectedValueOnce(new Error('relay rejected deletion'));
+    renderPage(OWNER);
+
+    fireEvent.click(await screen.findByRole('button', { name: /listDetailPage.delete/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'confirm-delete' }));
+
+    await waitFor(() => expect(mockDeleteVideoList).toHaveBeenCalled());
+    expect(screen.getByRole('button', { name: 'confirm-delete' })).toBeInTheDocument();
   });
 });

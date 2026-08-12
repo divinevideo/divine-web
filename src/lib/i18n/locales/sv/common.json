@@ -1479,8 +1479,8 @@
   },
   "deleteListDialog": {
     "title": "Radera listan?",
-    "videosDescription": "Det här raderar listan ”{{name}}” permanent. Videorna i listan påverkas inte.",
-    "peopleDescription": "Det här raderar listan ”{{name}}” permanent. Personerna i listan påverkas inte.",
+    "videosDescription": "Det här begär radering av listan ”{{name}}”. Videorna i listan påverkas inte.",
+    "peopleDescription": "Det här begär radering av listan ”{{name}}”. Personerna i listan påverkas inte.",
     "noteLabel": "Obs:",
     "relayNote": "Den här åtgärden skickar en raderingsbegäran till reläer. De flesta reläer respekterar den, men radering är inte garanterad överallt.",
     "cancelButton": "Avbryt",

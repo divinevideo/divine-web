@@ -1479,8 +1479,8 @@
   },
   "deleteListDialog": {
     "title": "リストを削除しますか？",
-    "videosDescription": "リスト「{{name}}」を完全に削除します。リスト内の動画には影響しません。",
-    "peopleDescription": "リスト「{{name}}」を完全に削除します。リスト内の人には影響しません。",
+    "videosDescription": "リスト「{{name}}」の削除をリクエストします。リスト内の動画には影響しません。",
+    "peopleDescription": "リスト「{{name}}」の削除をリクエストします。リスト内の人には影響しません。",
     "noteLabel": "注意:",
     "relayNote": "この操作はリレーに削除リクエストを送信します。多くのリレーは応じますが、すべてのリレーで削除される保証はありません。",
     "cancelButton": "キャンセル",

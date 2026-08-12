@@ -47,8 +47,10 @@ function peopleListsQueryKey(pubkey: string) {
   return ['people-lists', pubkey] as const;
 }
 
+// Hex pubkeys are case-insensitive, so fold to lower case before deduplicating —
+// otherwise the same member can be tagged twice in two different casings.
 function uniqueHexPubkeys(pubkeys: string[]): string[] {
-  return Array.from(new Set(pubkeys.filter(isHex64)));
+  return Array.from(new Set(pubkeys.filter(isHex64).map((pubkey) => pubkey.toLowerCase())));
 }
 
 function removeTags(tags: string[][], names: Set<string>): string[][] {
@@ -82,7 +84,8 @@ function withMemberTags(originalTags: string[][], memberPubkeys: string[]): stri
   for (const tag of originalTags) {
     if (tag[0] !== 'p') continue;
     if (tag[1] && isHex64(tag[1])) {
-      if (!existingPTags.has(tag[1])) existingPTags.set(tag[1], tag);
+      const pubkey = tag[1].toLowerCase();
+      if (!existingPTags.has(pubkey)) existingPTags.set(pubkey, tag);
     } else {
       preservedPTags.push(tag);
     }

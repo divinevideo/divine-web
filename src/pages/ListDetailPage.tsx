@@ -181,6 +181,7 @@ export default function ListDetailPage() {
         title: t('listDetailPage.listDeletedTitle'),
         description: t('listDetailPage.listDeletedDescription', { name: list.name }),
       });
+      setShowDeleteDialog(false);
       navigate('/lists');
     } catch (error) {
       toast({
@@ -190,7 +191,6 @@ export default function ListDetailPage() {
       });
     } finally {
       setIsDeleting(false);
-      setShowDeleteDialog(false);
     }
   };
 

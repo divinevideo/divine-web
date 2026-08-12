@@ -70,6 +70,23 @@ describe('buildEventRouter — mute list carve-out', () => {
     }
   });
 
+  it.each([30000, 30005])(
+    'routes kind 5 deletion requests for list kind %i to the list relay set',
+    (deletedKind) => {
+      const targets = buildEventRouter(ctx)(makeEvent(5, {
+        tags: [
+          ['a', `${deletedKind}:${'a'.repeat(64)}:friends`],
+          ['k', String(deletedKind)],
+        ],
+      }));
+
+      expect(targets).not.toContain(PRESET_ONLY_URL);
+      for (const url of getRelayUrls(PROFILE_RELAYS)) {
+        expect(targets).toContain(url);
+      }
+    },
+  );
+
   it('routes non-profile publishes through ranked preset and custom candidates', () => {
     const pickTopN = vi.fn((urls: string[]) => urls);
     const targets = buildEventRouter({

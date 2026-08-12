@@ -1479,8 +1479,8 @@
   },
   "deleteListDialog": {
     "title": "删除列表？",
-    "videosDescription": "这会永久删除列表“{{name}}”。列表中的视频不受影响。",
-    "peopleDescription": "这会永久删除列表“{{name}}”。列表中的人不受影响。",
+    "videosDescription": "这会请求删除列表“{{name}}”。列表中的视频不受影响。",
+    "peopleDescription": "这会请求删除列表“{{name}}”。列表中的人不受影响。",
     "noteLabel": "注意：",
     "relayNote": "此操作会向中继发送删除请求。多数中继会遵从，但并非所有中继都保证删除。",
     "cancelButton": "取消",

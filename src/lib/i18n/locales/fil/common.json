@@ -1479,8 +1479,8 @@
   },
   "deleteListDialog": {
     "title": "Burahin ang listahan?",
-    "videosDescription": "Permanenteng buburahin nito ang listahang “{{name}}”. Hindi maaapektuhan ang mga video sa listahan.",
-    "peopleDescription": "Permanenteng buburahin nito ang listahang “{{name}}”. Hindi maaapektuhan ang mga tao sa listahan.",
+    "videosDescription": "Hihilingin nito ang pagbura ng listahang “{{name}}”. Hindi maaapektuhan ang mga video sa listahan.",
+    "peopleDescription": "Hihilingin nito ang pagbura ng listahang “{{name}}”. Hindi maaapektuhan ang mga tao sa listahan.",
     "noteLabel": "Paalala:",
     "relayNote": "Nagpapadala ang aksyong ito ng kahilingang pagbura sa mga relay. Karamihan ay susunod, pero hindi garantisado ang pagbura sa lahat ng relay.",
     "cancelButton": "Kanselahin",

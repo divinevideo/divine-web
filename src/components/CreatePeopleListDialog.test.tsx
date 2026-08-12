@@ -94,6 +94,7 @@ describe('CreatePeopleListDialog', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Create List' }));
 
     expect(screen.getByRole('alert')).toHaveTextContent('That name is reserved for a system list.');
+    expect(screen.getByLabelText('List Name *')).toHaveAttribute('aria-invalid', 'true');
     expect(mockCreatePeopleList).not.toHaveBeenCalled();
   });
 

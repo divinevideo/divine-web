@@ -1479,8 +1479,8 @@
   },
   "deleteListDialog": {
     "title": "Xóa danh sách?",
-    "videosDescription": "Thao tác này sẽ xóa vĩnh viễn danh sách “{{name}}”. Các video trong danh sách không bị ảnh hưởng.",
-    "peopleDescription": "Thao tác này sẽ xóa vĩnh viễn danh sách “{{name}}”. Những người trong danh sách không bị ảnh hưởng.",
+    "videosDescription": "Thao tác này sẽ yêu cầu xóa danh sách “{{name}}”. Các video trong danh sách không bị ảnh hưởng.",
+    "peopleDescription": "Thao tác này sẽ yêu cầu xóa danh sách “{{name}}”. Những người trong danh sách không bị ảnh hưởng.",
     "noteLabel": "Lưu ý:",
     "relayNote": "Thao tác này gửi yêu cầu xóa tới các relay. Hầu hết relay sẽ thực hiện, nhưng việc xóa không được đảm bảo trên mọi relay.",
     "cancelButton": "Hủy",

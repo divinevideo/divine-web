@@ -1481,8 +1481,8 @@
   },
   "deleteListDialog": {
     "title": "Usunąć listę?",
-    "videosDescription": "Lista „{{name}}” zostanie trwale usunięta. Filmy z listy pozostaną nienaruszone.",
-    "peopleDescription": "Lista „{{name}}” zostanie trwale usunięta. Osoby z listy pozostaną nienaruszone.",
+    "videosDescription": "Spowoduje to wysłanie żądania usunięcia listy „{{name}}”. Filmy z listy pozostaną nienaruszone.",
+    "peopleDescription": "Spowoduje to wysłanie żądania usunięcia listy „{{name}}”. Osoby z listy pozostaną nienaruszone.",
     "noteLabel": "Uwaga:",
     "relayNote": "Ta akcja wysyła żądanie usunięcia do przekaźników. Większość je uszanuje, ale usunięcie nie jest gwarantowane wszędzie.",
     "cancelButton": "Anuluj",

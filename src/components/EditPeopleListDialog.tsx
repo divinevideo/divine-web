@@ -130,6 +130,8 @@ export function EditPeopleListDialog({
                 if (nameError) setNameError('');
               }}
               disabled={isSaving}
+              required
+              aria-invalid={Boolean(nameError)}
               aria-describedby={nameError ? 'edit-people-list-name-error' : undefined}
             />
             {nameError && (
@@ -163,6 +165,7 @@ export function EditPeopleListDialog({
                 if (imageError) setImageError('');
               }}
               disabled={isSaving}
+              aria-invalid={Boolean(imageError)}
               aria-describedby={imageError ? 'edit-people-list-image-error' : undefined}
             />
             {imageError && (

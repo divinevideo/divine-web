@@ -1479,8 +1479,8 @@
   },
   "deleteListDialog": {
     "title": "Lijst verwijderen?",
-    "videosDescription": "Hiermee wordt de lijst ‘{{name}}’ definitief verwijderd. Video’s in de lijst blijven bestaan.",
-    "peopleDescription": "Hiermee wordt de lijst ‘{{name}}’ definitief verwijderd. Mensen in de lijst blijven bestaan.",
+    "videosDescription": "Hiermee wordt verwijdering van de lijst ‘{{name}}’ aangevraagd. Video’s in de lijst blijven bestaan.",
+    "peopleDescription": "Hiermee wordt verwijdering van de lijst ‘{{name}}’ aangevraagd. Mensen in de lijst blijven bestaan.",
     "noteLabel": "Let op:",
     "relayNote": "Deze actie stuurt een verwijderverzoek naar relays. De meeste relays honoreren dat, maar verwijdering is niet overal gegarandeerd.",
     "cancelButton": "Annuleren",

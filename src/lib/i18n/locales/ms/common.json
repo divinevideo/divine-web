@@ -1479,8 +1479,8 @@
   },
   "deleteListDialog": {
     "title": "Padam senarai?",
-    "videosDescription": "Ini akan memadam senarai “{{name}}” secara kekal. Video dalam senarai tidak terjejas.",
-    "peopleDescription": "Ini akan memadam senarai “{{name}}” secara kekal. Orang dalam senarai tidak terjejas.",
+    "videosDescription": "Ini akan meminta pemadaman senarai “{{name}}”. Video dalam senarai tidak terjejas.",
+    "peopleDescription": "Ini akan meminta pemadaman senarai “{{name}}”. Orang dalam senarai tidak terjejas.",
     "noteLabel": "Nota:",
     "relayNote": "Tindakan ini menghantar permintaan pemadaman kepada relay. Kebanyakan relay akan mematuhinya, tetapi pemadaman tidak dijamin pada semua relay.",
     "cancelButton": "Batal",

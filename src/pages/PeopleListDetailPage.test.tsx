@@ -118,6 +118,16 @@ function renderPage() {
   );
 }
 
+function renderUppercaseRoute() {
+  return render(
+    <MemoryRouter initialEntries={[`/people-lists/${OWNER.toUpperCase()}/friends`]}>
+      <Routes>
+        <Route path="/people-lists/:pubkey/:listId" element={<PeopleListDetailPage />} />
+      </Routes>
+    </MemoryRouter>,
+  );
+}
+
 describe('PeopleListDetailPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -195,6 +205,15 @@ describe('PeopleListDetailPage', () => {
     expect(screen.getByRole('button', { name: 'Delete' })).toBeInTheDocument();
   });
 
+  it('normalizes uppercase hex routes before querying and checking ownership', () => {
+    mockUseCurrentUser.mockReturnValue({ user: { pubkey: OWNER } });
+
+    renderUppercaseRoute();
+
+    expect(mockUsePeopleList).toHaveBeenCalledWith(OWNER, 'friends');
+    expect(screen.getByRole('button', { name: 'Edit' })).toBeInTheDocument();
+  });
+
   it('hides owner controls for non-owners', () => {
     mockUseCurrentUser.mockReturnValue({ user: { pubkey: BOB } });
     renderPage();
@@ -213,6 +232,23 @@ describe('PeopleListDetailPage', () => {
     await waitFor(() => {
       expect(mockDeletePeopleList).toHaveBeenCalledWith({ listId: 'friends' });
     });
+  });
+
+  it('keeps the delete confirmation open when deletion fails', async () => {
+    mockUseCurrentUser.mockReturnValue({ user: { pubkey: OWNER } });
+    mockDeletePeopleList.mockRejectedValueOnce(new Error('relay rejected deletion'));
+    renderPage();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm delete' }));
+
+    await waitFor(() => {
+      expect(mockToast).toHaveBeenCalledWith(expect.objectContaining({
+        description: 'relay rejected deletion',
+        variant: 'destructive',
+      }));
+    });
+    expect(screen.getByRole('dialog', { name: 'Delete people list' })).toBeInTheDocument();
   });
 
   it('shows a not-found state when the exact list is absent', () => {

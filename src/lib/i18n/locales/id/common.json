@@ -1479,8 +1479,8 @@
   },
   "deleteListDialog": {
     "title": "Hapus daftar?",
-    "videosDescription": "Ini akan menghapus permanen daftar “{{name}}”. Video di dalam daftar tidak terpengaruh.",
-    "peopleDescription": "Ini akan menghapus permanen daftar “{{name}}”. Orang di dalam daftar tidak terpengaruh.",
+    "videosDescription": "Ini akan meminta penghapusan daftar “{{name}}”. Video di dalam daftar tidak terpengaruh.",
+    "peopleDescription": "Ini akan meminta penghapusan daftar “{{name}}”. Orang di dalam daftar tidak terpengaruh.",
     "noteLabel": "Catatan:",
     "relayNote": "Tindakan ini mengirim permintaan penghapusan ke relay. Sebagian besar relay akan mematuhinya, tetapi penghapusan tidak dijamin di semua relay.",
     "cancelButton": "Batal",

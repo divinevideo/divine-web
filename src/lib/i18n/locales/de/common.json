@@ -1479,8 +1479,8 @@
   },
   "deleteListDialog": {
     "title": "Liste löschen?",
-    "videosDescription": "Damit wird die Liste „{{name}}“ endgültig gelöscht. Videos in der Liste bleiben erhalten.",
-    "peopleDescription": "Damit wird die Liste „{{name}}“ endgültig gelöscht. Personen in der Liste bleiben erhalten.",
+    "videosDescription": "Damit wird die Löschung der Liste „{{name}}“ angefragt. Videos in der Liste bleiben erhalten.",
+    "peopleDescription": "Damit wird die Löschung der Liste „{{name}}“ angefragt. Personen in der Liste bleiben erhalten.",
     "noteLabel": "Hinweis:",
     "relayNote": "Diese Aktion sendet eine Löschanfrage an die Relays. Die meisten Relays befolgen sie, garantiert ist das Löschen aber nicht überall.",
     "cancelButton": "Abbrechen",

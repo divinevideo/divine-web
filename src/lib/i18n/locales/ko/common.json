@@ -1479,8 +1479,8 @@
   },
   "deleteListDialog": {
     "title": "리스트를 삭제할까요?",
-    "videosDescription": "‘{{name}}’ 리스트가 영구히 삭제돼요. 리스트 안의 동영상은 그대로 남아요.",
-    "peopleDescription": "‘{{name}}’ 리스트가 영구히 삭제돼요. 리스트 안의 사람은 그대로 남아요.",
+    "videosDescription": "‘{{name}}’ 리스트의 삭제를 요청해요. 리스트 안의 동영상은 그대로 남아요.",
+    "peopleDescription": "‘{{name}}’ 리스트의 삭제를 요청해요. 리스트 안의 사람은 그대로 남아요.",
     "noteLabel": "참고:",
     "relayNote": "이 작업은 릴레이에 삭제 요청을 보냅니다. 대부분의 릴레이가 요청을 따르지만 모든 릴레이에서 삭제가 보장되지는 않아요.",
     "cancelButton": "취소",

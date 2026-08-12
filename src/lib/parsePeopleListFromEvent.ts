@@ -2,6 +2,7 @@
 
 import type { NostrEvent } from '@nostrify/nostrify';
 import { buildAddressableCoordinate, isHex64 } from '@/lib/nostrCoordinates';
+import { compareNostrEventsByNewest } from '@/lib/nostrEvents';
 
 export const PEOPLE_LIST_KIND = 30000;
 
@@ -52,7 +53,7 @@ export function parsePeopleListFromEvent(event: NostrEvent): PeopleList | null {
   const memberPubkeys = Array.from(new Set(
     event.tags
       .filter((tag) => tag[0] === 'p' && Boolean(tag[1]) && isHex64(tag[1]))
-      .map((tag) => tag[1]),
+      .map((tag) => tag[1].toLowerCase()),
   ));
 
   return {
@@ -69,10 +70,12 @@ export function parsePeopleListFromEvent(event: NostrEvent): PeopleList | null {
 export function deduplicatePeopleLists(events: NostrEvent[]): PeopleList[] {
   const newestByAddress = new Map<string, PeopleList>();
 
-  events
+  // Sort the events, not the parsed lists: two versions of the same list can
+  // share a created_at, and only the event id breaks that tie deterministically.
+  [...events]
+    .sort(compareNostrEventsByNewest)
     .map(parsePeopleListFromEvent)
     .filter((list): list is PeopleList => list !== null)
-    .sort((a, b) => b.createdAt - a.createdAt)
     .forEach((list) => {
       const address = peopleListAddress(list);
       if (!newestByAddress.has(address)) {

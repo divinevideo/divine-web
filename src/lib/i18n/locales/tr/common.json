@@ -1479,8 +1479,8 @@
   },
   "deleteListDialog": {
     "title": "Liste silinsin mi?",
-    "videosDescription": "Bu işlem “{{name}}” listesini kalıcı olarak siler. Listedeki videolar etkilenmez.",
-    "peopleDescription": "Bu işlem “{{name}}” listesini kalıcı olarak siler. Listedeki kişiler etkilenmez.",
+    "videosDescription": "Bu işlem “{{name}}” listesi için silme talebi gönderir. Listedeki videolar etkilenmez.",
+    "peopleDescription": "Bu işlem “{{name}}” listesi için silme talebi gönderir. Listedeki kişiler etkilenmez.",
     "noteLabel": "Not:",
     "relayNote": "Bu işlem relaylere bir silme isteği gönderir. Çoğu relay bunu uygular ama silme her yerde garanti değildir.",
     "cancelButton": "İptal",

@@ -1480,8 +1480,8 @@
   },
   "deleteListDialog": {
     "title": "Supprimer la liste ?",
-    "videosDescription": "Cela supprimera définitivement la liste « {{name}} ». Les vidéos de la liste ne seront pas touchées.",
-    "peopleDescription": "Cela supprimera définitivement la liste « {{name}} ». Les personnes de la liste ne seront pas touchées.",
+    "videosDescription": "Cela demandera la suppression de la liste « {{name}} ». Les vidéos de la liste ne seront pas touchées.",
+    "peopleDescription": "Cela demandera la suppression de la liste « {{name}} ». Les personnes de la liste ne seront pas touchées.",
     "noteLabel": "Note :",
     "relayNote": "Cette action envoie une demande de suppression aux relais. La plupart la respectent, mais la suppression n’est pas garantie partout.",
     "cancelButton": "Annuler",

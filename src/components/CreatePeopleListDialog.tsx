@@ -133,6 +133,8 @@ export function CreatePeopleListDialog({
                 if (nameError) setNameError('');
               }}
               disabled={isCreating}
+              required
+              aria-invalid={Boolean(nameError)}
               aria-describedby={nameError ? 'create-people-list-name-error' : undefined}
             />
             {nameError && (
@@ -166,6 +168,7 @@ export function CreatePeopleListDialog({
                 if (imageError) setImageError('');
               }}
               disabled={isCreating}
+              aria-invalid={Boolean(imageError)}
               aria-describedby={imageError ? 'create-people-list-image-error' : undefined}
             />
             {imageError && (

@@ -126,6 +126,22 @@ describe('usePeopleListMutations', () => {
     });
   });
 
+  it('folds member pubkey casing so one member is tagged once', async () => {
+    mockNostrQuery.mockResolvedValue([]);
+    const { useCreatePeopleList } = await import('./usePeopleListMutations');
+    const { result } = renderHook(() => useCreatePeopleList(), { wrapper: createWrapper() });
+
+    await result.current.mutateAsync({
+      id: 'makers',
+      name: 'Makers',
+      memberPubkeys: [ALICE.toUpperCase(), ALICE],
+    });
+
+    expect(mockPublishAsync.mock.calls[0][0].tags.filter((tag: string[]) => tag[0] === 'p')).toEqual([
+      ['p', ALICE],
+    ]);
+  });
+
   it('refuses to create with invalid member pubkeys', async () => {
     mockNostrQuery.mockResolvedValue([]);
     const { useCreatePeopleList } = await import('./usePeopleListMutations');

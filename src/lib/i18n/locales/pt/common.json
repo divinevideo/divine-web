@@ -1480,8 +1480,8 @@
   },
   "deleteListDialog": {
     "title": "Excluir lista?",
-    "videosDescription": "Isso vai excluir permanentemente a lista “{{name}}”. Os vídeos da lista não serão afetados.",
-    "peopleDescription": "Isso vai excluir permanentemente a lista “{{name}}”. As pessoas da lista não serão afetadas.",
+    "videosDescription": "Isso vai solicitar a exclusão da lista “{{name}}”. Os vídeos da lista não serão afetados.",
+    "peopleDescription": "Isso vai solicitar a exclusão da lista “{{name}}”. As pessoas da lista não serão afetadas.",
     "noteLabel": "Nota:",
     "relayNote": "Esta ação envia um pedido de exclusão aos relays. A maioria vai respeitar, mas a exclusão não é garantida em todos.",
     "cancelButton": "Cancelar",

@@ -81,6 +81,18 @@ describe('parsePeopleListFromEvent', () => {
     expect(parsePeopleListFromEvent(event)?.memberPubkeys).toEqual([ALICE, CAROL]);
   });
 
+  it('normalizes member pubkeys so relay filters match', () => {
+    const event = peopleListEvent({
+      tags: [
+        ['d', 'friends'],
+        ['p', ALICE.toUpperCase()],
+        ['p', ALICE],
+      ],
+    });
+
+    expect(parsePeopleListFromEvent(event)?.memberPubkeys).toEqual([ALICE]);
+  });
+
   it('uses the complete addressable coordinate as its key', () => {
     const list = parsePeopleListFromEvent(peopleListEvent());
     expect(list && peopleListAddress(list)).toBe(`30000:${OWNER}:friends`);
@@ -125,5 +137,18 @@ describe('deduplicatePeopleLists', () => {
       'New',
       'makers',
     ]);
+  });
+
+  it('uses the lowest event id when replaceable events share a timestamp', () => {
+    const higherId = peopleListEvent({
+      id: 'f'.repeat(64),
+      tags: [['d', 'friends'], ['title', 'Higher id']],
+    });
+    const lowerId = peopleListEvent({
+      id: '0'.repeat(64),
+      tags: [['d', 'friends'], ['title', 'Lower id']],
+    });
+
+    expect(deduplicatePeopleLists([higherId, lowerId])[0]?.name).toBe('Lower id');
   });
 });

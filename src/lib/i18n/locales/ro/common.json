@@ -1480,8 +1480,8 @@
   },
   "deleteListDialog": {
     "title": "Ștergi lista?",
-    "videosDescription": "Lista „{{name}}” va fi ștearsă definitiv. Videoclipurile din listă nu vor fi afectate.",
-    "peopleDescription": "Lista „{{name}}” va fi ștearsă definitiv. Persoanele din listă nu vor fi afectate.",
+    "videosDescription": "Aceasta va cere ștergerea listei „{{name}}”. Videoclipurile din listă nu vor fi afectate.",
+    "peopleDescription": "Aceasta va cere ștergerea listei „{{name}}”. Persoanele din listă nu vor fi afectate.",
     "noteLabel": "Notă:",
     "relayNote": "Această acțiune trimite o cerere de ștergere către relee. Majoritatea o respectă, dar ștergerea nu este garantată peste tot.",
     "cancelButton": "Anulează",
