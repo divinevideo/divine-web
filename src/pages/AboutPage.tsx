@@ -10,6 +10,7 @@ import { MarketingLayout } from '@/components/MarketingLayout';
 import { ApplePodcastEmbed } from '@/components/ApplePodcastEmbed';
 import { usePlatformStats } from '@/hooks/usePlatformStats';
 import { useTranslation } from 'react-i18next';
+import { PLAY_STORE_URL, APP_STORE_URL } from '@/lib/mobileStoreLinks';
 
 export function AboutPage() {
   const { t } = useTranslation('about');
@@ -366,7 +367,14 @@ export function AboutPage() {
           </CardHeader>
           <CardContent>
             <p className="text-muted-foreground text-sm">
-              <strong>iOS:</strong> TestFlight is full (10k sign ups in 4 hours!) - Stay tuned for updates
+              <strong>iOS:</strong> Get Divine on the{' '}
+              <a href={APP_STORE_URL} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                App Store
+              </a>.{' '}
+              <strong>Android:</strong> Get Divine on{' '}
+              <a href={PLAY_STORE_URL} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                Google Play
+              </a>.
             </p>
           </CardContent>
         </Card>

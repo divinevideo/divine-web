@@ -39,4 +39,25 @@ describe('FAQPage', () => {
     expect(screen.queryByText(/direct messages between users/i))
       .not.toBeInTheDocument();
   });
+
+  it('answers TestFlight -> App Store account resolution without a silent merge', () => {
+    render(
+      <MemoryRouter>
+        <FAQPage />
+      </MemoryRouter>,
+    );
+
+    fireEvent.click(
+      screen.getByRole('button', { name: /which account will i sign into/i }),
+    );
+
+    // Same app/sign-in across TestFlight and App Store.
+    expect(
+      screen.getByText(/it's the same app with the same sign-in/i),
+    ).toBeInTheDocument();
+    // Core reassurance: no silent merge/overwrite/delete of an existing account.
+    expect(
+      screen.getByText(/never merges, replaces, or deletes any other account/i),
+    ).toBeInTheDocument();
+  });
 });
