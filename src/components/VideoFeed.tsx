@@ -92,6 +92,7 @@ export function VideoFeed({
     isLoading,
     error,
     refetch,
+    fetchedCount,
     dataSource,
   } = useVideoProvider({
     feedType,
@@ -459,7 +460,7 @@ export function VideoFeed({
       >
         {compilationLauncher}
         <InfiniteScroll
-          dataLength={filteredVideos.length}
+          dataLength={fetchedCount}
           next={fetchNextPage}
           hasMore={hasNextPage ?? false}
           loader={
@@ -513,7 +514,7 @@ export function VideoFeed({
     >
       {compilationLauncher}
       <InfiniteScroll
-        dataLength={filteredVideos.length}
+        dataLength={fetchedCount}
         next={fetchNextPage}
         hasMore={hasNextPage ?? false}
         loader={

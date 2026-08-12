@@ -307,4 +307,25 @@ describe('useVideoProvider', () => {
     }));
     expect(result.current.dataSource).toBe('websocket');
   });
+
+  it('reports fetched count from unfiltered active query pages', () => {
+    mockUseInfiniteVideosFunnelcake.mockReturnValue({
+      ...queryResult,
+      data: {
+        pages: [
+          { videos: [{ pubkey: 'a' }, { pubkey: 'b' }], nextCursor: undefined },
+          { videos: [{ pubkey: 'a' }], nextCursor: undefined },
+        ],
+        pageParams: [undefined, 2],
+      },
+    });
+
+    const { result } = renderHook(() =>
+      useVideoProvider({
+        feedType: 'discovery',
+      })
+    );
+
+    expect(result.current.fetchedCount).toBe(3);
+  });
 });

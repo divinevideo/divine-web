@@ -38,6 +38,7 @@ interface VideoProviderResult {
   isLoading: boolean;
   error: Error | null;
   refetch: () => void;
+  fetchedCount: number;
   // Additional metadata
   dataSource: 'funnelcake' | 'websocket';
   apiUrl?: string;
@@ -286,6 +287,7 @@ export function useVideoProvider({
   // unfiltered pages inside the underlying query hooks.
   const blockedPubkeys = useFeedBlocklist();
   const rawData = activeQuery.data;
+  const fetchedCount = rawData?.pages.reduce((sum, page) => sum + page.videos.length, 0) ?? 0;
   const filteredData = useMemo(
     () => filterBlockedVideoPages(rawData, blockedPubkeys),
     [rawData, blockedPubkeys]
@@ -298,6 +300,7 @@ export function useVideoProvider({
     isLoading: activeQuery.isLoading,
     error: activeQuery.error,
     refetch: activeQuery.refetch,
+    fetchedCount,
     dataSource: activeDataSource,
     apiUrl: shouldUseFunnelcake ? decision.apiUrl : undefined,
   };

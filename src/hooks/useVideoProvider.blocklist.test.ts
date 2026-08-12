@@ -79,6 +79,7 @@ describe('useVideoProvider blocklist filtering', () => {
     );
     const videos = result.current.data?.pages.flatMap(p => p.videos) ?? [];
     expect(videos.map(v => v.id)).toEqual(['ok-1', 'ok-2']);
+    expect(result.current.fetchedCount).toBe(4);
   });
 
   it("drops a blocked author's videos from the discovery feed", () => {

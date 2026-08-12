@@ -87,7 +87,7 @@ function makeEvents(count: number, startIndex = 0): NostrEvent[] {
   return Array.from({ length: count }, (_, index) => makeEvent(startIndex + index));
 }
 
-function makeVideo(index: number): ParsedVideoData {
+function makeVideo(index: number, overrides: Partial<ParsedVideoData> = {}): ParsedVideoData {
   return {
     id: `event-${String(index).padStart(2, '0')}`,
     pubkey: `pubkey-${String(index).padStart(2, '0')}`,
@@ -99,6 +99,7 @@ function makeVideo(index: number): ParsedVideoData {
     vineId: `vine-${index}`,
     isVineMigrated: false,
     reposts: [],
+    ...overrides,
   };
 }
 
@@ -215,6 +216,94 @@ describe('useInfiniteVideos sorted relay pagination', () => {
     expect(result.current.data?.pages[0].videos).toHaveLength(18);
     expect(result.current.hasNextPage).toBe(false);
   });
+
+  it('stops after exhausting zero-video sorted backfill attempts', async () => {
+    mockNostrQuery
+      .mockResolvedValueOnce(makeEvents(20))
+      .mockResolvedValueOnce(makeEvents(40))
+      .mockResolvedValueOnce(makeEvents(60));
+    mockParseVideoEvents
+      .mockReturnValueOnce([])
+      .mockReturnValueOnce([])
+      .mockReturnValueOnce([]);
+
+    const { result } = renderHook(
+      () => useInfiniteVideos({ feedType: 'trending', sortMode: 'hot', pageSize: 20 }),
+      { wrapper: createWrapper() }
+    );
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+
+    expect(mockNostrQuery).toHaveBeenCalledTimes(3);
+    expect(mockNostrQuery.mock.calls.map(call => call[0][0].limit)).toEqual([20, 40, 60]);
+    expect(result.current.data?.pages[0].videos).toEqual([]);
+    expect(result.current.hasNextPage).toBe(false);
+  });
+
+  it('stops when an expanded sorted window hits the relay cap before parsing videos', async () => {
+    mockNostrQuery
+      .mockResolvedValueOnce(makeEvents(20))
+      .mockResolvedValueOnce(makeEvents(39));
+    mockParseVideoEvents
+      .mockReturnValueOnce([])
+      .mockReturnValueOnce([]);
+
+    const { result } = renderHook(
+      () => useInfiniteVideos({ feedType: 'trending', sortMode: 'hot', pageSize: 20 }),
+      { wrapper: createWrapper() }
+    );
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+
+    expect(mockNostrQuery).toHaveBeenCalledTimes(2);
+    expect(result.current.data?.pages[0].videos).toEqual([]);
+    expect(result.current.hasNextPage).toBe(false);
+  });
+
+  it('sorts only the current raw window for client-side Classic ordering', async () => {
+    mockNostrQuery
+      .mockResolvedValueOnce(makeEvents(2))
+      .mockResolvedValueOnce(makeEvents(4));
+    mockParseVideoEvents
+      .mockReturnValueOnce([
+        makeVideo(0, { loopCount: 20 }),
+        makeVideo(1, { loopCount: 10 }),
+      ])
+      .mockReturnValueOnce([
+        makeVideo(2, { loopCount: 5 }),
+        makeVideo(3, { loopCount: 50 }),
+      ]);
+
+    const { result } = renderHook(
+      () => useInfiniteVideos({ feedType: 'trending', sortMode: 'top', pageSize: 2 }),
+      { wrapper: createWrapper() }
+    );
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+
+    await waitFor(() => {
+      expect(result.current.hasNextPage).toBe(true);
+    });
+
+    let nextPageResult: Awaited<ReturnType<typeof result.current.fetchNextPage>> | undefined;
+    await act(async () => {
+      nextPageResult = await result.current.fetchNextPage();
+    });
+
+    expect(mockParseVideoEvents.mock.calls[1]?.[0].map((event: NostrEvent) => event.id)).toEqual(
+      ['event-02', 'event-03']
+    );
+    expect(nextPageResult?.data?.pages[1].videos.map(video => video.id)).toEqual([
+      'event-03',
+      'event-02',
+    ]);
+  });
 });
 
 describe('useInfiniteVideos chronological relay pagination', () => {
@@ -243,5 +332,43 @@ describe('useInfiniteVideos chronological relay pagination', () => {
       expect.objectContaining({ until: 98 }),
     ]);
     expect(result.current.data?.pages[0].videos).toEqual([makeVideo(3)]);
+  });
+
+  it('stops after exhausting zero-video chronological backfill attempts', async () => {
+    mockNostrQuery
+      .mockResolvedValueOnce([
+        makeEvent(1, 100),
+        makeEvent(2, 99),
+      ])
+      .mockResolvedValueOnce([
+        makeEvent(3, 80),
+        makeEvent(4, 79),
+      ])
+      .mockResolvedValueOnce([
+        makeEvent(5, 60),
+        makeEvent(6, 59),
+      ]);
+    mockParseVideoEvents
+      .mockReturnValueOnce([])
+      .mockReturnValueOnce([])
+      .mockReturnValueOnce([]);
+
+    const { result } = renderHook(
+      () => useInfiniteVideos({ feedType: 'recent', pageSize: 2 }),
+      { wrapper: createWrapper() }
+    );
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+
+    expect(mockNostrQuery).toHaveBeenCalledTimes(3);
+    expect(mockNostrQuery.mock.calls.map(call => call[0][0].until)).toEqual([
+      undefined,
+      98,
+      78,
+    ]);
+    expect(result.current.data?.pages[0].videos).toEqual([]);
+    expect(result.current.hasNextPage).toBe(false);
   });
 });

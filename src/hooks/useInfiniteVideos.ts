@@ -14,7 +14,7 @@ import { debugLog } from '@/lib/debug';
 import { performanceMonitor } from '@/lib/performanceMonitoring';
 import {
   nextSortedOffset,
-  SORTED_FEED_BACKFILL_ATTEMPTS,
+  RAW_FEED_BACKFILL_ATTEMPTS,
   sortedFeedHasMore,
   sortedFeedWindowSize,
 } from '@/lib/sortedFeedWindow';
@@ -177,9 +177,9 @@ export function useInfiniteVideos({
       let pageVideos: ParsedVideoData[] = [];
       let queryTime = 0;
       let parseTime = 0;
-      let requestedLimit = filter.limit ?? pageSize;
+      let requestedLimit = pageSize;
 
-      for (let attempt = 0; attempt < SORTED_FEED_BACKFILL_ATTEMPTS; attempt++) {
+      for (let attempt = 0; attempt < RAW_FEED_BACKFILL_ATTEMPTS; attempt++) {
         if (useSortedPagination) {
           requestedLimit = offset + sortedFeedWindowSize(pageSize, attempt);
           filter.limit = requestedLimit;

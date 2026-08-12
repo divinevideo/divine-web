@@ -13,6 +13,7 @@ const {
   mockSetVideosForFullscreen,
   mockUpdateVideos,
   mockUseVideoPrefetch,
+  mockInfiniteScroll,
 } = vi.hoisted(() => ({
   mockNavigate: vi.fn(),
   mockUseVideoProvider: vi.fn(),
@@ -20,6 +21,7 @@ const {
   mockSetVideosForFullscreen: vi.fn(),
   mockUpdateVideos: vi.fn(),
   mockUseVideoPrefetch: vi.fn(),
+  mockInfiniteScroll: vi.fn(),
 }));
 
 vi.mock('@/hooks/useVideoProvider', () => ({
@@ -105,7 +107,10 @@ vi.mock('@/components/ui/card', () => ({
 }));
 
 vi.mock('react-infinite-scroll-component', () => ({
-  default: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+  default: ({ children, dataLength }: { children: ReactNode; dataLength: number }) => {
+    mockInfiniteScroll({ dataLength });
+    return <div>{children}</div>;
+  },
 }));
 
 describe('VideoFeed', () => {
@@ -137,6 +142,7 @@ describe('VideoFeed', () => {
       isLoading: false,
       error: null,
       refetch: vi.fn(),
+      fetchedCount: 1,
       dataSource: 'funnelcake',
     });
   });
@@ -196,5 +202,46 @@ describe('VideoFeed', () => {
       [expect.objectContaining({ id: 'video-1' })],
       { prefetchVideos: false },
     );
+  });
+
+  it('keys infinite scroll from fetched count instead of filtered rendered count', () => {
+    mockUseVideoProvider.mockReturnValue({
+      data: {
+        pages: [{
+          videos: [
+            {
+              id: 'video-1',
+              pubkey: 'a'.repeat(64),
+              kind: 34236,
+              vineId: 'same-address',
+              videoUrl: 'https://example.com/video-1.mp4',
+            },
+            {
+              id: 'video-2',
+              pubkey: 'a'.repeat(64),
+              kind: 34236,
+              vineId: 'same-address',
+              videoUrl: 'https://example.com/video-2.mp4',
+            },
+          ],
+        }],
+      },
+      fetchNextPage: vi.fn(),
+      hasNextPage: true,
+      isLoading: false,
+      error: null,
+      refetch: vi.fn(),
+      fetchedCount: 2,
+      dataSource: 'funnelcake',
+    });
+
+    render(
+      <MemoryRouter initialEntries={['/discovery']}>
+        <VideoFeed feedType="discovery" />
+      </MemoryRouter>
+    );
+
+    expect(screen.getAllByTestId('video-card')).toHaveLength(1);
+    expect(mockInfiniteScroll).toHaveBeenCalledWith({ dataLength: 2 });
   });
 });

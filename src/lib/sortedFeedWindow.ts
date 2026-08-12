@@ -1,7 +1,7 @@
-// ABOUTME: Raw-event pagination helpers for relay sorted feeds
-// ABOUTME: Keeps NIP-50 sorted windows advancing even when parsing drops events
+// ABOUTME: Raw-event pagination helpers for relay feed backfill
+// ABOUTME: Keeps feed windows advancing even when parsing drops events
 
-export const SORTED_FEED_BACKFILL_ATTEMPTS = 3;
+export const RAW_FEED_BACKFILL_ATTEMPTS = 3;
 
 export function nextSortedOffset(eventCount: number, offset: number): number {
   return Math.max(eventCount, offset);
