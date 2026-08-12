@@ -256,18 +256,20 @@ export function useAddToPeopleList() {
     mutationFn: async ({ listId, memberPubkey }: MemberMutationInput) => {
       if (!user) throw new Error('Must be logged in to update people lists');
       if (!isHex64(memberPubkey)) throw new Error('Invalid member pubkey');
+      const normalizedMemberPubkey = memberPubkey.toLowerCase();
 
       const { event, list } = await fetchCurrentPeopleListEvent(nostr, user.pubkey, listId);
-      if (list.memberPubkeys.includes(memberPubkey)) return;
+      if (list.memberPubkeys.includes(normalizedMemberPubkey)) return;
 
       await publishEvent({
         kind: PEOPLE_LIST_KIND,
         content: event.content,
-        tags: withMemberTags(event.tags, [...list.memberPubkeys, memberPubkey]),
+        tags: withMemberTags(event.tags, [...list.memberPubkeys, normalizedMemberPubkey]),
       });
     },
     onMutate: async ({ listId, memberPubkey }) => {
       if (!user) return undefined;
+      const normalizedMemberPubkey = memberPubkey.toLowerCase();
       const listKey = peopleListQueryKey(user.pubkey, listId);
       const listsKey = peopleListsQueryKey(user.pubkey);
 
@@ -278,8 +280,8 @@ export function useAddToPeopleList() {
       const previousLists = queryClient.getQueryData<PeopleList[]>(listsKey);
 
       const update = (list: PeopleList | null | undefined): PeopleList | null | undefined => {
-        if (!list || list.memberPubkeys.includes(memberPubkey)) return list;
-        return { ...list, memberPubkeys: [...list.memberPubkeys, memberPubkey] };
+        if (!list || list.memberPubkeys.includes(normalizedMemberPubkey)) return list;
+        return { ...list, memberPubkeys: [...list.memberPubkeys, normalizedMemberPubkey] };
       };
 
       queryClient.setQueryData<PeopleList | null>(listKey, update);
@@ -314,21 +316,23 @@ export function useRemoveFromPeopleList() {
     mutationFn: async ({ listId, memberPubkey }: MemberMutationInput) => {
       if (!user) throw new Error('Must be logged in to update people lists');
       if (!isHex64(memberPubkey)) throw new Error('Invalid member pubkey');
+      const normalizedMemberPubkey = memberPubkey.toLowerCase();
 
       const { event, list } = await fetchCurrentPeopleListEvent(nostr, user.pubkey, listId);
-      if (!list.memberPubkeys.includes(memberPubkey)) return;
+      if (!list.memberPubkeys.includes(normalizedMemberPubkey)) return;
 
       await publishEvent({
         kind: PEOPLE_LIST_KIND,
         content: event.content,
         tags: withMemberTags(
           event.tags,
-          list.memberPubkeys.filter((pubkey) => pubkey !== memberPubkey),
+          list.memberPubkeys.filter((pubkey) => pubkey !== normalizedMemberPubkey),
         ),
       });
     },
     onMutate: async ({ listId, memberPubkey }) => {
       if (!user) return undefined;
+      const normalizedMemberPubkey = memberPubkey.toLowerCase();
       const listKey = peopleListQueryKey(user.pubkey, listId);
       const listsKey = peopleListsQueryKey(user.pubkey);
 
@@ -342,7 +346,7 @@ export function useRemoveFromPeopleList() {
         if (!list) return list;
         return {
           ...list,
-          memberPubkeys: list.memberPubkeys.filter((pubkey) => pubkey !== memberPubkey),
+          memberPubkeys: list.memberPubkeys.filter((pubkey) => pubkey !== normalizedMemberPubkey),
         };
       };
 

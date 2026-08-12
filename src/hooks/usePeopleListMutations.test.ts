@@ -341,6 +341,29 @@ describe('usePeopleListMutations', () => {
     expect(mockPublishAsync).not.toHaveBeenCalled();
   });
 
+  it('treats uppercase member input as the same key for add and remove', async () => {
+    const { useAddToPeopleList, useRemoveFromPeopleList } = await import('./usePeopleListMutations');
+    const wrapper = createWrapper();
+    const add = renderHook(() => useAddToPeopleList(), { wrapper });
+    const remove = renderHook(() => useRemoveFromPeopleList(), { wrapper });
+
+    await add.result.current.mutateAsync({ listId: 'friends', memberPubkey: ALICE.toUpperCase() });
+    expect(mockPublishAsync).not.toHaveBeenCalled();
+
+    await remove.result.current.mutateAsync({ listId: 'friends', memberPubkey: BOB.toUpperCase() });
+    expect(mockPublishAsync).toHaveBeenCalledWith({
+      kind: 30000,
+      content: 'encrypted-private-members',
+      tags: [
+        ['d', 'friends'],
+        ['title', 'Friends'],
+        ['description', 'Good people'],
+        ['custom', 'keep-me'],
+        ['p', ALICE, 'wss://relay.example'],
+      ],
+    });
+  });
+
   it('rolls back optimistic member updates when publish fails', async () => {
     mockPublishAsync.mockRejectedValue(new Error('relay failed'));
     const queryClient = new QueryClient({
