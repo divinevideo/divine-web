@@ -54,6 +54,15 @@ describe('parsePeopleListFromEvent', () => {
     expect(parsePeopleListFromEvent(event)?.name).toBe('makers');
   });
 
+  it('accepts empty lists', () => {
+    expect(parsePeopleListFromEvent(peopleListEvent({
+      tags: [
+        ['d', 'makers'],
+        ['title', 'Makers'],
+      ],
+    }))?.memberPubkeys).toEqual([]);
+  });
+
   it('rejects missing d tags, the reserved block list, and other event kinds', () => {
     expect(parsePeopleListFromEvent(peopleListEvent({ tags: [] }))).toBeNull();
     expect(parsePeopleListFromEvent(peopleListEvent({ tags: [['d', 'block']] }))).toBeNull();
