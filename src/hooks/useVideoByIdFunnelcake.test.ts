@@ -1,6 +1,6 @@
 import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { renderHook, waitFor } from '@testing-library/react';
+import { act, renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 const mockFetchUserVideos = vi.fn();
@@ -399,5 +399,77 @@ describe('useVideoByIdFunnelcake', () => {
     expect(mockSearchVideos).not.toHaveBeenCalled();
     expect(mockFetchUserVideos).not.toHaveBeenCalled();
     expect(result.current.videos).toBeNull();
+  });
+
+  it('skips a fully-blocked featured page when paging for the next neighbor', async () => {
+    const blockedPubkey = 'b'.repeat(64);
+    mockBlocklist.add(blockedPubkey);
+    mockUseFeaturedTab.mockReturnValue({
+      tab: { id: 'ft_1234abcd' },
+      isResolved: true,
+    });
+    // Page 2 is entirely blocked authors; the visible neighbor is on page 3.
+    // A single-page fetch would filter to nothing and dead-end the boundary.
+    mockFetchFeaturedTabVideos.mockImplementation((_apiUrl, _configId, cursor) => {
+      if (!cursor) {
+        return Promise.resolve({
+          videos: [{ id: 'target-video', pubkey: 'p'.repeat(64), d_tag: 'target-video' }],
+          has_more: true,
+          next_cursor: 'cursor-2',
+        });
+      }
+      if (cursor === 'cursor-2') {
+        return Promise.resolve({
+          videos: [
+            { id: 'blocked-a', pubkey: blockedPubkey, d_tag: 'blocked-a' },
+            { id: 'blocked-b', pubkey: blockedPubkey, d_tag: 'blocked-b' },
+          ],
+          has_more: true,
+          next_cursor: 'cursor-3',
+        });
+      }
+      if (cursor === 'cursor-3') {
+        return Promise.resolve({
+          videos: [{ id: 'visible-next', pubkey: 'v'.repeat(64), d_tag: 'visible-next' }],
+          has_more: false,
+        });
+      }
+      return Promise.resolve({ videos: [], has_more: false });
+    });
+
+    const { result } = renderHook(
+      () => useVideoByIdFunnelcake({
+        videoId: 'target-video',
+        featuredTabId: 'ft_1234abcd',
+      }),
+      { wrapper: createWrapper() }
+    );
+
+    await waitFor(() => {
+      expect(result.current.videos?.map(video => video.id)).toEqual(['target-video']);
+    });
+
+    let pagedIds: string[] | undefined;
+    await act(async () => {
+      const paged = await result.current.fetchNextPage();
+      pagedIds = paged?.map(video => video.id);
+    });
+
+    // The all-blocked page is walked past, not surfaced as a dead-end.
+    expect(pagedIds).toEqual(['target-video', 'visible-next']);
+    expect(mockFetchFeaturedTabVideos).toHaveBeenCalledWith(
+      'https://api.divine.video',
+      'ft_1234abcd',
+      'cursor-2',
+      12,
+      expect.any(AbortSignal)
+    );
+    expect(mockFetchFeaturedTabVideos).toHaveBeenCalledWith(
+      'https://api.divine.video',
+      'ft_1234abcd',
+      'cursor-3',
+      12,
+      expect.any(AbortSignal)
+    );
   });
 });

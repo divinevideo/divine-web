@@ -286,9 +286,34 @@ export function useVideoByIdFunnelcake(options: UseVideoByIdOptions): UseVideoBy
     fetchNextPage: async () => {
       if (!eligibleFeaturedTabId || !featuredHasNextPage) return featuredVideos;
 
-      const result = await fetchNextFeaturedPage();
-      return filterBlockedVideoPages(result.data, blockedPubkeys)
+      const startCount = featuredVideos?.length ?? 0;
+      let result = await fetchNextFeaturedPage();
+      let visible = filterBlockedVideoPages(result.data, blockedPubkeys)
         ?.pages.flatMap((page) => page.videos) ?? featuredVideos;
+      let loadedPages = result.data?.pages.length ?? 0;
+
+      // A featured page can be entirely blocked/muted authors; filtered to
+      // nothing it would surface as a spurious "couldn't load next" toast at the
+      // boundary even though visible videos remain further in. Skip past
+      // fully-filtered pages until a visible neighbor appears or the tab ends.
+      // Bounded per keypress, and it stops the moment a fetch makes no progress
+      // (error or no-op) so a failing page can't spin the loop.
+      let skipped = 0;
+      while (
+        (visible?.length ?? 0) <= startCount &&
+        result.hasNextPage &&
+        skipped < FEATURED_NAVIGATION_PAGE_BUDGET
+      ) {
+        result = await fetchNextFeaturedPage();
+        const nextLoadedPages = result.data?.pages.length ?? 0;
+        if (nextLoadedPages <= loadedPages) break;
+        loadedPages = nextLoadedPages;
+        visible = filterBlockedVideoPages(result.data, blockedPubkeys)
+          ?.pages.flatMap((page) => page.videos) ?? visible;
+        skipped += 1;
+      }
+
+      return visible;
     },
     isLoading,
     error,
