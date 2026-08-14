@@ -359,7 +359,10 @@ describe('useFollowUser - follow list overwrite protection', () => {
 
     expect(mockNostrReq).toHaveBeenCalledWith(
       [{ kinds: [3], authors: [mockUserPubkey], limit: 1 }],
-      { signal: expect.any(AbortSignal) },
+      {
+        signal: expect.any(AbortSignal),
+        relays: ['wss://relay.divine.video'],
+      },
     );
   });
 

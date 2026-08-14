@@ -63,7 +63,7 @@ async function fetchAndSelectContactList(
     const relayEvents: NostrEvent[] = [];
     for await (const message of nostr.req(
       [{ kinds: [3], authors: [userPubkey], limit: 1 }],
-      { signal },
+      { signal, relays: [PRIMARY_RELAY.url] },
     )) {
       if (message[0] === 'EVENT') {
         relayEvents.push(message[2]);
