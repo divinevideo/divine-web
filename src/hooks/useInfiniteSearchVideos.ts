@@ -39,6 +39,10 @@ type SearchPageParam =
   | { type: 'relay-timestamp'; until: number }
   | { type: 'relay-offset'; offset: number };
 
+function isPageParamNumber(value: unknown): value is number {
+  return typeof value === 'number' && Number.isInteger(value) && value >= 0;
+}
+
 function useDebouncedValue(value: string, delay: number): string {
   const [debounced, setDebounced] = useState(value);
 
@@ -109,7 +113,7 @@ function getRelayOffset(pageParam: unknown): number {
     return 0;
   }
 
-  return pageParam.type === 'relay-offset' || pageParam.type === 'funnelcake-offset'
+  return pageParam.type === 'relay-offset'
     ? pageParam.offset
     : 0;
 }
@@ -120,11 +124,11 @@ function isSearchPageParam(pageParam: unknown): pageParam is SearchPageParam {
     && 'type' in pageParam
     && (
       ((pageParam as { type?: unknown; offset?: unknown }).type === 'funnelcake-offset'
-        && typeof (pageParam as { offset?: unknown }).offset === 'number')
+        && isPageParamNumber((pageParam as { offset?: unknown }).offset))
       || ((pageParam as { type?: unknown; until?: unknown }).type === 'relay-timestamp'
-        && typeof (pageParam as { until?: unknown }).until === 'number')
+        && isPageParamNumber((pageParam as { until?: unknown }).until))
       || ((pageParam as { type?: unknown; offset?: unknown }).type === 'relay-offset'
-        && typeof (pageParam as { offset?: unknown }).offset === 'number')
+        && isPageParamNumber((pageParam as { offset?: unknown }).offset))
     );
 }
 
@@ -267,7 +271,7 @@ export function useInfiniteSearchVideos({
             const page = transformToVideoPage(result, 'offset');
             const apiCompletedAt = performance.now();
             const nextCursor = page.offset ?? page.nextCursor;
-            const nextPageParam = nextCursor === undefined
+            const nextPageParam = !isPageParamNumber(nextCursor)
               ? undefined
               : { type: 'funnelcake-offset' as const, offset: nextCursor };
 
@@ -389,12 +393,11 @@ export function useInfiniteSearchVideos({
         limit: pageSize,
       };
 
-      if (relayTimestamp) {
-        filter.until = relayTimestamp;
-      }
-
       if (searchParams.type === 'hashtag') {
         filter['#t'] = [searchParams.value];
+        if (relayTimestamp) {
+          filter.until = relayTimestamp;
+        }
 
         const relayStartedAt = performance.now();
         const { events, videos } = await fetchChronologicalRelayPage({

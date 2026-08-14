@@ -74,22 +74,26 @@ function createWrapper() {
   };
 }
 
+function makeHex(index: number, length: number): string {
+  return index.toString(16).padStart(length, '0');
+}
+
 function makeEvent(index: number, createdAt = 1700000000 - index): NostrEvent {
   return {
-    id: `event-${String(index).padStart(2, '0')}`,
-    pubkey: `pubkey-${String(index).padStart(2, '0')}`,
+    id: makeHex(index, 64),
+    pubkey: makeHex(1000 + index, 64),
     created_at: createdAt,
     kind: 34236,
     tags: [['d', `vine-${index}`]],
     content: '',
-    sig: 'sig',
+    sig: makeHex(2000 + index, 128),
   };
 }
 
 function makeVideo(index: number, overrides: Partial<ParsedVideoData> = {}): ParsedVideoData {
   return {
-    id: `event-${String(index).padStart(2, '0')}`,
-    pubkey: `pubkey-${String(index).padStart(2, '0')}`,
+    id: makeEvent(index).id,
+    pubkey: makeEvent(index).pubkey,
     kind: 34236,
     createdAt: 1700000000 - index,
     content: '',
@@ -110,7 +114,7 @@ describe('useInfiniteSearchVideos', () => {
 
   it('uses Funnelcake search results without falling back to relay search', async () => {
     const expectedVideos = [
-      { id: 'video-1', pubkey: 'pubkey-1', createdAt: 123 } as const,
+      makeVideo(101, { createdAt: 123 }),
     ];
 
     mockSearchVideos.mockResolvedValue({
@@ -178,20 +182,12 @@ describe('useInfiniteSearchVideos', () => {
 
   it('falls back to relay search when Funnelcake search throws', async () => {
     const relayVideos = [
-      { id: 'video-2', pubkey: 'pubkey-2', createdAt: 456 } as const,
+      makeVideo(102, { createdAt: 456 }),
     ];
 
     mockSearchVideos.mockRejectedValue(new Error('boom'));
     mockNostrQuery.mockResolvedValue([
-      {
-        id: 'event-1',
-        pubkey: 'pubkey-2',
-        kind: 34236,
-        created_at: 456,
-        tags: [['d', 'vine-1']],
-        content: 'jack video',
-        sig: 'sig',
-      },
+      makeEvent(102, 456),
     ]);
     mockParseVideoEvents.mockReturnValue(relayVideos);
 
@@ -409,8 +405,8 @@ describe('useInfiniteSearchVideos', () => {
     expect(mockNostrQuery.mock.calls[0]?.[0][0]).not.toHaveProperty('until');
     expect(mockNostrQuery.mock.calls[1]?.[0][0]).not.toHaveProperty('until');
     expect(mockParseVideoEvents.mock.calls[1]?.[0].map((event: NostrEvent) => event.id)).toEqual([
-      'event-03',
-      'event-04',
+      makeEvent(3).id,
+      makeEvent(4).id,
     ]);
   });
 
@@ -462,7 +458,7 @@ describe('useInfiniteSearchVideos', () => {
     expect(result.current.hasNextPage).toBe(false);
   });
 
-  it('does not interpret a Funnelcake offset as a relay timestamp when falling back', async () => {
+  it('does not carry a Funnelcake offset into ranked relay fallback', async () => {
     mockSearchVideos
       .mockResolvedValueOnce({ videos: [], has_more: true })
       .mockRejectedValueOnce(new Error('boom'));
@@ -474,20 +470,8 @@ describe('useInfiniteSearchVideos', () => {
     mockNostrQuery.mockResolvedValueOnce([
       makeEvent(1),
       makeEvent(2),
-      makeEvent(3),
-      makeEvent(4),
-      makeEvent(5),
-      makeEvent(6),
-      makeEvent(7),
-      makeEvent(8),
-      makeEvent(9),
-      makeEvent(10),
-      makeEvent(11),
-      makeEvent(12),
-      makeEvent(13),
-      makeEvent(14),
     ]);
-    mockParseVideoEvents.mockReturnValueOnce([makeVideo(13), makeVideo(14)]);
+    mockParseVideoEvents.mockReturnValueOnce([makeVideo(1), makeVideo(2)]);
 
     const { result } = renderHook(
       () => useInfiniteSearchVideos({ query: 'jack', sortMode: 'relevance', pageSize: 2 }),
@@ -507,9 +491,70 @@ describe('useInfiniteSearchVideos', () => {
     });
 
     expect(mockNostrQuery.mock.calls[0]?.[0][0]).toEqual(
-      expect.objectContaining({ search: 'jack', limit: 14 })
+      expect.objectContaining({ search: 'jack', limit: 2 })
     );
     expect(mockNostrQuery.mock.calls[0]?.[0][0]).not.toHaveProperty('until');
+  });
+
+  it('does not pass an author timestamp cursor into ranked relay fallback', async () => {
+    mockSearchProfiles
+      .mockResolvedValueOnce([{ pubkey: 'a'.repeat(64) }])
+      .mockRejectedValueOnce(new Error('boom'));
+    mockNostrQuery
+      .mockResolvedValueOnce([
+        makeEvent(1, 100),
+        makeEvent(2, 90),
+      ])
+      .mockResolvedValueOnce([
+        makeEvent(3, 80),
+        makeEvent(4, 70),
+      ]);
+    mockParseVideoEvents
+      .mockReturnValueOnce([makeVideo(1, { createdAt: 100 })])
+      .mockReturnValueOnce([makeVideo(3, { createdAt: 80 }), makeVideo(4, { createdAt: 70 })]);
+
+    const { result } = renderHook(
+      () => useInfiniteSearchVideos({ query: 'alice', searchType: 'author', sortMode: 'relevance', pageSize: 2 }),
+      { wrapper: createWrapper() }
+    );
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+
+    await waitFor(() => {
+      expect(result.current.hasNextPage).toBe(true);
+    });
+
+    await act(async () => {
+      await result.current.fetchNextPage();
+    });
+
+    expect(mockNostrQuery.mock.calls[1]?.[0][0]).toEqual(
+      expect.objectContaining({ search: 'alice', limit: 2 })
+    );
+    expect(mockNostrQuery.mock.calls[1]?.[0][0]).not.toHaveProperty('until');
+  });
+
+  it('stops pagination when Funnelcake returns a non-numeric offset cursor', async () => {
+    mockSearchVideos.mockResolvedValueOnce({ videos: [], has_more: true });
+    mockTransformToVideoPage.mockReturnValueOnce({
+      videos: [makeVideo(1)],
+      offset: NaN,
+      hasMore: true,
+    });
+
+    const { result } = renderHook(
+      () => useInfiniteSearchVideos({ query: 'jack', sortMode: 'relevance', pageSize: 2 }),
+      { wrapper: createWrapper() }
+    );
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+
+    expect(result.current.hasNextPage).toBe(false);
+    expect(mockNostrQuery).not.toHaveBeenCalled();
   });
 });
 
