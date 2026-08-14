@@ -7,6 +7,7 @@ import { useNostr } from '@nostrify/react';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useNostrPublish } from '@/hooks/useNostrPublish';
 import { followListCache } from '@/lib/followListCache';
+import type { CachedQueryOptions } from '@/lib/cachedNostr';
 import {
   countContactListFollows,
   selectContactListForPublish,
@@ -56,9 +57,16 @@ async function fetchAndSelectContactList(
   let relayQuerySucceeded = false;
 
   try {
+    // Bypass the local contact-list cache: this is a read-before-write that
+    // must see the authoritative relay list, not a stale cached copy, or a
+    // deliberate removal published by another client would be reverted.
+    const queryOpts: CachedQueryOptions = {
+      signal: AbortSignal.timeout(5000),
+      bypassCache: true,
+    };
     const relayEvents = await nostr.query([
       { kinds: [3], authors: [userPubkey], limit: 1 },
-    ], { signal: AbortSignal.timeout(5000) });
+    ], queryOpts);
 
     relayQuerySucceeded = true;
 

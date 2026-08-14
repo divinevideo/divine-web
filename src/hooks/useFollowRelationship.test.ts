@@ -233,6 +233,30 @@ describe('useFollowUser - follow list overwrite protection', () => {
     expect(followedPubkeys).not.toContain(removedPubkey);
   });
 
+  it('requests an authoritative (cache-bypassing) relay read before publishing', async () => {
+    // Regression guard: the read-before-write must not be served a stale
+    // cached contact list, or a removal published by another client would be
+    // silently reverted. See src/lib/cachedNostr.ts bypassCache.
+    const existing = makeContactListEvent(['bbbb'.padEnd(64, '0')], 1000);
+    mockNostrQuery.mockResolvedValue([existing]);
+
+    const { useFollowUser } = await import('./useFollowRelationship');
+    const { result } = renderHook(() => useFollowUser(), { wrapper: createWrapper() });
+
+    await act(async () => {
+      await result.current.mutateAsync({
+        targetPubkey: mockTargetPubkey,
+        currentContactList: existing,
+        targetDisplayName: 'Test User',
+      });
+    });
+
+    expect(mockNostrQuery).toHaveBeenCalled();
+    expect(
+      mockNostrQuery.mock.calls.some(call => call[1]?.bypassCache === true)
+    ).toBe(true);
+  });
+
   it('allows first follow when user has no existing contact list', async () => {
     // Relay query succeeds but returns nothing — brand new account
     mockNostrQuery.mockResolvedValue([]);

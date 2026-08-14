@@ -5,8 +5,19 @@ import type { NostrEvent, NostrFilter } from '@nostrify/nostrify';
 import { eventCache } from './eventCache';
 import { debugLog } from './debug';
 
+/**
+ * Query options accepted by the cached client. `bypassCache` lets a caller
+ * skip the local cache-first short-circuit and force an authoritative relay
+ * read (the fresh result is still written back to the cache).
+ */
+export interface CachedQueryOptions {
+  signal?: AbortSignal;
+  relays?: string[];
+  bypassCache?: boolean;
+}
+
 interface NostrClient {
-  query: (filters: NostrFilter[], opts?: { signal?: AbortSignal; relays?: string[] }) => Promise<NostrEvent[]>;
+  query: (filters: NostrFilter[], opts?: CachedQueryOptions) => Promise<NostrEvent[]>;
   event: (event: NostrEvent) => Promise<void>;
 }
 
@@ -20,7 +31,7 @@ export function createCachedNostr<T extends NostrClient>(
   const cachedNostr = Object.create(baseNostr) as T;
 
   // Wrap query method with cache-first logic
-  cachedNostr.query = async (filters: NostrFilter[], opts?: { signal?: AbortSignal; relays?: string[] }): Promise<NostrEvent[]> => {
+  cachedNostr.query = async (filters: NostrFilter[], opts?: CachedQueryOptions): Promise<NostrEvent[]> => {
     const startTime = performance.now();
     // debugLog('[CachedNostr] Query with filters:', filters);
 
@@ -29,8 +40,12 @@ export function createCachedNostr<T extends NostrClient>(
     const isContactQuery = filters.some(f => f.kinds?.includes(3));
     const isCacheable = isProfileQuery || isContactQuery;
 
-    // 1. Try local cache first for cacheable queries
-    if (isCacheable) {
+    // 1. Try local cache first for cacheable queries.
+    //    `bypassCache` callers skip this short-circuit so they read the
+    //    authoritative event from the relay (e.g. a read-before-write that
+    //    must not be served a stale cached list). The fresh relay result is
+    //    still cached below.
+    if (isCacheable && !opts?.bypassCache) {
       const cachedResults = await eventCache.query(filters);
       if (cachedResults.length > 0) {
         debugLog(`[CachedNostr] Cache hit: ${cachedResults.length} events in ${(performance.now() - startTime).toFixed(0)}ms`);
