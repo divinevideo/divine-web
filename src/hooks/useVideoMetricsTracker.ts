@@ -131,27 +131,34 @@ export function useVideoMetricsTracker({
     });
   }, [trackEngagementSummary]); // Reads playback state from refs
 
-  // Reset metrics when video ID changes and keep the tracked video fresh for same-ID updates.
+  // Reset metrics on a real video id change; keep the tracked object fresh otherwise.
   useEffect(() => {
     const videoId = video?.id ?? null;
     if (!videoId) return;
 
-    // If video changed, publish remaining time for previous video
-    if (currentVideoIdRef.current && currentVideoIdRef.current !== videoId) {
-      const previousVideo = trackedVideoRef.current;
-      flushWatchTime();
-      publishAndReset(previousVideo);
+    const idChanged = currentVideoIdRef.current !== videoId;
+
+    // Only a genuine id change publishes leftovers and resets. A same-id object
+    // change (e.g. async ProofMode enrichment handing us a new object with the
+    // same id) must NOT reset the accumulator, or mid-play watch time is lost.
+    if (idChanged) {
+      if (currentVideoIdRef.current) {
+        const previousVideo = trackedVideoRef.current;
+        flushWatchTime();
+        publishAndReset(previousVideo);
+      }
+
+      metricsRef.current = {
+        lastPosition: 0,
+        loopCount: 0,
+        hasTrackedView: false,
+      };
+      watchTimeAccumulatorRef.current = 0;
+      lastUpdateTimeRef.current = Date.now();
+      currentVideoIdRef.current = videoId;
     }
 
-    // Reset metrics for new video
-    metricsRef.current = {
-      lastPosition: 0,
-      loopCount: 0,
-      hasTrackedView: false,
-    };
-    watchTimeAccumulatorRef.current = 0;
-    lastUpdateTimeRef.current = Date.now();
-    currentVideoIdRef.current = videoId;
+    // Keep the tracked object current for this id (same id/pubkey/vineId).
     trackedVideoRef.current = video;
   }, [video, video?.id, publishAndReset, flushWatchTime]);
 
