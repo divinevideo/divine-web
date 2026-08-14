@@ -5,9 +5,9 @@
 import type { NostrEvent, NostrFilter } from '@nostrify/nostrify';
 import { MUTE_LIST_KIND } from '@/hooks/useModeration';
 import { BADGE_RELAYS, PROFILE_RELAYS, getRelayUrls } from '@/config/relays';
+import { BADGE_READ_KINDS } from '@/lib/badges';
 import { VIDEO_KINDS } from '@/types/video';
 
-const BADGE_KINDS = [30009, 8, 30008];
 const LIST_KINDS = [30000, 30001, 30005];
 
 export interface RoutingContext {
@@ -52,7 +52,7 @@ export function buildReqRouter(ctx: RoutingContext): ReqRouter {
     for (const filter of filters) {
       if (filter.kinds?.includes(0) || filter.kinds?.includes(3) || filter.kinds?.includes(10011)) {
         profileRelayFilters.push(filter);
-      } else if (filter.kinds?.some((k) => BADGE_KINDS.includes(k))) {
+      } else if (filter.kinds?.some((k) => BADGE_READ_KINDS.includes(k))) {
         badgeRelayFilters.push(filter);
       } else if (filter.kinds?.some((k) => VIDEO_KINDS.includes(k))) {
         videoFilters.push(filter);

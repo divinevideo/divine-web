@@ -116,7 +116,7 @@ export const PRESET_RELAYS: RelayConfig[] = [
 ];
 
 /**
- * Relays used for NIP-58 badge queries (kinds 30009, 8, 30008)
+ * Relays used for NIP-58 badge queries (kinds 30009, 8, 10008, 30008)
  * Badge events may not be accepted by all relays, so we query a broad set.
  * Includes Divine relay (once kinds are allowlisted) plus public relays.
  */
