@@ -205,6 +205,34 @@ describe('useFollowUser - follow list overwrite protection', () => {
     expect(pTags).toHaveLength(11); // 10 from relay + 1 new
   });
 
+  it('uses newer relay contact list when it removed a follow', async () => {
+    const removedPubkey = 'cccc'.padEnd(64, '0');
+    const keptPubkey = 'bbbb'.padEnd(64, '0');
+    const staleContactList = makeContactListEvent([keptPubkey, removedPubkey], 1000);
+    const relayContactList = makeContactListEvent([keptPubkey], 2000);
+
+    mockNostrQuery.mockResolvedValue([relayContactList]);
+
+    const { useFollowUser } = await import('./useFollowRelationship');
+    const { result } = renderHook(() => useFollowUser(), { wrapper: createWrapper() });
+
+    await act(async () => {
+      await result.current.mutateAsync({
+        targetPubkey: mockTargetPubkey,
+        currentContactList: staleContactList,
+        targetDisplayName: 'Test User',
+      });
+    });
+
+    const publishedTags = mockPublishEvent.mock.calls[0][0].tags;
+    const followedPubkeys = publishedTags
+      .filter((t: string[]) => t[0] === 'p')
+      .map((t: string[]) => t[1]);
+
+    expect(followedPubkeys).toEqual([keptPubkey, mockTargetPubkey]);
+    expect(followedPubkeys).not.toContain(removedPubkey);
+  });
+
   it('allows first follow when user has no existing contact list', async () => {
     // Relay query succeeds but returns nothing — brand new account
     mockNostrQuery.mockResolvedValue([]);
@@ -249,6 +277,60 @@ describe('useFollowUser - follow list overwrite protection', () => {
         });
       }),
     ).rejects.toThrow(FollowRaceError);
+
+    expect(mockPublishEvent).not.toHaveBeenCalled();
+  });
+});
+
+describe('useUnfollowUser - follow list overwrite protection', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockPublishEvent.mockResolvedValue({ id: 'new-event-id' });
+  });
+
+  it('uses newer relay contact list when it removed a different follow', async () => {
+    const targetToUnfollow = mockTargetPubkey;
+    const removedElsewhere = 'cccc'.padEnd(64, '0');
+    const keptPubkey = 'bbbb'.padEnd(64, '0');
+    const staleContactList = makeContactListEvent([targetToUnfollow, keptPubkey, removedElsewhere], 1000);
+    const relayContactList = makeContactListEvent([targetToUnfollow, keptPubkey], 2000);
+
+    mockNostrQuery.mockResolvedValue([relayContactList]);
+
+    const { useUnfollowUser } = await import('./useFollowRelationship');
+    const { result } = renderHook(() => useUnfollowUser(), { wrapper: createWrapper() });
+
+    await act(async () => {
+      await result.current.mutateAsync({
+        targetPubkey: targetToUnfollow,
+        currentContactList: staleContactList,
+      });
+    });
+
+    const publishedTags = mockPublishEvent.mock.calls[0][0].tags;
+    const followedPubkeys = publishedTags
+      .filter((t: string[]) => t[0] === 'p')
+      .map((t: string[]) => t[1]);
+
+    expect(followedPubkeys).toEqual([keptPubkey]);
+    expect(followedPubkeys).not.toContain(removedElsewhere);
+    expect(followedPubkeys).not.toContain(targetToUnfollow);
+  });
+
+  it('refuses to publish when relay fetch fails and no cached contact list exists', async () => {
+    mockNostrQuery.mockRejectedValue(new Error('timeout'));
+
+    const { useUnfollowUser } = await import('./useFollowRelationship');
+    const { result } = renderHook(() => useUnfollowUser(), { wrapper: createWrapper() });
+
+    await expect(
+      act(async () => {
+        await result.current.mutateAsync({
+          targetPubkey: mockTargetPubkey,
+          currentContactList: null,
+        });
+      }),
+    ).rejects.toThrow('Could not load your existing follow list');
 
     expect(mockPublishEvent).not.toHaveBeenCalled();
   });

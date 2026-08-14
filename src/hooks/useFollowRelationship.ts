@@ -7,6 +7,10 @@ import { useNostr } from '@nostrify/react';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useNostrPublish } from '@/hooks/useNostrPublish';
 import { followListCache } from '@/lib/followListCache';
+import {
+  countContactListFollows,
+  selectContactListForPublish,
+} from '@/lib/contactListSelection';
 import { debugLog } from '@/lib/debug';
 import type { NostrEvent } from '@nostrify/nostrify';
 import { PRIMARY_RELAY } from '@/config/relays';
@@ -34,6 +38,58 @@ interface FollowUserParams {
 interface UnfollowUserParams {
   targetPubkey: string;
   currentContactList: NostrEvent | null;
+}
+
+interface ContactListPublishSelection {
+  contactList: NostrEvent | null;
+  relayQuerySucceeded: boolean;
+}
+
+type NostrClient = ReturnType<typeof useNostr>['nostr'];
+
+async function fetchAndSelectContactList(
+  nostr: NostrClient,
+  userPubkey: string,
+  currentContactList: NostrEvent | null,
+  logPrefix: string
+): Promise<ContactListPublishSelection> {
+  let relayQuerySucceeded = false;
+
+  try {
+    const relayEvents = await nostr.query([
+      { kinds: [3], authors: [userPubkey], limit: 1 },
+    ], { signal: AbortSignal.timeout(5000) });
+
+    relayQuerySucceeded = true;
+
+    const relayContactList = relayEvents
+      .filter((e: NostrEvent) => e.kind === 3)
+      .sort((a: NostrEvent, b: NostrEvent) => b.created_at - a.created_at)[0] || null;
+
+    const selection = selectContactListForPublish(currentContactList, relayContactList);
+    const source = selection.chosen === relayContactList ? 'relay' : 'passed';
+
+    debugLog(
+      `[${logPrefix}] Using ${source} contact list:`,
+      selection.reason,
+      '(relay had',
+      countContactListFollows(relayContactList),
+      'follows, passed had',
+      countContactListFollows(currentContactList),
+      ')'
+    );
+
+    return {
+      contactList: selection.chosen,
+      relayQuerySucceeded,
+    };
+  } catch (error) {
+    debugLog(`[${logPrefix}] Failed to fetch latest Kind 3 from relay, using passed contact list:`, error);
+    return {
+      contactList: currentContactList,
+      relayQuerySucceeded,
+    };
+  }
 }
 
 /**
@@ -141,38 +197,10 @@ export function useFollowUser() {
     mutationFn: async ({ targetPubkey, currentContactList, targetDisplayName }: FollowUserParams) => {
       if (!user?.pubkey) throw new Error('No current user');
 
-      // CRITICAL: Always fetch the latest Kind 3 from the relay before publishing.
-      // The passed currentContactList may be stale or null if the UI query hasn't
-      // loaded yet (race condition on fresh sessions / mobile browsers).
-      let bestContactList = currentContactList;
-      let relayQuerySucceeded = false;
-
-      try {
-        const relayEvents = await nostr.query([
-          { kinds: [3], authors: [user.pubkey], limit: 1 },
-        ], { signal: AbortSignal.timeout(5000) });
-
-        relayQuerySucceeded = true;
-
-        const relayContactList = relayEvents
-          .filter((e: NostrEvent) => e.kind === 3)
-          .sort((a: NostrEvent, b: NostrEvent) => b.created_at - a.created_at)[0] || null;
-
-        if (relayContactList) {
-          const relayFollowCount = relayContactList.tags.filter((t: string[]) => t[0] === 'p').length;
-          const passedFollowCount = currentContactList?.tags.filter((t: string[]) => t[0] === 'p').length ?? 0;
-
-          // Use whichever has more follows to prevent data loss
-          if (relayFollowCount >= passedFollowCount) {
-            bestContactList = relayContactList;
-            debugLog('[useFollowUser] Using relay contact list:', relayFollowCount, 'follows (passed had', passedFollowCount, ')');
-          } else {
-            debugLog('[useFollowUser] Using passed contact list:', passedFollowCount, 'follows (relay had', relayFollowCount, ')');
-          }
-        }
-      } catch (error) {
-        debugLog('[useFollowUser] Failed to fetch latest Kind 3 from relay, using passed contact list:', error);
-      }
+      const {
+        contactList: bestContactList,
+        relayQuerySucceeded,
+      } = await fetchAndSelectContactList(nostr, user.pubkey, currentContactList, 'useFollowUser');
 
       // If relay query failed and we have no cached list, refuse to publish
       // to prevent creating a Kind 3 with only 1 follow that overwrites an existing list.
@@ -249,29 +277,15 @@ export function useUnfollowUser() {
     mutationFn: async ({ targetPubkey, currentContactList }: UnfollowUserParams) => {
       if (!user?.pubkey) throw new Error('No current user');
 
-      // Fetch latest Kind 3 from relay, same as useFollowUser
-      let bestContactList = currentContactList;
+      const {
+        contactList: bestContactList,
+        relayQuerySucceeded,
+      } = await fetchAndSelectContactList(nostr, user.pubkey, currentContactList, 'useUnfollowUser');
 
-      try {
-        const relayEvents = await nostr.query([
-          { kinds: [3], authors: [user.pubkey], limit: 1 },
-        ], { signal: AbortSignal.timeout(5000) });
-
-        const relayContactList = relayEvents
-          .filter((e: NostrEvent) => e.kind === 3)
-          .sort((a: NostrEvent, b: NostrEvent) => b.created_at - a.created_at)[0] || null;
-
-        if (relayContactList) {
-          const relayFollowCount = relayContactList.tags.filter((t: string[]) => t[0] === 'p').length;
-          const passedFollowCount = currentContactList?.tags.filter((t: string[]) => t[0] === 'p').length ?? 0;
-
-          if (relayFollowCount >= passedFollowCount) {
-            bestContactList = relayContactList;
-            debugLog('[useUnfollowUser] Using relay contact list:', relayFollowCount, 'follows');
-          }
-        }
-      } catch (error) {
-        debugLog('[useUnfollowUser] Failed to fetch latest Kind 3, using passed contact list:', error);
+      if (!bestContactList && !relayQuerySucceeded) {
+        throw new Error(
+          'Could not load your existing follow list. Please try again in a moment.'
+        );
       }
 
       if (!bestContactList) throw new Error('No contact list to update');
