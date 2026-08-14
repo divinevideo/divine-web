@@ -303,10 +303,20 @@ describe('useVideoMetricsTracker', () => {
     act(() => { vi.advanceTimersByTime(2000); });
 
     expect(mockPublishViewEvent).toHaveBeenCalledTimes(1);
+    expect(mockPublishViewEvent).toHaveBeenNthCalledWith(1, expect.objectContaining({
+      video: video1,
+      startSeconds: 0,
+      source: 'unknown',
+    }));
 
     unmount();
     // Also publishes for video2
     expect(mockPublishViewEvent).toHaveBeenCalledTimes(2);
+    expect(mockPublishViewEvent).toHaveBeenNthCalledWith(2, expect.objectContaining({
+      video: video2,
+      startSeconds: 0,
+      source: 'unknown',
+    }));
   });
 
   it('does not accumulate time while paused', () => {

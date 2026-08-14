@@ -44,14 +44,12 @@ export function useVideoMetricsTracker({
   const { publishViewEvent, isAuthenticated } = useViewEventPublisher();
 
   // Store props/callbacks in refs so effects don't re-run on object reference changes.
-  const videoRef = useRef(video);
   const publishViewEventRef = useRef(publishViewEvent);
   const sourceRef = useRef(source);
   const isAuthenticatedRef = useRef(isAuthenticated);
   const enabledRef = useRef(enabled);
   const isPlayingRef = useRef(isPlaying);
 
-  videoRef.current = video;
   publishViewEventRef.current = publishViewEvent;
   sourceRef.current = source;
   isAuthenticatedRef.current = isAuthenticated;
@@ -67,6 +65,7 @@ export function useVideoMetricsTracker({
 
   // Track the current video ID to detect video changes
   const currentVideoIdRef = useRef<string | null>(null);
+  const trackedVideoRef = useRef<ParsedVideoData | null>(video);
 
   // Track accumulated watch time since last publish
   const watchTimeAccumulatorRef = useRef<number>(0);
@@ -99,8 +98,8 @@ export function useVideoMetricsTracker({
   }, []);
 
   // Publish a view event and reset the accumulator (stable, reads from refs)
-  const publishAndReset = useCallback(async () => {
-    const currentVideo = videoRef.current;
+  const publishAndReset = useCallback(async (targetVideo = trackedVideoRef.current) => {
+    const currentVideo = targetVideo;
     if (!currentVideo || !enabledRef.current || !isAuthenticatedRef.current) return;
 
     const rawWatchedSeconds = watchTimeAccumulatorRef.current;
@@ -132,15 +131,16 @@ export function useVideoMetricsTracker({
     });
   }, [trackEngagementSummary]); // Reads playback state from refs
 
-  // Reset metrics when video ID changes (primitive comparison, stable)
+  // Reset metrics when video ID changes and keep the tracked video fresh for same-ID updates.
   useEffect(() => {
     const videoId = video?.id ?? null;
     if (!videoId) return;
 
     // If video changed, publish remaining time for previous video
     if (currentVideoIdRef.current && currentVideoIdRef.current !== videoId) {
+      const previousVideo = trackedVideoRef.current;
       flushWatchTime();
-      publishAndReset();
+      publishAndReset(previousVideo);
     }
 
     // Reset metrics for new video
@@ -152,7 +152,8 @@ export function useVideoMetricsTracker({
     watchTimeAccumulatorRef.current = 0;
     lastUpdateTimeRef.current = Date.now();
     currentVideoIdRef.current = videoId;
-  }, [video?.id, publishAndReset, flushWatchTime]);
+    trackedVideoRef.current = video;
+  }, [video, video?.id, publishAndReset, flushWatchTime]);
 
   // Track playback time — depends only on primitives
   useEffect(() => {
@@ -181,6 +182,7 @@ export function useVideoMetricsTracker({
     }, 1000);
 
     return () => {
+      // On pause, render has already set isPlayingRef.current=false; count the slice that just ended.
       flushWatchTime(true);
       clearInterval(interval);
     };
@@ -213,27 +215,13 @@ export function useVideoMetricsTracker({
     metrics.lastPosition = currentTime;
   }, [video?.id, enabled, currentTime, duration, flushWatchTime, publishAndReset]);
 
-  // Publish remaining time on actual component unmount (empty deps)
+  // Publish remaining time on actual component unmount.
   useEffect(() => {
     return () => {
-      const currentVideo = videoRef.current;
       flushWatchTime();
-      const rawWatchedSeconds = watchTimeAccumulatorRef.current;
-      const watchedSeconds = Math.floor(rawWatchedSeconds);
-
-      if (currentVideo && rawWatchedSeconds > 0 && isAuthenticatedRef.current && enabledRef.current) {
-        trackEngagementSummary(currentVideo, watchedSeconds);
-        publishViewEventRef.current({
-          video: currentVideo,
-          startSeconds: 0,
-          endSeconds: watchedSeconds,
-          source: sourceRef.current,
-        }).catch(() => {
-          // Ignore errors on unmount
-        });
-      }
+      void publishAndReset();
     };
-  }, [flushWatchTime, trackEngagementSummary]); // Fires only on unmount
+  }, [flushWatchTime, publishAndReset]);
 
   // Return current metrics for debugging/display purposes
   return {
