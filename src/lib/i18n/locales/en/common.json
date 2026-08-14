@@ -813,6 +813,7 @@
     "seoDescription": "Watch this video on Divine",
     "seoDescriptionWithAuthor": "Watch this video by {{name}} on Divine",
     "errorTitle": "Error",
+    "nextVideoUnavailableDescription": "No more videos in this tab.",
     "likedTitle": "Liked!",
     "likedDescription": "Your reaction has been published",
     "likeFailedDescription": "Failed to like video",

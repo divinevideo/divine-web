@@ -813,6 +813,7 @@
     "seoDescription": "Assista a este vídeo na Divine",
     "seoDescriptionWithAuthor": "Assista a este vídeo de {{name}} na Divine",
     "errorTitle": "Erro",
+    "nextVideoUnavailableDescription": "Não há mais vídeos nesta aba.",
     "likedTitle": "Curtido!",
     "likedDescription": "Sua reação foi publicada",
     "likeFailedDescription": "Falha ao curtir o vídeo",

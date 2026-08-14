@@ -813,6 +813,7 @@
     "seoDescription": "在 Divine 上观看这个视频",
     "seoDescriptionWithAuthor": "在 Divine 上观看 {{name}} 的视频",
     "errorTitle": "出错",
+    "nextVideoUnavailableDescription": "这个标签页里没有更多视频了。",
     "likedTitle": "已点赞！",
     "likedDescription": "你的反应已发布",
     "likeFailedDescription": "点赞失败",

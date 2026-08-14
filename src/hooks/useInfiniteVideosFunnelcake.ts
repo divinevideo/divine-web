@@ -4,6 +4,7 @@
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { getFunnelcakeBaseUrl } from '@/config/api';
+import { FEED_PAGE_SIZE } from '@/config/feed';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import type { ParsedVideoData } from '@/types/video';
 import type { FunnelcakeFetchOptions } from '@/types/funnelcake';
@@ -200,7 +201,7 @@ export function useInfiniteVideosFunnelcake({
   hashtag,
   category,
   pubkey,
-  pageSize = 12,
+  pageSize = FEED_PAGE_SIZE,
   enabled = true,
   randomizeWithinTop,
 }: UseInfiniteVideosFunnelcakeOptions) {

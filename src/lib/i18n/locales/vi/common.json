@@ -813,6 +813,7 @@
     "seoDescription": "Xem video này trên Divine",
     "seoDescriptionWithAuthor": "Xem video này của {{name}} trên Divine",
     "errorTitle": "Lỗi",
+    "nextVideoUnavailableDescription": "Không còn video nào trong tab này.",
     "likedTitle": "Đã thích!",
     "likedDescription": "Cảm xúc của bạn đã được đăng",
     "likeFailedDescription": "Không thích được video",

@@ -126,7 +126,7 @@ export function VideoPage() {
     if (!nextVideo) {
       toast({
         title: t('videoPage.errorTitle'),
-        description: "Couldn't load the next video. Try again?",
+        description: t('videoPage.nextVideoUnavailableDescription'),
         variant: 'destructive',
       });
       return;

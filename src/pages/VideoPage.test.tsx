@@ -130,51 +130,23 @@ vi.mock('@/hooks/useVideoByIdFunnelcake', () => ({
   },
 }));
 
-vi.mock('@/hooks/useVideoNavigation', () => ({
-  buildVideoNavigationUrl: (videoId: string, context: {
-    source: string;
-    hashtag?: string;
-    pubkey?: string;
-    listId?: string;
-    featuredTabId?: string;
-    query?: string;
-    sortMode?: string;
-  }, index?: number) => {
-    const params = new URLSearchParams({ source: context.source });
-    if (context.hashtag) params.set('hashtag', context.hashtag);
-    if (context.pubkey) params.set('pubkey', context.pubkey);
-    if (context.listId) params.set('listId', context.listId);
-    if (context.featuredTabId) params.set('featuredTabId', context.featuredTabId);
-    if (context.query) params.set('q', context.query);
-    if (context.sortMode) params.set('sort', context.sortMode);
-    if (index !== undefined) params.set('index', String(index));
-    return `/video/${videoId}?${params.toString()}`;
-  },
-  parseVideoNavigationContext: (searchParams: URLSearchParams) => {
-    const source = searchParams.get('source');
-    if (!source) return null;
-    return {
-      source,
-      hashtag: searchParams.get('hashtag') || undefined,
-      pubkey: searchParams.get('pubkey') || undefined,
-      listId: searchParams.get('listId') || undefined,
-      featuredTabId: searchParams.get('featuredTabId') || undefined,
-      query: searchParams.get('q') || undefined,
-      sortMode: searchParams.get('sort') || undefined,
-      currentIndex: searchParams.get('index') ? parseInt(searchParams.get('index')!, 10) : undefined,
-    };
-  },
-  useVideoNavigation: () => ({
-    context: null,
-    currentVideo: null,
-    videos: null,
-    hasNext: false,
-    hasPrevious: false,
-    goToNext: vi.fn(),
-    goToPrevious: vi.fn(),
-    isLoading: false,
-  }),
-}));
+vi.mock('@/hooks/useVideoNavigation', async () => {
+  const actual = await vi.importActual<typeof import('@/hooks/useVideoNavigation')>('@/hooks/useVideoNavigation');
+
+  return {
+    ...actual,
+    useVideoNavigation: () => ({
+      context: null,
+      currentVideo: null,
+      videos: null,
+      hasNext: false,
+      hasPrevious: false,
+      goToNext: vi.fn(),
+      goToPrevious: vi.fn(),
+      isLoading: false,
+    }),
+  };
+});
 
 vi.mock('@/hooks/useAuthor', () => ({
   useAuthor: () => ({
@@ -389,6 +361,7 @@ describe('VideoPage', () => {
 
     await waitFor(() => {
       expect(mockToast).toHaveBeenCalledWith(expect.objectContaining({
+        description: 'No more videos in this tab.',
         variant: 'destructive',
       }));
     });

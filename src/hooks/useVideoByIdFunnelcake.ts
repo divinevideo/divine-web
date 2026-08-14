@@ -232,24 +232,27 @@ export function useVideoByIdFunnelcake(options: UseVideoByIdOptions): UseVideoBy
 
   const contextVideos = userVideosQuery.data ?? hashtagVideosQuery.data ?? searchVideosQuery.data ?? featuredVideos ?? null;
   const contextVideo = contextVideos?.find(v => v.id === videoId || v.vineId === videoId) || null;
-  const contextLoading = pubkey
-    ? userVideosQuery.isLoading
-    : hashtag
-      ? hashtagVideosQuery.isLoading
-      : searchValue
-        ? searchVideosQuery.isLoading
-        : eligibleFeaturedTabId
-          ? isFeaturedVideosLoading || isFetchingNextFeaturedPage
-        : false;
-  const contextError = pubkey
-    ? (userVideosQuery.error as Error | null)
-    : hashtag
-      ? (hashtagVideosQuery.error as Error | null)
-      : searchValue
-        ? (searchVideosQuery.error as Error | null)
-        : eligibleFeaturedTabId
-          ? (featuredVideosError as Error | null)
-        : null;
+  let contextLoading = false;
+  if (pubkey) {
+    contextLoading = userVideosQuery.isLoading;
+  } else if (hashtag) {
+    contextLoading = hashtagVideosQuery.isLoading;
+  } else if (searchValue) {
+    contextLoading = searchVideosQuery.isLoading;
+  } else if (eligibleFeaturedTabId) {
+    contextLoading = isFeaturedVideosLoading || isFetchingNextFeaturedPage;
+  }
+
+  let contextError: Error | null = null;
+  if (pubkey) {
+    contextError = userVideosQuery.error as Error | null;
+  } else if (hashtag) {
+    contextError = hashtagVideosQuery.error as Error | null;
+  } else if (searchValue) {
+    contextError = searchVideosQuery.error as Error | null;
+  } else if (eligibleFeaturedTabId) {
+    contextError = featuredVideosError as Error | null;
+  }
   const shouldLookupSingleVideo = enabled && !!videoId && (
     !contextVideo
   );

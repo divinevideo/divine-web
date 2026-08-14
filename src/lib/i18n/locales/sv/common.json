@@ -813,6 +813,7 @@
     "seoDescription": "Titta på den här videon på Divine",
     "seoDescriptionWithAuthor": "Titta på den här videon av {{name}} på Divine",
     "errorTitle": "Fel",
+    "nextVideoUnavailableDescription": "Inga fler videor i den här fliken.",
     "likedTitle": "Gillad!",
     "likedDescription": "Din reaktion har publicerats",
     "likeFailedDescription": "Kunde inte gilla videon",

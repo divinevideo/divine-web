@@ -813,6 +813,7 @@
     "seoDescription": "Vezi acest videoclip pe Divine",
     "seoDescriptionWithAuthor": "Vezi acest videoclip de la {{name}} pe Divine",
     "errorTitle": "Eroare",
+    "nextVideoUnavailableDescription": "Nu mai sunt videoclipuri în această filă.",
     "likedTitle": "Apreciat!",
     "likedDescription": "Reacția ta a fost publicată",
     "likeFailedDescription": "Aprecierea videoclipului a eșuat",

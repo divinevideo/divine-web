@@ -813,6 +813,7 @@
     "seoDescription": "Bekijk deze video op Divine",
     "seoDescriptionWithAuthor": "Bekijk deze video van {{name}} op Divine",
     "errorTitle": "Fout",
+    "nextVideoUnavailableDescription": "Geen verdere videos in dit tabblad.",
     "likedTitle": "Geliket!",
     "likedDescription": "Je reactie is gepubliceerd",
     "likeFailedDescription": "Video liken mislukt",

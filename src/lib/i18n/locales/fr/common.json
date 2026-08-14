@@ -813,6 +813,7 @@
     "seoDescription": "Regarde cette vidéo sur Divine",
     "seoDescriptionWithAuthor": "Regarde cette vidéo de {{name}} sur Divine",
     "errorTitle": "Erreur",
+    "nextVideoUnavailableDescription": "Plus de vidéos dans cet onglet.",
     "likedTitle": "Aimé !",
     "likedDescription": "Ta réaction a été publiée",
     "likeFailedDescription": "Échec du like",

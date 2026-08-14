@@ -813,6 +813,7 @@
     "seoDescription": "Divineでこの動画を視聴",
     "seoDescriptionWithAuthor": "Divineで{{name}}のこの動画を視聴",
     "errorTitle": "エラー",
+    "nextVideoUnavailableDescription": "このタブにはこれ以上動画がありません。",
     "likedTitle": "いいねしました！",
     "likedDescription": "リアクションが公開されました",
     "likeFailedDescription": "動画へのいいねに失敗しました",
