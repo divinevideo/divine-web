@@ -41,8 +41,15 @@ export function selectContactListForPublish(
     return { chosen: passed, reason: 'passed contact list is newer' };
   }
 
+  if (relay.id <= passed.id) {
+    return {
+      chosen: relay,
+      reason: 'contact lists have equal timestamps; relay id is canonical',
+    };
+  }
+
   return {
-    chosen: relay,
-    reason: 'contact lists have equal timestamps; using relay copy',
+    chosen: passed,
+    reason: 'contact lists have equal timestamps; passed id is canonical',
   };
 }

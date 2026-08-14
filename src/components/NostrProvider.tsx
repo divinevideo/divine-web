@@ -6,7 +6,7 @@ import { useQueryClient } from '@tanstack/react-query';
 
 import { useAppContext } from '@/hooks/useAppContext';
 import { debugLog, verboseLog } from '@/lib/debug';
-import { createCachedNostr, type CachedNostrClient } from '@/lib/cachedNostr';
+import { createCachedNostr } from '@/lib/cachedNostr';
 import { buildEventRouter, buildReqRouter } from '@/lib/relayRouting';
 import {
   pickTopN,
@@ -34,7 +34,7 @@ const NostrProvider: React.FC<NostrProviderProps> = (props) => {
 
   // Create NPool instance only once
   const pool = useRef<NPool | undefined>(undefined);
-  const cachedPool = useRef<CachedNostrClient<NPool> | undefined>(undefined);
+  const cachedPool = useRef<NPool | undefined>(undefined);
 
   // Use refs so the pool always has the latest data
   const relayUrl = useRef<string>(config.relayUrl);

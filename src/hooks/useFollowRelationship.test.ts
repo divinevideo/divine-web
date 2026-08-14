@@ -33,6 +33,7 @@ vi.mock('@/config/relays', () => ({
 
 // Create mock functions
 const mockNostrQuery = vi.fn();
+const mockNostrReq = vi.fn();
 const mockPublishEvent = vi.fn();
 const mockUserPubkey = 'aabbccdd11223344aabbccdd11223344aabbccdd11223344aabbccdd11223344';
 const mockTargetPubkey = '11223344aabbccdd11223344aabbccdd11223344aabbccdd11223344aabbccdd';
@@ -42,6 +43,7 @@ vi.mock('@nostrify/react', () => ({
   useNostr: () => ({
     nostr: {
       query: mockNostrQuery,
+      req: mockNostrReq,
     },
   }),
 }));
@@ -71,9 +73,13 @@ function createWrapper() {
     React.createElement(QueryClientProvider, { client: queryClient }, children);
 }
 
-function makeContactListEvent(pubkeys: string[], createdAt: number = Math.floor(Date.now() / 1000)): NostrEvent {
+function makeContactListEvent(
+  pubkeys: string[],
+  createdAt: number = Math.floor(Date.now() / 1000),
+  id = 'event-' + createdAt,
+): NostrEvent {
   return {
-    id: 'event-' + createdAt,
+    id,
     pubkey: mockUserPubkey,
     created_at: createdAt,
     kind: 3,
@@ -87,6 +93,13 @@ describe('useFollowUser - follow list overwrite protection', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockPublishEvent.mockResolvedValue({ id: 'new-event-id' });
+    mockNostrReq.mockImplementation(async function* () {
+      const events = await mockNostrQuery();
+      for (const event of events) {
+        yield ['EVENT', 'subscription', event];
+      }
+      yield ['EOSE', 'subscription'];
+    });
   });
 
   afterEach(() => {
@@ -115,7 +128,7 @@ describe('useFollowUser - follow list overwrite protection', () => {
     });
 
     // Should have queried the relay for the latest Kind 3
-    expect(mockNostrQuery).toHaveBeenCalledWith(
+    expect(mockNostrReq).toHaveBeenCalledWith(
       expect.arrayContaining([
         expect.objectContaining({ kinds: [3], authors: [mockUserPubkey] }),
       ]),
@@ -205,7 +218,27 @@ describe('useFollowUser - follow list overwrite protection', () => {
     expect(mockPublishEvent).not.toHaveBeenCalled();
   });
 
-  it('uses the newer relay contact list when the relay read aborts with a result', async () => {
+  it('refuses to publish when every relay closes the authoritative read', async () => {
+    mockNostrQuery.mockResolvedValue([]);
+    mockNostrReq.mockImplementation(async function* () {
+      yield ['CLOSED', 'subscription', 'error: unavailable'];
+    });
+
+    const { useFollowUser } = await import('./useFollowRelationship');
+    const { result } = renderHook(() => useFollowUser(), { wrapper: createWrapper() });
+
+    await expect(
+      result.current.mutateAsync({
+        targetPubkey: mockTargetPubkey,
+        currentContactList: null,
+        targetDisplayName: 'Test User',
+      }),
+    ).rejects.toThrow('Could not load your existing follow list');
+
+    expect(mockPublishEvent).not.toHaveBeenCalled();
+  });
+
+  it('uses the passed contact list when the relay read aborts with partial results', async () => {
     const controller = new AbortController();
     controller.abort();
     vi.spyOn(AbortSignal, 'timeout').mockReturnValue(controller.signal);
@@ -227,8 +260,8 @@ describe('useFollowUser - follow list overwrite protection', () => {
     const followedPubkeys = mockPublishEvent.mock.calls[0][0].tags
       .filter((t: string[]) => t[0] === 'p')
       .map((t: string[]) => t[1]);
-    expect(followedPubkeys).toEqual(['bbbb'.padEnd(64, '0'), mockTargetPubkey]);
-    expect(followedPubkeys).not.toContain('aaaa'.padEnd(64, '0'));
+    expect(followedPubkeys).toEqual(['aaaa'.padEnd(64, '0'), mockTargetPubkey]);
+    expect(followedPubkeys).not.toContain('bbbb'.padEnd(64, '0'));
   });
 
   it('prefers relay contact list over passed one when relay has more follows', async () => {
@@ -287,10 +320,39 @@ describe('useFollowUser - follow list overwrite protection', () => {
     expect(followedPubkeys).not.toContain(removedPubkey);
   });
 
-  it('requests an authoritative (cache-bypassing) relay read before publishing', async () => {
-    // Regression guard: the read-before-write must not be served a stale
-    // cached contact list, or a removal published by another client would be
-    // silently reverted. See src/lib/cachedNostr.ts bypassCache.
+  it('uses the canonical relay event when relays return a timestamp tie', async () => {
+    const canonicalPubkey = 'bbbb'.padEnd(64, '0');
+    const nonCanonicalPubkey = 'cccc'.padEnd(64, '0');
+    const nonCanonical = makeContactListEvent(
+      [nonCanonicalPubkey],
+      2000,
+      'b'.repeat(64),
+    );
+    const canonical = makeContactListEvent(
+      [canonicalPubkey],
+      2000,
+      'a'.repeat(64),
+    );
+    mockNostrQuery.mockResolvedValue([nonCanonical, canonical]);
+
+    const { useFollowUser } = await import('./useFollowRelationship');
+    const { result } = renderHook(() => useFollowUser(), { wrapper: createWrapper() });
+
+    await act(async () => {
+      await result.current.mutateAsync({
+        targetPubkey: mockTargetPubkey,
+        currentContactList: null,
+        targetDisplayName: 'Test User',
+      });
+    });
+
+    const followedPubkeys = mockPublishEvent.mock.calls[0][0].tags
+      .filter((tag: string[]) => tag[0] === 'p')
+      .map((tag: string[]) => tag[1]);
+    expect(followedPubkeys).toEqual([canonicalPubkey, mockTargetPubkey]);
+  });
+
+  it('requests the relay stream directly before publishing', async () => {
     const existing = makeContactListEvent(['bbbb'.padEnd(64, '0')], 1000);
     mockNostrQuery.mockResolvedValue([existing]);
 
@@ -305,10 +367,10 @@ describe('useFollowUser - follow list overwrite protection', () => {
       });
     });
 
-    expect(mockNostrQuery).toHaveBeenCalled();
-    expect(
-      mockNostrQuery.mock.calls.some(call => call[1]?.bypassCache === true)
-    ).toBe(true);
+    expect(mockNostrReq).toHaveBeenCalledWith(
+      [{ kinds: [3], authors: [mockUserPubkey], limit: 1 }],
+      { signal: expect.any(AbortSignal) },
+    );
   });
 
   it('allows first follow when user has no existing contact list', async () => {
@@ -364,6 +426,13 @@ describe('useUnfollowUser - follow list overwrite protection', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockPublishEvent.mockResolvedValue({ id: 'new-event-id' });
+    mockNostrReq.mockImplementation(async function* () {
+      const events = await mockNostrQuery();
+      for (const event of events) {
+        yield ['EVENT', 'subscription', event];
+      }
+      yield ['EOSE', 'subscription'];
+    });
   });
 
   afterEach(() => {

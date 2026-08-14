@@ -7,12 +7,12 @@ import { useNostr } from '@nostrify/react';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useNostrPublish } from '@/hooks/useNostrPublish';
 import { followListCache } from '@/lib/followListCache';
-import type { CachedNostrClient, CachedQueryOptions } from '@/lib/cachedNostr';
 import {
   countContactListFollows,
   selectContactListForPublish,
 } from '@/lib/contactListSelection';
 import { debugLog } from '@/lib/debug';
+import { latestEvent } from '@/lib/nostrEvents';
 import type { NostrEvent } from '@nostrify/nostrify';
 import { PRIMARY_RELAY } from '@/config/relays';
 
@@ -56,27 +56,34 @@ async function fetchAndSelectContactList(
   currentContactList: NostrEvent | null,
   logPrefix: string
 ): Promise<NostrEvent | null> {
+  let relayQuerySucceeded = false;
+
   try {
-    // Bypass the local contact-list cache: this is a read-before-write that
-    // must see the authoritative relay list, not a stale cached copy, or a
-    // deliberate removal published by another client would be reverted.
     const signal = AbortSignal.timeout(5000);
-    const queryOpts: CachedQueryOptions = {
-      signal,
-      bypassCache: true,
-    };
-    // useNostr() is typed as NPool, but NostrProvider supplies createCachedNostr()
-    // in production; this cast is the local contract for bypassCache support.
-    const cachedNostr = nostr as CachedNostrClient<NostrClient>;
-    const relayEvents = await cachedNostr.query([
-      { kinds: [3], authors: [userPubkey], limit: 1 },
-    ], queryOpts);
+    const relayEvents: NostrEvent[] = [];
+    for await (const message of nostr.req(
+      [{ kinds: [3], authors: [userPubkey], limit: 1 }],
+      { signal },
+    )) {
+      if (message[0] === 'EVENT') {
+        relayEvents.push(message[2]);
+      } else if (message[0] === 'EOSE') {
+        relayQuerySucceeded = true;
+        break;
+      } else if (message[0] === 'CLOSED') {
+        break;
+      }
+    }
 
-    const relayContactList = relayEvents
-      .filter((e: NostrEvent) => e.kind === 3)
-      .sort((a: NostrEvent, b: NostrEvent) => b.created_at - a.created_at)[0] || null;
+    relayQuerySucceeded &&= !signal.aborted;
 
-    const selection = selectContactListForPublish(currentContactList, relayContactList);
+    const relayContactList = latestEvent(
+      relayEvents.filter((event: NostrEvent) => event.kind === 3),
+    );
+
+    const selection = relayQuerySucceeded
+      ? selectContactListForPublish(currentContactList, relayContactList)
+      : { chosen: currentContactList, reason: 'relay query ended before authoritative EOSE' };
     let source = 'passed';
     if (selection.chosen === null) {
       source = 'none';
@@ -94,7 +101,7 @@ async function fetchAndSelectContactList(
       ')'
     );
 
-    if (!selection.chosen && signal.aborted) {
+    if (!selection.chosen && !relayQuerySucceeded) {
       throw new ContactListUnavailableError();
     }
 

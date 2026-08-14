@@ -8,9 +8,9 @@ import {
 
 const USER_PUBKEY = 'aabbccdd11223344aabbccdd11223344aabbccdd11223344aabbccdd11223344';
 
-function event(pubkeys: string[], createdAt: number): NostrEvent {
+function event(pubkeys: string[], createdAt: number, id = `event-${createdAt}-${pubkeys.length}`): NostrEvent {
   return {
-    id: `event-${createdAt}-${pubkeys.length}`,
+    id,
     pubkey: USER_PUBKEY,
     created_at: createdAt,
     kind: 3,
@@ -75,24 +75,24 @@ describe('selectContactListForPublish', () => {
     expect(result.reason).toBe('passed contact list is newer');
   });
 
-  it('uses relay when timestamps are equal even if passed has more follows', () => {
-    const passed = event(['a'.repeat(64), 'b'.repeat(64)], 100);
-    const relay = event(['a'.repeat(64)], 100);
+  it('uses relay when timestamps are equal and its id is lower', () => {
+    const passed = event(['a'.repeat(64), 'b'.repeat(64)], 100, 'b'.repeat(64));
+    const relay = event(['a'.repeat(64)], 100, 'a'.repeat(64));
 
     const result = selectContactListForPublish(passed, relay);
 
     expect(result.chosen).toBe(relay);
-    expect(result.reason).toBe('contact lists have equal timestamps; using relay copy');
+    expect(result.reason).toBe('contact lists have equal timestamps; relay id is canonical');
   });
 
-  it('uses relay on equal timestamp when relay has the same number of follows', () => {
-    const passed = event(['a'.repeat(64)], 100);
-    const relay = event(['b'.repeat(64)], 100);
+  it('uses passed when timestamps are equal and its id is lower', () => {
+    const passed = event(['a'.repeat(64)], 100, 'a'.repeat(64));
+    const relay = event(['b'.repeat(64)], 100, 'b'.repeat(64));
 
     const result = selectContactListForPublish(passed, relay);
 
-    expect(result.chosen).toBe(relay);
-    expect(result.reason).toBe('contact lists have equal timestamps; using relay copy');
+    expect(result.chosen).toBe(passed);
+    expect(result.reason).toBe('contact lists have equal timestamps; passed id is canonical');
   });
 });
 
