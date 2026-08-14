@@ -12,9 +12,10 @@ const { VIDEO_1_AUTHOR_PK, VIDEO_2_AUTHOR_PK, VIDEO_3_AUTHOR_PK, VIEWER_PK } = v
   VIEWER_PK: 'f'.repeat(64),
 }));
 
-const { mockNavigate, mockFetchNextFunnelcakePage } = vi.hoisted(() => ({
+const { mockNavigate, mockFetchNextFunnelcakePage, mockToast } = vi.hoisted(() => ({
   mockNavigate: vi.fn(),
   mockFetchNextFunnelcakePage: vi.fn(),
+  mockToast: vi.fn(),
 }));
 
 const { openLoginDialogMock } = vi.hoisted(() => ({
@@ -91,6 +92,19 @@ vi.mock('@/hooks/useVideoByIdFunnelcake', () => ({
     if (options.featuredTabId === 'ft_1234abcd') {
       mockFetchNextFunnelcakePage.mockResolvedValueOnce([videos[1], videos[2]]);
 
+      return {
+        video: videos[1],
+        videos: [videos[1]],
+        windowOffset: 1,
+        hasNextPage: true,
+        isFetchingNextPage: false,
+        fetchNextPage: mockFetchNextFunnelcakePage,
+        isLoading: false,
+        error: null,
+      };
+    }
+
+    if (options.featuredTabId === 'ft_slow' || options.featuredTabId === 'ft_empty') {
       return {
         video: videos[1],
         videos: [videos[1]],
@@ -211,7 +225,7 @@ vi.mock('@tanstack/react-query', async () => {
 
 vi.mock('@/hooks/useToast', () => ({
   useToast: () => ({
-    toast: vi.fn(),
+    toast: mockToast,
   }),
 }));
 
@@ -264,6 +278,7 @@ describe('VideoPage', () => {
   beforeEach(async () => {
     vi.clearAllMocks();
     mockFetchNextFunnelcakePage.mockReset();
+    mockToast.mockReset();
     currentUser.value = null;
     publishAsyncMock.mockResolvedValue({ id: 'like-event-id' });
     const storage = new Map<string, string>();
@@ -312,6 +327,72 @@ describe('VideoPage', () => {
     expect(url.searchParams.get('source')).toBe('featured');
     expect(url.searchParams.get('featuredTabId')).toBe('ft_1234abcd');
     expect(url.searchParams.get('index')).toBe('2');
+  });
+
+  it('ignores repeated next navigation while a boundary fetch is in flight', async () => {
+    let resolveNextPage: (videos: Array<{ id: string; pubkey: string; kind: number; createdAt: number; content: string; videoUrl: string; vineId: string | null; hashtags: string[]; reposts: unknown[] }>) => void;
+    mockFetchNextFunnelcakePage.mockImplementationOnce(() => new Promise(resolve => {
+      resolveNextPage = resolve;
+    }));
+
+    renderPage('/video/video-2?source=featured&featuredTabId=ft_slow&index=1');
+
+    fireEvent.keyDown(document.body, { key: 'ArrowDown' });
+    fireEvent.keyDown(document.body, { key: 'ArrowDown' });
+
+    expect(mockFetchNextFunnelcakePage).toHaveBeenCalledTimes(1);
+    expect(mockNavigate).not.toHaveBeenCalled();
+
+    resolveNextPage!([{
+      id: 'video-2',
+      pubkey: VIDEO_2_AUTHOR_PK,
+      kind: 34236,
+      createdAt: 2,
+      content: 'two',
+      videoUrl: 'https://example.com/2.mp4',
+      vineId: 'vine-two',
+      hashtags: [],
+      reposts: [],
+    }, {
+      id: 'video-3',
+      pubkey: VIDEO_3_AUTHOR_PK,
+      kind: 34236,
+      createdAt: 3,
+      content: 'three',
+      videoUrl: 'https://example.com/3.mp4',
+      vineId: 'vine-three',
+      hashtags: [],
+      reposts: [],
+    }]);
+
+    await waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  it('shows feedback when a visible next page produces no next video', async () => {
+    mockFetchNextFunnelcakePage.mockResolvedValueOnce([{
+      id: 'video-2',
+      pubkey: VIDEO_2_AUTHOR_PK,
+      kind: 34236,
+      createdAt: 2,
+      content: 'two',
+      videoUrl: 'https://example.com/2.mp4',
+      vineId: 'vine-two',
+      hashtags: [],
+      reposts: [],
+    }]);
+
+    renderPage('/video/video-2?source=featured&featuredTabId=ft_empty&index=1');
+
+    fireEvent.keyDown(document.body, { key: 'ArrowDown' });
+
+    await waitFor(() => {
+      expect(mockToast).toHaveBeenCalledWith(expect.objectContaining({
+        variant: 'destructive',
+      }));
+    });
+    expect(mockNavigate).not.toHaveBeenCalled();
   });
 
   it('opens the login dialog when a signed-out viewer likes or reposts', () => {

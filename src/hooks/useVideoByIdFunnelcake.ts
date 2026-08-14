@@ -9,7 +9,10 @@ import { transformFunnelcakeVideo } from '@/lib/funnelcakeTransform';
 import { getFunnelcakeUrl } from '@/config/relays';
 import { useAppContext } from '@/hooks/useAppContext';
 import { useFeaturedTab } from '@/hooks/useFeaturedTab';
-import { FEATURED_TAB_PAGE_SIZE, useFeaturedTabVideos } from '@/hooks/useFeaturedTabVideos';
+import { useFeaturedTabVideos } from '@/hooks/useFeaturedTabVideos';
+import { useFeedBlocklist } from '@/hooks/useFeedBlocklist';
+import { FEED_PAGE_SIZE } from '@/config/feed';
+import { filterBlockedVideoPages } from '@/lib/blocklistFilter';
 import { debugLog } from '@/lib/debug';
 import type { ParsedVideoData } from '@/types/video';
 import type { FunnelcakeVideoRaw } from '@/types/funnelcake';
@@ -38,6 +41,8 @@ interface UseVideoByIdResult {
 }
 
 const NAVIGATION_WINDOW_SIZE = 16;
+// Cold featured links must page forward by cursor to rebuild enough filtered
+// server-order context, but the detail page should not drain an unbounded tab.
 const FEATURED_NAVIGATION_PAGE_BUDGET = 5;
 
 /** Drop rows the transform refuses — a video with no `d` tag has no coordinate. */
@@ -78,7 +83,7 @@ function getFeaturedNavigationPageBudget(currentIndex?: number): number {
 
   return Math.min(
     FEATURED_NAVIGATION_PAGE_BUDGET,
-    Math.ceil((currentIndex + 1) / FEATURED_TAB_PAGE_SIZE) + 1
+    Math.ceil((currentIndex + 1) / FEED_PAGE_SIZE) + 1
   );
 }
 
@@ -92,6 +97,7 @@ function getFeaturedNavigationPageBudget(currentIndex?: number): number {
 export function useVideoByIdFunnelcake(options: UseVideoByIdOptions): UseVideoByIdResult {
   const { videoId, pubkey, hashtag, query, featuredTabId, sortMode = 'relevance', currentIndex, enabled = true } = options;
   const { config } = useAppContext();
+  const blockedPubkeys = useFeedBlocklist();
   const windowOffset = getNavigationWindowOffset(currentIndex);
   const featuredPageBudget = getFeaturedNavigationPageBudget(currentIndex);
   const trimmedQuery = query?.trim();
@@ -177,7 +183,7 @@ export function useVideoByIdFunnelcake(options: UseVideoByIdOptions): UseVideoBy
   const featuredVideosQuery = useFeaturedTabVideos({
     configId: eligibleFeaturedTabId,
     apiUrl: funnelcakeUrl,
-    pageSize: FEATURED_TAB_PAGE_SIZE,
+    pageSize: FEED_PAGE_SIZE,
     enabled: enabled && !!eligibleFeaturedTabId && !pubkey && !hashtag && !searchValue,
   });
   const {
@@ -188,16 +194,23 @@ export function useVideoByIdFunnelcake(options: UseVideoByIdOptions): UseVideoBy
     isFetchingNextPage: isFetchingNextFeaturedPage,
     isLoading: isFeaturedVideosLoading,
   } = featuredVideosQuery;
+  const filteredFeaturedVideosData = useMemo(
+    () => filterBlockedVideoPages(featuredVideosData, blockedPubkeys),
+    [featuredVideosData, blockedPubkeys]
+  );
   const featuredVideos = useMemo(
-    () => featuredVideosData?.pages.flatMap((page) => page.videos) ?? null,
-    [featuredVideosData]
+    () => filteredFeaturedVideosData?.pages.flatMap((page) => page.videos) ?? null,
+    [filteredFeaturedVideosData]
   );
   const featuredContextVideo = featuredVideos?.find(v => v.id === videoId || v.vineId === videoId) || null;
+  const hasEnoughFeaturedNeighbors = currentIndex === undefined || currentIndex < 0
+    ? Boolean(featuredContextVideo)
+    : Boolean(featuredVideos && featuredVideos.length > currentIndex + 1);
 
   useEffect(() => {
     if (
       !eligibleFeaturedTabId ||
-      featuredContextVideo ||
+      (featuredContextVideo && hasEnoughFeaturedNeighbors) ||
       !featuredHasNextPage ||
       isFetchingNextFeaturedPage ||
       (featuredVideosData?.pages.length ?? 0) >= featuredPageBudget
@@ -209,6 +222,7 @@ export function useVideoByIdFunnelcake(options: UseVideoByIdOptions): UseVideoBy
   }, [
     eligibleFeaturedTabId,
     featuredContextVideo,
+    hasEnoughFeaturedNeighbors,
     featuredHasNextPage,
     isFetchingNextFeaturedPage,
     featuredVideosData,
@@ -273,7 +287,8 @@ export function useVideoByIdFunnelcake(options: UseVideoByIdOptions): UseVideoBy
       if (!eligibleFeaturedTabId || !featuredHasNextPage) return featuredVideos;
 
       const result = await fetchNextFeaturedPage();
-      return result.data?.pages.flatMap((page) => page.videos) ?? featuredVideos;
+      return filterBlockedVideoPages(result.data, blockedPubkeys)
+        ?.pages.flatMap((page) => page.videos) ?? featuredVideos;
     },
     isLoading,
     error,

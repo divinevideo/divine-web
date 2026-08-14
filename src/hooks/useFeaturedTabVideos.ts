@@ -1,5 +1,6 @@
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { getFunnelcakeBaseUrl } from '@/config/api';
+import { FEED_PAGE_SIZE } from '@/config/feed';
 import { fetchFeaturedTabVideos } from '@/lib/featuredTabsClient';
 import { transformToVideoPage } from '@/lib/funnelcakeTransform';
 import type { ParsedVideoData } from '@/types/video';
@@ -11,12 +12,10 @@ export interface FeaturedTabVideoPage {
   hasMore: boolean;
 }
 
-export const FEATURED_TAB_PAGE_SIZE = 12;
-
 export function useFeaturedTabVideos({
   configId,
   apiUrl = getFunnelcakeBaseUrl(),
-  pageSize = FEATURED_TAB_PAGE_SIZE,
+  pageSize = FEED_PAGE_SIZE,
   enabled = true,
 }: {
   configId?: string;

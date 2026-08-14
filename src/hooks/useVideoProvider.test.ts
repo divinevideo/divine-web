@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderHook } from '@testing-library/react';
+import { FEED_PAGE_SIZE } from '@/config/feed';
 import type { RelayCapabilities } from '@/lib/relayCapabilities';
 
 const mockUseInfiniteVideos = vi.fn();
@@ -245,6 +246,7 @@ describe('useVideoProvider', () => {
     expect(mockUseFeaturedTabVideos).toHaveBeenCalledWith(expect.objectContaining({
       configId: 'ft_1234abcd',
       apiUrl: 'https://api.divine.video',
+      pageSize: FEED_PAGE_SIZE,
       enabled: true,
     }));
     expect(mockUseInfiniteVideos).toHaveBeenCalledWith(expect.objectContaining({

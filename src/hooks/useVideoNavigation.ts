@@ -66,8 +66,7 @@ export function useVideoNavigation(videoId: string, options: UseVideoNavigationO
   const feedTypeForWebSocket: WebSocketFeedType | undefined = (() => {
     if (!context) return undefined;
     if (isPeopleListContext) return 'discovery';
-    if (context.source === 'foryou' || context.source === 'popular') return 'trending';
-    if (context.source === 'featured') return undefined;
+    if (context.source === 'foryou' || context.source === 'popular' || context.source === 'featured') return 'trending';
     if (context.source === 'search') return 'discovery';
     if (
       context.source === 'hashtag' ||

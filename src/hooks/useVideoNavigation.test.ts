@@ -56,16 +56,17 @@ describe('useVideoNavigation', () => {
     });
   });
 
-  it('does not map featured navigation to a websocket feed', () => {
+  it('falls featured navigation back to trending when featured neighbors are unavailable', () => {
     renderHook(
       () => useVideoNavigation('video-1'),
       { wrapper: createWrapper('/video/video-1?source=featured&featuredTabId=ft_1234abcd&index=0') }
     );
 
     expect(mockUseVideoEvents).toHaveBeenCalledWith({
-      filter: { ids: ['video-1'] },
-      limit: 1,
-      feedType: 'discovery',
+      feedType: 'trending',
+      hashtag: undefined,
+      pubkey: undefined,
+      limit: 50,
       enabled: true,
     });
   });

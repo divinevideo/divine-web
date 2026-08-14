@@ -9,6 +9,7 @@ import { useResolvedRelayCapabilities } from '@/hooks/useRelayCapabilities';
 import { useInfiniteVideosFunnelcake, type FunnelcakeFeedType, type FunnelcakeSortMode, type PopularPeriod, type PopularSource } from '@/hooks/useInfiniteVideosFunnelcake';
 import { useFeaturedTabVideos } from '@/hooks/useFeaturedTabVideos';
 import { useFeedBlocklist } from '@/hooks/useFeedBlocklist';
+import { FEED_PAGE_SIZE } from '@/config/feed';
 import { filterBlockedVideoPages } from '@/lib/blocklistFilter';
 import { hasFunnelcake, getFunnelcakeUrl } from '@/config/relays';
 import { debugLog } from '@/lib/debug';
@@ -228,7 +229,7 @@ export function useVideoProvider({
   category,
   featuredTabId,
   pubkey,
-  pageSize = 12,
+  pageSize = FEED_PAGE_SIZE,
   enabled = true,
 }: UseVideoProviderOptions): VideoProviderResult {
   const { config } = useAppContext();

@@ -31,6 +31,7 @@ import type { ParsedVideoData, UserInteractions } from '@/types/video';
 
 export function VideoPage() {
   const { t } = useTranslation();
+  const { toast } = useToast();
   const { id } = useParams<{ id: string }>();
   const [searchParams] = useSearchParams();
   const navigate = useSubdomainNavigate();
@@ -47,6 +48,7 @@ export function VideoPage() {
     videos: funnelcakeVideos,
     windowOffset: funnelcakeWindowOffset,
     hasNextPage: funnelcakeHasNextPage,
+    isFetchingNextPage: isFetchingNextFunnelcakePage,
     fetchNextPage: fetchNextFunnelcakePage,
     isLoading: funnelcakeLoading,
     error: funnelcakeError,
@@ -61,7 +63,10 @@ export function VideoPage() {
     enabled: !!id,
   });
 
-  const shouldEnableWebsocketNavigation = !!id && !funnelcakeLoading && !funnelcakeVideo;
+  const shouldEnableWebsocketNavigation = !!id && !funnelcakeLoading && (
+    !funnelcakeVideo ||
+    (context?.source === 'featured' && !funnelcakeVideos)
+  );
 
   // Fallback to WebSocket-based navigation (slower but handles all cases)
   const {
@@ -93,6 +98,7 @@ export function VideoPage() {
   const hasNextLoaded = currentIndex >= 0 && currentIndex < (videos?.length || 0) - 1;
   const hasNext = hasNextLoaded || (isUsingFunnelcakeVideos && currentIndex >= 0 && funnelcakeHasNextPage);
   const hasPrevious = currentIndex > 0;
+  const nextNavigationInFlightRef = useRef(false);
 
   // Build navigation URL
   const buildNavigationUrl = useCallback((video: ParsedVideoData, index: number) => {
@@ -102,15 +108,29 @@ export function VideoPage() {
   }, [context]);
 
   const goToNext = useCallback(async () => {
-    if (!hasNext || !videos) return;
+    if (!hasNext || !videos || nextNavigationInFlightRef.current || isFetchingNextFunnelcakePage) return;
     let nextVideos = videos;
 
     if (!hasNextLoaded && isUsingFunnelcakeVideos && funnelcakeHasNextPage) {
-      nextVideos = await fetchNextFunnelcakePage() ?? videos;
+      nextNavigationInFlightRef.current = true;
+      try {
+        nextVideos = await fetchNextFunnelcakePage() ?? videos;
+      } catch {
+        nextVideos = videos;
+      } finally {
+        nextNavigationInFlightRef.current = false;
+      }
     }
 
     const nextVideo = nextVideos[currentIndex + 1];
-    if (!nextVideo) return;
+    if (!nextVideo) {
+      toast({
+        title: t('videoPage.errorTitle'),
+        description: "Couldn't load the next video. Try again?",
+        variant: 'destructive',
+      });
+      return;
+    }
 
     navigate(buildNavigationUrl(nextVideo, navigationIndexBase + currentIndex + 1));
   }, [
@@ -120,10 +140,13 @@ export function VideoPage() {
     isUsingFunnelcakeVideos,
     funnelcakeHasNextPage,
     fetchNextFunnelcakePage,
+    isFetchingNextFunnelcakePage,
     currentIndex,
     navigate,
     buildNavigationUrl,
     navigationIndexBase,
+    toast,
+    t,
   ]);
 
   const goToPrevious = useCallback(() => {
@@ -222,7 +245,6 @@ export function VideoPage() {
     videosForInteractions,
     user?.pubkey
   );
-  const { toast } = useToast();
   const queryClient = useQueryClient();
   const { mutateAsync: publishEvent } = useNostrPublish();
   const { mutateAsync: repostVideo, isPending: isReposting } = useRepostVideo();

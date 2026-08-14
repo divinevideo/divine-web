@@ -7,6 +7,7 @@ const mockFetchUserVideos = vi.fn();
 const mockSearchVideos = vi.fn();
 const mockFetchVideoById = vi.fn();
 const mockFetchFeaturedTabVideos = vi.fn();
+const mockBlocklist = new Set<string>();
 const mockTransformToVideoPage = vi.fn((response: {
   videos: Array<{ id: string; pubkey: string; d_tag?: string }>;
   has_more?: boolean;
@@ -70,6 +71,10 @@ vi.mock('@/hooks/useFeaturedTab', () => ({
   useFeaturedTab: mockUseFeaturedTab,
 }));
 
+vi.mock('@/hooks/useFeedBlocklist', () => ({
+  useFeedBlocklist: () => mockBlocklist,
+}));
+
 vi.mock('@/lib/debug', () => ({
   debugLog: vi.fn(),
 }));
@@ -94,6 +99,7 @@ describe('useVideoByIdFunnelcake', () => {
   beforeEach(async () => {
     vi.resetModules();
     vi.clearAllMocks();
+    mockBlocklist.clear();
     mockUseFeaturedTab.mockReturnValue({
       tab: null,
       isResolved: true,
@@ -293,6 +299,36 @@ describe('useVideoByIdFunnelcake', () => {
       'featured-3',
     ]);
     expect(result.current.windowOffset).toBe(0);
+  });
+
+  it('filters blocked authors out of featured navigation candidates', async () => {
+    const blockedPubkey = 'b'.repeat(64);
+    mockBlocklist.add(blockedPubkey);
+    mockUseFeaturedTab.mockReturnValue({
+      tab: { id: 'ft_1234abcd' },
+      isResolved: true,
+    });
+    mockFetchFeaturedTabVideos.mockResolvedValueOnce({
+      videos: [
+        { id: 'target-video', pubkey: 'p'.repeat(64), d_tag: 'target-video' },
+        { id: 'blocked-video', pubkey: blockedPubkey, d_tag: 'blocked-video' },
+        { id: 'visible-video', pubkey: 'v'.repeat(64), d_tag: 'visible-video' },
+      ],
+      has_more: false,
+    });
+
+    const { result } = renderHook(
+      () => useVideoByIdFunnelcake({
+        videoId: 'target-video',
+        featuredTabId: 'ft_1234abcd',
+        currentIndex: 0,
+      }),
+      { wrapper: createWrapper() }
+    );
+
+    await waitFor(() => {
+      expect(result.current.videos?.map(video => video.id)).toEqual(['target-video', 'visible-video']);
+    });
   });
 
   it('walks featured cursor pages up to the index-derived budget for cold links', async () => {
