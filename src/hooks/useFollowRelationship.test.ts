@@ -148,8 +148,7 @@ describe('useFollowUser - follow list overwrite protection', () => {
     expect(pTags).toHaveLength(41); // 40 existing + 1 new
   });
 
-  it('uses passed contactList when relay fetch fails', async () => {
-    // Relay query fails, but we have a cached contact list from the UI
+  it('refuses to publish when the relay fetch fails even with a passed contact list', async () => {
     const existingFollows = ['aaaa'.padEnd(64, '0'), 'bbbb'.padEnd(64, '0')];
     const cachedContactList = makeContactListEvent(existingFollows);
 
@@ -158,18 +157,15 @@ describe('useFollowUser - follow list overwrite protection', () => {
     const { useFollowUser } = await import('./useFollowRelationship');
     const { result } = renderHook(() => useFollowUser(), { wrapper: createWrapper() });
 
-    await act(async () => {
-      await result.current.mutateAsync({
+    await expect(
+      result.current.mutateAsync({
         targetPubkey: mockTargetPubkey,
         currentContactList: cachedContactList,
         targetDisplayName: 'Test User',
-      });
-    });
+      }),
+    ).rejects.toThrow('Could not load your existing follow list');
 
-    // Should fall back to the passed contact list
-    const publishedTags = mockPublishEvent.mock.calls[0][0].tags;
-    const pTags = publishedTags.filter((t: string[]) => t[0] === 'p');
-    expect(pTags).toHaveLength(3); // 2 existing + 1 new
+    expect(mockPublishEvent).not.toHaveBeenCalled();
   });
 
   it('refuses to publish when both relay fetch and passed contactList are empty but relay had follows', async () => {
@@ -181,12 +177,10 @@ describe('useFollowUser - follow list overwrite protection', () => {
     const { result } = renderHook(() => useFollowUser(), { wrapper: createWrapper() });
 
     await expect(
-      act(async () => {
-        await result.current.mutateAsync({
-          targetPubkey: mockTargetPubkey,
-          currentContactList: null,
-          targetDisplayName: 'Test User',
-        });
+      result.current.mutateAsync({
+        targetPubkey: mockTargetPubkey,
+        currentContactList: null,
+        targetDisplayName: 'Test User',
       }),
     ).rejects.toThrow();
 
@@ -238,7 +232,7 @@ describe('useFollowUser - follow list overwrite protection', () => {
     expect(mockPublishEvent).not.toHaveBeenCalled();
   });
 
-  it('uses the passed contact list when the relay read aborts with partial results', async () => {
+  it('refuses to publish when the relay read aborts with partial results', async () => {
     const controller = new AbortController();
     controller.abort();
     vi.spyOn(AbortSignal, 'timeout').mockReturnValue(controller.signal);
@@ -249,19 +243,15 @@ describe('useFollowUser - follow list overwrite protection', () => {
     const { useFollowUser } = await import('./useFollowRelationship');
     const { result } = renderHook(() => useFollowUser(), { wrapper: createWrapper() });
 
-    await act(async () => {
-      await result.current.mutateAsync({
+    await expect(
+      result.current.mutateAsync({
         targetPubkey: mockTargetPubkey,
         currentContactList: passedContactList,
         targetDisplayName: 'Test User',
-      });
-    });
+      }),
+    ).rejects.toThrow('Could not load your existing follow list');
 
-    const followedPubkeys = mockPublishEvent.mock.calls[0][0].tags
-      .filter((t: string[]) => t[0] === 'p')
-      .map((t: string[]) => t[1]);
-    expect(followedPubkeys).toEqual(['aaaa'.padEnd(64, '0'), mockTargetPubkey]);
-    expect(followedPubkeys).not.toContain('bbbb'.padEnd(64, '0'));
+    expect(mockPublishEvent).not.toHaveBeenCalled();
   });
 
   it('prefers relay contact list over passed one when relay has more follows', async () => {
@@ -409,12 +399,10 @@ describe('useFollowUser - follow list overwrite protection', () => {
     const { result } = renderHook(() => useFollowUser(), { wrapper: createWrapper() });
 
     await expect(
-      act(async () => {
-        await result.current.mutateAsync({
-          targetPubkey: mockTargetPubkey,
-          currentContactList: null,
-          targetDisplayName: 'Test User',
-        });
+      result.current.mutateAsync({
+        targetPubkey: mockTargetPubkey,
+        currentContactList: null,
+        targetDisplayName: 'Test User',
       }),
     ).rejects.toThrow(FollowRaceError);
 

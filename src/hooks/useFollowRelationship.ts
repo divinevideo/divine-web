@@ -76,14 +76,15 @@ async function fetchAndSelectContactList(
     }
 
     relayQuerySucceeded &&= !signal.aborted;
+    if (!relayQuerySucceeded) {
+      throw new ContactListUnavailableError();
+    }
 
     const relayContactList = latestEvent(
       relayEvents.filter((event: NostrEvent) => event.kind === 3),
     );
 
-    const selection = relayQuerySucceeded
-      ? selectContactListForPublish(currentContactList, relayContactList)
-      : { chosen: currentContactList, reason: 'relay query ended before authoritative EOSE' };
+    const selection = selectContactListForPublish(currentContactList, relayContactList);
     let source = 'passed';
     if (selection.chosen === null) {
       source = 'none';
@@ -101,22 +102,14 @@ async function fetchAndSelectContactList(
       ')'
     );
 
-    if (!selection.chosen && !relayQuerySucceeded) {
-      throw new ContactListUnavailableError();
-    }
-
     return selection.chosen;
   } catch (error) {
     if (error instanceof ContactListUnavailableError) {
       throw error;
     }
 
-    debugLog(`[${logPrefix}] Failed to fetch latest Kind 3 from relay, using passed contact list:`, error);
-    if (!currentContactList) {
-      throw new ContactListUnavailableError();
-    }
-
-    return currentContactList;
+    debugLog(`[${logPrefix}] Failed to fetch latest Kind 3 from relay:`, error);
+    throw new ContactListUnavailableError();
   }
 }
 
