@@ -190,13 +190,15 @@ describe('useFollowUser - follow list overwrite protection', () => {
     const { useFollowUser } = await import('./useFollowRelationship');
     const { result } = renderHook(() => useFollowUser(), { wrapper: createWrapper() });
 
+    // Assert on the mutation promise directly. Wrapping the rejecting
+    // mutateAsync in act() turns a resolved (non-throwing) run into an
+    // unhandled rejection instead of a failing assertion, which would let this
+    // safety guard silently pass. See the abort-refuse path it protects.
     await expect(
-      act(async () => {
-        await result.current.mutateAsync({
-          targetPubkey: mockTargetPubkey,
-          currentContactList: null,
-          targetDisplayName: 'Test User',
-        });
+      result.current.mutateAsync({
+        targetPubkey: mockTargetPubkey,
+        currentContactList: null,
+        targetDisplayName: 'Test User',
       }),
     ).rejects.toThrow('Could not load your existing follow list');
 
