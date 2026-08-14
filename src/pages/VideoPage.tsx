@@ -47,6 +47,7 @@ export function VideoPage() {
     video: funnelcakeVideo,
     videos: funnelcakeVideos,
     windowOffset: funnelcakeWindowOffset,
+    fetchedCount: funnelcakeFetchedCount,
     hasNextPage: funnelcakeHasNextPage,
     isFetchingNextPage: isFetchingNextFunnelcakePage,
     fetchNextPage: fetchNextFunnelcakePage,
@@ -183,10 +184,28 @@ export function VideoPage() {
   }, [videos, maxRendered]);
 
   const hasMoreToShow = maxRendered < (videos?.length || 0);
+  const hasMoreFeedVideos = hasMoreToShow || (isUsingFunnelcakeVideos && funnelcakeHasNextPage);
+  const scrollDataLength = isUsingFunnelcakeVideos
+    ? funnelcakeFetchedCount + visibleVideos.length
+    : visibleVideos.length;
 
-  const showMoreVideos = useCallback(() => {
-    setMaxRendered(prev => Math.min(prev + LOAD_MORE_COUNT, videos?.length || 0));
-  }, [videos?.length]);
+  const showMoreVideos = useCallback(async () => {
+    if (hasMoreToShow) {
+      setMaxRendered(prev => Math.min(prev + LOAD_MORE_COUNT, videos?.length || 0));
+      return;
+    }
+
+    if (isUsingFunnelcakeVideos && funnelcakeHasNextPage && !isFetchingNextFunnelcakePage) {
+      await fetchNextFunnelcakePage();
+    }
+  }, [
+    fetchNextFunnelcakePage,
+    funnelcakeHasNextPage,
+    hasMoreToShow,
+    isFetchingNextFunnelcakePage,
+    isUsingFunnelcakeVideos,
+    videos?.length,
+  ]);
 
   const fallbackReportKeyRef = useRef<string | null>(null);
 
@@ -723,9 +742,9 @@ export function VideoPage() {
 
         {/* Scrollable video feed - progressive rendering */}
         <InfiniteScroll
-          dataLength={visibleVideos.length}
+          dataLength={scrollDataLength}
           next={showMoreVideos}
-          hasMore={hasMoreToShow}
+          hasMore={hasMoreFeedVideos}
           loader={
             <div className="h-16 flex items-center justify-center">
               <div className="flex items-center gap-3">
@@ -733,6 +752,11 @@ export function VideoPage() {
                 <span className="text-sm text-muted-foreground">{t('videoPage.loadingMore')}</span>
               </div>
             </div>
+          }
+          endMessage={
+            <p className="py-6 text-center text-sm text-muted-foreground">
+              You've reached the end
+            </p>
           }
           className="space-y-6 max-w-xl mx-auto"
         >

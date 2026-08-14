@@ -25,6 +25,7 @@ const mockTransformToVideoPage = vi.fn((response: {
     reposts: [],
   })),
   nextCursor: undefined,
+  offset: response.next_cursor ? parseInt(response.next_cursor, 10) : undefined,
   rawCursor: response.next_cursor,
   hasMore: Boolean(response.has_more),
 }));
@@ -258,6 +259,144 @@ describe('useVideoByIdFunnelcake', () => {
     expect(result.current.videos?.map(video => video.id)).toEqual(['neighbor-1', 'target-video']);
   });
 
+  it('fetches additional profile pages from the initial window offset', async () => {
+    mockFetchUserVideos
+      .mockResolvedValueOnce({
+        videos: [
+          { id: 'target-video', pubkey: 'p'.repeat(64), d_tag: 'target-video' },
+          { id: 'neighbor-1', pubkey: 'p'.repeat(64), d_tag: 'neighbor-1' },
+        ],
+        has_more: true,
+        next_cursor: '52',
+      })
+      .mockResolvedValueOnce({
+        videos: [
+          { id: 'neighbor-2', pubkey: 'p'.repeat(64), d_tag: 'neighbor-2' },
+        ],
+        has_more: false,
+      });
+
+    const { result } = renderHook(
+      () => useVideoByIdFunnelcake({
+        videoId: 'target-video',
+        pubkey: 'p'.repeat(64),
+        currentIndex: 44,
+      }),
+      { wrapper: createWrapper() }
+    );
+
+    await waitFor(() => {
+      expect(result.current.hasNextPage).toBe(true);
+    });
+
+    await result.current.fetchNextPage();
+
+    await waitFor(() => {
+      expect(result.current.videos?.map(video => video.id)).toEqual([
+        'target-video',
+        'neighbor-1',
+        'neighbor-2',
+      ]);
+    });
+
+    expect(mockFetchUserVideos).toHaveBeenNthCalledWith(
+      1,
+      'https://api.divine.video',
+      'p'.repeat(64),
+      expect.objectContaining({
+        offset: 36,
+      })
+    );
+    expect(mockFetchUserVideos).toHaveBeenNthCalledWith(
+      2,
+      'https://api.divine.video',
+      'p'.repeat(64),
+      expect.objectContaining({
+        offset: 52,
+      })
+    );
+    expect(result.current.fetchedCount).toBe(3);
+  });
+
+  it('exposes pagination for hashtag and search navigation contexts', async () => {
+    mockSearchVideos
+      .mockResolvedValueOnce({
+        videos: [
+          { id: 'target-video', pubkey: 'p'.repeat(64), d_tag: 'target-video' },
+        ],
+        has_more: true,
+        next_cursor: '16',
+      })
+      .mockResolvedValueOnce({
+        videos: [
+          { id: 'search-next', pubkey: 'p'.repeat(64), d_tag: 'search-next' },
+        ],
+        has_more: false,
+      });
+
+    const searchResult = renderHook(
+      () => useVideoByIdFunnelcake({
+        videoId: 'target-video',
+        query: 'twerking',
+        currentIndex: 8,
+      }),
+      { wrapper: createWrapper() }
+    );
+
+    await waitFor(() => {
+      expect(searchResult.result.current.hasNextPage).toBe(true);
+    });
+
+    await searchResult.result.current.fetchNextPage();
+
+    await waitFor(() => {
+      expect(searchResult.result.current.videos?.map(video => video.id)).toEqual([
+        'target-video',
+        'search-next',
+      ]);
+    });
+
+    expect(mockSearchVideos).toHaveBeenNthCalledWith(
+      2,
+      'https://api.divine.video',
+      expect.objectContaining({
+        query: 'twerking',
+        offset: 16,
+      })
+    );
+
+    mockSearchVideos.mockReset();
+    mockFetchVideoById.mockReset();
+    mockSearchVideos.mockResolvedValueOnce({
+      videos: [
+        { id: 'target-video', pubkey: 'p'.repeat(64), d_tag: 'target-video' },
+      ],
+      has_more: true,
+      next_cursor: '24',
+    });
+
+    const hashtagResult = renderHook(
+      () => useVideoByIdFunnelcake({
+        videoId: 'target-video',
+        hashtag: 'cats',
+        currentIndex: 12,
+      }),
+      { wrapper: createWrapper() }
+    );
+
+    await waitFor(() => {
+      expect(hashtagResult.result.current.hasNextPage).toBe(true);
+    });
+
+    expect(mockSearchVideos).toHaveBeenCalledWith(
+      'https://api.divine.video',
+      expect.objectContaining({
+        tag: 'cats',
+        offset: 4,
+      })
+    );
+  });
+
   it('uses eligible featured tab videos for navigation in server order', async () => {
     mockUseFeaturedTab.mockReturnValue({
       tab: { id: 'ft_1234abcd' },
@@ -330,6 +469,33 @@ describe('useVideoByIdFunnelcake', () => {
       expect(result.current.videos?.map(video => video.id)).toEqual(['target-video', 'visible-video']);
     });
   });
+
+  it('filters blocked authors out of profile navigation candidates', async () => {
+    const blockedPubkey = 'b'.repeat(64);
+    mockBlocklist.add(blockedPubkey);
+    mockFetchUserVideos.mockResolvedValueOnce({
+      videos: [
+        { id: 'target-video', pubkey: 'p'.repeat(64), d_tag: 'target-video' },
+        { id: 'blocked-video', pubkey: blockedPubkey, d_tag: 'blocked-video' },
+        { id: 'visible-video', pubkey: 'v'.repeat(64), d_tag: 'visible-video' },
+      ],
+      has_more: false,
+    });
+
+    const { result } = renderHook(
+      () => useVideoByIdFunnelcake({
+        videoId: 'target-video',
+        pubkey: 'p'.repeat(64),
+        currentIndex: 0,
+      }),
+      { wrapper: createWrapper() }
+    );
+
+    await waitFor(() => {
+      expect(result.current.videos?.map(video => video.id)).toEqual(['target-video', 'visible-video']);
+    });
+  });
+
 
   it('walks featured cursor pages up to the index-derived budget for cold links', async () => {
     mockUseFeaturedTab.mockReturnValue({

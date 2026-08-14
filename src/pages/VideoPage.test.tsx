@@ -81,6 +81,85 @@ vi.mock('@/hooks/useVideoByIdFunnelcake', () => ({
         video,
         videos,
         windowOffset: 0,
+        fetchedCount: videos.length,
+        hasNextPage: false,
+        isFetchingNextPage: false,
+        fetchNextPage: vi.fn(),
+        isLoading: false,
+        error: null,
+      };
+    }
+
+    if (options.query === 'scroll-window') {
+      const scrollVideos = Array.from({ length: 12 }, (_, index) => ({
+        id: `scroll-video-${index + 1}`,
+        pubkey: VIDEO_2_AUTHOR_PK,
+        kind: 34236,
+        createdAt: index + 1,
+        content: `scroll ${index + 1}`,
+        videoUrl: `https://example.com/scroll-${index + 1}.mp4`,
+        vineId: `scroll-vine-${index + 1}`,
+        hashtags: [],
+        reposts: [],
+      }));
+
+      return {
+        video: scrollVideos[0],
+        videos: scrollVideos,
+        windowOffset: 0,
+        fetchedCount: scrollVideos.length,
+        hasNextPage: false,
+        isFetchingNextPage: false,
+        fetchNextPage: mockFetchNextFunnelcakePage,
+        isLoading: false,
+        error: null,
+      };
+    }
+
+    if (options.query === 'scroll-fetch') {
+      const scrollVideos = Array.from({ length: 10 }, (_, index) => ({
+        id: `fetch-video-${index + 1}`,
+        pubkey: VIDEO_2_AUTHOR_PK,
+        kind: 34236,
+        createdAt: index + 1,
+        content: `fetch ${index + 1}`,
+        videoUrl: `https://example.com/fetch-${index + 1}.mp4`,
+        vineId: `fetch-vine-${index + 1}`,
+        hashtags: [],
+        reposts: [],
+      }));
+
+      return {
+        video: scrollVideos[0],
+        videos: scrollVideos,
+        windowOffset: 0,
+        fetchedCount: scrollVideos.length,
+        hasNextPage: true,
+        isFetchingNextPage: false,
+        fetchNextPage: mockFetchNextFunnelcakePage,
+        isLoading: false,
+        error: null,
+      };
+    }
+
+    if (options.query === 'scroll-done') {
+      const scrollVideos = Array.from({ length: 10 }, (_, index) => ({
+        id: `done-video-${index + 1}`,
+        pubkey: VIDEO_2_AUTHOR_PK,
+        kind: 34236,
+        createdAt: index + 1,
+        content: `done ${index + 1}`,
+        videoUrl: `https://example.com/done-${index + 1}.mp4`,
+        vineId: `done-vine-${index + 1}`,
+        hashtags: [],
+        reposts: [],
+      }));
+
+      return {
+        video: scrollVideos[0],
+        videos: scrollVideos,
+        windowOffset: 0,
+        fetchedCount: scrollVideos.length,
         hasNextPage: false,
         isFetchingNextPage: false,
         fetchNextPage: vi.fn(),
@@ -96,6 +175,7 @@ vi.mock('@/hooks/useVideoByIdFunnelcake', () => ({
         video: videos[1],
         videos: [videos[1]],
         windowOffset: 1,
+        fetchedCount: 1,
         hasNextPage: true,
         isFetchingNextPage: false,
         fetchNextPage: mockFetchNextFunnelcakePage,
@@ -109,6 +189,7 @@ vi.mock('@/hooks/useVideoByIdFunnelcake', () => ({
         video: videos[1],
         videos: [videos[1]],
         windowOffset: 1,
+        fetchedCount: 1,
         hasNextPage: true,
         isFetchingNextPage: false,
         fetchNextPage: mockFetchNextFunnelcakePage,
@@ -121,6 +202,7 @@ vi.mock('@/hooks/useVideoByIdFunnelcake', () => ({
       video,
       videos: null,
       windowOffset: 0,
+      fetchedCount: 0,
       hasNextPage: false,
       isFetchingNextPage: false,
       fetchNextPage: vi.fn(),
@@ -233,7 +315,27 @@ vi.mock('@/components/ui/button', () => ({
 }));
 
 vi.mock('react-infinite-scroll-component', () => ({
-  default: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+  default: ({
+    children,
+    dataLength,
+    hasMore,
+    next,
+    endMessage,
+  }: {
+    children: ReactNode;
+    dataLength: number;
+    hasMore: boolean;
+    next: () => void | Promise<void>;
+    endMessage?: ReactNode;
+  }) => (
+    <div data-testid="infinite-scroll" data-length={dataLength} data-has-more={String(hasMore)}>
+      <button type="button" onClick={() => void next()}>
+        Load more
+      </button>
+      {children}
+      {!hasMore && endMessage}
+    </div>
+  ),
 }));
 
 function renderPage(path: string) {
@@ -299,6 +401,44 @@ describe('VideoPage', () => {
     expect(url.searchParams.get('source')).toBe('featured');
     expect(url.searchParams.get('featuredTabId')).toBe('ft_1234abcd');
     expect(url.searchParams.get('index')).toBe('2');
+  });
+
+  it('advances infinite-scroll data length when widening the rendered window', async () => {
+    renderPage('/video/scroll-video-1?source=search&q=scroll-window&index=0');
+
+    const scroll = screen.getByTestId('infinite-scroll');
+    expect(scroll).toHaveAttribute('data-length', '22');
+    expect(scroll).toHaveAttribute('data-has-more', 'true');
+
+    fireEvent.click(screen.getByRole('button', { name: /load more/i }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('infinite-scroll')).toHaveAttribute('data-length', '24');
+    });
+    expect(mockFetchNextFunnelcakePage).not.toHaveBeenCalled();
+  });
+
+  it('fetches the next Funnelcake page when the rendered window is exhausted', async () => {
+    mockFetchNextFunnelcakePage.mockResolvedValueOnce([]);
+
+    renderPage('/video/fetch-video-1?source=search&q=scroll-fetch&index=0');
+
+    const scroll = screen.getByTestId('infinite-scroll');
+    expect(scroll).toHaveAttribute('data-length', '20');
+    expect(scroll).toHaveAttribute('data-has-more', 'true');
+
+    fireEvent.click(screen.getByRole('button', { name: /load more/i }));
+
+    await waitFor(() => {
+      expect(mockFetchNextFunnelcakePage).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  it('shows an end message when the loaded feed has no more rows or pages', () => {
+    renderPage('/video/done-video-1?source=search&q=scroll-done&index=0');
+
+    expect(screen.getByTestId('infinite-scroll')).toHaveAttribute('data-has-more', 'false');
+    expect(screen.getByText("You've reached the end")).toBeInTheDocument();
   });
 
   it('ignores repeated next navigation while a boundary fetch is in flight', async () => {
