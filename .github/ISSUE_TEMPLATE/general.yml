@@ -1,0 +1,25 @@
+name: General Issue
+description: Track docs, chores, CI, refactors, tests, and other work.
+title: "chore(): "
+labels:
+  - triage
+assignees:
+  - NotThatKindOfDrLiz
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: >-
+        Replace the title placeholder with `type(scope): subject`. Allowed
+        types are `build`, `chore`, `ci`, `docs`, `feat`, `fix`, `perf`,
+        `refactor`, `revert`, `style`, and `test`.
+      placeholder: Briefly describe the work.
+    validations:
+      required: true
+  - type: textarea
+    id: details
+    attributes:
+      label: Details
+      description: Add context, constraints, links, or acceptance criteria.
+      placeholder: What needs to happen?

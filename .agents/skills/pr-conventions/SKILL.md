@@ -22,11 +22,27 @@ type(scope): summary
 type: summary
 ```
 
-Allowed types: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`,
-`perf`.
+Allowed types: `build`, `chore`, `ci`, `docs`, `feat`, `fix`, `perf`,
+`refactor`, `revert`, `style`, `test`.
 
 Set the correct title when opening the PR. Editing the title afterward may not
 retrigger `semantic_pr.yml`, leaving the check stale or failed.
+
+## Issue Titles
+
+Use scoped Conventional Commit format:
+
+```
+type(scope): summary
+```
+
+Issue titles require a scope. Allowed types match PR titles: `build`, `chore`,
+`ci`, `docs`, `feat`, `fix`, `perf`, `refactor`, `revert`, `style`, `test`.
+
+Examples:
+
+- `fix(search): avoid duplicate fallback requests`
+- `docs(readme): clarify deploy commands`
 
 ## PR Description
 
