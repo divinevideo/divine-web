@@ -9,7 +9,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { VideoCard } from '@/components/VideoCard';
-import { useVideoNavigation, type VideoNavigationContext } from '@/hooks/useVideoNavigation';
+import { buildVideoNavigationUrl, parseVideoNavigationContext, useVideoNavigation, type VideoNavigationContext } from '@/hooks/useVideoNavigation';
 import { useVideoByIdFunnelcake } from '@/hooks/useVideoByIdFunnelcake';
 import { useAuthor } from '@/hooks/useAuthor';
 import { useBatchedVideoInteractions } from '@/hooks/useBatchedVideoInteractions';
@@ -37,18 +37,7 @@ export function VideoPage() {
 
   // Parse navigation context from URL params
   const context: VideoNavigationContext | null = useMemo(() => {
-    const source = searchParams.get('source') as VideoNavigationContext['source'];
-    if (!source) return null;
-
-    return {
-      source,
-      hashtag: searchParams.get('hashtag') || undefined,
-      pubkey: searchParams.get('pubkey') || undefined,
-      listId: searchParams.get('listId') || undefined,
-      query: searchParams.get('q') || undefined,
-      sortMode: searchParams.get('sort') as VideoNavigationContext['sortMode'],
-      currentIndex: searchParams.get('index') ? parseInt(searchParams.get('index')!) : undefined,
-    };
+    return parseVideoNavigationContext(searchParams);
   }, [searchParams]);
   const profileContextPubkey = context?.source === 'profile' ? context.pubkey : undefined;
 
@@ -57,6 +46,8 @@ export function VideoPage() {
     video: funnelcakeVideo,
     videos: funnelcakeVideos,
     windowOffset: funnelcakeWindowOffset,
+    hasNextPage: funnelcakeHasNextPage,
+    fetchNextPage: fetchNextFunnelcakePage,
     isLoading: funnelcakeLoading,
     error: funnelcakeError,
   } = useVideoByIdFunnelcake({
@@ -64,6 +55,7 @@ export function VideoPage() {
     pubkey: profileContextPubkey,
     hashtag: context?.source === 'hashtag' ? context.hashtag : undefined,
     query: context?.source === 'search' ? context.query : undefined,
+    featuredTabId: context?.source === 'featured' ? context.featuredTabId : undefined,
     sortMode: context?.sortMode,
     currentIndex: context?.currentIndex,
     enabled: !!id,
@@ -97,32 +89,42 @@ export function VideoPage() {
   }, [videos, id]);
   const navigationIndexBase = videos === funnelcakeVideos ? funnelcakeWindowOffset : 0;
 
-  const hasNext = currentIndex >= 0 && currentIndex < (videos?.length || 0) - 1;
+  const isUsingFunnelcakeVideos = videos === funnelcakeVideos;
+  const hasNextLoaded = currentIndex >= 0 && currentIndex < (videos?.length || 0) - 1;
+  const hasNext = hasNextLoaded || (isUsingFunnelcakeVideos && currentIndex >= 0 && funnelcakeHasNextPage);
   const hasPrevious = currentIndex > 0;
 
   // Build navigation URL
   const buildNavigationUrl = useCallback((video: ParsedVideoData, index: number) => {
     if (!context) return `/video/${video.id}`;
 
-    const params = new URLSearchParams({
-      source: context.source,
-      index: index.toString(),
-    });
-
-    if (context.hashtag) params.set('hashtag', context.hashtag);
-    if (context.pubkey) params.set('pubkey', context.pubkey);
-    if (context.listId) params.set('listId', context.listId);
-    if (context.query) params.set('q', context.query);
-    if (context.sortMode) params.set('sort', context.sortMode);
-
-    return `/video/${video.id}?${params.toString()}`;
+    return buildVideoNavigationUrl(video.id, context, index);
   }, [context]);
 
-  const goToNext = useCallback(() => {
+  const goToNext = useCallback(async () => {
     if (!hasNext || !videos) return;
-    const nextVideo = videos[currentIndex + 1];
+    let nextVideos = videos;
+
+    if (!hasNextLoaded && isUsingFunnelcakeVideos && funnelcakeHasNextPage) {
+      nextVideos = await fetchNextFunnelcakePage() ?? videos;
+    }
+
+    const nextVideo = nextVideos[currentIndex + 1];
+    if (!nextVideo) return;
+
     navigate(buildNavigationUrl(nextVideo, navigationIndexBase + currentIndex + 1));
-  }, [hasNext, videos, currentIndex, navigate, buildNavigationUrl, navigationIndexBase]);
+  }, [
+    hasNext,
+    videos,
+    hasNextLoaded,
+    isUsingFunnelcakeVideos,
+    funnelcakeHasNextPage,
+    fetchNextFunnelcakePage,
+    currentIndex,
+    navigate,
+    buildNavigationUrl,
+    navigationIndexBase,
+  ]);
 
   const goToPrevious = useCallback(() => {
     if (!hasPrevious || !videos) return;

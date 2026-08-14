@@ -15,6 +15,8 @@ const {
   mockUseVideoPrefetch,
   mockInfiniteScroll,
   mockTrackEvent,
+  mockVideoCardWithMetrics,
+  mockVideoGrid,
 } = vi.hoisted(() => ({
   mockTrackEvent: vi.fn(),
   mockNavigate: vi.fn(),
@@ -24,6 +26,8 @@ const {
   mockUpdateVideos: vi.fn(),
   mockUseVideoPrefetch: vi.fn(),
   mockInfiniteScroll: vi.fn(),
+  mockVideoCardWithMetrics: vi.fn(),
+  mockVideoGrid: vi.fn(),
 }));
 
 vi.mock('@/hooks/useVideoProvider', () => ({
@@ -90,11 +94,17 @@ vi.mock('@/lib/performanceMonitoring', () => ({
 }));
 
 vi.mock('@/components/VideoCardWithMetrics', () => ({
-  VideoCardWithMetrics: () => <div data-testid="video-card" />,
+  VideoCardWithMetrics: (props: unknown) => {
+    mockVideoCardWithMetrics(props);
+    return <div data-testid="video-card" />;
+  },
 }));
 
 vi.mock('@/components/VideoGrid', () => ({
-  VideoGrid: () => <div data-testid="video-grid" />,
+  VideoGrid: (props: unknown) => {
+    mockVideoGrid(props);
+    return <div data-testid="video-grid" />;
+  },
 }));
 
 vi.mock('@/components/AddToListDialog', () => ({
@@ -258,6 +268,40 @@ describe('VideoFeed', () => {
       null,
       [expect.objectContaining({ id: 'video-1' })],
       { prefetchVideos: false },
+    );
+  });
+
+  it('passes featured tab context to feed cards', () => {
+    render(
+      <MemoryRouter initialEntries={['/discovery/seasonal-theme']}>
+        <VideoFeed feedType="featured" featuredTabId="ft_1234abcd" />
+      </MemoryRouter>
+    );
+
+    expect(mockVideoCardWithMetrics).toHaveBeenCalledWith(
+      expect.objectContaining({
+        navigationContext: expect.objectContaining({
+          source: 'featured',
+          featuredTabId: 'ft_1234abcd',
+        }),
+      })
+    );
+  });
+
+  it('passes featured tab context to grid cards', () => {
+    render(
+      <MemoryRouter initialEntries={['/discovery/seasonal-theme']}>
+        <VideoFeed feedType="featured" featuredTabId="ft_1234abcd" viewMode="grid" />
+      </MemoryRouter>
+    );
+
+    expect(mockVideoGrid).toHaveBeenCalledWith(
+      expect.objectContaining({
+        navigationContext: expect.objectContaining({
+          source: 'featured',
+          featuredTabId: 'ft_1234abcd',
+        }),
+      })
     );
   });
 

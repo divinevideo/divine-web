@@ -58,8 +58,10 @@ function getFreshCachedConfig(
 
 export function useFeaturedTab({
   apiUrl = getFunnelcakeBaseUrl(),
+  enabled = true,
 }: {
   apiUrl?: string;
+  enabled?: boolean;
 } = {}): FeaturedTabState {
   const { i18n } = useTranslation();
   const minorStatus = useProtectedMinorStatus();
@@ -67,6 +69,7 @@ export function useFeaturedTab({
   const { data, dataUpdatedAt } = useQuery({
     queryKey: ['featured-tabs', apiUrl],
     queryFn: ({ signal }) => fetchFeaturedTabs(apiUrl, signal),
+    enabled,
     staleTime: 60 * 1000,
     gcTime: GC_TIME_MS,
     refetchOnWindowFocus: true,

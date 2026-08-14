@@ -11,10 +11,12 @@ export interface FeaturedTabVideoPage {
   hasMore: boolean;
 }
 
+export const FEATURED_TAB_PAGE_SIZE = 12;
+
 export function useFeaturedTabVideos({
   configId,
   apiUrl = getFunnelcakeBaseUrl(),
-  pageSize = 12,
+  pageSize = FEATURED_TAB_PAGE_SIZE,
   enabled = true,
 }: {
   configId?: string;

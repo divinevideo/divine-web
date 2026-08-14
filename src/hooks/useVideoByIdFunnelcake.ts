@@ -1,12 +1,15 @@
 // ABOUTME: Hook to fetch a single video by ID via Funnelcake REST API
 // ABOUTME: Provides fast video lookup for VideoPage with profile and hashtag context support
 
+import { useEffect, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { getFunnelcakeBaseUrl } from '@/config/api';
 import { fetchVideoById, fetchUserVideos, searchVideos } from '@/lib/funnelcakeClient';
 import { transformFunnelcakeVideo } from '@/lib/funnelcakeTransform';
 import { getFunnelcakeUrl } from '@/config/relays';
 import { useAppContext } from '@/hooks/useAppContext';
+import { useFeaturedTab } from '@/hooks/useFeaturedTab';
+import { FEATURED_TAB_PAGE_SIZE, useFeaturedTabVideos } from '@/hooks/useFeaturedTabVideos';
 import { debugLog } from '@/lib/debug';
 import type { ParsedVideoData } from '@/types/video';
 import type { FunnelcakeVideoRaw } from '@/types/funnelcake';
@@ -17,6 +20,7 @@ interface UseVideoByIdOptions {
   pubkey?: string;   // Optional pubkey for profile context
   hashtag?: string;  // Optional hashtag for hashtag feed context
   query?: string;    // Optional search query for bounded search navigation
+  featuredTabId?: string;
   sortMode?: SortMode | 'relevance';
   currentIndex?: number; // Optional global index from feed context for neighbor windowing
   enabled?: boolean;
@@ -26,11 +30,15 @@ interface UseVideoByIdResult {
   video: ParsedVideoData | null;
   videos: ParsedVideoData[] | null;  // Neighboring videos for navigation
   windowOffset: number;
+  hasNextPage: boolean;
+  isFetchingNextPage: boolean;
+  fetchNextPage: () => Promise<ParsedVideoData[] | null>;
   isLoading: boolean;
   error: Error | null;
 }
 
 const NAVIGATION_WINDOW_SIZE = 16;
+const FEATURED_NAVIGATION_PAGE_BUDGET = 5;
 
 /** Drop rows the transform refuses — a video with no `d` tag has no coordinate. */
 function transformNavigationVideos(rawVideos: FunnelcakeVideoRaw[]): ParsedVideoData[] {
@@ -63,6 +71,17 @@ function mapSearchSortModeToFunnelcakeSort(sortMode: SortMode | 'relevance' = 'r
   }
 }
 
+function getFeaturedNavigationPageBudget(currentIndex?: number): number {
+  if (currentIndex === undefined || currentIndex < 0) {
+    return 1;
+  }
+
+  return Math.min(
+    FEATURED_NAVIGATION_PAGE_BUDGET,
+    Math.ceil((currentIndex + 1) / FEATURED_TAB_PAGE_SIZE) + 1
+  );
+}
+
 /**
  * Hook to fetch a single video by ID via Funnelcake REST API
  *
@@ -71,15 +90,23 @@ function mapSearchSortModeToFunnelcakeSort(sortMode: SortMode | 'relevance' = 'r
  * The single video lookup is faster than WebSocket queries.
  */
 export function useVideoByIdFunnelcake(options: UseVideoByIdOptions): UseVideoByIdResult {
-  const { videoId, pubkey, hashtag, query, sortMode = 'relevance', currentIndex, enabled = true } = options;
+  const { videoId, pubkey, hashtag, query, featuredTabId, sortMode = 'relevance', currentIndex, enabled = true } = options;
   const { config } = useAppContext();
   const windowOffset = getNavigationWindowOffset(currentIndex);
+  const featuredPageBudget = getFeaturedNavigationPageBudget(currentIndex);
   const trimmedQuery = query?.trim();
   const isHashtagSearch = !!trimmedQuery && trimmedQuery.startsWith('#');
   const searchValue = isHashtagSearch ? trimmedQuery?.slice(1).toLowerCase() : trimmedQuery;
 
   // Determine API URL from current relay
   const funnelcakeUrl = getFunnelcakeUrl(config.relayUrl) || getFunnelcakeBaseUrl();
+  const featuredTabState = useFeaturedTab({
+    apiUrl: funnelcakeUrl,
+    enabled: enabled && !!featuredTabId,
+  });
+  const eligibleFeaturedTabId = featuredTabState.tab?.id === featuredTabId
+    ? featuredTabId
+    : undefined;
 
   // If we have a pubkey, fetch all their videos for navigation context
   const userVideosQuery = useQuery({
@@ -147,7 +174,49 @@ export function useVideoByIdFunnelcake(options: UseVideoByIdOptions): UseVideoBy
     gcTime: 900000,
   });
 
-  const contextVideos = userVideosQuery.data ?? hashtagVideosQuery.data ?? searchVideosQuery.data ?? null;
+  const featuredVideosQuery = useFeaturedTabVideos({
+    configId: eligibleFeaturedTabId,
+    apiUrl: funnelcakeUrl,
+    pageSize: FEATURED_TAB_PAGE_SIZE,
+    enabled: enabled && !!eligibleFeaturedTabId && !pubkey && !hashtag && !searchValue,
+  });
+  const {
+    data: featuredVideosData,
+    error: featuredVideosError,
+    fetchNextPage: fetchNextFeaturedPage,
+    hasNextPage: featuredHasNextPage,
+    isFetchingNextPage: isFetchingNextFeaturedPage,
+    isLoading: isFeaturedVideosLoading,
+  } = featuredVideosQuery;
+  const featuredVideos = useMemo(
+    () => featuredVideosData?.pages.flatMap((page) => page.videos) ?? null,
+    [featuredVideosData]
+  );
+  const featuredContextVideo = featuredVideos?.find(v => v.id === videoId || v.vineId === videoId) || null;
+
+  useEffect(() => {
+    if (
+      !eligibleFeaturedTabId ||
+      featuredContextVideo ||
+      !featuredHasNextPage ||
+      isFetchingNextFeaturedPage ||
+      (featuredVideosData?.pages.length ?? 0) >= featuredPageBudget
+    ) {
+      return;
+    }
+
+    void fetchNextFeaturedPage();
+  }, [
+    eligibleFeaturedTabId,
+    featuredContextVideo,
+    featuredHasNextPage,
+    isFetchingNextFeaturedPage,
+    featuredVideosData,
+    featuredPageBudget,
+    fetchNextFeaturedPage,
+  ]);
+
+  const contextVideos = userVideosQuery.data ?? hashtagVideosQuery.data ?? searchVideosQuery.data ?? featuredVideos ?? null;
   const contextVideo = contextVideos?.find(v => v.id === videoId || v.vineId === videoId) || null;
   const contextLoading = pubkey
     ? userVideosQuery.isLoading
@@ -155,6 +224,8 @@ export function useVideoByIdFunnelcake(options: UseVideoByIdOptions): UseVideoBy
       ? hashtagVideosQuery.isLoading
       : searchValue
         ? searchVideosQuery.isLoading
+        : eligibleFeaturedTabId
+          ? isFeaturedVideosLoading || isFetchingNextFeaturedPage
         : false;
   const contextError = pubkey
     ? (userVideosQuery.error as Error | null)
@@ -162,6 +233,8 @@ export function useVideoByIdFunnelcake(options: UseVideoByIdOptions): UseVideoBy
       ? (hashtagVideosQuery.error as Error | null)
       : searchValue
         ? (searchVideosQuery.error as Error | null)
+        : eligibleFeaturedTabId
+          ? (featuredVideosError as Error | null)
         : null;
   const shouldLookupSingleVideo = enabled && !!videoId && (
     !contextVideo
@@ -193,7 +266,15 @@ export function useVideoByIdFunnelcake(options: UseVideoByIdOptions): UseVideoBy
   return {
     video,
     videos,
-    windowOffset,
+    windowOffset: eligibleFeaturedTabId ? 0 : windowOffset,
+    hasNextPage: Boolean(eligibleFeaturedTabId && featuredHasNextPage),
+    isFetchingNextPage: Boolean(eligibleFeaturedTabId && isFetchingNextFeaturedPage),
+    fetchNextPage: async () => {
+      if (!eligibleFeaturedTabId || !featuredHasNextPage) return featuredVideos;
+
+      const result = await fetchNextFeaturedPage();
+      return result.data?.pages.flatMap((page) => page.videos) ?? featuredVideos;
+    },
     isLoading,
     error,
   };

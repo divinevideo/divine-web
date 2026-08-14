@@ -10,6 +10,7 @@ import { VideoCardWithMetrics } from '@/components/VideoCardWithMetrics';
 import { VideoGrid } from '@/components/VideoGrid';
 import { AddToListDialog } from '@/components/AddToListDialog';
 import { useVideoProvider } from '@/hooks/useVideoProvider';
+import { FEATURED_TAB_PAGE_SIZE } from '@/hooks/useFeaturedTabVideos';
 import { useBatchedAuthors } from '@/hooks/useBatchedAuthors';
 import { useContentModeration } from '@/hooks/useModeration';
 import { useFeedPerformanceInstrumentation } from '@/hooks/useFeedPerformanceInstrumentation';
@@ -63,7 +64,7 @@ export function VideoFeed({
   category,
   featuredTabId,
   pubkey,
-  limit = 12, // Smaller first page improves initial paint on REST-backed feeds
+  limit = FEATURED_TAB_PAGE_SIZE, // Smaller first page improves initial paint on REST-backed feeds
   sortMode,
   popularSource,
   popularPeriod,
@@ -505,6 +506,7 @@ export function VideoFeed({
               source: feedType,
               hashtag,
               pubkey,
+              featuredTabId,
             }}
           />
         </InfiniteScroll>
@@ -570,6 +572,7 @@ export function VideoFeed({
                 source: feedType,
                 hashtag,
                 pubkey,
+                featuredTabId,
               }}
             />
           ))}

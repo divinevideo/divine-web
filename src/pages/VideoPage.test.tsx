@@ -12,8 +12,9 @@ const { VIDEO_1_AUTHOR_PK, VIDEO_2_AUTHOR_PK, VIDEO_3_AUTHOR_PK, VIEWER_PK } = v
   VIEWER_PK: 'f'.repeat(64),
 }));
 
-const { mockNavigate } = vi.hoisted(() => ({
+const { mockNavigate, mockFetchNextFunnelcakePage } = vi.hoisted(() => ({
   mockNavigate: vi.fn(),
+  mockFetchNextFunnelcakePage: vi.fn(),
 }));
 
 const { openLoginDialogMock } = vi.hoisted(() => ({
@@ -35,7 +36,7 @@ vi.mock('@/hooks/useSubdomainNavigate', () => ({
 }));
 
 vi.mock('@/hooks/useVideoByIdFunnelcake', () => ({
-  useVideoByIdFunnelcake: (options: { videoId: string; query?: string }) => {
+  useVideoByIdFunnelcake: (options: { videoId: string; query?: string; featuredTabId?: string }) => {
     const videos = [
       {
         id: 'video-1',
@@ -79,6 +80,24 @@ vi.mock('@/hooks/useVideoByIdFunnelcake', () => ({
         video,
         videos,
         windowOffset: 0,
+        hasNextPage: false,
+        isFetchingNextPage: false,
+        fetchNextPage: vi.fn(),
+        isLoading: false,
+        error: null,
+      };
+    }
+
+    if (options.featuredTabId === 'ft_1234abcd') {
+      mockFetchNextFunnelcakePage.mockResolvedValueOnce([videos[1], videos[2]]);
+
+      return {
+        video: videos[1],
+        videos: [videos[1]],
+        windowOffset: 1,
+        hasNextPage: true,
+        isFetchingNextPage: false,
+        fetchNextPage: mockFetchNextFunnelcakePage,
         isLoading: false,
         error: null,
       };
@@ -88,6 +107,9 @@ vi.mock('@/hooks/useVideoByIdFunnelcake', () => ({
       video,
       videos: null,
       windowOffset: 0,
+      hasNextPage: false,
+      isFetchingNextPage: false,
+      fetchNextPage: vi.fn(),
       isLoading: false,
       error: null,
     };
@@ -95,6 +117,39 @@ vi.mock('@/hooks/useVideoByIdFunnelcake', () => ({
 }));
 
 vi.mock('@/hooks/useVideoNavigation', () => ({
+  buildVideoNavigationUrl: (videoId: string, context: {
+    source: string;
+    hashtag?: string;
+    pubkey?: string;
+    listId?: string;
+    featuredTabId?: string;
+    query?: string;
+    sortMode?: string;
+  }, index?: number) => {
+    const params = new URLSearchParams({ source: context.source });
+    if (context.hashtag) params.set('hashtag', context.hashtag);
+    if (context.pubkey) params.set('pubkey', context.pubkey);
+    if (context.listId) params.set('listId', context.listId);
+    if (context.featuredTabId) params.set('featuredTabId', context.featuredTabId);
+    if (context.query) params.set('q', context.query);
+    if (context.sortMode) params.set('sort', context.sortMode);
+    if (index !== undefined) params.set('index', String(index));
+    return `/video/${videoId}?${params.toString()}`;
+  },
+  parseVideoNavigationContext: (searchParams: URLSearchParams) => {
+    const source = searchParams.get('source');
+    if (!source) return null;
+    return {
+      source,
+      hashtag: searchParams.get('hashtag') || undefined,
+      pubkey: searchParams.get('pubkey') || undefined,
+      listId: searchParams.get('listId') || undefined,
+      featuredTabId: searchParams.get('featuredTabId') || undefined,
+      query: searchParams.get('q') || undefined,
+      sortMode: searchParams.get('sort') || undefined,
+      currentIndex: searchParams.get('index') ? parseInt(searchParams.get('index')!, 10) : undefined,
+    };
+  },
   useVideoNavigation: () => ({
     context: null,
     currentVideo: null,
@@ -208,6 +263,7 @@ function renderPage(path: string) {
 describe('VideoPage', () => {
   beforeEach(async () => {
     vi.clearAllMocks();
+    mockFetchNextFunnelcakePage.mockReset();
     currentUser.value = null;
     publishAsyncMock.mockResolvedValue({ id: 'like-event-id' });
     const storage = new Map<string, string>();
@@ -237,6 +293,24 @@ describe('VideoPage', () => {
     expect(url.searchParams.get('source')).toBe('search');
     expect(url.searchParams.get('q')).toBe('twerking');
     expect(url.searchParams.get('sort')).toBe('top');
+    expect(url.searchParams.get('index')).toBe('2');
+  });
+
+  it('fetches the next featured page at the boundary while preserving featured params', async () => {
+    renderPage('/video/video-2?source=featured&featuredTabId=ft_1234abcd&index=1');
+
+    fireEvent.keyDown(document.body, { key: 'ArrowDown' });
+
+    await waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalledTimes(1);
+    });
+    expect(mockFetchNextFunnelcakePage).toHaveBeenCalledTimes(1);
+
+    const [target] = mockNavigate.mock.calls[0] ?? [];
+    const url = new URL(String(target), 'https://divine.video');
+    expect(url.pathname).toBe('/video/video-3');
+    expect(url.searchParams.get('source')).toBe('featured');
+    expect(url.searchParams.get('featuredTabId')).toBe('ft_1234abcd');
     expect(url.searchParams.get('index')).toBe('2');
   });
 

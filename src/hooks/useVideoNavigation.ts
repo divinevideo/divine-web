@@ -16,6 +16,7 @@ export interface VideoNavigationContext {
   hashtag?: string;
   pubkey?: string;
   listId?: string;
+  featuredTabId?: string;
   query?: string;
   sortMode?: SortMode | 'relevance';
   currentIndex?: number;
@@ -43,18 +44,7 @@ export function useVideoNavigation(videoId: string, options: UseVideoNavigationO
 
   // Parse navigation context from URL params
   const context: VideoNavigationContext | null = useMemo(() => {
-    const source = searchParams.get('source') as VideoNavigationContext['source'];
-    if (!source) return null;
-
-    return {
-      source,
-      hashtag: searchParams.get('hashtag') || undefined,
-      pubkey: searchParams.get('pubkey') || undefined,
-      listId: searchParams.get('listId') || undefined,
-      query: searchParams.get('q') || undefined,
-      sortMode: searchParams.get('sort') as VideoNavigationContext['sortMode'],
-      currentIndex: searchParams.get('index') ? parseInt(searchParams.get('index')!) : undefined,
-    };
+    return parseVideoNavigationContext(searchParams);
   }, [searchParams]);
 
   const isPeopleListContext = context?.source === 'people-list';
@@ -76,7 +66,8 @@ export function useVideoNavigation(videoId: string, options: UseVideoNavigationO
   const feedTypeForWebSocket: WebSocketFeedType | undefined = (() => {
     if (!context) return undefined;
     if (isPeopleListContext) return 'discovery';
-    if (context.source === 'foryou' || context.source === 'popular' || context.source === 'featured') return 'trending';
+    if (context.source === 'foryou' || context.source === 'popular') return 'trending';
+    if (context.source === 'featured') return undefined;
     if (context.source === 'search') return 'discovery';
     if (
       context.source === 'hashtag' ||
@@ -93,7 +84,7 @@ export function useVideoNavigation(videoId: string, options: UseVideoNavigationO
     return 'discovery';
   })();
   const { data: feedVideos, isLoading: feedVideosLoading } = useVideoEvents(
-    context && !isPeopleListContext ? {
+    context && !isPeopleListContext && feedTypeForWebSocket ? {
       feedType: feedTypeForWebSocket,
       hashtag: context.hashtag,
       pubkey: context.pubkey,
@@ -129,18 +120,7 @@ export function useVideoNavigation(videoId: string, options: UseVideoNavigationO
   const buildNavigationUrl = useCallback((video: ParsedVideoData, index: number) => {
     if (!context) return `/video/${video.id}`;
 
-    const params = new URLSearchParams({
-      source: context.source,
-      index: index.toString(),
-    });
-
-    if (context.hashtag) params.set('hashtag', context.hashtag);
-    if (context.pubkey) params.set('pubkey', context.pubkey);
-    if (context.listId) params.set('listId', context.listId);
-    if (context.query) params.set('q', context.query);
-    if (context.sortMode) params.set('sort', context.sortMode);
-
-    return `/video/${video.id}?${params.toString()}`;
+    return buildVideoNavigationUrl(video.id, context, index);
   }, [context]);
 
   const goToNext = useCallback(() => {
@@ -167,6 +147,26 @@ export function useVideoNavigation(videoId: string, options: UseVideoNavigationO
   };
 }
 
+export function parseVideoNavigationContext(searchParams: URLSearchParams): VideoNavigationContext | null {
+  const source = searchParams.get('source') as VideoNavigationContext['source'];
+  if (!source) return null;
+
+  const rawIndex = searchParams.get('index');
+  const sortMode = searchParams.get('sort') as VideoNavigationContext['sortMode'] | null;
+  const currentIndex = rawIndex ? parseInt(rawIndex, 10) : undefined;
+
+  return {
+    source,
+    hashtag: searchParams.get('hashtag') || undefined,
+    pubkey: searchParams.get('pubkey') || undefined,
+    listId: searchParams.get('listId') || undefined,
+    featuredTabId: searchParams.get('featuredTabId') || undefined,
+    query: searchParams.get('q') || undefined,
+    sortMode: sortMode || undefined,
+    currentIndex: Number.isFinite(currentIndex) ? currentIndex : undefined,
+  };
+}
+
 // Helper function to build navigation URL from context
 export function buildVideoNavigationUrl(
   videoId: string,
@@ -180,6 +180,7 @@ export function buildVideoNavigationUrl(
   if (context.hashtag) params.set('hashtag', context.hashtag);
   if (context.pubkey) params.set('pubkey', context.pubkey);
   if (context.listId) params.set('listId', context.listId);
+  if (context.featuredTabId) params.set('featuredTabId', context.featuredTabId);
   if (context.query) params.set('q', context.query);
   if (context.sortMode) params.set('sort', context.sortMode);
   if (index !== undefined) params.set('index', index.toString());
