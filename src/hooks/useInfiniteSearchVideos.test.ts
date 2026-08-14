@@ -536,6 +536,69 @@ describe('useInfiniteSearchVideos', () => {
     expect(mockNostrQuery.mock.calls[1]?.[0][0]).not.toHaveProperty('until');
   });
 
+  it('keeps paging the ranked window after author fallback instead of rewinding', async () => {
+    mockSearchProfiles
+      .mockResolvedValueOnce([{ pubkey: 'a'.repeat(64) }])
+      .mockRejectedValueOnce(new Error('boom'))
+      .mockResolvedValue([{ pubkey: 'a'.repeat(64) }]);
+    mockNostrQuery
+      .mockResolvedValueOnce([
+        makeEvent(1, 100),
+        makeEvent(2, 90),
+      ])
+      .mockResolvedValueOnce([
+        makeEvent(3, 80),
+        makeEvent(4, 70),
+      ])
+      .mockResolvedValueOnce([
+        makeEvent(3, 80),
+        makeEvent(4, 70),
+        makeEvent(5, 60),
+        makeEvent(6, 50),
+      ]);
+    mockParseVideoEvents
+      .mockReturnValueOnce([makeVideo(1, { createdAt: 100 })])
+      .mockReturnValueOnce([makeVideo(3, { createdAt: 80 }), makeVideo(4, { createdAt: 70 })])
+      .mockReturnValueOnce([makeVideo(5, { createdAt: 60 }), makeVideo(6, { createdAt: 50 })]);
+
+    const { result } = renderHook(
+      () => useInfiniteSearchVideos({ query: 'alice', searchType: 'author', sortMode: 'relevance', pageSize: 2 }),
+      { wrapper: createWrapper() }
+    );
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+
+    await waitFor(() => {
+      expect(result.current.hasNextPage).toBe(true);
+    });
+
+    await act(async () => {
+      await result.current.fetchNextPage();
+    });
+
+    await waitFor(() => {
+      expect(result.current.hasNextPage).toBe(true);
+    });
+
+    await act(async () => {
+      await result.current.fetchNextPage();
+    });
+
+    // Once author search falls over to the ranked window it stays there: no third
+    // profile lookup, and the window grows instead of restarting the author feed.
+    expect(mockSearchProfiles).toHaveBeenCalledTimes(2);
+    expect(mockNostrQuery.mock.calls[2]?.[0][0]).toEqual(
+      expect.objectContaining({ search: 'alice', limit: 4 })
+    );
+    expect(mockNostrQuery.mock.calls[2]?.[0][0]).not.toHaveProperty('until');
+    expect(mockParseVideoEvents.mock.calls[2]?.[0].map((event: NostrEvent) => event.id)).toEqual([
+      makeEvent(5).id,
+      makeEvent(6).id,
+    ]);
+  });
+
   it('stops pagination when Funnelcake returns a non-numeric offset cursor', async () => {
     mockSearchVideos.mockResolvedValueOnce({ videos: [], has_more: true });
     mockTransformToVideoPage.mockReturnValueOnce({

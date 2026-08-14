@@ -226,11 +226,16 @@ export function useInfiniteSearchVideos({
       const relayOffset = getRelayOffset(pageParam);
       const searchParams = parseSearchQuery(debouncedQuery, searchType);
       const funnelcakeAvailable = isFunnelcakeAvailable(apiUrl);
+      // Author search resolves pubkeys through Funnelcake and then pages the relay
+      // chronologically, so it may re-enter Funnelcake on a relay-timestamp param.
+      // A relay-offset param means we already fell over to the ranked window, which
+      // has no timestamp cursor to resume from — re-entering there would rewind the
+      // author feed to its newest page (#560).
       const canUseFunnelcake = funnelcakeAvailable
         && (
           !isSearchPageParam(pageParam)
           || pageParam.type === 'funnelcake-offset'
-          || searchParams.type === 'author'
+          || (searchParams.type === 'author' && pageParam.type === 'relay-timestamp')
         );
       const requestContext = {
         query: debouncedQuery,
