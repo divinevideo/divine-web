@@ -1,6 +1,6 @@
 name: Feature Request
 description: Propose a new capability or product improvement for divine-web.
-title: "feat: "
+title: "feat(scope): "
 labels:
   - enhancement
 body:
@@ -8,7 +8,12 @@ body:
     id: summary
     attributes:
       label: Summary
-      description: What should be added or changed? Avoid naming corporate partners, customers, or other sensitive external brands; use generic descriptors unless explicitly approved.
+      description: >-
+        What should be added or changed? Keep the issue title in
+        `type(scope): subject` format, for example `feat(profile): show saved
+        collections`. Avoid naming corporate partners, customers, or other
+        sensitive external brands; use generic descriptors unless explicitly
+        approved.
       placeholder: Briefly describe the feature request.
     validations:
       required: true

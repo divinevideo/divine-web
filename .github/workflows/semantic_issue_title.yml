@@ -1,0 +1,25 @@
+name: Semantic Issue Title
+
+on:
+  issues:
+    types: [opened, edited, reopened]
+
+permissions:
+  issues: read
+
+jobs:
+  semantic-issue-title:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check issue title
+        env:
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+        run: |
+          pattern='^(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test|review|ops|epic)\([a-z0-9][a-z0-9-]*\): .+'
+          if [[ ! "$ISSUE_TITLE" =~ $pattern ]]; then
+            echo "Issue title must use: type(scope): subject"
+            echo "Allowed types: build, chore, ci, docs, feat, fix, perf, refactor, revert, style, test, review, ops, epic"
+            echo "Example: fix(search): avoid duplicate fallback requests"
+            echo "Actual: $ISSUE_TITLE"
+            exit 1
+          fi
