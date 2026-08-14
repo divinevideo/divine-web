@@ -1,11 +1,8 @@
 // ABOUTME: Helpers for validating relay URLs by scheme
 // ABOUTME: Uses the URL constructor instead of regex for correctness
 
+import { isRelayUrlAllowed } from '@/lib/relayUrlPolicy';
+
 export function isWssUrl(value: string): boolean {
-  if (!value) return false;
-  try {
-    return new URL(value).protocol === 'wss:';
-  } catch {
-    return false;
-  }
+  return isRelayUrlAllowed(value) && new URL(value.trim()).protocol === 'wss:';
 }

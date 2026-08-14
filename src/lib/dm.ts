@@ -5,6 +5,11 @@ import { finalizeEvent, generateSecretKey, nip44, verifyEvent } from 'nostr-tool
 
 import { PRESET_RELAYS, PROFILE_RELAYS, getRelayUrls } from '@/config/relays';
 import { DIVINE_MODERATION_PUBKEY } from '@/lib/officialAccounts';
+import {
+  REMOTE_RELAY_HINT_CAP,
+  admitRelayUrls,
+  admitRemoteSuppliedRelays,
+} from '@/lib/relayUrlPolicy';
 import { getApexShareUrl } from '@/lib/subdomainLinks';
 import { SHORT_VIDEO_KIND } from '@/types/video';
 
@@ -131,12 +136,15 @@ function randomNow(): number {
 }
 
 function normalizeRelayUrls(relayUrls: string[]): string[] {
-  return [...new Set(
-    relayUrls
-      .map((relayUrl) => relayUrl.trim())
-      .filter(Boolean)
-      .filter((relayUrl) => relayUrl.startsWith('ws://') || relayUrl.startsWith('wss://')),
-  )];
+  return admitRelayUrls(relayUrls);
+}
+
+function warnRejectedDmRelay(relayUrl: string, reason: string): void {
+  console.warn(`[DM] Rejected remote relay URL "${relayUrl}": ${reason}`);
+}
+
+function warnTruncatedDmRelayList(droppedCount: number): void {
+  console.warn(`[DM] Truncated remote relay list by ${droppedCount} entries`);
 }
 
 function isPubkey(value: string): boolean {
@@ -274,6 +282,7 @@ async function publishEventToAllRelays(
 async function queryPreferredRelayMap(
   relayUrls: string[],
   authors: string[],
+  relayTrust: 'self' | 'remote',
   signal?: AbortSignal,
 ): Promise<Record<string, string[]>> {
   if (!authors.length || !relayUrls.length) {
@@ -302,11 +311,16 @@ async function queryPreferredRelayMap(
 
     return Object.fromEntries(
       [...newestEvents.entries()].map(([pubkey, event]) => {
-        const urls = normalizeRelayUrls(
-          event.tags
-            .filter((tag) => (tag[0] === 'r' || tag[0] === 'relay') && typeof tag[1] === 'string')
-            .map((tag) => tag[1]),
-        );
+        const relayTags = event.tags
+          .filter((tag) => (tag[0] === 'r' || tag[0] === 'relay') && typeof tag[1] === 'string')
+          .map((tag) => tag[1]);
+        const urls = relayTrust === 'remote'
+          ? admitRemoteSuppliedRelays(relayTags, {
+              cap: REMOTE_RELAY_HINT_CAP,
+              onRejected: warnRejectedDmRelay,
+              onTruncated: warnTruncatedDmRelayList,
+            })
+          : normalizeRelayUrls(relayTags);
         return [pubkey, urls];
       }),
     );
@@ -636,7 +650,7 @@ export async function resolveDmReadRelays(input: ResolveDmRelaysInput): Promise<
     : [];
 
   const preferredRelayMap = currentUserPubkey
-    ? await queryPreferredRelayMap(fallbackRelays, [currentUserPubkey], signal).catch(() => ({}))
+    ? await queryPreferredRelayMap(fallbackRelays, [currentUserPubkey], 'self', signal).catch(() => ({}))
     : {};
 
   return normalizeRelayUrls([
@@ -661,7 +675,7 @@ export async function resolveDmWriteRelays(input: ResolveDmRelaysInput): Promise
       )
     : [];
 
-  const preferredRelayMap = await queryPreferredRelayMap(fallbackRelays, recipientPubkeys, signal).catch(() => ({}));
+  const preferredRelayMap = await queryPreferredRelayMap(fallbackRelays, recipientPubkeys, 'remote', signal).catch(() => ({}));
 
   return normalizeRelayUrls([
     ...fallbackRelays,

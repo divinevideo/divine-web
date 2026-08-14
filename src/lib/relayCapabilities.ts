@@ -3,6 +3,7 @@
 
 import type { SortMode } from '@/types/nostr';
 import { VIDEO_KINDS } from '@/types/video';
+import { isRelayUrlAllowed } from '@/lib/relayUrlPolicy';
 import { recordProbe } from './relayHealth';
 
 type CapabilitySource = 'optimistic' | 'nip11' | 'probe' | 'fallback';
@@ -32,7 +33,7 @@ const capabilitiesCache = new Map<string, RelayCapabilities>();
 
 function normalizeRelayUrl(relayUrl: string): URL | null {
   try {
-    if (relayUrl.startsWith('ws://') || relayUrl.startsWith('wss://')) {
+    if (isRelayUrlAllowed(relayUrl)) {
       return new URL(relayUrl.replace(/^ws/, 'http'));
     }
     return new URL(relayUrl);
