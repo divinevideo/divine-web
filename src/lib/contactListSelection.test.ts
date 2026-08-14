@@ -75,14 +75,14 @@ describe('selectContactListForPublish', () => {
     expect(result.reason).toBe('passed contact list is newer');
   });
 
-  it('keeps larger-wins tiebreak when timestamps are equal', () => {
+  it('uses relay when timestamps are equal even if passed has more follows', () => {
     const passed = event(['a'.repeat(64), 'b'.repeat(64)], 100);
     const relay = event(['a'.repeat(64)], 100);
 
     const result = selectContactListForPublish(passed, relay);
 
-    expect(result.chosen).toBe(passed);
-    expect(result.reason).toBe('contact lists have equal timestamps and passed has more follows');
+    expect(result.chosen).toBe(relay);
+    expect(result.reason).toBe('contact lists have equal timestamps; using relay copy');
   });
 
   it('uses relay on equal timestamp when relay has the same number of follows', () => {
@@ -92,7 +92,7 @@ describe('selectContactListForPublish', () => {
     const result = selectContactListForPublish(passed, relay);
 
     expect(result.chosen).toBe(relay);
-    expect(result.reason).toBe('contact lists have equal timestamps and relay has at least as many follows');
+    expect(result.reason).toBe('contact lists have equal timestamps; using relay copy');
   });
 });
 

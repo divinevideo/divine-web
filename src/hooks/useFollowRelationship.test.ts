@@ -1,7 +1,7 @@
 // ABOUTME: Tests for useFollowRelationship hook - specifically the follow list overwrite protection
 // ABOUTME: Ensures Kind 3 contact list is fetched fresh before publishing to prevent data loss
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { afterEach, describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { FollowRaceError } from './useFollowRelationship';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -87,6 +87,10 @@ describe('useFollowUser - follow list overwrite protection', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockPublishEvent.mockResolvedValue({ id: 'new-event-id' });
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   it('fetches latest Kind 3 from relay before publishing, even when passed null', async () => {
@@ -175,6 +179,54 @@ describe('useFollowUser - follow list overwrite protection', () => {
 
     // Should NOT have published anything
     expect(mockPublishEvent).not.toHaveBeenCalled();
+  });
+
+  it('refuses to publish when the authoritative relay read aborts and returns no events', async () => {
+    const controller = new AbortController();
+    controller.abort();
+    vi.spyOn(AbortSignal, 'timeout').mockReturnValue(controller.signal);
+    mockNostrQuery.mockResolvedValue([]);
+
+    const { useFollowUser } = await import('./useFollowRelationship');
+    const { result } = renderHook(() => useFollowUser(), { wrapper: createWrapper() });
+
+    await expect(
+      act(async () => {
+        await result.current.mutateAsync({
+          targetPubkey: mockTargetPubkey,
+          currentContactList: null,
+          targetDisplayName: 'Test User',
+        });
+      }),
+    ).rejects.toThrow('Could not load your existing follow list');
+
+    expect(mockPublishEvent).not.toHaveBeenCalled();
+  });
+
+  it('uses the passed contact list when the relay read aborts with partial results', async () => {
+    const controller = new AbortController();
+    controller.abort();
+    vi.spyOn(AbortSignal, 'timeout').mockReturnValue(controller.signal);
+    const passedContactList = makeContactListEvent(['aaaa'.padEnd(64, '0')], 1000);
+    const partialRelayList = makeContactListEvent(['bbbb'.padEnd(64, '0')], 2000);
+    mockNostrQuery.mockResolvedValue([partialRelayList]);
+
+    const { useFollowUser } = await import('./useFollowRelationship');
+    const { result } = renderHook(() => useFollowUser(), { wrapper: createWrapper() });
+
+    await act(async () => {
+      await result.current.mutateAsync({
+        targetPubkey: mockTargetPubkey,
+        currentContactList: passedContactList,
+        targetDisplayName: 'Test User',
+      });
+    });
+
+    const followedPubkeys = mockPublishEvent.mock.calls[0][0].tags
+      .filter((t: string[]) => t[0] === 'p')
+      .map((t: string[]) => t[1]);
+    expect(followedPubkeys).toEqual(['aaaa'.padEnd(64, '0'), mockTargetPubkey]);
+    expect(followedPubkeys).not.toContain('bbbb'.padEnd(64, '0'));
   });
 
   it('prefers relay contact list over passed one when relay has more follows', async () => {
@@ -310,6 +362,10 @@ describe('useUnfollowUser - follow list overwrite protection', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockPublishEvent.mockResolvedValue({ id: 'new-event-id' });
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   it('uses newer relay contact list when it removed a different follow', async () => {

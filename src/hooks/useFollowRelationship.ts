@@ -7,7 +7,7 @@ import { useNostr } from '@nostrify/react';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useNostrPublish } from '@/hooks/useNostrPublish';
 import { followListCache } from '@/lib/followListCache';
-import type { CachedQueryOptions } from '@/lib/cachedNostr';
+import type { CachedNostrClient, CachedQueryOptions } from '@/lib/cachedNostr';
 import {
   countContactListFollows,
   selectContactListForPublish,
@@ -43,10 +43,12 @@ interface UnfollowUserParams {
 
 interface ContactListPublishSelection {
   contactList: NostrEvent | null;
-  relayQuerySucceeded: boolean;
 }
 
 type NostrClient = ReturnType<typeof useNostr>['nostr'];
+
+const CONTACT_LIST_LOAD_ERROR =
+  'Could not load your existing follow list. Please try again in a moment.';
 
 async function fetchAndSelectContactList(
   nostr: NostrClient,
@@ -60,22 +62,33 @@ async function fetchAndSelectContactList(
     // Bypass the local contact-list cache: this is a read-before-write that
     // must see the authoritative relay list, not a stale cached copy, or a
     // deliberate removal published by another client would be reverted.
+    const signal = AbortSignal.timeout(5000);
     const queryOpts: CachedQueryOptions = {
-      signal: AbortSignal.timeout(5000),
+      signal,
       bypassCache: true,
     };
-    const relayEvents = await nostr.query([
+    // useNostr() is typed as NPool, but NostrProvider supplies createCachedNostr()
+    // in production; this cast is the local contract for bypassCache support.
+    const cachedNostr = nostr as CachedNostrClient<NostrClient>;
+    const relayEvents = await cachedNostr.query([
       { kinds: [3], authors: [userPubkey], limit: 1 },
     ], queryOpts);
 
-    relayQuerySucceeded = true;
+    relayQuerySucceeded = !signal.aborted;
 
     const relayContactList = relayEvents
       .filter((e: NostrEvent) => e.kind === 3)
       .sort((a: NostrEvent, b: NostrEvent) => b.created_at - a.created_at)[0] || null;
 
-    const selection = selectContactListForPublish(currentContactList, relayContactList);
-    const source = selection.chosen === relayContactList ? 'relay' : 'passed';
+    const selection = relayQuerySucceeded
+      ? selectContactListForPublish(currentContactList, relayContactList)
+      : { chosen: currentContactList, reason: 'relay query timed out before authoritative EOSE' };
+    let source = 'passed';
+    if (selection.chosen === null) {
+      source = 'none';
+    } else if (selection.chosen === relayContactList) {
+      source = 'relay';
+    }
 
     debugLog(
       `[${logPrefix}] Using ${source} contact list:`,
@@ -87,15 +100,25 @@ async function fetchAndSelectContactList(
       ')'
     );
 
+    if (!selection.chosen && !relayQuerySucceeded) {
+      throw new Error(CONTACT_LIST_LOAD_ERROR);
+    }
+
     return {
       contactList: selection.chosen,
-      relayQuerySucceeded,
     };
   } catch (error) {
+    if (error instanceof Error && error.message === CONTACT_LIST_LOAD_ERROR) {
+      throw error;
+    }
+
     debugLog(`[${logPrefix}] Failed to fetch latest Kind 3 from relay, using passed contact list:`, error);
+    if (!currentContactList) {
+      throw new Error(CONTACT_LIST_LOAD_ERROR);
+    }
+
     return {
       contactList: currentContactList,
-      relayQuerySucceeded,
     };
   }
 }
@@ -207,18 +230,7 @@ export function useFollowUser() {
 
       const {
         contactList: bestContactList,
-        relayQuerySucceeded,
       } = await fetchAndSelectContactList(nostr, user.pubkey, currentContactList, 'useFollowUser');
-
-      // If relay query failed and we have no cached list, refuse to publish
-      // to prevent creating a Kind 3 with only 1 follow that overwrites an existing list.
-      // But if the relay query succeeded and returned nothing, this user has genuinely
-      // never followed anyone — allow creating their first Kind 3.
-      if (!bestContactList && !relayQuerySucceeded) {
-        throw new Error(
-          'Could not load your existing follow list. Please try again in a moment.'
-        );
-      }
 
       const currentTags = bestContactList?.tags ?? [];
 
@@ -287,14 +299,7 @@ export function useUnfollowUser() {
 
       const {
         contactList: bestContactList,
-        relayQuerySucceeded,
       } = await fetchAndSelectContactList(nostr, user.pubkey, currentContactList, 'useUnfollowUser');
-
-      if (!bestContactList && !relayQuerySucceeded) {
-        throw new Error(
-          'Could not load your existing follow list. Please try again in a moment.'
-        );
-      }
 
       if (!bestContactList) throw new Error('No contact list to update');
 

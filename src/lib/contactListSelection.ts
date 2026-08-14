@@ -9,6 +9,14 @@ export function countContactListFollows(event: NostrEvent | null): number {
   return event?.tags.filter(tag => tag[0] === 'p').length ?? 0;
 }
 
+/**
+ * Selects the contact list to extend for a follow-list publish.
+ *
+ * Newer strictly beats larger: a newer kind 3 with fewer `p` tags can be an
+ * intentional removal, and keeping an older larger list would republish the
+ * removed follow. A truncation guard should be added separately if evidence
+ * shows newer clients are publishing partial kind 3 events.
+ */
 export function selectContactListForPublish(
   passed: NostrEvent | null,
   relay: NostrEvent | null
@@ -33,18 +41,8 @@ export function selectContactListForPublish(
     return { chosen: passed, reason: 'passed contact list is newer' };
   }
 
-  const relayFollowCount = countContactListFollows(relay);
-  const passedFollowCount = countContactListFollows(passed);
-
-  if (relayFollowCount >= passedFollowCount) {
-    return {
-      chosen: relay,
-      reason: 'contact lists have equal timestamps and relay has at least as many follows',
-    };
-  }
-
   return {
-    chosen: passed,
-    reason: 'contact lists have equal timestamps and passed has more follows',
+    chosen: relay,
+    reason: 'contact lists have equal timestamps; using relay copy',
   };
 }

@@ -21,14 +21,18 @@ interface NostrClient {
   event: (event: NostrEvent) => Promise<void>;
 }
 
+export type CachedNostrClient<T extends NostrClient = NostrClient> = T & {
+  query: (filters: NostrFilter[], opts?: CachedQueryOptions) => Promise<NostrEvent[]>;
+};
+
 /**
  * Wrap a Nostr client with caching layer
  * Order: Local cache -> WebSocket
  */
 export function createCachedNostr<T extends NostrClient>(
   baseNostr: T
-): T {
-  const cachedNostr = Object.create(baseNostr) as T;
+): CachedNostrClient<T> {
+  const cachedNostr = Object.create(baseNostr) as CachedNostrClient<T>;
 
   // Wrap query method with cache-first logic
   cachedNostr.query = async (filters: NostrFilter[], opts?: CachedQueryOptions): Promise<NostrEvent[]> => {
