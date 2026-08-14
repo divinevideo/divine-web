@@ -813,7 +813,7 @@
     "seoDescription": "Obejrzyj to wideo na Divine",
     "seoDescriptionWithAuthor": "Obejrzyj to wideo od {{name}} na Divine",
     "errorTitle": "Błąd",
-    "nextVideoUnavailableDescription": "Nie ma więcej filmów w tej karcie.",
+    "nextVideoUnavailableDescription": "Nie udalo sie wczytac nastepnego filmu. Sprobowac ponownie?",
     "likedTitle": "Polubione!",
     "likedDescription": "Twoja reakcja została opublikowana",
     "likeFailedDescription": "Nie udało się polubić wideo",

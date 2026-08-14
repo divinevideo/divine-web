@@ -361,7 +361,7 @@ describe('VideoPage', () => {
 
     await waitFor(() => {
       expect(mockToast).toHaveBeenCalledWith(expect.objectContaining({
-        description: 'No more videos in this tab.',
+        description: "Couldn't load the next video. Try again?",
         variant: 'destructive',
       }));
     });

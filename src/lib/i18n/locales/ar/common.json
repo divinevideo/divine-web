@@ -857,7 +857,7 @@
     "seoDescription": "شاهد هذا الفيديو على Divine",
     "seoDescriptionWithAuthor": "شاهد هذا الفيديو من {{name}} على Divine",
     "errorTitle": "خطأ",
-    "nextVideoUnavailableDescription": "لا توجد فيديوهات أخرى في هذه التبويبة.",
+    "nextVideoUnavailableDescription": "تعذر تحميل الفيديو التالي. حاول مرة أخرى؟",
     "likedTitle": "أعجبني!",
     "likedDescription": "تم نشر تفاعلك",
     "likeFailedDescription": "فشل الإعجاب بالفيديو",

@@ -1,6 +1,12 @@
 // ABOUTME: Centralized relay configuration for the entire application
 // ABOUTME: Single source of truth for all relay URLs and their purposes
 
+import {
+  REMOTE_RELAY_HINT_CAP,
+  admitRelayUrls,
+  admitRemoteSuppliedRelays,
+} from '@/lib/relayUrlPolicy';
+
 /**
  * Relay configuration with metadata
  */
@@ -116,7 +122,7 @@ export const PRESET_RELAYS: RelayConfig[] = [
 ];
 
 /**
- * Relays used for NIP-58 badge queries (kinds 30009, 8, 30008)
+ * Relays used for NIP-58 badge queries (kinds 30009, 8, 10008, 30008)
  * Badge events may not be accepted by all relays, so we query a broad set.
  * Includes Divine relay (once kinds are allowlisted) plus public relays.
  */
@@ -183,11 +189,15 @@ export const getRelayUrls = (relays: RelayConfig[]): string[] =>
   relays.map(r => r.url);
 
 function dedupeRelayUrls(urls: Array<string | null | undefined>): string[] {
-  return [...new Set(
-    urls
-      .map(url => url?.trim())
-      .filter((url): url is string => Boolean(url))
-  )];
+  return admitRelayUrls(urls.filter((url): url is string => Boolean(url)));
+}
+
+function warnRejectedRelayHint(relayUrl: string, reason: string): void {
+  console.warn(`[Relay] Rejected remote relay hint "${relayUrl}": ${reason}`);
+}
+
+function warnTruncatedRelayHints(droppedCount: number): void {
+  console.warn(`[Relay] Truncated remote relay hints by ${droppedCount} entries`);
 }
 
 export function getEventLookupRelayUrls(options?: {
@@ -196,7 +206,11 @@ export function getEventLookupRelayUrls(options?: {
 }): string[] {
   return dedupeRelayUrls([
     ...(options?.configuredRelayUrls ?? []),
-    ...(options?.relayHints ?? []),
+    ...admitRemoteSuppliedRelays(options?.relayHints ?? [], {
+      cap: REMOTE_RELAY_HINT_CAP,
+      onRejected: warnRejectedRelayHint,
+      onTruncated: warnTruncatedRelayHints,
+    }),
     ...getRelayUrls(EVENT_LOOKUP_RELAYS),
   ]);
 }

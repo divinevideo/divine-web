@@ -19,6 +19,44 @@ describe('getOptimisticRelayCapabilities (after #415 ditto.pub removal)', () => 
   });
 });
 
+describe('NIP-11 metadata URL', () => {
+  beforeEach(() => {
+    clearCapabilitiesCache();
+    relayHealth.reset();
+    vi.stubGlobal(
+      'WebSocket',
+      class {
+        constructor() {
+          throw new Error('probe not under test');
+        }
+      },
+    );
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  // The websocket->http mapping is a scheme concern, not an admission concern.
+  // Gating it on the relay admission policy left `ws://` on a public host
+  // unmapped, so `fetch` rejected the URL and NIP-11 silently never resolved.
+  it.each([
+    ['wss://relay.nostr.wine', 'https://relay.nostr.wine/'],
+    ['ws://localhost:7777', 'http://localhost:7777/'],
+    ['ws://relay.example', 'http://relay.example/'],
+  ])('fetches %s metadata over http(s)', async (relayUrl, expectedUrl) => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ supported_nips: [50] }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    await detectRelayCapabilities(relayUrl);
+
+    expect(fetchMock).toHaveBeenCalledWith(expectedUrl, expect.anything());
+  });
+});
+
 describe('detectRelayCapabilities failure path', () => {
   // Optimistic caps: NIP-50 yes, video sorts no — so a live probe is attempted.
   const URL = 'wss://relay.nostr.wine';

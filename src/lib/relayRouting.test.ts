@@ -116,12 +116,14 @@ describe('buildReqRouter — kind-based routing', () => {
     expect(result.size).toBeGreaterThan(0);
   });
 
-  it('routes BADGE_KINDS to BADGE_RELAYS', () => {
-    const filter: NostrFilter = { kinds: [30009] };
-    const result = buildReqRouter(ctx)([filter]);
+  it.each([30009, 8, 30008, 10008])('routes badge kind %i to BADGE_RELAYS', (kind) => {
+    const pickTopN = vi.fn((urls: string[]) => urls.slice(0, 3));
+    const filter: NostrFilter = { kinds: [kind] };
+    const result = buildReqRouter({ ...ctx, pickTopN })([filter]);
     for (const url of result.keys()) {
       expect(BADGE_RELAYS.some((r) => r.url === url)).toBe(true);
     }
+    expect(pickTopN).toHaveBeenCalledWith(getRelayUrls(BADGE_RELAYS), 3, undefined);
   });
 
   it('routes video filters through health-ranked relays and marks sticky', () => {

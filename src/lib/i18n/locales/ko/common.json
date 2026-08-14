@@ -813,7 +813,7 @@
     "seoDescription": "Divine에서 이 비디오를 보세요",
     "seoDescriptionWithAuthor": "Divine에서 {{name}}님의 이 비디오를 보세요",
     "errorTitle": "오류",
-    "nextVideoUnavailableDescription": "이 탭에는 더 이상 동영상이 없어요.",
+    "nextVideoUnavailableDescription": "다음 동영상을 불러오지 못했어요. 다시 시도할까요?",
     "likedTitle": "좋아요!",
     "likedDescription": "반응이 발행됐어요",
     "likeFailedDescription": "비디오에 좋아요를 남길 수 없어요",

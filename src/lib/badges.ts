@@ -1,5 +1,5 @@
 // ABOUTME: NIP-58 badge utilities - validation, parsing, and caching
-// ABOUTME: Handles badge definitions (kind 30009), awards (kind 8), and profile badges (kind 30008)
+// ABOUTME: Handles badge definitions (kind 30009), awards (kind 8), and profile badges (kind 10008/30008)
 
 import type { NostrEvent } from '@nostrify/nostrify';
 
@@ -13,8 +13,11 @@ export const DIVINE_BADGE_PUBKEY = 'b3a706bcceb39f193da553ce76255dd6ba5b097001c8
 export const BADGE_KINDS = {
   DEFINITION: 30009,
   AWARD: 8,
-  PROFILE_BADGES: 30008,
+  PROFILE_BADGES: 10008,
+  PROFILE_BADGES_LEGACY: 30008,
 } as const;
+
+export const BADGE_READ_KINDS = Object.values(BADGE_KINDS) as number[];
 
 /** Parsed badge definition from a kind 30009 event */
 export interface BadgeDefinition {
@@ -111,27 +114,48 @@ export function getBadgeImageUrl(def: BadgeDefinition, targetSize: number): stri
   return def.image;
 }
 
+export function isProfileBadgesEvent(event: NostrEvent): boolean {
+  if (event.kind === BADGE_KINDS.PROFILE_BADGES) return true;
+  if (event.kind !== BADGE_KINDS.PROFILE_BADGES_LEGACY) return false;
+  return event.tags.some(t => t[0] === 'd' && t[1] === 'profile_badges');
+}
+
+export function selectProfileBadgesEvent(events: NostrEvent[]): NostrEvent | null {
+  const profileBadgeEvents = events.filter(isProfileBadgesEvent);
+  if (!profileBadgeEvents.length) return null;
+
+  return [...profileBadgeEvents].sort((a, b) => {
+    if (a.created_at !== b.created_at) return b.created_at - a.created_at;
+    if (a.kind !== b.kind) {
+      if (a.kind === BADGE_KINDS.PROFILE_BADGES) return -1;
+      if (b.kind === BADGE_KINDS.PROFILE_BADGES) return 1;
+    }
+    // NIP-01 tie-break: retain the lowest event id in lexical (code-point)
+    // order. Event ids are lowercase hex, so a direct string compare is the
+    // spec's byte order; localeCompare could reorder under some locales.
+    if (a.id !== b.id) return a.id < b.id ? -1 : 1;
+    return 0;
+  })[0];
+}
+
 /**
- * Parse `a` tags from a kind 30008 profile badges event.
+ * Parse `a`/`e` tag pairs from a kind 10008 or legacy 30008 profile badges event.
  * Returns pairs of [naddr, awardEventId] in display order.
  */
 export function parseProfileBadges(event: NostrEvent): Array<{ naddr: string; awardId: string }> {
-  if (event.kind !== BADGE_KINDS.PROFILE_BADGES) return [];
+  if (!isProfileBadgesEvent(event)) return [];
 
   const results: Array<{ naddr: string; awardId: string }> = [];
   const tags = event.tags;
 
-  // Profile badges use alternating a/e tag pairs after the d tag
-  for (let i = 0; i < tags.length; i++) {
-    if (tags[i][0] === 'a' && tags[i][1]) {
-      // Look for the next e tag
-      const nextE = tags.find((t, j) => j > i && t[0] === 'e');
-      if (nextE?.[1]) {
-        results.push({
-          naddr: tags[i][1],
-          awardId: nextE[1],
-        });
-      }
+  for (let i = 0; i < tags.length - 1; i++) {
+    const aTag = tags[i];
+    const eTag = tags[i + 1];
+    if (aTag[0] === 'a' && aTag[1] && eTag[0] === 'e' && eTag[1]) {
+      results.push({
+        naddr: aTag[1],
+        awardId: eTag[1],
+      });
     }
   }
 

@@ -1,0 +1,30 @@
+name: Issue Assignee
+
+on:
+  issues:
+    types: [opened, reopened, unassigned]
+
+permissions:
+  issues: write
+
+jobs:
+  default-assignee:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Assign unowned issues
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const defaultAssignee = 'NotThatKindOfDrLiz';
+            const issue = context.payload.issue;
+
+            if (issue.assignees.length > 0) {
+              return;
+            }
+
+            await github.rest.issues.addAssignees({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issue.number,
+              assignees: [defaultAssignee],
+            });

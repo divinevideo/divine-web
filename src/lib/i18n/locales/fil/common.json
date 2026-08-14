@@ -813,7 +813,7 @@
     "seoDescription": "Panoorin ang loop na 'to sa Divine",
     "seoDescriptionWithAuthor": "Panoorin ang loop na 'to ni {{name}} sa Divine",
     "errorTitle": "May Mali",
-    "nextVideoUnavailableDescription": "Wala nang ibang video sa tab na ito.",
+    "nextVideoUnavailableDescription": "Hindi ma-load ang susunod na video. Subukan ulit?",
     "likedTitle": "Na-like!",
     "likedDescription": "Na-publish na ang reaksyon mo",
     "likeFailedDescription": "Hindi na-like ang loop",

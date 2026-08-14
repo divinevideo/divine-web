@@ -230,6 +230,35 @@ Requirements:
 - Rebase on `origin/main` before pushing
 - One PR per issue when possible
 
+## Issues
+
+Issue titles use scoped Conventional Commit format: `type(scope): summary`.
+Unlike PR titles, issue titles require a scope so the backlog stays scannable.
+
+Allowed issue-title types match the default PR-title checker:
+
+- `build`
+- `chore`
+- `ci`
+- `docs`
+- `feat`
+- `fix`
+- `perf`
+- `refactor`
+- `revert`
+- `style`
+- `test`
+
+Use a short, specific scope such as `search`, `profile`, `deploy`, or
+`docs/readme`. Examples:
+
+- `fix(search): avoid duplicate fallback requests`
+- `docs(readme): clarify deploy commands`
+
+Issue templates assign new issues to the default repo owner. The
+`Issue Assignee` workflow also assigns any open issue that is filed without an
+assignee or later loses its last assignee, so backlog items do not sit unowned.
+
 Before opening, make sure you have followed [Scope Discipline](#scope-discipline)
 and `npm run test` passes locally.
 

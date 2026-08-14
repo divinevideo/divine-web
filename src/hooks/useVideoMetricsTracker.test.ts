@@ -84,7 +84,7 @@ describe('useVideoMetricsTracker', () => {
     expect(mockPublishViewEvent).not.toHaveBeenCalled();
   });
 
-  it('does not publish for less than 1 second of watch time', () => {
+  it('publishes for sub-second watch time', () => {
     const video = makeVideo('v1');
     const { unmount } = renderHook(() =>
       useVideoMetricsTracker({
@@ -95,11 +95,18 @@ describe('useVideoMetricsTracker', () => {
       })
     );
 
-    // Only 500ms — not enough
     act(() => { vi.advanceTimersByTime(500); });
     unmount();
 
-    expect(mockPublishViewEvent).not.toHaveBeenCalled();
+    expect(mockPublishViewEvent).toHaveBeenCalledTimes(1);
+    expect(mockPublishViewEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        video,
+        startSeconds: 0,
+        endSeconds: 0,
+        source: 'unknown',
+      })
+    );
   });
 
   it('publishes remaining time on unmount', () => {
@@ -130,6 +137,74 @@ describe('useVideoMetricsTracker', () => {
     expect(call.endSeconds).toBeLessThanOrEqual(4);
   });
 
+  it('flushes watch time before publishing on unmount', () => {
+    const video = makeVideo('v1');
+    const { unmount } = renderHook(() =>
+      useVideoMetricsTracker({
+        video,
+        isPlaying: true,
+        currentTime: 0,
+        duration: 6,
+      })
+    );
+
+    act(() => { vi.advanceTimersByTime(500); });
+    unmount();
+
+    expect(mockPublishViewEvent).toHaveBeenCalledTimes(1);
+    expect(mockTrackProductEvent).toHaveBeenCalledWith('video_engagement_summary', expect.objectContaining({
+      duration_ms: 0,
+      properties: expect.objectContaining({
+        watched_seconds: 0,
+      }),
+    }));
+  });
+
+  it('publishes sub-second watch time after pausing', () => {
+    const video = makeVideo('v1');
+    const { rerender, unmount } = renderHook(
+      ({ isPlaying }) =>
+        useVideoMetricsTracker({
+          video,
+          isPlaying,
+          currentTime: 0,
+          duration: 6,
+        }),
+      { initialProps: { isPlaying: true } }
+    );
+
+    act(() => { vi.advanceTimersByTime(500); });
+    rerender({ isPlaying: false });
+    act(() => { vi.advanceTimersByTime(5000); });
+    unmount();
+
+    expect(mockPublishViewEvent).toHaveBeenCalledTimes(1);
+    expect(mockPublishViewEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        video,
+        startSeconds: 0,
+        endSeconds: 0,
+      })
+    );
+  });
+
+  it('does not publish when playback never starts', () => {
+    const video = makeVideo('v1');
+    const { unmount } = renderHook(() =>
+      useVideoMetricsTracker({
+        video,
+        isPlaying: false,
+        currentTime: 0,
+        duration: 6,
+      })
+    );
+
+    act(() => { vi.advanceTimersByTime(500); });
+    unmount();
+
+    expect(mockPublishViewEvent).not.toHaveBeenCalled();
+  });
+
   it('does NOT publish on every re-render when video object reference changes', () => {
     const { rerender, unmount } = renderHook(
       ({ video }) =>
@@ -154,6 +229,26 @@ describe('useVideoMetricsTracker', () => {
 
     unmount();
     expect(mockPublishViewEvent).toHaveBeenCalledTimes(1);
+  });
+
+  it('preserves accumulated watch time when the video object reference changes for the same id', () => {
+    // Regression: async enrichment (e.g. ProofMode) hands VideoPlayer a new video
+    // object with the same id mid-play. That must not reset the watch accumulator.
+    const { rerender, unmount } = renderHook(
+      ({ video }) =>
+        useVideoMetricsTracker({ video, isPlaying: true, currentTime: 3, duration: 6 }),
+      { initialProps: { video: makeVideo('v1') } }
+    );
+
+    act(() => { vi.advanceTimersByTime(3000); }); // ~3s accumulated
+    rerender({ video: makeVideo('v1') });         // same id, new object reference
+    act(() => { vi.advanceTimersByTime(1000); });  // ~1s more
+    unmount();
+
+    expect(mockPublishViewEvent).toHaveBeenCalledTimes(1);
+    const call = mockPublishViewEvent.mock.calls[0][0];
+    // ~4s total watched must survive the reference change (was wiped to ~1s before the fix).
+    expect(call.endSeconds).toBeGreaterThanOrEqual(3);
   });
 
   it('publishes on each loop, then remaining time on unmount', () => {
@@ -228,10 +323,20 @@ describe('useVideoMetricsTracker', () => {
     act(() => { vi.advanceTimersByTime(2000); });
 
     expect(mockPublishViewEvent).toHaveBeenCalledTimes(1);
+    expect(mockPublishViewEvent).toHaveBeenNthCalledWith(1, expect.objectContaining({
+      video: video1,
+      startSeconds: 0,
+      source: 'unknown',
+    }));
 
     unmount();
     // Also publishes for video2
     expect(mockPublishViewEvent).toHaveBeenCalledTimes(2);
+    expect(mockPublishViewEvent).toHaveBeenNthCalledWith(2, expect.objectContaining({
+      video: video2,
+      startSeconds: 0,
+      source: 'unknown',
+    }));
   });
 
   it('does not accumulate time while paused', () => {

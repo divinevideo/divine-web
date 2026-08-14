@@ -813,7 +813,7 @@
     "seoDescription": "Guarda questo video su Divine",
     "seoDescriptionWithAuthor": "Guarda questo video di {{name}} su Divine",
     "errorTitle": "Errore",
-    "nextVideoUnavailableDescription": "Non ci sono altri video in questa scheda.",
+    "nextVideoUnavailableDescription": "Impossibile caricare il prossimo video. Riprova?",
     "likedTitle": "Mi piace!",
     "likedDescription": "La tua reazione è stata pubblicata",
     "likeFailedDescription": "Impossibile mettere mi piace al video",

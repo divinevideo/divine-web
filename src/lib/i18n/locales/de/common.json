@@ -813,7 +813,7 @@
     "seoDescription": "Schau dir dieses Video auf Divine an",
     "seoDescriptionWithAuthor": "Schau dir dieses Video von {{name}} auf Divine an",
     "errorTitle": "Fehler",
-    "nextVideoUnavailableDescription": "Keine weiteren Videos in diesem Tab.",
+    "nextVideoUnavailableDescription": "Das nächste Video konnte nicht geladen werden. Noch mal versuchen?",
     "likedTitle": "Geliked!",
     "likedDescription": "Deine Reaktion wurde veröffentlicht",
     "likeFailedDescription": "Video konnte nicht geliked werden",

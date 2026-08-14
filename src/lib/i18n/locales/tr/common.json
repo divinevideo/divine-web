@@ -813,7 +813,7 @@
     "seoDescription": "Bu videoyu Divine'da izle",
     "seoDescriptionWithAuthor": "{{name}} tarafından bu videoyu Divine'da izle",
     "errorTitle": "Hata",
-    "nextVideoUnavailableDescription": "Bu sekmede başka video yok.",
+    "nextVideoUnavailableDescription": "Sonraki video yuklenemedi. Tekrar dene?",
     "likedTitle": "Beğenildi!",
     "likedDescription": "Tepkin yayınlandı",
     "likeFailedDescription": "Video beğenilemedi",

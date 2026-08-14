@@ -813,7 +813,7 @@
     "seoDescription": "Tonton video ini di Divine",
     "seoDescriptionWithAuthor": "Tonton video oleh {{name}} di Divine",
     "errorTitle": "Error",
-    "nextVideoUnavailableDescription": "Tidak ada video lagi di tab ini.",
+    "nextVideoUnavailableDescription": "Tidak bisa memuat video berikutnya. Coba lagi?",
     "likedTitle": "Disukai!",
     "likedDescription": "Reaksi kamu sudah dipublikasikan",
     "likeFailedDescription": "Gagal menyukai video",

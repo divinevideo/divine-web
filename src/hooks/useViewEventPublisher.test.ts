@@ -85,10 +85,10 @@ describe('useViewEventPublisher', () => {
     ]);
   });
 
-  it('skips publishing when watch time is less than 1 second', async () => {
+  it('publishes zero-length viewed ranges for sub-second playback', async () => {
     const { result } = renderHook(() => useViewEventPublisher());
 
-    let success: boolean = true;
+    let success: boolean = false;
     await act(async () => {
       success = await result.current.publishViewEvent({
         video: makeVideo(),
@@ -97,11 +97,13 @@ describe('useViewEventPublisher', () => {
       });
     });
 
-    expect(success).toBe(false);
-    expect(mockPublishEvent).not.toHaveBeenCalled();
+    expect(success).toBe(true);
+    expect(mockPublishEvent).toHaveBeenCalledTimes(1);
+    const tags = mockPublishEvent.mock.calls[0][0].tags as string[][];
+    expect(tags).toContainEqual(['viewed', '0', '0']);
   });
 
-  it('skips publishing when endSeconds <= startSeconds', async () => {
+  it('skips publishing when endSeconds is before startSeconds', async () => {
     const { result } = renderHook(() => useViewEventPublisher());
 
     let success: boolean = true;

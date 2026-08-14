@@ -44,17 +44,17 @@ export function useVideoMetricsTracker({
   const { publishViewEvent, isAuthenticated } = useViewEventPublisher();
 
   // Store props/callbacks in refs so effects don't re-run on object reference changes.
-  const videoRef = useRef(video);
   const publishViewEventRef = useRef(publishViewEvent);
   const sourceRef = useRef(source);
   const isAuthenticatedRef = useRef(isAuthenticated);
   const enabledRef = useRef(enabled);
+  const isPlayingRef = useRef(isPlaying);
 
-  videoRef.current = video;
   publishViewEventRef.current = publishViewEvent;
   sourceRef.current = source;
   isAuthenticatedRef.current = isAuthenticated;
   enabledRef.current = enabled;
+  isPlayingRef.current = isPlaying;
 
   // Track metrics state in a ref to avoid re-renders
   const metricsRef = useRef<VideoMetricsState>({
@@ -65,16 +65,17 @@ export function useVideoMetricsTracker({
 
   // Track the current video ID to detect video changes
   const currentVideoIdRef = useRef<string | null>(null);
+  const trackedVideoRef = useRef<ParsedVideoData | null>(video);
 
   // Track accumulated watch time since last publish
   const watchTimeAccumulatorRef = useRef<number>(0);
   const lastUpdateTimeRef = useRef<number>(Date.now());
 
   // Flush accumulated watch time into the accumulator (call before reading it)
-  const flushWatchTime = useCallback(() => {
+  const flushWatchTime = useCallback((countPlayback = isPlayingRef.current) => {
     const now = Date.now();
     const elapsed = (now - lastUpdateTimeRef.current) / 1000;
-    if (elapsed > 0 && elapsed < 10) { // Sanity check: ignore huge gaps (tab was backgrounded)
+    if (countPlayback && elapsed > 0 && elapsed < 10) { // Sanity check: ignore huge gaps (tab was backgrounded)
       watchTimeAccumulatorRef.current += elapsed;
     }
     lastUpdateTimeRef.current = now;
@@ -97,16 +98,17 @@ export function useVideoMetricsTracker({
   }, []);
 
   // Publish a view event and reset the accumulator (stable, reads from refs)
-  const publishAndReset = useCallback(async () => {
-    const currentVideo = videoRef.current;
+  const publishAndReset = useCallback(async (targetVideo = trackedVideoRef.current) => {
+    const currentVideo = targetVideo;
     if (!currentVideo || !enabledRef.current || !isAuthenticatedRef.current) return;
 
-    const watchedSeconds = Math.floor(watchTimeAccumulatorRef.current);
-    if (watchedSeconds < 1) {
-      debugLog('[VideoMetricsTracker] Skipping view event: less than 1 second watched');
+    const rawWatchedSeconds = watchTimeAccumulatorRef.current;
+    if (rawWatchedSeconds <= 0) {
+      debugLog('[VideoMetricsTracker] Skipping view event: no playback time watched');
       return;
     }
 
+    const watchedSeconds = Math.floor(rawWatchedSeconds);
     debugLog('[VideoMetricsTracker] Publishing view event', {
       videoId: currentVideo.id,
       watchedSeconds,
@@ -129,27 +131,36 @@ export function useVideoMetricsTracker({
     });
   }, [trackEngagementSummary]); // Reads playback state from refs
 
-  // Reset metrics when video ID changes (primitive comparison, stable)
+  // Reset metrics on a real video id change; keep the tracked object fresh otherwise.
   useEffect(() => {
     const videoId = video?.id ?? null;
     if (!videoId) return;
 
-    // If video changed, publish remaining time for previous video
-    if (currentVideoIdRef.current && currentVideoIdRef.current !== videoId) {
-      flushWatchTime();
-      publishAndReset();
+    const idChanged = currentVideoIdRef.current !== videoId;
+
+    // Only a genuine id change publishes leftovers and resets. A same-id object
+    // change (e.g. async ProofMode enrichment handing us a new object with the
+    // same id) must NOT reset the accumulator, or mid-play watch time is lost.
+    if (idChanged) {
+      if (currentVideoIdRef.current) {
+        const previousVideo = trackedVideoRef.current;
+        flushWatchTime();
+        publishAndReset(previousVideo);
+      }
+
+      metricsRef.current = {
+        lastPosition: 0,
+        loopCount: 0,
+        hasTrackedView: false,
+      };
+      watchTimeAccumulatorRef.current = 0;
+      lastUpdateTimeRef.current = Date.now();
+      currentVideoIdRef.current = videoId;
     }
 
-    // Reset metrics for new video
-    metricsRef.current = {
-      lastPosition: 0,
-      loopCount: 0,
-      hasTrackedView: false,
-    };
-    watchTimeAccumulatorRef.current = 0;
-    lastUpdateTimeRef.current = Date.now();
-    currentVideoIdRef.current = videoId;
-  }, [video?.id, publishAndReset, flushWatchTime]);
+    // Keep the tracked object current for this id (same id/pubkey/vineId).
+    trackedVideoRef.current = video;
+  }, [video, video?.id, publishAndReset, flushWatchTime]);
 
   // Track playback time — depends only on primitives
   useEffect(() => {
@@ -177,8 +188,12 @@ export function useVideoMetricsTracker({
       lastUpdateTimeRef.current = now;
     }, 1000);
 
-    return () => clearInterval(interval);
-  }, [video?.id, enabled, isPlaying]);
+    return () => {
+      // On pause, render has already set isPlayingRef.current=false; count the slice that just ended.
+      flushWatchTime(true);
+      clearInterval(interval);
+    };
+  }, [video?.id, enabled, isPlaying, flushWatchTime]);
 
   // Detect loops and publish once per loop
   useEffect(() => {
@@ -207,25 +222,13 @@ export function useVideoMetricsTracker({
     metrics.lastPosition = currentTime;
   }, [video?.id, enabled, currentTime, duration, flushWatchTime, publishAndReset]);
 
-  // Publish remaining time on actual component unmount (empty deps)
+  // Publish remaining time on actual component unmount.
   useEffect(() => {
     return () => {
-      const currentVideo = videoRef.current;
-      const watchedSeconds = Math.floor(watchTimeAccumulatorRef.current);
-
-      if (currentVideo && watchedSeconds >= 1 && isAuthenticatedRef.current && enabledRef.current) {
-        trackEngagementSummary(currentVideo, watchedSeconds);
-        publishViewEventRef.current({
-          video: currentVideo,
-          startSeconds: 0,
-          endSeconds: watchedSeconds,
-          source: sourceRef.current,
-        }).catch(() => {
-          // Ignore errors on unmount
-        });
-      }
+      flushWatchTime();
+      void publishAndReset();
     };
-  }, [trackEngagementSummary]); // Fires only on unmount
+  }, [flushWatchTime, publishAndReset]);
 
   // Return current metrics for debugging/display purposes
   return {

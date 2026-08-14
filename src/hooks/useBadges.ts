@@ -1,5 +1,5 @@
 // ABOUTME: Hook to fetch and validate NIP-58 badges for a user profile
-// ABOUTME: Subscribes to kinds 30008, 30009, and 8 to build the full badge chain
+// ABOUTME: Subscribes to kinds 10008, 30008, 30009, and 8 to build the full badge chain
 
 import { useNostr } from '@nostrify/react';
 import { useQuery } from '@tanstack/react-query';
@@ -8,6 +8,7 @@ import {
   BADGE_KINDS,
   parseBadgeDefinition,
   parseProfileBadges,
+  selectProfileBadgesEvent,
   validateBadgeAward,
   getCachedDefinition,
   cacheDefinition,
@@ -18,13 +19,13 @@ import {
  * Fetch and validate all displayable badges for a given pubkey.
  *
  * Flow:
- * 1. Fetch kind 30008 (profile_badges) for the user
+ * 1. Fetch kind 10008 and legacy kind 30008 (profile_badges) for the user
  * 2. For each badge reference, fetch the kind 30009 definition and kind 8 award
  * 3. Validate the chain: definition → award → user
  * 4. Return only validated badges in display order
  */
 /**
- * Shared time budget for the whole badge fan-out (kinds 30008/30009 are
+ * Shared time budget for the whole badge fan-out (kinds 10008/30008/30009 are
  * addressable, so NPool waits for every relay to EOSE — one hung relay would
  * otherwise block the query forever; same failure mode as issue #415).
  */
@@ -47,18 +48,24 @@ export function useBadges(pubkey: string | undefined) {
 
       const signal = AbortSignal.any([querySignal, AbortSignal.timeout(BADGES_QUERY_TIMEOUT_MS)]);
 
-      // Step 1: Fetch profile badges (kind 30008)
-      const profileBadgeFilter: NostrFilter = {
-        kinds: [BADGE_KINDS.PROFILE_BADGES],
-        authors: [pubkey],
-        '#d': ['profile_badges'],
-        limit: 1,
-      };
+      const profileBadgeFilters: NostrFilter[] = [
+        {
+          kinds: [BADGE_KINDS.PROFILE_BADGES],
+          authors: [pubkey],
+          limit: 10,
+        },
+        {
+          kinds: [BADGE_KINDS.PROFILE_BADGES_LEGACY],
+          authors: [pubkey],
+          '#d': ['profile_badges'],
+          limit: 10,
+        },
+      ];
 
       let profileBadgeEvents: NostrEvent[] = [];
       try {
         profileBadgeEvents = await nostr.query(
-          [profileBadgeFilter],
+          profileBadgeFilters,
           { signal }
         );
       } catch (error) {
@@ -66,8 +73,10 @@ export function useBadges(pubkey: string | undefined) {
         return [];
       }
 
-      // Fallback: if no profile_badges event, show all awarded badges
-      if (!profileBadgeEvents.length) {
+      const profileBadgeEvent = selectProfileBadgesEvent(profileBadgeEvents);
+
+      // Fallback: if no profile badges event exists in either encoding, show all awarded badges
+      if (!profileBadgeEvent) {
         // Fetch all badge awards for this user
         const awardFilter: NostrFilter = {
           kinds: [BADGE_KINDS.AWARD],
@@ -120,11 +129,6 @@ export function useBadges(pubkey: string | undefined) {
         }
         return fallbackValidated;
       }
-
-      // Use the most recent one (addressable event, should be only one)
-      const profileBadgeEvent = profileBadgeEvents.sort(
-        (a, b) => b.created_at - a.created_at
-      )[0];
 
       const badgeRefs = parseProfileBadges(profileBadgeEvent);
       if (!badgeRefs.length) return [];
