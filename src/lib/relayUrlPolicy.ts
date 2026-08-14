@@ -1,3 +1,6 @@
+// ABOUTME: Shared admission policy for relay URLs, split by who supplied them
+// ABOUTME: Self/app lists may use loopback ws://; remote lists require public wss:// and are capped
+
 export const REMOTE_RELAY_HINT_CAP = 8;
 
 export interface RelayAdmissionOptions {
@@ -20,6 +23,9 @@ function parseRelayUrl(value: string): ParsedRelayUrl | null {
   try {
     const url = new URL(trimmed);
     if (url.protocol !== 'ws:' && url.protocol !== 'wss:') return null;
+    // Load-bearing: `wss://http://evil.example` parses to the single-label host
+    // `http` with pathname `//evil.example`. That host is not private, so the
+    // host filter alone would admit it. Do not remove without a replacement.
     if (url.pathname.startsWith('//')) return null;
     const protocol = url.protocol === 'ws:' ? 'ws:' : 'wss:';
 
@@ -154,17 +160,23 @@ export function isPrivateOrLinkLocalHost(hostname: string): boolean {
   return false;
 }
 
-export function isRelayUrlAllowed(value: string): boolean {
-  const parsed = parseRelayUrl(value);
-  if (!parsed) return false;
+function isParsedRelayAllowed(parsed: ParsedRelayUrl): boolean {
   if (parsed.protocol === 'wss:') return true;
   return isPrivateOrLinkLocalHost(parsed.hostname);
 }
 
+function isParsedRemoteSuppliedRelayAllowed(parsed: ParsedRelayUrl): boolean {
+  return parsed.protocol === 'wss:' && !isPrivateOrLinkLocalHost(parsed.hostname);
+}
+
+export function isRelayUrlAllowed(value: string): boolean {
+  const parsed = parseRelayUrl(value);
+  return parsed ? isParsedRelayAllowed(parsed) : false;
+}
+
 export function isRemoteSuppliedRelayUrlAllowed(value: string): boolean {
   const parsed = parseRelayUrl(value);
-  if (!parsed) return false;
-  return parsed.protocol === 'wss:' && !isPrivateOrLinkLocalHost(parsed.hostname);
+  return parsed ? isParsedRemoteSuppliedRelayAllowed(parsed) : false;
 }
 
 export function admitRelayUrls(relayUrls: string[]): string[] {
@@ -173,7 +185,7 @@ export function admitRelayUrls(relayUrls: string[]): string[] {
 
   for (const relayUrl of relayUrls) {
     const parsed = parseRelayUrl(relayUrl);
-    if (!parsed || !isRelayUrlAllowed(parsed.value) || seen.has(parsed.key)) continue;
+    if (!parsed || !isParsedRelayAllowed(parsed) || seen.has(parsed.key)) continue;
     seen.add(parsed.key);
     admitted.push(parsed.value);
   }
@@ -195,7 +207,7 @@ export function admitRemoteSuppliedRelays(
       continue;
     }
 
-    if (!isRemoteSuppliedRelayUrlAllowed(parsed.value)) {
+    if (!isParsedRemoteSuppliedRelayAllowed(parsed)) {
       options.onRejected?.(parsed.value, 'remote relay URL must use wss:// and a public host');
       continue;
     }
