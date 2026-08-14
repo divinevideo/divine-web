@@ -205,13 +205,13 @@ describe('useFollowUser - follow list overwrite protection', () => {
     expect(mockPublishEvent).not.toHaveBeenCalled();
   });
 
-  it('uses the passed contact list when the relay read aborts with partial results', async () => {
+  it('uses the newer relay contact list when the relay read aborts with a result', async () => {
     const controller = new AbortController();
     controller.abort();
     vi.spyOn(AbortSignal, 'timeout').mockReturnValue(controller.signal);
     const passedContactList = makeContactListEvent(['aaaa'.padEnd(64, '0')], 1000);
-    const partialRelayList = makeContactListEvent(['bbbb'.padEnd(64, '0')], 2000);
-    mockNostrQuery.mockResolvedValue([partialRelayList]);
+    const relayContactList = makeContactListEvent(['bbbb'.padEnd(64, '0')], 2000);
+    mockNostrQuery.mockResolvedValue([relayContactList]);
 
     const { useFollowUser } = await import('./useFollowRelationship');
     const { result } = renderHook(() => useFollowUser(), { wrapper: createWrapper() });
@@ -227,8 +227,8 @@ describe('useFollowUser - follow list overwrite protection', () => {
     const followedPubkeys = mockPublishEvent.mock.calls[0][0].tags
       .filter((t: string[]) => t[0] === 'p')
       .map((t: string[]) => t[1]);
-    expect(followedPubkeys).toEqual(['aaaa'.padEnd(64, '0'), mockTargetPubkey]);
-    expect(followedPubkeys).not.toContain('bbbb'.padEnd(64, '0'));
+    expect(followedPubkeys).toEqual(['bbbb'.padEnd(64, '0'), mockTargetPubkey]);
+    expect(followedPubkeys).not.toContain('aaaa'.padEnd(64, '0'));
   });
 
   it('prefers relay contact list over passed one when relay has more follows', async () => {
@@ -406,11 +406,9 @@ describe('useUnfollowUser - follow list overwrite protection', () => {
     const { result } = renderHook(() => useUnfollowUser(), { wrapper: createWrapper() });
 
     await expect(
-      act(async () => {
-        await result.current.mutateAsync({
-          targetPubkey: mockTargetPubkey,
-          currentContactList: null,
-        });
+      result.current.mutateAsync({
+        targetPubkey: mockTargetPubkey,
+        currentContactList: null,
       }),
     ).rejects.toThrow('Could not load your existing follow list');
 

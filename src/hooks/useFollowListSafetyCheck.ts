@@ -4,6 +4,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useNostr } from '@nostrify/react';
 import { debugLog } from '@/lib/debug';
+import { countContactListFollows } from '@/lib/contactListSelection';
 
 interface SafetyCheckResult {
   needsWarning: boolean;
@@ -106,9 +107,7 @@ export function useFollowListSafetyCheck(pubkey: string | undefined, enabled: bo
         }
 
         // Check if user has existing follow list with contacts
-        const hasExistingFollowList = contactListEvent
-          ? contactListEvent.tags.filter(tag => tag[0] === 'p').length > 0
-          : false;
+        const hasExistingFollowList = countContactListFollows(contactListEvent ?? null) > 0;
 
         debugLog('[SafetyCheck] Has existing follow list:', hasExistingFollowList);
         debugLog('[SafetyCheck] -------------------------------------------');

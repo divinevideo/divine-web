@@ -27,7 +27,13 @@ import { useVideoProvider } from '@/hooks/useVideoProvider';
 import { useFunnelcakeProfile } from '@/hooks/useFunnelcakeProfile';
 import { useProfileJoinedDate } from '@/hooks/useProfileJoinedDate';
 import { useClassicVineArchiveStats } from '@/hooks/useClassicVineArchiveStats';
-import { useFollowRelationship, useFollowUser, useUnfollowUser, FollowRaceError } from '@/hooks/useFollowRelationship';
+import {
+  useFollowRelationship,
+  useFollowUser,
+  useUnfollowUser,
+  FollowRaceError,
+  ContactListUnavailableError,
+} from '@/hooks/useFollowRelationship';
 import { useFollowListSafetyCheck } from '@/hooks/useFollowListSafetyCheck';
 import { PinnedVideosSection } from '@/components/PinnedVideosSection';
 import { ProfileListsSection } from '@/components/ProfileListsSection';
@@ -362,7 +368,9 @@ export function ProfilePage({ pubkeyOverride }: { pubkeyOverride?: string } = {}
       console.error('Failed to update follow status:', error);
       if (!(error instanceof FollowRaceError)) {
         // Suppress the stale-UI follow race because the user is already in the desired state.
-        const message = error instanceof Error ? error.message : '';
+        const message = error instanceof Error && !(error instanceof ContactListUnavailableError)
+          ? error.message
+          : '';
         toast({
           title: t('profilePage.followErrorTitle'),
           description: message || t('profilePage.followErrorDescription'),

@@ -24,6 +24,13 @@ export class FollowRaceError extends Error {
   }
 }
 
+export class ContactListUnavailableError extends Error {
+  constructor() {
+    super('Could not load your existing follow list. Please try again in a moment.');
+    this.name = 'ContactListUnavailableError';
+  }
+}
+
 interface FollowRelationshipData {
   isFollowing: boolean;
   mutualFollows: number;
@@ -41,23 +48,14 @@ interface UnfollowUserParams {
   currentContactList: NostrEvent | null;
 }
 
-interface ContactListPublishSelection {
-  contactList: NostrEvent | null;
-}
-
 type NostrClient = ReturnType<typeof useNostr>['nostr'];
-
-const CONTACT_LIST_LOAD_ERROR =
-  'Could not load your existing follow list. Please try again in a moment.';
 
 async function fetchAndSelectContactList(
   nostr: NostrClient,
   userPubkey: string,
   currentContactList: NostrEvent | null,
   logPrefix: string
-): Promise<ContactListPublishSelection> {
-  let relayQuerySucceeded = false;
-
+): Promise<NostrEvent | null> {
   try {
     // Bypass the local contact-list cache: this is a read-before-write that
     // must see the authoritative relay list, not a stale cached copy, or a
@@ -74,15 +72,11 @@ async function fetchAndSelectContactList(
       { kinds: [3], authors: [userPubkey], limit: 1 },
     ], queryOpts);
 
-    relayQuerySucceeded = !signal.aborted;
-
     const relayContactList = relayEvents
       .filter((e: NostrEvent) => e.kind === 3)
       .sort((a: NostrEvent, b: NostrEvent) => b.created_at - a.created_at)[0] || null;
 
-    const selection = relayQuerySucceeded
-      ? selectContactListForPublish(currentContactList, relayContactList)
-      : { chosen: currentContactList, reason: 'relay query timed out before authoritative EOSE' };
+    const selection = selectContactListForPublish(currentContactList, relayContactList);
     let source = 'passed';
     if (selection.chosen === null) {
       source = 'none';
@@ -100,26 +94,22 @@ async function fetchAndSelectContactList(
       ')'
     );
 
-    if (!selection.chosen && !relayQuerySucceeded) {
-      throw new Error(CONTACT_LIST_LOAD_ERROR);
+    if (!selection.chosen && signal.aborted) {
+      throw new ContactListUnavailableError();
     }
 
-    return {
-      contactList: selection.chosen,
-    };
+    return selection.chosen;
   } catch (error) {
-    if (error instanceof Error && error.message === CONTACT_LIST_LOAD_ERROR) {
+    if (error instanceof ContactListUnavailableError) {
       throw error;
     }
 
     debugLog(`[${logPrefix}] Failed to fetch latest Kind 3 from relay, using passed contact list:`, error);
     if (!currentContactList) {
-      throw new Error(CONTACT_LIST_LOAD_ERROR);
+      throw new ContactListUnavailableError();
     }
 
-    return {
-      contactList: currentContactList,
-    };
+    return currentContactList;
   }
 }
 
@@ -228,9 +218,12 @@ export function useFollowUser() {
     mutationFn: async ({ targetPubkey, currentContactList, targetDisplayName }: FollowUserParams) => {
       if (!user?.pubkey) throw new Error('No current user');
 
-      const {
-        contactList: bestContactList,
-      } = await fetchAndSelectContactList(nostr, user.pubkey, currentContactList, 'useFollowUser');
+      const bestContactList = await fetchAndSelectContactList(
+        nostr,
+        user.pubkey,
+        currentContactList,
+        'useFollowUser'
+      );
 
       const currentTags = bestContactList?.tags ?? [];
 
@@ -297,9 +290,12 @@ export function useUnfollowUser() {
     mutationFn: async ({ targetPubkey, currentContactList }: UnfollowUserParams) => {
       if (!user?.pubkey) throw new Error('No current user');
 
-      const {
-        contactList: bestContactList,
-      } = await fetchAndSelectContactList(nostr, user.pubkey, currentContactList, 'useUnfollowUser');
+      const bestContactList = await fetchAndSelectContactList(
+        nostr,
+        user.pubkey,
+        currentContactList,
+        'useUnfollowUser'
+      );
 
       if (!bestContactList) throw new Error('No contact list to update');
 

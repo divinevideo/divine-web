@@ -10,6 +10,7 @@ import { fetchUserProfile, fetchUserLoopStats } from '@/lib/funnelcakeClient';
 import { isFunnelcakeAvailable } from '@/lib/funnelcakeHealth';
 import { isAbortError, reportFunnelcakeFallback } from '@/lib/funnelcakeFallbackReporting';
 import type { ProfileStats } from '@/lib/profileStats';
+import { countContactListFollows } from '@/lib/contactListSelection';
 
 /**
  * Fetch comprehensive profile statistics for a user
@@ -160,9 +161,7 @@ export function useProfileStats(pubkey: string, videos?: ParsedVideoData[]) {
         const latestContactList = userContactList
           .sort((a, b) => b.created_at - a.created_at)[0];
 
-        const followingCount = latestContactList
-          ? latestContactList.tags.filter(tag => tag[0] === 'p').length
-          : 0;
+        const followingCount = countContactListFollows(latestContactList ?? null);
 
         // Calculate joined date (earliest video or contact list)
         let joinedDate: Date | null = null;
