@@ -83,7 +83,7 @@ export function useVideoNavigation(videoId: string, options: UseVideoNavigationO
     return 'discovery';
   })();
   const { data: feedVideos, isLoading: feedVideosLoading } = useVideoEvents(
-    context && !isPeopleListContext && feedTypeForWebSocket ? {
+    context && !isPeopleListContext ? {
       feedType: feedTypeForWebSocket,
       hashtag: context.hashtag,
       pubkey: context.pubkey,
