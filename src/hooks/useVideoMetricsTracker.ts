@@ -49,12 +49,14 @@ export function useVideoMetricsTracker({
   const sourceRef = useRef(source);
   const isAuthenticatedRef = useRef(isAuthenticated);
   const enabledRef = useRef(enabled);
+  const isPlayingRef = useRef(isPlaying);
 
   videoRef.current = video;
   publishViewEventRef.current = publishViewEvent;
   sourceRef.current = source;
   isAuthenticatedRef.current = isAuthenticated;
   enabledRef.current = enabled;
+  isPlayingRef.current = isPlaying;
 
   // Track metrics state in a ref to avoid re-renders
   const metricsRef = useRef<VideoMetricsState>({
@@ -71,10 +73,10 @@ export function useVideoMetricsTracker({
   const lastUpdateTimeRef = useRef<number>(Date.now());
 
   // Flush accumulated watch time into the accumulator (call before reading it)
-  const flushWatchTime = useCallback(() => {
+  const flushWatchTime = useCallback((countPlayback = isPlayingRef.current) => {
     const now = Date.now();
     const elapsed = (now - lastUpdateTimeRef.current) / 1000;
-    if (elapsed > 0 && elapsed < 10) { // Sanity check: ignore huge gaps (tab was backgrounded)
+    if (countPlayback && elapsed > 0 && elapsed < 10) { // Sanity check: ignore huge gaps (tab was backgrounded)
       watchTimeAccumulatorRef.current += elapsed;
     }
     lastUpdateTimeRef.current = now;
@@ -101,12 +103,13 @@ export function useVideoMetricsTracker({
     const currentVideo = videoRef.current;
     if (!currentVideo || !enabledRef.current || !isAuthenticatedRef.current) return;
 
-    const watchedSeconds = Math.floor(watchTimeAccumulatorRef.current);
-    if (watchedSeconds < 1) {
-      debugLog('[VideoMetricsTracker] Skipping view event: less than 1 second watched');
+    const rawWatchedSeconds = watchTimeAccumulatorRef.current;
+    if (rawWatchedSeconds <= 0) {
+      debugLog('[VideoMetricsTracker] Skipping view event: no playback time watched');
       return;
     }
 
+    const watchedSeconds = Math.floor(rawWatchedSeconds);
     debugLog('[VideoMetricsTracker] Publishing view event', {
       videoId: currentVideo.id,
       watchedSeconds,
@@ -177,8 +180,11 @@ export function useVideoMetricsTracker({
       lastUpdateTimeRef.current = now;
     }, 1000);
 
-    return () => clearInterval(interval);
-  }, [video?.id, enabled, isPlaying]);
+    return () => {
+      flushWatchTime(true);
+      clearInterval(interval);
+    };
+  }, [video?.id, enabled, isPlaying, flushWatchTime]);
 
   // Detect loops and publish once per loop
   useEffect(() => {
@@ -211,9 +217,11 @@ export function useVideoMetricsTracker({
   useEffect(() => {
     return () => {
       const currentVideo = videoRef.current;
-      const watchedSeconds = Math.floor(watchTimeAccumulatorRef.current);
+      flushWatchTime();
+      const rawWatchedSeconds = watchTimeAccumulatorRef.current;
+      const watchedSeconds = Math.floor(rawWatchedSeconds);
 
-      if (currentVideo && watchedSeconds >= 1 && isAuthenticatedRef.current && enabledRef.current) {
+      if (currentVideo && rawWatchedSeconds > 0 && isAuthenticatedRef.current && enabledRef.current) {
         trackEngagementSummary(currentVideo, watchedSeconds);
         publishViewEventRef.current({
           video: currentVideo,
@@ -225,7 +233,7 @@ export function useVideoMetricsTracker({
         });
       }
     };
-  }, [trackEngagementSummary]); // Fires only on unmount
+  }, [flushWatchTime, trackEngagementSummary]); // Fires only on unmount
 
   // Return current metrics for debugging/display purposes
   return {
