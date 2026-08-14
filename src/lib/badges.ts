@@ -130,7 +130,11 @@ export function selectProfileBadgesEvent(events: NostrEvent[]): NostrEvent | nul
       if (a.kind === BADGE_KINDS.PROFILE_BADGES) return -1;
       if (b.kind === BADGE_KINDS.PROFILE_BADGES) return 1;
     }
-    return a.id.localeCompare(b.id);
+    // NIP-01 tie-break: retain the lowest event id in lexical (code-point)
+    // order. Event ids are lowercase hex, so a direct string compare is the
+    // spec's byte order; localeCompare could reorder under some locales.
+    if (a.id !== b.id) return a.id < b.id ? -1 : 1;
+    return 0;
   })[0];
 }
 
