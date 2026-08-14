@@ -3,7 +3,6 @@
 
 import type { SortMode } from '@/types/nostr';
 import { VIDEO_KINDS } from '@/types/video';
-import { isRelayUrlAllowed } from '@/lib/relayUrlPolicy';
 import { recordProbe } from './relayHealth';
 
 type CapabilitySource = 'optimistic' | 'nip11' | 'probe' | 'fallback';
@@ -31,12 +30,17 @@ const VIDEO_SORT_MODES: SortMode[] = ['hot', 'top', 'rising', 'controversial'];
 const CACHE_DURATION = 5 * 60 * 1000;
 const capabilitiesCache = new Map<string, RelayCapabilities>();
 
+// Maps a relay URL onto the origin its NIP-11 document is served from. This is
+// a scheme question, not an admission question: admission is enforced where
+// relay lists are built, and reusing that predicate here would leave a `ws://`
+// URL that `fetch` rejects.
 function normalizeRelayUrl(relayUrl: string): URL | null {
   try {
-    if (isRelayUrlAllowed(relayUrl)) {
-      return new URL(relayUrl.replace(/^ws/, 'http'));
+    const url = new URL(relayUrl);
+    if (url.protocol === 'ws:' || url.protocol === 'wss:') {
+      url.protocol = url.protocol === 'ws:' ? 'http:' : 'https:';
     }
-    return new URL(relayUrl);
+    return url;
   } catch {
     return null;
   }
