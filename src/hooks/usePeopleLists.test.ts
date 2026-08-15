@@ -140,4 +140,24 @@ describe('people list hooks', () => {
 
     expect(mockNostrQuery).toHaveBeenCalledTimes(2);
   });
+
+  it('shares a cache entry across reordered relay hints', async () => {
+    mockNostrQuery.mockResolvedValue([peopleListEvent()]);
+    const { usePeopleList } = await import('./usePeopleLists');
+    const wrapper = createWrapper();
+    const { result, rerender } = renderHook(
+      ({ relayHints }) => usePeopleList(OWNER, 'friends', { relayHints }),
+      {
+        wrapper,
+        initialProps: { relayHints: ['wss://a.example', 'wss://b.example'] },
+      },
+    );
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    rerender({ relayHints: ['wss://b.example', 'wss://a.example'] });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    // Same hint set in a different order must reuse the cache, not refetch.
+    expect(mockNostrQuery).toHaveBeenCalledTimes(1);
+  });
 });

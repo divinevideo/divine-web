@@ -127,7 +127,9 @@ export function EventPage() {
   const decodedIdentifier = identifier ? decodeURIComponent(identifier) : null;
   const relayHints = parseRelayHints(location.search);
   const configuredRelayUrls = config.relayUrls || [config.relayUrl];
-  const relayKey = [...configuredRelayUrls, ...relayHints].join(',');
+  // Canonicalize hints (dedupe + sort) so reordered/duplicate hint sets share a
+  // cache entry instead of refetching the same event.
+  const relayKey = [...configuredRelayUrls, ...[...new Set(relayHints)].sort()].join(',');
 
   const { data: event, isLoading, error } = useQuery({
     queryKey: ['event-page', eventId, numericKind, pubkey, decodedIdentifier, relayKey],
