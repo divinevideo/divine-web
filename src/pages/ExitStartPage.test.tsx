@@ -18,6 +18,21 @@ vi.mock("@/hooks/useCurrentUser", () => ({
   useCurrentUser: () => mockUseCurrentUser(),
 }));
 
+const { mockGetActiveLocalNsecLogin, mockBannerRender } = vi.hoisted(() => ({
+  mockGetActiveLocalNsecLogin: vi.fn(() => null as { data: { nsec: string } } | null),
+  mockBannerRender: vi.fn(() => null as React.ReactNode),
+}));
+
+vi.mock("@/lib/localNsecAccount", () => ({
+  getActiveLocalNsecLogin: () => mockGetActiveLocalNsecLogin(),
+}));
+
+// The real banner gates itself for protected minors by rendering null. Mocking
+// it lets that case be reproduced directly.
+vi.mock("@/components/auth/LocalNsecBanner", () => ({
+  LocalNsecBanner: () => mockBannerRender(),
+}));
+
 function signedIn() {
   const signer = new FixtureSigner();
   return { user: { pubkey: fixturePubkey, signer }, signer, isResolvingJwt: false };
@@ -30,6 +45,8 @@ function signedOut() {
 describe("ExitStartPage", () => {
   beforeEach(() => {
     mockUseCurrentUser.mockReturnValue(signedOut());
+    mockGetActiveLocalNsecLogin.mockReturnValue(null);
+    mockBannerRender.mockReturnValue(null);
   });
 
   afterEach(() => {
@@ -194,6 +211,28 @@ describe("ExitStartPage", () => {
       </TestApp>
     );
 
-    expect(screen.getByText(/Divine's signer holds the key for this account/)).toBeInTheDocument();
+    expect(screen.getByText(/This account signs through Divine's signer/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Everything in it is already signed, and it stays verifiable/)
+    ).toBeInTheDocument();
+  });
+
+  it("still explains the keys section when the backup banner renders nothing", () => {
+    mockUseCurrentUser.mockReturnValue(signedIn());
+    mockGetActiveLocalNsecLogin.mockReturnValue({ data: { nsec: "nsec1example" } });
+    mockBannerRender.mockReturnValue(null);
+
+    render(
+      <TestApp>
+        <ExitStartPage />
+      </TestApp>
+    );
+
+    expect(
+      screen.getByText(/This account has its own key, stored in this browser/)
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText(/This account signs through Divine's signer/)
+    ).not.toBeInTheDocument();
   });
 });

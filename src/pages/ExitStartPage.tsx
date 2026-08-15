@@ -330,25 +330,52 @@ export function ExitStartPage() {
             lead="Your account is a key, not a username. Whether you can hold that key yourself depends on how you signed up."
           />
 
+          {/* This card always renders. The backup controls below gate themselves for
+              protected minors by rendering null (#182), so if the explanation lived
+              inside that component this section would collapse to a bare heading for
+              exactly the readers least able to fill in the gap themselves. */}
+          <Card variant="brand" accent="blue">
+            <CardContent className="pt-6 space-y-3 text-base leading-relaxed text-muted-foreground">
+              {localNsecLogin ? (
+                <>
+                  <p>
+                    This account has its own key, stored in this browser rather than on a
+                    Divine server. That key is what proves the account is yours, here and
+                    anywhere else that speaks the same protocol.
+                  </p>
+                  <p>
+                    Keep a copy of it somewhere safe. If it is lost, nobody can restore it
+                    for you &mdash; not Divine, not anyone.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p>
+                    This account signs through Divine&apos;s signer. The key is held there,
+                    not in this browser, so there is no secret key for this page to give
+                    you.
+                  </p>
+                  <p>
+                    What that means for moving: your public identity &mdash; the name other
+                    apps know you by &mdash; is yours and does not change. What depends on
+                    Divine is the ability to sign new events, because that happens on the
+                    signer.
+                  </p>
+                  <p>
+                    Your archive does not depend on any of that. Everything in it is already
+                    signed, and it stays verifiable no matter what happens to how you sign
+                    in.
+                  </p>
+                </>
+              )}
+            </CardContent>
+          </Card>
+
           {localNsecLogin ? (
-            <LocalNsecBanner nsec={localNsecLogin.data.nsec} />
-          ) : (
-            <Card variant="brand" accent="blue">
-              <CardContent className="pt-6 space-y-3 text-base leading-relaxed text-muted-foreground">
-                <p>
-                  Divine&apos;s signer holds the key for this account, so there is no secret
-                  key for this page to hand you. You can still export everything below, and
-                  your account keeps working in other apps that can ask this signer to sign
-                  for you.
-                </p>
-                <p>
-                  Accounts created with their own key can back it up here instead. If you
-                  need a key you hold yourself, that is a change to how you sign in, not
-                  something this export can do.
-                </p>
-              </CardContent>
-            </Card>
-          )}
+            <div className="mt-5">
+              <LocalNsecBanner nsec={localNsecLogin.data.nsec} />
+            </div>
+          ) : null}
 
           <div className="mt-5">
             <KeySafetyNotice />

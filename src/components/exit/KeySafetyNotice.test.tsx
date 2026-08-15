@@ -16,6 +16,7 @@ describe("KeySafetyNotice", () => {
     expect(
       screen.getByRole("heading", { name: "Divine will never ask for your secret key" })
     ).toBeInTheDocument();
+    expect(screen.getByText(/secret key \(nsec\)/)).toBeInTheDocument();
     expect(screen.getByText(/Anyone who does is not Divine/)).toBeInTheDocument();
   });
 
