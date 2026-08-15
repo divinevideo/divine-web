@@ -230,7 +230,10 @@ async function fetchPage(
   const authHeader = await createNip98AuthHeader(signer, url, "GET");
 
   if (!authHeader) {
-    throw new OwnerExportError("auth-required", "This export could not be signed. Sign in again, then restart the export.");
+    throw new OwnerExportError(
+      "auth-required",
+      "This export could not be signed. If your account is restricted, appeal first. Otherwise sign in again, then restart the export."
+    );
   }
 
   let response: Response;

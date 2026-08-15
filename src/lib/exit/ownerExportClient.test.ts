@@ -132,7 +132,10 @@ describe("exportOwnerEvents", () => {
         signer: brokenSigner,
         fetcher: createFixtureFetch("one-page")
       })
-    ).rejects.toMatchObject({ code: "auth-required" });
+    ).rejects.toMatchObject({
+      code: "auth-required",
+      message: expect.stringContaining("appeal first")
+    });
   });
 
   it.each([

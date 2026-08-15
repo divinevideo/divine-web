@@ -23,12 +23,15 @@ vi.mock("@/hooks/useCurrentUser", () => ({
 }));
 
 const { mockGetActiveLocalNsecLogin, mockBannerRender } = vi.hoisted(() => ({
-  mockGetActiveLocalNsecLogin: vi.fn(() => null as { data: { nsec: string } } | null),
+  mockGetActiveLocalNsecLogin: vi.fn(
+    (_logins: unknown[] = [], _pubkey = "") => null as { data: { nsec: string } } | null
+  ),
   mockBannerRender: vi.fn(() => null as React.ReactNode),
 }));
 
 vi.mock("@/lib/localNsecAccount", () => ({
-  getLocalNsecLogin: () => mockGetActiveLocalNsecLogin(),
+  getLocalNsecLogin: (logins: unknown[], pubkey: string) =>
+    mockGetActiveLocalNsecLogin(logins, pubkey),
 }));
 
 // The real banner gates itself for protected minors by rendering null. Mocking
@@ -84,6 +87,7 @@ describe("ExitStartPage", () => {
 
     expect(screen.getByRole("button", { name: /Create my archive/ })).toBeInTheDocument();
     expect(screen.queryByText(/Sign in to export your account/)).not.toBeInTheDocument();
+    expect(mockGetActiveLocalNsecLogin).toHaveBeenCalledWith(expect.any(Array), fixturePubkey);
   });
 
   it("builds an archive from the owner export and enables the download", async () => {
@@ -299,7 +303,7 @@ describe("ExitStartPage", () => {
 
     expect(screen.getByText(/This account signs through Divine's signer/)).toBeInTheDocument();
     expect(
-      screen.getByText(/Everything in it is already signed, and it stays verifiable/)
+      screen.getByText(/Creating an archive still requires that signer/)
     ).toBeInTheDocument();
   });
 

@@ -413,9 +413,9 @@ export function ExitStartPage() {
                     signer.
                   </p>
                   <p>
-                    Your archive does not depend on any of that. Everything in it is already
-                    signed, and it stays verifiable no matter what happens to how you sign
-                    in.
+                    Creating an archive still requires that signer to approve the request.
+                    Once downloaded, everything in the archive is already signed and stays
+                    verifiable no matter what happens to how you sign in.
                   </p>
                 </>
               )}
