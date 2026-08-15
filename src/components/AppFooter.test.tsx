@@ -37,6 +37,19 @@ describe('AppFooter', () => {
     );
   });
 
+  it('renders a delete account docs link', () => {
+    render(
+      <MemoryRouter>
+        <AppFooter />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole('link', { name: 'Delete Account' })).toHaveAttribute(
+      'href',
+      '/delete-account',
+    );
+  });
+
   it('renders a merch store link', () => {
     render(
       <MemoryRouter>

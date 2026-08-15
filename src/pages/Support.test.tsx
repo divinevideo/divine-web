@@ -66,6 +66,21 @@ describe('Support page', () => {
     expect(screen.getByRole('link', { name: 'Contactar con soporte' })).toBeInTheDocument();
   });
 
+  it('links to account portability and deletion docs', () => {
+    render(
+      <MemoryRouter>
+        <Support />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole('heading', { name: 'Account help' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Move your account' })).toHaveAttribute('href', '/exit');
+    expect(screen.getByRole('link', { name: 'Delete your account' })).toHaveAttribute(
+      'href',
+      '/delete-account',
+    );
+  });
+
   it('opens the canonical Support conversation', () => {
     supportState.user = { pubkey: 'a'.repeat(64) };
     supportState.canUseDirectMessages = true;

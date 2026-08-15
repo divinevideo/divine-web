@@ -2,8 +2,15 @@
 // ABOUTME: Displays email contact and GitHub issues link for user support
 
 import { useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Envelope as Mail, GithubLogo as Github, ChatCircle as MessageCircle } from '@phosphor-icons/react';
+import {
+  ArrowSquareOut,
+  Envelope as Mail,
+  GithubLogo as Github,
+  ChatCircle as MessageCircle,
+  Trash,
+} from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
 import { MarketingLayout } from '@/components/MarketingLayout';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
@@ -101,6 +108,29 @@ export function Support() {
             {/* <p className="text-sm text-muted-foreground mt-4 text-center">
               Our support widget will open in the bottom-right corner
             </p> */}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Account help</CardTitle>
+            <CardDescription>
+              Find the docs for moving your account or deleting what Divine controls.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="grid gap-3 sm:grid-cols-2">
+            <Button asChild variant="outline" className="justify-start">
+              <Link to="/exit">
+                <ArrowSquareOut className="h-4 w-4" />
+                Move your account
+              </Link>
+            </Button>
+            <Button asChild variant="outline" className="justify-start">
+              <Link to="/delete-account">
+                <Trash className="h-4 w-4" />
+                Delete your account
+              </Link>
+            </Button>
           </CardContent>
         </Card>
 
