@@ -4,9 +4,12 @@ import {
   addBlockProvenance,
   clearWebMute,
   getExplicitBlockedPubkeys,
+  getRememberedOwnMuteList,
+  getWebMutedPubkeys,
   isWebAuthoredMute,
   removeBlockProvenance,
   recordWebMute,
+  rememberOwnMuteList,
   type ModerationProvenanceStorage,
 } from './moderationProvenance';
 
@@ -73,5 +76,72 @@ describe('block provenance', () => {
     storage.setItem(`divine:block-provenance:${owner}`, JSON.stringify([target]));
 
     expect(getExplicitBlockedPubkeys(owner, [target], storage)).toEqual(new Set([target]));
+  });
+});
+
+describe('web mute provenance', () => {
+  it('returns every web-authored mute for the owner and nobody else', () => {
+    const storage = createStorage();
+    const ownerA = 'a'.repeat(64);
+    const ownerB = 'b'.repeat(64);
+    const first = 'c'.repeat(64);
+    const second = 'd'.repeat(64);
+
+    recordWebMute(ownerA, first, storage);
+    recordWebMute(ownerA, second, storage);
+    recordWebMute(ownerB, first, storage);
+
+    expect(getWebMutedPubkeys(ownerA, storage)).toEqual(new Set([first, second]));
+    expect(getWebMutedPubkeys(undefined, storage)).toEqual(new Set());
+  });
+});
+
+describe('remembered own mute list', () => {
+  const owner = 'a'.repeat(64);
+  const snapshot = {
+    createdAt: 1_900_000_000,
+    tags: [['p', 'b'.repeat(64)], ['t', 'nsfw']],
+    content: 'encrypted',
+    eventId: 'e'.repeat(64),
+  };
+
+  it('round-trips the snapshot without sharing tag arrays', () => {
+    const storage = createStorage();
+    rememberOwnMuteList(owner, snapshot, storage);
+
+    const remembered = getRememberedOwnMuteList(owner, storage);
+    expect(remembered).toEqual(snapshot);
+
+    remembered!.tags[0][1] = 'mutated';
+    expect(getRememberedOwnMuteList(owner, storage)).toEqual(snapshot);
+  });
+
+  it('survives a write that empties both pubkey lists', () => {
+    const storage = createStorage();
+    const muted = 'c'.repeat(64);
+
+    rememberOwnMuteList(owner, snapshot, storage);
+    recordWebMute(owner, muted, storage);
+    clearWebMute(owner, muted, storage);
+
+    expect(getRememberedOwnMuteList(owner, storage)).toEqual(snapshot);
+  });
+
+  it('stays scoped to the owning account', () => {
+    const storage = createStorage();
+    rememberOwnMuteList(owner, snapshot, storage);
+
+    expect(getRememberedOwnMuteList('f'.repeat(64), storage)).toBeNull();
+    expect(getRememberedOwnMuteList(undefined, storage)).toBeNull();
+  });
+
+  it('ignores a malformed stored snapshot instead of throwing', () => {
+    const storage = createStorage();
+    storage.setItem(
+      `divine:moderation-provenance:v1:${owner}`,
+      JSON.stringify({ blockedPubkeys: [], webMutedPubkeys: [], rememberedOwnMuteList: { createdAt: 'nope' } }),
+    );
+
+    expect(getRememberedOwnMuteList(owner, storage)).toBeNull();
   });
 });

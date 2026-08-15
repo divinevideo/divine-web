@@ -3,6 +3,7 @@
 
 import { useQueryClient } from '@tanstack/react-query';
 import { useState, useEffect } from 'react';
+import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useMuteList, useMuteItem, useUnmuteItem, useReportHistory, MUTE_LIST_KIND } from '@/hooks/useModeration';
 import { useBlockedPubkeys, useUnblockUser } from '@/hooks/useBlockList';
@@ -18,9 +19,21 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { SectionHeader } from '@/components/brand/SectionHeader';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { Shield, UserMinus as UserX, Hash, TextAa as Type, Plus, Flag, Trash as Trash2, WarningCircle as AlertCircle } from '@phosphor-icons/react';
 import { useToast } from '@/hooks/useToast';
-import { MuteType, REPORT_REASON_LABELS } from '@/types/moderation';
+import { MuteType, REPORT_REASON_LABELS, type MuteItem } from '@/types/moderation';
 import { genUserName } from '@/lib/genUserName';
 import { getSafeProfileImage } from '@/lib/imageUtils';
 import {
@@ -34,42 +47,114 @@ import { formatDistanceToNow } from 'date-fns';
 import { nip19 } from 'nostr-tools';
 import type { NostrEvent } from '@nostrify/nostrify';
 
-function MutedUserItem({ pubkey, reason, onUnmute, actionLabel }: {
+/**
+ * A user row in the moderation lists.
+ *
+ * Pass `confirmDescription` to put the action behind a confirmation dialog.
+ * Every unmute uses one: web cannot tell an ordinary mute from a Block another
+ * client set, so lifting the p-tag may remove state that client depends on.
+ * Unblocking skips it — web recorded that block itself, so the provenance is
+ * already known and the profile-level dialog already covers it.
+ */
+function MutedUserItem({ pubkey, reason, onUnmute, actionLabel, confirmDescription }: {
   pubkey: string;
   reason?: string;
   onUnmute: () => void;
   actionLabel: string;
+  confirmDescription?: string;
 }) {
+  const { t } = useTranslation();
   const author = useAuthor(pubkey);
   const authorMetadata = author.data?.metadata;
   const authorName = authorMetadata?.name || genUserName(pubkey);
 
   return (
-    <div className="flex items-center justify-between p-3 rounded-lg border">
-      <div className="flex items-center gap-3">
+    <div className="flex items-center justify-between gap-3 p-3 rounded-lg border">
+      <div className="flex min-w-0 items-center gap-3">
         <Avatar size="md">
           <AvatarImage src={getSafeProfileImage(authorMetadata?.picture)} />
           <AvatarFallback>{authorName[0]?.toUpperCase()}</AvatarFallback>
         </Avatar>
-        <div>
-          <p className="font-medium">{authorName}</p>
+        <div className="min-w-0">
+          <p className="font-medium truncate">{authorName}</p>
           {reason && (
-            <p className="text-xs text-muted-foreground">{reason}</p>
+            <p className="text-xs text-muted-foreground truncate">{reason}</p>
           )}
         </div>
       </div>
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={onUnmute}
-      >
-        <Trash2 className="h-4 w-4 mr-2" />
-        {actionLabel}
-      </Button>
+      {confirmDescription ? (
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button variant="outline" size="sm">
+              <AlertCircle className="h-4 w-4 mr-2" />
+              {t('moderationSettings.reviewBeforeUnmute')}
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>{t('moderationSettings.confirmUnmuteTitle')}</AlertDialogTitle>
+              <AlertDialogDescription>
+                {confirmDescription}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>{t('moderationSettings.confirmUnmuteCancel')}</AlertDialogCancel>
+              <AlertDialogAction onClick={onUnmute}>
+                {t('moderationSettings.confirmUnmuteAction')}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      ) : (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={onUnmute}
+        >
+          <Trash2 className="h-4 w-4 mr-2" />
+          {actionLabel}
+        </Button>
+      )}
     </div>
   );
 }
 
+/**
+ * One provenance group inside the muted-users card. Web-authored mutes and
+ * entries of unknown origin get separate headings so the user can see which
+ * ones another client may still depend on.
+ */
+function MutedUserSection({
+  title,
+  description,
+  users,
+  emptyText,
+  renderUser,
+}: {
+  title: string;
+  description: string;
+  users: MuteItem[];
+  emptyText: string;
+  renderUser: (item: MuteItem) => ReactNode;
+}) {
+  return (
+    <section className="space-y-3">
+      <div>
+        <SectionHeader as="h3" className="text-base">{title}</SectionHeader>
+        <p className="text-sm text-muted-foreground">{description}</p>
+      </div>
+      {users.length > 0 ? (
+        <div className="space-y-2">
+          {users.map(renderUser)}
+        </div>
+      ) : (
+        <p className="text-sm text-muted-foreground py-3">
+          {emptyText}
+        </p>
+      )}
+    </section>
+  );
+}
 
 
 export default function ModerationSettingsPage() {
@@ -95,6 +180,10 @@ export default function ModerationSettingsPage() {
   const allMutedUsers = muteList.filter(item => item.type === MuteType.USER);
   const blockedUsers = allMutedUsers.filter(item => blockedPubkeys.has(item.value));
   const mutedUsers = allMutedUsers.filter(item => !blockedPubkeys.has(item.value));
+  // Split the remaining mutes by local provenance. `unknown` entries may be
+  // Blocks another Divine client set, so they carry the stronger warning.
+  const webMutedUsers = mutedUsers.filter(item => item.origin === 'web');
+  const unknownMutedUsers = mutedUsers.filter(item => item.origin !== 'web');
   const mutedHashtags = muteList.filter(item => item.type === MuteType.HASHTAG);
   const mutedKeywords = muteList.filter(item => item.type === MuteType.KEYWORD);
   const effectiveFunnelcakeBaseUrl = resolveFunnelcakeBaseUrl({
@@ -551,16 +640,39 @@ export default function ModerationSettingsPage() {
                   ))}
                 </div>
               ) : mutedUsers.length > 0 ? (
-                <div className="space-y-2">
-                  {mutedUsers.map((item) => (
-                    <MutedUserItem
-                      key={item.value}
-                      pubkey={item.value}
-                      reason={item.reason}
-                      actionLabel={t('moderationSettings.unmute')}
-                      onUnmute={() => handleUnmute(MuteType.USER, item.value)}
-                    />
-                  ))}
+                <div className="space-y-6">
+                  <MutedUserSection
+                    title={t('moderationSettings.mutedHereTitle', { count: webMutedUsers.length })}
+                    description={t('moderationSettings.mutedHereDescription')}
+                    users={webMutedUsers}
+                    emptyText={t('moderationSettings.noWebMutedUsers')}
+                    renderUser={(item) => (
+                      <MutedUserItem
+                        key={item.value}
+                        pubkey={item.value}
+                        reason={item.reason}
+                        actionLabel={t('moderationSettings.unmute')}
+                        onUnmute={() => handleUnmute(MuteType.USER, item.value)}
+                        confirmDescription={t('moderationSettings.confirmWebUnmuteDescription')}
+                      />
+                    )}
+                  />
+                  <MutedUserSection
+                    title={t('moderationSettings.mutedElsewhereTitle', { count: unknownMutedUsers.length })}
+                    description={t('moderationSettings.mutedElsewhereDescription')}
+                    users={unknownMutedUsers}
+                    emptyText={t('moderationSettings.noUnknownMutedUsers')}
+                    renderUser={(item) => (
+                      <MutedUserItem
+                        key={item.value}
+                        pubkey={item.value}
+                        reason={item.reason}
+                        actionLabel={t('moderationSettings.unmute')}
+                        onUnmute={() => handleUnmute(MuteType.USER, item.value)}
+                        confirmDescription={t('moderationSettings.confirmUnmuteDescription')}
+                      />
+                    )}
+                  />
                 </div>
               ) : (
                 <p className="text-center text-muted-foreground py-8">

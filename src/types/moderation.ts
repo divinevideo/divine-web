@@ -54,6 +54,10 @@ export interface MuteItem {
   reason?: string;         // Optional reason
   createdAt: number;       // Unix timestamp
   expireAt?: number;       // Optional expiration (unix timestamp)
+  // Where web believes this entry came from. `web` means local provenance
+  // recorded the mute; `unknown` means it arrived on the kind 10000 list from
+  // somewhere else and may be a Block another client depends on.
+  origin?: 'web' | 'unknown';
 }
 
 /**

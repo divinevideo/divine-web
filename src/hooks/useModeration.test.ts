@@ -252,6 +252,10 @@ describe('useMuteList', () => {
   beforeEach(() => {
     mockMuteQuery.mockReset();
     mockMuteReq.mockReset();
+    // The remembered own-list snapshot and web-mute provenance both live in
+    // localStorage, so tests have to start from an empty store or one test's
+    // snapshot decides the next test's base.
+    localStorage.clear();
   });
 
   it('queries kind 10000 (NIP-51 mute list)', async () => {
@@ -296,11 +300,11 @@ describe('useMuteList', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data).toEqual([
-      { type: MuteType.USER, value: 'pubkey-a', reason: undefined, createdAt: event.created_at },
-      { type: MuteType.USER, value: 'pubkey-b', reason: 'reason-b', createdAt: event.created_at },
-      { type: MuteType.HASHTAG, value: 'nsfw', reason: undefined, createdAt: event.created_at },
-      { type: MuteType.KEYWORD, value: 'spamword', reason: 'too noisy', createdAt: event.created_at },
-      { type: MuteType.EVENT, value: 'event-1', reason: undefined, createdAt: event.created_at },
+      { type: MuteType.USER, value: 'pubkey-a', reason: undefined, createdAt: event.created_at, origin: 'unknown' },
+      { type: MuteType.USER, value: 'pubkey-b', reason: 'reason-b', createdAt: event.created_at, origin: 'unknown' },
+      { type: MuteType.HASHTAG, value: 'nsfw', reason: undefined, createdAt: event.created_at, origin: 'unknown' },
+      { type: MuteType.KEYWORD, value: 'spamword', reason: 'too noisy', createdAt: event.created_at, origin: 'unknown' },
+      { type: MuteType.EVENT, value: 'event-1', reason: undefined, createdAt: event.created_at, origin: 'unknown' },
     ]);
   });
 
@@ -341,7 +345,9 @@ describe('useMuteItem', () => {
     mockMuteQuery.mockReset();
     mockMuteReq.mockReset();
     mockPublishEvent.mockReset();
+    mockPublishEvent.mockImplementation(async (t) => makeMuteEvent(t.tags, mockUserPubkey, Math.floor(Date.now() / 1000), t.content));
     mockMuteReqFromQuery();
+    localStorage.clear();
   });
 
   it('publishes kind 10000 with the new tag when no mute list exists', async () => {
@@ -528,7 +534,9 @@ describe('useUnmuteItem', () => {
     mockMuteQuery.mockReset();
     mockMuteReq.mockReset();
     mockPublishEvent.mockReset();
+    mockPublishEvent.mockImplementation(async (t) => makeMuteEvent(t.tags, mockUserPubkey, Math.floor(Date.now() / 1000), t.content));
     mockMuteReqFromQuery();
+    localStorage.clear();
   });
 
   it('publishes kind 10000 with the matching tag removed', async () => {
@@ -657,5 +665,188 @@ describe('useUnmuteItem', () => {
     expect(mockPublishEvent).toHaveBeenCalledOnce();
     expect(error).toBeInstanceOf(Error);
     expect((error as Error).message).toBe('relay timeout');
+  });
+});
+
+describe('mute provenance', () => {
+  beforeEach(() => {
+    mockMuteQuery.mockReset();
+    mockMuteReq.mockReset();
+    mockPublishEvent.mockReset();
+    mockPublishEvent.mockImplementation(async (t) => makeMuteEvent(t.tags, mockUserPubkey, Math.floor(Date.now() / 1000), t.content));
+    mockMuteReqFromQuery();
+    localStorage.clear();
+  });
+
+  it('marks a user muted from web as web-authored and leaves the rest unknown', async () => {
+    mockMuteQuery.mockResolvedValue([]);
+
+    const mute = renderHook(() => useMuteItem(), { wrapper: createWrapper() });
+    await act(async () => {
+      await mute.result.current.mutateAsync({ type: MuteType.USER, value: 'from-web' });
+    });
+
+    mockMuteQuery.mockResolvedValue([
+      makeMuteEvent([['p', 'from-web'], ['p', 'from-elsewhere']], mockUserPubkey, 1_900_000_000),
+    ]);
+
+    const list = renderHook(() => useMuteList(mockUserPubkey), { wrapper: createWrapper() });
+    await waitFor(() => expect(list.result.current.isSuccess).toBe(true));
+
+    const byValue = Object.fromEntries(
+      (list.result.current.data ?? []).map(item => [item.value, item.origin]),
+    );
+    expect(byValue['from-web']).toBe('web');
+    expect(byValue['from-elsewhere']).toBe('unknown');
+  });
+
+  it('does not claim provenance for a p-tag that was already on the list', async () => {
+    mockMuteQuery.mockResolvedValue([
+      makeMuteEvent([['p', 'already-there']], mockUserPubkey, 1_900_000_000),
+    ]);
+
+    const mute = renderHook(() => useMuteItem(), { wrapper: createWrapper() });
+    await act(async () => {
+      await mute.result.current.mutateAsync({ type: MuteType.USER, value: 'already-there' });
+    });
+
+    expect(mockPublishEvent).not.toHaveBeenCalled();
+
+    const list = renderHook(() => useMuteList(mockUserPubkey), { wrapper: createWrapper() });
+    await waitFor(() => expect(list.result.current.isSuccess).toBe(true));
+    expect(list.result.current.data?.[0].origin).toBe('unknown');
+  });
+
+  it('drops provenance again after an unmute', async () => {
+    mockMuteQuery.mockResolvedValue([]);
+
+    const mute = renderHook(() => useMuteItem(), { wrapper: createWrapper() });
+    await act(async () => {
+      await mute.result.current.mutateAsync({ type: MuteType.USER, value: 'temporary' });
+    });
+
+    mockMuteQuery.mockResolvedValue([
+      makeMuteEvent([['p', 'temporary']], mockUserPubkey, 1_900_000_000),
+    ]);
+    const unmute = renderHook(() => useUnmuteItem(), { wrapper: createWrapper() });
+    await act(async () => {
+      await unmute.result.current.mutateAsync({ type: MuteType.USER, value: 'temporary' });
+    });
+
+    // Same pubkey muted again from another client: web must not still claim it.
+    mockMuteQuery.mockResolvedValue([
+      makeMuteEvent([['p', 'temporary']], mockUserPubkey, 2_000_000_000),
+    ]);
+    const list = renderHook(() => useMuteList(mockUserPubkey), { wrapper: createWrapper() });
+    await waitFor(() => expect(list.result.current.isSuccess).toBe(true));
+    expect(list.result.current.data?.[0].origin).toBe('unknown');
+  });
+
+  it('does not read provenance for another user\'s mute list', async () => {
+    const otherPubkey = 'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
+    mockMuteQuery.mockResolvedValue([]);
+
+    const mute = renderHook(() => useMuteItem(), { wrapper: createWrapper() });
+    await act(async () => {
+      await mute.result.current.mutateAsync({ type: MuteType.USER, value: 'shared-target' });
+    });
+
+    mockMuteQuery.mockResolvedValue([
+      makeMuteEvent([['p', 'shared-target']], otherPubkey, 1_900_000_000),
+    ]);
+    const list = renderHook(() => useMuteList(otherPubkey), { wrapper: createWrapper() });
+    await waitFor(() => expect(list.result.current.isSuccess).toBe(true));
+    expect(list.result.current.data?.[0].origin).toBe('unknown');
+  });
+
+  it('falls back to the remembered snapshot when relays miss the list entirely', async () => {
+    mockMuteQuery.mockResolvedValue([
+      makeMuteEvent([['p', 'keep-me'], ['t', 'nsfw']], mockUserPubkey, 1_900_000_000),
+    ]);
+
+    const seed = renderHook(() => useMuteList(mockUserPubkey), { wrapper: createWrapper() });
+    await waitFor(() => expect(seed.result.current.isSuccess).toBe(true));
+
+    // Relay now answers with nothing at all.
+    mockMuteQuery.mockResolvedValue([]);
+    const list = renderHook(() => useMuteList(mockUserPubkey), { wrapper: createWrapper() });
+    await waitFor(() => expect(list.result.current.isSuccess).toBe(true));
+
+    expect(list.result.current.data?.map(item => item.value)).toEqual(['keep-me', 'nsfw']);
+  });
+
+  it('does not let an older relay copy downgrade the remembered snapshot', async () => {
+    mockMuteQuery.mockResolvedValue([
+      makeMuteEvent([['p', 'a'], ['p', 'b']], mockUserPubkey, 1_900_000_000),
+    ]);
+    const seed = renderHook(() => useMuteList(mockUserPubkey), { wrapper: createWrapper() });
+    await waitFor(() => expect(seed.result.current.isSuccess).toBe(true));
+
+    // A lagging relay replies with a strictly older copy that is missing 'b'.
+    mockMuteQuery.mockResolvedValue([
+      makeMuteEvent([['p', 'a']], mockUserPubkey, 1_800_000_000),
+    ]);
+    const list = renderHook(() => useMuteList(mockUserPubkey), { wrapper: createWrapper() });
+    await waitFor(() => expect(list.result.current.isSuccess).toBe(true));
+
+    expect(list.result.current.data?.map(item => item.value)).toEqual(['a', 'b']);
+  });
+
+  it('lets a newer relay copy replace the remembered snapshot', async () => {
+    mockMuteQuery.mockResolvedValue([
+      makeMuteEvent([['p', 'a'], ['p', 'b']], mockUserPubkey, 1_900_000_000),
+    ]);
+    const seed = renderHook(() => useMuteList(mockUserPubkey), { wrapper: createWrapper() });
+    await waitFor(() => expect(seed.result.current.isSuccess).toBe(true));
+
+    // Another client legitimately removed 'b' after our snapshot was taken.
+    mockMuteQuery.mockResolvedValue([
+      makeMuteEvent([['p', 'a']], mockUserPubkey, 2_000_000_000),
+    ]);
+    const list = renderHook(() => useMuteList(mockUserPubkey), { wrapper: createWrapper() });
+    await waitFor(() => expect(list.result.current.isSuccess).toBe(true));
+
+    expect(list.result.current.data?.map(item => item.value)).toEqual(['a']);
+  });
+
+  it('publishes from the remembered snapshot when the relay read comes back empty', async () => {
+    mockMuteQuery.mockResolvedValue([
+      makeMuteEvent([['p', 'blocked-elsewhere']], mockUserPubkey, 1_900_000_000),
+    ]);
+    const seed = renderHook(() => useMuteList(mockUserPubkey), { wrapper: createWrapper() });
+    await waitFor(() => expect(seed.result.current.isSuccess).toBe(true));
+
+    // Relay reaches EOSE but returns no events; without the snapshot this
+    // publish would drop 'blocked-elsewhere' from the list.
+    mockMuteQuery.mockResolvedValue([]);
+    const mute = renderHook(() => useMuteItem(), { wrapper: createWrapper() });
+    await act(async () => {
+      await mute.result.current.mutateAsync({ type: MuteType.USER, value: 'new-mute' });
+    });
+
+    const call = mockPublishEvent.mock.calls[0][0];
+    expect(call.tags).toContainEqual(['p', 'blocked-elsewhere']);
+    expect(call.tags).toContainEqual(['p', 'new-mute']);
+  });
+
+  it('refuses to publish when the relay never reached EOSE', async () => {
+    mockMuteReq.mockImplementation(async function* () {
+      yield ['CLOSED', 'subscription', 'error: overloaded'];
+    });
+
+    const mute = renderHook(() => useMuteItem(), { wrapper: createWrapper() });
+
+    let error: unknown;
+    await act(async () => {
+      try {
+        await mute.result.current.mutateAsync({ type: MuteType.USER, value: 'target' });
+      } catch (e) {
+        error = e;
+      }
+    });
+
+    expect(error).toBeInstanceOf(Error);
+    expect((error as Error).name).toBe('MuteListUnavailableError');
+    expect(mockPublishEvent).not.toHaveBeenCalled();
   });
 });

@@ -12,12 +12,20 @@ const {
   mockInvalidateQueries,
   mockMuteList,
   mockBlockedPubkeys,
+  mockUnmute,
 } = vi.hoisted(() => ({
   mockToast: vi.fn(),
   mockNostrQuery: vi.fn(),
   mockInvalidateQueries: vi.fn(),
-  mockMuteList: [] as Array<{ type: string; value: string; reason?: string; createdAt: number }>,
+  mockMuteList: [] as Array<{
+    type: string;
+    value: string;
+    reason?: string;
+    createdAt: number;
+    origin?: 'web' | 'unknown';
+  }>,
   mockBlockedPubkeys: new Set<string>(),
+  mockUnmute: vi.fn(),
 }));
 
 vi.mock('@/hooks/useCurrentUser', () => ({
@@ -36,7 +44,7 @@ vi.mock('@/hooks/useModeration', () => ({
     isPending: false,
   }),
   useUnmuteItem: () => ({
-    mutateAsync: vi.fn(),
+    mutateAsync: mockUnmute,
     isPending: false,
   }),
   useReportHistory: () => ({
@@ -221,5 +229,46 @@ describe('ModerationSettingsPage', () => {
 
     expect(screen.getByRole('heading', { name: /blocked users \(1\)/i })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /muted users \(1\)/i })).toBeInTheDocument();
+  });
+
+  it('groups the remaining mutes by local provenance', async () => {
+    mockMuteList.push(
+      { type: 'p', value: 'a'.repeat(64), createdAt: 1, origin: 'web' },
+      { type: 'p', value: 'b'.repeat(64), createdAt: 1, origin: 'unknown' },
+      { type: 'p', value: 'c'.repeat(64), createdAt: 1, origin: 'unknown' },
+    );
+
+    renderPage();
+
+    expect(screen.getByRole('heading', { name: /muted here \(1\)/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /muted or blocked elsewhere \(2\)/i })).toBeInTheDocument();
+  });
+
+  it('requires confirmation before lifting a mute of unknown origin', async () => {
+    mockMuteList.push({ type: 'p', value: 'b'.repeat(64), createdAt: 1, origin: 'unknown' });
+
+    renderPage();
+
+    fireEvent.click(screen.getByRole('button', { name: /review/i }));
+
+    expect(await screen.findByText(/may be a Block set in the Divine app/i)).toBeInTheDocument();
+    expect(mockUnmute).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole('button', { name: /lift it/i }));
+
+    await waitFor(() => {
+      expect(mockUnmute).toHaveBeenCalledWith({ type: 'p', value: 'b'.repeat(64) });
+    });
+  });
+
+  it('still confirms before lifting a mute web authored itself', async () => {
+    mockMuteList.push({ type: 'p', value: 'a'.repeat(64), createdAt: 1, origin: 'web' });
+
+    renderPage();
+
+    fireEvent.click(screen.getByRole('button', { name: /review/i }));
+
+    expect(await screen.findByText(/This mute was added from web/i)).toBeInTheDocument();
+    expect(mockUnmute).not.toHaveBeenCalled();
   });
 });

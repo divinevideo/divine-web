@@ -213,3 +213,27 @@ requests whose `k` tag targets one of those list kinds. Other writes use
 `{primary} ∪ PROFILE_RELAYS`** so the write set is aligned with the
 read set and a user's populated list on a public relay is not
 clobbered by a web-side write that the web read path would never see.
+
+## Moderation Provenance
+
+The kind 10000 mute list is a flat set of p-tags, so web cannot tell an
+ordinary mute from a Block the Divine app set. Two local stores in
+[`src/lib/moderationProvenance.ts`](./src/lib/moderationProvenance.ts) fill that
+gap, both keyed by the signed-in viewer and read only for that viewer's own
+list:
+
+- **Block and web-mute provenance** — which p-tags web itself added, and which
+  of those were Blocks. `useMuteList` labels each user entry `web` or `unknown`;
+  [`src/pages/ModerationSettingsPage.tsx`](./src/pages/ModerationSettingsPage.tsx)
+  groups them accordingly and confirms every unmute, because an `unknown` entry
+  may be state another client still depends on. Provenance is a UI signal, not
+  an authorization boundary — the relay list stays authoritative.
+- **Remembered own list snapshot** — the newest kind 10000 web has seen or
+  published. A relay that misses the list or answers with an older copy would
+  otherwise make the next publish drop entries the user still has muted, so the
+  snapshot wins whenever its `created_at` is newer. The newest copy always
+  wins, so another client's legitimate removal is never resurrected.
+
+Mutations additionally refuse to publish unless the relay read reached EOSE
+(`MuteListUnavailableError`), so an unestablished read is never mistaken for an
+empty list.

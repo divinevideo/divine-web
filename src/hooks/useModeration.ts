@@ -16,6 +16,14 @@ import {
   type ModerationResult,
   ContentSeverity
 } from '@/types/moderation';
+import {
+  clearWebMute,
+  getRememberedOwnMuteList,
+  getWebMutedPubkeys,
+  recordWebMute,
+  rememberOwnMuteList,
+  type RememberedOwnMuteList,
+} from '@/lib/moderationProvenance';
 import { submitReportToZendesk, buildContentUrl } from '@/lib/reportApi';
 
 // Canonical definition lives in @/types/moderation so pure modules can read the
@@ -36,15 +44,29 @@ export class MuteListUnavailableError extends Error {
 }
 
 /**
- * Parse the mute-relevant tags from a NIP-51 mute list event (kind 10000).
- * Returns only p/t/word/e tags the UI understands. Other tags (a pins, d, etc.)
- * are preserved on the event itself and must round-trip through the mutation
- * helpers below.
+ * The tags/content web will build the next kind 10000 publish from. It comes
+ * either from the latest relay copy or from the remembered own snapshot, so
+ * callers never have to care which one won.
  */
-function parseMuteList(event: NostrEvent): MuteItem[] {
+interface MuteListBase {
+  tags: string[][];
+  content: string;
+  createdAt: number;
+}
+
+/**
+ * Parse the mute-relevant tags from a NIP-51 mute list (kind 10000).
+ * Returns only p/t/word/e tags the UI understands. Other tags (a pins, d, etc.)
+ * are preserved on the base itself and must round-trip through the mutation
+ * helpers below.
+ *
+ * `webMutedPubkeys` carries local provenance: a user entry web recorded is
+ * `web`, anything else is `unknown` and may be a Block another client set.
+ */
+function parseMuteList(base: MuteListBase, webMutedPubkeys: Set<string> = new Set()): MuteItem[] {
   const items: MuteItem[] = [];
 
-  for (const tag of event.tags) {
+  for (const tag of base.tags) {
     const [type, value, reason] = tag;
 
     if (type === 'p' || type === 't' || type === 'word' || type === 'e') {
@@ -53,7 +75,10 @@ function parseMuteList(event: NostrEvent): MuteItem[] {
           type: type as MuteType,
           value,
           reason,
-          createdAt: event.created_at
+          createdAt: base.createdAt,
+          origin: type === MuteType.USER && webMutedPubkeys.has(value)
+            ? 'web'
+            : 'unknown'
         });
       }
     }
@@ -74,10 +99,71 @@ function latestEvent(events: NostrEvent[]): NostrEvent | null {
     .sort((a, b) => b.created_at - a.created_at || (a.id < b.id ? -1 : 1))[0];
 }
 
+function rememberEvent(ownerPubkey: string, event: NostrEvent): void {
+  rememberOwnMuteList(ownerPubkey, {
+    createdAt: event.created_at,
+    tags: event.tags,
+    content: event.content,
+    eventId: event.id,
+  });
+}
+
+function snapshotToBase(snapshot: RememberedOwnMuteList): MuteListBase {
+  return {
+    tags: snapshot.tags.map(tag => [...tag]),
+    content: snapshot.content,
+    createdAt: snapshot.createdAt,
+  };
+}
+
+function eventToBase(event: NostrEvent): MuteListBase {
+  return {
+    tags: event.tags,
+    content: event.content,
+    createdAt: event.created_at,
+  };
+}
+
+/**
+ * Pick the mute list web should trust for the owner.
+ *
+ * Relays can miss the list entirely or answer with an older copy. Either would
+ * make the next publish drop entries the user still has muted or blocked, so
+ * the remembered own snapshot wins whenever it is newer. It is a
+ * lost-state guard, not a safety boundary: the newest copy always wins, and a
+ * snapshot is only ever consulted for the viewer's own list.
+ */
+function resolveMuteListBase(
+  events: NostrEvent[],
+  ownerPubkey: string,
+  canUseOwnSnapshot: boolean,
+): MuteListBase | null {
+  const latest = latestEvent(events);
+  const remembered = canUseOwnSnapshot ? getRememberedOwnMuteList(ownerPubkey) : null;
+
+  if (!latest) {
+    return remembered ? snapshotToBase(remembered) : null;
+  }
+
+  if (remembered && remembered.createdAt > latest.created_at) {
+    return snapshotToBase(remembered);
+  }
+
+  if (canUseOwnSnapshot) {
+    rememberEvent(ownerPubkey, latest);
+  }
+  return eventToBase(latest);
+}
+
+/**
+ * Read the owner's mute list for a mutation. Throws rather than returning an
+ * empty list when the relay never reached EOSE, so a mutation never republishes
+ * from state that was merely never established.
+ */
 async function fetchMuteListForPublish(
   nostr: NostrClient,
   userPubkey: string,
-): Promise<NostrEvent | null> {
+): Promise<MuteListBase | null> {
   const signal = AbortSignal.timeout(5000);
   const events: NostrEvent[] = [];
   let relayQuerySucceeded = false;
@@ -105,7 +191,7 @@ async function fetchMuteListForPublish(
     throw new MuteListUnavailableError();
   }
 
-  return latestEvent(events);
+  return resolveMuteListBase(events, userPubkey, true);
 }
 
 export async function publishMuteListUpdate({
@@ -119,18 +205,19 @@ export async function publishMuteListUpdate({
   userPubkey: string;
   updateTags: (current: { tags: string[][]; items: MuteItem[] }) => string[][] | null;
 }): Promise<boolean> {
-  const latest = await fetchMuteListForPublish(nostr, userPubkey);
-  const existingTags: string[][] = latest ? latest.tags : [];
-  const existingContent = latest ? latest.content : '';
-  const existingItems = latest ? parseMuteList(latest) : [];
+  const base = await fetchMuteListForPublish(nostr, userPubkey);
+  const existingTags: string[][] = base ? base.tags : [];
+  const existingContent = base ? base.content : '';
+  const existingItems = base ? parseMuteList(base, getWebMutedPubkeys(userPubkey)) : [];
   const tags = updateTags({ tags: existingTags, items: existingItems });
   if (!tags) return false;
 
-  await publishEvent({
+  const published = await publishEvent({
     kind: MUTE_LIST_KIND,
     content: existingContent,
     tags
   });
+  rememberEvent(userPubkey, published);
   return true;
 }
 
@@ -141,6 +228,9 @@ export function useMuteList(pubkey?: string) {
   const { nostr } = useNostr();
   const { user } = useCurrentUser();
   const targetPubkey = pubkey || user?.pubkey;
+  // Provenance and the remembered snapshot are local to the signed-in viewer,
+  // so they only apply when the list being read is that viewer's own.
+  const canUseOwnSnapshot = !!user?.pubkey && targetPubkey === user.pubkey;
 
   return useQuery({
     queryKey: ['mute-list', targetPubkey],
@@ -160,10 +250,13 @@ export function useMuteList(pubkey?: string) {
 
       const events = await nostr.query([filter], { signal });
 
-      const latest = latestEvent(events);
-      if (!latest) return [];
+      const base = resolveMuteListBase(events, targetPubkey, canUseOwnSnapshot);
+      if (!base) return [];
 
-      return parseMuteList(latest);
+      const webMutedPubkeys = canUseOwnSnapshot
+        ? getWebMutedPubkeys(targetPubkey)
+        : new Set<string>();
+      return parseMuteList(base, webMutedPubkeys);
     },
     enabled: !!targetPubkey,
     staleTime: 60000, // 1 minute
@@ -192,7 +285,7 @@ export function useMuteItem() {
     }) => {
       if (!user) throw new Error('Must be logged in to mute content');
 
-      await publishMuteListUpdate({
+      const didPublish = await publishMuteListUpdate({
         nostr,
         publishEvent,
         userPubkey: user.pubkey,
@@ -207,6 +300,13 @@ export function useMuteItem() {
           return [...tags, newTag];
         },
       });
+
+      // Only claim provenance for a p-tag web actually added. An entry that was
+      // already on the list came from somewhere else and keeps its `unknown`
+      // origin, so unmuting it still warns the user.
+      if (didPublish && type === MuteType.USER) {
+        recordWebMute(user.pubkey, value);
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['mute-list'] });
@@ -243,6 +343,12 @@ export function useUnmuteItem() {
           return tags.filter(tag => !(tag[0] === type && tag[1] === value));
         },
       });
+
+      // Clear provenance unconditionally: the p-tag is gone from the list
+      // either way, so a stale `web` claim would only mislabel a future entry.
+      if (type === MuteType.USER) {
+        clearWebMute(user.pubkey, value);
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['mute-list'] });

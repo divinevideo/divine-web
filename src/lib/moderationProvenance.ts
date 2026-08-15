@@ -8,9 +8,22 @@ export interface ModerationProvenanceStorage {
   removeItem(key: string): void;
 }
 
+/**
+ * The most recent kind 10000 event web has seen or published for the owner.
+ * Relays can miss the list or answer with an older copy; remembering the last
+ * known-good snapshot keeps a mutation from republishing a downgraded list.
+ */
+export interface RememberedOwnMuteList {
+  createdAt: number;
+  tags: string[][];
+  content: string;
+  eventId?: string;
+}
+
 interface ModerationProvenanceRecord {
   blockedPubkeys: string[];
   webMutedPubkeys: string[];
+  rememberedOwnMuteList?: RememberedOwnMuteList;
 }
 
 function getStorageKey(ownerPubkey: string): string {
@@ -30,6 +43,27 @@ function normalizePubkeys(value: unknown): string[] {
   return Array.isArray(value)
     ? value.filter((item): item is string => typeof item === 'string')
     : [];
+}
+
+function normalizeRememberedList(value: unknown): RememberedOwnMuteList | undefined {
+  if (!value || typeof value !== 'object') return undefined;
+  const remembered = value as Partial<RememberedOwnMuteList>;
+  if (
+    typeof remembered.createdAt !== 'number'
+    || !Array.isArray(remembered.tags)
+    || typeof remembered.content !== 'string'
+  ) {
+    return undefined;
+  }
+
+  return {
+    createdAt: remembered.createdAt,
+    tags: remembered.tags
+      .filter((tag): tag is string[] => Array.isArray(tag))
+      .map(tag => tag.filter((part): part is string => typeof part === 'string')),
+    content: remembered.content,
+    eventId: typeof remembered.eventId === 'string' ? remembered.eventId : undefined,
+  };
 }
 
 function readRecord(ownerPubkey: string, storage: ModerationProvenanceStorage): ModerationProvenanceRecord {
@@ -52,6 +86,7 @@ function readRecord(ownerPubkey: string, storage: ModerationProvenanceStorage): 
     return {
       blockedPubkeys: normalizePubkeys(record.blockedPubkeys),
       webMutedPubkeys: normalizePubkeys(record.webMutedPubkeys),
+      rememberedOwnMuteList: normalizeRememberedList(record.rememberedOwnMuteList),
     };
   } catch {
     return { blockedPubkeys: [], webMutedPubkeys: [] };
@@ -63,11 +98,16 @@ function writeRecord(
   record: ModerationProvenanceRecord,
   storage: ModerationProvenanceStorage,
 ): void {
-  const normalized = {
+  const normalized: ModerationProvenanceRecord = {
     blockedPubkeys: [...new Set(record.blockedPubkeys)].sort(),
     webMutedPubkeys: [...new Set(record.webMutedPubkeys)].sort(),
+    ...(record.rememberedOwnMuteList ? { rememberedOwnMuteList: record.rememberedOwnMuteList } : {}),
   };
-  if (normalized.blockedPubkeys.length === 0 && normalized.webMutedPubkeys.length === 0) {
+  if (
+    normalized.blockedPubkeys.length === 0
+    && normalized.webMutedPubkeys.length === 0
+    && !normalized.rememberedOwnMuteList
+  ) {
     storage.removeItem(getStorageKey(ownerPubkey));
   } else {
     storage.setItem(getStorageKey(ownerPubkey), JSON.stringify(normalized));
@@ -170,4 +210,50 @@ export function isWebAuthoredMute(
 ): boolean {
   if (!ownerPubkey || !storage) return false;
   return readRecord(ownerPubkey, storage).webMutedPubkeys.includes(mutedPubkey);
+}
+
+export function getWebMutedPubkeys(
+  ownerPubkey: string | undefined,
+  storage: ModerationProvenanceStorage | undefined = typeof window === 'undefined' ? undefined : window.localStorage,
+): Set<string> {
+  if (!ownerPubkey || !storage) return new Set();
+  return new Set(readRecord(ownerPubkey, storage).webMutedPubkeys);
+}
+
+export function rememberOwnMuteList(
+  ownerPubkey: string,
+  list: RememberedOwnMuteList,
+  storage: ModerationProvenanceStorage | undefined = typeof window === 'undefined' ? undefined : window.localStorage,
+): void {
+  if (!storage) return;
+  const record = readRecord(ownerPubkey, storage);
+  try {
+    writeRecord(ownerPubkey, {
+      ...record,
+      rememberedOwnMuteList: {
+        createdAt: list.createdAt,
+        tags: list.tags.map(tag => [...tag]),
+        content: list.content,
+        eventId: list.eventId,
+      },
+    }, storage);
+  } catch {
+    // Best-effort: a missed snapshot only costs us the downgrade guard.
+  }
+}
+
+export function getRememberedOwnMuteList(
+  ownerPubkey: string | undefined,
+  storage: ModerationProvenanceStorage | undefined = typeof window === 'undefined' ? undefined : window.localStorage,
+): RememberedOwnMuteList | null {
+  if (!ownerPubkey || !storage) return null;
+  const remembered = readRecord(ownerPubkey, storage).rememberedOwnMuteList;
+  if (!remembered) return null;
+
+  return {
+    createdAt: remembered.createdAt,
+    tags: remembered.tags.map(tag => [...tag]),
+    content: remembered.content,
+    eventId: remembered.eventId,
+  };
 }
