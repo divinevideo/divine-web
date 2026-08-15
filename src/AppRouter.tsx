@@ -52,6 +52,7 @@ import { SafetyToolsPage } from "./pages/family/SafetyToolsPage";
 import { AgeReviewPage } from "./pages/AgeReviewPage";
 import { KidsPolicyPage } from "./pages/KidsPolicyPage";
 import { PortabilityPage } from "./pages/PortabilityPage";
+import { ExitStartPage } from "./pages/ExitStartPage";
 import { DeleteAccountPage } from "./pages/DeleteAccountPage";
 import { Support } from "./pages/Support";
 import { FAQPage } from "./pages/FAQPage";
@@ -178,6 +179,7 @@ export function AppRouter() {
         <Route path="/age-review" element={<AgeReviewPage />} />
         <Route path="/kids" element={<KidsPolicyPage />} />
         <Route path="/exit" element={<PortabilityPage />} />
+        <Route path="/exit/start" element={<ExitStartPage />} />
         <Route path="/account-portability" element={<Navigate to="/exit" replace />} />
         <Route path="/delete-account" element={<DeleteAccountPage />} />
         <Route path="/support" element={<Support />} />

@@ -240,23 +240,21 @@ export function PortabilityPage() {
           </div>
 
           <div className="mt-8">
-            <a
-              href="https://github.com/divinevideo/divine-exit"
-              className={staticPageLinkCardClass("orange")}
-            >
+            <Link to="/exit/start" className={staticPageLinkCardClass("orange")}>
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <h3 className="font-display font-extrabold tracking-tight text-xl text-brand-dark-green dark:text-brand-off-white">
-                    The guided migration tool is in progress
+                    Download your archive now
                   </h3>
                   <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                    The public source for the guided flow lives in divine-exit.
-                    This page is the stable Divine URL for account portability.
+                    Sign in and take a copy of your posts, video records, and media
+                    list today. Choosing a destination and copying your media there
+                    is still being built.
                   </p>
                 </div>
                 <ArrowSquareOut className="h-5 w-5 flex-shrink-0 text-brand-dark-green dark:text-brand-green group-hover:translate-x-0.5 transition-transform" />
               </div>
-            </a>
+            </Link>
           </div>
         </Anchor>
 

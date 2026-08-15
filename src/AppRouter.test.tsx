@@ -47,6 +47,10 @@ vi.mock('./pages/DiscoveryPage', () => ({
   default: () => <div data-testid="discovery-page" />,
 }));
 
+vi.mock('./pages/ExitStartPage', () => ({
+  ExitStartPage: () => <div data-testid="exit-start-page" />,
+}));
+
 vi.mock('@/components/MarketingLayout', () => ({
   MarketingLayout: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }));
@@ -109,6 +113,14 @@ describe('AppRouter', () => {
     await waitFor(() => {
       expect(window.location.pathname).toBe('/exit');
     });
+  });
+
+  it('routes the account export tool at /exit/start', () => {
+    window.history.pushState({}, '', '/exit/start');
+
+    renderRouter();
+
+    expect(screen.getByTestId('exit-start-page')).toBeInTheDocument();
   });
 
   it('routes the delete account guide', () => {

@@ -41,4 +41,18 @@ describe("PortabilityPage", () => {
     expect(container.querySelector('a[href="/safety#appeals"]')).toBeTruthy();
     expect(container.querySelector('a[href="/kids"]')).toBeTruthy();
   });
+
+  it("sends readers to the working export tool without overpromising the rest", () => {
+    const { container } = render(
+      <TestApp>
+        <PortabilityPage />
+      </TestApp>
+    );
+
+    expect(container.querySelector('a[href="/exit/start"]')).toBeTruthy();
+    expect(screen.getByText("Download your archive now")).toBeInTheDocument();
+    expect(
+      screen.getByText(/Choosing a destination and copying your media there is still being built./)
+    ).toBeInTheDocument();
+  });
 });
