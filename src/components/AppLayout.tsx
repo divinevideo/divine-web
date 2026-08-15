@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback } from 'react';
 import { Outlet, useLocation, useSearchParams } from 'react-router-dom';
 import { AppHeader } from '@/components/AppHeader';
 import { BottomNav } from '@/components/BottomNav';
@@ -21,15 +21,6 @@ export function AppLayout() {
   const { isRecording } = useAppContext();
   const { state: fullscreenState, exitFullscreen, onLoadMore, hasMore } = useFullscreenFeed();
   const compilationRequest = parseCompilationPlaybackParams(searchParams);
-  const searchParamsRef = useRef(searchParams);
-  const setSearchParamsRef = useRef(setSearchParams);
-  const exitFullscreenRef = useRef(exitFullscreen);
-
-  useEffect(() => {
-    searchParamsRef.current = searchParams;
-    setSearchParamsRef.current = setSearchParams;
-    exitFullscreenRef.current = exitFullscreen;
-  }, [exitFullscreen, searchParams, setSearchParams]);
 
   const isLoggedIn = Boolean(user);
 
@@ -37,45 +28,33 @@ export function AppLayout() {
   const isLandingPage = location.pathname === '/' && !isLoggedIn && !getSubdomainUser();
 
   const handleCloseFullscreen = useCallback(() => {
-    exitFullscreenRef.current();
+    exitFullscreen();
 
-    const currentParams = searchParamsRef.current;
-    const currentRequest = parseCompilationPlaybackParams(currentParams);
+    const currentRequest = parseCompilationPlaybackParams(searchParams);
     if (!currentRequest.play) {
       return;
     }
 
-    const nextParams = new URLSearchParams(currentParams);
+    const nextParams = new URLSearchParams(searchParams);
     clearCompilationPlaybackParams(nextParams);
-    if (nextParams.toString() === currentParams.toString()) {
-      return;
-    }
-
-    searchParamsRef.current = nextParams;
-    setSearchParamsRef.current(nextParams, { replace: true });
-  }, []);
+    setSearchParams(nextParams, { replace: true });
+  }, [exitFullscreen, searchParams, setSearchParams]);
 
   const handleCompilationVideoChange = useCallback((videoId: string) => {
-    const currentParams = searchParamsRef.current;
-    const currentRequest = parseCompilationPlaybackParams(currentParams);
+    const currentRequest = parseCompilationPlaybackParams(searchParams);
     if (!currentRequest.play) {
       return;
     }
 
-    if (currentRequest.videoId === videoId && currentRequest.start === undefined) {
-      return;
-    }
-
-    const nextParams = new URLSearchParams(currentParams);
+    const nextParams = new URLSearchParams(searchParams);
     nextParams.set('video', videoId);
     nextParams.delete('start');
-    if (nextParams.toString() === currentParams.toString()) {
+    if (nextParams.toString() === searchParams.toString()) {
       return;
     }
 
-    searchParamsRef.current = nextParams;
-    setSearchParamsRef.current(nextParams, { replace: true });
-  }, []);
+    setSearchParams(nextParams, { replace: true });
+  }, [searchParams, setSearchParams]);
 
   return (
     <>

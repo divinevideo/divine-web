@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -58,17 +58,30 @@ vi.mock('@/contexts/FullscreenFeedContext', () => ({
 vi.mock('@/components/FullscreenFeed', () => ({
   FullscreenFeed: ({
     videos,
+    onClose,
     onVideoChange,
   }: {
     videos: ParsedVideoData[];
+    onClose: () => void;
     onVideoChange?: (videoId: string) => void;
   }) => {
+    const lastReportedVideoIdRef = useRef<string>();
+
     useEffect(() => {
-      onVideoChange?.(videos[0]?.id);
+      const activeVideoId = videos[0]?.id;
+      if (!activeVideoId || lastReportedVideoIdRef.current === activeVideoId) {
+        return;
+      }
+
+      lastReportedVideoIdRef.current = activeVideoId;
+      onVideoChange?.(activeVideoId);
     }, [onVideoChange, videos]);
 
     return (
       <div>
+        <button type="button" onClick={onClose}>
+          close fullscreen
+        </button>
         <button type="button" onClick={() => onVideoChange?.('video-1')}>
           report video 1
         </button>
@@ -103,6 +116,7 @@ describe('AppLayout', () => {
 
   afterEach(() => {
     window.history.replaceState = originalReplaceState;
+    window.history.pushState(null, '', '/');
   });
 
   it('does not rewrite the url when the compilation active video is already current', async () => {
@@ -132,5 +146,20 @@ describe('AppLayout', () => {
 
     expect(replaceStateSpy).toHaveBeenCalledTimes(1);
     expect(window.location.search).toBe('?q=x&play=compilation&video=video-2');
+  });
+
+  it('clears compilation playback params when fullscreen closes', async () => {
+    const user = userEvent.setup();
+    const replaceStateSpy = vi.fn(originalReplaceState.bind(window.history));
+    window.history.replaceState = replaceStateSpy;
+
+    renderLayout('/search?q=x&play=compilation&video=video-1');
+    replaceStateSpy.mockClear();
+
+    await user.click(screen.getByRole('button', { name: 'close fullscreen' }));
+
+    expect(mockExitFullscreen).toHaveBeenCalledTimes(1);
+    expect(replaceStateSpy).toHaveBeenCalledTimes(1);
+    expect(window.location.search).toBe('?q=x');
   });
 });

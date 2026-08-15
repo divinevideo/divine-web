@@ -146,20 +146,7 @@ export function SearchPage() {
   // This prevents analytics from firing on every keystroke
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const analyticsTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const resultCountsRef = useRef({
-    videos: videoResults.length,
-    users: userResults.length,
-    hashtags: hashtagResults.length,
-  });
   const lastTrackedSearchRef = useRef<string | null>(null);
-
-  useEffect(() => {
-    resultCountsRef.current = {
-      videos: videoResults.length,
-      users: userResults.length,
-      hashtags: hashtagResults.length,
-    };
-  }, [hashtagResults.length, userResults.length, videoResults.length]);
 
   useEffect(() => {
     // Clear any existing timer
@@ -208,20 +195,24 @@ export function SearchPage() {
       clearTimeout(analyticsTimerRef.current);
     }
 
+    const trimmedQuery = searchQuery.trim();
+    if (!trimmedQuery) {
+      lastTrackedSearchRef.current = null;
+      return;
+    }
+
+    if (isLoadingVideos || isLoadingUsers || isLoadingHashtags) {
+      return;
+    }
+
+    const trackingKey = JSON.stringify([trimmedQuery, activeFilter]);
+    if (lastTrackedSearchRef.current === trackingKey) {
+      return;
+    }
+
     analyticsTimerRef.current = setTimeout(() => {
-      const trimmedQuery = searchQuery.trim();
-      if (!trimmedQuery) {
-        lastTrackedSearchRef.current = null;
-        return;
-      }
-
-      const trackingKey = JSON.stringify([trimmedQuery, activeFilter]);
-      if (lastTrackedSearchRef.current === trackingKey) {
-        return;
-      }
-
-      const counts = resultCountsRef.current;
-      trackSearch(searchQuery, activeFilter, counts.videos + counts.users + counts.hashtags);
+      const totalResults = videoResults.length + userResults.length + hashtagResults.length;
+      trackSearch(searchQuery, activeFilter, totalResults);
       lastTrackedSearchRef.current = trackingKey;
     }, 500);
 
@@ -230,7 +221,16 @@ export function SearchPage() {
         clearTimeout(analyticsTimerRef.current);
       }
     };
-  }, [activeFilter, searchQuery]);
+  }, [
+    activeFilter,
+    hashtagResults.length,
+    isLoadingHashtags,
+    isLoadingUsers,
+    isLoadingVideos,
+    searchQuery,
+    userResults.length,
+    videoResults.length,
+  ]);
 
   useEffect(() => {
     return () => {

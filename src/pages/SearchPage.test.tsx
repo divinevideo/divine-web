@@ -186,10 +186,14 @@ vi.mock('@/lib/eventLookup', () => ({
   fetchEventById: mockFetchEventById,
 }));
 
-function renderPage(initialEntries: string[] = ['/search']) {
-  const queryClient = new QueryClient({
+function createTestQueryClient() {
+  return new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
+}
+
+function renderPage(initialEntries: string[] = ['/search']) {
+  const queryClient = createTestQueryClient();
   return render(
     <QueryClientProvider client={queryClient}>
       <MemoryRouter initialEntries={initialEntries}>
@@ -202,10 +206,14 @@ function renderPage(initialEntries: string[] = ['/search']) {
 
 function renderPageInBrowser(path: string) {
   window.history.pushState(null, '', path);
-  const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
-  });
+  const queryClient = createTestQueryClient();
   return render(
+    renderPageWithBrowserRouter(queryClient)
+  );
+}
+
+function renderPageWithBrowserRouter(queryClient = createTestQueryClient()) {
+  return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <SearchPage />
@@ -269,6 +277,7 @@ describe('SearchPage', () => {
 
   afterEach(() => {
     vi.useRealTimers();
+    window.history.pushState(null, '', '/');
   });
 
   it('clears the blur suggestion timeout on unmount', async () => {
@@ -599,15 +608,7 @@ describe('SearchPage', () => {
       });
 
       rerender(
-        <QueryClientProvider client={new QueryClient({
-          defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
-        })}
-        >
-          <BrowserRouter>
-            <SearchPage />
-            <LocationDisplay />
-          </BrowserRouter>
-        </QueryClientProvider>
+        renderPageWithBrowserRouter()
       );
 
       await act(async () => {
@@ -619,6 +620,56 @@ describe('SearchPage', () => {
     } finally {
       window.history.replaceState = originalReplaceState;
     }
+  });
+
+  it('tracks a slow search once after results settle', async () => {
+    vi.useFakeTimers();
+    mockUseInfiniteSearchVideos.mockReturnValue({
+      data: { pages: [{ videos: [] }] },
+      fetchNextPage: vi.fn(),
+      hasNextPage: false,
+      isLoading: true,
+      error: null,
+      fetchedCount: 0,
+    });
+
+    const { rerender } = renderPage(['/search?q=twerking&filter=videos']);
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(600);
+    });
+
+    expect(trackSearch).not.toHaveBeenCalled();
+
+    mockUseInfiniteSearchVideos.mockReturnValue({
+      data: {
+        pages: [
+          { videos: [{ id: 'video-1', pubkey: 'a'.repeat(64) }] },
+          { videos: [{ id: 'video-2', pubkey: 'b'.repeat(64) }] },
+        ],
+      },
+      fetchNextPage: vi.fn(),
+      hasNextPage: false,
+      isLoading: false,
+      error: null,
+      fetchedCount: 2,
+    });
+
+    rerender(
+      <QueryClientProvider client={createTestQueryClient()}>
+        <MemoryRouter initialEntries={['/search?q=twerking&filter=videos']}>
+          <SearchPage />
+          <LocationDisplay />
+        </MemoryRouter>
+      </QueryClientProvider>
+    );
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(600);
+    });
+
+    expect(trackSearch).toHaveBeenCalledTimes(1);
+    expect(trackSearch).toHaveBeenLastCalledWith('twerking', 'videos', 2);
   });
 
   it('does not retrack a settled search when result counts change', async () => {
@@ -656,10 +707,7 @@ describe('SearchPage', () => {
     });
 
     rerender(
-      <QueryClientProvider client={new QueryClient({
-        defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
-      })}
-      >
+      <QueryClientProvider client={createTestQueryClient()}>
         <MemoryRouter initialEntries={['/search?q=twerking&filter=videos']}>
           <SearchPage />
           <LocationDisplay />
