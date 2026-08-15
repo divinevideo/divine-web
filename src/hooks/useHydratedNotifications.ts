@@ -16,6 +16,7 @@ import type { ActorInfo, NotificationFilters, NotificationItem, RawNotification 
 export interface HydratedNotificationsResult {
   items: NotificationItem[];
   isLoading: boolean;
+  isSuccess: boolean;
   isError: boolean;
   error: Error | null;
   fetchNextPage: () => void;
@@ -225,6 +226,7 @@ export function useHydratedNotifications(
   return {
     items,
     isLoading: notificationsQuery.isLoading,
+    isSuccess: notificationsQuery.isSuccess,
     isError: notificationsQuery.isError,
     error: notificationsQuery.error,
     fetchNextPage: notificationsQuery.fetchNextPage,

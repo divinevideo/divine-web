@@ -68,6 +68,7 @@ function makeHookResult(items: NotificationItem[], overrides = {}) {
   return {
     items,
     isLoading: false,
+    isSuccess: true,
     isError: false,
     error: null,
     fetchNextPage: vi.fn(),
@@ -136,6 +137,74 @@ describe('NotificationsPage', () => {
     });
   });
 
+  it('marks all read on open when the All list is all read', async () => {
+    mockUseHydratedNotifications.mockImplementation(() =>
+      makeHookResult([
+        buildVideoNotification({ id: 'earlier-1', rawIds: ['raw-earlier-1'], isRead: true }),
+      ]),
+    );
+
+    render(<NotificationsPage />);
+
+    expect(await screen.findByText('earlier-1')).toBeInTheDocument();
+    expect(screen.queryByText('New')).not.toBeInTheDocument();
+
+    await waitFor(() => {
+      expect(mockMarkReadMutate).toHaveBeenCalledWith(undefined);
+    });
+  });
+
+  it('marks all read on open when the All list is empty', async () => {
+    mockUseHydratedNotifications.mockImplementation(() => makeHookResult([]));
+
+    render(<NotificationsPage />);
+
+    expect(await screen.findByText('All quiet. Nothing to flag.')).toBeInTheDocument();
+
+    await waitFor(() => {
+      expect(mockMarkReadMutate).toHaveBeenCalledWith(undefined);
+    });
+  });
+
+  it('does not mark all read before the All list successfully loads', async () => {
+    mockUseHydratedNotifications.mockImplementation(() =>
+      makeHookResult([], { isLoading: true, isSuccess: false }),
+    );
+
+    render(<NotificationsPage />);
+
+    await waitFor(() => {
+      expect(mockUseHydratedNotifications).toHaveBeenCalled();
+    });
+    expect(mockMarkReadMutate).not.toHaveBeenCalled();
+  });
+
+  it('does not mark all read when the All list errors', async () => {
+    mockUseHydratedNotifications.mockImplementation(() =>
+      makeHookResult([], {
+        isSuccess: false,
+        isError: true,
+        error: new Error('Network error'),
+      }),
+    );
+
+    render(<NotificationsPage />);
+
+    expect(await screen.findByText('Failed to load notifications')).toBeInTheDocument();
+    expect(mockMarkReadMutate).not.toHaveBeenCalled();
+  });
+
+  it('does not mark all read for disabled logged-out notification queries', async () => {
+    mockUseHydratedNotifications.mockImplementation(() =>
+      makeHookResult([], { isSuccess: false }),
+    );
+
+    render(<NotificationsPage />);
+
+    expect(await screen.findByText('All quiet. Nothing to flag.')).toBeInTheDocument();
+    expect(mockMarkReadMutate).not.toHaveBeenCalled();
+  });
+
   it('files unread rows from a later page under New, and still marks read once', async () => {
     const firstPage = [
       buildVideoNotification({ id: 'new-1', rawIds: ['raw-new-1'], isRead: false }),
@@ -165,6 +234,30 @@ describe('NotificationsPage', () => {
     expect(mockMarkReadMutate).toHaveBeenCalledTimes(1);
   });
 
+  it('files unread rows from a later page under New after an all-read first page', async () => {
+    const firstPage = [
+      buildActorNotification({ id: 'earlier-1', rawIds: ['raw-earlier-1'], isRead: true }),
+    ];
+    mockUseHydratedNotifications.mockImplementation(() => makeHookResult(firstPage));
+
+    const { rerender } = render(<NotificationsPage />);
+    expect(await screen.findByText('earlier-1')).toBeInTheDocument();
+
+    mockUseHydratedNotifications.mockImplementation(() =>
+      makeHookResult([
+        ...firstPage,
+        buildVideoNotification({ id: 'new-2', rawIds: ['raw-new-2'], isRead: false }),
+      ]),
+    );
+    rerender(<NotificationsPage />);
+
+    const newSection = (await screen.findByText('New')).parentElement;
+    await waitFor(() => {
+      expect(newSection?.textContent).toContain('new-2');
+    });
+    expect(mockMarkReadMutate).toHaveBeenCalledTimes(1);
+  });
+
   it('renders VideoNotificationRow for video kind and ActorNotificationRow for actor kind', async () => {
     render(<NotificationsPage />);
 
@@ -185,6 +278,25 @@ describe('NotificationsPage', () => {
     expect(screen.queryByText('new-1')).not.toBeInTheDocument();
     expect(screen.queryByText('Earlier')).not.toBeInTheDocument();
     expect(screen.queryByText('New')).not.toBeInTheDocument();
+  });
+
+  it('does not mark all read on a filtered tab', async () => {
+    mockUseHydratedNotifications.mockImplementation((filters?: { category?: string }) => {
+      const category = filters?.category ?? 'all';
+      if (category === 'likes') {
+        return makeHookResult([
+          buildVideoNotification({ id: 'like-1', type: 'like', isRead: true }),
+        ]);
+      }
+      return makeHookResult([], { isLoading: true, isSuccess: false });
+    });
+    const user = userEvent.setup();
+
+    render(<NotificationsPage />);
+    await user.click(screen.getByRole('tab', { name: 'Likes' }));
+
+    expect(await screen.findByText('like-1')).toBeInTheDocument();
+    expect(mockMarkReadMutate).not.toHaveBeenCalled();
   });
 
   it('category unread does NOT use the New/Earlier split', async () => {

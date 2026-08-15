@@ -114,10 +114,14 @@ function makeNotificationsPage(notifications: RawNotification[], unreadCount = 0
   return { notifications, unreadCount, hasMore: false };
 }
 
-function makeInfiniteQueryResult(pages: NotificationsResponse[], opts?: { isLoading?: boolean; isError?: boolean }) {
+function makeInfiniteQueryResult(
+  pages: NotificationsResponse[],
+  opts?: { isLoading?: boolean; isSuccess?: boolean; isError?: boolean },
+) {
   return {
     data: { pages, pageParams: [undefined] },
     isLoading: opts?.isLoading ?? false,
+    isSuccess: opts?.isSuccess ?? true,
     isError: opts?.isError ?? false,
     error: null,
     fetchNextPage: vi.fn(),
@@ -671,6 +675,7 @@ describe('useHydratedNotifications', () => {
     mockUseNotifications.mockReturnValue({
       data: { pages: [makeNotificationsPage([], 5)], pageParams: [undefined] },
       isLoading: false,
+      isSuccess: true,
       isError: false,
       error: null,
       fetchNextPage,
@@ -694,6 +699,33 @@ describe('useHydratedNotifications', () => {
     expect(result.current.isFetchingNextPage).toBe(true);
     expect(result.current.fetchNextPage).toBe(fetchNextPage);
     expect(result.current.unreadCount).toBe(5);
+    expect(result.current.isSuccess).toBe(true);
+  });
+
+  it('exposes disabled notification queries as not successful', async () => {
+    mockUseNotifications.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isSuccess: false,
+      isError: false,
+      error: null,
+      fetchNextPage: vi.fn(),
+      hasNextPage: false,
+      isFetchingNextPage: false,
+    });
+    mockUseBatchedAuthors.mockReturnValue({ data: {} });
+
+    const { useHydratedNotifications } = await import('./useHydratedNotifications');
+
+    const { result } = renderHook(
+      () => useHydratedNotifications({ category: 'all' }),
+      { wrapper: createWrapper() },
+    );
+
+    expect(result.current.items).toEqual([]);
+    expect(result.current.isLoading).toBe(false);
+    expect(result.current.isError).toBe(false);
+    expect(result.current.isSuccess).toBe(false);
   });
 
   it('attaches video title and thumbnail from fetchVideoById when available', async () => {

@@ -52,6 +52,25 @@ contexts (`AppContext`, `VideoPlaybackContext`, `FullscreenFeedContext`,
 and subscriptions against Nostr relays. Auth uses `@divinevideo/login` with
 `NostrLoginProvider`, hydrated from cross-subdomain cookies.
 
+### Notification Read Marker
+
+Web and mobile both write the same Funnelcake per-pubkey notification read
+marker through `POST /api/users/{pubkey}/notifications/read` with an empty body.
+On web, [`src/pages/NotificationsPage.tsx`](./src/pages/NotificationsPage.tsx)
+marks the All tab read once per page mount after the notifications query
+successfully loads, even when the fetched list is empty or already read. Filtered
+tabs do not mark read.
+
+Web deliberately does not mark read on `refetchOnWindowFocus`. Mobile marks
+after an explicit unfiltered pull-to-refresh, but excludes app resume; the web
+window-focus refetch maps to app resume, not to that deliberate refresh gesture.
+
+Until Funnelcake supports bounded read-marker writes (divine-funnelcake #938),
+the empty-body request advances the marker to server time. That can cover
+notifications whose source events existed before the request but whose inbox
+rows had not materialized yet. Web accepts that tradeoff only for the
+once-per-mount All-tab write.
+
 ## Routing
 
 Client-side SPA routing via react-router-dom v6.

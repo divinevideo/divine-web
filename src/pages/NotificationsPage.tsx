@@ -1,5 +1,5 @@
 // ABOUTME: Notifications page showing social interactions (likes, comments, follows, reposts)
-// ABOUTME: Simple list with infinite scroll, marks all as read on page open
+// ABOUTME: Infinite list that marks All-tab visits read after a successful load
 
 import { useEffect, useRef, useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -59,6 +59,7 @@ export default function NotificationsPage() {
   const {
     items,
     isLoading,
+    isSuccess,
     isError,
     error,
     fetchNextPage,
@@ -69,27 +70,28 @@ export default function NotificationsPage() {
   // Destructured because useMutation returns a fresh object every render, so
   // depending on the whole result re-ran the effect below on every render.
   const { mutate: markAllRead } = useMarkNotificationsRead();
-  const hasCapturedInitialUnread = useRef(false);
+  const hasMarkedRead = useRef(false);
   const [initialUnreadIds, setInitialUnreadIds] = useState<Set<string>>(() => new Set());
+
+  useEffect(() => {
+    if (category !== 'all') return;
+    if (!isSuccess) return;
+    if (hasMarkedRead.current) return;
+
+    hasMarkedRead.current = true;
+    markAllRead(undefined);
+  }, [category, isSuccess, markAllRead]);
 
   // Keep a snapshot of unread rawIds so the list can still show what was new
   // when the user arrived, even after optimistic updates flip everything to
-  // read in the cache.
-  //
-  // The snapshot accumulates across pages rather than latching on the first
-  // one: under infinite scroll a row that is still unread when page 2 arrives
-  // was also unread when the user landed, so it belongs under "New". The
-  // mark-read call stays one-shot for the visit.
+  // read in the cache. The snapshot accumulates across pages: under infinite
+  // scroll a row that is still unread when page 2 arrives was also unread when
+  // the user landed, so it belongs under "New".
   useEffect(() => {
     if (category !== 'all') return;
-    if (items.length === 0) return;
-
     const unreadIds = items
       .filter((n) => !n.isRead)
       .flatMap((n) => n.rawIds);
-
-    const shouldMarkRead = !hasCapturedInitialUnread.current && unreadIds.length > 0;
-    hasCapturedInitialUnread.current = true;
 
     if (unreadIds.length > 0) {
       setInitialUnreadIds((prev) => {
@@ -104,11 +106,7 @@ export default function NotificationsPage() {
         return added ? next : prev;
       });
     }
-
-    if (shouldMarkRead) {
-      markAllRead(undefined);
-    }
-  }, [category, items, markAllRead]);
+  }, [category, items]);
 
   const newNotifications = useMemo(
     () => items.filter((n) => n.rawIds.some((id) => initialUnreadIds.has(id))),
