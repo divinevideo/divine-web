@@ -30,7 +30,9 @@
     "help": "Ajutor",
     "merch": "Merch",
     "familyResources": "Resurse pentru familie",
-    "kidsPolicy": "Politica pentru copii"
+    "kidsPolicy": "Politica pentru copii",
+    "accountPortability": "Account Portability",
+    "deleteAccount": "Delete Account"
   },
   "theme": {
     "lightMode": "Mod luminos",

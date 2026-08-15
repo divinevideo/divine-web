@@ -113,6 +113,22 @@ describe('AppSidebar', () => {
     expect(mockNavigate).toHaveBeenCalledWith('/dmca');
   });
 
+  it('links account portability and deletion docs from the terms section', () => {
+    render(
+      <MemoryRouter>
+        <AppSidebar />
+      </MemoryRouter>,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Terminos y codigo abierto' }));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Account Portability' }));
+    expect(mockNavigate).toHaveBeenCalledWith('/exit');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Delete Account' }));
+    expect(mockNavigate).toHaveBeenCalledWith('/delete-account');
+  });
+
   it('hides the sidebar imported Vines total', () => {
     const fetchSpy = vi.fn();
     vi.stubGlobal('fetch', fetchSpy);

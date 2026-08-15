@@ -30,7 +30,9 @@
     "help": "Tulong",
     "merch": "Merch",
     "familyResources": "Mga resource para sa pamilya",
-    "kidsPolicy": "Patakaran para sa mga bata"
+    "kidsPolicy": "Patakaran para sa mga bata",
+    "accountPortability": "Account Portability",
+    "deleteAccount": "Delete Account"
   },
   "theme": {
     "lightMode": "Maliwanag na mode",

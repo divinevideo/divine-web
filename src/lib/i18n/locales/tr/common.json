@@ -30,7 +30,9 @@
     "help": "Yardim",
     "merch": "Merch",
     "familyResources": "Aile kaynaklari",
-    "kidsPolicy": "Cocuk politikasi"
+    "kidsPolicy": "Cocuk politikasi",
+    "accountPortability": "Account Portability",
+    "deleteAccount": "Delete Account"
   },
   "theme": {
     "lightMode": "Acik mod",

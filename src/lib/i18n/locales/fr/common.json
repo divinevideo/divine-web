@@ -30,7 +30,9 @@
     "help": "Aide",
     "merch": "Merch",
     "familyResources": "Ressources famille",
-    "kidsPolicy": "Politique enfants"
+    "kidsPolicy": "Politique enfants",
+    "accountPortability": "Account Portability",
+    "deleteAccount": "Delete Account"
   },
   "theme": {
     "lightMode": "Mode clair",

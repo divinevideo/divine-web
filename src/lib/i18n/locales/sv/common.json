@@ -30,7 +30,9 @@
     "help": "Hjalp",
     "merch": "Merch",
     "familyResources": "Familjeresurser",
-    "kidsPolicy": "Policy for barn"
+    "kidsPolicy": "Policy for barn",
+    "accountPortability": "Account Portability",
+    "deleteAccount": "Delete Account"
   },
   "theme": {
     "lightMode": "Ljust lage",

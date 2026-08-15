@@ -30,7 +30,9 @@
     "help": "Trợ giúp",
     "merch": "Merch",
     "familyResources": "Tài nguyên gia đình",
-    "kidsPolicy": "Chính sách trẻ em"
+    "kidsPolicy": "Chính sách trẻ em",
+    "accountPortability": "Account Portability",
+    "deleteAccount": "Delete Account"
   },
   "theme": {
     "lightMode": "Chế độ sáng",

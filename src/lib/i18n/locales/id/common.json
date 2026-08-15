@@ -30,7 +30,9 @@
     "help": "Bantuan",
     "merch": "Merch",
     "familyResources": "Sumber daya keluarga",
-    "kidsPolicy": "Kebijakan anak"
+    "kidsPolicy": "Kebijakan anak",
+    "accountPortability": "Account Portability",
+    "deleteAccount": "Delete Account"
   },
   "theme": {
     "lightMode": "Mode terang",

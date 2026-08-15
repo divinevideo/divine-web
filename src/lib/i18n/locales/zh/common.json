@@ -30,7 +30,9 @@
     "help": "帮助",
     "merch": "周边",
     "familyResources": "家庭资源",
-    "kidsPolicy": "儿童政策"
+    "kidsPolicy": "儿童政策",
+    "accountPortability": "Account Portability",
+    "deleteAccount": "Delete Account"
   },
   "theme": {
     "lightMode": "浅色模式",

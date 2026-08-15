@@ -30,7 +30,9 @@
     "help": "مساعدة",
     "merch": "Merch",
     "familyResources": "موارد العائلة",
-    "kidsPolicy": "سياسة الأطفال"
+    "kidsPolicy": "سياسة الأطفال",
+    "accountPortability": "Account Portability",
+    "deleteAccount": "Delete Account"
   },
   "theme": {
     "lightMode": "الوضع الفاتح",

@@ -30,7 +30,9 @@
     "help": "ヘルプ",
     "merch": "Merch",
     "familyResources": "家族向けリソース",
-    "kidsPolicy": "子どもポリシー"
+    "kidsPolicy": "子どもポリシー",
+    "accountPortability": "Account Portability",
+    "deleteAccount": "Delete Account"
   },
   "theme": {
     "lightMode": "ライトモード",

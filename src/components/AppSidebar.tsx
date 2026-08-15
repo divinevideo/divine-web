@@ -514,6 +514,18 @@ export function AppSidebar({ className }: { className?: string }) {
                 {t('menu.kidsPolicy')}
               </button>
               <button
+                onClick={() => navigate('/exit')}
+                className="transition-colors hover:text-primary"
+              >
+                {t('menu.accountPortability')}
+              </button>
+              <button
+                onClick={() => navigate('/delete-account')}
+                className="transition-colors hover:text-primary"
+              >
+                {t('menu.deleteAccount')}
+              </button>
+              <button
                 onClick={() => navigate('/dmca')}
                 className="transition-colors hover:text-primary"
               >

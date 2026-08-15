@@ -30,7 +30,9 @@
     "help": "مدد",
     "merch": "مرچ",
     "familyResources": "خاندانی وسائل",
-    "kidsPolicy": "بچوں کی پالیسی"
+    "kidsPolicy": "بچوں کی پالیسی",
+    "accountPortability": "Account Portability",
+    "deleteAccount": "Delete Account"
   },
   "theme": {
     "lightMode": "لائٹ موڈ",

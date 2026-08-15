@@ -30,7 +30,9 @@
     "help": "도움말",
     "merch": "Merch",
     "familyResources": "가족 리소스",
-    "kidsPolicy": "어린이 정책"
+    "kidsPolicy": "어린이 정책",
+    "accountPortability": "Account Portability",
+    "deleteAccount": "Delete Account"
   },
   "theme": {
     "lightMode": "라이트 모드",

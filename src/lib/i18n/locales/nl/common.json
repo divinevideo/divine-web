@@ -30,7 +30,9 @@
     "help": "Help",
     "merch": "Merch",
     "familyResources": "Gezinsbronnen",
-    "kidsPolicy": "Kinderbeleid"
+    "kidsPolicy": "Kinderbeleid",
+    "accountPortability": "Account Portability",
+    "deleteAccount": "Delete Account"
   },
   "theme": {
     "lightMode": "Lichte modus",
