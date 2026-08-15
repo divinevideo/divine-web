@@ -12,8 +12,8 @@ import {
   BLOCK_PROVENANCE_EVENT,
   getExplicitBlockedPubkeys,
   removeBlockProvenance,
-} from '@/lib/blockProvenance';
-import { debugLog } from '@/lib/debug';
+} from '@/lib/moderationProvenance';
+import { debugLog, debugWarn } from '@/lib/debug';
 import { MuteType } from '@/types/moderation';
 
 const EMPTY_BLOCKED_SET: ReadonlySet<string> = new Set();
@@ -71,20 +71,24 @@ export function useBlockUser() {
       });
       addBlockProvenance(user.pubkey, targetPubkey);
 
-      const bestContactList = await fetchAndSelectContactList(
-        nostr,
-        user.pubkey,
-        null,
-        'useBlockUser'
-      );
-      const currentTags = bestContactList?.tags ?? [];
-      const updatedTags = currentTags.filter(tag => !(tag[0] === 'p' && tag[1] === targetPubkey));
-      if (updatedTags.length !== currentTags.length) {
-        await publishEvent({
-          kind: 3,
-          content: bestContactList?.content ?? '',
-          tags: updatedTags,
-        });
+      try {
+        const bestContactList = await fetchAndSelectContactList(
+          nostr,
+          user.pubkey,
+          null,
+          'useBlockUser'
+        );
+        const currentTags = bestContactList?.tags ?? [];
+        const updatedTags = currentTags.filter(tag => !(tag[0] === 'p' && tag[1] === targetPubkey));
+        if (updatedTags.length !== currentTags.length) {
+          await publishEvent({
+            kind: 3,
+            content: bestContactList?.content ?? '',
+            tags: updatedTags,
+          });
+        }
+      } catch (error) {
+        debugWarn('[useBlockUser] Block published, but follow-list cleanup failed:', error);
       }
     },
     onSuccess: (_, { targetPubkey }) => {
@@ -111,7 +115,7 @@ export function useUnblockUser() {
     mutationFn: async ({ targetPubkey }: { targetPubkey: string }) => {
       if (!user?.pubkey) throw new Error('Must be logged in to unblock users');
 
-      await publishMuteListUpdate({
+      const didPublish = await publishMuteListUpdate({
         nostr,
         publishEvent,
         userPubkey: user.pubkey,
@@ -124,7 +128,9 @@ export function useUnblockUser() {
           return tags.filter(tag => !(tag[0] === 'p' && tag[1] === targetPubkey));
         },
       });
-      removeBlockProvenance(user.pubkey, targetPubkey);
+      if (didPublish) {
+        removeBlockProvenance(user.pubkey, targetPubkey);
+      }
     },
     onSuccess: (_, { targetPubkey }) => {
       queryClient.invalidateQueries({ queryKey: ['mute-list'] });

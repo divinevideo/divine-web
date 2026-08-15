@@ -28,6 +28,13 @@ const EMPTY_MUTE_LIST: MuteItem[] = [];
 type PublishEvent = ReturnType<typeof useNostrPublish>['mutateAsync'];
 type NostrClient = ReturnType<typeof useNostr>['nostr'];
 
+export class MuteListUnavailableError extends Error {
+  constructor() {
+    super('Could not load your moderation list. Please try again in a moment.');
+    this.name = 'MuteListUnavailableError';
+  }
+}
+
 /**
  * Parse the mute-relevant tags from a NIP-51 mute list event (kind 10000).
  * Returns only p/t/word/e tags the UI understands. Other tags (a pins, d, etc.)
@@ -67,6 +74,40 @@ function latestEvent(events: NostrEvent[]): NostrEvent | null {
     .sort((a, b) => b.created_at - a.created_at || (a.id < b.id ? -1 : 1))[0];
 }
 
+async function fetchMuteListForPublish(
+  nostr: NostrClient,
+  userPubkey: string,
+): Promise<NostrEvent | null> {
+  const signal = AbortSignal.timeout(5000);
+  const events: NostrEvent[] = [];
+  let relayQuerySucceeded = false;
+
+  try {
+    for await (const message of nostr.req([{
+      kinds: [MUTE_LIST_KIND],
+      authors: [userPubkey],
+      limit: 1
+    }], { signal })) {
+      if (message[0] === 'EVENT' && message[2].kind === MUTE_LIST_KIND) {
+        events.push(message[2]);
+      } else if (message[0] === 'EOSE') {
+        relayQuerySucceeded = true;
+        break;
+      } else if (message[0] === 'CLOSED') {
+        break;
+      }
+    }
+  } catch {
+    throw new MuteListUnavailableError();
+  }
+
+  if (!relayQuerySucceeded || signal.aborted) {
+    throw new MuteListUnavailableError();
+  }
+
+  return latestEvent(events);
+}
+
 export async function publishMuteListUpdate({
   nostr,
   publishEvent,
@@ -77,26 +118,20 @@ export async function publishMuteListUpdate({
   publishEvent: PublishEvent;
   userPubkey: string;
   updateTags: (current: { tags: string[][]; items: MuteItem[] }) => string[][] | null;
-}): Promise<void> {
-  const signal = AbortSignal.timeout(5000);
-  const events = await nostr.query([{
-    kinds: [MUTE_LIST_KIND],
-    authors: [userPubkey],
-    limit: 1
-  }], { signal });
-
-  const latest = latestEvent(events);
+}): Promise<boolean> {
+  const latest = await fetchMuteListForPublish(nostr, userPubkey);
   const existingTags: string[][] = latest ? latest.tags : [];
   const existingContent = latest ? latest.content : '';
   const existingItems = latest ? parseMuteList(latest) : [];
   const tags = updateTags({ tags: existingTags, items: existingItems });
-  if (!tags) return;
+  if (!tags) return false;
 
   await publishEvent({
     kind: MUTE_LIST_KIND,
     content: existingContent,
     tags
   });
+  return true;
 }
 
 /**

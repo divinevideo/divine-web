@@ -15,7 +15,7 @@ import { debugLog } from '@/lib/debug';
 import { latestEvent } from '@/lib/nostrEvents';
 import type { NostrEvent } from '@nostrify/nostrify';
 import { PRIMARY_RELAY } from '@/config/relays';
-import { getExplicitBlockedPubkeys, readBlockProvenance } from '@/lib/blockProvenance';
+import { getExplicitBlockedPubkeys, readBlockProvenance } from '@/lib/moderationProvenance';
 import { MUTE_LIST_KIND } from '@/types/moderation';
 
 /** Thrown when a follow request races with stale UI state. */

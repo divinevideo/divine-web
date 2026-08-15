@@ -30,6 +30,7 @@ Object.defineProperty(globalThis, 'localStorage', { value: localStorageMock, wri
 
 const mockPublishEvent = vi.fn();
 const mockMuteQuery = vi.fn();
+const mockMuteReq = vi.fn();
 const mockUserPubkey = 'aabbccdd11223344aabbccdd11223344aabbccdd11223344aabbccdd11223344';
 const mockReportedPubkey = '11223344aabbccdd11223344aabbccdd11223344aabbccdd11223344aabbccdd';
 const mockEventId = 'event1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcd';
@@ -41,7 +42,10 @@ vi.mock('@/lib/reportApi', () => ({
 
 vi.mock('@nostrify/react', () => ({
   useNostr: () => ({
-    nostr: { query: mockMuteQuery },
+    nostr: {
+      query: mockMuteQuery,
+      req: mockMuteReq,
+    },
   }),
 }));
 
@@ -234,9 +238,20 @@ function makeMuteEvent(
   };
 }
 
+function mockMuteReqFromQuery() {
+  mockMuteReq.mockImplementation(async function* (filters) {
+    const events = await mockMuteQuery(filters);
+    for (const event of events) {
+      yield ['EVENT', 'subscription', event];
+    }
+    yield ['EOSE', 'subscription'];
+  });
+}
+
 describe('useMuteList', () => {
   beforeEach(() => {
     mockMuteQuery.mockReset();
+    mockMuteReq.mockReset();
   });
 
   it('queries kind 10000 (NIP-51 mute list)', async () => {
@@ -324,7 +339,9 @@ describe('useMuteList', () => {
 describe('useMuteItem', () => {
   beforeEach(() => {
     mockMuteQuery.mockReset();
+    mockMuteReq.mockReset();
     mockPublishEvent.mockReset();
+    mockMuteReqFromQuery();
   });
 
   it('publishes kind 10000 with the new tag when no mute list exists', async () => {
@@ -485,12 +502,34 @@ describe('useMuteItem', () => {
     expect(error).toBeInstanceOf(Error);
     expect((error as Error).message).toBe('relay timeout');
   });
+
+  it('does not publish when the mute-list relay read misses EOSE', async () => {
+    mockMuteReq.mockImplementation(async function* () {
+      yield ['EVENT', 'subscription', makeMuteEvent([['p', 'existing-muted']])];
+    });
+
+    const { result } = renderHook(() => useMuteItem(), { wrapper: createWrapper() });
+
+    let error: unknown;
+    await act(async () => {
+      try {
+        await result.current.mutateAsync({ type: MuteType.USER, value: 'new' });
+      } catch (e) {
+        error = e;
+      }
+    });
+
+    expect(error).toBeInstanceOf(Error);
+    expect(mockPublishEvent).not.toHaveBeenCalled();
+  });
 });
 
 describe('useUnmuteItem', () => {
   beforeEach(() => {
     mockMuteQuery.mockReset();
+    mockMuteReq.mockReset();
     mockPublishEvent.mockReset();
+    mockMuteReqFromQuery();
   });
 
   it('publishes kind 10000 with the matching tag removed', async () => {

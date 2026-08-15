@@ -5,7 +5,7 @@ import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { MUTE_LIST_KIND } from '@/hooks/useModeration';
-import { addBlockProvenance } from '@/lib/blockProvenance';
+import { addBlockProvenance, getExplicitBlockedPubkeys } from '@/lib/moderationProvenance';
 import { useBlockUser, useUnblockUser } from './useBlockList';
 
 vi.mock('@/lib/debug', () => ({
@@ -86,6 +86,40 @@ function makeContactListEvent(pubkeys: string[]): NostrEvent {
   };
 }
 
+function mockReq({ muteEvents = [makeMuteEvent([])], contactPubkeys = [mockTargetPubkey, 'b'.repeat(64)] }: {
+  muteEvents?: NostrEvent[];
+  contactPubkeys?: string[];
+} = {}) {
+  mockNostrReq.mockImplementation(async function* (filters) {
+    const kinds = filters[0]?.kinds ?? [];
+    if (kinds.includes(MUTE_LIST_KIND)) {
+      for (const event of muteEvents) {
+        yield ['EVENT', 'subscription', event];
+      }
+      yield ['EOSE', 'subscription'];
+      return;
+    }
+    if (kinds.includes(3)) {
+      yield ['EVENT', 'subscription', makeContactListEvent(contactPubkeys)];
+      yield ['EOSE', 'subscription'];
+    }
+  });
+}
+
+function mockColdMuteListReq() {
+  mockNostrReq.mockImplementation(async function* (filters) {
+    const kinds = filters[0]?.kinds ?? [];
+    if (kinds.includes(MUTE_LIST_KIND)) {
+      yield ['EVENT', 'subscription', makeMuteEvent([['p', 'existing-muted']])];
+      return;
+    }
+    if (kinds.includes(3)) {
+      yield ['EVENT', 'subscription', makeContactListEvent([mockTargetPubkey])];
+      yield ['EOSE', 'subscription'];
+    }
+  });
+}
+
 function installLocalStorageMock() {
   const storage = new Map<string, string>();
   Object.defineProperty(window, 'localStorage', {
@@ -110,20 +144,17 @@ describe('useBlockUser', () => {
     vi.clearAllMocks();
     installLocalStorageMock();
     mockPublishEvent.mockResolvedValue({});
-    mockNostrReq.mockImplementation(async function* () {
-      yield ['EVENT', 'subscription', makeContactListEvent([mockTargetPubkey, 'b'.repeat(64)])];
-      yield ['EOSE', 'subscription'];
-    });
+    mockReq();
   });
 
   it('publishes kind 10000 p-tag while preserving foreign tags and encrypted content', async () => {
-    mockNostrQuery.mockResolvedValue([
-      makeMuteEvent([
+    mockReq({
+      muteEvents: [makeMuteEvent([
         ['a', '34236:somepub:vid-1'],
         ['p', 'existing-muted'],
         ['client', 'divine-web'],
-      ]),
-    ]);
+      ])],
+    });
 
     const { result } = renderHook(() => useBlockUser(), { wrapper: createWrapper() });
 
@@ -144,7 +175,7 @@ describe('useBlockUser', () => {
   });
 
   it('republishes kind 3 once without the blocked pubkey when target is followed', async () => {
-    mockNostrQuery.mockResolvedValue([makeMuteEvent([])]);
+    mockReq();
 
     const { result } = renderHook(() => useBlockUser(), { wrapper: createWrapper() });
 
@@ -159,7 +190,7 @@ describe('useBlockUser', () => {
   });
 
   it('does not republish the mute list when the target is already muted', async () => {
-    mockNostrQuery.mockResolvedValue([makeMuteEvent([['p', mockTargetPubkey]])]);
+    mockReq({ muteEvents: [makeMuteEvent([['p', mockTargetPubkey]])] });
 
     const { result } = renderHook(() => useBlockUser(), { wrapper: createWrapper() });
 
@@ -172,6 +203,44 @@ describe('useBlockUser', () => {
     expect(publishedKinds).not.toContain(MUTE_LIST_KIND);
     expect(publishedKinds).toContain(3);
   });
+
+  it('does not publish or record provenance when the mute-list relay read misses EOSE', async () => {
+    mockColdMuteListReq();
+
+    const { result } = renderHook(() => useBlockUser(), { wrapper: createWrapper() });
+
+    let error: unknown;
+    await act(async () => {
+      try {
+        await result.current.mutateAsync({ targetPubkey: mockTargetPubkey });
+      } catch (e) {
+        error = e;
+      }
+    });
+
+    expect(error).toBeInstanceOf(Error);
+    expect(mockPublishEvent).not.toHaveBeenCalled();
+    expect(getExplicitBlockedPubkeys(mockUserPubkey, [mockTargetPubkey])).toEqual(new Set());
+  });
+
+  it('keeps the block successful when follow-list cleanup fails after the mute-list publish', async () => {
+    mockNostrReq.mockImplementation(async function* (filters) {
+      const kinds = filters[0]?.kinds ?? [];
+      if (kinds.includes(MUTE_LIST_KIND)) {
+        yield ['EOSE', 'subscription'];
+      }
+    });
+
+    const { result } = renderHook(() => useBlockUser(), { wrapper: createWrapper() });
+
+    await act(async () => {
+      await result.current.mutateAsync({ targetPubkey: mockTargetPubkey });
+    });
+
+    expect(mockPublishEvent).toHaveBeenCalledOnce();
+    expect(mockPublishEvent.mock.calls[0][0].kind).toBe(MUTE_LIST_KIND);
+    expect(getExplicitBlockedPubkeys(mockUserPubkey, [mockTargetPubkey])).toEqual(new Set([mockTargetPubkey]));
+  });
 });
 
 describe('useUnblockUser', () => {
@@ -179,17 +248,18 @@ describe('useUnblockUser', () => {
     vi.clearAllMocks();
     installLocalStorageMock();
     mockPublishEvent.mockResolvedValue({});
+    mockReq();
   });
 
   it('removes explicit block p-tag from kind 10000 without touching kind 3', async () => {
     addBlockProvenance(mockUserPubkey, mockTargetPubkey);
-    mockNostrQuery.mockResolvedValue([
-      makeMuteEvent([
+    mockReq({
+      muteEvents: [makeMuteEvent([
         ['p', mockTargetPubkey],
         ['p', 'keep-muted'],
         ['t', 'nsfw'],
-      ]),
-    ]);
+      ])],
+    });
 
     const { result } = renderHook(() => useUnblockUser(), { wrapper: createWrapper() });
 
@@ -206,11 +276,11 @@ describe('useUnblockUser', () => {
         ['t', 'nsfw'],
       ],
     });
-    expect(mockNostrReq).not.toHaveBeenCalled();
+    expect(mockNostrReq).toHaveBeenCalledOnce();
   });
 
   it('does not remove ordinary mutes that lack local block provenance', async () => {
-    mockNostrQuery.mockResolvedValue([makeMuteEvent([['p', mockTargetPubkey]])]);
+    mockReq({ muteEvents: [makeMuteEvent([['p', mockTargetPubkey]])] });
 
     const { result } = renderHook(() => useUnblockUser(), { wrapper: createWrapper() });
 
@@ -219,6 +289,20 @@ describe('useUnblockUser', () => {
     });
 
     expect(mockPublishEvent).not.toHaveBeenCalled();
+  });
+
+  it('keeps block provenance when the block p-tag was not published', async () => {
+    addBlockProvenance(mockUserPubkey, mockTargetPubkey);
+    mockReq({ muteEvents: [makeMuteEvent([])] });
+
+    const { result } = renderHook(() => useUnblockUser(), { wrapper: createWrapper() });
+
+    await act(async () => {
+      await result.current.mutateAsync({ targetPubkey: mockTargetPubkey });
+    });
+
+    expect(mockPublishEvent).not.toHaveBeenCalled();
+    expect(getExplicitBlockedPubkeys(mockUserPubkey, [mockTargetPubkey])).toEqual(new Set([mockTargetPubkey]));
   });
 
   it('keeps mute and block distinct in the exposed blocked set', async () => {

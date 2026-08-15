@@ -395,12 +395,17 @@ export function ProfileHeader({
           <div className="flex-shrink-0 self-center sm:self-start flex gap-2">
             <Button
               onClick={handleFollowClick}
-              variant={isFollowing && !isBlocked ? "outline" : "sticker"}
+              variant={isFollowing || isBlocked ? "outline" : "sticker"}
               size="sm"
               className="min-w-[100px]"
               data-testid="follow-button"
             >
-              {isFollowing && !isBlocked ? (
+              {isBlocked ? (
+                <>
+                  <Prohibit className="w-4 h-4 mr-2" />
+                  {t('profileHeader.unblockUser')}
+                </>
+              ) : isFollowing ? (
                 <>
                   <UserCheck className="w-4 h-4 mr-2" weight="fill" />
                   {t('profileHeader.following')}

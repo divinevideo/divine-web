@@ -2,12 +2,15 @@ import { describe, expect, it } from 'vitest';
 
 import {
   addBlockProvenance,
+  clearWebMute,
   getExplicitBlockedPubkeys,
+  isWebAuthoredMute,
   removeBlockProvenance,
-  type BlockProvenanceStorage,
-} from './blockProvenance';
+  recordWebMute,
+  type ModerationProvenanceStorage,
+} from './moderationProvenance';
 
-function createStorage(): BlockProvenanceStorage {
+function createStorage(): ModerationProvenanceStorage {
   const store = new Map<string, string>();
   return {
     getItem: key => store.get(key) ?? null,
@@ -46,5 +49,29 @@ describe('block provenance', () => {
     removeBlockProvenance(owner, first, storage);
 
     expect(getExplicitBlockedPubkeys(owner, [first, second], storage)).toEqual(new Set([second]));
+  });
+
+  it('preserves web mute provenance when block provenance changes', () => {
+    const storage = createStorage();
+    const owner = 'a'.repeat(64);
+    const blocked = 'b'.repeat(64);
+    const muted = 'c'.repeat(64);
+
+    recordWebMute(owner, muted, storage);
+    addBlockProvenance(owner, blocked, storage);
+    removeBlockProvenance(owner, blocked, storage);
+
+    expect(isWebAuthoredMute(owner, muted, storage)).toBe(true);
+    clearWebMute(owner, muted, storage);
+    expect(isWebAuthoredMute(owner, muted, storage)).toBe(false);
+  });
+
+  it('reads the previous block-only array storage shape', () => {
+    const storage = createStorage();
+    const owner = 'a'.repeat(64);
+    const target = 'b'.repeat(64);
+    storage.setItem(`divine:block-provenance:${owner}`, JSON.stringify([target]));
+
+    expect(getExplicitBlockedPubkeys(owner, [target], storage)).toEqual(new Set([target]));
   });
 });

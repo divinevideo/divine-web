@@ -227,7 +227,7 @@ describe('ProfileHeader', () => {
     expect(screen.getByText('Divine Loops')).toBeInTheDocument();
   });
 
-  it('shows blocked profiles as not followed in the follow button', () => {
+  it('shows blocked profiles with an unblock button', () => {
     const blockedPubkey = 'a'.repeat(64);
     pm.blocked.add(blockedPubkey);
 
@@ -244,7 +244,8 @@ describe('ProfileHeader', () => {
       </MemoryRouter>
     );
 
-    expect(screen.getByRole('button', { name: /^follow$/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^unblock user$/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^follow$/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /^following$/i })).not.toBeInTheDocument();
   });
 

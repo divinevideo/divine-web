@@ -7,7 +7,7 @@ import { FollowRaceError } from './useFollowRelationship';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
 import type { NostrEvent } from '@nostrify/nostrify';
-import { addBlockProvenance } from '@/lib/blockProvenance';
+import { addBlockProvenance } from '@/lib/moderationProvenance';
 import { MUTE_LIST_KIND } from '@/types/moderation';
 
 // Mock debug module
