@@ -450,7 +450,8 @@
     "switchRelay": "Đổi relay",
     "switchAccount": "Đổi tài khoản",
     "addAnotherAccount": "Thêm tài khoản khác",
-    "logOut": "Đăng xuất"
+    "logOut": "Đăng xuất",
+    "accountPortability": "Move your account"
   },
   "reportContentDialog": {
     "titleVideo": "Báo cáo video",

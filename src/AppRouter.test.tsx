@@ -1,5 +1,6 @@
 import { Outlet } from 'react-router-dom';
 import { render, screen, waitFor } from '@testing-library/react';
+import { createHead, UnheadProvider } from '@unhead/react/client';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import AppRouter from './AppRouter';
 
@@ -46,6 +47,19 @@ vi.mock('./pages/DiscoveryPage', () => ({
   default: () => <div data-testid="discovery-page" />,
 }));
 
+vi.mock('@/components/MarketingLayout', () => ({
+  MarketingLayout: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+}));
+
+function renderRouter() {
+  const head = createHead();
+  return render(
+    <UnheadProvider head={head}>
+      <AppRouter />
+    </UnheadProvider>,
+  );
+}
+
 describe('AppRouter', () => {
   beforeEach(() => {
     mockUseCurrentUser.mockReset();
@@ -59,7 +73,7 @@ describe('AppRouter', () => {
   it('keeps analytics routed while a saved session is restoring', () => {
     window.history.pushState({}, '', '/analytics');
 
-    render(<AppRouter />);
+    renderRouter();
 
     expect(screen.getByTestId('analytics-page')).toBeInTheDocument();
     expect(screen.queryByTestId('nip19-page')).not.toBeInTheDocument();
@@ -68,11 +82,32 @@ describe('AppRouter', () => {
   it('redirects the retired new-video feed to hot', async () => {
     window.history.pushState({}, '', '/discovery/new');
 
-    render(<AppRouter />);
+    renderRouter();
 
     await waitFor(() => {
       expect(window.location.pathname).toBe('/discovery/hot');
     });
     expect(screen.getByTestId('discovery-page')).toBeInTheDocument();
+  });
+
+  it('routes the account portability entry point at /exit', () => {
+    window.history.pushState({}, '', '/exit');
+
+    renderRouter();
+
+    expect(
+      screen.getByRole('heading', { name: 'Move your Divine account' }),
+    ).toBeInTheDocument();
+    expect(screen.queryByTestId('nip19-page')).not.toBeInTheDocument();
+  });
+
+  it('redirects the legacy account portability docs path to /exit', async () => {
+    window.history.pushState({}, '', '/account-portability');
+
+    renderRouter();
+
+    await waitFor(() => {
+      expect(window.location.pathname).toBe('/exit');
+    });
   });
 });

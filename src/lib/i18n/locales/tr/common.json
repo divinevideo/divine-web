@@ -450,7 +450,8 @@
     "switchRelay": "Relay Değiştir",
     "switchAccount": "Hesap Değiştir",
     "addAnotherAccount": "Başka bir hesap ekle",
-    "logOut": "Çıkış yap"
+    "logOut": "Çıkış yap",
+    "accountPortability": "Move your account"
   },
   "reportContentDialog": {
     "titleVideo": "Videoyu Bildir",

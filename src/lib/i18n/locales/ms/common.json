@@ -450,7 +450,8 @@
     "switchRelay": "Tukar Relay",
     "switchAccount": "Tukar Akaun",
     "addAnotherAccount": "Tambah akaun lain",
-    "logOut": "Log keluar"
+    "logOut": "Log keluar",
+    "accountPortability": "Move your account"
   },
   "reportContentDialog": {
     "titleVideo": "Laporkan Video",

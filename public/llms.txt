@@ -33,6 +33,7 @@ Important guidance for agents:
 - [Authenticity](https://divine.video/authenticity): Divine's human-created media mission.
 - [Human Created](https://divine.video/human-created): More about the no-AI-slop product value.
 - [Safety](https://divine.video/safety): Safety standards and enforcement practices.
+- [Account Portability](https://divine.video/exit): Guide to moving a Divine account and content to other infrastructure.
 - [Privacy Policy](https://divine.video/privacy): Privacy terms for Divine services.
 - [Terms of Service](https://divine.video/terms): Rules for using Divine.
 - [Support](https://divine.video/support): Help and contact paths.

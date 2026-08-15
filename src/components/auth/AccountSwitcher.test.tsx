@@ -169,6 +169,16 @@ describe('AccountSwitcher', () => {
     );
   });
 
+  it('links account settings to the account portability entry point', async () => {
+    const user = userEvent.setup();
+
+    render(<AccountSwitcher onAddAccountClick={vi.fn()} />);
+
+    await user.click(screen.getByRole('button', { name: /Move your account/i }));
+
+    expect(mockNavigate).toHaveBeenCalledWith('/exit');
+  });
+
   describe('nsec backup banner mounting (#182)', () => {
     beforeEach(() => {
       mockUseNostrLogin.mockReturnValue({ logins: [LOCAL_NSEC_LOGIN] });

@@ -450,7 +450,8 @@
     "switchRelay": "Relay wisselen",
     "switchAccount": "Account wisselen",
     "addAnotherAccount": "Nog een account toevoegen",
-    "logOut": "Uitloggen"
+    "logOut": "Uitloggen",
+    "accountPortability": "Move your account"
   },
   "reportContentDialog": {
     "titleVideo": "Video melden",

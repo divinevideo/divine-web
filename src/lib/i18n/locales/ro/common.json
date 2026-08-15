@@ -450,7 +450,8 @@
     "switchRelay": "Schimbă releul",
     "switchAccount": "Schimbă contul",
     "addAnotherAccount": "Adaugă alt cont",
-    "logOut": "Deconectează-te"
+    "logOut": "Deconectează-te",
+    "accountPortability": "Move your account"
   },
   "reportContentDialog": {
     "titleVideo": "Raportează videoclipul",

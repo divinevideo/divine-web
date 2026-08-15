@@ -214,6 +214,10 @@ export const API_CONFIG = {
     },
   },
 
+  accountPortability: {
+    url: import.meta.env.VITE_ACCOUNT_PORTABILITY_URL || '/exit',
+  },
+
   // Feature flags (can be overridden via localStorage for debugging)
   features: {
     // Use Funnelcake API when available (default: true)

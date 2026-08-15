@@ -450,7 +450,8 @@
     "switchRelay": "Lumipat ng Relay",
     "switchAccount": "Lumipat ng Account",
     "addAnotherAccount": "Magdagdag ng account",
-    "logOut": "Mag-log out"
+    "logOut": "Mag-log out",
+    "accountPortability": "Move your account"
   },
   "reportContentDialog": {
     "titleVideo": "I-report ang Video",

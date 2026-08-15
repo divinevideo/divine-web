@@ -450,7 +450,8 @@
     "switchRelay": "Relay 전환",
     "switchAccount": "계정 전환",
     "addAnotherAccount": "다른 계정 추가",
-    "logOut": "로그아웃"
+    "logOut": "로그아웃",
+    "accountPortability": "Move your account"
   },
   "reportContentDialog": {
     "titleVideo": "비디오 신고",

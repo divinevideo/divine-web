@@ -450,7 +450,8 @@
     "switchRelay": "Byt relä",
     "switchAccount": "Byt konto",
     "addAnotherAccount": "Lägg till ett annat konto",
-    "logOut": "Logga ut"
+    "logOut": "Logga ut",
+    "accountPortability": "Move your account"
   },
   "reportContentDialog": {
     "titleVideo": "Rapportera video",

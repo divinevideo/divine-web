@@ -450,7 +450,8 @@
     "switchRelay": "ریلے بدلیں",
     "switchAccount": "اکاؤنٹ بدلیں",
     "addAnotherAccount": "ایک اور اکاؤنٹ شامل کریں",
-    "logOut": "لاگ آؤٹ"
+    "logOut": "لاگ آؤٹ",
+    "accountPortability": "Move your account"
   },
   "reportContentDialog": {
     "titleVideo": "ویڈیو رپورٹ کریں",

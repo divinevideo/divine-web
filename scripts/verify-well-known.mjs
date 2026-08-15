@@ -36,6 +36,10 @@ for (const requiredPath of requiredPaths) {
   }
 }
 
+if (declaredPaths.has('/exit') || declaredPaths.has('/exit/*')) {
+  throw new Error('apple-app-site-association must not claim /exit for mobile universal links');
+}
+
 const assetlinks = JSON.parse(
   await readFile(requiredFiles[1], 'utf8'),
 );

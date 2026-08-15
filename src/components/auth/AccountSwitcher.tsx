@@ -1,7 +1,7 @@
 // NOTE: This file is stable and usually should not be modified.
 // It is important that all functionality in this file is preserved, and should only be modified if explicitly requested.
 
-import { CaretDown as ChevronDown, SignOut as LogOut, User as UserIcon, UserPlus, User, Gear as Settings, LinkSimple as Link2, CloudArrowUp as Server } from '@phosphor-icons/react';
+import { CaretDown as ChevronDown, SignOut as LogOut, User as UserIcon, UserPlus, User, Gear as Settings, LinkSimple as Link2, CloudArrowUp as Server, Export } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { nip19 } from 'nostr-tools';
@@ -23,6 +23,7 @@ import { genUserName } from '@/lib/genUserName';
 import { getSafeProfileImage } from '@/lib/imageUtils';
 import { getActiveLocalNsecLogin } from '@/lib/localNsecAccount';
 import { OVERLAY_LAYERS } from '@/lib/overlayLayers';
+import { API_CONFIG } from '@/config/api';
 import { RelaySelector } from '@/components/RelaySelector';
 import { LocalNsecBanner } from './LocalNsecBanner';
 
@@ -49,6 +50,16 @@ export function AccountSwitcher({ onAddAccountClick }: AccountSwitcherProps) {
   const handleMyProfileClick = () => {
     const npub = nip19.npubEncode(currentUser.pubkey);
     navigate(`/profile/${npub}`);
+  };
+
+  const handleAccountPortabilityClick = () => {
+    const url = API_CONFIG.accountPortability.url;
+    if (url.startsWith('/')) {
+      navigate(url);
+      return;
+    }
+
+    window.open(url, '_blank', 'noopener,noreferrer');
   };
 
   const handleLogout = () => {
@@ -110,6 +121,13 @@ export function AccountSwitcher({ onAddAccountClick }: AccountSwitcherProps) {
           >
             <Server className='w-4 h-4' />
             <span>{t('accountSwitcher.relays', 'Relays')}</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={handleAccountPortabilityClick}
+            className='flex items-center gap-2 cursor-pointer p-2 rounded-md'
+          >
+            <Export className='w-4 h-4' />
+            <span>{t('accountSwitcher.accountPortability', 'Move your account')}</span>
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuLabel>{t('accountSwitcher.switchRelay')}</DropdownMenuLabel>

@@ -194,7 +194,7 @@ export function SafetyPage() {
           </section>
 
           {/* 13. Appeals */}
-          <section>
+          <section id="appeals" className="scroll-mt-24">
             <h2 className="text-2xl font-extrabold text-foreground mb-3">{t('sections.appeals')}</h2>
             <p>
               Divine may, but is not obligated to, review requests to reconsider moderation decisions.

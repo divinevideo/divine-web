@@ -450,7 +450,8 @@
     "switchRelay": "リレーを切り替え",
     "switchAccount": "アカウントを切り替え",
     "addAnotherAccount": "別のアカウントを追加",
-    "logOut": "ログアウト"
+    "logOut": "ログアウト",
+    "accountPortability": "Move your account"
   },
   "reportContentDialog": {
     "titleVideo": "動画を報告",

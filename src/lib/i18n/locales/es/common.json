@@ -450,7 +450,8 @@
     "switchRelay": "Cambiar relay",
     "switchAccount": "Cambiar cuenta",
     "addAnotherAccount": "Añadir otra cuenta",
-    "logOut": "Cerrar sesión"
+    "logOut": "Cerrar sesión",
+    "accountPortability": "Move your account"
   },
   "reportContentDialog": {
     "titleVideo": "Reportar video",

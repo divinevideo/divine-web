@@ -470,7 +470,8 @@
     "switchRelay": "تبديل المُرحِّل",
     "switchAccount": "تبديل الحساب",
     "addAnotherAccount": "إضافة حساب آخر",
-    "logOut": "تسجيل الخروج"
+    "logOut": "تسجيل الخروج",
+    "accountPortability": "Move your account"
   },
   "reportContentDialog": {
     "titleVideo": "الإبلاغ عن فيديو",

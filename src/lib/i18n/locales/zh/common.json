@@ -450,7 +450,8 @@
     "switchRelay": "切换 Relay",
     "switchAccount": "切换账号",
     "addAnotherAccount": "添加另一个账号",
-    "logOut": "退出登录"
+    "logOut": "退出登录",
+    "accountPortability": "Move your account"
   },
   "reportContentDialog": {
     "titleVideo": "举报视频",
