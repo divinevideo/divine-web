@@ -318,6 +318,50 @@ describe('useVideoByIdFunnelcake', () => {
     expect(result.current.fetchedCount).toBe(3);
   });
 
+  it('deduplicates videos that repeat across paginated pages', async () => {
+    // A publish/delete between page fetches can shift a row across the offset
+    // boundary, so the same addressable video can appear on two pages.
+    mockFetchUserVideos
+      .mockResolvedValueOnce({
+        videos: [
+          { id: 'target-video', pubkey: 'p'.repeat(64), d_tag: 'target-video' },
+          { id: 'neighbor-1', pubkey: 'p'.repeat(64), d_tag: 'neighbor-1' },
+        ],
+        has_more: true,
+        next_cursor: '52',
+      })
+      .mockResolvedValueOnce({
+        videos: [
+          { id: 'neighbor-1', pubkey: 'p'.repeat(64), d_tag: 'neighbor-1' },
+          { id: 'neighbor-2', pubkey: 'p'.repeat(64), d_tag: 'neighbor-2' },
+        ],
+        has_more: false,
+      });
+
+    const { result } = renderHook(
+      () => useVideoByIdFunnelcake({
+        videoId: 'target-video',
+        pubkey: 'p'.repeat(64),
+        currentIndex: 44,
+      }),
+      { wrapper: createWrapper() }
+    );
+
+    await waitFor(() => {
+      expect(result.current.hasNextPage).toBe(true);
+    });
+
+    await result.current.fetchNextPage();
+
+    await waitFor(() => {
+      expect(result.current.videos?.map(video => video.id)).toEqual([
+        'target-video',
+        'neighbor-1',
+        'neighbor-2',
+      ]);
+    });
+  });
+
   it('exposes pagination for hashtag and search navigation contexts', async () => {
     mockSearchVideos
       .mockResolvedValueOnce({

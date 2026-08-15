@@ -51,6 +51,29 @@ interface VideoNavigationPage {
   hasMore: boolean;
 }
 
+/**
+ * Flatten infinite-query pages into one navigation list, dropping any row that
+ * repeats across the page boundary. Offset pagination can shift a video onto two
+ * consecutive pages when a publish/delete lands between fetches, so a plain
+ * flatMap yields duplicate cards (and duplicate React keys). Keyed by the
+ * addressable coordinate (pubkey:kind:d-tag), matching the per-response dedup in
+ * transformFunnelcakeResponse.
+ */
+function flattenUniqueVideos(pages?: VideoNavigationPage[]): ParsedVideoData[] | null {
+  if (!pages) return null;
+  const seen = new Set<string>();
+  const videos: ParsedVideoData[] = [];
+  for (const page of pages) {
+    for (const video of page.videos) {
+      const key = `${video.pubkey}:${video.kind}:${video.vineId || video.id}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      videos.push(video);
+    }
+  }
+  return videos;
+}
+
 function getNavigationWindowOffset(currentIndex?: number): number {
   if (currentIndex === undefined || currentIndex < 0) {
     return 0;
@@ -219,19 +242,19 @@ export function useVideoByIdFunnelcake(options: UseVideoByIdOptions): UseVideoBy
     [searchVideosQuery.data, blockedPubkeys]
   );
   const userVideos = useMemo(
-    () => filteredUserVideosData?.pages.flatMap((page) => page.videos) ?? null,
+    () => flattenUniqueVideos(filteredUserVideosData?.pages),
     [filteredUserVideosData]
   );
   const hashtagVideos = useMemo(
-    () => filteredHashtagVideosData?.pages.flatMap((page) => page.videos) ?? null,
+    () => flattenUniqueVideos(filteredHashtagVideosData?.pages),
     [filteredHashtagVideosData]
   );
   const searchVideosForContext = useMemo(
-    () => filteredSearchVideosData?.pages.flatMap((page) => page.videos) ?? null,
+    () => flattenUniqueVideos(filteredSearchVideosData?.pages),
     [filteredSearchVideosData]
   );
   const featuredVideos = useMemo(
-    () => filteredFeaturedVideosData?.pages.flatMap((page) => page.videos) ?? null,
+    () => flattenUniqueVideos(filteredFeaturedVideosData?.pages),
     [filteredFeaturedVideosData]
   );
   const featuredContextVideo = featuredVideos?.find(v => v.id === videoId || v.vineId === videoId) || null;
@@ -346,30 +369,26 @@ export function useVideoByIdFunnelcake(options: UseVideoByIdOptions): UseVideoBy
       if (pubkey) {
         if (!userVideosQuery.hasNextPage) return userVideos;
         const result = await userVideosQuery.fetchNextPage();
-        return filterBlockedVideoPages(result.data, blockedPubkeys)
-          ?.pages.flatMap((page) => page.videos) ?? userVideos;
+        return flattenUniqueVideos(filterBlockedVideoPages(result.data, blockedPubkeys)?.pages) ?? userVideos;
       }
 
       if (hashtag) {
         if (!hashtagVideosQuery.hasNextPage) return hashtagVideos;
         const result = await hashtagVideosQuery.fetchNextPage();
-        return filterBlockedVideoPages(result.data, blockedPubkeys)
-          ?.pages.flatMap((page) => page.videos) ?? hashtagVideos;
+        return flattenUniqueVideos(filterBlockedVideoPages(result.data, blockedPubkeys)?.pages) ?? hashtagVideos;
       }
 
       if (searchValue) {
         if (!searchVideosQuery.hasNextPage) return searchVideosForContext;
         const result = await searchVideosQuery.fetchNextPage();
-        return filterBlockedVideoPages(result.data, blockedPubkeys)
-          ?.pages.flatMap((page) => page.videos) ?? searchVideosForContext;
+        return flattenUniqueVideos(filterBlockedVideoPages(result.data, blockedPubkeys)?.pages) ?? searchVideosForContext;
       }
 
       if (!eligibleFeaturedTabId || !featuredHasNextPage) return featuredVideos;
 
       const startCount = featuredVideos?.length ?? 0;
       let result = await fetchNextFeaturedPage();
-      let visible = filterBlockedVideoPages(result.data, blockedPubkeys)
-        ?.pages.flatMap((page) => page.videos) ?? featuredVideos;
+      let visible = flattenUniqueVideos(filterBlockedVideoPages(result.data, blockedPubkeys)?.pages) ?? featuredVideos;
       let loadedPages = result.data?.pages.length ?? 0;
 
       // A featured page can be entirely blocked/muted authors; filtered to
@@ -388,8 +407,7 @@ export function useVideoByIdFunnelcake(options: UseVideoByIdOptions): UseVideoBy
         const nextLoadedPages = result.data?.pages.length ?? 0;
         if (nextLoadedPages <= loadedPages) break;
         loadedPages = nextLoadedPages;
-        visible = filterBlockedVideoPages(result.data, blockedPubkeys)
-          ?.pages.flatMap((page) => page.videos) ?? visible;
+        visible = flattenUniqueVideos(filterBlockedVideoPages(result.data, blockedPubkeys)?.pages) ?? visible;
         skipped += 1;
       }
 
