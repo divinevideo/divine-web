@@ -69,6 +69,9 @@ vi.mock('@/components/FullscreenFeed', () => ({
 
     return (
       <div>
+        <button type="button" onClick={() => onVideoChange?.('video-1')}>
+          report video 1
+        </button>
         <button type="button" onClick={() => onVideoChange?.('video-2')}>
           report video 2
         </button>
@@ -102,12 +105,17 @@ describe('AppLayout', () => {
     window.history.replaceState = originalReplaceState;
   });
 
-  it('does not rewrite the url when the compilation active video is already current', () => {
-    const replaceStateSpy = vi.fn();
+  it('does not rewrite the url when the compilation active video is already current', async () => {
+    const user = userEvent.setup();
+    const replaceStateSpy = vi.fn(originalReplaceState.bind(window.history));
     window.history.replaceState = replaceStateSpy;
 
     renderLayout('/search?q=x&play=compilation&video=video-1');
     replaceStateSpy.mockClear();
+
+    // Re-report the already-current video: the handler must no-op rather than
+    // rewrite the identical URL (the replaceState loop this fix prevents).
+    await user.click(screen.getByRole('button', { name: 'report video 1' }));
 
     expect(replaceStateSpy).not.toHaveBeenCalled();
   });
