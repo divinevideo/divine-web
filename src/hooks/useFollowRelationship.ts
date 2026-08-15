@@ -15,6 +15,8 @@ import { debugLog } from '@/lib/debug';
 import { latestEvent } from '@/lib/nostrEvents';
 import type { NostrEvent } from '@nostrify/nostrify';
 import { PRIMARY_RELAY } from '@/config/relays';
+import { getExplicitBlockedPubkeys } from '@/lib/blockProvenance';
+import { MUTE_LIST_KIND } from '@/types/moderation';
 
 /** Thrown when a follow request races with stale UI state. */
 export class FollowRaceError extends Error {
@@ -50,7 +52,7 @@ interface UnfollowUserParams {
 
 type NostrClient = ReturnType<typeof useNostr>['nostr'];
 
-async function fetchAndSelectContactList(
+export async function fetchAndSelectContactList(
   nostr: NostrClient,
   userPubkey: string,
   currentContactList: NostrEvent | null,
@@ -111,6 +113,28 @@ async function fetchAndSelectContactList(
     debugLog(`[${logPrefix}] Failed to fetch latest Kind 3 from relay:`, error);
     throw new ContactListUnavailableError();
   }
+}
+
+function filterExplicitBlockedContactTags(tags: string[][], blockedPubkeys: ReadonlySet<string>): string[][] {
+  if (blockedPubkeys.size === 0) return tags;
+  return tags.filter(tag => !(tag[0] === 'p' && tag[1] && blockedPubkeys.has(tag[1])));
+}
+
+async function fetchExplicitBlockedPubkeysForPublish(
+  nostr: NostrClient,
+  userPubkey: string,
+): Promise<Set<string>> {
+  const signal = AbortSignal.timeout(5000);
+  const events = await nostr.query([{
+    kinds: [MUTE_LIST_KIND],
+    authors: [userPubkey],
+    limit: 1,
+  }], { signal });
+  const latestMuteList = latestEvent(events.filter(event => event.kind === MUTE_LIST_KIND));
+  const mutedPubkeys = latestMuteList?.tags
+    .filter(tag => tag[0] === 'p' && tag[1])
+    .map(tag => tag[1]) ?? [];
+  return getExplicitBlockedPubkeys(userPubkey, mutedPubkeys);
 }
 
 /**
@@ -236,7 +260,9 @@ export function useFollowUser() {
       // Add new follow tag
       // Format: ['p', pubkey, relayUrl, petname]
       const newFollowTag = ['p', targetPubkey, '', targetDisplayName || ''];
-      const updatedTags = [...currentTags, newFollowTag];
+      const explicitBlocked = await fetchExplicitBlockedPubkeysForPublish(nostr, user.pubkey);
+      explicitBlocked.delete(targetPubkey);
+      const updatedTags = filterExplicitBlockedContactTags([...currentTags, newFollowTag], explicitBlocked);
 
       // Preserve relay information from existing contact list or use default
       const relayContent = bestContactList?.content || JSON.stringify({
@@ -300,7 +326,8 @@ export function useUnfollowUser() {
       if (!bestContactList) throw new Error('No contact list to update');
 
       // Remove the target user from tags
-      const updatedTags = bestContactList.tags.filter(tag =>
+      const explicitBlocked = await fetchExplicitBlockedPubkeysForPublish(nostr, user.pubkey);
+      const updatedTags = filterExplicitBlockedContactTags(bestContactList.tags, explicitBlocked).filter(tag =>
         !(tag[0] === 'p' && tag[1] === targetPubkey)
       );
 

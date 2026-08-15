@@ -10,10 +10,14 @@ const {
   mockToast,
   mockNostrQuery,
   mockInvalidateQueries,
+  mockMuteList,
+  mockBlockedPubkeys,
 } = vi.hoisted(() => ({
   mockToast: vi.fn(),
   mockNostrQuery: vi.fn(),
   mockInvalidateQueries: vi.fn(),
+  mockMuteList: [] as Array<{ type: string; value: string; reason?: string; createdAt: number }>,
+  mockBlockedPubkeys: new Set<string>(),
 }));
 
 vi.mock('@/hooks/useCurrentUser', () => ({
@@ -24,7 +28,7 @@ vi.mock('@/hooks/useCurrentUser', () => ({
 
 vi.mock('@/hooks/useModeration', () => ({
   useMuteList: () => ({
-    data: [],
+    data: mockMuteList,
     isLoading: false,
   }),
   useMuteItem: () => ({
@@ -37,6 +41,15 @@ vi.mock('@/hooks/useModeration', () => ({
   }),
   useReportHistory: () => ({
     data: [],
+  }),
+  MUTE_LIST_KIND: 10000,
+}));
+
+vi.mock('@/hooks/useBlockList', () => ({
+  useBlockedPubkeys: () => mockBlockedPubkeys,
+  useUnblockUser: () => ({
+    mutateAsync: vi.fn(),
+    isPending: false,
   }),
 }));
 
@@ -162,6 +175,8 @@ function renderPage() {
 describe('ModerationSettingsPage', () => {
   beforeEach(async () => {
     vi.clearAllMocks();
+    mockMuteList.length = 0;
+    mockBlockedPubkeys.clear();
     installLocalStorageMock();
     localStorage.clear();
     mockNostrQuery.mockResolvedValue([]);
@@ -193,5 +208,18 @@ describe('ModerationSettingsPage', () => {
 
     expect(screen.getByText('https://api.staging.divine.video')).toBeInTheDocument();
     expect(mockInvalidateQueries).toHaveBeenCalled();
+  });
+
+  it('splits explicit blocked users out of the muted users card', async () => {
+    mockMuteList.push(
+      { type: 'p', value: 'a'.repeat(64), createdAt: 1 },
+      { type: 'p', value: 'b'.repeat(64), createdAt: 1 },
+    );
+    mockBlockedPubkeys.add('a'.repeat(64));
+
+    renderPage();
+
+    expect(screen.getByRole('heading', { name: /blocked users \(1\)/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /muted users \(1\)/i })).toBeInTheDocument();
   });
 });

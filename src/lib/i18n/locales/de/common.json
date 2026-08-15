@@ -396,7 +396,19 @@
     "originalVineLoops": "Originale Vine-Loops",
     "classicVines": "Classic Vines",
     "classicVineStatsCaption": "Statistik von der originalen Vine-Plattform (2013-2017)",
-    "legacySocialLabel": "{{label}}: {{handle}}"
+    "legacySocialLabel": "{{label}}: {{handle}}",
+    "blockUser": "Block user",
+    "unblockUser": "Unblock user",
+    "blockDialogTitle": "Block this user?",
+    "blockDialogDescription": "{{name}} will be removed from your following list, and their videos will stay out of your feeds.",
+    "unblockDialogTitle": "Unblock this user?",
+    "unblockDialogDescription": "This will unhide {{name}}'s videos, but it won't follow them again.",
+    "blockedTitle": "Blocked.",
+    "blockedDescription": "They're off your following list and out of your feeds.",
+    "unblockedTitle": "Unblocked.",
+    "unblockedDescription": "Their videos can show up again. You're not following them.",
+    "cancel": "Cancel",
+    "blockFailedDescription": "Failed to block. Please try again."
   },
   "loginDialog": {
     "title": "Bei Divine anmelden",
@@ -601,7 +613,17 @@
     "toastUnmutedDescription": "Aus der Mute-Liste entfernt",
     "toastUnmuteFailed": "Stummschaltung konnte nicht aufgehoben werden. Bitte nochmal versuchen.",
     "toastFunnelcakeUpdatedTitle": "Funnelcake-API aktualisiert",
-    "toastFunnelcakeUpdatedDescription": "{{url}} wird für künftige REST-Reads genutzt."
+    "toastFunnelcakeUpdatedDescription": "{{url}} wird für künftige REST-Reads genutzt.",
+    "unblock": "Unblock",
+    "statusUsersBlockedSuffix": "users blocked",
+    "blockedUsersTitle_one": "Blocked Users ({{count}})",
+    "blockedUsersTitle_other": "Blocked Users ({{count}})",
+    "blockedUsersDescription": "Blocked users are removed from your public following list. Unblocking also un-hides their videos, but it does not follow them again.",
+    "mutedUsersDescription": "Muted users stay hidden from your feeds without changing who you follow.",
+    "noBlockedUsers": "No blocked users.",
+    "toastUnblockedTitle": "Unblocked",
+    "toastUnblockedDescription": "Removed from blocked users. Their videos can show up again.",
+    "toastUnblockFailed": "Failed to unblock. Please try again."
   },
   "linkedAccountsSettings": {
     "copy": "Kopieren",

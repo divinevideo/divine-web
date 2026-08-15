@@ -7,6 +7,8 @@ import { FollowRaceError } from './useFollowRelationship';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
 import type { NostrEvent } from '@nostrify/nostrify';
+import { addBlockProvenance } from '@/lib/blockProvenance';
+import { MUTE_LIST_KIND } from '@/types/moderation';
 
 // Mock debug module
 vi.mock('@/lib/debug', () => ({
@@ -89,9 +91,41 @@ function makeContactListEvent(
   };
 }
 
+function makeMuteListEvent(pubkeys: string[]): NostrEvent {
+  return {
+    id: 'mute-list',
+    pubkey: mockUserPubkey,
+    created_at: 1,
+    kind: MUTE_LIST_KIND,
+    tags: pubkeys.map(pubkey => ['p', pubkey]),
+    content: '',
+    sig: 'fake-sig',
+  };
+}
+
+function installLocalStorageMock() {
+  const storage = new Map<string, string>();
+  Object.defineProperty(window, 'localStorage', {
+    configurable: true,
+    value: {
+      getItem: (key: string) => storage.get(key) ?? null,
+      setItem: (key: string, value: string) => {
+        storage.set(key, value);
+      },
+      removeItem: (key: string) => {
+        storage.delete(key);
+      },
+      clear: () => {
+        storage.clear();
+      },
+    } satisfies Pick<Storage, 'getItem' | 'setItem' | 'removeItem' | 'clear'>,
+  });
+}
+
 describe('useFollowUser - follow list overwrite protection', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    installLocalStorageMock();
     mockPublishEvent.mockResolvedValue({ id: 'new-event-id' });
     mockNostrReq.mockImplementation(async function* () {
       const events = await mockNostrQuery();
@@ -411,11 +445,69 @@ describe('useFollowUser - follow list overwrite protection', () => {
 
     expect(mockPublishEvent).not.toHaveBeenCalled();
   });
+
+  it('strips explicit blocked pubkeys from kind 3 when following someone else', async () => {
+    const blockedPubkey = 'c'.repeat(64);
+    const keptPubkey = 'b'.repeat(64);
+    addBlockProvenance(mockUserPubkey, blockedPubkey);
+    mockNostrQuery.mockResolvedValue([makeMuteListEvent([blockedPubkey])]);
+    mockNostrReq.mockImplementation(async function* () {
+      yield ['EVENT', 'subscription', makeContactListEvent([blockedPubkey, keptPubkey])];
+      yield ['EOSE', 'subscription'];
+    });
+
+    const { useFollowUser } = await import('./useFollowRelationship');
+    const { result } = renderHook(() => useFollowUser(), { wrapper: createWrapper() });
+
+    await act(async () => {
+      await result.current.mutateAsync({
+        targetPubkey: mockTargetPubkey,
+        currentContactList: null,
+        targetDisplayName: 'Test User',
+      });
+    });
+
+    expect(mockNostrQuery).toHaveBeenCalledWith(
+      expect.arrayContaining([expect.objectContaining({ kinds: [MUTE_LIST_KIND] })]),
+      expect.any(Object),
+    );
+    const followedPubkeys = mockPublishEvent.mock.calls[0][0].tags
+      .filter((tag: string[]) => tag[0] === 'p')
+      .map((tag: string[]) => tag[1]);
+    expect(followedPubkeys).toEqual([keptPubkey, mockTargetPubkey]);
+    expect(followedPubkeys).not.toContain(blockedPubkey);
+  });
+
+  it('does not strip pubkeys without own explicit block provenance', async () => {
+    const thirdPartyBlocker = 'c'.repeat(64);
+    mockNostrQuery.mockResolvedValue([]);
+    mockNostrReq.mockImplementation(async function* () {
+      yield ['EVENT', 'subscription', makeContactListEvent([thirdPartyBlocker])];
+      yield ['EOSE', 'subscription'];
+    });
+
+    const { useFollowUser } = await import('./useFollowRelationship');
+    const { result } = renderHook(() => useFollowUser(), { wrapper: createWrapper() });
+
+    await act(async () => {
+      await result.current.mutateAsync({
+        targetPubkey: mockTargetPubkey,
+        currentContactList: null,
+        targetDisplayName: 'Test User',
+      });
+    });
+
+    const followedPubkeys = mockPublishEvent.mock.calls[0][0].tags
+      .filter((tag: string[]) => tag[0] === 'p')
+      .map((tag: string[]) => tag[1]);
+    expect(followedPubkeys).toEqual([thirdPartyBlocker, mockTargetPubkey]);
+  });
 });
 
 describe('useUnfollowUser - follow list overwrite protection', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    installLocalStorageMock();
     mockPublishEvent.mockResolvedValue({ id: 'new-event-id' });
     mockNostrReq.mockImplementation(async function* () {
       const events = await mockNostrQuery();
@@ -456,6 +548,39 @@ describe('useUnfollowUser - follow list overwrite protection', () => {
 
     expect(followedPubkeys).toEqual([keptPubkey]);
     expect(followedPubkeys).not.toContain(removedElsewhere);
+    expect(followedPubkeys).not.toContain(targetToUnfollow);
+  });
+
+  it('strips explicit blocked pubkeys from kind 3 when unfollowing someone else', async () => {
+    const targetToUnfollow = mockTargetPubkey;
+    const blockedPubkey = 'c'.repeat(64);
+    const keptPubkey = 'b'.repeat(64);
+    addBlockProvenance(mockUserPubkey, blockedPubkey);
+    mockNostrQuery.mockResolvedValue([makeMuteListEvent([blockedPubkey])]);
+    mockNostrReq.mockImplementation(async function* () {
+      yield ['EVENT', 'subscription', makeContactListEvent([targetToUnfollow, blockedPubkey, keptPubkey])];
+      yield ['EOSE', 'subscription'];
+    });
+
+    const { useUnfollowUser } = await import('./useFollowRelationship');
+    const { result } = renderHook(() => useUnfollowUser(), { wrapper: createWrapper() });
+
+    await act(async () => {
+      await result.current.mutateAsync({
+        targetPubkey: targetToUnfollow,
+        currentContactList: null,
+      });
+    });
+
+    expect(mockNostrQuery).toHaveBeenCalledWith(
+      expect.arrayContaining([expect.objectContaining({ kinds: [MUTE_LIST_KIND] })]),
+      expect.any(Object),
+    );
+    const followedPubkeys = mockPublishEvent.mock.calls[0][0].tags
+      .filter((tag: string[]) => tag[0] === 'p')
+      .map((tag: string[]) => tag[1]);
+    expect(followedPubkeys).toEqual([keptPubkey]);
+    expect(followedPubkeys).not.toContain(blockedPubkey);
     expect(followedPubkeys).not.toContain(targetToUnfollow);
   });
 

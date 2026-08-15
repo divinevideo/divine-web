@@ -16,7 +16,17 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { UserPlus, UserCheck, CheckCircle, PencilSimple as Pencil, Copy, DotsThreeVertical as MoreVertical, Flag, Play, Repeat, CircleNotch as Loader2, XCircle, LinkSimple as Link2, Code, Rss } from '@phosphor-icons/react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { UserPlus, UserCheck, CheckCircle, PencilSimple as Pencil, Copy, DotsThreeVertical as MoreVertical, Flag, Play, Repeat, CircleNotch as Loader2, XCircle, LinkSimple as Link2, Code, Rss, Prohibit } from '@phosphor-icons/react';
 import { useNavigate } from 'react-router-dom';
 import { feedUrls } from '@/lib/feedUrls';
 import { useRssFeedAvailable } from '@/hooks/useRssFeedAvailable';
@@ -30,6 +40,7 @@ import { useFollowing } from '@/hooks/useFollowing';
 import { useBadges } from '@/hooks/useBadges';
 import { useDmCapability } from '@/hooks/useDirectMessages';
 import { useSubdomainNavigate } from '@/hooks/useSubdomainNavigate';
+import { useBlockedPubkeys, useBlockUser, useUnblockUser } from '@/hooks/useBlockList';
 import { ProfileBadges } from '@/components/ProfileBadges';
 import { getSafeProfileImage } from '@/lib/imageUtils';
 import { genUserName } from '@/lib/genUserName';
@@ -104,6 +115,8 @@ export function ProfileHeader({
   const subdomainNavigate = useSubdomainNavigate();
   const rssFeedAvailable = useRssFeedAvailable();
   const [showReportDialog, setShowReportDialog] = useState(false);
+  const [showBlockDialog, setShowBlockDialog] = useState(false);
+  const [showUnblockDialog, setShowUnblockDialog] = useState(false);
   const [userListDialog, setUserListDialog] = useState<'followers' | 'following' | null>(null);
   const { canUseDirectMessages } = useDmCapability();
   // Hide every non-Support compose affordance. Support still flows through the
@@ -136,9 +149,52 @@ export function ProfileHeader({
   const website = metadata?.website;
   const websiteHref = normalizeExternalUrl(website);
   const websiteLabel = website?.trim();
+  const blockedPubkeys = useBlockedPubkeys();
+  const isBlocked = blockedPubkeys.has(pubkey);
+  const blockUser = useBlockUser();
+  const unblockUser = useUnblockUser();
+  const isBlockPending = blockUser.isPending || unblockUser.isPending;
 
   const handleFollowClick = () => {
+    if (isBlocked) {
+      setShowUnblockDialog(true);
+      return;
+    }
     onFollowToggle(!isFollowing);
+  };
+
+  const handleBlock = async () => {
+    try {
+      await blockUser.mutateAsync({ targetPubkey: pubkey });
+      setShowBlockDialog(false);
+      toast({
+        title: t('profileHeader.blockedTitle'),
+        description: t('profileHeader.blockedDescription'),
+      });
+    } catch {
+      toast({
+        title: t('moderationSettings.toastErrorTitle'),
+        description: t('profileHeader.blockFailedDescription'),
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleUnblock = async () => {
+    try {
+      await unblockUser.mutateAsync({ targetPubkey: pubkey });
+      setShowUnblockDialog(false);
+      toast({
+        title: t('profileHeader.unblockedTitle'),
+        description: t('profileHeader.unblockedDescription'),
+      });
+    } catch {
+      toast({
+        title: t('moderationSettings.toastErrorTitle'),
+        description: t('moderationSettings.toastUnblockFailed'),
+        variant: 'destructive',
+      });
+    }
   };
 
   const handleCopyNpub = async () => {
@@ -339,12 +395,12 @@ export function ProfileHeader({
           <div className="flex-shrink-0 self-center sm:self-start flex gap-2">
             <Button
               onClick={handleFollowClick}
-              variant={isFollowing ? "outline" : "sticker"}
+              variant={isFollowing && !isBlocked ? "outline" : "sticker"}
               size="sm"
               className="min-w-[100px]"
               data-testid="follow-button"
             >
-              {isFollowing ? (
+              {isFollowing && !isBlocked ? (
                 <>
                   <UserCheck className="w-4 h-4 mr-2" weight="fill" />
                   {t('profileHeader.following')}
@@ -375,6 +431,13 @@ export function ProfileHeader({
                 <DropdownMenuItem onClick={() => navigate(`/get-embed?npub=${nip19.npubEncode(pubkey)}`)}>
                   <Code className="h-4 w-4 mr-2" />
                   {t('profileHeader.getEmbedCode')}
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => isBlocked ? setShowUnblockDialog(true) : setShowBlockDialog(true)}
+                  disabled={isBlockPending}
+                >
+                  <Prohibit className="h-4 w-4 mr-2" />
+                  {isBlocked ? t('profileHeader.unblockUser') : t('profileHeader.blockUser')}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setShowReportDialog(true)}>
                   <Flag className="h-4 w-4 mr-2" />
@@ -526,6 +589,44 @@ export function ProfileHeader({
           contentType="user"
         />
       )}
+
+      <AlertDialog open={showBlockDialog} onOpenChange={setShowBlockDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('profileHeader.blockDialogTitle')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('profileHeader.blockDialogDescription', { name: displayName })}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isBlockPending}>
+              {t('profileHeader.cancel')}
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={handleBlock} disabled={isBlockPending}>
+              {t('profileHeader.blockUser')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={showUnblockDialog} onOpenChange={setShowUnblockDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('profileHeader.unblockDialogTitle')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('profileHeader.unblockDialogDescription', { name: displayName })}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isBlockPending}>
+              {t('profileHeader.cancel')}
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={handleUnblock} disabled={isBlockPending}>
+              {t('profileHeader.unblockUser')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Followers / Following Dialog */}
       <UserListDialog

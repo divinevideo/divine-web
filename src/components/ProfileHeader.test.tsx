@@ -33,6 +33,7 @@ const pm = vi.hoisted(() => ({
   state: 'not_protected' as 'protected' | 'not_protected' | 'unknown',
   canUseDirectMessages: false,
   approved: new Set<string>(),
+  blocked: new Set<string>(),
 }));
 
 vi.mock('@/hooks/useProtectedMinorStatus', () => ({
@@ -77,6 +78,18 @@ vi.mock('@/hooks/useSubdomainNavigate', () => ({
   useSubdomainNavigate: () => vi.fn(),
 }));
 
+vi.mock('@/hooks/useBlockList', () => ({
+  useBlockedPubkeys: () => pm.blocked,
+  useBlockUser: () => ({
+    mutateAsync: vi.fn(),
+    isPending: false,
+  }),
+  useUnblockUser: () => ({
+    mutateAsync: vi.fn(),
+    isPending: false,
+  }),
+}));
+
 vi.mock('@/hooks/useNip05Validation', () => ({
   useNip05Validation: () => ({ state: 'valid' }),
 }));
@@ -108,6 +121,7 @@ describe('ProfileHeader', () => {
     pm.state = 'not_protected';
     pm.canUseDirectMessages = false;
     pm.approved.clear();
+    pm.blocked.clear();
     const storage = new Map<string, string>();
     Object.defineProperty(window, 'localStorage', {
       configurable: true,
@@ -211,6 +225,27 @@ describe('ProfileHeader', () => {
     expect(screen.getByText('Followers')).toBeInTheDocument();
     expect(screen.getByText('Following')).toBeInTheDocument();
     expect(screen.getByText('Divine Loops')).toBeInTheDocument();
+  });
+
+  it('shows blocked profiles as not followed in the follow button', () => {
+    const blockedPubkey = 'a'.repeat(64);
+    pm.blocked.add(blockedPubkey);
+
+    render(
+      <MemoryRouter>
+        <ProfileHeader
+          pubkey={blockedPubkey}
+          metadata={{ display_name: 'Modern Creator' }}
+          stats={baseStats}
+          isOwnProfile={false}
+          isFollowing={true}
+          onFollowToggle={vi.fn()}
+        />
+      </MemoryRouter>
+    );
+
+    expect(screen.getByRole('button', { name: /^follow$/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^following$/i })).not.toBeInTheDocument();
   });
 
   it('keeps the joined stat in the two-column mobile stats grid', () => {

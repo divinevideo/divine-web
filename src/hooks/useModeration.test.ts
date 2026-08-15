@@ -351,6 +351,25 @@ describe('useMuteItem', () => {
     expect(call.tags).toEqual([['p', 'target-pubkey', 'spam']]);
   });
 
+  it('does not publish kind 3 when muting a user', async () => {
+    mockMuteQuery.mockResolvedValue([]);
+    mockPublishEvent.mockResolvedValue({});
+
+    const { result } = renderHook(() => useMuteItem(), {
+      wrapper: createWrapper(),
+    });
+
+    await act(async () => {
+      await result.current.mutateAsync({
+        type: MuteType.USER,
+        value: 'target-pubkey',
+      });
+    });
+
+    expect(mockPublishEvent).toHaveBeenCalledOnce();
+    expect(mockPublishEvent.mock.calls[0][0].kind).toBe(MUTE_LIST_KIND);
+  });
+
   it('preserves existing pin and foreign tags when adding a mute (no clobber)', async () => {
     const existing = makeMuteEvent([
       ['a', '34236:somepub:vid-1'],
@@ -500,6 +519,26 @@ describe('useUnmuteItem', () => {
       ['p', 'keep-me'],
       ['t', 'nsfw'],
     ]);
+  });
+
+  it('does not publish kind 3 when unmuting a user', async () => {
+    const existing = makeMuteEvent([['p', 'remove-me']]);
+    mockMuteQuery.mockResolvedValue([existing]);
+    mockPublishEvent.mockResolvedValue({});
+
+    const { result } = renderHook(() => useUnmuteItem(), {
+      wrapper: createWrapper(),
+    });
+
+    await act(async () => {
+      await result.current.mutateAsync({
+        type: MuteType.USER,
+        value: 'remove-me',
+      });
+    });
+
+    expect(mockPublishEvent).toHaveBeenCalledOnce();
+    expect(mockPublishEvent.mock.calls[0][0].kind).toBe(MUTE_LIST_KIND);
   });
 
   it('preserves content on unmute', async () => {

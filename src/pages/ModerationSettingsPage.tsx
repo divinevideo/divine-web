@@ -5,6 +5,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useMuteList, useMuteItem, useUnmuteItem, useReportHistory, MUTE_LIST_KIND } from '@/hooks/useModeration';
+import { useBlockedPubkeys, useUnblockUser } from '@/hooks/useBlockList';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useAuthor } from '@/hooks/useAuthor';
 import { useNostr } from '@nostrify/react';
@@ -33,12 +34,12 @@ import { formatDistanceToNow } from 'date-fns';
 import { nip19 } from 'nostr-tools';
 import type { NostrEvent } from '@nostrify/nostrify';
 
-function MutedUserItem({ pubkey, reason, onUnmute }: {
+function MutedUserItem({ pubkey, reason, onUnmute, actionLabel }: {
   pubkey: string;
   reason?: string;
   onUnmute: () => void;
+  actionLabel: string;
 }) {
-  const { t } = useTranslation();
   const author = useAuthor(pubkey);
   const authorMetadata = author.data?.metadata;
   const authorName = authorMetadata?.name || genUserName(pubkey);
@@ -63,7 +64,7 @@ function MutedUserItem({ pubkey, reason, onUnmute }: {
         onClick={onUnmute}
       >
         <Trash2 className="h-4 w-4 mr-2" />
-        {t('moderationSettings.unmute')}
+        {actionLabel}
       </Button>
     </div>
   );
@@ -81,6 +82,8 @@ export default function ModerationSettingsPage() {
   const { data: reportHistory = [] } = useReportHistory();
   const muteItem = useMuteItem();
   const unmuteItem = useUnmuteItem();
+  const unblockUser = useUnblockUser();
+  const blockedPubkeys = useBlockedPubkeys();
 
   const [muteType, setMuteType] = useState<MuteType>(MuteType.USER);
   const [muteValue, setMuteValue] = useState('');
@@ -89,24 +92,15 @@ export default function ModerationSettingsPage() {
   const [rawMuteEvent, setRawMuteEvent] = useState<NostrEvent | null>(null);
   const [funnelcakeApiMode, setFunnelcakeApiMode] = useState<FunnelcakeApiMode>(() => getFunnelcakeApiModeOverride());
 
-  const mutedUsers = muteList.filter(item => item.type === MuteType.USER);
+  const allMutedUsers = muteList.filter(item => item.type === MuteType.USER);
+  const blockedUsers = allMutedUsers.filter(item => blockedPubkeys.has(item.value));
+  const mutedUsers = allMutedUsers.filter(item => !blockedPubkeys.has(item.value));
   const mutedHashtags = muteList.filter(item => item.type === MuteType.HASHTAG);
   const mutedKeywords = muteList.filter(item => item.type === MuteType.KEYWORD);
   const effectiveFunnelcakeBaseUrl = resolveFunnelcakeBaseUrl({
     mode: funnelcakeApiMode,
     hostname: window.location.hostname,
     envBaseUrl: import.meta.env.VITE_FUNNELCAKE_API_URL,
-  });
-
-  // Debug: Log state
-  console.log('[ModerationSettingsPage] Render state:', {
-    user: user?.pubkey,
-    muteListLoading,
-    muteListLength: muteList.length,
-    mutedUsers: mutedUsers.length,
-    mutedHashtags: mutedHashtags.length,
-    mutedKeywords: mutedKeywords.length,
-    muteList
   });
 
   // Fetch raw mute list event for debugging
@@ -219,6 +213,22 @@ export default function ModerationSettingsPage() {
       toast({
         title: t('moderationSettings.toastErrorTitle'),
         description: t('moderationSettings.toastUnmuteFailed'),
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleUnblock = async (value: string) => {
+    try {
+      await unblockUser.mutateAsync({ targetPubkey: value });
+      toast({
+        title: t('moderationSettings.toastUnblockedTitle'),
+        description: t('moderationSettings.toastUnblockedDescription'),
+      });
+    } catch {
+      toast({
+        title: t('moderationSettings.toastErrorTitle'),
+        description: t('moderationSettings.toastUnblockFailed'),
         variant: 'destructive',
       });
     }
@@ -368,6 +378,9 @@ export default function ModerationSettingsPage() {
               </p>
               <div className="text-xs text-muted-foreground mt-1 space-y-1">
                 <div>
+                  • <strong>{blockedUsers.length}</strong> {t('moderationSettings.statusUsersBlockedSuffix')}
+                </div>
+                <div>
                   • <strong>{mutedUsers.length}</strong> {t('moderationSettings.statusUsersMutedSuffix')}
                 </div>
                 <div>
@@ -481,6 +494,44 @@ export default function ModerationSettingsPage() {
             </CardContent>
           </Card>
 
+          {/* Blocked Users */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Shield className="h-5 w-5" />
+                {t('moderationSettings.blockedUsersTitle', { count: blockedUsers.length })}
+              </CardTitle>
+              <CardDescription>
+                {t('moderationSettings.blockedUsersDescription')}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {muteListLoading ? (
+                <div className="space-y-2">
+                  {[...Array(3)].map((_, i) => (
+                    <Skeleton key={i} className="h-16 w-full" />
+                  ))}
+                </div>
+              ) : blockedUsers.length > 0 ? (
+                <div className="space-y-2">
+                  {blockedUsers.map((item) => (
+                    <MutedUserItem
+                      key={item.value}
+                      pubkey={item.value}
+                      reason={item.reason}
+                      actionLabel={t('moderationSettings.unblock')}
+                      onUnmute={() => handleUnblock(item.value)}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <p className="text-center text-muted-foreground py-8">
+                  {t('moderationSettings.noBlockedUsers')}
+                </p>
+              )}
+            </CardContent>
+          </Card>
+
           {/* Muted Users */}
           <Card>
             <CardHeader>
@@ -488,6 +539,9 @@ export default function ModerationSettingsPage() {
                 <UserX className="h-5 w-5" />
                 {t('moderationSettings.mutedUsersTitle', { count: mutedUsers.length })}
               </CardTitle>
+              <CardDescription>
+                {t('moderationSettings.mutedUsersDescription')}
+              </CardDescription>
             </CardHeader>
             <CardContent>
               {muteListLoading ? (
@@ -503,6 +557,7 @@ export default function ModerationSettingsPage() {
                       key={item.value}
                       pubkey={item.value}
                       reason={item.reason}
+                      actionLabel={t('moderationSettings.unmute')}
                       onUnmute={() => handleUnmute(MuteType.USER, item.value)}
                     />
                   ))}

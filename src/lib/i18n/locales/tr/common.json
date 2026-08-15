@@ -396,7 +396,19 @@
     "originalVineLoops": "Orijinal Vine Loop'ları",
     "classicVines": "Klasik Vine'lar",
     "classicVineStatsCaption": "Orijinal Vine platformundan istatistikler (2013-2017)",
-    "legacySocialLabel": "{{label}}: {{handle}}"
+    "legacySocialLabel": "{{label}}: {{handle}}",
+    "blockUser": "Block user",
+    "unblockUser": "Unblock user",
+    "blockDialogTitle": "Block this user?",
+    "blockDialogDescription": "{{name}} will be removed from your following list, and their videos will stay out of your feeds.",
+    "unblockDialogTitle": "Unblock this user?",
+    "unblockDialogDescription": "This will unhide {{name}}'s videos, but it won't follow them again.",
+    "blockedTitle": "Blocked.",
+    "blockedDescription": "They're off your following list and out of your feeds.",
+    "unblockedTitle": "Unblocked.",
+    "unblockedDescription": "Their videos can show up again. You're not following them.",
+    "cancel": "Cancel",
+    "blockFailedDescription": "Failed to block. Please try again."
   },
   "loginDialog": {
     "title": "Divine'a giriş yap",
@@ -601,7 +613,17 @@
     "toastUnmutedDescription": "Susturma listesinden çıkarıldı",
     "toastUnmuteFailed": "Susturma kaldırılamadı. Lütfen tekrar dene.",
     "toastFunnelcakeUpdatedTitle": "Funnelcake API güncellendi",
-    "toastFunnelcakeUpdatedDescription": "Sonraki REST okumaları için {{url}} kullanılacak."
+    "toastFunnelcakeUpdatedDescription": "Sonraki REST okumaları için {{url}} kullanılacak.",
+    "unblock": "Unblock",
+    "statusUsersBlockedSuffix": "users blocked",
+    "blockedUsersTitle_one": "Blocked Users ({{count}})",
+    "blockedUsersTitle_other": "Blocked Users ({{count}})",
+    "blockedUsersDescription": "Blocked users are removed from your public following list. Unblocking also un-hides their videos, but it does not follow them again.",
+    "mutedUsersDescription": "Muted users stay hidden from your feeds without changing who you follow.",
+    "noBlockedUsers": "No blocked users.",
+    "toastUnblockedTitle": "Unblocked",
+    "toastUnblockedDescription": "Removed from blocked users. Their videos can show up again.",
+    "toastUnblockFailed": "Failed to unblock. Please try again."
   },
   "linkedAccountsSettings": {
     "copy": "Kopyala",

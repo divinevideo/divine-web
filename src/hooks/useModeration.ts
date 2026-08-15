@@ -25,6 +25,9 @@ export { MUTE_LIST_KIND };
 // Stable empty array to prevent infinite re-renders when user is not logged in
 const EMPTY_MUTE_LIST: MuteItem[] = [];
 
+type PublishEvent = ReturnType<typeof useNostrPublish>['mutateAsync'];
+type NostrClient = ReturnType<typeof useNostr>['nostr'];
+
 /**
  * Parse the mute-relevant tags from a NIP-51 mute list event (kind 10000).
  * Returns only p/t/word/e tags the UI understands. Other tags (a pins, d, etc.)
@@ -62,6 +65,38 @@ function latestEvent(events: NostrEvent[]): NostrEvent | null {
   return events
     .slice()
     .sort((a, b) => b.created_at - a.created_at || (a.id < b.id ? -1 : 1))[0];
+}
+
+export async function publishMuteListUpdate({
+  nostr,
+  publishEvent,
+  userPubkey,
+  updateTags,
+}: {
+  nostr: NostrClient;
+  publishEvent: PublishEvent;
+  userPubkey: string;
+  updateTags: (current: { tags: string[][]; items: MuteItem[] }) => string[][] | null;
+}): Promise<void> {
+  const signal = AbortSignal.timeout(5000);
+  const events = await nostr.query([{
+    kinds: [MUTE_LIST_KIND],
+    authors: [userPubkey],
+    limit: 1
+  }], { signal });
+
+  const latest = latestEvent(events);
+  const existingTags: string[][] = latest ? latest.tags : [];
+  const existingContent = latest ? latest.content : '';
+  const existingItems = latest ? parseMuteList(latest) : [];
+  const tags = updateTags({ tags: existingTags, items: existingItems });
+  if (!tags) return;
+
+  await publishEvent({
+    kind: MUTE_LIST_KIND,
+    content: existingContent,
+    tags
+  });
 }
 
 /**
@@ -122,38 +157,20 @@ export function useMuteItem() {
     }) => {
       if (!user) throw new Error('Must be logged in to mute content');
 
-      const signal = AbortSignal.timeout(5000);
-      const events = await nostr.query([{
-        kinds: [MUTE_LIST_KIND],
-        authors: [user.pubkey],
-        limit: 1
-      }], { signal });
+      await publishMuteListUpdate({
+        nostr,
+        publishEvent,
+        userPubkey: user.pubkey,
+        updateTags: ({ tags, items }) => {
+          const alreadyMuted = items.some(
+            item => item.type === type && item.value === value
+          );
+          if (alreadyMuted) return null;
 
-      const latest = latestEvent(events);
-      // Preserve every existing tag — pin a-tags, foreign tags, anything
-      // another app wrote — so we don't clobber unrelated state.
-      const existingTags: string[][] = latest ? latest.tags : [];
-      const existingContent = latest ? latest.content : '';
-
-      // Deduplicate against the muted-items projection, not raw tags, so a
-      // raw `p` tag with extra positional fields (rare but legal) still
-      // de-dupes on (type,value).
-      const existingItems = latest ? parseMuteList(latest) : [];
-      const alreadyMuted = existingItems.some(
-        item => item.type === type && item.value === value
-      );
-      if (alreadyMuted) return;
-
-      const newTag = [type, value];
-      if (reason) newTag.push(reason);
-      const tags: string[][] = [...existingTags, newTag];
-
-      await publishEvent({
-        kind: MUTE_LIST_KIND,
-        // NIP-51 mute lists may carry NIP-44 encrypted private entries in
-        // content; we must round-trip whatever the latest event had.
-        content: existingContent,
-        tags
+          const newTag = [type, value];
+          if (reason) newTag.push(reason);
+          return [...tags, newTag];
+        },
       });
     },
     onSuccess: () => {
@@ -181,26 +198,15 @@ export function useUnmuteItem() {
     }) => {
       if (!user) throw new Error('Must be logged in to unmute content');
 
-      const signal = AbortSignal.timeout(5000);
-      const events = await nostr.query([{
-        kinds: [MUTE_LIST_KIND],
-        authors: [user.pubkey],
-        limit: 1
-      }], { signal });
-
-      const latest = latestEvent(events);
-      if (!latest) return;
-
-      // Drop every tag that matches (type,value) regardless of trailing
-      // fields; preserve everything else, in order.
-      const tags = latest.tags.filter(
-        tag => !(tag[0] === type && tag[1] === value)
-      );
-
-      await publishEvent({
-        kind: MUTE_LIST_KIND,
-        content: latest.content,
-        tags
+      await publishMuteListUpdate({
+        nostr,
+        publishEvent,
+        userPubkey: user.pubkey,
+        updateTags: ({ tags, items }) => {
+          const hasItem = items.some(item => item.type === type && item.value === value);
+          if (!hasItem) return null;
+          return tags.filter(tag => !(tag[0] === type && tag[1] === value));
+        },
       });
     },
     onSuccess: () => {

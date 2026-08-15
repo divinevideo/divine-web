@@ -396,7 +396,19 @@
     "originalVineLoops": "Vòng lặp Vine nguyên bản",
     "classicVines": "Vine kinh điển",
     "classicVineStatsCaption": "Thống kê từ nền tảng Vine nguyên bản (2013-2017)",
-    "legacySocialLabel": "{{label}}: {{handle}}"
+    "legacySocialLabel": "{{label}}: {{handle}}",
+    "blockUser": "Block user",
+    "unblockUser": "Unblock user",
+    "blockDialogTitle": "Block this user?",
+    "blockDialogDescription": "{{name}} will be removed from your following list, and their videos will stay out of your feeds.",
+    "unblockDialogTitle": "Unblock this user?",
+    "unblockDialogDescription": "This will unhide {{name}}'s videos, but it won't follow them again.",
+    "blockedTitle": "Blocked.",
+    "blockedDescription": "They're off your following list and out of your feeds.",
+    "unblockedTitle": "Unblocked.",
+    "unblockedDescription": "Their videos can show up again. You're not following them.",
+    "cancel": "Cancel",
+    "blockFailedDescription": "Failed to block. Please try again."
   },
   "loginDialog": {
     "title": "Đăng nhập vào Divine",
@@ -601,7 +613,17 @@
     "toastUnmutedDescription": "Đã gỡ khỏi danh sách tắt tiếng",
     "toastUnmuteFailed": "Không bật tiếng được. Vui lòng thử lại.",
     "toastFunnelcakeUpdatedTitle": "Đã cập nhật Funnelcake API",
-    "toastFunnelcakeUpdatedDescription": "Dùng {{url}} cho các lượt đọc REST tiếp theo."
+    "toastFunnelcakeUpdatedDescription": "Dùng {{url}} cho các lượt đọc REST tiếp theo.",
+    "unblock": "Unblock",
+    "statusUsersBlockedSuffix": "users blocked",
+    "blockedUsersTitle_one": "Blocked Users ({{count}})",
+    "blockedUsersTitle_other": "Blocked Users ({{count}})",
+    "blockedUsersDescription": "Blocked users are removed from your public following list. Unblocking also un-hides their videos, but it does not follow them again.",
+    "mutedUsersDescription": "Muted users stay hidden from your feeds without changing who you follow.",
+    "noBlockedUsers": "No blocked users.",
+    "toastUnblockedTitle": "Unblocked",
+    "toastUnblockedDescription": "Removed from blocked users. Their videos can show up again.",
+    "toastUnblockFailed": "Failed to unblock. Please try again."
   },
   "linkedAccountsSettings": {
     "copy": "Sao chép",
