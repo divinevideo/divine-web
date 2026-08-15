@@ -183,7 +183,7 @@ export function SafetyPage() {
               systems. Divine does not control how independent operators handle content.
             </p>
             <p>
-              For simple steps and limits, see{" "}
+              For simple steps and limits, see{' '}
               <a
                 href="/delete-account"
                 className="text-primary hover:underline font-medium"

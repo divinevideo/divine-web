@@ -279,6 +279,12 @@ export function PortabilityPage() {
                 their own policies.
               </p>
               <p>
+                If Divine&apos;s signer holds your key, a suspension currently also
+                prevents it from signing an archive request. Appeal first if you need
+                to export from that kind of account. An account whose key is stored in
+                your own browser can still use that key with other services.
+              </p>
+              <p>
                 If you believe Divine made a mistake, appeal information is in
                 the{" "}
                 <a

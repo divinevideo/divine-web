@@ -30,6 +30,6 @@ describe("KeySafetyNotice", () => {
     expect(
       screen.getByText(/You never need a link to reach this page/)
     ).toBeInTheDocument();
-    expect(screen.getByText(/open divine\.video yourself/)).toBeInTheDocument();
+    expect(screen.getByText(/open divine\.video\/exit yourself/)).toBeInTheDocument();
   });
 });

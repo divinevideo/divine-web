@@ -39,6 +39,7 @@ describe("PortabilityPage", () => {
       screen.getByText(/Other servers have their own rules./)
     ).toBeInTheDocument();
     expect(container.querySelector('a[href="/safety#appeals"]')).toBeTruthy();
+    expect(screen.getByText(/prevents it from signing an archive request/)).toBeInTheDocument();
     expect(container.querySelector('a[href="/kids"]')).toBeTruthy();
   });
 

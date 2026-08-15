@@ -25,7 +25,7 @@ export function KeySafetyNotice() {
           <p className="text-base leading-relaxed text-muted-foreground">
             You never need a link to reach this page. If you get a message saying your
             account was actioned, you do not have to trust it to act on it &mdash; open
-            divine.video yourself, then use the account menu to reach this guide.
+            divine.video/exit yourself instead.
           </p>
         </div>
       </CardContent>
