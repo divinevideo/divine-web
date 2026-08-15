@@ -16,8 +16,21 @@ export function componentClaimsExit(pattern) {
   return componentPatternMatchesPath(pattern, '/exit') || componentPatternMatchesPath(pattern, '/exit/start');
 }
 
-export function declaredComponentsClaimExit(declaredPaths) {
-  return [...declaredPaths].some((declaredPath) => componentClaimsExit(declaredPath));
+function componentsClaimPath(components, candidatePath) {
+  for (const component of components) {
+    const pattern = typeof component === 'string' ? component : component?.['/'];
+    if (typeof pattern !== 'string' || !componentPatternMatchesPath(pattern, candidatePath)) {
+      continue;
+    }
+
+    return typeof component === 'object' ? component.exclude !== true : true;
+  }
+
+  return false;
+}
+
+export function declaredComponentsClaimExit(components) {
+  return componentsClaimPath(components, '/exit') || componentsClaimPath(components, '/exit/start');
 }
 
 async function verifyWellKnown() {
@@ -40,10 +53,10 @@ async function verifyWellKnown() {
   }
 
   const requiredPaths = new Set(['/video/*', '/profile/*', '/invite/*', '/list/*']);
+  const declaredComponentGroups = aasa?.applinks?.details?.map((detail) => detail.components ?? []) ?? [];
+  const declaredComponents = declaredComponentGroups.flat();
   const declaredPaths = new Set(
-    aasa?.applinks?.details?.flatMap((detail) =>
-      (detail.components ?? []).map((component) => component?.['/']).filter(Boolean),
-    ) ?? [],
+    declaredComponents.map((component) => component?.['/']).filter(Boolean),
   );
 
   for (const requiredPath of requiredPaths) {
@@ -52,7 +65,7 @@ async function verifyWellKnown() {
     }
   }
 
-  if (declaredComponentsClaimExit(declaredPaths)) {
+  if (declaredComponentGroups.some((components) => declaredComponentsClaimExit(components))) {
     throw new Error('apple-app-site-association must not claim /exit for mobile universal links');
   }
 

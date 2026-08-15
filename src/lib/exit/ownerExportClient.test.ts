@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { fixturePubkey, makeFixtureEvent } from "./__fixtures__/exportFixtures";
 import { createFixtureFetch } from "./__fixtures__/fixtureFetch";
@@ -230,6 +230,67 @@ describe("exportOwnerEvents", () => {
           )
       })
     ).rejects.toMatchObject({ code: "malformed-response" });
+  });
+
+  it("rejects events belonging to a different account", async () => {
+    await expect(
+      exportOwnerEvents({
+        endpointBase: "https://api.divine.video",
+        pubkey: fixturePubkey,
+        signer: new FixtureSigner(),
+        fetcher: async () =>
+          new Response(
+            JSON.stringify({
+              data: [makeFixtureEvent({ pubkey: "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb" })],
+              pagination: { next_cursor: null, has_more: false }
+            }),
+            { status: 200 }
+          )
+      })
+    ).rejects.toMatchObject({ code: "malformed-response" });
+  });
+
+  it("passes cancellation through to the request", async () => {
+    const controller = new AbortController();
+    const fetcher = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
+      expect(init?.signal).toBe(controller.signal);
+      controller.abort();
+      throw new DOMException("Aborted", "AbortError");
+    });
+
+    await expect(
+      exportOwnerEvents({
+        endpointBase: "https://api.divine.video",
+        pubkey: fixturePubkey,
+        signer: new FixtureSigner(),
+        fetcher,
+        signal: controller.signal
+      })
+    ).rejects.toMatchObject({ code: "cancelled" });
+  });
+
+  it("cancels a rate-limit wait immediately", async () => {
+    const controller = new AbortController();
+    let markSleepStarted: () => void = () => void 0;
+    const sleepStarted = new Promise<void>((resolve) => {
+      markSleepStarted = resolve;
+    });
+    const exportPromise = exportOwnerEvents({
+      endpointBase: "https://api.divine.video",
+      pubkey: fixturePubkey,
+      signer: new FixtureSigner(),
+      fetcher: async () => new Response("slow down", { status: 429, headers: { "retry-after": "60" } }),
+      sleep: async () => {
+        markSleepStarted();
+        return new Promise<void>(() => undefined);
+      },
+      signal: controller.signal
+    });
+
+    await sleepStarted;
+    controller.abort();
+
+    await expect(exportPromise).rejects.toMatchObject({ code: "cancelled" });
   });
 
   it("keeps the events it collected when the export fails partway", async () => {

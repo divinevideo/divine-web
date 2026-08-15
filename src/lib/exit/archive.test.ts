@@ -140,6 +140,26 @@ describe("archive builder", () => {
     ]);
   });
 
+  it("discovers media in pair-form imeta tags", () => {
+    const hash = "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
+    const references = discoverMediaReferences([
+      makeFixtureEvent({
+        tags: [
+          ["imeta", "url", "https://cdn.example.com/video.mp4", "x", hash]
+        ]
+      })
+    ]);
+
+    expect(references).toEqual([
+      {
+        event_id: "1111111111111111111111111111111111111111111111111111111111111111",
+        tag: "imeta",
+        url: "https://cdn.example.com/video.mp4",
+        sha256: hash
+      }
+    ]);
+  });
+
   it("serializes the three archive files", () => {
     const archive = buildArchiveFiles({
       events: [makeFixtureEvent()],

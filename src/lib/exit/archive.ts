@@ -61,15 +61,23 @@ function readImeta(tag: string[]): Array<{ url: string; sha256: string | null }>
   let sha256: string | null = null;
   const urls: Array<{ key: string; url: string }> = [];
 
-  for (const value of tag.slice(1)) {
-    const [key, ...rest] = value.split(" ");
-    const body = rest.join(" ");
-
+  const readValue = (key: string, body: string) => {
     if (IMETA_URL_KEYS.has(key) && body) {
       urls.push({ key, url: body });
     }
     if (key === "x" && isHex64(body)) {
       sha256 = body.toLowerCase();
+    }
+  };
+
+  if (tag[1]?.includes(" ")) {
+    for (const value of tag.slice(1)) {
+      const [key, ...rest] = value.split(" ");
+      readValue(key, rest.join(" "));
+    }
+  } else {
+    for (let index = 1; index < tag.length; index += 2) {
+      readValue(tag[index] ?? "", tag[index + 1] ?? "");
     }
   }
 

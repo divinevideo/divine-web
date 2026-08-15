@@ -25,6 +25,7 @@ export type ExportFailureCode =
   | "server-failure"
   | "malformed-response"
   | "network-failure"
+  | "cancelled"
   | "stalled-cursor"
   | "page-limit";
 
@@ -61,6 +62,7 @@ export interface OwnerExportClientOptions {
   sleep?: (ms: number) => Promise<void>;
   maxRateLimitRetries?: number;
   maxPages?: number;
+  signal?: AbortSignal;
   onProgress?: (progress: ExportProgress) => void;
 }
 
@@ -110,6 +112,28 @@ async function readErrorBody(response: Response): Promise<string> {
   }
 }
 
+async function waitBeforeRetry(ms: number, sleep: (ms: number) => Promise<void>, signal?: AbortSignal): Promise<void> {
+  if (!signal) {
+    await sleep(ms);
+    return;
+  }
+  if (signal.aborted) {
+    throw new OwnerExportError("cancelled", "The export was cancelled.");
+  }
+
+  let handleAbort: () => void = () => void 0;
+  const aborted = new Promise<never>((_resolve, reject) => {
+    handleAbort = () => reject(new OwnerExportError("cancelled", "The export was cancelled."));
+    signal.addEventListener("abort", handleAbort, { once: true });
+  });
+
+  try {
+    await Promise.race([sleep(ms), aborted]);
+  } finally {
+    signal.removeEventListener("abort", handleAbort);
+  }
+}
+
 function classifyBadRequest(body: string): OwnerExportError {
   const normalized = body.toLowerCase();
 
@@ -126,7 +150,7 @@ function classifyBadRequest(body: string): OwnerExportError {
 
 const SIG_HEX = /^[0-9a-f]{128}$/i;
 
-function validateEvent(value: unknown): NostrEvent {
+function validateEvent(value: unknown, expectedPubkey: string): NostrEvent {
   if (!value || typeof value !== "object") {
     throw new OwnerExportError("malformed-response", "Divine returned a response this tool could not read.");
   }
@@ -139,6 +163,9 @@ function validateEvent(value: unknown): NostrEvent {
 
   if (typeof event.pubkey !== "string" || !isHex64(event.pubkey)) {
     throw new OwnerExportError("malformed-response", "Divine returned an account identifier this tool could not read.");
+  }
+  if (event.pubkey !== expectedPubkey) {
+    throw new OwnerExportError("malformed-response", "Divine returned an event for a different account.");
   }
 
   if (typeof event.sig !== "string" || !SIG_HEX.test(event.sig)) {
@@ -159,7 +186,7 @@ function validateEvent(value: unknown): NostrEvent {
   return event as NostrEvent;
 }
 
-function validatePage(value: unknown): ExportPage {
+function validatePage(value: unknown, expectedPubkey: string): ExportPage {
   if (!value || typeof value !== "object") {
     throw new OwnerExportError("malformed-response", "Divine returned a response this tool could not read.");
   }
@@ -180,7 +207,7 @@ function validatePage(value: unknown): ExportPage {
   }
 
   return {
-    data: candidate.data.map(validateEvent),
+    data: candidate.data.map((event) => validateEvent(event, expectedPubkey)),
     pagination: {
       has_more: candidate.pagination.has_more,
       next_cursor: nextCursor ?? null
@@ -192,8 +219,14 @@ async function fetchPage(
   url: string,
   signer: NostrSigner,
   fetcher: typeof fetch,
+  expectedPubkey: string,
+  signal?: AbortSignal,
   rateLimitRetryCount = 0
 ): Promise<ExportPage> {
+  if (signal?.aborted) {
+    throw new OwnerExportError("cancelled", "The export was cancelled.");
+  }
+
   const authHeader = await createNip98AuthHeader(signer, url, "GET");
 
   if (!authHeader) {
@@ -207,9 +240,13 @@ async function fetchPage(
       headers: {
         Authorization: authHeader,
         Accept: "application/json"
-      }
+      },
+      signal
     });
   } catch {
+    if (signal?.aborted) {
+      throw new OwnerExportError("cancelled", "The export was cancelled.");
+    }
     throw new OwnerExportError("network-failure", "The export could not reach Divine. Check the connection and try again.");
   }
 
@@ -238,7 +275,7 @@ async function fetchPage(
   }
 
   try {
-    return validatePage(await response.json());
+    return validatePage(await response.json(), expectedPubkey);
   } catch (error) {
     if (error instanceof OwnerExportError) {
       throw error;
@@ -257,6 +294,7 @@ export async function exportOwnerEvents(options: OwnerExportClientOptions): Prom
     limit = DEFAULT_LIMIT,
     maxRateLimitRetries = DEFAULT_MAX_RATE_LIMIT_RETRIES,
     maxPages = DEFAULT_MAX_PAGES,
+    signal,
     onProgress
   } = options;
 
@@ -276,7 +314,7 @@ export async function exportOwnerEvents(options: OwnerExportClientOptions): Prom
     const url = buildExportUrl(endpointBase, pubkey, limit, cursor);
 
     try {
-      const page = await fetchPage(url, signer, fetcher, rateLimitRetriesForPage);
+      const page = await fetchPage(url, signer, fetcher, pubkey, signal, rateLimitRetriesForPage);
       pagesFetched += 1;
       events.push(...page.data);
       rateLimitRetriesForPage = 0;
@@ -326,8 +364,12 @@ export async function exportOwnerEvents(options: OwnerExportClientOptions): Prom
         retryCount += 1;
         rateLimitRetriesForPage += 1;
         onProgress?.({ pagesFetched, eventsFetched: events.length, retryCount });
-        await sleep(error.retryAfterMs ?? 1000);
+        await waitBeforeRetry(error.retryAfterMs ?? 1000, sleep, signal);
         continue;
+      }
+
+      if (error instanceof OwnerExportError && error.code === "cancelled") {
+        throw error;
       }
 
       const failure =

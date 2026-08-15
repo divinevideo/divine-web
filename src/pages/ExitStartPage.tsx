@@ -11,7 +11,7 @@ import {
 } from "@phosphor-icons/react";
 import { useNostrLogin } from "@nostrify/react/login";
 import { useHead } from "@unhead/react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 
 import { LocalNsecBanner } from "@/components/auth/LocalNsecBanner";
@@ -21,6 +21,7 @@ import { MarketingLayout } from "@/components/MarketingLayout";
 import { SectionHero } from "@/components/static-pages";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { getFunnelcakeBaseUrl } from "@/config/api";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { buildArchiveFiles, serializeArchiveFiles, type ArchiveFiles } from "@/lib/exit/archive";
 import { exportOwnerEvents, OwnerExportError, type ExportProgress } from "@/lib/exit/ownerExportClient";
@@ -28,8 +29,6 @@ import { createZip } from "@/lib/exit/zip";
 import { getActiveLocalNsecLogin } from "@/lib/localNsecAccount";
 
 type RunState = "idle" | "running" | "complete" | "failed";
-
-const EXPORT_ENDPOINT = "https://api.divine.video";
 
 function errorMessage(error: unknown): string {
   if (error instanceof OwnerExportError) {
@@ -89,6 +88,20 @@ export function ExitStartPage() {
   });
   const [archiveFiles, setArchiveFiles] = useState<ArchiveFiles | null>(null);
   const [failure, setFailure] = useState<string | null>(null);
+  const activeExport = useRef<AbortController | null>(null);
+  const currentPubkey = useRef(user?.pubkey);
+  currentPubkey.current = user?.pubkey;
+
+  useEffect(() => {
+    activeExport.current?.abort();
+    activeExport.current = null;
+    setState("idle");
+    setFailure(null);
+    setArchiveFiles(null);
+    setProgress({ pagesFetched: 0, eventsFetched: 0, retryCount: 0 });
+
+    return () => activeExport.current?.abort();
+  }, [user?.pubkey]);
 
   const summary = useMemo(() => {
     if (!archiveFiles) {
@@ -112,28 +125,45 @@ export function ExitStartPage() {
     setFailure(null);
     setArchiveFiles(null);
     setProgress({ pagesFetched: 0, eventsFetched: 0, retryCount: 0 });
+    activeExport.current?.abort();
+    const controller = new AbortController();
+    const exportPubkey = user.pubkey;
+    const exportEndpoint = getFunnelcakeBaseUrl();
+    activeExport.current = controller;
 
     try {
       const result = await exportOwnerEvents({
-        endpointBase: EXPORT_ENDPOINT,
-        pubkey: user.pubkey,
+        endpointBase: exportEndpoint,
+        pubkey: exportPubkey,
         signer,
+        signal: controller.signal,
         onProgress: setProgress,
       });
+
+      if (controller.signal.aborted || currentPubkey.current !== exportPubkey) {
+        return;
+      }
 
       setArchiveFiles(
         buildArchiveFiles({
           events: result.events,
-          pubkey: user.pubkey,
-          sourceEndpoint: EXPORT_ENDPOINT,
+          pubkey: exportPubkey,
+          sourceEndpoint: exportEndpoint,
           pageCount: result.pageCount,
           failures: result.failures,
         })
       );
       setState("complete");
     } catch (error) {
+      if (controller.signal.aborted || currentPubkey.current !== exportPubkey) {
+        return;
+      }
       setFailure(errorMessage(error));
       setState("failed");
+    } finally {
+      if (activeExport.current === controller) {
+        activeExport.current = null;
+      }
     }
   }
 

@@ -15,18 +15,17 @@ export function KeySafetyNotice() {
         />
         <div className="space-y-3">
           <h3 className="font-display font-extrabold tracking-tight text-xl text-brand-dark-green dark:text-brand-off-white">
-            Divine will never ask for your secret key
+            Never share your secret key
           </h3>
           <p className="text-base leading-relaxed text-muted-foreground">
             No Divine message, email, or support agent will ever ask for your secret key
-            (nsec), or ask you to paste it into a page. Anyone who does is not Divine,
-            whatever the message looks like.
+            (nsec). Only enter it when you deliberately choose the secret-key option on
+            Divine&apos;s sign-in screen, and check that you are on divine.video first.
           </p>
           <p className="text-base leading-relaxed text-muted-foreground">
             You never need a link to reach this page. If you get a message saying your
-            account was actioned, you do not have to trust it to act on it &mdash; go to
-            divine.video/exit yourself and sign in. Anything real will be waiting for you
-            here.
+            account was actioned, you do not have to trust it to act on it &mdash; open
+            divine.video yourself, then use the account menu to reach this guide.
           </p>
         </div>
       </CardContent>

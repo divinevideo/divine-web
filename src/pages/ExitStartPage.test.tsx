@@ -5,7 +5,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { TestApp } from "@/test/TestApp";
 import { createFixtureFetch } from "@/lib/exit/__fixtures__/fixtureFetch";
 import { FixtureSigner } from "@/lib/exit/__fixtures__/fixtureSigner";
-import { fixturePubkey, makeFixtureEvent } from "@/lib/exit/__fixtures__/exportFixtures";
+import {
+  fixturePubkey,
+  makeFixtureEvent,
+  otherFixturePubkey,
+} from "@/lib/exit/__fixtures__/exportFixtures";
 
 import { ExitStartPage } from "./ExitStartPage";
 
@@ -50,6 +54,7 @@ describe("ExitStartPage", () => {
   });
 
   afterEach(() => {
+    localStorage.clear();
     vi.unstubAllGlobals();
     vi.clearAllMocks();
   });
@@ -101,6 +106,53 @@ describe("ExitStartPage", () => {
     expect(
       screen.getByText(/2 pages read, 2 events and 2 media references collected from Divine/)
     ).toBeInTheDocument();
+  });
+
+  it("uses the active Funnelcake environment", async () => {
+    mockUseCurrentUser.mockReturnValue(signedIn());
+    localStorage.setItem("divine_dev_funnelcake_api_mode", "staging");
+    const fetcher = vi.fn(createFixtureFetch("one-page"));
+    vi.stubGlobal("fetch", fetcher);
+
+    render(
+      <TestApp>
+        <ExitStartPage />
+      </TestApp>
+    );
+
+    await userEvent.click(screen.getByRole("button", { name: /Create my archive/ }));
+    await waitFor(() => expect(fetcher).toHaveBeenCalled());
+
+    expect(String(fetcher.mock.calls[0][0])).toMatch(/^https:\/\/api\.staging\.divine\.video\//);
+  });
+
+  it("clears a completed archive when the active account changes", async () => {
+    mockUseCurrentUser.mockReturnValue(signedIn());
+    vi.stubGlobal("fetch", createFixtureFetch("one-page"));
+
+    const view = render(
+      <TestApp>
+        <ExitStartPage />
+      </TestApp>
+    );
+
+    await userEvent.click(screen.getByRole("button", { name: /Create my archive/ }));
+    await waitFor(() => expect(screen.getByRole("button", { name: /Download archive/ })).toBeEnabled());
+
+    const signer = new FixtureSigner();
+    mockUseCurrentUser.mockReturnValue({
+      user: { pubkey: otherFixturePubkey, signer },
+      signer,
+      isResolvingJwt: false,
+    });
+    view.rerender(
+      <TestApp>
+        <ExitStartPage />
+      </TestApp>
+    );
+
+    await waitFor(() => expect(screen.getByRole("button", { name: /Download archive/ })).toBeDisabled());
+    expect(screen.queryByText("Your archive is ready.")).not.toBeInTheDocument();
   });
 
   it("explains when the archive download cannot be created", async () => {
@@ -232,7 +284,7 @@ describe("ExitStartPage", () => {
     );
 
     expect(
-      screen.getByRole("heading", { name: "Divine will never ask for your secret key" })
+      screen.getByRole("heading", { name: "Never share your secret key" })
     ).toBeInTheDocument();
   });
 

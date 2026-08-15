@@ -50,7 +50,7 @@ describe("PortabilityPage", () => {
     );
 
     expect(
-      screen.getByRole("heading", { name: "Divine will never ask for your secret key" })
+      screen.getByRole("heading", { name: "Never share your secret key" })
     ).toBeInTheDocument();
   });
 

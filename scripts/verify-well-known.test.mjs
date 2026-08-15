@@ -17,4 +17,15 @@ describe('verify-well-known universal link guard', () => {
     expect(declaredComponentsClaimExit(new Set(['/video/*', '/e*']))).toBe(true);
     expect(declaredComponentsClaimExit(new Set(['/video/*', '/exit/*']))).toBe(true);
   });
+
+  it('respects ordered exclusions', () => {
+    expect(declaredComponentsClaimExit([
+      { '/': '/exit*', exclude: true },
+      { '/': '/*' },
+    ])).toBe(false);
+    expect(declaredComponentsClaimExit([
+      { '/': '/*' },
+      { '/': '/exit*', exclude: true },
+    ])).toBe(true);
+  });
 });
