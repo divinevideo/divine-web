@@ -113,7 +113,7 @@ jobs:
                   repo,
                   issue_number: blockerNumber,
                 });
-                closed = data.state === 'closed' && (!data.pull_request || data.pull_request.merged_at !== null);
+                closed = data.state === 'closed' && (!data.pull_request || Boolean(data.pull_request.merged_at));
               } catch (error) {
                 // A reference we cannot resolve keeps the issue blocked.
                 if (error.status !== 404) {
