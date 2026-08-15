@@ -188,11 +188,17 @@ describe('useFeedBlocklist', () => {
         created_at: 200,
         tags: [['d', 'block']],
       }),
+      makeEvent({
+        pubkey: BLOCKER,
+        kind: 30000,
+        tags: [['d', 'block'], ['p', VIEWER]],
+      }),
     ]);
     mockMuteList = [{ type: MuteType.USER, value: OWN_MUTED }];
 
     const { result } = renderHook(() => useFeedBlocklist(), { wrapper: createWrapper() });
-    await waitFor(() => expect(result.current.has(OWN_MUTED)).toBe(true));
+    await waitFor(() => expect(result.current.has(BLOCKER)).toBe(true));
+    expect(result.current.has(OWN_MUTED)).toBe(true);
     expect(result.current.has(OWN_BLOCKED)).toBe(false);
   });
 
