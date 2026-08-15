@@ -10,6 +10,7 @@ import {
   Trash,
 } from "@phosphor-icons/react";
 import { useHead } from "@unhead/react";
+import { Link } from "react-router-dom";
 
 import { SectionHeader } from "@/components/brand/SectionHeader";
 import { MarketingLayout } from "@/components/MarketingLayout";
@@ -92,9 +93,22 @@ export function DeleteAccountPage() {
                 the deletion path below.
               </p>
               <p>
+                If you may want a copy later, export your archive before you
+                delete. Deletion can remove access to the tools that prove the
+                request is yours.
+              </p>
+              <p>
                 Deletion is not instant everywhere. Some steps depend on
                 servers accepting and processing deletion requests.
               </p>
+              <Link to="/exit/start" className={staticPageLinkCardClass("orange")}>
+                <div className="flex items-center justify-between gap-3">
+                  <span className="font-display font-extrabold tracking-tight text-lg text-brand-dark-green dark:text-brand-off-white">
+                    Export your archive first
+                  </span>
+                  <ArrowSquareOut className="h-5 w-5 flex-shrink-0 text-brand-dark-green dark:text-brand-green group-hover:translate-x-0.5 transition-transform" />
+                </div>
+              </Link>
             </CardContent>
           </Card>
         </Anchor>

@@ -39,9 +39,17 @@ function errorMessage(error: unknown): string {
   return "The export stopped before an archive could be created. Try again.";
 }
 
+function downloadErrorMessage(error: unknown): string {
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+
+  return "The archive could not be downloaded. Try creating it again.";
+}
+
 function downloadArchive(files: ArchiveFiles): void {
   if (typeof URL.createObjectURL !== "function") {
-    return;
+    throw new Error("This browser cannot create the archive download. Try another browser.");
   }
 
   const zip = createZip(serializeArchiveFiles(files));
@@ -129,6 +137,19 @@ export function ExitStartPage() {
     }
   }
 
+  function handleDownloadArchive() {
+    if (!archiveFiles) {
+      return;
+    }
+
+    try {
+      downloadArchive(archiveFiles);
+    } catch (error) {
+      setFailure(downloadErrorMessage(error));
+      setState("failed");
+    }
+  }
+
   return (
     <MarketingLayout>
       <section className="bg-brand-dark-green text-brand-off-white">
@@ -207,7 +228,7 @@ export function ExitStartPage() {
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => archiveFiles && downloadArchive(archiveFiles)}
+                  onClick={handleDownloadArchive}
                   disabled={!archiveFiles}
                 >
                   <DownloadSimple className="h-4 w-4" aria-hidden="true" />

@@ -40,7 +40,7 @@ const MOVE_STEPS = [
   {
     title: "Get your keys",
     body:
-      "Your Divine account is tied to keys that prove the account is yours. The migration flow helps you see and save them.",
+      "Your Divine account is tied to keys that prove the account is yours. The migration flow helps you see where they live and save them when your account type allows key export.",
   },
   {
     title: "Choose where things go",
@@ -50,12 +50,12 @@ const MOVE_STEPS = [
   {
     title: "Copy your videos",
     body:
-      "Your media is copied byte for byte. Divine does not resize, re-encode, or change the files.",
+      "When destination copying is ready, your media can be copied byte for byte. Divine will not resize, re-encode, or change the files.",
   },
   {
     title: "Publish and point",
     body:
-      "Your posts can be republished to the destination, and your public account records can tell other apps where to look next.",
+      "When destination publishing is ready, your posts can be republished there, and your public account records can tell other apps where to look next.",
   },
 ];
 
@@ -217,7 +217,7 @@ export function PortabilityPage() {
             eyebrow="How it works"
             icon={<Compass weight="fill" className="h-7 w-7" />}
             title="Four plain steps"
-            lead="The moving flow keeps the protocol details in the background. These are the parts that matter."
+            lead="The moving flow keeps the protocol details in the background. Today you can download your archive; choosing a destination and copying your media there is still being built."
           />
 
           <div className="grid gap-5 md:grid-cols-2">
@@ -268,7 +268,7 @@ export function PortabilityPage() {
             eyebrow="If your account was suspended"
             icon={<ShieldCheck weight="fill" className="h-7 w-7" />}
             title="A suspension applies to Divine's servers"
-            lead="If Divine suspends posting access on Divine-operated services, that does not remove your identity or prevent you from using infrastructure operated by someone else."
+            lead="If Divine suspends posting access on Divine-operated services, that does not remove your already-signed records. Whether you can sign new events elsewhere depends on where your account key lives."
           />
 
           <Card variant="brand" accent="pink">

@@ -49,4 +49,12 @@ describe("createZip", () => {
     expect(zip.size).toBe(zipBytes.byteLength);
     expect(unzipStored(zipBytes)).toEqual(files);
   });
+
+  it("fails loudly when the archive has more entries than ZIP32 can represent", () => {
+    const files = Object.fromEntries(
+      Array.from({ length: 0x10000 }, (_, index) => [`file-${index}.json`, "{}\n"])
+    );
+
+    expect(() => createZipBytes(files)).toThrow("too many files");
+  });
 });

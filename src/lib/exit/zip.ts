@@ -2,6 +2,7 @@
 // ABOUTME: Avoids a compression dependency for the handful of JSON files we emit
 
 const encoder = new TextEncoder();
+const MAX_ZIP32_VALUE = 0xffffffff;
 
 interface CentralDirectoryEntry {
   name: Uint8Array;
@@ -39,6 +40,10 @@ function uint16(value: number): Uint8Array {
 }
 
 function uint32(value: number): Uint8Array {
+  if (!Number.isSafeInteger(value) || value < 0 || value > MAX_ZIP32_VALUE) {
+    throw new RangeError("This archive is too large for this ZIP writer. Try a smaller export.");
+  }
+
   return new Uint8Array([
     value & 0xff,
     (value >>> 8) & 0xff,
@@ -49,6 +54,11 @@ function uint32(value: number): Uint8Array {
 
 function concat(parts: Uint8Array[]): Uint8Array {
   const total = parts.reduce((sum, part) => sum + part.length, 0);
+
+  if (total > MAX_ZIP32_VALUE) {
+    throw new RangeError("This archive is too large for this ZIP writer. Try a smaller export.");
+  }
+
   const output = new Uint8Array(total);
   let offset = 0;
 
@@ -67,6 +77,10 @@ export function createZipBytes(files: Record<string, string>): Uint8Array {
   let offset = 0;
 
   for (const [filename, content] of Object.entries(files)) {
+    if (entries.length >= 0xffff) {
+      throw new RangeError("This archive has too many files for this ZIP writer.");
+    }
+
     const name = encoder.encode(filename);
     const body = encoder.encode(content);
     const checksum = crc32(body);
@@ -88,6 +102,10 @@ export function createZipBytes(files: Record<string, string>): Uint8Array {
     localParts.push(localHeader, body);
     entries.push({ name, crc32: checksum, size: body.length, offset });
     offset += localHeader.length + body.length;
+
+    if (offset > MAX_ZIP32_VALUE) {
+      throw new RangeError("This archive is too large for this ZIP writer. Try a smaller export.");
+    }
   }
 
   const centralDirectoryOffset = offset;

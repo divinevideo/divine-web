@@ -3,7 +3,6 @@
 
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { ArrowRight } from "@phosphor-icons/react";
 
 export function MarketingHeader() {
   const { t } = useTranslation();
@@ -22,43 +21,45 @@ export function MarketingHeader() {
           </Link>
 
           {/* Navigation Links */}
-          <div className="flex items-center gap-3 md:gap-8">
+          <div className="flex items-center gap-8">
             <a
               href="https://about.divine.video/"
-              className="hidden md:inline text-sm font-medium text-brand-off-white hover:text-brand-green transition-colors"
+              className="text-sm font-medium text-brand-off-white hover:text-brand-green transition-colors"
             >
               About
             </a>
             <a
               href="https://about.divine.video/blog/"
-              className="hidden md:inline text-sm font-medium text-brand-off-white hover:text-brand-green transition-colors"
+              className="text-sm font-medium text-brand-off-white hover:text-brand-green transition-colors"
             >
               Blog
             </a>
             <a
               href="https://about.divine.video/faqs/"
-              className="hidden md:inline text-sm font-medium text-brand-off-white hover:text-brand-green transition-colors"
+              className="text-sm font-medium text-brand-off-white hover:text-brand-green transition-colors"
             >
               FAQ
             </a>
             <a
               href="https://about.divine.video/news/"
-              className="hidden md:inline text-sm font-medium text-brand-off-white hover:text-brand-green transition-colors"
+              className="text-sm font-medium text-brand-off-white hover:text-brand-green transition-colors"
             >
               In the News
             </a>
             <Link
               to="/merch"
-              className="hidden md:inline text-sm font-medium text-brand-off-white hover:text-brand-green transition-colors"
+              className="text-sm font-medium text-brand-off-white hover:text-brand-green transition-colors"
             >
               {t('menu.merch')}
             </Link>
             <Link
               to="/discovery"
-              className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-primary px-3 py-1.5 text-sm font-semibold text-primary-foreground transition-colors hover:brightness-110 sm:px-4 sm:py-2"
+              className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold bg-primary text-primary-foreground rounded-full hover:brightness-110 transition-colors"
             >
               Try it
-              <ArrowRight className="hidden h-4 w-4 sm:block" weight="bold" />
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+              </svg>
             </Link>
           </div>
         </div>

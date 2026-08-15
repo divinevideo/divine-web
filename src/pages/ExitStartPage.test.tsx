@@ -103,6 +103,40 @@ describe("ExitStartPage", () => {
     ).toBeInTheDocument();
   });
 
+  it("explains when the archive download cannot be created", async () => {
+    mockUseCurrentUser.mockReturnValue(signedIn());
+    vi.stubGlobal("fetch", createFixtureFetch("one-page"));
+
+    render(
+      <TestApp>
+        <ExitStartPage />
+      </TestApp>
+    );
+
+    await userEvent.click(screen.getByRole("button", { name: /Create my archive/ }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/Your archive is ready/)).toBeInTheDocument();
+    });
+
+    const originalCreateObjectURL = URL.createObjectURL;
+    Object.defineProperty(URL, "createObjectURL", {
+      configurable: true,
+      value: undefined,
+    });
+
+    await userEvent.click(screen.getByRole("button", { name: /Download archive/ }));
+
+    expect(
+      screen.getByText("This browser cannot create the archive download. Try another browser.")
+    ).toBeInTheDocument();
+
+    Object.defineProperty(URL, "createObjectURL", {
+      configurable: true,
+      value: originalCreateObjectURL,
+    });
+  });
+
   it("offers a partial archive but says it is incomplete", async () => {
     mockUseCurrentUser.mockReturnValue(signedIn());
 
