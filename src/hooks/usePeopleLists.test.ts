@@ -12,6 +12,15 @@ vi.mock('@nostrify/react', () => ({
   useNostr: () => ({ nostr: { query: mockNostrQuery } }),
 }));
 
+vi.mock('@/hooks/useAppContext', () => ({
+  useAppContext: () => ({
+    config: {
+      relayUrl: 'wss://relay.divine.video',
+      relayUrls: ['wss://relay.divine.video'],
+    },
+  }),
+}));
+
 const OWNER = 'a'.repeat(64);
 const MEMBER = 'b'.repeat(64);
 
@@ -84,8 +93,51 @@ describe('people list hooks', () => {
 
     expect(mockNostrQuery).toHaveBeenCalledWith(
       [{ kinds: [30000], authors: [OWNER], '#d': ['friends'], limit: 10 }],
-      { signal: expect.any(AbortSignal) },
+      {
+        signal: expect.any(AbortSignal),
+        relays: expect.arrayContaining(['wss://relay.divine.video']),
+      },
     );
     expect(result.current.data?.name).toBe('New');
+  });
+
+  it('queries exact people lists through relay hints', async () => {
+    mockNostrQuery.mockResolvedValue([peopleListEvent()]);
+    const { usePeopleList } = await import('./usePeopleLists');
+
+    const { result } = renderHook(
+      () => usePeopleList(OWNER, 'friends', { relayHints: ['wss://relay.example'] }),
+      { wrapper: createWrapper() },
+    );
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    expect(mockNostrQuery).toHaveBeenCalledWith(
+      [{ kinds: [30000], authors: [OWNER], '#d': ['friends'], limit: 10 }],
+      {
+        signal: expect.any(AbortSignal),
+        relays: expect.arrayContaining(['wss://relay.divine.video', 'wss://relay.example']),
+      },
+    );
+  });
+
+  it('keeps relay-hinted people-list lookups in distinct cache entries', async () => {
+    mockNostrQuery
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([peopleListEvent({ tags: [['d', 'friends'], ['title', 'Hinted'], ['p', MEMBER]] })]);
+    const { usePeopleList } = await import('./usePeopleLists');
+    const wrapper = createWrapper();
+    const { result, rerender } = renderHook(
+      ({ relayHints }) => usePeopleList(OWNER, 'friends', { relayHints }),
+      {
+        wrapper,
+        initialProps: { relayHints: [] as string[] },
+      },
+    );
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    rerender({ relayHints: ['wss://relay.example'] });
+    await waitFor(() => expect(result.current.data?.name).toBe('Hinted'));
+
+    expect(mockNostrQuery).toHaveBeenCalledTimes(2);
   });
 });

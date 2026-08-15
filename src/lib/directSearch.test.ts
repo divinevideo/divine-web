@@ -85,6 +85,7 @@ describe('directSearch', () => {
       identifier: 'friends',
       pubkey,
       kind: 30000,
+      relays: ['wss://relay.example'],
     });
     const blockListNaddr = nip19.naddrEncode({
       identifier: 'block',
@@ -104,7 +105,7 @@ describe('directSearch', () => {
       entity: 'event',
     });
     expect(getDirectSearchTarget(peopleListNaddr)).toEqual({
-      path: buildPeopleListPath(pubkey, 'friends'),
+      path: `${buildPeopleListPath(pubkey, 'friends')}?relays=${encodeURIComponent('wss://relay.example')}`,
       entity: 'event',
     });
     expect(getDirectSearchTarget(blockListNaddr)).toEqual({

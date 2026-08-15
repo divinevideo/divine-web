@@ -107,9 +107,9 @@ vi.mock('@/components/VideoGrid', () => ({
   ),
 }));
 
-function renderPage() {
+function renderPage(initialEntry = `/people-lists/${OWNER}/friends`) {
   return render(
-    <MemoryRouter initialEntries={[`/people-lists/${OWNER}/friends`]}>
+    <MemoryRouter initialEntries={[initialEntry]}>
       <Routes>
         <Route path="/people-lists/:pubkey/:listId" element={<PeopleListDetailPage />} />
         <Route path="/profile/:npub/lists" element={<div>Profile lists</div>} />
@@ -210,8 +210,16 @@ describe('PeopleListDetailPage', () => {
 
     renderUppercaseRoute();
 
-    expect(mockUsePeopleList).toHaveBeenCalledWith(OWNER, 'friends');
+    expect(mockUsePeopleList).toHaveBeenCalledWith(OWNER, 'friends', { relayHints: [] });
     expect(screen.getByRole('button', { name: 'Edit' })).toBeInTheDocument();
+  });
+
+  it('threads relay hints into the exact list lookup', () => {
+    renderPage(`/people-lists/${OWNER}/friends?relays=${encodeURIComponent('wss://relay.example')}`);
+
+    expect(mockUsePeopleList).toHaveBeenCalledWith(OWNER, 'friends', {
+      relayHints: ['wss://relay.example'],
+    });
   });
 
   it('hides owner controls for non-owners', () => {

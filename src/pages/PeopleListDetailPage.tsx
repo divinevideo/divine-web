@@ -5,7 +5,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { nip19 } from 'nostr-tools';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { DeleteListDialog } from '@/components/DeleteListDialog';
 import { EditPeopleListDialog } from '@/components/EditPeopleListDialog';
 import { PeopleListMembers } from '@/components/PeopleListMembers';
@@ -24,6 +24,7 @@ import { useToast } from '@/hooks/useToast';
 import { genUserName } from '@/lib/genUserName';
 import { getSafeProfileImage } from '@/lib/imageUtils';
 import { buildProfileLinkPath } from '@/lib/profileLinks';
+import { parseRelayHints } from '@/lib/relayHints';
 import { getPeopleListShareData } from '@/lib/shareUtils';
 
 function LoadMoreButton({
@@ -47,10 +48,18 @@ function LoadMoreButton({
   );
 }
 
-function PeopleListContent({ pubkey, listId }: { pubkey: string; listId: string }) {
+function PeopleListContent({
+  pubkey,
+  listId,
+  relayHints,
+}: {
+  pubkey: string;
+  listId: string;
+  relayHints: string[];
+}) {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const listQuery = usePeopleList(pubkey, listId);
+  const listQuery = usePeopleList(pubkey, listId, { relayHints });
   const author = useAuthor(pubkey);
   const { user } = useCurrentUser();
   const { toast } = useToast();
@@ -263,7 +272,9 @@ function PeopleListContent({ pubkey, listId }: { pubkey: string; listId: string 
 
 export default function PeopleListDetailPage() {
   const { pubkey, listId } = useParams<{ pubkey: string; listId: string }>();
+  const location = useLocation();
   const isValidPubkey = Boolean(pubkey && /^[0-9a-fA-F]{64}$/.test(pubkey));
+  const relayHints = parseRelayHints(location.search);
 
   if (!isValidPubkey || !pubkey || !listId) {
     return (
@@ -273,5 +284,5 @@ export default function PeopleListDetailPage() {
     );
   }
 
-  return <PeopleListContent pubkey={pubkey.toLowerCase()} listId={listId} />;
+  return <PeopleListContent pubkey={pubkey.toLowerCase()} listId={listId} relayHints={relayHints} />;
 }

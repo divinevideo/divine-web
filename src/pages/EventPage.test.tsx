@@ -1,7 +1,7 @@
 import { describe, expect, it, beforeEach, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { MemoryRouter, Route, Routes, Link } from 'react-router-dom';
+import { MemoryRouter, Route, Routes, Link, useLocation } from 'react-router-dom';
 import type {
   ButtonHTMLAttributes,
   HTMLAttributes,
@@ -98,6 +98,11 @@ vi.mock('@/components/ui/badge', () => ({
   Badge: ({ children, ...props }: HTMLAttributes<HTMLSpanElement>) => <span {...props}>{children}</span>,
 }));
 
+function PeopleListRouteProbe() {
+  const location = useLocation();
+  return <div data-testid="people-list-page">People list page {location.search}</div>;
+}
+
 function renderPage(initialEntries: string[]) {
   const queryClient = new QueryClient({
     defaultOptions: {
@@ -112,7 +117,7 @@ function renderPage(initialEntries: string[]) {
           <Route path="/event/:eventId" element={<EventPage />} />
           <Route path="/event/a/:kind/:pubkey/:identifier" element={<EventPage />} />
           <Route path="/list/:pubkey/:listId" element={<div data-testid="list-page">List page</div>} />
-          <Route path="/people-lists/:pubkey/:listId" element={<div data-testid="people-list-page">People list page</div>} />
+          <Route path="/people-lists/:pubkey/:listId" element={<PeopleListRouteProbe />} />
           <Route path="/video/:id" element={<div data-testid="video-page">Video page</div>} />
           <Route path="/profile/:npub" element={<div data-testid="profile-page">Profile page</div>} />
           <Route path="/t/:tag" element={<div data-testid="tag-page">Tag page</div>} />
@@ -187,6 +192,25 @@ describe('EventPage', () => {
     renderPage([`/event/${'c'.repeat(64)}`]);
 
     expect(await screen.findByTestId('people-list-page')).toBeInTheDocument();
+  });
+
+  it('preserves relay hints when redirecting people lists to the detail page', async () => {
+    const pubkey = 'a'.repeat(64);
+    const relayHint = 'wss://relay.example';
+    mockFetchAddressableEvent.mockResolvedValue({
+      id: 'c'.repeat(64),
+      pubkey,
+      created_at: 1_700_000_000,
+      kind: 30000,
+      tags: [['d', 'friends']],
+      content: '',
+      sig: '1'.repeat(128),
+    });
+
+    renderPage([`/event/a/30000/${pubkey}/friends?relays=${encodeURIComponent(relayHint)}`]);
+
+    expect(await screen.findByTestId('people-list-page')).toBeInTheDocument();
+    expect(screen.getByTestId('people-list-page')).toHaveTextContent(`?relays=${encodeURIComponent(relayHint)}`);
   });
 
   it('keeps legacy block list coordinates on the generic event page', async () => {

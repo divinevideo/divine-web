@@ -19,6 +19,7 @@ import {
   isNoteEventKind,
 } from '@/lib/eventRouting';
 import { getDirectSearchTarget } from '@/lib/directSearch';
+import { appendRelayHints, parseRelayHints } from '@/lib/relayHints';
 import { genUserName } from '@/lib/genUserName';
 import { getSafeProfileImage } from '@/lib/imageUtils';
 import { NoteContent } from '@/components/NoteContent';
@@ -109,15 +110,6 @@ function EventLoadingState() {
   );
 }
 
-function getRelayHints(search: string): string[] {
-  const params = new URLSearchParams(search);
-  return params
-    .getAll('relays')
-    .flatMap(value => value.split(','))
-    .map(value => value.trim())
-    .filter(Boolean);
-}
-
 export function EventPage() {
   const { eventId, kind, pubkey, identifier } = useParams<{
     eventId?: string;
@@ -133,7 +125,7 @@ export function EventPage() {
 
   const numericKind = kind ? Number(kind) : null;
   const decodedIdentifier = identifier ? decodeURIComponent(identifier) : null;
-  const relayHints = getRelayHints(location.search);
+  const relayHints = parseRelayHints(location.search);
   const configuredRelayUrls = config.relayUrls || [config.relayUrl];
   const relayKey = [...configuredRelayUrls, ...relayHints].join(',');
 
@@ -200,7 +192,7 @@ export function EventPage() {
   }
 
   if (event && redirectPath && redirectPath !== location.pathname) {
-    return <Navigate to={redirectPath} replace />;
+    return <Navigate to={appendRelayHints(redirectPath, relayHints)} replace />;
   }
 
   if (!event) {

@@ -2,6 +2,8 @@
 
 import { useNostr } from '@nostrify/react';
 import { useQuery } from '@tanstack/react-query';
+import { getEventLookupRelayUrls } from '@/config/relays';
+import { useAppContext } from '@/hooks/useAppContext';
 import { deduplicatePeopleLists, PEOPLE_LIST_KIND } from '@/lib/parsePeopleListFromEvent';
 
 export function usePeopleLists(pubkey: string | undefined) {
@@ -26,11 +28,18 @@ export function usePeopleLists(pubkey: string | undefined) {
   });
 }
 
-export function usePeopleList(pubkey: string | undefined, listId: string | undefined) {
+export function usePeopleList(
+  pubkey: string | undefined,
+  listId: string | undefined,
+  options: { relayHints?: string[] } = {},
+) {
   const { nostr } = useNostr();
+  const { config } = useAppContext();
+  const configuredRelayUrls = config.relayUrls || [config.relayUrl];
+  const relayKey = [...configuredRelayUrls, ...(options.relayHints ?? [])].join(',');
 
   return useQuery({
-    queryKey: ['people-list', pubkey, listId],
+    queryKey: ['people-list', pubkey, listId, relayKey],
     queryFn: async ({ signal }) => {
       const events = await nostr.query([{
         kinds: [PEOPLE_LIST_KIND],
@@ -39,6 +48,10 @@ export function usePeopleList(pubkey: string | undefined, listId: string | undef
         limit: 10,
       }], {
         signal: AbortSignal.any([signal, AbortSignal.timeout(5000)]),
+        relays: getEventLookupRelayUrls({
+          configuredRelayUrls,
+          relayHints: options.relayHints,
+        }),
       });
 
       return deduplicatePeopleLists(events)[0] ?? null;

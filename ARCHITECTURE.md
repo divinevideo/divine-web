@@ -98,6 +98,9 @@ them on the generic event route rather than sending them to a detail page that
 cannot render them. Divine clients no longer author `d=block` kind `30000`
 lists; web reads that list only for legacy compatibility with pre-retirement
 accounts and older or non-Divine clients.
+People-list detail routes preserve `?relays=` hints from NIP-19 addresses and
+generic event redirects so lists published only to non-default relays can still
+be resolved.
 
 ## Styling
 
