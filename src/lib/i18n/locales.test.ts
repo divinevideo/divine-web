@@ -84,6 +84,11 @@ const MUST_BE_TRANSLATED_PREFIXES = [
   // docstring above excludes on purpose.
   'notificationsPage.errorTitle',
   'notificationsPage.errorFallback',
+  // Featured-navigation fallback copy. Same reasoning: full sentences, named
+  // individually rather than widening to `videoPage.` so the short labels that
+  // sit alongside them are not dragged in.
+  'videoPage.featuredTabWrappedDescription',
+  'videoPage.featuredNavigationEndedDescription',
 ];
 
 describe('i18n locale resources', () => {
