@@ -19,9 +19,9 @@ jobs:
             const pr = context.payload.pull_request;
             const prNumber = pr.number;
             const { owner, repo } = context.repo;
-            const blockerPattern = new RegExp(
-              String.raw`\bblocked\s+(?:on|by)(?:\s+(?:pr|pull request))?\s+#${prNumber}\b`,
-              'i',
+            const blockerReferencePattern = new RegExp(
+              String.raw`\bblocked\s+(?:on|by)(?:\s+(?:pr|pull request))?\s+#\d+(?:\s*(?:,|and|&)\s*(?:(?:pr|pull request)\s+)?#\d+)*`,
+              'gi',
             );
             const labels = {
               blocked: { color: 'cfd3d7', description: 'Waiting on another issue or pull request' },
@@ -55,6 +55,17 @@ jobs:
             }
 
             const marker = `<!-- merged-blocker-reminder:${prNumber} -->`;
+            const blockerStateCache = new Map([[prNumber, true]]);
+
+            function extractBlockerNumbers(text) {
+              const numbers = new Set();
+              for (const match of text.matchAll(blockerReferencePattern)) {
+                for (const numberMatch of match[0].matchAll(/#(\d+)/g)) {
+                  numbers.add(Number(numberMatch[1]));
+                }
+              }
+              return numbers;
+            }
 
             async function listComments(issueNumber) {
               return github.paginate(github.rest.issues.listComments, {
@@ -63,6 +74,21 @@ jobs:
                 issue_number: issueNumber,
                 per_page: 100,
               });
+            }
+
+            async function isBlockerClosed(blockerNumber) {
+              if (blockerStateCache.has(blockerNumber)) {
+                return blockerStateCache.get(blockerNumber);
+              }
+
+              const { data } = await github.rest.issues.get({
+                owner,
+                repo,
+                issue_number: blockerNumber,
+              });
+              const closed = data.state === 'closed';
+              blockerStateCache.set(blockerNumber, closed);
+              return closed;
             }
 
             const issues = await github.paginate(github.rest.issues.listForRepo, {
@@ -82,11 +108,12 @@ jobs:
               // Fetched at most once per issue and reused for both the blocker
               // match and the duplicate-comment check.
               const comments = issue.comments > 0 ? await listComments(issue.number) : [];
+              const blockerNumbers = new Set([
+                ...extractBlockerNumbers(issue.body ?? ''),
+                ...comments.flatMap((comment) => [...extractBlockerNumbers(comment.body ?? '')]),
+              ]);
 
-              if (
-                blockerPattern.test(issue.body ?? '') ||
-                comments.some((comment) => blockerPattern.test(comment.body ?? ''))
-              ) {
+              if (blockerNumbers.has(prNumber)) {
                 blockedIssues.push({ issue, comments });
               }
             }
@@ -99,17 +126,36 @@ jobs:
             await ensureLabel('ready');
 
             for (const { issue, comments } of blockedIssues) {
+              const blockerNumbers = new Set([
+                ...extractBlockerNumbers(issue.body ?? ''),
+                ...comments.flatMap((comment) => [...extractBlockerNumbers(comment.body ?? '')]),
+              ]);
+              const allBlockersClosed = (
+                await Promise.all([...blockerNumbers].map((number) => isBlockerClosed(number)))
+              ).every(Boolean);
+
+              if (!allBlockersClosed) {
+                continue;
+              }
+
               const existingLabelNames = issue.labels.map((label) =>
                 typeof label === 'string' ? label : label.name,
               );
 
               if (existingLabelNames.includes('blocked')) {
-                await github.rest.issues.removeLabel({
-                  owner,
-                  repo,
-                  issue_number: issue.number,
-                  name: 'blocked',
-                });
+                try {
+                  await github.rest.issues.removeLabel({
+                    owner,
+                    repo,
+                    issue_number: issue.number,
+                    name: 'blocked',
+                  });
+                } catch (error) {
+                  // Another merged blocker run may have removed it first.
+                  if (error.status !== 404) {
+                    throw error;
+                  }
+                }
               }
 
               if (!existingLabelNames.includes('ready')) {

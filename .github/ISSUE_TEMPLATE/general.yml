@@ -21,5 +21,5 @@ body:
     id: details
     attributes:
       label: Details
-      description: Add context, constraints, links, or acceptance criteria.
+      description: Add context, constraints, links, acceptance criteria, or blockers. If another PR blocks this issue, write `blocked on #123`, `blocked by #123`, or `blocked by PR #123`.
       placeholder: What needs to happen?

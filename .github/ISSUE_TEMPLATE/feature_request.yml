@@ -31,7 +31,7 @@ body:
     id: proposal
     attributes:
       label: Proposed Approach
-      description: Describe the desired behavior or UX at a high level.
+      description: Describe the desired behavior or UX at a high level. If another PR blocks this issue, write `blocked on #123`, `blocked by #123`, or `blocked by PR #123`.
       placeholder: Outline the proposed change.
     validations:
       required: true

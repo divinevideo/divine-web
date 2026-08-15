@@ -48,7 +48,7 @@ body:
     id: regression
     attributes:
       label: Regression Notes
-      description: If known, note whether this worked before and what changed.
+      description: If known, note whether this worked before and what changed. If another PR blocks this issue, write `blocked on #123`, `blocked by #123`, or `blocked by PR #123`.
       placeholder: Optional context about when the regression started.
   - type: textarea
     id: screenshots
