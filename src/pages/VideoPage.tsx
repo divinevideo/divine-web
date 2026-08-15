@@ -51,6 +51,8 @@ export function VideoPage() {
   const {
     video: funnelcakeVideo,
     videos: funnelcakeVideos,
+    featuredNavigationState,
+    featuredTab,
     windowOffset: funnelcakeWindowOffset,
     fetchedCount: funnelcakeFetchedCount,
     hasNextPage: funnelcakeHasNextPage,
@@ -69,9 +71,15 @@ export function VideoPage() {
     enabled: !!id,
   });
 
+  const isFeaturedTabUnavailable = featuredNavigationState === 'tab-unavailable';
+  const isFeaturedTargetOutOfRange = featuredNavigationState === 'target-out-of-range';
+  const effectiveNavigationContext: VideoNavigationContext | null = useMemo(
+    () => isFeaturedTabUnavailable ? { source: 'trending' } : context,
+    [context, isFeaturedTabUnavailable]
+  );
   const shouldEnableWebsocketNavigation = !!id && !funnelcakeLoading && (
     !funnelcakeVideo ||
-    (context?.source === 'featured' && !funnelcakeVideos)
+    (isFeaturedTabUnavailable && !funnelcakeVideos)
   );
 
   // Fallback to WebSocket-based navigation (slower but handles all cases)
@@ -84,7 +92,10 @@ export function VideoPage() {
     goToNext: _wsGoToNext,
     goToPrevious: _wsGoToPrevious,
     isLoading: wsLoading,
-  } = useVideoNavigation(id || '', { enabled: shouldEnableWebsocketNavigation });
+  } = useVideoNavigation(id || '', {
+    enabled: shouldEnableWebsocketNavigation,
+    context: effectiveNavigationContext,
+  });
 
   // ALWAYS prefer Funnelcake REST API first - it's much faster
   // Loop counts are parsed from content field by funnelcakeTransform
@@ -108,10 +119,10 @@ export function VideoPage() {
 
   // Build navigation URL
   const buildNavigationUrl = useCallback((video: ParsedVideoData, index: number) => {
-    if (!context) return `/video/${video.id}`;
+    if (!effectiveNavigationContext) return `/video/${video.id}`;
 
-    return buildVideoNavigationUrl(video.id, context, index);
-  }, [context]);
+    return buildVideoNavigationUrl(video.id, effectiveNavigationContext, index);
+  }, [effectiveNavigationContext]);
 
   const goToNext = useCallback(async () => {
     if (!hasNext || !videos || nextNavigationInFlightRef.current) return;
@@ -342,26 +353,30 @@ export function VideoPage() {
 
   // Navigation back to source
   const handleGoBack = useCallback(() => {
-    if (context?.source === 'hashtag' && context.hashtag) {
-      navigate(`/hashtag/${context.hashtag}`);
-    } else if (context?.source === 'profile' && context.pubkey) {
+    if (isFeaturedTargetOutOfRange && featuredTab?.slug) {
+      navigate(`/discovery/${featuredTab.slug}`);
+    } else if (context?.source === 'featured' && featuredTab?.slug) {
+      navigate(`/discovery/${featuredTab.slug}`);
+    } else if (effectiveNavigationContext?.source === 'hashtag' && effectiveNavigationContext.hashtag) {
+      navigate(`/hashtag/${effectiveNavigationContext.hashtag}`);
+    } else if (effectiveNavigationContext?.source === 'profile' && effectiveNavigationContext.pubkey) {
       navigate(buildProfileLinkPath({
-        pubkey: context.pubkey,
+        pubkey: effectiveNavigationContext.pubkey,
         fallbackRoute: 'profile',
-      }), { ownerPubkey: context.pubkey });
-    } else if (context?.source === 'search') {
+      }), { ownerPubkey: effectiveNavigationContext.pubkey });
+    } else if (effectiveNavigationContext?.source === 'search') {
       const params = new URLSearchParams();
-      if (context.query) params.set('q', context.query);
+      if (effectiveNavigationContext.query) params.set('q', effectiveNavigationContext.query);
       params.set('filter', 'videos');
-      if (context.sortMode) params.set('sort', context.sortMode);
+      if (effectiveNavigationContext.sortMode) params.set('sort', effectiveNavigationContext.sortMode);
       const target = params.toString() ? `/search?${params.toString()}` : '/search';
       navigate(target);
-    } else if (context?.source === 'people-list' && context.pubkey && context.listId) {
-      navigate(buildPeopleListPath(context.pubkey, context.listId));
+    } else if (effectiveNavigationContext?.source === 'people-list' && effectiveNavigationContext.pubkey && effectiveNavigationContext.listId) {
+      navigate(buildPeopleListPath(effectiveNavigationContext.pubkey, effectiveNavigationContext.listId));
     } else {
       navigate(-1); // Browser back
     }
-  }, [context, navigate]);
+  }, [context?.source, effectiveNavigationContext, featuredTab?.slug, isFeaturedTargetOutOfRange, navigate]);
 
   // Social interaction handlers (same as VideoFeed)
   const handleLike = useCallback(async (video: ParsedVideoData) => {
@@ -586,7 +601,7 @@ export function VideoPage() {
         commentCount={video.commentCount ?? 0}
         viewCount={displayCount}
         showComments={showCommentsForVideo === video.id}
-        navigationContext={context || undefined}
+        navigationContext={effectiveNavigationContext || undefined}
       />
     );
   }
@@ -665,26 +680,29 @@ export function VideoPage() {
               onClick={handleGoBack}
               className="text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-2 text-sm font-medium"
             >
-              {context.source === 'hashtag' && context.hashtag && (
+              {effectiveNavigationContext?.source === 'hashtag' && effectiveNavigationContext.hashtag && (
                 <>
                   <Hash className="h-4 w-4" />
-                  #{context.hashtag}
+                  #{effectiveNavigationContext.hashtag}
                 </>
               )}
-              {context.source === 'profile' && (
+              {effectiveNavigationContext?.source === 'profile' && (
                 <>
                   <User className="h-4 w-4" />
                   {t('videoPage.loadingVideos')}
                 </>
               )}
-              {context.source === 'search' && (
-                <span>{context.query ? t('videoPage.searchPrefix', { query: context.query }) : t('videoPage.searchResults')}</span>
+              {effectiveNavigationContext?.source === 'search' && (
+                <span>{effectiveNavigationContext.query ? t('videoPage.searchPrefix', { query: effectiveNavigationContext.query }) : t('videoPage.searchResults')}</span>
               )}
-              {context.source === 'people-list' && (
+              {effectiveNavigationContext?.source === 'people-list' && (
                 <span>People list</span>
               )}
-              {(context.source === 'discovery' || context.source === 'trending' || context.source === 'home') && (
-                <span className="capitalize">{context.source}</span>
+              {effectiveNavigationContext?.source === 'featured' && (
+                <span>{featuredTab?.label ?? t('videoPage.featuredVideos')}</span>
+              )}
+              {(effectiveNavigationContext?.source === 'discovery' || effectiveNavigationContext?.source === 'trending' || effectiveNavigationContext?.source === 'home') && (
+                <span className="capitalize">{effectiveNavigationContext.source}</span>
               )}
             </button>
             <Button
@@ -729,26 +747,29 @@ export function VideoPage() {
               onClick={handleGoBack}
               className="text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-2 text-sm font-medium"
             >
-              {context.source === 'hashtag' && context.hashtag && (
+              {effectiveNavigationContext?.source === 'hashtag' && effectiveNavigationContext.hashtag && (
                 <>
                   <Hash className="h-4 w-4" />
-                  #{context.hashtag}
+                  #{effectiveNavigationContext.hashtag}
                 </>
               )}
-              {context.source === 'profile' && authorName && (
+              {effectiveNavigationContext?.source === 'profile' && authorName && (
                 <>
                   <User className="h-4 w-4" />
                   {t('videoPage.authorVideos', { name: authorName })}
                 </>
               )}
-              {context.source === 'search' && (
-                <span>{context.query ? t('videoPage.searchPrefix', { query: context.query }) : t('videoPage.searchResults')}</span>
+              {effectiveNavigationContext?.source === 'search' && (
+                <span>{effectiveNavigationContext.query ? t('videoPage.searchPrefix', { query: effectiveNavigationContext.query }) : t('videoPage.searchResults')}</span>
               )}
-              {context.source === 'people-list' && (
+              {effectiveNavigationContext?.source === 'people-list' && (
                 <span>People list</span>
               )}
-              {(context.source === 'discovery' || context.source === 'trending' || context.source === 'home') && (
-                <span className="capitalize">{context.source}</span>
+              {effectiveNavigationContext?.source === 'featured' && (
+                <span>{featuredTab?.label ?? t('videoPage.featuredVideos')}</span>
+              )}
+              {(effectiveNavigationContext?.source === 'discovery' || effectiveNavigationContext?.source === 'trending' || effectiveNavigationContext?.source === 'home') && (
+                <span className="capitalize">{effectiveNavigationContext.source}</span>
               )}
             </button>
             <Button
@@ -761,6 +782,12 @@ export function VideoPage() {
             </Button>
           </div>
         </div>
+
+        {isFeaturedTabUnavailable && (
+          <p className="mb-4 text-center text-sm text-muted-foreground">
+            {t('videoPage.featuredTabWrappedDescription')}
+          </p>
+        )}
 
         {/* Scrollable video feed - progressive rendering */}
         <InfiniteScroll
@@ -828,16 +855,16 @@ export function VideoPage() {
       {context && (
         <div className="mb-4">
           <div className="text-center text-sm">
-            {context.source === 'hashtag' && context.hashtag && (
+            {effectiveNavigationContext?.source === 'hashtag' && effectiveNavigationContext.hashtag && (
               <button
                 onClick={handleGoBack}
                 className="text-muted-foreground hover:text-primary transition-colors inline-flex items-center gap-1 text-xs"
               >
                 <Hash className="h-3 w-3" />
-                #{context.hashtag}
+                #{effectiveNavigationContext.hashtag}
               </button>
             )}
-            {context.source === 'profile' && authorName && (
+            {effectiveNavigationContext?.source === 'profile' && authorName && (
               <button
                 onClick={handleGoBack}
                 className="text-muted-foreground hover:text-primary transition-colors inline-flex items-center gap-1 text-xs"
@@ -846,15 +873,15 @@ export function VideoPage() {
                 {authorName}
               </button>
             )}
-            {context.source === 'search' && (
+            {effectiveNavigationContext?.source === 'search' && (
               <button
                 onClick={handleGoBack}
                 className="text-muted-foreground hover:text-primary transition-colors text-xs"
               >
-                {context.query ? t('videoPage.searchPrefix', { query: context.query }) : t('videoPage.searchResults')}
+                {effectiveNavigationContext.query ? t('videoPage.searchPrefix', { query: effectiveNavigationContext.query }) : t('videoPage.searchResults')}
               </button>
             )}
-            {context.source === 'people-list' && (
+            {effectiveNavigationContext?.source === 'people-list' && (
               <button
                 onClick={handleGoBack}
                 className="text-muted-foreground hover:text-primary transition-colors text-xs"
@@ -862,15 +889,34 @@ export function VideoPage() {
                 People list
               </button>
             )}
-            {(context.source === 'discovery' || context.source === 'trending' || context.source === 'home') && (
+            {effectiveNavigationContext?.source === 'featured' && (
               <button
                 onClick={handleGoBack}
                 className="text-muted-foreground hover:text-primary transition-colors text-xs"
               >
-                {context.source}
+                {featuredTab?.label ?? t('videoPage.featuredVideos')}
+              </button>
+            )}
+            {(effectiveNavigationContext?.source === 'discovery' || effectiveNavigationContext?.source === 'trending' || effectiveNavigationContext?.source === 'home') && (
+              <button
+                onClick={handleGoBack}
+                className="text-muted-foreground hover:text-primary transition-colors text-xs"
+              >
+                {effectiveNavigationContext.source}
               </button>
             )}
           </div>
+        </div>
+      )}
+
+      {isFeaturedTargetOutOfRange && featuredTab && (
+        <div className="mb-4 text-center space-y-3">
+          <p className="text-sm text-muted-foreground">
+            {t('videoPage.featuredNavigationEndedDescription')}
+          </p>
+          <Button type="button" variant="outline" size="sm" onClick={handleGoBack}>
+            {t('videoPage.backToFeaturedTab', { label: featuredTab.label })}
+          </Button>
         </div>
       )}
 

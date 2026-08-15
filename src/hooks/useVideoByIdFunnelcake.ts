@@ -17,6 +17,7 @@ import { debugLog } from '@/lib/debug';
 import { videoAddress } from '@/lib/videoAddress';
 import type { ParsedVideoData } from '@/types/video';
 import type { SortMode } from '@/types/nostr';
+import type { ResolvedFeaturedTab } from '@/types/featuredTabs';
 
 interface UseVideoByIdOptions {
   videoId: string;
@@ -32,6 +33,8 @@ interface UseVideoByIdOptions {
 interface UseVideoByIdResult {
   video: ParsedVideoData | null;
   videos: ParsedVideoData[] | null;  // Neighboring videos for navigation
+  featuredNavigationState: FeaturedNavigationState;
+  featuredTab: ResolvedFeaturedTab | null;
   windowOffset: number;
   fetchedCount: number;
   hasNextPage: boolean;
@@ -45,6 +48,7 @@ const NAVIGATION_WINDOW_SIZE = 16;
 const NAVIGATION_PAGE_BUDGET = 5;
 
 type NavigationVideo = ParsedVideoData & { navigationIndex?: number };
+export type FeaturedNavigationState = 'not-featured' | 'ok' | 'unresolved' | 'tab-unavailable' | 'target-out-of-range';
 
 interface VideoNavigationPage {
   videos: NavigationVideo[];
@@ -385,6 +389,22 @@ export function useVideoByIdFunnelcake(options: UseVideoByIdOptions): UseVideoBy
 
   const video = contextVideo || singleVideoQuery.data || null;
   const videos = contextVideo ? contextVideos : null;
+  const featuredPagesLoaded = featuredVideosData?.pages.length ?? 0;
+  const featuredNavigationState: FeaturedNavigationState = (() => {
+    if (!featuredTabId) return 'not-featured';
+    if (!eligibleFeaturedTabId) {
+      return featuredTabState.isResolved ? 'tab-unavailable' : 'unresolved';
+    }
+    if (
+      !contextVideo &&
+      !isFeaturedVideosLoading &&
+      !isFetchingNextFeaturedPage &&
+      (featuredPagesLoaded >= featuredPageBudget || !featuredHasNextPage)
+    ) {
+      return 'target-out-of-range';
+    }
+    return 'ok';
+  })();
   const isLoading = contextLoading || singleVideoQuery.isLoading;
   const error = video
     ? null
@@ -416,6 +436,8 @@ export function useVideoByIdFunnelcake(options: UseVideoByIdOptions): UseVideoBy
   return {
     video,
     videos,
+    featuredNavigationState,
+    featuredTab: featuredTabState.tab,
     windowOffset: eligibleFeaturedTabId ? 0 : windowOffset,
     fetchedCount,
     hasNextPage,

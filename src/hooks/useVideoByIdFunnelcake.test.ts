@@ -469,6 +469,8 @@ describe('useVideoByIdFunnelcake', () => {
       expect(result.current.video?.id).toBe('target-video');
     });
 
+    expect(result.current.featuredNavigationState).toBe('ok');
+    expect(result.current.featuredTab?.id).toBe('ft_1234abcd');
     expect(mockFetchFeaturedTabVideos).toHaveBeenCalledWith(
       'https://api.divine.video',
       'ft_1234abcd',
@@ -482,6 +484,33 @@ describe('useVideoByIdFunnelcake', () => {
       'featured-3',
     ]);
     expect(result.current.windowOffset).toBe(0);
+  });
+
+  it('marks featured navigation unresolved while the tab configuration is unknown', async () => {
+    mockUseFeaturedTab.mockReturnValue({
+      tab: null,
+      isResolved: false,
+    });
+    mockFetchVideoById.mockResolvedValueOnce({
+      id: 'target-video',
+      pubkey: 'p'.repeat(64),
+      d_tag: 'target-video',
+    });
+
+    const { result } = renderHook(
+      () => useVideoByIdFunnelcake({
+        videoId: 'target-video',
+        featuredTabId: 'ft_1234abcd',
+      }),
+      { wrapper: createWrapper() }
+    );
+
+    await waitFor(() => {
+      expect(result.current.video?.id).toBe('target-video');
+    });
+
+    expect(result.current.featuredNavigationState).toBe('unresolved');
+    expect(mockFetchFeaturedTabVideos).not.toHaveBeenCalled();
   });
 
   it('filters blocked authors out of featured navigation candidates', async () => {
@@ -607,6 +636,47 @@ describe('useVideoByIdFunnelcake', () => {
     expect(mockFetchFeaturedTabVideos).not.toHaveBeenCalled();
     expect(mockSearchVideos).not.toHaveBeenCalled();
     expect(mockFetchUserVideos).not.toHaveBeenCalled();
+    expect(result.current.videos).toBeNull();
+    expect(result.current.featuredNavigationState).toBe('tab-unavailable');
+  });
+
+  it('marks featured navigation out of range when an index-free link misses the first page budget', async () => {
+    mockUseFeaturedTab.mockReturnValue({
+      tab: { id: 'ft_1234abcd', slug: 'seasonal-theme', label: 'Seasonal' },
+      isResolved: true,
+    });
+    mockFetchFeaturedTabVideos.mockResolvedValueOnce({
+      videos: [{ id: 'featured-1', pubkey: 'p'.repeat(64), d_tag: 'featured-1' }],
+      has_more: true,
+      next_cursor: 'cursor-2',
+    });
+    mockFetchVideoById.mockResolvedValueOnce({
+      id: 'target-video',
+      pubkey: 'p'.repeat(64),
+      d_tag: 'target-video',
+    });
+
+    const { result } = renderHook(
+      () => useVideoByIdFunnelcake({
+        videoId: 'target-video',
+        featuredTabId: 'ft_1234abcd',
+      }),
+      { wrapper: createWrapper() }
+    );
+
+    await waitFor(() => {
+      expect(result.current.video?.id).toBe('target-video');
+      expect(result.current.featuredNavigationState).toBe('target-out-of-range');
+    });
+
+    expect(mockFetchFeaturedTabVideos).toHaveBeenCalledTimes(1);
+    expect(mockFetchFeaturedTabVideos).toHaveBeenCalledWith(
+      'https://api.divine.video',
+      'ft_1234abcd',
+      undefined,
+      12,
+      expect.any(AbortSignal)
+    );
     expect(result.current.videos).toBeNull();
   });
 

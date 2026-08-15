@@ -6,6 +6,8 @@ import { useCallback, useMemo } from 'react';
 import { useVideoEvents } from './useVideoEvents';
 import { usePeopleList } from '@/hooks/usePeopleLists';
 import { usePeopleListVideos } from '@/hooks/usePeopleListVideos';
+import { useFeedBlocklist } from '@/hooks/useFeedBlocklist';
+import { filterBlockedVideos } from '@/lib/blocklistFilter';
 import type { ParsedVideoData } from '@/types/video';
 import type { SortMode } from '@/types/nostr';
 
@@ -35,17 +37,19 @@ interface VideoNavigationHook {
 
 interface UseVideoNavigationOptions {
   enabled?: boolean;
+  context?: VideoNavigationContext | null;
 }
 
 export function useVideoNavigation(videoId: string, options: UseVideoNavigationOptions = {}): VideoNavigationHook {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { enabled = true } = options;
+  const { enabled = true, context: contextOverride } = options;
 
   // Parse navigation context from URL params
-  const context: VideoNavigationContext | null = useMemo(() => {
+  const parsedContext: VideoNavigationContext | null = useMemo(() => {
     return parseVideoNavigationContext(searchParams);
   }, [searchParams]);
+  const context = contextOverride === undefined ? parsedContext : contextOverride;
 
   const isPeopleListContext = context?.source === 'people-list';
   const peopleListQuery = usePeopleList(
@@ -66,7 +70,7 @@ export function useVideoNavigation(videoId: string, options: UseVideoNavigationO
   const feedTypeForWebSocket: WebSocketFeedType | undefined = (() => {
     if (!context) return undefined;
     if (isPeopleListContext) return 'discovery';
-    if (context.source === 'foryou' || context.source === 'popular' || context.source === 'featured') return 'trending';
+    if (context.source === 'foryou' || context.source === 'popular') return 'trending';
     if (context.source === 'search') return 'discovery';
     if (
       context.source === 'hashtag' ||
@@ -82,6 +86,7 @@ export function useVideoNavigation(videoId: string, options: UseVideoNavigationO
     }
     return 'discovery';
   })();
+  const blockedPubkeys = useFeedBlocklist();
   const { data: feedVideos, isLoading: feedVideosLoading } = useVideoEvents(
     context && !isPeopleListContext ? {
       feedType: feedTypeForWebSocket,
@@ -96,7 +101,11 @@ export function useVideoNavigation(videoId: string, options: UseVideoNavigationO
       enabled: enabled && !isPeopleListContext,
     }
   );
-  const videos = isPeopleListContext ? peopleListVideos : feedVideos;
+  const filteredFeedVideos = useMemo(
+    () => feedVideos ? filterBlockedVideos(feedVideos, blockedPubkeys) : feedVideos,
+    [feedVideos, blockedPubkeys]
+  );
+  const videos = isPeopleListContext ? peopleListVideos : filteredFeedVideos;
   const isLoading = isPeopleListContext
     ? peopleListQuery.isLoading || peopleListVideosQuery.isLoading
     : feedVideosLoading;

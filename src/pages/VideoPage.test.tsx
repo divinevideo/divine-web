@@ -12,10 +12,11 @@ const { VIDEO_1_AUTHOR_PK, VIDEO_2_AUTHOR_PK, VIDEO_3_AUTHOR_PK, VIEWER_PK } = v
   VIEWER_PK: 'f'.repeat(64),
 }));
 
-const { mockNavigate, mockFetchNextFunnelcakePage, mockToast } = vi.hoisted(() => ({
+const { mockNavigate, mockFetchNextFunnelcakePage, mockToast, mockUseVideoNavigation } = vi.hoisted(() => ({
   mockNavigate: vi.fn(),
   mockFetchNextFunnelcakePage: vi.fn(),
   mockToast: vi.fn(),
+  mockUseVideoNavigation: vi.fn(),
 }));
 
 const { openLoginDialogMock } = vi.hoisted(() => ({
@@ -80,6 +81,8 @@ vi.mock('@/hooks/useVideoByIdFunnelcake', () => ({
       return {
         video,
         videos,
+        featuredNavigationState: 'not-featured',
+        featuredTab: null,
         windowOffset: 0,
         fetchedCount: videos.length,
         hasNextPage: false,
@@ -106,6 +109,8 @@ vi.mock('@/hooks/useVideoByIdFunnelcake', () => ({
       return {
         video: scrollVideos[0],
         videos: scrollVideos,
+        featuredNavigationState: 'not-featured',
+        featuredTab: null,
         windowOffset: 0,
         fetchedCount: scrollVideos.length,
         hasNextPage: false,
@@ -132,6 +137,8 @@ vi.mock('@/hooks/useVideoByIdFunnelcake', () => ({
       return {
         video: scrollVideos[0],
         videos: scrollVideos,
+        featuredNavigationState: 'not-featured',
+        featuredTab: null,
         windowOffset: 0,
         fetchedCount: scrollVideos.length,
         hasNextPage: true,
@@ -158,6 +165,8 @@ vi.mock('@/hooks/useVideoByIdFunnelcake', () => ({
       return {
         video: scrollVideos[0],
         videos: scrollVideos,
+        featuredNavigationState: 'not-featured',
+        featuredTab: null,
         windowOffset: 0,
         fetchedCount: scrollVideos.length,
         hasNextPage: true,
@@ -184,6 +193,8 @@ vi.mock('@/hooks/useVideoByIdFunnelcake', () => ({
       return {
         video: scrollVideos[0],
         videos: scrollVideos,
+        featuredNavigationState: 'not-featured',
+        featuredTab: null,
         windowOffset: 0,
         fetchedCount: scrollVideos.length,
         hasNextPage: false,
@@ -210,6 +221,8 @@ vi.mock('@/hooks/useVideoByIdFunnelcake', () => ({
             navigationIndex: 7,
           },
         ],
+        featuredNavigationState: 'not-featured',
+        featuredTab: null,
         windowOffset: 4,
         fetchedCount: 3,
         hasNextPage: false,
@@ -226,6 +239,8 @@ vi.mock('@/hooks/useVideoByIdFunnelcake', () => ({
       return {
         video: videos[1],
         videos: [videos[1]],
+        featuredNavigationState: 'ok',
+        featuredTab: { id: 'ft_1234abcd', slug: 'seasonal-theme', label: 'Seasonal' },
         windowOffset: 1,
         fetchedCount: 1,
         hasNextPage: true,
@@ -241,6 +256,8 @@ vi.mock('@/hooks/useVideoByIdFunnelcake', () => ({
       return {
         video: videos[0],
         videos,
+        featuredNavigationState: 'not-featured',
+        featuredTab: null,
         windowOffset: 0,
         fetchedCount: videos.length,
         hasNextPage: true,
@@ -255,6 +272,8 @@ vi.mock('@/hooks/useVideoByIdFunnelcake', () => ({
       return {
         video: videos[1],
         videos: [videos[1]],
+        featuredNavigationState: 'ok',
+        featuredTab: { id: options.featuredTabId, slug: 'seasonal-theme', label: 'Seasonal' },
         windowOffset: 1,
         fetchedCount: 1,
         hasNextPage: true,
@@ -265,9 +284,43 @@ vi.mock('@/hooks/useVideoByIdFunnelcake', () => ({
       };
     }
 
+    if (options.featuredTabId === 'ft_unavailable') {
+      return {
+        video: videos[1],
+        videos: null,
+        featuredNavigationState: 'tab-unavailable',
+        featuredTab: null,
+        windowOffset: 0,
+        fetchedCount: 0,
+        hasNextPage: false,
+        isFetchingNextPage: false,
+        fetchNextPage: vi.fn(),
+        isLoading: false,
+        error: null,
+      };
+    }
+
+    if (options.featuredTabId === 'ft_out_of_range') {
+      return {
+        video: videos[1],
+        videos: null,
+        featuredNavigationState: 'target-out-of-range',
+        featuredTab: { id: 'ft_out_of_range', slug: 'live-tab', label: 'Live Tab' },
+        windowOffset: 0,
+        fetchedCount: 12,
+        hasNextPage: true,
+        isFetchingNextPage: false,
+        fetchNextPage: vi.fn(),
+        isLoading: false,
+        error: null,
+      };
+    }
+
     return {
       video,
       videos: null,
+      featuredNavigationState: 'not-featured',
+      featuredTab: null,
       windowOffset: 0,
       fetchedCount: 0,
       hasNextPage: false,
@@ -284,16 +337,7 @@ vi.mock('@/hooks/useVideoNavigation', async () => {
 
   return {
     ...actual,
-    useVideoNavigation: () => ({
-      context: null,
-      currentVideo: null,
-      videos: null,
-      hasNext: false,
-      hasPrevious: false,
-      goToNext: vi.fn(),
-      goToPrevious: vi.fn(),
-      isLoading: false,
-    }),
+    useVideoNavigation: mockUseVideoNavigation,
   };
 });
 
@@ -420,6 +464,16 @@ describe('VideoPage', () => {
     vi.clearAllMocks();
     mockFetchNextFunnelcakePage.mockReset();
     mockToast.mockReset();
+    mockUseVideoNavigation.mockReturnValue({
+      context: null,
+      currentVideo: null,
+      videos: null,
+      hasNext: false,
+      hasPrevious: false,
+      goToNext: vi.fn(),
+      goToPrevious: vi.fn(),
+      isLoading: false,
+    });
     currentUser.value = null;
     publishAsyncMock.mockResolvedValue({ id: 'like-event-id' });
     const storage = new Map<string, string>();
@@ -468,6 +522,91 @@ describe('VideoPage', () => {
     expect(url.searchParams.get('source')).toBe('featured');
     expect(url.searchParams.get('featuredTabId')).toBe('ft_1234abcd');
     expect(url.searchParams.get('index')).toBe('2');
+  });
+
+  it('rewrites onward navigation to trending when a featured tab is unavailable', async () => {
+    mockUseVideoNavigation.mockReturnValue({
+      context: { source: 'trending' },
+      currentVideo: {
+        id: 'video-2',
+        pubkey: VIDEO_2_AUTHOR_PK,
+        kind: 34236,
+        createdAt: 2,
+        content: 'two',
+        videoUrl: 'https://example.com/2.mp4',
+        vineId: 'vine-two',
+        hashtags: [],
+        reposts: [],
+      },
+      videos: [
+        {
+          id: 'video-2',
+          pubkey: VIDEO_2_AUTHOR_PK,
+          kind: 34236,
+          createdAt: 2,
+          content: 'two',
+          videoUrl: 'https://example.com/2.mp4',
+          vineId: 'vine-two',
+          hashtags: [],
+          reposts: [],
+        },
+        {
+          id: 'video-3',
+          pubkey: VIDEO_3_AUTHOR_PK,
+          kind: 34236,
+          createdAt: 3,
+          content: 'three',
+          videoUrl: 'https://example.com/3.mp4',
+          vineId: 'vine-three',
+          hashtags: [],
+          reposts: [],
+        },
+      ],
+      hasNext: true,
+      hasPrevious: false,
+      goToNext: vi.fn(),
+      goToPrevious: vi.fn(),
+      isLoading: false,
+    });
+
+    renderPage('/video/video-2?source=featured&featuredTabId=ft_unavailable&index=1');
+
+    expect(mockUseVideoNavigation).toHaveBeenCalledWith('video-2', {
+      enabled: true,
+      context: { source: 'trending' },
+    });
+    expect(screen.getByText("That featured tab wrapped. Here's trending.")).toBeInTheDocument();
+
+    fireEvent.keyDown(document.body, { key: 'ArrowDown' });
+
+    await waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalledTimes(1);
+    });
+
+    const [target] = mockNavigate.mock.calls[0] ?? [];
+    const url = new URL(String(target), 'https://divine.video');
+    expect(url.pathname).toBe('/video/video-3');
+    expect(url.searchParams.get('source')).toBe('trending');
+    expect(url.searchParams.has('featuredTabId')).toBe(false);
+  });
+
+  it('stops featured neighbor navigation when the target is outside the live tab window', () => {
+    renderPage('/video/video-2?source=featured&featuredTabId=ft_out_of_range');
+
+    expect(mockUseVideoNavigation).toHaveBeenCalledWith('video-2', {
+      enabled: false,
+      context: expect.objectContaining({
+        source: 'featured',
+        featuredTabId: 'ft_out_of_range',
+      }),
+    });
+    expect(screen.getByText('This video is still here, but it is not in the loaded tab window anymore.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Back to Live Tab' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /next video/i })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Back to Live Tab' }));
+
+    expect(mockNavigate).toHaveBeenCalledWith('/discovery/live-tab');
   });
 
   it('advances infinite-scroll data length when widening the rendered window', async () => {
