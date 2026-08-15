@@ -292,7 +292,7 @@ describe("ExitStartPage", () => {
     ).toBeInTheDocument();
   });
 
-  it("tells a hosted-signer account where its signing key lives", () => {
+  it("explains accounts whose key is managed by another signer", () => {
     mockUseCurrentUser.mockReturnValue(signedIn());
 
     render(
@@ -301,7 +301,7 @@ describe("ExitStartPage", () => {
       </TestApp>
     );
 
-    expect(screen.getByText(/This account signs through Divine's signer/)).toBeInTheDocument();
+    expect(screen.getByText(/signs through a browser extension or another signer/)).toBeInTheDocument();
     expect(
       screen.getByText(/Creating an archive still requires that signer/)
     ).toBeInTheDocument();
@@ -322,7 +322,7 @@ describe("ExitStartPage", () => {
       screen.getByText(/This account has its own key, stored in this browser/)
     ).toBeInTheDocument();
     expect(
-      screen.queryByText(/This account signs through Divine's signer/)
+      screen.queryByText(/signs through a browser extension or another signer/)
     ).not.toBeInTheDocument();
   });
 });

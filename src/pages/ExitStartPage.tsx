@@ -402,15 +402,14 @@ export function ExitStartPage() {
               ) : (
                 <>
                   <p>
-                    This account signs through Divine&apos;s signer. The key is held there,
-                    not in this browser, so there is no secret key for this page to give
-                    you.
+                    This account signs through a browser extension or another signer,
+                    rather than a secret key stored directly by this page. This page
+                    cannot reveal a key it does not hold.
                   </p>
                   <p>
                     What that means for moving: your public identity &mdash; the name other
-                    apps know you by &mdash; is yours and does not change. What depends on
-                    Divine is the ability to sign new events, because that happens on the
-                    signer.
+                    apps know you by &mdash; is yours and does not change. The ability to
+                    sign new events depends on whichever signer this account uses.
                   </p>
                   <p>
                     Creating an archive still requires that signer to approve the request.
