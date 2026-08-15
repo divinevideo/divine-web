@@ -59,18 +59,24 @@ jobs:
             const blockerStateCache = new Map([[prNumber, true]]);
 
             function extractBlockerNumbers(text) {
-              const numbers = new Set();
-              for (const line of text.split(/\r?\n/)) {
-                const normalizedLine = line.trimStart();
-                if (normalizedLine.startsWith('>') || /\bnot\s+blocked\s+(?:on|by)\b/i.test(normalizedLine)) {
-                  continue;
-                }
+              // Quoted and negated lines are dropped first, then the survivors are
+              // rejoined so a blocker list that wraps mid-list still matches as one.
+              const scannable = text
+                .split(/\r?\n/)
+                .filter((line) => {
+                  const normalizedLine = line.trimStart();
+                  return (
+                    !normalizedLine.startsWith('>') &&
+                    !/\bnot\s+blocked\s+(?:on|by)\b/i.test(normalizedLine)
+                  );
+                })
+                .join('\n');
 
-                blockerReferencePattern.lastIndex = 0;
-                for (const match of normalizedLine.matchAll(blockerReferencePattern)) {
-                  for (const numberMatch of match[0].matchAll(/#(\d+)/g)) {
-                    numbers.add(Number(numberMatch[1]));
-                  }
+              const numbers = new Set();
+              blockerReferencePattern.lastIndex = 0;
+              for (const match of scannable.matchAll(blockerReferencePattern)) {
+                for (const numberMatch of match[0].matchAll(/#(\d+)/g)) {
+                  numbers.add(Number(numberMatch[1]));
                 }
               }
               return numbers;

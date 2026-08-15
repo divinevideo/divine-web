@@ -134,6 +134,42 @@ describe('merged blocker reminder workflow', () => {
     expect(issueApi.createComment).not.toHaveBeenCalled();
   });
 
+  it('keeps an issue blocked when a wrapped blocker list still has an open blocker', async () => {
+    const issueApi = await runWorkflow({
+      blockerStates: { 100: 'closed', 999: 'open' },
+      issues: [
+        {
+          body: 'Blocked on #100, #123,\n#456, and #999.',
+          comments: 0,
+          labels: [{ name: 'blocked' }],
+          number: 42,
+        },
+      ],
+    });
+
+    expect(issueApi.removeLabel).not.toHaveBeenCalled();
+    expect(issueApi.addLabels).not.toHaveBeenCalled();
+    expect(issueApi.createComment).not.toHaveBeenCalled();
+  });
+
+  it('still ignores a quoted blocker reference on the line after a real one', async () => {
+    const issueApi = await runWorkflow({
+      blockerStates: { 999: 'open' },
+      issues: [
+        {
+          body: 'Blocked on #123.\n> blocked on #999',
+          comments: 0,
+          labels: [{ name: 'blocked' }],
+          number: 42,
+        },
+      ],
+    });
+
+    expect(issueApi.addLabels).toHaveBeenCalledWith(
+      expect.objectContaining({ issue_number: 42, labels: ['ready'] }),
+    );
+  });
+
   it('treats an unresolvable blocker reference as open', async () => {
     const issueApi = await runWorkflow({
       issues: [
