@@ -169,7 +169,14 @@ export function PortabilityPage() {
               <p>
                 If you want to delete content from Divine-operated services,
                 use the deletion tools for that purpose. Moving and deleting are
-                different actions.
+                different actions. See{" "}
+                <a
+                  href="/delete-account"
+                  className="text-brand-dark-green dark:text-brand-green underline underline-offset-2 hover:opacity-80"
+                >
+                  how account deletion works
+                </a>
+                .
               </p>
               <p>
                 Content that has already been copied by independent services may

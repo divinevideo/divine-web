@@ -110,4 +110,14 @@ describe('AppRouter', () => {
       expect(window.location.pathname).toBe('/exit');
     });
   });
+
+  it('routes the delete account guide', () => {
+    window.history.pushState({}, '', '/delete-account');
+
+    renderRouter();
+
+    expect(
+      screen.getByRole('heading', { name: 'Delete your Divine account' }),
+    ).toBeInTheDocument();
+  });
 });

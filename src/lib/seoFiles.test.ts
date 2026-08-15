@@ -46,5 +46,6 @@ describe('public sitemap.xml', () => {
   it('links the kids policy and account portability pages', () => {
     expect(sitemap).toContain('<loc>https://divine.video/kids</loc>');
     expect(sitemap).toContain('<loc>https://divine.video/exit</loc>');
+    expect(sitemap).toContain('<loc>https://divine.video/delete-account</loc>');
   });
 });

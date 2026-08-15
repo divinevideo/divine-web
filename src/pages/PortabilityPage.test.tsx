@@ -23,6 +23,7 @@ describe("PortabilityPage", () => {
     expect(
       screen.getByText(/It does not delete anything from Divine./)
     ).toBeInTheDocument();
+    expect(container.querySelector('a[href="/delete-account"]')).toBeTruthy();
     expect(
       screen.getByText(/Other servers have their own rules./)
     ).toBeInTheDocument();

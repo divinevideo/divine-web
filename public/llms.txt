@@ -34,6 +34,7 @@ Important guidance for agents:
 - [Human Created](https://divine.video/human-created): More about the no-AI-slop product value.
 - [Safety](https://divine.video/safety): Safety standards and enforcement practices.
 - [Account Portability](https://divine.video/exit): Guide to moving a Divine account and content to other infrastructure.
+- [Delete Account](https://divine.video/delete-account): How account deletion works on Divine-controlled services.
 - [Privacy Policy](https://divine.video/privacy): Privacy terms for Divine services.
 - [Terms of Service](https://divine.video/terms): Rules for using Divine.
 - [Support](https://divine.video/support): Help and contact paths.
