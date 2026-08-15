@@ -42,6 +42,18 @@ describe("PortabilityPage", () => {
     expect(container.querySelector('a[href="/kids"]')).toBeTruthy();
   });
 
+  it("carries the standing key-safety notice", () => {
+    render(
+      <TestApp>
+        <PortabilityPage />
+      </TestApp>
+    );
+
+    expect(
+      screen.getByRole("heading", { name: "Divine will never ask for your secret key" })
+    ).toBeInTheDocument();
+  });
+
   it("sends readers to the working export tool without overpromising the rest", () => {
     const { container } = render(
       <TestApp>

@@ -15,6 +15,7 @@ import { useHead } from "@unhead/react";
 import { Link } from "react-router-dom";
 
 import { SectionHeader } from "@/components/brand/SectionHeader";
+import { KeySafetyNotice } from "@/components/exit/KeySafetyNotice";
 import { MarketingLayout } from "@/components/MarketingLayout";
 import {
   Anchor,
@@ -255,6 +256,10 @@ export function PortabilityPage() {
                 <ArrowSquareOut className="h-5 w-5 flex-shrink-0 text-brand-dark-green dark:text-brand-green group-hover:translate-x-0.5 transition-transform" />
               </div>
             </Link>
+          </div>
+
+          <div className="mt-5">
+            <KeySafetyNotice />
           </div>
         </Anchor>
 

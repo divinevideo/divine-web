@@ -15,6 +15,7 @@ import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
 import { LocalNsecBanner } from "@/components/auth/LocalNsecBanner";
+import { KeySafetyNotice } from "@/components/exit/KeySafetyNotice";
 import { LoginArea } from "@/components/auth/LoginArea";
 import { MarketingLayout } from "@/components/MarketingLayout";
 import { SectionHero } from "@/components/static-pages";
@@ -348,6 +349,10 @@ export function ExitStartPage() {
               </CardContent>
             </Card>
           )}
+
+          <div className="mt-5">
+            <KeySafetyNotice />
+          </div>
         </section>
       </div>
     </MarketingLayout>

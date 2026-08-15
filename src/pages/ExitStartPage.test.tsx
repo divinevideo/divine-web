@@ -173,6 +173,18 @@ describe("ExitStartPage", () => {
     expect(screen.getByText(/This session cannot sign the export request/)).toBeInTheDocument();
   });
 
+  it("carries the standing key-safety notice even when signed out", () => {
+    render(
+      <TestApp>
+        <ExitStartPage />
+      </TestApp>
+    );
+
+    expect(
+      screen.getByRole("heading", { name: "Divine will never ask for your secret key" })
+    ).toBeInTheDocument();
+  });
+
   it("tells a hosted-signer account where its signing key lives", () => {
     mockUseCurrentUser.mockReturnValue(signedIn());
 
