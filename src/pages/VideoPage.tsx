@@ -353,9 +353,14 @@ export function VideoPage() {
 
   // Navigation back to source
   const handleGoBack = useCallback(() => {
+    // Both featured branches read the *effective* context: once navigation has
+    // fallen back off an unavailable tab, `featuredTab` holds whichever tab is
+    // eligible now, which is by definition not the one the link came from.
+    // Matching on the raw context there would send a link labelled "Trending"
+    // to some unrelated featured tab.
     if (isFeaturedTargetOutOfRange && featuredTab?.slug) {
       navigate(`/discovery/${featuredTab.slug}`);
-    } else if (context?.source === 'featured' && featuredTab?.slug) {
+    } else if (effectiveNavigationContext?.source === 'featured' && featuredTab?.slug) {
       navigate(`/discovery/${featuredTab.slug}`);
     } else if (effectiveNavigationContext?.source === 'hashtag' && effectiveNavigationContext.hashtag) {
       navigate(`/hashtag/${effectiveNavigationContext.hashtag}`);
@@ -376,7 +381,7 @@ export function VideoPage() {
     } else {
       navigate(-1); // Browser back
     }
-  }, [context?.source, effectiveNavigationContext, featuredTab?.slug, isFeaturedTargetOutOfRange, navigate]);
+  }, [effectiveNavigationContext, featuredTab?.slug, isFeaturedTargetOutOfRange, navigate]);
 
   // Social interaction handlers (same as VideoFeed)
   const handleLike = useCallback(async (video: ParsedVideoData) => {

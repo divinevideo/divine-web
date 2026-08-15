@@ -300,6 +300,25 @@ vi.mock('@/hooks/useVideoByIdFunnelcake', () => ({
       };
     }
 
+    // The URL tab is gone, but a *different* featured tab is eligible now — the
+    // shape useFeaturedTab actually returns when one editorial window closes and
+    // the next opens.
+    if (options.featuredTabId === 'ft_unavailable_superseded') {
+      return {
+        video: videos[1],
+        videos: null,
+        featuredNavigationState: 'tab-unavailable',
+        featuredTab: { id: 'ft_successor', slug: 'successor-tab', label: 'Successor' },
+        windowOffset: 0,
+        fetchedCount: 0,
+        hasNextPage: false,
+        isFetchingNextPage: false,
+        fetchNextPage: vi.fn(),
+        isLoading: false,
+        error: null,
+      };
+    }
+
     if (options.featuredTabId === 'ft_out_of_range') {
       return {
         video: videos[1],
@@ -588,6 +607,42 @@ describe('VideoPage', () => {
     expect(url.pathname).toBe('/video/video-3');
     expect(url.searchParams.get('source')).toBe('trending');
     expect(url.searchParams.has('featuredTabId')).toBe(false);
+  });
+
+  it('does not send the trending fallback back to a successor featured tab', () => {
+    const videoTwo = {
+      id: 'video-2',
+      pubkey: VIDEO_2_AUTHOR_PK,
+      kind: 34236,
+      createdAt: 2,
+      content: 'two',
+      videoUrl: 'https://example.com/2.mp4',
+      vineId: 'vine-two',
+      hashtags: [],
+      reposts: [],
+    };
+
+    mockUseVideoNavigation.mockReturnValue({
+      context: { source: 'trending' },
+      currentVideo: videoTwo,
+      videos: [videoTwo],
+      hasNext: false,
+      hasPrevious: false,
+      goToNext: vi.fn(),
+      goToPrevious: vi.fn(),
+      isLoading: false,
+    });
+
+    renderPage('/video/video-2?source=featured&featuredTabId=ft_unavailable_superseded&index=1');
+
+    expect(screen.getByText("That featured tab wrapped. Here's trending.")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /trending/i }));
+
+    // The link reads "Trending", so it must not land on the unrelated featured
+    // tab that happens to be eligible now.
+    expect(mockNavigate).not.toHaveBeenCalledWith('/discovery/successor-tab');
+    expect(mockNavigate).toHaveBeenCalledWith(-1);
   });
 
   it('stops featured neighbor navigation when the target is outside the live tab window', () => {
