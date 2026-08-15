@@ -28,6 +28,13 @@ describe("PortabilityPage", () => {
     expect(
       screen.getByText(/If you're looking for information about deleting your Divine account/)
     ).toBeInTheDocument();
+    expect(screen.getByText(/Moving is not all-or-nothing./)).toBeInTheDocument();
+    expect(
+      screen.getByText(/You do not have to choose between Divine and the rest of the network./)
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/Those services can be Divine services, services run by someone else, or a mix of both./)
+    ).toBeInTheDocument();
     expect(
       screen.getByText(/Other servers have their own rules./)
     ).toBeInTheDocument();

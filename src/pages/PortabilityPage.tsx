@@ -44,7 +44,7 @@ const MOVE_STEPS = [
   {
     title: "Choose where things go",
     body:
-      "You choose a place for videos and a place for posts. Those services can be run by you or by another operator you trust.",
+      "You choose a place for videos and a place for posts. Those services can be Divine services, services run by someone else, or a mix of both.",
   },
   {
     title: "Copy your videos",
@@ -95,6 +95,11 @@ export function PortabilityPage() {
             relays, media servers, or Nostr work.
           </p>
           <p className="text-base md:text-lg text-brand-off-white/80 max-w-3xl leading-relaxed mt-3">
+            Moving is not all-or-nothing. You can keep using Divine servers and
+            also use other relays or media servers, including Blossom servers,
+            at the same time.
+          </p>
+          <p className="text-base md:text-lg text-brand-off-white/80 max-w-3xl leading-relaxed mt-3">
             If you&apos;re looking for information about deleting your Divine
             account, you can find it{" "}
             <Link
@@ -128,6 +133,13 @@ export function PortabilityPage() {
                 When you move, you are choosing new places for your posts and
                 videos to live. Other compatible apps can read those places and
                 show your account there.
+              </p>
+              <p>
+                You do not have to choose between Divine and the rest of the
+                network. A mixed setup is fine: some posts can stay on
+                Divine-operated relays, videos can stay on Divine-operated
+                media servers, and you can also add relays or Blossom servers
+                run by other people.
               </p>
               <p>
                 You can move because Divine is built on open account and media
