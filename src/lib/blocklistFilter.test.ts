@@ -1,14 +1,14 @@
 // ABOUTME: Tests for pure per-viewer feed blocklist helpers
-// ABOUTME: Covers muters-of-viewer, blockers-of-viewer (kind 30000 d=block), own blocks, and video filtering
+// ABOUTME: Covers muters-of-viewer, legacy blockers-of-viewer, own legacy blocks, and video filtering
 
 import { describe, it, expect } from 'vitest';
 import type { NostrEvent } from '@nostrify/nostrify';
 import {
-  BLOCK_LIST_KIND,
-  BLOCK_LIST_D_TAG,
+  LEGACY_BLOCK_LIST_KIND,
+  LEGACY_BLOCK_LIST_D_TAG,
   parseMutersOfViewer,
   parseBlockersOfViewer,
-  parseOwnBlockedPubkeys,
+  parseOwnLegacyBlockedPubkeys,
   buildFeedBlocklist,
   filterBlockedVideos,
   filterBlockedVideoPages,
@@ -49,11 +49,11 @@ function muteListEvent(author: string, mutedPubkeys: string[], createdAt = 17000
 function blockListEvent(
   author: string,
   blockedPubkeys: string[],
-  { dTag = BLOCK_LIST_D_TAG, createdAt = 1700000000 }: { dTag?: string; createdAt?: number } = {}
+  { dTag = LEGACY_BLOCK_LIST_D_TAG, createdAt = 1700000000 }: { dTag?: string; createdAt?: number } = {}
 ): NostrEvent {
   return makeEvent({
     pubkey: author,
-    kind: BLOCK_LIST_KIND,
+    kind: LEGACY_BLOCK_LIST_KIND,
     created_at: createdAt,
     tags: [['d', dTag], ...blockedPubkeys.map(pk => ['p', pk])],
   });
@@ -144,13 +144,21 @@ describe('parseBlockersOfViewer', () => {
   });
 });
 
-describe('parseOwnBlockedPubkeys', () => {
-  it('returns p-tags from the viewer’s latest kind 30000 d=block event', () => {
+describe('parseOwnLegacyBlockedPubkeys', () => {
+  it("returns p-tags from the viewer's latest legacy kind 30000 d=block event", () => {
     const events = [
       blockListEvent(VIEWER, [ALICE, BOB], { createdAt: 100 }),
       blockListEvent(VIEWER, [ALICE], { createdAt: 200 }),
     ];
-    expect(parseOwnBlockedPubkeys(events, VIEWER)).toEqual([ALICE]);
+    expect(parseOwnLegacyBlockedPubkeys(events, VIEWER)).toEqual([ALICE]);
+  });
+
+  it('returns empty when an empty retirement replacement supersedes a populated legacy list', () => {
+    const events = [
+      blockListEvent(VIEWER, [ALICE, BOB], { createdAt: 100 }),
+      blockListEvent(VIEWER, [], { createdAt: 200 }),
+    ];
+    expect(parseOwnLegacyBlockedPubkeys(events, VIEWER)).toEqual([]);
   });
 
   it('ignores other authors, non-block d-tags, and self-references', () => {
@@ -159,11 +167,11 @@ describe('parseOwnBlockedPubkeys', () => {
       blockListEvent(VIEWER, [CAROL], { dTag: 'friends' }),
       blockListEvent(VIEWER, [VIEWER, BOB]),
     ];
-    expect(parseOwnBlockedPubkeys(events, VIEWER)).toEqual([BOB]);
+    expect(parseOwnLegacyBlockedPubkeys(events, VIEWER)).toEqual([BOB]);
   });
 
   it('returns empty when the viewer has no block list', () => {
-    expect(parseOwnBlockedPubkeys([], VIEWER)).toEqual([]);
+    expect(parseOwnLegacyBlockedPubkeys([], VIEWER)).toEqual([]);
   });
 });
 
@@ -172,7 +180,7 @@ describe('buildFeedBlocklist', () => {
     const set = buildFeedBlocklist({
       viewerPubkey: VIEWER,
       ownMutedPubkeys: [ALICE],
-      ownBlockedPubkeys: [BOB],
+      ownLegacyBlockedPubkeys: [BOB],
       mutersOfViewer: [CAROL],
       blockersOfViewer: [ALICE, BOB],
     });

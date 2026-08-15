@@ -76,7 +76,9 @@ are rejected by
 [`parsePeopleListFromEvent`](./src/lib/parsePeopleListFromEvent.ts), so the
 route builders in [`src/lib/eventRouting.ts`](./src/lib/eventRouting.ts) leave
 them on the generic event route rather than sending them to a detail page that
-cannot render them.
+cannot render them. Divine clients no longer author `d=block` kind `30000`
+lists; web reads that list only for legacy compatibility with pre-retirement
+accounts and older or non-Divine clients.
 
 ## Styling
 

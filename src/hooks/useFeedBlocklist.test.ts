@@ -1,5 +1,5 @@
 // ABOUTME: Tests for useFeedBlocklist hook — per-viewer feed blocklist assembled from relay queries
-// ABOUTME: Covers muters/blockers-of-viewer, own mutes/blocks, fail-open on relay errors, logged-out no-op
+// ABOUTME: Covers muters/legacy blockers-of-viewer, own mutes/legacy blocks, fail-open, logged-out no-op
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
@@ -166,7 +166,7 @@ describe('useFeedBlocklist', () => {
     await waitFor(() => expect(result.current.has(OWN_MUTED)).toBe(true));
   });
 
-  it("includes the viewer's own blocked pubkeys (own kind 30000 d=block p-tags)", async () => {
+  it("includes the viewer's own legacy blocked pubkeys (own kind 30000 d=block p-tags)", async () => {
     respondWith([
       makeEvent({ pubkey: VIEWER, kind: 30000, tags: [['d', 'block'], ['p', OWN_BLOCKED]] }),
     ]);
@@ -174,7 +174,29 @@ describe('useFeedBlocklist', () => {
     await waitFor(() => expect(result.current.has(OWN_BLOCKED)).toBe(true));
   });
 
-  it('unions all sources into one set', async () => {
+  it('keeps own kind 10000 filtering after an empty legacy replacement retires own kind 30000', async () => {
+    respondWith([
+      makeEvent({
+        pubkey: VIEWER,
+        kind: 30000,
+        created_at: 100,
+        tags: [['d', 'block'], ['p', OWN_BLOCKED]],
+      }),
+      makeEvent({
+        pubkey: VIEWER,
+        kind: 30000,
+        created_at: 200,
+        tags: [['d', 'block']],
+      }),
+    ]);
+    mockMuteList = [{ type: MuteType.USER, value: OWN_MUTED }];
+
+    const { result } = renderHook(() => useFeedBlocklist(), { wrapper: createWrapper() });
+    await waitFor(() => expect(result.current.has(OWN_MUTED)).toBe(true));
+    expect(result.current.has(OWN_BLOCKED)).toBe(false);
+  });
+
+  it('unions mixed-era kind 10000 and legacy kind 30000 sources into one set', async () => {
     respondWith([
       makeEvent({ pubkey: MUTER, kind: 10000, tags: [['p', VIEWER]] }),
       makeEvent({ pubkey: BLOCKER, kind: 30000, tags: [['d', 'block'], ['p', VIEWER]] }),

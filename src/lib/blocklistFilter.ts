@@ -5,10 +5,12 @@ import type { NostrEvent } from '@nostrify/nostrify';
 import { MUTE_LIST_KIND } from '@/types/moderation';
 import { latestEventsByKey } from '@/lib/nostrEvents';
 
-// Divine's legacy block list: NIP-51 kind 30000 addressable list with d=block.
-// Any other d-tag on kind 30000 (follow sets, etc.) is NOT a block list.
-export const BLOCK_LIST_KIND = 30000;
-export const BLOCK_LIST_D_TAG = 'block';
+// Legacy block list: NIP-51 kind 30000 addressable list with d=block.
+// Divine clients no longer author it; mobile retired own lists by publishing
+// one empty replacement per account. Web still reads it for pre-retirement
+// accounts, older clients, and other clients that may still publish it.
+export const LEGACY_BLOCK_LIST_KIND = 30000;
+export const LEGACY_BLOCK_LIST_D_TAG = 'block';
 
 function getDTag(event: NostrEvent): string {
   const tag = event.tags.find(t => t[0] === 'd');
@@ -16,7 +18,7 @@ function getDTag(event: NostrEvent): string {
 }
 
 function hasBlockDTag(event: NostrEvent): boolean {
-  return getDTag(event) === BLOCK_LIST_D_TAG;
+  return getDTag(event) === LEGACY_BLOCK_LIST_D_TAG;
 }
 
 function pTagsInclude(event: NostrEvent, pubkey: string): boolean {
@@ -41,13 +43,14 @@ export function parseMutersOfViewer(events: NostrEvent[], viewerPubkey: string):
 }
 
 /**
- * Authors whose latest kind 30000 d=block list p-tags the viewer ("blockers-of-viewer").
+ * Authors whose latest legacy kind 30000 d=block list p-tags the viewer
+ * ("blockers-of-viewer").
  * Addressable events deduplicate by pubkey:kind:d-tag, so a newer kind 30000 list with a
  * different d-tag (e.g. a follow set) never shadows the block list, and only d=block counts.
  */
 export function parseBlockersOfViewer(events: NostrEvent[], viewerPubkey: string): string[] {
   const listEvents = events.filter(
-    e => e.kind === BLOCK_LIST_KIND && e.pubkey !== viewerPubkey
+    e => e.kind === LEGACY_BLOCK_LIST_KIND && e.pubkey !== viewerPubkey
   );
   const latestByAddress = latestEventsByKey(
     listEvents,
@@ -63,13 +66,15 @@ export function parseBlockersOfViewer(events: NostrEvent[], viewerPubkey: string
 }
 
 /**
- * Pubkeys on the viewer's own latest kind 30000 d=block list (blocks published by
- * Divine mobile). Self-references are dropped so a malformed list can never hide
- * the viewer's own content.
+ * Pubkeys on the viewer's own latest legacy kind 30000 d=block list.
+ * Current-era Divine clients publish own blocks on kind 10000 instead, through
+ * useMuteList. This legacy read remains for pre-retirement accounts and older
+ * clients. Self-references are dropped so a malformed list can never hide the
+ * viewer's own content.
  */
-export function parseOwnBlockedPubkeys(events: NostrEvent[], viewerPubkey: string): string[] {
+export function parseOwnLegacyBlockedPubkeys(events: NostrEvent[], viewerPubkey: string): string[] {
   const ownBlockEvents = events.filter(
-    e => e.kind === BLOCK_LIST_KIND && e.pubkey === viewerPubkey && hasBlockDTag(e)
+    e => e.kind === LEGACY_BLOCK_LIST_KIND && e.pubkey === viewerPubkey && hasBlockDTag(e)
   );
   const latest = latestEventsByKey(ownBlockEvents, () => 'own').get('own');
   if (!latest) return [];
@@ -84,11 +89,11 @@ export interface FeedBlocklistSources {
   viewerPubkey?: string;
   /** Pubkeys the viewer muted on their own kind 10000 mute list */
   ownMutedPubkeys?: Iterable<string>;
-  /** Pubkeys the viewer blocked on their own kind 30000 d=block list */
-  ownBlockedPubkeys?: Iterable<string>;
+  /** Pubkeys on the viewer's own legacy kind 30000 d=block list */
+  ownLegacyBlockedPubkeys?: Iterable<string>;
   /** Authors whose kind 10000 mute list p-tags the viewer */
   mutersOfViewer?: Iterable<string>;
-  /** Authors whose kind 30000 d=block list p-tags the viewer */
+  /** Authors whose legacy kind 30000 d=block list p-tags the viewer */
   blockersOfViewer?: Iterable<string>;
 }
 
@@ -100,7 +105,7 @@ export function buildFeedBlocklist(sources: FeedBlocklistSources): Set<string> {
   const set = new Set<string>();
   const buckets = [
     sources.ownMutedPubkeys,
-    sources.ownBlockedPubkeys,
+    sources.ownLegacyBlockedPubkeys,
     sources.mutersOfViewer,
     sources.blockersOfViewer,
   ];

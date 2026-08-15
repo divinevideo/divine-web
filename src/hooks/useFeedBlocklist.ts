@@ -1,5 +1,5 @@
-// ABOUTME: Hook assembling the per-viewer feed blocklist: own mutes/blocks plus authors who
-// ABOUTME: muted (kind 10000) or blocked (kind 30000 d=block) the viewer. Fails open on relay errors.
+// ABOUTME: Hook assembling the per-viewer feed blocklist: own mutes, compatible legacy blocks,
+// ABOUTME: plus authors who muted (kind 10000) or legacy-blocked the viewer. Fails open on relay errors.
 
 import { useMemo } from 'react';
 import { useNostr } from '@nostrify/react';
@@ -9,24 +9,24 @@ import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useMuteList, MUTE_LIST_KIND } from '@/hooks/useModeration';
 import { MuteType } from '@/types/moderation';
 import {
-  BLOCK_LIST_KIND,
+  LEGACY_BLOCK_LIST_KIND,
   buildFeedBlocklist,
   parseBlockersOfViewer,
   parseMutersOfViewer,
-  parseOwnBlockedPubkeys,
+  parseOwnLegacyBlockedPubkeys,
 } from '@/lib/blocklistFilter';
 import { debugError } from '@/lib/debug';
 
 interface ViewerTargetedLists {
   mutersOfViewer: string[];
   blockersOfViewer: string[];
-  ownBlockedPubkeys: string[];
+  ownLegacyBlockedPubkeys: string[];
 }
 
 const EMPTY_LISTS: ViewerTargetedLists = {
   mutersOfViewer: [],
   blockersOfViewer: [],
-  ownBlockedPubkeys: [],
+  ownLegacyBlockedPubkeys: [],
 };
 
 // Stable empty set so logged-out consumers never re-render on identity changes
@@ -36,9 +36,13 @@ const EMPTY_BLOCKLIST: ReadonlySet<string> = new Set();
  * The set of pubkeys whose videos must be hidden from feed surfaces for the
  * current viewer (parity with divine-mobile's shouldFilterFromFeeds):
  * - pubkeys the viewer muted (own kind 10000 mute list, via useMuteList)
- * - pubkeys the viewer blocked (own kind 30000 d=block list)
+ * - pubkeys on the viewer's own legacy kind 30000 d=block list, for
+ *   pre-retirement accounts and older clients
  * - authors whose kind 10000 mute list p-tags the viewer
- * - authors whose kind 30000 d=block list p-tags the viewer
+ * - authors whose legacy kind 30000 d=block list p-tags the viewer
+ *
+ * Divine clients no longer author own kind 30000 d=block lists; current-era
+ * own blocks arrive through useMuteList as kind 10000 p-tags.
  *
  * Funnelcake REST feeds apply platform moderation only — per-viewer block/mute
  * filtering is a client responsibility (divine-web#399).
@@ -68,9 +72,9 @@ export function useFeedBlocklist(): ReadonlySet<string> {
       const candidateFilters: NostrFilter[] = [
         // Authors who muted or blocked the viewer. The d=block check happens
         // client-side because not all relays support #d filtering.
-        { kinds: [MUTE_LIST_KIND, BLOCK_LIST_KIND], '#p': [viewerPubkey], limit: 1000 },
-        // The viewer's own kind 30000 d=block list (published by Divine mobile)
-        { kinds: [BLOCK_LIST_KIND], authors: [viewerPubkey], limit: 1000 },
+        { kinds: [MUTE_LIST_KIND, LEGACY_BLOCK_LIST_KIND], '#p': [viewerPubkey], limit: 1000 },
+        // The viewer's own retired kind 30000 d=block list, retained for legacy compatibility.
+        { kinds: [LEGACY_BLOCK_LIST_KIND], authors: [viewerPubkey], limit: 1000 },
       ];
 
       try {
@@ -91,7 +95,7 @@ export function useFeedBlocklist(): ReadonlySet<string> {
                 limit: Math.min(1000, Math.max(10, candidateAuthors.length * 5)),
               },
               {
-                kinds: [BLOCK_LIST_KIND],
+                kinds: [LEGACY_BLOCK_LIST_KIND],
                 authors: candidateAuthors,
                 limit: Math.min(1000, Math.max(10, candidateAuthors.length * 10)),
               },
@@ -101,7 +105,7 @@ export function useFeedBlocklist(): ReadonlySet<string> {
         return {
           mutersOfViewer: parseMutersOfViewer(events, viewerPubkey),
           blockersOfViewer: parseBlockersOfViewer(events, viewerPubkey),
-          ownBlockedPubkeys: parseOwnBlockedPubkeys(events, viewerPubkey),
+          ownLegacyBlockedPubkeys: parseOwnLegacyBlockedPubkeys(events, viewerPubkey),
         };
       } catch (err) {
         // Fail open: an unreachable relay must not blank the feed.
@@ -123,7 +127,7 @@ export function useFeedBlocklist(): ReadonlySet<string> {
     return buildFeedBlocklist({
       viewerPubkey,
       ownMutedPubkeys,
-      ownBlockedPubkeys: targeted.ownBlockedPubkeys,
+      ownLegacyBlockedPubkeys: targeted.ownLegacyBlockedPubkeys,
       mutersOfViewer: targeted.mutersOfViewer,
       blockersOfViewer: targeted.blockersOfViewer,
     });
