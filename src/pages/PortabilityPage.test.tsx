@@ -20,6 +20,7 @@ describe("PortabilityPage", () => {
     expect(
       screen.getByRole("heading", { name: "Move your Divine account" })
     ).toBeInTheDocument();
+    expect(screen.getByText("Account portability")).toBeInTheDocument();
     expect(
       screen.getByText(/It does not delete anything from Divine./)
     ).toBeInTheDocument();

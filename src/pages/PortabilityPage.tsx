@@ -78,7 +78,7 @@ export function PortabilityPage() {
         <div className="container mx-auto px-4 py-16 md:py-24 max-w-5xl">
           <div className="flex items-center gap-2 text-xs font-semibold tracking-wide text-brand-green mb-6">
             <Export weight="fill" className="h-4 w-4" />
-            <span>Move your account</span>
+            <span>Account portability</span>
           </div>
           <h1 className="font-display font-extrabold tracking-tight text-4xl md:text-6xl leading-[1.05] text-brand-off-white mb-6">
             Move your Divine account
