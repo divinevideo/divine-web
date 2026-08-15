@@ -12,6 +12,7 @@ import {
   ShieldCheck,
 } from "@phosphor-icons/react";
 import { useHead } from "@unhead/react";
+import { Link } from "react-router-dom";
 
 import { SectionHeader } from "@/components/brand/SectionHeader";
 import { MarketingLayout } from "@/components/MarketingLayout";
@@ -92,6 +93,17 @@ export function PortabilityPage() {
           <p className="text-base md:text-lg text-brand-off-white/80 max-w-3xl leading-relaxed mt-4">
             This guide explains the moving flow without assuming you know how
             relays, media servers, or Nostr work.
+          </p>
+          <p className="text-base md:text-lg text-brand-off-white/80 max-w-3xl leading-relaxed mt-3">
+            If you&apos;re looking for information about deleting your Divine
+            account, you can find it{" "}
+            <Link
+              to="/delete-account"
+              className="font-semibold text-brand-green underline decoration-brand-green/60 underline-offset-4 hover:text-brand-light-green"
+            >
+              here
+            </Link>
+            .
           </p>
 
           <AnchorNav

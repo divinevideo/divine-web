@@ -26,6 +26,9 @@ describe("PortabilityPage", () => {
     ).toBeInTheDocument();
     expect(container.querySelector('a[href="/delete-account"]')).toBeTruthy();
     expect(
+      screen.getByText(/If you're looking for information about deleting your Divine account/)
+    ).toBeInTheDocument();
+    expect(
       screen.getByText(/Other servers have their own rules./)
     ).toBeInTheDocument();
     expect(container.querySelector('a[href="/safety#appeals"]')).toBeTruthy();
