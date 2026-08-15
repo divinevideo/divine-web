@@ -109,10 +109,15 @@ export function VideoPage() {
   }, [context]);
 
   const goToNext = useCallback(async () => {
-    if (!hasNext || !videos || nextNavigationInFlightRef.current || isFetchingNextFunnelcakePage) return;
+    if (!hasNext || !videos || nextNavigationInFlightRef.current) return;
     let nextVideos = videos;
 
     if (!hasNextLoaded && isUsingFunnelcakeVideos && funnelcakeHasNextPage) {
+      // The next video isn't loaded yet. If a scroll-triggered fetch is already
+      // loading it, let that finish rather than starting a second fetch. When the
+      // next video is already loaded we fall through and navigate immediately,
+      // even while a background page fetch is in flight.
+      if (isFetchingNextFunnelcakePage) return;
       nextNavigationInFlightRef.current = true;
       try {
         nextVideos = await fetchNextFunnelcakePage() ?? videos;

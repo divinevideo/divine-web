@@ -184,6 +184,21 @@ vi.mock('@/hooks/useVideoByIdFunnelcake', () => ({
       };
     }
 
+    if (options.query === 'nav-during-fetch') {
+      // Next video is already loaded, but a background scroll fetch is in flight.
+      return {
+        video: videos[0],
+        videos,
+        windowOffset: 0,
+        fetchedCount: videos.length,
+        hasNextPage: true,
+        isFetchingNextPage: true,
+        fetchNextPage: mockFetchNextFunnelcakePage,
+        isLoading: false,
+        error: null,
+      };
+    }
+
     if (options.featuredTabId === 'ft_slow' || options.featuredTabId === 'ft_empty') {
       return {
         video: videos[1],
@@ -439,6 +454,18 @@ describe('VideoPage', () => {
 
     expect(screen.getByTestId('infinite-scroll')).toHaveAttribute('data-has-more', 'false');
     expect(screen.getByText("You've reached the end")).toBeInTheDocument();
+  });
+
+  it('navigates to an already-loaded next video while a page fetch is in flight', async () => {
+    renderPage('/video/video-1?source=search&q=nav-during-fetch&index=0');
+
+    fireEvent.keyDown(document.body, { key: 'ArrowDown' });
+
+    await waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalledTimes(1);
+    });
+    // The next video was already loaded, so no extra page fetch is needed.
+    expect(mockFetchNextFunnelcakePage).not.toHaveBeenCalled();
   });
 
   it('ignores repeated next navigation while a boundary fetch is in flight', async () => {
