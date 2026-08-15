@@ -502,6 +502,28 @@ describe('useFollowUser - follow list overwrite protection', () => {
       .map((tag: string[]) => tag[1]);
     expect(followedPubkeys).toEqual([thirdPartyBlocker, mockTargetPubkey]);
   });
+
+  it('skips the mute-list query on follow when there is no local block provenance', async () => {
+    mockNostrQuery.mockResolvedValue([]);
+    mockNostrReq.mockImplementation(async function* () {
+      yield ['EVENT', 'subscription', makeContactListEvent([])];
+      yield ['EOSE', 'subscription'];
+    });
+
+    const { useFollowUser } = await import('./useFollowRelationship');
+    const { result } = renderHook(() => useFollowUser(), { wrapper: createWrapper() });
+
+    await act(async () => {
+      await result.current.mutateAsync({
+        targetPubkey: mockTargetPubkey,
+        currentContactList: null,
+        targetDisplayName: 'Test User',
+      });
+    });
+
+    // No blocks recorded ⇒ no mute-list round-trip on the follow path.
+    expect(mockNostrQuery).not.toHaveBeenCalled();
+  });
 });
 
 describe('useUnfollowUser - follow list overwrite protection', () => {

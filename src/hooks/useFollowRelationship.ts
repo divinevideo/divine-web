@@ -15,7 +15,7 @@ import { debugLog } from '@/lib/debug';
 import { latestEvent } from '@/lib/nostrEvents';
 import type { NostrEvent } from '@nostrify/nostrify';
 import { PRIMARY_RELAY } from '@/config/relays';
-import { getExplicitBlockedPubkeys } from '@/lib/blockProvenance';
+import { getExplicitBlockedPubkeys, readBlockProvenance } from '@/lib/blockProvenance';
 import { MUTE_LIST_KIND } from '@/types/moderation';
 
 /** Thrown when a follow request races with stale UI state. */
@@ -124,6 +124,11 @@ async function fetchExplicitBlockedPubkeysForPublish(
   nostr: NostrClient,
   userPubkey: string,
 ): Promise<Set<string>> {
+  // Explicit blocks are the intersection of local provenance and the mute list,
+  // so with no local block provenance the result is always empty. Skip the
+  // mute-list round-trip that every follow/unfollow would otherwise incur.
+  if (readBlockProvenance(userPubkey).size === 0) return new Set();
+
   const signal = AbortSignal.timeout(5000);
   const events = await nostr.query([{
     kinds: [MUTE_LIST_KIND],
