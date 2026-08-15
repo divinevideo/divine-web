@@ -26,7 +26,7 @@ import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { buildArchiveFiles, serializeArchiveFiles, type ArchiveFiles } from "@/lib/exit/archive";
 import { exportOwnerEvents, OwnerExportError, type ExportProgress } from "@/lib/exit/ownerExportClient";
 import { createZip } from "@/lib/exit/zip";
-import { getActiveLocalNsecLogin } from "@/lib/localNsecAccount";
+import { getLocalNsecLogin } from "@/lib/localNsecAccount";
 
 type RunState = "idle" | "running" | "complete" | "failed";
 
@@ -78,7 +78,7 @@ export function ExitStartPage() {
 
   const { user, signer, isResolvingJwt } = useCurrentUser();
   const { logins } = useNostrLogin();
-  const localNsecLogin = getActiveLocalNsecLogin(logins);
+  const localNsecLogin = user ? getLocalNsecLogin(logins, user.pubkey) : null;
 
   const [state, setState] = useState<RunState>("idle");
   const [progress, setProgress] = useState<ExportProgress>({

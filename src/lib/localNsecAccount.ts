@@ -12,6 +12,12 @@ export function getActiveLocalNsecLogin(logins: readonly NLoginType[]): LocalNse
   return logins.find(isNsecLogin) || null;
 }
 
+export function getLocalNsecLogin(logins: readonly NLoginType[], pubkey: string): LocalNsecLogin | null {
+  return logins.find(
+    (login): login is LocalNsecLogin => isNsecLogin(login) && login.pubkey === pubkey,
+  ) || null;
+}
+
 export function getStoredLocalNsecLogin(storageKey = DEFAULT_STORAGE_KEY): LocalNsecLogin | null {
   const stored = localStorage.getItem(storageKey);
   if (!stored) {

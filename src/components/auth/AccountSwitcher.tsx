@@ -21,7 +21,7 @@ import { useDivineSession } from '@/hooks/useDivineSession';
 import { clearLoginCookie, clearJwtCookie } from '@/lib/crossSubdomainAuth';
 import { genUserName } from '@/lib/genUserName';
 import { getSafeProfileImage } from '@/lib/imageUtils';
-import { getActiveLocalNsecLogin } from '@/lib/localNsecAccount';
+import { getLocalNsecLogin } from '@/lib/localNsecAccount';
 import { OVERLAY_LAYERS } from '@/lib/overlayLayers';
 import { API_CONFIG } from '@/config/api';
 import { RelaySelector } from '@/components/RelaySelector';
@@ -37,9 +37,10 @@ export function AccountSwitcher({ onAddAccountClick }: AccountSwitcherProps) {
   const { currentUser, otherUsers, setLogin, removeLogin } = useLoggedInAccounts();
   const { clearSession } = useDivineSession();
   const navigate = useNavigate();
-  const localNsecLogin = getActiveLocalNsecLogin(logins);
 
   if (!currentUser) return null;
+
+  const localNsecLogin = getLocalNsecLogin(logins, currentUser.pubkey);
 
   const isJwtCurrentUser = currentUser.id.startsWith('jwt:');
 

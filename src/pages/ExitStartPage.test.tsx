@@ -28,7 +28,7 @@ const { mockGetActiveLocalNsecLogin, mockBannerRender } = vi.hoisted(() => ({
 }));
 
 vi.mock("@/lib/localNsecAccount", () => ({
-  getActiveLocalNsecLogin: () => mockGetActiveLocalNsecLogin(),
+  getLocalNsecLogin: () => mockGetActiveLocalNsecLogin(),
 }));
 
 // The real banner gates itself for protected minors by rendering null. Mocking
