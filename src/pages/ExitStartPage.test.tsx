@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { TestApp } from "@/test/TestApp";
 import { createFixtureFetch } from "@/lib/exit/__fixtures__/fixtureFetch";
 import { FixtureSigner } from "@/lib/exit/__fixtures__/fixtureSigner";
-import { fixturePubkey } from "@/lib/exit/__fixtures__/exportFixtures";
+import { fixturePubkey, makeFixtureEvent } from "@/lib/exit/__fixtures__/exportFixtures";
 
 import { ExitStartPage } from "./ExitStartPage";
 
@@ -83,6 +83,44 @@ describe("ExitStartPage", () => {
     expect(screen.getByRole("button", { name: /Download archive/ })).toBeEnabled();
     expect(
       screen.getByText(/2 pages read, 2 events and 2 media references collected from Divine/)
+    ).toBeInTheDocument();
+  });
+
+  it("offers a partial archive but says it is incomplete", async () => {
+    mockUseCurrentUser.mockReturnValue(signedIn());
+
+    let requests = 0;
+    vi.stubGlobal("fetch", async () => {
+      requests += 1;
+      if (requests === 1) {
+        return new Response(
+          JSON.stringify({
+            data: [makeFixtureEvent()],
+            pagination: { next_cursor: "cursor-one", has_more: true },
+          }),
+          { status: 200, headers: { "content-type": "application/json" } }
+        );
+      }
+
+      return new Response(JSON.stringify({ error: "boom" }), { status: 503 });
+    });
+
+    render(
+      <TestApp>
+        <ExitStartPage />
+      </TestApp>
+    );
+
+    await userEvent.click(screen.getByRole("button", { name: /Create my archive/ }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/This archive is incomplete/)).toBeInTheDocument();
+    });
+
+    expect(screen.getByRole("button", { name: /Download archive/ })).toBeEnabled();
+    expect(screen.queryByText("Your archive is ready.")).not.toBeInTheDocument();
+    expect(
+      screen.getByText("Divine could not finish this export right now. Try again later.")
     ).toBeInTheDocument();
   });
 

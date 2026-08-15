@@ -24,7 +24,9 @@ export type ExportFailureCode =
   | "rate-limited"
   | "server-failure"
   | "malformed-response"
-  | "network-failure";
+  | "network-failure"
+  | "stalled-cursor"
+  | "page-limit";
 
 export class OwnerExportError extends Error {
   constructor(
@@ -58,11 +60,18 @@ export interface OwnerExportClientOptions {
   fetcher?: typeof fetch;
   sleep?: (ms: number) => Promise<void>;
   maxRateLimitRetries?: number;
+  maxPages?: number;
   onProgress?: (progress: ExportProgress) => void;
 }
 
 const DEFAULT_LIMIT = 500;
 const DEFAULT_MAX_RATE_LIMIT_RETRIES = 3;
+
+// A backstop against a server that never reports `has_more: false`, not a real
+// account size. At the default page size this is five million events, so a
+// genuine export should never reach it; hitting it returns what was collected
+// rather than discarding it.
+const DEFAULT_MAX_PAGES = 10_000;
 
 function buildExportUrl(endpointBase: string, pubkey: string, limit: number, cursor?: string): string {
   const base = endpointBase.replace(/\/$/, "");
@@ -242,6 +251,7 @@ export async function exportOwnerEvents(options: OwnerExportClientOptions): Prom
     sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
     limit = DEFAULT_LIMIT,
     maxRateLimitRetries = DEFAULT_MAX_RATE_LIMIT_RETRIES,
+    maxPages = DEFAULT_MAX_PAGES,
     onProgress
   } = options;
 
@@ -251,6 +261,7 @@ export async function exportOwnerEvents(options: OwnerExportClientOptions): Prom
 
   const events: NostrEvent[] = [];
   const failures: OwnerExportError[] = [];
+  const usedCursors = new Set<string>();
   let cursor: string | undefined;
   let pagesFetched = 0;
   let retryCount = 0;
@@ -274,7 +285,33 @@ export async function exportOwnerEvents(options: OwnerExportClientOptions): Prom
         throw new OwnerExportError("malformed-response", "Divine did not provide the next export page.");
       }
 
-      cursor = page.pagination.next_cursor;
+      const nextCursor = page.pagination.next_cursor;
+
+      // A cursor we have already requested with means the server is not
+      // advancing. That is a definite protocol violation rather than a guess,
+      // so stop here and keep everything collected so far.
+      if (usedCursors.has(nextCursor)) {
+        failures.push(
+          new OwnerExportError(
+            "stalled-cursor",
+            "Divine stopped moving through the export, so this archive ends where it stopped."
+          )
+        );
+        return { events, pageCount: pagesFetched, failures };
+      }
+
+      if (pagesFetched >= maxPages) {
+        failures.push(
+          new OwnerExportError(
+            "page-limit",
+            `This export stopped after ${maxPages} pages. Everything read up to that point is included.`
+          )
+        );
+        return { events, pageCount: pagesFetched, failures };
+      }
+
+      usedCursors.add(nextCursor);
+      cursor = nextCursor;
     } catch (error) {
       if (
         error instanceof OwnerExportError &&
@@ -288,13 +325,24 @@ export async function exportOwnerEvents(options: OwnerExportClientOptions): Prom
         continue;
       }
 
-      if (error instanceof OwnerExportError) {
-        failures.push(error);
-        throw error;
+      const failure =
+        error instanceof OwnerExportError
+          ? error
+          : new OwnerExportError(
+              "network-failure",
+              "The export could not reach Divine. Check the connection and try again."
+            );
+
+      failures.push(failure);
+
+      // Keep a partial archive rather than discarding pages already collected.
+      // Media is content-addressed and the walk is idempotent, so an incomplete
+      // archive is still useful and re-running it costs nothing. With nothing
+      // collected there is nothing to keep, so the failure is the whole story.
+      if (events.length > 0) {
+        return { events, pageCount: pagesFetched, failures };
       }
 
-      const failure = new OwnerExportError("network-failure", "The export could not reach Divine. Check the connection and try again.");
-      failures.push(failure);
       throw failure;
     }
   }

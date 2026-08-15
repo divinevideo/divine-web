@@ -90,6 +90,7 @@ export function ExitStartPage() {
       events: archiveFiles["manifest.json"].event_count,
       pages: archiveFiles["manifest.json"].page_count,
       media: archiveFiles["media.json"].length,
+      failures: archiveFiles["manifest.json"].failures,
     };
   }, [archiveFiles]);
 
@@ -255,17 +256,26 @@ export function ExitStartPage() {
               )}
 
               {state === "complete" && summary && (
-                <Card variant="brand" accent="green">
+                <Card variant="brand" accent={summary.failures.length > 0 ? "yellow" : "green"}>
                   <CardContent className="pt-6 flex items-start gap-3">
-                    <CheckCircle
-                      weight="fill"
-                      className="mt-1 h-5 w-5 flex-shrink-0 text-brand-dark-green dark:text-brand-green"
-                    />
+                    {summary.failures.length > 0 ? (
+                      <WarningCircle
+                        weight="fill"
+                        className="mt-1 h-5 w-5 flex-shrink-0 text-brand-dark-green dark:text-brand-green"
+                      />
+                    ) : (
+                      <CheckCircle
+                        weight="fill"
+                        className="mt-1 h-5 w-5 flex-shrink-0 text-brand-dark-green dark:text-brand-green"
+                      />
+                    )}
                     <div className="space-y-2">
                       <p className="font-semibold text-foreground">
-                        {summary.events === 0
-                          ? "Your archive is ready, and it is empty."
-                          : "Your archive is ready."}
+                        {summary.failures.length > 0
+                          ? "This archive is incomplete."
+                          : summary.events === 0
+                            ? "Your archive is ready, and it is empty."
+                            : "Your archive is ready."}
                       </p>
                       <p className="text-base leading-relaxed text-muted-foreground">
                         {summary.pages} page{summary.pages === 1 ? "" : "s"} read,{" "}
@@ -274,6 +284,20 @@ export function ExitStartPage() {
                         collected from Divine. Other relays were not checked, so anything
                         you posted elsewhere is not in this file.
                       </p>
+                      {summary.failures.map((failure) => (
+                        <p
+                          key={`${failure.code}-${failure.message}`}
+                          className="text-base leading-relaxed text-muted-foreground"
+                        >
+                          {failure.message}
+                        </p>
+                      ))}
+                      {summary.failures.length > 0 && (
+                        <p className="text-base leading-relaxed text-muted-foreground">
+                          You can download what was collected and run the export again;
+                          starting over is safe and does not duplicate anything.
+                        </p>
+                      )}
                     </div>
                   </CardContent>
                 </Card>

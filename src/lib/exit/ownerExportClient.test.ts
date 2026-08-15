@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { fixturePubkey } from "./__fixtures__/exportFixtures";
+import { fixturePubkey, makeFixtureEvent } from "./__fixtures__/exportFixtures";
 import { createFixtureFetch } from "./__fixtures__/fixtureFetch";
 import { FixtureSigner } from "./__fixtures__/fixtureSigner";
 import { exportOwnerEvents, OwnerExportError } from "./ownerExportClient";
@@ -197,6 +197,95 @@ describe("exportOwnerEvents", () => {
           )
       })
     ).rejects.toMatchObject({ code: "malformed-response" });
+  });
+
+  it("keeps the events it collected when the export fails partway", async () => {
+    let requests = 0;
+
+    const result = await exportOwnerEvents({
+      endpointBase: "https://api.divine.video",
+      pubkey: fixturePubkey,
+      signer: new FixtureSigner(),
+      fetcher: async () => {
+        requests += 1;
+        if (requests === 1) {
+          return new Response(
+            JSON.stringify({
+              data: [makeFixtureEvent()],
+              pagination: { next_cursor: "cursor-one", has_more: true }
+            }),
+            { status: 200, headers: { "content-type": "application/json" } }
+          );
+        }
+
+        return new Response(JSON.stringify({ error: "boom" }), { status: 503 });
+      }
+    });
+
+    expect(result.events).toHaveLength(1);
+    expect(result.pageCount).toBe(1);
+    expect(result.failures.map((failure) => failure.code)).toEqual(["server-failure"]);
+  });
+
+  it("still rejects when the export fails before anything was collected", async () => {
+    await expect(
+      exportOwnerEvents({
+        endpointBase: "https://api.divine.video",
+        pubkey: fixturePubkey,
+        signer: new FixtureSigner(),
+        fetcher: createFixtureFetch("server-failure")
+      })
+    ).rejects.toMatchObject({ code: "server-failure" });
+  });
+
+  it("stops and keeps what it has when the server stops advancing the cursor", async () => {
+    let requests = 0;
+
+    const result = await exportOwnerEvents({
+      endpointBase: "https://api.divine.video",
+      pubkey: fixturePubkey,
+      signer: new FixtureSigner(),
+      fetcher: async () => {
+        requests += 1;
+        return new Response(
+          JSON.stringify({
+            data: [makeFixtureEvent({ id: `${requests}`.padStart(64, "0") })],
+            pagination: { next_cursor: "same-cursor-forever", has_more: true }
+          }),
+          { status: 200, headers: { "content-type": "application/json" } }
+        );
+      }
+    });
+
+    expect(requests).toBe(2);
+    expect(result.events).toHaveLength(2);
+    expect(result.failures.map((failure) => failure.code)).toEqual(["stalled-cursor"]);
+  });
+
+  it("stops at the page ceiling and reports the archive as incomplete", async () => {
+    let requests = 0;
+
+    const result = await exportOwnerEvents({
+      endpointBase: "https://api.divine.video",
+      pubkey: fixturePubkey,
+      signer: new FixtureSigner(),
+      maxPages: 2,
+      fetcher: async () => {
+        requests += 1;
+        return new Response(
+          JSON.stringify({
+            data: [makeFixtureEvent({ id: `${requests}`.padStart(64, "0") })],
+            pagination: { next_cursor: `cursor-${requests}`, has_more: true }
+          }),
+          { status: 200, headers: { "content-type": "application/json" } }
+        );
+      }
+    });
+
+    expect(requests).toBe(2);
+    expect(result.pageCount).toBe(2);
+    expect(result.events).toHaveLength(2);
+    expect(result.failures.map((failure) => failure.code)).toEqual(["page-limit"]);
   });
 
   it("rejects invalid pubkeys before making a request", async () => {
