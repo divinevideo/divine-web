@@ -63,7 +63,9 @@ export function useBlockUser() {
           const alreadyMuted = items.some(
             item => item.type === MuteType.USER && item.value === targetPubkey
           );
-          if (alreadyMuted) return tags;
+          // Already muted: the p-tag is present, so skip a redundant kind-10000
+          // republish. Provenance + the kind-3 strip below still run.
+          if (alreadyMuted) return null;
           return [...tags, ['p', targetPubkey]];
         },
       });

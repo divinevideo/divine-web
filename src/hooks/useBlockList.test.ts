@@ -157,6 +157,21 @@ describe('useBlockUser', () => {
     expect(contactListPublish.kind).toBe(3);
     expect(contactListPublish.tags).toEqual([['p', 'b'.repeat(64), '', '']]);
   });
+
+  it('does not republish the mute list when the target is already muted', async () => {
+    mockNostrQuery.mockResolvedValue([makeMuteEvent([['p', mockTargetPubkey]])]);
+
+    const { result } = renderHook(() => useBlockUser(), { wrapper: createWrapper() });
+
+    await act(async () => {
+      await result.current.mutateAsync({ targetPubkey: mockTargetPubkey });
+    });
+
+    // Already muted ⇒ no redundant kind-10000 republish; the kind-3 strip still runs.
+    const publishedKinds = mockPublishEvent.mock.calls.map(call => call[0].kind);
+    expect(publishedKinds).not.toContain(MUTE_LIST_KIND);
+    expect(publishedKinds).toContain(3);
+  });
 });
 
 describe('useUnblockUser', () => {
