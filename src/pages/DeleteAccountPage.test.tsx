@@ -7,7 +7,7 @@ import { DeleteAccountPage } from "./DeleteAccountPage";
 
 describe("DeleteAccountPage", () => {
   it("explains mobile and web account deletion without overpromising network deletion", () => {
-    render(
+    const { container } = render(
       <TestApp>
         <DeleteAccountPage />
       </TestApp>
@@ -27,5 +27,6 @@ describe("DeleteAccountPage", () => {
     expect(
       screen.getByText(/Divine also cannot control every copy outside Divine/)
     ).toBeInTheDocument();
+    expect(container.querySelector('a[href="mailto:support@divine.video"]')).toBeTruthy();
   });
 });

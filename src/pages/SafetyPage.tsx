@@ -175,12 +175,22 @@ export function SafetyPage() {
           {/* 11. Decentralization Limitation */}
           <section>
             <h2 className="text-2xl font-extrabold text-foreground mb-3">{t('sections.decentralization')}</h2>
-            <p>
+            <p className="mb-3">
               Enforcement actions apply only within Divine-controlled infrastructure and do not extend to
               independent relays, clients, or third-party systems. Because the Service interacts with
               decentralized systems, content or accounts removed or restricted within Divine-controlled
               infrastructure may remain visible or accessible through other clients, relays, or third-party
               systems. Divine does not control how independent operators handle content.
+            </p>
+            <p>
+              For simple steps and limits, see{" "}
+              <a
+                href="/delete-account"
+                className="text-primary hover:underline font-medium"
+              >
+                how account deletion works
+              </a>
+              .
             </p>
           </section>
 

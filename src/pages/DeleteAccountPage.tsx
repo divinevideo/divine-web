@@ -276,6 +276,16 @@ export function DeleteAccountPage() {
               </a>
             ))}
           </div>
+          <p className="mt-8 text-sm leading-relaxed text-muted-foreground">
+            Questions? Email{" "}
+            <a
+              href="mailto:support@divine.video"
+              className="text-brand-dark-green dark:text-brand-green underline underline-offset-2 hover:opacity-80"
+            >
+              support@divine.video
+            </a>
+            .
+          </p>
         </div>
       </div>
     </MarketingLayout>

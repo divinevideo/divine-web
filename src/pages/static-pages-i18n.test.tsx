@@ -91,6 +91,10 @@ describe('static pages i18n', () => {
 
     expect(screen.getByRole('heading', { name: 'Normas de seguridad' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: '1. Descripción general' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'how account deletion works' })).toHaveAttribute(
+      'href',
+      '/delete-account',
+    );
   });
 
   it('renders DMCA copy in spanish', () => {
