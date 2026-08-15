@@ -97,4 +97,20 @@ describe('getEventLookupRelayUrls', () => {
     expect(relays).toContain('wss://configured.example');
     expect(relays).toContain(EVENT_LOOKUP_RELAYS[0].url);
   });
+
+  it('filters disabled configured and lookup relays without dropping explicit hints', () => {
+    const disabledLookupRelay = EVENT_LOOKUP_RELAYS[1].url;
+    const disabledHintRelay = EVENT_LOOKUP_RELAYS[2].url;
+
+    const relays = getEventLookupRelayUrls({
+      configuredRelayUrls: ['wss://configured.example', disabledLookupRelay],
+      relayHints: [disabledHintRelay],
+      disabledRelayUrls: [disabledLookupRelay, disabledHintRelay],
+    });
+
+    expect(relays).toContain('wss://configured.example');
+    expect(relays).not.toContain(disabledLookupRelay);
+    expect(relays).toContain(disabledHintRelay);
+    expect(relays.indexOf(disabledHintRelay)).toBe(relays.lastIndexOf(disabledHintRelay));
+  });
 });

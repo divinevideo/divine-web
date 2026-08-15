@@ -15,12 +15,14 @@ export interface AddressableEventRef {
 export interface EventLookupOptions {
   relayHints?: string[];
   relayUrls?: string[];
+  disabledRelayUrls?: string[];
 }
 
 function resolveEventLookupRelays(options?: EventLookupOptions): string[] {
   return getEventLookupRelayUrls({
     configuredRelayUrls: options?.relayUrls,
     relayHints: options?.relayHints,
+    disabledRelayUrls: options?.disabledRelayUrls,
   });
 }
 

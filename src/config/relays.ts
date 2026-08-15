@@ -203,15 +203,23 @@ function warnTruncatedRelayHints(droppedCount: number): void {
 export function getEventLookupRelayUrls(options?: {
   configuredRelayUrls?: string[];
   relayHints?: string[];
+  disabledRelayUrls?: string[];
 }): string[] {
+  const disabledRelays = new Set(options?.disabledRelayUrls ?? []);
+  const configuredRelayUrls = (options?.configuredRelayUrls ?? [])
+    .filter((url) => !disabledRelays.has(url));
+  const relayHints = admitRemoteSuppliedRelays(options?.relayHints ?? [], {
+    cap: REMOTE_RELAY_HINT_CAP,
+    onRejected: warnRejectedRelayHint,
+    onTruncated: warnTruncatedRelayHints,
+  }).sort();
+  const lookupRelayUrls = getRelayUrls(EVENT_LOOKUP_RELAYS)
+    .filter((url) => !disabledRelays.has(url));
+
   return dedupeRelayUrls([
-    ...(options?.configuredRelayUrls ?? []),
-    ...admitRemoteSuppliedRelays(options?.relayHints ?? [], {
-      cap: REMOTE_RELAY_HINT_CAP,
-      onRejected: warnRejectedRelayHint,
-      onTruncated: warnTruncatedRelayHints,
-    }),
-    ...getRelayUrls(EVENT_LOOKUP_RELAYS),
+    ...configuredRelayUrls,
+    ...relayHints,
+    ...lookupRelayUrls,
   ]);
 }
 

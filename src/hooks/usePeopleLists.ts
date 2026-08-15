@@ -35,11 +35,16 @@ export function usePeopleList(
 ) {
   const { nostr } = useNostr();
   const { config } = useAppContext();
-  const configuredRelayUrls = config.relayUrls || [config.relayUrl];
-  // Canonicalize hints (dedupe + sort) so reordered/duplicate hint sets share a
-  // cache entry instead of refetching the same list. The query itself still
-  // admits/dedupes hints via getEventLookupRelayUrls below.
-  const relayKey = [...configuredRelayUrls, ...[...new Set(options.relayHints ?? [])].sort()].join(',');
+  const configuredRelayUrls = [
+    ...(config.relayUrls || [config.relayUrl]),
+    ...(config.customRelayUrls ?? []),
+  ];
+  const relays = getEventLookupRelayUrls({
+    configuredRelayUrls,
+    relayHints: options.relayHints,
+    disabledRelayUrls: config.disabledPresetUrls,
+  });
+  const relayKey = relays.join(',');
 
   return useQuery({
     queryKey: ['people-list', pubkey, listId, relayKey],
@@ -51,10 +56,7 @@ export function usePeopleList(
         limit: 10,
       }], {
         signal: AbortSignal.any([signal, AbortSignal.timeout(5000)]),
-        relays: getEventLookupRelayUrls({
-          configuredRelayUrls,
-          relayHints: options.relayHints,
-        }),
+        relays,
       });
 
       return deduplicatePeopleLists(events)[0] ?? null;

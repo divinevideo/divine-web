@@ -160,7 +160,14 @@ export default function ListDetailPage() {
   const navigate = useNavigate();
   const { nostr } = useNostr();
   const { config } = useAppContext();
-  const listLookupRelayKey = (config.relayUrls || [config.relayUrl]).join(',');
+  const listLookupRelays = getEventLookupRelayUrls({
+    configuredRelayUrls: [
+      ...(config.relayUrls || [config.relayUrl]),
+      ...(config.customRelayUrls ?? []),
+    ],
+    disabledRelayUrls: config.disabledPresetUrls,
+  });
+  const listLookupRelayKey = listLookupRelays.join(',');
   const { user } = useCurrentUser();
   const { toast } = useToast();
   const { share } = useShare();
@@ -212,9 +219,7 @@ export default function ListDetailPage() {
         limit: 1
       }], {
         signal,
-        relays: getEventLookupRelayUrls({
-          configuredRelayUrls: config.relayUrls || [config.relayUrl],
-        }),
+        relays: listLookupRelays,
       });
 
       if (ownerEvents.length === 0) {
@@ -238,9 +243,7 @@ export default function ListDetailPage() {
         limit: 50,
       }], {
         signal,
-        relays: getEventLookupRelayUrls({
-          configuredRelayUrls: config.relayUrls || [config.relayUrl],
-        }),
+        relays: listLookupRelays,
       });
 
       const participantSet = new Set(participantPubkeys);

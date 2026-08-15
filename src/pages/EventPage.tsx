@@ -20,6 +20,7 @@ import {
 } from '@/lib/eventRouting';
 import { getDirectSearchTarget } from '@/lib/directSearch';
 import { appendRelayHints, parseRelayHints } from '@/lib/relayHints';
+import { getEventLookupRelayUrls } from '@/config/relays';
 import { genUserName } from '@/lib/genUserName';
 import { getSafeProfileImage } from '@/lib/imageUtils';
 import { NoteContent } from '@/components/NoteContent';
@@ -126,10 +127,16 @@ export function EventPage() {
   const numericKind = kind ? Number(kind) : null;
   const decodedIdentifier = identifier ? decodeURIComponent(identifier) : null;
   const relayHints = parseRelayHints(location.search);
-  const configuredRelayUrls = config.relayUrls || [config.relayUrl];
-  // Canonicalize hints (dedupe + sort) so reordered/duplicate hint sets share a
-  // cache entry instead of refetching the same event.
-  const relayKey = [...configuredRelayUrls, ...[...new Set(relayHints)].sort()].join(',');
+  const configuredRelayUrls = [
+    ...(config.relayUrls || [config.relayUrl]),
+    ...(config.customRelayUrls ?? []),
+  ];
+  const relays = getEventLookupRelayUrls({
+    configuredRelayUrls,
+    relayHints,
+    disabledRelayUrls: config.disabledPresetUrls,
+  });
+  const relayKey = relays.join(',');
 
   const { data: event, isLoading, error } = useQuery({
     queryKey: ['event-page', eventId, numericKind, pubkey, decodedIdentifier, relayKey],
@@ -140,6 +147,7 @@ export function EventPage() {
         return fetchEventById(nostr, eventId, signal, {
           relayHints,
           relayUrls: configuredRelayUrls,
+          disabledRelayUrls: config.disabledPresetUrls,
         });
       }
 
@@ -151,6 +159,7 @@ export function EventPage() {
         }, signal, {
           relayHints,
           relayUrls: configuredRelayUrls,
+          disabledRelayUrls: config.disabledPresetUrls,
         });
       }
 

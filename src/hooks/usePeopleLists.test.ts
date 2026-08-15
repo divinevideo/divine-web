@@ -7,6 +7,12 @@ import type { NostrEvent } from '@nostrify/nostrify';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mockNostrQuery = vi.fn();
+const mockAppConfig = vi.hoisted(() => ({
+  relayUrl: 'wss://relay.divine.video',
+  relayUrls: ['wss://relay.divine.video'],
+  customRelayUrls: [] as string[],
+  disabledPresetUrls: [] as string[],
+}));
 
 vi.mock('@nostrify/react', () => ({
   useNostr: () => ({ nostr: { query: mockNostrQuery } }),
@@ -14,10 +20,7 @@ vi.mock('@nostrify/react', () => ({
 
 vi.mock('@/hooks/useAppContext', () => ({
   useAppContext: () => ({
-    config: {
-      relayUrl: 'wss://relay.divine.video',
-      relayUrls: ['wss://relay.divine.video'],
-    },
+    config: mockAppConfig,
   }),
 }));
 
@@ -49,6 +52,10 @@ function createWrapper() {
 describe('people list hooks', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockAppConfig.relayUrl = 'wss://relay.divine.video';
+    mockAppConfig.relayUrls = ['wss://relay.divine.video'];
+    mockAppConfig.customRelayUrls = [];
+    mockAppConfig.disabledPresetUrls = [];
     mockNostrQuery.mockResolvedValue([]);
   });
 
@@ -120,6 +127,27 @@ describe('people list hooks', () => {
     );
   });
 
+  it('uses custom relays and skips disabled app-chosen relays for exact people-list lookups', async () => {
+    mockAppConfig.relayUrls = ['wss://relay.divine.video', 'wss://relay.damus.io'];
+    mockAppConfig.customRelayUrls = ['wss://custom.example'];
+    mockAppConfig.disabledPresetUrls = ['wss://relay.damus.io'];
+    mockNostrQuery.mockResolvedValue([peopleListEvent()]);
+    const { usePeopleList } = await import('./usePeopleLists');
+
+    const { result } = renderHook(() => usePeopleList(OWNER, 'friends'), { wrapper: createWrapper() });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    expect(mockNostrQuery).toHaveBeenCalledWith(
+      [{ kinds: [30000], authors: [OWNER], '#d': ['friends'], limit: 10 }],
+      {
+        signal: expect.any(AbortSignal),
+        relays: expect.arrayContaining(['wss://relay.divine.video', 'wss://custom.example']),
+      },
+    );
+    const relays = mockNostrQuery.mock.calls[0]?.[1]?.relays;
+    expect(relays).not.toContain('wss://relay.damus.io');
+  });
+
   it('keeps relay-hinted people-list lookups in distinct cache entries', async () => {
     mockNostrQuery
       .mockResolvedValueOnce([])
@@ -158,6 +186,26 @@ describe('people list hooks', () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
     // Same hint set in a different order must reuse the cache, not refetch.
+    expect(mockNostrQuery).toHaveBeenCalledTimes(1);
+  });
+
+  it('shares a cache entry when raw hints resolve to the same relay set', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    mockNostrQuery.mockResolvedValue([peopleListEvent()]);
+    const { usePeopleList } = await import('./usePeopleLists');
+    const wrapper = createWrapper();
+    const { result, rerender } = renderHook(
+      ({ relayHints }) => usePeopleList(OWNER, 'friends', { relayHints }),
+      {
+        wrapper,
+        initialProps: { relayHints: ['wss://relay.example'] },
+      },
+    );
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    rerender({ relayHints: ['wss://relay.example', 'ws://rejected.example'] });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
     expect(mockNostrQuery).toHaveBeenCalledTimes(1);
   });
 });
