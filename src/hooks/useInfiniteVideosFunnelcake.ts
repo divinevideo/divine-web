@@ -13,6 +13,7 @@ import { enrichAgeRestrictedVideos } from '@/lib/ageRestrictedVideos';
 import { transformToVideoPage } from '@/lib/funnelcakeTransform';
 import { debugLog } from '@/lib/debug';
 import { performanceMonitor } from '@/lib/performanceMonitoring';
+import { videoAddress } from '@/lib/videoAddress';
 
 const EDGE_INJECTED_FEED_LIMIT = 10;
 
@@ -46,16 +47,12 @@ interface FunnelcakeVideoPage {
   mode?: 'recommendations' | 'popular';
 }
 
-function getVideoKey(video: Pick<ParsedVideoData, 'pubkey' | 'kind' | 'vineId' | 'id'>): string {
-  return `${video.pubkey}:${video.kind}:${video.vineId || video.id}`;
-}
-
 function getUniqueVideoCount(pages: FunnelcakeVideoPage[]): number {
   const seenKeys = new Set<string>();
 
   for (const page of pages) {
     for (const video of page.videos) {
-      seenKeys.add(getVideoKey(video));
+      seenKeys.add(videoAddress(video));
     }
   }
 
@@ -420,7 +417,7 @@ export function useInfiniteVideosFunnelcake({
 
       if (feedType === 'recommendations' && responseMode === 'recommendations' && isRecommendationsCursorParam) {
         const seenKeys = new Set(pageParam.seenVideoKeys);
-        const hasNewVideos = page.videos.some(video => !seenKeys.has(getVideoKey(video)));
+        const hasNewVideos = page.videos.some(video => !seenKeys.has(videoAddress(video)));
 
         if (!hasNewVideos) {
           responseMode = 'popular';
@@ -493,7 +490,7 @@ export function useInfiniteVideosFunnelcake({
           return {
             mode: 'recommendations' as const,
             cursor: lastPage.recommendationsCursor,
-            seenVideoKeys: allPages.flatMap(page => page.videos.map(getVideoKey)),
+            seenVideoKeys: allPages.flatMap(page => page.videos.map(videoAddress)),
             popularOffset: getUniqueVideoCount(allPages),
           };
         }

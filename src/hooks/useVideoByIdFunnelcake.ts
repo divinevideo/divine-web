@@ -14,6 +14,7 @@ import { useFeedBlocklist } from '@/hooks/useFeedBlocklist';
 import { FEED_PAGE_SIZE } from '@/config/feed';
 import { filterBlockedVideoPages } from '@/lib/blocklistFilter';
 import { debugLog } from '@/lib/debug';
+import { videoAddress } from '@/lib/videoAddress';
 import type { ParsedVideoData } from '@/types/video';
 import type { SortMode } from '@/types/nostr';
 
@@ -41,14 +42,13 @@ interface UseVideoByIdResult {
 }
 
 const NAVIGATION_WINDOW_SIZE = 16;
-// Cold featured links must page forward by cursor to rebuild enough filtered
-// server-order context, but the detail page should not drain an unbounded tab.
-const FEATURED_NAVIGATION_PAGE_BUDGET = 5;
+const NAVIGATION_PAGE_BUDGET = 5;
+
+type NavigationVideo = ParsedVideoData & { navigationIndex?: number };
 
 interface VideoNavigationPage {
-  videos: ParsedVideoData[];
+  videos: NavigationVideo[];
   offset?: number;
-  hasMore: boolean;
 }
 
 /**
@@ -65,7 +65,7 @@ function flattenUniqueVideos(pages?: VideoNavigationPage[]): ParsedVideoData[] |
   const videos: ParsedVideoData[] = [];
   for (const page of pages) {
     for (const video of page.videos) {
-      const key = `${video.pubkey}:${video.kind}:${video.vineId || video.id}`;
+      const key = videoAddress(video);
       if (seen.has(key)) continue;
       seen.add(key);
       videos.push(video);
@@ -103,9 +103,63 @@ function getFeaturedNavigationPageBudget(currentIndex?: number): number {
   }
 
   return Math.min(
-    FEATURED_NAVIGATION_PAGE_BUDGET,
+    NAVIGATION_PAGE_BUDGET,
     Math.ceil((currentIndex + 1) / FEED_PAGE_SIZE) + 1
   );
+}
+
+function withNavigationIndexes(page: VideoNavigationPage, startIndex: number): VideoNavigationPage {
+  return {
+    ...page,
+    videos: page.videos.map((video, index) => ({
+      ...video,
+      navigationIndex: startIndex + index,
+    })),
+  };
+}
+
+function visibleVideosFromResult(
+  data: { pages: VideoNavigationPage[] } | undefined,
+  blockedPubkeys: ReadonlySet<string>
+): ParsedVideoData[] | null {
+  return flattenUniqueVideos(filterBlockedVideoPages(data, blockedPubkeys)?.pages);
+}
+
+async function fetchVisiblePagePastBlocked(
+  fetchNextPage: () => Promise<{
+    data?: { pages: VideoNavigationPage[] };
+    hasNextPage?: boolean;
+    isError?: boolean;
+    error?: Error | null;
+  }>,
+  currentVideos: ParsedVideoData[] | null,
+  blockedPubkeys: ReadonlySet<string>,
+  pageBudget: number = NAVIGATION_PAGE_BUDGET
+): Promise<ParsedVideoData[] | null> {
+  const startCount = currentVideos?.length ?? 0;
+  let result = await fetchNextPage();
+  if (result.isError) throw result.error ?? new Error('Could not load more videos');
+
+  let visible = visibleVideosFromResult(result.data, blockedPubkeys) ?? currentVideos;
+  let loadedPages = result.data?.pages.length ?? 0;
+  let skipped = 0;
+
+  while (
+    (visible?.length ?? 0) <= startCount &&
+    result.hasNextPage &&
+    skipped < pageBudget
+  ) {
+    result = await fetchNextPage();
+    if (result.isError) throw result.error ?? new Error('Could not load more videos');
+
+    const nextLoadedPages = result.data?.pages.length ?? 0;
+    if (nextLoadedPages <= loadedPages) break;
+    loadedPages = nextLoadedPages;
+    visible = visibleVideosFromResult(result.data, blockedPubkeys) ?? visible;
+    skipped += 1;
+  }
+
+  return visible;
 }
 
 /**
@@ -150,7 +204,7 @@ export function useVideoByIdFunnelcake(options: UseVideoByIdOptions): UseVideoBy
         signal,
       });
 
-      return transformToVideoPage(response, 'offset');
+      return withNavigationIndexes(transformToVideoPage(response, 'offset'), Number(pageParam));
     },
     initialPageParam: windowOffset,
     getNextPageParam: (lastPage) => lastPage.offset,
@@ -174,7 +228,7 @@ export function useVideoByIdFunnelcake(options: UseVideoByIdOptions): UseVideoBy
         signal,
       });
 
-      return transformToVideoPage(response, 'offset');
+      return withNavigationIndexes(transformToVideoPage(response, 'offset'), Number(pageParam));
     },
     initialPageParam: windowOffset,
     getNextPageParam: (lastPage) => lastPage.offset,
@@ -202,7 +256,7 @@ export function useVideoByIdFunnelcake(options: UseVideoByIdOptions): UseVideoBy
         signal,
       });
 
-      return transformToVideoPage(response, 'offset');
+      return withNavigationIndexes(transformToVideoPage(response, 'offset'), Number(pageParam));
     },
     initialPageParam: windowOffset,
     getNextPageParam: (lastPage) => lastPage.offset,
@@ -312,7 +366,8 @@ export function useVideoByIdFunnelcake(options: UseVideoByIdOptions): UseVideoBy
     !contextVideo
   );
 
-  // Single video lookup (used when no context or as fallback)
+  // Direct video links are addressable Nostr events. Feed/profile navigation is
+  // filtered, but the detail fallback intentionally stays unfiltered.
   const singleVideoQuery = useQuery({
     queryKey: ['funnelcake-video', videoId, funnelcakeUrl],
     queryFn: async ({ signal }) => {
@@ -368,50 +423,21 @@ export function useVideoByIdFunnelcake(options: UseVideoByIdOptions): UseVideoBy
     fetchNextPage: async () => {
       if (pubkey) {
         if (!userVideosQuery.hasNextPage) return userVideos;
-        const result = await userVideosQuery.fetchNextPage();
-        return flattenUniqueVideos(filterBlockedVideoPages(result.data, blockedPubkeys)?.pages) ?? userVideos;
+        return fetchVisiblePagePastBlocked(userVideosQuery.fetchNextPage, userVideos, blockedPubkeys);
       }
 
       if (hashtag) {
         if (!hashtagVideosQuery.hasNextPage) return hashtagVideos;
-        const result = await hashtagVideosQuery.fetchNextPage();
-        return flattenUniqueVideos(filterBlockedVideoPages(result.data, blockedPubkeys)?.pages) ?? hashtagVideos;
+        return fetchVisiblePagePastBlocked(hashtagVideosQuery.fetchNextPage, hashtagVideos, blockedPubkeys);
       }
 
       if (searchValue) {
         if (!searchVideosQuery.hasNextPage) return searchVideosForContext;
-        const result = await searchVideosQuery.fetchNextPage();
-        return flattenUniqueVideos(filterBlockedVideoPages(result.data, blockedPubkeys)?.pages) ?? searchVideosForContext;
+        return fetchVisiblePagePastBlocked(searchVideosQuery.fetchNextPage, searchVideosForContext, blockedPubkeys);
       }
 
       if (!eligibleFeaturedTabId || !featuredHasNextPage) return featuredVideos;
-
-      const startCount = featuredVideos?.length ?? 0;
-      let result = await fetchNextFeaturedPage();
-      let visible = flattenUniqueVideos(filterBlockedVideoPages(result.data, blockedPubkeys)?.pages) ?? featuredVideos;
-      let loadedPages = result.data?.pages.length ?? 0;
-
-      // A featured page can be entirely blocked/muted authors; filtered to
-      // nothing it would surface as a spurious "couldn't load next" toast at the
-      // boundary even though visible videos remain further in. Skip past
-      // fully-filtered pages until a visible neighbor appears or the tab ends.
-      // Bounded per keypress, and it stops the moment a fetch makes no progress
-      // (error or no-op) so a failing page can't spin the loop.
-      let skipped = 0;
-      while (
-        (visible?.length ?? 0) <= startCount &&
-        result.hasNextPage &&
-        skipped < FEATURED_NAVIGATION_PAGE_BUDGET
-      ) {
-        result = await fetchNextFeaturedPage();
-        const nextLoadedPages = result.data?.pages.length ?? 0;
-        if (nextLoadedPages <= loadedPages) break;
-        loadedPages = nextLoadedPages;
-        visible = flattenUniqueVideos(filterBlockedVideoPages(result.data, blockedPubkeys)?.pages) ?? visible;
-        skipped += 1;
-      }
-
-      return visible;
+      return fetchVisiblePagePastBlocked(fetchNextFeaturedPage, featuredVideos, blockedPubkeys);
     },
     isLoading,
     error,

@@ -29,6 +29,11 @@ import { reportFunnelcakeFallback } from '@/lib/funnelcakeFallbackReporting';
 import { buildVideoLikeTags } from '@/lib/buildVideoLikeTags';
 import type { ParsedVideoData, UserInteractions } from '@/types/video';
 
+function getNavigationIndex(video: ParsedVideoData, fallbackIndex: number): number {
+  const navigationIndex = (video as ParsedVideoData & { navigationIndex?: unknown }).navigationIndex;
+  return typeof navigationIndex === 'number' ? navigationIndex : fallbackIndex;
+}
+
 export function VideoPage() {
   const { t } = useTranslation();
   const { toast } = useToast();
@@ -138,7 +143,7 @@ export function VideoPage() {
       return;
     }
 
-    navigate(buildNavigationUrl(nextVideo, navigationIndexBase + currentIndex + 1));
+    navigate(buildNavigationUrl(nextVideo, getNavigationIndex(nextVideo, navigationIndexBase + currentIndex + 1)));
   }, [
     hasNext,
     videos,
@@ -158,7 +163,7 @@ export function VideoPage() {
   const goToPrevious = useCallback(() => {
     if (!hasPrevious || !videos) return;
     const prevVideo = videos[currentIndex - 1];
-    navigate(buildNavigationUrl(prevVideo, navigationIndexBase + currentIndex - 1));
+    navigate(buildNavigationUrl(prevVideo, getNavigationIndex(prevVideo, navigationIndexBase + currentIndex - 1)));
   }, [hasPrevious, videos, currentIndex, navigate, buildNavigationUrl, navigationIndexBase]);
 
   // Get author data for profile context
@@ -190,6 +195,8 @@ export function VideoPage() {
 
   const hasMoreToShow = maxRendered < (videos?.length || 0);
   const hasMoreFeedVideos = hasMoreToShow || (isUsingFunnelcakeVideos && funnelcakeHasNextPage);
+  // InfiniteScroll only calls next when dataLength grows. The unfiltered fetched
+  // count keeps it moving after a fully filtered page; visibleVideos controls UI.
   const scrollDataLength = isUsingFunnelcakeVideos
     ? funnelcakeFetchedCount + visibleVideos.length
     : visibleVideos.length;
@@ -201,7 +208,15 @@ export function VideoPage() {
     }
 
     if (isUsingFunnelcakeVideos && funnelcakeHasNextPage && !isFetchingNextFunnelcakePage) {
-      await fetchNextFunnelcakePage();
+      try {
+        await fetchNextFunnelcakePage();
+      } catch {
+        toast({
+          title: t('videoPage.errorTitle'),
+          description: t('videoPage.loadMoreUnavailableDescription'),
+          variant: 'destructive',
+        });
+      }
     }
   }, [
     fetchNextFunnelcakePage,
@@ -209,6 +224,8 @@ export function VideoPage() {
     hasMoreToShow,
     isFetchingNextFunnelcakePage,
     isUsingFunnelcakeVideos,
+    toast,
+    t,
     videos?.length,
   ]);
 
@@ -759,9 +776,11 @@ export function VideoPage() {
             </div>
           }
           endMessage={
-            <p className="py-6 text-center text-sm text-muted-foreground">
-              You've reached the end
-            </p>
+            (videos?.length ?? 0) > 10 ? (
+              <p className="py-6 text-center text-sm text-muted-foreground">
+                {t('videoPage.allCaughtUp')}
+              </p>
+            ) : null
           }
           className="space-y-6 max-w-xl mx-auto"
         >

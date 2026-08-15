@@ -7,6 +7,7 @@ import type { FunnelcakeVideoRaw, FunnelcakeResponse } from '@/types/funnelcake'
 import { debugLog } from './debug';
 import { getProofModeData, getVineId } from './videoParser';
 import { extractSha256FromVideoUrl, normalizeSha256 } from './videoVerification';
+import { videoAddress } from '@/lib/videoAddress';
 import type { NostrEvent } from '@nostrify/nostrify';
 
 /**
@@ -286,7 +287,7 @@ export function transformFunnelcakeResponse(response: FunnelcakeResponse | Funne
   // The API may return duplicate rows for the same video
   const seen = new Set<string>();
   const videos = transformed.filter(v => {
-    const key = `${v.pubkey}:${v.kind}:${v.vineId || v.id}`;
+    const key = videoAddress(v);
     if (seen.has(key)) return false;
     seen.add(key);
     return true;

@@ -540,7 +540,6 @@ describe('useVideoByIdFunnelcake', () => {
     });
   });
 
-
   it('walks featured cursor pages up to the index-derived budget for cold links', async () => {
     mockUseFeaturedTab.mockReturnValue({
       tab: { id: 'ft_1234abcd' },
@@ -680,6 +679,59 @@ describe('useVideoByIdFunnelcake', () => {
       'cursor-3',
       12,
       expect.any(AbortSignal)
+    );
+  });
+
+  it('skips a fully-blocked search page when paging for the next neighbor', async () => {
+    const blockedPubkey = 'b'.repeat(64);
+    mockBlocklist.add(blockedPubkey);
+    mockSearchVideos
+      .mockResolvedValueOnce({
+        videos: [{ id: 'target-video', pubkey: 'p'.repeat(64), d_tag: 'target-video' }],
+        has_more: true,
+        next_cursor: '16',
+      })
+      .mockResolvedValueOnce({
+        videos: [
+          { id: 'blocked-a', pubkey: blockedPubkey, d_tag: 'blocked-a' },
+          { id: 'blocked-b', pubkey: blockedPubkey, d_tag: 'blocked-b' },
+        ],
+        has_more: true,
+        next_cursor: '32',
+      })
+      .mockResolvedValueOnce({
+        videos: [{ id: 'visible-next', pubkey: 'v'.repeat(64), d_tag: 'visible-next' }],
+        has_more: false,
+      });
+
+    const { result } = renderHook(
+      () => useVideoByIdFunnelcake({
+        videoId: 'target-video',
+        query: 'cats',
+      }),
+      { wrapper: createWrapper() }
+    );
+
+    await waitFor(() => {
+      expect(result.current.videos?.map(video => video.id)).toEqual(['target-video']);
+    });
+
+    let pagedIds: string[] | undefined;
+    await act(async () => {
+      const paged = await result.current.fetchNextPage();
+      pagedIds = paged?.map(video => video.id);
+    });
+
+    expect(pagedIds).toEqual(['target-video', 'visible-next']);
+    expect(mockSearchVideos).toHaveBeenNthCalledWith(
+      2,
+      'https://api.divine.video',
+      expect.objectContaining({ offset: 16 })
+    );
+    expect(mockSearchVideos).toHaveBeenNthCalledWith(
+      3,
+      'https://api.divine.video',
+      expect.objectContaining({ offset: 32 })
     );
   });
 });

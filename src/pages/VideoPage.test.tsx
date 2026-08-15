@@ -142,8 +142,34 @@ vi.mock('@/hooks/useVideoByIdFunnelcake', () => ({
       };
     }
 
-    if (options.query === 'scroll-done') {
+    if (options.query === 'scroll-error') {
       const scrollVideos = Array.from({ length: 10 }, (_, index) => ({
+        id: `error-video-${index + 1}`,
+        pubkey: VIDEO_2_AUTHOR_PK,
+        kind: 34236,
+        createdAt: index + 1,
+        content: `error ${index + 1}`,
+        videoUrl: `https://example.com/error-${index + 1}.mp4`,
+        vineId: `error-vine-${index + 1}`,
+        hashtags: [],
+        reposts: [],
+      }));
+
+      return {
+        video: scrollVideos[0],
+        videos: scrollVideos,
+        windowOffset: 0,
+        fetchedCount: scrollVideos.length,
+        hasNextPage: true,
+        isFetchingNextPage: false,
+        fetchNextPage: mockFetchNextFunnelcakePage,
+        isLoading: false,
+        error: null,
+      };
+    }
+
+    if (options.query === 'scroll-done') {
+      const scrollVideos = Array.from({ length: 11 }, (_, index) => ({
         id: `done-video-${index + 1}`,
         pubkey: VIDEO_2_AUTHOR_PK,
         kind: 34236,
@@ -160,6 +186,32 @@ vi.mock('@/hooks/useVideoByIdFunnelcake', () => ({
         videos: scrollVideos,
         windowOffset: 0,
         fetchedCount: scrollVideos.length,
+        hasNextPage: false,
+        isFetchingNextPage: false,
+        fetchNextPage: vi.fn(),
+        isLoading: false,
+        error: null,
+      };
+    }
+
+    if (options.query === 'filtered-index') {
+      return {
+        video: {
+          ...videos[0],
+          navigationIndex: 5,
+        },
+        videos: [
+          {
+            ...videos[0],
+            navigationIndex: 5,
+          },
+          {
+            ...videos[1],
+            navigationIndex: 7,
+          },
+        ],
+        windowOffset: 4,
+        fetchedCount: 3,
         hasNextPage: false,
         isFetchingNextPage: false,
         fetchNextPage: vi.fn(),
@@ -449,11 +501,41 @@ describe('VideoPage', () => {
     });
   });
 
+  it('shows feedback when a scroll-triggered Funnelcake page fails', async () => {
+    mockFetchNextFunnelcakePage.mockRejectedValueOnce(new Error('network down'));
+
+    renderPage('/video/error-video-1?source=search&q=scroll-error&index=0');
+
+    fireEvent.click(screen.getByRole('button', { name: /load more/i }));
+
+    await waitFor(() => {
+      expect(mockToast).toHaveBeenCalledWith(expect.objectContaining({
+        description: "Couldn't load more videos. Try again?",
+        variant: 'destructive',
+      }));
+    });
+  });
+
   it('shows an end message when the loaded feed has no more rows or pages', () => {
-    renderPage('/video/done-video-1?source=search&q=scroll-done&index=0');
+    renderPage('/video/done-video-9?source=search&q=scroll-done&index=8');
 
     expect(screen.getByTestId('infinite-scroll')).toHaveAttribute('data-has-more', 'false');
-    expect(screen.getByText("You've reached the end")).toBeInTheDocument();
+    expect(screen.getByText("That's the whole haul.")).toBeInTheDocument();
+  });
+
+  it('uses the server navigation index carried by filtered Funnelcake pages', async () => {
+    renderPage('/video/video-1?source=search&q=filtered-index&index=5');
+
+    fireEvent.keyDown(document.body, { key: 'ArrowDown' });
+
+    await waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalledTimes(1);
+    });
+
+    const [target] = mockNavigate.mock.calls[0] ?? [];
+    const url = new URL(String(target), 'https://divine.video');
+    expect(url.pathname).toBe('/video/video-2');
+    expect(url.searchParams.get('index')).toBe('7');
   });
 
   it('navigates to an already-loaded next video while a page fetch is in flight', async () => {
