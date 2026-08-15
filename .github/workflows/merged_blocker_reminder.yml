@@ -20,9 +20,10 @@ jobs:
             const prNumber = pr.number;
             const { owner, repo } = context.repo;
             const blockerReferencePattern = new RegExp(
-              String.raw`\bblocked\s+(?:on|by)(?:\s+(?:pr|pull request))?\s+#\d+(?:\s*(?:,|and|&)\s*(?:(?:pr|pull request)\s+)?#\d+)*`,
+              String.raw`\bblocked\s+(?:on|by)(?:\s+(?:pr|pull request))?\s+#\d+(?:\s*(?:,\s*(?:and\s+)?|and\s+|&\s*)(?:(?:pr|pull request)\s+)?#\d+)*`,
               'gi',
             );
+            const trustedCommentAssociations = new Set(['OWNER', 'MEMBER', 'COLLABORATOR']);
             const labels = {
               blocked: { color: 'cfd3d7', description: 'Waiting on another issue or pull request' },
               ready: { color: '0e8a16', description: 'Unblocked and ready to pick up' },
@@ -59,12 +60,29 @@ jobs:
 
             function extractBlockerNumbers(text) {
               const numbers = new Set();
-              for (const match of text.matchAll(blockerReferencePattern)) {
-                for (const numberMatch of match[0].matchAll(/#(\d+)/g)) {
-                  numbers.add(Number(numberMatch[1]));
+              for (const line of text.split(/\r?\n/)) {
+                const normalizedLine = line.trimStart();
+                if (normalizedLine.startsWith('>') || /\bnot\s+blocked\s+(?:on|by)\b/i.test(normalizedLine)) {
+                  continue;
+                }
+
+                blockerReferencePattern.lastIndex = 0;
+                for (const match of normalizedLine.matchAll(blockerReferencePattern)) {
+                  for (const numberMatch of match[0].matchAll(/#(\d+)/g)) {
+                    numbers.add(Number(numberMatch[1]));
+                  }
                 }
               }
               return numbers;
+            }
+
+            function extractTrustedBlockerNumbers(issueBody, comments) {
+              return new Set([
+                ...extractBlockerNumbers(issueBody ?? ''),
+                ...comments
+                  .filter((comment) => trustedCommentAssociations.has(comment.author_association))
+                  .flatMap((comment) => [...extractBlockerNumbers(comment.body ?? '')]),
+              ]);
             }
 
             async function listComments(issueNumber) {
@@ -81,12 +99,23 @@ jobs:
                 return blockerStateCache.get(blockerNumber);
               }
 
-              const { data } = await github.rest.issues.get({
-                owner,
-                repo,
-                issue_number: blockerNumber,
-              });
-              const closed = data.state === 'closed';
+              let closed = false;
+
+              try {
+                const { data } = await github.rest.issues.get({
+                  owner,
+                  repo,
+                  issue_number: blockerNumber,
+                });
+                closed = data.state === 'closed' && (!data.pull_request || data.pull_request.merged_at !== null);
+              } catch (error) {
+                // A reference we cannot resolve keeps the issue blocked.
+                if (error.status !== 404) {
+                  throw error;
+                }
+                console.warn(`Blocker #${blockerNumber} does not exist; treating it as open.`);
+              }
+
               blockerStateCache.set(blockerNumber, closed);
               return closed;
             }
@@ -108,13 +137,10 @@ jobs:
               // Fetched at most once per issue and reused for both the blocker
               // match and the duplicate-comment check.
               const comments = issue.comments > 0 ? await listComments(issue.number) : [];
-              const blockerNumbers = new Set([
-                ...extractBlockerNumbers(issue.body ?? ''),
-                ...comments.flatMap((comment) => [...extractBlockerNumbers(comment.body ?? '')]),
-              ]);
+              const blockerNumbers = extractTrustedBlockerNumbers(issue.body, comments);
 
               if (blockerNumbers.has(prNumber)) {
-                blockedIssues.push({ issue, comments });
+                blockedIssues.push({ issue, comments, blockerNumbers });
               }
             }
 
@@ -125,11 +151,7 @@ jobs:
             await ensureLabel('blocked');
             await ensureLabel('ready');
 
-            for (const { issue, comments } of blockedIssues) {
-              const blockerNumbers = new Set([
-                ...extractBlockerNumbers(issue.body ?? ''),
-                ...comments.flatMap((comment) => [...extractBlockerNumbers(comment.body ?? '')]),
-              ]);
+            for (const { issue, comments, blockerNumbers } of blockedIssues) {
               const allBlockersClosed = (
                 await Promise.all([...blockerNumbers].map((number) => isBlockerClosed(number)))
               ).every(Boolean);
