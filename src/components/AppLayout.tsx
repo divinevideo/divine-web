@@ -1,3 +1,4 @@
+import { useCallback, useEffect, useRef } from 'react';
 import { Outlet, useLocation, useSearchParams } from 'react-router-dom';
 import { AppHeader } from '@/components/AppHeader';
 import { BottomNav } from '@/components/BottomNav';
@@ -20,34 +21,61 @@ export function AppLayout() {
   const { isRecording } = useAppContext();
   const { state: fullscreenState, exitFullscreen, onLoadMore, hasMore } = useFullscreenFeed();
   const compilationRequest = parseCompilationPlaybackParams(searchParams);
+  const searchParamsRef = useRef(searchParams);
+  const setSearchParamsRef = useRef(setSearchParams);
+  const exitFullscreenRef = useRef(exitFullscreen);
+
+  useEffect(() => {
+    searchParamsRef.current = searchParams;
+    setSearchParamsRef.current = setSearchParams;
+    exitFullscreenRef.current = exitFullscreen;
+  }, [exitFullscreen, searchParams, setSearchParams]);
 
   const isLoggedIn = Boolean(user);
 
   // Hide header/sidebar on landing page (when logged out on root path), but NOT on subdomain profiles
   const isLandingPage = location.pathname === '/' && !isLoggedIn && !getSubdomainUser();
 
-  const handleCloseFullscreen = () => {
-    exitFullscreen();
+  const handleCloseFullscreen = useCallback(() => {
+    exitFullscreenRef.current();
 
-    if (!compilationRequest.play) {
+    const currentParams = searchParamsRef.current;
+    const currentRequest = parseCompilationPlaybackParams(currentParams);
+    if (!currentRequest.play) {
       return;
     }
 
-    const nextParams = new URLSearchParams(searchParams);
+    const nextParams = new URLSearchParams(currentParams);
     clearCompilationPlaybackParams(nextParams);
-    setSearchParams(nextParams, { replace: true });
-  };
-
-  const handleCompilationVideoChange = (videoId: string) => {
-    if (!compilationRequest.play) {
+    if (nextParams.toString() === currentParams.toString()) {
       return;
     }
 
-    const nextParams = new URLSearchParams(searchParams);
+    searchParamsRef.current = nextParams;
+    setSearchParamsRef.current(nextParams, { replace: true });
+  }, []);
+
+  const handleCompilationVideoChange = useCallback((videoId: string) => {
+    const currentParams = searchParamsRef.current;
+    const currentRequest = parseCompilationPlaybackParams(currentParams);
+    if (!currentRequest.play) {
+      return;
+    }
+
+    if (currentRequest.videoId === videoId && currentRequest.start === undefined) {
+      return;
+    }
+
+    const nextParams = new URLSearchParams(currentParams);
     nextParams.set('video', videoId);
     nextParams.delete('start');
-    setSearchParams(nextParams, { replace: true });
-  };
+    if (nextParams.toString() === currentParams.toString()) {
+      return;
+    }
+
+    searchParamsRef.current = nextParams;
+    setSearchParamsRef.current(nextParams, { replace: true });
+  }, []);
 
   return (
     <>

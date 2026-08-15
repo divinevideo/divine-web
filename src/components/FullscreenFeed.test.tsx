@@ -128,6 +128,42 @@ describe('FullscreenFeed', () => {
     expect(screen.getByTestId('fullscreen-item-video-b')).toHaveAttribute('data-active', 'true');
   });
 
+  it('reports video changes only once per active video id', () => {
+    const onVideoChange = vi.fn();
+    const firstCallback = vi.fn(onVideoChange);
+    const secondCallback = vi.fn(onVideoChange);
+    const videos = [makeVideo('video-a'), makeVideo('video-b')];
+    const { rerender } = render(
+      <FullscreenFeed
+        videos={videos}
+        startIndex={0}
+        onClose={vi.fn()}
+        autoAdvance
+        onVideoChange={firstCallback}
+      />
+    );
+
+    expect(onVideoChange).toHaveBeenCalledTimes(1);
+    expect(onVideoChange).toHaveBeenLastCalledWith('video-a');
+
+    rerender(
+      <FullscreenFeed
+        videos={videos}
+        startIndex={0}
+        onClose={vi.fn()}
+        autoAdvance
+        onVideoChange={secondCallback}
+      />
+    );
+
+    expect(onVideoChange).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(screen.getByRole('button', { name: 'end-video-a' }));
+
+    expect(onVideoChange).toHaveBeenCalledTimes(2);
+    expect(onVideoChange).toHaveBeenLastCalledWith('video-b');
+  });
+
   it('requests only one additional page while waiting at the loaded tail', () => {
     const onLoadMore = vi.fn();
 

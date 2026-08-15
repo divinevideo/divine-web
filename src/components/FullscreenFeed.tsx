@@ -191,10 +191,16 @@ export function FullscreenFeed({
   const [awaitingNextPage, setAwaitingNextPage] = useState(false);
   const { setGlobalMuted, globalMuted } = useVideoPlayback();
   const previousMutedState = useRef(globalMuted);
+  const onVideoChangeRef = useRef(onVideoChange);
+  const lastReportedVideoIdRef = useRef<string>();
   const scrollToIndex = useCallback((index: number, behavior: ScrollBehavior = 'smooth') => {
     const targetElement = containerRef.current?.children[index] as HTMLElement | undefined;
     targetElement?.scrollIntoView({ behavior });
   }, []);
+
+  useEffect(() => {
+    onVideoChangeRef.current = onVideoChange;
+  }, [onVideoChange]);
 
   // Unmute when entering fullscreen, restore on exit
   useEffect(() => {
@@ -231,8 +237,13 @@ export function FullscreenFeed({
       return;
     }
 
-    onVideoChange?.(activeVideo.id);
-  }, [currentIndex, onVideoChange, videos]);
+    if (lastReportedVideoIdRef.current === activeVideo.id) {
+      return;
+    }
+
+    lastReportedVideoIdRef.current = activeVideo.id;
+    onVideoChangeRef.current?.(activeVideo.id);
+  }, [currentIndex, videos]);
 
   // Handle scroll to detect current video
   const handleScroll = useCallback(() => {
