@@ -85,13 +85,18 @@ function buildExportUrl(endpointBase: string, pubkey: string, limit: number, cur
   return url.toString();
 }
 
+// Cap a server-supplied Retry-After so a hostile or misconfigured header
+// (e.g. `retry-after: 86400`) cannot stall the export for hours; backoffMs
+// already floors the delay at 1000ms.
+const MAX_RETRY_AFTER_MS = 60_000;
+
 function retryDelayMs(response: Response, retryCount: number): number {
   const retryAfter = response.headers.get("retry-after");
   const retryAfterSeconds = retryAfter ? Number(retryAfter) : Number.NaN;
   const backoffMs = Math.min(1000 * 2 ** retryCount, 8000);
 
   if (Number.isFinite(retryAfterSeconds) && retryAfterSeconds >= 0) {
-    return Math.max(retryAfterSeconds * 1000, backoffMs, 1000);
+    return Math.min(Math.max(retryAfterSeconds * 1000, backoffMs), MAX_RETRY_AFTER_MS);
   }
 
   return Math.max(backoffMs, 1000);

@@ -84,6 +84,39 @@ describe("exportOwnerEvents", () => {
     expect(sleeps.every((ms) => ms >= 1000)).toBe(true);
   });
 
+  it("caps a large Retry-After so the export cannot stall for hours", async () => {
+    const sleeps: number[] = [];
+    let requests = 0;
+
+    await exportOwnerEvents({
+      endpointBase: "https://api.divine.video",
+      pubkey: fixturePubkey,
+      signer: new FixtureSigner(),
+      fetcher: async () => {
+        requests += 1;
+        if (requests <= 1) {
+          return new Response(JSON.stringify({ error: "slow down" }), {
+            status: 429,
+            headers: { "retry-after": "86400" }
+          });
+        }
+
+        return new Response(
+          JSON.stringify({
+            data: [],
+            pagination: { next_cursor: null, has_more: false }
+          }),
+          { status: 200, headers: { "content-type": "application/json" } }
+        );
+      },
+      sleep: async (ms) => {
+        sleeps.push(ms);
+      }
+    });
+
+    expect(sleeps).toEqual([60_000]);
+  });
+
   it("reports auth-required when the request cannot be signed", async () => {
     const brokenSigner = {
       getPublicKey: async () => fixturePubkey,
