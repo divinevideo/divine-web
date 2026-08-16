@@ -27,6 +27,10 @@ function memberFromCoordinate(videoCoordinate: string): VideoListMember {
   return { type: 'a', value: videoCoordinate };
 }
 
+function getPreferredSourceTagName(sourceTags: string[][] | undefined, supportedNames: string[], fallback: string): string {
+  return sourceTags?.find(tag => supportedNames.includes(tag[0]))?.[0] ?? fallback;
+}
+
 function buildListTags(
   list: Pick<VideoList, 'id' | 'name' | 'description' | 'image' | 'tags' | 'isCollaborative' | 'allowedCollaborators' | 'thumbnailEventId' | 'playOrder'> & Partial<Pick<VideoList, 'sourceTags'>>,
   members: VideoListMember[],
@@ -76,11 +80,17 @@ function buildListTags(
   }
 
   if (list.thumbnailEventId) {
-    tags.push(['thumbnail', list.thumbnailEventId]);
+    tags.push([
+      getPreferredSourceTagName(list.sourceTags, ['thumbnail', 'thumbnail-event'], 'thumbnail'),
+      list.thumbnailEventId,
+    ]);
   }
 
   if (list.playOrder && list.playOrder !== 'chronological') {
-    tags.push(['playorder', list.playOrder]);
+    tags.push([
+      getPreferredSourceTagName(list.sourceTags, ['playorder', 'play-order'], 'playorder'),
+      list.playOrder,
+    ]);
   }
 
   const preservedSourceTags = (list.sourceTags ?? [])
@@ -209,11 +219,11 @@ export function useVideoLists(pubkey?: string) {
 /**
  * Hook to fetch videos that are in lists
  */
-export function useVideosInLists(videoId?: string) {
+export function useVideosInLists(videoId?: string, videoEventId?: string) {
   const { nostr } = useNostr();
 
   return useQuery({
-    queryKey: ['videos-in-lists', videoId],
+    queryKey: ['videos-in-lists', videoId, videoEventId],
     queryFn: async (context) => {
       if (!videoId) return [];
 
@@ -230,7 +240,7 @@ export function useVideosInLists(videoId?: string) {
       }], { signal });
 
       const lists = deduplicateVideoLists(events)
-        .filter((list) => list.members.some((member) => memberMatchesVideoId(member, videoId)));
+        .filter((list) => list.members.some((member) => memberMatchesVideoId(member, videoId, videoEventId)));
 
       return lists;
     },
@@ -346,11 +356,13 @@ export function useAddVideoToList() {
     mutationFn: async ({
       listId,
       ownerPubkey,
-      videoCoordinate
+      videoCoordinate,
+      videoEventId,
     }: {
       listId: string;
       ownerPubkey: string;
       videoCoordinate: string;
+      videoEventId?: string;
     }) => {
       if (!user) throw new Error('Must be logged in to modify lists');
 
@@ -366,8 +378,11 @@ export function useAddVideoToList() {
       }
 
       const incomingMember = memberFromCoordinate(videoCoordinate);
+      const incomingVideoId = videoCoordinate.split(':').at(-1) ?? '';
 
-      if (currentList.members.some((member) => memberMatchesCoordinate(member, videoCoordinate))) {
+      if (currentList.members.some((member) => (
+        memberMatchesCoordinate(member, videoCoordinate) || memberMatchesVideoId(member, incomingVideoId, videoEventId)
+      ))) {
         return; // Already in list
       }
 
@@ -401,16 +416,13 @@ export function useRemoveVideoFromList() {
     mutationFn: async ({
       listId,
       ownerPubkey,
-      videoCoordinate,
       videoMember,
     }: {
       listId: string;
       ownerPubkey: string;
-      videoCoordinate?: string;
-      videoMember?: VideoListMember;
+      videoMember: VideoListMember;
     }) => {
       if (!user) throw new Error('Must be logged in to modify lists');
-      if (!videoCoordinate && !videoMember) throw new Error('Missing video to remove');
 
       const signal = AbortSignal.timeout(5000);
       const currentList = await fetchListByOwner(nostr, ownerPubkey, listId, signal);
@@ -423,9 +435,8 @@ export function useRemoveVideoFromList() {
         throw new Error('You do not have permission to edit this list');
       }
 
-      const updatedMembers = videoMember
-        ? currentList.members.filter(member => videoListMemberKey(member) !== videoListMemberKey(videoMember))
-        : currentList.members.filter(member => !memberMatchesCoordinate(member, videoCoordinate!));
+      const updatedMembers = currentList.members
+        .filter(member => videoListMemberKey(member) !== videoListMemberKey(videoMember));
 
       const tags = buildListTags(currentList, updatedMembers);
 

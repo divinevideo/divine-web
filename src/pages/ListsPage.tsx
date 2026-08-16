@@ -76,7 +76,7 @@ function ListCard({ list }: { list: VideoListModel }) {
           <div className="flex items-center gap-4 text-sm">
             <div className="flex items-center gap-1">
               <Video className="h-4 w-4 text-muted-foreground" />
-              <span>{t('addToListDialog.videoCount', { count: list.memberCount })}</span>
+              <span>{t('listDetailPage.videoCount', { count: list.memberCount })}</span>
             </div>
             <div className="flex items-center gap-1">
               <Clock className="h-4 w-4 text-muted-foreground" />

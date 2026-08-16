@@ -79,7 +79,7 @@ describe('parseVideoListFromEvent', () => {
       ],
     });
     const list = parseVideoListFromEvent(ev);
-    expect(list?.members).toEqual([{ type: 'e', value: EVENT_ID }]);
+    expect(list?.members.map(({ type, value }) => ({ type, value }))).toEqual([{ type: 'e', value: EVENT_ID }]);
     expect(list?.memberCount).toBe(1);
     expect(list?.videoCoordinates).toEqual([]);
   });
@@ -96,11 +96,41 @@ describe('parseVideoListFromEvent', () => {
       ],
     });
 
-    expect(parseVideoListFromEvent(ev)?.members).toEqual([
+    expect(parseVideoListFromEvent(ev)?.members.map(({ type, value }) => ({ type, value }))).toEqual([
       { type: 'e', value: EVENT_ID },
       { type: 'a', value: COORD },
       { type: 'e', value: secondEventId },
       { type: 'a', value: LEGACY_COORD },
+    ]);
+  });
+
+  it('preserves full source tags for list members', () => {
+    const ev = baseEvent({
+      tags: [
+        ['d', 'l1'],
+        ['e', EVENT_ID, 'wss://relay.example', 'root'],
+        ['a', COORD, 'wss://relay.example'],
+      ],
+    });
+
+    expect(parseVideoListFromEvent(ev)?.members.map(member => member.sourceTag)).toEqual([
+      ['e', EVENT_ID, 'wss://relay.example', 'root'],
+      ['a', COORD, 'wss://relay.example'],
+    ]);
+  });
+
+  it('normalizes uppercase e tag event ids', () => {
+    const uppercaseEventId = 'ABCDEF'.repeat(10) + 'ABCD';
+    const lowercaseEventId = uppercaseEventId.toLowerCase();
+    const ev = baseEvent({
+      tags: [
+        ['d', 'l1'],
+        ['e', uppercaseEventId],
+      ],
+    });
+
+    expect(parseVideoListFromEvent(ev)?.members).toEqual([
+      { type: 'e', value: lowercaseEventId, sourceTag: ['e', lowercaseEventId] },
     ]);
   });
 

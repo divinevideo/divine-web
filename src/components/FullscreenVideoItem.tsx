@@ -117,7 +117,7 @@ export function FullscreenVideoItem({
   const { mutate: deleteVideo, isPending: isDeleting } = useDeleteVideo();
   const canDelete = useCanDeleteVideo(video);
   const { data: reactions } = useVideoReactions(video.id, video.pubkey, video.vineId);
-  const { data: lists } = useVideosInLists(video.vineId ?? undefined);
+  const { data: lists } = useVideosInLists(video.vineId ?? undefined, video.id);
   const playbackCountLabel = video.isVineMigrated
     ? formatClassicVineViewBreakdown(viewCount, video.loopCount ?? 0)
     : formatLoopCount(viewCount);
@@ -565,6 +565,7 @@ export function FullscreenVideoItem({
       {video.vineId && showAddToListDialog && (
         <AddToListDialog
           videoId={video.vineId}
+          videoEventId={video.id}
           videoPubkey={video.pubkey}
           open={showAddToListDialog}
           onClose={() => setShowAddToListDialog(false)}

@@ -141,7 +141,7 @@ export function VideoCard({
     ? video.hlsUrl || optimalHlsUrl
     : undefined;
   const effectiveHlsUrl = hlsFallbackUrl || ((isClassicVine || isShortForm) ? undefined : (video.hlsUrl || (optimalHlsUrl !== video.videoUrl ? optimalHlsUrl : undefined)));
-  const { data: lists } = useVideosInLists(video.vineId ?? undefined);
+  const { data: lists } = useVideosInLists(video.vineId ?? undefined, video.id);
 
   // NEW: Get reposter data from reposts array
   const hasReposts = video.reposts && video.reposts.length > 0;
@@ -533,6 +533,7 @@ export function VideoCard({
       {video.vineId && showAddToListDialog && (
         <AddToListDialog
           videoId={video.vineId}
+          videoEventId={video.id}
           videoPubkey={video.pubkey}
           open={showAddToListDialog}
           onClose={() => setShowAddToListDialog(false)}

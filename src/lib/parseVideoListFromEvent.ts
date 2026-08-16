@@ -4,7 +4,10 @@ import type { NostrEvent } from '@nostrify/nostrify';
 import { VIDEO_KINDS } from '@/types/video';
 
 export type PlayOrder = 'chronological' | 'reverse' | 'manual' | 'shuffle';
-export type VideoListMember = { type: 'e'; value: string } | { type: 'a'; value: string };
+type VideoListMemberBase = { value: string; sourceTag?: string[] };
+export type VideoListMember =
+  | ({ type: 'e' } & VideoListMemberBase)
+  | ({ type: 'a' } & VideoListMemberBase);
 
 export const LIST_VIDEO_KINDS = [34235, ...VIDEO_KINDS];
 
@@ -42,6 +45,7 @@ export function isVideoCoordinate(value: string): boolean {
 }
 
 export function videoListMemberToTag(member: VideoListMember): string[] {
+  if (member.sourceTag) return [...member.sourceTag];
   return [member.type, member.value];
 }
 
@@ -53,9 +57,9 @@ export function memberMatchesCoordinate(member: VideoListMember, coordinate: str
   return member.type === 'a' && member.value === coordinate;
 }
 
-export function memberMatchesVideoId(member: VideoListMember, videoId: string): boolean {
+export function memberMatchesVideoId(member: VideoListMember, videoId: string, videoEventId?: string): boolean {
   if (member.type === 'e') {
-    return member.value === videoId;
+    return !!videoEventId && member.value === videoEventId.toLowerCase();
   }
 
   const firstSeparator = member.value.indexOf(':');
@@ -78,8 +82,13 @@ export function parseVideoListFromEvent(event: NostrEvent): VideoList | null {
 
   const members: VideoListMember[] = event.tags.flatMap((tag): VideoListMember[] => {
     if (!tag[1]) return [];
-    if (tag[0] === 'e' && isVideoEventId(tag[1])) return [{ type: 'e', value: tag[1] }];
-    if (tag[0] === 'a' && isVideoCoordinate(tag[1])) return [{ type: 'a', value: tag[1] }];
+    if (tag[0] === 'e' && isVideoEventId(tag[1])) {
+      const value = tag[1].toLowerCase();
+      return [{ type: 'e', value, sourceTag: [tag[0], value, ...tag.slice(2)] }];
+    }
+    if (tag[0] === 'a' && isVideoCoordinate(tag[1])) {
+      return [{ type: 'a', value: tag[1], sourceTag: [...tag] }];
+    }
     return [];
   });
 

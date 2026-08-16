@@ -21,6 +21,7 @@ import { AddToListDialog } from './AddToListDialog';
 
 interface VideoListBadgesProps {
   videoId: string;
+  videoEventId?: string;
   videoPubkey: string;
   compact?: boolean;
   showAddButton?: boolean;
@@ -69,12 +70,13 @@ function ListBadge({
 
 export function VideoListBadges({
   videoId,
+  videoEventId,
   videoPubkey,
   compact = false,
   showAddButton = true,
   className = ''
 }: VideoListBadgesProps) {
-  const { data: lists, isLoading } = useVideosInLists(videoId);
+  const { data: lists, isLoading } = useVideosInLists(videoId, videoEventId);
   const [showAddDialog, setShowAddDialog] = useState(false);
 
   if (isLoading) {
@@ -103,6 +105,7 @@ export function VideoListBadges({
         {showAddDialog && (
           <AddToListDialog
             videoId={videoId}
+            videoEventId={videoEventId}
             videoPubkey={videoPubkey}
             open={showAddDialog}
             onClose={() => setShowAddDialog(false)}
@@ -184,6 +187,7 @@ export function VideoListBadges({
       {showAddDialog && (
         <AddToListDialog
           videoId={videoId}
+          videoEventId={videoEventId}
           videoPubkey={videoPubkey}
           open={showAddDialog}
           onClose={() => setShowAddDialog(false)}

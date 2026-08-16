@@ -31,6 +31,7 @@ import { memberMatchesCoordinate, memberMatchesVideoId } from '@/lib/parseVideoL
 
 interface AddToListDialogProps {
   videoId: string;
+  videoEventId?: string;
   videoPubkey: string;
   open: boolean;
   onClose: () => void;
@@ -38,6 +39,7 @@ interface AddToListDialogProps {
 
 export function AddToListDialog({
   videoId,
+  videoEventId,
   videoPubkey,
   open,
   onClose
@@ -47,7 +49,7 @@ export function AddToListDialog({
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { data: userLists, isLoading: listsLoading } = useVideoLists(user?.pubkey);
-  const { data: publicLists, isLoading: publicListsLoading } = useVideosInLists(videoId);
+  const { data: publicLists, isLoading: publicListsLoading } = useVideosInLists(videoId, videoEventId);
   const addToList = useAddVideoToList();
   const createList = useCreateVideoList();
 
@@ -68,6 +70,7 @@ export function AddToListDialog({
           listId: list.id,
           ownerPubkey: list.pubkey,
           videoCoordinate,
+          videoEventId,
         }),
       );
 
@@ -215,7 +218,7 @@ export function AddToListDialog({
                   <div className="space-y-2">
                     {userLists.map((list) => {
                       const isInList = list.members.some((member) => (
-                        memberMatchesCoordinate(member, videoCoordinate) || memberMatchesVideoId(member, videoId)
+                        memberMatchesCoordinate(member, videoCoordinate) || memberMatchesVideoId(member, videoId, videoEventId)
                       ));
                       return (
                         <div

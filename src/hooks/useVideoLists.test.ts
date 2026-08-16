@@ -210,6 +210,26 @@ describe('useVideoLists hooks', () => {
       expect(mockNostrQuery.mock.calls[0][0][0]).not.toHaveProperty('#a');
       expect(result.current.data?.map((list) => list.id)).toEqual(['matching']);
     });
+
+    it('matches e-tag membership by event id', async () => {
+      const { useVideosInLists } = await import('./useVideoLists');
+      const eventId = '2'.repeat(64);
+
+      mockNostrQuery.mockResolvedValue([
+        listEvent({
+          tags: [
+            ['d', 'matching-e'],
+            ['title', 'Matching e'],
+            ['e', eventId],
+          ],
+        }),
+      ]);
+      const { result } = renderHook(() => useVideosInLists('my-dtag', eventId), { wrapper: createWrapper() });
+
+      await waitFor(() => expect(result.current.isFetched).toBe(true));
+
+      expect(result.current.data?.map((list) => list.id)).toEqual(['matching-e']);
+    });
   });
 
   describe('useCreateVideoList', () => {
@@ -315,19 +335,19 @@ describe('useVideoLists hooks', () => {
         id: 'mobile-list',
         name: 'Renamed',
         videoCoordinates: [],
-        members: [{ type: 'e', value: eventId }],
+        members: [{ type: 'e', value: eventId, sourceTag: ['e', eventId, 'wss://relay.example', 'root'] }],
         sourceTags: [
           ['d', 'mobile-list'],
           ['title', 'Old'],
           ['client', 'divine-mobile'],
-          ['e', eventId],
+          ['e', eventId, 'wss://relay.example', 'root'],
         ],
       });
 
       const tags = (mockPublishAsync.mock.calls[0][0] as { tags: string[][] }).tags;
       expect(tags).toContainEqual(['title', 'Renamed']);
       expect(tags).toContainEqual(['client', 'divine-mobile']);
-      expect(tags.filter((tag) => tag[0] === 'e')).toEqual([['e', eventId]]);
+      expect(tags.filter((tag) => tag[0] === 'e')).toEqual([['e', eventId, 'wss://relay.example', 'root']]);
     });
 
     it('prepends new list to video-lists cache on success (before refetch)', async () => {
@@ -470,6 +490,32 @@ describe('useVideoLists hooks', () => {
       expect(tags.filter((t) => t[0] === 'e')).toEqual([['e', eventId]]);
       expect(tags.filter((t) => t[0] === 'a')).toEqual([['a', incoming]]);
     });
+
+    it('returns without publishing when video already exists as an e-tag member', async () => {
+      const eventId = '6'.repeat(64);
+      const incoming = `${SHORT_VIDEO_KIND}:${TEST_PUBKEY}:vid-1`;
+      mockNostrQuery.mockResolvedValue([
+        listEvent({
+          tags: [
+            ['d', 'my-list'],
+            ['title', 'Mobile list'],
+            ['e', eventId],
+          ],
+        }),
+      ]);
+      const { useAddVideoToList } = await import('./useVideoLists');
+      const { result } = renderHook(() => useAddVideoToList(), { wrapper: createWrapper() });
+
+      mockPublishAsync.mockClear();
+      await result.current.mutateAsync({
+        listId: 'my-list',
+        ownerPubkey: TEST_PUBKEY,
+        videoCoordinate: incoming,
+        videoEventId: eventId,
+      });
+
+      expect(mockPublishAsync).not.toHaveBeenCalled();
+    });
   });
 
   describe('useRemoveVideoFromList', () => {
@@ -482,7 +528,7 @@ describe('useVideoLists hooks', () => {
         result.current.mutateAsync({
           listId: 'x',
           ownerPubkey: TEST_PUBKEY,
-          videoCoordinate: `${SHORT_VIDEO_KIND}:${TEST_PUBKEY}:v`,
+          videoMember: { type: 'a', value: `${SHORT_VIDEO_KIND}:${TEST_PUBKEY}:v` },
         })
       ).rejects.toThrow('List not found');
     });
@@ -496,7 +542,7 @@ describe('useVideoLists hooks', () => {
         result.current.mutateAsync({
           listId: 'any',
           ownerPubkey: TEST_PUBKEY,
-          videoCoordinate: `${SHORT_VIDEO_KIND}:${TEST_PUBKEY}:v`,
+          videoMember: { type: 'a', value: `${SHORT_VIDEO_KIND}:${TEST_PUBKEY}:v` },
         })
       ).rejects.toThrow('Invalid list format');
     });
@@ -527,7 +573,7 @@ describe('useVideoLists hooks', () => {
       await result.current.mutateAsync({
         listId: 'my-list',
         ownerPubkey: TEST_PUBKEY,
-        videoCoordinate: coord1,
+        videoMember: { type: 'a', value: coord1 },
       });
 
       expect(mockPublishAsync).toHaveBeenCalledTimes(1);
@@ -540,8 +586,8 @@ describe('useVideoLists hooks', () => {
       expect(tags).toContainEqual(['t', 'tag1']);
       expect(tags).toContainEqual(['collaborative', 'true']);
       expect(tags).toContainEqual(['collaborator', OTHER_PUBKEY]);
-      expect(tags).toContainEqual(['thumbnail', 'th']);
-      expect(tags).toContainEqual(['playorder', 'reverse']);
+      expect(tags).toContainEqual(['thumbnail-event', 'th']);
+      expect(tags).toContainEqual(['play-order', 'reverse']);
       expect(tags.filter((t) => t[0] === 'a').map((t) => t[1])).toEqual([coord2]);
     });
 

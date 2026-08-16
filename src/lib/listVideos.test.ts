@@ -3,7 +3,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { NostrEvent, NostrFilter } from '@nostrify/nostrify';
 import { SHORT_VIDEO_KIND } from '@/types/video';
-import type { VideoListMember } from '@/lib/parseVideoListFromEvent';
+import { LIST_VIDEO_KINDS, type VideoListMember } from '@/lib/parseVideoListFromEvent';
 import { fetchListVideos } from './listVideos';
 
 const OWNER = 'a'.repeat(64);
@@ -38,8 +38,8 @@ describe('fetchListVideos', () => {
 
     const filters = query.mock.calls[0][0] as NostrFilter[];
     expect(filters).toHaveLength(2);
-    expect(filters[0]).toMatchObject({ kinds: [SHORT_VIDEO_KIND], ids: ids.slice(0, 200), limit: 200 });
-    expect(filters[1]).toMatchObject({ kinds: [SHORT_VIDEO_KIND], ids: ids.slice(200), limit: 1 });
+    expect(filters[0]).toMatchObject({ kinds: LIST_VIDEO_KINDS, ids: ids.slice(0, 200), limit: 200 });
+    expect(filters[1]).toMatchObject({ kinds: LIST_VIDEO_KINDS, ids: ids.slice(200), limit: 1 });
   });
 
   it('merges e and a results, dedupes, and returns videos in member order', async () => {
@@ -58,5 +58,17 @@ describe('fetchListVideos', () => {
 
     expect(videos.map(video => video.id)).toEqual([coordEventId, eventId]);
     expect(videos.map(video => video.listMember)).toEqual(members.slice(0, 2));
+  });
+
+  it('resolves legacy kind e-tag members', async () => {
+    const eventId = '3'.repeat(64);
+    const members: VideoListMember[] = [{ type: 'e', value: eventId }];
+    const query = vi.fn().mockResolvedValue([
+      videoEvent({ id: eventId, kind: 34235, tags: [['d', 'legacy']] }),
+    ]);
+
+    const videos = await fetchListVideos({ query }, members, new AbortController().signal);
+
+    expect(videos.map(video => video.id)).toEqual([eventId]);
   });
 });

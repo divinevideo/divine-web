@@ -1,7 +1,7 @@
 // ABOUTME: Resolves ordered video list members into parsed video grid data
 
 import type { NostrEvent, NostrFilter } from '@nostrify/nostrify';
-import { SHORT_VIDEO_KIND, VIDEO_KINDS, type ParsedVideoData } from '@/types/video';
+import { SHORT_VIDEO_KIND, type ParsedVideoData } from '@/types/video';
 import {
   LIST_VIDEO_KINDS,
   type VideoListMember,
@@ -49,7 +49,7 @@ function buildListVideoFilters(members: VideoListMember[]): NostrFilter[] {
 
   for (const ids of chunk(eventIds, IDS_CHUNK_SIZE)) {
     filters.push({
-      kinds: VIDEO_KINDS,
+      kinds: LIST_VIDEO_KINDS,
       ids,
       limit: ids.length,
     });
