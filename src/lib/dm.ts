@@ -63,7 +63,7 @@ export interface DmConversation {
   unreadCount: number;
 }
 
-interface DmRumorEvent {
+export interface DmRumorEvent {
   id: string;
   pubkey: string;
   kind: number;
@@ -72,12 +72,20 @@ interface DmRumorEvent {
   content: string;
 }
 
-export interface CreateDmGiftWrapsInput {
-  signer: NostrSigner;
+export interface BuildDmRumorInput {
   senderPubkey: string;
   recipientPubkeys: string[];
   content: string;
   additionalTags?: string[][];
+}
+
+export interface CreateDmGiftWrapsInput extends BuildDmRumorInput {
+  signer: NostrSigner;
+  /**
+   * Rumor to wrap. Omit to mint a fresh one. Pass the rumor from a previous
+   * attempt to re-wrap the same message — see `buildDmRumor` (#578).
+   */
+  rumor?: DmRumorEvent;
 }
 
 export interface FetchDmMessagesInput {
@@ -388,6 +396,33 @@ function createWrapEvent(seal: NostrEvent, targetPubkey: string): NostrEvent {
 }
 
 /**
+ * Build the kind-14 rumor for a NIP-17 send.
+ *
+ * The rumor id is a message's only stable identity: NIP-59 mints a fresh
+ * ephemeral keypair per gift wrap and randomizes the wrap/seal `created_at`,
+ * and NIP-44 v2 randomizes the nonce, so nothing in the outer layers repeats
+ * between two wraps of the same message. Callers that may send a message more
+ * than once — a retry, or the recipient copy plus the self copy — must mint
+ * the rumor once here and hand it to both wrap builders, or each attempt
+ * delivers a message the receiver cannot recognize as a duplicate (#578).
+ *
+ * NIP-59: "If a rumor is intended for more than one party, or if the author
+ * wants to retain an encrypted copy, a single rumor may be wrapped and
+ * addressed for each recipient individually."
+ */
+export function buildDmRumor(input: BuildDmRumorInput): DmRumorEvent {
+  const { senderPubkey, recipientPubkeys, content, additionalTags = [] } = input;
+  const recipients = recipientPubkeys.filter(isPubkey);
+
+  if (!recipients.length) {
+    throw new Error('Direct messages require at least one recipient');
+  }
+
+  const allParticipants = [...new Set([senderPubkey, ...recipients])];
+  return createRumorEvent(senderPubkey, allParticipants, content, additionalTags);
+}
+
+/**
  * Create gift wraps targeted at the recipients of a NIP-17 DM.
  *
  * Throws on any failure. This is the primary path: if it can't produce
@@ -405,15 +440,14 @@ function createWrapEvent(seal: NostrEvent, targetPubkey: string): NostrEvent {
  * let a protected minor DM a non-approved account.
  */
 export async function createRecipientGiftWraps(input: CreateDmGiftWrapsInput): Promise<NostrEvent[]> {
-  const { signer, senderPubkey, recipientPubkeys, content, additionalTags = [] } = input;
+  const { signer, recipientPubkeys } = input;
   const recipients = recipientPubkeys.filter(isPubkey);
 
   if (!recipients.length) {
     throw new Error('Direct messages require at least one recipient');
   }
 
-  const allParticipants = [...new Set([senderPubkey, ...recipients])];
-  const rumor = createRumorEvent(senderPubkey, allParticipants, content, additionalTags);
+  const rumor = input.rumor ?? buildDmRumor(input);
 
   const wraps: NostrEvent[] = [];
   for (const recipient of recipients) {
@@ -432,13 +466,15 @@ export async function createRecipientGiftWraps(input: CreateDmGiftWrapsInput): P
  * throw on null; the recipient delivery has already happened (or failed
  * loudly via `createRecipientGiftWraps`), and the self copy is purely a
  * recovery path.
+ *
+ * Pass the same `rumor` handed to `createRecipientGiftWraps` so both copies
+ * of a message share one id — otherwise the sender's recovered copy is a
+ * different message from the one the recipient holds (#578).
  */
 export async function createSelfGiftWrap(input: CreateDmGiftWrapsInput): Promise<NostrEvent | null> {
   try {
-    const { signer, senderPubkey, recipientPubkeys, content, additionalTags = [] } = input;
-    const recipients = recipientPubkeys.filter(isPubkey);
-    const allParticipants = [...new Set([senderPubkey, ...recipients])];
-    const rumor = createRumorEvent(senderPubkey, allParticipants, content, additionalTags);
+    const { signer, senderPubkey } = input;
+    const rumor = input.rumor ?? buildDmRumor(input);
     const seal = await createSealEvent(signer, senderPubkey, rumor);
     return createWrapEvent(seal, senderPubkey);
   } catch (cause) {

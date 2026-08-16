@@ -3,10 +3,12 @@ import { NSecSigner, type NostrEvent, type NostrSigner } from '@nostrify/nostrif
 import { generateSecretKey, getPublicKey } from 'nostr-tools/pure';
 
 import {
+  buildDmRumor,
   createRecipientGiftWraps,
   createSelfGiftWrap,
   decodeConversationId,
   DM_GIFT_WRAP_KIND,
+  DM_RUMOR_KIND,
   encodeConversationId,
   getDmMessagePreview,
   groupDmConversations,
@@ -110,6 +112,30 @@ describe('dm utilities', () => {
 // entirely on mock signers, so they're unaffected.
 
 describe('createSelfGiftWrap', () => {
+  it('wraps the rumor it is given, so the self copy shares the recipient copy id', async () => {
+    // NIP-59: a single rumor may be wrapped and addressed for each recipient
+    // individually — including the author's own copy. Two rumors would leave
+    // the sender holding a different message from the one they sent.
+    const { sealed, signer } = createSealCapturingSigner();
+
+    const rumor = buildDmRumor({
+      senderPubkey: 'a'.repeat(64),
+      recipientPubkeys: ['b'.repeat(64)],
+      content: 'hi',
+    });
+
+    await createSelfGiftWrap({
+      signer,
+      senderPubkey: 'a'.repeat(64),
+      recipientPubkeys: ['b'.repeat(64)],
+      content: 'hi',
+      rumor,
+    });
+
+    expect(sealed).toHaveLength(1);
+    expect(JSON.parse(sealed[0])).toEqual(rumor);
+  });
+
   it('returns null and warns when signer.nip44.encrypt rejects', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const cause = new Error('bunker rejected encrypt-to-self');
@@ -170,6 +196,100 @@ describe('createRecipientGiftWraps', () => {
       recipientPubkeys: [],
       content: 'hi',
     })).rejects.toThrow(/at least one recipient/);
+  });
+
+  it('re-wraps a supplied rumor instead of minting a new one', async () => {
+    // A retry hands back the first attempt's rumor. Its id is the only thing
+    // a receiver can dedupe on, so it must reach the seal untouched.
+    //
+    // Asserted on the plaintext handed to the signer rather than the returned
+    // wrap: the wrap step runs real nip44 encryption, which cannot execute
+    // under the jsdom TextEncoder override documented above. Sealing happens
+    // first, so an empty `sealed` still fails this test.
+    const { sealed, signer } = createSealCapturingSigner();
+
+    const rumor = buildDmRumor({
+      senderPubkey: 'a'.repeat(64),
+      recipientPubkeys: ['b'.repeat(64)],
+      content: 'hi',
+    });
+
+    await createRecipientGiftWraps({
+      signer,
+      senderPubkey: 'a'.repeat(64),
+      recipientPubkeys: ['b'.repeat(64)],
+      content: 'hi',
+      rumor,
+    }).catch(() => undefined);
+
+    expect(sealed).toHaveLength(1);
+    expect(JSON.parse(sealed[0])).toEqual(rumor);
+  });
+});
+
+function createSealCapturingSigner(): { sealed: string[]; signer: NostrSigner } {
+  const sealed: string[] = [];
+
+  return {
+    sealed,
+    signer: {
+      getPublicKey: vi.fn().mockResolvedValue('a'.repeat(64)),
+      signEvent: vi.fn().mockResolvedValue({
+        id: 'seal-id',
+        pubkey: 'a'.repeat(64),
+        kind: 13,
+        created_at: 1,
+        tags: [],
+        content: 'ciphertext',
+        sig: 'c'.repeat(128),
+      }),
+      nip44: {
+        encrypt: vi.fn(async (_pubkey: string, plaintext: string) => {
+          sealed.push(plaintext);
+          return 'ciphertext';
+        }),
+        decrypt: vi.fn(),
+      },
+    },
+  };
+}
+
+describe('buildDmRumor', () => {
+  const SENDER = 'a'.repeat(64);
+  const RECIPIENT = 'b'.repeat(64);
+
+  it('mints a different id once the clock advances', () => {
+    // This is why a retry cannot rebuild: created_at is the only varying
+    // input to the id hash, and a failed send burns the publish timeout
+    // before Retry is reachable.
+    vi.spyOn(Date, 'now').mockReturnValue(1_700_000_000_000);
+    const first = buildDmRumor({ senderPubkey: SENDER, recipientPubkeys: [RECIPIENT], content: 'hi' });
+
+    vi.spyOn(Date, 'now').mockReturnValue(1_700_000_011_000);
+    const second = buildDmRumor({ senderPubkey: SENDER, recipientPubkeys: [RECIPIENT], content: 'hi' });
+
+    expect(second.id).not.toBe(first.id);
+    expect(second.content).toBe(first.content);
+  });
+
+  it('tags the sender and every recipient as participants', () => {
+    const rumor = buildDmRumor({
+      senderPubkey: SENDER,
+      recipientPubkeys: [RECIPIENT, RECIPIENT, 'not-a-pubkey'],
+      content: 'hi',
+    });
+
+    expect(rumor.kind).toBe(DM_RUMOR_KIND);
+    expect(rumor.pubkey).toBe(SENDER);
+    expect(rumor.tags).toEqual([['p', SENDER], ['p', RECIPIENT]]);
+  });
+
+  it('throws when given no valid recipients', () => {
+    expect(() => buildDmRumor({
+      senderPubkey: SENDER,
+      recipientPubkeys: ['not-a-pubkey'],
+      content: 'hi',
+    })).toThrow(/at least one recipient/);
   });
 });
 

@@ -24,6 +24,7 @@ import {
 } from '@/lib/dmInboundFilter';
 import { officialAccountsService } from '@/lib/officialAccounts';
 import {
+  buildDmRumor,
   createRecipientGiftWraps,
   createSelfGiftWrap,
   decodeConversationId,
@@ -38,8 +39,10 @@ import {
   type FetchDmMessagesResult,
 } from '@/lib/dm';
 import {
+  attachDmOutboxRumor,
   convertOutboxRecordToDmMessage,
   createDmOutboxRecord,
+  getDmOutboxRecord,
   hydrateDmOutbox,
   markDmOutboxRecordFailed,
   markDmOutboxRecordSending,
@@ -454,32 +457,36 @@ export function useDmSend() {
       }
       assertSupportOnlyDmRecipients(recipients);
 
-      const record = clientId
+      // A retry reuses the record the first attempt left behind, so the
+      // bubble and its persisted rumor survive; anything else starts one.
+      const resumed = clientId
         ? markDmOutboxRecordSending(user.pubkey, clientId, {
           participantPubkeys,
           content,
-        }) || createDmOutboxRecord({
-          ownerPubkey: user.pubkey,
-          participantPubkeys,
-          content,
         })
-        : createDmOutboxRecord({
-          ownerPubkey: user.pubkey,
-          participantPubkeys,
-          content,
-        });
+        : undefined;
 
-      const optimisticMessage = convertOutboxRecordToDmMessage(record);
-      if (!clientId || record.clientId !== clientId) {
+      const record = resumed ?? createDmOutboxRecord({
+        ownerPubkey: user.pubkey,
+        participantPubkeys,
+        content,
+        clientId,
+      });
+
+      // markDmOutboxRecordSending has already written the resumed record; a
+      // freshly built one still needs persisting.
+      if (!resumed) {
         upsertDmOutboxRecord(user.pubkey, record);
       }
+
+      const optimisticMessage = convertOutboxRecordToDmMessage(record);
 
       insertOptimisticDmIntoAllCaches(queryClient, user.pubkey, optimisticMessage);
       return {
         clientId: record.clientId,
       };
     },
-    mutationFn: async ({ participantPubkeys, content }: SendDmInput) => {
+    mutationFn: async ({ clientId, participantPubkeys, content }: SendDmInput) => {
       if (!user?.pubkey) {
         throw new Error('You need to log in before sending a message');
       }
@@ -512,6 +519,24 @@ export function useDmSend() {
         signal: AbortSignal.timeout(5000),
       });
 
+      // Replay the rumor from the previous attempt when there is one, so a
+      // retry re-wraps the same message instead of minting a second one the
+      // recipient would render as a separate bubble (#578). A stored rumor
+      // whose content has drifted from this send is not the same message, so
+      // it is rebuilt rather than replayed.
+      const storedRumor = clientId ? getDmOutboxRecord(user.pubkey, clientId)?.rumor : undefined;
+      const rumor = storedRumor?.content === content && storedRumor.pubkey === user.pubkey
+        ? storedRumor
+        : buildDmRumor({
+          senderPubkey: user.pubkey,
+          recipientPubkeys: recipients,
+          content,
+        });
+
+      if (clientId && rumor !== storedRumor) {
+        attachDmOutboxRumor(user.pubkey, clientId, rumor);
+      }
+
       // Primary path: deliver to the recipients. Failure here rejects the
       // mutation so the UI shows the send as failed.
       const recipientWraps = await createRecipientGiftWraps({
@@ -519,18 +544,21 @@ export function useDmSend() {
         senderPubkey: user.pubkey,
         recipientPubkeys: recipients,
         content,
+        rumor,
       });
       await publishDmMessages(relayUrls, recipientWraps, AbortSignal.timeout(10000));
 
       // Best-effort: self copy for cross-device recovery and server-side
-      // observers (e.g. divine-moderation-service's dm-reader cron). If
-      // either step fails the recipient already got the message — log and
-      // continue.
+      // observers (e.g. divine-moderation-service's dm-reader cron). Wraps the
+      // same rumor as the recipient copy, per NIP-59, so both sides of the
+      // conversation hold one message rather than two. If either step fails
+      // the recipient already got the message — log and continue.
       const selfWrap = await createSelfGiftWrap({
         signer,
         senderPubkey: user.pubkey,
         recipientPubkeys: recipients,
         content,
+        rumor,
       });
       if (selfWrap) {
         try {

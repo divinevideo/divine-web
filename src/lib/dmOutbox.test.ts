@@ -1,8 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { buildDmRumor, type DmRumorEvent } from './dm';
 import {
+  attachDmOutboxRumor,
   createDmOutboxRecord,
+  getDmOutboxRecord,
   hydrateDmOutbox,
+  markDmOutboxRecordSending,
   readDmOutbox,
   upsertDmOutboxRecord,
   writeDmOutbox,
@@ -100,6 +104,52 @@ describe('dmOutbox', () => {
         deliveryState: 'failed',
       }),
     ]);
+  });
+
+  it('keeps the attached rumor across a retry marked sending', () => {
+    // The retry path re-wraps this rumor, so losing it on the way through
+    // markDmOutboxRecordSending would silently restore the double-delivery.
+    const record = createDmOutboxRecord({
+      ownerPubkey: TEST_PUBKEY,
+      participantPubkeys: [RECIPIENT_PUBKEY],
+      content: 'hello',
+    });
+    upsertDmOutboxRecord(TEST_PUBKEY, record);
+
+    const rumor = buildDmRumor({
+      senderPubkey: TEST_PUBKEY,
+      recipientPubkeys: [RECIPIENT_PUBKEY],
+      content: 'hello',
+    });
+    attachDmOutboxRumor(TEST_PUBKEY, record.clientId, rumor);
+
+    const retried = markDmOutboxRecordSending(TEST_PUBKEY, record.clientId, {
+      participantPubkeys: [RECIPIENT_PUBKEY],
+      content: 'hello',
+    });
+
+    expect(retried?.rumor).toEqual(rumor);
+    expect(retried?.retryCount).toBe(1);
+    expect(getDmOutboxRecord(TEST_PUBKEY, record.clientId)?.rumor).toEqual(rumor);
+  });
+
+  it('drops a persisted rumor that is not a well-formed event', () => {
+    // localStorage is user-writable and survives app versions; a corrupt
+    // rumor must cost the replay, not the pending message.
+    const record = createDmOutboxRecord({
+      ownerPubkey: TEST_PUBKEY,
+      participantPubkeys: [RECIPIENT_PUBKEY],
+      content: 'hello',
+    });
+
+    writeDmOutbox(TEST_PUBKEY, [{
+      ...record,
+      rumor: { id: 'only-an-id' } as unknown as DmRumorEvent,
+    }]);
+
+    const [stored] = readDmOutbox(TEST_PUBKEY);
+    expect(stored.rumor).toBeUndefined();
+    expect(stored.content).toBe('hello');
   });
 
   it('does not throw when localStorage writes fail', () => {

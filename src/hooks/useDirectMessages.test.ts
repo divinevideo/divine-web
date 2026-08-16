@@ -112,7 +112,7 @@ vi.mock('@/lib/dm', async () => {
 import { DIVINE_SUPPORT_PUBKEY, encodeConversationId } from '@/lib/dm';
 import { DmSupportOnlyError } from '@/lib/dmAccessPolicy';
 import { DmSendBlockedError } from '@/lib/dmSendGuard';
-import { readDmOutbox, writeDmOutbox } from '@/lib/dmOutbox';
+import { createDmClientId, readDmOutbox, writeDmOutbox } from '@/lib/dmOutbox';
 import {
   useDmCapability,
   useDmConversation,
@@ -453,6 +453,105 @@ describe('useDirectMessages', () => {
     // Policy is enforced in onMutate, before any outbox write: a blocked send
     // must not leave an invisible failed record in outbox storage.
     expect(readDmOutbox(TEST_PUBKEY)).toEqual([]);
+  });
+
+  it('replays the first attempt rumor when a failed send is retried', async () => {
+    // #578: a retry that rebuilds the rumor delivers a second message under a
+    // second id. The clock is advanced between attempts so a rebuild would be
+    // visible — created_at is the only varying input to the rumor id.
+    vi.spyOn(Date, 'now').mockReturnValue(1_234_567_890_000);
+    mockPublishDmMessages.mockRejectedValueOnce(new Error('relay never acked'));
+
+    const queryClient = new QueryClient({
+      defaultOptions: {
+        queries: { retry: false },
+        mutations: { retry: false },
+      },
+    });
+
+    const { result } = renderHook(() => useDmSend(), {
+      wrapper: createWrapper(queryClient),
+    });
+
+    const clientId = createDmClientId([RECIPIENT_PUBKEY]);
+    await expect(
+      result.current.mutateAsync({
+        clientId,
+        participantPubkeys: [RECIPIENT_PUBKEY],
+        content: 'hello',
+      }),
+    ).rejects.toThrow('relay never acked');
+
+    const [failed] = readDmOutbox(TEST_PUBKEY);
+    expect(failed.clientId).toBe(clientId);
+    expect(failed.deliveryState).toBe('failed');
+    const firstRumor = failed.rumor;
+    expect(firstRumor?.id).toEqual(expect.any(String));
+
+    // The user taps Retry: same clientId, a later clock.
+    vi.spyOn(Date, 'now').mockReturnValue(1_234_567_901_000);
+    await act(async () => {
+      await result.current.mutateAsync({
+        clientId: failed.clientId,
+        participantPubkeys: [RECIPIENT_PUBKEY],
+        content: 'hello',
+      });
+    });
+
+    expect(mockCreateRecipientGiftWraps).toHaveBeenCalledTimes(2);
+    const [firstCall] = mockCreateRecipientGiftWraps.mock.calls[0];
+    const [retryCall] = mockCreateRecipientGiftWraps.mock.calls[1];
+    expect(retryCall.rumor).toEqual(firstRumor);
+    expect(retryCall.rumor.id).toBe(firstCall.rumor.id);
+
+    // The self copy rides the same rumor, per NIP-59. Only the retry reaches
+    // it — the first attempt rejected at the recipient publish, which is the
+    // step before the self wrap is built.
+    expect(mockCreateSelfGiftWrap).toHaveBeenCalledTimes(1);
+    const [selfCall] = mockCreateSelfGiftWrap.mock.calls[0];
+    expect(selfCall.rumor.id).toBe(firstRumor?.id);
+  });
+
+  it('rebuilds the rumor when the stored one no longer matches the message', async () => {
+    // A persisted rumor is only a replay of *this* message. Content drift
+    // means a different message, and replaying would send the stale text.
+    vi.spyOn(Date, 'now').mockReturnValue(1_234_567_890_000);
+    mockPublishDmMessages.mockRejectedValueOnce(new Error('relay never acked'));
+
+    const queryClient = new QueryClient({
+      defaultOptions: {
+        queries: { retry: false },
+        mutations: { retry: false },
+      },
+    });
+
+    const { result } = renderHook(() => useDmSend(), {
+      wrapper: createWrapper(queryClient),
+    });
+
+    const clientId = createDmClientId([RECIPIENT_PUBKEY]);
+    await expect(
+      result.current.mutateAsync({
+        clientId,
+        participantPubkeys: [RECIPIENT_PUBKEY],
+        content: 'hello',
+      }),
+    ).rejects.toThrow('relay never acked');
+
+    const [failed] = readDmOutbox(TEST_PUBKEY);
+    expect(failed.clientId).toBe(clientId);
+
+    await act(async () => {
+      await result.current.mutateAsync({
+        clientId: failed.clientId,
+        participantPubkeys: [RECIPIENT_PUBKEY],
+        content: 'hello, edited',
+      });
+    });
+
+    const [retryCall] = mockCreateRecipientGiftWraps.mock.calls[1];
+    expect(retryCall.rumor.id).not.toBe(failed.rumor?.id);
+    expect(retryCall.rumor.content).toBe('hello, edited');
   });
 
   it('adds an optimistic sending message before publish resolves', async () => {

@@ -25,6 +25,7 @@ import {
   getSupportDmConversationPath,
   isSupportOnlyDmPeerSet,
 } from '@/lib/dmAccessPolicy';
+import { createDmClientId } from '@/lib/dmOutbox';
 import { isThreadAllowedForProtectedMinor } from '@/lib/dmInboundFilter';
 import { officialAccountsService } from '@/lib/officialAccounts';
 import { isMinorDmRestricted } from '@/lib/protectedMinor';
@@ -265,6 +266,11 @@ export function ConversationPage() {
 
     try {
       await sendMessage.mutateAsync({
+        // Minted here rather than inside the mutation so the send has an
+        // identity before any wrap is built — that is what lets a retry find
+        // the first attempt's rumor and replay it instead of minting a second
+        // message the recipient cannot collapse (#578).
+        clientId: createDmClientId(peerPubkeys),
         participantPubkeys: peerPubkeys,
         content: trimmedDraft,
       });

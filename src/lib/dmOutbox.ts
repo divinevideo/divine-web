@@ -1,4 +1,10 @@
-import { encodeConversationId, type DmDeliveryState, type DmMessage, type DmSharePayload } from './dm';
+import {
+  encodeConversationId,
+  type DmDeliveryState,
+  type DmMessage,
+  type DmRumorEvent,
+  type DmSharePayload,
+} from './dm';
 
 const DM_OUTBOX_STORAGE_PREFIX = 'dm:outbox:';
 const DM_RECONCILIATION_WINDOW_SECONDS = 5;
@@ -14,6 +20,14 @@ export interface DmOutboxRecord {
   deliveryState: DmDeliveryState;
   errorMessage?: string;
   retryCount: number;
+  /**
+   * The kind-14 rumor built for the first attempt. A retry re-wraps this
+   * rumor instead of minting a new one, so every attempt carries the same
+   * rumor id — the only identity a receiver can dedupe on (#578). Absent on
+   * records written before the rumor was persisted, and on records whose
+   * first attempt failed before the rumor was built.
+   */
+  rumor?: DmRumorEvent;
 }
 
 interface CreateDmOutboxRecordInput {
@@ -21,6 +35,7 @@ interface CreateDmOutboxRecordInput {
   participantPubkeys: string[];
   content: string;
   share?: DmSharePayload;
+  clientId?: string;
 }
 
 function getStorageKey(ownerPubkey: string): string {
@@ -43,19 +58,43 @@ function getLocalStorage(): Storage | undefined {
   }
 }
 
-function buildClientId(ownerPubkey: string, participantPubkeys: string[], createdAt: number): string {
+function buildClientId(participantPubkeys: string[], createdAt: number): string {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
     return `dm-${crypto.randomUUID()}`;
   }
 
   const randomPart = Math.random().toString(36).slice(2, 10);
-  return `dm-${ownerPubkey.slice(0, 8)}-${participantPubkeys.join('-').slice(0, 16)}-${createdAt}-${randomPart}`;
+  return `dm-${participantPubkeys.join('-').slice(0, 16)}-${createdAt}-${randomPart}`;
+}
+
+function isPersistedRumor(value: unknown): value is DmRumorEvent {
+  if (!value || typeof value !== 'object') {
+    return false;
+  }
+
+  const rumor = value as Partial<DmRumorEvent>;
+
+  return (
+    typeof rumor.id === 'string' &&
+    typeof rumor.pubkey === 'string' &&
+    typeof rumor.kind === 'number' &&
+    typeof rumor.created_at === 'number' &&
+    typeof rumor.content === 'string' &&
+    Array.isArray(rumor.tags) &&
+    rumor.tags.every((tag) => Array.isArray(tag) && tag.every((entry) => typeof entry === 'string'))
+  );
 }
 
 function normalizeRecord(record: DmOutboxRecord): DmOutboxRecord {
+  // A malformed persisted rumor drops rather than invalidating the whole
+  // record: the pending message is still sendable, it just mints a fresh
+  // rumor instead of replaying one that cannot be trusted.
+  const { rumor, ...rest } = record;
+
   return {
-    ...record,
+    ...rest,
     participantPubkeys: [...new Set(record.participantPubkeys)].sort(),
+    ...(isPersistedRumor(rumor) ? { rumor } : {}),
   };
 }
 
@@ -116,12 +155,23 @@ function isDmOutboxRecord(value: unknown): value is DmOutboxRecord {
   );
 }
 
+/**
+ * Mint the client-side identity for a send.
+ *
+ * Called at the moment the user sends, so the id exists before the mutation
+ * runs and every later step — the outbox record, the persisted rumor, a retry
+ * — keys off the same value (#578).
+ */
+export function createDmClientId(participantPubkeys: string[]): string {
+  return buildClientId([...new Set(participantPubkeys)].sort(), nowInSeconds());
+}
+
 export function createDmOutboxRecord(input: CreateDmOutboxRecordInput): DmOutboxRecord {
   const createdAt = nowInSeconds();
   const participantPubkeys = [...new Set(input.participantPubkeys)].sort();
 
   return {
-    clientId: buildClientId(input.ownerPubkey, participantPubkeys, createdAt),
+    clientId: input.clientId || buildClientId(participantPubkeys, createdAt),
     ownerPubkey: input.ownerPubkey,
     participantPubkeys,
     content: input.content,
@@ -280,6 +330,27 @@ export function mergeFetchedAndOutboxMessages(
     messages,
     reconciledClientIds,
   };
+}
+
+/**
+ * Persist the rumor built for a send so a later retry re-wraps the same one.
+ *
+ * Called once the rumor exists, which is after `onMutate` has already written
+ * the record — hence a separate write rather than a field on creation.
+ */
+export function attachDmOutboxRumor(
+  ownerPubkey: string,
+  clientId: string,
+  rumor: DmRumorEvent,
+): DmOutboxRecord | undefined {
+  const record = getDmOutboxRecord(ownerPubkey, clientId);
+  if (!record) {
+    return undefined;
+  }
+
+  const updatedRecord = { ...record, rumor };
+  upsertDmOutboxRecord(ownerPubkey, updatedRecord);
+  return updatedRecord;
 }
 
 export function markDmOutboxRecordSent(ownerPubkey: string, clientId: string): DmOutboxRecord | undefined {

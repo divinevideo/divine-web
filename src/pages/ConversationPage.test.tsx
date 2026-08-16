@@ -350,7 +350,10 @@ describe('ConversationPage', () => {
     await user.type(composer, 'hello');
     await user.keyboard('{Enter}');
 
+    // clientId is minted at the call site so a retry can replay the same
+    // rumor rather than build a second one (#578).
     await waitFor(() => expect(mockSendMutateAsync).toHaveBeenCalledWith({
+      clientId: expect.stringMatching(/^dm-/),
       participantPubkeys: [RECIPIENT_PUBKEY],
       content: 'hello',
     }));
@@ -372,7 +375,10 @@ describe('ConversationPage', () => {
     await user.type(composer, 'hello');
     await user.keyboard('{Enter}');
 
+    // clientId is minted at the call site so a retry can replay the same
+    // rumor rather than build a second one (#578).
     await waitFor(() => expect(mockSendMutateAsync).toHaveBeenCalledWith({
+      clientId: expect.stringMatching(/^dm-/),
       participantPubkeys: [RECIPIENT_PUBKEY],
       content: 'hello',
     }));
