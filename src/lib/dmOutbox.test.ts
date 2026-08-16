@@ -152,6 +152,50 @@ describe('dmOutbox', () => {
     expect(stored.content).toBe('hello');
   });
 
+  it('drops a persisted rumor whose kind is not a DM rumor', () => {
+    const record = createDmOutboxRecord({
+      ownerPubkey: TEST_PUBKEY,
+      participantPubkeys: [RECIPIENT_PUBKEY],
+      content: 'hello',
+    });
+    const rumor = {
+      ...buildDmRumor({
+        senderPubkey: TEST_PUBKEY,
+        recipientPubkeys: [RECIPIENT_PUBKEY],
+        content: 'hello',
+      }),
+      kind: 1,
+    };
+
+    writeDmOutbox(TEST_PUBKEY, [{ ...record, rumor }]);
+
+    const [stored] = readDmOutbox(TEST_PUBKEY);
+    expect(stored.rumor).toBeUndefined();
+    expect(stored.content).toBe('hello');
+  });
+
+  it('drops a persisted rumor whose id no longer hashes to its contents', () => {
+    const record = createDmOutboxRecord({
+      ownerPubkey: TEST_PUBKEY,
+      participantPubkeys: [RECIPIENT_PUBKEY],
+      content: 'hello',
+    });
+    const rumor = {
+      ...buildDmRumor({
+        senderPubkey: TEST_PUBKEY,
+        recipientPubkeys: [RECIPIENT_PUBKEY],
+        content: 'hello',
+      }),
+      content: 'tampered',
+    };
+
+    writeDmOutbox(TEST_PUBKEY, [{ ...record, rumor }]);
+
+    const [stored] = readDmOutbox(TEST_PUBKEY);
+    expect(stored.rumor).toBeUndefined();
+    expect(stored.content).toBe('hello');
+  });
+
   it('does not throw when localStorage writes fail', () => {
     const record = createDmOutboxRecord({
       ownerPubkey: TEST_PUBKEY,

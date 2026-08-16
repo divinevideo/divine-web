@@ -1,5 +1,8 @@
 import {
+  calculateUnsignedEventHash,
+  DM_RUMOR_KIND,
   encodeConversationId,
+  isRumorEvent,
   type DmDeliveryState,
   type DmMessage,
   type DmRumorEvent,
@@ -68,20 +71,10 @@ function buildClientId(participantPubkeys: string[], createdAt: number): string 
 }
 
 function isPersistedRumor(value: unknown): value is DmRumorEvent {
-  if (!value || typeof value !== 'object') {
-    return false;
-  }
-
-  const rumor = value as Partial<DmRumorEvent>;
-
   return (
-    typeof rumor.id === 'string' &&
-    typeof rumor.pubkey === 'string' &&
-    typeof rumor.kind === 'number' &&
-    typeof rumor.created_at === 'number' &&
-    typeof rumor.content === 'string' &&
-    Array.isArray(rumor.tags) &&
-    rumor.tags.every((tag) => Array.isArray(tag) && tag.every((entry) => typeof entry === 'string'))
+    isRumorEvent(value) &&
+    value.kind === DM_RUMOR_KIND &&
+    calculateUnsignedEventHash(value) === value.id
   );
 }
 
