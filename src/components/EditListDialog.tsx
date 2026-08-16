@@ -82,6 +82,8 @@ export function EditListDialog({ open, onClose, list }: EditListDialogProps) {
         description: description || undefined,
         image: imageUrl || undefined,
         videoCoordinates: list.videoCoordinates, // Preserve existing videos
+        members: list.members,
+        sourceTags: list.sourceTags,
         tags: tags.length > 0 ? tags : undefined,
         playOrder,
         isCollaborative,

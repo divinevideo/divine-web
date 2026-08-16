@@ -141,7 +141,7 @@ export function VideoListBadges({
           listId={list.id}
           listName={list.name}
           listPubkey={list.pubkey}
-          videoCount={list.videoCoordinates.length}
+          videoCount={list.memberCount}
         />
       ))}
 

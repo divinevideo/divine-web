@@ -47,8 +47,8 @@ describe('ProfileListsSection', () => {
     ]));
     mockUseVideoLists.mockReturnValue({
       ...listResult([
-        { id: 'video-new', name: 'Video new', pubkey: OWNER, createdAt: 30, videoCoordinates: [], public: true },
-        { id: 'video-mid', name: 'Video mid', pubkey: OWNER, createdAt: 20, videoCoordinates: [], public: true },
+        { id: 'video-new', name: 'Video new', pubkey: OWNER, createdAt: 30, members: [], memberCount: 0, videoCoordinates: [], public: true, sourceTags: [] },
+        { id: 'video-mid', name: 'Video mid', pubkey: OWNER, createdAt: 20, members: [], memberCount: 0, videoCoordinates: [], public: true, sourceTags: [] },
       ]),
       isError: true,
     });

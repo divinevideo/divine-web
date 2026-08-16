@@ -7,6 +7,8 @@ import { deduplicateVideoLists, parseVideoListFromEvent } from './parseVideoList
 
 const OWNER = 'b'.repeat(64);
 const COORD = `${SHORT_VIDEO_KIND}:${OWNER}:my-video`;
+const LEGACY_COORD = `34235:${OWNER}:legacy-video`;
+const EVENT_ID = '1'.repeat(64);
 
 function baseEvent(overrides: Partial<NostrEvent> = {}): NostrEvent {
   return {
@@ -37,6 +39,8 @@ describe('parseVideoListFromEvent', () => {
       image: undefined,
       pubkey: OWNER,
       createdAt: 1700,
+      members: [],
+      memberCount: 0,
       videoCoordinates: [],
       public: true,
       tags: [],
@@ -44,6 +48,7 @@ describe('parseVideoListFromEvent', () => {
       allowedCollaborators: [],
       thumbnailEventId: undefined,
       playOrder: 'chronological',
+      sourceTags: [['d', 'list-d']],
     });
   });
 
@@ -63,6 +68,40 @@ describe('parseVideoListFromEvent', () => {
       ],
     });
     expect(parseVideoListFromEvent(ev)?.videoCoordinates).toEqual([COORD]);
+  });
+
+  it('parses e tags as ordered members and counts them', () => {
+    const ev = baseEvent({
+      tags: [
+        ['d', 'l1'],
+        ['e', EVENT_ID],
+        ['e', 'not-an-event-id'],
+      ],
+    });
+    const list = parseVideoListFromEvent(ev);
+    expect(list?.members).toEqual([{ type: 'e', value: EVENT_ID }]);
+    expect(list?.memberCount).toBe(1);
+    expect(list?.videoCoordinates).toEqual([]);
+  });
+
+  it('preserves mixed e and a membership order', () => {
+    const secondEventId = '2'.repeat(64);
+    const ev = baseEvent({
+      tags: [
+        ['d', 'l1'],
+        ['e', EVENT_ID],
+        ['a', COORD],
+        ['e', secondEventId],
+        ['a', LEGACY_COORD],
+      ],
+    });
+
+    expect(parseVideoListFromEvent(ev)?.members).toEqual([
+      { type: 'e', value: EVENT_ID },
+      { type: 'a', value: COORD },
+      { type: 'e', value: secondEventId },
+      { type: 'a', value: LEGACY_COORD },
+    ]);
   });
 
   it('collects t tags in order', () => {
@@ -99,11 +138,14 @@ describe('parseVideoListFromEvent', () => {
     expect(parseVideoListFromEvent(ev)?.isCollaborative).toBe(false);
   });
 
-  it('parses thumbnail-event', () => {
+  it.each([
+    ['thumbnail-event', 'note1abc'],
+    ['thumbnail', EVENT_ID],
+  ])('parses %s', (tagName, expected) => {
     const ev = baseEvent({
-      tags: [['d', 'l1'], ['thumbnail-event', 'note1abc']],
+      tags: [['d', 'l1'], [tagName, expected]],
     });
-    expect(parseVideoListFromEvent(ev)?.thumbnailEventId).toBe('note1abc');
+    expect(parseVideoListFromEvent(ev)?.thumbnailEventId).toBe(expected);
   });
 
   it.each([
@@ -114,6 +156,11 @@ describe('parseVideoListFromEvent', () => {
   ] as const)('play-order %s → %s', (tagValue, expected) => {
     const ev = baseEvent({ tags: [['d', 'l1'], ['play-order', tagValue]] });
     expect(parseVideoListFromEvent(ev)?.playOrder).toBe(expected);
+  });
+
+  it('parses mobile playorder tag', () => {
+    const ev = baseEvent({ tags: [['d', 'l1'], ['playorder', 'manual']] });
+    expect(parseVideoListFromEvent(ev)?.playOrder).toBe('manual');
   });
 
   it('defaults play-order to chronological when tag absent', () => {

@@ -29,103 +29,8 @@ import { useAppContext } from '@/hooks/useAppContext';
 import { getListShareData } from '@/lib/shareUtils';
 import { getSafeProfileImage } from '@/lib/imageUtils';
 import { getEventLookupRelayUrls } from '@/config/relays';
-import type { NostrEvent, NostrFilter } from '@nostrify/nostrify';
-import { SHORT_VIDEO_KIND, VIDEO_KINDS, type ParsedVideoData } from '@/types/video';
-import { parseVideoEvent, getVineId, getThumbnailUrl, getOriginalVineTimestamp, getLoopCount, getProofModeData, getOriginalLikeCount, getOriginalRepostCount, getOriginalCommentCount, getOriginPlatform, isVineMigrated } from '@/lib/videoParser';
+import { fetchListVideos } from '@/lib/listVideos';
 import { resolveListPermissions } from '@/lib/listPermissions';
-
-async function fetchListVideos(
-  nostr: { query: (filters: NostrFilter[], options: { signal: AbortSignal }) => Promise<NostrEvent[]> },
-  coordinates: string[],
-  signal: AbortSignal
-): Promise<ParsedVideoData[]> {
-  if (coordinates.length === 0) return [];
-
-  // Parse coordinates to extract pubkeys and d-tags
-  const filters: NostrFilter[] = [];
-  const coordinateMap = new Map<string, { pubkey: string; dTag: string }>();
-
-  coordinates.forEach(coord => {
-    const [kind, pubkey, dTag] = coord.split(':');
-    const kindNum = parseInt(kind, 10);
-    if (VIDEO_KINDS.includes(kindNum) && pubkey && dTag) {
-      coordinateMap.set(`${pubkey}:${dTag}`, { pubkey, dTag });
-    }
-  });
-
-  // Group by pubkey for efficient querying
-  const pubkeyGroups = new Map<string, string[]>();
-  coordinateMap.forEach(({ pubkey, dTag }) => {
-    if (!pubkeyGroups.has(pubkey)) {
-      pubkeyGroups.set(pubkey, []);
-    }
-    pubkeyGroups.get(pubkey)!.push(dTag);
-  });
-
-  // Create filters for each pubkey group
-  pubkeyGroups.forEach((dTags, pubkey) => {
-    filters.push({
-      kinds: VIDEO_KINDS,
-      authors: [pubkey],
-      '#d': dTags,
-      limit: dTags.length
-    });
-  });
-
-  if (filters.length === 0) return [];
-
-  const events = await nostr.query(filters, { signal });
-
-  // Parse and order videos according to list order
-  const videoMap = new Map<string, ParsedVideoData>();
-
-  events.forEach(event => {
-    const vineId = getVineId(event);
-    if (!vineId) return;
-
-    const videoEvent = parseVideoEvent(event);
-    if (!videoEvent?.videoMetadata?.url) return;
-
-    const key = `${event.pubkey}:${vineId}`;
-    videoMap.set(key, {
-      id: event.id,
-      pubkey: event.pubkey,
-      kind: SHORT_VIDEO_KIND,
-      createdAt: event.created_at,
-      originalVineTimestamp: getOriginalVineTimestamp(event),
-      content: event.content,
-      videoUrl: videoEvent.videoMetadata.url,
-      fallbackVideoUrls: videoEvent.videoMetadata?.fallbackUrls,
-      hlsUrl: videoEvent.videoMetadata?.hlsUrl,
-      thumbnailUrl: getThumbnailUrl(videoEvent),
-      title: videoEvent.title,
-      duration: videoEvent.videoMetadata?.duration,
-      hashtags: videoEvent.hashtags || [],
-      vineId,
-      loopCount: getLoopCount(event),
-      likeCount: getOriginalLikeCount(event),
-      repostCount: getOriginalRepostCount(event),
-      commentCount: getOriginalCommentCount(event),
-      proofMode: getProofModeData(event),
-      origin: getOriginPlatform(event),
-      isVineMigrated: isVineMigrated(event),
-      reposts: [] // List videos don't include repost data
-    });
-  });
-
-  // Return videos in the order they appear in the list
-  const orderedVideos: ParsedVideoData[] = [];
-  coordinates.forEach(coord => {
-    const [_, pubkey, dTag] = coord.split(':');
-    const key = `${pubkey}:${dTag}`;
-    const video = videoMap.get(key);
-    if (video) {
-      orderedVideos.push(video);
-    }
-  });
-
-  return orderedVideos;
-}
 
 const PlayOrderIcon = ({ order }: { order?: PlayOrder }) => {
   switch (order) {
@@ -265,7 +170,7 @@ export default function ListDetailPage() {
 
   // Fetch videos in the list
   const { data: videos, isLoading: videosLoading } = useQuery({
-    queryKey: ['list-videos', pubkey, listId, list?.videoCoordinates],
+    queryKey: ['list-videos', pubkey, listId, list?.members],
     queryFn: async (context) => {
       if (!list) return [];
 
@@ -274,7 +179,7 @@ export default function ListDetailPage() {
         AbortSignal.timeout(10000)
       ]);
 
-      return fetchListVideos(nostr, list.videoCoordinates, signal);
+      return fetchListVideos(nostr, list.members, signal);
     },
     enabled: !!list
   });
@@ -394,7 +299,7 @@ export default function ListDetailPage() {
                 <div className="flex items-center gap-4 text-sm text-muted-foreground flex-wrap">
                   <div className="flex items-center gap-1">
                     <Video className="h-4 w-4" />
-                    <span>{t('listDetailPage.videoCount', { count: list.videoCoordinates.length })}</span>
+                    <span>{t('listDetailPage.videoCount', { count: list.memberCount })}</span>
                   </div>
                   <div className="flex items-center gap-1">
                     <Clock className="h-4 w-4" />
@@ -463,7 +368,6 @@ export default function ListDetailPage() {
             {permissions.canEditContent ? (
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 {videos.map((video) => {
-                  const videoCoord = `${video.kind}:${video.pubkey}:${video.vineId}`;
                   return (
                     <div key={video.id} className="relative group">
                       <VideoGrid
@@ -491,7 +395,7 @@ export default function ListDetailPage() {
                                   await removeVideo.mutateAsync({
                                     listId: list.id,
                                     ownerPubkey: listOwnerPubkey || list.pubkey,
-                                    videoCoordinate: videoCoord
+                                    videoMember: video.listMember,
                                   });
                                   toast({
                                     title: t('listDetailPage.videoRemovedTitle'),

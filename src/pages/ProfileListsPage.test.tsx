@@ -39,7 +39,17 @@ describe('ProfileListsPage', () => {
       refetch: mockRefetchPeople,
     });
     mockUseVideoLists.mockReturnValue({
-      data: [{ id: 'videos', name: 'My videos', pubkey: OWNER, createdAt: 10, videoCoordinates: [], public: true }],
+      data: [{
+        id: 'videos',
+        name: 'My videos',
+        pubkey: OWNER,
+        createdAt: 10,
+        members: [],
+        memberCount: 0,
+        videoCoordinates: [],
+        public: true,
+        sourceTags: [],
+      }],
       isLoading: false,
       isError: false,
       refetch: mockRefetchVideos,

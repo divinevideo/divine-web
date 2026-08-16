@@ -22,18 +22,10 @@ import { CreateListDialog } from '@/components/CreateListDialog';
 import { CreatePeopleListDialog } from '@/components/CreatePeopleListDialog';
 import { formatDistanceToNow } from 'date-fns';
 import { getSafeProfileImage } from '@/lib/imageUtils';
+import type { VideoList as VideoListModel } from '@/lib/parseVideoListFromEvent';
 
-interface ListCardProps {
-  id: string;
-  name: string;
-  description?: string;
-  image?: string;
-  pubkey: string;
-  createdAt: number;
-  videoCoordinates: string[];
-}
-
-function ListCard({ list }: { list: ListCardProps }) {
+function ListCard({ list }: { list: VideoListModel }) {
+  const { t } = useTranslation();
   const author = useAuthor(list.pubkey);
   const authorMetadata = author.data?.metadata;
   const authorName = authorMetadata?.name || genUserName(list.pubkey);
@@ -84,7 +76,7 @@ function ListCard({ list }: { list: ListCardProps }) {
           <div className="flex items-center gap-4 text-sm">
             <div className="flex items-center gap-1">
               <Video className="h-4 w-4 text-muted-foreground" />
-              <span>{list.videoCoordinates.length} videos</span>
+              <span>{t('addToListDialog.videoCount', { count: list.memberCount })}</span>
             </div>
             <div className="flex items-center gap-1">
               <Clock className="h-4 w-4 text-muted-foreground" />

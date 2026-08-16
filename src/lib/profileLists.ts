@@ -43,7 +43,7 @@ export function toDiscoverableVideoList(list: VideoList): DiscoverableList {
     image: list.image,
     ownerPubkey: list.pubkey,
     createdAt: list.createdAt,
-    itemCount: list.videoCoordinates.length,
+    itemCount: list.memberCount,
     href: buildListPath(list.pubkey, list.id),
   };
 }

@@ -28,8 +28,11 @@ const videoList: VideoList = {
   name: 'Favorites',
   pubkey: OWNER,
   createdAt: 10,
+  members: [{ type: 'a', value: '34236:owner:one' }],
+  memberCount: 1,
   videoCoordinates: ['34236:owner:one'],
   public: true,
+  sourceTags: [['d', 'favorites'], ['a', '34236:owner:one']],
 };
 
 describe('profile list presentation', () => {
