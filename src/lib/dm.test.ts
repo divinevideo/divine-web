@@ -2,6 +2,26 @@ import { describe, expect, it, vi } from 'vitest';
 import { NSecSigner, type NostrEvent, type NostrSigner } from '@nostrify/nostrify';
 import { generateSecretKey, getPublicKey } from 'nostr-tools/pure';
 
+// fetchDmMessages builds its own NPool internally, so the relay is stubbed at
+// the module boundary. Everything inside — unwrapping, verification, NIP-44
+// decryption — stays real.
+const relayStub = vi.hoisted(() => ({ events: [] as unknown[] }));
+
+vi.mock('@nostrify/nostrify', async () => {
+  const actual = await vi.importActual<typeof import('@nostrify/nostrify')>('@nostrify/nostrify');
+  return {
+    ...actual,
+    NRelay1: class {},
+    NPool: class {
+      async query() {
+        return relayStub.events;
+      }
+
+      async close() {}
+    },
+  };
+});
+
 import {
   buildDmRumor,
   createRecipientGiftWraps,
@@ -10,6 +30,7 @@ import {
   DM_GIFT_WRAP_KIND,
   DM_RUMOR_KIND,
   encodeConversationId,
+  fetchDmMessages,
   getDmMessagePreview,
   groupDmConversations,
   probeBunkerNip44,
@@ -105,35 +126,103 @@ describe('dm utilities', () => {
   });
 });
 
-// Note: real-crypto round-trip tests for these functions are blocked by
-// src/test/setup.ts overriding global TextEncoder with node:util's
-// TextEncoder, which produces a Uint8Array from a different realm than
-// @noble/hashes' instance check accepts. The failure-path tests below run
-// entirely on mock signers, so they're unaffected.
+describe('fetchDmMessages deduplication', () => {
+  it('renders one message when the same rumor arrives in two gift wraps', async () => {
+    // #578: NIP-59 mints a fresh ephemeral keypair per wrap, so re-publishing
+    // one message produces two kind-1059 events that share nothing on the
+    // outside. The rumor id is the only thing that identifies them as one
+    // message. Exercised against real NIP-44 encryption end to end.
+    const sender = createTestSigner();
+    const recipient = createTestSigner();
+
+    const rumor = buildDmRumor({
+      senderPubkey: sender.pubkey,
+      recipientPubkeys: [recipient.pubkey],
+      content: 'sent once, published twice',
+    });
+
+    const wraps = [
+      ...(await createRecipientGiftWraps({
+        signer: sender.signer,
+        senderPubkey: sender.pubkey,
+        recipientPubkeys: [recipient.pubkey],
+        content: rumor.content,
+        rumor,
+      })),
+      ...(await createRecipientGiftWraps({
+        signer: sender.signer,
+        senderPubkey: sender.pubkey,
+        recipientPubkeys: [recipient.pubkey],
+        content: rumor.content,
+        rumor,
+      })),
+    ];
+
+    expect(wraps).toHaveLength(2);
+    expect(wraps[0].id).not.toBe(wraps[1].id);
+    expect(wraps[0].pubkey).not.toBe(wraps[1].pubkey);
+
+    const result = await fetchWithStubbedRelay(wraps, recipient);
+
+    expect(result.fetchedCount).toBe(2);
+    expect(result.messages).toHaveLength(1);
+    expect(result.messages[0].rumorId).toBe(rumor.id);
+    expect(result.malformedCount).toBe(0);
+  });
+
+  it('keeps two distinct messages that happen to share their text', async () => {
+    // The collapse must key on identity, not content — sending "ok" twice on
+    // purpose is two messages.
+    const sender = createTestSigner();
+    const recipient = createTestSigner();
+
+    const wraps: NostrEvent[] = [];
+    for (const createdAt of [1_700_000_000, 1_700_000_060]) {
+      vi.spyOn(Date, 'now').mockReturnValue(createdAt * 1000);
+      wraps.push(...(await createRecipientGiftWraps({
+        signer: sender.signer,
+        senderPubkey: sender.pubkey,
+        recipientPubkeys: [recipient.pubkey],
+        content: 'ok',
+      })));
+    }
+    vi.restoreAllMocks();
+
+    const result = await fetchWithStubbedRelay(wraps, recipient);
+
+    expect(result.messages).toHaveLength(2);
+    expect(result.messages[0].rumorId).not.toBe(result.messages[1].rumorId);
+  });
+});
 
 describe('createSelfGiftWrap', () => {
   it('wraps the rumor it is given, so the self copy shares the recipient copy id', async () => {
     // NIP-59: a single rumor may be wrapped and addressed for each recipient
     // individually — including the author's own copy. Two rumors would leave
     // the sender holding a different message from the one they sent.
-    const { sealed, signer } = createSealCapturingSigner();
+    const sender = createTestSigner();
+    const recipient = createTestSigner();
 
     const rumor = buildDmRumor({
-      senderPubkey: 'a'.repeat(64),
-      recipientPubkeys: ['b'.repeat(64)],
+      senderPubkey: sender.pubkey,
+      recipientPubkeys: [recipient.pubkey],
       content: 'hi',
     });
 
-    await createSelfGiftWrap({
-      signer,
-      senderPubkey: 'a'.repeat(64),
-      recipientPubkeys: ['b'.repeat(64)],
+    const selfWrap = await createSelfGiftWrap({
+      signer: sender.signer,
+      senderPubkey: sender.pubkey,
+      recipientPubkeys: [recipient.pubkey],
       content: 'hi',
       rumor,
     });
 
-    expect(sealed).toHaveLength(1);
-    expect(JSON.parse(sealed[0])).toEqual(rumor);
+    expect(selfWrap).not.toBeNull();
+    const unwrapped = await unwrapDmGiftWrap(selfWrap!, sender.signer);
+    expect(unwrapped.ok).toBe(true);
+    if (unwrapped.ok) {
+      expect(unwrapped.rumor.id).toBe(rumor.id);
+    }
   });
 
   it('returns null and warns when signer.nip44.encrypt rejects', async () => {
@@ -200,59 +289,32 @@ describe('createRecipientGiftWraps', () => {
 
   it('re-wraps a supplied rumor instead of minting a new one', async () => {
     // A retry hands back the first attempt's rumor. Its id is the only thing
-    // a receiver can dedupe on, so it must reach the seal untouched.
-    //
-    // Asserted on the plaintext handed to the signer rather than the returned
-    // wrap: the wrap step runs real nip44 encryption, which cannot execute
-    // under the jsdom TextEncoder override documented above. Sealing happens
-    // first, so an empty `sealed` still fails this test.
-    const { sealed, signer } = createSealCapturingSigner();
+    // a receiver can dedupe on, so it must survive the round trip untouched.
+    const sender = createTestSigner();
+    const recipient = createTestSigner();
 
     const rumor = buildDmRumor({
-      senderPubkey: 'a'.repeat(64),
-      recipientPubkeys: ['b'.repeat(64)],
+      senderPubkey: sender.pubkey,
+      recipientPubkeys: [recipient.pubkey],
       content: 'hi',
     });
 
-    await createRecipientGiftWraps({
-      signer,
-      senderPubkey: 'a'.repeat(64),
-      recipientPubkeys: ['b'.repeat(64)],
+    const [wrap] = await createRecipientGiftWraps({
+      signer: sender.signer,
+      senderPubkey: sender.pubkey,
+      recipientPubkeys: [recipient.pubkey],
       content: 'hi',
       rumor,
-    }).catch(() => undefined);
+    });
 
-    expect(sealed).toHaveLength(1);
-    expect(JSON.parse(sealed[0])).toEqual(rumor);
+    const unwrapped = await unwrapDmGiftWrap(wrap, recipient.signer);
+    expect(unwrapped.ok).toBe(true);
+    if (unwrapped.ok) {
+      expect(unwrapped.rumor).toEqual(rumor);
+    }
   });
 });
 
-function createSealCapturingSigner(): { sealed: string[]; signer: NostrSigner } {
-  const sealed: string[] = [];
-
-  return {
-    sealed,
-    signer: {
-      getPublicKey: vi.fn().mockResolvedValue('a'.repeat(64)),
-      signEvent: vi.fn().mockResolvedValue({
-        id: 'seal-id',
-        pubkey: 'a'.repeat(64),
-        kind: 13,
-        created_at: 1,
-        tags: [],
-        content: 'ciphertext',
-        sig: 'c'.repeat(128),
-      }),
-      nip44: {
-        encrypt: vi.fn(async (_pubkey: string, plaintext: string) => {
-          sealed.push(plaintext);
-          return 'ciphertext';
-        }),
-        decrypt: vi.fn(),
-      },
-    },
-  };
-}
 
 describe('buildDmRumor', () => {
   const SENDER = 'a'.repeat(64);
@@ -352,6 +414,22 @@ function createTestSigner(): { signer: NSecSigner; pubkey: string } {
   return { signer: new NSecSigner(sk), pubkey: getPublicKey(sk) };
 }
 
+async function fetchWithStubbedRelay(
+  wraps: NostrEvent[],
+  recipient: { signer: NSecSigner; pubkey: string },
+) {
+  relayStub.events = wraps;
+  try {
+    return await fetchDmMessages({
+      signer: recipient.signer,
+      currentUserPubkey: recipient.pubkey,
+      relayUrls: ['wss://relay.example'],
+    });
+  } finally {
+    relayStub.events = [];
+  }
+}
+
 function createDmTestWrap(recipientPubkey: string): NostrEvent {
   return {
     id: 'a'.repeat(64),
@@ -379,14 +457,6 @@ function createMockSigner(
 }
 
 describe('unwrapDmGiftWrap', () => {
-  // The happy-path round-trip (real NIP-44 encrypt → decrypt) is exercised in
-  // useDirectMessages.test.ts which mocks at the import boundary. Here we
-  // cannot run real nip44.v2 because src/test/setup.ts overrides global
-  // TextEncoder with node:util's TextEncoder, which produces a Uint8Array
-  // from a different realm than the @noble/hashes consumer expects, breaking
-  // its instance check. Failure-path tests below all run via mocked signers
-  // so they're unaffected.
-
   it('returns decrypt-failed when the signer.nip44.decrypt RPC throws', async () => {
     const recipient = createTestSigner();
     const wrap = createDmTestWrap(recipient.pubkey);

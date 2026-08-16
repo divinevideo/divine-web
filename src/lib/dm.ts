@@ -620,6 +620,7 @@ export async function fetchDmMessages(input: FetchDmMessagesInput): Promise<Fetc
     );
 
     const messages: DmMessage[] = [];
+    const seenRumorIds = new Set<string>();
     let decryptFailures = 0;
     let malformedCount = 0;
 
@@ -627,8 +628,21 @@ export async function fetchDmMessages(input: FetchDmMessagesInput): Promise<Fetc
       const outcome = outcomes[i];
       if (outcome.ok) {
         const built = buildMessageFromRumor(events[i], outcome.rumor, currentUserPubkey);
-        if (built) messages.push(built);
-        else malformedCount++;
+        if (!built) {
+          malformedCount++;
+          continue;
+        }
+
+        // Collapse on the rumor id, not the wrap id. NIP-59 mints a fresh
+        // ephemeral keypair per gift wrap and randomizes the wrap/seal
+        // created_at, and NIP-44 randomizes the nonce, so two wraps of one
+        // message share nothing on the outside — keying the list on wrapId
+        // renders a re-published message twice (#578). This holds against
+        // any source of a duplicate wrap, not only this client's retries.
+        if (seenRumorIds.has(built.rumorId)) continue;
+        seenRumorIds.add(built.rumorId);
+
+        messages.push(built);
       } else if (outcome.reason === 'decrypt-failed') {
         decryptFailures++;
       } else {
