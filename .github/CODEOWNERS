@@ -1,0 +1,23 @@
+# Routes review requests automatically when a pull request opens.
+#
+# Branch protection decides whether a pull request may merge; this decides who
+# gets asked. Without it, requesting a reviewer is a step the author has to
+# remember, and a skipped request looks exactly like a completed one.
+#
+# Order matters: the LAST matching pattern wins. Keep the catch-all first.
+#
+# Only paths that exist in this repository are listed. A pattern matching no
+# path is silently inert, as is a team without write access here — GitHub
+# reports neither.
+
+* @divinevideo/reviewers
+
+# Platform-sensitive paths, per PR_REVIEW_TEAMS.md: production deployment and
+# routing. wrangler.toml carries the Worker's routes, bindings and environment,
+# so an incorrect final state here misdirects live traffic rather than breaking
+# one feature.
+/.github/workflows/   @divinevideo/platform
+/wrangler.toml        @divinevideo/platform
+
+# Changing who reviews what is itself a platform decision.
+/.github/CODEOWNERS   @divinevideo/platform
