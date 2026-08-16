@@ -4,20 +4,23 @@
 # gets asked. Without it, requesting a reviewer is a step the author has to
 # remember, and a skipped request looks exactly like a completed one.
 #
-# Order matters: the LAST matching pattern wins. Keep the catch-all first.
+# divine-web is not in the per-repo mapping in divine-context
+# PR_REVIEW_TEAMS.md, so the default applies: @divinevideo/reviewers owns
+# review requests for the whole repository.
 #
-# Only paths that exist in this repository are listed. A pattern matching no
-# path is silently inert, as is a team without write access here — GitHub
-# reports neither.
+# Two ways a line here can fail, one silent, one reported:
+# - A pattern matching no path is silently inert.
+# - A team without write access to this repository is an "Unknown owner":
+#   GitHub flags it on this file's page and at
+#   /repos/divinevideo/divine-web/codeowners/errors, which takes a ref, so a
+#   branch can be checked before merge:
+#   gh api "repos/divinevideo/divine-web/codeowners/errors?ref=<branch>"
+#
+# If platform routing is added later, the team needs write access here first
+# (the "Unknown owner" check above covers that), and compute-js/ — the Fastly
+# edge config with the live service id, backends, KV and secret stores — is
+# the path that earns it. wrangler.toml is a three-line Cloudflare Pages
+# build config. Order matters if lines are added: the LAST matching pattern
+# wins, so keep the catch-all first.
 
 * @divinevideo/reviewers
-
-# Platform-sensitive paths, per PR_REVIEW_TEAMS.md: production deployment and
-# routing. wrangler.toml carries the Worker's routes, bindings and environment,
-# so an incorrect final state here misdirects live traffic rather than breaking
-# one feature.
-/.github/workflows/   @divinevideo/platform
-/wrangler.toml        @divinevideo/platform
-
-# Changing who reviews what is itself a platform decision.
-/.github/CODEOWNERS   @divinevideo/platform
