@@ -1,6 +1,5 @@
 import {
   parseFeaturedTabPillLabel,
-  parseFeaturedTabPosition,
   parseFeaturedTabSlug,
   parseFeaturedTabSponsorName,
   pickFeaturedTabLabel,
@@ -79,7 +78,6 @@ export function selectFeaturedTab(
       id,
       slug,
       label,
-      position: parseFeaturedTabPosition(config.position),
       pillLabel: parseFeaturedTabPillLabel(config.pill_label),
       sponsorName: parseFeaturedTabSponsorName(config.disclosure_label),
     };

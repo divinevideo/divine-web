@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   parseFeaturedTabPillLabel,
-  parseFeaturedTabPosition,
+  parseFeaturedTabSlug,
   parseFeaturedTabSponsorName,
   pickFeaturedTabLabel,
   transformFeaturedTabVideosResponse,
@@ -20,22 +20,16 @@ describe('featured tab transforms', () => {
     }, 'fr')).toBe('This label is unexpected');
   });
 
-  it('rejects hostile position payloads and unknown tab names', () => {
-    expect(parseFeaturedTabPosition('after-hot')).toBeNull();
-    expect(parseFeaturedTabPosition({ web: { after: 'rising' } })).toBeNull();
-    expect(parseFeaturedTabPosition({ mobile: { after: 'popular' } })).toBeNull();
+  it('rejects slugs that would shadow built-in discovery tabs', () => {
+    expect(parseFeaturedTabSlug('foryou')).toBeNull();
+    expect(parseFeaturedTabSlug('classics')).toBeNull();
+    expect(parseFeaturedTabSlug('hot')).toBeNull();
+    expect(parseFeaturedTabSlug('hashtags')).toBeNull();
+    expect(parseFeaturedTabSlug('top')).toBeNull();
   });
 
-  it('parses valid web position by tab name', () => {
-    expect(parseFeaturedTabPosition({ web: { after: 'hot' } })).toEqual({ after: 'hot' });
-    expect(parseFeaturedTabPosition({ web: { before: 'hashtags' } })).toEqual({ before: 'hashtags' });
-  });
-
-  it('keeps a single anchor when the backend sends both after and before', () => {
-    expect(parseFeaturedTabPosition({ web: { after: 'hot', before: 'hashtags' } }))
-      .toEqual({ after: 'hot' });
-    expect(parseFeaturedTabPosition({ web: { after: 'rising', before: 'hashtags' } }))
-      .toEqual({ before: 'hashtags' });
+  it('accepts routable featured tab slugs', () => {
+    expect(parseFeaturedTabSlug('seasonal-theme')).toBe('seasonal-theme');
   });
 
   it('only accepts string pill labels and keeps them readable', () => {

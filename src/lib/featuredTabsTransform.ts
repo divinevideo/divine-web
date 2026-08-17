@@ -2,7 +2,6 @@ import { DEFAULT_LOCALE, normalizeLocale } from '@/lib/i18n/config';
 import type { FunnelcakeResponse, FunnelcakeVideoRaw } from '@/types/funnelcake';
 import type {
   DiscoveryTabName,
-  FeaturedTabPosition,
   FeaturedTabVideosResponseRaw,
   FeaturedTabVideoRaw,
 } from '@/types/featuredTabs';
@@ -52,13 +51,6 @@ function cleanShortString(value: string, maxLength: number): string {
     .slice(0, maxLength);
 }
 
-function parseDiscoveryTabName(value: unknown): DiscoveryTabName | null {
-  if (typeof value !== 'string') return null;
-  return DISCOVERY_TAB_NAMES.has(value as DiscoveryTabName)
-    ? (value as DiscoveryTabName)
-    : null;
-}
-
 export function parseFeaturedTabSlug(value: unknown): string | null {
   if (typeof value !== 'string') return null;
 
@@ -85,24 +77,6 @@ export function pickFeaturedTabLabel(
   const cleaned = cleanShortString(localized, MAX_LABEL_LENGTH);
 
   return cleaned || null;
-}
-
-export function parseFeaturedTabPosition(value: unknown): FeaturedTabPosition | null {
-  if (typeof value !== 'object' || value === null || Array.isArray(value)) return null;
-
-  const web = (value as { web?: unknown }).web;
-  if (typeof web !== 'object' || web === null || Array.isArray(web)) return null;
-
-  const after = parseDiscoveryTabName((web as { after?: unknown }).after);
-  const before = parseDiscoveryTabName((web as { before?: unknown }).before);
-
-  // `after` and `before` are mutually exclusive anchors. Keeping both would let
-  // a placement contradict itself (anchor from one key, side from the other),
-  // so resolve the conflict here rather than in the insertion code.
-  if (after) return { after };
-  if (before) return { before };
-
-  return null;
 }
 
 export function parseFeaturedTabPillLabel(value: unknown): string | null {

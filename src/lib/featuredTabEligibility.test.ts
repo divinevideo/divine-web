@@ -8,7 +8,6 @@ function makeConfig(overrides: Partial<FeaturedTabConfigRaw> = {}): FeaturedTabC
     id: 'ft_1234abcd',
     slug: 'seasonal-theme',
     label: { default: 'Seasonal' },
-    position: { web: { after: 'hot' } },
     starts_at: '2026-08-01T00:00:00Z',
     ends_at: '2026-09-01T00:00:00Z',
     enabled: true,
@@ -83,7 +82,6 @@ describe('featured tab eligibility', () => {
       id: 'ft_eligible',
       slug: 'seasonal-theme',
       label: 'Especial',
-      position: { after: 'hot' },
       pillLabel: 'Skate week',
       sponsorName: 'Acme Bikes',
     });
@@ -106,7 +104,6 @@ describe('featured tab eligibility', () => {
       id: 'ft_eligible',
       slug: 'seasonal-theme',
       label: 'Seasonal',
-      position: { after: 'hot' },
       pillLabel: 'Skate week',
       sponsorName: null,
     });
@@ -144,7 +141,6 @@ describe('featured tab eligibility', () => {
       id: 'ft_eligible',
       slug: 'seasonal-theme',
       label: 'Especial',
-      position: { after: 'hot' },
       pillLabel: 'Skate week',
       sponsorName: 'Acme Bikes',
     });

@@ -187,12 +187,11 @@ describe('DiscoveryPage', () => {
     });
   });
 
-  it('inserts an eligible featured tab after the configured tab and renders disclosure text', () => {
+  it('inserts an eligible featured tab after classics and before hot', () => {
     mockFeaturedTab.current = {
       id: 'ft_1234abcd',
       slug: 'seasonal-theme',
       label: 'Especial',
-      position: { after: 'hot' },
       pillLabel: 'Skate week',
       sponsorName: null,
     };
@@ -207,8 +206,35 @@ describe('DiscoveryPage', () => {
 
     expect(screen.getAllByRole('tab').map((tab) => tab.textContent)).toEqual([
       'Clasico',
-      'Popular',
       'DestacadoSkate week',
+      'Popular',
+      'Etiquetas',
+    ]);
+  });
+
+  it('keeps the featured tab after classics when foryou is visible', () => {
+    mockCurrentUser.current = { pubkey: 'viewer-pubkey' };
+    mockFeaturedTab.current = {
+      id: 'ft_1234abcd',
+      slug: 'seasonal-theme',
+      label: 'Especial',
+      pillLabel: null,
+      sponsorName: null,
+    };
+
+    render(
+      <MemoryRouter initialEntries={['/discovery/classics']}>
+        <Routes>
+          <Route path="/discovery/:tab" element={<DiscoveryPage />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    expect(screen.getAllByRole('tab').map((tab) => tab.textContent)).toEqual([
+      'Para ti',
+      'Clasico',
+      'Destacado',
+      'Popular',
       'Etiquetas',
     ]);
   });
@@ -218,7 +244,6 @@ describe('DiscoveryPage', () => {
       id: 'ft_1234abcd',
       slug: 'seasonal-theme',
       label: 'Especial',
-      position: { after: 'hot' },
       pillLabel: null,
       sponsorName: null,
     });
@@ -277,7 +302,6 @@ describe('DiscoveryPage', () => {
       id: 'ft_1234abcd',
       slug: 'seasonal-theme',
       label: 'Especial',
-      position: { after: 'hot' },
       pillLabel: null,
       sponsorName: null,
     };
@@ -323,7 +347,6 @@ describe('DiscoveryPage', () => {
       id: 'ft_1234abcd',
       slug: 'seasonal-theme',
       label: 'Especial',
-      position: { after: 'hot' },
       pillLabel: 'Skate week',
       sponsorName: 'Acme Bikes',
     };
@@ -347,7 +370,6 @@ describe('DiscoveryPage', () => {
       id: 'ft_1234abcd',
       slug: 'seasonal-theme',
       label: 'Especial',
-      position: { after: 'hot' },
       pillLabel: 'Skate week',
       sponsorName: null,
     };
@@ -371,7 +393,6 @@ describe('DiscoveryPage', () => {
         id: 'ft_1234abcd',
         slug: 'seasonal-theme',
         label: 'Especial',
-        position: { after: 'hot' },
         pillLabel: null,
         sponsorName: 'Acme Bikes',
       };
@@ -394,7 +415,6 @@ describe('DiscoveryPage', () => {
       id: 'ft_1234abcd',
       slug: 'seasonal-theme',
       label: 'Especial',
-      position: { after: 'hot' },
       pillLabel: 'Skate week',
       sponsorName: 'Acme Bikes',
     };
@@ -409,8 +429,8 @@ describe('DiscoveryPage', () => {
 
     expect(screen.getAllByRole('tab').map((tab) => tab.getAttribute('aria-label'))).toEqual([
       'Clasico',
-      'Popular',
       'Destacado: Skate week',
+      'Popular',
       'Etiquetas',
     ]);
   });

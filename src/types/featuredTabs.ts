@@ -9,7 +9,6 @@ export interface FeaturedTabConfigRaw {
   id: string;
   slug: string;
   label: Record<string, string>;
-  position: unknown;
   starts_at: string;
   ends_at: string;
   enabled: boolean;
@@ -19,16 +18,10 @@ export interface FeaturedTabConfigRaw {
   has_content: boolean;
 }
 
-export interface FeaturedTabPosition {
-  after?: DiscoveryTabName;
-  before?: DiscoveryTabName;
-}
-
 export interface ResolvedFeaturedTab {
   id: string;
   slug: string;
   label: string;
-  position: FeaturedTabPosition | null;
   pillLabel: string | null;
   sponsorName: string | null;
 }

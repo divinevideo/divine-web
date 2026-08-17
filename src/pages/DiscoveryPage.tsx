@@ -45,17 +45,13 @@ function insertFeaturedTab(
     pillLabel: featuredTab.pillLabel,
     featuredTab,
   };
-  const position = featuredTab.position;
-  const target = position?.after ?? position?.before;
-  const targetIndex = target
-    ? tabs.findIndex((tab) => tab.value === target)
-    : -1;
+  const targetIndex = tabs.findIndex((tab) => tab.value === 'classics');
 
   if (targetIndex === -1) {
     return [...tabs, item];
   }
 
-  const insertAt = position?.before ? targetIndex : targetIndex + 1;
+  const insertAt = targetIndex + 1;
   return [
     ...tabs.slice(0, insertAt),
     item,

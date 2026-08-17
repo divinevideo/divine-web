@@ -57,7 +57,6 @@ function makeResponse(overrides: Partial<FeaturedTabsResponse['featured_tabs'][n
         id: 'ft_1234abcd',
         slug: 'seasonal-theme',
         label: { default: 'Seasonal', es: 'Especial' },
-        position: { web: { after: 'hot' } },
         starts_at: '2026-08-01T00:00:00Z',
         ends_at: '2026-09-01T00:00:00Z',
         enabled: true,
@@ -122,7 +121,6 @@ describe('useFeaturedTab', () => {
       id: 'ft_1234abcd',
       slug: 'seasonal-theme',
       label: 'Especial',
-      position: { after: 'hot' },
       pillLabel: null,
       sponsorName: null,
     });
