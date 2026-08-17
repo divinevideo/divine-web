@@ -94,7 +94,7 @@ function buildListTags(
   }
 
   const preservedSourceTags = (list.sourceTags ?? [])
-    .filter((tag) => !ownedTags.has(tag[0]))
+    .filter((tag) => tag[0] && !ownedTags.has(tag[0]))
     .map(tag => [...tag]);
 
   tags.push(...preservedSourceTags);

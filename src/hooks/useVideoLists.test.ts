@@ -350,6 +350,29 @@ describe('useVideoLists hooks', () => {
       expect(tags.filter((tag) => tag[0] === 'e')).toEqual([['e', eventId, 'wss://relay.example', 'root']]);
     });
 
+    it('drops empty and nameless source tags instead of re-signing them', async () => {
+      const { useCreateVideoList } = await import('./useVideoLists');
+      const { result } = renderHook(() => useCreateVideoList(), { wrapper: createWrapper() });
+
+      await result.current.mutateAsync({
+        id: 'mobile-list',
+        name: 'Renamed',
+        videoCoordinates: [],
+        members: [],
+        sourceTags: [
+          ['d', 'mobile-list'],
+          ['title', 'Old'],
+          [],
+          [''],
+          ['client', 'divine-mobile'],
+        ],
+      });
+
+      const tags = (mockPublishAsync.mock.calls[0][0] as { tags: string[][] }).tags;
+      expect(tags).toContainEqual(['client', 'divine-mobile']);
+      expect(tags.every((tag) => tag.length > 0 && tag[0] !== '')).toBe(true);
+    });
+
     it('prepends new list to video-lists cache on success (before refetch)', async () => {
       const queryClient = new QueryClient({
         defaultOptions: {
