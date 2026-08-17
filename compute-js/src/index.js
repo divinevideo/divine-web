@@ -397,7 +397,10 @@ async function handleRequest(event) {
   // matched `/:nip19` and rendered the 404 page inside the subscriber's iframe.
   // Note this is distinct from the `/embed/:id` video player handled above;
   // that check requires the trailing slash, so the two do not collide.
-  if (isEmbedWidgetPath(url.pathname)) {
+  // GET only: the marker check below reads the body, which a HEAD response does
+  // not carry, so intercepting HEAD would log a false alarm and fall through to
+  // the SPA anyway — exactly what the normal static path does for it.
+  if (request.method === 'GET' && isEmbedWidgetPath(url.pathname)) {
     const widgetUrl = new URL(EMBED_WIDGET_ASSET, url.origin);
     widgetUrl.search = url.search;
     const widgetHeaders = new Headers(request.headers);
