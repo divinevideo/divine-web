@@ -89,6 +89,33 @@ const MUST_BE_TRANSLATED_PREFIXES = [
   // sit alongside them are not dragged in.
   'videoPage.featuredTabWrappedDescription',
   'videoPage.featuredNavigationEndedDescription',
+  // Moderation safety copy must not ship English placeholders. These strings
+  // explain public follow-list changes, block/unblock outcomes, and destructive
+  // cross-device p-tag removal. Count-title bases are included so plural
+  // category gaps cannot fall back to English for locales like pl and ro.
+  'profileHeader.blockDialogDescription',
+  'profileHeader.unblockDialogDescription',
+  'profileHeader.blockedDescription',
+  'profileHeader.unblockedDescription',
+  'profileHeader.blockFailedDescription',
+  'moderationSettings.blockedUsersTitle',
+  'moderationSettings.blockedUsersDescription',
+  'moderationSettings.mutedUsersTitle',
+  'moderationSettings.mutedUsersDescription',
+  'moderationSettings.mutedHashtagsTitle',
+  'moderationSettings.mutedKeywordsTitle',
+  'moderationSettings.mutedHereTitle',
+  'moderationSettings.mutedHereDescription',
+  'moderationSettings.mutedElsewhereTitle',
+  'moderationSettings.mutedElsewhereDescription',
+  'moderationSettings.reportHistoryDescription',
+  'moderationSettings.noWebMutedUsers',
+  'moderationSettings.noUnknownMutedUsers',
+  'moderationSettings.confirmUnmuteDescription',
+  'moderationSettings.confirmWebUnmuteDescription',
+  'moderationSettings.noBlockedUsers',
+  'moderationSettings.toastUnblockedDescription',
+  'moderationSettings.toastUnblockFailed',
 ];
 
 describe('i18n locale resources', () => {
