@@ -12,7 +12,7 @@ export function PrivacyPage() {
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         <ZendeskWidget />
         <h1 className="text-4xl font-extrabold mb-4">{t('privacyPage.title')}</h1>
-        <p className="text-muted-foreground mb-8">{t('privacyPage.lastUpdated', { date: 'March 30, 2026' })}</p>
+        <p className="text-muted-foreground mb-8">{t('privacyPage.lastUpdated', { date: 'August 17, 2026' })}</p>
 
         <div className="space-y-8 text-muted-foreground leading-relaxed">
           {/* 1. Overview */}
@@ -116,6 +116,14 @@ export function PrivacyPage() {
               We collect information automatically when you use the Service, including device and browser
               information, IP address, approximate location derived from network signals, and logs relating to
               interactions with Divine-controlled infrastructure.
+            </p>
+            <p className="mb-3">
+              Divine uses Shorebird to check for and deliver app updates. When the app checks for an update,
+              Shorebird receives a random identifier unique to that app installation, the app, release, and patch
+              versions, update channel, platform, device architecture, and patch download or installation status.
+              This information is used to deliver updates, diagnose update failures, and produce aggregated update
+              and active-install analytics. The installation identifier is not an advertising identifier and is
+              not used for advertising or cross-app tracking.
             </p>
             <p className="mb-3">
               We may also collect and generate information for safety and moderation purposes, including reports,

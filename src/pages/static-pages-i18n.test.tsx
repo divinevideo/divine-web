@@ -80,6 +80,8 @@ describe('static pages i18n', () => {
     );
 
     expect(screen.getByRole('heading', { name: 'Política de privacidad' })).toBeInTheDocument();
+    expect(screen.getByText(/Divine uses Shorebird to check for and deliver app updates/)).toBeInTheDocument();
+    expect(screen.getByText(/not used for advertising or cross-app tracking/)).toBeInTheDocument();
   });
 
   it('renders safety copy in spanish', () => {
