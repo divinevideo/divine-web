@@ -3,6 +3,13 @@ import { resources } from './index';
 
 const PLURAL_SUFFIXES = new Set(['zero', 'one', 'two', 'few', 'many', 'other']);
 const LOCALES_REQUIRING_FULL_PLURAL_COVERAGE = new Set(['ar']);
+const BARE_LOOP_TOKEN = /\bloops?\b/i;
+const LOOP_GLOSSARY = {
+  ms: 'gelung',
+  ur: 'لوپ',
+  vi: 'vòng lặp',
+  zh: '循环',
+};
 
 function flattenKeys(value: unknown, prefix = ''): string[] {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
@@ -155,6 +162,35 @@ describe('i18n locale resources', () => {
         expect(
           untranslated,
           `${locale}.${namespace} still holds the english string for:\n${untranslated.join('\n')}`,
+        ).toEqual([]);
+      }
+    }
+  });
+
+  it('keeps documented loop glossary terms localized', () => {
+    for (const [namespace, englishCatalog] of Object.entries(resources.en)) {
+      const loopKeys = flattenKeys(englishCatalog)
+        .filter((key) => {
+          const value = getByPath(englishCatalog, key);
+          return typeof value === 'string' && BARE_LOOP_TOKEN.test(value);
+        })
+        .sort();
+
+      for (const [locale, glossaryTerm] of Object.entries(LOOP_GLOSSARY)) {
+        const namespaces = resources[locale as keyof typeof resources];
+        const localeCatalog = namespaces[namespace as keyof typeof namespaces];
+        const violations = loopKeys.filter((key) => {
+          const value = getByPath(localeCatalog, key);
+          return (
+            typeof value !== 'string' ||
+            BARE_LOOP_TOKEN.test(value) ||
+            !value.toLocaleLowerCase().includes(glossaryTerm.toLocaleLowerCase())
+          );
+        });
+
+        expect(
+          violations,
+          `${locale}.${namespace} must use "${glossaryTerm}" instead of bare english loop text for:\n${violations.join('\n')}`,
         ).toEqual([]);
       }
     }
