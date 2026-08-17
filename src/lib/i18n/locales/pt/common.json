@@ -409,7 +409,7 @@
     "blockedTitle": "Bloqueado.",
     "blockedDescription": "Fora da tua lista de seguindo e dos teus feeds.",
     "unblockedTitle": "Desbloqueado.",
-    "unblockedDescription": "Os vídeos dele podem aparecer de novo. Você não está seguindo.",
+    "unblockedDescription": "Os vídeos dele podem aparecer de novo. Você não está seguindo essa pessoa.",
     "cancel": "Cancelar",
     "blockFailedDescription": "Falha ao bloquear. Tenta de novo."
   },

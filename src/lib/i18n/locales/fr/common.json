@@ -405,7 +405,7 @@
     "blockDialogTitle": "Bloquer cet utilisateur ?",
     "blockDialogDescription": "{{name}} sera retiré de ta liste publique d’abonnements, et ses vidéos resteront hors de tes feeds.",
     "unblockDialogTitle": "Débloquer cet utilisateur ?",
-    "unblockDialogDescription": "Ses vidéos de {{name}} pourront réapparaître, mais tu ne le suivras pas à nouveau.",
+    "unblockDialogDescription": "Les vidéos de {{name}} pourront réapparaître, mais tu ne le suivras pas à nouveau.",
     "blockedTitle": "Bloqué.",
     "blockedDescription": "Retiré de ta liste d’abonnements et de tes feeds.",
     "unblockedTitle": "Débloqué.",

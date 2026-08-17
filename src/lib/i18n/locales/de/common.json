@@ -403,7 +403,7 @@
     "blockUser": "Nutzer blockieren",
     "unblockUser": "Blockierung aufheben",
     "blockDialogTitle": "Diesen Nutzer blockieren?",
-    "blockDialogDescription": "{{name}} wird aus deiner öffentlichen Folgen-Liste entfernt, und ihre Videos bleiben aus deinen Feeds.",
+    "blockDialogDescription": "{{name}} wird aus deiner öffentlichen Folgen-Liste entfernt, und ihre Videos werden nicht mehr in deinen Feeds angezeigt.",
     "unblockDialogTitle": "Blockierung dieses Nutzers aufheben?",
     "unblockDialogDescription": "Dadurch werden die Videos von {{name}} wieder eingeblendet, aber du folgst ihnen nicht erneut.",
     "blockedTitle": "Blockiert.",
