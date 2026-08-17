@@ -43,6 +43,20 @@ describe('embed route parity', () => {
     expect(rule).toContain(EMBED_WIDGET_ASSET);
   });
 
+  it('Cloudflare serves the trailing-slash form too', () => {
+    // The Fastly worker accepts '/embed/' (see the collision test below), and
+    // the widget's assets are root-absolute precisely because this document is
+    // served under /embed/ as well. Both deploy targets must describe the same
+    // surface: on Cloudflare that takes a rewrite rule and the framing/caching
+    // headers, or /embed/ renders the 404-in-an-iframe on preview deploys.
+    const rule = REDIRECTS.split('\n').find(
+      (line) => /^\/embed\/\s/.test(line.trim()),
+    );
+    expect(rule, 'public/_redirects has no /embed/ rule').toBeDefined();
+    expect(rule).toContain(EMBED_WIDGET_ASSET);
+    expect(HEADERS).toMatch(/^\/embed\/$/m);
+  });
+
   it('the Fastly worker rewrites /embed to the widget', () => {
     // Fastly serves production and never reads _redirects, so the rewrite has
     // to exist here independently. Nothing executes this worker before it is
