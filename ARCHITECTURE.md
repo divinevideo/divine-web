@@ -117,9 +117,10 @@ request in the visitor's console.
 
 Note the app-shell CSP is meta-only — the shell routes carry no CSP response
 header, so `report-uri` and `report-to` are ignored and violations are never
-reported back. (The `/embed` widget is the exception: it is a separate static
-document, and the worker sets a `frame-ancestors *` response header on it —
-see [`compute-js/src/embedWidget.js`](./compute-js/src/embedWidget.js).)
+reported back. (The embed routes are the exception: they are separate static documents, and
+the worker sets a `frame-ancestors *` response header on them — the `/embed`
+widget via [`compute-js/src/embedWidget.js`](./compute-js/src/embedWidget.js),
+the `/embed/:id` oEmbed player inline in `index.js`.)
 
 ## Key Dependencies
 
