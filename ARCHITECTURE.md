@@ -115,8 +115,11 @@ request in the visitor's console.
   separately: `fastly:deploy` publishes the Wasm worker carrying `SHELL_CSP`,
   `fastly:publish` pushes `index.html` to the KV store. Run **both**.
 
-Note the CSP is meta-only — there is no CSP response header, so `report-uri`
-and `report-to` are ignored and violations are never reported back.
+Note the app-shell CSP is meta-only — the shell routes carry no CSP response
+header, so `report-uri` and `report-to` are ignored and violations are never
+reported back. (The `/embed` widget is the exception: it is a separate static
+document, and the worker sets a `frame-ancestors *` response header on it —
+see [`compute-js/src/embedWidget.js`](./compute-js/src/embedWidget.js).)
 
 ## Key Dependencies
 
