@@ -122,4 +122,27 @@ describe('fetchListVideos', () => {
     expect(videos.map(video => video.id)).toEqual([firstNew.id, second.id]);
     expect(videos[0]?.title).toBe('New first');
   });
+
+  it('breaks a same-timestamp revision tie by keeping the lowest event id', async () => {
+    const lowerId = videoEvent({
+      id: '4'.repeat(64),
+      created_at: 200,
+      tags: [['d', 'first'], ['title', 'Lower id']],
+    });
+    const higherId = videoEvent({
+      id: '7'.repeat(64),
+      created_at: 200,
+      tags: [['d', 'first'], ['title', 'Higher id']],
+    });
+    const members: VideoListMember[] = [
+      { type: 'a', value: `${SHORT_VIDEO_KIND}:${OWNER}:first` },
+    ];
+    // Return the higher id first so selection cannot depend on query order.
+    const query = vi.fn().mockResolvedValue([higherId, lowerId]);
+
+    const videos = await fetchListVideos({ query }, members, new AbortController().signal);
+
+    expect(videos.map(video => video.id)).toEqual([lowerId.id]);
+    expect(videos[0]?.title).toBe('Lower id');
+  });
 });

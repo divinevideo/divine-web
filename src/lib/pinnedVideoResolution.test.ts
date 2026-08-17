@@ -76,4 +76,26 @@ describe('resolvePinnedVideosFromEvents', () => {
     expect(videos.map(video => video.id)).toEqual([second.id, firstNew.id]);
     expect(videos[1]?.title).toBe('New first');
   });
+
+  it('breaks a same-timestamp revision tie by keeping the lowest event id', () => {
+    const lowerId = videoEvent({
+      id: '2'.repeat(64),
+      created_at: 200,
+      tags: [['d', 'first'], ['title', 'Lower id']],
+    });
+    const higherId = videoEvent({
+      id: '9'.repeat(64),
+      created_at: 200,
+      tags: [['d', 'first'], ['title', 'Higher id']],
+    });
+
+    // Return the higher id first so selection cannot depend on query order.
+    const videos = resolvePinnedVideosFromEvents(
+      [`${SHORT_VIDEO_KIND}:${OWNER}:first`],
+      [higherId, lowerId],
+    );
+
+    expect(videos.map(video => video.id)).toEqual([lowerId.id]);
+    expect(videos[0]?.title).toBe('Lower id');
+  });
 });
