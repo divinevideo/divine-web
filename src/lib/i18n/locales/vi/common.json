@@ -844,7 +844,7 @@
     "loginRequiredDescription": "Bạn cần đăng nhập để quay video",
     "goToHomeButton": "Về trang chủ",
     "createTitle": "Tạo một Vine",
-    "createSubtitle": "Quay một video lặp 6 giây để chia sẻ với cả thế giới",
+    "createSubtitle": "Quay một video vòng lặp 6 giây để chia sẻ với cả thế giới",
     "recordWithCameraButton": "Quay bằng camera",
     "cancelButton": "Hủy"
   },
@@ -1066,8 +1066,8 @@
     "unpinErrorDescription": "Không bỏ ghim được. Thử lại nhé?"
   },
   "indexPage": {
-    "seoTitle": "Divine Web - Video lặp ngắn trên Nostr",
-    "seoDescription": "Xem và chia sẻ video lặp 6 giây trên mạng Nostr phi tập trung.",
+    "seoTitle": "Divine Web - Video vòng lặp ngắn trên Nostr",
+    "seoDescription": "Xem và chia sẻ video vòng lặp 6 giây trên mạng Nostr phi tập trung.",
     "heading": "Trang chủ",
     "subheadingDefault": "Video từ những người bạn theo dõi",
     "subheadingCount_one": "Video từ {{count}} người bạn theo dõi",

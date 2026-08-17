@@ -3,7 +3,7 @@ import { resources } from './index';
 
 const PLURAL_SUFFIXES = new Set(['zero', 'one', 'two', 'few', 'many', 'other']);
 const LOCALES_REQUIRING_FULL_PLURAL_COVERAGE = new Set(['ar']);
-const BARE_LOOP_TOKEN = /\bloops?\b/i;
+const BARE_LOOP_TOKEN = /\bloop(s|ing)?\b/i;
 const LOOP_GLOSSARY = {
   ms: 'gelung',
   ur: 'لوپ',
