@@ -444,8 +444,8 @@ describe('DiscoveryPage', () => {
       sponsorName: null,
     };
 
-    function renderAt(route: string) {
-      mockFeaturedTab.current = FEATURED;
+    function renderAt(route: string, featured: ResolvedFeaturedTab = FEATURED) {
+      mockFeaturedTab.current = featured;
       return render(
         <MemoryRouter initialEntries={[route]}>
           <Routes>
@@ -456,19 +456,34 @@ describe('DiscoveryPage', () => {
     }
 
     // The pill used to clip because every trigger shared an equal `1fr` grid
-    // column while only the featured one carried a third child. The featured
-    // trigger now sizes to its content and the rest split what is left.
-    it('sizes the featured trigger to its content and lets the others share the rest', () => {
+    // column while only the featured one carried a third child. From `sm` up
+    // the featured trigger sizes to its content and the rest split what is
+    // left. Below `sm` nobody has a label or a pill, so it stays on the equal
+    // share rather than collapsing onto its bare icon beside four wide
+    // siblings.
+    it('sizes the featured trigger to its content from sm up and lets the others share the rest', () => {
       renderAt('/discovery/seasonal-theme');
 
       const featured = screen.getByRole('tab', { name: 'Destacado: Skate week' });
-      expect(featured).toHaveClass('shrink-0');
-      expect(featured).not.toHaveClass('flex-1');
+      expect(featured).toHaveClass('flex-1', 'sm:flex-none');
 
       for (const name of ['Clasico', 'Popular', 'Etiquetas']) {
         const trigger = screen.getByRole('tab', { name });
         expect(trigger).toHaveClass('flex-1', 'min-w-0');
+        expect(trigger).not.toHaveClass('sm:flex-none');
       }
+    });
+
+    // A featured tab need not carry a pill at all, and without one there is no
+    // third child to make room for.
+    it('leaves a featured tab without a pill sized like every other trigger', () => {
+      renderAt('/discovery/seasonal-theme', { ...FEATURED, pillLabel: null });
+
+      const featured = screen.getByRole('tab', { name: 'Destacado' });
+      expect(featured).toHaveClass('flex-1');
+      expect(featured).not.toHaveClass('sm:flex-none');
+      expect(featured).not.toHaveClass('group');
+      expect(screen.queryByTestId('featured-tab-pill')).toBeNull();
     });
 
     it('renders the pill label in full rather than a clipped copy', () => {

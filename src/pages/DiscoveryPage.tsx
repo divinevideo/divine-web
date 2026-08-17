@@ -250,17 +250,21 @@ export function DiscoveryPage() {
             Equal `1fr` columns used to clip the featured pill: only the
             featured trigger carries a third child, so it needed more room than
             the average column it was allotted and the pill was the child that
-            gave. The featured trigger now sizes to its content and the rest
-            share what is left.
+            gave. The featured trigger now sizes to its content instead, from
+            `sm` up. Not below: there the label and the pill are both hidden, so
+            a content-sized trigger collapses onto its bare icon while its four
+            siblings stretch, and every phone gets a lopsided bar. A featured
+            tab with no pill has no third child either, so it keeps the equal
+            share at every width.
           */}
           <TabsList className="flex w-full gap-1">
-            {tabItems.map(({ value, label, Icon, pillLabel, featuredTab: featuredConfig }) => (
+            {tabItems.map(({ value, label, Icon, pillLabel }) => (
               <TabsTrigger
                 key={value}
                 value={value}
                 className={cn(
-                  'min-w-0 gap-1.5 px-2 sm:gap-2 sm:px-4',
-                  featuredConfig ? 'group shrink-0' : 'flex-1'
+                  'min-w-0 flex-1 gap-1.5 px-2 sm:gap-2 sm:px-4',
+                  pillLabel && 'group sm:flex-none'
                 )}
                 aria-label={pillLabel ? `${label}: ${pillLabel}` : label}
               >
