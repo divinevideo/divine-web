@@ -1,26 +1,14 @@
 // ABOUTME: Resolves ordered video list members into parsed video grid data
 
 import type { NostrEvent, NostrFilter } from '@nostrify/nostrify';
-import { SHORT_VIDEO_KIND, type ParsedVideoData } from '@/types/video';
+import type { ParsedVideoData } from '@/types/video';
 import {
   LIST_VIDEO_KINDS,
   type VideoListMember,
 } from '@/lib/parseVideoListFromEvent';
+import { parseVideoDataFromEvent } from '@/lib/parsedVideoData';
 import { isNewerParsedVideo } from '@/lib/parsedVideoSelection';
 import { parseVideoCoordinate, videoCoordinateKey } from '@/lib/videoCoordinates';
-import {
-  getLoopCount,
-  getOriginalCommentCount,
-  getOriginalLikeCount,
-  getOriginalRepostCount,
-  getOriginalVineTimestamp,
-  getOriginPlatform,
-  getProofModeData,
-  getThumbnailUrl,
-  getVineId,
-  isVineMigrated,
-  parseVideoEvent,
-} from '@/lib/videoParser';
 
 export interface ListVideoData extends ParsedVideoData {
   listMember: VideoListMember;
@@ -79,39 +67,6 @@ function buildListVideoFilters(members: VideoListMember[]): NostrFilter[] {
   return filters;
 }
 
-function parseListVideoEvent(event: NostrEvent): ParsedVideoData | null {
-  const vineId = getVineId(event);
-  if (!vineId) return null;
-
-  const videoEvent = parseVideoEvent(event);
-  if (!videoEvent?.videoMetadata?.url) return null;
-
-  return {
-    id: event.id,
-    pubkey: event.pubkey,
-    kind: SHORT_VIDEO_KIND,
-    createdAt: event.created_at,
-    originalVineTimestamp: getOriginalVineTimestamp(event),
-    content: event.content,
-    videoUrl: videoEvent.videoMetadata.url,
-    fallbackVideoUrls: videoEvent.videoMetadata?.fallbackUrls,
-    hlsUrl: videoEvent.videoMetadata?.hlsUrl,
-    thumbnailUrl: getThumbnailUrl(videoEvent),
-    title: videoEvent.title,
-    duration: videoEvent.videoMetadata?.duration,
-    hashtags: videoEvent.hashtags || [],
-    vineId,
-    loopCount: getLoopCount(event),
-    likeCount: getOriginalLikeCount(event),
-    repostCount: getOriginalRepostCount(event),
-    commentCount: getOriginalCommentCount(event),
-    proofMode: getProofModeData(event),
-    origin: getOriginPlatform(event),
-    isVineMigrated: isVineMigrated(event),
-    reposts: [],
-  };
-}
-
 export async function fetchListVideos(
   nostr: { query: (filters: NostrFilter[], options: { signal: AbortSignal }) => Promise<NostrEvent[]> },
   members: VideoListMember[],
@@ -127,7 +82,7 @@ export async function fetchListVideos(
   const coordinateMap = new Map<string, ParsedVideoData>();
 
   for (const event of events) {
-    const video = parseListVideoEvent(event);
+    const video = parseVideoDataFromEvent(event);
     if (!video) continue;
 
     eventMap.set(event.id, video);
