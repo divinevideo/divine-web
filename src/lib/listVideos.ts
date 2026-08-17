@@ -6,6 +6,8 @@ import {
   LIST_VIDEO_KINDS,
   type VideoListMember,
 } from '@/lib/parseVideoListFromEvent';
+import { isNewerParsedVideo } from '@/lib/parsedVideoSelection';
+import { parseVideoCoordinate, videoCoordinateKey } from '@/lib/videoCoordinates';
 import {
   getLoopCount,
   getOriginalCommentCount,
@@ -24,6 +26,7 @@ export interface ListVideoData extends ParsedVideoData {
   listMember: VideoListMember;
 }
 
+// Keep id filters comfortably below common relay request-size limits.
 const IDS_CHUNK_SIZE = 200;
 
 function chunk<T>(items: T[], size: number): T[][] {
@@ -36,9 +39,8 @@ function chunk<T>(items: T[], size: number): T[][] {
 
 function coordinateKey(member: VideoListMember): string | null {
   if (member.type !== 'a') return null;
-  const [kind, pubkey, dTag] = member.value.split(':');
-  if (!LIST_VIDEO_KINDS.includes(Number(kind)) || !pubkey || !dTag) return null;
-  return `${pubkey}:${dTag}`;
+  const coordinate = parseVideoCoordinate(member.value, LIST_VIDEO_KINDS);
+  return coordinate ? videoCoordinateKey(coordinate) : null;
 }
 
 function buildListVideoFilters(members: VideoListMember[]): NostrFilter[] {
@@ -51,24 +53,26 @@ function buildListVideoFilters(members: VideoListMember[]): NostrFilter[] {
     filters.push({
       kinds: LIST_VIDEO_KINDS,
       ids,
-      limit: ids.length,
     });
   }
 
   const pubkeyGroups = new Map<string, string[]>();
   for (const member of members) {
     if (member.type !== 'a') continue;
-    const [kind, pubkey, dTag] = member.value.split(':');
-    if (!LIST_VIDEO_KINDS.includes(Number(kind)) || !pubkey || !dTag) continue;
-    pubkeyGroups.set(pubkey, [...(pubkeyGroups.get(pubkey) ?? []), dTag]);
+    const coordinate = parseVideoCoordinate(member.value, LIST_VIDEO_KINDS);
+    if (!coordinate) continue;
+    pubkeyGroups.set(coordinate.pubkey, [
+      ...(pubkeyGroups.get(coordinate.pubkey) ?? []),
+      coordinate.dTag,
+    ]);
   }
 
   for (const [pubkey, dTags] of pubkeyGroups) {
+    const uniqueDTags = Array.from(new Set(dTags));
     filters.push({
       kinds: LIST_VIDEO_KINDS,
       authors: [pubkey],
-      '#d': Array.from(new Set(dTags)),
-      limit: dTags.length,
+      '#d': uniqueDTags,
     });
   }
 
@@ -127,7 +131,13 @@ export async function fetchListVideos(
     if (!video) continue;
 
     eventMap.set(event.id, video);
-    coordinateMap.set(`${event.pubkey}:${video.vineId}`, video);
+    if (!video.vineId) continue;
+
+    const key = videoCoordinateKey({ pubkey: event.pubkey, dTag: video.vineId });
+    const existing = coordinateMap.get(key);
+    if (!existing || isNewerParsedVideo(video, existing)) {
+      coordinateMap.set(key, video);
+    }
   }
 
   const orderedVideos: ListVideoData[] = [];

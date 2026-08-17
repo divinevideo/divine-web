@@ -11,17 +11,18 @@ const OWNER = 'a'.repeat(64);
 function videoEvent(overrides: Partial<NostrEvent> = {}): NostrEvent {
   const id = overrides.id ?? '1'.repeat(64);
   const dTag = overrides.tags?.find(tag => tag[0] === 'd')?.[1] ?? `d-${id[0]}`;
+  const title = overrides.tags?.find(tag => tag[0] === 'title')?.[1] ?? `Video ${dTag}`;
   return {
     ...overrides,
     id,
     pubkey: overrides.pubkey ?? OWNER,
     kind: overrides.kind ?? SHORT_VIDEO_KIND,
-    created_at: 1700,
+    created_at: overrides.created_at ?? 1700,
     tags: [
       ['d', dTag],
-      ['title', `Video ${dTag}`],
+      ['title', title],
       ['imeta', `url https://media.example/${dTag}.mp4`, 'm video/mp4'],
-      ...(overrides.tags?.filter(tag => tag[0] !== 'd') ?? []),
+      ...(overrides.tags?.filter(tag => tag[0] !== 'd' && tag[0] !== 'title') ?? []),
     ],
     content: '',
     sig: 's'.repeat(128),
@@ -38,8 +39,30 @@ describe('fetchListVideos', () => {
 
     const filters = query.mock.calls[0][0] as NostrFilter[];
     expect(filters).toHaveLength(2);
-    expect(filters[0]).toMatchObject({ kinds: LIST_VIDEO_KINDS, ids: ids.slice(0, 200), limit: 200 });
-    expect(filters[1]).toMatchObject({ kinds: LIST_VIDEO_KINDS, ids: ids.slice(200), limit: 1 });
+    expect(filters[0]).toMatchObject({ kinds: LIST_VIDEO_KINDS, ids: ids.slice(0, 200) });
+    expect(filters[1]).toMatchObject({ kinds: LIST_VIDEO_KINDS, ids: ids.slice(200) });
+    expect(filters[0]).not.toHaveProperty('limit');
+    expect(filters[1]).not.toHaveProperty('limit');
+  });
+
+  it('builds addressable filters without exact-count relay limits', async () => {
+    const members: VideoListMember[] = [
+      { type: 'a', value: `${SHORT_VIDEO_KIND}:${OWNER}:first` },
+      { type: 'a', value: `${SHORT_VIDEO_KIND}:${OWNER}:second` },
+      { type: 'a', value: `${SHORT_VIDEO_KIND}:${OWNER}:second` },
+    ];
+    const query = vi.fn().mockResolvedValue([]);
+
+    await fetchListVideos({ query }, members, new AbortController().signal);
+
+    const filters = query.mock.calls[0][0] as NostrFilter[];
+    expect(filters).toEqual([
+      {
+        kinds: LIST_VIDEO_KINDS,
+        authors: [OWNER],
+        '#d': ['first', 'second'],
+      },
+    ]);
   });
 
   it('merges e and a results, dedupes, and returns videos in member order', async () => {
@@ -70,5 +93,33 @@ describe('fetchListVideos', () => {
     const videos = await fetchListVideos({ query }, members, new AbortController().signal);
 
     expect(videos.map(video => video.id)).toEqual([eventId]);
+  });
+
+  it('keeps every resolvable coordinate and picks the newest revision', async () => {
+    const firstOld = videoEvent({
+      id: '4'.repeat(64),
+      created_at: 100,
+      tags: [['d', 'first'], ['title', 'Old first']],
+    });
+    const firstNew = videoEvent({
+      id: '5'.repeat(64),
+      created_at: 200,
+      tags: [['d', 'first'], ['title', 'New first']],
+    });
+    const second = videoEvent({
+      id: '6'.repeat(64),
+      created_at: 150,
+      tags: [['d', 'second']],
+    });
+    const members: VideoListMember[] = [
+      { type: 'a', value: `${SHORT_VIDEO_KIND}:${OWNER}:first` },
+      { type: 'a', value: `${SHORT_VIDEO_KIND}:${OWNER}:second` },
+    ];
+    const query = vi.fn().mockResolvedValue([firstNew, second, firstOld]);
+
+    const videos = await fetchListVideos({ query }, members, new AbortController().signal);
+
+    expect(videos.map(video => video.id)).toEqual([firstNew.id, second.id]);
+    expect(videos[0]?.title).toBe('New first');
   });
 });
