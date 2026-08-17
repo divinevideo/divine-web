@@ -70,6 +70,7 @@
     "hot": "Popular",
     "new": "Nou",
     "featured": "Recomandat",
+    "paidPartnership": "Parteneriat plătit cu <bdi>{{sponsorName}}</bdi>",
     "tags": "Etichete",
     "verifiedOnly": "Creat de oameni",
     "verifiedOnlyHint": "Afiseaza doar videoclipuri cu verificare ProofMode",

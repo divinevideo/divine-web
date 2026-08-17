@@ -8,6 +8,20 @@ import DiscoveryPage from './DiscoveryPage';
 import type { CategoryWithConfig } from '@/hooks/useCategories';
 import type { ResolvedFeaturedTab } from '@/types/featuredTabs';
 
+function getPartnershipDisclosure(text: string): HTMLElement {
+  return screen.getByText(
+    (_, element) => element?.textContent === text,
+    { selector: 'span' },
+  );
+}
+
+function queryPartnershipDisclosure(): HTMLElement | null {
+  return screen.queryByText(
+    (_, element) => element?.textContent?.includes('colaboración pagada') ?? false,
+    { selector: 'span' },
+  );
+}
+
 const {
   mockNavigate,
   mockCategories,
@@ -360,7 +374,9 @@ describe('DiscoveryPage', () => {
     );
 
     expect(screen.getByTestId('video-feed-featured')).toHaveAttribute('data-featured-tab-id', 'ft_1234abcd');
-    expect(screen.getByText('In paid partnership with Acme Bikes')).toBeInTheDocument();
+    const disclosure = getPartnershipDisclosure('En colaboración pagada con Acme Bikes');
+    expect(disclosure).toBeInTheDocument();
+    expect(disclosure.querySelector('bdi')).toHaveTextContent('Acme Bikes');
     expect(screen.getByRole('tab', { name: 'Destacado: Skate week' })).toHaveTextContent('Skate week');
     expect(screen.getAllByText(/Acme Bikes/)).toHaveLength(1);
   });
@@ -382,7 +398,7 @@ describe('DiscoveryPage', () => {
       </MemoryRouter>,
     );
 
-    expect(screen.queryByText(/In paid partnership with/)).not.toBeInTheDocument();
+    expect(queryPartnershipDisclosure()).not.toBeInTheDocument();
   });
 
   it.each(['empty', 'failed'] as const)(
@@ -405,10 +421,33 @@ describe('DiscoveryPage', () => {
         </MemoryRouter>,
       );
 
-      expect(screen.getByText('In paid partnership with Acme Bikes')).toBeInTheDocument();
+      expect(getPartnershipDisclosure('En colaboración pagada con Acme Bikes')).toBeInTheDocument();
       expect(screen.getByText(feedState)).toBeInTheDocument();
     },
   );
+
+  it('wraps the sponsor name with bdi for RTL disclosure copy', async () => {
+    window.localStorage.setItem(LOCALE_STORAGE_KEY, 'ar');
+    await initializeI18n({ force: true, languages: ['ar'] });
+    mockFeaturedTab.current = {
+      id: 'ft_1234abcd',
+      slug: 'seasonal-theme',
+      label: 'Especial',
+      pillLabel: null,
+      sponsorName: 'Acme Bikes',
+    };
+
+    render(
+      <MemoryRouter initialEntries={['/discovery/seasonal-theme']}>
+        <Routes>
+          <Route path="/discovery/:tab" element={<DiscoveryPage />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    const disclosure = getPartnershipDisclosure('شراكة مدفوعة مع Acme Bikes');
+    expect(disclosure.querySelector('bdi')).toHaveTextContent('Acme Bikes');
+  });
 
   it('names every tab trigger when labels are visually hidden on mobile', () => {
     mockFeaturedTab.current = {

@@ -70,6 +70,7 @@
     "hot": "Em alta",
     "new": "Novo",
     "featured": "Destaque",
+    "paidPartnership": "Parceria paga com <bdi>{{sponsorName}}</bdi>",
     "tags": "Tags",
     "verifiedOnly": "Feito por humanos",
     "verifiedOnlyHint": "Mostrando apenas videos com verificacao ProofMode",

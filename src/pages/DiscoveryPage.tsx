@@ -3,7 +3,7 @@
 // ABOUTME: For You tab shows personalized recommendations when user is logged in
 
 import { type ComponentType, useEffect, useMemo, useState } from 'react';
-import { useTranslation } from 'react-i18next';
+import { Trans, useTranslation } from 'react-i18next';
 import { useParams } from 'react-router-dom';
 import { useSubdomainNavigate } from '@/hooks/useSubdomainNavigate';
 import { VideoFeed } from '@/components/VideoFeed';
@@ -318,7 +318,12 @@ export function DiscoveryPage() {
               {activeTabItem.featuredTab.sponsorName && (
                 <div className="flex justify-center">
                   <span className="inline-flex max-w-full rounded-full border border-border bg-background px-3 py-1 text-center text-sm font-medium text-foreground">
-                    In paid partnership with {activeTabItem.featuredTab.sponsorName}
+                    {/* bdi keeps Latin sponsor names stable inside RTL disclosure copy. */}
+                    <Trans
+                      i18nKey="discovery.paidPartnership"
+                      values={{ sponsorName: activeTabItem.featuredTab.sponsorName }}
+                      components={{ bdi: <bdi /> }}
+                    />
                   </span>
                 </div>
               )}

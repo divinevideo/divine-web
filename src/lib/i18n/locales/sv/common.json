@@ -70,6 +70,7 @@
     "hot": "Hett",
     "new": "Nytt",
     "featured": "Utvalt",
+    "paidPartnership": "Betalt partnerskap med <bdi>{{sponsorName}}</bdi>",
     "tags": "Taggar",
     "verifiedOnly": "Skapad av manniskor",
     "verifiedOnlyHint": "Visar endast videor med ProofMode-verifiering",

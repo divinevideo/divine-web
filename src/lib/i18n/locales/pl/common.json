@@ -70,6 +70,7 @@
     "hot": "Gorace",
     "new": "Nowe",
     "featured": "Polecane",
+    "paidPartnership": "Płatna współpraca z <bdi>{{sponsorName}}</bdi>",
     "tags": "Tagi",
     "verifiedOnly": "Stworzone przez ludzi",
     "verifiedOnlyHint": "Pokazuje tylko filmy z weryfikacja ProofMode",

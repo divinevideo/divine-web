@@ -70,6 +70,7 @@
     "hot": "火爆",
     "new": "最新",
     "featured": "精选",
+    "paidPartnership": "与 <bdi>{{sponsorName}}</bdi> 的付费合作",
     "tags": "标签",
     "verifiedOnly": "真人创作",
     "verifiedOnlyHint": "只显示通过 ProofMode 验证的视频",

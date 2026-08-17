@@ -70,6 +70,7 @@
     "hot": "Populer",
     "new": "Baru",
     "featured": "Unggulan",
+    "paidPartnership": "Kemitraan berbayar dengan <bdi>{{sponsorName}}</bdi>",
     "tags": "Tag",
     "verifiedOnly": "Buatan manusia",
     "verifiedOnlyHint": "Hanya menampilkan video dengan verifikasi ProofMode",
