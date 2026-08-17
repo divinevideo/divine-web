@@ -338,7 +338,7 @@ describe('DiscoveryPage', () => {
 
     expect(screen.getByTestId('video-feed-featured')).toHaveAttribute('data-featured-tab-id', 'ft_1234abcd');
     expect(screen.getByText('In paid partnership with Acme Bikes')).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: 'Destacado' })).toHaveTextContent('Skate week');
+    expect(screen.getByRole('tab', { name: 'Destacado: Skate week' })).toHaveTextContent('Skate week');
     expect(screen.getAllByText(/Acme Bikes/)).toHaveLength(1);
   });
 
@@ -410,7 +410,7 @@ describe('DiscoveryPage', () => {
     expect(screen.getAllByRole('tab').map((tab) => tab.getAttribute('aria-label'))).toEqual([
       'Clasico',
       'Popular',
-      'Destacado',
+      'Destacado: Skate week',
       'Etiquetas',
     ]);
   });

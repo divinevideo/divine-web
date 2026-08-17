@@ -258,7 +258,7 @@ export function DiscoveryPage() {
                 key={value}
                 value={value}
                 className="min-w-0 gap-1.5 px-2 sm:gap-2 sm:px-4"
-                aria-label={label}
+                aria-label={pillLabel ? `${label}: ${pillLabel}` : label}
               >
                 <Icon className="h-4 w-4 shrink-0" />
                 <span className="hidden min-w-0 truncate sm:inline" title={label}>{label}</span>
