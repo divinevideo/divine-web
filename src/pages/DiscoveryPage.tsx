@@ -24,24 +24,25 @@ interface DiscoveryTabItem {
   value: string;
   label: string;
   Icon: ComponentType<{ className?: string }>;
-  disclosureLabel?: string | null;
+  pillLabel?: string | null;
   featuredTab?: ResolvedFeaturedTab;
 }
 
 function insertFeaturedTab(
   tabs: DiscoveryTabItem[],
-  featuredTab: ResolvedFeaturedTab | null
+  featuredTab: ResolvedFeaturedTab | null,
+  featuredLabel: string
 ): DiscoveryTabItem[] {
   if (!featuredTab) return tabs;
 
   const item: DiscoveryTabItem = {
     value: featuredTab.slug,
-    label: featuredTab.label,
+    label: featuredLabel,
     // Not Hash: the hashtags tab already owns that glyph, and below `sm` the
     // labels are hidden, so a second Hash would make the editorial tab
     // indistinguishable from it on mobile.
     Icon: Confetti,
-    disclosureLabel: featuredTab.disclosureLabel,
+    pillLabel: featuredTab.pillLabel,
     featuredTab,
   };
   const position = featuredTab.position;
@@ -106,8 +107,8 @@ export function DiscoveryPage() {
   }, [isLoggedIn, t]);
 
   const tabItems = useMemo(
-    () => insertFeaturedTab(baseTabs, featuredTab),
-    [baseTabs, featuredTab]
+    () => insertFeaturedTab(baseTabs, featuredTab, t('discovery.featured')),
+    [baseTabs, featuredTab, t]
   );
 
   const allowedTabs = useMemo(() => {
@@ -252,21 +253,21 @@ export function DiscoveryPage() {
             className="grid w-full gap-1"
             style={{ gridTemplateColumns: `repeat(${tabItems.length}, minmax(0, 1fr))` }}
           >
-            {tabItems.map(({ value, label, Icon, disclosureLabel }) => (
+            {tabItems.map(({ value, label, Icon, pillLabel }) => (
               <TabsTrigger
                 key={value}
                 value={value}
                 className="min-w-0 gap-1.5 px-2 sm:gap-2 sm:px-4"
-                aria-label={disclosureLabel ? `${label}: ${disclosureLabel}` : label}
+                aria-label={label}
               >
                 <Icon className="h-4 w-4 shrink-0" />
                 <span className="hidden min-w-0 truncate sm:inline" title={label}>{label}</span>
-                {disclosureLabel && (
+                {pillLabel && (
                   <span
                     className="hidden max-w-[7rem] shrink truncate rounded-full bg-background/80 px-1.5 py-0.5 text-[10px] leading-none text-foreground sm:inline"
-                    title={disclosureLabel}
+                    title={pillLabel}
                   >
-                    {disclosureLabel}
+                    {pillLabel}
                   </span>
                 )}
               </TabsTrigger>
@@ -318,10 +319,10 @@ export function DiscoveryPage() {
 
           {activeTabItem?.featuredTab && (
             <TabsContent value={activeTabItem.featuredTab.slug} className="mt-0 space-y-6">
-              {activeTabItem.featuredTab.disclosureLabel && (
+              {activeTabItem.featuredTab.sponsorName && (
                 <div className="flex justify-center">
-                  <span className="inline-flex max-w-full rounded-full border border-border bg-background px-3 py-1 text-sm font-medium text-foreground">
-                    {activeTabItem.featuredTab.disclosureLabel}
+                  <span className="inline-flex max-w-full rounded-full border border-border bg-background px-3 py-1 text-center text-sm font-medium text-foreground">
+                    In paid partnership with {activeTabItem.featuredTab.sponsorName}
                   </span>
                 </div>
               )}

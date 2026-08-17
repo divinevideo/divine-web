@@ -8,10 +8,8 @@ import type {
 } from '@/types/featuredTabs';
 
 const MAX_LABEL_LENGTH = 24;
-// A disclosure is the one server-supplied string here whose meaning is legal
-// rather than decorative — "Sponsored", "Paid partnership". Room for the phrases
-// that matter, and the tab renders it in full rather than clipping it again.
-const MAX_DISCLOSURE_LENGTH = 24;
+const MAX_PILL_LABEL_LENGTH = 24;
+const MAX_SPONSOR_NAME_LENGTH = 24;
 const DISCOVERY_TAB_NAMES = new Set<DiscoveryTabName>(['foryou', 'classics', 'hot', 'hashtags']);
 // The slug is both the `/discovery/:tab` route segment and the Radix Tabs value.
 // The route comparison lowercases `params.tab`, so anything outside this shape
@@ -107,10 +105,17 @@ export function parseFeaturedTabPosition(value: unknown): FeaturedTabPosition | 
   return null;
 }
 
-export function parseFeaturedTabDisclosure(value: unknown): string | null {
+export function parseFeaturedTabPillLabel(value: unknown): string | null {
   if (typeof value !== 'string') return null;
 
-  const cleaned = cleanShortString(value, MAX_DISCLOSURE_LENGTH);
+  const cleaned = cleanShortString(value, MAX_PILL_LABEL_LENGTH);
+  return cleaned || null;
+}
+
+export function parseFeaturedTabSponsorName(value: unknown): string | null {
+  if (typeof value !== 'string') return null;
+
+  const cleaned = cleanShortString(value, MAX_SPONSOR_NAME_LENGTH);
   return cleaned || null;
 }
 

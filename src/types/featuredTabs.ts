@@ -14,6 +14,7 @@ export interface FeaturedTabConfigRaw {
   ends_at: string;
   enabled: boolean;
   visible_to_minors: boolean;
+  pill_label: unknown;
   disclosure_label: unknown;
   has_content: boolean;
 }
@@ -28,7 +29,8 @@ export interface ResolvedFeaturedTab {
   slug: string;
   label: string;
   position: FeaturedTabPosition | null;
-  disclosureLabel: string | null;
+  pillLabel: string | null;
+  sponsorName: string | null;
 }
 
 export interface FeaturedTabVideoRaw extends Omit<FunnelcakeVideoRaw, 'created_at'> {

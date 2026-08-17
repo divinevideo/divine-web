@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
-import { parseFeaturedTabDisclosure, parseFeaturedTabPosition, pickFeaturedTabLabel, transformFeaturedTabVideosResponse } from './featuredTabsTransform';
+import {
+  parseFeaturedTabPillLabel,
+  parseFeaturedTabPosition,
+  parseFeaturedTabSponsorName,
+  pickFeaturedTabLabel,
+  transformFeaturedTabVideosResponse,
+} from './featuredTabsTransform';
 
 describe('featured tab transforms', () => {
   it('picks a locale label and falls back to default with a length cap', () => {
@@ -32,17 +38,27 @@ describe('featured tab transforms', () => {
       .toEqual({ before: 'hashtags' });
   });
 
-  it('only accepts string disclosure labels and keeps the phrase readable', () => {
-    expect(parseFeaturedTabDisclosure({ text: 'Ad' })).toBeNull();
-    expect(parseFeaturedTabDisclosure(' Sponsored collection ')).toBe('Sponsored collection');
-    expect(parseFeaturedTabDisclosure('Paid partnership')).toBe('Paid partnership');
+  it('only accepts string pill labels and keeps them readable', () => {
+    expect(parseFeaturedTabPillLabel({ text: 'Launch' })).toBeNull();
+    expect(parseFeaturedTabPillLabel(' Skate week ')).toBe('Skate week');
+    expect(parseFeaturedTabPillLabel('This pill label is unexpectedly long'))
+      .toBe('This pill label is unexp');
+  });
+
+  it('only accepts string sponsor names and keeps them readable', () => {
+    expect(parseFeaturedTabSponsorName({ text: 'Acme Bikes' })).toBeNull();
+    expect(parseFeaturedTabSponsorName(' Acme Bikes ')).toBe('Acme Bikes');
+    expect(parseFeaturedTabSponsorName('')).toBeNull();
+    expect(parseFeaturedTabSponsorName('This sponsor name is unexpectedly long'))
+      .toBe('This sponsor name is une');
   });
 
   it('strips invisible formatting from server-supplied strings', () => {
     // A bidi override could otherwise reorder the tab bar around the label.
     expect(pickFeaturedTabLabel({ default: 'Sea\u202esonal' }, 'en')).toBe('Seasonal');
-    expect(parseFeaturedTabDisclosure('Spon\u200bsored')).toBe('Sponsored');
-    expect(parseFeaturedTabDisclosure('\u200b\u202e')).toBeNull();
+    expect(parseFeaturedTabPillLabel('Ska\u200bte')).toBe('Skate');
+    expect(parseFeaturedTabSponsorName('Acme\u200b Bikes')).toBe('Acme Bikes');
+    expect(parseFeaturedTabSponsorName('\u200b\u202e')).toBeNull();
   });
 
   it('maps featured video envelopes without reordering server data', () => {

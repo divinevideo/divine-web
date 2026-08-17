@@ -62,6 +62,7 @@ function makeResponse(overrides: Partial<FeaturedTabsResponse['featured_tabs'][n
         ends_at: '2026-09-01T00:00:00Z',
         enabled: true,
         visible_to_minors: true,
+        pill_label: null,
         disclosure_label: null,
         has_content: true,
         ...overrides,
@@ -122,7 +123,8 @@ describe('useFeaturedTab', () => {
       slug: 'seasonal-theme',
       label: 'Especial',
       position: { after: 'hot' },
-      disclosureLabel: null,
+      pillLabel: null,
+      sponsorName: null,
     });
   });
 

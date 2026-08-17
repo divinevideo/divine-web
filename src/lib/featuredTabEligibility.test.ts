@@ -13,6 +13,7 @@ function makeConfig(overrides: Partial<FeaturedTabConfigRaw> = {}): FeaturedTabC
     ends_at: '2026-09-01T00:00:00Z',
     enabled: true,
     visible_to_minors: true,
+    pill_label: null,
     disclosure_label: null,
     has_content: true,
     ...overrides,
@@ -69,7 +70,8 @@ describe('featured tab eligibility', () => {
       makeConfig({
         id: 'ft_eligible',
         label: { default: 'Default', es: 'Especial' },
-        disclosure_label: 'Featured',
+        pill_label: 'Skate week',
+        disclosure_label: 'Acme Bikes',
       }),
     ], {
       now,
@@ -82,7 +84,31 @@ describe('featured tab eligibility', () => {
       slug: 'seasonal-theme',
       label: 'Especial',
       position: { after: 'hot' },
-      disclosureLabel: 'Featured',
+      pillLabel: 'Skate week',
+      sponsorName: 'Acme Bikes',
+    });
+  });
+
+  it('resolves empty sponsor names as unsponsored', () => {
+    const selected = selectFeaturedTab([
+      makeConfig({
+        id: 'ft_eligible',
+        pill_label: 'Skate week',
+        disclosure_label: '   ',
+      }),
+    ], {
+      now,
+      minorState: 'not_protected',
+      locale: 'en',
+    });
+
+    expect(selected).toEqual({
+      id: 'ft_eligible',
+      slug: 'seasonal-theme',
+      label: 'Seasonal',
+      position: { after: 'hot' },
+      pillLabel: 'Skate week',
+      sponsorName: null,
     });
   });
 
@@ -102,7 +128,12 @@ describe('featured tab eligibility', () => {
   it('falls through to the next eligible configuration when a slug is unusable', () => {
     const selected = selectFeaturedTab([
       makeConfig({ id: 'ft_bad_slug', slug: 'hashtags' }),
-      makeConfig({ id: 'ft_eligible', label: { default: 'Default', es: 'Especial' }, disclosure_label: 'Featured' }),
+      makeConfig({
+        id: 'ft_eligible',
+        label: { default: 'Default', es: 'Especial' },
+        pill_label: 'Skate week',
+        disclosure_label: 'Acme Bikes',
+      }),
     ], {
       now,
       minorState: 'not_protected',
@@ -114,7 +145,8 @@ describe('featured tab eligibility', () => {
       slug: 'seasonal-theme',
       label: 'Especial',
       position: { after: 'hot' },
-      disclosureLabel: 'Featured',
+      pillLabel: 'Skate week',
+      sponsorName: 'Acme Bikes',
     });
   });
 });

@@ -17,6 +17,7 @@ const {
   mockFeaturedResolved,
   mockResolvingJwt,
   mockFeaturedApiUrl,
+  mockFeaturedFeedState,
   mockUseFeaturedTabArgs,
 } = vi.hoisted(() => ({
   mockNavigate: vi.fn(),
@@ -27,6 +28,7 @@ const {
   mockCurrentUser: { current: null as { pubkey: string } | null },
   mockResolvingJwt: { current: false },
   mockFeaturedApiUrl: { current: 'https://api.divine.video' },
+  mockFeaturedFeedState: { current: 'normal' as 'normal' | 'empty' | 'failed' },
   mockUseFeaturedTabArgs: [] as Array<{ apiUrl?: string } | undefined>,
 }));
 
@@ -68,9 +70,17 @@ vi.mock('@/lib/analytics', () => ({
 }));
 
 vi.mock('@/components/VideoFeed', () => ({
-  VideoFeed: ({ feedType, featuredTabId }: { feedType: string; featuredTabId?: string }) => (
-    <div data-testid={`video-feed-${feedType}`} data-featured-tab-id={featuredTabId} />
-  ),
+  VideoFeed: ({ feedType, featuredTabId }: { feedType: string; featuredTabId?: string }) => {
+    const message = feedType === 'featured' && mockFeaturedFeedState.current !== 'normal'
+      ? mockFeaturedFeedState.current
+      : null;
+
+    return (
+      <div data-testid={`video-feed-${feedType}`} data-featured-tab-id={featuredTabId}>
+        {message}
+      </div>
+    );
+  },
 }));
 
 vi.mock('@/components/HashtagExplorer', () => ({
@@ -106,6 +116,7 @@ describe('DiscoveryPage', () => {
     mockResolvingJwt.current = false;
     mockCurrentUser.current = null;
     mockFeaturedApiUrl.current = 'https://api.divine.video';
+    mockFeaturedFeedState.current = 'normal';
     mockUseFeaturedTabArgs.length = 0;
   });
 
@@ -182,7 +193,8 @@ describe('DiscoveryPage', () => {
       slug: 'seasonal-theme',
       label: 'Especial',
       position: { after: 'hot' },
-      disclosureLabel: 'New',
+      pillLabel: 'Skate week',
+      sponsorName: null,
     };
 
     render(
@@ -196,7 +208,7 @@ describe('DiscoveryPage', () => {
     expect(screen.getAllByRole('tab').map((tab) => tab.textContent)).toEqual([
       'Clasico',
       'Popular',
-      'EspecialNew',
+      'DestacadoSkate week',
       'Etiquetas',
     ]);
   });
@@ -207,7 +219,8 @@ describe('DiscoveryPage', () => {
       slug: 'seasonal-theme',
       label: 'Especial',
       position: { after: 'hot' },
-      disclosureLabel: null,
+      pillLabel: null,
+      sponsorName: null,
     });
     mockFeaturedTab.current = config();
 
@@ -265,7 +278,8 @@ describe('DiscoveryPage', () => {
       slug: 'seasonal-theme',
       label: 'Especial',
       position: { after: 'hot' },
-      disclosureLabel: null,
+      pillLabel: null,
+      sponsorName: null,
     };
 
     const tree = () => (
@@ -310,7 +324,8 @@ describe('DiscoveryPage', () => {
       slug: 'seasonal-theme',
       label: 'Especial',
       position: { after: 'hot' },
-      disclosureLabel: 'Sponsored',
+      pillLabel: 'Skate week',
+      sponsorName: 'Acme Bikes',
     };
 
     render(
@@ -322,8 +337,57 @@ describe('DiscoveryPage', () => {
     );
 
     expect(screen.getByTestId('video-feed-featured')).toHaveAttribute('data-featured-tab-id', 'ft_1234abcd');
-    expect(screen.getAllByText('Sponsored')).not.toHaveLength(0);
+    expect(screen.getByText('In paid partnership with Acme Bikes')).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Destacado' })).toHaveTextContent('Skate week');
+    expect(screen.getAllByText(/Acme Bikes/)).toHaveLength(1);
   });
+
+  it('does not render partnership copy for an unsponsored featured tab', () => {
+    mockFeaturedTab.current = {
+      id: 'ft_1234abcd',
+      slug: 'seasonal-theme',
+      label: 'Especial',
+      position: { after: 'hot' },
+      pillLabel: 'Skate week',
+      sponsorName: null,
+    };
+
+    render(
+      <MemoryRouter initialEntries={['/discovery/seasonal-theme']}>
+        <Routes>
+          <Route path="/discovery/:tab" element={<DiscoveryPage />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    expect(screen.queryByText(/In paid partnership with/)).not.toBeInTheDocument();
+  });
+
+  it.each(['empty', 'failed'] as const)(
+    'keeps partnership copy visible when the featured feed is %s',
+    (feedState) => {
+      mockFeaturedFeedState.current = feedState;
+      mockFeaturedTab.current = {
+        id: 'ft_1234abcd',
+        slug: 'seasonal-theme',
+        label: 'Especial',
+        position: { after: 'hot' },
+        pillLabel: null,
+        sponsorName: 'Acme Bikes',
+      };
+
+      render(
+        <MemoryRouter initialEntries={['/discovery/seasonal-theme']}>
+          <Routes>
+            <Route path="/discovery/:tab" element={<DiscoveryPage />} />
+          </Routes>
+        </MemoryRouter>,
+      );
+
+      expect(screen.getByText('In paid partnership with Acme Bikes')).toBeInTheDocument();
+      expect(screen.getByText(feedState)).toBeInTheDocument();
+    },
+  );
 
   it('names every tab trigger when labels are visually hidden on mobile', () => {
     mockFeaturedTab.current = {
@@ -331,7 +395,8 @@ describe('DiscoveryPage', () => {
       slug: 'seasonal-theme',
       label: 'Especial',
       position: { after: 'hot' },
-      disclosureLabel: 'Sponsored',
+      pillLabel: 'Skate week',
+      sponsorName: 'Acme Bikes',
     };
 
     render(
@@ -345,7 +410,7 @@ describe('DiscoveryPage', () => {
     expect(screen.getAllByRole('tab').map((tab) => tab.getAttribute('aria-label'))).toEqual([
       'Clasico',
       'Popular',
-      'Especial: Sponsored',
+      'Destacado',
       'Etiquetas',
     ]);
   });

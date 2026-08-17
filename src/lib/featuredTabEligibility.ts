@@ -1,7 +1,8 @@
 import {
-  parseFeaturedTabDisclosure,
+  parseFeaturedTabPillLabel,
   parseFeaturedTabPosition,
   parseFeaturedTabSlug,
+  parseFeaturedTabSponsorName,
   pickFeaturedTabLabel,
 } from '@/lib/featuredTabsTransform';
 import { isFeaturedTabMinorRestricted, type ProtectedMinorState } from '@/lib/protectedMinor';
@@ -79,7 +80,8 @@ export function selectFeaturedTab(
       slug,
       label,
       position: parseFeaturedTabPosition(config.position),
-      disclosureLabel: parseFeaturedTabDisclosure(config.disclosure_label),
+      pillLabel: parseFeaturedTabPillLabel(config.pill_label),
+      sponsorName: parseFeaturedTabSponsorName(config.disclosure_label),
     };
   }
 

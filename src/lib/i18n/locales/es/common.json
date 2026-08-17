@@ -69,6 +69,7 @@
     "classic": "Clasico",
     "hot": "Popular",
     "new": "Nuevo",
+    "featured": "Destacado",
     "tags": "Etiquetas",
     "verifiedOnly": "Hecho por humanos",
     "verifiedOnlyHint": "Mostrando solo videos con verificacion ProofMode",
