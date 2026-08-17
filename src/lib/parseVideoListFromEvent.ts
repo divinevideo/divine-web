@@ -36,7 +36,7 @@ export function videoListAddress(list: VideoList): string {
   return `${list.pubkey}:30005:${list.id}`;
 }
 
-export function isVideoEventId(value: string): boolean {
+function isVideoEventId(value: string): boolean {
   return HEX_EVENT_ID_RE.test(value);
 }
 
