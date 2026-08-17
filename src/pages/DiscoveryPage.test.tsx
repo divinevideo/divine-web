@@ -434,4 +434,71 @@ describe('DiscoveryPage', () => {
       'Etiquetas',
     ]);
   });
+
+  describe('featured tab pill layout', () => {
+    const FEATURED: ResolvedFeaturedTab = {
+      id: 'ft_1234abcd',
+      slug: 'seasonal-theme',
+      label: 'Especial',
+      pillLabel: 'Skate week',
+      sponsorName: null,
+    };
+
+    function renderAt(route: string) {
+      mockFeaturedTab.current = FEATURED;
+      return render(
+        <MemoryRouter initialEntries={[route]}>
+          <Routes>
+            <Route path="/discovery/:tab" element={<DiscoveryPage />} />
+          </Routes>
+        </MemoryRouter>,
+      );
+    }
+
+    // The pill used to clip because every trigger shared an equal `1fr` grid
+    // column while only the featured one carried a third child. The featured
+    // trigger now sizes to its content and the rest split what is left.
+    it('sizes the featured trigger to its content and lets the others share the rest', () => {
+      renderAt('/discovery/seasonal-theme');
+
+      const featured = screen.getByRole('tab', { name: 'Destacado: Skate week' });
+      expect(featured).toHaveClass('shrink-0');
+      expect(featured).not.toHaveClass('flex-1');
+
+      for (const name of ['Clasico', 'Popular', 'Etiquetas']) {
+        const trigger = screen.getByRole('tab', { name });
+        expect(trigger).toHaveClass('flex-1', 'min-w-0');
+      }
+    });
+
+    it('renders the pill label in full rather than a clipped copy', () => {
+      renderAt('/discovery/seasonal-theme');
+
+      const pill = screen.getByTestId('featured-tab-pill');
+      expect(pill).toHaveTextContent('Skate week');
+      expect(pill).toHaveAttribute('title', 'Skate week');
+    });
+
+    // Between `sm` and `md` the pill shows only for the active tab, so the
+    // other four triggers keep their labels when the user is somewhere else.
+    it('reveals the pill on the active tab and at md and up', () => {
+      renderAt('/discovery/seasonal-theme');
+
+      const pill = screen.getByTestId('featured-tab-pill');
+      expect(pill).toHaveClass('hidden');
+      expect(pill).toHaveClass('sm:group-data-[state=active]:inline-block');
+      expect(pill).toHaveClass('md:inline-block');
+      expect(
+        screen.getByRole('tab', { name: 'Destacado: Skate week' }),
+      ).toHaveClass('group');
+    });
+
+    it('gives the pill an opaque sticker fill so it reads on both tab states', () => {
+      renderAt('/discovery/classics');
+
+      const pill = screen.getByTestId('featured-tab-pill');
+      expect(pill).toHaveClass('bg-brand-yellow', 'text-brand-dark-green');
+      expect(pill).not.toHaveClass('bg-background/80');
+    });
+  });
 });

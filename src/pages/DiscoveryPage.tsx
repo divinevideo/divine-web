@@ -17,6 +17,7 @@ import { useCategories } from '@/hooks/useCategories';
 import { useFeaturedTab } from '@/hooks/useFeaturedTab';
 import { useFunnelcakeSupport } from '@/hooks/useVideoProvider';
 import { getTranslatedCategoryLabel } from '@/lib/constants/categories';
+import { cn } from '@/lib/utils';
 import { trackEvent } from '@/lib/analytics';
 import type { ResolvedFeaturedTab } from '@/types/featuredTabs';
 
@@ -245,22 +246,48 @@ export function DiscoveryPage() {
           }}
           className="space-y-6"
         >
-          <TabsList
-            className="grid w-full gap-1"
-            style={{ gridTemplateColumns: `repeat(${tabItems.length}, minmax(0, 1fr))` }}
-          >
-            {tabItems.map(({ value, label, Icon, pillLabel }) => (
+          {/*
+            Equal `1fr` columns used to clip the featured pill: only the
+            featured trigger carries a third child, so it needed more room than
+            the average column it was allotted and the pill was the child that
+            gave. The featured trigger now sizes to its content and the rest
+            share what is left.
+          */}
+          <TabsList className="flex w-full gap-1">
+            {tabItems.map(({ value, label, Icon, pillLabel, featuredTab: featuredConfig }) => (
               <TabsTrigger
                 key={value}
                 value={value}
-                className="min-w-0 gap-1.5 px-2 sm:gap-2 sm:px-4"
+                className={cn(
+                  'min-w-0 gap-1.5 px-2 sm:gap-2 sm:px-4',
+                  featuredConfig ? 'group shrink-0' : 'flex-1'
+                )}
                 aria-label={pillLabel ? `${label}: ${pillLabel}` : label}
               >
                 <Icon className="h-4 w-4 shrink-0" />
                 <span className="hidden min-w-0 truncate sm:inline" title={label}>{label}</span>
                 {pillLabel && (
+                  /*
+                    A sticker rather than a chip: the old `bg-background/80` sat
+                    on the muted tab bar with almost no separation. Opaque brand
+                    yellow with dark-green ink clears AA against both the muted
+                    bar and the green active trigger, and needs no dark-mode
+                    variant because both tokens are theme-invariant.
+
+                    Between `sm` and `md` the pill shows only on the active
+                    trigger: measured at a 640px viewport, keeping it open there
+                    truncates the "For You" and "Classic" labels. From `md` up
+                    there is room for it to simply stay open. The toggle is
+                    `display` rather than an animated `max-width` because
+                    `max-w-0` cannot crush the border and padding below ~16px,
+                    which left a yellow sliver on the furled pill.
+
+                    `max-w-[9rem]` is a backstop, not the usual case: pill labels
+                    are capped at 24 characters by parseFeaturedTabPillLabel.
+                  */
                   <span
-                    className="hidden max-w-[7rem] shrink truncate rounded-full bg-background/80 px-1.5 py-0.5 text-[10px] leading-none text-foreground sm:inline"
+                    data-testid="featured-tab-pill"
+                    className="hidden max-w-[9rem] shrink-0 truncate rounded-full border-2 border-brand-dark-green bg-brand-yellow px-1.5 py-0.5 text-[10px] font-semibold leading-none text-brand-dark-green sm:group-data-[state=active]:inline-block md:inline-block"
                     title={pillLabel}
                   >
                     {pillLabel}
