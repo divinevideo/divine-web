@@ -26,6 +26,7 @@ import { cleanupServiceWorkersAndCaches } from '@/lib/serviceWorkerCleanup';
 // Import polyfills first
 import './lib/polyfills.ts';
 
+// Start lazy locale loading early; React still waits for the same promise below.
 initializeI18n();
 
 // Initialize cookie consent listener (must be before analytics)

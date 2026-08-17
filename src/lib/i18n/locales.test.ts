@@ -1,5 +1,34 @@
 import { describe, expect, it } from 'vitest';
-import { resources } from './index';
+import { SUPPORTED_LOCALES, type SupportedLocale } from './config';
+
+type LocaleResourceSet = Record<string, Record<string, unknown>>;
+
+const localeModules = import.meta.glob('./locales/*/*.json', {
+  eager: true,
+  import: 'default',
+}) as Record<string, unknown>;
+
+const resources: Record<SupportedLocale, LocaleResourceSet> = SUPPORTED_LOCALES.reduce(
+  (accumulator, locale) => {
+    accumulator[locale] = {};
+    return accumulator;
+  },
+  {} as Record<SupportedLocale, LocaleResourceSet>,
+);
+
+for (const [path, module] of Object.entries(localeModules)) {
+  const match = path.match(/^\.\/locales\/([^/]+)\/([^/]+)\.json$/);
+  if (!match) {
+    continue;
+  }
+
+  const [, locale, namespace] = match;
+  if (!SUPPORTED_LOCALES.includes(locale as SupportedLocale)) {
+    continue;
+  }
+
+  resources[locale as SupportedLocale][namespace] = module as Record<string, unknown>;
+}
 
 const PLURAL_SUFFIXES = new Set(['zero', 'one', 'two', 'few', 'many', 'other']);
 const LOCALES_REQUIRING_FULL_PLURAL_COVERAGE = new Set(['ar']);

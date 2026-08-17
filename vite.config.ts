@@ -48,6 +48,21 @@ export default defineConfig(() => ({
   build: {
     // Enable source maps for better debugging
     sourcemap: false, // Disable in production for smaller builds
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          const normalizedId = id.split(path.sep).join("/");
+          const localeMatch = normalizedId.match(/\/src\/lib\/i18n\/locales\/([^/]+)\//);
+          const locale = localeMatch?.[1];
+
+          if (!locale || locale === "en") {
+            return undefined;
+          }
+
+          return `locale-${locale}`;
+        },
+      },
+    },
     // Optimize dependencies
     commonjsOptions: {
       include: [/node_modules/]

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { LOCALE_STORAGE_KEY } from './config';
-import { createI18nInstance, initializeI18n } from './index';
+import { changeLanguage, createI18nInstance, initializeI18n } from './index';
 
 describe('i18n bootstrap', () => {
   beforeEach(() => {
@@ -87,5 +87,26 @@ describe('i18n bootstrap', () => {
 
     expect(i18n.language).toBe('ms');
     expect(i18n.t('nav.home')).toBe('Utama');
+  });
+
+  it('loads a lazy locale when changing language after english bootstrap', async () => {
+    const i18n = await initializeI18n({ force: true, languages: ['en-US'] });
+
+    await changeLanguage('ja');
+
+    expect(i18n.language).toBe('ja');
+    expect(i18n.t('nav.home')).toBe('ホーム');
+    expect(document.documentElement.lang).toBe('ja');
+  });
+
+  it('keeps lazy bundles available when switching away and back', async () => {
+    const i18n = await initializeI18n({ force: true, languages: ['en-US'] });
+
+    await changeLanguage('vi');
+    await changeLanguage('en');
+    await changeLanguage('vi');
+
+    expect(i18n.language).toBe('vi');
+    expect(i18n.t('nav.home')).toBe('Trang chủ');
   });
 });
