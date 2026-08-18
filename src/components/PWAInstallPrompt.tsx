@@ -4,6 +4,7 @@ import { useLocation } from 'react-router-dom';
 import { DownloadSimple as Download, X } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
 import { APP_STORE_URL, PLAY_STORE_URL } from '@/lib/mobileStoreLinks';
+import { isMobileUserAgent } from '@/lib/isMobileUserAgent';
 
 interface NavigatorWithStandalone extends Navigator {
   standalone?: boolean;
@@ -32,10 +33,8 @@ export function PWAInstallPrompt({ delayMs = 10000 }: { delayMs?: number } = {})
   useEffect(() => {
     // Check if mobile device
     const checkMobile = () => {
-      const userAgent = window.navigator.userAgent.toLowerCase();
-      const isMobileDevice = /iphone|ipad|ipod|android|mobile/.test(userAgent);
       const isSmallScreen = window.innerWidth < 768; // md breakpoint
-      setIsMobile(isMobileDevice || isSmallScreen);
+      setIsMobile(isMobileUserAgent(window.navigator.userAgent) || isSmallScreen);
     };
 
     checkMobile();
