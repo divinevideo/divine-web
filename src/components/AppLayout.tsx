@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { Outlet, useLocation, useSearchParams } from 'react-router-dom';
+import { Outlet, useSearchParams } from 'react-router-dom';
 import { AppHeader } from '@/components/AppHeader';
 import { BottomNav } from '@/components/BottomNav';
 import { PWAInstallPrompt } from '@/components/PWAInstallPrompt';
@@ -7,25 +7,16 @@ import { FullscreenFeed } from '@/components/FullscreenFeed';
 import { AppSidebar } from '@/components/AppSidebar';
 import { useAppContext } from '@/hooks/useAppContext';
 import { useFullscreenFeed } from '@/contexts/FullscreenFeedContext';
-import { getSubdomainUser } from '@/hooks/useSubdomainUser';
-import { useCurrentUser } from '@/hooks/useCurrentUser';
 import {
   clearCompilationPlaybackParams,
   parseCompilationPlaybackParams,
 } from '@/lib/compilationPlayback';
 
 export function AppLayout() {
-  const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { user } = useCurrentUser();
   const { isRecording } = useAppContext();
   const { state: fullscreenState, exitFullscreen, onLoadMore, hasMore } = useFullscreenFeed();
   const compilationRequest = parseCompilationPlaybackParams(searchParams);
-
-  const isLoggedIn = Boolean(user);
-
-  // Hide header/sidebar on landing page (when logged out on root path), but NOT on subdomain profiles
-  const isLandingPage = location.pathname === '/' && !isLoggedIn && !getSubdomainUser();
 
   const handleCloseFullscreen = useCallback(() => {
     exitFullscreen();
@@ -58,13 +49,13 @@ export function AppLayout() {
 
   return (
     <>
-      {/* Sidebar - desktop only (fixed position), hidden on landing page */}
-      {!isLandingPage && <AppSidebar className="hidden md:flex" />}
+      {/* Sidebar - desktop only (fixed position) */}
+      <AppSidebar className="hidden md:flex" />
 
       {/* Main content area - offset by sidebar width on desktop */}
-      <div className={`flex min-h-screen flex-col bg-background ${!isLandingPage ? 'md:ml-[240px]' : ''}`}>
-        {/* Header - mobile only (sidebar replaces it on desktop), hidden on landing page */}
-        {!isLandingPage && <AppHeader className="md:hidden" />}
+      <div className="flex min-h-screen flex-col bg-background md:ml-[240px]">
+        {/* Header - mobile only (sidebar replaces it on desktop) */}
+        <AppHeader className="md:hidden" />
 
         {/* Main content */}
         <main className="flex-1 pb-[calc(4rem+env(safe-area-inset-bottom))] md:pb-0">
@@ -72,7 +63,7 @@ export function AppLayout() {
         </main>
 
         {/* Bottom nav - mobile only */}
-        {!isLandingPage && !isRecording && <BottomNav />}
+        {!isRecording && <BottomNav />}
 
         <PWAInstallPrompt />
       </div>

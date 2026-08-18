@@ -15,11 +15,11 @@ const mockVideos = [
 ] as ParsedVideoData[];
 
 vi.mock('@/components/AppHeader', () => ({
-  AppHeader: () => <header>header</header>,
+  AppHeader: () => <header aria-label="header">header</header>,
 }));
 
 vi.mock('@/components/BottomNav', () => ({
-  BottomNav: () => <nav>bottom nav</nav>,
+  BottomNav: () => <nav aria-label="bottom nav">bottom nav</nav>,
 }));
 
 vi.mock('@/components/PWAInstallPrompt', () => ({
@@ -27,19 +27,11 @@ vi.mock('@/components/PWAInstallPrompt', () => ({
 }));
 
 vi.mock('@/components/AppSidebar', () => ({
-  AppSidebar: () => <aside>sidebar</aside>,
+  AppSidebar: () => <aside aria-label="sidebar">sidebar</aside>,
 }));
 
 vi.mock('@/hooks/useAppContext', () => ({
   useAppContext: () => ({ isRecording: false }),
-}));
-
-vi.mock('@/hooks/useCurrentUser', () => ({
-  useCurrentUser: () => ({ user: null }),
-}));
-
-vi.mock('@/hooks/useSubdomainUser', () => ({
-  getSubdomainUser: () => null,
 }));
 
 vi.mock('@/contexts/FullscreenFeedContext', () => ({
@@ -100,7 +92,7 @@ function renderLayout(path: string) {
     <BrowserRouter>
       <Routes>
         <Route element={<AppLayout />}>
-          <Route path="/search" element={<main>search page</main>} />
+          <Route path="*" element={<main>page content</main>} />
         </Route>
       </Routes>
     </BrowserRouter>
@@ -117,6 +109,14 @@ describe('AppLayout', () => {
   afterEach(() => {
     window.history.replaceState = originalReplaceState;
     window.history.pushState(null, '', '/');
+  });
+
+  it.each(['/', '/discovery'])('shows app navigation at %s', (path) => {
+    renderLayout(path);
+
+    expect(screen.getByRole('banner', { name: 'header' })).toBeInTheDocument();
+    expect(screen.getByRole('complementary', { name: 'sidebar' })).toBeInTheDocument();
+    expect(screen.getByRole('navigation', { name: 'bottom nav' })).toBeInTheDocument();
   });
 
   it('does not rewrite the url when the compilation active video is already current', async () => {

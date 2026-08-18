@@ -28,8 +28,8 @@ const ALLOWLIST: RegExp[] = [
   /src\/components\/landing\/DecentralizedDemo\.tsx$/,
 ];
 
-// Phase 5: enforced. LandingPage, MessagesPage, ConversationPage, NotFound.tsx,
-// VideoGrid, VideoFeed, HashtagExplorer, and ClassicVinersRow are now de-gradiented.
+// Phase 5: enforced. MessagesPage, ConversationPage, NotFound.tsx, VideoGrid,
+// VideoFeed, HashtagExplorer, and ClassicVinersRow are now de-gradiented.
 // Any new layout-surface gradient must either (a) be removed or (b) be justified
 // as genuine illustration/imagery and added to ALLOWLIST with a code comment.
 describe('brand rule: no gradients on layout surfaces', () => {
