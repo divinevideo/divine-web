@@ -56,6 +56,28 @@
     box-shadow: 2px 2px 0 0 hsl(var(--brand-off-white));
   }
 
+  /*
+    Surface-aware modifier, for a sticker on a section that is dark in BOTH
+    themes — the landing hero and the closing CTA. Every rule above keys the ink
+    off the theme, which is correct for a surface that follows the theme and
+    wrong for one that does not: in light mode those buttons drew dark-green ink
+    on a dark-green section and flattened, the same failure the dark-mode
+    override fixed in the other direction.
+
+    `.dark .brand-sticker` outranks this on specificity, but both resolve to the
+    same off-white, so the two agree in dark mode rather than fighting.
+  */
+  .brand-sticker-on-dark {
+    border-color: hsl(var(--brand-off-white));
+    box-shadow: 4px 4px 0 0 hsl(var(--brand-off-white));
+  }
+  .brand-sticker-on-dark:hover {
+    box-shadow: 6px 6px 0 0 hsl(var(--brand-off-white));
+  }
+  .brand-sticker-on-dark:active {
+    box-shadow: 2px 2px 0 0 hsl(var(--brand-off-white));
+  }
+
   /* Card: thick border + optional accent shadow via composition */
   .brand-card {
     border: 2px solid hsl(var(--brand-dark-green));

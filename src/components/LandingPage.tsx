@@ -110,7 +110,7 @@ export function LandingPage() {
             </p>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-2">
-              <Button asChild variant="sticker" size="lg" className="text-base">
+              <Button asChild variant="sticker" size="lg" className="text-base brand-sticker-on-dark">
                 <Link to="/discovery">Start joy scrolling</Link>
               </Button>
               <Button
@@ -235,7 +235,7 @@ export function LandingPage() {
             </div>
 
             <div className="pt-2">
-              <Button asChild variant="sticker" size="lg" className="text-base">
+              <Button asChild variant="sticker" size="lg" className="text-base brand-sticker-on-dark">
                 <Link to="/discovery">Jump into the web app</Link>
               </Button>
             </div>
