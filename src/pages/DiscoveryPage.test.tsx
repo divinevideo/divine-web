@@ -22,21 +22,7 @@ function queryPartnershipDisclosure(): HTMLElement | null {
   );
 }
 
-const MOBILE_GLYPH = '🌮';
-
-const ORIGINAL_USER_AGENT = window.navigator.userAgent;
-
-const IPHONE_USER_AGENT =
-  'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1';
-const DESKTOP_USER_AGENT =
-  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
-
-function setUserAgent(userAgent: string) {
-  Object.defineProperty(window.navigator, 'userAgent', {
-    configurable: true,
-    value: userAgent,
-  });
-}
+const FEATURED_GLYPH = '🌮';
 
 const {
   mockNavigate,
@@ -148,7 +134,6 @@ describe('DiscoveryPage', () => {
     mockFeaturedApiUrl.current = 'https://api.divine.video';
     mockFeaturedFeedState.current = 'normal';
     mockUseFeaturedTabArgs.length = 0;
-    setUserAgent(ORIGINAL_USER_AGENT);
   });
 
   it('renders localized discovery copy and category pills', () => {
@@ -237,7 +222,7 @@ describe('DiscoveryPage', () => {
 
     expect(screen.getAllByRole('tab').map((tab) => tab.textContent)).toEqual([
       'Clasico',
-      'DestacadoSkate week',
+      `${FEATURED_GLYPH}DestacadoSkate week`,
       'Popular',
       'Etiquetas',
     ]);
@@ -264,7 +249,7 @@ describe('DiscoveryPage', () => {
     expect(screen.getAllByRole('tab').map((tab) => tab.textContent)).toEqual([
       'Para ti',
       'Clasico',
-      'Destacado',
+      `${FEATURED_GLYPH}Destacado`,
       'Popular',
       'Etiquetas',
     ]);
@@ -578,49 +563,33 @@ describe('DiscoveryPage', () => {
       );
     }
 
-    it('shows the mobile glyph in a mobile browser', () => {
-      setUserAgent(IPHONE_USER_AGENT);
-
+    it('renders the editorial emoji instead of an icon', () => {
       renderFeatured();
 
       const featured = screen.getByRole('tab', { name: 'Destacado' });
-      expect(featured).toHaveTextContent(MOBILE_GLYPH);
+      expect(featured).toHaveTextContent(FEATURED_GLYPH);
       expect(featured.querySelector('svg')).toBeNull();
-    });
-
-    it('keeps the confetti icon in a desktop browser', () => {
-      setUserAgent(DESKTOP_USER_AGENT);
-
-      renderFeatured();
-
-      const featured = screen.getByRole('tab', { name: 'Destacado' });
-      expect(featured.textContent).not.toContain(MOBILE_GLYPH);
-      expect(featured.querySelector('svg')).not.toBeNull();
     });
 
     // The glyph is decoration on top of the trigger's own aria-label, so it
     // must not leak into the accessible name or the tab's text.
     it('hides the glyph from assistive technology and from the tab label', () => {
-      setUserAgent(IPHONE_USER_AGENT);
-
       renderFeatured();
 
       const featured = screen.getByRole('tab', { name: 'Destacado' });
       const glyph = featured.querySelector('[aria-hidden="true"]');
       expect(glyph).not.toBeNull();
-      expect(glyph).toHaveTextContent(MOBILE_GLYPH);
+      expect(glyph).toHaveTextContent(FEATURED_GLYPH);
       expect(featured).toHaveAttribute('aria-label', 'Destacado');
     });
 
     it('leaves the non-featured tabs on their own icons', () => {
-      setUserAgent(IPHONE_USER_AGENT);
-
       renderFeatured();
 
       for (const name of ['Clasico', 'Popular', 'Etiquetas']) {
         const trigger = screen.getByRole('tab', { name });
         expect(trigger.querySelector('svg')).not.toBeNull();
-        expect(trigger.textContent).not.toContain(MOBILE_GLYPH);
+        expect(trigger.textContent).not.toContain(FEATURED_GLYPH);
       }
     });
   });

@@ -11,11 +11,10 @@ import { VerifiedOnlyToggle } from '@/components/VerifiedOnlyToggle';
 import { HashtagExplorer } from '@/components/HashtagExplorer';
 import { ClassicVinersRow } from '@/components/ClassicVinersRow';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Star, Hash, Flame, Sparkle as Sparkles, Confetti } from '@phosphor-icons/react';
+import { Star, Hash, Flame, Sparkle as Sparkles } from '@phosphor-icons/react';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useCategories } from '@/hooks/useCategories';
 import { useFeaturedTab } from '@/hooks/useFeaturedTab';
-import { useIsMobileDevice } from '@/hooks/useIsMobileDevice';
 import { useFunnelcakeSupport } from '@/hooks/useVideoProvider';
 import { getTranslatedCategoryLabel } from '@/lib/constants/categories';
 import { cn } from '@/lib/utils';
@@ -30,16 +29,16 @@ interface DiscoveryTabItem {
   featuredTab?: ResolvedFeaturedTab;
 }
 
-// The featured tab's mobile glyph. Below `sm` every trigger is icon-only, so
-// on a phone this emoji is the entire tab — it carries the editorial identity
-// that the hidden label would otherwise. `aria-hidden` because the trigger
-// already names itself through `aria-label`; without it a screen reader would
-// announce the emoji's own description alongside that name.
+// The featured tab's glyph — an editorial emoji rather than a Phosphor icon.
+// Below `sm` every trigger is icon-only, so on a phone this is the entire tab
+// and it carries the identity the hidden label would otherwise. `aria-hidden`
+// because the trigger already names itself through `aria-label`; without it a
+// screen reader would announce the emoji's own description alongside that name.
 //
 // Named for the slot rather than the glyph: the emoji is editorial and will
 // change, and identifiers that spell out a campaign do not belong in a public
 // repository.
-function FeaturedMobileGlyph({ className }: { className?: string }) {
+function FeaturedGlyph({ className }: { className?: string }) {
   return (
     <span
       className={cn('inline-flex items-center justify-center text-base leading-none', className)}
@@ -53,17 +52,14 @@ function FeaturedMobileGlyph({ className }: { className?: string }) {
 function insertFeaturedTab(
   tabs: DiscoveryTabItem[],
   featuredTab: ResolvedFeaturedTab | null,
-  featuredLabel: string,
-  // Passed in rather than chosen here so this stays a pure list transform: the
-  // glyph depends on the device, which only the component knows about.
-  Icon: ComponentType<{ className?: string }>
+  featuredLabel: string
 ): DiscoveryTabItem[] {
   if (!featuredTab) return tabs;
 
   const item: DiscoveryTabItem = {
     value: featuredTab.slug,
     label: featuredLabel,
-    Icon,
+    Icon: FeaturedGlyph,
     pillLabel: featuredTab.pillLabel,
     featuredTab,
   };
@@ -92,7 +88,6 @@ export function DiscoveryPage() {
   const { tab: featuredTab, isResolved: isFeaturedConfigResolved } = useFeaturedTab({
     apiUrl: featuredApiUrl,
   });
-  const isMobileDevice = useIsMobileDevice();
 
   const baseTabs = useMemo<DiscoveryTabItem[]>(() => {
     const tabs: DiscoveryTabItem[] = [
@@ -125,13 +120,9 @@ export function DiscoveryPage() {
       : tabs;
   }, [isLoggedIn, t]);
 
-  // Confetti is the desktop glyph and the pre-hydration default. Not Hash: the
-  // hashtags tab already owns that one, and below `sm` the labels are hidden,
-  // so a second Hash would make the editorial tab indistinguishable from it.
-  const featuredIcon = isMobileDevice ? FeaturedMobileGlyph : Confetti;
   const tabItems = useMemo(
-    () => insertFeaturedTab(baseTabs, featuredTab, t('discovery.featured'), featuredIcon),
-    [baseTabs, featuredTab, t, featuredIcon]
+    () => insertFeaturedTab(baseTabs, featuredTab, t('discovery.featured')),
+    [baseTabs, featuredTab, t]
   );
 
   const allowedTabs = useMemo(() => {
