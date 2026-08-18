@@ -16,6 +16,18 @@ const LANDING = readFileSync('src/components/LandingPage.tsx', 'utf8');
 
 const DARK_SURFACE_INK = 'hsl(var(--brand-off-white))';
 
+// A section counts as permanently dark only when `bg-brand-dark-green` is the
+// unconditional background. `\b` on its own also matches inside
+// `dark:bg-brand-dark-green`, `md:…` and `hover:…`, and a `dark:`-prefixed
+// surface is the opposite case: it is light in light mode, so demanding the
+// modifier there would pin off-white ink onto a light surface — this bug
+// inverted. The lookbehind rejects any variant prefix while still allowing an
+// opacity suffix (`bg-brand-dark-green/95`).
+const PERMANENTLY_DARK_SECTION = /^<section[^>]*(?<![\w:-])bg-brand-dark-green\b/;
+
+const permanentlyDarkSections = (source: string) =>
+  source.split(/(?=<section)/).filter((chunk) => PERMANENTLY_DARK_SECTION.test(chunk));
+
 describe('brand rule: stickers stay visible on permanently dark surfaces', () => {
   it('defines the on-dark modifier with off-white ink', () => {
     const rule = CSS.match(/\.brand-sticker-on-dark\s*\{([^}]*)\}/);
@@ -47,9 +59,7 @@ describe('brand rule: stickers stay visible on permanently dark surfaces', () =>
   // Without this, the next CTA dropped into the hero silently loses its
   // outline in light mode and no test notices.
   it('gives every sticker inside a permanently dark landing section the modifier', () => {
-    const sections = LANDING.split(/(?=<section)/).filter((chunk) =>
-      /^<section[^>]*\bbg-brand-dark-green\b/.test(chunk)
-    );
+    const sections = permanentlyDarkSections(LANDING);
     expect(sections.length, 'expected landing sections with a dark surface').toBeGreaterThan(0);
 
     const offenders: string[] = [];
@@ -60,5 +70,29 @@ describe('brand rule: stickers stay visible on permanently dark surfaces', () =>
     }
 
     expect(offenders, 'sticker buttons on a dark surface missing brand-sticker-on-dark').toEqual([]);
+  });
+
+  // Guards the guard. A surface that only goes dark under `dark:` follows the
+  // theme, so it must NOT be treated as permanently dark — otherwise the rule
+  // above would demand off-white ink on a light-mode surface and reintroduce
+  // the invisible button it exists to prevent. The landing nav
+  // (`bg-brand-off-white/95 dark:bg-brand-dark-green/95`, deliberately left
+  // without the modifier) is exactly that shape.
+  it('counts only unconditionally dark surfaces, not `dark:`-prefixed ones', () => {
+    expect(
+      permanentlyDarkSections('<section className="bg-brand-dark-green text-brand-off-white">')
+    ).toHaveLength(1);
+    expect(
+      permanentlyDarkSections('<section className="bg-brand-dark-green/95 p-4">')
+    ).toHaveLength(1);
+
+    for (const themed of [
+      '<section className="bg-brand-off-white/95 dark:bg-brand-dark-green/95">',
+      '<section className="bg-brand-off-white dark:bg-brand-dark-green">',
+      '<section className="bg-card hover:bg-brand-dark-green">',
+      '<section className="bg-card md:bg-brand-dark-green">',
+    ]) {
+      expect(permanentlyDarkSections(themed), themed).toEqual([]);
+    }
   });
 });
