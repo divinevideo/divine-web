@@ -344,7 +344,14 @@ export function DiscoveryPage() {
             <TabsContent value={activeTabItem.featuredTab.slug} className="mt-0 space-y-6">
               {activeTabItem.featuredTab.sponsorName && (
                 <div className="flex justify-center">
-                  <span className="inline-flex max-w-full rounded-full border border-border bg-background px-3 py-1 text-center text-sm font-medium text-foreground">
+                  {/*
+                    inline-block, not inline-flex: the copy below renders as a
+                    text node next to a <bdi> element, and a flex container
+                    would make those two flex items and discard the trailing
+                    space of the text one — welding the sponsor name onto the
+                    word before it. Nothing here needs flex.
+                  */}
+                  <span className="inline-block max-w-full rounded-full border border-border bg-background px-3 py-1 text-center text-sm font-medium text-foreground">
                     {/* bdi keeps Latin sponsor names stable inside RTL disclosure copy. */}
                     <Trans
                       i18nKey="discovery.paidPartnership"

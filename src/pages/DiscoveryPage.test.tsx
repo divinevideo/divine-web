@@ -381,6 +381,34 @@ describe('DiscoveryPage', () => {
     expect(screen.getAllByText(/Acme Bikes/)).toHaveLength(1);
   });
 
+  // The disclosure renders as a text node followed by a <bdi> element. In a
+  // flex container those become two separate flex items, and flex layout drops
+  // the trailing whitespace of the anonymous text item — so the sponsor name
+  // renders welded to the word before it. jsdom does no layout, so textContent
+  // still reports the space and cannot catch this; the layout mode is the only
+  // thing a unit test can pin.
+  it('lays the disclosure out inline so the space before the sponsor survives', async () => {
+    mockFeaturedTab.current = {
+      id: 'ft_1234abcd',
+      slug: 'seasonal-theme',
+      label: 'Especial',
+      pillLabel: null,
+      sponsorName: 'Acme Bikes',
+    };
+
+    render(
+      <MemoryRouter initialEntries={['/discovery/seasonal-theme']}>
+        <Routes>
+          <Route path="/discovery/:tab" element={<DiscoveryPage />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    const disclosure = getPartnershipDisclosure('En colaboración pagada con Acme Bikes');
+    expect(disclosure).toHaveClass('inline-block');
+    expect(disclosure.className).not.toMatch(/(^|\s)(inline-)?flex(\s|$)/);
+  });
+
   it('does not render partnership copy for an unsponsored featured tab', () => {
     mockFeaturedTab.current = {
       id: 'ft_1234abcd',
