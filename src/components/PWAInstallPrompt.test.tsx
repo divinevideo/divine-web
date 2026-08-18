@@ -107,6 +107,25 @@ describe('PWAInstallPrompt', () => {
     expect(await screen.findByRole('link', { name: 'Download Divine on the App Store' })).toBeVisible();
   });
 
+  // The store actions are `flex-1` inside a `flex-wrap` row, and the button
+  // base class sets `whitespace-nowrap`. `min-w-0` removes each item's
+  // min-content floor, so instead of the row wrapping when the labels no longer
+  // fit, the items shrink under their own text and the label spills outside the
+  // pill. jsdom performs no layout, so only the absence of the floor-removal is
+  // checkable here.
+  it('lets the store actions keep their content width so the row wraps instead of clipping', async () => {
+    setNavigator({
+      userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 Version/18.0 Mobile/15E148 Safari/604.1',
+      languages: ['en-NZ'],
+    });
+
+    renderPrompt();
+
+    const appStore = await screen.findByRole('link', { name: 'Download Divine on the App Store' });
+    expect(appStore).not.toHaveClass('min-w-0');
+    expect(appStore.parentElement?.className ?? '').toContain('flex-wrap');
+  });
+
   it('does not inject a third-party lookup script', async () => {
     setNavigator({
       userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 Version/18.0 Mobile/15E148 Safari/604.1',

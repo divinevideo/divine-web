@@ -126,9 +126,15 @@ export function PWAInstallPrompt({ delayMs = 10000 }: { delayMs?: number } = {})
             {t('pwaInstallPrompt.descriptionNative')}
           </p>
 
+          {/*
+            flex-1 without min-w-0: the buttons share the row when the labels
+            fit and the row wraps when they do not. With min-w-0 they shrank
+            under their own `whitespace-nowrap` text instead, spilling the label
+            outside the pill.
+          */}
           <div className="flex flex-wrap gap-2">
             {showAppStore && (
-              <Button asChild size="sm" className="flex-1 min-w-0">
+              <Button asChild size="sm" className="flex-1">
                 <a href={APP_STORE_URL} target="_blank" rel="noopener noreferrer" aria-label={t('pwaInstallPrompt.appStoreAria')}>
                   <Download className="h-4 w-4 mr-2" />
                   {t('pwaInstallPrompt.appStore')}
@@ -136,7 +142,7 @@ export function PWAInstallPrompt({ delayMs = 10000 }: { delayMs?: number } = {})
               </Button>
             )}
             {showGooglePlay && (
-              <Button asChild size="sm" className="flex-1 min-w-0">
+              <Button asChild size="sm" className="flex-1">
                 <a href={PLAY_STORE_URL} target="_blank" rel="noopener noreferrer" aria-label={t('pwaInstallPrompt.googlePlayAria')}>
                   <Download className="h-4 w-4 mr-2" />
                   {t('pwaInstallPrompt.googlePlay')}
