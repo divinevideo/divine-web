@@ -24,8 +24,6 @@ const ALLOWLIST: RegExp[] = [
   /src\/components\/ui\/avatar\.tsx$/,
   /src\/components\/BadgeImage\.tsx$/,
   /src\/components\/BadgeDetailModal\.tsx$/,
-  /src\/components\/landing\/VerifiedDemo\.tsx$/,
-  /src\/components\/landing\/DecentralizedDemo\.tsx$/,
 ];
 
 // Phase 5: enforced. MessagesPage, ConversationPage, NotFound.tsx, VideoGrid,
