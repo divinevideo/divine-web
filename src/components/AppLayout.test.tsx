@@ -34,6 +34,13 @@ vi.mock('@/hooks/useAppContext', () => ({
   useAppContext: () => ({ isRecording: false }),
 }));
 
+// AppLayout no longer reads auth state. This mock stays so that a regression
+// re-coupling the layout to the user fails on the navigation assertion instead
+// of crashing every test in this file with a missing NostrProvider.
+vi.mock('@/hooks/useCurrentUser', () => ({
+  useCurrentUser: () => ({ user: null }),
+}));
+
 vi.mock('@/contexts/FullscreenFeedContext', () => ({
   useFullscreenFeed: () => ({
     state: {
