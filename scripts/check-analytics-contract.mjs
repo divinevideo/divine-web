@@ -10,6 +10,12 @@ export function readEmbeddedCommit(contents) {
   return contents.match(/Source contract commit: ([0-9a-f]{40})/)?.[1];
 }
 
+export function readEmbeddedSchemaVersion(contents) {
+  const match = contents.match(/PRODUCT_ANALYTICS_SCHEMA_VERSION = (\d+) as const;/);
+
+  return match ? Number(match[1]) : undefined;
+}
+
 export function assertContractPin(lock, artifact) {
   if (lock.artifact !== expectedArtifact) {
     throw new Error(`analytics contract lock must target ${expectedArtifact}`);
@@ -26,6 +32,13 @@ export function assertContractPin(lock, artifact) {
   const contents = bytes.toString('utf8');
   if (readEmbeddedCommit(contents) !== lock.contract_commit) {
     throw new Error('analytics contract artifact commit does not match the lock');
+  }
+
+  const embeddedSchemaVersion = readEmbeddedSchemaVersion(contents);
+  if (embeddedSchemaVersion !== lock.schema_version) {
+    throw new Error(
+      `analytics contract schema version does not match the lock: expected ${lock.schema_version}, got ${embeddedSchemaVersion}`,
+    );
   }
 
   if (!contents.includes('DO NOT EDIT')) {

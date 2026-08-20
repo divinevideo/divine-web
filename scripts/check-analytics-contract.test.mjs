@@ -8,6 +8,7 @@ import { describe, expect, it } from 'vitest';
 import {
   assertContractPin,
   readEmbeddedCommit,
+  readEmbeddedSchemaVersion,
   verifyAnalyticsContract,
 } from './check-analytics-contract.mjs';
 
@@ -20,10 +21,11 @@ describe('analytics contract pin', () => {
     expect(verifyAnalyticsContract()).toBe(lock.contract_commit);
   });
 
-  it('reads the commit the generator embedded', () => {
+  it('reads the commit and schema version the generator embedded', () => {
     const contents = artifact.toString('utf8');
 
     expect(readEmbeddedCommit(contents)).toBe(lock.contract_commit);
+    expect(readEmbeddedSchemaVersion(contents)).toBe(lock.schema_version);
     expect(contents).toContain('DO NOT EDIT');
   });
 
@@ -41,6 +43,11 @@ describe('analytics contract pin', () => {
   it('rejects a re-pin that forgot to update the contract commit', () => {
     expect(() => assertContractPin({ ...lock, contract_commit: 'a'.repeat(40) }, artifact))
       .toThrow(/commit does not match/);
+  });
+
+  it('rejects a re-pin that forgot to update the schema version', () => {
+    expect(() => assertContractPin({ ...lock, schema_version: 2 }, artifact))
+      .toThrow(/schema version does not match/);
   });
 
   it('rejects an artifact missing its generated-file header', () => {
