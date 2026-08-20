@@ -15,7 +15,7 @@ export function MediaProgressList({ progress }: { progress: MediaProgress | null
   return (
     <div className="rounded-lg border border-brand-dark-green/15 p-4 dark:border-brand-green/25" aria-live="polite">
       <p className="font-semibold text-foreground">Media {progress.completed} of {progress.total}</p>
-      <p className="text-sm text-muted-foreground">{label}: {progress.result.source_url}</p>
+      <p className="text-sm text-muted-foreground">{label}: <span className="break-all">{progress.result.source_url}</span></p>
     </div>
   );
 }
