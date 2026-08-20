@@ -35,6 +35,7 @@ src/
   types/         shared TypeScript definitions
   config/        relay lists and app configuration
   data/          static data files
+  generated/     vendored generated code, never hand-edited
   styles/        global stylesheets
   test/          test setup (setup.ts) and utilities
 ```
@@ -198,6 +199,21 @@ Nostr relays are configured in [`src/config/relays.ts`](./src/config/relays.ts).
 Firebase Analytics runs behind GDPR cookie consent. Sentry handles error
 tracking. Media assets come from cdn.divine.video. Content moderation uses
 moderation-api.divine.video. HubSpot provides the cookie consent banner.
+
+### Product Analytics Contract
+
+The cross-platform product-event vocabulary lives in the `divine-context`
+repository and is generated from `analytics/event-contract.yaml` there. This
+repository vendors the TypeScript output at
+[`src/generated/productAnalytics.ts`](./src/generated/productAnalytics.ts) and
+pins it in [`analytics-contract.lock`](./analytics-contract.lock), which records
+the upstream commit and the artifact's SHA-256.
+
+Do not hand-edit the vendored file. To take a new version, regenerate it
+upstream, copy it here, and update both fields in the lock.
+`npm run analytics:contract:check` verifies the pin, and
+`scripts/check-analytics-contract.test.mjs` runs the same check under
+`npm run test`.
 
 ### Relay Routing
 
