@@ -32,6 +32,10 @@ export function readEmbeddedSchemaVersion(contents) {
   return match?.[1] === match?.[2] ? Number(match[1]) : undefined;
 }
 
+export function readEmbeddedEventIdAlgorithm(contents) {
+  return contents.match(/PRODUCT_ANALYTICS_V2_EVENT_ID_ALGORITHM = '([^']+)' as const;/)?.[1];
+}
+
 function requireEqual(actual, expected, label) {
   if (actual !== expected) {
     throw new Error(`analytics contract ${label} must be ${expected}`);
@@ -75,6 +79,11 @@ export function assertContractPin(lock, artifact, manifest) {
   const manifestValue = JSON.parse(manifestBytes.toString('utf8'));
   requireEqual(manifestValue.contract_commit, lock.contract_commit, 'manifest commit');
   requireEqual(manifestValue.schema_version, lock.schema_version, 'manifest schema version');
+  requireEqual(
+    manifestValue.event_id_algorithm,
+    'sha256-rfc8785-v1',
+    'manifest event ID algorithm',
+  );
   const sourceName = expectedSourceArtifact.split('/').at(-1);
   const sourceEntry = manifestValue.artifacts?.[sourceName];
   if (sourceEntry === null || typeof sourceEntry !== 'object' || Array.isArray(sourceEntry)) {
@@ -100,6 +109,9 @@ export function assertContractPin(lock, artifact, manifest) {
     throw new Error(
       `analytics contract schema version does not match the lock: expected ${lock.schema_version}, got ${embeddedSchemaVersion}`,
     );
+  }
+  if (readEmbeddedEventIdAlgorithm(contents) !== 'sha256-rfc8785-v1') {
+    throw new Error('analytics contract event ID algorithm does not match the manifest');
   }
   if (!contents.includes('DO NOT EDIT')) {
     throw new Error('analytics contract artifact is missing its generated-file header');

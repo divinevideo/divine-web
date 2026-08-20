@@ -1,8 +1,9 @@
 // @generated from analytics/event-contract.yaml.
-// Source contract commit: 0aa587e38a9aea3bee70fd1d0bf492dac8266dd4
+// Source contract commit: 02083864050efdba549f118ba11bf6111f4bb7ba
 // DO NOT EDIT. Update the contract and run analytics/codegen/generate.py.
-export const PRODUCT_ANALYTICS_V2_CONTRACT_COMMIT = '0aa587e38a9aea3bee70fd1d0bf492dac8266dd4' as const;
+export const PRODUCT_ANALYTICS_V2_CONTRACT_COMMIT = '02083864050efdba549f118ba11bf6111f4bb7ba' as const;
 export const PRODUCT_ANALYTICS_V2_SCHEMA_VERSION = 2 as const;
+export const PRODUCT_ANALYTICS_V2_EVENT_ID_ALGORITHM = 'sha256-rfc8785-v1' as const;
 export const PRODUCT_ANALYTICS_V2_CONSENT_DEFAULT_ENABLED: boolean | null = null;
 
 export type ProductAnalyticsV2Source = 'mobile' | 'web';

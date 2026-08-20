@@ -8,6 +8,7 @@ import { describe, expect, it } from 'vitest';
 import {
   assertContractPin,
   readEmbeddedCommit,
+  readEmbeddedEventIdAlgorithm,
   readEmbeddedSchemaVersion,
   verifyAnalyticsContract,
 } from './check-analytics-contract.mjs';
@@ -45,11 +46,12 @@ describe('analytics contract pin', () => {
     expect(verifyAnalyticsContract()).toEqual(lock);
   });
 
-  it('reads the commit and schema version the generator embedded', () => {
+  it('reads the commit, schema version, and ID algorithm the generator embedded', () => {
     const contents = artifact.toString('utf8');
 
     expect(readEmbeddedCommit(contents)).toBe(lock.contract_commit);
     expect(readEmbeddedSchemaVersion(contents)).toBe(lock.schema_version);
+    expect(readEmbeddedEventIdAlgorithm(contents)).toBe('sha256-rfc8785-v1');
     expect(contents).toContain('DO NOT EDIT');
   });
 
@@ -85,6 +87,26 @@ describe('analytics contract pin', () => {
     const edited = Buffer.concat([manifest, Buffer.from('\n')]);
 
     expect(() => assertContractPin(lock, artifact, edited)).toThrow(/manifest checksum drifted/);
+  });
+
+  it('rejects a manifest with another event ID algorithm', () => {
+    const manifestValue = JSON.parse(manifest.toString('utf8'));
+    manifestValue.event_id_algorithm = 'random-uuid';
+    const repinned = repinManifest(manifestValue);
+
+    expect(() => assertContractPin(repinned.lock, artifact, repinned.manifest))
+      .toThrow(/event ID algorithm/);
+  });
+
+  it('rejects an artifact with another event ID algorithm', () => {
+    const edited = Buffer.from(
+      artifact.toString('utf8').replace('sha256-rfc8785-v1', 'random-uuid'),
+      'utf8',
+    );
+    const repinned = repinArtifact(edited);
+
+    expect(() => assertContractPin(repinned.lock, edited, repinned.manifest))
+      .toThrow(/event ID algorithm/);
   });
 
   it('rejects an artifact commit that is not a full Git commit', () => {
