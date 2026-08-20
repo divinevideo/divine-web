@@ -207,10 +207,12 @@ repository and is generated from `analytics/event-contract.yaml` there. This
 repository vendors the TypeScript output at
 [`src/generated/productAnalytics.ts`](./src/generated/productAnalytics.ts) and
 pins it in [`analytics-contract.lock`](./analytics-contract.lock), which records
-the upstream commit and the artifact's SHA-256.
+the source-contract commit, generated-artifact commit, schema version, and
+SHA-256 values for both the vendored manifest and artifact.
 
 Do not hand-edit the vendored file. To take a new version, regenerate it
-upstream, copy it here, and update both fields in the lock.
+upstream, copy both the artifact and `analytics-contract.manifest.json` here,
+and update the lock from that manifest.
 `npm run analytics:contract:check` verifies the pin, and
 `scripts/check-analytics-contract.test.mjs` runs the same check under
 `npm run test`.
