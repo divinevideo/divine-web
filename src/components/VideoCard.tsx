@@ -644,6 +644,7 @@ export function VideoCard({
                     subtitlesVisible={showSubtitles}
                     videoData={video}
                     trafficSource={trafficSource}
+                    analyticsPosition={videoIndex ?? 0}
                     objectFit={isClassicVine ? 'cover' : 'contain'}
                   />
                   {mode === 'thumbnail' && showThumbnailDuringStartup && (

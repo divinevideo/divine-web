@@ -152,12 +152,15 @@ describe('useVideoMetricsTracker', () => {
     unmount();
 
     expect(mockPublishViewEvent).toHaveBeenCalledTimes(1);
-    expect(mockTrackProductEvent).toHaveBeenCalledWith('video_engagement_summary', expect.objectContaining({
-      duration_ms: 0,
-      properties: expect.objectContaining({
-        watched_seconds: 0,
+    expect(mockTrackProductEvent).toHaveBeenCalledWith(
+      'playback_session_recorded',
+      expect.objectContaining({
+        content_id: video.id,
+        duration_ms: 6000,
+        watched_ms: 500,
+        end_reason: 'navigation',
       }),
-    }));
+    );
   });
 
   it('publishes sub-second watch time after pausing', () => {
@@ -387,7 +390,7 @@ describe('useVideoMetricsTracker', () => {
     );
   });
 
-  it('tracks first-party video engagement summary when watch time is published', () => {
+  it('records one aggregate playback event when playback is interrupted', () => {
     const video = makeVideo('v1');
     const { unmount } = renderHook(() =>
       useVideoMetricsTracker({
@@ -402,19 +405,55 @@ describe('useVideoMetricsTracker', () => {
     act(() => { vi.advanceTimersByTime(3000); });
     unmount();
 
-    expect(mockTrackProductEvent).toHaveBeenCalledWith('video_engagement_summary', {
-      surface: 'video',
-      content_id: video.id,
-      creator_pubkey: video.pubkey,
-      traffic_source: 'trending',
-      duration_ms: expect.any(Number),
-      position_ms: 0,
-      loop_count: 0,
-      properties: {
-        vine_id: video.vineId,
-        watched_seconds: expect.any(Number),
+    expect(mockTrackProductEvent).toHaveBeenCalledTimes(1);
+    expect(mockTrackProductEvent).toHaveBeenCalledWith(
+      'playback_session_recorded',
+      {
+        playback_session_id: expect.stringMatching(
+          /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
+        ),
+        content_id: video.id,
+        surface: 'discovery',
+        duration_ms: 6000,
+        watched_ms: 3000,
+        loop_count: 0,
+        completed: false,
+        end_reason: 'navigation',
       },
+    );
+  });
+
+  it('records one impression only after half the video is visible for one second', () => {
+    const video = makeVideo('v1');
+    const { rerender, unmount } = renderHook(
+      ({ visibilityRatio }) => useVideoMetricsTracker({
+        video,
+        isPlaying: false,
+        currentTime: 0,
+        duration: 6,
+        source: 'home',
+        position: 4,
+        visibilityRatio,
+      }),
+      { initialProps: { visibilityRatio: 0.49 } },
+    );
+
+    act(() => { vi.advanceTimersByTime(2000); });
+    expect(mockTrackProductEvent).not.toHaveBeenCalled();
+
+    rerender({ visibilityRatio: 0.5 });
+    act(() => { vi.advanceTimersByTime(1000); });
+    rerender({ visibilityRatio: 0.9 });
+    act(() => { vi.advanceTimersByTime(2000); });
+
+    expect(mockTrackProductEvent).toHaveBeenCalledTimes(1);
+    expect(mockTrackProductEvent).toHaveBeenCalledWith('content_impression_recorded', {
+      content_id: video.id,
+      surface: 'feed',
+      position: 4,
+      visible_ms: 1000,
     });
+    unmount();
   });
 
   it('detects video loops and increments loopCount', () => {

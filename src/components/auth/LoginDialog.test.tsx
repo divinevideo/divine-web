@@ -21,6 +21,7 @@ const {
   mockBuildSignupRedirect,
   mockGetStoredLocalNsecLogin,
   mockLoginActions,
+  mockTrackProductEvent,
   mockUseProtectedMinorStatus,
 } = vi.hoisted(() => ({
   mockBuildLoginRedirect: vi.fn(),
@@ -31,12 +32,21 @@ const {
     extension: vi.fn(),
     nsec: vi.fn(),
   },
+  mockTrackProductEvent: vi.fn().mockResolvedValue('event-id'),
   mockUseProtectedMinorStatus: vi.fn(),
 }));
 
 const originalLocation = window.location;
 const locationAssign = vi.fn();
 const fetchMock = vi.fn<typeof fetch>();
+
+vi.mock('@/lib/analyticsClient', () => ({
+  getProductAnalyticsUtm: () => ({
+    utm_source: 'newsletter',
+    utm_medium: 'email',
+  }),
+  trackProductEvent: mockTrackProductEvent,
+}));
 
 vi.mock('@/lib/divineLogin', async () => {
   const actual = await vi.importActual<typeof import('@/lib/divineLogin')>('@/lib/divineLogin');
@@ -118,6 +128,22 @@ describe('LoginDialog', () => {
     expect(screen.queryByRole('button', { name: /I already have an account/i })).not.toBeInTheDocument();
   });
 
+  it('records registration entry once when the registration tab opens', async () => {
+    const { rerender } = render(
+      <LoginDialog isOpen onClose={vi.fn()} onLogin={vi.fn()} />,
+    );
+
+    await waitFor(() => {
+      expect(mockTrackProductEvent).toHaveBeenCalledWith('registration_started', {
+        entry_point: 'landing',
+        utm_source: 'newsletter',
+        utm_medium: 'email',
+      });
+    });
+
+    rerender(<LoginDialog isOpen onClose={vi.fn()} onLogin={vi.fn()} />);
+    expect(mockTrackProductEvent).toHaveBeenCalledTimes(1);
+  });
   it('renders hosted sign-in and keeps Nostr methods behind a text disclosure', async () => {
     const user = userEvent.setup();
 

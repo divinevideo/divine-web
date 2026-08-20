@@ -61,6 +61,7 @@ interface VideoPlayerProps {
   // View event tracking
   videoData?: ParsedVideoData;
   trafficSource?: ViewTrafficSource;
+  analyticsPosition?: number;
   // Object-fit mode for the video element (default: 'contain')
   objectFit?: 'contain' | 'cover';
 }
@@ -108,6 +109,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
       subtitlesVisible,
       videoData,
       trafficSource,
+      analyticsPosition = 0,
       objectFit = 'contain',
     },
     ref
@@ -203,6 +205,8 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
       duration: videoDuration,
       source: trafficSource,
       enabled: !!videoData,
+      visibilityRatio: entry?.intersectionRatio ?? 0,
+      position: analyticsPosition,
     });
 
     // Combine refs - minimize dependencies for stability

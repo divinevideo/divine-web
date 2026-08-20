@@ -1,40 +1,25 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { ProductAnalyticsPayload } from './analyticsClient';
+import type { ProductAnalyticsV2Event } from '@/generated/productAnalytics';
 import type { ProductEventQueueRecord } from './eventQueue';
 
-function makeEvent(overrides: Partial<ProductAnalyticsPayload> = {}): ProductAnalyticsPayload {
+function makeEvent(overrides: Partial<ProductAnalyticsV2Event> = {}): ProductAnalyticsV2Event {
   return {
-    event_id: '018ff7d7-0000-7000-8000-000000000001',
-    event_name: 'session_started',
+    event_id: 'a'.repeat(64),
+    event_name: 'landing_viewed',
     occurred_at: '2026-07-07T00:00:00.000Z',
-    anonymous_id: '018ff7d7-0000-7000-8000-000000000002',
-    session_id: '018ff7d7-0000-7000-8000-000000000003',
-    user_pubkey: 'a'.repeat(64),
+    anonymous_id: '018ff7d7-0000-4000-8000-000000000002',
+    session_id: '018ff7d7-0000-4000-8000-000000000003',
+    source: 'web',
     platform: 'web',
-    app_version: '0.0.0',
-    build_number: '',
-    surface: 'home',
-    schema_version: 1,
-    properties: {},
-    entry_point: '',
-    flow_name: '',
-    step_name: '',
-    result: '',
-    reason_code: '',
-    content_id: '',
-    creator_pubkey: '',
-    feed_algorithm: '',
-    traffic_source: '',
-    feature_key: '',
-    experiment_key: '',
-    variant_key: '',
-    variation_id: 0,
-    duration_ms: 0,
-    position_ms: 0,
-    loop_count: 0,
-    value: 0,
+    release: '0.0.0',
+    consent_category: 'product_analytics',
+    schema_version: 2,
+    properties: {
+      landing_page: 'home',
+      referrer_class: 'direct',
+    },
     ...overrides,
-  };
+  } as ProductAnalyticsV2Event;
 }
 
 const baseEvent = makeEvent();
@@ -244,6 +229,37 @@ describe('ProductEventQueue', () => {
     await queue.markSucceeded([record.id]);
 
     expect(await queue.getFlushableBatch(10)).toHaveLength(0);
+  });
+
+  it('keeps anonymous and account-owned deliveries in separate batches', async () => {
+    const { ProductEventQueue } = await import('./eventQueue');
+    const queue = new ProductEventQueue();
+    const signed = makeEvent({ event_id: 'b'.repeat(64) });
+    const anonymous = makeEvent({ event_id: 'c'.repeat(64) });
+
+    await queue.enqueue(signed, 'd'.repeat(64));
+    await queue.enqueue(anonymous);
+
+    expect(await queue.getSignedFlushableBatch(10, 'd'.repeat(64))).toMatchObject([
+      { id: signed.event_id },
+    ]);
+    expect(await queue.getAnonymousFlushableBatch(10)).toMatchObject([
+      { id: anonymous.event_id },
+    ]);
+  });
+
+  it('purges only the account that logged out', async () => {
+    const { ProductEventQueue } = await import('./eventQueue');
+    const queue = new ProductEventQueue();
+    await queue.enqueue(makeEvent({ event_id: 'b'.repeat(64) }), 'd'.repeat(64));
+    await queue.enqueue(makeEvent({ event_id: 'c'.repeat(64) }), 'e'.repeat(64));
+    await queue.enqueue(makeEvent({ event_id: 'f'.repeat(64) }));
+
+    await queue.clearOwner('d'.repeat(64));
+
+    expect(await queue.getSignedFlushableBatch(10, 'd'.repeat(64))).toHaveLength(0);
+    expect(await queue.getSignedFlushableBatch(10, 'e'.repeat(64))).toHaveLength(1);
+    expect(await queue.getAnonymousFlushableBatch(10)).toHaveLength(1);
   });
 
   describe('when IndexedDB rejects every operation', () => {

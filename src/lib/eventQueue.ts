@@ -1,25 +1,24 @@
-import type { ProductAnalyticsPayload } from '@/lib/analyticsClient';
+import type { ProductAnalyticsV2Event } from '@/generated/productAnalytics';
 
 export const PRODUCT_EVENT_MAX_ATTEMPTS = 5;
 
 /**
  * Hard bounds on what may sit on a user's disk.
  *
- * Records here contain a pubkey and a session id, and the ingest endpoint is
- * not live yet, so without these every batch retries to dead and stays there
- * forever. Dead letters expire; pending records expire; and the queue as a
- * whole is capped, dropping the oldest first.
+ * Dead letters expire; pending records expire; and the queue as a whole is
+ * capped, dropping the oldest first.
  */
 export const PRODUCT_EVENT_MAX_RECORDS = 500;
 export const PRODUCT_EVENT_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 
 const DB_NAME = 'divine_product_events';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const STORE_NAME = 'product_event_queue';
 
 export interface ProductEventQueueRecord {
   id: string;
-  event: ProductAnalyticsPayload;
+  event: ProductAnalyticsV2Event;
+  owner_pubkey?: string;
   created_at: number;
   next_attempt_at: number;
   attempt_count: number;
@@ -42,10 +41,11 @@ export class ProductEventQueue {
     this.initPromise = this.init();
   }
 
-  async enqueue(event: ProductAnalyticsPayload): Promise<void> {
+  async enqueue(event: ProductAnalyticsV2Event, ownerPubkey?: string): Promise<void> {
     const record: ProductEventQueueRecord = {
       id: event.event_id,
       event,
+      owner_pubkey: ownerPubkey,
       created_at: Date.now(),
       next_attempt_at: Date.now(),
       attempt_count: 0,
@@ -55,23 +55,32 @@ export class ProductEventQueue {
     await this.enforceBounds();
   }
 
-  /**
-   * Pending records ready to send, oldest first.
-   *
-   * `ownerPubkey` scopes the read to one account. Records outlive the session
-   * that queued them, so an unscoped read lets account A's backlog be POSTed
-   * under account B's request signature once B logs in. Callers that send
-   * always pass the owner; the bare form exists for inspection and tests.
-   */
   async getFlushableBatch(limit: number, ownerPubkey?: string): Promise<ProductEventQueueRecord[]> {
     const records = await this.prune(await this.getAllRecords());
     const now = Date.now();
 
     return records
       .filter((record) => record.status === 'pending' && record.next_attempt_at <= now)
-      .filter((record) => !ownerPubkey || record.event.user_pubkey === ownerPubkey)
+      .filter((record) => !ownerPubkey || record.owner_pubkey === ownerPubkey)
       .sort((a, b) => a.created_at - b.created_at)
       .slice(0, limit);
+  }
+
+  async getSignedFlushableBatch(limit: number, ownerPubkey: string): Promise<ProductEventQueueRecord[]> {
+    const records = await this.getFlushableBatch(PRODUCT_EVENT_MAX_RECORDS, ownerPubkey);
+    return records.slice(0, limit);
+  }
+
+  async getAnonymousFlushableBatch(limit: number): Promise<ProductEventQueueRecord[]> {
+    const records = await this.getFlushableBatch(PRODUCT_EVENT_MAX_RECORDS);
+    return records.filter((record) => !record.owner_pubkey).slice(0, limit);
+  }
+
+  async clearOwner(ownerPubkey: string): Promise<void> {
+    const records = await this.getAllRecords();
+    await this.deleteRecords(
+      records.filter((record) => record.owner_pubkey === ownerPubkey).map((record) => record.id),
+    );
   }
 
   /**

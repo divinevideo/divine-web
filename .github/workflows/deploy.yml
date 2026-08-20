@@ -44,6 +44,8 @@ jobs:
         run: npm ci
 
       - name: Build
+        env:
+          VITE_PRODUCT_ANALYTICS_ENABLED: 'false'
         run: npm run build
 
       - name: Upload build artifact
