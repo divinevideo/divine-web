@@ -239,7 +239,7 @@ export function useVideoMetricsTracker({
     const contentId = video.id;
     impressionTimerRef.current = window.setTimeout(() => {
       impressionTimerRef.current = undefined;
-      if (impressionVideoIdRef.current !== contentId || impressionRecordedRef.current) return;
+      if (!enabledRef.current || impressionVideoIdRef.current !== contentId || impressionRecordedRef.current) return;
       impressionRecordedRef.current = true;
       void trackProductEvent('content_impression_recorded', {
         content_id: contentId,

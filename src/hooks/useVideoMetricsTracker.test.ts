@@ -456,6 +456,32 @@ describe('useVideoMetricsTracker', () => {
     unmount();
   });
 
+  it('does not record an impression after tracking is disabled', () => {
+    const video = makeVideo('v1');
+    const { rerender, unmount } = renderHook(
+      ({ enabled }) => useVideoMetricsTracker({
+        video,
+        isPlaying: false,
+        currentTime: 0,
+        duration: 6,
+        source: 'home',
+        position: 4,
+        visibilityRatio: 0.5,
+        enabled,
+      }),
+      { initialProps: { enabled: true } },
+    );
+
+    // Impression timer is armed but has not yet fired.
+    act(() => { vi.advanceTimersByTime(500); });
+    // Tracking is turned off before the one-second threshold elapses.
+    rerender({ enabled: false });
+    act(() => { vi.advanceTimersByTime(1000); });
+
+    expect(mockTrackProductEvent).not.toHaveBeenCalled();
+    unmount();
+  });
+
   it('detects video loops and increments loopCount', () => {
     const video = makeVideo('v1');
     const { rerender, result } = renderHook(
