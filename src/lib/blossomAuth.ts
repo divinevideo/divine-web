@@ -27,7 +27,7 @@ export async function createBlossomGetAuthHeader(
     const signedEvent = await signer.signEvent(template);
     const encoded = btoa(JSON.stringify(signedEvent));
 
-    debugLog(`[blossomAuth] Created GET auth header for sha256 ${sha256.slice(0, 8)}…`);
+    debugLog('[blossomAuth] Created GET auth header for requested blob');
     return `Nostr ${encoded}`;
   } catch (error) {
     debugError('[blossomAuth] Failed to generate GET auth header:', error);

@@ -112,6 +112,37 @@ describe("ExitStartPage", () => {
     ).toBeInTheDocument();
   });
 
+  it("explains the media limitation when direct file saving is unavailable", async () => {
+    mockUseCurrentUser.mockReturnValue(signedIn());
+    vi.stubGlobal("fetch", createFixtureFetch("one-page"));
+    render(<TestApp><ExitStartPage /></TestApp>);
+    await userEvent.click(screen.getByRole("button", { name: /Create my archive/ }));
+    await waitFor(() => expect(screen.getByText(/Your archive is ready/)).toBeInTheDocument());
+    expect(screen.getByRole("button", { name: /Save media archive/ })).toBeDisabled();
+    expect(screen.getByText(/cannot safely assemble one large media archive/)).toBeInTheDocument();
+  });
+
+  it("streams media to a selected file and reports a quarantined mismatch", async () => {
+    mockUseCurrentUser.mockReturnValue(signedIn());
+    vi.stubGlobal("fetch", createFixtureFetch("one-page"));
+    const write = vi.fn(async () => undefined);
+    const close = vi.fn(async () => undefined);
+    const abort = vi.fn(async () => undefined);
+    vi.stubGlobal("showSaveFilePicker", vi.fn(async () => ({
+      createWritable: async () => ({ write, close, abort }),
+    })));
+    render(<TestApp><ExitStartPage /></TestApp>);
+    await userEvent.click(screen.getByRole("button", { name: /Create my archive/ }));
+    await waitFor(() => expect(screen.getByText(/Your archive is ready/)).toBeInTheDocument());
+    vi.stubGlobal("fetch", vi.fn(async () => new Response("hello", { headers: { "content-type": "video/mp4" } })));
+    await userEvent.click(screen.getByRole("button", { name: /Save media archive/ }));
+    await waitFor(() => expect(screen.getByText("Your media archive is saved.")).toBeInTheDocument());
+    expect(screen.getByText(/Saved separately because the hash did not match/)).toBeInTheDocument();
+    expect(write).toHaveBeenCalled();
+    expect(close).toHaveBeenCalledOnce();
+    expect(abort).not.toHaveBeenCalled();
+  });
+
   it("uses the active Funnelcake environment", async () => {
     mockUseCurrentUser.mockReturnValue(signedIn());
     localStorage.setItem("divine_dev_funnelcake_api_mode", "staging");

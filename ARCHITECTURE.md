@@ -166,6 +166,15 @@ locales. `@fontsource-variable/inter` supplies typography.
 `@unhead/react` manages the document head. `sonner` and `vaul` provide toast
 and drawer UI. `vite-plugin-pwa` generates the PWA service worker.
 
+### Account Archive Export
+
+The `/exit/start` flow reads raw signed events through the owner-export API and
+builds archive metadata in `src/lib/exit/`. Its media option writes a store-only
+Zip64 archive directly to a user-selected file, downloads one unique blob at a
+time, verifies advertised SHA-256 hashes, and records partial failures without
+changing signed events. Viewer authorization is retried only for the exact
+`https://media.divine.video` origin; third-party media requests remain bare.
+
 ## Linting
 
 ESLint 9 with TypeScript, React Hooks, HTML, and three custom rules in

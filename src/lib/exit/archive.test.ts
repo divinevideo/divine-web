@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { fixtureMediaHash, fixturePubkey, makeFixtureEvent } from "./__fixtures__/exportFixtures";
-import { buildArchiveFiles, discoverMediaReferences, serializeArchiveFiles } from "./archive";
+import { buildArchiveFiles, completeArchiveMedia, discoverMediaReferences, serializeArchiveFiles } from "./archive";
 
 describe("archive builder", () => {
   it("preserves raw events and writes manifest metadata", () => {
@@ -171,5 +171,26 @@ describe("archive builder", () => {
     });
 
     expect(Object.keys(serializeArchiveFiles(archive))).toEqual(["events.json", "manifest.json", "media.json"]);
+  });
+
+  it("merges per-reference results, summarizes blobs, and certifies only trusted paths", () => {
+    const archive = buildArchiveFiles({
+      events: [makeFixtureEvent()], pubkey: fixturePubkey, sourceEndpoint: "https://api.divine.video",
+      pageCount: 1, failures: [], generatedAt: new Date("2026-08-12T21:00:00Z"),
+    });
+    const reference = archive["media.json"][0];
+    const completed = completeArchiveMedia(archive, [
+      { references: [reference], source_url: reference.url, expected_sha256: fixtureMediaHash,
+        computed_sha256: fixtureMediaHash, byte_size: 5, content_type: "video/mp4",
+        archive_path: `media/${fixtureMediaHash}.mp4`, verification: "verified" },
+      { references: [{ ...reference, url: "https://example.com/wrong" }], source_url: "https://example.com/wrong",
+        expected_sha256: fixtureMediaHash, computed_sha256: "e".repeat(64), byte_size: 4, content_type: "video/mp4",
+        archive_path: `media/mismatched/${fixtureMediaHash}.mp4`, verification: "hash-mismatch" },
+    ]);
+    expect(completed["manifest.json"].media).toEqual({
+      media_total: 2, media_verified: 1, media_unverified: 0, media_mismatched: 1, media_failed: 0,
+    });
+    expect(completed["media.json"]).toHaveLength(2);
+    expect(completed["media-checksums.txt"]).toBe(`${fixtureMediaHash}  media/${fixtureMediaHash}.mp4\n`);
   });
 });

@@ -5,6 +5,7 @@ import type { NostrEvent } from "@nostrify/nostrify";
 
 import { isHex64 } from "./hex";
 import type { OwnerExportError } from "./ownerExportClient";
+import type { MediaDownloadResult, MediaVerification } from "./mediaDownloader";
 
 export interface MediaReference {
   event_id: string;
@@ -25,12 +26,33 @@ export interface ArchiveManifest {
     message: string;
     status?: number;
   }>;
+  media?: MediaSummary;
+}
+
+export interface MediaSummary {
+  media_total: number;
+  media_verified: number;
+  media_unverified: number;
+  media_mismatched: number;
+  media_failed: number;
+}
+
+export interface ArchivedMediaReference extends MediaReference {
+  source_url: string;
+  expected_sha256: string | null;
+  computed_sha256: string | null;
+  byte_size: number | null;
+  content_type: string | null;
+  archive_path: string | null;
+  verification: MediaVerification;
+  failure_reason?: string;
 }
 
 export interface ArchiveFiles {
   "events.json": NostrEvent[];
   "manifest.json": ArchiveManifest;
-  "media.json": MediaReference[];
+  "media.json": MediaReference[] | ArchivedMediaReference[];
+  "media-checksums.txt"?: string;
 }
 
 const URL_TAGS = new Set(["url", "image", "thumb", "thumbnail"]);
@@ -162,10 +184,52 @@ export function buildArchiveFiles(input: {
   };
 }
 
-export function serializeArchiveFiles(files: ArchiveFiles): Record<string, string> {
+export function mergeMediaResults(results: MediaDownloadResult[]): ArchivedMediaReference[] {
+  return results.flatMap((result) => result.references.map((reference) => ({
+    ...reference,
+    source_url: result.source_url,
+    expected_sha256: result.expected_sha256,
+    computed_sha256: result.computed_sha256,
+    byte_size: result.byte_size,
+    content_type: result.content_type,
+    archive_path: result.archive_path,
+    verification: result.verification,
+    ...(result.failure_reason ? { failure_reason: result.failure_reason } : {}),
+  })));
+}
+
+export function summarizeMedia(results: MediaDownloadResult[]): MediaSummary {
   return {
+    media_total: results.length,
+    media_verified: results.filter((result) => result.verification === "verified").length,
+    media_unverified: results.filter((result) => result.verification === "unverified").length,
+    media_mismatched: results.filter((result) => result.verification === "hash-mismatch").length,
+    media_failed: results.filter((result) => result.verification === "failed").length,
+  };
+}
+
+export function createMediaChecksums(results: MediaDownloadResult[]): string {
+  const lines = results
+    .filter((result) => result.archive_path && (result.verification === "verified" || result.verification === "unverified"))
+    .map((result) => `${result.computed_sha256}  ${result.archive_path}`);
+  return lines.length ? `${lines.join("\n")}\n` : "";
+}
+
+export function completeArchiveMedia(files: ArchiveFiles, results: MediaDownloadResult[]): ArchiveFiles {
+  return {
+    ...files,
+    "manifest.json": { ...files["manifest.json"], media: summarizeMedia(results) },
+    "media.json": mergeMediaResults(results),
+    "media-checksums.txt": createMediaChecksums(results),
+  };
+}
+
+export function serializeArchiveFiles(files: ArchiveFiles): Record<string, string> {
+  const serialized: Record<string, string> = {
     "events.json": `${JSON.stringify(files["events.json"], null, 2)}\n`,
     "manifest.json": `${JSON.stringify(files["manifest.json"], null, 2)}\n`,
     "media.json": `${JSON.stringify(files["media.json"], null, 2)}\n`
   };
+  if (files["media-checksums.txt"] !== undefined) serialized["media-checksums.txt"] = files["media-checksums.txt"];
+  return serialized;
 }

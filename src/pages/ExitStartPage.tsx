@@ -16,6 +16,7 @@ import { Link } from "react-router-dom";
 
 import { LocalNsecBanner } from "@/components/auth/LocalNsecBanner";
 import { KeySafetyNotice } from "@/components/exit/KeySafetyNotice";
+import { MediaProgressList } from "@/components/exit/MediaProgressList";
 import { LoginArea } from "@/components/auth/LoginArea";
 import { MarketingLayout } from "@/components/MarketingLayout";
 import { SectionHero } from "@/components/static-pages";
@@ -23,6 +24,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getFunnelcakeBaseUrl } from "@/config/api";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { useArchiveMediaExport } from "@/hooks/useArchiveMediaExport";
 import { buildArchiveFiles, serializeArchiveFiles, type ArchiveFiles } from "@/lib/exit/archive";
 import { exportOwnerEvents, OwnerExportError, type ExportProgress } from "@/lib/exit/ownerExportClient";
 import { createZip } from "@/lib/exit/zip";
@@ -46,12 +48,12 @@ function downloadErrorMessage(error: unknown): string {
   return "The archive could not be downloaded. Try creating it again.";
 }
 
-function downloadArchive(files: ArchiveFiles): void {
+async function downloadArchive(files: ArchiveFiles): Promise<void> {
   if (typeof URL.createObjectURL !== "function") {
     throw new Error("This browser cannot create the archive download. Try another browser.");
   }
 
-  const zip = createZip(serializeArchiveFiles(files));
+  const zip = await createZip(serializeArchiveFiles(files));
   const url = URL.createObjectURL(zip);
   const link = document.createElement("a");
 
@@ -71,7 +73,7 @@ export function ExitStartPage() {
       {
         name: "description",
         content:
-          "Download a portable archive of your Divine posts, video records, and media references.",
+          "Download a portable archive of your Divine posts, video records, and media files.",
       },
     ],
   });
@@ -91,6 +93,7 @@ export function ExitStartPage() {
   const activeExport = useRef<AbortController | null>(null);
   const currentPubkey = useRef(user?.pubkey);
   currentPubkey.current = user?.pubkey;
+  const mediaExport = useArchiveMediaExport({ files: archiveFiles, signer });
 
   useEffect(() => {
     activeExport.current?.abort();
@@ -167,13 +170,13 @@ export function ExitStartPage() {
     }
   }
 
-  function handleDownloadArchive() {
+  async function handleDownloadArchive() {
     if (!archiveFiles) {
       return;
     }
 
     try {
-      downloadArchive(archiveFiles);
+      await downloadArchive(archiveFiles);
     } catch (error) {
       setFailure(downloadErrorMessage(error));
       setState("failed");
@@ -258,13 +261,42 @@ export function ExitStartPage() {
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={handleDownloadArchive}
+                  onClick={() => void handleDownloadArchive()}
                   disabled={!archiveFiles}
                 >
                   <DownloadSimple className="h-4 w-4" aria-hidden="true" />
                   Download archive (.zip)
                 </Button>
+                <Button
+                  type="button"
+                  variant="sticker"
+                  onClick={() => void mediaExport.start()}
+                  disabled={!archiveFiles || !mediaExport.supported || mediaExport.state === "running"}
+                >
+                  {mediaExport.state === "running" ? (
+                    <ArrowClockwise className="h-4 w-4 animate-spin" aria-hidden="true" />
+                  ) : (
+                    <DownloadSimple className="h-4 w-4" aria-hidden="true" />
+                  )}
+                  {mediaExport.state === "running" ? "Saving media" : "Save media archive"}
+                </Button>
               </div>
+
+              {!mediaExport.supported && archiveFiles && (
+                <p className="text-sm leading-relaxed text-muted-foreground">
+                  This browser can download the JSON archive, but it cannot safely assemble one large media archive. Use a browser that supports saving directly to a file for the media copy.
+                </p>
+              )}
+
+              <MediaProgressList progress={mediaExport.progress} />
+
+              {mediaExport.state === "complete" && (
+                <p className="text-base font-semibold text-foreground" role="status">Your media archive is saved.</p>
+              )}
+
+              {mediaExport.state === "failed" && mediaExport.failure && (
+                <p className="text-base text-destructive" role="alert">{mediaExport.failure}</p>
+              )}
 
               {!signer && (
                 <Card variant="brand" accent="pink">
