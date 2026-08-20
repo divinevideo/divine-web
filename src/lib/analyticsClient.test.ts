@@ -130,6 +130,36 @@ describe('analyticsClient', () => {
     expect(await productAnalytics.queue.getFlushableBatch(10)).toHaveLength(0);
   });
 
+  it('allows an explicit staging test from a Cloudflare preview', async () => {
+    const { resolveProductAnalyticsEnabled } = await import('./analyticsClient');
+
+    expect(resolveProductAnalyticsEnabled({
+      buildEnabled: false,
+      hostname: 'analytics-test.divine-web-direct-deploy.pages.dev',
+      apiMode: 'staging',
+    })).toBe(true);
+  });
+
+  it('does not turn analytics on for ordinary previews or Divine domains', async () => {
+    const { resolveProductAnalyticsEnabled } = await import('./analyticsClient');
+
+    expect(resolveProductAnalyticsEnabled({
+      buildEnabled: false,
+      hostname: 'analytics-test.divine-web-direct-deploy.pages.dev',
+      apiMode: 'auto',
+    })).toBe(false);
+    expect(resolveProductAnalyticsEnabled({
+      buildEnabled: false,
+      hostname: 'alice.divine.video',
+      apiMode: 'staging',
+    })).toBe(false);
+    expect(resolveProductAnalyticsEnabled({
+      buildEnabled: false,
+      hostname: 'divine.video',
+      apiMode: 'staging',
+    })).toBe(false);
+  });
+
   it('requires analytics consent for signed and anonymous events', async () => {
     consent.value = null;
     const { productAnalytics, configureProductAnalyticsIdentity } = await import('./analyticsClient');

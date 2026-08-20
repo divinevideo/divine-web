@@ -233,6 +233,12 @@ and update the lock from that manifest.
 `scripts/check-analytics-contract.test.mjs` runs the same check under
 `npm run test`.
 
+Product analytics remains off in normal production and preview builds. An
+operator can use the existing Funnelcake API setting to select staging on a
+`*.pages.dev` preview; that explicit combination turns product analytics on for
+the staging test without reserving a `*.divine.video` hostname. Selecting
+staging on a Divine user-facing domain does not turn collection on.
+
 ### Relay Routing
 
 [`src/lib/relayRouting.ts`](./src/lib/relayRouting.ts) defines the

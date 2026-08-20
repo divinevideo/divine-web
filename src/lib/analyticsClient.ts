@@ -1,6 +1,10 @@
 import type { NostrSigner } from '@nostrify/nostrify';
 
-import { getFunnelcakeBaseUrl } from '@/config/api';
+import {
+  getFunnelcakeApiModeOverride,
+  getFunnelcakeBaseUrl,
+  type FunnelcakeApiMode,
+} from '@/config/api';
 import type {
   ProductAnalyticsV2Event,
   ProductAnalyticsV2EventName,
@@ -35,6 +39,12 @@ interface ProductAnalyticsClientOptions {
   batchSize?: number;
 }
 
+interface ResolveProductAnalyticsEnabledOptions {
+  buildEnabled: boolean;
+  hostname: string;
+  apiMode: FunnelcakeApiMode;
+}
+
 export interface ProductAnalyticsUtm {
   utm_source?: string;
   utm_medium?: string;
@@ -46,7 +56,11 @@ const SESSION_ID_KEY = 'divine_product_analytics_session_id';
 const ANONYMOUS_ID_KEY = 'divine_product_analytics_anonymous_id';
 const UTM_KEY = 'divine_product_analytics_utm';
 const DEFAULT_RELEASE = '0.0.0';
-const PRODUCT_ANALYTICS_ENABLED = import.meta.env.VITE_PRODUCT_ANALYTICS_ENABLED === 'true';
+const PRODUCT_ANALYTICS_ENABLED = resolveProductAnalyticsEnabled({
+  buildEnabled: import.meta.env.VITE_PRODUCT_ANALYTICS_ENABLED === 'true',
+  hostname: typeof window === 'undefined' ? '' : window.location.hostname,
+  apiMode: getFunnelcakeApiModeOverride(),
+});
 const ANONYMOUS_EVENT_NAMES = new Set<ProductAnalyticsV2EventName>([
   'landing_viewed',
   'registration_started',
@@ -57,6 +71,16 @@ const UTM_VALUE = /^[a-z0-9][a-z0-9._-]{0,63}$/;
 let currentIdentity: ProductAnalyticsIdentity = {};
 const identityListeners: ProductAnalyticsIdentityCallback[] = [];
 const clients = new Set<ProductAnalyticsClient>();
+
+export function resolveProductAnalyticsEnabled({
+  buildEnabled,
+  hostname,
+  apiMode,
+}: ResolveProductAnalyticsEnabledOptions): boolean {
+  if (buildEnabled) return true;
+
+  return apiMode === 'staging' && hostname.toLowerCase().endsWith('.pages.dev');
+}
 
 export function configureProductAnalyticsIdentity(identity: ProductAnalyticsIdentity): void {
   const previousPubkey = currentIdentity.userPubkey;
