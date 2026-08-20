@@ -3,6 +3,8 @@
 
 const encoder = new TextEncoder();
 const ZIP32_MAX = 0xffffffffn;
+// General-purpose bit 11 (EFS): entry names are UTF-8, not CP437.
+const UTF8_NAME_FLAG = 0x0800;
 const ZIP16_MAX = 0xffffn;
 
 export interface ZipSink {
@@ -110,7 +112,7 @@ export function createZipWriter(sink: ZipSink, options: ZipWriterOptions = {}): 
       const extra = zip64Size ? zip64Extra([size, size]) : new Uint8Array();
       entries.push({ name: encodedName, crc32: checksum, size, offset: entryOffset, zip64Size, zip64Offset });
       await write(concat([
-        uint32(0x04034b50), uint16(zip64Size ? 45 : 20), uint16(0), uint16(0), uint16(0), uint16(0),
+        uint32(0x04034b50), uint16(zip64Size ? 45 : 20), uint16(UTF8_NAME_FLAG), uint16(0), uint16(0), uint16(0),
         uint32(checksum), uint32(zip64Size ? ZIP32_MAX : size), uint32(zip64Size ? ZIP32_MAX : size),
         uint16(encodedName.length), uint16(extra.length), encodedName, extra,
       ]));
@@ -129,7 +131,7 @@ export function createZipWriter(sink: ZipSink, options: ZipWriterOptions = {}): 
         const extra = values.length ? zip64Extra(values) : new Uint8Array();
         usesZip64 ||= values.length > 0;
         await write(concat([
-          uint32(0x02014b50), uint16(45), uint16(values.length ? 45 : 20), uint16(0), uint16(0), uint16(0), uint16(0),
+          uint32(0x02014b50), uint16(45), uint16(values.length ? 45 : 20), uint16(UTF8_NAME_FLAG), uint16(0), uint16(0), uint16(0),
           uint32(entry.crc32), uint32(entry.zip64Size ? ZIP32_MAX : entry.size), uint32(entry.zip64Size ? ZIP32_MAX : entry.size),
           uint16(entry.name.length), uint16(extra.length), uint16(0), uint16(0), uint16(0), uint32(0),
           uint32(entry.zip64Offset ? ZIP32_MAX : entry.offset), entry.name, extra,

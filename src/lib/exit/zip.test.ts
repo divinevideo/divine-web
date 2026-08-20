@@ -61,6 +61,16 @@ describe("createZip", () => {
     expect(unzipStored(bytes)["first"]).toEqual(new Uint8Array(9));
   });
 
+  it("marks entry names as UTF-8 so non-ASCII paths survive extraction", async () => {
+    const bytes = await createZipBytes({ "média/✓.txt": "hi\n" });
+    // General-purpose bit 11 lives at offset 6 of the local header and offset 8
+    // of the central directory header; without it readers fall back to CP437.
+    expect(bytes[6] | (bytes[7] << 8)).toBe(0x0800);
+    const central = bytes.findIndex((_, offset) => readUint32(bytes, offset) === 0x02014b50);
+    expect(bytes[central + 8] | (bytes[central + 9] << 8)).toBe(0x0800);
+    expect(Object.keys(unzipStored(bytes))).toEqual(["média/✓.txt"]);
+  });
+
   it("aborts the underlying sink after a failed export", async () => {
     const abort = vi.fn(async () => undefined);
     const writer = createZipWriter({ write: async () => undefined, abort });
