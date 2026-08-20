@@ -29,7 +29,7 @@ export function readEmbeddedSchemaVersion(contents) {
     /PRODUCT_ANALYTICS_V([0-9]+)_SCHEMA_VERSION = ([0-9]+) as const;/,
   );
 
-  return match?.[1] === match?.[2] ? Number(match[1]) : undefined;
+  return match && match[1] === match[2] ? Number(match[1]) : undefined;
 }
 
 export function readEmbeddedEventIdAlgorithm(contents) {

@@ -119,6 +119,19 @@ describe('analytics contract pin', () => {
       .toThrow(/required provenance fields/);
   });
 
+  it('rejects an artifact whose schema version constant was renamed', () => {
+    const renamed = Buffer.from(
+      artifact
+        .toString('utf8')
+        .replace('PRODUCT_ANALYTICS_V2_SCHEMA_VERSION', 'PRODUCT_ANALYTICS_SCHEMA_REVISION'),
+      'utf8',
+    );
+    const repinned = repinArtifact(renamed);
+
+    expect(() => assertContractPin(repinned.lock, renamed, repinned.manifest))
+      .toThrow(/schema version does not match the lock/);
+  });
+
   it('rejects an artifact missing its generated-file header', () => {
     const stripped = Buffer.from(artifact.toString('utf8').replace('// DO NOT EDIT.', '//'), 'utf8');
     const repinned = repinArtifact(stripped);
