@@ -5,6 +5,7 @@ import {
   Archive,
   ArrowClockwise,
   CheckCircle,
+  Copy,
   DownloadSimple,
   Key,
   WarningCircle,
@@ -17,6 +18,7 @@ import { Link } from "react-router-dom";
 import { LocalNsecBanner } from "@/components/auth/LocalNsecBanner";
 import { KeySafetyNotice } from "@/components/exit/KeySafetyNotice";
 import { MediaProgressList } from "@/components/exit/MediaProgressList";
+import { DestinationForm } from "@/components/exit/DestinationForm";
 import { LoginArea } from "@/components/auth/LoginArea";
 import { MarketingLayout } from "@/components/MarketingLayout";
 import { SectionHero } from "@/components/static-pages";
@@ -25,6 +27,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getFunnelcakeBaseUrl } from "@/config/api";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { useArchiveMediaExport } from "@/hooks/useArchiveMediaExport";
+import { useDestinationMirror } from "@/hooks/useDestinationMirror";
 import { buildArchiveFiles, serializeArchiveFiles, type ArchiveFiles } from "@/lib/exit/archive";
 import { exportOwnerEvents, OwnerExportError, type ExportProgress } from "@/lib/exit/ownerExportClient";
 import { createZip } from "@/lib/exit/zip";
@@ -94,6 +97,7 @@ export function ExitStartPage() {
   const currentPubkey = useRef(user?.pubkey);
   currentPubkey.current = user?.pubkey;
   const mediaExport = useArchiveMediaExport({ files: archiveFiles, signer });
+  const destinationMirror = useDestinationMirror({ files: archiveFiles, signer });
 
   useEffect(() => {
     activeExport.current?.abort();
@@ -404,6 +408,24 @@ export function ExitStartPage() {
             </div>
           )}
         </section>
+
+        {archiveFiles && signer && (
+          <section>
+            <SectionHero
+              eyebrow="Choose a destination"
+              icon={<Copy weight="fill" className="h-7 w-7" />}
+              title="Move your media"
+              lead="Copy the original files to another Blossom server. Nothing is removed from Divine, and one refused file will not stop the rest."
+            />
+            <DestinationForm
+              state={destinationMirror.state}
+              progress={destinationMirror.progress}
+              summary={destinationMirror.summary}
+              failure={destinationMirror.failure}
+              onStart={destinationMirror.start}
+            />
+          </section>
+        )}
 
         <section>
           <SectionHero

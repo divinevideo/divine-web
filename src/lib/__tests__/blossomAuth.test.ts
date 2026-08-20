@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { createBlossomGetAuthHeader } from '@/lib/blossomAuth';
+import { createBlossomGetAuthHeader, createBlossomUploadAuthHeader } from '@/lib/blossomAuth';
 
 function makeSigner() {
   return {
@@ -40,5 +40,26 @@ describe('createBlossomGetAuthHeader', () => {
 
     const header = await createBlossomGetAuthHeader(signer, HASH);
     expect(header).toBeNull();
+  });
+});
+
+describe('createBlossomUploadAuthHeader', () => {
+  const HASH = 'b'.repeat(64);
+
+  it('signs a hash-bound kind 24242 upload event', async () => {
+    const signer = makeSigner();
+    const header = await createBlossomUploadAuthHeader(signer, HASH);
+
+    const payload = JSON.parse(atob(header.slice('Nostr '.length)));
+    expect(payload).toMatchObject({ kind: 24242, content: 'Upload blob' });
+    expect(payload.tags).toContainEqual(['t', 'upload']);
+    expect(payload.tags).toContainEqual(['x', HASH]);
+  });
+
+  it('surfaces signing failures to the mirror flow', async () => {
+    const signer = makeSigner();
+    signer.signEvent.mockRejectedValueOnce(new Error('signing denied'));
+
+    await expect(createBlossomUploadAuthHeader(signer, HASH)).rejects.toThrow('signing denied');
   });
 });

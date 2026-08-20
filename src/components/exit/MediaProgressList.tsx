@@ -2,6 +2,7 @@
 // ABOUTME: Uses plain status text so partial and mismatched results remain unambiguous
 
 import type { MediaProgress } from "@/lib/exit/mediaDownloader";
+import { TransferProgress } from "@/components/exit/TransferProgress";
 
 export function MediaProgressList({ progress }: { progress: MediaProgress | null }) {
   if (!progress) return null;
@@ -12,10 +13,5 @@ export function MediaProgressList({ progress }: { progress: MediaProgress | null
       : progress.result.verification === "hash-mismatch"
         ? "Saved separately because the hash did not match"
         : "Could not download";
-  return (
-    <div className="rounded-lg border border-brand-dark-green/15 p-4 dark:border-brand-green/25" aria-live="polite">
-      <p className="font-semibold text-foreground">Media {progress.completed} of {progress.total}</p>
-      <p className="text-sm text-muted-foreground">{label}: <span className="break-all">{progress.result.source_url}</span></p>
-    </div>
-  );
+  return <TransferProgress completed={progress.completed} total={progress.total} label={label} url={progress.result.source_url} />;
 }

@@ -7,6 +7,7 @@ import { createFixtureFetch } from "@/lib/exit/__fixtures__/fixtureFetch";
 import { FixtureSigner } from "@/lib/exit/__fixtures__/fixtureSigner";
 import {
   fixturePubkey,
+  fixtureMediaHash,
   makeFixtureEvent,
   otherFixturePubkey,
 } from "@/lib/exit/__fixtures__/exportFixtures";
@@ -110,6 +111,41 @@ describe("ExitStartPage", () => {
     expect(
       screen.getByText(/2 pages read, 2 events and 2 media references collected from Divine/)
     ).toBeInTheDocument();
+  });
+
+  it("validates a custom Blossom destination inline", async () => {
+    mockUseCurrentUser.mockReturnValue(signedIn());
+    vi.stubGlobal("fetch", createFixtureFetch("one-page"));
+    render(<TestApp><ExitStartPage /></TestApp>);
+    await userEvent.click(screen.getByRole("button", { name: /Create my archive/ }));
+    await waitFor(() => expect(screen.getByRole("heading", { name: "Move your media" })).toBeInTheDocument());
+
+    await userEvent.type(screen.getByLabelText("Blossom server URL"), "http://blossom.example");
+    await userEvent.click(screen.getByRole("button", { name: "Copy my media" }));
+
+    expect(screen.getByText("Use an HTTPS Blossom server URL.")).toBeInTheDocument();
+  });
+
+  it("reports destination mirror counts", async () => {
+    mockUseCurrentUser.mockReturnValue(signedIn());
+    vi.stubGlobal("fetch", createFixtureFetch("one-page"));
+    render(<TestApp><ExitStartPage /></TestApp>);
+    await userEvent.click(screen.getByRole("button", { name: /Create my archive/ }));
+    await waitFor(() => expect(screen.getByRole("heading", { name: "Move your media" })).toBeInTheDocument());
+
+    vi.stubGlobal("fetch", vi.fn<typeof fetch>()
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        url: `https://blossom.example/${fixtureMediaHash}`,
+        sha256: fixtureMediaHash,
+        size: 5,
+        type: "video/mp4",
+      }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(null, { status: 200, headers: { "content-length": "5" } })));
+    await userEvent.type(screen.getByLabelText("Blossom server URL"), "https://blossom.example");
+    await userEvent.click(screen.getByRole("button", { name: "Copy my media" }));
+
+    await waitFor(() => expect(screen.getByText("Destination copy finished.")).toBeInTheDocument());
+    expect(screen.getByRole("status")).toHaveTextContent("1 mirrored, 0 failed, 0 skipped, and 0 unverified.");
   });
 
   it("explains the media limitation when direct file saving is unavailable", async () => {
