@@ -286,7 +286,12 @@ export class ProductAnalyticsClient {
         body,
         keepalive: true,
       });
-      if (response.ok || (response.status < 500 && response.status !== 429)) {
+      // 5xx and a few 4xx are transient: 408 (timeout), 429 (rate limit), and
+      // 401/403 (auth headers that fail on clock skew or an expired token).
+      // Any other 4xx is a permanent contract rejection we drop rather than
+      // retry forever.
+      const retryable = response.status >= 500 || [401, 403, 408, 429].includes(response.status);
+      if (response.ok || !retryable) {
         await this.queue.markSucceeded(records.map((record) => record.id));
       } else {
         await this.queue.markFailed(records);

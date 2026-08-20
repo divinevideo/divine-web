@@ -282,6 +282,31 @@ describe('analyticsClient', () => {
     productAnalytics.dispose();
   });
 
+  it('retries a transient auth failure instead of dropping the event', async () => {
+    vi.stubGlobal('fetch', vi.fn()
+      .mockResolvedValueOnce(new Response('{}', { status: 401 }))
+      .mockResolvedValueOnce(new Response('{"accepted":true}', { status: 200 })));
+    const { ProductAnalyticsClient, configureProductAnalyticsIdentity } = await import('./analyticsClient');
+    const { ProductEventQueue } = await import('./eventQueue');
+    const client = new ProductAnalyticsClient({
+      queue: new ProductEventQueue({ baseRetryDelayMs: 0 }),
+    });
+    configureProductAnalyticsIdentity({ userPubkey: pubkey, signer });
+
+    await client.track('content_impression_recorded', impression);
+    await vi.waitFor(() => expect(fetch).toHaveBeenCalledTimes(1));
+    // A 401 is transient (clock skew / expired auth); the event must stay queued.
+    await vi.waitFor(async () => {
+      expect(await client.queue.getFlushableBatch(10)).toHaveLength(1);
+    });
+    await client.flush();
+    await vi.waitFor(() => expect(fetch).toHaveBeenCalledTimes(2));
+    await vi.waitFor(async () => {
+      expect(await client.queue.getFlushableBatch(10)).toHaveLength(0);
+    });
+    client.dispose();
+  });
+
   it('leaves a signed event queued when the signer is unavailable', async () => {
     const failingSigner = {
       signEvent: vi.fn(async () => { throw new Error('unavailable'); }),
