@@ -147,7 +147,11 @@ export class ProductEventQueue {
   }
 
   async markFailed(records: ProductEventQueueRecord[]): Promise<void> {
-    await Promise.all(records.map((record) => {
+    // A record deleted while its send was outstanding (account switch, logout,
+    // consent withdrawal) must stay deleted. Only re-queue records that still
+    // exist, so a failed in-flight send cannot resurrect purged events.
+    const live = new Set((await this.getAllRecords()).map((record) => record.id));
+    await Promise.all(records.filter((record) => live.has(record.id)).map((record) => {
       const attemptCount = record.attempt_count + 1;
       const failedRecord: ProductEventQueueRecord = {
         ...record,

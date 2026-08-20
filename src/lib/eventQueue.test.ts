@@ -262,6 +262,26 @@ describe('ProductEventQueue', () => {
     expect(await queue.getAnonymousFlushableBatch(10)).toHaveLength(1);
   });
 
+  it('does not resurrect a record deleted while its send was in flight', async () => {
+    const { ProductEventQueue } = await import('./eventQueue');
+    // Zero backoff so a resurrected record would be immediately flushable
+    // rather than merely deferred by retry delay.
+    const queue = new ProductEventQueue({ baseRetryDelayMs: 0 });
+    const owner = 'd'.repeat(64);
+    await queue.enqueue(makeEvent({ event_id: 'b'.repeat(64) }), owner);
+
+    // Snapshot the batch as send() does, then clear it (account switch/logout)
+    // while that send is still outstanding.
+    const inFlight = await queue.getFlushableBatch(10, owner);
+    expect(inFlight).toHaveLength(1);
+    await queue.clearOwner(owner);
+    expect(await queue.getFlushableBatch(10)).toHaveLength(0);
+
+    // The outstanding send now fails; markFailed must not revive the cleared record.
+    await queue.markFailed(inFlight);
+    expect(await queue.getFlushableBatch(10)).toHaveLength(0);
+  });
+
   describe('when IndexedDB rejects every operation', () => {
     beforeEach(() => {
       Object.defineProperty(globalThis, 'indexedDB', {
