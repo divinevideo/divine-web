@@ -157,8 +157,8 @@ export function AppRouter() {
   return (
     <BrowserRouter>
       <ScrollToTop />
-      {/* AnalyticsUserTracker first: it configures analytics identity, and
-          AnalyticsPageTracker's one-shot session_started needs it in place. */}
+      {/* AnalyticsUserTracker first: it configures the analytics identity that
+          AnalyticsPageTracker's identity-linked events depend on. */}
       <AnalyticsUserTracker />
       <AnalyticsPageTracker />
       <Routes>
