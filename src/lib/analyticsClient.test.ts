@@ -130,6 +130,16 @@ describe('analyticsClient', () => {
     expect(await productAnalytics.queue.getFlushableBatch(10)).toHaveLength(0);
   });
 
+  it('rechecks whether analytics is enabled after the client starts', async () => {
+    vi.stubEnv('VITE_PRODUCT_ANALYTICS_ENABLED', 'false');
+    const { productAnalytics } = await import('./analyticsClient');
+
+    vi.stubEnv('VITE_PRODUCT_ANALYTICS_ENABLED', 'true');
+    await productAnalytics.track('landing_viewed', landing);
+
+    await vi.waitFor(() => expect(fetch).toHaveBeenCalledOnce());
+  });
+
   it('allows an explicit staging test from a Cloudflare preview', async () => {
     const { resolveProductAnalyticsEnabled } = await import('./analyticsClient');
 

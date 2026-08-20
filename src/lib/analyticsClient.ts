@@ -56,11 +56,6 @@ const SESSION_ID_KEY = 'divine_product_analytics_session_id';
 const ANONYMOUS_ID_KEY = 'divine_product_analytics_anonymous_id';
 const UTM_KEY = 'divine_product_analytics_utm';
 const DEFAULT_RELEASE = '0.0.0';
-const PRODUCT_ANALYTICS_ENABLED = resolveProductAnalyticsEnabled({
-  buildEnabled: import.meta.env.VITE_PRODUCT_ANALYTICS_ENABLED === 'true',
-  hostname: typeof window === 'undefined' ? '' : window.location.hostname,
-  apiMode: getFunnelcakeApiModeOverride(),
-});
 const ANONYMOUS_EVENT_NAMES = new Set<ProductAnalyticsV2EventName>([
   'landing_viewed',
   'registration_started',
@@ -193,7 +188,6 @@ export class ProductAnalyticsClient {
     this.queue = options.queue ?? productEventQueue;
     this.batchSize = options.batchSize ?? 50;
     clients.add(this);
-    if (!PRODUCT_ANALYTICS_ENABLED) return;
 
     this.registerFlushTriggers();
     this.unsubscribeConsent = onAnalyticsConsentChanged((consented) => {
@@ -350,9 +344,17 @@ function canonicalize(value: unknown): string {
 }
 
 function canCollectAnalytics(): boolean {
-  if (!PRODUCT_ANALYTICS_ENABLED) return false;
+  if (!isProductAnalyticsEnabled()) return false;
   if (typeof window !== 'undefined' && window.__DIVINE_ANALYTICS_DISABLED__) return false;
   return getAnalyticsConsent() === true;
+}
+
+function isProductAnalyticsEnabled(): boolean {
+  return resolveProductAnalyticsEnabled({
+    buildEnabled: import.meta.env.VITE_PRODUCT_ANALYTICS_ENABLED === 'true',
+    hostname: typeof window === 'undefined' ? '' : window.location.hostname,
+    apiMode: getFunnelcakeApiModeOverride(),
+  });
 }
 
 function getRelease(): string {
