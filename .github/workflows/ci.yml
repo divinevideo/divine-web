@@ -25,5 +25,8 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Verify pinned analytics contract
+        run: npm run analytics:contract:check
+
       - name: Run tests (includes lint, type-check, and build)
         run: npm test

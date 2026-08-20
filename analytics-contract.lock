@@ -1,0 +1,7 @@
+{
+  "artifact": "src/generated/productAnalytics.ts",
+  "artifact_sha256": "9a19b65862fdd98005c3b11517a632b83833f0f33f7ffa50c37d414e3ef9efca",
+  "contract_commit": "687df20125fac8b8643892e7cfaefbd84606c83c",
+  "schema_version": 1,
+  "source_artifact": "analytics/generated/productAnalytics.ts"
+}

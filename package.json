@@ -19,6 +19,7 @@
     "fastly:release": "npm run fastly:deploy && npm run fastly:publish",
     "verify:well-known": "node scripts/verify-well-known.mjs",
     "verify:og": "bash scripts/verify-og-tags.sh",
+    "analytics:contract:check": "node scripts/check-analytics-contract.mjs",
     "precalculate-thumbnails": "tsx scripts/precalculate-hashtag-thumbnails.ts",
     "generate-icons": "node scripts/generate-icons.js",
     "test:visual": "playwright test",
