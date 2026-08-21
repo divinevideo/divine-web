@@ -11,7 +11,10 @@ export type DestinationErrorCode =
   | "unreachable"
   | "auth-required"
   | "no-mirror-support"
-  | "rate-limited";
+  | "rate-limited"
+  | "invalid-relay-url"
+  | "insecure-relay-scheme"
+  | "private-relay-host";
 
 export class DestinationError extends Error {
   constructor(

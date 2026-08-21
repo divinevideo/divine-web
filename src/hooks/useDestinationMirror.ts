@@ -10,6 +10,7 @@ import {
   mirrorArchiveMedia,
   summarizeMirrorResults,
   type MirrorProgress,
+  type MirrorResult,
   type MirrorSummary,
 } from "@/lib/exit/mirrorClient";
 
@@ -19,6 +20,7 @@ export function useDestinationMirror(input: { files: ArchiveFiles | null; signer
   const [state, setState] = useState<DestinationMirrorState>("idle");
   const [progress, setProgress] = useState<MirrorProgress | null>(null);
   const [summary, setSummary] = useState<MirrorSummary | null>(null);
+  const [results, setResults] = useState<MirrorResult[] | null>(null);
   const [failure, setFailure] = useState<string | null>(null);
   const activeController = useRef<AbortController | null>(null);
   const archivePubkey = input.files?.["manifest.json"].pubkey;
@@ -28,6 +30,7 @@ export function useDestinationMirror(input: { files: ArchiveFiles | null; signer
     setState("idle");
     setProgress(null);
     setSummary(null);
+    setResults(null);
     setFailure(null);
     return () => activeController.current?.abort();
   }, [archivePubkey]);
@@ -40,6 +43,7 @@ export function useDestinationMirror(input: { files: ArchiveFiles | null; signer
     setState("running");
     setProgress(null);
     setSummary(null);
+    setResults(null);
     setFailure(null);
     try {
       const results = await mirrorArchiveMedia({
@@ -50,6 +54,7 @@ export function useDestinationMirror(input: { files: ArchiveFiles | null; signer
         onProgress: setProgress,
       });
       if (controller.signal.aborted) return;
+      setResults(results);
       setSummary(summarizeMirrorResults(results));
       setState("complete");
     } catch (error) {
@@ -61,5 +66,5 @@ export function useDestinationMirror(input: { files: ArchiveFiles | null; signer
     }
   }
 
-  return { state, progress, summary, failure, start };
+  return { state, progress, results, summary, failure, start };
 }

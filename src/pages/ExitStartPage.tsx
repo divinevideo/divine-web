@@ -4,6 +4,7 @@
 import {
   Archive,
   ArrowClockwise,
+  Broadcast,
   CheckCircle,
   Copy,
   DownloadSimple,
@@ -15,11 +16,12 @@ import { useHead } from "@unhead/react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 
-import { LocalNsecBanner } from "@/components/auth/LocalNsecBanner";
+import { DestinationForm } from "@/components/exit/DestinationForm";
 import { KeySafetyNotice } from "@/components/exit/KeySafetyNotice";
 import { MediaProgressList } from "@/components/exit/MediaProgressList";
-import { DestinationForm } from "@/components/exit/DestinationForm";
+import { RelayDestinationForm } from "@/components/exit/RelayDestinationForm";
 import { LoginArea } from "@/components/auth/LoginArea";
+import { LocalNsecBanner } from "@/components/auth/LocalNsecBanner";
 import { MarketingLayout } from "@/components/MarketingLayout";
 import { SectionHero } from "@/components/static-pages";
 import { Button } from "@/components/ui/button";
@@ -28,6 +30,7 @@ import { getFunnelcakeBaseUrl } from "@/config/api";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { useArchiveMediaExport } from "@/hooks/useArchiveMediaExport";
 import { useDestinationMirror } from "@/hooks/useDestinationMirror";
+import { useDestinationRepublish } from "@/hooks/useDestinationRepublish";
 import { buildArchiveFiles, serializeArchiveFiles, type ArchiveFiles } from "@/lib/exit/archive";
 import { exportOwnerEvents, OwnerExportError, type ExportProgress } from "@/lib/exit/ownerExportClient";
 import { createZip } from "@/lib/exit/zip";
@@ -98,6 +101,11 @@ export function ExitStartPage() {
   currentPubkey.current = user?.pubkey;
   const mediaExport = useArchiveMediaExport({ files: archiveFiles, signer });
   const destinationMirror = useDestinationMirror({ files: archiveFiles, signer });
+  const destinationRepublish = useDestinationRepublish({
+    files: archiveFiles,
+    mirrorResults: destinationMirror.results,
+    signer,
+  });
 
   useEffect(() => {
     activeExport.current?.abort();
@@ -423,6 +431,25 @@ export function ExitStartPage() {
               summary={destinationMirror.summary}
               failure={destinationMirror.failure}
               onStart={destinationMirror.start}
+            />
+          </section>
+        )}
+
+        {archiveFiles && signer && destinationMirror.state === "complete" && destinationMirror.results && (
+          <section>
+            <SectionHero
+              eyebrow="Choose a relay"
+              icon={<Broadcast weight="fill" className="h-7 w-7" />}
+              title="Move your posts"
+              lead="Publish your public posts to another relay. Private messages, temporary authentication events, and deletion requests stay where they are."
+            />
+            <RelayDestinationForm
+              state={destinationRepublish.state}
+              progress={destinationRepublish.progress}
+              results={destinationRepublish.results}
+              summary={destinationRepublish.summary}
+              failure={destinationRepublish.failure}
+              onStart={destinationRepublish.start}
             />
           </section>
         )}

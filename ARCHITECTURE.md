@@ -193,6 +193,17 @@ copies. Sources without an advertised hash and generated HLS manifests are
 skipped. Descriptor hashes and redirect-aware `HEAD` readback results remain
 distinct from independent byte hashing.
 
+After mirroring finishes, the page can republish durable public events to one
+custom `wss://` relay. This deliberately opens and closes a standalone
+`NRelay1` connection instead of routing migration writes through the app's
+`NPool`. Only media with descriptor-and-readback verification is rewritten.
+Changed events are re-signed with their original timestamp, referenced owner
+events are prepared first so `e`, `E`, and `q` tags keep pointing at valid
+event IDs, and unchanged events retain their original ID and signature.
+Encrypted messages, ephemeral or authentication events, deletion requests,
+and vanish requests are skipped. Relay refusals remain per-event results and
+do not stop unrelated publishes.
+
 ## Linting
 
 ESLint 9 with TypeScript, React Hooks, HTML, and three custom rules in

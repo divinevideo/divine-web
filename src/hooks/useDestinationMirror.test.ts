@@ -56,6 +56,7 @@ describe("useDestinationMirror", () => {
 
     expect(fetcher.mock.calls[0][1]?.signal?.aborted).toBe(true);
     expect(result.current.summary).toBeNull();
+    expect(result.current.results).toBeNull();
     expect(result.current.failure).toBeNull();
   });
 });
