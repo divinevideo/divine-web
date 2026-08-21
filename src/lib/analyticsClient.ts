@@ -64,6 +64,7 @@ export interface ProductAnalyticsUtm {
 
 const SESSION_ID_KEY = 'divine_product_analytics_session_id';
 const ANONYMOUS_ID_KEY = 'divine_product_analytics_anonymous_id';
+const IDENTITY_PUBKEY_KEY = 'divine_product_analytics_identity_pubkey';
 const UTM_KEY = 'divine_product_analytics_utm';
 const DEFAULT_RELEASE = '0.0.0';
 const ANONYMOUS_EVENT_NAMES = new Set<ProductAnalyticsV2EventName>([
@@ -74,6 +75,7 @@ const UTM_KEYS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content'] as 
 const UTM_VALUE = /^[a-z0-9][a-z0-9._-]{0,63}$/;
 
 let currentIdentity: ProductAnalyticsIdentity = {};
+let identityConfigured = false;
 let privacyBoundaryVersion = 0;
 const identityListeners: ProductAnalyticsIdentityCallback[] = [];
 const clients = new Set<ProductAnalyticsClient>();
@@ -89,8 +91,11 @@ export function resolveProductAnalyticsEnabled({
 }
 
 export function configureProductAnalyticsIdentity(identity: ProductAnalyticsIdentity): void {
-  const previousPubkey = currentIdentity.userPubkey;
+  const previousPubkey = identityConfigured
+    ? currentIdentity.userPubkey
+    : getStoredIdentityPubkey();
   currentIdentity = identity;
+  identityConfigured = true;
 
   if (previousPubkey !== identity.userPubkey) {
     privacyBoundaryVersion += 1;
@@ -100,6 +105,7 @@ export function configureProductAnalyticsIdentity(identity: ProductAnalyticsIden
       client.resetIdentityBoundary();
     }
   }
+  storeIdentityPubkey(identity.userPubkey);
 
   for (const listener of identityListeners) listener();
 }
@@ -116,7 +122,7 @@ export function trackProductEvent<Name extends ProductAnalyticsV2EventName>(
   eventName: Name,
   properties: ProductAnalyticsProperties<Name>,
 ): Promise<string | null> {
-  return productAnalytics.track(eventName, properties);
+  return productAnalytics.track(eventName, properties).catch(() => null);
 }
 
 export async function computeProductAnalyticsEventId(
@@ -266,6 +272,9 @@ export class ProductAnalyticsClient {
       if (this.disposed || !canCollectAnalytics()) return;
       await this.flushAnonymousBatch();
       await this.flushSignedBatch();
+    } catch {
+      // Analytics runs in the background and must never surface storage,
+      // signing, or network failures as unhandled application errors.
     } finally {
       this.flushing = false;
     }
@@ -438,6 +447,21 @@ function clearProductAnalyticsUtm(): void {
 function rotateProductAnalyticsIdentifiers(): void {
   getStorage('local')?.removeItem(ANONYMOUS_ID_KEY);
   getStorage('session')?.removeItem(SESSION_ID_KEY);
+}
+
+function getStoredIdentityPubkey(): string | undefined {
+  const stored = getStorage('local')?.getItem(IDENTITY_PUBKEY_KEY);
+  return stored && /^[0-9a-f]{64}$/.test(stored) ? stored : undefined;
+}
+
+function storeIdentityPubkey(pubkey?: string): void {
+  const storage = getStorage('local');
+  if (!storage) return;
+  if (pubkey) {
+    storage.setItem(IDENTITY_PUBKEY_KEY, pubkey);
+  } else {
+    storage.removeItem(IDENTITY_PUBKEY_KEY);
+  }
 }
 
 function getStorage(kind: 'local' | 'session'): Storage | null {

@@ -341,15 +341,61 @@ describe('analyticsClient', () => {
     const failingSigner = {
       signEvent: vi.fn(async () => { throw new Error('unavailable'); }),
     } as unknown as NostrSigner;
-    const { productAnalytics, configureProductAnalyticsIdentity } = await import('./analyticsClient');
+    const { ProductAnalyticsClient, configureProductAnalyticsIdentity } = await import('./analyticsClient');
+    const { ProductEventQueue } = await import('./eventQueue');
+    const client = new ProductAnalyticsClient({ queue: new ProductEventQueue() });
+    configureProductAnalyticsIdentity({ userPubkey: pubkey });
+
+    await client.track('content_impression_recorded', impression);
+    await new Promise((resolve) => window.setTimeout(resolve, 0));
     configureProductAnalyticsIdentity({ userPubkey: pubkey, signer: failingSigner });
 
-    await productAnalytics.track('content_impression_recorded', impression);
-    await productAnalytics.flush();
-
-    await vi.waitFor(() => expect(failingSigner.signEvent).toHaveBeenCalled());
+    await expect(client.flush()).resolves.toBeUndefined();
+    expect(failingSigner.signEvent).toHaveBeenCalledOnce();
     expect(fetch).not.toHaveBeenCalled();
-    expect(await productAnalytics.queue.getFlushableBatch(10)).toHaveLength(1);
+    expect(await client.queue.getFlushableBatch(10)).toHaveLength(1);
+    client.dispose();
+  });
+
+  it('preserves identifiers when the same signed-in account reloads the page', async () => {
+    const firstModule = await import('./analyticsClient');
+    firstModule.configureProductAnalyticsIdentity({ userPubkey: pubkey, signer });
+    await firstModule.productAnalytics.track('content_impression_recorded', impression);
+    await vi.waitFor(() => expect(fetch).toHaveBeenCalledOnce());
+    const firstEvent = JSON.parse(vi.mocked(fetch).mock.calls[0][1]?.body as string).events[0];
+    firstModule.productAnalytics.dispose();
+
+    vi.mocked(fetch).mockClear();
+    vi.resetModules();
+    const reloadedModule = await import('./analyticsClient');
+    reloadedModule.configureProductAnalyticsIdentity({ userPubkey: pubkey, signer });
+    await reloadedModule.productAnalytics.track('content_impression_recorded', impression);
+    await vi.waitFor(() => expect(fetch).toHaveBeenCalledOnce());
+    const reloadedEvent = JSON.parse(vi.mocked(fetch).mock.calls[0][1]?.body as string).events[0];
+
+    expect(reloadedEvent.anonymous_id).toBe(firstEvent.anonymous_id);
+    expect(reloadedEvent.session_id).toBe(firstEvent.session_id);
+    reloadedModule.productAnalytics.dispose();
+  });
+
+  it('does not reject fire-and-forget tracking when event hashing fails', async () => {
+    vi.spyOn(crypto.subtle, 'digest').mockRejectedValueOnce(new Error('crypto unavailable'));
+    const { trackProductEvent } = await import('./analyticsClient');
+
+    await expect(trackProductEvent('landing_viewed', landing)).resolves.toBeNull();
+  });
+
+  it('does not reject a background flush when queue storage fails', async () => {
+    const { ProductAnalyticsClient } = await import('./analyticsClient');
+    const { ProductEventQueue } = await import('./eventQueue');
+    const queue = new ProductEventQueue();
+    vi.spyOn(queue, 'getAnonymousFlushableBatch').mockRejectedValueOnce(
+      new Error('storage unavailable'),
+    );
+    const client = new ProductAnalyticsClient({ queue });
+
+    await expect(client.flush()).resolves.toBeUndefined();
+    client.dispose();
   });
 
   it('purges queued records and stored acquisition data on consent withdrawal', async () => {
