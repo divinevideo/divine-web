@@ -98,6 +98,17 @@ describe('functions/[[path]]', () => {
         });
       }
 
+      if (url.includes('/.well-known/nostr.json?name=jalcine')) {
+        return new Response(JSON.stringify({
+          names: {
+            jalcine: '076c979382b90f5d3a2b21f95e1ee86b6033f14c92e79b7fad3fe1f1073f4886',
+          },
+        }), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        });
+      }
+
       if (url.includes('/api/categories')) {
         return new Response(JSON.stringify([
           { name: 'dance', video_count: 895 },
@@ -153,6 +164,8 @@ describe('functions/[[path]]', () => {
     expect(response.status).toBe(200);
     expect(response.headers.get('content-security-policy')).toBe('frame-ancestors *');
     expect(response.headers.get('x-robots-tag')).toBe('noindex');
+    expect(html).toContain('html,body{margin:0;padding:0;height:100%;background:#000;overflow:hidden}');
+    expect(html).toContain('video{width:100vw;height:100vh;object-fit:contain;display:block}');
     expect(html).toContain('<video autoplay loop muted playsinline');
     expect(html).toContain('src="https://media.divine.video/abc123.mp4"');
   });
@@ -285,8 +298,9 @@ describe('functions/[[path]]', () => {
     ['/t/funny', '#funny videos on Divine', 'https://divine.video/t/funny'],
     ['/search?q=cats', '&quot;cats&quot; on Divine', 'https://divine.video/search?q=cats'],
     ['/discovery', 'Trending videos on Divine', 'https://divine.video/discovery'],
-    ['/discovery/recent', 'Recent videos on Divine', 'https://divine.video/discovery/recent'],
-    ['/@jalcine', 'jalcine on Divine', 'https://divine.video/@jalcine'],
+    ['/discovery/hot', 'Trending videos on Divine', 'https://divine.video/discovery/hot'],
+    ['/discovery/classics', 'Classic videos on Divine', 'https://divine.video/discovery/classics'],
+    ['/@jalcine', 'The Wall! on Divine', 'https://divine.video/@jalcine'],
     ['/', 'Divine — 6-second loops from real humans', 'https://divine.video/'],
   ])('injects route metadata for %s', async (path, title, canonicalUrl) => {
     const response = await onRequest({
@@ -300,5 +314,19 @@ describe('functions/[[path]]', () => {
     expect(response.status).toBe(200);
     expect(html).toContain(`<title>${title}</title>`);
     expect(html).toContain(`property="og:url" content="${canonicalUrl}"`);
+  });
+
+  it('keeps generic metadata for an unknown at-username route', async () => {
+    const response = await onRequest({
+      request: new Request('https://divine.video/@missing'),
+      next: async () => new Response('not found', { status: 404 }),
+      env: {},
+    });
+
+    const html = await response.text();
+
+    expect(response.status).toBe(200);
+    expect(html).toContain('<title>Divine Web - Short-form Looping Videos on Nostr</title>');
+    expect(html).not.toContain('missing on Divine');
   });
 });

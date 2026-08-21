@@ -48,7 +48,8 @@ ROUTES=(
   "/t/funny|hashtag page|og_title_not_brand && og_url_matches_path"
   "/search?q=cats|search results|og_title_not_brand && og_url_matches_path"
   "/discovery|discovery (trending)|og_title_not_brand && og_url_matches_path"
-  "/discovery/recent|discovery (recent)|og_title_not_brand && og_url_matches_path"
+  "/discovery/hot|discovery (trending)|og_title_not_brand && og_url_matches_path"
+  "/discovery/classics|discovery (classics)|og_title_not_brand && og_url_matches_path"
   "/@jalcine|at-username apex|og_title_not_brand"
   "/|apex home|og_title_not_brand"
 )

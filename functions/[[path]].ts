@@ -188,23 +188,18 @@ function buildSimpleRouteMeta(url: URL): PageMeta | null {
       : null;
   }
 
-  const discoveryMatch = url.pathname.match(/^\/discovery(?:\/(recent|popular|loops))?$/);
+  const discoveryMatch = url.pathname.match(/^\/discovery(?:\/(hot|classics|top|hashtags))?$/);
   if (discoveryMatch) {
     const labels = {
       trending: 'Trending videos',
-      recent: 'Recent videos',
-      popular: 'Popular videos',
-      loops: 'Top loops',
+      hot: 'Trending videos',
+      classics: 'Classic videos',
+      top: 'Classic videos',
+      hashtags: 'Trending hashtags',
     } as const;
     const feedType = discoveryMatch[1] as keyof typeof labels | undefined;
     const label = labels[feedType || 'trending'];
     return buildSimplePageMeta(url, `${label} on Divine`, `${label} on Divine — 6-second loops from real humans.`);
-  }
-
-  const usernameMatch = url.pathname.match(/^\/@([^/]+)$/);
-  if (usernameMatch) {
-    const username = decodeURIComponent(usernameMatch[1]);
-    return buildSimplePageMeta(url, `${username} on Divine`, `Watch ${username}'s videos on Divine.`);
   }
 
   if (url.pathname === '/') {
@@ -216,6 +211,42 @@ function buildSimpleRouteMeta(url: URL): PageMeta | null {
   }
 
   return null;
+}
+
+async function fetchAtUsernameMeta(url: URL): Promise<PageMeta | null> {
+  const match = url.pathname.match(/^\/@([a-zA-Z0-9_-]+)$/);
+  if (!match) {
+    return null;
+  }
+
+  const username = match[1].toLowerCase();
+
+  try {
+    const resolutionResponse = await fetch(
+      `https://divine.video/.well-known/nostr.json?name=${encodeURIComponent(username)}`
+    );
+    if (!resolutionResponse.ok) {
+      return null;
+    }
+
+    const resolution = await resolutionResponse.json() as { names?: Record<string, string> };
+    const pubkey = resolution.names?.[username];
+    if (!pubkey || !/^[0-9a-f]{64}$/i.test(pubkey)) {
+      return null;
+    }
+
+    const profileResponse = await fetch(`${FUNNELCAKE_API_URL}/api/users/${pubkey}`);
+    if (profileResponse.ok) {
+      const profile = await profileResponse.json() as ProfileApiResponse;
+      if (profile.profile) {
+        return buildProfilePageMeta(url, profile);
+      }
+    }
+
+    return buildProfilePageMeta(url, { profile: { name: username } });
+  } catch {
+    return null;
+  }
 }
 
 async function fetchProfileMeta(url: URL): Promise<PageMeta | null> {
@@ -284,6 +315,10 @@ async function fetchRouteMeta(url: URL): Promise<PageMeta | null> {
     return fetchProfileMeta(url);
   }
 
+  if (url.pathname.startsWith('/@')) {
+    return fetchAtUsernameMeta(url);
+  }
+
   // Family resource hub at /family on apex.
   if (url.pathname === '/family') {
     return buildFamilyPageMeta(url);
@@ -318,6 +353,10 @@ function renderEmbedPage(meta: PageMeta): string {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>${title}</title>
+  <style>
+    html,body{margin:0;padding:0;height:100%;background:#000;overflow:hidden}
+    video{width:100vw;height:100vh;object-fit:contain;display:block}
+  </style>
 </head>
 <body>
   <video autoplay loop muted playsinline poster="${poster}">
