@@ -502,6 +502,34 @@ describe('DiscoveryPage', () => {
     expect(disclosure.querySelector('bdi')).toHaveTextContent('Acme Bikes');
   });
 
+  // The ASCII colon and space this replaced (#648) came in with the locale-wide
+  // rewrite in #637 and nothing caught it: parity, placeholder and
+  // not-English checks all pass on either punctuation. Asserting the rendered
+  // text is what pins it, since the full-width colon carries its own spacing
+  // and there is no separator character to look for.
+  it('sets the Japanese disclosure with a full-width colon', async () => {
+    window.localStorage.setItem(LOCALE_STORAGE_KEY, 'ja');
+    await initializeI18n({ force: true, languages: ['ja'] });
+    mockFeaturedTab.current = {
+      id: 'ft_1234abcd',
+      slug: 'seasonal-theme',
+      label: 'Especial',
+      pillLabel: null,
+      sponsorName: 'Acme Bikes',
+    };
+
+    render(
+      <MemoryRouter initialEntries={['/discovery/seasonal-theme']}>
+        <Routes>
+          <Route path="/discovery/:tab" element={<DiscoveryPage />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    const disclosure = getPartnershipDisclosure('提供：Acme Bikes');
+    expect(disclosure.querySelector('bdi')).toHaveTextContent('Acme Bikes');
+  });
+
   it('names every tab trigger when labels are visually hidden on mobile', () => {
     mockFeaturedTab.current = {
       id: 'ft_1234abcd',
