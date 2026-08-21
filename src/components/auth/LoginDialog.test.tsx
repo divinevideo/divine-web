@@ -636,12 +636,16 @@ describe('LoginDialog', () => {
   });
 
   it('renders both auth tabs immediately without contacting the invite service', async () => {
+    const user = userEvent.setup();
     render(<LoginDialog isOpen onClose={vi.fn()} onLogin={vi.fn()} />);
 
-    expect(await screen.findByRole('button', { name: /^Create account$/i })).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: /^Register$/i })).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: /^Sign in$/i })).toBeInTheDocument();
+    const registerTab = await screen.findByRole('tab', { name: /^Register$/i });
+    expect(screen.getByRole('tab', { name: /^Sign in$/i })).toHaveAttribute('data-state', 'active');
     expect(screen.queryByText(/Checking invite status/i)).not.toBeInTheDocument();
+    expect(fetchMock).not.toHaveBeenCalled();
+
+    await user.click(registerTab);
+    expect(await screen.findByRole('button', { name: /^Create account$/i })).toBeInTheDocument();
     expect(fetchMock).not.toHaveBeenCalled();
   });
 });
