@@ -21,6 +21,13 @@ function descriptor(sha256 = hash, size = 5) {
   return { url: `https://blossom.example/${sha256}`, sha256, size, type: "video/mp4" };
 }
 
+function decodeAuthorization(value: string): { tags: string[][] } {
+  const token = value.slice("Nostr ".length);
+  const padded = token.replace(/-/g, "+").replace(/_/g, "/").padEnd(Math.ceil(token.length / 4) * 4, "=");
+  const bytes = Uint8Array.from(atob(padded), (character) => character.charCodeAt(0));
+  return JSON.parse(new TextDecoder().decode(bytes));
+}
+
 describe("mirrorArchiveMedia", () => {
   beforeEach(() => vi.clearAllMocks());
 
@@ -96,7 +103,8 @@ describe("mirrorArchiveMedia", () => {
     expect(results[1].verification).toBe("unverified");
   });
 
-  it("skips HLS manifests and summarizes all four user-facing counts", async () => {
+  it("skips HLS manifests and reports their progress in source order", async () => {
+    const onProgress = vi.fn();
     const fetcher = vi.fn<typeof fetch>()
       .mockResolvedValueOnce(new Response(JSON.stringify(descriptor()), { status: 200 }))
       .mockResolvedValueOnce(new Response(null, { status: 200, headers: { "content-length": "5" } }));
@@ -105,22 +113,65 @@ describe("mirrorArchiveMedia", () => {
       references: [reference("https://source.example/master.m3u8", null), reference("https://source.example/video", hash)],
       signer,
       fetcher,
+      onProgress,
     });
     expect(results).toMatchObject([
       { verification: "skipped" },
       { verification: "descriptor-verified" },
     ]);
+    expect(onProgress.mock.calls.map(([progress]) => progress.completed)).toEqual([1, 2]);
   });
 
-  it("mirrors a source without an advertised hash and reports it as unverified", async () => {
-    const fetcher = vi.fn<typeof fetch>()
-      .mockResolvedValueOnce(new Response(JSON.stringify(descriptor()), { status: 200 }))
-      .mockResolvedValueOnce(new Response(null, { status: 200, headers: { "content-length": "5" } }));
+  it("skips a source without an advertised hash before signing or requesting it", async () => {
+    const fetcher = vi.fn<typeof fetch>();
     const results = await mirrorArchiveMedia({
       destination: "https://blossom.example", references: [reference("https://source.example/no-hash", null)], signer, fetcher,
     });
-    expect(results[0]).toMatchObject({ verification: "unverified", destination_sha256: hash });
-    expect(fetcher.mock.calls[0][1]).toMatchObject({ method: "PUT" });
+    expect(results[0]).toMatchObject({
+      verification: "skipped",
+      destination_sha256: null,
+      reason: expect.stringContaining("did not advertise a SHA-256 hash"),
+    });
+    expect(signer.signEvent).not.toHaveBeenCalled();
+    expect(fetcher).not.toHaveBeenCalled();
+  });
+
+  it("sends a BUD-11-compliant authorization token to a strict destination", async () => {
+    const fetcher = vi.fn<typeof fetch>(async (_input, init) => {
+      if (init?.method === "HEAD") {
+        return new Response(null, { status: 200, headers: { "content-length": "5" } });
+      }
+      const authorization = new Headers(init?.headers).get("Authorization") ?? "";
+      const token = authorization.slice("Nostr ".length);
+      if (!authorization.startsWith("Nostr ") || /[+/=]/.test(token)) return new Response(null, { status: 401 });
+      const event = decodeAuthorization(authorization);
+      if (!event.tags.some((tag) => tag[0] === "x" && tag[1] === hash)) return new Response(null, { status: 401 });
+      return new Response(JSON.stringify(descriptor()), { status: 200 });
+    });
+
+    const results = await mirrorArchiveMedia({
+      destination: "https://blossom.example",
+      references: [reference("https://source.example/video")],
+      signer,
+      fetcher,
+    });
+
+    expect(results[0].verification).toBe("descriptor-verified");
+  });
+
+  it("allows destination readback to follow redirects", async () => {
+    const fetcher = vi.fn<typeof fetch>()
+      .mockResolvedValueOnce(new Response(JSON.stringify(descriptor()), { status: 200 }))
+      .mockResolvedValueOnce(new Response(null, { status: 200, headers: { "content-length": "5" } }));
+
+    await mirrorArchiveMedia({
+      destination: "https://blossom.example",
+      references: [reference("https://source.example/video")],
+      signer,
+      fetcher,
+    });
+
+    expect(fetcher.mock.calls[1][1]).not.toMatchObject({ redirect: "error" });
   });
 
   it("follows a BUD-01 redirect when reading the mirrored blob back", async () => {

@@ -24,7 +24,7 @@ function progressLabel(progress: MirrorProgress): string {
     case "descriptor-verified": return "Mirrored and confirmed by the destination";
     case "unverified": return "Mirrored without confirmed readback";
     case "hash-mismatch": return "Destination reported a different hash";
-    case "skipped": return "Skipped generated streaming manifest";
+    case "skipped": return progress.result.reason ?? "Skipped this source";
     default: return "Could not mirror";
   }
 }

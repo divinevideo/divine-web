@@ -4,7 +4,7 @@
 import type { NostrSigner } from "@nostrify/nostrify";
 import { useEffect, useRef, useState } from "react";
 
-import { completeArchiveMedia, serializeArchiveFiles, type ArchiveFiles, type MediaReference } from "@/lib/exit/archive";
+import { completeArchiveMedia, serializeArchiveFiles, type ArchiveFiles } from "@/lib/exit/archive";
 import { pickArchiveSink, supportsStreamingArchive } from "@/lib/exit/archiveSink";
 import { downloadArchiveMedia, type MediaProgress } from "@/lib/exit/mediaDownloader";
 import { createZipWriter } from "@/lib/exit/zip";
@@ -49,7 +49,7 @@ export function useArchiveMediaExport(input: { files: ArchiveFiles | null; signe
       const initial = serializeArchiveFiles(input.files);
       await writer.addFile("events.json", initial["events.json"]);
       const results = await downloadArchiveMedia({
-        references: input.files["media.json"] as MediaReference[],
+        references: input.files["media.json"],
         signer: input.signer,
         signal: controller.signal,
         onFile: (path, bytes) => writer.addFile(path, bytes),

@@ -126,6 +126,19 @@ describe("ExitStartPage", () => {
     expect(screen.getByText("Use an HTTPS Blossom server URL.")).toBeInTheDocument();
   });
 
+  it("rejects a Blossom destination with an endpoint path", async () => {
+    mockUseCurrentUser.mockReturnValue(signedIn());
+    vi.stubGlobal("fetch", createFixtureFetch("one-page"));
+    render(<TestApp><ExitStartPage /></TestApp>);
+    await userEvent.click(screen.getByRole("button", { name: /Create my archive/ }));
+    await waitFor(() => expect(screen.getByRole("heading", { name: "Move your media" })).toBeInTheDocument());
+
+    await userEvent.type(screen.getByLabelText("Blossom server URL"), "https://blossom.example/path");
+    await userEvent.click(screen.getByRole("button", { name: "Copy my media" }));
+
+    expect(screen.getByText("Blossom servers answer at the domain root. Use https://blossom.example instead.")).toBeInTheDocument();
+  });
+
   it("reports destination mirror counts", async () => {
     mockUseCurrentUser.mockReturnValue(signedIn());
     vi.stubGlobal("fetch", createFixtureFetch("one-page"));

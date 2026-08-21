@@ -4,7 +4,7 @@
 import type { NostrSigner } from "@nostrify/nostrify";
 import { useEffect, useRef, useState } from "react";
 
-import type { ArchiveFiles, MediaReference } from "@/lib/exit/archive";
+import type { ArchiveFiles } from "@/lib/exit/archive";
 import { normalizeDestinationUrl } from "@/lib/exit/destination";
 import {
   mirrorArchiveMedia,
@@ -44,7 +44,7 @@ export function useDestinationMirror(input: { files: ArchiveFiles | null; signer
     try {
       const results = await mirrorArchiveMedia({
         destination: normalizeDestinationUrl(destinationValue),
-        references: input.files["media.json"] as MediaReference[],
+        references: input.files["media.json"],
         signer: input.signer,
         signal: controller.signal,
         onProgress: setProgress,

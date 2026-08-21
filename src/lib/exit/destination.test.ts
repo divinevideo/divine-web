@@ -20,6 +20,7 @@ describe("normalizeDestinationUrl", () => {
     ["https://blossom.example/path", "path-not-allowed"],
     ["https://blossom.example?token=secret", "query-not-allowed"],
     ["https://blossom.example#place", "fragment-not-allowed"],
+    ["https://blossom.example/path///", "path-not-allowed"],
   ])("rejects %s", (value, code) => {
     expect(() => normalizeDestinationUrl(value)).toThrow(DestinationError);
     try {

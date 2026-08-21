@@ -9,6 +9,17 @@ const DEFAULT_EXPIRATION_SECONDS = 60;
 
 type BlossomAuthAction = 'get' | 'upload';
 
+function encodeBase64(value: string): string {
+  const bytes = new TextEncoder().encode(value);
+  let binary = '';
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return btoa(binary);
+}
+
+function encodeBase64Url(value: string): string {
+  return encodeBase64(value).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
 async function createBlossomAuthHeader(
   signer: NostrSigner,
   action: BlossomAuthAction,
@@ -27,7 +38,11 @@ async function createBlossomAuthHeader(
     created_at: now,
   };
   const signedEvent = await signer.signEvent(template);
-  return `Nostr ${btoa(JSON.stringify(signedEvent))}`;
+  const serializedEvent = JSON.stringify(signedEvent);
+  const encodedEvent = action === 'upload'
+    ? encodeBase64Url(serializedEvent)
+    : encodeBase64(serializedEvent);
+  return `Nostr ${encodedEvent}`;
 }
 
 export async function createBlossomGetAuthHeader(
@@ -47,7 +62,7 @@ export async function createBlossomGetAuthHeader(
 
 export async function createBlossomUploadAuthHeader(
   signer: NostrSigner,
-  sha256?: string,
+  sha256: string,
   expirationSeconds: number = DEFAULT_EXPIRATION_SECONDS,
 ): Promise<string> {
   const header = await createBlossomAuthHeader(signer, 'upload', sha256, expirationSeconds);

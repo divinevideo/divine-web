@@ -140,11 +140,15 @@ function failedResult(
   };
 }
 
-async function requestMirror(references: MediaReference[], options: MirrorOptions): Promise<Response | DestinationError> {
+async function requestMirror(
+  references: MediaReference[],
+  sha256: string,
+  options: MirrorOptions,
+): Promise<Response | DestinationError> {
   const fetcher = options.fetcher ?? fetch;
   const wait = options.wait ?? defaultWait;
   for (let attempt = 0; ; attempt += 1) {
-    const authorization = await createBlossomUploadAuthHeader(options.signer, references[0].sha256 ?? undefined);
+    const authorization = await createBlossomUploadAuthHeader(options.signer, sha256);
     try {
       const response = await fetcher(`${options.destination}/mirror`, {
         method: "PUT",
@@ -202,10 +206,10 @@ async function verifyReadback(
 
 async function mirrorOne(
   references: MediaReference[],
+  expectedHash: string,
   options: MirrorOptions,
 ): Promise<{ result: MirrorResult; destinationError: DestinationError | null }> {
-  const expectedHash = references[0].sha256;
-  const response = await requestMirror(references, options);
+  const response = await requestMirror(references, expectedHash, options);
   if (response instanceof DestinationError) {
     return { result: failedResult(references, "failed", response.message), destinationError: response };
   }
@@ -233,18 +237,32 @@ async function mirrorOne(
 
 export async function mirrorArchiveMedia(options: MirrorOptions): Promise<MirrorResult[]> {
   const groups = groupReferences(options.references);
-  const work = groups.filter(([reference]) => !isHlsManifest(reference.url));
-  const skipped = groups.filter(([reference]) => isHlsManifest(reference.url)).map((references): MirrorResult => ({
-    references, source_url: references[0].url, destination_url: null, expected_sha256: references[0].sha256,
-    destination_sha256: null, byte_size: null, verification: "skipped", reason: "Streaming manifests are generated derivatives and were not copied.",
-  }));
-  const results: MirrorResult[] = [...skipped];
-  for (let index = 0; index < work.length; index += 1) {
+  const results: MirrorResult[] = [];
+  let mirrorAttempts = 0;
+  for (const references of groups) {
     if (options.signal?.aborted) throw new DOMException("Mirror cancelled", "AbortError");
-    const outcome = await mirrorOne(work[index], options);
-    if (index === 0 && outcome.destinationError) throw outcome.destinationError;
-    results.push(outcome.result);
-    options.onProgress?.({ completed: results.length, total: groups.length, result: outcome.result });
+    const reference = references[0];
+    let result: MirrorResult;
+    if (isHlsManifest(reference.url)) {
+      result = {
+        references, source_url: reference.url, destination_url: null, expected_sha256: reference.sha256,
+        destination_sha256: null, byte_size: null, verification: "skipped",
+        reason: "Streaming manifests are generated derivatives and were not copied.",
+      };
+    } else if (!reference.sha256) {
+      result = {
+        references, source_url: reference.url, destination_url: null, expected_sha256: null,
+        destination_sha256: null, byte_size: null, verification: "skipped",
+        reason: "The source did not advertise a SHA-256 hash, so a secure copy could not be authorized.",
+      };
+    } else {
+      const outcome = await mirrorOne(references, reference.sha256, options);
+      if (mirrorAttempts === 0 && outcome.destinationError) throw outcome.destinationError;
+      mirrorAttempts += 1;
+      result = outcome.result;
+    }
+    results.push(result);
+    options.onProgress?.({ completed: results.length, total: groups.length, result });
   }
   return results;
 }
