@@ -8,10 +8,8 @@ interface InviteCodeFormProps {
   error?: string | null;
   isLoading: boolean;
   onInviteCodeChange: (value: string) => void;
-  onJoinWaitlist?: () => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
   value: string;
-  waitlistEnabled: boolean;
   inputClassName?: string;
 }
 
@@ -21,10 +19,8 @@ export function InviteCodeForm(props: InviteCodeFormProps) {
     error,
     isLoading,
     onInviteCodeChange,
-    onJoinWaitlist,
     onSubmit,
     value,
-    waitlistEnabled,
     inputClassName,
   } = props;
 
@@ -48,17 +44,6 @@ export function InviteCodeForm(props: InviteCodeFormProps) {
       <Button className="w-full rounded-full py-3" disabled={isLoading || !value.trim()} type="submit">
         {isLoading ? t('inviteCodeForm.checking') : t('inviteCodeForm.continue')}
       </Button>
-
-      {waitlistEnabled ? (
-        <Button
-          className="h-auto px-0 py-0 text-sm font-medium text-muted-foreground"
-          onClick={onJoinWaitlist}
-          type="button"
-          variant="link"
-        >
-          {t('inviteCodeForm.joinWaitlist')}
-        </Button>
-      ) : null}
     </form>
   );
 }

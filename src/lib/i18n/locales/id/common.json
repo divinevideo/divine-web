@@ -417,7 +417,6 @@
   "loginDialog": {
     "title": "Masuk ke Divine",
     "heading": "Masuk yuk.",
-    "subtitleRegister": "Punya invite? Bikin akun.",
     "subtitleSignIn": "Masuk di login.divine.video dengan akun yang sudah ada.",
     "tabRegister": "Daftar",
     "tabSignIn": "Masuk",
@@ -441,7 +440,6 @@
     "bunkerPlaceholder": "bunker://",
     "bunkerButton": "Masuk dengan Bunker",
     "connecting": "Menghubungkan...",
-    "errorInviteServiceUnavailable": "Layanan invite tidak tersedia",
     "errorExtensionNotFound": "Ekstensi Nostr tidak ditemukan. Silakan pasang ekstensi NIP-07.",
     "errorExtensionLoginFailed": "Login ekstensi gagal",
     "errorKeyLoginFailed": "Gagal masuk dengan key ini. Pastikan benar.",
@@ -456,7 +454,10 @@
     "errorInviteValidationFailed": "Tidak bisa memvalidasi kode invite",
     "errorInviteCodeUsed": "Kode invite ini sudah digunakan",
     "errorSignInStartFailed": "Tidak bisa memulai sign-in",
-    "errorWaitlistJoinFailed": "Tidak bisa bergabung ke waitlist"
+    "subtitleCreate": "Siapkan akun Divine kamu.",
+    "createAccountButton": "Buat akun",
+    "creatingAccount": "Menyiapkan akun...",
+    "errorSignUpStartFailed": "Tidak dapat memulai pendaftaran"
   },
   "accountSwitcher": {
     "myProfile": "Profil Saya",
@@ -1458,8 +1459,7 @@
     "label": "Kode undangan",
     "placeholder": "Tempel kode undangan kamu",
     "checking": "Mengecek...",
-    "continue": "Lanjut",
-    "joinWaitlist": "Belum punya undangan? Masuk waitlist."
+    "continue": "Lanjut"
   },
   "invitesLandingPage": {
     "seoTitle": "Gabung Divine dengan kode invite {{code}}",

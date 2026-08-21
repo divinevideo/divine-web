@@ -417,7 +417,6 @@
   "loginDialog": {
     "title": "Conectează-te la Divine",
     "heading": "Intră.",
-    "subtitleRegister": "Ai o invitație? Fă-ți un cont.",
     "subtitleSignIn": "Conectează-te pe login.divine.video cu contul existent.",
     "tabRegister": "Înregistrare",
     "tabSignIn": "Conectare",
@@ -441,7 +440,6 @@
     "bunkerPlaceholder": "bunker://",
     "bunkerButton": "Conectează-te cu Bunker",
     "connecting": "Se conectează...",
-    "errorInviteServiceUnavailable": "Serviciul de invitații e indisponibil",
     "errorExtensionNotFound": "Extensie Nostr negăsită. Te rugăm instalează o extensie NIP-07.",
     "errorExtensionLoginFailed": "Conectarea cu extensia a eșuat",
     "errorKeyLoginFailed": "Conectarea cu această cheie a eșuat. Verifică dacă e corectă.",
@@ -456,7 +454,10 @@
     "errorInviteValidationFailed": "Codul de invitație nu poate fi validat",
     "errorInviteCodeUsed": "Acest cod de invitație a fost deja folosit",
     "errorSignInStartFailed": "Conectarea nu poate fi pornită",
-    "errorWaitlistJoinFailed": "Înscrierea pe lista de așteptare a eșuat"
+    "subtitleCreate": "Configurează-ți contul Divine.",
+    "createAccountButton": "Creează cont",
+    "creatingAccount": "Se configurează contul...",
+    "errorSignUpStartFailed": "Înregistrarea nu a putut fi pornită"
   },
   "accountSwitcher": {
     "myProfile": "Profilul meu",
@@ -1466,8 +1467,7 @@
     "label": "Cod de invitație",
     "placeholder": "Lipește codul tău de invitație",
     "checking": "Se verifică...",
-    "continue": "Continuă",
-    "joinWaitlist": "N-ai invitație? Înscrie-te pe lista de așteptare."
+    "continue": "Continuă"
   },
   "invitesLandingPage": {
     "seoTitle": "Alătură-te Divine cu codul de invitație {{code}}",

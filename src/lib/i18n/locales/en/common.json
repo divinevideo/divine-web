@@ -417,7 +417,6 @@
   "loginDialog": {
     "title": "Sign in to Divine",
     "heading": "Get in.",
-    "subtitleRegister": "Got an invite? Spin up an account.",
     "subtitleSignIn": "Sign in at login.divine.video with your existing account.",
     "tabRegister": "Register",
     "tabSignIn": "Sign in",
@@ -441,7 +440,6 @@
     "bunkerPlaceholder": "bunker://",
     "bunkerButton": "Login with Bunker",
     "connecting": "Connecting...",
-    "errorInviteServiceUnavailable": "Invite service unavailable",
     "errorExtensionNotFound": "Nostr extension not found. Please install a NIP-07 extension.",
     "errorExtensionLoginFailed": "Extension login failed",
     "errorKeyLoginFailed": "Failed to login with this key. Please check that it is correct.",
@@ -456,7 +454,10 @@
     "errorInviteValidationFailed": "Unable to validate invite code",
     "errorInviteCodeUsed": "This invite code has already been used",
     "errorSignInStartFailed": "Unable to start sign-in",
-    "errorWaitlistJoinFailed": "Unable to join the waitlist"
+    "subtitleCreate": "Set up your Divine account.",
+    "createAccountButton": "Create account",
+    "creatingAccount": "Setting things up...",
+    "errorSignUpStartFailed": "Unable to start sign-up"
   },
   "accountSwitcher": {
     "myProfile": "My Profile",
@@ -1458,8 +1459,7 @@
     "label": "Invite code",
     "placeholder": "Paste your invite code",
     "checking": "Checking...",
-    "continue": "Continue",
-    "joinWaitlist": "No invite? Get on the waitlist."
+    "continue": "Continue"
   },
   "invitesLandingPage": {
     "seoTitle": "Join Divine with invite code {{code}}",

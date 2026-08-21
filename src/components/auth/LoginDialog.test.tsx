@@ -19,41 +19,24 @@ const PROTECTED_STATUS: ProtectedMinorStatus = Object.freeze({
 const {
   mockBuildLoginRedirect,
   mockBuildSignupRedirect,
-  mockGetInviteClientConfig,
   mockGetStoredLocalNsecLogin,
-  mockJoinInviteWaitlist,
   mockLoginActions,
-  mockSetInviteHandoff,
   mockUseProtectedMinorStatus,
-  mockValidateInviteCode,
 } = vi.hoisted(() => ({
   mockBuildLoginRedirect: vi.fn(),
   mockBuildSignupRedirect: vi.fn(),
-  mockGetInviteClientConfig: vi.fn(),
   mockGetStoredLocalNsecLogin: vi.fn(),
-  mockJoinInviteWaitlist: vi.fn(),
   mockLoginActions: {
     bunker: vi.fn(),
     extension: vi.fn(),
     nsec: vi.fn(),
   },
-  mockSetInviteHandoff: vi.fn(),
   mockUseProtectedMinorStatus: vi.fn(),
-  mockValidateInviteCode: vi.fn(),
 }));
 
 const originalLocation = window.location;
 const locationAssign = vi.fn();
-
-vi.mock('@/lib/inviteApi', () => ({
-  getInviteClientConfig: mockGetInviteClientConfig,
-  joinInviteWaitlist: mockJoinInviteWaitlist,
-  validateInviteCode: mockValidateInviteCode,
-}));
-
-vi.mock('@/lib/authHandoff', () => ({
-  setInviteHandoff: mockSetInviteHandoff,
-}));
+const fetchMock = vi.fn<typeof fetch>();
 
 vi.mock('@/lib/divineLogin', async () => {
   const actual = await vi.importActual<typeof import('@/lib/divineLogin')>('@/lib/divineLogin');
@@ -84,6 +67,7 @@ vi.mock('@/lib/localNsecAccount', async () => {
 
 describe('LoginDialog', () => {
   beforeEach(async () => {
+    vi.stubGlobal('fetch', fetchMock);
     const storage = new Map<string, string>();
     Object.defineProperty(window, 'localStorage', {
       configurable: true,
@@ -96,10 +80,6 @@ describe('LoginDialog', () => {
     });
     await initializeI18n({ force: true, languages: ['en-US'] });
 
-    mockGetInviteClientConfig.mockResolvedValue({
-      mode: 'invite_code_required',
-      waitlistEnabled: true,
-    });
     mockGetStoredLocalNsecLogin.mockReturnValue(null);
     mockUseProtectedMinorStatus.mockReturnValue(NOT_PROTECTED);
     mockBuildSignupRedirect.mockResolvedValue({
@@ -120,6 +100,7 @@ describe('LoginDialog', () => {
 
   afterEach(() => {
     vi.clearAllMocks();
+    vi.unstubAllGlobals();
     Object.defineProperty(window, 'location', {
       value: originalLocation,
       writable: true,
@@ -132,23 +113,9 @@ describe('LoginDialog', () => {
 
     expect(await screen.findByRole('tab', { name: /^Register$/i })).toHaveAttribute('data-state', 'active');
     expect(screen.getByRole('tab', { name: /^Sign in$/i })).toBeInTheDocument();
-    expect(screen.getByText(/Got an invite\? Spin up an account\./i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Invite code/i)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /^Continue$/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /No invite\? Get on the waitlist/i })).toBeInTheDocument();
+    expect(screen.getByText(/Set up your Divine account\./i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^Create account$/i })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /I already have an account/i })).not.toBeInTheDocument();
-  });
-
-  it('shows field-level feedback for invalid invite codes', async () => {
-    const user = userEvent.setup();
-    mockValidateInviteCode.mockRejectedValue(new Error('Invite not found'));
-
-    render(<LoginDialog isOpen onClose={vi.fn()} onLogin={vi.fn()} />);
-
-    await user.type(await screen.findByLabelText(/Invite code/i), 'bad-code');
-    await user.click(screen.getByRole('button', { name: /^Continue$/i }));
-
-    await screen.findByText(/Invite not found/i);
   });
 
   it('renders hosted sign-in and keeps Nostr methods behind a text disclosure', async () => {
@@ -168,7 +135,7 @@ describe('LoginDialog', () => {
     expect(await screen.findByRole('button', { name: /Login with Extension/i })).toBeInTheDocument();
   });
 
-  it('redirects existing-account users from the sign-in tab without validating an invite code', async () => {
+  it('redirects existing-account users from the sign-in tab', async () => {
     const user = userEvent.setup();
 
     render(<LoginDialog isOpen onClose={vi.fn()} onLogin={vi.fn()} />);
@@ -178,7 +145,6 @@ describe('LoginDialog', () => {
 
     await waitFor(() => {
       expect(mockBuildLoginRedirect).toHaveBeenCalledWith({ returnPath: '/' });
-      expect(mockValidateInviteCode).not.toHaveBeenCalled();
       expect(locationAssign).toHaveBeenCalledWith('https://login.divine.video/api/oauth/authorize?client_id=divine-web');
     });
   });
@@ -479,44 +445,42 @@ describe('LoginDialog', () => {
     });
   });
 
-  it('validates an invite, stores the handoff, and redirects to login.divine.video', async () => {
+  it('redirects new users to hosted signup with the current return path', async () => {
     const user = userEvent.setup();
-    mockValidateInviteCode.mockResolvedValue({
-      valid: true,
-      normalizedCode: 'ABCD-EFGH',
+    Object.defineProperty(window, 'location', {
+      value: { ...originalLocation, assign: locationAssign, pathname: '/discovery', search: '?tab=hot' },
+      writable: true,
+      configurable: true,
     });
 
     render(<LoginDialog isOpen onClose={vi.fn()} onLogin={vi.fn()} />);
 
-    await user.type(await screen.findByLabelText(/Invite code/i), 'abcd-efgh');
-    await user.click(screen.getByRole('button', { name: /^Continue$/i }));
+    await user.click(await screen.findByRole('button', { name: /^Create account$/i }));
 
     await waitFor(() => {
-      expect(mockSetInviteHandoff).toHaveBeenCalledWith(
-        expect.objectContaining({
-          code: 'ABCD-EFGH',
-          mode: 'signup',
-        }),
-      );
+      expect(mockBuildSignupRedirect).toHaveBeenCalledWith({ returnPath: '/discovery?tab=hot' });
       expect(locationAssign).toHaveBeenCalledWith('https://login.divine.video/api/oauth/authorize?client_id=divine-web');
     });
   });
 
-  it('keeps hosted sign-in available when the invite service config fails', async () => {
+  it('shows a signup-specific error when hosted signup cannot start', async () => {
     const user = userEvent.setup();
-    mockGetInviteClientConfig.mockRejectedValue(new Error('Invite service unavailable'));
+    mockBuildSignupRedirect.mockRejectedValue(undefined);
 
     render(<LoginDialog isOpen onClose={vi.fn()} onLogin={vi.fn()} />);
 
-    await screen.findByText(/Invite service unavailable/i);
-    expect(screen.getByText(/Invite sign-up is unavailable right now/i)).toBeInTheDocument();
+    await user.click(await screen.findByRole('button', { name: /^Create account$/i }));
 
-    await user.click(screen.getByRole('tab', { name: /^Sign in$/i }));
-    await user.click(await screen.findByRole('button', { name: /^Sign in at login\.divine\.video$/i }));
+    expect(await screen.findByText(/Unable to start sign-up/i)).toBeInTheDocument();
+  });
 
-    await waitFor(() => {
-      expect(mockBuildLoginRedirect).toHaveBeenCalledWith({ returnPath: '/' });
-      expect(locationAssign).toHaveBeenCalledWith('https://login.divine.video/api/oauth/authorize?client_id=divine-web');
-    });
+  it('renders both auth tabs immediately without contacting the invite service', async () => {
+    render(<LoginDialog isOpen onClose={vi.fn()} onLogin={vi.fn()} />);
+
+    expect(await screen.findByRole('button', { name: /^Create account$/i })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /^Register$/i })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /^Sign in$/i })).toBeInTheDocument();
+    expect(screen.queryByText(/Checking invite status/i)).not.toBeInTheDocument();
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 });

@@ -417,7 +417,6 @@
   "loginDialog": {
     "title": "Mag-sign in sa Divine",
     "heading": "Sali na.",
-    "subtitleRegister": "May invite ka? I-set up ang account mo.",
     "subtitleSignIn": "Mag-sign in sa login.divine.video gamit ang account mo.",
     "tabRegister": "Mag-register",
     "tabSignIn": "Mag-sign in",
@@ -441,7 +440,6 @@
     "bunkerPlaceholder": "bunker://",
     "bunkerButton": "Mag-log in gamit ang Bunker",
     "connecting": "Kumokonekta...",
-    "errorInviteServiceUnavailable": "Hindi available ang invite service",
     "errorExtensionNotFound": "Walang nakitang Nostr extension. Mag-install ng NIP-07 extension.",
     "errorExtensionLoginFailed": "Hindi nag-log in ang extension",
     "errorKeyLoginFailed": "Hindi nag-log in gamit ang key na ito. Tignan kung tama ito.",
@@ -456,7 +454,10 @@
     "errorInviteValidationFailed": "Hindi ma-validate ang invite code",
     "errorInviteCodeUsed": "Nagamit na ang invite code na ito",
     "errorSignInStartFailed": "Hindi masimulan ang sign-in",
-    "errorWaitlistJoinFailed": "Hindi maka-join sa waitlist"
+    "subtitleCreate": "I-set up ang Divine account mo.",
+    "createAccountButton": "Gumawa ng account",
+    "creatingAccount": "Sine-set up ang account mo...",
+    "errorSignUpStartFailed": "Hindi masimulan ang pag-sign up"
   },
   "accountSwitcher": {
     "myProfile": "Profile ko",
@@ -1458,8 +1459,7 @@
     "label": "Invite code",
     "placeholder": "I-paste ang invite code mo",
     "checking": "Sinusuri...",
-    "continue": "Magpatuloy",
-    "joinWaitlist": "Walang invite? Sumali sa waitlist."
+    "continue": "Magpatuloy"
   },
   "invitesLandingPage": {
     "seoTitle": "Sumali sa Divine gamit ang invite code {{code}}",

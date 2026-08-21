@@ -417,7 +417,6 @@
   "loginDialog": {
     "title": "Divine میں سائن اِن کریں",
     "heading": "آ جائیں اندر۔",
-    "subtitleRegister": "دعوت نامہ ہے؟ اکاؤنٹ بنا لیں۔",
     "subtitleSignIn": "اپنے موجودہ اکاؤنٹ سے login.divine.video پر سائن اِن کریں۔",
     "tabRegister": "رجسٹر",
     "tabSignIn": "سائن اِن",
@@ -441,7 +440,6 @@
     "bunkerPlaceholder": "bunker://",
     "bunkerButton": "Bunker سے لاگ اِن",
     "connecting": "جڑ رہا ہے...",
-    "errorInviteServiceUnavailable": "دعوت نامہ سروس دستیاب نہیں",
     "errorExtensionNotFound": "Nostr ایکسٹینشن نہیں ملی۔ براہِ کرم NIP-07 ایکسٹینشن انسٹال کریں۔",
     "errorExtensionLoginFailed": "ایکسٹینشن لاگ اِن ناکام",
     "errorKeyLoginFailed": "اس کلید سے لاگ اِن نہیں ہو سکا۔ چیک کریں کہ درست ہے۔",
@@ -456,7 +454,10 @@
     "errorInviteValidationFailed": "دعوت نامہ کوڈ کی تصدیق نہیں ہو سکی",
     "errorInviteCodeUsed": "یہ دعوت نامہ کوڈ پہلے ہی استعمال ہو چکا ہے",
     "errorSignInStartFailed": "سائن اِن شروع نہیں ہو سکا",
-    "errorWaitlistJoinFailed": "ویٹ لسٹ میں شامل نہیں ہو سکا"
+    "subtitleCreate": "اپنا Divine اکاؤنٹ ترتیب دیں۔",
+    "createAccountButton": "اکاؤنٹ بنائیں",
+    "creatingAccount": "اکاؤنٹ ترتیب دیا جا رہا ہے...",
+    "errorSignUpStartFailed": "رجسٹریشن شروع نہیں ہو سکی"
   },
   "accountSwitcher": {
     "myProfile": "میرا پروفائل",
@@ -1458,8 +1459,7 @@
     "label": "دعوت نامہ کوڈ",
     "placeholder": "اپنا دعوت نامہ کوڈ پیسٹ کریں",
     "checking": "چیک ہو رہا ہے...",
-    "continue": "جاری رکھیں",
-    "joinWaitlist": "دعوت نامہ نہیں؟ ویٹ لسٹ میں شامل ہوں۔"
+    "continue": "جاری رکھیں"
   },
   "invitesLandingPage": {
     "seoTitle": "دعوت نامہ کوڈ {{code}} سے Divine میں شامل ہوں",

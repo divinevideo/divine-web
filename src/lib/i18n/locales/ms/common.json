@@ -417,7 +417,6 @@
   "loginDialog": {
     "title": "Log masuk ke Divine",
     "heading": "Jom masuk.",
-    "subtitleRegister": "Ada jemputan? Cipta akaun.",
     "subtitleSignIn": "Log masuk di login.divine.video dengan akaun sedia ada anda.",
     "tabRegister": "Daftar",
     "tabSignIn": "Log masuk",
@@ -441,7 +440,6 @@
     "bunkerPlaceholder": "bunker://",
     "bunkerButton": "Log masuk dengan Bunker",
     "connecting": "Menyambung...",
-    "errorInviteServiceUnavailable": "Perkhidmatan jemputan tidak tersedia",
     "errorExtensionNotFound": "Ekstensi Nostr tidak ditemui. Sila pasang ekstensi NIP-07.",
     "errorExtensionLoginFailed": "Log masuk ekstensi gagal",
     "errorKeyLoginFailed": "Gagal log masuk dengan kunci ini. Sila pastikan ia betul.",
@@ -456,7 +454,10 @@
     "errorInviteValidationFailed": "Tidak dapat mengesahkan kod jemputan",
     "errorInviteCodeUsed": "Kod jemputan ini telah digunakan",
     "errorSignInStartFailed": "Tidak dapat memulakan log masuk",
-    "errorWaitlistJoinFailed": "Tidak dapat menyertai senarai menunggu"
+    "subtitleCreate": "Sediakan akaun Divine anda.",
+    "createAccountButton": "Cipta akaun",
+    "creatingAccount": "Menyediakan akaun...",
+    "errorSignUpStartFailed": "Tidak dapat memulakan pendaftaran"
   },
   "accountSwitcher": {
     "myProfile": "Profil Saya",
@@ -1458,8 +1459,7 @@
     "label": "Kod jemputan",
     "placeholder": "Tampal kod jemputan anda",
     "checking": "Menyemak...",
-    "continue": "Teruskan",
-    "joinWaitlist": "Tiada jemputan? Masuk senarai menunggu."
+    "continue": "Teruskan"
   },
   "invitesLandingPage": {
     "seoTitle": "Sertai Divine dengan kod jemputan {{code}}",

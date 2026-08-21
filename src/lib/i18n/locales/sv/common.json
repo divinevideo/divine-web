@@ -417,7 +417,6 @@
   "loginDialog": {
     "title": "Logga in på Divine",
     "heading": "Kom in.",
-    "subtitleRegister": "Har du en inbjudan? Skapa ett konto.",
     "subtitleSignIn": "Logga in på login.divine.video med ditt befintliga konto.",
     "tabRegister": "Registrera",
     "tabSignIn": "Logga in",
@@ -441,7 +440,6 @@
     "bunkerPlaceholder": "bunker://",
     "bunkerButton": "Logga in med Bunker",
     "connecting": "Ansluter...",
-    "errorInviteServiceUnavailable": "Inbjudningstjänsten är inte tillgänglig",
     "errorExtensionNotFound": "Hittade inget Nostr-tillägg. Installera ett NIP-07-tillägg.",
     "errorExtensionLoginFailed": "Inloggning med tillägg misslyckades",
     "errorKeyLoginFailed": "Kunde inte logga in med den här nyckeln. Kontrollera att den är korrekt.",
@@ -456,7 +454,10 @@
     "errorInviteValidationFailed": "Kunde inte validera inbjudningskoden",
     "errorInviteCodeUsed": "Den här inbjudningskoden har redan använts",
     "errorSignInStartFailed": "Kunde inte starta inloggning",
-    "errorWaitlistJoinFailed": "Kunde inte gå med i väntelistan"
+    "subtitleCreate": "Konfigurera ditt Divine-konto.",
+    "createAccountButton": "Skapa konto",
+    "creatingAccount": "Konfigurerar kontot...",
+    "errorSignUpStartFailed": "Det gick inte att starta registreringen"
   },
   "accountSwitcher": {
     "myProfile": "Min profil",
@@ -1458,8 +1459,7 @@
     "label": "Inbjudningskod",
     "placeholder": "Klistra in din inbjudningskod",
     "checking": "Kollar...",
-    "continue": "Fortsätt",
-    "joinWaitlist": "Ingen inbjudan? Ställ dig på väntelistan."
+    "continue": "Fortsätt"
   },
   "invitesLandingPage": {
     "seoTitle": "Gå med i Divine med inbjudningskoden {{code}}",

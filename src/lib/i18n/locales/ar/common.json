@@ -437,7 +437,6 @@
   "loginDialog": {
     "title": "تسجيل الدخول إلى Divine",
     "heading": "ادخل.",
-    "subtitleRegister": "لديك دعوة؟ أنشئ حساباً.",
     "subtitleSignIn": "سجّل الدخول من login.divine.video بحسابك الحالي.",
     "tabRegister": "تسجيل",
     "tabSignIn": "تسجيل الدخول",
@@ -461,7 +460,6 @@
     "bunkerPlaceholder": "bunker://",
     "bunkerButton": "تسجيل الدخول عبر Bunker",
     "connecting": "جارٍ الاتصال...",
-    "errorInviteServiceUnavailable": "خدمة الدعوات غير متاحة",
     "errorExtensionNotFound": "لم يتم العثور على إضافة Nostr. يرجى تثبيت إضافة NIP-07.",
     "errorExtensionLoginFailed": "فشل تسجيل الدخول بالإضافة",
     "errorKeyLoginFailed": "تعذّر تسجيل الدخول بهذا المفتاح. يرجى التأكد من صحته.",
@@ -476,7 +474,10 @@
     "errorInviteValidationFailed": "تعذّر التحقق من رمز الدعوة",
     "errorInviteCodeUsed": "تم استخدام رمز الدعوة هذا من قبل",
     "errorSignInStartFailed": "تعذّر بدء تسجيل الدخول",
-    "errorWaitlistJoinFailed": "تعذّر الانضمام إلى قائمة الانتظار"
+    "subtitleCreate": "أعِدّ حسابك على Divine.",
+    "createAccountButton": "إنشاء حساب",
+    "creatingAccount": "جارٍ إعداد حسابك...",
+    "errorSignUpStartFailed": "تعذّر بدء التسجيل"
   },
   "accountSwitcher": {
     "myProfile": "ملفي الشخصي",
@@ -1554,8 +1555,7 @@
     "label": "رمز الدعوة",
     "placeholder": "الصق رمز الدعوة الخاص بك",
     "checking": "جارٍ التحقق...",
-    "continue": "متابعة",
-    "joinWaitlist": "ليس لديك دعوة؟ انضم إلى قائمة الانتظار."
+    "continue": "متابعة"
   },
   "invitesLandingPage": {
     "seoTitle": "انضم إلى Divine برمز الدعوة {{code}}",

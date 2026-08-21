@@ -417,7 +417,6 @@
   "loginDialog": {
     "title": "Entrar na Divine",
     "heading": "Bora.",
-    "subtitleRegister": "Tem convite? Cria uma conta.",
     "subtitleSignIn": "Faça login em login.divine.video com sua conta.",
     "tabRegister": "Cadastrar",
     "tabSignIn": "Entrar",
@@ -441,7 +440,6 @@
     "bunkerPlaceholder": "bunker://",
     "bunkerButton": "Entrar com Bunker",
     "connecting": "Conectando...",
-    "errorInviteServiceUnavailable": "Serviço de convites indisponível",
     "errorExtensionNotFound": "Extensão Nostr não encontrada. Instale uma extensão NIP-07.",
     "errorExtensionLoginFailed": "Falha no login pela extensão",
     "errorKeyLoginFailed": "Não deu pra entrar com essa chave. Confere se está certa.",
@@ -456,7 +454,10 @@
     "errorInviteValidationFailed": "Não foi possível validar o código de convite",
     "errorInviteCodeUsed": "Este código de convite já foi usado",
     "errorSignInStartFailed": "Não foi possível iniciar o login",
-    "errorWaitlistJoinFailed": "Não foi possível entrar na lista de espera"
+    "subtitleCreate": "Configura a tua conta Divine.",
+    "createAccountButton": "Criar conta",
+    "creatingAccount": "A configurar a conta...",
+    "errorSignUpStartFailed": "Não foi possível iniciar o cadastro"
   },
   "accountSwitcher": {
     "myProfile": "Meu perfil",
@@ -1466,8 +1467,7 @@
     "label": "Código de convite",
     "placeholder": "Cole seu código de convite",
     "checking": "Verificando...",
-    "continue": "Continuar",
-    "joinWaitlist": "Sem convite? Entre na lista de espera."
+    "continue": "Continuar"
   },
   "invitesLandingPage": {
     "seoTitle": "Entre no Divine com o código de convite {{code}}",

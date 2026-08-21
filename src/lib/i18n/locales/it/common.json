@@ -417,7 +417,6 @@
   "loginDialog": {
     "title": "Accedi a Divine",
     "heading": "Entra.",
-    "subtitleRegister": "Hai un invito? Crea un account.",
     "subtitleSignIn": "Accedi su login.divine.video con il tuo account esistente.",
     "tabRegister": "Registrati",
     "tabSignIn": "Accedi",
@@ -441,7 +440,6 @@
     "bunkerPlaceholder": "bunker://",
     "bunkerButton": "Accedi con Bunker",
     "connecting": "Connessione...",
-    "errorInviteServiceUnavailable": "Servizio inviti non disponibile",
     "errorExtensionNotFound": "Estensione Nostr non trovata. Installa un'estensione NIP-07.",
     "errorExtensionLoginFailed": "Accesso con estensione non riuscito",
     "errorKeyLoginFailed": "Accesso con questa chiave non riuscito. Verifica che sia corretta.",
@@ -456,7 +454,10 @@
     "errorInviteValidationFailed": "Impossibile validare il codice invito",
     "errorInviteCodeUsed": "Questo codice invito è già stato usato",
     "errorSignInStartFailed": "Impossibile avviare l'accesso",
-    "errorWaitlistJoinFailed": "Impossibile unirsi alla lista d'attesa"
+    "subtitleCreate": "Configura il tuo account Divine.",
+    "createAccountButton": "Crea account",
+    "creatingAccount": "Configurazione in corso...",
+    "errorSignUpStartFailed": "Impossibile avviare la registrazione"
   },
   "accountSwitcher": {
     "myProfile": "Il mio profilo",
@@ -1466,8 +1467,7 @@
     "label": "Codice invito",
     "placeholder": "Incolla il tuo codice invito",
     "checking": "Verifica in corso...",
-    "continue": "Continua",
-    "joinWaitlist": "Niente invito? Mettiti in lista d'attesa."
+    "continue": "Continua"
   },
   "invitesLandingPage": {
     "seoTitle": "Unisciti a Divine con il codice invito {{code}}",

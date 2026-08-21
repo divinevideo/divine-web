@@ -1,4 +1,4 @@
-import React, { FormEvent, useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Warning as AlertTriangle, Cloud, Key as KeyRound, Shield, UploadSimple as Upload } from '@phosphor-icons/react';
 
@@ -8,18 +8,14 @@ import { Collapsible, CollapsibleContent } from '@/components/ui/collapsible';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { setInviteHandoff } from '@/lib/authHandoff';
 import { buildLoginRedirect, buildSignupRedirect } from '@/lib/divineLogin';
-import { getInviteClientConfig, joinInviteWaitlist, validateInviteCode } from '@/lib/inviteApi';
 import { getStoredLocalNsecLogin } from '@/lib/localNsecAccount';
 import { isMinorKeyHandoverRestricted } from '@/lib/protectedMinor';
 import { cn } from '@/lib/utils';
 import { useLoginActions } from '@/hooks/useLoginActions';
 import { useProtectedMinorStatus } from '@/hooks/useProtectedMinorStatus';
 
-import InviteCodeForm from './InviteCodeForm';
 import LocalNsecBanner from './LocalNsecBanner';
-import WaitlistForm from './WaitlistForm';
 import WebAccountSignInForm from './WebAccountSignInForm';
 
 interface LoginDialogProps {
@@ -30,7 +26,6 @@ interface LoginDialogProps {
 }
 
 type AuthTab = 'register' | 'signin';
-type RegisterView = 'invite' | 'waitlist';
 
 const validateNsec = (nsec: string) => /^nsec1[a-zA-Z0-9]{58}$/.test(nsec);
 const validateBunkerUri = (uri: string) => uri.startsWith('bunker://');
@@ -41,24 +36,12 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin }) =
   const [bunkerError, setBunkerError] = useState<string | null>(null);
   const [bunkerUri, setBunkerUri] = useState('');
   const [generalError, setGeneralError] = useState<string | null>(null);
-  const [inviteConfigError, setInviteConfigError] = useState<string | null>(null);
-  const [inviteCode, setInviteCode] = useState('');
-  const [inviteError, setInviteError] = useState<string | null>(null);
-  const [isConfigLoading, setIsConfigLoading] = useState(false);
   const [isFileLoading, setIsFileLoading] = useState(false);
-  const [isInviteLoading, setIsInviteLoading] = useState(false);
   const [isLoginLoading, setIsLoginLoading] = useState(false);
-  const [isWaitlistLoading, setIsWaitlistLoading] = useState(false);
   const [keyError, setKeyError] = useState<string | null>(null);
   const [nsec, setNsec] = useState('');
   const [storedLocalNsec, setStoredLocalNsec] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<AuthTab>('register');
-  const [registerView, setRegisterView] = useState<RegisterView>('invite');
-  const [waitlistContact, setWaitlistContact] = useState('');
-  const [waitlistEnabled, setWaitlistEnabled] = useState(false);
-  const [waitlistError, setWaitlistError] = useState<string | null>(null);
-  const [waitlistNewsletterOptIn, setWaitlistNewsletterOptIn] = useState(false);
-  const [waitlistSuccess, setWaitlistSuccess] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const login = useLoginActions();
   const { state: protectedMinorState } = useProtectedMinorStatus();
@@ -95,47 +78,12 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin }) =
     setBunkerError(null);
     setBunkerUri('');
     setGeneralError(null);
-    setInviteConfigError(null);
-    setInviteCode('');
-    setInviteError(null);
-    setIsConfigLoading(true);
     setIsFileLoading(false);
-    setIsInviteLoading(false);
     setIsLoginLoading(false);
-    setIsWaitlistLoading(false);
     setKeyError(null);
     setNsec('');
     setStoredLocalNsec(getStoredLocalNsecLogin()?.data.nsec ?? null);
     setActiveTab('register');
-    setRegisterView('invite');
-    setWaitlistContact('');
-    setWaitlistEnabled(false);
-    setWaitlistError(null);
-    setWaitlistNewsletterOptIn(false);
-    setWaitlistSuccess(false);
-
-    let isCancelled = false;
-
-    getInviteClientConfig()
-      .then((config) => {
-        if (!isCancelled) {
-          setWaitlistEnabled(config.waitlistEnabled);
-        }
-      })
-      .catch((caughtError) => {
-        if (!isCancelled) {
-          setInviteConfigError(caughtError instanceof Error ? caughtError.message : t('loginDialog.errorInviteServiceUnavailable'));
-        }
-      })
-      .finally(() => {
-        if (!isCancelled) {
-          setIsConfigLoading(false);
-        }
-      });
-
-    return () => {
-      isCancelled = true;
-    };
   }, [isOpen]);
 
   const handleExtensionLogin = async () => {
@@ -265,26 +213,17 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin }) =
     reader.readAsText(file);
   };
 
-  const handleInviteSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setInviteError(null);
-    setIsInviteLoading(true);
+  const handleRegister = async () => {
+    setGeneralError(null);
+    setIsLoginLoading(true);
 
     try {
-      const result = await validateInviteCode(inviteCode);
       const returnPath = `${window.location.pathname}${window.location.search}`;
-      setInviteHandoff({
-        code: result.normalizedCode,
-        mode: 'signup',
-        createdAt: Date.now(),
-        returnPath,
-      });
       const redirect = await buildSignupRedirect({ returnPath });
       window.location.assign(redirect.url);
     } catch (caughtError) {
-      setInviteError(caughtError instanceof Error ? caughtError.message : t('loginDialog.errorInviteValidationFailed'));
-    } finally {
-      setIsInviteLoading(false);
+      setGeneralError(caughtError instanceof Error ? caughtError.message : t('loginDialog.errorSignUpStartFailed'));
+      setIsLoginLoading(false);
     }
   };
 
@@ -299,21 +238,6 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin }) =
     } catch (caughtError) {
       setGeneralError(caughtError instanceof Error ? caughtError.message : t('loginDialog.errorSignInStartFailed'));
       setIsLoginLoading(false);
-    }
-  };
-
-  const handleWaitlistSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setWaitlistError(null);
-    setIsWaitlistLoading(true);
-
-    try {
-      await joinInviteWaitlist(waitlistContact, waitlistNewsletterOptIn);
-      setWaitlistSuccess(true);
-    } catch (caughtError) {
-      setWaitlistError(caughtError instanceof Error ? caughtError.message : t('loginDialog.errorWaitlistJoinFailed'));
-    } finally {
-      setIsWaitlistLoading(false);
     }
   };
 
@@ -337,7 +261,7 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin }) =
           </DialogDescription>
           <p className="text-center text-sm text-muted-foreground">
             {activeTab === 'register'
-              ? t('loginDialog.subtitleRegister')
+              ? t('loginDialog.subtitleCreate')
               : t('loginDialog.subtitleSignIn')}
           </p>
         </DialogHeader>
@@ -364,38 +288,9 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin }) =
             </TabsList>
 
             <TabsContent className="space-y-4" value="register">
-              {isConfigLoading ? (
-                <div className="rounded-2xl bg-muted px-4 py-6 text-center text-sm text-muted-foreground">
-                  {t('loginDialog.checkingInvite')}
-                </div>
-              ) : inviteConfigError ? (
-                <div className="space-y-2 rounded-2xl bg-muted px-4 py-6 text-center text-sm text-muted-foreground">
-                  <p>{t('loginDialog.inviteUnavailable')}</p>
-                  <p className="text-red-500">{inviteConfigError}</p>
-                </div>
-              ) : registerView === 'invite' ? (
-                <InviteCodeForm
-                  error={inviteError}
-                  isLoading={isInviteLoading}
-                  onInviteCodeChange={setInviteCode}
-                  onJoinWaitlist={() => setRegisterView('waitlist')}
-                  onSubmit={handleInviteSubmit}
-                  value={inviteCode}
-                  waitlistEnabled={waitlistEnabled}
-                />
-              ) : (
-                <WaitlistForm
-                  contact={waitlistContact}
-                  error={waitlistError}
-                  isLoading={isWaitlistLoading}
-                  isSuccess={waitlistSuccess}
-                  newsletterOptIn={waitlistNewsletterOptIn}
-                  onBack={() => setRegisterView('invite')}
-                  onContactChange={setWaitlistContact}
-                  onNewsletterOptInChange={setWaitlistNewsletterOptIn}
-                  onSubmit={handleWaitlistSubmit}
-                />
-              )}
+              <Button className="w-full rounded-full py-3" disabled={isLoginLoading} onClick={handleRegister}>
+                {isLoginLoading ? t('loginDialog.creatingAccount') : t('loginDialog.createAccountButton')}
+              </Button>
             </TabsContent>
 
             <TabsContent className="space-y-4" value="signin">

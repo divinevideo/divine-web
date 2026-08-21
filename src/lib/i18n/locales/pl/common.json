@@ -417,7 +417,6 @@
   "loginDialog": {
     "title": "Zaloguj się do Divine",
     "heading": "Wskakuj.",
-    "subtitleRegister": "Masz zaproszenie? Załóż konto.",
     "subtitleSignIn": "Zaloguj się na login.divine.video swoim kontem.",
     "tabRegister": "Rejestracja",
     "tabSignIn": "Zaloguj się",
@@ -441,7 +440,6 @@
     "bunkerPlaceholder": "bunker://",
     "bunkerButton": "Zaloguj przez Bunker",
     "connecting": "Łączenie...",
-    "errorInviteServiceUnavailable": "Usługa zaproszeń niedostępna",
     "errorExtensionNotFound": "Nie znaleziono rozszerzenia Nostr. Zainstaluj rozszerzenie NIP-07.",
     "errorExtensionLoginFailed": "Logowanie rozszerzeniem się nie udało",
     "errorKeyLoginFailed": "Nie udało się zalogować tym kluczem. Sprawdź, czy jest poprawny.",
@@ -456,7 +454,10 @@
     "errorInviteValidationFailed": "Nie można zweryfikować kodu zaproszenia",
     "errorInviteCodeUsed": "Ten kod zaproszenia został już użyty",
     "errorSignInStartFailed": "Nie można rozpocząć logowania",
-    "errorWaitlistJoinFailed": "Nie można dołączyć do listy oczekujących"
+    "subtitleCreate": "Skonfiguruj konto Divine.",
+    "createAccountButton": "Utwórz konto",
+    "creatingAccount": "Konfigurowanie konta...",
+    "errorSignUpStartFailed": "Nie można rozpocząć rejestracji"
   },
   "accountSwitcher": {
     "myProfile": "Mój profil",
@@ -1474,8 +1475,7 @@
     "label": "Kod zaproszenia",
     "placeholder": "Wklej swój kod zaproszenia",
     "checking": "Sprawdzanie...",
-    "continue": "Dalej",
-    "joinWaitlist": "Nie masz zaproszenia? Zapisz się na listę oczekujących."
+    "continue": "Dalej"
   },
   "invitesLandingPage": {
     "seoTitle": "Dołącz do Divine z kodem zaproszenia {{code}}",

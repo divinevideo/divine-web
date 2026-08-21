@@ -1,21 +1,10 @@
 const INVITE_API_BASE_URL = import.meta.env.VITE_INVITE_API_URL || 'https://invite.divine.video';
 
-export type InviteClientConfigMode = 'invite_code_required' | 'waitlist_only' | 'open';
 export type InviteApiErrorCode = 'invalid_invite' | 'unavailable' | 'unknown';
-
-export interface InviteClientConfig {
-  mode: InviteClientConfigMode;
-  waitlistEnabled: boolean;
-  supportEmail?: string;
-}
 
 export interface InviteValidationResult {
   valid: true;
   normalizedCode: string;
-}
-
-export interface WaitlistJoinResult {
-  ok: true;
 }
 
 export class InviteApiError extends Error {
@@ -72,30 +61,6 @@ function toNetworkInviteApiError(error: unknown): InviteApiError {
   );
 }
 
-export async function getInviteClientConfig(): Promise<InviteClientConfig> {
-  let response: Response;
-  try {
-    response = await fetch(`${INVITE_API_BASE_URL}/v1/client-config`);
-  } catch (error) {
-    throw toNetworkInviteApiError(error);
-  }
-  const body = await readJson(response);
-
-  if (!response.ok) {
-    throw toInviteApiError(response, body);
-  }
-
-  return {
-    mode: (body.mode as InviteClientConfigMode | undefined) || 'invite_code_required',
-    waitlistEnabled: Boolean(body.waitlistEnabled ?? body.waitlist_enabled),
-    supportEmail: typeof body.supportEmail === 'string'
-      ? body.supportEmail
-      : typeof body.support_email === 'string'
-        ? body.support_email
-        : undefined,
-  };
-}
-
 export async function validateInviteCode(code: string): Promise<InviteValidationResult> {
   const normalizedCode = normalizeInviteCode(code);
   let response: Response;
@@ -122,24 +87,4 @@ export async function validateInviteCode(code: string): Promise<InviteValidation
         ? body.normalized_code
         : normalizedCode,
   };
-}
-
-export async function joinInviteWaitlist(contact: string, newsletterOptIn = false): Promise<WaitlistJoinResult> {
-  let response: Response;
-  try {
-    response = await fetch(`${INVITE_API_BASE_URL}/v1/waitlist`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ contact: contact.trim(), newsletter_opt_in: newsletterOptIn }),
-    });
-  } catch (error) {
-    throw toNetworkInviteApiError(error);
-  }
-  const body = await readJson(response);
-
-  if (!response.ok) {
-    throw toInviteApiError(response, body);
-  }
-
-  return { ok: true };
 }

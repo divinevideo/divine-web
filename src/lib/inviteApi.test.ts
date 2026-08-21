@@ -2,8 +2,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   InviteApiError,
-  getInviteClientConfig,
-  joinInviteWaitlist,
   validateInviteCode,
 } from './inviteApi';
 
@@ -17,25 +15,6 @@ describe('inviteApi', () => {
   afterEach(() => {
     fetchMock.mockReset();
     vi.unstubAllGlobals();
-  });
-
-  it('normalizes client config responses from the invite service', async () => {
-    fetchMock.mockResolvedValue(
-      new Response(JSON.stringify({
-        mode: 'invite_code_required',
-        waitlist_enabled: true,
-        support_email: 'support@divine.video',
-      }), {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' },
-      }),
-    );
-
-    await expect(getInviteClientConfig()).resolves.toEqual({
-      mode: 'invite_code_required',
-      waitlistEnabled: true,
-      supportEmail: 'support@divine.video',
-    });
   });
 
   it('validates invite codes and returns the normalized code', async () => {
@@ -84,54 +63,10 @@ describe('inviteApi', () => {
   it('maps network failures to an unavailable invite service error', async () => {
     fetchMock.mockRejectedValue(new TypeError('Failed to fetch'));
 
-    await expect(getInviteClientConfig()).rejects.toMatchObject({
+    await expect(validateInviteCode('ABCD-EFGH')).rejects.toMatchObject({
       code: 'unavailable',
       message: 'Invite service unavailable',
       status: 0,
     } satisfies Partial<InviteApiError>);
-  });
-
-  it('submits waitlist entries to the invite service', async () => {
-    fetchMock.mockResolvedValue(
-      new Response(JSON.stringify({
-        ok: true,
-      }), {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' },
-      }),
-    );
-
-    await expect(joinInviteWaitlist('person@example.com')).resolves.toEqual({ ok: true });
-
-    expect(fetchMock).toHaveBeenCalledWith(
-      'https://invite.divine.video/v1/waitlist',
-      expect.objectContaining({
-        body: JSON.stringify({ contact: 'person@example.com', newsletter_opt_in: false }),
-        headers: { 'Content-Type': 'application/json' },
-        method: 'POST',
-      }),
-    );
-  });
-
-  it('submits opted-in waitlist entries to the invite service', async () => {
-    fetchMock.mockResolvedValue(
-      new Response(JSON.stringify({
-        ok: true,
-      }), {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' },
-      }),
-    );
-
-    await expect(joinInviteWaitlist('person@example.com', true)).resolves.toEqual({ ok: true });
-
-    expect(fetchMock).toHaveBeenCalledWith(
-      'https://invite.divine.video/v1/waitlist',
-      expect.objectContaining({
-        body: JSON.stringify({ contact: 'person@example.com', newsletter_opt_in: true }),
-        headers: { 'Content-Type': 'application/json' },
-        method: 'POST',
-      }),
-    );
   });
 });

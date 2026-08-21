@@ -417,7 +417,6 @@
   "loginDialog": {
     "title": "Inloggen bij Divine",
     "heading": "Kom binnen.",
-    "subtitleRegister": "Heb je een uitnodiging? Maak een account aan.",
     "subtitleSignIn": "Log in op login.divine.video met je bestaande account.",
     "tabRegister": "Registreren",
     "tabSignIn": "Inloggen",
@@ -441,7 +440,6 @@
     "bunkerPlaceholder": "bunker://",
     "bunkerButton": "Inloggen met Bunker",
     "connecting": "Verbinden...",
-    "errorInviteServiceUnavailable": "Uitnodigingsservice niet beschikbaar",
     "errorExtensionNotFound": "Nostr-extensie niet gevonden. Installeer een NIP-07-extensie.",
     "errorExtensionLoginFailed": "Inloggen met extensie mislukt",
     "errorKeyLoginFailed": "Inloggen met deze sleutel mislukt. Controleer of hij klopt.",
@@ -456,7 +454,10 @@
     "errorInviteValidationFailed": "Kan uitnodigingscode niet valideren",
     "errorInviteCodeUsed": "Deze uitnodigingscode is al gebruikt",
     "errorSignInStartFailed": "Kan inloggen niet starten",
-    "errorWaitlistJoinFailed": "Kan niet aansluiten bij de wachtlijst"
+    "subtitleCreate": "Stel je Divine-account in.",
+    "createAccountButton": "Account maken",
+    "creatingAccount": "Account wordt ingesteld...",
+    "errorSignUpStartFailed": "Registratie kan niet worden gestart"
   },
   "accountSwitcher": {
     "myProfile": "Mijn profiel",
@@ -1458,8 +1459,7 @@
     "label": "Uitnodigingscode",
     "placeholder": "Plak je uitnodigingscode",
     "checking": "Bezig met controleren...",
-    "continue": "Doorgaan",
-    "joinWaitlist": "Geen uitnodiging? Zet je op de wachtlijst."
+    "continue": "Doorgaan"
   },
   "invitesLandingPage": {
     "seoTitle": "Word lid van Divine met uitnodigingscode {{code}}",

@@ -417,7 +417,6 @@
   "loginDialog": {
     "title": "Divineにサインイン",
     "heading": "ログインしよう。",
-    "subtitleRegister": "招待コードがある？アカウントを作ろう。",
     "subtitleSignIn": "既存のアカウントでlogin.divine.videoからサインインしてください。",
     "tabRegister": "登録",
     "tabSignIn": "サインイン",
@@ -441,7 +440,6 @@
     "bunkerPlaceholder": "bunker://",
     "bunkerButton": "Bunkerでログイン",
     "connecting": "接続中...",
-    "errorInviteServiceUnavailable": "招待サービスが利用できません",
     "errorExtensionNotFound": "Nostr拡張機能が見つかりません。NIP-07拡張機能をインストールしてください。",
     "errorExtensionLoginFailed": "拡張機能でのログインに失敗しました",
     "errorKeyLoginFailed": "このキーでログインできませんでした。正しいか確認してください。",
@@ -456,7 +454,10 @@
     "errorInviteValidationFailed": "招待コードを検証できません",
     "errorInviteCodeUsed": "この招待コードはすでに使用されています",
     "errorSignInStartFailed": "サインインを開始できません",
-    "errorWaitlistJoinFailed": "順番待ちリストに参加できません"
+    "subtitleCreate": "Divineアカウントを設定しましょう。",
+    "createAccountButton": "アカウントを作成",
+    "creatingAccount": "アカウントを設定中...",
+    "errorSignUpStartFailed": "登録を開始できません"
   },
   "accountSwitcher": {
     "myProfile": "マイプロフィール",
@@ -1458,8 +1459,7 @@
     "label": "招待コード",
     "placeholder": "招待コードを貼り付けてください",
     "checking": "確認中...",
-    "continue": "続ける",
-    "joinWaitlist": "招待がない?ウェイトリストに登録してください。"
+    "continue": "続ける"
   },
   "invitesLandingPage": {
     "seoTitle": "招待コード {{code}} でDivineに参加",

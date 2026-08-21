@@ -151,7 +151,6 @@ const InvitesLandingPage = () => {
                 onInviteCodeChange={setInviteCode}
                 onSubmit={handleSubmit}
                 value={inviteCode}
-                waitlistEnabled={false}
               />
             </CardContent>
           </Card>

@@ -417,7 +417,6 @@
   "loginDialog": {
     "title": "Đăng nhập vào Divine",
     "heading": "Vào đi.",
-    "subtitleRegister": "Có thư mời? Tạo tài khoản ngay.",
     "subtitleSignIn": "Đăng nhập tại login.divine.video bằng tài khoản hiện có của bạn.",
     "tabRegister": "Đăng ký",
     "tabSignIn": "Đăng nhập",
@@ -441,7 +440,6 @@
     "bunkerPlaceholder": "bunker://",
     "bunkerButton": "Đăng nhập bằng Bunker",
     "connecting": "Đang kết nối...",
-    "errorInviteServiceUnavailable": "Dịch vụ thư mời không khả dụng",
     "errorExtensionNotFound": "Không tìm thấy tiện ích mở rộng Nostr. Vui lòng cài một tiện ích NIP-07.",
     "errorExtensionLoginFailed": "Đăng nhập bằng tiện ích mở rộng thất bại",
     "errorKeyLoginFailed": "Không đăng nhập được bằng khóa này. Vui lòng kiểm tra lại xem đã đúng chưa.",
@@ -456,7 +454,10 @@
     "errorInviteValidationFailed": "Không xác thực được mã mời",
     "errorInviteCodeUsed": "Mã mời này đã được sử dụng",
     "errorSignInStartFailed": "Không bắt đầu được đăng nhập",
-    "errorWaitlistJoinFailed": "Không tham gia được danh sách chờ"
+    "subtitleCreate": "Thiết lập tài khoản Divine của bạn.",
+    "createAccountButton": "Tạo tài khoản",
+    "creatingAccount": "Đang thiết lập tài khoản...",
+    "errorSignUpStartFailed": "Không thể bắt đầu đăng ký"
   },
   "accountSwitcher": {
     "myProfile": "Hồ sơ của tôi",
@@ -1458,8 +1459,7 @@
     "label": "Mã mời",
     "placeholder": "Dán mã mời của bạn",
     "checking": "Đang kiểm tra...",
-    "continue": "Tiếp tục",
-    "joinWaitlist": "Chưa có mã mời? Vào danh sách chờ đi."
+    "continue": "Tiếp tục"
   },
   "invitesLandingPage": {
     "seoTitle": "Tham gia Divine với mã mời {{code}}",

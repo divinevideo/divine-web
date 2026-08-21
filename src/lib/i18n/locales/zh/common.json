@@ -417,7 +417,6 @@
   "loginDialog": {
     "title": "登录 Divine",
     "heading": "进来吧。",
-    "subtitleRegister": "有邀请码？开个号。",
     "subtitleSignIn": "用你已有的账号在 login.divine.video 登录。",
     "tabRegister": "注册",
     "tabSignIn": "登录",
@@ -441,7 +440,6 @@
     "bunkerPlaceholder": "bunker://",
     "bunkerButton": "用 Bunker 登录",
     "connecting": "连接中…",
-    "errorInviteServiceUnavailable": "邀请服务不可用",
     "errorExtensionNotFound": "没找到 Nostr 扩展。请安装一个 NIP-07 扩展。",
     "errorExtensionLoginFailed": "扩展登录失败",
     "errorKeyLoginFailed": "用这个密钥登录失败，请检查密钥是否正确。",
@@ -456,7 +454,10 @@
     "errorInviteValidationFailed": "无法验证邀请码",
     "errorInviteCodeUsed": "这个邀请码已经被用过了",
     "errorSignInStartFailed": "无法开始登录",
-    "errorWaitlistJoinFailed": "无法加入候补名单"
+    "subtitleCreate": "设置你的 Divine 账号。",
+    "createAccountButton": "创建账号",
+    "creatingAccount": "正在设置账号...",
+    "errorSignUpStartFailed": "无法开始注册"
   },
   "accountSwitcher": {
     "myProfile": "我的主页",
@@ -1458,8 +1459,7 @@
     "label": "邀请码",
     "placeholder": "粘贴你的邀请码",
     "checking": "检查中…",
-    "continue": "继续",
-    "joinWaitlist": "没有邀请码？加入候补名单。"
+    "continue": "继续"
   },
   "invitesLandingPage": {
     "seoTitle": "使用邀请码 {{code}} 加入 Divine",

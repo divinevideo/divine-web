@@ -417,7 +417,6 @@
   "loginDialog": {
     "title": "Divine'a giriş yap",
     "heading": "Hadi giriş yap.",
-    "subtitleRegister": "Davetin var mı? Bir hesap aç.",
     "subtitleSignIn": "Mevcut hesabınla login.divine.video adresinden giriş yap.",
     "tabRegister": "Kayıt ol",
     "tabSignIn": "Giriş yap",
@@ -441,7 +440,6 @@
     "bunkerPlaceholder": "bunker://",
     "bunkerButton": "Bunker ile Giriş Yap",
     "connecting": "Bağlanıyor...",
-    "errorInviteServiceUnavailable": "Davet servisi kullanılamıyor",
     "errorExtensionNotFound": "Nostr eklentisi bulunamadı. Lütfen bir NIP-07 eklentisi yükle.",
     "errorExtensionLoginFailed": "Eklenti girişi başarısız",
     "errorKeyLoginFailed": "Bu anahtarla giriş yapılamadı. Lütfen doğru olduğundan emin ol.",
@@ -456,7 +454,10 @@
     "errorInviteValidationFailed": "Davet kodu doğrulanamadı",
     "errorInviteCodeUsed": "Bu davet kodu zaten kullanılmış",
     "errorSignInStartFailed": "Giriş başlatılamadı",
-    "errorWaitlistJoinFailed": "Bekleme listesine katılınamadı"
+    "subtitleCreate": "Divine hesabını oluştur.",
+    "createAccountButton": "Hesap oluştur",
+    "creatingAccount": "Hesap hazırlanıyor...",
+    "errorSignUpStartFailed": "Kayıt başlatılamadı"
   },
   "accountSwitcher": {
     "myProfile": "Profilim",
@@ -1458,8 +1459,7 @@
     "label": "Davet kodu",
     "placeholder": "Davet kodunu yapıştır",
     "checking": "Kontrol ediliyor...",
-    "continue": "Devam et",
-    "joinWaitlist": "Davetin yok mu? Bekleme listesine katıl."
+    "continue": "Devam et"
   },
   "invitesLandingPage": {
     "seoTitle": "{{code}} davet koduyla Divine'a katıl",

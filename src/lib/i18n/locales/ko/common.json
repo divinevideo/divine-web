@@ -417,7 +417,6 @@
   "loginDialog": {
     "title": "Divine에 로그인",
     "heading": "들어가기.",
-    "subtitleRegister": "초대장 있어요? 계정을 만들어 보세요.",
     "subtitleSignIn": "기존 계정으로 login.divine.video에서 로그인하세요.",
     "tabRegister": "회원가입",
     "tabSignIn": "로그인",
@@ -441,7 +440,6 @@
     "bunkerPlaceholder": "bunker://",
     "bunkerButton": "Bunker로 로그인",
     "connecting": "연결 중...",
-    "errorInviteServiceUnavailable": "초대 서비스를 사용할 수 없음",
     "errorExtensionNotFound": "Nostr 확장을 찾을 수 없어요. NIP-07 확장을 설치하세요.",
     "errorExtensionLoginFailed": "확장 로그인 실패",
     "errorKeyLoginFailed": "이 키로 로그인 실패. 키가 올바른지 확인하세요.",
@@ -456,7 +454,10 @@
     "errorInviteValidationFailed": "초대 코드를 확인할 수 없음",
     "errorInviteCodeUsed": "이 초대 코드는 이미 사용되었습니다",
     "errorSignInStartFailed": "로그인을 시작할 수 없음",
-    "errorWaitlistJoinFailed": "대기자 명단에 등록할 수 없음"
+    "subtitleCreate": "Divine 계정을 설정하세요.",
+    "createAccountButton": "계정 만들기",
+    "creatingAccount": "계정 설정 중...",
+    "errorSignUpStartFailed": "가입을 시작할 수 없음"
   },
   "accountSwitcher": {
     "myProfile": "내 프로필",
@@ -1458,8 +1459,7 @@
     "label": "초대 코드",
     "placeholder": "초대 코드를 붙여넣으세요",
     "checking": "확인 중...",
-    "continue": "계속",
-    "joinWaitlist": "초대 코드가 없나요? 대기자 명단에 등록하세요."
+    "continue": "계속"
   },
   "invitesLandingPage": {
     "seoTitle": "초대 코드 {{code}}로 Divine에 가입",
