@@ -123,6 +123,18 @@ describe("mirrorArchiveMedia", () => {
     expect(fetcher.mock.calls[0][1]).toMatchObject({ method: "PUT" });
   });
 
+  it("follows a BUD-01 redirect when reading the mirrored blob back", async () => {
+    const fetcher = vi.fn<typeof fetch>()
+      .mockResolvedValueOnce(new Response(JSON.stringify(descriptor()), { status: 200 }))
+      .mockResolvedValueOnce(new Response(null, { status: 200, headers: { "content-length": "5" } }));
+    const results = await mirrorArchiveMedia({
+      destination: "https://blossom.example", references: [reference("https://source.example/one")], signer, fetcher,
+    });
+
+    expect(results[0].verification).toBe("descriptor-verified");
+    expect(fetcher.mock.calls[1][1]).toMatchObject({ method: "HEAD", redirect: "follow" });
+  });
+
   it("records malformed destination JSON as a file failure", async () => {
     const results = await mirrorArchiveMedia({
       destination: "https://blossom.example",

@@ -165,10 +165,13 @@ async function verifyReadback(
 ): Promise<MirrorResult> {
   const expectedHash = references[0].sha256;
   try {
+    // BUD-01 lets a blob endpoint answer with 307/308 to a CDN, and guarantees
+    // the redirect target still carries the same sha256. Refusing to follow
+    // reported every CDN-backed destination as unverified.
     const response = await (options.fetcher ?? fetch)(descriptor.url, {
       method: "HEAD",
       signal: options.signal,
-      redirect: "error",
+      redirect: "follow",
     });
     const size = response.headers.get("content-length");
     if (expectedHash && response.ok && size !== null && Number(size) === descriptor.size) {
