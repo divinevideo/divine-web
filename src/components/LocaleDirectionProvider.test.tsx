@@ -1,8 +1,8 @@
-import { render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { LOCALE_STORAGE_KEY } from '@/lib/i18n/config';
-import { initializeI18n } from '@/lib/i18n';
+import { changeLanguage, initializeI18n } from '@/lib/i18n';
 import { LocaleDirectionProvider } from './LocaleDirectionProvider';
 
 function renderTabs() {
@@ -53,5 +53,24 @@ describe('LocaleDirectionProvider', () => {
     renderTabs();
 
     expect(directedAncestor()).toHaveAttribute('dir', 'ltr');
+  });
+
+  // The provider reads the locale through `useTranslation` rather than a
+  // one-shot read precisely so switching language reaches Radix without a
+  // reload. Nothing else pins that: a non-reactive read of the same locale
+  // leaves every case above green while the running app stays left-to-right
+  // until the next refresh.
+  it('follows a language change without a reload', async () => {
+    window.localStorage.setItem(LOCALE_STORAGE_KEY, 'en');
+    await initializeI18n({ force: true, languages: ['en'] });
+
+    renderTabs();
+    expect(directedAncestor()).toHaveAttribute('dir', 'ltr');
+
+    await act(async () => {
+      await changeLanguage('ar');
+    });
+
+    expect(directedAncestor()).toHaveAttribute('dir', 'rtl');
   });
 });
