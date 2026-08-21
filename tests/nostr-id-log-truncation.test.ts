@@ -40,9 +40,36 @@ function isIdentifierShortening(node: ts.Node): node is ts.CallExpression {
   return IDENTIFIER_NAME.test(node.expression.expression.getText());
 }
 
+/**
+ * An identifier only stands for a variable in some positions. In `video.id` and
+ * `{ id: value }` the `id` names a property, so matching it against local
+ * variables would blame an unrelated `const id` elsewhere in the file.
+ */
+function isValueReference(node: ts.Identifier): boolean {
+  const parent = node.parent;
+  if (!parent) return true;
+  if (ts.isPropertyAccessExpression(parent) && parent.name === node) return false;
+  if (ts.isQualifiedName(parent) && parent.right === node) return false;
+  if (ts.isPropertyAssignment(parent) && parent.name === node) return false;
+  if (ts.isBindingElement(parent) && parent.propertyName === node) return false;
+  if (ts.isJsxAttribute(parent) && parent.name === node) return false;
+  return true;
+}
+
+/** Nodes that hold their own `const`/`let` bindings. */
+function isScope(node: ts.Node): boolean {
+  return ts.isSourceFile(node)
+    || ts.isBlock(node)
+    || ts.isModuleBlock(node)
+    || ts.isCaseBlock(node)
+    || ts.isForStatement(node)
+    || ts.isForInStatement(node)
+    || ts.isForOfStatement(node);
+}
+
 export function findNostrIdLogTruncations(file: string, source: string): Violation[] {
   const sourceFile = ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
-  const shortenedLocals = new Map<string, ts.CallExpression>();
+  const shortenedLocals = new Map<ts.Node, Map<string, ts.CallExpression>>();
   const violations = new Map<number, Violation>();
 
   const record = (node: ts.Node) => {
@@ -54,10 +81,31 @@ export function findNostrIdLogTruncations(file: string, source: string): Violati
     });
   };
 
+  const enclosingScope = (node: ts.Node): ts.Node => {
+    for (let current = node.parent; current; current = current.parent) {
+      if (isScope(current)) return current;
+    }
+    return sourceFile;
+  };
+
+  const resolveShortening = (node: ts.Identifier): ts.CallExpression | undefined => {
+    for (let current: ts.Node | undefined = node; current; current = current.parent) {
+      if (!isScope(current)) continue;
+      const shortening = shortenedLocals.get(current)?.get(node.text);
+      if (shortening) return shortening;
+    }
+    return undefined;
+  };
+
   const collectLocals = (node: ts.Node) => {
     if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name) && node.initializer) {
       const visitInitializer = (candidate: ts.Node) => {
-        if (isIdentifierShortening(candidate)) shortenedLocals.set(node.name.text, candidate);
+        if (isIdentifierShortening(candidate)) {
+          const scope = enclosingScope(node);
+          const locals = shortenedLocals.get(scope) ?? new Map<string, ts.CallExpression>();
+          locals.set(node.name.text, candidate);
+          shortenedLocals.set(scope, locals);
+        }
         ts.forEachChild(candidate, visitInitializer);
       };
       visitInitializer(node.initializer);
@@ -67,8 +115,8 @@ export function findNostrIdLogTruncations(file: string, source: string): Violati
 
   const inspectLogArgument = (node: ts.Node) => {
     if (isIdentifierShortening(node)) record(node);
-    if (ts.isIdentifier(node)) {
-      const shortening = shortenedLocals.get(node.text);
+    if (ts.isIdentifier(node) && isValueReference(node)) {
+      const shortening = resolveShortening(node);
       if (shortening) record(shortening);
     }
     ts.forEachChild(node, inspectLogArgument);
@@ -106,11 +154,49 @@ describe('Nostr identifier logging', () => {
     expect(findNostrIdLogTruncations('synthetic.ts', source)).toHaveLength(1);
   });
 
+  it('detects a shortened identifier logged from an inner scope', () => {
+    const source = `
+      const preview = pubkey.slice(0, 8);
+      function report() {
+        debugLog('author', preview);
+      }
+    `;
+
+    expect(findNostrIdLogTruncations('synthetic.ts', source)).toHaveLength(1);
+  });
+
   it('allows UI truncation, list sampling, and full identifier logs', () => {
     const source = `
       const label = event.id.slice(0, 8);
       const sample = pubkeys.slice(0, 5);
       debugLog(event.id, sample);
+    `;
+
+    expect(findNostrIdLogTruncations('synthetic.ts', source)).toEqual([]);
+  });
+
+  it('does not blame a UI truncation for a property that happens to share its name', () => {
+    const source = `
+      const id = event.id.slice(0, 8);
+      const pubkey = author.pubkey.slice(0, 8);
+      debugLog(video.id, event.pubkey);
+      debugLog(\`ev=\${video.id}\`);
+      debugLog({ id: video.id });
+    `;
+
+    expect(findNostrIdLogTruncations('synthetic.ts', source)).toEqual([]);
+  });
+
+  it('does not blame a UI truncation for a same-named variable in another scope', () => {
+    const source = `
+      function Badge({ event }) {
+        const label = event.id.slice(0, 8);
+        return label;
+      }
+      function announce(text) {
+        const label = text.toUpperCase();
+        debugLog('label', label);
+      }
     `;
 
     expect(findNostrIdLogTruncations('synthetic.ts', source)).toEqual([]);
