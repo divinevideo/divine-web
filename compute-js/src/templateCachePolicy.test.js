@@ -28,8 +28,9 @@ describe('edge template cache policy', () => {
   });
 
   it('varies apex username profiles but not bare vanity profiles by user agent', () => {
-    expect(shouldVaryTemplateByUserAgent('/@creator')).toBe(true);
-    expect(shouldVaryTemplateByUserAgent('/')).toBe(false);
+    expect(shouldVaryTemplateByUserAgent('/@creator', false)).toBe(true);
+    expect(shouldVaryTemplateByUserAgent('/', true)).toBe(false);
+    expect(shouldVaryTemplateByUserAgent('/@another-creator', true)).toBe(false);
   });
 
   it('varies host-dependent crawler responses by host and user agent', () => {

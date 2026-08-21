@@ -133,7 +133,7 @@ async function handleRequest(event) {
     // Subdomain profile - serve SPA with injected user data
     console.log('Handling subdomain profile for:', subdomain);
     try {
-      return await handleSubdomainProfile(subdomain, url, request, hostnameToUse);
+      return await handleSubdomainProfile(subdomain, url, request, hostnameToUse, true);
     } catch (err) {
       console.error('Subdomain profile error:', err.message, err.stack);
       return new Response('Profile not found', { status: 404 });
@@ -160,7 +160,7 @@ async function handleRequest(event) {
       }
     }
     try {
-      return await handleSubdomainProfile(username, url, request, hostnameToUse);
+      return await handleSubdomainProfile(username, url, request, hostnameToUse, false);
     } catch (err) {
       console.error('@username profile error:', err.message, err.stack);
       // Fall through to SPA handler which will render the client-side @username route
@@ -899,7 +899,7 @@ async function handleSubdomainNip05(subdomain) {
  * Handle subdomain profile requests (e.g., alice.dvine.video/)
  * Serves the SPA directly with injected user data instead of redirecting.
  */
-async function handleSubdomainProfile(subdomain, url, request, originalHostname) {
+async function handleSubdomainProfile(subdomain, url, request, originalHostname, isVanitySubdomain) {
   // Check if this is a static asset request - let publisherServer handle it
   const assetExtensions = ['.js', '.css', '.png', '.jpg', '.jpeg', '.gif', '.svg', '.ico', '.webp', '.avif', '.woff', '.woff2', '.ttf', '.otf', '.json', '.webmanifest', '.map'];
   const isAsset = assetExtensions.some(ext => url.pathname.endsWith(ext)) || url.pathname.startsWith('/assets/');
@@ -1008,7 +1008,7 @@ async function handleSubdomainProfile(subdomain, url, request, originalHostname)
     headers: createEdgeTemplateHeaders({
       cacheControl: 'public, s-maxage=60, stale-while-revalidate=300',
       subdomain,
-      varyByUserAgent: shouldVaryTemplateByUserAgent(url.pathname),
+      varyByUserAgent: shouldVaryTemplateByUserAgent(url.pathname, isVanitySubdomain),
     }),
   });
 }
