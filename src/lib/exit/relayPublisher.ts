@@ -71,6 +71,7 @@ interface PreparedEvent {
 interface RelayAuthState {
   failure: string | null;
   currentPublish: AbortController | null;
+  handshake: Promise<void> | null;
 }
 
 const HEX_64 = /^[0-9a-f]{64}$/i;
@@ -102,6 +103,7 @@ function relayRefusal(error: unknown): { code: string; message: string; retry: b
   switch (prefix) {
     case "duplicate": return { code: prefix, message: "The relay already has this event.", retry: false, duplicate: true };
     case "rate-limited": return { code: prefix, message: "The relay is accepting events too slowly.", retry: true, duplicate: false };
+    case "auth-required": return { code: prefix, message: "The relay wanted proof of your account before accepting this event.", retry: true, duplicate: false };
     case "blocked": return { code: prefix, message: `The relay blocked this event.${detail ? ` ${detail}` : ""}`, retry: false, duplicate: false };
     case "restricted": return { code: prefix, message: `The relay restricts this event.${detail ? ` ${detail}` : ""}`, retry: false, duplicate: false };
     case "invalid": return { code: prefix, message: `The relay says this event is invalid.${detail ? ` ${detail}` : ""}`, retry: false, duplicate: false };
@@ -254,6 +256,10 @@ async function publishOne(
         };
       }
       if (refusal.retry && attempt < (options.maxRateLimitRetries ?? 2)) {
+        // A NIP-42 relay challenges on connect and refuses whatever is already
+        // on the wire. Nostrify answers the challenge but never resends those
+        // events, so wait for the signature to settle and send them again.
+        if (refusal.code === "auth-required") await authState.handshake;
         await wait(1000 * 2 ** attempt, options.signal);
         continue;
       }
@@ -281,11 +287,13 @@ export async function publishArchiveEvents(options: PublishArchiveOptions): Prom
     backoff: false,
     idleTimeout: false,
   }));
-  const authState: RelayAuthState = { failure: null, currentPublish: null };
+  const authState: RelayAuthState = { failure: null, currentPublish: null, handshake: null };
   const relay = relayFactory(destination, {
     auth: async (challenge) => {
+      const handshake = createRelayAuth(options.signer, destination, challenge);
+      authState.handshake = handshake.then(() => undefined, () => undefined);
       try {
-        return await createRelayAuth(options.signer, destination, challenge);
+        return await handshake;
       } catch {
         authState.failure = "Your signer refused the relay's access request.";
         authState.currentPublish?.abort();

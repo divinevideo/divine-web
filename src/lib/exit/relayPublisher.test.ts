@@ -217,6 +217,32 @@ describe("publishArchiveEvents", () => {
     expect(close).toHaveBeenCalledOnce();
   });
 
+  it("republishes after a NIP-42 relay answers the first events with auth-required", async () => {
+    const published: NostrEvent[] = [];
+    let authenticated = false;
+    const results = await publishArchiveEvents({
+      destination: RELAY,
+      events: [makeEvent("1"), makeEvent("2")],
+      mirrorResults: [],
+      signer: makeSigner(),
+      wait: vi.fn().mockResolvedValue(undefined),
+      relayFactory: (_url, options) => {
+        // A NIP-42 relay challenges on connect. The signer answers it while the
+        // first events are already on the wire, so those come back refused.
+        void options.auth("challenge").then(() => { authenticated = true; });
+        return {
+          close: vi.fn().mockResolvedValue(undefined),
+          event: vi.fn(async (event: NostrEvent) => {
+            if (!authenticated) throw new Error("auth-required: we only accept events from authenticated users");
+            published.push(event);
+          }),
+        };
+      },
+    });
+    expect(published).toHaveLength(2);
+    expect(results.map((result) => result.status)).toEqual(["unchanged", "unchanged"]);
+  });
+
   it("keeps signer refusal local to the changed event", async () => {
     const signer = makeSigner();
     signer.signEvent.mockRejectedValueOnce(new Error("not allowed"));
