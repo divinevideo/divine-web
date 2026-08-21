@@ -6,6 +6,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ProductAnalyticsV2Surface } from '@/generated/productAnalytics';
 import { trackProductEvent } from '@/lib/analyticsClient';
 import { debugLog } from '@/lib/debug';
+import { clampProductAnalyticsInteger } from '@/lib/productAnalyticsBounds';
 import { createUuid } from '@/lib/uuid';
 import type { ParsedVideoData } from '@/types/video';
 import { useViewEventPublisher, type ViewTrafficSource } from './useViewEventPublisher';
@@ -54,7 +55,7 @@ function newProductPlayback(
     playbackSessionId: createUuid(),
     contentId: video?.id ?? '',
     surface: getSurface(source),
-    durationMs: Math.max(0, Math.round(duration * 1000)),
+    durationMs: clampProductAnalyticsInteger(duration * 1000, 0, 86_400_000),
     watchedMs: 0,
     loopCount: 0,
     started: false,
@@ -145,9 +146,9 @@ export function useVideoMetricsTracker({
       playback_session_id: playback.playbackSessionId,
       content_id: playback.contentId,
       surface: playback.surface,
-      duration_ms: playback.durationMs,
-      watched_ms: Math.round(playback.watchedMs),
-      loop_count: playback.loopCount,
+      duration_ms: clampProductAnalyticsInteger(playback.durationMs, 0, 86_400_000),
+      watched_ms: clampProductAnalyticsInteger(playback.watchedMs, 0, 86_400_000),
+      loop_count: clampProductAnalyticsInteger(playback.loopCount, 0, 1_000),
       completed: playback.loopCount > 0 || (
         playback.durationMs > 0 && playback.watchedMs >= playback.durationMs
       ),
@@ -186,7 +187,11 @@ export function useVideoMetricsTracker({
       impressionVisibleSinceRef.current = null;
     } else {
       productPlaybackRef.current.surface = getSurface(source);
-      productPlaybackRef.current.durationMs = Math.max(0, Math.round(duration * 1000));
+      productPlaybackRef.current.durationMs = clampProductAnalyticsInteger(
+        duration * 1000,
+        0,
+        86_400_000,
+      );
     }
     trackedVideoRef.current = video;
   }, [duration, flushWatchTime, publishAndReset, recordProductPlayback, source, video, video?.id]);
@@ -252,8 +257,8 @@ export function useVideoMetricsTracker({
       void trackProductEvent('content_impression_recorded', {
         content_id: contentId,
         surface: getSurface(sourceRef.current),
-        position: Math.max(0, Math.floor(positionRef.current)),
-        visible_ms: Math.min(3_600_000, Math.max(500, Date.now() - visibleSince)),
+        position: clampProductAnalyticsInteger(positionRef.current, 0, 10_000),
+        visible_ms: clampProductAnalyticsInteger(Date.now() - visibleSince, 500, 3_600_000),
       });
     }, 1000);
 

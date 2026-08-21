@@ -118,19 +118,16 @@ describe('LoginDialog', () => {
     });
   });
 
-  it('renders explicit register and sign-in tabs with register selected by default', async () => {
+  it('defaults to sign-in without recording registration', async () => {
     render(<LoginDialog isOpen onClose={vi.fn()} onLogin={vi.fn()} />);
 
-    expect(await screen.findByRole('tab', { name: /^Register$/i })).toHaveAttribute('data-state', 'active');
-    expect(screen.getByRole('tab', { name: /^Sign in$/i })).toBeInTheDocument();
-    expect(screen.getByText(/Set up your Divine account\./i)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /^Create account$/i })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /I already have an account/i })).not.toBeInTheDocument();
+    expect(await screen.findByRole('tab', { name: /^Sign in$/i })).toHaveAttribute('data-state', 'active');
+    expect(mockTrackProductEvent).not.toHaveBeenCalled();
   });
 
   it('records registration entry once when the registration tab opens', async () => {
     const { rerender } = render(
-      <LoginDialog isOpen onClose={vi.fn()} onLogin={vi.fn()} />,
+      <LoginDialog initialTab="register" isOpen onClose={vi.fn()} onLogin={vi.fn()} />,
     );
 
     await waitFor(() => {
@@ -141,7 +138,7 @@ describe('LoginDialog', () => {
       });
     });
 
-    rerender(<LoginDialog isOpen onClose={vi.fn()} onLogin={vi.fn()} />);
+    rerender(<LoginDialog initialTab="register" isOpen onClose={vi.fn()} onLogin={vi.fn()} />);
     expect(mockTrackProductEvent).toHaveBeenCalledTimes(1);
   });
   it('does not record registration until a sign-in visitor chooses Register', async () => {
@@ -178,7 +175,7 @@ describe('LoginDialog', () => {
       configurable: true,
     });
 
-    render(<LoginDialog isOpen onClose={vi.fn()} onLogin={vi.fn()} />);
+    render(<LoginDialog initialTab="register" isOpen onClose={vi.fn()} onLogin={vi.fn()} />);
 
     await waitFor(() => {
       expect(mockTrackProductEvent).toHaveBeenCalledWith('registration_started', {
@@ -191,7 +188,7 @@ describe('LoginDialog', () => {
   it('renders hosted sign-in and keeps Nostr methods behind a text disclosure', async () => {
     const user = userEvent.setup();
 
-    render(<LoginDialog isOpen onClose={vi.fn()} onLogin={vi.fn()} />);
+    render(<LoginDialog initialTab="register" isOpen onClose={vi.fn()} onLogin={vi.fn()} />);
 
     await user.click(await screen.findByRole('tab', { name: /^Sign in$/i }));
 
@@ -617,7 +614,7 @@ describe('LoginDialog', () => {
       configurable: true,
     });
 
-    render(<LoginDialog isOpen onClose={vi.fn()} onLogin={vi.fn()} />);
+    render(<LoginDialog initialTab="register" isOpen onClose={vi.fn()} onLogin={vi.fn()} />);
 
     await user.click(await screen.findByRole('button', { name: /^Create account$/i }));
 
@@ -631,7 +628,7 @@ describe('LoginDialog', () => {
     const user = userEvent.setup();
     mockBuildSignupRedirect.mockRejectedValue(undefined);
 
-    render(<LoginDialog isOpen onClose={vi.fn()} onLogin={vi.fn()} />);
+    render(<LoginDialog initialTab="register" isOpen onClose={vi.fn()} onLogin={vi.fn()} />);
 
     await user.click(await screen.findByRole('button', { name: /^Create account$/i }));
 

@@ -41,7 +41,7 @@ const getChallengeHost = (url: string): string | null => {
   }
 };
 
-const LoginDialog: React.FC<LoginDialogProps> = ({ initialTab = 'register', isOpen, onClose, onLogin }) => {
+const LoginDialog: React.FC<LoginDialogProps> = ({ initialTab = 'signin', isOpen, onClose, onLogin }) => {
   const { t } = useTranslation();
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [bunkerError, setBunkerError] = useState<string | null>(null);
