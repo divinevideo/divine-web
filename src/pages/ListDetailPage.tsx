@@ -200,9 +200,10 @@ export default function ListDetailPage() {
     authorMetadata?.display_name || authorMetadata?.name,
     pubkey || '',
   );
-  const displayListName = list?.name === list?.id
-    ? t('listDetailPage.untitledVideoList')
-    : list?.name;
+  // Undefined for a list that never got a title tag, so the translated
+  // placeholder below stays out of the shareable video URL.
+  const listTitle = list && list.name !== list.id ? list.name : undefined;
+  const displayListName = listTitle ?? t('listDetailPage.untitledVideoList');
   const creatorProfilePath = buildProfileLinkPath({
     pubkey: pubkey || '',
     fallbackRoute: 'profile',
@@ -384,7 +385,7 @@ export default function ListDetailPage() {
                           source: 'video-list',
                           pubkey: listOwnerPubkey || list.pubkey,
                           listId: list.id,
-                          listName: displayListName,
+                          listName: listTitle,
                         }}
                       />
                       <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -438,7 +439,7 @@ export default function ListDetailPage() {
                   source: 'video-list',
                   pubkey: listOwnerPubkey || list.pubkey,
                   listId: list.id,
-                  listName: displayListName,
+                  listName: listTitle,
                 }}
               />
             )}

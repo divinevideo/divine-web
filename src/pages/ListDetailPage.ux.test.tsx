@@ -191,6 +191,17 @@ describe('ListDetailPage UX', () => {
     expect(screen.queryByRole('heading', { name: 'favorites' })).not.toBeInTheDocument();
   });
 
+  it('leaves the untitled placeholder out of the video link', () => {
+    mockListName = 'favorites';
+
+    renderPage();
+
+    fireEvent.click(screen.getByRole('link', { name: 'First loop' }));
+    const destination = new URL(screen.getByTestId('video-destination').textContent ?? '', 'https://divine.video');
+    expect(destination.searchParams.get('source')).toBe('video-list');
+    expect(destination.searchParams.get('listName')).toBeNull();
+  });
+
   it('still renders the header when the URL carries a malformed creator key', () => {
     renderPage('not-a-hex-key');
 
