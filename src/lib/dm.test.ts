@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { NSecSigner, type NostrEvent, type NostrSigner } from '@nostrify/nostrify';
-import { generateSecretKey, getPublicKey } from 'nostr-tools/pure';
+import { generateSecretKey, getPublicKey, verifyEvent } from 'nostr-tools/pure';
 
 // fetchDmMessages builds its own NPool internally, so the relay is stubbed at
 // the module boundary. Everything inside — unwrapping, verification, NIP-44
@@ -33,6 +33,7 @@ import {
   fetchDmMessages,
   getDmMessagePreview,
   groupDmConversations,
+  makeDmAuthCallback,
   probeBunkerNip44,
   unwrapDmGiftWrap,
 } from '@/lib/dm';
@@ -192,6 +193,41 @@ describe('fetchDmMessages deduplication', () => {
 
     expect(result.messages).toHaveLength(2);
     expect(result.messages[0].rumorId).not.toBe(result.messages[1].rumorId);
+  });
+});
+
+describe('makeDmAuthCallback', () => {
+  const RELAY_URL = 'wss://relay.divine.video';
+  const CHALLENGE = 'server-challenge-string';
+
+  it('signs a verifiable kind-22242 AUTH event bound to the relay url and challenge', async () => {
+    // NIP-42: the recipient proves identity to the gated relay by returning a
+    // signed kind-22242 event carrying the relay url and the challenge. Without
+    // it the relay serves nothing for the kind-1059 inbox read.
+    const { signer, pubkey } = createTestSigner();
+
+    const authEvent = await makeDmAuthCallback(RELAY_URL, signer)(CHALLENGE);
+
+    expect(authEvent.kind).toBe(22242);
+    expect(authEvent.pubkey).toBe(pubkey);
+    expect(authEvent.content).toBe('');
+    expect(authEvent.tags).toEqual(
+      expect.arrayContaining([
+        ['relay', RELAY_URL],
+        ['challenge', CHALLENGE],
+      ]),
+    );
+    expect(verifyEvent(authEvent)).toBe(true);
+  });
+
+  it('rejects without throwing synchronously when there is no signer', async () => {
+    // NRelay1 runs the callback as `auth(challenge).then(...).catch(() => {})`,
+    // so a synchronous throw would escape its `.catch`. A logged-out pool must
+    // reject asynchronously, leaving the connection unauthenticated.
+    const settled = makeDmAuthCallback(RELAY_URL, undefined)(CHALLENGE);
+
+    expect(settled).toBeInstanceOf(Promise);
+    await expect(settled).rejects.toThrow(/without a signer/);
   });
 });
 
