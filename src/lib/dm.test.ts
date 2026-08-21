@@ -5,15 +5,45 @@ import { generateSecretKey, getPublicKey, verifyEvent } from 'nostr-tools/pure';
 // fetchDmMessages builds its own NPool internally, so the relay is stubbed at
 // the module boundary. Everything inside — unwrapping, verification, NIP-44
 // decryption — stays real.
-const relayStub = vi.hoisted(() => ({ events: [] as unknown[] }));
+const relayStub = vi.hoisted(() => ({
+  events: [] as unknown[],
+  // Every NRelay1 the pool opened, with the options it was constructed with.
+  // The `auth` option is the whole point of the NIP-42 wiring, so the stub has
+  // to expose it rather than swallow it.
+  opened: [] as { url: string; opts: { auth?: (challenge: string) => Promise<NostrEvent> } }[],
+}));
 
 vi.mock('@nostrify/nostrify', async () => {
   const actual = await vi.importActual<typeof import('@nostrify/nostrify')>('@nostrify/nostrify');
   return {
     ...actual,
-    NRelay1: class {},
+    NRelay1: class {
+      constructor(url: string, opts: { auth?: (challenge: string) => Promise<NostrEvent> } = {}) {
+        relayStub.opened.push({ url, opts });
+      }
+    },
     NPool: class {
-      async query() {
+      private connections = new Map<string, { event(): Promise<void> }>();
+
+      constructor(private opts: { open(url: string): unknown }) {}
+
+      // The real NPool opens one relay per routed url, once, and caches it.
+      // Mirroring that is what makes the `open` factory — and therefore the
+      // `auth` option it builds — observable from a test.
+      relay(url: string) {
+        let connection = this.connections.get(url);
+        if (!connection) {
+          this.opts.open(url);
+          connection = { event: async () => {} };
+          this.connections.set(url, connection);
+        }
+        return connection;
+      }
+
+      async query(_filters: unknown, opts?: { relays?: string[] }) {
+        for (const url of opts?.relays ?? []) {
+          this.relay(url);
+        }
         return relayStub.events;
       }
 
@@ -35,6 +65,7 @@ import {
   groupDmConversations,
   makeDmAuthCallback,
   probeBunkerNip44,
+  publishDmMessages,
   unwrapDmGiftWrap,
 } from '@/lib/dm';
 
@@ -228,6 +259,51 @@ describe('makeDmAuthCallback', () => {
 
     expect(settled).toBeInstanceOf(Promise);
     await expect(settled).rejects.toThrow(/without a signer/);
+  });
+});
+
+describe('DM relay pool NIP-42 wiring', () => {
+  const RELAY_URL = 'wss://relay.example';
+
+  it('gives the gift-wrap read connection an auth callback bound to the reader', async () => {
+    // The helper being correct in isolation proves nothing about the read
+    // path: the gate only lifts if the pool that issues the kind-1059 REQ is
+    // the one carrying the callback. Dropping `auth` from createRelayPool, or
+    // no longer threading the signer into it, must fail here.
+    const recipient = createTestSigner();
+    relayStub.opened = [];
+
+    await fetchWithStubbedRelay([], recipient);
+
+    const connection = relayStub.opened.find((relay) => relay.url === RELAY_URL);
+    expect(connection?.opts.auth).toBeTypeOf('function');
+
+    const authEvent = await connection!.opts.auth!('challenge-from-relay');
+
+    expect(authEvent.kind).toBe(22242);
+    expect(authEvent.pubkey).toBe(recipient.pubkey);
+    expect(authEvent.tags).toEqual(
+      expect.arrayContaining([
+        ['relay', RELAY_URL],
+        ['challenge', 'challenge-from-relay'],
+      ]),
+    );
+  });
+
+  it('leaves the publish connection unauthenticated so gift wraps stay anonymous', async () => {
+    // NIP-59 signs each wrap with a throwaway key precisely so the relay
+    // cannot tell who sent it. Authenticating the write connection would hand
+    // the relay the sender's real pubkey alongside the wrap and undo that, so
+    // the signer must not reach the publish pool.
+    relayStub.opened = [];
+
+    await publishDmMessages([RELAY_URL], [createDmTestWrap('a'.repeat(64))]);
+
+    const connection = relayStub.opened.find((relay) => relay.url === RELAY_URL);
+    expect(connection).toBeDefined();
+    await expect(connection!.opts.auth!('challenge-from-relay')).rejects.toThrow(
+      /without a signer/,
+    );
   });
 });
 
