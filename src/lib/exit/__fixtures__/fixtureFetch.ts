@@ -13,6 +13,17 @@ function jsonResponse(body: unknown, status = 200, headers?: HeadersInit): Respo
   });
 }
 
+function rateLimitResponse(): Response {
+  return new Response("Too Many Requests! Wait for 0s", {
+    status: 429,
+    headers: {
+      "content-type": "text/plain; charset=utf-8",
+      "retry-after": "0",
+      "x-ratelimit-after": "0"
+    }
+  });
+}
+
 export function createFixtureFetch(scenario: FixtureScenario): typeof fetch {
   let requestCount = 0;
 
@@ -37,19 +48,19 @@ export function createFixtureFetch(scenario: FixtureScenario): typeof fetch {
     }
 
     if (scenario === "bad-cursor") {
-      return jsonResponse({ error: "malformed cursor" }, 400);
+      return jsonResponse({ error: "Invalid cursor format" }, 400);
     }
 
     if (scenario === "expired-cursor") {
-      return jsonResponse({ error: "expired cursor token" }, 400);
+      return jsonResponse({ error: "Invalid or expired cursor" }, 400);
     }
 
     if (scenario === "rate-limit" && requestCount === 1) {
-      return jsonResponse({ error: "slow down" }, 429, { "retry-after": "0" });
+      return rateLimitResponse();
     }
 
     if (scenario === "always-rate-limit") {
-      return jsonResponse({ error: "slow down" }, 429, { "retry-after": "0" });
+      return rateLimitResponse();
     }
 
     if (scenario === "empty") {

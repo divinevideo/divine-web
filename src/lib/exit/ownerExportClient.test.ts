@@ -84,6 +84,29 @@ describe("exportOwnerEvents", () => {
     expect(sleeps.every((ms) => ms >= 1000)).toBe(true);
   });
 
+  it("accepts Funnelcake's plain-text throttling response and Retry-After headers", async () => {
+    const fixtureFetch = createFixtureFetch("rate-limit");
+    const responses: Response[] = [];
+
+    const result = await exportOwnerEvents({
+      endpointBase: "https://api.divine.video",
+      pubkey: fixturePubkey,
+      signer: new FixtureSigner(),
+      fetcher: async (input, init) => {
+        const response = await fixtureFetch(input, init);
+        responses.push(response.clone());
+        return response;
+      },
+      sleep: async () => undefined
+    });
+
+    expect(result.events).toHaveLength(1);
+    expect(responses[0].status).toBe(429);
+    expect(responses[0].headers.get("retry-after")).toBe("0");
+    expect(responses[0].headers.get("x-ratelimit-after")).toBe("0");
+    await expect(responses[0].text()).resolves.toBe("Too Many Requests! Wait for 0s");
+  });
+
   it("caps a large Retry-After so the export cannot stall for hours", async () => {
     const sleeps: number[] = [];
     let requests = 0;
@@ -140,7 +163,6 @@ describe("exportOwnerEvents", () => {
 
   it.each([
     ["bad-cursor", "bad-cursor"],
-    ["expired-cursor", "expired-cursor"],
     ["auth-failure", "auth-required"],
     ["pubkey-mismatch", "pubkey-mismatch"],
     ["network-failure", "network-failure"],
@@ -154,6 +176,26 @@ describe("exportOwnerEvents", () => {
         fetcher: createFixtureFetch(scenario)
       })
     ).rejects.toMatchObject({ code });
+  });
+
+  it("keeps cursor fixtures aligned with Funnelcake's response prose", async () => {
+    const url = `https://api.divine.video/api/users/${fixturePubkey}/export/events?limit=500`;
+    const badCursorResponse = await createFixtureFetch("bad-cursor")(url);
+    const expiredCursorResponse = await createFixtureFetch("expired-cursor")(url);
+
+    await expect(badCursorResponse.json()).resolves.toEqual({ error: "Invalid cursor format" });
+    await expect(expiredCursorResponse.json()).resolves.toEqual({ error: "Invalid or expired cursor" });
+  });
+
+  it("maps Funnelcake's unresolved-cursor response to expired-cursor", async () => {
+    await expect(
+      exportOwnerEvents({
+        endpointBase: "https://api.divine.video",
+        pubkey: fixturePubkey,
+        signer: new FixtureSigner(),
+        fetcher: createFixtureFetch("expired-cursor")
+      })
+    ).rejects.toMatchObject({ code: "expired-cursor" });
   });
 
   it("surfaces rate limit failure copy when retries are exhausted", async () => {
