@@ -8,8 +8,8 @@ import { DEFAULT_LOCALE, getLocaleDirection, normalizeLocale } from '@/lib/i18n/
 
 /**
  * Radix primitives resolve their direction from this provider, and default to
- * `ltr` without it — then stamp that default onto their own markup. A
- * `TabsContent` carrying `dir="ltr"` overrides the `dir="rtl"` that
+ * `ltr` without it — then stamp that default onto their own markup. A `Tabs`
+ * root carrying `dir="ltr"` overrides the `dir="rtl"` that
  * `applyDocumentLocale` puts on `<html>`, so every tab panel laid its content
  * out left-to-right in Arabic and Urdu, sponsorship disclosures included.
  *
