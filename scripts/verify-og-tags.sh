@@ -209,7 +209,11 @@ run_check() {
           all_passed=false
           echo "    FAIL: og:url leaks Fastly origin host (should be ${BASE_URL})"
           echo "          got: ${og_url}"
-        elif [[ "$og_url" != "${BASE_URL}${path}" && "$og_url" != "${BASE_URL}${path}/" && "$og_url" != "${BASE_URL}/" ]]; then
+        elif [[ "$og_url" != "${BASE_URL}${path}" \
+          && "$og_url" != "${BASE_URL}${path}/" \
+          && "$og_url" != "${BASE_URL}/" \
+          && "$og_url" != "https://divine.video${path}" \
+          && "$og_url" != "https://divine.video${path}/" ]]; then
           all_passed=false
           echo "    FAIL: og:url does not match expected path"
           echo "          expected: ${BASE_URL}${path}"

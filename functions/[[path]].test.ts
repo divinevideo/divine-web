@@ -134,9 +134,27 @@ describe('functions/[[path]]', () => {
     expect(html).toContain('property="og:image" content="https://media.divine.video/abc123.jpg"');
     expect(html).toContain('property="og:video" content="https://media.divine.video/abc123.mp4"');
     expect(html).toContain('property="og:video:type" content="video/mp4"');
+    expect(html).toContain('name="twitter:card" content="player"');
+    expect(html).toContain('name="twitter:player" content="https://divine.video/embed/abc123"');
     expect(html).toContain('name="twitter:title" content="Bangkok rooftop"');
     expect(html).toContain('rel="alternate" type="application/json+oembed"');
     expect(html).toContain('href="https://relay.divine.video/api/oembed?url=https%3A%2F%2Fdivine.video%2Fvideo%2Fabc123"');
+  });
+
+  it('serves the video embed with iframe and indexing headers', async () => {
+    const response = await onRequest({
+      request: new Request('https://divine.video/embed/abc123'),
+      next: async () => new Response('not found', { status: 404 }),
+      env: {},
+    });
+
+    const html = await response.text();
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get('content-security-policy')).toBe('frame-ancestors *');
+    expect(response.headers.get('x-robots-tag')).toBe('noindex');
+    expect(html).toContain('<video autoplay loop muted playsinline');
+    expect(html).toContain('src="https://media.divine.video/abc123.mp4"');
   });
 
   it('falls back to the generic shell when video metadata is unavailable', async () => {
@@ -261,5 +279,26 @@ describe('functions/[[path]]', () => {
     expect(html).toContain('<title>Dance Videos - Divine</title>');
     expect(html).toContain('property="og:title" content="Dance Videos - Divine"');
     expect(html).toContain('property="og:description" content="Explore 895 dance videos on Divine."');
+  });
+
+  it.each([
+    ['/t/funny', '#funny videos on Divine', 'https://divine.video/t/funny'],
+    ['/search?q=cats', '&quot;cats&quot; on Divine', 'https://divine.video/search?q=cats'],
+    ['/discovery', 'Trending videos on Divine', 'https://divine.video/discovery'],
+    ['/discovery/recent', 'Recent videos on Divine', 'https://divine.video/discovery/recent'],
+    ['/@jalcine', 'jalcine on Divine', 'https://divine.video/@jalcine'],
+    ['/', 'Divine — 6-second loops from real humans', 'https://divine.video/'],
+  ])('injects route metadata for %s', async (path, title, canonicalUrl) => {
+    const response = await onRequest({
+      request: new Request(`https://divine.video${path}`),
+      next: async () => new Response('not found', { status: 404 }),
+      env: {},
+    });
+
+    const html = await response.text();
+
+    expect(response.status).toBe(200);
+    expect(html).toContain(`<title>${title}</title>`);
+    expect(html).toContain(`property="og:url" content="${canonicalUrl}"`);
   });
 });

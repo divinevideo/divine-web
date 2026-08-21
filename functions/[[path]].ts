@@ -13,6 +13,7 @@ import {
   decodeNpubToHex,
   extractCategoryName,
   extractProfileNpub,
+  getDefaultPageMeta,
   type PageMeta,
   type ProfileApiResponse,
   type VideoApiResponse,
@@ -106,6 +107,19 @@ function injectMetaTags(html: string, meta: PageMeta, path: string): string {
     updatedHtml = removeMetaTag(updatedHtml, 'property', 'og:video:type');
   }
 
+  if (meta.twitterPlayerUrl) {
+    updatedHtml = upsertMetaTag(updatedHtml, 'name', 'twitter:player', meta.twitterPlayerUrl);
+    updatedHtml = upsertMetaTag(updatedHtml, 'name', 'twitter:player:width', '720');
+    updatedHtml = upsertMetaTag(updatedHtml, 'name', 'twitter:player:height', '1280');
+    updatedHtml = upsertMetaTag(updatedHtml, 'name', 'twitter:player:stream', meta.videoUrl || '');
+    updatedHtml = upsertMetaTag(
+      updatedHtml,
+      'name',
+      'twitter:player:stream:content_type',
+      meta.videoMimeType || 'video/mp4'
+    );
+  }
+
   if (isVideoPage(path)) {
     const videoId = extractVideoId(path);
     if (videoId) {
@@ -119,7 +133,7 @@ function injectMetaTags(html: string, meta: PageMeta, path: string): string {
 }
 
 async function fetchVideoMeta(url: URL): Promise<PageMeta | null> {
-  const match = url.pathname.match(/^\/video\/([^/]+)$/);
+  const match = url.pathname.match(/^\/(?:video|embed)\/([^/]+)$/);
   if (!match) {
     return null;
   }
@@ -137,10 +151,71 @@ async function fetchVideoMeta(url: URL): Promise<PageMeta | null> {
       return null;
     }
 
-    return buildVideoPageMeta(url, payload);
+    const pageUrl = new URL(`/video/${encodeURIComponent(identifier)}`, url);
+    return buildVideoPageMeta(pageUrl, payload);
   } catch {
     return null;
   }
+}
+
+function buildSimplePageMeta(
+  url: URL,
+  title: string,
+  description: string,
+  imageAlt = title
+): PageMeta {
+  return {
+    ...getDefaultPageMeta(url),
+    title,
+    description,
+    imageAlt,
+  };
+}
+
+function buildSimpleRouteMeta(url: URL): PageMeta | null {
+  const hashtagMatch = url.pathname.match(/^\/t\/([^/]+)$/);
+  if (hashtagMatch) {
+    const hashtag = decodeURIComponent(hashtagMatch[1]).replace(/^#/, '').trim();
+    return hashtag
+      ? buildSimplePageMeta(url, `#${hashtag} videos on Divine`, `Watch the latest #${hashtag} videos on Divine.`)
+      : null;
+  }
+
+  if (url.pathname === '/search') {
+    const query = url.searchParams.get('q')?.trim().slice(0, 80);
+    return query
+      ? buildSimplePageMeta(url, `"${query}" on Divine`, `Search Divine for "${query}" — watch loops, find creators, follow what you love.`)
+      : null;
+  }
+
+  const discoveryMatch = url.pathname.match(/^\/discovery(?:\/(recent|popular|loops))?$/);
+  if (discoveryMatch) {
+    const labels = {
+      trending: 'Trending videos',
+      recent: 'Recent videos',
+      popular: 'Popular videos',
+      loops: 'Top loops',
+    } as const;
+    const feedType = discoveryMatch[1] as keyof typeof labels | undefined;
+    const label = labels[feedType || 'trending'];
+    return buildSimplePageMeta(url, `${label} on Divine`, `${label} on Divine — 6-second loops from real humans.`);
+  }
+
+  const usernameMatch = url.pathname.match(/^\/@([^/]+)$/);
+  if (usernameMatch) {
+    const username = decodeURIComponent(usernameMatch[1]);
+    return buildSimplePageMeta(url, `${username} on Divine`, `Watch ${username}'s videos on Divine.`);
+  }
+
+  if (url.pathname === '/') {
+    return buildSimplePageMeta(
+      url,
+      'Divine — 6-second loops from real humans',
+      'Watch and share 6-second looping videos on the decentralized Nostr network.'
+    );
+  }
+
+  return null;
 }
 
 async function fetchProfileMeta(url: URL): Promise<PageMeta | null> {
@@ -228,7 +303,28 @@ async function fetchRouteMeta(url: URL): Promise<PageMeta | null> {
     return buildDownloadPageMeta(url);
   }
 
-  return null;
+  return buildSimpleRouteMeta(url);
+}
+
+function renderEmbedPage(meta: PageMeta): string {
+  const title = escapeHtml(meta.title);
+  const poster = escapeHtml(meta.image);
+  const videoUrl = escapeHtml(meta.videoUrl || '');
+  const mimeType = escapeHtml(meta.videoMimeType || 'video/mp4');
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>${title}</title>
+</head>
+<body>
+  <video autoplay loop muted playsinline poster="${poster}">
+    <source src="${videoUrl}" type="${mimeType}">
+  </video>
+</body>
+</html>`;
 }
 
 export async function onRequest(context: {
@@ -242,6 +338,23 @@ export async function onRequest(context: {
   // Serve .well-known files directly - don't intercept them
   if (path.startsWith('/.well-known/')) {
     return context.next();
+  }
+
+  if (path.startsWith('/embed/')) {
+    const meta = await fetchVideoMeta(url);
+    if (!meta?.videoUrl) {
+      return new Response('Video not found', { status: 404 });
+    }
+
+    return new Response(renderEmbedPage(meta), {
+      status: 200,
+      headers: {
+        'content-type': 'text/html; charset=UTF-8',
+        'cache-control': 'public, max-age=300',
+        'content-security-policy': 'frame-ancestors *',
+        'x-robots-tag': 'noindex',
+      },
+    });
   }
 
   // Try to serve the requested asset first

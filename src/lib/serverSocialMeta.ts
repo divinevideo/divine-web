@@ -19,6 +19,7 @@ export interface PageMeta {
   twitterCard: string;
   videoUrl?: string;
   videoMimeType?: string;
+  twitterPlayerUrl?: string;
 }
 
 export interface VideoApiResponse {
@@ -228,6 +229,8 @@ export function buildVideoPageMeta(url: URL, payload: VideoApiResponse): PageMet
 
   const media = parseImeta(payload.event.tags);
 
+  const hasPlayableVideo = Boolean(media.url);
+
   return {
     title,
     description,
@@ -235,9 +238,12 @@ export function buildVideoPageMeta(url: URL, payload: VideoApiResponse): PageMet
     url: url.toString(),
     image: media.image || DEFAULT_OG_IMAGE,
     imageAlt: title,
-    twitterCard: 'summary_large_image',
+    twitterCard: hasPlayableVideo ? 'player' : 'summary_large_image',
     videoUrl: media.url,
     videoMimeType: media.mimeType,
+    twitterPlayerUrl: hasPlayableVideo
+      ? new URL(`/embed/${encodeURIComponent(payload.event.id)}`, url).toString()
+      : undefined,
   };
 }
 
