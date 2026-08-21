@@ -3,7 +3,6 @@ import { describe, expect, it } from 'vitest';
 import {
   createEdgeTemplateHeaders,
   HOST_DEPENDENT_CRAWLER_VARY,
-  shouldVaryTemplateByUserAgent,
 } from './templateCachePolicy.js';
 
 describe('edge template cache policy', () => {
@@ -25,12 +24,6 @@ describe('edge template cache policy', () => {
 
     expect(headers.get('Vary')).toBe('X-Original-Host');
     expect(headers.get('X-Divine-Subdomain')).toBe('creator');
-  });
-
-  it('varies apex username profiles but not bare vanity profiles by user agent', () => {
-    expect(shouldVaryTemplateByUserAgent('/@creator', false)).toBe(true);
-    expect(shouldVaryTemplateByUserAgent('/', true)).toBe(false);
-    expect(shouldVaryTemplateByUserAgent('/@another-creator', true)).toBe(false);
   });
 
   it('varies host-dependent crawler responses by host and user agent', () => {

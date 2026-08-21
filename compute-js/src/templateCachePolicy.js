@@ -3,10 +3,6 @@ const CRAWLER_VARY = `${ORIGINAL_HOST_VARY}, User-Agent`;
 
 export const HOST_DEPENDENT_CRAWLER_VARY = CRAWLER_VARY;
 
-export function shouldVaryTemplateByUserAgent(pathname, isVanitySubdomain) {
-  return !isVanitySubdomain && pathname.startsWith('/@');
-}
-
 export function createEdgeTemplateHeaders({
   cacheControl,
   subdomain,

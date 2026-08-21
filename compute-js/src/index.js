@@ -35,7 +35,6 @@ import {
 import {
   createEdgeTemplateHeaders,
   HOST_DEPENDENT_CRAWLER_VARY,
-  shouldVaryTemplateByUserAgent,
 } from './templateCachePolicy.js';
 import { renderFeedPage, renderVideoPage, renderProfilePage, renderSearchPage } from './templates/pages.js';
 
@@ -1008,7 +1007,7 @@ async function handleSubdomainProfile(subdomain, url, request, originalHostname,
     headers: createEdgeTemplateHeaders({
       cacheControl: 'public, s-maxage=60, stale-while-revalidate=300',
       subdomain,
-      varyByUserAgent: shouldVaryTemplateByUserAgent(url.pathname, isVanitySubdomain),
+      varyByUserAgent: !isVanitySubdomain,
     }),
   });
 }
