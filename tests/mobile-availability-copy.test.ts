@@ -19,6 +19,9 @@ const STALE_MOBILE_COPY = [
   'Join the Beta',
 ];
 const NEWSLETTER_SURFACES = [
+  // The blurb itself lives here; the two components below only render it, so
+  // this is the file the guard actually has to watch.
+  'src/lib/constants/mailingListCopy.ts',
   'src/components/AppFooter.tsx',
   'src/components/family/StoreBadgesCta.tsx',
 ];
