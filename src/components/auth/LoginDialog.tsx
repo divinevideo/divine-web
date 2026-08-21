@@ -22,7 +22,6 @@ interface LoginDialogProps {
   isOpen: boolean;
   onClose: () => void;
   onLogin: () => void;
-  onSignup?: () => void;
 }
 
 type AuthTab = 'register' | 'signin';
