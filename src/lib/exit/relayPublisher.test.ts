@@ -194,26 +194,34 @@ describe("publishArchiveEvents", () => {
     }));
   });
 
-  it("stops clearly when the signer refuses NIP-42 relay access", async () => {
+  it("preserves completed results when the signer refuses NIP-42 relay access", async () => {
     const signer = makeSigner();
     signer.signEvent.mockRejectedValueOnce(new Error("not allowed"));
     const close = vi.fn().mockResolvedValue(undefined);
-    await expect(publishArchiveEvents({
+    let publishCount = 0;
+    const results = await publishArchiveEvents({
       destination: RELAY,
-      events: [makeEvent("1")],
+      events: [makeEvent("1"), makeEvent("2"), makeEvent("3")],
       mirrorResults: [],
       signer,
       relayFactory: (_url, options) => ({
         close,
-        event: vi.fn((_event, publishOptions) => new Promise<void>((_resolve, reject) => {
-          publishOptions?.signal?.addEventListener("abort", () => reject(new DOMException("aborted", "AbortError")), { once: true });
-          void options.auth("challenge").catch(() => undefined);
-        })),
+        event: vi.fn((_event, publishOptions) => {
+          publishCount += 1;
+          if (publishCount === 1) return Promise.resolve();
+          return new Promise<void>((_resolve, reject) => {
+            publishOptions?.signal?.addEventListener("abort", () => reject(new DOMException("aborted", "AbortError")), { once: true });
+            void options.auth("challenge").catch(() => undefined);
+          });
+        }),
       }),
-    })).rejects.toMatchObject({
-      code: "auth-required",
-      message: "Your signer refused the relay's access request.",
     });
+    expect(results.map((result) => result.status)).toEqual(["unchanged", "failed", "failed"]);
+    expect(results.slice(1)).toEqual(expect.arrayContaining([
+      expect.objectContaining({ reason: "Your signer refused the relay's access request." }),
+    ]));
+    expect(summarizePublishResults(results)).toMatchObject({ unchanged: 1, failed: 2 });
+    expect(publishCount).toBe(2);
     expect(close).toHaveBeenCalledOnce();
   });
 

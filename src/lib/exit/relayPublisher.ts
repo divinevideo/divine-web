@@ -229,8 +229,17 @@ async function publishOne(
   authState: RelayAuthState,
 ): Promise<PublishResult> {
   const wait = options.wait ?? defaultWait;
+  const authenticationFailure = (): PublishResult => ({
+    event_id: prepared.original.id,
+    published_event_id: null,
+    kind: prepared.original.kind,
+    status: "failed",
+    remaining_media_urls: prepared.remainingMediaUrls,
+    reason: authState.failure ?? "The relay's access request could not be signed.",
+  });
   for (let attempt = 0; ; attempt += 1) {
     if (options.signal?.aborted) throw new DOMException("Republish cancelled", "AbortError");
+    if (authState.failure) return authenticationFailure();
     const timed = publishSignal(options.signal, options.eventTimeoutMs ?? DEFAULT_EVENT_TIMEOUT_MS, authState);
     try {
       await relay.event(prepared.event, { signal: timed.signal });
@@ -243,7 +252,7 @@ async function publishOne(
       };
     } catch (error) {
       if (options.signal?.aborted) throw new DOMException("Republish cancelled", "AbortError");
-      if (authState.failure) throw new DestinationError("auth-required", authState.failure);
+      if (authState.failure) return authenticationFailure();
       const refusal = relayRefusal(error);
       if (refusal.duplicate) {
         return {
