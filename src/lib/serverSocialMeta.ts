@@ -337,7 +337,7 @@ export function buildKidsPolicyPageMeta(url: URL): PageMeta {
 export function buildDownloadPageMeta(url: URL): PageMeta {
   return {
     title: 'Download Divine',
-    description: 'Get Divine from the App Store, Google Play, or ZapStore.',
+    description: 'Get Divine from the App Store, Google Play, or Zapstore.',
     ogType: 'website',
     url: url.toString(),
     image: DEFAULT_OG_IMAGE,

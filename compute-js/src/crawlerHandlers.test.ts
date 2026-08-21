@@ -29,7 +29,7 @@ describe('handleDownloadOgTags', () => {
     const html = await result!.text();
 
     expect(html).toContain('<title>Download Divine</title>');
-    expect(html).toContain('App Store, Google Play, or ZapStore');
+    expect(html).toContain('App Store, Google Play, or Zapstore');
     expect(html).toContain('https://divine.video/download');
     expect(html).toContain('https://divine.video/og.png');
   });

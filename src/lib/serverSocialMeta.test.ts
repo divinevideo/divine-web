@@ -81,7 +81,7 @@ describe('serverSocialMeta', () => {
     const meta = buildDownloadPageMeta(new URL('https://divine.video/download'));
 
     expect(meta.title).toBe('Download Divine');
-    expect(meta.description).toContain('App Store, Google Play, or ZapStore');
+    expect(meta.description).toContain('App Store, Google Play, or Zapstore');
     expect(meta.url).toBe('https://divine.video/download');
     expect(meta.image).toBe('https://divine.video/og.png');
   });

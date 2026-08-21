@@ -13,7 +13,7 @@ const DEFAULT_SITE_DESCRIPTION = 'Watch and share 6-second looping videos on the
 export function handleDownloadOgTags(url, hostnameToUse) {
   const html = buildCrawlerHtml({
     title: 'Download Divine',
-    description: 'Get Divine from the App Store, Google Play, or ZapStore.',
+    description: 'Get Divine from the App Store, Google Play, or Zapstore.',
     image: DEFAULT_OG_IMAGE,
     url: `https://${hostnameToUse}${url.pathname}`,
     ogType: 'website',

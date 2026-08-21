@@ -22,7 +22,7 @@ export function DownloadPage() {
   useHead({
     title: "Download Divine",
     link: [{ rel: "canonical", href: "https://divine.video/download" }],
-    meta: [{ name: "description", content: "Get Divine from the App Store, Google Play, or ZapStore." }],
+    meta: [{ name: "description", content: "Get Divine from the App Store, Google Play, or Zapstore." }],
   });
 
   return (
@@ -61,10 +61,10 @@ export function DownloadPage() {
             href={ZAP_STORE_URL}
             target="_blank"
             rel="noopener noreferrer"
-            aria-label="Get Divine on ZapStore"
+            aria-label="Get Divine on Zapstore"
             className="mt-8 text-sm font-semibold text-brand-off-white/80 underline decoration-brand-green/70 underline-offset-4 transition-colors hover:text-brand-green"
           >
-            Get it from ZapStore
+            Get it from Zapstore
           </a>
         </div>
       </main>

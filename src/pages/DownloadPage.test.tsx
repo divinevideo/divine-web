@@ -42,12 +42,12 @@ describe("DownloadPage", () => {
     expect(screen.queryByRole("link", { name: "Download Divine on the App Store" })).not.toBeInTheDocument();
   });
 
-  it("shows both stores and ZapStore on desktop and unrecognized devices", () => {
+  it("shows both stores and Zapstore on desktop and unrecognized devices", () => {
     renderPage("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)");
 
     expect(screen.getByRole("link", { name: "Download Divine on the App Store" })).toHaveAttribute("href", APP_STORE_URL);
     expect(screen.getByRole("link", { name: "Get Divine on Google Play" })).toHaveAttribute("href", PLAY_STORE_URL);
-    expect(screen.getByRole("link", { name: "Get Divine on ZapStore" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "Get Divine on Zapstore" })).toHaveAttribute(
       "href",
       ZAP_STORE_URL
     );

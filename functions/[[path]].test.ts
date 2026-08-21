@@ -245,7 +245,7 @@ describe('functions/[[path]]', () => {
     expect(response.status).toBe(200);
     expect(html).toContain('<title>Download Divine</title>');
     expect(html).toContain('property="og:url" content="https://divine.video/download"');
-    expect(html).toContain('App Store, Google Play, or ZapStore');
+    expect(html).toContain('App Store, Google Play, or Zapstore');
   });
 
   it('injects category metadata for category routes', async () => {
