@@ -1553,5 +1553,9 @@
     "deletedDescription": "« {{name}} » a été retirée.",
     "deleteFailedTitle": "Échec de la suppression.",
     "deleteFailedDescription": "La suppression de la liste de personnes a coincé. On réessaie ?"
+  },
+  "userList": {
+    "searchPlaceholder": "Rechercher par nom",
+    "noMatches": "Personne ne correspond ici. Un autre nom ?"
   }
 }

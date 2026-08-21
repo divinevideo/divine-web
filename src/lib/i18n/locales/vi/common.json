@@ -1545,5 +1545,9 @@
     "deletedDescription": "“{{name}}” đã bị gỡ.",
     "deleteFailedTitle": "Xóa không thành công.",
     "deleteFailedDescription": "Việc xóa danh sách người bị trục trặc. Thử lại nhé?"
+  },
+  "userList": {
+    "searchPlaceholder": "Tìm theo tên",
+    "noMatches": "Không ai ở đây khớp. Thử tên khác nhé?"
   }
 }

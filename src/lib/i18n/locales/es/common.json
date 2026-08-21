@@ -1553,5 +1553,9 @@
     "deletedDescription": "«{{name}}» se eliminó.",
     "deleteFailedTitle": "No se pudo eliminar.",
     "deleteFailedDescription": "La eliminación de la lista de personas se atascó. ¿Lo intentamos de nuevo?"
+  },
+  "userList": {
+    "searchPlaceholder": "Buscar por nombre",
+    "noMatches": "Aquí no coincide nadie. ¿Probamos otro nombre?"
   }
 }

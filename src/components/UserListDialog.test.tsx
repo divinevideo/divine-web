@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { nip19 } from 'nostr-tools';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { UserListDialog } from './UserListDialog';
+import { initializeI18n } from '@/lib/i18n';
 
 const {
   mockNavigate,
@@ -42,8 +43,9 @@ vi.mock('@/lib/sentry', () => ({
 }));
 
 describe('UserListDialog', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks();
+    await initializeI18n({ force: true, languages: ['en-US'] });
     mockUseNip05Validation.mockReturnValue({
       isValid: false,
       isLoading: false,
@@ -93,6 +95,101 @@ describe('UserListDialog', () => {
 
     expect(screen.getByText('Sam')).toBeVisible();
     expect(screen.queryByText('Generated aaaaaa')).not.toBeInTheDocument();
+  });
+
+  describe('search', () => {
+    const alice = 'a'.repeat(64);
+    const bob = 'b'.repeat(64);
+
+    const authors = {
+      [alice]: { metadata: { display_name: 'Alice Cooper', name: 'alice' } },
+      [bob]: { metadata: { display_name: 'Bob Ross', name: 'bob' } },
+    };
+
+    it('filters the list by name', async () => {
+      const user = userEvent.setup();
+      mockUseBatchedAuthors.mockReturnValue({ data: authors });
+
+      render(
+        <UserListDialog open onOpenChange={vi.fn()} title="Following" pubkeys={[alice, bob]} />,
+      );
+
+      await user.type(screen.getByRole('searchbox'), 'bob');
+
+      expect(screen.getByText('Bob Ross')).toBeVisible();
+      expect(screen.queryByText('Alice Cooper')).not.toBeInTheDocument();
+    });
+
+    it('resolves every profile once a query is typed so search can reach the whole list', async () => {
+      const user = userEvent.setup();
+      mockUseBatchedAuthors.mockReturnValue({ data: authors });
+
+      const pubkeys = Array.from({ length: 200 }, (_, index) =>
+        index.toString(16).padStart(64, '0'));
+
+      render(
+        <UserListDialog open onOpenChange={vi.fn()} title="Following" pubkeys={pubkeys} />,
+      );
+
+      // Windowed while idle: only the visible slice is requested.
+      expect(mockUseBatchedAuthors).toHaveBeenLastCalledWith(
+        expect.not.arrayContaining([pubkeys[199]]),
+      );
+
+      await user.type(screen.getByRole('searchbox'), 'x');
+
+      // Searching a list you can only partly see is not searching. Filtering
+      // needs a name for every entry, not just the rows on screen.
+      expect(mockUseBatchedAuthors).toHaveBeenLastCalledWith(pubkeys);
+    });
+
+    it('reports no matches without claiming the list is empty', async () => {
+      const user = userEvent.setup();
+      mockUseBatchedAuthors.mockReturnValue({ data: authors });
+
+      render(
+        <UserListDialog open onOpenChange={vi.fn()} title="Following" pubkeys={[alice, bob]} />,
+      );
+
+      await user.type(screen.getByRole('searchbox'), 'zzzz');
+
+      expect(screen.getByText(/no one here matches/i)).toBeVisible();
+      expect(screen.queryByText(/no following yet/i)).not.toBeInTheDocument();
+    });
+
+    it('does not page in more rows while a query narrows the list', async () => {
+      const user = userEvent.setup();
+      const onLoadMore = vi.fn();
+      mockUseBatchedAuthors.mockReturnValue({ data: authors });
+
+      render(
+        <UserListDialog
+          open
+          onOpenChange={vi.fn()}
+          title="Followers"
+          pubkeys={[alice, bob]}
+          hasMore
+          onLoadMore={onLoadMore}
+        />,
+      );
+
+      onLoadMore.mockClear();
+      // The filtered list is short, so an end-of-list check against it would
+      // fire fetchNextPage on every render.
+      await user.type(screen.getByRole('searchbox'), 'bob');
+
+      expect(onLoadMore).not.toHaveBeenCalled();
+    });
+
+    it('hides the search field when there is nothing to search', () => {
+      mockUseBatchedAuthors.mockReturnValue({ data: {} });
+
+      render(
+        <UserListDialog open onOpenChange={vi.fn()} title="Following" pubkeys={[]} />,
+      );
+
+      expect(screen.queryByRole('searchbox')).not.toBeInTheDocument();
+    });
   });
 
   it('uses a friendly profile path only after NIP-05 validation succeeds', async () => {

@@ -1553,5 +1553,9 @@
     "deletedDescription": "„{{name}}” a fost eliminată.",
     "deleteFailedTitle": "Ștergerea a eșuat.",
     "deleteFailedDescription": "Ștergerea listei de persoane s-a poticnit. Mai încerci?"
+  },
+  "userList": {
+    "searchPlaceholder": "Caută după nume",
+    "noMatches": "Nimeni de aici nu se potrivește. Încerci alt nume?"
   }
 }

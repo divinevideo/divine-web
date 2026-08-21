@@ -1545,5 +1545,9 @@
     "deletedDescription": "“{{name}}” telah dibuang.",
     "deleteFailedTitle": "Gagal memadam.",
     "deleteFailedDescription": "Pemadaman senarai orang tersekat. Cuba lagi?"
+  },
+  "userList": {
+    "searchPlaceholder": "Cari mengikut nama",
+    "noMatches": "Tiada sesiapa sepadan di sini. Cuba nama lain?"
   }
 }
