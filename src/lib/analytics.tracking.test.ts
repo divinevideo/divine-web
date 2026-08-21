@@ -4,6 +4,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 const mockLogEvent = vi.fn();
+const mockSetUserId = vi.fn();
 
 vi.mock('firebase/app', () => ({
   initializeApp: vi.fn(() => ({})),
@@ -12,7 +13,7 @@ vi.mock('firebase/app', () => ({
 vi.mock('firebase/analytics', () => ({
   getAnalytics: vi.fn(() => ({})),
   logEvent: (...args: unknown[]) => mockLogEvent(...args),
-  setUserId: vi.fn(),
+  setUserId: (...args: unknown[]) => mockSetUserId(...args),
   setAnalyticsCollectionEnabled: vi.fn(),
 }));
 
@@ -83,5 +84,25 @@ describe('trackNonFatalError console echo', () => {
       }
       spy.mockRestore();
     }
+  });
+});
+
+describe('setAnalyticsUserId', () => {
+  beforeEach(() => {
+    vi.resetModules();
+    vi.clearAllMocks();
+  });
+
+  it('uses the full public key for analytics and local diagnostics', async () => {
+    const publicKey = '1'.repeat(64);
+    const log = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    const mod = await loadEnabledAnalytics();
+
+    mod.setAnalyticsUserId(publicKey);
+
+    expect(mockSetUserId).toHaveBeenCalledWith(expect.anything(), publicKey);
+    expect(log).toHaveBeenCalledWith('[Analytics] User ID set:', publicKey);
+    expect(log).not.toHaveBeenCalledWith('[Analytics] User ID set:', expect.stringContaining('...'));
+    log.mockRestore();
   });
 });

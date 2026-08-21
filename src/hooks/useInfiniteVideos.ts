@@ -214,7 +214,7 @@ export function useInfiniteVideos({
             events.slice(0, 3).map(e => ({
               created_at: e.created_at,
               date: new Date(e.created_at * 1000).toISOString(),
-              id: e.id.substring(0, 8)
+              id: e.id
             }))
           );
         }

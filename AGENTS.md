@@ -312,6 +312,7 @@ Always deduplicate videos by `pubkey:kind:d-tag`, NOT by event ID. Different eve
 - API uses hex format (64 chars)
 - Users share bech32 (`npub1...`, `note1...`)
 - Always decode bech32 to hex before API calls
+- Log public Nostr identifiers such as event IDs, pubkeys, and npubs at full length. Never log secrets such as nsecs, ncryptsecs, or raw private/signing keys, even partially.
 
 ### Profile Data
 Funnelcake profile response is nested:

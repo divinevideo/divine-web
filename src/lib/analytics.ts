@@ -4,6 +4,9 @@
 import { initializeApp, type FirebaseApp } from 'firebase/app';
 import { getAnalytics, logEvent, setUserId, setAnalyticsCollectionEnabled, type Analytics } from 'firebase/analytics';
 import { getPerformance, trace, type FirebasePerformance } from 'firebase/performance';
+
+import { debugLog } from '@/lib/debug';
+
 import { onAnalyticsConsentChanged } from './cookieConsent';
 
 // Sim-suppression hard block. Set by divine-brain's virtual-persona
@@ -172,7 +175,7 @@ export function setAnalyticsUserId(userId: string | null) {
   try {
     if (userId) {
       setUserId(analytics, userId);
-      console.log('[Analytics] User ID set:', userId.substring(0, 8) + '...');
+      debugLog('[Analytics] User ID set:', userId);
     } else {
       setUserId(analytics, null);
       console.log('[Analytics] User ID cleared');

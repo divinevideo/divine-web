@@ -170,7 +170,7 @@ export function VideoCard({
 
   // Log once per video mount to trace aspect ratio decisions
   useMemo(() => {
-    debugLog(`[AspectRatio] video=${video.id?.slice(0, 8)} isClassicVine=${isClassicVine}`,
+    debugLog(`[AspectRatio] video=${video.id} isClassicVine=${isClassicVine}`,
       `loopCount=${video.loopCount} isVineMigrated=${video.isVineMigrated}`,
       `dimensions=${video.dimensions} vineTimestamp=${video.originalVineTimestamp}`);
   }, [video.id, isClassicVine, video.loopCount, video.isVineMigrated, video.dimensions, video.originalVineTimestamp]);
@@ -205,7 +205,7 @@ export function VideoCard({
   // unlike HLS streams which may be transcoded to different dimensions.
   const handleThumbnailDimensions = useCallback((d: { width: number; height: number }) => {
     const newRatio = d.width / d.height;
-    console.log(`[AspectRatio] THUMBNAIL video=${video.id?.slice(0, 8)} dims=${d.width}x${d.height} ratio=${newRatio.toFixed(3)} isClassicVine=${isClassicVine} → ${isClassicVine ? 'IGNORED (classic vine)' : 'APPLIED'}`);
+    debugLog(`[AspectRatio] THUMBNAIL video=${video.id} dims=${d.width}x${d.height} ratio=${newRatio.toFixed(3)} isClassicVine=${isClassicVine} → ${isClassicVine ? 'IGNORED (classic vine)' : 'APPLIED'}`);
     if (isClassicVine) return; // Classic Vines locked to 1:1
     thumbnailRatioRef.current = newRatio;
     setVideoAspectRatio(newRatio);
@@ -219,7 +219,7 @@ export function VideoCard({
     const thumbRatio = thumbnailRatioRef.current;
 
     if (isClassicVine) {
-      console.log(`[AspectRatio] VIDEO video=${video.id?.slice(0, 8)} dims=${d.width}x${d.height} ratio=${newRatio.toFixed(3)} → IGNORED (classic vine, forcing 1:1)`);
+      debugLog(`[AspectRatio] VIDEO video=${video.id} dims=${d.width}x${d.height} ratio=${newRatio.toFixed(3)} → IGNORED (classic vine, forcing 1:1)`);
       return;
     }
 
@@ -227,7 +227,7 @@ export function VideoCard({
     if (thumbRatio !== null) {
       const ratioChange = Math.abs(newRatio - thumbRatio) / thumbRatio;
       if (ratioChange > 0.1) {
-        console.log(`[AspectRatio] VIDEO video=${video.id?.slice(0, 8)} dims=${d.width}x${d.height} ratio=${newRatio.toFixed(3)} → IGNORED (${(ratioChange * 100).toFixed(0)}% off thumbnail=${thumbRatio.toFixed(3)})`);
+        debugLog(`[AspectRatio] VIDEO video=${video.id} dims=${d.width}x${d.height} ratio=${newRatio.toFixed(3)} → IGNORED (${(ratioChange * 100).toFixed(0)}% off thumbnail=${thumbRatio.toFixed(3)})`);
         return; // >10% difference = HLS distortion, ignore
       }
     }
@@ -237,12 +237,12 @@ export function VideoCard({
       const isNewLandscape = newRatio > 1.1;
       // Don't let HLS flip a video with declared portrait/square dimensions to landscape
       if (isInitialPortraitOrSquare && isNewLandscape) {
-        console.log(`[AspectRatio] VIDEO video=${video.id?.slice(0, 8)} dims=${d.width}x${d.height} ratio=${newRatio.toFixed(3)} → IGNORED (declared ${initialAspectRatio.toFixed(3)} but HLS says landscape)`);
+        debugLog(`[AspectRatio] VIDEO video=${video.id} dims=${d.width}x${d.height} ratio=${newRatio.toFixed(3)} → IGNORED (declared ${initialAspectRatio.toFixed(3)} but HLS says landscape)`);
         return;
       }
     }
 
-    console.log(`[AspectRatio] VIDEO video=${video.id?.slice(0, 8)} dims=${d.width}x${d.height} ratio=${newRatio.toFixed(3)} → APPLIED (was ${videoAspectRatio.toFixed(3)})`);
+    debugLog(`[AspectRatio] VIDEO video=${video.id} dims=${d.width}x${d.height} ratio=${newRatio.toFixed(3)} → APPLIED (was ${videoAspectRatio.toFixed(3)})`);
     setVideoAspectRatio(newRatio);
   }, [initialAspectRatio, hasDeclaredDimensions, isClassicVine, video.id, videoAspectRatio]);
   const _isMobile = useIsMobile();
