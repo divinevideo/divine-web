@@ -3,7 +3,19 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import type { ProductAnalyticsV2Surface } from '@/generated/productAnalytics';
+import {
+  type ProductAnalyticsV2Surface,
+  PRODUCT_ANALYTICS_V2_CONTENT_IMPRESSION_RECORDED_POSITION_MAXIMUM,
+  PRODUCT_ANALYTICS_V2_CONTENT_IMPRESSION_RECORDED_POSITION_MINIMUM,
+  PRODUCT_ANALYTICS_V2_CONTENT_IMPRESSION_RECORDED_VISIBLE_MS_MAXIMUM,
+  PRODUCT_ANALYTICS_V2_CONTENT_IMPRESSION_RECORDED_VISIBLE_MS_MINIMUM,
+  PRODUCT_ANALYTICS_V2_PLAYBACK_SESSION_RECORDED_DURATION_MS_MAXIMUM,
+  PRODUCT_ANALYTICS_V2_PLAYBACK_SESSION_RECORDED_DURATION_MS_MINIMUM,
+  PRODUCT_ANALYTICS_V2_PLAYBACK_SESSION_RECORDED_LOOP_COUNT_MAXIMUM,
+  PRODUCT_ANALYTICS_V2_PLAYBACK_SESSION_RECORDED_LOOP_COUNT_MINIMUM,
+  PRODUCT_ANALYTICS_V2_PLAYBACK_SESSION_RECORDED_WATCHED_MS_MAXIMUM,
+  PRODUCT_ANALYTICS_V2_PLAYBACK_SESSION_RECORDED_WATCHED_MS_MINIMUM,
+} from '@/generated/productAnalytics';
 import { trackProductEvent } from '@/lib/analyticsClient';
 import { debugLog } from '@/lib/debug';
 import { clampProductAnalyticsInteger } from '@/lib/productAnalyticsBounds';
@@ -55,7 +67,11 @@ function newProductPlayback(
     playbackSessionId: createUuid(),
     contentId: video?.id ?? '',
     surface: getSurface(source),
-    durationMs: clampProductAnalyticsInteger(duration * 1000, 0, 86_400_000),
+    durationMs: clampProductAnalyticsInteger(
+      duration * 1000,
+      PRODUCT_ANALYTICS_V2_PLAYBACK_SESSION_RECORDED_DURATION_MS_MINIMUM,
+      PRODUCT_ANALYTICS_V2_PLAYBACK_SESSION_RECORDED_DURATION_MS_MAXIMUM,
+    ),
     watchedMs: 0,
     loopCount: 0,
     started: false,
@@ -146,9 +162,21 @@ export function useVideoMetricsTracker({
       playback_session_id: playback.playbackSessionId,
       content_id: playback.contentId,
       surface: playback.surface,
-      duration_ms: clampProductAnalyticsInteger(playback.durationMs, 0, 86_400_000),
-      watched_ms: clampProductAnalyticsInteger(playback.watchedMs, 0, 86_400_000),
-      loop_count: clampProductAnalyticsInteger(playback.loopCount, 0, 1_000),
+      duration_ms: clampProductAnalyticsInteger(
+        playback.durationMs,
+        PRODUCT_ANALYTICS_V2_PLAYBACK_SESSION_RECORDED_DURATION_MS_MINIMUM,
+        PRODUCT_ANALYTICS_V2_PLAYBACK_SESSION_RECORDED_DURATION_MS_MAXIMUM,
+      ),
+      watched_ms: clampProductAnalyticsInteger(
+        playback.watchedMs,
+        PRODUCT_ANALYTICS_V2_PLAYBACK_SESSION_RECORDED_WATCHED_MS_MINIMUM,
+        PRODUCT_ANALYTICS_V2_PLAYBACK_SESSION_RECORDED_WATCHED_MS_MAXIMUM,
+      ),
+      loop_count: clampProductAnalyticsInteger(
+        playback.loopCount,
+        PRODUCT_ANALYTICS_V2_PLAYBACK_SESSION_RECORDED_LOOP_COUNT_MINIMUM,
+        PRODUCT_ANALYTICS_V2_PLAYBACK_SESSION_RECORDED_LOOP_COUNT_MAXIMUM,
+      ),
       completed: playback.loopCount > 0 || (
         playback.durationMs > 0 && playback.watchedMs >= playback.durationMs
       ),
@@ -189,8 +217,8 @@ export function useVideoMetricsTracker({
       productPlaybackRef.current.surface = getSurface(source);
       productPlaybackRef.current.durationMs = clampProductAnalyticsInteger(
         duration * 1000,
-        0,
-        86_400_000,
+        PRODUCT_ANALYTICS_V2_PLAYBACK_SESSION_RECORDED_DURATION_MS_MINIMUM,
+        PRODUCT_ANALYTICS_V2_PLAYBACK_SESSION_RECORDED_DURATION_MS_MAXIMUM,
       );
     }
     trackedVideoRef.current = video;
@@ -257,8 +285,16 @@ export function useVideoMetricsTracker({
       void trackProductEvent('content_impression_recorded', {
         content_id: contentId,
         surface: getSurface(sourceRef.current),
-        position: clampProductAnalyticsInteger(positionRef.current, 0, 10_000),
-        visible_ms: clampProductAnalyticsInteger(Date.now() - visibleSince, 500, 3_600_000),
+        position: clampProductAnalyticsInteger(
+          positionRef.current,
+          PRODUCT_ANALYTICS_V2_CONTENT_IMPRESSION_RECORDED_POSITION_MINIMUM,
+          PRODUCT_ANALYTICS_V2_CONTENT_IMPRESSION_RECORDED_POSITION_MAXIMUM,
+        ),
+        visible_ms: clampProductAnalyticsInteger(
+          Date.now() - visibleSince,
+          PRODUCT_ANALYTICS_V2_CONTENT_IMPRESSION_RECORDED_VISIBLE_MS_MINIMUM,
+          PRODUCT_ANALYTICS_V2_CONTENT_IMPRESSION_RECORDED_VISIBLE_MS_MAXIMUM,
+        ),
       });
     }, 1000);
 
