@@ -135,9 +135,9 @@ function VideoDestination() {
   return <p data-testid="video-destination">{`${location.pathname}${location.search}`}</p>;
 }
 
-function renderPage() {
+function renderPage(owner: string = OWNER) {
   return render(
-    <MemoryRouter initialEntries={[`/list/${OWNER}/favorites`]}>
+    <MemoryRouter initialEntries={[`/list/${owner}/favorites`]}>
       <Routes>
         <Route path="/list/:pubkey/:listId" element={<ListDetailPage />} />
         <Route path="/video/:id" element={<VideoDestination />} />
@@ -189,6 +189,16 @@ describe('ListDetailPage UX', () => {
 
     expect(screen.getByRole('heading', { level: 1, name: 'Untitled video list' })).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'favorites' })).not.toBeInTheDocument();
+  });
+
+  it('still renders the header when the URL carries a malformed creator key', () => {
+    renderPage('not-a-hex-key');
+
+    expect(screen.getByRole('heading', { level: 1, name: 'Six seconds of joy' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'By Loop Lover' })).toHaveAttribute(
+      'href',
+      '/profile/not-a-hex-key',
+    );
   });
 
   it('replaces a raw creator key with a readable generated name', () => {

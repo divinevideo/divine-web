@@ -4,7 +4,6 @@
 import { useState } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { nip19 } from 'nostr-tools';
 import { useNostr } from '@nostrify/react';
 import { useQuery } from '@tanstack/react-query';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
@@ -28,6 +27,7 @@ import { useShare } from '@/hooks/useShare';
 import { useAppContext } from '@/hooks/useAppContext';
 import { getListShareData } from '@/lib/shareUtils';
 import { getSafeProfileImage } from '@/lib/imageUtils';
+import { buildProfileLinkPath } from '@/lib/profileLinks';
 import { getEventLookupRelayUrls } from '@/config/relays';
 import { fetchListVideos } from '@/lib/listVideos';
 import { resolveListPermissions } from '@/lib/listPermissions';
@@ -203,7 +203,10 @@ export default function ListDetailPage() {
   const displayListName = list?.name === list?.id
     ? t('listDetailPage.untitledVideoList')
     : list?.name;
-  const creatorNpub = pubkey ? nip19.npubEncode(pubkey) : '';
+  const creatorProfilePath = buildProfileLinkPath({
+    pubkey: pubkey || '',
+    fallbackRoute: 'profile',
+  });
 
   const handleShare = () => {
     if (!pubkey || !listId) return;
@@ -260,7 +263,7 @@ export default function ListDetailPage() {
     <div className="container mx-auto max-w-6xl px-4 py-8">
       <div className="space-y-8">
         <Link
-          to={`/profile/${creatorNpub}/lists`}
+          to={`${creatorProfilePath}/lists`}
           className="inline-flex items-center gap-2 text-sm font-semibold text-foreground hover:text-primary hover:underline"
         >
           <ArrowLeft className="h-4 w-4" />
@@ -285,7 +288,7 @@ export default function ListDetailPage() {
 
               <div className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-3">
                 <Link
-                  to={`/profile/${creatorNpub}`}
+                  to={creatorProfilePath}
                   aria-label={t('listDetailPage.byCreator', { name: authorName })}
                   className="inline-flex items-center gap-2 rounded-2xl font-semibold text-foreground transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
