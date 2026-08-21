@@ -70,7 +70,7 @@
     "hot": "人気",
     "new": "新着",
     "featured": "注目",
-    "sponsoredBy": "提供: <bdi>{{sponsorName}}</bdi>",
+    "sponsoredBy": "提供：<bdi>{{sponsorName}}</bdi>",
     "tags": "タグ",
     "verifiedOnly": "人が作成",
     "verifiedOnlyHint": "ProofMode 検証済みの動画のみ表示しています",
