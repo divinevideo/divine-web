@@ -76,13 +76,6 @@ export class ProductEventQueue {
     return records.filter((record) => !record.owner_pubkey).slice(0, limit);
   }
 
-  async clearOwner(ownerPubkey: string): Promise<void> {
-    const records = await this.getAllRecords();
-    await this.deleteRecords(
-      records.filter((record) => record.owner_pubkey === ownerPubkey).map((record) => record.id),
-    );
-  }
-
   /**
    * Drop expired records and trim the queue to its cap, oldest first. Returns
    * the records that survived so callers can reuse the read.
@@ -163,11 +156,6 @@ export class ProductEventQueue {
     }));
   }
 
-  async getDeadLetters(): Promise<ProductEventQueueRecord[]> {
-    const records = await this.prune(await this.getAllRecords());
-    return records.filter((record) => record.status === 'dead');
-  }
-
   async clear(): Promise<void> {
     const db = await this.ensureDB();
     const ids = (await this.getAllRecords()).map((record) => record.id);
@@ -215,6 +203,8 @@ export class ProductEventQueue {
       };
       request.onupgradeneeded = () => {
         const db = request.result;
+        // Version 1 used the incompatible pre-contract payload. Discarding it
+        // prevents those records from crossing the version 2 privacy boundary.
         if (db.objectStoreNames.contains(STORE_NAME)) {
           db.deleteObjectStore(STORE_NAME);
         }

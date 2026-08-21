@@ -169,7 +169,6 @@ describe('ProductEventQueue', () => {
     }
 
     expect(await queue.getFlushableBatch(10)).toHaveLength(0);
-    expect(await queue.getDeadLetters()).toHaveLength(1);
   });
 
   it('caps the queue, dropping the oldest records first', async () => {
@@ -185,28 +184,6 @@ describe('ProductEventQueue', () => {
     // The 20 oldest are gone, the newest survive.
     expect(records.some((r) => r.id === 'event-0000')).toBe(false);
     expect(records.some((r) => r.id === `event-${String(PRODUCT_EVENT_MAX_RECORDS + 19).padStart(4, '0')}`)).toBe(true);
-  });
-
-  it('expires dead letters rather than keeping signed payloads forever', async () => {
-    vi.useFakeTimers();
-    try {
-      const { ProductEventQueue, PRODUCT_EVENT_MAX_ATTEMPTS, PRODUCT_EVENT_MAX_AGE_MS } =
-        await import('./eventQueue');
-      const queue = new ProductEventQueue({ baseRetryDelayMs: 0 });
-      await queue.enqueue(baseEvent);
-
-      for (let attempt = 0; attempt < PRODUCT_EVENT_MAX_ATTEMPTS; attempt += 1) {
-        const [record] = await queue.getFlushableBatch(1);
-        await queue.markFailed([record]);
-      }
-      expect(await queue.getDeadLetters()).toHaveLength(1);
-
-      vi.advanceTimersByTime(PRODUCT_EVENT_MAX_AGE_MS + 1);
-
-      expect(await queue.getDeadLetters()).toHaveLength(0);
-    } finally {
-      vi.useRealTimers();
-    }
   });
 
   it('expires pending records that were never delivered', async () => {
@@ -253,20 +230,6 @@ describe('ProductEventQueue', () => {
     ]);
   });
 
-  it('purges only the account that logged out', async () => {
-    const { ProductEventQueue } = await import('./eventQueue');
-    const queue = new ProductEventQueue();
-    await queue.enqueue(makeEvent({ event_id: 'b'.repeat(64) }), 'd'.repeat(64));
-    await queue.enqueue(makeEvent({ event_id: 'c'.repeat(64) }), 'e'.repeat(64));
-    await queue.enqueue(makeEvent({ event_id: 'f'.repeat(64) }));
-
-    await queue.clearOwner('d'.repeat(64));
-
-    expect(await queue.getSignedFlushableBatch(10, 'd'.repeat(64))).toHaveLength(0);
-    expect(await queue.getSignedFlushableBatch(10, 'e'.repeat(64))).toHaveLength(1);
-    expect(await queue.getAnonymousFlushableBatch(10)).toHaveLength(1);
-  });
-
   it('does not resurrect a record deleted while its send was in flight', async () => {
     const { ProductEventQueue } = await import('./eventQueue');
     // Zero backoff so a resurrected record would be immediately flushable
@@ -279,7 +242,7 @@ describe('ProductEventQueue', () => {
     // while that send is still outstanding.
     const inFlight = await queue.getFlushableBatch(10, owner);
     expect(inFlight).toHaveLength(1);
-    await queue.clearOwner(owner);
+    await queue.clear();
     expect(await queue.getFlushableBatch(10)).toHaveLength(0);
 
     // The outstanding send now fails; markFailed must not revive the cleared record.
