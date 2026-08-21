@@ -1,6 +1,8 @@
 import type { NostrSigner } from '@nostrify/nostrify';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import eventIdVectorsJson from '../../analytics-event-id-vectors.json?raw';
+
 const consent = vi.hoisted(() => ({
   value: true as boolean | null,
   listeners: [] as Array<(consented: boolean) => void>,
@@ -89,34 +91,23 @@ describe('analyticsClient', () => {
   });
 
   it('matches the cross-language RFC 8785 event ID vector', async () => {
-    // Copied from divine-context/analytics/event-id-vectors.json. Mobile and
-    // Funnelcake use the same fixed input and expected digest.
     const { computeProductAnalyticsEventId } = await import('./analyticsClient');
-    const event = {
-      schema_version: 2 as const,
-      occurred_at: '2026-08-20T00:00:00Z',
-      anonymous_id: '22222222-2222-4222-8222-222222222222',
-      session_id: '33333333-3333-4333-8333-333333333333',
-      source: 'web' as const,
-      platform: 'web' as const,
-      release: '2026.08.20',
-      consent_category: 'product_analytics' as const,
-      event_name: 'content_impression_recorded' as const,
-      properties: {
-        content_id: '4444444444444444444444444444444444444444444444444444444444444444',
-        surface: 'feed' as const,
-        position: 3,
-        visible_ms: 1500,
-      },
+    const vectorFile = JSON.parse(eventIdVectorsJson) as {
+      vectors: Array<{
+        alternate_order_json: string;
+        event_without_id: unknown;
+        expected_event_id: string;
+      }>;
     };
+    const vector = vectorFile.vectors[0];
+    const event = vector.event_without_id as Parameters<typeof computeProductAnalyticsEventId>[0];
 
     await expect(computeProductAnalyticsEventId(event)).resolves.toBe(
-      '0592b5a4908ee37cc24348ca8292152498e7caed970c043526051818c15b22cd',
+      vector.expected_event_id,
     );
-    const { properties, ...rest } = event;
-    const reordered = { properties, ...rest };
+    const reordered = JSON.parse(vector.alternate_order_json) as typeof event;
     await expect(computeProductAnalyticsEventId(reordered)).resolves.toBe(
-      '0592b5a4908ee37cc24348ca8292152498e7caed970c043526051818c15b22cd',
+      vector.expected_event_id,
     );
   });
 

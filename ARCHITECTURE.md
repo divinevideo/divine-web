@@ -267,7 +267,10 @@ and session identity.
 The browser queue is bounded and best effort. IndexedDB is preferred, with an
 in-memory copy retained when a write fails. A permanent rejection of a
 multi-event request is retried one event at a time so a malformed event cannot
-delete valid neighbors.
+delete valid neighbors. Numeric producer values are clamped to the shared
+contract ranges before hashing and enqueueing. The contract lock also pins the
+cross-language event-ID fixture, so its canonicalization vectors cannot drift
+independently of the generated schema.
 
 ### Relay Routing
 

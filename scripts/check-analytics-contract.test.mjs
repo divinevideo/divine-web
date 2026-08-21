@@ -7,6 +7,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   assertContractPin,
+  assertEventIdVectorPin,
   readEmbeddedCommit,
   readEmbeddedEventIdAlgorithm,
   readEmbeddedSchemaVersion,
@@ -17,6 +18,7 @@ const repoRoot = dirname(dirname(fileURLToPath(import.meta.url)));
 const lock = JSON.parse(readFileSync(join(repoRoot, 'analytics-contract.lock'), 'utf8'));
 const artifact = readFileSync(join(repoRoot, 'src/generated/productAnalytics.ts'));
 const manifest = readFileSync(join(repoRoot, 'analytics-contract.manifest.json'));
+const vector = readFileSync(join(repoRoot, 'analytics-event-id-vectors.json'));
 
 function sha256(bytes) {
   return createHash('sha256').update(bytes).digest('hex');
@@ -44,6 +46,12 @@ function repinArtifact(repinnedArtifact) {
 describe('analytics contract pin', () => {
   it('accepts the checked-in artifact and lock', () => {
     expect(verifyAnalyticsContract()).toEqual(lock);
+  });
+
+  it('rejects an event ID vector edited after it was pinned', () => {
+    const edited = Buffer.concat([vector, Buffer.from('\n')]);
+
+    expect(() => assertEventIdVectorPin(lock, edited)).toThrow(/vector checksum/);
   });
 
   it('reads the commit, schema version, and ID algorithm the generator embedded', () => {

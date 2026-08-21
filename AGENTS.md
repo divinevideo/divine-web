@@ -403,6 +403,7 @@ npx tsc --noEmit      # Type check only
 
 ```bash
 VITE_FUNNELCAKE_API_URL=https://api.divine.video  # Funnelcake API host
+VITE_PRODUCT_ANALYTICS_ENABLED=false              # Explicit product analytics build gate
 ```
 
 ## Useful Commands

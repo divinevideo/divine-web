@@ -8,6 +8,8 @@ const expectedArtifact = 'src/generated/productAnalytics.ts';
 const expectedManifest = 'analytics-contract.manifest.json';
 const expectedSourceArtifact = 'analytics/generated/productAnalytics.ts';
 const expectedSourceManifest = 'analytics/generated/manifest.json';
+const expectedVector = 'analytics-event-id-vectors.json';
+const expectedSourceVector = 'analytics/event-id-vectors.json';
 const expectedLockKeys = [
   'artifact',
   'artifact_commit',
@@ -18,6 +20,10 @@ const expectedLockKeys = [
   'schema_version',
   'source_artifact',
   'source_manifest',
+  'source_vector',
+  'vector',
+  'vector_commit',
+  'vector_sha256',
 ];
 
 export function readEmbeddedCommit(contents) {
@@ -120,12 +126,30 @@ export function assertContractPin(lock, artifact, manifest) {
   return lock.contract_commit;
 }
 
+export function assertEventIdVectorPin(lock, vector) {
+  requireEqual(lock.vector, expectedVector, 'vector path');
+  requireEqual(lock.source_vector, expectedSourceVector, 'source vector path');
+  requireMatch(lock.vector_commit, /^[0-9a-f]{40}$/, 'vector commit');
+  requireMatch(lock.vector_sha256, /^[0-9a-f]{64}$/, 'vector checksum');
+
+  const vectorBytes = asBuffer(vector);
+  const actualVectorSha = createHash('sha256').update(vectorBytes).digest('hex');
+  requireEqual(actualVectorSha, lock.vector_sha256, 'vector checksum');
+  const vectorValue = JSON.parse(vectorBytes.toString('utf8'));
+  requireEqual(vectorValue.algorithm, 'sha256-rfc8785-v1', 'vector algorithm');
+  if (!Array.isArray(vectorValue.vectors) || vectorValue.vectors.length === 0) {
+    throw new Error('analytics contract vector fixture has no vectors');
+  }
+}
+
 export function verifyAnalyticsContract(root = repoRoot) {
   const lock = JSON.parse(readFileSync(join(root, 'analytics-contract.lock'), 'utf8'));
   const artifact = readFileSync(join(root, expectedArtifact));
   const manifest = readFileSync(join(root, expectedManifest));
+  const vector = readFileSync(join(root, expectedVector));
 
   assertContractPin(lock, artifact, manifest);
+  assertEventIdVectorPin(lock, vector);
   return lock;
 }
 

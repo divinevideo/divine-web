@@ -1,11 +1,15 @@
 {
   "artifact": "src/generated/productAnalytics.ts",
-  "artifact_commit": "470a150d767b0c23bea66c37158cdefec6ae9743",
-  "artifact_sha256": "1b99c8425e8d7087910debbb5af62c05ba85df545c704d80c7f0c703914595c3",
-  "contract_commit": "27e21a7a1ea3c6cb998186eda50807e63806efc9",
+  "artifact_commit": "2ad3473107b5cfb75fcc06c0a9d4c0694d886873",
+  "artifact_sha256": "4c6337f5868a9403c2b8624cd37cd599f329896108982813382aa59ced3a3e76",
+  "contract_commit": "7563f7990097476e1e5e8a3761ec87ad2da3e2ca",
   "manifest": "analytics-contract.manifest.json",
-  "manifest_sha256": "027e85ab7098adc866b0b3cd8e827fd48c9645471b13e5a014212c4652765ec5",
+  "manifest_sha256": "502b4efd8928a8ac74f50e5aab8345442a0e08bd76ee9b8d05a8d02ad16c52eb",
   "schema_version": 2,
   "source_artifact": "analytics/generated/productAnalytics.ts",
-  "source_manifest": "analytics/generated/manifest.json"
+  "source_manifest": "analytics/generated/manifest.json",
+  "source_vector": "analytics/event-id-vectors.json",
+  "vector": "analytics-event-id-vectors.json",
+  "vector_commit": "27e21a7a1ea3c6cb998186eda50807e63806efc9",
+  "vector_sha256": "29a2cbb82f3545d84b5b69d6ff15d9e659110983256f6fcef36cd7e47f458c02"
 }
