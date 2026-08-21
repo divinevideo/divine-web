@@ -247,6 +247,8 @@ export function useVideoMetricsTracker({
         || visibleSince === null
       ) return;
       impressionRecordedRef.current = true;
+      // This is the continuous visible interval that qualified the
+      // impression. Total dwell belongs to the playback event.
       void trackProductEvent('content_impression_recorded', {
         content_id: contentId,
         surface: getSurface(sourceRef.current),

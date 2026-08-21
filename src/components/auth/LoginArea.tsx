@@ -20,12 +20,14 @@ export function LoginArea({ className }: LoginAreaProps) {
   const { currentUser } = useLoggedInAccounts();
   const { isOpen: globalLoginDialogOpen, closeLoginDialog } = useLoginDialog();
   const [localLoginDialogOpen, setLocalLoginDialogOpen] = useState(false);
+  const [localInitialTab, setLocalInitialTab] = useState<'register' | 'signin'>('signin');
 
   // Open invite-first auth dialog via legacy #signup deep link handling in main.tsx
   useEffect(() => {
     if (sessionStorage.getItem('openInviteAuth') || sessionStorage.getItem('openSignup')) {
       sessionStorage.removeItem('openInviteAuth');
       sessionStorage.removeItem('openSignup');
+      setLocalInitialTab('register');
       setLocalLoginDialogOpen(true);
     }
   }, []);
@@ -46,10 +48,16 @@ export function LoginArea({ className }: LoginAreaProps) {
   return (
     <div className={cn("inline-flex items-center justify-center gap-2", className)}>
       {currentUser ? (
-        <AccountSwitcher onAddAccountClick={() => setLocalLoginDialogOpen(true)} />
+        <AccountSwitcher onAddAccountClick={() => {
+          setLocalInitialTab('signin');
+          setLocalLoginDialogOpen(true);
+        }} />
       ) : (
         <Button
-          onClick={() => setLocalLoginDialogOpen(true)}
+          onClick={() => {
+            setLocalInitialTab('signin');
+            setLocalLoginDialogOpen(true);
+          }}
           variant="sticker"
           className='flex items-center gap-2 px-4 py-2 font-medium transition-all animate-scale-in'
         >
@@ -59,6 +67,7 @@ export function LoginArea({ className }: LoginAreaProps) {
       )}
 
       <LoginDialog
+        initialTab={localLoginDialogOpen ? localInitialTab : 'signin'}
         isOpen={loginDialogOpen}
         onClose={handleCloseLoginDialog}
         onLogin={handleLogin}

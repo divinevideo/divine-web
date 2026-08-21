@@ -247,6 +247,14 @@ hosted login service, which owns onboarding, and it does not produce
 `experiment_exposure` because the web app has no experiment assignment system
 or exposure point yet.
 
+`registration_started` means that the person deliberately reached the
+registration surface: an explicit signup link may open it directly, or a
+person in the sign-in dialog may choose the Register tab. Merely opening a
+sign-in prompt does not count. For `content_impression_recorded`, `visible_ms`
+is the uninterrupted visible time that qualified the impression (normally
+about 1,000 ms on both web and mobile), not the video's total visible dwell
+time. Playback dwell is recorded separately by `playback_session_recorded`.
+
 Anonymous acquisition events use the anonymous endpoint. User activity uses a
 NIP-98-signed request whose body and signature identify the account to
 Funnelcake, even though the event itself has no public-key field. The browser

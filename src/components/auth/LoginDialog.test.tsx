@@ -144,6 +144,33 @@ describe('LoginDialog', () => {
     rerender(<LoginDialog isOpen onClose={vi.fn()} onLogin={vi.fn()} />);
     expect(mockTrackProductEvent).toHaveBeenCalledTimes(1);
   });
+  it('does not record registration until a sign-in visitor chooses Register', async () => {
+    const user = userEvent.setup();
+
+    render(
+      <LoginDialog
+        initialTab="signin"
+        isOpen
+        onClose={vi.fn()}
+        onLogin={vi.fn()}
+      />,
+    );
+
+    expect(await screen.findByRole('tab', { name: /^Sign in$/i })).toHaveAttribute(
+      'data-state',
+      'active',
+    );
+    expect(mockTrackProductEvent).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole('tab', { name: /^Register$/i }));
+
+    await waitFor(() => {
+      expect(mockTrackProductEvent).toHaveBeenCalledWith(
+        'registration_started',
+        expect.objectContaining({ entry_point: 'landing' }),
+      );
+    });
+  });
   it('does not mislabel registration opened from an app route as a landing', async () => {
     Object.defineProperty(window, 'location', {
       value: { ...originalLocation, assign: locationAssign, pathname: '/profile/npub1example', search: '' },
