@@ -70,7 +70,7 @@
     "hot": "ہاٹ",
     "new": "نئے",
     "featured": "نمایاں",
-    "paidPartnership": "<bdi>{{sponsorName}}</bdi> کے ساتھ بامعاوضہ شراکت داری",
+    "sponsoredBy": "<bdi>{{sponsorName}}</bdi> کی جانب سے اسپانسر شدہ",
     "tags": "ٹیگز",
     "verifiedOnly": "انسان کا بنایا",
     "verifiedOnlyHint": "صرف ProofMode تصدیق شدہ ویڈیوز دکھائی جا رہی ہیں",

@@ -17,7 +17,7 @@ function getPartnershipDisclosure(text: string): HTMLElement {
 
 function queryPartnershipDisclosure(): HTMLElement | null {
   return screen.queryByText(
-    (_, element) => element?.textContent?.includes('colaboración pagada') ?? false,
+    (_, element) => element?.textContent?.includes('Patrocinado por') ?? false,
     { selector: 'span' },
   );
 }
@@ -376,7 +376,7 @@ describe('DiscoveryPage', () => {
     );
 
     expect(screen.getByTestId('video-feed-featured')).toHaveAttribute('data-featured-tab-id', 'ft_1234abcd');
-    const disclosure = getPartnershipDisclosure('En colaboración pagada con Acme Bikes');
+    const disclosure = getPartnershipDisclosure('Patrocinado por Acme Bikes');
     expect(disclosure).toBeInTheDocument();
     expect(disclosure.querySelector('bdi')).toHaveTextContent('Acme Bikes');
     expect(screen.getByRole('tab', { name: 'Destacado: Skate week' })).toHaveTextContent('Skate week');
@@ -406,7 +406,7 @@ describe('DiscoveryPage', () => {
       </MemoryRouter>,
     );
 
-    const disclosure = getPartnershipDisclosure('En colaboración pagada con Acme Bikes');
+    const disclosure = getPartnershipDisclosure('Patrocinado por Acme Bikes');
     expect(disclosure).toHaveClass('inline-block');
     expect(disclosure.className).not.toMatch(/(^|\s)(inline-)?flex(\s|$)/);
   });
@@ -451,7 +451,7 @@ describe('DiscoveryPage', () => {
         </MemoryRouter>,
       );
 
-      expect(getPartnershipDisclosure('En colaboración pagada con Acme Bikes')).toBeInTheDocument();
+      expect(getPartnershipDisclosure('Patrocinado por Acme Bikes')).toBeInTheDocument();
       expect(screen.getByText(feedState)).toBeInTheDocument();
     },
   );
@@ -475,7 +475,30 @@ describe('DiscoveryPage', () => {
       </MemoryRouter>,
     );
 
-    const disclosure = getPartnershipDisclosure('شراكة مدفوعة مع Acme Bikes');
+    const disclosure = getPartnershipDisclosure('برعاية Acme Bikes');
+    expect(disclosure.querySelector('bdi')).toHaveTextContent('Acme Bikes');
+  });
+
+  it('keeps the sponsor first with a separating space in Urdu', async () => {
+    window.localStorage.setItem(LOCALE_STORAGE_KEY, 'ur');
+    await initializeI18n({ force: true, languages: ['ur'] });
+    mockFeaturedTab.current = {
+      id: 'ft_1234abcd',
+      slug: 'seasonal-theme',
+      label: 'Especial',
+      pillLabel: null,
+      sponsorName: 'Acme Bikes',
+    };
+
+    render(
+      <MemoryRouter initialEntries={['/discovery/seasonal-theme']}>
+        <Routes>
+          <Route path="/discovery/:tab" element={<DiscoveryPage />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    const disclosure = getPartnershipDisclosure('Acme Bikes کی جانب سے اسپانسر شدہ');
     expect(disclosure.querySelector('bdi')).toHaveTextContent('Acme Bikes');
   });
 

@@ -70,7 +70,7 @@
     "hot": "Sikat",
     "new": "Bago",
     "featured": "Tampok",
-    "paidPartnership": "Bayad na partnership kasama ang <bdi>{{sponsorName}}</bdi>",
+    "sponsoredBy": "Sponsored ng <bdi>{{sponsorName}}</bdi>",
     "tags": "Mga Tag",
     "verifiedOnly": "Gawa ng Tao",
     "verifiedOnlyHint": "Mga video lang na may ProofMode verification.",

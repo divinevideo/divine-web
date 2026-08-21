@@ -70,7 +70,7 @@
     "hot": "Heet",
     "new": "Nieuw",
     "featured": "Uitgelicht",
-    "paidPartnership": "Betaald partnerschap met <bdi>{{sponsorName}}</bdi>",
+    "sponsoredBy": "Gesponsord door <bdi>{{sponsorName}}</bdi>",
     "tags": "Tags",
     "verifiedOnly": "Door mensen gemaakt",
     "verifiedOnlyHint": "Toont alleen video's met ProofMode-verificatie",

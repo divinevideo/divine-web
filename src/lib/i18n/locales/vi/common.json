@@ -70,7 +70,7 @@
     "hot": "Hot",
     "new": "Mới",
     "featured": "Nổi bật",
-    "paidPartnership": "Hợp tác trả phí với <bdi>{{sponsorName}}</bdi>",
+    "sponsoredBy": "Được tài trợ bởi <bdi>{{sponsorName}}</bdi>",
     "tags": "Thẻ",
     "verifiedOnly": "Do con người tạo ra",
     "verifiedOnlyHint": "Chỉ hiển thị video có xác minh ProofMode",

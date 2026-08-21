@@ -70,7 +70,7 @@
     "hot": "Tendance",
     "new": "Nouveau",
     "featured": "A la une",
-    "paidPartnership": "Partenariat rémunéré avec <bdi>{{sponsorName}}</bdi>",
+    "sponsoredBy": "Sponsorisé par <bdi>{{sponsorName}}</bdi>",
     "tags": "Tags",
     "verifiedOnly": "Cree par des humains",
     "verifiedOnlyHint": "Affiche uniquement les videos avec verification ProofMode",

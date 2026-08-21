@@ -371,7 +371,7 @@ export function DiscoveryPage() {
                   <span className="inline-block max-w-full rounded-full border border-border bg-background px-3 py-1 text-center text-sm font-medium text-foreground">
                     {/* bdi keeps Latin sponsor names stable inside RTL disclosure copy. */}
                     <Trans
-                      i18nKey="discovery.paidPartnership"
+                      i18nKey="discovery.sponsoredBy"
                       values={{ sponsorName: activeTabItem.featuredTab.sponsorName }}
                       components={{ bdi: <bdi /> }}
                     />

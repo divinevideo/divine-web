@@ -70,7 +70,7 @@
     "hot": "Hangat",
     "new": "Baharu",
     "featured": "Pilihan",
-    "paidPartnership": "Perkongsian berbayar dengan <bdi>{{sponsorName}}</bdi>",
+    "sponsoredBy": "Ditaja oleh <bdi>{{sponsorName}}</bdi>",
     "tags": "Tag",
     "verifiedOnly": "Buatan Manusia",
     "verifiedOnlyHint": "Menunjukkan hanya video dengan pengesahan ProofMode",

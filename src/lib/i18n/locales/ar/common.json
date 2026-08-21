@@ -70,7 +70,7 @@
     "hot": "رائج",
     "new": "جديد",
     "featured": "مميز",
-    "paidPartnership": "شراكة مدفوعة مع <bdi>{{sponsorName}}</bdi>",
+    "sponsoredBy": "برعاية <bdi>{{sponsorName}}</bdi>",
     "tags": "الوسوم",
     "verifiedOnly": "من صنع البشر",
     "verifiedOnlyHint": "يتم عرض الفيديوهات التي تحتوي على تحقق ProofMode فقط",

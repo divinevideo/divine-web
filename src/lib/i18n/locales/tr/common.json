@@ -70,7 +70,7 @@
     "hot": "Populer",
     "new": "Yeni",
     "featured": "Öne çıkan",
-    "paidPartnership": "<bdi>{{sponsorName}}</bdi> ile ücretli iş birliği",
+    "sponsoredBy": "<bdi>{{sponsorName}}</bdi> sponsorluğunda",
     "tags": "Etiketler",
     "verifiedOnly": "Insan yapimi",
     "verifiedOnlyHint": "Yalnizca ProofMode dogrulamali videolar gosteriliyor",
