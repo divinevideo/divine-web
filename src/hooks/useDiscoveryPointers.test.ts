@@ -1,6 +1,6 @@
 import type { NostrEvent, NostrSigner } from "@nostrify/nostrify";
 import { act, renderHook } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { buildArchiveFiles } from "@/lib/exit/archive";
 import { fixturePubkey, makeFixtureEvent } from "@/lib/exit/__fixtures__/exportFixtures";
@@ -24,6 +24,10 @@ describe("useDiscoveryPointers", () => {
     publish.mockReset().mockResolvedValue({ status: "accepted" });
     close.mockReset().mockResolvedValue(undefined);
     vi.mocked(openDestinationRelay).mockReset().mockReturnValue({ publish, close });
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   it("keeps a signer refusal local to one pointer", async () => {
