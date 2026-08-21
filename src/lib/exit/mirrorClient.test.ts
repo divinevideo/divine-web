@@ -135,6 +135,24 @@ describe("mirrorArchiveMedia", () => {
     expect(fetcher.mock.calls[1][1]).toMatchObject({ method: "HEAD", redirect: "follow" });
   });
 
+  it("passes the destination's own X-Reason on to the person reading the summary", async () => {
+    const fetcher = vi.fn(async () => new Response(null, {
+      status: 413,
+      headers: { "x-reason": "  Blob exceeds the 100 MB   limit for this account  " },
+    }));
+    const results = await mirrorArchiveMedia({
+      destination: "https://blossom.example",
+      references: [reference("https://source.example/one"), reference("https://source.example/two", otherHash)],
+      signer,
+      fetcher,
+    });
+
+    expect(results[0]).toMatchObject({
+      verification: "failed",
+      reason: "The destination refused this file (HTTP 413). The server said: Blob exceeds the 100 MB limit for this account",
+    });
+  });
+
   it("records malformed destination JSON as a file failure", async () => {
     const results = await mirrorArchiveMedia({
       destination: "https://blossom.example",

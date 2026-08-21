@@ -97,6 +97,14 @@ function destinationFailure(status: number, destination: string): DestinationErr
   return null;
 }
 
+// BUD-01 lets a server attach a human-readable `X-Reason` to any error. It is
+// diagnostic text only, never control flow, so it is bounded and stripped of
+// line breaks before it reaches the page.
+function serverReason(response: Response): string {
+  const reason = response.headers.get("x-reason")?.replace(/\s+/g, " ").trim();
+  return reason ? ` The server said: ${reason.slice(0, 200)}` : "";
+}
+
 function parseDescriptor(value: unknown): BlobDescriptor | null {
   if (!value || typeof value !== "object") return null;
   const descriptor = value as Partial<BlobDescriptor>;
@@ -204,7 +212,10 @@ async function mirrorOne(
     return { result: failedResult(references, "failed", destinationError.message), destinationError };
   }
   if (!response.ok) {
-    return { result: failedResult(references, "failed", `The destination refused this file (HTTP ${response.status}).`), destinationError: null };
+    return {
+      result: failedResult(references, "failed", `The destination refused this file (HTTP ${response.status}).${serverReason(response)}`),
+      destinationError: null,
+    };
   }
   const descriptor = await readDescriptor(response);
   if (!descriptor) {
