@@ -1,25 +1,38 @@
-import { readFileSync } from 'node:fs';
-
 import { describe, expect, it } from 'vitest';
 
-import { EDGE_TEMPLATE_VARY } from './templateCachePolicy.js';
+import {
+  createEdgeTemplateHeaders,
+  HOST_DEPENDENT_CRAWLER_VARY,
+  shouldVaryTemplateByUserAgent,
+} from './templateCachePolicy.js';
 
 describe('edge template cache policy', () => {
-  it('separates crawler responses from browser responses', () => {
-    expect(EDGE_TEMPLATE_VARY.split(/,\s*/)).toEqual(
-      expect.arrayContaining(['X-Original-Host', 'User-Agent']),
-    );
+  it('separates crawler responses from browser responses by default', () => {
+    const headers = createEdgeTemplateHeaders({ cacheControl: 'public, max-age=60' });
+
+    expect(headers.get('Vary')).toBe('X-Original-Host, User-Agent');
+    expect(headers.get('Cache-Control')).toBe('public, max-age=60');
+    expect(headers.get('Content-Type')).toBe('text/html; charset=utf-8');
+    expect(headers.get('X-Divine-Edge')).toBe('template');
   });
 
-  it('applies the policy to every edge-templated response', () => {
-    const indexSource = readFileSync('compute-js/src/index.js', 'utf8');
-    const templateHeaderBlocks = [
-      ...indexSource.matchAll(/headers: \{([\s\S]*?)'X-Divine-Edge': 'template'/g),
-    ];
+  it('does not vary bare vanity profiles by user agent', () => {
+    const headers = createEdgeTemplateHeaders({
+      cacheControl: 'public, max-age=60',
+      subdomain: 'creator',
+      varyByUserAgent: false,
+    });
 
-    expect(templateHeaderBlocks).toHaveLength(6);
-    for (const [, headers] of templateHeaderBlocks) {
-      expect(headers).toContain("'Vary': EDGE_TEMPLATE_VARY");
-    }
+    expect(headers.get('Vary')).toBe('X-Original-Host');
+    expect(headers.get('X-Divine-Subdomain')).toBe('creator');
+  });
+
+  it('varies apex username profiles but not bare vanity profiles by user agent', () => {
+    expect(shouldVaryTemplateByUserAgent('/@creator')).toBe(true);
+    expect(shouldVaryTemplateByUserAgent('/')).toBe(false);
+  });
+
+  it('varies host-dependent crawler responses by host and user agent', () => {
+    expect(HOST_DEPENDENT_CRAWLER_VARY).toBe('X-Original-Host, User-Agent');
   });
 });

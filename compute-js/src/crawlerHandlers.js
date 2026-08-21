@@ -5,6 +5,7 @@ import { KVStore } from 'fastly:kv-store';
 import { buildCrawlerHtml, cleanText, truncateText } from './ogTags.js';
 import { hexToNpub, decodeNpubToHex } from './bech32.js';
 import { transformVideoApiResponse } from './videoMetadata.js';
+import { HOST_DEPENDENT_CRAWLER_VARY } from './templateCachePolicy.js';
 
 const FUNNELCAKE_API_URL = 'https://relay.divine.video';
 const DEFAULT_OG_IMAGE = 'https://divine.video/og.png';
@@ -27,7 +28,7 @@ export function handleDownloadOgTags(url, hostnameToUse) {
     headers: {
       'Content-Type': 'text/html; charset=utf-8',
       'Cache-Control': 'public, max-age=300',
-      'Vary': 'User-Agent',
+      'Vary': HOST_DEPENDENT_CRAWLER_VARY,
     },
   });
 }

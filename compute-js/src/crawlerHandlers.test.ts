@@ -32,6 +32,7 @@ describe('handleDownloadOgTags', () => {
     expect(html).toContain('App Store, Google Play, or Zapstore');
     expect(html).toContain('https://divine.video/download');
     expect(html).toContain('https://divine.video/og.png');
+    expect(result!.headers.get('Vary')).toBe('X-Original-Host, User-Agent');
   });
 });
 

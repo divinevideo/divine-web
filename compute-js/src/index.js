@@ -32,7 +32,11 @@ import {
   applyEmbedWidgetHeaders,
   isEmbedWidgetPath,
 } from './embedWidget.js';
-import { EDGE_TEMPLATE_VARY } from './templateCachePolicy.js';
+import {
+  createEdgeTemplateHeaders,
+  HOST_DEPENDENT_CRAWLER_VARY,
+  shouldVaryTemplateByUserAgent,
+} from './templateCachePolicy.js';
 import { renderFeedPage, renderVideoPage, renderProfilePage, renderSearchPage } from './templates/pages.js';
 
 const publisherServer = PublisherServer.fromStaticPublishRc(rc);
@@ -1001,13 +1005,11 @@ async function handleSubdomainProfile(subdomain, url, request, originalHostname)
 
   return new Response(profileHtml, {
     status: 200,
-    headers: {
-      'Content-Type': 'text/html; charset=utf-8',
-      'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
-      'Vary': EDGE_TEMPLATE_VARY,
-      'X-Divine-Subdomain': subdomain,
-      'X-Divine-Edge': 'template',
-    },
+    headers: createEdgeTemplateHeaders({
+      cacheControl: 'public, s-maxage=60, stale-while-revalidate=300',
+      subdomain,
+      varyByUserAgent: shouldVaryTemplateByUserAgent(url.pathname),
+    }),
   });
 }
 
@@ -1189,12 +1191,9 @@ async function handleVideoPage(request, videoId, url, funnelcakeTarget) {
         console.log(`Video page cache hit, id: ${videoId}, age: ${age}s`);
         return new Response(parsed.html, {
           status: 200,
-          headers: {
-            'Content-Type': 'text/html; charset=utf-8',
-            'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
-            'Vary': EDGE_TEMPLATE_VARY,
-            'X-Divine-Edge': 'template',
-          },
+          headers: createEdgeTemplateHeaders({
+            cacheControl: 'public, s-maxage=60, stale-while-revalidate=300',
+          }),
         });
       }
     }
@@ -1232,12 +1231,9 @@ async function handleVideoPage(request, videoId, url, funnelcakeTarget) {
 
   return new Response(html, {
     status: 200,
-    headers: {
-      'Content-Type': 'text/html; charset=utf-8',
-      'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
-      'Vary': EDGE_TEMPLATE_VARY,
-      'X-Divine-Edge': 'template',
-    },
+    headers: createEdgeTemplateHeaders({
+      cacheControl: 'public, s-maxage=60, stale-while-revalidate=300',
+    }),
   });
 }
 
@@ -1261,12 +1257,9 @@ async function handleFeedPage(feedType, funnelcakeTarget) {
         console.log(`Feed page cache hit, type: ${feedType}, age: ${age}s`);
         return new Response(parsed.html, {
           status: 200,
-          headers: {
-            'Content-Type': 'text/html; charset=utf-8',
-            'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
-            'Vary': EDGE_TEMPLATE_VARY,
-            'X-Divine-Edge': 'template',
-          },
+          headers: createEdgeTemplateHeaders({
+            cacheControl: 'public, s-maxage=60, stale-while-revalidate=300',
+          }),
         });
       }
     }
@@ -1304,12 +1297,9 @@ async function handleFeedPage(feedType, funnelcakeTarget) {
 
   return new Response(html, {
     status: 200,
-    headers: {
-      'Content-Type': 'text/html; charset=utf-8',
-      'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
-      'Vary': EDGE_TEMPLATE_VARY,
-      'X-Divine-Edge': 'template',
-    },
+    headers: createEdgeTemplateHeaders({
+      cacheControl: 'public, s-maxage=60, stale-while-revalidate=300',
+    }),
   });
 }
 
@@ -1338,12 +1328,9 @@ async function handleSearchPage(query, funnelcakeTarget) {
 
     return new Response(html, {
       status: 200,
-      headers: {
-        'Content-Type': 'text/html; charset=utf-8',
-        'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=60',
-        'Vary': EDGE_TEMPLATE_VARY,
-        'X-Divine-Edge': 'template',
-      },
+      headers: createEdgeTemplateHeaders({
+        cacheControl: 'public, s-maxage=30, stale-while-revalidate=60',
+      }),
     });
   } catch (e) {
     console.error('Search page error:', e.message);
@@ -1500,7 +1487,7 @@ function handleFamilyOgTags(url, hostnameToUse) {
       headers: {
         'Content-Type': 'text/html; charset=utf-8',
         'Cache-Control': 'public, max-age=300',
-        'Vary': 'User-Agent',
+        'Vary': HOST_DEPENDENT_CRAWLER_VARY,
       },
     });
   } catch (err) {
@@ -1529,7 +1516,7 @@ function handleAgeReviewOgTags(url, hostnameToUse) {
       headers: {
         'Content-Type': 'text/html; charset=utf-8',
         'Cache-Control': 'public, max-age=300',
-        'Vary': 'User-Agent',
+        'Vary': HOST_DEPENDENT_CRAWLER_VARY,
       },
     });
   } catch (err) {
@@ -1558,7 +1545,7 @@ function handleKidsPolicyOgTags(url, hostnameToUse) {
       headers: {
         'Content-Type': 'text/html; charset=utf-8',
         'Cache-Control': 'public, max-age=300',
-        'Vary': 'User-Agent',
+        'Vary': HOST_DEPENDENT_CRAWLER_VARY,
       },
     });
   } catch (err) {

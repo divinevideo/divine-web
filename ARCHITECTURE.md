@@ -137,8 +137,10 @@ On Fastly, some routes are not served from
 identifiable by the `x-divine-edge: template` response header — and that shell
 boots the same SPA bundle. `/` and `/discovery/hot` go through it today;
 [`compute-js/src/index.js`](./compute-js/src/index.js) can route more.
-These template responses vary by both the original host and user agent so they
-cannot replace the crawler-specific Open Graph response in the edge cache.
+Templates with a distinct crawler response vary by both the original host and
+user agent so one response cannot replace the other in the edge cache. Bare
+vanity-subdomain profiles vary only by original host because crawlers and
+browsers receive the same HTML there.
 
 The CSP therefore exists as **two copies**: the meta tag in `index.html` and
 `SHELL_CSP` in `shell.js`. They must stay byte-identical. A directive present
