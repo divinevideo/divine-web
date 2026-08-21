@@ -259,7 +259,11 @@ async function publishOne(
         // A NIP-42 relay challenges on connect and refuses whatever is already
         // on the wire. Nostrify answers the challenge but never resends those
         // events, so wait for the signature to settle and send them again.
-        if (refusal.code === "auth-required") await authState.handshake;
+        // Bounded by the per-event timeout so a signer that never answers
+        // cannot stall the run.
+        if (refusal.code === "auth-required" && authState.handshake) {
+          await Promise.race([authState.handshake, wait(options.eventTimeoutMs ?? DEFAULT_EVENT_TIMEOUT_MS, options.signal)]);
+        }
         await wait(1000 * 2 ** attempt, options.signal);
         continue;
       }
