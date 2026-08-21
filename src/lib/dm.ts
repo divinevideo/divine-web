@@ -1,7 +1,7 @@
 import { NPool, NRelay1, type NostrEvent, type NostrFilter, type NostrSigner } from '@nostrify/nostrify';
 import { bytesToHex } from '@noble/hashes/utils';
 import { sha256 } from '@noble/hashes/sha256';
-import { finalizeEvent, generateSecretKey, nip44, verifyEvent } from 'nostr-tools';
+import { finalizeEvent, generateSecretKey, nip42, nip44, verifyEvent } from 'nostr-tools';
 
 import { PRESET_RELAYS, PROFILE_RELAYS, getRelayUrls } from '@/config/relays';
 import { DIVINE_MODERATION_PUBKEY } from '@/lib/officialAccounts';
@@ -195,9 +195,42 @@ function getDirectMessageRelayUrls(): string[] {
   ]);
 }
 
-function createRelayPool(relayUrls: string[]): NPool<NRelay1> {
+/**
+ * Build the `auth` callback an {@link NRelay1} uses to answer a relay's
+ * NIP-42 AUTH challenge with a signed kind-22242 event.
+ *
+ * The Divine relay gates kind-1059 (NIP-17 gift wrap) reads to the
+ * authenticated recipient: until the connection answers the challenge, the
+ * relay returns nothing for the inbox query. With a single default relay and
+ * no EOSE, that read then hangs to its abort timeout and surfaces as a
+ * permanently empty inbox — so signing the challenge is what lets a recipient
+ * read their own gift wraps at all.
+ *
+ * When no signer is available (logged-out) the callback rejects: there is no
+ * identity to authenticate with, so the connection stays unauthenticated
+ * rather than sending a bogus AUTH. NRelay1 runs this as
+ * `auth(challenge).then(...).catch(() => {})`, so the rejection is swallowed
+ * and a missing signer degrades to "unauthenticated", never an uncaught error.
+ */
+export function makeDmAuthCallback(
+  relayUrl: string,
+  signer: NostrSigner | undefined,
+): (challenge: string) => Promise<NostrEvent> {
+  return async (challenge: string) => {
+    if (!signer) {
+      throw new Error('[DM] Cannot answer a NIP-42 AUTH challenge without a signer');
+    }
+    return signer.signEvent(nip42.makeAuthEvent(relayUrl, challenge));
+  };
+}
+
+function createRelayPool(relayUrls: string[], signer?: NostrSigner): NPool<NRelay1> {
   return new NPool({
-    open: (url) => new NRelay1(url, { idleTimeout: false }),
+    open: (url) =>
+      new NRelay1(url, {
+        idleTimeout: false,
+        auth: makeDmAuthCallback(url, signer),
+      }),
     reqRouter: (filters) => new Map(relayUrls.map((url) => [url, filters])),
     eventRouter: () => relayUrls,
   });
@@ -600,7 +633,7 @@ export async function fetchDmMessages(input: FetchDmMessagesInput): Promise<Fetc
     return { messages: [], fetchedCount: 0, decryptFailures: 0, malformedCount: 0 };
   }
 
-  const pool = createRelayPool(normalizedRelays);
+  const pool = createRelayPool(normalizedRelays, signer);
 
   try {
     const events = await pool.query(

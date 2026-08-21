@@ -14,11 +14,12 @@ import type { SortMode } from '@/types/nostr';
 type WebSocketFeedType = 'discovery' | 'home' | 'trending' | 'hashtag' | 'profile' | 'recent' | 'classics' | 'category';
 
 export interface VideoNavigationContext {
-  source: 'hashtag' | 'profile' | 'discovery' | 'home' | 'trending' | 'popular' | 'recent' | 'classics' | 'foryou' | 'category' | 'search' | 'people-list' | 'featured';
+  source: 'hashtag' | 'profile' | 'discovery' | 'home' | 'trending' | 'popular' | 'recent' | 'classics' | 'foryou' | 'category' | 'search' | 'people-list' | 'video-list' | 'featured';
   hashtag?: string;
   pubkey?: string;
   listId?: string;
   featuredTabId?: string;
+  listName?: string;
   query?: string;
   sortMode?: SortMode | 'relevance';
   currentIndex?: number;
@@ -52,6 +53,7 @@ export function useVideoNavigation(videoId: string, options: UseVideoNavigationO
   const context = contextOverride === undefined ? parsedContext : contextOverride;
 
   const isPeopleListContext = context?.source === 'people-list';
+  const isVideoListContext = context?.source === 'video-list';
   const peopleListQuery = usePeopleList(
     isPeopleListContext ? context.pubkey : undefined,
     isPeopleListContext ? context.listId : undefined,
@@ -69,7 +71,7 @@ export function useVideoNavigation(videoId: string, options: UseVideoNavigationO
   // Map 'foryou' to 'trending' for WebSocket fallback (foryou only works via Funnelcake API)
   const feedTypeForWebSocket: WebSocketFeedType | undefined = (() => {
     if (!context) return undefined;
-    if (isPeopleListContext) return 'discovery';
+    if (isPeopleListContext || isVideoListContext) return 'discovery';
     if (context.source === 'foryou' || context.source === 'popular') return 'trending';
     if (context.source === 'search') return 'discovery';
     if (
@@ -88,7 +90,7 @@ export function useVideoNavigation(videoId: string, options: UseVideoNavigationO
   })();
   const blockedPubkeys = useFeedBlocklist();
   const { data: feedVideos, isLoading: feedVideosLoading } = useVideoEvents(
-    context && !isPeopleListContext ? {
+    context && !isPeopleListContext && !isVideoListContext ? {
       feedType: feedTypeForWebSocket,
       hashtag: context.hashtag,
       pubkey: context.pubkey,
@@ -168,6 +170,7 @@ export function parseVideoNavigationContext(searchParams: URLSearchParams): Vide
     hashtag: searchParams.get('hashtag') || undefined,
     pubkey: searchParams.get('pubkey') || undefined,
     listId: searchParams.get('listId') || undefined,
+    listName: searchParams.get('listName') || undefined,
     featuredTabId: searchParams.get('featuredTabId') || undefined,
     query: searchParams.get('q') || undefined,
     sortMode: sortMode || undefined,
@@ -189,6 +192,7 @@ export function buildVideoNavigationUrl(
   if (context.pubkey) params.set('pubkey', context.pubkey);
   if (context.listId) params.set('listId', context.listId);
   if (context.featuredTabId) params.set('featuredTabId', context.featuredTabId);
+  if (context.listName) params.set('listName', context.listName);
   if (context.query) params.set('q', context.query);
   if (context.sortMode) params.set('sort', context.sortMode);
   if (index !== undefined) params.set('index', index.toString());

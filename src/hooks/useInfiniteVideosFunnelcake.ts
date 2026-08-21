@@ -38,6 +38,13 @@ interface UseInfiniteVideosFunnelcakeOptions {
 
 interface FunnelcakeVideoPage {
   videos: ParsedVideoData[];
+  /**
+   * Rows this page fetched, as the API returned them. Required, not optional:
+   * infinite scroll paginates on this (divine-web#380), and `countFetchedVideos`
+   * falls back to `videos.length` when it is absent, so an optional field would
+   * let a dropped assignment revert the count to the parsed length silently.
+   */
+  fetchedRows: number;
   nextCursor: number | undefined;
   offset?: number;
   /** Opaque cursor string for recommendations pagination */
@@ -269,6 +276,7 @@ export function useInfiniteVideosFunnelcake({
           });
           return {
             videos: page.videos,
+            fetchedRows: page.fetchedRows,
             nextCursor: page.nextCursor,
             offset: page.offset,
             recommendationsCursor: feedType === 'recommendations' ? page.rawCursor : undefined,
@@ -341,7 +349,7 @@ export function useInfiniteVideosFunnelcake({
           case 'home':
             if (!user?.pubkey) {
               debugLog('[useInfiniteVideosFunnelcake] No user logged in for home feed');
-              return { videos: [], nextCursor: undefined };
+              return { videos: [], fetchedRows: 0, nextCursor: undefined };
             }
             response = await fetchUserFeed(effectiveApiUrl, {
               ...options,
@@ -352,7 +360,7 @@ export function useInfiniteVideosFunnelcake({
           case 'recommendations': {
             if (!user?.pubkey) {
               debugLog('[useInfiniteVideosFunnelcake] No user logged in for recommendations feed');
-              return { videos: [], nextCursor: undefined };
+              return { videos: [], fetchedRows: 0, nextCursor: undefined };
             }
             if (isPopularFallback) {
               responseMode = 'popular';
@@ -464,6 +472,7 @@ export function useInfiniteVideosFunnelcake({
 
       return {
         videos: enrichedVideos,
+        fetchedRows: page.fetchedRows,
         nextCursor: page.nextCursor,
         offset: page.offset,
         recommendationsCursor: responseMode === 'recommendations' ? page.rawCursor : undefined,

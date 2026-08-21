@@ -859,4 +859,15 @@ describe('VideoPage', () => {
       ],
     });
   });
+
+  it('returns a video-list viewer to the exact list', () => {
+    renderPage(`/video/video-2?source=video-list&pubkey=${'a'.repeat(64)}&listId=favorites&listName=Six+seconds+of+joy`);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Six seconds of joy' }));
+
+    expect(mockNavigate).toHaveBeenCalledWith(
+      `/list/${'a'.repeat(64)}/favorites`,
+      { ownerPubkey: 'a'.repeat(64) },
+    );
+  });
 });
