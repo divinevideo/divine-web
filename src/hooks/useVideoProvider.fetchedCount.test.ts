@@ -52,6 +52,17 @@ vi.mock('@/hooks/useInfiniteVideos', () => ({
   }),
 }));
 
+vi.mock('@/hooks/useFeaturedTabVideos', () => ({
+  useFeaturedTabVideos: () => ({
+    data: undefined,
+    fetchNextPage: vi.fn(),
+    hasNextPage: false,
+    isLoading: false,
+    error: null,
+    refetch: vi.fn(),
+  }),
+}));
+
 vi.mock('@/hooks/useAppContext', () => ({
   useAppContext: () => ({ config: { relayUrl: 'wss://relay.divine.video' } }),
 }));
