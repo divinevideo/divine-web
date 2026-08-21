@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
 interface InviteCodeFormProps {
-  error?: string | null;
   isLoading: boolean;
   onInviteCodeChange: (value: string) => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
@@ -16,7 +15,6 @@ interface InviteCodeFormProps {
 export function InviteCodeForm(props: InviteCodeFormProps) {
   const { t } = useTranslation();
   const {
-    error,
     isLoading,
     onInviteCodeChange,
     onSubmit,
@@ -38,7 +36,6 @@ export function InviteCodeForm(props: InviteCodeFormProps) {
           placeholder={t('inviteCodeForm.placeholder')}
           value={value}
         />
-        {error ? <p className="text-sm text-red-500">{error}</p> : null}
       </div>
 
       <Button className="w-full rounded-full py-3" disabled={isLoading || !value.trim()} type="submit">
