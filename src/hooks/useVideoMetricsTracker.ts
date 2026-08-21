@@ -1,11 +1,12 @@
 // ABOUTME: Publishes public Nostr view counts and one private aggregate per playback session.
 // ABOUTME: Records an impression only after a video stays at least half visible for one second.
 
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import type { ProductAnalyticsV2Surface } from '@/generated/productAnalytics';
 import { trackProductEvent } from '@/lib/analyticsClient';
 import { debugLog } from '@/lib/debug';
+import { createUuid } from '@/lib/uuid';
 import type { ParsedVideoData } from '@/types/video';
 import { useViewEventPublisher, type ViewTrafficSource } from './useViewEventPublisher';
 
@@ -34,16 +35,6 @@ interface ProductPlaybackState {
   watchedMs: number;
   loopCount: number;
   started: boolean;
-}
-
-function createUuid(): string {
-  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
-    return crypto.randomUUID();
-  }
-  return '10000000-1000-4000-8000-100000000000'.replace(/[018]/g, (char) => {
-    const random = Math.floor(Math.random() * 16);
-    return (Number(char) ^ (random & (15 >> (Number(char) / 4)))).toString(16);
-  });
 }
 
 function getSurface(source: ViewTrafficSource): ProductAnalyticsV2Surface {
@@ -110,6 +101,10 @@ export function useVideoMetricsTracker({
   const impressionVideoIdRef = useRef<string | null>(null);
   const impressionRecordedRef = useRef(false);
   const impressionTimerRef = useRef<number>();
+  const impressionVisibleSinceRef = useRef<number | null>(null);
+  const [documentVisible, setDocumentVisible] = useState(
+    typeof document === 'undefined' || document.visibilityState === 'visible',
+  );
 
   const flushWatchTime = useCallback((countPlayback = isPlayingRef.current) => {
     const now = Date.now();
@@ -188,6 +183,7 @@ export function useVideoMetricsTracker({
         window.clearTimeout(impressionTimerRef.current);
         impressionTimerRef.current = undefined;
       }
+      impressionVisibleSinceRef.current = null;
     } else {
       productPlaybackRef.current.surface = getSurface(source);
       productPlaybackRef.current.durationMs = Math.max(0, Math.round(duration * 1000));
@@ -227,29 +223,39 @@ export function useVideoMetricsTracker({
   useEffect(() => {
     if (!video?.id || !enabled || impressionRecordedRef.current) return;
 
-    if (visibilityRatio < 0.5) {
+    if (!documentVisible || visibilityRatio < 0.5) {
       if (impressionTimerRef.current !== undefined) {
         window.clearTimeout(impressionTimerRef.current);
         impressionTimerRef.current = undefined;
       }
+      impressionVisibleSinceRef.current = null;
       return;
     }
     if (impressionTimerRef.current !== undefined) return;
 
     const contentId = video.id;
+    impressionVisibleSinceRef.current = Date.now();
     impressionTimerRef.current = window.setTimeout(() => {
       impressionTimerRef.current = undefined;
-      if (!enabledRef.current || impressionVideoIdRef.current !== contentId || impressionRecordedRef.current) return;
+      const visibleSince = impressionVisibleSinceRef.current;
+      impressionVisibleSinceRef.current = null;
+      if (
+        !enabledRef.current
+        || document.visibilityState !== 'visible'
+        || impressionVideoIdRef.current !== contentId
+        || impressionRecordedRef.current
+        || visibleSince === null
+      ) return;
       impressionRecordedRef.current = true;
       void trackProductEvent('content_impression_recorded', {
         content_id: contentId,
         surface: getSurface(sourceRef.current),
         position: Math.max(0, Math.floor(positionRef.current)),
-        visible_ms: 1000,
+        visible_ms: Math.min(3_600_000, Math.max(500, Date.now() - visibleSince)),
       });
     }, 1000);
 
-  }, [enabled, video?.id, visibilityRatio]);
+  }, [documentVisible, enabled, video?.id, visibilityRatio]);
 
   useEffect(() => () => {
     if (impressionTimerRef.current !== undefined) {
@@ -259,6 +265,7 @@ export function useVideoMetricsTracker({
 
   useEffect(() => {
     const onVisibilityChange = () => {
+      setDocumentVisible(document.visibilityState === 'visible');
       if (document.visibilityState === 'hidden') {
         flushWatchTime();
         void publishAndReset();

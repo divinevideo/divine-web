@@ -267,8 +267,15 @@ export class ProductEventQueue {
         request.onsuccess = () => {
           const records = (request.result as ProductEventQueueRecord[])
             .filter((record) => !this.deletedRecordIds.has(record.id));
-          records.forEach((record) => this.memoryRecords.set(record.id, record));
-          resolve(records);
+          const available = new Map(
+            Array.from(this.memoryRecords.entries())
+              .filter(([id]) => !this.deletedRecordIds.has(id)),
+          );
+          // Durable records win when both stores have the same event, while
+          // memory-only records survive quota or transaction failures.
+          records.forEach((record) => available.set(record.id, record));
+          available.forEach((record, id) => this.memoryRecords.set(id, record));
+          resolve(Array.from(available.values()));
         };
         request.onerror = () => resolve(Array.from(this.memoryRecords.values()));
       } catch {

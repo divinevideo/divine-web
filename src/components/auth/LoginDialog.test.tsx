@@ -144,6 +144,23 @@ describe('LoginDialog', () => {
     rerender(<LoginDialog isOpen onClose={vi.fn()} onLogin={vi.fn()} />);
     expect(mockTrackProductEvent).toHaveBeenCalledTimes(1);
   });
+  it('does not mislabel registration opened from an app route as a landing', async () => {
+    Object.defineProperty(window, 'location', {
+      value: { ...originalLocation, assign: locationAssign, pathname: '/profile/npub1example', search: '' },
+      writable: true,
+      configurable: true,
+    });
+
+    render(<LoginDialog isOpen onClose={vi.fn()} onLogin={vi.fn()} />);
+
+    await waitFor(() => {
+      expect(mockTrackProductEvent).toHaveBeenCalledWith('registration_started', {
+        entry_point: 'unknown',
+        utm_source: 'newsletter',
+        utm_medium: 'email',
+      });
+    });
+  });
   it('renders hosted sign-in and keeps Nostr methods behind a text disclosure', async () => {
     const user = userEvent.setup();
 

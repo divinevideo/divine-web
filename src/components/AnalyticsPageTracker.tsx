@@ -16,13 +16,21 @@ import {
 } from '@/lib/analyticsClient';
 
 function getSurface(pathname: string): ProductAnalyticsV2Surface {
-  if (pathname === '/') return 'feed';
-  if (pathname.startsWith('/following')) return 'following';
-  if (pathname.startsWith('/discovery')) return 'discovery';
+  if (pathname === '/') return 'landing';
+  if (pathname === '/home') return 'feed';
+  if (
+    pathname.startsWith('/discovery')
+    || pathname === '/trending'
+    || pathname === '/popular'
+    || pathname === '/hashtags'
+    || pathname.startsWith('/hashtag/')
+    || pathname === '/category'
+    || pathname.startsWith('/category/')
+    || pathname.startsWith('/t/')
+  ) return 'discovery';
   if (pathname.startsWith('/search')) return 'search_results';
   if (pathname.startsWith('/profile') || pathname.startsWith('/u/')) return 'profile';
-  if (pathname.startsWith('/onboarding')) return 'onboarding';
-  if (pathname.startsWith('/invite') || pathname.startsWith('/register')) return 'registration';
+  if (pathname.startsWith('/invite/')) return 'registration';
   if (pathname.startsWith('/notifications')) return 'notifications';
   if (pathname.startsWith('/settings')) return 'settings';
   return 'unknown';
@@ -30,9 +38,7 @@ function getSurface(pathname: string): ProductAnalyticsV2Surface {
 
 function getLandingPage(pathname: string): ProductAnalyticsV2LandingPage | null {
   if (pathname === '/') return 'home';
-  if (pathname.startsWith('/download')) return 'download';
-  if (pathname.startsWith('/invite')) return 'invite';
-  if (pathname.startsWith('/register')) return 'registration';
+  if (pathname.startsWith('/invite/')) return 'invite';
   return null;
 }
 

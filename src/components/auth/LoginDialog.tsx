@@ -93,9 +93,9 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isOpen, onClose, onLogin }) =
     const pathname = window.location.pathname;
     const entryPoint = pathname.startsWith('/invite')
       ? 'invite'
-      : pathname.startsWith('/download')
-        ? 'download_prompt'
-        : 'landing';
+      : pathname === '/'
+        ? 'landing'
+        : 'unknown';
     void trackProductEvent('registration_started', {
       entry_point: entryPoint,
       ...getProductAnalyticsUtm(),

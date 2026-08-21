@@ -89,6 +89,8 @@ describe('analyticsClient', () => {
   });
 
   it('matches the cross-language RFC 8785 event ID vector', async () => {
+    // Copied from divine-context/analytics/event-id-vectors.json. Mobile and
+    // Funnelcake use the same fixed input and expected digest.
     const { computeProductAnalyticsEventId } = await import('./analyticsClient');
     const event = {
       schema_version: 2 as const,
@@ -282,6 +284,34 @@ describe('analyticsClient', () => {
     productAnalytics.dispose();
   });
 
+  it('isolates a permanently rejected batch before dropping any event', async () => {
+    vi.stubGlobal('fetch', vi.fn()
+      .mockResolvedValueOnce(new Response('{}', { status: 400 }))
+      .mockResolvedValueOnce(new Response('{}', { status: 400 }))
+      .mockResolvedValueOnce(new Response('{}', { status: 503 })));
+    const { ProductAnalyticsClient, configureProductAnalyticsIdentity } = await import('./analyticsClient');
+    const { ProductEventQueue } = await import('./eventQueue');
+    const client = new ProductAnalyticsClient({
+      queue: new ProductEventQueue({ baseRetryDelayMs: 0 }),
+    });
+
+    // Queue two events before a signer is available so the first request is a
+    // real two-event batch.
+    configureProductAnalyticsIdentity({ userPubkey: pubkey });
+    await client.track('content_impression_recorded', impression);
+    await client.track('content_impression_recorded', { ...impression, position: 2 });
+    await new Promise((resolve) => window.setTimeout(resolve, 0));
+    configureProductAnalyticsIdentity({ userPubkey: pubkey, signer });
+    await client.flush();
+
+    const sentBodies = vi.mocked(fetch).mock.calls.map(([, init]) => JSON.parse(init?.body as string));
+    expect(sentBodies.map((body) => body.events.length)).toEqual([2, 1, 1]);
+    const remaining = await client.queue.getFlushableBatch(10);
+    expect(remaining).toHaveLength(1);
+    expect(remaining[0].event.properties).toMatchObject({ position: 2 });
+    client.dispose();
+  });
+
   it('retries a transient auth failure instead of dropping the event', async () => {
     vi.stubGlobal('fetch', vi.fn()
       .mockResolvedValueOnce(new Response('{}', { status: 401 }))
@@ -333,16 +363,26 @@ describe('analyticsClient', () => {
     captureProductAnalyticsUtm('?utm_source=newsletter');
     await productAnalytics.track('content_impression_recorded', impression);
     expect(await productAnalytics.queue.getFlushableBatch(10)).toHaveLength(1);
+    await vi.waitFor(() => expect(fetch).toHaveBeenCalledOnce());
+    const beforeWithdrawal = JSON.parse(vi.mocked(fetch).mock.calls[0][1]?.body as string).events[0];
 
     consent.set(false);
 
     await vi.waitFor(async () => {
       expect(await productAnalytics.queue.getFlushableBatch(10)).toHaveLength(0);
     });
-    expect(window.sessionStorage.removeItem).toHaveBeenCalled();
+    expect(window.localStorage.removeItem).toHaveBeenCalledWith('divine_product_analytics_anonymous_id');
+    expect(window.sessionStorage.removeItem).toHaveBeenCalledWith('divine_product_analytics_session_id');
+    expect(window.sessionStorage.removeItem).toHaveBeenCalledWith('divine_product_analytics_utm');
+
+    consent.set(true);
+    await productAnalytics.track('landing_viewed', landing);
+    const [afterReconsent] = await productAnalytics.queue.getAnonymousFlushableBatch(10);
+    expect(afterReconsent.event.anonymous_id).not.toBe(beforeWithdrawal.anonymous_id);
+    expect(afterReconsent.event.session_id).not.toBe(beforeWithdrawal.session_id);
   });
 
-  it('purges the previous account on logout or account switch', async () => {
+  it('purges and rotates browser identifiers on account switch and logout', async () => {
     vi.stubGlobal('fetch', vi.fn(() => new Promise<Response>(() => {})));
     const {
       captureProductAnalyticsUtm,
@@ -353,13 +393,69 @@ describe('analyticsClient', () => {
     captureProductAnalyticsUtm('?utm_source=newsletter');
     await productAnalytics.track('content_impression_recorded', impression);
     expect(await productAnalytics.queue.getFlushableBatch(10)).toHaveLength(1);
+    vi.mocked(window.localStorage.removeItem).mockClear();
+    vi.mocked(window.sessionStorage.removeItem).mockClear();
 
     configureProductAnalyticsIdentity({ userPubkey: 'e'.repeat(64), signer });
 
     await vi.waitFor(async () => {
       expect(await productAnalytics.queue.getFlushableBatch(10)).toHaveLength(0);
     });
-    expect(window.sessionStorage.removeItem).toHaveBeenCalled();
+    expect(window.localStorage.removeItem).toHaveBeenCalledWith('divine_product_analytics_anonymous_id');
+    expect(window.sessionStorage.removeItem).toHaveBeenCalledWith('divine_product_analytics_session_id');
+
+    vi.mocked(window.localStorage.removeItem).mockClear();
+    vi.mocked(window.sessionStorage.removeItem).mockClear();
+    configureProductAnalyticsIdentity({});
+    expect(window.localStorage.removeItem).toHaveBeenCalledWith('divine_product_analytics_anonymous_id');
+    expect(window.sessionStorage.removeItem).toHaveBeenCalledWith('divine_product_analytics_session_id');
+  });
+
+  it('starts a new anonymous and session identity at login boundaries', async () => {
+    vi.stubGlobal('fetch', vi.fn(() => new Promise<Response>(() => {})));
+    const {
+      configureProductAnalyticsIdentity,
+      productAnalytics,
+    } = await import('./analyticsClient');
+
+    configureProductAnalyticsIdentity({});
+    await productAnalytics.track('landing_viewed', landing);
+    await vi.waitFor(() => expect(fetch).toHaveBeenCalledOnce());
+    const anonymousRequest = JSON.parse(vi.mocked(fetch).mock.calls[0][1]?.body as string);
+    const anonymousEvent = anonymousRequest.events[0];
+
+    configureProductAnalyticsIdentity({ userPubkey: pubkey, signer });
+    await productAnalytics.track('content_impression_recorded', impression);
+    const [signedRecord] = await productAnalytics.queue.getSignedFlushableBatch(10, pubkey);
+
+    expect(signedRecord.event.anonymous_id).not.toBe(anonymousEvent.anonymous_id);
+    expect(signedRecord.event.session_id).not.toBe(anonymousEvent.session_id);
+  });
+
+  it('does not enqueue an event whose identity changes while its ID is calculated', async () => {
+    const realDigest = crypto.subtle.digest.bind(crypto.subtle);
+    let releaseDigest!: () => void;
+    let markDigestStarted!: () => void;
+    const digestStarted = new Promise<void>((resolve) => { markDigestStarted = resolve; });
+    const digestReleased = new Promise<void>((resolve) => { releaseDigest = resolve; });
+    vi.spyOn(crypto.subtle, 'digest').mockImplementationOnce(async (algorithm, data) => {
+      markDigestStarted();
+      await digestReleased;
+      return realDigest(algorithm, data);
+    });
+    const {
+      configureProductAnalyticsIdentity,
+      productAnalytics,
+    } = await import('./analyticsClient');
+
+    configureProductAnalyticsIdentity({ userPubkey: pubkey });
+    const tracking = productAnalytics.track('content_impression_recorded', impression);
+    await digestStarted;
+    configureProductAnalyticsIdentity({ userPubkey: 'e'.repeat(64) });
+    releaseDigest();
+
+    await expect(tracking).resolves.toBeNull();
+    expect(await productAnalytics.queue.getFlushableBatch(10)).toHaveLength(0);
   });
 
   it('keeps only allowlisted bounded UTM values for registration', async () => {
@@ -406,5 +502,20 @@ describe('analyticsClient', () => {
     expect(removeDocumentListener).toHaveBeenCalledWith('visibilitychange', expect.any(Function));
     expect(clearIntervalSpy).toHaveBeenCalledWith(expect.anything());
     expect(consent.listeners).toHaveLength(listenersBefore);
+  });
+
+  it('does not install flush timers for a build and host that cannot collect', async () => {
+    vi.stubEnv('VITE_PRODUCT_ANALYTICS_ENABLED', 'false');
+    const addWindowListener = vi.spyOn(window, 'addEventListener');
+    const addDocumentListener = vi.spyOn(document, 'addEventListener');
+    const setIntervalSpy = vi.spyOn(window, 'setInterval');
+    const { ProductAnalyticsClient } = await import('./analyticsClient');
+
+    const client = new ProductAnalyticsClient();
+
+    expect(addWindowListener).not.toHaveBeenCalledWith('online', expect.any(Function));
+    expect(addDocumentListener).not.toHaveBeenCalledWith('visibilitychange', expect.any(Function));
+    expect(setIntervalSpy).not.toHaveBeenCalled();
+    client.dispose();
   });
 });

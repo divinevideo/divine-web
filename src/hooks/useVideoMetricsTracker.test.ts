@@ -44,6 +44,10 @@ describe('useVideoMetricsTracker', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.useFakeTimers();
+    Object.defineProperty(document, 'visibilityState', {
+      configurable: true,
+      value: 'visible',
+    });
   });
 
   afterEach(() => {
@@ -477,6 +481,32 @@ describe('useVideoMetricsTracker', () => {
     // Tracking is turned off before the one-second threshold elapses.
     rerender({ enabled: false });
     act(() => { vi.advanceTimersByTime(1000); });
+
+    expect(mockTrackProductEvent).not.toHaveBeenCalled();
+    unmount();
+  });
+
+  it('does not record an impression while the browser tab is hidden', () => {
+    const video = makeVideo('v1');
+    const { unmount } = renderHook(() => useVideoMetricsTracker({
+      video,
+      isPlaying: false,
+      currentTime: 0,
+      duration: 6,
+      source: 'home',
+      position: 4,
+      visibilityRatio: 0.5,
+    }));
+
+    act(() => { vi.advanceTimersByTime(500); });
+    Object.defineProperty(document, 'visibilityState', {
+      configurable: true,
+      value: 'hidden',
+    });
+    act(() => {
+      document.dispatchEvent(new Event('visibilitychange'));
+      vi.advanceTimersByTime(1000);
+    });
 
     expect(mockTrackProductEvent).not.toHaveBeenCalled();
     unmount();

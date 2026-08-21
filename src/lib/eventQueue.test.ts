@@ -64,7 +64,7 @@ function createFailingIndexedDB(): IDBFactory {
   } as unknown as IDBFactory;
 }
 
-function createDeleteFailingIndexedDB(options: { failClear?: boolean } = {}): IDBFactory {
+function createDeleteFailingIndexedDB(options: { failClear?: boolean; failPut?: boolean } = {}): IDBFactory {
   const records = new Map<string, ProductEventQueueRecord>();
   const makeRequest = <T>(result: T) => {
     const request = { onsuccess: null, onerror: null, result } as unknown as IDBRequest<T> & {
@@ -81,10 +81,15 @@ function createDeleteFailingIndexedDB(options: { failClear?: boolean } = {}): ID
     transaction: (_storeNames: string[], _mode: IDBTransactionMode) => {
       let deleteAttempted = false;
       let clearFailed = false;
+      let putFailed = false;
       const transaction = {
         objectStore: () => ({
           put: (record: { id: string }) => {
-            records.set(record.id, record as ProductEventQueueRecord);
+            if (options.failPut) {
+              putFailed = true;
+            } else {
+              records.set(record.id, record as ProductEventQueueRecord);
+            }
             return makeRequest(record.id);
           },
           delete: (_id: string) => {
@@ -111,7 +116,7 @@ function createDeleteFailingIndexedDB(options: { failClear?: boolean } = {}): ID
       };
 
       queueMicrotask(() => {
-        if (deleteAttempted || clearFailed) {
+        if (deleteAttempted || clearFailed || putFailed) {
           transaction.onerror?.(new Event('error'));
           return;
         }
@@ -334,6 +339,19 @@ describe('ProductEventQueue', () => {
     await queue.markSucceeded([baseEvent.event_id]);
 
     expect(await queue.getFlushableBatch(10)).toHaveLength(0);
+  });
+
+  it('keeps the memory copy flushable when a durable write fails but later reads work', async () => {
+    Object.defineProperty(globalThis, 'indexedDB', {
+      writable: true,
+      value: createDeleteFailingIndexedDB({ failPut: true }),
+    });
+    const { ProductEventQueue } = await import('./eventQueue');
+    const queue = new ProductEventQueue();
+
+    await queue.enqueue(baseEvent);
+
+    expect(await queue.getFlushableBatch(10)).toHaveLength(1);
   });
 
   it('does not make cleared records flushable again when durable clear fails but later reads work', async () => {

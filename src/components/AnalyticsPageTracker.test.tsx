@@ -81,8 +81,29 @@ describe('AnalyticsPageTracker', () => {
     });
 
     expect(trackProductEvent).toHaveBeenCalledWith('navigation_context_recorded', {
-      from_surface: 'feed',
+      from_surface: 'landing',
       to_surface: 'discovery',
+      action: 'open',
+    });
+  });
+
+  it('uses the real home route for the feed and does not label invented routes', () => {
+    function NavigateToHome() {
+      const navigate = useNavigate();
+      useEffect(() => navigate('/home'), [navigate]);
+      return null;
+    }
+
+    render(
+      <MemoryRouter initialEntries={['/following']}>
+        <AnalyticsPageTracker />
+        <NavigateToHome />
+      </MemoryRouter>,
+    );
+
+    expect(trackProductEvent).toHaveBeenCalledWith('navigation_context_recorded', {
+      from_surface: 'unknown',
+      to_surface: 'feed',
       action: 'open',
     });
   });

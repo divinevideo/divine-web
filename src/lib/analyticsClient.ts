@@ -17,6 +17,7 @@ import {
   type ProductEventQueueRecord,
 } from '@/lib/eventQueue';
 import { createNip98AuthHeader } from '@/lib/nip98Auth';
+import { createUuid } from '@/lib/uuid';
 
 interface ProductAnalyticsIdentity {
   userPubkey?: string;
@@ -45,6 +46,15 @@ interface ResolveProductAnalyticsEnabledOptions {
   apiMode: FunnelcakeApiMode;
 }
 
+interface ProductAnalyticsRequest {
+  body: string;
+  authorization?: string;
+}
+
+type ProductAnalyticsRequestFactory = (
+  records: ProductEventQueueRecord[],
+) => Promise<ProductAnalyticsRequest | null>;
+
 export interface ProductAnalyticsUtm {
   utm_source?: string;
   utm_medium?: string;
@@ -64,6 +74,7 @@ const UTM_KEYS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content'] as 
 const UTM_VALUE = /^[a-z0-9][a-z0-9._-]{0,63}$/;
 
 let currentIdentity: ProductAnalyticsIdentity = {};
+let privacyBoundaryVersion = 0;
 const identityListeners: ProductAnalyticsIdentityCallback[] = [];
 const clients = new Set<ProductAnalyticsClient>();
 
@@ -81,10 +92,12 @@ export function configureProductAnalyticsIdentity(identity: ProductAnalyticsIden
   const previousPubkey = currentIdentity.userPubkey;
   currentIdentity = identity;
 
-  if (previousPubkey && previousPubkey !== identity.userPubkey) {
+  if (previousPubkey !== identity.userPubkey) {
+    privacyBoundaryVersion += 1;
+    rotateProductAnalyticsIdentifiers();
     clearProductAnalyticsUtm();
     for (const client of clients) {
-      void client.queue.clearOwner(previousPubkey);
+      client.resetIdentityBoundary();
     }
   }
 
@@ -183,19 +196,26 @@ export class ProductAnalyticsClient {
   private visibilityHandler?: () => void;
   private intervalId?: number;
   private unsubscribeConsent?: () => void;
+  private privacyReset: Promise<void> = Promise.resolve();
 
   constructor(options: ProductAnalyticsClientOptions = {}) {
     this.queue = options.queue ?? productEventQueue;
     this.batchSize = options.batchSize ?? 50;
     clients.add(this);
 
-    this.registerFlushTriggers();
+    if (canEverCollectAnalytics()) this.registerFlushTriggers();
     this.unsubscribeConsent = onAnalyticsConsentChanged((consented) => {
       if (!consented) {
+        privacyBoundaryVersion += 1;
+        rotateProductAnalyticsIdentifiers();
         clearProductAnalyticsUtm();
-        void this.queue.clear();
+        this.resetIdentityBoundary();
       }
     });
+  }
+
+  resetIdentityBoundary(): void {
+    this.privacyReset = this.privacyReset.then(() => this.queue.clear());
   }
 
   async track<Name extends ProductAnalyticsV2EventName>(
@@ -203,6 +223,9 @@ export class ProductAnalyticsClient {
     properties: ProductAnalyticsProperties<Name>,
   ): Promise<string | null> {
     if (this.disposed || !canCollectAnalytics()) return null;
+    await this.privacyReset;
+    if (this.disposed || !canCollectAnalytics()) return null;
+    const eventPrivacyBoundary = privacyBoundaryVersion;
 
     const anonymous = ANONYMOUS_EVENT_NAMES.has(eventName);
     const ownerPubkey = anonymous ? undefined : currentIdentity.userPubkey;
@@ -224,8 +247,13 @@ export class ProductAnalyticsClient {
       ...unsigned,
       event_id: await computeProductAnalyticsEventId(unsigned),
     } as ProductAnalyticsV2Event;
+    if (eventPrivacyBoundary !== privacyBoundaryVersion || !canCollectAnalytics()) return null;
 
     await this.queue.enqueue(event, ownerPubkey);
+    if (eventPrivacyBoundary !== privacyBoundaryVersion || !canCollectAnalytics()) {
+      await this.queue.markSucceeded([event.event_id]);
+      return null;
+    }
     void this.flush();
     return event.event_id;
   }
@@ -234,6 +262,8 @@ export class ProductAnalyticsClient {
     if (this.disposed || !canCollectAnalytics() || this.flushing) return;
     this.flushing = true;
     try {
+      await this.privacyReset;
+      if (this.disposed || !canCollectAnalytics()) return;
       await this.flushAnonymousBatch();
       await this.flushSignedBatch();
     } finally {
@@ -246,8 +276,9 @@ export class ProductAnalyticsClient {
     if (records.length === 0) return;
 
     const url = `${getFunnelcakeBaseUrl()}/api/analytics/events/anonymous`;
-    const body = JSON.stringify({ events: records.map((record) => record.event) });
-    await this.send(records, url, body);
+    await this.send(records, url, async (requestRecords) => ({
+      body: JSON.stringify({ events: requestRecords.map((record) => record.event) }),
+    }));
   }
 
   private async flushSignedBatch(): Promise<void> {
@@ -258,32 +289,34 @@ export class ProductAnalyticsClient {
     if (records.length === 0) return;
 
     const url = `${getFunnelcakeBaseUrl()}/api/analytics/events`;
-    const body = JSON.stringify({
-      subject_pubkey: userPubkey,
-      events: records.map((record) => record.event),
+    await this.send(records, url, async (requestRecords) => {
+      const body = JSON.stringify({
+        subject_pubkey: userPubkey,
+        events: requestRecords.map((record) => record.event),
+      });
+      const authorization = await createNip98AuthHeader(signer, url, 'POST', body);
+      return authorization ? { body, authorization } : null;
     });
-    const authorization = await createNip98AuthHeader(signer, url, 'POST', body);
-    if (!authorization) return;
-    await this.send(records, url, body, authorization);
   }
 
   private async send(
     records: ProductEventQueueRecord[],
     url: string,
-    body: string,
-    authorization?: string,
+    createRequest: ProductAnalyticsRequestFactory,
   ): Promise<void> {
+    const request = await createRequest(records);
+    if (!request) return;
     const headers: Record<string, string> = {
       Accept: 'application/json',
       'Content-Type': 'application/json',
     };
-    if (authorization) headers.Authorization = authorization;
+    if (request.authorization) headers.Authorization = request.authorization;
 
     try {
       const response = await fetch(url, {
         method: 'POST',
         headers,
-        body,
+        body: request.body,
         keepalive: true,
       });
       // 5xx and a few 4xx are transient: 408 (timeout), 429 (rate limit), and
@@ -291,10 +324,20 @@ export class ProductAnalyticsClient {
       // Any other 4xx is a permanent contract rejection we drop rather than
       // retry forever.
       const retryable = response.status >= 500 || [401, 403, 408, 429].includes(response.status);
-      if (response.ok || !retryable) {
+      if (response.ok) {
         await this.queue.markSucceeded(records.map((record) => record.id));
-      } else {
+      } else if (retryable) {
         await this.queue.markFailed(records);
+      } else if (records.length === 1) {
+        // A single event that the server permanently rejects cannot become
+        // valid on retry, so remove only that event.
+        await this.queue.markSucceeded([records[0].id]);
+      } else {
+        // The API rejects a batch as a unit and does not name the bad event.
+        // Retry one at a time so one malformed event cannot delete good ones.
+        for (const record of records) {
+          await this.send([record], url, createRequest);
+        }
       }
     } catch {
       await this.queue.markFailed(records);
@@ -354,6 +397,12 @@ function canCollectAnalytics(): boolean {
   return getAnalyticsConsent() === true;
 }
 
+function canEverCollectAnalytics(): boolean {
+  const buildEnabled = import.meta.env.VITE_PRODUCT_ANALYTICS_ENABLED === 'true';
+  const hostname = typeof window === 'undefined' ? '' : window.location.hostname.toLowerCase();
+  return buildEnabled || hostname.endsWith('.pages.dev');
+}
+
 function isProductAnalyticsEnabled(): boolean {
   return resolveProductAnalyticsEnabled({
     buildEnabled: import.meta.env.VITE_PRODUCT_ANALYTICS_ENABLED === 'true',
@@ -386,6 +435,11 @@ function clearProductAnalyticsUtm(): void {
   getStorage('session')?.removeItem(UTM_KEY);
 }
 
+function rotateProductAnalyticsIdentifiers(): void {
+  getStorage('local')?.removeItem(ANONYMOUS_ID_KEY);
+  getStorage('session')?.removeItem(SESSION_ID_KEY);
+}
+
 function getStorage(kind: 'local' | 'session'): Storage | null {
   if (typeof window === 'undefined') return null;
   try {
@@ -393,16 +447,6 @@ function getStorage(kind: 'local' | 'session'): Storage | null {
   } catch {
     return null;
   }
-}
-
-function createUuid(): string {
-  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
-    return crypto.randomUUID();
-  }
-  return '10000000-1000-4000-8000-100000000000'.replace(/[018]/g, (char) => {
-    const random = Math.floor(Math.random() * 16);
-    return (Number(char) ^ (random & (15 >> (Number(char) / 4)))).toString(16);
-  });
 }
 
 export const productAnalytics = new ProductAnalyticsClient();
