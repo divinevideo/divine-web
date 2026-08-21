@@ -9,6 +9,7 @@ import {
   Copy,
   DownloadSimple,
   Key,
+  MapPin,
   WarningCircle,
 } from "@phosphor-icons/react";
 import { useNostrLogin } from "@nostrify/react/login";
@@ -17,6 +18,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 
 import { DestinationForm } from "@/components/exit/DestinationForm";
+import { DiscoveryPointerForm } from "@/components/exit/DiscoveryPointerForm";
 import { KeySafetyNotice } from "@/components/exit/KeySafetyNotice";
 import { MediaProgressList } from "@/components/exit/MediaProgressList";
 import { RelayDestinationForm } from "@/components/exit/RelayDestinationForm";
@@ -450,6 +452,29 @@ export function ExitStartPage() {
               summary={destinationRepublish.summary}
               failure={destinationRepublish.failure}
               onStart={destinationRepublish.start}
+            />
+          </section>
+        )}
+
+        {archiveFiles
+          && signer
+          && destinationMirror.destination
+          && destinationRepublish.destination
+          && destinationRepublish.state === "complete"
+          && destinationRepublish.summary
+          && destinationRepublish.summary.published + destinationRepublish.summary.unchanged > 0 && (
+          <section>
+            <SectionHero
+              eyebrow="Make the move discoverable"
+              icon={<MapPin weight="fill" className="h-7 w-7" />}
+              title="Publish your new home"
+              lead="Share destination-only discovery pointers so compatible apps can find your relay and Blossom server without Divine in the path."
+            />
+            <DiscoveryPointerForm
+              files={archiveFiles}
+              relayDestination={destinationRepublish.destination}
+              blossomDestination={destinationMirror.destination}
+              signer={signer}
             />
           </section>
         )}

@@ -22,6 +22,7 @@ export function useDestinationMirror(input: { files: ArchiveFiles | null; signer
   const [summary, setSummary] = useState<MirrorSummary | null>(null);
   const [results, setResults] = useState<MirrorResult[] | null>(null);
   const [failure, setFailure] = useState<string | null>(null);
+  const [destination, setDestination] = useState<string | null>(null);
   const activeController = useRef<AbortController | null>(null);
   const archivePubkey = input.files?.["manifest.json"].pubkey;
 
@@ -32,6 +33,7 @@ export function useDestinationMirror(input: { files: ArchiveFiles | null; signer
     setSummary(null);
     setResults(null);
     setFailure(null);
+    setDestination(null);
     return () => activeController.current?.abort();
   }, [archivePubkey]);
 
@@ -45,9 +47,12 @@ export function useDestinationMirror(input: { files: ArchiveFiles | null; signer
     setSummary(null);
     setResults(null);
     setFailure(null);
+    setDestination(null);
     try {
+      const normalizedDestination = normalizeDestinationUrl(destinationValue);
+      setDestination(normalizedDestination);
       const results = await mirrorArchiveMedia({
-        destination: normalizeDestinationUrl(destinationValue),
+        destination: normalizedDestination,
         references: input.files["media.json"],
         signer: input.signer,
         signal: controller.signal,
@@ -66,5 +71,5 @@ export function useDestinationMirror(input: { files: ArchiveFiles | null; signer
     }
   }
 
-  return { state, progress, results, summary, failure, start };
+  return { state, progress, results, summary, failure, destination, start };
 }

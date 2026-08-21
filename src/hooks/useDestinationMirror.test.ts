@@ -30,6 +30,7 @@ describe("useDestinationMirror", () => {
     });
 
     expect(result.current.state).toBe("failed");
+    expect(result.current.destination).toBeNull();
     expect(result.current.failure).toBe(
       "Blossom servers answer at the domain root. Use https://blossom.example instead.",
     );
@@ -58,5 +59,6 @@ describe("useDestinationMirror", () => {
     expect(result.current.summary).toBeNull();
     expect(result.current.results).toBeNull();
     expect(result.current.failure).toBeNull();
+    expect(result.current.destination).toBeNull();
   });
 });

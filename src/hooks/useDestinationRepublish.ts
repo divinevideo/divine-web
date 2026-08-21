@@ -13,6 +13,7 @@ import {
   type PublishResult,
   type PublishSummary,
 } from "@/lib/exit/relayPublisher";
+import { normalizeRelayDestinationUrl } from "@/lib/exit/relayDestination";
 
 type DestinationRepublishState = "idle" | "running" | "complete" | "failed";
 
@@ -26,6 +27,7 @@ export function useDestinationRepublish(input: {
   const [results, setResults] = useState<PublishResult[] | null>(null);
   const [summary, setSummary] = useState<PublishSummary | null>(null);
   const [failure, setFailure] = useState<string | null>(null);
+  const [destination, setDestination] = useState<string | null>(null);
   const activeController = useRef<AbortController | null>(null);
   const archivePubkey = input.files?.["manifest.json"].pubkey;
 
@@ -36,10 +38,11 @@ export function useDestinationRepublish(input: {
     setResults(null);
     setSummary(null);
     setFailure(null);
+    setDestination(null);
     return () => activeController.current?.abort();
   }, [archivePubkey, input.mirrorResults]);
 
-  async function start(destination: string) {
+  async function start(destinationValue: string) {
     if (!input.files || !input.mirrorResults || !input.signer) return;
     const controller = new AbortController();
     activeController.current?.abort();
@@ -49,9 +52,12 @@ export function useDestinationRepublish(input: {
     setResults(null);
     setSummary(null);
     setFailure(null);
+    setDestination(null);
     try {
+      const normalizedDestination = normalizeRelayDestinationUrl(destinationValue);
+      setDestination(normalizedDestination);
       const publishResults = await publishArchiveEvents({
-        destination,
+        destination: normalizedDestination,
         events: input.files["events.json"],
         mirrorResults: input.mirrorResults,
         signer: input.signer,
@@ -71,5 +77,5 @@ export function useDestinationRepublish(input: {
     }
   }
 
-  return { state, progress, results, summary, failure, start };
+  return { state, progress, results, summary, failure, destination, start };
 }

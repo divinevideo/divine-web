@@ -31,6 +31,7 @@ describe("useDestinationRepublish", () => {
     await act(async () => result.current.start("wss://relay.example"));
     expect(result.current.state).toBe("complete");
     expect(result.current.summary).toMatchObject({ published: 0, unchanged: 1, skipped: 0, failed: 0 });
+    expect(result.current.destination).toBe("wss://relay.example/");
   });
 
   it("aborts and resets when the account changes", async () => {
@@ -53,5 +54,6 @@ describe("useDestinationRepublish", () => {
     await waitFor(() => expect(result.current.state).toBe("idle"));
     expect(publishSignal?.aborted).toBe(true);
     expect(result.current.results).toBeNull();
+    expect(result.current.destination).toBeNull();
   });
 });

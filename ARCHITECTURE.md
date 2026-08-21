@@ -194,15 +194,23 @@ skipped. Descriptor hashes and redirect-aware `HEAD` readback results remain
 distinct from independent byte hashing.
 
 After mirroring finishes, the page can republish durable public events to one
-custom `wss://` relay. This deliberately opens and closes a standalone
-`NRelay1` connection instead of routing migration writes through the app's
-`NPool`. Only media with descriptor-and-readback verification is rewritten.
+custom `wss://` relay. Migration writes use a standalone authenticated relay
+session instead of the app's `NPool`; the same session primitive also publishes
+the discovery pointers described below. Only media with
+descriptor-and-readback verification is rewritten.
 Changed events are re-signed with their original timestamp, referenced owner
 events are prepared first so `e`, `E`, and `q` tags keep pointing at valid
 event IDs, and unchanged events retain their original ID and signature.
 Encrypted messages, ephemeral or authentication events, deletion requests,
 and vanish requests are skipped. Relay refusals remain per-event results and
 do not stop unrelated publishes.
+
+Once at least one event is present at the destination relay, the page can publish
+destination-only discovery metadata there: a NIP-65 kind-10002 relay list and a
+BUD-03 kind-10063 Blossom server list. Each pointer is signed and reported
+independently. Replacement timestamps explicitly exceed the owner's archived
+pointer, and a future-dated archived pointer blocks that one publication rather
+than relying on relay tie-breaking or guessing the destination's clock policy.
 
 ## Linting
 
