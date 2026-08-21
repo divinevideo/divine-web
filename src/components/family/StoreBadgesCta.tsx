@@ -1,8 +1,9 @@
 // ABOUTME: App Store / Google Play badge block for family pages, with UTM-tagged links
-// ABOUTME: Optional signup variant keeps the invite/newsletter form BELOW the badges
+// ABOUTME: Optional signup variant keeps the newsletter form BELOW the badges
 
 import { trackEvent } from "@/lib/analytics";
 import { HubSpotSignup } from "@/components/HubSpotSignup";
+import { MAILING_LIST_BLURB } from "@/lib/constants/mailingListCopy";
 import { APP_STORE_URL } from "@/lib/mobileStoreLinks";
 
 const PLAY_STORE_BASE = "https://play.google.com/store/apps/details";
@@ -27,7 +28,7 @@ interface StoreBadgesCtaProps {
   campaign: string;
   /** Short line above the badges; stays factual, no exclamation marks */
   heading?: string;
-  /** Render the invite/newsletter signup below the badges */
+  /** Render the newsletter signup below the badges */
   withSignup?: boolean;
   className?: string;
 }
@@ -86,9 +87,7 @@ export function StoreBadgesCta({
       </div>
       {withSignup && (
         <div className="mt-6 max-w-md">
-          <p className="text-sm text-muted-foreground mb-2">
-            Divine is live in the app stores. Sign up here to hear what&apos;s next.
-          </p>
+          <p className="text-sm text-muted-foreground mb-2">{MAILING_LIST_BLURB}</p>
           <HubSpotSignup />
         </div>
       )}

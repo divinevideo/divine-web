@@ -1,6 +1,7 @@
 import { SmartLink } from '@/components/SmartLink';
 import { useTranslation } from 'react-i18next';
 import { SocialLinks } from '@/components/SocialLinks';
+import { MAILING_LIST_BLURB } from '@/lib/constants/mailingListCopy';
 import { HubSpotSignup } from './HubSpotSignup';
 
 export function AppFooter() {
@@ -15,9 +16,7 @@ export function AppFooter() {
             {/* Left side - Email signup */}
             <div className="flex flex-col gap-2 lg:max-w-md">
               <div className="text-sm font-semibold text-brand-green">Divine Inspiration</div>
-              <p className="text-sm text-brand-off-white mb-2">
-                Divine is live in the app stores. Sign up here to hear what&apos;s next.
-              </p>
+              <p className="text-sm text-brand-off-white mb-2">{MAILING_LIST_BLURB}</p>
               <HubSpotSignup />
             </div>
 
