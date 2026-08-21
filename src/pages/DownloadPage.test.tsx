@@ -33,12 +33,15 @@ describe("DownloadPage", () => {
     expect(screen.getByRole("heading", { name: "Get Divine" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Download Divine on the App Store" })).toHaveAttribute("href", APP_STORE_URL);
     expect(screen.queryByRole("link", { name: "Get Divine on Google Play" })).not.toBeInTheDocument();
+    // Zapstore only distributes the Android build, so the link is a dead end here.
+    expect(screen.queryByRole("link", { name: "Get Divine on Zapstore" })).not.toBeInTheDocument();
   });
 
-  it("shows only Google Play as the primary choice on Android", () => {
+  it("shows Google Play and Zapstore as the choices on Android", () => {
     renderPage("Mozilla/5.0 (Linux; Android 15; Pixel 9)");
 
     expect(screen.getByRole("link", { name: "Get Divine on Google Play" })).toHaveAttribute("href", PLAY_STORE_URL);
+    expect(screen.getByRole("link", { name: "Get Divine on Zapstore" })).toHaveAttribute("href", ZAP_STORE_URL);
     expect(screen.queryByRole("link", { name: "Download Divine on the App Store" })).not.toBeInTheDocument();
   });
 

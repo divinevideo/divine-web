@@ -17,7 +17,9 @@ import {
 export function DownloadPage() {
   const [platform] = useState(() => detectMobilePlatform(window.navigator.userAgent));
   const showAppStore = platform !== "android";
-  const showGooglePlay = platform !== "ios";
+  // Google Play and Zapstore both hand out the Android build, so neither
+  // has anything an iOS visitor can install.
+  const showAndroidStores = platform !== "ios";
 
   useHead({
     title: "Download Divine",
@@ -48,7 +50,7 @@ export function DownloadPage() {
                 </a>
               </Button>
             )}
-            {showGooglePlay && (
+            {showAndroidStores && (
               <Button asChild variant="sticker" size="lg">
                 <a href={PLAY_STORE_URL} target="_blank" rel="noopener noreferrer" aria-label="Get Divine on Google Play">
                   <GooglePlayLogo weight="fill" className="h-5 w-5" />
@@ -57,15 +59,17 @@ export function DownloadPage() {
               </Button>
             )}
           </div>
-          <a
-            href={ZAP_STORE_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label="Get Divine on Zapstore"
-            className="mt-8 text-sm font-semibold text-brand-off-white/80 underline decoration-brand-green/70 underline-offset-4 transition-colors hover:text-brand-green"
-          >
-            Get it from Zapstore
-          </a>
+          {showAndroidStores && (
+            <a
+              href={ZAP_STORE_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Get Divine on Zapstore"
+              className="mt-8 text-sm font-semibold text-brand-off-white/80 underline decoration-brand-green/70 underline-offset-4 transition-colors hover:text-brand-green"
+            >
+              Get it from Zapstore
+            </a>
+          )}
         </div>
       </main>
     </MarketingLayout>
