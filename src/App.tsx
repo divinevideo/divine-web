@@ -18,6 +18,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { NostrLoginProvider } from '@nostrify/react/login';
 import { AppProvider } from '@/components/AppProvider';
+import { LocaleDirectionProvider } from '@/components/LocaleDirectionProvider';
 import { NWCProvider } from '@/contexts/NWCContext';
 import { AppConfig } from '@/contexts/AppContext';
 import { VideoPlaybackProvider } from '@/contexts/VideoPlaybackContext';
@@ -60,30 +61,32 @@ const presetRelays = toLegacyFormat(PRESET_RELAYS);
 export function App() {
   return (
     <UnheadProvider head={head}>
-      <AppProvider storageKey="nostr:app-config" defaultConfig={defaultConfig} presetRelays={presetRelays}>
-        <QueryClientProvider client={queryClient}>
-          <NostrLoginProvider storageKey='nostr:login'>
-            <NostrProvider>
-              <DivineJWTWindowNostr />
-              <EventCachePreloader />
-              <SentryUserSync />
-              <NWCProvider>
-                <VideoPlaybackProvider>
-                  <FullscreenFeedProvider>
-                    <TooltipProvider>
-                      <Toaster />
-                      <Sonner />
-                      <Suspense>
-                        <AppRouter />
-                      </Suspense>
-                    </TooltipProvider>
-                  </FullscreenFeedProvider>
-                </VideoPlaybackProvider>
-              </NWCProvider>
-            </NostrProvider>
-          </NostrLoginProvider>
-        </QueryClientProvider>
-      </AppProvider>
+      <LocaleDirectionProvider>
+        <AppProvider storageKey="nostr:app-config" defaultConfig={defaultConfig} presetRelays={presetRelays}>
+          <QueryClientProvider client={queryClient}>
+            <NostrLoginProvider storageKey='nostr:login'>
+              <NostrProvider>
+                <DivineJWTWindowNostr />
+                <EventCachePreloader />
+                <SentryUserSync />
+                <NWCProvider>
+                  <VideoPlaybackProvider>
+                    <FullscreenFeedProvider>
+                      <TooltipProvider>
+                        <Toaster />
+                        <Sonner />
+                        <Suspense>
+                          <AppRouter />
+                        </Suspense>
+                      </TooltipProvider>
+                    </FullscreenFeedProvider>
+                  </VideoPlaybackProvider>
+                </NWCProvider>
+              </NostrProvider>
+            </NostrLoginProvider>
+          </QueryClientProvider>
+        </AppProvider>
+      </LocaleDirectionProvider>
     </UnheadProvider>
   );
 }

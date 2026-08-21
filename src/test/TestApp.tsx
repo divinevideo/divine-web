@@ -4,6 +4,7 @@ import { BrowserRouter } from 'react-router-dom';
 import { NostrLoginProvider } from '@nostrify/react/login';
 import NostrProvider from '@/components/NostrProvider';
 import { AppProvider } from '@/components/AppProvider';
+import { LocaleDirectionProvider } from '@/components/LocaleDirectionProvider';
 import { NWCProvider } from '@/contexts/NWCContext';
 import { VideoPlaybackProvider } from '@/contexts/VideoPlaybackContext';
 import { AppConfig } from '@/contexts/AppContext';
@@ -30,21 +31,23 @@ export function TestApp({ children }: TestAppProps) {
 
   return (
     <UnheadProvider head={head}>
-      <AppProvider storageKey='test-app-config' defaultConfig={defaultConfig}>
-        <QueryClientProvider client={queryClient}>
-          <NostrLoginProvider storageKey='test-login'>
-            <NostrProvider>
-              <NWCProvider>
-                <VideoPlaybackProvider>
-                  <BrowserRouter>
-                    {children}
-                  </BrowserRouter>
-                </VideoPlaybackProvider>
-              </NWCProvider>
-            </NostrProvider>
-          </NostrLoginProvider>
-        </QueryClientProvider>
-      </AppProvider>
+      <LocaleDirectionProvider>
+        <AppProvider storageKey='test-app-config' defaultConfig={defaultConfig}>
+          <QueryClientProvider client={queryClient}>
+            <NostrLoginProvider storageKey='test-login'>
+              <NostrProvider>
+                <NWCProvider>
+                  <VideoPlaybackProvider>
+                    <BrowserRouter>
+                      {children}
+                    </BrowserRouter>
+                  </VideoPlaybackProvider>
+                </NWCProvider>
+              </NostrProvider>
+            </NostrLoginProvider>
+          </QueryClientProvider>
+        </AppProvider>
+      </LocaleDirectionProvider>
     </UnheadProvider>
   );
 }
