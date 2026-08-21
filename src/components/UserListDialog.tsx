@@ -1,7 +1,7 @@
 // ABOUTME: Reusable dialog component that displays a list of Nostr users
 // ABOUTME: Uses virtual scrolling for performance with large lists (500+ users)
 
-import { memo, useCallback, useRef, useEffect, useMemo } from 'react';
+import { memo, useCallback, useRef, useEffect, useMemo, useState } from 'react';
 import type { NostrMetadata } from '@nostrify/nostrify';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -21,6 +21,10 @@ import { genUserName } from '@/lib/genUserName';
 import { Sentry } from '@/lib/sentry';
 
 const ESTIMATED_ROW_HEIGHT = 56;
+
+interface AuthorData {
+  metadata?: NostrMetadata;
+}
 
 interface UserListDialogProps {
   open: boolean;
@@ -154,6 +158,16 @@ export function UserListDialog({
 
   const { data: authorsData } = useBatchedAuthors(open ? visiblePubkeys : []);
 
+  // Profiles are fetched a window at a time, so `authorsData` only ever covers
+  // the rows currently on screen. Accumulate it: without this, scrolling away
+  // and back leaves the earlier rows with no metadata, and they visibly reset
+  // to a generated name and the default avatar.
+  const [resolvedAuthors, setResolvedAuthors] = useState<Record<string, AuthorData>>({});
+  useEffect(() => {
+    if (!authorsData) return;
+    setResolvedAuthors((previous) => ({ ...previous, ...authorsData }));
+  }, [authorsData]);
+
   const handleNavigate = useCallback(
     (pubkey: string, profilePath: string) => {
       onOpenChange(false);
@@ -238,7 +252,7 @@ export function UserListDialog({
                   >
                     <UserRow
                       pubkey={pubkey}
-                      metadata={authorsData?.[pubkey]?.metadata}
+                      metadata={resolvedAuthors[pubkey]?.metadata}
                       onNavigate={handleNavigate}
                     />
                   </div>

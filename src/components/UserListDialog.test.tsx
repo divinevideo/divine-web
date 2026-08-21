@@ -70,6 +70,31 @@ describe('UserListDialog', () => {
     expect(screen.getAllByText('GE')).toHaveLength(2);
   });
 
+  it('keeps a resolved name after the batch window scrolls past it', async () => {
+    // useBatchedAuthors is keyed on the visible window, so scrolling mints a new
+    // query whose data covers only the new window. Without accumulation the rows
+    // left behind fall back to genUserName and the default avatar — the list
+    // visibly resets itself as you scroll.
+    const pubkey = 'a'.repeat(64);
+    mockUseBatchedAuthors.mockReturnValue({
+      data: { [pubkey]: { metadata: { display_name: 'Sam' } } },
+    });
+
+    const { rerender } = render(
+      <UserListDialog open onOpenChange={vi.fn()} title="Following" pubkeys={[pubkey]} />,
+    );
+    expect(await screen.findByText('Sam')).toBeVisible();
+
+    // The window moved on; this pubkey is no longer in the batch response.
+    mockUseBatchedAuthors.mockReturnValue({ data: {} });
+    rerender(
+      <UserListDialog open onOpenChange={vi.fn()} title="Following" pubkeys={[pubkey]} />,
+    );
+
+    expect(screen.getByText('Sam')).toBeVisible();
+    expect(screen.queryByText('Generated aaaaaa')).not.toBeInTheDocument();
+  });
+
   it('uses a friendly profile path only after NIP-05 validation succeeds', async () => {
     const user = userEvent.setup();
     const pubkey = 'a'.repeat(64);
