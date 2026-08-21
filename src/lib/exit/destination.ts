@@ -5,6 +5,7 @@ export type DestinationErrorCode =
   | "invalid-url"
   | "insecure-scheme"
   | "embedded-credentials"
+  | "path-not-allowed"
   | "query-not-allowed"
   | "fragment-not-allowed"
   | "unreachable"
@@ -42,6 +43,13 @@ export function normalizeDestinationUrl(value: string): string {
   if (destination.hash) {
     throw new DestinationError("fragment-not-allowed", "Remove the fragment from this URL.");
   }
-  destination.pathname = destination.pathname.replace(/\/+$/, "");
-  return destination.toString().replace(/\/$/, "");
+  // BUD-01 requires every Blossom endpoint to live at the domain root, so a
+  // path would deterministically address the wrong `/mirror` endpoint.
+  if (destination.pathname.replace(/\/+$/, "")) {
+    throw new DestinationError(
+      "path-not-allowed",
+      `Blossom servers answer at the domain root. Use ${destination.origin} instead.`,
+    );
+  }
+  return destination.origin;
 }

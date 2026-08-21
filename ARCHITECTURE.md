@@ -177,7 +177,9 @@ changing signed events. Viewer authorization is retried only for the exact
 `https://media.divine.video` origin; third-party media requests remain bare.
 
 After an archive is built, the same page can mirror its unique source blobs to a
-custom HTTPS Blossom destination with BUD-04 `PUT /mirror`. The first eligible
+custom HTTPS Blossom destination with BUD-04 `PUT /mirror`. Destination URLs
+normalize to the domain root because BUD-01 serves every Blossom endpoint there.
+The first eligible
 copy is the destination capability canary, kind-24242 upload authorization is
 scoped to one advertised hash when available, and later file failures do not
 stop the remaining copies. Generated HLS manifests are skipped, while descriptor
