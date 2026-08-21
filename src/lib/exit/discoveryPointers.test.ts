@@ -5,6 +5,7 @@ import {
   BLOSSOM_SERVER_LIST_KIND,
   buildBlossomServerListTemplate,
   buildRelayListTemplate,
+  MAX_REPLACEMENT_FUTURE_SKEW_SECONDS,
   newestPointerCreatedAt,
   RELAY_LIST_KIND,
   replacementCreatedAt,
@@ -39,5 +40,10 @@ describe("discovery pointer templates", () => {
     expect(replacementCreatedAt({ nowSeconds: 20, newestSeconds: 20, toleranceSeconds: 60 })).toEqual({ createdAt: 21 });
     expect(replacementCreatedAt({ nowSeconds: 20, newestSeconds: 21 })).toMatchObject({ blocked: true });
     expect(replacementCreatedAt({ nowSeconds: 20, newestSeconds: 20, toleranceSeconds: 1 })).toEqual({ createdAt: 21 });
+    expect(replacementCreatedAt({
+      nowSeconds: 20,
+      newestSeconds: 21,
+      toleranceSeconds: MAX_REPLACEMENT_FUTURE_SKEW_SECONDS,
+    })).toMatchObject({ blocked: true });
   });
 });

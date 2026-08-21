@@ -7,7 +7,7 @@ import type { EventTemplate } from "./eventRewrite";
 
 export const RELAY_LIST_KIND = 10_002;
 export const BLOSSOM_SERVER_LIST_KIND = 10_063;
-export const MAX_REPLACEMENT_FUTURE_SKEW_SECONDS = 60;
+export const MAX_REPLACEMENT_FUTURE_SKEW_SECONDS = 1;
 
 export function buildRelayListTemplate(relayUrl: string, createdAt: number): EventTemplate {
   return { kind: RELAY_LIST_KIND, created_at: createdAt, content: "", tags: [["r", relayUrl]] };

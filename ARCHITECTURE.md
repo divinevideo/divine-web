@@ -209,8 +209,9 @@ Once at least one event is present at the destination relay, the page can publis
 destination-only discovery metadata there: a NIP-65 kind-10002 relay list and a
 BUD-03 kind-10063 Blossom server list. Each pointer is signed and reported
 independently. Replacement timestamps explicitly exceed the owner's archived
-pointer, and a future-dated archived pointer blocks that one publication rather
-than relying on relay tie-breaking or guessing the destination's clock policy.
+pointer, and a pointer that would require more than one second of future clock
+skew blocks that publication rather than relying on relay tie-breaking or
+guessing the destination's clock policy.
 
 ## Linting
 
