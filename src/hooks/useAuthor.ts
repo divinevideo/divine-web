@@ -64,7 +64,7 @@ export function useAuthor(pubkey: string | undefined, options?: UseAuthorOptions
       // Try Funnelcake REST API first (fast, ~50ms)
       if (isFunnelcakeAvailable(apiUrl)) {
         try {
-          debugLog(`[useAuthor] REST fetch for ${pubkey}...`);
+          debugLog(`[useAuthor] REST fetch for ${pubkey}`);
           const profile = await fetchUserProfile(apiUrl, pubkey, signal);
 
           if (profile) {
@@ -78,7 +78,7 @@ export function useAuthor(pubkey: string | undefined, options?: UseAuthorOptions
               lud16: profile.lud16,
               website: profile.website,
             };
-            debugLog(`[useAuthor] REST got profile for ${pubkey}...`);
+            debugLog(`[useAuthor] REST got profile for ${pubkey}`);
             return { metadata };
           }
 
@@ -97,7 +97,7 @@ export function useAuthor(pubkey: string | undefined, options?: UseAuthorOptions
       }
 
       // WebSocket fallback (slow, can take seconds)
-      debugLog(`[useAuthor] WebSocket fetch for ${pubkey}...`);
+      debugLog(`[useAuthor] WebSocket fetch for ${pubkey}`);
 
       const events = await nostr.query(
         [{ kinds: [0], authors: [pubkey!], limit: 5 }],
@@ -105,14 +105,14 @@ export function useAuthor(pubkey: string | undefined, options?: UseAuthorOptions
       );
 
       if (events.length === 0) {
-        debugLog(`[useAuthor] No profile found for ${pubkey}...`);
+        debugLog(`[useAuthor] No profile found for ${pubkey}`);
         return {};
       }
 
       // Take the most recent event (kind 0 is replaceable)
       const event = events.sort((a, b) => b.created_at - a.created_at)[0];
 
-      debugLog(`[useAuthor] WebSocket got profile for ${pubkey}...`);
+      debugLog(`[useAuthor] WebSocket got profile for ${pubkey}`);
 
       // Also add to event cache for future synchronous access
       eventCache.event(event).catch(() => {
