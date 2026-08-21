@@ -34,7 +34,6 @@ export function useDestinationMirror(input: { files: ArchiveFiles | null; signer
 
   async function start(destinationValue: string) {
     if (!input.files || !input.signer) return;
-    const destination = normalizeDestinationUrl(destinationValue);
     const controller = new AbortController();
     activeController.current?.abort();
     activeController.current = controller;
@@ -44,7 +43,7 @@ export function useDestinationMirror(input: { files: ArchiveFiles | null; signer
     setFailure(null);
     try {
       const results = await mirrorArchiveMedia({
-        destination,
+        destination: normalizeDestinationUrl(destinationValue),
         references: input.files["media.json"] as MediaReference[],
         signer: input.signer,
         signal: controller.signal,

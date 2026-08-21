@@ -70,6 +70,10 @@ function isHlsManifest(url: string): boolean {
 
 function defaultWait(milliseconds: number, signal?: AbortSignal): Promise<void> {
   return new Promise((resolve, reject) => {
+    if (signal?.aborted) {
+      reject(new DOMException("Mirror cancelled", "AbortError"));
+      return;
+    }
     const timeout = window.setTimeout(resolve, milliseconds);
     signal?.addEventListener("abort", () => {
       window.clearTimeout(timeout);

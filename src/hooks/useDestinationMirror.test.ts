@@ -22,6 +22,19 @@ const signer = new FixtureSigner();
 describe("useDestinationMirror", () => {
   afterEach(() => vi.unstubAllGlobals());
 
+  it("reports an unusable destination URL instead of rejecting the caller", async () => {
+    const { result } = renderHook(() => useDestinationMirror({ files: files(fixturePubkey), signer }));
+
+    await act(async () => {
+      await result.current.start("https://blossom.example/path");
+    });
+
+    expect(result.current.state).toBe("failed");
+    expect(result.current.failure).toBe(
+      "Blossom servers answer at the domain root. Use https://blossom.example instead.",
+    );
+  });
+
   it("aborts active work and clears its state when the account changes", async () => {
     const fetcher = vi.fn((_input: RequestInfo | URL, init?: RequestInit) => new Promise<Response>((_resolve, reject) => {
       init?.signal?.addEventListener("abort", () => reject(new DOMException("Mirror cancelled", "AbortError")), { once: true });
