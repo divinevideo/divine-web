@@ -378,6 +378,11 @@ export function VideoPage() {
       navigate(target);
     } else if (effectiveNavigationContext?.source === 'people-list' && effectiveNavigationContext.pubkey && effectiveNavigationContext.listId) {
       navigate(buildPeopleListPath(effectiveNavigationContext.pubkey, effectiveNavigationContext.listId));
+    } else if (effectiveNavigationContext?.source === 'video-list' && effectiveNavigationContext.pubkey && effectiveNavigationContext.listId) {
+      navigate(
+        `/list/${effectiveNavigationContext.pubkey}/${encodeURIComponent(effectiveNavigationContext.listId)}`,
+        { ownerPubkey: effectiveNavigationContext.pubkey },
+      );
     } else {
       navigate(-1); // Browser back
     }
@@ -706,6 +711,9 @@ export function VideoPage() {
               {effectiveNavigationContext?.source === 'featured' && (
                 <span>{featuredTab?.label ?? t('videoPage.featuredVideos')}</span>
               )}
+              {effectiveNavigationContext?.source === 'video-list' && (
+                <span>{effectiveNavigationContext.listName || t('listDetailPage.videoList')}</span>
+              )}
               {(effectiveNavigationContext?.source === 'discovery' || effectiveNavigationContext?.source === 'trending' || effectiveNavigationContext?.source === 'home') && (
                 <span className="capitalize">{effectiveNavigationContext.source}</span>
               )}
@@ -772,6 +780,9 @@ export function VideoPage() {
               )}
               {effectiveNavigationContext?.source === 'featured' && (
                 <span>{featuredTab?.label ?? t('videoPage.featuredVideos')}</span>
+              )}
+              {effectiveNavigationContext?.source === 'video-list' && (
+                <span>{effectiveNavigationContext.listName || t('listDetailPage.videoList')}</span>
               )}
               {(effectiveNavigationContext?.source === 'discovery' || effectiveNavigationContext?.source === 'trending' || effectiveNavigationContext?.source === 'home') && (
                 <span className="capitalize">{effectiveNavigationContext.source}</span>
@@ -900,6 +911,14 @@ export function VideoPage() {
                 className="text-muted-foreground hover:text-primary transition-colors text-xs"
               >
                 {featuredTab?.label ?? t('videoPage.featuredVideos')}
+              </button>
+            )}
+            {effectiveNavigationContext?.source === 'video-list' && (
+              <button
+                onClick={handleGoBack}
+                className="text-muted-foreground hover:text-primary transition-colors text-xs"
+              >
+                {effectiveNavigationContext.listName || t('listDetailPage.videoList')}
               </button>
             )}
             {(effectiveNavigationContext?.source === 'discovery' || effectiveNavigationContext?.source === 'trending' || effectiveNavigationContext?.source === 'home') && (
