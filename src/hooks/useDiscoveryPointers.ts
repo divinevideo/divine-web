@@ -65,8 +65,21 @@ export function useDiscoveryPointers(input: {
       setState("complete");
       return;
     }
-    const session = openDestinationRelay({ destination: input.relayDestination, signer: input.signer, signal: controller.signal });
     const nextResults: DiscoveryPointerResult[] = [];
+    let session;
+    try {
+      session = openDestinationRelay({ destination: input.relayDestination, signer: input.signer, signal: controller.signal });
+    } catch (error) {
+      const detail = error instanceof Error && error.message ? ` ${error.message}` : "";
+      setResults(prepared.map((item) => item.blocked ?? {
+        kind: item.definition.kind,
+        label: item.definition.label,
+        status: "publish-failed",
+        reason: `The destination relay connection could not start.${detail}`,
+      }));
+      setState("complete");
+      return;
+    }
     try {
       for (const item of prepared) {
         if (item.blocked) {

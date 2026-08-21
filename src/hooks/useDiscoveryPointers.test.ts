@@ -99,4 +99,20 @@ describe("useDiscoveryPointers", () => {
     await expect(startPromise).resolves.toBeUndefined();
     expect(close).toHaveBeenCalledOnce();
   });
+
+  it("reports a relay connection that cannot start", async () => {
+    const testSigner = signer(async (template) => ({ ...template, id: "a".repeat(64), pubkey: fixturePubkey, sig: "b".repeat(128) }));
+    vi.mocked(openDestinationRelay).mockImplementation(() => {
+      throw new DOMException("The port is blocked", "SecurityError");
+    });
+    const { result } = renderHook(() => useDiscoveryPointers({ files, relayDestination: "wss://relay.example/", blossomDestination: "https://blossom.example", signer: testSigner }));
+
+    await act(async () => result.current.start());
+
+    expect(result.current.state).toBe("complete");
+    expect(result.current.results).toEqual(expect.arrayContaining([
+      expect.objectContaining({ status: "publish-failed", reason: expect.stringContaining("could not start") }),
+    ]));
+    expect(testSigner.signEvent).not.toHaveBeenCalled();
+  });
 });
