@@ -4,15 +4,10 @@
 name: OG/Twitter Card parity audit
 
 on:
-  push:
+  workflow_run:
+    workflows: ['Deploy to Production']
+    types: [completed]
     branches: [main]
-    paths:
-      - 'compute-js/**'
-      - 'functions/**'
-      - 'src/lib/serverSocialMeta.ts'
-      - 'scripts/verify-og-tags.sh'
-      - '.github/workflows/og-audit.yml'
-      - 'package.json'
   schedule:
     - cron: '0 6 * * *'
   workflow_dispatch:
@@ -22,12 +17,15 @@ permissions:
 
 jobs:
   audit-production:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     name: Audit production (divine.video)
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
 
       - name: Run OG parity audit against production
         id: audit-prod
@@ -41,12 +39,15 @@ jobs:
         run: echo "::warning::Scheduled production OG audit failed. This monitors live production state and is warning-only on schedule."
 
   audit-cloudflare-production:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     name: Audit Cloudflare production (latest main-branch deployment)
     runs-on: ubuntu-24.04
     timeout-minutes: 8
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
 
       - name: Install wrangler
         run: npm install -g wrangler@4.31.0
