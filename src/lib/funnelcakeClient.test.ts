@@ -223,6 +223,34 @@ describe('funnelcakeClient', () => {
       );
     });
 
+    it('splits requests larger than the server cap into chunks and merges them', async () => {
+      // The server rejects more than 100 pubkeys with `400 Maximum 100 pubkeys
+      // allowed`, and a 400 here records a circuit-breaker failure — three of
+      // them drop the whole app to WebSocket for 30s. Chunk instead.
+      const pubkeys = Array.from({ length: 250 }, (_, index) =>
+        index.toString(16).padStart(64, '0'));
+
+      (global.fetch as ReturnType<typeof vi.fn>).mockImplementation((_url, init) => {
+        const sent = JSON.parse(String((init as RequestInit).body)).pubkeys as string[];
+        expect(sent.length).toBeLessThanOrEqual(100);
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({
+            users: sent.slice(0, 1).map((pubkey) => ({ pubkey, profile: { name: pubkey } })),
+            missing: sent.slice(1),
+          }),
+        });
+      });
+
+      const result = await fetchBulkUsers(API_URL, pubkeys);
+
+      expect(global.fetch).toHaveBeenCalledTimes(3);
+      expect(result.users).toHaveLength(3);
+      expect(result.missing).toHaveLength(247);
+      expect([...result.users.map((user) => user.pubkey), ...result.missing].sort())
+        .toEqual([...pubkeys].sort());
+    });
+
     it('handles partial results (some users not found)', async () => {
       const pubkeys = ['a'.repeat(64), 'b'.repeat(64)];
       const mockResponse = {
