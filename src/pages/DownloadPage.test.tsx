@@ -4,7 +4,7 @@
 import { render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { APP_STORE_URL, PLAY_STORE_URL } from "@/lib/mobileStoreLinks";
+import { APP_STORE_URL, PLAY_STORE_URL, ZAP_STORE_URL } from "@/lib/mobileStoreLinks";
 import { TestApp } from "@/test/TestApp";
 
 import { DownloadPage } from "./DownloadPage";
@@ -49,7 +49,7 @@ describe("DownloadPage", () => {
     expect(screen.getByRole("link", { name: "Get Divine on Google Play" })).toHaveAttribute("href", PLAY_STORE_URL);
     expect(screen.getByRole("link", { name: "Get Divine on ZapStore" })).toHaveAttribute(
       "href",
-      "https://zapstore.dev/apps/co.openvine.app"
+      ZAP_STORE_URL
     );
   });
 });

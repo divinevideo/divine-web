@@ -4,6 +4,7 @@ import {
   detectMobilePlatform,
   DIVINE_IOS_APP_ID,
   PLAY_STORE_URL,
+  ZAP_STORE_URL,
 } from './mobileStoreLinks';
 
 describe('mobileStoreLinks', () => {
@@ -23,6 +24,12 @@ describe('mobileStoreLinks', () => {
     // blocked by CSP, an ad blocker, or a slow connection.
     expect(APP_STORE_URL).toMatch(/^https:\/\/apps\.apple\.com\//);
     expect(PLAY_STORE_URL).toMatch(/^https:\/\/play\.google\.com\//);
+    expect(ZAP_STORE_URL).toMatch(/^https:\/\/zapstore\.dev\//);
+  });
+
+  it('points at the plural /apps/ Zapstore path', () => {
+    // zapstore.dev/app/<id> (singular) 404s; only /apps/<id> resolves.
+    expect(ZAP_STORE_URL).toBe('https://zapstore.dev/apps/co.openvine.app');
   });
 
   it.each([

@@ -11,9 +11,8 @@ import {
   APP_STORE_URL,
   detectMobilePlatform,
   PLAY_STORE_URL,
+  ZAP_STORE_URL,
 } from "@/lib/mobileStoreLinks";
-
-const ZAP_STORE_URL = "https://zapstore.dev/apps/co.openvine.app";
 
 export function DownloadPage() {
   const [platform] = useState(() => detectMobilePlatform(window.navigator.userAgent));

@@ -1,4 +1,4 @@
-// ABOUTME: Mobile app store links, shared across the sidebar, install prompt and family pages
+// ABOUTME: Mobile app store links, shared across the sidebar, install prompt, download and family pages
 // ABOUTME: Static by design — a badge for a shipped app must not depend on a network call to render
 
 export const DIVINE_IOS_APP_ID = '6747959501';
@@ -11,6 +11,12 @@ export const DIVINE_IOS_APP_ID = '6747959501';
 export const APP_STORE_URL = `https://apps.apple.com/app/id${DIVINE_IOS_APP_ID}`;
 
 export const PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=co.openvine.app&gl=us&hl=en';
+
+/**
+ * Zapstore ships the Android build only — the listing behind this URL has no
+ * iOS download, so it belongs beside Google Play rather than the App Store.
+ */
+export const ZAP_STORE_URL = 'https://zapstore.dev/apps/co.openvine.app';
 
 export type MobilePlatform = 'ios' | 'android' | 'other';
 
