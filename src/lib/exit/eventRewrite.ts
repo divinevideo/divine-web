@@ -15,7 +15,10 @@ export interface EventRewrite {
 
 const URL_TAGS = new Set(["url", "image", "thumb", "thumbnail"]);
 const IMETA_URL_KEYS = new Set(["url", "image", "thumb", "thumbnail", "fallback"]);
-const PRIVATE_MESSAGE_KINDS = new Set([4, 14, 1059]);
+// 4 is a NIP-04 direct message; 13 is the NIP-59 seal, which carries the
+// sender's real pubkey and so is the one of these an owner export can return;
+// 14 and 15 are NIP-17 chat and file messages; 1059 is the NIP-59 gift wrap.
+const PRIVATE_MESSAGE_KINDS = new Set([4, 13, 14, 15, 1059]);
 const DESTRUCTIVE_KINDS = new Set([5, 62]);
 
 export function buildDestinationUrlMap(results: MirrorResult[]): Map<string, string> {

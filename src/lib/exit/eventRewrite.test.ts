@@ -114,7 +114,7 @@ describe("event references", () => {
 });
 
 describe("republishSkipReason", () => {
-  it.each([4, 14, 1059, 5, 62, 22242, 24133, 24242, 27235])("skips non-portable kind %s", (kind) => {
+  it.each([4, 13, 14, 15, 1059, 5, 62, 22242, 24133, 24242, 27235])("skips non-portable kind %s", (kind) => {
     expect(republishSkipReason(kind)).not.toBeNull();
   });
 
