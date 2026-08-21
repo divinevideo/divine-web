@@ -36,6 +36,16 @@ describe("useDestinationMirror", () => {
     );
   });
 
+  it("does not retain a destination when the copy fails", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(null, { status: 401 })));
+    const { result } = renderHook(() => useDestinationMirror({ files: files(fixturePubkey), signer }));
+
+    await act(async () => result.current.start("https://blossom.example"));
+
+    expect(result.current.state).toBe("failed");
+    expect(result.current.destination).toBeNull();
+  });
+
   it("aborts active work and clears its state when the account changes", async () => {
     const fetcher = vi.fn((_input: RequestInfo | URL, init?: RequestInit) => new Promise<Response>((_resolve, reject) => {
       init?.signal?.addEventListener("abort", () => reject(new DOMException("Mirror cancelled", "AbortError")), { once: true });

@@ -55,7 +55,6 @@ export function useDestinationRepublish(input: {
     setDestination(null);
     try {
       const normalizedDestination = normalizeRelayDestinationUrl(destinationValue);
-      setDestination(normalizedDestination);
       const publishResults = await publishArchiveEvents({
         destination: normalizedDestination,
         events: input.files["events.json"],
@@ -67,6 +66,7 @@ export function useDestinationRepublish(input: {
       if (controller.signal.aborted) return;
       setResults(publishResults);
       setSummary(summarizePublishResults(publishResults));
+      setDestination(normalizedDestination);
       setState("complete");
     } catch (error) {
       if (controller.signal.aborted) return;

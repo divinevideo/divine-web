@@ -50,7 +50,6 @@ export function useDestinationMirror(input: { files: ArchiveFiles | null; signer
     setDestination(null);
     try {
       const normalizedDestination = normalizeDestinationUrl(destinationValue);
-      setDestination(normalizedDestination);
       const results = await mirrorArchiveMedia({
         destination: normalizedDestination,
         references: input.files["media.json"],
@@ -61,6 +60,7 @@ export function useDestinationMirror(input: { files: ArchiveFiles | null; signer
       if (controller.signal.aborted) return;
       setResults(results);
       setSummary(summarizeMirrorResults(results));
+      setDestination(normalizedDestination);
       setState("complete");
     } catch (error) {
       if (controller.signal.aborted) return;
