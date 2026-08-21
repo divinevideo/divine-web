@@ -22,7 +22,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/useToast';
 import { genUserName } from '@/lib/genUserName';
 import { buildProfileLinkPath } from '@/lib/profileLinks';
-import { buildPeopleListPath } from '@/lib/eventRouting';
+import { buildListPath, buildPeopleListPath } from '@/lib/eventRouting';
 import { debugLog } from '@/lib/debug';
 import { getVisiblePlaybackCount } from '@/lib/playbackCount';
 import { reportFunnelcakeFallback } from '@/lib/funnelcakeFallbackReporting';
@@ -380,7 +380,7 @@ export function VideoPage() {
       navigate(buildPeopleListPath(effectiveNavigationContext.pubkey, effectiveNavigationContext.listId));
     } else if (effectiveNavigationContext?.source === 'video-list' && effectiveNavigationContext.pubkey && effectiveNavigationContext.listId) {
       navigate(
-        `/list/${effectiveNavigationContext.pubkey}/${encodeURIComponent(effectiveNavigationContext.listId)}`,
+        buildListPath(effectiveNavigationContext.pubkey, effectiveNavigationContext.listId),
         { ownerPubkey: effectiveNavigationContext.pubkey },
       );
     } else {
