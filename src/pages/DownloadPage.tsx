@@ -64,10 +64,9 @@ export function DownloadPage() {
               href={ZAP_STORE_URL}
               target="_blank"
               rel="noopener noreferrer"
-              aria-label="Get Divine on Zapstore"
               className="mt-8 text-sm font-semibold text-brand-off-white/80 underline decoration-brand-green/70 underline-offset-4 transition-colors hover:text-brand-green"
             >
-              Get it from Zapstore
+              Get Divine on Zapstore
             </a>
           )}
         </div>
