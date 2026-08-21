@@ -49,22 +49,34 @@ export function useDiscoveryPointers(input: {
       { kind: RELAY_LIST_KIND, label: "Relay list", build: buildRelayListTemplate, destination: input.relayDestination },
       { kind: BLOSSOM_SERVER_LIST_KIND, label: "Blossom server list", build: buildBlossomServerListTemplate, destination: input.blossomDestination },
     ];
+    const prepared = definitions.map((definition) => {
+      const timestamp = replacementCreatedAt({
+        nowSeconds,
+        newestSeconds: newestPointerCreatedAt(input.files["events.json"], definition.kind, ownerPubkey),
+        toleranceSeconds: MAX_REPLACEMENT_FUTURE_SKEW_SECONDS,
+      });
+      if (timestamp.blocked) {
+        return { definition, blocked: { kind: definition.kind, label: definition.label, status: "blocked" as const, reason: timestamp.reason } };
+      }
+      return { definition, createdAt: timestamp.createdAt };
+    });
+    if (prepared.every((item) => item.blocked)) {
+      setResults(prepared.flatMap((item) => item.blocked ? [item.blocked] : []));
+      setState("complete");
+      return;
+    }
     const session = openDestinationRelay({ destination: input.relayDestination, signer: input.signer, signal: controller.signal });
     const nextResults: DiscoveryPointerResult[] = [];
     try {
-      for (const definition of definitions) {
-        const timestamp = replacementCreatedAt({
-          nowSeconds,
-          newestSeconds: newestPointerCreatedAt(input.files["events.json"], definition.kind, ownerPubkey),
-          toleranceSeconds: MAX_REPLACEMENT_FUTURE_SKEW_SECONDS,
-        });
-        if (timestamp.blocked) {
-          nextResults.push({ kind: definition.kind, label: definition.label, status: "blocked", reason: timestamp.reason });
+      for (const item of prepared) {
+        if (item.blocked) {
+          nextResults.push(item.blocked);
           continue;
         }
+        const { definition } = item;
         let event: NostrEvent;
         try {
-          event = await input.signer.signEvent(definition.build(definition.destination, timestamp.createdAt));
+          event = await input.signer.signEvent(definition.build(definition.destination, item.createdAt));
           if (event.pubkey !== ownerPubkey) throw new Error("The signer returned an event for a different account.");
         } catch (error) {
           const detail = error instanceof Error && error.message ? ` ${error.message}` : "";
@@ -80,6 +92,8 @@ export function useDiscoveryPointers(input: {
           nextResults.push({ kind: definition.kind, label: definition.label, status: "publish-failed", reason: outcome.message });
         }
       }
+    } catch (error) {
+      if (!controller.signal.aborted) throw error;
     } finally {
       await session.close();
     }

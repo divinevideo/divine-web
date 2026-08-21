@@ -53,7 +53,7 @@ describe("DiscoveryPointerForm", () => {
 
     expect(await screen.findByText("Relay list: published")).toBeInTheDocument();
     expect(screen.getByText("Blossom server list: published")).toBeInTheDocument();
-    expect(screen.getByText("Compatible third-party clients should now find your new home automatically.")).toBeInTheDocument();
+    expect(screen.getByText("Compatible third-party clients that check your destination relay should now find your new home automatically.")).toBeInTheDocument();
   });
 
   it("keeps a failed pointer separate from a successful one", async () => {

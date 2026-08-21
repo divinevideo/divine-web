@@ -50,7 +50,7 @@ export function DiscoveryPointerForm(props: DiscoveryPointerFormProps) {
             </ul>
             <p className="text-base leading-relaxed text-muted-foreground" role="status">
               {successful === 2
-                ? "Compatible third-party clients should now find your new home automatically."
+                ? "Compatible third-party clients that check your destination relay should now find your new home automatically."
                 : "Some old discovery pointers may still advertise Divine. Fix the failed pointer before relying on automatic discovery."}
             </p>
           </div>

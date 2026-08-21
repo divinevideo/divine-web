@@ -23,7 +23,7 @@ describe("useDiscoveryPointers", () => {
   beforeEach(() => {
     publish.mockReset().mockResolvedValue({ status: "accepted" });
     close.mockReset().mockResolvedValue(undefined);
-    vi.mocked(openDestinationRelay).mockReturnValue({ publish, close });
+    vi.mocked(openDestinationRelay).mockReset().mockReturnValue({ publish, close });
   });
 
   it("keeps a signer refusal local to one pointer", async () => {
@@ -54,5 +54,49 @@ describe("useDiscoveryPointers", () => {
     await act(async () => result.current.start());
     expect(result.current.results.every((item) => item.status === "signing-failed")).toBe(true);
     expect(publish).not.toHaveBeenCalled();
+  });
+
+  it("reports future-dated pointers without opening a relay connection", async () => {
+    vi.spyOn(Date, "now").mockReturnValue(20_000);
+    const futureFiles = buildArchiveFiles({
+      events: [
+        makeFixtureEvent({ kind: 10_002, created_at: 21 }),
+        makeFixtureEvent({ id: "2".repeat(64), kind: 10_063, created_at: 21 }),
+      ],
+      pubkey: fixturePubkey,
+      sourceEndpoint: "https://api.divine.video",
+      pageCount: 1,
+      failures: [],
+    });
+    const testSigner = signer(async (template) => ({ ...template, id: "a".repeat(64), pubkey: fixturePubkey, sig: "b".repeat(128) }));
+    const { result } = renderHook(() => useDiscoveryPointers({ files: futureFiles, relayDestination: "wss://relay.example/", blossomDestination: "https://blossom.example", signer: testSigner }));
+
+    await act(async () => result.current.start());
+
+    expect(result.current.results.map((item) => item.status)).toEqual(["blocked", "blocked"]);
+    expect(testSigner.signEvent).not.toHaveBeenCalled();
+    expect(openDestinationRelay).not.toHaveBeenCalled();
+  });
+
+  it("resolves cleanly when an active publication is cancelled", async () => {
+    const testSigner = signer(async (template) => ({ ...template, id: "a".repeat(64), pubkey: fixturePubkey, sig: "b".repeat(128) }));
+    vi.mocked(openDestinationRelay).mockImplementation((options) => ({
+      publish: () => new Promise((_resolve, reject) => {
+        if (options.signal?.aborted) {
+          reject(new DOMException("Relay publish cancelled", "AbortError"));
+          return;
+        }
+        options.signal?.addEventListener("abort", () => reject(new DOMException("Relay publish cancelled", "AbortError")), { once: true });
+      }),
+      close,
+    }));
+    const { result, unmount } = renderHook(() => useDiscoveryPointers({ files, relayDestination: "wss://relay.example/", blossomDestination: "https://blossom.example", signer: testSigner }));
+    let startPromise: Promise<void> | undefined;
+    act(() => { startPromise = result.current.start(); });
+
+    unmount();
+
+    await expect(startPromise).resolves.toBeUndefined();
+    expect(close).toHaveBeenCalledOnce();
   });
 });
