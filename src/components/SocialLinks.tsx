@@ -57,7 +57,7 @@ const SOCIAL_LINKS: readonly SocialLink[] = [
   },
   {
     name: 'YouTube',
-    href: 'https://www.youtube.com/channel/UCkAaxItWqDpTgngWAS2cAtQ',
+    href: 'https://www.youtube.com/@DivineVideoApp',
     icon: '/social-icons/youtube.svg',
     ariaLabelKey: 'socialLinks.followYoutube',
   },
