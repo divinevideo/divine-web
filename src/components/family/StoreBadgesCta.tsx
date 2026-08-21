@@ -87,7 +87,7 @@ export function StoreBadgesCta({
       {withSignup && (
         <div className="mt-6 max-w-md">
           <p className="text-sm text-muted-foreground mb-2">
-            Divine is now live in the app stores with invite codes. If you'd like to receive a code and hear our news, sign up here.
+            Divine is live in the app stores. Sign up here to hear what&apos;s next.
           </p>
           <HubSpotSignup />
         </div>

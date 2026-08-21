@@ -5,6 +5,7 @@ import {
   buildAgeReviewPageMeta,
   buildCategoriesIndexMeta,
   buildCategoryPageMeta,
+  buildDownloadPageMeta,
   buildFamilyPageMeta,
   buildKidsPolicyPageMeta,
   buildProfilePageMeta,
@@ -221,6 +222,10 @@ async function fetchRouteMeta(url: URL): Promise<PageMeta | null> {
   // Kids policy page at /kids on apex.
   if (url.pathname === '/kids') {
     return buildKidsPolicyPageMeta(url);
+  }
+
+  if (url.pathname === '/download') {
+    return buildDownloadPageMeta(url);
   }
 
   return null;

@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useLocation } from 'react-router-dom';
 import { DownloadSimple as Download, X } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
-import { APP_STORE_URL, PLAY_STORE_URL } from '@/lib/mobileStoreLinks';
+import { APP_STORE_URL, detectMobilePlatform, PLAY_STORE_URL } from '@/lib/mobileStoreLinks';
 
 interface NavigatorWithStandalone extends Navigator {
   standalone?: boolean;
@@ -13,14 +13,13 @@ export function PWAInstallPrompt({ delayMs = 10000 }: { delayMs?: number } = {})
   const { t } = useTranslation();
   const location = useLocation();
   const [showPrompt, setShowPrompt] = useState(false);
-  const [isIOS, setIsIOS] = useState(false);
-  const [isAndroid, setIsAndroid] = useState(false);
+  const [platform] = useState(() => detectMobilePlatform(window.navigator.userAgent));
   const [isStandalone, setIsStandalone] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [hasLeftLanding, setHasLeftLanding] = useState(false);
 
-  const showAppStore = !isAndroid;
-  const showGooglePlay = !isIOS;
+  const showAppStore = platform !== 'android';
+  const showGooglePlay = platform !== 'ios';
 
   // Track when user leaves the landing page
   useEffect(() => {
@@ -56,16 +55,6 @@ export function PWAInstallPrompt({ delayMs = 10000 }: { delayMs?: number } = {})
     };
 
     checkStandalone();
-
-    // Check if iOS
-    const checkIOS = () => {
-      const userAgent = window.navigator.userAgent.toLowerCase();
-      const isIOSDevice = /iphone|ipad|ipod/.test(userAgent);
-      setIsIOS(isIOSDevice);
-      setIsAndroid(/android/.test(userAgent));
-    };
-
-    checkIOS();
 
     return () => {
       window.removeEventListener('resize', handleResize);

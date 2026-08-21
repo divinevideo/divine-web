@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   buildCategoriesIndexMeta,
   buildCategoryPageMeta,
+  buildDownloadPageMeta,
   buildProfilePageMeta,
   buildVideoPageMeta,
   decodeNpubToHex,
@@ -74,6 +75,15 @@ describe('serverSocialMeta', () => {
 
     expect(meta.title).toBe('Browse Categories - Divine');
     expect(meta.description).toContain('Explore video categories on Divine');
+  });
+
+  it('builds metadata for the public download page', () => {
+    const meta = buildDownloadPageMeta(new URL('https://divine.video/download'));
+
+    expect(meta.title).toBe('Download Divine');
+    expect(meta.description).toContain('App Store, Google Play, or ZapStore');
+    expect(meta.url).toBe('https://divine.video/download');
+    expect(meta.image).toBe('https://divine.video/og.png');
   });
 
   it('decodes npub identifiers to hex pubkeys', () => {

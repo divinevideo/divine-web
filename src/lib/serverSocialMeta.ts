@@ -334,6 +334,18 @@ export function buildKidsPolicyPageMeta(url: URL): PageMeta {
   };
 }
 
+export function buildDownloadPageMeta(url: URL): PageMeta {
+  return {
+    title: 'Download Divine',
+    description: 'Get Divine from the App Store, Google Play, or ZapStore.',
+    ogType: 'website',
+    url: url.toString(),
+    image: DEFAULT_OG_IMAGE,
+    imageAlt: 'Download the Divine mobile app',
+    twitterCard: 'summary_large_image',
+  };
+}
+
 export function getDefaultPageMeta(url: URL): PageMeta {
   return {
     title: 'Divine Web - Short-form Looping Videos on Nostr',

@@ -80,6 +80,9 @@ routing resolves user profiles (e.g., `alice.divine.video/`) by reading the
 subdomain and loading the corresponding Nostr profile. Static hosts use
 `404.html` (copied from [`index.html`](./index.html) during build) as a
 catch-all fallback.
+The public `/download` marketing route detects the visitor's mobile platform
+in the browser and presents the matching app-store link without automatically
+redirecting; unknown and desktop platforms receive every store choice.
 The retired `/discovery/new` chronological feed redirects to
 `/discovery/hot`; Discovery does not expose or mount an all-new-video feed.
 `/discovery/:tab` accepts the built-in Discovery tabs plus the currently

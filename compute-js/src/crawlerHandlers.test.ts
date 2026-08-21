@@ -19,9 +19,21 @@ vi.mock('fastly:kv-store', () => {
   return { KVStore: MockKVStore };
 });
 
-import { handleAtUsernameOg, handleHashtagOgTags, handleSearchOgTags, handleDiscoveryOgTags, handleApexOgTags } from './crawlerHandlers.js';
+import { handleAtUsernameOg, handleDownloadOgTags, handleHashtagOgTags, handleSearchOgTags, handleDiscoveryOgTags, handleApexOgTags } from './crawlerHandlers.js';
 
 const HEX64 = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+
+describe('handleDownloadOgTags', () => {
+  it('builds canonical download-page metadata', async () => {
+    const result = handleDownloadOgTags(new URL('https://divine.video/download'), 'divine.video');
+    const html = await result!.text();
+
+    expect(html).toContain('<title>Download Divine</title>');
+    expect(html).toContain('App Store, Google Play, or ZapStore');
+    expect(html).toContain('https://divine.video/download');
+    expect(html).toContain('https://divine.video/og.png');
+  });
+});
 
 describe('handleApexOgTags', () => {
   beforeEach(() => {

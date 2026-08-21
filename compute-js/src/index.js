@@ -20,6 +20,7 @@ import {
   handleHashtagOgTags,
   handleSearchOgTags,
   handleDiscoveryOgTags,
+  handleDownloadOgTags,
   handleApexOgTags,
 } from './crawlerHandlers.js';
 import { transformVideoApiResponse } from './videoMetadata.js';
@@ -303,6 +304,14 @@ async function handleRequest(event) {
     // Kids policy page at /kids on apex.
     if (url.pathname === '/kids') {
       const ogResponse = handleKidsPolicyOgTags(url, hostnameToUse);
+      if (ogResponse) {
+        return ogResponse;
+      }
+    }
+
+    // Device-aware app download page at /download on apex.
+    if (url.pathname === '/download') {
+      const ogResponse = handleDownloadOgTags(url, hostnameToUse);
       if (ogResponse) {
         return ogResponse;
       }

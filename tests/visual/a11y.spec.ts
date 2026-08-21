@@ -10,6 +10,7 @@ const ROUTES = [
   '/family',
   '/age-review',
   '/kids',
+  '/download',
   `/profile/${PUBKEY}`,
   `/profile/${PUBKEY}/lists`,
   `/people-lists/${PUBKEY}/friends`,

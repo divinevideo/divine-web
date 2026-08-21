@@ -62,4 +62,15 @@ describe('AppFooter', () => {
       '/merch',
     );
   });
+
+  it('describes public availability without asking for an invite code', () => {
+    render(
+      <MemoryRouter>
+        <AppFooter />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByText(/Divine is live in the app stores/)).toBeInTheDocument();
+    expect(screen.queryByText(/invite code/i)).not.toBeInTheDocument();
+  });
 });

@@ -233,6 +233,21 @@ describe('functions/[[path]]', () => {
     expect(html).toContain('name="twitter:title" content="Kids on Divine');
   });
 
+  it('injects download metadata for /download on apex', async () => {
+    const response = await onRequest({
+      request: new Request('https://divine.video/download'),
+      next: async () => new Response('not found', { status: 404 }),
+      env: {},
+    });
+
+    const html = await response.text();
+
+    expect(response.status).toBe(200);
+    expect(html).toContain('<title>Download Divine</title>');
+    expect(html).toContain('property="og:url" content="https://divine.video/download"');
+    expect(html).toContain('App Store, Google Play, or ZapStore');
+  });
+
   it('injects category metadata for category routes', async () => {
     const response = await onRequest({
       request: new Request('https://divine.video/category/dance'),

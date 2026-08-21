@@ -105,6 +105,15 @@ describe('AppRouter', () => {
     expect(screen.queryByTestId('nip19-page')).not.toBeInTheDocument();
   });
 
+  it('routes the public download page outside the app shell', () => {
+    window.history.pushState({}, '', '/download');
+
+    renderRouter();
+
+    expect(screen.getByRole('heading', { name: 'Get Divine' })).toBeInTheDocument();
+    expect(screen.queryByTestId('nip19-page')).not.toBeInTheDocument();
+  });
+
   it('redirects the legacy account portability docs path to /exit', async () => {
     window.history.pushState({}, '', '/account-portability');
 
