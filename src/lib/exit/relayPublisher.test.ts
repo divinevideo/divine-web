@@ -93,9 +93,29 @@ describe("publishArchiveEvents", () => {
       relayFactory: () => relay,
     });
     expect(relay.published.map((event) => event.kind)).toEqual([34236, 1111, 1111]);
+    expect(relay.published[0].created_at).toBe(video.created_at + 1);
+    expect(relay.published[1].created_at).toBe(comment.created_at);
+    expect(relay.published[2].created_at).toBe(reply.created_at);
     expect(relay.published[1].tags).toEqual([["E", relay.published[0].id], ["e", relay.published[0].id]]);
     expect(relay.published[2].tags).toEqual([["E", relay.published[0].id], ["e", relay.published[1].id]]);
     expect(results.every((result) => result.status === "published")).toBe(true);
+  });
+
+  it("produces the same replacement templates on repeated runs", async () => {
+    const signer = makeSigner();
+    const video = makeEvent("1", { kind: 34236, content: SOURCE, tags: [["url", SOURCE]] });
+    const firstRelay = fakeRelay();
+    const secondRelay = fakeRelay();
+    await publishArchiveEvents({ destination: RELAY, events: [video], mirrorResults: [mirrorResult()], signer, relayFactory: () => firstRelay });
+    await publishArchiveEvents({ destination: RELAY, events: [video], mirrorResults: [mirrorResult()], signer, relayFactory: () => secondRelay });
+
+    expect(signer.signEvent).toHaveBeenNthCalledWith(2, signer.signEvent.mock.calls[0][0]);
+    expect(secondRelay.published[0]).toMatchObject({
+      kind: firstRelay.published[0].kind,
+      created_at: firstRelay.published[0].created_at,
+      content: firstRelay.published[0].content,
+      tags: firstRelay.published[0].tags,
+    });
   });
 
   it("replaces serialized repost content with the newly signed referenced event", async () => {
@@ -261,15 +281,81 @@ describe("publishArchiveEvents", () => {
     expect(results.find((result) => result.event_id === changed.id)).toMatchObject({ status: "failed", reason: expect.stringContaining("signer refused") });
     expect(relay.published).toEqual([unchanged]);
   });
+
+  it("re-dates old videos before signing the reference graph", async () => {
+    const signer = makeSigner();
+    const relay = fakeRelay();
+    const video = makeEvent("1", {
+      kind: 34236,
+      created_at: 100,
+      tags: [["d", "archived-loop"], ["published_at", "80"]],
+    });
+    const comment = makeEvent("2", { kind: 1111, created_at: 100, tags: [["E", video.id], ["e", video.id]] });
+    const results = await publishArchiveEvents({
+      destination: RELAY,
+      events: [comment, video],
+      mirrorResults: [],
+      signer,
+      relayFactory: () => relay,
+      nowSeconds: 1_000,
+      relayAgeLimitSeconds: 500,
+    });
+
+    expect(relay.published[0]).toMatchObject({ kind: 34236, created_at: 1_000, tags: expect.arrayContaining([["published_at", "80"]]) });
+    expect(relay.published[1]).toMatchObject({ kind: 1111, created_at: 100 });
+    expect(relay.published[1].tags).toEqual([["E", relay.published[0].id], ["e", relay.published[0].id]]);
+    expect(results).toEqual(expect.arrayContaining([
+      expect.objectContaining({ event_id: video.id, status: "published", redated: true }),
+      expect.objectContaining({ event_id: comment.id, status: "published", redated: false }),
+    ]));
+  });
+
+  it("does not re-date old non-video events", async () => {
+    const signer = makeSigner();
+    const relay = fakeRelay();
+    const note = makeEvent("1", { kind: 1, created_at: 100 });
+    const results = await publishArchiveEvents({
+      destination: RELAY,
+      events: [note],
+      mirrorResults: [],
+      signer,
+      relayFactory: () => relay,
+      nowSeconds: 1_000,
+      relayAgeLimitSeconds: 500,
+    });
+
+    expect(relay.published).toEqual([note]);
+    expect(results[0]).toMatchObject({ status: "unchanged", redated: false });
+    expect(signer.signEvent).not.toHaveBeenCalled();
+  });
+
+  it("reports a signer refusal instead of publishing an old video unchanged", async () => {
+    const signer = makeSigner();
+    signer.signEvent.mockRejectedValueOnce(new Error("not allowed"));
+    const relay = fakeRelay();
+    const video = makeEvent("1", { kind: 34236, created_at: 100, tags: [["d", "archived-loop"]] });
+    const results = await publishArchiveEvents({
+      destination: RELAY,
+      events: [video],
+      mirrorResults: [],
+      signer,
+      relayFactory: () => relay,
+      nowSeconds: 1_000,
+      relayAgeLimitSeconds: 500,
+    });
+
+    expect(results[0]).toMatchObject({ status: "failed", redated: true, reason: expect.stringContaining("signer refused") });
+    expect(relay.event).not.toHaveBeenCalled();
+  });
 });
 
 describe("summarizePublishResults", () => {
   it("reports every terminal state and remaining media URL", () => {
     expect(summarizePublishResults([
-      { event_id: "1".repeat(64), published_event_id: "a".repeat(64), kind: 1, status: "published", remaining_media_urls: 2 },
-      { event_id: "2".repeat(64), published_event_id: "2".repeat(64), kind: 1, status: "unchanged", remaining_media_urls: 0 },
-      { event_id: "3".repeat(64), published_event_id: null, kind: 4, status: "skipped", remaining_media_urls: 0 },
-      { event_id: "4".repeat(64), published_event_id: null, kind: 1, status: "failed", remaining_media_urls: 1 },
-    ])).toEqual({ published: 1, unchanged: 1, skipped: 1, failed: 1, remainingMediaUrls: 3 });
+      { event_id: "1".repeat(64), published_event_id: "a".repeat(64), kind: 1, status: "published", remaining_media_urls: 2, redated: true },
+      { event_id: "2".repeat(64), published_event_id: "2".repeat(64), kind: 1, status: "unchanged", remaining_media_urls: 0, redated: false },
+      { event_id: "3".repeat(64), published_event_id: null, kind: 4, status: "skipped", remaining_media_urls: 0, redated: false },
+      { event_id: "4".repeat(64), published_event_id: null, kind: 1, status: "failed", remaining_media_urls: 1, redated: false },
+    ])).toEqual({ published: 1, unchanged: 1, skipped: 1, failed: 1, redated: 1, remainingMediaUrls: 3 });
   });
 });

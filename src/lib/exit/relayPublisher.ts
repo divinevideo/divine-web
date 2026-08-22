@@ -6,6 +6,7 @@ import type { NostrEvent, NostrSigner } from "@nostrify/nostrify";
 import {
   buildDestinationUrlMap,
   referencedEventIds,
+  republishCreatedAt,
   republishSkipReason,
   rewriteEventMedia,
   rewriteEventReferences,
@@ -13,6 +14,7 @@ import {
 import type { MirrorResult } from "./mirrorClient";
 import { normalizeRelayDestinationUrl } from "./relayDestination";
 import { openDestinationRelay, type DestinationRelayOptions } from "./relayConnection";
+import { redateArchivedVideo } from "./videoTimestamp";
 
 export type PublishStatus = "published" | "unchanged" | "skipped" | "failed";
 
@@ -22,6 +24,7 @@ export interface PublishResult {
   kind: number;
   status: PublishStatus;
   remaining_media_urls: number;
+  redated: boolean;
   reason?: string;
 }
 
@@ -37,6 +40,7 @@ export interface PublishSummary {
   skipped: number;
   failed: number;
   remainingMediaUrls: number;
+  redated: number;
 }
 
 export interface PublishArchiveOptions {
@@ -49,6 +53,8 @@ export interface PublishArchiveOptions {
   wait?: (milliseconds: number, signal?: AbortSignal) => Promise<void>;
   eventTimeoutMs?: number;
   maxRateLimitRetries?: number;
+  relayAgeLimitSeconds?: number | null;
+  nowSeconds?: number;
   onProgress?(progress: PublishProgress): void;
 }
 
@@ -56,12 +62,14 @@ interface PreparedEvent {
   original: NostrEvent;
   event: NostrEvent;
   changed: boolean;
+  redated: boolean;
   remainingMediaUrls: number;
 }
 
 const HEX_64 = /^[0-9a-f]{64}$/i;
+const DEFAULT_RELAY_AGE_LIMIT_SECONDS = 94_608_000;
 
-async function prepareEvents(options: PublishArchiveOptions): Promise<{
+async function prepareEvents(options: PublishArchiveOptions, now: number, cutoff: number): Promise<{
   events: PreparedEvent[];
   results: PublishResult[];
 }> {
@@ -89,7 +97,7 @@ async function prepareEvents(options: PublishArchiveOptions): Promise<{
     const skipReason = republishSkipReason(original.kind);
     if (skipReason) {
       settled.add(original.id);
-      results.push({ event_id: original.id, published_event_id: null, kind: original.kind, status: "skipped", remaining_media_urls: 0, reason: skipReason });
+      results.push({ event_id: original.id, published_event_id: null, kind: original.kind, status: "skipped", remaining_media_urls: 0, redated: false, reason: skipReason });
       return null;
     }
 
@@ -110,18 +118,25 @@ async function prepareEvents(options: PublishArchiveOptions): Promise<{
         kind: original.kind,
         status: "failed",
         remaining_media_urls: 0,
+        redated: false,
         reason: "This event belongs to a circular reference chain that cannot be safely rewritten.",
       });
       return null;
     }
 
     const media = rewriteEventMedia(original, destinationUrls);
-    const references = rewriteEventReferences(media.template, replacements);
-    const changed = media.changed || references.changed;
+    const timestamp = redateArchivedVideo(original, media.template, now, cutoff);
+    const references = rewriteEventReferences(timestamp.template, replacements);
+    const changed = media.changed || references.changed || timestamp.redated;
     let event = original;
     if (changed) {
       try {
-        event = await options.signer.signEvent(references.template);
+        // A deterministic one-second advance prevents replaceable copies from
+        // falling back to event-id or arrival-order tie-breaks.
+        event = await options.signer.signEvent({
+          ...references.template,
+          created_at: timestamp.redated ? references.template.created_at : republishCreatedAt(original),
+        });
         if (event.pubkey !== original.pubkey || !HEX_64.test(event.id)) {
           throw new Error("The signer returned an event for a different account.");
         }
@@ -130,11 +145,11 @@ async function prepareEvents(options: PublishArchiveOptions): Promise<{
         const reason = error instanceof Error && error.message
           ? `Your signer refused this event. ${error.message}`
           : "Your signer refused this event.";
-        results.push({ event_id: original.id, published_event_id: null, kind: original.kind, status: "failed", remaining_media_urls: media.remainingMediaUrls, reason });
+        results.push({ event_id: original.id, published_event_id: null, kind: original.kind, status: "failed", remaining_media_urls: media.remainingMediaUrls, redated: timestamp.redated, reason });
         return null;
       }
     }
-    const value = { original, event, changed, remainingMediaUrls: media.remainingMediaUrls };
+    const value = { original, event, changed, redated: timestamp.redated, remainingMediaUrls: media.remainingMediaUrls };
     prepared.set(original.id, value);
     settled.add(original.id);
     if (changed) replacements.set(original.id, event);
@@ -148,7 +163,11 @@ async function prepareEvents(options: PublishArchiveOptions): Promise<{
 
 export async function publishArchiveEvents(options: PublishArchiveOptions): Promise<PublishResult[]> {
   const destination = normalizeRelayDestinationUrl(options.destination);
-  const preparation = await prepareEvents(options);
+  const now = options.nowSeconds ?? Math.floor(Date.now() / 1000);
+  const ageLimit = options.relayAgeLimitSeconds && options.relayAgeLimitSeconds > 0
+    ? options.relayAgeLimitSeconds
+    : DEFAULT_RELAY_AGE_LIMIT_SECONDS;
+  const preparation = await prepareEvents(options, now, now - ageLimit);
   const results = [...preparation.results];
   if (preparation.events.length === 0) return results;
   const relay = openDestinationRelay({
@@ -169,6 +188,7 @@ export async function publishArchiveEvents(options: PublishArchiveOptions): Prom
         kind: event.original.kind,
         status: outcome.status === "failed" ? "failed" : event.changed ? "published" : "unchanged",
         remaining_media_urls: event.remainingMediaUrls,
+        redated: event.redated,
         ...(outcome.status !== "accepted" ? { reason: outcome.message } : {}),
       };
       results.push(result);
@@ -186,6 +206,7 @@ export function summarizePublishResults(results: PublishResult[]): PublishSummar
     unchanged: results.filter((result) => result.status === "unchanged").length,
     skipped: results.filter((result) => result.status === "skipped").length,
     failed: results.filter((result) => result.status === "failed").length,
+    redated: results.filter((result) => result.redated && result.status === "published").length,
     remainingMediaUrls: results.reduce((total, result) => total + result.remaining_media_urls, 0),
   };
 }
