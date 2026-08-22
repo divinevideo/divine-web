@@ -7,6 +7,7 @@ import {
   buildRelayListTemplate,
   MAX_REPLACEMENT_FUTURE_SKEW_SECONDS,
   newestPointerCreatedAt,
+  pointerPublishTargets,
   RELAY_LIST_KIND,
   replacementCreatedAt,
 } from "./discoveryPointers";
@@ -32,6 +33,26 @@ describe("discovery pointer templates", () => {
       event(RELAY_LIST_KIND, 99, "d".repeat(64)),
       event(BLOSSOM_SERVER_LIST_KIND, 30),
     ], RELAY_LIST_KIND, OWNER)).toBe(20);
+  });
+
+  it("publishes destination first and deduplicates normalized discovery relays", () => {
+    expect(pointerPublishTargets({
+      relayDestination: "wss://relay.example",
+      discoveryRelays: ["WSS://RELAY.EXAMPLE/", "wss://indexer.example"],
+    })).toEqual([
+      { relay: "wss://relay.example/", isDiscoveryRelay: true },
+      { relay: "wss://indexer.example/", isDiscoveryRelay: true },
+    ]);
+  });
+
+  it("distinguishes a custom destination from discovery relays", () => {
+    expect(pointerPublishTargets({
+      relayDestination: "wss://destination.example",
+      discoveryRelays: ["wss://indexer.example"],
+    })).toEqual([
+      { relay: "wss://destination.example/", isDiscoveryRelay: false },
+      { relay: "wss://indexer.example/", isDiscoveryRelay: true },
+    ]);
   });
 
   it("beats older and equal timestamps and blocks future-dated pointers", () => {

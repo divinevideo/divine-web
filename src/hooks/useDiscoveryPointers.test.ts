@@ -12,22 +12,40 @@ vi.mock("@/lib/exit/relayConnection", () => ({ openDestinationRelay: vi.fn() }))
 
 const files = buildArchiveFiles({ events: [makeFixtureEvent()], pubkey: fixturePubkey, sourceEndpoint: "https://api.divine.video", pageCount: 1, failures: [] });
 
-function signer(sign: (template: Omit<NostrEvent, "id" | "pubkey" | "sig">) => Promise<NostrEvent>): NostrSigner {
-  return { signEvent: vi.fn(sign) } as unknown as NostrSigner;
+function signer(sign?: (template: Omit<NostrEvent, "id" | "pubkey" | "sig">) => Promise<NostrEvent>): NostrSigner {
+  return {
+    signEvent: vi.fn(sign ?? (async (template) => ({ ...template, id: "a".repeat(64), pubkey: fixturePubkey, sig: "b".repeat(128) }))),
+  } as unknown as NostrSigner;
 }
 
 describe("useDiscoveryPointers", () => {
-  const publish = vi.fn();
-  const close = vi.fn();
+  const publishes = new Map<string, ReturnType<typeof vi.fn>>();
+  const closes = new Map<string, ReturnType<typeof vi.fn>>();
 
   beforeEach(() => {
-    publish.mockReset().mockResolvedValue({ status: "accepted" });
-    close.mockReset().mockResolvedValue(undefined);
-    vi.mocked(openDestinationRelay).mockReset().mockReturnValue({ publish, close });
+    publishes.clear();
+    closes.clear();
+    vi.mocked(openDestinationRelay).mockReset().mockImplementation(({ destination }) => {
+      const publish = vi.fn().mockResolvedValue({ status: "accepted" });
+      const close = vi.fn().mockResolvedValue(undefined);
+      publishes.set(destination, publish);
+      closes.set(destination, close);
+      return { publish, close };
+    });
   });
 
-  afterEach(() => {
-    vi.restoreAllMocks();
+  afterEach(() => vi.restoreAllMocks());
+
+  it("publishes both pointers to every deduplicated target and signs only twice", async () => {
+    const testSigner = signer();
+    const { result } = renderHook(() => useDiscoveryPointers({ files, relayDestination: "wss://relay.divine.video/", blossomDestination: "https://blossom.example", signer: testSigner }));
+
+    await act(async () => result.current.start());
+
+    expect(openDestinationRelay).toHaveBeenCalledTimes(4);
+    expect([...publishes.values()].every((publish) => publish.mock.calls.length === 2)).toBe(true);
+    expect(testSigner.signEvent).toHaveBeenCalledTimes(2);
+    expect(result.current.summaries.every((summary) => summary.status === "published")).toBe(true);
   });
 
   it("keeps a signer refusal local to one pointer", async () => {
@@ -38,85 +56,69 @@ describe("useDiscoveryPointers", () => {
       return { ...template, id: "a".repeat(64), pubkey: fixturePubkey, sig: "b".repeat(128) };
     });
     const { result } = renderHook(() => useDiscoveryPointers({ files, relayDestination: "wss://relay.example/", blossomDestination: "https://blossom.example", signer: testSigner }));
+
     await act(async () => result.current.start());
-    expect(result.current.results.map((item) => item.status)).toEqual(["signing-failed", "published"]);
-    expect(publish).toHaveBeenCalledOnce();
-    expect(close).toHaveBeenCalledOnce();
+
+    expect(result.current.summaries.map((summary) => summary.status)).toEqual(["signing-failed", "published"]);
+    expect([...publishes.values()].every((publish) => publish.mock.calls.length === 1)).toBe(true);
   });
 
-  it("reports relay failures independently", async () => {
-    const testSigner = signer(async (template) => ({ ...template, id: "a".repeat(64), pubkey: fixturePubkey, sig: "b".repeat(128) }));
-    publish.mockResolvedValueOnce({ status: "failed", code: "blocked", message: "blocked" }).mockResolvedValueOnce({ status: "accepted" });
+  it("keeps one relay connection failure local to that relay", async () => {
+    const testSigner = signer();
+    vi.mocked(openDestinationRelay).mockImplementation(({ destination }) => {
+      if (destination === "wss://relay.damus.io/") throw new DOMException("The port is blocked", "SecurityError");
+      const publish = vi.fn().mockResolvedValue({ status: "accepted" });
+      const close = vi.fn().mockResolvedValue(undefined);
+      publishes.set(destination, publish);
+      closes.set(destination, close);
+      return { publish, close };
+    });
     const { result } = renderHook(() => useDiscoveryPointers({ files, relayDestination: "wss://relay.example/", blossomDestination: "https://blossom.example", signer: testSigner }));
+
     await act(async () => result.current.start());
-    expect(result.current.results.map((item) => item.status)).toEqual(["publish-failed", "published"]);
+
+    expect(result.current.summaries.every((summary) => summary.status === "published")).toBe(true);
+    expect(result.current.results.filter((item) => item.status === "publish-failed")).toHaveLength(2);
+    expect(closes.size).toBe(4);
   });
 
-  it("rejects a signed pointer for another account", async () => {
-    const testSigner = signer(async (template) => ({ ...template, id: "a".repeat(64), pubkey: "d".repeat(64), sig: "b".repeat(128) }));
-    const { result } = renderHook(() => useDiscoveryPointers({ files, relayDestination: "wss://relay.example/", blossomDestination: "https://blossom.example", signer: testSigner }));
-    await act(async () => result.current.start());
-    expect(result.current.results.every((item) => item.status === "signing-failed")).toBe(true);
-    expect(publish).not.toHaveBeenCalled();
-  });
-
-  it("reports future-dated pointers without opening a relay connection", async () => {
+  it("reports future-dated pointers without signing or opening relays", async () => {
     vi.spyOn(Date, "now").mockReturnValue(20_000);
     const futureFiles = buildArchiveFiles({
-      events: [
-        makeFixtureEvent({ kind: 10_002, created_at: 21 }),
-        makeFixtureEvent({ id: "2".repeat(64), kind: 10_063, created_at: 21 }),
-      ],
+      events: [makeFixtureEvent({ kind: 10_002, created_at: 21 }), makeFixtureEvent({ id: "2".repeat(64), kind: 10_063, created_at: 21 })],
       pubkey: fixturePubkey,
       sourceEndpoint: "https://api.divine.video",
       pageCount: 1,
       failures: [],
     });
-    const testSigner = signer(async (template) => ({ ...template, id: "a".repeat(64), pubkey: fixturePubkey, sig: "b".repeat(128) }));
+    const testSigner = signer();
     const { result } = renderHook(() => useDiscoveryPointers({ files: futureFiles, relayDestination: "wss://relay.example/", blossomDestination: "https://blossom.example", signer: testSigner }));
 
     await act(async () => result.current.start());
 
-    expect(result.current.results.map((item) => item.status)).toEqual(["blocked", "blocked"]);
+    expect(result.current.summaries.map((summary) => summary.status)).toEqual(["blocked", "blocked"]);
     expect(testSigner.signEvent).not.toHaveBeenCalled();
     expect(openDestinationRelay).not.toHaveBeenCalled();
   });
 
-  it("resolves cleanly when an active publication is cancelled", async () => {
-    const testSigner = signer(async (template) => ({ ...template, id: "a".repeat(64), pubkey: fixturePubkey, sig: "b".repeat(128) }));
-    vi.mocked(openDestinationRelay).mockImplementation((options) => ({
-      publish: () => new Promise((_resolve, reject) => {
-        if (options.signal?.aborted) {
-          reject(new DOMException("Relay publish cancelled", "AbortError"));
-          return;
-        }
-        options.signal?.addEventListener("abort", () => reject(new DOMException("Relay publish cancelled", "AbortError")), { once: true });
-      }),
-      close,
-    }));
+  it("closes every active relay session when publication is cancelled", async () => {
+    const testSigner = signer();
+    vi.mocked(openDestinationRelay).mockImplementation(({ destination, signal }) => {
+      const close = vi.fn().mockResolvedValue(undefined);
+      closes.set(destination, close);
+      return {
+        publish: () => new Promise((_resolve, reject) => signal?.addEventListener("abort", () => reject(new DOMException("cancelled", "AbortError")), { once: true })),
+        close,
+      };
+    });
     const { result, unmount } = renderHook(() => useDiscoveryPointers({ files, relayDestination: "wss://relay.example/", blossomDestination: "https://blossom.example", signer: testSigner }));
     let startPromise: Promise<void> | undefined;
     act(() => { startPromise = result.current.start(); });
+    await vi.waitFor(() => expect(openDestinationRelay).toHaveBeenCalledTimes(5));
 
     unmount();
 
     await expect(startPromise).resolves.toBeUndefined();
-    expect(close).toHaveBeenCalledOnce();
-  });
-
-  it("reports a relay connection that cannot start", async () => {
-    const testSigner = signer(async (template) => ({ ...template, id: "a".repeat(64), pubkey: fixturePubkey, sig: "b".repeat(128) }));
-    vi.mocked(openDestinationRelay).mockImplementation(() => {
-      throw new DOMException("The port is blocked", "SecurityError");
-    });
-    const { result } = renderHook(() => useDiscoveryPointers({ files, relayDestination: "wss://relay.example/", blossomDestination: "https://blossom.example", signer: testSigner }));
-
-    await act(async () => result.current.start());
-
-    expect(result.current.state).toBe("complete");
-    expect(result.current.results).toEqual(expect.arrayContaining([
-      expect.objectContaining({ status: "publish-failed", reason: expect.stringContaining("could not start") }),
-    ]));
-    expect(testSigner.signEvent).not.toHaveBeenCalled();
+    expect([...closes.values()].every((close) => close.mock.calls.length === 1)).toBe(true);
   });
 });

@@ -1,4 +1,4 @@
-// ABOUTME: Publishes signed Nostr events through one authenticated destination relay session
+// ABOUTME: Publishes signed Nostr events through one authenticated relay session
 // ABOUTME: Centralizes relay refusal, retry, timeout, cancellation, and NIP-42 behavior
 
 import { NRelay1, type NostrEvent, type NostrSigner } from "@nostrify/nostrify";

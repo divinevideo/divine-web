@@ -210,12 +210,14 @@ and vanish requests are skipped. Relay refusals remain per-event results and
 do not stop unrelated publishes.
 
 Once at least one event is present at the destination relay, the page can publish
-destination-only discovery metadata there: a NIP-65 kind-10002 relay list and a
-BUD-03 kind-10063 Blossom server list. Each pointer is signed and reported
-independently. Replacement timestamps explicitly exceed the owner's archived
-pointer, and a pointer that would require more than one second of future clock
-skew blocks that publication rather than relying on relay tie-breaking or
-guessing the destination's clock policy.
+destination-only discovery metadata: a NIP-65 kind-10002 relay list and a BUD-03
+kind-10063 Blossom server list. Each pointer is signed once, then published to
+the destination and the public metadata relays that other clients query. The UI
+reports success only when a public metadata relay accepts the pointer. Replacement
+timestamps explicitly exceed the owner's archived pointer, and a pointer that
+would require more than one second of future clock skew blocks that publication
+rather than relying on relay tie-breaking or guessing the destination's clock
+policy.
 
 ## Linting
 

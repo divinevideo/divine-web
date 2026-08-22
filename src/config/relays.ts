@@ -102,6 +102,12 @@ export const PROFILE_RELAYS: RelayConfig[] = [
 ];
 
 /**
+ * Public metadata relays where other clients can discover account-move pointers.
+ * Divine remains included so clients that know the old home can find the new one.
+ */
+export const DISCOVERY_POINTER_RELAYS: readonly RelayConfig[] = PROFILE_RELAYS;
+
+/**
  * Relays available in the UI relay picker
  * Users can switch between these relays for their main content feed
  */

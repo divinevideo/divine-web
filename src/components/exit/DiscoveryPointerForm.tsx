@@ -18,7 +18,7 @@ interface DiscoveryPointerFormProps {
 
 export function DiscoveryPointerForm(props: DiscoveryPointerFormProps) {
   const pointers = useDiscoveryPointers(props);
-  const successful = pointers.results.filter((result) => result.status === "published" || result.status === "duplicate").length;
+  const discoverable = pointers.summaries.filter((summary) => summary.status === "published").length;
 
   return (
     <Card variant="brand" accent="violet">
@@ -38,20 +38,32 @@ export function DiscoveryPointerForm(props: DiscoveryPointerFormProps) {
         {pointers.state === "complete" && (
           <div className="space-y-4">
             <ul className="space-y-3">
-              {pointers.results.map((result) => {
-                const ok = result.status === "published" || result.status === "duplicate";
+              {pointers.summaries.map((summary) => {
+                const ok = summary.status === "published";
+                const outcome = ok
+                  ? `published to ${summary.acceptedDiscoveryRelays.length} of ${summary.totalDiscoveryRelays} places apps look`
+                  : summary.status === "destination-only"
+                    ? "only published to your destination"
+                    : "not published";
                 return (
-                  <li key={result.kind} className="flex items-start gap-3">
+                  <li key={summary.kind} className="flex items-start gap-3">
                     {ok ? <CheckCircle weight="fill" className="mt-1 h-5 w-5 flex-shrink-0 text-brand-dark-green dark:text-brand-green" /> : <WarningCircle weight="fill" className="mt-1 h-5 w-5 flex-shrink-0 text-destructive" />}
-                    <div><p className="font-semibold text-foreground">{result.label}: {ok ? "published" : "not published"}</p>{result.reason && <p className="text-sm text-muted-foreground">{result.reason}</p>}</div>
+                    <div>
+                      <p className="font-semibold text-foreground">{summary.label} — {outcome}.</p>
+                      {summary.failures.map((failure) => (
+                        <p key={`${summary.kind}:${failure.relay ?? summary.status}`} className="break-all text-sm text-muted-foreground">
+                          {failure.relay ? `${failure.relay}: ` : ""}{failure.reason}
+                        </p>
+                      ))}
+                    </div>
                   </li>
                 );
               })}
             </ul>
             <p className="text-base leading-relaxed text-muted-foreground" role="status">
-              {successful === 2
-                ? "Compatible third-party clients that check your destination relay should now find your new home automatically."
-                : "Some old discovery pointers may still advertise Divine. Fix the failed pointer before relying on automatic discovery."}
+              {discoverable === 2
+                ? "Other apps can now find your new home through public discovery relays."
+                : "At least one pointer is not discoverable yet. Try publishing again before relying on automatic discovery."}
             </p>
           </div>
         )}
