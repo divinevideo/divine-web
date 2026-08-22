@@ -14,6 +14,7 @@ import {
   extractCategoryName,
   extractProfileNpub,
   getDefaultPageMeta,
+  safeDecodeURIComponent,
   type PageMeta,
   type ProfileApiResponse,
   type VideoApiResponse,
@@ -32,14 +33,6 @@ function escapeHtml(value: string): string {
 
 function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-
-function safeDecodeURIComponent(value: string): string {
-  try {
-    return decodeURIComponent(value);
-  } catch {
-    return value;
-  }
 }
 
 // `String.prototype.replace` reads `$&`, `$'`, `` $` ``, `$1`-`$9` and `$$` in a
@@ -204,10 +197,11 @@ function buildSimpleRouteMeta(url: URL): PageMeta | null {
       : null;
   }
 
-  const discoveryMatch = url.pathname.match(/^\/discovery(?:\/(hot|classics|top|hashtags))?$/);
+  const discoveryMatch = url.pathname.match(/^\/discovery(?:\/(new|hot|classics|top|hashtags))?$/);
   if (discoveryMatch) {
     const labels = {
       trending: 'Trending videos',
+      new: 'Trending videos',
       hot: 'Trending videos',
       classics: 'Classic videos',
       top: 'Classic videos',

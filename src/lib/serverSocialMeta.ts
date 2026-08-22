@@ -75,7 +75,7 @@ function getTagValue(tags: string[][], name: string): string | undefined {
   return tags.find(tag => tag[0] === name)?.[1];
 }
 
-function safeDecodeURIComponent(value: string): string {
+export function safeDecodeURIComponent(value: string): string {
   try {
     return decodeURIComponent(value);
   } catch {

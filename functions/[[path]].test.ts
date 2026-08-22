@@ -326,6 +326,7 @@ describe('functions/[[path]]', () => {
     ['/t/funny', '#funny videos on Divine', 'https://divine.video/t/funny'],
     ['/search?q=cats', '&quot;cats&quot; on Divine', 'https://divine.video/search?q=cats'],
     ['/discovery', 'Trending videos on Divine', 'https://divine.video/discovery'],
+    ['/discovery/new', 'Trending videos on Divine', 'https://divine.video/discovery/new'],
     ['/discovery/hot', 'Trending videos on Divine', 'https://divine.video/discovery/hot'],
     ['/discovery/classics', 'Classic videos on Divine', 'https://divine.video/discovery/classics'],
     ['/@jalcine', 'The Wall! on Divine', 'https://divine.video/@jalcine'],

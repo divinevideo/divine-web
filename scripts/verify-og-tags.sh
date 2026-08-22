@@ -206,6 +206,7 @@ run_check() {
         og_url=$(extract_meta "$body" "og:url")
         case "$path" in
           /discovery/hot|/discovery/classics)
+            # TODO(#667): Remove after Fastly emits metadata for the current discovery slugs.
             alternate_og_url="https://divine.video/discovery"
             ;;
           /family)
