@@ -329,6 +329,7 @@ describe('functions/[[path]]', () => {
     ['/discovery/new', 'Trending videos on Divine', 'https://divine.video/discovery/new'],
     ['/discovery/hot', 'Trending videos on Divine', 'https://divine.video/discovery/hot'],
     ['/discovery/classics', 'Classic videos on Divine', 'https://divine.video/discovery/classics'],
+    ['/discovery/foryou', 'For you videos on Divine', 'https://divine.video/discovery/foryou'],
     ['/@jalcine', 'The Wall! on Divine', 'https://divine.video/@jalcine'],
     ['/', 'Divine — 6-second loops from real humans', 'https://divine.video/'],
   ])('injects route metadata for %s', async (path, title, canonicalUrl) => {
