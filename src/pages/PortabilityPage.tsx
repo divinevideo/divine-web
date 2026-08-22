@@ -87,9 +87,9 @@ export function PortabilityPage() {
           </h1>
           <p className="text-lg md:text-xl text-brand-light-green max-w-3xl leading-relaxed">
             Divine accounts are built so you can take your identity and content
-            to infrastructure you choose. Moving changes where other apps can
-            find your account and videos. It does not delete anything from
-            Divine.
+            to infrastructure you choose. Moving creates copies of your account
+            and videos in the places you choose. Compatible apps can use those
+            copies when they find them. It does not delete anything from Divine.
           </p>
           <p className="text-base md:text-lg text-brand-off-white/80 max-w-3xl leading-relaxed mt-4">
             This guide explains the moving flow without assuming you know how
@@ -206,7 +206,8 @@ export function PortabilityPage() {
               <p>
                 Content that has already been copied by independent services may
                 remain available outside Divine. Divine does not control those
-                services.
+                services. Those copies can still point at Divine-hosted media, so
+                apps that use them may keep loading your videos from Divine.
               </p>
             </CardContent>
           </Card>
