@@ -19,6 +19,8 @@ export interface PageMeta {
   twitterCard: string;
   videoUrl?: string;
   videoMimeType?: string;
+  videoWidth?: number;
+  videoHeight?: number;
   twitterPlayerUrl?: string;
 }
 
@@ -73,7 +75,24 @@ function getTagValue(tags: string[][], name: string): string | undefined {
   return tags.find(tag => tag[0] === name)?.[1];
 }
 
-function parseImeta(tags: string[][]): { url?: string; image?: string; mimeType?: string } {
+function parseDimensions(value?: string): { width?: number; height?: number } {
+  const match = value?.match(/^(\d+)x(\d+)$/i);
+  if (!match) {
+    return {};
+  }
+
+  const width = Number(match[1]);
+  const height = Number(match[2]);
+  return width > 0 && height > 0 ? { width, height } : {};
+}
+
+function parseImeta(tags: string[][]): {
+  url?: string;
+  image?: string;
+  mimeType?: string;
+  width?: number;
+  height?: number;
+} {
   const imetaTag = tags.find(tag => tag[0] === 'imeta');
   if (!imetaTag) {
     return {};
@@ -94,6 +113,7 @@ function parseImeta(tags: string[][]): { url?: string; image?: string; mimeType?
     if (key === 'url') parsed.url = value;
     if (key === 'image') parsed.image = value;
     if (key === 'm') parsed.mimeType = value;
+    if (key === 'dim') Object.assign(parsed, parseDimensions(value));
   }
 
   return parsed;
@@ -241,6 +261,8 @@ export function buildVideoPageMeta(url: URL, payload: VideoApiResponse): PageMet
     twitterCard: hasPlayableVideo ? 'player' : 'summary_large_image',
     videoUrl: media.url,
     videoMimeType: media.mimeType,
+    videoWidth: media.width,
+    videoHeight: media.height,
     twitterPlayerUrl: hasPlayableVideo
       ? new URL(`/embed/${encodeURIComponent(payload.event.id)}`, url).toString()
       : undefined,

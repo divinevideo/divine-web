@@ -96,9 +96,13 @@ function injectMetaTags(html: string, meta: PageMeta, path: string): string {
   if (meta.videoUrl) {
     updatedHtml = upsertMetaTag(updatedHtml, 'property', 'og:video', meta.videoUrl);
     updatedHtml = upsertMetaTag(updatedHtml, 'property', 'og:video:secure_url', meta.videoUrl);
+    updatedHtml = upsertMetaTag(updatedHtml, 'property', 'og:video:width', String(meta.videoWidth || 720));
+    updatedHtml = upsertMetaTag(updatedHtml, 'property', 'og:video:height', String(meta.videoHeight || 1280));
   } else {
     updatedHtml = removeMetaTag(updatedHtml, 'property', 'og:video');
     updatedHtml = removeMetaTag(updatedHtml, 'property', 'og:video:secure_url');
+    updatedHtml = removeMetaTag(updatedHtml, 'property', 'og:video:width');
+    updatedHtml = removeMetaTag(updatedHtml, 'property', 'og:video:height');
   }
 
   if (meta.videoMimeType) {
@@ -109,8 +113,8 @@ function injectMetaTags(html: string, meta: PageMeta, path: string): string {
 
   if (meta.twitterPlayerUrl) {
     updatedHtml = upsertMetaTag(updatedHtml, 'name', 'twitter:player', meta.twitterPlayerUrl);
-    updatedHtml = upsertMetaTag(updatedHtml, 'name', 'twitter:player:width', '720');
-    updatedHtml = upsertMetaTag(updatedHtml, 'name', 'twitter:player:height', '1280');
+    updatedHtml = upsertMetaTag(updatedHtml, 'name', 'twitter:player:width', String(meta.videoWidth || 720));
+    updatedHtml = upsertMetaTag(updatedHtml, 'name', 'twitter:player:height', String(meta.videoHeight || 1280));
     updatedHtml = upsertMetaTag(updatedHtml, 'name', 'twitter:player:stream', meta.videoUrl || '');
     updatedHtml = upsertMetaTag(
       updatedHtml,
@@ -379,7 +383,7 @@ export async function onRequest(context: {
     return context.next();
   }
 
-  if (path.startsWith('/embed/')) {
+  if (/^\/embed\/[^/]+$/.test(path)) {
     const meta = await fetchVideoMeta(url);
     if (!meta?.videoUrl) {
       return new Response('Video not found', { status: 404 });
@@ -421,22 +425,17 @@ export async function onRequest(context: {
       // Fetch index.html from the static assets
       const indexUrl = new URL('/index.html', context.request.url);
       const indexResponse = await fetch(indexUrl);
+      const html = injectMetaTags(
+        await indexResponse.text(),
+        meta || getDefaultPageMeta(url),
+        path
+      );
+      const headers = new Headers(indexResponse.headers);
+      headers.set('content-type', 'text/html; charset=UTF-8');
 
-      if (meta) {
-        const html = injectMetaTags(await indexResponse.text(), meta, path);
-        const headers = new Headers(indexResponse.headers);
-        headers.set('content-type', 'text/html; charset=UTF-8');
-
-        return new Response(html, {
-          status: 200,
-          headers,
-        });
-      }
-
-      // Return index.html with 200 status code
-      return new Response(indexResponse.body, {
+      return new Response(html, {
         status: 200,
-        headers: indexResponse.headers,
+        headers,
       });
     }
   }

@@ -202,7 +202,17 @@ run_check() {
         ;;
       og_url_matches_path)
         local og_url
+        local alternate_og_url=""
         og_url=$(extract_meta "$body" "og:url")
+        case "$path" in
+          /discovery/hot|/discovery/classics)
+            alternate_og_url="https://divine.video/discovery"
+            ;;
+          /family)
+            # The prerendered marketing page intentionally canonicalizes previews to production.
+            alternate_og_url="https://divine.video/family"
+            ;;
+        esac
         if [[ -z "$og_url" ]]; then
           all_passed=false
           echo "    FAIL: missing og:url tag"
@@ -213,8 +223,8 @@ run_check() {
         elif [[ "$og_url" != "${BASE_URL}${path}" \
           && "$og_url" != "${BASE_URL}${path}/" \
           && "$og_url" != "${BASE_URL}/" \
-          && "$og_url" != "https://divine.video${path}" \
-          && "$og_url" != "https://divine.video${path}/" ]]; then
+          && "$og_url" != "$alternate_og_url" \
+          && "$og_url" != "${alternate_og_url}/" ]]; then
           all_passed=false
           echo "    FAIL: og:url does not match expected path"
           echo "          expected: ${BASE_URL}${path}"
