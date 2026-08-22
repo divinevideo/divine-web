@@ -93,9 +93,29 @@ describe("publishArchiveEvents", () => {
       relayFactory: () => relay,
     });
     expect(relay.published.map((event) => event.kind)).toEqual([34236, 1111, 1111]);
+    expect(relay.published[0].created_at).toBe(video.created_at + 1);
+    expect(relay.published[1].created_at).toBe(comment.created_at);
+    expect(relay.published[2].created_at).toBe(reply.created_at);
     expect(relay.published[1].tags).toEqual([["E", relay.published[0].id], ["e", relay.published[0].id]]);
     expect(relay.published[2].tags).toEqual([["E", relay.published[0].id], ["e", relay.published[1].id]]);
     expect(results.every((result) => result.status === "published")).toBe(true);
+  });
+
+  it("produces the same replacement templates on repeated runs", async () => {
+    const signer = makeSigner();
+    const video = makeEvent("1", { kind: 34236, content: SOURCE, tags: [["url", SOURCE]] });
+    const firstRelay = fakeRelay();
+    const secondRelay = fakeRelay();
+    await publishArchiveEvents({ destination: RELAY, events: [video], mirrorResults: [mirrorResult()], signer, relayFactory: () => firstRelay });
+    await publishArchiveEvents({ destination: RELAY, events: [video], mirrorResults: [mirrorResult()], signer, relayFactory: () => secondRelay });
+
+    expect(signer.signEvent).toHaveBeenNthCalledWith(2, signer.signEvent.mock.calls[0][0]);
+    expect(secondRelay.published[0]).toMatchObject({
+      kind: firstRelay.published[0].kind,
+      created_at: firstRelay.published[0].created_at,
+      content: firstRelay.published[0].content,
+      tags: firstRelay.published[0].tags,
+    });
   });
 
   it("replaces serialized repost content with the newly signed referenced event", async () => {

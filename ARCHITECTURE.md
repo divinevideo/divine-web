@@ -202,8 +202,10 @@ custom `wss://` relay. Migration writes use a standalone authenticated relay
 session instead of the app's `NPool`; the same session primitive also publishes
 the discovery pointers described below. Only media with
 descriptor-and-readback verification is rewritten.
-Changed events are re-signed with their original timestamp, referenced owner
-events are prepared first so `e`, `E`, and `q` tags keep pointing at valid
+Changed replaceable and addressable events are re-signed one second after their
+original timestamp so the migrated copy deterministically supersedes the old
+media references. Other changed events keep their original timestamp, referenced
+owner events are prepared first so `e`, `E`, and `q` tags keep pointing at valid
 event IDs, and unchanged events retain their original ID and signature.
 Encrypted messages, ephemeral or authentication events, deletion requests,
 and vanish requests are skipped. Relay refusals remain per-event results and

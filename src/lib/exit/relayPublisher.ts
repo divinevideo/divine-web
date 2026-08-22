@@ -6,6 +6,7 @@ import type { NostrEvent, NostrSigner } from "@nostrify/nostrify";
 import {
   buildDestinationUrlMap,
   referencedEventIds,
+  republishCreatedAt,
   republishSkipReason,
   rewriteEventMedia,
   rewriteEventReferences,
@@ -121,7 +122,12 @@ async function prepareEvents(options: PublishArchiveOptions): Promise<{
     let event = original;
     if (changed) {
       try {
-        event = await options.signer.signEvent(references.template);
+        // A deterministic one-second advance prevents replaceable copies from
+        // falling back to event-id or arrival-order tie-breaks.
+        event = await options.signer.signEvent({
+          ...references.template,
+          created_at: republishCreatedAt(original),
+        });
         if (event.pubkey !== original.pubkey || !HEX_64.test(event.id)) {
           throw new Error("The signer returned an event for a different account.");
         }
