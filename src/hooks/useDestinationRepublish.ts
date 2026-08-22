@@ -14,6 +14,7 @@ import {
   type PublishSummary,
 } from "@/lib/exit/relayPublisher";
 import { normalizeRelayDestinationUrl } from "@/lib/exit/relayDestination";
+import { fetchRelayAgeLimit } from "@/lib/exit/relayLimits";
 
 type DestinationRepublishState = "idle" | "running" | "complete" | "failed";
 
@@ -55,12 +56,14 @@ export function useDestinationRepublish(input: {
     setDestination(null);
     try {
       const normalizedDestination = normalizeRelayDestinationUrl(destinationValue);
+      const relayAgeLimitSeconds = await fetchRelayAgeLimit(normalizedDestination, { signal: controller.signal });
       const publishResults = await publishArchiveEvents({
         destination: normalizedDestination,
         events: input.files["events.json"],
         mirrorResults: input.mirrorResults,
         signer: input.signer,
         signal: controller.signal,
+        relayAgeLimitSeconds,
         onProgress: setProgress,
       });
       if (controller.signal.aborted) return;
