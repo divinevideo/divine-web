@@ -19,6 +19,9 @@ export interface PageMeta {
   twitterCard: string;
   videoUrl?: string;
   videoMimeType?: string;
+  videoWidth?: number;
+  videoHeight?: number;
+  twitterPlayerUrl?: string;
 }
 
 export interface VideoApiResponse {
@@ -72,13 +75,40 @@ function getTagValue(tags: string[][], name: string): string | undefined {
   return tags.find(tag => tag[0] === name)?.[1];
 }
 
-function parseImeta(tags: string[][]): { url?: string; image?: string; mimeType?: string } {
+export function safeDecodeURIComponent(value: string): string {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
+}
+
+function parseDimensions(value?: string): { width?: number; height?: number } {
+  const match = value?.match(/^(\d+)x(\d+)$/i);
+  if (!match) {
+    return {};
+  }
+
+  const width = Number(match[1]);
+  const height = Number(match[2]);
+  return width > 0 && height > 0 ? { width, height } : {};
+}
+
+interface ImetaFields {
+  url?: string;
+  image?: string;
+  mimeType?: string;
+  width?: number;
+  height?: number;
+}
+
+function parseImeta(tags: string[][]): ImetaFields {
   const imetaTag = tags.find(tag => tag[0] === 'imeta');
   if (!imetaTag) {
     return {};
   }
 
-  const parsed: { url?: string; image?: string; mimeType?: string } = {};
+  const parsed: ImetaFields = {};
 
   for (let i = 1; i < imetaTag.length; i += 1) {
     const part = imetaTag[i];
@@ -93,13 +123,14 @@ function parseImeta(tags: string[][]): { url?: string; image?: string; mimeType?
     if (key === 'url') parsed.url = value;
     if (key === 'image') parsed.image = value;
     if (key === 'm') parsed.mimeType = value;
+    if (key === 'dim') Object.assign(parsed, parseDimensions(value));
   }
 
   return parsed;
 }
 
 function humanizeCategoryName(name: string): string {
-  const normalized = decodeURIComponent(name).trim().toLowerCase();
+  const normalized = safeDecodeURIComponent(name).trim().toLowerCase();
   if (!normalized) {
     return 'Category';
   }
@@ -116,7 +147,7 @@ function humanizeCategoryName(name: string): string {
 }
 
 function categoryDescription(name: string, videoCount?: number): string {
-  const normalized = cleanText(decodeURIComponent(name).toLowerCase()) || 'category';
+  const normalized = cleanText(safeDecodeURIComponent(name).toLowerCase()) || 'category';
   if (typeof videoCount === 'number' && Number.isFinite(videoCount) && videoCount >= 0) {
     return `Explore ${videoCount} ${normalized} videos on Divine.`;
   }
@@ -192,7 +223,7 @@ export function extractProfileNpub(pathname: string): string | null {
     return null;
   }
 
-  return decodeURIComponent(match[1]);
+  return safeDecodeURIComponent(match[1]);
 }
 
 export function extractCategoryName(pathname: string): string | null {
@@ -201,7 +232,7 @@ export function extractCategoryName(pathname: string): string | null {
     return null;
   }
 
-  return decodeURIComponent(match[1]);
+  return safeDecodeURIComponent(match[1]);
 }
 
 export function buildVideoPageMeta(url: URL, payload: VideoApiResponse): PageMeta {
@@ -228,6 +259,8 @@ export function buildVideoPageMeta(url: URL, payload: VideoApiResponse): PageMet
 
   const media = parseImeta(payload.event.tags);
 
+  const hasPlayableVideo = Boolean(media.url);
+
   return {
     title,
     description,
@@ -235,9 +268,14 @@ export function buildVideoPageMeta(url: URL, payload: VideoApiResponse): PageMet
     url: url.toString(),
     image: media.image || DEFAULT_OG_IMAGE,
     imageAlt: title,
-    twitterCard: 'summary_large_image',
+    twitterCard: hasPlayableVideo ? 'player' : 'summary_large_image',
     videoUrl: media.url,
     videoMimeType: media.mimeType,
+    videoWidth: media.width,
+    videoHeight: media.height,
+    twitterPlayerUrl: hasPlayableVideo
+      ? new URL(`/embed/${encodeURIComponent(payload.event.id)}`, url).toString()
+      : undefined,
   };
 }
 

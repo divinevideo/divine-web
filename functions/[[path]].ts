@@ -13,6 +13,8 @@ import {
   decodeNpubToHex,
   extractCategoryName,
   extractProfileNpub,
+  getDefaultPageMeta,
+  safeDecodeURIComponent,
   type PageMeta,
   type ProfileApiResponse,
   type VideoApiResponse,
@@ -33,8 +35,12 @@ function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
+// `String.prototype.replace` reads `$&`, `$'`, `` $` ``, `$1`-`$9` and `$$` in a
+// replacement *string* as substitution patterns. Route text arrives straight from
+// the URL, so every helper below builds its replacement in a function instead,
+// where the returned value is inserted verbatim.
 function replaceTitle(html: string, title: string): string {
-  return html.replace(/<title>[^<]*<\/title>/i, `<title>${escapeHtml(title)}</title>`);
+  return html.replace(/<title>[^<]*<\/title>/i, () => `<title>${escapeHtml(title)}</title>`);
 }
 
 function upsertMetaTag(html: string, attribute: 'name' | 'property', key: string, content: string): string {
@@ -43,12 +49,12 @@ function upsertMetaTag(html: string, attribute: 'name' | 'property', key: string
   const escapedContent = escapeHtml(content);
 
   if (pattern.test(html)) {
-    return html.replace(pattern, `$1${escapedContent}$2`);
+    return html.replace(pattern, (_match, prefix: string, suffix: string) => `${prefix}${escapedContent}${suffix}`);
   }
 
   return html.replace(
     '</head>',
-    `    <meta ${attribute}="${key}" content="${escapedContent}" />\n  </head>`
+    () => `    <meta ${attribute}="${key}" content="${escapedContent}" />\n  </head>`
   );
 }
 
@@ -57,10 +63,10 @@ function upsertLinkTag(html: string, rel: string, type: string, href: string): s
   const pattern = new RegExp(`<link[^>]+rel="${rel}"[^>]*>`, 'i');
 
   if (pattern.test(html)) {
-    return html.replace(pattern, linkTag);
+    return html.replace(pattern, () => linkTag);
   }
 
-  return html.replace('</head>', `${linkTag}</head>`);
+  return html.replace('</head>', () => `${linkTag}</head>`);
 }
 
 function isVideoPage(path: string): boolean {
@@ -95,15 +101,32 @@ function injectMetaTags(html: string, meta: PageMeta, path: string): string {
   if (meta.videoUrl) {
     updatedHtml = upsertMetaTag(updatedHtml, 'property', 'og:video', meta.videoUrl);
     updatedHtml = upsertMetaTag(updatedHtml, 'property', 'og:video:secure_url', meta.videoUrl);
+    updatedHtml = upsertMetaTag(updatedHtml, 'property', 'og:video:width', String(meta.videoWidth || 720));
+    updatedHtml = upsertMetaTag(updatedHtml, 'property', 'og:video:height', String(meta.videoHeight || 1280));
   } else {
     updatedHtml = removeMetaTag(updatedHtml, 'property', 'og:video');
     updatedHtml = removeMetaTag(updatedHtml, 'property', 'og:video:secure_url');
+    updatedHtml = removeMetaTag(updatedHtml, 'property', 'og:video:width');
+    updatedHtml = removeMetaTag(updatedHtml, 'property', 'og:video:height');
   }
 
   if (meta.videoMimeType) {
     updatedHtml = upsertMetaTag(updatedHtml, 'property', 'og:video:type', meta.videoMimeType);
   } else {
     updatedHtml = removeMetaTag(updatedHtml, 'property', 'og:video:type');
+  }
+
+  if (meta.twitterPlayerUrl) {
+    updatedHtml = upsertMetaTag(updatedHtml, 'name', 'twitter:player', meta.twitterPlayerUrl);
+    updatedHtml = upsertMetaTag(updatedHtml, 'name', 'twitter:player:width', String(meta.videoWidth || 720));
+    updatedHtml = upsertMetaTag(updatedHtml, 'name', 'twitter:player:height', String(meta.videoHeight || 1280));
+    updatedHtml = upsertMetaTag(updatedHtml, 'name', 'twitter:player:stream', meta.videoUrl || '');
+    updatedHtml = upsertMetaTag(
+      updatedHtml,
+      'name',
+      'twitter:player:stream:content_type',
+      meta.videoMimeType || 'video/mp4'
+    );
   }
 
   if (isVideoPage(path)) {
@@ -119,12 +142,12 @@ function injectMetaTags(html: string, meta: PageMeta, path: string): string {
 }
 
 async function fetchVideoMeta(url: URL): Promise<PageMeta | null> {
-  const match = url.pathname.match(/^\/video\/([^/]+)$/);
+  const match = url.pathname.match(/^\/(?:video|embed)\/([^/]+)$/);
   if (!match) {
     return null;
   }
 
-  const identifier = decodeURIComponent(match[1]);
+  const identifier = safeDecodeURIComponent(match[1]);
 
   try {
     const response = await fetch(`${FUNNELCAKE_API_URL}/api/videos/${identifier}`);
@@ -137,7 +160,101 @@ async function fetchVideoMeta(url: URL): Promise<PageMeta | null> {
       return null;
     }
 
-    return buildVideoPageMeta(url, payload);
+    const pageUrl = new URL(`/video/${encodeURIComponent(identifier)}`, url);
+    return buildVideoPageMeta(pageUrl, payload);
+  } catch {
+    return null;
+  }
+}
+
+function buildSimplePageMeta(
+  url: URL,
+  title: string,
+  description: string,
+  imageAlt = title
+): PageMeta {
+  return {
+    ...getDefaultPageMeta(url),
+    title,
+    description,
+    imageAlt,
+  };
+}
+
+function buildSimpleRouteMeta(url: URL): PageMeta | null {
+  const hashtagMatch = url.pathname.match(/^\/t\/([^/]+)$/);
+  if (hashtagMatch) {
+    const hashtag = safeDecodeURIComponent(hashtagMatch[1]).replace(/^#/, '').trim();
+    return hashtag
+      ? buildSimplePageMeta(url, `#${hashtag} videos on Divine`, `Watch the latest #${hashtag} videos on Divine.`)
+      : null;
+  }
+
+  if (url.pathname === '/search') {
+    const query = url.searchParams.get('q')?.trim().slice(0, 80);
+    return query
+      ? buildSimplePageMeta(url, `"${query}" on Divine`, `Search Divine for "${query}" — watch loops, find creators, follow what you love.`)
+      : null;
+  }
+
+  const discoveryMatch = url.pathname.match(/^\/discovery(?:\/(new|hot|classics|top|hashtags|foryou))?$/);
+  if (discoveryMatch) {
+    const labels = {
+      trending: 'Trending videos',
+      new: 'Trending videos',
+      hot: 'Trending videos',
+      classics: 'Classic videos',
+      top: 'Classic videos',
+      hashtags: 'Trending hashtags',
+      foryou: 'For you videos',
+    } as const;
+    const feedType = discoveryMatch[1] as keyof typeof labels | undefined;
+    const label = labels[feedType || 'trending'];
+    return buildSimplePageMeta(url, `${label} on Divine`, `${label} on Divine — 6-second loops from real humans.`);
+  }
+
+  if (url.pathname === '/') {
+    return buildSimplePageMeta(
+      url,
+      'Divine — 6-second loops from real humans',
+      'Watch and share 6-second looping videos on the decentralized Nostr network.'
+    );
+  }
+
+  return null;
+}
+
+async function fetchAtUsernameMeta(url: URL): Promise<PageMeta | null> {
+  const match = url.pathname.match(/^\/@([a-zA-Z0-9_-]+)$/);
+  if (!match) {
+    return null;
+  }
+
+  const username = match[1].toLowerCase();
+
+  try {
+    const resolutionResponse = await fetch(
+      `https://divine.video/.well-known/nostr.json?name=${encodeURIComponent(username)}`
+    );
+    if (!resolutionResponse.ok) {
+      return null;
+    }
+
+    const resolution = await resolutionResponse.json() as { names?: Record<string, string> };
+    const pubkey = resolution.names?.[username];
+    if (!pubkey || !/^[0-9a-f]{64}$/i.test(pubkey)) {
+      return null;
+    }
+
+    const profileResponse = await fetch(`${FUNNELCAKE_API_URL}/api/users/${pubkey}`);
+    if (profileResponse.ok) {
+      const profile = await profileResponse.json() as ProfileApiResponse;
+      if (profile.profile) {
+        return buildProfilePageMeta(url, profile);
+      }
+    }
+
+    return buildProfilePageMeta(url, { profile: { name: username } });
   } catch {
     return null;
   }
@@ -209,6 +326,10 @@ async function fetchRouteMeta(url: URL): Promise<PageMeta | null> {
     return fetchProfileMeta(url);
   }
 
+  if (url.pathname.startsWith('/@')) {
+    return fetchAtUsernameMeta(url);
+  }
+
   // Family resource hub at /family on apex.
   if (url.pathname === '/family') {
     return buildFamilyPageMeta(url);
@@ -228,7 +349,32 @@ async function fetchRouteMeta(url: URL): Promise<PageMeta | null> {
     return buildDownloadPageMeta(url);
   }
 
-  return null;
+  return buildSimpleRouteMeta(url);
+}
+
+function renderEmbedPage(meta: PageMeta): string {
+  const title = escapeHtml(meta.title);
+  const poster = escapeHtml(meta.image);
+  const videoUrl = escapeHtml(meta.videoUrl || '');
+  const mimeType = escapeHtml(meta.videoMimeType || 'video/mp4');
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>${title}</title>
+  <style>
+    html,body{margin:0;padding:0;height:100%;background:#000;overflow:hidden}
+    video{width:100vw;height:100vh;object-fit:contain;display:block}
+  </style>
+</head>
+<body>
+  <video autoplay loop muted playsinline poster="${poster}">
+    <source src="${videoUrl}" type="${mimeType}">
+  </video>
+</body>
+</html>`;
 }
 
 export async function onRequest(context: {
@@ -242,6 +388,23 @@ export async function onRequest(context: {
   // Serve .well-known files directly - don't intercept them
   if (path.startsWith('/.well-known/')) {
     return context.next();
+  }
+
+  if (/^\/embed\/[^/]+$/.test(path)) {
+    const meta = await fetchVideoMeta(url);
+    if (!meta?.videoUrl) {
+      return new Response('Video not found', { status: 404 });
+    }
+
+    return new Response(renderEmbedPage(meta), {
+      status: 200,
+      headers: {
+        'content-type': 'text/html; charset=UTF-8',
+        'cache-control': 'public, max-age=300',
+        'content-security-policy': 'frame-ancestors *',
+        'x-robots-tag': 'noindex',
+      },
+    });
   }
 
   // Try to serve the requested asset first
@@ -269,22 +432,17 @@ export async function onRequest(context: {
       // Fetch index.html from the static assets
       const indexUrl = new URL('/index.html', context.request.url);
       const indexResponse = await fetch(indexUrl);
+      const html = injectMetaTags(
+        await indexResponse.text(),
+        meta || getDefaultPageMeta(url),
+        path
+      );
+      const headers = new Headers(indexResponse.headers);
+      headers.set('content-type', 'text/html; charset=UTF-8');
 
-      if (meta) {
-        const html = injectMetaTags(await indexResponse.text(), meta, path);
-        const headers = new Headers(indexResponse.headers);
-        headers.set('content-type', 'text/html; charset=UTF-8');
-
-        return new Response(html, {
-          status: 200,
-          headers,
-        });
-      }
-
-      // Return index.html with 200 status code
-      return new Response(indexResponse.body, {
+      return new Response(html, {
         status: 200,
-        headers: indexResponse.headers,
+        headers,
       });
     }
   }

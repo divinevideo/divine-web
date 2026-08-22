@@ -47,7 +47,7 @@ describe('functions/[[path]]', () => {
             tags: [
               ['title', 'Bangkok rooftop'],
               ['summary', 'Skyline views over Bangkok'],
-              ['imeta', 'url https://media.divine.video/abc123.mp4', 'm video/mp4', 'image https://media.divine.video/abc123.jpg'],
+              ['imeta', 'url https://media.divine.video/abc123.mp4', 'm video/mp4', 'image https://media.divine.video/abc123.jpg', 'dim 1080x1080'],
             ],
           },
           stats: {
@@ -98,6 +98,17 @@ describe('functions/[[path]]', () => {
         });
       }
 
+      if (url.includes('/.well-known/nostr.json?name=jalcine')) {
+        return new Response(JSON.stringify({
+          names: {
+            jalcine: '076c979382b90f5d3a2b21f95e1ee86b6033f14c92e79b7fad3fe1f1073f4886',
+          },
+        }), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        });
+      }
+
       if (url.includes('/api/categories')) {
         return new Response(JSON.stringify([
           { name: 'dance', video_count: 895 },
@@ -134,9 +145,57 @@ describe('functions/[[path]]', () => {
     expect(html).toContain('property="og:image" content="https://media.divine.video/abc123.jpg"');
     expect(html).toContain('property="og:video" content="https://media.divine.video/abc123.mp4"');
     expect(html).toContain('property="og:video:type" content="video/mp4"');
+    expect(html).toContain('name="twitter:card" content="player"');
+    expect(html).toContain('name="twitter:player" content="https://divine.video/embed/abc123"');
+    expect(html).toContain('property="og:video:width" content="1080"');
+    expect(html).toContain('property="og:video:height" content="1080"');
+    expect(html).toContain('name="twitter:player:width" content="1080"');
+    expect(html).toContain('name="twitter:player:height" content="1080"');
     expect(html).toContain('name="twitter:title" content="Bangkok rooftop"');
     expect(html).toContain('rel="alternate" type="application/json+oembed"');
     expect(html).toContain('href="https://relay.divine.video/api/oembed?url=https%3A%2F%2Fdivine.video%2Fvideo%2Fabc123"');
+  });
+
+  it('serves the video embed with iframe and indexing headers', async () => {
+    const response = await onRequest({
+      request: new Request('https://divine.video/embed/abc123'),
+      next: async () => new Response('not found', { status: 404 }),
+      env: {},
+    });
+
+    const html = await response.text();
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get('content-security-policy')).toBe('frame-ancestors *');
+    expect(response.headers.get('x-robots-tag')).toBe('noindex');
+    expect(html).toContain('html,body{margin:0;padding:0;height:100%;background:#000;overflow:hidden}');
+    expect(html).toContain('video{width:100vw;height:100vh;object-fit:contain;display:block}');
+    expect(html).toContain('<video autoplay loop muted playsinline');
+    expect(html).toContain('src="https://media.divine.video/abc123.mp4"');
+  });
+
+  it('leaves the trailing-slash embed widget route to static routing', async () => {
+    const next = vi.fn(async () => new Response('Divine Video Widget', { status: 200 }));
+    const response = await onRequest({
+      request: new Request('https://divine.video/embed/'),
+      next,
+      env: {},
+    });
+
+    expect(response.status).toBe(200);
+    expect(await response.text()).toBe('Divine Video Widget');
+    expect(next).toHaveBeenCalledOnce();
+  });
+
+  it('returns a normal not-found response for a malformed embed identifier', async () => {
+    const response = await onRequest({
+      request: new Request('https://divine.video/embed/%zz'),
+      next: async () => new Response('not found', { status: 404 }),
+      env: {},
+    });
+
+    expect(response.status).toBe(404);
+    expect(await response.text()).toBe('Video not found');
   });
 
   it('falls back to the generic shell when video metadata is unavailable', async () => {
@@ -261,5 +320,120 @@ describe('functions/[[path]]', () => {
     expect(html).toContain('<title>Dance Videos - Divine</title>');
     expect(html).toContain('property="og:title" content="Dance Videos - Divine"');
     expect(html).toContain('property="og:description" content="Explore 895 dance videos on Divine."');
+  });
+
+  it.each([
+    ['/t/funny', '#funny videos on Divine', 'https://divine.video/t/funny'],
+    ['/search?q=cats', '&quot;cats&quot; on Divine', 'https://divine.video/search?q=cats'],
+    ['/discovery', 'Trending videos on Divine', 'https://divine.video/discovery'],
+    ['/discovery/new', 'Trending videos on Divine', 'https://divine.video/discovery/new'],
+    ['/discovery/hot', 'Trending videos on Divine', 'https://divine.video/discovery/hot'],
+    ['/discovery/classics', 'Classic videos on Divine', 'https://divine.video/discovery/classics'],
+    ['/discovery/foryou', 'For you videos on Divine', 'https://divine.video/discovery/foryou'],
+    ['/@jalcine', 'The Wall! on Divine', 'https://divine.video/@jalcine'],
+    ['/', 'Divine — 6-second loops from real humans', 'https://divine.video/'],
+  ])('injects route metadata for %s', async (path, title, canonicalUrl) => {
+    const response = await onRequest({
+      request: new Request(`https://divine.video${path}`),
+      next: async () => new Response('not found', { status: 404 }),
+      env: {},
+    });
+
+    const html = await response.text();
+
+    expect(response.status).toBe(200);
+    expect(html).toContain(`<title>${title}</title>`);
+    expect(html).toContain(`property="og:url" content="${canonicalUrl}"`);
+  });
+
+  it('treats dollar sequences in route text as literal characters', async () => {
+    const response = await onRequest({
+      request: new Request('https://divine.video/search?q=%24%26'),
+      next: async () => new Response('not found', { status: 404 }),
+      env: {},
+    });
+
+    const html = await response.text();
+
+    expect(response.status).toBe(200);
+    expect(html).toContain('<title>&quot;$&amp;&quot; on Divine</title>');
+    expect(html).toContain('property="og:title" content="&quot;$&amp;&quot; on Divine"');
+    // A `$&` in the replacement string would splice the matched tag back in.
+    expect(html).not.toContain('<title><title>');
+    expect(html).not.toContain('content="&quot;<meta');
+  });
+
+  it('keeps a dollar sequence in the query string out of the injected og:url', async () => {
+    const response = await onRequest({
+      request: new Request('https://divine.video/no-such-route?a=$&'),
+      next: async () => new Response('not found', { status: 404 }),
+      env: {},
+    });
+
+    const html = await response.text();
+
+    expect(response.status).toBe(200);
+    expect(html).toContain('property="og:url" content="https://divine.video/no-such-route?a=$&amp;"');
+    expect(html).not.toContain('content="https://divine.video/no-such-route?a=<meta');
+  });
+
+  it('does not throw on a malformed hashtag escape', async () => {
+    const response = await onRequest({
+      request: new Request('https://divine.video/t/%zz'),
+      next: async () => new Response('not found', { status: 404 }),
+      env: {},
+    });
+    const html = await response.text();
+
+    expect(response.status).toBe(200);
+    expect(html).toContain('<title>#%zz videos on Divine</title>');
+  });
+
+  it.each(['/profile/%zz', '/category/%zz'])(
+    'does not throw on a malformed dynamic segment at %s',
+    async (path) => {
+      const response = await onRequest({
+        request: new Request(`https://divine.video${path}`),
+        next: async () => new Response('not found', { status: 404 }),
+        env: {},
+      });
+
+      expect(response.status).toBe(200);
+    }
+  );
+
+  it('keeps generic metadata for an unknown at-username route', async () => {
+    const response = await onRequest({
+      request: new Request('https://divine.video/@missing'),
+      next: async () => new Response('not found', { status: 404 }),
+      env: {},
+    });
+
+    const html = await response.text();
+
+    expect(response.status).toBe(200);
+    expect(html).toContain('<title>Divine Web - Short-form Looping Videos on Nostr</title>');
+    expect(html).not.toContain('missing on Divine');
+  });
+
+  it('restores generic metadata when the index fetch resolves through the home route', async () => {
+    const homeHtml = INDEX_HTML
+      .replaceAll('Divine Web - Short-form Looping Videos on Nostr', 'Divine — 6-second loops from real humans')
+      .replace('https://divine.video/', 'https://preview.pages.dev/');
+    vi.mocked(fetch).mockResolvedValueOnce(new Response(homeHtml, {
+      status: 200,
+      headers: { 'content-type': 'text/html; charset=UTF-8' },
+    }));
+
+    const response = await onRequest({
+      request: new Request('https://preview.pages.dev/no-such-route'),
+      next: async () => new Response('not found', { status: 404 }),
+      env: {},
+    });
+    const html = await response.text();
+
+    expect(response.status).toBe(200);
+    expect(html).toContain('<title>Divine Web - Short-form Looping Videos on Nostr</title>');
+    expect(html).toContain('property="og:url" content="https://preview.pages.dev/no-such-route"');
   });
 });
