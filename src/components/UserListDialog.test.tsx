@@ -208,6 +208,22 @@ describe('UserListDialog', () => {
       expect(screen.getByText('Generated aaaaaa')).toBeVisible();
     });
 
+    it('matches the generated display name when NIP-05 is the only profile name', async () => {
+      const user = userEvent.setup();
+      mockUseBatchedAuthors.mockReturnValue({
+        data: { [alice]: { metadata: { nip05: 'alice@example.com' } } },
+      });
+
+      render(
+        <UserListDialog open onOpenChange={vi.fn()} title="Following" pubkeys={[alice]} />,
+      );
+
+      expect(await screen.findByText('Generated aaaaaa')).toBeVisible();
+      await user.type(screen.getByRole('searchbox'), 'generated');
+
+      expect(screen.getByText('Generated aaaaaa')).toBeVisible();
+    });
+
     it('does not page in more rows while a query narrows the list', async () => {
       const user = userEvent.setup();
       const onLoadMore = vi.fn();

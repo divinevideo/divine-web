@@ -146,7 +146,7 @@ export function UserListDialog({
         metadata?.display_name,
         metadata?.name,
         metadata?.nip05,
-        metadata?.display_name || metadata?.name || metadata?.nip05
+        metadata?.display_name || metadata?.name
           ? undefined
           : genUserName(pubkey),
       ];
