@@ -120,6 +120,28 @@ describe('UserListDialog', () => {
       expect(screen.queryByText('Alice Cooper')).not.toBeInTheDocument();
     });
 
+    it('clears the query when the dialog closes', async () => {
+      const user = userEvent.setup();
+      mockUseBatchedAuthors.mockReturnValue({ data: authors });
+
+      const { rerender } = render(
+        <UserListDialog open onOpenChange={vi.fn()} title="Following" pubkeys={[alice, bob]} />,
+      );
+
+      await user.type(screen.getByRole('searchbox'), 'bob');
+      expect(screen.queryByText('Alice Cooper')).not.toBeInTheDocument();
+
+      rerender(
+        <UserListDialog open={false} onOpenChange={vi.fn()} title="Following" pubkeys={[alice, bob]} />,
+      );
+      rerender(
+        <UserListDialog open onOpenChange={vi.fn()} title="Following" pubkeys={[alice, bob]} />,
+      );
+
+      expect(screen.getByRole('searchbox')).toHaveValue('');
+      expect(screen.getByText('Alice Cooper')).toBeVisible();
+    });
+
     it('resolves every profile once a query is typed so search can reach the whole list', async () => {
       const user = userEvent.setup();
       mockUseBatchedAuthors.mockReturnValue({ data: authors });
@@ -155,6 +177,35 @@ describe('UserListDialog', () => {
 
       expect(screen.getByText(/no one here matches/i)).toBeVisible();
       expect(screen.queryByText(/no following yet/i)).not.toBeInTheDocument();
+    });
+
+    it('waits for the widened profile lookup before reporting no matches', async () => {
+      const user = userEvent.setup();
+      mockUseBatchedAuthors.mockReturnValue({ data: {}, isLoading: true });
+
+      render(
+        <UserListDialog open onOpenChange={vi.fn()} title="Following" pubkeys={[alice, bob]} />,
+      );
+
+      await user.type(screen.getByRole('searchbox'), 'zzzz');
+
+      expect(screen.queryByText(/no one here matches/i)).not.toBeInTheDocument();
+    });
+
+    it('matches the generated name when resolved metadata has no searchable name', async () => {
+      const user = userEvent.setup();
+      mockUseBatchedAuthors.mockReturnValue({
+        data: { [alice]: { metadata: {} } },
+      });
+
+      render(
+        <UserListDialog open onOpenChange={vi.fn()} title="Following" pubkeys={[alice]} />,
+      );
+
+      expect(await screen.findByText('Generated aaaaaa')).toBeVisible();
+      await user.type(screen.getByRole('searchbox'), 'generated');
+
+      expect(screen.getByText('Generated aaaaaa')).toBeVisible();
     });
 
     it('does not page in more rows while a query narrows the list', async () => {

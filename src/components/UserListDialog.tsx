@@ -135,6 +135,10 @@ export function UserListDialog({
   const trimmedQuery = query.trim().toLowerCase();
   const isSearching = trimmedQuery.length > 0;
 
+  useEffect(() => {
+    if (!open) setQuery('');
+  }, [open]);
+
   const matchesQuery = useCallback(
     (pubkey: string) => {
       const metadata = resolvedAuthors[pubkey]?.metadata;
@@ -142,7 +146,9 @@ export function UserListDialog({
         metadata?.display_name,
         metadata?.name,
         metadata?.nip05,
-        metadata ? undefined : genUserName(pubkey),
+        metadata?.display_name || metadata?.name || metadata?.nip05
+          ? undefined
+          : genUserName(pubkey),
       ];
       return haystack.some((value) => value?.toLowerCase().includes(trimmedQuery));
     },
@@ -194,7 +200,9 @@ export function UserListDialog({
   // screen, so a query widens the fetch to the whole list. Bulk lookups chunk
   // themselves, and windowed fetching stays the default while idle.
   const requestedPubkeys = isSearching ? pubkeys : visiblePubkeys;
-  const { data: authorsData } = useBatchedAuthors(open ? requestedPubkeys : []);
+  const { data: authorsData, isLoading: areAuthorsLoading = false } = useBatchedAuthors(
+    open ? requestedPubkeys : [],
+  );
 
   useEffect(() => {
     if (!authorsData) return;
@@ -259,6 +267,12 @@ export function UserListDialog({
             <p className="text-center text-muted-foreground py-8 text-sm">
               No {title.toLowerCase()} yet
             </p>
+          </div>
+        ) : isSearching && filteredPubkeys.length === 0 && areAuthorsLoading ? (
+          <div className="px-4 pb-4">
+            {Array.from({ length: 3 }, (_, index) => (
+              <LoadingSkeleton key={index} />
+            ))}
           </div>
         ) : isSearching && filteredPubkeys.length === 0 ? (
           <div className="px-4 pb-4">
