@@ -5,6 +5,7 @@ import type { MirrorResult } from "./mirrorClient";
 import {
   buildDestinationUrlMap,
   referencedEventIds,
+  republishCreatedAt,
   republishSkipReason,
   rewriteEventMedia,
   rewriteEventReferences,
@@ -121,4 +122,22 @@ describe("republishSkipReason", () => {
   it.each([0, 1, 3, 7, 16, 1111, 10002, 30005, 34236])("allows durable public kind %s", (kind) => {
     expect(republishSkipReason(kind)).toBeNull();
   });
+});
+
+describe("republishCreatedAt", () => {
+  it.each([0, 3, 10_000, 19_999, 30_000, 34_236, 39_999])(
+    "advances replaceable or addressable kind %s by one second",
+    (kind) => {
+      const original = event({ kind });
+      expect(republishCreatedAt(original)).toBe(original.created_at + 1);
+    },
+  );
+
+  it.each([1, 16, 1111, 9999, 20_000, 29_999, 40_000])(
+    "preserves the timestamp for regular kind %s",
+    (kind) => {
+      const original = event({ kind });
+      expect(republishCreatedAt(original)).toBe(original.created_at);
+    },
+  );
 });
