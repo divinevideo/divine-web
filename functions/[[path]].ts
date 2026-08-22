@@ -197,7 +197,7 @@ function buildSimpleRouteMeta(url: URL): PageMeta | null {
       : null;
   }
 
-  const discoveryMatch = url.pathname.match(/^\/discovery(?:\/(new|hot|classics|top|hashtags))?$/);
+  const discoveryMatch = url.pathname.match(/^\/discovery(?:\/(new|hot|classics|top|hashtags|foryou))?$/);
   if (discoveryMatch) {
     const labels = {
       trending: 'Trending videos',
@@ -206,6 +206,7 @@ function buildSimpleRouteMeta(url: URL): PageMeta | null {
       classics: 'Classic videos',
       top: 'Classic videos',
       hashtags: 'Trending hashtags',
+      foryou: 'For you videos',
     } as const;
     const feedType = discoveryMatch[1] as keyof typeof labels | undefined;
     const label = labels[feedType || 'trending'];
