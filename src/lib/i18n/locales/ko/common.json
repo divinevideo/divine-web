@@ -1547,5 +1547,9 @@
     "deletedDescription": "‘{{name}}’ 삭제했어요.",
     "deleteFailedTitle": "삭제하지 못했어요.",
     "deleteFailedDescription": "사람 리스트를 삭제하다 막혔어요. 다시 해볼까요?"
+  },
+  "userList": {
+    "searchPlaceholder": "이름으로 검색",
+    "noMatches": "일치하는 사람이 없어요. 다른 이름으로 해볼까요?"
   }
 }

@@ -1547,5 +1547,9 @@
     "deletedDescription": "Naalis na ang “{{name}}”.",
     "deleteFailedTitle": "Hindi nabura.",
     "deleteFailedDescription": "May sablay sa pagbura ng listahan ng tao. Subukan ulit?"
+  },
+  "userList": {
+    "searchPlaceholder": "Maghanap ayon sa pangalan",
+    "noMatches": "Walang tumugma dito. Subukan ang ibang pangalan?"
   }
 }

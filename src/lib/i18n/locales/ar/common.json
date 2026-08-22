@@ -1643,5 +1643,9 @@
     "deletedDescription": "تمت إزالة «{{name}}».",
     "deleteFailedTitle": "فشل الحذف.",
     "deleteFailedDescription": "تعثّر حذف قائمة الأشخاص. نجرب مرة أخرى؟"
+  },
+  "userList": {
+    "searchPlaceholder": "ابحث بالاسم",
+    "noMatches": "لا أحد هنا يطابق ذلك. جرّب اسمًا آخر؟"
   }
 }

@@ -1547,5 +1547,9 @@
     "deletedDescription": "“{{name}}”已移除。",
     "deleteFailedTitle": "删除失败。",
     "deleteFailedDescription": "删除人物列表时卡住了。再试一次？"
+  },
+  "userList": {
+    "searchPlaceholder": "按名称搜索",
+    "noMatches": "这里没有匹配的人。换个名字试试？"
   }
 }

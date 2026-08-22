@@ -1547,5 +1547,9 @@
     "deletedDescription": "“{{name}}” telah dihapus.",
     "deleteFailedTitle": "Gagal menghapus.",
     "deleteFailedDescription": "Penghapusan daftar orang tersendat. Coba lagi?"
+  },
+  "userList": {
+    "searchPlaceholder": "Cari berdasarkan nama",
+    "noMatches": "Tidak ada yang cocok di sini. Coba nama lain?"
   }
 }

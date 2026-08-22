@@ -1547,5 +1547,9 @@
     "deletedDescription": "\"{{name}}\" has been removed.",
     "deleteFailedTitle": "Delete failed.",
     "deleteFailedDescription": "People list deletion hit a snag. Try again?"
+  },
+  "userList": {
+    "searchPlaceholder": "Search by name",
+    "noMatches": "No one here matches that. Try another name?"
   }
 }

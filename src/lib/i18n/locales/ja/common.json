@@ -1547,5 +1547,9 @@
     "deletedDescription": "「{{name}}」を削除しました。",
     "deleteFailedTitle": "削除できませんでした。",
     "deleteFailedDescription": "ピープルリストの削除でつまずきました。もう一度試す？"
+  },
+  "userList": {
+    "searchPlaceholder": "名前で検索",
+    "noMatches": "一致する人はいません。別の名前で試しますか？"
   }
 }

@@ -1547,5 +1547,9 @@
     "deletedDescription": "«{{name}}» ہٹا دی گئی۔",
     "deleteFailedTitle": "حذف نہیں ہو سکی۔",
     "deleteFailedDescription": "لوگوں کی فہرست حذف کرتے ہوئے رکاوٹ آئی۔ دوبارہ کوشش کریں؟"
+  },
+  "userList": {
+    "searchPlaceholder": "نام سے تلاش کریں",
+    "noMatches": "یہاں کوئی مماثل نہیں۔ کوئی اور نام آزمائیں؟"
   }
 }

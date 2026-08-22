@@ -1547,5 +1547,9 @@
     "deletedDescription": "‘{{name}}’ is verwijderd.",
     "deleteFailedTitle": "Verwijderen mislukt.",
     "deleteFailedDescription": "Het verwijderen van de personenlijst liep vast. Opnieuw?"
+  },
+  "userList": {
+    "searchPlaceholder": "Zoeken op naam",
+    "noMatches": "Niemand hier komt overeen. Een andere naam proberen?"
   }
 }

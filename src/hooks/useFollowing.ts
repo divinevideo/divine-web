@@ -9,17 +9,29 @@ import { debugLog } from '@/lib/debug';
 interface FollowingResponse {
   pubkeys: string[];
   total?: number;
+  limit?: number;
 }
 
 /**
  * Fetch following list for a user
  */
-async function fetchUserFollowing(
+/**
+ * The endpoint clamps `limit` to 100 per page. Without paging, a list longer
+ * than that is silently truncated — the dialog just loses people, with nothing
+ * on screen to say so.
+ */
+const FOLLOWING_PAGE_SIZE = 100;
+
+/** Backstop so a pathological `total` cannot page forever. */
+const FOLLOWING_MAX_PAGES = 30;
+
+async function fetchFollowingPage(
   apiUrl: string,
   pubkey: string,
+  offset: number,
   signal?: AbortSignal
 ): Promise<FollowingResponse> {
-  const url = `${apiUrl}/api/users/${pubkey}/following`;
+  const url = `${apiUrl}/api/users/${pubkey}/following?limit=${FOLLOWING_PAGE_SIZE}&offset=${offset}`;
   debugLog(`[useFollowing] Fetching: ${url}`);
 
   const response = await fetch(url, {
@@ -39,6 +51,35 @@ async function fetchUserFollowing(
   return {
     pubkeys,
     total: data.total || pubkeys.length,
+    limit: typeof data.limit === 'number' ? data.limit : undefined,
+  };
+}
+
+async function fetchUserFollowing(
+  apiUrl: string,
+  pubkey: string,
+  signal?: AbortSignal
+): Promise<FollowingResponse> {
+  const pubkeys: string[] = [];
+  let total = 0;
+
+  for (let page = 0; page < FOLLOWING_MAX_PAGES; page += 1) {
+    const result = await fetchFollowingPage(apiUrl, pubkey, pubkeys.length, signal);
+    pubkeys.push(...result.pubkeys);
+    total = result.total ?? pubkeys.length;
+
+    // A short page means the server has nothing more, whatever `total` claims.
+    if (
+      result.pubkeys.length < (result.limit ?? FOLLOWING_PAGE_SIZE)
+      || pubkeys.length >= total
+    ) {
+      break;
+    }
+  }
+
+  return {
+    pubkeys,
+    total: Math.max(total, pubkeys.length),
   };
 }
 

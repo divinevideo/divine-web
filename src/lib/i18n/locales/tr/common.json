@@ -1547,5 +1547,9 @@
     "deletedDescription": "“{{name}}” kaldırıldı.",
     "deleteFailedTitle": "Silinemedi.",
     "deleteFailedDescription": "Kişi listesi silinirken takıldı. Tekrar deneyelim mi?"
+  },
+  "userList": {
+    "searchPlaceholder": "Ada göre ara",
+    "noMatches": "Buradaki kimse eşleşmiyor. Başka bir ad denesene?"
   }
 }

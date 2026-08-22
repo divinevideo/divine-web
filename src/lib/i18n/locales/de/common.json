@@ -1547,5 +1547,9 @@
     "deletedDescription": "„{{name}}“ wurde entfernt.",
     "deleteFailedTitle": "Löschen fehlgeschlagen.",
     "deleteFailedDescription": "Beim Löschen der Personenliste hat es gehakt. Nochmal?"
+  },
+  "userList": {
+    "searchPlaceholder": "Nach Namen suchen",
+    "noMatches": "Hier passt niemand dazu. Anderen Namen versuchen?"
   }
 }

@@ -1555,5 +1555,9 @@
     "deletedDescription": "«{{name}}» è stata rimossa.",
     "deleteFailedTitle": "Eliminazione non riuscita.",
     "deleteFailedDescription": "L’eliminazione della lista di persone si è inceppata. Riproviamo?"
+  },
+  "userList": {
+    "searchPlaceholder": "Cerca per nome",
+    "noMatches": "Qui non corrisponde nessuno. Provi un altro nome?"
   }
 }
