@@ -56,6 +56,31 @@
     box-shadow: 2px 2px 0 0 hsl(var(--brand-off-white));
   }
 
+
+
+  /*
+    Permanently dark sections (bg-brand-dark-green unconditional) need the sticker
+    modifier to handle light mode. Unlike `.dark` (which applies to the whole app's
+    theme), this targets specific elements where the surface is always dark-green
+    regardless of theme. The sticker's ink must stay off-white so it's visible in
+    light mode and readable in dark mode. This is NOT for theme-following surfaces
+    that have conditional dark-mode variants (dark:, md:, hover: prefixes) — those
+    are handled by `.dark .brand-sticker` above.
+
+    Every offset state is restated, just like dark mode, to ensure hover and active
+    states remain visible.
+  */
+  .brand-sticker-on-dark {
+    border-color: hsl(var(--brand-off-white));
+    box-shadow: 4px 4px 0 0 hsl(var(--brand-off-white));
+  }
+  .brand-sticker-on-dark:hover {
+    box-shadow: 6px 6px 0 0 hsl(var(--brand-off-white));
+  }
+  .brand-sticker-on-dark:active {
+    box-shadow: 2px 2px 0 0 hsl(var(--brand-off-white));
+  }
+
   /* Card: thick border + optional accent shadow via composition */
   .brand-card {
     border: 2px solid hsl(var(--brand-dark-green));

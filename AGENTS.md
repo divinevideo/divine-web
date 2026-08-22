@@ -371,6 +371,7 @@ Defined in `src/styles/brand-utilities.css` (`@layer components`):
 - `brand-offset-shadow-sm-{green|dark}` — 3px offset (used on tab / nav active states)
 - `brand-tilt-neg-3`, `brand-tilt-pos-2` — playful rotation for stickers
 - `brand-sticker` — composition helper (border + shadow + hover lift)
+- `brand-sticker-on-dark` — modifier for sticker buttons on permanently dark sections. Apply when `bg-brand-dark-green` is unconditional (no theme-variant prefixes like `dark:`, `md:`, `hover:`). Repaints border and all offset states in off-white to prevent flattening on dark-green backgrounds in light mode.
 - `brand-card` — composition helper (thick border + 22px radius)
 
 ### Preview page (dev only)
