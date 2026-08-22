@@ -24,11 +24,17 @@ describe("PortabilityPage", () => {
     expect(
       screen.getByText(/It does not delete anything from Divine./)
     ).toBeInTheDocument();
+    expect(
+      screen.getByText(/Compatible apps can use those copies when they find them./)
+    ).toBeInTheDocument();
     expect(container.querySelector('a[href="/delete-account"]')).toBeTruthy();
     expect(
       screen.getByText(/If you're looking for information about deleting your Divine account/)
     ).toBeInTheDocument();
     expect(screen.getByText(/Moving is not all-or-nothing./)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Those copies can still point at Divine-hosted media/)
+    ).toBeInTheDocument();
     expect(
       screen.getByText(/You do not have to choose between Divine and the rest of the network./)
     ).toBeInTheDocument();

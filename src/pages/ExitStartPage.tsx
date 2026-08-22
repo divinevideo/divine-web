@@ -476,6 +476,17 @@ export function ExitStartPage() {
               blossomDestination={destinationMirror.destination}
               signer={signer}
             />
+            <Card variant="brand" accent="violet" className="mt-5">
+              <CardHeader>
+                <CardTitle>Old copies stay where they are</CardTitle>
+              </CardHeader>
+              <CardContent className="text-base leading-relaxed text-muted-foreground">
+                Other relays may already hold copies of your posts. Those copies can
+                still point at Divine-hosted media, so apps that use them may keep
+                loading your videos from Divine. Moving cannot update or remove those
+                copies.
+              </CardContent>
+            </Card>
           </section>
         )}
 

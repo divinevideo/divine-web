@@ -47,6 +47,10 @@ describe("ExitStartPage discovery pointer gate", () => {
     expect(screen.getByRole("heading", { name: "Publish your new home" })).toBeInTheDocument();
     expect(screen.getByText(/name only your destination to Divine and public metadata relays/)).toBeInTheDocument();
     expect(screen.queryByText(/without Divine in the path/)).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Old copies stay where they are" })).toBeInTheDocument();
+    expect(
+      screen.getByText(/Those copies can still point at Divine-hosted media/)
+    ).toBeInTheDocument();
   });
 
   it("does not offer pointers after an all-failed republish", async () => {

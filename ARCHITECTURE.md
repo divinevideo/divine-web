@@ -212,6 +212,10 @@ Encrypted messages, ephemeral or authentication events, deletion requests,
 and vanish requests are skipped. Relay refusals remain per-event results and
 do not stop unrelated publishes.
 
+The moving flow also states the boundary of that rewrite: copies already held
+by independent relays are not updated or removed, and their original media
+links may continue loading files from Divine.
+
 Once at least one event is present at the destination relay, the page can publish
 destination-only discovery metadata: a NIP-65 kind-10002 relay list and a BUD-03
 kind-10063 Blossom server list. Each pointer is signed once, then published to
