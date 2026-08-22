@@ -42,8 +42,12 @@ function safeDecodeURIComponent(value: string): string {
   }
 }
 
+// `String.prototype.replace` reads `$&`, `$'`, `` $` ``, `$1`-`$9` and `$$` in a
+// replacement *string* as substitution patterns. Route text arrives straight from
+// the URL, so every helper below builds its replacement in a function instead,
+// where the returned value is inserted verbatim.
 function replaceTitle(html: string, title: string): string {
-  return html.replace(/<title>[^<]*<\/title>/i, `<title>${escapeHtml(title)}</title>`);
+  return html.replace(/<title>[^<]*<\/title>/i, () => `<title>${escapeHtml(title)}</title>`);
 }
 
 function upsertMetaTag(html: string, attribute: 'name' | 'property', key: string, content: string): string {
@@ -52,12 +56,12 @@ function upsertMetaTag(html: string, attribute: 'name' | 'property', key: string
   const escapedContent = escapeHtml(content);
 
   if (pattern.test(html)) {
-    return html.replace(pattern, `$1${escapedContent}$2`);
+    return html.replace(pattern, (_match, prefix: string, suffix: string) => `${prefix}${escapedContent}${suffix}`);
   }
 
   return html.replace(
     '</head>',
-    `    <meta ${attribute}="${key}" content="${escapedContent}" />\n  </head>`
+    () => `    <meta ${attribute}="${key}" content="${escapedContent}" />\n  </head>`
   );
 }
 
@@ -66,10 +70,10 @@ function upsertLinkTag(html: string, rel: string, type: string, href: string): s
   const pattern = new RegExp(`<link[^>]+rel="${rel}"[^>]*>`, 'i');
 
   if (pattern.test(html)) {
-    return html.replace(pattern, linkTag);
+    return html.replace(pattern, () => linkTag);
   }
 
-  return html.replace('</head>', `${linkTag}</head>`);
+  return html.replace('</head>', () => `${linkTag}</head>`);
 }
 
 function isVideoPage(path: string): boolean {

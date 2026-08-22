@@ -344,6 +344,37 @@ describe('functions/[[path]]', () => {
     expect(html).toContain(`property="og:url" content="${canonicalUrl}"`);
   });
 
+  it('treats dollar sequences in route text as literal characters', async () => {
+    const response = await onRequest({
+      request: new Request('https://divine.video/search?q=%24%26'),
+      next: async () => new Response('not found', { status: 404 }),
+      env: {},
+    });
+
+    const html = await response.text();
+
+    expect(response.status).toBe(200);
+    expect(html).toContain('<title>&quot;$&amp;&quot; on Divine</title>');
+    expect(html).toContain('property="og:title" content="&quot;$&amp;&quot; on Divine"');
+    // A `$&` in the replacement string would splice the matched tag back in.
+    expect(html).not.toContain('<title><title>');
+    expect(html).not.toContain('content="&quot;<meta');
+  });
+
+  it('keeps a dollar sequence in the query string out of the injected og:url', async () => {
+    const response = await onRequest({
+      request: new Request('https://divine.video/no-such-route?a=$&'),
+      next: async () => new Response('not found', { status: 404 }),
+      env: {},
+    });
+
+    const html = await response.text();
+
+    expect(response.status).toBe(200);
+    expect(html).toContain('property="og:url" content="https://divine.video/no-such-route?a=$&amp;"');
+    expect(html).not.toContain('content="https://divine.video/no-such-route?a=<meta');
+  });
+
   it('does not throw on a malformed hashtag escape', async () => {
     const response = await onRequest({
       request: new Request('https://divine.video/t/%zz'),
