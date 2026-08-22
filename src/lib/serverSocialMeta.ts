@@ -94,19 +94,21 @@ function parseDimensions(value?: string): { width?: number; height?: number } {
   return width > 0 && height > 0 ? { width, height } : {};
 }
 
-function parseImeta(tags: string[][]): {
+interface ImetaFields {
   url?: string;
   image?: string;
   mimeType?: string;
   width?: number;
   height?: number;
-} {
+}
+
+function parseImeta(tags: string[][]): ImetaFields {
   const imetaTag = tags.find(tag => tag[0] === 'imeta');
   if (!imetaTag) {
     return {};
   }
 
-  const parsed: { url?: string; image?: string; mimeType?: string } = {};
+  const parsed: ImetaFields = {};
 
   for (let i = 1; i < imetaTag.length; i += 1) {
     const part = imetaTag[i];
