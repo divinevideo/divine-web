@@ -55,7 +55,7 @@ describe("PortabilityPage", () => {
     ).toBeInTheDocument();
   });
 
-  it("sends readers to the working export tool without overpromising the rest", () => {
+  it("sends readers to the working account-moving flow", () => {
     const { container } = render(
       <TestApp>
         <PortabilityPage />
@@ -63,9 +63,10 @@ describe("PortabilityPage", () => {
     );
 
     expect(container.querySelector('a[href="/exit/start"]')).toBeTruthy();
-    expect(screen.getByText("Download your archive now")).toBeInTheDocument();
-    expect(
-      screen.getByText(/Choosing a destination and copying your media there is still being built./)
-    ).toBeInTheDocument();
+    expect(screen.getByText("Start moving your account")).toBeInTheDocument();
+    expect(screen.getByText(/You choose a media server/)).toBeInTheDocument();
+    expect(screen.getByText(/published to the relay you choose/i)).toBeInTheDocument();
+    expect(container).not.toHaveTextContent(/still being built/i);
+    expect(container).not.toHaveTextContent(/when destination \w+ is ready/i);
   });
 });
