@@ -32,7 +32,7 @@ for (const [path, module] of Object.entries(localeModules)) {
 
 const PLURAL_SUFFIXES = new Set(['zero', 'one', 'two', 'few', 'many', 'other']);
 const LOCALES_REQUIRING_FULL_PLURAL_COVERAGE = new Set(['ar']);
-const BARE_LOOP_TOKEN = /\bloop(s|ing)?\b/i;
+const BARE_LOOP_TOKEN = /\bloop(?:s|ing|ed|ers?)?\b/i;
 const LOOP_GLOSSARY = {
   ms: 'gelung',
   ur: 'لوپ',
@@ -73,6 +73,31 @@ function getByPath(catalog: unknown, path: string): unknown {
           : undefined,
       catalog,
     );
+}
+
+function findLoopGlossaryViolations(
+  englishCatalog: unknown,
+  localeCatalog: unknown,
+  glossaryTerm: string,
+): string[] {
+  return flattenKeys(localeCatalog)
+    .filter((key) => {
+      const englishValue = getByPath(englishCatalog, key);
+      const localeValue = getByPath(localeCatalog, key);
+      const requiresGlossaryTerm =
+        typeof englishValue === 'string' && BARE_LOOP_TOKEN.test(englishValue);
+
+      if (typeof localeValue !== 'string') {
+        return requiresGlossaryTerm;
+      }
+
+      return (
+        BARE_LOOP_TOKEN.test(localeValue) ||
+        (requiresGlossaryTerm &&
+          !localeValue.toLocaleLowerCase().includes(glossaryTerm.toLocaleLowerCase()))
+      );
+    })
+    .sort();
 }
 
 function getPluralCategoryMap(keys: string[]): Map<string, Set<string>> {
@@ -156,6 +181,26 @@ const MUST_BE_TRANSLATED_PREFIXES = [
 ];
 
 describe('i18n locale resources', () => {
+  it('recognizes every documented bare english loop form', () => {
+    expect(
+      ['loop', 'loops', 'looping', 'looped', 'looper'].filter((value) =>
+        BARE_LOOP_TOKEN.test(value),
+      ),
+    ).toEqual(
+      ['loop', 'loops', 'looping', 'looped', 'looper'],
+    );
+  });
+
+  it('finds bare english loop text even when the english source uses another word', () => {
+    const violations = findLoopGlossaryViolations(
+      { leaderboard: { plays: 'plays' } },
+      { leaderboard: { plays: '12 loops' } },
+      'gelung',
+    );
+
+    expect(violations).toEqual(['leaderboard.plays']);
+  });
+
   it('keeps every locale aligned with the english namespaces', () => {
     for (const [namespace, englishCatalog] of Object.entries(resources.en)) {
       const englishKeys = flattenKeys(englishCatalog).sort();
@@ -226,24 +271,14 @@ describe('i18n locale resources', () => {
 
   it('keeps documented loop glossary terms localized', () => {
     for (const [namespace, englishCatalog] of Object.entries(resources.en)) {
-      const loopKeys = flattenKeys(englishCatalog)
-        .filter((key) => {
-          const value = getByPath(englishCatalog, key);
-          return typeof value === 'string' && BARE_LOOP_TOKEN.test(value);
-        })
-        .sort();
-
       for (const [locale, glossaryTerm] of Object.entries(LOOP_GLOSSARY)) {
         const namespaces = resources[locale as keyof typeof resources];
         const localeCatalog = namespaces[namespace as keyof typeof namespaces];
-        const violations = loopKeys.filter((key) => {
-          const value = getByPath(localeCatalog, key);
-          return (
-            typeof value !== 'string' ||
-            BARE_LOOP_TOKEN.test(value) ||
-            !value.toLocaleLowerCase().includes(glossaryTerm.toLocaleLowerCase())
-          );
-        });
+        const violations = findLoopGlossaryViolations(
+          englishCatalog,
+          localeCatalog,
+          glossaryTerm,
+        );
 
         expect(
           violations,
