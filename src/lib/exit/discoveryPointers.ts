@@ -3,11 +3,41 @@
 
 import type { NostrEvent } from "@nostrify/nostrify";
 
+import { DISCOVERY_POINTER_RELAYS } from "@/config/relays";
+
 import type { EventTemplate } from "./eventRewrite";
+import { normalizeRelayDestinationUrl } from "./relayDestination";
 
 export const RELAY_LIST_KIND = 10_002;
 export const BLOSSOM_SERVER_LIST_KIND = 10_063;
 export const MAX_REPLACEMENT_FUTURE_SKEW_SECONDS = 1;
+
+export interface PointerPublishTarget {
+  relay: string;
+  isDiscoveryRelay: boolean;
+}
+
+export function pointerPublishTargets(input: {
+  relayDestination: string;
+  discoveryRelays?: readonly string[];
+}): PointerPublishTarget[] {
+  const destination = normalizeRelayDestinationUrl(input.relayDestination);
+  const discoveryRelays = input.discoveryRelays
+    ?? DISCOVERY_POINTER_RELAYS.map((relay) => relay.url);
+  const targets = new Map<string, PointerPublishTarget>([
+    [destination, { relay: destination, isDiscoveryRelay: false }],
+  ]);
+
+  for (const relay of discoveryRelays) {
+    const normalized = normalizeRelayDestinationUrl(relay);
+    targets.set(normalized, {
+      relay: normalized,
+      isDiscoveryRelay: true,
+    });
+  }
+
+  return [...targets.values()];
+}
 
 export function buildRelayListTemplate(relayUrl: string, createdAt: number): EventTemplate {
   return { kind: RELAY_LIST_KIND, created_at: createdAt, content: "", tags: [["r", relayUrl]] };
