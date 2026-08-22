@@ -75,6 +75,14 @@ function getTagValue(tags: string[][], name: string): string | undefined {
   return tags.find(tag => tag[0] === name)?.[1];
 }
 
+function safeDecodeURIComponent(value: string): string {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
+}
+
 function parseDimensions(value?: string): { width?: number; height?: number } {
   const match = value?.match(/^(\d+)x(\d+)$/i);
   if (!match) {
@@ -120,7 +128,7 @@ function parseImeta(tags: string[][]): {
 }
 
 function humanizeCategoryName(name: string): string {
-  const normalized = decodeURIComponent(name).trim().toLowerCase();
+  const normalized = safeDecodeURIComponent(name).trim().toLowerCase();
   if (!normalized) {
     return 'Category';
   }
@@ -137,7 +145,7 @@ function humanizeCategoryName(name: string): string {
 }
 
 function categoryDescription(name: string, videoCount?: number): string {
-  const normalized = cleanText(decodeURIComponent(name).toLowerCase()) || 'category';
+  const normalized = cleanText(safeDecodeURIComponent(name).toLowerCase()) || 'category';
   if (typeof videoCount === 'number' && Number.isFinite(videoCount) && videoCount >= 0) {
     return `Explore ${videoCount} ${normalized} videos on Divine.`;
   }
@@ -213,7 +221,7 @@ export function extractProfileNpub(pathname: string): string | null {
     return null;
   }
 
-  return decodeURIComponent(match[1]);
+  return safeDecodeURIComponent(match[1]);
 }
 
 export function extractCategoryName(pathname: string): string | null {
@@ -222,7 +230,7 @@ export function extractCategoryName(pathname: string): string | null {
     return null;
   }
 
-  return decodeURIComponent(match[1]);
+  return safeDecodeURIComponent(match[1]);
 }
 
 export function buildVideoPageMeta(url: URL, payload: VideoApiResponse): PageMeta {

@@ -356,6 +356,19 @@ describe('functions/[[path]]', () => {
     expect(html).toContain('<title>#%zz videos on Divine</title>');
   });
 
+  it.each(['/profile/%zz', '/category/%zz'])(
+    'does not throw on a malformed dynamic segment at %s',
+    async (path) => {
+      const response = await onRequest({
+        request: new Request(`https://divine.video${path}`),
+        next: async () => new Response('not found', { status: 404 }),
+        env: {},
+      });
+
+      expect(response.status).toBe(200);
+    }
+  );
+
   it('keeps generic metadata for an unknown at-username route', async () => {
     const response = await onRequest({
       request: new Request('https://divine.video/@missing'),
