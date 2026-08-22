@@ -34,6 +34,14 @@ function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
+function safeDecodeURIComponent(value: string): string {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
+}
+
 function replaceTitle(html: string, title: string): string {
   return html.replace(/<title>[^<]*<\/title>/i, `<title>${escapeHtml(title)}</title>`);
 }
@@ -142,7 +150,7 @@ async function fetchVideoMeta(url: URL): Promise<PageMeta | null> {
     return null;
   }
 
-  const identifier = decodeURIComponent(match[1]);
+  const identifier = safeDecodeURIComponent(match[1]);
 
   try {
     const response = await fetch(`${FUNNELCAKE_API_URL}/api/videos/${identifier}`);
@@ -179,7 +187,7 @@ function buildSimplePageMeta(
 function buildSimpleRouteMeta(url: URL): PageMeta | null {
   const hashtagMatch = url.pathname.match(/^\/t\/([^/]+)$/);
   if (hashtagMatch) {
-    const hashtag = decodeURIComponent(hashtagMatch[1]).replace(/^#/, '').trim();
+    const hashtag = safeDecodeURIComponent(hashtagMatch[1]).replace(/^#/, '').trim();
     return hashtag
       ? buildSimplePageMeta(url, `#${hashtag} videos on Divine`, `Watch the latest #${hashtag} videos on Divine.`)
       : null;

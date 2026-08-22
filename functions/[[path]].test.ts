@@ -187,6 +187,17 @@ describe('functions/[[path]]', () => {
     expect(next).toHaveBeenCalledOnce();
   });
 
+  it('returns a normal not-found response for a malformed embed identifier', async () => {
+    const response = await onRequest({
+      request: new Request('https://divine.video/embed/%zz'),
+      next: async () => new Response('not found', { status: 404 }),
+      env: {},
+    });
+
+    expect(response.status).toBe(404);
+    expect(await response.text()).toBe('Video not found');
+  });
+
   it('falls back to the generic shell when video metadata is unavailable', async () => {
     const response = await onRequest({
       request: new Request('https://divine.video/video/missing'),
@@ -331,6 +342,18 @@ describe('functions/[[path]]', () => {
     expect(response.status).toBe(200);
     expect(html).toContain(`<title>${title}</title>`);
     expect(html).toContain(`property="og:url" content="${canonicalUrl}"`);
+  });
+
+  it('does not throw on a malformed hashtag escape', async () => {
+    const response = await onRequest({
+      request: new Request('https://divine.video/t/%zz'),
+      next: async () => new Response('not found', { status: 404 }),
+      env: {},
+    });
+    const html = await response.text();
+
+    expect(response.status).toBe(200);
+    expect(html).toContain('<title>#%zz videos on Divine</title>');
   });
 
   it('keeps generic metadata for an unknown at-username route', async () => {
