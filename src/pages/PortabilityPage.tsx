@@ -50,12 +50,12 @@ const MOVE_STEPS = [
   {
     title: "Copy your videos",
     body:
-      "When destination copying is ready, your media can be copied byte for byte. Divine will not resize, re-encode, or change the files.",
+      "You choose a media server—Divine's or someone else's—and Divine copies eligible files byte for byte without resizing, re-encoding, or changing them.",
   },
   {
     title: "Publish and point",
     body:
-      "When destination publishing is ready, your posts can be republished there, and your public account records can tell other apps where to look next.",
+      "Your posts can be rewritten to point at the copied media and published to the relay you choose. Divine can also publish account records naming that relay and media server.",
   },
 ];
 
@@ -217,7 +217,7 @@ export function PortabilityPage() {
             eyebrow="How it works"
             icon={<Compass weight="fill" className="h-7 w-7" />}
             title="Four plain steps"
-            lead="The moving flow keeps the protocol details in the background. Today you can download your archive; choosing a destination and copying your media there is still being built."
+            lead="The moving flow keeps the protocol details in the background. Build your archive, choose destinations, copy eligible media, republish posts, and publish account records from one place."
           />
 
           <div className="grid gap-5 md:grid-cols-2">
@@ -245,12 +245,11 @@ export function PortabilityPage() {
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <h3 className="font-display font-extrabold tracking-tight text-xl text-brand-dark-green dark:text-brand-off-white">
-                    Download your archive now
+                    Start moving your account
                   </h3>
                   <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                    Sign in and take a copy of your posts, video records, and media
-                    list today. Choosing a destination and copying your media there
-                    is still being built.
+                    Sign in to build your archive, choose a media server and relay,
+                    and move eligible media and posts.
                   </p>
                 </div>
                 <ArrowSquareOut className="h-5 w-5 flex-shrink-0 text-brand-dark-green dark:text-brand-green group-hover:translate-x-0.5 transition-transform" />
