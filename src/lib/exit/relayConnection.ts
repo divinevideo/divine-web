@@ -73,7 +73,11 @@ function relayRefusal(error: unknown): RelayRefusal {
     case "auth-required": return { status: "failed", code: prefix, message: "The relay wanted proof of your account before accepting this event.", retry: true };
     case "blocked": return { status: "failed", code: prefix, message: `The relay blocked this event.${detail ? ` ${detail}` : ""}` };
     case "restricted": return { status: "failed", code: prefix, message: `The relay restricts this event.${detail ? ` ${detail}` : ""}` };
-    case "invalid": return { status: "failed", code: prefix, message: `The relay says this event is invalid.${detail ? ` ${detail}` : ""}` };
+    case "invalid": return {
+      status: "failed",
+      code: /created_at too (?:early|old)/i.test(detail) ? "created-at-too-old" : prefix,
+      message: `The relay says this event is invalid.${detail ? ` ${detail}` : ""}`,
+    };
     case "pow": return { status: "failed", code: prefix, message: `The relay requires proof of work.${detail ? ` ${detail}` : ""}` };
     default: return { status: "failed", code: "relay-error", message: raw || "The relay returned a response this tool could not read." };
   }

@@ -211,6 +211,13 @@ Encrypted messages, ephemeral or authentication events, deletion requests,
 and vanish requests are skipped. Relay refusals remain per-event results and
 do not stop unrelated publishes.
 
+Before preparing the event graph, the move flow reads the destination's NIP-11
+`created_at_lower_limit`. When the relay does not declare one, the flow assumes
+the common three-year admission window. NIP-71 videos older than that window
+are re-signed with the current event timestamp before references are rewritten;
+their original publication time remains in `published_at`. Other event kinds
+are not given video-specific metadata or silently re-dated.
+
 Once at least one event is present at the destination relay, the page can publish
 destination-only discovery metadata there: a NIP-65 kind-10002 relay list and a
 BUD-03 kind-10063 Blossom server list. Each pointer is signed and reported

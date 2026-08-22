@@ -9,7 +9,7 @@ const EVENT_ID = "a".repeat(64);
 describe("RelayDestinationForm", () => {
   it("validates the destination beside the relay field", async () => {
     const onStart = vi.fn();
-    render(<RelayDestinationForm state="idle" progress={null} results={null} summary={null} failure={null} onStart={onStart} />);
+    render(<RelayDestinationForm state="idle" progress={null} results={null} summary={null} failure={null} oldestVideoDate={null} onStart={onStart} />);
     await userEvent.type(screen.getByLabelText("Relay URL"), "ws://relay.example");
     await userEvent.click(screen.getByRole("button", { name: "Publish my posts" }));
     expect(screen.getByRole("alert")).toHaveTextContent("Use a secure wss:// relay URL.");
@@ -21,9 +21,10 @@ describe("RelayDestinationForm", () => {
       <RelayDestinationForm
         state="complete"
         progress={null}
-        results={[{ event_id: EVENT_ID, published_event_id: EVENT_ID, kind: 1, status: "unchanged", remaining_media_urls: 1 }]}
-        summary={{ published: 0, unchanged: 1, failed: 0, skipped: 0, remainingMediaUrls: 1 }}
+        results={[{ event_id: EVENT_ID, published_event_id: EVENT_ID, kind: 1, status: "unchanged", remaining_media_urls: 1, redated: false }]}
+        summary={{ published: 0, unchanged: 1, failed: 0, skipped: 0, remainingMediaUrls: 1, redated: 0 }}
         failure={null}
+        oldestVideoDate={null}
         onStart={vi.fn()}
       />,
     );
@@ -31,5 +32,38 @@ describe("RelayDestinationForm", () => {
     expect(screen.getByRole("status")).toHaveTextContent("1 media link still points to the original location");
     await userEvent.click(screen.getByText("Event results"));
     expect(screen.getByText(EVENT_ID)).toBeInTheDocument();
+  });
+
+  it("warns about old archived videos before publishing", () => {
+    render(
+      <RelayDestinationForm
+        state="idle"
+        progress={null}
+        results={null}
+        summary={null}
+        failure={null}
+        oldestVideoDate={1_457_922_740}
+        onStart={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText(/oldest archived video is from March 2016/i)).toBeInTheDocument();
+    expect(screen.getByText(/Many relays refuse posts older than three years/i)).toBeInTheDocument();
+  });
+
+  it("reports how many archived videos received a fresh event date", () => {
+    render(
+      <RelayDestinationForm
+        state="complete"
+        progress={null}
+        results={null}
+        summary={{ published: 2, unchanged: 0, failed: 0, skipped: 0, remainingMediaUrls: 0, redated: 2 }}
+        failure={null}
+        oldestVideoDate={1_457_922_740}
+        onStart={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByRole("status")).toHaveTextContent("2 archived videos were republished with today's event date");
   });
 });

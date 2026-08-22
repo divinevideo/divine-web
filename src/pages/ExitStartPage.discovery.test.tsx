@@ -27,7 +27,7 @@ vi.mock("@/hooks/useDestinationRepublish", () => ({ useDestinationRepublish: () 
 describe("ExitStartPage discovery pointer gate", () => {
   beforeEach(() => {
     mockMirror.mockReturnValue({ state: "complete", progress: null, results: [], summary: {}, failure: null, destination: "https://blossom.example", start: vi.fn() });
-    mockRepublish.mockReturnValue({ state: "complete", progress: null, results: [], summary: { published: 0, unchanged: 1, failed: 0, skipped: 0, remainingMediaUrls: 0 }, failure: null, destination: "wss://relay.example/", start: vi.fn() });
+    mockRepublish.mockReturnValue({ state: "complete", progress: null, results: [], summary: { published: 0, unchanged: 1, failed: 0, skipped: 0, remainingMediaUrls: 0, redated: 0 }, failure: null, destination: "wss://relay.example/", start: vi.fn() });
     vi.stubGlobal("fetch", createFixtureFetch("one-page"));
   });
 
@@ -48,7 +48,7 @@ describe("ExitStartPage discovery pointer gate", () => {
   });
 
   it("does not offer pointers after an all-failed republish", async () => {
-    mockRepublish.mockReturnValue({ state: "complete", progress: null, results: [], summary: { published: 0, unchanged: 0, failed: 2, skipped: 0, remainingMediaUrls: 0 }, failure: null, destination: "wss://relay.example/", start: vi.fn() });
+    mockRepublish.mockReturnValue({ state: "complete", progress: null, results: [], summary: { published: 0, unchanged: 0, failed: 2, skipped: 0, remainingMediaUrls: 0, redated: 0 }, failure: null, destination: "wss://relay.example/", start: vi.fn() });
     render(<TestApp><ExitStartPage /></TestApp>);
     await userEvent.click(screen.getByRole("button", { name: /Create my archive/ }));
     await waitFor(() => expect(screen.getByText(/Your archive is ready/)).toBeInTheDocument());
