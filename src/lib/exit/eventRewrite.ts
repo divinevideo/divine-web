@@ -1,7 +1,7 @@
 // ABOUTME: Rewrites exported event media and references for a destination relay
 // ABOUTME: Keeps unchanged signed events intact and identifies events unsafe to republish
 
-import type { NostrEvent } from "@nostrify/nostrify";
+import { NKinds, type NostrEvent } from "@nostrify/nostrify";
 
 import type { MirrorResult } from "./mirrorClient";
 
@@ -37,6 +37,12 @@ export function republishSkipReason(kind: number): string | null {
   if (kind >= 20_000 && kind < 30_000) return "Temporary authentication and ephemeral events are not portable posts.";
   if (DESTRUCTIVE_KINDS.has(kind)) return "Deletion and vanish requests are not replayed during a move.";
   return null;
+}
+
+export function republishCreatedAt(event: NostrEvent): number {
+  return NKinds.replaceable(event.kind) || NKinds.addressable(event.kind)
+    ? event.created_at + 1
+    : event.created_at;
 }
 
 function replaceExact(value: string, urls: ReadonlyMap<string, string>): string {
