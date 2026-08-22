@@ -9,6 +9,7 @@ import { debugLog } from '@/lib/debug';
 interface FollowingResponse {
   pubkeys: string[];
   total?: number;
+  limit?: number;
 }
 
 /**
@@ -50,6 +51,7 @@ async function fetchFollowingPage(
   return {
     pubkeys,
     total: data.total || pubkeys.length,
+    limit: typeof data.limit === 'number' ? data.limit : undefined,
   };
 }
 
@@ -67,7 +69,10 @@ async function fetchUserFollowing(
     total = result.total ?? pubkeys.length;
 
     // A short page means the server has nothing more, whatever `total` claims.
-    if (result.pubkeys.length < FOLLOWING_PAGE_SIZE || pubkeys.length >= total) {
+    if (
+      result.pubkeys.length < (result.limit ?? FOLLOWING_PAGE_SIZE)
+      || pubkeys.length >= total
+    ) {
       break;
     }
   }

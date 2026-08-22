@@ -30,14 +30,14 @@ function pubkeyAt(index: number): string {
   return index.toString(16).padStart(64, '0');
 }
 
-/** Mirrors the server: `limit` is clamped to 100 and `offset` slices the list. */
-function mockPagedFollowing(total: number) {
+/** Mirrors the server: `limit` is clamped to its cap and `offset` slices the list. */
+function mockPagedFollowing(total: number, serverCap = 100) {
   const all = Array.from({ length: total }, (_, index) => pubkeyAt(index));
 
   global.fetch = vi.fn(async (input: RequestInfo | URL) => {
     const url = new URL(String(input));
     const offset = Number(url.searchParams.get('offset') ?? 0);
-    const limit = Math.min(Number(url.searchParams.get('limit') ?? 50), 100);
+    const limit = Math.min(Number(url.searchParams.get('limit') ?? 50), serverCap);
 
     return {
       ok: true,
@@ -79,6 +79,16 @@ describe('useFollowing', () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data?.pubkeys).toHaveLength(250);
     expect(result.current.data?.pubkeys).toEqual(all);
+  });
+
+  it('uses the effective server limit when deciding whether a page is short', async () => {
+    const all = mockPagedFollowing(90, 40);
+
+    const { result } = renderHook(() => useFollowing(PUBKEY), { wrapper });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data?.pubkeys).toEqual(all);
+    expect(global.fetch).toHaveBeenCalledTimes(3);
   });
 
   it('stops when a page comes back short even if total disagrees', async () => {
