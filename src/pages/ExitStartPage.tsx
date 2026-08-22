@@ -468,7 +468,7 @@ export function ExitStartPage() {
               eyebrow="Make the move discoverable"
               icon={<MapPin weight="fill" className="h-7 w-7" />}
               title="Publish your new home"
-              lead="Share destination-only discovery pointers so compatible apps can find your relay and Blossom server without Divine in the path."
+              lead="Share destination-only discovery pointers so compatible apps that read them know where to find your relay and Blossom server."
             />
             <DiscoveryPointerForm
               files={archiveFiles}
@@ -476,6 +476,17 @@ export function ExitStartPage() {
               blossomDestination={destinationMirror.destination}
               signer={signer}
             />
+            <Card variant="brand" accent="violet" className="mt-5">
+              <CardHeader>
+                <CardTitle>Old copies stay where they are</CardTitle>
+              </CardHeader>
+              <CardContent className="text-base leading-relaxed text-muted-foreground">
+                Other relays may already hold copies of your posts. Those copies can
+                still point at Divine-hosted media, so apps that use them may keep
+                loading your videos from Divine. Moving cannot update or remove those
+                copies.
+              </CardContent>
+            </Card>
           </section>
         )}
 
