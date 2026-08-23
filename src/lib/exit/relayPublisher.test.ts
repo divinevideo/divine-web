@@ -8,6 +8,11 @@ const PUBKEY = "a".repeat(64);
 const SOURCE = `https://media.divine.video/${"b".repeat(64)}.mp4`;
 const DESTINATION_MEDIA = `https://blossom.example/${"b".repeat(64)}`;
 const RELAY = "wss://relay.example/nostr";
+// Fixtures sit inside the publisher's default relay age window, so only the
+// tests that pass their own nowSeconds and relayAgeLimitSeconds exercise
+// re-dating. A fixed literal would drift out of that window as the clock
+// advances and would silently re-date every fixture instead.
+const FIXTURE_CREATED_AT = Math.floor(Date.now() / 1000) - 1_000;
 
 function makeEvent(idChar: string, overrides: Partial<NostrEvent> = {}): NostrEvent {
   return {
@@ -15,7 +20,7 @@ function makeEvent(idChar: string, overrides: Partial<NostrEvent> = {}): NostrEv
     pubkey: PUBKEY,
     sig: idChar.repeat(128),
     kind: 1,
-    created_at: 1_700_000_000,
+    created_at: FIXTURE_CREATED_AT,
     content: "hello",
     tags: [],
     ...overrides,
