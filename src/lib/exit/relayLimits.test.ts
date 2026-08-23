@@ -18,12 +18,19 @@ describe("fetchRelayAgeLimit", () => {
 
   it.each([
     ["an absent limit", {}],
-    ["a zero limit", { limitation: { created_at_lower_limit: 0 } }],
     ["a negative limit", { limitation: { created_at_lower_limit: -1 } }],
     ["a non-numeric limit", { limitation: { created_at_lower_limit: "94608000" } }],
   ])("treats %s as undeclared", async (_label, document) => {
     const fetcher = vi.fn().mockResolvedValue(new Response(JSON.stringify(document), { status: 200 }));
     await expect(fetchRelayAgeLimit(RELAY, { fetcher })).resolves.toBeNull();
+  });
+
+  it("reads a zero limit as no lower age bound", async () => {
+    const fetcher = vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      limitation: { created_at_lower_limit: 0 },
+    }), { status: 200 }));
+
+    await expect(fetchRelayAgeLimit(RELAY, { fetcher })).resolves.toBe(0);
   });
 
   it("treats an unavailable document as undeclared", async () => {

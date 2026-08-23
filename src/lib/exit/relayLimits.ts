@@ -37,7 +37,7 @@ export async function fetchRelayAgeLimit(
     if (!response.ok) return null;
     const document = await response.json() as RelayInformationDocument;
     const limit = document.limitation?.created_at_lower_limit;
-    return typeof limit === "number" && Number.isFinite(limit) && limit > 0 ? limit : null;
+    return typeof limit === "number" && Number.isFinite(limit) && limit >= 0 ? limit : null;
   } catch (error) {
     if (options.signal?.aborted && error instanceof DOMException && error.name === "AbortError") throw error;
     return null;

@@ -34,7 +34,7 @@ import { useArchiveMediaExport } from "@/hooks/useArchiveMediaExport";
 import { useDestinationMirror } from "@/hooks/useDestinationMirror";
 import { useDestinationRepublish } from "@/hooks/useDestinationRepublish";
 import { buildArchiveFiles, serializeArchiveFiles, type ArchiveFiles } from "@/lib/exit/archive";
-import { oldestArchivedVideoDate } from "@/lib/exit/archiveAge";
+import { oldestArchivedVideoCreatedAt } from "@/lib/exit/archiveAge";
 import { exportOwnerEvents, OwnerExportError, type ExportProgress } from "@/lib/exit/ownerExportClient";
 import { createZip } from "@/lib/exit/zip";
 import { getLocalNsecLogin } from "@/lib/localNsecAccount";
@@ -133,8 +133,8 @@ export function ExitStartPage() {
       failures: archiveFiles["manifest.json"].failures,
     };
   }, [archiveFiles]);
-  const oldestVideoDate = useMemo(
-    () => archiveFiles ? oldestArchivedVideoDate(archiveFiles["events.json"]) : null,
+  const oldestVideoCreatedAt = useMemo(
+    () => archiveFiles ? oldestArchivedVideoCreatedAt(archiveFiles["events.json"]) : null,
     [archiveFiles],
   );
 
@@ -456,7 +456,7 @@ export function ExitStartPage() {
               results={destinationRepublish.results}
               summary={destinationRepublish.summary}
               failure={destinationRepublish.failure}
-              oldestVideoDate={oldestVideoDate}
+              oldestVideoCreatedAt={oldestVideoCreatedAt}
               onStart={destinationRepublish.start}
             />
           </section>

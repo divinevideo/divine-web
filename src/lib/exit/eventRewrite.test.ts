@@ -126,18 +126,23 @@ describe("republishSkipReason", () => {
 
 describe("republishCreatedAt", () => {
   it.each([0, 3, 10_000, 19_999, 30_000, 34_236, 39_999])(
-    "advances replaceable or addressable kind %s by one second",
+    "uses the run time for changed replaceable or addressable kind %s",
     (kind) => {
       const original = event({ kind });
-      expect(republishCreatedAt(original)).toBe(original.created_at + 1);
+      expect(republishCreatedAt(original, original.created_at + 100)).toBe(original.created_at + 100);
     },
   );
+
+  it("stays newer than a future-dated original", () => {
+    const original = event({ kind: 34236 });
+    expect(republishCreatedAt(original, original.created_at - 100)).toBe(original.created_at + 1);
+  });
 
   it.each([1, 16, 1111, 9999, 20_000, 29_999, 40_000])(
     "preserves the timestamp for kind %s, which is neither replaceable nor addressable",
     (kind) => {
       const original = event({ kind });
-      expect(republishCreatedAt(original)).toBe(original.created_at);
+      expect(republishCreatedAt(original, original.created_at + 100)).toBe(original.created_at);
     },
   );
 });

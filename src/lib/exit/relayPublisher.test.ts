@@ -7,6 +7,8 @@ import { publishArchiveEvents, summarizePublishResults } from "./relayPublisher"
 const PUBKEY = "a".repeat(64);
 const SOURCE = `https://media.divine.video/${"b".repeat(64)}.mp4`;
 const DESTINATION_MEDIA = `https://blossom.example/${"b".repeat(64)}`;
+const SECOND_SOURCE = `https://media.divine.video/${"c".repeat(64)}.mp4`;
+const SECOND_DESTINATION_MEDIA = `https://blossom.example/${"c".repeat(64)}`;
 const RELAY = "wss://relay.example/nostr";
 // Fixtures sit inside the publisher's default relay age window, so only the
 // tests that pass their own nowSeconds and relayAgeLimitSeconds exercise
@@ -40,11 +42,11 @@ function makeSigner(): NostrSigner & { signEvent: ReturnType<typeof vi.fn> } {
   } as unknown as NostrSigner & { signEvent: ReturnType<typeof vi.fn> };
 }
 
-function mirrorResult(): MirrorResult {
+function mirrorResult(source = SOURCE, destination = DESTINATION_MEDIA): MirrorResult {
   return {
-    references: [{ event_id: "1".repeat(64), tag: "url", url: SOURCE, sha256: "b".repeat(64) }],
-    source_url: SOURCE,
-    destination_url: DESTINATION_MEDIA,
+    references: [{ event_id: "1".repeat(64), tag: "url", url: source, sha256: "b".repeat(64) }],
+    source_url: source,
+    destination_url: destination,
     expected_sha256: "b".repeat(64),
     destination_sha256: "b".repeat(64),
     byte_size: 10,
@@ -98,7 +100,7 @@ describe("publishArchiveEvents", () => {
       relayFactory: () => relay,
     });
     expect(relay.published.map((event) => event.kind)).toEqual([34236, 1111, 1111]);
-    expect(relay.published[0].created_at).toBe(video.created_at + 1);
+    expect(relay.published[0].created_at).toBeGreaterThan(video.created_at);
     expect(relay.published[1].created_at).toBe(comment.created_at);
     expect(relay.published[2].created_at).toBe(reply.created_at);
     expect(relay.published[1].tags).toEqual([["E", relay.published[0].id], ["e", relay.published[0].id]]);
@@ -133,8 +135,33 @@ describe("publishArchiveEvents", () => {
 
     await publishArchiveEvents({ destination: RELAY, events: [video, playlist], mirrorResults: [mirrorResult()], signer, relayFactory: () => relay });
 
-    expect(relay.published[1].created_at).toBe(playlist.created_at + 1);
+    expect(relay.published[1].created_at).toBeGreaterThan(playlist.created_at);
     expect(relay.published[1].tags).toContainEqual(["e", relay.published[0].id]);
+  });
+
+  it("gives a richer later replacement a newer timestamp", async () => {
+    const video = makeEvent("1", {
+      kind: 34236,
+      content: `${SOURCE} ${SECOND_SOURCE}`,
+      tags: [["url", SOURCE], ["thumb", SECOND_SOURCE]],
+    });
+    const firstRelay = fakeRelay();
+    const secondRelay = fakeRelay();
+    const signer = makeSigner();
+
+    await publishArchiveEvents({ destination: RELAY, events: [video], mirrorResults: [mirrorResult()], signer, relayFactory: () => firstRelay, nowSeconds: video.created_at + 100 });
+    await publishArchiveEvents({
+      destination: RELAY,
+      events: [video],
+      mirrorResults: [mirrorResult(), mirrorResult(SECOND_SOURCE, SECOND_DESTINATION_MEDIA)],
+      signer,
+      relayFactory: () => secondRelay,
+      nowSeconds: video.created_at + 101,
+    });
+
+    expect(secondRelay.published[0].created_at).toBeGreaterThan(firstRelay.published[0].created_at);
+    expect(firstRelay.published[0].content).toContain(SECOND_SOURCE);
+    expect(secondRelay.published[0].content).toBe(`${DESTINATION_MEDIA} ${SECOND_DESTINATION_MEDIA}`);
   });
 
   it("replaces serialized repost content with the newly signed referenced event", async () => {
@@ -371,6 +398,26 @@ describe("publishArchiveEvents", () => {
     });
 
     expect(relay.published).toEqual([note]);
+    expect(results[0]).toMatchObject({ status: "unchanged", redated: false });
+    expect(signer.signEvent).not.toHaveBeenCalled();
+  });
+
+  it("keeps old videos unchanged when the relay declares no lower age bound", async () => {
+    const signer = makeSigner();
+    const relay = fakeRelay();
+    const video = makeEvent("1", { kind: 34236, created_at: 100 });
+
+    const results = await publishArchiveEvents({
+      destination: RELAY,
+      events: [video],
+      mirrorResults: [],
+      signer,
+      relayFactory: () => relay,
+      nowSeconds: 1_000,
+      relayAgeLimitSeconds: 0,
+    });
+
+    expect(relay.published).toEqual([video]);
     expect(results[0]).toMatchObject({ status: "unchanged", redated: false });
     expect(signer.signEvent).not.toHaveBeenCalled();
   });

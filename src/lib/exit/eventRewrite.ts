@@ -39,9 +39,9 @@ export function republishSkipReason(kind: number): string | null {
   return null;
 }
 
-export function republishCreatedAt(event: NostrEvent): number {
+export function republishCreatedAt(event: NostrEvent, now: number): number {
   return NKinds.replaceable(event.kind) || NKinds.addressable(event.kind)
-    ? event.created_at + 1
+    ? Math.max(event.created_at + 1, now)
     : event.created_at;
 }
 

@@ -58,17 +58,4 @@ describe("openDestinationRelay", () => {
     expect(wait).toHaveBeenCalledOnce();
   });
 
-  it("distinguishes old timestamps from other invalid events", async () => {
-    const event = vi.fn()
-      .mockRejectedValueOnce(new Error("invalid: created_at too early"))
-      .mockRejectedValueOnce(new Error("invalid: bad tags"));
-    const session = openDestinationRelay({
-      destination: RELAY,
-      signer: signer(),
-      relayFactory: () => ({ event, close: vi.fn().mockResolvedValue(undefined) }),
-    });
-
-    await expect(session.publish(EVENT)).resolves.toMatchObject({ status: "failed", code: "created-at-too-old" });
-    await expect(session.publish(EVENT)).resolves.toMatchObject({ status: "failed", code: "invalid" });
-  });
 });

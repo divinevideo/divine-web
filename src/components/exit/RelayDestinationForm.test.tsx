@@ -9,7 +9,7 @@ const EVENT_ID = "a".repeat(64);
 describe("RelayDestinationForm", () => {
   it("validates the destination beside the relay field", async () => {
     const onStart = vi.fn();
-    render(<RelayDestinationForm state="idle" progress={null} results={null} summary={null} failure={null} oldestVideoDate={null} onStart={onStart} />);
+    render(<RelayDestinationForm state="idle" progress={null} results={null} summary={null} failure={null} oldestVideoCreatedAt={null} onStart={onStart} />);
     await userEvent.type(screen.getByLabelText("Relay URL"), "ws://relay.example");
     await userEvent.click(screen.getByRole("button", { name: "Publish my posts" }));
     expect(screen.getByRole("alert")).toHaveTextContent("Use a secure wss:// relay URL.");
@@ -24,7 +24,7 @@ describe("RelayDestinationForm", () => {
         results={[{ event_id: EVENT_ID, published_event_id: EVENT_ID, kind: 1, status: "unchanged", remaining_media_urls: 1, redated: false }]}
         summary={{ published: 0, unchanged: 1, failed: 0, skipped: 0, remainingMediaUrls: 1, redated: 0 }}
         failure={null}
-        oldestVideoDate={null}
+        oldestVideoCreatedAt={null}
         onStart={vi.fn()}
       />,
     );
@@ -42,13 +42,29 @@ describe("RelayDestinationForm", () => {
         results={null}
         summary={null}
         failure={null}
-        oldestVideoDate={1_457_922_740}
+        oldestVideoCreatedAt={1_457_922_740}
         onStart={vi.fn()}
       />,
     );
 
     expect(screen.getByText(/oldest archived video is from March 2016/i)).toBeInTheDocument();
     expect(screen.getByText(/Many relays refuse posts older than three years/i)).toBeInTheDocument();
+  });
+
+  it("does not warn when every archived video is inside the default age window", () => {
+    render(
+      <RelayDestinationForm
+        state="idle"
+        progress={null}
+        results={null}
+        summary={null}
+        failure={null}
+        oldestVideoCreatedAt={2_000_000_000}
+        onStart={vi.fn()}
+      />,
+    );
+
+    expect(screen.queryByText(/Many relays refuse posts older than three years/i)).not.toBeInTheDocument();
   });
 
   it("reports how many archived videos received a fresh event date", () => {
@@ -59,7 +75,7 @@ describe("RelayDestinationForm", () => {
         results={null}
         summary={{ published: 2, unchanged: 0, failed: 0, skipped: 0, remainingMediaUrls: 0, redated: 2 }}
         failure={null}
-        oldestVideoDate={1_457_922_740}
+        oldestVideoCreatedAt={1_457_922_740}
         onStart={vi.fn()}
       />,
     );

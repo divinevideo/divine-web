@@ -4,8 +4,7 @@
 import type { NostrEvent } from "@nostrify/nostrify";
 
 import type { EventTemplate } from "./eventRewrite";
-
-const VIDEO_KINDS = new Set([21, 22, 34235, 34236]);
+import { EXIT_VIDEO_KINDS } from "./videoKinds";
 
 function publicationTags(event: NostrEvent, tags: string[][]): string[][] {
   const publishedAt = tags.findIndex((tag) => tag[0] === "published_at");
@@ -20,7 +19,7 @@ export function redateArchivedVideo(
   now: number,
   cutoff: number,
 ): { template: EventTemplate; redated: boolean } {
-  if (!VIDEO_KINDS.has(original.kind) || original.created_at >= cutoff) {
+  if (!EXIT_VIDEO_KINDS.has(original.kind) || original.created_at >= cutoff) {
     return { template, redated: false };
   }
   return {

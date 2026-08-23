@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { DestinationError } from "@/lib/exit/destination";
 import { normalizeRelayDestinationUrl } from "@/lib/exit/relayDestination";
-import type { PublishProgress, PublishResult, PublishSummary } from "@/lib/exit/relayPublisher";
+import { DEFAULT_RELAY_AGE_LIMIT_SECONDS, type PublishProgress, type PublishResult, type PublishSummary } from "@/lib/exit/relayPublisher";
 
 interface RelayDestinationFormProps {
   state: "idle" | "running" | "complete" | "failed";
@@ -18,7 +18,7 @@ interface RelayDestinationFormProps {
   results: PublishResult[] | null;
   summary: PublishSummary | null;
   failure: string | null;
-  oldestVideoDate: number | null;
+  oldestVideoCreatedAt: number | null;
   onStart(destination: string): Promise<void>;
 }
 
@@ -35,9 +35,10 @@ function formatArchiveDate(timestamp: number): string {
   return new Intl.DateTimeFormat("en-US", { month: "long", year: "numeric", timeZone: "UTC" }).format(new Date(timestamp * 1000));
 }
 
-export function RelayDestinationForm({ state, progress, results, summary, failure, oldestVideoDate, onStart }: RelayDestinationFormProps) {
+export function RelayDestinationForm({ state, progress, results, summary, failure, oldestVideoCreatedAt, onStart }: RelayDestinationFormProps) {
   const [destination, setDestination] = useState("");
   const [validationFailure, setValidationFailure] = useState<string | null>(null);
+  const defaultAgeCutoff = Math.floor(Date.now() / 1000) - DEFAULT_RELAY_AGE_LIMIT_SECONDS;
 
   function submit() {
     try {
@@ -57,9 +58,9 @@ export function RelayDestinationForm({ state, progress, results, summary, failur
         <p className="text-base leading-relaxed text-muted-foreground">
           Enter a relay you trust. Media links with confirmed destination copies will be updated; anything that could not be copied keeps its original link.
         </p>
-        {oldestVideoDate !== null && (
+        {oldestVideoCreatedAt !== null && oldestVideoCreatedAt < defaultAgeCutoff && (
           <p className="text-base leading-relaxed text-muted-foreground">
-            Your oldest archived video is from {formatArchiveDate(oldestVideoDate)}. Many relays refuse posts older than three years, so Divine republishes old videos with today&apos;s event date and keeps their original publication dates in the video metadata.
+            Your oldest archived video is from {formatArchiveDate(oldestVideoCreatedAt)}. Many relays refuse posts older than three years, so Divine republishes old videos with today&apos;s event date and keeps their original publication dates in the video metadata.
           </p>
         )}
         <div className="space-y-2">

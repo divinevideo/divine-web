@@ -67,7 +67,7 @@ interface PreparedEvent {
 }
 
 const HEX_64 = /^[0-9a-f]{64}$/i;
-const DEFAULT_RELAY_AGE_LIMIT_SECONDS = 94_608_000;
+export const DEFAULT_RELAY_AGE_LIMIT_SECONDS = 94_608_000;
 
 async function prepareEvents(options: PublishArchiveOptions, now: number, cutoff: number): Promise<{
   events: PreparedEvent[];
@@ -131,11 +131,9 @@ async function prepareEvents(options: PublishArchiveOptions, now: number, cutoff
     let event = original;
     if (changed) {
       try {
-        // A deterministic one-second advance prevents replaceable copies from
-        // falling back to event-id or arrival-order tie-breaks.
         const template = {
           ...references.template,
-          created_at: timestamp.redated ? references.template.created_at : republishCreatedAt(original),
+          created_at: timestamp.redated ? references.template.created_at : republishCreatedAt(original, now),
         };
         event = await options.signer.signEvent(template);
         if (event.pubkey !== original.pubkey || !HEX_64.test(event.id)) {
@@ -168,10 +166,9 @@ async function prepareEvents(options: PublishArchiveOptions, now: number, cutoff
 export async function publishArchiveEvents(options: PublishArchiveOptions): Promise<PublishResult[]> {
   const destination = normalizeRelayDestinationUrl(options.destination);
   const now = options.nowSeconds ?? Math.floor(Date.now() / 1000);
-  const ageLimit = options.relayAgeLimitSeconds && options.relayAgeLimitSeconds > 0
-    ? options.relayAgeLimitSeconds
-    : DEFAULT_RELAY_AGE_LIMIT_SECONDS;
-  const preparation = await prepareEvents(options, now, now - ageLimit);
+  const ageLimit = options.relayAgeLimitSeconds ?? DEFAULT_RELAY_AGE_LIMIT_SECONDS;
+  const cutoff = ageLimit === 0 ? Number.NEGATIVE_INFINITY : now - ageLimit;
+  const preparation = await prepareEvents(options, now, cutoff);
   const results = [...preparation.results];
   if (preparation.events.length === 0) return results;
   const relay = openDestinationRelay({
