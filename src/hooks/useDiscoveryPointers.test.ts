@@ -100,6 +100,7 @@ describe("useDiscoveryPointers", () => {
     expect(result.current.state).toBe("complete");
     expect(result.current.summaries.every((summary) => summary.status === "published")).toBe(true);
     expect(result.current.results.filter((item) => item.status === "publish-failed")).toHaveLength(0);
+    expect(result.current.results.filter((item) => "relay" in item && item.relay === "wss://relay.damus.io/")).toHaveLength(2);
   });
 
   it("reports future-dated pointers without signing or opening relays", async () => {
