@@ -212,8 +212,10 @@ do not stop unrelated publishes.
 Once at least one event is present at the destination relay, the page can publish
 destination-only discovery metadata: a NIP-65 kind-10002 relay list and a BUD-03
 kind-10063 Blossom server list. Each pointer is signed once, then published to
-the destination and the public metadata relays that other clients query. The UI
-reports success only when a public metadata relay accepts the pointer. Replacement
+the destination and the public metadata relays that other clients query. Divine's
+own relay is one of those publication targets so an app that knows the old home
+can follow the move, but it never counts toward discovery: the UI reports success
+only when a metadata relay outside Divine accepts the pointer. Replacement
 timestamps explicitly exceed the owner's archived pointer, and a pointer that
 would require more than one second of future clock skew blocks that publication
 rather than relying on relay tie-breaking or guessing the destination's clock

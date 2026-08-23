@@ -103,7 +103,9 @@ export const PROFILE_RELAYS: RelayConfig[] = [
 
 /**
  * Public metadata relays where other clients can discover account-move pointers.
- * Divine remains included so clients that know the old home can find the new one.
+ * Divine remains included so clients that know the old home can find the new one,
+ * but a pointer that reaches only Divine has not been discovered by anyone else,
+ * so `pointerPublishTargets` does not count it toward automatic discovery.
  */
 export const DISCOVERY_POINTER_RELAYS: readonly RelayConfig[] = PROFILE_RELAYS;
 

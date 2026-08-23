@@ -51,8 +51,8 @@ describe("DiscoveryPointerForm", () => {
     renderForm();
     await userEvent.click(screen.getByRole("button", { name: "Publish destination pointers" }));
 
-    expect(await screen.findByText("Relay list — published to 4 of 4 places apps look.")).toBeInTheDocument();
-    expect(screen.getByText("Blossom server list — published to 4 of 4 places apps look.")).toBeInTheDocument();
+    expect(await screen.findByText("Relay list — published to 3 of 3 places apps look.")).toBeInTheDocument();
+    expect(screen.getByText("Blossom server list — published to 3 of 3 places apps look.")).toBeInTheDocument();
     expect(screen.getByText("Other apps can now find your new home through public discovery relays.")).toBeInTheDocument();
   });
 
@@ -66,7 +66,7 @@ describe("DiscoveryPointerForm", () => {
     renderForm();
     await userEvent.click(screen.getByRole("button", { name: "Publish destination pointers" }));
 
-    expect(await screen.findByText("Relay list — published to 3 of 4 places apps look.")).toBeInTheDocument();
+    expect(await screen.findByText("Relay list — published to 2 of 3 places apps look.")).toBeInTheDocument();
     expect(screen.getAllByText(/wss:\/\/relay\.damus\.io\/: The relay blocked this event\./)).toHaveLength(2);
     expect(screen.getByText("Other apps can now find your new home through public discovery relays.")).toBeInTheDocument();
   });
@@ -84,5 +84,22 @@ describe("DiscoveryPointerForm", () => {
     expect(await screen.findByText("Relay list — only published to your destination.")).toBeInTheDocument();
     expect(screen.getByText("Blossom server list — only published to your destination.")).toBeInTheDocument();
     expect(screen.getByText(/At least one pointer is not discoverable yet/)).toBeInTheDocument();
+  });
+
+  it("does not call a pointer discoverable when only Divine's own relay accepts it", async () => {
+    vi.mocked(openDestinationRelay).mockImplementation(({ destination }) => ({
+      publish: vi.fn().mockResolvedValue(
+        destination === "wss://relay.example/" || destination === "wss://relay.divine.video/"
+          ? { status: "accepted" }
+          : { status: "failed", code: "blocked", message: "The relay blocked this event." },
+      ),
+      close: vi.fn().mockResolvedValue(undefined),
+    }));
+    renderForm();
+    await userEvent.click(screen.getByRole("button", { name: "Publish destination pointers" }));
+
+    expect(await screen.findByText("Relay list — only published to your destination.")).toBeInTheDocument();
+    expect(screen.getByText(/At least one pointer is not discoverable yet/)).toBeInTheDocument();
+    expect(screen.queryByText("Other apps can now find your new home through public discovery relays.")).toBeNull();
   });
 });

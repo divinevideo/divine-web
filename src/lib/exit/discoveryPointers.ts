@@ -3,7 +3,7 @@
 
 import type { NostrEvent } from "@nostrify/nostrify";
 
-import { DISCOVERY_POINTER_RELAYS } from "@/config/relays";
+import { DISCOVERY_POINTER_RELAYS, PRIMARY_RELAY } from "@/config/relays";
 
 import type { EventTemplate } from "./eventRewrite";
 import { normalizeRelayDestinationUrl } from "./relayDestination";
@@ -22,6 +22,7 @@ export function pointerPublishTargets(input: {
   discoveryRelays?: readonly string[];
 }): PointerPublishTarget[] {
   const destination = normalizeRelayDestinationUrl(input.relayDestination);
+  const divineRelay = normalizeRelayDestinationUrl(PRIMARY_RELAY.url);
   const discoveryRelays = input.discoveryRelays
     ?? DISCOVERY_POINTER_RELAYS.map((relay) => relay.url);
   const targets = new Map<string, PointerPublishTarget>([
@@ -32,7 +33,10 @@ export function pointerPublishTargets(input: {
     const normalized = normalizeRelayDestinationUrl(relay);
     targets.set(normalized, {
       relay: normalized,
-      isDiscoveryRelay: true,
+      // Divine's own relay is still published to, so an app that knows the old
+      // home can follow the move. It is not somewhere another app looks for
+      // one, so it must never be what makes a pointer count as discoverable.
+      isDiscoveryRelay: normalized !== divineRelay,
     });
   }
 

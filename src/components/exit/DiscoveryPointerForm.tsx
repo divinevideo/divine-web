@@ -61,7 +61,7 @@ export function DiscoveryPointerForm(props: DiscoveryPointerFormProps) {
               })}
             </ul>
             <p className="text-base leading-relaxed text-muted-foreground" role="status">
-              {discoverable === 2
+              {discoverable === pointers.summaries.length
                 ? "Other apps can now find your new home through public discovery relays."
                 : "At least one pointer is not discoverable yet. Try publishing again before relying on automatic discovery."}
             </p>

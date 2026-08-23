@@ -45,6 +45,17 @@ describe("discovery pointer templates", () => {
     ]);
   });
 
+  it("publishes to Divine's own relay without counting it as somewhere apps look", () => {
+    expect(pointerPublishTargets({
+      relayDestination: "wss://destination.example",
+      discoveryRelays: ["wss://relay.divine.video", "wss://indexer.example"],
+    })).toEqual([
+      { relay: "wss://destination.example/", isDiscoveryRelay: false },
+      { relay: "wss://relay.divine.video/", isDiscoveryRelay: false },
+      { relay: "wss://indexer.example/", isDiscoveryRelay: true },
+    ]);
+  });
+
   it("distinguishes a custom destination from discovery relays", () => {
     expect(pointerPublishTargets({
       relayDestination: "wss://destination.example",
