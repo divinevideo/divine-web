@@ -181,14 +181,22 @@ const MUST_BE_TRANSLATED_PREFIXES = [
 ];
 
 describe('i18n locale resources', () => {
-  it('recognizes every documented bare english loop form', () => {
+  it('matches every english loop form without catching words that merely contain one', () => {
+    // The token now decides whether *any* string in a glossary locale is a
+    // violation, not only the ones whose english source mentions loops, so an
+    // over-broad pattern would fail translations that never said "loop".
+    const matches = ['loop', 'loops', 'looping', 'looped', 'looper', 'loopers', 'Loop'];
+    const nonMatches = ['loophole', 'bloopers', 'loopy', 'developer', 'interloper', 'sloop'];
+
     expect(
-      ['loop', 'loops', 'looping', 'looped', 'looper'].filter((value) =>
-        BARE_LOOP_TOKEN.test(value),
-      ),
-    ).toEqual(
-      ['loop', 'loops', 'looping', 'looped', 'looper'],
-    );
+      matches.filter((value) => !BARE_LOOP_TOKEN.test(value)),
+      'BARE_LOOP_TOKEN must match every bare english loop form',
+    ).toEqual([]);
+
+    expect(
+      nonMatches.filter((value) => BARE_LOOP_TOKEN.test(value)),
+      'BARE_LOOP_TOKEN must not match words that only contain "loop"',
+    ).toEqual([]);
   });
 
   it('finds bare english loop text even when the english source uses another word', () => {
