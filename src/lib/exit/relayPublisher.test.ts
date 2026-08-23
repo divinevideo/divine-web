@@ -295,6 +295,33 @@ describe("publishArchiveEvents", () => {
     expect(results.find((result) => result.event_id === changed.id)).toMatchObject({ status: "failed", reason: expect.stringContaining("signer refused") });
     expect(relay.published).toEqual([unchanged]);
   });
+
+  it("rejects a replacement when the signer changes its timestamp", async () => {
+    const signer = makeSigner();
+    signer.signEvent.mockImplementationOnce(async (template) => ({
+      ...template,
+      created_at: template.created_at - 1,
+      id: "f".repeat(64),
+      pubkey: PUBKEY,
+      sig: "f".repeat(128),
+    }));
+    const relay = fakeRelay();
+    const changed = makeEvent("1", { kind: 34236, content: SOURCE, tags: [["url", SOURCE]] });
+
+    const results = await publishArchiveEvents({
+      destination: RELAY,
+      events: [changed],
+      mirrorResults: [mirrorResult()],
+      signer,
+      relayFactory: () => relay,
+    });
+
+    expect(results[0]).toMatchObject({
+      status: "failed",
+      reason: expect.stringContaining("signer changed this event's timestamp"),
+    });
+    expect(relay.event).not.toHaveBeenCalled();
+  });
 });
 
 describe("summarizePublishResults", () => {
