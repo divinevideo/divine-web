@@ -134,7 +134,7 @@ describe("republishCreatedAt", () => {
   );
 
   it.each([1, 16, 1111, 9999, 20_000, 29_999, 40_000])(
-    "preserves the timestamp for regular kind %s",
+    "preserves the timestamp for kind %s, which is neither replaceable nor addressable",
     (kind) => {
       const original = event({ kind });
       expect(republishCreatedAt(original)).toBe(original.created_at);
