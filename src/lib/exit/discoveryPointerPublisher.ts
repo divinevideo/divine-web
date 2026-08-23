@@ -48,6 +48,25 @@ export interface DiscoveryPointerSummary {
   failures: Array<{ relay?: string; reason: string }>;
 }
 
+function errorDetail(error: unknown): string {
+  return error instanceof Error && error.message ? ` ${error.message}` : "";
+}
+
+function relayFailure(
+  target: PointerPublishTarget,
+  pointer: { kind: number; label: string },
+  reason: string,
+): PointerRelayResult {
+  return {
+    kind: pointer.kind,
+    label: pointer.label,
+    relay: target.relay,
+    isDiscoveryRelay: target.isDiscoveryRelay,
+    status: "publish-failed",
+    reason,
+  };
+}
+
 export async function prepareSignedPointers(input: {
   pointers: PointerToSign[];
   signer: NostrSigner;
@@ -64,12 +83,11 @@ export async function prepareSignedPointers(input: {
       }
       signed.push({ kind: pointer.kind, label: pointer.label, event });
     } catch (error) {
-      const detail = error instanceof Error && error.message ? ` ${error.message}` : "";
       failures.push({
         kind: pointer.kind,
         label: pointer.label,
         status: "signing-failed",
-        reason: `Your signer refused this pointer.${detail}`,
+        reason: `Your signer refused this pointer.${errorDetail(error)}`,
       });
     }
   }
@@ -91,19 +109,15 @@ export async function publishPointersToRelay(input: {
       signal: input.signal,
     });
   } catch (error) {
-    const detail = error instanceof Error && error.message ? ` ${error.message}` : "";
-    return input.pointers.map((pointer) => ({
-      kind: pointer.kind,
-      label: pointer.label,
-      relay: input.target.relay,
-      isDiscoveryRelay: input.target.isDiscoveryRelay,
-      status: "publish-failed",
-      reason: `The relay connection could not start.${detail}`,
-    }));
+    return input.pointers.map((pointer) => relayFailure(
+      input.target,
+      pointer,
+      `The relay connection could not start.${errorDetail(error)}`,
+    ));
   }
 
+  const results: PointerRelayResult[] = [];
   try {
-    const results: PointerRelayResult[] = [];
     for (const pointer of input.pointers) {
       const outcome = await session.publish(pointer.event);
       if (outcome.status === "accepted") {
@@ -111,13 +125,22 @@ export async function publishPointersToRelay(input: {
       } else if (outcome.status === "duplicate") {
         results.push({ kind: pointer.kind, label: pointer.label, relay: input.target.relay, isDiscoveryRelay: input.target.isDiscoveryRelay, status: "duplicate", reason: outcome.message });
       } else {
-        results.push({ kind: pointer.kind, label: pointer.label, relay: input.target.relay, isDiscoveryRelay: input.target.isDiscoveryRelay, status: "publish-failed", reason: outcome.message });
+        results.push(relayFailure(input.target, pointer, outcome.message));
       }
     }
-    return results;
+  } catch (error) {
+    // Cancellation belongs to the caller. Every other failure has to stay a
+    // reported outcome for this relay, or one late throw would discard what
+    // the other relays in the fan-out already reported.
+    if (input.signal.aborted) throw error;
+    for (const pointer of input.pointers.slice(results.length)) {
+      results.push(relayFailure(input.target, pointer, `The relay stopped answering.${errorDetail(error)}`));
+    }
   } finally {
-    await session.close();
+    // Failing to close the socket must not throw away results already collected.
+    await session.close().catch(() => {});
   }
+  return results;
 }
 
 function isAccepted(result: DiscoveryPointerResult): result is PointerRelayResult {

@@ -82,6 +82,26 @@ describe("useDiscoveryPointers", () => {
     expect(closes.size).toBe(4);
   });
 
+  it("keeps a late relay failure from discarding the other relays' results", async () => {
+    const testSigner = signer();
+    vi.mocked(openDestinationRelay).mockImplementation(({ destination }) => {
+      const publish = vi.fn().mockResolvedValue({ status: "accepted" });
+      const close = destination === "wss://relay.damus.io/"
+        ? vi.fn().mockRejectedValue(new Error("The socket closed unexpectedly"))
+        : vi.fn().mockResolvedValue(undefined);
+      publishes.set(destination, publish);
+      closes.set(destination, close);
+      return { publish, close };
+    });
+    const { result } = renderHook(() => useDiscoveryPointers({ files, relayDestination: "wss://relay.example/", blossomDestination: "https://blossom.example", signer: testSigner }));
+
+    await act(async () => result.current.start());
+
+    expect(result.current.state).toBe("complete");
+    expect(result.current.summaries.every((summary) => summary.status === "published")).toBe(true);
+    expect(result.current.results.filter((item) => item.status === "publish-failed")).toHaveLength(0);
+  });
+
   it("reports future-dated pointers without signing or opening relays", async () => {
     vi.spyOn(Date, "now").mockReturnValue(20_000);
     const futureFiles = buildArchiveFiles({

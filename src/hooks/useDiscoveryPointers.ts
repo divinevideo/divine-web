@@ -88,8 +88,8 @@ export function useDiscoveryPointers(input: {
     }
     const settled = await Promise.allSettled(targets.map((target) => publishPointersToRelay({ target, pointers: signed.signed, signer: input.signer, signal: controller.signal })));
     if (controller.signal.aborted) return;
-    const rejected = settled.find((outcome) => outcome.status === "rejected");
-    if (rejected?.status === "rejected") throw rejected.reason;
+    // publishPointersToRelay reports its own failures and only rejects when the
+    // run was cancelled, which the check above already handled.
     const relayResults = settled.flatMap((outcome) => outcome.status === "fulfilled" ? outcome.value : []);
     const nextResults = [...prepared.failures, ...signed.failures, ...relayResults]
       .sort((left, right) => left.kind - right.kind || (("relay" in left ? left.relay : "").localeCompare("relay" in right ? right.relay : "")));
