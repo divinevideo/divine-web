@@ -204,9 +204,10 @@ the discovery pointers described below. Only media with
 descriptor-and-readback verification is rewritten.
 Changed replaceable and addressable events are re-signed one second after their
 original timestamp so the migrated copy deterministically supersedes the old
-media references. Other changed events keep their original timestamp, referenced
-owner events are prepared first so `e`, `E`, and `q` tags keep pointing at valid
-event IDs, and unchanged events retain their original ID and signature.
+media references. Other changed events keep their original timestamp.
+Referenced owner events are prepared first so `e`, `E`, and `q` tags keep
+pointing at valid event IDs, and unchanged events retain their original ID and
+signature.
 Encrypted messages, ephemeral or authentication events, deletion requests,
 and vanish requests are skipped. Relay refusals remain per-event results and
 do not stop unrelated publishes.
