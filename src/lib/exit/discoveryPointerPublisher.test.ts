@@ -11,6 +11,10 @@ import {
 vi.mock("./relayConnection", () => ({ openDestinationRelay: vi.fn() }));
 
 const ownerPubkey = "a".repeat(64);
+const signedPointers = [
+  { kind: 10002, label: "Relay list", event: { kind: 10002 } as NostrEvent },
+  { kind: 10063, label: "Blossom server list", event: { kind: 10063 } as NostrEvent },
+];
 
 function signer(): NostrSigner {
   return {
@@ -72,6 +76,38 @@ describe("discovery pointer publication", () => {
 
     expect(prepared.signed).toEqual([]);
     expect(prepared.failures[0]).toMatchObject({ status: "signing-failed", reason: expect.stringContaining("different account") });
+  });
+
+  it("keeps accepted results when the relay stops answering mid-publication", async () => {
+    publish
+      .mockResolvedValueOnce({ status: "accepted" })
+      .mockRejectedValueOnce(new Error("socket closed"));
+
+    await expect(publishPointersToRelay({
+      target: { relay: "wss://indexer.example/", isDiscoveryRelay: true },
+      pointers: signedPointers,
+      signer: signer(),
+      signal: new AbortController().signal,
+    })).resolves.toEqual([
+      expect.objectContaining({ kind: 10002, status: "published" }),
+      expect.objectContaining({ kind: 10063, status: "publish-failed", reason: expect.stringContaining("stopped answering") }),
+    ]);
+  });
+
+  it("rethrows relay failures when publication was cancelled", async () => {
+    const controller = new AbortController();
+    publish.mockImplementationOnce(async () => {
+      controller.abort();
+      throw new DOMException("cancelled", "AbortError");
+    });
+
+    await expect(publishPointersToRelay({
+      target: { relay: "wss://indexer.example/", isDiscoveryRelay: true },
+      pointers: signedPointers,
+      signer: signer(),
+      signal: controller.signal,
+    })).rejects.toThrow("cancelled");
+    expect(close).toHaveBeenCalledOnce();
   });
 
   it("marks duplicate relay responses as accepted discovery", () => {
