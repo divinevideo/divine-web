@@ -25,7 +25,7 @@ export function DiscoveryPointerForm(props: DiscoveryPointerFormProps) {
       <CardHeader><CardTitle>Point apps at your new home</CardTitle></CardHeader>
       <CardContent className="space-y-5">
         <p className="text-base leading-relaxed text-muted-foreground">
-          Check the media and post results above first. Publishing these pointers tells compatible apps where to find your posts and files.
+          Check the media and post results above first. This sends the same signed pointers to Divine and public metadata relays that compatible apps check. Each pointer names only your new relay or Blossom server.
         </p>
         <dl className="space-y-3 rounded-lg border border-brand-dark-green/15 p-4 dark:border-brand-green/25">
           <div><dt className="text-sm font-semibold text-foreground">Relay</dt><dd className="break-all text-sm text-muted-foreground">{props.relayDestination}</dd></div>

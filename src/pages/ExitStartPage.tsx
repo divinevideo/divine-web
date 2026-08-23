@@ -468,7 +468,7 @@ export function ExitStartPage() {
               eyebrow="Make the move discoverable"
               icon={<MapPin weight="fill" className="h-7 w-7" />}
               title="Publish your new home"
-              lead="Share destination-only discovery pointers so compatible apps can find your relay and Blossom server without Divine in the path."
+              lead="Publish pointers that name only your destination to Divine and public metadata relays, so compatible apps can find your relay and Blossom server."
             />
             <DiscoveryPointerForm
               files={archiveFiles}

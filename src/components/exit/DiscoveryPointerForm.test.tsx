@@ -49,6 +49,7 @@ describe("DiscoveryPointerForm", () => {
 
   it("reports each pointer and confirms automatic discovery after both succeed", async () => {
     renderForm();
+    expect(screen.getByText(/same signed pointers to Divine and public metadata relays/)).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "Publish destination pointers" }));
 
     expect(await screen.findByText("Relay list — published to 3 of 3 places apps look.")).toBeInTheDocument();

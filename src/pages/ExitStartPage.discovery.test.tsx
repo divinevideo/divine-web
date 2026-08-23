@@ -45,6 +45,8 @@ describe("ExitStartPage discovery pointer gate", () => {
   it("offers pointers after at least one destination event succeeds", async () => {
     await createArchive();
     expect(screen.getByRole("heading", { name: "Publish your new home" })).toBeInTheDocument();
+    expect(screen.getByText(/name only your destination to Divine and public metadata relays/)).toBeInTheDocument();
+    expect(screen.queryByText(/without Divine in the path/)).not.toBeInTheDocument();
   });
 
   it("does not offer pointers after an all-failed republish", async () => {
