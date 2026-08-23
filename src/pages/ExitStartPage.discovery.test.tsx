@@ -59,5 +59,8 @@ describe("ExitStartPage discovery pointer gate", () => {
     await userEvent.click(screen.getByRole("button", { name: /Create my archive/ }));
     await waitFor(() => expect(screen.getByText(/Your archive is ready/)).toBeInTheDocument());
     expect(screen.queryByText("Discovery pointer form")).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", { name: "Old copies stay where they are" })
+    ).not.toBeInTheDocument();
   });
 });
