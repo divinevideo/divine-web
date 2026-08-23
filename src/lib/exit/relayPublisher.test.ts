@@ -118,6 +118,20 @@ describe("publishArchiveEvents", () => {
     });
   });
 
+  it("advances an addressable event changed only by reference rewriting", async () => {
+    const signer = makeSigner();
+    const relay = fakeRelay();
+    const video = makeEvent("1", { kind: 34236, content: SOURCE, tags: [["d", "vid"], ["url", SOURCE]] });
+    // A curation set carries no media of its own, so only the rewritten `e` tag
+    // changes it — and it still has to beat the copy that points at Divine.
+    const playlist = makeEvent("3", { kind: 30_005, created_at: 1_700_000_900, content: "", tags: [["d", "list"], ["e", video.id]] });
+
+    await publishArchiveEvents({ destination: RELAY, events: [video, playlist], mirrorResults: [mirrorResult()], signer, relayFactory: () => relay });
+
+    expect(relay.published[1].created_at).toBe(playlist.created_at + 1);
+    expect(relay.published[1].tags).toContainEqual(["e", relay.published[0].id]);
+  });
+
   it("replaces serialized repost content with the newly signed referenced event", async () => {
     const signer = makeSigner();
     const relay = fakeRelay();
