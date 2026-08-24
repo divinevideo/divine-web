@@ -1550,6 +1550,10 @@
   },
   "userList": {
     "searchPlaceholder": "Ada göre ara",
-    "noMatches": "Buradaki kimse eşleşmiyor. Başka bir ad denesene?"
+    "noMatches": "Buradaki kimse eşleşmiyor. Başka bir ad denesene?",
+    "searchHint": "En az 2 harf veya rakam yaz.",
+    "searchUnavailable": "Şu anda arama yapılamıyor. Tekrar dene?",
+    "noFollowers": "Henüz takipçi yok.",
+    "noFollowing": "Henüz kimseyi takip etmiyor."
   }
 }

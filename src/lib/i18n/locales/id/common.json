@@ -1550,6 +1550,10 @@
   },
   "userList": {
     "searchPlaceholder": "Cari berdasarkan nama",
-    "noMatches": "Tidak ada yang cocok di sini. Coba nama lain?"
+    "noMatches": "Tidak ada yang cocok di sini. Coba nama lain?",
+    "searchHint": "Ketik minimal 2 huruf atau angka.",
+    "searchUnavailable": "Pencarian sedang tidak bisa. Coba lagi?",
+    "noFollowers": "Belum ada pengikut.",
+    "noFollowing": "Belum mengikuti siapa pun."
   }
 }

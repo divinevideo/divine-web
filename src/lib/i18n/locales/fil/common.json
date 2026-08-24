@@ -1550,6 +1550,10 @@
   },
   "userList": {
     "searchPlaceholder": "Maghanap ayon sa pangalan",
-    "noMatches": "Walang tumugma dito. Subukan ang ibang pangalan?"
+    "noMatches": "Walang tumugma dito. Subukan ang ibang pangalan?",
+    "searchHint": "Mag-type ng kahit 2 letra o numero.",
+    "searchUnavailable": "Hindi makapaghanap ngayon. Subukan ulit?",
+    "noFollowers": "Wala pang followers.",
+    "noFollowing": "Wala pang fina-follow."
   }
 }

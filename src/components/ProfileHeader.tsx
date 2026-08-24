@@ -36,7 +36,7 @@ import { UserListDialog } from '@/components/UserListDialog';
 import { LinkedAccounts } from '@/components/LinkedAccounts';
 import { useNip05Validation } from '@/hooks/useNip05Validation';
 import { useFollowers, getAllFollowerPubkeys } from '@/hooks/useFollowers';
-import { useFollowing } from '@/hooks/useFollowing';
+import { getAllFollowingPubkeys, useFollowing } from '@/hooks/useFollowing';
 import { useBadges } from '@/hooks/useBadges';
 import { useDmCapability } from '@/hooks/useDirectMessages';
 import { useSubdomainNavigate } from '@/hooks/useSubdomainNavigate';
@@ -118,16 +118,23 @@ export function ProfileHeader({
   const [showBlockDialog, setShowBlockDialog] = useState(false);
   const [showUnblockDialog, setShowUnblockDialog] = useState(false);
   const [userListDialog, setUserListDialog] = useState<'followers' | 'following' | null>(null);
+  const [userListSearch, setUserListSearch] = useState('');
   const { canUseDirectMessages } = useDmCapability();
   // Hide every non-Support compose affordance. Support still flows through the
   // protected-minor approval check inside the compose guard.
   const { isComposeBlocked } = useDmComposeGuard();
 
   // Fetch followers/following when dialog is open
-  const followersQuery = useFollowers(userListDialog === 'followers' ? pubkey : '');
-  const followingQuery = useFollowing(userListDialog === 'following' ? pubkey : '');
+  const followersQuery = useFollowers(
+    userListDialog === 'followers' ? pubkey : '',
+    userListDialog === 'followers' ? userListSearch : '',
+  );
+  const followingQuery = useFollowing(
+    userListDialog === 'following' ? pubkey : '',
+    userListDialog === 'following' ? userListSearch : '',
+  );
   const followerPubkeys = getAllFollowerPubkeys(followersQuery.data);
-  const followingPubkeys = followingQuery.data?.pubkeys ?? [];
+  const followingPubkeys = getAllFollowingPubkeys(followingQuery.data);
 
   // Fetch NIP-58 badges
   const badgesQuery = useBadges(pubkey);
@@ -642,13 +649,23 @@ export function ProfileHeader({
         isLoading={followersQuery.isLoading || followersQuery.isFetchingNextPage}
         hasMore={followersQuery.hasNextPage ?? false}
         onLoadMore={() => followersQuery.fetchNextPage()}
+        searchQuery={userListSearch}
+        onSearchQueryChange={setUserListSearch}
+        isSearchError={followersQuery.isError}
+        emptyMessage={t('userList.noFollowers')}
       />
       <UserListDialog
         open={userListDialog === 'following'}
         onOpenChange={(open) => !open && setUserListDialog(null)}
         title={t('profileHeader.followingDialogTitle')}
         pubkeys={followingPubkeys}
-        isLoading={followingQuery.isLoading}
+        isLoading={followingQuery.isLoading || followingQuery.isFetchingNextPage}
+        hasMore={followingQuery.hasNextPage ?? false}
+        onLoadMore={() => followingQuery.fetchNextPage()}
+        searchQuery={userListSearch}
+        onSearchQueryChange={setUserListSearch}
+        isSearchError={followingQuery.isError}
+        emptyMessage={t('userList.noFollowing')}
       />
     </div>
   );

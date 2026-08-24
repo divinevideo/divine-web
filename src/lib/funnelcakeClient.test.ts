@@ -251,6 +251,39 @@ describe('funnelcakeClient', () => {
         .toEqual([...pubkeys].sort());
     });
 
+    it('bounds concurrent bulk user chunks', async () => {
+      const pubkeys = Array.from({ length: 500 }, (_, index) =>
+        index.toString(16).padStart(64, '0'));
+      let activeRequests = 0;
+      let peakRequests = 0;
+      const releases: Array<() => void> = [];
+
+      (global.fetch as ReturnType<typeof vi.fn>).mockImplementation((_url, init) => {
+        const sent = JSON.parse(String((init as RequestInit).body)).pubkeys as string[];
+        activeRequests += 1;
+        peakRequests = Math.max(peakRequests, activeRequests);
+        return new Promise((resolve) => {
+          releases.push(() => {
+            activeRequests -= 1;
+            resolve({
+              ok: true,
+              json: () => Promise.resolve({ users: [], missing: sent }),
+            });
+          });
+        });
+      });
+
+      const request = fetchBulkUsers(API_URL, pubkeys);
+      await vi.waitFor(() => expect(releases).toHaveLength(3));
+      releases.splice(0).forEach((release) => release());
+      await vi.waitFor(() => expect(releases).toHaveLength(2));
+      releases.splice(0).forEach((release) => release());
+      await request;
+
+      expect(peakRequests).toBe(3);
+      expect(global.fetch).toHaveBeenCalledTimes(5);
+    });
+
     it('handles partial results (some users not found)', async () => {
       const pubkeys = ['a'.repeat(64), 'b'.repeat(64)];
       const mockResponse = {

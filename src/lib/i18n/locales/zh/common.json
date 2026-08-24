@@ -1550,6 +1550,10 @@
   },
   "userList": {
     "searchPlaceholder": "按名称搜索",
-    "noMatches": "这里没有匹配的人。换个名字试试？"
+    "noMatches": "这里没有匹配的人。换个名字试试？",
+    "searchHint": "请输入至少 2 个字母或数字。",
+    "searchUnavailable": "现在无法搜索。再试一次？",
+    "noFollowers": "还没有关注者。",
+    "noFollowing": "还没有关注任何人。"
   }
 }

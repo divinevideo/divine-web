@@ -1566,6 +1566,10 @@
   },
   "userList": {
     "searchPlaceholder": "Szukaj po nazwie",
-    "noMatches": "Nikt tu nie pasuje. Spróbuj innej nazwy?"
+    "noMatches": "Nikt tu nie pasuje. Spróbuj innej nazwy?",
+    "searchHint": "Wpisz co najmniej 2 litery lub cyfry.",
+    "searchUnavailable": "Wyszukiwanie teraz nie działa. Spróbować ponownie?",
+    "noFollowers": "Brak obserwujących.",
+    "noFollowing": "Jeszcze nikogo nie obserwuje."
   }
 }

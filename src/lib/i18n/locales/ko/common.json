@@ -1550,6 +1550,10 @@
   },
   "userList": {
     "searchPlaceholder": "이름으로 검색",
-    "noMatches": "일치하는 사람이 없어요. 다른 이름으로 해볼까요?"
+    "noMatches": "일치하는 사람이 없어요. 다른 이름으로 해볼까요?",
+    "searchHint": "글자나 숫자를 2자 이상 입력하세요.",
+    "searchUnavailable": "지금은 검색할 수 없어요. 다시 해볼까요?",
+    "noFollowers": "아직 팔로워가 없어요.",
+    "noFollowing": "아직 아무도 팔로우하지 않아요."
   }
 }

@@ -1550,6 +1550,10 @@
   },
   "userList": {
     "searchPlaceholder": "Search by name",
-    "noMatches": "No one here matches that. Try another name?"
+    "noMatches": "No one here matches that. Try another name?",
+    "searchHint": "Type at least 2 letters or numbers.",
+    "searchUnavailable": "Couldn't search right now. Try again?",
+    "noFollowers": "No followers yet.",
+    "noFollowing": "Not following anyone yet."
   }
 }

@@ -37,6 +37,10 @@ interface UserListDialogProps {
   isLoading?: boolean;
   hasMore?: boolean;
   onLoadMore?: () => void;
+  searchQuery?: string;
+  onSearchQueryChange?: (query: string) => void;
+  isSearchError?: boolean;
+  emptyMessage?: string;
 }
 
 interface UserRowProps {
@@ -95,6 +99,10 @@ export function UserListDialog({
   isLoading = false,
   hasMore = false,
   onLoadMore,
+  searchQuery = '',
+  onSearchQueryChange,
+  isSearchError = false,
+  emptyMessage,
 }: UserListDialogProps) {
   const { t } = useTranslation();
   const navigate = useSubdomainNavigate();
@@ -132,36 +140,26 @@ export function UserListDialog({
   const [resolvedAuthors, setResolvedAuthors] = useState<Record<string, AuthorData>>({});
 
   const [query, setQuery] = useState('');
-  const trimmedQuery = query.trim().toLowerCase();
-  const isSearching = trimmedQuery.length > 0;
+  const trimmedQuery = query.trim();
+  const hasEligibleQuery = trimmedQuery
+    .split(/\s+/)
+    .some((token) => (token.match(/[\p{L}\p{N}]/gu) ?? []).length >= 2);
+  const isSearching = searchQuery.length > 0;
 
   useEffect(() => {
-    if (!open) setQuery('');
-  }, [open]);
+    if (!open) {
+      setQuery('');
+      onSearchQueryChange?.('');
+      return;
+    }
 
-  const matchesQuery = useCallback(
-    (pubkey: string) => {
-      const metadata = resolvedAuthors[pubkey]?.metadata;
-      const haystack = [
-        metadata?.display_name,
-        metadata?.name,
-        metadata?.nip05,
-        metadata?.display_name || metadata?.name
-          ? undefined
-          : genUserName(pubkey),
-      ];
-      return haystack.some((value) => value?.toLowerCase().includes(trimmedQuery));
-    },
-    [resolvedAuthors, trimmedQuery],
-  );
+    const nextQuery = hasEligibleQuery ? trimmedQuery.slice(0, 100) : '';
+    const delay = import.meta.env.MODE === 'test' ? 0 : 300;
+    const timeout = window.setTimeout(() => onSearchQueryChange?.(nextQuery), delay);
+    return () => window.clearTimeout(timeout);
+  }, [hasEligibleQuery, onSearchQueryChange, open, trimmedQuery]);
 
-  const filteredPubkeys = useMemo(
-    () => (isSearching ? pubkeys.filter(matchesQuery) : pubkeys),
-    [isSearching, matchesQuery, pubkeys],
-  );
-
-  // Skeleton rows stand for pages still arriving, which a query is not waiting on.
-  const totalCount = filteredPubkeys.length + (isLoading && !isSearching ? 3 : 0);
+  const totalCount = pubkeys.length + (isLoading ? 3 : 0);
 
   const rowVirtualizer = useVirtualizer({
     count: totalCount,
@@ -192,16 +190,12 @@ export function UserListDialog({
     const visibleStart = renderedRows[0].index;
     const visibleEnd = renderedRows[renderedRows.length - 1].index;
     const bufferStart = Math.max(0, visibleStart - 10);
-    const bufferEnd = Math.min(filteredPubkeys.length, visibleEnd + 11);
-    return filteredPubkeys.slice(bufferStart, bufferEnd);
-  }, [renderedRows, filteredPubkeys]);
+    const bufferEnd = Math.min(pubkeys.length, visibleEnd + 11);
+    return pubkeys.slice(bufferStart, bufferEnd);
+  }, [renderedRows, pubkeys]);
 
-  // Filtering on a name needs a name for every entry, not just the rows on
-  // screen, so a query widens the fetch to the whole list. Bulk lookups chunk
-  // themselves, and windowed fetching stays the default while idle.
-  const requestedPubkeys = isSearching ? pubkeys : visiblePubkeys;
-  const { data: authorsData, isLoading: areAuthorsLoading = false } = useBatchedAuthors(
-    open ? requestedPubkeys : [],
+  const { data: authorsData } = useBatchedAuthors(
+    open ? visiblePubkeys : [],
   );
 
   useEffect(() => {
@@ -218,17 +212,13 @@ export function UserListDialog({
   );
 
   // Infinite scroll: trigger load more when near the end.
-  //
-  // Held off while a query is active. The rendered rows index into the filtered
-  // list, so an end-of-list check would compare against a length the query can
-  // make arbitrarily short and page in the rest of the list on every render.
   useEffect(() => {
-    if (isSearching || virtualItems.length === 0) return;
-    const lastItem = virtualItems[virtualItems.length - 1];
+    if (renderedRows.length === 0) return;
+    const lastItem = renderedRows[renderedRows.length - 1];
     if (lastItem && lastItem.index >= pubkeys.length - 5 && hasMore && onLoadMore && !isLoading) {
       onLoadMore();
     }
-  }, [virtualItems, pubkeys.length, hasMore, onLoadMore, isLoading, isSearching]);
+  }, [renderedRows, pubkeys.length, hasMore, onLoadMore, isLoading]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -243,7 +233,7 @@ export function UserListDialog({
           </DialogDescription>
         </DialogHeader>
 
-        {pubkeys.length > 0 && (
+        {(pubkeys.length > 0 || query.length > 0 || isSearching) && (
           <div className="px-6 pb-2">
             <div className="relative">
               <MagnifyingGlass
@@ -254,6 +244,7 @@ export function UserListDialog({
                 type="search"
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
+                maxLength={100}
                 placeholder={t('userList.searchPlaceholder')}
                 aria-label={t('userList.searchPlaceholder')}
                 className="pl-9"
@@ -262,22 +253,34 @@ export function UserListDialog({
           </div>
         )}
 
-        {pubkeys.length === 0 && !isLoading ? (
+        {trimmedQuery.length > 0 && !hasEligibleQuery && (
+          <p className="px-6 pb-2 text-xs text-muted-foreground">
+            {t('userList.searchHint')}
+          </p>
+        )}
+
+        {isSearchError && isSearching ? (
           <div className="px-4 pb-4">
             <p className="text-center text-muted-foreground py-8 text-sm">
-              No {title.toLowerCase()} yet
+              {t('userList.searchUnavailable')}
             </p>
           </div>
-        ) : isSearching && filteredPubkeys.length === 0 && areAuthorsLoading ? (
+        ) : isSearching && pubkeys.length === 0 && isLoading ? (
           <div className="px-4 pb-4">
             {Array.from({ length: 3 }, (_, index) => (
               <LoadingSkeleton key={index} />
             ))}
           </div>
-        ) : isSearching && filteredPubkeys.length === 0 ? (
+        ) : isSearching && pubkeys.length === 0 ? (
           <div className="px-4 pb-4">
             <p className="text-center text-muted-foreground py-8 text-sm">
               {t('userList.noMatches')}
+            </p>
+          </div>
+        ) : pubkeys.length === 0 && !isLoading ? (
+          <div className="px-4 pb-4">
+            <p className="text-center text-muted-foreground py-8 text-sm">
+              {emptyMessage ?? title}
             </p>
           </div>
         ) : (
@@ -295,7 +298,7 @@ export function UserListDialog({
               {renderedRows.map((virtualRow) => {
                 const index = virtualRow.index;
 
-                if (index >= filteredPubkeys.length) {
+                if (index >= pubkeys.length) {
                   return (
                     <div
                       key={virtualRow.key}
@@ -313,7 +316,7 @@ export function UserListDialog({
                   );
                 }
 
-                const pubkey = filteredPubkeys[index];
+                const pubkey = pubkeys[index];
                 return (
                   <div
                     key={virtualRow.key}

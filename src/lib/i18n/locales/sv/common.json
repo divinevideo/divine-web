@@ -1550,6 +1550,10 @@
   },
   "userList": {
     "searchPlaceholder": "Sök på namn",
-    "noMatches": "Ingen här matchar. Testa ett annat namn?"
+    "noMatches": "Ingen här matchar. Testa ett annat namn?",
+    "searchHint": "Skriv minst 2 bokstäver eller siffror.",
+    "searchUnavailable": "Det gick inte att söka nu. Försöka igen?",
+    "noFollowers": "Inga följare än.",
+    "noFollowing": "Följer ingen än."
   }
 }

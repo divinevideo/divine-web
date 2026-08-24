@@ -1105,6 +1105,7 @@ export interface FunnelcakeBulkStatsResponse {
  * merely fail — three of them take the whole app off Funnelcake for 30 seconds.
  */
 const BULK_USERS_MAX_PUBKEYS = 100;
+const BULK_USERS_MAX_CONCURRENCY = 3;
 
 /**
  * Fetch multiple user profiles in bulk via POST /api/users/bulk
@@ -1136,9 +1137,19 @@ export async function fetchBulkUsers(
 
     debugLog(`[FunnelcakeClient] fetchBulkUsers: ${pubkeys.length} pubkeys in ${chunks.length} chunks`);
 
-    const responses = await Promise.all(
-      chunks.map((chunk) => fetchBulkUsers(apiUrl, chunk, signal)),
+    const responses: FunnelcakeBulkUsersResponse[] = new Array(chunks.length);
+    let nextChunk = 0;
+    const workers = Array.from(
+      { length: Math.min(BULK_USERS_MAX_CONCURRENCY, chunks.length) },
+      async () => {
+        while (nextChunk < chunks.length) {
+          const chunkIndex = nextChunk;
+          nextChunk += 1;
+          responses[chunkIndex] = await fetchBulkUsers(apiUrl, chunks[chunkIndex], signal);
+        }
+      },
     );
+    await Promise.all(workers);
 
     return {
       users: responses.flatMap((response) => response.users),

@@ -63,7 +63,14 @@ vi.mock('@/hooks/useFollowers', () => ({
 }));
 
 vi.mock('@/hooks/useFollowing', () => ({
-  useFollowing: () => ({ data: { pubkeys: [] }, isLoading: false }),
+  useFollowing: () => ({
+    data: undefined,
+    isLoading: false,
+    isFetchingNextPage: false,
+    hasNextPage: false,
+    fetchNextPage: vi.fn(),
+  }),
+  getAllFollowingPubkeys: () => [],
 }));
 
 vi.mock('@/hooks/useBadges', () => ({

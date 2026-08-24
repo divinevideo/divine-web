@@ -1,7 +1,7 @@
 // ABOUTME: Hook for fetching following list from Funnelcake REST API
-// ABOUTME: Returns full list of pubkeys the user follows
+// ABOUTME: Pages complete following lists and server-filtered searches
 
-import { useQuery } from '@tanstack/react-query';
+import { useInfiniteQuery } from '@tanstack/react-query';
 import { API_CONFIG } from '@/config/api';
 import { isFunnelcakeAvailable } from '@/lib/funnelcakeHealth';
 import { debugLog } from '@/lib/debug';
@@ -10,6 +10,8 @@ interface FollowingResponse {
   pubkeys: string[];
   total?: number;
   limit?: number;
+  has_more: boolean;
+  query?: string;
 }
 
 /**
@@ -22,16 +24,19 @@ interface FollowingResponse {
  */
 const FOLLOWING_PAGE_SIZE = 100;
 
-/** Backstop so a pathological `total` cannot page forever. */
-const FOLLOWING_MAX_PAGES = 30;
-
 async function fetchFollowingPage(
   apiUrl: string,
   pubkey: string,
   offset: number,
+  query: string,
   signal?: AbortSignal
 ): Promise<FollowingResponse> {
-  const url = `${apiUrl}/api/users/${pubkey}/following?limit=${FOLLOWING_PAGE_SIZE}&offset=${offset}`;
+  const params = new URLSearchParams({
+    limit: String(FOLLOWING_PAGE_SIZE),
+    offset: String(offset),
+  });
+  if (query) params.set('q', query);
+  const url = `${apiUrl}/api/users/${pubkey}/following?${params}`;
   debugLog(`[useFollowing] Fetching: ${url}`);
 
   const response = await fetch(url, {
@@ -47,59 +52,49 @@ async function fetchFollowingPage(
 
   // Handle different response formats
   const pubkeys = Array.isArray(data) ? data : (data.pubkeys || data.following || []);
-
-  return {
-    pubkeys,
-    total: data.total || pubkeys.length,
-    limit: typeof data.limit === 'number' ? data.limit : undefined,
-  };
-}
-
-async function fetchUserFollowing(
-  apiUrl: string,
-  pubkey: string,
-  signal?: AbortSignal
-): Promise<FollowingResponse> {
-  const pubkeys: string[] = [];
-  let total = 0;
-
-  for (let page = 0; page < FOLLOWING_MAX_PAGES; page += 1) {
-    const result = await fetchFollowingPage(apiUrl, pubkey, pubkeys.length, signal);
-    pubkeys.push(...result.pubkeys);
-    total = result.total ?? pubkeys.length;
-
-    // A short page means the server has nothing more, whatever `total` claims.
-    if (
-      result.pubkeys.length < (result.limit ?? FOLLOWING_PAGE_SIZE)
-      || pubkeys.length >= total
-    ) {
-      break;
-    }
+  if (query && data.query !== query) {
+    throw new Error('Follow-list search unavailable');
   }
 
+  const total = typeof data.total === 'number' ? data.total : pubkeys.length;
+
   return {
     pubkeys,
-    total: Math.max(total, pubkeys.length),
+    total,
+    limit: typeof data.limit === 'number' ? data.limit : undefined,
+    has_more: pubkeys.length >= (typeof data.limit === 'number' ? data.limit : FOLLOWING_PAGE_SIZE)
+      && offset + pubkeys.length < total,
+    query: data.query,
   };
 }
 
 /**
  * Hook for fetching following list
  */
-export function useFollowing(pubkey: string) {
+export function useFollowing(pubkey: string, query = '') {
   const apiUrl = API_CONFIG.funnelcake.baseUrl;
 
-  return useQuery({
-    queryKey: ['following', pubkey],
-    queryFn: async ({ signal }) => {
+  return useInfiniteQuery({
+    queryKey: ['following', pubkey, query],
+    queryFn: async ({ pageParam = 0, signal }) => {
       if (!isFunnelcakeAvailable(apiUrl)) {
         throw new Error('Funnelcake unavailable');
       }
 
-      return fetchUserFollowing(apiUrl, pubkey, signal);
+      return fetchFollowingPage(apiUrl, pubkey, pageParam, query, signal);
     },
+    getNextPageParam: (lastPage, allPages) => {
+      if (!lastPage.has_more) return undefined;
+      return allPages.reduce((sum, page) => sum + page.pubkeys.length, 0);
+    },
+    initialPageParam: 0,
     enabled: !!pubkey && isFunnelcakeAvailable(apiUrl),
     staleTime: 60000, // 1 minute
     gcTime: 300000, // 5 minutes
   });
+}
+
+export function getAllFollowingPubkeys(data: ReturnType<typeof useFollowing>['data']): string[] {
+  if (!data?.pages) return [];
+  return data.pages.flatMap((page) => page.pubkeys);
 }

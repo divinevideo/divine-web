@@ -1550,6 +1550,10 @@
   },
   "userList": {
     "searchPlaceholder": "Tìm theo tên",
-    "noMatches": "Không ai ở đây khớp. Thử tên khác nhé?"
+    "noMatches": "Không ai ở đây khớp. Thử tên khác nhé?",
+    "searchHint": "Nhập ít nhất 2 chữ cái hoặc chữ số.",
+    "searchUnavailable": "Hiện chưa tìm kiếm được. Thử lại nhé?",
+    "noFollowers": "Chưa có người theo dõi.",
+    "noFollowing": "Chưa theo dõi ai."
   }
 }

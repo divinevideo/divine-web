@@ -1558,6 +1558,10 @@
   },
   "userList": {
     "searchPlaceholder": "Buscar por nombre",
-    "noMatches": "Aquí no coincide nadie. ¿Probamos otro nombre?"
+    "noMatches": "Aquí no coincide nadie. ¿Probamos otro nombre?",
+    "searchHint": "Escribe al menos 2 letras o números.",
+    "searchUnavailable": "No se pudo buscar ahora. ¿Lo intentamos de nuevo?",
+    "noFollowers": "Todavía no hay seguidores.",
+    "noFollowing": "Todavía no sigue a nadie."
   }
 }

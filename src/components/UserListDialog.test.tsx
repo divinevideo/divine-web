@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { nip19 } from 'nostr-tools';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -106,126 +106,101 @@ describe('UserListDialog', () => {
       [bob]: { metadata: { display_name: 'Bob Ross', name: 'bob' } },
     };
 
-    it('filters the list by name', async () => {
+    it('sends an eligible query to the server search after input settles', async () => {
       const user = userEvent.setup();
       mockUseBatchedAuthors.mockReturnValue({ data: authors });
+      const onSearchQueryChange = vi.fn();
 
       render(
-        <UserListDialog open onOpenChange={vi.fn()} title="Following" pubkeys={[alice, bob]} />,
+        <UserListDialog
+          open
+          onOpenChange={vi.fn()}
+          title="Following"
+          pubkeys={[alice, bob]}
+          onSearchQueryChange={onSearchQueryChange}
+        />,
       );
 
       await user.type(screen.getByRole('searchbox'), 'bob');
-
-      expect(screen.getByText('Bob Ross')).toBeVisible();
-      expect(screen.queryByText('Alice Cooper')).not.toBeInTheDocument();
+      await waitFor(() => expect(onSearchQueryChange).toHaveBeenLastCalledWith('bob'));
     });
 
     it('clears the query when the dialog closes', async () => {
       const user = userEvent.setup();
       mockUseBatchedAuthors.mockReturnValue({ data: authors });
 
+      const onSearchQueryChange = vi.fn();
       const { rerender } = render(
-        <UserListDialog open onOpenChange={vi.fn()} title="Following" pubkeys={[alice, bob]} />,
+        <UserListDialog open onOpenChange={vi.fn()} title="Following" pubkeys={[alice, bob]} onSearchQueryChange={onSearchQueryChange} />,
       );
 
       await user.type(screen.getByRole('searchbox'), 'bob');
-      expect(screen.queryByText('Alice Cooper')).not.toBeInTheDocument();
+      await waitFor(() => expect(onSearchQueryChange).toHaveBeenLastCalledWith('bob'));
 
       rerender(
-        <UserListDialog open={false} onOpenChange={vi.fn()} title="Following" pubkeys={[alice, bob]} />,
+        <UserListDialog open={false} onOpenChange={vi.fn()} title="Following" pubkeys={[alice, bob]} onSearchQueryChange={onSearchQueryChange} />,
       );
       rerender(
-        <UserListDialog open onOpenChange={vi.fn()} title="Following" pubkeys={[alice, bob]} />,
+        <UserListDialog open onOpenChange={vi.fn()} title="Following" pubkeys={[alice, bob]} onSearchQueryChange={onSearchQueryChange} />,
       );
 
       expect(screen.getByRole('searchbox')).toHaveValue('');
-      expect(screen.getByText('Alice Cooper')).toBeVisible();
+      expect(onSearchQueryChange).toHaveBeenCalledWith('');
     });
 
-    it('resolves every profile once a query is typed so search can reach the whole list', async () => {
-      const user = userEvent.setup();
+    it('keeps profile fetching windowed while server search is active', () => {
       mockUseBatchedAuthors.mockReturnValue({ data: authors });
 
       const pubkeys = Array.from({ length: 200 }, (_, index) =>
         index.toString(16).padStart(64, '0'));
 
       render(
-        <UserListDialog open onOpenChange={vi.fn()} title="Following" pubkeys={pubkeys} />,
+        <UserListDialog open onOpenChange={vi.fn()} title="Following" pubkeys={pubkeys} searchQuery="alice" />,
       );
 
-      // Windowed while idle: only the visible slice is requested.
       expect(mockUseBatchedAuthors).toHaveBeenLastCalledWith(
         expect.not.arrayContaining([pubkeys[199]]),
       );
-
-      await user.type(screen.getByRole('searchbox'), 'x');
-
-      // Searching a list you can only partly see is not searching. Filtering
-      // needs a name for every entry, not just the rows on screen.
-      expect(mockUseBatchedAuthors).toHaveBeenLastCalledWith(pubkeys);
     });
 
     it('reports no matches without claiming the list is empty', async () => {
-      const user = userEvent.setup();
-      mockUseBatchedAuthors.mockReturnValue({ data: authors });
+      mockUseBatchedAuthors.mockReturnValue({ data: {} });
 
       render(
-        <UserListDialog open onOpenChange={vi.fn()} title="Following" pubkeys={[alice, bob]} />,
+        <UserListDialog open onOpenChange={vi.fn()} title="Following" pubkeys={[]} searchQuery="zzzz" />,
       );
-
-      await user.type(screen.getByRole('searchbox'), 'zzzz');
 
       expect(screen.getByText(/no one here matches/i)).toBeVisible();
-      expect(screen.queryByText(/no following yet/i)).not.toBeInTheDocument();
     });
 
-    it('waits for the widened profile lookup before reporting no matches', async () => {
-      const user = userEvent.setup();
-      mockUseBatchedAuthors.mockReturnValue({ data: {}, isLoading: true });
+    it('waits for the server search before reporting no matches', () => {
+      mockUseBatchedAuthors.mockReturnValue({ data: {} });
 
       render(
-        <UserListDialog open onOpenChange={vi.fn()} title="Following" pubkeys={[alice, bob]} />,
+        <UserListDialog open onOpenChange={vi.fn()} title="Following" pubkeys={[]} searchQuery="zzzz" isLoading />,
       );
-
-      await user.type(screen.getByRole('searchbox'), 'zzzz');
 
       expect(screen.queryByText(/no one here matches/i)).not.toBeInTheDocument();
     });
 
-    it('matches the generated name when resolved metadata has no searchable name', async () => {
+    it('does not search generated placeholder names locally', async () => {
       const user = userEvent.setup();
+      const onSearchQueryChange = vi.fn();
       mockUseBatchedAuthors.mockReturnValue({
         data: { [alice]: { metadata: {} } },
       });
 
       render(
-        <UserListDialog open onOpenChange={vi.fn()} title="Following" pubkeys={[alice]} />,
+        <UserListDialog open onOpenChange={vi.fn()} title="Following" pubkeys={[alice]} onSearchQueryChange={onSearchQueryChange} />,
       );
 
       expect(await screen.findByText('Generated aaaaaa')).toBeVisible();
       await user.type(screen.getByRole('searchbox'), 'generated');
 
-      expect(screen.getByText('Generated aaaaaa')).toBeVisible();
+      await waitFor(() => expect(onSearchQueryChange).toHaveBeenLastCalledWith('generated'));
     });
 
-    it('matches the generated display name when NIP-05 is the only profile name', async () => {
-      const user = userEvent.setup();
-      mockUseBatchedAuthors.mockReturnValue({
-        data: { [alice]: { metadata: { nip05: 'alice@example.com' } } },
-      });
-
-      render(
-        <UserListDialog open onOpenChange={vi.fn()} title="Following" pubkeys={[alice]} />,
-      );
-
-      expect(await screen.findByText('Generated aaaaaa')).toBeVisible();
-      await user.type(screen.getByRole('searchbox'), 'generated');
-
-      expect(screen.getByText('Generated aaaaaa')).toBeVisible();
-    });
-
-    it('does not page in more rows while a query narrows the list', async () => {
-      const user = userEvent.setup();
+    it('continues paging server-filtered results', () => {
       const onLoadMore = vi.fn();
       mockUseBatchedAuthors.mockReturnValue({ data: authors });
 
@@ -237,15 +212,29 @@ describe('UserListDialog', () => {
           pubkeys={[alice, bob]}
           hasMore
           onLoadMore={onLoadMore}
+          searchQuery="bob"
         />,
       );
 
-      onLoadMore.mockClear();
-      // The filtered list is short, so an end-of-list check against it would
-      // fire fetchNextPage on every render.
-      await user.type(screen.getByRole('searchbox'), 'bob');
+      expect(onLoadMore).toHaveBeenCalled();
+    });
 
-      expect(onLoadMore).not.toHaveBeenCalled();
+    it('does not submit a one-character query', async () => {
+      const user = userEvent.setup();
+      const onSearchQueryChange = vi.fn();
+      mockUseBatchedAuthors.mockReturnValue({ data: authors });
+
+      render(<UserListDialog open onOpenChange={vi.fn()} title="Following" pubkeys={[alice, bob]} onSearchQueryChange={onSearchQueryChange} />);
+      await user.type(screen.getByRole('searchbox'), 'a');
+
+      expect(await screen.findByText(/at least 2/i)).toBeVisible();
+      await waitFor(() => expect(onSearchQueryChange).toHaveBeenLastCalledWith(''));
+    });
+
+    it('reports when authoritative search is unavailable', () => {
+      mockUseBatchedAuthors.mockReturnValue({ data: {} });
+      render(<UserListDialog open onOpenChange={vi.fn()} title="Followers" pubkeys={[]} searchQuery="alice" isSearchError />);
+      expect(screen.getByText(/couldn't search/i)).toBeVisible();
     });
 
     it('hides the search field when there is nothing to search', () => {

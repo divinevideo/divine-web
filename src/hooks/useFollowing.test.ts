@@ -15,7 +15,7 @@ vi.mock('@/lib/debug', () => ({
   debugError: vi.fn(),
 }));
 
-import { useFollowing } from './useFollowing';
+import { getAllFollowingPubkeys, useFollowing } from './useFollowing';
 
 const PUBKEY = 'a'.repeat(64);
 
@@ -64,8 +64,8 @@ describe('useFollowing', () => {
     const { result } = renderHook(() => useFollowing(PUBKEY), { wrapper });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data?.pubkeys).toEqual(all);
-    expect(result.current.data?.total).toBe(61);
+    expect(getAllFollowingPubkeys(result.current.data)).toEqual(all);
+    expect(result.current.data?.pages[0].total).toBe(61);
   });
 
   it('pages past the server cap instead of silently truncating', async () => {
@@ -76,9 +76,11 @@ describe('useFollowing', () => {
 
     const { result } = renderHook(() => useFollowing(PUBKEY), { wrapper });
 
-    await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data?.pubkeys).toHaveLength(250);
-    expect(result.current.data?.pubkeys).toEqual(all);
+    await waitFor(() => expect(result.current.hasNextPage).toBe(true));
+    await result.current.fetchNextPage();
+    await result.current.fetchNextPage();
+    await waitFor(() => expect(result.current.hasNextPage).toBe(false));
+    expect(getAllFollowingPubkeys(result.current.data)).toEqual(all);
   });
 
   it('uses the effective server limit when deciding whether a page is short', async () => {
@@ -86,8 +88,11 @@ describe('useFollowing', () => {
 
     const { result } = renderHook(() => useFollowing(PUBKEY), { wrapper });
 
-    await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data?.pubkeys).toEqual(all);
+    await waitFor(() => expect(result.current.hasNextPage).toBe(true));
+    await result.current.fetchNextPage();
+    await result.current.fetchNextPage();
+    await waitFor(() => expect(result.current.hasNextPage).toBe(false));
+    expect(getAllFollowingPubkeys(result.current.data)).toEqual(all);
     expect(global.fetch).toHaveBeenCalledTimes(3);
   });
 
@@ -106,7 +111,40 @@ describe('useFollowing', () => {
     const { result } = renderHook(() => useFollowing(PUBKEY), { wrapper });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data?.pubkeys).toHaveLength(1);
+    expect(getAllFollowingPubkeys(result.current.data)).toHaveLength(1);
     expect(global.fetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('searches on the server and accepts only an echoed query', async () => {
+    global.fetch = vi.fn(async (input: RequestInfo | URL) => {
+      const url = new URL(String(input));
+      return {
+        ok: true,
+        json: async () => ({
+          following: [pubkeyAt(1)],
+          total: 1,
+          limit: 100,
+          query: url.searchParams.get('q'),
+        }),
+      };
+    }) as unknown as typeof fetch;
+
+    const { result } = renderHook(() => useFollowing(PUBKEY, 'alice'), { wrapper });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    expect(String((global.fetch as ReturnType<typeof vi.fn>).mock.calls[0][0]))
+      .toContain('q=alice');
+    expect(getAllFollowingPubkeys(result.current.data)).toEqual([pubkeyAt(1)]);
+  });
+
+  it('rejects an unfiltered response to a search request', async () => {
+    global.fetch = vi.fn(async () => ({
+      ok: true,
+      json: async () => ({ following: [pubkeyAt(1)], total: 1, limit: 100 }),
+    })) as unknown as typeof fetch;
+
+    const { result } = renderHook(() => useFollowing(PUBKEY, 'alice'), { wrapper });
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(result.current.error).toEqual(new Error('Follow-list search unavailable'));
   });
 });
