@@ -804,13 +804,22 @@ describe('VideoPlayer', () => {
       vi.spyOn(HTMLMediaElement.prototype, 'paused', 'get').mockImplementation(() => isPaused);
       HTMLMediaElement.prototype.play = playSpy;
       HTMLMediaElement.prototype.pause = pauseSpy;
-      // The mute-sync effect resumes inside a double requestAnimationFrame; run
-      // rAF synchronously so a regressed effect's play() actually fires and can
-      // be caught, instead of being scheduled into a frame the test never flushes.
+      // The mute-sync effect resumes inside a double requestAnimationFrame.
+      // Queue the callbacks and flush them at controlled points instead of
+      // relying on the environment's frame timing, so the test is deterministic:
+      // we drain the mount frame while the video is still playing, then flush
+      // again after the pause to catch any effect that tries to resume it.
+      const rafQueue: FrameRequestCallback[] = [];
       vi.spyOn(globalThis, 'requestAnimationFrame').mockImplementation((cb) => {
-        cb(0);
-        return 0;
+        rafQueue.push(cb);
+        return rafQueue.length;
       });
+      const flushFrames = () => {
+        for (let i = 0; i < 10 && rafQueue.length > 0; i++) {
+          const pending = rafQueue.splice(0);
+          pending.forEach((cb) => cb(0));
+        }
+      };
       mockSetUserPaused.mockImplementation((videoId: string, paused: boolean) => {
         userPausedVideoId = paused ? videoId : null;
       });
@@ -832,8 +841,10 @@ describe('VideoPlayer', () => {
       const video = container.querySelector('video');
       if (!video) throw new Error('expected rendered video element');
 
-      // Ignore any startup play() from mounting an active video; from here on
-      // the user has paused, so no effect may resume it.
+      // Drain the mount frame while the video is still playing, so a leftover
+      // frame can't fire after the pause and resume it. Then ignore any startup
+      // play(): from here on the user has paused, so no effect may resume it.
+      act(() => flushFrames());
       playSpy.mockClear();
 
       fireEvent.click(video);
@@ -846,9 +857,8 @@ describe('VideoPlayer', () => {
       // A mute toggle must not resume it either (the mute-sync effect path).
       globalMuted = false;
       rerender(<VideoPlayer videoId="user-paused" src="https://example.com/user-paused.mp4" />);
-      await act(async () => {
-        await Promise.resolve();
-      });
+      // Fire any frame a regressed effect scheduled to resume the paused video.
+      act(() => flushFrames());
 
       expect(playSpy).not.toHaveBeenCalled();
       expect(isPaused).toBe(true);
