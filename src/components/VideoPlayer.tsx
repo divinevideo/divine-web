@@ -1024,7 +1024,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
 
         // Revoke blob URL to prevent memory leaks
         if (blobUrlRef.current) {
-          verboseLog(`[VideoPlayer ${videoId}] Revoking blob URL on unmount`);
+          verboseLog(`[VideoPlayer ${resolvedPlaybackIdRef.current}] Revoking blob URL on unmount`);
           URL.revokeObjectURL(blobUrlRef.current);
           blobUrlRef.current = null;
         }
