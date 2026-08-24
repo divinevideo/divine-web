@@ -57,5 +57,4 @@ describe("openDestinationRelay", () => {
     expect(event).toHaveBeenCalledTimes(2);
     expect(wait).toHaveBeenCalledOnce();
   });
-
 });
