@@ -25,7 +25,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Chat as MessageSquare, CaretDown as ChevronDown, CaretRight as ChevronRight, DotsThree as MoreHorizontal, Flag, SpeakerHigh as Volume2, Trash as Trash2, ArrowBendDownRight as CornerDownRight } from '@phosphor-icons/react';
 import { formatDistanceToNow } from 'date-fns';
-import { genUserName } from '@/lib/genUserName';
+import { resolveDisplayName } from '@/lib/resolveDisplayName';
 import { MuteType } from '@/types/moderation';
 import { useToast } from '@/hooks/useToast';
 
@@ -54,7 +54,7 @@ export function Comment({ root, comment, depth = 0, maxDepth = 3, limit, parentC
   const { toast } = useToast();
 
   const metadata = author.data?.metadata;
-  const displayName = metadata?.name ?? genUserName(comment.pubkey)
+  const displayName = resolveDisplayName(metadata, comment.pubkey);
   const timeAgo = formatDistanceToNow(new Date(comment.created_at * 1000), { addSuffix: true });
 
   // Get direct replies to this comment
@@ -69,7 +69,9 @@ export function Comment({ root, comment, depth = 0, maxDepth = 3, limit, parentC
   // Parent comment data (passed as prop when this is a reply)
   const parentAuthor = useAuthor(parentComment?.pubkey || '');
   const parentMetadata = parentAuthor.data?.metadata;
-  const parentDisplayName = parentComment ? (parentMetadata?.name ?? genUserName(parentComment.pubkey)) : '';
+  const parentDisplayName = parentComment
+    ? resolveDisplayName(parentMetadata, parentComment.pubkey)
+    : '';
 
   const handleReportComment = () => {
     setReportType('comment');

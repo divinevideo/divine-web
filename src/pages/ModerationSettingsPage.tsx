@@ -34,7 +34,7 @@ import {
 import { Shield, UserMinus as UserX, Hash, TextAa as Type, Plus, Flag, Trash as Trash2, WarningCircle as AlertCircle } from '@phosphor-icons/react';
 import { useToast } from '@/hooks/useToast';
 import { MuteType, REPORT_REASON_LABELS, type MuteItem } from '@/types/moderation';
-import { genUserName } from '@/lib/genUserName';
+import { resolveDisplayName } from '@/lib/resolveDisplayName';
 import { getSafeProfileImage } from '@/lib/imageUtils';
 import {
   getFunnelcakeApiModeOverride,
@@ -66,7 +66,7 @@ function MutedUserItem({ pubkey, reason, onUnmute, actionLabel, confirmDescripti
   const { t } = useTranslation();
   const author = useAuthor(pubkey);
   const authorMetadata = author.data?.metadata;
-  const authorName = authorMetadata?.name || genUserName(pubkey);
+  const authorName = resolveDisplayName(authorMetadata, pubkey);
 
   return (
     <div className="flex items-center justify-between gap-3 p-3 rounded-lg border">

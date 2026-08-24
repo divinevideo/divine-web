@@ -53,6 +53,11 @@ contexts (`AppContext`, `VideoPlaybackContext`, `FullscreenFeedContext`,
 and subscriptions against Nostr relays. Auth uses `@divinevideo/login` with
 `NostrLoginProvider`, hydrated from cross-subdomain cookies.
 
+Profile metadata remains raw through the fetch layer because `name` is also used
+as a handle. Display surfaces resolve `display_name`, then `name`, then a
+deterministic fallback through [`resolveDisplayName`](./src/lib/resolveDisplayName.ts);
+handle surfaces deliberately keep their separate `name`-only fallback.
+
 ### Notification Read Marker
 
 Web and mobile both write the same Funnelcake per-pubkey notification read

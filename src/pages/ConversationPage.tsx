@@ -29,9 +29,9 @@ import { createDmClientId } from '@/lib/dmOutbox';
 import { isThreadAllowedForProtectedMinor } from '@/lib/dmInboundFilter';
 import { officialAccountsService } from '@/lib/officialAccounts';
 import { isMinorDmRestricted } from '@/lib/protectedMinor';
-import { genUserName } from '@/lib/genUserName';
+import { getConversationSubtitle } from '@/lib/conversationDisplay';
+import { resolveDisplayName } from '@/lib/resolveDisplayName';
 import { getSafeProfileImage } from '@/lib/imageUtils';
-import { getDivineNip05Info } from '@/lib/nip05Utils';
 import { formatRelativeTime } from '@/lib/notificationTransform';
 import { cn } from '@/lib/utils';
 
@@ -44,29 +44,7 @@ function getDisplayName(pubkey: string, metadata?: { display_name?: string; name
     return metadata?.display_name || metadata?.name || (t ? t('conversationPage.divineSupport') : 'Divine Support');
   }
 
-  return metadata?.display_name || metadata?.name || genUserName(pubkey);
-}
-
-function getConversationSubtitle(
-  pubkey: string,
-  metadata?: { name?: string; nip05?: string },
-  t?: TFn,
-) {
-  if (pubkey === DIVINE_SUPPORT_PUBKEY) {
-    return t ? t('conversationPage.privateSupportChat') : 'Private support chat';
-  }
-
-  const nip05 = metadata?.nip05?.trim();
-  if (nip05) {
-    const divineInfo = getDivineNip05Info(nip05);
-    if (divineInfo) {
-      return divineInfo.displayName;
-    }
-
-    return nip05.startsWith('_@') ? `@${nip05.slice(2)}` : `@${nip05}`;
-  }
-
-  return `@${metadata?.name || genUserName(pubkey)}`;
+  return resolveDisplayName(metadata, pubkey);
 }
 
 function MessageBubble({

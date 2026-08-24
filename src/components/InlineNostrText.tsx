@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { nip19 } from 'nostr-tools';
 import { SmartLink } from '@/components/SmartLink';
 import { useAuthor } from '@/hooks/useAuthor';
-import { genUserName } from '@/lib/genUserName';
+import { resolveDisplayName } from '@/lib/resolveDisplayName';
 
 const NIP19_CHARS = '023456789acdefghjklmnpqrstuvwxyz';
 const NOSTR_MENTION_REGEX = new RegExp(`(?:nostr:)?\\b(npub1[${NIP19_CHARS}]{58})(?=$|[^A-Za-z0-9_]|nostr:)`, 'g');
@@ -29,7 +29,7 @@ function extractPubkeys(text: string): string[] {
 function MentionName({ pubkey }: { pubkey: string }) {
   const author = useAuthor(pubkey);
   const npub = nip19.npubEncode(pubkey);
-  const displayName = author.data?.metadata?.name || author.data?.metadata?.display_name || genUserName(pubkey);
+  const displayName = resolveDisplayName(author.data?.metadata, pubkey);
 
   return (
     <SmartLink to={`/${npub}`} ownerPubkey={pubkey} className="hover:underline">

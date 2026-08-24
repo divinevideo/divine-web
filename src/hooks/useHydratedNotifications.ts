@@ -6,7 +6,7 @@ import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-quer
 import { API_CONFIG } from '@/config/api';
 import { fetchBulkVideos, fetchVideoById } from '@/lib/funnelcakeClient';
 import { isFunnelcakeAvailable } from '@/lib/funnelcakeHealth';
-import { genUserName } from '@/lib/genUserName';
+import { resolveDisplayName } from '@/lib/resolveDisplayName';
 import { getSafeProfileImage, getSafeThumbnailUrl } from '@/lib/imageUtils';
 import { groupRawNotifications, type NotificationVideoMeta } from '@/lib/notificationGrouping';
 import { useNotifications } from '@/hooks/useNotifications';
@@ -255,8 +255,7 @@ function buildProfilesMap(
     const author = authorsData[pubkey];
     const metadata = author?.metadata;
 
-    const displayName =
-      metadata?.display_name || metadata?.name || genUserName(pubkey);
+    const displayName = resolveDisplayName(metadata, pubkey);
 
     map.set(pubkey, {
       pubkey,

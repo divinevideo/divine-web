@@ -14,7 +14,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { genUserName } from '@/lib/genUserName';
+import { resolveDisplayName } from '@/lib/resolveDisplayName';
 import { buildListPath } from '@/lib/eventRouting';
 import { useState } from 'react';
 import { AddToListDialog } from './AddToListDialog';
@@ -40,7 +40,7 @@ function ListBadge({
   videoCount: number;
 }) {
   const author = useAuthor(listPubkey);
-  const authorName = author.data?.metadata?.name || genUserName(listPubkey);
+  const authorName = resolveDisplayName(author.data?.metadata, listPubkey);
 
   return (
     <TooltipProvider>

@@ -31,6 +31,7 @@ import { useVideoPlayback } from '@/hooks/useVideoPlayback';
 import { useVideosInLists } from '@/hooks/useVideoLists';
 import { enhanceAuthorData } from '@/lib/generateProfile';
 import { genUserName } from '@/lib/genUserName';
+import { resolveDisplayName } from '@/lib/resolveDisplayName';
 import { formatDistanceToNow } from 'date-fns';
 import type { ParsedVideoData } from '@/types/video';
 import { SHORT_VIDEO_KIND } from '@/types/video';
@@ -148,7 +149,6 @@ export function VideoCard({
   const latestRepost = hasReposts ? video.reposts[video.reposts.length - 1] : null;
   const reposterPubkey = latestRepost?.reposterPubkey;
   const reposterData = useAuthor(reposterPubkey || '');
-  const shouldShowReposter = hasReposts && reposterPubkey;
   const playbackCountLabel = video.isVineMigrated
     ? formatClassicVineViewBreakdown(viewCount, video.loopCount ?? 0)
     : formatLoopCount(viewCount);
@@ -273,12 +273,7 @@ export function VideoCard({
 
   // Enhance author data with generated profiles
   const author = enhanceAuthorData(authorData.data, video.pubkey);
-  const reposter = shouldShowReposter && reposterPubkey
-    ? enhanceAuthorData(reposterData.data, reposterPubkey)
-    : null;
-
   const metadata: NostrMetadata = author.metadata;
-  const reposterMetadata: NostrMetadata | undefined = reposter?.metadata;
 
   // Use raw author data (pre-enhancement) to detect real vs generated names
   // enhanceAuthorData fills in generated names like "ElectricVine742" — we don't want those
@@ -300,7 +295,7 @@ export function VideoCard({
 
   const reposterName = reposterData.isLoading
     ? t('videoCard.loadingProfile')
-    : (reposterMetadata?.name || (reposterPubkey ? genUserName(reposterPubkey) : ''));
+    : (reposterPubkey ? resolveDisplayName(reposterData.data?.metadata, reposterPubkey) : '');
 
   // NEW: Get all unique reposters for display
   const allReposters = video.reposts || [];

@@ -180,6 +180,28 @@ describe('AccountSwitcher', () => {
     expect(mockNavigate).toHaveBeenCalledWith('/exit');
   });
 
+  it('shows display_name when an account name is empty', () => {
+    mockUseLoggedInAccounts.mockReturnValue({
+      currentUser: {
+        id: 'nsec-account',
+        metadata: { name: '', display_name: 'Visible Account' },
+        pubkey: 'a'.repeat(64),
+      },
+      otherUsers: [{
+        id: 'other-account',
+        metadata: { name: '', display_name: 'Other Account' },
+        pubkey: 'b'.repeat(64),
+      }],
+      removeLogin: mockRemoveLogin,
+      setLogin: mockSetLogin,
+    });
+
+    render(<AccountSwitcher onAddAccountClick={vi.fn()} />);
+
+    expect(screen.getAllByText('Visible Account')).not.toHaveLength(0);
+    expect(screen.getByText('Other Account')).toBeInTheDocument();
+  });
+
   describe('nsec backup banner mounting (#182)', () => {
     beforeEach(() => {
       mockUseNostrLogin.mockReturnValue({ logins: [LOCAL_NSEC_LOGIN] });

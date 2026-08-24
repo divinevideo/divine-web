@@ -21,7 +21,7 @@ import {
 import { getDirectSearchTarget } from '@/lib/directSearch';
 import { appendRelayHints, parseRelayHints } from '@/lib/relayHints';
 import { getEventLookupRelayUrls } from '@/config/relays';
-import { genUserName } from '@/lib/genUserName';
+import { resolveDisplayName } from '@/lib/resolveDisplayName';
 import { getSafeProfileImage } from '@/lib/imageUtils';
 import { NoteContent } from '@/components/NoteContent';
 import { SmartLink } from '@/components/SmartLink';
@@ -172,9 +172,7 @@ export function EventPage() {
 
   const author = useAuthor(event?.pubkey || '');
   const authorName = event
-    ? author.data?.metadata?.display_name
-      || author.data?.metadata?.name
-      || genUserName(event.pubkey)
+    ? resolveDisplayName(author.data?.metadata, event.pubkey)
     : '';
   const authorImage = getSafeProfileImage(author.data?.metadata?.picture);
   const authorNpub = event ? nip19.npubEncode(event.pubkey) : '';

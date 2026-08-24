@@ -36,6 +36,7 @@ const authorMocks = vi.hoisted(() => ({
     name: 'Video Author',
     picture: 'https://example.com/avatar.jpg',
   } as Record<string, unknown>,
+  reposterMetadata: undefined as Record<string, unknown> | undefined,
   useNip05Validation: vi.fn(),
 }));
 
@@ -189,9 +190,11 @@ vi.mock('@/components/SmartLink', () => ({
 }));
 
 vi.mock('@/hooks/useAuthor', () => ({
-  useAuthor: () => ({
+  useAuthor: (pubkey: string) => ({
     data: {
-      metadata: authorMocks.metadata,
+      metadata: authorMocks.reposterMetadata && pubkey === 'b'.repeat(64)
+        ? authorMocks.reposterMetadata
+        : authorMocks.metadata,
     },
     isLoading: false,
   }),
@@ -422,6 +425,7 @@ describe('VideoCard', () => {
       name: 'Video Author',
       picture: 'https://example.com/avatar.jpg',
     };
+    authorMocks.reposterMetadata = undefined;
     authorMocks.useNip05Validation.mockReturnValue({
       isValid: false,
       isLoading: false,
@@ -471,6 +475,30 @@ describe('VideoCard', () => {
       'href',
       `/${nip19.npubEncode(baseVideo.pubkey)}`,
     );
+  });
+
+  it('shows the reposter display_name when their name is empty', () => {
+    authorMocks.reposterMetadata = {
+      name: '',
+      display_name: 'Visible Reposter',
+      picture: 'https://example.com/reposter.jpg',
+    };
+
+    render(
+      <VideoCard
+        video={{
+          ...baseVideo,
+          reposts: [{
+            eventId: 'repost-event-1',
+            reposterPubkey: 'b'.repeat(64),
+            repostedAt: 1_700_000_001,
+          }],
+        }}
+        mode="thumbnail"
+      />,
+    );
+
+    expect(screen.getByText(/Visible Reposter/)).toBeInTheDocument();
   });
 
   it('builds the thumbnail link from the navigation context when provided', () => {

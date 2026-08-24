@@ -19,7 +19,7 @@ import { useNostrLogin } from '@nostrify/react/login';
 import { useLoggedInAccounts, type Account } from '@/hooks/useLoggedInAccounts';
 import { useDivineSession } from '@/hooks/useDivineSession';
 import { clearLoginCookie, clearJwtCookie } from '@/lib/crossSubdomainAuth';
-import { genUserName } from '@/lib/genUserName';
+import { resolveDisplayName } from '@/lib/resolveDisplayName';
 import { getSafeProfileImage } from '@/lib/imageUtils';
 import { getLocalNsecLogin } from '@/lib/localNsecAccount';
 import { OVERLAY_LAYERS } from '@/lib/overlayLayers';
@@ -45,7 +45,7 @@ export function AccountSwitcher({ onAddAccountClick }: AccountSwitcherProps) {
   const isJwtCurrentUser = currentUser.id.startsWith('jwt:');
 
   const getDisplayName = (account: Account): string => {
-    return account.metadata.name ?? genUserName(account.pubkey);
+    return resolveDisplayName(account.metadata, account.pubkey);
   }
 
   const handleMyProfileClick = () => {

@@ -16,7 +16,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { List, TrendUp as TrendingUp, Plus, Users, VideoCamera as Video, Clock } from '@phosphor-icons/react';
-import { genUserName } from '@/lib/genUserName';
+import { resolveDisplayName } from '@/lib/resolveDisplayName';
 import { buildListPath } from '@/lib/eventRouting';
 import { CreateListDialog } from '@/components/CreateListDialog';
 import { CreatePeopleListDialog } from '@/components/CreatePeopleListDialog';
@@ -28,7 +28,7 @@ function ListCard({ list }: { list: VideoListModel }) {
   const { t } = useTranslation();
   const author = useAuthor(list.pubkey);
   const authorMetadata = author.data?.metadata;
-  const authorName = authorMetadata?.name || genUserName(list.pubkey);
+  const authorName = resolveDisplayName(authorMetadata, list.pubkey);
 
   return (
     <Card className="hover:shadow-lg transition-shadow">

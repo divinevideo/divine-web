@@ -41,7 +41,7 @@ import { useLoginDialog } from '@/contexts/LoginDialogContext';
 import { toast } from '@/hooks/useToast';
 import { debugLog } from '@/lib/debug';
 import { useNip05Validation } from '@/hooks/useNip05Validation';
-import { genUserName } from '@/lib/genUserName';
+import { resolveDisplayName } from '@/lib/resolveDisplayName';
 import { parseLegacySocials } from '@/lib/legacySocials';
 import { buildProfileStats } from '@/lib/profileStats';
 import { buildProfileLinkPath } from '@/lib/profileLinks';
@@ -253,7 +253,9 @@ export function ProfilePage({ pubkeyOverride }: { pubkeyOverride?: string } = {}
     !!currentUser?.pubkey // Only check if user is logged in
   );
 
-  const displayName = metadata?.display_name || metadata?.name || (pubkey ? genUserName(pubkey) : t('profilePage.defaultUser'));
+  const displayName = pubkey
+    ? resolveDisplayName(metadata, pubkey)
+    : t('profilePage.defaultUser');
 
   // RSS auto-discovery link for feed readers (only if feed endpoints exist)
   const rssFeedAvailable = useRssFeedAvailable();

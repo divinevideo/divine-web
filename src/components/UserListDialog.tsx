@@ -17,7 +17,7 @@ import { useBatchedAuthors } from '@/hooks/useBatchedAuthors';
 import { useSubdomainNavigate } from '@/hooks/useSubdomainNavigate';
 import { useValidatedProfileLinkPath } from '@/hooks/useValidatedProfileLinkPath';
 import { getSafeProfileImage } from '@/lib/imageUtils';
-import { genUserName } from '@/lib/genUserName';
+import { resolveDisplayName } from '@/lib/resolveDisplayName';
 import { Sentry } from '@/lib/sentry';
 
 const ESTIMATED_ROW_HEIGHT = 56;
@@ -39,7 +39,7 @@ interface UserRowProps {
 }
 
 const UserRow = memo(function UserRow({ pubkey, metadata, onNavigate }: UserRowProps) {
-  const displayName = metadata?.display_name || metadata?.name || genUserName(pubkey);
+  const displayName = resolveDisplayName(metadata, pubkey);
   const profileImage = getSafeProfileImage(metadata?.picture) || '/user-avatar.png';
   const profilePath = useValidatedProfileLinkPath({
     pubkey,

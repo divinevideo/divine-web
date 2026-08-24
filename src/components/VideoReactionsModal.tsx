@@ -4,7 +4,7 @@ import { Heart, Repeat as Repeat2, CircleNotch as Loader2 } from '@phosphor-icon
 import { useAuthor } from '@/hooks/useAuthor';
 import { useBatchedAuthors } from '@/hooks/useBatchedAuthors';
 import { enhanceAuthorData } from '@/lib/generateProfile';
-import { genUserName } from '@/lib/genUserName';
+import { resolveDisplayName } from '@/lib/resolveDisplayName';
 import { getSafeProfileImage } from '@/lib/imageUtils';
 import { formatDistanceToNow } from 'date-fns';
 import { SmartLink } from '@/components/SmartLink';
@@ -27,7 +27,7 @@ function ReactionUserItem({ pubkey, timestamp }: { pubkey: string; timestamp: nu
 
   const displayName = authorData.isLoading
     ? "Loading..."
-    : (metadata?.display_name || metadata?.name || genUserName(pubkey));
+    : resolveDisplayName(metadata, pubkey);
   const profileImage = getSafeProfileImage(metadata?.picture);
   const profileUrl = useValidatedProfileLinkPath({
     pubkey,

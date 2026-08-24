@@ -23,6 +23,7 @@ import { useSearchUsers } from '@/hooks/useSearchUsers';
 import { useSearchHashtags, type HashtagResult } from '@/hooks/useSearchHashtags';
 import { getFunnelcakeBaseUrl } from '@/config/api';
 import { genUserName } from '@/lib/genUserName';
+import { resolveDisplayName } from '@/lib/resolveDisplayName';
 import { getSafeProfileImage } from '@/lib/imageUtils';
 import type { SortMode } from '@/types/nostr';
 import { SEARCH_SORT_MODES as SORT_MODES } from '@/lib/constants/sortModes';
@@ -790,7 +791,7 @@ interface UserCardMetadata {
 // User card component
 function UserCard({ user }: { user: { pubkey: string; metadata?: UserCardMetadata } }) {
   const navigate = useSubdomainNavigate();
-  const displayName = user.metadata?.display_name || user.metadata?.name || genUserName(user.pubkey);
+  const displayName = resolveDisplayName(user.metadata, user.pubkey);
   const username = user.metadata?.name || genUserName(user.pubkey);
   const nip05 = user.metadata?.nip05;
   const { state: nip05State } = useNip05Validation(nip05, user.pubkey);

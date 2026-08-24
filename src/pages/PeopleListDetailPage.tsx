@@ -21,7 +21,7 @@ import { usePeopleList } from '@/hooks/usePeopleLists';
 import { usePeopleListVideos } from '@/hooks/usePeopleListVideos';
 import { useShare } from '@/hooks/useShare';
 import { useToast } from '@/hooks/useToast';
-import { genUserName } from '@/lib/genUserName';
+import { resolveDisplayName } from '@/lib/resolveDisplayName';
 import { getSafeProfileImage } from '@/lib/imageUtils';
 import { buildProfileLinkPath } from '@/lib/profileLinks';
 import { parseRelayHints } from '@/lib/relayHints';
@@ -71,7 +71,7 @@ function PeopleListContent({
   const videosQuery = usePeopleListVideos(memberPubkeys);
   const videos = videosQuery.data?.pages.flatMap((page) => page.videos) ?? [];
   const authorMetadata = author.data?.metadata;
-  const authorName = authorMetadata?.display_name || authorMetadata?.name || genUserName(pubkey);
+  const authorName = resolveDisplayName(authorMetadata, pubkey);
   const isOwner = user?.pubkey === pubkey;
 
   const handleShare = () => {

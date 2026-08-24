@@ -3,7 +3,7 @@
 import type { NostrMetadata } from '@nostrify/nostrify';
 import { Link } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { genUserName } from '@/lib/genUserName';
+import { resolveDisplayName } from '@/lib/resolveDisplayName';
 import { getSafeProfileImage } from '@/lib/imageUtils';
 import { buildProfileLinkPath } from '@/lib/profileLinks';
 
@@ -13,7 +13,7 @@ interface PeopleListMemberProps {
 }
 
 export function PeopleListMember({ pubkey, metadata }: PeopleListMemberProps) {
-  const name = metadata?.display_name || metadata?.name || genUserName(pubkey);
+  const name = resolveDisplayName(metadata, pubkey);
 
   return (
     <Link

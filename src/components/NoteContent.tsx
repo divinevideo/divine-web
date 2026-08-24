@@ -4,7 +4,7 @@ import { SmartLink } from '@/components/SmartLink';
 import { nip19 } from 'nostr-tools';
 import { useAuthor } from '@/hooks/useAuthor';
 import { useValidatedProfileLinkPath } from '@/hooks/useValidatedProfileLinkPath';
-import { genUserName } from '@/lib/genUserName';
+import { resolveDisplayName } from '@/lib/resolveDisplayName';
 import { cn } from '@/lib/utils';
 
 interface NoteContentProps {
@@ -119,7 +119,7 @@ export function NoteContent({
 function NostrMention({ pubkey }: { pubkey: string }) {
   const author = useAuthor(pubkey);
   const hasRealName = !!(author.data?.metadata?.name || author.data?.metadata?.display_name);
-  const displayName = author.data?.metadata?.name || author.data?.metadata?.display_name || genUserName(pubkey);
+  const displayName = resolveDisplayName(author.data?.metadata, pubkey);
   const nip05 = author.data?.metadata?.nip05;
   const profilePath = useValidatedProfileLinkPath({
     pubkey,
