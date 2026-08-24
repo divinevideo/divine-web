@@ -5,7 +5,7 @@ import { useVideoPlayback } from '@/hooks/useVideoPlayback';
 import { VideoPlaybackProvider } from './VideoPlaybackContext';
 
 function Harness() {
-  const { activeVideoId, setActiveVideo, setUserPaused, updateVideoVisibility, userPausedVideoId } = useVideoPlayback();
+  const { activeVideoId, setActiveVideo, setUserPaused, unregisterVideo, updateVideoVisibility, userPausedVideoId } = useVideoPlayback();
 
   return (
     <div>
@@ -16,6 +16,15 @@ function Harness() {
         onClick={() => setUserPaused('fullscreen:video-1', true)}
       >
         pause-fullscreen
+      </button>
+      <button
+        type="button"
+        onClick={() => setActiveVideo('fullscreen:video-1')}
+      >
+        reactivate-fullscreen
+      </button>
+      <button type="button" onClick={() => unregisterVideo('fullscreen:video-1')}>
+        unregister-fullscreen
       </button>
       <button
         type="button"
@@ -41,6 +50,7 @@ function Harness() {
 
 function IdentityHarness() {
   const playback = useVideoPlayback();
+  const initialValue = useRef(playback);
   const initialFunctions = useRef({
     registerVideo: playback.registerVideo,
     setActiveVideo: playback.setActiveVideo,
@@ -55,6 +65,7 @@ function IdentityHarness() {
   return (
     <div>
       <div data-testid="functions-stable">{String(functionsAreStable)}</div>
+      <div data-testid="value-stable">{String(initialValue.current === playback)}</div>
     </div>
   );
 }
@@ -100,6 +111,34 @@ describe('VideoPlaybackContext', () => {
     );
 
     expect(screen.getByTestId('functions-stable')).toHaveTextContent('true');
+    expect(screen.getByTestId('value-stable')).toHaveTextContent('true');
+  });
+
+  it('keeps a user pause when the same video is activated again', () => {
+    render(
+      <VideoPlaybackProvider>
+        <Harness />
+      </VideoPlaybackProvider>
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'activate-fullscreen' }));
+    fireEvent.click(screen.getByRole('button', { name: 'pause-fullscreen' }));
+    fireEvent.click(screen.getByRole('button', { name: 'reactivate-fullscreen' }));
+
+    expect(screen.getByTestId('user-paused-video-id')).toHaveTextContent('fullscreen:video-1');
+  });
+
+  it('clears a user pause when its player unregisters', () => {
+    render(
+      <VideoPlaybackProvider>
+        <Harness />
+      </VideoPlaybackProvider>
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'pause-fullscreen' }));
+    fireEvent.click(screen.getByRole('button', { name: 'unregister-fullscreen' }));
+
+    expect(screen.getByTestId('user-paused-video-id')).toBeEmptyDOMElement();
   });
 
   it('clears a user pause when another video becomes active', () => {

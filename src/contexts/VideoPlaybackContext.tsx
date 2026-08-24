@@ -80,6 +80,7 @@ export function VideoPlaybackProvider({ children }: { children: ReactNode }) {
     verboseLog(`Unregistering video: ${videoId}`);
     videoRefs.current.delete(videoId);
     videoVisibility.current.delete(videoId);
+    setUserPausedVideoId((pausedVideoId) => pausedVideoId === videoId ? null : pausedVideoId);
 
     // Remove from registration order
     const orderIndex = registrationOrder.current.indexOf(videoId);

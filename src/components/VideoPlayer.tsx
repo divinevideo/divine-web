@@ -1029,7 +1029,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
           blobUrlRef.current = null;
         }
       };
-    }, [videoId]);
+    }, []);
 
     // Handle GIF format (use img tag)
     const currentUrl = allUrls[currentUrlIndex] || src;

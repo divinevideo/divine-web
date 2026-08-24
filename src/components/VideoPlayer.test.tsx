@@ -10,6 +10,7 @@ const mockUnregisterVideo = vi.fn();
 const mockUpdateVideoVisibility = vi.fn();
 const mockSetUserPaused = vi.fn();
 const hlsTestState = vi.hoisted(() => ({
+  inViewRef: vi.fn(),
   instances: [] as Array<{
     attachMedia: ReturnType<typeof vi.fn>;
     destroy: ReturnType<typeof vi.fn>;
@@ -127,7 +128,7 @@ vi.mock('hls.js', () => {
 // Mock react-intersection-observer to avoid observer.observe issues
 vi.mock('react-intersection-observer', () => ({
   useInView: vi.fn(() => ({
-    ref: vi.fn(),
+    ref: hlsTestState.inViewRef,
     inView: true,
     entry: null,
   })),
@@ -170,6 +171,8 @@ describe('VideoPlayer', () => {
     const { useVideoPlayback } = await import('@/hooks/useVideoPlayback');
     (useVideoPlayback as ReturnType<typeof vi.fn>).mockImplementation(() => ({
       activeVideoId: null,
+      userPausedVideoId: null,
+      setUserPaused: mockSetUserPaused,
       registerVideo: mockRegisterVideo,
       unregisterVideo: mockUnregisterVideo,
       updateVideoVisibility: mockUpdateVideoVisibility,
@@ -273,6 +276,18 @@ describe('VideoPlayer', () => {
       rerender(<VideoPlayer videoId="cleanup-stability" src="https://example.com/stable.mp4" />);
 
       expect(pauseSpy).not.toHaveBeenCalled();
+    });
+
+    it('does not run unmount cleanup when the video identity changes', () => {
+      const { rerender } = render(
+        <VideoPlayer videoId="video-a" src="https://example.com/a.mp4" />
+      );
+      mockUnregisterVideo.mockClear();
+
+      rerender(<VideoPlayer videoId="video-b" src="https://example.com/b.mp4" />);
+
+      expect(mockUnregisterVideo).toHaveBeenCalledWith('video-a');
+      expect(mockUnregisterVideo).not.toHaveBeenCalledWith('video-b');
     });
 
     it('should not trigger infinite loop when context values change', async () => {
