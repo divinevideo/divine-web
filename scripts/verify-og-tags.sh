@@ -86,6 +86,23 @@ extract_meta() {
   LC_ALL=C printf '%s' "$body" | grep -aoE "<meta ${attr}=\"${key}\" content=\"[^\"]*\"" | head -1 | sed -E "s/<meta ${attr}=\"${key}\" content=\"([^\"]*)\"/\1/"
 }
 
+extract_final_response_headers() {
+  local header_file="$1"
+  local response_headers=""
+  local header_line
+
+  while IFS= read -r header_line || [[ -n "$header_line" ]]; do
+    header_line="${header_line%$'\r'}"
+    if [[ "$header_line" == HTTP/* ]]; then
+      response_headers="$header_line"
+    elif [[ -n "$response_headers" ]]; then
+      response_headers+=$'\n'"$header_line"
+    fi
+  done < "$header_file"
+
+  printf '%s' "$response_headers"
+}
+
 run_check() {
   local path="$1"
   local description="$2"
@@ -108,14 +125,14 @@ run_check() {
   # connection used to fail the whole deploy gate. Retry transport errors before
   # calling it a parity failure. --retry-max-time keeps a genuinely unreachable
   # origin from stacking 30s timeouts on every route.
-  local http_code
+  local curl_result
   local curl_exit=0
-  http_code=$(curl -sS -L --max-time 30 --compressed \
+  curl_result=$(curl -sS -L --max-time 30 --compressed \
     --retry 2 --retry-delay 1 --retry-connrefused --retry-all-errors --retry-max-time 30 \
     -A "$ua_value" \
     -D "$tmp_headers" \
     -o "$tmp_body" \
-    -w '%{http_code}' \
+    -w '%{http_code}|%{num_redirects}' \
     "$url" 2>"$tmp_error") || curl_exit=$?
 
   if [[ ${curl_exit} -ne 0 ]]; then
@@ -129,21 +146,23 @@ run_check() {
     return 1
   fi
 
-  # curl only writes to stderr here when an attempt failed, so a non-empty file
-  # on an otherwise successful request means a retry saved us. Retries that
-  # succeeded still say something about edge health — surface them rather than
-  # swallowing the only evidence we have. (The wording of curl's retry notice
-  # varies by version, so key off "wrote anything at all", not a phrase.)
+  local http_code="${curl_result%%|*}"
+  local redirect_count="${curl_result##*|}"
+  local response_count
+  response_count=$(grep -c '^HTTP/' "$tmp_headers")
+
   if [[ -s "$tmp_error" ]]; then
     local recovered_from
     recovered_from=$(tr -d '\r' < "$tmp_error" | grep -v '^[[:space:]]*$' | head -1)
     echo "  ~ ${ua_label} -> ${path} (recovered after a transient network error${recovered_from:+ - ${recovered_from}})"
+  elif [[ ${response_count} -gt $((redirect_count + 1)) ]]; then
+    echo "  ~ ${ua_label} -> ${path} (recovered after a transient HTTP error)"
   fi
 
   local body
   body=$(cat "$tmp_body")
   local headers
-  headers=$(cat "$tmp_headers")
+  headers=$(extract_final_response_headers "$tmp_headers")
 
   if [[ "$http_code" != "200" ]]; then
     echo "  X ${ua_label} -> ${path} (HTTP ${http_code})"
@@ -184,7 +203,7 @@ run_check() {
         fi
         ;;
       frame_ancestors_header)
-        if grep -qi '^content-security-policy:.*frame-ancestors' "$tmp_headers"; then
+        if grep -qi '^content-security-policy:.*frame-ancestors' <<< "$headers"; then
           :
         else
           all_passed=false
@@ -192,7 +211,7 @@ run_check() {
         fi
         ;;
       noindex_header)
-        if grep -qi '^x-robots-tag:.*noindex' "$tmp_headers"; then
+        if grep -qi '^x-robots-tag:.*noindex' <<< "$headers"; then
           :
         else
           all_passed=false

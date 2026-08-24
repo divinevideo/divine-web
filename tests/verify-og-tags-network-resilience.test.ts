@@ -51,7 +51,11 @@ type Fixture = {
  * @param dropPlan path -> how many times to drop the connection before serving normally.
  *   Use Infinity for a route that never recovers.
  */
-async function startFixture(dropPlan: Record<string, number> = {}): Promise<Fixture> {
+async function startFixture(
+  dropPlan: Record<string, number> = {},
+  staleHeaderPath?: string,
+  transientStatusPath?: string,
+): Promise<Fixture> {
   const drops = new Map<string, number>();
 
   const server = createServer((request, response) => {
@@ -59,6 +63,27 @@ async function startFixture(dropPlan: Record<string, number> = {}): Promise<Fixt
     const pathOnly = requestPath.split('?')[0];
     const budget = dropPlan[pathOnly] ?? 0;
     const dropped = drops.get(pathOnly) ?? 0;
+
+    if (pathOnly === transientStatusPath && dropped === 0) {
+      drops.set(pathOnly, 1);
+      response.writeHead(503, { 'content-type': 'text/plain' });
+      response.end('try again');
+      return;
+    }
+
+    if (pathOnly === staleHeaderPath && dropped === 0) {
+      drops.set(pathOnly, 1);
+      response.writeHead(200, {
+        'content-length': '10000',
+        'content-security-policy': "frame-ancestors 'self' https:",
+        'content-type': 'text/html; charset=utf-8',
+        'x-robots-tag': 'noindex',
+      });
+      response.flushHeaders();
+      response.write('<!doctype html>');
+      setTimeout(() => response.socket?.destroy(), 10);
+      return;
+    }
 
     if (dropped < budget) {
       drops.set(pathOnly, dropped + 1);
@@ -68,11 +93,14 @@ async function startFixture(dropPlan: Record<string, number> = {}): Promise<Fixt
 
     const baseUrl = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
 
-    response.writeHead(200, {
-      'content-security-policy': "frame-ancestors 'self' https:",
+    const headers: Record<string, string> = {
       'content-type': 'text/html; charset=utf-8',
-      'x-robots-tag': 'noindex',
-    });
+    };
+    if (pathOnly !== staleHeaderPath) {
+      headers['content-security-policy'] = "frame-ancestors 'self' https:";
+      headers['x-robots-tag'] = 'noindex';
+    }
+    response.writeHead(200, headers);
     response.end(request.method === 'HEAD' ? '' : pageFor(baseUrl, requestPath));
   });
 
@@ -143,5 +171,28 @@ describe('verify-og-tags.sh network resilience', () => {
     expect(output).toMatch(/network error.*curl exit \d+/);
     expect(output).toContain('FAILED: 1 of 16 checks did not pass');
     expect(status).toBe(1);
+  }, 60_000);
+
+  it('does not accept headers from a discarded retry attempt', async () => {
+    const embedPath = '/embed/3ca833a0027dd6240b2956dec98643032ff43ee75c0f0cde9d2096186b4b2605';
+    fixture = await startFixture({}, embedPath);
+
+    const { output, status } = await runAudit(fixture.baseUrl);
+
+    expect(fixture.drops.get(embedPath)).toBe(1);
+    expect(output).toContain('missing Content-Security-Policy: frame-ancestors header');
+    expect(output).toContain('missing X-Robots-Tag: noindex header');
+    expect(status).toBe(1);
+  }, 60_000);
+
+  it('reports a recovered HTTP retry', async () => {
+    fixture = await startFixture({}, undefined, '/discovery');
+
+    const { output, status } = await runAudit(fixture.baseUrl);
+
+    expect(fixture.drops.get('/discovery')).toBe(1);
+    expect(output).toContain('recovered after a transient HTTP error');
+    expect(output).toContain('All checks passed.');
+    expect(status).toBe(0);
   }, 60_000);
 });
