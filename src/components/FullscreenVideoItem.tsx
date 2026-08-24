@@ -106,7 +106,8 @@ export function FullscreenVideoItem({
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showViewSourceDialog, setShowViewSourceDialog] = useState(false);
   const videoContainerRef = useRef<HTMLDivElement>(null);
-  const { globalMuted, setGlobalMuted, setActiveVideo } = useVideoPlayback();
+  const videoElementRef = useRef<HTMLVideoElement>(null);
+  const { globalMuted, setGlobalMuted, setActiveVideo, setUserPaused } = useVideoPlayback();
   const { cues: subtitleCues, hasSubtitles } = useSubtitles(video);
   // Subtitles default to ON when available, independent of mute state
   const [subtitlesVisible, setSubtitlesVisible] = useState(true);
@@ -173,16 +174,26 @@ export function FullscreenVideoItem({
 
   // Handle tap on video area to toggle play/pause
   const handleOverlayClick = useCallback(() => {
-    // Find the video element and toggle play
-    const videoEl = document.querySelector(`video`) as HTMLVideoElement;
+    // Toggle this item's own video element. The fullscreen feed mounts every
+    // item, so multiple <video> elements are in the document at once;
+    // document.querySelector('video') would grab the first one, not the one the
+    // user tapped. Use the ref VideoPlayer forwards to its <video>.
+    const videoEl = videoElementRef.current;
     if (videoEl) {
+      // Record the pause in the shared playback model so the active-status and
+      // mute-sync effects honor it. Without this, a mute toggle (or any effect
+      // re-run) resumes a video the user paused, since this overlay bypasses
+      // VideoPlayer.togglePlay. See divinevideo/divine-web#680.
+      const pausedVideoId = playbackId ?? video.id;
       if (videoEl.paused) {
+        setUserPaused(pausedVideoId, false);
         videoEl.play().catch(() => { /* handled by VideoPlayer */ });
       } else {
+        setUserPaused(pausedVideoId, true);
         videoEl.pause();
       }
     }
-  }, []);
+  }, [playbackId, video.id, setUserPaused]);
 
   // Handle double-tap to like
   const handleDoubleTap = useCallback(() => {
@@ -241,6 +252,7 @@ export function FullscreenVideoItem({
       <div className="absolute inset-0 z-0 flex items-center justify-center">
         {!videoError ? (
           <VideoPlayer
+            ref={videoElementRef}
             videoId={video.id}
             playbackId={playbackId}
             src={video.videoUrl}
