@@ -8,6 +8,7 @@ import { VideoPlayer } from './VideoPlayer';
 const mockRegisterVideo = vi.fn();
 const mockUnregisterVideo = vi.fn();
 const mockUpdateVideoVisibility = vi.fn();
+const mockSetUserPaused = vi.fn();
 const hlsTestState = vi.hoisted(() => ({
   instances: [] as Array<{
     attachMedia: ReturnType<typeof vi.fn>;
@@ -24,6 +25,8 @@ const hlsTestState = vi.hoisted(() => ({
 vi.mock('@/hooks/useVideoPlayback', () => ({
   useVideoPlayback: vi.fn(() => ({
     activeVideoId: null,
+    userPausedVideoId: null,
+    setUserPaused: mockSetUserPaused,
     registerVideo: mockRegisterVideo,
     unregisterVideo: mockUnregisterVideo,
     updateVideoVisibility: mockUpdateVideoVisibility,
@@ -249,6 +252,29 @@ describe('VideoPlayer', () => {
   });
 
   describe('ref stability - prevents infinite loop', () => {
+    it('does not run unmount cleanup when context actions change identity', async () => {
+      const { useVideoPlayback } = await import('@/hooks/useVideoPlayback');
+      (useVideoPlayback as ReturnType<typeof vi.fn>).mockImplementation(() => ({
+        activeVideoId: null,
+        userPausedVideoId: null,
+        setUserPaused: mockSetUserPaused,
+        registerVideo: mockRegisterVideo,
+        unregisterVideo: vi.fn(),
+        updateVideoVisibility: vi.fn(),
+        globalMuted: true,
+      }));
+      const pauseSpy = vi.spyOn(HTMLMediaElement.prototype, 'pause');
+
+      const { rerender } = render(
+        <VideoPlayer videoId="cleanup-stability" src="https://example.com/stable.mp4" />
+      );
+      pauseSpy.mockClear();
+
+      rerender(<VideoPlayer videoId="cleanup-stability" src="https://example.com/stable.mp4" />);
+
+      expect(pauseSpy).not.toHaveBeenCalled();
+    });
+
     it('should not trigger infinite loop when context values change', async () => {
       // This test verifies the bug: setRefs callback must be stable
       //
@@ -764,6 +790,56 @@ describe('VideoPlayer', () => {
   });
 
   describe('active playback startup', () => {
+    it('keeps a user-paused active video paused across rerenders and mute changes', async () => {
+      let globalMuted = true;
+      let userPausedVideoId: string | null = null;
+      let isPaused = false;
+      const playSpy = vi.fn().mockImplementation(() => {
+        isPaused = false;
+        return Promise.resolve();
+      });
+      const pauseSpy = vi.fn().mockImplementation(() => {
+        isPaused = true;
+      });
+      vi.spyOn(HTMLMediaElement.prototype, 'paused', 'get').mockImplementation(() => isPaused);
+      HTMLMediaElement.prototype.play = playSpy;
+      HTMLMediaElement.prototype.pause = pauseSpy;
+      mockSetUserPaused.mockImplementation((videoId: string, paused: boolean) => {
+        userPausedVideoId = paused ? videoId : null;
+      });
+
+      const { useVideoPlayback } = await import('@/hooks/useVideoPlayback');
+      (useVideoPlayback as ReturnType<typeof vi.fn>).mockImplementation(() => ({
+        activeVideoId: 'user-paused',
+        userPausedVideoId,
+        setUserPaused: mockSetUserPaused,
+        registerVideo: mockRegisterVideo,
+        unregisterVideo: mockUnregisterVideo,
+        updateVideoVisibility: mockUpdateVideoVisibility,
+        globalMuted,
+      }));
+
+      const { container, rerender } = render(
+        <VideoPlayer videoId="user-paused" src="https://example.com/user-paused.mp4" />
+      );
+      const video = container.querySelector('video');
+      if (!video) throw new Error('expected rendered video element');
+
+      fireEvent.click(video);
+      expect(mockSetUserPaused).toHaveBeenCalledWith('user-paused', true);
+      expect(pauseSpy).toHaveBeenCalled();
+
+      playSpy.mockClear();
+      rerender(<VideoPlayer videoId="user-paused" src="https://example.com/user-paused.mp4" />);
+      globalMuted = false;
+      rerender(<VideoPlayer videoId="user-paused" src="https://example.com/user-paused.mp4" />);
+      await act(async () => {
+        await Promise.resolve();
+      });
+
+      expect(playSpy).not.toHaveBeenCalled();
+    });
+
     it('starts an active video before loadeddata fires', async () => {
       const playSpy = vi.fn().mockResolvedValue(undefined);
       HTMLMediaElement.prototype.play = playSpy;

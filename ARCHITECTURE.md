@@ -58,6 +58,11 @@ as a handle. Display surfaces resolve `display_name`, then `name`, then a
 deterministic fallback through [`resolveDisplayName`](./src/lib/resolveDisplayName.ts);
 handle surfaces deliberately keep their separate `name`-only fallback.
 
+`VideoPlaybackContext` keeps viewport activation separate from an explicit user
+pause. A paused active video stays paused through overlays, rerenders, and mute
+changes; moving another video into the active position clears the pause so feed
+autoplay resumes when the user scrolls back.
+
 ### Notification Read Marker
 
 Web and mobile both write the same Funnelcake per-pubkey notification read

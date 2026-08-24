@@ -1,7 +1,7 @@
 // ABOUTME: Context for managing video playback state across the feed
 // ABOUTME: Ensures only one video plays at a time based on viewport visibility
 
-import { createContext, useState, useRef, ReactNode } from 'react';
+import { createContext, useCallback, useEffect, useMemo, useState, useRef, ReactNode } from 'react';
 import { verboseLog } from '@/lib/debug';
 
 // Maximum number of video references to keep in memory
@@ -10,7 +10,9 @@ const MAX_VIDEO_REFS = 30;
 
 export interface VideoPlaybackContextType {
   activeVideoId: string | null;
+  userPausedVideoId: string | null;
   setActiveVideo: (videoId: string | null) => void;
+  setUserPaused: (videoId: string, paused: boolean) => void;
   registerVideo: (videoId: string, element: HTMLVideoElement) => void;
   unregisterVideo: (videoId: string) => void;
   updateVideoVisibility: (videoId: string, visibilityRatio: number) => void;
@@ -22,6 +24,7 @@ export const VideoPlaybackContext = createContext<VideoPlaybackContextType | und
 
 export function VideoPlaybackProvider({ children }: { children: ReactNode }) {
   const [activeVideoId, setActiveVideoId] = useState<string | null>(null);
+  const [userPausedVideoId, setUserPausedVideoId] = useState<string | null>(null);
   const [globalMuted, setGlobalMuted] = useState(true); // Start muted by default
   const videoRefs = useRef<Map<string, HTMLVideoElement>>(new Map());
   const videoVisibility = useRef<Map<string, number>>(new Map());
@@ -32,16 +35,25 @@ export function VideoPlaybackProvider({ children }: { children: ReactNode }) {
   const activeVideoIdRef = useRef<string | null>(null);
   activeVideoIdRef.current = activeVideoId;
 
-  const setActiveVideo = (videoId: string | null) => {
-    verboseLog(`setActiveVideo called with: ${videoId}, current: ${activeVideoId}`);
-    verboseLog(`Registered videos: ${Array.from(videoRefs.current.keys()).join(', ')}`);
-
-    // Just update the active video ID
-    // The VideoPlayer components will handle play/pause based on this change
+  const activateVideo = useCallback((videoId: string | null) => {
+    setUserPausedVideoId((pausedVideoId) => pausedVideoId === videoId ? pausedVideoId : null);
     setActiveVideoId(videoId);
-  };
+  }, []);
 
-  const registerVideo = (videoId: string, element: HTMLVideoElement) => {
+  const setActiveVideo = useCallback((videoId: string | null) => {
+    verboseLog(`setActiveVideo called with: ${videoId}, current: ${activeVideoIdRef.current}`);
+    verboseLog(`Registered videos: ${Array.from(videoRefs.current.keys()).join(', ')}`);
+    activateVideo(videoId);
+  }, [activateVideo]);
+
+  const setUserPaused = useCallback((videoId: string, paused: boolean) => {
+    setUserPausedVideoId((pausedVideoId) => {
+      if (paused) return videoId;
+      return pausedVideoId === videoId ? null : pausedVideoId;
+    });
+  }, []);
+
+  const registerVideo = useCallback((videoId: string, element: HTMLVideoElement) => {
     verboseLog(`Registering video: ${videoId}`);
 
     // Add to registration order (move to end if already exists)
@@ -62,9 +74,9 @@ export function VideoPlaybackProvider({ children }: { children: ReactNode }) {
         videoVisibility.current.delete(oldestId);
       }
     }
-  };
+  }, []);
 
-  const unregisterVideo = (videoId: string) => {
+  const unregisterVideo = useCallback((videoId: string) => {
     verboseLog(`Unregistering video: ${videoId}`);
     videoRefs.current.delete(videoId);
     videoVisibility.current.delete(videoId);
@@ -74,9 +86,9 @@ export function VideoPlaybackProvider({ children }: { children: ReactNode }) {
     if (orderIndex !== -1) {
       registrationOrder.current.splice(orderIndex, 1);
     }
-  };
+  }, []);
 
-  const updateVideoVisibility = (videoId: string, visibilityRatio: number) => {
+  const updateVideoVisibility = useCallback((videoId: string, visibilityRatio: number) => {
     // Update visibility for this video
     if (visibilityRatio > 0) {
       videoVisibility.current.set(videoId, visibilityRatio);
@@ -88,7 +100,7 @@ export function VideoPlaybackProvider({ children }: { children: ReactNode }) {
     // This skips the debounce for the first video on page load (priority video)
     if (activeVideoIdRef.current === null && visibilityRatio >= 0.5) {
       verboseLog(`Immediately activating first visible video: ${videoId} (${(visibilityRatio * 100).toFixed(1)}% visible)`);
-      setActiveVideoId(videoId);
+      activateVideo(videoId);
       return;
     }
 
@@ -116,22 +128,39 @@ export function VideoPlaybackProvider({ children }: { children: ReactNode }) {
       // Use ref to get current value and avoid stale closure
       if (mostVisibleId !== activeVideoIdRef.current) {
         verboseLog(`Switching to most visible video: ${mostVisibleId} (${(maxVisibility * 100).toFixed(1)}% visible)`);
-        setActiveVideoId(mostVisibleId);
+        activateVideo(mostVisibleId);
       }
     }, 100); // Small debounce to avoid rapid switching
-  };
+  }, [activateVideo]);
+
+  useEffect(() => () => {
+    if (visibilityUpdateTimer.current) clearTimeout(visibilityUpdateTimer.current);
+  }, []);
+
+  const value = useMemo(() => ({
+    activeVideoId,
+    userPausedVideoId,
+    setActiveVideo,
+    setUserPaused,
+    registerVideo,
+    unregisterVideo,
+    updateVideoVisibility,
+    globalMuted,
+    setGlobalMuted,
+  }), [
+    activeVideoId,
+    globalMuted,
+    registerVideo,
+    setActiveVideo,
+    setUserPaused,
+    unregisterVideo,
+    updateVideoVisibility,
+    userPausedVideoId,
+  ]);
 
   return (
     <VideoPlaybackContext.Provider
-      value={{
-        activeVideoId,
-        setActiveVideo,
-        registerVideo,
-        unregisterVideo,
-        updateVideoVisibility,
-        globalMuted,
-        setGlobalMuted,
-      }}
+      value={value}
     >
       {children}
     </VideoPlaybackContext.Provider>
