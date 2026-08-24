@@ -202,9 +202,11 @@ custom `wss://` relay. Migration writes use a standalone authenticated relay
 session instead of the app's `NPool`; the same session primitive also publishes
 the discovery pointers described below. Only media with
 descriptor-and-readback verification is rewritten.
-Changed replaceable and addressable events are re-signed one second after their
-original timestamp so the migrated copy deterministically supersedes the old
-media references. Other changed events keep their original timestamp.
+Changed replaceable and addressable events are re-signed with the move run's
+timestamp, falling back to one second past the original when that original is
+already newer. The migrated copy therefore supersedes the old media references
+deterministically, and a later move run supersedes an earlier one. Other changed
+events keep their original timestamp.
 Referenced owner events are prepared first so `e`, `E`, and `q` tags keep
 pointing at valid event IDs, and unchanged events retain their original ID and
 signature.
@@ -220,8 +222,9 @@ Before preparing the event graph, the move flow reads the destination's NIP-11
 `created_at_lower_limit`. When the relay does not declare one, the flow assumes
 the common three-year admission window. NIP-71 videos older than that window
 are re-signed with the current event timestamp before references are rewritten;
-their original publication time remains in `published_at`. Other event kinds
-are not given video-specific metadata or silently re-dated.
+their original publication time remains in `published_at`. This age rule covers
+video kinds only: no other kind is given video-specific metadata or re-dated to
+satisfy a relay's age policy.
 
 Once at least one event is present at the destination relay, the page can publish
 destination-only discovery metadata: a NIP-65 kind-10002 relay list and a BUD-03
