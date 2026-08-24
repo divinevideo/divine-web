@@ -804,6 +804,13 @@ describe('VideoPlayer', () => {
       vi.spyOn(HTMLMediaElement.prototype, 'paused', 'get').mockImplementation(() => isPaused);
       HTMLMediaElement.prototype.play = playSpy;
       HTMLMediaElement.prototype.pause = pauseSpy;
+      // The mute-sync effect resumes inside a double requestAnimationFrame; run
+      // rAF synchronously so a regressed effect's play() actually fires and can
+      // be caught, instead of being scheduled into a frame the test never flushes.
+      vi.spyOn(globalThis, 'requestAnimationFrame').mockImplementation((cb) => {
+        cb(0);
+        return 0;
+      });
       mockSetUserPaused.mockImplementation((videoId: string, paused: boolean) => {
         userPausedVideoId = paused ? videoId : null;
       });
@@ -825,12 +832,18 @@ describe('VideoPlayer', () => {
       const video = container.querySelector('video');
       if (!video) throw new Error('expected rendered video element');
 
+      // Ignore any startup play() from mounting an active video; from here on
+      // the user has paused, so no effect may resume it.
+      playSpy.mockClear();
+
       fireEvent.click(video);
       expect(mockSetUserPaused).toHaveBeenCalledWith('user-paused', true);
       expect(pauseSpy).toHaveBeenCalled();
 
-      playSpy.mockClear();
+      // A plain rerender (isUserPaused now true) must not let the active-status
+      // effect resume the paused video.
       rerender(<VideoPlayer videoId="user-paused" src="https://example.com/user-paused.mp4" />);
+      // A mute toggle must not resume it either (the mute-sync effect path).
       globalMuted = false;
       rerender(<VideoPlayer videoId="user-paused" src="https://example.com/user-paused.mp4" />);
       await act(async () => {
@@ -838,6 +851,7 @@ describe('VideoPlayer', () => {
       });
 
       expect(playSpy).not.toHaveBeenCalled();
+      expect(isPaused).toBe(true);
     });
 
     it('starts an active video before loadeddata fires', async () => {
