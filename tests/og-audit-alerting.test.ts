@@ -172,8 +172,28 @@ describe('notify-og-audit-failure.sh', () => {
     });
 
     const text = JSON.parse(capture.bodies[0]).text as string;
+    expect(text).toContain('🟠');
     expect(text).toContain('could not be reached');
     expect(text).toContain('TLS connect error');
+  }, 30_000);
+
+  it('alerts when a failed audit log cannot be parsed', async () => {
+    capture = await startWebhook();
+
+    const path = join(scratch, 'unparseable.log');
+    writeFileSync(path, 'The audit exited before it could print a summary.\n');
+
+    await runNotifier({
+      AUDIT_LOG: path,
+      AUDIT_TARGET: 'production (divine.video)',
+      RUN_URL,
+      SLACK_WEBHOOK: capture.url,
+    });
+
+    const text = JSON.parse(capture.bodies[0]).text as string;
+    expect(text).toContain('🟠');
+    expect(text).toContain('could not interpret the failed audit output');
+    expect(text).toContain(RUN_URL);
   }, 30_000);
 
   it('reports when the audit could not run at all, so a broken monitor is not silent', async () => {

@@ -74,7 +74,7 @@ fi
 # so there is no failure list to report — just curl's reason.
 if grep -q '^ERROR: cannot reach' "$AUDIT_LOG"; then
   reason="$(grep -A5 '^ERROR: cannot reach' "$AUDIT_LOG" | sed -n '2,3p' | sed 's/^[[:space:]]*//' | head -1)"
-  post "$(printf '🔴 *OG parity audit failed* — %s\nThe target could not be reached, so no checks ran.%s%s' \
+  post "$(printf '🟠 *OG parity audit could not run* — %s\nThe target could not be reached, so no checks ran.%s%s' \
     "$AUDIT_TARGET" "${reason:+$(printf '\n%s' "$reason")}" "$run_line")"
   exit 0
 fi
@@ -104,7 +104,8 @@ while IFS= read -r failure; do
 done < <(sed -n '/^Failures:/,/^$/p' "$AUDIT_LOG" | sed -n 's/^  X //p')
 
 if [[ ${failure_count} -eq 0 ]]; then
-  echo "WARNING: no failure list found in '${AUDIT_LOG}'; not alerting on an unparseable log."
+  post "$(printf '🟠 *OG parity audit could not run* — %s\nThe notifier could not interpret the failed audit output.%s' \
+    "$AUDIT_TARGET" "$run_line")"
   exit 0
 fi
 
