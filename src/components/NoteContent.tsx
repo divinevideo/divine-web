@@ -118,7 +118,9 @@ export function NoteContent({
 // Helper component to display user mentions
 function NostrMention({ pubkey }: { pubkey: string }) {
   const author = useAuthor(pubkey);
-  const hasRealName = !!(author.data?.metadata?.name || author.data?.metadata?.display_name);
+  // Trim to match resolveDisplayName: a whitespace-only field falls through to the
+  // generated name, so it must not be styled as a real one.
+  const hasRealName = !!(author.data?.metadata?.display_name?.trim() || author.data?.metadata?.name?.trim());
   const displayName = resolveDisplayName(author.data?.metadata, pubkey);
   const nip05 = author.data?.metadata?.nip05;
   const profilePath = useValidatedProfileLinkPath({

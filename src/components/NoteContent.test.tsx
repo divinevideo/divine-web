@@ -3,6 +3,7 @@ import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { nip19 } from 'nostr-tools';
 import { NoteContent } from './NoteContent';
+import { genUserName } from '@/lib/genUserName';
 import type { NostrEvent } from '@nostrify/nostrify';
 
 const noteMocks = vi.hoisted(() => ({
@@ -142,6 +143,27 @@ describe('NoteContent — prefixed nostr: form (regression)', () => {
     expect(links).toHaveLength(2);
     expect(links[0]).toHaveAttribute('href', `/${NPUB}`);
     expect(links[1]).toHaveAttribute('href', `/${NPUB}`);
+  });
+});
+
+describe('NoteContent — mention name styling', () => {
+  it('styles a whitespace-only profile name as a generated name', () => {
+    noteMocks.metadata = { name: '   ' };
+
+    renderContent(`hello ${NPUB}`);
+
+    const link = screen.getByRole('link');
+    expect(link.textContent).toBe(`@${genUserName(PUBKEY_HEX)}`);
+    expect(link.className).toContain('text-gray-500');
+    expect(link.className).not.toContain('text-blue-500');
+  });
+
+  it('styles a real profile name as a real name', () => {
+    renderContent(`hello ${NPUB}`);
+
+    const link = screen.getByRole('link');
+    expect(link.textContent).toBe('@rabble');
+    expect(link.className).toContain('text-blue-500');
   });
 });
 
