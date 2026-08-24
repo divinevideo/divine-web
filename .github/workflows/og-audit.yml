@@ -3,6 +3,20 @@
 
 name: OG/Twitter Card parity audit
 
+# This audits a LIVE third-party edge, and it runs after production is already
+# serving, so a red run rolls nothing back. It is a monitor, not a gate: results
+# go to #divine-alerts (alongside deploy failures and the uptime heartbeat)
+# rather than failing the build. Run 32740711299 failed on three dropped
+# connections out of 64 — nothing was wrong with the site, and a monitor that
+# cries wolf gets ignored.
+#
+# The parity logic itself IS gated before merge, where a gate can actually
+# prevent a bad ship: compute-js/src/ogTags.test.ts and crawlerHandlers.test.ts
+# run in `npm run test`.
+#
+# The one exception is workflow_dispatch: if a human ran this on purpose, they
+# want a verdict, so a manual run still fails.
+
 on:
   workflow_run:
     workflows: ['Deploy to Production']
@@ -29,14 +43,29 @@ jobs:
 
       - name: Run OG parity audit against production
         id: audit-prod
-        continue-on-error: ${{ github.event_name == 'schedule' }}
+        continue-on-error: true
         env:
           BASE_URL: https://divine.video
-        run: bash scripts/verify-og-tags.sh
+        run: |
+          set -o pipefail
+          bash scripts/verify-og-tags.sh 2>&1 | tee /tmp/og-audit-production.log
 
-      - name: Annotate scheduled production audit result
-        if: github.event_name == 'schedule' && steps.audit-prod.outcome == 'failure'
-        run: echo "::warning::Scheduled production OG audit failed. This monitors live production state and is warning-only on schedule."
+      - name: 'Alert #divine-alerts about the production audit failure'
+        if: steps.audit-prod.outcome == 'failure'
+        env:
+          AUDIT_LOG: /tmp/og-audit-production.log
+          AUDIT_TARGET: production (divine.video)
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          SLACK_WEBHOOK: ${{ secrets.SLACK_DIVINE_ALERTS_WEBHOOK }}
+        run: |
+          echo "::warning::OG parity audit failed against production; alerted #divine-alerts. The run stays green because this monitors a live edge, not this commit."
+          bash scripts/notify-og-audit-failure.sh
+
+      - name: Fail a manually dispatched production audit
+        if: github.event_name == 'workflow_dispatch' && steps.audit-prod.outcome == 'failure'
+        run: |
+          echo "::error::OG parity audit failed against production. See the step output above."
+          exit 1
 
   audit-cloudflare-production:
     if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
@@ -54,7 +83,7 @@ jobs:
 
       - name: Find latest Cloudflare Pages main-branch production deployment URL
         id: find-production
-        continue-on-error: ${{ github.event_name == 'schedule' }}
+        continue-on-error: true
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -88,18 +117,40 @@ jobs:
           fi
           echo "production_url=$URL" >> "$GITHUB_OUTPUT"
 
-      - name: Annotate scheduled Cloudflare production discovery result
-        if: github.event_name == 'schedule' && steps.find-production.outcome == 'failure'
-        run: echo "::warning::Scheduled Cloudflare production discovery failed. This monitors live deployment state and is warning-only on schedule."
+      - name: 'Alert #divine-alerts that the Cloudflare audit could not run'
+        if: steps.find-production.outcome == 'failure'
+        env:
+          AUDIT_TARGET: Cloudflare production
+          AUDIT_UNAVAILABLE_REASON: Could not find the latest main-branch Cloudflare Pages deployment, so no checks ran.
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          SLACK_WEBHOOK: ${{ secrets.SLACK_DIVINE_ALERTS_WEBHOOK }}
+        run: |
+          echo "::warning::Could not find the latest Cloudflare production deployment; the Cloudflare OG audit was skipped."
+          bash scripts/notify-og-audit-failure.sh
 
       - name: Run OG parity audit against Cloudflare production
         id: audit-production-cf
         if: steps.find-production.outputs.production_url != ''
-        continue-on-error: ${{ github.event_name == 'schedule' }}
+        continue-on-error: true
         env:
           BASE_URL: ${{ steps.find-production.outputs.production_url }}
-        run: bash scripts/verify-og-tags.sh
+        run: |
+          set -o pipefail
+          bash scripts/verify-og-tags.sh 2>&1 | tee /tmp/og-audit-cloudflare.log
 
-      - name: Annotate scheduled Cloudflare production audit result
-        if: github.event_name == 'schedule' && steps.audit-production-cf.outcome == 'failure'
-        run: echo "::warning::Scheduled Cloudflare production OG audit failed. This monitors live deployment state and is warning-only on schedule."
+      - name: 'Alert #divine-alerts about the Cloudflare audit failure'
+        if: steps.audit-production-cf.outcome == 'failure'
+        env:
+          AUDIT_LOG: /tmp/og-audit-cloudflare.log
+          AUDIT_TARGET: Cloudflare production (${{ steps.find-production.outputs.production_url }})
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          SLACK_WEBHOOK: ${{ secrets.SLACK_DIVINE_ALERTS_WEBHOOK }}
+        run: |
+          echo "::warning::OG parity audit failed against Cloudflare production; alerted #divine-alerts. The run stays green because this monitors a live deployment, not this commit."
+          bash scripts/notify-og-audit-failure.sh
+
+      - name: Fail a manually dispatched Cloudflare audit
+        if: github.event_name == 'workflow_dispatch' && (steps.audit-production-cf.outcome == 'failure' || steps.find-production.outcome == 'failure')
+        run: |
+          echo "::error::OG parity audit failed against Cloudflare production. See the step output above."
+          exit 1
