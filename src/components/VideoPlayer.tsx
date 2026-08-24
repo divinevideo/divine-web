@@ -1005,9 +1005,9 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
 
     // Cleanup on unmount
     useEffect(() => {
-      verboseLog(`[VideoPlayer ${videoId}] Component mounting`);
+      verboseLog(`[VideoPlayer ${resolvedPlaybackIdRef.current}] Component mounting`);
       return () => {
-        verboseLog(`[VideoPlayer ${videoId}] Component unmounting`);
+        verboseLog(`[VideoPlayer ${resolvedPlaybackIdRef.current}] Component unmounting`);
 
         // Ensure video is paused before unmounting
         if (videoRef.current) {
