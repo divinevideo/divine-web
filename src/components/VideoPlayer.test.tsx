@@ -790,6 +790,85 @@ describe('VideoPlayer', () => {
   });
 
   describe('active playback startup', () => {
+    it('does not resume a user-paused video when loading completes', async () => {
+      const playSpy = vi.fn().mockResolvedValue(undefined);
+      HTMLMediaElement.prototype.play = playSpy;
+
+      const { useVideoPlayback } = await import('@/hooks/useVideoPlayback');
+      (useVideoPlayback as ReturnType<typeof vi.fn>).mockImplementation(() => ({
+        activeVideoId: 'loading-paused',
+        userPausedVideoId: 'loading-paused',
+        setUserPaused: mockSetUserPaused,
+        registerVideo: mockRegisterVideo,
+        unregisterVideo: mockUnregisterVideo,
+        updateVideoVisibility: mockUpdateVideoVisibility,
+        globalMuted: true,
+      }));
+
+      const { container } = render(
+        <VideoPlayer videoId="loading-paused" src="https://example.com/loading-paused.mp4" />
+      );
+      const video = container.querySelector('video');
+      if (!video) throw new Error('expected rendered video element');
+      playSpy.mockClear();
+
+      fireEvent.loadedData(video);
+
+      expect(playSpy).not.toHaveBeenCalled();
+    });
+
+    it('does not run a queued mute resume after the user pauses', async () => {
+      let userPausedVideoId: string | null = null;
+      let isPaused = false;
+      const playSpy = vi.fn().mockImplementation(() => {
+        isPaused = false;
+        return Promise.resolve();
+      });
+      HTMLMediaElement.prototype.play = playSpy;
+      HTMLMediaElement.prototype.pause = vi.fn().mockImplementation(() => {
+        isPaused = true;
+      });
+      vi.spyOn(HTMLMediaElement.prototype, 'paused', 'get').mockImplementation(() => isPaused);
+      const rafQueue: FrameRequestCallback[] = [];
+      vi.spyOn(globalThis, 'requestAnimationFrame').mockImplementation((cb) => {
+        rafQueue.push(cb);
+        return rafQueue.length;
+      });
+      mockSetUserPaused.mockImplementation((videoId: string, paused: boolean) => {
+        userPausedVideoId = paused ? videoId : null;
+      });
+
+      const { useVideoPlayback } = await import('@/hooks/useVideoPlayback');
+      (useVideoPlayback as ReturnType<typeof vi.fn>).mockImplementation(() => ({
+        activeVideoId: 'queued-resume',
+        userPausedVideoId,
+        setUserPaused: mockSetUserPaused,
+        registerVideo: mockRegisterVideo,
+        unregisterVideo: mockUnregisterVideo,
+        updateVideoVisibility: mockUpdateVideoVisibility,
+        globalMuted: true,
+      }));
+
+      const { container, rerender } = render(
+        <VideoPlayer videoId="queued-resume" src="https://example.com/queued-resume.mp4" />
+      );
+      const video = container.querySelector('video');
+      if (!video) throw new Error('expected rendered video element');
+      playSpy.mockClear();
+
+      fireEvent.click(video);
+      rerender(<VideoPlayer videoId="queued-resume" src="https://example.com/queued-resume.mp4" />);
+      act(() => {
+        for (let i = 0; i < 10 && rafQueue.length > 0; i++) {
+          const pending = rafQueue.splice(0);
+          pending.forEach((cb) => cb(0));
+        }
+      });
+
+      expect(playSpy).not.toHaveBeenCalled();
+      expect(isPaused).toBe(true);
+    });
+
     it('keeps a user-paused active video paused across rerenders and mute changes', async () => {
       let globalMuted = true;
       let userPausedVideoId: string | null = null;

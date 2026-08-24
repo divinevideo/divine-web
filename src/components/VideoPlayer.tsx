@@ -166,6 +166,8 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
     } = useVideoPlayback();
     const isActive = activeVideoId === resolvedPlaybackId;
     const isUserPaused = userPausedVideoId === resolvedPlaybackId;
+    const shouldBePlayingRef = useRef(isActive && !isUserPaused && !hasError);
+    shouldBePlayingRef.current = isActive && !isUserPaused && !hasError;
 
     // Store context functions in refs to avoid unstable dependencies in setRefs callback
     // This prevents infinite loops when context functions change reference
@@ -328,7 +330,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
           requestAnimationFrame(() => {
             // Then use another one to ensure we're after any browser-triggered events
             requestAnimationFrame(() => {
-              if (video.paused) {
+              if (video.paused && shouldBePlayingRef.current) {
                 verboseLog(`[VideoPlayer ${videoId}] Video paused after mute change, resuming...`);
                 video.play().catch(error => {
                   verboseLog(`[VideoPlayer ${videoId}] Failed to resume after mute change:`, error);
@@ -581,7 +583,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
       setHasLoadedOnce(true);
       setAuthDeniedAfterVerification(false);
 
-      if (isActive && !hasError && videoRef.current?.paused) {
+      if (isActive && !isUserPaused && !hasError && videoRef.current?.paused) {
         videoRef.current.play().catch((error) => {
           debugError(`[VideoPlayer ${videoId}] Failed to resume after load:`, error);
           if (error.name === 'NotSupportedError') {
