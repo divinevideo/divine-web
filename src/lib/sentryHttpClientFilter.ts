@@ -22,6 +22,7 @@ type SentryEventLike = {
 };
 
 const MEDIA_HOSTNAME = 'media.divine.video';
+const DIVINE_LOGIN_HOSTNAME = 'login.divine.video';
 const FUNNELCAKE_API_HOSTNAMES = new Set([
   'api.divine.video',
   'api.staging.divine.video',
@@ -174,6 +175,37 @@ export function shouldDropFunnelcakeHttpClientEvent(event: SentryEventLike): boo
 
   return FUNNELCAKE_RELAY_HOSTNAMES.has(parsedUrl.hostname)
     && parsedUrl.pathname.startsWith('/api/');
+}
+
+export function shouldDropHandledKeyExportHttpClientEvent(event: SentryEventLike): boolean {
+  if (!isHttpClientEvent(event)) {
+    return false;
+  }
+
+  const requestUrl = toSafeString(event.request?.url);
+  if (!requestUrl) {
+    return false;
+  }
+
+  let parsedUrl: URL;
+  try {
+    parsedUrl = new URL(requestUrl);
+  } catch {
+    return false;
+  }
+
+  if (
+    parsedUrl.hostname !== DIVINE_LOGIN_HOSTNAME
+    || parsedUrl.pathname !== '/api/user/export-key'
+  ) {
+    return false;
+  }
+
+  const statusCode = extractStatusCode(event);
+  return statusCode === 401
+    || statusCode === 403
+    || statusCode === 404
+    || statusCode === 429;
 }
 
 /**

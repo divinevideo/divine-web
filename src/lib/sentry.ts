@@ -3,6 +3,7 @@
 
 import * as Sentry from '@sentry/react';
 import {
+  shouldDropHandledKeyExportHttpClientEvent,
   shouldDropFunnelcakeHttpClientEvent,
   shouldDropHandledMediaHttpClientEvent,
 } from '@/lib/sentryHttpClientFilter';
@@ -204,6 +205,10 @@ export function initializeSentry() {
 
     // Don't send PII
     beforeSend(event) {
+      if (shouldDropHandledKeyExportHttpClientEvent(event)) {
+        return null;
+      }
+
       if (shouldDropHandledMediaHttpClientEvent(event)) {
         return null;
       }

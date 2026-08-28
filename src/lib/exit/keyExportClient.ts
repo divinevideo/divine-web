@@ -117,7 +117,7 @@ function failureFor(
       404,
     );
   }
-  if (response.status === 503 || response.status >= 500) {
+  if (response.status >= 500) {
     return new KeyExportError(
       "service-unavailable",
       "The key service is busy right now. Try again shortly.",

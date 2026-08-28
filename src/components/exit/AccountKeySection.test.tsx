@@ -72,12 +72,19 @@ describe("AccountKeySection", () => {
     await userEvent.click(screen.getByRole("checkbox", { name: /I understand/ }));
     await userEvent.click(reveal);
 
-    expect(await screen.findByText(NSEC)).toBeInTheDocument();
+    expect(await screen.findByText(NSEC)).toHaveAttribute("data-sentry-mask");
     expect(password).toHaveValue("");
     expect(mockExportAccountKey).toHaveBeenCalledWith(expect.objectContaining({
       token: "token",
       password: "correct horse",
     }));
+  });
+
+  it("keeps the local backup control available for a hosted account with a local key", () => {
+    render(<AccountKeySection pubkey={PUBKEY} hostedToken="token" localNsec={NSEC} />);
+
+    expect(screen.getByLabelText("Divine account password")).toBeInTheDocument();
+    expect(screen.getByText(`Local backup for ${NSEC}`)).toBeInTheDocument();
   });
 
   it("clears the revealed nsec on Hide and on account change", async () => {
@@ -118,6 +125,23 @@ describe("AccountKeySection", () => {
 
     await waitFor(() => expect(screen.queryByText(NSEC)).not.toBeInTheDocument());
     expect(mockExportAccountKey.mock.calls[0][0].signal.aborted).toBe(true);
+  });
+
+  it("keeps an in-flight export when the hosted token refreshes for the same account", async () => {
+    let resolveExport: ((value: { nsec: string }) => void) | undefined;
+    mockExportAccountKey.mockReturnValue(new Promise((resolve) => { resolveExport = resolve; }));
+    const { rerender } = render(
+      <AccountKeySection pubkey={PUBKEY} hostedToken="token-a" localNsec={null} />,
+    );
+
+    await userEvent.type(screen.getByLabelText("Divine account password"), "password");
+    await userEvent.click(screen.getByRole("checkbox", { name: /I understand/ }));
+    await userEvent.click(screen.getByRole("button", { name: "Show my secret key" }));
+    rerender(<AccountKeySection pubkey={PUBKEY} hostedToken="token-b" localNsec={null} />);
+    resolveExport?.({ nsec: NSEC });
+
+    expect(await screen.findByText(NSEC)).toHaveAttribute("data-sentry-mask");
+    expect(mockExportAccountKey.mock.calls[0][0].signal.aborted).toBe(false);
   });
 
   it("turns policy denial into a restriction state", async () => {

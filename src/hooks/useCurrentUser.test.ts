@@ -218,6 +218,17 @@ describe('useCurrentUser', () => {
     expect(result.current.hostedToken).toBeNull();
   });
 
+  it('does not expose a hosted token when JWT resolution fails without a current user', async () => {
+    mockGetValidToken.mockReturnValue('jwt-token');
+    mockJwtSigner.getPublicKey.mockRejectedValue(new Error('rpc failed'));
+
+    const { result } = renderHook(() => useCurrentUser());
+
+    await waitFor(() => expect(result.current.isResolvingJwt).toBe(false));
+    expect(result.current.user).toBeUndefined();
+    expect(result.current.hostedToken).toBeNull();
+  });
+
   it('reports isResolvingJwt while the session initializes, then clears it', async () => {
     mockGetValidToken.mockReturnValue('jwt-token');
     let resolvePubkey: (pubkey: string) => void = () => {};

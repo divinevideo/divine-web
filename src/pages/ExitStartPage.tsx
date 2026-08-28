@@ -506,7 +506,7 @@ export function ExitStartPage() {
 
           <AccountKeySection
             pubkey={user?.pubkey}
-            hostedToken={hostedToken ?? null}
+            hostedToken={hostedToken}
             localNsec={localNsecLogin?.data.nsec ?? null}
           />
 

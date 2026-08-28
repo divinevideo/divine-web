@@ -1,8 +1,38 @@
 import { describe, expect, it } from 'vitest';
 import {
+  shouldDropHandledKeyExportHttpClientEvent,
   shouldDropFunnelcakeHttpClientEvent,
   shouldDropHandledMediaHttpClientEvent,
 } from '@/lib/sentryHttpClientFilter';
+
+describe('shouldDropHandledKeyExportHttpClientEvent', () => {
+  it.each([401, 403, 404, 429])('drops handled key-export status %s', (statusCode) => {
+    const event = createHttpClientEvent({
+      url: 'https://login.divine.video/api/user/export-key',
+      statusCode,
+    });
+
+    expect(shouldDropHandledKeyExportHttpClientEvent(event)).toBe(true);
+  });
+
+  it('keeps server failures from the key-export endpoint', () => {
+    const event = createHttpClientEvent({
+      url: 'https://login.divine.video/api/user/export-key',
+      statusCode: 503,
+    });
+
+    expect(shouldDropHandledKeyExportHttpClientEvent(event)).toBe(false);
+  });
+
+  it('keeps failures from other login endpoints', () => {
+    const event = createHttpClientEvent({
+      url: 'https://login.divine.video/api/user/change-key',
+      statusCode: 403,
+    });
+
+    expect(shouldDropHandledKeyExportHttpClientEvent(event)).toBe(false);
+  });
+});
 
 interface TestEventOptions {
   url?: string;

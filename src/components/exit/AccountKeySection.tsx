@@ -20,7 +20,11 @@ interface AccountKeySectionProps {
 
 function retryCopy(retryAfterMs?: number): string {
   if (!retryAfterMs) return "Too many attempts. Wait a bit, then try again.";
-  return `Too many attempts. Try again in about ${Math.max(1, Math.ceil(retryAfterMs / 1_000))} seconds.`;
+  return `Too many attempts. Try again in about ${retrySeconds(retryAfterMs)} seconds.`;
+}
+
+function retrySeconds(retryAfterMs: number): number {
+  return Math.max(1, Math.ceil(retryAfterMs / 1_000));
 }
 
 function exportFailureMessage(error: KeyExportError): string {
@@ -37,7 +41,7 @@ function exportFailureMessage(error: KeyExportError): string {
       return "Divine does not hold a secret key for this account.";
     case "service-unavailable":
       return error.retryAfterMs
-        ? `The key service is busy. Try again in about ${Math.max(1, Math.ceil(error.retryAfterMs / 1_000))} seconds.`
+        ? `The key service is busy. Try again in about ${retrySeconds(error.retryAfterMs)} seconds.`
         : "The key service is busy right now. Try again shortly.";
     case "network-failure":
       return "Divine could not be reached. Check your connection and try again.";
@@ -62,6 +66,7 @@ export function AccountKeySection(props: AccountKeySectionProps) {
   const activeRequest = useRef<AbortController | null>(null);
   const attempt = useRef(0);
   const npub = pubkey ? nip19.npubEncode(pubkey) : null;
+  const isHostedAccount = !!hostedToken && !!pubkey;
 
   useEffect(() => {
     attempt.current += 1;
@@ -78,7 +83,7 @@ export function AccountKeySection(props: AccountKeySectionProps) {
       attempt.current += 1;
       activeRequest.current?.abort();
     };
-  }, [pubkey, hostedToken]);
+  }, [pubkey, isHostedAccount]);
 
   async function copyValue(value: string, label: string) {
     try {
@@ -159,7 +164,7 @@ export function AccountKeySection(props: AccountKeySectionProps) {
             <p>Sign in to see the public key for your account.</p>
           )}
 
-          {hostedToken && pubkey ? (
+          {isHostedAccount ? (
             restricted ? (
               <Alert className="border-brand-orange/50 bg-brand-orange/10">
                 <WarningCircle className="h-5 w-5" weight="fill" />
@@ -172,7 +177,7 @@ export function AccountKeySection(props: AccountKeySectionProps) {
             ) : nsec ? (
               <div className="space-y-3">
                 <p className="font-medium text-foreground">Your secret key</p>
-                <p className="break-all font-mono text-sm text-foreground">{nsec}</p>
+                <p data-sentry-mask className="break-all font-mono text-sm text-foreground">{nsec}</p>
                 <div className="flex flex-wrap gap-2">
                   <Button type="button" variant="sticker" onClick={() => void copyValue(nsec, "Secret key")}>
                     <Copy className="mr-2 h-4 w-4" />
@@ -228,7 +233,6 @@ export function AccountKeySection(props: AccountKeySectionProps) {
                 This account has its own key, stored in this browser rather than on a Divine server.
                 Keep a copy somewhere safe. If it is lost, nobody can restore it for you.
               </p>
-              <LocalNsecBanner nsec={localNsec} />
             </div>
           ) : pubkey ? (
             <div className="space-y-3">
@@ -242,6 +246,8 @@ export function AccountKeySection(props: AccountKeySectionProps) {
               </p>
             </div>
           ) : null}
+
+          {localNsec && pubkey ? <LocalNsecBanner nsec={localNsec} /> : null}
 
           {failure ? <p role="alert" className="text-destructive">{failure}</p> : null}
           {copyStatus ? <p role="status" className="text-sm">{copyStatus}</p> : null}
