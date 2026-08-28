@@ -128,6 +128,16 @@ describe("rewriteEventMedia", () => {
       tags: [],
     }), new Map()).remainingMediaUrls).toBe(0);
   });
+
+  it("does not count a non-URL banner such as a theme color as remaining media", () => {
+    const result = rewriteEventMedia(event({
+      kind: 0,
+      content: JSON.stringify({ picture: SOURCE, banner: "0x27c58b" }),
+      tags: [],
+    }), new Map());
+
+    expect(result.remainingMediaUrls).toBe(1);
+  });
 });
 
 describe("event references", () => {

@@ -170,6 +170,26 @@ describe("archive builder", () => {
     ]);
   });
 
+  it("ignores a non-URL banner such as a theme color", () => {
+    const profile = makeFixtureEvent({
+      kind: 0,
+      tags: [],
+      content: JSON.stringify({
+        picture: "https://cdn.divine.video/avatar/current.jpg",
+        banner: "0x27c58b",
+      }),
+    });
+
+    expect(discoverMediaReferences([profile])).toEqual([
+      {
+        event_id: profile.id,
+        tag: "picture",
+        url: "https://cdn.divine.video/avatar/current.jpg",
+        sha256: null,
+      },
+    ]);
+  });
+
   it("uses a sibling x tag when the URL does not carry a hash", () => {
     const hash = "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
     const references = discoverMediaReferences([
