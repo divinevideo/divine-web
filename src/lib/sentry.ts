@@ -4,6 +4,7 @@
 import * as Sentry from '@sentry/react';
 import {
   shouldDropHandledKeyExportHttpClientEvent,
+  shouldDropKeyExportReplayEvent,
   shouldDropFunnelcakeHttpClientEvent,
   shouldDropHandledMediaHttpClientEvent,
 } from '@/lib/sentryHttpClientFilter';
@@ -140,6 +141,9 @@ export function initializeSentry() {
       Sentry.replayIntegration({
         maskAllText: false,
         blockAllMedia: false,
+        beforeAddRecordingEvent(event) {
+          return shouldDropKeyExportReplayEvent(event) ? null : event;
+        },
       }),
       Sentry.httpClientIntegration({ failedRequestStatusCodes: [[400, 599]] }),
       Sentry.captureConsoleIntegration({ levels: ['error', 'warn'] }),

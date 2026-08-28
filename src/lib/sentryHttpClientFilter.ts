@@ -1,3 +1,5 @@
+import { DIVINE_LOGIN_ORIGIN } from '@/lib/divineLoginOrigin';
+
 type SentryExceptionValue = {
   value?: unknown;
   mechanism?: {
@@ -21,8 +23,14 @@ type SentryEventLike = {
   };
 };
 
+type ReplayRecordingEventLike = {
+  data?: {
+    tag?: unknown;
+    payload?: unknown;
+  };
+};
+
 const MEDIA_HOSTNAME = 'media.divine.video';
-const DIVINE_LOGIN_HOSTNAME = 'login.divine.video';
 const FUNNELCAKE_API_HOSTNAMES = new Set([
   'api.divine.video',
   'api.staging.divine.video',
@@ -141,6 +149,17 @@ function isFunnelcakeFallbackReportedPath(pathname: string): boolean {
   return false;
 }
 
+function isKeyExportUrl(value: string): boolean {
+  try {
+    const requestUrl = new URL(value);
+    const loginUrl = new URL(DIVINE_LOGIN_ORIGIN);
+    return requestUrl.origin === loginUrl.origin
+      && requestUrl.pathname === '/api/user/export-key';
+  } catch {
+    return false;
+  }
+}
+
 /**
  * Filters raw "HTTP Client Error" events for Funnelcake REST API requests.
  *
@@ -187,17 +206,7 @@ export function shouldDropHandledKeyExportHttpClientEvent(event: SentryEventLike
     return false;
   }
 
-  let parsedUrl: URL;
-  try {
-    parsedUrl = new URL(requestUrl);
-  } catch {
-    return false;
-  }
-
-  if (
-    parsedUrl.hostname !== DIVINE_LOGIN_HOSTNAME
-    || parsedUrl.pathname !== '/api/user/export-key'
-  ) {
+  if (!isKeyExportUrl(requestUrl)) {
     return false;
   }
 
@@ -206,6 +215,24 @@ export function shouldDropHandledKeyExportHttpClientEvent(event: SentryEventLike
     || statusCode === 403
     || statusCode === 404
     || statusCode === 429;
+}
+
+export function shouldDropKeyExportReplayEvent(event: ReplayRecordingEventLike): boolean {
+  if (event.data?.tag !== 'performanceSpan') {
+    return false;
+  }
+
+  const payload = event.data.payload;
+  if (!payload || typeof payload !== 'object') {
+    return false;
+  }
+
+  const { op, description } = payload as { op?: unknown; description?: unknown };
+  if (op !== 'resource.fetch' && op !== 'resource.xhr') {
+    return false;
+  }
+
+  return typeof description === 'string' && isKeyExportUrl(description);
 }
 
 /**

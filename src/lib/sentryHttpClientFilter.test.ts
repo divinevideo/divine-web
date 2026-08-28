@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   shouldDropHandledKeyExportHttpClientEvent,
+  shouldDropKeyExportReplayEvent,
   shouldDropFunnelcakeHttpClientEvent,
   shouldDropHandledMediaHttpClientEvent,
 } from '@/lib/sentryHttpClientFilter';
@@ -31,6 +32,52 @@ describe('shouldDropHandledKeyExportHttpClientEvent', () => {
     });
 
     expect(shouldDropHandledKeyExportHttpClientEvent(event)).toBe(false);
+  });
+});
+
+describe('shouldDropKeyExportReplayEvent', () => {
+  it.each(['resource.fetch', 'resource.xhr'])('drops key-export %s spans', (op) => {
+    const event = {
+      data: {
+        tag: 'performanceSpan',
+        payload: {
+          op,
+          description: 'https://login.divine.video/api/user/export-key',
+          data: { statusCode: 403, request: { size: 52 } },
+        },
+      },
+    };
+
+    expect(shouldDropKeyExportReplayEvent(event)).toBe(true);
+  });
+
+  it('keeps other replay network spans', () => {
+    const event = {
+      data: {
+        tag: 'performanceSpan',
+        payload: {
+          op: 'resource.fetch',
+          description: 'https://login.divine.video/api/user/account',
+          data: { statusCode: 403 },
+        },
+      },
+    };
+
+    expect(shouldDropKeyExportReplayEvent(event)).toBe(false);
+  });
+
+  it('keeps non-network replay events', () => {
+    const event = {
+      data: {
+        tag: 'breadcrumb',
+        payload: {
+          op: 'resource.fetch',
+          description: 'https://login.divine.video/api/user/export-key',
+        },
+      },
+    };
+
+    expect(shouldDropKeyExportReplayEvent(event)).toBe(false);
   });
 });
 
