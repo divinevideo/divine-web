@@ -147,6 +147,18 @@ describe("rewriteEventMedia", () => {
     expect(result.remainingMediaUrls).toBe(0);
   });
 
+  it("rewrites mapped profile media when JSON escapes URL slashes", () => {
+    const source = "https://storage.googleapis.com/archive/avatar.jpg";
+    const destination = "https://blossom.example/uploaded-avatar";
+    const content = `{"name":"Creator","picture":"${source.replace(/\//g, "\\/")}"}`;
+
+    const result = rewriteEventMedia(event({ kind: 0, content, tags: [] }), new Map([[source, destination]]));
+
+    expect(JSON.parse(result.template.content)).toEqual({ name: "Creator", picture: destination });
+    expect(result.changed).toBe(true);
+    expect(result.remainingMediaUrls).toBe(0);
+  });
+
   it("ignores malformed and non-string profile media while reporting", () => {
     expect(rewriteEventMedia(event({ kind: 0, content: "{", tags: [] }), new Map()).remainingMediaUrls).toBe(0);
     expect(rewriteEventMedia(event({

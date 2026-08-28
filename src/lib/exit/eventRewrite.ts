@@ -51,6 +51,21 @@ function replaceExact(value: string, urls: ReadonlyMap<string, string>): string 
   return urls.get(value) ?? value;
 }
 
+function rewriteProfileContent(event: NostrEvent, urls: ReadonlyMap<string, string>): string {
+  const references = profileMediaUrls(event);
+  if (references.length === 0) return event.content;
+
+  const metadata = JSON.parse(event.content) as Record<string, unknown>;
+  let changed = false;
+  for (const { key, url } of references) {
+    const replacement = replaceExact(url, urls);
+    if (replacement === url) continue;
+    metadata[key] = replacement;
+    changed = true;
+  }
+  return changed ? JSON.stringify(metadata) : event.content;
+}
+
 function rewriteImeta(tag: string[], urls: ReadonlyMap<string, string>): string[] {
   if (tag[1]?.includes(" ")) {
     return tag.map((value, index) => {
@@ -99,7 +114,7 @@ export function rewriteEventMedia(event: NostrEvent, urls: ReadonlyMap<string, s
     }
     return tag[0] === "imeta" ? rewriteImeta(tag, urls) : [...tag];
   });
-  let content = event.content;
+  let content = rewriteProfileContent(event, urls);
   for (const [source, destination] of urls) {
     content = content.split(source).join(destination);
   }
