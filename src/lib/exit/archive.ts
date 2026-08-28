@@ -4,6 +4,7 @@
 import type { NostrEvent } from "@nostrify/nostrify";
 
 import { isHex64 } from "./hex";
+import { IMETA_URL_KEYS, profileMediaUrls, URL_TAGS } from "./mediaReferences";
 import type { OwnerExportModeration } from "./ownerExportClient";
 import type { ModerationAnnotation } from "./moderationMetadata";
 import type { MediaDownloadResult, MediaVerification } from "./mediaDownloader";
@@ -76,9 +77,6 @@ export interface ArchiveFiles {
   "media-checksums.txt"?: string;
   "media-failures.txt"?: string;
 }
-
-const URL_TAGS = new Set(["url", "image", "thumb", "thumbnail"]);
-const IMETA_URL_KEYS = new Set(["url", "image", "thumb", "thumbnail", "fallback"]);
 
 function basenameHash(url: string): string | null {
   try {
@@ -173,6 +171,15 @@ export function discoverMediaReferences(events: NostrEvent[]): MediaReference[] 
           });
         }
       }
+    }
+
+    for (const profileMedia of profileMediaUrls(event)) {
+      references.push({
+        event_id: event.id,
+        tag: profileMedia.key,
+        url: profileMedia.url,
+        sha256: basenameHash(profileMedia.url),
+      });
     }
   }
 

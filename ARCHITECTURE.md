@@ -199,7 +199,9 @@ while requests carrying viewer authorization refuse redirects and are retried
 only for the exact `https://media.divine.video` origin; third-party media
 requests remain bare. The completed archive omits an empty checksum file, adds
 a readable failure report for downloads and quarantined hash mismatches, and
-keeps the final on-screen result aligned with the media actually saved.
+keeps the final on-screen result aligned with the media actually saved. Media
+discovery reads URL-bearing event tags plus the `picture` and `banner` fields in
+kind-0 profile metadata.
 
 The same page shows the signed-in account's full npub and separates hosted,
 local-nsec, and external-signer key ownership. Hosted accounts may export their

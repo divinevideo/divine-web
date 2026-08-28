@@ -104,6 +104,30 @@ describe("rewriteEventMedia", () => {
     expect(result.changed).toBe(false);
     expect(result.remainingMediaUrls).toBe(0);
   });
+
+  it("rewrites mapped profile media and reports unmapped profile media", () => {
+    const banner = `https://media.divine.video/${"e".repeat(64)}.jpg`;
+    const original = event({
+      kind: 0,
+      content: JSON.stringify({ picture: SOURCE, banner }),
+      tags: [],
+    });
+
+    const result = rewriteEventMedia(original, new Map([[SOURCE, DESTINATION]]));
+
+    expect(result.changed).toBe(true);
+    expect(JSON.parse(result.template.content)).toEqual({ picture: DESTINATION, banner });
+    expect(result.remainingMediaUrls).toBe(1);
+  });
+
+  it("ignores malformed and non-string profile media while reporting", () => {
+    expect(rewriteEventMedia(event({ kind: 0, content: "{", tags: [] }), new Map()).remainingMediaUrls).toBe(0);
+    expect(rewriteEventMedia(event({
+      kind: 0,
+      content: JSON.stringify({ picture: 42, banner: "" }),
+      tags: [],
+    }), new Map()).remainingMediaUrls).toBe(0);
+  });
 });
 
 describe("event references", () => {

@@ -121,6 +121,55 @@ describe("archive builder", () => {
     ]);
   });
 
+  it("discovers picture and banner URLs from profile metadata", () => {
+    const pictureHash = "e".repeat(64);
+    const bannerHash = "f".repeat(64);
+    const profile = makeFixtureEvent({
+      kind: 0,
+      tags: [],
+      content: JSON.stringify({
+        picture: `https://cdn.divine.video/${pictureHash}.jpg`,
+        banner: `https://media.divine.video/${bannerHash}`,
+      }),
+    });
+
+    expect(discoverMediaReferences([profile])).toEqual([
+      {
+        event_id: profile.id,
+        tag: "picture",
+        url: `https://cdn.divine.video/${pictureHash}.jpg`,
+        sha256: pictureHash,
+      },
+      {
+        event_id: profile.id,
+        tag: "banner",
+        url: `https://media.divine.video/${bannerHash}`,
+        sha256: bannerHash,
+      },
+    ]);
+  });
+
+  it("keeps hashless profile media and ignores invalid metadata values", () => {
+    const profile = makeFixtureEvent({
+      kind: 0,
+      tags: [],
+      content: JSON.stringify({
+        picture: "https://cdn.divine.video/avatar/current.jpg",
+        banner: 42,
+      }),
+    });
+    const malformed = makeFixtureEvent({ kind: 0, tags: [], content: "{" });
+
+    expect(discoverMediaReferences([profile, malformed])).toEqual([
+      {
+        event_id: profile.id,
+        tag: "picture",
+        url: "https://cdn.divine.video/avatar/current.jpg",
+        sha256: null,
+      },
+    ]);
+  });
+
   it("uses a sibling x tag when the URL does not carry a hash", () => {
     const hash = "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
     const references = discoverMediaReferences([

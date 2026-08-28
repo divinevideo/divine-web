@@ -37,6 +37,22 @@ describe("downloadArchiveMedia", () => {
     expect(results[0].references).toHaveLength(2);
   });
 
+  it("downloads one blob for duplicate profile and tag references", async () => {
+    const url = `https://media.divine.video/${helloHash}.jpg`;
+    const fetcher = vi.fn(async () => new Response("hello", { headers: { "content-type": "image/jpeg" } }));
+    const onFile = vi.fn(async () => undefined);
+
+    const results = await downloadArchiveMedia({
+      references: [reference(url), { ...reference(url), tag: "picture" }],
+      fetcher,
+      onFile,
+    });
+
+    expect(fetcher).toHaveBeenCalledOnce();
+    expect(onFile).toHaveBeenCalledOnce();
+    expect(results[0].references).toHaveLength(2);
+  });
+
   it("quarantines the last mismatch when every mirror is invalid", async () => {
     const onFile = vi.fn(async () => undefined);
     const results = await downloadArchiveMedia({

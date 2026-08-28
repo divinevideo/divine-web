@@ -108,6 +108,29 @@ describe("publishArchiveEvents", () => {
     expect(results.every((result) => result.status === "published")).toBe(true);
   });
 
+  it("republishes a profile with its mirrored picture URL", async () => {
+    const signer = makeSigner();
+    const relay = fakeRelay();
+    const profile = makeEvent("1", {
+      kind: 0,
+      content: JSON.stringify({ name: "Fixture profile", picture: SOURCE }),
+    });
+
+    const results = await publishArchiveEvents({
+      destination: RELAY,
+      events: [profile],
+      mirrorResults: [mirrorResult()],
+      signer,
+      relayFactory: () => relay,
+    });
+
+    expect(JSON.parse(relay.published[0].content)).toEqual({
+      name: "Fixture profile",
+      picture: DESTINATION_MEDIA,
+    });
+    expect(results[0]).toMatchObject({ status: "published", remaining_media_urls: 0 });
+  });
+
   it("produces the same replacement templates on repeated runs", async () => {
     const signer = makeSigner();
     const video = makeEvent("1", { kind: 34236, content: SOURCE, tags: [["url", SOURCE]] });

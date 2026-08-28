@@ -3,6 +3,7 @@
 
 import { NKinds, type NostrEvent } from "@nostrify/nostrify";
 
+import { IMETA_URL_KEYS, profileMediaUrls, URL_TAGS } from "./mediaReferences";
 import type { MirrorResult } from "./mirrorClient";
 
 export type EventTemplate = Omit<NostrEvent, "id" | "pubkey" | "sig">;
@@ -13,8 +14,6 @@ export interface EventRewrite {
   remainingMediaUrls: number;
 }
 
-const URL_TAGS = new Set(["url", "image", "thumb", "thumbnail"]);
-const IMETA_URL_KEYS = new Set(["url", "image", "thumb", "thumbnail", "fallback"]);
 // 4 is a NIP-04 direct message; 13 is the NIP-59 seal, which carries the
 // sender's real pubkey and so is the one of these an owner export can return;
 // 14 and 15 are NIP-17 chat and file messages; 1059 is the NIP-59 gift wrap.
@@ -71,9 +70,9 @@ function rewriteImeta(tag: string[], urls: ReadonlyMap<string, string>): string[
   });
 }
 
-function countRemainingMediaUrls(tags: string[][], urls: ReadonlyMap<string, string>): number {
+function countRemainingMediaUrls(event: NostrEvent, urls: ReadonlyMap<string, string>): number {
   let count = 0;
-  for (const tag of tags) {
+  for (const tag of event.tags) {
     if (URL_TAGS.has(tag[0]) && tag[1] && !urls.has(tag[1])) count += 1;
     if (tag[0] !== "imeta") continue;
     if (tag[1]?.includes(" ")) {
@@ -87,6 +86,7 @@ function countRemainingMediaUrls(tags: string[][], urls: ReadonlyMap<string, str
       }
     }
   }
+  count += profileMediaUrls(event).filter(({ url }) => !urls.has(url)).length;
   return count;
 }
 
@@ -109,7 +109,7 @@ export function rewriteEventMedia(event: NostrEvent, urls: ReadonlyMap<string, s
   return {
     template: { kind: event.kind, created_at: event.created_at, content, tags },
     changed,
-    remainingMediaUrls: countRemainingMediaUrls(event.tags, urls),
+    remainingMediaUrls: countRemainingMediaUrls(event, urls),
   };
 }
 
