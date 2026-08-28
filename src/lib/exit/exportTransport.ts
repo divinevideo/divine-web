@@ -89,6 +89,8 @@ export async function readExportErrorBody(response: Response): Promise<string> {
 export function exportRetryDelayMs(response: Response, retryCount: number): number {
   const retryAfterSeconds = Number(response.headers.get("retry-after"));
   const backoffMs = Math.min(1000 * 2 ** retryCount, 8000);
+  // Bound a hostile or misconfigured Retry-After so one response cannot stall
+  // an export for hours while retaining exponential backoff as the floor.
   return Number.isFinite(retryAfterSeconds) && retryAfterSeconds >= 0
     ? Math.min(Math.max(retryAfterSeconds * 1000, backoffMs), 60_000)
     : Math.max(backoffMs, 1000);

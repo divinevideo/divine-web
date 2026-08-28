@@ -116,6 +116,7 @@ async function fetchSnapshotPage(input: RedeemSnapshotOptions & { url: string; r
   if (response.status === 403 && body.toLowerCase().includes("own account")) throw new BanSnapshotError("pubkey-mismatch", "This sign-in does not match the account being recovered.", 403);
   if (response.status === 403) throw new BanSnapshotError("snapshot-unavailable", "The snapshot became unavailable, so this archive ends where recovery stopped.", 403);
   if (response.status === 429) throw new BanSnapshotError("rate-limited", "Divine asked this recovery to slow down. Wait a moment and try again.", 429, exportRetryDelayMs(response, input.retryCount));
+  if (response.status === 503) throw new BanSnapshotError("server-failure", "Divine could not finish this recovery right now. Try again later.", 503, exportRetryDelayMs(response, input.retryCount));
   if (!response.ok) throw new BanSnapshotError("server-failure", "Divine could not finish this recovery right now. Try again later.", response.status);
   try { return validateExportPage(await response.json(), input.pubkey, () => new BanSnapshotError("malformed-response", "Divine returned snapshot data this page could not read.")); } catch (error) {
     if (error instanceof BanSnapshotError) throw error;

@@ -28,4 +28,9 @@ describe("SnapshotRecovery", () => {
     fireEvent.click(screen.getByRole("button", { name: "Recover snapshot" }));
     expect(onRecover).toHaveBeenCalledOnce();
   });
+
+  it("does not start recovery while another archive is running", () => {
+    render(<SnapshotRecovery {...base} disabled status={{ state: "available", enforcement_id: "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd", enforced_at: "2026-08-01T12:00:00Z", created_at: "2026-08-01T12:01:00Z", expires_at: "2026-08-31T12:01:00Z", days_remaining: 3 }} />);
+    expect(screen.getByRole("button", { name: "Recover snapshot" })).toBeDisabled();
+  });
 });

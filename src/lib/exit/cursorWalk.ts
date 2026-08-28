@@ -34,6 +34,8 @@ export async function walkExportCursor<TFailure extends CursorFailure>(input: {
   const usedCursors = new Set<string>();
   const sleep = input.sleep ?? ((ms: number) => new Promise((resolve) => setTimeout(resolve, ms)));
   const maxRateLimitRetries = input.maxRateLimitRetries ?? 3;
+  // This is a protocol backstop, not an account-size limit. At the default
+  // page size it permits five million events before preserving a partial walk.
   const maxPages = input.maxPages ?? 10_000;
   let cursor: string | undefined;
   let pagesFetched = 0;
@@ -60,7 +62,7 @@ export async function walkExportCursor<TFailure extends CursorFailure>(input: {
       usedCursors.add(page.pagination.next_cursor);
       cursor = page.pagination.next_cursor;
     } catch (error) {
-      if (input.isFailure(error) && error.code === input.rateLimitedCode && pageRetries < maxRateLimitRetries) {
+      if (input.isFailure(error) && (error.code === input.rateLimitedCode || error.retryAfterMs !== undefined) && pageRetries < maxRateLimitRetries) {
         pageRetries += 1;
         retryCount += 1;
         input.onProgress?.({ pagesFetched, eventsFetched: events.length, retryCount });
@@ -70,6 +72,8 @@ export async function walkExportCursor<TFailure extends CursorFailure>(input: {
       if (input.isFailure(error) && error.code === input.cancelledCode) throw error;
       const failure = input.isFailure(error) ? error : input.makeFailure("network-failure");
       failures.push(failure);
+      // A completed page is still useful. Keep it and report why the walk
+      // stopped instead of discarding data already recovered.
       if (events.length > 0) return { events, pageCount: pagesFetched, failures };
       throw failure;
     }

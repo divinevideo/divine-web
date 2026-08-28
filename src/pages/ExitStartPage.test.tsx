@@ -138,6 +138,33 @@ describe("ExitStartPage", () => {
     ).toBeInTheDocument();
   });
 
+  it("recovers an available snapshot into the existing archive flow", async () => {
+    mockUseCurrentUser.mockReturnValue(signedIn());
+    const fetcher = vi.fn<typeof fetch>()
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        state: "available",
+        enforcement_id: "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        enforced_at: "2026-08-01T12:00:00Z",
+        created_at: "2026-08-01T12:01:00Z",
+        expires_at: "2026-08-31T12:01:00Z",
+        days_remaining: 3,
+      }), { status: 200, headers: { "content-type": "application/json" } }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        data: [makeFixtureEvent()],
+        pagination: { next_cursor: null, has_more: false },
+      }), { status: 200, headers: { "content-type": "application/json" } }));
+    vi.stubGlobal("fetch", fetcher);
+
+    render(<TestApp><ExitStartPage /></TestApp>);
+    await userEvent.click(screen.getByRole("button", { name: "Check for a snapshot" }));
+    await userEvent.click(await screen.findByRole("button", { name: "Recover snapshot" }));
+
+    await waitFor(() => expect(screen.getByText("Your archive is ready.")).toBeInTheDocument());
+    expect(screen.getByText(/1 page read, 1 event and 1 media reference collected from Divine/)).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Move your media" })).toBeInTheDocument();
+    expect(String(fetcher.mock.calls[1][0])).toContain("/export/snapshot?enforcement_id=");
+  });
+
   it("validates a custom Blossom destination inline", async () => {
     mockUseCurrentUser.mockReturnValue(signedIn());
     vi.stubGlobal("fetch", createFixtureFetch("one-page"));

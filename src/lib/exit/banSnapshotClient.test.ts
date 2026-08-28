@@ -101,4 +101,18 @@ describe("redeemSnapshotEvents", () => {
     });
     expect(sleeps).toEqual([60_000]);
   });
+
+  it("retries a temporary server overload", async () => {
+    const sleeps: number[] = [];
+    let requests = 0;
+    await redeemSnapshotEvents({
+      endpointBase: "https://api.divine.video", pubkey: fixturePubkey, enforcementId, signer: new FixtureSigner(),
+      fetcher: async () => ++requests === 1
+        ? new Response("temporarily unavailable", { status: 503, headers: { "retry-after": "1" } })
+        : json({ data: [], pagination: { has_more: false, next_cursor: null } }),
+      sleep: async (ms) => { sleeps.push(ms); },
+    });
+    expect(requests).toBe(2);
+    expect(sleeps).toEqual([1000]);
+  });
 });

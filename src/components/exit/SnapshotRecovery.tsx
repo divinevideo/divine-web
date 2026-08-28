@@ -58,7 +58,7 @@ export function SnapshotRecovery(props: SnapshotRecoveryProps) {
                   <p className="text-base leading-relaxed text-muted-foreground">Preserved on {formatDate(available.created_at)}. It expires on {formatDate(available.expires_at)}. {available.days_remaining} day{available.days_remaining === 1 ? "" : "s"} remaining.</p>
                 </div>
               </div>
-              <Button type="button" variant="sticker" onClick={() => props.onRecover(available)} disabled={props.recovering}>
+              <Button type="button" variant="sticker" onClick={() => props.onRecover(available)} disabled={props.disabled || props.recovering}>
                 {props.recovering ? <ArrowClockwise className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Archive className="h-4 w-4" aria-hidden="true" />}
                 {props.recovering ? "Recovering your snapshot" : "Recover snapshot"}
               </Button>
