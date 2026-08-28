@@ -329,7 +329,34 @@ function skippedResult(references: MediaReference[], reason: string): MirrorResu
   };
 }
 
-async function uploadHashlessImage(references: MediaReference[], options: MirrorOptions): Promise<MirrorResult> {
+async function verifyUploadedReadback(
+  references: MediaReference[],
+  descriptor: BlobDescriptor,
+  options: MirrorOptions,
+): Promise<MirrorResult> {
+  try {
+    const response = await (options.fetcher ?? fetch)(descriptor.url, {
+      method: "HEAD",
+      signal: options.signal,
+      redirect: "follow",
+    });
+    const size = response.headers.get("content-length");
+    if (response.ok && size !== null && Number(size) === descriptor.size) {
+      return { references, source_url: references[0].url, destination_url: descriptor.url, expected_sha256: null,
+        destination_sha256: descriptor.sha256, byte_size: descriptor.size, verification: "upload-verified" };
+    }
+  } catch {
+    if (options.signal?.aborted) throw new DOMException("Mirror cancelled", "AbortError");
+  }
+  return { references, source_url: references[0].url, destination_url: descriptor.url, expected_sha256: null,
+    destination_sha256: descriptor.sha256, byte_size: descriptor.size, verification: "unverified",
+    reason: "The destination accepted the upload, but browser readback could not be confirmed." };
+}
+
+async function uploadHashlessImage(
+  references: MediaReference[],
+  options: MirrorOptions,
+): Promise<{ result: MirrorResult; destinationError: DestinationError | null; copyAttempted: boolean }> {
   let blob: HashedBlob;
   try {
     blob = await fetchAndHashBlob({
@@ -343,38 +370,36 @@ async function uploadHashlessImage(references: MediaReference[], options: Mirror
     if (options.signal?.aborted) throw new DOMException("Mirror cancelled", "AbortError");
     const reason = error instanceof Error ? error.message : "download failed";
     if (reason.includes("larger than")) {
-      return skippedResult(references, "The hashless image is larger than 5 MB, so it was not uploaded.");
+      return { result: skippedResult(references, "The hashless image is larger than 5 MB, so it was not uploaded."), destinationError: null, copyAttempted: false };
     }
-    return failedResult(references, "failed", `The source image could not be read: ${reason}`);
+    return { result: failedResult(references, "failed", `The source image could not be read: ${reason}`), destinationError: null, copyAttempted: false };
   }
   if (!blob.contentType || !UPLOADABLE_IMAGE_TYPES.has(blob.contentType)) {
-    return skippedResult(references, "The hashless source is not a supported image, so it was not uploaded.");
+    return { result: skippedResult(references, "The hashless source is not a supported image, so it was not uploaded."), destinationError: null, copyAttempted: false };
   }
 
   const response = await requestUpload(blob, options);
   if (response instanceof DestinationError) {
-    return failedResult(references, "failed", response.message);
+    return { result: failedResult(references, "failed", response.message), destinationError: response, copyAttempted: true };
   }
   if (response.status === 404 || response.status === 405 || response.status === 501) {
-    return skippedResult(references, `${options.destination} does not support browser uploads.`);
+    return { result: skippedResult(references, `${options.destination} does not support browser uploads.`), destinationError: null, copyAttempted: false };
+  }
+  const destinationError = response.status === 429
+    ? new DestinationError("rate-limited", `${options.destination} is rate limiting media copies. Try again later.`, 429)
+    : destinationFailure(response.status, options.destination);
+  if (destinationError) {
+    return { result: failedResult(references, "failed", destinationError.message), destinationError, copyAttempted: true };
   }
   if (!response.ok) {
-    return failedResult(references, "failed", `The destination refused this upload (HTTP ${response.status}).${serverReason(response)}`);
+    return { result: failedResult(references, "failed", `The destination refused this upload (HTTP ${response.status}).${serverReason(response)}`), destinationError: null, copyAttempted: true };
   }
   const descriptor = await readDescriptor(response);
-  if (!descriptor) return failedResult(references, "failed", "The destination returned an invalid blob descriptor.");
+  if (!descriptor) return { result: failedResult(references, "failed", "The destination returned an invalid blob descriptor."), destinationError: null, copyAttempted: true };
   if (descriptor.sha256 !== blob.computedSha256 || descriptor.size !== blob.bytes.length) {
-    return failedResult(references, "hash-mismatch", "The destination reported different uploaded bytes.", descriptor);
+    return { result: failedResult(references, "hash-mismatch", "The destination reported different uploaded bytes.", descriptor), destinationError: null, copyAttempted: true };
   }
-  return {
-    references,
-    source_url: blob.finalUrl,
-    destination_url: descriptor.url,
-    expected_sha256: null,
-    destination_sha256: descriptor.sha256,
-    byte_size: descriptor.size,
-    verification: "upload-verified",
-  };
+  return { result: await verifyUploadedReadback(references, descriptor, options), destinationError: null, copyAttempted: true };
 }
 
 export async function mirrorArchiveMedia(options: MirrorOptions): Promise<MirrorResult[]> {
@@ -388,9 +413,16 @@ export async function mirrorArchiveMedia(options: MirrorOptions): Promise<Mirror
     if (isHlsManifest(reference.url)) {
       result = skippedResult(references, "Streaming manifests are generated derivatives and were not copied.");
     } else if (!reference.sha256) {
-      result = references.some(({ tag }) => PROFILE_IMAGE_TAGS.has(tag))
-        ? await uploadHashlessImage(references, options)
-        : skippedResult(references, "The source did not advertise a SHA-256 hash, so a secure copy could not be authorized.");
+      if (references.some(({ tag }) => PROFILE_IMAGE_TAGS.has(tag))) {
+        const outcome = await uploadHashlessImage(references, options);
+        if (outcome.copyAttempted) {
+          if (copyAttempts === 0 && outcome.destinationError) throw outcome.destinationError;
+          copyAttempts += 1;
+        }
+        result = outcome.result;
+      } else {
+        result = skippedResult(references, "The source did not advertise a SHA-256 hash, so a secure copy could not be authorized.");
+      }
     } else {
       const outcome = await mirrorOne(references, reference.sha256, options);
       if (outcome.result.verification !== "already-present") {
