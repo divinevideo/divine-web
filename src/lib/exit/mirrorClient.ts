@@ -405,7 +405,8 @@ async function uploadHashlessImage(
 export async function mirrorArchiveMedia(options: MirrorOptions): Promise<MirrorResult[]> {
   const groups = groupMediaReferences(options.references);
   const results: MirrorResult[] = [];
-  let copyAttempts = 0;
+  let mirrorAttempts = 0;
+  let uploadAttempts = 0;
   for (const references of groups) {
     if (options.signal?.aborted) throw new DOMException("Mirror cancelled", "AbortError");
     const reference = references[0];
@@ -416,8 +417,8 @@ export async function mirrorArchiveMedia(options: MirrorOptions): Promise<Mirror
       if (references.some(({ tag }) => PROFILE_IMAGE_TAGS.has(tag))) {
         const outcome = await uploadHashlessImage(references, options);
         if (outcome.copyAttempted) {
-          if (copyAttempts === 0 && outcome.destinationError) throw outcome.destinationError;
-          copyAttempts += 1;
+          if (uploadAttempts === 0 && outcome.destinationError) throw outcome.destinationError;
+          uploadAttempts += 1;
         }
         result = outcome.result;
       } else {
@@ -426,8 +427,8 @@ export async function mirrorArchiveMedia(options: MirrorOptions): Promise<Mirror
     } else {
       const outcome = await mirrorOne(references, reference.sha256, options);
       if (outcome.result.verification !== "already-present") {
-        if (copyAttempts === 0 && outcome.destinationError) throw outcome.destinationError;
-        copyAttempts += 1;
+        if (mirrorAttempts === 0 && outcome.destinationError) throw outcome.destinationError;
+        mirrorAttempts += 1;
       }
       result = outcome.result;
     }

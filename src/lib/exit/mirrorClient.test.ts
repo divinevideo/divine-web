@@ -205,6 +205,23 @@ describe("mirrorArchiveMedia", () => {
     })).rejects.toMatchObject({ code: "auth-required" });
   });
 
+  it("keeps the mirror canary after a successful browser upload", async () => {
+    const imageHash = "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824";
+    const fetcher = vi.fn<typeof fetch>()
+      .mockResolvedValueOnce(new Response("hello", { headers: { "content-type": "image/jpeg" } }))
+      .mockResolvedValueOnce(new Response(JSON.stringify(descriptor(imageHash)), { status: 200 }))
+      .mockResolvedValueOnce(blobHead(5, "image/jpeg"))
+      .mockResolvedValueOnce(new Response(null, { status: 404 }))
+      .mockResolvedValueOnce(new Response(null, { status: 404 }));
+
+    await expect(mirrorArchiveMedia({
+      destination: "https://blossom.example",
+      references: [profileReference("https://source.example/avatar.jpg"), reference("https://source.example/video.mp4")],
+      signer,
+      fetcher,
+    })).rejects.toMatchObject({ code: "no-mirror-support" });
+  });
+
   it("does not certify a hashless upload whose descriptor reports another hash", async () => {
     const fetcher = vi.fn<typeof fetch>()
       .mockResolvedValueOnce(new Response("hello", { headers: { "content-type": "image/jpeg" } }))
