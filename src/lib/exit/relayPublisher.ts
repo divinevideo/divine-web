@@ -4,7 +4,7 @@
 import type { NostrEvent, NostrSigner } from "@nostrify/nostrify";
 
 import {
-  buildDestinationUrlMap,
+  buildDestinationRewrite,
   referencedEventIds,
   republishCreatedAt,
   republishSkipReason,
@@ -74,7 +74,7 @@ async function prepareEvents(options: PublishArchiveOptions, now: number, cutoff
   results: PublishResult[];
 }> {
   const originals = new Map(options.events.map((event) => [event.id, event]));
-  const destinationUrls = buildDestinationUrlMap(options.mirrorResults);
+  const destinationRewrite = buildDestinationRewrite(options.mirrorResults);
   const replacements = new Map<string, NostrEvent>();
   const prepared = new Map<string, PreparedEvent>();
   const settled = new Set<string>();
@@ -124,7 +124,7 @@ async function prepareEvents(options: PublishArchiveOptions, now: number, cutoff
       return null;
     }
 
-    const media = rewriteEventMedia(original, destinationUrls);
+    const media = rewriteEventMedia(original, destinationRewrite);
     const timestamp = redateArchivedVideo(original, media.template, now, cutoff);
     const references = rewriteEventReferences(timestamp.template, replacements);
     const changed = media.changed || references.changed || timestamp.redated;

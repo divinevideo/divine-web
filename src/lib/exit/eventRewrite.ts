@@ -14,24 +14,63 @@ export interface EventRewrite {
   remainingMediaUrls: number;
 }
 
+export interface DestinationRewrite {
+  urls: Map<string, string>;
+  confirmedOrigins: Set<string>;
+  unconfirmedUrls: Set<string>;
+}
+
+interface MediaTagField {
+  encoding: "direct" | "spaced" | "alternating";
+  index: number;
+  key: string;
+  url: string;
+}
+
 // 4 is a NIP-04 direct message; 13 is the NIP-59 seal, which carries the
 // sender's real pubkey and so is the one of these an owner export can return;
 // 14 and 15 are NIP-17 chat and file messages; 1059 is the NIP-59 gift wrap.
 const PRIVATE_MESSAGE_KINDS = new Set([4, 13, 14, 15, 1059]);
 const DESTRUCTIVE_KINDS = new Set([5, 62]);
 
-export function buildDestinationUrlMap(results: MirrorResult[]): Map<string, string> {
+export function isConfirmedDestinationCopy(
+  result: MirrorResult,
+): result is MirrorResult & { destination_url: string } {
+  return (
+    ["descriptor-verified", "upload-verified", "already-present"].includes(result.verification)
+    && typeof result.destination_url === "string"
+    && result.destination_url.trim().length > 0
+  );
+}
+
+function originOf(value: string): string | null {
+  try {
+    return new URL(value).origin;
+  } catch {
+    return null;
+  }
+}
+
+export function buildDestinationRewrite(results: MirrorResult[]): DestinationRewrite {
   const urls = new Map<string, string>();
+  const confirmedOrigins = new Set<string>();
+  const unconfirmedUrls = new Set<string>();
   for (const result of results) {
-    if (
-      !["descriptor-verified", "upload-verified", "already-present"].includes(result.verification)
-      || !result.destination_url
-    ) continue;
-    for (const reference of result.references) {
-      urls.set(reference.url, result.destination_url);
+    if (isConfirmedDestinationCopy(result)) {
+      // Use the reported delivery origin because a Blossom server may return a
+      // separate CDN URL; the summary trusts that destination-provided origin.
+      const origin = originOf(result.destination_url);
+      if (origin) confirmedOrigins.add(origin);
+      for (const reference of result.references) {
+        urls.set(reference.url, result.destination_url);
+      }
+    } else {
+      for (const reference of result.references) {
+        unconfirmedUrls.add(reference.url);
+      }
     }
   }
-  return urls;
+  return { urls, confirmedOrigins, unconfirmedUrls };
 }
 
 export function republishSkipReason(kind: number): string | null {
@@ -47,8 +86,45 @@ export function republishCreatedAt(event: NostrEvent, now: number): number {
     : event.created_at;
 }
 
-function replaceExact(value: string, urls: ReadonlyMap<string, string>): string {
-  return urls.get(value) ?? value;
+function mediaTagFields(tag: string[]): MediaTagField[] {
+  if (URL_TAGS.has(tag[0]) && tag[1]) {
+    return [{ encoding: "direct", index: 1, key: tag[0], url: tag[1] }];
+  }
+  if (tag[0] !== "imeta") return [];
+  if (tag[1]?.includes(" ")) {
+    return tag.flatMap((value, index) => {
+      if (index === 0) return [];
+      const [key, ...body] = value.split(" ");
+      const url = body.join(" ");
+      return IMETA_URL_KEYS.has(key) && url ? [{ encoding: "spaced" as const, index, key, url }] : [];
+    });
+  }
+  const fields: MediaTagField[] = [];
+  for (let index = 1; index < tag.length; index += 2) {
+    const key = tag[index];
+    const url = tag[index + 1];
+    if (IMETA_URL_KEYS.has(key) && url) {
+      fields.push({ encoding: "alternating", index: index + 1, key, url });
+    }
+  }
+  return fields;
+}
+
+function rewriteMediaTag(tag: string[], fields: MediaTagField[], urls: ReadonlyMap<string, string>): string[] {
+  const rewritten = [...tag];
+  for (const field of fields) {
+    const replacement = urls.get(field.url);
+    if (!replacement) continue;
+    rewritten[field.index] = field.encoding === "spaced" ? `${field.key} ${replacement}` : replacement;
+  }
+  return rewritten;
+}
+
+function isRemainingMediaUrl(url: string, rewrite: DestinationRewrite): boolean {
+  if (rewrite.urls.has(url)) return false;
+  if (rewrite.unconfirmedUrls.has(url)) return true;
+  const origin = originOf(url);
+  return origin === null || !rewrite.confirmedOrigins.has(origin);
 }
 
 function rewriteProfileContent(event: NostrEvent, urls: ReadonlyMap<string, string>): string {
@@ -58,64 +134,21 @@ function rewriteProfileContent(event: NostrEvent, urls: ReadonlyMap<string, stri
   const metadata = JSON.parse(event.content) as Record<string, unknown>;
   let changed = false;
   for (const { key, url } of references) {
-    const replacement = replaceExact(url, urls);
-    if (replacement === url) continue;
+    const replacement = urls.get(url);
+    if (!replacement || replacement === url) continue;
     metadata[key] = replacement;
     changed = true;
   }
   return changed ? JSON.stringify(metadata) : event.content;
 }
 
-function rewriteImeta(tag: string[], urls: ReadonlyMap<string, string>): string[] {
-  if (tag[1]?.includes(" ")) {
-    return tag.map((value, index) => {
-      if (index === 0) return value;
-      const [key, ...body] = value.split(" ");
-      if (!IMETA_URL_KEYS.has(key)) return value;
-      const original = body.join(" ");
-      const replacement = replaceExact(original, urls);
-      return replacement === original ? value : `${key} ${replacement}`;
-    });
-  }
-
-  return tag.map((value, index) => {
-    if (index < 2 || index % 2 !== 0) return value;
-    const key = tag[index - 1];
-    return IMETA_URL_KEYS.has(key) ? replaceExact(value, urls) : value;
-  });
-}
-
-function countRemainingMediaUrls(event: NostrEvent, urls: ReadonlyMap<string, string>): number {
-  let count = 0;
-  for (const tag of event.tags) {
-    if (URL_TAGS.has(tag[0]) && tag[1] && !urls.has(tag[1])) count += 1;
-    if (tag[0] !== "imeta") continue;
-    if (tag[1]?.includes(" ")) {
-      count += tag.slice(1).filter((value) => {
-        const [key, ...body] = value.split(" ");
-        return IMETA_URL_KEYS.has(key) && body.length > 0 && !urls.has(body.join(" "));
-      }).length;
-    } else {
-      for (let index = 1; index < tag.length; index += 2) {
-        if (IMETA_URL_KEYS.has(tag[index]) && tag[index + 1] && !urls.has(tag[index + 1])) count += 1;
-      }
-    }
-  }
-  count += profileMediaUrls(event).filter(({ url }) => !urls.has(url)).length;
-  return count;
-}
-
-export function rewriteEventMedia(event: NostrEvent, urls: ReadonlyMap<string, string>): EventRewrite {
+export function rewriteEventMedia(event: NostrEvent, rewrite: DestinationRewrite): EventRewrite {
   const tags = event.tags.map((tag) => {
-    if (URL_TAGS.has(tag[0]) && tag[1]) {
-      const rewritten = [...tag];
-      rewritten[1] = replaceExact(tag[1], urls);
-      return rewritten;
-    }
-    return tag[0] === "imeta" ? rewriteImeta(tag, urls) : [...tag];
+    const fields = mediaTagFields(tag);
+    return fields.length > 0 ? rewriteMediaTag(tag, fields, rewrite.urls) : [...tag];
   });
-  let content = rewriteProfileContent(event, urls);
-  for (const [source, destination] of urls) {
+  let content = rewriteProfileContent(event, rewrite.urls);
+  for (const [source, destination] of rewrite.urls) {
     content = content.split(source).join(destination);
   }
   const changed = content !== event.content || tags.some((tag, index) =>
@@ -124,7 +157,10 @@ export function rewriteEventMedia(event: NostrEvent, urls: ReadonlyMap<string, s
   return {
     template: { kind: event.kind, created_at: event.created_at, content, tags },
     changed,
-    remainingMediaUrls: countRemainingMediaUrls(event, urls),
+    remainingMediaUrls: event.tags
+      .flatMap(mediaTagFields)
+      .filter((field) => isRemainingMediaUrl(field.url, rewrite)).length
+      + profileMediaUrls(event).filter(({ url }) => isRemainingMediaUrl(url, rewrite)).length,
   };
 }
 

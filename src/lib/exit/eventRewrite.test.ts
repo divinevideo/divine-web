@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 
 import type { MirrorResult } from "./mirrorClient";
 import {
-  buildDestinationUrlMap,
+  buildDestinationRewrite,
   referencedEventIds,
   republishCreatedAt,
   republishSkipReason,
@@ -41,20 +41,34 @@ function mirror(verification: MirrorResult["verification"] = "descriptor-verifie
   };
 }
 
-describe("buildDestinationUrlMap", () => {
-  it("uses confirmed destination results and maps every grouped source", () => {
+describe("buildDestinationRewrite", () => {
+  it("classifies confirmed mappings, origins, and unconfirmed source URLs", () => {
     const verified = mirror();
     verified.references.push({ event_id: "e".repeat(64), tag: "thumb", url: `${SOURCE}?thumb=1`, sha256: "c".repeat(64) });
     const alreadyPresent = mirror("already-present");
     alreadyPresent.references = [{ event_id: ID, tag: "image", url: DESTINATION, sha256: "c".repeat(64) }];
     alreadyPresent.source_url = DESTINATION;
     alreadyPresent.destination_url = DESTINATION;
-    const map = buildDestinationUrlMap([verified, alreadyPresent, mirror("unverified"), mirror("hash-mismatch")]);
-    expect([...map.entries()]).toEqual([
+    const unverified = mirror("unverified");
+    unverified.references = [{ event_id: ID, tag: "url", url: `${SOURCE}?unverified=1`, sha256: "c".repeat(64) }];
+    const mismatch = mirror("hash-mismatch");
+    mismatch.references = [{ event_id: ID, tag: "url", url: `${SOURCE}?mismatch=1`, sha256: "c".repeat(64) }];
+    const rewrite = buildDestinationRewrite([verified, alreadyPresent, unverified, mismatch]);
+
+    expect([...rewrite.urls.entries()]).toEqual([
       [SOURCE, DESTINATION],
       [`${SOURCE}?thumb=1`, DESTINATION],
       [DESTINATION, DESTINATION],
     ]);
+    expect([...rewrite.confirmedOrigins]).toEqual(["https://blossom.example"]);
+    expect([...rewrite.unconfirmedUrls]).toEqual([`${SOURCE}?unverified=1`, `${SOURCE}?mismatch=1`]);
+  });
+
+  it("skips malformed confirmed destination origins", () => {
+    const verified = mirror();
+    verified.destination_url = "not a URL";
+
+    expect(buildDestinationRewrite([verified]).confirmedOrigins).toEqual(new Set());
   });
 
   it("uses verified browser uploads", () => {
@@ -68,14 +82,26 @@ describe("buildDestinationUrlMap", () => {
       expected_sha256: null,
     };
 
-    expect(buildDestinationUrlMap([uploaded])).toEqual(new Map([[source, destination]]));
+    expect(buildDestinationRewrite([uploaded]).urls).toEqual(new Map([[source, destination]]));
   });
+
+  it.each<MirrorResult["verification"]>(["failed", "skipped", "hash-mismatch", "unverified"])(
+    "keeps %s references unconfirmed",
+    (verification) => {
+      const result = mirror(verification);
+      const rewrite = buildDestinationRewrite([result]);
+
+      expect(rewrite.urls).toEqual(new Map());
+      expect(rewrite.confirmedOrigins).toEqual(new Set());
+      expect(rewrite.unconfirmedUrls).toEqual(new Set([SOURCE]));
+    },
+  );
 });
 
 describe("rewriteEventMedia", () => {
   it("rewrites direct tags and exact content occurrences while preserving event fields", () => {
     const original = event();
-    const result = rewriteEventMedia(original, new Map([[SOURCE, DESTINATION]]));
+    const result = rewriteEventMedia(original, buildDestinationRewrite([mirror()]));
     expect(result).toEqual({
       changed: true,
       remainingMediaUrls: 0,
@@ -98,7 +124,10 @@ describe("rewriteEventMedia", () => {
         ["imeta", "url", pairSource, "m", "video/mp4", "fallback", SOURCE],
       ],
     });
-    const result = rewriteEventMedia(original, new Map([[SOURCE, DESTINATION], [pairSource, `${DESTINATION}?pair=1`]]));
+    const second = mirror();
+    second.references = [{ event_id: ID, tag: "image", url: pairSource, sha256: "c".repeat(64) }];
+    second.destination_url = `${DESTINATION}?pair=1`;
+    const result = rewriteEventMedia(original, buildDestinationRewrite([mirror(), second]));
     expect(result.template.tags).toEqual([
       ["imeta", `url ${DESTINATION}`, "m video/mp4", `image ${DESTINATION}?pair=1`, `x ${"c".repeat(64)}`],
       ["imeta", "url", `${DESTINATION}?pair=1`, "m", "video/mp4", "fallback", DESTINATION],
@@ -106,17 +135,90 @@ describe("rewriteEventMedia", () => {
   });
 
   it("leaves unmapped URLs unchanged and reports them", () => {
-    const result = rewriteEventMedia(event({ content: "unchanged" }), new Map());
+    const result = rewriteEventMedia(event({ content: "unchanged" }), buildDestinationRewrite([]));
     expect(result.changed).toBe(false);
     expect(result.remainingMediaUrls).toBe(1);
   });
 
   it("treats an identity mapping as unchanged with no remaining media", () => {
     const original = event({ content: DESTINATION, tags: [["url", DESTINATION]] });
-    const result = rewriteEventMedia(original, new Map([[DESTINATION, DESTINATION]]));
+    const alreadyPresent = mirror("already-present");
+    alreadyPresent.references = [{ event_id: ID, tag: "url", url: DESTINATION, sha256: "c".repeat(64) }];
+    alreadyPresent.source_url = DESTINATION;
+    alreadyPresent.destination_url = DESTINATION;
+    const result = rewriteEventMedia(original, buildDestinationRewrite([alreadyPresent]));
 
     expect(result.changed).toBe(false);
     expect(result.remainingMediaUrls).toBe(0);
+  });
+
+  it("leaves destination-origin media with no mirror reference unchanged and confirmed", () => {
+    const original = event({ content: DESTINATION, tags: [["url", DESTINATION]] });
+    const result = rewriteEventMedia(original, buildDestinationRewrite([mirror()]));
+
+    expect(result.changed).toBe(false);
+    expect(result.remainingMediaUrls).toBe(0);
+    expect(result.template.tags).toEqual(original.tags);
+  });
+
+  it("counts destination-looking media when no result confirms its origin", () => {
+    const original = event({ content: DESTINATION, tags: [["url", DESTINATION]] });
+    const result = rewriteEventMedia(original, buildDestinationRewrite([]));
+
+    expect(result.changed).toBe(false);
+    expect(result.remainingMediaUrls).toBe(1);
+  });
+
+  it("counts an unconfirmed URL even when another result confirms its origin", () => {
+    const unconfirmedUrl = `${DESTINATION}?unconfirmed=1`;
+    const unverified = mirror("unverified");
+    unverified.references = [{ event_id: ID, tag: "url", url: unconfirmedUrl, sha256: "c".repeat(64) }];
+    const original = event({ content: unconfirmedUrl, tags: [["url", unconfirmedUrl]] });
+    const result = rewriteEventMedia(original, buildDestinationRewrite([mirror(), unverified]));
+
+    expect(result.remainingMediaUrls).toBe(1);
+  });
+
+  it("lets an actual remapping win when the same URL also has an unconfirmed result", () => {
+    const unverified = mirror("unverified");
+    const result = rewriteEventMedia(event({ content: "unchanged" }), buildDestinationRewrite([mirror(), unverified]));
+
+    expect(result.changed).toBe(true);
+    expect(result.remainingMediaUrls).toBe(0);
+  });
+
+  it("recognizes the confirmed descriptor origin instead of the source origin", () => {
+    const cdnDestination = `https://cdn.example/${"c".repeat(64)}`;
+    const verified = mirror();
+    verified.destination_url = cdnDestination;
+    const original = event({ content: cdnDestination, tags: [["url", cdnDestination]] });
+    const result = rewriteEventMedia(original, buildDestinationRewrite([verified]));
+
+    expect(result.changed).toBe(false);
+    expect(result.remainingMediaUrls).toBe(0);
+  });
+
+  it("counts all direct media tags and both imeta encodings by occurrence", () => {
+    const original = event({
+      content: "unchanged",
+      tags: [
+        ["url", DESTINATION],
+        ["image", DESTINATION],
+        ["thumb", DESTINATION],
+        ["thumbnail", DESTINATION],
+        ["imeta", `url ${DESTINATION}`, `image ${DESTINATION}`, `fallback ${DESTINATION}`],
+        ["imeta", "url", DESTINATION, "thumb", DESTINATION, "thumbnail", DESTINATION],
+      ],
+    });
+
+    expect(rewriteEventMedia(original, buildDestinationRewrite([])).remainingMediaUrls).toBe(10);
+    expect(rewriteEventMedia(original, buildDestinationRewrite([mirror()])).remainingMediaUrls).toBe(0);
+  });
+
+  it("counts malformed and relative media URLs conservatively", () => {
+    const original = event({ content: "unchanged", tags: [["url", "not a URL"], ["image", "/relative.mp4"]] });
+
+    expect(rewriteEventMedia(original, buildDestinationRewrite([mirror()])).remainingMediaUrls).toBe(2);
   });
 
   it("rewrites mapped profile media and reports unmapped profile media", () => {
@@ -127,7 +229,7 @@ describe("rewriteEventMedia", () => {
       tags: [],
     });
 
-    const result = rewriteEventMedia(original, new Map([[SOURCE, DESTINATION]]));
+    const result = rewriteEventMedia(original, buildDestinationRewrite([mirror()]));
 
     expect(result.changed).toBe(true);
     expect(JSON.parse(result.template.content)).toEqual({ picture: DESTINATION, banner });
@@ -137,11 +239,18 @@ describe("rewriteEventMedia", () => {
   it("rewrites a kind-0 picture after a verified browser upload", () => {
     const source = "https://storage.googleapis.com/archive/avatar.jpg";
     const destination = "https://blossom.example/uploaded-avatar";
+    const uploaded = {
+      ...mirror("upload-verified"),
+      references: [{ event_id: ID, tag: "picture", url: source, sha256: null }],
+      source_url: source,
+      destination_url: destination,
+      expected_sha256: null,
+    };
     const result = rewriteEventMedia(event({
       kind: 0,
       content: JSON.stringify({ name: "Creator", picture: source }),
       tags: [],
-    }), new Map([[source, destination]]));
+    }), buildDestinationRewrite([uploaded]));
 
     expect(JSON.parse(result.template.content)).toMatchObject({ picture: destination });
     expect(result.remainingMediaUrls).toBe(0);
@@ -151,21 +260,45 @@ describe("rewriteEventMedia", () => {
     const source = "https://storage.googleapis.com/archive/avatar.jpg";
     const destination = "https://blossom.example/uploaded-avatar";
     const content = `{"name":"Creator","picture":"${source.replace(/\//g, "\\/")}"}`;
+    const uploaded = {
+      ...mirror("upload-verified"),
+      references: [{ event_id: ID, tag: "picture", url: source, sha256: null }],
+      source_url: source,
+      destination_url: destination,
+      expected_sha256: null,
+    };
 
-    const result = rewriteEventMedia(event({ kind: 0, content, tags: [] }), new Map([[source, destination]]));
+    const result = rewriteEventMedia(
+      event({ kind: 0, content, tags: [] }),
+      buildDestinationRewrite([uploaded]),
+    );
 
     expect(JSON.parse(result.template.content)).toEqual({ name: "Creator", picture: destination });
     expect(result.changed).toBe(true);
     expect(result.remainingMediaUrls).toBe(0);
   });
 
+  it("leaves unreferenced destination-origin profile media unchanged and confirmed", () => {
+    const original = event({
+      kind: 0,
+      content: JSON.stringify({ picture: DESTINATION }),
+      tags: [],
+    });
+
+    const result = rewriteEventMedia(original, buildDestinationRewrite([mirror()]));
+
+    expect(result.changed).toBe(false);
+    expect(result.template.content).toBe(original.content);
+    expect(result.remainingMediaUrls).toBe(0);
+  });
+
   it("ignores malformed and non-string profile media while reporting", () => {
-    expect(rewriteEventMedia(event({ kind: 0, content: "{", tags: [] }), new Map()).remainingMediaUrls).toBe(0);
+    expect(rewriteEventMedia(event({ kind: 0, content: "{", tags: [] }), buildDestinationRewrite([])).remainingMediaUrls).toBe(0);
     expect(rewriteEventMedia(event({
       kind: 0,
       content: JSON.stringify({ picture: 42, banner: "" }),
       tags: [],
-    }), new Map()).remainingMediaUrls).toBe(0);
+    }), buildDestinationRewrite([])).remainingMediaUrls).toBe(0);
   });
 
   it("does not count a non-URL banner such as a theme color as remaining media", () => {
@@ -173,7 +306,7 @@ describe("rewriteEventMedia", () => {
       kind: 0,
       content: JSON.stringify({ picture: SOURCE, banner: "0x27c58b" }),
       tags: [],
-    }), new Map());
+    }), buildDestinationRewrite([]));
 
     expect(result.remainingMediaUrls).toBe(1);
   });

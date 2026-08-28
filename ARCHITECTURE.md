@@ -237,13 +237,20 @@ copies. Hashless profile images are read through a five-megabyte streaming cap,
 hashed in the browser, and sent through BUD-02 `PUT /upload`; other hashless
 media and generated HLS manifests are skipped. Source-advertised hashes,
 browser-computed upload hashes, descriptor hashes, and redirect-aware `HEAD`
-readback results remain distinct.
+readback results remain distinct. Confirmed copy results also establish
+the delivery origins used by republish summaries. Those origins come from the
+destination-provided copy descriptor because Blossom servers may deliver through
+a separate CDN; HTTPS and readback are validated, but ownership by the typed
+destination is not independently established. The summary therefore trusts the
+chosen destination's reported delivery origin. An unconfirmed result for a
+specific URL remains conservative even when another copy confirms that origin.
 
 After mirroring finishes, the page can republish durable public events to one
 custom `wss://` relay. Migration writes use a standalone authenticated relay
 session instead of the app's `NPool`; the same session primitive also publishes
-the discovery pointers described below. Only media with
-descriptor-and-readback verification is rewritten.
+the discovery pointers described below. Only media with a confirmed destination
+result is rewritten, while already-hosted destination URLs affect reporting
+without changing or re-signing the exported event.
 Changed replaceable and addressable events are re-signed with the move run's
 timestamp, falling back to one second past the original when that original is
 already newer. The migrated copy therefore supersedes the old media references

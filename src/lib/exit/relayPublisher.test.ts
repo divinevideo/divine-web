@@ -169,6 +169,34 @@ describe("publishArchiveEvents", () => {
     expect(summarizePublishResults(results).remainingMediaUrls).toBe(0);
   });
 
+  it("publishes unreferenced destination-origin media unchanged without signing", async () => {
+    const signer = makeSigner();
+    const relay = fakeRelay();
+    const unreferencedDestination = `https://blossom.example/${"d".repeat(64)}`;
+    const video = makeEvent("1", {
+      kind: 34236,
+      content: unreferencedDestination,
+      tags: [
+        ["url", unreferencedDestination],
+        ["imeta", `image ${unreferencedDestination}`],
+      ],
+    });
+
+    const results = await publishArchiveEvents({
+      destination: RELAY,
+      events: [video],
+      mirrorResults: [mirrorResult()],
+      signer,
+      relayFactory: () => relay,
+    });
+
+    expect(results).toMatchObject([{ status: "unchanged", remaining_media_urls: 0 }]);
+    expect(summarizePublishResults(results).remainingMediaUrls).toBe(0);
+    expect(signer.signEvent).not.toHaveBeenCalled();
+    expect(relay.published).toEqual([video]);
+    expect(relay.published[0].id).toBe(video.id);
+  });
+
   it("advances an addressable event changed only by reference rewriting", async () => {
     const signer = makeSigner();
     const relay = fakeRelay();
