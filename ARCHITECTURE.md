@@ -205,6 +205,17 @@ change, and is never added to the archive. Keycast remains authoritative for
 raw-key policy: a policy denial changes only the key section and leaves every
 other portability step available.
 
+The same page can lazily check for a private pre-ban snapshot and redeem it with
+the signed-in owner's NIP-98 proof. Snapshot status and redemption keep their
+lifecycle validation and HTTP error classification in
+[`banSnapshotClient.ts`](./src/lib/exit/banSnapshotClient.ts); ordinary and
+snapshot exports share only signed GET transport, event-envelope validation,
+and the bounded cursor walk. Every page URL is completed before signing so the
+NIP-98 `u` tag includes the enforcement id and opaque cursor. Recovered events
+enter the existing archive, media verification, mirror, and republish pipeline.
+The manifest records snapshot provenance, while partial pages remain usable if
+the snapshot expires or becomes unavailable during retrieval.
+
 After an archive is built, the same page can mirror its unique source blobs to a
 custom HTTPS Blossom destination with BUD-04 `PUT /mirror`. Destination URLs
 normalize to the domain root because BUD-01 serves every Blossom endpoint there.

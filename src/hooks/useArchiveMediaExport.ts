@@ -16,7 +16,9 @@ export function useArchiveMediaExport(input: { files: ArchiveFiles | null; signe
   const [progress, setProgress] = useState<MediaProgress | null>(null);
   const [failure, setFailure] = useState<string | null>(null);
   const activeController = useRef<AbortController | null>(null);
-  const archivePubkey = input.files?.["manifest.json"].pubkey;
+  const archiveIdentity = input.files
+    ? `${input.files["manifest.json"].pubkey}:${input.files["manifest.json"].snapshot?.enforcement_id ?? "owner"}`
+    : undefined;
 
   useEffect(() => {
     activeController.current?.abort();
@@ -24,7 +26,7 @@ export function useArchiveMediaExport(input: { files: ArchiveFiles | null; signe
     setProgress(null);
     setFailure(null);
     return () => activeController.current?.abort();
-  }, [archivePubkey]);
+  }, [archiveIdentity]);
 
   async function start() {
     if (!input.files || !input.signer || !supportsStreamingArchive()) return;

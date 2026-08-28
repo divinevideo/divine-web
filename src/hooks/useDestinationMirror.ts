@@ -24,7 +24,9 @@ export function useDestinationMirror(input: { files: ArchiveFiles | null; signer
   const [failure, setFailure] = useState<string | null>(null);
   const [destination, setDestination] = useState<string | null>(null);
   const activeController = useRef<AbortController | null>(null);
-  const archivePubkey = input.files?.["manifest.json"].pubkey;
+  const archiveIdentity = input.files
+    ? `${input.files["manifest.json"].pubkey}:${input.files["manifest.json"].snapshot?.enforcement_id ?? "owner"}`
+    : undefined;
 
   useEffect(() => {
     activeController.current?.abort();
@@ -35,7 +37,7 @@ export function useDestinationMirror(input: { files: ArchiveFiles | null; signer
     setFailure(null);
     setDestination(null);
     return () => activeController.current?.abort();
-  }, [archivePubkey]);
+  }, [archiveIdentity]);
 
   async function start(destinationValue: string) {
     if (!input.files || !input.signer) return;

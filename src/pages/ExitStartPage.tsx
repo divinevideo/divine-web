@@ -23,6 +23,7 @@ import { DiscoveryPointerForm } from "@/components/exit/DiscoveryPointerForm";
 import { KeySafetyNotice } from "@/components/exit/KeySafetyNotice";
 import { MediaProgressList } from "@/components/exit/MediaProgressList";
 import { RelayDestinationForm } from "@/components/exit/RelayDestinationForm";
+import { SnapshotRecovery } from "@/components/exit/SnapshotRecovery";
 import { LoginArea } from "@/components/auth/LoginArea";
 import { MarketingLayout } from "@/components/MarketingLayout";
 import { SectionHero } from "@/components/static-pages";
@@ -31,10 +32,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getFunnelcakeBaseUrl } from "@/config/api";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { useArchiveMediaExport } from "@/hooks/useArchiveMediaExport";
+import { useBanSnapshotStatus } from "@/hooks/useBanSnapshotStatus";
 import { useDestinationMirror } from "@/hooks/useDestinationMirror";
 import { useDestinationRepublish } from "@/hooks/useDestinationRepublish";
 import { buildArchiveFiles, serializeArchiveFiles, type ArchiveFiles } from "@/lib/exit/archive";
 import { oldestArchivedVideoCreatedAt } from "@/lib/exit/archiveAge";
+import { BanSnapshotError, redeemSnapshotEvents, type SnapshotStatus } from "@/lib/exit/banSnapshotClient";
 import { exportOwnerEvents, OwnerExportError, type ExportProgress } from "@/lib/exit/ownerExportClient";
 import { createZip } from "@/lib/exit/zip";
 import { getLocalNsecLogin } from "@/lib/localNsecAccount";
@@ -42,7 +45,7 @@ import { getLocalNsecLogin } from "@/lib/localNsecAccount";
 type RunState = "idle" | "running" | "complete" | "failed";
 
 function errorMessage(error: unknown): string {
-  if (error instanceof OwnerExportError) {
+  if (error instanceof OwnerExportError || error instanceof BanSnapshotError) {
     return error.message;
   }
 
@@ -90,6 +93,7 @@ export function ExitStartPage() {
   const { user, signer, hostedToken, isHostedAccount, isResolvingJwt } = useCurrentUser();
   const { logins } = useNostrLogin();
   const localNsecLogin = user ? getLocalNsecLogin(logins, user.pubkey) : null;
+  const snapshotStatus = useBanSnapshotStatus({ pubkey: user?.pubkey, signer });
 
   const [state, setState] = useState<RunState>("idle");
   const [progress, setProgress] = useState<ExportProgress>({
@@ -99,6 +103,7 @@ export function ExitStartPage() {
   });
   const [archiveFiles, setArchiveFiles] = useState<ArchiveFiles | null>(null);
   const [failure, setFailure] = useState<string | null>(null);
+  const [activeSource, setActiveSource] = useState<"owner" | "snapshot" | null>(null);
   const activeExport = useRef<AbortController | null>(null);
   const currentPubkey = useRef(user?.pubkey);
   currentPubkey.current = user?.pubkey;
@@ -115,6 +120,7 @@ export function ExitStartPage() {
     activeExport.current = null;
     setState("idle");
     setFailure(null);
+    setActiveSource(null);
     setArchiveFiles(null);
     setProgress({ pagesFetched: 0, eventsFetched: 0, retryCount: 0 });
 
@@ -144,6 +150,7 @@ export function ExitStartPage() {
     }
 
     setState("running");
+    setActiveSource("owner");
     setFailure(null);
     setArchiveFiles(null);
     setProgress({ pagesFetched: 0, eventsFetched: 0, retryCount: 0 });
@@ -185,6 +192,56 @@ export function ExitStartPage() {
     } finally {
       if (activeExport.current === controller) {
         activeExport.current = null;
+        setActiveSource(null);
+      }
+    }
+  }
+
+  async function recoverSnapshot(status: SnapshotStatus & { state: "available"; enforcement_id: string; expires_at: string }) {
+    if (!user?.pubkey || !signer) return;
+    setState("running");
+    setActiveSource("snapshot");
+    setFailure(null);
+    setArchiveFiles(null);
+    setProgress({ pagesFetched: 0, eventsFetched: 0, retryCount: 0 });
+    activeExport.current?.abort();
+    const controller = new AbortController();
+    const exportPubkey = user.pubkey;
+    const exportEndpoint = getFunnelcakeBaseUrl();
+    activeExport.current = controller;
+
+    try {
+      const result = await redeemSnapshotEvents({
+        endpointBase: exportEndpoint,
+        pubkey: exportPubkey,
+        enforcementId: status.enforcement_id,
+        signer,
+        signal: controller.signal,
+        onProgress: setProgress,
+      });
+      if (controller.signal.aborted || currentPubkey.current !== exportPubkey) return;
+      setArchiveFiles(buildArchiveFiles({
+        events: result.events,
+        pubkey: exportPubkey,
+        sourceEndpoint: exportEndpoint,
+        sourceName: "Divine pre-ban snapshot",
+        pageCount: result.pageCount,
+        failures: result.failures,
+        snapshot: {
+          enforcement_id: status.enforcement_id,
+          enforced_at: status.enforced_at,
+          expires_at: status.expires_at,
+        },
+      }));
+      setState("complete");
+    } catch (error) {
+      if (controller.signal.aborted || currentPubkey.current !== exportPubkey) return;
+      setFailure(errorMessage(error));
+      setState("failed");
+    } finally {
+      if (activeExport.current === controller) {
+        activeExport.current = null;
+        setActiveSource(null);
       }
     }
   }
@@ -423,6 +480,18 @@ export function ExitStartPage() {
             </div>
           )}
         </section>
+
+        {user && (
+          <SnapshotRecovery
+            status={snapshotStatus.data ?? null}
+            checkError={snapshotStatus.error instanceof Error ? snapshotStatus.error.message : null}
+            checking={snapshotStatus.isFetching}
+            recovering={activeSource === "snapshot"}
+            disabled={!signer || state === "running"}
+            onCheck={() => void snapshotStatus.refetch()}
+            onRecover={(status) => void recoverSnapshot(status)}
+          />
+        )}
 
         {archiveFiles && signer && (
           <section>

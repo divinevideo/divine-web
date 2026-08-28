@@ -27,6 +27,28 @@ describe("archive builder", () => {
     });
   });
 
+  it("records snapshot provenance without changing the archive model", () => {
+    const snapshot = {
+      enforcement_id: "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      enforced_at: "2026-08-01T12:00:00Z",
+      expires_at: "2026-08-31T12:01:00Z",
+    };
+    const archive = buildArchiveFiles({
+      events: [makeFixtureEvent()],
+      pubkey: fixturePubkey,
+      sourceEndpoint: "https://api.divine.video",
+      sourceName: "Divine pre-ban snapshot",
+      pageCount: 1,
+      failures: [],
+      snapshot,
+    });
+
+    expect(archive["manifest.json"]).toMatchObject({
+      source_name: "Divine pre-ban snapshot",
+      snapshot,
+    });
+  });
+
   it("discovers media URLs and hashes from tags", () => {
     const references = discoverMediaReferences([
       makeFixtureEvent(),

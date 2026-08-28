@@ -4,8 +4,12 @@
 import type { NostrEvent } from "@nostrify/nostrify";
 
 import { isHex64 } from "./hex";
-import type { OwnerExportError } from "./ownerExportClient";
 import type { MediaDownloadResult, MediaVerification } from "./mediaDownloader";
+
+export interface ArchiveFailure extends Error {
+  code: string;
+  status?: number;
+}
 
 export interface MediaReference {
   event_id: string;
@@ -26,6 +30,11 @@ export interface ArchiveManifest {
     message: string;
     status?: number;
   }>;
+  snapshot?: {
+    enforcement_id: string;
+    enforced_at: string | null;
+    expires_at: string;
+  };
   media?: MediaSummary;
 }
 
@@ -162,7 +171,9 @@ export function buildArchiveFiles(input: {
   pubkey: string;
   sourceEndpoint: string;
   pageCount: number;
-  failures: OwnerExportError[];
+  failures: ArchiveFailure[];
+  sourceName?: string;
+  snapshot?: ArchiveManifest["snapshot"];
   generatedAt?: Date;
 }): ArchiveFiles {
   return {
@@ -171,14 +182,15 @@ export function buildArchiveFiles(input: {
       pubkey: input.pubkey,
       generated_at: (input.generatedAt ?? new Date()).toISOString(),
       event_count: input.events.length,
-      source_name: "Divine relay",
+      source_name: input.sourceName ?? "Divine relay",
       source_endpoint: input.sourceEndpoint,
       page_count: input.pageCount,
       failures: input.failures.map((failure) => ({
         code: failure.code,
         message: failure.message,
         status: failure.status
-      }))
+      })),
+      ...(input.snapshot ? { snapshot: input.snapshot } : {}),
     },
     "media.json": discoverMediaReferences(input.events)
   };

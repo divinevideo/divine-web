@@ -30,7 +30,9 @@ export function useDestinationRepublish(input: {
   const [failure, setFailure] = useState<string | null>(null);
   const [destination, setDestination] = useState<string | null>(null);
   const activeController = useRef<AbortController | null>(null);
-  const archivePubkey = input.files?.["manifest.json"].pubkey;
+  const archiveIdentity = input.files
+    ? `${input.files["manifest.json"].pubkey}:${input.files["manifest.json"].snapshot?.enforcement_id ?? "owner"}`
+    : undefined;
 
   useEffect(() => {
     activeController.current?.abort();
@@ -41,7 +43,7 @@ export function useDestinationRepublish(input: {
     setFailure(null);
     setDestination(null);
     return () => activeController.current?.abort();
-  }, [archivePubkey, input.mirrorResults]);
+  }, [archiveIdentity, input.mirrorResults]);
 
   async function start(destinationValue: string) {
     if (!input.files || !input.mirrorResults || !input.signer) return;
