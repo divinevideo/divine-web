@@ -55,6 +55,7 @@ interface MirrorOptions {
 }
 
 const MAX_HASHLESS_IMAGE_BYTES = 5 * 1024 * 1024;
+const PROFILE_IMAGE_TAGS = new Set(["picture", "banner"]);
 const UPLOADABLE_IMAGE_TYPES = new Set(["image/gif", "image/jpeg", "image/png", "image/webp"]);
 
 function isHlsManifest(url: string): boolean {
@@ -387,7 +388,9 @@ export async function mirrorArchiveMedia(options: MirrorOptions): Promise<Mirror
     if (isHlsManifest(reference.url)) {
       result = skippedResult(references, "Streaming manifests are generated derivatives and were not copied.");
     } else if (!reference.sha256) {
-      result = await uploadHashlessImage(references, options);
+      result = references.some(({ tag }) => PROFILE_IMAGE_TAGS.has(tag))
+        ? await uploadHashlessImage(references, options)
+        : skippedResult(references, "The source did not advertise a SHA-256 hash, so a secure copy could not be authorized.");
     } else {
       const outcome = await mirrorOne(references, reference.sha256, options);
       if (outcome.result.verification !== "already-present") {

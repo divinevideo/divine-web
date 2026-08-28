@@ -17,6 +17,10 @@ function reference(url: string, sha256: string | null = hash): MediaReference {
   return { event_id: "f".repeat(64), tag: "url", url, sha256 };
 }
 
+function profileReference(url: string): MediaReference {
+  return { ...reference(url, null), tag: "picture" };
+}
+
 function descriptor(sha256 = hash, size = 5) {
   return { url: `https://blossom.example/${sha256}`, sha256, size, type: "video/mp4" };
 }
@@ -132,7 +136,7 @@ describe("mirrorArchiveMedia", () => {
       .mockResolvedValueOnce(new Response("hello", { headers: { "content-type": "image/jpeg" } }))
       .mockResolvedValueOnce(new Response(JSON.stringify(descriptor(imageHash)), { status: 200 }));
     const results = await mirrorArchiveMedia({
-      destination: "https://blossom.example", references: [reference("https://source.example/avatar.jpg", null)], signer, fetcher,
+      destination: "https://blossom.example", references: [profileReference("https://source.example/avatar.jpg")], signer, fetcher,
     });
     expect(results[0]).toMatchObject({
       verification: "upload-verified",
@@ -152,7 +156,7 @@ describe("mirrorArchiveMedia", () => {
       .mockResolvedValueOnce(new Response(null, { status: 404 }));
 
     const results = await mirrorArchiveMedia({
-      destination: "https://blossom.example", references: [reference("https://source.example/avatar.jpg", null)], signer, fetcher,
+      destination: "https://blossom.example", references: [profileReference("https://source.example/avatar.jpg")], signer, fetcher,
     });
     expect(results[0]).toMatchObject({
       verification: "skipped",
@@ -165,7 +169,7 @@ describe("mirrorArchiveMedia", () => {
       .mockResolvedValueOnce(new Response("hello", { headers: { "content-type": "image/jpeg" } }))
       .mockResolvedValueOnce(new Response(JSON.stringify(descriptor(otherHash)), { status: 200 }));
     const results = await mirrorArchiveMedia({
-      destination: "https://blossom.example", references: [reference("https://source.example/avatar.jpg", null)], signer, fetcher,
+      destination: "https://blossom.example", references: [profileReference("https://source.example/avatar.jpg")], signer, fetcher,
     });
     expect(results[0]).toMatchObject({ verification: "hash-mismatch", destination_sha256: otherHash });
   });
@@ -174,7 +178,7 @@ describe("mirrorArchiveMedia", () => {
     const nonImageFetcher = vi.fn<typeof fetch>()
       .mockResolvedValueOnce(new Response("hello", { headers: { "content-type": "video/mp4" } }));
     const [nonImage] = await mirrorArchiveMedia({
-      destination: "https://blossom.example", references: [reference("https://source.example/video", null)], signer,
+      destination: "https://blossom.example", references: [profileReference("https://source.example/video")], signer,
       fetcher: nonImageFetcher,
     });
     expect(nonImage).toMatchObject({ verification: "skipped", reason: expect.stringContaining("not a supported image") });
@@ -185,11 +189,26 @@ describe("mirrorArchiveMedia", () => {
         headers: { "content-type": "image/jpeg", "content-length": String(5 * 1024 * 1024 + 1) },
       }));
     const [oversized] = await mirrorArchiveMedia({
-      destination: "https://blossom.example", references: [reference("https://source.example/avatar.jpg", null)], signer,
+      destination: "https://blossom.example", references: [profileReference("https://source.example/avatar.jpg")], signer,
       fetcher: oversizedFetcher,
     });
     expect(oversized).toMatchObject({ verification: "skipped", reason: expect.stringContaining("larger than") });
     expect(oversizedFetcher).toHaveBeenCalledOnce();
+  });
+
+  it("leaves hashless non-profile images untouched", async () => {
+    const fetcher = vi.fn<typeof fetch>();
+    const thumbnail = { ...reference("https://source.example/thumbnail.jpg", null), tag: "thumbnail" };
+
+    const [result] = await mirrorArchiveMedia({
+      destination: "https://blossom.example", references: [thumbnail], signer, fetcher,
+    });
+
+    expect(result).toMatchObject({
+      verification: "skipped",
+      reason: expect.stringContaining("did not advertise a SHA-256 hash"),
+    });
+    expect(fetcher).not.toHaveBeenCalled();
   });
 
   it("sends a BUD-11-compliant authorization token to a strict destination", async () => {
