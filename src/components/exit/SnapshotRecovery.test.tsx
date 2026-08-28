@@ -23,6 +23,7 @@ describe("SnapshotRecovery", () => {
   it("renders the exact expiry date and starts available recovery", () => {
     const onRecover = vi.fn();
     render(<SnapshotRecovery {...base} onRecover={onRecover} status={{ state: "available", enforcement_id: "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd", enforced_at: "2026-08-01T12:00:00Z", created_at: "2026-08-01T12:01:00Z", expires_at: "2026-08-31T12:01:00Z", days_remaining: 3 }} />);
+    expect(screen.getByText(/Preserved on August 1, 2026/)).toBeInTheDocument();
     expect(screen.getByText(/August 31, 2026/)).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Recover snapshot" }));
     expect(onRecover).toHaveBeenCalledOnce();

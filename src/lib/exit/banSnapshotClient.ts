@@ -61,7 +61,7 @@ function validateStatus(value: unknown): SnapshotStatus {
   if (timestamps.some((value) => value !== null && value !== undefined && !validateTimestamp(value))) throw new BanSnapshotError("malformed-response", "Divine returned a snapshot date this page could not read.");
   if (status.enforcement_id !== null && status.enforcement_id !== undefined && !isHex64(status.enforcement_id)) throw new BanSnapshotError("malformed-response", "Divine returned a snapshot identifier this page could not read.");
   if (status.days_remaining !== null && status.days_remaining !== undefined && (!Number.isInteger(status.days_remaining) || status.days_remaining < 0)) throw new BanSnapshotError("malformed-response", "Divine returned an invalid snapshot lifetime.");
-  if (status.state === "available" && (!status.enforcement_id || !status.expires_at || status.days_remaining === null || status.days_remaining === undefined)) throw new BanSnapshotError("malformed-response", "Divine returned incomplete snapshot information.");
+  if (status.state === "available" && (!status.enforcement_id || !status.created_at || !status.expires_at || status.days_remaining === null || status.days_remaining === undefined)) throw new BanSnapshotError("malformed-response", "Divine returned incomplete snapshot information.");
   return {
     state: status.state,
     enforcement_id: status.enforcement_id ?? null,

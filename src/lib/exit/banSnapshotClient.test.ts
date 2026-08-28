@@ -34,6 +34,15 @@ describe("fetchSnapshotStatus", () => {
     await expect(fetchSnapshotStatus({ endpointBase: "https://api.divine.video", pubkey: fixturePubkey, signer: new FixtureSigner(), fetcher: async () => json({ state: "available", enforcement_id: enforcementId }) })).rejects.toMatchObject({ code: "malformed-response" });
   });
 
+  it("requires a creation date for an available snapshot", async () => {
+    await expect(fetchSnapshotStatus({
+      endpointBase: "https://api.divine.video",
+      pubkey: fixturePubkey,
+      signer: new FixtureSigner(),
+      fetcher: async () => json({ ...available, created_at: null }),
+    })).rejects.toMatchObject({ code: "malformed-response" });
+  });
+
   it.each([[401, "auth-required"], [403, "pubkey-mismatch"]] as const)("classifies status HTTP %s as %s", async (status, code) => {
     await expect(fetchSnapshotStatus({ endpointBase: "https://api.divine.video", pubkey: fixturePubkey, signer: new FixtureSigner(), fetcher: async () => json({ error: "denied" }, status) })).rejects.toMatchObject({ code });
   });

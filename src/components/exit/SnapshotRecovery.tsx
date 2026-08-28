@@ -18,15 +18,15 @@ interface SnapshotRecoveryProps {
   onRecover: (status: SnapshotStatus & { state: "available"; enforcement_id: string; expires_at: string }) => void;
 }
 
-function formatExpiry(value: string) {
+function formatDate(value: string) {
   return new Intl.DateTimeFormat(undefined, {
     year: "numeric", month: "long", day: "numeric", hour: "numeric", minute: "2-digit", timeZoneName: "short",
   }).format(new Date(value));
 }
 
 export function SnapshotRecovery(props: SnapshotRecoveryProps) {
-  const available = props.status?.state === "available" && props.status.enforcement_id && props.status.expires_at
-    ? props.status as SnapshotStatus & { state: "available"; enforcement_id: string; expires_at: string }
+  const available = props.status?.state === "available" && props.status.enforcement_id && props.status.created_at && props.status.expires_at
+    ? props.status as SnapshotStatus & { state: "available"; enforcement_id: string; created_at: string; expires_at: string }
     : null;
 
   return (
@@ -55,7 +55,7 @@ export function SnapshotRecovery(props: SnapshotRecoveryProps) {
                 <WarningCircle weight="fill" className="mt-1 h-5 w-5 flex-shrink-0 text-brand-dark-green dark:text-brand-green" />
                 <div>
                   <p className="font-semibold text-foreground">A pre-ban snapshot is ready to recover.</p>
-                  <p className="text-base leading-relaxed text-muted-foreground">It expires on {formatExpiry(available.expires_at)}. {available.days_remaining} day{available.days_remaining === 1 ? "" : "s"} remaining.</p>
+                  <p className="text-base leading-relaxed text-muted-foreground">Preserved on {formatDate(available.created_at)}. It expires on {formatDate(available.expires_at)}. {available.days_remaining} day{available.days_remaining === 1 ? "" : "s"} remaining.</p>
                 </div>
               </div>
               <Button type="button" variant="sticker" onClick={() => props.onRecover(available)} disabled={props.recovering}>
