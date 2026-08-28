@@ -3,8 +3,19 @@
 
 import type { NostrEvent } from "@nostrify/nostrify";
 
+import type { MediaReference } from "./archive";
+
 export const URL_TAGS = new Set(["url", "image", "thumb", "thumbnail"]);
 export const IMETA_URL_KEYS = new Set(["url", "image", "thumb", "thumbnail", "fallback"]);
+
+export function groupMediaReferences(references: MediaReference[]): MediaReference[][] {
+  const grouped = new Map<string, MediaReference[]>();
+  for (const reference of references) {
+    const key = reference.sha256 ? `hash:${reference.sha256}` : `url:${reference.url}`;
+    grouped.set(key, [...(grouped.get(key) ?? []), reference]);
+  }
+  return [...grouped.values()];
+}
 
 const PROFILE_MEDIA_KEYS = ["picture", "banner"] as const;
 

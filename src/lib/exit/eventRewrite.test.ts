@@ -56,6 +56,20 @@ describe("buildDestinationUrlMap", () => {
       [DESTINATION, DESTINATION],
     ]);
   });
+
+  it("uses verified browser uploads", () => {
+    const source = "https://storage.googleapis.com/archive/avatar.jpg";
+    const destination = "https://blossom.example/uploaded-avatar";
+    const uploaded = {
+      ...mirror("upload-verified"),
+      references: [{ event_id: ID, tag: "picture", url: source, sha256: null }],
+      source_url: source,
+      destination_url: destination,
+      expected_sha256: null,
+    };
+
+    expect(buildDestinationUrlMap([uploaded])).toEqual(new Map([[source, destination]]));
+  });
 });
 
 describe("rewriteEventMedia", () => {
@@ -118,6 +132,19 @@ describe("rewriteEventMedia", () => {
     expect(result.changed).toBe(true);
     expect(JSON.parse(result.template.content)).toEqual({ picture: DESTINATION, banner });
     expect(result.remainingMediaUrls).toBe(1);
+  });
+
+  it("rewrites a kind-0 picture after a verified browser upload", () => {
+    const source = "https://storage.googleapis.com/archive/avatar.jpg";
+    const destination = "https://blossom.example/uploaded-avatar";
+    const result = rewriteEventMedia(event({
+      kind: 0,
+      content: JSON.stringify({ name: "Creator", picture: source }),
+      tags: [],
+    }), new Map([[source, destination]]));
+
+    expect(JSON.parse(result.template.content)).toMatchObject({ picture: destination });
+    expect(result.remainingMediaUrls).toBe(0);
   });
 
   it("ignores malformed and non-string profile media while reporting", () => {

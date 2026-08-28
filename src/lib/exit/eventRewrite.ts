@@ -24,7 +24,7 @@ export function buildDestinationUrlMap(results: MirrorResult[]): Map<string, str
   const urls = new Map<string, string>();
   for (const result of results) {
     if (
-      (result.verification !== "descriptor-verified" && result.verification !== "already-present")
+      !["descriptor-verified", "upload-verified", "already-present"].includes(result.verification)
       || !result.destination_url
     ) continue;
     for (const reference of result.references) {

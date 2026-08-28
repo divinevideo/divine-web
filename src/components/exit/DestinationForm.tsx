@@ -22,6 +22,7 @@ interface DestinationFormProps {
 function progressLabel(progress: MirrorProgress): string {
   switch (progress.result.verification) {
     case "descriptor-verified": return "Mirrored and confirmed by the destination";
+    case "upload-verified": return "Uploaded and confirmed by the destination";
     case "already-present": return "Already at the destination";
     case "unverified": return "Mirrored without confirmed readback";
     case "hash-mismatch": return "Destination reported a different hash";
@@ -69,7 +70,7 @@ export function DestinationForm({ state, progress, summary, failure, onStart }: 
       </CardHeader>
       <CardContent className="space-y-5">
         <p className="text-base leading-relaxed text-muted-foreground">
-          Enter a Blossom server you trust. The server copies each original file directly from its current URL—your browser never re-uploads the media.
+          Enter a Blossom server you trust. It copies content-addressed media from the source. For hashless profile images, your browser verifies and uploads the image directly.
         </p>
         <div className="space-y-2">
           <label htmlFor="blossom-destination" className="text-sm font-semibold text-foreground">Blossom server URL</label>

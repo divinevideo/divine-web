@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { MediaReference } from "./archive";
-import { downloadArchiveMedia, isDivineMediaOrigin } from "./mediaDownloader";
+import { downloadArchiveMedia } from "./mediaDownloader";
 
 const helloHash = "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824";
 const reference = (url: string, sha256: string | null = helloHash): MediaReference => ({
@@ -137,13 +137,5 @@ describe("downloadArchiveMedia", () => {
 
     expect(result).toMatchObject({ verification: "failed" });
     expect(result.failure_reason).toContain("redirected to an untrusted origin");
-  });
-});
-
-describe("isDivineMediaOrigin", () => {
-  it("requires the exact HTTPS origin", () => {
-    expect(isDivineMediaOrigin("https://media.divine.video/blob")).toBe(true);
-    expect(isDivineMediaOrigin("http://media.divine.video/blob")).toBe(false);
-    expect(isDivineMediaOrigin("https://media.divine.video.evil.example/blob")).toBe(false);
   });
 });

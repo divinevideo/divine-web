@@ -4,6 +4,20 @@ import { describe, expect, it, vi } from "vitest";
 import { DestinationForm } from "./DestinationForm";
 
 describe("DestinationForm", () => {
+  it("explains the bounded browser upload path for hashless profile images", () => {
+    render(
+      <DestinationForm
+        state="idle"
+        progress={null}
+        summary={null}
+        failure={null}
+        onStart={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText(/your browser verifies and uploads the image directly/i)).toBeInTheDocument();
+  });
+
   it("describes already-present progress and hides zero summary categories", () => {
     render(
       <DestinationForm

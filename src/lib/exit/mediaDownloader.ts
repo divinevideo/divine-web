@@ -3,8 +3,9 @@
 
 import type { NostrSigner } from "@nostrify/nostrify";
 
-import { createMediaViewerAuthHeader } from "@/lib/mediaViewerAuth";
 import type { MediaReference } from "./archive";
+import { fetchAndHashBlob } from "./mediaBlob";
+import { groupMediaReferences } from "./mediaReferences";
 
 export type MediaVerification = "verified" | "unverified" | "hash-mismatch" | "failed";
 
@@ -40,57 +41,12 @@ const EXTENSIONS: Record<string, string> = {
   "image/webp": "webp", "image/gif": "gif", "application/vnd.apple.mpegurl": "m3u8",
 };
 
-export function isDivineMediaOrigin(url: string): boolean {
-  try {
-    const parsed = new URL(url);
-    return parsed.protocol === "https:" && parsed.hostname === "media.divine.video";
-  } catch {
-    return false;
-  }
-}
-
 function extension(contentType: string | null): string {
   return EXTENSIONS[contentType?.split(";")[0].trim().toLowerCase() ?? ""] ?? "bin";
 }
 
-function hex(bytes: ArrayBuffer): string {
-  return Array.from(new Uint8Array(bytes), (byte) => byte.toString(16).padStart(2, "0")).join("");
-}
-
-async function fetchCandidate(url: string, expectedHash: string | null, options: Pick<DownloadOptions, "fetcher" | "signer" | "signal">) {
-  const fetcher = options.fetcher ?? fetch;
-  const request = async (authorization?: string | null) => fetcher(url, {
-    method: "GET", signal: options.signal, redirect: authorization ? "error" : "follow",
-    headers: authorization ? { Authorization: authorization } : undefined,
-  });
-  let response = await request();
-  let usedAuthorization = false;
-  if ((response.status === 401 || response.status === 403) && isDivineMediaOrigin(url)) {
-    const auth = await createMediaViewerAuthHeader({ signer: options.signer, url, sha256: expectedHash ?? undefined });
-    if (auth) {
-      response = await request(auth);
-      usedAuthorization = true;
-    }
-  }
-  if (!response.ok) throw new Error(`HTTP ${response.status}`);
-  if (usedAuthorization && !isDivineMediaOrigin(response.url || url)) throw new Error("Divine media redirected to an untrusted origin");
-  const bytes = new Uint8Array(await response.arrayBuffer());
-  const advertisedSize = response.headers.get("content-length");
-  if (advertisedSize && Number(advertisedSize) !== bytes.length) throw new Error("Response byte count did not match Content-Length");
-  return { bytes, contentType: response.headers.get("content-type"), finalUrl: response.url || url };
-}
-
-function groups(references: MediaReference[]): MediaReference[][] {
-  const grouped = new Map<string, MediaReference[]>();
-  for (const reference of references) {
-    const key = reference.sha256 ? `hash:${reference.sha256}` : `url:${reference.url}`;
-    grouped.set(key, [...(grouped.get(key) ?? []), reference]);
-  }
-  return [...grouped.values()];
-}
-
 export async function downloadArchiveMedia(options: DownloadOptions): Promise<MediaDownloadResult[]> {
-  const batches = groups(options.references);
+  const batches = groupMediaReferences(options.references);
   const results: MediaDownloadResult[] = [];
   for (const references of batches) {
     const expectedHash = references[0].sha256;
@@ -101,8 +57,14 @@ export async function downloadArchiveMedia(options: DownloadOptions): Promise<Me
     for (const url of candidates) {
       if (options.signal?.aborted) { failures.push("Download cancelled"); break; }
       try {
-        const response = await fetchCandidate(url, expectedHash, options);
-        const computedHash = hex(await crypto.subtle.digest("SHA-256", response.bytes));
+        const response = await fetchAndHashBlob({
+          url,
+          expectedSha256: expectedHash,
+          signer: options.signer,
+          signal: options.signal,
+          fetcher: options.fetcher,
+        });
+        const computedHash = response.computedSha256;
         const status: MediaVerification = expectedHash ? (expectedHash === computedHash ? "verified" : "hash-mismatch") : "unverified";
         const folder = status === "hash-mismatch" ? "media/mismatched" : status === "unverified" ? "media/unverified" : "media";
         const archivePath = `${folder}/${status === "hash-mismatch" ? expectedHash : computedHash}.${extension(response.contentType)}`;

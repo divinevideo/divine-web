@@ -233,9 +233,11 @@ normalize to the domain root because BUD-01 serves every Blossom endpoint there.
 The first eligible
 copy is the destination capability canary, kind-24242 upload authorization is
 scoped to one advertised hash, and later file failures do not stop the remaining
-copies. Sources without an advertised hash and generated HLS manifests are
-skipped. Descriptor hashes and redirect-aware `HEAD` readback results remain
-distinct from independent byte hashing.
+copies. Hashless profile images are read through a five-megabyte streaming cap,
+hashed in the browser, and sent through BUD-02 `PUT /upload`; other hashless
+media and generated HLS manifests are skipped. Source-advertised hashes,
+browser-computed upload hashes, descriptor hashes, and redirect-aware `HEAD`
+readback results remain distinct.
 
 After mirroring finishes, the page can republish durable public events to one
 custom `wss://` relay. Migration writes use a standalone authenticated relay
