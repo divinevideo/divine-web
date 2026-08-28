@@ -6,12 +6,14 @@ import { NIP07_GRACE_MS, NIP07_POLL_INTERVAL_MS } from './useNip07Availability';
 
 const {
   mockGetValidToken,
+  mockIsExpired,
   mockJwtSigner,
   mockLogins,
   mockReleaseBunkerSignersExcept,
   mockUseAuthor,
 } = vi.hoisted(() => ({
   mockGetValidToken: vi.fn<() => string | null>(() => null),
+  mockIsExpired: { value: false },
   mockJwtSigner: {
     getPublicKey: vi.fn<() => Promise<string>>(),
     signEvent: vi.fn(),
@@ -45,6 +47,7 @@ vi.mock('./useAuthor.ts', () => ({
 vi.mock('@/hooks/useDivineSession', () => ({
   useDivineSession: () => ({
     getValidToken: mockGetValidToken,
+    isExpired: mockIsExpired.value,
   }),
 }));
 
@@ -78,6 +81,7 @@ describe('useCurrentUser', () => {
     mockLogins.length = 0;
     mockGetValidToken.mockReset();
     mockGetValidToken.mockReturnValue(null);
+    mockIsExpired.value = false;
     mockJwtSigner.getPublicKey.mockReset();
     mockJwtSigner.signEvent.mockReset();
     mockUseAuthor.mockClear();
@@ -132,6 +136,7 @@ describe('useCurrentUser', () => {
 
     expect(result.current.users).toHaveLength(1);
     expect(result.current.signer).toBe(mockJwtSigner);
+    expect(result.current.hostedToken).toBe('jwt-token');
     expect(mockUseAuthor).toHaveBeenCalledWith('b'.repeat(64));
   });
 
@@ -156,6 +161,17 @@ describe('useCurrentUser', () => {
 
     expect(result.current.users).toHaveLength(1);
     expect(result.current.signer).toBe(mockJwtSigner);
+  });
+
+  it('does not expose an expired hosted token for key export', async () => {
+    mockGetValidToken.mockReturnValue('expired-token');
+    mockIsExpired.value = true;
+    mockJwtSigner.getPublicKey.mockResolvedValue('e'.repeat(64));
+
+    const { result } = renderHook(() => useCurrentUser());
+
+    await waitFor(() => expect(result.current.user?.pubkey).toBe('e'.repeat(64)));
+    expect(result.current.hostedToken).toBeNull();
   });
 
   it('does not fall back to a manual account while a JWT session is still initializing', () => {
@@ -199,6 +215,7 @@ describe('useCurrentUser', () => {
     });
     expect(result.current.users).toHaveLength(1);
     expect(result.current.signer).toBeDefined();
+    expect(result.current.hostedToken).toBeNull();
   });
 
   it('reports isResolvingJwt while the session initializes, then clears it', async () => {

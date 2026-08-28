@@ -24,7 +24,7 @@ type JwtResolution =
 
 export function useCurrentUser() {
   const { logins } = useNostrLogin();
-  const { getValidToken } = useDivineSession();
+  const { getValidToken, isExpired } = useDivineSession();
   const token = getValidToken();
   const [jwtResolution, setJwtResolution] = useState<JwtResolution>();
   const jwtSigner = useMemo(() => (
@@ -134,11 +134,13 @@ export function useCurrentUser() {
   const user = users[0];
   const signer = useMemo(() => getSafeUserSigner(user), [user]);
   const author = useAuthor(user?.pubkey);
+  const hostedToken = !isExpired && user?.pubkey === jwtPubkey ? token : null;
 
   return {
     user,
     users,
     signer,
+    hostedToken,
     isResolvingJwt,
     ...author.data,
   };

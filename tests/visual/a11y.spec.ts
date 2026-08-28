@@ -11,6 +11,7 @@ const ROUTES = [
   '/age-review',
   '/kids',
   '/download',
+  '/exit/start',
   `/profile/${PUBKEY}`,
   `/profile/${PUBKEY}/lists`,
   `/people-lists/${PUBKEY}/friends`,

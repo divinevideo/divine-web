@@ -17,13 +17,13 @@ import { useHead } from "@unhead/react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 
+import { AccountKeySection } from "@/components/exit/AccountKeySection";
 import { DestinationForm } from "@/components/exit/DestinationForm";
 import { DiscoveryPointerForm } from "@/components/exit/DiscoveryPointerForm";
 import { KeySafetyNotice } from "@/components/exit/KeySafetyNotice";
 import { MediaProgressList } from "@/components/exit/MediaProgressList";
 import { RelayDestinationForm } from "@/components/exit/RelayDestinationForm";
 import { LoginArea } from "@/components/auth/LoginArea";
-import { LocalNsecBanner } from "@/components/auth/LocalNsecBanner";
 import { MarketingLayout } from "@/components/MarketingLayout";
 import { SectionHero } from "@/components/static-pages";
 import { Button } from "@/components/ui/button";
@@ -87,7 +87,7 @@ export function ExitStartPage() {
     ],
   });
 
-  const { user, signer, isResolvingJwt } = useCurrentUser();
+  const { user, signer, hostedToken, isResolvingJwt } = useCurrentUser();
   const { logins } = useNostrLogin();
   const localNsecLogin = user ? getLocalNsecLogin(logins, user.pubkey) : null;
 
@@ -504,51 +504,11 @@ export function ExitStartPage() {
             lead="Your account is a key, not a username. Whether you can hold that key yourself depends on how you signed up."
           />
 
-          {/* This card always renders. The backup controls below gate themselves for
-              protected minors by rendering null (#182), so if the explanation lived
-              inside that component this section would collapse to a bare heading for
-              exactly the readers least able to fill in the gap themselves. */}
-          <Card variant="brand" accent="blue">
-            <CardContent className="pt-6 space-y-3 text-base leading-relaxed text-muted-foreground">
-              {localNsecLogin ? (
-                <>
-                  <p>
-                    This account has its own key, stored in this browser rather than on a
-                    Divine server. That key is what proves the account is yours, here and
-                    anywhere else that speaks the same protocol.
-                  </p>
-                  <p>
-                    Keep a copy of it somewhere safe. If it is lost, nobody can restore it
-                    for you &mdash; not Divine, not anyone.
-                  </p>
-                </>
-              ) : (
-                <>
-                  <p>
-                    This account signs through a browser extension or another signer,
-                    rather than a secret key stored directly by this page. This page
-                    cannot reveal a key it does not hold.
-                  </p>
-                  <p>
-                    What that means for moving: your public identity &mdash; the name other
-                    apps know you by &mdash; is yours and does not change. The ability to
-                    sign new events depends on whichever signer this account uses.
-                  </p>
-                  <p>
-                    Creating an archive still requires that signer to approve the request.
-                    Once downloaded, everything in the archive is already signed and stays
-                    verifiable no matter what happens to how you sign in.
-                  </p>
-                </>
-              )}
-            </CardContent>
-          </Card>
-
-          {localNsecLogin ? (
-            <div className="mt-5">
-              <LocalNsecBanner nsec={localNsecLogin.data.nsec} />
-            </div>
-          ) : null}
+          <AccountKeySection
+            pubkey={user?.pubkey}
+            hostedToken={hostedToken ?? null}
+            localNsec={localNsecLogin?.data.nsec ?? null}
+          />
 
           <div className="mt-5">
             <KeySafetyNotice />

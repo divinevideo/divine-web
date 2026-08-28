@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { TestApp } from "@/test/TestApp";
 import { createFixtureFetch } from "@/lib/exit/__fixtures__/fixtureFetch";
 import { FixtureSigner } from "@/lib/exit/__fixtures__/fixtureSigner";
+import { KeyExportError } from "@/lib/exit/keyExportClient";
 import {
   fixturePubkey,
   fixtureMediaHash,
@@ -23,12 +24,18 @@ vi.mock("@/hooks/useCurrentUser", () => ({
   useCurrentUser: () => mockUseCurrentUser(),
 }));
 
-const { mockGetActiveLocalNsecLogin, mockBannerRender } = vi.hoisted(() => ({
+const { mockGetActiveLocalNsecLogin, mockBannerRender, mockExportAccountKey } = vi.hoisted(() => ({
   mockGetActiveLocalNsecLogin: vi.fn(
     (_logins: unknown[] = [], _pubkey = "") => null as { data: { nsec: string } } | null
   ),
   mockBannerRender: vi.fn(() => null as React.ReactNode),
+  mockExportAccountKey: vi.fn(),
 }));
+
+vi.mock("@/lib/exit/keyExportClient", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/exit/keyExportClient")>();
+  return { ...actual, exportAccountKey: (...args: unknown[]) => mockExportAccountKey(...args) };
+});
 
 vi.mock("@/lib/localNsecAccount", () => ({
   getLocalNsecLogin: (logins: unknown[], pubkey: string) =>
@@ -43,7 +50,12 @@ vi.mock("@/components/auth/LocalNsecBanner", () => ({
 
 function signedIn() {
   const signer = new FixtureSigner();
-  return { user: { pubkey: fixturePubkey, signer }, signer, isResolvingJwt: false };
+  return { user: { pubkey: fixturePubkey, signer }, signer, hostedToken: null, isResolvingJwt: false };
+}
+
+function hostedSignedIn() {
+  const signer = new FixtureSigner();
+  return { user: { pubkey: fixturePubkey, signer }, signer, hostedToken: "token", isResolvingJwt: false };
 }
 
 function signedOut() {
@@ -55,6 +67,7 @@ describe("ExitStartPage", () => {
     mockUseCurrentUser.mockReturnValue(signedOut());
     mockGetActiveLocalNsecLogin.mockReturnValue(null);
     mockBannerRender.mockReturnValue(null);
+    mockExportAccountKey.mockReset();
   });
 
   afterEach(() => {
@@ -385,8 +398,47 @@ describe("ExitStartPage", () => {
 
     expect(screen.getByText(/signs through a browser extension or another signer/)).toBeInTheDocument();
     expect(
-      screen.getByText(/Creating an archive still requires that signer/)
+      screen.getByText(/everything in your downloaded archive stays verifiable/)
     ).toBeInTheDocument();
+  });
+
+  it("keeps portability controls available when hosted key export is restricted", async () => {
+    mockUseCurrentUser.mockReturnValue(hostedSignedIn());
+    mockExportAccountKey.mockRejectedValue(new KeyExportError(
+      "policy-denied",
+      "Divine cannot export the secret key for this account.",
+      403,
+    ));
+    vi.stubGlobal("fetch", createFixtureFetch("one-page"));
+    render(<TestApp><ExitStartPage /></TestApp>);
+
+    await userEvent.type(screen.getByLabelText("Divine account password"), "password");
+    await userEvent.click(screen.getByRole("checkbox", { name: /I understand/ }));
+    await userEvent.click(screen.getByRole("button", { name: "Show my secret key" }));
+    expect(await screen.findByText(/Secret-key export is restricted/)).toBeInTheDocument();
+
+    const archiveButton = screen.getByRole("button", { name: /Create my archive/ });
+    expect(archiveButton).toBeEnabled();
+    await userEvent.click(archiveButton);
+    await waitFor(() => expect(screen.getByRole("heading", { name: "Move your media" })).toBeInTheDocument());
+
+    vi.stubGlobal("fetch", vi.fn<typeof fetch>()
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        url: `https://blossom.example/${fixtureMediaHash}`,
+        sha256: fixtureMediaHash,
+        size: 5,
+        type: "video/mp4",
+      }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(null, { status: 200, headers: { "content-length": "5" } })));
+    await userEvent.type(screen.getByLabelText("Blossom server URL"), "https://blossom.example");
+    const mirrorButton = screen.getByRole("button", { name: "Copy my media" });
+    expect(mirrorButton).toBeEnabled();
+    await userEvent.click(mirrorButton);
+
+    await waitFor(() => expect(screen.getByRole("button", { name: "Publish my posts" })).toBeInTheDocument());
+    await userEvent.type(screen.getByLabelText("Relay URL"), "wss://relay.example");
+    expect(screen.getByRole("button", { name: "Publish my posts" })).toBeEnabled();
+    expect(screen.getByText(/Secret-key export is restricted/)).toBeInTheDocument();
   });
 
   it("still explains the keys section when the backup banner renders nothing", () => {

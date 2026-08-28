@@ -197,6 +197,14 @@ time, verifies advertised SHA-256 hashes, and records partial failures without
 changing signed events. Viewer authorization is retried only for the exact
 `https://media.divine.video` origin; third-party media requests remain bare.
 
+The same page shows the signed-in account's full npub and separates hosted,
+local-nsec, and external-signer key ownership. Hosted accounts may export their
+nsec through Keycast's password-confirmed `/api/user/export-key` endpoint. The
+secret exists only in transient component state, is cleared on hide or account
+change, and is never added to the archive. Keycast remains authoritative for
+raw-key policy: a policy denial changes only the key section and leaves every
+other portability step available.
+
 After an archive is built, the same page can mirror its unique source blobs to a
 custom HTTPS Blossom destination with BUD-04 `PUT /mirror`. Destination URLs
 normalize to the domain root because BUD-01 serves every Blossom endpoint there.
