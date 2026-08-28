@@ -44,6 +44,14 @@ describe("exportAccountKey", () => {
     await expectCode(vi.fn<typeof fetch>().mockResolvedValue(response(status, body)), code);
   });
 
+  it.each([
+    [401, '', 'auth-required'],
+    [401, 'Unauthorized', 'auth-required'],
+    [403, 'Forbidden', 'policy-denied'],
+  ] as const)('fails closed for ambiguous status %s as %s', async (status, body, code) => {
+    await expectCode(vi.fn<typeof fetch>().mockResolvedValue(response(status, body)), code);
+  });
+
   it("maps rate limits by code and caps Retry-After", async () => {
     const fetcher = vi.fn<typeof fetch>().mockResolvedValue(response(
       429,

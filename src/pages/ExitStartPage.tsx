@@ -87,7 +87,7 @@ export function ExitStartPage() {
     ],
   });
 
-  const { user, signer, hostedToken, isResolvingJwt } = useCurrentUser();
+  const { user, signer, hostedToken, isHostedAccount, isResolvingJwt } = useCurrentUser();
   const { logins } = useNostrLogin();
   const localNsecLogin = user ? getLocalNsecLogin(logins, user.pubkey) : null;
 
@@ -507,6 +507,7 @@ export function ExitStartPage() {
           <AccountKeySection
             pubkey={user?.pubkey}
             hostedToken={hostedToken}
+            isHostedAccount={isHostedAccount}
             localNsec={localNsecLogin?.data.nsec ?? null}
           />
 

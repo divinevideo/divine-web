@@ -69,11 +69,12 @@ async function readFailure(response: Response): Promise<{ code?: string; message
   }
 }
 
-function isAuthFailure(message?: string): boolean {
+function isInvalidPassword(message?: string): boolean {
   const normalized = message?.toLowerCase() ?? "";
-  return normalized.includes("authentication required")
-    || normalized.includes("invalid or expired token")
-    || normalized.includes("valid token");
+  return normalized.includes("invalid email or password")
+    || normalized.includes("invalid password")
+    || normalized.includes("incorrect password")
+    || normalized.includes("password did not match");
 }
 
 function failureFor(
@@ -106,9 +107,16 @@ function failureFor(
     );
   }
   if (response.status === 401) {
-    return isAuthFailure(body.message)
-      ? new KeyExportError("auth-required", "Your Divine session expired. Sign in again.", 401)
-      : new KeyExportError("invalid-password", "That password did not match this account.", 401);
+    return isInvalidPassword(body.message)
+      ? new KeyExportError("invalid-password", "That password did not match this account.", 401)
+      : new KeyExportError("auth-required", "Your Divine session expired. Sign in again.", 401);
+  }
+  if (response.status === 403) {
+    return new KeyExportError(
+      "policy-denied",
+      "Divine cannot export the secret key for this account.",
+      403,
+    );
   }
   if (response.status === 404) {
     return new KeyExportError(

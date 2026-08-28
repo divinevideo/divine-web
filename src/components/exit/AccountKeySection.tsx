@@ -15,6 +15,7 @@ import { exportAccountKey, KeyExportError } from "@/lib/exit/keyExportClient";
 interface AccountKeySectionProps {
   pubkey: string | undefined;
   hostedToken: string | null;
+  isHostedAccount: boolean;
   localNsec: string | null;
 }
 
@@ -54,7 +55,7 @@ function exportFailureMessage(error: KeyExportError): string {
 }
 
 export function AccountKeySection(props: AccountKeySectionProps) {
-  const { pubkey, hostedToken, localNsec } = props;
+  const { pubkey, hostedToken, isHostedAccount, localNsec } = props;
   const passwordId = useId();
   const confirmationId = useId();
   const [confirmed, setConfirmed] = useState(false);
@@ -66,7 +67,6 @@ export function AccountKeySection(props: AccountKeySectionProps) {
   const activeRequest = useRef<AbortController | null>(null);
   const attempt = useRef(0);
   const npub = pubkey ? nip19.npubEncode(pubkey) : null;
-  const isHostedAccount = !!hostedToken && !!pubkey;
 
   useEffect(() => {
     attempt.current += 1;
@@ -165,8 +165,16 @@ export function AccountKeySection(props: AccountKeySectionProps) {
           )}
 
           {isHostedAccount ? (
-            restricted ? (
-              <Alert className="border-brand-orange/50 bg-brand-orange/10">
+            !hostedToken ? (
+              <Alert data-sentry-mask>
+                <WarningCircle className="h-5 w-5" weight="fill" />
+                <AlertTitle>Your Divine session expired</AlertTitle>
+                <AlertDescription>
+                  Sign in again, then return here to reveal this account&apos;s secret key.
+                </AlertDescription>
+              </Alert>
+            ) : restricted ? (
+              <Alert data-sentry-mask className="border-brand-orange/50 bg-brand-orange/10">
                 <WarningCircle className="h-5 w-5" weight="fill" />
                 <AlertTitle>Secret-key export is restricted</AlertTitle>
                 <AlertDescription>
@@ -249,8 +257,8 @@ export function AccountKeySection(props: AccountKeySectionProps) {
 
           {localNsec && pubkey ? <LocalNsecBanner nsec={localNsec} /> : null}
 
-          {failure ? <p role="alert" className="text-destructive">{failure}</p> : null}
-          {copyStatus ? <p role="status" className="text-sm">{copyStatus}</p> : null}
+          {failure ? <p data-sentry-mask role="alert" className="text-destructive">{failure}</p> : null}
+          {copyStatus ? <p data-sentry-mask role="status" className="text-sm">{copyStatus}</p> : null}
         </CardContent>
       </Card>
     </div>

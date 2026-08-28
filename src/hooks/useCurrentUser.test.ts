@@ -172,6 +172,7 @@ describe('useCurrentUser', () => {
 
     await waitFor(() => expect(result.current.user?.pubkey).toBe('e'.repeat(64)));
     expect(result.current.hostedToken).toBeNull();
+    expect(result.current.isHostedAccount).toBe(true);
   });
 
   it('does not fall back to a manual account while a JWT session is still initializing', () => {

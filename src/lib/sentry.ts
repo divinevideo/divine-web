@@ -4,6 +4,7 @@
 import * as Sentry from '@sentry/react';
 import {
   shouldDropHandledKeyExportHttpClientEvent,
+  shouldDropKeyExportBreadcrumb,
   shouldDropKeyExportReplayEvent,
   shouldDropFunnelcakeHttpClientEvent,
   shouldDropHandledMediaHttpClientEvent,
@@ -148,6 +149,10 @@ export function initializeSentry() {
       Sentry.httpClientIntegration({ failedRequestStatusCodes: [[400, 599]] }),
       Sentry.captureConsoleIntegration({ levels: ['error', 'warn'] }),
     ],
+
+    beforeBreadcrumb(breadcrumb) {
+      return shouldDropKeyExportBreadcrumb(breadcrumb) ? null : breadcrumb;
+    },
 
     // Filter out noise - browser environment errors we can't fix
     ignoreErrors: [

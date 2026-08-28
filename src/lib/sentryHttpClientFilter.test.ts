@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   shouldDropHandledKeyExportHttpClientEvent,
+  shouldDropKeyExportBreadcrumb,
   shouldDropKeyExportReplayEvent,
   shouldDropFunnelcakeHttpClientEvent,
   shouldDropHandledMediaHttpClientEvent,
@@ -32,6 +33,27 @@ describe('shouldDropHandledKeyExportHttpClientEvent', () => {
     });
 
     expect(shouldDropHandledKeyExportHttpClientEvent(event)).toBe(false);
+  });
+});
+
+describe('shouldDropKeyExportBreadcrumb', () => {
+  it.each(['fetch', 'xhr'])('drops key-export %s breadcrumbs', (category) => {
+    expect(shouldDropKeyExportBreadcrumb({
+      category,
+      type: 'http',
+      data: {
+        url: 'https://login.divine.video/api/user/export-key',
+        status_code: 403,
+      },
+    })).toBe(true);
+  });
+
+  it('keeps breadcrumbs for other login endpoints', () => {
+    expect(shouldDropKeyExportBreadcrumb({
+      category: 'fetch',
+      type: 'http',
+      data: { url: 'https://login.divine.video/api/user/account' },
+    })).toBe(false);
   });
 });
 

@@ -30,6 +30,12 @@ type ReplayRecordingEventLike = {
   };
 };
 
+type BreadcrumbLike = {
+  category?: unknown;
+  type?: unknown;
+  data?: Record<string, unknown>;
+};
+
 const MEDIA_HOSTNAME = 'media.divine.video';
 const FUNNELCAKE_API_HOSTNAMES = new Set([
   'api.divine.video',
@@ -215,6 +221,16 @@ export function shouldDropHandledKeyExportHttpClientEvent(event: SentryEventLike
     || statusCode === 403
     || statusCode === 404
     || statusCode === 429;
+}
+
+export function shouldDropKeyExportBreadcrumb(breadcrumb: BreadcrumbLike): boolean {
+  if (breadcrumb.type !== 'http'
+    || (breadcrumb.category !== 'fetch' && breadcrumb.category !== 'xhr')) {
+    return false;
+  }
+
+  const requestUrl = toSafeString(breadcrumb.data?.url);
+  return requestUrl ? isKeyExportUrl(requestUrl) : false;
 }
 
 export function shouldDropKeyExportReplayEvent(event: ReplayRecordingEventLike): boolean {

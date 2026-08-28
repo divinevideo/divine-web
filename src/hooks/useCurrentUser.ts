@@ -134,13 +134,15 @@ export function useCurrentUser() {
   const user = users[0];
   const signer = useMemo(() => getSafeUserSigner(user), [user]);
   const author = useAuthor(user?.pubkey);
-  const hostedToken = !isExpired && !!user?.pubkey && user.pubkey === jwtPubkey ? token : null;
+  const isHostedAccount = !!user?.pubkey && user.pubkey === jwtPubkey;
+  const hostedToken = !isExpired && isHostedAccount ? token : null;
 
   return {
     user,
     users,
     signer,
     hostedToken,
+    isHostedAccount,
     isResolvingJwt,
     ...author.data,
   };

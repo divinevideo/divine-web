@@ -50,12 +50,24 @@ vi.mock("@/components/auth/LocalNsecBanner", () => ({
 
 function signedIn() {
   const signer = new FixtureSigner();
-  return { user: { pubkey: fixturePubkey, signer }, signer, hostedToken: null, isResolvingJwt: false };
+  return {
+    user: { pubkey: fixturePubkey, signer },
+    signer,
+    hostedToken: null,
+    isHostedAccount: false,
+    isResolvingJwt: false,
+  };
 }
 
 function hostedSignedIn() {
   const signer = new FixtureSigner();
-  return { user: { pubkey: fixturePubkey, signer }, signer, hostedToken: "token", isResolvingJwt: false };
+  return {
+    user: { pubkey: fixturePubkey, signer },
+    signer,
+    hostedToken: "token",
+    isHostedAccount: true,
+    isResolvingJwt: false,
+  };
 }
 
 function signedOut() {
