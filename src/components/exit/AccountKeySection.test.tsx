@@ -147,6 +147,25 @@ describe("AccountKeySection", () => {
     expect(mockExportAccountKey.mock.calls[0][0].signal.aborted).toBe(false);
   });
 
+  it("clears a revealed secret when the hosted session expires", async () => {
+    mockExportAccountKey.mockResolvedValue({ nsec: NSEC });
+    const { rerender } = render(
+      <AccountKeySection pubkey={PUBKEY} hostedToken="token-a" isHostedAccount localNsec={null} />,
+    );
+
+    await userEvent.type(screen.getByLabelText("Divine account password"), "password");
+    await userEvent.click(screen.getByRole("checkbox", { name: /I understand/ }));
+    await userEvent.click(screen.getByRole("button", { name: "Show my secret key" }));
+    expect(await screen.findByText(NSEC)).toBeInTheDocument();
+
+    rerender(<AccountKeySection pubkey={PUBKEY} hostedToken={null} isHostedAccount localNsec={null} />);
+    await waitFor(() => expect(screen.queryByText(NSEC)).not.toBeInTheDocument());
+
+    rerender(<AccountKeySection pubkey={PUBKEY} hostedToken="token-b" isHostedAccount localNsec={null} />);
+    expect(screen.getByLabelText("Divine account password")).toBeInTheDocument();
+    expect(screen.queryByText(NSEC)).not.toBeInTheDocument();
+  });
+
   it("turns policy denial into a restriction state", async () => {
     mockExportAccountKey.mockRejectedValue(new KeyExportError(
       "policy-denied",

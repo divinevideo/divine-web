@@ -67,6 +67,7 @@ export function AccountKeySection(props: AccountKeySectionProps) {
   const activeRequest = useRef<AbortController | null>(null);
   const attempt = useRef(0);
   const npub = pubkey ? nip19.npubEncode(pubkey) : null;
+  const hasHostedToken = !!hostedToken;
 
   useEffect(() => {
     attempt.current += 1;
@@ -83,7 +84,7 @@ export function AccountKeySection(props: AccountKeySectionProps) {
       attempt.current += 1;
       activeRequest.current?.abort();
     };
-  }, [pubkey, isHostedAccount]);
+  }, [pubkey, isHostedAccount, hasHostedToken]);
 
   async function copyValue(value: string, label: string) {
     try {

@@ -224,11 +224,6 @@ export function shouldDropHandledKeyExportHttpClientEvent(event: SentryEventLike
 }
 
 export function shouldDropKeyExportBreadcrumb(breadcrumb: BreadcrumbLike): boolean {
-  if (breadcrumb.type !== 'http'
-    || (breadcrumb.category !== 'fetch' && breadcrumb.category !== 'xhr')) {
-    return false;
-  }
-
   const requestUrl = toSafeString(breadcrumb.data?.url);
   return requestUrl ? isKeyExportUrl(requestUrl) : false;
 }

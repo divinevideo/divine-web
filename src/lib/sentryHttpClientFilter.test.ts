@@ -55,6 +55,13 @@ describe('shouldDropKeyExportBreadcrumb', () => {
       data: { url: 'https://login.divine.video/api/user/account' },
     })).toBe(false);
   });
+
+  it('drops the exact key-export URL even when the breadcrumb shape changes', () => {
+    expect(shouldDropKeyExportBreadcrumb({
+      category: 'request',
+      data: { url: 'https://login.divine.video/api/user/export-key' },
+    })).toBe(true);
+  });
 });
 
 describe('shouldDropKeyExportReplayEvent', () => {
