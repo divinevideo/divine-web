@@ -91,21 +91,24 @@ jobs:
       # `npx --no-install fastly` from working-directory: compute-js — not a
       # global `npm install -g @fastly/cli` — so the deploy uses the
       # lockfile-pinned version (reproducible, visible to dependency tooling,
-      # and the same CLI local dev uses). Two load-bearing details: the steps
-      # MUST run from compute-js (from the repo root, npx would resolve a
-      # different @fastly/cli that compute-js-static-publish pulls in), and
-      # --no-install makes a missing pin fail loudly instead of fetching an
-      # unrelated `fastly` package from the registry. Bump the pin deliberately
-      # in compute-js/package.json.
+      # and the same CLI local dev uses). The steps MUST run from compute-js;
+      # from the repo root, npx would resolve a different @fastly/cli that
+      # compute-js-static-publish pulls in. Bump the pin deliberately in
+      # compute-js/package.json.
       - name: Install Fastly compute dependencies
         run: npm ci
 
-      # Logs the resolved CLI version in the deploy record and fails fast (via
-      # --no-install, run from compute-js) if the pin didn't resolve, before we
-      # attempt an actual publish.
+      # Assert that the workspace-local binary exists before npx gets a chance
+      # to fall back to the root workspace binary, then record its version.
       - name: Show pinned Fastly CLI version
         working-directory: compute-js
-        run: npx --no-install fastly version
+        run: |
+          set -euo pipefail
+          test -x node_modules/.bin/fastly || {
+            echo "::error::compute-js/node_modules/.bin/fastly is missing; npx would fall back to the root @fastly/cli."
+            exit 1
+          }
+          npx --no-install fastly version
 
       - name: Deploy to Fastly Compute (edge worker)
         working-directory: compute-js
@@ -140,7 +143,7 @@ jobs:
           # partial publish can't go green. We match the stable ASCII "Failed:"
           # rather than the emoji so a locale/encoding change can't silently
           # disable this guard. See #426.
-          npx @fastly/compute-js-static-publish publish-content 2>&1 | tee /tmp/publish-content.log
+          npx --no-install @fastly/compute-js-static-publish publish-content 2>&1 | tee /tmp/publish-content.log
           if grep -qF 'Failed:' /tmp/publish-content.log; then
             echo "::error::publish-content dropped one or more uploads (see 'Failed:' above)."
             exit 1
