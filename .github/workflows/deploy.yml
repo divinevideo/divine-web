@@ -87,7 +87,12 @@ jobs:
           cache-dependency-path: package-lock.json
 
       - name: Install Fastly CLI
-        run: npm install -g @fastly/cli
+        # Pin the version so a Fastly CLI release can't silently change the
+        # production deploy mid-pipeline. The npm package pins its platform
+        # binary exactly (optionalDependencies "=<version>"), so this makes the
+        # whole publish reproducible. Bump deliberately, not by drifting to
+        # latest.
+        run: npm install -g @fastly/cli@16.0.0
 
       - name: Install Fastly compute dependencies
         run: npm ci
