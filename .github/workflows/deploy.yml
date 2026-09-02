@@ -86,14 +86,11 @@ jobs:
           cache: 'npm'
           cache-dependency-path: package-lock.json
 
-      - name: Install Fastly CLI
-        # Pin the version so a Fastly CLI release can't silently change the
-        # production deploy mid-pipeline. The npm package pins its platform
-        # binary exactly (optionalDependencies "=<version>"), so this makes the
-        # whole publish reproducible. Bump deliberately, not by drifting to
-        # latest.
-        run: npm install -g @fastly/cli@16.0.0
-
+      # Installs the compute-js workspace deps, including @fastly/cli, pinned
+      # via package-lock. We invoke it below with `npx fastly` (not a global
+      # `npm install -g @fastly/cli`) so the deploy uses the lockfile-pinned
+      # version — reproducible, Dependabot-trackable, and the same CLI local
+      # dev uses. Bump the pin deliberately in compute-js/package.json.
       - name: Install Fastly compute dependencies
         run: npm ci
 
@@ -104,7 +101,7 @@ jobs:
         run: |
           set -euo pipefail
           for attempt in $(seq 1 5); do
-            if fastly compute publish --non-interactive --token="$FASTLY_API_TOKEN"; then
+            if npx fastly compute publish --non-interactive --token="$FASTLY_API_TOKEN"; then
               exit 0
             fi
 
@@ -147,7 +144,7 @@ jobs:
             echo "Failed to read service_id from compute-js/fastly.toml" >&2
             exit 1
           }
-          fastly purge --all --service-id "$service_id" --token="$FASTLY_API_TOKEN"
+          npx fastly purge --all --service-id "$service_id" --token="$FASTLY_API_TOKEN"
 
       - name: Verify live .well-known endpoints
         run: |
