@@ -87,10 +87,16 @@ jobs:
           cache-dependency-path: package-lock.json
 
       # Installs the compute-js workspace deps, including @fastly/cli, pinned
-      # via package-lock. We invoke it below with `npx fastly` (not a global
-      # `npm install -g @fastly/cli`) so the deploy uses the lockfile-pinned
-      # version — reproducible, Dependabot-trackable, and the same CLI local
-      # dev uses. Bump the pin deliberately in compute-js/package.json.
+      # via package-lock. The Fastly steps below invoke it as
+      # `npx --no-install fastly` from working-directory: compute-js — not a
+      # global `npm install -g @fastly/cli` — so the deploy uses the
+      # lockfile-pinned version (reproducible, visible to dependency tooling,
+      # and the same CLI local dev uses). Two load-bearing details: the steps
+      # MUST run from compute-js (from the repo root, npx would resolve a
+      # different @fastly/cli that compute-js-static-publish pulls in), and
+      # --no-install makes a missing pin fail loudly instead of fetching an
+      # unrelated `fastly` package from the registry. Bump the pin deliberately
+      # in compute-js/package.json.
       - name: Install Fastly compute dependencies
         run: npm ci
 
@@ -101,7 +107,7 @@ jobs:
         run: |
           set -euo pipefail
           for attempt in $(seq 1 5); do
-            if npx fastly compute publish --non-interactive --token="$FASTLY_API_TOKEN"; then
+            if npx --no-install fastly compute publish --non-interactive --token="$FASTLY_API_TOKEN"; then
               exit 0
             fi
 
@@ -144,7 +150,7 @@ jobs:
             echo "Failed to read service_id from compute-js/fastly.toml" >&2
             exit 1
           }
-          npx fastly purge --all --service-id "$service_id" --token="$FASTLY_API_TOKEN"
+          npx --no-install fastly purge --all --service-id "$service_id" --token="$FASTLY_API_TOKEN"
 
       - name: Verify live .well-known endpoints
         run: |
