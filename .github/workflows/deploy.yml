@@ -100,6 +100,13 @@ jobs:
       - name: Install Fastly compute dependencies
         run: npm ci
 
+      # Logs the resolved CLI version in the deploy record and fails fast (via
+      # --no-install, run from compute-js) if the pin didn't resolve, before we
+      # attempt an actual publish.
+      - name: Show pinned Fastly CLI version
+        working-directory: compute-js
+        run: npx --no-install fastly version
+
       - name: Deploy to Fastly Compute (edge worker)
         working-directory: compute-js
         env:
