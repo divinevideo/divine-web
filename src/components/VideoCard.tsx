@@ -261,6 +261,10 @@ export function VideoCard({
   const { mutate: deleteVideo, isPending: isDeleting } = useDeleteVideo();
   const canDelete = useCanDeleteVideo(video);
   const { user: currentUser } = useCurrentUser();
+  // Reporting and muting are meaningless against yourself, and divine-web is a
+  // trusted report client, so hide those affordances on your own content. The
+  // useReportContent/useMuteItem hooks reject self-targets regardless.
+  const isOwnVideo = !!currentUser && currentUser.pubkey === video.pubkey;
   const coordinate = video.vineId ? `${SHORT_VIDEO_KIND}:${video.pubkey}:${video.vineId}` : undefined;
   const isPinned = useIsVideoPinned(coordinate);
   const { mutateAsync: pinVideo } = usePinVideo();
@@ -1029,20 +1033,24 @@ export function VideoCard({
                   <DropdownMenuSeparator />
                 </>
               )}
-              <DropdownMenuItem onClick={() => setShowReportDialog(true)}>
-                <Flag className="h-4 w-4 mr-2" />
-                {t('videoCard.menu.reportVideo')}
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setShowReportUserDialog(true)}>
-                <Flag className="h-4 w-4 mr-2" />
-                {t('videoCard.menu.reportUser')}
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleMuteUser} className="text-destructive focus:text-destructive">
-                <UserX className="h-4 w-4 mr-2" />
-                {t('videoCard.menu.muteUser', { name: displayName })}
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
+              {!isOwnVideo && (
+                <>
+                  <DropdownMenuItem onClick={() => setShowReportDialog(true)}>
+                    <Flag className="h-4 w-4 mr-2" />
+                    {t('videoCard.menu.reportVideo')}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setShowReportUserDialog(true)}>
+                    <Flag className="h-4 w-4 mr-2" />
+                    {t('videoCard.menu.reportUser')}
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleMuteUser} className="text-destructive focus:text-destructive">
+                    <UserX className="h-4 w-4 mr-2" />
+                    {t('videoCard.menu.muteUser', { name: displayName })}
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                </>
+              )}
               <DropdownMenuItem onClick={() => setShowViewSourceDialog(true)}>
                 <Code className="h-4 w-4 mr-2" />
                 {t('videoCard.menu.viewSource')}

@@ -284,6 +284,12 @@ export function useMuteItem() {
       reason?: string;
     }) => {
       if (!user) throw new Error('Must be logged in to mute content');
+      // A user muting their own pubkey is nonsensical and, more importantly,
+      // divine-web is a trusted report client: keep every self-directed
+      // moderation path closed at the hook, mirroring useBlockUser.
+      if (type === MuteType.USER && value === user.pubkey) {
+        throw new Error('Cannot mute yourself');
+      }
 
       const didPublish = await publishMuteListUpdate({
         nostr,
@@ -430,6 +436,13 @@ export function useReportContent() {
       reporterName?: string;
     }) => {
       if (!user) throw new Error('Must be logged in to report content');
+      // divine-web is a TRUSTED_REPORT_CLIENT: a kind-1984 report published here
+      // counts toward the two-reporter threshold for automatic age restriction,
+      // so a self-report would let a user supply half that threshold against
+      // themselves. Reject it before anything is published, mirroring useBlockUser.
+      if (pubkey === user.pubkey) {
+        throw new Error('Cannot report your own content');
+      }
 
       // NIP-56: p tag is required for all kind:1984 reports
       const tags: string[][] = [];

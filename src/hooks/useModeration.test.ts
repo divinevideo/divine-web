@@ -218,6 +218,45 @@ describe('useReportContent', () => {
     expect(call.tags).toContainEqual(['L', 'social.nos.ontology']);
     expect(call.tags).toContainEqual(['l', 'NS-harassment', 'social.nos.ontology']);
   });
+
+  it('rejects a report of the reporter\'s own content and publishes nothing', async () => {
+    mockPublishEvent.mockResolvedValue({ id: 'test' });
+
+    const { result } = renderHook(() => useReportContent(), { wrapper: createWrapper() });
+
+    let error: unknown;
+    await act(async () => {
+      try {
+        await result.current.mutateAsync({
+          eventId: mockEventId,
+          pubkey: mockUserPubkey,
+          reason: ContentFilterReason.SPAM,
+        });
+      } catch (e) {
+        error = e;
+      }
+    });
+
+    expect(error).toBeInstanceOf(Error);
+    expect((error as Error).message).toBe('Cannot report your own content');
+    expect(mockPublishEvent).not.toHaveBeenCalled();
+  });
+
+  it('still reports another user\'s content', async () => {
+    mockPublishEvent.mockResolvedValue({ id: 'test' });
+
+    const { result } = renderHook(() => useReportContent(), { wrapper: createWrapper() });
+
+    await act(() =>
+      result.current.mutateAsync({
+        pubkey: mockReportedPubkey,
+        reason: ContentFilterReason.SPAM,
+      })
+    );
+
+    expect(mockPublishEvent).toHaveBeenCalledOnce();
+    expect(mockPublishEvent.mock.calls[0][0].kind).toBe(1984);
+  });
 });
 
 function makeMuteEvent(
@@ -526,6 +565,56 @@ describe('useMuteItem', () => {
 
     expect(error).toBeInstanceOf(Error);
     expect(mockPublishEvent).not.toHaveBeenCalled();
+  });
+
+  it('rejects muting the current user\'s own pubkey and publishes nothing', async () => {
+    mockMuteQuery.mockResolvedValue([]);
+    mockPublishEvent.mockResolvedValue({});
+
+    const { result } = renderHook(() => useMuteItem(), { wrapper: createWrapper() });
+
+    let error: unknown;
+    await act(async () => {
+      try {
+        await result.current.mutateAsync({ type: MuteType.USER, value: mockUserPubkey });
+      } catch (e) {
+        error = e;
+      }
+    });
+
+    expect(error).toBeInstanceOf(Error);
+    expect((error as Error).message).toBe('Cannot mute yourself');
+    expect(mockPublishEvent).not.toHaveBeenCalled();
+  });
+
+  it('still mutes another user', async () => {
+    mockMuteQuery.mockResolvedValue([]);
+    mockPublishEvent.mockResolvedValue({});
+
+    const { result } = renderHook(() => useMuteItem(), { wrapper: createWrapper() });
+
+    await act(async () => {
+      await result.current.mutateAsync({ type: MuteType.USER, value: 'target-pubkey' });
+    });
+
+    expect(mockPublishEvent).toHaveBeenCalledOnce();
+    expect(mockPublishEvent.mock.calls[0][0].kind).toBe(MUTE_LIST_KIND);
+  });
+
+  it('does not treat a non-user mute whose value equals the pubkey as a self-mute', async () => {
+    // The self-guard is scoped to user mutes; a hashtag or keyword that happens
+    // to equal the viewer's pubkey string must still publish.
+    mockMuteQuery.mockResolvedValue([]);
+    mockPublishEvent.mockResolvedValue({});
+
+    const { result } = renderHook(() => useMuteItem(), { wrapper: createWrapper() });
+
+    await act(async () => {
+      await result.current.mutateAsync({ type: MuteType.HASHTAG, value: mockUserPubkey });
+    });
+
+    expect(mockPublishEvent).toHaveBeenCalledOnce();
+    expect(mockPublishEvent.mock.calls[0][0].tags).toContainEqual(['t', mockUserPubkey]);
   });
 });
 

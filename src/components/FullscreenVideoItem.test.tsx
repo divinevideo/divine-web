@@ -1,4 +1,4 @@
-import { fireEvent, render } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { forwardRef, type HTMLAttributes, type ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ParsedVideoData } from '@/types/video';
@@ -8,6 +8,14 @@ const playbackMocks = vi.hoisted(() => ({
   setActiveVideo: vi.fn(),
   setUserPaused: vi.fn(),
   setGlobalMuted: vi.fn(),
+}));
+
+const authMocks = vi.hoisted(() => ({
+  useCurrentUser: vi.fn(() => ({ user: null as { pubkey: string } | null })),
+}));
+
+vi.mock('@/hooks/useCurrentUser', () => ({
+  useCurrentUser: () => authMocks.useCurrentUser(),
 }));
 
 vi.mock('react-i18next', () => ({
@@ -130,6 +138,30 @@ function renderItem(prefix?: ReactNode) {
 function setPaused(el: HTMLMediaElement, paused: boolean) {
   Object.defineProperty(el, 'paused', { value: paused, configurable: true });
 }
+
+describe('FullscreenVideoItem self-moderation affordances', () => {
+  beforeEach(() => {
+    authMocks.useCurrentUser.mockReturnValue({ user: null });
+  });
+
+  it('hides report and mute actions on the viewer\'s own video', () => {
+    authMocks.useCurrentUser.mockReturnValue({ user: { pubkey: 'f'.repeat(64) } });
+    renderItem();
+
+    expect(screen.queryByText('fullscreenVideoItem.reportVideo')).not.toBeInTheDocument();
+    expect(screen.queryByText('fullscreenVideoItem.reportUser')).not.toBeInTheDocument();
+    expect(screen.queryByText('fullscreenVideoItem.muteUser')).not.toBeInTheDocument();
+  });
+
+  it('shows report and mute actions on another user\'s video', () => {
+    authMocks.useCurrentUser.mockReturnValue({ user: { pubkey: 'a'.repeat(64) } });
+    renderItem();
+
+    expect(screen.getByText('fullscreenVideoItem.reportVideo')).toBeInTheDocument();
+    expect(screen.getByText('fullscreenVideoItem.reportUser')).toBeInTheDocument();
+    expect(screen.getByText('fullscreenVideoItem.muteUser')).toBeInTheDocument();
+  });
+});
 
 describe('FullscreenVideoItem tap-to-pause', () => {
   beforeEach(() => {

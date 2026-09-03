@@ -20,6 +20,7 @@ import { useVideoPlayback } from '@/hooks/useVideoPlayback';
 import { useVideoReactions } from '@/hooks/useVideoReactions';
 import { useVideosInLists } from '@/hooks/useVideoLists';
 import { useMuteItem } from '@/hooks/useModeration';
+import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useDeleteVideo, useCanDeleteVideo } from '@/hooks/useDeleteVideo';
 import { useToast } from '@/hooks/useToast';
 import { enhanceAuthorData } from '@/lib/generateProfile';
@@ -117,6 +118,11 @@ export function FullscreenVideoItem({
   const muteUser = useMuteItem();
   const { mutate: deleteVideo, isPending: isDeleting } = useDeleteVideo();
   const canDelete = useCanDeleteVideo(video);
+  const { user: currentUser } = useCurrentUser();
+  // Reporting and muting are meaningless against yourself, and divine-web is a
+  // trusted report client, so hide those affordances on your own content. The
+  // useReportContent/useMuteItem hooks reject self-targets regardless.
+  const isOwnVideo = !!currentUser && currentUser.pubkey === video.pubkey;
   const { data: reactions } = useVideoReactions(video.id, video.pubkey, video.vineId);
   const { data: lists } = useVideosInLists(video.vineId ?? undefined, video.id);
   const playbackCountLabel = video.isVineMigrated
@@ -521,29 +527,33 @@ export function FullscreenVideoItem({
                       <DropdownMenuSeparator className="bg-white/20" />
                     </>
                   )}
-                  <DropdownMenuItem
-                    onClick={() => setShowReportDialog(true)}
-                    className="focus:bg-white/10"
-                  >
-                    <Flag className="h-4 w-4 mr-2" />
-                    {t('fullscreenVideoItem.reportVideo')}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => setShowReportUserDialog(true)}
-                    className="focus:bg-white/10"
-                  >
-                    <Flag className="h-4 w-4 mr-2" />
-                    {t('fullscreenVideoItem.reportUser')}
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator className="bg-white/20" />
-                  <DropdownMenuItem
-                    onClick={handleMuteUser}
-                    className="text-red-400 focus:text-red-400 focus:bg-red-500/20"
-                  >
-                    <UserX className="h-4 w-4 mr-2" />
-                    {t('fullscreenVideoItem.muteUser', { name: displayName })}
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator className="bg-white/20" />
+                  {!isOwnVideo && (
+                    <>
+                      <DropdownMenuItem
+                        onClick={() => setShowReportDialog(true)}
+                        className="focus:bg-white/10"
+                      >
+                        <Flag className="h-4 w-4 mr-2" />
+                        {t('fullscreenVideoItem.reportVideo')}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => setShowReportUserDialog(true)}
+                        className="focus:bg-white/10"
+                      >
+                        <Flag className="h-4 w-4 mr-2" />
+                        {t('fullscreenVideoItem.reportUser')}
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator className="bg-white/20" />
+                      <DropdownMenuItem
+                        onClick={handleMuteUser}
+                        className="text-red-400 focus:text-red-400 focus:bg-red-500/20"
+                      >
+                        <UserX className="h-4 w-4 mr-2" />
+                        {t('fullscreenVideoItem.muteUser', { name: displayName })}
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator className="bg-white/20" />
+                    </>
+                  )}
                   <DropdownMenuItem
                     onClick={() => setShowViewSourceDialog(true)}
                     className="focus:bg-white/10"
