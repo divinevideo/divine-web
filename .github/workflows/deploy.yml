@@ -98,17 +98,29 @@ jobs:
       - name: Install Fastly compute dependencies
         run: npm ci
 
-      # Assert that the workspace-local binary exists before npx gets a chance
-      # to fall back to the root workspace binary, then record its version.
+      # Assert which Fastly CLI npx actually resolves: its major must match the
+      # @fastly/cli pin in compute-js/package.json. This deliberately checks the
+      # resolved version rather than a node_modules path, because the path is a
+      # side effect of version-range layout. Today compute-js pins ^16 while
+      # @fastly/compute-js-static-publish pins ^15, so npm nests a second copy
+      # under compute-js/. When static-publish's range converges on ^16, npm
+      # hoists a single copy to the root and compute-js/node_modules/ stops
+      # existing — a path guard would hard-fail that routine bump even though
+      # npx resolved the right CLI. A wrong resolution (e.g. the root ^15
+      # binary) still fails here, on the major mismatch.
       - name: Show pinned Fastly CLI version
         working-directory: compute-js
         run: |
           set -euo pipefail
-          test -x node_modules/.bin/fastly || {
-            echo "::error::compute-js/node_modules/.bin/fastly is missing; npx would fall back to the root @fastly/cli."
+          want="$(node -p "require('./package.json').devDependencies['@fastly/cli'].match(/\\d+/)[0]")"
+          version_output="$(npx --no-install fastly version)"
+          line="${version_output%%$'\n'*}"
+          got="$(printf '%s' "$line" | sed -n 's/.*v\([0-9][0-9]*\)\..*/\1/p')"
+          echo "$line (compute-js pins ^${want}.x)"
+          [ "$want" = "$got" ] || {
+            echo "::error::Fastly CLI major '${got:-unparseable}' resolved, but compute-js pins ^${want}.x; deploys would run the wrong binary."
             exit 1
           }
-          npx --no-install fastly version
 
       - name: Deploy to Fastly Compute (edge worker)
         working-directory: compute-js
