@@ -100,14 +100,16 @@ jobs:
 
       # Assert which Fastly CLI npx actually resolves: its major must match the
       # @fastly/cli pin in compute-js/package.json. This deliberately checks the
-      # resolved version rather than a node_modules path, because the path is a
-      # side effect of version-range layout. Today compute-js pins ^16 while
-      # @fastly/compute-js-static-publish pins ^15, so npm nests a second copy
-      # under compute-js/. When static-publish's range converges on ^16, npm
-      # hoists a single copy to the root and compute-js/node_modules/ stops
-      # existing — a path guard would hard-fail that routine bump even though
-      # npx resolved the right CLI. A wrong resolution (e.g. the root ^15
-      # binary) still fails here, on the major mismatch.
+      # resolved version rather than a node_modules path, because where npm
+      # places that binary is an accident of lockfile history, not a stable
+      # fact. compute-js pins ^16 while @fastly/compute-js-static-publish pins
+      # ^15; in this lock the 16.0.0 copy happens to sit under compute-js/ with
+      # 15.4.0 at the root, but resolving those same ranges in a clean tree
+      # hoists 16.0.0 to the root instead, and any lockfile regeneration can
+      # flip the layout and delete compute-js/node_modules/ outright. A path
+      # guard hard-fails on that flip even though npx still resolves the right
+      # CLI. This check passes on every layout and still fails on a wrong
+      # resolution (e.g. a root ^15 binary), on the major mismatch.
       - name: Show pinned Fastly CLI version
         working-directory: compute-js
         run: |
